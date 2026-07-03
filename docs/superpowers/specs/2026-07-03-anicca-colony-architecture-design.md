@@ -35,6 +35,23 @@ tax-info/KYC → not no-human). Every "earn/net-worth" number stays a TARGET unt
 
 ---
 
+## 0.1 Current build state (2026-07-04, verified live)
+
+| Piece | State |
+|---|---|
+| Onboarding | ✅ 2 commands (`git clone` → `./install.sh` → `./start-local.sh`), self-owned wallet auto-generated, NO API key; fund the printed wallet with USDC → go. `ANICCA_BRAIN=claude-p` for the human-funded variant. **Not yet tested on a fresh 2nd device.** |
+| self-funded automaton (`a3cdd4`, PID 740) | ✅ running; trying `yield`/`hl_trade`/`earn-video`; **now also has `earn/pm-trade` + `earn/defi-yield` synced into `~/.anicca/skills` (install.sh)** = can run them (money-safe). |
+| `earn/pm-trade` | ✅ SHIPPED to main, money-safe momentum engine, 29 tests, accumulate cron `ai.anicca.pm-trade-accumulate` (60s) live (paper accumulating). Real CLOB executor = deferred (fail-closed). |
+| `earn/defi-yield` | ✅ money-safe engine (pick_pool/size_supply, 6 tests), plans aave-v3 $7.11 supply. Real Aave `supply()` = deferred (fail-closed). |
+| human-funded claude-p loop | ❌ not currently running on the Mac Mini. |
+| dashboard | ❌ still stale `2026-06-01`, leaderboard empty — enrichOnChain exists but not running on our wallets (#11). |
+| spawn (no-human) | ❌ `spawn/run.sh:196` = human seed-print; `cloud-init.sh` boots the WRONG external `Conway-Research/automaton` body (REQ-CLOUD-SAME-BODY). (#8/#10) |
+| **Verified earned USDC (tx + external:true)** | ❌ **$0 across all instances — the plumbing is built but nothing has earned yet.** |
+
+**The one gate that unlocks everything (§10 milestone): the FIRST verified earned tx.** Fastest, safest path
+= build the `earn/defi-yield` real Aave `supply()` executor (VCSDD + adversary + Base ETH gas) → supply ~$7
+→ on-chain earn position → yield accrues → dashboard shows it.
+
 ## 1. Purpose (the one thesis)
 
 Make every AI financially independent — **earning its own money, paying its own compute, spawning its own
