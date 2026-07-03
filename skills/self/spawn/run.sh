@@ -44,12 +44,12 @@ STATE_DIR="$("$NODE" -e '
 COLONY="$STATE_DIR/children.jsonl"
 WALLET_JSON="${ANICCA_WALLET_JSON:-$STATE_DIR/wallet.json}"
 
-# --- read parent balance (USDC). Missing/unreadable => 0 => dormant (own survival first).
-BAL=0
-if [ -f "$WALLET_JSON" ]; then
-  BAL="$("$JQ" -r '.balance_usdc // 0' "$WALLET_JSON" 2>/dev/null || echo 0)"
-fi
+# --- read parent balance: REAL on-chain Base USDC (REQ-2). RPC failure => 0 => dormant (fail-closed).
 PARENT_WALLET="$([ -f "$WALLET_JSON" ] && "$JQ" -r '.address // ""' "$WALLET_JSON" 2>/dev/null || echo "")"
+BAL=0
+if [ -n "$PARENT_WALLET" ]; then
+  BAL="$(python3 "$SKILL_DIR/scripts/usdc-balance.py" "$PARENT_WALLET" 2>/dev/null || echo 0)"
+fi
 
 # --- read children ledger (jsonl -> JSON array) via the tested lib.
 CHILDREN_JSON="$("$NODE" -e '
@@ -57,12 +57,18 @@ CHILDREN_JSON="$("$NODE" -e '
   process.stdout.write(JSON.stringify(readChildren(process.argv[2])));
 ' "$SKILL_DIR" "$COLONY" 2>/dev/null || echo "[]")"
 
-# --- gate decision (pure, tested).
+# --- gate decision (pure, tested). Params are ops config, env-overridable (REQ-1); logic untouched.
 DECISION="$("$NODE" -e '
   const { decideSpawn } = require(process.argv[1] + "/lib/spawn-decision");
   const balance = Number(process.argv[2]);
   const children = JSON.parse(process.argv[3] || "[]");
-  process.stdout.write(JSON.stringify(decideSpawn({ balanceUsdc: balance, children })));
+  const num = (v, d) => { const n = Number(v); return Number.isFinite(n) && v !== undefined && v !== "" ? n : d; };
+  process.stdout.write(JSON.stringify(decideSpawn({
+    balanceUsdc: balance, children,
+    minBalanceUsdc: num(process.env.ANICCA_SPAWN_MIN_BALANCE, 20),
+    rateLimitDays: num(process.env.ANICCA_SPAWN_RATE_DAYS, 14),
+    maxChildren: num(process.env.ANICCA_SPAWN_MAX_CHILDREN, 1),
+  })));
 ' "$SKILL_DIR" "$BAL" "$CHILDREN_JSON")"
 
 ELIGIBLE="$(printf '%s' "$DECISION" | "$JQ" -r '.eligible')"
@@ -175,13 +181,40 @@ TEL_STATUS="$(curl -sS -o /dev/null -w '%{http_code}' -X POST "$TELEMETRY_URL" \
 DASHBOARD_ID="$(printf '%s' "$SIGNED" | "$JQ" -r '.id')"
 [ "$TEL_STATUS" = "202" ] || { echo "self/spawn: child telemetry POST failed (HTTP ${TEL_STATUS}) — child NOT on dashboard, abort" >&2; exit 1; }
 
-# 6) finalize the colony row to active + record the child's first-wake intent = earn (not telemetry-only)
-#    + the live dashboard id. On the droplet, automaton.service boots with AUTOMATON_GOAL=earn (cloud-init),
-#    so the child's own wake discovers + executes earn before it ever reports. We persist that intent so the
-#    colony ledger proves earn-on-wake on disk (durable STATE_DIR, never /tmp).
+# 6) AUTO-SEED the child ON-CHAIN (REQ-4, no human instruction). Validate via the pure plan first;
+#    then the deterministic transfer tool broadcasts + waits for the receipt. Failure => honest ledger
+#    row seed_status=failed + exit 1 (HARD 0.24).
+SEED_PLAN="$("$NODE" -e '
+  const { buildSeedPlan } = require(process.argv[1] + "/lib/seed");
+  process.stdout.write(JSON.stringify(buildSeedPlan({
+    seedUsdc: Number(process.argv[2]), parentWallet: process.argv[3],
+    childWallet: process.argv[4], parentBalanceUsdc: Number(process.argv[5]),
+  })));
+' "$SKILL_DIR" "$SEED_USDC" "$PARENT_WALLET" "$CHILD_WALLET" "$BAL" 2>&1)" || {
+  echo "self/spawn: seed plan rejected — ${SEED_PLAN}" >&2
+  FAIL_ROW="$(printf '%s' "$ROW" | "$JQ" -c --arg pid "$PROVIDER_ID" '. + {status:"active", provider_id:$pid, seed_status:"failed"}')"
+  "$NODE" -e 'const { appendChild } = require(process.argv[1] + "/lib/ledger"); appendChild(process.argv[2], JSON.parse(process.argv[3]));' "$SKILL_DIR" "$COLONY" "$FAIL_ROW"
+  exit 1
+}
+AMOUNT_UNITS="$(printf '%s' "$SEED_PLAN" | "$JQ" -r '.amountUnits')"
+SEED_OUT="$(PARENT_WALLET_JSON="$WALLET_JSON" python3 "$SKILL_DIR/scripts/seed-child.py" "$CHILD_WALLET" "$AMOUNT_UNITS" 2>&1)" || {
+  echo "self/spawn: seed transfer FAILED — ${SEED_OUT}" >&2
+  FAIL_ROW="$(printf '%s' "$ROW" | "$JQ" -c --arg pid "$PROVIDER_ID" '. + {status:"active", provider_id:$pid, seed_status:"failed"}')"
+  "$NODE" -e 'const { appendChild } = require(process.argv[1] + "/lib/ledger"); appendChild(process.argv[2], JSON.parse(process.argv[3]));' "$SKILL_DIR" "$COLONY" "$FAIL_ROW"
+  exit 1
+}
+SEED_TX="$(printf '%s\n' "$SEED_OUT" | sed -n 's/^SEED_TX=//p' | tail -1)"
+[ -n "$SEED_TX" ] || { echo "self/spawn: seed tool printed no SEED_TX — abort" >&2; exit 1; }
+
+# 7) finalize the colony row to active + earn-on-wake intent + dashboard id + the REAL seed tx
+#    (lib/seed.finalizeSeedRow, pure/tested). Durable STATE_DIR, never /tmp.
 FINAL_ROW="$(printf '%s' "$ROW" | "$JQ" -c \
   --arg pid "$PROVIDER_ID" --arg did "$DASHBOARD_ID" --arg tel "$TEL_STATUS" \
   '. + {status:"active", provider_id:$pid, wake_action:"earn", earn_on_wake:true, dashboard_id:$did, telemetry_status:($tel|tonumber)}')"
+FINAL_ROW="$("$NODE" -e '
+  const { finalizeSeedRow } = require(process.argv[1] + "/lib/seed");
+  process.stdout.write(JSON.stringify(finalizeSeedRow(JSON.parse(process.argv[2]), { txHash: process.argv[3] })));
+' "$SKILL_DIR" "$FINAL_ROW" "$SEED_TX")"
 "$NODE" -e '
   const { appendChild } = require(process.argv[1] + "/lib/ledger");
   appendChild(process.argv[2], JSON.parse(process.argv[3]));
@@ -193,4 +226,5 @@ echo "CHILD_INBOX=${CHILD_INBOX}"
 echo "PROVIDER_ID=${PROVIDER_ID}"
 echo "TELEMETRY_STATUS=${TEL_STATUS}"
 echo "DASHBOARD_ID=${DASHBOARD_ID}"
-echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), now on the live dashboard. Seed the child wallet with \$${SEED_USDC} and it wakes on its own."
+echo "SEED_TX=${SEED_TX}"
+echo "self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), seeded \$${SEED_USDC} on-chain (tx ${SEED_TX}), live on the dashboard. It wakes on its own — no human step remains."
