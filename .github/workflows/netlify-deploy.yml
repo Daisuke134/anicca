@@ -89,9 +89,15 @@ jobs:
               | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{const a=JSON.parse(s).filter(x=>x.state==='ready'&&x.published_at);process.stdout.write((a[1]||{}).id||'')}catch{process.stdout.write('')}})")
             if [ -n "$PREV" ]; then
               curl -s -X POST "https://api.netlify.com/api/v1/sites/$NETLIFY_SITE_ID/deploys/$PREV/restore" -H "Authorization: Bearer $NETLIFY_AUTH_TOKEN" >/dev/null
-              echo "rolled back to previous deploy $PREV"
+              echo "restored previous deploy $PREV — re-verifying (flap guard)"
+              sleep 20
+              if node scripts/money-path-smoke.mjs "https://aniccaai.com"; then
+                echo "flap-guard: rollback target is healthy"
+              else
+                echo "FLAP GUARD: the restored deploy $PREV ALSO fails the smoke — escalate, do not trust the rollback"
+              fi
             else
-              echo "no previous good deploy found to roll back to"
+              echo "no previous good deploy found to roll back to — escalate"
             fi
             exit 1
           fi
