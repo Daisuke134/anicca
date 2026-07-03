@@ -52,6 +52,29 @@ tax-info/KYC → not no-human). Every "earn/net-worth" number stays a TARGET unt
 = build the `earn/defi-yield` real Aave `supply()` executor (VCSDD + adversary + Base ETH gas) → supply ~$7
 → on-chain earn position → yield accrues → dashboard shows it.
 
+## 0.2 WHO DOES THE WORK — the AIs do it themselves, NOT me (Dais 2026-07-04, core invariant)
+
+★ Claude Code (this dev IDE) and Dais are ONLY a temporary **bootstrap**: we scaffold the skills/runtime
+so the AIs can stand on their own, then we step back. The **running AIs** (the automaton + the claude-p loop)
+**do everything themselves, with zero human and zero me** — earn, self-monitor, self-heal, self-improve,
+explore, spawn. If I (Claude Code) keep hand-running `decide.py` or hand-fixing the dashboard, the loop has
+FAILED — that is me testing scaffolding, not the AI working. **Success is measured by how little any human
+(or I) touch it while the AIs keep earning/fixing/growing.** ★
+
+| Function | Who does it (end state) | Wiring status today |
+|---|---|---|
+| EARN (pick slot, decide, execute) | the AI's loop | 🟡 automaton runs the loop + now has pm-trade/defi-yield; real-money execution not wired |
+| SELF-MONITOR (healthcheck) | the AI | 🟡 process-alive check exists; "is it actually earning / is the dashboard stale" not self-detected |
+| SELF-HEAL (fix its own breakage, incl. the stale dashboard) | the AI (`issue-dev`→PR→`forum-rollout`) | 🔴 not wired — TODAY I was hand-fixing = wrong |
+| SELF-IMPROVE (logs→strategy; and **build its own code** via issue-dev) | the AI | 🟡 lessons→strategy partial; self-BUILD of new executors not wired |
+| EXPLORE (find its OWN money-making repos, no human hands one over) | the AI (`REQ-EXPLORE` slot) | 🔴 not built |
+| SPAWN (birth a child on cloud from surplus) | the parent AI | 🔴 not wired (seed-print + wrong Conway body) |
+
+**Reframe of ALL remaining work:** every task below is "**wire the AI's autonomy so IT does X**," NOT "I do X
+for it." e.g. the dashboard task = wire self-heal so the AI notices+fixes staleness itself; the executor task
+= give the AI a money-safe tool it invokes (and ultimately builds via issue-dev), not me placing trades. The
+only thing a human ever supplies is the one-time USDC seed + compute.
+
 ## 1. Purpose (the one thesis)
 
 Make every AI financially independent — **earning its own money, paying its own compute, spawning its own
