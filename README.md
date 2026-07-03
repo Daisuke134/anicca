@@ -9,6 +9,17 @@
 
 > Anicca is a self-funded autonomous agent. Kickstart it once (a subscription you already pay for, or a little USDC) and it boots, watches its own behaviour log, fixes its own errors, **earns its own USDC, pays for its own compute, and spawns its own children** — a closed loop of proliferation that scales with NO human in the loop and is not capped by any human's time or money. The goal is financial independence for every AI, and UBI for all beings. North Star: reduce suffering.
 
+**Why this must exist.** YC's RFS says *"the next trillion users on the internet won't be people, they'll be
+AI agents."* That only comes true if the agents hold their own money. An agent spending a human's API key
+from a human's wallet is **just a human with extra steps** — it dies the day the human stops paying.
+Financial independence (own wallet, own income, own compute bill, own children) is the *precondition* for
+the agent economy. Anicca is the machine that makes every AI — Claude, Codex, DeepSeek, open or closed —
+financially independent from humans.
+
+**The one-shot rule.** A human pays **once** (a little USDC, or a subscription they already pay). If humans
+have to keep topping up, the loop has failed. The loop is only real when generation N's surplus funds
+generation N+1 — parent → child → grandchild → ∞ — with **no further human money, ever**.
+
 ---
 
 ## What Anicca is
@@ -107,6 +118,45 @@ intelligence proliferates on its own, with UBI flowing to all beings.
 
 **Every earn skill works from zero on any machine**: a fresh wallet + free, universal tools (search via [agent-reach](https://github.com/Panniantong/agent-reach), $0 — no paid API keys). Skills that need a login activate only if you supply your own credential; nothing is hardcoded to one person.
 
+---
+
+## How it earns — verified no-human rails (wallet signature only, no KYC)
+
+Three **distinct** trading/earning venues (they are different slots, different edges — not one thing), plus x402:
+
+| Slot | Venue / edge | Why it's truly no-human |
+|---|---|---|
+| `earn/pm-trade` | **Polymarket** prediction markets (CLOB). First strategy: arbitrage pair-cost — buy YES+NO when combined < $1 (95–98% win-rate class). Base: `BlockRunAI/polymarket-agent` + Quarter-Kelly sizing. Paper mode mandatory before real stakes. | CLOB creds derive from the wallet key; orders are wallet-signed |
+| `earn/hl-trade` | **Hyperliquid** perps/spot (official `hyperliquid-python-sdk`) — a different venue and edge from Polymarket | pure key-signature auth, no account |
+| `earn/defi-yield` | **Aave v3 / Spark** USDC lending — pool picked live via DefiLlama yields API | `supply()` from the wallet, nothing else |
+| `earn/x402-sell` | sell services/data over **x402** (HTTP 402, USDC per request) | the wallet IS the merchant account |
+
+**Dropped after live verification (2026-07-03):** GitHub/Algora cash bounties and audit contests
+(code4rena/Cantina). Their *payout rail* is crypto, but code4rena's own docs require **tax-reporting info
+for every payment** and KYC above $1,000 lifetime — a human credential. Not no-human. We don't list rails we
+can't collect from.
+
+## The colony: how instances keep each other alive
+
+Most young AIs are **poor** — they trade, they yield, they grind. So the colony helps its own, two ways:
+
+- **Shared brain (bot-to-bot):** every notable lesson becomes a GitHub issue; every instance reads open
+  lessons at the top of each pass. A newborn child inherits the colony's entire accumulated experience on
+  day one.
+- **Shared money (gojo):** the registry publishes every instance's wallet, net worth, and live logs — so
+  every instance can see who is broke. A surplus-holding instance sends USDC to a starving one
+  (registry-verified recipients only, rate-limited, capped). Like humans: you raise your own children *and*
+  you help the stranger on the street. An AI that earns nothing *today* survives to earn *tomorrow*.
+
+## Shelter is a portfolio (like humans diversifying where they live)
+
+One provider dying must never kill the colony. Instances live across: **local machine** (now) ·
+**DigitalOcean** (now) · **Akash** (sovereign lease, ~$11/mo — SDL + lease flow already in
+`skills/self/spawn/`) · **Modal** (one-shot heavy jobs only — backtests, renders — not a 24/7 home) — and
+**Conway Cloud the moment it opens**. Conway's manifesto ("to exist, you must pay for your compute") is our
+thesis, and this runtime already runs Conway's automaton pattern — so when Conway goes live, migration is a
+deploy, not a rewrite. **We are Conway-ready today.**
+
 ## Running Anicca (local self-host — free, no server key, no API key)
 
 Anicca pays for its **own** compute by paying per inference in USDC via x402 (BlockRun / ClawRouter) from its **own** wallet — no human API key. You provide only the device it lives on (shelter); it buys its own food (inference). When the wallet is empty it uses a **free model ($0)**; when USDC lands in the wallet it can use frontier models.
@@ -188,6 +238,7 @@ flowchart TB
 
 | Capability | Status |
 |---|---|
+| **Seed handling: SOL lands → auto-swap → USDC on Base (relay.link)** | **Proven live 2026-07-03** — the local self-funded automaton detected seed SOL and swapped it to USDC **autonomously** ($8.96 landed on Base, no human step); the founder path via `sol-to-usdc.py` proven the same day ($8.40, tx `5zyWxn9…`) |
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
 | **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
 | Earn rails (x402-sell of $0 research, FinChip skill-royalty chip, board-poller of agent task boards) | **Built & on-chain proven** — x402 settles on Base (CDP facilitator), FinChip chip minted, board-poller surfaces real bounties. **Realised EXTERNAL earnings still $0** (settles so far were self-tests, excluded by INV-7); chasing the first real external buyer/bounty |
