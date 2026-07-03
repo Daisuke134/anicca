@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The ONLY genuinely-implemented, non-stub business logic in Sprint 1 is: (1) gates/v0.sh's real (non-ARTICLE_TEST_FORCE_V0) mechanical check (draft exists/non-empty/has-heading/line-count>3), and (2) gates/v05.sh's real (non-ARTICLE_TEST_FORCE_V05) path — both the judge_v05 hook parser that reads ARTICLE_JUDGE_V05_RESPONSE and decides criteria (a)-(d), AND the criterion-(e) mechanical readability arithmetic (sentence-splitting + <=60-char percentage). Every single test file under skills/profitable-article-writer/tests/ that reaches gates/v0.sh or gates/v05.sh does so EXCLUSIVELY via ARTICLE_TEST_FORCE_V0/ARTICLE_TEST_FORCE_V05 (verified: `grep -rn 'gates/v0.sh\\|gates/v05.sh' tests/` returns no direct invocation, and every run.sh call site in tests/ sets ARTICLE_TEST=1 with FORCE results). No test ever calls gates/v0.sh or gates/v05.sh directly, and no test ever sets ARTICLE_JUDGE_V05_RESPONSE. Consequently: (a) a bug in the real heading/size/line-count check in v0.sh would go undetected by every green test; (b) a bug in the judge_v05 response-file parser (e.g. a typo in the `grep -qE '^V05_CRIT_a: true$'` patterns) would go undetected; (c) a bug in the readability-percentage arithmetic in v05.sh (e.g. the `sentences` split, or the `pct = short*100/total` integer math) would go undetected; (d) the documented fail-closed-when-unwired behavior (real v05.sh run with ARTICLE_JUDGE_V05_RESPONSE unset must yield V05_CRIT_a..d=false and V05_RESULT: FAIL) is asserted only by comments, never exercised by any test. This directly contradicts SKILL.md's own claim (SKILL.md:78-79): 'the tests/ oracle suite (tests/run-red.sh) passes green against that real logic, no NOT_IMPLEMENTED marker remains anywhere' — the tests pass green, but NOT against the real (non-forced) gate logic; they pass green against a parallel FORCE-stub code path that bypasses the real logic entirely.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/gates/v05.sh",
+    "lineRange": "88-122",
+    "snippet": "crit_a=false\ncrit_b=false\ncrit_c=false\ncrit_d=false\nif [ -n \"${ARTICLE_JUDGE_V05_RESPONSE:-}\" ] && [ -f \"$ARTICLE_JUDGE_V05_RESPONSE\" ]; then\n  resp=\"$(cat \"$ARTICLE_JUDGE_V05_RESPONSE\")\"\n  echo \"$resp\" | grep -qE '^V05_CRIT_a: true$' && crit_a=true\n  ...\n# (this entire block, plus the (e) readability arithmetic below it, and gates/v0.sh's real check, have\n# zero test coverage anywhere in tests/)"
+  },
+  "routeToPhase": "2c"
+}
