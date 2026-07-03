@@ -228,6 +228,20 @@ REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP
 account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
 the "Verify your profile" thread.
 
+## D-60 (2026-07-03) — ★ 5-DAY STALL ROOT-CAUSE FIXED ★
+producer.sh had failed daily since ~06-29 with "engine venv missing" —
+`~/.cache/anicca-clones/AI-Youtube-Shorts-Generator/.venv` was gone (disk-cleanup casualty). Re-cloned
+repo (depth-1, 57KB) + rebuilt `.venv` + `pip install -r requirements-local.txt` (faster-whisper/yt-dlp/
+opencv-python/google-genai). Re-ran producer.sh live → ★ real queued clip ★ `~/clips/queue/6xlmaorRY0w_EN.mp4`
+(ffprobe: 202x360 9:16, 60.0s, audio stream present) + caption sidecar, verify_clip.sh gate passed inside
+the run. ★ NOTE: producer.sh still calls the OLD v1 heuristic `earn-clip-rewards/scripts/pipeline.py`
+(whisper + naive highlight pick), NOT the SamurAIGPT+Gemini virality-scored engine that D-20/D-46
+established as canonical — hook text quality reflects this ("This is incontroveritable evidence that
+grain of hair is rev" = weak heuristic pick). Fast-follow: point producer.sh at SamurAIGPT's main.py
+(like daily.sh already does) for better highlight judgment. Left the existing hourly claude-p cron to
+drain the queue naturally (no forced extra post — account already has 2 prior posts, avoid over-posting
+risk on a not-yet-Day-7 account).
+
 ## D-59 (2026-06-29) — ★★★ ALWAYS-ON claude-p clip-core LIVE (Sutando architecture copied) ★★★
 Dais: "look at sutando, they go on claude-p crons, we copy them." DONE. Copied sonichi/sutando's
 always-on chain (read the real code: scripts/start-cli.sh, src/health-check + launchd plists, skills/
