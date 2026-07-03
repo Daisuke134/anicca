@@ -1,12 +1,6 @@
 {
-  "reviewType": "contract",
-  "featureName": "profitable-article-writer",
-  "sprintNumber": 1,
-  "contractPath": "contracts/sprint-1.md",
-  "contractDigest": "947ca5d967d3feb8cbf6a7fb689fcdc06e14635ce8eadc592fa85bdbab463b60",
-  "artifactsToReview": {
-    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
-    "tests": ["skills/profitable-article-writer/tests/"],
-    "source": ["skills/profitable-article-writer/"]
-  }
+  "reviewType": "contract", "featureName": "profitable-article-writer", "sprintNumber": 1, "round": 2,
+  "contractPath": "contracts/sprint-1.md", "contractDigest": "21ec46b48da2dfa24894aab9192a8a9990fea2f2213685d0db1d4d261a53cd4d",
+  "priorRound": { "verdict": "FAIL", "findings": ["FIND-001","FIND-002","FIND-003","FIND-004","FIND-005"] },
+  "artifactsToReview": { "spec": ["specs/behavioral-spec.md","specs/verification-architecture.md"], "tests": ["skills/profitable-article-writer/tests/"], "source": ["skills/profitable-article-writer/"] }
 }
