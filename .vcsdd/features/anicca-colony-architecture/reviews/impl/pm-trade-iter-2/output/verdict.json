@@ -1,0 +1,90 @@
+{
+  "feature": "anicca-colony-architecture",
+  "slot": "earn/pm-trade",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "filesReviewed": [
+      "skills/earn/pm-trade/lib.py",
+      "skills/earn/pm-trade/test_lib.py",
+      "skills/earn/pm-trade/momentum.py",
+      "skills/earn/pm-trade/gate.py",
+      "skills/earn/pm-trade/test_strategy.py",
+      "skills/earn/pm-trade/decide.py",
+      "skills/earn/pm-trade/run.sh",
+      "skills/earn/pm-trade/pm-paper.py",
+      "skills/registry.json",
+      ".vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md"
+    ],
+    "specPath": ".vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "specSections": ["REQ-PMTRADE", "REQ-EARN"],
+    "note": "IMPORTANT TOOLING DISCLOSURE (HONESTY RULES): my actual tool set in this session was Read/Write/Edit/Grep/Glob only — no Bash tool was actually available to me despite the task brief asserting one. I did NOT execute `python3 test_lib.py` / `python3 test_strategy.py`. I hand-traced every one of the 9 test_lib.py assertions and all 10 test_strategy.py assertions line-by-line against lib.py/momentum.py/gate.py's arithmetic (re-deriving each formula) and found all 19 assertions consistent with the code as written -- this is static verification, not fresh executed evidence, and I am flagging the gap rather than fabricating a 'passed' run per this project's own HONESTY RULES Rule 4."
+  },
+  "priorIterationFindingsStatus": {
+    "FIND-001_lib_never_wired": "RESOLVED - decide.py:16-17 imports lib and momentum; decide.py:80,85 calls momentum.side_and_prob and lib.position_size with live-derived arguments.",
+    "FIND-002_no_live_data_path": "RESOLVED - decide.py:27-31 fetches live Binance BTCUSDT 5m klines; decide.py:34-59 fetches live Polymarket gamma market list + decide.py:62-68 fetches live CLOB order books; both feed momentum.py/lib.py.",
+    "FIND-004_PM_PAPER_PASS_spoofable_env_var": "RESOLVED - gate.py:19-29 evaluate_gate() is a pure function over ledger-derived resolved trades; gate.py:49-54 CLI prints a produced 'PM_PAPER_PASS=0|1' line; run.sh:17-18 assigns PM_PAPER_PASS ONLY from that produced stdout (`${GATE_OUT#PM_PAPER_PASS=}`) -- there is no `${PM_PAPER_PASS:-...}` read from the process environment anywhere in run.sh, so an attacker/operator cannot spoof it via env var.",
+    "FIND-005_no_real_order_path_mitigating": "STILL CONFIRMED TRUE (money-safe) - run.sh:24-27 is the only branch reachable when DRY_RUN=false+EARN_MODE=execute+PM_PAPER_PASS=1, and it only echoes a hardcoded 'execute-blocked' JSON and exits 0. Grepped the whole directory: no signing code, no private-key read, no POST to any CLOB order endpoint anywhere in lib.py/momentum.py/gate.py/decide.py/run.sh/pm-paper.py.",
+    "FIND-003_missing_trade_audit_and_alerts_only_gates": "STILL OPEN - directory listing confirms only paper-run (gate.py+decide.py) exists; no trade-audit script, no alerts-only mode.",
+    "FIND-006_pm_paper_book_ordering_untested": "STILL OPEN (in the unchanged pm-paper.py) - decide.py's own `_best_ask` (decide.py:62-68) independently fixes this by using min() over all ask prices (order-independent), but pm-paper.py:33-40 is untouched and still assumes bids[-1]/asks[-1] are best, with zero test locking that assumption down, and pm-paper.py is still shipped (still listed in registry.json:104 as 'pm-paper.py=live read-only paper mechanics').",
+    "FIND-007_run_sh_gate_combinator_untested": "STILL OPEN - no test file exercises run.sh's DRY_RUN/EARN_MODE/PM_PAPER_PASS combinator or decide.py/gate.py as subprocesses.",
+    "FIND-008_min_edge_boundary_untested": "STILL OPEN - test_lib.py unchanged from iteration 1, no boundary test at edge==min_edge.",
+    "FIND-009_purity_boundary_nothing_crosses": "RESOLVED - decide.py now imports and calls both lib.py and momentum.py; the pure/effectful split described in the docstrings is now real, not just aspirational.",
+    "FIND-010_no_SKILL_md": "STILL OPEN - confirmed via directory listing, no SKILL.md exists.",
+    "FIND-011_no_bash_and_no_property_tests": "PARTIALLY OPEN - the 'no Bash in review session' half recurred in this iteration too (see note above, a review-tooling constraint, not something this codebase's author controls); the 'no property/hypothesis-based tests for the pure money-sizing math' half is STILL unaddressed in test_lib.py/test_strategy.py (still 100% fixed-example assertions)."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "decide.py:16-17,80,85", "description": "Confirmed real wiring: decide.py imports lib+momentum and calls momentum.side_and_prob() then lib.position_size() with live-fetched arguments -- FIND-001 is resolved."},
+        {"type": "file", "location": "decide.py:27-68", "description": "Confirmed real live-data acquisition: Binance BTCUSDT 5m klines (btc_window_return) + Polymarket gamma markets + CLOB order books (find_btc_updown/_best_ask) -- FIND-002 is resolved."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "run.sh:24-27", "description": "Re-confirmed fail-closed: the execute branch is still a hardcoded no-op JSON echo + exit 0; no order-signing or order-placement code exists anywhere in this slot -- no real USDC can move today (FIND-005 mitigating status holds)."},
+        {"type": "file", "location": "gate.py:17-29 hand-traced against test_strategy.py:52-75", "description": "All 4 gate.evaluate_gate unit tests and all 15 lib.py/momentum.py unit tests hand-traced arithmetic-correct (Kelly formula f*=(q-p)/(1-p), logistic momentum clamp, winrate/net-PnL threshold logic all re-derived and match); the bug is not in this pure math, it is in the untested file-reading glue (_load_resolved) documented in FIND-001."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "decide.py + lib.py + momentum.py", "description": "Purity boundary is now real and crossed: lib.py/momentum.py remain pure (no imports of json/os/network beyond stdlib math), decide.py is the sole effectful caller. FIND-009 resolved."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "test_lib.py + test_strategy.py, hand-traced (no Bash tool available this session, see note)", "description": "19/19 hand-traced assertions across both test files are arithmetically consistent with lib.py/momentum.py/gate.py as currently written."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-PMTRADE"],
+    "duplicateFindings": [],
+    "moneySafe": true,
+    "moneySafeRationale": "Confirmed by full read + grep of every .py/.sh file in skills/earn/pm-trade/: the only branch reachable with DRY_RUN=false+EARN_MODE=execute+PM_PAPER_PASS=1 (run.sh:24-27) is a hardcoded 'execute-blocked' echo that exits 0 -- no signing, no private-key read, no POST to any order endpoint exists anywhere in the slot. This holds regardless of the FIND-001 gate bug below.",
+    "safeToProceedToLivePaperRun": true,
+    "safeToProceedRationale": "Running run.sh in its default paper mode is safe (no money at risk, confirmed above) and will now exercise real wiring (live Binance+Polymarket data -> momentum.py edge -> lib.py sizing -> ledger row) once find_btc_updown's market-lookup gap (already tracked, task #16) is fixed so a market is actually found. HOWEVER a live paper run's results will never be able to progress the paper-mode gate to PASS: gate.py's _load_resolved() (gate.py:44) only counts rows with status=='resolved' AND a 'pnl_usdc' key, but decide.py's ledger writer (decide.py:91-93) never produces such a row, and the only script that ever marks a row 'resolved' (pm-paper.py:130-133) uses a different key ('realized_pnl') and a different, incompatible row shape (requires 'shares_held'/'outcome_index' decide.py never writes) -- so PM_PAPER_PASS is mathematically stuck at 0 forever under the current code, independent of how many paper trades accumulate or how good the strategy is. This must be fixed (FIND-001) before any real-stake path is meaningful, in addition to the already-tracked find_btc_updown fix (task #16)."
+  }
+}

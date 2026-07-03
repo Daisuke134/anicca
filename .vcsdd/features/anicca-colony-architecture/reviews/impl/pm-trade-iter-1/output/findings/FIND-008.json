@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "test_lib.py does not test the min_edge boundary itself (edge == min_edge exactly, e.g. estimated_prob=0.65, price=0.5, min_edge=0.15 -> edge is exactly 0.15) even though the code's comparison is a strict '<' (position_size returns non-zero when edge==min_edge). Only edge<min_edge (0.1<0.15) is tested. Also untested: kelly_fraction's upper bound near-certainty case (e.g. estimated_prob=0.99, price=0.01) to lock in that full-Kelly can approach but never exceed 1.0, and arb_pair_profit at the exact boundary ask_yes or ask_no == 1.0 (excluded by the strict '<1.0' guard) is never exercised.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/test_lib.py",
+    "lineRange": "38-40",
+    "snippet": "def test_position_size_below_min_edge_is_zero():\n    # edge 0.1 < min_edge 0.15 -> 0\n    assert lib.position_size(0.6, 0.5, 100.0, min_edge=0.15) == 0.0"
+  },
+  "routeToPhase": "2b"
+}

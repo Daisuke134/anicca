@@ -74,6 +74,19 @@ def test_settle_pnl_win_and_loss():
     assert lib.settle_pnl(True, 0.5, 0.0) == 0.0
 
 
+def test_risk_gate_blocks_and_caps():
+    # healthy: stake passes (capped by remaining daily budget). peak 100, loss 0, cap 5% -> budget 5.
+    assert approx(lib.risk_gate(3.0, 100.0, 0.0, 100.0), 3.0)
+    # stake above remaining budget -> capped to budget
+    assert approx(lib.risk_gate(9.0, 100.0, 2.0, 100.0), 3.0)   # budget 5-2=3
+    # daily loss cap hit -> 0
+    assert lib.risk_gate(1.0, 100.0, 5.0, 100.0) == 0.0
+    # drawdown cap hit (balance 70 from peak 100 = 30% >= 25%) -> 0
+    assert lib.risk_gate(1.0, 70.0, 0.0, 100.0) == 0.0
+    # below gas reserve -> 0
+    assert lib.risk_gate(1.0, 0.4, 0.0, 100.0, gas_reserve=0.5) == 0.0
+
+
 if __name__ == "__main__":
     import sys
     fns = [v for k, v in sorted(globals().items()) if k.startswith("test_") and callable(v)]

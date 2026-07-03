@@ -47,8 +47,10 @@ def _iso_ms(s):
         return None
 
 
-def _already_traded_window(ledger, window_end_ms, side):
-    """Idempotency (FIND-007): true if a momentum row for this exact window_end + side already exists."""
+def _already_traded_window(ledger, window_end_ms):
+    """Idempotency: true if ANY momentum row for this window_end already exists (ONE trade per window,
+    regardless of side — a mid-window signal flip must not record both UP and DOWN; FIND-006). A None
+    window_end is treated as 'cannot dedup' by the caller, which refuses to record at all (FIND-005)."""
     if not ledger.exists() or window_end_ms is None:
         return False
     for line in ledger.read_text().splitlines():
@@ -59,7 +61,7 @@ def _already_traded_window(ledger, window_end_ms, side):
             r = json.loads(line)
         except Exception:
             continue
-        if r.get("src") == "momentum" and r.get("window_end_ms") == window_end_ms and r.get("side") == side:
+        if r.get("src") == "momentum" and r.get("window_end_ms") == window_end_ms:
             return True
     return False
 
@@ -132,9 +134,13 @@ def main():
            "btc_window_return": round(wr, 6), "bankroll": bankroll, "question": question}
     if stake > 0:
         LEDGER.parent.mkdir(parents=True, exist_ok=True)
-        if _already_traded_window(LEDGER, win_end, side):
+        if win_end is None:
+            # cannot resolve a trade with no window end -> never record it (would orphan forever). FIND-005.
             out["recorded"] = False
-            out["note"] = "already traded this window+side (idempotent)"
+            out["note"] = "no window_end_ms (unresolvable) -> not recorded"
+        elif _already_traded_window(LEDGER, win_end):
+            out["recorded"] = False
+            out["note"] = "already traded this window (idempotent)"
         else:
             row = {"ts": int(time.time()), "src": "momentum", "mode": "paper", "token_id": tok, "side": side,
                    "size_usdc": round(stake, 4), "entry_price": price, "est_prob": round(prob, 4),

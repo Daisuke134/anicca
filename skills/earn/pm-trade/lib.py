@@ -55,6 +55,24 @@ def settle_pnl(won: bool, entry_price: float, size_usdc: float) -> float:
     return -size_usdc
 
 
+def risk_gate(proposed_stake: float, balance: float, daily_loss: float, peak_balance: float,
+              daily_loss_cap_pct: float = 0.05, drawdown_cap_pct: float = 0.25,
+              gas_reserve: float = 0.5) -> float:
+    """Clamp a proposed stake to the risk limits (the missing risk.py the spec/EARS requires). Returns the
+    ALLOWED stake (0 if any hard limit is hit). Pure. daily_loss is a positive number = USDC lost today;
+    peak_balance = session high. Blocks when: today's loss >= daily_loss_cap of peak, OR drawdown from peak
+    >= drawdown_cap, OR balance <= gas_reserve. Otherwise caps the stake to the remaining daily-loss budget."""
+    if balance <= gas_reserve or proposed_stake <= 0.0 or peak_balance <= 0.0:
+        return 0.0
+    if daily_loss >= daily_loss_cap_pct * peak_balance:
+        return 0.0
+    drawdown = (peak_balance - balance) / peak_balance
+    if drawdown >= drawdown_cap_pct:
+        return 0.0
+    remaining_budget = daily_loss_cap_pct * peak_balance - daily_loss
+    return min(proposed_stake, remaining_budget, balance - gas_reserve)
+
+
 def arb_pair_profit(ask_yes: float, ask_no: float) -> float:
     """Risk-free profit per $1 of paired YES+NO when their combined ask < $1 (one side always redeems at $1).
     Returns 0.0 when there is no arb (combined ask >= 1). This is the highest-win-rate first strategy."""
