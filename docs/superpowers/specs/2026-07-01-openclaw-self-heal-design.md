@@ -164,6 +164,26 @@ BP: 完了 = 「cron が存在する」ではない。**実障害を注入して
 - TIER 0 の実体 = launchd plist（macOS native, OpenClaw 非依存）を第一候補。実装 plan で確定。
 - 既存10 cron の統合 = engine 完成後に段階的に置換（いきなり全削除しない）。
 
+### 6.1 TIER 2/3 実装時に追加した安全設計（2026-07-04 追記、HARD RULE 0.21 準拠）
+
+TIER 1 実装中に実発見: `openclaw cron list --all --json` で 200 cron 中 70 が error 状態だが、
+その大半（Larry/Comedy/Life-call 等の content-posting/distribution cron）は "配信を実投稿でテスト
+するな = cron の仕事" (memory `feedback_never_test_by_direct_posting`) の対象そのもの。TIER 2 (agent
+診断) / F6 (model failover) の**修復後 verify** を TIER 0/1 と同じ「即 `openclaw cron run --wait` して
+確認」でやると、content-posting cron を手動発火 = 実際に投稿/送信してしまう重大違反になる。
+
+★ 追加ルール ★:
+1. TIER 2 の診断 agent 呼び出しは **read-only 診断 + infra-level fix のみ**（gateway restart 等）を
+   許可。cron 自身の payload（投稿/送信/生成タスク）を実行させることは prompt で明示的に禁止する。
+2. 修復後の verify は、対象 cron が content-posting/distribution 種別（payload に
+   post/publish/send/投稿 等のキーワードが含まれる、または該当 skill が公開系）の場合 ★ 強制発火し
+   ない ★。ledger の `verify_result` は `pending_next_scheduled_run`（+ 次回 schedule 時刻）とし、
+   TIER 2 の**次回サイクル**でその cron の `consecutiveErrors`/`lastRunAtMs` が実際の自然発火後に
+   改善したかを事後確認する（forced-fire ではなく wait-and-observe）。
+3. F6 (model failover) も同様: pinned model 変更後の verify は、対象 cron が content-posting なら
+   同じ「次回自然発火を待って確認」パターンに従う。非 posting 系（health-check 系等）は従来通り
+   `openclaw cron run --wait` で即時 verify して良い。
+
 ---
 
 ## 7. Next
