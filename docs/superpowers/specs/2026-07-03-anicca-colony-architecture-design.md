@@ -607,10 +607,14 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      no-mock run (fresh evidence: tx hash / trace line / live URL). A cell stays open until green — we
      ITERATE (run → error → fix[bootstrap now, self-heal later] → re-run) until it passes. This matrix IS
      the release-copy made checkable: each 発表文 bullet maps to rows below.
+     ★ EXECUTION MODE (Dais 2026-07-04): NO adversary gate for V-runs — "all the tests are done"; the
+     verification IS the real run + on-chain/trace evidence. Go ONE BY ONE in order V1→V2→V3→V4. What
+     matters = both the human-funded AI and the self-funded AI are RUNNING these and making money or
+     trying (a continuous loop of real attempts), with me watching, not gating. ★
 
      | capability (release-copy bullet)         | human-funded (local) | self-funded (cloud) |
      |---|---|---|
-     | V1 trade Polymarket (pm-trade)           | 🟡 pipeline E2E green, agent chose 0 trades; DONE=first real trade tx | ⬜ same run on cloud child |
+     | V1 trade Polymarket (pm-trade)           | 🟢 TRYING verified 2026-07-04: live E2E green + loop alive (node runtime/loop PID, ClawRouter free/glm-4.7 = AI's own fuel) + pm-trade in live skills; agent chose 0 trades (edge<its 15% min); first trade tx lands autonomously | ⬜ same run on cloud child |
      | V2 trade Solana (Franklin, W2)           | ⬜ | ⬜ |
      | V3 yield (execute-yield)                 | ✅ 0.19 aUSDC on-chain, autonomous | ⬜ |
      | V4 SPAWN cloud child on AKASH, 1 command | ⬜ (human-funded parent spawns) | ⬜ (self-funded parent spawns = closed loop) |
