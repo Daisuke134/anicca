@@ -1,0 +1,16 @@
+{
+  "id": "FIND-002",
+  "severity": "blocking",
+  "dimension": "spec_fidelity",
+  "requirement": "REQ-104 / Ground Truth",
+  "title": "`launch_clip_browser.py` does not exist anywhere on this machine — the spec cites a nonexistent 'already-proven' file as the reuse target",
+  "evidence": [
+    "Ground Truth section: 'Launch and confirm login for that new account's isolated CloakBrowser instance (reusing the existing launch_clip_browser.py pattern already proven for @aiclipsvault).'",
+    "REQ-104: 'THE SYSTEM SHALL launch a NEW, dedicated CloakBrowser persistent-profile instance (reusing the existing launch_clip_browser.py pattern) bound to <new-port>...'",
+    "`find / -iname \"*launch_clip_browser*\"` returns ZERO results on this machine.",
+    "Direct directory listing of ~/anicca/skills/earn/clip/ (the canonical clip-earn skill dir) shows only: _instance_paths.sh, clip-cli.sh, clip-healthcheck.sh, count_posts.py, monitor.sh, producer.sh, reel_verify.py, run.sh, self_heal.py — no browser-launch script of any name exists there.",
+    "Searched ~/.claude/skills/ig-account-create/ and ~/.claude/skills/ig-reels-poster/ as well — no launch_clip_browser.py or equivalently-named file found in either."
+  ],
+  "why_it_matters": "This project's own CLAUDE.md HONESTY RULES (Rule 1: 'Verify before claiming... 確認 せず に symbol 名 を 書く = fabrication = 罪') exist precisely to catch this class of error. REQ-104 and its supporting Ground Truth claim confidently name a specific, reusable script as 'the existing... pattern already proven for @aiclipsvault' — but no such file exists. Either (a) the @aiclipsvault CloakBrowser instance at port 9223 was launched through some other, differently-named mechanism that the spec should identify by its REAL name/path, or (b) it was a one-off manual sequence (CDP calls issued ad hoc, never saved as a script) — in which case REQ-104 should not claim there is an 'existing pattern' to reuse; it should say the implementer must design the launch sequence fresh (informed by how post_reel.py/CDP driving works elsewhere), or should point at whatever real mechanism actually started that Chromium process on :9223.",
+  "recommendation": "Before this spec passes, identify the REAL script/mechanism (if any) that started the @aiclipsvault CloakBrowser instance on :9223, cite it by its real path, or explicitly state in Ground Truth/REQ-104 that no reusable launch script currently exists and the implementer must write one (which changes REQ-104 from 'reuse' to 'author', a materially different and larger task)."
+}

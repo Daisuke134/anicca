@@ -1,0 +1,30 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-clawrouter-instance-provision",
+  "iteration": 1,
+  "reviewer": "fresh-context-adversary (independent file verification against real codebase)",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003", "FIND-004"]
+    }
+  },
+  "overall_verdict": "FAIL",
+  "summary": "Most of this spec's Ground Truth section is genuinely well-verified: _instance_paths.sh's 5-var suffix pattern is accurate (confirmed by reading the real file), test_n_instance_distinctness.sh really does test [\"\", \"myclaude\", \"clawrouter\", \"clawrouter-2\"] as claimed, registry.json's earn/clip entry is accurate (status:live, entrypoint:run.sh, owner:clip), solders is genuinely importable, myclaude-solana.json's shape and 600 perms match exactly, and the Out-of-scope section correctly avoids touching any already-hardened file from the two prior features. However, two concrete, checkable claims fail on direct verification: (1) REQ-106 — the single most load-bearing requirement per the review brief — describes an env-propagation mechanism ('write ANICCA_INSTANCE=clawrouter into the genesis loop's own .env') that does NOT actually work: config.mjs's loadConfig() only forwards a fixed, small allowlist of named keys from parsed dotenv text into a separate `config` object and never writes back into process.env; buildSkillEnv reads process.env directly; and the actual currently-running genesis daemon (com.anicca.daemon, ANICCA_HOME=/Users/anicca/.anicca, confirmed live via launchctl list) gets its real process.env from a static launchd plist dict that has nothing to do with the .env text file. The two mechanisms that would actually work (editing the plist's EnvironmentVariables dict, or editing anicca-daemon.sh to export it) are either a different file than the one named, or a change the spec's own Gate explicitly forbids. (2) REQ-104's 'reuse the existing launch_clip_browser.py pattern' cites a file that does not exist anywhere on this machine (verified via a filesystem-wide search) — there is no such script in ~/anicca/skills/earn/clip/ or anywhere else searched. Both are correctable without a large spec rewrite, but both must be fixed before Phase 1c can pass, since an implementer following the spec exactly as written would either silently fail to achieve genesis-loop env propagation (REQ-106) or have no real script to 'reuse' (REQ-104). A minor citation-precision issue (FIND-003, post_reel.py:107) and an informational note about pre-existing debug artifacts (FIND-004) are included for completeness but are not blocking on their own.",
+  "verified_accurate_claims": [
+    "_instance_paths.sh really suffixes CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER/CLIP_PENDING_VERIFY with -${ANICCA_INSTANCE}, unsuffixed when unset — read directly, matches spec verbatim.",
+    "tests/test_n_instance_distinctness.sh really tests [\"\", \"myclaude\", \"clawrouter\", \"clawrouter-2\"] pairwise-distinctness across all 5 vars — read directly, matches.",
+    "registry.json:115-123 really has earn/clip with track:A, dir:skills/earn/clip, entrypoint:run.sh, status:live, owner:clip — read directly, matches (line range is 115-123, spec said 115-120, close enough, not a material error).",
+    "solders is genuinely importable in this Python environment (python3 -c \"import solders\" succeeds).",
+    "myclaude-solana.json really has exactly {chain, created_at, owner, pubkey, purpose, secret_bytes} and is chmod 600 — verified directly.",
+    "scrubPrivateKeys' regex (/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/) genuinely does not match 'ANICCA_INSTANCE' — confirmed, this part of the Ground Truth claim about scrub() not touching instance-name strings is correct, even though the larger propagation claim (FIND-001) is not.",
+    "buildSkillEnv's childEnv genuinely flows into the actual spawn() call (`spawn(skillPath, [], {env: childEnv, ...})`) — confirmed the full plumbing from computed env to actual child process, not just a discarded value.",
+    "Out-of-scope section's list of already-shipped files to avoid touching (_instance_paths.sh, run.sh, monitor.sh, self_heal.py, reel_verify.py, count_posts.py, post_reel.py) is consistent with what clip-loop-dual-instance-earn and clip-post-verify-hardening actually shipped and tested.",
+    "Port 9222 (Dais daily-driver) and 9223 (@aiclipsvault) are both genuinely bound right now (confirmed via lsof) — REQ-103's port-uniqueness requirement is correctly scoped as a real-time scan rather than a hardcoded list, which also correctly would catch other bound ports like :9377 (camofox) that the spec doesn't explicitly name but the real-scan methodology naturally covers."
+  ],
+  "gate_pass": false
+}

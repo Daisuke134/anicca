@@ -1,0 +1,14 @@
+{
+  "id": "FIND-003",
+  "severity": "minor",
+  "dimension": "verification_readiness",
+  "requirement": "REQ-104 / PROP-104",
+  "title": "Citation 'post_reel.py:107 (active_account == handle)' is imprecise — wrong line number and wrong expression",
+  "evidence": [
+    "REQ-104: '...CONFIRM login via the SAME account-guard check pattern post_reel.py:107 already uses (active_account == handle)'.",
+    "PROP-104: '...same JS expression post_reel.py:107 already uses'.",
+    "Actual file content (~/.claude/skills/ig-reels-poster/scripts/post_reel.py): line 107 falls inside the 'not logged in' check block (`if ev(tid, ...): res[\"outcome\"]=\"failed\"; ...`). The '★ ACCOUNT GUARD (CRITICAL) ★' comment block starts at line 112, and the actual comparison is `if active != a.handle:` (a Python string inequality, not a JS expression, and not literally 'active_account == handle') a few lines after that, around line 118-119. The JS `ev(...)` expression that reads the active account (matching alt text ending in 'のプロフィール写真') is a separate line from the comparison itself."
+  ],
+  "why_it_matters": "PROP-104's own gate criterion requires a fresh-context adversary/verifier to re-read the exact cited line and confirm the citation is accurate. As written, re-reading post_reel.py:107 does not show the account-guard comparison the spec describes — it shows unrelated code (the not-logged-in check). This would fail a literal-citation check even though the underlying claim ('there IS an account-guard pattern to mirror') is directionally correct.",
+  "recommendation": "Update the citation to the correct line (the `if active != a.handle:` comparison, ~line 118 in the current file) and the correct expression, or state the line range instead of a single line number, so PROP-104's later verification doesn't fail on a citation-accuracy technicality despite the underlying design being sound."
+}

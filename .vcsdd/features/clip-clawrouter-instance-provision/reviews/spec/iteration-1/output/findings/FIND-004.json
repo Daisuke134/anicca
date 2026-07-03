@@ -1,0 +1,13 @@
+{
+  "id": "FIND-004",
+  "severity": "informational",
+  "dimension": "verification_readiness",
+  "requirement": "REQ-103 / non-functional (zero regression)",
+  "title": "Leftover test-artifact files from prior VCSDD debug/test runs already exist in ~/.cloak/ and ~/.openclaw/state/ — implementer should not confuse them with this feature's new provisioning files",
+  "evidence": [
+    "~/.cloak/clip-accounts-vcsdd-debug-35346.json and ~/.cloak/clip-accounts-vcsdd-test-3way-35683-14369.json already exist on disk (found via `ls -la ~/.cloak/`).",
+    "~/.openclaw/state/clip-earn-ledger-vcsdd-debug-35346.jsonl also already exists (found via `grep -l clip ~/.openclaw/state/*.jsonl`)."
+  ],
+  "why_it_matters": "Not created by this feature and not blocking, but the implementer doing a real `ls`/`grep` sweep of ~/.cloak/*.json or ~/.openclaw/state/*.jsonl during REQ-105's before/after verification could mistake these pre-existing debug artifacts for either a collision with the new -clawrouter suffix (they aren't — different suffix strings) or for stray files this feature itself must clean up (it doesn't have to, they predate it). Worth a one-line awareness note in the spec so the before/after diff check in REQ-105 is scoped correctly (compare claude-p's unsuffixed files only, not every file matching `clip-accounts*`).",
+  "recommendation": "No spec change required to pass review, but consider adding a one-line note in REQ-105 or the implementation plan acknowledging these pre-existing debug files so they aren't mistaken for either a port/name collision or an in-scope cleanup task."
+}

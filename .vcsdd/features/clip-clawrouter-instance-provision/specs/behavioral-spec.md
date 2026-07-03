@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 1
+# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 2 (post iteration-1 FAIL)
 
 ## Context (why this feature exists)
 
@@ -29,15 +29,38 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   account file, a real ledger with real content) rather than just a test fixture string.
 - `~/anicca/runtime/loop/index.mjs:439-461` (`buildSkillEnv`): every skill invocation (including
   `earn/clip/run.sh`) receives `{...scrub(process.env), ANICCA_ARGS, EARN_MODE, EARN_STRATEGY,
-  WAKE_ID, ...(config.EARN_LEDGER ? {EARN_LEDGER: config.EARN_LEDGER} : {})}` — i.e. **the child
-  process env is the loop's OWN `process.env`, filtered through `scrub()` (removes private keys per
-  REQ-004), plus a few explicit additions.** `ANICCA_INSTANCE` is NOT explicitly added or stripped
-  by `buildSkillEnv` — if the genesis loop PROCESS itself has `ANICCA_INSTANCE=clawrouter` set in
-  ITS OWN environment (e.g. loaded from its own `.env`), it passes through `scrub(process.env)`
-  unchanged (confirmed via reading `scrubPrivateKeys` in `env-filter.mjs` — it only strips
-  key-shaped values, never touches a plain instance-name string) to the child `run.sh` invocation,
-  which sources `_instance_paths.sh` and picks it up. **No code change needed in the genesis loop
-  for env propagation — only a config/env-provisioning step.**
+  WAKE_ID, ...(config.EARN_LEDGER ? {EARN_LEDGER: config.EARN_LEDGER} : {})}`, and `base =
+  scrub(process.env)` reads the REAL OS-level `process.env` of the running node process directly
+  (confirmed: `scrubPrivateKeys`'s regex `/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/` does not match
+  `ANICCA_INSTANCE`, so a plain instance-name string genuinely passes through unmodified — this
+  part of the original claim was correct). ★ CORRECTED after iteration-1 FIND-001 (a real,
+  load-bearing error): `~/.anicca/.env`'s TEXT is NOT the source of the actually-running daemon's
+  `process.env`. `runtime/loop/config.mjs`'s `loadConfig()` parses that `.env` file's text into a
+  LOCAL `dotenvValues` object, then copies ONLY a fixed, small allowlist of named keys
+  (`ANICCA_HOME`, `ANICCA_WALLET_ADDRESS`, `ANICCA_BALANCE_OVERRIDE`, `ANICCA_EARN_SKILL`,
+  `EARN_LEDGER`, `CLAUDE_BIN`, plus the module's own DEFAULTS) into a separate `config` object — it
+  NEVER writes back into `process.env` (confirmed: zero matches anywhere in
+  `runtime/loop/*.mjs` for `process.env[`, `Object.assign(process.env`, or `process.env.KEY =`). A
+  brand-new key like `ANICCA_INSTANCE` is silently dropped by `loadConfig` and never reaches
+  `process.env` this way. The genesis loop actually running on this machine right now is
+  `com.anicca.daemon` (confirmed via `launchctl list` → currently loaded, `ANICCA_HOME=
+  /Users/anicca/.anicca`); its REAL `process.env` comes from the STATIC
+  `<key>EnvironmentVariables</key>` dict inside
+  `~/Library/LaunchAgents/com.anicca.daemon.plist` (confirmed via `plutil -convert xml1 -o -`:
+  `ANICCA_FREE_MODEL`, `ANICCA_FUNDED_MODEL`, `ANICCA_HOME`, `ANICCA_LEAN_MODEL`, `ANICCA_REPO`,
+  `BASE_RPC_URL`, `COMPUTE_RESERVE_USDC`, `HOME`, `PATH`, `YIELD_MIN_DEPLOY_USDC` — `ANICCA_INSTANCE`
+  is not there, and this plist dict is a completely separate, static file, NOT dynamically
+  populated from `~/.anicca/.env`'s text). `~/anicca/runtime/anicca-daemon.sh` (the daemon's
+  `ProgramArguments` entrypoint) does not source `~/.anicca/.env` either (confirmed: no `source
+  .env` / `set -a` pattern anywhere in that file; it only explicitly exports `ANICCA_HOME`,
+  `OPENAI_BASE_URL`, `OPENAI_API_KEY`, `ANICCA_WALLET_ADDRESS`). ★ The CORRECT mechanism (zero code
+  change to any `.mjs` file, matching the original "no code change" intent): add `ANICCA_INSTANCE`
+  as a literal new key inside `com.anicca.daemon.plist`'s `<key>EnvironmentVariables</key>` dict,
+  then `launchctl unload ~/Library/LaunchAgents/com.anicca.daemon.plist && launchctl load
+  ~/Library/LaunchAgents/com.anicca.daemon.plist` (or `launchctl kickstart -k
+  gui/$(id -u)/com.anicca.daemon`) so launchd re-reads the plist and the NEW env var reaches the
+  daemon's real `process.env` on its next start — genuinely zero `.mjs` code change, but the
+  correct target file is the PLIST, not `~/.anicca/.env`. ★
 - `~/anicca/skills/registry.json:115-120`: `"earn/clip"` is ALREADY registered
   (`track: A, dir: skills/earn/clip, entrypoint: run.sh, status: live, owner: clip`) — already
   auto-discoverable by ANY genesis loop instance via `liveSlotNames(registry)`
@@ -75,15 +98,22 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
 - Provision `~/.cloak/clip-accounts-clawrouter.json` with that new handle, a NEW CloakBrowser
   profile name, and a port distinct from 9223 (and from Dais's daily-driver :9222).
 - Launch and confirm login for that new account's isolated CloakBrowser instance (reusing the
-  existing `launch_clip_browser.py` pattern already proven for `@aiclipsvault`).
+  existing pattern already proven for `@aiclipsvault`, at
+  `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` — ★ CORRECTED
+  after iteration-1 FIND-002: this file exists ONLY at the PROJECT-level `.claude/skills/` path,
+  NOT the GLOBAL `~/.claude/skills/` path where `post_reel.py` itself lives; confirmed by direct
+  `find` — a real, pre-existing split between these two skill directories for `ig-reels-poster`
+  (the project-level copy also has a STALE, out-of-date `post_reel.py` missing this session's
+  `clip-post-verify-hardening` refactor entirely — out of scope to fix here, just noting the
+  correct real path for `launch_clip_browser.py` specifically) ★).
 - Verify (via real command execution, `ANICCA_INSTANCE=clawrouter`) that `run.sh`/`monitor.sh`
   correctly resolve to the NEW instance's isolated queue/posted/ledger/pending-verify paths, with
   ZERO overlap with claude-p's existing (unsuffixed) state.
-- Document (in `~/.anicca/.env` or the genesis loop's actual config location — determined during
-  implementation by reading the real, current config-loading code) how `ANICCA_INSTANCE=clawrouter`
-  reaches the genesis loop process's own environment, so a REAL wake of that loop can pick
-  `earn/clip` and have it resolve to this new identity — without modifying
-  `runtime/loop/index.mjs`'s `buildSkillEnv` (per Ground Truth, no code change is needed there).
+- Actually wire `ANICCA_INSTANCE=clawrouter` into `com.anicca.daemon.plist`'s
+  `EnvironmentVariables` dict + reload via `launchctl` (per REQ-106) so the REAL genesis-loop
+  daemon process's own environment carries it, and a REAL wake of that loop picking `earn/clip`
+  would resolve to this new identity — without modifying `runtime/loop/index.mjs`'s
+  `buildSkillEnv` (per Ground Truth, no `.mjs` code change is needed there — only the plist).
 - A real, live E2E: with `ANICCA_INSTANCE=clawrouter` set, run the REAL `producer.sh` (or a
   manually-queued real clip, matching the precedent set in `clip-post-verify-hardening`'s own
   PROP-008(a) live-verification) → REAL `run.sh` → an actual post lands on the NEW account,
@@ -129,10 +159,16 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   CloakBrowser instance on this machine (checked via a real `lsof`/`curl` port-liveness scan at
   implementation time, not assumed free).
 - **REQ-104 (isolated browser launch + login)**: THE SYSTEM SHALL launch a NEW, dedicated
-  CloakBrowser persistent-profile instance (reusing the existing `launch_clip_browser.py` pattern)
-  bound to `<new-port>`, log in as the new IG handle, and CONFIRM login via the SAME account-guard
-  check pattern `post_reel.py:107` already uses (`active_account == handle`) — not merely "browser
-  process started".
+  CloakBrowser persistent-profile instance (reusing the existing pattern at
+  `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` — a 14-line
+  script: `cloakbrowser.launch_persistent_context(<profile-dir>, headless=False,
+  args=["--remote-debugging-port=<port>", "--remote-allow-origins=*"])` + open an initial
+  instagram.com tab + keep-alive loop; adapted with the NEW profile dir + `<new-port>`) bound to
+  `<new-port>`, log in as the new IG handle, and CONFIRM login via the SAME account-guard check
+  pattern `post_reel.py:118` already uses (★ CORRECTED after iteration-1 FIND-003: the real
+  comparison is the Python `if active != a.handle:` at line 118, not line 107 — line 107 is the
+  unrelated "not logged in" check; `active` itself comes from the `ev(...)` JS read at line 117 ★)
+  — not merely "browser process started".
 - **REQ-105 (path isolation verified with REAL provisioned files, not just synthetic test
   fixtures)**: WHEN `ANICCA_INSTANCE=clawrouter` is set, THE SYSTEM SHALL demonstrate (via a real,
   executed `EARN_MODE=discover bash run.sh` and `bash monitor.sh`) that `$CLIP_QUEUE`,
@@ -141,14 +177,29 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   claude-p's), and that claude-p's own (unsuffixed) queue/posted/ledger/accounts files are
   COMPLETELY UNTOUCHED by this run (a before/after content-hash or line-count comparison of
   claude-p's files, not merely "I didn't see an error").
-- **REQ-106 (genesis-loop env wiring, no code change)**: THE SYSTEM SHALL determine, by reading the
-  REAL, current genesis-loop config-loading code (`runtime/loop/config.mjs` +
-  wherever the loop's own `.env` actually lives for the identity this feature targets), the correct
-  location to set `ANICCA_INSTANCE=clawrouter` so that a REAL invocation of that loop process
-  (env-inherited by `buildSkillEnv`'s `scrub(process.env)`, per Ground Truth) would propagate it to
-  `earn/clip/run.sh` WITHOUT any change to `runtime/loop/index.mjs` itself. This requirement is
-  satisfied by DOCUMENTING the exact file+line to set, not by starting a perpetual daemon (out of
-  scope).
+- **REQ-106 (genesis-loop env wiring, no `.mjs` code change — ★ REDESIGNED after iteration-1
+  FIND-001, which correctly proved the original `~/.anicca/.env` route does not work: that file's
+  text is never loaded back into `process.env` by any code path in `runtime/loop/*.mjs` ★)**: THE
+  SYSTEM SHALL add `ANICCA_INSTANCE` = `clawrouter` as a literal new
+  `<key>ANICCA_INSTANCE</key><string>clawrouter</string>` entry inside
+  `~/Library/LaunchAgents/com.anicca.daemon.plist`'s existing `<key>EnvironmentVariables</key>`
+  dict (the file confirmed, via `plutil -convert xml1 -o -`, to be the actual source of the
+  currently-running `com.anicca.daemon` genesis-loop process's real `process.env` — NOT
+  `~/.anicca/.env`, which nothing loads), THEN reload it via `launchctl unload
+  ~/Library/LaunchAgents/com.anicca.daemon.plist && launchctl load
+  ~/Library/LaunchAgents/com.anicca.daemon.plist` so launchd re-reads the plist and the daemon's
+  next start genuinely has `ANICCA_INSTANCE=clawrouter` in its real OS-level environment — which
+  THEN propagates to `earn/clip/run.sh` via `buildSkillEnv`'s `scrub(process.env)` exactly as the
+  original Ground Truth analysis of `scrub()`/`buildSkillEnv` correctly described (that specific
+  sub-claim was verified accurate by the adversary; only the "where it's set" claim was wrong).
+  This genuinely requires ZERO changes to any `.mjs` file (satisfies the original "no code change
+  to `runtime/loop`" intent) — the correct target is the plist, not the `.env` text file. This
+  requirement is satisfied by ACTUALLY EDITING the real plist + reloading it (a real, checkable
+  side effect — `launchctl list` / `plutil` re-read confirming the new key is live), not by merely
+  documenting where one COULD edit it, and not by starting a perpetual daemon wake-cycle (out of
+  scope — REQ-107's E2E verification uses a manually-exported `ANICCA_INSTANCE=clawrouter` in the
+  verifying shell, matching the daemon's own env once reloaded, without requiring an actual
+  autonomous wake to fire during this feature's verification window).
 - **REQ-107 (live E2E, no dry run — HARD RULE 0.24/0.31)**: THE SYSTEM SHALL, with
   `ANICCA_INSTANCE=clawrouter` genuinely exported in the shell environment (matching how REQ-106
   documents the loop would set it), run the REAL `EARN_MODE=execute bash run.sh` against a REAL
