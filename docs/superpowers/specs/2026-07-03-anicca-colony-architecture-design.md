@@ -629,7 +629,15 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      message.content), but parse-tool-call.mjs scavenge required content to START with a brace — the
      wrapper made it bail to null to narrate. So every day the AI thought, chose an action, and the
      parser threw it away. Fix = scavenge tool_call wrappers + brace-balanced JSON in prose (11/11
-     tests pass). Not model, not balance, not tools: a dropped decision was why the loop never earned. ★★
+     tests pass). Not model, not balance, not tools: a dropped decision was why the loop never earned.
+     (6) ★ THE ACTUAL FIX ★ — the launchd plist forced ANICCA_BRAIN=claude-p, so the brain was the
+     agentic Claude Code CLI, which hit permission gates and returned PROSE ("Tools need permission
+     grants... I cannot execute any earn action") with NO tool call to parse. Switched plist to
+     ANICCA_BRAIN=proxy (ClawRouter pure-completion, the AI's OWN wallet fuel = W3). RESULT (verified
+     live 2026-07-04): ledger flipped from 100% narrate to executing the AI's decisions —
+     kind:wake slot:hl_trade, kind:wake slot:x402_sell. THE LOOP NOW ACTS EVERY WAKE. Parser hardening
+     (5) stays as insurance for free-model text tool calls. Residual polish: occasional
+     skill_missing run_skill when args arrive without a nested slot (not blocking). ★★
 
      | capability (release-copy bullet)         | human-funded (local) | self-funded (cloud) |
      |---|---|---|
