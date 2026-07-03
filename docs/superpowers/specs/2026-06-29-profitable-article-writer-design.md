@@ -82,6 +82,32 @@ the OSS-replicable, model-agnostic, self-fundable thing.
 - NOT Brain/Tips affiliate (others' accounts, JP-only). Payout → the install's OWN note account/wallet.
 This supersedes the earlier "own-product funnel primary" line.
 
+### §3.1 Multi-platform monetization matrix (Dais 2026-07-03) — one article, N native rails
+
+The skill ALREADY publishes EN+JP to X / Substack / note / Zenn / dev.to. Do NOT limit money to note. **One
+deeply-researched piece (the shared moat) → repurposed per platform (native shape + language) → each platform
+monetized its OWN native way.** People earn $10k EACH from note, Substack, X separately — we stack the rails
+from ONE engine.
+
+```
+ ONE piece (EN+JP)  ── shared writing engine (research + visual explainer) ──
+   │  repurpose per platform (native format + language)
+   ▼
+ PLATFORM   LANG    NATIVE MONEY RAIL                          ROLE
+ note       JP      ¥500 単発有料 + 月額マガジン                DIRECT $ (ポチ帯)
+ Substack   EN/JP   paid subscription (creator-priced, recurring)  DIRECT $ (recurring)
+ X          EN/JP   ad-rev-share(at impression scale) + X Articles/Subscriptions + top-funnel  FUNNEL + $
+ Zenn       JP      有料Books + 支援バッジ (dev niche)          DIRECT $ (dev)
+ dev.to     EN      no native paywall → SEO/reach              FUNNEL → drives the paid rails
+```
+
+Principle: **paywall-less platforms (dev.to, X posts) are TOP-FUNNEL** that drive readers to the paid rails
+(note ¥500, Substack sub, Zenn Books) + an owned email list; **paywalled platforms are the DIRECT $ rails.**
+Each platform is a **credential-gated parameter** in `registry.json` (`content_note`, `content_substack`,
+`content_devto`, `x_poster`, + add `content_zenn`, `content_x_articles`); an install monetizes only the rails it
+has creds for. **V4 earn-verify runs PER RAIL** (money landed on note ≠ on Substack ≠ on X). Prove ONE rail
+first (default: note ¥500), then light up the others from the same article.
+
 ## §4 The writing craft we dropped (improve INSIDE the article)
 
 Our PLAYBOOK perfected **PURITY** (clarity / anti-slop) and **deliberately killed CONVERSION** — rule #1 verbatim
