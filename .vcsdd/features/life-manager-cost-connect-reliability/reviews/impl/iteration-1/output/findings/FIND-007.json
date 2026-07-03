@@ -1,0 +1,11 @@
+{
+  "id": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "major",
+  "file": "apps/life-call/lib/user-selector.test.js",
+  "line": "25-30",
+  "issue": "The test's own name/comment says 'scheduler.js uses the shared filter at BOTH sites (no lingering eq.composio_gcal)' -- this is exactly the C4/F4 defect class being guarded against (a Pipedream user selected in the batch scan but re-excluded on the Inngest per-user refetch because only ONE of the two hardcoded filters was fixed). But the actual assertion `assert.ok(/calendarProviderFilter\\(\\)/.test(src))` only proves the pattern occurs AT LEAST ONCE in scheduler.js, not that it occurs at BOTH call sites (scheduler.js:43 supaUsers() and scheduler.js:281 getUserByUid()). A future regression that reverts ONLY the getUserByUid() site back to a hardcoded `eq.composio_gcal` (while leaving the OTHER hardcoded filter, or leaving one calendarProviderFilter() call intact elsewhere) would need the first regex (line 28, `eq\\.composio_gcal` absent) to also hold, but a partial revert that instead hardcodes `in.(composio_gcal)` (no eq. literal, but still only covering one provider, only at one site) would pass BOTH current assertions while violating the stated 'BOTH sites' invariant.",
+  "evidence": "user-selector.test.js:25-30 uses a single non-global `.test()` check with no occurrence-count assertion, despite the test title explicitly claiming 'BOTH sites' coverage; scheduler.js:43 and scheduler.js:281 are the two actual call sites.",
+  "fix": "Count occurrences explicitly, e.g. `assert.equal((src.match(/calendarProviderFilter\\(\\)/g)||[]).length, 2)` (or >=2 with a comment on the expected sites), so a partial regression at only one of the two sites is caught."
+}
