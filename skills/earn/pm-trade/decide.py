@@ -33,16 +33,18 @@ def btc_window_return():
 
 def find_btc_updown():
     """Find an active Polymarket BTC up/down market; return (yes_ask, no_ask, question, token_yes) or None."""
-    for q in ["bitcoin+up+or+down", "btc+up+or+down"]:
+    # The 5-min BTC up/down series has low individual volume → find it by NEWEST (startDate desc),
+    # not by volume (verified 2026-07-04: e.g. "Bitcoin Up or Down - July 4, 12:25PM-12:30PM ET").
+    for _ in range(1):
         try:
-            ms = get(f"https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=40&order=volume24hr&ascending=false")
+            ms = get("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=100&order=startDate&ascending=false")
         except Exception:
             continue
         for m in ms:
-            ql = (m.get("question") or "").lower()
+            ql = (m.get("question") or m.get("slug") or "").lower()
             if "bitcoin" not in ql and "btc" not in ql:
                 continue
-            if "up or down" not in ql and "up/down" not in ql and "higher" not in ql:
+            if "up or down" not in ql:
                 continue
             t = m.get("clobTokenIds")
             if isinstance(t, str):
