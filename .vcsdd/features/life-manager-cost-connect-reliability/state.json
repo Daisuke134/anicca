@@ -10,8 +10,16 @@
     "epicId": "VCSDD-life-manager-cost-connect-reliability-1783085021986",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T14:34:22.838Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-03T14:34:22.838Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-03T13:23:41.985Z",
-  "updatedAt": "2026-07-03T13:23:41.985Z"
+  "updatedAt": "2026-07-03T14:34:22.839Z"
 }
