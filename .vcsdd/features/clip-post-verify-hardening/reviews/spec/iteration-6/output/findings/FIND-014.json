@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "PROP-005's FIND-007 regression check (verification-architecture.md line 78) tests instance-isolation for $CLIP_PENDING_VERIFY as a single one-off spot check ('run with ANICCA_INSTANCE=clawrouter-probe set, assert $CLIP_PENDING_VERIFY resolves to ~/clips/pending-verify-clawrouter-probe ... never collides with a parallel run using the default instance') -- a 2-way check (probe vs default). This is weaker than the coverage already proven for the other 4 paths (CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER) by the existing committed test tests/test_n_instance_distinctness.sh, which does full pairwise distinctness across 4 named instances (including the unset/default case) via a set-based uniqueness check, not a single pairwise spot check. The spec text says the new check is 'reusing clip-loop-dual-instance-earn's existing pattern' but never actually says to add CLIP_PENDING_VERIFY into that SAME test file's ALL_PATHS array (the natural, minimal, already-proven mechanism) -- leaving open the possibility of a bespoke, narrower one-off assertion that doesn't get the same N-way collision coverage the other 4 paths already enjoy.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "78",
+    "snippet": "ALSO (FIND-007 regression test, reusing clip-loop-dual-instance-earn's existing pattern): run with ANICCA_INSTANCE=clawrouter-probe set, assert $CLIP_PENDING_VERIFY resolves to ~/clips/pending-verify-clawrouter-probe (suffixed), never the unsuffixed default, and never collides with a parallel run using the default instance"
+  },
+  "routeToPhase": "1b"
+}

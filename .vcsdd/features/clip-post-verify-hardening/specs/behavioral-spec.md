@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 6 (post iteration-5 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 7 (post iteration-6 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -162,18 +162,27 @@ or duplicate a clip).
      does NOT block that wake's normal new-content posting pipeline regardless of its own outcome —
      self-heal and new-content posting are independent steps in the same wake; a still-unresolved
      `pending-verify/` clip is retried on the NEXT wake, indefinitely, without stalling new posts.
-  2. **Multiple pending clips (FIND-009)**: IF `$CLIP_PENDING_VERIFY` contains more than one clip, THE
-     SYSTEM SHALL fetch ONE stabilized `reels` snapshot (steps 3-4 below) and evaluate EACH pending clip
-     against it, OLDEST-move-time-first; once an href is attributed to confirm one clip, THE SYSTEM SHALL
-     REMOVE it from consideration for any other pending clip evaluated in the same wake (an href can
-     confirm at most one clip per wake — prevents double-attribution if two clips' before-sets happen to
-     be similar).
-  3. **Missing/corrupt sidecar (FIND-008)**: IF a pending clip's sidecar file (`<clipname>.before-hrefs.
-     json`, in `$CLIP_PENDING_VERIFY`) is MISSING, unreadable, or fails to parse as a JSON array of
-     strings, THE SYSTEM SHALL treat that clip as **inconclusive this wake** (per REQ-002's inconclusive
-     handling — do NOT guess, do NOT delete the clip, do NOT delete a sidecar that doesn't exist) and
-     retry on a later wake. This is a data-integrity precondition, not a new outcome category — it reuses
-     the existing "leave in pending-verify/, try again next wake" behavior.
+  2. **ONE clip per wake, oldest-first by sidecar mtime (SIMPLIFIED after iteration-6 FIND-011/012, which
+     correctly hand-traced the original multi-clip-per-wake algorithm and found it mathematically broken:
+     a per-clip diff against each clip's own independently-captured before-set is NOT a valid way to
+     disambiguate simultaneous clips, because content unrelated to either clip — e.g. another clip's own
+     already-legitimately-posted content, or a normal new post from the same wake's independent
+     new-content pipeline — can appear in the diff and be indistinguishable from "this clip's own new
+     post". Rather than add more disambiguation machinery, THE DESIGN IS SIMPLIFIED)**: IF
+     `$CLIP_PENDING_VERIFY` contains more than one clip, THE SYSTEM SHALL process ONLY THE OLDEST ONE
+     this wake (ordering signal = the sidecar file's OWN filesystem mtime — no new field needed, `os.
+     path.getmtime()` on `<clipname>.before-hrefs.json`, since the sidecar is written at the same moment
+     the clip moves to `pending-verify/`) and SHALL NOT attempt any other pending clip in the same wake —
+     each additional pending clip simply waits its turn on a later wake. This trades a few extra wakes'
+     latency (self-heal is not urgent — a clip already sits in `pending-verify/`, one more hourly wake of
+     delay is immaterial) for eliminating the cross-clip attribution ambiguity entirely.
+  3. **Missing/corrupt sidecar (FIND-008)**: IF the oldest pending clip's sidecar file (`<clipname>.
+     before-hrefs.json`, in `$CLIP_PENDING_VERIFY`) is MISSING, unreadable, or fails to parse as a JSON
+     array of strings, THE SYSTEM SHALL treat that clip as **inconclusive this wake** (per REQ-002's
+     inconclusive handling — do NOT guess, do NOT delete the clip, do NOT delete a sidecar that doesn't
+     exist) and retry on a later wake (moving on to the next-oldest clip, if any, in THIS same wake is
+     explicitly NOT required — keeping strictly one-clip-per-wake is simpler and still bounded; a
+     permanently-corrupt sidecar for the oldest clip would otherwise starve all newer ones).
   4. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
      seconds between invocations — REQ-001's stabilize model applied EXTERNALLY, at the CALLER level
      (via the shared `reel_verify.py`'s `stabilize_reads`), across separate `--verify-only` subprocess
@@ -185,17 +194,23 @@ or duplicate a clip).
      `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing the JSON array of the EXACT
      stabilized `before["hrefs"]` list captured at that time (the same list already computed by REQ-001
      for that post attempt — no extra browser work, just persist it to disk instead of discarding it).
-     THE SELF-HEAL DRIVER SHALL compute `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)` (a real
-     set difference, giving the ACTUAL new href string, not a guess/index-0 assumption). IF `new_hrefs`
-     (after step 2's already-attributed-hrefs removal, when multiple clips are pending) has EXACTLY ONE
-     element for a given clip, THE SYSTEM SHALL treat it as now-confirmed: move the clip to `$CLIP_POSTED`,
-     delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH `"post_url"`
-     SET TO THE REAL CONFIRMED URL (`"https://www.instagram.com" + new_hrefs[0]`, never `null` — a
-     `status:"posted"` ledger line MUST always carry a real, non-null `post_url`, per REQ-009's step-1
-     guard below). IF `new_hrefs` is empty (no new URL yet) OR has more than one element (an ambiguous
-     case — e.g. two clips landed between reads — treat as inconclusive, do NOT guess), leave the clip in
-     `$CLIP_PENDING_VERIFY` for the next wake (never silently drop it, never duplicate-post it, never
-     fabricate a `post_url`).
+     For the ONE clip being processed this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
+     `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)` (a real set difference, giving the ACTUAL new
+     href string, not a guess/index-0 assumption). IF `new_hrefs` has EXACTLY ONE element, THE SYSTEM
+     SHALL treat it as now-confirmed: move the clip to `$CLIP_POSTED`, delete the sidecar file, and
+     append the delayed `"status":"posted"` ledger line WITH `"post_url"` SET TO THE REAL CONFIRMED URL
+     (`"https://www.instagram.com" + new_hrefs[0]`, never `null` — a `status:"posted"` ledger line MUST
+     always carry a real, non-null `post_url`, per REQ-009's step-1 guard below). IF `new_hrefs` is empty
+     (no new URL yet) OR has more than one element (an ambiguous case — e.g. an unrelated new post from
+     the SAME wake's independent new-content pipeline also landed in between reads — treat as
+     inconclusive, do NOT guess), leave the clip in `$CLIP_PENDING_VERIFY` for the next wake (never
+     silently drop it, never duplicate-post it, never fabricate a `post_url`). ★ Documented known
+     limitation (accepted tradeoff, per iteration-6's finding): if new content keeps landing via the
+     independent new-content pipeline on EVERY subsequent wake, `new_hrefs` could keep having >1 element
+     indefinitely and this clip might never resolve. This is SAFE (never guesses, never duplicate-posts,
+     never loses the clip) but not OPTIMAL (may take many wakes). Given real posting cadence is roughly
+     hourly at most and self-heal isn't time-critical, this is an acceptable, explicitly-documented
+     limitation rather than a defect requiring more disambiguation machinery. ★
 - **REQ-009 (monitor honesty — REV 4, adds the null-guard iteration-4 FIND-005 found missing)**:
   `monitor.sh`'s posts-recorded count SHALL be computed as follows:
   1. Collect `status=="posted"` lines (new-format, this feature onward) that have a non-null non-empty

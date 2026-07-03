@@ -1,0 +1,59 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 6,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-007 (iteration-5, pending-verify dir not instance-isolated)",
+      "status": "FIXED",
+      "note": "REQ-006 REV6 (behavioral-spec.md lines 137-149) now defines CLIP_PENDING_VERIFY as a NEW per-ANICCA_INSTANCE path added to the EXISTING _instance_paths.sh, `CLIP_PENDING_VERIFY=\"${HOME}/clips/pending-verify${_SFX}\"`, textually matching the exact pattern of the 4 real paths confirmed in _instance_paths.sh:14-17 (CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER, all suffixed via the same _SFX variable). Re-verified the new path is referenced consistently everywhere it's used (REQ-006, REQ-008 steps 1-6) -- not just introduced once and forgotten. PROP-005 adds an explicit suffix-isolation regression check (see FIND-014 below for a residual coverage gap in that check's scope, not a re-open of FIND-007 itself)."
+    },
+    {
+      "priorFinding": "FIND-008 (iteration-5, no missing/corrupt-sidecar handling)",
+      "status": "FIXED",
+      "note": "REQ-008 step 3 (behavioral-spec.md lines 171-176) now explicitly states: sidecar MISSING, unreadable, or fails to parse as a JSON array of strings -> treat that clip as inconclusive this wake (reuses REQ-002's inconclusive handling), do NOT guess, do NOT delete the clip, do NOT delete a sidecar that doesn't exist, retry next wake. PROP-006(b) (verification-architecture.md line 79) adds a concrete test: no-sidecar case and corrupt-JSON case, both asserting skip-not-crash-not-delete."
+    },
+    {
+      "priorFinding": "FIND-009 (iteration-5, no gating spec for self-heal vs new-posting + multi-clip disambiguation)",
+      "status": "PARTIALLY FIXED -- gating clause added but disambiguation algorithm is internally inconsistent with its own proof example (see NEW FIND-011)",
+      "note": "REQ-008 step 1 (lines 161-164) now explicitly states self-heal runs once per wake, before new content, but never blocks new-content posting regardless of its own outcome -- textually resolves the gating half of FIND-009, and PROP-009 was added as a dedicated test (though FIND-013 below shows that test is not strong enough to prove the gating claim). REQ-008 step 2 (lines 165-170) adds oldest-first ordering + href-removal-once-attributed for the multi-clip half -- but re-deriving PROP-006(c)'s own worked example against this exact algorithm shows the algorithm cannot produce the claimed result for realistic/valid chronological data, and creates a permanent-starvation edge case the spec's own 'never silently lose a clip' invariant forbids. This is a NEW, more precise finding (FIND-011), not the same shape as iteration-5's FIND-009, so FIND-009 itself is closed, but the fix it produced is not yet correct."
+    },
+    {
+      "priorFinding": "FIND-010 (iteration-5, no shared module location for pure functions)",
+      "status": "FIXED",
+      "note": "verification-architecture.md lines 10-13 and REQ-008's preamble (behavioral-spec.md lines 156-159) both now name the exact concrete path ~/anicca/skills/earn/clip/reel_verify.py as the ONE file defining all 4 pure functions, imported by both post_reel.py (via the same sys.path.insert pattern it already uses for cdp.py, confirmed at post_reel.py:22) and the new self-heal driver script. The concrete refactor pseudocode (verification-architecture.md lines 28-58) consistently calls stabilize_reads/diff_new_href/classify_outcome from this single module, no duplicate re-implementation anywhere in the spec text."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-011", "FIND-012"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:6-17", "description": "re-confirmed the existing 4-path per-ANICCA_INSTANCE suffix pattern that REQ-006's new CLIP_PENDING_VERIFY line textually matches"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:87-106", "description": "re-confirmed the current single-branch-on-post_url logic REQ-005/006/007's 3-way routing is built on top of, unchanged from prior iterations' ground truth"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:22,89-190", "description": "re-confirmed byte-accurate all Ground Truth line citations (6 pre-share sites, verify-only branch, before-snapshot site, post-share search loop, except/finally block, existing cdp.py import pattern REQ-008/verification-architecture.md claims reel_verify.py will follow)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-013", "FIND-014"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:10-13", "description": "confirmed FIND-010's shared-module fix is concrete and correctly wired -- no regression"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh:1-30", "description": "confirmed the existing full-pairwise N-instance distinctness test's exact mechanism (set-based uniqueness over ALL_PATHS across 4 instances) that PROP-005's new CLIP_PENDING_VERIFY check does NOT reuse at the same coverage strength (FIND-014)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

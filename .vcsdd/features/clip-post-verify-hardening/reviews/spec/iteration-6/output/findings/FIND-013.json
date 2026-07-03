@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "PROP-009 (verification-architecture.md line 80) is meant to verify REQ-008 step 1's gating claim ('Self-heal runs ONCE per wake, BEFORE producing/posting any new content, but does NOT block that wake's normal new-content posting pipeline'). As specified, the test only asserts 'the wake's new-content posting path ... still runs and can succeed even though self-heal made no progress that wake'. This assertion is satisfied identically whether the self-heal driver actually ran (attempted its --verify-only calls and legitimately made no progress) OR was never invoked/wired at all (e.g. a future regression that skips calling the self-heal driver entirely). The test as described cannot distinguish 'self-heal executed and stalled' from 'self-heal silently never ran' -- it needs a positive assertion that the self-heal driver's --verify-only stub was actually invoked (e.g. a call-count/call-log file the stub writes, asserted >0) to prove genuine execution, not just non-blocking. Separately, the 'BEFORE producing/posting any new content' ordering claim in REQ-008 step 1 has no corresponding test anywhere in PROP-006/PROP-009 that asserts call order (e.g. a shared log with self-heal's invocation timestamped before the new-content post attempt's) -- an implementation that runs self-heal AFTER or even interleaved with new-content posting would still pass every existing PROP.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "80",
+    "snippet": "seed $CLIP_PENDING_VERIFY with a clip whose self-heal check is inconclusive (stub never stabilizes) AND seed $CLIP_QUEUE with a fresh, postable clip in the SAME wake -- assert the wake's new-content posting path (REQ-005-style) still runs and can succeed even though self-heal made no progress that wake"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-008 step 2 (behavioral-spec.md line 165-170) requires evaluating pending clips 'OLDEST-move-time-first' but never specifies the concrete signal that determines 'oldest'. The sidecar file written per REQ-008(6) contains ONLY a bare JSON array of before-hrefs (line 184-187: 'containing the JSON array of the EXACT stabilized before[\"hrefs\"] list') -- no timestamp field, no move-order field. Nothing in the spec says whether 'oldest' means the clip file's filesystem mtime, the sidecar file's mtime, a lexical filename sort, or an explicit timestamp to be added to the sidecar JSON shape. This is a real implementation-choice ambiguity: two implementers (or the builder vs the Phase-3 adversary checking 'no bypass of the algorithm') could reasonably pick different concrete mechanisms, and PROP-006(c)'s test description ('clip1 moved-to-pending-verify BEFORE clip2 chronologically') likewise never states how the TEST fixture establishes/asserts that ordering (e.g. does it sleep between file writes and rely on mtime, or use an explicit sequence number?). Per this project's own stated bar (spec must be concrete enough to implement unambiguously, no 'optional'/implicit behavior), this needs one explicit, named mechanism (e.g. 'oldest = earliest mtime of the sidecar file, read via os.path.getmtime') stated in REQ-008 itself, not left to be inferred.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "165-170",
+    "snippet": "IF $CLIP_PENDING_VERIFY contains more than one clip, THE SYSTEM SHALL fetch ONE stabilized reels snapshot ... and evaluate EACH pending clip against it, OLDEST-move-time-first"
+  },
+  "routeToPhase": "1a"
+}
