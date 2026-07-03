@@ -1,0 +1,31 @@
+{
+  "featureName": "clip-clawrouter-instance-provision",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-03T17:50:20.847Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-03T17:50:20.850Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-clip-clawrouter-instance-provision-1783100917379",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-03T17:48:37.378Z",
+  "updatedAt": "2026-07-03T17:50:20.850Z"
+}
