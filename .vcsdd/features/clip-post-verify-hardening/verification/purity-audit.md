@@ -1,4 +1,4 @@
-# Purity Audit — clip-post-verify-hardening (Phase 5)
+# Purity Boundary Audit — clip-post-verify-hardening (Phase 5)
 
 ## Declared Boundaries
 

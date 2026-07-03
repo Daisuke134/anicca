@@ -2,7 +2,7 @@
   "featureName": "clip-post-verify-hardening",
   "mode": "lean",
   "language": "python",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -48,11 +48,18 @@
       "to": "5",
       "timestamp": "2026-07-03T17:19:11.060Z",
       "sprint": 2
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-03T17:21:20.424Z",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -63,7 +70,40 @@
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-clip-post-verify-hardening-1783089402284",
-    "beads": []
+    "beads": [
+      {
+        "beadId": "BEAD-100",
+        "type": "adversary-finding",
+        "externalId": "FIND-100",
+        "status": "resolved",
+        "artifactPath": ".vcsdd/features/clip-post-verify-hardening/reviews/sprint-1/output/findings/FIND-100.json",
+        "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-101",
+        "type": "adversary-finding",
+        "externalId": "FIND-101",
+        "status": "resolved",
+        "artifactPath": ".vcsdd/features/clip-post-verify-hardening/reviews/sprint-1/output/findings/FIND-101.json",
+        "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-102",
+        "type": "adversary-finding",
+        "externalId": "FIND-102",
+        "status": "resolved",
+        "artifactPath": ".vcsdd/features/clip-post-verify-hardening/reviews/sprint-1/output/findings/FIND-102.json",
+        "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-103",
+        "type": "adversary-finding",
+        "externalId": "FIND-103",
+        "status": "resolved",
+        "artifactPath": ".vcsdd/features/clip-post-verify-hardening/reviews/sprint-1/output/findings/FIND-103.json",
+        "linkedBeads": []
+      }
+    ]
   },
   "gates": {
     "3": {
@@ -81,5 +121,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T14:36:42.284Z",
-  "updatedAt": "2026-07-03T17:19:11.060Z"
+  "updatedAt": "2026-07-03T17:22:34.997Z"
 }

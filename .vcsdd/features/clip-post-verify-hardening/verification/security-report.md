@@ -1,4 +1,4 @@
-# Security Report — clip-post-verify-hardening (Phase 5)
+# Security Hardening Report — clip-post-verify-hardening (Phase 5)
 
 ## Tooling
 
