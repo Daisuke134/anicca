@@ -1,0 +1,63 @@
+{
+  "sprintNumber": 2,
+  "feature": "clip-loop-dual-instance-earn",
+  "reviewType": "implementation",
+  "timestamp": "2026-07-03T00:00:00Z",
+  "iteration": 1,
+  "executionNote": "This review environment exposed no Bash/execution tool (only Read/Grep/Glob). The three shell tests were NOT literally re-executed; they were verified by line-by-line static simulation, the authoritative PROP-005 ripgrep manual-read (done in-review), and by confirming the RED/GREEN evidence logs describe a genuine, internally-consistent failure->fix transition (pre-fix monitor.sh hardcoded LEDGER/ACCTS to myclaude defaults -> leaked @aiclipsvault; post-fix sources _instance_paths.sh). No live fresh run was performed.",
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "edge_cases": "PASS",
+    "impl_correctness": "PASS",
+    "structural_integrity": "PASS",
+    "verification_readiness": "PASS"
+  },
+  "overall": "PASS",
+  "prop005_manual_read": {
+    "result": "PASS",
+    "method": "Read all four WORKER files (_instance_paths.sh, run.sh, producer.sh, monitor.sh) in full + ripgrep '\\b(if|elif|case)\\b' cross-referenced against 'claude|sonnet|clawrouter|anthropic|blockrun'.",
+    "conclusion": "Zero conditionals branch on model/provider identity. Every if/case in the worker layer branches on URL-empty, file-exists, EARN_MODE, TID-empty, ACTIVE==HANDLE, or LEDGER-exists. The only 'claude'/'sonnet' string matches in the worker files are path fragments (~/.claude/skills/...) and comments, not conditionals. clip-cli.sh (launcher, out of scope per REQ-005 carve-out) correctly still hardcodes 'claude --model sonnet' at line 33 and does NOT source _instance_paths.sh."
+  },
+  "findings": [
+    {
+      "dimension": "verification_readiness",
+      "severity": "minor",
+      "location": "skills/earn/clip/tests/test_instance_paths.sh:22-24",
+      "issue": "PROP-002 case 2 only asserts suffix+inequality for CLIP_QUEUE and CLIP_ACCTS; it never asserts CLIP_POSTED or CLIP_LEDGER are suffixed / differ from default. The ledger-suffix guarantee (the specific drain risk REQ-002 calls out) is only proven transitively by test_n_instance_distinctness.sh, not directly in the PROP-002 unit test."
+    },
+    {
+      "dimension": "edge_cases",
+      "severity": "minor",
+      "location": "skills/earn/clip/tests/test_prop008_isolation.sh:18-26",
+      "issue": "PROP-008(a) spec asks for an 'mtime/content diff' on the default queue; the test substitutes a filename-SET comparison (documented, to avoid false-positives from the concurrent live cron). A content mutation of an existing default-queue file that preserved the filename set would go undetected. Low real risk because run.sh under a probe instance never references the default queue, but the assertion is weaker than the spec's stated method."
+    },
+    {
+      "dimension": "edge_cases",
+      "severity": "minor",
+      "location": "skills/earn/clip/monitor.sh:13,68-74",
+      "issue": "monitor.sh isolation is not total: section 3 always queries and prints the DEFAULT founder wallet address (xxKC33TY...) for ANY instance unless CLIP_WALLET is set, so running monitor.sh under a second/probe instance still emits myclaude's financial state. PROP-008 only asserts absence of the myclaude account handle (@aiclipsvault) and nonzero post count, NOT absence of the founder wallet line, so this leak is uncaught by the test. Acceptable under the spec's explicit wallet-deferral to REQ-006/PROP-006 (follow-on feature), but monitor.sh cross-instance isolation is partial, not complete."
+    },
+    {
+      "dimension": "impl_correctness",
+      "severity": "minor",
+      "location": "skills/earn/clip/run.sh:20 (also producer.sh:18, monitor.sh:8)",
+      "issue": "All three worker scripts run under 'set -uo pipefail' with no 'set -e'. If _instance_paths.sh were missing/renamed, 'source' returns nonzero but execution continues; the next line (e.g. run.sh:21 QUEUE=\"$CLIP_QUEUE\") then trips 'set -u' unbound-variable and exits. This is fail-loud (acceptable, not silent misbehavior) but relies on the downstream unbound-var trap rather than an explicit guard on the source result; a corrupted (but present, partially-defining) _instance_paths.sh could set some vars and leave others, producing a partial-config run."
+    }
+  ],
+  "positiveEvidence": [
+    {"req": "REQ-001", "location": "_instance_paths.sh:10-17", "verified": "Unset ANICCA_INSTANCE -> _SFX='' -> queue/posted/accounts.json/ledger.jsonl byte-identical to the four pre-feature defaults."},
+    {"req": "REQ-002/004", "location": "_instance_paths.sh:11-17 + tests/test_n_instance_distinctness.sh", "verified": "ANICCA_INSTANCE=name -> '-name' suffix on ALL FOUR path types incl. ledger; 4 instances x 4 paths = 16 resolved, statically all distinct."},
+    {"req": "REQ-003", "location": "_instance_paths.sh:17", "verified": "CLIP_LEDGER=${EARN_LEDGER:-...} -> explicit override wins regardless of ANICCA_INSTANCE."},
+    {"req": "REQ-005", "location": "run/producer/monitor/_instance_paths.sh", "verified": "Zero model/provider conditionals in worker layer (ripgrep + full manual read). clip-cli.sh launcher left untouched, correctly hardcodes claude/sonnet per carve-out."},
+    {"req": "REQ-007", "location": "run.sh:25-26", "verified": "Only calls into already-proven ig-reels-poster/post_reel.py + ig-account-create/scripts; producer uses earn-clip-rewards; no new/unproven signup path."},
+    {"req": "REQ-008", "location": "run.sh:53-54, monitor.sh:8-10,18-35,39-45", "verified": "Both run.sh and monitor.sh source _instance_paths.sh and consume per-instance CLIP_* paths; missing probe files -> 'nothing to post' / 'no ledger yet' / empty accounts, no cross-instance file read."},
+    {"structural": "DRY", "location": "run.sh:20, producer.sh:18, monitor.sh:8", "verified": "All three workers source the single _instance_paths.sh; no duplicated path-derivation logic. monitor.sh old hardcoded LEDGER/ACCTS fully replaced (not shadowed) by CLIP_LEDGER/CLIP_ACCTS."}
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "blockingFindingCount": 0,
+    "allPropsEvaluated": true,
+    "evaluatedProps": ["PROP-001", "PROP-002", "PROP-003", "PROP-004", "PROP-005", "PROP-008"],
+    "deferredProps": ["PROP-006", "PROP-007"]
+  }
+}

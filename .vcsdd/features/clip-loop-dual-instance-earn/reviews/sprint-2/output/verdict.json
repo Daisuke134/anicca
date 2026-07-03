@@ -1,0 +1,60 @@
+{
+  "sprintNumber": 2,
+  "feature": "clip-loop-dual-instance-earn",
+  "timestamp": "2026-07-03T14:00:00.000Z",
+  "iteration": 1,
+  "overallVerdict": "PASS",
+  "reviewContext": { "reviewType": "implementation" },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/earn/clip/_instance_paths.sh:10-17", "description": "implements REQ-001..004 exactly (unset ANICCA_INSTANCE => byte-identical defaults; suffix applies to all 4 path types incl. ledger; EARN_LEDGER override wins)" },
+        { "type": "file", "location": "skills/earn/clip/clip-cli.sh:15,33", "description": "correctly left untouched per the REQ-005 launcher carve-out; still hardcodes claude binary + --model sonnet, does NOT source _instance_paths.sh" }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "evidence/sprint-2-red-phase.log", "description": "pre-fix monitor.sh leaked @aiclipsvault handle + nonzero post count for a probe ANICCA_INSTANCE" },
+        { "type": "test-output", "location": "evidence/sprint-2-green-phase.log", "description": "post-fix: test_prop008_isolation.sh, test_instance_paths.sh, test_n_instance_distinctness.sh all ALL PASS" }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/earn/clip/run.sh:20-23", "description": "sources _instance_paths.sh, consumes CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER, no path re-derivation downstream" },
+        { "type": "file", "location": "skills/earn/clip/monitor.sh:7-13", "description": "set -uo pipefail: a missing/renamed _instance_paths.sh fails loud via unbound-variable, not silent misbehavior" }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/earn/clip/{run.sh,producer.sh,monitor.sh}", "description": "DRY: all three worker scripts share one path-resolution file, zero duplicated logic" },
+        { "type": "file", "location": "skills/earn/clip/monitor.sh:8-13", "description": "old hardcoded LEDGER/ACCTS lines fully replaced (not shadowed) by CLIP_LEDGER/CLIP_ACCTS" }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "skills/earn/clip/tests/test_instance_paths.sh", "description": "PROP-001/002/003 unit tests, re-verified live ALL PASS after extending case 2 to also assert CLIP_POSTED/CLIP_LEDGER suffixing" },
+        { "type": "proof-result", "location": "reviews/impl/iteration-1/output/verdict.json#prop005_manual_read", "description": "PROP-005 authoritative Tier-3 manual read: zero conditionals branch on model/provider identity across all 4 worker files" }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006"]
+  }
+}

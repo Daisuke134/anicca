@@ -1,0 +1,19 @@
+In /Users/anicca/anicca/skills/earn/clip/_instance_paths.sh line 14:
+CLIP_QUEUE="${HOME}/clips/queue${_SFX}"
+^--------^ SC2034 (warning): CLIP_QUEUE appears unused. Verify use (or export if used externally).
+In /Users/anicca/anicca/skills/earn/clip/_instance_paths.sh line 15:
+CLIP_POSTED="${HOME}/clips/posted${_SFX}"
+^---------^ SC2034 (warning): CLIP_POSTED appears unused. Verify use (or export if used externally).
+In /Users/anicca/anicca/skills/earn/clip/_instance_paths.sh line 16:
+CLIP_ACCTS="${HOME}/.cloak/clip-accounts${_SFX}.json"
+^--------^ SC2034 (warning): CLIP_ACCTS appears unused. Verify use (or export if used externally).
+In /Users/anicca/anicca/skills/earn/clip/_instance_paths.sh line 17:
+CLIP_LEDGER="${EARN_LEDGER:-${HOME}/.openclaw/state/clip-earn-ledger${_SFX}.jsonl}"
+^---------^ SC2034 (warning): CLIP_LEDGER appears unused. Verify use (or export if used externally).
+In /Users/anicca/anicca/skills/earn/clip/producer.sh line 47:
+[ -f "$CLIP" ] || CLIP=$(ls "$WORK"/*.mp4 2>/dev/null | grep -v raw | head -1)
+                         ^-- SC2010 (warning): Don't use ls | grep. Use a glob or a for loop with a condition to allow non-alphanumeric filenames.
+For more information:
+  https://www.shellcheck.net/wiki/SC2010 -- Don't use ls | grep. Use a glob o...
+  https://www.shellcheck.net/wiki/SC2034 -- CLIP_ACCTS appears unused. Verify...
+[full output: ~/Library/Application Support/rtk/tee/1783087485_shellcheck_-S_warning__Users_anicca_anic.log]

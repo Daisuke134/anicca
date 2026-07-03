@@ -1,7 +1,7 @@
 {
   "featureName": "clip-loop-dual-instance-earn",
   "mode": "lean",
-  "currentPhase": "3",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -41,16 +41,37 @@
       "to": "3",
       "timestamp": "2026-07-03T13:57:23.914Z",
       "sprint": 2
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-03T14:04:13.677Z",
+      "sprint": 2
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-03T14:05:59.807Z",
+      "sprint": 2
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-03T14:06:21.456Z",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -58,6 +79,14 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T14:04:03.471Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-03T13:53:50.304Z",
@@ -71,5 +100,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T13:37:11.528Z",
-  "updatedAt": "2026-07-03T13:57:23.914Z"
+  "updatedAt": "2026-07-03T14:06:21.456Z"
 }
