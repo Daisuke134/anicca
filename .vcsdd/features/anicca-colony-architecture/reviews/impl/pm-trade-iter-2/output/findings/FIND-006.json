@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "decide.py's `btc_window_return()` makes an unguarded network call with no try/except around it, unlike `find_btc_updown()` (which wraps its gamma fetch in try/except: continue) and `_best_ask()` (which wraps its book fetch in try/except: return None). If the Binance klines endpoint times out, rate-limits (HTTP 429), or returns a malformed/empty body, `float(k[0][1])` raises an uncaught exception and decide.py crashes with a non-zero exit and a traceback. run.sh (line 21: `DECISION=\"$(\"$PY\" \"$HERE/decide.py\" \"$BANKROLL\" 2>/dev/null | tail -1)\"`) suppresses stderr and never checks decide.py's exit code, so this failure is completely silent to any operator or monitoring system -- the pass simply renders `\"decision\":null` in the final JSON, indistinguishable from 'no positive-edge side found' or 'no market found.' No test in the directory covers this path, and there is no build_log.md or equivalent log write anywhere in decide.py to record why a pass produced no decision.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "27-31",
+    "snippet": "def btc_window_return():\n    k = get(\"https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1\")\n    o = float(k[0][1]); c = float(k[0][4])\n    return (c - o) / o if o else 0.0"
+  },
+  "routeToPhase": "2b"
+}

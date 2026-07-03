@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "I do not have a Bash/execution tool available in this review session — only Read/Write/Edit/Grep/Glob. I did NOT execute `python3 test_lib.py` and am not claiming fresh executed evidence of '9/9 passed' (per this project's own HONESTY rules, an unexecuted test-pass claim would be fabrication). I instead hand-traced all 9 assertions against lib.py's arithmetic (including re-deriving the binary-outcome Kelly formula f*=(q-p)/(1-p) from first principles to confirm it is algebraically correct) and found the assertions internally consistent with the code as written. This is static review only, not the fresh-evidence execution this review's own instructions asked for — flagging the gap rather than fabricating a run. Separately: none of lib.py's invariants (stake never negative, stake never exceeds max_bet_pct*bankroll, kelly_fraction never exceeds 1.0) are captured as property-based tests (e.g. hypothesis) sweeping the input space; all 9 tests are single fixed-example assertions, which is a materially weaker verification posture for exactly the kind of small pure function VCSDD singles out as formally-verifiable.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/test_lib.py",
+    "lineRange": "58-70",
+    "snippet": "if __name__ == \"__main__\": ... fns = [v for k, v in sorted(globals().items()) if k.startswith(\"test_\") ...]"
+  },
+  "routeToPhase": "2b"
+}

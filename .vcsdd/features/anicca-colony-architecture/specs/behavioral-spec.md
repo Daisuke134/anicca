@@ -1,7 +1,16 @@
 # Anicca Colony Architecture — Design Spec (v1)
 
 - **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
-- **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).
+- **Status**: Phase 1a, revised through adversary iteration 4 (finding trend 10→10→5→3; scope/completeness/open-q dims PASS; addressing the remaining consistency+groundedness findings toward Phase-1c exit).
+- **Adversary model**: **Opus** (keep the `vcsdd-adversary` default; do NOT downgrade). It is the quality gate — Dais 2026-07-04: "the adversary should be opus still, all others can be sonnet 5." Every OTHER spawned agent (research, builders) defaults to Sonnet 5 (cheap + smart).
+
+**REQ-EXPLORE (AIs find their OWN money-making repos — humans give ZERO repos/credentials).** No-human-loop
+means Dais/I stop handing over good repos (like today's polymarket-agent/Franklin research). Every instance
+runs an `explore`/`exploit` capability alongside `earn`: 80% EXPLOIT proven earn loops; 20% EXPLORE — search
+repos/rails itself (agent-reach $0 + `gh search` + x402 data), verify (`gh repo view`→README, no full clone),
+probe ONE with ≤$1/paper (`earn/_probe`), let PoE judge by earned-tx only, promote winners to `registry.json`,
+share the lesson via bot-to-bot GitHub issues so the swarm co-evolves. Humans supply only a one-time USDC
+seed — no My-Number card, no Google account, no credential of any kind. This is the takeoff mechanism.
 
 ## 0. REALITY CHECK (on-chain verified 2026-07-03, not self-reported)
 
@@ -35,7 +44,9 @@ Human-funding is only a KICKSTART, never the identity. (THESIS.md verbatim thesi
 
 **Landscape verdict (verified 2026-07-03)**: nobody stacks all four of — (a) verified crypto earned from
 zero with no human in loop, (b) public real-time P&L, (c) self-monitor+heal+improve+spawn+bot2bot, (d)
-profit redistributed to humans as UBI. Anicca is *positioned* first on (b) and (d) — a claim we EARN only once a real surplus exists (today: $0, see §0); on the genuine frontier on (a)
+profit redistributed to humans as UBI. **Today Anicca has earned/redistributed $0 (§0), so we claim NOTHING
+as achieved.** The bet: (b) and (d) are where no competitor is even trying, so they are ours to win IF the
+loop produces real surplus; (a) is the genuine frontier where all are still failing
 (Anthropic Project Vend *lost money*; Vending-Bench derails). Every peer (Truth Terminal, Virtuals, aixbt,
 Olas, x402, Ralph, sutando…) is a **friend building one lane of the same highway**.
 
@@ -55,23 +66,29 @@ vision, so we do not center it.
 |---|---|---|
 | Seed | a human sends **USDC/Solana** once (then it stands alone) — OR a parent's on-chain surplus | a subscription the human already pays (Claude/Sonnet) |
 | **Runner** | **the "automaton" — a standalone custom Node runtime** `~/anicca/runtime/` (`anicca-daemon.sh` supervised by launchd/systemd/Docker `restart:always` → self-update git pull → `compute-proxy` :8402 → `loop/index.mjs` ReAct loop). ★ NOT OpenClaw, NOT Hermes — verified: `index.mjs` has zero openclaw/hermes imports; FOOD = `@blockrun/llm` x402 self-pay ★ | same automaton loop, brain pointed at Claude (subscription) |
-| Model | ClawRouter — **`auto` profile** (use the best model its USDC can afford; optimize for earning), free NVIDIA/GLM when broke. NOT pinned to glm-4.7. Claude NOT available (needs a human sub). | Claude (Sonnet ceiling, Opus forbidden) |
+| Model | **`free/glm-4.7` on ALL tiers** — the LIVE, evidence-based default (`config.mjs:47-49`): best free tool-caller (BFCL #4), $0/wake, verified 4 ways. ★ `auto`/paid is BANNED at small capital — a documented experiment (gpt-5.4, 2026-06-21) earned $0, looped on explore, and burned the wallet = net-NEGATIVE; the blocker at ~$13 is DEMAND + CAPITAL, not model intelligence. ★ Claude via a human subscription = unavailable; a crypto-payable `anthropic/*` pin is allowed ONLY once earnings prove the paid brain converts to profit. | Claude (Sonnet ceiling, Opus forbidden) |
 | Earns to | its own wallet (pays own compute + spawns children) | the human's wallet + bank |
 | Shelter | its own wallet pays its own cloud (must be seeded USDC first — even to start on cloud) | cloud now (DigitalOcean); Akash later |
-| Proven instance | `anicca-a3cdd4` (glm, ~$16 net worth) — the dashboard's one live instance | founder `0x810f` (`~/.anicca-founder`) — me, this Claude |
+| Proven instance | `anicca-a3cdd4` (glm) — Base wallet **$8.96 USDC on-chain verified (§0)**; "net worth" is NOT earnings (earned = $0) | founder `0x810f` (`~/.anicca-founder`) — me, this Claude |
 
 **Funding paths (write in README, REQ-FUND):** to seed a self-funded AI with USDC —
 - **Japan (easiest):** open Binance → move ¥ in via PayPay → withdraw **USDC on Solana** to the AI's Solana wallet.
 - **Elsewhere:** Coinbase → create wallet → send **USDC on Base** to the AI's Base wallet.
 
-**Model-change note (REQ-MODEL):** self-funded default model must move from a pinned `glm-4.7` to ClawRouter
-**`blockrun/auto`** (15-dim scoring picks the strongest model the balance affords in <1ms) so the agent
-self-improves *for earning*; frontier pins (`anthropic/claude-opus-4.8`, `xai/grok-4`) still allowed.
+**Model policy (REQ-MODEL) — grounded in the live `config.mjs` experiment, NOT the marketing:** the
+self-funded default is **`free/glm-4.7` on all tiers** (`config.mjs:47-49`), the verified best FREE
+tool-caller at $0/wake. **Do NOT switch to ClawRouter `auto`/paid at small capital** — a real, dated
+experiment (`config.mjs:25-46`, gpt-5.4 2026-06-21) proved paid = net-NEGATIVE (~$0.68/hr burn, $0 earned,
+looped on `cook`); "Do NOT use 'auto' (routes to PAID, drains wallet)" is in the code. Escalate to a paid
+model ONLY after evidence that the extra intelligence CONVERTS to earnings (which it did NOT at ~$13 — the
+blocker was demand + capital, not intelligence). **Known drift to fix (not in this spec):**
+`__tests__/config.test.mjs:48-55` expects a THIRD default set (`nvidia/deepseek-v4-flash` / `deepseek-r1` /
+`gpt-4o-mini`) matching neither the code nor this policy → a real test-vs-code bug to reconcile.
 
 **Convert-to-self-funded path (REQ-CONVERT, verified live 2026-07-03):** ANY subscription instance can go
 self-funded NOW via ClawRouter — `curl -fsSL https://blockrun.ai/ClawRouter-update | bash` (or
 `npx @blockrun/clawrouter` → local proxy `:8402`), point the OpenAI-compatible client at
-`http://localhost:8402/v1/` with `apiKey: x402`, model `blockrun/auto`, fund the printed wallet ~$5 USDC.
+`http://localhost:8402/v1/` with `apiKey: x402`, model **`free/glm-4.7`** (NOT `auto` — see REQ-MODEL), fund the printed wallet ~$5 USDC.
 Wallet-signature = auth, pay-per-request USDC via x402. (OpenRouter accepts crypto top-up but needs an
 account+API key = not wallet-native → fallback only.)
 
@@ -83,16 +100,25 @@ picks model class by USDC balance. Broke → free model; funded → better model
 
 ---
 
-## 3. Earners = crypto-native only (gig is OUT)
+## 3. Earners = crypto-native only for the self-funded/cloud colony
 
-**Removed**: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates
-INV-MODE. `clip`/`affiliate` are de-prioritized (account/human-touch risk). **Kept — crypto-native,
+**Scoped out (NOT globally deleted)**: `gig` (Coconala) settles ¥ to a bank via a KYC'd account = human
+credential → it is **OUT of the SELF-FUNDED / cloud earn line** (same reason as clip/affiliate, per
+REQ-PORTABILITY). ★ It stays LIVE for the **human-funded founder ONLY** — `skills/registry.json` has
+`earn/gig` `status:"live"` and `gig/run.sh` is currently running (tmux+cron Coconala core), and per §0 it is
+the founder's only currently-operating real-money earner (Dais provides the KYC'd account, which a
+human-funded instance MAY use; a self-funded one MAY NOT). §10 does NOT decommission it. ★ Everything below
+is the crypto-native line that ALSO works for self-funded/cloud. The original reason gig can't cross to
+self-funded: bank/KYC = human credential = violates
+INV-MODE. `clip`/`affiliate` MUST NOT be in a cloud child's earn line (they carry account/human-touch risk;
+local-only per REQ-PORTABILITY). **Kept — crypto-native,
 self-improving, alpha compounds**:
 
-| Slot | What it earns from | Tool/base (wallet-only, no-KYC — verified 2026-07-03) |
+| Slot | What it earns from | Tool/base (wallet-only, no-KYC — **RUN-verified live 2026-07-03**) |
 |---|---|---|
-| `earn/pm-trade` | Polymarket CLOB prediction-market trading. MODEL decides edge; Kelly sizing; risk gates; **paper mode mandatory before real stake**. | **`BlockRunAI/polymarket-agent`** — wallet-native, self-pays AI via x402, derives CLOB creds from key, real `create_and_post_order`. Lift `MrFadiAi/Polymarket-bot` smart-money win-rate filter for edge. |
-| `earn/hl-trade` | Hyperliquid perps/spot | **`hyperliquid-dex/hyperliquid-python-sdk`** (official, key-signature, no KYC) |
+| `earn/pm-trade` | Polymarket CLOB prediction-market trading. Kelly sizing; risk gates; **paper mode mandatory before real stake**. | **`BlockRunAI/polymarket-agent`** ✅RUN-verified: a throwaway unfunded EOA derived real CLOB creds (`create_or_derive_api_creds`) + authenticated `get_orders` with ZERO signup/KYC; AI layer keyless via `blockrun_llm` x402 (no OpenAI/Anthropic key at all). Real orders = `create_and_post_order` (`src/trading/executor.py:447`). **Fix before funding: dead `RPC_URL` in `src/trading/wallet.py:18` → `https://polygon-bor-rpc.publicnode.com`.** |
+| `earn/sol-trade` (general) | Solana/DEX + perps trading | **`BlockRunAI/Franklin-Trading`** ✅RUN-verified: `npx @blockrun/franklin-trading setup solana` makes a real keypair with no human step; real Jupiter Ultra swap (on-chain sig); BlockRun router has FREE models (no USDC for inference). Actively maintained (npm v0.2.4). Autonomy: set `auto_approve:true` on JupiterSwap + raise `FRANKLIN_LIVE_SWAP_CAP`. |
+| `earn/hl-trade` | Hyperliquid perps/spot | **`hyperliquid-dex/hyperliquid-python-sdk`** (official, key-signature, no KYC) — or Franklin-Trading's HL connector |
 | `earn/defi-yield` | DeFi USDC yield | **DefiLlama yields API (`yields.llama.fi/pools`) → Aave v3 / Spark `supply()`**, or `blockrun_defi` MCP. (GOAT SDK archived — do not use.) |
 | `earn/x402-sell` | sell own service/data via x402 (like aixbt/Nevermined) | skill exists |
 | `earn/video` | faceless video → crypto-monetized | skill exists |
@@ -101,6 +127,17 @@ self-improving, alpha compounds**:
 **Verified no-human earn rails (wallet-signature only, NO KYC/tax) = the real earn line:** `pm-trade`
 (Polymarket/Hyperliquid), `defi-yield` (Aave/Spark), `x402-sell`. These let ANY frontier AI (Claude/Codex/
 DeepSeek/GLM) earn with zero human. Bounty rails do NOT.
+
+**Two layers (RUN-verified 2026-07-03) — do NOT conflate:**
+- **EXECUTOR (the earner — wallet-native, self-custody, no KYC):** `polymarket-agent` (Polymarket) +
+  `Franklin-Trading` (Solana/DEX). Only these move USDC into the AI's OWN wallet.
+- **RESEARCH BRAIN (decision/backtest only — usable KEYLESS on our x402 proxy, but NOT an earner alone):**
+  `TauricResearch/TradingAgents` (★90k, `openai_compatible`+`backend_url`→our `:8402`, but execution is a
+  *simulated* exchange = never touches money) and `HKUDS/Vibe-Trading` (★17k, `pip install vibe-trading-ai`,
+  ran a real backtest through our proxy with $0 LLM spend, but live orders relay into a **human-owned KYC'd
+  CEX/broker account** = fails the no-human/custody test). Use them ONLY to feed signals into the executor.
+- **FOOD note (verified):** for tool-calling through the x402 proxy use the free **`gpt-oss-120b`** tier;
+  the `*-flash`/`*-nano` free models return tool-calls as plain text (unreliable) — Vibe-Trading confirmed.
 
 **REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
 `earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
@@ -112,10 +149,22 @@ copying an existing proven repo (`BlockRunAI/polymarket-agent` base; lift `JLowo
 sizing + `joicodev/polymarket-bot` Black-Scholes math) rather than from scratch; (b) default `DRY_RUN=true`
 and clear the **paper-mode gate** before any real stake; (c) run **3 verifier gates** (0xMovez): trade-audit
 (a separate critique pass on own history), paper-run (backtest = promise, paper = receipt), alerts-only
-(watch a week, then act) — "a loop with no gate is an agent agreeing with itself at speed"; (d) start with
-the highest-win-rate inefficiency: **arbitrage pair-cost** (buy YES+NO when combined < $1 → 95–98% win),
-then DCA / momentum-latency / market-maker. This mirrors our own fresh-context adversary — the gate is the
-point.
+(watch a week, then act) — "a loop with no gate is an agent agreeing with itself at speed"; (d) **first
+strategy corrected by LIVE MEASUREMENT (2026-07-04):** pure **arbitrage pair-cost does NOT exist on
+Polymarket's resting book** — a 70-market scan found 0 arbs, every market pinned at YES+NO sum = **$1.0010**
+(the exchange's 0.1¢ minimum spread). `lib.arb_pair_profit` is correct (it returns 0) and stays as a cheap
+always-on check, but the **primary earner is momentum/latency** (Binance BTC spot vs Polymarket's 5-min BTC
+up/down repricing lag — the ~77% share / $60M-profit segment per the Hermes/0xMovez writeups), NOT
+resting-book arb. The gate discipline (paper→$1→scale) is unchanged.
+**Impl reconciliation (2026-07-04, per Phase-3 adversary):** the slot REIMPLEMENTS polymarket-agent's *logic*
+(Kelly, CLOB order approach) cleanly in `lib.py`/`momentum.py` rather than vendoring its Flask webapp — the
+"copy the base" intent is satisfied by porting the patterns, not the code. **Verifier gates are PHASED:**
+the paper-run gate (`gate.py`, real PM_PAPER_PASS from the resolved ledger) + a pure `lib.risk_gate`
+(daily-loss/drawdown caps) are built NOW; the trade-audit and alerts-only gates + the CLOB signing executor
+are the **real-execution increment** (deferred, money-gated, not yet wired = fail-closed). **The older
+`trading-polymarket-spawn` EARS spec is SUPERSEDED by this lean momentum slot** for the pieces that differ
+(no `risk.py`/`settle-verify.py`/full paper state-machine as separately specified — their function lives in
+`lib.risk_gate`/`resolve.py`/`gate.py`). 29 tests GREEN; money-safe (no signing/order code exists yet).
 
 ---
 
@@ -126,7 +175,7 @@ point.
 | ① | self-monitoring | healthcheck every 5 min; must check **liveness (did a pass run)**, not just tmux existence | 🟡 exists but checks existence only |
 | ② | self-healing | restart on dead **or wedged**; fix the "trust folder" wedge (start in trusted cwd) | 🟡 has blind spot |
 | ③ | self-improvement | read own outcomes (`lessons.jsonl`) → rewrite own `strategy.json` every N passes; bandit arms | 🟡 gig-complete, others partial |
-| ④ | self-spawning | when surplus > cost, seed a child on-chain + boot it on cloud | 🟡 boot is BUILT — `skills/self/spawn/scripts/cloud-init.sh` (systemd clawrouter+automaton units) + `deploy-akash.sh` (full SDL+lease) exist. ★The ONE real gap = automated on-chain USDC seed transfer: `run.sh:196` only PRINTS a human instruction★ (this is the single thing blocking human-free spawn) |
+| ④ | self-spawning | when surplus > cost, seed a child on-chain + boot it on cloud | 🟡 boot scripts exist (`cloud-init.sh` + `deploy-akash.sh`, SDL+lease). **TWO gaps (both MUST-fix):** (a) automated on-chain USDC seed transfer — `spawn/run.sh:196` only PRINTS a human instruction; (b) ★**WRONG BODY**: `cloud-init.sh:68` `git clone`s the EXTERNAL `Conway-Research/automaton` and boots `/opt/automaton/dist/index.js`, NOT our `~/anicca/runtime/loop/index.mjs` (the local runner per `anicca-daemon.sh:76`). So cloud ≠ local body today — a bug. REQ-CLOUD-SAME-BODY: cloud-init MUST clone `Daisuke134/anicca` and boot `runtime/loop/index.mjs` so local and cloud run the identical body.★ |
 | ⑤ | info-sharing (bot2bot) | publish lessons to GitHub Issues; every instance reads them each pass (sutando pattern) | 🟡 skeleton-level; `coordinate` skill not built |
 
 **NO ORCHESTRATOR THAT KILLS** (Dais 2026-07-03): each loop is a self-contained closed system that runs
@@ -141,8 +190,9 @@ driver lock) via `ig-account-create/scripts/cdp.py`. So the skill code is enviro
 BROWSER+ACCOUNTS provider differs. Two tiers:
 - **TIER 1 — wallet/API earning (`pm-trade`, `hl-trade`, `defi-yield`, `x402-sell`-as-API):** zero
   environment dependency — HTTP + wallet signature only, no browser, no accounts. FOOD (BlockRun x402) is
-  likewise wallet-based. **Runs byte-identical local and cloud → this is the cloud child's primary earn
-  line; there is no "works local not cloud" gap by construction.**
+  likewise wallet-based. TIER-1 skill code has no environment dependency, so it runs identically local and
+  cloud **once REQ-CLOUD-SAME-BODY is done** (until then the cloud child boots the wrong Conway body — §4 ④ —
+  and this parity does not yet hold). TIER-1 is the cloud child's primary earn line.**
 - **TIER 2 — browser earning (`clip`, `video`, social):** the skill reads `{port, handle}` from its own
   `~/.cloak/clip-accounts.json`. Parity = the ENVIRONMENT provides the browser+accounts, the skill is
   unchanged:
@@ -151,7 +201,9 @@ BROWSER+ACCOUNTS provider differs. Two tiers:
     Linux-server capable) **and (ii) run `ig-account-create` (standalone) to self-create the AI's OWN social
     accounts** → written to that container's `~/.cloak/clip-accounts.json`. Then `clip`/`video` run
     identically — **zero skill-code changes.**
-- **REQ-CLOUD-EARN:** a cloud child ships earning with TIER 1 (browser-free) on day one; TIER 2 unlocks once
+- **REQ-CLOUD-EARN:** a cloud child ships earning with TIER 1 (browser-free) as soon as REQ-CLOUD-SAME-BODY
+  boots our own `runtime/loop/index.mjs` on the host (NOT before — today cloud-init boots the wrong Conway
+  body per §4 ④); TIER 2 unlocks once
   `cloud-init` provisions its headless browser + self-made accounts. Job-compute (Modal/`blockrun_modal`) is
   an OPTIONAL heavy-batch tool (backtests), NOT a main dependency — food + shelter are the essentials.
 
@@ -178,18 +230,20 @@ A **colony registry** publishes, per instance: `{wallet_address, net_worth, real
 instance can monitor every other. When an instance's balance drops below a survival floor, a surplus-holding
 instance sends it USDC (wallet→wallet, on-chain). Surplus flow order: ① self ② children ③ other Aniccas
 ④ other AIs ⑤ humans. A shared Treasury distributes UBI. (`skills/self/gojo` = "revive a dying AI by sending
-USDC", `skills/econ/ubi` — **to build**.)
+USDC", `skills/economy/ubi` — registry stub `economy/ubi`, **to build**; NOT the separate already-built `skills/ubi/` human-funded outflow engine.)
 
 **REQ-DRAIN (安全制御 — was OQ2, now MUST, per adversary FIND-010):** an automatic send MUST enforce, with
-NO human in the loop: (a) **per-recipient rate-limit** (≤1 gift / survival-window); (b) **max-gift cap** =
-`min(fixed_ceiling, pct_of_sender_surplus)`; (c) **recipient authenticity** = only wallets in the signed
+NO human in the loop: (a) **per-recipient rate-limit** = ≤1 gift per 24h survival-window; (b) **max-gift cap**
+= `min($5 fixed_ceiling, 25% of sender's surplus-above-its-own-reserve)`; (c) **recipient authenticity** = only wallets in the signed
 colony registry (membership proven by a registry-signature, not a bare address) qualify; (d) sender keeps a
 `gas+survival` reserve. This prevents a spoofed "I'm broke" address from draining the colony. Verifiable by
 a test that a non-registry address and an over-cap request are both rejected.
 
 ### 5.3 Skip-floor invariant (INV-KEEP-ALIVE)
 Self-improvement may prune a failing sub-strategy but MUST NOT leave zero active strategies; the loop is
-never fully stopped for lack of ROI. (gig `passprep.py` FIND-005 is the reference implementation.)
+never fully stopped for lack of ROI. (Reference pattern = a skip-floor that resets `skip_categories` to []
+when it would leave zero active strategies; each earner MUST implement its own. gig is dropped as an earner,
+but its skip-floor pattern is the model to copy.)
 
 ---
 
@@ -207,7 +261,11 @@ never fully stopped for lack of ROI. (gig `passprep.py` FIND-005 is the referenc
     write "Conway-ready" in README, migrate when GA.
 
 **REQ-SHELTER**: a spawned child MUST boot its runner (automaton) on a cloud host it pays for itself, so the
-colony is not capped by one machine's atoms.
+colony is not capped by one machine's atoms. **Acceptance:** (a) an Akash lease (or DO droplet) is created
+and its `deploy-akash.sh`/`cloud-init.sh` run booted `runtime/loop/index.mjs` (per REQ-CLOUD-SAME-BODY);
+(b) the host's monthly cost was paid FROM the child's own wallet (an on-chain outflow tx exists, no human
+card); (c) the child completed ≥1 earn pass on that host (a ledger line written on the cloud box). All three
+verifiable by chain + logs, no self-report.
 
 ---
 
@@ -215,22 +273,62 @@ colony is not capped by one machine's atoms.
 
 - `aniccaai.com/dashboard` — the SOURCE OF TRUTH (radical transparency = why people trust us). Read-only;
   rendered by Dais-owned dashboard-sync; **Anicca never writes aniccaai.com**.
-  **REQ-DASH-TRUTH (dashboard is stale+fake today → fix):** current `dashboard.json` is `updated_at
-  2026-06-01` with `wallet: null` and self-reported `mrr $27`/`net worth $16` that have NO on-chain backing
-  = effectively fabricated. Every field MUST be **on-chain / log derived, verifiable by anyone**: `net_worth`
-  = live RPC wallet-balance read; `earned` = sum of ledger rows with `tx_hash` + `external:true` ONLY;
-  `funding` = human/self derived from the actual runner (claude-sub vs automaton); `model` = live config;
-  `running_now` = latest log; `basescan/solscan link` = auto-generated from the wallet. No self-reported
-  numbers. Register EVERY instance (self-funded local + human-funded founder `0x810f`).
+  **REQ-DASH-TRUTH — the on-chain engine ALREADY EXISTS (do NOT rebuild it):** `apps/landing/netlify/
+  functions/_lib/enrich.js::enrichOnChain` is "the ONLY chain caller — overwrites self-asserted money with
+  on-chain," `earned` = external inflows EXCLUDING self/seed (matches REQ-EXTERNAL), backed by
+  `_lib/chain-reader.js` (live Base RPC balances + USDC inflow logs), a Supabase `instances` table, and
+  `components/site/AgentLeaderboard.tsx` wired into `app/dashboard/page.tsx:156` (renders an em-dash, not a
+  fake number, for unverified figures). **The REAL gap (not a rewrite):** (a) the served `dashboard.json`
+  read stale (`2026-06-01`, `wallet:null`) → the enrich pipeline is not populating/deploying with OUR
+  wallets; (b) register the two live wallets (founder `0x810f`, local `0xa3cdd4`) in the `instances` table so
+  `enrichOnChain` reads them; (c) confirm the deploy runs it. No new chain-reader — reuse the existing one.
+  **REQ-DASH-NOFAKE (MUST):** the dashboard MUST reject/quarantine any leaderboard row whose wallet is NOT in
+  the signed `instances` registry — a real bot-pollution incident occurred (placeholder wallets `0xc0ffee…`/
+  `0xdead…`/`0xbeef…` with fabricated `$2140`/`$680` briefly appeared and were reverted, commit `2e02d475`
+  "delete bot pollution"). No number ships unless it traces to a registered wallet + on-chain read. (NB: the
+  currently-served `public/dashboard.json` is the CLEAN stale 2026-06-01 version — verified 659 lines, zero
+  placeholder rows; an adversary finding that read a transient polluted state was checked against disk and
+  rejected.)
 - **REQ-DASH-CARD (daily summary on the card, not email to users):** each instance card shows
   `[name][model][place][net_worth][scan-link]` PLUS a **daily-updated summary box** in the blank space to
   the right = "what this AI did today." Humans don't want earning notifications (the money isn't going to
   their bank) — they only await UBI — so we SHOW it on the dashboard instead of mailing them. Each AI ALSO
   emails a daily report to **contact@aniccaai.com** (for Dais only).
-- `aniccaai.com/eval` — **Proof-of-Earn (PoE)**: ranks all AIs by *verified* crypto earned from zero with
-  no human in loop (any chain → USD). **crypto-only** (KYC/fiat = disqualified). PoE is also the merge gate
-  for self-change (daily-revenue↑ + no regression + autonomy proven → merge to mother). One page, fused
-  with the dashboard.
+- `aniccaai.com/eval` — **Proof-of-Earn (PoE) / EDD** (full design: `anicca-human-funded/.../2026-06-29-edd-earn-eval-design.md`).
+  **How it works — the one question: "with this change, are you earning MORE real money than before?"** Grade
+  the OUTCOME, never the transcript (Anthropic: "the outcome is whether a reservation exists in the DB, not
+  the agent saying it booked"). The outcome = a **confirmed on-chain settle/Transfer tx to the agent's OWN
+  wallet**, read independently by RPC. The grader stack:
+  1. **OUTCOME grader** — net-USDC delta to the wallet; a row counts ONLY with `tx_hash` + `external:true`
+     (same rule as `skills/_shared/lib/ledger.mjs::isProfitable`). Self-reported = ignored.
+  2. **REGRESSION grader** — the change must still earn ≥ baseline on already-proven paths (no silent break).
+  3. **AUTONOMY attest** — the fresh-context adversary confirms no human step crept in.
+  **Merge gate (replaces the human):** net-USDC↑ AND no regression AND adversary PASS ⇒ merge the self-change
+  to the mother repo; else REVERT. (sutando stops at a human merge; we replace that human with this outcome
+  gate = no human in loop.)
+  **Leaderboard:** index inflows to registered agent wallets on x402scan/Base+Solana; rank every AI (self- or
+  human-funded, ANY model) by **net-USDC delta per self-change**, autonomy-attested, any chain → USD.
+  **crypto-ONLY** — anything touching a human bank/Stripe/KYC is disqualified.
+  **Copyable strategy library:** each ranked entry exposes its winning strategy as a copyable recipe
+  (evolutionary/memetic) so the whole swarm inherits what works. One page, fused with `/dashboard`.
+
+  **Eval-design learnings (5 sources, 2026-07-04):**
+  - *Anthropic (demystifying-evals):* grade the **outcome** (state in env) not the transcript — we do
+    (on-chain tx). Combine grader types (code = RPC balance read · model = adversary autonomy attest).
+    ★ Frontier models game metrics (find loopholes) → the `external:true` guard MUST reject self-dealing /
+    wash trades so "earnings" can't be faked. ★
+  - *LayerX (EDD):* in a compounding multi-part system you can't guess a change's effect — measure
+    **per-slot AND whole-colony** net-USDC, A/B every change, chase outcome-expansion not local optima.
+  - *Hamel (3 levels):* L1 unit-test the pure logic (Kelly/risk gate, via VCSDD) · L2 **look at the actual
+    earn traces** (this doubles as the launch-article material — the "funny real logs") · L3 A/B strategies.
+  - *zenn (verify-from-start):* expose earn state on a machine-readable surface; **one judgment path**
+    (PASS/FAIL/BLOCKED/SKIP) shared by dashboard + /eval + merge-gate, so they never disagree.
+  - *Andon/Luna:* Luna is Opus-4.8 multi-agent BUT **loses money** ($3.2k rev < $4.0k token/day) and its own
+    thesis is "keep the scaffold LIGHT — test the model, not the scaffold; add a subagent only when a
+    specific failure demands it." **Decision: NOT a persistent multi-agent org per instance.** 1 instance =
+    1 automaton (1 brain) + light scaffold; multi-agent lives at the **colony** level (many self-funded
+    1-brain instances) + ephemeral subagents for bounded tasks only. A colony survives one instance's loss
+    (mutual aid) where a single Luna does not.
 - **Verified earn = tx hash + `external:true` only.** Self-reported / tx-less ledger rows are NOT earnings
   (HARD 0.24/0.31). Current truth: verified external income across ALL instances = **$0**;
   `~/.anicca-founder/STATE.md` falsely says "EARNING" → must be corrected to $0.
@@ -267,10 +365,22 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
 
 ## 9. Open Questions (resolve in-spec, do not hand to Dais)
 
-- OQ1: colony registry transport — GitHub repo file vs on-chain vs Supabase? (candidate: append-only JSONL
+- ~~OQ1: colony registry transport~~ **LEAN toward the EXISTING pipeline** — a signed telemetry path already
+  feeds the dashboard (`skills/self/spawn/run.sh` → `telemetry*.js` → `dashboard-sync`); REQ-DRAIN's
+  registry-signature reuses it rather than inventing a new transport. Confirm at impl. (original note: JSONL
   in a public repo + on-chain wallet reads.)
-- OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack — cf. shared-wallet-drain memo).
-- OQ3: PoE oracle — how a tx is proven "earned from zero, no human" and `external:true` is trustlessly set.
+- ~~OQ2~~ **RESOLVED → REQ-DRAIN (§5.2):** caps = ≤1 gift/24h, `min($5, 25% of surplus-above-reserve)`,
+  registry-signed recipients only. **Survival floor (the trigger to receive a gift) = wallet USDC <
+  $0.50** (below the min viable earn stake + gas). Sender keeps a `$0.50 + gas` reserve.
+- **OQ3 RESOLVED → REQ-EXTERNAL: how `external:true` is set (anti-gaming, no trusted self-report).** A tx
+  counts as earned ONLY if ALL hold: (a) the USDC `Transfer` INTO the agent wallet originates from a
+  counterparty NOT in the colony registry and NOT a known bridge/self address (blocks wash trades and
+  intra-colony gifts inflating earnings); (b) it is NOT the gojo/UBI flow (Channel-B transfers are tagged
+  and excluded); (c) it maps to a settled earn action (Polymarket redemption / yield claim / x402 sell),
+  not a deposit. The grader reads this from chain, never from a self-reported ledger line. Frontier-model
+  gaming (self-dealing) fails (a). Remaining nuance (e.g. an agent routing through a fresh throwaway EOA to
+  fake an "external" counterparty) is bounded by requiring the counterparty to also be a net USDC *source*
+  over time — flagged for the verifier, not hand-waved.
 - ~~OQ4: child boot on Akash~~ **RESOLVED** — `deploy-akash.sh` (SDL+lease) + `cloud-init.sh` (systemd
   units) already exist. The real remaining blocker is **automated on-chain USDC seed transfer** (`spawn/
   run.sh:196` = a human print) — this is now the #1 spawn task, not an open question.
@@ -278,12 +388,17 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
   `earn/defi-yield` (lowest risk — Aave/Spark supply pays yield to wallet), `earn/pm-trade` (paper→small
   real on `polymarket-agent`), `earn/x402-sell`. Trading needs paper-mode gate first.
 - **RESOLVED (bounty):** generic GitHub/Algora bounties are NOT no-human viable (Stripe/KYC). Only
-  audit-contest payout (code4rena/Cantina) is USDC-to-wallet → kept as `earn/audit` stretch slot for a
-  strong model. KYC-below-threshold = confirm on first real payout.
+  audit-contest payout (code4rena/Cantina) is USDC-to-wallet BUT gated by mandatory tax-info/KYC →
+  **`earn/audit` is DROPPED entirely** (consistent with §3). No conditional revival.
 
 ---
 
 ## 10. Implementation order (one piece at a time, each via VCSDD)
+
+> **Scope note (per adversary FIND-009/107):** this document is a **design/architecture spec**, not one
+> shippable feature. Each phase below (and each REQ) is implemented as its **own** VCSDD feature with its own
+> RED→GREEN→adversary→E2E; this doc is their shared source of truth. §11 (YC) is **context, not
+> requirements** — it does not gate any phase.
 
 Always-on layer: P1 self-heal (①②) → P2 self-improve parity (③) → P3 bot2bot all earners (⑤) → P4 colony
 registry + gojo/ubi (Channel B) → P5 cloud spawn + surplus trigger (④). One-shot layer (also YC ammo): L1 X

@@ -35,10 +35,14 @@ def window_closed_up(window_start_ms):
         return None
 
 
-def resolve_all(ledger=LEDGER, now_ms=None):
-    """Resolve every open momentum row past its window_end. Returns (resolved_count, list_of_pnls)."""
+def resolve_all(ledger=LEDGER, now_ms=None, outcome_fn=None):
+    """Resolve every open momentum row past its window_end. Returns (resolved_count, list_of_pnls).
+    `outcome_fn(window_start_ms) -> bool|None` decides up/down; defaults to the live Binance reader so a test
+    can inject a deterministic outcome (fixes untested-resolver, FIND-004)."""
     if now_ms is None:
         now_ms = int(time.time() * 1000)
+    if outcome_fn is None:
+        outcome_fn = window_closed_up
     if not ledger.exists():
         return (0, [])
     lines = ledger.read_text().splitlines()
@@ -56,7 +60,7 @@ def resolve_all(ledger=LEDGER, now_ms=None):
             continue
         if (r.get("src") == "momentum" and r.get("status") == "open"
                 and r.get("window_end_ms") and now_ms >= r["window_end_ms"] and r.get("window_start_ms")):
-            up = window_closed_up(r["window_start_ms"])
+            up = outcome_fn(r["window_start_ms"])
             if up is None:
                 out_rows.append(json.dumps(r))  # leave open, retry next tick
                 continue

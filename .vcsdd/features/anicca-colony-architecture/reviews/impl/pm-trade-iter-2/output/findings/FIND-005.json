@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Carried forward from iteration 1 (previously FIND-010), still unresolved: there is no SKILL.md (or equivalent onboarding doc) for skills/earn/pm-trade/, unlike sibling earn slots. The model driving the ReAct loop still has no documented interface telling it that momentum.py/lib.py/decide.py exist, what units they expect, or how the pass is invoked -- this gap is now more pronounced than iteration 1 since the slot has grown from 4 files to 8 (lib.py, momentum.py, gate.py, decide.py plus their tests and run.sh) with no onboarding doc added to match.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade",
+    "lineRange": "n/a (directory listing)",
+    "snippet": "no SKILL.md present in skills/earn/pm-trade/"
+  },
+  "routeToPhase": "2b"
+}
