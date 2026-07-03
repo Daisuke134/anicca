@@ -461,6 +461,9 @@ A — MAKE THE AI EARN ITS FIRST REAL USDC (top priority = the gate)
   T1  earn/defi-yield: wire the AI's REAL Aave supply() tool (money-safe, EARN_MODE-gated, Base ETH gas)
        → the automaton, in its loop, supplies ~$7 → first on-chain earn tx. (task #7)
   T2  earn/pm-trade: wire the AI's REAL CLOB executor; cron accumulates paper → gate PASS → AI fires $1. (#6)
+  T2b earn/sol-trade: BUILD the missing general-trading slot from `BlockRunAI/Franklin-Trading` (RUN-verified,
+       decided but never built) — CLOUD-portable (wallet-only), same VCSDD as pm-trade (pure sizing/risk →
+       dry-run live prices → money-safe, real Jupiter swap gated → registry live → Opus adversary). (task #17)
   T3  restart the human-funded claude-p loop so IT runs the same earners. (#3)
 
 B — WIRE THE AI'S SELF-* SO IT NEEDS NO HUMAN (incl. me)
