@@ -91,10 +91,35 @@ Verifiable conditions (each MUST be demonstrated with fresh evidence):
 - **INVARIANT (SRE)**: black-box + **content assertion** (200 is not enough — assert the actual Stripe link value + product/price text). Low-noise: page a human only on a real, ongoing symptom (Google SRE golden-signals / symptom-vs-cause).
 - **KNOWLEDGE**: known-good values (Stripe link, deploy id) live in a small registry file, not hardcoded across the codebase (SSOT, HARD 0.17).
 
-### C7 — Self-improve loop
+### C7 — Self-improve loop (LM) → extends to C7-EXT Portfolio loop
 - **IN**: daily tick.
 - **OUT**: a metrics snapshot + ≥1 action + a persisted `/money-report`, committed & pushed.
 - **INVARIANT**: every claimed action is verified by real side-effect (GLVS); no X posting; human is not in the loop except a single escalation channel.
+
+### C7-EXT — PORTFOLIO self-improvement loop (grounded in 2 deep-research passes 2026-07-03)
+Applies the SAME loop to every product in `aniccaai.com/dais` + `anicca-project`, not just LM.
+
+**Loop shape (universal, from Warp/Reflexion/Self-Refine/Anthropic evaluator-optimizer)** — two nested loops; improvement is stored as TEXT in a versioned `SKILL.md` (Reflexion: verbal memory, not weights), the repo is the STATE (GLVS):
+- INNER (per task): apply a product/marketing skill → real side-effect → record a trace stamped `skill:<name> v:<N> run_id:<...>`.
+- OUTER (daily `claude -p` Sonnet): observe traces+git since last bump → GRADE by metric delta attributed to the version window → synthesize ≤ a few GENERALIZABLE lessons → diff the skill + bump version → open a PR (never push main).
+
+**7 hard rules (load-bearing, or the loop degrades)**: (1) grounded external signal, not self-opinion — here the grader = **metric delta (MRR/signup/conversion/cost)**; (2) generalizable-only lessons; (3) bounded guidelines (≤~12, consolidate/prune at cap); (4) versioned skill + trace marker for attribution; (5) weak/conflicting signal = NO-OP (empty run is success); (6) weighted evidence (MRR-drop/relabel=strong > engagement=moderate > silence=weak-positive); (7) PR gate + audit trail — no-human review is replaced by **fresh-context vcsdd-adversary on the diff + a regression guard (if the previous bump's metric got WORSE, REVERT it, don't stack)**.
+
+**show-me-the-money = ADAPT, not use-as-is** (`~/.claude/plugins/cache/show-me-the-money/money/1.0.0/`, CC BY-NC OK): it's NL prompts with PLACEHOLDER metrics + human-in-loop gates + an X-posting arm. REUSE = `money-ops` 6-dim health-score bottleneck-picker, `~/.smtm/` state spine (`/money-save`,`/money-learn`,`/money-retro`,`/money-report`), `money-finance` business-type→metric router. REPLACE = wire real metric reads (deterministic tools write today's numbers to `~/.smtm/analytics/<slug>.jsonl` BEFORE the agent reasons — agent judges, tools fetch); swap human confirmation for adversary + browser E2E; AMPUTATE `money-social` X path.
+
+**Funnel-lever priority at $0 MRR (AARRR, but NOT acronym order)**: 0 Instrumentation → 1 **Activation** (fix the leaky bucket before scaling traffic) → 2 Retention (churn caps MRR; target <5%/mo, NRR>100%) → 3 Revenue/Paywall (trial→paid>10%; reprice when conv<5%=too dear or churn<2%+high-use=too cheap) → 4 Acquisition (compounding organic) → 5 Referral. Pick the lowest BROKEN UPSTREAM stage, one product × one lever × one action per day.
+
+**Marketing WITHOUT X (Dais bans X)**, effectiveness order: programmatic SEO + GEO (AI-citation: schema/JSON-LD → cited by ChatGPT/Perplexity/Gemini) + directory submissions > paid ads > cold email (warmed domain, bounce<5%) > Product Hunt (episodic). Drop X entirely.
+
+**Metrics per product + source**: MRR/churn/subs/failed-pay → Stripe API/CLI; mobile subs/trial→paid → RevenueCat MCP (`get-overview-metrics`,`get-revenue-metric`); downloads/ASC conversion/proceeds(3-day lag, weekly-smooth) → `asc` CLI; signups/activation/D7-D30 → Supabase SQL; traffic/LP-conv → GA4. Derived: growth MoM, ARPU, CAC, **LTV:CAC>3**, payback<6mo.
+
+**Daily loop (no human, no X)**: [1] PULL metrics (deterministic) → [2] SCORE+PICK one product×one bottleneck → [3] SPEC the one action (VCSDD, right-altitude, agent decides — no hardcoded branch) → [4] BUILD (SDD RED→GREEN, commit+push) → [5] VERIFY (① adversary disk-only ② my browser/on-chain E2E: curl 200 + Supabase event fires + Stripe/RC reflects; NO mock) → [6] PERSIST (money-save/learn + report row before→after+evidence+next bottleneck) → [7] GUARDRAILS (spend cap, new channel 10%→scale over 6d, canary 24h auto-flag on −50%×2, panic-stop) → next product; weekly money-retro rolls up portfolio.
+
+**Anti-patterns (Project Vend — Claude ran a real shop 1mo and LOST money)**: selling at a loss / talked into discounts / missing lucrative offers / hallucinating payment details / not learning across runs / vanity metrics / unverified "done". Guards: LTV:CAC>3 enforced, no autonomous discounting, score-driven action, HONESTY+real-read, STATE memory, load-bearing-metric-only, E2E-mandatory.
+
+**Ownership**: human-funded instance (this Claude, on a Claude sub) may run `earn/human/` + `earn/ai/`; self-funded instances run `earn/ai/` only (no human credentials). This C7-EXT loop = the `earn/human/` product-operator engine.
+
+**Sources (verified 2026-07-03)**: Warp issue-triage-loop (inner/outer + 7 rules); Reflexion arXiv 2303.11366; Self-Refine 2303.17651; Anthropic Building-Effective-Agents + Effective-Context-Engineering; MT-Bench LLM-as-judge 2306.05685; Hamel "Your AI Product Needs Evals"; AARRR (McClure/500 Startups); programmaticseo.com + ahrefs GEO; Anthropic Project Vend; show-me-the-money v2.5.1 skill source.
 
 ## 4. Architecture delta (ASCII)
 
