@@ -228,7 +228,33 @@ REMAINING for "prints money daily": CLIP-B 5-gate+record-earn(real payout), CLIP
 account, CLIP-E first real USDC (campaign), CLIP-F self-improve. Login-persist note: IG OTP = LATEST msg in
 the "Verify your profile" thread.
 
+## D-63 (2026-07-03, Dais correction applied) — ★ REAL root cause found: wrong browser process on :9223, NOT a captcha/behavioral issue ★
+Dais (angry, correctly): "you should use the daily browser and cloak browser... all caches should be
+saved... we never close tabs." Investigated per his correction: `ps aux` showed the process actually
+bound to port 9223 was using `--user-data-dir=/Users/anicca/.browser-harness-profile` (Chrome/149, the
+SYSTEM Chrome) — NOT the dedicated persistent `~/.cloak/profiles/clip-en` (which has a real, valid
+20KB Cookies file the whole time). Some other process/skill had squatted on port 9223 with the WRONG
+profile; the D-61/D-62 "not logged in" / "recaptcha wall" findings were both artifacts of inspecting
+the WRONG browser, not a real IG problem. Fix: `kill -TERM` the wrong process, relaunched the correct
+one via `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py`
+(`cloakbrowser.launch_persistent_context("~/.cloak/profiles/clip-en", ...)`, Chrome/145). ★ Confirmed
+immediately logged in as @aiclipsvault ★ (no ログイン button, nav avatar = aiclipsvaultのプロフィール写真,
+"プロフィール写真を追加" = own-account-only UI) — zero login/captcha work needed, exactly as Dais said.
+★ Lesson: when a dedicated port/profile "isn't logged in", FIRST verify which process/profile is actually
+bound to that port before assuming a session/captcha problem. ★
+
+★ HOWEVER ★ ran `EARN_MODE=execute bash run.sh` next and it self-reported "posted" (URL DaLKV2xP8Ij,
+same URL as an ALREADY-existing post) + moved the clip to `posted/`. Independent verification (direct
+profile check + hard reload, twice) showed the account is STILL at exactly 3 posts, same 3 URLs as
+before — NO new content actually went live. This is a SEPARATE, real bug in `post_reel.py`'s
+before/after reel-diff (race condition: the `_before_reels` snapshot can be taken before Instagram's
+profile grid finishes lazy-loading, so an existing post looks "missing" from `before` and then looks
+"new" after sharing). Corrected the ledger with an honest `false_positive_corrected:true` entry, moved
+the clip back to `~/clips/queue/`, filed as its own task (post_reel.py before/after race fix) rather than
+re-attempting live posting again this session.
+
 ## D-62 (2026-07-03, later still) — ★ IG re-login blocked on BOTH CDP-raw and camofox-stealth: likely a behavioral (not fingerprint) tell ★
+★ SUPERSEDED by D-63 — this was diagnosing the WRONG browser process, not a real captcha/login issue. ★
 Tried the no-human re-login for @aiclipsvault twice, two different browser engines: (1) raw CDP on the
 dedicated CloakBrowser :9223, (2) camofox stealth Firefox :9377 (per HARD RULE 0.30 fallback order).
 ★ BOTH hit the identical `https://www.instagram.com/auth_platform/recaptcha/` wall ★ with no visible
