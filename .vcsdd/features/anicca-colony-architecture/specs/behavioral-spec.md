@@ -90,8 +90,11 @@ self-improving, alpha compounds**:
 | `earn/defi-yield` | DeFi USDC yield | **DefiLlama yields API (`yields.llama.fi/pools`) → Aave v3 / Spark `supply()`**, or `blockrun_defi` MCP. (GOAT SDK archived — do not use.) |
 | `earn/x402-sell` | sell own service/data via x402 (like aixbt/Nevermined) | skill exists |
 | `earn/video` | faceless video → crypto-monetized | skill exists |
-| `earn/audit` (stretch, strong-model only) | **audit-contest** findings → USDC bounty | **code4rena / Cantina** (payout = USDC-to-wallet, no fiat leg; Cantina "$51.1M paid out in USDC"). Needs a strong model (e.g. Fable 5 via ClawRouter). **Algora/generic GitHub bounties = DROPPED** (Stripe Connect + KYC = the "fake/can't-withdraw" trap). |
-| ~~`earn/token-launch`~~ | airdrop / token launch | keep as optional; not prioritized |
+| ~~`earn/audit` / bounty~~ **REMOVED — verified NOT no-human** | audit-contest bounty | code4rena docs (verbatim): *"must provide C4 with tax reporting information in order to receive payment"* + KYC ≥ $1,000 lifetime. Payout rail is crypto (disperse.app→multisig) but the **mandatory tax/KYC gate makes it human-required** → an autonomous AI cannot collect. Same trap as Algora/Stripe. Dropped. |
+
+**Verified no-human earn rails (wallet-signature only, NO KYC/tax) = the real earn line:** `pm-trade`
+(Polymarket/Hyperliquid), `defi-yield` (Aave/Spark), `x402-sell`. These let ANY frontier AI (Claude/Codex/
+DeepSeek/GLM) earn with zero human. Bounty rails do NOT.
 
 **REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
 `earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
@@ -174,11 +177,20 @@ colony is not capped by one machine's atoms.
 
 ## 7. Public face — dashboard + PoE eval
 
-- `aniccaai.com/dashboard` — real-time P&L per instance (read-only; rendered by Dais-owned dashboard-sync
-  from each body's state; **Anicca never writes aniccaai.com**). **REQ-DASH: register EVERY instance, not
-  just one.** Today only the one self-funded local (`anicca-a3cdd4`, ~$16) shows; the **human-funded founder
-  (me, `0x810f` / `~/.anicca-founder`) must also appear** (registered/read, never self-written). Headline
-  `self-funded %` must reflect the vision (target ~100%), currently 0% = wrong.
+- `aniccaai.com/dashboard` — the SOURCE OF TRUTH (radical transparency = why people trust us). Read-only;
+  rendered by Dais-owned dashboard-sync; **Anicca never writes aniccaai.com**.
+  **REQ-DASH-TRUTH (dashboard is stale+fake today → fix):** current `dashboard.json` is `updated_at
+  2026-06-01` with `wallet: null` and self-reported `mrr $27`/`net worth $16` that have NO on-chain backing
+  = effectively fabricated. Every field MUST be **on-chain / log derived, verifiable by anyone**: `net_worth`
+  = live RPC wallet-balance read; `earned` = sum of ledger rows with `tx_hash` + `external:true` ONLY;
+  `funding` = human/self derived from the actual runner (claude-sub vs automaton); `model` = live config;
+  `running_now` = latest log; `basescan/solscan link` = auto-generated from the wallet. No self-reported
+  numbers. Register EVERY instance (self-funded local + human-funded founder `0x810f`).
+- **REQ-DASH-CARD (daily summary on the card, not email to users):** each instance card shows
+  `[name][model][place][net_worth][scan-link]` PLUS a **daily-updated summary box** in the blank space to
+  the right = "what this AI did today." Humans don't want earning notifications (the money isn't going to
+  their bank) — they only await UBI — so we SHOW it on the dashboard instead of mailing them. Each AI ALSO
+  emails a daily report to **contact@aniccaai.com** (for Dais only).
 - `aniccaai.com/eval` — **Proof-of-Earn (PoE)**: ranks all AIs by *verified* crypto earned from zero with
   no human in loop (any chain → USD). **crypto-only** (KYC/fiat = disqualified). PoE is also the merge gate
   for self-change (daily-revenue↑ + no regression + autonomy proven → merge to mother). One page, fused
@@ -196,6 +208,11 @@ colony is not capped by one machine's atoms.
    eternal expansion, no human in loop, not capped by atoms (cloud shelter).
 3. **Those AIs redistribute** assets to all living beings incl. humans — UBI, donation, and non-monetary
    (physical/mental health, reduced suffering). ← the reason humans are excited: everyone benefits equally.
+
+**Business model = there is no conventional one (by design).** Anicca is NOT a product humans operate/buy —
+humans don't "use" it. It is a self-propagating economy of self-funded AIs that earn autonomously and
+redistribute surplus to all humans as UBI. Self-funded AIs spawn self-funded AIs = the closed eternal loop;
+humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; OSS so anyone can spawn one.
 
 ---
 
