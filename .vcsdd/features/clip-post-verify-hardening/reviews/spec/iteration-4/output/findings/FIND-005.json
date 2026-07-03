@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-008(3)'s self-heal sidecar is left genuinely ambiguous between two NON-equivalent designs, and the ambiguity has a concrete downstream consequence for REQ-009's count-accuracy invariant (the exact class of bug this feature exists to eliminate). REQ-008(3) says: 'tracked via a small sidecar file recording the stable_before_hrefs count/set at move-time' -- literally offering 'count' OR 'set' as if interchangeable. They are NOT interchangeable for what REQ-008(3)'s own condition requires: 'IF the stabilized reels list contains a URL not present at the time the clip was moved to pending-verify/' is a set-membership test (which specific href is new) -- this can only be answered if the sidecar stores the actual BEFORE HREF SET, not merely a count. Yet PROP-006 (verification-architecture.md line 74) tests the OTHER interpretation: 'seed pending-verify/ with a fake clip + sidecar before_count=2, stub 3 identical calls returning 3 reels (2+1) -> self-heal moves to posted/ + ledger line' -- a scalar COUNT, not a set. A builder following PROP-006's literal fixture would implement count-only comparison (len(reels) == before_count + 1) and would have NO way to identify WHICH of the returned hrefs is the new one. Since REQ-005's ledger-line shape (which REQ-008(3) explicitly reuses via 'append the delayed status:posted ledger line') populates post_url with 'the confirmed URL' for every other posted-outcome path in this spec, a count-only self-heal driver is structurally forced to either (a) invent an unspecified guess at which href is new (e.g. assume index 0 = most recent, an assumption never stated anywhere in REQ-008 or the Ground Truth section), or (b) append the ledger line with post_url: null. Path (b) directly threatens REQ-009's own counting correctness: REQ-009 step 1 says 'Collect status==\"posted\" lines (new-format) -> their post_url values' with NO null/non-empty guard analogous to step 2's explicit 'non-null non-empty post_url' guard for old-format lines. A status:\"posted\" line with post_url:null would be unioned into the deduplicated URL set as a distinct member (None is a valid, distinct set element), inflating monitor.sh's reported count by 1 for every self-healed confirmation whose specific URL wasn't captured -- structurally the same over-counting failure mode (REQ-009's own motivating incident) that this entire feature was built to close. This is not resolved anywhere in REV 4: no requirement states the sidecar's exact file format/path, no requirement states whether count-based or set-based comparison is authoritative, and no requirement adds a null-guard to REQ-009 step 1 to defend against a self-heal-produced null post_url.",
+  "evidence": [
+    {
+      "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+      "lineRange": "159-163",
+      "snippet": "IF the stabilized `reels` list contains a URL not present at the time the clip was moved to `pending-verify/` (tracked via a small sidecar file recording the `stable_before_hrefs` count/set at move-time), THEN treat it as now-confirmed: move the clip to `posted/` and append the delayed `\"status\":\"posted\"` ledger line"
+    },
+    {
+      "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+      "lineRange": "74",
+      "snippet": "seed `pending-verify/` with a fake clip + sidecar `before_count=2`, stub 3 identical calls returning 3 reels (2+1) -> self-heal moves to `posted/` + ledger line"
+    },
+    {
+      "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+      "lineRange": "164-170",
+      "snippet": "REQ-009 step 1: 'Collect `status==\"posted\"` lines (new-format, this feature onward) -> their `post_url` values.' -- no non-null/non-empty guard, unlike step 2's explicit guard for old-format lines."
+    }
+  ],
+  "routeToPhase": "1a"
+}

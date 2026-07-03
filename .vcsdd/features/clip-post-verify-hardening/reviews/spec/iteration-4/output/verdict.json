@@ -1,0 +1,58 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 4,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-001 (iteration-3, frozen fixture drift)",
+      "status": "FIXED",
+      "note": "tests/fixtures/ledger-2026-07-03-snapshot.jsonl exists and was byte-compared against behavioral-spec.md's Ground Truth section: exactly 4 lines; line1 post_url=DaK4tlmvomQ (no status); line2 post_url=DaLKV2xP8Ij (no status); line3 post_url=DaLKV2xP8Ij, identical to line2, no status, not flagged; line4 post_url=null, false_positive_corrected=true. Matches the quoted Ground Truth exactly. REQ-009's ★IMPORTANT★ paragraph and PROP-007 both now explicitly mandate this frozen file over the live ledger path. The live ledger (~/.openclaw/state/clip-earn-ledger.jsonl) was independently re-checked and has now grown to 5 lines (a further real post, DaVbOajvKqO, landed) -- confirming the live path is indeed still drifting and the frozen fixture is correctly isolated from it."
+    },
+    {
+      "priorFinding": "FIND-002 (iteration-3, 7th exception-fallback path missing outcome)",
+      "status": "FIXED",
+      "note": "post_reel.py:187-190 read fresh: line187 `except Exception as e:`, line188 `res[\"error\"]=repr(e)[:200]`, line189 `finally:`, line190 `print(json.dumps(res, ensure_ascii=False))` -- matches the Ground Truth citation exactly. verification-architecture.md's described fix (change finally to `res.setdefault(\"outcome\",\"failed\"); print(...)`) targets this real, correctly-cited block and uses setdefault (not direct assignment), so it will not clobber an outcome already set by a normal code path."
+    },
+    {
+      "priorFinding": "FIND-003 (iteration-3, CRITICAL -- unconditional composer/share proceeds on unstable before-read)",
+      "status": "FIXED",
+      "note": "verification-architecture.md's pseudocode (lines 24-34) places the `if not before[\"stable\"]: ... return` abort IMMEDIATELY after `stabilize_reads(...)` and BEFORE the comment '...unchanged composer/upload/caption/share steps (only reached when before IS stable)...'. Traced control flow: there is no other entry point into the composer-open/upload/share sequence in the pseudocode or in the real post_reel.py structure that bypasses this gate -- the share button can only be reached after this abort check has already passed. REQ-004 correctly labels this the 8th failed-outcome site, set inline before print+return, so the composer is genuinely never opened on an unstable before-read."
+    },
+    {
+      "priorFinding": "FIND-004 (iteration-3, self-heal stabilize wiring unspecified)",
+      "status": "FIXED",
+      "note": "REQ-008(1) now explicitly states stabilization is applied EXTERNALLY by the self-heal DRIVER, comparing `reels` arrays returned by up to 3 separate `post_reel.py --verify-only` subprocess invocations, and explicitly states 'each individual call's own internal read at post_reel.py:112-113 is untouched'. Verified post_reel.py:111-113 against the real file: line111 `if a.verify_only:`, line112 `cdp.navigate(...); time.sleep(4)`, line113 `reels = ev(tid, ...)` -- citation is accurate, and the code at these lines is confirmed unchanged/unmodified by this feature's design. PROP-006 correctly tests the driver-level multi-call stabilize behavior, not any change inside post_reel.py's --verify-only branch."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:95,108,111-113,118,123,127,134,141,163,174-190", "description": "all Ground Truth line citations for the 6 pre-share sites, the verify-only branch, the before-snapshot site, the post-share search loop, and the except/finally block re-verified byte-accurate against the real current file"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/tests/fixtures/ledger-2026-07-03-snapshot.jsonl", "description": "frozen fixture's 4 lines byte-compared against behavioral-spec.md's Ground Truth quotes and confirmed to match exactly"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:24-34", "description": "before-unstable abort gate pseudocode traced and confirmed to fully precede the composer-open step, closing iteration-3 FIND-003"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:55-60", "description": "except/finally setdefault fix traced against the real post_reel.py:187-190, closing iteration-3 FIND-002"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

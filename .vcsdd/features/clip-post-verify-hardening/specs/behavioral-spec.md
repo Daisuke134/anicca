@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 4 (post iteration-3 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 5 (post iteration-4 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -156,14 +156,30 @@ or duplicate a clip).
   2. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
      match (inconclusive — leave the clip in `pending-verify/`, try again next wake, per REQ-002's
      inconclusive handling).
-  3. IF the stabilized `reels` list contains a URL not present at the time the clip was moved to
-     `pending-verify/` (tracked via a small sidecar file recording the `stable_before_hrefs` count/set at
-     move-time), THEN treat it as now-confirmed: move the clip to `posted/` and append the delayed
-     `"status":"posted"` ledger line; OTHERWISE (stable but no new URL, or inconclusive) leave it in
-     `pending-verify/` for the next wake (never silently drop it, never duplicate-post it).
-- **REQ-009 (monitor honesty — REV 3, fixes the no-op found in iteration-2 FIND-001)**: `monitor.sh`'s
-  posts-recorded count SHALL be computed as follows:
-  1. Collect `status=="posted"` lines (new-format, this feature onward) → their `post_url` values.
+  3. THE SIDECAR SHALL RECORD A SET, NOT A COUNT (FIXED after iteration-4 FIND-005/006, which correctly
+     found "count/set" was ambiguous and could force a null `post_url` into a `status:"posted"` ledger
+     line): when `run.sh` first moves a clip to `pending-verify/` (REQ-006), it SHALL also write a sidecar
+     file `~/clips/pending-verify/<clipname>.before-hrefs.json` containing the JSON array of the EXACT
+     stabilized `before["hrefs"]` list captured at that time (the same list already computed by REQ-001
+     for that post attempt — no extra browser work, just persist it to disk instead of discarding it).
+     THE SELF-HEAL DRIVER SHALL compute `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)` (a real
+     set difference, giving the ACTUAL new href string, not a guess/index-0 assumption). IF `new_hrefs`
+     has EXACTLY ONE element, THE SYSTEM SHALL treat it as now-confirmed: move the clip to `posted/`,
+     delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH `"post_url"`
+     SET TO THE REAL CONFIRMED URL (`"https://www.instagram.com" + new_hrefs[0]`, never `null` — a
+     `status:"posted"` ledger line MUST always carry a real, non-null `post_url`, per REQ-009's step-1
+     guard below). IF `new_hrefs` is empty (no new URL yet) OR has more than one element (an ambiguous
+     case — e.g. two clips landed between reads — treat as inconclusive, do NOT guess), leave the clip in
+     `pending-verify/` for the next wake (never silently drop it, never duplicate-post it, never fabricate
+     a `post_url`).
+- **REQ-009 (monitor honesty — REV 4, adds the null-guard iteration-4 FIND-005 found missing)**:
+  `monitor.sh`'s posts-recorded count SHALL be computed as follows:
+  1. Collect `status=="posted"` lines (new-format, this feature onward) that have a non-null non-empty
+     `post_url` → their `post_url` values. (★ Null-guard ADDED here per iteration-4 FIND-005: REQ-008(3)
+     above now guarantees every `status:"posted"` line it writes carries a real URL, so this guard should
+     never actually trigger in practice — it exists as defense-in-depth against any future code path that
+     might otherwise write a `status:"posted"` line with `post_url:null` and silently inflate the count,
+     which is structurally the exact failure mode this entire feature exists to eliminate.)
   2. Collect OLD-format lines (no `status` field) that have a non-null non-empty `post_url` AND do NOT
      have `"false_positive_corrected": true` → their `post_url` values.
   3. Union both sets of `post_url` values into ONE set and DEDUPLICATE by exact URL string equality.

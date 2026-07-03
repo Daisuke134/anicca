@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "PROP-006 and PROP-007 (verification-architecture.md lines 74-75) do not cover the failure mode described in FIND-005: neither test asserts WHAT post_url value the self-heal driver writes into its 'status:posted' ledger line, and PROP-007's synthetic new-format test case only exercises two DIFFERENT non-null URLs -- it never exercises a 'status:\"posted\"' line with post_url:null (the exact shape a count-only self-heal implementation would produce). As specified, a fully-compliant implementation could pass every listed proof obligation in this REV 4 verification architecture while still reintroducing count inflation via a null-post_url posted-line in monitor.sh's dedup set. This is a proof-obligation gap, not merely an implementation gap: the spec claims (verification-architecture.md Gate section, line 87) that Phase 3 adversary review 'confirms PROP-001..007 PASS' as the completeness bar for this feature's correctness -- but PROP-006/007 as written cannot catch the exact regression this feature exists to prevent (dedup count inflation) when it originates from the self-heal path specifically.",
+  "evidence": [
+    {
+      "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+      "lineRange": "74",
+      "snippet": "PROP-006 asserts only 'self-heal moves to posted/ + ledger line' -- no assertion on the ledger line's post_url field content."
+    },
+    {
+      "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+      "lineRange": "75",
+      "snippet": "PROP-007's synthetic new-format test: '1 status:\"posted\" line + 1 status:\"unverified\" line with DIFFERENT urls -> count == 1' -- no null-post_url posted-line case."
+    }
+  ],
+  "routeToPhase": "1b"
+}
