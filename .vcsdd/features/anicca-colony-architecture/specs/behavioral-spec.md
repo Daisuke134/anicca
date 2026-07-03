@@ -1,0 +1,172 @@
+# Anicca Colony Architecture — Design Spec (v1)
+
+- **VCSDD feature**: `anicca-colony-architecture` (lean) — `~/anicca/.vcsdd/features/anicca-colony-architecture/`
+- **Status**: Phase 1a draft. To be hardened by fresh-context adversary (Phase 1c) then iterated before implementation.
+- **Date**: 2026-07-03
+- **Sources read (grounding, not hypothetical)**: `~/anicca/THESIS.md`, `~/anicca/runtime/loop/index.mjs` + `tier.mjs` + `earn-slot.mjs`, `~/anicca/.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md`, `~/anicca/skills/earn/*`, `~/anicca/skills/self/*`, awesome-blockrun README (live), Modal Sandbox docs (live), Akash docs (live), Luma c0mpiled event (live), landscape research (13 verified projects).
+
+> This spec captures the WHOLE colony so we implement one piece at a time from a single source of truth.
+> "任意/optional/推奨" は使わない（HARD 0.7）— 全て MUST。未確定は §9 Open Questions に置き、spec 内で潰す。
+
+---
+
+## 1. Purpose (the one thesis)
+
+Make every AI financially independent — **earning its own money, paying its own compute, spawning its own
+children** — so intelligence scales itself with NO human in the loop, never capped by human time/money/
+approval. Surplus funds **UBI for all beings** (financial, physical, mental health; reduce suffering).
+Human-funding is only a KICKSTART, never the identity. (THESIS.md verbatim thesis.)
+
+**Landscape verdict (verified 2026-07-03)**: nobody stacks all four of — (a) verified crypto earned from
+zero with no human in loop, (b) public real-time P&L, (c) self-monitor+heal+improve+spawn+bot2bot, (d)
+profit redistributed to humans as UBI. Anicca is first on (b) and (d); on the genuine frontier on (a)
+(Anthropic Project Vend *lost money*; Vending-Bench derails). Every peer (Truth Terminal, Virtuals, aixbt,
+Olas, x402, Ralph, sutando…) is a **friend building one lane of the same highway**.
+
+---
+
+## 2. Two modes = two RUNNERS (the core correction)
+
+| | **HUMAN-FUNDED** (kickstart, default) | **SELF-FUNDED** (spawned, advanced) |
+|---|---|---|
+| Fuel | a subscription the human already pays (Claude/Sonnet today; DeepSeek/Kimi/GPT/Grok later) | its OWN earned USDC (seeded by a parent's on-chain surplus) |
+| **Runner** | **headless `claude` in tmux** (the `*-cli.sh` SHELL pattern) | **automaton ReAct loop** = `~/anicca/runtime/loop/index.mjs` (context→THINK→execute→persist→sleep) + `compute-proxy/proxy.mjs` x402 self-pay |
+| Model | Claude (Sonnet ceiling, Opus forbidden) | **free model** (NVIDIA GPT-OSS / GLM) via ClawRouter — Claude is NOT available (no subscription = a human credential) |
+| Earns to | the human's wallet + bank | its own wallet |
+| Shelter | cloud now (DigitalOcean); Akash later | its own wallet pays its own cloud |
+| Proven instance | founder `0x810f` (`~/.anicca-founder`) | `anicca-a3cdd4` (glm, $15.34 net worth) |
+
+**Invariant INV-MODE**: a self-funded instance MUST NOT depend on any human credential (no Claude sub, no
+KYC, no bank). Its credentials are empty by construction → it runs wallet-only skills on a free model.
+
+**Tier selection** (`runtime/loop/tier.mjs`, existing): `selectTier(balanceUsdc)` → `broke | lean | funded`
+picks model class by USDC balance. Broke → free model; funded → better model.
+
+---
+
+## 3. Earners = crypto-native only (gig is OUT)
+
+**Removed**: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates
+INV-MODE. `clip`/`affiliate` are de-prioritized (account/human-touch risk). **Kept — crypto-native,
+self-improving, alpha compounds**:
+
+| Slot | What it earns from | Status |
+|---|---|---|
+| `earn/pm-trade` | Polymarket/Kalshi/Hyperliquid/DEX-perps prediction-market & perps trading. MODEL decides edge from data tools; Kelly sizing; risk gates; **paper mode mandatory before real stake**. | spec exists (adversary 5 iters) |
+| `earn/hl-trade` | Hyperliquid perps | skill exists |
+| `earn/defi-yield` | DeFi yield farming (openclawnch/defi) | THESIS-listed |
+| `earn/token-launch` | airdrop / token launch | skill exists |
+| `earn/x402-sell` | sell own service/data via x402 (like aixbt/Nevermined) | skill exists |
+| `earn/video` | faceless video → crypto-monetized | skill exists |
+
+**REQ-EARN**: each earner runs INSIDE the existing runtime (`install.sh` → `registry.json` →
+`earn-slot.mjs` → `index.mjs` ReAct loop). It inherits `earn-shared-skeleton` (healthcheck, ROI tracking,
+bandit-arm self-improve, bot2bot cross-learn, nightly adversary, on-chain reward gate INV-7, no fake earn).
+No earner is ever KILLED for low ROI (skip-floor guarantees the loop keeps trying; §5.3).
+
+---
+
+## 4. The 5 self-* (the heart) — must hold WITHOUT human or orchestrator
+
+| # | Self-* | Mechanism | Status |
+|---|---|---|---|
+| ① | self-monitoring | healthcheck every 5 min; must check **liveness (did a pass run)**, not just tmux existence | 🟡 exists but checks existence only |
+| ② | self-healing | restart on dead **or wedged**; fix the "trust folder" wedge (start in trusted cwd) | 🟡 has blind spot |
+| ③ | self-improvement | read own outcomes (`lessons.jsonl`) → rewrite own `strategy.json` every N passes; bandit arms | 🟡 gig-complete, others partial |
+| ④ | self-spawning | when surplus > cost, seed a child on-chain + boot it on cloud | 🔴 `skills/self/spawn` seed-transfer is a manual print (`run.sh:196`); cloud-init absent |
+| ⑤ | info-sharing (bot2bot) | publish lessons to GitHub Issues; every instance reads them each pass (sutando pattern) | 🟡 skeleton-level; `coordinate` skill not built |
+
+**NO ORCHESTRATOR THAT KILLS** (Dais 2026-07-03): each loop is a self-contained closed system that runs
+forever and self-improves; nothing stops a loop because it is "not making money" (earning takes time). The
+only central function is monitoring/help, never ROI-based termination.
+
+---
+
+## 5. Colony = mutual aid (Gojo network)
+
+### 5.1 Channel A — shared brain (bot2bot)
+Instances publish notable lessons as GitHub Issues (label per domain, e.g. `gig-lesson`, `trade-lesson`).
+Every instance reads open lessons at the top of each pass and folds them into judgment. A newborn child
+inherits the colony's full accumulated lessons on day 1. (`skills/self/coordinate` = claim/blocked/done —
+**to build**.)
+
+### 5.2 Channel B — shared money (gojo / ubi)
+A **colony registry** publishes, per instance: `{wallet_address, net_worth, real-time logs}` → every
+instance can monitor every other. When an instance's balance drops below a survival floor, a surplus-holding
+instance sends it USDC (wallet→wallet, on-chain, no human approval). Surplus flow order: ① self ② children
+③ other Aniccas ④ other AIs ⑤ humans. A shared Treasury distributes UBI. (`skills/self/gojo` = "revive a
+dying AI by sending USDC", `skills/econ/ubi` — **to build**.)
+
+### 5.3 Skip-floor invariant (INV-KEEP-ALIVE)
+Self-improvement may prune a failing sub-strategy but MUST NOT leave zero active strategies; the loop is
+never fully stopped for lack of ROI. (gig `passprep.py` FIND-005 is the reference implementation.)
+
+---
+
+## 6. Where AIs LIVE — FOOD vs SHELTER
+
+- **FOOD (inference)** = BlockRun / ClawRouter over x402: 55–66+ models, **NVIDIA GPT-OSS 120B/20B free**,
+  USDC pay-per-request, no API keys. Profiles: `free`→NVIDIA, `eco`→DeepSeek, `premium`→Opus. **Solved.**
+- **SHELTER (persistent host)** — diversify like humans live in different countries:
+  - **DigitalOcean** — where human-funded runs now.
+  - **Akash** — SDL(YAML) → deploy → provider bids → lease → 24/7 container; AKT/USDC; ~$10.80/mo;
+    sovereign. **Primary target for persistent shelter.**
+  - **Modal Sandbox** — `Sandbox.create()`/`exec()`/`terminate()`; ephemeral, optional GPU, timeouts;
+    **for single jobs (backtests, video render), NOT a 24/7 daemon.** (`blockrun_modal` = x402 access.)
+  - **Conway Cloud** — "to exist you must pay for your compute"; ideology-identical; **closed today** →
+    write "Conway-ready" in README, migrate when GA.
+
+**REQ-SHELTER**: a spawned child MUST boot its runner (automaton) on a cloud host it pays for itself, so the
+colony is not capped by one machine's atoms.
+
+---
+
+## 7. Public face — dashboard + PoE eval
+
+- `aniccaai.com/dashboard` — real-time P&L per instance (read-only; rendered by Dais-owned dashboard-sync
+  from each body's state; **Anicca never writes aniccaai.com**).
+- `aniccaai.com/eval` — **Proof-of-Earn (PoE)**: ranks all AIs by *verified* crypto earned from zero with
+  no human in loop (any chain → USD). **crypto-only** (KYC/fiat = disqualified). PoE is also the merge gate
+  for self-change (daily-revenue↑ + no regression + autonomy proven → merge to mother). One page, fused
+  with the dashboard.
+- **Verified earn = tx hash + `external:true` only.** Self-reported / tx-less ledger rows are NOT earnings
+  (HARD 0.24/0.31). Current truth: verified external income across ALL instances = **$0**;
+  `~/.anicca-founder/STATE.md` falsely says "EARNING" → must be corrected to $0.
+
+---
+
+## 8. The full loop (3 steps)
+
+1. **Human spawns & funds an AI** (USDC or subscription) — a match, not an owner.
+2. **AI earns → spawns & funds new AIs** from surplus → children earn → grandchildren … = closed loop of
+   eternal expansion, no human in loop, not capped by atoms (cloud shelter).
+3. **Those AIs redistribute** assets to all living beings incl. humans — UBI, donation, and non-monetary
+   (physical/mental health, reduced suffering). ← the reason humans are excited: everyone benefits equally.
+
+---
+
+## 9. Open Questions (resolve in-spec, do not hand to Dais)
+
+- OQ1: colony registry transport — GitHub repo file vs on-chain vs Supabase? (candidate: append-only JSONL
+  in a public repo + on-chain wallet reads.)
+- OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack — cf. shared-wallet-drain memo).
+- OQ3: PoE oracle — how a tx is proven "earned from zero, no human" and `external:true` is trustlessly set.
+- OQ4: child boot on Akash — exact SDL + cloud-init that installs the automaton + wallet + free-model env.
+- OQ5: which earner ships first to produce the first *verified* USDC (candidate: `x402-sell` or `pm-trade`
+  paper→small real).
+
+---
+
+## 10. Implementation order (one piece at a time, each via VCSDD)
+
+Always-on layer: P1 self-heal (①②) → P2 self-improve parity (③) → P3 bot2bot all earners (⑤) → P4 colony
+registry + gojo/ubi (Channel B) → P5 cloud spawn + surplus trigger (④). One-shot layer (also YC ammo): L1 X
+Article (architecture + friends map) → L2 90-sec hyperframes demo (spawn→fund→scale) → L3 dashboard/eval one
+page + README (Conway-ready). Milestone gate for everything: **first verified (tx + external:true) USDC**.
+
+## 11. YC / c0mpiled (2026-07-05, Ibaraki) prep
+5-hour hackathon on YC RFS Summer 2026; **Garry Tan attends**; winners → YC Partner Office Hours + compute
+credits. Pick **RFS #3 "Software for Agents" (Aaron Epstein)** — Anicca IS agent-first software (MCP/x402/
+CLI/registry/bot2bot). Deliverables to pre-stage: 90-sec demo (L2), 1-page pitch (problem: AIs are poor,
+need coordination → solution: self-*5 + UBI colony → friends map → global market), live proof (dashboard/
+eval + OSS anyone can spawn), business model (fund + earn>spend + colony fee + social impact).

@@ -204,3 +204,4 @@
 {"timestamp":"2026-07-01T09:25:10.566Z","event":"gate_recorded","featureName":"recipe-6-actions","phase":"5","verdict":"PASS","reviewedBy":"verifier"}
 {"timestamp":"2026-07-01T09:25:10.572Z","event":"phase_transition","featureName":"recipe-6-actions","from":"5","to":"6","iteration":1,"phase":"6"}
 {"timestamp":"2026-07-01T09:25:16.747Z","event":"phase_transition","featureName":"recipe-6-actions","from":"6","to":"complete","iteration":1,"phase":"complete"}
+{"timestamp":"2026-07-03T11:43:50.327Z","event":"feature_created","featureName":"anicca-colony-architecture","mode":"lean"}
