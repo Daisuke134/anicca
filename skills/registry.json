@@ -98,19 +98,10 @@
    "track": "A",
    "dir": "skills/earn/pm-trade",
    "entrypoint": "run.sh",
-   "status": "live",
+   "status": "wiring",
    "owner": "pm-trade",
-   "spec": "2026-07-03-anicca-colony-architecture (design); impl Phase-3 in progress",
-   "summary": "CLOUD-portable Polymarket earn slot (wallet-only, no browser/KYC). PRIMARY strategy = momentum/latency (Binance BTC spot vs Polymarket 5min BTC up/down repricing lag; pure arb pair-cost is dead on the resting book, verified 0/70 all at $1.0010). Files: lib.py (pure Kelly/edge/settle_pnl) + momentum.py (latency edge) + decide.py (live wiring) + resolve.py (Binance outcome->pnl) + gate.py (real PM_PAPER_PASS from resolved ledger) + run.sh (DRY_RUN default, real order fail-closed). 29 tests GREEN (lib12+strategy12+resolve5); risk_gate wired. Money-safe: no signing/order code yet. Base=BlockRunAI/polymarket-agent."
-  },
-  "earn/defi-yield": {
-   "track": "A",
-   "dir": "skills/earn/defi-yield",
-   "entrypoint": "run.sh",
-   "status": "live",
-   "owner": "defi-yield",
-   "spec": "2026-07-03-anicca-colony-architecture (design)",
-   "summary": "CLOUD-portable DeFi-yield earn slot (wallet-only, no browser/KYC). lib.py pure pick_pool(battle-tested lending: aave-v3/spark/compound/morpho/fluid, min-TVL, prefer-safest)+size_supply(gas-reserve). decide-yield.py live DefiLlama+wallet balance->plan. DRY_RUN default; real Aave supply() gated (needs signer+Base ETH gas)=fail-closed. Verified: Base USDC=aave-v3 3.14%/$29M, plans $7.11 supply from founder $8.40. 6/6 tests. Money-safe."
+   "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W1",
+   "summary": "REWIRING (W1): run BlockRunAI/polymarket-agent AS-IS. The AGENT does its OWN analysis/sizing/execution; we only supply wallet 0x810f + a thin money-safe guard (dry-run/cap/kill-switch) + the loop. My hand-written momentum/Kelly strategy was DELETED (T0, §0.25 — I do not write the strategy). status=wiring until W1 lands (loop skips non-live)."
   },
   "earn/gig": {
    "track": "A",
