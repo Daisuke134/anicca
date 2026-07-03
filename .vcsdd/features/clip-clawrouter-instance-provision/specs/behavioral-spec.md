@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 4 (2ND CORRECTION: wallet work removed entirely)
+# Behavioral Spec — clip-clawrouter-instance-provision (Phase 1a) — REV 5 (post iteration-3 FAIL: dropped broken genesis-loop registry path, hardened REQ-103 port validation)
 
 ## ★★★ SCOPE PIVOT (Dais 2026-07-04 verbatim correction, mid-implementation) ★★★
 
@@ -156,33 +156,35 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
 
 ## In scope (REVISED per the pivot — wallet work REMOVED entirely per the 2nd correction)
 
-- **Register `ig-account-create` as a genuinely agent-invokable action** in
-  `~/anicca/skills/registry.json` (the SAME registry `earn/clip` is already in), so the ClawRouter
-  genesis loop's `activeSkillSlots` (derived from that registry via `liveSlotNames`) actually
-  OFFERS it as a pickable `run_skill` tool — closing the real, confirmed gap (zero registry entry
-  today).
+- ★ DROPPED (iteration-3 FIND-006, confirmed by direct code read): registering `ig-account-create`
+  in `~/anicca/skills/registry.json` for the ClawRouter genesis loop. `run-skill.mjs`'s
+  `resolveSkillPath()` hardcodes every slot's entrypoint as `<slot>/run.sh` and NEVER reads
+  `registry.slots[slot].entrypoint` (that field is read in exactly one place repo-wide,
+  `install.sh:123`, cosmetically). `ig-account-create` has no `run.sh` and lives entirely outside
+  `~/anicca/skills/`. A registry entry would therefore be inert — the genesis loop could "pick" the
+  slot but the spawn would 404. Writing a new `run.sh` wrapper to fake compatibility would mean
+  hardcoding `ig-account-create`'s inherently judgment-driven signup flow as brittle deterministic
+  code — contradicting both "no new signup code" and project memory on agent-driven browser
+  automation. ★
 - **Update claude-p's own onboarding instructions** (`clip-cli.sh`'s `STARTUP` cron-registration
-  prompt) to explicitly tell the agent: when `EARN_MODE=discover bash run.sh` reports no ready
-  account for its `ANICCA_INSTANCE`, the correct next action is to invoke `ig-account-create`
-  itself (with a fresh Gmail plus-address tag) — not to silently no-op forever. This is guidance IN
+  prompt — the ONLY mechanically-sound path: claude-p is a real, fully-capable
+  `claude --dangerously-skip-permissions` process with native Skill/Bash/Read tools, so it can
+  directly follow `ig-account-create`'s `SKILL.md` itself, no registry/wrapper needed) to
+  explicitly tell the agent: when `EARN_MODE=discover bash run.sh` reports no ready account for its
+  `ANICCA_INSTANCE`, the correct next action is to invoke `ig-account-create`'s proven flow itself
+  (with a fresh Gmail plus-address tag) — not to silently no-op forever. This is guidance IN
   NATURAL LANGUAGE (per HARD RULE #0 — the agent decides HOW/WHEN, this only tells it the action
   EXISTS and is appropriate here), not a hardcoded deterministic branch inside `run.sh` itself.
-- **The SAME onboarding update applies to the ClawRouter genesis loop's own skill catalog summary**
-  (`skillCatalog[name]` in `runtime/loop/index.mjs:110`, sourced from `registry.slots[name].summary`
-  — a real, existing field the loop already surfaces to the model) — the `earn/clip` registry
-  entry's own `summary` field (or a sibling note) should mention that a missing ready account is
-  resolved by invoking `ig-account-create`, so BOTH loops (human-funded and self-funded, sharing
-  the identical skill library per `feedback_real_axis_local_vs_cloud_zero_human_loop`) get the same
-  guidance from the same source of truth.
-- **A REAL, LIVE demonstration**: with the above wiring in place, trigger a REAL wake (of either
-  loop — whichever is more practically triggerable within this session) that currently has no
-  ready clip-earn account for a given `ANICCA_INSTANCE`, and confirm the agent — of its OWN
-  accord, reading the updated guidance, not following a hardcoded script — decides to invoke
-  `ig-account-create` and a REAL new Instagram account comes into existence as a result, then
-  completes REQ-103/104 (account-file provisioning + isolated browser login) for that real,
-  agent-created account. This is the load-bearing verification: the account must be created BY THE
-  LOOP'S OWN DECISION during a real wake, not by the main Claude Code session driving the browser
-  by hand.
+- **A REAL, LIVE demonstration, COMMITTED to claude-p's path** (★ iteration-3 FIND-007: "either
+  loop" was not an honest bar since only claude-p's path is mechanically real ★): with the above
+  onboarding update in place, trigger claude-p's own bounded, already-existing "run ONE pass now"
+  mechanism (part of `clip-cli.sh`'s `STARTUP` string already) against an `ANICCA_INSTANCE` with no
+  ready account, and confirm the agent — of its OWN accord, reading the updated guidance, not
+  following a hardcoded script — decides to invoke `ig-account-create`'s flow and a REAL new
+  Instagram account comes into existence as a result, then completes REQ-103/104 (VALIDATED
+  account-file provisioning + isolated browser login) for that real, agent-created account. This is
+  the load-bearing verification: the account must be created BY THE AGENT'S OWN DECISION during a
+  real, bounded claude-p pass, not by the main Claude Code session driving the browser by hand.
 - Verify (via real command execution, `ANICCA_INSTANCE=clawrouter`) that `run.sh`/`monitor.sh`
   correctly resolve to the NEW instance's isolated queue/posted/ledger/pending-verify paths, with
   ZERO overlap with claude-p's existing (unsuffixed) state (REQ-105, unchanged).
@@ -223,37 +225,63 @@ isolation mechanism — this is a PROVISIONING feature, not a new mechanism.
   (`~/.cloak/clawrouter-clip-solana.json`) has been DELETED from disk. This ID is retained
   (not renumbered) so the review history (iterations 1-3) that discussed REQ-101 remains
   traceable; it is simply void going forward.
-- **REQ-102 (agent-invokable account provisioning — ★ REDESIGNED per the 2026-07-04 scope pivot:
-  was "I create ONE account by hand", now "the LOOP decides to create it, using tooling this
-  requirement wires" ★)**: THE SYSTEM SHALL (a) add an `"ig-account-create"` entry to
-  `~/anicca/skills/registry.json` (same shape/fields as the existing `"earn/clip"` entry: `track`,
-  `dir`, `entrypoint` pointing at a real, invocable script, `status: "live"`, `owner`), so
-  `liveSlotNames(registry)` genuinely includes it in `activeSkillSlots` and the ClawRouter genesis
-  loop's tool-menu (`getToolDefinitions`/`buildUserMessage` in `runtime/loop/prompt.mjs`) offers it
-  as a real `run_skill({slot:"ig-account-create", args})` option; (b) update `clip-cli.sh`'s
-  `STARTUP` cron-registration string (claude-p's own onboarding prompt) to explicitly state: when
+- **REQ-102 (agent-invokable account provisioning — ★ REDESIGNED AGAIN per iteration-3 FIND-006/007
+  (BOTH blocking, both independently re-confirmed by direct code read before this fix): the
+  registry.json + ClawRouter-genesis-loop half of the previous design DOES NOT WORK MECHANICALLY.
+  `~/anicca/runtime/loop/run-skill.mjs`'s `resolveSkillPath(slot, config)` (confirmed by direct
+  read) is HARDCODED to `path.join(home, 'skills', slot.replace('/', path.sep), 'run.sh')` — it
+  NEVER reads `registry.slots[slot].entrypoint` at all (that field is read in exactly one place
+  repo-wide, `install.sh:123`, for a cosmetic "declared" status message only). So even with a
+  registry entry, the genesis loop would try to spawn
+  `$ANICCA_HOME/skills/ig-account-create/run.sh` — a file that does not exist (ig-account-create
+  has only `.py` scripts + a `SKILL.md`, lives entirely outside `~/anicca/skills/`, at
+  `~/.claude/skills/ig-account-create/` / `~/.agents/skills/ig-account-create/`) and never will,
+  because its own real signup flow (retry usernames until the "使用できません" error clears,
+  re-verify autocomplete-corrupted fields, read Gmail OTP possibly from spam) is INHERENTLY
+  judgment-driven — writing a deterministic `run.sh` wrapper around it would mean re-implementing
+  that judgment as brittle hardcoded logic, directly contradicting both this requirement's own "no
+  new signup code" claim and project memory
+  `feedback_warmup_two_layer_agentic_not_brittle_selectors`. THE GENESIS-LOOP PATH IS THEREFORE
+  DROPPED ENTIRELY from this requirement. ★)**: THE SYSTEM SHALL update `clip-cli.sh`'s `STARTUP`
+  cron-registration string (claude-p's own onboarding prompt — the ONLY mechanically-sound path:
+  claude-p is a real, fully-capable `claude --dangerously-skip-permissions` CLI process with native
+  Skill/Bash/Read tool access, so it can directly follow `ig-account-create`'s `SKILL.md`
+  instructions itself, no wrapper or registry entry needed) to explicitly state: when
   `EARN_MODE=discover bash run.sh` reports no ready account, the agent SHALL invoke
-  `ig-account-create` (with a fresh Gmail plus-address tag, e.g. `keiodaisuke+clawrouter<N>@gmail.com`)
-  to provision one itself, per that skill's proven zero-human flow, ALSO launch that account's own
-  isolated CloakBrowser instance (REQ-104) and write its own entry into `$CLIP_ACCTS` (REQ-103 —
-  `ig-account-create` itself has no knowledge of the clip-earn account registry; the STARTUP prompt
-  explicitly instructs the agent to also do this trivial file-write step, a deterministic action
-  well within the agent's existing Bash/file tools, not a new skill), THEN retry `run.sh`. THE
-  SYSTEM SHALL THEN, as the real verification bar (not a hand-driven substitute), trigger a REAL
-  wake of
-  EITHER loop that currently has no ready account, and CONFIRM (via the loop's own tool-call log /
-  cron output, not a mocked trace) that the agent itself chose to invoke `ig-account-create` and a
-  REAL new Instagram handle came into existence as a direct result — completing the same
-  "COMPLETE account" bar (profile icon + bio, per that skill's own contract) — with the resulting
-  handle provably distinct from `aiclipsvault`.
-- **REQ-103 (new account file)**: THE SYSTEM SHALL write
+  `ig-account-create`'s proven flow itself (with a fresh Gmail plus-address tag, e.g.
+  `keiodaisuke+clawrouter<N>@gmail.com`) to provision one, ALSO launch that account's own isolated
+  CloakBrowser instance (REQ-104) and write its own entry into `$CLIP_ACCTS` (REQ-103, INCLUDING
+  the validation REQ-103 now requires — see below), THEN retry `run.sh`. THE SYSTEM SHALL THEN, as
+  the real verification bar (not a hand-driven substitute), trigger claude-p's own bounded, existing
+  "run ONE pass now" mechanism (`clip-cli.sh`'s `STARTUP` string already says this — an immediate,
+  practically achievable trigger within this session, per iteration-3 FIND-007's correction that
+  "either loop" was not an honest bar since only claude-p's path is real) against an
+  `ANICCA_INSTANCE` with no ready account, and CONFIRM (via claude-p's own tool-call/cron output,
+  not a mocked trace) that the agent itself chose to invoke `ig-account-create` and a REAL new
+  Instagram handle came into existence as a direct result — completing the same "COMPLETE account"
+  bar (profile icon + bio, per that skill's own contract) — with the resulting handle provably
+  distinct from `aiclipsvault`.
+- **REQ-103 (new account file, WITH VALIDATION — ★ HARDENED per iteration-3 FIND-008, a real,
+  independently-confirmed danger: `run.sh:49`'s `x.get("port",9222)` SILENTLY DEFAULTS a missing
+  `"port"` key to 9222 — Dais's OWN daily-driver browser port — meaning an agent-written account
+  entry that forgets the `port` field would make `run.sh` attempt to drive Dais's personal browser
+  as if it were the clip-earn account's isolated instance, exactly the D-63 collision class this
+  spec already warns against elsewhere ★)**: THE SYSTEM SHALL write
   `~/.cloak/clip-accounts-clawrouter.json` (the exact path `_instance_paths.sh:16` resolves for
   `ANICCA_INSTANCE=clawrouter`) containing exactly one entry:
   `{"handle": "<new-handle>", "profile": "<new-profile-name>", "port": <new-port>, "lang": "en",
   "status": "ready"}`, where `<new-port>` is NEITHER `9222` (Dais's daily-driver) NOR `9223`
   (`@aiclipsvault`'s existing isolated instance) NOR any other port already bound by an existing
   CloakBrowser instance on this machine (checked via a real `lsof`/`curl` port-liveness scan at
-  implementation time, not assumed free).
+  implementation time, not assumed free). ★ THE SYSTEM SHALL ALSO add an explicit validation step —
+  either a small, genuinely deterministic (not a judgment call, so appropriate as a hardcoded check)
+  schema/sanity check run IMMEDIATELY after the agent writes this file (e.g. as an addition to
+  `clip-cli.sh`'s STARTUP instructions: "after writing the account file, verify it via `python3 -c
+  "import json; d=json.load(open(path))[0]; assert d['port'] not in (9222,); assert all(k in d for
+  k in ('handle','profile','port','lang','status'))"` before retrying `run.sh`" — OR a small,
+  reusable validation function added to `_instance_paths.sh` or a sibling script — such that a
+  malformed/incomplete entry (missing `port`, or accidentally `9222`) is caught and corrected BEFORE
+  `run.sh` ever reads it, never silently defaulting into Dais's daily-driver. ★
 - **REQ-104 (isolated browser launch + login)**: THE SYSTEM SHALL launch a NEW, dedicated
   CloakBrowser persistent-profile instance (reusing the existing pattern at
   `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` — a 14-line

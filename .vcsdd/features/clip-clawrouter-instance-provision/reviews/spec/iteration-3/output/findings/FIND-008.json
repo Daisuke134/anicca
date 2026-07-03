@@ -1,0 +1,14 @@
+{
+  "id": "FIND-008",
+  "severity": "blocking",
+  "dimension": "spec_fidelity",
+  "requirement": "REQ-103",
+  "title": "REQ-103's agent-written account-file entry has no validation contract, and the real consumer code silently falls back to Dais's own daily-driver port (9222) on a malformed entry",
+  "evidence": [
+    "`~/anicca/skills/earn/clip/run.sh:42-51`: `$ACCTS` (the file REQ-103 has the agent write) is parsed by an inline Python snippet: `try: a=json.load(open(sys.argv[1])) except Exception: a=[]`, then `for x in a: if x.get(\"status\")==\"ready\": print(x.get(\"handle\",\"\"), x.get(\"port\",9222)); break`.",
+    "This means: (a) ANY JSON parse failure silently degrades to an empty account list (no ready account found) rather than erroring loudly; (b) a well-formed-but-incomplete entry (e.g. missing the 'port' key, or a typo'd key name) silently defaults PORT to 9222 — which the spec itself documents (Ground Truth) as 'Dais's daily-driver' CloakBrowser port, and explicitly calls avoiding a port collision with 9222/9223 'the exact class of bug D-63 already diagnosed once this session'.",
+    "REQ-102(b) has the STARTUP prompt instruct the agent (via natural language, per HARD RULE #0) to 'also do this trivial file-write step' with no schema check described before or after the write; PROP-103 in the verification architecture only checks the file's shape POST HOC, as something a separate reviewing party runs, not as an in-loop safeguard the agent itself or run.sh enforces before consumption."
+  ],
+  "why_it_matters": "This is not a hypothetical edge case — the exact failure mode (an incomplete/malformed account entry causing a silent fallback to Dais's own daily-driver port) is the same CLASS of bug this project has already hit once (D-63) and the spec explicitly tries to avoid via 'a NEW port avoids CDP-endpoint collision'. An agent-authored file write, with no schema enforcement, is exactly where such an entry is most likely to go wrong (e.g. if the agent copies the wrong key name or omits a field under prompt-following pressure).",
+  "recommendation": "Add an explicit validation step to REQ-103: either (a) have the STARTUP prompt instruct the agent to run a one-line schema-check command immediately after writing the file (e.g. `python3 -c \"import json,sys; d=json.load(open(sys.argv[1])); assert len(d)==1 and all(k in d[0] for k in ('handle','profile','port','lang','status'))\" $CLIP_ACCTS`) and only proceed if it exits 0, or (b) harden `run.sh`'s own account-file parsing to reject (log an error and exit non-zero, not silently default) an entry missing 'port' or 'handle', rather than the current `.get(key, default)` silent-fallback pattern. Either is deterministic bookkeeping/validation, not a 'judgment' call, so it does not conflict with HARD RULE #0's model-decides principle."
+}

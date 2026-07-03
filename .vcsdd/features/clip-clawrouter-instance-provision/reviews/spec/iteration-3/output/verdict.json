@@ -1,0 +1,32 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-clawrouter-instance-provision",
+  "iteration": 3,
+  "reviewer": "fresh-context-adversary (independent file verification against real codebase, post scope-pivot)",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-008", "FIND-009"]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-007"]
+    }
+  },
+  "overall_verdict": "FAIL",
+  "summary": "The scope pivot's DIAGNOSIS is correct and independently confirmed: `grep -n '\"ig-account-create\"' ~/anicca/skills/registry.json` genuinely returns 0 matches, and clip-cli.sh's real STARTUP string (line 18) genuinely instructs claude-p to run run.sh/monitor.sh only, never mentioning self-provisioning an account. The gap Dais identified is real, not imagined. However, the PRESCRIBED FIX for the genesis-loop half of REQ-102(a) does not work, and this is not a nitpick — it is the same class of load-bearing mechanism error that failed iteration-1 (FIND-001, wrong env-propagation file). Direct evidence: `~/anicca/runtime/loop/run-skill.mjs:105-112`'s `resolveSkillPath()` hardcodes the entrypoint filename as the literal string 'run.sh' and never reads `registry.slots[slot].entrypoint` at all -- across the entire repo that field is read in exactly one place (`install.sh:123`), purely for a human-facing echo message about 'declared' (not-yet-live) slots, never for actual invocation. Separately, ig-account-create has no run.sh anywhere (its scripts/ dir holds only cdp.py/cdp_incognito.py/ig_dob.py/read_otp.py/read_sms_otp.py/setup_profile.py plus SKILL.md) and lives entirely outside ~/anicca/skills/ (canonical ~/.agents/skills/ig-account-create/, symlinked into ~/.claude/skills/ and ~/.openclaw/skills/ only). Most fundamentally, ig-account-create's own documented 'Proven flow' is an inherently agent-judgment-driven procedure (pick a username until an error message clears, re-verify a field corrupted by autocomplete, choose the visible listbox among several, read Gmail OTP that sometimes lands in spam) -- exactly the kind of task this project's own memory (`feedback_warmup_two_layer_agentic_not_brittle_selectors`) says must stay agent-driven, not a fire-and-forget script `runSkill()` can spawn non-interactively and wait ~120s for. Writing a deterministic run.sh wrapper to make it 'invocable' the same way earn/clip is would require substantial new brittle-automation code, directly contradicting REQ-102's own claim of zero new signup code. REQ-102(b) (updating claude-p's STARTUP prompt) is, by contrast, genuinely sound: claude-p is a real spawned `claude --dangerously-skip-permissions` CLI process (clip-cli.sh:33) with full native Skill/Read/Bash tool access, so it can actually follow ig-account-create's SKILL.md itself with real judgment, exactly as any Claude Code session can -- no registry, no run_skill, no new code needed. Because only one of the two loops can reach the described outcome, REQ-102's verification bar ('trigger a REAL wake of EITHER loop ... CONFIRM the agent itself chose to invoke ig-account-create') is not achievable as written and should commit explicitly to the claude-p path (FIND-007). Two further, more minor issues: REQ-103's agent-written account-file entry has no validation step, and the real consumer (run.sh:42-51) silently defaults a missing 'port' key to 9222 -- Dais's own daily-driver port, exactly the D-63 collision class this spec explicitly tries to avoid (FIND-008, treated as blocking given the safety stakes). And the wallet-exception reasoning cites the wrong function as precedent -- identity.mjs's assignIdentity only names an already-existing address, it does not generate a wallet -- while the actually-relevant precedent (self/spawn/scripts/gen-wallet.sh, already invoked fully autonomously by self/spawn/run.sh) shows wallet-gen has zero mechanical obstacle to being made agent-invoked too, unlike ig-account-create (FIND-009, informational, not blocking since the wallet already exists and works). REQ-104's citations (post_reel.py:117-118) and launch_clip_browser.py's existence were independently re-verified fresh and remain accurate -- the pivot rewrite did not corrupt REQ-104/105/106/107's already-PASSED technical content.",
+  "verified_accurate_claims": [
+    "grep -n '\"ig-account-create\"' ~/anicca/skills/registry.json -> 0 matches; only \"earn/clip\" (line 124) is present with track/dir/entrypoint/status/owner/spec/summary fields.",
+    "clip-cli.sh's real STARTUP string (line 18) genuinely says '...only posts when ... a ready logged-in clip account in ~/.cloak/clip-accounts.json exist...' and never mentions self-provisioning an account when none exists.",
+    "clip-cli.sh:33 genuinely spawns claude-p as `claude --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$STARTUP\"` -- a real Claude Code CLI process with native tool access, distinct from the ClawRouter genesis loop's run_skill/registry mechanism.",
+    "resolveSkillPath() in run-skill.mjs hardcodes filename 'run.sh' and base path $ANICCA_HOME/skills/<slot>/, never reading registry.slots[slot].entrypoint.",
+    "The only repo-wide consumer of registry .entrypoint is install.sh:123, for a status!=live human-facing message only.",
+    "~/.claude/skills/ig-account-create/scripts/ contains only .py files, no run.sh; canonical location ~/.agents/skills/ig-account-create/ is outside ~/anicca/skills/.",
+    "run.sh:42-51's account-file parser: try/except silently degrades to empty list on parse error; x.get('port', 9222) silently defaults to port 9222 on a missing key.",
+    "identity.mjs's assignIdentity(address, home) takes an existing address as input and only derives+persists a display name -- confirmed it does not generate any wallet keypair.",
+    "self/spawn/scripts/gen-wallet.sh is a real, deterministic, already-existing keypair generator invoked automatically by self/spawn/run.sh with zero human/dev involvement.",
+    "post_reel.py:117 is the ev() active-handle read, :118 is `if active != a.handle:` -- re-confirmed fresh, matches REQ-104's citation exactly, unchanged by the pivot rewrite.",
+    "~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py exists (522 bytes) -- re-confirmed fresh."
+  ],
+  "gate_pass": false
+}
