@@ -92,7 +92,27 @@ function buildLlmChat({ system, history = [], model = "llama-3.1-8b-instant" }) 
   return { model, stream: true, messages, temperature: 0.4 };
 }
 
+
+// Pure line builder for the agent's opening wake line (moved from the deleted voice-cheap.js).
+function buildWakeLine(event, route, urgency = "firm", lang = "ja") {
+  const title = (event && event.title) || "";
+  const place = (event && event.place) || "";
+  const line = (route && route.line) || "";
+  const dur = route && route.durationMin != null ? route.durationMin : null;
+  if (lang === "ja") {
+    const push = urgency === "harsh" ? "今すぐ出てください。" : "そろそろ出発しましょう。";
+    const via = line ? `${line}で` : "";
+    const mins = dur != null ? `${dur}分ほどです。` : "";
+    return `${title}へ、${place}まで${via}${mins}${push}`.replace(/\s+/g, " ").trim();
+  }
+  const push = urgency === "harsh" ? "Leave right now." : "Time to head out.";
+  const via = line ? `via ${line}` : "";
+  const mins = dur != null ? `about ${dur} min.` : "";
+  return `${title} at ${place}, ${via} ${mins} ${push}`.replace(/\s+/g, " ").trim();
+}
+
 module.exports = {
+  buildWakeLine,
   sentenceSplitter,
   energyVAD,
   decideBargeIn,
