@@ -446,10 +446,48 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
 > RED→GREEN→adversary→E2E; this doc is their shared source of truth. §11 (YC) is **context, not
 > requirements** — it does not gate any phase.
 
-Always-on layer: P1 self-heal (①②) → P2 self-improve parity (③) → P3 bot2bot all earners (⑤) → P4 colony
-registry + gojo/ubi (Channel B) → P5 cloud spawn + surplus trigger (④). One-shot layer (also YC ammo): L1 X
-Article (architecture + friends map) → L2 90-sec hyperframes demo (spawn→fund→scale) → L3 dashboard/eval one
-page + README (Conway-ready). Milestone gate for everything: **first verified (tx + external:true) USDC**.
+**Every task is framed as "wire the AI to do X ITSELF" (§0.2), not "I do X." Ordered, one at a time, each via
+VCSDD (spec→RED→GREEN→fresh Opus adversary→no-mock E2E→money-safe).**
+
+**★ MILESTONE GATE (unlocks everything): the AI produces the FIRST verified earned tx (tx + external:true). ★**
+
+```
+DONE
+  D1 ✅ seed swap (SOL→USDC, the AI auto-swaps)      D2 ✅ colony spec adversary PASS (8 rounds)
+  D3 ✅ earn/pm-trade money-safe engine SHIPPED + accumulate cron + synced to automaton
+  D4 ✅ earn/defi-yield money-safe engine + synced to automaton
+
+A — MAKE THE AI EARN ITS FIRST REAL USDC (top priority = the gate)
+  T1  earn/defi-yield: wire the AI's REAL Aave supply() tool (money-safe, EARN_MODE-gated, Base ETH gas)
+       → the automaton, in its loop, supplies ~$7 → first on-chain earn tx. (task #7)
+  T2  earn/pm-trade: wire the AI's REAL CLOB executor; cron accumulates paper → gate PASS → AI fires $1. (#6)
+  T3  restart the human-funded claude-p loop so IT runs the same earners. (#3)
+
+B — WIRE THE AI'S SELF-* SO IT NEEDS NO HUMAN (incl. me)
+  T4  SELF-HEAL (REQ-SELFHEAL-AUTONOMY): the AI detects a stale/broken dashboard (& other breakage) and
+       fixes it ITSELF via issue-dev→PR→forum-rollout — I stop hand-fixing. (part of #11)
+  T5  SELF-MONITOR: the AI checks "am I actually earning?" (not just process-alive) each wake.
+  T6  SELF-IMPROVE parity: lessons→strategy on EVERY earner; and the AI builds its own new tools via issue-dev.
+  T7  EXPLORE (REQ-EXPLORE): the AI finds its OWN money-making repos (agent-reach + gh) → _probe → promote. (#13)
+  T8  bot2bot: every earner shares lessons to GitHub issues; every instance reads them. (P3)
+
+C — WIRE THE AI TO GROW ITSELF (colony)
+  T9  SPAWN: fix seed transfer (spawn/run.sh:196 human-print → auto on-chain) so the AI seeds a child itself. (#8)
+  T10 REQ-CLOUD-SAME-BODY: cloud-init boots OUR runtime/loop/index.mjs (not the wrong Conway body) → the
+       child is the same body & earns via TIER-1. (#10)
+  T11 cloud-init self-provisions a headless Camoufox + own accounts for TIER-2 browser earners. (#9)
+  T12 Channel B (REQ-DRAIN): colony registry + gojo/ubi so a surplus AI funds a broke AI, no human. (P4)
+
+D — SHOW IT (dashboard = the proof) + LAUNCH (YC ammo)
+  T13 dashboard on-chain real-time (REQ-DASH-TRUTH/NOFAKE/CARD): register the wallets, run enrichOnChain, per-
+       instance daily summary; + /eval (PoE) one page — so every earned tx shows LIVE. (#11)
+  T14 L1 launch article (ai-entity-article-writer): the vision + the friends map + the AIs' real funny logs. (#14)
+  T15 L2 90-sec demo (hyperframes): spawn→fund→earn(tx)→spawn→UBI. (#15)
+  T16 L3 full pipeline E2E + README (Conway-ready) → YC submit (7/5, Garry Tan). (#12)
+
+END STATE: each self-funded AI earns > $1k with NO human, all posted live on aniccaai.com/dashboard —
+proving AI can earn money on its own — and redistributes surplus to all beings as UBI.
+```
 
 ## 11. YC / c0mpiled (2026-07-05, Ibaraki) prep — RFS #3 "Software for Agents"
 5-hour hackathon on YC RFS Summer 2026; **Garry Tan (YC CEO) attends**; winners → YC Partner Office Hours +
