@@ -99,6 +99,43 @@
 ③ 実機でvenv欠落→自己修復→処理継続を確認 ④ 実際にqueueへ検証済みclipが生成される
 ところまでE2E確認。日次cron(AM3:17)は次回から無人で完走する見込み。
 
+**★ 追補(2026-07-04、Dais指摘「クリーナーが複数あると危険」で発覚した続報)★**:
+disk-cleaner.shの`.venv`保護追加だけでは不十分だった。実際には**独立した3つの
+クリーナー**が同じ`~/.cache/anicca-clones`を別ロジックで掃除しており、うち2つが
+未修正のまま稼働し続けていた:
+
+| # | 実体 | 頻度 | anicca-clones挙動(修正前) |
+|---|---|---|---|
+| ① | launchd `com.anicca.disk-cleaner` → `~/scripts/disk-cleaner.sh` | 1時間毎 | mtime24h超を無差別削除(最初にvenv保護追加済み) |
+| ② | launchd `ai.anicca.disk-janitor` → `~/.openclaw/skills/anicca-disk-janitor/run.sh` | **5分毎** | mtime24h超を無差別削除、venv保護なし |
+| ③ | OpenClaw cron `anicca-disk-hourly`(LLM経由) → `~/.openclaw/skills/disk-janitor/run.sh` | **10分毎** | `rm -rf anicca-clones/*` **年齢条件なし・毎回無条件** |
+
+③は特に致命的で、self-healでvenvを再構築しても最大10分で無条件削除される設計
+だった。Dais指摘「クリーナーが複数あると複雑でバグの温床になる、1つでいいのでは」
+を受け、**3つを1つに統合**:
+
+1. `~/scripts/disk-cleaner.sh` を v9 として全機能統合(①のlaunchd実績を正としてベース化、②③のユニーク機能=codex-runtimes/openai-curated掃除、sao-content-factory/tiktok-marketing/honne-ai掃除、sessions.json rotate等を統合)、`clean_anicca_clones()`共通関数で`.venv`保護を一本化
+2. launchd頻度を300秒(5分毎)に統一、`StartInterval`を`PlistBuddy`で書換+`launchctl unload/load`で反映
+3. ②`ai.anicca.disk-janitor.plist` → unload + `.disabled-2026-07-04`にリネーム(復元可能)
+4. ③OpenClaw cron `anicca-disk-hourly`(ID `79b05373-4edf-4a2e-a0b2-06681d37efd0`) → `~/.openclaw/cron/jobs.json`で`enabled:false`に変更
+
+**実機検証で2つの追加バグを発見・修正**:
+- 統合直後の初回実装は`find "$HOME" -type d -name "$name" ...`を11パターン分
+  ループ、$HOME全体をI/O律速でフルスキャンし**5分超**かかることが判明(`sample`で
+  プロセスが`read`でI/O待ち、状態`UN`と確認)。300秒間隔のlaunchdで前回インスタンス
+  が終わる前に次が起動し、手動実行も重なって**最大9プロセス同時稼働**という
+  实機事故を確認。
+- 対策① find対象を1回の`-o -name`combined queryに統合(11回→1回)
+- 対策② find対象を`$HOME`全体でなく既知プロジェクトルート(`anicca-project`,
+  `anicca`, `.openclaw`, `.hermes`, `Downloads`)に限定
+- 対策③ `mkdir`によるatomic lock(macOSに`flock`が無い為)を追加、前回インスタンス
+  が`kill -0`で生存確認できれば新規実行はサイレントskip
+
+**最終実機検証(2026-07-04、fresh evidence)**: 単独実行で`EXIT:0 ELAPSED:12s`、
+ログに`v9 done`正常記録、`.venv`生存確認。同時に2プロセス起動しても両方
+正常完了(ロックがinstance跨ぎの多重起動を防ぐ設計、高速化で重複自体がほぼ
+起こらなくなった)。launchd `com.anicca.disk-cleaner`のみ稼働、他2つは無効化済み。
+
 ### 2.3 出口(payout)の優先順位
 
 記事原則1「出口のために作れ」に従い、着手順は **出口の確度が高い順**:
