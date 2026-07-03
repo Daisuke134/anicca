@@ -81,6 +81,33 @@ else
   echo "PASS: \$CAP's original content is byte-identical after a post attempt (read-only, per FIND-029)"
 fi
 
+# PROP-011 (2nd assertion, added after Phase-3 FIND-102 coverage gap): the mktemp-created TMPCAP
+# file must be deleted (via `trap ... EXIT`) regardless of outcome -- test all 3 explicitly.
+test_tmpcap_cleanup_for_outcome() {
+  local outcome_json="$1" label="$2"
+  local before after
+  before="$(ls "${TMPDIR:-/tmp}"/clip-cap-* 2>/dev/null | wc -l | tr -d ' ')"
+  local stub
+  stub="$(mktemp "${TMPDIR:-/tmp}/vcsdd-prop011-cleanup-poster-XXXXXX")"
+  { printf '#!/usr/bin/env python3\n'; printf "print('''%s''')\n" "$outcome_json"; } > "$stub"
+  rm -f "$CLIP_QUEUE"/*.mp4 "$CLIP_QUEUE"/*.txt 2>/dev/null
+  echo "fake mp4 bytes" > "$CLIP_QUEUE/testclip.mp4"
+  printf '%s' "$ORIG_CAP_CONTENT" > "$CLIP_QUEUE/testclip.txt"
+  EARN_MODE=execute CLIP_POSTER_OVERRIDE="$stub" CLIP_SELF_HEAL_OVERRIDE="/bin/true" \
+    CLIP_TEST_TID_OVERRIDE="fake-tid" CLIP_TEST_ACTIVE_OVERRIDE="testhandle" \
+    bash "$DIR/run.sh" >/dev/null 2>&1
+  after="$(ls "${TMPDIR:-/tmp}"/clip-cap-* 2>/dev/null | wc -l | tr -d ' ')"
+  rm -f "$stub"
+  if [ "$after" -gt "$before" ]; then
+    echo "FAIL: TMPCAP leaked for outcome=$label (before=$before after=$after)"; FAIL=1
+  else
+    echo "PASS: TMPCAP cleaned up for outcome=$label"
+  fi
+}
+test_tmpcap_cleanup_for_outcome '{"reached":"PUBLISHED","published":true,"outcome":"published","post_url":"https://x/CLEANUP1/"}' "published"
+test_tmpcap_cleanup_for_outcome '{"reached":"shared-unconfirmed","published":false,"outcome":"unverified","post_url":null,"before_hrefs":[]}' "unverified"
+test_tmpcap_cleanup_for_outcome '{"reached":"no-share-btn","published":false,"outcome":"failed","post_url":null}' "failed"
+
 rm -rf "$CLIP_QUEUE" "$CLIP_POSTED" "$CLIP_PENDING_VERIFY" "$CLIP_ACCTS" "$CLIP_LEDGER" "$POSTER_STUB" 2>/dev/null
 
 if [ "$FAIL" = 0 ]; then

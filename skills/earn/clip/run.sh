@@ -104,7 +104,11 @@ fi
 # below regardless of its own outcome (best-effort; failure here must not prevent a new post).
 SELF_HEAL="${CLIP_SELF_HEAL_OVERRIDE:-$(dirname "${BASH_SOURCE[0]}")/self_heal.py}"  # test hook (PROP-009), unset in production
 if [ -f "$SELF_HEAL" ]; then
-  CDP_PORT="$PORT" "$PY" "$SELF_HEAL" --handle "$HANDLE" --tid "$TID" --wake "$WAKE" 2>/dev/null || true
+  # FIXED after Phase 3 FIND-103: pass the paths run.sh ALREADY resolved via _instance_paths.sh
+  # above, instead of self_heal.py re-deriving ANICCA_INSTANCE suffixing independently in Python
+  # (a duplicate/drifting-logic risk with zero enforcement mechanism to keep the two in sync).
+  CDP_PORT="$PORT" "$PY" "$SELF_HEAL" --handle "$HANDLE" --tid "$TID" --wake "$WAKE" \
+    --pending-verify "$PENDING_VERIFY" --posted "$POSTED" --ledger "$LEDGER" 2>/dev/null || true
 fi
 
 if [ -z "${CLIP}" ]; then

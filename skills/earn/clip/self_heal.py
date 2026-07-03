@@ -122,14 +122,22 @@ if __name__ == "__main__":
     ap.add_argument("--handle", required=True)
     ap.add_argument("--tid", required=True)
     ap.add_argument("--wake", default=None)
+    # ★ FIXED after Phase 3 FIND-103 (structural_integrity): this wrapper used to independently
+    # re-derive the ANICCA_INSTANCE path-suffix convention in Python, duplicating the SINGLE
+    # canonical source (_instance_paths.sh) with no mechanism to keep the two in sync. run.sh has
+    # ALREADY resolved $CLIP_PENDING_VERIFY/$CLIP_POSTED/$CLIP_LEDGER via `source
+    # _instance_paths.sh` moments earlier in the SAME script — it now passes them here as explicit
+    # CLI args instead of this wrapper re-deriving them. NO duplicate/drifting path logic remains. ★
+    ap.add_argument("--pending-verify", required=True)
+    ap.add_argument("--posted", required=True)
+    ap.add_argument("--ledger", required=True)
     a = ap.parse_args()
     clip_dir = os.path.dirname(os.path.abspath(__file__))
     sys.path.insert(0, clip_dir)
-    _sfx = f"-{os.environ['ANICCA_INSTANCE']}" if os.environ.get("ANICCA_INSTANCE") else ""
     home = os.path.expanduser("~")
-    pending_verify = f"{home}/clips/pending-verify{_sfx}"
-    posted = f"{home}/clips/posted{_sfx}"
-    ledger = os.environ.get("EARN_LEDGER") or f"{home}/.openclaw/state/clip-earn-ledger{_sfx}.jsonl"
+    pending_verify = a.pending_verify
+    posted = a.posted
+    ledger = a.ledger
     poster_path = f"{home}/.claude/skills/ig-reels-poster/scripts/post_reel.py"
     cdp_dir = f"{home}/.claude/skills/ig-account-create/scripts"
     sys.path.insert(0, cdp_dir)
