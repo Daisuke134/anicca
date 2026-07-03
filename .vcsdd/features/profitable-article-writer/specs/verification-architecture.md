@@ -32,9 +32,9 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
 | PROP-10 | REQ-15 | every credential is read from the install's own env; registry slot gates rail activation; no Dais/shared account referenced | T1 | ✅ |
 | PROP-11 | REQ-8 | monetization mechanism is selected per rail via the native-rail map (note/Substack/X/Zenn/dev.to) | T1 | — |
 | PROP-12 | REQ-11 | account-absent → self-create(proven rail) OR flag-unavailable; never a loud failure / error-spew | T2 | — |
-| PROP-13 | REQ-7 | Mode B: when V0∧V0.5 PASS, the skill publishes DIRECTLY then distributes (autonomous path exercised, no human gate present) | T2 | ✅ |
+| PROP-13 | REQ-7 | Mode B: when V0∧V0.5 PASS, the skill publishes DIRECTLY then distributes (autonomous path exercised, no human gate present) — tested via the injected-seam (ARTICLE_TEST_FORCE_V0/V05) | T1 (wiring, injected seam; real gates no-mock at T2 via test-v0-real.sh/test-v05-real.sh) | ✅ |
 | PROP-14 | REQ-4b | no-viable-topic / insufficient-research → the wake SKIPS (no article emitted), verified with a stubbed empty-research input | T2 | — |
-| PROP-15 | REQ-14 | after 3 consecutive V0/V0.5 FAILs the wake ABORTS with no publish AND records the failure (ceiling test: stub 3 fails → assert abort + zero publish calls + a failure entry written to state) | T2 | ✅ |
+| PROP-15 | REQ-14 | after 3 consecutive V0/V0.5 FAILs the wake ABORTS with no publish AND records the failure (ceiling test: stub 3 fails via the injected seam → assert abort + zero publish calls + a failure entry written to state) | T1 (wiring, injected seam; real gates no-mock at T2 via test-v0-real.sh/test-v05-real.sh) | ✅ |
 | PROP-16 | REQ-17 | self-heal: inject a wake failure (crash/stuck-gate/expired-cred) → skill detects + attempts an autonomous fix + the loop SURVIVES (no crash); unrecoverable → rail quarantined + recorded; NO Opus/human call in the heal path | T2/T3 | ✅ |
 | PROP-17 | REQ-18 | self-improve: given a stubbed per-rail stats history (e.g. rail low convert) → the NEXT-wake choice CHANGES toward higher earn AND the change is recorded; the decision USES the stats (model-judged, not hardcoded, not ignored) | T2 | ✅ |
 

@@ -56,7 +56,7 @@ write_state() {
 # ---------------------------------------------------------------------------------------------------------
 json_escape() {
   local val="$1"
-  if command -v python3 >/dev/null 2>&1; then
+  if [ -z "${ARTICLE_FORCE_SED_ESCAPE:-}" ] && command -v python3 >/dev/null 2>&1; then
     python3 -c 'import json, sys; s = json.dumps(sys.argv[1]); print(s[1:-1])' "$val"
   else
     printf '%s' "$val" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g'
