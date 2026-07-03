@@ -2,7 +2,7 @@
 sprintNumber: 1
 feature: profitable-article-writer
 scope: "Sprint 1 = the orchestration skeleton, draft-first, verified by 10 required PROP oracle tests (incl. PROP-12). Real content-gen + real note publish + real earn are Sprint 2+, explicitly OUT of this contract."
-status: draft
+status: approved
 negotiationRound: 0
 criteria:
   - id: CRIT-001

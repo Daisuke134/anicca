@@ -1,0 +1,10 @@
+{
+  "id": "FIND-006",
+  "criterion": "CRIT-002",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "minor",
+  "location": "contracts/sprint-1.md:17 (CRIT-002 passThreshold) vs skills/profitable-article-writer/tests/test-prop6-modeA-draft.sh:16-17 vs skills/profitable-article-writer/run.sh:221-226",
+  "problem": "CRIT-002's passThreshold text requires: 'a notify record (URL+screenshot fields) is written'. run.sh:223-224 does write those fields into notify.json ('{\"draft_path\": ..., \"url\": \"pending-human-review\", \"screenshot\": \"pending-human-review\"}'). But tests/test-prop6-modeA-draft.sh:16-17 only asserts that notify_path is non-empty and that the file exists ([ -n \"$notify\" ] && [ -f \"$notify\" ]) -- it never greps the file for the 'url' or 'screenshot' keys the passThreshold explicitly names. If a future edit dropped either field from notify.json's body, this test would still report PASS. This is a test-thoroughness gap, not an implementation defect (the fields genuinely exist today) -- non-blocking for this round.",
+  "fix": "Add two assertions to tests/test-prop6-modeA-draft.sh after the notify-file-exists check: grep -q '\"url\"' \"$notify\" and grep -q '\"screenshot\"' \"$notify\", so the passThreshold's explicit field-presence claim is actually re-verifiable by the committed test suite."
+}

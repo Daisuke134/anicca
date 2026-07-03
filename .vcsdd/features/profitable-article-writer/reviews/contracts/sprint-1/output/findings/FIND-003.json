@@ -1,0 +1,10 @@
+{
+  "id": "FIND-003",
+  "criterion": "CRIT-004",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "major",
+  "location": "contracts/sprint-1.md:26-27 (CRIT-004 passThreshold) vs skills/profitable-article-writer/tests/test-prop1-no-model-literal.sh:1-28",
+  "problem": "CRIT-004's passThreshold explicitly demands: 'PROP-1 test proven non-vacuous (a draft containing 'claude-3-opus' fails it)'. Reading the actual test file top to bottom: it (1) greps the skill tree statically for forbidden literals, (2) runs a real wake in ARTICLE_TEST=1 mode with a clean template, (3) asserts the produced draft has 0 forbidden-literal hits. At no point does the test inject or construct a draft CONTAINING 'claude-3-opus' (or any forbidden literal) and assert the check FAILS on it. The only place this non-vacuousness demonstration appears is as narrative prose in evidence/sprint-1-green-phase.log ('ADVERSARIAL PROOF the fixed test is NOT vacuous ... dirty draft (\"...claude-3-opus...\") -> dhits=[1] -> assertion FAILS'), which is a one-time manual claim by 'the main agent', not a repeatable, automated assertion inside the test suite. If a future edit weakens the FORBIDDEN regex or the dhits computation, nothing in the committed test suite would catch the regression -- the exact test-quality failure mode ('tests that would pass even if a critical edge case were unhandled') this review is required to hunt for.",
+  "fix": "Add an explicit negative-case block to tests/test-prop1-no-model-literal.sh: write a synthetic draft file containing a forbidden literal (e.g. 'claude-3-opus') directly to a temp path and assert the same dhits/grep check reports >0 hits and treats it as a violation. Only then does CRIT-004's passThreshold description match what the test suite actually proves, and only then is the non-vacuousness claim re-verifiable by Phase 3 without trusting a log file's prose."
+}

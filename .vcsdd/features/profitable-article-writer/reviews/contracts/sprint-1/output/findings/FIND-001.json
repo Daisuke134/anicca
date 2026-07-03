@@ -1,0 +1,10 @@
+{
+  "id": "FIND-001",
+  "criterion": "COVERAGE",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "location": "specs/verification-architecture.md:55-56 (Sprint plan line) vs contracts/sprint-1.md:7-37 (criteria list) vs skills/profitable-article-writer/identity/accounts.sh:26-57",
+  "problem": "verification-architecture.md's Sprint-1 line explicitly scopes PROP-12 into this sprint: 'per-install identity scaffold (PROP-2,12)'. identity/accounts.sh:26-57 visibly implements the PROP-12 behavior (a self-create-or-flag branch keyed off <RAIL>_SELF_CREATE and PROVEN_SELF_CREATE_RAILS). Yet contracts/sprint-1.md has no CRIT that names or exercises PROP-12, and there is no tests/test-prop12-*.sh file (only 9 test files exist, matching CRIT-001..006's 9 named PROPs, exactly excluding PROP-12). The contract's 'OUT of Sprint 1' section (lines 63-65) lists what is explicitly deferred (real publish, real earn, distribution, daily loop, self-heal/improve) but never mentions PROP-12/REQ-11 self-create as deferred -- this is a silent coverage gap, not a declared scope decision. The asymmetry is sharpened by the fact that PROP-14 -- equally marked 'required: -' (not required) in the proof-obligations table -- IS covered by CRIT-003, so the exclusion of PROP-12 looks like an oversight rather than a principled choice.",
+  "fix": "Either (a) add a CRIT-007 pinned to PROP-12 with a passThreshold matching accounts.sh's actual self-create-or-flag behavior (e.g. 'account-absent + no proven self-create -> status=unavailable, rc=0, no loud failure/error-spew; SELF_CREATE=1 on a non-proven rail also degrades to unavailable, never aborts the wake') and require a tests/test-prop12-*.sh oracle before Phase 3 sign-off, or (b) explicitly add PROP-12/REQ-11 self-create to the contract's 'Explicitly OUT of Sprint 1' section with a stated reason (e.g. 'no rail has a proven self-create path yet, so PROP-12 reduces to the already-covered flag-unavailable path exercised incidentally by PROP-10's test'). Silence is not acceptable for a strict-mode sprint contract."
+}

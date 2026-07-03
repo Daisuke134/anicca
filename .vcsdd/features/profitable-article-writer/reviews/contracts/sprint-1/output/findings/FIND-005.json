@@ -1,0 +1,10 @@
+{
+  "id": "FIND-005",
+  "criterion": "N/A",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "location": "skills/profitable-article-writer/SKILL.md:73-77 vs .vcsdd/features/profitable-article-writer/evidence/sprint-1-green-phase.log:1-4,26-33 and skills/profitable-article-writer/{run.sh,gates/*.sh,identity/accounts.sh}",
+  "problem": "SKILL.md's Status section (lines 73-77) reads: 'Phase 2a (RED). Every script under this directory is an intentionally-unimplemented stub -- see the NOT_IMPLEMENTED marker each one prints.' This is stale and factually wrong at the current repo state: evidence/sprint-1-green-phase.log confirms '9/9 PROP oracle tests PASS with real orchestration logic (no fake-to-pass)' and every script reviewed (run.sh, gates/v0.sh, gates/v05.sh, gates/publish-gate.sh, identity/accounts.sh) contains real, non-stub control flow with no NOT_IMPLEMENTED marker anywhere. A Phase 3 reviewer or any downstream agent reading only SKILL.md (a reasonable first stop) would be actively misled into believing the skill is unimplemented RED-phase scaffolding.",
+  "fix": "Update SKILL.md's Status section to reflect the current phase (2c / Green-complete per state.json) and remove the stale NOT_IMPLEMENTED claim, or replace it with a phase-neutral pointer to state.json's currentPhase so it cannot drift out of sync again."
+}

@@ -15,6 +15,7 @@ draft="$(grep -oE '^draft_path: .*' "$T/STATE.md" 2>/dev/null | sed 's/^draft_pa
 ok "$([ -n "$draft" ] && [ -f "$draft" ] && echo 1 || echo 0)" "Mode A produced a draft artifact"
 notify="$(grep -oE '^notify_path: .*' "$T/STATE.md" 2>/dev/null | sed 's/^notify_path: //')"
 ok "$([ -n "$notify" ] && [ -f "$notify" ] && echo 1 || echo 0)" "Mode A wrote a notify record (URL + screenshot) for human review"
+ok "$([ -f "$notify" ] && grep -q '"url"' "$notify" && grep -q '"screenshot"' "$notify" && echo 1 || echo 0)" "Mode A notify record actually contains url + screenshot fields (CRIT-002)"
 ok "$([ ! -f "$T/state/PUBLISHED" ] && echo 1 || echo 0)" "Mode A NEVER publishes (no publish sentinel)"
 
 [ $fails -eq 0 ] && { echo "PASS — PROP-6 Mode A stops at draft + notify, never publishes"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

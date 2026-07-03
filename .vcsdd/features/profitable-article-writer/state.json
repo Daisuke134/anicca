@@ -498,9 +498,14 @@
       "humanVerdict": "PASS",
       "humanApproved": true,
       "humanApprovedAt": "2026-07-03T19:21:29.756Z"
+    },
+    "2c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-03T20:10:50.075Z",
+      "reviewedBy": "adversary"
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-03T19:49:00.497Z"
+  "updatedAt": "2026-07-03T20:10:50.076Z"
 }
