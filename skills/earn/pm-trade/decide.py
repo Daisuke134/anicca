@@ -24,15 +24,44 @@ def get(url):
     return json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20))
 
 
-def btc_window_return():
-    """Return-so-far of the current 5-min BTC candle on Binance: (last - open)/open. Returns None on failure
-    (network/parse) — the caller must treat None as 'cannot decide', never as 0 (FIND-006)."""
+def btc_window_return(window_start_ms=None):
+    """Return-so-far of the BTC 5-min candle. If window_start_ms is given, read the SAME 5-min window the
+    Polymarket market resolves on (FIND-002: align signal window with the market's window); else the latest.
+    (last - open)/open. Returns None on failure — caller treats None as 'cannot decide', never 0 (FIND-006)."""
     try:
-        k = get("https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1")
+        if window_start_ms is not None:
+            url = f"https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&startTime={int(window_start_ms)}&limit=1"
+        else:
+            url = "https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1"
+        k = get(url)
+        if not k:
+            return None
         o = float(k[0][1]); c = float(k[0][4])
         return (c - o) / o if o else 0.0
     except Exception:
         return None
+
+
+def _day_paper_loss(ledger):
+    """Today's realized paper LOSS (positive USDC) from resolved momentum rows — feeds lib.risk_gate."""
+    if not ledger.exists():
+        return 0.0
+    import datetime
+    midnight = int(datetime.datetime.now(datetime.timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0).timestamp())
+    loss = 0.0
+    for line in ledger.read_text().splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            r = json.loads(line)
+        except Exception:
+            continue
+        if r.get("src") == "momentum" and r.get("status") == "resolved" and int(r.get("resolved_ts", 0)) >= midnight:
+            pnl = float(r.get("pnl_usdc", 0.0))
+            if pnl < 0:
+                loss += -pnl
+    return loss
 
 
 def _iso_ms(s):
@@ -70,11 +99,11 @@ def find_btc_updown():
     """Find an active Polymarket BTC up/down market; return (yes_ask, no_ask, question, token_yes) or None."""
     # The 5-min BTC up/down series has low individual volume → find it by NEWEST (startDate desc),
     # not by volume (verified 2026-07-04: e.g. "Bitcoin Up or Down - July 4, 12:25PM-12:30PM ET").
-    for _ in range(1):
-        try:
-            ms = get("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=100&order=startDate&ascending=false")
-        except Exception:
-            continue
+    try:
+        ms = get("https://gamma-api.polymarket.com/markets?active=true&closed=false&limit=100&order=startDate&ascending=false")
+    except Exception:
+        return None
+    if True:
         for m in ms:
             ql = (m.get("question") or m.get("slug") or "").lower()
             if "bitcoin" not in ql and "btc" not in ql:
@@ -108,17 +137,17 @@ def _best_ask(tok):
 
 def main():
     bankroll = float(sys.argv[1]) if len(sys.argv) > 1 else float(os.getenv("PM_BANKROLL", "8"))
-    wr = btc_window_return()
-    if wr is None:
-        print(json.dumps({"slot": "earn/pm-trade", "decision": "no-data", "note": "binance BTC fetch failed"}))
-        return
     mk = find_btc_updown()
     if mk is None:
-        print(json.dumps({"slot": "earn/pm-trade", "decision": "no-market",
-                          "btc_window_return": round(wr, 6), "note": "no live BTC up/down market found"}))
+        print(json.dumps({"slot": "earn/pm-trade", "decision": "no-market", "note": "no live BTC up/down market found"}))
         return
     yes, no, question, tok = mk["yes"], mk["no"], mk["question"], mk["token_yes"]
     win_start, win_end = mk["window_start_ms"], mk["window_end_ms"]
+    # FIND-002: read the SAME 5-min window the market resolves on, so signal and settlement align.
+    wr = btc_window_return(win_start)
+    if wr is None:
+        print(json.dumps({"slot": "earn/pm-trade", "decision": "no-data", "note": "binance BTC fetch failed"}))
+        return
     side, price, prob = momentum.side_and_prob(wr, yes, no)
     if side is None:
         print(json.dumps({"slot": "earn/pm-trade", "decision": "skip", "btc_window_return": round(wr, 6),
@@ -127,8 +156,11 @@ def main():
     # momentum/latency edges are small + frequent (not big directional bets) -> lower min_edge than the
     # Kelly default 0.15; tune from paper results. gas_reserve keeps a buffer.
     MOM_MIN_EDGE = float(os.getenv("PM_MIN_EDGE", "0.03"))
-    stake = lib.position_size(prob, price, bankroll, min_edge=MOM_MIN_EDGE, gas_reserve=0.5)
-    decision = "paper-trade" if stake > 0 else "skip-below-min-edge"
+    raw_stake = lib.position_size(prob, price, bankroll, min_edge=MOM_MIN_EDGE, gas_reserve=0.5)
+    # FIND-001: WIRE risk_gate — clamp the stake to daily-loss/drawdown limits (paper loss tracked from ledger).
+    day_loss = _day_paper_loss(LEDGER)
+    stake = lib.risk_gate(raw_stake, bankroll, day_loss, bankroll, gas_reserve=0.5) if raw_stake > 0 else 0.0
+    decision = "paper-trade" if stake > 0 else ("risk-blocked" if raw_stake > 0 else "skip-below-min-edge")
     out = {"slot": "earn/pm-trade", "decision": decision, "side": side, "price": price,
            "est_prob": round(prob, 4), "edge": round(prob - price, 4), "stake_usdc": round(stake, 4),
            "btc_window_return": round(wr, 6), "bankroll": bankroll, "question": question}
