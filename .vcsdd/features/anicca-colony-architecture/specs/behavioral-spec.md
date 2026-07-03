@@ -218,7 +218,7 @@ A **colony registry** publishes, per instance: `{wallet_address, net_worth, real
 instance can monitor every other. When an instance's balance drops below a survival floor, a surplus-holding
 instance sends it USDC (wallet→wallet, on-chain). Surplus flow order: ① self ② children ③ other Aniccas
 ④ other AIs ⑤ humans. A shared Treasury distributes UBI. (`skills/self/gojo` = "revive a dying AI by sending
-USDC", `skills/econ/ubi` — **to build**.)
+USDC", `skills/economy/ubi` — registry stub `economy/ubi`, **to build**; NOT the separate already-built `skills/ubi/` human-funded outflow engine.)
 
 **REQ-DRAIN (安全制御 — was OQ2, now MUST, per adversary FIND-010):** an automatic send MUST enforce, with
 NO human in the loop: (a) **per-recipient rate-limit** = ≤1 gift per 24h survival-window; (b) **max-gift cap**
@@ -270,6 +270,13 @@ verifiable by chain + logs, no self-report.
   read stale (`2026-06-01`, `wallet:null`) → the enrich pipeline is not populating/deploying with OUR
   wallets; (b) register the two live wallets (founder `0x810f`, local `0xa3cdd4`) in the `instances` table so
   `enrichOnChain` reads them; (c) confirm the deploy runs it. No new chain-reader — reuse the existing one.
+  **REQ-DASH-NOFAKE (MUST):** the dashboard MUST reject/quarantine any leaderboard row whose wallet is NOT in
+  the signed `instances` registry — a real bot-pollution incident occurred (placeholder wallets `0xc0ffee…`/
+  `0xdead…`/`0xbeef…` with fabricated `$2140`/`$680` briefly appeared and were reverted, commit `2e02d475`
+  "delete bot pollution"). No number ships unless it traces to a registered wallet + on-chain read. (NB: the
+  currently-served `public/dashboard.json` is the CLEAN stale 2026-06-01 version — verified 659 lines, zero
+  placeholder rows; an adversary finding that read a transient polluted state was checked against disk and
+  rejected.)
 - **REQ-DASH-CARD (daily summary on the card, not email to users):** each instance card shows
   `[name][model][place][net_worth][scan-link]` PLUS a **daily-updated summary box** in the blank space to
   the right = "what this AI did today." Humans don't want earning notifications (the money isn't going to
