@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "2c",
+  "currentPhase": "3",
   "phaseHistory": [
     {
       "from": "init",
@@ -41,9 +41,17 @@
       "timestamp": "2026-07-03T19:43:37.543Z",
       "reason": "Green 9/9 PASS, markers fixed",
       "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-03T20:12:42.240Z",
+      "reason": "contract approved, verdict schema-valid PASS",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -507,5 +515,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-03T20:10:50.076Z"
+  "updatedAt": "2026-07-03T20:12:42.240Z"
 }

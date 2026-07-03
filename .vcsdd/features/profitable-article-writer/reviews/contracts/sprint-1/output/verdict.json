@@ -1,66 +1,19 @@
 {
-  "verdict": "PASS",
   "sprintNumber": 1,
   "feature": "profitable-article-writer",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-03T20:12:24Z",
+  "iteration": 1,
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-1.md",
-    "contractDigest": "21ec46b48da2dfa24894aab9192a8a9990fea2f2213685d0db1d4d261a53cd4d",
-    "iteration": 1
-  },
-  "round": 2,
-  "priorFindings": {
-    "FIND-001": "RESOLVED",
-    "FIND-002": "RESOLVED",
-    "FIND-003": "RESOLVED",
-    "FIND-004": "RESOLVED",
-    "FIND-005": "RESOLVED"
-  },
-  "priorFindingsEvidence": {
-    "FIND-001": "contracts/sprint-1.md:38-42,71-73 adds CRIT-007 pinned to PROP-12; skills/profitable-article-writer/tests/test-prop12-account-absent.sh (new) covers no-cred/no-self-create -> unavailable rc=0 no-error-spew, AND <RAIL>_SELF_CREATE=1-on-unproven-rail -> still-unavailable, plus a static no-shared-literal grep on identity/. tests/run-red.sh:12 globs test-*.sh so the new file is auto-included (evidence/sprint-1-green-phase.log:119: 'RED-PHASE SUMMARY: 10 test files, 10 PASS, 0 FAIL').",
-    "FIND-002": "skills/profitable-article-writer/gates/v05.sh:63-102 -- the real (non-test) path for criteria (a)-(d) no longer contains any keyword/regex decision over draft content. It writes a judgment-request artifact (lines 70-86) and reads the running agent's own verdict back from ARTICLE_JUDGE_V05_RESPONSE, parsing only the agent's own 'V05_CRIT_x: true' response lines (lines 92-100: grep -qE '^V05_CRIT_a: true$' etc -- parsing the agent's answer format, not judging draft content). Unset/missing response fails closed to false (lines 88-91, 101-102), matching contracts/sprint-1.md:12 CRIT-001 passThreshold and contracts/sprint-1.md:78-79's 'fail-closed-when-unwired, not a live model call' scope note. Criterion (e) remains a mechanical sentence-length computation (lines 104-122), explicitly allowed. Independently grepped gates/v05.sh for every 'grep' occurrence: only lines 96-99 (response-line parsing) and 106-107 (arithmetic e) -- zero draft-content keyword decisions for (a)-(d).",
-    "FIND-003": "skills/profitable-article-writer/tests/test-prop1-no-model-literal.sh:28-37 -- new negative-case block writes a synthetic draft containing 'claude-3-opus' to a temp file and asserts the SAME $FORBIDDEN grep reports >0 hits ('claude-[0-9a-z-]*[0-9]' matches the substring 'claude-3' inside 'claude-3-opus', dirty_hits=1). Now a repeatable automated assertion in the committed test file, not prose in a log.",
-    "FIND-004": "skills/profitable-article-writer/lib/config.sh:23 changed from an unconditional assignment to a conditional default (': \"${RECORD_EARN_USES_LLM:=0}\"'), so an environment override actually survives the source. skills/profitable-article-writer/tests/test-prop9-model-policy.sh:25-28 now injects RECORD_EARN_USES_LLM=1 before invoking run.sh's record_earn_only path and asserts rc!=0 and absence of the 'RECORD_EARN_NO_LLM: true' marker. Traced run.sh:56-63 against the new default: with RECORD_EARN_USES_LLM=1 in the environment, config.sh's conditional default leaves it at 1, run.sh's '\"${RECORD_EARN_USES_LLM:-1}\" = \"0\"' check is false, falls to the refusal branch, exit 1 -- the fail-closed branch is now genuinely reachable and tested.",
-    "FIND-005": "skills/profitable-article-writer/SKILL.md:73-81 -- Status section rewritten to point at state.json's currentPhase as canonical and describes the actual Phase-2c/real-implementation state ('every script under this directory is a real, non-stub implementation ... no NOT_IMPLEMENTED marker remains anywhere'). Grepped the full skill tree for NOT_IMPLEMENTED: zero hits in any script; the only remaining occurrence is a generic phase-description comment inside tests/run-red.sh:6 describing what RED phase means in general, not a current-state claim."
-  },
-  "criteria": {
-    "CRIT-001": "PASS",
-    "CRIT-002": "PASS",
-    "CRIT-003": "PASS",
-    "CRIT-004": "PASS",
-    "CRIT-005": "PASS",
-    "CRIT-006": "PASS",
-    "CRIT-007": "PASS"
-  },
-  "coverageCheck": {
-    "sprint1ScopedPropsPerVerificationArchitecture": ["PROP-1","PROP-2","PROP-3","PROP-5","PROP-6","PROP-9","PROP-10","PROP-12","PROP-14","PROP-15"],
-    "propsCoveredByAContractCriterion": ["PROP-1","PROP-2","PROP-3","PROP-5","PROP-6","PROP-9","PROP-10","PROP-12","PROP-14","PROP-15"],
-    "uncoveredProp": null,
-    "note": "PROP-12 gap from round 1 is closed by CRIT-007 + tests/test-prop12-account-absent.sh; every Sprint-1-scoped PROP now has exactly one pinned CRIT."
+    "contractDigest": "21ec46b48da2dfa24894aab9192a8a9990fea2f2213685d0db1d4d261a53cd4d"
   },
   "dimensions": [
-    {"name": "spec_fidelity", "verdict": "PASS", "findings": [], "evidence": [
-      {"type": "file", "location": "specs/verification-architecture.md:53-59 vs contracts/sprint-1.md:7-42", "description": "Sprint-1 plan scopes PROP-1,2,3,5,6,9,10,12,14,15; the 7 CRITs cover exactly this set, verified PROP-by-PROP."}
-    ]},
-    {"name": "edge_case_coverage", "verdict": "PASS", "findings": [], "evidence": [
-      {"type": "test-output", "location": "skills/profitable-article-writer/tests/test-prop14-topic-skip.sh, test-prop15-3round-abort.sh, test-prop12-account-absent.sh", "description": "no-viable-topic, insufficient-research, 3-round-abort, and account-absent-with/without-self-create-flag edge cases are each exercised with dynamic file-based assertions."}
-    ]},
-    {"name": "implementation_correctness", "verdict": "PASS", "findings": [], "evidence": [
-      {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh:63-137, lib/config.sh:23, run.sh:56-63", "description": "Traced the fail-closed publish wiring, the judge_v05 hook fail-closed-when-unwired path, and the RECORD_EARN_USES_LLM conditional-default reachability line-by-line; all match their pinned CRIT passThresholds."}
-    ]},
-    {"name": "structural_integrity", "verdict": "PASS", "findings": [], "evidence": [
-      {"type": "file", "location": "contracts/sprint-1.md:7-42 (7 CRITs, weights 0.18+0.13+0.13+0.13+0.13+0.18+0.12=1.00)", "description": "Every required Sprint-1 PROP now has exactly one pinned CRIT; no overlapping/duplicate criteria; weights sum to 1.0."}
-    ]},
-    {"name": "verification_readiness", "verdict": "PASS", "findings": ["FIND-006"], "evidence": [
-      {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh:12,66-69,96-99", "description": "The purity boundary is now genuinely honored for V0.5 (a)-(d): the script emits a judgment-request artifact and parses only the agent's own verdict-line format back, never judging draft content itself via regex; readability (e) stays declared arithmetic, matching the purity boundary map + REQ-5(e)."}
-    ]}
-  ],
-  "convergenceSignals": {
-    "findingCount": 1,
-    "allCriteriaEvaluated": true,
-    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007"],
-    "duplicateFindings": []
-  },
-  "findingsCount": 1,
-  "summary": "All 5 round-1 findings are genuinely resolved with concrete file:line evidence, independently re-derived by full-file reads + line-by-line control-flow tracing of lib/config.sh, run.sh, gates/v05.sh, gates/publish-gate.sh, and identity/accounts.sh against every pinned test file (this reviewer has no Bash/execution tool -- verification is by static trace, disk-only, per the adversary's read-only role). FIND-002 (blocker) is genuinely closed: gates/v05.sh's real path no longer decides V0.5 (a)-(d) via keyword/regex over draft content -- it delegates to a documented judge_v05 request/response hook and fails closed to false when unwired, honestly scoped as a Sprint-2 live-wiring seam by contracts/sprint-1.md's own 'OUT of Sprint 1' section; only (e) stays mechanical arithmetic, as REQ-5(e) requires. FIND-003 is closed: test-prop1 now has a real negative-case assertion (a dirty draft containing 'claude-3-opus' is asserted to score dhits>0 with the SAME grep). FIND-004 is closed: lib/config.sh's RECORD_EARN_USES_LLM default is now conditional (': ${VAR:=0}'), making the fail-closed-on-flip branch in run.sh genuinely reachable, and test-prop9 injects RECORD_EARN_USES_LLM=1 and asserts rc!=0 + absence of the no-LLM marker. FIND-001 is closed: CRIT-007 + tests/test-prop12-account-absent.sh close the PROP-12 coverage gap, auto-picked-up by run-red.sh's glob (10/10 test files). FIND-005 is closed: SKILL.md's Status section now points at state.json's currentPhase and truthfully describes the non-stub state; zero NOT_IMPLEMENTED markers remain in any script. All 10 required Sprint-1 PROPs (1,2,3,5,6,9,10,12,14,15) have exactly one pinned CRIT each; CRIT weights sum to 1.00; the 'Explicitly OUT of Sprint 1' section is honest and consistent with the reviewed source tree (no real publish/earn/distribution/judge_v05-live-call code exists anywhere reviewed). One new non-blocking minor observation logged as FIND-006: CRIT-002's passThreshold text asserts the notify record has 'URL+screenshot fields' but tests/test-prop6-modeA-draft.sh only checks the notify_path file's existence, not its field contents -- the fields DO exist in run.sh's actual notify.json emission (run.sh:223-224), so this is a test-thoroughness gap, not an implementation defect, and does not block Phase 3 sign-off."
+    {"name":"spec_fidelity","verdict":"PASS","findings":[],"evidence":[{"type":"file","location":"contracts/sprint-1.md","description":"7 CRIT align with the specs; all 10 required Sprint-1 PROPs (1,2,3,5,6,9,10,12,14,15) each pinned to exactly one CRIT; OUT-of-Sprint-1 scope honest (no real publish/earn code exists)"}]},
+    {"name":"edge_case_coverage","verdict":"PASS","findings":[],"evidence":[{"type":"file","location":"skills/profitable-article-writer/tests/test-prop15-3round-abort.sh","description":"3-round abort+record (PROP-15), no-topic skip (PROP-14), account-absent self-create-or-flag (PROP-12/test-prop12) all covered"}]},
+    {"name":"implementation_correctness","verdict":"PASS","findings":[],"evidence":[{"type":"file","location":"skills/profitable-article-writer/gates/v05.sh:63-102","description":"fail-closed publish only on both-PASS; V0.5 (a)-(d) model-judged via judge_v05 hook (no draft regex), (e) arithmetic; config flip fail-closed reachable+tested (test-prop9)"}]},
+    {"name":"structural_integrity","verdict":"PASS","findings":[],"evidence":[{"type":"file","location":"skills/profitable-article-writer/identity/accounts.sh","description":"model-agnostic (no provider/model literal; PROP-1 negative-case proven), no external run (PROP-3), per-install creds only + no shared/Dais literal, Mode-B no human gate"}]},
+    {"name":"verification_readiness","verdict":"PASS","findings":[],"evidence":[{"type":"file","location":"skills/profitable-article-writer/tests/run-red.sh","description":"10/10 oracle tests green with real logic; PROP-1 non-vacuous asserted; notify field content asserted (FIND-006 closed)"}]}
+  ]
 }
