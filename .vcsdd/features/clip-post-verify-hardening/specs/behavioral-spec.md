@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 9 (post iteration-8 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 10 (post iteration-9 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -131,6 +131,16 @@ or duplicate a clip).
   and `post_url`(str|None) keys remain unchanged and are set consistently with `outcome`
   (`outcome=="published"` implies `published==True` and `post_url` is the confirmed URL; both other
   outcomes imply `published==False`).
+  ★ FIXED after iteration-9 FIND-021 (a real data-plumbing gap: `before["hrefs"]` was computed inside
+  `post_reel.py` but never returned to its caller, so `run.sh` had no source for REQ-006's sidecar
+  write) ★: WHENEVER `outcome=="unverified"`, `post_reel.py`'s output JSON SHALL ALSO include
+  `res["before_hrefs"] = before["hrefs"]` (the exact stabilized list from REQ-001, already computed and
+  in scope at that point in the function — no extra browser work, just also assigning it into `res`
+  before printing). `run.sh` reads `d.get("before_hrefs")` from this JSON for REQ-006's sidecar write.
+  The clip's caption text does NOT need to come from `post_reel.py` at all — `run.sh` already has the
+  caption file path in hand (it is the `--caption-file` argument `run.sh` itself passes to
+  `post_reel.py`, per the existing `POSTER ... --caption-file "$CAP"` call), so `run.sh` reads
+  `$CAP`'s content directly for the sidecar's `"caption"` field — no new plumbing needed for that part.
 - **REQ-005**: WHEN `run.sh` observes `outcome=="published"`, THE SYSTEM SHALL append a ledger line with
   `"status":"posted"` (in addition to keeping the existing line shape) and move the clip file to `posted/`
   — unchanged from current behavior except for the added `status` field.
@@ -210,9 +220,23 @@ or duplicate a clip).
      `cdp.insert_text` during the composer flow — no extra work, persist what's already in hand>"}`.
      For the ONE clip being processed this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
      `new_hrefs = stabilized_reels_set - set(sidecar["before_hrefs"])` (a real set difference). THEN, FOR
-     EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and read
-     its actual caption text from the live page; compare it EXACTLY to `sidecar["caption"]`. IF EXACTLY
-     ONE href's live caption matches, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
+     EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and
+     extract its live caption text — CONCRETE METHOD (FIXED after iteration-9 FIND-022, which correctly
+     flagged that exact full-string match is fragile against IG's real display behavior — truncation via
+     a "…more" toggle on long captions, a leading `@handle` prefix IG renders alongside the caption, and
+     minor whitespace/newline differences): read `document.body.innerText` on the reel's permalink page
+     (the same broad text-scan style `post_reel.py` already uses elsewhere, e.g. the account-guard check
+     at `:105` — no rigid caption-specific selector, which would be brittle against IG's frequently-
+     changing DOM). Compute `match_key` = the sidecar's recorded caption, whitespace-normalized (collapse
+     runs of whitespace to a single space, trim), truncated to its FIRST 40 CHARACTERS (or the full
+     string if shorter — 40 chars reliably precedes where IG's "…more" truncation kicks in for reel
+     captions, and avoids relying on hashtag-block text which IG is more likely to reorder/truncate
+     first). A candidate href's caption IS CONSIDERED A MATCH if `match_key` (whitespace-normalized)
+     appears as a SUBSTRING anywhere in that page's whitespace-normalized `innerText` — a prefix/substring
+     containment check, NOT full-string equality, specifically so IG's own truncation of the DISPLAYED
+     caption never causes a false negative for the clip's own real post (the first 40 characters are
+     always rendered even in the truncated/"…more"-collapsed view). IF EXACTLY ONE href's page contains
+     the `match_key` substring, THE SYSTEM SHALL treat it as now-confirmed: move the clip to
      `$CLIP_POSTED`, delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH
      `"post_url"` SET TO THAT MATCHED URL (never `null` — a `status:"posted"` ledger line MUST always
      carry a real, non-null, CONTENT-VERIFIED `post_url`, per REQ-009's step-1 guard below). IF ZERO hrefs

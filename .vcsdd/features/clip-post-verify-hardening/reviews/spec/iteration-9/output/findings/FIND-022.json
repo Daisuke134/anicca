@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-022",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The single riskiest NEW mechanism in REV9 -- reading a LIVE, already-rendered Instagram caption from the DOM and comparing it EXACTLY (behavioral-spec.md:214, 'compare it EXACTLY to sidecar[\"caption\"]') to the sidecar's recorded caption -- has zero specified DOM-extraction method (no selector, no textContent-vs-innerText decision, no rule for stripping the username IG prefixes onto a caption on a reel/post page, no rule for expanding IG's well-known '...more' truncation toggle on long captions before reading text, no whitespace/newline normalization rule) and ZERO live-E2E coverage. PROP-008, the only Tier-3 live proof obligation, exercises only the direct-success posting path (post count +1, URL reachable) -- it never drives the unverified-to-self-heal-to-caption-match path at all. PROP-006(a)/(b)'s tests stub the caption-fetch result as an already-extracted plain string, so the one genuinely risky operation (extracting exact caption text from IG's live rendered page) is never exercised end-to-end anywhere in the verification plan. Given the caption is read from a file with only .strip() applied (post_reel.py:86) and then inserted via cdp.insert_text (post_reel.py:159), while IG's live rendering visibly prefixes the caption with the account's own username and truncates long captions behind '...more', an exact-match comparison against the visible DOM text -- absent an explicit extraction spec -- would very plausibly NEVER match even for the clip's own genuine post, converting FIND-018's rare misattribution bug into a much MORE common false negative: the self-heal path silently never confirms real posts, and per REQ-008 step 6's own framing this looks identical to 'genuinely never published' -- an unbounded stall for every real clip, not just the collision edge case the spec explicitly accepts as a residual risk.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "211-227",
+    "snippet": "navigate to that reel's URL and read its actual caption text from the live page; compare it EXACTLY to sidecar[\"caption\"] -- no selector, no username-stripping rule, no truncation-expansion rule specified anywhere in behavioral-spec.md or verification-architecture.md"
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "83",
+    "snippet": "PROP-008's live E2E only asserts 'account's post count increased by exactly 1 and the new URL is reachable with video content' -- never exercises the self-heal caption-match mechanism against a real IG page"
+  },
+  "routeToPhase": "1a"
+}

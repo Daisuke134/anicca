@@ -1,0 +1,55 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 9,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-018 (iteration-8, pure count/URL-diffing is unsound -- an unrelated post landing on any later wake gets silently misattributed to a stuck clip)",
+      "status": "FIXED",
+      "note": "REQ-008 step 6's redesign (behavioral-spec.md lines 196-233) now requires a per-href LIVE CAPTION fetch + exact-match compare against the sidecar's recorded caption for every element of new_hrefs, confirming ONLY when exactly one href's live caption matches. Hand-traced the exact FIND-018 counter-example: an unrelated post lands via the independent new-content pipeline, producing new_hrefs=[unrelated_href]; its live caption will differ from sidecar['caption'] (captions are per-clip and dynamic per the ground-truth section), so select_confirmed_href correctly returns None and the clip stays in $CLIP_PENDING_VERIFY rather than being misattributed. The logical structure of this fix is sound and closes FIND-018 as originally traced. However, this same redesign introduces two NEW critical gaps (FIND-021, FIND-022 below) that must be resolved before this closure can be trusted operationally."
+    },
+    {
+      "priorFinding": "FIND-019 (iteration-8, no test catches the FIND-018 misattribution)",
+      "status": "FIXED",
+      "note": "verification-architecture.md PROP-006(b) (line 80) now concretely specifies the exact regression scenario: seed the sidecar, stub a candidate href belonging to an unrelated post, stub its live-caption-fetch to return a DIFFERENT caption text, and assert select_confirmed_href returns None + the clip stays pending + no ledger line + sidecar not deleted. This is a precise, implementable test for the driver-level logic. Note: this only tests the pure decision function and the driver's plumbing around an already-extracted caption string -- it does NOT test the actual browser-side caption extraction, which is the subject of NEW FIND-022."
+    },
+    {
+      "priorFinding": "FIND-020 (iteration-8, missing-sidecar placeholder content unspecified)",
+      "status": "FIXED",
+      "note": "REQ-008 step 3 (behavioral-spec.md lines 182-189) now concretely specifies: no placeholder is ever written; the clip is treated as permanently inconclusive; round-robin ordering no longer depends on the sidecar at all (moved to the clip file's own mtime, step 2). PROP-006(c) (verification-architecture.md line 80) specifies concrete tests for both a missing sidecar file and a corrupt/invalid-JSON sidecar, asserting no placeholder, no crash, no clip deletion, and clip-file mtime touched. This is precise enough for a builder to implement without guessing."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-021"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:88-91", "description": "confirmed run.sh's ONLY access to post_reel.py's output is parsing post_url from stdout JSON -- no before_hrefs field is ever read or available"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:29-58", "description": "confirmed the REV9 refactor pseudocode keeps 'before' as a bare local Python variable, never assigned into the printed res dict"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:86,159", "description": "confirmed caption is read via open(...).read().strip() and inserted via cdp.insert_text -- caption plumbing to run.sh is fine (run.sh already owns $CAP), but before_hrefs plumbing is not"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-022", "FIND-023"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:83", "description": "confirmed PROP-008 (the only Tier-3 live proof obligation) never exercises the self-heal caption-match path, only the direct-success posting path"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:86-88", "description": "confirmed select_confirmed_href is omitted from the Tier-1 pure-function unit-test legend despite being declared PURE in the purity-boundary table (line 21)"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:80", "description": "confirmed PROP-006 has no test for the 'more than one caption match' branch of select_confirmed_href's own documented contract"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

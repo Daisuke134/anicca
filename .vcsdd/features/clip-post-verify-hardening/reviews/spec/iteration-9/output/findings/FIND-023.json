@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-023",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "select_confirmed_href's own explicit contract (behavioral-spec.md:218-221: 'OR MORE THAN ONE href matches ... do NOT guess') has no dedicated test anywhere. PROP-006 only covers the 0-match case ((b), different caption) and the 1-match case ((a), matching caption); there is no test asserting that when TWO OR MORE candidate hrefs' live captions both match expected_caption, the function returns None rather than arbitrarily picking one. This is the exact branch where a wrong implementation choice (e.g. `next((h for h in candidates if captions[h]==expected), None)` picking the FIRST match instead of enforcing exactly-one) would silently reintroduce FIND-018-class misattribution. Additionally, select_confirmed_href is declared PURE in the purity-boundary table (verification-architecture.md:21) but is conspicuously absent from the Tier-1 pure-function legend's explicit list (verification-architecture.md:86-88: '_reads_stable, stabilize_reads, diff_new_href, classify_outcome, the monitor counting function') -- it has no dedicated isolated unit test at all, only incidental coverage embedded in PROP-006's integration-level driver tests.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "80, 86-88",
+    "snippet": "PROP-006(a)/(b) cover exactly-one-match and zero-match only; Tier-1 legend (lines 86-88) omits select_confirmed_href from the explicit pure-function unit-test list despite line 21 declaring it PURE"
+  },
+  "routeToPhase": "1b"
+}

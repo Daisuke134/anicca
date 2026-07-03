@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-021",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-008 step 6 (behavioral-spec.md lines 206-210) requires run.sh to write a sidecar containing the STABILIZED before-hrefs snapshot ('...stabilized before[\"hrefs\"]...') that post_reel.py captures internally before the composer opens. But nothing in REQ-004's outcome-JSON schema, REQ-006's unverified-routing text, or PROP-005's canonical stub JSON shapes ever specifies post_reel.py returning that list to run.sh. The REV9 refactor pseudocode itself (verification-architecture.md:29-58) stores it as a bare local variable `before = stabilize_reads(...)` and never assigns it into `res` (the dict actually printed as JSON) -- confirmed by reading the pseudocode end-to-end, and confirmed against the REAL run.sh (/Users/anicca/anicca/skills/earn/clip/run.sh:88-91), which only ever parses `post_url` out of post_reel.py's stdout JSON. A builder implementing REQ-008 step 6 literally has no data source for the sidecar's `before_hrefs` field. The one plausible workaround -- run.sh separately invoking `--verify-only` AFTER the failed/unconfirmed attempt to get a 'before' snapshot -- is actively WRONG: if the clip in fact landed but wasn't confirmed, that post-hoc snapshot would already include this clip's own href, making the self-heal diff blind to it forever (a permanent false negative). This is precisely the class of correctness gap the feature exists to eliminate, reintroduced at the JSON-schema handoff boundary between post_reel.py and run.sh.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "29-58, 79",
+    "snippet": "before = stabilize_reads(lambda: read_hrefs(tid, handle))   # local var, never put into res\\n...\\nres.update(outcome)   # only classify_outcome's keys ever reach res\\n-- PROP-005 stub for unverified: {\"reached\":\"shared-unconfirmed\",\"published\":false,\"outcome\":\"unverified\",\"post_url\":null}  (no before_hrefs field)"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/earn/clip/run.sh",
+    "lineRange": "88-91",
+    "snippet": "RES=\"$(... $POSTER ... | tail -1)\"\\nURL=\"$(printf '%s' \"$RES\" | ... print(d.get(\"post_url\") or \"\"))\"\\n# run.sh parses ONLY post_url from post_reel.py's stdout -- no other field is read"
+  },
+  "routeToPhase": "1a"
+}
