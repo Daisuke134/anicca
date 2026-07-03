@@ -278,6 +278,7 @@ Every wallet on Base is public at `basescan.org/address/<addr>`, so the treasury
 - **Life Manager (separate project):** <https://github.com/Daisuke134/life-manager>
 - **Repository (this self-host):** <https://github.com/Daisuke134/anicca>
 - **Soul / behaviour policy:** [`SOUL.md`](SOUL.md) · [`THESIS.md`](THESIS.md)
+- **Earn loops (human-funded claude-p + self-funded ClawRouter, full inventory):** [`docs/EARN_LOOPS.md`](docs/EARN_LOOPS.md)
 
 ## License
 
