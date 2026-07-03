@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 11 (post iteration-10 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 12 (post iteration-11 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -160,22 +160,32 @@ or duplicate a clip).
 - **REQ-007**: WHEN `run.sh` observes `outcome=="failed"`, THE SYSTEM SHALL leave the clip file in
   `queue/` (current behavior preserved, no ledger line added) so the loop naturally retries it on a later
   wake.
-- **REQ-010 (unique per-clip tracking token — NEW after iteration-10 FIND-025, which correctly found that
-  matching on hook/caption TEXT is fundamentally unsound for this project specifically: HARD RULE 0.18
-  "clone-don't-template" means proven hooks are deliberately reused VERBATIM across multiple clips, so the
-  same 40-character hook prefix can legitimately appear in TWO DIFFERENT clips' captions — the exact
-  ambiguity self-heal confirmation must never have)**: WHEN `run.sh` posts a clip (in either the direct
-  live-share path OR when preparing to re-attempt via self-heal), THE SYSTEM SHALL APPEND a machine-
-  readable, per-clip UNIQUE tracking token to the caption text actually submitted to Instagram — derived
-  from the clip's own existing filename-based ID (the same deterministic ID `producer.sh` already computes
-  from the source URL, e.g. `6xlmaorRY0w` from `6xlmaorRY0w_EN.mp4` — already unique per clip by
-  construction, no new ID-generation logic needed). Concretely: `run.sh` reads `$CAP`'s content, appends
-  `"\n​#c<clip_id>"` (a newline + zero-width space + a short hashtag-shaped token, e.g. `#c6xlmaorRY0w`
-  — visually blends in as one more hashtag, does not require any producer.sh/caption-template change,
-  stays entirely within this feature's file scope) and passes THIS appended string to `post_reel.py` as the
-  caption to insert. This tracking token, NOT the hook/caption prose, is what REQ-008 step 6's content
-  match checks for — an exact, short, unlikely-to-collide-by-chance alphanumeric substring, immune to
-  hook-text reuse across different clips.
+- **REQ-010 (unique per-ATTEMPT tracking token, RANDOM not clip_id-derived — REDESIGNED after iteration-11
+  FIND-028/029, which correctly proved clip_id is NOT a safe uniqueness source: `producer.sh`'s clip_id is
+  derived purely from the source video URL with zero history/dedup check against already-processed URLs,
+  and its default no-`--url` picker selects the single most recent video from a fixed channel — on any day
+  that channel hasn't published something new, or on any manual retry with the same `--url`, `producer.sh`
+  deterministically re-derives the IDENTICAL clip_id, which would have produced the IDENTICAL token under
+  REV 11's design — reopening the exact misattribution risk REQ-010 exists to close, just via clip_id
+  reuse instead of hook-text reuse)**: WHEN `run.sh` is about to attempt posting a clip (each individual
+  attempt — the direct live-share path, AND separately each time self-heal reconciliation would need one,
+  though self-heal itself does not re-post, only re-checks an EXISTING attempt's token per REQ-008), THE
+  SYSTEM SHALL generate a FRESH, RANDOM tracking token for THAT ATTEMPT — e.g. `"#c" + <10 random hex
+  characters>` (via `python3 -c "import secrets;print(secrets.token_hex(5))"` or equivalent) — NOT derived
+  from the clip's filename/ID/source-URL in any way, so two attempts of the identical source video (whether
+  a same-day channel-repeat or a manual retry) always get DIFFERENT tokens, structurally eliminating
+  FIND-028's collision path regardless of `producer.sh`'s own dedup behavior (which remains unfixed and
+  out of scope — this feature does not need `producer.sh` to be collision-free, only the TOKEN to be).
+  ★ Concrete file-plumbing mechanism (FIXED after FIND-029, which correctly found `post_reel.py`'s
+  `--caption-file` only accepts a file PATH via `open()`, never inline string content, and using `$CAP`
+  in-place would risk corrupting the original file across retries/moves) ★: `run.sh` SHALL write the
+  ORIGINAL `$CAP` content plus a trailing `"\n​<token>"` line into a NEW TEMPORARY file (e.g.
+  `mktemp` under the existing disk-hygiene convention, HARD RULE 0.26 — cleaned up after the post attempt
+  regardless of outcome) and pass THAT TEMP FILE's path as `--caption-file` to `post_reel.py`. `$CAP`
+  itself is NEVER mutated, NEVER read-modified-written in place — it is only ever READ (to build the temp
+  file's content) — so its existing move-on-success (`$CLIP_POSTED`) / reuse-on-retry (`queue/`) behavior
+  is completely unaffected. This tracking token, not any derived-from-content value, is what REQ-008 step
+  6's content match checks for.
 - **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004,
   further hardened after iteration-5 FIND-008/009/010)**: WHEN a wake begins and `$CLIP_PENDING_VERIFY`
   (REQ-006) is non-empty, THE SYSTEM SHALL run a self-heal driver — a NEW shared module
@@ -228,8 +238,9 @@ or duplicate a clip).
      mechanically generated per-clip, never reused, and is what gates confirmation — not the hook/caption
      prose)**: when `run.sh` first moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL write a
      sidecar file `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing
-     `{"before_hrefs": [...stabilized before["hrefs"]...], "token": "#c<clip_id>"}` (REQ-010's exact
-     tracking token for this clip — already computed, just persist it). For the ONE clip being processed
+     `{"before_hrefs": [...stabilized before["hrefs"]...], "token": "#c<10-hex-random>"}` (REQ-010's exact
+     RANDOM tracking token generated for THIS ATTEMPT — already computed when the temp caption file was
+     built, just persist it verbatim, never re-derive/regenerate it). For the ONE clip being processed
      this wake (step 2), THE SELF-HEAL DRIVER SHALL compute
      `new_hrefs = stabilized_reels_set - set(sidecar["before_hrefs"])` (a real set difference). THEN, FOR
      EACH href IN `new_hrefs` (whatever the count — 0, 1, or more), navigate to that reel's URL and read

@@ -1,0 +1,9 @@
+{
+  "reviewType": "spec",
+  "feature": "clip-post-verify-hardening",
+  "artifactsToReview": [
+    ".vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"]
+}

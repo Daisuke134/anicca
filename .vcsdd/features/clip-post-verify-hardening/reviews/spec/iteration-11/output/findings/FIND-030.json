@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-030",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "No proof obligation in verification-architecture.md's PROP table tests or guards against FIND-028's clip_id-reuse scenario. PROP-006(b) (the FIND-018/019/025 regression test) only proves that an unrelated post sharing the SAME hook prose but a DIFFERENT token is correctly rejected -- it never constructs the inverse, now-demonstrated-real scenario: two DIFFERENT clips (different video content, different queue-time before_hrefs snapshots) that end up with the IDENTICAL token because producer.sh re-derived the same clip_id from a recurring/re-processed source URL. Nothing in PROP-001..010 or PROP-008's live E2E plan exercises producer.sh's own ID-collision behavior at all (no test seeds two clips with the same clip_id and asserts EITHER that this is structurally prevented at production time, e.g. a check against already-active clip_ids in queue/pending-verify/posted before producer.sh writes a new file, OR that self-heal correctly refuses to confirm when it CAN detect an ambiguous/stale token situation). As currently specified, this entire class of misattribution risk (FIND-028) would ship with zero test coverage in any tier (unit, integration, or live) -- there is no PROP whose failure would ever catch it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "82,86",
+    "snippet": "PROP-006(b) ... an unrelated post, EVEN ONE SHARING THE SAME HOOK TEXT ... must NEVER be misattributed ... but a DIFFERENT tracking token ... assert select_confirmed_href returns None -- no equivalent test exists for two clips sharing the SAME token due to clip_id reuse"
+  },
+  "routeToPhase": "1b"
+}

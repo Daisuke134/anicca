@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-029",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-010 says 'run.sh reads $CAP's content, appends \"\\n\\u200b#c<clip_id>\" ... and passes THIS appended string to post_reel.py as the caption to insert.' This is not implementable as literally written: post_reel.py's ONLY caption-input mechanism is the CLI flag `--caption-file <path>`, which it opens and reads directly (`caption = open(a.caption_file, encoding=\"utf-8\").read().strip()`, post_reel.py:86; `ap.add_argument(\"--caption-file\", required=True)`, post_reel.py:78) -- there is no `--caption-text`/stdin/inline-string interface. run.sh's existing invocation (`\"$PY\" \"$POSTER\" --video \"$CLIP\" --caption-file \"$CAP\" ...`, run.sh:88) passes a FILE PATH, not string content. For REQ-010's token-appended text to actually reach post_reel.py, run.sh MUST materialize it as a file on disk and pass THAT path as `--caption-file` -- but the spec never says how: (a) does run.sh write a NEW temp file (where, what name, cleaned up when/how, on every attempt including retries)? (b) does run.sh mutate `$CAP` in place before the POSTER call? If (b), this is actively dangerous: `$CAP` is the SAME file that (per REQ-007) stays in `$CLIP_QUEUE` and gets RE-ATTEMPTED on a later wake after a 'failed' outcome -- if the token were appended in-place each attempt without being reverted, a clip retried N times would accumulate N stacked token lines in its permanently-queued/posted caption sidecar, and (per run.sh:94-95) the (by-then-mutated) $CAP file itself gets moved to $CLIP_POSTED alongside the video on success, silently changing the on-disk caption artifact from what was originally produced. Neither option is specified, tested, or even mentioned as a design decision anywhere in REQ-010, REQ-008, or the verification-architecture.md pseudocode block (which only shows the post_reel.py-internal before/candidate/reconfirm logic, not any run.sh-side change to the POSTER invocation). This is the same class of gap iteration-9's FIND-021 and iteration-10's FIND-027 both caught (missing concrete plumbing for a cross-file data path) -- REQ-010, this iteration's core fix for FIND-025, has an identical unaddressed plumbing gap of its own, and it sits directly on the path of every single live post attempt, not just the self-heal path.",
+  "evidence": {
+    "filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py",
+    "lineRange": "78,86",
+    "snippet": "ap.add_argument(\"--caption-file\", required=True)\n...\ncaption = open(a.caption_file, encoding=\"utf-8\").read().strip()"
+  },
+  "routeToPhase": "1a"
+}

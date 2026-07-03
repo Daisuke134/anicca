@@ -1,0 +1,58 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 11,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-024 (iteration-10, critical -- purity-boundary table's select_confirmed_href contract still said 'exactly matches', contradicting the substring-match text elsewhere)",
+      "status": "FIXED",
+      "note": "Verified against verification-architecture.md:21 (REV 11): the purity table now explicitly says select_confirmed_href is 'REVISED after iteration-10 FIND-024/025 (was: hook/caption prose EXACT match; NOW: exact SUBSTRING containment check of REQ-010's unique tracking token ... no fuzziness, no normalization, no truncation-tolerance logic needed)'. This is fully consistent with REQ-008 step 6's token-based design in behavioral-spec.md. No remaining contradiction between the two documents."
+    },
+    {
+      "priorFinding": "FIND-025 (iteration-10, critical -- hook/caption-prose matching is unsound given HARD RULE 0.18's clone-don't-template policy of reusing proven hooks verbatim across different clips)",
+      "status": "PARTIALLY FIXED",
+      "note": "REQ-010's introduction of a unique per-clip tracking token, mechanically derived from producer.sh's existing clip_id (verified real at /Users/anicca/anicca/skills/earn/clip/producer.sh:60-62, `${ID}_EN.mp4`), and REQ-008 step 6's redesign to check ONLY for exact token-substring containment (never hook prose), DOES structurally solve the original narrow FIND-025 scenario: traced concretely, two different clips sharing the exact same reused hook text per HARD RULE 0.18 but originating from DIFFERENT source URLs get DIFFERENT clip_ids and therefore different tokens, so hook-text reuse can no longer cause misattribution. PROP-006(b)'s regression test explicitly proves this. HOWEVER the spec's own broader claim that follows from this fix -- 'there is no meaningful residual token-collision risk ... tokens are derived 1:1 from each clip's own unique source-URL-based ID' (behavioral-spec.md, REQ-008 step 6 closing paragraph) -- is FALSE against the real producer.sh code this spec itself cites as ground truth: clip_id is derived from the SOURCE VIDEO URL, not from anything unique to a specific processing run, and producer.sh's default source-selection has no dedup/history check against previously-processed URLs (see FIND-028, new this iteration, critical). The original hook-reuse ambiguity is closed; an isomorphic clip_id-reuse ambiguity has taken its place, unaddressed by the spec."
+    },
+    {
+      "priorFinding": "FIND-026 (iteration-10, critical -- no live E2E test for the self-heal/token-match path)",
+      "status": "FIXED",
+      "note": "PROP-008(b) in verification-architecture.md (line 86) now explicitly requires: force a real clip through the unverified -> $CLIP_PENDING_VERIFY path, confirm the real sidecar was written with a real before_hrefs + token, then run the actual self-heal driver against the REAL live account and confirm it finds and content-matches the REAL token in the REAL posted reel's live page text, moving the clip to $CLIP_POSTED with the correct post_url. This is a genuine Tier-3 no-mock proof obligation covering exactly the path iteration-9/10 found untested. Fully closed at the spec level (execution is deferred to Phase 3+ per the two-gate design, as is correct)."
+    },
+    {
+      "priorFinding": "FIND-027 (iteration-10, major -- pseudocode doc-sync gap: verification-architecture.md's own code block did not show res['before_hrefs'] actually being set)",
+      "status": "FIXED",
+      "note": "Verified: verification-architecture.md's pseudocode block now includes `if outcome[\"outcome\"] == \"unverified\": res[\"before_hrefs\"] = before[\"hrefs\"]` with an explicit comment citing iteration-10 FIND-027. Doc-sync gap closed."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-028", "FIND-029"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/producer.sh:5,30-34,60-62", "description": "confirmed producer.sh's clip_id is derived purely from source-video URL with no dedup/history check, and its default source-pick (channel's single latest video, run as a daily cron) will deterministically re-derive an identical clip_id on any day the channel has no new upload -- falsifying REQ-010's 'already unique per clip' / 'no meaningful residual collision risk' claims"},
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:78,86", "description": "confirmed --caption-file is a required file-path CLI argument that post_reel.py opens and reads directly -- REQ-010's 'passes this appended string to post_reel.py' has no specified mechanism for materializing the token-appended text as a file, and the two obvious candidate mechanisms (new temp file vs. in-place mutation of $CAP) have materially different, unaddressed correctness implications given $CAP's reuse across retries (REQ-007) and its move to $CLIP_POSTED on success (run.sh:94-95)"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:88,94-95", "description": "confirmed the exact current POSTER invocation and $CAP file-move behavior that REQ-010 must extend without specifying how"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-030"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:82", "description": "confirmed PROP-006(b) only tests the hook-text-reuse-with-different-token scenario, not the inverse (identical token from clip_id reuse) that FIND-028 demonstrates is real -- zero proof obligation anywhere in the PROP table would catch this class of misattribution"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
