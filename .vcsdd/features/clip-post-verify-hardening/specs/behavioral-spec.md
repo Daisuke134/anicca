@@ -1,4 +1,4 @@
-# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 5 (post iteration-4 FAIL)
+# Behavioral Spec — clip-post-verify-hardening (Phase 1a) — REV 6 (post iteration-5 FAIL)
 
 ## Context (why this feature exists)
 2026-07-03 live incident: `EARN_MODE=execute bash run.sh` self-reported `"posted @aiclipsvault: .../DaLKV2xP8Ij/"`
@@ -134,44 +134,68 @@ or duplicate a clip).
 - **REQ-005**: WHEN `run.sh` observes `outcome=="published"`, THE SYSTEM SHALL append a ledger line with
   `"status":"posted"` (in addition to keeping the existing line shape) and move the clip file to `posted/`
   — unchanged from current behavior except for the added `status` field.
-- **REQ-006**: WHEN `run.sh` observes `outcome=="unverified"`, THE SYSTEM SHALL append a ledger line with
-  `"status":"unverified"` and `"post_url": null` (even if a candidate URL string exists internally — it is
-  NOT confirmed, so it is not published as a trustworthy `post_url` in the ledger) and move the clip file
-  to a NEW `~/clips/pending-verify/` directory (sibling of `queue/`/`posted/`) — NOT back to `queue/`
-  (duplicate-post risk) and NOT to `posted/` (false-confirmation risk).
+- **REQ-006 (instance-isolated pending-verify dir — FIXED after iteration-5 FIND-007)**: WHEN `run.sh`
+  observes `outcome=="unverified"`, THE SYSTEM SHALL append a ledger line with `"status":"unverified"` and
+  `"post_url": null` (even if a candidate URL string exists internally — it is NOT confirmed) and move the
+  clip file to `$CLIP_PENDING_VERIFY` — a NEW per-`ANICCA_INSTANCE` path added to the EXISTING
+  `_instance_paths.sh` (the same file that already defines `CLIP_QUEUE`/`CLIP_POSTED`/`CLIP_ACCTS`/
+  `CLIP_LEDGER`, all suffixed `-${ANICCA_INSTANCE}` when set — see `feature/clip-loop-dual-instance-earn`,
+  already shipped). `CLIP_PENDING_VERIFY="${HOME}/clips/pending-verify${_SFX}"`, following the exact same
+  pattern as the other four. NOT back to `$CLIP_QUEUE` (duplicate-post risk) and NOT to `$CLIP_POSTED`
+  (false-confirmation risk). This closes the cross-instance collision risk iteration-5 correctly
+  identified: without instance-suffixing, a self-funded (ClawRouter) instance and the human-funded
+  (claude-p) instance sharing one unsuffixed `pending-verify/` dir would corrupt each other's self-heal
+  state — the exact class of bug `clip-loop-dual-instance-earn` was built to prevent, now reintroduced by
+  this feature's new directory if left unsuffixed.
 - **REQ-007**: WHEN `run.sh` observes `outcome=="failed"`, THE SYSTEM SHALL leave the clip file in
   `queue/` (current behavior preserved, no ledger line added) so the loop naturally retries it on a later
   wake.
-- **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004)**:
-  WHEN a wake begins and `~/clips/pending-verify/` is non-empty, THE SYSTEM SHALL, BEFORE producing/
-  posting any new content, run a self-heal driver (a separate small script/function, NOT a modification
-  to `post_reel.py --verify-only` itself, which stays byte-for-byte unchanged for its other existing
-  caller) that:
-  1. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
-     seconds between invocations — this is REQ-001's stabilize model applied EXTERNALLY, at the
-     CALLER level, across separate `--verify-only` subprocess calls (each individual call's own internal
-     read at `post_reel.py:112-113` is untouched — `_reads_stable` is applied by the DRIVER comparing
-     the `reels` arrays returned by consecutive subprocess calls, not by any change inside
-     `post_reel.py`'s `--verify-only` branch).
-  2. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
-     match (inconclusive — leave the clip in `pending-verify/`, try again next wake, per REQ-002's
-     inconclusive handling).
-  3. THE SIDECAR SHALL RECORD A SET, NOT A COUNT (FIXED after iteration-4 FIND-005/006, which correctly
-     found "count/set" was ambiguous and could force a null `post_url` into a `status:"posted"` ledger
-     line): when `run.sh` first moves a clip to `pending-verify/` (REQ-006), it SHALL also write a sidecar
-     file `~/clips/pending-verify/<clipname>.before-hrefs.json` containing the JSON array of the EXACT
+- **REQ-008 (self-heal, REUSING the existing mechanism — WIRING CLARIFIED after iteration-3 FIND-004,
+  further hardened after iteration-5 FIND-008/009/010)**: WHEN a wake begins and `$CLIP_PENDING_VERIFY`
+  (REQ-006) is non-empty, THE SYSTEM SHALL run a self-heal driver — a NEW shared module
+  `~/anicca/skills/earn/clip/reel_verify.py` (FIXED after FIND-010: this is the ONE file that defines
+  `_reads_stable`/`stabilize_reads`/`diff_new_href`/`classify_outcome`; `post_reel.py` imports it via
+  `sys.path.insert` the same way it already imports `~/.claude/skills/ig-account-create/scripts/cdp.py`
+  today; the new self-heal driver script imports the SAME module — one implementation, zero drift risk)
+  — that does the following, gated as specified below (FIXED after FIND-009):
+  1. **Gating (FIND-009)**: Self-heal runs ONCE per wake, BEFORE producing/posting any new content, but
+     does NOT block that wake's normal new-content posting pipeline regardless of its own outcome —
+     self-heal and new-content posting are independent steps in the same wake; a still-unresolved
+     `pending-verify/` clip is retried on the NEXT wake, indefinitely, without stalling new posts.
+  2. **Multiple pending clips (FIND-009)**: IF `$CLIP_PENDING_VERIFY` contains more than one clip, THE
+     SYSTEM SHALL fetch ONE stabilized `reels` snapshot (steps 3-4 below) and evaluate EACH pending clip
+     against it, OLDEST-move-time-first; once an href is attributed to confirm one clip, THE SYSTEM SHALL
+     REMOVE it from consideration for any other pending clip evaluated in the same wake (an href can
+     confirm at most one clip per wake — prevents double-attribution if two clips' before-sets happen to
+     be similar).
+  3. **Missing/corrupt sidecar (FIND-008)**: IF a pending clip's sidecar file (`<clipname>.before-hrefs.
+     json`, in `$CLIP_PENDING_VERIFY`) is MISSING, unreadable, or fails to parse as a JSON array of
+     strings, THE SYSTEM SHALL treat that clip as **inconclusive this wake** (per REQ-002's inconclusive
+     handling — do NOT guess, do NOT delete the clip, do NOT delete a sidecar that doesn't exist) and
+     retry on a later wake. This is a data-integrity precondition, not a new outcome category — it reuses
+     the existing "leave in pending-verify/, try again next wake" behavior.
+  4. Invokes `post_reel.py --verify-only --handle <handle>` as a subprocess UP TO 3 TIMES, waiting 5
+     seconds between invocations — REQ-001's stabilize model applied EXTERNALLY, at the CALLER level
+     (via the shared `reel_verify.py`'s `stabilize_reads`), across separate `--verify-only` subprocess
+     calls (each individual call's own internal read at `post_reel.py:112-113` is untouched).
+  5. Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never
+     match (inconclusive — leave the clip in `$CLIP_PENDING_VERIFY`, try again next wake).
+  6. THE SIDECAR RECORDS A SET, NOT A COUNT (FIXED after iteration-4 FIND-005/006): when `run.sh` first
+     moves a clip to `$CLIP_PENDING_VERIFY` (REQ-006), it SHALL also write a sidecar file
+     `$CLIP_PENDING_VERIFY/<clipname>.before-hrefs.json` containing the JSON array of the EXACT
      stabilized `before["hrefs"]` list captured at that time (the same list already computed by REQ-001
      for that post attempt — no extra browser work, just persist it to disk instead of discarding it).
      THE SELF-HEAL DRIVER SHALL compute `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)` (a real
      set difference, giving the ACTUAL new href string, not a guess/index-0 assumption). IF `new_hrefs`
-     has EXACTLY ONE element, THE SYSTEM SHALL treat it as now-confirmed: move the clip to `posted/`,
+     (after step 2's already-attributed-hrefs removal, when multiple clips are pending) has EXACTLY ONE
+     element for a given clip, THE SYSTEM SHALL treat it as now-confirmed: move the clip to `$CLIP_POSTED`,
      delete the sidecar file, and append the delayed `"status":"posted"` ledger line WITH `"post_url"`
      SET TO THE REAL CONFIRMED URL (`"https://www.instagram.com" + new_hrefs[0]`, never `null` — a
      `status:"posted"` ledger line MUST always carry a real, non-null `post_url`, per REQ-009's step-1
      guard below). IF `new_hrefs` is empty (no new URL yet) OR has more than one element (an ambiguous
      case — e.g. two clips landed between reads — treat as inconclusive, do NOT guess), leave the clip in
-     `pending-verify/` for the next wake (never silently drop it, never duplicate-post it, never fabricate
-     a `post_url`).
+     `$CLIP_PENDING_VERIFY` for the next wake (never silently drop it, never duplicate-post it, never
+     fabricate a `post_url`).
 - **REQ-009 (monitor honesty — REV 4, adds the null-guard iteration-4 FIND-005 found missing)**:
   `monitor.sh`'s posts-recorded count SHALL be computed as follows:
   1. Collect `status=="posted"` lines (new-format, this feature onward) that have a non-null non-empty

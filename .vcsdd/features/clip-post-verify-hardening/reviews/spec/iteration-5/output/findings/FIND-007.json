@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-006/REQ-008 introduce a brand-new `~/clips/pending-verify/` directory and per-clip sidecar files (`<clipname>.before-hrefs.json`) but neither behavioral-spec.md nor verification-architecture.md route this new path through `_instance_paths.sh`'s existing per-`ANICCA_INSTANCE` suffix mechanism (`_SFX = \"-${ANICCA_INSTANCE}\"`). `run.sh:20` and `monitor.sh:8` both `source _instance_paths.sh` and use `$CLIP_QUEUE`/`$CLIP_POSTED`/`$CLIP_ACCTS`/`$CLIP_LEDGER` (all suffixed) for exactly this reason: `_instance_paths.sh:6-9`'s own header states 'Two independent identities (e.g. claude-p human-funded vs a ClawRouter self-funded instance) run the SAME scripts against DIFFERENT wallets/accounts/ledgers by only differing in this one env var -- never share a queue/account/ledger across instances (shared state across earners is the drain/duplicate-post pitfall this file exists to avoid).' This invariant already has a dedicated, committed regression test (`skills/earn/clip/tests/test_n_instance_distinctness.sh`, PROP-004 of a prior feature) that asserts all 4 existing paths are pairwise-distinct across instances (`\"\" myclaude clawrouter clawrouter-2`). REQ-006's literal wording -- 'move the clip file to a NEW `~/clips/pending-verify/` directory (sibling of `queue/`/`posted/`)' -- hardcodes an unsuffixed path, which, the moment a second `ANICCA_INSTANCE` runs this same skill (a scenario the codebase already provisions for and tests), would make BOTH instances share ONE `pending-verify/` directory and sidecar-file namespace. A self-heal driver for instance A could then read/overwrite/delete instance B's sidecar file (different account, different `before_hrefs`), computing a bogus set-difference against the wrong account's reel list -- silently producing exactly the false-positive/duplicate-post class of bug this entire feature exists to eliminate, but now across instances instead of within one.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "137-141",
+    "snippet": "move the clip file to a NEW `~/clips/pending-verify/` directory (sibling of `queue/`/`posted/`) -- NOT back to `queue/` ... and NOT to `posted/`"
+  },
+  "supportingEvidence": [
+    {"filePath": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh", "lineRange": "6-17"},
+    {"filePath": "/Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh", "lineRange": "1-30"},
+    {"filePath": "/Users/anicca/anicca/skills/earn/clip/run.sh", "lineRange": "20-24"}
+  ],
+  "routeToPhase": "1a"
+}

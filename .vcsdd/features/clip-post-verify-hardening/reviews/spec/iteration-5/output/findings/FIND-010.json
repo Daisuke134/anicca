@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "verification-architecture.md's purity-boundary table (lines 10-15) defines `_reads_stable`, `stabilize_reads`, `diff_new_href`, and `classify_outcome` as pure functions and states what code they 'replace' inside `post_reel.py`, but never states WHAT FILE/MODULE they live in. This matters concretely because REQ-008(1) makes an explicit reuse claim: '_reads_stable is applied by the DRIVER comparing the reels arrays returned by consecutive subprocess calls' -- i.e. the NEW self-heal driver (REQ-008's 'separate small script/function, NOT a modification to post_reel.py --verify-only itself') is claimed to call the SAME `_reads_stable` pure function that `post_reel.py`'s internal `stabilize_reads` also uses. But `post_reel.py` is a `#!/usr/bin/env python3` script with `if __name__ == \"__main__\": main()` (line 207-208) and no existing shared-library module; if `_reads_stable`/`classify_outcome`/etc. are implemented as private functions inside `post_reel.py` (the natural place, since that is the file whose behavior they 'replace'), the separate self-heal driver script would either need an unusual same-directory import of a script-with-`__main__` file, or -- far more likely in practice -- re-implement the same 'set equality of two href lists' comparison inline. A duplicated (not shared) implementation would violate PROP-004(b)'s stated adversary check ('no code path may set outcome=\"published\" other than through it') in spirit for the self-heal driver's own stable/unstable decision, and creates two independently-editable copies of the exact comparison logic this entire feature is built around, which can silently drift out of sync over time. The spec should name an explicit shared module path (e.g. a new `verify_lib.py` importable by both `post_reel.py` and the self-heal driver) so Phase 3 review can confirm actual code reuse rather than parallel reimplementation.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md",
+    "lineRange": "10-15",
+    "snippet": "| `_reads_stable(latest: list[str], previous: list[str]) -> bool` | **PURE** -- set equality of two href lists | new helper |"
+  },
+  "supportingEvidence": [
+    {"filePath": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py", "lineRange": "207-208", "note": "post_reel.py has no shared-library structure today; it is a standalone script"}
+  ],
+  "routeToPhase": "1b"
+}

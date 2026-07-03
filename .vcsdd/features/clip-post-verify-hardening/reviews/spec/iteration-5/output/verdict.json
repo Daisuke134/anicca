@@ -1,0 +1,50 @@
+{
+  "feature": "clip-post-verify-hardening",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 5,
+  "priorIterationResolution": [
+    {
+      "priorFinding": "FIND-005 (iteration-4, sidecar count-vs-set ambiguity risking null post_url)",
+      "status": "FIXED",
+      "note": "REQ-008(3) REV5 now explicitly says 'THE SIDECAR SHALL RECORD A SET, NOT A COUNT' and stores the exact stabilized before['hrefs'] array as JSON at `~/clips/pending-verify/<clipname>.before-hrefs.json`. The self-heal driver computes a real set difference `new_hrefs = stabilized_reels_set - set(sidecar_hrefs)`, uses `new_hrefs[0]` (the actual href string, not an index-0 guess against a raw scrape) only when exactly one element is present, and treats 0-new or >1-new as inconclusive (leave in pending-verify/, never fabricate a post_url, never guess). REQ-009 step 1 now has an explicit 'non-null non-empty post_url' guard, textually matching step 2's existing guard. PROP-006 was re-read and now asserts the exact non-null post_url string (not just 'a ledger line exists'), and PROP-007 adds a dedicated regression case for a status:posted line with post_url:null being excluded from the count. Both halves of iteration-4's finding are resolved."
+    },
+    {
+      "priorFinding": "FIND-006 (iteration-4, no test coverage for the null-post_url regression)",
+      "status": "FIXED",
+      "note": "PROP-006 (verification-architecture.md line 74) explicitly labels its 3-href-stub assertion 'this is the concrete regression test for FIND-005/006' and asserts the exact URL string. PROP-007 (line 75) adds a second, explicitly-labeled 'NEW regression test for FIND-005/006': a status:posted line with post_url:null mixed with a valid line must count as 1, not 2. Both are concrete, assertable test cases, not vague coverage claims."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-007", "FIND-008", "FIND-009"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.claude/skills/ig-reels-poster/scripts/post_reel.py:95,107-108,111-118,123,127,134,141,163,174-190", "description": "all Ground Truth line citations for the 6 pre-share sites, the verify-only branch (incl. its internal read at :112-113), the before-snapshot site, the post-share search loop, and the except/finally block re-verified byte-accurate against the real current file"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/run.sh:87-106", "description": "re-verified run.sh's current single-branch-on-post_url logic and the ledger-write shape the spec builds on top of"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/_instance_paths.sh:6-17", "description": "confirmed the existing, tested, per-ANICCA_INSTANCE path-suffix mechanism that CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER all use, and that the spec's new pending-verify/ path does not route through (FIND-007)"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip/tests/test_n_instance_distinctness.sh:1-30", "description": "confirmed a dedicated, committed regression test already enforces pairwise path-distinctness across instances for the 4 existing paths -- the new pending-verify/ path is not covered and would collide"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-010"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:10-15", "description": "purity-boundary table has no file/module column; REQ-008(1)'s explicit function-reuse claim for _reads_stable across post_reel.py and the new self-heal driver script has no specified shared-module location to make that reuse real rather than a duplicated re-implementation"},
+        {"type": "file", "location": ".vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md:24-34,55-60", "description": "before-unstable abort gate and except/finally setdefault fix re-traced and reconfirmed correct, closing iteration-3 FIND-002/FIND-003 (no regression)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

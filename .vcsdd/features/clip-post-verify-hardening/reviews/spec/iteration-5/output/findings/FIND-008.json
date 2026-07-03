@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-008(3) specifies the WRITE side ('when run.sh first moves a clip to pending-verify/ (REQ-006), it SHALL also write a sidecar file ...') and the normal READ+diff side ('THE SELF-HEAL DRIVER SHALL compute new_hrefs = stabilized_reels_set - set(sidecar_hrefs)'), but never specifies what the self-heal driver does if it finds a clip file in `pending-verify/` with NO matching `<clipname>.before-hrefs.json` sidecar (or a sidecar that fails to parse as JSON) -- e.g. if the process crashed between the `mv` and the sidecar write, if an operator manually touched the directory, or any future code path that moves a clip there without going through REQ-006's exact sequence. This is not a hypothetical: REQ-006's move and REQ-008(3)'s sidecar write are two separate filesystem operations with no stated atomicity/ordering guarantee, and the ledger's Ground Truth section documents this codebase already had one real false-positive/partial-state incident. Without a specified behavior, an implementer could plausibly (a) crash/throw, (b) silently skip the clip forever, or (c) fall back to treating the full `stabilized_reels_set` as 'new' (effectively a 1-element check with `sidecar_hrefs={}`), which for an account with existing posts would almost certainly yield more-than-one 'new' href and coincidentally look safe -- but for a brand-new account with exactly one prior post already showing, could misfire. PROP-006's test list (integration tests for REQ-008) enumerates exactly 4 scenarios (1-new/exact-match, 0-new, 2-new-ambiguous, idempotency-rerun) and has NO test for a missing-or-corrupt sidecar file, so this gap is untested as well as unspecified.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "159-174",
+    "snippet": "THE SIDECAR SHALL RECORD A SET, NOT A COUNT ... THE SELF-HEAL DRIVER SHALL compute new_hrefs = stabilized_reels_set - set(sidecar_hrefs)"
+  },
+  "supportingEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/verification-architecture.md", "lineRange": "74", "note": "PROP-006's 4 enumerated scenarios do not include a missing/corrupt sidecar case"}
+  ],
+  "routeToPhase": "1a"
+}

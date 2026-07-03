@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-008(2) explicitly allows the self-heal driver to leave a clip in `pending-verify/` across MULTIPLE wakes when the 3-call reconciliation is inconclusive ('after 3 calls if they never match (inconclusive -- leave the clip in pending-verify/, try again next wake)'), and REQ-008(3)'s ambiguous->2-or-more-new-hrefs branch does the same. This means the spec itself anticipates `pending-verify/` staying non-empty for more than one wake -- yet: (a) REQ-008's opening sentence only says the self-heal driver runs 'BEFORE producing/posting any new content' on a wake where the directory is non-empty; it never states whether that wake's NORMAL new-clip posting (run.sh's existing queue-scan logic) is skipped/gated when self-heal fails to clear the directory that same wake, so it is unspecified whether a second clip can be posted (and, if unverified, ALSO land in pending-verify/) while an earlier one is still unresolved; (b) neither REQ-008 nor PROP-006 specifies how the self-heal driver behaves when it must process MORE THAN ONE clip file in `pending-verify/` in a single pass -- e.g. processing order (oldest-first?), and whether one clip's now-confirmed post could be double-counted as the 'new href' for a second, unrelated pending clip's own set-difference (since both would be diffed against the SAME single `--verify-only` reels snapshot). PROP-006's test fixtures only ever seed a single fake clip; there is no multi-clip scenario specified or tested.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/clip-post-verify-hardening/specs/behavioral-spec.md",
+    "lineRange": "145-158",
+    "snippet": "WHEN a wake begins and `~/clips/pending-verify/` is non-empty, THE SYSTEM SHALL, BEFORE producing/posting any new content, run a self-heal driver ... Stops calling once 2 consecutive `reels` arrays match (stable), or after 3 calls if they never match (inconclusive -- leave the clip in `pending-verify/`, try again next wake"
+  },
+  "routeToPhase": "1a"
+}
