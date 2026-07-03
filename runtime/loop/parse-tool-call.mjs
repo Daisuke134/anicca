@@ -111,8 +111,7 @@ function scavengeRoleplayedToolCall(content) {
   //   3. JSON inside surrounding prose / markdown fences
   // Collect candidate JSON objects and return the first that names a tool.
   for (const candidate of jsonObjectCandidates(content)) {
-    let parsed;
-    try { parsed = JSON.parse(candidate); } catch { continue; }
+    const parsed = parseMaybeTruncated(candidate);
     if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) continue;
     const name = typeof parsed.name === 'string' ? parsed.name
       : (typeof parsed.function === 'string' ? parsed.function : null);
@@ -122,6 +121,31 @@ function scavengeRoleplayedToolCall(content) {
     return { function: { name, arguments: callArgs } };
   }
   return null;
+}
+
+/**
+ * Parse a JSON object, repairing the common free-model defect of a TRUNCATED tail: the model
+ * emits e.g. {"name":"run_skill","arguments":{"slot":"hl_trade","args":{...}}  — missing the final
+ * closing brace(s) (glm-4.7 verified 2026-07-04). Try as-is; on failure, close any open string and
+ * append the missing } to balance, then re-parse. Returns the object or null.
+ */
+function parseMaybeTruncated(candidate) {
+  try { return JSON.parse(candidate); } catch { /* fall through to repair */ }
+  let inStr = false, esc = false, depth = 0;
+  for (const ch of candidate) {
+    if (inStr) {
+      if (esc) esc = false;
+      else if (ch === '\\') esc = true;
+      else if (ch === '"') inStr = false;
+    } else if (ch === '"') inStr = true;
+    else if (ch === '{') depth++;
+    else if (ch === '}') depth--;
+  }
+  if (depth <= 0) return null;               // not a missing-tail case
+  let repaired = candidate;
+  if (inStr) repaired += '"';                // close a dangling string
+  repaired += '}'.repeat(depth);             // balance the braces
+  try { return JSON.parse(repaired); } catch { return null; }
 }
 
 /**
@@ -155,4 +179,8 @@ function* jsonObjectCandidates(text) {
       }
     }
   }
+  // 3. fallback: from the first '{' to end-of-text — a TRUNCATED bare object (no closing brace,
+  //    not in a tag) that step 2 never balanced. parseMaybeTruncated repairs it.
+  const first = text.indexOf('{');
+  if (first !== -1) yield stripFences(text.slice(first));
 }
