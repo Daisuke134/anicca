@@ -236,7 +236,9 @@ if [ "$STRATEGY" = "x402" ] && [ -z "${EARN_TX:-}" ]; then
     fi
     [ -n "$PUB" ] && echo "[earn] x402 public: $PUB/research"
   fi
-  JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'x402-serve','task':'x402 server $UP'+($' public+advertised' if '${PUB:-}' else ''),'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
+  X402_TASK="x402 server $UP"
+  [ -n "${PUB:-}" ] && X402_TASK="$X402_TASK public+advertised"
+  JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':sys.argv[1],'source':'x402-serve','task':sys.argv[2],'earn_usdc':0,'cost_usdc':0,'wake':sys.argv[3]}))" "${WLOW:-unknown}" "$X402_TASK" "$WAKE" 2>/dev/null)
   OUT=$(record_line "$JSON"); echo "[earn] x402 narrate -> $OUT"; exit 0
 fi
 
