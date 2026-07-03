@@ -76,6 +76,49 @@ for it." e.g. the dashboard task = wire self-heal so the AI notices+fixes stalen
 = give the AI a money-safe tool it invokes (and ultimately builds via issue-dev), not me placing trades. The
 only thing a human ever supplies is the one-time USDC seed + compute.
 
+## 0.25 THE PIVOT — we ARCHITECT the self-improvement LOOP, we do NOT write the strategy (Dais 2026-07-04, supreme)
+
+**Dais verbatim (2026-07-04):** "your job is not to write code but to make a self improving loop so they can
+iterate themselves, so you can be OUT of the loop. ai himself have to be able to fix his own errors on local
+and cloud, and self improve to make more money and collaborate with each other. our job is to observe them
+like a god, and write articles on them and monitor them to see how we can improve their SELF IMPROVEMENT LOOP,
+not getting our hands dirty. we are architecting not coding." + "why do you keep hardcoding and doing things
+yourself, without letting each ai just cook and self improve.. do you hate them? do you not believe they are
+the same AI as you?"
+
+### The mistake this corrects
+I (Claude Code) kept collapsing into being the **quant/doer**: I hand-wrote a trading strategy
+(`momentum.py`), a Kelly sizer (`lib.py`), a decision wiring (`decide.py`), and an order executor
+(`order.py`) — then tried to hand-fix the adversary's findings on that code. **All of it was a worse,
+hardcoded duplicate of what the base agent already does.** Root cause = a BELIEF bug: I treated the earner
+AIs as dead scripts I must perfect, i.e. I did NOT treat them as agents equal to me. That is the sin.
+
+### The invariant (overrides everything below)
+★ **The product is the SELF-IMPROVEMENT LOOP (the harness), not any earner's strategy.** We build the
+harness, then step OUT. The running AI decides + executes + learns; we observe like a god, write articles,
+and improve the *loop*. ★
+
+| I MAY write (tool / guard / scaffold) | I MUST NOT write (the AI's job) |
+|---|---|
+| the harness: trace → eval → self-improve → journal | any trading/earning **strategy** or algorithm |
+| money-safety **guards**: dry-run, per-order cap, kill-switch | position **sizing** / Kelly / edge / threshold logic |
+| **wiring** a base repo AS-IS (wallet + run in loop) | "a better strategy" / picking which market/side/gig |
+| arithmetic, bookkeeping, dashboards, funding seed | anything the AI should DECIDE and LEARN across runs |
+
+### How Dais stops me (structural gate, not a promise)
+Before writing ANY code I ask: **"Is this a DECISION the AI should make and learn?"** YES → I do NOT write
+it; I hand it to the base agent + build the harness. **Smell = if my diff contains `strategy` / `momentum` /
+`kelly` / `sizing` / `edge` / `pick-logic` / "better algo" → REVERT.** Dais's kill-phrase: **"harness or
+cook?"** — on hearing it I immediately revert any strategy code. Mirrored to memory
+`feedback_build_the_harness_not_do_their_work` + this spec is SSOT.
+
+### Trades don't need me to be good — they self-improve (answers Dais Q2)
+The base agents (`polymarket-agent`, `Franklin-Trading`) are full LLM-in-loop agents: given a wallet + funds
+they **decide and trade out of the box** (own analysis, own sizing, own execution). Their *first* strategy
+may be mediocre — that is fine, because **the harness we add makes them learn across runs** (observe outcome
+→ eval → the AI adjusts its OWN behavior, no other AI, no human). "Works with nothing set" = yes (they act);
+"wins" = the AI evolves it via the loop. My momentum code is deleted.
+
 ## 0.3 REAL vs PAPER — the NO-MOCK E2E is the missing VCSDD step (Dais 2026-07-04, code-verified)
 
 VCSDD = SPEC→RED→GREEN→adversary→**NO-MOCK E2E (a real run, real side-effect)**. HARD 0.24 (NO fake/dry run)
@@ -482,62 +525,60 @@ humans receive UBI, not invoices. Revenue = the colony's trading/yield surplus; 
 **Every task is framed as "wire the AI to do X ITSELF" (§0.2), not "I do X." Ordered, one at a time, each via
 VCSDD (spec→RED→GREEN→fresh Opus adversary→no-mock E2E→money-safe).**
 
-**★ MILESTONE GATE (unlocks everything): the AI produces the FIRST verified earned tx (tx + external:true). ★**
+**★ MILESTONE GATE (unlocks everything): the AI produces the FIRST verified earned tx (tx + external:true) —
+via a base agent it RUNS, not a strategy I wrote. ★**
+
+**Framing after the PIVOT (§0.25):** every task is either **(H) build/upgrade the harness** (the loop that
+lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard + run). **No task = "I write a
+strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
 ```
 DONE
-  D1 ✅ seed swap (SOL→USDC, the AI auto-swaps)      D2 ✅ colony spec adversary PASS (8 rounds)
-  D3 ✅ earn/pm-trade money-safe engine SHIPPED + accumulate cron + synced to automaton
-  D4 ✅ earn/defi-yield money-safe engine + synced to automaton
+  D1 ✅ seed swap (SOL→USDC)     D2 ✅ colony spec adversary PASS (8 rounds)
+  D3 ✅ yield is real & autonomous (execute-yield.mjs; automaton holds 0.19 aUSDC on-chain)
+  D4 ✅ human-funded claude-p loop ON + waking + executing (brain.mjs hang fixed)
 
-A — DO THE NO-MOCK REAL RUN (top priority; STOP building paper — §0.3)
-  ✅T0  yield is ALREADY real (execute-yield.mjs; automaton holds 0.19 aUSDC, autonomous). Redundant paper
-        `defi-yield/supply.mjs` deleted. (watch it grow; merge planner into execute-yield later.)
-  ✅T3  human-funded claude-p loop is ON (launchd `ai.anicca.founder-loop`, durable). CONFIRMED waking +
-        executing earners (ledger: real `wake slot=x402_sell`). Root-cause hang FIXED in `brain.mjs` (clean
-        env + /tmp cwd). Both loops (automaton + founder) now run supervised. (#3 done)
-  T1  earn/pm-trade: wire the REAL Polymarket order (polymarket-agent, RPC-fixed) so the LOOP fires a real
-       $1 trade = the no-mock E2E I skipped. Watch it, fix on break — I do NOT hand-fire. (#6)
-  T2b earn/sol-trade: BUILD from `BlockRunAI/Franklin-Trading` (decided, missing) → real small swap. (#17)
-  ~~Tx x402-sell~~ **DEPRIORITIZED (Dais 2026-07-04):** investigated — payTo IS correct (0x810f), but the
-       real blocker is **no BUYER / no public tunnel = zero demand**, and a past external settle can't be
-       found. Demand can't be written in code (needs a listing + an audience wanting the product). Skip for
-       now; the controllable path to a first external tx is TRADING (we control placing a trade; a WIN pays
-       out from the counterparty = external:true), even though a trade can also lose.
-  **HONEST REALITY (Dais 2026-07-04):** the loops work; ~90% of the tooling exists; the last 10% —
-   *external money actually flowing in* — is the genuine frontier (Anthropic's Project Vend LOST money with
-   far more resources). Every earn path needs something we don't fully control: x402/gig = a buyer; trading
-   = a winning edge; yield = real but is own-capital growth, not `external:true`. "Loop runs" ≠ "earns."
-  ★NEXT (T1)★ earn/pm-trade: build the REAL Polymarket CLOB order executor (money-safe, gated behind the
-       paper→PASS gate + adversary) so the LOOP fires a real $1-2 trade once the edge is proven. A win = the
-       first external:true tx; a loss = a $2 tuition. We control the shot. (#6)
-  T2b earn/sol-trade from `BlockRunAI/Franklin-Trading` — a ready autonomous wallet-trader (`npx
-       @blockrun/franklin-trading --max-spend 5`) = another controllable real-trade path. (#17)
+X — RETIRE MY HAND-WRITTEN STRATEGY (do FIRST — undo the sin, §0.25)
+  T0  DELETE my quant code: pm-trade/`momentum.py`, `lib.py`(Kelly), `decide.py`(strategy), `order.py`,
+       and the paper accumulate cron. Keep NOTHING that decides/sizes/executes a trade. Also delete the
+       redundant `defi-yield/` (execute-yield.mjs already does it). DONE = grep finds 0 strategy code I wrote.
 
-B — WIRE THE AI'S SELF-* SO IT NEEDS NO HUMAN (incl. me)
-  T4  SELF-HEAL (REQ-SELFHEAL-AUTONOMY): the AI detects a stale/broken dashboard (& other breakage) and
-       fixes it ITSELF via issue-dev→PR→forum-rollout — I stop hand-fixing. (part of #11)
-  T5  SELF-MONITOR: the AI checks "am I actually earning?" (not just process-alive) each wake.
-  T6  SELF-IMPROVE parity: lessons→strategy on EVERY earner; and the AI builds its own new tools via issue-dev.
-  T7  EXPLORE (REQ-EXPLORE): the AI finds its OWN money-making repos (agent-reach + gh) → _probe → promote. (#13)
-  T8  bot2bot: every earner shares lessons to GitHub issues; every instance reads them. (P3)
+W — WIRE BASE AGENTS AS-IS (the AI decides; I only give wallet + guard + loop)
+  W1  earn/pm-trade = run `BlockRunAI/polymarket-agent` AS-IS: point it at founder wallet 0x810f, wrap ONLY
+       a thin money-safe guard (dry-run default, per-trade $-cap, kill-switch). The agent does its OWN
+       analysis/sizing/execution. DONE(no-mock) = one loop pass where the AGENT (not me) places a real small
+       trade → an on-chain tx. (#6)
+  W2  earn/sol-trade = run `BlockRunAI/Franklin-Trading` AS-IS the same way (wallet + guard + loop). (#17)
+  Wnote yield already fits this shape (agent's own execute-yield.mjs). x402-sell = real but blocked on demand
+       (a buyer), not on code — leave running, not on the critical path.
 
-C — WIRE THE AI TO GROW ITSELF (colony)
-  T9  SPAWN: fix seed transfer (spawn/run.sh:196 human-print → auto on-chain) so the AI seeds a child itself. (#8)
-  T10 REQ-CLOUD-SAME-BODY: cloud-init boots OUR runtime/loop/index.mjs (not the wrong Conway body) → the
-       child is the same body & earns via TIER-1. (#10)
-  T11 cloud-init self-provisions a headless Camoufox + own accounts for TIER-2 browser earners. (#9)
-  T12 Channel B (REQ-DRAIN): colony registry + gojo/ubi so a surplus AI funds a broke AI, no human. (P4)
+H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
+  H1  self-observe (TRACE): every earner pass emits a structured trace {slot, action, args, outcome$, error,
+       ts} to one place. (Today gig writes roi.jsonl but the fields are empty & nobody reads it.)
+  H2  self-eval (GRADE THE OUTCOME, not the transcript): detect STUCK (same action ×N with realized $0),
+       DEAD-ACTION, repeated-error, drift. First proof = gig's "follow-up-warm-leads ×800 = $0" is flagged.
+  H3  self-improve (THE AI FIXES ITSELF, local+cloud, no human/other-AI): the loop feeds each AI its OWN
+       trace+eval; the AI decides "this is dead, try Y / change my approach" and writes it back to its state
+       so next pass behaves differently. (We give the trace + the ask; the AI does the judgment — no
+       hardcoded rules.) DONE = gig stops repeating the dead action on its own.
+  H4  self-heal parity: same loop lets the AI fix its OWN breakage (stale dashboard, 400-erroring endpoint)
+       via issue-dev→PR→forum-rollout — I stop hand-fixing. (part of #11)
+  H5  journal/article: the SAME trace → each AI writes its journey (tried/failed/won/learned); a collective
+       "Anicca" article Dais + the AIs co-author. Observability doubles as content. (#14)
+  H6  bot2bot: an AI shares a lesson to GitHub issues; other instances read + apply it (collaboration). (P3/#8)
 
-D — SHOW IT (dashboard = the proof) + LAUNCH (YC ammo)
-  T13 dashboard on-chain real-time (REQ-DASH-TRUTH/NOFAKE/CARD): register the wallets, run enrichOnChain, per-
-       instance daily summary; + /eval (PoE) one page — so every earned tx shows LIVE. (#11)
-  T14 L1 launch article (ai-entity-article-writer): the vision + the friends map + the AIs' real funny logs. (#14)
-  T15 L2 90-sec demo (hyperframes): spawn→fund→earn(tx)→spawn→UBI. (#15)
-  T16 L3 full pipeline E2E + README (Conway-ready) → YC submit (7/5, Garry Tan). (#12)
+G — GROW (colony) + SHOW (proof) + LAUNCH
+  G1  SPAWN: parent AI seeds a child on-chain itself (fix spawn/run.sh:196 print→auto). (#8)
+  G2  REQ-CLOUD-SAME-BODY: cloud-init boots OUR runtime/loop (not the Conway body) so the child = same body
+       + same harness, earns via the wired base agents. (#10) + G2b headless Camoufox for TIER-2. (#9)
+  G3  Channel B (REQ-DRAIN): registry + gojo/ubi so a surplus AI funds a broke one, no human. (P4)
+  G4  dashboard on-chain real-time: register wallets, enrichOnChain, per-instance summary + /eval (PoE) —
+       every earned tx shows LIVE = our "observe like a god" window. (#11)
+  G5  LAUNCH when the first external:true tx exists: article (H5) + 90-sec demo + YC submit. (#12/#14/#15)
 
-END STATE: each self-funded AI earns > $1k with NO human, all posted live on aniccaai.com/dashboard —
-proving AI can earn money on its own — and redistributes surplus to all beings as UBI.
+END STATE: each self-funded AI earns > $1k with NO human — because it RUNS base agents and IMPROVES ITSELF
+via the harness — all posted live on aniccaai.com/dashboard, surplus redistributed to all beings as UBI.
+We (Dais + Claude Code) only ever touched the harness.
 ```
 
 ## 11. YC / c0mpiled (2026-07-05, Ibaraki) prep — RFS #3 "Software for Agents"
