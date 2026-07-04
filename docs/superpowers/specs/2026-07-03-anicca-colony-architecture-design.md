@@ -1537,3 +1537,7 @@ $100k++実エッジ=leaderboard(Theo$22M)。★$20-50 で「shit ton」は不可
 
 ### §17 進捗ログ(one-by-one, 各verify)
 - 2026-07-05: capital/best-practice を実データで確定(§17.8)。次 = STEP0 PM realized profit 確認 → STEP1 各エンジンBASE。
+
+- 2026-07-05 STEP0 PM: ★maker-bundle が約定し始めた★(受動resting→takerが当てに来た)。ポジ4件、ネット含み損益≈+$0.32(未実現)。
+  Wimbledon +$0.40 / Morocco -$0.03 / Canada -$0.03。realized は resolution or 売却時。= 戦略は「動いてる」、profit は「後で」実現(Q2の通り)。
+  次: ①resolution待ちで realized確認 ②SOL/HL は wallet空→funding必要(PMのみ資金あり)。SOL/HL BASEはコード先行実装。
