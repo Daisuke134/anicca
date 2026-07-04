@@ -296,16 +296,37 @@ on the niche the agent chose, runnable on any frontier model by swapping the mod
   wake's topic/hook/price/rail-mix to earn more — a closed loop the model drives by judgment, never hardcoded
   rules. Zero Opus, zero human.
 
-**Sprint 2.5 — flip the verified draft to real (Dais 2026-07-04): "the note is not actually published."**
-Sprint 1+2 proved the ORCHESTRATION (fail-closed gates, real content, real visuals, real ¥500 config) but Mode A
-by design never presses publish. The draft `nfb2ace9f0ed8` has passed V0/V0.5 + 4 rounds of adversary review +
-independent main-agent browser verification — the calibration Mode A exists for is done for this piece. Per
-§7.1, the graduation trigger is Dais's explicit go ("we have to have it actually published, after the
-verification"). Next action: run the SAME wiring (`lib/note_publish.sh`'s `run_note_mode_a_publish` → the
-identical `記事タイプ=有料/¥500` call, this time NOT cancelled — carried through to 投稿する) to make it live,
-then verify V1 (public URL, HTTP 200, paywall visible to a logged-out visitor) and start tracking V4 (does a
-real ¥500 sale land in the note account). This is a real, irreversible, monetized publish action — done once,
-observed, before Mode B is flipped to run this daily unattended.
+**Sprint 2.5 — DONE (2026-07-04): flip the verified draft to real, by hand.** "the note is not actually
+published, we have to have it actually published, after the verification." Built a standalone, one-off tool
+(`lib/note-publish-live.py` + independent `lib/note-verify-live.py`), structurally excluded from `run.sh`'s call
+graph (grep-verified, adversary-verified 6 rounds total across 1c/contract/impl review). The main agent
+personally invoked it once (`NOTE_LIVE_PUBLISH=1 python3 lib/note-publish-live.py --draft-key nfb2ace9f0ed8`).
+**Result: `nfb2ace9f0ed8` is genuinely PUBLIC.** Verified 3 independent ways: the tool's own output, the separate
+verifier process (logged-out, PASS:true), and the main agent's own fresh curl (HTTP 200 + exact title match).
+V1(real)=TRUE. This closed the manual proof — but it was a HUMAN HAND on the trigger, not the loop. Dais
+2026-07-04: "then wire that in, yes, we have to" — the honest gap this leaves open is §11.1.
+
+### §11.1 Sprint 4 — wire real publish INTO the loop (Mode B), so no human/Opus ever triggers it again
+
+Today: `run.sh` (the daily `claude -p` wake) stops at Mode A's draft every time — by design, it structurally
+cannot reach a publish click (REQ-6/REQ-21's isolation is intentional and stays true for Mode A). The real
+publish that just happened was the main agent running a separate tool by hand — **not the loop**. Closing this
+gap is Sprint 4's job:
+
+- **REQ-23 Mode-B publish branch.** WHEN `run.sh` runs WITH `AUTONOMY=on` (Mode B) AND V0∧V0.5 PASS, THEN `run.sh`
+  itself SHALL perform the equivalent of `note-publish-live.py`'s confirm→click sequence, reusing the SAME
+  fail-closed pre-publish checks (price/type/eyecatch/visuals) and the SAME try/except/finally exception-safety
+  (no leaked context, no raw traceback) — NOT a re-invention, a real code-sharing wire-up (e.g. `note-publish-live.py`'s
+  core logic becomes an importable function both the standalone tool AND `run.sh`'s Mode-B branch call). This is
+  the ONLY caller allowed to reach the real click from an unattended wake.
+- **REQ-24 Mode-B post-publish verify, in-loop.** Immediately after a Mode-B publish, `run.sh` SHALL invoke the
+  SAME independent verifier logic as `note-verify-live.py` (logged-out fetch, 200 + content match) and record
+  the result to state; on verify failure, the wake SHALL record an unconfirmed-publish state (never silently
+  assume success) for the next wake or self-heal (REQ-17, Sprint 5) to reconcile.
+- **Trust-ramp graduation (§7.1, unchanged principle):** Mode B is flipped per-install by explicit go — start
+  with a small number of Mode-B wakes (e.g. 1-in-N) while Mode A continues alongside for comparison, widen once
+  stable. Self-heal/self-improve (Sprint 5, REQ-17/18) is what eventually makes even THIS graduation decision
+  unattended — until then, turning AUTONOMY=on is the one calibration knob a human/main-agent still touches.
 
 ## §10 Non-goals / open
 
