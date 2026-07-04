@@ -6,7 +6,11 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # → writes a result marker. That is how the loops self-improve their own code without babysitting.
 # Usage: self-fix.sh <loop-name> "<blocker + concrete fix hint>"
 set -uo pipefail
-LOOP="${1:?loop name}"; BLOCKER="${2:?blocker+hint}"
+# FIND-025: NORMALIZE the loop name to a single canonical form ("<x>-loop") so every call site — healthcheck
+# (HC_LOOP=capafy-loop), STARTUP prompts (capafy), verify-loops (capafy) — maps to ONE session name + ONE result
+# marker. Without this, "capafy" and "capafy-loop" spawn two mutually-unaware fixers and split the marker the
+# anti-fake verifier reads. Idempotent: strip a trailing -loop then re-add it.
+LOOP="${1:?loop name}"; LOOP="${LOOP%-loop}-loop"; BLOCKER="${2:?blocker+hint}"
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"; SESSION="anicca-selffix-$LOOP"
 CLAUDE="$(command -v claude || echo /opt/homebrew/bin/claude)"
 STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
@@ -24,7 +28,12 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   if [ "$age_min" -lt "$MAX_FIXER_MIN" ]; then
     echo "$(date '+%F %T') self-fix[$LOOP] running (${age_min}min<${MAX_FIXER_MIN}) — skip" >> "$LOG"; echo "self-fix[$LOOP] already running (${age_min}min)"; exit 0
   fi
-  echo "$(date '+%F %T') self-fix[$LOOP] HUNG (${age_min}min≥${MAX_FIXER_MIN}) → kill+respawn" >> "$LOG"
+  # FIND-023: past the wall-clock ceiling, do NOT kill a fixer that is still actively generating (real progress) —
+  # active generation always shows "esc to interrupt". Only a session idle/stuck past 3h is genuinely hung.
+  if tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null | tail -6 | grep -qE 'esc to interrupt'; then
+    echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min but STILL GENERATING — let it continue" >> "$LOG"; echo "self-fix[$LOOP] still working (${age_min}min)"; exit 0
+  fi
+  echo "$(date '+%F %T') self-fix[$LOOP] HUNG+idle (${age_min}min≥${MAX_FIXER_MIN}) → kill+respawn" >> "$LOG"
   tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
 fi
 
