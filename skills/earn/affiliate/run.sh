@@ -14,7 +14,18 @@ ACCTS="$HOME_DIR/.cloak/affiliate-accounts.json"   # [{handle,profile,port,niche
 POSTER="$HOME_DIR/.claude/skills/ig-account-poster/scripts/post.py"   # PROVEN carousel poster
 CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
 PY=/opt/homebrew/bin/python3
-mkdir -p "$QUEUE" "$POSTED"
+STATE="$HOME_DIR/anicca/skills/earn/affiliate/state"
+mkdir -p "$QUEUE" "$POSTED" "$STATE"
+
+# MEASURE: 毎wake無条件に1回、アカウント全体のコミッション増分だけ確認。
+# SET/HANDLE/EARN_MODEのどれよりも前に置く — amazon_report.pyはこれらに一切
+# 依存しない新規タブベースの独立した確認であり、POSTの各種ゲートを一切
+# ブロックしない(clip/run.shのself_healより依存が少ない、
+# docs/superpowers/specs/2026-07-05-affiliate-bounty-state-machine-design.md §1.2参照)。
+# measure_commission.py自身が例外を握りつぶさずJSON出力に含める設計なので、
+# ここでの`2>/dev/null || true`はプロセスの異常終了だけを無害化するためのもの。
+"$PY" "$HOME_DIR/anicca/skills/earn/affiliate/measure_commission.py" \
+  --watermark "$STATE/commission-watermark.json" --wake "$WAKE" 2>/dev/null || true
 
 emit() { printf '{"slot":"earn/affiliate","did":%s,"earn_usdc":0,"cost_usdc":0}\n' \
   "$(printf '%s' "$1" | "$PY" -c 'import json,sys;print(json.dumps(sys.stdin.read()))')"; }

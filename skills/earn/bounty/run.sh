@@ -48,11 +48,27 @@ PY
 attempt(){
   local gj="$STATE/gated.json" af="$STATE/attempts.jsonl"
   [ -f "$gj" ] || gate >/dev/null 2>&1
-  local pick; pick=$("$PY" -c "import json;s=json.load(open('$gj')).get('survivors',[]);print(json.dumps(s[0]) if s else '')" 2>/dev/null)
-  [ -n "$pick" ] || { emit "attempt: no gated survivor to claim (real-USD inventory empty)"; return; }
-  # don't double-claim the same issue
+  # FIX (VCSDD REQ-B1 item 1, docs/superpowers/specs/2026-07-05-affiliate-bounty-state-machine-design.md §3):
+  # survivors[0]固定ではなく、attempts.jsonlに未登録の最初の1件を選ぶ。以前はsurvivors[0]が既に
+  # claimed済みだと"already claimed"と言うだけでsurvivors[1]以降を永久に試さないバグだった。
+  local pick; pick=$("$PY" -c "
+import json,os
+survivors=json.load(open('$gj')).get('survivors',[])
+claimed=set()
+if os.path.exists('$af'):
+    for line in open('$af'):
+        line=line.strip()
+        if not line: continue
+        try: d=json.loads(line)
+        except Exception: continue
+        if d.get('key'): claimed.add(d['key'])
+for s in survivors:
+    k=s['repo']+'#'+str(s['issue'])
+    if k not in claimed:
+        print(json.dumps(s)); break
+" 2>/dev/null)
+  [ -n "$pick" ] || { emit "attempt: no unclaimed gated survivor to claim (all already attempted or real-USD inventory empty)"; return; }
   local key; key=$("$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(d['repo']+'#'+str(d['issue']))" "$pick" 2>/dev/null)
-  if [ -f "$af" ] && grep -qF "\"key\":\"$key\"" "$af" 2>/dev/null; then emit "attempt: $key already claimed (tracking)"; return; fi
   "$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(json.dumps({'key':d['repo']+'#'+str(d['issue']),'repo':d['repo'],'issue':d['issue'],'bounty_usd':d.get('bounty_usd',0),'pr':None,'status':'claim','wake':sys.argv[2]}))" "$pick" "$WAKE" >> "$af"
   emit "attempt: WORK-ORDER written for $key (\$$(printf '%s' "$pick"|"$PY" -c 'import json,sys;print(json.load(sys.stdin).get("bounty_usd",0))' 2>/dev/null)). Brain: /attempt + fix(VSDD) + PR → set pr:N."
 }
@@ -60,18 +76,45 @@ attempt(){
 track(){
   local af="$STATE/attempts.jsonl" merged=0 tracked=0
   [ -f "$af" ] || { emit "track: no attempts yet (state/attempts.jsonl empty)"; return; }
+  # FIX (VCSDD REQ-B1 item 2, docs/superpowers/specs/2026-07-05-affiliate-bounty-state-machine-design.md §3):
+  # 事前に「既にstalled行が1回でも出たkey」の集合を作り、それらは以後gh呼び出しごとスキップする
+  # (これが無いとCLOSED判定のたびに毎wake重複してstalled行を無限に追記し続けるバグになる)。
+  local resolved; resolved=$("$PY" -c "
+import json
+resolved=set()
+for line in open('$af'):
+    line=line.strip()
+    if not line: continue
+    try: d=json.loads(line)
+    except Exception: continue
+    if d.get('status')=='stalled' and d.get('key'):
+        resolved.add(d['key'])
+print(' '.join(sorted(resolved)))
+" 2>/dev/null)
+  # BOUNTY_GH_OVERRIDE: テストフック、clip run.shのCLIP_SELF_HEAL_OVERRIDEと同じ命名慣習
+  local gh_bin="${BOUNTY_GH_OVERRIDE:-gh}"
+  local stalled_keys=""   # ループ中はここに溜めるだけ、$afへは書かない(ループとのI/O競合回避)
   # each line: {"key","repo":"o/r","pr":N|null,"issue":N,"bounty_usd":X,"status"}
   while IFS= read -r line; do
     [ -n "$line" ] || continue
-    local repo pr; repo=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('repo',''))" "$line" 2>/dev/null)
+    local repo pr key; repo=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('repo',''))" "$line" 2>/dev/null)
+    key=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('key',''))" "$line" 2>/dev/null)
     pr=$("$PY" -c "import json,sys;v=json.loads(sys.argv[1]).get('pr');print(v if v else '')" "$line" 2>/dev/null)
     [ -n "$repo" ] || continue
+    case " $resolved " in *" $key "*) continue;; esac   # 既にstalled確定済みならgh呼び出しごとスキップ
     tracked=$((tracked+1))
     [ -n "$pr" ] || { echo "[bounty] track $repo (no PR yet — awaiting brain)"; continue; }
-    local st; st=$(gh pr view "$pr" -R "$repo" --json state,reviewDecision 2>/dev/null | "$PY" -c "import json,sys;d=json.load(sys.stdin);print(d.get('state',''),d.get('reviewDecision',''))" 2>/dev/null)
+    local st; st=$("$gh_bin" pr view "$pr" -R "$repo" --json state,reviewDecision 2>/dev/null | "$PY" -c "import json,sys;d=json.load(sys.stdin);print(d.get('state',''),d.get('reviewDecision',''))" 2>/dev/null)
     echo "[bounty] track $repo#$pr → $st"
-    case "$st" in MERGED*) merged=$((merged+1));; esac
+    case "$st" in
+      MERGED*) merged=$((merged+1));;
+      CLOSED*) stalled_keys="$stalled_keys $key";;
+    esac
   done < "$af"
+  # ループ終了後にまとめて追記(ループ中のファイルI/O競合を避ける)
+  for k in $stalled_keys; do
+    "$PY" -c "import json;print(json.dumps({'key':'$k','status':'stalled'}))" >> "$af"
+  done
   # SETTLE (FIND-002): if anything merged, call the chain oracle — only real external USDC counts (INV-7)
   if [ "$merged" -gt 0 ]; then
     local re="${ANICCA_HOME:-$HOME/anicca}/skills/self/founder-loop/record-earn.mjs"
