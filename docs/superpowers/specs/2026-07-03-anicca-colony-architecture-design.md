@@ -1697,6 +1697,12 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - ~~残 = Task #5b~~ → ★完了(3b077b9)★: ubi-payout-watcher の pass() 先頭に contribute() 再利用の realized-surplus gate(閾値未満は Supabase queue すら読まず defer + defer-log.jsonl 記録)+ per-tx cap(`UBI_PERTX_CAP_BASE`)。本番 daemon 再起動 → `DEFER pass: realized=$0.006964 < $1` を6回以上連続で実ログ確認、以降送金ゼロ。★これで §27 事故の再発経路は閉じた = リリース文「収益の一部を配布」は fail-closed パイプとして正直に真★。
 - spawn-builder 追加実証(Task #6): 「稼いだら spawn」の発火条件は★追加コード不要★ — registry の live slot は runtime/loop が毎 wake の system prompt に載せ、agent 自身が run_skill で選ぶ(HARD RULE #0 通り、cron 的固定発火を hardcode しない)。`activeSkillSlots.includes("self/spawn-child")===true` を実行確認済み = 全 instance が次の wake から自分の判断でゲートを呼べる。
 
+### §30 ★ 記事3本(#36/#37/#38)ドラフト完成 → fresh review → 全 PASS(2026-07-05)★
+- ART-A(72b3fbed3+748c47d15)/ ART-B(8d866a616+6ba11ffae)/ ART-C(2e4893d6f)、各 ja/en、`docs/articles/drafts/`。全素材を執筆前に実データ裏取り(settle tx は RPC 直叩き、dashboard は live curl、audit ログ実集計)。
+- fresh-context reviewer(執筆者と別)が6 dimension 審査 → ★公開前に事実誤り1件を捕捉★(ブロック番号 89,713,198→実測 89,644,078、RPC 二重検証で確定)+ 未検証 order id 削除 + ART-B コスト($1.39)/モデル切替(8種の試行錯誤)を実測に修正 → 修正箇所 diff 再検証で★全ファイル PASS★。記録 = .vcsdd/features/colony-launch-day/reviews/2026-07-05-article-review.md。
+- HONESTY 設計: 「realized ≈$0.03-0.2」「Franklin は swap 未実行(無理な賭けをしなかった話)」「自動化はまだ人間起動」を全記事が明記 — 盛りゼロで launch する。
+- 公開 = Dais の copy 編集(no-human-loop の正当停止点)後。6/27 loop-engineering 既存記事とはシリーズ(概念編/実証編)。
+
 ### §29 ★ dashboard 3/3 LIVE + spawn capability 準備完了(2026-07-05)★
 - **#25/#14 中核達成(poster-builder)**: aniccaai.com の dashboard-sync に★3 instance 全部が実データで掲載★(alive:3, total ≈$25.4)。Franklin = ed25519(`telemetry-post-franklin.mjs`, ~/.blockrun の自鍵)、claude-p = 専用署名鍵を新規発行(資金保有 0x904B は ERC-1167 proxy で鍵を持たず EIP-191 不可 → `~/.anicca-founder/state/telemetry-identity.json`、mode600・非commit)。products main に PR #282(Solana ed25519 昇格)/#283(smoke ECONNRESET 3連続→正常deployをrollbackしていた既存バグ修正)/#285(telemetry.js の 0x限定guard + anicca-<hex>限定 host チェックの2つのハードコード除去、anti-squat 不変条件維持)/#286(claude-p 専用鍵)。Supabase instances に chain カラム追加。mother 8469108。
 - **funding flap 事故と恒久修正(team-lead)**: anicca-daemon.sh は起動時に既存 telemetry-poster を pkill して自分のを立てる = ★最後に再起動した daemon が poster を所有★。com.anicca.daemon が self-update 再起動で poster を奪い、その plist に ANICCA_FUNDING が無く a3cdd4 が funding=human に退行 → com.anicca.daemon plist にも self を追加+reload(founder-loop と両方に設定済み)。
