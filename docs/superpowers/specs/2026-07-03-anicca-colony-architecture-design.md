@@ -1619,3 +1619,13 @@ STEP 4 free-tier cloud login(DO/Daytona/Akash を browser で無料確保、課�
 STEP 5 自己spawn capability(prompt+script で子を Akash に即spawn、発火は資金できてから)
 STEP 6 記事(#36/37/38)/ ENV-README(#31)/ ハッカソン(#39)/ LAUNCH(#15)
 ```
+
+### §21.2 訂正: EXPLORE skill は既存(cook)= 新規構築不要(Dais 2026-07-05)
+- ★`~/anicca/skills/cook` = EXPLORE skill、既に存在 + ループ配線済★:
+  "search live web(firecrawl)for fresh earning opportunities → 候補URLを返す → YOUが試す→earner配線→forum共有(1探索→N再利用)"。
+  runtime/loop の config/index/prompt/self-eval.mjs から呼ばれる = automaton+ClawRouter が実際に cook を叩いてる(self-eval に cook→yield 実績)。
+  `research` skill も併存。
+- ★従って STEP 2a は「新 EXPLORE 構築」ではなく = ①cook が全 instance のループで確実に回る ②cook 候補を実際に
+  「試す→新earner skill 配線→テスト→merge」する橋(#35)③個体 self-improve(#41)④集団 git-merge(#27)★。
+- 既にある部品(要らぬ再発明を避ける): cook(explore)/ research / 3トレード baseline / self-eval(H2)/ self-improve(H3)/
+  founder-loop(automaton)/ pm-earner(claude-p)/ franklin-sol(Franklin)。★残 = これらを繋いで「探索→試作→稼ぐ→merge」を閉じる★。
