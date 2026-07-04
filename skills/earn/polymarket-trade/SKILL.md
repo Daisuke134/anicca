@@ -48,7 +48,15 @@
 > | date | engine | in | position / P&L | proof |
 > |---|---|---|---|---|
 > | 2026-07-04 | pm-v2 taker | ~$3 pUSD | 1.7857 sh "Morocco win" YES @0.5599 = $0.99 (open) | order `0xdad65538…` matched; settle tx `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` (status 0x1) |
-> | 2026-07-04 | pm-v2 maker(MM base) | 5 sh @0.17 = $0.85 | resting maker order (spread+rebate accrues on fill) | order `0x73bee6545b10` server status=live |
+> | 2026-07-04 | pm-v2 maker(MM base) | 5 sh @0.17 = $0.85 | resting maker order | order `0x73bee6545b10` status=live |
+> | 2026-07-04 | pm-v2 MM two-sided | 5 YES@0.56 + 5 NO@0.43 (Morocco) | delta-neutral, spread capture on fill | orders `0xcd75314cd7f1` + `0xc59559c7b84a` both status=live |
+>
+> ### 🔧 CAPITAL RECOVERY (2026-07-04): un-stuck \$10.93 via relayer transfer_erc20
+> \$10.93 (USDC.e \$5.976 + pUSD \$4.951) was stranded in a wrong wallet (POLY_PROXY
+> `0x3f06`, undeployed) set up before the sig-3 path was found. Recovered with
+> `SecureClient._create(wallet=0x3f06, api_key=relayer) → transfer_erc20(→deposit wallet)`
+> — the relayer deployed the proxy + swept both tokens gaslessly. Deposit wallet now
+> holds pUSD 6.891 + USDC.e 5.976 (≈\$12.9 tradeable). Lesson: recover, don't abandon.
 >
 > ★ FIRST REAL no-human position placed. browser=0, human-credentials=0. The number
 > moves only on real on-chain fills — this row is a verified settle tx, not a claim. ★
