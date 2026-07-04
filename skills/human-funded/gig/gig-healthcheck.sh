@@ -44,7 +44,7 @@ restart(){
   fi
   echo "$now" >> "$RESTART_LOG"
   echo "$(date '+%F %T') $1 → restarting" >> "$LOG"
-  bash "$HOME/anicca/skills/earn/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$HOME/anicca/skills/human-funded/gig/gig-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then

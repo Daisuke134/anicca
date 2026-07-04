@@ -42,7 +42,7 @@ restart() {
   pkill -f "tmux -S $SOCK new-session" 2>/dev/null || true
   sleep 1
   echo "$(date '+%F %T') ${1:-bounty-core DEAD} → restart" >> "$LOG"
-  bash "$HOME/anicca/skills/earn/bounty/bounty-cli.sh" --restart >> "$LOG" 2>&1 || true
+  bash "$HOME/anicca/skills/human-funded/bounty/bounty-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then

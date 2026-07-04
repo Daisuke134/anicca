@@ -1,5 +1,5 @@
 """PROP-S1 (back-compat), PROP-I1 (no ~/loops writes), PROP-I2 (no tmux kill)
-integration tests on Darwin. Runs the real skills/earn/gig/run.sh and parses
+integration tests on Darwin. Runs the real skills/human-funded/gig/run.sh and parses
 its stdout JSON.
 
 NOTE: this test reads ~/gig/ ledgers (production data) but writes NOTHING.
@@ -20,7 +20,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RUN_SH = REPO_ROOT / "skills" / "earn" / "gig" / "run.sh"
+RUN_SH = REPO_ROOT / "skills" / "human-funded" / "gig" / "run.sh"
 LOOPS_DIR = Path.home() / "loops" / "gig"
 
 EXISTING_KEYS = {
