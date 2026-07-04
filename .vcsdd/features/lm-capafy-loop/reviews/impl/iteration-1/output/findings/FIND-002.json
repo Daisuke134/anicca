@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The anti-fake contract requires: 'a revenue number is real ONLY if the provider API returns it... the script must NEVER fabricate a number... On an API error/unparseable response it must fail SAFE (show NA / not silently 0-as-success)'. This is violated by construction. Capafy's CAP_REV parse (loop.sh:29-32) does `.get('data',{}).get('data',[])` and sums it; Stripe's LM_SUBS parse (loop.sh:34-37) does `.get('data',[])` and takes len(). Both provider APIs return well-formed JSON error bodies on failure that are NOT shaped like a success response but also do NOT raise a Python exception: Capafy returns `{\"code\":401,...}` (the exact shape the script's own HEAL check at line 18 parses the 'code' field from, proving this response shape is real and expected), and Stripe returns the standard `{\"error\":{\"type\":...,\"message\":...}}` on any 4xx (invalid key, rate-limited, bad request). Neither error shape has a top-level 'data' key, so `.get('data',{})`/`.get('data',[])` silently default to empty, and the script prints '0.0'/'0' as if it had verified zero revenue -- exactly the '0-as-success' failure mode the contract forbids. Because the HEAL check (lines 17-19, 24-25) and the READ call (lines 29, 34) are two SEPARATE curl invocations -- for Capafy even against a DIFFERENT endpoint (/agent/account vs /agent/sales/trend) -- a TOCTOU gap or an endpoint-specific outage lets this happen even when heal_first reports 'all revenue surfaces healthy', producing a STATE.md that looks entirely trustworthy but contains a fabricated-looking zero.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "17-19,24-25,29-37",
+    "snippet": "CAP_REV=\"$(curl ... https://api.capafy.ai/agent/sales/trend ... | python3 -c \\\"...d=json.load(sys.stdin).get('data',{}).get('data',[]); print(round(sum(x.get('netRevenue',0) for x in d),2))\\n...\\\" ...)\"\nLM_SUBS=\"$(curl ... 'https://api.stripe.com/v1/subscriptions?status=active&limit=100' ... | python3 -c \\\"...d=json.load(sys.stdin); print(len(d.get('data',[])))\\n...\\\" ...)\""
+  },
+  "fix": "Before defaulting to an empty list, explicitly check for an error indicator (Capafy: top-level 'code' != 0; Stripe: presence of an 'error' key or absence of \\\"object\\\":\\\"list\\\") and print 'NA' in that case instead of treating missing 'data' as zero. Ideally reuse the SAME parsed response for both the health signal and the revenue number so there is no TOCTOU window between HEAL and READ.",
+  "routeToPhase": "2b"
+}

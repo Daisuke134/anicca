@@ -1,8 +1,17 @@
 // Hand-rolled validator (matches repo style — fashion webhook validates inline; zod is not a dep).
 // Returns { ok:true, payload } or { ok:false, reason:"schema" }.
+const BASE_ID_RE = /^0x[a-fA-F0-9]{40}$/;
+// Base58 alphabet excludes 0/O/I/l (Bitcoin/Solana convention) to avoid visual ambiguity.
+const SOLANA_ID_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+
 function validate(o) {
   if (o === null || typeof o !== "object") return { ok: false, reason: "schema" };
-  if (typeof o.id !== "string" || !/^0x[a-fA-F0-9]{40}$/.test(o.id)) return { ok: false, reason: "schema" };
+  const chain = o.chain === undefined ? "base" : o.chain;
+  if (chain !== "base" && chain !== "solana") return { ok: false, reason: "schema" };
+  if (typeof o.id !== "string") return { ok: false, reason: "schema" };
+  if (chain === "solana") {
+    if (!SOLANA_ID_RE.test(o.id)) return { ok: false, reason: "schema" };
+  } else if (!BASE_ID_RE.test(o.id)) return { ok: false, reason: "schema" };
   if (!Number.isInteger(o.ts) || o.ts <= 0) return { ok: false, reason: "schema" };
   for (const k of ["host", "geo", "model_live"]) {
     if (typeof o[k] !== "string" || o[k].length === 0) return { ok: false, reason: "schema" };

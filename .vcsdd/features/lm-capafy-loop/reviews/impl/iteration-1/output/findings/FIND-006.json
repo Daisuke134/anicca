@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "loop.sh never reads its own prior STATE.md before overwriting it -- unlike the reference model founder-loop.sh, which explicitly reads PREV_EARN from the existing STATE.md before acting (its INV-H1 invariant, founder-loop.sh:19-21) and persists prev_realised_earn_usdc for the next wake to compare against (founder-loop.sh:45-46). Combined with Capafy's revenue metric being only a 3-day trailing window (the field is literally named capafy_net_revenue_usd_3d, loop.sh:54) and no accumulation of history anywhere, the script cannot correctly evaluate its own stated GOAL line, which it writes verbatim every wake: 'LM Stripe revenue + Capafy subscription revenue > Dais monthly spend (~$200)' (loop.sh:50). A wake cadence gap greater than 3 days permanently loses visibility into that gap's Capafy revenue (it is never re-summed or carried forward), and there is no mechanism analogous to founder-loop's ledger-summed cumulative TOTAL to reconcile a rolling 3-day snapshot against a MONTHLY spend comparison.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "9-10,50,54",
+    "snippet": "DIR=\"${LMCAP_DIR:-$HERE}\"; STATE_MD=\"$DIR/state/STATE.md\"; mkdir -p \"$DIR/state\"\n... (no read of $STATE_MD anywhere before it is overwritten at line 57) ...\necho \"capafy_net_revenue_usd_3d: $CAP_REV\""
+  },
+  "fix": "Either read+carry-forward a running monthly total in STATE.md (mirroring founder-loop's PREV_EARN pattern), or call a Capafy endpoint that returns actual monthly/cumulative revenue instead of a 3-day trend, and document how the number is reconciled against the ~$200/month goal.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "The numeric guard `grep -qE '^[0-9.]+$'` for CAP_REV (loop.sh:42) accepts any run of digits and dots including malformed multi-dot values ('1.2.3', '.', '..', '1..2') since the pattern places no constraint on how many dots appear or their position, before handing the value to `awk \"BEGIN{exit !($CAP_REV>0)}\"`. Under the current python `round(x,2)` producer this specific malformation cannot occur today, so it is latent rather than firing, but it is a known-and-already-documented class of defect: the sibling founder-loop.sh was reviewed and flagged for the IDENTICAL weak-numeric-guard pattern (its own adversarial history, FIND-903, calls out 'TOTAL should be validated as a single well-formed number'). This exact lesson was not carried over into lm-capafy-loop.sh, which duplicates the same loose-guard shape for a different revenue field.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "42",
+    "snippet": "if printf '%s' \"$CAP_REV\" | grep -qE '^[0-9.]+$' && awk \"BEGIN{exit !($CAP_REV>0)}\" 2>/dev/null; then STATUS=\"EARNING (Capafy net \\$$CAP_REV) — grow it\"; fi"
+  },
+  "fix": "Use a strict single-decimal numeric pattern, e.g. `^-?[0-9]+(\\.[0-9]+)?$`, matching the hardening already recommended for founder-loop.sh's TOTAL guard.",
+  "routeToPhase": "2b"
+}

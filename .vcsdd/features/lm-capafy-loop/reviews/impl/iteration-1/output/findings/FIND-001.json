@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The spec's GOAL is explicitly a DOLLAR comparison: 'LM Stripe revenue + Capafy subscription revenue > Dais monthly spend (~$200)' (design spec lines 16, 36; restated verbatim in the STATE.md goal line the script itself writes, loop.sh:50). But loop.sh never computes an LM dollar figure at all — LM_SUBS (loop.sh:34-37) is `len(d.get('data',[]))`, i.e. a COUNT of Stripe subscription objects with status=active, not a currency amount. A count cannot be validly summed against a $200/month threshold: it says nothing about plan price, currency, proration, or whether the subscription is actually paid (a $0-price or 100%-coupon-discounted subscription, or one created for QA by Dais himself, still counts as 'active' and inflates LM_SUBS to a positive number, which loop.sh:43 then reads as 'EARNING').",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "33-37,43,50",
+    "snippet": "LM_SUBS=\"$(curl ... 'https://api.stripe.com/v1/subscriptions?status=active&limit=100' ... | python3 -c \"...print(len(d.get('data',[])))\" ...)\"\nif printf '%s' \"$LM_SUBS\" | grep -qE '^[0-9]+$' && [ \"${LM_SUBS:-0}\" -gt 0 ] 2>/dev/null; then STATUS=\"EARNING (LM $LM_SUBS active subs) — grow it\"; fi"
+  },
+  "fix": "Compute an actual dollar figure (e.g. Stripe balance_transactions summed over the period, or sum of each subscription's items[].price.unit_amount while excluding $0/coupon-discounted/trialing subs) and compare that against $200/mo, not a raw subscription count.",
+  "routeToPhase": "2b"
+}

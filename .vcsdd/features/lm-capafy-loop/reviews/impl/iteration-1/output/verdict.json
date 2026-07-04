@@ -1,0 +1,27 @@
+{
+  "feature": "lm-capafy-loop",
+  "reviewType": "impl",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewedFile": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "referenceModel": "/Users/anicca/anicca/skills/self/founder-loop/founder-loop.sh",
+    "authoritativeSpec": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-04-anicca-money-loop-lm-capafy-design.md",
+    "note": "No manifest.json existed at reviews/impl/iteration-1/input/; located the authoritative spec myself via grep across the repo (docs/superpowers/specs/2026-07-04-anicca-money-loop-lm-capafy-design.md). No SKILL.md and no test file exist for this skill directory.",
+    "executionNote": "I do not have a Bash tool in this session (only Read/Write/Edit/Grep/Glob were provided despite the task text saying 'you have Bash'). I did NOT execute loop.sh myself. Evidence used instead: (1) the pre-existing state/STATE.md on disk, timestamped 2026-07-04T14:57:55Z, which reflects a real prior live run (heal_first=healthy, subs=0, capafy_rev_3d=0.0); (2) static code-trace of the bash+python logic, which is deterministic and traceable by hand for the failure-path findings below; (3) confirmed STRIPE_SECRET_KEY in ~/.openclaw/.env is currently 'sk_live...' (prefix only, not full value read/printed)."
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "FAIL", "findings": ["FIND-001", "FIND-008"], "evidence": []},
+    {"name": "edge_case_coverage", "verdict": "FAIL", "findings": ["FIND-003", "FIND-004"], "evidence": []},
+    {"name": "implementation_correctness", "verdict": "FAIL", "findings": ["FIND-002", "FIND-003", "FIND-009"], "evidence": []},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["FIND-005", "FIND-006", "FIND-007"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["FIND-004"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 9,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

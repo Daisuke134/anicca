@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The authoritative design spec's HEAL-FIRST requirement (section 11, point 0) explicitly lists checking 'crons firing (log freshness)' alongside auth/endpoint health, and requires 'If broken → auto-fix (re-auth via email-OTP, restart, rollback) or ONE escalation' -- generalizing the money-path-monitor pattern and directly naming the incident (section 4's 'one Telegram ping', section 8's 6-week silent Capafy-token death, section 12's 'the cron does not point at [daily_loop.sh] → it never ran' — a failure mode an auth-only check cannot catch). loop.sh implements neither of these: (1) it checks only 3 auth/endpoint signals (Capafy /agent/account, LM /health, Stripe key) and never checks whether the actual publish cron/log has fired recently, so the exact 'loop built but launchd job never loaded' failure mode from section 12 would sail through HEAL as 'healthy'; (2) on HEAL-NEEDED it performs no auto-fix and sends no notification/escalation of any kind -- it only writes a suggested manual heal string into STATE.md. Section 13 (the narrower as-built description this file matches) silently drops both requirements without an explicit spec amendment reconciling the gap against sections 4/11/12.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "15-25",
+    "snippet": "# ── 0. HEAL-FIRST: is each revenue surface alive? ────────────────────────────\n... (only CAP_HEALTH, LM_HEALTH, ST_HEALTH; no cron-log-freshness check; no auto-fix call; no notification call anywhere in the file)"
+  },
+  "fix": "Add a cron-log-freshness check (e.g. stat the daily_loop.sh/daily_publish.sh log mtime, fail HEAL if stale beyond N days) and a notification call (e.g. Telegram ping) on HEAL-NEEDED; or explicitly amend the design spec section 13 to descope auto-fix/escalation/cron-freshness for this specific measurement-only file, recording why that narrowing is safe given section 11/12's motivating incident.",
+  "routeToPhase": "2b"
+}

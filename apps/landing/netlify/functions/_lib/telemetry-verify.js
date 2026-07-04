@@ -1,4 +1,6 @@
 const { verifyMessage } = require("ethers");
+const nacl = require("tweetnacl");
+const bs58 = require("bs58");
 const { validate } = require("./telemetry-schema");
 
 // CLIENT-SIDE format helper only. The verifier NEVER calls this on inbound data — it recovers the
@@ -12,6 +14,7 @@ function canonicalMessage(p) {
   };
   // Additive leaderboard fields — appended ONLY when present so they are covered by the signature,
   // while base-only messages stay byte-identical (cross-language + back-compat preserved).
+  if (p.chain !== undefined) m.chain = p.chain;
   if (p.tags !== undefined) m.tags = p.tags;
   if (p.revenue_today_usd !== undefined) m.revenue_today_usd = p.revenue_today_usd;
   if (p.revenue_by_source !== undefined) m.revenue_by_source = p.revenue_by_source;
@@ -30,6 +33,18 @@ function verifyTelemetry(message, signature, ctx) {
   if (p.ts > ctx.now + 5) return { ok: false, reason: "future" };
   if (ctx.now - p.ts > 60) return { ok: false, reason: "stale" };
   if (p.ts <= ctx.lastTs) return { ok: false, reason: "replay" };
+  if (p.chain === "solana") {
+    // ed25519 has no signature-recovery step (unlike ECDSA) — the claimed `id` IS the
+    // verification key. base58 is case-sensitive: NEVER .toLowerCase()/.toUpperCase() here.
+    let verified;
+    try {
+      const pub = bs58.decode(p.id);
+      const sig = bs58.decode(signature);
+      verified = nacl.sign.detached.verify(Buffer.from(message, "utf8"), sig, pub);
+    } catch { return { ok: false, reason: "bad_signature" }; }
+    if (!verified) return { ok: false, reason: "bad_signature" };
+    return { ok: true, payload: p };
+  }
   let signer;
   try { signer = verifyMessage(message, signature); } catch { return { ok: false, reason: "bad_signature" }; }
   if (signer.toLowerCase() !== p.id.toLowerCase()) return { ok: false, reason: "signer_mismatch" };

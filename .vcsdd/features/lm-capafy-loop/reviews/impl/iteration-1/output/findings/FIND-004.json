@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "loop.sh has ZERO automated tests and ZERO test-seam environment variables (no LMCAP_TEST/mock-injection mechanism of any kind), despite its own header comment claiming it is 'Modeled on ~/anicca/skills/self/founder-loop/founder-loop.sh'. The reference model it names ships test-founder-loop.sh: 7 behavioral tests plus static invariant greps (INV-H1..H6), using FOUNDER_TEST=1 + FOUNDER_DIR + FOUNDER_LOGS_JSON/FOUNDER_CURSOR/FOUNDER_BLOCK_NOW seams so failure paths (corrupt ledger, corrupt cursor, self-transfer-only, first-run) can be exercised WITHOUT touching live infra. lm-capafy-loop.sh has no equivalent: every single invocation unconditionally calls the live production Capafy account endpoint, the live production Railway LM /health endpoint, and the live production Stripe account with real production credentials -- there is no way to reproduce or regression-test any of the failure modes in FIND-002/FIND-003 (error-shaped-but-parseable API response, TOCTOU between heal-check and read, malformed numeric value) without deliberately breaking a real production credential.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "1-60",
+    "snippet": "(whole file — no LMCAP_TEST branch anywhere; no test-lm-capafy-loop.sh exists in the directory)"
+  },
+  "fix": "Add an LMCAP_TEST=1 seam (mirroring founder-loop's FOUNDER_TEST) that swaps the three curl calls for injectable fixture responses (env-var JSON strings or a stubbed 'curl' shim on PATH), and write test-lm-capafy-loop.sh covering: all-healthy path, each surface individually down, error-shaped-but-JSON-parseable response on READ while HEAL passes (the FIND-002 TOCTOU case), malformed numeric CAP_REV, and STATE.md atomicity (no .tmp left behind).",
+  "routeToPhase": "2b"
+}

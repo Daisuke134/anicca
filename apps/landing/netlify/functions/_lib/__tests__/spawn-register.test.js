@@ -7,6 +7,8 @@
 const { test } = require("node:test");
 const assert = require("node:assert");
 const { Wallet } = require("ethers");
+const nacl = require("tweetnacl");
+const bs58 = require("bs58");
 const { canonicalMessage, verifyTelemetry } = require("../telemetry-verify");
 
 const KEY = "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d";
@@ -111,6 +113,51 @@ test("S2-IMPL-FIND-002: rejects revenue_today_usd > revenue_mo_usd BEFORE touchi
   await assert.rejects(
     registerSpawn({ privateKey: KEY, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() }),
     /verifyTelemetry|schema/i,
+  );
+  assert.strictEqual(stub.calls.length, 0);
+});
+
+// Sprint-6: multi-chain — solana registerSpawn (chain param, ed25519 signer, id NEVER lowercased)
+const solKeypair = nacl.sign.keyPair();
+const SOL_ADDR = bs58.encode(Buffer.from(solKeypair.publicKey));
+const SOL_SECRET_B58 = bs58.encode(Buffer.from(solKeypair.secretKey));
+
+function solPayload(over = {}) {
+  return {
+    id: SOL_ADDR, chain: "solana", ts: NOW_S, host: "akash", geo: "JP", model_live: "glm-4.7",
+    model_tier: "free", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0.1, runway_days: 10,
+    status: "alive", ...over,
+  };
+}
+
+test("S6.3: solana registerSpawn signs via ed25519 and verifies OK", async () => {
+  const { registerSpawn } = require("../spawn-register");
+  const p = solPayload();
+  const stub = makeStoreStub();
+  const iso = new Date(NOW_S * 1000).toISOString();
+  const result = await registerSpawn({ chain: "solana", privateKey: SOL_SECRET_B58, payload: p, storeDeps: stub.deps, now: () => iso });
+  assert.strictEqual(result.message, canonicalMessage(p));
+  const v = verifyTelemetry(result.message, result.signature, { now: NOW_S, lastTs: 0 });
+  assert.strictEqual(v.ok, true, `verify must pass, got: ${v.reason}`);
+});
+
+test("S6.3: solana registerSpawn does NOT lowercase the id in the stored row (regression guard)", async () => {
+  const { registerSpawn } = require("../spawn-register");
+  const p = solPayload();
+  const stub = makeStoreStub();
+  await registerSpawn({ chain: "solana", privateKey: SOL_SECRET_B58, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() });
+  assert.strictEqual(stub.calls.length, 1);
+  assert.strictEqual(stub.calls[0].id, SOL_ADDR); // exact case, not .toLowerCase()
+});
+
+test("S6.3: solana registerSpawn rejects a claimed id that doesn't match the signing key", async () => {
+  const { registerSpawn } = require("../spawn-register");
+  const otherKeypair = nacl.sign.keyPair();
+  const wrongId = bs58.encode(Buffer.from(otherKeypair.publicKey));
+  const p = solPayload({ id: wrongId });
+  const stub = makeStoreStub();
+  await assert.rejects(
+    registerSpawn({ chain: "solana", privateKey: SOL_SECRET_B58, payload: p, storeDeps: stub.deps, now: () => new Date().toISOString() }),
   );
   assert.strictEqual(stub.calls.length, 0);
 });

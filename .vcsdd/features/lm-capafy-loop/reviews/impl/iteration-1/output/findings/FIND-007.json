@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "STATUS computation (loop.sh:40-44) is a sequence of full overwrites, not a composition. If HEAL is non-empty it unconditionally clobbers any 'EARNING' string already computed in the same wake (line 44 runs last and wins). Concretely: if LM Stripe subs are genuinely > 0 (real earning) in the same wake that Capafy auth happens to be down, the human/agent-facing STATUS line reports ONLY 'HEAL-NEEDED — CAPAFY-AUTH-DOWN...' -- the fact that real revenue also exists this wake is dropped from the one field most likely to be skimmed (the raw lm_active_paid_subs field is still printed separately, but the narrative STATUS text hides it).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "40-44",
+    "snippet": "if ...; then STATUS=\"EARNING (Capafy net \\$$CAP_REV) — grow it\"; fi\nif ...; then STATUS=\"EARNING (LM $LM_SUBS active subs) — grow it\"; fi\n[ -n \"$HEAL\" ] && STATUS=\"HEAL-NEEDED — $HEAL\""
+  },
+  "fix": "Compose STATUS to reflect both concerns when both apply, e.g. 'EARNING (LM 3 subs) + HEAL-NEEDED (Capafy down)', instead of a single winner-takes-all string.",
+  "routeToPhase": "2b"
+}

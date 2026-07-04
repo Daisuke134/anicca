@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "When CAP_REV or LM_SUBS genuinely resolves to 'NA' (curl timeout, empty body, non-JSON -- the python except-branch), and HEAL passed at check-time (or the heal-check endpoint differs from the read endpoint, so HEAL genuinely can't see this particular failure), STATUS falls through to the hardcoded default string at line 41: 'NO realised external revenue yet — bottleneck = DEMAND (users/sales), not code'. This is self-contradictory within the SAME STATE.md file: the same wake would show 'capafy_net_revenue_usd_3d: NA' or 'lm_active_paid_subs: NA' (a code/data-fetch failure indicator) right next to a STATUS line that explicitly asserts 'not code'. A human or the downstream self-improve agent skimming just the STATUS line would wrongly conclude there is no infra/code problem when in fact the READ step just failed.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "40-44",
+    "snippet": "SPEND=200\nSTATUS=\"NO realised external revenue yet — bottleneck = DEMAND (users/sales), not code\"\nif printf '%s' \"$CAP_REV\" | grep -qE '^[0-9.]+$' && awk \"BEGIN{exit !($CAP_REV>0)}\" 2>/dev/null; then STATUS=\"EARNING (Capafy net \\$$CAP_REV) — grow it\"; fi\nif printf '%s' \"$LM_SUBS\" | grep -qE '^[0-9]+$' && [ \"${LM_SUBS:-0}\" -gt 0 ] 2>/dev/null; then STATUS=\"EARNING (LM $LM_SUBS active subs) — grow it\"; fi\n[ -n \"$HEAL\" ] && STATUS=\"HEAL-NEEDED — $HEAL\""
+  },
+  "fix": "Add an explicit branch: if CAP_REV==\"NA\" or LM_SUBS==\"NA\" (and HEAL is empty, i.e. HEAL didn't already catch it), set STATUS to something like 'READ-FAILED (NA) — data fetch broke after heal-check passed; investigate/retry', distinct from both EARNING and the demand-side default.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "There is no check anywhere in loop.sh that STRIPE_SECRET_KEY is a LIVE-mode key (prefix sk_live_) rather than a TEST-mode key (sk_test_). Verified the current ~/.openclaw/.env value does begin with 'sk_live' (prefix only was grepped, full secret not read/printed), so the currently observed STATE.md output is genuinely live-mode data -- but the script itself has zero code-level enforcement of this. If the env var is ever swapped to a test key (e.g. left over from local development, or a future accidental edit), every Stripe call in this script would silently operate against Stripe's TEST-MODE data set, which can contain fabricated/test subscriptions with no relation to real money, and the script would report them via lm_active_paid_subs and a resulting 'EARNING' STATUS exactly as if they were real revenue -- a direct violation of the 'a revenue number is real ONLY if the provider API returns it [as real production data]' anti-fake contract, with no code-level guard preventing it.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "24,34",
+    "snippet": "ST_HEALTH=\"$(curl ... -u \\\"${STRIPE_SECRET_KEY:-x}:\\\" ...)\"\nLM_SUBS=\"$(curl ... -u \\\"${STRIPE_SECRET_KEY:-x}:\\\" ...)\"\n(no check of the key's sk_live_/sk_test_ prefix anywhere in the file)"
+  },
+  "fix": "Assert `${STRIPE_SECRET_KEY}` starts with `sk_live_` before trusting the READ result; if it does not, force HEAL-NEEDED with an explicit 'STRIPE-KEY-IS-TEST-MODE' heal reason rather than silently reading test-mode data as real revenue.",
+  "routeToPhase": "2b"
+}
