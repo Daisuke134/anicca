@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV2(GATE 1ラウンド1 FAIL、根本的な設計ミスを修正) |
+| 状態 | spec REV3(GATE 1ラウンド1-2 FAIL、致命的な設計欠陥を修正) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -57,21 +57,32 @@ JOINしたら、そのcampaignのライフサイクルが終わるまで別campa
 
 ### 1.2 正しい参照実装は`earn/clip`(clip-promoteではない)
 
-`~/anicca/skills/earn/clip/run.sh:111-125`(REQ-008、fresh grep根拠、全文引用):
+`~/anicca/skills/earn/clip/run.sh:111-126`(REQ-008、fresh grep根拠。GATE 1ラウンド2で
+「全文引用」という表現が不正確と指摘され訂正 — 実際は116行目コメント・117-119行目の
+コメントブロックを含む全16行、以下が正確な全文):
 ```bash
 # REQ-008: self-heal runs ONCE per wake, BEFORE new-content posting, using the SAME resolved
 # HANDLE/TID this wake already confirmed logged-in. Runs regardless of whether a new clip is
 # queued (independent of the QUEUE-empty check below) but never blocks the posting pipeline
 # below regardless of its own outcome (best-effort; failure here must not prevent a new post).
-SELF_HEAL="${CLIP_SELF_HEAL_OVERRIDE:-$(dirname "${BASH_SOURCE[0]}")/self_heal.py}"
+SELF_HEAL="${CLIP_SELF_HEAL_OVERRIDE:-$(dirname "${BASH_SOURCE[0]}")/self_heal.py}"  # test hook (PROP-009), unset in production
 if [ -f "$SELF_HEAL" ]; then
+  # FIXED after Phase 3 FIND-103: pass the paths run.sh ALREADY resolved via _instance_paths.sh
+  # above, instead of self_heal.py re-deriving ANICCA_INSTANCE suffixing independently in Python
+  # (a duplicate/drifting-logic risk with zero enforcement mechanism to keep the two in sync).
   CDP_PORT="$PORT" "$PY" "$SELF_HEAL" --handle "$HANDLE" --tid "$TID" --wake "$WAKE" \
     --pending-verify "$PENDING_VERIFY" --posted "$POSTED" --ledger "$LEDGER" 2>/dev/null || true
 fi
+
 if [ -z "${CLIP}" ]; then
   emit "nothing new to post (queue empty; self-heal already ran this wake)"; exit 0
 fi
 ```
+挙動確認: `self_heal.py`の終了コードは`|| true`(121行目)で握りつぶされ、124行目の
+`if [ -z "${CLIP}" ]`チェックはself_healの結果に一切依存しない。self-healがPOSTを
+ブロックしないという主張は正しいと確認済み。`CLIP_SELF_HEAL_OVERRIDE`という
+テストフック(115行目コメント)も存在する — bounty用の`gh`モック機構(§3.3)で
+同じ命名パターンを踏襲する。
 これがaffiliateの実際の形に合う唯一の既存パターン: **「未解決アイテムの回収
 (self-heal相当)」と「新規投稿」は独立した2つのステップとして毎wake両方試み、
 片方の結果がもう片方をブロックしない**。
@@ -93,56 +104,95 @@ fi
 - `amazon_report.py` / `record-affiliate-earn.mjs` — §0で訂正した通り、コメント言及のみで
   実行呼び出しは0件(dangling)。
 
-### 新規ディレクトリ構造(REQ-A1、clipのqueue/posted/pending-verifyパターンを模す)
+### ★GATE 1ラウンド2で発見した致命的な事実誤認(REV3で訂正)★
 
+REV2の`measure_one.py`設計は「投稿済みアイテム1件ごとにcommissionを個別確認する」
+という前提だったが、これは**実装不可能な前提だった**。実際に`amazon_report.py`
+(21-42行)を読むと:
+- **引数を一切取らない**(`main()`はitem/URLを一切受け取らない)。
+- affiliate.amazon.co.jpの「**今月のレポート**」カードから`紹介料合計`
+  (=**アカウント全体・当月累計**のコミッション)をスクレイプするだけ。
+- **どの投稿がどのクリック/購入を生んだかを一切区別できない**(per-post
+  attributionの仕組みがAmazon Associatesのこのダッシュボード上に存在しない)。
+
+つまり「アイテムXのcommissionを確認する」という操作自体が、このツールでは
+そもそも不可能。REV2の`measure_one(item)`という関数シグネチャは実装できない
+(adversary finding #2は完全に正しく、致命的)。
+
+**さらに追加で発見した不整合**: `record-affiliate-earn.mjs`のINV-4は
+`report_export_id`(非空文字列)を必須とするが、`amazon_report.py`は
+そのようなIDを一切生成しない(ダッシュボードのライブスクレイプであり、
+Amazonの「レポートをエクスポート」機能を使っていないため)。この2つの
+スクリプトは**過去の別々の設計意図で書かれ、一度も実際に繋げて動かされて
+いない**(だからこそdanglingのまま放置されていた、と推測できる)。
+
+### 修正した設計: アイテム単位ではなく「アカウント全体の当月累計」を追跡する(REQ-A2)
+
+per-post attributionを諦め、「アカウント全体で今月コミッションが**増えたか**」
+だけを検知する、より単純で実装可能な設計に変更する。これは「どの投稿が稼いだか」
+は分からないが、「アフィリエイトで実際にお金が発生したかどうか」というHARD RULE
+0.24(no-fake-earn)の核心要件は満たす。
+
+新規state(`~/anicca/skills/earn/affiliate/state/commission-watermark.json`):
+```json
+{"month": "2026-07", "last_commission_jpy": 0, "last_checked_at": epoch秒 or null}
 ```
-~/affiliate/queue/           既存のまま(producer.shが書く、未投稿)
-~/affiliate/posted/          意味変更: 「投稿済み・commission計測待ち」に変更
-~/affiliate/measured/        新規: 計測完了(RECORDまたはSTALLED、どちらも移動先は同じ)
-```
 
-### 新規: `measure_one.py`(REQ-A2、`self_heal.py`と同型のパターン)
-
-`~/anicca/skills/earn/affiliate/measure_one.py`を新規作成。責務は1つだけ:
-`~/affiliate/posted/`から**最古のmtimeのディレクトリ1件**を選び(clipの
-`_pick_oldest_clip`と同じround-robin方式)、`amazon_report.py`を実行して
-そのアイテムのcommissionを確認する。
-
+新規`~/anicca/skills/earn/affiliate/measure_commission.py`(引数なし、
+`amazon_report.py`をそのまま呼ぶラッパー):
 ```python
-def measure_one(posted_dir, measured_dir, ledger, amazon_report_fn, now,
-                 dead_zero_days=DEAD_ZERO_DAYS_DEFAULT):
-    """1件だけ処理。呼び出し元(run.sh)が毎wake無条件に呼ぶ。POSTブロックしない。"""
-    item = _pick_oldest(posted_dir)  # 該当なければNone
-    if item is None:
-        return {"status": "empty"}
-    commission = amazon_report_fn(item)  # CDP経由、実アカウントログイン必須
-    if commission and commission > 0:
-        _append_ledger(ledger, item, commission)   # record-affiliate-earn.mjs相当のゲート
-        _move(item, measured_dir)
-        return {"status": "recorded", "item": item, "commission_jpy": commission}
-    posted_at = _mtime(item)
-    if now - posted_at >= dead_zero_days * 86400:
-        _move(item, measured_dir)  # 記録なしで移動、諦める(STALLED相当)
-        return {"status": "stalled", "item": item}
-    _touch(item)  # 未確定のまま、次回また試す(round-robinで別アイテムに順番が回る)
-    return {"status": "still-pending", "item": item}
+def measure_commission(watermark_path, ledger_record_fn, now, amazon_report_fn):
+    """アカウント全体の当月コミッションの増分だけを検知。個別投稿とは紐付けない。
+    呼び出し元(run.sh)が毎wake無条件に呼ぶ。POSTを一切ブロックしない(self_heal.py型)。"""
+    report = amazon_report_fn()  # amazon_report.pyの実際の出力: {commission_jpy, asof, store_id, ...}
+    if report.get("error"):
+        return {"status": "error", "detail": report["error"]}  # ログイン切れ等、正直に報告して終了
+    wm = _load(watermark_path) or {"month": None, "last_commission_jpy": 0, "last_checked_at": None}
+    this_month = report["asof"][:7]  # "2026-07-05 ..." → "2026-07"
+    if wm["month"] != this_month:
+        # 月が変わった: Amazon側のカードも新しい月のカウントにリセットされているはず。
+        # 前月との差分計算はしない(意味が無い、リセット後の絶対値をそのまま新basisにする)。
+        wm = {"month": this_month, "last_commission_jpy": report["commission_jpy"], "last_checked_at": now}
+        _save(watermark_path, wm)
+        return {"status": "new-month-baseline", "commission_jpy": report["commission_jpy"]}
+    delta = report["commission_jpy"] - wm["last_commission_jpy"]
+    wm["last_checked_at"] = now
+    if delta > 0:
+        # report_export_id: amazon_report.pyはAmazonの正式なレポートexport機能を使っていない
+        # (ライブダッシュボードのスクレイプ)。record-affiliate-earn.mjsのINV-4は非空文字列
+        # であれば足りるため、"live-scrape-<asof>"という決定論的な代替IDで満たす(捏造ではなく、
+        # 「いつ観測した実データか」を指す実在のタイムスタンプ由来)。
+        export_id = f"live-scrape-{report['asof'].replace(' ', 'T').replace(':', '')}"
+        ledger_record_fn({
+            "source": "amazon_report", "amount_jpy": delta,
+            "report_date": report["asof"][:10], "report_export_id": export_id,
+            "order_items": report.get("ordered_items"),
+        })
+        wm["last_commission_jpy"] = report["commission_jpy"]
+        _save(watermark_path, wm)
+        return {"status": "recorded", "delta_jpy": delta}
+    _save(watermark_path, wm)
+    return {"status": "no-change"}
 ```
 
-`DEAD_ZERO_DAYS_DEFAULT = 30`(仮値、Amazonのコミッション反映レイテンシの一次情報が
-無いため。動作原理は仮値のままでも正しく機能する — 値調整は後からいつでも可能)。
+**posted/ディレクトリの意味は変更しない**(REQ-A2の訂正に伴いREQ-A1は撤回):
+投稿済みアイテムは引き続き`~/affiliate/posted/`に置かれたままでよい(個別
+commission追跡をしないので「計測待ち」という状態遷移が不要になった)。
+将来的にディスク容量が気になれば別途アーカイブ処理を検討するが、**今回の
+スコープには含めない**(YAGN、7件程度のPNG+txtはディスク上無視できる量)。
 
 ### `run.sh`への配線(REQ-A3、clip run.shのREQ-008と同じ位置関係)
 
 ```bash
-# MEASURE: 毎wake無条件に1件だけ試みる。POSTをブロックしない(REQ-008と同型)。
-"$PY" "$SK/measure_one.py" --posted "$POSTED" --measured "$MEASURED" \
-  --ledger "$LEDGER" --wake "$WAKE" 2>/dev/null || true
+# MEASURE: 毎wake無条件に1回、アカウント全体のコミッション増分だけ確認。
+# POSTを一切ブロックしない(REQ-008と同型)。
+"$PY" "$SK/measure_commission.py" --watermark "$STATE/commission-watermark.json" \
+  --wake "$WAKE" 2>/dev/null || true
 
 # 以降、既存のPOSTロジック(SET選択→アカウント選択→投稿)は完全に無変更で継続
 ```
 **既存のPOST用ロジック(queue選択・アカウント選択・投稿実行部分)は一切書き換えない**
-(REQ-A4)。追加するのは「measure_one.py呼び出し1行」と「POSTED先の意味変更
-(posted→measured移動はmeasure_one.pyが担当)」のみ。
+(REQ-A4)。追加するのは「measure_commission.py呼び出し1行」のみ。
 
 ## 3. bounty用の設計(REV2、既存4モードの性質を再確認して最小修正に訂正)
 
@@ -162,10 +212,53 @@ adversary finding #4は正しい** — 訂正する。
    キーが無い最初の1件を選ぶ**よう修正(既存の「1 wakeにつき1件だけ新規claim」
    という粒度は変えない、選び方だけを直す)。
 2. **`track()`にSTALLED検知を追加**: 現状`MERGED*`のみ判定(L73)、`CLOSED`
-   (mergeされずclose)を無視している。→ `CLOSED`かつ`reviewDecision`が
-   `MERGED`でない場合、そのattemptを`stalled`として記録(append-onlyの原則を
-   保つため、同じkeyで`status:"stalled"`の新規行を追記する — jsonlの「最新行が
-   正」という既存パターンに倣う、in-place編集はしない)。
+   (mergeされずclose)を無視している。
+
+### ★GATE 1ラウンド2で発見した2つの不正確な記述(REV3で訂正)★
+
+1. **「jsonlの最新行が正、という既存パターン」は存在しない**(adversary finding #3)。
+   `track()`(L64-74)は`while IFS= read -r line; do ... done < "$af"`で**全行を
+   単純に走査するのみ**、「同じkeyの複数行のうち最新を正とする」重複解決ロジックは
+   どこにも実装されていない。この主張は撤回する。
+2. **while-readループの実行中に同じファイル(`$af`)へ追記するのは未定義動作リスク**
+   (adversary finding #3)。bashの`while read < file`は開いたファイルディスクリプタを
+   順に読むが、同じシェルプロセスが同時にそのファイルへ`>>`で書き込むと、読み取り位置と
+   書き込み位置の整合性はPOSIX的に保証されない。
+
+**修正した実装方針**: `track()`のループ内では**メモリ上のリスト**に「stalledと
+判定されたkey」を溜めるだけにし、`done < "$af"`でループが完全に終了した**後**に、
+まとめて`$af`へ追記する(1回のみのファイルI/O、ループとの競合を避ける)。
+```bash
+track(){
+  local af="$STATE/attempts.jsonl" merged=0 tracked=0
+  [ -f "$af" ] || { emit "track: no attempts yet (state/attempts.jsonl empty)"; return; }
+  local stalled_keys=""   # ループ中はここに溜めるだけ、$afへは書かない
+  while IFS= read -r line; do
+    [ -n "$line" ] || continue
+    local repo pr key; repo=$("$PY" -c "...")
+    key=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('key',''))" "$line" 2>/dev/null)
+    pr=$("$PY" -c "...")
+    [ -n "$repo" ] || continue
+    tracked=$((tracked+1))
+    [ -n "$pr" ] || { echo "[bounty] track $repo (no PR yet — awaiting brain)"; continue; }
+    # BOUNTY_GH_OVERRIDE: テストフック、clip run.shのCLIP_SELF_HEAL_OVERRIDEと同じ命名慣習
+    local gh_bin="${BOUNTY_GH_OVERRIDE:-gh}"
+    local st; st=$("$gh_bin" pr view "$pr" -R "$repo" --json state,reviewDecision 2>/dev/null | "$PY" -c "...")
+    case "$st" in
+      MERGED*) merged=$((merged+1));;
+      CLOSED*) stalled_keys="$stalled_keys $key";;   # ループ内では溜めるだけ
+    esac
+  done < "$af"
+  # ループ終了後にまとめて追記(ファイルI/Oの競合を避ける)
+  for k in $stalled_keys; do
+    "$PY" -c "import json;print(json.dumps({'key':'$k','status':'stalled'}))" >> "$af"
+  done
+  ...(既存のsettle処理は変更なし)
+}
+```
+**この修正はREQ-B1のスコープを1点だけ広げる**: `gh`呼び出しに`BOUNTY_GH_OVERRIDE`
+というテストフック変数を追加する(GATE 2のtrack()テストで`gh`をモックするために
+必須、既存のattempt()/discover()/gate()には手を入れない)。
 
 ### 「PRを書く」ステップは自動化しない、しかし優先順位を変える(REQ-B2)
 
@@ -177,44 +270,61 @@ decide.py的な純関数には代替できない。**ここはREV1の判断を�
 STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report」という順序を
 **全て1ターンに詰め込んでいる**ため、と診断済み(§22.2)。この対策として:
 
-- **STARTUP promptの構造を変える**(REQ-B3): 「未完了のwork-order(attempts.jsonlに
-  `status:claim`かつ`pr:null`の行)があるかどうかのチェックを、discover/gateより
-  **前**に置く。もし未完了work-orderがあれば、新しいbountyを探しに行く前に
-  **まずそれを終わらせる**(PRを開くところまで)ことを最優先タスクとして明示する。
-  これにより、前回のwakeでATTEMPTまで到達したが力尽きた場合でも、次のwakeは
-  真っ先にその続きをやる構造になる(clip-promoteのWITHDRAW待ちパターンと同じ
-  「完了するまで同じ対象に固執する」動きを、自然言語プロンプトの順序で再現する)。
+- **STARTUP promptの構造を変える**(REQ-B3、GATE 1ラウンド2指摘で具体化):
+  現行`bounty-cli.sh:17`のSTARTUP文字列は「selfheal-check→(1)DISCOVER→(2)GATE→
+  (3)ATTEMPT+PR作成→(4)TRACK→report→touch」という順。この`(1)DISCOVER`の**直前**に
+  新規ステップ`(0)`を挿入する。挿入する正確な文言(既存文言との接続点を明記):
+
+  現行(挿入箇所直前、`bounty-cli.sh:17`より抜粋):
+  `"...then rm the file anyway. THEN (1) DISCOVER: EARN_MODE=discover bash ..."`
+
+  変更後:
+  `"...then rm the file anyway. THEN (0) CHECK FOR UNFINISHED WORK FIRST: read `
+  `~/anicca/skills/earn/bounty/state/attempts.jsonl; if ANY line has status:claim `
+  `AND pr is null, that is unfinished work from a previous pass -- do NOT run `
+  `discover/gate this pass, instead ACTUALLY FINISH that bounty right now (comment `
+  `/attempt #N on that GitHub issue as Daisuke134, fork the repo, fix the issue via `
+  `VSDD RED->GREEN, open a PR referencing the issue, then update that attempts.jsonl `
+  `line setting pr to the PR number), THEN skip to step (4) TRACK below. Only if NO `
+  `unfinished claim exists, proceed to (1) DISCOVER: EARN_MODE=discover bash ..."`
+
+  これにより「前回のwakeでATTEMPTまで到達したが力尽きた」場合、次のwakeは
+  discover/gateへ進む前に必ずこの未完了work-orderを検知し、そこで足止めされる
+  (新しいbountyを探しに行けない)構造になる — clip-promoteのWITHDRAW待ちパターン
+  (completeするまで同じ対象に固執する)と同じ効果を、自然言語プロンプトの
+  順序変更のみで実現する。
 
 ## 4. スコープ判断(YAGNI、REV2で訂正)
 
 | 項目 | 今回やる/やらない | 理由 |
 |---|---|---|
-| affiliate: `measure_one.py`新規実装 + run.shへの1行配線 | ★今回実装★ | MEASURE/RECORDが完全に未配線だった実バグを、POSTをブロックしない形で直す |
+| affiliate: `measure_commission.py`新規実装(account-level delta) + run.shへの1行配線 | ★今回実装★ | MEASURE/RECORDが完全に未配線だった実バグを、POSTをブロックしない形+実装可能な形で直す |
 | affiliate: 既存POSTロジック(queue選択・アカウント選択・投稿) | 変更しない | 既に正しく動いている(6/30の2件は実際に投稿できた実績あり) |
+| affiliate: per-post commission attribution | 今回やらない(実装不可能と判明) | `amazon_report.py`はアカウント全体・当月累計しか取得できず、個別投稿への帰属は
+  Amazon Associatesダッシュボード自体に存在しない機能。account-level delta方式で代替 |
 | bounty: `attempt()`のsurvivor選択ロジック修正 | ★今回実装★(小さい修正) | 既にclaimedなsurvivorに永久に足止めされるバグを直す |
-| bounty: `track()`へのSTALLED検知追加 | ★今回実装★(小さい修正) | CLOSED(unmerged)を無視し続けるバグを直す |
+| bounty: `track()`へのSTALLED検知追加(ループ外での追記+`BOUNTY_GH_OVERRIDE`追加) | ★今回実装★(小さい修正) | CLOSED(unmerged)を無視し続けるバグを直す、while-read中の追記競合も回避 |
 | bounty: discover/gate/attempt/trackの内部ロジック(判定条件そのもの) | 変更しない | 既に正しく機能している(gate()のフィルタ条件等) |
 | bounty: 「PRを書く」ステップの自動化 | 今回やらない | 本物のコード判断が必要、対話ターンの仕事のまま |
-| bounty-cli.sh: STARTUP promptの順序変更(未完了work-order優先) | ★今回実装★ | 「詰まる」実バグの直接対策 |
-| affiliate/bounty双方のcli.sh STARTUP大幅簡素化(decide.py型への全面書き換え) | 今回はやらない、範囲を絞る | REV1は「clip-promote型の全面リファクタ」を狙ったが、bountyは既に4モードの
-  設計自体は健全(§3で確認)、affiliateもPOSTロジックは健全 — 壊れていない部分まで
-  書き換えるのは過剰実装。実際に壊れている箇所(MEASURE未配線、survivor選択、
-  STALLED検知、優先順位)だけをピンポイントで直す |
-| DEAD_ZERO_DAYS(30日)の正確な値 | 仮値のまま実装、Dais確認は別途 | 一次情報が無いため推測値、動作原理は仮値のままでも正しく機能する |
+| bounty-cli.sh: STARTUP promptの順序変更(未完了work-order優先、REQ-B3に具体的文言記載) | ★今回実装★ | 「詰まる」実バグの直接対策 |
+| affiliate/bounty双方のcli.sh STARTUP大幅簡素化(decide.py型への全面書き換え) | 今回はやらない、範囲を絞る | bountyは既に4モードの設計自体は健全(§3で確認)、affiliateもPOSTロジックは健全 —
+  壊れていない部分まで書き換えるのは過剰実装。実際に壊れている箇所だけをピンポイントで直す |
+| DEAD_ZERO_DAYS等の仮値 | account-level delta方式には不要になったため撤回 | §2の設計変更によりdead-zero判定自体が不要(投稿と計測を紐付けないため) |
 
 ## 5. 検証計画(GATE 2: TDD)
 
 | 項目 | 検証方法 |
 |---|---|
-| `measure_one.py`の全分岐(empty/recorded/stalled/still-pending) | `tests/test_measure_one.py`新規作成、clipの`self_heal.py`のテストパターンに倣う(ダミーの`amazon_report_fn`を注入、実ブラウザ不要) |
-| `measure_one.py`がPOSTをブロックしない | run.sh変更後、`~/affiliate/queue`に複数アイテムがある状態で1 wake実行し、`measure_one.py`の結果に関わらずPOSTが実行されることを確認(結合テスト) |
+| `measure_commission.py`の全分岐(error/new-month-baseline/recorded/no-change) | `tests/test_measure_commission.py`新規作成、ダミーの`amazon_report_fn`/`ledger_record_fn`を注入(実ブラウザ不要、`amazon_report.py`のCDP呼び出し部分はテスト対象外) |
+| `measure_commission.py`がPOSTをブロックしない | run.sh変更後、`~/affiliate/queue`に複数アイテムがある状態で1 wake実行し、`measure_commission.py`の結果に関わらずPOSTが実行されることを確認(結合テスト) |
 | 既存POSTロジックが壊れない | 変更前後で`EARN_MODE=discover`の出力が一致することを確認 |
-| `attempt()`のsurvivor選択修正 | survivors 2件・1件目が既にattempts.jsonlにある状態を作り、2件目が選ばれることを確認(既存のgated.json/attempts.jsonlのテスト用フィクスチャで再現) |
-| `track()`のSTALLED検知 | `gh pr view`のモック出力(CLOSED、reviewDecision非MERGED)を注入し、`status:stalled`行が追記されることを確認 |
-| bounty-cli.sh STARTUP順序変更 | プロンプト文字列内で「未完了work-orderチェック」が「discover」より前に出現することを確認(文字列比較で十分、実行はcronの自然発火まで待つ) |
+| `record-affiliate-earn.mjs`のINV-1〜5を満たすrowが生成される | `measure_commission.py`が構築する`--row`のJSONが実際にvalidateRow()を通過することを単体テストで確認(`report_export_id`の代替IDフォーマットも含む) |
+| `attempt()`のsurvivor選択修正 | survivors 2件・1件目が既にattempts.jsonlにある状態を作る新規テストフィクスチャを用意し、2件目が選ばれることを確認 |
+| `track()`のSTALLED検知(ループ外追記) | `BOUNTY_GH_OVERRIDE`でダミーの`gh`相当スクリプト(CLOSED、reviewDecision非MERGEDを返す)を注入し、`status:stalled`行がループ終了後に追記されることを確認 |
+| bounty-cli.sh STARTUP順序変更 | プロンプト文字列内で「(0) CHECK FOR UNFINISHED WORK FIRST」が「(1) DISCOVER」より前に出現することを文字列比較で確認 |
 | queue backlog(affiliate 7件)の解消 | 実装後、次の自然wakeでqueueが減っていくことを継続監視で確認(POSTがMEASUREにブロックされなくなったため、1 wake 1件のペースで着実に減るはず) |
 | bounty survivorへの初回attempt | 実装後、次の自然wakeでattempts.jsonlに実際に行が追加されることを確認 |
-| record-affiliate-earn.mjs / amazon_report.pyの実配線確認 | `measure_one.py`から実際に呼ばれ、実アカウントログイン環境で最低1回動作確認(モック不可、実装後に別途実施) |
+| `measure_commission.py`の実配線確認 | 実装後、実アカウントログイン環境で最低1回`amazon_report.py`呼び出し自体が成功することを確認(モック不可、実装後に別途実施) |
 
 ## 6. GATE 1(SPEC)判定について
 
@@ -231,9 +341,24 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   検証の結果、(a)(b)(c)(d)(e)(f)は全て正当な指摘と確認。特に(a)は根本的で、
   参照実装の選定自体(clip-promote)が間違っていたと判明 — 正しい参照実装は
   `earn/clip`のself_heal.pyパターン(§1.2)。
-- **ラウンド2(REV2、本ファイル)**: 参照実装をclip-promoteからclip(self_heal.py型)へ
-  変更し、affiliateはMEASURE/POSTを独立させた設計に全面訂正(§2)。bountyは
-  「single current_key」の状態機械を撤回し、既存4モードの中の2箇所の小さいバグ修正
-  (survivor選択・STALLED検知)+ STARTUP prompt優先順位変更、という最小スコープに
-  訂正(§3)。次はこのREV2を再度fresh-context adversaryにかけ、PASSするまで実装に
-  進まない。
+- **ラウンド2(REV2)**: FAIL。fresh-context Sonnet adversaryの指摘:
+  (a)★致命的★ `measure_one.py`の設計が前提としていた「投稿アイテム単位のcommission
+  確認」が実装不可能と判明 — `amazon_report.py`は引数を取らずアカウント全体・
+  当月累計しか返さない、per-post attributionの手段がAmazon Associatesダッシュボード
+  自体に存在しない (b) `track()`の「jsonlの最新行が正、という既存パターン」という
+  主張が事実誤認(そのようなロジックは存在しない)、かつwhile-readループ中に同じ
+  ファイルへ追記するのは未定義動作リスク (c) §5の「既存のテスト用フィクスチャ」が
+  実在しない(`tests/`ディレクトリ自体が無い)、`gh`呼び出しにモック用のテストフックが
+  無くGATE 2で指定した検証方法が実行不可能 (d) REQ-B3(STARTUP prompt順序変更)が
+  抽象的な意図表明のみで具体的な文言が無い (e) §1.2の引用が「全文引用」と主張しつつ
+  実際は数行省略していた。
+  検証の結果、全て正当な指摘と確認。特に(a)は§2の設計全体を作り直す必要がある
+  致命的な欠陥だった。
+- **ラウンド3(REV3、本ファイル)**: (a)affiliateのMEASUREを「投稿アイテム単位」から
+  「アカウント全体の当月コミッション増分(delta)」方式に全面設計変更、
+  `report_export_id`の代替ID生成方法も明記(§2)。(b)track()の追記をループ終了後に
+  まとめて行う設計に変更、`BOUNTY_GH_OVERRIDE`テストフックを追加、「既存パターン」
+  という誤った主張を撤回(§3)。(c)§5のテスト検証方法を実際に実行可能な形に訂正
+  (新規テストフィクスチャを作る前提に変更)。(d)REQ-B3に挿入前後の正確な文言を記載
+  (§3)。(e)§1.2の引用を完全な全16行に訂正。次はこのREV3を再度fresh-context
+  adversaryにかけ、PASSするまで実装に進まない。
