@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "2a",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -162,6 +162,20 @@
       "timestamp": "2026-07-04T11:34:32.009Z",
       "reason": "Sprint 2.5: 1c PASS(3 rounds) + human sign-off; Red for REQ-21/22",
       "sprint": 3
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-04T11:54:20.805Z",
+      "reason": "Green: 23/23 verified independently by main agent",
+      "sprint": 3
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-04T11:54:28.746Z",
+      "reason": "refactor pass, still 23/23, verified by main agent",
+      "sprint": 3
     }
   ],
   "iterations": {
@@ -172,8 +186,8 @@
     "1b": 2,
     "1c": 2,
     "2a": 2,
-    "2b": 1,
-    "2c": 1,
+    "2b": 2,
+    "2c": 2,
     "complete": 2
   },
   "proofObligations": [],
@@ -936,5 +950,5 @@
   },
   "sprintCount": 3,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T11:34:32.009Z"
+  "updatedAt": "2026-07-04T11:54:28.746Z"
 }
