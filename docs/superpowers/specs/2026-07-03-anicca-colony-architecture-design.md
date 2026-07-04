@@ -668,13 +668,35 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      | V7 self-monitor/heal/improve/replicate/share (自己監視・修復・改善・増殖・情報共有) | ⬜ H1-H6 each with 1 real proof | ⬜ |
      | V8 UBI/寄付 redistribute to humans        | ⬜ first real payout tx | ⬜ |
 
-★ PRIORITY RESET (Dais 2026-07-04): DO NOT optimize for the hackathon. Think MAXIMALLY LONG-TERM. The one
-goal = TAKEOFF = the closed loop (earn → spawn → earn → spawn …) continues with ZERO human money in. If
-takeoff happens by the hackathon, great, but it is NOT a deadline we bend toward. SELF-IMPROVEMENT (H1→H3)
-is THE key — an AI that notices its own dead action (hl "close" churn = $0) and changes itself is what makes
-the loop compound instead of idle. Wallets = docs/WALLETS.md (canonical). Order now: H1→H2→H3 (self-improve
-spine) FIRST, then H4-H7, then G (grow/spawn). HACK1/2 + ART become BYPRODUCTS of the trace (H5), not a
-separate sprint. ★
+★ PRIORITY RESET v2 (Dais 2026-07-04, corrected). Four hard corrections:
+
+1. ★ WHAT anicca-local IS ★ — the ONE active local self-funded instance on aniccaai.com/dashboard =
+   **automaton body (`~/anicca/runtime/loop`) + ClawRouter**, installed by `install.sh` → runtime root
+   `$ANICCA_HOME` (`~/.anicca-founder`), started by `start-local.sh`/daemon. It is NOT Franklin. Franklin
+   was set up but is NOT in use yet.
+
+2. ★ VARIETIES are EXPERIMENTS (future) ★ — we support MANY self-funded engines so we can measure HOW MUCH
+   the harness matters across hundreds/thousands of setups: `anicca-local` (automaton+ClawRouter, active) ·
+   `franklin` · `franklin+openclaw` · `franklin+hermes` · … Same harness, swap the executor engine = the
+   experiment. Not now; the point is the design must stay engine-agnostic.
+
+3. ★ MY ROLE = VERIFIER ONLY. I DO NOT MOVE MONEY OR EXECUTE. ★ (Dais verbatim: "you don't move anything,
+   you just verify and improve the self-improving harness to make more money.") The AIs are the executors
+   (they bridge, trade, spawn, earn). I ONLY: verify their runs + improve the HARNESS (trace→eval→
+   self-improve→heal). The bridges/trades/franklin-runs I did earlier were me over-stepping as executor —
+   stop. Going forward: read/verify/improve-harness, never hand-execute an earn.
+
+4. ★ WEAK MODELS NEED GOOD DEFAULT STRATEGIES ★ (Dais 2026-07-04) — GLM/free models can't self-improve
+   enough EVEN WITH the harness; the model alone "cannot actually improve by itself so much." So the harness
+   must SHIP good DEFAULT strategies/heuristics as a starting scaffold (not a blank slate). This REFINES
+   §0.25: I still don't hand-pick trades, but the harness may encode solid default earn strategies +
+   right-altitude heuristics the weak model starts from and the loop tunes. (building-effective-ai-agents:
+   right-altitude prompt + canonical examples, not brittle rules.)
+
+THE ONE GOAL = TAKEOFF = the closed loop (earn → spawn → earn …) runs with ZERO human money — ideally no
+human invests capital at all, literally no human in the loop. SELF-IMPROVEMENT (H1→H3, now built) is the
+key. NO short-term deadlines exist. Order: H (self-improve harness + default strategies) → G (grow/spawn).
+Wallets = docs/WALLETS.md. ★
 
 G — GROW (colony) + SHOW (proof) + LAUNCH
   G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child ON
