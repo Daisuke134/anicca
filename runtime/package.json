@@ -6,6 +6,8 @@
   "description": "Anicca runtime — Mastra graph workflows for inbox responder loop (spec 08)",
   "dependencies": {
     "@mastra/core": "latest",
+    "bs58": "^5.0.0",
+    "tweetnacl": "^1.0.3",
     "viem": "^2.53.1"
   }
 }
