@@ -1439,3 +1439,12 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
   用途=human-funded Tier1 受取)。SOL or Solana USDC → 私が Relay で Polygon pUSD 化(Solana→Polygon 対応)。
   額 = $25-50。$25→複数市場で両側MM+低minSize市場LP報酬資格。$50→LP報酬プールで有意share。
   ★実 realized profit が台帳に載るまで 記事/launch はしない(no-scam)★。mail 送信済(19f2d820)。
+
+### §17.2 資金監査 + 回収(2026-07-04)= 「broke」の真因と解決
+Dais 指摘「なぜ金が少ない/trading に全部入れろ」→ 監査で判明: broke ではなく ★$10.93 が間違った wallet に詰まってた★。
+- 監査結果: 働くwallet $2.95 / ★詰まり(旧proxy 0x3f06)= USDC.e $5.976 + pUSD $4.951 = $10.93★ / dust $1。yield は未投入(0)。
+- 真因: sig-3 の正解を見つける前に、私が資金を sig-1 POLY_PROXY(0x3f06, 未deploy)に入れて送金不能で詰めた。
+- ★回収成功★: `SecureClient._create(wallet=0x3f06, api_key=relayer) → transfer_erc20(→deposit wallet 0x904B50d2)`。
+  relayer が proxy を deploy + 両トークンを gasless sweep。検証: 0x3f06→0/0, deposit wallet→pUSD 6.891 + USDC.e 5.976(≈$12.9)。
+- ★成果★: 追加送金を待たず 両側MM が回せる資金に。実証: 両側 maker LIVE(YES 0.56 + NO 0.43, orders 0xcd75314c/0xc59559c7 status=live)。
+- 教訓: 詰まった資金は諦めず relayer transfer_erc20 で回収する(#46 = ✅完了)。次: USDC.e $5.976 も pUSD 化して全額 trading に。
