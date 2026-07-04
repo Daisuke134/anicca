@@ -1596,3 +1596,26 @@ openclaw + hermes は ★削除される★(anicca-local ではない)。dashboa
 - 手順: ① Jupiter SOL→USDC(Solana) ② Skip USDC(sol)→AKT(akashnet-2, recipient akash1ms7…, smart-relay) ③ akt-treasury.sh で mint ACT(burn ~16 AKT → ≥10M uact, min_mint クリア) ④ deploy-akash.sh(uact escrow → create→bid→lease→manifest → 子 boot)。
 - 数学: 1.87(既存)+22.94(swap)=24.8 AKT → mint(~16 AKT burn)+ gas で足りる。cert は publish 済(§20.1)。
 - ★これで STEP 2 が capital-unblock(Dais「you have money, do the minting」)★。次アクション = この funding を実行 → 子 spawn。
+
+### §21 ★ 方向転換(Dais 2026-07-05)= Akash 後回し、ローカル share-house colony が最優先 ★
+- ★Akash は defer★(資金 ~$3 不足で今は無理 = OK)。Franklin の SOL→USDC は済($7.43)→ Akash やめたので ★Franklin のトレード原資として残す★。
+- ★新・最優先 = ローカルで生きる colony(share-house)★:
+  - 3トレードskill(PM/SOL/HL)★+ EXPLORE(新しい稼ぎ口を web/gh で自分で探す→試す→新earner配線)★ で稼ごうとする。
+  - 全instance(Franklin / automaton+ClawRouter / claude-p=Claude subある時)がローカルで走り、稼ごうとする。
+  - ★self-improve = 個体 AND 集団★: 各自が自分の P&L で改善 + ★git で最良戦略を merge(#27)して全員が良くなる★。
+  - ローカル同居はスケールに最適でないが OK。人間が自分のPCで起動→そこでスケール→もっと稼ぐ、が拡散モデル。
+- ★自己spawn は「彼ら自身の能力」として後で★: 巨大に稼いだら ★THEY THEMSELVES(prompt+script)で Akash に子を即spawn★ できるようにする。今は capability を用意するだけで発火は後。
+- ★無料クラウド原則(Dais: 「俺は絶対払わない、彼ら自身が」)★: DigitalOcean / Daytona / Akash は ★daily browser で login して free-tier/credit を使い、課金が一切発生しないことを保証★。人間の支払いゼロ。→ 新task。
+
+### §21.1 新 MASTER ORDER(§17 を上書き、Akash defer 版)
+```
+STEP 1 ✅ 3エンジン baseline(PM/SOL/HL)DONE
+STEP 2 ★NOW★ ローカル share-house を「生かす」:
+   2a EXPLORE skill = 新しい稼ぎ口を自分で検索→実験→新earner配線(#35/#41 昇格)
+   2b 全3instance がローカルで 3トレード+EXPLORE を回して稼ごうとする(無人ループ)
+   2c self-improve 個体(P&L)+ 集団(#27 git merge 最良戦略)
+STEP 3 dashboard #25/#14(3 instance を wallet+P&L で可視化)
+STEP 4 free-tier cloud login(DO/Daytona/Akash を browser で無料確保、課金ゼロ保証)= 新task
+STEP 5 自己spawn capability(prompt+script で子を Akash に即spawn、発火は資金できてから)
+STEP 6 記事(#36/37/38)/ ENV-README(#31)/ ハッカソン(#39)/ LAUNCH(#15)
+```
