@@ -1464,3 +1464,10 @@ Dais 指摘「なぜ金が少ない/trading に全部入れろ」→ 監査で�
 - ✅ USDC.e→pUSD 変換完了: transfer_erc20(deposit wallet→0x810f) → Relay(tx 097295181170a89…) → deposit wallet。
 - ✅ deposit wallet pUSD = ★12.791★(詰まり回収分$10.93含め全資金を pUSD で1箇所に集約)+ Morocco建玉$1.01。
 - ✅ 両側MM LIVE(orders 0xcd75314c/0xc59559c7)。次 = 約定/LP報酬監視 → realized profit>0 を台帳へ + 資金増でMM市場数を拡大。
+
+### §17.4 ★ 継続 earner ループ稼働(2026-07-04)= もう止まらない ★
+- ✅ BASE #2 bundle-arb scanner(bundle_arb.py, risk-free YES+NO<$1)構築。実走: 60市場スキャン→今arb無し(市場効率的=正常)。
+- ✅ run_earner.sh = bundle-arb hunt + MM refresh を1パス。launchd `ai.anicca.pm-earner`(StartInterval 600s, RunAtLoad)で10分毎に自動。
+- ✅ market_maker = cancel-and-replace(cancel_all→再quote)で毎パスのスタック防止。両側MM LIVE(自動再配置)。
+- 稼ぎ方: ①bundle-arb 出現時に確定利益執行 ②MM 約定でスプレッド取り。realized profit は earner.log + 台帳で監視。
+- 現資金 $12.79 pUSD 全額 trading。Dais Solana 入金で拡大。実 realized profit が出るまで 記事/launch しない。
