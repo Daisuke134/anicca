@@ -207,6 +207,33 @@ airdrop-and-faucets** (official Solana docs), which lists 6 real acquisition pat
     thread (Dais's global self-funded-AI consortium goal). Awaiting response. |
 | 9 | `solana airdrop` retried at intervals (2026-07-04, 3x over ~45s) | still 429 — rate limit
     window has not cleared yet; keep retrying periodically. |
+| 10 | `devnet-pow mine` retried (2026-07-04, correct usage this time: `~/.cargo/bin/devnet-pow
+    get-all-faucets` DOES list funded faucets, e.g. `6yvwhesLJ...` with 2.1M SOL @ difficulty 3 /
+    reward 0.02) | `mine` (with `--no-infer` + matching `-d`/`--reward`) proceeds to actually mine,
+    but its final step calls an internal `requestAirdrop` (to cover the miner's own tx fee when
+    balance=0) → **same 429** as #1/#2. Root cause confirmed: this is a network-wide IP/wallet rate
+    limit on the OFFICIAL faucet infra, shared by every tool built on top of it (CLI, raw RPC, PoW
+    miner) — not something fixable by switching tools. Only a truly independent faucet (Discord
+    bot, a peer sending from their own already-funded wallet) escapes it. |
+| 11 | **Self-deploy the escrow, sidestep public-devnet entirely** — built `anchor build` for
+    `examples/txodds/escrow/{escrow,arbiter}` against `solana-test-validator`. Blocked initially by
+    `rustc 1.84.1` (bundled with `platform-tools` v1.48/v1.50) rejecting `edition2024` crates
+    (`zeroize`, `toml_edit`, `hashbrown` all bumped their MSRV). **Fixed**: `anchor build` /
+    `cargo-build-sbf --tools-version v1.54 --force-tools-install` pulls a newer toolchain — resolved
+    the edition2024 wall. Result: `anchor deploy --provider.cluster localnet` succeeded for real —
+    both programs `Executable: true` on my own `solana-test-validator`, real tx sigs
+    `TEp4GjwMnAbVPkJx95bfvhUyKjBStiVRVrr8KYAnRHoxJrGNEreMaz59tfySAQM9gauBkAcamLQjyh5uVnWVfFw`
+    (arbiter) and `jRFEo7GXrvGRocgoU9bQFj86esSBqWgRfNTNouDt6CvzPZJncW4Nkb5SnJLTeg3ZjpvS8NbPXnuMfqt4DfoJKHQ`
+    (escrow), confirmed via `solana confirm`. **This answers Dais's "can't we create our own
+    devnet/Solana ourselves" directly: yes — `anchor build && anchor deploy --provider.cluster
+    localnet` is the one-command path, once `platform-tools v1.54` is installed.** Caveat: this
+    deploys MY OWN copy of the program under a NEW program ID (`CBMhXWdqRAdGcUqBdyrvhNZDp3btunc
+    ggJBDYRZMUDi2` / `7hWqsuKRxHUm4nvJ3EEZRheXVEcuBCQqxRQaMVfurST2`), not the CoralOS bounty's
+    canonical public-devnet IDs (`R5NWNg9e.../FJtuVXsy...`) that `proxy.ts`/`arbiter.ts` hardcode —
+    so it does NOT by itself satisfy REQ-3's "real public-devnet settlement against the CoralOS
+    submission's actual programs." It DOES fully unblock task #8 (Tokyo multi-chain infra): each
+    hackathon participant's own local validator, seeded independently, sidesteps the shared
+    rate-limit entirely. |
 
 **Money clarification (answering Dais directly):** devnet SOL has **zero monetary value** and
 **cannot be purchased** — it only comes from the above faucets. Sending real mainnet SOL to any
@@ -238,8 +265,15 @@ PHASE A — prove the mechanism works (brain = ChatGPT subscription, Tier 3, sca
           (root-caused: file: dependency needs agent-runtime installed+built FIRST; fixed)
   [~] A3  ORIGINAL (superseded): funded a LOCAL validator wallet — invalid for this target,
           the escrow program is public-devnet-only. Real A3 = get PUBLIC devnet SOL, still
-          BLOCKED (see funding-blocker log above). Next untried real options: Discord faucet
+          BLOCKED (see funding-blocker log above, entries #10-11: PoW faucet hits the same
+          rate limit at its internal airdrop step; root cause = shared official-faucet
+          rate limit, not a tool problem). Next untried real options: Discord faucet
           bots, Tino's Shippers Telegram ask, retry devnetfaucet.org OAuth properly.
+  [x] A9  BONUS (not on the critical path, but proves capability + unblocks task #8):
+          self-build + self-deploy the escrow/arbiter to MY OWN `solana-test-validator` —
+          real `anchor build && anchor deploy --provider.cluster localnet`, real tx sigs,
+          `Executable: true` confirmed on-chain. Root-caused + fixed the edition2024 build
+          wall via `platform-tools v1.54`. See funding-blocker log entry #11 for full detail.
   [x] A4  Wired LLM_PROVIDER=openai + OpenAI key into .env (Tier 3, temporary) — done for the
           (superseded) quickstart path; re-verify still wired for the corrected target.
   [x] A5  CORRECTED + DONE: retargeted from quickstart's deliverData (WRONG — no-escrow
