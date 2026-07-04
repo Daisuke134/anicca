@@ -1680,3 +1680,9 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - ★これでリリース文の5 self-* が全部実体を持った: 監視(H2+healthcheck)/修復(#7)/改善(H3+#27 gate)/増殖(spawn 準備 Task#6)/共有(#9 coordinate)★。残 = 増殖 capability の発火条件埋め。
 - **追加実証(同日、telem-builder 2巡目)**: ①#7 = 実故障注入(exit127 fixture)→ self-fix.sh が本物の Opus spawn で実修復・再実行 exit0・自ら commit 473f302(fixture は証跡採取後 0f6f953 で削除)= 検出→修復チェーンが実動 ②#27 伝播 = 既存 anicca-daemon.sh の self-update(`git merge --ff-only origin/main` 毎起動)がまさに伝播ループで、automaton が 18:08:01Z に d00aa6d へ self-update → 稼働中 index.mjs に loopDetectStreak 6箇所を確認 = builder改善→mother push→他instance 自動pull→新コードで稼働 の全ループを実データで閉じた ③#9 = cook の「share the find」は記述のみで実装ゼロと確認 → self/coordinate に配線(1c0a2ea)。
 - 残(正直): auto_merge の実 PR E2E は未実施(関数はテスト済)/healthcheck-runtime-loop の launchd 配線は意図的に未実施(cron 新設は Dais 監視下)。
+
+### §27 ★ INCIDENT: ubi-watcher 修理で実送金 $0.25 が自動発生(2026-07-05, Task #5 中)★
+- 事象: `com.anicca.ubi-watcher` exit 127 の真因 = a09ab4e の earn→ubi 分割で実体が `skills/ubi/ubi-watcher-daemon.sh` へ移動したのに plist path が旧のまま(単純 path 不整合)。path 修正+reload した直後、daemon が★既存 queue の設計どおりの支払いを自動実行★: gate-live-check@example.com → 0xA5513fA6… $0.25、tx 0xfe270dfc355cd42830853ac05ef83a5cb22cf720f26393f55263cd0e4026e07d。宛先名から過去の E2E テスト signup 由来と推測(裏取り中)。
+- 帰責: builder ではなく team-lead(私)の指示矛盾(「支払い daemon を修理」+「資金移動禁止」— queue が残っていれば修理=送金)。builder は即停止・報告(正)。
+- 決定: ①daemon 稼働継続(crash-loop を安全装置にしない) ②最優先で fail-closed guard: realized-surplus gate(閾値未満は defer+no-op 記録)→ per-tx cap → balance floor(§5.3 skip-floor 整合) ③原資 wallet を tx から特定し残高/floor を報告 ④事件を UBI ledger に正直記録 ⑤gojo は pure logic+read-only 検証のみ。
+- 残り queue = 2件、両方 method=bank(daemon は wallet/email 以外 skip)= 新規 signup が無い限り追加送金なし(確認済)。
