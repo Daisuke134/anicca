@@ -882,3 +882,48 @@ campaignを除外するロジックが必要。IG対応17件の中から、フ�
 ある程度育てる(oragnic growth、既存ig-account-warmerの範囲を超える中長期
 施策)、③現状はharnessの完成度を優先し、フォロワー要件充足は後日に回す、
 のいずれかの判断が必要(次セッションで方針決定)。
+
+### 18.3 追加検索完了(2026-07-04、17件中ほぼ全滅を確認)+ Dais方針決定: 戦略②採用
+
+IG対応17件を全数チェックした結果(fresh evidence、Ended判定は`\bEnded\b`の正規表現で
+再検証、前回の`Live`判定は"Live Support"サイドバー文言との誤マッチだったバグを修正):
+
+| campaign | 状態 |
+|---|---|
+| madden-content-2, jackass-clips-1, bashfortheworld-memes, bumble-podcast, danny-ocean, k-pops, ateez-audio-1, florie, ice-nine-kills, jackass-clips-3, lecrae, ida-corr | 全て**Ended**(予算全消化、Join Campaignボタン自体が消滅) |
+| copa90-2 | 表示は`Live`だが`Paid $2,400.00 / $0.00 left`= 実質枯渇(Joinボタンなし) |
+| thomas-rhett-content | Live、budget残あり、だが最低2,000フォロワー要求 |
+| susannah-joffe | Live、budget残あり、だが最低200フォロワー要求 |
+
+**17件中15件がEnded/枯渇、残り2件はフォロワー要件でブロック。0フォロワーで
+即参加できるIG campaignは実質ゼロ**という結論が確定した。
+
+**Dais方針決定(2026-07-04 verbatim)**: 「search a bit more, then since we didn't
+find one, let's do strategy 2 (grow followers/trust first), but bake this into
+the skill, since every AI needs to know that in order to do good money-making
+affiliate work, you have to earn trust and followers first.」
+
+→ **これは個別のclip-promote向けハードコードではなく、汎用原則としてskillに
+組み込むべき**(HARD RULE: judgment=agent, but the PRINCIPLE itself — "affiliate
+monetization requires a follower/trust base first" — is a piece of DOMAIN
+KNOWLEDGE every earn-affiliate-type AI should carry, not a one-off patch)。
+
+### 18.4 実装方針: 「フォロワー/信頼构築フェーズ」をskillナレッジとして焼き込む
+
+1. **`decide.py`にJOIN前提チェックを追加**(SELECT→CLIP間、または SELECT内):
+   選定したcampaignのフォロワー要件を実際にJoin試行で確認し、不足なら
+   そのcampaignをskip対象に記録して次candidateへ。全滅なら
+   `no-eligible-campaign:follower-requirement-unmet`を正直に返す(fabrication無し)。
+2. **既存`earn/clip`(通常のIG投稿loop)がそのままフォロワー成長エンジンである**
+   という事実をSKILL.mdに明記: campaign参加の前提条件(フォロワー数)を満たす
+   までは、`earn/clip-promote`は`no-eligible-campaign`を正直に返し続け、並行して
+   `earn/clip`(同じ@aiclipsvaultアカウントへの毎時投稿)がオーガニックに
+   フォロワーを積み上げる、という2loop連携の設計を明文化する。
+3. **汎用ナレッジとして`~/anicca/skills/earn/clip-promote/SKILL.md`(および将来の
+   同種affiliate系skill)に追記**: 「アフィリエイト型の収益化(per-view報酬、
+   ブランドcampaign等)を狙うAIは、まず投稿実績・フォロワー基盤(=信頼)を
+   構築するフェーズを経る必要がある。0フォロワーの新規アカウントでいきなり
+   高単価campaignに参加しようとするのは失敗パターン。まず低いフォロワー要件
+   (または要件無し)のcampaignで小さく実績を作り、並行して通常投稿(既存clip
+   loop等)でフォロワーを積み上げ、フォロワー数が増えるにつれて高単価
+   campaignへ段階的に移行する、という順序が正しい。」
