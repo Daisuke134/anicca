@@ -1588,3 +1588,11 @@ openclaw + hermes は ★削除される★(anicca-local ではない)。dashboa
 - ★STEP 2 = AKT $15 funding-gated(実証済)★。cert は済んだので、AKT さえ入れば deploy→bid→lease→manifest は deploy-akash.sh で通る。
 - ★パターン(正直)★: STEP 1(戦略)は全部 build 完了。だが STEP 0(PM/Franklin)・STEP 2(Akash)全て ★capital-gated★:
   PM $12.79 / Franklin $16(<$50閾値) / HL 未入金 / Akash 1.9 AKT(<必要$15)。build は終わり、capital が唯一の壁。
+
+### §20.2 STEP 2 funding ルート確定(docs + Skip API, 2026-07-05)
+- docs(ctx7 akash): 最小 deposit 0.5 AKT だが ★AEP-76 live = escrow は uact 必須★(uakt は 1 AKT でも `Deposit invalid`、実測2回)。AKT 入手 = Osmosis/CEX/bridge。
+- ★no-human ルート確定(Skip API)★: `solana/8453 → noble-1 → osmosis-1 → akashnet-2`(4 hop, smart_relay 自動)。$15 USDC → 22.94 AKT。
+- 資金源 = ★Franklin の ~$16 SOL(Dais がくれた金)★。SOL→USDC(Jupiter)→ Skip route → AKT が akash1ms7… に着く。
+- 手順: ① Jupiter SOL→USDC(Solana) ② Skip USDC(sol)→AKT(akashnet-2, recipient akash1ms7…, smart-relay) ③ akt-treasury.sh で mint ACT(burn ~16 AKT → ≥10M uact, min_mint クリア) ④ deploy-akash.sh(uact escrow → create→bid→lease→manifest → 子 boot)。
+- 数学: 1.87(既存)+22.94(swap)=24.8 AKT → mint(~16 AKT burn)+ gas で足りる。cert は publish 済(§20.1)。
+- ★これで STEP 2 が capital-unblock(Dais「you have money, do the minting」)★。次アクション = この funding を実行 → 子 spawn。
