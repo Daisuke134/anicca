@@ -16,6 +16,7 @@ def test_empty_or_idle_selects():
 
 def test_linear_pipeline():
     assert decide({"phase": "SELECT"}, NOW) == "SELECT"
+    assert decide({"phase": "JOIN"}, NOW) == "JOIN"
     assert decide({"phase": "CLIP"}, NOW) == "CLIP"
     assert decide({"phase": "POST"}, NOW) == "POST"
     assert decide({"phase": "SUBMIT"}, NOW) == "SUBMIT"
