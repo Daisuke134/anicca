@@ -1,6 +1,6 @@
 {
-  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 2, "round": 2,
+  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 2, "round": 3,
   "contractPath": "contracts/sprint-2.md",
-  "priorRound": {"verdict":"FAIL","findings":["FIND-001 critical: ¥500 panel not visually proven","FIND-002 major: tr byte-wise JP risk","FIND-003 major: silent fallback on missing file","FIND-004 major: stale grep passThreshold","FIND-005 major: secret leak in error output","FIND-006 minor: duplication","FIND-007 minor: stale interface doc","FIND-008 major: tautological test","FIND-009 major: spec/impl divergence REQ-19"]},
+  "priorRound": {"verdict":"FAIL","findings":["FIND-010 high: PROP-21 doc claimed note_mcp.upload_eyecatch_image, actual impl uses browser button"]},
   "artifactsToReview": {"spec":["specs/behavioral-spec.md","specs/verification-architecture.md"],"contract":["contracts/sprint-2.md"],"source":["skills/profitable-article-writer/"],"tests":["skills/profitable-article-writer/tests/"]}
 }
