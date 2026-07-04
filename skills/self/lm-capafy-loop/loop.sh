@@ -36,7 +36,9 @@ try:
     d=json.load(sys.stdin)
     if d.get('code',0)!=0 or 'data' not in d: print('NA'); raise SystemExit   # INV-1
     recs=d['data'] if isinstance(d['data'],list) else []
-    print(round(float(max((r.get('amount',0) for r in recs), default=0)),2))
+    if not recs: print('0.0'); raise SystemExit
+    latest=max(recs, key=lambda r: str(r.get('payoutMonth','')))   # FIND-015: CURRENT/latest month, not max-ever
+    print(round(float(latest.get('amount',0) or 0),2))
 except SystemExit: pass
 except Exception: print('NA')" 2>/dev/null || echo NA)"
 # Capafy 3d leading indicator (NOT summed into the monthly goal; labeled)
