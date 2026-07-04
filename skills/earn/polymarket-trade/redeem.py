@@ -205,6 +205,19 @@ def _mint_relayer_api_key(acct) -> str:
     import requests
     from eth_account.messages import encode_defunct
 
+    # The relayer caps API keys at 100 per address; minting a fresh one every run hit that cap
+    # (400 "max 100 keys per address", observed live 2026-07-05 once EARN-1 + retries burned through
+    # them). An api key is meant to be REUSED, so cache it and only mint when there is none. This is
+    # what lets the loop redeem forever without a human re-minting.
+    _cache = os.path.expanduser("~/.anicca-founder/.pm-relayer-apikey")
+    try:
+        with open(_cache) as _f:
+            _cached = _f.read().strip()
+        if _cached:
+            return _cached
+    except FileNotFoundError:
+        pass
+
     gamma = "https://gamma-api.polymarket.com"
     s = requests.Session()
     s.headers.update({
@@ -249,6 +262,12 @@ def _mint_relayer_api_key(acct) -> str:
             api_key = data.get("apiKey") or data.get("api_key")
             if not api_key:
                 raise RuntimeError(f"relayer auth did not return an apiKey: {json.dumps(data)[:300]}")
+            try:  # cache for reuse so we never hit the 100-key cap again
+                with open(_cache, "w") as _f:
+                    _f.write(api_key)
+                os.chmod(_cache, 0o600)
+            except Exception:  # noqa: BLE001 — caching is best-effort, never fail the redeem
+                pass
             return api_key
         except Exception as e:  # noqa: BLE001 — best-effort auth, retried with a fresh nonce
             last_err = e
