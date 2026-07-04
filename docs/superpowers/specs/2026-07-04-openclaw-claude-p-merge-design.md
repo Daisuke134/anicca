@@ -838,3 +838,25 @@ promote.fun側で「Verified」ステータスに変化したことを確認(ス
 (SELECTの前、またはCLIPの前に「アカウント接続済みか」「対象campaignにjoin済みか」
 を確認するステップが必要)。次にJoin Campaignボタンを実際にクリックして、
 campaign参加が完了するか確認する。
+
+### 18.1 ★新たな重大制約発見★: campaignごとに最低フォロワー数要件があり、SELECTが未考慮
+
+実際にJoin Campaignを試行した結果: **「Account @aiclipsvault has 0 followers, but
+this campaign requires at least 2,000 followers.」**でブロックされた。
+thomas-rhett-content(SELECTが選定したIG対応campaign)は最低2,000フォロワーを
+要求しており、0フォロワーの新規warmedアカウントでは参加不可能。
+
+これは`select_campaigns.py`のSELECTロジックに完全に欠落しているフィルタ
+(現在はbudget×cpmスコアとIG対応のみを見ている、フォロワー要件は一切見ていない)。
+一方、既に確認済みのcrocs(TikTok限定、除外対象)は「There is no follower
+requirement for this campaign, you can join with a brand new page.」と明記
+されていた — つまり**「新規ページ可」を明示するcampaignが存在する**ので、
+それを条件に加えれば0フォロワーアカウントでも参加できるcampaignは見つかる
+可能性が高い。
+
+**Next Action(優先度高)**: `select_campaigns.py`のSELECT/ランキングロジックに
+「最低フォロワー数要件」チェックを追加する必要がある。各campaign詳細ページの
+「Page Requirements」(Rulesタブ、または今回のJoinモーダルのエラーメッセージ)
+から最低フォロワー数を読み取り、保有アカウントの実フォロワー数(0)を下回る
+campaignを除外するロジックが必要。IG対応17件の中から、フォロワー要件が低い/
+無いcampaignを探すのが次の具体的な一歩。
