@@ -1,6 +1,8 @@
-# Verification Report — profitable-article-writer, Sprint 1
+# Verification Report — profitable-article-writer, Sprint 1 + Sprint 2
 
 Mode: strict. Phase 5 (formal hardening). Sprint 1 = the article-orchestration SKELETON, draft-first.
+Sprint 2 = REAL content-gen + REAL note.com DRAFT publish (visuals, eyecatch, single-¥500 gate), REQ-19/20
+(daily executor = `claude -p` sonnet, verifier = main agent).
 
 ## Proof Obligations
 
@@ -21,10 +23,24 @@ Sprint-1 required proof obligations, each proven by a green oracle test (13/13, 
 
 Real-gate mechanics (v0 heading/size, v05 (e) arithmetic + judge_v05 response parser) proven no-mock by `test-v0-real.sh` / `test-v05-real.sh` with the FORCE seams unset.
 
+Sprint-2 additional proof obligations (20/20 tests total; `bash tests/run-red.sh`):
+
+| PROP | Obligation | Proven by | Status |
+|---|---|---|---|
+| PROP-18 | v05 readability arithmetic handles Japanese full-width punctuation (。！？), not just ASCII, and is locale-independent (python3 `re`-based, not byte-wise `tr`) | test-prop18-v05-jp-sentences + test-find002-locale-safe-sentences | proved |
+| PROP-19 | generate_draft's 3-state precedence: (a) real draft path → verbatim, never boilerplate; (b) topic/research declared, no path → documented wiring safety-net; (c) nothing → fail-closed SKIP. Missing-but-supplied path is a logged wiring error, distinct from not-supplied | test-prop19-real-content-hook + test-find003-missing-draft-path-wiring-error | proved |
+| PROP-20 | Mode-A real note.com DRAFT publish wiring (reuses existing pipeline for auth/verify; new browser scripts for eyecatch/single-price, contract-approved deviation), fail-closed, never fabricates a URL, secrets redacted from error output | test-prop20-note-publish-failclosed + test-find005-secret-redaction | proved |
+| PROP-21 | Real Mode-A draft contains REAL visuals (hero + ≥2 inline figures), a REAL eyecatch/cover, and a SINGLE ¥500 paid gate — VISUALLY confirmed (not just DOM-eval), never メンバーシップ | test-prop21-visual-and-single-price + independent main-agent browser verification of `single-price-panel-*.png` | proved |
+
 ## Summary
 
-All Sprint-1 required proof obligations are proved by green, non-vacuous oracle tests, independently re-run by the
-main agent. Adversary implementation review (Phase 3) PASSed after 3 rounds with zero open findings. No formal
-proof tooling (e.g. TLA+, model checking) is applicable to this bash orchestration skeleton; correctness is
-established by the oracle suite + adversarial review. Deeper formal/property work applies at Sprint 2+ when real
-publish and on-chain earn land.
+All Sprint-1 and Sprint-2 required proof obligations are proved by green, non-vacuous oracle tests, independently
+re-run by the main agent (not taken on the builder's word). Adversary implementation review PASSed: Sprint 1 after
+3 rounds (0 findings), Sprint 2 after 4 rounds (0 findings) — the Sprint-2 arc caught and closed a real defect class
+across 4 rounds (a doc/impl mismatch on the eyecatch mechanism that recurred in 3 separate files: spec, code
+comment, test comment — each closed as found, with a final full-sweep round confirming no 5th instance). No formal
+proof tooling (e.g. TLA+, model checking) is applicable to this bash+python orchestration skill; correctness is
+established by the oracle suite + adversarial review + main-agent browser verification (a real note.com draft was
+produced and its render/paid-gate visually confirmed by the main agent, not merely claimed). Deeper formal/property
+work applies at Sprint 3+ (distribution, daily loop, self-heal/self-improve) and once real on-chain/platform-sale
+earn (V4) lands.
