@@ -698,6 +698,26 @@
         "createdAt": "2026-07-04T10:47:50.482Z",
         "createdInPhase": "3",
         "externalId": "FIND-010"
+      },
+      {
+        "beadId": "BEAD-050",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-011.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T10:54:19.064Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-011"
+      },
+      {
+        "beadId": "BEAD-051",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-012.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T10:54:19.067Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-012"
       }
     ]
   },
@@ -728,5 +748,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T10:47:50.483Z"
+  "updatedAt": "2026-07-04T10:54:19.067Z"
 }

@@ -3,20 +3,21 @@
   "feature": "profitable-article-writer",
   "overallVerdict": "FAIL",
   "timestamp": "2026-07-04T00:00:00Z",
-  "iteration": 2,
+  "iteration": 3,
   "reviewContext": {
     "reviewType": "implementation",
     "contractPath": "contracts/sprint-2.md",
-    "methodologyNote": "Round 2. All 9 prior findings (FIND-001..009) were independently re-verified against the current source, spec, contract, and evidence artifacts on disk. FIND-001's screenshot artifacts (single-price-panel-nfb2ace9f0ed8.png and single-price-panel-n39ef09f828f7.png) were directly opened and visually inspected (image render), confirming 記事タイプ=有料 selected + 価格=500 filled + overlay still open. tests/test-find002-locale-safe-sentences.sh, tests/test-find003-missing-draft-path-wiring-error.sh, tests/test-find005-redact-secrets-in-error-output.sh were read in full and cross-checked against .../evidence/sprint-2-findings-fix-red-phase.log (proves each new test genuinely FAILS against pre-fix source) and .../evidence/sprint-2-findings-fix-green-phase.log (20/20 PASS post-fix). All 9 prior findings are RESOLVED with real, non-tautological evidence. A fresh adversarial pass over specs/verification-architecture.md (explicitly in scope per this review's manifest) surfaced ONE new, previously-unflagged defect (FIND-010): the PROP-21 row still misattributes the eyecatch mechanism to note_mcp.upload_eyecatch_image, contradicting the correction already made in the sibling behavioral-spec.md (FIND-009's own fix), SKILL.md, the contract, and the actual code -- the identical class of defect FIND-009 closed elsewhere, left open in this one document."
+    "methodologyNote": "Round 3. FIND-010 (specs/verification-architecture.md's PROP-21 row misattributing eyecatch to note_mcp.upload_eyecatch_image) was independently re-verified against the current file: PROP-21's row (line 43) now correctly reads 'lib/note-set-eyecatch.py, via the editor's own 画像を追加 button — note_mcp.upload_eyecatch_image was tried and reproducibly fails per that script's docstring, so it is NOT used', byte-for-byte consistent with lib/note-set-eyecatch.py's own docstring (no note_mcp import at all). FIND-010 is RESOLVED. A full fresh 5-dimension pass was then run across the current codebase per this round's explicit mandate to sweep for any remaining doc/impl mismatch of the SAME shape anywhere in scope. That sweep surfaced ONE new defect (FIND-011, high, spec_fidelity): the identical false claim ('note-create-rich-draft.py orchestrates note_mcp's upload_eyecatch_image') independently persists, uncorrected, in TWO source-tree files this review's own manifest lists as in-scope -- lib/note_publish.sh:31 (self-contradicting that same file's own correct lines 10-15/163) and tests/test-prop21-visual-and-single-price.sh:6 (self-contradicting that same file's own correct lines 31-38 and its actual executable assertions). lib/note-create-rich-draft.py's full source was read and confirmed to import/call only create_draft, upload_body_image, and generate_image_html -- never upload_eyecatch_image -- matching its own correct docstring. The Round-2 fix for this defect class corrected the Phase-1 spec layer (specs/verification-architecture.md) but missed the source-code and test-code layer where the same false claim exists independently. A second, lower-severity finding (FIND-012, medium, non-blocking) was also filed: SKILL.md's 'Real Mode-A wake evidence' prose still cites the OLD, contract-superseded screenshot filename (single-price-nfb2ace9f0ed8.png, taken after the overlay closed) instead of the FIND-001-corrected panel screenshot (single-price-panel-nfb2ace9f0ed8.png) that actually exists on disk and is what CRIT-105 requires -- this does not affect any grading criterion's actual pass/fail. All other Round-2 PASS dimensions were re-verified with a fresh pass over run.sh, lib/note_publish.sh, lib/note-create-rich-draft.py, lib/note-set-single-price.py, lib/note-set-eyecatch.py, tests/test-prop21-visual-and-single-price.sh, and the Sprint-2-findings-fix green-phase evidence log (20/20 tests PASS) -- no new functional/logic/edge-case/security defects found beyond FIND-011/FIND-012."
   },
   "dimensions": [
     {
       "name": "spec_fidelity",
       "verdict": "FAIL",
-      "findings": ["FIND-010"],
+      "findings": ["FIND-011", "FIND-012"],
       "evidence": [
-        {"type": "file", "location": "specs/behavioral-spec.md", "description": "FIND-009 verified RESOLVED: REQ-19's Round-2 correction (lines 101-120) correctly scopes pipeline reuse to auth/verify only and documents the new eyecatch/single-price/rich-draft scripts."},
-        {"type": "file", "location": "contracts/sprint-2.md", "description": "FIND-004 verified RESOLVED: CRIT-104's passThreshold (lines 99-102) now names lib/note-create-rich-draft.py, the file that actually contains 'create_draft'."}
+        {"type": "file", "location": "specs/verification-architecture.md", "description": "FIND-010 verified RESOLVED: PROP-21 row (line 43) now correctly states eyecatch is set via lib/note-set-eyecatch.py's browser 画像を追加 button, explicitly noting note_mcp.upload_eyecatch_image was tried and reproducibly fails, so it is NOT used -- matching lib/note-set-eyecatch.py's own docstring exactly."},
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "REQ-19's Round-2 correction (lines 109-120) remains correct and unchanged; still consistent with the code."},
+        {"type": "file", "location": "contracts/sprint-2.md", "description": "CRIT-104/CRIT-106 passThresholds remain accurate against lib/note_publish.sh's actual call graph and lib/note-create-rich-draft.py's actual note_mcp imports."}
       ]
     },
     {
@@ -24,8 +25,9 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh", "description": "FIND-002 verified RESOLVED: python3 codepoint-safe re.split is the primary path (lines 128-137); tr fallback (only when python3 absent) forces a UTF-8 locale (line 140), never an inherited ambient C/POSIX locale."},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-red-phase.log", "description": "Confirms test-find002-locale-safe-sentences.sh's CONTROL section reproduces the old byte-wise tr splitter under LC_ALL=C giving the WRONG verdict, and the FIX section (current gates/v05.sh under the same LC_ALL=C) gives the CORRECT verdict -- a genuinely discriminating test."}
+        {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh", "description": "PROP-18 Japanese sentence-boundary fix unchanged since round 2; still recognizes 。！？ in addition to ASCII terminators."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh", "description": "Partial-failure policy re-verified: note_create_rich_draft failure aborts before any key is produced (lines 230-235, 237-241); note_set_eyecatch/note_set_single_price non-zero returns are logged but never abort or fabricate a URL (lines 245-259) -- matches CRIT-106's grep-verifiable partial-failure requirement."},
+        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-green-phase.log", "description": "20 test files, 20 PASS, 0 FAIL, including test-prop18-v05-jp-sentences.sh and test-prop21-visual-and-single-price.sh."}
       ]
     },
     {
@@ -33,20 +35,17 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/run.sh", "description": "FIND-003 verified RESOLVED: generate_draft (lines 134-163) now logs a distinct 'generate_draft_wiring_error' to state/failures.jsonl when ARTICLE_REAL_DRAFT_PATH is supplied-but-missing, and does NOT when the path is never supplied at all -- confirmed by reading both branches and the test's positive+negative-control assertions."},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh", "description": "FIND-005 verified RESOLVED: _note_redact_secrets() (lines 91-119) is piped into all 5 non-zero-return diagnostic branches in run_note_mode_a_publish (lines 232, 238, 249, 257, 275); test proves a synthetic secret is redacted and ordinary diagnostics are untouched."},
-        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh", "description": "FIND-008 verified RESOLVED: states (a)/(b) now assert last_wake_result: DRAFT (lines 52, 67); I independently hand-computed both fixtures' sentence-length arithmetic and line counts against the REAL (non-forced) gates/v0.sh (line_count>3) and gates/v05.sh (>=70% short sentences) and confirmed both fixtures genuinely pass in round 1."},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-green-phase.log", "description": "20 test files, 20 PASS, 0 FAIL -- includes all 3 new discriminating tests plus the rewritten test-prop19."}
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh", "description": "generate_draft's 3-state precedence (lines 132-184), the <=3-round V0/V0.5 gate loop (lines 190-228), the ABORT path (lines 234-247), and the Mode-A/Mode-B branching (lines 255-331) were re-read in full: logic is internally consistent, fail-closed, and matches PROP-19/REQ-14/REQ-6/REQ-7."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py", "description": "FIND-001's panel-screenshot-before-キャンセル fix (lines 113-123) re-verified positioned correctly in the control flow, before the キャンセル click loop (lines 128-132); no 投稿する/更新する click target anywhere in the file (grep-confirmed)."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-create-rich-draft.py", "description": "Full source re-read: imports/calls only create_draft, upload_body_image, generate_image_html from note_mcp; never upload_eyecatch_image; fail-closed per-marker (a failed image upload skips that marker without aborting draft creation, lines 129-136)."}
       ]
     },
     {
       "name": "structural_integrity",
-      "verdict": "PASS",
-      "findings": [],
+      "verdict": "FAIL",
+      "findings": ["FIND-011"],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-2.md", "description": "FIND-004 verified RESOLVED (see spec_fidelity dimension for the same underlying fix, cross-listed here as it was originally filed under structural_integrity)."},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note_browser_common.py", "description": "FIND-006 verified RESOLVED: new shared module (load_note_cookies, open_editor_ready) eliminates the ~20-line duplication; imported by both lib/note-set-eyecatch.py:31 and lib/note-set-single-price.py:44."},
-        {"type": "file", "location": "skills/profitable-article-writer/run.sh", "description": "FIND-007 verified RESOLVED: INTERFACE comment (lines 20-36) now documents every Sprint-2 real-mode env var the script's own logic consumes."}
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh", "description": "The 3-script orchestration (note_create_rich_draft/note_set_eyecatch/note_set_single_price) itself is correctly wired and thin per CRIT-104, but the file's own top-of-file header comment (line 31) self-contradicts its own lines 10-15/163 -- a structural-integrity defect (misleading, internally inconsistent documentation embedded in the orchestration file CRIT-104/CRIT-106 designate as the reviewable wiring)."}
       ]
     },
     {
@@ -54,21 +53,21 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png", "description": "FIND-001 verified RESOLVED: directly opened and visually inspected -- 記事タイプ=有料 selected, 価格=500 filled, overlay's own キャンセル/有料エリア設定 buttons still on screen (captured BEFORE the overlay closed)."},
-        {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png", "description": "Second, independent real Mode-A wake reproduces the identical, correctly-timed panel screenshot for a brand-new draft, confirming the fix generalizes."},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py", "description": "Screenshot capture (lines 113-123) confirmed positioned in the control flow BEFORE the キャンセル click loop (lines 128-132)."}
+        {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png", "description": "Re-confirmed to exist on disk: the CRIT-105-designated, human/verifier-reviewable evidence for the ¥500 single-price panel state."},
+        {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png", "description": "Second, independent real Mode-A wake's panel screenshot also confirmed to exist on disk."},
+        {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png", "description": "Eyecatch/hero/figures screenshot for the CRIT-105-designated draft confirmed to exist on disk."}
       ]
     }
   ],
   "priorFindingsVerification": {
     "FIND-001": "RESOLVED", "FIND-002": "RESOLVED", "FIND-003": "RESOLVED", "FIND-004": "RESOLVED",
     "FIND-005": "RESOLVED", "FIND-006": "RESOLVED", "FIND-007": "RESOLVED", "FIND-008": "RESOLVED",
-    "FIND-009": "RESOLVED"
+    "FIND-009": "RESOLVED", "FIND-010": "RESOLVED"
   },
-  "newDefectsFound": ["FIND-010"],
+  "newDefectsFound": ["FIND-011", "FIND-012"],
   "convergenceSignals": {
-    "findingCount": 1,
-    "previousFindingCount": 9,
+    "findingCount": 2,
+    "previousFindingCount": 1,
     "allCriteriaEvaluated": true,
     "evaluatedCriteria": ["CRIT-102", "CRIT-103", "CRIT-104", "CRIT-105", "CRIT-106"],
     "duplicateFindings": []

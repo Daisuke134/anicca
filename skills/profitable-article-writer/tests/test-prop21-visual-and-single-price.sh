@@ -3,7 +3,8 @@
 # the rendered draft (key n7261a753887f) must be structurally impossible to regress to:
 #   1. NO VISUALS in the article body -> lib/note-create-rich-draft.py must exist and genuinely call
 #      note_mcp's upload_body_image + generate_image_html + create_draft (not a stub/fake).
-#   2. NO eyecatch/cover -> the same file must call note_mcp's upload_eyecatch_image.
+#   2. NO eyecatch/cover -> lib/note-set-eyecatch.py must drive the editor's 画像を追加 button (note_mcp's
+#      upload_eyecatch_image reproducibly fails, so it is NOT used — see that script's own docstring).
 #   3. Monetization wired to メンバーシップ (membership) instead of a single ¥500 有料note -> the WIRING
 #      (lib/note_publish.sh) must never call the old membership-hardcoded `publish-to-note.sh publish`
 #      subcommand any more, and lib/note-set-single-price.py must select 有料 and must NEVER contain a

@@ -28,7 +28,8 @@
 #
 # This file still never rebuilds note_mcp or cloakbrowser. It calls:
 #   - lib/note-create-rich-draft.py (this skill's own file, NOT ai-entity-article-writer's) — orchestrates
-#     note_mcp's EXISTING create_draft/upload_body_image/upload_eyecatch_image/generate_image_html.
+#     note_mcp's EXISTING create_draft/upload_body_image/generate_image_html (eyecatch is set separately,
+#     by note-set-eyecatch.py's browser automation — note_mcp's upload_eyecatch_image reproducibly fails).
 #   - lib/note-set-single-price.py (this skill's own file) — orchestrates cloakbrowser exactly the way
 #     ai-entity-article-writer/scripts/note-publish/insert-toc-save.py already does (same caret-then-hover-
 #     then-gutter-menu technique, reused not reinvented), but selects 有料 instead of メンバーシップ.

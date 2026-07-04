@@ -113,9 +113,11 @@ arithmetic now recognizes Japanese terminal punctuation (。！？), not just AS
    left in the code to regress to.
 
 Real Mode-A wake evidence (2026-07-04): draft `https://note.com/anicca123/n/nfb2ace9f0ed8` — cover set,
-hero diagram + 2 inline figures embedded, 記事タイプ=有料/¥500/paid-line confirmed via live DOM (screenshot
-`~/.cloak/note-work/single-price-nfb2ace9f0ed8.png`). Phase 3 (fresh-context adversary review) for this fix
-has not yet run in this session — see `.vcsdd/features/profitable-article-writer/contracts/sprint-2.md`.
+hero diagram + 2 inline figures embedded, 記事タイプ=有料/¥500 visibly confirmed on-screen while the 公開設定
+panel is still open (screenshot `~/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png` — supersedes the
+earlier `single-price-nfb2ace9f0ed8.png`, taken after the overlay closed, which never showed the panel).
+Phase 3 (fresh-context adversary review) is in progress (round 3) — see
+`.vcsdd/features/profitable-article-writer/reviews/sprint-2/output/verdict.json`.
 
 **Test coverage: wiring vs real-gate mechanics.** Most `test-prop*.sh` files (PROP-2/5/6/9/14/15 etc.) drive
 `gates/v0.sh` and `gates/v05.sh` via `ARTICLE_TEST_FORCE_V0`/`ARTICLE_TEST_FORCE_V05` — a deterministic
