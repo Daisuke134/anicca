@@ -13,7 +13,8 @@ SOLUSDC=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
 erc20(){ curl -s -m8 -X POST "$1" -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"eth_call\",\"params\":[{\"to\":\"$2\",\"data\":\"0x70a08231000000000000000000000000${3:2}\"},\"latest\"]}" | python3 -c "import sys,json;r=json.load(sys.stdin).get('result','0x0');print('%.2f'%(int(r,16)/1e6) if r and r!='0x' else '0')" 2>/dev/null; }
 sol(){ curl -s -m8 "$SOLR" -X POST -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getBalance\",\"params\":[\"$1\"]}" | python3 -c "import sys,json;print('%.3f'%(json.load(sys.stdin).get('result',{}).get('value',0)/1e9))" 2>/dev/null; }
 solusdc(){ curl -s -m8 "$SOLR" -X POST -H 'content-type: application/json' --data "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"getTokenAccountsByOwner\",\"params\":[\"$1\",{\"mint\":\"$SOLUSDC\"},{\"encoding\":\"jsonParsed\"}]}" | python3 -c "import sys,json;v=json.load(sys.stdin).get('result',{}).get('value',[]);print('%.2f'%sum(float(a['account']['data']['parsed']['info']['tokenAmount']['uiAmount'] or 0) for a in v) if v else '0')" 2>/dev/null; }
-loop(){ launchctl list 2>/dev/null | grep -q "$1" && echo RUNNING || echo STOPPED; }
+# grep -q would SIGPIPE launchctl under pipefail → spurious STOPPED; capture instead
+loop(){ [ -n "$(launchctl list 2>/dev/null | grep "$1")" ] && echo RUNNING || echo STOPPED; }
 
 echo "════════════ ANICCA COLONY — LIVE SSOT ($(date -u +%Y-%m-%dT%H:%MZ)) ════════════"
 echo ""
