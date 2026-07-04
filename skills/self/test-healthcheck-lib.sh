@@ -2,11 +2,9 @@
 # test-healthcheck-lib.sh — FIND-014: prove the stuck-asking detector fires ONLY on idle input-await prompts and
 # NEVER on active generation ("esc to interrupt") or healthy idle. Mirrors the exact predicate in healthcheck-lib.sh.
 set -uo pipefail; P=0; F=0
-# predicate copied verbatim from hc_run (b): fire iff picker/confirm markers present AND not actively generating.
-stuck(){ local pane="$1"
-  printf '%s' "$pane" | grep -qE 'Enter to select|↑/↓ to navigate|Type something\.|Do you want to proceed' \
-    && ! printf '%s' "$pane" | grep -qE 'esc to interrupt'; }
-chk(){ local name="$1" want="$2" pane="$3"; if stuck "$pane"; then got=FIRE; else got=OK; fi
+# FIND-021: source the REAL predicate from the lib (no duplication → cannot drift).
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")"&&pwd)/healthcheck-lib.sh"
+chk(){ local name="$1" want="$2" pane="$3"; if hc_is_stuck_pane "$pane"; then got=FIRE; else got=OK; fi
   [ "$got" = "$want" ] && { echo "  ok $name ($got)"; P=$((P+1)); } || { echo "  FAIL $name want=$want got=$got"; F=$((F+1)); }; }
 
 # idle interactive picker (asking a human) → FIRE (restart)

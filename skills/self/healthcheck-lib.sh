@@ -10,6 +10,15 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
 
+# FIND-014/021: single source of truth for "is this pane an idle prompt awaiting a human?" — fires ONLY on
+# unambiguous input-await markers AND ONLY when NOT actively generating ("esc to interrupt" = live generation).
+# test-healthcheck-lib.sh sources THIS function (no duplication → no drift).
+hc_is_stuck_pane() {
+  local pane="$1"
+  printf '%s' "$pane" | grep -qE 'Enter to select|↑/↓ to navigate|Type something\.|Do you want to proceed' \
+    && ! printf '%s' "$pane" | grep -qE 'esc to interrupt'
+}
+
 hc_run() {
   local LOOP="$HC_LOOP" SOCK="$HC_SOCK" SESSION="$HC_SESSION" HB="$HC_HB" START="$HC_START"
   local STALE_MIN="$HC_STALE_MIN" CLI="$HC_CLI" OUTPUT="${HC_OUTPUT:-}" OUT_STALE_HRS="${HC_OUTPUT_STALE_HRS:-30}"
@@ -49,10 +58,8 @@ hc_run() {
   # picker/confirm/free-text, AND ONLY when the session is NOT actively generating. Active generation always shows
   # "esc to interrupt"; an idle-await prompt never does. This prevents false-restarting healthy long-running work.
   local pane; pane="$(tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null | tail -25)"
-  if printf '%s' "$pane" | grep -qE 'Enter to select|↑/↓ to navigate|Type something\.|Do you want to proceed'; then
-    if ! printf '%s' "$pane" | grep -qE 'esc to interrupt'; then
-      echo "$(date '+%F %T') STUCK: idle interactive prompt (awaiting human input) → restart" >> "$LOG"; _restart "STUCK asking human"; return
-    fi
+  if hc_is_stuck_pane "$pane"; then
+    echo "$(date '+%F %T') STUCK: idle interactive prompt (awaiting human input) → restart" >> "$LOG"; _restart "STUCK asking human"; return
   fi
 
   # (c) liveness heartbeat stale
