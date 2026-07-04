@@ -1781,3 +1781,11 @@ run_earner.sh に redeem step 配線=done(loop は毎 pass 自律で redeem を�
 - ★redeem を search で解く(Dais 厳命)★: team-lead が「Polymarket の正しい redeem フローを知らずに patch を当て続けた」と認め、redeem-researcher(subagent)に firecrawl docs.polymarket.com + SDK 実コード + GitHub issues で authoritative な方法(invalid authorization の真因 / 100-key cap の正しい扱い / deposit-wallet proxy の redeem 作法)を一次ソース引用で調べさせ中。結果で redeem.py を直す。
 - ★複利の重要性(Dais)★: redeem 無しでは bet→win→collect→bet more の複利が回らない = AI millionaire 経路が断たれる。redeem は EARN の心臓。
 - hygiene: mother ~/anicca が別 agent の branch feature/affiliate-bounty-statemachine に checkout されてた → commit は HEAD:main で origin/main に反映済み、後で main に戻す要。
+
+### §44 ★★ #14 完了: loop が自律で redeem = 初の「AI 自身が回収した realized」(2026-07-05)★★
+Dais 厳命「search しろ」→ redeem-researcher が一次ソースで真因確定 → team-lead が正解通り fix → ★loop が自律で $5.99 を回収した★:
+- 真因(一次ソース): CLOB api key と Relayer api key は別システム。俺が試した SDK `fetch_api_keys()` は CLOB registry しか見ず relayer キーに触れてなかった(=invalid authorization の正体)。正解 = Gamma auth → ★`GET /relayer/api/keys` で既存 relayer キーを list して再利用★(3独立実装で確認)。旧 bug = build_client が毎回無条件 mint(list-before-mint 無し)→ 100-key cap(prune 不可、DELETE 無し)を焼いた実行犯。
+- fix(73→list-before-mint): `_mint_relayer_api_key` に GET /relayer/api/keys の list-before-mint + login status チェック + exact address match、build_client を RelayerApiKey 明示渡しに復元。
+- ★verify(on-chain, loop がやった)★: redeem tx `0xd33b09c8d78d9b28cc9f0ad5db06a1015fb3c63deefa20f7076ed5615c103e2b` status 0x1 block 89667011、Tiafoe $5.99 建玉消失、pUSD $4.27→$10.26(+5.99)。★team-lead は kickstart しただけ、手で redeem.py を撃っていない = loop の run_earner.sh redeem step が自律実行 = EARN-1(手動 meddling)と違い今度は AI 自身★。
+- ★これで複利が回る★: bet→win→collect(自律)→cash→bet more。AI millionaire 経路の心臓が動いた。
+- 教訓(Dais): 「知らないなら search しろ」。5回 patch で失敗 → 一次ソース search 1回で解決。README も既に正直(「first collection was human-triggered」)→ 次の re-verify で「自律回収 proven」に更新可。
