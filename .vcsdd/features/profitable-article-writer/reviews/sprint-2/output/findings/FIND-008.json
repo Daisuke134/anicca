@@ -1,17 +1,18 @@
 {
   "findingId": "FIND-008",
+  "resolutionStatus": "RESOLVED",
   "dimension": "implementation_correctness",
   "category": "test_quality",
-  "severity": "major",
+  "severity": "high",
   "criterion": "CRIT-103",
-  "description": "tests/test-prop19-real-content-hook.sh's states (a) and (b) assert only `rc -eq 0` for 'the wake completes' plus draft.md's own content -- they never assert `last_wake_result` in STATE.md (DRAFT vs ABORTED). This is a near-tautological check given run.sh's own documented design: run.sh returns rc=0 for EVERY legitimate outcome including ABORTED (run.sh lines 20-23, 196-209), so `rc -eq 0` cannot discriminate 'the real-content hook worked AND the wake actually reached a DRAFT/PUBLISHED state' from 'the real-content hook worked but the wake silently ABORTED downstream'. Concretely: state (a)'s own fixture file is exactly 3 lines (heading, blank, one content line) -- gates/v0.sh's real (non-FORCE) check requires `line_count -gt 3` (gates/v0.sh line 38), so this exact fixture FAILS the real V0 gate; and no ARTICLE_JUDGE_V05_RESPONSE is supplied in this test, so gates/v05.sh's real (a)-(d) fail closed to false (gates/v05.sh lines 88-100) and V0.5 also fails. Since ARTICLE_TEST_V0_RESULTS/ARTICLE_TEST_V05_RESULTS are unset here (test only sets ARTICLE_TEST=1... unset variables, real-mode path, so run.sh invokes the REAL non-forced gates, lines 173-179), a real run of this exact fixture would exhaust all 3 retry rounds and ABORT the wake -- yet the test's only pass condition (`rc -eq 0`) is satisfied identically whether the wake reaches DRAFT or silently ABORTS. The test's own success message ('real-mode wake with real draft supplied completes, rc=0') therefore overstates what was actually verified.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. tests/test-prop19-real-content-hook.sh's states (a) and (b) were rewritten: both fixtures are now deliberately constructed to PASS the REAL (non-FORCE) gates/v0.sh + gates/v05.sh in round 1 (a real ARTICLE_JUDGE_V05_RESPONSE is supplied; I independently hand-verified the readability arithmetic on both fixtures satisfies the >=70%-short-sentences threshold and gates/v0.sh's line-count>3 requirement), and both states now assert `grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\"` explicitly (lines 52, 67) -- not merely `rc -eq 0`, which run.sh also returns on ABORTED. This closes the tautology: the test can no longer pass identically whether the wake reaches DRAFT or silently ABORTS. Confirmed as a genuinely new, previously-failing assertion by re-reading the current test file and cross-checking gates/v0.sh's real line_count>3 requirement and gates/v05.sh's real sentence-arithmetic against the actual fixture content.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh",
-    "lineRange": "20-34",
-    "snippet": "OUT=\"$(ARTICLE_DIR=\"$T\" AUTONOMY=off ARTICLE_REAL_TOPIC=\"x402\" ARTICLE_REAL_RESEARCH=sufficient ARTICLE_REAL_DRAFT_PATH=\"$FIXTURE\" bash \"$SKILL/run.sh\" 2>&1)\"; rc=$?\nok \"$([ $rc -eq 0 ] && echo 1 || echo 0)\" \"real-mode wake with real draft supplied completes, rc=0 (rc=$rc): $OUT\"\n... (no assertion anywhere on STATE.md's last_wake_result)"
+    "lineRange": "46-52",
+    "snippet": "OUT=\"$(ARTICLE_DIR=\"$T\" AUTONOMY=off ARTICLE_JUDGE_V05_RESPONSE=\"$RESP\" ARTICLE_REAL_TOPIC=\"x402\" ARTICLE_REAL_RESEARCH=sufficient ARTICLE_REAL_DRAFT_PATH=\"$FIXTURE\" bash \"$SKILL/run.sh\" 2>&1)\"; rc=$?\n...\nok \"$(grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\" 2>/dev/null && echo 1 || echo 0)\" \"FIND-008: the wake actually reached last_wake_result: DRAFT (not merely rc=0, which run.sh also returns on ABORTED) ...\""
   },
   "additionalEvidence": [
-    {"type": "file", "location": "skills/profitable-article-writer/gates/v0.sh", "description": "Line 38: real V0 requires line_count -gt 3; the test's own 3-line fixture fails this."}
-  ],
-  "routeToPhase": "2a"
+    {"type": "file", "location": "skills/profitable-article-writer/gates/v0.sh", "description": "Real line_count>3 check re-verified: state (a)'s fixture has 7 lines, passes."},
+    {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh", "description": "Real sentence arithmetic re-verified by hand: state (a) fixture achieves 6/7 sentences <=60 chars (85.7%>=70%)."}
+  ]
 }

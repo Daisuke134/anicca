@@ -1,17 +1,14 @@
 {
   "findingId": "FIND-009",
+  "resolutionStatus": "RESOLVED",
   "dimension": "spec_fidelity",
   "category": "spec_gap",
-  "severity": "major",
+  "severity": "high",
   "criterion": "N/A (behavioral-spec.md REQ-19 vs contract CRIT-104/CRIT-106)",
-  "description": "behavioral-spec.md's REQ-19 states the real note DRAFT post 'SHALL REUSE the existing, already-proven ai-entity-article-writer/scripts/note-publish/ pipeline (auth, eyecatch/目次/paywall-gate, verify) -- it is NEVER rebuilt.' The Sprint-2 PROP-21 fix, however, explicitly abandons the OLD pipeline's own eyecatch/monetization sub-scripts (lib/note_publish.sh's own header, lines 10-27, documents that the old flow's [5/7]/[6/7] steps -- publish.py, toggle-plan.py, set-eyecatch-republish.py -- are no longer called at all) and instead introduces two brand-new files (lib/note-set-eyecatch.py, lib/note-set-single-price.py) that independently drive browser automation via cloakbrowser to reach equivalent DOM state. This is a legitimate, contract-approved (CRIT-106) engineering decision given the old scripts' hardcoded メンバーシップ bug and the eyecatch API's confirmed defect -- but behavioral-spec.md's REQ-19 wording was never updated to reflect that 'eyecatch/paywall-gate reuse' no longer literally holds for those two sub-flows. A fresh reader of behavioral-spec.md alone (the authoritative Phase-1a document) would be told something the actual, contract-sanctioned Sprint-2 implementation no longer does.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. behavioral-spec.md's REQ-19 now carries an explicit 'Round-2 correction (FIND-009)' paragraph (lines 109-120) stating plainly that the OLD pipeline's eyecatch/目次/paywall-gate sub-scripts (publish.py/toggle-plan.py/set-eyecatch-republish.py) are NOT reused for eyecatch or monetization, that this is a legitimate contract-approved (CRIT-106) deviation, and that eyecatch/single-price/visuals are now set via this skill's own lib/note-set-eyecatch.py/lib/note-set-single-price.py/lib/note-create-rich-draft.py. The 'REUSE' claim earlier in REQ-19 is now correctly scoped: it explicitly says the reused pipeline is used 'for AUTH and VERIFY only' (line 101-103). A fresh reader of behavioral-spec.md alone is no longer misled about what the Sprint-2 implementation actually does for eyecatch/monetization.",
   "evidence": {
-    "filePath": "specs/behavioral-spec.md",
-    "lineRange": "101-108",
-    "snippet": "the real note DRAFT post SHALL REUSE the existing, already-proven `ai-entity-article-writer/scripts/note-publish/` pipeline (auth, eyecatch/目次/paywall-gate, verify) -- it is NEVER rebuilt."
-  },
-  "additionalEvidence": [
-    {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh", "description": "Header comment lines 10-27 candidly documents that the old pipeline's eyecatch/monetization sub-scripts (toggle-plan.py, set-eyecatch-republish.py) are no longer called; replaced by brand-new lib/note-set-eyecatch.py and lib/note-set-single-price.py."}
-  ],
-  "routeToPhase": "1a"
+    "filePath": ".vcsdd/features/profitable-article-writer/specs/behavioral-spec.md",
+    "lineRange": "101-120",
+    "snippet": "the real note DRAFT post SHALL REUSE the existing, already-proven `ai-entity-article-writer/scripts/note-publish/` pipeline for AUTH and VERIFY only ... **Round-2 correction (FIND-009)**: the OLD pipeline's own eyecatch/目次/paywall-gate sub-scripts ... are NOT reused for eyecatch or monetization ... This is a legitimate, contract-approved (CRIT-106) engineering deviation ..."
+  }
 }

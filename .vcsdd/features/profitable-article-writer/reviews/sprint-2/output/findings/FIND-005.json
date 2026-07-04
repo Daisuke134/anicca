@@ -1,14 +1,18 @@
 {
   "findingId": "FIND-005",
+  "resolutionStatus": "RESOLVED",
   "dimension": "implementation_correctness",
   "category": "security_surface",
-  "severity": "major",
+  "severity": "high",
   "criterion": "CRIT-104",
-  "description": "lib/note_publish.sh's run_note_mode_a_publish captures each Python sub-step's COMBINED stdout+stderr verbatim via `2>&1` into $create_out (line 177), $eyecatch_out (line 192), $price_out (line 199), and $verify_out (line 205), then re-emits that raw captured text verbatim to its own stderr on any non-zero return (lines 179, 194, 201, 218) with NO redaction/sanitization whatsoever. Every one of these subprocess calls loads the install's stored NOTE_COOKIES_FILE and drives either an HTTP client (note_mcp) or a real browser session (cloakbrowser) authenticated with those cookies. If note_mcp or cloakbrowser ever raises an exception whose message embeds request/response detail (a realistic failure mode for HTTP/browser client libraries -- e.g. an error body echoing a Set-Cookie header, a session/auth token, or a redirected URL containing a token), that content propagates unredacted into the wake's stderr/log stream. CRIT-104's own passThreshold is explicitly concerned with credential leakage into 'the human/verifier-facing evidence artifact', but the only test coverage that exists (tests/test-prop20-note-publish-failclosed.sh) checks the STATIC SHAPE of notify.json only -- no test in the suite simulates a sub-step exception containing credential-shaped content and asserts it is excluded/redacted from the wake's stderr output. This is a real, untested credential-leak surface distinct from (and not covered by) the notify.json-only check that exists today.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. lib/note_publish.sh now defines _note_redact_secrets() (lines 91-119): a two-pass python3 redactor that (1) redacts every cookie VALUE loaded from NOTE_COOKIES_FILE wherever it appears verbatim in sub-step output, and (2) generically redacts any 'cookie|session|token|auth'-keyed value via regex. EVERY non-zero-return branch in run_note_mode_a_publish (create failure line 232-234, missing-key line 238-240, eyecatch failure line 249-251, price failure line 257-259, verify non-PASS line 275-277) now pipes its raw captured output through _note_redact_secrets BEFORE re-emission to stderr -- confirmed by reading all 5 branches. tests/test-find005-redact-secrets-in-error-output.sh proves this with a synthetic secret-looking string ('SUPERSECRET_TOKEN_...') injected via a hermetic fake sub-step script: the secret does NOT appear verbatim in the final stderr output, a [REDACTED] marker appears in its place (proving redaction ran, not silent dropping), AND a control case with ordinary non-secret diagnostic text ('connection refused') passes through UNCHANGED (no over-redaction). Confirmed as a genuinely new, previously-failing (against pre-fix source, which had no _note_redact_secrets at all) test via the red-phase evidence log.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/lib/note_publish.sh",
-    "lineRange": "176-219",
-    "snippet": "create_out=\"$(note_create_rich_draft \"$draft_path\" \"$title\" 2>&1)\"; create_rc=$?\nif [ $create_rc -ne 0 ]; then\n  echo \"run_note_mode_a_publish: note_create_rich_draft failed: $create_out\" >&2\n  return 1\nfi"
+    "lineRange": "230-259",
+    "snippet": "create_out=\"$(note_create_rich_draft \"$draft_path\" \"$title\" 2>&1)\"; create_rc=$?\nif [ $create_rc -ne 0 ]; then\n  create_out_redacted=\"$(printf '%s' \"$create_out\" | _note_redact_secrets)\"\n  echo \"run_note_mode_a_publish: note_create_rich_draft failed: $create_out_redacted\" >&2\n  return 1\nfi"
   },
-  "routeToPhase": "2b"
+  "additionalEvidence": [
+    {"type": "file", "location": "skills/profitable-article-writer/tests/test-find005-redact-secrets-in-error-output.sh", "description": "Synthetic-secret redaction assertion + non-secret control (no over-redaction)."},
+    {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-green-phase.log", "description": "test-find005 PASS, line 16-17."}
+  ]
 }

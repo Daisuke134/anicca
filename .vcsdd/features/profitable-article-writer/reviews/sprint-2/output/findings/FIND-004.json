@@ -1,14 +1,18 @@
 {
   "findingId": "FIND-004",
+  "resolutionStatus": "RESOLVED",
   "dimension": "structural_integrity",
   "category": "requirement_mismatch",
-  "severity": "major",
+  "severity": "high",
   "criterion": "CRIT-104",
-  "description": "CRIT-104's passThreshold literally states: 'grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT and note_mcp.api.articles.create_draft'. I read lib/note_publish.sh in full: the literal string 'create_draft' never appears anywhere in that file (it only appears in lib/note-create-rich-draft.py, a different file, at the point where THAT file imports note_mcp's create_draft). The criterion as worded therefore does not correspond to a real, greppable fact about the named file. No test file in the suite (tests/test-prop20-note-publish-failclosed.sh, tests/test-prop21-visual-and-single-price.sh) actually performs this grep against lib/note_publish.sh either -- test-prop21 greps 'create_draft' against $RICH_DRAFT_PY (the correct file), never against $NOTE_PUBLISH_SH. This is a genuine criteria-to-artifact mapping defect: CRIT-104's own passThreshold cannot be mechanically verified as written against the file it names, which is exactly the kind of non-binary-evaluable criterion structural_integrity review is meant to catch.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. contracts/sprint-2.md's CRIT-104 passThreshold now reads 'grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT (verify subcommand only) and lib/note-create-rich-draft.py -- this skill's own thin orchestration script, which itself calls note_mcp.api.articles.create_draft/...' -- naming the file that actually contains the literal string 'create_draft' (lib/note-create-rich-draft.py), not lib/note_publish.sh directly. Confirmed mechanically: lib/note_publish.sh (source read in full) never contains the literal string 'create_draft' itself; it calls note_create_rich_draft() (a distinctly-named local function) which execs lib/note-create-rich-draft.py, and THAT file is the one containing note_mcp's create_draft call (grep-verified by tests/test-prop21-visual-and-single-price.sh line 26 against $RICH_DRAFT_PY, the correct file). The criterion is now mechanically grep-verifiable exactly as worded, closing the criteria-to-artifact mapping defect.",
   "evidence": {
-    "filePath": "skills/profitable-article-writer/lib/note_publish.sh",
-    "lineRange": "1-221",
-    "snippet": "(grep -c 'create_draft' lib/note_publish.sh == 0; the only calls this file makes are to $NOTE_PUBLISH_SCRIPT (verify subcommand only, line 154) and to $NOTE_CREATE_RICH_DRAFT_PY / $NOTE_SET_EYECATCH_PY / $NOTE_SET_SINGLE_PRICE_PY as external python scripts, lines 104-105, 124, 142)"
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "99-102",
+    "snippet": "**Round-3 correction (FIND-004)**: CRIT-104's passThreshold literally named `note_mcp.api.articles.create_draft` as a direct call inside `lib/note_publish.sh`, but the literal string `create_draft` only appears in `lib/note-create-rich-draft.py` ... FIXED by naming the correct file in the passThreshold."
   },
-  "routeToPhase": "1b"
+  "additionalEvidence": [
+    {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh", "description": "Full read confirms no literal 'create_draft' string in this file; only note_create_rich_draft() calls out to lib/note-create-rich-draft.py."},
+    {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop21-visual-and-single-price.sh", "description": "Line 26 greps 'create_draft' against $RICH_DRAFT_PY (lib/note-create-rich-draft.py), the correct file."}
+  ]
 }

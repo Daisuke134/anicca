@@ -1,17 +1,18 @@
 {
   "findingId": "FIND-006",
+  "resolutionStatus": "RESOLVED",
   "dimension": "structural_integrity",
   "category": "requirement_mismatch",
-  "severity": "minor",
+  "severity": "low",
   "criterion": "CRIT-106",
-  "description": "lib/note-set-eyecatch.py and lib/note-set-single-price.py -- both authored in this same sprint -- duplicate ~20 lines of near-identical logic verbatim: the cookie-file existence check + JSON load + cookie-dict-to-list conversion (compare note-set-eyecatch.py lines 44-52 to note-set-single-price.py lines 49-54), and the cloakbrowser session bootstrap + navigate + 'wait up to 20s for 公開に進む to appear in body innerText' polling loop (compare note-set-eyecatch.py lines 54-68 to note-set-single-price.py lines 56-70) -- differing only in one viewport-height constant and one log string. Neither file factors this into a shared helper module (e.g. a lib/note_browser_common.py), despite both files living in the same lib/ directory and being written together for the same PROP-21 fix.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. A new shared module, lib/note_browser_common.py, now hosts load_note_cookies() (cookie-file load + list-of-dicts conversion) and open_editor_ready() (cloakbrowser session bootstrap + navigate + poll-for-公開に進む), the ~20 previously-duplicated lines. Both lib/note-set-eyecatch.py (line 31: 'from note_browser_common import load_note_cookies, open_editor_ready') and lib/note-set-single-price.py (line 44, same import) now delegate to this module instead of re-implementing the logic. Each caller retains its own distinct error-message wording (the module returns None/(ctx, None) rather than printing/exiting itself), preserving each script's own diagnostics.",
   "evidence": {
-    "filePath": "skills/profitable-article-writer/lib/note-set-eyecatch.py",
-    "lineRange": "44-68",
-    "snippet": "if not os.path.isfile(COOKIES_FILE): ...\nwith open(COOKIES_FILE) as f: ck = json.load(f)\ncookies = [{\"name\": k, \"value\": v, \"domain\": \".note.com\", \"path\": \"/\"} for k, v in ck.items()]\nctx = launch_context(headless=True, humanize=False)\n... for _ in range(20): if \"公開に進む\" in pg.evaluate(...): loaded = True; break"
+    "filePath": "skills/profitable-article-writer/lib/note_browser_common.py",
+    "lineRange": "24-55",
+    "snippet": "def load_note_cookies(cookies_file: str) -> Optional[list]: ...\ndef open_editor_ready(cookies: list, note_key: str, viewport: dict, timeout_s: int = 20): ..."
   },
   "additionalEvidence": [
-    {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py", "description": "Lines 49-70 duplicate the same cookie-load + session-bootstrap + wait-for-公開に進む block almost verbatim."}
-  ],
-  "routeToPhase": "2c"
+    {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-eyecatch.py", "description": "Line 31 imports the shared module."},
+    {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py", "description": "Line 44 imports the shared module."}
+  ]
 }

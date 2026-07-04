@@ -1,0 +1,48 @@
+{
+  "findingId": "FIND-010",
+  "resolutionStatus": "OPEN",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "criterion": "N/A (specs/verification-architecture.md PROP-21 row vs actual lib/note-set-eyecatch.py implementation)",
+  "description": "NEW (not previously flagged): specs/verification-architecture.md's PROP-21 row still states the eyecatch/cover is set via 'note_mcp.upload_eyecatch_image via lib/note-set-eyecatch.py' -- but this is factually false about the ACTUAL, current, contract-approved implementation. lib/note-set-eyecatch.py's own docstring (lines 7-16) and its full source (no note_mcp import at all -- only 'from note_browser_common import load_note_cookies, open_editor_ready') both confirm the note_mcp upload_eyecatch_image API path was tried FIRST, reproducibly fails ('API response missing required field url'), and was abandoned in favor of driving the editor's own 画像を追加 button via the browser (cloakbrowser). This exact correction was already made, correctly, in THREE other authoritative places touched by this same Sprint-2-fix round: (1) behavioral-spec.md's REQ-19 Round-2 correction (lines 113-115: 'the note_mcp upload_eyecatch_image API path was tried first and reproducibly fails'), (2) SKILL.md (lines 65-67, 97-101: 'note_mcp upload_eyecatch_image API is a confirmed live bug ... this genuinely needs the browser path'), and (3) the contract's CRIT-106 passThreshold (lib/note-create-rich-draft.py sub-section: 'lib/note-set-eyecatch.py exists and drives 画像を追加' -- no note_mcp claim). specs/verification-architecture.md's PROP-21 row is the ONE remaining authoritative document never updated to match, and it was NOT among the 8 tracked files this findings-fix round touched (confirmed via .vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-red-phase.log's own file list, which omits specs/verification-architecture.md). A fresh reader relying on verification-architecture.md alone (the authoritative Phase-1b document, explicitly one of the two spec artifacts this review's manifest lists) would be told the WRONG mechanism for a Sprint-2-fix defect this same round otherwise correctly documented everywhere else -- the identical class of defect FIND-009 closed in behavioral-spec.md, left open in its sibling document.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "43-43",
+    "snippet": "| PROP-21 | REQ-3,8 | The Mode-A note.com draft wiring includes REAL visuals ..., a REAL eyecatch/cover (`note_mcp.upload_eyecatch_image` via `lib/note-set-eyecatch.py`), and a SINGLE ¥500 有料note price ... |"
+  },
+  "additionalEvidence": [
+    {
+      "type": "file",
+      "location": "skills/profitable-article-writer/lib/note-set-eyecatch.py",
+      "description": "Full source has no note_mcp import at all; docstring lines 7-16 explicitly documents the note_mcp upload_eyecatch_image API path was abandoned as reproducibly broken, replaced by the editor's own 画像を追加 browser button."
+    },
+    {
+      "type": "file",
+      "location": ".vcsdd/features/profitable-article-writer/specs/behavioral-spec.md",
+      "description": "REQ-19 lines 113-115 already correctly documents the same abandonment -- the sibling spec file this exact round DID fix."
+    },
+    {
+      "type": "file",
+      "location": "skills/profitable-article-writer/SKILL.md",
+      "description": "Lines 65-67, 97-101 correctly document the browser-path-not-note_mcp-API mechanism."
+    },
+    {
+      "type": "file",
+      "location": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+      "description": "CRIT-106 passThreshold correctly says 'lib/note-set-eyecatch.py exists and drives 画像を追加' with no note_mcp claim."
+    },
+    {
+      "type": "file",
+      "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-red-phase.log",
+      "description": "Lines 7-9 list the 8 tracked files this findings-fix round touched; specs/verification-architecture.md is not among them."
+    }
+  ],
+  "routeToPhase": "1b",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3",
+    "notes": "verification-architecture.md PROP-21 corrected to match note-set-eyecatch.py actual implementation (browser button, not note_mcp API)"
+  }
+}

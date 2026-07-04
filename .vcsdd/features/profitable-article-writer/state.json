@@ -688,6 +688,16 @@
         "createdAt": "2026-07-04T09:31:10.861Z",
         "createdInPhase": "1b",
         "externalId": "PROP-21"
+      },
+      {
+        "beadId": "BEAD-049",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-010.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T10:47:50.482Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-010"
       }
     ]
   },
@@ -718,5 +728,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T10:14:48.457Z"
+  "updatedAt": "2026-07-04T10:47:50.483Z"
 }

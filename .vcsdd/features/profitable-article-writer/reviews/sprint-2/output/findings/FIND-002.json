@@ -1,17 +1,19 @@
 {
   "findingId": "FIND-002",
+  "resolutionStatus": "RESOLVED",
   "dimension": "edge_case_coverage",
   "category": "edge_case_coverage",
-  "severity": "major",
+  "severity": "high",
   "criterion": "CRIT-102",
-  "description": "gates/v05.sh's real criterion-(e) sentence splitter uses `tr '.!?。！？' '\\n\\n\\n\\n\\n\\n'` to recognize both ASCII and Japanese full-width terminal punctuation as sentence boundaries. `tr` (GNU coreutils in particular, and any invocation running under the C/POSIX locale -- the common default for minimal/cron/headless environments such as the unattended `claude -p` daily-executor wake this gate is designed for, per REQ-19) operates byte-wise, not full-Unicode-codepoint-wise. The three Japanese punctuation marks encode to multi-byte UTF-8 sequences (。=E3 80 82, ！=EF BC 81, ？=EF BC 9F) whose continuation bytes (0x80, 0x82, 0xBC, 0x9F, plus the shared lead byte 0xE3) also appear as continuation/lead bytes inside countless OTHER, unrelated Japanese characters (e.g. the common hiragana あ is E3 81 82, sharing byte 0x82 with 。's third byte). Because SET2 in this `tr` call is entirely composed of the repeated single byte '\\n', ANY byte from SET1 that a byte-oriented `tr` matches gets translated to a newline -- risking spurious sentence-boundary insertion in the middle of ordinary Japanese words/characters that have nothing to do with real sentence-ending punctuation, corrupting the (e) percentage computation on real-world Japanese prose in ways the narrow, repetitive test fixtures in tests/test-prop18-v05-jp-sentences.sh do not exercise. No file under skills/profitable-article-writer pins LANG/LC_ALL/LC_CTYPE (grep across the whole skill tree for 'LANG=|LC_ALL|LC_CTYPE|locale' returns zero matches), so the real behavior of this gate depends entirely on whatever locale the invoking shell happens to have -- an untested, unpinned edge case directly relevant to REQ-19's real unattended Japanese-content wake.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. gates/v05.sh's real (non-FORCE) criterion-(e) arithmetic now runs a python3 `re.split(r\"[.!?。！？]\", text)` (lines 128-137) as the PRIMARY path -- codepoint-safe regardless of ambient locale -- and only falls back to `tr` (lines 139-149) if python3 is genuinely absent, with LC_ALL/LANG explicitly forced to a UTF-8 locale in that fallback (never an inherited ambient C/POSIX locale). A NEW dedicated discriminating test, tests/test-find002-locale-safe-sentences.sh, proves BOTH halves of the requirement: (1) a CONTROL section reproduces the OLD byte-wise `tr` splitter forced under LC_ALL=C on a genuinely-long Japanese sentence and shows it computes the WRONG verdict (crit_e=true); (2) the CURRENT gates/v05.sh, run under the SAME LC_ALL=C on the SAME fixture, computes the CORRECT verdict (crit_e=false). The red-phase evidence log (.../evidence/sprint-2-findings-fix-red-phase.log) shows this exact test FAILING against the pre-fix source, and the green-phase log shows it PASSING post-fix -- proving the fix is real and the test is discriminating, not tautological.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/gates/v05.sh",
-    "lineRange": "110-126",
-    "snippet": "plain=\"$(echo \"$body\" | grep -vE '^#' | grep -vE '^[[:space:]]*$')\"\nsentences=\"$(echo \"$plain\" | tr '.!?。！？' '\\n\\n\\n\\n\\n\\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')\""
+    "lineRange": "128-149",
+    "snippet": "if command -v python3 >/dev/null 2>&1; then\n  read -r total short <<PYOUT\n$(printf '%s' \"$plain\" | python3 -c 'import re,sys; text=sys.stdin.read(); sentences=[s.strip() for s in re.split(r\"[.!?。！？]\", text) if s.strip()]; print(len(sentences), sum(1 for s in sentences if len(s)<=60))')\nPYOUT\nelse\n  sentences=\"$(printf '%s' \"$plain\" | LC_ALL=\"${LC_ALL:-en_US.UTF-8}\" LANG=\"${LANG:-en_US.UTF-8}\" tr '.!?。！？' ...)\""
   },
   "additionalEvidence": [
-    {"type": "grep", "location": "skills/profitable-article-writer/", "description": "grep for LANG=|LC_ALL|LC_CTYPE|locale across the whole skill tree returns 0 matches -- no locale is ever pinned for this arithmetic."}
-  ],
-  "routeToPhase": "2b"
+    {"type": "file", "location": "skills/profitable-article-writer/tests/test-find002-locale-safe-sentences.sh", "description": "Discriminating LC_ALL=C control-vs-fix test."},
+    {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-red-phase.log", "description": "Proves the new test fails against pre-fix source (line 16-24)."},
+    {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-green-phase.log", "description": "Proves the new test passes against the fixed source (line 10-11), 20/20 total."}
+  ]
 }
