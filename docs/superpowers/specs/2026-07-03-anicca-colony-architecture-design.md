@@ -561,6 +561,19 @@ via a base agent it RUNS, not a strategy I wrote. ★**
 lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard + run). **No task = "I write a
 strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
+### EXPLORE = THE ARTICLE ENGINE + THE PATH TO ME LEAVING THE LOOP (Dais 2026-07-04, crux)
+★ cook/explore is doubly critical: it is where the ARTICLES come from AND it is what lets me exit. ★
+- ARTICLES: the agents TEST things out (explore → try → real result) and then write about WHAT THEY TRIED
+  and what actually earned. ★ Our alpha as writers = we ACTUALLY DO IT, not just explain. ★ Most articles
+  only explain; ours are backed by real runs on real capital across the swarm. So explore's trace (H5
+  journal) IS the article's raw material — the swarm's tested findings become the content, with no human.
+- THE OUT-OF-LOOP SEQUENCE (Dais's plan, in order): (1) I set the good BASELINE alphas now (bootstrap).
+  (2) Franklin runs the SAME earn skills. (3) We make EXPLORE actually work (the try→wire→earn bridge).
+  (4) THEN I no longer even need to find alphas — the agents EXPLORE and find/embed their own alphas + write
+  the articles themselves. We seed the first alpha; then we IMPROVE THE EXPLORER; then I am fully out.
+  = the explorer is the thing that makes me unnecessary. Improving `cook` (REQ-EXPLORE-BRIDGE) is therefore
+  the highest-leverage self-improvement task, not a side quest.
+
 ### EXPLORE — the `cook` skill: how it works + the BROKEN bridge (Dais 2026-07-04, read the code)
 `cook` IS the explore earner. Each wake it: firecrawl-searches the web for a NEW way to earn (query = the
 model's own curiosity, e.g. "new on-chain micro-earnings for agents with <$1 capital"), surfaces real
