@@ -9,23 +9,32 @@
     "contractPath": "contracts/sprint-3.md",
     "contractDigest": "0a41203f5b56ec9b3bd61d383ffb1855b0b0b96e0580c83ec901867dcbc18f8d"
   },
-  "priorRoundFindings": {
-    "FIND-001": "RESOLVED",
-    "FIND-002": "RESOLVED",
-    "FIND-003": "RESOLVED",
-    "FIND-004": "RESOLVED",
-    "FIND-005": "RESOLVED"
-  },
   "dimensions": [
     {
       "name": "spec_fidelity",
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "test-output", "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:36-69", "description": "FIND-001 RESOLVED: the manually-curated CALL_GRAPH_FILES list was replaced with a structural whole-tree scan (`find \"$SKILL\" -type f \\( -name '*.sh' -o -name '*.py' \\) ! -path '*/tests/*'`) matched against an invocation-shape regex (import/from-import/importlib/spec_from_file_location/subprocess/os.system/Popen/source/dot-source/python-bash-direct-call), so gates/publish-gate.sh and any future file are automatically covered instead of requiring manual enumeration"},
-        {"type": "file", "location": "skills/profitable-article-writer/gates/publish-gate.sh:1-50", "description": "independently read in full: calls only gates/v0.sh and gates/v05.sh, writes the state/PUBLISHED sentinel -- zero reference to note-publish-live.py, confirming the scan's real-world result on today's disk state is correct, not merely trusted"},
-        {"type": "test-output", "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:63-69", "description": "the scan's own non-vacuousness is proven by a canary: a deliberately-injected `python3 \".../note-publish-live.py\" --draft-key test` line inside a temp file under lib/ is confirmed DETECTED by the same INVOKE_RE before cleanup -- this is a genuine control proving the check can actually fail, not a check that always trivially passes"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:64-65", "description": "test-prop22a-live-publish-wiring.sh reports PASS in the real green-phase run (not merely present in source, actually executed)"}
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:36-69",
+          "description": "FIND-001 RESOLVED: the manually-curated CALL_GRAPH_FILES list was replaced with a structural whole-tree scan (`find \"$SKILL\" -type f \\( -name '*.sh' -o -name '*.py' \\) ! -path '*/tests/*'`) matched against an invocation-shape regex (import/from-import/importlib/spec_from_file_location/subprocess/os.system/Popen/source/dot-source/python-bash-direct-call), so gates/publish-gate.sh and any future file are automatically covered instead of requiring manual enumeration"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/gates/publish-gate.sh:1-50",
+          "description": "independently read in full: calls only gates/v0.sh and gates/v05.sh, writes the state/PUBLISHED sentinel -- zero reference to note-publish-live.py, confirming the scan's real-world result on today's disk state is correct, not merely trusted"
+        },
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:63-69",
+          "description": "the scan's own non-vacuousness is proven by a canary: a deliberately-injected `python3 \".../note-publish-live.py\" --draft-key test` line inside a temp file under lib/ is confirmed DETECTED by the same INVOKE_RE before cleanup -- this is a genuine control proving the check can actually fail, not a check that always trivially passes"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:64-65",
+          "description": "test-prop22a-live-publish-wiring.sh reports PASS in the real green-phase run (not merely present in source, actually executed)"
+        }
       ]
     },
     {
@@ -33,11 +42,31 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:119-161", "description": "FIND-002 RESOLVED: new case (e) sets eyecatch PRESENT (a real-shaped assets.st-note.com URL) with a body containing zero <img> tags, isolating gate-3b (img_count<1) from gate-3a (eyecatch) -- asserts the refusal names 'ZERO <img> tags' specifically and explicitly does NOT contain 'eyecatch NOT set', proving gate-3a did not short-circuit"},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-publish-live.py:119-132", "description": "read directly: confirmed the img_count<1 branch's own stderr wording ('has ZERO <img> tags in its body ... expected >=1 visual figure per REQ-21') matches exactly what the new test asserts, not a paraphrase"},
-        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop22c-price-type-refusal-branches.sh:1-124", "description": "FIND-003 RESOLVED: 3 new dedicated hermetic sub-tests, each intercepting note_browser_common via sys.modules before sys.path is consulted, exercise row_found=False, paid_checked=False (row_found=True), and price_filled mismatch (999 filled vs 500 expected) IN ISOLATION -- each asserts its OWN specific refusal wording AND asserts the OTHER two branches' wording is absent, proving exactly one branch fired per case"},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-publish-live.py:203-223", "description": "read directly: the 3 refusal message strings (有料 radio row / 記事タイプ could not be confirmed / price confirmed as X, expected Y) match verbatim what test-prop22c asserts -- the test is checking the real branch logic, not a mocked substitute for it"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:76-77", "description": "test-prop22c-price-type-refusal-branches.sh reports PASS in the real green-phase run"}
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh:119-161",
+          "description": "FIND-002 RESOLVED: new case (e) sets eyecatch PRESENT (a real-shaped assets.st-note.com URL) with a body containing zero <img> tags, isolating gate-3b (img_count<1) from gate-3a (eyecatch) -- asserts the refusal names 'ZERO <img> tags' specifically and explicitly does NOT contain 'eyecatch NOT set', proving gate-3a did not short-circuit"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-publish-live.py:119-132",
+          "description": "read directly: confirmed the img_count<1 branch's own stderr wording ('has ZERO <img> tags in its body ... expected >=1 visual figure per REQ-21') matches exactly what the new test asserts, not a paraphrase"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/tests/test-prop22c-price-type-refusal-branches.sh:1-124",
+          "description": "FIND-003 RESOLVED: 3 new dedicated hermetic sub-tests, each intercepting note_browser_common via sys.modules before sys.path is consulted, exercise row_found=False, paid_checked=False (row_found=True), and price_filled mismatch (999 filled vs 500 expected) IN ISOLATION -- each asserts its OWN specific refusal wording AND asserts the OTHER two branches' wording is absent, proving exactly one branch fired per case"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-publish-live.py:203-223",
+          "description": "read directly: the 3 refusal message strings (有料 radio row / 記事タイプ could not be confirmed / price confirmed as X, expected Y) match verbatim what test-prop22c asserts -- the test is checking the real branch logic, not a mocked substitute for it"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:76-77",
+          "description": "test-prop22c-price-type-refusal-branches.sh reports PASS in the real green-phase run"
+        }
       ]
     },
     {
@@ -45,11 +74,31 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-publish-live.py:190-310", "description": "FIND-004 RESOLVED, verified by reading the actual control flow (not taking the docstring's claim on faith): `ctx = None` then `try: ctx, pg = open_editor_ready(...)` -- the open_editor_ready call now sits INSIDE the try block (previously outside it). `except Exception as e` catches ANY exception anywhere in the browser-session lifecycle (open_editor_ready through the click sequence) and re-reports it through the SAME clean-refusal stderr shape as every other gate ('note-publish-live: REFUSED ... an unexpected browser-session error occurred: {e}'), never a bare re-raise. `finally: if ctx is not None: try: ctx.close() except Exception: pass` closes the context exactly once and cannot double-close, because if open_editor_ready itself raises before returning, the tuple assignment never completes and ctx remains None in main()'s scope (so main()'s finally correctly skips closing what it never held) -- verified this is not a double-close risk by tracing both possible paths"},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note_browser_common.py:44-77", "description": "open_editor_ready()'s own internal try/except now wraps launch_context()'s downstream calls (add_cookies/new_page/goto/the readiness poll): on ANY exception it closes the context it itself created (best-effort) BEFORE re-raising -- verified this means a partially-launched context can never be orphaned regardless of which caller (note-publish-live.py or note-set-single-price.py) invokes it, closing the exact leak FIND-004 identified at its source, not just at one call site"},
-        {"type": "test-output", "location": "skills/profitable-article-writer/tests/test-find004-browser-exception-safety.sh:1-169 + .vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:7-16", "description": "3 injected-failure sub-cases, all independently re-verified by reading both the test's mock wiring and the real green-phase output: (1) open_editor_ready's own add_cookies failure -> __RAISED__=True (re-raises, does not swallow) + __MSG__ carries the ORIGINAL exception text (not replaced) + __CLOSE_CALLS__=1 (closed exactly once, no leak); (2) main()'s open_editor_ready call itself raising -> rc=1, a clean 'REFUSED ... unexpected browser-session error' message naming the real exception text, zero 'Traceback (most recent call last)' string anywhere in captured stdout+stderr; (3) select_paid_price raising mid-session after a real ctx handle was obtained -> rc=1, clean refusal, zero raw traceback, AND __CLOSE_CALLS__=1 confirming the finally block closed the ctx main() DID hold a handle to. All 3 real assertions match the real captured output verbatim, not fabricated expectations"},
-        {"type": "analysis", "location": "skills/profitable-article-writer/lib/note-publish-live.py:292-304", "description": "checked for a NEW defect (success masked as failure or vice versa): the except-block's refusal message for an exception occurring AFTER a real click attempt explicitly states 'if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome' -- this is an honest acknowledgment of ambiguity (REQ-22's independent verifier exists precisely to resolve it), not a silent mask of either outcome; confirmed a stray re-invocation after such an ambiguous rc=1 is itself safe because a second run would simply re-confirm/re-click 更新する (update) on an already-published draft rather than double-submitting a new publish -- no new safety defect found"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:67-74", "description": "test-prop22b's REAL invocation independently reconfirmed post-fix: precheck eyecatch=true/img_count=3, tool actually clicked 更新する, postcheck status remained 'published' -- the try/except/finally wrapping did not regress the genuine success path"}
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-publish-live.py:190-310",
+          "description": "FIND-004 RESOLVED, verified by reading the actual control flow (not taking the docstring's claim on faith): `ctx = None` then `try: ctx, pg = open_editor_ready(...)` -- the open_editor_ready call now sits INSIDE the try block (previously outside it). `except Exception as e` catches ANY exception anywhere in the browser-session lifecycle (open_editor_ready through the click sequence) and re-reports it through the SAME clean-refusal stderr shape as every other gate ('note-publish-live: REFUSED ... an unexpected browser-session error occurred: {e}'), never a bare re-raise. `finally: if ctx is not None: try: ctx.close() except Exception: pass` closes the context exactly once and cannot double-close, because if open_editor_ready itself raises before returning, the tuple assignment never completes and ctx remains None in main()'s scope (so main()'s finally correctly skips closing what it never held) -- verified this is not a double-close risk by tracing both possible paths"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note_browser_common.py:44-77",
+          "description": "open_editor_ready()'s own internal try/except now wraps launch_context()'s downstream calls (add_cookies/new_page/goto/the readiness poll): on ANY exception it closes the context it itself created (best-effort) BEFORE re-raising -- verified this means a partially-launched context can never be orphaned regardless of which caller (note-publish-live.py or note-set-single-price.py) invokes it, closing the exact leak FIND-004 identified at its source, not just at one call site"
+        },
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-find004-browser-exception-safety.sh:1-169 + .vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:7-16",
+          "description": "3 injected-failure sub-cases, all independently re-verified by reading both the test's mock wiring and the real green-phase output: (1) open_editor_ready's own add_cookies failure -> __RAISED__=True (re-raises, does not swallow) + __MSG__ carries the ORIGINAL exception text (not replaced) + __CLOSE_CALLS__=1 (closed exactly once, no leak); (2) main()'s open_editor_ready call itself raising -> rc=1, a clean 'REFUSED ... unexpected browser-session error' message naming the real exception text, zero 'Traceback (most recent call last)' string anywhere in captured stdout+stderr; (3) select_paid_price raising mid-session after a real ctx handle was obtained -> rc=1, clean refusal, zero raw traceback, AND __CLOSE_CALLS__=1 confirming the finally block closed the ctx main() DID hold a handle to. All 3 real assertions match the real captured output verbatim, not fabricated expectations"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-publish-live.py:292-304",
+          "description": "checked for a NEW defect (success masked as failure or vice versa): the except-block's refusal message for an exception occurring AFTER a real click attempt explicitly states 'if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome' -- this is an honest acknowledgment of ambiguity (REQ-22's independent verifier exists precisely to resolve it), not a silent mask of either outcome; confirmed a stray re-invocation after such an ambiguous rc=1 is itself safe because a second run would simply re-confirm/re-click 更新する (update) on an already-published draft rather than double-submitting a new publish -- no new safety defect found"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:67-74",
+          "description": "test-prop22b's REAL invocation independently reconfirmed post-fix: precheck eyecatch=true/img_count=3, tool actually clicked 更新する, postcheck status remained 'published' -- the try/except/finally wrapping did not regress the genuine success path"
+        }
       ]
     },
     {
@@ -57,10 +106,26 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop21b-single-price-live-regression.sh:1-59", "description": "FIND-005 RESOLVED: a genuine LIVE (not structural-only) regression test now exists for note-set-single-price.py, the refactor's ORIGINAL caller -- targets the real TEST draft n39ef09f828f7 (never the flagship, with the same hard-exit-3 safety guard pattern as test-prop22b), asserts real post-refactor stdout markers (SINGLE_PRICE_TYPE: paid, SINGLE_PRICE_VALUE: 500, both screenshot paths non-empty on disk), and asserts the tool's own output never mentions 投稿する/更新する"},
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py:75-76,86-88,137-139", "description": "read directly: confirmed the SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE/SINGLE_PRICE_PANEL_SCREENSHOT/SINGLE_PRICE_SCREENSHOT stdout markers the new test asserts are the SAME markers this script actually prints -- the test is not asserting against an invented output shape"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:54-62", "description": "the live regression test's REAL captured run: SINGLE_PRICE_TYPE: paid, SINGLE_PRICE_VALUE: 500, both screenshots written to disk against the real TEST draft n39ef09f828f7 -- genuinely exercised, not skipped (the venv-cloak python + real cookies were present on this host)"},
-        {"type": "test-output", "location": "grep across all of skills/profitable-article-writer/tests/*.sh", "description": "re-verified CRIT-204 across the FULL, current test suite (not just the two files changed this round): the literal string nfb2ace9f0ed8 appears ONLY in test-prop22b-live-publish-real-click.sh and test-prop21b-single-price-live-regression.sh, and in both files exclusively as the FLAGSHIP_DRAFT_KEY safety-guard constant plus a post-hoc negative assertion that it never appears in tool output -- it is never passed as a --draft-key/positional argument to note-publish-live.py or note-set-single-price.py in any test file"}
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/tests/test-prop21b-single-price-live-regression.sh:1-59",
+          "description": "FIND-005 RESOLVED: a genuine LIVE (not structural-only) regression test now exists for note-set-single-price.py, the refactor's ORIGINAL caller -- targets the real TEST draft n39ef09f828f7 (never the flagship, with the same hard-exit-3 safety guard pattern as test-prop22b), asserts real post-refactor stdout markers (SINGLE_PRICE_TYPE: paid, SINGLE_PRICE_VALUE: 500, both screenshot paths non-empty on disk), and asserts the tool's own output never mentions 投稿する/更新する"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-set-single-price.py:75-76,86-88,137-139",
+          "description": "read directly: confirmed the SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE/SINGLE_PRICE_PANEL_SCREENSHOT/SINGLE_PRICE_SCREENSHOT stdout markers the new test asserts are the SAME markers this script actually prints -- the test is not asserting against an invented output shape"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:54-62",
+          "description": "the live regression test's REAL captured run: SINGLE_PRICE_TYPE: paid, SINGLE_PRICE_VALUE: 500, both screenshots written to disk against the real TEST draft n39ef09f828f7 -- genuinely exercised, not skipped (the venv-cloak python + real cookies were present on this host)"
+        },
+        {
+          "type": "test-output",
+          "location": "grep across all of skills/profitable-article-writer/tests/*.sh",
+          "description": "re-verified CRIT-204 across the FULL, current test suite (not just the two files changed this round): the literal string nfb2ace9f0ed8 appears ONLY in test-prop22b-live-publish-real-click.sh and test-prop21b-single-price-live-regression.sh, and in both files exclusively as the FLAGSHIP_DRAFT_KEY safety-guard constant plus a post-hoc negative assertion that it never appears in tool output -- it is never passed as a --draft-key/positional argument to note-publish-live.py or note-set-single-price.py in any test file"
+        }
       ]
     },
     {
@@ -68,9 +133,21 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/profitable-article-writer/lib/note-verify-live.py:1-116", "description": "re-confirmed unchanged from round 1: never imports/execs/subprocess-calls note-publish-live.py, never reads NOTE_COOKIES_FILE, stdlib urllib only, PASS = (status==200) AND (key_in_body OR title_in_body)"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:79-80", "description": "test-prop23-independent-live-verify.sh reports PASS in the current full-suite green-phase run, confirming no regression from this round's FIND-001..005 fixes leaked into the independent-verify tool"},
-        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:100-101", "description": "RED-PHASE SUMMARY: 26 test files, 26 PASS, 0 FAIL -- the full current suite (including all 5 fixed/added files) genuinely passes end-to-end on this host, not a subset"}
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-verify-live.py:1-116",
+          "description": "re-confirmed unchanged from round 1: never imports/execs/subprocess-calls note-publish-live.py, never reads NOTE_COOKIES_FILE, stdlib urllib only, PASS = (status==200) AND (key_in_body OR title_in_body)"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:79-80",
+          "description": "test-prop23-independent-live-verify.sh reports PASS in the current full-suite green-phase run, confirming no regression from this round's FIND-001..005 fixes leaked into the independent-verify tool"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-findings-fix-green-phase.log:100-101",
+          "description": "RED-PHASE SUMMARY: 26 test files, 26 PASS, 0 FAIL -- the full current suite (including all 5 fixed/added files) genuinely passes end-to-end on this host, not a subset"
+        }
       ]
     }
   ],
@@ -78,7 +155,13 @@
     "findingCount": 0,
     "previousFindingCount": 5,
     "allCriteriaEvaluated": true,
-    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205"],
+    "evaluatedCriteria": [
+      "CRIT-201",
+      "CRIT-202",
+      "CRIT-203",
+      "CRIT-204",
+      "CRIT-205"
+    ],
     "duplicateFindings": []
   }
 }
