@@ -44,6 +44,28 @@ python hl.py close ETH               # realize / exit
 - Never bet the whole account on one trade (size ≤ ~1.5x account value notional).
 - This is risk-managed investing/trading, NOT gambling — a single trade can never blow the account.
 
-## Why no strategy is written here
-Each Anicca decides itself → many strategies → diversified, compounding revenue across the colony.
-Hardcoding "what worked for me" would make a bot and collapse that diversity. Tool + rules, never the call.
+## ★ BASELINE STRATEGY (battle-tested seed — START here, then self-improve) — #24 H8 ★
+You are NOT expected to invent alpha from zero (that is why you churned "close ETH" for $0). Start from this
+tested trend-following baseline, then tune it across runs from your own P&L (H1-H3). It is a STARTING POINT,
+not a cage — override it when you have a better-reasoned view.
+
+1. `account` FIRST. **If you already hold a position → HOLD it** (your stop/target manage it). Do NOT stack
+   a second one, and ★ do NOT call `close` on it just to "do something" ★ — close ONLY when your thesis is
+   invalidated or the take-profit/stop is effectively hit.
+2. **If you are FLAT** (no open position): `market <coin> 24` and read `closes_hourly` + `change_pct_window`:
+   - **Uptrend** = last close is clearly above the window mean (≈ +1% or more) AND the recent closes are
+     rising → open a SMALL **long**.
+   - **Downtrend** = last close clearly below the mean (≈ −1% or more) AND falling → open a SMALL **short**.
+   - ★ **Range / noise** (|change_pct_window| < ~1%, choppy, no clear direction) → **NO TRADE**. Do nothing
+     this wake. This is the anti-churn rule: no signal = no action (do NOT open, do NOT close). ★
+3. Size = small: notional ≤ ~15% of account value, leverage ≤ 2x. ALWAYS `--sl 3 --tp 6` (2:1 reward:risk).
+4. One position at a time. Realize (`close`) when TP/SL logic says the thesis is done — not on a whim.
+
+Why this fixes the churn: the loop kept picking `close ETH` while FLAT (no position → no-op/loss). The
+baseline says explicitly: FLAT + no clear signal = NO TRADE. The thresholds (±1% trend, 15% size, 3/6 SL/TP)
+are the knobs you self-improve — raise the trend threshold if you get chopped up, widen TP if trends run.
+
+## Why the baseline is a SEED, not a cage
+The baseline gets you earning from the start; each Anicca then tunes it → many strategies → diversified,
+compounding revenue across the colony. The winning tunings get MERGED back (REQ-MERGE) so every instance —
+and every future spawn — inherits the better strategy. Seed IN, then autonomy. (spec ROLE v3 + §H8.)
