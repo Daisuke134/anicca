@@ -1,4 +1,13 @@
-# Purity Boundary Audit — profitable-article-writer, Sprint 1 + Sprint 2
+# Purity Boundary Audit — profitable-article-writer, Sprint 1 + Sprint 2 + Sprint 3 (2.5)
+
+## Sprint-3 boundary: real-publish is a TOOL, not a decision
+
+`note-publish-live.py` makes no judgment call — it deterministically confirms already-decided state (price=500,
+type=有料, eyecatch present, ≥1 figure) and either clicks or refuses. The DECISION (which draft, when, whether
+to publish at all) is made by the human/main-agent invoker, not the tool. This is correctly on the deterministic
+side of the boundary: no hidden judgment, no hardcoded classifier deciding content quality — that decision
+already happened at V0/V0.5 (Sprint 1-2) before this tool is ever invoked. `note-verify-live.py` is likewise
+pure verification (HTTP fetch + string match), no judgment.
 
 Mode: strict. Phase 5. Audits the boundary between deterministic code and agent judgment (per
 building-effective-ai-agents: the MODEL judges via right-altitude prompts; NEVER hardcode a regex/if-else for a

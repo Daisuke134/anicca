@@ -1,0 +1,22 @@
+# Captured security-hardening tool outputs — profitable-article-writer Sprint 3 (2026-07-04T12:30:24Z)
+
+## syntax check
+  OK   lib/note-publish-live.py
+  OK   lib/note-verify-live.py
+  OK   lib/note_browser_common.py
+
+## structural unreachability confirmation (main agent, invocation-shape check, not bare grep)
+  Raw grep -l hits (includes comments/docstrings):
+skills/profitable-article-writer/lib/note_browser_common.py
+skills/profitable-article-writer/lib/note-verify-live.py
+skills/profitable-article-writer/lib/note-set-single-price.py
+  Manually inspected each: all are prose/docstring mentions (e.g. 'SHARED with lib/note-publish-live.py'),
+  NOT an import/call/exec/subprocess invocation. Zero actual invocation-shape references outside the file itself and its own tests.
+
+## CLI fail-closed check (real invocation, no env set)
+note-publish-live: REFUSED -- NOTE_LIVE_PUBLISH=1 is not set in the environment. This tool performs a deliberate, ONE-OFF real-publish action (REQ-21) and requires the explicit trigger. No browser/network action was taken.
+
+## full suite
+
+===================================================
+RED-PHASE SUMMARY: 26 test files, 26 PASS, 0 FAIL

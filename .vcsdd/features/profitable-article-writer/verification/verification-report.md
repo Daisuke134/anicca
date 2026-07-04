@@ -1,8 +1,20 @@
-# Verification Report — profitable-article-writer, Sprint 1 + Sprint 2
+# Verification Report — profitable-article-writer, Sprint 1 + Sprint 2 + Sprint 3 (2.5)
 
 Mode: strict. Phase 5 (formal hardening). Sprint 1 = the article-orchestration SKELETON, draft-first.
 Sprint 2 = REAL content-gen + REAL note.com DRAFT publish (visuals, eyecatch, single-¥500 gate), REQ-19/20
-(daily executor = `claude -p` sonnet, verifier = main agent).
+(daily executor = `claude -p` sonnet, verifier = main agent). Sprint 3 (Sprint 2.5) = REQ-21/22, a standalone
+one-off real-publish tool + independent post-publish verifier — explicitly excluded from run.sh/Mode-B/the
+daily wake, invoked once by the main agent to make a specific already-verified draft public.
+
+## Sprint-3 proof obligations (26/26 tests, `bash tests/run-red.sh`)
+
+| PROP | Obligation | Proven by | Status |
+|---|---|---|---|
+| PROP-22 | `note-publish-live.py` unreachable from run.sh/gates/lib (structural whole-tree scan); requires NOTE_LIVE_PUBLISH=1 + explicit --draft-key; fails closed on unconfirmed price/type/eyecatch/visuals (each branch independently tested); a confirmed-ready TEST draft genuinely reaches and fires the click; browser-session exceptions are caught, cleanly reported, context always closed (no leak, no raw traceback, no double-close) | test-prop22a/b/c + test-find004 | proved (adversary hand-traced the exception-safety fix twice, independently) |
+| PROP-23 | independent (separate-process) post-publish verification: 200 AND page-content match (title/note-ID), not bare 200 | test-prop23 | proved |
+
+Regression: `note-set-single-price.py`'s original call to the extracted `select_paid_price()` re-verified live
+against a real test draft (no behavior change from Sprint 2) — test-prop21b.
 
 ## Proof Obligations
 
