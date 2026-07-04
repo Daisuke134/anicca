@@ -7,7 +7,9 @@ const SOLANA_ID_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 function validate(o) {
   if (o === null || typeof o !== "object") return { ok: false, reason: "schema" };
   const chain = o.chain === undefined ? "base" : o.chain;
-  if (chain !== "base" && chain !== "solana") return { ok: false, reason: "schema" };
+  // "polygon" = same EIP-191/secp256k1 signature scheme as "base" (chain-agnostic across EVM
+  // networks — only the RPC target used for balance verification differs, see chain-reader.js).
+  if (chain !== "base" && chain !== "solana" && chain !== "polygon") return { ok: false, reason: "schema" };
   if (typeof o.id !== "string") return { ok: false, reason: "schema" };
   if (chain === "solana") {
     if (!SOLANA_ID_RE.test(o.id)) return { ok: false, reason: "schema" };

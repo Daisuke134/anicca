@@ -46,8 +46,12 @@ test("chain:'base' (default) rejects a base58 id (unchanged behavior)", () => {
   const r = validate({ ...valid, id: "AJ99EemzNHpkdjpMJ9aXfLthvfQYkjSXUjYrQr3853MN" });
   assert.strictEqual(r.ok, false);
 });
-test("rejects an unknown chain value", () => {
+test("chain:'polygon' is a known, accepted value (same 0x id shape as base)", () => {
   const r = validate({ ...valid, chain: "polygon" });
+  assert.strictEqual(r.ok, true);
+});
+test("rejects an unknown chain value", () => {
+  const r = validate({ ...valid, chain: "ethereum" });
   assert.strictEqual(r.ok, false);
 });
 test("chain:'solana' rejects an id containing base58-excluded chars (0/O/I/l)", () => {
