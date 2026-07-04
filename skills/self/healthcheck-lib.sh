@@ -34,7 +34,7 @@ hc_run() {
   if ! mkdir "$LOCK_DIR" 2>/dev/null; then
     # a FRESH lock (<10min) = a live run holds it → bail. Only a STALE lock (>10min, = a hard-killed prior run) is stolen.
     local lage=$(( ( now - $(stat -f %m "$LOCK_DIR" 2>/dev/null||echo "$now") ) / 60 ))
-    if [ "$lage" -ge 10 ]; then rmdir "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 0
+    if [ "$lage" -ge 10 ]; then rm -rf "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 0
       echo "$(date '+%F %T') stole stale lock (${lage}min)" >> "$LOG"
     else return 0; fi
   fi

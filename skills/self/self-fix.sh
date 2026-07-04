@@ -17,6 +17,8 @@ STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
+# FIND-028 test seam: print the normalized identity + derived paths and exit BEFORE any tmux/side-effect.
+if [ "${SELF_FIX_DRYRUN:-}" = "1" ]; then printf 'LOOP=%s SESSION=%s SOCK=%s RESULT=%s\n' "$LOOP" "$SESSION" "$SOCK" "$RESULT"; exit 0; fi
 MAX_FIXER_MIN=180                             # FIND-023: a fixer older than 3h is presumed hung → kill+respawn. Set
                                               # ABOVE any legitimate fix duration (a real fix rarely needs >3h) so the
                                               # 6h audit re-invocation cannot kill an in-progress long fix; only a
@@ -28,12 +30,18 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   if [ "$age_min" -lt "$MAX_FIXER_MIN" ]; then
     echo "$(date '+%F %T') self-fix[$LOOP] running (${age_min}min<${MAX_FIXER_MIN}) — skip" >> "$LOG"; echo "self-fix[$LOOP] already running (${age_min}min)"; exit 0
   fi
-  # FIND-023: past the wall-clock ceiling, do NOT kill a fixer that is still actively generating (real progress) —
-  # active generation always shows "esc to interrupt". Only a session idle/stuck past 3h is genuinely hung.
-  if tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null | tail -6 | grep -qE 'esc to interrupt'; then
-    echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min but STILL GENERATING — let it continue" >> "$LOG"; echo "self-fix[$LOOP] still working (${age_min}min)"; exit 0
+  # FIND-023/027: past the ceiling, distinguish REAL PROGRESS from a HUNG tool. "esc to interrupt" alone is not enough
+  # (a hung curl/waitForSelector shows the same spinner forever), so we compare the pane CONTENT between successive
+  # past-ceiling checks: if the pane still shows generation AND its content ADVANCED since the last check → real
+  # progress, continue; if it is frozen (unchanged) or not generating at all → genuinely hung/idle → kill+respawn.
+  PANEHASH="$STATE/.self-fix-$LOOP.panehash"
+  _pane="$(tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null)"
+  cur="$(printf '%s' "$_pane" | tail -25 | cksum | awk '{print $1"-"$2}')"
+  prev="$(cat "$PANEHASH" 2>/dev/null||echo none)"; printf '%s' "$cur" > "$PANEHASH"
+  if printf '%s' "$_pane" | tail -6 | grep -qE 'esc to interrupt' && [ "$cur" != "$prev" ]; then
+    echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, generating + pane ADVANCED → real progress, continue" >> "$LOG"; echo "self-fix[$LOOP] still progressing (${age_min}min)"; exit 0
   fi
-  echo "$(date '+%F %T') self-fix[$LOOP] HUNG+idle (${age_min}min≥${MAX_FIXER_MIN}) → kill+respawn" >> "$LOG"
+  echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, pane frozen/idle (prev=$prev cur=$cur) → hung → kill+respawn" >> "$LOG"; rm -f "$PANEHASH"
   tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
 fi
 
