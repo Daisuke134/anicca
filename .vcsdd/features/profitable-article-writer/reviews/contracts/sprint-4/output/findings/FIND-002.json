@@ -1,5 +1,8 @@
 {
   "findingId": "FIND-002",
+  "status": "RESOLVED",
+  "resolvedInRound": 2,
+  "resolutionEvidence": "The SAME $((10#$x)) base-10-forcing guard is now applied at all 3 arithmetic sites: skills/profitable-article-writer/run.sh:119 (_modeb_ratio_n, before -eq 0), run.sh:144 (_modeb_next_wake_count, before increment), and run.sh:166-167 (the actual modulo deciding effective_mode=B -- the exact previously-unguarded site named by this finding). Traced by hand: $wake_n/$ratio_n are already leading-zero-free by construction when they reach lines 166-167, so this guard is a provably-safe, non-spurious belt-and-suspenders re-check, not a new inconsistency.",
   "dimension": "implementation_correctness",
   "category": "requirement_mismatch",
   "severity": "major",

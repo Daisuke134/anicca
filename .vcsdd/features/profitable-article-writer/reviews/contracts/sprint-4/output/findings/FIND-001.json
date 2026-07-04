@@ -1,5 +1,8 @@
 {
   "findingId": "FIND-001",
+  "status": "RESOLVED",
+  "resolvedInRound": 2,
+  "resolutionEvidence": "skills/profitable-article-writer/run.sh:99-127 now forces $((10#$digits)) before any -eq/modulo use of the ratio value; skills/profitable-article-writer/tests/test-prop26d-leading-zero-octal-failclosed.sh proves leading-zero ratio strings ('08','09','1-in-08') and a leading-zero wake-counter file ('08') both normalize correctly (never octal-misparsed) with genuine RED (pre-fix crash-symptom failure) -> GREEN (post-fix pass) evidence in .vcsdd/features/profitable-article-writer/evidence/sprint-4-findings-fix-{red,green}-phase.log.",
   "dimension": "edge_case_coverage",
   "category": "test_coverage",
   "severity": "critical",
