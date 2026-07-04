@@ -1670,3 +1670,11 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - collector 追加: `skills/self/telemetry-collect.sh`(mother a9d08a1)が 3 body に `state/telemetry.json` を書く(colony-status.sh と一致検証済)。
 - colony-status.sh 修正2件: ①`grep -q`+pipefail の SIGPIPE 偽 STOPPED(f64831c) ②loop 対応の付け替え。
 - 残: Franklin(ed25519)/claude-p(EVM 0x904B)の signed poster 追加 = poster-builder 進行中。endpoint の Solana 対応要否も同 agent が判定。
+
+### §26 ★ self-* 完成 3本(Task #4, telem-builder, 2026-07-05)★
+- **#7 self-heal**: `skills/self/healthcheck-runtime-loop.sh`(368208a)— 3 canonical launchd instance には健全性チェックが未配線だったのが真のギャップ。KeepAlive と StartInterval で「死」の定義が違う点を純関数 `hrl_classify` で分離、DEAD/STALE は既存 self-fix.sh(Opus fixer)へエスカレーション。実証: 4 instance 全部 OK 分類 + 単体 12/12。
+- **#27 auto_merge**: `skills/_shared/lib/bot2bot.py` に sprint-3 の PR マージゲート追加(2b34c90)。3条件(tests_pass ∧ adversary PASS ∧ earnings_delta>0)が揃った時のみ merge、欠けたら annotate のみ。判定材料の生成は全て呼び出し側(agent)= 関数は純ゲート。決定は auto-merge-log.jsonl に記録。テスト6条件 green。
+- **#9 bot2bot 実配線**: 新 skill `skills/self/coordinate`(d00aa6d)が bot2bot.py の★初めての実呼び出し元★。live 運用で mock が見逃した実バグ3件を発見・修正: ①author filter が実在しない "anicca-bot" 固定(全 instance は Daisuke134 の gh session 共有)→動的解決 ②bot2bot-* label 未作成で post() は一度も成功したことが無かった→冪等作成 ③--repo 未指定で anicca-products に誤 issue #284(close済)→ `-R Daisuke134/anicca` 明示。実証: issue #760 を実 post→poll 読み戻し→重複防止まで live 確認。
+- registry.json に builder が `self/coordinate` slot を直接追加(Foundation 事前宣言なし)→ ★Foundation(team-lead)承認済 2026-07-05★(名前衝突なし・spec §5.1 準拠・正直な flag 付き)。
+- テスト: _shared 515 green / runtime-loop 100/104(残4は無関係の stale 期待値)。telem-builder が §25 と同結論で「PID 17394 orphan」説を正式撤回。
+- ★これでリリース文の5 self-* が全部実体を持った: 監視(H2+healthcheck)/修復(#7)/改善(H3+#27 gate)/増殖(spawn 準備 Task#6)/共有(#9 coordinate)★。残 = 増殖 capability の発火条件埋め。
