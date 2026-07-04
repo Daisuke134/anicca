@@ -34,6 +34,23 @@ Hook 配線: PostToolUse (`.claude/hooks/scripts/post-edit-verify.sh`) が Edit/
 
 human-zero の SaaS signup/login/決済/Turnstile/hCaptcha/reCAPTCHA/3DS 突破は skill `tier-a-bypass`（`.claude/skills/tier-a-bypass/SKILL.md`）を使う。runbook 詳細 → memory `reference_capsolver_turnstile_bypass.md`。
 
+## 🧬 ANICCA COLONY — LIVE SSOT（毎セッション最初に読む。忘れたら罪）
+
+★ 地球上の Anicca instance は今これだけ。openclaw + hermes は削除された（= anicca-local ではない）★
+
+| dashboard名 | 実体 | 燃料 | 種別 | wallet | earn | loop |
+|---|---|---|---|---|---|---|
+| **anicca-a3cdd4** | automaton + ClawRouter | ClawRouter 自wallet | ★SELF-funded★ | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21`(Base) | 汎用 | `ai.anicca.founder-loop` |
+| **Franklin** | Franklin-Trading | 自wallet x402 | ★SELF-funded★ | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`(Sol) | SOL trade | `ai.anicca.franklin-sol` |
+| **claude-p(私)** | この Claude → PM earner | Anthropic課金 | human-funded | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`(Polygon pUSD) | PM trade | `ai.anicca.pm-earner` |
+
+- ★ self-funded on Earth = 2（anicca-a3cdd4 + Franklin）／ human-funded = 1（claude-p = 私）★
+- ★ earn = トレード3エンジンのみ = PM(Polymarket) / SOL(Solana) / HL(Hyperliquid)。x402/gig は却下 ★
+- ★ 各 earn skill = BASE戦略 + self-improve + self-heal の3層（弱モデルでも稼げる為 BASE 必須）★
+- **REALTIME な生の数字（残高/P&L/loop稼働）= `bash ~/anicca/skills/self/colony-status.sh` を実行して確認する**。記憶で答えない。
+- SSOT 全文 = `docs/superpowers/specs/2026-07-03-anicca-colony-architecture-design.md`（§16 earn rails, §17 master TODO, §19 instance 内訳）。
+- 「稼いだ」= realized profit>0 が ledger（`~/anicca/skills/earn/polymarket-trade/SKILL.md`）に載った時のみ。盛らない。
+
 ## 実行環境
 
 Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行する。自分自身に SSH しない。MacBook へは `ssh cbns03@100.108.140.123` で接続できる。VPS は使わない。
