@@ -51,6 +51,7 @@ read-only 監査（3 Explore 並列）で判明: ①ディスク92% ②CLAUDE.md
 
 ## 境界
 
+- **不可侵 store（Dais 2026-07-04 verbatim「deleting that is a sin」）: `~/.cloak`（ブラウザ履歴/ログイン profile）、`~/anicca-rtdash`、`~/anicca-monk-factory` — 削除・キャッシュ掃除・移動の対象外。** disk 回収は他の再生成可能キャッシュのみ
 - canonical 4 path（~/anicca-project, ~/anicca, ~/.openclaw, ~/.claude）は移動しない
 - ~/.openclaw runtime の中身（cron/skills 473）は本 spec の対象外（構造指摘のみ）
 - memory/ ディレクトリは削除・移動の対象外
