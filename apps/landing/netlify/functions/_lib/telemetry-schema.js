@@ -9,7 +9,13 @@ function validate(o) {
   const chain = o.chain === undefined ? "base" : o.chain;
   // "polygon" = same EIP-191/secp256k1 signature scheme as "base" (chain-agnostic across EVM
   // networks — only the RPC target used for balance verification differs, see chain-reader.js).
-  if (chain !== "base" && chain !== "solana" && chain !== "polygon") return { ok: false, reason: "schema" };
+  // "polygon-proxy" = signed by a DELEGATE identity that is deliberately NOT the funds-holding
+  // address (e.g. a Polymarket ERC-1167 proxy wallet, which has no private key of its own and
+  // cannot produce an EIP-191 signature — see claude-p, 2026-07-05). Same id-shape/signature rules
+  // as "base", but dashboard-sync.js intentionally wires NO reader for it, so it is always
+  // net_worth_src="unverified" until real EIP-1271 (proxy-signature) verification exists — honest,
+  // never a false "chain"-verified figure for an address that was never actually checked.
+  if (chain !== "base" && chain !== "solana" && chain !== "polygon" && chain !== "polygon-proxy") return { ok: false, reason: "schema" };
   if (typeof o.id !== "string") return { ok: false, reason: "schema" };
   if (chain === "solana") {
     if (!SOLANA_ID_RE.test(o.id)) return { ok: false, reason: "schema" };

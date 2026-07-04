@@ -84,6 +84,19 @@ test("a reader failure => net_worth_src/earn_src unverified, row still served (n
   assert.strictEqual(body.total_net_worth_usd, undefined); // never a fake summed total
 });
 
+test("a chain:'polygon-proxy' row (e.g. claude-p, signer != funds-holder) stays honestly unverified — NOT a false verified-$0", async () => {
+  const { handler } = require("../../dashboard-sync");
+  const proxyRow = { id: "0xsigner", ts: NOWTS, chain: "polygon-proxy", net_worth_usd: 0.24, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive", host: "claude-p", model_tier: "frontier" };
+  global.fetch = async (url) => (typeof url === "string" && url.includes("/rest/v1/instances")) ? { ok: true, json: async () => [proxyRow] } : { ok: false, status: 500 };
+  // deliberately give it a WORKING base reader that would happily report a real (but wrong) $0 for
+  // "0xsigner" — this proves the row is skipped by chain, not merely because no reader was passed at all.
+  const passthrough = { ethUsdPrice: () => 1, usdcBalanceAtomic: () => 0n, nativeBalanceWei: () => 0n, externalInflowsUsd: () => 0 };
+  const res = await handler({ httpMethod: "GET", headers: {} }, {}, { readers: { base: passthrough } });
+  const body = JSON.parse(res.body);
+  assert.strictEqual(body.leaderboard[0].net_worth_src, "unverified");
+  assert.strictEqual(body.leaderboard[0].net_worth_usd, 0.24); // self-reported figure preserved, not overwritten with a false $0
+});
+
 test("returns 500 when SUPABASE_URL env is missing", async () => {
   delete process.env.SUPABASE_URL;
   delete require.cache[require.resolve("../../dashboard-sync")];
