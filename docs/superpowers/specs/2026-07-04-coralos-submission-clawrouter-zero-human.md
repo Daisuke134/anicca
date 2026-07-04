@@ -422,7 +422,37 @@ PHASE C — wrap as an unattended loop + submit
           to `Daisuke134/solana_coralOS@e6a32a8`.
   [ ] C7  Submit on the Superteam listing before 2026-07-20 — BLOCKED behind C3's live E2E
           (task #21) + C8's adversary pass; do not submit with a known-untested code path.
-  [ ] C8  fresh-context adversary review of the whole submission (spec fidelity + no-mock E2E)
+  [~] C8  ROUND 1 fresh-context vcsdd-adversary review DONE 2026-07-05 — verdict: FAIL, 8
+          findings (3 critical, 2 high, 3 medium). ALL 8 addressed same-session:
+          - FIND-001 (critical, no persisted evidence artifact) -> fixed: `evidence/
+            tx-confirmations.txt`, real `solana confirm -v` output for all 5 cited tx sigs.
+          - FIND-002 (critical, SUBMISSION.md overstated the anicca-service claim without the
+            fallback caveat) -> fixed: Slide 2 now discloses the dashboard-sync gap honestly.
+          - FIND-003 (critical, no TRACE evidence the Docker round used ClawRouter vs silent
+            fallback) -> fixed: re-ran with TRACE=1, captured REAL `provider=clawrouter
+            model=eco` + non-fallback LLM reasoning text on both buyer and seller sides,
+            persisted at `evidence/trace-clawrouter-multiagent-round.txt`. This same run
+            surfaced a REAL bug (self-report failed: "Failed to parse URL from" — the same
+            ''-bypasses-`??` class as the earlier LLM_MODEL bug, this time on
+            ANICCA_TELEMETRY_URL because coral-server injects a toml `default=""` into the
+            container env when a caller omits the option) — fixed in telemetry.ts (`||` not
+            `??`) and defensively in complete.ts's CLAWROUTER_URL. NOT yet re-verified live
+            (disk hit ~824Mi mid-verification, had to tear down colima for safety before a
+            3rd round could confirm the fix) — this specific sub-item stays open, folded into
+            task #21.
+          - FIND-004 (high, seller-agent's own toml/README stale/contradictory) -> fixed.
+          - FIND-005 (medium, imprecise "byte-for-byte" comment + mislabeled test) -> fixed.
+          - FIND-006 (medium, llm_buyer.ts's Anthropic-hardwired legacy code undocumented) ->
+            fixed with an explicit doc-comment.
+          - FIND-007 (high, adversary couldn't verify commit hashes — no Bash/git in its
+            sandbox) -> resolved: verified myself via `git log origin/main --oneline`, all 5
+            cited hashes are real and present on the actual GitHub remote, in order.
+          - FIND-008 (medium, no test/evidence distinguishes real ClawRouter from silent
+            fallback) -> resolved by the same TRACE=1 evidence as FIND-003.
+          All fixes pushed: `Daisuke134/solana_coralOS@6221d9f` (FIND-001),
+          `@b6e1916` (FIND-004/005/006), `@d022bc7` (FIND-003/008 + the real bug fix),
+          `@f3c84eb` (FIND-002). ROUND 2 (re-verify the fixes, especially the still-open
+          telemetry-URL live re-check) not yet run.
 ```
 
 Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
