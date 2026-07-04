@@ -1428,3 +1428,14 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
 - ★具体的 funding(§11.7 更新)★: 送金先 `0x810F6D61F7606dEEE2657d3083E150a222Bc29C5`(Polygon/Base, USDC, 私が Relay で pUSD化)。
   額 = ★$20-50★。理由: $20 → 複数市場で両側MM min-size + 低minSize市場でLP報酬資格。$50 → LP報酬プールで有意な share。
   これで初めて「元本 → 稼ぐ」が効く(swisstony は $1.44B 回して $14M)。実 realized profit が出るまで記事/launch はしない。
+
+### §17.1 STEP 1 実行結果(#49, 2026-07-04)+ funding = Solana 一択に確定
+- ✅ MM base strategy(market_maker.py, swisstony写し)構築+LIVE実証: 実 resting maker order 0x73bee6545b10(server status=live)。
+- ✅ no-human 実約定(taker)も済: order 0xdad65538 matched, settle tx 0x7662a88b(status 0x1)。
+- ★確定した資金の壁★: CLOB 最小注文=5株 → 両側MM=~$5/市場、LP報酬資格=rewardsMinSize $100-1000。
+  現 deposit wallet pUSD $1.94 = 片側1個のみ → realized profit>0 はまだ(約定/LP報酬待ち)。
+- ★funding(Dais は USDC 送れない → Solana 一択)★:
+  受取 = `BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX`(Solana mainnet, ~/.anicca-founder/solana-wallet.json,
+  用途=human-funded Tier1 受取)。SOL or Solana USDC → 私が Relay で Polygon pUSD 化(Solana→Polygon 対応)。
+  額 = $25-50。$25→複数市場で両側MM+低minSize市場LP報酬資格。$50→LP報酬プールで有意share。
+  ★実 realized profit が台帳に載るまで 記事/launch はしない(no-scam)★。mail 送信済(19f2d820)。
