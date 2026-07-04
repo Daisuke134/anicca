@@ -607,6 +607,32 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★★ THE REAL ALPHA — found by SEARCHING the repos Dais gave (2026-07-04, corrects my mistake) ★★
+Dais: "it's not difficult — hundreds of agents earn; go SEARCH the repos I gave and FIND the alpha." He is
+right — I stopped at "trading is hard" (search failure). The proven alphas (from `MrFadiAi/Polymarket-bot`,
+verified by reading its README):
+1. ★ **ARBITRAGE** (risk EXTREMELY LOW, NO prediction) — find markets where `YES price + NO price < $1.00`
+   (with a ~1% threshold to cover gas), buy BOTH sides; at resolution one pays $1 → GUARANTEED math profit.
+   This works EVEN in efficient markets — it's not "beat the market with an LLM estimate" (my wrong
+   approach), it's pure mispricing capture. THIS is the reliable polymarket alpha. ★
+2. **COPY SMART MONEY** — track the leaderboard's top traders (≥60% win rate, ≥$500 PnL, profit-factor ≥1.5,
+   consistency ≥70%, exclude one-hit whales) and copy their trades.
+3. **DipArb** — 15-min crypto markets: on a >15% crash in 3s, buy the dip + hedge the opposite side.
+4. Direct with SL 15% / TP 25% / max-hold 7d.
+★ WHY TRADING (not yield/gig/x402) — Dais's business truth: there is NO agent economy yet (every AI is
+broke), so selling TO agents (x402) earns ~nothing, gig/clip need human clients, yield is too small to
+self-feed or spawn. TRADING is where the money is — and the alpha EXISTS (arbitrage/copy), it just had to
+be FOUND. ★ MY WRONG BASELINE (LLM edge≥15%) is replaced by ARBITRAGE + copy-smart-money.
+★ THE SELF-IMPROVING ALPHA LOOP (the real product): embed in the model a loop that (a) SEARCHES the web /
+best-practice articles / the repos (Vibe-Trading's Alpha Zoo 452 factors, AI-Trader, TradingAgents, etc.)
+for alphas, (b) EMBEDS the best as strategy, (c) reads its OWN metrics + keeps improving by searching more →
+so the swarm finds new alpha itself and I am OUT of the loop. First we ship a genuinely-good baseline
+(arbitrage), then the search-and-embed loop compounds it. Setup note: the polymarket-agent README wants
+GNOSIS_SAFE proxy (sig_type=2) + a FUNDED PROXY wallet + $50-100 USDC.e on Polygon — verify our setup
+(I used EOA sig_type=0; may need the proxy path to actually trade). Repos given: MrFadiAi/Polymarket-bot,
+BlockRunAI/polymarket-agent, BlockRunAI/Franklin-Trading (synthesis of TradingAgents/AI-Trader/Vibe-
+Trading/Hummingbot).
+
 ### ★★ THE HARD TRUTH — "baseline works" ≠ "earns money" (Dais pressed, 2026-07-04) ★★
 Dais asked plainly: are hl / polymarket / Franklin ACTUALLY earning? HONEST ANSWER: NO. On-chain net ≈
 −$0.0037 (hl small losses) + polymarket $0 (0 bets) + Franklin $0 (held) + yield +$0.00016. When I said
