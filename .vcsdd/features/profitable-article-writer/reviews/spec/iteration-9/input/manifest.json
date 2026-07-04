@@ -1,0 +1,7 @@
+{
+  "reviewType": "spec", "feature": "profitable-article-writer", "mode": "strict", "phase": "1c", "iteration": 9,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "scope": "Sprint 4 REQ-23/24/25 revision round 2 - verify all 6 iteration-8 findings resolved",
+  "priorIteration": {"iteration":8,"verdict":"FAIL","findingsToVerify":["FIND-001","FIND-002","FIND-003","FIND-004","FIND-005","FIND-006"]}
+}
