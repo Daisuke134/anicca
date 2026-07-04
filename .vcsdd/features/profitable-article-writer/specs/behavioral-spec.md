@@ -107,23 +107,34 @@ One article → funnel → per-platform native monetization → real money verif
 REQ-21's tool proved the mechanism works but requires a human/main-agent hand on the trigger. This section wires
 the SAME mechanism into the unattended daily loop so no human/Opus ever triggers it again.
 
-- **REQ-23 Mode-B publish branch, in-loop.** WHEN `run.sh` runs WITH `AUTONOMY=on` (Mode B, REQ-7) AND V0∧V0.5
-  PASS, THEN `run.sh` SHALL perform the equivalent of REQ-21's confirm→click sequence itself, by calling a
-  SHARED, importable core function that BOTH the standalone `lib/note-publish-live.py` tool AND `run.sh`'s
-  Mode-B branch call (the logic SHALL NOT be duplicated/reinvented). The SAME fail-closed pre-publish checks
-  (price/type/eyecatch/visuals confirmed before any click) and the SAME exception-safety (try/except/finally,
-  no leaked browser context, no raw traceback — the REQ-21/FIND-004 fix) apply unchanged. This branch is the
-  ONLY code path allowed to reach a real publish click from an unattended wake; Mode A (`AUTONOMY=off`) SHALL
-  remain structurally unable to reach it (REQ-6 unaffected, grep-verifiable).
+- **REQ-23 Mode-B publish branch, in-loop.** WHEN `run.sh`'s branch-selection logic evaluates the EFFECTIVE mode
+  for the current wake (REQ-25's ratio-derived value, not the raw `AUTONOMY` variable in isolation) AND that
+  evaluates to Mode B AND V0∧V0.5 PASS, THEN `run.sh` SHALL call a SHARED, importable core function — the SAME
+  module `lib/note-publish-live.py` imports for its own confirm→click sequence, with the pre-publish checks
+  (price/type/eyecatch/visuals) AND the try/except/finally exception-safety (the REQ-21/FIND-004 fix) living
+  INSIDE that shared unit, not re-wrapped or reimplemented per caller — a future change to the shared function
+  SHALL apply to both callers identically (single source, grep-verifiable: the publish-click statement appears
+  in exactly one file). This is the ONLY code path allowed to reach a real publish click from an unattended
+  wake. Mode A's branch SHALL be REQUIRED to demonstrate — by a dynamic call-count assertion on the shared
+  function (the same pattern PROP-6 already uses for Mode A's no-publish invariant), not merely a static grep —
+  that it never calls the shared publish function under any AUTONOMY/branch-selection value that resolves to
+  Mode A, including a deliberately-injected branch-selection bug in the test harness.
 - **REQ-24 Mode-B post-publish verify, in-loop.** Immediately after a Mode-B publish click, `run.sh` SHALL
   invoke the SAME independent-verification logic as REQ-22's standalone verifier (logged-out fetch, 200 AND
-  content-match) and record the result to state. IF verification fails or is inconclusive THEN the wake SHALL
-  record an UNCONFIRMED-publish state (never silently assume success) for a later wake or self-heal (REQ-17,
-  Sprint 5) to reconcile — it SHALL NOT retry-publish the same draft blindly (risking a duplicate/garbled post).
-- **REQ-25 Graduation is per-install, gradual, and explicit.** `AUTONOMY=on` SHALL be an explicit per-install
-  configuration value, not a code default. An install MAY run a MIX (e.g. 1-in-N wakes in Mode B, the rest Mode
-  A) during a trust-ramp period; this ratio is a state/config value the installer (human or, once REQ-18
-  self-improve lands, the skill itself) sets — not hardcoded in `run.sh`.
+  content-match) and record the result to state. ON SUCCESS, `run.sh` SHALL record the SAME fields REQ-22
+  requires (URL + timestamp + verification result) so V4 (earn) tracking begins exactly as it does for the
+  standalone tool — a success path SHALL be positively tested, not merely inferred from the absence of a
+  failure test. ON verification failure or inconclusive result, the wake SHALL record an UNCONFIRMED-publish
+  state (never silently assume success) for a later wake or self-heal (REQ-17, Sprint 7) to reconcile — it
+  SHALL NOT retry-publish the same draft blindly (risking a duplicate/garbled post).
+- **REQ-25 Graduation is per-install, gradual, explicit, and ACTUALLY CONSULTED.** The effective per-wake mode
+  SHALL be computed from an install-level ratio/mix configuration value (e.g. "1-in-N wakes run Mode B"), read
+  from runtime config/state — NOT a source-code default, and NOT satisfiable by a bundled installer template
+  that pre-sets a fixed value equivalent to a hardcoded default (the config value SHALL be re-readable/mutable
+  at runtime without a code change, and a test SHALL prove changing it changes wake behavior without redeploying
+  code). REQ-23's branch-selection logic SHALL consult THIS ratio-derived effective mode, not a raw binary
+  `AUTONOMY` flag read independently — a test SHALL prove that setting the ratio to "1-in-N" actually produces
+  N-1 Mode-A wakes and 1 Mode-B wake over N consecutive wakes, not merely that the ratio value is stored.
 
 ## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
 
