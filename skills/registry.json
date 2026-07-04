@@ -117,6 +117,15 @@
     "earn/_probe": {
       "status": "declared",
       "summary": "VCSDD integration probe (writes a test earn-ledger line)"
+    },
+    "earn/article": {
+      "track": "A",
+      "dir": "skills/profitable-article-writer",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": ".vcsdd/features/profitable-article-writer (VCSDD strict, Sprint 4 in progress)",
+      "summary": "Model-agnostic: research+write a visual explainer article, gate it (V0 render / V0.5 craft), publish native-monetized (note.com ¥500 single-purchase live-verified 2026-07-04), climb V0->V4 (real receipt). Mode A (draft+notify) is live; Mode B (autonomous publish, no human click) is being wired in Sprint 4. NOT a rename of skills/ai-entity-article-writer (that skill is untouched, separate, and remains the canonical note-publish pipeline referenced by memory feedback_use_canonical_note_publish_skill_not_adhoc.md) — this is a new, separate, general-purpose successor built in this repo.",
+      "owner": "wf-a:earn"
     }
   }
 }
