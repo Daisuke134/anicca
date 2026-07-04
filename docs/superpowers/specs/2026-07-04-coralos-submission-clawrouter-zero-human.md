@@ -422,8 +422,9 @@ PHASE C — wrap as an unattended loop + submit
           to `Daisuke134/solana_coralOS@e6a32a8`.
   [ ] C7  Submit on the Superteam listing before 2026-07-20 — BLOCKED behind C3's live E2E
           (task #21) + C8's adversary pass; do not submit with a known-untested code path.
-  [~] C8  ROUND 1 fresh-context vcsdd-adversary review DONE 2026-07-05 — verdict: FAIL, 8
-          findings (3 critical, 2 high, 3 medium). ALL 8 addressed same-session:
+  [x] C8  DONE 2026-07-05 (3 rounds to converge). ROUND 1 fresh-context vcsdd-adversary
+          review — verdict: FAIL, 8 findings (3 critical, 2 high, 3 medium). ALL 8 addressed
+          same-session:
           - FIND-001 (critical, no persisted evidence artifact) -> fixed: `evidence/
             tx-confirmations.txt`, real `solana confirm -v` output for all 5 cited tx sigs.
           - FIND-002 (critical, SUBMISSION.md overstated the anicca-service claim without the
@@ -477,8 +478,20 @@ PHASE C — wrap as an unattended loop + submit
           - FIND-005 (adversary's own sandbox had no Bash, same limitation as round 1) -> not
             a repo issue; it self-corroborated via git ref objects, sufficient.
           All fixes pushed: `Daisuke134/solana_coralOS@499be56`. Full regression: seller-agent
-          28/28 GREEN, packages/agent-runtime 37/37 GREEN. ROUND 3 (targeted re-check of these
-          5, watching for a 3rd instance of the same overclaiming pattern) not yet run.
+          28/28 GREEN, packages/agent-runtime 37/37 GREEN.
+
+          ROUND 3 targeted re-check DONE 2026-07-05 — verdict: **PASS on documentation
+          honesty** (items 1-4 all PASS on fresh reading: SUBMISSION.md no longer overclaims,
+          all 4 tx sigs have full `solana confirm -v` transcripts, the coral README diagram/
+          env-list match the real flow, goal.ts is disclosed). No 3rd instance of the
+          overclaiming pattern found in a full honesty sweep. One caveat raised: no adversary
+          across all 3 rounds had Bash to independently execute the test suites (all 3
+          sandboxes lacked it) — the 28/28 + 37/37 GREEN claim rested on the Builder's own
+          report. RESOLVED immediately after: re-ran both suites myself, fresh, right now —
+          seller-agent 28/28 GREEN, packages/agent-runtime 37/37 GREEN, confirmed again.
+          **C8 is DONE.** Remaining before C7 (actual submission): C3's live Docker
+          re-verification of the telemetry-URL fix (task #21, disk-constrained, honestly
+          still open) — this is the only concrete blocker, not a documentation issue.
 ```
 
 Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
