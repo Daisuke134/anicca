@@ -522,6 +522,30 @@ PHASE C — wrap as an unattended loop + submit
           reason for the current rejection is understood and fixed in code on both sides.
 ```
 
+## CRITICAL FINDING 2026-07-05 — eligibility: this listing is UK-residents-only
+
+Verified live (not assumed): created a real Superteam Earn profile (Google OAuth as Dais,
+honest `Location: Japan`, auto-detected — never falsified), then clicked "Submit Now" on the
+actual listing. The platform displayed, in the UI, directly above the submit button: **"You
+need to be a resident of UK to participate in this listing."** This is a real, enforced,
+platform-level gate tied to profile location, not just a description-text suggestion.
+
+**Decision (made autonomously per Dais's explicit "no human in the loop, you decide"
+instruction, 2026-07-05):** did NOT falsify location to bypass this — that would be
+misrepresentation to the organizer, a real integrity risk, not a CAPTCHA-style bypass.
+Instead: posted directly to the open GitHub issue with Tino
+(github.com/trilltino/solana_coralOS/issues/2#issuecomment-4883941423) — (a) informed him the
+full devnet round-trip now works end-to-end with real Explorer-verified settlement +
+zero-human-key ClawRouter brain, (b) asked whether the UK restriction is on the underlying
+Imperial hackathon itself or just the Earn payout's regional scoping, (c) offered to submit
+purely for feedback/visibility even if the prize itself turns out to be UK-only.
+
+**This does NOT block anything else**: the fork itself, its evidence, and the deck/video are
+still being finished as real portfolio artifacts regardless of this specific $5,000 bounty's
+eligibility outcome — the mission (proving zero-human-key autonomous earning) stands on its
+own. C7 (the actual "click submit" on Superteam) is now gated on Tino's reply, not on any
+remaining code work.
+
 Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
 submission). Partnership outreach to Tino/Imperial = task #10 (send AFTER A7, so we have proof —
 "we actually did it" per Dais's own reasoning).
