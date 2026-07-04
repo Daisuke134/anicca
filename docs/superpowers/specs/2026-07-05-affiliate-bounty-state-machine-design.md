@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV7(GATE 1ラウンド1-6 FAIL、$STATE未定義クラッシュ/エラー握りつぶし/未使用引数を修正) |
+| 状態 | spec REV8(GATE 1ラウンド1-7 FAIL、MEASURE挿入位置とself_heal特性の事実誤認を修正) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -83,9 +83,37 @@ fi
 ブロックしないという主張は正しいと確認済み。`CLIP_SELF_HEAL_OVERRIDE`という
 テストフック(115行目コメント)も存在する — bounty用の`gh`モック機構(§3.3)で
 同じ命名パターンを踏襲する。
-これがaffiliateの実際の形に合う唯一の既存パターン: **「未解決アイテムの回収
-(self-heal相当)」と「新規投稿」は独立した2つのステップとして毎wake両方試み、
-片方の結果がもう片方をブロックしない**。
+
+★GATE 1ラウンド7で発見した重要な訂正★: `clip/run.sh`を1〜110行目まで通しで
+再確認したところ、`self_heal.py`は**「毎wake完全に無条件」ではなかった**。
+実際のガード順序: HANDLE(readyアカウント)が無ければ57-69行目で`exit 0`
+→ `EARN_MODE!=execute`なら71-73行目で`exit 0`(discoverモードではself-healに
+一度も到達しない)→ ブラウザ疎通確認(89-91行目)→ ログイン確認(107-109行目)
+→ **ここまで全て通過して初めて**self_heal.py(111-122行目)が実行される。
+つまりREQ-008の「独立性」は「queueが空かどうかには依存しない」という一点のみで
+(自身のコメント通り)、EARN_MODE=executeかつアカウントのブラウザ疎通・ログイン
+確認済み、という前提までは他のPOSTロジックと共有している。「毎wake完全に
+無条件」という当初の記述は事実として不正確だったので訂正する。
+
+この訂正を踏まえてaffiliateのMEASURE配置を考え直すと、**clip/run.shと全く同じ
+ガード位置に置く必要は無い**。理由: `amazon_report.py`は`cdp.new_tab(...)`で
+**新規タブを都度開く**設計であり、affiliateアカウントのIGログイン状態
+(`HANDLE`/`ACTIVE`確認)や`EARN_MODE`やqueueの中身に一切依存しない
+(affiliate.amazon.co.jpへのログインはIGログインとは別物で、daily-driverの
+ブラウザプロファイルに既に確立されている前提 — この前提の検証自体は§5の
+「実配線確認」で行う、今回のスコープでは前提として置く)。つまりclip/run.shの
+self_healより**さらに依存が少ない**ため、affiliateの全ゲート(SET/HANDLE有無・
+EARN_MODE・ブラウザ疎通・ログイン確認)より**前**、`mkdir`直後に置くのが
+正しい(EARN_MODE=discoverの時ですら実行してよい、実際に何も投稿しない
+discoverモードでも「コミッションが入ったかどうかの確認」自体は無害かつ
+有用なため)。
+
+これがaffiliateの実際の形に合うように調整したパターン: **「未解決アイテムの
+回収(commission確認)」と「新規投稿」は独立した2つのステップとして毎wake
+両方試み、片方の結果がもう片方をブロックしない** — ただしaffiliateの場合、
+commission確認の方がPOSTより依存条件が少ないため、POSTの各種ゲートより
+「前」に置く(clip/run.shの「executeモード+ログイン確認の後」という位置とは
+異なる、affiliate固有の正しい配置)。
 
 ## 2. affiliate用の設計(REV2、self_heal.py型に訂正)
 
@@ -265,29 +293,60 @@ if __name__ == "__main__":
 「POSTをブロックしない」どころか全体をクラッシュさせていた)。`STATE`を明示的に
 定義する行を、既存の`mkdir -p "$QUEUE" "$POSTED"`(現行17行目)の近くに追加する:
 
+**挿入位置を行番号で明記(GATE 1ラウンド7指摘、FIND対応)**: 現行`affiliate/run.sh`
+17行目`mkdir -p "$QUEUE" "$POSTED"`と22行目`# next queued slideshow ...`の**間**
+(=既存コードのどこも書き換えず、この2行の間に新規行を挿入するだけ)。ここに
+置く理由: `amazon_report.py`は`cdp.new_tab(...)`で新規タブを都度開く設計であり、
+affiliateアカウントの`SET`(queue)・`HANDLE`(readyアカウント)・`EARN_MODE`・
+ブラウザログイン状態のいずれにも依存しない(§1.2で訂正した通り、clip/run.shの
+self_healより依存が少ない)。よってrun.shの他のどのゲート(40-45行目のSET/HANDLE
+チェック、EARN_MODEチェック等)より**前**に置くのが正しく、22行目以降の既存
+POSTロジックには一切触れない:
+
 ```bash
-# 既存17行目 mkdir -p "$QUEUE" "$POSTED" の直前または直後に追加
+#!/usr/bin/env bash
+# (1-16行目: 既存のまま、変更なし)
+set -uo pipefail
+EARN_MODE="${EARN_MODE:-discover}"
+WAKE="${WAKE_ID:-$(date -u +%s)}"
+HOME_DIR="$HOME"
+QUEUE="$HOME_DIR/affiliate/queue"
+POSTED="$HOME_DIR/affiliate/posted"
+ACCTS="$HOME_DIR/.cloak/affiliate-accounts.json"
+POSTER="$HOME_DIR/.claude/skills/ig-account-poster/scripts/post.py"
+CDP_DIR="$HOME_DIR/.claude/skills/ig-account-create/scripts"
+PY=/opt/homebrew/bin/python3
+
+# ↓↓↓ ここが新規挿入部分(旧17行目 mkdir を置き換え、STATE追加) ↓↓↓
 STATE="$HOME_DIR/anicca/skills/earn/affiliate/state"
 mkdir -p "$QUEUE" "$POSTED" "$STATE"
 
-# ...(既存のPOST用ロジック本体はこのまま)...
-
 # MEASURE: 毎wake無条件に1回、アカウント全体のコミッション増分だけ確認。
-# POSTを一切ブロックしない(REQ-008と同型)。measure_commission.py自身が
-# 例外を握りつぶさずJSON出力に含める設計(上記FIND-2修正)なので、ここでの
+# SET/HANDLE/EARN_MODEのどれよりも前に置く — amazon_report.pyはこれらに一切
+# 依存しない新規タブベースの独立した確認であり、POSTの各種ゲートを一切
+# ブロックしない(§1.2訂正版参照)。measure_commission.py自身が例外を
+# 握りつぶさずJSON出力に含める設計(FIND-2修正済み)なので、ここでの
 # `2>/dev/null || true`はプロセスの異常終了(タイムアウト等)だけを無害化する
 # ためのものであり、実際のエラー内容(ledger_errors等)はstdoutのJSONに残る。
 "$PY" "$HOME_DIR/anicca/skills/earn/affiliate/measure_commission.py" \
   --watermark "$STATE/commission-watermark.json" --wake "$WAKE" 2>/dev/null || true
+# ↑↑↑ 新規挿入部分ここまで ↑↑↑
 
-# 以降、既存のPOSTロジック(SET選択→アカウント選択→投稿)は完全に無変更で継続
+emit() { printf '{"slot":"earn/affiliate","did":%s,"earn_usdc":0,"cost_usdc":0}\n' \
+  "$(printf '%s' "$1" | "$PY" -c 'import json,sys;print(json.dumps(sys.stdin.read()))')"; }
+
+# (22行目以降: 既存のPOSTロジック本体、完全に無変更で継続)
+# next queued slideshow (oldest dir with >=3 slides + caption)
+SET=""
+# ...
 ```
 (GATE 2のテストでは`_amazon_report_fn`/`_ledger_record_fn`を直接呼ばず、
 `measure_commission()`本体にダミー関数を注入する既存の単体テスト方針
 (§5)を使う — この`__main__`ブロック+2つのsubprocessヘルパーは実配線確認
 (§5「measure_commission.pyの実配線確認」の行)でのみ実行し、モックしない)。
-**既存のPOST用ロジック(queue選択・アカウント選択・投稿実行部分)は一切書き換えない**
-(REQ-A4)。追加するのは「measure_commission.py呼び出し1行」のみ。
+**既存のPOST用ロジック(22行目以降、queue選択・アカウント選択・投稿実行部分)は
+一切書き換えない**(REQ-A4)。追加するのは「`STATE`変数定義+`measure_commission.py`
+呼び出し」のみ、挿入位置は17行目と22行目の間の1箇所のみ。
 
 ## 3. bounty用の設計(REV2、既存4モードの性質を再確認して最小修正に訂正)
 
@@ -565,10 +624,22 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   にくい場所で握りつぶす」結果になっていた(FIND-2) (c) `--wake`引数を
   受け取るが一度も使っていない、意味の無い必須引数だった(FIND-3、non-blocking)。
   検証の結果、(a)(b)は正当かつcritical、(c)も直すべきと判断。
-- **ラウンド7(REV7、本ファイル)**: `affiliate/run.sh`に`STATE`変数定義+
-  `mkdir -p`を追加する具体的な差分を明記(FIND-1修正)。`_ledger_record_fn`を
-  例外を投げず結果文字列を返す設計に変更し、`measure_commission.py`の`__main__`が
-  それを`ledger_errors`として最終JSON出力に必ず含めるようにした(run.shが
-  stderrを捨てても、stdoutのJSONにはエラーが残る、FIND-2修正)。`--wake`を
-  出力JSONに含めてトレーサビリティ用途に実際に使うようにした(FIND-3修正)。
-  次はこのREV7を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド7**: FAIL。fresh-context Sonnet adversaryの指摘: (a)(b)(c)の3件は
+  全てAPPLIED-CORRECTLYと確認(`$STATE`定義は`run.sh:17`に実在しない新規追加、
+  `_ledger_record_fn`のstdout保存は`2>/dev/null`(stderrのみ)`|| true`(終了コード
+  のみ)のいずれにも影響されないとbashの意味論通り確認、`--wake`は純関数の外
+  (`__main__`)でのみ使われ purity を保っていると確認)。(d)新規発見: MEASURE呼び
+  出しの**挿入位置**がrun.sh内のどこなのか一度も行番号で specify されておらず、
+  「既存のPOST用ロジック本体はこのまま」という曖昧な省略コメントに囲まれていた。
+  さらに、参照元として引用していた`clip/run.sh`のself_healが実は「EARN_MODE=execute
+  かつログイン確認済み」というPOSTと同じゲートの後ろで動く設計であり(§1.2の
+  「毎wake完全に無条件」という記述は事実誤認だった)、この誤った理解のまま
+  挿入位置を考えていたことが根本原因と判明。
+  検証の結果、正当と確認。
+- **ラウンド8(REV8、本ファイル)**: §1.2の事実誤認(self_healは実は
+  EARN_MODE=execute+ログイン確認後というゲート付き)を訂正。その上で
+  `amazon_report.py`はclip/run.shのself_healより依存が少ない(SET/HANDLE/
+  EARN_MODE/ログイン状態のいずれにも非依存)と論証し、affiliateのMEASURE呼び
+  出しは全ゲートより前(現行17行目mkdirと22行目SET検索ロジックの間)に置くべき
+  と結論、正確な挿入位置を行番号+diff形式で明記。次はこのREV8を再度
+  fresh-context adversaryにかけ、PASSするまで実装に進まない。
