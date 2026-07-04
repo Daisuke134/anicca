@@ -51,3 +51,20 @@ x402/crypto self-earn (dropped). New product surfaces beyond LM + Capafy (stop t
 1. **Verify Capafy daily cron actually earns** — is `anicca-capafy-daily-publish` publishing + is anything selling? (read cron logs + Capafy sales). If broken, fix it (it's the cheapest already-wired revenue).
 2. **LM E1 Gmail late-notice** (retention value) + **funnel instrumentation** (see where users drop).
 3. **Build the claude-p GLVS harness** that drives the 2 engines on a cadence, reads the metrics, verifies real revenue, updates STATE.md — starting L1 (report-only) → L2 (assisted) → L3 (unattended).
+
+## 7. Reddit / community = an AUTHENTIC-CONVERSATION LOOP, not a broadcast cron (Dais 2026-07-04)
+The reason marketing must be a **loop** (claude-p agent) and NOT a fire-and-forget cron: real community growth is **ongoing, stateful, two-way conversation + trust**, not posting links. Dais verbatim intent:
+- We do NOT push the product. We JOIN the conversation genuinely — answer people's questions, be helpful, be a real participant in the subreddit.
+- Trust is built CONTINUOUSLY over many interactions (the loop remembers past threads/people = stateful; a cron can't).
+- The product surfaces NATURALLY and softly, as a builder story tied to a real pain: "this is a problem I have, and I can explain it carefully — I built X to solve it." Never pushy, never a link-drop.
+- Because it's a real problem we understand deeply, we can explain it well → that earns trust → trust converts, not a CTA.
+
+### Design implications
+- **Agent-driven judgment per conversation** (memory `feedback_build_agents_not_hardcode_regex`): the agent reads each thread/reply and DECIDES what to say — no scripted templates, no regex, no canned CTA. My job = build the LOOP; the agent decides the words (memory `feedback_build_the_harness_not_do_their_work`).
+- **Stateful**: track which subreddits/threads/users we've engaged, what was said, karma, what earned trust vs got removed → STATE.md. Reply to replies (the conversation continues).
+- **Value-first cadence**: mostly helpful comments (no product), occasional genuine builder-story post; respond to every reply/question. NOT daily link spam.
+- **Targets** (LM's pain = lateness): r/ADHD, r/productivity, r/getdisciplined, r/executivedysfunction, r/SideProject, r/startups.
+- **Guardrails**: warmed/aged accounts (karma first via genuine comments), per-subreddit rules respected, ban-risk tracked, back off where removed. Same warmup discipline as TikTok/IG.
+- **Self-improve**: measure signups attributed to reddit + trust signals (upvotes, positive replies, DMs asking "what's it called"); double down on what earns trust, drop what gets removed.
+
+This is a NEW engine of the claude-p money loop (alongside Capafy publish + LM funnel). It is the clearest example of why the harness = a conversational LOOP, not a cron.
