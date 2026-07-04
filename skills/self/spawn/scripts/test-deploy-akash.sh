@@ -90,4 +90,39 @@ runfake manifest
 ok "$([ $rc -ne 0 ] && [ -z "$OUT" ] && echo 1 || echo 0)" "behavioral fail-closed (send-manifest 400): rc=$rc out='$OUT'"
 grep -q "send-manifest" <<<"$recd" || { echo "  - FAIL: manifest never attempted in manifest-fail mode"; fails=$((fails+1)); }
 
-[ $fails -eq 0 ] && { echo "PASS — all B1 deploy invariants hold (static + faithful-fake behavioral + fail-closed)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }
+# ---------- AKASH_SDL_TEMPLATE override (2026-07-05, self/spawn-child prep): the SDL actually submitted
+# to `tx deployment create` must be the RENDERED external template (image-independent node:22 + git
+# clone), not the inline ghcr.io heredoc — capture the SDL file content the fake sees.
+mkfake_capture(){
+  cat <<FAKE
+#!/usr/bin/env bash
+echo "\$*" >> "\$B1_REC"
+case "\$*" in
+  *"keys show"*)            echo "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523" ;;
+  *"query cert list"*)      echo '{"certificates":[{"certificate":{"state":"valid"}}]}' ;;
+  *"tx deployment create"*) cat "\$4" > "\$B1_SDL_CAPTURE"
+                             jq -nc '{code:0,txhash:"ABC",events:[{type:"akash.deployment.v1.EventDeploymentCreated",attributes:[{key:"hash",value:"xx"},{key:"id",value:({owner:"akash1ms7",dseq:"777"}|tojson)}]}]}' ;;
+  *"query market bid list"*) echo '{"bids":[{"bid":{"id":{"owner":"akash1ms7","dseq":"777","gseq":1,"oseq":1,"provider":"akash1prov"},"state":"open","price":{"denom":"uact","amount":"5"}}}]}' ;;
+  *"tx market lease create"*)echo '{"code":0,"txhash":"DEF"}' ;;
+  *"query market lease list"*) echo '{"leases":[{"lease":{"state":"active"}}]}' ;;
+  *"send-manifest"*)        echo "ok" ;;
+  *version*)                echo "v0.11.1" ;;
+  *)                        echo "{}" ;;
+esac
+FAKE
+}
+T="$(mktemp -d)"; REC="$T/rec"; SDLCAP="$T/captured.yaml"; : >"$REC"
+mkfake_capture > "$T/provider-services"; chmod +x "$T/provider-services"
+SPAWN_CHILD_TEMPLATE="$(cd "$(dirname "$S")/../../spawn-child" && pwd)/sdl/child.yaml"
+B1_REC="$REC" B1_SDL_CAPTURE="$SDLCAP" PROVIDER_SERVICES="$T/provider-services" AKASH_KEY_NAME=anicca-akash \
+  AKASH_NODE="http://localhost:1" AKASH_CHAIN_ID="testchain" AKASH_KEYRING_BACKEND=test AKASH_POLL_SLEEP=0 \
+  AKASH_SDL_TEMPLATE="$SPAWN_CHILD_TEMPLATE" \
+  bash "$S" templatechild >/dev/null 2>"$T/err2"; rc3=$?
+ok "$([ $rc3 -eq 0 ] && echo 1 || echo 0)" "AKASH_SDL_TEMPLATE: templated run still exits 0 — $(tail -1 "$T/err2")"
+ok "$([ -f "$SDLCAP" ] && echo 1 || echo 0)" "AKASH_SDL_TEMPLATE: SDL file was actually passed to tx deployment create"
+grep -qE "^\s*image:\s*node:22-bookworm\s*$" "$SDLCAP" 2>/dev/null && ok 1 "" || { echo "  - FAIL: AKASH_SDL_TEMPLATE: captured SDL 'image:' line is not the image-independent node:22-bookworm base"; fails=$((fails+1)); }
+grep -qE "^\s*image:\s*ghcr\.io" "$SDLCAP" 2>/dev/null && { echo "  - FAIL: AKASH_SDL_TEMPLATE: captured SDL 'image:' line still references the broken ghcr.io image"; fails=$((fails+1)); }; true
+grep -q "ANICCA_CHILD_ID=templatechild" "$SDLCAP" 2>/dev/null || { echo "  - FAIL: AKASH_SDL_TEMPLATE: CHILD_ID placeholder was not substituted"; fails=$((fails+1)); }
+rm -rf "$T"
+
+[ $fails -eq 0 ] && { echo "PASS — all B1 deploy invariants hold (static + faithful-fake behavioral + fail-closed + AKASH_SDL_TEMPLATE)"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

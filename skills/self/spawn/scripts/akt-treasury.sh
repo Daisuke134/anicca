@@ -24,7 +24,10 @@ if [ -z "${AKASH_NODE:-}" ] || [ -z "${AKASH_CHAIN_ID:-}" ]; then
   META="${AKASH_META_URL:-https://raw.githubusercontent.com/akash-network/net/main/mainnet/meta.json}"
   MJ="$(curl -sSf "$META")" || { echo "akt-treasury: meta.json fetch failed" >&2; exit 1; }
   export AKASH_CHAIN_ID="${AKASH_CHAIN_ID:-$(jq -r '.chain_id' <<<"$MJ")}"
-  export AKASH_NODE="${AKASH_NODE:-$(jq -r '.apis.rpc[0].address' <<<"$MJ")}"
+  # rpc[0] is sometimes a bare host with NO port (e.g. https://rpc.akt.dev/rpc) -> provider-services
+  # fails to dial it ("missing port in address", verified live 2026-07-05). Prefer the first entry that
+  # HAS an explicit port; fall back to rpc[0] only if none do.
+  export AKASH_NODE="${AKASH_NODE:-$(jq -r '([.apis.rpc[].address | select(test(":[0-9]+"))] | .[0]) // .apis.rpc[0].address' <<<"$MJ")}"
 fi
 export AKASH_GAS="${AKASH_GAS:-500000}" AKASH_GAS_PRICES="${AKASH_GAS_PRICES:-0.025uakt}" AKASH_GAS_ADJUSTMENT="${AKASH_GAS_ADJUSTMENT:-1.5}"
 [ -n "${AKASH_NODE:-}" ] && [ -n "${AKASH_CHAIN_ID:-}" ] || { echo "akt-treasury: could not resolve node/chain" >&2; exit 1; }

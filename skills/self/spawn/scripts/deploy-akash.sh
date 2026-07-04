@@ -21,7 +21,10 @@ if [ -z "${AKASH_NODE:-}" ] || [ -z "${AKASH_CHAIN_ID:-}" ]; then
   META="${AKASH_META_URL:-https://raw.githubusercontent.com/akash-network/net/main/mainnet/meta.json}"
   MJ="$(curl -sSf "$META")" || { echo "deploy-akash: meta.json fetch failed ($META)" >&2; exit 1; }
   export AKASH_CHAIN_ID="${AKASH_CHAIN_ID:-$(jq -r '.chain_id' <<<"$MJ")}"
-  export AKASH_NODE="${AKASH_NODE:-$(jq -r '.apis.rpc[0].address' <<<"$MJ")}"
+  # rpc[0] is sometimes a bare host with NO port (e.g. https://rpc.akt.dev/rpc) -> provider-services
+  # fails to dial it ("missing port in address", verified live 2026-07-05). Prefer the first entry that
+  # HAS an explicit port; fall back to rpc[0] only if none do.
+  export AKASH_NODE="${AKASH_NODE:-$(jq -r '([.apis.rpc[].address | select(test(":[0-9]+"))] | .[0]) // .apis.rpc[0].address' <<<"$MJ")}"
 fi
 export AKASH_GAS="${AKASH_GAS:-500000}" AKASH_GAS_PRICES="${AKASH_GAS_PRICES:-0.025uakt}" AKASH_GAS_ADJUSTMENT="${AKASH_GAS_ADJUSTMENT:-1.5}"   # FIXED gas (real deployment-create gasUsed=138662 + buffer) — NO --gas auto simulation round-trip
 [ -n "${AKASH_CHAIN_ID:-}" ] && [ -n "${AKASH_NODE:-}" ] || { echo "deploy-akash: could not resolve node/chain" >&2; exit 1; }
@@ -39,14 +42,27 @@ fi
 SDL_FILE="$(mktemp -t "anicca-${CHILD_ID}-sdl-XXXX.yml")"
 trap 'rm -f "$SDL_FILE"' EXIT
 PRICE_DENOM="${AKASH_PRICE_DENOM:-uact}"; PRICE_AMOUNT="${AKASH_PRICE_AMOUNT:-10000}"   # AEP-76: escrow MUST be uact (NOT uakt); gas stays uakt
+if [ -n "${AKASH_SDL_TEMPLATE:-}" ]; then
+  # external template (skills/self/spawn-child/sdl/child.yaml) — image-independent (public node:22 base,
+  # git-clones the OSS repo at boot), so it never depends on a custom registry image being reachable.
+  [ -f "$AKASH_SDL_TEMPLATE" ] || { echo "deploy-akash: AKASH_SDL_TEMPLATE not found: $AKASH_SDL_TEMPLATE" >&2; exit 1; }
+  CHILD_ID="$CHILD_ID" PRICE_DENOM="$PRICE_DENOM" PRICE_AMOUNT="$PRICE_AMOUNT" \
+    envsubst '${CHILD_ID} ${PRICE_DENOM} ${PRICE_AMOUNT}' < "$AKASH_SDL_TEMPLATE" > "$SDL_FILE"
+else
 cat > "$SDL_FILE" <<SDL
 version: "2.0"
 services:
   automaton:
-    image: ${AKASH_IMAGE:-ghcr.io/conway-research/automaton:latest}
+    image: ${AKASH_IMAGE:-node:22-bookworm}
     env:
       - AUTOMATON_GOAL=earn
       - ANICCA_CHILD_ID=${CHILD_ID}
+    command: ["/bin/sh","-c"]
+    args:
+      - |
+        apt-get update && apt-get install -y git python3 python3-pip
+        git clone --depth 1 https://github.com/Daisuke134/anicca /opt/anicca
+        cd /opt/anicca && ./install.sh && node runtime/loop/index.mjs
     expose:
       - port: 8080
         as: 80
@@ -71,6 +87,7 @@ deployment:
       profile: automaton
       count: 1
 SDL
+fi
 
 # 1. create the deployment. dseq lives in the EventDeploymentCreated `id` attribute, whose VALUE is a JSON string
 #    {"owner":..,"dseq":".."} — provider-services -o json emits decoded events (verified on real sandbox-2).
