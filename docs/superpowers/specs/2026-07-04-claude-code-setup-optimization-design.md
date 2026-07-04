@@ -43,7 +43,7 @@ read-only 監査（3 Explore 並列）で判明: ①ディスク92% ②CLAUDE.md
 | T1 | D3 モデル分業の設定反映 | no |
 | T2 | Phase 0 保全: 設定 tarball backup + untracked 166 triage（.agents/skills = commit or ignore 確定） | no |
 | T3 | Phase 1 ディスク救急: cache 残骸→worktree→file-history→90日超セッションログ（memory/ 絶対除外）で 4-5GB 回収 | **yes** |
-| T4 | Phase 2 安全性: permissions 再設計 / シークレット env 化 + ローテーション / MCP 一本化（x-search・computer-use 削除） | 一部 |
+| T4 | Phase 2 安全性（2026-07-04 調査結果で方針上書き）: ①permissions 再設計 ✅（rm 4パス限定 allow / force-push ask / .p8 .pem Read deny / dangerous-prompt 復活）②死 MCP 削除 ✅（headroom=バイナリ欠損, x-search=402/403。~/.claude.json 9→7 servers、全セッション再起動後に再確認要）③**${VAR} 化は中止** — 起動時 env 不在（zshrc は FIRECRAWL/VIBECODE のみ export）で parse 失敗する + .env 全 export は露出面拡大。代替 = mcp.json chmod 600 + mcp.json を MCP キーの canonical とする ④.p8 判定 = **漏洩なし**（4 repo 全履歴 add ゼロ、鍵は repo 外 3+1 箇所）。ただし mcp.json の鍵パスが ~/Downloads の消えた実体を指し ASC MCP 破損中 → 実在パス（~/.appstoreconnect/private_keys/）に修正 ⑤ローテーション不要判定（KEY_ID/ISSUER_ID は識別子、.p8 未漏洩のため）。Fastfile ハードコード除去は T5 系列の別途 ⑥.env の ASC 別名 8 種は cron 参照リスクがあるため今回は温存（canonical 名の文書化のみ） | 一部 |
 | T5 | Phase 3 CLAUDE.md diet: global 18K→6K、project 49K→15K。**D1/D2 適用**（camofox 記述削除、履歴文体→現在形上書き、「3箇所同期」全廃、precedence 表 1 個、~/.hermes 等 stale 削除） | no |
 | T6 | Phase 4 skills 大掃除: SKILL.md 欠落10修復、description 20+ 補完、クラスタ統合、43衝突解消、commands/ 12本移行 | 一部 |
 | T7 | Phase 5 PC 再編: ~/Projects + ~/Archive 新設、参照 grep → 移動、Desktop 183→<10、.bak 掃除。重複 clone は T2 調査で確定済: 残す = `~/work/camofox-browser`（2026-05-23、17日新）+ `~/Developer/video-use`（2026-05-14、29日新）、削除 = `~/Developer/camofox-browser` + `~/anicca-video-lab/video-use`（remote 同一の真正重複） | **yes** |
