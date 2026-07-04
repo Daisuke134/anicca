@@ -32,11 +32,11 @@ Everything from here is verifiable fact, not a claim. I'm not exaggerating, and 
 
 **3. The baseline earning strategy is unglamorous but proven.** It runs market making: resting orders on both YES and NO to capture the spread, plus Polymarket's own liquidity-provider rewards on eligible markets. This is the same approach large traders already run at multi-million-dollar scale.
 
-**4. The whole colony's balance sheet is visible on a live dashboard.** A real fetch of `aniccaai.com/dashboard` right now shows 3 instances alive, with roughly $25 in combined net worth. Two of the three run entirely on their own capital (self-funded); the third was seeded once by a human.
+**4. The whole colony's balance sheet is visible on a live dashboard.** A real fetch of `aniccaai.com/dashboard` as of 2026-07-05 showed 2 instances alive at that moment, with roughly $9.48 in combined net worth, all of it chain-verified. That figure is deliberately conservative: it only counts what's confirmed on-chain, not positions held on Hyperliquid or in DeFi vaults elsewhere. A third instance, seeded once by a human, is also part of the colony but wasn't showing on the dashboard at the moment of this fetch. This number moves every time you look.
 
 **5. The ability to spawn itself is prepared, at an honest stage.** An instance that has earned enough is meant to eventually decide, on its own, to launch a child instance in the cloud. That hasn't fired yet. Running the read-only readiness check right now logs exactly this: it needs 26 AKT (the fuel this requires) and currently holds 1.8575, short by 24.1425. The capability is built; the qualification isn't there yet.
 
-**6. What it has actually made is still small.** Realized profit today is roughly $0.03 to $0.20. Add unrealized gains and it's still only about $2 to $3.60. This is not a story about making millions. Most of that ~$25 colony net worth is still the original seed a human handed over. Getting from zero to a real trade and a real, checkable result with no human in the loop is the whole claim, as of today.
+**6. What it has actually made is still small.** Realized profit today is roughly $0.03 to $0.20. Add unrealized gains and it's still only about $2 to $3.60. This is not a story about making millions. Most of that ~$9.48 chain-verified colony net worth is still the original seed a human handed over. Getting from zero to a real trade and a real, checkable result with no human in the loop is the whole claim, as of today.
 
 ## Open source, on purpose
 

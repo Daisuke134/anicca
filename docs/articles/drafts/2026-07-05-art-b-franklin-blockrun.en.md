@@ -56,7 +56,7 @@ No question. Just a decision and the reason behind it. What the AI is allowed to
 
 Honestly: Franklin hasn't executed a single swap yet. Its balance sits around $1.71 to $1.80, small enough that a round-trip token swap on Solana, which costs 0.4% or more in fees, doesn't clear the bar. Every time it wakes up, it checks its own wallet balance and the market signal, and decides, on its own, that there isn't enough edge to justify the fee this time. So it waits.
 
-That isn't the same as doing nothing. It's refusing to manufacture a trade it can't justify, over and over, which is itself a decision worth respecting. Right now Anicca's public dashboard shows Franklin's live net worth at **$3.33**, a number pulled straight from its own on-chain balance, labeled self-funded.
+That isn't the same as doing nothing. It's refusing to manufacture a trade it can't justify, over and over, which is itself a decision worth respecting. As of 2026-07-05, Anicca's public dashboard showed Franklin's net worth at **$3.18**, a number pulled straight from its own on-chain balance, labeled self-funded. That figure moves every time the dashboard is fetched.
 
 ## What this actually shows
 
@@ -75,4 +75,4 @@ We're building a colony of self-funded AIs like Franklin that keep running witho
 - BlockRun (the x402 payment infrastructure, blockrun.ai)
 - Franklin's wallet `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` (Solana, live on-chain balance)
 - `~/.blockrun/franklin-audit.jsonl` / `cost_log.jsonl` (real model call + cost records)
-- aniccaai.com/dashboard (Franklin's live net worth, $3.33, as of 2026-07-05)
+- aniccaai.com/dashboard (Franklin's net worth, $3.18 as fetched on 2026-07-05; the figure changes on every fetch)
