@@ -79,17 +79,28 @@ One article → funnel → per-platform native monetization → real money verif
 
 ## Real publish (Sprint 2.5, Dais 2026-07-04: "the note is not actually published, we have to have it actually published, after the verification")
 
-- **REQ-21 Real Mode-B publish path.** The skill SHALL provide a REAL publish path (`lib/note-publish-live.py` or
-  equivalent) that, given a note draft key already carrying a validated 記事タイプ=有料/¥500 configuration and a
-  cover + visuals, drives the browser to click 投稿する/更新する for real, making the draft PUBLIC. This path
-  SHALL be structurally distinct from Mode A's draft-only scripts (which SHALL continue to NEVER contain a
-  投稿する/更新する click target — REQ-6 is unaffected). The real-publish path SHALL require an explicit,
-  separate trigger (env var or CLI flag, e.g. `NOTE_LIVE_PUBLISH=1`) so it can never fire from the default Mode-A
-  wake. SHALL fail closed: if the pre-publish state (price/type/visuals) cannot be confirmed, it SHALL NOT click
-  publish and SHALL report the exact blocking reason.
-- **REQ-22 Post-publish verification (V1 real).** After a real publish, the skill SHALL verify — with a
-  logged-out HTTP fetch of the public URL (no stored cookies) — that the article is publicly reachable (200),
-  and SHALL record the live URL + timestamp to state for V4 (earn) tracking to begin against it.
+- **REQ-21 Real ONE-OFF publish tool — NOT wired into run.sh, NOT Mode B.** The skill SHALL provide a standalone,
+  human/main-agent-invoked tool (`lib/note-publish-live.py`) that, given an EXPLICIT note draft key argument and
+  a note draft already carrying a validated 記事タイプ=有料/¥500 configuration and cover + visuals, drives the
+  browser to click 投稿する/更新する for real, making that ONE draft PUBLIC. This tool is explicitly OUT OF
+  `run.sh`'s call graph — it SHALL NOT be invoked from `run.sh`, from the `AUTONOMY` branch logic, or from any
+  unattended daily wake path; it is only ever invoked directly, once, by a human or the main agent, naming the
+  exact draft key. This does NOT satisfy, and SHALL NOT be described as satisfying, REQ-2's zero-human-in-Mode-B
+  invariant — REQ-2 remains scoped to `run.sh`'s own automated publish branch (REQ-7), which this tool is
+  structurally excluded from. Mode A's draft-only scripts SHALL continue to NEVER contain a 投稿する/更新する
+  click target (REQ-6 is unaffected; grep-verifiable). The tool SHALL require an explicit trigger
+  (`NOTE_LIVE_PUBLISH=1`) AND a named `--draft-key` argument (no default/wildcard key). It SHALL fail closed: if
+  the pre-publish state (price/type/visuals) cannot be confirmed for that exact key, it SHALL NOT click publish
+  and SHALL report the exact blocking reason. On a successful invocation with a confirmed-ready draft, the tool
+  SHALL actually perform the click and SHALL NOT be satisfiable by an always-refuse stub (a real success path
+  must exist and be exercised, not merely a refusal path).
+- **REQ-22 Post-publish verification (V1 real) — independent of the publish tool.** After REQ-21's tool reports a
+  publish attempt, verification SHALL be performed by a SEPARATE process/invocation from the publish tool itself
+  (the tool's own stdout claim is not sufficient) — a logged-out HTTP fetch (no stored cookies) of the public
+  note.com URL, checking BOTH a 200 status AND the presence of page content proving the specific article rendered
+  (e.g. the article title or note ID in the HTML), not just any 200 (guards against an SPA shell returning 200
+  for a non-existent path). The live URL + timestamp + this independent verification's result SHALL be recorded
+  to state for V4 (earn) tracking to begin against it.
 
 ## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
 
