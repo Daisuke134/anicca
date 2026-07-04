@@ -1,0 +1,2 @@
+{"reviewType":"implementation","featureName":"profitable-article-writer","sprintNumber":3,"contractPath":"contracts/sprint-3.md",
+"artifactsToReview":{"spec":["specs/behavioral-spec.md","specs/verification-architecture.md"],"contract":["contracts/sprint-3.md"],"source":["skills/profitable-article-writer/"],"tests":["skills/profitable-article-writer/tests/"]}}
