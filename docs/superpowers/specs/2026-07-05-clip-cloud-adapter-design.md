@@ -350,3 +350,14 @@ device`)が発生、worktreeチェックアウトが途中で失敗した。`df 
   (継続監視、Task #4と同様の扱い)
 
 **Task #8(層①③スコープ)完了**。層②④⑤は§2の通り別フェーズへ先送り継続。
+
+### mainへのマージは保留(他エージェントの並行作業を尊重)
+
+`~/anicca`の`main`ブランチへ`feature/clip-cloud-adapter`をmergeしようとしたところ、
+`skills/earn/clip/producer.sh`に**別のAIセッションによる未commitの変更**
+(`--playlist-end 10`→`30`、私の変更箇所と別行)が既にmain上に存在しており、
+mergeがコンフリクトで停止した。これは私の作業ではなく、他エージェントの
+進行中の作業を上書きするリスクがあるため、**mainへの直接介入はせず、
+`feature/clip-cloud-adapter`をpush済みの未マージ状態のまま残す**判断とした
+(worktree.mdの「同じブランチで複数エージェント作業しない」原則を尊重)。
+マージは他エージェントの作業がcommitされた後、後日改めて行う。
