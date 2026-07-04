@@ -7,7 +7,7 @@
 | worktree | `.worktrees/clip-cloud-adapter/`(実装フェーズで作成、spec自体はdev直接) |
 | ブランチ | `feature/clip-cloud-adapter` |
 | 対象repo | `~/anicca`(OSS、`earn/clip`本体) + `~/anicca-project/.claude/skills/`(ig-account-create/cdp.py系、earn-clip-rewards/pipeline.py系 — cookie処理の実体はこちらにある、§4で訂正) |
-| 状態 | spec REV2(GATE 1ラウンド1 FAIL、fresh-context Sonnet adversaryの指摘を反映して全面修正) |
+| 状態 | spec REV3(GATE 1ラウンド1・2 FAIL、指摘反映。ラウンド3審査待ち) |
 
 ## 0. なぜこれをやるか(Dais 2026-07-05 verbatim、動機の核心)
 
@@ -78,7 +78,7 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
     は`pipeline.py`(`~/.claude/skills/earn-clip-rewards/scripts/pipeline.py`
     ── 別repo/別ディレクトリ、L70コメントで委譲を確認)へcookie処理を含む重い
     処理を丸ごと委譲している。cookie取得の実体は`pipeline.py`の
-    `_youtube_cookies_file()`(L34-49)+`export_camofox_cookies.py`にあり、
+    `_youtube_cookies_file()`(L37-58)+`export_camofox_cookies.py`にあり、
     `~/.camofox/profiles/{HASH}/storage-state.json`という**Macローカル
     固定パス**を参照(既にファイルが無ければ`None`を返しcookie無し実行に
     フォールバックする設計が既存)。層③のREQ-C2はこちらを対象にする(§4で訂正)。
@@ -108,13 +108,13 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
 
 ## 3. 層①: ブラウザ接続のhost抽象化
 
-### 現状(3ファイルすべてが対象、ラウンド1の漏れを反映)
+### 現状(4ファイルすべてが対象、ラウンド1+2の漏れを反映)
 1. `~/.claude/skills/ig-account-create/scripts/cdp.py:28-29`:
    ```python
    _PORT = os.environ.get("CDP_PORT", "9222")
    CDP = f"http://localhost:{_PORT}"
    ```
-   `page_ws()`(58-59)も`ws://localhost:{_PORT}/...`とhost固定。**このファイルは
+   `page_ws()`(59)も`ws://localhost:{_PORT}/...`とhost固定。**このファイルは
    clip以外(ig-account-create、promote-fun-login等)からも共有で呼ばれる** —
    変更時は既存呼び出し元の挙動を一切変えないことが必須(§5で回帰確認)。
 2. `~/.claude/skills/ig-account-create/scripts/cdp_incognito.py:20` —
@@ -123,20 +123,39 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
    venvパス・プロファイルパス・ポート(9223)が3つともハードコード。これは
    CloakBrowserプロセスを**起動する**側であり、1・2は**接続する**側。両方
    変えないと「host抽象化」は名前だけになる。
+4. **【ラウンド2で見つかった漏れ】** `~/.claude/skills/promote-fun-login/scripts/
+   register_flow.py:124` — `f"http://localhost:{args.cdp_port}/json/list"`。
+   ポートは`--cdp-port`引数でパラメータ化済みだが、**hostは`cdp.py`を介さず
+   独自にhttp呼び出しをしており`localhost`固定**。`cdp.py`側の`CDP_HOST`を
+   追加しても、このファイルは`cdp.py`をimportしてから直接この行で`urllib`を
+   呼んでいる(120行目で`import cdp`しているが、124行目はcdpモジュールの関数を
+   経由せず独自にurllibで叩いている)ため、このファイル単体でも同じ
+   `CDP_HOST`環境変数を読む変更が別途必要。
 
 ### 変更(REQ-C1)
 - `cdp.py`: `CDP_HOST`環境変数を追加、デフォルト`localhost`(後方互換)。
   `CDP = f"http://{_HOST}:{_PORT}"`、`page_ws()`も同様に`_HOST`を使う。
 - `cdp_incognito.py`: 同じ`CDP_HOST`/`CDP_PORT`パターンを追加(現状は
   `CDP_PORT`すら無いので、`cdp.py`と同じ実装に揃える)。
-- `launch_clip_browser.py`: venvパスを`VENV_CLOAK_PATH`、プロファイルパスを
-  `CLOAK_PROFILE_PATH`、ポートを既存の`CDP_PORT`(無ければ現状の9223を
-  デフォルト)としてenv化。3つとも未設定時は現状と完全に同じ値になること。
+- `register_flow.py:124`: `os.environ.get("CDP_HOST", "localhost")`を読み、
+  `f"http://{host}:{args.cdp_port}/json/list"`に変更(未設定時は現状と
+  完全に同じURL)。
+- `launch_clip_browser.py`: **venvパスは「ルートパスからの合成」ではなく、
+  現状のハードコード文字列(`/Users/anicca/.openclaw/skills/_shared/
+  venv-cloak/lib/python3.14/site-packages`)を丸ごと1つの環境変数
+  `VENV_CLOAK_SITE_PACKAGES`のデフォルト値として持たせる**(ラウンド2指摘:
+  Pythonマイナーバージョンが環境ごとに違う可能性があるため、`venv root`+
+  自動合成のような賢い解決は今回はしない — 呼び出し側が完全な文字列を
+  そのまま上書きできれば十分、implementerの判断余地を残さない)。プロファイル
+  パスは`CLOAK_PROFILE_PATH`(デフォルト`/Users/anicca/.cloak/profiles/
+  clip-en`)、ポートは既存の`CDP_PORT`(デフォルト9223)としてenv化。3つとも
+  未設定時は現状と完全に同じ値になること。
 - **不到達hostの挙動(ラウンド1指摘の欠落エッジケース)**: `CDP_HOST`/
   `CDP_PORT`が到達不能な場合、`cdp.py`の各関数は現状通り`requests`/
   `websocket-client`の例外をそのまま送出する(新規の握りつぶし・リトライは
   追加しない — 呼び出し元の`run.sh`側`run_step`タイムアウト機構に判断を
-  委ねる、既存設計を変えない)。
+  委ねる、既存設計を変えない)。`register_flow.py:124`も同様(urllib例外を
+  そのまま伝播)。
 - 既存の呼び出し元(`run.sh`, `join_campaign.py`, `select_campaigns.py`,
   `post_reel.py`等)はコード変更不要(env未設定時は現状と完全に同じ挙動)。
 
@@ -150,7 +169,7 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
 ### 現状(REV1の誤りを訂正)
 `producer.sh`自体にcookie関連コードは無い(grep 0件、確認済み)。実際のcookie
 処理は`~/.claude/skills/earn-clip-rewards/scripts/pipeline.py`
-(`_youtube_cookies_file()`, L34-49)+同ディレクトリの`export_camofox_cookies.py`
+(`_youtube_cookies_file()`, L37-58)+同ディレクトリの`export_camofox_cookies.py`
 にあり、producer.shはL70でこのpipeline.pyへ処理そのものを委譲している。
 `_youtube_cookies_file()`は`~/.camofox/profiles/{HASH}/storage-state.json`と
 いうMacローカル固定パスを参照し、**既にファイルが存在しない場合はNoneを返して
@@ -168,12 +187,24 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
 ### 変更(REQ-C2、対象ファイル訂正)
 - `producer.sh:16`の`ENGINE`を`${ENGINE:-$HOME/.cache/anicca-clones/AI-Youtube-
   Shorts-Generator}`に変更(未設定時は現状と完全に同じパス、上書き可能に)。
-- `pipeline.py`の`_youtube_cookies_file()`に`COOKIE_SOURCE`環境変数分岐を追加:
-  `local-camofox`(現状のデフォルト、既存の`~/.camofox/...`パス参照、後方互換)/
-  `env-file`(`YT_COOKIES_FILE`環境変数が指すファイルパスをそのまま返す —
-  クラウドでは事前に用意したcookies.txtをこの変数で渡す想定)。既存の
-  「ファイルが無ければNoneを返しフォールバック」という安全側の挙動は両モードで
-  維持する。
+- `pipeline.py`の`_youtube_cookies_file()`に`COOKIE_SOURCE`環境変数分岐を追加、
+  **両モードとも同じ判定ロジック(ラウンド2指摘の矛盾を解消: 「そのまま返す」と
+  「Noneフォールバック」が両立しない書き方だったのを明確な条件分岐に修正)**:
+  ```python
+  mode = os.environ.get("COOKIE_SOURCE", "local-camofox")
+  if mode == "env-file":
+      path = os.environ.get("YT_COOKIES_FILE")
+      return path if path and os.path.exists(path) else None
+  # mode == "local-camofox"(デフォルト、既存動作そのまま)
+  storage_state = os.path.expanduser(f"~/.camofox/profiles/{CAMOFOX_YT_PROFILE_HASH}/storage-state.json")
+  if not os.path.exists(storage_state):
+      return None
+  ...(既存のexport_camofox_cookies.py呼び出しへ続く、変更なし)
+  ```
+  `env-file`モードでも`YT_COOKIES_FILE`が未設定、または指すファイルが存在しない
+  場合は**必ず`None`を返す**(既存の「cookie無しでフォールバック実行」という
+  安全側の挙動をどちらのモードでも保証、`yt-dlp`に存在しないパスをそのまま
+  渡すことは無い)。
 - `producer.sh:42`の`requirements-local.txt`は変更しない(クローンされる外部
   リポジトリ側の既存ファイルであり、このspecのスコープ外)。
 
@@ -200,6 +231,16 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
   sdl.yamlが存在しない」は**私が自分で再確認した結果、事実ではなかった**
   (adversaryの誤検知)。VCSDDの原則通り、adversaryの指摘も鵜呑みにせず自分で
   再検証してから反映した。
-- **ラウンド2(REV2、本ファイル)**: 上記(b)(c)(d)を修正し、(a)は「obsolete」を
-  撤回して中立的な記述に訂正。次はこのREV2を再度fresh-context adversaryに
-  かけ、PASSするまで実装に進まない。
+- **ラウンド2**: FAIL(縮小)。ラウンド1の修正(a)(b)(c)は全て別のfresh-context
+  adversaryが独立に再確認しCONFIRMED(worktree実在、hardcodeの3箇所とも正確、
+  producer.sh/pipeline.pyの切り分けも正確 — ラウンド1のadversary誤検知は
+  正しく訂正できていたと確認)。残った指摘4件: ①`register_flow.py:124`が
+  `cdp.py`を介さない独自hardcodeでREQ-C1の対象漏れ、②`launch_clip_browser.py`
+  のvenvパスenv化がPythonバージョン差異への対応で判断余地を残していた、
+  ③`COOKIE_SOURCE=env-file`のNoneフォールバック条件が文章として自己矛盾していた、
+  ④`_youtube_cookies_file()`の行番号引用ミス(L34-49→正しくはL37-58)。
+- **ラウンド3(REV3、本ファイル)**: 上記4件を修正(①`register_flow.py`を
+  REQ-C1の4件目として追加、②venvパスを「合成」ではなく「文字列まるごと
+  env化」に変更してimplementerの判断余地を除去、③COOKIE_SOURCE分岐を明確な
+  if/elseの疑似コードで確定、④行番号訂正)。次はこのREV3を再度fresh-context
+  adversaryにかけ、PASSするまで実装に進まない。
