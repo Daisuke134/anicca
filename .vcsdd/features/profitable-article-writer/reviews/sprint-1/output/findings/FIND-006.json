@@ -2,7 +2,7 @@
   "findingId": "FIND-006",
   "dimension": "edge_case_coverage",
   "category": "test_coverage",
-  "severity": "minor",
+  "severity": "low",
   "description": "run.sh's json_escape() helper (added as the FIND-003 fix, run.sh:57-64) has two branches: a python3 json.dumps path (run.sh:59-60) and a sed-pipeline fallback for environments without python3 (run.sh:61-63: `printf '%s' \"$val\" | sed -e 's/\\\\/\\\\\\\\/g' -e 's/\"/\\\\\"/g' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\\n/\\\\n/g'`). The hostile-topic test added to tests/test-prop15-3round-abort.sh (lines 22-42) only ever exercises the python3 branch, because every environment this suite runs in (per its own python3-availability check at test-v05-real.sh:30 and elsewhere in the suite) has python3 present, so `command -v python3 >/dev/null 2>&1` at run.sh:59 is always true and the sed fallback at run.sh:61-63 never executes in any test run. The sed fallback is exactly the code path FIND-003 was raised to make safe (it is the ONLY escaping logic that would run in a hypothetical minimal/python3-less install), yet its correctness (that the two-stage sed pipeline actually produces valid, single-line, round-trippable JSON for a quote+newline value) is asserted nowhere — it is unverified code guarding the same JSONL-corruption failure mode FIND-003 described.",
   "evidence": {
     "filePath": "run.sh",

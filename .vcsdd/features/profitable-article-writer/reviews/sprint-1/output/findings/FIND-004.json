@@ -2,7 +2,7 @@
   "findingId": "FIND-004",
   "dimension": "structural_integrity",
   "category": "dead_code",
-  "severity": "minor",
+  "severity": "low",
   "description": "identity/accounts.sh's PROVEN_SELF_CREATE_RAILS case-statement (lines 44-56) is currently a no-op: PROVEN_SELF_CREATE_RAILS is the empty string (line 30), so the matched arm (`*\" $rail \"*)`, lines 47-51) can never match for any rail, and the default arm (`*)`, lines 52-55) is always taken — both arms set the identical `status=\"unavailable\"`. The case construct therefore has no observable effect on current behavior; it reads as live branching logic but is dead in practice until a future sprint populates PROVEN_SELF_CREATE_RAILS. This is intentionally documented as a forward seam (comment at accounts.sh:26-29), so it is not a functional bug, but it is a structural smell (a conditional whose both branches currently produce the same outcome) worth flagging under HARD RULE 'no dead code paths'.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/identity/accounts.sh",
