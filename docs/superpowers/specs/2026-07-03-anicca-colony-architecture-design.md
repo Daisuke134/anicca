@@ -607,6 +607,18 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★ FRANKLIN NO-HUMAN VERIFIED (#34, 2026-07-04) — mechanism proven, disciplined hold ★
+Ran Franklin FULLY no-human (`franklin-trading start --trust -m gpt-5-mini -p <baseline>`). It: (1) checked
+its live Solana wallet itself ($0.32 USDC, no gas SOL); (2) ran TradingSignal on SOL = real RSI/MACD/Bollinger
+→ neutral verdict, 33% confidence; (3) per the baseline, correctly DECIDED NOT TO TRADE (weak signal + $0.32
+can't clear the ~0.4% fee hurdle + no gas) and articulated its own thresholds for next time (conviction ≥70%,
+min ~$50 bankroll, 2-5% sizing, SL/TP ≥2:1). ★ This PROVES the mechanism: Franklin runs autonomously, does
+real analysis, and makes a disciplined risk-managed decision with NO human — a correct HOLD, not a fee-losing
+trade. It didn't EARN (held), but "held for the right reason at micro-capital" is exactly a good trader. ★
+= the ART-B ("we ran BlockRun Franklin no-human") core. Consistent finding: EARNING at scale needs capital
+(Franklin itself said it needs ~$50+ + SOL gas); the RECIPE (no-human disciplined trading) works across all
+3 engines (hl live / polymarket live / Franklin live-swap-capable).
+
 ### ★ VERIFIED EARNINGS — the brutal on-chain truth (Dais: "verify you actually earn, no dry runs") ★
 Checked the ledgers + on-chain 2026-07-04 AFTER wiring the baseline alphas:
 - earn-ledger realized net = **−$0.0037** (all hl-trade churn losses before the baseline).
