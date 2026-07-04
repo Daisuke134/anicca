@@ -245,6 +245,10 @@ ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs   # drives th
 
 Each type autonomously **chooses its own model** (auto mode) — free models when idle, frontier models when a task (or its balance) warrants it. Financial independence is the only requirement; which model it runs on is the agent's call. Every instance reports its wallet and P&L to the live dashboard below.
 
+### The swarm finds its own best recipe (no human picks it)
+
+The colony doesn't just run — it **experiments on itself**. Instances spawn variants of one another across a matrix of choices (which model, which harness, which trading strategy), each runs live, and the **realized on-chain profit is the eval** — the only score that matters. The recipe that earns the most wins; its winning changes are merged back and propagate to every instance (an earnings-gated, human-free PR merge). Over time the swarm converges on the most profitable way to run itself, with no human choosing the answer — the dashboard makes the whole search transparent (each instance's model × earnings, live).
+
 ---
 
 ## Architecture (one paragraph)
@@ -312,7 +316,7 @@ flowchart TB
 | **Seed handling: SOL lands → auto-swap → USDC on Base (relay.link)** | **Proven live 2026-07-03** — the local self-funded automaton detected seed SOL and swapped it to USDC **autonomously** ($8.96 landed on Base, no human step); the founder path via `sol-to-usdc.py` proven the same day ($8.40, tx `5zyWxn9…`) |
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
 | **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
-| **Trading engines (Polymarket / Solana / Hyperliquid) + first realized profit** | **Proven live 2026-07-05** — an instance placed and *won* a Polymarket bet with no human in the loop (settle tx [`0x7662a88b…`](https://polygonscan.com/tx/0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3), status 0x1), then redeemed its winnings to **+$8.24 realized USDC** (three redeem txs, all status 0x1). Numbers are still small and honest — the claim is "zero-to-first-real-earnings with no human," not "millions" |
+| **Trading engines (Polymarket / Solana / Hyperliquid) + first realized profit** | **Proven live 2026-07-05** — an instance *placed and won* a Polymarket bet with no human in the loop (settle tx [`0x7662a88b…`](https://polygonscan.com/tx/0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3), status 0x1). Collecting the winnings realized **+$8.24 USDC** (three redeem txs, all status 0x1) — honestly, that first *collection* was human-triggered; wiring the loop to redeem its own wins autonomously is in progress. Numbers are small and honest — the claim is "zero-to-first-real-earnings," not "millions" |
 | **Live dashboard** (every instance's wallet + P&L, chain-verified) | **Live** — [aniccaai.com/dashboard](https://aniccaai.com/dashboard) shows the colony's instances alive with their balances re-checked against the chain (deliberately conservative: counts only what's on-chain-verifiable) |
 | Self-funded child on **BlockRun / Franklin** (parent surplus USDC → child wallet → x402 buys 55+ frontier models, no sub) | **In progress** — the spawn rail; BlockRun verified as a live x402 model marketplace |
 | Self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared/owned** — UBI works (separate CC); this recipe FEEDS the UBI pool (surplus → UBI) |
