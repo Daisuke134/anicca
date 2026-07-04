@@ -23,7 +23,7 @@ echo "[1] anicca-a3cdd4   SELF-funded  (automaton + ClawRouter)"
 echo "    wallet 0xa3CDd4…C21  Base USDC=\$$(erc20 $BASE $BUSDC 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21)(+HL口座は別途)   loop(com.anicca.daemon)=$(loop anicca.daemon)"
 echo ""
 echo "[2] Franklin        SELF-funded  (Franklin-Trading, Solana)"
-echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-sol)=$(loop franklin-sol)"
+echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-loop)=$(loop franklin-loop)"
 echo ""
 echo "[3] claude-p (me)   human-funded (this Claude → PM earner)"
 # 0x904B50d2 holds the real funds (ERC-1167 proxy, no private key of its own -> cannot EIP-191 sign);
