@@ -58,7 +58,11 @@ async function makeEvmReader(ids, { rpcUrl, tokenAddress, priceUrl, priceKey }) 
 
 async function makeBaseReader(ids = [], opts = {}) {
   return makeEvmReader(ids, {
-    rpcUrl: opts.rpcUrl || process.env.BASE_RPC_URL,
+    // Falls back to a public RPC (same pattern as Polygon/Solana below) — BASE_RPC_URL was never
+    // configured on the Netlify site (2026-07-05 finding: this is why every row, including
+    // anicca-a3cdd4, showed net_worth_src=null even before this multi-chain PR existed — there was
+    // simply no RPC target, not a code bug). Still overridable via env for a dedicated/paid RPC.
+    rpcUrl: opts.rpcUrl || process.env.BASE_RPC_URL || "https://base-rpc.publicnode.com",
     tokenAddress: BASE_USDC,
     priceUrl: "https://api.coinbase.com/v2/prices/ETH-USD/spot",
     priceKey: "ETH",
