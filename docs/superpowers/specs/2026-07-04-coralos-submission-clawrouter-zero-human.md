@@ -489,9 +489,37 @@ PHASE C — wrap as an unattended loop + submit
           sandboxes lacked it) — the 28/28 + 37/37 GREEN claim rested on the Builder's own
           report. RESOLVED immediately after: re-ran both suites myself, fresh, right now —
           seller-agent 28/28 GREEN, packages/agent-runtime 37/37 GREEN, confirmed again.
-          **C8 is DONE.** Remaining before C7 (actual submission): C3's live Docker
-          re-verification of the telemetry-URL fix (task #21, disk-constrained, honestly
-          still open) — this is the only concrete blocker, not a documentation issue.
+          **C8 is DONE.**
+
+          C3 live re-verification DONE 2026-07-05 (3rd Docker cycle, disk-managed carefully:
+          511Mi->719Mi free at the tightest points, torn down immediately after). RESULT:
+          the URL-parse fix (round-2) is CONFIRMED — the seller's self-report now reaches the
+          real `aniccaai.com/.netlify/functions/telemetry` endpoint for real (no more "Failed
+          to parse URL from"). It surfaced a NEW, real, DIFFERENT rejection instead: `400
+          host_wallet_mismatch`. Root-caused (cross-repo): `apps/landing`'s `main` branch
+          (production) has a wallet=1-fixed-identity anti-squatting check
+          (`telemetry.js`+`fixed-identities.js`) that doesn't exist yet on my feature branch —
+          this CoralOS seller wallet wasn't registered, AND the 3 seller personas
+          (worldcup/fast/premium) sharing one wallet would each report under a DIFFERENT
+          per-persona host, which the check correctly rejects. Fixed on both sides:
+          - CoralOS fork: `coral-agents/seller-agent/src/index.ts` now hardcodes
+            `host:'coralos-seller'` (one fixed identity for the shared wallet, not the
+            per-persona `AGENT_NAME`). Pushed `Daisuke134/solana_coralOS@b9c5720`.
+          - anicca-products: pulled `fixed-identities.js` from `origin/main` onto this feature
+            branch, added the CoralOS wallet -> `coralos-seller` entry; exported
+            `BASE_ID_RE`/`SOLANA_ID_RE` from `telemetry-schema.js` (main's `telemetry.js`
+            needs them; additive, 103/103 landing tests still GREEN). Pushed
+            `feature/clip-rewards@38a625457`.
+
+          **HONEST REMAINING GAP**: this fix is code-complete and tested on both repos, but
+          production traffic is served from anicca-products' `main` branch, and this fix
+          lives on `feature/clip-rewards` — it will NOT take effect on the live endpoint until
+          it reaches `main` through the normal `dev -> main` PR flow (not attempted this
+          session; a direct hotfix to `main` was deliberately avoided per this repo's own git
+          workflow rules for a security-relevant file). So the self-report's FULL round trip
+          (real POST -> real 202 accepted -> row visible) is still not confirmed end-to-end —
+          what IS confirmed: the network path is real, the signing is real, and the exact
+          reason for the current rejection is understood and fixed in code on both sides.
 ```
 
 Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
