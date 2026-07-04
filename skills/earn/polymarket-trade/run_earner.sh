@@ -13,6 +13,11 @@ ts(){ date -u +%Y-%m-%dT%H:%M:%SZ; }
 TO="$(command -v gtimeout || command -v timeout || true)"
 run(){ if [ -n "$TO" ]; then "$TO" 200 "$@"; else "$@"; fi; }  # python has its own net timeouts
 echo "[$(ts)] === earner pass ===" >> "$LOG"
+# EARN-2 (#14): autonomously collect any RESOLVED winning positions FIRST, so the freed cash is
+# available to the market-making pass below. redeem.py is idempotent (no-op when nothing is
+# redeemable), so the loop — not a human — collects every future win. This replaces the one-time
+# manual redeem (EARN-1) with the agent doing it itself each pass.
+run "$VENV" "$DIR/redeem.py"       >> "$LOG" 2>&1 || echo "[$(ts)] redeem exit $?" >> "$LOG"
 run "$VENV" "$DIR/bundle_arb.py"   >> "$LOG" 2>&1 || echo "[$(ts)] bundle_arb exit $?" >> "$LOG"
 run "$VENV" "$DIR/market_maker.py" >> "$LOG" 2>&1 || echo "[$(ts)] market_maker exit $?" >> "$LOG"
 echo "[$(ts)] === pass done ===" >> "$LOG"
