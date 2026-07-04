@@ -1,0 +1,113 @@
+FIND-001 (critical) real-run evidence — 2026-07-04
+====================================================
+
+Finding: the ¥500 paid-gate was only proven via a DOM-eval print (SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE),
+never visually captured. REQ-20 requires the human/verifier to SEE it in a screenshot. lib/note-set-single-price.py
+took its ONLY screenshot AFTER already clicking キャンセル to close the 公開に進む overlay, so that
+screenshot never showed the panel at all.
+
+Fix: lib/note-set-single-price.py now takes a SEPARATE screenshot (single-price-panel-<key>.png) of the
+overlay WHILE 記事タイプ=有料 and the price are still visibly selected/filled on screen, BEFORE the
+キャンセル click. Two independent REAL runs (no simulation, no mock) prove this:
+
+--------------------------------------------------------------------------------------------------
+RUN 1 — direct re-run of the FIXED script against the EXISTING nfb2ace9f0ed8 draft (the exact draft
+CRIT-105/FIND-001 name), a real, already-live note.com draft on the anicca123 account:
+
+Command:
+  cd skills/profitable-article-writer && \
+  NOTE_COOKIES_FILE=~/.cloak/note-work/note-cookies.json \
+  ~/.openclaw/skills/_shared/venv-cloak/bin/python3 lib/note-set-single-price.py \
+    nfb2ace9f0ed8 500 "x402をどう設計に組み込むか"
+
+Actual output:
+  Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+  SINGLE_PRICE_TYPE: paid
+  SINGLE_PRICE_VALUE: 500
+  SINGLE_PRICE_PANEL_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png
+  SINGLE_PRICE_LINE_INSERTED: true
+  SINGLE_PRICE_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-nfb2ace9f0ed8.png
+
+Visual verification: /Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png was opened and
+visually inspected (Read tool, image render). It shows the live 公開設定 overlay with:
+  - 記事タイプ section: 有料 radio button SELECTED (filled circle, distinct from the unselected 無料 radio)
+  - 価格 (price) field: "500" visibly filled in the text input
+  - the overlay's own キャンセル / 有料エリア設定 buttons still on screen (proving this was captured BEFORE
+    the overlay was closed)
+This is the exact CRIT-105-designated artifact for the human/verifier (REQ-20) to review in a browser.
+
+--------------------------------------------------------------------------------------------------
+RUN 2 — a FULL, real Mode-A wake via run.sh, end-to-end, exercising every Sprint-2 + this findings-fix
+change together (locale-safe V0.5 arithmetic, generate_draft real-content hook, note_publish.sh's
+create/eyecatch/price/verify chain, the shared note_browser_common.py bootstrap, and the FIND-001 panel
+screenshot) — producing a BRAND-NEW, genuinely-created note.com draft (never injected/forced):
+
+Command:
+  cd skills/profitable-article-writer
+  D=~/.cloak/note-work/x402-jp-run-sprint2-findings-fix
+  ARTICLE_DIR="$D" AUTONOMY=off \
+    ARTICLE_REAL_TOPIC="x402" ARTICLE_REAL_RESEARCH=sufficient \
+    ARTICLE_REAL_DRAFT_PATH="$D/real-draft.md" \
+    ARTICLE_JUDGE_V05_RESPONSE="$D/v05-judge-response.txt" \
+    ARTICLE_NOTE_TITLE="AIエージェントは、クレジットカードを持てない" \
+    ARTICLE_NOTE_PRICE=500 \
+    ARTICLE_NOTE_PAYWALL_HEADING="x402をどう設計に組み込むか" \
+    ARTICLE_NOTE_COVER=~/.cloak/note-work/x402-jp-assets/x402-cover.jpeg \
+    ARTICLE_NOTE_VISUAL_HERO=~/.cloak/note-work/x402-jp-assets/hero.png \
+    ARTICLE_NOTE_VISUAL_FIG1=~/.cloak/note-work/x402-jp-assets/fig1.png \
+    ARTICLE_NOTE_VISUAL_FIG2=~/.cloak/note-work/x402-jp-assets/fig2.png \
+    bash run.sh
+
+(real-draft.md = a verbatim copy of the already-researched, already-cited real x402 article used for the
+prior Sprint-2 live-wake evidence — real content, containing a `## 出典` section with 2 real https:// URLs,
+NOT the ARTICLE_TEST boilerplate. v05-judge-response.txt = V05_CRIT_a/b/c/d: true, the running agent's own
+natural-language verdict on this specific draft, per gates/v05.sh's documented judge_v05 hook.)
+
+Actual output:
+  WAKE_RESULT: DRAFT (rounds_used=1, notify_path=/Users/anicca/.cloak/note-work/x402-jp-run-sprint2-findings-fix/notify.json)
+
+STATE.md:
+  last_wake_result: DRAFT
+  rounds_used: 1
+  draft_path: /Users/anicca/.cloak/note-work/x402-jp-run-sprint2-findings-fix/draft.md
+  notify_path: /Users/anicca/.cloak/note-work/x402-jp-run-sprint2-findings-fix/notify.json
+
+notify.json:
+  {"draft_path": ".../draft.md", "url": "https://note.com/anicca123/n/n39ef09f828f7", "screenshot": "unknown"}
+
+  -> a genuinely NEW note.com draft, key n39ef09f828f7, was created via note_mcp's create_draft (never
+     injected/forced -- NOTE_PUBLISH_TEST_FORCE was NOT set for this run).
+
+Verification that real content (not boilerplate) was used:
+  $ diff "$D/draft.md" "$D/real-draft.md"          -> files identical (real content used VERBATIM)
+  $ grep -c "burn 10+ hours" "$D/draft.md"          -> 0 (boilerplate marker absent)
+  $ grep -n "## 出典" "$D/draft.md"                 -> line 77 present
+
+Artifacts produced by this real run (all verified to exist on disk, non-zero size):
+  /Users/anicca/.cloak/note-work/eyecatch-n39ef09f828f7.png              279.3K
+  /Users/anicca/.cloak/note-work/single-price-n39ef09f828f7.png         1.1M
+  /Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png    174.4K
+
+Visual verification: /Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png was opened and
+visually inspected (Read tool, image render) -- same result as RUN 1: 記事タイプ=有料 selected, 価格=500
+filled, overlay still open (captured BEFORE キャンセル). /Users/anicca/.cloak/note-work/eyecatch-n39ef09f828f7.png
+was also inspected and shows the real embedded hero diagram + real article title + real body text in the
+live note.com editor for the newly-created draft, confirming PROP-21's visuals wiring also still works
+end-to-end after this findings-fix round.
+
+state/failures.jsonl was NOT written for this run (clean, single-round PASS) -- confirmed via
+`ls "$D/state/"` (empty dir).
+
+--------------------------------------------------------------------------------------------------
+CONCLUSION: FIND-001 is fixed. Both the pre-existing CRIT-105-designated draft (nfb2ace9f0ed8) and a
+brand-new draft created by a full real Mode-A wake (n39ef09f828f7) now have a real, browser-reviewable
+screenshot showing 記事タイプ=有料/¥500 visibly on screen WHILE the overlay is open -- not a DOM-eval print,
+not a post-close screenshot of the plain article body.
+
+Human/verifier (REQ-20) review paths (both real, live note.com drafts, viewable in a real browser with the
+account's own session):
+  https://note.com/anicca123/n/nfb2ace9f0ed8
+  https://note.com/anicca123/n/n39ef09f828f7
+Screenshot files for direct visual inspection:
+  /Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png
+  /Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png

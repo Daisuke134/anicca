@@ -24,17 +24,24 @@ INTERFACE:
     NOTE_COOKIES_FILE   default: $HOME/.cloak/note-work/note-cookies.json
     NOTE_WORK_DIR       default: $HOME/.cloak/note-work  (screenshot output dir)
   stdout: "SINGLE_PRICE_TYPE: paid|free"  "SINGLE_PRICE_VALUE: <int>"  "SINGLE_PRICE_LINE_INSERTED: true|false"
-          "SINGLE_PRICE_SCREENSHOT: <path>"
+          "SINGLE_PRICE_PANEL_SCREENSHOT: <path>"  "SINGLE_PRICE_SCREENSHOT: <path>"
   exit: 0 if the 有料 radio + price fill were confirmed via the live DOM (even if the paywall-line insert
         was best-effort and failed -- that degrades gracefully, logged on stderr, never crashes); non-zero
         only if the editor/publish-panel itself never loaded (a genuine wiring failure).
+
+  Sprint-2 contract-review FIND-001 fix: REQ-20 requires the human/verifier to SEE the 有料/¥500 state in a
+  browser-reviewable screenshot, not just via the DOM-eval facts printed above. The prior version of this
+  script took its ONLY screenshot (SINGLE_PRICE_SCREENSHOT) AFTER already clicking キャンセル to close the
+  公開に進む overlay -- so that screenshot never actually showed the panel at all. This version now ALSO
+  captures SINGLE_PRICE_PANEL_SCREENSHOT (single-price-panel-<note_key>.png) of the overlay WHILE 記事タイプ
+  =有料 and the price are visibly selected/filled on screen, BEFORE キャンセル is clicked -- the artifact
+  CRIT-105 designates for human/verifier review.
 """
-import json
 import os
 import sys
 import time
 
-from cloakbrowser import launch_context
+from note_browser_common import load_note_cookies, open_editor_ready
 
 WORK = os.environ.get("NOTE_WORK_DIR", os.path.expanduser("~/.cloak/note-work"))
 COOKIES_FILE = os.environ.get("NOTE_COOKIES_FILE", os.path.join(WORK, "note-cookies.json"))
@@ -46,26 +53,14 @@ def main() -> int:
         return 2
     note_key, price, heading_substring = sys.argv[1], sys.argv[2], sys.argv[3]
 
-    if not os.path.isfile(COOKIES_FILE):
+    cookies = load_note_cookies(COOKIES_FILE)
+    if cookies is None:
         print(f"note-set-single-price: NOTE_COOKIES_FILE missing at {COOKIES_FILE!r}", file=sys.stderr)
         return 1
-    with open(COOKIES_FILE) as f:
-        ck = json.load(f)
-    cookies = [{"name": k, "value": v, "domain": ".note.com", "path": "/"} for k, v in ck.items()]
 
-    ctx = launch_context(headless=True, humanize=False)
+    ctx, pg = open_editor_ready(cookies, note_key, {"width": 1280, "height": 1400})
     try:
-        ctx.add_cookies(cookies)
-        pg = ctx.new_page()
-        pg.set_viewport_size({"width": 1280, "height": 1400})
-        pg.goto(f"https://editor.note.com/notes/{note_key}/edit/", wait_until="domcontentloaded", timeout=45000)
-        loaded = False
-        for _ in range(20):
-            if "公開に進む" in pg.evaluate("()=>document.body.innerText"):
-                loaded = True
-                break
-            time.sleep(1)
-        if not loaded:
+        if pg is None:
             print("note-set-single-price: editor never reached the 公開に進む state", file=sys.stderr)
             return 1
         time.sleep(2)
@@ -114,6 +109,18 @@ def main() -> int:
             time.sleep(1)
             price_filled = pg.eval_on_selector("#price", "e=>e.value")
         print(f"SINGLE_PRICE_VALUE: {price_filled or ''}")
+
+        # Sprint-2 contract-review FIND-001 fix: capture the 公開に進む overlay WHILE 記事タイプ=有料 and
+        # the price are still visibly selected/filled on screen -- BEFORE キャンセル closes it below. This
+        # is the human/verifier-reviewable artifact REQ-20/CRIT-105 require: the DOM-eval facts printed
+        # above (SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE) prove the state programmatically, but only a
+        # screenshot taken at THIS point in the control flow actually SHOWS it. A viewport screenshot (not
+        # full_page) is used deliberately: the publish overlay is a fixed-position modal, and Playwright's
+        # full-page stitching does not reliably render fixed-position elements at every scroll offset.
+        time.sleep(0.5)
+        panel_shot = os.path.join(WORK, f"single-price-panel-{note_key}.png")
+        pg.screenshot(path=panel_shot)
+        print(f"SINGLE_PRICE_PANEL_SCREENSHOT: {panel_shot}")
 
         # Close the publish overlay (キャンセル -- discards nothing we need; the 有料/price selection is
         # global React state that survives the overlay closing, per the empirical probe in this file's

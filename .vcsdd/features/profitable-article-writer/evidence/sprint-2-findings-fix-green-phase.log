@@ -1,0 +1,71 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+This is the GREEN-phase evidence for the Sprint-2 Phase-3 implementation-review findings fix round
+(FIND-001..FIND-009). All fixes applied, all 20 test files (17 pre-existing + 3 new: test-find002, test-find003,
+test-find005) PASS, including the rewritten tests/test-prop19-real-content-hook.sh (FIND-008 fix).
+
+Command: cd skills/profitable-article-writer && bash tests/run-red.sh
+
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 20 test files, 20 PASS, 0 FAIL

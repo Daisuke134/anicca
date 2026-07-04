@@ -16,6 +16,24 @@
 #   env in:  ARTICLE_TEST_MODE         named deterministic scenario for isolated sub-path checks, e.g.
 #                                       "record_earn_only" => exercises ONLY the record-earn call and
 #                                       prints "RECORD_EARN_NO_LLM: true" (REQ-12, PROP-9)
+#
+#   Sprint-2 REAL-MODE env vars (REQ-19; used only when ARTICLE_TEST is NOT "1" — contract-review FIND-007):
+#   env in:  ARTICLE_REAL_TOPIC        the running agent's own picked topic (real-mode equivalent of
+#                                       ARTICLE_TEST_TOPIC); EMPTY => no viable topic (REQ-4b SKIP)
+#   env in:  ARTICLE_REAL_RESEARCH     "sufficient" | "insufficient", the agent's own research-sufficiency
+#                                       verdict (real-mode equivalent of ARTICLE_TEST_RESEARCH)
+#   env in:  ARTICLE_REAL_DRAFT_PATH   path to the agent's ALREADY-researched-and-written real article;
+#                                       used VERBATIM by generate_draft's state (a) (PROP-19). Supplied-but-
+#                                       missing is a distinct wiring ERROR, logged to
+#                                       $ARTICLE_DIR/state/failures.jsonl (not the same as omitting it)
+#   env in:  ARTICLE_NOTE_TITLE        if set, Mode A attempts a REAL note.com DRAFT via lib/note_publish.sh
+#                                       (PROP-20); if unset, Mode A keeps the Sprint-1 placeholder
+#   env in:  ARTICLE_NOTE_KEY          note.com draft key hint passed to run_note_mode_a_publish (default
+#                                       "new" — a genuinely NEW draft, never overwrites an existing article)
+#   env in:  ARTICLE_NOTE_PRICE        single one-time ¥ price for the 有料note paid area (default 500)
+#   env in:  ARTICLE_NOTE_PAYWALL_HEADING  substring of the heading the paid-area marker is inserted before
+#                                       (REQ-5c free/paid split); empty => paid-line insertion is skipped,
+#                                       draft stays fully free (lib/note-set-single-price.py)
 #   writes:  $ARTICLE_DIR/STATE.md     last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED, rounds_used,
 #                                      draft_path, publish_url (Mode B only), notify_path (Mode A only)
 #   exit:    0 for every LEGITIMATE outcome — SKIPPED/DRAFT/PUBLISHED/ABORTED are all valid, non-error
@@ -113,35 +131,55 @@ fi
 # ---------------------------------------------------------------------------------------------------------
 generate_draft() {
   local topic="$1" out="$2"
-  if [ "${ARTICLE_TEST:-}" != "1" ] && [ -n "${ARTICLE_REAL_DRAFT_PATH:-}" ] && [ -f "${ARTICLE_REAL_DRAFT_PATH:-}" ]; then
-    # REQ-19/Sprint 2 real content-gen hook: the running agent (never this deterministic shell script) has
-    # ALREADY researched and written the real article to ARTICLE_REAL_DRAFT_PATH, per the purity-boundary
-    # map (craft writing = agent judgment, verification-architecture.md). Use that real content VERBATIM.
-    # PROP-19 note: this is state (a) of generate_draft's 3-state precedence (verification-architecture.md,
-    # PROP-19 row) -- the ONLY state where the boilerplate template below is guaranteed never used. States
-    # (b) (topic/research declared but ARTICLE_REAL_DRAFT_PATH absent -- falls through to the boilerplate
-    # below as a documented wiring safety-net, never reached by the real daily-executor loop which always
-    # supplies the draft together with topic/research) and (c) (nothing supplied -- fail-closed SKIPPED,
-    # handled earlier in the wake before generate_draft is even called) are NOT gated by this branch.
-    cp "$ARTICLE_REAL_DRAFT_PATH" "$out"
-    return 0
+  if [ "${ARTICLE_TEST:-}" != "1" ] && [ -n "${ARTICLE_REAL_DRAFT_PATH:-}" ]; then
+    if [ -f "${ARTICLE_REAL_DRAFT_PATH:-}" ]; then
+      # REQ-19/Sprint 2 real content-gen hook: the running agent (never this deterministic shell script) has
+      # ALREADY researched and written the real article to ARTICLE_REAL_DRAFT_PATH, per the purity-boundary
+      # map (craft writing = agent judgment, verification-architecture.md). Use that real content VERBATIM.
+      # PROP-19 note: this is state (a) of generate_draft's 3-state precedence (verification-architecture.md,
+      # PROP-19 row) -- the ONLY state where the boilerplate template below is guaranteed never used. States
+      # (b) (topic/research declared but ARTICLE_REAL_DRAFT_PATH absent -- falls through to the boilerplate
+      # below as a documented wiring safety-net, never reached by the real daily-executor loop which always
+      # supplies the draft together with topic/research) and (c) (nothing supplied -- fail-closed SKIPPED,
+      # handled earlier in the wake before generate_draft is even called) are NOT gated by this branch.
+      cp "$ARTICLE_REAL_DRAFT_PATH" "$out"
+      return 0
+    fi
+    # Sprint-2 contract-review FIND-003 fix: ARTICLE_REAL_DRAFT_PATH was SUPPLIED (non-empty) but the file
+    # does NOT exist. This is a DISTINCT, genuine wiring ERROR — not the same as state (b)'s documented
+    # "no draft path handed off yet" safety-net, which is defined by the caller never supplying a path at
+    # all. A caller that supplied a path with a typo, hit a race where the file hasn't been written yet, or
+    # has a real bug in the daily-executor's own wiring must be distinguishable from a caller that simply
+    # never intended a real draft — silently falling through to the SAME boilerplate branch as state (b)
+    # would hide exactly the class of wiring bug PROP-19 exists to catch (REQ-19's real daily-executor
+    # would otherwise silently draft/publish boilerplate instead of the agent's real researched article,
+    # completely undetected). Log a clearly-labeled, distinct failure line to state/failures.jsonl — this
+    # still degrades to the boilerplate safety-net below (never crashes the wake), but the failure trail now
+    # shows WHY.
+    local err_ts path_json
+    err_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+    path_json="$(json_escape "$ARTICLE_REAL_DRAFT_PATH")"
+    printf '%s\n' "{\"ts\": \"$err_ts\", \"error\": \"generate_draft_wiring_error\", \"reason\": \"ARTICLE_REAL_DRAFT_PATH was supplied but the file does not exist\", \"path\": \"$path_json\"}" >> "$ARTICLE_DIR/state/failures.jsonl"
+    echo "generate_draft: WIRING ERROR -- ARTICLE_REAL_DRAFT_PATH='$ARTICLE_REAL_DRAFT_PATH' was supplied but does not exist on disk (falling back to the boilerplate safety-net; this is a distinct wiring bug, NOT the documented 'no draft path supplied' state (b), and is now recorded to state/failures.jsonl)" >&2
   fi
   cat > "$out" <<EOF
 # ${topic}: the pattern most people miss in the first 10 hours
 
-Most people trying ${topic} burn 10+ hours before they find the one workflow that actually ships. Here is the compressed version.
+Most people burn 10+ hours on ${topic} before finding the one workflow that ships. Here is the compressed version.
 
 ## What's free
 
 - The core mental model for ${topic}.
-- The buy-reason, in three lines: (1) speed — skip the trial-and-error, (2) certainty — a checklist that works today, (3) leverage — reuse it on every future project.
-- Why the split exists: the What is free here, the How is paid below.
+- Speed. Skip the trial-and-error.
+- Certainty. A checklist that works today.
+- Leverage. Reuse it on every future project.
+- The What is free here. The How is paid below.
 
 ## How it works (paid)
 
-The full step-by-step, plus the exact configs, live in the paid section.
+The full step-by-step lives in the paid section. Exact configs included.
 
-CTA: Get the full walkthrough → https://note.com/example/n/paid-guide
+CTA: Get the full walkthrough at the paid link below.
 EOF
 }
 

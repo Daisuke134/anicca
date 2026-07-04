@@ -19,12 +19,18 @@ criteria:
     dimension: structural_integrity
     description: "lib/note_publish.sh reuses the existing note-publish pipeline and note_mcp's create_draft rather than rebuilding either; the wiring is fail-closed and never fabricates a URL on failure; no stored credential ever reaches a human/verifier-facing evidence artifact."
     weight: 0.2
-    passThreshold: "grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT and note_mcp.api.articles.create_draft rather than reimplementing browser automation or the note.com API client; tests/test-prop20-note-publish-failclosed.sh proves: no-integration-requested keeps the Sprint-1 placeholder verbatim, a forced failure degrades without crash or fake URL, and a forced success carries the wiring's own returned url/screenshot into notify.json. AND: grep confirms run_note_mode_a_publish's only stdout-facing lines are NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY (never $NOTE_COOKIES_FILE content, a raw cookie value, or a note_mcp auth token string), and that notify.json's writer never interpolates the cookie-file path's CONTENTS (only NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY values) — no credential leaks into the human/verifier-reviewable evidence CRIT-105 designates."
+    passThreshold: "grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT (verify subcommand only) and lib/note-create-rich-draft.py — this skill's own thin orchestration script, which itself calls note_mcp.api.articles.create_draft/upload_body_image/generate_image_html — rather than reimplementing browser automation or the note.com API client directly inside note_publish.sh; tests/test-prop20-note-publish-failclosed.sh proves: no-integration-requested keeps the Sprint-1 placeholder verbatim, a forced failure degrades without crash or fake URL, and a forced success carries the wiring's own returned url/screenshot into notify.json. AND: grep confirms run_note_mode_a_publish's only stdout-facing lines are NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY (never $NOTE_COOKIES_FILE content, a raw cookie value, or a note_mcp auth token string), that notify.json's writer never interpolates the cookie-file path's CONTENTS (only NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY values), and that any raw sub-step stdout+stderr re-emitted to the caller's stderr on failure is redacted of cookie/session/token-shaped content before being printed — no credential leaks into the human/verifier-reviewable evidence CRIT-105 designates."
   - id: CRIT-105
     dimension: verification_readiness
     description: "A real, non-test wake actually ran end-to-end AFTER the PROP-21 fix and produced verifiable, human-browser-reviewable evidence of the FIXED render (visuals + eyecatch + single ¥500) — not just green unit tests, and not the original pre-fix defective draft."
     weight: 0.2
-    passThreshold: "A real article markdown file exists with real content: (i) it does NOT contain the Sprint-1 boilerplate marker string ('burn 10+ hours'), AND (ii) it contains a `## 出典` (sources) section listing at least one real, externally-fetched https:// URL. A SECOND, post-PROP-21-fix note.com draft (key nfb2ace9f0ed8, distinct from the pre-fix n7261a753887f draft the adversary flagged) was created via note_mcp's create_draft (not injected/forced), with its cover/hero/inline-figures/price state captured in real screenshots (~/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png showing the set cover + embedded figures, ~/.cloak/note-work/single-price-nfb2ace9f0ed8.png showing 記事タイプ=有料/¥500 in the live DOM) for the human/verifier (REQ-20) to review in a browser."
+    passThreshold: "A real article markdown file exists with real content: (i) it does NOT contain the Sprint-1 boilerplate marker string ('burn 10+ hours'), AND (ii) it contains a `## 出典` (sources) section listing at least one real, externally-fetched https:// URL. A SECOND, post-PROP-21-fix note.com draft (key nfb2ace9f0ed8, distinct from the pre-fix n7261a753887f draft the adversary flagged) was created via note_mcp's create_draft (not injected/forced), with its cover/hero/inline-figures/price state captured in real screenshots (~/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png showing the set cover + embedded figures) for the human/verifier (REQ-20) to review in a browser.
+    **Round-3 correction (FIND-001)**: the price/paid-area state's qualifying evidence is now
+    `~/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png` — captured WHILE the 公開に進む overlay is
+    still open with 記事タイプ=有料/¥500 visibly selected/filled on screen, BEFORE キャンセル closes it —
+    not the OLD `single-price-nfb2ace9f0ed8.png` (taken AFTER the overlay was already closed, which never
+    actually showed the panel). A second, independent real Mode-A wake (post-fix, note key n39ef09f828f7)
+    reproduced the same panel screenshot for a brand-new draft, confirming the fix generalizes."
   - id: CRIT-106
     dimension: implementation_correctness
     description: "The real note.com DRAFT wiring includes actual visuals (hero + inline figures), an eyecatch/cover image, and a single ¥500 有料note price — never text-only, coverless, or メンバーシップ (membership) monetization — and degrades safely (never fakes success, never discards an already-created draft) if any later step in the 3-call chain fails."
@@ -83,10 +89,17 @@ Sprint-1 fail-closed SKIP default (REQ-4b) provably unchanged and clearly distin
 state.
 
 ### CRIT-104
-PROP-20's `lib/note_publish.sh` is a THIN wrapper around the existing note-publish pipeline + note_mcp's
-`create_draft` (grep-verifiable: no reimplemented browser automation or note.com API client), fail-closed at
-every step, tested hermetically via its own `NOTE_PUBLISH_TEST_FORCE` seam, and leaks no stored credential
-into any human/verifier-facing evidence artifact.
+PROP-20's `lib/note_publish.sh` is a THIN wrapper around the existing note-publish pipeline (verify subcommand)
+plus this skill's own `lib/note-create-rich-draft.py`, which itself calls note_mcp's `create_draft`
+(grep-verifiable: no reimplemented browser automation or note.com API client inside `note_publish.sh` itself),
+fail-closed at every step, tested hermetically via its own `NOTE_PUBLISH_TEST_FORCE` seam, and leaks no stored
+credential into any human/verifier-facing evidence artifact — including redacting cookie/session/token-shaped
+content out of any raw sub-step error output before it is re-emitted to the wake's own stderr.
+
+**Round-3 correction (FIND-004)**: CRIT-104's passThreshold literally named `note_mcp.api.articles.create_draft`
+as a direct call inside `lib/note_publish.sh`, but the literal string `create_draft` only appears in
+`lib/note-create-rich-draft.py` (which `note_publish.sh` calls as a separate script). FIXED by naming the
+correct file in the passThreshold, so the criterion is mechanically grep-verifiable as written.
 
 ### CRIT-105
 Beyond green unit tests, Sprint 2 requires ONE real, non-test wake, run AFTER the PROP-21 fix, that actually

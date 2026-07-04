@@ -70,6 +70,55 @@ NOTE_SET_SINGLE_PRICE_PY="${NOTE_SET_SINGLE_PRICE_PY:-$_NOTE_PUBLISH_SH_DIR/note
 NOTE_SET_EYECATCH_PY="${NOTE_SET_EYECATCH_PY:-$_NOTE_PUBLISH_SH_DIR/note-set-eyecatch.py}"
 
 # ---------------------------------------------------------------------------------------------------------
+# _note_redact_secrets: redact cookie/session/token-shaped content from a sub-step's raw combined
+# stdout+stderr BEFORE it is ever re-emitted to run_note_mode_a_publish's own stderr (Sprint-2
+# contract-review FIND-005 fix). Every sub-step below (note_create_rich_draft/note_set_eyecatch/
+# note_set_single_price/note_verify_draft) authenticates via $NOTE_COOKIES_FILE against note_mcp (HTTP) or
+# cloakbrowser (a real browser session) -- if either ever raises an exception whose message embeds
+# request/response detail (a realistic failure mode for HTTP/browser client libraries: an error body
+# echoing a Set-Cookie header, a session/auth token, or a redirected URL containing one), that content must
+# never propagate unredacted into the wake's stderr/log stream, which CRIT-104 designates as a
+# human/verifier-facing evidence surface. Two passes, both in python3 (already a hard skill dependency):
+#   1. If NOTE_COOKIES_FILE is readable, every cookie VALUE in it is redacted verbatim wherever it appears
+#      in the sub-step output (covers an exception embedding a raw cookie value this process itself loaded).
+#   2. A generic "key=value"/"key: value" pattern redacts the VALUE whenever the key looks like
+#      cookie/session/token/auth (case-insensitive) -- covers values this process never itself held (e.g. a
+#      Set-Cookie response header a library's own exception message echoes verbatim).
+# stdin: the raw text to redact. stdout: the redacted text. Never fails closed-loud: any internal error
+# falls back to returning the ORIGINAL text unredacted-by-pattern-2 only (pass 1, the verbatim cookie-value
+# scrub, still always runs when the cookies file is readable) rather than crashing the caller.
+# ---------------------------------------------------------------------------------------------------------
+_note_redact_secrets() {
+  NOTE_COOKIES_FILE="$NOTE_COOKIES_FILE" python3 -c '
+import json
+import os
+import re
+import sys
+
+text = sys.stdin.read()
+
+cookies_file = os.environ.get("NOTE_COOKIES_FILE", "")
+if cookies_file and os.path.isfile(cookies_file):
+    try:
+        with open(cookies_file) as f:
+            data = json.load(f)
+        for value in data.values():
+            if isinstance(value, str) and len(value) >= 6 and value in text:
+                text = text.replace(value, "[REDACTED_COOKIE_VALUE]")
+    except Exception:
+        pass
+
+try:
+    pattern = re.compile(r"(?i)\b((?:cookie|session|token|auth)[a-z0-9_-]*)\s*([:=])\s*([^\s,;\"'"'"']+)")
+    text = pattern.sub(lambda m: m.group(1) + m.group(2) + " [REDACTED]", text)
+except Exception:
+    pass
+
+sys.stdout.write(text)
+'
+}
+
+# ---------------------------------------------------------------------------------------------------------
 # note_create_rich_draft: create a genuinely NEW note.com draft, with a hero diagram + inline figures
 # embedded in the body, via lib/note-create-rich-draft.py (this skill's own deterministic orchestration of
 # note_mcp's proven API functions — Sprint-2 fix #1). Eyecatch is a SEPARATE step (note_set_eyecatch below
@@ -101,8 +150,12 @@ note_create_rich_draft() {
   [ -n "${ARTICLE_NOTE_VISUAL_FIG1:-}" ] && [ -f "${ARTICLE_NOTE_VISUAL_FIG1:-}" ] && marker_args+=(--marker "FIG1=${ARTICLE_NOTE_VISUAL_FIG1}")
   [ -n "${ARTICLE_NOTE_VISUAL_FIG2:-}" ] && [ -f "${ARTICLE_NOTE_VISUAL_FIG2:-}" ] && marker_args+=(--marker "FIG2=${ARTICLE_NOTE_VISUAL_FIG2}")
 
+  # "${marker_args[@]+"${marker_args[@]}"}" (not the plain "${marker_args[@]}") is deliberate: macOS ships
+  # bash 3.2, which raises "unbound variable" under `set -u` when expanding an EMPTY array with `[@]` --
+  # this idiom is the standard bash-3.2-safe workaround (verified empirically: reproduced live when no
+  # --marker args are supplied, the real, common case when a draft has no visuals).
   NOTE_MCP_SRC="$NOTE_MCP_SRC" NOTE_COOKIES_FILE="$NOTE_COOKIES_FILE" \
-    "$NOTE_MCP_PY" "$NOTE_CREATE_RICH_DRAFT_PY" --title "$title" --body "$draft_path" "${marker_args[@]}"
+    "$NOTE_MCP_PY" "$NOTE_CREATE_RICH_DRAFT_PY" --title "$title" --body "$draft_path" "${marker_args[@]+"${marker_args[@]}"}"
 }
 
 # ---------------------------------------------------------------------------------------------------------
@@ -173,35 +226,39 @@ run_note_mode_a_publish() {
     return 1
   fi
 
-  local create_out create_rc key
+  local create_out create_rc create_out_redacted key
   create_out="$(note_create_rich_draft "$draft_path" "$title" 2>&1)"; create_rc=$?
   if [ $create_rc -ne 0 ]; then
-    echo "run_note_mode_a_publish: note_create_rich_draft failed: $create_out" >&2
+    create_out_redacted="$(printf '%s' "$create_out" | _note_redact_secrets)"
+    echo "run_note_mode_a_publish: note_create_rich_draft failed: $create_out_redacted" >&2
     return 1
   fi
   key="$(echo "$create_out" | grep -oE '^NOTE_DRAFT_KEY: .*' | sed 's/^NOTE_DRAFT_KEY: //')"
   if [ -z "$key" ]; then
-    echo "run_note_mode_a_publish: no NOTE_DRAFT_KEY in create_draft output: $create_out" >&2
+    create_out_redacted="$(printf '%s' "$create_out" | _note_redact_secrets)"
+    echo "run_note_mode_a_publish: no NOTE_DRAFT_KEY in create_draft output: $create_out_redacted" >&2
     return 1
   fi
 
   # Best-effort: neither eyecatch nor single-price setup failures invalidate the already-created,
   # already-visual draft.
   if [ -n "${ARTICLE_NOTE_COVER:-}" ] && [ -f "${ARTICLE_NOTE_COVER:-}" ]; then
-    local eyecatch_out eyecatch_rc
+    local eyecatch_out eyecatch_rc eyecatch_out_redacted
     eyecatch_out="$(note_set_eyecatch "$key" "$ARTICLE_NOTE_COVER" 2>&1)"; eyecatch_rc=$?
     if [ $eyecatch_rc -ne 0 ]; then
-      echo "run_note_mode_a_publish: note_set_eyecatch did not complete (draft exists at key=$key; cover may still need manual review): $eyecatch_out" >&2
+      eyecatch_out_redacted="$(printf '%s' "$eyecatch_out" | _note_redact_secrets)"
+      echo "run_note_mode_a_publish: note_set_eyecatch did not complete (draft exists at key=$key; cover may still need manual review): $eyecatch_out_redacted" >&2
     fi
   fi
 
-  local price_out price_rc
+  local price_out price_rc price_out_redacted
   price_out="$(note_set_single_price "$key" "$price" "$paywall_heading" 2>&1)"; price_rc=$?
   if [ $price_rc -ne 0 ]; then
-    echo "run_note_mode_a_publish: note_set_single_price did not complete (draft exists at key=$key; monetization type may still need manual review): $price_out" >&2
+    price_out_redacted="$(printf '%s' "$price_out" | _note_redact_secrets)"
+    echo "run_note_mode_a_publish: note_set_single_price did not complete (draft exists at key=$key; monetization type may still need manual review): $price_out_redacted" >&2
   fi
 
-  local verify_out verify_rc url screenshot
+  local verify_out verify_rc verify_out_redacted url screenshot
   verify_out="$(note_verify_draft "$key" 2>&1)"; verify_rc=$?
   url="https://note.com/anicca123/n/$key"
   screenshot="$(echo "$verify_out" | python3 -c 'import json,sys
@@ -215,7 +272,8 @@ except Exception:
   echo "NOTE_SCREENSHOT: ${screenshot:-unknown}"
   echo "NOTE_KEY: $key"
   if [ $verify_rc -ne 0 ]; then
-    echo "run_note_mode_a_publish: verify reported a non-PASS (draft exists at $url, but verify's deterministic check did not pass): $verify_out" >&2
+    verify_out_redacted="$(printf '%s' "$verify_out" | _note_redact_secrets)"
+    echo "run_note_mode_a_publish: verify reported a non-PASS (draft exists at $url, but verify's deterministic check did not pass): $verify_out_redacted" >&2
   fi
   return 0
 }

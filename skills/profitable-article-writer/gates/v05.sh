@@ -107,18 +107,46 @@ fi
 # entire well-punctuated Japanese paragraph as one giant "sentence" (since it contains no ASCII terminator),
 # which almost always exceeds 60 chars and makes crit_e permanently false regardless of how short the real
 # sentences are (Sprint-2 PROP-18 fix). Drop headings/blank lines/empty fragments.
+#
+# LOCALE SAFETY (Sprint-2 contract-review FIND-002 fix): a byte-wise `tr '.!?。！？' ...` is UNSAFE here.
+# `tr` (this is true of both GNU and BSD/macOS tr) matches SET1 byte-by-byte, not codepoint-by-codepoint;
+# under a C/POSIX locale — the common default for a minimal/cron/headless environment, i.e. exactly the
+# unattended `claude -p` daily-executor REQ-19 describes — the individual UTF-8 continuation/lead bytes
+# that make up 。！？ (multi-byte sequences) also occur inside countless OTHER, unrelated Japanese
+# characters, so a byte-wise tr shreds ordinary text mid-character and silently corrupts this arithmetic.
+# Verified empirically (Sprint-2 evidence): the old tr-based split, run under `LC_ALL=C`, computed
+# crit_e=true (100% of fragments "short") on a draft containing ONE deliberately very-long Japanese
+# sentence that should FAIL — the exact wrong verdict. python3's `re` module operates on decoded Unicode
+# codepoints regardless of the process locale (verified: CPython's UTF-8/surrogateescape stdio mode reads
+# UTF-8 correctly even under `LC_ALL=C`), so this computation now runs in python3 — already a hard
+# dependency elsewhere in this skill (see json_escape() in run.sh) — whenever it is available. Only if
+# python3 is genuinely absent does this fall back to `tr`, and even then a UTF-8 locale is forced (never
+# an inherited ambient C/POSIX locale) to minimize the same byte-corruption risk.
 plain="$(echo "$body" | grep -vE '^#' | grep -vE '^[[:space:]]*$')"
-sentences="$(echo "$plain" | tr '.!?。！？' '\n\n\n\n\n\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')"
 total=0
 short=0
-while IFS= read -r s; do
-  [ -z "$s" ] && continue
-  total=$((total+1))
-  len=${#s}
-  if [ "$len" -le 60 ]; then short=$((short+1)); fi
-done <<EOF
+if command -v python3 >/dev/null 2>&1; then
+  read -r total short <<PYOUT
+$(printf '%s' "$plain" | python3 -c '
+import re
+import sys
+
+text = sys.stdin.read()
+sentences = [s.strip() for s in re.split(r"[.!?。！？]", text) if s.strip()]
+print(len(sentences), sum(1 for s in sentences if len(s) <= 60))
+')
+PYOUT
+else
+  sentences="$(printf '%s' "$plain" | LC_ALL="${LC_ALL:-en_US.UTF-8}" LANG="${LANG:-en_US.UTF-8}" tr '.!?。！？' '\n\n\n\n\n\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')"
+  while IFS= read -r s; do
+    [ -z "$s" ] && continue
+    total=$((total+1))
+    len=${#s}
+    if [ "$len" -le 60 ]; then short=$((short+1)); fi
+  done <<EOF
 $sentences
 EOF
+fi
 crit_e=false
 if [ "$total" -gt 0 ]; then
   pct=$(( short * 100 / total ))

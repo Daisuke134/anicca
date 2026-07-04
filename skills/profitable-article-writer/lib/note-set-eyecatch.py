@@ -24,12 +24,11 @@ INTERFACE:
         itself failed -- that is reported via EYECATCH_SET: false on stdout, never a crash); non-zero
         only if the editor/cookies never loaded at all (a genuine wiring failure).
 """
-import json
 import os
 import sys
 import time
 
-from cloakbrowser import launch_context
+from note_browser_common import load_note_cookies, open_editor_ready
 
 WORK = os.environ.get("NOTE_WORK_DIR", os.path.expanduser("~/.cloak/note-work"))
 COOKIES_FILE = os.environ.get("NOTE_COOKIES_FILE", os.path.join(WORK, "note-cookies.json"))
@@ -41,29 +40,17 @@ def main() -> int:
         return 2
     note_key, cover_path = sys.argv[1], sys.argv[2]
 
-    if not os.path.isfile(COOKIES_FILE):
-        print(f"note-set-eyecatch: NOTE_COOKIES_FILE missing at {COOKIES_FILE!r}", file=sys.stderr)
-        return 1
     if not os.path.isfile(cover_path):
         print(f"note-set-eyecatch: cover image not found at {cover_path!r}", file=sys.stderr)
         return 1
-    with open(COOKIES_FILE) as f:
-        ck = json.load(f)
-    cookies = [{"name": k, "value": v, "domain": ".note.com", "path": "/"} for k, v in ck.items()]
+    cookies = load_note_cookies(COOKIES_FILE)
+    if cookies is None:
+        print(f"note-set-eyecatch: NOTE_COOKIES_FILE missing at {COOKIES_FILE!r}", file=sys.stderr)
+        return 1
 
-    ctx = launch_context(headless=True, humanize=False)
+    ctx, pg = open_editor_ready(cookies, note_key, {"width": 1280, "height": 1000})
     try:
-        ctx.add_cookies(cookies)
-        pg = ctx.new_page()
-        pg.set_viewport_size({"width": 1280, "height": 1000})
-        pg.goto(f"https://editor.note.com/notes/{note_key}/edit/", wait_until="domcontentloaded", timeout=45000)
-        loaded = False
-        for _ in range(20):
-            if "公開に進む" in pg.evaluate("()=>document.body.innerText"):
-                loaded = True
-                break
-            time.sleep(1)
-        if not loaded:
+        if pg is None:
             print("note-set-eyecatch: editor never reached a ready state", file=sys.stderr)
             return 1
         time.sleep(2)

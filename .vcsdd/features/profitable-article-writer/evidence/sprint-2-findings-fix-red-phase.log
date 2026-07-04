@@ -1,0 +1,115 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+This is the RED-phase evidence for the Sprint-2 Phase-3 implementation-review findings fix round
+(FIND-001..FIND-009, .vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/).
+
+Command: cd skills/profitable-article-writer && git stash push -- <the 8 tracked files this round
+touches: gates/v05.sh, run.sh, lib/note_publish.sh, lib/note-set-eyecatch.py, lib/note-set-single-price.py,
+tests/test-prop19-real-content-hook.sh, contracts/sprint-2.md, specs/behavioral-spec.md> && bash
+tests/test-find002-locale-safe-sentences.sh && bash tests/test-find003-missing-draft-path-wiring-error.sh
+&& bash tests/test-find005-redact-secrets-in-error-output.sh && bash tests/run-red.sh
+(the 3 new test files + lib/note_browser_common.py were left UNTRACKED on disk and not stashed, so each new
+discriminating test ran against the OLD, pre-fix source it targets)
+
+=== test-find002-locale-safe-sentences.sh (new test, against PRE-FIX gates/v05.sh) ===
+  - FAIL FIX: the CURRENT (locale-safe, python3-based) gates/v05.sh gives the CORRECT verdict (crit_e=false) under LC_ALL=C: V05_CRIT_a: false
+V05_CRIT_b: false
+V05_CRIT_c: false
+V05_CRIT_d: false
+V05_CRIT_e: true
+V05_RESULT: FAIL
+FAIL (1)
+rc=1
+
+=== test-find003-missing-draft-path-wiring-error.sh (new test, against PRE-FIX run.sh) ===
+  - FAIL supplied-but-missing draft path: stderr carries an explicit WIRING ERROR diagnostic (distinct from the silent state-(b) fallback)
+  - FAIL supplied-but-missing draft path: failures.jsonl contains a distinct 'generate_draft_wiring_error' entry
+  - FAIL failures.jsonl entry names the actual missing path, for real debuggability
+FAIL (3)
+rc=1
+
+=== test-find005-redact-secrets-in-error-output.sh (new test, against PRE-FIX note_publish.sh) ===
+  - FAIL the error output carries a [REDACTED] marker in place of the secret, proving redaction actually ran (not just silent dropping): run_note_mode_a_publish: note_create_rich_draft failed: /Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note_publish.sh: line 104: marker_args[@]: unbound variable
+  - FAIL control: ordinary diagnostic text with no secret-shaped content is NOT mangled by redaction: run_note_mode_a_publish: note_create_rich_draft failed: /Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note_publish.sh: line 104: marker_args[@]: unbound variable
+FAIL (2)
+rc=1
+
+=== full regression baseline (all 20 files, run against PRE-FIX source + NEW-but-undiscriminating-old test-prop19) ===
+=== test-find002-locale-safe-sentences.sh ===
+  - FAIL FIX: the CURRENT (locale-safe, python3-based) gates/v05.sh gives the CORRECT verdict (crit_e=false) under LC_ALL=C: V05_CRIT_a: false
+V05_CRIT_b: false
+V05_CRIT_c: false
+V05_CRIT_d: false
+V05_CRIT_e: true
+V05_RESULT: FAIL
+FAIL (1)
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+  - FAIL supplied-but-missing draft path: stderr carries an explicit WIRING ERROR diagnostic (distinct from the silent state-(b) fallback)
+  - FAIL supplied-but-missing draft path: failures.jsonl contains a distinct 'generate_draft_wiring_error' entry
+  - FAIL failures.jsonl entry names the actual missing path, for real debuggability
+FAIL (3)
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+  - FAIL the error output carries a [REDACTED] marker in place of the secret, proving redaction actually ran (not just silent dropping): run_note_mode_a_publish: note_create_rich_draft failed: /Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note_publish.sh: line 104: marker_args[@]: unbound variable
+  - FAIL control: ordinary diagnostic text with no secret-shaped content is NOT mangled by redaction: run_note_mode_a_publish: note_create_rich_draft failed: /Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note_publish.sh: line 104: marker_args[@]: unbound variable
+FAIL (2)
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 20 test files, 17 PASS, 3 FAIL
+FAILING:
+  - test-find002-locale-safe-sentences.sh
+  - test-find003-missing-draft-path-wiring-error.sh
+  - test-find005-redact-secrets-in-error-output.sh

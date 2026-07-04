@@ -98,14 +98,26 @@ One article → funnel → per-platform native monetization → real money verif
   (me / the main agent) via a real browser look at the posted draft — NOT by the executor grading itself. The
   executor posts; the verifier checks. (This is the Mode-A trust ramp: executor drafts daily, verifier approves;
   once trusted, Mode B flips to autonomous publish, and self-heal/self-improve (Sprint 5) removes the verifier too.)
-  **Sprint-2 note-publish integration (PROP-19/20):** the real note DRAFT post SHALL REUSE the existing, already-
-  proven `ai-entity-article-writer/scripts/note-publish/` pipeline (auth, eyecatch/目次/paywall-gate, verify) — it
-  is NEVER rebuilt. The one genuinely-missing piece (creating a BRAND-NEW note draft, as opposed to updating the
+  **Sprint-2 note-publish integration (PROP-19/20/21):** the real note DRAFT post SHALL REUSE the existing,
+  already-proven `ai-entity-article-writer/scripts/note-publish/` pipeline for AUTH and VERIFY only (session
+  cookies, and the `verify` subcommand's ground-truth API + logged-out screenshot check) — that part is NEVER
+  rebuilt. The one genuinely-missing piece (creating a BRAND-NEW note draft, as opposed to updating the
   pre-existing Automaton note) SHALL use `note_mcp.api.articles.create_draft` — the SAME underlying library the
   reused pipeline's own `note-stage2-publish.py` already depends on for `update_article` — so no non-Automaton
   article can ever overwrite the live published Automaton note (that note's numeric id stays hardcoded-and-guarded
-  in the upstream script; the new-draft path never touches it). Any failure in the create/gate/verify chain SHALL
-  degrade to the Mode-A safe placeholder (REQ-6) rather than crash the wake or fabricate a URL.
+  in the upstream script; the new-draft path never touches it).
+  **Round-2 correction (FIND-009):** the OLD pipeline's own eyecatch/目次/paywall-gate sub-scripts
+  (`publish.py`/`toggle-plan.py`/`set-eyecatch-republish.py`) are NOT reused for eyecatch or monetization —
+  a real live-wake evidence draft exposed that those scripts hardcode a メンバーシップ (recurring
+  membership) monetization path regardless of REQ-8's native single ¥500 有料note requirement, and never set
+  an eyecatch at all. This is a legitimate, contract-approved (CRIT-106) engineering deviation: eyecatch is
+  now set via this skill's own `lib/note-set-eyecatch.py` (driving the editor's own 画像を追加 button — the
+  note_mcp `upload_eyecatch_image` API path was tried first and reproducibly fails), and the single ¥500
+  paid-area price is set via this skill's own `lib/note-set-single-price.py` (selecting 記事タイプ=有料,
+  never メンバーシップ). Visuals (hero + inline figures) are embedded via this skill's own
+  `lib/note-create-rich-draft.py`, orchestrating note_mcp's `upload_body_image`/`generate_image_html` before
+  `create_draft`. Any failure in the create/eyecatch/price/verify chain SHALL degrade to the Mode-A safe
+  placeholder (REQ-6) rather than crash the wake or fabricate a URL.
 
 ## Purity-boundary candidates (refined in 1b)
 
