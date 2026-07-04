@@ -7,7 +7,7 @@
 | worktree | `.worktrees/clip-cloud-adapter/`(実装フェーズで作成、spec自体はdev直接) |
 | ブランチ | `feature/clip-cloud-adapter` |
 | 対象repo | `~/anicca`(OSS、`earn/clip`本体) + `~/anicca-project/.claude/skills/`(ig-account-create/cdp.py系、earn-clip-rewards/pipeline.py系 — cookie処理の実体はこちらにある、§4で訂正) |
-| 状態 | spec REV3(GATE 1ラウンド1・2 FAIL、指摘反映。ラウンド3審査待ち) |
+| 状態 | spec REV4(GATE 1ラウンド1-3 FAIL、指摘反映。ラウンド4審査待ち) |
 
 ## 0. なぜこれをやるか(Dais 2026-07-05 verbatim、動機の核心)
 
@@ -128,7 +128,7 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
    ポートは`--cdp-port`引数でパラメータ化済みだが、**hostは`cdp.py`を介さず
    独自にhttp呼び出しをしており`localhost`固定**。`cdp.py`側の`CDP_HOST`を
    追加しても、このファイルは`cdp.py`をimportしてから直接この行で`urllib`を
-   呼んでいる(120行目で`import cdp`しているが、124行目はcdpモジュールの関数を
+   呼んでいる(113行目で`import cdp`しているが、124行目はcdpモジュールの関数を
    経由せず独自にurllibで叩いている)ため、このファイル単体でも同じ
    `CDP_HOST`環境変数を読む変更が別途必要。
 
@@ -239,8 +239,8 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
   のvenvパスenv化がPythonバージョン差異への対応で判断余地を残していた、
   ③`COOKIE_SOURCE=env-file`のNoneフォールバック条件が文章として自己矛盾していた、
   ④`_youtube_cookies_file()`の行番号引用ミス(L34-49→正しくはL37-58)。
-- **ラウンド3(REV3、本ファイル)**: 上記4件を修正(①`register_flow.py`を
-  REQ-C1の4件目として追加、②venvパスを「合成」ではなく「文字列まるごと
-  env化」に変更してimplementerの判断余地を除去、③COOKIE_SOURCE分岐を明確な
-  if/elseの疑似コードで確定、④行番号訂正)。次はこのREV3を再度fresh-context
-  adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド3**: FAIL(極小)。4件全てAPPLIED-CORRECTLYと確認されたが、
+  ①の修正文中で新たに`import cdp`の行番号を「120行目」と誤記(正しくは113行目、
+  REQ-C1自体の修正内容には影響なし、説明文のみの誤り)と指摘。
+- **ラウンド4(REV4、本ファイル)**: 上記の行番号誤記のみ修正(113行目に訂正)。
+  次はこのREV4を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
