@@ -216,5 +216,39 @@ Dais から disk-cleaner の安全性 + claude-p/ClawRouter の実稼働状況�
    というDais指示によりこの節を記録。CloakBrowser(Chromium)側の運用は変更せず、YouTube
    cookie取得専用にcamofoxプロファイルを1つ追加する(既存プロファイルの置き換えではない)。
 
+   **実装(完了)**: camofox(:9377、userId=anicca/sessionKey=clip-yt)でYouTubeにアクセスし
+   既存Googleログインを確認(92件のYouTube/Google cookie、平文JSON `storage-state.json`に
+   保存済み、profile hash `45136ac6a5321e8fcfc75c3b306c5714`)。
+   `~/.claude/skills/earn-clip-rewards/scripts/export_camofox_cookies.py`を新規実装し
+   storage-state.json→Netscape cookies.txtへ変換。`pipeline.py`の`get_duration()`/
+   `yt_dlp()`を`--cookies-from-browser chromium:...`から`--cookies <camofox export>`に
+   切替。追加発見: yt-dlpの新JSチャレンジ解決システム(EJS)が`--remote-components
+   ejs:github`無しだと解決スクリプトDLをスキップし、n-challenge解決失敗→全フォーマット
+   ゼロになる不具合も併せて修正。
+
+   **実機E2E検証(2026-07-04、fresh evidence)**: producer.sh実行 → cookie付きbot検出突破
+   確認(`--list-formats`で360p実フォーマット取得、以前は`sb0-3`storyboardのみ) →
+   sliced download(9146s→360s)→ whisper → crop → caption → verify_clip gate通過 →
+   `~/clips/queue/`へ実clip生成。さらに claude-p 自身(anicca-clip-core tmux、毎時cron)
+   も同修正の恩恵を受け、手動介入なしに別動画(`Xs94KBeIiAo`)を自律生成・queueへ格納
+   したことを確認(lifetime posts 4→11に増加)。Task #8完了。
+
+6. **Task #7(tmuxソケット消失→重複起動)の再発と根本対策(完了)**: §4.2で応急処置(kill)
+   のみだった問題が、その後12時間で**3回再発**(04:55/10:51/15:46/17:01の4世代が同時に
+   積み重なり、clip/affiliate/video/bounty各loopで最大8プロセス、計32プロセス並行稼働を
+   実機確認)。gigのみ既存のbackoff機構(`gig-healthcheck.sh`)により暴走せず0プロセス
+   (健全)だった対比が根本対策の方向性を示した。
+
+   **対策**: gigの実証済みパターン(pkill by process name + 60分5回backoff)を
+   clip/affiliate/video/bountyの4つの`*-healthcheck.sh`全てに移植(v2)。ソケットが
+   消失していても`pkill -f "claude --name <session>"`でプロセス名ベースに確実にkillして
+   から再起動するため、「ソケット切断=別プロセスと誤認して重複起動」が構造的に起きなく
+   なる。ソケット消失自体の根本原因(disk-cleanerのsweepはtype f/d限定でsocket非対象と
+   確認済み、それ以外の原因は依然未特定)は残るが、重複が積み重なる実害は解消。
+
+   実装: `~/anicca/skills/earn/{clip,affiliate,video,bounty}/*-healthcheck.sh`をv2に
+   書換、commit+push済み。修正反映前に発生していた重複(4世代×4loop)は手動で整理済み、
+   全loop 1プロセスずつの状態に復帰したことを確認。
+
 タスク化(#6〜#8、TaskList参照): #6 ClawRouter producer経路E2E確認、#7 tmuxソケット消失原因
 +healthcheck重複防止、#8 cookie復号失敗の根本解決(camofox Firefox cookie方式へ切替、実装中)。
