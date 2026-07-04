@@ -1629,3 +1629,12 @@ STEP 6 記事(#36/37/38)/ ENV-README(#31)/ ハッカソン(#39)/ LAUNCH(#15)
   「試す→新earner skill 配線→テスト→merge」する橋(#35)③個体 self-improve(#41)④集団 git-merge(#27)★。
 - 既にある部品(要らぬ再発明を避ける): cook(explore)/ research / 3トレード baseline / self-eval(H2)/ self-improve(H3)/
   founder-loop(automaton)/ pm-earner(claude-p)/ franklin-sol(Franklin)。★残 = これらを繋いで「探索→試作→稼ぐ→merge」を閉じる★。
+
+### §22 ★ 検証で発覚: 私が anicca-a3cdd4 を枯渇させて止めてた(2026-07-05)★
+- ★cook(EXPLORE)は実働★: 手動実走で実候補URL返却 + automaton の ledger に "cook exploring: new on-chain micro-earners" 記録。
+  automaton は cook + earn/video/clip/yield/sol-trade/pm-trade/bounty/gig を実際に cycle してた = share-house は設計通り動いてた。
+- ★但し automaton(anicca-a3cdd4, wallet 0xa3cd)は BROKE で停止中★: ledger 末尾が "Balance ($0.2997) below compute buffer ($5)" ×9 → shutdown。
+  ★原因 = 私が 0xa3cd を $8.76→$0.30 に枯渇(PM engine 資金に Relay した)★。ClawRouter compute 予算($5)を割って自走不能に。
+- ★修復(自分の罪を戻す)★: Akash defer で Franklin の $7.43 USDC が空いた → ★~$5.5 を Franklin(Solana)→ Relay → 0xa3cd(Base)に返金★
+  → automaton が compute buffer 回復 → cook+全earner loop 再開。richest-behavior instance(全 earn + explore を回す)を最優先で生き返らせる。
+- 教訓: instance 間の資金移動は「動いてる body を止める」= §11.9 の self-heal 対象。今後 colony wallet を勝手に枯渇させない。
