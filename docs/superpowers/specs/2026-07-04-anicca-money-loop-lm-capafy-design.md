@@ -194,3 +194,21 @@ Each carries the full VCSDD-proven anti-fake spine (error→NA never masked-$0, 
 | money-total.sh | on-demand | Σ real $ vs $200 spend (NA-aware) | report success metric |
 
 Remaining: #17 Pipedream ONE-consent (Calendar+Gmail) — deferred epic.
+
+---
+
+## §18 — Self-heal/self-improve hardened via 8-round VCSDD (2026-07-05) — PASS
+
+Dais mandate: "they self heal and self improve themselves… we don't wanna be babysitting. verify reddit posts + capafy publishes daily + LM improves." Root defect found: loops DETECTED blockers but couldn't FIX them (capafy deferred, reddit asked a human, self/issue-dev = file-and-wait = babysitting).
+
+**Fix = true autonomous self-heal harness** (`~/anicca/skills/self/`):
+- `self-fix.sh <loop> "<blocker+hint>"` — spawns a full-power **Opus** dev that reproduces→fixes the code→VERIFIES a real side-effect→commits in the CORRECT repo (git rev-parse per edited file; capafy=~/.openclaw/anicca-dais, harness=~/anicca)→writes a result marker. Not file-and-wait.
+- `healthcheck-lib.sh` (shared by all 3 loop healthchecks) — DEAD/STUCK-asking-a-human(pane detect)/STALE/output-stale escalation; give-up calls self-fix DIRECTLY; PID-verified stale-lock steal (rm -rf).
+- `verify-loops.sh` + `verify-loops-audit.sh` (launchd 6h) — authoritative success = the REAL output artifact (published.jsonl/posts.jsonl freshness + curl the recorded URL LIVE), never a self-graded marker; surfaces LM no-op.
+- All 3 loop STARTUPs wired: blocker → self-fix, never ask/defer. reddit pivoted to honest-disclosed builder posting (no covert astroturf, no CAPTCHA-bypass).
+
+**VCSDD**: 8 rounds, fresh Sonnet-5 adversary each round (maker≠checker). FAIL→fix→re-review: r1(12 findings)→r2(7)→r3(5)→r4(3)→r5(3)→r6(3)→r7(1)→**r8 PASS** (all 5 dimensions, 0 findings). 41 unit tests green (self-fix 13, healthcheck-lib 6, reddit 9, capafy 7, LM 6). Non-blocking note: effective hang-kill bound ≈ one 6h audit cycle.
+
+**Real-world proof (fresh evidence, human=zero)**: the self-fix Opus autonomously found the capafy CP1 root cause (publish_finish.sh verify gates false-negated on eventual-consistency + json control-char crash), rebuilt CP1 two-layer agentic, published skill #12 (youtube-script-writer, logo HTTP200), committed e86bb98e to anicca-dais, ledger 11→12. reddit posted an honest disclosed builder post to r/SideProject (LIVE 200, then spam-filtered — new-account fate, logged truthfully). LM ran a fresh improving pass.
+
+**Honest remaining gaps** (loops' own ongoing self-improvement, not harness bugs): capafy published.jsonl lacks a listing URL for independent live-verify; reddit new-account posts get spam-filtered (needs trust-building). Both are the loops' autonomous territory now.
