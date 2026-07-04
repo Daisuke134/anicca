@@ -6,6 +6,16 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # → writes a result marker. That is how the loops self-improve their own code without babysitting.
 # Usage: self-fix.sh <loop-name> "<blocker + concrete fix hint>"
 set -uo pipefail
+# FIND-029: fingerprint the SUBSTANTIVE pane content only — strip the CLI's ever-changing status line (elapsed
+# timer, token counter, spinner glyphs, "esc to interrupt") so a genuinely FROZEN (deadlocked) fixer produces the
+# SAME fingerprint across checks (its reasoning/tool text is unchanged; only the timer ticks), while real progress
+# (new text) changes it. Without this strip, the incrementing timer made every check look like "progress".
+sf_pane_fingerprint(){ printf '%s' "$1" | tail -25 \
+  | sed -E 's/[0-9]+//g; s/esc to interrupt//g' \
+  | tr -d '✻✳✶✢⏺◐◓◑◒·↑↓…' \
+  | grep -avE 'tokens' \
+  | cksum | awk '{print $1"-"$2}'; }
+if [ "${1:-}" = "--fingerprint" ]; then sf_pane_fingerprint "$(cat)"; exit 0; fi
 # FIND-025: NORMALIZE the loop name to a single canonical form ("<x>-loop") so every call site — healthcheck
 # (HC_LOOP=capafy-loop), STARTUP prompts (capafy), verify-loops (capafy) — maps to ONE session name + ONE result
 # marker. Without this, "capafy" and "capafy-loop" spawn two mutually-unaware fixers and split the marker the
@@ -36,7 +46,7 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   # progress, continue; if it is frozen (unchanged) or not generating at all → genuinely hung/idle → kill+respawn.
   PANEHASH="$STATE/.self-fix-$LOOP.panehash"
   _pane="$(tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null)"
-  cur="$(printf '%s' "$_pane" | tail -25 | cksum | awk '{print $1"-"$2}')"
+  cur="$(sf_pane_fingerprint "$_pane")"   # FIND-029: volatile timer/token/spinner stripped → frozen pane = same hash
   prev="$(cat "$PANEHASH" 2>/dev/null||echo none)"; printf '%s' "$cur" > "$PANEHASH"
   if printf '%s' "$_pane" | tail -6 | grep -qE 'esc to interrupt' && [ "$cur" != "$prev" ]; then
     echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, generating + pane ADVANCED → real progress, continue" >> "$LOG"; echo "self-fix[$LOOP] still progressing (${age_min}min)"; exit 0

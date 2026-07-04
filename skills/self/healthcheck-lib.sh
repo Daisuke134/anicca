@@ -19,6 +19,22 @@ hc_is_stuck_pane() {
     && ! printf '%s' "$pane" | grep -qE 'esc to interrupt'
 }
 
+# FIND-020/026/031: acquire a per-loop lock. mkdir is atomic (one winner). A FRESH lock (<10min) = a live run → refuse
+# (return 1). A STALE lock (>=10min, = a hard-killed prior run) is stolen with rm -rf (works even though the lock dir
+# is NON-EMPTY due to the owner file — plain rmdir would fail and permanently disable self-heal). After (re)creating,
+# claim by PID and re-verify to close the concurrent-steal race: exactly one survivor returns 0.
+hc_acquire_lock() {
+  local LOCK_DIR="$1" now="$2"
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    local lage=$(( ( now - $(stat -f %m "$LOCK_DIR" 2>/dev/null||echo "$now") ) / 60 ))
+    if [ "$lage" -ge 10 ]; then rm -rf "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 1
+    else return 1; fi
+  fi
+  echo "$$" > "$LOCK_DIR/owner" 2>/dev/null; sleep 0.2
+  [ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" = "$$" ] || return 1
+  return 0
+}
+
 hc_run() {
   local LOOP="$HC_LOOP" SOCK="$HC_SOCK" SESSION="$HC_SESSION" HB="$HC_HB" START="$HC_START"
   local STALE_MIN="$HC_STALE_MIN" CLI="$HC_CLI" OUTPUT="${HC_OUTPUT:-}" OUT_STALE_HRS="${HC_OUTPUT_STALE_HRS:-30}"
@@ -31,17 +47,7 @@ hc_run() {
   # FIND-013: lock with a staleness escape hatch. A healthcheck killed abnormally must not disable self-heal forever
   # — if the lock is older than 10min it is stale (each run finishes in seconds), so steal it.
   local LOCK_DIR="/tmp/.$LOOP-healthcheck.lock"
-  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
-    # a FRESH lock (<10min) = a live run holds it → bail. Only a STALE lock (>10min, = a hard-killed prior run) is stolen.
-    local lage=$(( ( now - $(stat -f %m "$LOCK_DIR" 2>/dev/null||echo "$now") ) / 60 ))
-    if [ "$lage" -ge 10 ]; then rm -rf "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 0
-      echo "$(date '+%F %T') stole stale lock (${lage}min)" >> "$LOG"
-    else return 0; fi
-  fi
-  # FIND-020: close the steal TOCTOU. Two racers stealing the same stale lock could each end up with their own fresh
-  # dir; claim by PID and re-verify — if a concurrent stealer overwrote us, exactly one survives and the rest bail.
-  echo "$$" > "$LOCK_DIR/owner" 2>/dev/null; sleep 0.2
-  [ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" = "$$" ] || return 0
+  hc_acquire_lock "$LOCK_DIR" "$now" || return 0
   trap 'rm -rf "$LOCK_DIR" 2>/dev/null' RETURN
 
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
