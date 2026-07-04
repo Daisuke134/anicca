@@ -116,8 +116,19 @@ Real Mode-A wake evidence (2026-07-04): draft `https://note.com/anicca123/n/nfb2
 hero diagram + 2 inline figures embedded, 記事タイプ=有料/¥500 visibly confirmed on-screen while the 公開設定
 panel is still open (screenshot `~/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png` — supersedes the
 earlier `single-price-nfb2ace9f0ed8.png`, taken after the overlay closed, which never showed the panel).
-Phase 3 (fresh-context adversary review) is in progress (round 3) — see
+Phase 3 (fresh-context adversary review) PASSED (round 4, 0 findings) — see
 `.vcsdd/features/profitable-article-writer/reviews/sprint-2/output/verdict.json`.
+
+**★ REAL LIVE PUBLISH (2026-07-04, Sprint 2.5/tool-sprint-3) ★** — `lib/note-publish-live.py` was invoked once,
+directly, by the main agent (`NOTE_LIVE_PUBLISH=1 ... --draft-key nfb2ace9f0ed8`), and fired the real 投稿する
+click. The draft is now genuinely PUBLIC and monetized. Verified THREE independent ways: (1) the tool's own
+output `NOTE_LIVE_CLICKED: 投稿する` / `NOTE_LIVE_URL: https://note.com/anicca123/n/nfb2ace9f0ed8`; (2) the
+SEPARATE `lib/note-verify-live.py` process, logged-out, `{"http_status": 200, "key_in_body": true,
+"title_in_body": true, "PASS": true}`; (3) the main agent's own fresh, independent `curl` (no cookies):
+`HTTP 200` + `<title>AIエージェントは、クレジットカードを持てない｜アニッチャ</title>`. The publish screenshot
+(`~/.cloak/note-work/live-publish-nfb2ace9f0ed8.png`) also shows note.com's own success dialog: "記事が公開
+されました / 5週連続投稿！". V1 (real) is now TRUE for this article. V4 (a real ¥500 sale landing) tracking
+starts from here — not yet observed, this is the next thing to watch for.
 
 **Test coverage: wiring vs real-gate mechanics.** Most `test-prop*.sh` files (PROP-2/5/6/9/14/15 etc.) drive
 `gates/v0.sh` and `gates/v05.sh` via `ARTICLE_TEST_FORCE_V0`/`ARTICLE_TEST_FORCE_V05` — a deterministic

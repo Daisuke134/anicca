@@ -17,8 +17,12 @@ Skill home: `skills/profitable-article-writer/` · VCSDD state: `.vcsdd/features
                        Adversary PASS (4 rounds, 0 findings) + hardening. 20/20 tests.
                        Real evidence: note draft `nfb2ace9f0ed8` (anicca123), independently
                        browser-verified by the main agent (cover + diagrams + 有料/¥500 panel visible).
- ⏳ NEXT: Sprint 2.5   Flip the ALREADY-VERIFIED draft to Mode B (real live publish) — see §11.
-    Sprint 3          Distribution (X/Threads) + trust ramp → V2 reach / V3 convert
+ ✅ Sprint 2.5 COMPLETE Standalone real-publish tool (REQ-21/22), structurally isolated from run.sh/Mode-B/
+                       daily-wake. Adversary PASS (1c: 3 rounds, contract: 2 rounds, impl: 1 round) + hardening.
+                       26/26 tests. ★ REAL PUBLISH EXECUTED 2026-07-04: `nfb2ace9f0ed8` is now genuinely
+                       PUBLIC — verified 3 independent ways (tool output, separate note-verify-live.py,
+                       main agent's own fresh logged-out curl). V1(real)=TRUE. V4(¥500 sale) tracking starts now.
+ ⏳ NEXT: Sprint 3     Distribution (X/Threads) + trust ramp → V2 reach / V3 convert
     Sprint 4          Wire run.sh into the runtime daily loop (claude -p sonnet, unattended)
     Sprint 5          Self-heal (REQ-17) + self-improve (REQ-18) — zero Opus, zero human
     Sprint 6          Niche generalization + spawn self-funded child
