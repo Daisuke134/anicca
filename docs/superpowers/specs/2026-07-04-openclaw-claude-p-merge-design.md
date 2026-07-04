@@ -597,4 +597,17 @@ tmux+cron+launchdパターンをclip-promoteにも適用する作業に着手(�
 既存のまま、足場のみ新規追加)。
 
 実装(cli.sh/healthcheck.sh/launchd plist新規作成+起動+初回パス確認+push)はTask #9として
-subagentに委譲、進行中。
+subagentに委譲、**完了**(2026-07-04、fresh evidence):
+- `clip-promote-cli.sh`/`clip-promote-healthcheck.sh`/launchd plist新規作成、commit `a11e88e`push済み
+- 実際にtmuxセッション起動→CronCreate(job `f30c419f`、2時間毎`17 */2 * * *`)→初回discover→execute
+  パス実行→loop-report.sh経由のmail報告(HTTP 200)まで全部fresh evidence確認済み
+
+### 16.1 新ブロッカー発見: promote.funへのログインが無い
+
+初回executeパスの結果: `select:no-promote-tab (login session not open on :9222)`。
+`curl localhost:9222/json/list`で独立確認したところ、CloakBrowser daily-driverには
+coconala.com/IG関連タブのみでpromote.fun関連タブが一切無い。`~/.openclaw/.env`にも
+promote.fun認証情報なし。これがclip-promote SELECTの前提条件であり、次に解決すべき
+ブロッカー(Task #10として登録)。ログイン方式(メール/パスワードかSolanaウォレット
+接続か)を調査し、既存の`CLIP_WALLET_SOLANA`(xxKC33...)を使う可能性を含め、AI自身が
+アカウント作成/ログインを試みる(HARD RULE #-2: 「できない」を先に出さず、まず試す)。
