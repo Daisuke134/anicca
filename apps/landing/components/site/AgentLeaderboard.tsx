@@ -9,6 +9,7 @@ import { useState } from 'react';
 
 export interface LeaderboardEntry {
   id: string;
+  chain?: 'base' | 'solana';
   model_live?: string;
   model_tier?: 'frontier' | 'free';
   status?: 'alive' | 'critical' | 'dead';
@@ -95,8 +96,14 @@ export default function AgentLeaderboard({ leaderboard }: { leaderboard: Leaderb
               style={{ display: 'grid', gridTemplateColumns: COLS, gap: 16, padding: '16px 20px', borderBottom: '1px solid rgba(244,241,234,0.08)', alignItems: 'center' }}
             >
               <span style={{ fontSize: 20, fontWeight: 800, opacity: 0.55 }}>{i + 1}</span>
-              <a href={`https://basescan.org/address/${e.id}`} target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#f4f1ea', textDecoration: 'none' }}>
+              <a
+                href={e.chain === 'solana' ? `https://explorer.solana.com/address/${e.id}` : `https://basescan.org/address/${e.id}`}
+                target="_blank" rel="noopener noreferrer" style={{ fontSize: 13, color: '#f4f1ea', textDecoration: 'none' }}
+              >
                 <span style={{ fontFamily: 'IBM Plex Mono, monospace' }}>{shortId(e.id)}</span>
+                <span style={{ marginLeft: 8, fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.4 }}>
+                  {e.chain === 'solana' ? 'solana' : 'base'}
+                </span>
                 {e.is_ours && <span style={{ marginLeft: 8, fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', opacity: 0.5 }}>ours</span>}
                 {(e.tags ?? []).includes('agent-hackathon') && <span style={{ marginLeft: 8, fontSize: 8, letterSpacing: 1, textTransform: 'uppercase', color: '#c8302e' }}>#hack</span>}
               </a>
