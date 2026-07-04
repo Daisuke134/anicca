@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "supply.mjs is completely disconnected from the skill's actual automaton entrypoint, and its own header comment makes an unverified/false claim about how it is invoked. `run.sh` (the file the automaton loop presumably fires for the earn/defi-yield slot, per HARD-RULE conventions elsewhere in skills/earn/*) never calls `supply.mjs` anywhere — it only shells out to `decide-yield.py` and, in the real-money branch, prints a STALE message: `\"note\":\"real Aave supply() not wired yet (needs signer + Base ETH gas) — fail-closed\"` (run.sh:14). That statement is now FALSE: a fully wired real supply() implementation (supply.mjs) exists in the same directory. Meanwhile supply.mjs's own top comment claims 'The automaton invokes THIS in its loop to put its own USDC to work' (supply.mjs:3) — a grep across the entire worktree found ZERO references to `supply.mjs` from any other file (run.sh, cron config, orchestrator, etc.); the script is only ever invoked by a human/agent typing `node supply.mjs` directly. Per this project's own HONESTY RULES ('verify before claiming... symbol/behavior not confirmed = fabrication'), an in-code comment asserting an automated invocation path that does not exist anywhere in the repository is an unverified claim shipped as fact, and leaves the real question 'how/when does the autonomous loop actually decide to fire a real supply' entirely unanswered — there is no SKILL.md in this directory either (see FIND-006) to supply that missing onboarding.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/run.sh",
+    "lineRange": "12-17",
+    "snippet": "if [ \"$DRY_RUN\" = \"false\" ] && [ \"$EARN_MODE\" = \"execute\" ]; then\n  echo \"{...\\\"note\\\":\\\"real Aave supply() not wired yet (needs signer + Base ETH gas) — fail-closed\\\"...}\"\n  exit 0\nfi"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "No handling for a reverted `approve()` before proceeding to `supply()`. `supply.mjs:72-75` awaits the approve receipt but never inspects `.status`; if the approve reverts (e.g. Base RPC returns a stale nonce, USDC pauses, out-of-gas given the wallet's ~$0.07 ETH balance), the code falls straight through to calling `supply()` with an allowance that was never actually raised, spending additional real gas on a `supply()` call that will also revert on-chain (transferFrom insufficient allowance) — a second, avoidable real-money gas loss that a `receipt.status==='success'` check immediately after the approve would prevent by aborting early with a clear diagnostic. Given the wallet only holds ~0.0000277 ETH ($0.07) for gas, wasting gas on an avoidable second revert is a real, non-hypothetical risk for this specific fire.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/supply.mjs",
+    "lineRange": "71-78",
+    "snippet": "if (allow < supplyAmt) {\n  approveTx = await wallet.writeContract({...functionName: 'approve'...});\n  await pub.waitForTransactionReceipt({ hash: approveTx });\n}\nconst supplyTx = await wallet.writeContract({...functionName: 'supply'...});"
+  },
+  "routeToPhase": "2b"
+}

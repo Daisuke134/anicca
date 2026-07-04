@@ -1,0 +1,12 @@
+{
+  "findingId": "S3-FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "moderate",
+  "description": "verify-live-migration.mjs runs S3.1 (apply, a real write against production) unconditionally, then S3.2-S3.4 as a post-hoc report. There is no pre-apply precondition check and no automated rollback if S3.4 discovers a real back-compat break after the migration already ran; main() only sets the process exit code. For this additive-only migration the residual risk is low, but the apply-then-verify structure has no documented revert step, which will not be safe to reuse unmodified for a less-trivially-additive future migration.",
+  "evidence": {
+    "filePath": "apps/landing/scripts/verify-live-migration.mjs",
+    "lineRange": "65-115"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "resolve.py's resolve_all() (skills/earn/pm-trade/resolve.py:38-77) is the module that implements the fix for iteration-2's CRITICAL FIND-001 -- it is the only code path that ever turns a decide.py 'open' row into a 'resolved' row with pnl_usdc, which is the sole input gate.py needs to ever produce PM_PAPER_PASS=1. It has ZERO test coverage: neither test_lib.py nor test_strategy.py imports resolve or exercises resolve_all in any way. Unlike gate.py's _load_resolved (which test_strategy.py:78-93 now tests via an injected tempfile, exactly the pattern needed here), resolve_all()'s core selection/rewrite conditional -- 'if (r.get(\"src\")==\"momentum\" and r.get(\"status\")==\"open\" and r.get(\"window_end_ms\") and now_ms>=r[\"window_end_ms\"] and r.get(\"window_start_ms\")):' (resolve.py:57-58) -- is completely unverified. window_closed_up() is a free module-level function and is trivially monkeypatchable in a test (exactly as the codebase already knows how to do for network calls elsewhere), so this is an avoidable gap, not an untestable-I/O excuse. Corroborating disk evidence: __pycache__/ has no resolve.cpython-314.pyc, meaning resolve.py has never even been imported in this venv, let alone tested.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/resolve.py",
+    "lineRange": "38-77",
+    "snippet": "def resolve_all(ledger=LEDGER, now_ms=None): ... if (r.get(\"src\") == \"momentum\" and r.get(\"status\") == \"open\" and r.get(\"window_end_ms\") and now_ms >= r[\"window_end_ms\"] and r.get(\"window_start_ms\")): ... -- zero tests reference resolve.py anywhere in test_lib.py or test_strategy.py"
+  },
+  "routeToPhase": "2c"
+}

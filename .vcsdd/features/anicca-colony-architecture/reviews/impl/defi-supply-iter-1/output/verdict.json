@@ -1,0 +1,61 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "impl/defi-supply-iter-1",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "safeToFireRealMoney": "NO",
+  "safeToFireRealMoneyReason": "The DRY_RUN/EARN_MODE double-gate itself is correctly implemented (verified by static trace: real writeContract is unreachable unless DRY_RUN==='false' AND EARN_MODE==='execute' — every other env combination, including unset/typo/case-mismatch, falls through to the simulate-only branch), and the amount math, approval scope, onBehalfOf target, and asset/pool addresses are all correct (see PASS evidence below). However, the real-execution branch NEVER checks the on-chain receipt status before writing 'supplied' to the position ledger (FIND-001, critical) — reproducing a phantom-deposit bug this same codebase already found and fixed elsewhere (skills/earn/lib/deposit-guard.mjs). A reverted or no-op supply (a real possibility given the wallet's ~$0.07 ETH gas buffer) will be recorded as a successful supply, corrupting the automaton's own bookkeeping even though it will not directly destroy the $2 principal. Per the money-safety review rubric (any one defect = FAIL), and because this script is also NOT wired into the automaton's actual entrypoint (FIND-003) and has zero automated test coverage of its own gate logic (FIND-002), it should not be fired for real until FIND-001 (and ideally FIND-005) is fixed.",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:17-18", "description": "USDC (0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913) and Aave v3 Base Pool (0xA238Dd80C259a72e81d7e4664a9801593F98d1c5) addresses match the SAME constants independently used in execute-yield.mjs:38-39, cross-verified — correct chain/contract targets."},
+        {"type": "file", "location": "skills/earn/defi-yield/run.sh:12-17", "description": "run.sh (the presumed loop entrypoint) still claims real supply is 'not wired yet' and never calls supply.mjs at all — spec/reality mismatch."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:54-55", "description": "no-gas (eth===0n) and post-reserve-zero (supplyAmt<=0n) skip paths ARE handled correctly and apply before either DRY or REAL branch runs."},
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:71-78", "description": "approve() receipt status is never checked before proceeding to supply(), risking an avoidable second on-chain revert burning scarce ($0.07) gas."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:44-49", "description": "Amount sizing is correct: supplyAmt = min(want, bal-RESERVE_USDC) in raw 6-decimal USDC units, so it can never exceed the wallet's actual balance; negative/zero cases are caught by the supplyAmt<=0n guard at line 54."},
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:73, 76-77", "description": "approve() is scoped to exactly supplyAmt (not MaxUint256) and supply()'s onBehalfOf is account.address (the AI's own wallet) — both correct, safer than the MaxUint approve pattern used in execute-yield.mjs:118-121."},
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:76-86", "description": "CRITICAL: ledger append + 'supplied' decision happen unconditionally after waitForTransactionReceipt, with no rcpt.status==='success' check — a reverted/no-op supply is recorded as a real supply (see FIND-001)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/defi-yield/lib.py:39-46, test_lib.py:44-52", "description": "size_supply()/pick_pool() pure logic has 6 passing-shaped unit tests covering reserve math, min-supply floor, allowlist/TVL/APY filtering, and empty-input None cases."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/defi-yield/supply.mjs:36-37", "description": "gate booleans traced statically for all four env-var truth-table combinations; only DRY_RUN==='false' AND EARN_MODE==='execute' reaches the real branch — but this is unverified by any automated test (FIND-002)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": false,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

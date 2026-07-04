@@ -28,9 +28,32 @@
       "status": "active",
       "createdAt": "2026-07-03T13:37:11.528Z",
       "mode": "lean",
-      "currentPhase": "1b",
-      "updatedAt": "2026-07-03T13:39:01.039Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-03T14:06:21.456Z"
+    },
+    "clip-post-verify-hardening": {
+      "status": "active",
+      "createdAt": "2026-07-03T14:36:42.284Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "6",
+      "updatedAt": "2026-07-03T17:21:20.425Z"
+    },
+    "clip-clawrouter-instance-provision": {
+      "status": "active",
+      "createdAt": "2026-07-03T17:48:37.378Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "2a",
+      "updatedAt": "2026-07-03T18:38:03.743Z"
+    },
+    "portfolio-self-improve-loop": {
+      "status": "active",
+      "createdAt": "2026-07-03T22:42:34.341Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-03T22:42:34.341Z"
     }
   },
-  "activeFeature": "clip-loop-dual-instance-earn"
+  "activeFeature": "portfolio-self-improve-loop"
 }

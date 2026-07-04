@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "The idempotency fix for iter-2 FIND-007 (decide.py:50-64, _already_traded_window) dedupes on the tuple (window_end_ms, side), not on window_end_ms alone. Because decide.py's cron pass is documented in SKILL.md:26 as running 'every ~1 min during a window,' and momentum.side_and_prob's chosen side can flip within a single 5-min window as BTC spot price oscillates (momentum.py:31-42, purely a function of the return-so-far at call time), it is possible for the SAME window to first produce an 'UP' paper trade on one wake and a 'DOWN' paper trade on a later wake within the same window -- the dedup key (window_end_ms='UP') and (window_end_ms='DOWN') are treated as distinct and both are allowed to be recorded. This means a single underlying 5-min event can generate two conflicting paper positions, both of which resolve.py will independently resolve and gate.py will independently count toward the win-rate/net statistics -- inflating the effective sample size and mixing two contradictory bets into what the operator/SKILL.md documentation implies is one signal per window. This is a residual, real gap in the idempotency fix, not a full re-opening of FIND-007 (exact-duplicate spam is genuinely blocked) but a documented-behavior mismatch that should be tracked.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "50-64, 135",
+    "snippet": "if r.get(\"src\") == \"momentum\" and r.get(\"window_end_ms\") == window_end_ms and r.get(\"side\") == side: return True  -- keyed on (window_end_ms, side), so a same-window side flip is not deduped"
+  },
+  "routeToPhase": "2c"
+}

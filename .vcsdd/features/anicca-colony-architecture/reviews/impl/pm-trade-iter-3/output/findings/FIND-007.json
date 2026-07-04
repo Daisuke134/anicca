@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "low",
+  "description": "The HTTP GET helper (UA header dict + urllib.request.urlopen(...) wrapped in json.load) is duplicated verbatim across three files: pm-paper.py:20-30, decide.py:19-24, resolve.py:18-23. All three define an identical UA constant and a near-identical get(url) function. This is minor duplication (each file is a standalone shell script by the codebase's own convention) and not blocking, but it means any future fix to request behavior (timeout, retry, header) must be applied in three places by hand, and nothing enforces they stay in sync. Not severe enough alone to fail structural_integrity, but noted as it will compound as more shell scripts are added to this slot.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "19-24",
+    "snippet": "UA = {\"User-Agent\": \"Mozilla/5.0 ...\"}\\ndef get(url): return json.load(urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20)) -- near-identical block also in resolve.py:18-23 and pm-paper.py:20-30"
+  },
+  "routeToPhase": "2c"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "decide.py's _already_traded_window() (lines 50-64) and _iso_ms() (lines 38-47) -- the two functions that implement iteration-2's FIND-007 idempotency fix and the window-boundary parsing it depends on -- have zero test coverage (no decide.cpython-314.pyc in __pycache__/, confirming decide.py has never been imported in this venv). This matters because of a concrete, traceable edge case: _iso_ms() returns None (decide.py:41-42, 46-47) if the Polymarket gamma market object's startDate/endDate is missing or fails datetime.fromisoformat parsing. decide.py's main() never validates win_start/win_end before writing a paper row (main():130-144) -- a row can be recorded with window_start_ms=None, window_end_ms=None, status='open'. Two compounding effects follow, neither tested nor guarded: (1) _already_traded_window() short-circuits to False whenever window_end_ms is None (line 52: 'if not ledger.exists() or window_end_ms is None: return False'), so idempotency is silently SKIPPED for such a row -- a cron running every ~1 min could spam duplicate open rows; (2) resolve.py's resolve_all() requires window_end_ms to be truthy to ever touch a row (resolve.py:57-58), so any such row can NEVER be resolved -- it is an orphaned 'open' row forever, silently never contributing to or blocking the gate. This is exactly the kind of edge case VSDD's mandatory adversarial check asks for: a test suite that would pass unchanged even if this handling were entirely absent.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "38-64, 130-144",
+    "snippet": "def _iso_ms(s): ... except Exception: return None\ndef _already_traded_window(ledger, window_end_ms, side): if not ledger.exists() or window_end_ms is None: return False ...\n(main() never checks win_start/win_end for None before writing the row at lines 139-144)"
+  },
+  "routeToPhase": "2c"
+}

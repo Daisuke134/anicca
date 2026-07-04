@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "decide.py computes the momentum signal (`wr = btc_window_return()`, decide.py:111) from a Binance query with NO startTime -- `https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1` (decide.py:31) -- which returns whatever Binance considers its OWN current/latest 5-min candle. Separately, `mk = find_btc_updown()` (decide.py:115) independently discovers the ACTIVE Polymarket BTC up/down market and its own `window_start_ms`/`window_end_ms` (decide.py:96, parsed via `_iso_ms(m.get('startDate'))`/`_iso_ms(m.get('endDate'))`). Nothing in decide.py ever verifies these two windows are the same window -- there is no assertion, no re-fetch of the Binance candle anchored to `mk['window_start_ms']`, and no test anywhere (test_lib.py/test_strategy.py/test_resolve.py) that checks Binance's 'latest candle' start-time equals the Polymarket market's window_start_ms. If Polymarket's window boundaries drift from Binance's UTC 5-min buckets (clock skew, an off-cadence market, or a request landing exactly at a boundary rollover), `wr` describes a DIFFERENT window than the one `side_and_prob` is trading and the ledger is recording (window_start_ms/window_end_ms are taken from `mk`, not from the candle `wr` was computed on) -- i.e., the edge estimate feeding `lib.position_size`'s stake decision can be computed against the wrong window's price action. Contrast with resolve.py, which DOES correctly re-fetch Binance anchored to the stored `window_start_ms` (resolve.py:29, `startTime=int(window_start_ms)`) at resolution time -- so win/loss LABELING is honest, but the trading SIGNAL used to size and place the paper bet is not proven to be computed on the same window it is scored against. This is a plausible, unverified calc-correctness gap in the core decision path, not the deferred real-execution stage.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "27-35, 69-97, 109-122",
+    "snippet": "def btc_window_return(): k = get(\"https://api.binance.com/api/v3/klines?symbol=BTCUSDT&interval=5m&limit=1\") ... (no startTime, no link to mk['window_start_ms'])\nmain(): wr = btc_window_return(); mk = find_btc_updown(); ... side, price, prob = momentum.side_and_prob(wr, yes, no)  -- wr and mk's window are never cross-checked"
+  },
+  "routeToPhase": "2c"
+}

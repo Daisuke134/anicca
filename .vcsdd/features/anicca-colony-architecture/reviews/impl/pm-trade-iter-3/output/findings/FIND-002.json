@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-PMTRADE(c) (.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:113-118) explicitly requires 'run 3 verifier gates (0xMovez): trade-audit (a separate critique pass on own history), paper-run (backtest = promise, paper = receipt), alerts-only (watch a week, then act)' with the explicit rationale quoted verbatim in-spec: 'a loop with no gate is an agent agreeing with itself at speed.' The v3 implementation ships exactly ONE gate: gate.py's evaluate_gate (resolved-count + winrate + net threshold), which corresponds only to the 'paper-run' leg. There is no 'trade-audit' module (a separate critique pass reviewing pm-trade's own paper-trade history for systematic bias) and no 'alerts-only' watch-period mechanism (a period where decide.py would log a would-be trade without recording it, before paper-recording begins). This is a partial implementation of an explicit spec MUST -- 1 of 3 mandated gates exists.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/gate.py",
+    "lineRange": "1-56",
+    "snippet": "gate.py implements only the paper-run threshold gate (MIN_RESOLVED/MIN_WINRATE/MIN_NET_USDC); no trade-audit.py or alerts-only mode exists anywhere in skills/earn/pm-trade/ (confirmed via Glob of the full directory listing)"
+  },
+  "routeToPhase": "1a-or-2b"
+}

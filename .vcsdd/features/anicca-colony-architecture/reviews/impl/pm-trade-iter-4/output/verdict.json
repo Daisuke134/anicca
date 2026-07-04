@@ -1,0 +1,94 @@
+{
+  "sprintNumber": 4,
+  "feature": "anicca-colony-architecture",
+  "slot": "earn/pm-trade",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "feature/colony-architecture",
+    "slotDir": "skills/earn/pm-trade/"
+  },
+  "testExecution": {
+    "method": "hand-trace (NO Bash tool available in this adversary session -- disk-only, zero prior-session claims accepted uncritically). Every assertion in all 3 test files was traced line-by-line against the current implementation.",
+    "test_lib.py": {"handTracedCount": 12, "handTracedResult": "12/12 PASS (all 6 pure fns incl. new risk_gate hand-verified against 5 sub-cases in test_risk_gate_blocks_and_caps: budget-pass, budget-cap, daily-loss-cap-block, drawdown-cap-block, gas-reserve-block -- all match lib.py:58-73 exactly)"},
+    "test_strategy.py": {"handTracedCount": 12, "handTracedResult": "12/12 PASS (unchanged from iter-3, re-verified: momentum edge sign/clamp/tie-break + gate.evaluate_gate thresholds + gate._load_resolved schema filter all correct)"},
+    "test_resolve.py": {"handTracedCount": 5, "handTracedResult": "5/5 PASS -- win+loss via injected outcome_fn (resolve.py:63-76 correctly applies lib.side_won + lib.settle_pnl), leaves-open-before-window-end (now_ms<window_end_ms short-circuits the guard at resolve.py:61-62), leaves-open-when-outcome-None (resolve.py:64-66 explicit retry-next-tick branch, row left byte-for-byte unmutated), ignores-foreign-rows (resolve.py:61 requires src=='momentum'), dedup-one-trade-per-window (decide.py:50-66, keyed on window_end_ms alone, side param removed vs iter-3)."},
+    "total": "29/29 hand-traced PASS -- matches the builder's claimed 29/29. No discrepancy found between claimed and traced results."
+  },
+  "iterationThreeFindingsStatus": {
+    "FIND-001-spec": {"status": "RESOLVED-BY-SPEC-AMENDMENT", "evidence": "The v4 'Impl reconciliation (2026-07-04, per Phase-3 adversary)' note (.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:159-167) explicitly reclassifies the vendoring requirement as satisfied by porting patterns rather than vendoring code, and is accepted per this review's instruction not to fail spec_fidelity for the deferred-by-design real-execution stage. See FIND-001 (new, this iteration) for a genuine residual gap inside this same reconciliation note."},
+    "FIND-002-spec": {"status": "RESOLVED-BY-SPEC-AMENDMENT", "evidence": "Same note: 'Verifier gates are PHASED' explicitly defers trade-audit + alerts-only to the real-execution increment. Accepted as legitimate phased deferral EXCEPT for its claim that lib.risk_gate is 'built NOW' -- see FIND-001 (new)."},
+    "FIND-003-spec": {"status": "RESOLVED", "evidence": "behavioral-spec.md:164-166 explicitly states 'The older trading-polymarket-spawn EARS spec is SUPERSEDED by this lean momentum slot for the pieces that differ ... their function lives in lib.risk_gate/resolve.py/gate.py.' The supersession pointer for resolve.py/gate.py is accurate (hand-verified); the pointer to lib.risk_gate is NOT accurate today since risk_gate is never invoked -- folded into FIND-001 rather than re-opening FIND-003, since the supersession NOTE itself now exists (the original gap was 'silently unreferenced', which is fixed)."},
+    "FIND-004-resolve-untested": {"status": "RESOLVED", "evidence": "test_resolve.py's 5 tests (hand-traced above) genuinely exercise resolve_all()'s core selection/rewrite conditional via dependency-injected outcome_fn, with zero network calls. resolve.py:38-45 was refactored to accept outcome_fn=None defaulting to the live window_closed_up, exactly the injectable pattern the iter-3 finding asked for."},
+    "FIND-005-dedup-untested-and-none-orphan": {"status": "RESOLVED", "evidence": "decide.py:137-140 now explicitly refuses to record when win_end is None ('cannot resolve a trade with no window end -> never record it (would orphan forever)'), closing the orphan-row path entirely regardless of _iso_ms's internal correctness. decide._already_traded_window is now directly unit-tested (test_resolve.py:67-73, test_dedup_one_trade_per_window_any_side). Residual, lower-severity gap: _iso_ms itself (decide.py:38-47) still has zero direct unit tests -- but since its only failure mode (returning None) is now safely handled by the new refuse-to-record guard, this residual gap is a reduced-severity test-coverage note, not re-opened as a critical/high finding."},
+    "FIND-006-dedup-side-flip": {"status": "RESOLVED", "evidence": "decide._already_traded_window (decide.py:50-66) is now keyed on window_end_ms alone -- 'if r.get(\"src\") == \"momentum\" and r.get(\"window_end_ms\") == window_end_ms: return True' -- the `side` parameter was removed from the function signature entirely. test_resolve.py:67-73 directly proves a same-window opposite-side signal is blocked. Hand-verified correct: this is a genuine fix, not just a doc claim."},
+    "FIND-007-duplication": {"status": "STILL OPEN (non-blocking, low severity)", "evidence": "Carried forward as FIND-003 (this iteration): the UA/get() HTTP helper is now duplicated in a THIRD file (resolve.py), not deduplicated."}
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:159-167", "description": "Impl-reconciliation note read in full; correctly closes iter-3 FIND-001/002/003 on the vendoring/gate-phasing/supersession points, but its own claim that lib.risk_gate is 'built NOW' is contradicted by the code (see FIND-001)"},
+        {"type": "grep", "location": "skills/earn/pm-trade/*.py", "description": "grep -i 'risk_gate' across the whole slot dir returns only lib.py + test_lib.py -- zero callers in decide.py/run.sh/resolve.py/gate.py"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "hand-trace", "location": "skills/earn/pm-trade/test_resolve.py:1-87", "description": "iter-3's 3 edge-case findings (untested resolver, untested dedup, side-flip double-count) are genuinely fixed and hand-traced correct -- 5/5 new tests pass"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "hand-trace", "location": "skills/earn/pm-trade/lib.py:58-73, test_lib.py:77-87", "description": "risk_gate's own math hand-verified correct against all 5 sub-assertions (budget cap, loss-cap block, drawdown block, gas-reserve block) -- the function itself has no bug, it is simply never called (see FIND-001)"},
+        {"type": "grep", "location": "skills/earn/pm-trade/*.py, run.sh", "description": "Zero hits for private_key|PRIVATE_KEY|sign(|signTransaction|clob_client|create_order|post_order|passphrase|web3|Account.from_key across every file -- money-safe, no signing or order-placement code exists anywhere in this slot"},
+        {"type": "file", "location": "skills/earn/pm-trade/run.sh:23-27", "description": "Real-execution branch re-confirmed unconditionally fail-closed even with DRY_RUN=false + EARN_MODE=execute + PM_PAPER_PASS=1 -- prints 'execute-blocked' and exits 0, no order path exists"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/pm-trade/lib.py, momentum.py, gate.py", "description": "Pure/shell split maintained in v4: lib.py/momentum.py/gate.py contain zero I/O, network, or global mutable state; decide.py/resolve.py/pm-paper.py/run.sh are the effectful shell -- verified by reading every file in full"},
+        {"type": "file", "location": "skills/earn/pm-trade/resolve.py:38-81", "description": "resolve_all's outcome_fn injection point is a clean, minimal seam (module-level default arg) -- good testability design, directly enabled test_resolve.py's 5 tests"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/pm-trade/test_resolve.py + test_lib.py:77-87", "description": "The critical proof obligation from iter-3 (resolve_all must be independently verifiable without network) is now satisfied via dependency injection -- genuine improvement"}
+      ]
+    }
+  ],
+  "moneySafety": {
+    "verdict": "YES",
+    "evidence": "grep -i across every file in skills/earn/pm-trade/ (lib.py, momentum.py, decide.py, resolve.py, gate.py, run.sh, pm-paper.py, test_*.py) for private_key|PRIVATE_KEY|sign\\(|signTransaction|clob_client|create_order|post_order|passphrase|web3|Account.from_key returns zero real hits (only the false-positive test/function name 'test_momentum_edge_sign'/'momentum_edge_sign'). No wallet/keyfile is read anywhere, no CLOB order endpoint is ever POSTed, and run.sh's real-execution branch (run.sh:23-27) is unconditionally fail-closed regardless of gate/env state -- this holds even with the risk_gate gap in FIND-001, because risk_gate not being wired only matters once a real-money executor exists, and none does."
+  },
+  "pipelineStructuralCompleteness": {
+    "paperToGate": "COMPLETE and CORRECT -- re-verified this iteration. decide.py records an open momentum row (with the FIND-005 None-window refusal and FIND-006 window-keyed dedup both now in place) -> resolve.py resolves it via injectable outcome_fn + pure lib.side_won/lib.settle_pnl -> gate.py reads exactly that schema. All 5 new test_resolve.py tests hand-traced correct; no regression from iter-3's verified round-trip.",
+    "riskLayer": "NOT STRUCTURALLY WIRED (a genuine gap, not by-design deferral) -- lib.risk_gate exists and is correctly implemented/tested in isolation, but nothing in decide.py or run.sh ever calls it, and no file tracks the daily_loss/peak_balance state it requires as inputs. The spec's reconciliation note claims this is 'built NOW' as an active safeguard; functionally it is inert. See FIND-001.",
+    "gateToReal": "NOT STRUCTURALLY COMPLETE (BY DESIGN, correctly fail-closed) -- no CLOB order client exists anywhere in this slot; run.sh's real branch is an inert stub. This is intentional and explicitly documented as deferred/money-gated in the v4 spec reconciliation note -- NOT counted against spec_fidelity per this review's instructions."
+  },
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "readyForPaperCron": {
+    "verdict": "YES",
+    "rationale": "Money-safe (no signing/order code exists, fail-closed real branch, hand-verified). The paper-record -> resolve -> gate pipeline is structurally complete and hand-traced correct against all 29 tests. It is SAFE to fire the cron and accumulate paper data. Two caveats attach to the DATA QUALITY of that accumulation, not to its safety: (1) FIND-002's unverified Binance/Polymarket window-alignment assumption could produce a noisy or biased momentum signal -- if so, the paper win-rate will self-report as weak/negative (gate.py's own thresholds are the safety net here, so a misaligned signal cannot produce a false PASS, only a true and correct FAIL/no-data), and (2) FIND-001's unwired risk_gate means daily-loss/drawdown caps provide zero protection today -- irrelevant for paper mode (no real USDC at risk) but MUST be wired (with actual daily_loss/peak_balance tracking added) before any future money-gated real-execution increment, not merely left as an isolated tested function."
+  }
+}

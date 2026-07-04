@@ -1,0 +1,12 @@
+{
+  "findingId": "S3-FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "description": "REQUIRED_COLUMNS asserts exact-string equality on information_schema.columns.data_type/udt_name (e.g. 'double precision', 'jsonb', 'timestamp with time zone', 'ARRAY'/'_text'). These are stable across supported Postgres major versions so real-world risk is low, but the comparison is brittle-by-construction (case/display-name drift would silently flip S3.2 to FAIL with a confusing diff rather than a normalized/tolerant comparison). Flagged for completeness, not blocking on its own.",
+  "evidence": {
+    "filePath": "apps/landing/scripts/verify-live-migration.mjs",
+    "lineRange": "55-63"
+  },
+  "routeToPhase": "4"
+}

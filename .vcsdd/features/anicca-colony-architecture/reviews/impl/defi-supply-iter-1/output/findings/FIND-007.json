@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "The REAL broadcast path uses a single RPC endpoint with no fallback: `const RPC = process.env.BASE_RPC || 'https://mainnet.base.org';` (supply.mjs:19), used directly via `http(RPC)` for both the public client and the wallet client that signs/broadcasts. The sibling script `execute-yield.mjs` in the same directory tree explicitly documents why this is dangerous for real-money txs: 'EVERY public Base RPC flakes intermittently (mainnet.base.org timeouts, llamarpc 521, drpc 500) — that silently dropped deposits (the loop logged \"deploy\" but no tx landed)' (execute-yield.mjs:23-26), and mitigates it with a 6-endpoint `fallback(...)` transport. supply.mjs does not apply this already-learned lesson from the same codebase, so an RPC flake during `waitForTransactionReceipt` on the real path can leave the process unable to confirm whether the (real, signed, broadcast) approve/supply tx landed, with no retry across a healthier endpoint.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/supply.mjs",
+    "lineRange": "19, 39, 69",
+    "snippet": "const RPC = process.env.BASE_RPC || 'https://mainnet.base.org';\nconst pub = createPublicClient({ chain: base, transport: http(RPC) });\n...\nconst wallet = createWalletClient({ account, chain: base, transport: http(RPC) });"
+  },
+  "routeToPhase": "2b"
+}

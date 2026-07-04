@@ -1,0 +1,16 @@
+{
+  "findingId": "S3-FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Spec intro claims sprint-3 'flips the production switch' so 'a real agent ... actually lands in the served aniccaai.com/dashboard leaderboard'. The live evidence log itself contradicts this: the deployed /dashboard-sync on main runs an older, un-enriched version, is_ours/earn_src/net_worth_src are all null on the live response. A real agent registering today shows up on aniccaai.com with no no-fake enrichment. This is disclosed in the evidence log's FOLLOW-UPS section (after the fact) but is NOT named anywhere in the spec's own 'Scope (out)' section, so a reader of the spec alone would believe S3.5 proves the full rollout outcome. Disclosure in an evidence log does not satisfy the requirement stated in the spec.",
+  "evidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/specs/sprint-3-production-rollout.md",
+    "lineRange": "5-7,59-64"
+  },
+  "secondaryEvidence": {
+    "filePath": ".vcsdd/features/agents-at-arms-leaderboard/evidence/sprint-3-live-rollout.log",
+    "lineRange": "30-35,61-66"
+  },
+  "routeToPhase": "2b"
+}

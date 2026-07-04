@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The REAL execution path never verifies that the on-chain tx actually succeeded before recording it as a landed position. `supply.mjs:76-86` calls `wallet.writeContract` for `supply()`, awaits `pub.waitForTransactionReceipt`, and then UNCONDITIONALLY appends a `{action:'supply', ...}` row to `~/loops/earn-defi-yield/positions.jsonl` and prints `decision:'supplied'` — there is no `if (rcpt.status !== 'success') ...` guard anywhere. The same is true for the `approveTx` receipt (line 73-75): its status is never checked before the code proceeds to call `supply()`. This is EXACTLY the 'phantom deposit' failure class this same codebase already discovered and fixed elsewhere: skills/earn/lib/deposit-guard.mjs's `depositLanded()` function exists specifically because 'a tx can succeed and still deposit nothing... producing a PHANTOM basis — exactly the `morpho: $1` in cost-basis.json while the on-chain morpho balance was 0. Recording phantom basis inflates net worth and makes the dashboard lie.' (deposit-guard.mjs:3-7). `execute-yield.mjs:146-151` reuses that exact guard (`depositLanded({statusOk: r.status==='success', liqBefore, liqAfter, surplus})`) and only calls `recordDeposit` when it returns true. `supply.mjs` does not import or replicate this guard at all, so a reverted or no-op `supply()` call (Aave pause, oracle issue, insufficient allowance from a reverted approve, etc.) will still be logged to the ledger as a successful supply. Given HARD RULE 0.24 in this project ('NO DRY RUN, NO FAKE RUN... all cron must confirm the tx landed, not just that an entrypoint was hit'), this is a first-class money-safety defect: the automaton's own bookkeeping can silently diverge from on-chain reality after a single failed broadcast.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/supply.mjs",
+    "lineRange": "68-86",
+    "snippet": "const rcpt = await pub.waitForTransactionReceipt({ hash: supplyTx });\n\nconst ledger = path.join(os.homedir(), 'loops', 'earn-defi-yield');\nfs.mkdirSync(ledger, { recursive: true });\nconst row = { ts: ..., status: rcpt.status };\nfs.appendFileSync(path.join(ledger, 'positions.jsonl'), JSON.stringify(row) + '\\n');\nconsole.log(JSON.stringify({ ...plan, decision: 'supplied', ... }));"
+  },
+  "comparisonEvidence": {
+    "filePath": "skills/earn/lib/deposit-guard.mjs",
+    "lineRange": "1-23",
+    "note": "Sibling script execute-yield.mjs already had this exact phantom-deposit bug in production (cost-basis.json morpho:$1 while on-chain morpho was 0) and fixed it with depositLanded(); supply.mjs reintroduces the unfixed pattern."
+  },
+  "routeToPhase": "2b"
+}

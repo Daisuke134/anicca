@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "Two structural gaps: (1) There is NO `SKILL.md` in `skills/earn/defi-yield/`, unlike every sibling earn skill (pm-trade, hl-trade, video, x402-sell, clip-promote, token-launch, board-poller, finchip-publish all have one). Without it there is no natural-language onboarding telling the autonomous loop what this slot does, when to run it, or what its env vars mean — compounding FIND-003 (the loop has no documented path to ever set EARN_MODE=execute for this slot). (2) `decide-yield.py`'s own module docstring still says '\"\"\"yield.py — DeFi yield earn slot driver...\"\"\"' (decide-yield.py:2) even though the file is named `decide-yield.py` — a stale rename artifact that will confuse the next reader/agent about which file is the real entrypoint. Additionally, `supply.mjs` reimplements its own reserve/sizing arithmetic (RESERVE_USDC=500000n, want/supplyAmt clamp at supply.mjs:44-49) instead of calling the already-tested, already-pure `lib.size_supply()` (lib.py:39-46) — a parallel, untested JS reimplementation of logic the project already unit-tests once in Python.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/decide-yield.py",
+    "lineRange": "1-6",
+    "snippet": "\"\"\"yield.py — DeFi yield earn slot driver. DEFAULT = DRY_RUN plan...\"\"\""
+  },
+  "routeToPhase": "2b"
+}

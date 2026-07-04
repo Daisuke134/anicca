@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "SKILL.md and skills/registry.json are stale relative to the actual v4 file set, undermining SSOT/verification-readiness for the next reader/builder. SKILL.md:23's Files table reads '`test_lib.py` (11) + `test_strategy.py` (12) | 23 tests, all GREEN' -- test_lib.py is now 12 (test_risk_gate_blocks_and_caps was added, test_lib.py:77-87) and test_resolve.py (5 NEW tests) is not listed in the Files table AT ALL, so the documented total (23) undercounts the real total (29) by 6 and omits an entire test file. SKILL.md's Files table (lines 14-23) also never mentions `lib.risk_gate` anywhere, even though the function exists in lib.py and is cited in the spec's own reconciliation note as a delivered v4 feature (see FIND-001) -- an operator reading SKILL.md has no way to know risk_gate exists, is untested-in-integration, or is unused. registry.json:104's summary likewise still says '23 tests GREEN' and does not mention lib.risk_gate. This is a documentation-completeness gap on files that are explicitly this project's SSOT-of-record (per this codebase's own HARD RULE 0.17 SSOT convention for skill docs).",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/SKILL.md",
+    "lineRange": "14-23",
+    "snippet": "| `test_lib.py` (11) + `test_strategy.py` (12) | 23 tests, all GREEN | -- |  -- omits test_resolve.py (5 tests) entirely, undercounts test_lib.py (now 12), and total should read 29; lib.py's row (line 16) never lists risk_gate among lib.py's functions"
+  },
+  "routeToPhase": "2c"
+}

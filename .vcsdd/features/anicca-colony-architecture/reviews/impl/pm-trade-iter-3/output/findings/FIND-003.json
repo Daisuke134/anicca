@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "A full EARS-format behavioral spec (.vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md, REQ-T1..T10 + REQ-R1..R5) and matching verification architecture (.../trading-polymarket-spawn/specs/verification-architecture.md, PROP-T1..T26 + PROP-R1..R5 + PROP-E2E-1, ~30 proof obligations across pytest/hypothesis Tier 1, integration Tier 2, and on-chain E2E Tier 3) exist on disk for this exact slot (earn/pm-trade) and are explicitly cited as a grounding source by the currently-active anicca-colony-architecture spec (behavioral-spec.md:22, 'Sources read'). None of REQ-T1..T10's mandated structure is implemented in the current pm-trade directory: no risk.py with kellyFraction/riskGate/edgePredicate/positionSize/jurisdictionVenueFilter (current lib.py has different function names and no riskGate at all), no settle-verify.py performing on-chain eth_getLogs Transfer verification before any earn row (INV-7, REQ-T8), no risk_state.json / paper_mode state machine gated on an adversary-pass.json file (REQ-T6), no jurisdiction/KYC venue guard (REQ-T10), no bot2bot trade dedup (REQ-R3), no requirements.txt (NFR-1), and none of the ~30 PROP-tier tests exist (current suite = 23 tests covering only lib.py/momentum.py/gate.py pure math). Neither SKILL.md nor registry.json for pm-trade mentions this spec's existence, status, or supersession -- a future reader/builder has no way to know whether REQ-T1..T10 is retired, deferred, or still binding. This is a spec-fragmentation gap that must be resolved explicitly (mark trading-polymarket-spawn's spec as superseded/deferred in-repo, or track the gap as an open TODO against REQ-T4/T6/T8/T10), not left silently unreferenced.",
+  "evidence": {
+    "filePath": ".vcsdd/features/trading-polymarket-spawn/specs/behavioral-spec.md",
+    "lineRange": "106-131 (REQ-T4 risk gate), 156-180 (REQ-T6 paper-mode state machine), 202-229 (REQ-T8 on-chain settlement verification), 238-253 (REQ-T10 jurisdiction guard)",
+    "snippet": "REQ-T4: 'THE SYSTEM SHALL then evaluate the pure function riskGate(risk_state, position_usdc, current_balance, edge, config)...'; REQ-T8(b): 'settle-verify.py SHALL perform on-chain settlement verification BEFORE any earn row is written'; REQ-T10: 'Kalshi MUST NOT be used for real stakes...' -- none of these three functions/files exist anywhere under skills/earn/pm-trade/"
+  },
+  "routeToPhase": "1a"
+}

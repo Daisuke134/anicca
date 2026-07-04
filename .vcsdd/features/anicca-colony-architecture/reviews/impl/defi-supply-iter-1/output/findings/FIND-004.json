@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "supply.mjs writes its own, third, uncoordinated ledger for the identical underlying asset/pool (Base USDC → Aave v3 Pool 0xA238...) that two OTHER ledgers in this codebase already track: (1) `skills/earn/lib/cost-basis.mjs` writes venue P&L basis (including an `aave` venue key) to `$ANICCA_HOME/skills/earn/state/cost-basis.json`, used by execute-yield.mjs for the SAME Aave pool/asset; (2) `~/.anicca-founder/state/earn-ledger.jsonl` (record-earn.mjs) tracks external inflows to the same founder wallet 0x810f. supply.mjs instead appends to a brand-new, unrelated path `~/loops/earn-defi-yield/positions.jsonl` (supply.mjs:80-85) that nothing else in the repo reads. Any automaton logic that reasons about 'how much of my USDC is currently deployed to Aave' by reading cost-basis.json will silently miss principal supplied via supply.mjs, and vice versa — this is the exact fragmentation risk that produces double-counting or missed-accounting bugs.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/supply.mjs",
+    "lineRange": "80-85",
+    "snippet": "const ledger = path.join(os.homedir(), 'loops', 'earn-defi-yield');\n...\nfs.appendFileSync(path.join(ledger, 'positions.jsonl'), JSON.stringify(row) + '\\n');"
+  },
+  "routeToPhase": "2b"
+}

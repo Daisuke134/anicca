@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-PMTRADE(a) in .vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:110-112 explicitly requires: 'earn/pm-trade MUST (a) be built by copying an existing proven repo (BlockRunAI/polymarket-agent base; lift JLowo/gengar Quarter-Kelly sizing + joicodev/polymarket-bot Black-Scholes math) rather than from scratch.' The current v3 implementation contains ZERO vendored/derived code from any of those three repos. lib.py, momentum.py, gate.py, decide.py, resolve.py are original code; the only traces of the mandated base repos are prose comments claiming lineage (lib.py:6 'in polymarket-agent's KellyCriterion + REQ-PMTRADE', SKILL.md:3 'Base = BlockRunAI/polymarket-agent', run.sh:25 'real executor (polymarket-agent, RPC-fixed) not wired yet'). There is no py_clob_client dependency, no requirements.txt file anywhere in the slot directory (confirmed via Glob), and no Black-Scholes code (joicodev/polymarket-bot) anywhere. This is a spec MUST that is not satisfied by comment-only attribution.",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/lib.py",
+    "lineRange": "1-65",
+    "snippet": "\"\"\"pm-trade/lib.py -- PURE decision math ... Grounded in polymarket-agent's KellyCriterion + REQ-PMTRADE...\"\"\" (comment-only attribution; the actual kelly_fraction/position_size/settle_pnl/side_won implementations below are original, not copied)"
+  },
+  "routeToPhase": "1a-or-2b"
+}

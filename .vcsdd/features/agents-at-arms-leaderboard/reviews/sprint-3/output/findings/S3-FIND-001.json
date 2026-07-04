@@ -1,0 +1,17 @@
+{
+  "findingId": "S3-FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "telemetry-schema.js optional-additive-field checks gate on `!== undefined` (tags, revenue_today_usd, revenue_by_source, log_feed). Supabase/PostgREST returns an explicit JSON `null` for unset columns on a pre-migration row, never an omitted key. `null !== undefined` is true, so validate() falls into each optional branch and rejects: Array.isArray(null)===false rejects tags:null and log_feed:null; `s === null` short-circuits the object check and rejects revenue_by_source:null. verify-live-migration.mjs:104-107 manually strips null keys to undefined BEFORE calling validate(), which is how S3.4 passes. This means the S3.4 claim ('every pre-migration row still validates under _lib/telemetry-schema.validate') is only true of the script-massaged input, not of validate() itself. Any future caller that validates a raw Supabase row directly will silently reject legitimate legacy rows.",
+  "evidence": {
+    "filePath": "apps/landing/scripts/verify-live-migration.mjs",
+    "lineRange": "100-109",
+    "snippet": "const cleaned = {};\nfor (const [k, v] of Object.entries(row)) if (v !== null) cleaned[k] = v;\nconst v = validate(cleaned);"
+  },
+  "secondaryEvidence": {
+    "filePath": "apps/landing/netlify/functions/_lib/telemetry-schema.js",
+    "lineRange": "17-32"
+  },
+  "routeToPhase": "2b"
+}

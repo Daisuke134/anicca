@@ -1,0 +1,79 @@
+{
+  "sprintNumber": 3,
+  "feature": "anicca-colony-architecture",
+  "slot": "earn/pm-trade",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 3,
+  "testExecution": {
+    "method": "hand-trace (no Bash tool available in this adversary session; disk-only, zero prior-session claims)",
+    "test_lib.py": {"expected": 11, "handTraced": 11, "handTracedResult": "11/11 PASS"},
+    "test_strategy.py": {"expected": 12, "handTraced": 12, "handTracedResult": "12/12 PASS"},
+    "corroboratingEvidence": "skills/earn/pm-trade/__pycache__/ contains lib.cpython-314.pyc, momentum.cpython-314.pyc, gate.cpython-314.pyc but NO decide.cpython-314.pyc / resolve.cpython-314.pyc -> decide.py and resolve.py have never been imported/executed in this venv, corroborating their 0% test coverage (FIND-004/FIND-005)."
+  },
+  "iterationTwoFindingsStatus": {
+    "FIND-001": {"status": "RESOLVED", "evidence": "decide.py:139-144 writes {src:momentum,status:open,window_start_ms,window_end_ms,entry_price,size_usdc,side}; resolve.py:57-77 updates same dict to status:resolved+pnl_usdc via lib.side_won/lib.settle_pnl; gate.py:44-47 _load_resolved reads exactly src==momentum && status==resolved && pnl_usdc present. Schema round-trips correctly, hand-traced field by field."},
+    "FIND-002": {"status": "RESOLVED", "evidence": "test_strategy.py:78-93 test_gate_load_resolved_reads_decide_schema injects a tmp ledger with a decide-schema resolved row, an open row, and a foreign pm-paper.py-schema resolved row; hand-traced gate.py:44-47 correctly returns only the 2 real rows and ignores the other 2."},
+    "FIND-004": {"status": "RESOLVED", "evidence": "registry.json:104 summary rewritten: 'PRIMARY strategy = momentum/latency ... pure arb pair-cost is dead on the resting book, verified 0/70'. Matches gate.py's src==momentum filter and SKILL.md."},
+    "FIND-005": {"status": "RESOLVED", "evidence": "SKILL.md now present (37 lines), documents strategy, files, loop, ledger, safety."},
+    "FIND-006": {"status": "RESOLVED", "evidence": "decide.py:30-35 btc_window_return() wrapped in try/except returning None on failure; main():109-112 checks `if wr is None` and returns early with a 'no-data' decision JSON, no crash, no silent 0 used as a return_so_far value."},
+    "FIND-007": {"status": "PARTIALLY RESOLVED", "evidence": "decide.py:50-64 _already_traded_window() added and invoked at main():135, blocking an exact duplicate (window_end_ms, side) row. Residual gaps found this iteration: (a) dedup key is (window_end_ms, side) not window alone, so a mid-window momentum-sign flip can still record BOTH an UP and a DOWN paper trade for the same window (see new FIND-006); (b) the dedup function itself has 0% test coverage (see new FIND-005)."}
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/registry.json:97-105", "description": "registry entry correctly updated to momentum-primary, matches gate.py filter"},
+        {"type": "file", "location": "skills/earn/pm-trade/decide.py:139-146", "description": "decide->resolve->gate schema round-trip hand-verified correct"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "hand-trace", "location": "skills/earn/pm-trade/lib.py:10-65", "description": "All 6 pure functions hand-traced against test_lib.py's 11 assertions; all correct incl. degenerate-input guards (price>=1, price<=0, size<=0, bankroll<=gas_reserve)"},
+        {"type": "hand-trace", "location": "skills/earn/pm-trade/momentum.py:11-43 + gate.py:19-29", "description": "All 12 test_strategy.py assertions hand-traced correct, incl. gate.evaluate_gate's winrate+net dual-threshold logic and the side_and_prob tie-break rule"},
+        {"type": "grep", "location": "skills/earn/pm-trade/*.py, run.sh", "description": "Zero hits for private_key/sign/create_order/post_order/clob_client/passphrase across the entire slot dir -- money-safe, no signing or order-placement code exists"},
+        {"type": "file", "location": "skills/earn/pm-trade/run.sh:23-27", "description": "Real-execution branch confirmed fail-closed: even with DRY_RUN=false + EARN_MODE=execute + PM_PAPER_PASS=1, it only echoes an 'execute-blocked' note, no order is placed"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": ["FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/pm-trade/lib.py, momentum.py, gate.py", "description": "Pure/shell split maintained; pure modules contain no I/O, no network, no globals; verified by reading full file contents"},
+        {"type": "file", "location": "skills/earn/pm-trade/run.sh", "description": "No dead code from the old spoofable PM_PAPER_PASS env-var gate remains; gate value is produced fresh from gate.py stdout every invocation"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005", "FIND-003"],
+      "evidence": []
+    }
+  ],
+  "moneySafety": {
+    "verdict": "YES",
+    "evidence": "grep across every file in skills/earn/pm-trade/ for private_key|PRIVATE_KEY|sign\\(|signTransaction|clob_client|create_order|post_order|passphrase returns zero real hits (only a false-positive test function name 'test_momentum_edge_sign'). No wallet file is read, no CLOB order endpoint is called, run.sh's real-execution branch is unconditionally fail-closed (run.sh:23-27) and prints 'not wired yet' regardless of gate/env state."
+  },
+  "pipelineStructuralCompleteness": {
+    "paperToGate": "COMPLETE and CORRECT -- decide.py records an open momentum row -> resolve.py resolves it with a real pnl_usdc computed via pure lib.side_won/lib.settle_pnl from the actual Binance window outcome -> gate.py reads exactly that schema and computes PM_PAPER_PASS. Hand-verified field-by-field, this critical round-trip (iter-2 FIND-001) is genuinely fixed.",
+    "gateToReal": "NOT STRUCTURALLY COMPLETE (by design) -- no pm.py / CLOB order client exists anywhere in this slot; run.sh's real branch is an inert stub that always exits with 'execute-blocked'. This is intentional fail-closed behavior, not a bug, but it means the full 'paper->gate->real' pipeline described in SKILL.md step 4 and in the colony-architecture spec's REQ-PMTRADE is only 2/3 built -- the real-order stage does not exist."
+  },
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

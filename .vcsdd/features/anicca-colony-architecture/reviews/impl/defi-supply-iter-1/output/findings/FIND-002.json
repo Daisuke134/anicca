@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "The most safety-critical logic in this deliverable — the `DRY_RUN`/`EARN_MODE` double-gate that decides whether a REAL transaction may ever broadcast (`supply.mjs:36-37,57-66`) — has ZERO automated test coverage. Only `test_lib.py` exists in this directory, and it tests the pure Python `lib.py` (pick_pool/size_supply), which `supply.mjs` does not even import or use (supply.mjs reimplements its own inline reserve/sizing math in JS, duplicated from lib.py — see FIND-006). There is no unit test asserting: (a) `DRY_RUN` unset + `EARN_MODE` unset never reaches the real branch, (b) `DRY_RUN='false'` alone (EARN_MODE unset/wrong) still stays simulate-only, (c) `EARN_MODE='execute'` alone (DRY_RUN unset/true) still stays simulate-only, (d) case/whitespace variants (`DRY_RUN='False'`, `'FALSE '`) fail closed. The builder's own verification note ('DRY_RUN simulated a $2 supply successfully') is a single manual run, not a repeatable test — it does not prove the gate holds across the boundary conditions above. A real-money broadcast gate with no unit test is not verification-ready.",
+  "evidence": {
+    "filePath": "skills/earn/defi-yield/supply.mjs",
+    "lineRange": "36-37, 57-66",
+    "snippet": "const DRY = process.env.DRY_RUN !== 'false';\nconst EXEC = process.env.EARN_MODE === 'execute';\n...\nif (DRY || !EXEC) { /* simulate only */ return; }\n/* REAL path */"
+  },
+  "routeToPhase": "2b"
+}

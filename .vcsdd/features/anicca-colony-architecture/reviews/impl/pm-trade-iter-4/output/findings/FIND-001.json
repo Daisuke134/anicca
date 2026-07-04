@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The v4 'Impl reconciliation (2026-07-04, per Phase-3 adversary)' note added to the spec (.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:161-163) states verifier gates are PHASED and that '**Verifier gates are PHASED:** the paper-run gate (`gate.py`...) + a pure `lib.risk_gate` (daily-loss/drawdown caps) are built NOW'. This claims lib.risk_gate is an operative, built-and-active safeguard in the current increment (not deferred like trade-audit/alerts-only/the CLOB executor). It is NOT operative: lib.risk_gate (lib.py:58-73) is defined and unit-tested (test_lib.py:77-87, test_risk_gate_blocks_and_caps) in complete isolation -- grep across the entire slot directory shows the string 'risk_gate' appears ONLY in lib.py and test_lib.py. decide.py (the only place a stake is ever computed and recorded, decide.py:130 `stake = lib.position_size(prob, price, bankroll, min_edge=MOM_MIN_EDGE, gas_reserve=0.5)`) never imports or calls lib.risk_gate, and run.sh never calls it either. Moreover no file anywhere in the slot computes or persists the two state values risk_gate's own signature requires to do anything (`daily_loss`, `peak_balance`) -- there is no risk_state.json/ledger-derived balance tracker at all, so even if someone wired the call in today, the required inputs do not exist yet. This is an internal contradiction: the spec text represents a working daily-loss/drawdown safeguard as 'built NOW' when it is disconnected dead code with no path to real invocation. This is exactly the failure mode this review is instructed to catch even for the paper-phase increment ('an internal contradiction' is an explicit non-deferral-excused FAIL criterion).",
+  "evidence": {
+    "filePath": "skills/earn/pm-trade/decide.py",
+    "lineRange": "1-16, 109-152 (no risk_gate import/call anywhere); lib.py:58-73 (risk_gate defined, never called); spec .vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:161-163",
+    "snippet": "decide.py imports only `import lib` and `import momentum` and computes `stake = lib.position_size(...)` directly at line 130 with no risk_gate clamp applied before the row is written at lines 145-150; spec claims '...+ a pure lib.risk_gate (daily-loss/drawdown caps) are built NOW.'"
+  },
+  "routeToPhase": "2c"
+}
