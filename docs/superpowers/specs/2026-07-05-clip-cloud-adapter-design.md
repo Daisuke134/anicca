@@ -299,3 +299,54 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
   §6の過去ラウンド履歴(旧citation含む)は「過去の誤りとして明記されている
   記述」であり生きた主張ではないと判定。全文再読でも新規の矛盾なし。
   **GATE 1(SPEC)完了。次はGATE 2(TDD: RED→GREEN→REFACTOR)へ進む。**
+
+## 7. GATE 2(実装)完了・検証結果(2026-07-05)
+
+### 実装時のディスク緊急事態(正直に記録)
+
+`~/anicca-project`側のworktree作成中に**ディスクフル**(`No space left on
+device`)が発生、worktreeチェックアウトが途中で失敗した。`df -h /`で確認した
+ところ空き**819Mi(93%使用)**という危険域だった。壊れたworktreeは
+`git worktree remove --force`で安全にクリーンアップ済み。新規worktreeの
+再作成は空き容量的にリスクが高いと判断し、**`launch_clip_browser.py`(1
+ファイルのみの変更)はworktreeを使わず、このセッションが元々使っている
+`~/anicca-project`のメインツリー(`feature/clip-rewards`ブランチ)で直接編集
+した**(通常の「原則worktree」から意図的に外れた、ディスク制約下の実務的判断)。
+`~/anicca`側(`producer.sh`)は既にworktree作成が成功済みだったためそのまま
+使用。
+
+### 実装内容(commit)
+
+| REQ | ファイル | commit | repo |
+|---|---|---|---|
+| REQ-C1 | `cdp.py`(CDP_HOST追加) | 直接編集(git管理外) | `~/.claude/skills/` |
+| REQ-C1 | `cdp_incognito.py`(CDP_HOST/CDP_PORT追加) | 直接編集(git管理外) | `~/.claude/skills/` |
+| REQ-C1 | `register_flow.py`(CDP_HOST読み取り) | 直接編集(git管理外) | `~/.claude/skills/` |
+| REQ-C1 | `launch_clip_browser.py`(3変数env化) | `anicca-project` feature/clip-rewards | `~/anicca-project` |
+| REQ-C2 | `pipeline.py`(COOKIE_SOURCE分岐) | 直接編集(git管理外) | `~/.claude/skills/` |
+| REQ-C2 | `producer.sh`(ENGINE `${ENGINE:-...}`化) | `anicca` `0291559`(feature/clip-cloud-adapter、push済み) | `~/anicca` |
+
+### §5検証計画の実施結果(全項目実施、fresh evidence)
+
+- ✅ 既存test `test_run_sh_3way_routing.sh`: 変更前後とも**3/3 PASS**(回帰なし)
+- ✅ `CDP_HOST`/`CDP_PORT`未設定時: `cdp.CDP == "http://localhost:9222"`
+  (変更前と完全一致)を実行確認
+- ✅ `CDP_HOST=127.0.0.1 CDP_PORT=9223`設定時: 実際に稼働中のCloakBrowser
+  (:9223)への疎通に成功(`_browser_ws()`が実websocket URLを返した)
+- ✅ 不到達host(`CDP_PORT=1`)指定時: `URLError`(Connection refused)が
+  握りつぶされず伝播することを確認
+- ✅ `register_flow.py`のCDP_HOST解決ロジックを分離テストで確認(未設定時
+  `localhost`、設定時はその値を使用)
+- ✅ `launch_clip_browser.py`の3環境変数(`VENV_CLOAK_SITE_PACKAGES`/
+  `CLOAK_PROFILE_PATH`/`CDP_PORT`)未設定時のデフォルト値が元のハードコード値と
+  **完全一致**することを確認
+- ✅ `COOKIE_SOURCE=env-file`: ファイル存在時はそのパスを返す/ファイル不在時は
+  `None`/`YT_COOKIES_FILE`未設定時も`None`、の3ケース全て実行確認。
+  `local-camofox`(デフォルト)モードも既存動作のまま(このマシンでは実際に
+  camofoxエクスポートが成功しパスを返すことを確認、影響なし)
+- ⏳ 「既存のローカルE2E(clip loop実運用)が壊れない」: これは受動的確認項目
+  (`earn/clip`の次の自然wakeを待つ必要がある)。このセッション内では強制発火
+  させず、次回の自然wakeでledgerに新規行が追加されることを確認する
+  (継続監視、Task #4と同様の扱い)
+
+**Task #8(層①③スコープ)完了**。層②④⑤は§2の通り別フェーズへ先送り継続。
