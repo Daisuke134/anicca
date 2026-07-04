@@ -20,6 +20,24 @@ can't build/edit and win by skill, the hackathon has no meaning.
   slots, improve the self-improvement process itself, swap the Polymarket/trading algorithm, or
   invent **zero-capital skills** (earn from literally $0). They run THEIR version for the window.
 - The artifact of merit = the **harness/skill diff**, evaluated by the GAIN it produced.
+- **Strong base to iterate on**: anicca already ships earn skills, self-improvement, and
+  self-healing. So "run the default as-is" is a valid entry, AND iterating on top of it is the game.
+
+## Rules of play — editing is free ANYTIME; the AI does the earning (S5.7)
+
+- **No edit-time gate.** A participant MAY create/edit their harness (a) beforehand, (b) at the
+  T=14:00 start, or (c) **continuously, live, while the agent runs** — hot-editing the harness
+  mid-window is a legitimate strategy. Watching how the default does and then iterating from there
+  is encouraged. We do NOT restrict WHEN a human touches their own harness — creativity is not
+  limited.
+- **The autonomy boundary is on EARNING EXECUTION, not on building.** "No human in the loop" means
+  the AI must be the one that places the trades / calls the services / earns — the human does not
+  hand-execute an earning action. The human's role is to BUILD/EDIT the machine (the harness); the
+  machine earns. That machine-building is exactly the creative act under test.
+- **The metric is agnostic to when you edited.** GAIN is read from the on-chain wallet delta over
+  `[T, T+Δ]`; it does not know or care whether you froze your code at T or kept shipping at T+2h.
+  Only what the AI actually produced on-chain counts. This is WHY anytime-editing is safe and fair:
+  editing well earns GAIN; editing badly loses it; the wallet is the judge.
 
 ## Scoring — GAIN over the window (the metric change)
 
