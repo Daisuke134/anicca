@@ -82,3 +82,10 @@ NO human in the loop. Execute the TODO one-by-one IN ORDER, never skip. #9 (Capa
 ## 8b. VERIFY conclusion — Capafy earns $0 (demand, not publishing, is the wall)
 Fresh query (token re-authed 2026-07-04): 19 published agents, **ALL 0 sales, $0 revenue, $0 payout (below_threshold)**. Statuses mixed — some `status=0` (draft, never submitted), some `status=4` (LISTED but 0 sales). The marketplace DOES have demand (memory: top sellers 68/57/56 sales) → our listings are just not competitive/discoverable → $0.
 **Decision (data-driven)**: Capafy's bottleneck = DEMAND, not publish volume. Pumping more daily listings = supply into a market where ours get $0 = waste. Token is fixed (the cheap existing cron can keep running), but Capafy is **LOW-ROI**; the money loop's effort goes to Life Manager (real product, real $20/mo) + Reddit demand-gen. Capafy stays a background cron, NOT a loop focus, until/unless a demand fix (competitive listings in proven niches, or promotion) is proven to convert. This is itself a self-improve signal: measure→reallocate away from a $0 engine.
+
+## 9. META-FINDING (2026-07-04 verification pass) — the wall is DEMAND, not features
+Verifying the TODO one-by-one surfaced a consistent pattern: **the features already exist; nothing has users/sales.**
+- Capafy: 19 published listings → **$0** (0 sales). Publishing works; demand = 0.
+- Life Manager: full feature set (two-way voice, calendar, cost-fixed, monitor) → **3 test users, $0 net new**.
+- Late-notice (E1): **already built + wired + live** (notify.js via Resend, server.js:43/263). Not a gap.
+⇒ Building MORE features (E1 Gmail upgrade, more Capafy listings) is NOT the lever. **The single bottleneck = DEMAND / distribution / getting real users.** The money loop must put its effort into DEMAND GENERATION: #10 Reddit authentic-conversation loop + LM funnel distribution, NOT more supply. Deprioritize: E1 Gmail upgrade (feature exists via Resend), Capafy publish volume (0 demand), E2 Pipedream (Composio works). Reorder the money loop: **#10 Reddit demand-gen → #8 harness that optimizes demand → measure real signups/sales**. This is the honest, data-driven pivot.
