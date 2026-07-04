@@ -68,3 +68,13 @@ The reason marketing must be a **loop** (claude-p agent) and NOT a fire-and-forg
 - **Self-improve**: measure signups attributed to reddit + trust signals (upvotes, positive replies, DMs asking "what's it called"); double down on what earns trust, drop what gets removed.
 
 This is a NEW engine of the claude-p money loop (alongside Capafy publish + LM funnel). It is the clearest example of why the harness = a conversational LOOP, not a cron.
+
+## 8. VERIFY findings (2026-07-04) — Capafy engine was DEAD (task #9)
+Verified `anicca-capafy-daily-publish` (09:00 JST daily). TWO failures found:
+1. **Auth expired**: the `am_sk_…` access token returns `code 1001 "Token is invalid or expired"`. The cron has been failing auth for ~6 weeks; last successful publish = 2026-06-04 (afrexai, agent_id 5837985051), log stopped 2026-06-22. Revenue from Capafy ≈ $0 (the $27 total MRR is not Capafy).
+2. **Backlog mostly unpublishable**: ~211 backlog skills, the majority SKIPPED by the leak-guard ("SKILL.md has creator-local paths/refs") or size (>500 KB). Even after re-auth, few skills can publish as-is.
+
+**Fix (no-human-in-loop, Dais consented to Capafy ToS/privacy 2026-07-04)**: no refresh_token exists (config has only access_token/user_id/email/name) → re-auth = email-OTP (`login-init` → OTP to keiodaisuke@gmail.com read via `gog gmail` → `login-verify` → new token to config.json). Then: publish 1 skill to prove revival; query real listings + sales; fix failure #2 by cleaning creator-local refs so more skills publish. This is why the loop must SELF-HEAL: a "daily money cron" silently died for 6 weeks with nobody noticing — the harness must detect+heal revenue-surface auth expiry (generalize the money-path-monitor).
+
+### Execution directive (Dais 2026-07-04)
+NO human in the loop. Execute the TODO one-by-one IN ORDER, never skip. #9 (Capafy revive) → #6 (LM E1/funnel) → #10 (Reddit loop) → #8 (harness). Each item run to real-side-effect verification before the next.
