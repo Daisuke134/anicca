@@ -6,7 +6,7 @@
 |------|------|---------|
 | GATE 1: SPEC | 設計の漏れ・矛盾 | codex-review → ok: true |
 | GATE 2: TDD | テストが正しさを証明 | RED → GREEN → REFACTOR |
-| GATE 3: REVIEW | 品質・セキュリティ | codex-review → ok: true + ユーザー実機確認 |
+| GATE 3: REVIEW | 品質・セキュリティ | codex-review → ok: true + agent 自己完結 E2E green（maestro E2E or simulator/実機スクリーンショット検証、fresh evidence） |
 
 ## codex-review
 
