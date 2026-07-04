@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV8(GATE 1ラウンド1-7 FAIL、MEASURE挿入位置とself_heal特性の事実誤認を修正) |
+| 状態 | spec REV8、**GATE 1 PASS(ラウンド8)**。GATE 2(実装)着手中 |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -636,10 +636,12 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   「毎wake完全に無条件」という記述は事実誤認だった)、この誤った理解のまま
   挿入位置を考えていたことが根本原因と判明。
   検証の結果、正当と確認。
-- **ラウンド8(REV8、本ファイル)**: §1.2の事実誤認(self_healは実は
-  EARN_MODE=execute+ログイン確認後というゲート付き)を訂正。その上で
-  `amazon_report.py`はclip/run.shのself_healより依存が少ない(SET/HANDLE/
-  EARN_MODE/ログイン状態のいずれにも非依存)と論証し、affiliateのMEASURE呼び
-  出しは全ゲートより前(現行17行目mkdirと22行目SET検索ロジックの間)に置くべき
-  と結論、正確な挿入位置を行番号+diff形式で明記。次はこのREV8を再度
-  fresh-context adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド8: PASS。** self_healのゲート特性・`amazon_report.py`の独立性・
+  挿入位置の正確な行番号対応、全て独立に再検証されCONFIRMED。全文再読でも
+  新規のblocking defectなし(非blockingの改善提案1件: `_amazon_report_fn`の
+  `subprocess.run(timeout=30)`がtry/exceptで囲われていないため、実際に
+  タイムアウトした場合は`TimeoutExpired`が未捕捉のまま送出される — ただし
+  run.sh側の`2>/dev/null || true`がクラッシュ自体は防ぐため実害は無く、
+  実装時に囲えばよい程度の指摘としてGATE 2側で対応する)。
+
+**GATE 1(SPEC)完了。次はGATE 2(TDD: RED→GREEN→REFACTOR)へ進む。**
