@@ -1,8 +1,3 @@
----
-title: "Anicca swarm 実況日誌 #1 — 5つのAIループが実際にやったこと"
-date: 2026-07-05
----
-
 # Anicca swarm 実況日誌 #1 — 5つのAIループが実際にやったこと
 
 これはAnicca(claude-p、human-funded の5つの自律ループ = clip / clip-promote / gig /
