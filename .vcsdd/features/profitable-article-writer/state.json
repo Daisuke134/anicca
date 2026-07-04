@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "complete",
+  "currentPhase": "1a",
   "phaseHistory": [
     {
       "from": "init",
@@ -69,13 +69,21 @@
       "timestamp": "2026-07-04T07:53:20.028Z",
       "reason": "Sprint-1 4-D convergence",
       "sprint": 1
+    },
+    {
+      "from": "complete",
+      "to": "1a",
+      "timestamp": "2026-07-04T08:07:42.374Z",
+      "reason": "Start Sprint 2: real content-gen + real note DRAFT + daily executor/verifier roles",
+      "sprint": 1,
+      "nextSprintHint": 2
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
     "6": 1,
-    "1a": 1,
+    "1a": 2,
     "1b": 1,
     "1c": 1,
     "2a": 1,
@@ -574,6 +582,26 @@
         "createdAt": "2026-07-04T07:50:56.560Z",
         "createdInPhase": "3",
         "externalId": "FIND-006"
+      },
+      {
+        "beadId": "BEAD-043",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T08:07:42.370Z",
+        "createdInPhase": "complete",
+        "externalId": "REQ-19"
+      },
+      {
+        "beadId": "BEAD-044",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T08:07:42.373Z",
+        "createdInPhase": "complete",
+        "externalId": "REQ-20"
       }
     ]
   },
@@ -604,5 +632,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T07:53:20.028Z"
+  "updatedAt": "2026-07-04T08:07:42.374Z"
 }

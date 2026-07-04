@@ -84,6 +84,17 @@ One article → funnel → per-platform native monetization → real money verif
   improvement loop the running model drives BY JUDGMENT (right-altitude prompt, NOT hardcoded rules), with NO Opus and
   NO human. Every change SHALL be recorded to state for audit. (Sprint 5.)
 
+## Operating model (Dais 2026-07-04) — daily executor + verifier, roles are separate
+
+- **REQ-19 Daily executor = `claude -p` (Sonnet).** The DAILY article wake — research → write → V0/V0.5 → **post a
+  note DRAFT (Mode A)** — SHALL be executed by the headless `claude -p --model sonnet` loop, unattended, one wake per
+  day. This is the executor; it does the work and posts the draft. (Wiring into the runtime loop = Sprint 4.)
+- **REQ-20 Verifier = the main agent (Opus), out of the daily loop.** Verification of what the loop posted (the
+  rendered note DRAFT: no slop, paywall gate, hook/CTA present, renders correctly) SHALL be done by the verifier
+  (me / the main agent) via a real browser look at the posted draft — NOT by the executor grading itself. The
+  executor posts; the verifier checks. (This is the Mode-A trust ramp: executor drafts daily, verifier approves;
+  once trusted, Mode B flips to autonomous publish, and self-heal/self-improve (Sprint 5) removes the verifier too.)
+
 ## Purity-boundary candidates (refined in 1b)
 
 - **Deterministic tools:** `record-earn` ledger, render/screenshot verify, platform publishers, dedup, git, payout routing.

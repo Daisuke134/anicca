@@ -57,7 +57,10 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
   Mode A draft-first (PROP-6) · model policy (PROP-9). **Sprint-1 DONE = a draft passes V0/V0.5 (V0.5 = the REQ-5 fixed binary checklist) AND Mode A correctly STOPS at draft + notifies (the human review gate is
   INTENTIONAL in Mode A); no model literal, no external run, fail-closed wiring proven. Zero-human is asserted of
   Mode B (Sprint 2+), NOT Mode A** (T0-T2 required props green).
-- **Sprint 2:** first real earn — one rail (note ¥500) reaches **V4**, autonomous publish (PROP-7,8,13, T3 live) = the money finish-line.
+- **Sprint 2 (leads with the REAL DRAFT):** wire `generate_draft` to REAL content-gen (research→write, migrating the
+  ai-entity-article-writer research/write logic) + REAL note DRAFT publish (Mode A, AUTONOMY=off) → **the `claude -p`
+  executor posts a real note draft (URL + screenshot) that the VERIFIER (main agent, Opus) looks at in a real browser**
+  (REQ-19/20). THEN the same note rail earns: ¥500 → **V4** (PROP-7,8,13, T3 live) = the money finish-line.
 - **Sprint 3:** distribution (X/Threads) + trust ramp → reach (V2) + convert (V3).
 - **Sprint 4:** wire the daily GLVS loop (runtime daemon, sonnet) + V5 continuous earn-verify.
 - **Sprint 5 (Dais 2026-07-04):** self-heal (PROP-16) + self-improve (PROP-17) — zero Opus, zero human: the loop finds its own errors, reads its own stats, and iterates to earn more, unattended.
