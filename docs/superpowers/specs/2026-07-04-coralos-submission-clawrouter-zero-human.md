@@ -400,6 +400,41 @@ Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not bloc
 submission). Partnership outreach to Tino/Imperial = task #10 (send AFTER A7, so we have proof —
 "we actually did it" per Dais's own reasoning).
 
+## C1/C3 design — the loop already exists; what's missing is self-report (re-verified 2026-07-05)
+
+Ground truth (re-read `coral-agents/buyer-agent/src/index.ts` this round): the buyer already runs
+a `while (true)` loop — wake (`ctx.waitForMention`), decide (`pickWinner`), settle
+(`deposit`→`release`), `sleep(CYCLE_MS)`, repeat. **C1's loop mechanism already exists** — it is
+NOT new code to write. What R6 additionally asks for ("self-reports") does NOT exist yet: nothing
+currently tells Anicca's own telemetry system that a round happened.
+
+**Honesty constraint (non-negotiable, ties to the no-fake-numbers HARD RULE):** the CoralOS
+settlement is on Solana **devnet** — devnet SOL is worthless play money (established earlier this
+session). Reporting it as `revenue_mo_usd`/`net_worth_usd` on the REAL leaderboard would inject a
+fake number into a system whose entire design point is "no fake numbers." Therefore:
+
+- **S-C3.1** The self-report SHALL post `net_worth_usd: 0, revenue_mo_usd: 0` (never the devnet SOL
+  amount) — this loop earns ZERO real dollars; only the mechanism is being demonstrated.
+- **S-C3.2** The self-report SHALL carry `tags: ['coralos-hackathon']` and a `log_feed` entry
+  describing the round (round number, RELEASE tx sig, explicit "devnet, test-value-only" wording)
+  so a human reading the dashboard is never misled about what happened.
+- **S-C3.3** The report SHALL use Sprint-6's `chain: 'solana'` signing path (ed25519 via
+  `tweetnacl`/`bs58`, `id` = the seller's own devnet wallet, case-preserved) — reusing
+  `registerSpawn`'s wire format (`canonicalMessage` + signature), posted to the SAME
+  `aniccaai.com/.netlify/functions/telemetry` endpoint every other Anicca instance uses.
+- **S-C3.4** SHALL fire from the seller side, at the point it observes `RELEASED`/`ARBITER_RELEASED`
+  (`coral-agents/seller-agent/src/index.ts` around the existing `if (verb(text) === ...)` block) —
+  the seller is the one earning, so the seller is the one that self-reports, matching R6's own
+  wording ("wakes, decides, sells/earns, settles, self-reports").
+- **S-C3.5** Never crash the round on a report failure — same fail-open contract as every other
+  network call in this fork (log and continue, don't throw).
+
+Verification: unit tests with an injectable fetch + a real ed25519 keypair (mirrors the sprint-6
+`tweetnacl`/`bs58` pattern already proven in `apps/landing`), asserting the exact posted body
+(`net_worth_usd===0`, `tags` includes `'coralos-hackathon'`, `chain==='solana'`) — then ONE more
+live Docker round (colima reinstalled fresh, cleaned up immediately after, same disk discipline as
+C0) confirming a real POST leaves a row visible via the telemetry API.
+
 ## Out of scope / honest limits
 - Free-tier models are capable but not frontier; if a task needs frontier reasoning the agent self-pays
   (R2) — still no human key. Documented, not hidden.
