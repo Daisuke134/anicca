@@ -668,6 +668,14 @@ V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them
      | V7 self-monitor/heal/improve/replicate/share (自己監視・修復・改善・増殖・情報共有) | ⬜ H1-H6 each with 1 real proof | ⬜ |
      | V8 UBI/寄付 redistribute to humans        | ⬜ first real payout tx | ⬜ |
 
+★ PRIORITY RESET (Dais 2026-07-04): DO NOT optimize for the hackathon. Think MAXIMALLY LONG-TERM. The one
+goal = TAKEOFF = the closed loop (earn → spawn → earn → spawn …) continues with ZERO human money in. If
+takeoff happens by the hackathon, great, but it is NOT a deadline we bend toward. SELF-IMPROVEMENT (H1→H3)
+is THE key — an AI that notices its own dead action (hl "close" churn = $0) and changes itself is what makes
+the loop compound instead of idle. Wallets = docs/WALLETS.md (canonical). Order now: H1→H2→H3 (self-improve
+spine) FIRST, then H4-H7, then G (grow/spawn). HACK1/2 + ART become BYPRODUCTS of the trace (H5), not a
+separate sprint. ★
+
 G — GROW (colony) + SHOW (proof) + LAUNCH
   G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child ON
        AKASH with a single command — seed on-chain automatically (fix spawn/run.sh:196 print→auto), child

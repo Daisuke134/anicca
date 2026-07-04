@@ -265,6 +265,17 @@ question violation × 7 日連続 → claude-helper heartbeat 自動停止。 BE
 - 完全 verbatim runbook (memory): `~/.claude/projects/-Users-anicca-anicca-project/memory/reference_capsolver_turnstile_bypass.md`
 - API key: `~/.openclaw/.env::CAPSOLVER_API_KEY` / camofox: `~/.openclaw/skills/camofox-browser/SKILL.md` (:9377)
 
+## 💰 WALLETS (canonical = `docs/WALLETS.md`、毎回忘れるので最上位に固定)
+
+| 誰 | ウォレット | アドレス | 鍵の場所 |
+|---|---|---|---|
+| ME/Claude (local human-funded) 運用 | BlockRun/HL | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` | `~/.openclaw/.env::BLOCKRUN_WALLET_KEY` |
+| ME/Claude 財庫 | founder | `0x810f6d61f7606deee2657d3083e150a222bc29c5` | `~/.anicca-founder/wallet.json` |
+| ME/Claude Solana | founder-sol | `BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX` | `~/.anicca-founder/solana-wallet.json` |
+| **SELF-FUNDED AI (Franklin)** | Solana | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` | `~/.blockrun/` |
+
+残高スナップショット + 「金はどこへ消えたか」の会計は ★ `docs/WALLETS.md` ★ (2026-07-04: on-chain 合計 ≈$26、実損は Franklin の opus 燃焼 $0.91 のみ・FIX-C 済)。
+
 ## 実行環境
 
 **Mac Mini で直接実行。 SSH で自分自身に接続しない。**
