@@ -289,10 +289,18 @@ def build_client():
     from polymarket.clients.secure import SecureClient
 
     acct = Account.from_key(key)
-    api_key = _mint_relayer_api_key(acct)
     tmp = SecureClient._create(private_key=key, validate_credentials=True)
     creds = tmp._ctx.credentials
+    # Reuse an EXISTING relayer api key instead of minting a fresh one every run. The relayer caps
+    # mints ("max 100 keys per address", hit live 2026-07-05 after EARN-1 + retries), while
+    # fetch_api_keys() returns the keys this signer already owns (verified: 1 valid key present).
+    # Only mint if the signer truly has none. This is what lets the loop redeem forever, no human.
+    try:
+        existing = tmp.fetch_api_keys()
+    except Exception:  # noqa: BLE001 — fall back to mint if the fetch itself fails
+        existing = ()
     tmp.close()
+    api_key = existing[0] if existing else _mint_relayer_api_key(acct)
     client = SecureClient.create(
         private_key=key, credentials=creds,
         api_key=RelayerApiKey(key=api_key, address=acct.address),
