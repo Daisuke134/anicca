@@ -717,3 +717,33 @@ state fileへの書き込みで裏付け(fabrication無し)。旧`crocs`(TikTok�
 ページで、クリップ元動画の入手方法(content library等)を確認してから、既存の
 `earn-clip-rewards`(クリップ生成)・`ig-reels-poster`(IG投稿)を再利用する
 具体的な実装方針を固める。
+
+### 17.3 朗報: 元動画は実在のYouTube URL、既存clip skillがそのまま使える(fresh確認)
+
+`thomas-rhett-content`詳細ページの実リンクを取得(DOM解析、推測ではない):
+- 「provided content」→ Google Driveフォルダ(生素材、画像/映像アセット)
+- **「Podcast 1」→ `https://www.youtube.com/watch?v=WDjp6aA9Wcc`(実在のYouTube動画)**
+- **「Podcast 2」→ `https://www.youtube.com/watch?v=sqRZS9pbaJM`(実在のYouTube動画)**
+- 「Clips Here」→ Google Driveフォルダ(過去の他クリッパー作品例、参考用)
+
+つまり**CLIP実装は、campaign詳細ページからYouTube URLを抽出し、既存
+`~/anicca/skills/earn/clip/producer.sh --url <youtube_url>`にそのまま渡せば
+動画取得+クリップ生成が完結する**(yt-dlpベースの既存パイプライン再利用、
+新規実装は不要)。追加要件(このcampaign固有):
+- 15–45秒(既存clip slotの60秒設定と異なる、パラメータ調整が必要)
+- 必須タグ付け: Podcast1→`@humanschool @milesadcox`、Podcast2→
+  `@shawnandandrewpods`(投稿キャプションに含める)
+- Content Editing Rules(crocsの例と同様、生clip禁止等)は`Rules`タブで
+  campaign毎に確認が必要(未確認)
+
+### 17.4 次の実装ステップ(具体化、次セッション着手)
+
+1. `select_campaigns.py`(またはCLIP専用モジュール)に、選定したcampaignの
+   詳細ページから「Podcast N」等のYouTube URLを抽出するロジックを追加
+2. `run.sh`のCLIPケースに、抽出したURLで`producer.sh --url <url>
+   --duration 15-45`(パラメータ名は既存producer.sh実装を要確認)を呼ぶ処理を実装
+3. POSTケースに既存`ig-reels-poster`を呼ぶ処理を実装(warmed account限定、REQ-4)
+   + 必須タグ付けをキャプションに反映
+4. SUBMITケース: promote.funのcampaignページに投稿URLを提出するUI操作を新規実装
+   (未調査、次ステップで詳細ページの提出フォームを確認する)
+5. WITHDRAW/RECORDは既存`record-payout.mjs`が対応済み(SKILL.md記載+コード確認済み)
