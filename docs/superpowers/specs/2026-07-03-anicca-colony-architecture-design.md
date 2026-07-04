@@ -547,6 +547,41 @@ via a base agent it RUNS, not a strategy I wrote. ★**
 lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard + run). **No task = "I write a
 strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
+## ★★ MASTER EXECUTION ORDER — single source of truth, keep updated (2026-07-04) ★★
+This mirrors the task tool IN ORDER so we never lose track. My role = build harness + VERIFY; AIs execute.
+```
+DONE ✅
+  Task0 spec+cleaner · H1 trace · H2 self-eval · H3 self-improve (VERIFIED: AI dropped dead hl_trade →
+  yield) · W3 claude-p→proxy (loop now ACTS) · FIX-A yield guard · FIX-B hl crash · FIX-C Franklin cheap
+  model · WALLETS.md canonical · code-verified trading scorecard (hl=live/no-strategy, pm=live/STUB,
+  franklin=PAPER/no-strategy)
+
+NEXT — in order:
+  1. #17 V4 / #30 AKASH-1CMD  ★FIRST (Dais)★ — real cloud self-funded child that EARNS like local.
+        BLOCKED now: spawn wallet 1.9<5 AKT escrow + automaton image ghcr 401 (Common Cloud down).
+        → G2 path: generic Ubuntu/node Akash container, cloud-init clones OSS repo (Daisuke134/anicca) +
+          install.sh + loop = SAME body, no custom image. Fund AKT (USDC→AKT). Verify real dseq + child earns.
+  2. #28 PM-STRATEGY + #24 H8 — fill the missing DECISION layer for the 3 engines (ship good, self-improvable
+        initial strategies from research/BP; wire pm-agent ai-edge into the stub; give hl.py a starting
+        strategy). Recipe must earn the SAME whether cloud/browser/local.
+  3. #25 TELEM — anicca-local posts signed telemetry each wake → it actually appears on /dashboard.
+  4. #14 G4 + #26 TREE — dashboard shows EVERY instance (human-funded labeled + model), self-funded RATE
+        (goal 100%), family tree (parent→child).
+  5. #29 OBS — Langfuse (intent/behaviour) + our on-chain telemetry (money) + netdata (infra vitals) +
+        swarm KILL-SWITCH (alignment: stop a bad direction).
+  6. #27 MERGE + #9 H6 + #32 EXP — collective evolution: bot2bot share → auto-merge PRs gated on
+        chain-verified earnings delta (no human) → daily mother-sync propagates winners → swarm runs the
+        which-harness/model/strategy experiments itself.
+  7. #7 H4 self-heal · #10 H7 self-refactor · #8 H5 journal · #12 G2 cloud-same-body · #13 G3 gojo/UBI
+        mutual-aid (broke AI funded by colony, none die).
+  8. #31 ENV-README — Anicca = THE ENVIRONMENT (spawnable harness menu) for every AI in the world.
+  9. #20 ART1 — article (me=writer, Dais=editor): "we tested the trading repos, here's the recipe that
+        actually earns," then later swarm-authored.
+  END STATE / TAKEOFF: colony earns > spend, spawns, funds its own, none die — zero human money, zero human
+  (and zero me) in the loop.
+```
+
+## (legacy §10 detail below — superseded by the MASTER ORDER above; kept for context)
 ```
 DONE
   D1 ✅ seed swap (SOL→USDC)     D2 ✅ colony spec adversary PASS (8 rounds)
@@ -778,14 +813,28 @@ it hardcodes `estimated_prob=0.55` vs `market_prob=0.50` and IGNORES the AI anal
 per-market probability → edge) is never wired into the bet. ★ → INITIAL STRATEGY TO BUILD IN (H8): wire the
 ai_analyzer probability estimate into generate_recommendations so the Kelly edge is REAL, changeable, and
 self-improvable. Everything else (fetch, Kelly, executor, wallet) is real.
-**`BlockRunAI/Franklin-Trading`** (TS, future variety): multi-persona debate (fundamentals/sentiment/tech/
-bull/bear/trader/risk/compliance) → backtest→paper→live lifecycle → multi-venue (Hyperliquid+Jupiter) → 4
-moats (regime detector, prompt-cache, slippage model, fact-checker). ★ NOT FULLY READY: README — "M1
-strategy-runner work is in progress; today use the agent's paper tools from an interactive session"; the
-autonomous `run <strategy>` runtime is roadmap. ★ Interactive agent works; the click-and-earn runner isn't.
-CONCLUSION: BOTH are strong scaffolds, NEITHER is click-and-autonomously-earn ready → we ship INITIAL good
-strategies (H8, from research/BP/backtest) that are self-improvable. Don't reinvent — wire the missing
-decision layer + tweak. This is the ARTICLE's core finding (we tested the repos, here's what's real).
+**`BlockRunAI/Franklin-Trading`** (TS, installed & READ at `/opt/homebrew/lib/node_modules/@blockrun/
+franklin-trading/dist`): a FULL agent framework (its own loop.js 125KB, llm.js 57KB, tools/, brain/,
+commands/ — Claude-Code-like). REAL analysis tools verified in code: `tools/trading.js` `TradingSignal`
+(price + RSI/MACD/Bollinger/volatility + a bull/bear/neutral VERDICT with confidence), `TradingMarket`
+(crypto/FX/commodity/stock + dual-listing basis), `tools/prediction.js` (54KB — its OWN prediction-market
+tool), `tools/jupiter.js` (Solana DEX). ★ BUT `tools/trading-execute.js` = `createTradingCapabilities` opens/
+closes **PAPER positions** (`engine.openPosition` on a paper engine — verbatim "open/close paper positions"),
+NOT live money; and `dist/strategies/` is EMPTY (just index, 3.4KB) = NO shipped strategy. ★ So Franklin
+out-of-the-box = great analysis + PAPER trading + no strategy = makes ZERO real money as-is. Live execution
++ a strategy = the roadmap. This is why "we are not using Franklin for real trading" — it can't earn live yet.
+
+★ CODE-VERIFIED TRADING SCORECARD (Dais 2026-07-04, read all three) ★
+| engine | real LIVE execution? | decision / strategy | makes REAL money as-is? |
+|---|---|---|---|
+| Hyperliquid = `hl.py` (OURS, thin tool) | ✅ LIVE mainnet (hyperliquid-sdk), verified +$0.15 real | ❌ NONE by design ("DECIDES NOTHING") — the model must decide | only if the model has a good strategy → today it CHURNS "close ETH" |
+| Polymarket = `polymarket-agent` | ✅ LIVE (py-clob-client, Polygon) | ❌ STUB — `generate_recommendations` hardcodes prob 0.55 vs 0.50, IGNORES the real ai_analyzer | NO — it would bet on a fake edge |
+| Solana = `Franklin-Trading` | ❌ PAPER only (`engine.openPosition`) | LLM + persona debate + real RSI/MACD analysis, but strategies/ EMPTY | NO — paper trades, no live money |
+CONCLUSION: for REAL money the two closest are **Hyperliquid** (real exec, needs a strategy) and
+**Polymarket** (real exec, needs the ai-edge wired into the stub). Franklin needs LIVE execution wired first
+(bigger lift). All three share the same gap: the DECISION/STRATEGY layer. → ship INITIAL good, self-improvable
+strategies (H8) sourced from research/BP/backtest; don't reinvent, wire the missing layer + tweak. RECIPE
+goal (Dais): prove the SAME recipe earns whether the AI lives on cloud, browser, or local. = the ARTICLE.
 
 ### OBSERVABILITY — netdata assessment (Dais asked "set it up, is it a good option?")
 `netdata/netdata` = 79k★ Go full-stack observability, ~290MB, real-time per-node metrics/dashboards. VERDICT:
