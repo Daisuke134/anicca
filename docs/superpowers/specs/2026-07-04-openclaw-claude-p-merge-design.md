@@ -1136,3 +1136,27 @@ no-human-loop例外3「Daisが記事本文を編集する場面」に該当す�
 `in_progress`のまま維持し、Pages CDNのビルド完了は継続監視する(次回セッション
 またはDaisからの追加確認依頼時に`gh api repos/Daisuke134/anicca/pages/builds/latest`
 を再確認する)。
+
+### 20.2 GitHub Pages CDN反映も完了(2026-07-05、fresh evidence、Task #5完了)
+
+Dais「check again」の指示で再確認したところ、legacy Jekyll builder(`build_type:
+legacy`)のビルドが結局`errored`で確定していた(9分の滞留は無限ハングではなく
+単に確定が遅かっただけ)。そこで`build_type`を`workflow`(GitHub Actions方式)に
+切替え、`gh-pages`ブランチに`.github/workflows/pages.yml`(標準の
+`actions/checkout`+`actions/upload-pages-artifact`+`actions/deploy-pages`、
+untrusted inputなし)を追加。
+
+- 1回目のActions実行(`28717667472`)は`actions/deploy-pages@v4`が
+  `"Deployment failed, try again later."`という一時的なGitHub側インフラエラーで
+  失敗 → `gh workflow run`で再実行(`28717683110`)したところ**success**。
+- ただし`index.md`はJekyll非経由だとルート(`/`)を解決できず404のまま
+  だったため、`index.md`を素の`index.html`に置き換えて再push(commit
+  `db229a3`)→ `on: push`トリガーで自動再デプロイ(`28717744222`、success)。
+- **最終fresh evidence確認**(このセッションでcurl実行):
+  - `https://daisuke134.github.io/anicca/` → **HTTP 200**、`"Anicca"`文字列を
+    実際に含む
+  - `https://daisuke134.github.io/anicca/articles/2026-07-05-swarm-highlight-01.md`
+    → **HTTP 200**、記事タイトル`"5つのAIループが実際にやったこと"`を実際に含む
+
+**Task #5完了**。記事はGitHub Pages(`https://daisuke134.github.io/anicca/`)で
+実際に公開され、VCSDD(Sonnet adversary 3ラウンド)+実URL E2E確認の両方を通過した。
