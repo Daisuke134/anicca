@@ -1,6 +1,6 @@
 {
-  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 2, "round": 3,
+  "reviewType": "implementation", "featureName": "profitable-article-writer", "sprintNumber": 2, "round": 4,
   "contractPath": "contracts/sprint-2.md",
-  "priorRound": {"verdict":"FAIL","findings":["FIND-010 high: PROP-21 doc claimed note_mcp.upload_eyecatch_image, actual impl uses browser button"]},
+  "priorRound": {"verdict":"FAIL","findings":["FIND-011 high: same eyecatch-API claim stale in note_publish.sh comment + test header","FIND-012 medium: SKILL.md cited pre-fix screenshot"]},
   "artifactsToReview": {"spec":["specs/behavioral-spec.md","specs/verification-architecture.md"],"contract":["contracts/sprint-2.md"],"source":["skills/profitable-article-writer/"],"tests":["skills/profitable-article-writer/tests/"]}
 }
