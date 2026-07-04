@@ -275,3 +275,69 @@ Dais から disk-cleaner の安全性 + claude-p/ClawRouter の実稼働状況�
    解消した後は`uv cache clean`が正常実行でき、disk空きは4.3GB→4.7GBまで回復。
    `~/.cache/uv`自体のサイズ縮小は限定的(再ダウンロードで再肥大化しうる)ため、継続監視
    が必要(disk-cleaner.shの`sweep uv 14日`条件では抑えきれない場合、閾値短縮を検討)。
+
+## 13. clip loop 全体像の訂正: warmup が欠落している(2026-07-04、Dais指摘から発覚)
+
+Dais「アカウント作成→7日warmup→投稿→アフィリエイト収益、というフローをASCII図で
+説明してほしい」に応えるべく実コードを精査した結果、**この完全なフローは実は
+`earn/video`(faceless-video)の設計であり、`earn/clip`には warmup が一切実装
+されていない**ことが判明した。正直な訂正として記録する。
+
+### video loop(faceless-video)= 理想形の状態機械(`earn/video/decide.py`、既存・完成済み)
+
+```
+S0_create(ig-account-create、1回だけ)
+   ↓
+S1_warmup × 7日(ig-account-warmer、毎日1回、人間らしい行動)
+   ↓ warmup_day >= 7
+S3_post(投稿、毎日) ←──────┐ 優先: 投稿はaffiliate設置より先(FIND-501修正)
+   ↓                        │
+S2_affiliate(アフィリエイトリンク設置、day>=7以降、1日1回リトライ、FIND-801修正)
+   ↓
+S4_record(実オンチェーン収益のみ記録)
+```
+`decide(state, today)`は純粋関数(I/O無し、テスト済み)、run.shがこの決定に従い
+`ig-account-warmer`の`scripts/warm_iso.py`をDEDICATED anti-throttle CloakBrowser
+(daily-driverとは別ポート、warmup専用)経由で呼ぶ。
+
+### clip loop(earn/clip)= 現状、warmupが無い(要修正)
+
+```
+ig-account-create(1回だけ、実証済み)
+   ↓
+★ warmup 無し ★ ← ig-account-warmerへの言及が run.sh/clip-cli.sh に一切無い
+   ↓
+run.sh がqueueにあるclipを即座に投稿(新規アカウント即日商用投稿 = IG凍結リスク大)
+   ↓
+出口(payout) = per-view reward campaign(promote.fun等)★まだharness未実装(Task#4)★
+   ※ video loopの「affiliateリンク」とは全く別の収益源。Daisの「アフィリエイトで
+     稼ぐ」という理解は実はvideo loopの設計と一致し、clip loopの実際の出口(reward
+     campaign)とは異なる。ここは混同しないよう正確に記録する。
+```
+
+### スキル共有の実態(良いニュース: 既に汎用設計)
+
+`ig-account-create`/`ig-account-warmer`は最初から**「特定のearn skill専用ではない
+GENERAL skill」**として設計されている(`ig-account-create/SKILL.md`に明記:
+「general_purpose: true、NOT coupled to affiliate、Creates an IG account for
+ANY use」)。つまりDaisの「新しいスキルを作る必要はない、共有すべき」という指摘は
+既に設計思想として実現されている — 実装(clip loopのrun.sh)がまだこの共有パターンを
+使い切れていないだけ。
+
+### ローカル/クラウドでのブラウザツール切替が必要(Dais指摘、未解決の設計課題)
+
+現状の`ig-account-create`/`ig-account-warmer`は**CloakBrowser(CDP、Macローカル
+プロセス)前提**で実装されている(`cdp.py`, `cdp_incognito.py`が`localhost:9222`等に
+接続)。claude-p(このMac mini上で動く)はCloakBrowserに直接アクセスできるが、もし
+self-funded AIがクラウド(Railway/Akash等)上で動く場合、**ローカルのCloakBrowser
+には物理的にアクセスできない**。Dais指摘通り、この場合はブラウザ操作ツール自体を
+差し替える必要がある(クラウド対応のheadless browser、あるいはリモートCDP接続等)。
+これは前セッションで発見した「ClawRouterはvision judgment可能なツールを持たない」
+制約(§8関連)とも直結する、より大きな設計課題。**今回は方針記録のみ、実装はまだ
+着手しない**(まずTask#4=promote.fun harnessでclip loopの出口を完成させ、その後
+warmup追加・クラウド対応を検討する優先順位)。
+
+### 次のタスク(TaskList追加候補)
+- clip loopに`ig-account-warmer`経由の7日warmupを追加(video loopの`decide.py`
+  パターンを移植) — IG凍結リスクを下げる恒久対策
+- クラウド上のself-funded AI向けブラウザ自動化ツールの選定・実装(現時点では未着手)
