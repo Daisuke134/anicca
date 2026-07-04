@@ -91,7 +91,18 @@ This skill is otherwise a thin harness: run for real, record the trace, let the 
 
 - Agent home: `~/.anicca-founder/agents/polymarket-agent` (override: `PM_TRADE_AGENT_HOME`).
 - Fuel: `.env` in agent home — `BLOCKRUN_WALLET_KEY` (analysis, x402) +
-  `POLYGON_WALLET_PRIVATE_KEY` (founder wallet `0x810f…`, trades) — already provisioned.
+  `POLYGON_WALLET_PRIVATE_KEY` — already provisioned.
+  ⚠️ **Two different addresses, don't confuse them (verified live 2026-07-05, both `eth_account` and
+  `viem` independently derive the same result):**
+  - `POLYGON_WALLET_PRIVATE_KEY` is the **owner EOA** `0x810F6D61F7606dEEE2657d3083E150a222Bc29C5` — it
+    only SIGNS orders (POLY_1271 / `signature_type=3`); it does not itself hold the tradeable balance,
+    and this same key doubles as the unrelated `ai.anicca.founder-loop` instance's own low-balance
+    identity wallet (colony spec §25) — a coincidence of both living under `~/.anicca-founder`, not a
+    typo.
+  - The **deposit wallet** `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74` (line above, "Ours:") is the
+    ERC-1167 proxy the EOA owns/signs for — THIS is the maker/signer of record on every order, the
+    address that holds pUSD/USDC.e, and the one colony-status.sh / the dashboard track as claude-p's PM
+    wallet. If you're looking up "claude-p's PM balance" on-chain, look up `0x904B50d2…`, not `0x810f…`.
 - Funds live on Polygon: USDC.e (bankroll) + POL (gas). Seeded 2026-07-04 via LiFi bridge from Base.
 
 ## Money-safety guards (the ONLY thing this wrapper adds)
