@@ -6,8 +6,8 @@
 |---|---|
 | worktree | `.worktrees/clip-cloud-adapter/`(実装フェーズで作成、spec自体はdev直接) |
 | ブランチ | `feature/clip-cloud-adapter` |
-| 対象repo | `~/anicca`(OSS、`earn/clip`本体がここにある) |
-| 状態 | spec作成中(VCSDD Phase 1) |
+| 対象repo | `~/anicca`(OSS、`earn/clip`本体) + `~/anicca-project/.claude/skills/`(ig-account-create/cdp.py系、earn-clip-rewards/pipeline.py系 — cookie処理の実体はこちらにある、§4で訂正) |
+| 状態 | spec REV2(GATE 1ラウンド1 FAIL、fresh-context Sonnet adversaryの指摘を反映して全面修正) |
 
 ## 0. なぜこれをやるか(Dais 2026-07-05 verbatim、動機の核心)
 
@@ -25,36 +25,68 @@ promote.fun収益化)は現状**このMac Mini 1台に物理的に縛られて�
 ([[project_anicca_mission_financial_independence_equalizer]])をこの1台の外に
 広げる唯一の道**。この位置づけは§1(スコープ判断)の優先順位に直結する。
 
-## 1. 既存調査のサマリ(deep-researcher subagent、2026-07-05、fresh grep根拠)
-
-deep-researcher subagentによる調査結果(このセッションで実施、以下は要約。詳細な
-citation付き報告は会話ログ参照):
+## 1. 既存調査のサマリ(2026-07-05、GATE 1ラウンド1のfresh-context adversary指摘を
+反映して訂正済み — REV1にあった不正確な記述をここで正す)
 
 - `docs/superpowers/specs/2026-07-04-openclaw-claude-p-merge-design.md` §15 が
   既に5層分解(ブラウザ/視覚判断/動画生成/wallet/スケジューリング)の一次調査を
   完了済み。本specはこれを土台にする(重複調査はしない)。
-- `~/anicca-oss/.worktrees/adapters`(feature/custom-adapters)と
-  `~/anicca-oss/.worktrees/akash`(feature/cloud-spawn)は、`~/anicca/specs/
-  00-MASTER.md`(2026-06-11)で「Hermes世代からautomaton世代へ方針転換」と
-  明記されている**旧世代の実装**である可能性が高く、コードの直接再利用は不可。
-  ただし以下は設計の参考になる:
-  - `wallet-factory.ts`(akash worktree) — counter-factual EOA/smart account生成
-    パターン → 層④(wallet)の参考
-  - `deploy/akash/sdl.yaml`(akash worktree) — 「常駐+cron前提でないクラウド環境
-    へのデプロイ」の具体例 → 層⑤(スケジューリング)の参考
+- **訂正(REV1の誤り)**: REV1は`~/anicca-oss/.worktrees/adapters`/`akash`を
+  「00-MASTER.mdで方針転換された旧世代、超obsolete」と断定したが、これは不正確な
+  推論だった。実際に確認したところ:
+  - `~/anicca-oss/.worktrees/adapters`(commit群: feat(spec-12)…)と
+    `~/anicca-oss/.worktrees/akash`(commit群: feat(spec-13)…)は**現在も
+    filesystem上に実在**(`ls -la`で確認、2026-07-05時点)。
+  - `wallet-factory.ts`(`~/anicca-oss/.worktrees/akash/skills/spawn-child/
+    scripts/wallet-factory.ts`)と`sdl.yaml`(`~/anicca-oss/.worktrees/akash/
+    deploy/akash/sdl.yaml`)も**実在確認済み**。
+  - `~/anicca/specs/00-MASTER.md`(2026-06-11 locked)は実在し、「Engine =
+    Conway automaton」「spawn_child(replicate)」を**現行LOCKEDアーキテクチャの
+    一部として明記**している。つまりakash worktree(feature/cloud-spawn、
+    「anicca-spawn-child v1」)は**obsoleteではなく、このLOCKED roadmapの
+    spawn_child項目を実装中の、進行中の別セッションの仕事である可能性が高い**。
+  - **正しい扱い**: これらのworktreeのコードを「参考パターン」として引用する際は、
+    「まだ`~/anicca/skills/earn/`にmergeされていない、統合状況未確認の別トラックの
+    実装」という中立的な言い方に留め、「obsolete」と断定しない。今回のspecでは
+    層④⑤を先送りするため(§2)、この訂正は今フェーズの実装には影響しないが、
+    将来層④⑤に着手する際の参考先として記録しておく。
 - `~/anicca/adapters/README.md`の「adapter」という語は**外部サービスプロバイダ
   統合**(Gmail/Lancers/Coconala等、1 provider = 1 subfolder)の慣習であり、
   Task #8が必要とする**実行環境(ローカル/クラウド)の抽象化**とは別の関心事。
   本specでは意図的に別名(「environment adapter」)を使い、既存adapters/との
   混同を避ける。
-- 現行コードの環境依存箇所(fresh grep、file:line):
+- 現行コードの環境依存箇所(fresh grep、file:line、GATE 1ラウンド1で見つかった
+  漏れも含めて再調査済み):
   - `~/anicca/skills/earn/clip/run.sh:7` — `# LOCAL slot (needs CloakBrowser on
     this Mac).`と明記
   - `~/.claude/skills/ig-account-create/scripts/cdp.py:28-29` — `CDP_PORT`は
     env化済みだが`CDP = f"http://localhost:{_PORT}"`と**host固定**
-  - `~/anicca/skills/earn/clip/producer.sh` — yt-dlp/whisper/ffmpeg、
-    ブラウザ非依存、Python venv(`$ENGINE/.venv`)ベース。**層③は既に
-    ほぼ環境非依存**(移植容易、と§15.2の判定を再確認)
+  - **【ラウンド1で見つかった漏れ】** `~/.claude/skills/ig-account-create/
+    scripts/cdp_incognito.py:20` — `"http://localhost:9222"`が**完全ハード
+    コード**(env変数一切なし)。clip loopのアカウント作成/incognitoフロー
+    経由で呼ばれる可能性がある同ディレクトリの姉妹ファイル
+  - **【ラウンド1で見つかった漏れ】** `~/anicca-project/.claude/skills/
+    ig-reels-poster/scripts/launch_clip_browser.py` — venvパス
+    (`/Users/anicca/.openclaw/skills/_shared/venv-cloak/lib/python3.14/
+    site-packages`)・プロファイルパス(`/Users/anicca/.cloak/profiles/
+    clip-en`)・ポート(`--remote-debugging-port=9223`)の3つが**すべて
+    ハードコード**。これがCloakBrowserプロセス自体を**起動する**ファイルであり、
+    cdp.pyが**接続する**対象。層①の「browser host抽象化」を名乗るなら、
+    接続側(cdp.py)だけでなく起動側(このファイル)も対象に入れないと不完全。
+  - `~/anicca/skills/earn/clip/producer.sh` — **訂正(REV1の誤り)**: cookie
+    関連コードは**producer.sh自体には一切存在しない**(grep 0件)。producer.sh
+    は`pipeline.py`(`~/.claude/skills/earn-clip-rewards/scripts/pipeline.py`
+    ── 別repo/別ディレクトリ、L70コメントで委譲を確認)へcookie処理を含む重い
+    処理を丸ごと委譲している。cookie取得の実体は`pipeline.py`の
+    `_youtube_cookies_file()`(L34-49)+`export_camofox_cookies.py`にあり、
+    `~/.camofox/profiles/{HASH}/storage-state.json`という**Macローカル
+    固定パス**を参照(既にファイルが無ければ`None`を返しcookie無し実行に
+    フォールバックする設計が既存)。層③のREQ-C2はこちらを対象にする(§4で訂正)。
+  - `producer.sh:16` — `ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-
+    Generator"`は`${ENGINE:-...}`ではなく**単純代入の完全ハードコード**。
+  - `producer.sh:42` — `pip install -r "$ENGINE/requirements-local.txt"`
+    (クローンした外部リポジトリ内の既存ファイルを参照、`~/anicca`側に新規
+    requirements.txtを作る話ではない)。
   - `~/anicca/skills/earn/clip/run.sh` / `producer.sh` に**wallet参照コードは
     無い**(clip loop自体はhuman-funded、wallet層は将来のself-funded cloud
     展開時のみ必要)
@@ -76,52 +108,98 @@ citation付き報告は会話ログ参照):
 
 ## 3. 層①: ブラウザ接続のhost抽象化
 
-### 現状
-`cdp.py:28-29`:
-```python
-_PORT = os.environ.get("CDP_PORT", "9222")
-CDP = f"http://localhost:{_PORT}"
-```
-`page_ws()`(cdp.py:58-59)も`ws://localhost:{_PORT}/...`とhost固定。
+### 現状(3ファイルすべてが対象、ラウンド1の漏れを反映)
+1. `~/.claude/skills/ig-account-create/scripts/cdp.py:28-29`:
+   ```python
+   _PORT = os.environ.get("CDP_PORT", "9222")
+   CDP = f"http://localhost:{_PORT}"
+   ```
+   `page_ws()`(58-59)も`ws://localhost:{_PORT}/...`とhost固定。**このファイルは
+   clip以外(ig-account-create、promote-fun-login等)からも共有で呼ばれる** —
+   変更時は既存呼び出し元の挙動を一切変えないことが必須(§5で回帰確認)。
+2. `~/.claude/skills/ig-account-create/scripts/cdp_incognito.py:20` —
+   `"http://localhost:9222"`が**env変数を一切介さず完全ハードコード**。
+3. `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` —
+   venvパス・プロファイルパス・ポート(9223)が3つともハードコード。これは
+   CloakBrowserプロセスを**起動する**側であり、1・2は**接続する**側。両方
+   変えないと「host抽象化」は名前だけになる。
 
 ### 変更(REQ-C1)
-- `CDP_HOST`環境変数を追加、デフォルト`localhost`(後方互換、ローカル動作を壊さない)。
-- `CDP = f"http://{_HOST}:{_PORT}"`、`page_ws()`も同様に`_HOST`を使う。
+- `cdp.py`: `CDP_HOST`環境変数を追加、デフォルト`localhost`(後方互換)。
+  `CDP = f"http://{_HOST}:{_PORT}"`、`page_ws()`も同様に`_HOST`を使う。
+- `cdp_incognito.py`: 同じ`CDP_HOST`/`CDP_PORT`パターンを追加(現状は
+  `CDP_PORT`すら無いので、`cdp.py`と同じ実装に揃える)。
+- `launch_clip_browser.py`: venvパスを`VENV_CLOAK_PATH`、プロファイルパスを
+  `CLOAK_PROFILE_PATH`、ポートを既存の`CDP_PORT`(無ければ現状の9223を
+  デフォルト)としてenv化。3つとも未設定時は現状と完全に同じ値になること。
+- **不到達hostの挙動(ラウンド1指摘の欠落エッジケース)**: `CDP_HOST`/
+  `CDP_PORT`が到達不能な場合、`cdp.py`の各関数は現状通り`requests`/
+  `websocket-client`の例外をそのまま送出する(新規の握りつぶし・リトライは
+  追加しない — 呼び出し元の`run.sh`側`run_step`タイムアウト機構に判断を
+  委ねる、既存設計を変えない)。
 - 既存の呼び出し元(`run.sh`, `join_campaign.py`, `select_campaigns.py`,
-  `post_reel.py`等)は変更不要(env未設定時は現状と完全に同じ挙動)。
+  `post_reel.py`等)はコード変更不要(env未設定時は現状と完全に同じ挙動)。
 
 ### スコープ外(明記)
 「クラウド上に実際にheadlessブラウザプロセスを立てて`CDP_HOST`をそこに向ける」
 作業自体は含まない(BrowserSH/browser-sh等の外部サービス調査は層②着手時に
 まとめて行う — 視覚判断機構と一緒でないと単体では検証できないため)。
 
-## 4. 層③: 動画生成処理(producer.sh)のポータビリティ
+## 4. 層③: 動画生成処理のポータビリティ(対象ファイルを訂正)
 
-### 現状
-`producer.sh`はyt-dlp→whisper→ffmpeg、`$ENGINE/.venv`という固定パス前提。
-cookie取得は「camofoxローカルexport」に依存(§15.1)。
+### 現状(REV1の誤りを訂正)
+`producer.sh`自体にcookie関連コードは無い(grep 0件、確認済み)。実際のcookie
+処理は`~/.claude/skills/earn-clip-rewards/scripts/pipeline.py`
+(`_youtube_cookies_file()`, L34-49)+同ディレクトリの`export_camofox_cookies.py`
+にあり、producer.shはL70でこのpipeline.pyへ処理そのものを委譲している。
+`_youtube_cookies_file()`は`~/.camofox/profiles/{HASH}/storage-state.json`と
+いうMacローカル固定パスを参照し、**既にファイルが存在しない場合はNoneを返して
+cookie無し実行にフォールバックする設計が実装済み**(2026-07-04 タスク#8関連の
+既存コメントあり — このファイル自体が過去の別作業で一部手当て済みだったことが
+判明)。
 
-### 変更(REQ-C2)
-- 依存関係(yt-dlp/whisper/ffmpeg + Pythonバージョン)を`requirements.txt`相当に
-  明示化(現状暗黙的にvenvへインストールされているものを文書化するのみ、
-  新規パッケージ追加は無し)。
-- cookie取得を`COOKIE_SOURCE`環境変数で切替可能にする: `local-camofox`(現状の
-  デフォルト、後方互換)/ `env-file`(クラウドでは環境変数経由でbase64
-  cookieファイルを渡す想定)。
-- venvパスを`ENGINE`環境変数から解決する既存の仕組みを確認し、ハードコードが
-  残っていれば同様にenv化(fresh grepで確認してから着手、推測しない)。
+`producer.sh`固有の環境依存は:
+- `producer.sh:16` — `ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-
+  Generator"`(単純代入、`${ENGINE:-...}`ではない)。
+- `producer.sh:42` — `$ENGINE/requirements-local.txt`(クローンされた外部
+  リポジトリ内に既存のファイルを参照。`~/anicca`側に新規requirements.txtを
+  作る話ではない — REV1はこれを誤解していた)。
 
-## 5. 検証計画(GATE 2: TDD)
+### 変更(REQ-C2、対象ファイル訂正)
+- `producer.sh:16`の`ENGINE`を`${ENGINE:-$HOME/.cache/anicca-clones/AI-Youtube-
+  Shorts-Generator}`に変更(未設定時は現状と完全に同じパス、上書き可能に)。
+- `pipeline.py`の`_youtube_cookies_file()`に`COOKIE_SOURCE`環境変数分岐を追加:
+  `local-camofox`(現状のデフォルト、既存の`~/.camofox/...`パス参照、後方互換)/
+  `env-file`(`YT_COOKIES_FILE`環境変数が指すファイルパスをそのまま返す —
+  クラウドでは事前に用意したcookies.txtをこの変数で渡す想定)。既存の
+  「ファイルが無ければNoneを返しフォールバック」という安全側の挙動は両モードで
+  維持する。
+- `producer.sh:42`の`requirements-local.txt`は変更しない(クローンされる外部
+  リポジトリ側の既存ファイルであり、このspecのスコープ外)。
 
-| 項目 | 検証方法 |
+## 5. 検証計画(GATE 2: TDD、テストファイルを具体的に特定)
+
+| 項目 | 検証方法(具体的な手順・ファイル名) |
 |---|---|
-| `CDP_HOST`未設定時に既存動作を壊さない | 既存test(`tests/test_run.sh`等)がenv未設定のまま100%通ることを確認 |
-| `CDP_HOST`設定時に別hostへ実際に接続できる | ローカルで2つ目のポートを別プロセスとして立て、`CDP_HOST=127.0.0.1 CDP_PORT=<別port>`で疎通確認(実ブラウザ不要、CDPのjson/versionエンドポイントへの到達確認で十分) |
-| `COOKIE_SOURCE=env-file`が実際に機能する | producer.shをこのモードで実行し、cookie読み込み元が意図通り切り替わることをログで確認 |
-| 既存のローカルE2E(clip loop実運用)が壊れない | 変更後、`earn/clip`の次の自然wakeで通常通り投稿が継続することを確認(回帰なし) |
+| `CDP_HOST`/`CDP_PORT`未設定時に既存動作を壊さない | `~/anicca/skills/earn/clip/tests/test_run_sh_3way_routing.sh`(実在する既存test、`earn/clip`のもの)を変更前後で実行し、pass数が変わらないことを確認 |
+| `CDP_HOST`設定時に別hostへ実際に接続できる | ローカルでCDPポートを1つ追加起動し、`CDP_HOST=127.0.0.1 CDP_PORT=<別port>`で`cdp.py url <tid>`相当の疎通(`/json/version`への到達)を確認。127.0.0.1はloopbackであり真の別hostテストではない旨を明記した上で、この段階ではネットワーク到達性の配線確認に限定する(実クラウドhostでの検証はデプロイ実機ができてから) |
+| 不到達`CDP_HOST`指定時に例外がそのまま伝播する | 存在しないport(例: `CDP_PORT=1`)を指定して`cdp.py`の関数を呼び、`ConnectionRefusedError`相当の例外がキャッチされず伝播することを確認(新規の握りつぶしをしていないことの確認) |
+| `cdp_incognito.py`/`launch_clip_browser.py`のenv化が既存呼び出し元を壊さない | 両ファイルの既存呼び出し元(grep -rl で洗い出し)を全て列挙し、env未設定時に生成される値が変更前と完全一致することをdiffで確認 |
+| `COOKIE_SOURCE=env-file`が実際に機能する | `pipeline.py`の`_youtube_cookies_file()`を直接呼び出す小さいpythonテストを書き、`COOKIE_SOURCE=env-file YT_COOKIES_FILE=<テスト用ダミーファイル>`で指定パスがそのまま返ることを確認。`local-camofox`(デフォルト)では既存パスがそのまま使われることも同テストで確認 |
+| 既存のローカルE2E(clip loop実運用)が壊れない | 変更後、`earn/clip`の次の自然wakeで`~/.openclaw/state/clip-earn-ledger.jsonl`に新規`status:posted`行(またはSELECT等の正常な非エラー遷移ログ)が1件以上追加されることを確認(回帰なしの定量基準) |
 
 ## 6. GATE 1(SPEC)判定について
 
-このspecはVCSDDのBuilder(私)が書いた初稿。次のステップは`vcsdd:vcsdd-adversary`
-(Sonnet)によるfresh-context spec review(矛盾・漏れの指摘、PASS/FAILの二値判定)。
-PASSするまで実装に進まない。
+- **ラウンド1(REV1)**: FAIL。fresh-context Sonnet adversaryの指摘: (a)
+  `~/anicca-oss/.worktrees/adapters`/`akash`の「obsolete」断定が不正確な推論
+  だった、(b) `cdp_incognito.py`/`launch_clip_browser.py`のハードコードを
+  REQ-C1が見落としていた、(c) REQ-C2が対象ファイルを誤っていた(producer.sh
+  ではなくpipeline.py)、(d) §5検証計画が具体性を欠いていた(存在しない
+  テストファイル名、不到達host時の挙動未定義、回帰確認基準が非定量的)。
+  ただしadversary自身の指摘のうち「worktreeが存在しない」「wallet-factory.ts/
+  sdl.yamlが存在しない」は**私が自分で再確認した結果、事実ではなかった**
+  (adversaryの誤検知)。VCSDDの原則通り、adversaryの指摘も鵜呑みにせず自分で
+  再検証してから反映した。
+- **ラウンド2(REV2、本ファイル)**: 上記(b)(c)(d)を修正し、(a)は「obsolete」を
+  撤回して中立的な記述に訂正。次はこのREV2を再度fresh-context adversaryに
+  かけ、PASSするまで実装に進まない。
