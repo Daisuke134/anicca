@@ -1742,3 +1742,13 @@ ledger 実データの engine 叩き分布: automaton HL2089/PM45/SOL13、claude
 - ★各スキルが「その設定で実際に動く」ことを verify する★。我々の Mac Mini で動かなければ US Mac Mini でもクラウドでも動かない。「どこでも(誰の端末でも・クラウドでも)動く」= Akash spawn の前提。verify は各 instance × 各 skill。
 - ★claude-p(subscription)は残す = 価値ある実験★: crypto/USDC を持たない人でも「あなたの Claude が稼げる」。ただし主眼ではない。主眼 = self-funded(automaton/Franklin)が crypto 燃料で自律に稼ぐこと。human-funded は稼いだら self-funded に卒業する道(§ graduation)。
 - ★autonomous earn の現実(正直)★: 人間も Claude も抜きで稼いだ realized = automaton $0.23 のみ。Franklin $0(sol 一本+規律 WAIT)、claude-p は自律で $8.24 分勝ったが redeem は team-lead(meddling)。= self-funded 自律実現益 合計 $0.23。ここを増やすのが全て。
+
+### §39 ★ #23 ENGINE-PARITY: Franklin を full loop 化(2026-07-05)★
+- 実装: `ai.anicca.franklin-loop.plist`(新規)= anicca-daemon.sh を ANICCA_HOME=~/.blockrun/INSTANCE=franklin/FUNDING=self/BRAIN=nvidia/llama-4-maverick で起動。旧 `franklin-sol.plist` は `.disabled` 退避(rollback 可)。mother self-update 782bd54。
+- ★team-lead が透明に検証(builder の報告を鵜呑みにせず、自分でログを読んだ)★:
+  - ✅ full loop 起動、`live skills: report/spawn/spawn-child/issue-dev/coordinate/ubi/cook/yield/hl_trade/x402_sell/token_launch/gig` = sol 一本足から脱却、catalog に hl_trade/cook/yield 等。
+  - ✅ franklin proxy :8403(Franklin 自身の Solana wallet が compute を払う x402)経由で THINK 成立、wake が判断を生成。
+  - ✅ dashboard 継続(202, net ~$3.0)、crash なし、sol-trade も継続。
+  - ⚠️ `tier=broke`(ANICCA_WALLET_ADDRESS unset)= ★バグでなく設計通り★(anicca-daemon.sh:117 に明記「unset for Franklin is correct, non-fatal」)。loop の balance/tier は EVM 専用(Base USDC, 0x…40hex)、Franklin は Solana wallet なので tier=broke のまま。各 skill は自分の .env で自分の wallet を使うので独立に動く。
+- ★スキルレベルの parity 達成★。但し実際に PM/HL で稼ぐには EVM/Polygon 資金が要る(Franklin=Solana のみ)= capital-gated(EARN-3/#15)。「全スキルを持つ」は達成、「全スキルで稼ぐ」は資金次第。
+- ★プロセス変更(Dais 2026-07-05)★: 今後 team-lead が main で透明にビルド(全コマンドが Dais に見える)、検証は fresh VCSDD adversary。opaque な builder subagent は使わない(遅い+不透明+meddling リスク=redeem-builder/franklin-parity-builder の教訓)。
