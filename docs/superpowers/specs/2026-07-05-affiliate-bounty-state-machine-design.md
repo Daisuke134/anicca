@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV4(GATE 1ラウンド1-3 FAIL、月またぎ欠落/重複追記/永久ブロック/疑似コード欠如を修正) |
+| 状態 | spec REV5(GATE 1ラウンド1-4 FAIL、断念パス自体の重複追記バグを修正) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -343,22 +343,32 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   現行(挿入箇所直前、`bounty-cli.sh:17`より抜粋):
   `"...then rm the file anyway. THEN (1) DISCOVER: EARN_MODE=discover bash ..."`
 
-  変更後(★GATE 1ラウンド3のfinding F4を反映、タイムアウト/断念パスを追加★
-  — 追加しないと「PRが絶対に開けない難しいbounty」に永久に足止めされ、
-  このspec自体が解決しようとしている「詰まる」失敗モードを別の形で再生産して
-  しまう):
+  変更後(★GATE 1ラウンド3のfinding F4を反映、タイムアウト/断念パスを追加★。
+  さらに★ラウンド4のfinding FIND-1を反映★ — ラウンド3の断念パス自体が
+  「既にstalled行が存在するかを一度も確認せず`GIVE UP`のたびに新規追記する」
+  という、`track()`側でF3として直したのと**全く同じ重複追記バグを、LLMが
+  読む自然言語プロンプト側の別経路で再導入していた**。この経路は`track()`の
+  bash実装がカバーする範囲の外(agentが直接attempts.jsonlを読み書きする)
+  なので、track()のresolved集合ロジックとは独立に、ここでも同じ「既にstalled
+  済みならスキップ」チェックを明記する必要がある):
   `"...then rm the file anyway. THEN (0) CHECK FOR UNFINISHED WORK FIRST: read `
-  `~/anicca/skills/earn/bounty/state/attempts.jsonl; if ANY line has status:claim `
-  `AND pr is null, that is unfinished work from a previous pass. Check that line's `
-  `wake field (epoch seconds at claim time): if now - wake >= 7 days (BOUNTY_STALE_DAYS), `
-  `GIVE UP on it -- append {"key":<same key>,"status":"stalled"} to attempts.jsonl `
-  `yourself (do NOT keep trying forever), then proceed to (1) DISCOVER below as normal. `
-  `Otherwise (claim is fresh, under 7 days old), do NOT run discover/gate this pass, `
-  `instead ACTUALLY FINISH that bounty right now (comment /attempt #N on that GitHub `
-  `issue as Daisuke134, fork the repo, fix the issue via VSDD RED->GREEN, open a PR `
-  `referencing the issue, then update that attempts.jsonl line setting pr to the PR `
-  `number), THEN skip to step (4) TRACK below. Only if NO unfinished claim exists at all, `
-  `proceed to (1) DISCOVER: EARN_MODE=discover bash ..."`
+  `~/anicca/skills/earn/bounty/state/attempts.jsonl; for each key, if it ALREADY `
+  `has a status:stalled line anywhere in the file, treat that key as fully resolved `
+  `-- do NOT re-evaluate it, do NOT append another stalled line for it, skip it `
+  `entirely. Among keys with NO stalled line yet, if ANY has status:claim AND pr is `
+  `null, that is unfinished work from a previous pass. Check that line's wake field `
+  `(epoch seconds at claim time; if wake is missing or not a plain number, treat `
+  `this claim as fresh/not-stale rather than erroring). If now - wake >= 7 days `
+  `(BOUNTY_STALE_DAYS), GIVE UP on it -- append {"key":<same key>,"status":"stalled"} `
+  `to attempts.jsonl ONCE (you already confirmed above no stalled line exists yet for `
+  `this key, so this single append is safe and will never repeat for this key on `
+  `future passes), then proceed to (1) DISCOVER below as normal. Otherwise (claim is `
+  `fresh, under 7 days old), do NOT run discover/gate this pass, instead ACTUALLY `
+  `FINISH that bounty right now (comment /attempt #N on that GitHub issue as `
+  `Daisuke134, fork the repo, fix the issue via VSDD RED->GREEN, open a PR referencing `
+  `the issue, then update that attempts.jsonl line setting pr to the PR number), THEN `
+  `skip to step (4) TRACK below. Only if NO unfinished (non-stalled, pr-null) claim `
+  `exists at all, proceed to (1) DISCOVER: EARN_MODE=discover bash ..."`
 
   これにより「前回のwakeでATTEMPTまで到達したが力尽きた」場合、次のwakeは
   discover/gateへ進む前に必ずこの未完了work-orderを検知し、そこで足止めされる
@@ -366,7 +376,10 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   (completeするまで同じ対象に固執する)と同じ効果を、自然言語プロンプトの
   順序変更のみで実現する。ただし`BOUNTY_STALE_DAYS`(仮値7日、一次情報無いため
   推測値)を超えたら自分でstalledとして諦め、次のbountyへ進めるようにする —
-  無限ブロックを防ぐ。
+  無限ブロックを防ぐ。**「既にstalled済みのkeyは二度と評価しない」という
+  チェックを最初に置くことで、この断念パス自体が無限に重複追記するバグを
+  防ぐ**(`track()`のresolved集合と同じ考え方を、agentが直接読み書きする
+  この経路にも独立に適用)。
 
 ## 4. スコープ判断(YAGNI、REV2で訂正)
 
@@ -396,6 +409,7 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
 | `attempt()`のsurvivor選択修正 | survivors 2件・1件目が既にattempts.jsonlにある状態を作る新規テストフィクスチャを用意し、2件目が選ばれることを確認 |
 | `track()`のSTALLED検知(ループ外追記) | `BOUNTY_GH_OVERRIDE`でダミーの`gh`相当スクリプト(CLOSED、reviewDecision非MERGEDを返す)を注入し、`status:stalled`行がループ終了後に追記されることを確認 |
 | bounty-cli.sh STARTUP順序変更 | プロンプト文字列内で「(0) CHECK FOR UNFINISHED WORK FIRST」が「(1) DISCOVER」より前に出現することを文字列比較で確認 |
+| STARTUP文言(0)の断念ロジック自体の正しさ(GATE 1ラウンド4指摘、FIND-2対応) | プロンプト文言はLLM解釈でありコードとして直接実行はできないため、**同じ判定基準をPythonで決定論的に再実装したリファレンス実装**(`tests/test_unfinished_work_logic.py`、新規)を書き、3つのfixture(①stale claim・stalled行なし→GIVE UP相当の判定になる ②stale claim・既にstalled行あり→スキップ判定になる ③fresh claim・7日未満→PR続行判定になる)全てで意図した分岐になることを確認する。これはLLMが実際にこの通り解釈する保証にはならない(NLプロンプトの原理的限界、正直に明記する)が、判定基準そのものに論理的欠陥が無いことは決定論的に検証できる |
 | queue backlog(affiliate 7件)の解消 | 実装後、次の自然wakeでqueueが減っていくことを継続監視で確認(POSTがMEASUREにブロックされなくなったため、1 wake 1件のペースで着実に減るはず) |
 | bounty survivorへの初回attempt | 実装後、次の自然wakeでattempts.jsonlに実際に行が追加されることを確認 |
 | `measure_commission.py`の実配線確認 | 実装後、実アカウントログイン環境で最低1回`amazon_report.py`呼び出し自体が成功することを確認(モック不可、実装後に別途実施) |
@@ -440,10 +454,20 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   REQ-B1の1点目(attempt()のsurvivor選択修正)が2点目と違い疑似コード無しで
   実装可能性を欠く。
   検証の結果、全て正当な指摘と確認。
-- **ラウンド4(REV4、本ファイル)**: (a)新月最初の確認時点の値をきちんと記録して
-  からbaselineにする設計に修正(§2)。(b)`track()`にresolved集合(既にstalled
-  確定済みのkey)を事前構築し、それらは`gh`呼び出しごとスキップする設計に修正、
-  重複追記を根絶(§3)。(c)REQ-B3に`BOUNTY_STALE_DAYS`(仮値7日)による自己断念
-  パスを追加、`wake`フィールドで経過日数を判定(§3)。(d)REQ-B1の1点目に完全な
-  bash実装を追加、既存の`grep -qF`重複チェックとPython側の統合を明記(§3)。
-  次はこのREV4を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド4**: FAIL。fresh-context Sonnet adversaryの指摘: (a)新月baseline処理
+  ・track()のresolved集合・attempt()のsurvivor選択修正は全て正しく実装可能と
+  確認(Q1/Q2/Q4 PASS)。(b)★ラウンド3で直したはずのF3(重複追記)と全く同じ
+  バグが、REQ-B3の断念パス(agentが直接attempts.jsonlに書き込む経路)で
+  再導入されていた — 「既にstalled行が存在するか」を確認せず`GIVE UP`のたびに
+  新規追記する設計だったため、7日超過後は毎wake重複してstalled行が増え続ける
+  (FIND-1、critical)。(c)この断念ロジック自体を検証する手段が§5に無かった
+  (FIND-2)。(d)`wake`フィールドが数値である前提が未検証・未文書化だった
+  (FIND-3、non-blocking)。
+  検証の結果、(b)(c)は正当かつblocking、(d)も反映すべきと判断。
+- **ラウンド5(REV5、本ファイル)**: REQ-B3の断念パスに「既にstalled行が
+  存在するkeyは二度と評価しない」というチェックを最初に追加、track()の
+  resolved集合と同じ考え方をLLMプロンプト側にも独立に適用(FIND-1修正)。
+  §5に断念ロジックのPythonリファレンス実装によるfixtureテストを追加
+  (FIND-2修正)。`wake`が数値でない場合は「fresh扱い、エラーにしない」と
+  明記(FIND-3修正)。次はこのREV5を再度fresh-context adversaryにかけ、
+  PASSするまで実装に進まない。
