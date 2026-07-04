@@ -207,6 +207,17 @@ platform :ios do
 
   desc "Build, archive, and export IPA for App Store"
   lane :build do
+    # CI signing: ~/.anicca-signing/*.p12 があれば一時 keychain に import
+    # (login keychain が identity を失った 2026-07-04 incident 対応。setup_ci が
+    #  fastlane_tmp_keychain を default に設定し xcodebuild が継承する)
+    dev_p12 = File.expand_path("~/.anicca-signing/dev-legacy.p12")
+    dist_p12 = File.expand_path("~/.anicca-signing/dist-legacy.p12")
+    if File.exist?(dev_p12) && File.exist?(dist_p12)
+      setup_ci(force: true)
+      import_certificate(keychain_name: "fastlane_tmp_keychain", keychain_password: "", certificate_path: dev_p12, certificate_password: ENV.fetch("ANICCA_P12_PASSWORD", "ascp12"))
+      import_certificate(keychain_name: "fastlane_tmp_keychain", keychain_password: "", certificate_path: dist_p12, certificate_password: ENV.fetch("ANICCA_P12_PASSWORD", "ascp12"))
+    end
+
     archive_path = File.expand_path("./build/aniccaios.xcarchive")
     export_path = File.expand_path("./build/export")
 
