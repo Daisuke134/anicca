@@ -184,3 +184,10 @@ mobile-apps/*/credentials.json
 mobile-apps/**/certs/
 **/*.p12
 **/credentials.json
+
+# Generated marketing/session artifacts (regenerable, keep out of product repo)
+tiktok-marketing/
+anicca_youtube_qr.png
+
+# Duplicate skill copies sprayed by installer (canonical = .agents/skills/)
+/agent/
