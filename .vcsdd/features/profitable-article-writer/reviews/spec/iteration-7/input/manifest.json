@@ -1,0 +1,7 @@
+{
+  "reviewType": "spec", "feature": "profitable-article-writer", "mode": "strict", "phase": "1c", "iteration": 7,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "scope": "Sprint 2.5 REQ-21/22, round 3 - verify FIND-008 (V1 ladder staleness) resolved, final sanity pass",
+  "priorIteration": {"iteration":6,"verdict":"FAIL","findingsToVerify":["FIND-008"]}
+}
