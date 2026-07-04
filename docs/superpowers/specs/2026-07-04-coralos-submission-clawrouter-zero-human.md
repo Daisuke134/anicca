@@ -406,8 +406,12 @@ PHASE C — wrap as an unattended loop + submit
           disclosed gap — NOT worked around by skipping the live proof and claiming done.
           Next attempt: free more disk first (candidates: `~/.npm` 1.6G, more `~/.cache/
           anicca-clones/*` stale clones) OR do the live E2E on a machine with more free disk.
-  [ ] C4  5-slide deck (lead with the settlement / Explorer link, per their own guidance)
-  [ ] C5  3-min demo video (Problem → Solution → Demo → Team)
+  [~] C4  5-slide deck CONTENT drafted (`SUBMISSION.md` in the fork, pushed to
+          `Daisuke134/solana_coralOS@ff7ead7`), grounded in the real Explorer link/tx sig from
+          C0 — not yet rendered as an actual slide file (Keynote/PDF/Google Slides), that's
+          still a manual production step.
+  [~] C5  3-min video SCRIPT drafted (same `SUBMISSION.md`, timestamped Problem/Solution/Demo/
+          Team beats) — not yet recorded/edited, that's still a manual production step.
   [ ] C6  Public repo cleanup: no keys committed, .env.example only; README notes Docker is
           required to run the multi-agent round (judges need their own Docker/colima)
   [ ] C7  Submit on the Superteam listing before 2026-07-20
