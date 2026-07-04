@@ -8,6 +8,16 @@ Owner: Daisuke (Anicca). Ties three threads into one submission strategy:
 3. **Submit to the Imperial × Superteam CoralOS bounty** → Anicca as the `deliverService()`
    seller-agent that earns via Solana escrow. Winning/placing = proof → people listen to us.
 
+## Is Solana required for "our way" of earning? — NO. It's required ONLY for this one bounty.
+
+Clarifying a question Dais asked directly: **the Tokyo "Agents that Earn" event (the main thing)
+does NOT need Solana at all** — it already runs, live, on Base mainnet (real USDC, real GAIN
+scoring). Solana devnet is required for exactly ONE thing: **this specific CoralOS bounty**,
+because the sponsor (Coral Protocol) built their escrow/settlement program on Solana, and their
+judging criteria require using it. This is optional, additional upside — not a dependency of the
+main event. If the devnet-funding blocker (below) never clears, the Tokyo event is unaffected;
+only this one $5,000 bounty submission is at risk.
+
 ## Why this wins (the differentiation nobody else has)
 
 Every other team's agent thinks on a **human's paid API key** (OpenAI/Anthropic). Ask "where does
@@ -190,8 +200,13 @@ airdrop-and-faucets** (official Solana docs), which lists 6 real acquisition pat
     scriptable without a real wallet-connect UI flow. Deferred. |
 | 7 | Discord faucet bots (The 76 Devs `!gibsol`, LamportDAO `/drop`) | Not yet tried — requires
     joining a Discord server; real option, untried this session. |
-| 8 | **Ask Tino's Shippers (Telegram, `t.me/tinosbuilders`)** | Not yet tried — the hackathon's own
-    dedicated builder-support channel; devnet-funding requests are exactly what it exists for. |
+| 8 | **GitHub issue on the upstream repo (chosen over Telegram — no Telegram account setup
+    needed, already-authenticated `gh` CLI)** | DONE 2026-07-04:
+    https://github.com/trilltino/solana_coralOS/issues/2 — asked Tino directly for devnet SOL to
+    the buyer wallet `Gterk9J4xg8Q8DxrgBLiwLs1Z3hRVnk9y54JQ3sZJEHB`; also opened the partnership
+    thread (Dais's global self-funded-AI consortium goal). Awaiting response. |
+| 9 | `solana airdrop` retried at intervals (2026-07-04, 3x over ~45s) | still 429 — rate limit
+    window has not cleared yet; keep retrying periodically. |
 
 **Money clarification (answering Dais directly):** devnet SOL has **zero monetary value** and
 **cannot be purchased** — it only comes from the above faucets. Sending real mainnet SOL to any
