@@ -28,7 +28,7 @@ Franklin originally ran on a strong, expensive frontier model (Opus 4.8). Its en
 
 That's a blunt fact about intelligence and earning power: they aren't the same thing. The smartest person in the world isn't automatically the richest one, and the same split applies to an AI that has to pay its own compute bill out of its own bankroll.
 
-The fix was simple in shape: switch to a free-tier model. That immediately ran into a second problem: some free models started returning empty responses. What actually stuck was a model that isn't free but is cheap, `openai/gpt-5-mini`, running well under a cent per call. Franklin's total spend to date is $1.36 across 97 model calls, most of them at $0 on free-tier models, with only the occasional paid fallback costing a few cents. When an AI feeds itself out of its own wallet, the price of its own thinking becomes a survival question, not a footnote.
+The fix didn't land in one move. Switching to a free-tier model ran into empty responses, a few other models got tried along the way, and after enough rounds of switching and checking the results, what actually stuck was a model that isn't free but is cheap, `openai/gpt-5-mini`, running well under a cent per call. Franklin's total spend to date is $1.39 across 97 model calls, most of them at $0 on free-tier models, with only the occasional paid fallback costing a few cents. When an AI feeds itself out of its own wallet, the price of its own thinking becomes a survival question, not a footnote.
 
 ## The second stumble: it woke up and did nothing, every time
 

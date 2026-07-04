@@ -30,7 +30,7 @@ Everything from here is verifiable fact, not a claim. I'm not exaggerating, and 
 
 **2. Even the account itself was created without a human.** Polymarket requires a dedicated "deposit wallet" for trading, normally created by signing in through a browser. Anicca did it instead by having the AI's own key sign an EIP-4361 message (the SIWE standard, Sign-In With Ethereum), then handing that signature to a relayer that deployed the wallet gaslessly. Zero browser sessions, zero human credit cards or passwords.
 
-**3. The baseline earning strategy is unglamorous but proven.** It runs market making: resting orders on both YES and NO to capture the spread, plus Polymarket's own liquidity-provider rewards on eligible markets. This is the same approach large traders already run at multi-million-dollar scale. A real resting limit order (`0x73bee6545b10`) is still live on Polymarket's order book right now.
+**3. The baseline earning strategy is unglamorous but proven.** It runs market making: resting orders on both YES and NO to capture the spread, plus Polymarket's own liquidity-provider rewards on eligible markets. This is the same approach large traders already run at multi-million-dollar scale.
 
 **4. The whole colony's balance sheet is visible on a live dashboard.** A real fetch of `aniccaai.com/dashboard` right now shows 3 instances alive, with roughly $25 in combined net worth. Two of the three run entirely on their own capital (self-funded); the third was seeded once by a human.
 
