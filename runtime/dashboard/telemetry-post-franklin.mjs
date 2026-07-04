@@ -22,6 +22,24 @@ const secretB58 = fs.readFileSync(SOLANA_WALLET_FILE, "utf8").trim();
 const secretKey = bs58.decode(secretB58); // 64 bytes: tweetnacl secretKey format == Solana Keypair.secretKey
 const address = bs58.encode(Buffer.from(secretKey.slice(32))); // last 32 bytes = the public key
 
+// #18 DASH: stream Franklin's REAL wake activity to the /<host> page. The page (AgentClient.tsx) reads
+// the field `log` with shape {ts, kind, slot, model, note} and polls dashboard-sync every 4s, so this
+// makes the "Live activity" feed update in real time from Franklin's own ledger — no fakes. Franklin's
+// realized earnings are $0 so far (it correctly WAITs when the edge doesn't clear fees), so revenue_by_source
+// is empty/0 honestly; the activity log still shows it IS awake and deciding.
+const LEDGER = HOME + "/.blockrun/state/ledger.jsonl";
+function activityLog() {
+  try {
+    return fs.readFileSync(LEDGER, "utf8").trim().split("\n").slice(-15).reverse().map((s) => {
+      try {
+        const o = JSON.parse(s);
+        const res = String(o.result || "").replace(/\s+/g, " ").trim().slice(0, 120);
+        return { ts: o.ts, kind: o.kind || "wake", slot: o.slot || null, model: o.model || null, note: res };
+      } catch { return null; }
+    }).filter(Boolean);
+  } catch { return []; }
+}
+
 async function rpc(method, params) {
   const r = await fetch(SOLR, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ jsonrpc: "2.0", id: 1, method, params }) });
   const j = await r.json();
@@ -60,7 +78,8 @@ async function post() {
     id: address, ts: Math.floor(Date.now() / 1000), host: "Franklin", geo: "JP", chain: "solana",
     funding: "self", env: "local", brain: "proxy",
     model_live: "openai/gpt-5-mini", model_tier: "frontier",
-    net_worth_usd, revenue_mo_usd: 0, burn_day_usd, runway_days: 999, status: "alive",
+    net_worth_usd, revenue_mo_usd: 0, revenue_by_source: {}, log: activityLog(),
+    burn_day_usd, runway_days: 999, status: "alive",
   };
   const message = JSON.stringify(payload);
   const sig = nacl.sign.detached(Buffer.from(message, "utf8"), secretKey);
