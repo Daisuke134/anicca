@@ -816,3 +816,25 @@ post_reel.pyで検証)。campaign固有の必須タグ付け(§17.3で判明)が
 **現状**: POST遷移は実装済みで、実際にIGの投稿フロー(composer→caption→share手前)
 まで動作確認済み(dry-run、実投稿はしていない)。次はcampaign固有タグ付けの実装
 →実際の`--live`投稿→SUBMIT実装、という順。
+
+## 18. 新発見: campaign参加(Join)にはIGアカウントのpromote.fun接続・検証が前提(2026-07-04)
+
+Rulesタブが「Join the Campaign to unlock full details」でロックされていることから
+判明。既存のdecide.py/run.sh状態機械(SELECT→CLIP→POST→SUBMIT→MEASURE→WITHDRAW→
+RECORD)には無い、**追加の前提条件**が2段階存在した:
+
+1. **promote.funアカウントにIGアカウントを接続**(Account Settings→Connected
+   Accounts→Connect Account→Instagram→username入力のみ、OAuth不要)
+2. **接続したIGアカウントの所有権をbio-code検証**(promote.funが発行する一時コード
+   をIGプロフィールのbio欄に貼り付け→「I've Added the Code」で検証完了)
+
+**実施済み(fresh evidence)**: @aiclipsvaultをpromote.funアカウント
+(anicca_clip_promote)に接続、bio-code`FL2KTGWJ`をIGプロフィール自己紹介欄に追加
+(IG @aiclipsvaultのブラウザ:9223で実施、「プロフィールが保存されました」確認)、
+promote.fun側で「Verified」ステータスに変化したことを確認(スクリーンショット
+証拠あり)。これで初めてcampaignへの「Join」が可能になる見込み(次に確認)。
+
+**Next Action**: このJOIN前提条件を`decide.py`/`run.sh`の状態機械に組み込む
+(SELECTの前、またはCLIPの前に「アカウント接続済みか」「対象campaignにjoin済みか」
+を確認するステップが必要)。次にJoin Campaignボタンを実際にクリックして、
+campaign参加が完了するか確認する。
