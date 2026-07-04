@@ -1,7 +1,31 @@
 # SPEC — profitable-article-writer: any AI writes an article and earns, zero human (2026-06-29)
 
-Date: 2026-06-29 · Status: DESIGN (approved direction, Dais 2026-06-29) · Author: main agent (Claude Code, dev IDE)
-Repo: `Daisuke134/anicca` · Branch: `feature/human-funded` · Skill home: `skills/profitable-article-writer/`
+Date: 2026-06-29, updated 2026-07-04 · Status: **Sprint 1 + Sprint 2 COMPLETE (VCSDD 4-D converged)**, building Sprint 3+
+Author: main agent (Claude Code, dev IDE) · Repo: `Daisuke134/anicca` · Branch: `feature/human-funded`
+Skill home: `skills/profitable-article-writer/` · VCSDD state: `.vcsdd/features/profitable-article-writer/`
+
+## §-1 STATUS (2026-07-04) — what is actually built vs still ahead
+
+```
+ ✅ Sprint 1 COMPLETE  orchestration skeleton: run.sh 1-wake, V0/V0.5 gates (fail-closed),
+                       Mode A draft-first, per-install identity, model-agnostic, sonnet-only loop.
+                       Adversary PASS (3 rounds, 0 findings) + formal hardening. 13/13 tests.
+ ✅ Sprint 2 COMPLETE  REAL content-gen hook (generate_draft), REAL note.com DRAFT publish
+                       (visuals: hero+2 inline figures, eyecatch/cover, SINGLE ¥500 paid gate —
+                       replacing the old メンバーシップ). REQ-19 (daily executor = `claude -p` sonnet)
+                       + REQ-20 (verifier = main agent, browser-verified render) added.
+                       Adversary PASS (4 rounds, 0 findings) + hardening. 20/20 tests.
+                       Real evidence: note draft `nfb2ace9f0ed8` (anicca123), independently
+                       browser-verified by the main agent (cover + diagrams + 有料/¥500 panel visible).
+ ⏳ NEXT: Sprint 2.5   Flip the ALREADY-VERIFIED draft to Mode B (real live publish) — see §11.
+    Sprint 3          Distribution (X/Threads) + trust ramp → V2 reach / V3 convert
+    Sprint 4          Wire run.sh into the runtime daily loop (claude -p sonnet, unattended)
+    Sprint 5          Self-heal (REQ-17) + self-improve (REQ-18) — zero Opus, zero human
+    Sprint 6          Niche generalization + spawn self-funded child
+ Method used throughout: VCSDD strict (10-phase, 4-role). Every builder/adversary claim independently
+ re-verified by the main agent (re-run tests myself, open screenshots myself, grep the fix myself) —
+ never taken on faith. See `.vcsdd/features/profitable-article-writer/reviews/` for the full audit trail.
+```
 
 ## §0 What this is and what it feeds
 
@@ -252,6 +276,32 @@ A 4-D convergence per VSDD: spec ✓ · tests ✓ · impl ✓ · **V4 earn verif
 touch, wrote an article, ran the funnel, posted + drove traffic, and a **real external ¥/USDC landed in a
 per-install account/wallet**, confirmed by `record-earn`'s anti-fake gate and my own browser/on-chain check,
 on the niche the agent chose, runnable on any frontier model by swapping the model.
+
+## §11 Operating model + self-operation (Dais 2026-07-03/07-04, added to VCSDD behavioral-spec REQ-17..20)
+
+- **REQ-19 Daily executor = `claude -p` (Sonnet).** The daily article wake — research → write → V0/V0.5 → post a
+  note DRAFT (Mode A) — runs unattended on the headless `claude -p --model sonnet` loop. It does the work.
+- **REQ-20 Verifier = the main agent (Opus), out of the daily loop.** The rendered draft is checked by the main
+  agent via a real browser look (no slop, paywall gate, hook/CTA, visuals) — not by the executor grading itself.
+  This is the Mode-A trust ramp; once trusted, Mode B removes this step (self-heal/improve, REQ-17/18, removes it
+  for good).
+- **REQ-17 Self-heal** (Sprint 5): on an unattended wake failure, the skill diagnoses from its own logs/state and
+  attempts an autonomous fix (retry/refresh cred/switch rail) — zero Opus, zero human. Unrecoverable → quarantine
+  + record; the loop survives.
+- **REQ-18 Self-improve** (Sprint 5): the skill reads its own per-rail stats (V2/V3/V4) and adjusts the next
+  wake's topic/hook/price/rail-mix to earn more — a closed loop the model drives by judgment, never hardcoded
+  rules. Zero Opus, zero human.
+
+**Sprint 2.5 — flip the verified draft to real (Dais 2026-07-04): "the note is not actually published."**
+Sprint 1+2 proved the ORCHESTRATION (fail-closed gates, real content, real visuals, real ¥500 config) but Mode A
+by design never presses publish. The draft `nfb2ace9f0ed8` has passed V0/V0.5 + 4 rounds of adversary review +
+independent main-agent browser verification — the calibration Mode A exists for is done for this piece. Per
+§7.1, the graduation trigger is Dais's explicit go ("we have to have it actually published, after the
+verification"). Next action: run the SAME wiring (`lib/note_publish.sh`'s `run_note_mode_a_publish` → the
+identical `記事タイプ=有料/¥500` call, this time NOT cancelled — carried through to 投稿する) to make it live,
+then verify V1 (public URL, HTTP 200, paywall visible to a logged-out visitor) and start tracking V4 (does a
+real ¥500 sale land in the note account). This is a real, irreversible, monetized publish action — done once,
+observed, before Mode B is flipped to run this daily unattended.
 
 ## §10 Non-goals / open
 
