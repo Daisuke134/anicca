@@ -10,18 +10,24 @@
 # actually checked for note-set-single-price.py's call site specifically (test-prop22b only proved
 # select_paid_price() still works through the NEW caller, lib/note-publish-live.py).
 #
-# Reuses the SAME TEST draft (n39ef09f828f7) test-prop22b already exercises for note-publish-live.py.
-# note-set-single-price.py NEVER clicks 投稿する/更新する (it only sets 記事タイプ=有料/価格, screenshots
-# the panel, then clicks キャンセル) -- see its own docstring's final line: "NEVER submits. No
-# 投稿する/更新する click exists anywhere in this file." -- so re-running it against this draft (whether it
-# is still 'draft' or already 'published' from a prior test-prop22b run) is a safe, non-publishing,
-# idempotent operation. The flagship draft (nfb2ace9f0ed8) is NEVER used here.
+# Reuses the SAME TEST draft (ne94efe526c9a) test-prop22b/test-prop24c already exercise for the shared
+# publish-click unit. note-set-single-price.py NEVER clicks 投稿する/更新する (it only sets
+# 記事タイプ=有料/価格, screenshots the panel, then clicks キャンセル) -- see its own docstring's final
+# line: "NEVER submits. No 投稿する/更新する click exists anywhere in this file." -- so re-running it
+# against this draft (whether it is still 'draft' or already 'published' from a prior test-prop22b/
+# test-prop24c run) is a safe, non-publishing, idempotent operation. The flagship draft (nfb2ace9f0ed8) is
+# NEVER used here.
+#
+# Sprint-4 note: the ORIGINAL test draft (n39ef09f828f7) was found DELETED on note.com (external
+# environment drift, unrelated to any code change here) -- ne94efe526c9a is its VCSDD-internal-test-only
+# replacement, created via this skill's own reused note-create-rich-draft.py/note-set-eyecatch.py pipeline
+# (never published outside this test suite's own mechanism checks).
 set -uo pipefail
 SKILL="/Users/anicca/anicca-human-funded/skills/profitable-article-writer"
 TOOL="$SKILL/lib/note-set-single-price.py"
 
 # ★★★ SAFETY: hardcoded, literal keys -- this test may NEVER touch the flagship draft. ★★★
-TEST_DRAFT_KEY="n39ef09f828f7"
+TEST_DRAFT_KEY="ne94efe526c9a"
 FLAGSHIP_DRAFT_KEY="nfb2ace9f0ed8"
 if [ "$TEST_DRAFT_KEY" = "$FLAGSHIP_DRAFT_KEY" ]; then
   echo "SAFETY ABORT: TEST_DRAFT_KEY must never equal FLAGSHIP_DRAFT_KEY" >&2

@@ -34,11 +34,29 @@
 #   env in:  ARTICLE_NOTE_PAYWALL_HEADING  substring of the heading the paid-area marker is inserted before
 #                                       (REQ-5c free/paid split); empty => paid-line insertion is skipped,
 #                                       draft stays fully free (lib/note-set-single-price.py)
-#   writes:  $ARTICLE_DIR/STATE.md     last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED, rounds_used,
-#                                      draft_path, publish_url (Mode B only), notify_path (Mode A only)
-#   exit:    0 for every LEGITIMATE outcome — SKIPPED/DRAFT/PUBLISHED/ABORTED are all valid, non-error
-#            wake results (REQ-4b and REQ-14 are expected control flow, not failures); non-zero only on a
-#            genuine harness error.
+#
+#   Sprint-4 REQ-23/24/25 env vars (real Mode-B in-loop publish, "wire that in"):
+#   env in:  ARTICLE_MODEB_RATIO       runtime-mutable "1-in-N" graduation ratio (or bare "N"), consulted
+#                                       ONLY when AUTONOMY=on -- REQ-25. Overrides ARTICLE_MODEB_RATIO_FILE
+#                                       when both are set. Missing/N=0/negative/non-integer ALL fail closed
+#                                       to Mode A for this wake (never Mode B, never a crash).
+#   env in:  ARTICLE_MODEB_RATIO_FILE  path to a runtime config/state file holding the SAME ratio value
+#                                       (default: $ARTICLE_DIR/state/mode-b-ratio) -- the install-level,
+#                                       re-readable-without-redeploy config REQ-25 requires.
+#   env in:  ARTICLE_MODEB_NOTE_KEY    an ALREADY-PREPARED (eyecatch+visuals+price confirmed) note.com
+#                                       draft key to actually publish for real when this wake resolves to
+#                                       Mode B (REQ-23) -- no default/wildcard (same REQ-21 safety
+#                                       convention). Absent => degrades to the Sprint-1 safe placeholder,
+#                                       never crashes, never fabricates a URL.
+#   env in:  ARTICLE_NOTE_BROWSER_COMMON_DIR  TEST-INJECTION ONLY, forwarded to
+#                                       lib/note-mode-b-publish.py -- see that file's own docstring.
+#   writes:  $ARTICLE_DIR/STATE.md     last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED|UNCONFIRMED,
+#                                      rounds_used, draft_path, publish_url (Mode B only),
+#                                      publish_verify_result/publish_verified_at (Mode B real-publish only),
+#                                      notify_path (Mode A only)
+#   exit:    0 for every LEGITIMATE outcome — SKIPPED/DRAFT/PUBLISHED/ABORTED/UNCONFIRMED are all valid,
+#            non-error wake results (REQ-4b, REQ-14, and REQ-24's verify-inconclusive path are expected
+#            control flow, not failures); non-zero only on a genuine harness error.
 set -uo pipefail
 
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -53,6 +71,70 @@ fi
 mkdir -p "$ARTICLE_DIR/state"
 
 AUTONOMY="${AUTONOMY:-off}"
+
+# ---------------------------------------------------------------------------------------------------------
+# REQ-23/REQ-25/PROP-26: the EFFECTIVE per-wake mode, ratio-derived, runtime-mutable, fail-closed to Mode A
+# on ANY malformed ratio (missing/uninitialized, N=0, negative, non-integer). AUTONOMY=on is the master
+# enable (a safety knob: AUTONOMY=off — the default — is ALWAYS Mode A regardless of ratio); the ratio then
+# decides WHICH specific wake, within the graduated 1-in-N cycle, is actually Mode B. REQ-23's Mode-B
+# branch-selection below consults ONLY $effective_mode, never a raw AUTONOMY value in isolation.
+# ---------------------------------------------------------------------------------------------------------
+MODEB_RATIO_FILE="${ARTICLE_MODEB_RATIO_FILE:-$ARTICLE_DIR/state/mode-b-ratio}"
+MODEB_COUNTER_FILE="$ARTICLE_DIR/state/mode-b-wake-count"
+
+# stdout: the parsed positive-integer N (accepts a bare "N" or a "1-in-N" string). Prints NOTHING and
+# returns 1 on ANY malformed/missing input -- missing/uninitialized (raw empty), N=0, negative (rejected by
+# the [0-9]+ shape, never reaches the modulo below), or non-integer (same rejection) -- REQ-25's 4 distinct
+# fail-closed cases.
+_modeb_ratio_n() {
+  local raw="${ARTICLE_MODEB_RATIO:-}"
+  if [ -z "$raw" ] && [ -f "$MODEB_RATIO_FILE" ]; then
+    raw="$(head -n1 "$MODEB_RATIO_FILE" 2>/dev/null | tr -d '[:space:]')"
+  fi
+  if [ -z "$raw" ]; then
+    return 1
+  fi
+  local n
+  if [[ "$raw" =~ ^1-in-([0-9]+)$ ]]; then
+    n="${BASH_REMATCH[1]}"
+  elif [[ "$raw" =~ ^[0-9]+$ ]]; then
+    n="$raw"
+  else
+    return 1
+  fi
+  if [ "$n" -eq 0 ] 2>/dev/null; then
+    return 1
+  fi
+  printf '%s' "$n"
+  return 0
+}
+
+# Atomically increments and returns the install's own persistent per-wake counter (REQ-25: "1-in-N wakes
+# run Mode B" needs a runtime-mutable, cross-invocation counter, not just a stored ratio value). A corrupted
+# (non-numeric) counter file resets to 0 rather than crashing or misresolving.
+_modeb_next_wake_count() {
+  local cur=0
+  if [ -f "$MODEB_COUNTER_FILE" ]; then
+    cur="$(cat "$MODEB_COUNTER_FILE" 2>/dev/null | tr -d '[:space:]')"
+  fi
+  case "$cur" in (''|*[!0-9]*) cur=0 ;; esac
+  local nxt=$((cur + 1))
+  local tmp
+  tmp="$(mktemp "$ARTICLE_DIR/state/.mode-b-wake-count.XXXXXX")"
+  printf '%s\n' "$nxt" > "$tmp"
+  mv "$tmp" "$MODEB_COUNTER_FILE"
+  printf '%s' "$nxt"
+}
+
+effective_mode="A"
+if [ "$AUTONOMY" = "on" ]; then
+  if ratio_n="$(_modeb_ratio_n)"; then
+    wake_n="$(_modeb_next_wake_count)"
+    if [ $((wake_n % ratio_n)) -eq 0 ]; then
+      effective_mode="B"
+    fi
+  fi
+fi
 
 # ---------------------------------------------------------------------------------------------------------
 # atomic STATE.md writer (REQ-4b/6/7/14): always write to a tmpfile then rename, never a partial STATE.md.
@@ -247,12 +329,15 @@ EOF
 fi
 
 # ---------------------------------------------------------------------------------------------------------
-# 4b. BOTH-PASS: Mode A (default, AUTONOMY=off) stops at draft + notifies the human; Mode B (AUTONOMY=on)
-#     publishes directly then distributes (REQ-6, REQ-7). Mode B's "publish" call goes through the SAME
-#     fail-closed gates/publish-gate.sh used by PROP-5, re-run with the already-PASSing forced values so
-#     the single wired publish point (the PUBLISHED sentinel) is the one that ever fires.
+# 4b. BOTH-PASS: Mode A (effective_mode=A, the default) stops at draft + notifies the human; Mode B
+#     (effective_mode=B, REQ-25's ratio-derived value) publishes directly then distributes (REQ-6, REQ-7).
+#     Mode B's "publish" call goes through the SAME fail-closed gates/publish-gate.sh used by PROP-5,
+#     re-run with the already-PASSing forced values so the single wired publish point (the PUBLISHED
+#     sentinel) is the one that ever fires, THEN (REQ-23/24, Sprint 4) reaches the SHARED real-publish unit
+#     (lib/note_browser_common.confirm_and_publish, via lib/note-mode-b-publish.py) and its independent
+#     in-loop verify -- NEVER the standalone REQ-21 one-off tool, which stays a separate, human-invoked path.
 # ---------------------------------------------------------------------------------------------------------
-if [ "$AUTONOMY" = "on" ]; then
+if [ "$effective_mode" = "B" ]; then
   pub_rc=0
   if [ "${ARTICLE_TEST:-}" = "1" ]; then
     ARTICLE_DIR="$ARTICLE_DIR" ARTICLE_TEST_FORCE_V0="$last_v0" ARTICLE_TEST_FORCE_V05="$last_v05" \
@@ -276,8 +361,67 @@ EOF
     exit 0
   fi
 
-  # Distribution to reach platforms (REQ-7/8/11) is the Sprint 2 live-integration seam — per-rail
-  # publishers keyed off identity/accounts.sh's registry. Sprint 1 proves the publish wiring itself.
+  # REQ-23/24 (Sprint 4): only fires a REAL publish click when the caller has handed off an
+  # ALREADY-PREPARED note draft key (ARTICLE_MODEB_NOTE_KEY, mirroring ARTICLE_NOTE_TITLE's role for Mode
+  # A) -- this file never creates/eyecatches/prices a draft itself, only clicks publish on one the caller
+  # names explicitly (no default/wildcard key, same REQ-21 safety property). Distribution to reach
+  # platforms (REQ-7/8/11) remains a later-sprint live-integration seam.
+  modeb_note_key="${ARTICLE_MODEB_NOTE_KEY:-}"
+
+  if [ -n "$modeb_note_key" ]; then
+    modeb_publish_py="${NOTE_MCP_PY:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
+    if [ ! -x "$modeb_publish_py" ]; then
+      modeb_publish_py="python3"
+    fi
+
+    modeb_out="$("$modeb_publish_py" "$SKILL_DIR/lib/note-mode-b-publish.py" --draft-key "$modeb_note_key" \
+      --price "${ARTICLE_NOTE_PRICE:-500}" 2>&1)"; modeb_rc=$?
+    modeb_url="$(echo "$modeb_out" | grep -oE '^NOTE_LIVE_URL: .*' | sed 's/^NOTE_LIVE_URL: //')"
+    modeb_ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+    verify_result="UNCONFIRMED"
+    if [ $modeb_rc -eq 0 ] && [ -n "$modeb_url" ]; then
+      # REQ-24: independent post-publish verify, the SAME logic as REQ-22's standalone
+      # lib/note-verify-live.py -- a SEPARATE process/invocation, never the click's own optimistic claim.
+      verify_out="$(python3 "$SKILL_DIR/lib/note-verify-live.py" "$modeb_note_key" 2>&1)"; verify_rc=$?
+      if [ $verify_rc -eq 0 ]; then
+        verify_result="SUCCESS"
+      fi
+    else
+      echo "run.sh: Mode-B in-loop publish click did not confirm success for draft '$modeb_note_key' (recording UNCONFIRMED, never blindly retry-publishing the same draft in this wake): $modeb_out" >&2
+    fi
+
+    if [ "$verify_result" = "SUCCESS" ]; then
+      write_state <<EOF
+last_wake_result: PUBLISHED
+rounds_used: $rounds_used
+draft_path: $draft_path
+publish_url: $modeb_url
+publish_verify_result: SUCCESS
+publish_verified_at: $modeb_ts
+EOF
+      echo "WAKE_RESULT: PUBLISHED (rounds_used=$rounds_used, verify=SUCCESS, draft_key=$modeb_note_key)"
+    else
+      # REQ-24: verification failure/inconclusive (or the click itself never confirmed success) -- NEVER
+      # silently assume success. Record UNCONFIRMED for a later wake or self-heal (REQ-17, Sprint 7) to
+      # reconcile; this wake does NOT retry-publish the same draft (this is the only publish attempt made
+      # in this wake, by construction — no retry loop exists here).
+      write_state <<EOF
+last_wake_result: UNCONFIRMED
+rounds_used: $rounds_used
+draft_path: $draft_path
+publish_url: ${modeb_url:-unknown}
+publish_verify_result: UNCONFIRMED
+publish_verified_at: $modeb_ts
+EOF
+      echo "WAKE_RESULT: UNCONFIRMED (rounds_used=$rounds_used, draft_key=$modeb_note_key)"
+    fi
+    exit 0
+  fi
+
+  # No real note draft key handed off for this wake (ARTICLE_MODEB_NOTE_KEY unset) -- degrade to the
+  # Sprint-1 safe placeholder (unchanged), never crash, never fabricate a URL/verify result. Zero calls to
+  # the shared publish function in this branch (PROP-24).
   write_state <<EOF
 last_wake_result: PUBLISHED
 rounds_used: $rounds_used

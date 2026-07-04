@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
 # VSDD oracle -- PROP-22b (REQ-21, Sprint 2.5): the REAL success path of lib/note-publish-live.py. This is
 # the ONLY test file in this suite permitted to fire a real 投稿する/更新する click, and it MUST target the
-# TEST draft n39ef09f828f7 -- NEVER the flagship draft nfb2ace9f0ed8 (that one is reserved for the main
+# TEST draft ne94efe526c9a -- NEVER the flagship draft nfb2ace9f0ed8 (that one is reserved for the main
 # agent to publish personally, as a deliberate one-off, after this sprint converges).
 #
-# Per Sprint-2 evidence (state/2026-07-04 exploration + note_mcp GET /v3/notes/n39ef09f828f7), this draft
-# already carries: status=draft, eyecatch set (a real assets.st-note.com URL), and 3 <img> markers in its
-# body -- i.e. it already satisfies PROP-22's eyecatch+visuals confirm gates. This test supplies
+# ne94efe526c9a (confirmed live via note_mcp GET /v3/notes/ne94efe526c9a: status=draft, eyecatch set,
+# 1 <img> tag in its body) is a VCSDD-internal-test-only draft, created via this skill's own reused
+# note-create-rich-draft.py/note-set-eyecatch.py pipeline, replacing the ORIGINAL Sprint-2.5 test draft
+# (n39ef09f828f7), which Sprint-4 found DELETED on note.com (external environment drift, unrelated to any
+# code change here). It already satisfies PROP-22's eyecatch+visuals confirm gates. This test supplies
 # NOTE_LIVE_PUBLISH=1 + the exact draft key and lets the tool's own price/type gate (browser-driven, since
 # that state is not persisted) run for real, then asserts the tool ACTUALLY reached and fired the
 # 投稿する/更新する click -- an always-refuse stub cannot pass this test.
@@ -20,7 +22,7 @@ SKILL="/Users/anicca/anicca-human-funded/skills/profitable-article-writer"
 TOOL="$SKILL/lib/note-publish-live.py"
 
 # ★★★ SAFETY: hardcoded, literal keys -- this test may NEVER touch the flagship draft. ★★★
-TEST_DRAFT_KEY="n39ef09f828f7"
+TEST_DRAFT_KEY="ne94efe526c9a"
 FLAGSHIP_DRAFT_KEY="nfb2ace9f0ed8"
 if [ "$TEST_DRAFT_KEY" = "$FLAGSHIP_DRAFT_KEY" ]; then
   echo "SAFETY ABORT: TEST_DRAFT_KEY must never equal FLAGSHIP_DRAFT_KEY" >&2

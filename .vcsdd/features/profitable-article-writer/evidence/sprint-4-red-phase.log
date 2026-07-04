@@ -1,0 +1,201 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+Sprint 4 (tool-tracked sprint 4) — REQ-23/24/25 (PROP-24/25/26): Mode-B in-loop real publish, wired into
+run.sh, replacing the Sprint-1 stub. RED phase captured by temporarily reverting run.sh,
+lib/note_browser_common.py, lib/note-publish-live.py to their pre-Sprint-4 (Sprint-3-approved) content and
+removing the new lib/note-mode-b-publish.py, while KEEPING every Sprint-4 test file (new + updated) in
+place, then running tests/run-red.sh. All 9 Sprint-4 target-feature test files genuinely FAIL against the
+pre-Sprint-4 implementation (no fake-to-pass); all 24 baseline (Sprint-1/2/2.5/3) test files still PASS
+unchanged, confirming no regression was introduced by the test-suite edits themselves.
+
+command: bash skills/profitable-article-writer/tests/run-red.sh
+exit code: 1
+
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find004-browser-exception-safety.sh ===
+  case 1 output: __RAISED__=True
+__MSG__=simulated add_cookies failure (malformed cookie / launch flake)
+__CLOSE_CALLS__=1
+  - FAIL case 2: a browser-launch failure -> ok=False (clean refusal, not a crash)
+  - FAIL case 2: a clean refusal reason naming the exception is returned
+  - FAIL case 3: a mid-session DOM error -> ok=False (clean refusal, not a crash)
+  - FAIL case 3: a clean refusal reason naming the exception is returned
+  - FAIL case 3: the browser context confirm_and_publish DID obtain a handle to was closed EXACTLY ONCE via the finally block (no leak)
+FAIL (7)
+  (Genuinely FAILs: confirm_and_publish() does not exist on the pre-Sprint-4 note_browser_common.py, so
+  cases 2/3, which call it directly, error out (AttributeError) instead of returning the expected ok=False
+  refusal shape. Case 1, which tests open_editor_ready()'s own leak-prevention -- unchanged by Sprint 4 --
+  still passes, as expected.)
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+  (Updated for REQ-25: now also sets ARTICLE_MODEB_RATIO=1 alongside AUTONOMY=on. Against the pre-Sprint-4
+  run.sh, ARTICLE_MODEB_RATIO is simply an unused/ignored env var and AUTONOMY=on alone still triggers the
+  OLD unconditional Mode-B branch -- so this updated assertion still legitimately PASSes on the old
+  implementation too, confirming the test update did not silently rely on new behavior to pass.)
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop21b-single-price-live-regression.sh ===
+PASS -- FIND-005: note-set-single-price.py's call to the shared select_paid_price() is LIVE-regression-verified against TEST draft ne94efe526c9a, no behavior change from the Sprint-2.5 extraction
+  (Points at the NEW disposable test draft ne94efe526c9a -- see "Sprint-4 environmental note" below. This
+  script itself is untouched by Sprint 4's implementation, only the hardcoded key was refreshed, so it
+  legitimately still passes against the OLD implementation.)
+
+=== test-prop22a-live-publish-wiring.sh ===
+PASS -- PROP-22a wiring/fail-closed gates all confirmed, zero browser action on any refusal path
+
+=== test-prop22b-live-publish-real-click.sh ===
+PASS -- PROP-22b: note-publish-live.py fired a REAL 投稿する/更新する click against TEST draft ne94efe526c9a, independently confirmed live
+
+=== test-prop22c-price-type-refusal-branches.sh ===
+  (run against the OLD note-publish-live.py/note_browser_common.py)
+FAIL (9)
+  (Genuinely FAILs: this test was rewritten for Sprint 4 to call note_browser_common.confirm_and_publish()
+  directly -- a function that does not exist on the pre-Sprint-4 module -- so every assertion errors out.)
+
+=== test-prop23-independent-live-verify.sh ===
+PASS -- PROP-23 independent logged-out verify (200 AND content-match) + state recording confirmed
+
+=== test-prop24a-shared-publish-click-single-source.sh ===
+  - FAIL the publish-click JS statement appears in EXACTLY ONE .py file across the whole skill tree
+  - FAIL the click fallback statement (get_by_text(...).first.click(...)) appears in EXACTLY ONE .py file
+  - FAIL the single location is lib/note_browser_common.py (the shared unit)
+  - FAIL lib/note-publish-live.py no longer contains its own copy of the click statement (imports the shared function instead)
+  - FAIL lib/note-mode-b-publish.py contains no copy of the click statement either (imports the shared function)
+  - FAIL lib/note-publish-live.py imports confirm_and_publish from note_browser_common (single source, not a copy)
+  - FAIL lib/note-mode-b-publish.py (run.sh's Mode-B caller) also imports confirm_and_publish from note_browser_common (same shared unit, not reimplemented)
+  - FAIL run.sh's Mode-B branch calls lib/note-mode-b-publish.py
+  - FAIL note_browser_common.py defines confirm_and_publish
+FAIL (9)
+  (Genuinely FAILs: the click statement still lives ONLY inside the OLD lib/note-publish-live.py, not in
+  note_browser_common.py, and lib/note-mode-b-publish.py does not exist at all yet.)
+
+=== test-prop24b-modeA-zero-calls-fault-injection.sh ===
+  - FAIL corrupted scenario #1 resolves to Mode A (DRAFT), never PUBLISHED/UNCONFIRMED: last_wake_result: PUBLISHED
+  - FAIL corrupted scenario #2 resolves to Mode A (DRAFT), never PUBLISHED/UNCONFIRMED: last_wake_result: PUBLISHED
+  - FAIL corrupted scenario #3 resolves to Mode A (DRAFT), never PUBLISHED/UNCONFIRMED: last_wake_result: PUBLISHED
+  - FAIL corrupted scenario #4 resolves to Mode A (DRAFT), never PUBLISHED/UNCONFIRMED: last_wake_result: PUBLISHED
+  - FAIL corrupted scenario #6 resolves to Mode A (DRAFT), never PUBLISHED/UNCONFIRMED: last_wake_result: PUBLISHED
+FAIL (5)
+  (Genuinely FAILs: the OLD run.sh has no ratio-consultation logic at all -- AUTONOMY=on alone always
+  resolves the OLD unconditional Mode-B branch, so every "malformed ratio should fail closed to Mode A"
+  scenario instead resolves PUBLISHED. Scenario #5 (AUTONOMY=off) still correctly stays Mode A even on old
+  code, since AUTONOMY=off was already the old Mode-A default.)
+
+=== test-prop24c-modeB-real-success-via-runsh.sh ===
+  run.sh output: WAKE_RESULT: PUBLISHED (rounds_used=1)
+  - FAIL STATE carries the real publish_url for the TEST draft
+  - FAIL STATE carries publish_verify_result: SUCCESS (independent in-loop verify, REQ-24)
+  - FAIL STATE carries a verification timestamp
+FAIL (3)
+  (Genuinely FAILs: the OLD run.sh's Mode-B branch only ever wrote the Sprint-1 placeholder
+  "publish_url: pending-live-rail-integration" -- it never called any real publish mechanism or verify step.)
+
+=== test-prop25a-modeB-unconfirmed-verify.sh ===
+  - FAIL STATE records UNCONFIRMED (never silently PUBLISHED=success) on verify failure: last_wake_result: PUBLISHED
+  - FAIL STATE carries publish_verify_result: UNCONFIRMED
+  - FAIL STATE still carries a verification timestamp even on UNCONFIRMED
+  - FAIL confirm_and_publish was called EXACTLY ONCE (no blind retry-publish of the same draft within this wake): (empty call log)
+FAIL (4)
+  (Genuinely FAILs: the OLD run.sh has no verify step and no UNCONFIRMED state at all -- it always writes
+  the Sprint-1 PUBLISHED placeholder regardless of any injected ARTICLE_MODEB_NOTE_KEY/fake module.)
+
+=== test-prop26a-malformed-ratio-failclosed.sh ===
+  - FAIL case 1 (missing/uninitialized ratio) -> resolves to Mode A (DRAFT, never PUBLISHED/UNCONFIRMED)
+  - FAIL case 2 (N=0) -> resolves to Mode A (DRAFT, never PUBLISHED/UNCONFIRMED)
+  - FAIL case 3 (N=-3, negative) -> resolves to Mode A (DRAFT, never PUBLISHED/UNCONFIRMED)
+  - FAIL case 4 (N='three', non-integer) -> resolves to Mode A (DRAFT, never PUBLISHED/UNCONFIRMED)
+FAIL (4)
+  (Genuinely FAILs: no ratio-config concept exists on the OLD run.sh; AUTONOMY=on alone always resolves
+  PUBLISHED regardless of any ratio file content.)
+
+=== test-prop26b-runtime-mutation.sh ===
+  - FAIL no ratio config -> Mode A (DRAFT), got 'PUBLISHED'
+  - FAIL mutating the ratio back to a malformed value (0) at runtime -> Mode A again ('PUBLISHED'), no redeploy needed
+  - FAIL mutating to ratio=2 at runtime -> wake 1 Mode A ('PUBLISHED'), wake 2 Mode B ('PUBLISHED')
+FAIL (3)
+  (Genuinely FAILs: same root cause -- OLD run.sh ignores the ratio file entirely.)
+
+=== test-prop26c-1-in-N-end-to-end.sh ===
+  - FAIL 1-in-4 ratio -> exactly 3 Mode-A (DRAFT) wakes over 4 consecutive wakes, got 0 (sequence: PUBLISHED PUBLISHED PUBLISHED PUBLISHED)
+  - FAIL 1-in-4 ratio -> exactly 1 Mode-B wake over 4 consecutive wakes, got 4 (sequence: PUBLISHED PUBLISHED PUBLISHED PUBLISHED)
+FAIL (2)
+  (Genuinely FAILs: same root cause -- every wake resolves PUBLISHED on old code, not the required 3-Mode-A/
+  1-Mode-B split.)
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 33 test files, 24 PASS, 9 FAIL
+FAILING:
+  - test-find004-browser-exception-safety.sh
+  - test-prop22c-price-type-refusal-branches.sh
+  - test-prop24a-shared-publish-click-single-source.sh
+  - test-prop24b-modeA-zero-calls-fault-injection.sh
+  - test-prop24c-modeB-real-success-via-runsh.sh
+  - test-prop25a-modeB-unconfirmed-verify.sh
+  - test-prop26a-malformed-ratio-failclosed.sh
+  - test-prop26b-runtime-mutation.sh
+  - test-prop26c-1-in-N-end-to-end.sh
+
+Sprint-4 environmental note (found during RED-phase setup, unrelated to any code change in this sprint):
+the Sprint-2.5/3 test draft `n39ef09f828f7` was found DELETED on note.com (external drift). It was replaced
+with a fresh, equivalent, VCSDD-internal-test-only draft `ne94efe526c9a` (created via this skill's own
+already-proven note-create-rich-draft.py + note-set-eyecatch.py pipeline, confirmed via authenticated API to
+carry eyecatch + 1 <img> tag before any test touched it). tests/test-prop21b, test-prop22b, and the new
+test-prop24c were updated to reference this replacement key. The flagship draft `nfb2ace9f0ed8` was never
+touched, referenced, or affected by this substitution.
