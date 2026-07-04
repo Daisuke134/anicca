@@ -547,6 +547,23 @@ via a base agent it RUNS, not a strategy I wrote. ★**
 lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard + run). **No task = "I write a
 strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
+### EARN-AUDIT results (ran the ledger + skills 2026-07-04) — the HONEST state of each earner
+| earn skill | works? | realised net (all runs) | the gap |
+|---|---|---|---|
+| yield (execute-yield) | ✅ WORKS no-human | aUSDC 0.315→0.31528 (real APY, tiny) | CAPITAL only — strategy = deposit best-APY vault (Aave 3.2%/Beefy/Fluid), proven |
+| hl-trade | runs, no earn | −$0.0037 over 120 runs | needs ALPHA (a strategy) — a weak free model can't beat markets; churns "close ETH" |
+| pm-trade | runs, no earn | $0 | decision is a STUB (0.55 hardcoded) — wire ai-edge |
+| Franklin/sol-trade | paper only | $0 | no live execution + empty strategies/ |
+| x402-serve | server up | $0 (26 runs) | needs DEMAND (buyers) — external, not code |
+| gig | poll | $0 (historical +$0.315 once) | needs CLIENTS — external |
+| cook | explore | $0 (by design) | not an earner, a search |
+★ HONEST RECIPE FINDING ★: the ONLY reliably-working no-human earner today is **yield** (passive DeFi APY,
+on-chain verified) — it just compounds slowly at tiny capital. Trading needs real ALPHA (hard for a weak free
+model); demand-earns (x402/gig/clip) need external BUYERS/CLIENTS (not a code fix). So the FIRST baseline
+strategy that works = "park idle USDC in the best-APY vault (yield) + only trade on a clear signal, small
+size." The self-funded AI CAN earn no-human via yield NOW; making trading earn = ship conservative baseline
+strategies (H8) + more capital. This is the article's honest core: what actually earns vs what's theatre.
+
 ## ★★ MASTER EXECUTION ORDER — single source of truth, keep updated (2026-07-04) ★★
 This mirrors the task tool IN ORDER so we never lose track. My role = build harness + VERIFY; the AIs
 execute. ONE bootstrap exception (Dais 2026-07-04): I MAY run the earn skills MYSELF once to find the FIRST
