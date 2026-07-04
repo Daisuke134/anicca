@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV5(GATE 1ラウンド1-4 FAIL、断念パス自体の重複追記バグを修正) |
+| 状態 | spec REV6(GATE 1ラウンド1-5 FAIL、measure_commission.pyのクロスリポジトリ配線を具体化) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -193,16 +193,62 @@ commission追跡をしないので「計測待ち」という状態遷移が不�
 将来的にディスク容量が気になれば別途アーカイブ処理を検討するが、**今回の
 スコープには含めない**(YAGN、7件程度のPNG+txtはディスク上無視できる量)。
 
+### クロスリポジトリ配線(REQ-A3、GATE 1ラウンド5指摘で追加 — 実体は別ディレクトリ)
+
+★GATE 1ラウンド5で発見★: `measure_commission(watermark_path, ledger_record_fn, now,
+amazon_report_fn)`は純関数として定義したが、実際に呼び出す`amazon_report.py`と
+`record-affiliate-earn.mjs`は`~/anicca/skills/earn/affiliate/`ではなく
+**`~/.claude/skills/earn-affiliate-slideshow/scripts/`という別ディレクトリツリー**
+に実在する(§0/§2で既出の事実)。この2つを実際にどう橋渡しするかが未記載だった
+(REQ-B1の1点目がラウンド3で疑似コード無しを指摘されたのと同種の欠落)。
+
+`measure_commission.py`の`__main__`ブロック(新規、`~/anicca/skills/earn/affiliate/
+measure_commission.py`の末尾に追加):
+```python
+AFFILIATE_SLIDESHOW_SCRIPTS = os.path.expanduser("~/.claude/skills/earn-affiliate-slideshow/scripts")
+
+def _amazon_report_fn():
+    """amazon_report.pyをsubprocessで呼び、そのJSON標準出力をパースする。
+    引数なし(スクリプト自体が引数を取らない、§2で確認済み)。CDP_PORTはenv経由で
+    daily-driver(9222、affiliateアカウントがログインしているポート)を使う既存の
+    デフォルトのまま、明示的な上書きはしない。"""
+    p = os.path.join(AFFILIATE_SLIDESHOW_SCRIPTS, "amazon_report.py")
+    out = subprocess.run([sys.executable, p], capture_output=True, text=True, timeout=30)
+    try:
+        return json.loads(out.stdout.strip().splitlines()[-1])
+    except Exception:
+        return {"error": f"amazon_report.py did not return valid JSON: {out.stdout[:200]!r} {out.stderr[:200]!r}"}
+
+def _ledger_record_fn(row):
+    """record-affiliate-earn.mjsをsubprocessで呼ぶ。INV-1〜5はmjs側が検証するので
+    ここでは二重チェックしない(失敗したら例外をそのまま伝播、握りつぶさない)。"""
+    p = os.path.join(AFFILIATE_SLIDESHOW_SCRIPTS, "record-affiliate-earn.mjs")
+    subprocess.run(["node", p, "--row", json.dumps(row)], check=True, timeout=15)
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--watermark", required=True)
+    ap.add_argument("--wake", required=True)
+    a = ap.parse_args()
+    result = measure_commission(a.watermark, _ledger_record_fn, time.time(), _amazon_report_fn)
+    print(json.dumps(result, ensure_ascii=False))
+```
+
 ### `run.sh`への配線(REQ-A3、clip run.shのREQ-008と同じ位置関係)
 
 ```bash
 # MEASURE: 毎wake無条件に1回、アカウント全体のコミッション増分だけ確認。
 # POSTを一切ブロックしない(REQ-008と同型)。
-"$PY" "$SK/measure_commission.py" --watermark "$STATE/commission-watermark.json" \
-  --wake "$WAKE" 2>/dev/null || true
+"$PY" "$HOME/anicca/skills/earn/affiliate/measure_commission.py" \
+  --watermark "$STATE/commission-watermark.json" --wake "$WAKE" 2>/dev/null || true
 
 # 以降、既存のPOSTロジック(SET選択→アカウント選択→投稿)は完全に無変更で継続
 ```
+(GATE 2のテストでは`_amazon_report_fn`/`_ledger_record_fn`を直接呼ばず、
+`measure_commission()`本体にダミー関数を注入する既存の単体テスト方針
+(§5)を使う — この`__main__`ブロック+2つのsubprocessヘルパーは実配線確認
+(§5「measure_commission.pyの実配線確認」の行)でのみ実行し、モックしない)。
 **既存のPOST用ロジック(queue選択・アカウント選択・投稿実行部分)は一切書き換えない**
 (REQ-A4)。追加するのは「measure_commission.py呼び出し1行」のみ。
 
@@ -464,10 +510,14 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   (FIND-2)。(d)`wake`フィールドが数値である前提が未検証・未文書化だった
   (FIND-3、non-blocking)。
   検証の結果、(b)(c)は正当かつblocking、(d)も反映すべきと判断。
-- **ラウンド5(REV5、本ファイル)**: REQ-B3の断念パスに「既にstalled行が
-  存在するkeyは二度と評価しない」というチェックを最初に追加、track()の
-  resolved集合と同じ考え方をLLMプロンプト側にも独立に適用(FIND-1修正)。
-  §5に断念ロジックのPythonリファレンス実装によるfixtureテストを追加
-  (FIND-2修正)。`wake`が数値でない場合は「fresh扱い、エラーにしない」と
-  明記(FIND-3修正)。次はこのREV5を再度fresh-context adversaryにかけ、
-  PASSするまで実装に進まない。
+- **ラウンド5**: FAIL(局所)。FIND-1/2/3は全てAPPLIED-CORRECTLYと確認され、
+  ラウンド1〜4で指摘された全項目・スポットチェックした既存引用も矛盾なし。
+  新規発見: `measure_commission.py`(純関数は定義済み)が実際に呼ぶ
+  `amazon_report.py`/`record-affiliate-earn.mjs`は別ディレクトリツリー
+  (`~/.claude/skills/earn-affiliate-slideshow/scripts/`)にあり、この2つへの
+  具体的な橋渡し(subprocess呼び出し等)が一度も書かれていなかった
+  (REQ-B1の1点目がラウンド3で指摘されたのと同種の「疑似コード無し」欠落)。
+- **ラウンド6(REV6、本ファイル)**: `measure_commission.py`の`__main__`ブロック+
+  `_amazon_report_fn`/`_ledger_record_fn`という2つのsubprocessヘルパーを追加、
+  クロスリポジトリ配線を具体化(REQ-A3)。次はこのREV6を再度fresh-context
+  adversaryにかけ、PASSするまで実装に進まない。
