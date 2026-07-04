@@ -176,10 +176,28 @@
       "sourceType": "github",
       "computedHash": "daaf733ad02e3068cd12dc71f7d4393e705e11e83f595772879cc75fc4990741"
     },
+    "embedded-captions": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/embedded-captions/SKILL.md",
+      "computedHash": "ea65e59cd7dc9ce34c957c7daf832648ea8880d2412ea5b7a72cda691b1b99bc"
+    },
+    "faceless-explainer": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/faceless-explainer/SKILL.md",
+      "computedHash": "6f4897be9ae1d6754a02cb684f31702daaf2c772e94b41ece24151bd970f0e53"
+    },
     "find-skills": {
       "source": "vercel-labs/skills",
       "sourceType": "github",
       "computedHash": "6412eb4eb3b91595ebab937f0c69501240e7ba761b3d82510b5cf506ec5c7adc"
+    },
+    "general-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/general-video/SKILL.md",
+      "computedHash": "a30225e30ec7b06c0e2d4e2e448860a97211b0dc55d5b2ddb9c3255d54b0e918"
     },
     "greenlight": {
       "source": "revylai/greenlight",
@@ -196,6 +214,48 @@
       "sourceType": "github",
       "computedHash": "39c0f35e2d9b74f1519e308d4ad45c12545ef7fce427310e4d6dfb07152326b4"
     },
+    "hyperframes": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes/SKILL.md",
+      "computedHash": "55f1e72887f8f983a7d983165a6bb22280447d4dd8f8821e03430aa4527d2933"
+    },
+    "hyperframes-animation": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-animation/SKILL.md",
+      "computedHash": "d7568757006d0947499c668e3a1af20e513141e292cdbac6dcf066a62cd14440"
+    },
+    "hyperframes-cli": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-cli/SKILL.md",
+      "computedHash": "9e6ba8441951507d1be7cee215887d6b419ccd4996154af57a108438335e284b"
+    },
+    "hyperframes-core": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-core/SKILL.md",
+      "computedHash": "316bc6270bd7f2c1790058f96126649887ee551d33d0c68b8066126989f753ac"
+    },
+    "hyperframes-creative": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-creative/SKILL.md",
+      "computedHash": "b803c42cece83e471e749b6c81b560a44784f3928f3be56f9876bfd1972efb0b"
+    },
+    "hyperframes-media": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-media/SKILL.md",
+      "computedHash": "b8ae8b410517fc3659c0d7da1fb2f90d4de4845c302836d036da6ac22c241e49"
+    },
+    "hyperframes-registry": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/hyperframes-registry/SKILL.md",
+      "computedHash": "62984a677583cb55beebbb5784e1caeabf7ac3e5a09e66bb5dd7205d5ab411bf"
+    },
     "ios-simulator": {
       "source": "tristanmanchester/agent-skills",
       "sourceType": "github",
@@ -210,6 +270,24 @@
       "source": "tovimx/maestro-mobile-testing-skill",
       "sourceType": "github",
       "computedHash": "bdbd865389287a513591c184ca7958256b42d694216ae55c8e94372843eda46b"
+    },
+    "media-use": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/media-use/SKILL.md",
+      "computedHash": "784251cafaa48844d5c0efc95465ebdbc7730f2c6acf6df41570df73f834a61b"
+    },
+    "motion-graphics": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/motion-graphics/SKILL.md",
+      "computedHash": "c0ab7e3d575104ca10bffae63f84867f6a38b6b614512757c0fd561d9a62288d"
+    },
+    "music-to-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/music-to-video/SKILL.md",
+      "computedHash": "275b7420284260ba2eddcccbe888886e06c6d4944272eb1db75b46e07f538573"
     },
     "news-aggregator-skill": {
       "source": "cclank/news-aggregator-skill",
@@ -231,10 +309,28 @@
       "sourceType": "github",
       "computedHash": "0da309e8c6c4bc1c551c26c677c038788a8feead13dbaab31a600a6a6f9170e4"
     },
+    "pr-to-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/pr-to-video/SKILL.md",
+      "computedHash": "05011ce89ca85ce2c3f6a3098eb24dd302b3904522f64529a1e9af25d9d54f40"
+    },
+    "product-launch-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/product-launch-video/SKILL.md",
+      "computedHash": "3fde6cbc9494130a0f78dd77cd0bb6175e957b38e52a2907ff295399d6838e13"
+    },
     "remotion-best-practices": {
       "source": "remotion-dev/skills",
       "sourceType": "github",
       "computedHash": "a2ebe92433006ce81bbdcfe24984663678bbbb20991a3686e34814de1097c44c"
+    },
+    "remotion-to-hyperframes": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/remotion-to-hyperframes/SKILL.md",
+      "computedHash": "bddd2720d403d329750ff75f3dcb31db1161b6fe3e4e26b4758ba17ae3332951"
     },
     "revenuecat": {
       "source": "rawveg/skillsforge-marketplace",
@@ -271,6 +367,12 @@
       "sourceType": "github",
       "computedHash": "592e4c41c41f0249d44cbc382af650a108e9646415fc872e40aad27fb2c67810"
     },
+    "slideshow": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/slideshow/SKILL.md",
+      "computedHash": "163fe323226c870ad03734fffa73a174197947d15cb4e66f427aef30e13fb066"
+    },
     "spec-driven-development": {
       "source": "89jobrien/steve",
       "sourceType": "github",
@@ -306,6 +408,12 @@
       "sourceType": "github",
       "computedHash": "e14392db24e52ad717f91902262a10912599fb92def65873080e8a4be7220822"
     },
+    "talking-head-recut": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/talking-head-recut/SKILL.md",
+      "computedHash": "a82a030cfeea7b799907cd1f7e278d81b38274f6be5cd6cbb57016f41f3f4fb4"
+    },
     "tiktok-research": {
       "source": "bradautomates/head-of-content",
       "sourceType": "github",
@@ -325,6 +433,12 @@
       "source": "vercel-labs/agent-skills",
       "sourceType": "github",
       "computedHash": "a6a44d5498f7e8f68289902f3dedfc6f38ae0cee1e96527c80724cf27f727c2a"
+    },
+    "website-to-video": {
+      "source": "heygen-com/hyperframes",
+      "sourceType": "github",
+      "skillPath": "skills/website-to-video/SKILL.md",
+      "computedHash": "d8d4c53b19b010c9f22ce681eb262382bfd9c667b9caff311e78a11a779c7eae"
     }
   }
 }
