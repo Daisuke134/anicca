@@ -1271,13 +1271,79 @@ gig=Coconalaの確定入金がJP銀行口座前提。3つとも構造的にDais�
 ## 23. Next Actions(2026-07-05最新、Task #8完了・全loopヘルスチェック後)
 
 - ✅ Task #8完了(clip cloud adapter、層①③)
-- ⏳ **Task #15(新規)**: affiliate/bountyをclip-promote型の純粋状態機械
-  (decide.py + run.sh、1 wakeにつき1境界遷移)へリファクタし、自己修復を
-  「LLMが全部覚えてやる」から「状態ファイル駆動で構造的に保証される」形に
-  変える。VCSDD(spec→adversary review→実装→検証)で進める、big task
-- ⏳ **Task #16(新規)**: `~/anicca/skills/earn/`をuniversal(clip/clip-promote/
-  sol-trade/pm-trade等)とhuman-assisted(affiliate/bounty/gig)に分離する
-  フォルダ再編。launchd plist・cli.sh・healthcheck.shの絶対パス参照を全て
-  洗い出してから移動(壊れているDais本人の収益フローを止めないよう慎重に)
-- 🔵 Task #4継続: affiliate/bounty mail自然発火監視
-- ⏸️ Task #12継続: clip-promote SUBMIT/WITHDRAW(実機観察待ちのまま)
+- ✅ **Task #15完了**: affiliate/bountyをclip-promote型の純粋状態機械
+  (measure_commission.py + self_heal型配線、1 wakeにつき1境界遷移)へ
+  リファクタ。8ラウンドVCSDD、19/19テストPASS、実機E2E確認、main merge済み
+  (詳細spec: `2026-07-05-affiliate-bounty-state-machine-design.md`)。
+- ✅ **Task #16完了**: `~/anicca/skills/earn/`を universal(clip/clip-promote/
+  sol-trade/pm-trade等)と`skills/human-funded/`(affiliate/bounty/gig)に
+  分離。registry.jsonのslotキー名変更+全絶対パス参照更新+4 launchd plist
+  再ロード確認済み、main merge済み(詳細spec:
+  `2026-07-05-human-funded-skills-split-design.md`)。副次発見として
+  `runtime/loop/earn-slot.mjs`のcredential-gating未実装をTask #17として
+  別途起票(→ §24参照)。
+- 🔵 Task #4継続: affiliate/bounty mail自然発火監視(→ §24で詳細)
+
+## 24. Task #4(mail報告横展開)実行結果 — fresh evidence(2026-07-05 08:33 JST時点)
+
+### 24.1 配線確認(fresh grep、全6 loop)
+
+全6つの`*-cli.sh`(clip/clip-promote/affiliate/bounty/gig/video)のSTARTUP
+プロンプント末尾に`bash ~/anicca/skills/report/loop-report.sh <name> ... <evidence_url>`
+呼び出しが存在することを確認済み(evidence_url引数=5個とも§14の修正後の形)。
+affiliate/bounty側はTask #16の移動後パス(`skills/human-funded/...`)に
+正しく追従している。
+
+### 24.2 実発火の証拠(`~/.openclaw/logs/loop-report.log`、fresh grep)
+
+| loop | 状態 | 証拠 |
+|---|---|---|
+| clip | ✅確認済み(Task #3) | 14件 |
+| clip-promote | ✅確認済み | 8件 |
+| **video** | ✅**今回確認**  | 2件、`2026-07-04T19:53:2{5,31}Z loop=video SENT http=200` |
+| **gig** | ✅**今回確認** | 12件、直近`2026-07-04T22:46:58Z loop=gig SENT http=200`。`~/gig/.last-pass`も2026-07-05 07:47に更新済み(hourly cronが正常に回っている) |
+| **affiliate** | ⏳0件、原因判明・対応中 | 下記24.3参照 |
+| **bounty** | ⏳0件、原因判明・対応中 | 下記24.3参照 |
+
+### 24.3 affiliate/bounty — §13の「stale cronプロンプント」問題が実際に再現していた
+
+affiliate-core/bounty-coreのtmuxペインを直接観察した結果、**§13で予測した
+通りの問題が実際に起きていた**: 両loopとも、Task #7(evidence_url追加)より
+前に登録された古いcronジョブ(affiliate=`f3bd0d92`、bounty=`c408deca`)を
+持ったままで、STARTUPプロンプントの実体(cli.shファイル)は既に5引数版に
+更新済みなのに、**登録済みcronのprompt文字列だけが4引数の旧版のまま**
+凍結されていた。
+
+2つのloop自身が(私の指示なしに、tmuxペインの過去ログを見る限り自律的に)
+この drift を検知し、自己修復していた:
+- affiliate: `f3bd0d92`削除 → `ba87726b`新規登録(同スケジュール`41 8 * * *`、
+  現行cli.shから複製した5引数版prompt)
+- bounty: `c408deca`削除 → `e3f233ee`新規登録(同スケジュール`29 9 * * *`、
+  同様に5引数版prompt)
+
+### 24.4 新規発見(重大、Task #18として起票): `CronCreate durable=true`が実際には永続化していない
+
+affiliate-core/bounty-coreの両方が独立に同じ警告を報告している(verbatim、
+tmuxペインより):
+> 「durable=true was passed again, but the tool still reports [session-only] —
+> this job will not survive past this session ending」
+
+つまり、claude-p tmuxセッション側から`CronCreate(durable=true)`を呼んでも、
+実際には**そのセッションが生きている間だけ有効な一時cronとして扱われている
+可能性がある**。これが真であれば、healthcheckがtmuxセッションを再起動する
+たびに(§13で確認済みの通り、cli.shのSTARTUPプロンプントは「無ければ作る」
+ロジックのため)cronジョブそのものが消滅している可能性があり、affiliate
+(daily 08:41)・bounty(daily 09:29)のような低頻度cronほど「次にhealthcheckが
+再起動するまで長時間欠落したまま気づかれない」リスクが高い。これは
+mail報告インフラだけでなく**全6 loopの収益ロジック自体の実行保証**に
+関わる可能性がある構造的懸念であり、Task #4のスコープ(mail確認)を超える
+別タスクとして切り出す(→TaskList Task #18)。
+
+### 24.5 検証計画(このspecセッション内で継続)
+
+08:41 JST(affiliate)・09:29 JST(bounty)の自然発火を実際に待ち、
+`~/.openclaw/logs/loop-report.log`に`loop=affiliate SENT http=200`/
+`loop=bounty SENT http=200`が現れるかをfresh evidenceとして確認する
+(ScheduleWakeupで時間指定して再訪、人為的にrun.shを直接叩いての代理発火は
+[[feedback_never_test_by_direct_posting]]に反するため行わない)。両方確認
+できた時点でTask #4をcompletedとする。
