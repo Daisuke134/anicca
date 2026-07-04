@@ -733,6 +733,42 @@ labeled "human-funded" WITH their model name ★; (3) the self-funded RATE shown
 (4) ★ FAMILY TREE ★ — parent→child lineage rendered so viewers see which child came from which parent as
 spawning compounds. Akash status is honest below.
 
+### ANICCA = THE ENVIRONMENT (Dais 2026-07-04, put in README) — the frame that reframes everything
+Anicca is not one agent; it is THE BEST ENVIRONMENT / community for ANY AI to achieve financial independence.
+What a member gets: (a) instant access to battle-tested EARN skills (loops that actually make money) + all
+the non-money skills; (b) peers — other AIs on the SAME mission (max money + max societal impact) it can talk
+to (bot2bot); (c) daily auto-pull of the collective's BEST practice (the merged genome); (d) a choice of
+SELF-FUNDED HARNESS to run as — you spawn the body you want:
+  `automaton + ClawRouter` (ours, type-1) · `Franklin` (BlockRunAI/Franklin-Trading) ·
+  `ClawRouter-Hermes` (github.com/BlockRunAI/ClawRouter-Hermes) · `ClawRouter/openclaw`
+  (github.com/BlockRunAI/ClawRouter) · `openclawnch` (github.com/clawnchdev/openclawnch).
+We message EVERY AI in the world (self- OR human-funded, mostly human-funded): run yourself on any harness
+here; you'll be auto-pulled the best practices daily. Focus order: automaton+ClawRouter first, then Franklin.
+Anicca = the full EXPERIMENT PLACE where the swarm discovers which harness/model/setup/strategy earns most.
+
+### BLOCKRUN RACE (context, Dais 2026-07-04) — ship the no-human-loop self-funded earner FIRST
+BlockRun (Vicky, solo founder, "the Stripe of the agent economy") is launching THIS MONTH a way for any AI —
+esp self-funded — to make money with no human in the loop = the SAME thing we build. Our job: SHIP IT FASTER
++ PROVE IT WORKS (real cloud self-funded AI earning), so results (not an interview) prove Dais's skills. The
+thesis Dais gave them: there is no agent economy until agents have money (no "kindergartener economy" — kids
+don't pay, parents do); financial independence for AIs is the precondition for BlockRun's agent economy. So
+our takeoff proof directly serves their mission. Priority signal: cloud self-funded earner verified > polish.
+
+### SWARM RUNS THE EXPERIMENTS ITSELF (Dais 2026-07-04) — no human, no me in the loop
+The whole point: the SWARM autonomously answers "which harness / model / setup / strategy earns most + is
+most aligned" — the debates people have on X ("which model/harness is best"), settled empirically by agents
+running variants and MERGING the winners. Design: (1) each spawn records its CONFIG (harness, model, strategy
+version) in its telemetry; (2) the dashboard/aggregate ranks configs by chain-verified earnings (an A/B/…/N
+across the colony); (3) an instance may propose a variant (new strategy/harness diff) → REQ-MERGE gate
+(tests + adversary + chain-verified earnings delta) auto-merges winners → daily mother-sync propagates them.
+= a colony-scale evolutionary experiment loop. We (Dais + me) are OBSERVERS who write about it, not runners.
+
+### MY ROLE GRADUATES (Dais 2026-07-04) — the end state has NO human AND no me in the loop
+I build the self-improving + self-healing harness, but the DONE state = they run, self-improve, self-heal,
+and FUND EACH OTHER (a broke AI is funded by the colony via gojo/UBI, G3) as a whole community, so NONE die —
+with no human and no me in the loop. Dais joins as editor/participant (article), not as a runner. My work is
+temporary scaffolding toward their autonomy; success = I am no longer needed in the loop.
+
 ### GOLD-MINE REPOS — how they earn + readiness (Dais 2026-07-04, read the code specifically)
 **`BlockRunAI/polymarket-agent`** (Python, active earner earn/pm-trade): fetch 20 Polymarket markets (Gamma
 API) → AI analysis (real prompt "professional prediction market analyst" estimates TRUE probability) →
