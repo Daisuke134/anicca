@@ -27,7 +27,21 @@
 | worktree(anicca OSS分) | `~/anicca`側は別途`.worktrees/clip-cloud-adapter/`(`producer.sh`用) |
 | ブランチ | `feature/clip-cloud-adapter`(git管理下の2リポジトリそれぞれで作成) |
 | 対象repo | `~/anicca`(git管理、`earn/clip`本体) + `~/anicca-project`(git管理、`launch_clip_browser.py`) + `~/.claude/skills/`(**git管理外**、cdp.py系・pipeline.py系はこちら、直接編集のみ) |
-| 状態 | spec REV5(GATE 1ラウンド1-4 FAIL、指摘反映。ラウンド5審査待ち) |
+| 状態 | spec REV6(GATE 1ラウンド1-5 FAIL、指摘反映。ラウンド6審査待ち) |
+
+### REQ→変更ファイル→git管理モード 対応表(ラウンド5指摘、implementer向けサマリ)
+
+| REQ | 変更ファイル | 場所 | git管理モード |
+|---|---|---|---|
+| REQ-C1 | `cdp.py` | `~/.claude/skills/ig-account-create/scripts/` | 直接編集のみ(git管理外) |
+| REQ-C1 | `cdp_incognito.py` | `~/.claude/skills/ig-account-create/scripts/` | 直接編集のみ(git管理外) |
+| REQ-C1 | `register_flow.py` | `~/.claude/skills/promote-fun-login/scripts/` | 直接編集のみ(git管理外) |
+| REQ-C1 | `launch_clip_browser.py` | `~/anicca-project/.claude/skills/ig-reels-poster/scripts/` | **git管理下** → worktree(anicca-project分)→commit→push |
+| REQ-C2 | `pipeline.py` | `~/.claude/skills/earn-clip-rewards/scripts/` | 直接編集のみ(git管理外) |
+| REQ-C2 | `producer.sh` | `~/anicca/skills/earn/clip/` | **git管理下** → worktree(anicca OSS分)→commit→push |
+
+つまりREQ-C1/REQ-C2それぞれ「commit/push対象は1ファイルのみ、残りはgit管理外への
+直接編集」という構成。
 
 ## 0. なぜこれをやるか(Dais 2026-07-05 verbatim、動機の核心)
 
@@ -274,8 +288,11 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
   worktree/ブランチ/commit/pushという通常のこのプロジェクトのgitフローが
   そもそも適用できない対象だった。また§5に`register_flow.py`のテスト行が
   無いという副次指摘も受けた。
-- **ラウンド5(REV5、本ファイル)**: 開発環境ヘッダーを訂正し、`~/.claude/
-  skills/`がgit管理外であることを明記した上で「この対象への変更はgit
-  commit/pushの対象にしない(直接ファイル編集のみ)」と正直に方針を記録。
-  §5に`register_flow.py`用のテスト行を追加。次はこのREV5を再度fresh-context
-  adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド5**: FAIL(極小)。上記3件はAPPLIED-CORRECTLYと確認されたが、
+  「REQ-C1/REQ-C2それぞれどのファイルがcommit/push対象でどれが直接編集対象か」
+  を1箇所にまとめた要約文が無く、implementerが§3/§4/開発環境ヘッダーを
+  手動で突き合わせる必要があると指摘。
+- **ラウンド6(REV6、本ファイル)**: 「開発環境」section内にREQ→変更ファイル→
+  git管理モードの対応表を新設し、6ファイルそれぞれの扱いを1箇所で一覧できる
+  ようにした。次はこのREV6を再度fresh-context adversaryにかけ、PASSするまで
+  実装に進まない。
