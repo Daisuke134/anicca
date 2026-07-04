@@ -55,7 +55,17 @@ PYJSON
 # whether a new clip happens to be queued -- so the "nothing queued" check below must NOT skip it.
 # Without a ready account at all, though, neither self-heal nor new posting can do anything.
 if [ -z "${HANDLE:-}" ]; then
-  emit "nothing to post (queued_clip=${CLIP:-none} ready_account=none)"; exit 0
+  # 2026-07-04 (Task#6 follow-up, self-heal-harness spec §8): right-altitude prompt hint --
+  # not a hardcoded auto-fix, just steering the next wake's own judgment toward a slot that
+  # genuinely exists and helps (earn/clip-producer is safe to slot-ify: deterministic, no
+  # vision judgment). Only surfaced when the queue is ACTUALLY empty -- don't suggest it when
+  # there's already a queued clip waiting (that's an account problem, not a queue problem).
+  if [ -z "${CLIP:-}" ]; then
+    emit "nothing to post (queued_clip=none ready_account=none) -- try the earn/clip-producer slot to generate a fresh clip while an account is not yet ready"
+  else
+    emit "nothing to post (queued_clip=${CLIP:-none} ready_account=none)"
+  fi
+  exit 0
 fi
 
 if [ "$EARN_MODE" != "execute" ]; then
