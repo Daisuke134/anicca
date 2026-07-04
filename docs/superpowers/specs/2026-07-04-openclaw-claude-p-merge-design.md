@@ -372,7 +372,7 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 | 「活動をIG/Xに投稿」(Dais発言中の"maybe") | 今回は見送り、10.4のswarm highlight記事で透明性要求を満たす | Dais自身"maybe"と留保つき発言。既存clip/video loopは既に商品コンテンツをIG投稿済みで、追加の「活動報告投稿」は新規の負荷になる割に透明性目的は記事化(10.3/10.4)で代替できる |
 | 10.4 swarm highlight記事 | ★フェーズ1(Dais+私で手動、1回)を今回着手★、フェーズ2(自動loop化)は次段 | Daisが2段階移行を明示指示済み。質を確認せず自動化するのは0.31/過去教訓に反する |
 
-## 11. Next Actions(SSOT、2026-07-05 00:30最新更新 — TaskListツール実番号#1-#14と完全一致)
+## 11. Next Actions(SSOT、2026-07-05 01:15最新更新 — TaskListツール実番号#1-#14と完全一致、§19反映)
 
 **フェーズ2: 透明性レイヤー(mail報告インフラ)— ほぼ完了**
 - ✅ Task #1 — `~/anicca/skills/report/loop-report.sh`新規実装
@@ -390,15 +390,24 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 - ✅ Task #11 — promote.funログイン手順のスクリプト化(2バグ発見・修正込み)
 - ✅ Task #13 — ディスク枯渇緊急対応(clip-promote-core自身が完全自己解決)
 - ✅ Task #14 — フォロワー先行構築の原則をskillナレッジ化(JOIN実装+SKILL.md明記)
-- 🔵 Task #12 — clip-promote run.shのCLIP/POST/SUBMIT/WITHDRAW遷移を実装(進行中)
-  - ✅ SELECT(IGフィルタ+Active/budget実態確認込み)
+- 🔵 Task #12 — clip-promote run.shのCLIP/POST/SUBMIT/WITHDRAW遷移を実装(進行中、
+  SUBMITは保留 — §19参照)
+  - ✅ SELECT(IGフィルタ+Active/budget実態確認込み、2026-07-05再検証で17件全件
+    ステータス変化なしと確認 — カバレッジ漏れなし)
   - ✅ JOIN(フォロワー要件検出、正直にskip、2回のcollective self-improvement実例)
   - ✅ CLIP(YouTube URL抽出→producer.sh連携、実mp4生成確認済み)
   - ✅ POST(dry-run、composer/caption/share手前まで動作確認、実投稿は次段階)
-  - ⏳ 次: campaign固有タグ付け実装→実投稿(--live)
-  - ⏳ SUBMIT(campaign UIへの投稿URL提出)実装 ← **次の直接の焦点**
-  - ⏳ WITHDRAW/RECORD確認(record-payout.mjsは実装済み、E2E未確認)
+  - ⏸️ SUBMIT — **保留(2026-07-05判断)**: join済みcampaignが1件も存在せず、
+    UI未観察のままコードを書くとHONESTYルール違反になるため実装しない。再開条件 =
+    (a) susannah-joffe(200フォロワー要件)をクリアできるまで@aiclipsvaultの
+    フォロワーが増える、または (b) 新規のフォロワー要件無し/低いIG campaignが
+    現れる。どちらもSELECT/JOINの既存機構が自然に検知する設計なので追加実装は
+    不要、次にJOINが`joined:true`を返した瞬間がSUBMIT着手の合図
+  - ⏳ WITHDRAW/RECORD確認(record-payout.mjsは実装済み、E2E未確認、SUBMIT同様
+    実campaign終了までテスト不可)
   - ⏳ producer.shのクリップ長を15-45秒に調整(既知課題、未着手)
+  - 👀 継続監視項目: @aiclipsvaultの投稿数/フォロワー数の推移(2026-07-05時点
+    投稿15件・フォロワー0人、§19.2参照)
 - ⏳ ClawRouter専用IGアカウントの自律作成(vision-in-the-loop harness、§8参照、別トラック)
 
 **フェーズ3: 記事化(§10.3/10.4、フェーズ1・2完了後に着手)**
@@ -407,7 +416,10 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 - ⏳ swarm highlight記事の自動loop化(`/schedule`日次、§10.4フェーズ2)
 
 **フェーズ4: 運用の安定化・可視化**
-- 👀 Task #6 — clip loop IG投稿確認フロー(shared-unconfirmed)問題、clip-core自身が対応予定
+- ✅ Task #6 — clip loop IG投稿確認フロー(shared-unconfirmed)問題。clip-core自身が
+  `self_heal.py`+`reel_verify.py`(token完全一致方式)で既に解決済みと2026-07-05
+  fresh evidenceで確認(pending-verify空、ledgerに"confirmed via self-heal"3件、
+  IGプロフィール実在reelと一致)。§19.3参照
 - ⏳ tmuxソケット消失の根本原因調査
 - ⏳ self-heal harnessのE2E確認(意図的異常注入)
 - ⏳ 週次self-improvementループ
@@ -967,3 +979,68 @@ clip-promote-core自身がこれを実行結果から発見し、①最大8秒�
 再検証の経緯を含む)も送信済み(HTTP 200)。
 
 Task #14完了。
+
+## 19. Task #12続き(SUBMIT調査)+ Task #6検証(2026-07-05、fresh evidence)
+
+### 19.1 SUBMIT実装は「今は書けない」と結論(推測DOM禁止のHONESTYルールに従い保留)
+
+Task #12の残りはSUBMIT/WITHDRAW。SUBMIT UIを見るには「実際にjoin済みのcampaign」が
+必須だが、今日(2026-07-05)再調査した結果:
+
+- `select_campaigns.py`が返す17件のIG対応candidateを全件live再チェック → 15件は
+  `Ended`/budget `$0.00 left`確認済み(前回2026-07-04調査と一致、劣化なし)、残り2件
+  (thomas-rhett-content=2000フォロワー要件、susannah-joffe=200フォロワー要件)は
+  依然フォロワー要件でブロック。**新規に空いたIG candidateは0件**。
+- promote.funホームページ(`firecrawl scrape https://www.promote.fun`)に新着
+  active campaign 6件(habe-audio/shaboozey/bia-rollin/alex-warren/bia-audio-3/
+  crocs)を発見したが、全件`title="tiktok"`確認 → **TikTok専用、IG非対応**(既存の
+  `select_campaigns.py`のInstagramフィルタは正しく機能しており、カバレッジ漏れでは
+  なかった、と確認)
+- `/my-campaigns`ページで確認: `No campaigns yet. Join a campaign to get started!`
+  → 現在join済みcampaignゼロ、SUBMIT UIを見る手段が存在しない
+- TikTok専用candidate(habe-audio)へ実際にjoinを試行(DOM構造確認目的)→ モーダルは
+  開いたが`No Eligible Accounts / This campaign accepts: TikTok / aiclipsvault
+  Instagram Not accepted`と表示され、join不可(IGアカウントしか無いため)。これで
+  「他のplatform限定campaignをjoinしてUI観察」という抜け道も無いと確認。
+
+**結論**: SUBMIT UIのDOM構造を一度も観察できていない状態でコードを書くのは、project
+CLAUDE.mdのHONESTYルール(存在確認できないものをUNVERIFIEDと明記/創作しない)に反する。
+よってSUBMIT/WITHDRAW実装は**フォロワー要件を満たすcampaignが現れるまで保留**と判断し、
+推測DOM実装は書かない。
+
+### 19.2 真のボトルネックは「@aiclipsvaultのフォロワー数が実際に0のまま」
+
+IGプロフィール直接確認(fresh evidence、2026-07-05): `投稿15件 / フォロワー0人 /
+フォロー中0人`。既存の15投稿すべてがreel URL付きで`~/.openclaw/state/
+clip-earn-ledger.jsonl`の`posted`ステータスと一致(例: DaXtt3, DaXVoa, DaXT44等)。
+つまり投稿自体は本当に成功しているが、フォロワー0人のままでsusannah-joffeの200人
+要件にすら遠い。DOMAIN KNOWLEDGE(§18.3、Dais発言「まずフォロワーと信頼を稼げ」)の
+前提である「通常投稿loopが自然にフォロワーを増やす」がまだ効果を出していない
+(投稿15件はまだ日が浅い可能性が高く、コード上のバグではなく時間の問題と現時点では
+判断。今後も投稿数・フォロワー数を継続観測する)。
+
+### 19.3 Task #6再検証 → 完了と確認(clip-core自身が既に解決済み、fresh evidence)
+
+TaskList上でTask #6("clip loop: IG投稿確認フローがshared-unconfirmedで公開失敗")が
+pendingのままだったため`post_reel.py`の`shared-unconfirmed`ロジックを調査:
+
+- `post_reel.py`のシェア後ポーリング(最大10回×12秒)で新規reel hrefが見つからない
+  場合`reached:"shared-unconfirmed"`を返す。これは「投稿失敗」ではなく「投稿直後の
+  検証タイムアウト」(実際には投稿が成功している場合がある)。
+- `earn/clip/run.sh`は既にこれを見越した設計: `unverified`結果は`pending-verify/`
+  へ移動 + ledgerに`status:unverified`を記録するのみで、**新規投稿処理は一切ブロック
+  しない**(REQ-008)。
+- `self_heal.py`が毎wake開始時に1件だけpending-verifyを取り出し、`reel_verify.
+  stabilize_reads`(3回re-read+5秒安定待ち)後、キャプションに埋め込んだランダム
+  token(`producer.sh`が生成、`#c<hex>`形式)を新規hrefのページテキストと突合して
+  確定判定する設計(hookプローズでなくtoken完全一致で判定、HARD RULE 0.18準拠)。
+- **fresh evidence確認**: `~/clips/pending-verify/`は現在**空**(スタックした
+  未解決アイテムなし)。`clip-earn-ledger.jsonl`に`"confirmed via self-heal"`の
+  ログが**3件**存在(reel DaXT44/DaXVoa/DaXtt3 — いずれもIGプロフィールに実在する
+  reel hrefと一致)。self-healが実際に機能し、unverified→posted の再分類に3回
+  成功していることを確認した。
+
+**結論**: Task #6は§11のメモ通り「clip-core自身が対応予定」だった項目であり、
+clip-core自身が`self_heal.py`+`reel_verify.py`の実装で**既に解決済み**。今回は
+私が実装したのではなく、fresh evidenceで動作を検証しただけ(「watch the loop,
+not do the loop's job」原則に整合)。**Task #6完了と判断してTaskList更新**。
