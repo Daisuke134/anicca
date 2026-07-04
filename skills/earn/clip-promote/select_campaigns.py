@@ -49,10 +49,22 @@ def rank_campaigns(raw_links, clipped=None):
 
 
 def fetch_live(tid, cdp):
-    """Live read of the campaigns page via an injected cdp module (cdp.navigate / cdp.evaluate)."""
+    """Live read of the campaigns page via an injected cdp module (cdp.navigate / cdp.evaluate).
+
+    REQ-4 fix (2026-07-04): filter to Instagram-only via the platform dropdown BEFORE
+    scraping cards. Without this, fetch_live returned ALL campaigns regardless of accepted
+    platform, and SELECT picked "crocs" — a TikTok-only campaign (confirmed live: its
+    detail page's "Accepted Platforms" showed only a TikTok icon) that clip-promote cannot
+    post to via IG. The dropdown selection is NOT reflected in the URL (client-side state
+    only, verified: url stays https://www.promote.fun/campaigns after filtering) — must
+    click through the UI every time, cannot deep-link."""
     import time
     cdp.navigate(tid, "https://www.promote.fun/campaigns")
     time.sleep(6)
+    cdp.click_by_text(tid, "All Platforms")
+    time.sleep(1)
+    cdp.click_by_text(tid, "Instagram")
+    time.sleep(2)
     js = (
         "JSON.stringify(Array.from(document.querySelectorAll('a[href*=\"/campaign\"]'))"
         ".slice(0,60).map(function(a){return {href:a.getAttribute('href'),"
