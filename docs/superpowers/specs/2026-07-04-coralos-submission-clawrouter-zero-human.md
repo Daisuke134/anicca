@@ -323,16 +323,40 @@ PHASE D — submission artifacts (ZERO code required, can start NOW in parallel 
           only in the public fork).
   ── R1b EXIT GATE: A7 must be true before Phase B starts ──
 
-PHASE B — downgrade to zero-human (brain = ClawRouter, Tier 1, the real submission)
-  [ ] B1  Install ClawRouter (curl -fsSL https://blockrun.ai/ClawRouter-update | bash, or
-          npm i -g @blockrun/clawrouter && clawrouter setup); confirm :8402 proxy is up
-  [ ] B2  Flip LLM_PROVIDER to route through ClawRouter's free tier (env-var only, no code
-          change per LLM.md's provider-agnostic shim)
-  [ ] B3  Unset ANTHROPIC_API_KEY / OPENAI_API_KEY from the run environment
-  [ ] B4  Re-run the SAME loop (A5's deliverService, A2's build) end-to-end
-  [ ] B5  VERIFY: a real Solana devnet tx lands in Anicca's seller wallet with human keys
-          UNSET — capture the Explorer link (fresh evidence)
-  ── R1c/R1d EXIT GATE: B5 must be true; the SUBMITTED config must point at ClawRouter ──
+PHASE B — downgrade to zero-human (brain = ClawRouter, Tier 1, the real submission)  DONE 2026-07-05
+  [x] B1  ClawRouter was ALREADY running system-wide (`/opt/homebrew/bin/clawrouter`, part of the
+          main Anicca-OpenClaw instance) — `curl localhost:8402/health` ->
+          `{"status":"ok","wallet":"0xa3CDd4Ec...","paymentChain":"base"}`. No fresh install
+          needed; this machine's existing ClawRouter instance was reused.
+  [x] B2  NOT env-var-only after all (LLM.md's `pickProvider()` had no generic base-URL
+          override for a 4th provider) — required a small code addition, the SANCTIONED
+          extension path LLM.md itself documents ("add a provider in code": extend the
+          `LlmProvider` union, add a `DEFAULT_MODEL` entry, teach `pickProvider()`, dispatch in
+          `complete()`). Added `clawrouter` as EXPLICIT-ONLY (never auto-detected — it needs no
+          key at all, so silence-of-keys must not silently select it). Also root-caused +
+          fixed a real bug found along the way: `LLM_MODEL=''` (the shipped .env.example
+          default) bypassed `DEFAULT_MODEL` because `??` doesn't fall through on `''`, only
+          null/undefined — every provider was silently affected, not just this one. 2 new unit
+          tests (pickProvider explicit-wins / never-auto-detected), 10/10 GREEN, pushed to
+          `Daisuke134/solana_coralOS@d9fc893`.
+  [x] B3  `.env`: `OPENAI_API_KEY=`, `ANTHROPIC_API_KEY=`, `VENICE_API_KEY=` all blank;
+          `LLM_PROVIDER=clawrouter`; also unset any shell-exported copies (`unset
+          OPENAI_API_KEY ANTHROPIC_API_KEY VENICE_API_KEY`) and verified `env | grep -i
+          "OPENAI\|ANTHROPIC\|VENICE"` returned nothing before restarting the proxy.
+  [x] B4  Re-ran BOTH endpoints fresh (killed + restarted the proxy so the new build + env took
+          effect): `GET /api/edge?fixtureId=18185036` (the real LLM call) and `GET
+          /api/settle?amount=0.001&fixtureId=18185036` (the full escrow loop).
+  [x] B5  VERIFIED, fresh evidence, zero human LLM keys present:
+          - `/api/edge` trace: `[llm] provider=clawrouter model=eco` -> real parsed JSON
+            (`{"call":"Morocco is favored...","confidence":0.216}`, NO fallback note — the
+            first attempt with `model=auto` produced verbose reasoning prose that failed
+            `parseJsonReply()` and fell back; switching `LLM_MODEL=eco` fixed it).
+          - `/api/settle` DEPOSIT: `2JL3mk2m8GuEsf64KJ1yifDuBSZmSeLKUKGPtjeeFphCwMmrBAuKZGHBTo8skF5fsLALexoEjZw5D3p2oH4XvKLq`
+            -> https://explorer.solana.com/tx/2JL3mk2m8GuEsf64KJ1yifDuBSZmSeLKUKGPtjeeFphCwMmrBAuKZGHBTo8skF5fsLALexoEjZw5D3p2oH4XvKLq?cluster=devnet
+          - `/api/settle` RELEASE: `51YnRDSHYR7BQrTBxWaRfKTn6h8GCzVfw9AFPHezY3U6Hw8Y8UeNBmymSMpPEt1fshmGotCdVEFEgGAZjFesUdXo`
+            -> https://explorer.solana.com/tx/51YnRDSHYR7BQrTBxWaRfKTn6h8GCzVfw9AFPHezY3U6Hw8Y8UeNBmymSMpPEt1fshmGotCdVEFEgGAZjFesUdXo?cluster=devnet
+          - Both confirmed via `solana confirm` (Confirmed status). **R1c/R1d exit gate satisfied.**
+  ── R1c/R1d EXIT GATE: B5 true; SUBMITTED config points at ClawRouter — SATISFIED ──
 
 PHASE C — wrap as an unattended loop + submit
   [ ] C1  Wrap A5+B4 as a loop (wake → bid → sell → settle → self-report), matching R6
