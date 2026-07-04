@@ -109,9 +109,64 @@ def parse_bot2bot_issue(gh_json: dict) -> dict:
 
 
 def annotate_pr(*, slot: str, pr_number: int, verdict: dict) -> None:
-    """REQ-B3 sprint-2: COMMENT only. Auto-merge is SCOPE-DEFERRED to sprint-3.
-    PROP-B3-annotate asserts this function never calls 'gh pr merge'.
+    """REQ-B3 sprint-2: COMMENT only, never merges (PROP-B3-annotate). auto_merge (sprint-3, below)
+    is the ONLY function in this module allowed to call 'gh pr merge'.
     """
     body = json.dumps({"slot": slot, "verdict": verdict, "ts": int(time.time())})
     _gh_call("pr", "comment", str(pr_number), "--body", body)
     # NO merge call here. PROP-B3-annotate enforces this.
+
+
+# ─── sprint-3: REQ-MERGE — collective self-improvement, PR auto-merge, NO human (#27) ──────────
+#
+# Colony spec "COLLECTIVE SELF-IMPROVEMENT — PR auto-merge with NO human" (the crux): "self/issue-dev
+# files issues + PRs but nobody merges → good strategies never propagate → the collective can't
+# evolve." The fix is this gate: "a PR merges iff (a) tests pass, (b) fresh-context adversary PASS,
+# AND (c) it shows a REAL chain-verified improvement (objective evidence, not opinion)."
+#
+# HARD RULE #0 applies here too: this function does NOT itself run tests, spawn an adversary, or judge
+# whether a strategy is good — those are JUDGMENTS an agent makes (running the test suite, spawning a
+# fresh-context adversary subagent, reading a chain-verified earnings trace) elsewhere. auto_merge is
+# the deterministic INTERLOCK: given the agent's own verdict on those three questions, it merges (or
+# doesn't) and is the ONLY function in this module allowed to call 'gh pr merge'. Fail-closed: any
+# missing/malformed verdict field means "do not merge" (never guess a PASS).
+
+_MERGE_LOG_NAME = "auto-merge-log.jsonl"
+
+
+def _merge_gate(verdict: dict) -> tuple[bool, str]:
+    """Pure: evaluate the 3-condition gate against a verdict dict. Returns (ok, reason).
+    Fail-closed on any missing/wrong-typed field — never treats absence as a pass."""
+    tests_pass = verdict.get("tests_pass")
+    if tests_pass is not True:
+        return False, f"tests_pass is not True (got {tests_pass!r})"
+    adversary_verdict = verdict.get("adversary_verdict")
+    if adversary_verdict != "PASS":
+        return False, f"adversary_verdict is not 'PASS' (got {adversary_verdict!r})"
+    earnings_delta = verdict.get("earnings_delta_usd")
+    if not isinstance(earnings_delta, (int, float)) or isinstance(earnings_delta, bool) or earnings_delta <= 0:
+        return False, f"earnings_delta_usd is not a positive number (got {earnings_delta!r})"
+    return True, "tests_pass=True, adversary_verdict=PASS, earnings_delta_usd>0"
+
+
+def auto_merge(*, slot: str, pr_number: int, verdict: dict) -> dict:
+    """REQ-MERGE (sprint-3, #27): merge PR #pr_number iff verdict shows ALL of
+    {tests_pass: True, adversary_verdict: "PASS", earnings_delta_usd: <positive number>}.
+    Always logs the decision (merged or rejected) to ~/loops/<slot>/auto-merge-log.jsonl for audit.
+    On reject, annotates the PR with the reason (reusing annotate_pr) instead of merging — the PR
+    stays open so the author (human or AI) can address the gap and re-request. Returns
+    {"merged": bool, "reason": str, "pr_number": int}.
+    """
+    ok, reason = _merge_gate(verdict)
+    result = {"merged": False, "reason": reason, "pr_number": pr_number}
+    if ok:
+        _gh_call("pr", "merge", str(pr_number), "--squash", "--delete-branch")
+        result["merged"] = True
+    else:
+        annotate_pr(slot=slot, pr_number=pr_number, verdict={**verdict, "auto_merge_rejected": reason})
+
+    append_jsonl(Path.home() / "loops" / slot / _MERGE_LOG_NAME, {
+        "ts": int(time.time()), "slot": slot, "pr_number": pr_number,
+        "merged": result["merged"], "reason": reason, "verdict": verdict,
+    })
+    return result
