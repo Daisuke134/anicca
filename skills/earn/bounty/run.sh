@@ -133,12 +133,15 @@ for it in items:
     active=[c.get("body","") for c in algora if not c.get("body","").lstrip().startswith("~~")]
     amt=0
     for b in active:
-        mm=re.search(r'\$([0-9][0-9,]*)\s*(?:bounty|reward|tip)', b, re.I) or re.search(r'bounty.{0,12}\$([0-9][0-9,]*)', b, re.I)
+        mm=re.search(r'\$([0-9][0-9,]*)[\s*]*(?:bounty|reward|tip)', b, re.I) or re.search(r'bounty[\s*]{0,12}\$([0-9][0-9,]*)', b, re.I)
         if mm: amt=max(amt,int(mm.group(1).replace(",",""))); break
     if amt<=0: continue   # no USD ($) amount in the active algora comment → token/none, skip
-    rj=sh(["gh","repo","view",repo,"--json","stargazerCount"])
-    try: stars=json.loads(rj).get("stargazerCount",0) if rj.strip() else 0
-    except Exception: stars=0
+    rj=sh(["gh","repo","view",repo,"--json","stargazerCount,isArchived"])
+    try:
+        rd=json.loads(rj) if rj.strip() else {}
+    except Exception: rd={}
+    if rd.get("isArchived"): continue   # archived repo: GitHub blocks new PRs, bounty is dead
+    stars=rd.get("stargazerCount",0)
     survivors.append({**it,"issue":int(num),"stars":stars,"bounty_usd":amt,"gate":"passed (active+funded $%d, no-PR, USD-from-comment)"%amt})
 json.dump({"survivors":survivors,"checked":len(items)}, open(gj,"w"), indent=2)
 print(f"{len(survivors)}/{len(items)}")
