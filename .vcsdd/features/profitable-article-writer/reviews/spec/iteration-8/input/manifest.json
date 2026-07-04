@@ -1,0 +1,6 @@
+{
+  "reviewType": "spec", "feature": "profitable-article-writer", "mode": "strict", "phase": "1c", "iteration": 8,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "scope": "Sprint 4 (wire real publish INTO run.sh Mode-B) - REQ-23/24/25 + PROP-24/25/26 only"
+}
