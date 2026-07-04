@@ -25,11 +25,6 @@
       "args": ["-y", "@nicepkg/revenuecat-mcp"],
       "env": {}
     },
-    "app-store-connect": {
-      "command": "npx",
-      "args": ["-y", "@nicepkg/asc-mcp"],
-      "env": {}
-    },
     "pencil": {
       "command": "npx",
       "args": ["-y", "@nicepkg/pencil-mcp"],
