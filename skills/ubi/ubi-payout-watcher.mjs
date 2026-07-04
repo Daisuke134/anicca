@@ -7,22 +7,59 @@
 //
 // Env (from ~/.openclaw/.env): SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY,
 //   BLOCKRUN_WALLET_KEY (execute-ubi), CROSSMINT_API_KEY (email wallets),
-//   UBI_STIPEND_BASE (default 100000 = $0.10).
+//   UBI_STIPEND_BASE (default 100000 = $0.10), UBI_PERTX_CAP_BASE (default = STIPEND_BASE),
+//   UBI_REALIZED_THRESHOLD_USD (default 1).
 // Usage:
 //   node ubi-payout-watcher.mjs          one pass
 //   node ubi-payout-watcher.mjs --loop   poll forever (demo mode, every 8s)
+//
+// #5b (Task #10): a REALIZED-SURPLUS GATE runs before every pass — this daemon previously paid a
+// flat stipend to anyone queued as long as the reserve floor held, with no link to whether Anicca is
+// actually earning. It now reuses the EXACT SAME gate (skills/economy/ubi/ubi.js::contribute(),
+// already unit-tested) that decides the human-UBI-pool contribution elsewhere in the colony — one
+// definition of "is there real surplus to share", not two. Below the threshold: DEFER the whole pass
+// (no-op, logged), never guessed. Also adds a PER-TX CAP independent of STIPEND_BASE so a
+// misconfigured stipend can never send more than the configured ceiling in one transfer.
 
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import fs from 'node:fs';
+import { contribute } from '../economy/ubi/ubi.js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const CROSSMINT_KEY = process.env.CROSSMINT_API_KEY;
 const STIPEND_BASE = parseInt(process.env.UBI_STIPEND_BASE || '100000', 10); // $0.10
+const PERTX_CAP_BASE = parseInt(process.env.UBI_PERTX_CAP_BASE || String(STIPEND_BASE), 10);
+const REALIZED_THRESHOLD_USD = parseFloat(process.env.UBI_REALIZED_THRESHOLD_USD || '1');
 const WALLET_RE = /wallet=(0x[0-9a-fA-F]{40})/;
 const METHOD_RE = /method=(\w+)/;
 const __dirname = dirname(fileURLToPath(import.meta.url));
+const DEFER_LOG = join(__dirname, 'state', 'defer-log.jsonl');
+const A3CDD4_ADDR = '0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21';
+
+// Realized profit = the SAME figure telemetry-poster.mjs already reports (revenueBySource(...).total),
+// read from the live, already-verified dashboard-sync rather than recomputing on-chain positions here
+// (no parallel "profit" metric invented). Fail-closed: any read/parse failure -> 0 (defer, never guess).
+async function realizedProfitUsd() {
+  try {
+    const r = await fetch('https://aniccaai.com/.netlify/functions/dashboard-sync', { signal: AbortSignal.timeout(10000) });
+    const j = await r.json();
+    const row = (j.leaderboard || []).find((x) => String(x.id || '').toLowerCase() === A3CDD4_ADDR);
+    const v = row ? Number(row.monthly_revenue_usd) : 0;
+    return Number.isFinite(v) ? v : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function appendDeferLog(rec) {
+  try {
+    fs.mkdirSync(dirname(DEFER_LOG), { recursive: true });
+    fs.appendFileSync(DEFER_LOG, JSON.stringify(rec) + '\n');
+  } catch { /* best effort, never blocks */ }
+}
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   console.error('missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY');
@@ -95,6 +132,19 @@ function yourTurnEmail(email, method, usd) {
 }
 
 async function pass() {
+  let bal = await aniccaUsdcBase(); // reserve floor: stop before draining below runway
+
+  // #5b REALIZED-SURPLUS GATE: reuse economy/ubi's contribute() — same threshold logic, same
+  // question ("is there real surplus to share"), asked ONCE per pass before touching the queue at
+  // all. Below threshold -> DEFER the whole pass (logged, never a silent skip).
+  const realized = await realizedProfitUsd();
+  const gate = contribute(realized, bal / 1e6, { contributeThresholdUsd: REALIZED_THRESHOLD_USD });
+  if (gate.amount_usd <= 0) {
+    appendDeferLog({ ts: new Date().toISOString(), realized_profit_usd: realized, liquid_usd: bal / 1e6, decision: gate });
+    console.log(`DEFER pass: realized=$${realized} liquid=$${(bal / 1e6).toFixed(6)} -> ${gate.reason}`);
+    return { queued: 0, paid: 0, deferred: true, reason: gate.reason };
+  }
+
   // FIFO: oldest signups first (a queue/right, not a lottery).
   const res = await sb('recipients?status=eq.queued&select=id,email,notes,applied_at&order=applied_at.asc.nullslast');
   if (!res.ok) throw new Error('supabase read ' + res.status);
@@ -105,7 +155,7 @@ async function pass() {
   const paidEmails = new Set(paidRows.map((p) => (p.email || '').toLowerCase()).filter(Boolean));
   const paidWallets = new Set(paidRows.map((p) => ((p.notes || '').match(WALLET_RE) || [])[1]).filter(Boolean));
   let paid = 0;
-  let bal = await aniccaUsdcBase(); // reserve floor: stop before draining below runway
+  const payAmountBase = Math.min(STIPEND_BASE, PERTX_CAP_BASE); // #5b PER-TX CAP
   for (const r of rows) {
     const notes = r.notes || '';
     const method = (notes.match(METHOD_RE) || [])[1];
@@ -124,11 +174,11 @@ async function pass() {
       } else {
         to = await crossmintEmailWallet(r.email); // email → their Crossmint wallet
       }
-      if (bal - STIPEND_BASE < RESERVE_BASE) {
+      if (bal - payAmountBase < RESERVE_BASE) {
         console.log(`RESERVE floor reached (bal $${bal / 1e6}); ${r.email} stays queued (their turn comes when funds grow)`);
         break; // FIFO: leave the rest queued, pay them next cycle when topped up
       }
-      const tx = payWallet(to, STIPEND_BASE);
+      const tx = payWallet(to, payAmountBase);
       bal -= tx.amount_base;
       await sb(`recipients?id=eq.${r.id}`, {
         method: 'PATCH',
