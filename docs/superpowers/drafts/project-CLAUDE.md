@@ -1,0 +1,205 @@
+# Anicca プロジェクト — 開発ガイドライン
+
+全体方針（検索優先/push/no-human-loop/GLVS/フロントエンド順序/モデル分業/ツール既定）は `~/.claude/CLAUDE.md` を正本とする。本ファイルはこの repo 固有の情報のみを持つ。
+
+## 根本原則
+
+BP（best practice）= 答え。オリジナルは書かない。判断には最低1つの引用（英/日で検索、ソース名+URL+核心の引用）を付ける。引用のない判断は削除する。
+
+## 開発方式 = Superpowers spec-driven development（全実装に必須）
+
+skill/cron/spec/mobile app/blog/画像/動画/cold email/browser flow を問わず、全実装は以下8段階を通す。
+
+```
+1. using-superpowers              毎メッセージ最初に skill router を通す
+2. brainstorming                  spec作成 → docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
+3. writing-plans                  spec → plan（2-5分単位のタスク + ファイルパス）
+                                   → docs/superpowers/plans/YYYY-MM-DD-<topic>.md
+4. using-git-worktrees            .worktrees/<feature>/ で分離（例外: ~/.openclaw runtime store は直接編集）
+5. executing-plans / subagent-driven-development
+   ├ test-driven-development         RED → GREEN → REFACTOR
+   ├ verification-before-completion  IDENTIFY → RUN → READ → VERIFY → CLAIM
+   ├ systematic-debugging            根本原因 → パターン → 仮説 → 修正
+   └ dispatching-parallel-agents     2+ の独立した失敗に対して
+6. requesting-code-review         spec 準拠 → コード品質の順で確認
+7. receiving-code-review          実装前に検証、形だけの同意はしない
+8. finishing-a-development-branch  テスト確認 → merge/PR/keep/discard を提示 → push → worktree cleanup
+```
+
+spec → plan → worktree → 実装(TDD+検証) → review → finish+push、いずれの段階もスキップしない。仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う（後回しにしない）。
+
+## HONESTY / VERIFICATION（詳細は `.claude/rules/honesty.md` 参照）
+
+symbol/function/import の存在は使う前に Read/Grep/依存ファイルのいずれかで確認する。確認できない場合はコード冒頭に `// UNVERIFIED:` を付ける。テスト/ビルド成功は実際にこの session 内でコマンドを実行してから claim する。存在しないライブラリの追加は既存依存を grep して代替を探し、無ければ追加して spec に記録する（fundamental な依存 — UI framework/DB driver/auth lib — のみ確認が必要、標準的な小さい lib はそのまま追加してよい）。エラーメッセージ/スタックトレースは見ていないものを創作しない。分からない時は「分からない」と言う。
+
+Hook 配線: PostToolUse (`.claude/hooks/scripts/post-edit-verify.sh`) が Edit/Write 後に構文チェックを自動実行。Stop hook (`.claude/hooks/scripts/stop-verify-claims.sh`) が session 終了前に直近編集の構文チェックを実行。`.claude/agents/fact-checker.md`（Read/Grep/Glob/Bash のみ）で commit 前の独立監査を行う。
+
+## HARD RULE #6 exception
+
+`anicca-inbox` skill 内のメール triage/draft は LLM 直判断でよい（1スレッドごとの分類であり、cron 化した固定判断ではないため）。詳細 → `docs/superpowers/specs/` 内の anicca-inbox-autonomy-design spec §12。
+
+## TIER A AUTONOMOUS BYPASS
+
+human-zero の SaaS signup/login/決済/Turnstile/hCaptcha/reCAPTCHA/3DS 突破は skill `tier-a-bypass`（`.claude/skills/tier-a-bypass/SKILL.md`）を使う。runbook 詳細 → memory `reference_capsolver_turnstile_bypass.md`。
+
+## 実行環境
+
+Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行する。自分自身に SSH しない。VPS は使わない。
+
+## ローカル + push 先マップ
+
+| ローカル path | Push 先 origin | 役割 |
+|---|---|---|
+| `~/anicca-project/`（★唯一の products working tree★） | `github.com/Daisuke134/anicca-products`（public） | iOS/web/api/mobile（aniccaai.com 含む）。Anicca instance からの直接 write は禁止、Dais + Claude Code のみ編集可 |
+| `~/.openclaw/` | `github.com/Daisuke134/anicca-dais`（private） | 本番 Anicca-OpenClaw: gateway/cron/skills/state |
+| `~/anicca/` | `github.com/Daisuke134/anicca`（public OSS） | OSS フレームワーク本体 |
+
+push は各 path で `git push` 単体。push前に必ず `git remote -v && git branch -vv` で origin を確認する。GitHub Actions の新規追加は禁止（`.github/workflows/netlify-deploy.yml` の1個のみ）— 定期実行/cron は全て `~/.openclaw/cron/jobs.json`（OpenClaw gateway）が正本。
+
+## ブランチ & デプロイ
+
+| ブランチ | 役割 | Railway |
+|---|---|---|
+| main | Production | 自動デプロイ |
+| dev | 開発（trunk） | Staging 自動デプロイ |
+| release/x.x.x | App Store 提出 | - |
+
+フロー: dev → テスト → main → release/x.x.x → App Store。Fastlane 必須（`cd aniccaios && fastlane <lane>`、xcodebuild 直接禁止）。提出前に `greenlight preflight <app_dir>` で CRITICAL=0 を確認する。
+
+### git 運用（GitHub Flow、常時のホーム = `dev`）
+
+```
+1. git fetch && git checkout dev && git pull
+2. git checkout -b feature/<名前>（ドキュメントのみ dev 直接可）
+3. 1編集 = 即 git add && commit && push
+4. git push -u origin feature/<名前>
+5. gh pr create --base dev
+6. merge → dev 自動デプロイ（staging 検証）
+7. 良ければ dev → main（PR）→ main 自動デプロイ
+8. App Store 提出時のみ main から release/x.x.x
+```
+
+commit/push 前に必ず `git fetch` して origin より遅れていないか確認する。branch の終着は merge か削除の2択（`gh pr merge --merge --delete-branch` で同時実行）。openclaw/agent/dotfiles の mirror や `~/.openclaw` state はこの製品 repo に commit しない。自動強制 = lefthook（`lefthook.yml`、pre-push で drift 検知）。
+
+## 並列開発（Git Worktrees）
+
+原則 worktree、ドキュメント変更のみ dev 直接可。同じブランチで複数エージェントが作業しない。
+
+```bash
+git worktree add .worktrees/<task> -b feature/<task>
+cd .worktrees/<task>
+# 完了後
+cd /path/to/anicca-project && git merge feature/<task>
+git worktree remove .worktrees/<task> && git branch -d feature/<task>
+```
+
+各 worktree は独自 spec を持ち、触るファイルを spec 境界に明記する。バックエンドは worktree push で自動デプロイされないため `cd apps/api && railway up --environment staging` を使う。複数エージェントのバックエンドデプロイは順番に行う。
+
+## ツール優先順位（このプロジェクト固有分）
+
+| タスク | 使うツール | 禁止 |
+|---|---|---|
+| ドキュメント/SDK/API の実装方法を調べる | Context7 CLI: `npx ctx7@latest library <name>` → `npx ctx7@latest docs <libraryId> <query>` | 古い知識での実装、docs 当て推量 |
+| iOS E2E | `mcp__maestro__*` | maestro CLI 直接 |
+| ビルド/テスト | `cd aniccaios && fastlane <lane>` | xcodebuild 直接 |
+
+Web検索/コード内シンボル操作/ブラウザ/Mac操作の既定は `~/.claude/CLAUDE.md` 参照。
+
+## プロジェクト概要
+
+**Anicca** = プロアクティブ行動変容エージェント。
+
+| 項目 | 値 |
+|---|---|
+| iOS | Swift/SwiftUI（iOS 15+, Xcode 16+） |
+| API | Node.js/Express（Railway） |
+| DB | PostgreSQL/Prisma |
+| 決済 | RevenueCat（$9.99/月, $49.99/年） |
+| 分析 | Mixpanel（Anicca 専用、factory アプリには入れない） |
+| E2E | Maestro |
+| Agent | OpenClaw（`agent_docs/openclaw_integration.md`） |
+
+## ミニマム folder tree
+
+```
+~/anicca-project/                          # ★唯一の products folder★
+├── aniccaios/                             # iOS Swift app（release は fastlane）
+├── apps/
+│   ├── api/                               # Node/Express API (Railway)
+│   └── landing/                           # Next.js → aniccaai.com
+│       ├── public/dashboard.json          # dashboard-sync（Dais owned）が render、Anicca 直接 write 禁止
+│       ├── content/blog/                  # Dais owned blog factory
+│       └── data/research/                 # topic queue（Dais owned）
+├── mobile-apps/                           # factory apps
+├── .github/workflows/netlify-deploy.yml   # ★1個だけ★
+└── docs/superpowers/{specs,plans}/        # SDD spec + plan
+
+~/.openclaw/                               # 本番 Anicca-OpenClaw、cron 正本
+├── skills/  cron/jobs.json  gateway/  state/
+├── .env（chmod 600、secrets, git ignore）
+└── CONSTITUTION.md  IDENTITY.md  SOUL.md
+
+~/anicca/                                  # OSS フレームワーク
+├── skills/  identity/  runtime/  services/
+├── control-room/  install.sh
+└── adapters/  templates/
+```
+
+## Anicca Architecture — 1 instance + human-funded claude loops、dashboard read-only
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│         Anicca: OpenClaw instance + human-funded loops         │
+├────────────────────────────────────────────────────────────────┤
+│  #1 Anicca-OpenClaw（Dais 専用、本体）                          │
+│    body : ~/.openclaw/                                         │
+│    repo : anicca-dais（private）                                │
+│    fuel : ChatGPT Plus 課金 / provider = openai-codex           │
+│    cron : ~221                                                  │
+│                                                                  │
+│  human-funded claude ループ群（このセッション種別）              │
+│    fuel : Anthropic subscription（Dais の Claude Code/Pro）      │
+│    role : 自律 earn（wallet 0x810f 等）+ 開発 ad-hoc            │
+│                                                                  │
+│  どちらも自分の body にのみ書く（state/*.jsonl, ledger, cron log） │
+│                    │                                             │
+│                    ▼                                            │
+│  dashboard-sync（Dais owned、Anicca ではない）                  │
+│    OpenClaw state を fetch → dashboard.json を render           │
+│    → anicca-products へ push → netlify 自動デプロイ             │
+│    → aniccaai.com/dashboard                                     │
+└────────────────────────────────────────────────────────────────┘
+```
+
+### HARD RULE: Anicca は aniccaai.com に直接書き込まない
+
+| 主体 | 書いてよい場所 | 書いてはいけない場所 |
+|---|---|---|
+| Anicca-OpenClaw | `~/.openclaw/state/`, `cron/`, `skills/`（自分の body） | `~/anicca-project/apps/landing/**`、anicca-products repo |
+| dashboard-sync（Dais owned） | `dashboard.json`（render 結果） | Anicca state の改変 |
+| Claude Code（開発 IDE） | 全 path、Dais 指示時 | 監視なしの unsupervised cron / aniccaai.com push |
+
+Anicca instance の自己更新は body file を書くのみ → dashboard-sync が pull して dashboard.json を render → aniccaai.com に反映する。aniccaai.com は Dais のサイトであり、Anicca は write 権限を持たない。
+
+### fuel 確認
+
+```bash
+openclaw models status | head -5     # → openai-codex
+# Claude Code: system prompt の "Powered by ..." 表示、出ないなら /model
+```
+
+## 技術 gotcha
+
+iOS/SwiftUI/RevenueCat/Xcode/App Store Connect 固有の既知の問題と回避策 → `.claude/rules/platform-gotchas.md`。FK 制約安全パターン（Prisma upsert 前の存在チェック）→ `.claude/rules/coding-style.md`。3ゲート開発ワークフロー（Spec→TDD→codex-review）→ `.claude/rules/dev-workflow.md`。git commit/PR 詳細 → `.claude/rules/git-workflow.md`。
+
+## 参照先（必要時に Read）
+
+| ファイル | いつ読む |
+|---|---|
+| `.cursor/plans/reference/secrets.md` | デプロイ・Secret 設定時 |
+| `.cursor/plans/reference/infrastructure.md` | インフラ・Railway 作業時 |
+| `agent_docs/openclaw_integration.md` | OpenClaw 作業時 |
+
+## 言語
+
+回答は常に日本語。
