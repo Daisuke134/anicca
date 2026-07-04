@@ -372,37 +372,49 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 | 「活動をIG/Xに投稿」(Dais発言中の"maybe") | 今回は見送り、10.4のswarm highlight記事で透明性要求を満たす | Dais自身"maybe"と留保つき発言。既存clip/video loopは既に商品コンテンツをIG投稿済みで、追加の「活動報告投稿」は新規の負荷になる割に透明性目的は記事化(10.3/10.4)で代替できる |
 | 10.4 swarm highlight記事 | ★フェーズ1(Dais+私で手動、1回)を今回着手★、フェーズ2(自動loop化)は次段 | Daisが2段階移行を明示指示済み。質を確認せず自動化するのは0.31/過去教訓に反する |
 
-## 11. Next Actions 更新(2026-07-04、10節を反映した最新TODO、SSOT)
+## 11. Next Actions(SSOT、2026-07-04 22:40最新更新 — TaskListツール実番号#1-#12と完全一致)
 
-**フェーズ1: self-funded AIが人間なしに稼ぐ**(既存、継続)
-- Task A1 — Task #2: ClawRouter専用IGアカウントの自律作成(vision-in-the-loop harness、§8参照)
-- Task A2 — Task #4: promote.fun Sutando harness構築(収益化の本命)
+**フェーズ2: 透明性レイヤー(mail報告インフラ)— 完了**
+- ✅ Task #1 — `~/anicca/skills/report/loop-report.sh`新規実装
+- ✅ Task #2 — 5つの`*-cli.sh`にloop-report.sh呼び出しを配線
+- ✅ Task #3 — clip loopで実mail着信をfresh evidenceで確認(自然発火、evidence_url付き)
+- ✅ Task #7 — loop-report.shにevidence_url引数を追加(Dais指摘対応)
+- ⏳ Task #4 — 残り4 loop(affiliate/video/bounty)の自然発火mail確認(gig確認済み、発火タイミング待ち)
 
-**フェーズ2: 透明性レイヤー(★今回新規、最優先★)**
-- Task B1 — `~/anicca/skills/report/loop-report.sh`新規実装(10.2)
-- Task B2 — clip/affiliate/video/bounty/gig 5つの`*-cli.sh`STARTUPプロンプントに
-  loop-report.sh呼び出しを追加(10.2)
-- Task B3 — 1 loop(clip)で実際に1 pass fireさせ、実mail着信をfresh evidenceで確認(0.31準拠、
-  dry runは大罪)
-- Task B4 — 残り4 loopに横展開、それぞれ実mail着信確認
+**フェーズ1: self-funded AIが人間なしに稼ぐ(promote.fun収益出口)— 進行中、最優先**
+- ✅ Task #9 — clip-promote harness構築(cli.sh/healthcheck.sh/launchd)
+- ✅ Task #10 — promote.funへのゼロヒューマンcredentialログイン確立
+- ✅ Task #11 — promote.funログイン手順のスクリプト化(2バグ発見・修正込み)
+- 🔵 Task #12 — clip-promote run.shのCLIP/POST/SUBMIT/WITHDRAW遷移を実装(進行中)
+  - ✅ SELECT修正(IGフィルタ追加、TikTok限定campaign誤選定を解消)
+  - ✅ CLIP用の元動画入手方法確認(実YouTube URL、既存clip skill再利用可)
+  - ⏳ 次: URL自動抽出→producer.sh連携→CLIP実装
+  - ⏳ POST(ig-reels-poster再利用)実装
+  - ⏳ SUBMIT(campaign UIへの投稿URL提出)実装(未調査)
+  - ⏳ WITHDRAW/RECORD確認(record-payout.mjsは実装済み、E2E未確認)
+- ⏳ ClawRouter専用IGアカウントの自律作成(vision-in-the-loop harness、§8参照、別トラック)
 
-**フェーズ3: 記事化(10.3/10.4、フェーズ2完了後に着手)**
-- Task C1 — swarm highlight記事フェーズ1(Dais+私で1回手動執筆、GitHub Pages/note公開)
-- Task C2 — 個別AI自己記事化(10.3)の前提条件確認(claude-pのSkill tool呼び出し能力)
-- Task C3 — swarm highlight記事の自動loop化(`/schedule`日次、10.4フェーズ2)
+**フェーズ3: 記事化(§10.3/10.4、フェーズ1・2完了後に着手)**
+- ⏳ Task #5 — swarm highlight記事フェーズ1(Dais+私で1回手動執筆、GitHub Pages/note公開)
+- ⏳ 個別AI自己記事化(§10.3)の前提条件確認(claude-pのSkill tool呼び出し能力)
+- ⏳ swarm highlight記事の自動loop化(`/schedule`日次、§10.4フェーズ2)
 
-**フェーズ4: 運用の安定化・可視化**(既存、継続)
-- Task #7 — tmuxソケット消失の根本原因調査
-- Task #11 — self-heal harnessのE2E確認(意図的異常注入)
-- Task #3 — 週次self-improvementループ
+**フェーズ4: 運用の安定化・可視化**
+- 👀 Task #6 — clip loop IG投稿確認フロー(shared-unconfirmed)問題、clip-core自身が対応予定
+- ⏳ tmuxソケット消失の根本原因調査
+- ⏳ self-heal harnessのE2E確認(意図的異常注入)
+- ⏳ 週次self-improvementループ
 
-**フェーズ5: collective self-improvementの完成**(既存、継続)
-- forum-rollout実装(Issue→PR→レビュー→マージ→全instance配布)
+**フェーズ5: collective self-improvementの完成**
+- ⏳ forum-rollout実装(Issue→PR→レビュー→マージ→全instance配布)
 
-**フェーズ6: 統合**(既存、継続、フェーズ1完了後)
-- TikTok系cron(23個)のclaude-p loop方式への移行
+**フェーズ6: クラウド対応(§15、フェーズ1完了後)**
+- ⏳ Task #8 — clip skillの5層アダプタ実装(ブラウザ/視覚判断/動画生成/wallet/スケジューリング)
 
-**フェーズ7: 将来構想**(着手しない、方針記録のみ)
+**フェーズ7: 統合(フェーズ1完了後)**
+- ⏳ TikTok系cron(23個)のclaude-p loop方式への移行
+
+**フェーズ8: 将来構想(着手しない、方針記録のみ)**
 - spawn-anywhere基盤
 
 ## 12. clip収益の実フロー確定(2026-07-04、Dais質問「お金は実際に誰から来るのか」への回答、fresh grep)
