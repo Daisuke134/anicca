@@ -1,5 +1,31 @@
 # pm-trade — Polymarket base agent + BASELINE ALPHA (W1 + #28)
 
+> ## ⚠️ CLOB V2 (2026-04-28+) — READ FIRST. The V1 path below is DEAD.
+> Polymarket moved to **CLOB V2**. Every V1 SDK is rejected with
+> `400 invalid order version`. The **steel recipe** every AI must use now lives
+> in **`v2_recipe.py`** (this dir) — verified constants + proven primitives:
+> 1. **FUND** — `fund_with_relay(...)` swaps USDC on any chain → Polygon **pUSD**
+>    (V2's only collateral, `0xC011a7E1…`). ✅ PROVEN live 2026-07-04 (Base $5→4.95 pUSD).
+> 2. **DEPOSIT WALLET** — V2 accepts orders ONLY from a **registered deposit
+>    wallet** (`signature_type=3` / POLY_1271, ERC-1167 proxy owned by your EOA).
+>    A raw EOA (sig 0) and a Gnosis-Safe proxy (sig 2) are BOTH rejected with
+>    `maker address not allowed, please use the deposit wallet flow`. One-time
+>    onboarding at polymarket.com deploys+registers it. `ensure_deposit_wallet()`.
+> 3. **TRADE** — BUYs go through `create_and_post_market_order` (FAK/FOK buys ARE
+>    market orders in V2; the limit path fails `invalid amounts … max 2 decimals`).
+> 4. **FEES** — `fee = rate·p·(1−p)·shares`, makers 0. Sources: py-clob-client-v2
+>    issue #92 + crp4222/pmq war-story.md + installed py_clob_client_v2 1.0.2.
+>
+> ### 💵 EARNINGS LEDGER (honest, no scam — this is WHY we're not a money-printer)
+> | date | engine | in | realized P&L | note |
+> |---|---|---|---|---|
+> | 2026-07-04 | polymarket-v2 | $5 pUSD ready | **$0** | pipeline proven to order-post; last gate = registered deposit wallet |
+>
+> ★ We publish the real number even when it's $0. "This repo earns you money"
+> with nothing on-chain = the scam we refuse to be. Number goes up only when a
+> real fill settles. ★
+
+
 The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the
 market fetch, x402-paid AI analysis, Kelly sizing, and live execution (py-clob-client, EOA
 `signature_type=0`). ★ Its `generate_recommendations` shipped as a STUB (hardcoded prob 0.55, ignored the
