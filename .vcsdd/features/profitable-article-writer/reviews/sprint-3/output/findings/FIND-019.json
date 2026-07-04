@@ -1,35 +1,15 @@
 {
-  "findingId": "FIND-001",
-  "dimension": "implementation_correctness",
+  "findingId": "FIND-019",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "low",
-  "relatedCriteria": [
-    "CRIT-203"
-  ],
   "description": "CRIT-203's passThreshold text states verbatim: \"the tool's stdout carries NOTE_LIVE_URL for https://note.com/anicca123/n/n39ef09f828f7 and a NOTE_LIVE_CLICKED: 投稿する|更新する marker\" -- grouping both markers as stdout output. The actual implementation prints NOTE_LIVE_URL and NOTE_LIVE_SCREENSHOT to stdout but prints NOTE_LIVE_CLICKED to stderr (file=sys.stderr). The tool's own docstring INTERFACE section (lines 63-67) correctly documents this split (only NOTE_LIVE_URL/NOTE_LIVE_SCREENSHOT are listed under 'stdout on success'), so the code is internally consistent with its own docs -- the discrepancy is only against the contract's literal wording. This is non-blocking in practice because tests/test-prop22b-live-publish-real-click.sh captures the tool's combined output via `2>&1` before grepping for NOTE_LIVE_CLICKED (line 72: `OUT=\"$(... 2>&1)\"`), so the passThreshold's actual gating test genuinely exercises and passes this assertion regardless of which stream the marker lands on. Flagged for precision only -- no safety, fail-closed, or real-publish-correctness guarantee is affected by this channel choice.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/lib/note-publish-live.py",
     "lineRange": "288-290",
     "snippet": "print(f\"NOTE_LIVE_URL: https://note.com/{username}/n/{note_key}\")\nprint(f\"NOTE_LIVE_SCREENSHOT: {shot}\")\nprint(f\"NOTE_LIVE_CLICKED: {clicked_label}\", file=sys.stderr)"
   },
-  "corroboratingEvidence": [
-    {
-      "filePath": "skills/profitable-article-writer/lib/note-publish-live.py",
-      "lineRange": "63-67",
-      "note": "the tool's own docstring INTERFACE section correctly documents NOTE_LIVE_CLICKED as absent from the stdout-on-success list, consistent with the code"
-    },
-    {
-      "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-3.md",
-      "lineRange": "22-22",
-      "note": "CRIT-203 passThreshold literal text groups NOTE_LIVE_URL and NOTE_LIVE_CLICKED as both being on stdout"
-    },
-    {
-      "filePath": "skills/profitable-article-writer/tests/test-prop22b-live-publish-real-click.sh",
-      "lineRange": "72-77",
-      "note": "the gating test captures combined stdout+stderr (2>&1) before asserting NOTE_LIVE_CLICKED, so the real passThreshold test is unaffected by the stream split"
-    }
-  ],
-  "routeToPhase": "none",
+  "routeToPhase": "1a",
   "resolution": {
     "status": "fixed",
     "fixedInSprint": 3,
