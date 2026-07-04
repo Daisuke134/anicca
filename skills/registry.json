@@ -94,15 +94,6 @@
       "owner": "wf-a:earn",
       "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
     },
-    "earn/pm-trade": {
-      "track": "A",
-      "dir": "skills/earn/pm-trade",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "owner": "pm-trade",
-      "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W1",
-      "summary": "LIVE (W1): runs BlockRunAI/polymarket-agent AS-IS from ~/.anicca-founder/agents/polymarket-agent. Agent does its OWN analysis/sizing/execution (BlockRun x402 + EOA sig_type=0). Wrapper = kill-switch + trace only. Seeded 2026-07-04: 5.98 USDC.e + 7.5 POL on Polygon."
-    },
     "earn/gig": {
       "track": "A",
       "dir": "skills/earn/gig",
@@ -172,6 +163,15 @@
       "owner": "sol-trade",
       "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W2",
       "summary": "LIVE (W2): runs BlockRunAI/Franklin-Trading AS-IS via franklin-trading CLI. Agent researches/sizes/trades itself and pays its own model calls via x402 from its own Solana wallet 8Fpqd (APIキー不要). Wrapper = kill-switch + max-spend + trace. First real pass verified 2026-07-04 (agent's own verdict: bankroll too small for edge → wait)."
+    },
+    "earn/polymarket-trade": {
+      "track": "A",
+      "dir": "skills/earn/polymarket-trade",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "owner": "pm-trade",
+      "spec": "2026-07-03-anicca-colony-architecture §0.25 PIVOT + §10 W1",
+      "summary": "LIVE (W1): runs BlockRunAI/polymarket-agent AS-IS from ~/.anicca-founder/agents/polymarket-agent. Agent does its OWN analysis/sizing/execution (BlockRun x402 + EOA sig_type=0). Wrapper = kill-switch + trace only. Seeded 2026-07-04: 5.98 USDC.e + 7.5 POL on Polygon."
     }
   }
 }
