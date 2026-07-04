@@ -188,13 +188,33 @@ Dais から disk-cleaner の安全性 + claude-p/ClawRouter の実稼働状況�
    ("Sign in to confirm you're not a bot")で失敗→durationがNone→sliceされずフル長(2h38m)を
    ダウンロードしてしまう実機事象を確認。`yt_dlp()`と同じcookie引数を追加して修正。
 
-5. **CloakBrowser cookie復号失敗**(原因特定、未解決): 上記4の修正後もyt-dlpの
+5. **CloakBrowser cookie復号失敗**(原因確定、対応方針決定): 上記4の修正後もyt-dlpの
    `--cookies-from-browser chromium:~/.cloak/profiles/clip-en`が
-   `"Extracted 0 cookies from chromium (12 could not be decrypted)"`で実質機能せず。根本原因は
-   macOS Keychainに`"Chromium Safe Storage"`エントリが存在しないこと(`security find-generic-
-   password`で未検出)。無人/ヘッドレス運用環境でKeychainがアンロックされていない可能性が高い。
-   cookie無しの状態でYouTubeへ問い合わせると不安定にbot検出へ引っかかる。次回対応候補:
-   Netscape形式cookieファイルのプリエクスポート方式へ切り替え(Keychain復号を経由しない)。
+   `"Extracted 0 cookies from chromium (12 could not be decrypted)"`で実質機能せず。
+
+   **調査(2026-07-04)**: `security find-generic-password -s "Chromium Safe Storage"`が
+   `"could not be found in the keychain"`で失敗。`security list-keychains`を実行すると
+   `/Library/Keychains/System.keychain`のみが返り、**`login.keychain-db`がsearch listに
+   含まれていない**ことが根本原因(このマシンの無人/ヘッドレス運用セッションが正規のGUI
+   ログインセッションのsecurity contextを持っていない)。`security unlock-keychain`や
+   `security list-keychains -s`で修正を試みたが、Bashツール経由の各コマンド呼び出しが
+   別プロセス(別security session)扱いになる為、設定が永続化されず失敗。
+
+   **yt-dlp公式ソース(`yt_dlp/cookies.py`)を直接確認**: `MacChromeCookieDecryptor`は
+   `_get_mac_keyring_password()`(`security find-generic-password`呼び出し)経由のみで、
+   Linux版にある`peanuts`固定キーのフォールバック(`--password-store=basic`時に使われる)は
+   **macOS向けには実装されていない**。つまりyt-dlp自体の使い方を変えても、Chromiumベースの
+   ブラウザ(CloakBrowser含む)である限りmacOS Keychainは回避不能と判明。一方
+   `_extract_firefox_cookies()`は`cookies.sqlite`を暗号化なしで直接読むのみで、
+   OS keychainに一切依存しない。
+
+   ★ Dais 判断(2026-07-04)★: CloakBrowser daily-driver優先の既定方針
+   (`feedback_use_cloakbrowser_daily_driver_not_camofox`)は維持しつつ、今回は
+   「ブラウザ選択」ではなく「cookie暗号化方式がOS依存で、Chromiumである限り原理的に
+   回避不能」という技術的制約が理由の例外として、**camofox(Firefox)を新規プロファイルで
+   採用してよい**との明示許可を得た。「何が起きたか・なぜ移行したか」を必ず記録すること、
+   というDais指示によりこの節を記録。CloakBrowser(Chromium)側の運用は変更せず、YouTube
+   cookie取得専用にcamofoxプロファイルを1つ追加する(既存プロファイルの置き換えではない)。
 
 タスク化(#6〜#8、TaskList参照): #6 ClawRouter producer経路E2E確認、#7 tmuxソケット消失原因
-+healthcheck重複防止、#8 cookie復号失敗の根本解決。
++healthcheck重複防止、#8 cookie復号失敗の根本解決(camofox Firefox cookie方式へ切替、実装中)。
