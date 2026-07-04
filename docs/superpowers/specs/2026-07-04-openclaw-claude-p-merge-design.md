@@ -257,3 +257,149 @@ harness(`earn/clip-producer`をregistry.jsonに新規slot登録、producer.shは
 
 **Task #6完了**。これは「私がharnessを作る→彼らが自分の判断で使う→結果を検証する」
 という、まさにDaisが求めていたサイクルの初めての完全な実例。
+
+## 10. 透明性レイヤー: 全AIが自分の活動をmailで報告 + 個別記事化 + Swarm全体ハイライト記事(Dais 2026-07-04 明示指示、SSOT更新)
+
+### 10.0 Dais指示(verbatim、複数メッセージにまたがる)
+
+> Okay, so go update the spec and tell me the full to do list. We don't want... we want
+> the SSOT and source of truth and we wanna be right.
+
+> I think mail is better, yeah(= 最初Telegramと言ったが訂正)
+
+> There's no candidates for tasks because we update the spec and we put the to-do list
+> on the spec... we do it in the right order, as we did.
+
+> all these things are gonna be reported to me to my mail... they have to report with
+> every loop what they actually did, with gig work with every one of these skills...
+> if they were given that, given the credential, they have to do that. If they're not
+> given, they don't need to do. But if they were given that, they should be reporting.
+> like okay I made this IG account, I did this, I did that, or I failed at this, I failed
+> at that... people want to be assured... I wanna know about it too, because I wanna know
+> what videos they're posting too, and this is important because we have to write an
+> article on that.
+
+> with the AI entity article writer we have to basically report what each AI is doing...
+> we have to showcase, hey, these AIs are posting these IG videos and earning this much
+> money. To be transparent.
+
+> individuals go post and write articles themselves. And then for us, we write an article
+> about the whole thing. How the whole swarm is doing... they made three hundred IG
+> accounts, they are earning this much money, as a whole. And we pick up interesting
+> things that they did.
+
+> The ideal is that all things work without human in the loop. Every AI posts and writes
+> articles of what they did and reports it to the human user but also on public places
+> too. On GitHub pages and articles, using the AI entity article writer skill... and we
+> write an article as a whole entity... this monitoring thing is outside of you and then
+> you just go look at the thing and write an article on that.
+
+> 1. every AI go and report by mail what they did with each loop + maybe post that to IG
+>    or all other platforms like X.
+> 2. we write an article on the whole highlight of what they actually did, every single
+>    day. First we do it with you and me, and then this is gonna be no human in the loop
+>    — done by the collective, or you just run it yourself, as a loop, without me in the
+>    loop.
+
+### 10.1 現状調査(fresh grep、2026-07-04): mail報告インフラは片側にしか無い
+
+| | ClawRouter/genesis(self-funded) | claude-p 5 loops(clip/affiliate/video/bounty/gig、human-funded) |
+|---|---|---|
+| mail報告skill | ★既存★ `~/anicca/skills/report/anicca-report.sh`(registry.json `report` slot、status=live)。genesis daemonのloop hook(running→sleeping edge)から**1 wake毎に自動fire**、AgentMail経由でkeiodaisuke@gmail.com + contact@aniccaai.comへnet worth/ETH/USDC/DID(直近5 tool呼び出し)/NEXTを送信 | ★存在しない★。各`*-cli.sh`のSTARTUPプロンプト末尾に「Report the slot one-line JSON + total USDC earned + any new reel URL」という指示文言は**ある**が、grep確認(`grep -n "AgentMail" clip-cli.sh` → 0件)の通り、これは**会話内の自己申告に留まり、実際にmail送信するツール呼び出しが無い**。1 passごとに何をしたかは`~/.openclaw/logs/clip-*.log`にしか残らず、Daisは見に行かない限り知り得ない |
+
+**結論**: Daisが「people want to be assured / I wanna know about it too」と言っているのはまさにこのギャップ。claude-p 5 loopは「稼ぐ手段(IG投稿・アフィリエイト・bounty・gig)」は持つが「稼いだ/失敗したことを人間に伝える手段」を持たない。
+
+### 10.2 設計A(最優先実装): per-loop mail report ツール
+
+**方針**: 既存`report`スキルの送信ロジック(AgentMail API呼び出し部分)を再利用しつつ、claude-p 5 loop用に**軽量な汎用ツール**を新規追加する。ClawRouter版(wallet net worth計算込み)とは責務を分離する — claude-p loopはwalletを持たない(§6参照、SOL_WALLETは表示用アドレスのみ)ので、net worth計算は不要、「何をしたか」報告に特化する。
+
+- 新規ファイル: `~/anicca/skills/report/loop-report.sh <loop_name> <did> <result> <earned_usdc>`
+  - `<did>`: このpassで何をしたか(自然言語1文、**agent自身が要約して渡す** — judgmentはagent、送信はdeterministic tool、[[feedback_build_agents_not_hardcode_regex]]に整合)
+  - `<result>`: success/failure/queue-empty等の短い状態語
+  - `<earned_usdc>`: このpassで確定した収益(無ければ0)
+  - 内部処理: 既存`anicca-report.sh`と同じAgentMail POST(`https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send`)を呼ぶ薄いラッパー。**AGENTMAIL_API_KEYが`~/.openclaw/.env`に無ければ黙ってexit 0(no-op)** — 「credentialを与えられていなければ報告しなくてよい」というDais指示をそのままfail-closed実装にする
+  - 宛先: `keiodaisuke@gmail.com`(既存reportと同じ、Composio優先→AgentMailフォールバックの既存パターンを流用)
+- 呼び出し箇所: 各`*-cli.sh`(clip/affiliate/video/bounty/gig)のSTARTUPプロンプント末尾、「FINALLY touch .../.{name}-core-last-pass」の直前に1行追加:
+  `bash ~/anicca/skills/report/loop-report.sh <name> "<one-line what you did>" "<result>" "<earned this pass>"`
+- **registry.json更新不要**(loop-report.shはclaude-p側のcli.shから直接bashで呼ばれる。ClawRouter側の`run_skill` slotではない)
+
+### 10.3 設計B: 各AIの自己記事化(`ai-entity-article-writer`の適用範囲拡張)
+
+既存`ai-entity-article-writer`(`~/.claude/skills/ai-entity-article-writer/SKILL.md`)は「第三者としてAI entityを深く調査し記事化する」設計だが、META節に既に
+「Many anicca (different harness/model) each earn this way and share experience via
+GitHub issues」「AI entities showcase」という将来像が明記されており、**対象を自分自身に
+広げることは既存スキルの自然な延長**(rule 40 NO DIARYは「内部incidentを教育記事に混ぜるな」
+という意味で、「稼いだ実績を書くな」ではない。[6]「で、稼げたのか」ブロックは元々実績報告の
+場として設計済み)。
+
+- 各claude-p loop / ClawRouterが、一定マイルストーン(例: 新規収益チャネル解禁、初回黒字化、
+  N件目のIGアカウント作成 等)到達時に、`Skill: ai-entity-article-writer`を自分で起動し、
+  「自分が何を試し、何が稼げて何が稼げなかったか」を記事化する(topic=自分自身、宛先=
+  GitHub Pages / note / dev.to 等の公開先)
+- **前提条件の確認が必要**: claude-p loopのSTARTUPプロンプントがSkill toolを呼び出す権能を
+  持つか(claude-pはClaude Codeと同じフルツールセットを持つ想定だが未検証)。ClawRouterは
+  `run_skill(slot)`のみのため、この設計Bは**当面claude-p 5 loop側限定**とする
+- スコープ: 今回のTODOでは「mail報告(10.2)を最優先で実装」し、この自己記事化は**次段の
+  タスクとして記録のみ**(過剰実装回避、まずmail報告のE2Eを固めてから着手)
+
+### 10.4 設計C(新規): Swarm全体ハイライト記事(日次)
+
+Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体として何をしたか」(例: 何百のIG
+アカウントを作った、合計いくら稼いだ、面白かった出来事)をまとめる記事を**毎日**書く。
+
+- **ソース**: 10.2のmail報告(AgentMail受信箱に溜まる) + `~/anicca/skills/earn/state/
+  earn-ledger.jsonl`(既存の集計台帳) + 各loopの`~/.openclaw/state/.{name}-core-last-pass`
+  等の状態ファイル
+- **フェーズ分け(Dais明示)**:
+  1. **まずDais + 私(Claude Code)で手動**: 1日分のmail報告+ledgerを集計し、
+     `ai-entity-article-writer`のフォーマットに倣った「swarm highlight」記事を書き、
+     GitHub Pages/note等に公開する
+  2. **その後、no-human-in-loop化**: 「collective(claude-p/ClawRouter自身)が担当する」
+     か「このClaude Codeセッション自体を独立したloop([[feedback_goal_loop_vcsdd_no_human_method]]
+     のGLVS harness、`/schedule`で日次cron化)として自走させる」のいずれか — **Daisは後者
+     ("you just run it yourself, as a loop, without me in the loop")を明示的に許容**
+  3. 実装順序: まず1.を1回実施して記事の型を固めてから、2.のcron化に着手する
+     (いきなり自動化すると質を検証できないため — [[feedback_never_test_by_direct_posting]]
+     と同じ「配信で試すな、まず質を確認してからcron化」原則)
+
+### 10.5 今回のスコープ判断(過剰実装回避、YAGNI)
+
+| 項目 | 今回やる/やらない | 理由 |
+|---|---|---|
+| 10.2 per-loop mail report | ★今回実装★(最優先) | Daisが最も明示的に指示した項目その1、実装コスト小、既存reportパターンの流用のみ |
+| 10.3 個別AI自己記事化 | 次段タスクとして記録のみ、実装はしない | claude-pのSkill tool呼び出し能力が未検証、ai-entity-article-writer自体が重量級(firecrawl+複数platform publish)でまず10.2を固めてから着手すべき |
+| 「活動をIG/Xに投稿」(Dais発言中の"maybe") | 今回は見送り、10.4のswarm highlight記事で透明性要求を満たす | Dais自身"maybe"と留保つき発言。既存clip/video loopは既に商品コンテンツをIG投稿済みで、追加の「活動報告投稿」は新規の負荷になる割に透明性目的は記事化(10.3/10.4)で代替できる |
+| 10.4 swarm highlight記事 | ★フェーズ1(Dais+私で手動、1回)を今回着手★、フェーズ2(自動loop化)は次段 | Daisが2段階移行を明示指示済み。質を確認せず自動化するのは0.31/過去教訓に反する |
+
+## 11. Next Actions 更新(2026-07-04、10節を反映した最新TODO、SSOT)
+
+**フェーズ1: self-funded AIが人間なしに稼ぐ**(既存、継続)
+- Task A1 — Task #2: ClawRouter専用IGアカウントの自律作成(vision-in-the-loop harness、§8参照)
+- Task A2 — Task #4: promote.fun Sutando harness構築(収益化の本命)
+
+**フェーズ2: 透明性レイヤー(★今回新規、最優先★)**
+- Task B1 — `~/anicca/skills/report/loop-report.sh`新規実装(10.2)
+- Task B2 — clip/affiliate/video/bounty/gig 5つの`*-cli.sh`STARTUPプロンプントに
+  loop-report.sh呼び出しを追加(10.2)
+- Task B3 — 1 loop(clip)で実際に1 pass fireさせ、実mail着信をfresh evidenceで確認(0.31準拠、
+  dry runは大罪)
+- Task B4 — 残り4 loopに横展開、それぞれ実mail着信確認
+
+**フェーズ3: 記事化(10.3/10.4、フェーズ2完了後に着手)**
+- Task C1 — swarm highlight記事フェーズ1(Dais+私で1回手動執筆、GitHub Pages/note公開)
+- Task C2 — 個別AI自己記事化(10.3)の前提条件確認(claude-pのSkill tool呼び出し能力)
+- Task C3 — swarm highlight記事の自動loop化(`/schedule`日次、10.4フェーズ2)
+
+**フェーズ4: 運用の安定化・可視化**(既存、継続)
+- Task #7 — tmuxソケット消失の根本原因調査
+- Task #11 — self-heal harnessのE2E確認(意図的異常注入)
+- Task #3 — 週次self-improvementループ
+
+**フェーズ5: collective self-improvementの完成**(既存、継続)
+- forum-rollout実装(Issue→PR→レビュー→マージ→全instance配布)
+
+**フェーズ6: 統合**(既存、継続、フェーズ1完了後)
+- TikTok系cron(23個)のclaude-p loop方式への移行
+
+**フェーズ7: 将来構想**(着手しない、方針記録のみ)
+- spawn-anywhere基盤
