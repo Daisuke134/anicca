@@ -14,9 +14,8 @@ tags:
 - clearKeychain
 - launchApp:
     arguments:
-      UITESTING: "true"
-    env:
-      PAYWALL_VARIANT: "test"
+      AppleLanguages: "(en)"
+      AppleLocale: "en_US"
 
 - runFlow: ./_onboarding_to_paywall.yaml
 
