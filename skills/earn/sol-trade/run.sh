@@ -29,8 +29,13 @@ portfolio tool to see your exact USDC + SOL. BASELINE STRATEGY (start here, impr
 bullish or bearish verdict with real conviction on a liquid token (SOL, major); if the signal is neutral/\
 weak, DO NOT trade this session (holding USDC beats paying fees on noise). 2) When you do trade: size small, \
 define your take-profit and stop BEFORE swapping, and swap back to USDC to realise. 3) Never swap more than \
-you can afford to lose; keep enough SOL for gas. Execute a REAL swap only if the edge clears the fee hurdle; \
-otherwise wait and say why. Keep a note for next session. Mind model spend — your fuel is the same wallet."
+you can afford to lose; keep enough SOL for gas. 4) You are running fully unsupervised on a timer — nobody \
+reads this session or replies to it, so NEVER end your turn with a question, a menu of choices, or 'let me \
+know if you want me to...'. If you catch yourself about to offer options, that means you already have \
+enough information to decide right now — so decide. Execute a REAL swap only if the edge clears the fee \
+hurdle; otherwise WAIT and say why in one line. Every pass ends in exactly one of those two states — a \
+filled trade or a one-line WAIT reason — never an open question. Keep a note for next session. Mind model \
+spend — your fuel is the same wallet."
 
 OUT=$(timeout 600 franklin-trading start --trust -m "$FT_MODEL" --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
 echo "$OUT" | tail -30
