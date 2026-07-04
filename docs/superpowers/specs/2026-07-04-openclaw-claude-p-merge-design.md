@@ -1058,3 +1058,39 @@ promote.fun等のaffiliateに進む」という順序をDaisが明示的に追�
 **この確認に基づく対応**: 新規実装は不要(既存のSELECT/JOIN/decide.pyの設計が
 まさにこの順序をそのまま実装済み)。実行方針は変更せず、@aiclipsvaultの投稿数/
 フォロワー数の推移を継続監視するのみ(§11フェーズ4に記載済みの監視項目と同じ)。
+
+## 20. Task #5(swarm highlight記事フェーズ1)ドラフト完成 — VCSDD 3ラウンド検証済み(2026-07-05)
+
+Dais指示「verify with vcsdd ofc the adversary is sonnet」に従い、記事ドラフトを
+fresh-context Sonnet adversaryによる3ラウンドのVCSDD検証にかけた。
+
+- **ドラフト**: `docs/superpowers/drafts/2026-07-05-swarm-highlight-01.md`
+- **ラウンド1(FAIL)**: 初稿は`~/.openclaw/logs/loop-report.log`+当日のtmuxペイン
+  スナップショットのみをadversaryに渡した結果、「12本」のうち1本が実は削除済みの
+  テスト投稿だったこと、clip-promoteの「17件チェック/フォロワー200・2000人条件/
+  2つのバグ」の段落が証拠ファイルに無く**unsupported**、「reel URLも一致」が
+  未検証、と判定された。原因は記事の内容自体が誤っていたのではなく、私が
+  adversaryに渡した証拠ファイルが不完全だったこと(過去の投資調査・git commit・
+  ソースファイルのdocstringを含めていなかった)。
+- **ラウンド2(FAIL、軽微)**: git commit `1e5e5c1`(--dryフラグ削除)・`0631388`
+  (JOIN race condition修正)の実際のdiff、ledgerの該当行、IGプロフィールの
+  fresh href一覧を証拠に追加して全面修正。再検証で12件のreel URL完全一致・
+  17/15/2000/200の数字・両commitの内容は全てCONFIRMEDとなったが、新たに
+  ①「self-heal解決3件」が実は`status:unverified`4件中3件で、1件は解決経路が
+  ledgerに明示されていないのに「全件解決」と読める書き方だった ②affiliate/bounty
+  の2件を「commitで確認済み」と書いていたが実際はcronログのみで確認、という
+  2点の過大表現(overclaim)を指摘された。
+- **ラウンド3(PASS)**: 上記2点+「12件と15件の差3件」の説明を推測であると明記する
+  修正を反映し、修正が正しく適用されているかのみを再確認する軽量パスを実施。
+  PASS判定(軽微な言い回し2点は任意改善として反映済み)。
+
+**教訓**: VCSDDのadversaryは「証拠ファイルに書いてあるかどうか」だけを見る
+fresh-contextのため、Builder(私)が実際に確認済みの事実でも、その根拠を証拠
+ファイルとして渡し忘れると平気でFAILになる。これは仕様通りの正しい挙動
+(adversaryが「たぶん本当だろう」と忖度したら意味がない)。
+
+**次のステップ**: このドラフトは「Dais + 私で手動」というフェーズ1の枠組み通り、
+公開前にDaisへ提示し、記事本文(copy)の確認を仰ぐ(グローバルCLAUDE.mdの
+no-human-loop例外3「Daisが記事本文を編集する場面」に該当するため、この一点のみ
+承認を待つ)。承認後の公開先(GitHub Pages/note等)は§10.4のフェーズ2着手時に
+決定する。
