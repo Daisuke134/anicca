@@ -135,6 +135,12 @@ the SAME mechanism into the unattended daily loop so no human/Opus ever triggers
   code). REQ-23's branch-selection logic SHALL consult THIS ratio-derived effective mode, not a raw binary
   `AUTONOMY` flag read independently — a test SHALL prove that setting the ratio to "1-in-N" actually produces
   N-1 Mode-A wakes and 1 Mode-B wake over N consecutive wakes, not merely that the ratio value is stored.
+  **Malformed-ratio SHALL fail closed to Mode A, never to Mode B.** IF the ratio config is missing/never
+  initialized (first boot), OR N=0, OR N is negative/non-integer/otherwise malformed, THEN the effective mode
+  SHALL resolve to Mode A (draft-only) for that wake — the safety throttle's own failure mode SHALL NEVER
+  silently widen publish frequency; a div/mod-by-zero or parse error SHALL be caught and treated identically to
+  "ratio says Mode A," not propagate as a crash or default to Mode B. Each of these boundary cases (missing,
+  zero, negative, non-integer) SHALL be a distinct tested case.
 
 ## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
 
