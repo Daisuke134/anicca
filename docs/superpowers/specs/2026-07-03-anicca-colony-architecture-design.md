@@ -1448,3 +1448,14 @@ Dais 指摘「なぜ金が少ない/trading に全部入れろ」→ 監査で�
   relayer が proxy を deploy + 両トークンを gasless sweep。検証: 0x3f06→0/0, deposit wallet→pUSD 6.891 + USDC.e 5.976(≈$12.9)。
 - ★成果★: 追加送金を待たず 両側MM が回せる資金に。実証: 両側 maker LIVE(YES 0.56 + NO 0.43, orders 0xcd75314c/0xc59559c7 status=live)。
 - 教訓: 詰まった資金は諦めず relayer transfer_erc20 で回収する(#46 = ✅完了)。次: USDC.e $5.976 も pUSD 化して全額 trading に。
+
+### §17.3 STEP 1 継続実行(2026-07-04)= 全額を trading に + MM 監視
+現状: deposit wallet 0x904B50d2 = pUSD 6.891(取引中)+ USDC.e 5.976(未変換)+ Morocco建玉 $1.01。両側MM LIVE。
+実行:
+1. ★USDC.e $5.976 を pUSD 化して全額 trading に★(Dais「trading に全部入れろ」):
+   ① transfer_erc20 で USDC.e を deposit wallet → EOA 0x810f(relayer gasless)
+   ② Relay で 0x810f の USDC.e(Polygon)→ pUSD(Polygon)→ deposit wallet へ(0x810f は MATIC gas 7.27 有)
+   → deposit wallet pUSD ≈ 12.8 に。
+2. 両側MM の約定/LP報酬を監視 → realized profit>0 を台帳へ。
+3. Dais の Solana 入金が来たら Relay で pUSD 追加 → 元本を積む。
+原則: 実 realized profit が出るまで 記事/launch はしない(no-scam)。
