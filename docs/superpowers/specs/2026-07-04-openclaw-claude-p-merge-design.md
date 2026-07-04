@@ -860,3 +860,25 @@ requirement for this campaign, you can join with a brand new page.」と明記
 から最低フォロワー数を読み取り、保有アカウントの実フォロワー数(0)を下回る
 campaignを除外するロジックが必要。IG対応17件の中から、フォロワー要件が低い/
 無いcampaignを探すのが次の具体的な一歩。
+
+### 18.2 構造的制約の判明(fresh evidence、Join実試行×2件)
+
+- thomas-rhett-content: 最低2,000フォロワー要求 → ブロック
+- susannah-joffe: 最低200フォロワー要求 → ブロック(要求は下がったが依然ブロック)
+- 別途確認: madden-content-2は既に`Ended`(budget $8,000 全額消化済み)— 一覧
+  ページの「Active」タブに表示されていても、実際には終了しているcampaignが
+  混在することも判明(SELECTにActive/budget残高チェックも必要)
+- crocs(TikTok限定、既に除外対象)だけが唯一「no follower requirement」を
+  明示していた。今回確認したIG対応14件(jackass-clips-1/bashfortheworld-memes/
+  bumble-podcast/danny-ocean/copa90/k-pops/ateez-audio-1/florie/copa90-2/
+  ice-nine-kills/jackass-clips-3/lecrae/ida-corr、susannah-joffe以外は
+  フォロワー要件を未確認)は全て`Live`状態だが、Overview記載だけでは
+  フォロワー要件の有無が判別できない(実際にJoinを試すまで不明)
+
+**結論**: promote.funの大半のcampaignは一定のフォロワー数を要求しており、
+真に0フォロワーの新規warmedアカウントで即参加できるcampaignは少数派
+(crocs=TikTok限定のみ確認済み)。IG経由で0フォロワーから収益化するには、
+①フォロワー要件0のIG campaignを探し続ける、②IGアカウントのフォロワーを
+ある程度育てる(oragnic growth、既存ig-account-warmerの範囲を超える中長期
+施策)、③現状はharnessの完成度を優先し、フォロワー要件充足は後日に回す、
+のいずれかの判断が必要(次セッションで方針決定)。
