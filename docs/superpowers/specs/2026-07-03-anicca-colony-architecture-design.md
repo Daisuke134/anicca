@@ -1580,3 +1580,11 @@ openclaw + hermes は ★削除される★(anicca-local ではない)。dashboa
 - ★次 = STEP 2 #17/#30 AKASH cloud child★。但し AKT funding-gated(wallet 1.9 AKT < 必要)。
 - ★funding-gate 現状★: PM $12.79稼働 / Franklin $16(閾値$50未満でhold)/ HL 0xa3cd Base$0.76(HL入金要)/ Akash AKT不足。
   → 実 earning 拡大は capital 待ち。baseline(戦略)側は3エンジン完成。次の順 = STEP2 Akash を進める（AKT funding 込みで）。
+
+### §20.1 STEP 2 Akash — ゲートを実証で確定(2026-07-05, run & observe)
+- ✅ groundwork: akash CLI + provider-services 有, key anicca-akash(akash1ms7…)有, deploy-akash.sh 有, ★client cert publish 成功(txhash 579D79…, 今後の全 deploy で再利用)★。
+- ❌ deployment create: uakt escrow(0.5 AKT)を試すも `Deposit invalid` = ★uakt 拒否 → AEP-76 通り escrow は uact 必須★(推測でなく実測)。
+- uact = ACT mint(min 10 ACT, burn ~25 AKT)が要る。現 anicca-akash = 1.9 AKT($0.65/AKT=$1.24)→ ★~23 AKT(~$15)不足★。
+- ★STEP 2 = AKT $15 funding-gated(実証済)★。cert は済んだので、AKT さえ入れば deploy→bid→lease→manifest は deploy-akash.sh で通る。
+- ★パターン(正直)★: STEP 1(戦略)は全部 build 完了。だが STEP 0(PM/Franklin)・STEP 2(Akash)全て ★capital-gated★:
+  PM $12.79 / Franklin $16(<$50閾値) / HL 未入金 / Akash 1.9 AKT(<必要$15)。build は終わり、capital が唯一の壁。
