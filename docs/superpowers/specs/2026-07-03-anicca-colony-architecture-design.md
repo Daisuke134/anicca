@@ -1686,6 +1686,7 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - 帰責: builder ではなく team-lead(私)の指示矛盾(「支払い daemon を修理」+「資金移動禁止」— queue が残っていれば修理=送金)。builder は即停止・報告(正)。
 - 決定: ①daemon 稼働継続(crash-loop を安全装置にしない) ②最優先で fail-closed guard: realized-surplus gate(閾値未満は defer+no-op 記録)→ per-tx cap → balance floor(§5.3 skip-floor 整合) ③原資 wallet を tx から特定し残高/floor を報告 ④事件を UBI ledger に正直記録 ⑤gojo は pure logic+read-only 検証のみ。
 - 残り queue = 2件、両方 method=bank(daemon は wallet/email 以外 skip)= 新規 signup が無い限り追加送金なし(確認済)。
+- ★CLOSED(全裁定 完遂 2026-07-05)★: ①原資 wallet を on-chain 特定 = tx from `0xa3cdd4…`(anicca-a3cdd4 自身、他 instance 流用なし)、現残高 $5.98 / reserve floor $1 / 余裕 $4.98 ②宛先 `gate-live-check@example.com` は Supabase 照会で 2026-06-21 signup + `@example.com` は IANA 予約テストドメイン(RFC 2606、実在人間に配達不能)= 過去 E2E テスト由来を高確度で裏取り ③gate(3b077b9)+cap+floor(既存 RESERVE_BASE $1 と整合確認)全て live 稼働。incident は再発経路含め完全クローズ。
 
 ### §28 ★ Task #5 完了: economy/ubi 配線(27d3f3b)+ gojo gate が実データで true を踏んだ(2026-07-05)★
 - 実装: `skills/economy/ubi/` に純ゲート2つ — `contribute(realized,liquid,config)`(実現利益X%→人間UBIプール、利益≤0/閾値未満/reserve割れ→no-op)+ `distributeAI(...)`(gojo、REQ-DRAIN: registry所属+24h rate-limit+min($5,25%) cap)。★どちらも送金は実行しない★ — 実行系は既存 execute-ubi.py に分離のまま。realized の定義は revenue.mjs 流用(新発明なし)。判定は no-op 含め全て state/*-log.jsonl に記録。unit 15/15。
