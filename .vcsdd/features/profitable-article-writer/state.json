@@ -850,7 +850,9 @@
         "type": "spec-requirement",
         "artifactPath": "specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-063"
+        ],
         "createdAt": "2026-07-04T11:18:41.982Z",
         "createdInPhase": "1a",
         "externalId": "REQ-21"
@@ -860,10 +862,36 @@
         "type": "spec-requirement",
         "artifactPath": "specs/behavioral-spec.md",
         "status": "active",
-        "linkedBeads": [],
+        "linkedBeads": [
+          "BEAD-064"
+        ],
         "createdAt": "2026-07-04T11:18:41.984Z",
         "createdInPhase": "1a",
         "externalId": "REQ-22"
+      },
+      {
+        "beadId": "BEAD-063",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-061"
+        ],
+        "createdAt": "2026-07-04T11:19:42.187Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-22"
+      },
+      {
+        "beadId": "BEAD-064",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-062"
+        ],
+        "createdAt": "2026-07-04T11:19:42.190Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-23"
       }
     ]
   },
@@ -894,5 +922,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T11:18:41.985Z"
+  "updatedAt": "2026-07-04T11:19:42.190Z"
 }
