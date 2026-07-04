@@ -48,10 +48,20 @@ def fetch_live(tid, cdp, campaign_slug):
 
     time.sleep(2)
     cdp.click_by_text(tid, "Select All")
-    time.sleep(1)
 
-    text = cdp.evaluate(tid, "document.body.innerText") or ""
-    m = re.search(r"requires at least ([\d,]+) followers", text)
+    # POLL for the follower-requirement warning instead of a single fixed sleep: it is
+    # rendered by an async per-account check that does not always finish within 1s. A
+    # 2026-07-04 live run proved this race: the fixed 1s wait saw no warning yet, clicked
+    # submit, and reported joined=True while the modal was STILL open with the warning
+    # (confirmed by an out-of-band screenshot minutes later) -- a fabricated success.
+    _FOLLOWER_RE = re.compile(r"requires at least ([\d,]+) followers")
+    m = None
+    for _ in range(8):  # up to ~8s
+        text = cdp.evaluate(tid, "document.body.innerText") or ""
+        m = _FOLLOWER_RE.search(text)
+        if m:
+            break
+        time.sleep(1)
     if m:
         min_followers = int(m.group(1).replace(",", ""))
         cdp.click_by_text(tid, "Cancel")
@@ -61,6 +71,20 @@ def fetch_live(tid, cdp, campaign_slug):
     if not submit.get("found"):
         return {"joined": False, "reason": "join-button-not-found", "min_followers": None}
     time.sleep(2)
+
+    # VERIFY the submit actually took effect -- do not trust "we found and clicked the
+    # button" as success. If the follower warning (or the modal itself) is still present,
+    # the click was rejected client-side and nothing was actually joined.
+    text_after = cdp.evaluate(tid, "document.body.innerText") or ""
+    m_after = _FOLLOWER_RE.search(text_after)
+    if m_after:
+        min_followers = int(m_after.group(1).replace(",", ""))
+        cdp.click_by_text(tid, "Cancel")
+        return {"joined": False, "reason": "follower-requirement", "min_followers": min_followers}
+    if "Join with" in text_after and "Select the accounts you want to use" in text_after:
+        # modal never closed -- submit had no effect, reason unknown but NOT a success
+        cdp.click_by_text(tid, "Cancel")
+        return {"joined": False, "reason": "join-not-confirmed", "min_followers": None}
     return {"joined": True, "reason": "ok", "min_followers": None}
 
 
