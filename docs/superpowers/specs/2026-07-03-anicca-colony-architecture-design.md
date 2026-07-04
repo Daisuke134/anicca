@@ -1236,3 +1236,22 @@ Kalshi(KYC 壁) > Polymarket(programmatic 現在不能)。
 **次アクション(earn の主軸をここに移す)**: `limitless-labs-group/agents-starter` を README 読んで setup →
 oracle-arb か certainty-closer を AI 自身の Base wallet で no-human 実走 → 実 fill tx + 実 P&L → earnings ledger に実数 →
 これが記事 ART-A の「実際に稼いだ」証拠になる。
+
+### §11.4 CORRECTION: Polymarket は死んでない → 公式 py-sdk (polymarket-client) で no-human 実働(subagent1 検証 2026-07-04)
+§11.3 の「Polymarket dead」は ★古い py-clob-client-v2(PyPI 1.0.2 凍結)限定★ の話。真の道:
+- deposit wallet 設定は PUBLIC(Polymarket/ts-sdk environments.ts = builder-relayer-client と byte 一致):
+  depositWalletFactory=`0x00000000000Fb5C9ADea0298D729A0CB3823Cc07` impl=`0x58CA52ebe0DadfdF531Cde7062e76746de4Db1eB`
+  beacon=`0x7A18EDfe055488A3128f01F563e5B479D92ffc3a` proxyFactory=`0xaB45c5A4B0c941a2F231C04C3f49182e1A254052`
+  collateral(pUSD)=`0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB` exchange=`0xE111180000d2663C0091e4f400237545B87B996B`
+- deploy: DepositWalletFactory.deploy は onlyOperator → EOA 直不可。但し公式 relayer `relayer-v2.polymarket.com/submit`
+  (txType WALLET_CREATE)が operator として deploy + gas 肩代わり。EOA は署名のみ = browser/人間 不要。
+- ★ 正解 SDK = `pip install --pre polymarket-client`(Polymarket/py-sdk, 公式 unified, 2026-07-03 push)★
+  `SecureClient.create(private_key=pk)`(wallet 引数なし)= deposit wallet を client 側 CREATE2 で自動導出 →
+  relayer で deploy 済チェック → 未deploy なら `_deploy_default_deposit_wallet()` で自動 deploy → sig3 で取引。
+- API key mint も full HTTP script(SIWE): gamma-api/nonce → personal_sign(local) → /login → POST /profiles →
+  relayer-v2/auth → {apiKey}. browser 一切なし。
+- 実証 repo(proven-live-no-human 順): ①TrebuchetDynamics/polygolem(Polygon mainnet 実資金, 100% headless)
+  ②Brogawd876/polymarket-trade-engine(実注文 accept, sig3 self-derived funder)③Alchemist-X/predict-raven
+  (1.0.2→1.0.6 fix 記録)④Polymarket/py-sdk 公式。
+- ★ 次アクション: py_clob_client_v2 を捨てる → polymarket-client に移行 → SecureClient.create で deposit wallet
+  自動 deploy → pUSD($4.95 既在) or Base USDC を入金 → sig3 で実注文 → order_id + fill tx。#42/43/46/47 復活。★
