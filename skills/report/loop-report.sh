@@ -5,22 +5,31 @@
 # a display-only address, spec §6) so this version reports WHAT the loop did, not net worth.
 # Spec: docs/superpowers/specs/2026-07-04-openclaw-claude-p-merge-design.md §10.2
 #
-#   bash loop-report.sh <loop_name> <did> <result> <earned_usdc>
+#   bash loop-report.sh <loop_name> <did> <result> <earned_usdc> [evidence_url]
 #     <loop_name>    clip | affiliate | video | bounty | gig
 #     <did>          one-line natural-language summary of what happened this pass
 #                     (agent-authored — judgment stays with the agent, this tool only sends it)
 #     <result>       success | failure | queue-empty (short state word)
 #     <earned_usdc>  USDC confirmed this pass, or 0
+#     [evidence_url] optional, defaults to "none". The actual verifiable URL for this pass
+#                     (the IG reel/post you published, the PR you opened, the gig you
+#                     delivered). Agent-authored, same as <did> — this tool only sends it.
+#                     If nothing was posted/shipped this pass, pass the literal string "none".
 #
 # Dais 2026-07-04 verbatim: "if they were given that, given the credential, they have to do
 # that. If they are not given, they do not need to do [it]." -> fail-closed no-op when the
 # credential is absent, never an error, never blocks the loop that calls it (exit 0 always).
+#
+# Dais 2026-07-04 verbatim (spec §14): "I want to receive the actual video, the actual link
+# of the video, as evidence... If they just say 'yeah I've done it' there's no meaning."
+# -> evidence_url exists so the report is verifiable, not a self-reported vibe.
 set -u
 
 LOOP_NAME="${1:-unknown}"
 DID="${2:-(no summary provided)}"
 RESULT="${3:-unknown}"
 EARNED="${4:-0}"
+EVIDENCE_URL="${5:-none}"
 
 LOG="$HOME/.openclaw/logs/loop-report.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null
@@ -36,7 +45,8 @@ SUBJECT="Anicca loop report: $LOOP_NAME"
 BODY="LOOP $LOOP_NAME
 DID $DID
 RESULT $RESULT
-EARNED \$$EARNED USDC"
+EARNED \$$EARNED USDC
+EVIDENCE $EVIDENCE_URL"
 
 PAYLOAD=$(python3 -c "
 import json, sys
