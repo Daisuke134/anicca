@@ -1670,6 +1670,7 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - collector 追加: `skills/self/telemetry-collect.sh`(mother a9d08a1)が 3 body に `state/telemetry.json` を書く(colony-status.sh と一致検証済)。
 - colony-status.sh 修正2件: ①`grep -q`+pipefail の SIGPIPE 偽 STOPPED(f64831c) ②loop 対応の付け替え。
 - 残: Franklin(ed25519)/claude-p(EVM 0x904B)の signed poster 追加 = poster-builder 進行中。endpoint の Solana 対応要否も同 agent が判定。
+- ★注記(2026-07-05, poster-builder完了 + telem-builder裏取り)★: 上表「wallet」列の `0x904B50d2`(claude-p PM earner)は**資金**を保有するPolymarket deposit walletで、ERC-1167 proxyのため秘密鍵を持たずEIP-191署名は不可。telemetry の**署名**は別の専用identity `0x02Bb6b2aF70DBf2c367C1B69aCA9858BF3525502`(`~/.anicca-founder/state/telemetry-identity.json`、資金は保有しない署名専用鍵)が行う。本番dashboard-syncで検証済み: `claude-p`行の`id`(署名者)は`0x02bb…`、`net_worth_usd`は実資金wallet`0x904B50d2…`のオンチェーン残高。anicca-a3cdd4とFranklinは資金wallet=署名鍵が同一のため、この区別は claude-p のみに適用。Franklin用(`telemetry-post-franklin.mjs`)・claude-p用(`telemetry-post-claude-p.mjs`)双方のposterが稼働し、3 instance 全て alive を確認(2026-07-05)。詳細 → `docs/WALLETS.md`。
 
 ### §26 ★ self-* 完成 3本(Task #4, telem-builder, 2026-07-05)★
 - **#7 self-heal**: `skills/self/healthcheck-runtime-loop.sh`(368208a)— 3 canonical launchd instance には健全性チェックが未配線だったのが真のギャップ。KeepAlive と StartInterval で「死」の定義が違う点を純関数 `hrl_classify` で分離、DEAD/STALE は既存 self-fix.sh(Opus fixer)へエスカレーション。実証: 4 instance 全部 OK 分類 + 単体 12/12。

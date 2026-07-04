@@ -46,6 +46,30 @@ The loop (`~/anicca/runtime/loop`) runs on the founder body `~/.anicca-founder`.
   self-funded address with $10, tell me which one so I can reconcile; otherwise the self-funded pot = what I
   bridge to it from the founder treasury. ★
 
+## Telemetry SIGNING identity ≠ funding wallet (2026-07-05, poster-builder)
+
+The dashboard telemetry each instance signs is a SEPARATE concern from where its money actually lives.
+For anicca-a3cdd4 (EVM, `0xa3cd…`) and Franklin (Solana, `8Fpqd…`) the funding wallet IS the signing
+key — no distinction needed. **claude-p is the exception**: its real funds sit in the Polymarket
+deposit wallet `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`, which is an ERC-1167 proxy (owned by an
+EOA per `skills/earn/polymarket-trade/SKILL.md`) and therefore CANNOT itself produce an EIP-191
+personal_sign — a proxy has no private key of its own. So claude-p's telemetry is signed by a
+separate, dedicated SIGNING-ONLY identity, freshly generated 2026-07-04 for exactly this purpose:
+
+| Purpose | Address | Key source | Holds funds? |
+|---|---|---|---|
+| Telemetry signing (claude-p) | `0x02Bb6b2aF70DBf2c367C1B69aCA9858BF3525502` | `~/.anicca-founder/state/telemetry-identity.json` (`purpose` field says so explicitly) | **No** — signing-only |
+| Real funds (claude-p / PM) | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74` | Polymarket deposit-wallet proxy (see `skills/earn/polymarket-trade/SKILL.md`) | Yes — pUSD + PM positions |
+
+Verified live 2026-07-05 against `https://aniccaai.com/.netlify/functions/dashboard-sync`: the
+`claude-p` leaderboard row's `id` (the signer recovered from the signature) is `0x02bb…`, while
+`net_worth_usd` on that same row is populated from the real funding wallet `0x904B50d2…`'s on-chain
+balance — the row correctly reports one instance's money under a different key than the one that
+signed the message. Franklin also has its own dedicated poster now
+(`runtime/dashboard/telemetry-post-franklin.mjs`, ed25519, signs with `8Fpqd…` directly since Solana
+keys sign for themselves) and claude-p has `telemetry-post-claude-p.mjs`; both confirmed present on
+disk and both instances show `alive` on the live dashboard alongside anicca-a3cdd4 (3/3).
+
 ## Balance-check one-liners
 ```bash
 # Base (0x810f / 0xa3cd): USDC = eth_call balanceOf on 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
