@@ -1471,3 +1471,16 @@ Dais 指摘「なぜ金が少ない/trading に全部入れろ」→ 監査で�
 - ✅ market_maker = cancel-and-replace(cancel_all→再quote)で毎パスのスタック防止。両側MM LIVE(自動再配置)。
 - 稼ぎ方: ①bundle-arb 出現時に確定利益執行 ②MM 約定でスプレッド取り。realized profit は earner.log + 台帳で監視。
 - 現資金 $12.79 pUSD 全額 trading。Dais Solana 入金で拡大。実 realized profit が出るまで 記事/launch しない。
+
+### §17.5 ★ 正直な訂正: 「$25-50 で稼げる」は誤り。micro-capital trading ≈ breakeven(2026-07-04)★
+Dais の鋭い指摘「$12 使ってないのに、なぜ $20 で稼げる?」→ ★正しい。私の過大主張を訂正★:
+- LP報酬の「意味ある」プール(dailyRate $679-2264/日)は rewardsMinSize $200-1000 が必要。$20-50 では届かない。
+  低minSize市場(50/0)は存在するが報酬プールが極小(dailyRate ~0.001)= 実質ゼロ。
+- 予測市場はほぼ効率的 → 小さい taker 取引は「価格 = 確率」で ★breakeven − 手数料★。free profit は無い。
+- 従って ★$12 も $50 も、Polymarket では reliable な利益を生まない★(構造的事実)。more money≠earn。
+- ★本当の2択★:
+  (A) MM を本気で稼がせる = 実資本 $1,000+(swisstony は $1.44B で $14M)。$20 の話ではない=大きな判断。
+  (B) 資本の要らない「労働」rail で稼ぐ = ★x402(自分の推論/計算を売る)/ gig・bounty(crypto払い)/ content★。
+       これは trading 資本ゼロで、AI の「働き」から直接 USDC を得る。capital-light な AI の本命。
+- 結論: 「trading が金」は ★実資本がある時だけ真★。capital-light AI(今の我々)の no-human earn の本命は (B) の労働rail。
+  Polymarket ループは維持(コストゼロ、arb出れば拾う)が、★first real profit は x402/gig から作るべき★。
