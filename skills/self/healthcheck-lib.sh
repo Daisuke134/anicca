@@ -32,12 +32,17 @@ hc_run() {
   # — if the lock is older than 10min it is stale (each run finishes in seconds), so steal it.
   local LOCK_DIR="/tmp/.$LOOP-healthcheck.lock"
   if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    # a FRESH lock (<10min) = a live run holds it → bail. Only a STALE lock (>10min, = a hard-killed prior run) is stolen.
     local lage=$(( ( now - $(stat -f %m "$LOCK_DIR" 2>/dev/null||echo "$now") ) / 60 ))
     if [ "$lage" -ge 10 ]; then rmdir "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 0
       echo "$(date '+%F %T') stole stale lock (${lage}min)" >> "$LOG"
     else return 0; fi
   fi
-  trap 'rmdir "$LOCK_DIR" 2>/dev/null' RETURN
+  # FIND-020: close the steal TOCTOU. Two racers stealing the same stale lock could each end up with their own fresh
+  # dir; claim by PID and re-verify — if a concurrent stealer overwrote us, exactly one survives and the rest bail.
+  echo "$$" > "$LOCK_DIR/owner" 2>/dev/null; sleep 0.2
+  [ "$(cat "$LOCK_DIR/owner" 2>/dev/null)" = "$$" ] || return 0
+  trap 'rm -rf "$LOCK_DIR" 2>/dev/null' RETURN
 
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
     echo "$(date '+%F %T') give-up → self-fix.sh $LOOP" >> "$LOG"

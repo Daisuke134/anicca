@@ -31,5 +31,5 @@ LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 echo "[lm]      last-pass: $(fresh "$LMHB") | reports: $(grep -c 'loop=life-manager' "$HOME/.openclaw/logs/loop-report.log" 2>/dev/null||echo 0)"
 echo "          → PASS only if a fresh pass + a real recorded funnel change (revenue via Stripe verify)"
 echo "--- self-fix result markers (autonomous fixes) ---"
-for L in capafy reddit life-manager; do r="$HOME/.openclaw/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
+for L in capafy-loop reddit-loop life-manager-loop; do r="$HOME/.openclaw/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
 echo "--- loop-report tail (real executions) ---"; tail -4 "$HOME/.openclaw/logs/loop-report.log" 2>/dev/null
