@@ -607,6 +607,22 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★ VERIFIED EARNINGS — the brutal on-chain truth (Dais: "verify you actually earn, no dry runs") ★
+Checked the ledgers + on-chain 2026-07-04 AFTER wiring the baseline alphas:
+- earn-ledger realized net = **−$0.0037** (all hl-trade churn losses before the baseline).
+- yield aUSDC = +$0.00016 unrealized (0.315114→0.315277, real APY, tiny).
+- ★ NET: the colony is NOT net-positive yet — roughly flat, slightly negative. ★
+This is the honest VDD result: I will NOT claim "we earn money" when we don't. What IS true: (1) the baseline
+alphas now produce REAL decisions (polymarket: genuine AI edges, bets only on ≥15% edge+conf7 — verified;
+hl: trend baseline + anti-churn — shipped); (2) yield earns real positive carry (tiny). What is NOT yet true:
+sustained NET PROFIT. The binding constraint is CAPITAL — ~$15 total is split across chains for the
+experiments (Base $0.30 < its own $5 compute reserve, Polygon $5.98 idle, HL $8.70, yield $0.315), so no
+alpha can earn a MEANINGFUL amount and micro-trades are dominated by fees. PATH TO A VERIFIED POSITIVE EARN:
+(a) let the baselines RUN in the loop over many cycles (hl baseline stops the churn-loss; polymarket only
+bets real edge) and measure realized net > 0; (b) consolidate the scattered capital into the earners; (c)
+more seed capital. The recipe is built + honest; proving it EARNS at scale needs capital + runtime, not more
+of my code. This capital-vs-alpha truth IS the article's most valuable finding.
+
 ### EARN-AUDIT results (ran the ledger + skills 2026-07-04) — the HONEST state of each earner
 | earn skill | works? | realised net (all runs) | the gap |
 |---|---|---|---|
