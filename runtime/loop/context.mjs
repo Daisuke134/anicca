@@ -23,7 +23,7 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer }) {
   return {
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
@@ -31,6 +31,9 @@ export function assembleContext({ walletAddress, balanceUsdc, tier, model, recen
     // so the FORBID-this-slot / over-use steers never fired in production (the live agent kept looping).
     avoidSlot: avoidSlot || null,
     recentSlots: Array.isArray(recentSlots) ? recentSlots : [],
+    // SELF-EVAL steer (H2/H3): per-action realised P&L text so the AI sees which actions are DEAD ($0
+    // repeated) vs WORK, and changes course itself. Empty when no earn ledger yet.
+    earnSteer: typeof earnSteer === 'string' ? earnSteer : '',
     // the instance's OWN compute buffer (deploy floor) — same source as execute-yield's RESERVE. Used to
     // steer "replenish first" when liquid drops below it. Per-instance via env; never hardcoded per agent.
     reserveUsdc: typeof reserveUsdc === 'number' ? reserveUsdc : (Number(process.env.COMPUTE_RESERVE_USDC) || 5),

@@ -25,6 +25,7 @@ import { loadConfig } from './config.mjs';
 import { selectTier } from './tier.mjs';
 import { fetchUsdcBalance } from './balance.mjs';
 import { assembleContext } from './context.mjs';
+import { selfEval } from './self-eval.mjs';
 import { think } from './brain.mjs';
 import { parseToolCall } from './parse-tool-call.mjs';
 import { runSkill } from './run-skill.mjs';
@@ -194,6 +195,18 @@ async function runOneWake() {
     recentLedger = all.slice(-20);
   } catch {}
 
+  // 3b. SELF-EVAL (H2): read the EARN ledger (the outcome trace, H1) and compute per-action realised P&L,
+  // so the prompt can show the AI that e.g. hl-trade ×22 = $0 is a DEAD action. The AI then decides to
+  // stop it itself (H3) — no hardcoded "avoid hl_trade" rule; we give it the money signal, it judges.
+  let earnSteer = '';
+  try {
+    const earnLedgerPath = path.join(ANICCA_HOME, 'skills', 'earn', 'state', 'earn-ledger.jsonl');
+    const raw = await fs.readFile(earnLedgerPath, 'utf8');
+    const earnLines = raw.trim().split('\n').filter(Boolean)
+      .map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
+    earnSteer = selfEval(earnLines, { window: 25 }).steer;
+  } catch { /* no earn ledger yet → no steer */ }
+
   // 4. Loop-detect check (REQ-005). Sleeping alone did NOT break the loop — the model just re-picked the
   // same slot+args next wake (cook×19 / x402×10 with identical args, observed 2026-06-22). So when a loop
   // is detected we (a) remember the repeated slot, (b) RESET the action history so the detector doesn't
@@ -231,6 +244,7 @@ async function runOneWake() {
     activeSkillSlots,
     skillCatalog,
     positionsSummary,
+    earnSteer,
     avoidSlot,
     recentSlots: recentActions.map((a) => a.slot),
   });

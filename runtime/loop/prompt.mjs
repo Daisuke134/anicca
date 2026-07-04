@@ -195,10 +195,14 @@ export function buildUserMessage(ctx) {
   // are the instance's own (its liquid + its reserve) — nothing hardcoded per agent.
   const reserve = typeof ctx.reserveUsdc === 'number' ? ctx.reserveUsdc : 5;
   const lowLiquid = liquidityDirective(ctx.balanceUsdc, reserve);
+  // SELF-EVAL (H2/H3): the AI's OWN realised P&L per action. This is the money signal the loop was
+  // missing — it turns "you did hl_trade a lot" into "hl_trade made you $0, it's DEAD" so the AI stops it.
+  const earnSteer = typeof ctx.earnSteer === 'string' ? ctx.earnSteer : '';
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
     lowLiquid,
     recent,
+    earnSteer,
     overuse,
     avoid,
     `Decide the single most productive action now and call run_skill({slot, args}) — pick ONE slot DIRECTLY (each is a real, equal earn/action option):`,
