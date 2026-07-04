@@ -52,4 +52,8 @@ rec = {
 with open(os.environ["TRACE_FILE"], "a") as f:
     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 PY
+
+# Signed telemetry POST (#25 TELEM) — fail-safe: never affects the trade pass's own exit code above.
+timeout 20 node "$SKILL_DIR/../../../runtime/dashboard/telemetry-post-franklin.mjs" >> "$STATE_DIR/telemetry-post.log" 2>&1 || true
+
 exit "$RC"
