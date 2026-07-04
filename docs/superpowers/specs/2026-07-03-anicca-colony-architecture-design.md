@@ -1570,3 +1570,13 @@ openclaw + hermes は ★削除される★(anicca-local ではない)。dashboa
 - ★正直な開示★: 私は今 session で anicca-a3cdd4 の wallet 0xa3cd の Base USDC($8.76→$0.76)を PM engine(claude-p)の資金に Relay で使った = self-funded 間の資金移動。記録。
 - dashboard 現状: 3体とも「稼ぎ手(wallet+P&L+種別)」として未掲載。socials/lineage のみ。→ #25 TELEM で 3体登録 + #14 で描画。
 - openclaw/hermes 削除 → 旧 dashboard-sync がそこを読む場合 破綻 → dashboard-sync を 3 instance(a3cdd4/Franklin/claude-p の body state)に向け直す必要。
+
+### §20 ★ MASTER ORDER 進捗更新(2026-07-05, one-by-one)★
+- ★STEP 1 = 全3エンジンに baseline 埋め込み → ✅ DONE★（私が HL/SOL を「baseline無し」と誤判定してたが実際は既埋め）:
+  - PM ✅ market_maker.py(maker-bundle)+ bundle_arb.py。LIVE 稼働、含み +$0.95。
+  - SOL ✅ sol-trade/run.sh baseline(disciplined Jupiter swap, neutral=hold)。Franklin が実走で正しく hold 判断。
+  - HL ✅ hl-trade/SKILL.md baseline(trend-follow, uptrend=long/downtrend=short/range=NO TRADE, SL3/TP6, size≤15%, anti-churn)。
+  - H8(弱モデル用 default)= この3 baseline が H8 の実体。
+- ★次 = STEP 2 #17/#30 AKASH cloud child★。但し AKT funding-gated(wallet 1.9 AKT < 必要)。
+- ★funding-gate 現状★: PM $12.79稼働 / Franklin $16(閾値$50未満でhold)/ HL 0xa3cd Base$0.76(HL入金要)/ Akash AKT不足。
+  → 実 earning 拡大は capital 待ち。baseline(戦略)側は3エンジン完成。次の順 = STEP2 Akash を進める（AKT funding 込みで）。
