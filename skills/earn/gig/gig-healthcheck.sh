@@ -7,11 +7,22 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 #       continuity gap where the session lives but the internal scheduler silently stopped, so the
 #       loop never wakes to reply to a buyer / catch a 仮払い. Heartbeat = ~/gig/.last-pass, touched
 #       by the core at the start of every pass (see gig-cli.sh cron prompt).
+#
+# v2 (2026-07-04, self-heal-harness spec): mkdir atomic lock so overlapping healthcheck
+# runs can't race each other's restart sequence (same pattern added to the other 4 loops'
+# healthchecks — see clip-healthcheck.sh for the full writeup).
 set -uo pipefail
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
 HB="$HOME/gig/.last-pass"; STALE_MIN=90
 LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/gig/.restart-log"
+
+LOCK_DIR="/tmp/.gig-healthcheck.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  exit 0
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
+
 restart(){
   # backoff: max 5 restarts per 60min window (prevent subscription drain under persistent failure)
   mkdir -p "$HOME/gig"
