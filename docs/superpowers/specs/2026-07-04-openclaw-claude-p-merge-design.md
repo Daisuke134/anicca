@@ -1339,11 +1339,62 @@ mail報告インフラだけでなく**全6 loopの収益ロジック自体の�
 関わる可能性がある構造的懸念であり、Task #4のスコープ(mail確認)を超える
 別タスクとして切り出す(→TaskList Task #18)。
 
-### 24.5 検証計画(このspecセッション内で継続)
+### 24.5 08:41 JST自然発火を実際に待った結果 → §24.4の仮説を自己訂正
 
-08:41 JST(affiliate)・09:29 JST(bounty)の自然発火を実際に待ち、
-`~/.openclaw/logs/loop-report.log`に`loop=affiliate SENT http=200`/
-`loop=bounty SENT http=200`が現れるかをfresh evidenceとして確認する
-(ScheduleWakeupで時間指定して再訪、人為的にrun.shを直接叩いての代理発火は
-[[feedback_never_test_by_direct_posting]]に反するため行わない)。両方確認
-できた時点でTask #4をcompletedとする。
+08:41(affiliate)を過ぎても`loop-report.log`に0件のまま、`~/.openclaw/cron/
+jobs.json`(221件)にも`ba87726b`は存在しなかった。ここまでは§24.4の仮説
+(durable=trueが永続化しない)を裏付けるように見えた。**しかし比較対照として
+「確実に動いているclip」を同じ方法で調べたところ、clipの現行cronジョブも
+`jobs.json`には一件も存在しなかった**(clipは1時間ごとに14件のmail送信を
+実際に記録しており、稼働は疑いない)。つまり`~/.openclaw/cron/jobs.json`は
+これらclaude-p tmuxセッションの内部cronとは**無関係の別レジストリ**であり、
+「jobs.jsonに無い」ことは非稼働の証拠にならない。§24.4の「durable=trueが
+原因」という結論は**時期尚早だった**、と訂正する。
+
+より正確な観察: affiliate/bounty両方の`.{name}-core-last-start`
+(healthcheckのSTALE検知が使う起動マーカー、cli.sh自身がtmux起動直前に
+touchする設計)が**存在しなかった**。これは両tmuxセッションが2026-07-04
+17:36の起動以来、**一度も完了パスはおろか、起動時touchすら記録されない
+状態で15時間以上経過していた**ことを意味する(比較: 稼働中のclip-coreの
+同マーカーは2026-07-05 02:23、gigは2026-07-04 17:36で以後`~/gig/.last-pass`
+は本日07:47まで更新継続)。healthcheck.shのSTALE判定
+(`stat -f %m "$START" 2>/dev/null || date +%s`)は、マーカーファイルが
+存在しない場合に**現在時刻へフォールバックしてしまうバグ**を持っており、
+結果としてSTALE_MIN=1560分(26h)の自動restartが永久にトリガーされない
+「詰まったまま気づかれない」盲点になっていた(これはTask #18の一部として
+記録、healthcheck.shの安全側フォールバック修正が必要)。
+
+### 24.6 対応: `--restart`で再起動 → fresh evidence取得(2026-07-05 08:49 JST)
+
+healthcheck自身が同じ状況で呼ぶのと全く同じ公式復旧コマンド
+(`bash affiliate-cli.sh --restart` / `bash bounty-cli.sh --restart`)を実行
+した(run.shを直接叩いての代理投稿ではなく、既存の自己修復パスをそのまま
+起動しただけなので[[feedback_never_test_by_direct_posting]]には抵触しない)。
+
+**bounty — ✅確認完了**: 再起動後3分強で1パス完了。
+```
+2026-07-04T23:52:27Z loop=bounty SENT http=200
+2026-07-04T23:52:33Z loop=bounty SENT http=200
+```
+(UTC表記、JSTで2026-07-05 08:52 — `.bounty-core-last-pass`のmtimeと一致)。
+tmuxペイン確認: DISCOVER/GATE/TRACK実行、「追跡対象なし」「queue-empty」で
+正直に終了、AgentMail経由送信済み(exit 0)。fake-earnなし。**Task #4の
+bounty分は完了**。
+
+**affiliate — ⏳進行中**: 再起動後9分経過時点でIGアカウントのログイン
+セッションが切れている問題に遭遇し、パスワードリセットフローで自力復旧を
+試行中(ig-account-create/scripts/cdp.py経由)。honest-blockerとして継続
+監視する。
+
+### 24.7 次のステップ
+
+- affiliate: 復旧成功→投稿→mail報告のfresh evidenceを引き続き待つ、または
+  honestなfailure報告(ログイン不可)がmail報告されるのを確認する。
+  いずれかが起きればTask #4完了。
+- Task #18の範囲を訂正: 「CronCreate durable=trueの永続化」自体は今回の
+  データでは反証も確証もできていない(clip/gig等も同じくjobs.jsonに載って
+  いないため、比較対照にならない)。**真に確認された問題は
+  healthcheck.shのSTALE検知フォールバックが「マーカー不在→現在時刻扱い」
+  になっている点**(全6 loop共通のhealthcheck.shパターンに同じ実装、
+  `stat ... || date +%s`)。Task #18のdescriptionをこの訂正済みの根本原因に
+  合わせて更新する。
