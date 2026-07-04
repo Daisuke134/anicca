@@ -8,6 +8,7 @@ SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SKILL_DIR/../state"; mkdir -p "$STATE_DIR"
 TRACE="$STATE_DIR/sol-trade.trace.jsonl"
 MAX_SPEND="${SOL_TRADE_MAX_SPEND:-0.25}"   # money-safety: per-pass LLM spend cap (USD)
+FT_MODEL="${SOL_TRADE_MODEL:-nvidia/deepseek-v4-flash}"   # FREE tool-caller: don't bleed the bankroll (FIX-C)
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -24,7 +25,7 @@ risk management. Take whatever real action you judge best right now, or explicit
 wait and say why. Keep a note of what you did for your next session. Mind your model spend: \
 your fuel comes from the same wallet."
 
-OUT=$(timeout 600 franklin-trading start --trust --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
+OUT=$(timeout 600 franklin-trading start --trust -m "$FT_MODEL" --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
 echo "$OUT" | tail -30
 
 TRACE_FILE="$TRACE" RC="$RC" OUTTAIL="$(echo "$OUT" | tail -5 | tr '\n' ' ')" python3 - <<'PY'
