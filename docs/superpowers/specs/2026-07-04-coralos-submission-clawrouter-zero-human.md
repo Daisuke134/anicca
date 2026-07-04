@@ -151,6 +151,56 @@ delivery the escrow releases funds to Anicca's wallet. Anicca ALREADY runs an x4
 | R6 | the loop runs unattended for ≥1 full cycle; telemetry-poster reports it; no human/Claude action mid-run |
 | R7 | public repo + deck + video links; submission confirmation on the Superteam listing |
 
+## Official submission requirements (verified 2026-07-04, re-scraped verbatim from the listing)
+
+- **Working demo**: a fork that runs end-to-end on devnet (WANT → BID → AWARD → DEPOSITED →
+  DELIVERED → RELEASED). One command a judge can run, plus a live Explorer link proving settlement.
+- **GitHub repo**: public. No keys committed; `.env` local only.
+- **Pitch deck (5 slides)**: prove an agent does something useful and gets paid on-chain. Must
+  cover, one point each: (1) **The customer** — agent or human? Why now? (2) **What it sells** —
+  the `deliverService`, in one line. (3) **Why they pay** — the value, and the price. (4) **The
+  economy** — one seller, a broker, a marketplace? A graph of agents? (5) **Proof** — payment
+  settling live, Explorer link, data delivered. "This slide wins" (their words).
+- **Demo video (3 min)**: Problem → Solution → Demo → Team.
+- Deadline: winner announced **2026-07-20** (submit before this).
+- **These 2 artifacts (deck outline + video outline) need ZERO code and can be drafted RIGHT NOW**
+  — tracked as D1/D2 below, in parallel with the blocked funding.
+
+## Funding-blocker log (honest, 2026-07-04 — this is what "lacking search" looked like, corrected)
+
+Dais correctly called out: the earlier attempts only read the fork's own code, never searched the
+web/official docs. Corrected by reading **solana.com/developers/guides/getstarted/solana-token-
+airdrop-and-faucets** (official Solana docs), which lists 6 real acquisition paths. Tried, in order:
+
+| # | Method | Result |
+|---|---|---|
+| 1 | `solana airdrop` (public devnet CLI) | 429 rate limit (repeated retries) |
+| 2 | raw RPC `requestAirdrop` | 429 rate limit |
+| 3 | `solana-test-validator` (local) | Works, BUT the escrow/arbiter programs (`R5NWNg9e...`,
+    `FJtuVXsyXuRKqgJBEPAXmktkd13CqStapgevzGwYktXd`) are only deployed on PUBLIC devnet — a local
+    validator has no such program, so this path cannot run the real escrow. Not usable for this. |
+| 4 | `devnet-pow` CLI (official, `cargo install devnet-pow`) | Installed OK; `mine` → **"No
+    faucets found"** — no active PoW faucet instance currently discoverable. |
+| 5 | **devnetfaucet.org** (official docs list, 48,012 SOL balance, "anonymous airdrop") | Reached
+    the form via `playwright-cli`; requires GitHub OAuth even with "anonymous" checked; OAuth
+    redirected to a GitHub LOGIN page (session cookies from an existing camofox profile did not
+    carry over into the new Playwright context — a `state-load` limitation, not a dead end, just
+    not solved this session). **Closest lead, not yet completed.** |
+| 6 | QuickNode faucet | Requires a browser wallet extension (Phantom/Solflare) connected — not
+    scriptable without a real wallet-connect UI flow. Deferred. |
+| 7 | Discord faucet bots (The 76 Devs `!gibsol`, LamportDAO `/drop`) | Not yet tried — requires
+    joining a Discord server; real option, untried this session. |
+| 8 | **Ask Tino's Shippers (Telegram, `t.me/tinosbuilders`)** | Not yet tried — the hackathon's own
+    dedicated builder-support channel; devnet-funding requests are exactly what it exists for. |
+
+**Money clarification (answering Dais directly):** devnet SOL has **zero monetary value** and
+**cannot be purchased** — it only comes from the above faucets. Sending real mainnet SOL to any
+wallet does **not** credit a devnet balance (separate ledgers). Real money IS useful for a
+SEPARATE, legitimate purpose: seeding Anicca's real mainnet wallets (already exists:
+`BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX`, Solana mainnet, human-funded Tier-1 receive
+wallet) for the Tokyo GAIN event / ClawRouter x402 spend. That is optional and NOT a fix for this
+blocker.
+
 ## The two prizes / two competitions (do not conflate)
 
 - **THEIR bounty (Imperial × Superteam, CoralOS track):** total **$5,000** — 1st **$3,000**, 2nd–5th
@@ -168,15 +218,35 @@ the next one starts.
 
 ```
 PHASE A — prove the mechanism works (brain = ChatGPT subscription, Tier 3, scaffolding only)
-  [ ] A1  Fork trilltino/solana_coralOS (public fork under our org/account)
-  [ ] A2  Fix the monorepo build: build packages/agent-runtime, link into examples/txodds
-          (this is the ERR_MODULE_NOT_FOUND from the earlier run — root-cause it, don't skip)
-  [ ] A3  Fund the devnet buyer wallet at faucet.solana.com (GitHub sign-in)
-  [ ] A4  Wire LLM_PROVIDER=openai + our ChatGPT/OpenAI key into .env (Tier 3, temporary)
-  [ ] A5  Replace deliverService() with Anicca's real output (the x402/earn-signal body)
-  [ ] A6  Run npm run dev (or npm run demo:coral for the multi-agent round) end-to-end
-  [ ] A7  VERIFY: a real Solana devnet tx lands in Anicca's seller wallet — capture the
-          Explorer link (fresh evidence, no mock, per HARD 0.31)
+  [x] A1  Fork trilltino/solana_coralOS -> github.com/Daisuke134/solana_coralOS
+  [x] A2  Fix the monorepo build: build packages/agent-runtime, link into examples/txodds
+          (root-caused: file: dependency needs agent-runtime installed+built FIRST; fixed)
+  [~] A3  ORIGINAL (superseded): funded a LOCAL validator wallet — invalid for this target,
+          the escrow program is public-devnet-only. Real A3 = get PUBLIC devnet SOL, still
+          BLOCKED (see funding-blocker log above). Next untried real options: Discord faucet
+          bots, Tino's Shippers Telegram ask, retry devnetfaucet.org OAuth properly.
+  [x] A4  Wired LLM_PROVIDER=openai + OpenAI key into .env (Tier 3, temporary) — done for the
+          (superseded) quickstart path; re-verify still wired for the corrected target.
+  [x] A5  CORRECTED + DONE: retargeted from quickstart's deliverData (WRONG — no-escrow
+          fallback per adversary finding) to examples/txodds/server/proxy.ts's
+          boundReference()/order — now sources Anicca's real on-chain net_worth/revenue from
+          aniccaai.com/dashboard.json instead of TxLine odds. RED (3/3 fail) -> GREEN (3/3
+          pass) -> pushed to the fork.
+  [ ] A6  Run the real escrow settle (npm run dev's /api/settle, or demo:coral) end-to-end —
+          BLOCKED on A3 (needs a funded public-devnet buyer wallet).
+  [ ] A7  VERIFY: real DEPOSIT + RELEASE Explorer links for the escrow lifecycle (fresh
+          evidence, no mock, HARD 0.31) — BLOCKED on A6.
+  [ ] A8  Retry devnetfaucet.org properly: either fix the GitHub-session carry-over
+          (playwright-cli state-load only updates the cookie jar, not an already-instantiated
+          page's auth state — need state-load BEFORE first navigation, or a fresh context) OR
+          use Tino's Shippers Telegram / a Discord faucet bot instead.
+
+PHASE D — submission artifacts (ZERO code required, can start NOW in parallel with A3/A6/A7)
+  [ ] D1  Draft the 5-slide deck outline (customer / what it sells / why they pay / the economy
+          / proof) — see the outline below, ready to fill once A7's Explorer link exists.
+  [ ] D2  Draft the 3-min video script (Problem -> Solution -> Demo -> Team).
+  [ ] D3  Repo cleanup pass: confirm no keys committed (.env stays local-only, .env.example
+          only in the public fork).
   ── R1b EXIT GATE: A7 must be true before Phase B starts ──
 
 PHASE B — downgrade to zero-human (brain = ClawRouter, Tier 1, the real submission)
