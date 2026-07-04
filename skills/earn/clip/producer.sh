@@ -13,7 +13,7 @@
 # only the final verified mp4 + caption land in ~/clips/queue.
 set -uo pipefail
 SKILLS="$HOME/.claude/skills/earn-clip-rewards/scripts"
-ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator"
+ENGINE="${ENGINE:-$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator}"
 PY="$ENGINE/.venv/bin/python"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
 QUEUE="$CLIP_QUEUE"; mkdir -p "$QUEUE"
