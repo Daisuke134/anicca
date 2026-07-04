@@ -640,6 +640,25 @@ strategy that works = "park idle USDC in the best-APY vault (yield) + only trade
 size." The self-funded AI CAN earn no-human via yield NOW; making trading earn = ship conservative baseline
 strategies (H8) + more capital. This is the article's honest core: what actually earns vs what's theatre.
 
+### ORDER REVERSED + 3 TRADING BASELINES + HACKATHON BACK ON (Dais 2026-07-04, latest)
+★ Dais reversed course: the hackathon IS back on — deadline TOMORROW (ends ~5–6:30pm); by then have
+EVERYTHING ready = a "cheap takeoff" of self-funded AI. Follow this, don't argue the earlier "ignore
+hackathon." ★
+★ ALL 3 TRADING SKILLS must have a tested BASE strategy that ACTUALLY carries profit, then self-improve —
+without the base, cloud-spawning is meaningless (an AI with no money can't spawn):
+  1. `hl_trade` (Hyperliquid, hl.py, LIVE) — baseline DONE (#24).
+  2. `earn/polymarket-trade` (polymarket-agent, LIVE) — baseline alpha DONE (#28).
+  3. `earn/sol-trade` = **Franklin = the "trading agent skill"** — ★ PAPER ONLY (code-confirmed: trading-
+     execute.js "This is paper") ★ → needs a LIVE execution path + baseline to earn real money. (#34)
+★ ORDER (Dais reversed): do FRANKLIN FIRST, THEN cloud/Akash spawn. Logic: first make EVERY self-funded AI
+  earn money no-human; the AIs that earn A LOT (not just some) can then pay the INITIAL INVESTMENT for a NEW
+  AI → spawn. So earning-a-lot precedes spawning. ★
+★ 3 ARTICLES to ship (hackathon assets, me=writer/Dais=editor, ai-entity-article-writer):
+  (A) "How to make AI earn money with NO human in the loop" — about Anicca, THE ENVIRONMENT.
+  (B) "We made BlockRun Franklin make money" — the Franklin live-earn proof (advert + tell Vicky).
+  (C) "How to make AI self-improve with NO human in the loop" — loop engineering + our self-heal/self-improve.
+  Plus the HACKATHON SUBMISSION: RFS#3 課題+解決 / プロダクト・技術・BM概要 / 90-sec demo / global market. ★
+
 ## ★★ MASTER EXECUTION ORDER — single source of truth, keep updated (2026-07-04) ★★
 This mirrors the task tool IN ORDER so we never lose track. My role = build harness + VERIFY; the AIs
 execute. ONE bootstrap exception (Dais 2026-07-04): I MAY run the earn skills MYSELF once to find the FIRST
