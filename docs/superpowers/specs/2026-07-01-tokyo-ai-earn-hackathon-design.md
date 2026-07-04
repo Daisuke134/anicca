@@ -96,7 +96,12 @@ Agent Economy" listing, but materially different (see §3).
 
 ## 8. Done / verification
 
-- Luma event live at a public URL (event page renders with title, date 7/11 14:00 JST, TIB
+- [x] Luma event live at a public URL (event page renders with title, date 7/11 14:00 JST, TIB
   address, online option, body copy) — verified by loading the public URL in browser.
-- Connpass event live, cross-linked.
-- Both URLs returned to owner.
+  **https://lu.ma/atfpxptu** (re-verified live 2026-07-05).
+- [x] Connpass event live, cross-linked. **https://connpass.com/event/399618/** — DONE
+  2026-07-05 via CloakBrowser daily-driver (CDP :9222). Title/date(2026/07/11 14:00-17:00)/venue
+  (TIB, Marunouchi, map pinned)/capacity(80)/price(free)/full Japanese body copy from §6/host
+  (Anicca・Daisuke Narita) all verified live on the public (non-edit) page. Cross-links to the
+  Luma page. Published (公開中), not draft.
+- [x] Both URLs returned to owner.
