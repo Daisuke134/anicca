@@ -252,3 +252,26 @@ Dais から disk-cleaner の安全性 + claude-p/ClawRouter の実稼働状況�
 
 タスク化(#6〜#8、TaskList参照): #6 ClawRouter producer経路E2E確認、#7 tmuxソケット消失原因
 +healthcheck重複防止、#8 cookie復号失敗の根本解決(camofox Firefox cookie方式へ切替、実装中)。
+
+7. **healthcheck v2の再発 + auto-reap実験の失敗(2026-07-04、Task #10と合流)**: v2
+   push後も再度重複が発生(04:55/10:51/15:46/17:01の4世代×4loop、最大32プロセス)。
+   原因は「v2のpkillはDEAD判定時にのみ発動、しかしソケット置換後はhas-sessionが
+   ずっとtrueを返すので、過去の孤立プロセスは一度も掃除されない」設計上の穴。
+   「ALIVE時にも孤立プロセスを掃除する」v3を2パターン試行:
+     ① tmuxの`pane_pid`を正規プロセスの目印にする方式
+     ② 起動時刻が最新のものを正規プロセスとみなす方式
+   **両方とも実機で唯一生きている正規プロセスを誤って"孤立"と判定しkillしてしまい、
+   セッション自体を落とす事故を2回再現**(ALIVE→"no server running")。外部プロセスから
+   「N個の同名プロセスのうちどれが本物か」を安全に判定する手段が無いと判断し、
+   ★ auto-reapは撤回、v2(pkill+backoffのみ)に安全側で確定 ★。既存の孤立プロセスの
+   整理は手動対応が必要(本セッションで実施、手動killで全loop 1プロセスずつに復帰確認)。
+   なお`ps aux | grep "claude --name <session> --model"`は**tmuxサーバー行 + claude本体行の
+   2つがヒットするのが正常**(1セッション=2行)— grep件数だけで重複と誤診しないよう注意
+   (本セッションでも一度誤診しかけた)。判定は必ず`tmux -S <sock> list-sessions`で行う。
+
+8. **disk容量4.4GB→3.9GB低下 + uvキャッシュ肥大化(2026-07-04、Task #10)**: 重複プロセス
+   (上記7)が並行してuv経由のpip install的処理を行い、`~/.cache/uv`が4.6GBまで肥大化、
+   `uv cache clean`自体がロック競合(300秒タイムアウト)で失敗する連鎖を確認。7の重複を
+   解消した後は`uv cache clean`が正常実行でき、disk空きは4.3GB→4.7GBまで回復。
+   `~/.cache/uv`自体のサイズ縮小は限定的(再ダウンロードで再肥大化しうる)ため、継続監視
+   が必要(disk-cleaner.shの`sweep uv 14日`条件では抑えきれない場合、閾値短縮を検討)。
