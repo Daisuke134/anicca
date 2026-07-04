@@ -543,3 +543,43 @@ evidence_urlをmail本文に含めることで、mail報告がそのまま以下
 エントリはまだゼロ**。次の自然発火(clip=21:07 JST、gig=毎時27分、video=4h毎:23分、
 affiliate=明日8:41、bounty=明日9:29)で、実際にevidence_url付きのmailが届くかを
 fresh evidenceで確認するまでがTask #3/#4の完了条件。
+
+## 15. clip skillを「どこでも(クラウド/ローカル問わず)」動かすための5層分解(Dais 2026-07-04、fresh grep)
+
+**Dais指摘の核心**: 「hundreds of self-funded AIsが、クラウド上でもローカルでも、人間の
+delegateなしにclippingでお金を稼げるようにする必要がある。そのために何を変える必要が
+あるか」。既存§8(ClawRouterのig-account-create実行不可能性)の発見を、clip skill全体に
+一般化して層ごとに整理する(一次ソース確認済み、推測ではない)。
+
+### 15.1 fresh grep結果(依存箇所の一次確認)
+
+- `~/anicca/skills/earn/clip/run.sh:7` に **明記**: `# captcha→CapSolver, publish→
+  autonomous. This is a LOCAL slot (needs CloakBrowser on this Mac).`
+- `~/anicca/skills/earn/clip/run.sh:81` — `curl http://localhost:${PORT}/json/list`
+  でCDP接続(Mac上のCloakBrowserプロセスへのlocalhost接続)
+- `~/anicca-project/.claude/skills/ig-reels-poster/scripts/launch_clip_browser.py` —
+  `from cloakbrowser import launch_persistent_context`、Mac専用venv
+  (`~/.openclaw/skills/_shared/venv-cloak/`)に依存
+- `~/.claude/skills/ig-account-create/SKILL.md` — `clickxy`/`getBoundingClientRect`
+  等、視覚判断が本質的に必須のステップが複数(§8で既に確認済みの内容を再確認)
+
+### 15.2 5層分解(層ごとの現状とクラウド化に必要な変更)
+
+| 層 | 現状(fresh grep根拠) | クラウド化への変更 | 難易度 |
+|---|---|---|---|
+| ①ブラウザそのもの | CloakBrowser(Mac Chromiumプロセス、CDP :9222/:9223、localhost接続) | クラウドheadlessブラウザ(browser-sh/BrowserSH等)に差し替え、接続先をlocalhostから一般化されたURLに | 中 |
+| ②アカウント作成の視覚判断 | `clickxy`/`getBoundingClientRect`必須。ClawRouterは`run_skill`単一ツールで実行不可能(§8で確定済み) | vision対応モデルによる「スクリーンショット→判断→クリック」ミニエージェント機構(vision-in-the-loop harness、既存§8案A)を新規実装 | 高(既存最大の難所) |
+| ③動画生成処理 | yt-dlp→whisper→ffmpeg、Pythonベース、ブラウザ非依存 | 依存パッケージさえ揃えれば概ねそのまま動く。cookie取得(camofoxローカルexport)のみクラウド版代替が必要 | 低 |
+| ④wallet/秘密鍵 | self-funded AIはMac上ファイルで秘密鍵保持 | クラウド環境での安全な鍵管理(BlockRun/Modal Sandbox系の既存知見を流用検討) | 中 |
+| ⑤スケジューリング | tmux常駐+claude CLI内蔵cron(Macローカルプロセス依存、§13で「session-only」問題も発覚済み) | クラウドサーバーレス環境は「常駐+内蔵cron」の概念自体が異なる。外部クラウドスケジューラから都度起動する形に再設計 | 中〜高 |
+
+### 15.3 結論・優先順位
+
+層③(動画生成)は最も移植しやすく、既存のclip-rewardsスキル資産をほぼそのまま使える。
+層①②④⑤は追加実装が必要で、特に**層②(視覚判断)が既存最大の難所**(§8 案Aと同一)。
+「ローカル vs クラウド」が実際の挙動の軸になる、という既存原則([[feedback_real_axis_local_vs_cloud_zero_human_loop]])
+の具体的な中身は、この5層それぞれに環境アダプタ(ローカル版/クラウド版)を用意し、
+同じビジネスロジック(SELECT→CLIP→POST→SUBMIT等)を環境だけ差し替えて動かす設計になる。
+
+**今回はまだ実装しない**(方針記録+層分解のみ)。実装順は既存フェーズ1(Task A1/A2、
+まずローカルのself-funded AIが1回でも稼ぐことを達成)完了後に着手する。
