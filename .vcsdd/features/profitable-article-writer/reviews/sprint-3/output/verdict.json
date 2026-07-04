@@ -85,7 +85,7 @@
     {
       "name": "implementation_correctness",
       "verdict": "PASS",
-      "findings": ["FIND-001"],
+      "findings": [],
       "evidence": [
         {
           "type": "file",
@@ -185,7 +185,7 @@
     }
   ],
   "convergenceSignals": {
-    "findingCount": 1,
+    "findingCount": 0,
     "allCriteriaEvaluated": true,
     "evaluatedCriteria": [
       "CRIT-201",
@@ -194,6 +194,7 @@
       "CRIT-204",
       "CRIT-205"
     ],
-    "duplicateFindings": []
+    "duplicateFindings": [],
+    "previousFindingCount": 1
   }
 }
