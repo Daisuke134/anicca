@@ -1,6 +1,8 @@
 """PROP-B3-annotate + B4-no-human-escalation (required:true) — bot2bot.
 
-Sprint-2 ships annotate-pr only; auto-merge SCOPE-DEFERRED to sprint-3.
+Sprint-2 shipped annotate-pr only. Sprint-3 (#27, colony spec "COLLECTIVE SELF-IMPROVEMENT — PR
+auto-merge with NO human") adds auto_merge: the gate that gh-merges a PR iff tests pass + a
+fresh-context adversary PASSed + chain-verified earnings delta is positive.
 """
 from __future__ import annotations
 
@@ -11,6 +13,7 @@ from lib.bot2bot import (  # FAIL until 2b
     post,
     poll,
     annotate_pr,
+    auto_merge,
     parse_bot2bot_issue,
 )
 
@@ -29,11 +32,70 @@ def test_annotate_pr_does_not_merge(monkeypatch):
     assert merge_calls == [], "bot2bot.annotate_pr must NOT call gh pr merge in sprint-2"
 
 
-def test_auto_merge_function_does_not_exist():
-    """Static-analysis-level: lib.bot2bot has NO auto_merge function."""
-    import lib.bot2bot
-    assert not hasattr(lib.bot2bot, "auto_merge"), \
-        "auto_merge is SCOPE-DEFERRED to sprint-3 per FIND-003 critical"
+# ─── sprint-3: REQ-MERGE auto_merge (#27) ─────────────────────────
+_GOOD_VERDICT = {"tests_pass": True, "adversary_verdict": "PASS", "earnings_delta_usd": 1.23}
+
+
+def _capture_gh(monkeypatch):
+    calls = []
+    monkeypatch.setattr("lib.bot2bot._gh_call", lambda *a, **k: (calls.append(a) or "ok"))
+    return calls
+
+
+def test_auto_merge_merges_when_all_gates_pass(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    result = auto_merge(slot="gig", pr_number=42, verdict=_GOOD_VERDICT)
+    assert result["merged"] is True
+    merge_calls = [c for c in calls if "merge" in c]
+    assert len(merge_calls) == 1
+    assert "42" in merge_calls[0]
+
+
+def test_auto_merge_rejects_when_tests_fail(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    verdict = {**_GOOD_VERDICT, "tests_pass": False}
+    result = auto_merge(slot="gig", pr_number=42, verdict=verdict)
+    assert result["merged"] is False
+    assert not any("merge" in c for c in calls), "must never merge when tests fail"
+
+
+def test_auto_merge_rejects_when_adversary_fail(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    verdict = {**_GOOD_VERDICT, "adversary_verdict": "FAIL"}
+    result = auto_merge(slot="gig", pr_number=42, verdict=verdict)
+    assert result["merged"] is False
+    assert not any("merge" in c for c in calls), "must never merge when the adversary FAILed"
+
+
+def test_auto_merge_rejects_when_earnings_delta_non_positive(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    verdict = {**_GOOD_VERDICT, "earnings_delta_usd": 0}
+    result = auto_merge(slot="gig", pr_number=42, verdict=verdict)
+    assert result["merged"] is False
+    assert not any("merge" in c for c in calls), "must never merge a non-positive (no real improvement) delta"
+
+
+def test_auto_merge_fails_closed_on_missing_verdict_keys(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    result = auto_merge(slot="gig", pr_number=42, verdict={})
+    assert result["merged"] is False, "missing verdict fields must fail-closed, never merge"
+    assert not any("merge" in c for c in calls)
+
+
+def test_auto_merge_logs_every_decision(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    _capture_gh(monkeypatch)
+    auto_merge(slot="gig", pr_number=1, verdict=_GOOD_VERDICT)
+    auto_merge(slot="gig", pr_number=2, verdict={**_GOOD_VERDICT, "tests_pass": False})
+    log = tmp_path / "loops" / "gig" / "auto-merge-log.jsonl"
+    assert log.exists()
+    lines = log.read_text().strip().split("\n")
+    assert len(lines) == 2, "both the merge and the rejection must be logged"
 
 
 # ─── PROP-B1-post ─────────────────────────────────────────────────
