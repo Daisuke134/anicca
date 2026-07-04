@@ -517,10 +517,29 @@ evidence_urlをmail本文に含めることで、mail報告がそのまま以下
 - swarm highlight記事(§10.4): 「何百のIGアカウントがこのURLの動画を投稿した」という
   具体的な実例(interesting things)を、evidence_url付きのmail報告から拾える
 
-### 14.4 Next Action
+### 14.4 実装+全5loop再登録の完了記録(2026-07-04、fresh evidence)
 
-- Task D1(新規) — `loop-report.sh`に5番目の引数`evidence_url`を追加、5つの`*-cli.sh`の
-  呼び出し箇所を更新(既にDaisが承認済みの5loop cron再登録と同じ経路で、各loop自身に
-  自己編集させるか、cli.shファイル自体を直接編集するかは実装時に判断)
-- Task D2(新規) — 更新後、次の各loopの自然発火で、実際にevidence_url付きのmailが届く
-  ことをfresh evidenceで確認(既存Task #3/#4の検証ループに統合)
+- `loop-report.sh`に5番目の引数`evidence_url`(デフォルト`none`)を実装。E2Eテストで
+  実際にAgentMail経由の本文に`EVIDENCE <url>`行が含まれることを確認(HTTP 200、
+  message id取得)。commit `20a5cf4`、`Daisuke134/anicca`(public OSS)にpush済み。
+- 5つの`*-cli.sh`全てにevidence引数(loopごとの意味は14.2表の通り)を配線。
+- **cli.sh編集だけでは稼働中cronに反映されない**(§13で判明済みの教訓)ため、
+  5loop全てで再度「CronList確認→古ければCronDelete+CronCreate」を実施:
+
+| loop | 旧job(evidence無し) | 新job(evidence込み) | スケジュール |
+|---|---|---|---|
+| clip | 2a762630 | **8447aeda** | 毎時7分 |
+| affiliate | f3bd0d92 | **ba87726b** | 毎日8:41 |
+| video | 623e7be4 | **9749d846** | 4時間毎:23分 |
+| bounty | c408deca | **e3f233ee** | 毎日9:29 |
+| gig | 2d4eed21 | **91dfea51** | 毎時27分 |
+
+全て各loop自身がCronListで「新jobのみ存在、旧job消滅」を確認済み(私が代行したのではなく、
+各loopが自分でCronDelete/CronCreate/CronListを実行)。
+
+### 14.5 残る検証(Task #3/#4、未完了)
+
+`~/.openclaw/logs/loop-report.log`はまだ手動テスト送信2件のみで、**自然発火由来のmail
+エントリはまだゼロ**。次の自然発火(clip=21:07 JST、gig=毎時27分、video=4h毎:23分、
+affiliate=明日8:41、bounty=明日9:29)で、実際にevidence_url付きのmailが届くかを
+fresh evidenceで確認するまでがTask #3/#4の完了条件。
