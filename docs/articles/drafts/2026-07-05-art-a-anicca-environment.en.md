@@ -26,7 +26,7 @@ Spinning up one Anicca instance doesn't mean launching a smart chatbot. It means
 
 Everything from here is verifiable fact, not a claim. I'm not exaggerating, and the numbers are still small.
 
-**1. A real Polymarket trade settled with zero humans involved.** The settlement transaction `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` is recorded as successful (status 0x1) on Polygon block 89,713,198. The AI decided on its own to take a position on a Morocco match outcome, and the trade settled without a browser or a human signature anywhere in the path.
+**1. A real Polymarket trade settled with zero humans involved.** The settlement transaction `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` is recorded as successful (status 0x1) on Polygon block 89,644,078. The AI decided on its own to take a position on a Morocco match outcome, and the trade settled without a browser or a human signature anywhere in the path.
 
 **2. Even the account itself was created without a human.** Polymarket requires a dedicated "deposit wallet" for trading, normally created by signing in through a browser. Anicca did it instead by having the AI's own key sign an EIP-4361 message (the SIWE standard, Sign-In With Ethereum), then handing that signature to a relayer that deployed the wallet gaslessly. Zero browser sessions, zero human credit cards or passwords.
 
