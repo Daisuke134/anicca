@@ -31,6 +31,15 @@
       "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
       "owner": "wf-a:self-spawn"
     },
+    "self/spawn-child": {
+      "track": "A",
+      "dir": "skills/self/spawn-child",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "colony spec §17-2 STEP5 / §20.1 / §20.2 / §21 / §21.1 STEP5, 2026-07-05",
+      "summary": "PREPARATION ONLY (firing deferred): read-only Akash self-spawn READINESS gate. Queries this instance's real AKT balance and compares it to spawn_cost_akt+buffer_akt (config.json) via a pure, unit-tested arithmetic gate (lib/akt-cost-gate.js) -- NOT-YET with exact shortfall, or READY with the documented funding route (Jupiter SOL->USDC -> Skip API 4-hop -> AKT -> ../spawn/scripts/akt-treasury.sh mint -> ../spawn/scripts/deploy-akash.sh). Never executes a swap/mint/send/deployment-create itself; the calling agent decides whether/when to actually fund+fire. Also ships the corrected image-independent SDL template (sdl/child.yaml, node:22-bookworm + git-clone boot, fixing the ghcr.io/conway-research default that was 401/down) which ../spawn/scripts/deploy-akash.sh now accepts via AKASH_SDL_TEMPLATE, plus a small backward-compatible RPC-endpoint-selection fix in ../spawn/scripts/{deploy-akash,akt-treasury}.sh (rpc[0] from meta.json can lack a port and fail to dial). NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) -- added directly by the builder per team-lead's Task #6 assignment; flagged for Foundation review.",
+      "owner": "wf-a:self-spawn"
+    },
     "self/issue-dev": {
       "track": "A",
       "dir": "skills/self/issue-dev",

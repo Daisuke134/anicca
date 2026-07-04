@@ -1,0 +1,10 @@
+{
+  "akash_key_name": "anicca-akash",
+  "akash_keyring_backend": "test",
+  "spawn_cost_akt": 25,
+  "buffer_akt": 1,
+  "recipient_chain": "akashnet-2",
+  "funding_route": "solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)",
+  "sdl_template": "sdl/child.yaml",
+  "_notes": "spawn_cost_akt mirrors ../spawn/scripts/akt-treasury.sh TREASURY_MINT_UAKT default (25,000,000 uakt burn to clear bme min_mint 10,000,000 uact, ~0.66 mint price, verified 2026-07-05 spec §20.1/§20.2). buffer_akt covers gas for deployment create + lease create + send-manifest (cert already published, no re-publish cost). This file holds NO judgment — spawn timing/host choice is the calling agent's, per SKILL.md."
+}
