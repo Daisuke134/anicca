@@ -37,7 +37,7 @@ function stageMessage(stage, chatId, base) {
     case "name":
       return { text: "👋 <b>Welcome to Life Manager!</b>\n\nFirst — what's your name? Just type it here.", extra: undefined };
     case "calendar":
-      return { text: "Next — connect your Google Calendar so I can see your schedule and call you before you need to leave.", extra: btn("📅 Connect Calendar") };
+      return { text: "Next — connect your Google Calendar (10 sec). Tap below: it opens your browser for a quick Google sign-in, then just come back to this chat — I'll pick up automatically.", extra: btn("📅 Connect Calendar") };
     case "phone":
       return { text: "✅ <b>Calendar connected!</b>\n\nWhat's your phone number? Type it with the country code, e.g. <code>+818012345678</code> — I'll call you before events.", extra: undefined };
     case "pay":
@@ -106,7 +106,7 @@ async function handleOnboardingText(chatId, text, row, { token, base, supaUrl, s
       // Not linked yet — carry the name in the connect link so the web saves it when binding.
       const root = (base || "https://aniccaai.com").replace(/\/$/, "");
       const link = `${root}/lm?tg=${encodeURIComponent(chatId)}&name=${encodeURIComponent(name)}`;
-      await sendMessage(token, chatId, `Nice to meet you, <b>${name}</b>! 🎉\n\nNext — connect your Google Calendar so I can see your schedule.`,
+      await sendMessage(token, chatId, `Nice to meet you, <b>${name}</b>! 🎉\n\nNext — connect your Google Calendar (10 sec). Tap below: it opens your browser for a quick Google sign-in, then come back here.`,
         { reply_markup: { inline_keyboard: [[{ text: "📅 Connect Calendar", url: link }]] } });
     }
     return "name";
