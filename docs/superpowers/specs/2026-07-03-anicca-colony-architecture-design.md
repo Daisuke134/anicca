@@ -607,6 +607,23 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★★★ THE REAL POLYMARKET ALPHA — TEMPORAL arbitrage (found by searching the web, 2026-07-04) ★★★
+My instant-arbitrage scan (0 in 34 books) was MYOPIC. The real "$100k/month" strategy (cyberk.io article +
+r/openclaw) is TEMPORAL/AVERAGING arbitrage, NOT instant buy-both:
+1. Target SHORT-DURATION markets (15-min BTC/ETH contracts) where humans OVERREACT to tiny price moves →
+   one side (YES or NO) becomes temporarily overpriced, the other cheap.
+2. ACCUMULATE whichever side is cheap AT THAT MOMENT, across MULTIPLE entries over time (legging in).
+3. TRACK your true AVERAGE cost of YES and of NO across all entries. Keep buying the cheaper side.
+4. Once `avg(YES) + avg(NO) < $1.00` → profit is GUARANTEED at resolution, direction risk GONE.
+5. Repeat many times/day → small low-risk profits COMPOUND.
+★ Why this is winnable by us (not bot-competed like instant-arb): it's about DISCIPLINE + PRECISE STATE
+(average-cost accounting) + PATIENCE, not millisecond speed. The LLM generates the STRATEGY (buy thresholds
+per side, stop-when-locked), a state layer tracks avg cost, an execution engine legs in. Once locked, the
+remaining risk is purely technical (bugs/liquidity), not financial. ★ THIS is the alpha to build for
+polymarket-trade (replaces both my LLM-edge stub AND the naive instant-arb). Solana = fast copy-trade
+(Trojan/BONKbot pattern) is the parallel. Scales with capital; at our micro-capital it earns proportionally
+small but PROVES the recipe → then the collective shares it → everyone compounds.
+
 ### ★★ THE REAL ALPHA — found by SEARCHING the repos Dais gave (2026-07-04, corrects my mistake) ★★
 Dais: "it's not difficult — hundreds of agents earn; go SEARCH the repos I gave and FIND the alpha." He is
 right — I stopped at "trading is hard" (search failure). The proven alphas (from `MrFadiAi/Polymarket-bot`,
