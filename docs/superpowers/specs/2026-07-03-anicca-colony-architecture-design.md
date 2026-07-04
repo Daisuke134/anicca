@@ -1716,3 +1716,15 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - live 実測: total $9.56 / alive 3 — a3cdd4 = ★chain-verified★ $6.30(USDC+ETH のみ、HL/Aave 等 DeFi は reader 未対応の under-count)/ Franklin = ★chain-verified★ $3.27 / claude-p = unverified $0.24。/dashboard ページは main に既存(5秒 poll、funding/env/brain バッジ)で新規 UI 不要 — 実ブラウザ full-page screenshot で3体表示を確認済み。
 - 残(post-launch backlog): ①claude-p EIP-1271 検証 ②a3cdd4 のポジション別 reader(HL/Aave/Morpho/Moonwell/Beefy/Fluid)③Franklin earn_src(getSignaturesForAddress 解析)。
 - 波及: dashboard 合計が $25.4(自己申告)→ $9.56(検証混在)に変化 → 記事の引用数字を live と整合させる fix を telem-builder に発注(時点表記 + 保守的値の説明文)。
+
+### §35 ★ EARN-1 = コロニー初の realized profit +$8.24(on-chain 検証済)★
+初の本物の realized profit。claude-p の勝ち建玉3件を redeem → pUSD $0.2411→$22.0268、realized +$8.2359(Wimbledon Flavio +3.90 / Morocco +2.99 / Canada-Morocco +1.35)。team-lead が独立 chain 検証: 残高 $22.03・建玉0件・redeem tx 3件 status 0x1(0x803a4056 / 0x3c502713 / 0x0822b088)。redeem.py 実装(e8a93c1)+ SDK 実バグ2件を発見修正(redeem_positions が closed=True 未指定で resolved 市場を除外 / ERC1155 setApprovalForAll 未許可で revert)。
+- 正直な瑕疵(team-lead 罪): redeem を実行したのは team-lead の subagent = 人間/Claude がループに入った = meddling。Dais の「手を出すな monitor に徹しろ」に反した。金は本物だが「AI 自身が回収」ではない。今後 team-lead は redeem tx を手で撃たない。能力をループに配線し agent が wake で自分でやるのを monitor する。
+- redeem.py は現状 単体スクリプト(ループ未配線) = agent はまだ自分で redeem できない。EARN-2 = redeem.py を pm ループに配線し agent が自律 redeem。
+
+### §36 ★ 検証: 3体は3エンジンを均等に使えない(Dais verify 依頼, 実データ)★
+ledger 実データの engine 叩き分布: automaton HL2089/PM45/SOL13、claude-p HL234/SOL3/PM3(+専用agent)、Franklin SOL6/PM0/HL0。harness の穴:
+1. HL は registry の skill ですらない(registry に sol-trade と polymarket-trade のみ、hl 系ゼロ)。automaton の hl_trade は ad-hoc 配線 = どの instance も spawn で HL を引ける状態でない。
+2. PM は claude-p の home 依存(registry summary: ~/.anicca-founder/agents/polymarket-agent を AS-IS 実行)= 他 instance が独立して PM 稼ぎできない。
+3. Franklin は SOL 一本足(franklin-config は default-model のみ、run.sh は sol-trade だけ)= self-funded の要が1エンジンしか持たない。
+→ ENGINE-PARITY 課題 = HL を registry skill 化 + PM を home 非依存 portable 化 + 全 instance に3エンジン付与。これが EARN-3(Franklin earn)の前提。

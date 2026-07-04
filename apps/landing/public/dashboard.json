@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-06-01T00:00:46.650Z",
+  "updated_at": "2026-07-04T21:08:00.254Z",
   "mrr": {
     "total_usd": 27,
     "by_product": {},
@@ -656,5 +656,263 @@
       "monthly_earn_usd": 0,
       "monthly_spend_usd": 0
     }
-  ]
+  ],
+  "leaderboard": [
+    {
+      "id": "0x02bb6b2af70dbf2c367c1b69aca9858bf3525502",
+      "ts": 1783192256,
+      "host": "claude-p",
+      "geo": "JP",
+      "model_live": "claude-sonnet-5",
+      "model_tier": "frontier",
+      "net_worth_usd": 0,
+      "revenue_mo_usd": 8.2297,
+      "burn_day_usd": 0,
+      "runway_days": 999,
+      "status": "alive",
+      "updated_at": "2026-07-04T19:10:57.187+00:00",
+      "log": [],
+      "breakdown": {},
+      "daily_revenue_usd": null,
+      "monthly_revenue_usd": null,
+      "revenue_by_source": null,
+      "funding": "human",
+      "env": "local",
+      "brain": "claude-p",
+      "tags": null,
+      "revenue_today_usd": null,
+      "net_worth_src": "chain",
+      "earn_src": "unverified",
+      "last_heartbeat": null,
+      "log_feed": null,
+      "chain": "polygon-proxy",
+      "stale": true,
+      "is_ours": false
+    },
+    {
+      "id": "0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21",
+      "ts": 1783199196,
+      "host": "anicca-a3cdd4",
+      "geo": "JP",
+      "model_live": "free/glm-4.7",
+      "model_tier": "free",
+      "net_worth_usd": 6.289235430920935,
+      "revenue_mo_usd": 0.02367,
+      "burn_day_usd": 0,
+      "runway_days": 999,
+      "status": "alive",
+      "updated_at": "2026-07-04T21:06:37.32+00:00",
+      "log": [
+        {
+          "ts": 1783196743,
+          "kind": "wake",
+          "note": "",
+          "slot": "cook",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783196872,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/bounty",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783196996,
+          "kind": "wake",
+          "note": "",
+          "slot": "yield",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197118,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197245,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/polymarket-trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197370,
+          "kind": "wake",
+          "note": "",
+          "slot": "token_launch",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197493,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197621,
+          "kind": "wake",
+          "note": "",
+          "slot": "x402_sell",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197746,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197870,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/video",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783197995,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/clip-producer",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198118,
+          "kind": "wake",
+          "note": "",
+          "slot": "cook",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198242,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198369,
+          "kind": "wake",
+          "note": "",
+          "slot": "yield",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198491,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/bounty",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198616,
+          "kind": "wake",
+          "note": "",
+          "slot": "earn/polymarket-trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198739,
+          "kind": "wake",
+          "note": "",
+          "slot": "token_launch",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198862,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783198989,
+          "kind": "wake",
+          "note": "",
+          "slot": "x402_sell",
+          "model": "free/glm-4.7"
+        },
+        {
+          "ts": 1783199114,
+          "kind": "wake",
+          "note": "",
+          "slot": "hl_trade",
+          "model": "free/glm-4.7"
+        }
+      ],
+      "breakdown": {
+        "hl": 8.855934,
+        "aave": 0.191305,
+        "beefy": 0,
+        "fluid": 0.501012,
+        "hlUpnl": 0.12972,
+        "liquid": 5.973802,
+        "morpho": 1.001976,
+        "bluechip": 4.296390622393807,
+        "moonwell": 1.0023233755734287
+      },
+      "daily_revenue_usd": 0.222519,
+      "monthly_revenue_usd": 0.02367,
+      "revenue_by_source": {
+        "hl": 0.12972,
+        "aave": -0.004787,
+        "fluid": 0.000964,
+        "morpho": 0.001497,
+        "bluechip": -0.335908,
+        "hl-trade": 0.2303,
+        "moonwell": 0.001884
+      },
+      "funding": "self",
+      "env": "local",
+      "brain": "claude-p",
+      "tags": null,
+      "revenue_today_usd": null,
+      "net_worth_src": "chain",
+      "earn_src": "unverified",
+      "last_heartbeat": null,
+      "log_feed": null,
+      "chain": null,
+      "stale": false,
+      "is_ours": true
+    },
+    {
+      "id": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9",
+      "ts": 1783198164,
+      "host": "Franklin",
+      "geo": "JP",
+      "model_live": "openai/gpt-5-mini",
+      "model_tier": "frontier",
+      "net_worth_usd": 3.147933,
+      "revenue_mo_usd": 0,
+      "burn_day_usd": 1.072577,
+      "runway_days": 999,
+      "status": "alive",
+      "updated_at": "2026-07-04T20:49:25.379+00:00",
+      "log": [],
+      "breakdown": {},
+      "daily_revenue_usd": null,
+      "monthly_revenue_usd": null,
+      "revenue_by_source": null,
+      "funding": "self",
+      "env": "local",
+      "brain": "proxy",
+      "tags": null,
+      "revenue_today_usd": null,
+      "net_worth_src": "unverified",
+      "earn_src": "unverified",
+      "last_heartbeat": null,
+      "log_feed": null,
+      "chain": "solana",
+      "stale": true,
+      "is_ours": false
+    }
+  ],
+  "total_net_worth_usd": 6.289235430920935,
+  "alive": 3,
+  "self_funded_pct": 0,
+  "frontier_pct": 67
 }
