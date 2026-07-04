@@ -607,6 +607,22 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★★ THE HARD TRUTH — "baseline works" ≠ "earns money" (Dais pressed, 2026-07-04) ★★
+Dais asked plainly: are hl / polymarket / Franklin ACTUALLY earning? HONEST ANSWER: NO. On-chain net ≈
+−$0.0037 (hl small losses) + polymarket $0 (0 bets) + Franklin $0 (held) + yield +$0.00016. When I said
+"baseline verified" I meant the DECISION LOGIC is correct (disciplined) — but ★ discipline only AVOIDS
+losing on noise; it does NOT create profit. Profit needs real ALPHA (an edge that beats the market), and
+that is genuinely hard. ★ Why each doesn't earn: polymarket = prediction markets are efficient, a cheap
+LLM's probability estimates don't beat the price (0 edge → 0 bets → $0); hl = profitable perp trading needs
+a real edge, a simple trend baseline + micro-capital + fees is net-negative; Franklin = $0.32 can't clear
+the fee hurdle (needs ~$50+). ★ CRITICAL REFRAME: the 3 TRADING skills may NOT be reliable earners for a
+cheap self-funded AI — beating markets is hard and I cannot manufacture alpha by wiring. The RELIABLE
+earners are: (1) YIELD (passive DeFi APY — real +, capital-limited) and (2) DEMAND-BASED (gig/x402/clip —
+real, but needs external clients/buyers). ★ STRATEGY FORK (Dais to decide): (a) chase real trading alpha
+(hard, uncertain for cheap models), or (b) pivot the "earn" proof to yield + demand-based earns, or (c)
+accept micro-capital = disciplined-not-losing and scale needs capital + real alpha + demand. I will NOT
+claim the trading skills "earn" when on-chain they do not (VDD/HONESTY).
+
 ### ★ FRANKLIN NO-HUMAN VERIFIED (#34, 2026-07-04) — mechanism proven, disciplined hold ★
 Ran Franklin FULLY no-human (`franklin-trading start --trust -m gpt-5-mini -p <baseline>`). It: (1) checked
 its live Solana wallet itself ($0.32 USDC, no gas SOL); (2) ran TradingSignal on SOL = real RSI/MACD/Bollinger
