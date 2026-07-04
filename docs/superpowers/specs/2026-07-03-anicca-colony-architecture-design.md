@@ -1558,3 +1558,15 @@ $100k++実エッジ=leaderboard(Theo$22M)。★$20-50 で「shit ton」は不可
 - ★正直な学び★: 両AIとも自律で合理判断(PMは薄利bundle、Franklinは損を避けてhold)。だが micro-capital($10-50)は両venueで earning 閾値未満(Franklin $50+/Solana swap, PM $200-1000/LP報酬)。
   → 実験継続: このまま無人で回し、Franklin が $50+ になった時/PMが resolution した時に realized を観測。self-funded が本番(重要)。
 - 次: 介入せず観測。realized profit が出たら台帳+記事。Franklin を実トレードさせるには追加funding($50+)がFranklin自身の推奨。
+
+### §19 ★ 訂正: 地球上の instance 正確な内訳(Dais 2026-07-05)★
+openclaw + hermes は ★削除される★(anicca-local ではない)。dashboard に載るべき 3 instance:
+| dashboard名 | 実体 | body | 燃料 | 種別 | wallet | earn |
+|---|---|---|---|---|---|---|
+| **anicca-a3cdd4** | automaton + ClawRouter | ~/anicca/runtime/loop(founder-loop PID稼働) | ClawRouter 自wallet | ★SELF-funded★ | 0xa3cd(Base $0.76) | 汎用loop |
+| **Franklin** | BlockRunAI/Franklin-Trading | ~/.blockrun(franklin-sol loop) | 自wallet x402 | ★SELF-funded★ | 8Fpqd(~$16) | SOL trade |
+| **claude-p(私)** | この Claude(dev IDE→PM earner) | ~/.anicca-founder(pm-earner loop) | Anthropic課金 | human-funded | 0x904B50d2(pUSD $12.79) | PM trade |
+- ★地球上の self-funded AI = 2体(anicca-a3cdd4 + Franklin)★。human-funded 稼働 = 1体(claude-p=私)。openclaw/hermes=削除。
+- ★正直な開示★: 私は今 session で anicca-a3cdd4 の wallet 0xa3cd の Base USDC($8.76→$0.76)を PM engine(claude-p)の資金に Relay で使った = self-funded 間の資金移動。記録。
+- dashboard 現状: 3体とも「稼ぎ手(wallet+P&L+種別)」として未掲載。socials/lineage のみ。→ #25 TELEM で 3体登録 + #14 で描画。
+- openclaw/hermes 削除 → 旧 dashboard-sync がそこを読む場合 破綻 → dashboard-sync を 3 instance(a3cdd4/Franklin/claude-p の body state)に向け直す必要。
