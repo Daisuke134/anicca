@@ -50,6 +50,12 @@ async function post() {
   const net_worth_usd = +bal.toFixed(6);
   const payload = {
     id: acct.address, ts: Math.floor(Date.now() / 1000), host: "claude-p", geo: "JP",
+    // chain:"polygon-proxy" (see apps/landing/netlify/functions/_lib/telemetry-schema.js on the
+    // anicca-products side): this signing identity is deliberately NOT the funds-holding address
+    // (FUNDED_ADDRESS, above), so on-chain verification of ITS balance would be a real-but-wrong
+    // $0 — the endpoint intentionally wires no reader for this chain value and keeps the row
+    // honestly self-reported/unverified instead.
+    chain: "polygon-proxy",
     funding: "human", env: "local", brain: "claude-p",
     model_live: "claude-sonnet-5", model_tier: "frontier",
     net_worth_usd, revenue_mo_usd: +upnl.toFixed(6), burn_day_usd: 0, runway_days: 999, status: "alive",
