@@ -35,10 +35,20 @@
 >    wallet, sig_type 3); `post_order(order)` posts it. SDK = `polymarket-client`
 >    (py-sdk). ⚠️ `py-clob-client-v2` (PyPI 1.0.2) is the DEAD one — do not use.
 >
+> ### BASE STRATEGY #1 — MARKET MAKING (`market_maker.py`, the swisstony $14M/$1.44B copy)
+> Posts two-sided resting **post_only** maker limit orders (fee 0) near the book:
+> BUY YES near bid + BUY NO near bid (YES+NO=1 → delta-neutral, capture spread), and
+> on rewards-enabled markets harvests Polymarket's daily LP pool. LIVE-proven 2026-07-04:
+> real resting maker order `0x73bee6545b10` (Argentina-WC YES 5@0.17, server status=live).
+> ⚠️ **CLOB min order size = 5 shares** → two-sided on a ~$0.50 market needs ~$5; LP-reward
+> eligibility needs `rewardsMinSize` ($100–1000). Earning scales with capital → this is
+> the concrete, honest reason to fund ($20–50 for real two-sided MM + LP rewards).
+>
 > ### 💵 EARNINGS LEDGER (honest — real on-chain only)
 > | date | engine | in | position / P&L | proof |
 > |---|---|---|---|---|
-> | 2026-07-04 | polymarket-v2 | ~$3 pUSD | **1.7857 shares "Morocco win 2026-07-04" YES @ 0.5599 = $0.99** (open) | order `0xdad65538…` matched; settle tx `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` (status 0x1, block 89644078); data-api confirms position |
+> | 2026-07-04 | pm-v2 taker | ~$3 pUSD | 1.7857 sh "Morocco win" YES @0.5599 = $0.99 (open) | order `0xdad65538…` matched; settle tx `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` (status 0x1) |
+> | 2026-07-04 | pm-v2 maker(MM base) | 5 sh @0.17 = $0.85 | resting maker order (spread+rebate accrues on fill) | order `0x73bee6545b10` server status=live |
 >
 > ★ FIRST REAL no-human position placed. browser=0, human-credentials=0. The number
 > moves only on real on-chain fills — this row is a verified settle tx, not a claim. ★
