@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV3(GATE 1ラウンド1-2 FAIL、致命的な設計欠陥を修正) |
+| 状態 | spec REV4(GATE 1ラウンド1-3 FAIL、月またぎ欠落/重複追記/永久ブロック/疑似コード欠如を修正) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -150,11 +150,23 @@ def measure_commission(watermark_path, ledger_record_fn, now, amazon_report_fn):
     wm = _load(watermark_path) or {"month": None, "last_commission_jpy": 0, "last_checked_at": None}
     this_month = report["asof"][:7]  # "2026-07-05 ..." → "2026-07"
     if wm["month"] != this_month:
-        # 月が変わった: Amazon側のカードも新しい月のカウントにリセットされているはず。
-        # 前月との差分計算はしない(意味が無い、リセット後の絶対値をそのまま新basisにする)。
+        # 月が変わった: Amazon側のカードも新しい月のカウントにリセットされている。
+        # ★GATE 1ラウンド3で発見(finding F2)★: 単に新basisとして黙って採用するだけだと、
+        # 月初めて確認した時点で既にAmazon側が示している金額(=今月分の実コミッション)を
+        # 一度も記録せずに失っていた(baseline化=無記録、が毎月確実に起きるバグだった)。
+        # 正しい扱い: 新月の初回確認時点の値自体を「0からの増分」として記録してから、
+        # それをbaselineにする(前月からの繰越ではなく、新月の実績として正しく計上)。
+        if report["commission_jpy"] > 0:
+            export_id = f"live-scrape-{report['asof'].replace(' ', 'T').replace(':', '')}"
+            ledger_record_fn({
+                "source": "amazon_report", "amount_jpy": report["commission_jpy"],
+                "report_date": report["asof"][:10], "report_export_id": export_id,
+                "order_items": report.get("ordered_items"),
+            })
         wm = {"month": this_month, "last_commission_jpy": report["commission_jpy"], "last_checked_at": now}
         _save(watermark_path, wm)
-        return {"status": "new-month-baseline", "commission_jpy": report["commission_jpy"]}
+        return {"status": "new-month-baseline-recorded" if report["commission_jpy"] > 0 else "new-month-baseline",
+                "commission_jpy": report["commission_jpy"]}
     delta = report["commission_jpy"] - wm["last_commission_jpy"]
     wm["last_checked_at"] = now
     if delta > 0:
@@ -210,7 +222,38 @@ adversary finding #4は正しい** — 訂正する。
    survivors[0]が既にattempts.jsonlにある場合、"already claimed"と言うだけで
    survivors[1]以降を試さない。→ **survivorsを先頭から走査し、attempts.jsonlに
    キーが無い最初の1件を選ぶ**よう修正(既存の「1 wakeにつき1件だけ新規claim」
-   という粒度は変えない、選び方だけを直す)。
+   という粒度は変えない、選び方だけを直す)。GATE 1ラウンド3指摘(finding F5)で
+   具体化、現行L51-56相当を以下に置き換える:
+   ```bash
+   attempt(){
+     local gj="$STATE/gated.json" af="$STATE/attempts.jsonl"
+     [ -f "$gj" ] || gate >/dev/null 2>&1
+     # 修正: survivors[0]固定ではなく、attempts.jsonlに未登録の最初の1件を選ぶ
+     local pick; pick=$("$PY" -c "
+import json,os
+survivors=json.load(open('$gj')).get('survivors',[])
+claimed=set()
+if os.path.exists('$af'):
+    for line in open('$af'):
+        line=line.strip()
+        if not line: continue
+        try: d=json.loads(line)
+        except Exception: continue
+        if d.get('key'): claimed.add(d['key'])
+for s in survivors:
+    k=s['repo']+'#'+str(s['issue'])
+    if k not in claimed:
+        print(json.dumps(s)); break
+" 2>/dev/null)
+     [ -n "$pick" ] || { emit "attempt: no unclaimed gated survivor to claim (all already attempted or real-USD inventory empty)"; return; }
+     # 以降(work-order書き込み)は既存ロジックのまま変更なし
+     local key; key=$("$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(d['repo']+'#'+str(d['issue']))" "$pick" 2>/dev/null)
+     "$PY" -c "import json,sys;d=json.loads(sys.argv[1]);print(json.dumps({'key':d['repo']+'#'+str(d['issue']),'repo':d['repo'],'issue':d['issue'],'bounty_usd':d.get('bounty_usd',0),'pr':None,'status':'claim','wake':sys.argv[2]}))" "$pick" "$WAKE" >> "$af"
+     emit "attempt: WORK-ORDER written for $key"
+   }
+   ```
+   (既存の重複チェック`grep -qF`は、上記のPython側`claimed`集合構築に統合済みのため
+   削除 — 同じ役割を1箇所で担う、二重実装を避ける)。
 2. **`track()`にSTALLED検知を追加**: 現状`MERGED*`のみ判定(L73)、`CLOSED`
    (mergeされずclose)を無視している。
 
@@ -225,13 +268,32 @@ adversary finding #4は正しい** — 訂正する。
    順に読むが、同じシェルプロセスが同時にそのファイルへ`>>`で書き込むと、読み取り位置と
    書き込み位置の整合性はPOSIX的に保証されない。
 
-**修正した実装方針**: `track()`のループ内では**メモリ上のリスト**に「stalledと
-判定されたkey」を溜めるだけにし、`done < "$af"`でループが完全に終了した**後**に、
-まとめて`$af`へ追記する(1回のみのファイルI/O、ループとの競合を避ける)。
+**修正した実装方針(GATE 1ラウンド3のfinding F3を反映、idempotency追加)**:
+`track()`のループ内では**メモリ上のリスト**に「stalledと判定されたkey」を溜める
+だけにし、`done < "$af"`でループが完全に終了した**後**に、まとめて`$af`へ追記する
+(1回のみのファイルI/O、ループとの競合を避ける)。**さらに、既に`status:"stalled"`の
+行が存在するkeyは、ループに入る前の時点で除外し、`gh pr view`を二度と呼ばない**
+(ラウンド3指摘: この除外が無いと毎wake重複した`stalled`行が無限に追記され続ける
+バグになる)。「最新行が正」ではなく「一度でもstalled行が出たら以後そのkeyは完全に
+スキップする」という単純な集合演算にする(append-onlyのまま、in-place編集なし):
 ```bash
 track(){
   local af="$STATE/attempts.jsonl" merged=0 tracked=0
   [ -f "$af" ] || { emit "track: no attempts yet (state/attempts.jsonl empty)"; return; }
+  # 事前に「既にstalled行が1回でも出たkey」の集合を作り、以後の処理から完全除外する
+  # (これが無いとgh呼び出し+stalled追記が毎wake重複し無限増殖する — ラウンド3 finding F3)
+  local resolved; resolved=$("$PY" -c "
+import json
+resolved=set()
+for line in open('$af'):
+    line=line.strip()
+    if not line: continue
+    try: d=json.loads(line)
+    except Exception: continue
+    if d.get('status')=='stalled' and d.get('key'):
+        resolved.add(d['key'])
+print(' '.join(sorted(resolved)))
+" 2>/dev/null)
   local stalled_keys=""   # ループ中はここに溜めるだけ、$afへは書かない
   while IFS= read -r line; do
     [ -n "$line" ] || continue
@@ -239,6 +301,7 @@ track(){
     key=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1]).get('key',''))" "$line" 2>/dev/null)
     pr=$("$PY" -c "...")
     [ -n "$repo" ] || continue
+    case " $resolved " in *" $key "*) continue;; esac   # 既にstalled確定済みならgh呼び出しごと丸ごとスキップ
     tracked=$((tracked+1))
     [ -n "$pr" ] || { echo "[bounty] track $repo (no PR yet — awaiting brain)"; continue; }
     # BOUNTY_GH_OVERRIDE: テストフック、clip run.shのCLIP_SELF_HEAL_OVERRIDEと同じ命名慣習
@@ -249,7 +312,9 @@ track(){
       CLOSED*) stalled_keys="$stalled_keys $key";;   # ループ内では溜めるだけ
     esac
   done < "$af"
-  # ループ終了後にまとめて追記(ファイルI/Oの競合を避ける)
+  # ループ終了後にまとめて追記(ファイルI/Oの競合を避ける)。resolvedに既に無いkeyのみ
+  # (同一wake内で複数回stalled判定されても1行だけ、$stalled_keysが重複を含む可能性は
+  # 無い — 1 attemptにつきループは1回しか通らないため)
   for k in $stalled_keys; do
     "$PY" -c "import json;print(json.dumps({'key':'$k','status':'stalled'}))" >> "$af"
   done
@@ -278,21 +343,30 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   現行(挿入箇所直前、`bounty-cli.sh:17`より抜粋):
   `"...then rm the file anyway. THEN (1) DISCOVER: EARN_MODE=discover bash ..."`
 
-  変更後:
+  変更後(★GATE 1ラウンド3のfinding F4を反映、タイムアウト/断念パスを追加★
+  — 追加しないと「PRが絶対に開けない難しいbounty」に永久に足止めされ、
+  このspec自体が解決しようとしている「詰まる」失敗モードを別の形で再生産して
+  しまう):
   `"...then rm the file anyway. THEN (0) CHECK FOR UNFINISHED WORK FIRST: read `
   `~/anicca/skills/earn/bounty/state/attempts.jsonl; if ANY line has status:claim `
-  `AND pr is null, that is unfinished work from a previous pass -- do NOT run `
-  `discover/gate this pass, instead ACTUALLY FINISH that bounty right now (comment `
-  `/attempt #N on that GitHub issue as Daisuke134, fork the repo, fix the issue via `
-  `VSDD RED->GREEN, open a PR referencing the issue, then update that attempts.jsonl `
-  `line setting pr to the PR number), THEN skip to step (4) TRACK below. Only if NO `
-  `unfinished claim exists, proceed to (1) DISCOVER: EARN_MODE=discover bash ..."`
+  `AND pr is null, that is unfinished work from a previous pass. Check that line's `
+  `wake field (epoch seconds at claim time): if now - wake >= 7 days (BOUNTY_STALE_DAYS), `
+  `GIVE UP on it -- append {"key":<same key>,"status":"stalled"} to attempts.jsonl `
+  `yourself (do NOT keep trying forever), then proceed to (1) DISCOVER below as normal. `
+  `Otherwise (claim is fresh, under 7 days old), do NOT run discover/gate this pass, `
+  `instead ACTUALLY FINISH that bounty right now (comment /attempt #N on that GitHub `
+  `issue as Daisuke134, fork the repo, fix the issue via VSDD RED->GREEN, open a PR `
+  `referencing the issue, then update that attempts.jsonl line setting pr to the PR `
+  `number), THEN skip to step (4) TRACK below. Only if NO unfinished claim exists at all, `
+  `proceed to (1) DISCOVER: EARN_MODE=discover bash ..."`
 
   これにより「前回のwakeでATTEMPTまで到達したが力尽きた」場合、次のwakeは
   discover/gateへ進む前に必ずこの未完了work-orderを検知し、そこで足止めされる
   (新しいbountyを探しに行けない)構造になる — clip-promoteのWITHDRAW待ちパターン
   (completeするまで同じ対象に固執する)と同じ効果を、自然言語プロンプトの
-  順序変更のみで実現する。
+  順序変更のみで実現する。ただし`BOUNTY_STALE_DAYS`(仮値7日、一次情報無いため
+  推測値)を超えたら自分でstalledとして諦め、次のbountyへ進めるようにする —
+  無限ブロックを防ぐ。
 
 ## 4. スコープ判断(YAGNI、REV2で訂正)
 
@@ -354,11 +428,22 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   実際は数行省略していた。
   検証の結果、全て正当な指摘と確認。特に(a)は§2の設計全体を作り直す必要がある
   致命的な欠陥だった。
-- **ラウンド3(REV3、本ファイル)**: (a)affiliateのMEASUREを「投稿アイテム単位」から
-  「アカウント全体の当月コミッション増分(delta)」方式に全面設計変更、
-  `report_export_id`の代替ID生成方法も明記(§2)。(b)track()の追記をループ終了後に
-  まとめて行う設計に変更、`BOUNTY_GH_OVERRIDE`テストフックを追加、「既存パターン」
-  という誤った主張を撤回(§3)。(c)§5のテスト検証方法を実際に実行可能な形に訂正
-  (新規テストフィクスチャを作る前提に変更)。(d)REQ-B3に挿入前後の正確な文言を記載
-  (§3)。(e)§1.2の引用を完全な全16行に訂正。次はこのREV3を再度fresh-context
-  adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド3**: FAIL。fresh-context Sonnet adversaryの指摘:
+  (a)★致命的★ 新month-baseline処理が、月初めて確認した時点で既にAmazon側が示す
+  金額を一度も記録せず握りつぶす構造的バグ(HARD RULE 0.24 no-fake-earnの逆:
+  no-fake-lossというべき欠落)、これが毎月確実に発生する (b) track()のstalled
+  追記にidempotencyが無く、同じkeyに対して毎wake重複したstalled行を無限に
+  追記し続ける新バグを作っていた(ラウンド2で直した競合を、別の形の未解決バグに
+  すり替えただけだった) (c) REQ-B3の「未完了work-order優先」に断念パス
+  (timeout)が無く、PRを開けない難しいbountyに永久ブロックされうる — このspec
+  自体が解決しようとしている「詰まる」失敗モードを別の形で再生産する (d)
+  REQ-B1の1点目(attempt()のsurvivor選択修正)が2点目と違い疑似コード無しで
+  実装可能性を欠く。
+  検証の結果、全て正当な指摘と確認。
+- **ラウンド4(REV4、本ファイル)**: (a)新月最初の確認時点の値をきちんと記録して
+  からbaselineにする設計に修正(§2)。(b)`track()`にresolved集合(既にstalled
+  確定済みのkey)を事前構築し、それらは`gh`呼び出しごとスキップする設計に修正、
+  重複追記を根絶(§3)。(c)REQ-B3に`BOUNTY_STALE_DAYS`(仮値7日)による自己断念
+  パスを追加、`wake`フィールドで経過日数を判定(§3)。(d)REQ-B1の1点目に完全な
+  bash実装を追加、既存の`grep -qF`重複チェックとPython側の統合を明記(§3)。
+  次はこのREV4を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
