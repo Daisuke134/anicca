@@ -48,11 +48,14 @@ function activityAndRevenue() {
     bySource[s] = +(((bySource[s] || 0) + net)).toFixed(6);
     monthly += net;
   }
-  const log_feed = mine.slice(-15).reverse().map((e) => ({
-    ts: e.ts,
-    line: `${e.source || "earn"}: ${e.task || e.wake || ""}${e.net_usdc != null ? ` (net $${(+e.net_usdc).toFixed(4)})` : ""}`.slice(0, 160),
+  // The /<host> page (apps/landing/app/[id]/AgentClient.tsx) reads the field `log` with shape
+  // {ts, kind, slot, model, note} — NOT `log_feed`. Match it exactly or the page shows
+  // "waiting for the next wake…" even though data was posted.
+  const log = mine.slice(-15).reverse().map((e) => ({
+    ts: e.ts, kind: e.source || "earn", slot: null, model: null,
+    note: `${e.task || e.wake || ""}${e.net_usdc != null ? ` (net $${(+e.net_usdc).toFixed(4)})` : ""}`.slice(0, 160),
   }));
-  return { log_feed, revenue_by_source: bySource, monthly: +monthly.toFixed(6) };
+  return { log, revenue_by_source: bySource, monthly: +monthly.toFixed(6) };
 }
 
 async function erc20Balance(rpc, token, addr) {
@@ -77,7 +80,7 @@ async function pmUnrealizedPnl(addr) {
 async function post() {
   const [bal, upnl] = await Promise.all([erc20Balance(POLY_RPC, PUSD, FUNDED_ADDRESS), pmUnrealizedPnl(FUNDED_ADDRESS)]);
   const net_worth_usd = +bal.toFixed(6);
-  const { log_feed, revenue_by_source, monthly } = activityAndRevenue();
+  const { log, revenue_by_source, monthly } = activityAndRevenue();
   const payload = {
     id: acct.address, ts: Math.floor(Date.now() / 1000), host: "claude-p", geo: "JP",
     // chain:"polygon-proxy" (see apps/landing/netlify/functions/_lib/telemetry-schema.js on the
@@ -91,7 +94,7 @@ async function post() {
     net_worth_usd,
     // revenue = REALIZED per-source (sum of net_usdc from the earn ledger). We do NOT report the
     // unrealized PnL (upnl) as revenue — paper gains are not earnings (#18 R5).
-    revenue_mo_usd: monthly, revenue_by_source, log_feed,
+    revenue_mo_usd: monthly, revenue_by_source, log,
     burn_day_usd: 0, runway_days: 999, status: "alive",
   };
   const message = JSON.stringify(payload);
