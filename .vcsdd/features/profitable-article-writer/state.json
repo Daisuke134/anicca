@@ -510,7 +510,7 @@
       {
         "beadId": "BEAD-037",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-001.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-001.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.552Z",
@@ -520,7 +520,7 @@
       {
         "beadId": "BEAD-038",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-002.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-002.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.556Z",
@@ -530,7 +530,7 @@
       {
         "beadId": "BEAD-039",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-003.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-003.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.557Z",
@@ -540,7 +540,7 @@
       {
         "beadId": "BEAD-040",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-004.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-004.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.558Z",
@@ -550,7 +550,7 @@
       {
         "beadId": "BEAD-041",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-005.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-005.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.559Z",
@@ -560,7 +560,7 @@
       {
         "beadId": "BEAD-042",
         "type": "adversary-finding",
-        "artifactPath": "reviews/sprint-1/output/findings/FIND-006.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-1/output/findings/FIND-006.json",
         "status": "resolved",
         "linkedBeads": [],
         "createdAt": "2026-07-04T07:50:56.560Z",
