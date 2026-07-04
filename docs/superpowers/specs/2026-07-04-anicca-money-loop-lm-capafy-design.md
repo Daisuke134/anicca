@@ -89,3 +89,27 @@ Verifying the TODO one-by-one surfaced a consistent pattern: **the features alre
 - Life Manager: full feature set (two-way voice, calendar, cost-fixed, monitor) → **3 test users, $0 net new**.
 - Late-notice (E1): **already built + wired + live** (notify.js via Resend, server.js:43/263). Not a gap.
 ⇒ Building MORE features (E1 Gmail upgrade, more Capafy listings) is NOT the lever. **The single bottleneck = DEMAND / distribution / getting real users.** The money loop must put its effort into DEMAND GENERATION: #10 Reddit authentic-conversation loop + LM funnel distribution, NOT more supply. Deprioritize: E1 Gmail upgrade (feature exists via Resend), Capafy publish volume (0 demand), E2 Pipedream (Composio works). Reorder the money loop: **#10 Reddit demand-gen → #8 harness that optimizes demand → measure real signups/sales**. This is the honest, data-driven pivot.
+
+## 10. SELF-IMPROVING design (Dais 2026-07-04) — both engines learn; kill the duplicate trash
+Root cause of low demand (Dais): "we're not following best practice sometimes." Fix = make BOTH engines SELF-IMPROVE (read outcomes → adjust → follow BP better), and delete the duplicate skills that caused confusion.
+
+### 10a. Dedup / refactor (the trash)
+- `capafy-autopublish` VENDORS its own `vendor/capafy-publisher` + `vendor/capafy-user` (SKILL.md: "never invoke the standalones directly"). But the cron runs the OLD `scripts/daily_publish.sh` which points at the STANDALONE `~/.openclaw/skills/capafy-publisher` (line 23) — a duplicate. This double-copy is what confused both Dais and me (I refreshed the standalone token, not the vendored one).
+- Refactor: (1) fresh token copied into the vendored configs [DONE 2026-07-04, verified code 0]; (2) repoint the cron `anicca-capafy-daily-publish` from `daily_publish.sh` → the vendored **DAILY_LOOP** (`claude -p --model sonnet` per DAILY_LOOP.md, which uses `publish_one.sh` → `vendor/capafy-publisher`); (3) DELETE the standalone `~/.openclaw/skills/{capafy-publisher,capafy-user}` + `cfo-earner-capafy` (0 cron refs) once the cron no longer references them.
+
+### 10b. Capafy self-improve loop
+Publishing already works; DEMAND is the gap → the loop must LEARN what sells:
+- **READ**: per-listing sales (`GET /agent/sales/trend`, `/agent/agents`), status, views; the winners' current pricing/structure (market search).
+- **JUDGE (agent, not hardcode)**: which of our niches/listings convert vs which are dead; are we drifting from a proven winner's structure/pricing/category; are any listings overclaiming (linter) or wrong-type (not sandbox-complete).
+- **ACT**: adjust pricing/listing copy toward the current top sellers; retire dead listings (free the ≤5 slot); build the NEXT inventory item in a PROVEN-selling niche (copy the current winner verbatim); re-publish.
+- **VERIFY**: real sales delta over weeks (not vanity "published"). STATE.md tracks niche→sales.
+- This is why it's a LOOP: the market moves; the agent re-reads winners + our sales each cycle and follows BP, instead of blindly publishing more supply.
+
+### 10c. Life Manager self-improve loop
+- **READ**: funnel (Telegram start→calendar-connect→phone→pay→retain), activation, churn, cost-per-outcome, call transcripts.
+- **JUDGE**: weakest funnel step; why users drop; what the onboarding/pitch/paywall gets wrong vs BP.
+- **ACT**: fix the one weakest step (onboarding copy, paywall, distribution to r/ADHD etc.), ship it, measure.
+- **VERIFY**: real new paid users (Stripe `lm_stripe_events`).
+
+### 10d. The harness ties them
+`claude -p` GLVS loop drives both engines: reads real revenue, picks the highest-EV self-improvement across LM + Capafy, verifies real side-effect, updates STATE.md, repeats — human + main-agent out of the loop. Reddit demand-gen (#10) feeds LM. Self-heal (money-path-monitor pattern) catches auth/expiry outages like the 6-week Capafy token death.
