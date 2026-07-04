@@ -50,6 +50,9 @@ const DEFAULTS = {
   SLEEP_BASE_S:         120,
   SLEEP_ERROR_S:        60,
   SLEEP_LOOP_DETECT_S:  300,
+  // Cap for the escalating loop_detect cooldown (index.mjs doubles SLEEP_LOOP_DETECT_S per consecutive
+  // same-slot re-offense; §24 adversary #4 — hl_trade thrashed ~25x/session against a flat 300s sleep).
+  SLEEP_LOOP_DETECT_MAX_S: 3600,
   SKILL_TIMEOUT_S:      120,
   LOOP_DETECT_WINDOW:   3,
   BALANCE_CACHE_TTL_S:  300,
@@ -59,7 +62,7 @@ const DEFAULTS = {
 };
 
 const INTEGER_KEYS = new Set([
-  'SLEEP_BASE_S', 'SLEEP_ERROR_S', 'SLEEP_LOOP_DETECT_S',
+  'SLEEP_BASE_S', 'SLEEP_ERROR_S', 'SLEEP_LOOP_DETECT_S', 'SLEEP_LOOP_DETECT_MAX_S',
   'SKILL_TIMEOUT_S', 'LOOP_DETECT_WINDOW', 'BALANCE_CACHE_TTL_S',
 ]);
 

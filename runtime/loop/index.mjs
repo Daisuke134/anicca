@@ -124,6 +124,14 @@ let recentActions = [];
 // When a loop is detected, the repeated slot is parked here and FORBIDDEN on the next wake (then cleared
 // once the model picks something else) — this is what actually breaks the cook/x402 spin (Dais 2026-06-22).
 let avoidSlot = null;
+// Escalating cooldown state (§24 adversary #4): a weak free model can ignore the prompt's "forbidden"
+// steer and re-pick the SAME dead slot a few wakes later, re-triggering loop_detect on a flat sleep
+// forever (observed live: hl_trade thrashed ~25x/session against a constant 300s cooldown). Track how
+// many CONSECUTIVE loop_detect events fired on the same slot; each one doubles the next cooldown
+// (capped) so repeat-offending costs more wall-clock time. Resets the moment the model diversifies away
+// from avoidSlot — the agent's choice is never blocked, only the enforced pause after ignoring it grows.
+let loopDetectStreak = 0;
+let loopDetectSlot = null;
 let shuttingDown = false;
 let currentChildKiller = null; // called to kill in-flight skill on SIGTERM
 
@@ -215,10 +223,15 @@ async function runOneWake() {
   const loopWindow = cfgNum(config.LOOP_DETECT_WINDOW, 3);
   if (loopWindow > 0 && isLooping(recentActions, loopWindow)) {
     avoidSlot = recentActions[recentActions.length - 1]?.slot || null;
-    process.stderr.write(`[loop] Loop detected on '${avoidSlot}' — forbidding it next wake to force diversification\n`);
+    // Same slot re-offending back-to-back → escalate; a different slot looping → fresh streak of 1.
+    loopDetectStreak = (avoidSlot && avoidSlot === loopDetectSlot) ? loopDetectStreak + 1 : 1;
+    loopDetectSlot = avoidSlot;
+    process.stderr.write(`[loop] Loop detected on '${avoidSlot}' (streak ${loopDetectStreak}) — forbidding it next wake to force diversification\n`);
     recentActions = [];
-    const sleepS = cfgNum(config.SLEEP_LOOP_DETECT_S, 300);
-    const record = formatRecord({ ts, wake_id: wakeId, kind: 'loop_detect', slot: avoidSlot, sleep_s: sleepS });
+    const baseSleepS = cfgNum(config.SLEEP_LOOP_DETECT_S, 300);
+    const maxSleepS = cfgNum(config.SLEEP_LOOP_DETECT_MAX_S, 3600);
+    const sleepS = Math.min(baseSleepS * (2 ** (loopDetectStreak - 1)), maxSleepS);
+    const record = formatRecord({ ts, wake_id: wakeId, kind: 'loop_detect', slot: avoidSlot, sleep_s: sleepS, streak: loopDetectStreak });
     await safeAppend(LEDGER_PATH, record);
     await sleepSecs(sleepS);
     return;
@@ -306,8 +319,9 @@ async function runOneWake() {
   }
 
   // 8. Execute skill. The model picked a slot — if it's not the forbidden one, the diversification worked,
-  // so clear the avoid flag.
-  if (slot !== avoidSlot) avoidSlot = null;
+  // so clear the avoid flag AND the escalating-cooldown streak (the thrash pattern broke; a fresh streak
+  // starts from 1 if this or any slot loops again later).
+  if (slot !== avoidSlot) { avoidSlot = null; loopDetectStreak = 0; loopDetectSlot = null; }
   recentActions.push({ slot, args: args || {} });
   const windowBuf = Math.max(loopWindow * 2, 10);
   if (recentActions.length > windowBuf) {

@@ -342,6 +342,57 @@ test('PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT cal
   }
 });
 
+// ── §24 adversary #4: escalating loop_detect cooldown ───────────────────────
+
+test('PROP-016b: consecutive loop_detect on the SAME slot escalates the cooldown', { timeout: 20000 }, async () => {
+  const home = makeTmpHome();
+  const ledgerPath = path.join(home, 'state', 'ledger.jsonl');
+  fs.mkdirSync(path.join(home, 'identity'), { recursive: true });
+  fs.writeFileSync(path.join(home, 'identity', 'genesis.md'), '# Anicca\nTest agent.\n');
+
+  // A model that ignores the prompt's "forbidden slot" steer entirely — always re-picks 'earn' with the
+  // same args, exactly like the live hl_trade thrash (§24 adversary #4, weak free model kept re-choosing
+  // a dead slot despite the steer). This should make loop_detect keep re-firing on the SAME slot.
+  const { server, url } = await startMockServer(() => makeToolCallResponse('earn', { slot: 'earn' }));
+
+  const mockSkillPath = path.join(os.tmpdir(), `mock-earn3-${Date.now()}.sh`);
+  fs.writeFileSync(mockSkillPath, '#!/bin/sh\necho "[earn] discover"\nexit 0\n');
+  fs.chmodSync(mockSkillPath, 0o755);
+
+  const proc = spawnLoop({
+    ANICCA_HOME: home,
+    OPENAI_BASE_URL: url,
+    ANICCA_BALANCE_OVERRIDE: '0',
+    SLEEP_BASE_S: '0',
+    SLEEP_ERROR_S: '0',
+    SLEEP_LOOP_DETECT_S: '1', // base cooldown small but non-zero so escalation is observable
+    LOOP_DETECT_WINDOW: '2', // fire after 2 identical actions — reach 2 cycles fast
+    SKILL_TIMEOUT_S: '5',
+    ANICCA_EARN_SKILL: mockSkillPath,
+  });
+
+  try {
+    // 2 wakes -> loop_detect(streak 1) -> 2 more wakes -> loop_detect(streak 2) = 6 lines minimum.
+    const lines = await waitForLines(ledgerPath, 6, 15000);
+    proc.kill('SIGTERM');
+
+    const loopDetectLines = lines.filter(l => l.kind === 'loop_detect');
+    assert.ok(loopDetectLines.length >= 2, 'expected at least 2 loop_detect cycles on the same slot');
+    const [first, second] = loopDetectLines;
+    assert.equal(first.slot, 'earn');
+    assert.equal(second.slot, 'earn');
+    assert.equal(first.streak, 1, 'first same-slot loop_detect must be streak 1 (unchanged base cooldown)');
+    assert.equal(second.streak, 2, 'second consecutive same-slot loop_detect must escalate to streak 2');
+    assert.ok(second.sleep_s > first.sleep_s, `escalated cooldown must be longer: ${second.sleep_s} > ${first.sleep_s}`);
+    assert.equal(second.sleep_s, first.sleep_s * 2, 'cooldown must double per consecutive same-slot re-offense');
+  } finally {
+    server.close();
+    proc.kill('SIGTERM');
+    fs.rmSync(home, { recursive: true, force: true });
+    fs.rmSync(mockSkillPath, { force: true });
+  }
+});
+
 // ── PROP-019: RPC failure stays on previous tier, no crash ──────────────────
 
 test('PROP-019: when balance RPC fails, loop retains previous tier and does not crash', { timeout: 15000 }, async () => {
