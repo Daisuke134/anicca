@@ -1,25 +1,36 @@
 #!/usr/bin/env bash
-# test-self-fix.sh — FIND-028: cover the two mechanisms re-patched in rounds 4-5.
-# (A) FIND-025 loop-name normalization: 'capafy' and 'capafy-loop' MUST resolve to ONE session + ONE marker.
-# (B) FIND-026 stale-lock recovery: a NON-EMPTY stale lock (owner file present) MUST be removable by the steal path
-#     (rm -rf), where the old rmdir would have failed → permanent self-heal death.
+# test-self-fix.sh — FIND-028/030/031: cover the mechanisms re-patched in rounds 4-6.
+# (A) FIND-025 loop-name normalization  (B) FIND-029/030 hang fingerprint  (C) FIND-026/031 real lock acquire/steal.
 set -uo pipefail; P=0; F=0; H="$(cd "$(dirname "${BASH_SOURCE[0]}")"&&pwd)"; SF="$H/self-fix.sh"
 a(){ echo "$2"|grep -qF "$3"&&{ echo "  ok $1"; P=$((P+1)); }||{ echo "  FAIL $1 want:[$3] got:[$2]"; F=$((F+1)); }; }
+eq(){ [ "$2" = "$3" ]&&{ echo "  ok $1"; P=$((P+1)); }||{ echo "  FAIL $1 ($2 vs $3)"; F=$((F+1)); }; }
+ne(){ [ "$2" != "$3" ]&&{ echo "  ok $1"; P=$((P+1)); }||{ echo "  FAIL $1 (both $2)"; F=$((F+1)); }; }
 
-echo "(A) normalization — short vs long form converge"
-S="$(SELF_FIX_DRYRUN=1 bash "$SF" capafy hint 2>&1)"
-L="$(SELF_FIX_DRYRUN=1 bash "$SF" capafy-loop hint 2>&1)"
+echo "(A) loop-name normalization"
+S="$(SELF_FIX_DRYRUN=1 bash "$SF" capafy hint 2>&1)"; L="$(SELF_FIX_DRYRUN=1 bash "$SF" capafy-loop hint 2>&1)"
 a "short 'capafy' → LOOP=capafy-loop" "$S" 'LOOP=capafy-loop'
-a "short 'capafy' → SESSION=anicca-selffix-capafy-loop" "$S" 'SESSION=anicca-selffix-capafy-loop'
-a "short 'capafy' → RESULT=.self-fix-capafy-loop.result" "$S" '.self-fix-capafy-loop.result'
-a "long 'capafy-loop' identical SESSION" "$L" 'SESSION=anicca-selffix-capafy-loop'
-[ "$S" = "$L" ] && { echo "  ok short==long fully identical"; P=$((P+1)); } || { echo "  FAIL short!=long"; F=$((F+1)); }
-a "life-manager short → life-manager-loop" "$(SELF_FIX_DRYRUN=1 bash "$SF" life-manager h 2>&1)" 'LOOP=life-manager-loop'
+a "short → RESULT .self-fix-capafy-loop.result" "$S" '.self-fix-capafy-loop.result'
+eq "short==long identical" "$S" "$L"
+a "life-manager → life-manager-loop" "$(SELF_FIX_DRYRUN=1 bash "$SF" life-manager h 2>&1)" 'LOOP=life-manager-loop'
 
-echo "(B) stale-lock recovery — non-empty lock must be steal-able (rm -rf, not rmdir)"
-LOCK="$(mktemp -d)/.lk"; mkdir "$LOCK"; echo 99999 > "$LOCK/owner"   # simulate a hard-killed run's non-empty lock
-rmdir "$LOCK" 2>/dev/null && { echo "  FAIL test premise: rmdir removed a non-empty dir?!"; F=$((F+1)); } || { echo "  ok premise: rmdir CANNOT remove non-empty lock (the old bug)"; P=$((P+1)); }
-rm -rf "$LOCK" 2>/dev/null; [ ! -d "$LOCK" ] && { echo "  ok rm -rf removes non-empty stale lock (the fix)"; P=$((P+1)); } || { echo "  FAIL rm -rf left lock"; F=$((F+1)); }
-grep -q 'rm -rf "$LOCK_DIR" 2>/dev/null||true' "$H/healthcheck-lib.sh" && { echo "  ok healthcheck-lib steal path uses rm -rf"; P=$((P+1)); } || { echo "  FAIL steal path not rm -rf"; F=$((F+1)); }
+echo "(B) FIND-029/030 hang fingerprint — frozen pane (only timer/tokens advance) = SAME hash; real progress = DIFF"
+BODY='⏺ Running browser step
+  ⎿  page.waitForSelector(".save-btn")'
+F1="$(printf '%s\n✢ Deploying… (3m 12s · ↓ 19.4k tokens · esc to interrupt)' "$BODY" | bash "$SF" --fingerprint)"
+F2="$(printf '%s\n✢ Deploying… (58m 40s · ↓ 77.8k tokens · esc to interrupt)' "$BODY" | bash "$SF" --fingerprint)"
+eq "frozen body, only timer/tokens changed → SAME fingerprint (hang detectable)" "$F1" "$F2"
+F3="$(printf '⏺ NEW: found the bug, editing publish_finish.sh now\n✢ Deploying… (59m · esc to interrupt)' | bash "$SF" --fingerprint)"
+ne "real new text → DIFFERENT fingerprint (progress)" "$F1" "$F3"
+
+echo "(C) FIND-026/031 real lock acquire/steal via hc_acquire_lock"
+source "$H/healthcheck-lib.sh"; now=$(date +%s)
+D="$(mktemp -d)"; LK="$D/.lk"
+hc_acquire_lock "$LK" "$now" && { echo "  ok acquire when no lock"; P=$((P+1)); } || { echo "  FAIL acquire when free"; F=$((F+1)); }
+# now a FRESH lock exists (just made) → a second acquire must REFUSE
+hc_acquire_lock "$LK" "$now" && { echo "  FAIL acquired a fresh held lock"; F=$((F+1)); } || { echo "  ok refuse fresh held lock"; P=$((P+1)); }
+# simulate a hard-killed run: NON-EMPTY stale lock (owner file, old mtime) → must be STOLEN (FIND-026)
+rm -rf "$LK"; mkdir "$LK"; echo 88 > "$LK/owner"; touch -t 202607010000 "$LK"
+hc_acquire_lock "$LK" "$now" && { echo "  ok steal NON-EMPTY stale lock (rm -rf recovery)"; P=$((P+1)); } || { echo "  FAIL could not steal non-empty stale lock"; F=$((F+1)); }
+rm -rf "$D"
 
 echo "=== self-fix: $P passed $F failed ==="; [ "$F" = 0 ]&&echo GREEN||exit 1
