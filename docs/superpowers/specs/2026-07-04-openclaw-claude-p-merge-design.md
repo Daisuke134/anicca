@@ -1044,3 +1044,17 @@ pendingのままだったため`post_reel.py`の`shared-unconfirmed`ロジック
 clip-core自身が`self_heal.py`+`reel_verify.py`の実装で**既に解決済み**。今回は
 私が実装したのではなく、fresh evidenceで動作を検証しただけ(「watch the loop,
 not do the loop's job」原則に整合)。**Task #6完了と判断してTaskList更新**。
+
+### 19.4 Dais確認(verbatim、2026-07-05): 戦略の方向性を追認
+
+> yes yeah we can start from free and then when we get followers get some
+> affiliate yes. since it is useful as content also. yes.
+
+§18.3/§19.2で判断した「まず無料の通常投稿でフォロワー/信頼を積む→貯まったら
+promote.fun等のaffiliateに進む」という順序をDaisが明示的に追認。追加の視点として
+**「フォロワーが貯まる前でも、投稿自体がコンテンツとして単体で価値を持つ」**
+(=affiliate収益がまだ無くても無駄働きではない)という位置づけが確認できた。
+
+**この確認に基づく対応**: 新規実装は不要(既存のSELECT/JOIN/decide.pyの設計が
+まさにこの順序をそのまま実装済み)。実行方針は変更せず、@aiclipsvaultの投稿数/
+フォロワー数の推移を継続監視するのみ(§11フェーズ4に記載済みの監視項目と同じ)。
