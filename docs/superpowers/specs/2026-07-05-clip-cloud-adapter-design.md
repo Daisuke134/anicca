@@ -2,12 +2,32 @@
 
 ## 開発環境
 
+**【ラウンド4で発見・訂正】対象ファイルは2つの異なるgit管理状態にまたがる**:
+- `~/.claude/skills/`(`ig-account-create/scripts/cdp.py`・`cdp_incognito.py`、
+  `promote-fun-login/scripts/register_flow.py`、`earn-clip-rewards/scripts/
+  pipeline.py`・`export_camofox_cookies.py`が実際にここにある — REV3以前の
+  「`~/anicca-project/.claude/skills/`」という記載は誤り、訂正する)は
+  **gitリポジトリではない**(`git rev-parse --show-toplevel`が
+  `fatal: not a git repository`を返すことを確認済み)。Claude Codeの
+  マシン全体・全プロジェクト共通のグローバルskillディレクトリであり、
+  worktree/ブランチ/commit/pushという通常のこのプロジェクトのgitフローが
+  そもそも適用できない。**このディレクトリへの変更は直接ファイル編集のみで
+  行い、git commit/pushの対象にしない**(対象がgit管理下に無いため、
+  HARD RULE 0.32の「spec変更=即commit+push」は物理的に適用不可 — この事実を
+  正直に明記する)。
+- `~/anicca-project/.claude/skills/ig-reels-poster/scripts/
+  launch_clip_browser.py`は**anicca-project(このリポジトリ)のgit管理下**。
+  通常通りworktree→commit→pushの対象。
+- `~/anicca`(OSS、`earn/clip`本体、`run.sh`/`producer.sh`)も通常通り
+  git管理下。
+
 | 項目 | 値 |
 |---|---|
-| worktree | `.worktrees/clip-cloud-adapter/`(実装フェーズで作成、spec自体はdev直接) |
-| ブランチ | `feature/clip-cloud-adapter` |
-| 対象repo | `~/anicca`(OSS、`earn/clip`本体) + `~/anicca-project/.claude/skills/`(ig-account-create/cdp.py系、earn-clip-rewards/pipeline.py系 — cookie処理の実体はこちらにある、§4で訂正) |
-| 状態 | spec REV4(GATE 1ラウンド1-3 FAIL、指摘反映。ラウンド4審査待ち) |
+| worktree(anicca-project分) | `.worktrees/clip-cloud-adapter/`(`launch_clip_browser.py`用) |
+| worktree(anicca OSS分) | `~/anicca`側は別途`.worktrees/clip-cloud-adapter/`(`producer.sh`用) |
+| ブランチ | `feature/clip-cloud-adapter`(git管理下の2リポジトリそれぞれで作成) |
+| 対象repo | `~/anicca`(git管理、`earn/clip`本体) + `~/anicca-project`(git管理、`launch_clip_browser.py`) + `~/.claude/skills/`(**git管理外**、cdp.py系・pipeline.py系はこちら、直接編集のみ) |
+| 状態 | spec REV5(GATE 1ラウンド1-4 FAIL、指摘反映。ラウンド5審査待ち) |
 
 ## 0. なぜこれをやるか(Dais 2026-07-05 verbatim、動機の核心)
 
@@ -216,6 +236,7 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
 | `CDP_HOST`設定時に別hostへ実際に接続できる | ローカルでCDPポートを1つ追加起動し、`CDP_HOST=127.0.0.1 CDP_PORT=<別port>`で`cdp.py url <tid>`相当の疎通(`/json/version`への到達)を確認。127.0.0.1はloopbackであり真の別hostテストではない旨を明記した上で、この段階ではネットワーク到達性の配線確認に限定する(実クラウドhostでの検証はデプロイ実機ができてから) |
 | 不到達`CDP_HOST`指定時に例外がそのまま伝播する | 存在しないport(例: `CDP_PORT=1`)を指定して`cdp.py`の関数を呼び、`ConnectionRefusedError`相当の例外がキャッチされず伝播することを確認(新規の握りつぶしをしていないことの確認) |
 | `cdp_incognito.py`/`launch_clip_browser.py`のenv化が既存呼び出し元を壊さない | 両ファイルの既存呼び出し元(grep -rl で洗い出し)を全て列挙し、env未設定時に生成される値が変更前と完全一致することをdiffで確認 |
+| `register_flow.py:124`の`CDP_HOST`対応 + 不到達時の例外伝播(ラウンド4指摘の欠落行を追加) | `register_flow.py`単体を`CDP_HOST`未設定で実行し既存と同じURLが生成されることを確認、次に存在しないport/host(例: `CDP_HOST=127.0.0.1 CDP_PORT=1`)で実行し`urllib.error.URLError`相当が握りつぶされず伝播することを確認 |
 | `COOKIE_SOURCE=env-file`が実際に機能する | `pipeline.py`の`_youtube_cookies_file()`を直接呼び出す小さいpythonテストを書き、`COOKIE_SOURCE=env-file YT_COOKIES_FILE=<テスト用ダミーファイル>`で指定パスがそのまま返ることを確認。`local-camofox`(デフォルト)では既存パスがそのまま使われることも同テストで確認 |
 | 既存のローカルE2E(clip loop実運用)が壊れない | 変更後、`earn/clip`の次の自然wakeで`~/.openclaw/state/clip-earn-ledger.jsonl`に新規`status:posted`行(またはSELECT等の正常な非エラー遷移ログ)が1件以上追加されることを確認(回帰なしの定量基準) |
 
@@ -242,5 +263,19 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
 - **ラウンド3**: FAIL(極小)。4件全てAPPLIED-CORRECTLYと確認されたが、
   ①の修正文中で新たに`import cdp`の行番号を「120行目」と誤記(正しくは113行目、
   REQ-C1自体の修正内容には影響なし、説明文のみの誤り)と指摘。
-- **ラウンド4(REV4、本ファイル)**: 上記の行番号誤記のみ修正(113行目に訂正)。
-  次はこのREV4を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド4**: FAIL。行番号誤記(113行目)は修正確認されたが、新たに
+  **開発環境ヘッダーの重大な誤り**を発見: cdp.py/cdp_incognito.py/pipeline.py/
+  export_camofox_cookies.py/register_flow.pyの実際の所在(`~/.claude/skills/`)
+  が「開発環境」表では誤って`~/anicca-project/.claude/skills/`と記載されていた
+  (本文中の7箇所の引用は全て正しく`~/.claude/skills/`だったので実害は
+  無かったが、ヘッダーだけ矛盾していた)。自分で`git rev-parse
+  --show-toplevel`を実行して確認したところ、**`~/.claude/skills/`はそもそも
+  gitリポジトリではない**(`fatal: not a git repository`)ことが判明 —
+  worktree/ブランチ/commit/pushという通常のこのプロジェクトのgitフローが
+  そもそも適用できない対象だった。また§5に`register_flow.py`のテスト行が
+  無いという副次指摘も受けた。
+- **ラウンド5(REV5、本ファイル)**: 開発環境ヘッダーを訂正し、`~/.claude/
+  skills/`がgit管理外であることを明記した上で「この対象への変更はgit
+  commit/pushの対象にしない(直接ファイル編集のみ)」と正直に方針を記録。
+  §5に`register_flow.py`用のテスト行を追加。次はこのREV5を再度fresh-context
+  adversaryにかけ、PASSするまで実装に進まない。
