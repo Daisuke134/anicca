@@ -84,8 +84,18 @@ MODEB_COUNTER_FILE="$ARTICLE_DIR/state/mode-b-wake-count"
 
 # stdout: the parsed positive-integer N (accepts a bare "N" or a "1-in-N" string). Prints NOTHING and
 # returns 1 on ANY malformed/missing input -- missing/uninitialized (raw empty), N=0, negative (rejected by
-# the [0-9]+ shape, never reaches the modulo below), or non-integer (same rejection) -- REQ-25's 4 distinct
-# fail-closed cases.
+# the [0-9]+ shape, never reaches the modulo below), non-integer (same rejection), OR a leading-zero digit
+# string (e.g. "08", "09", "1-in-08") -- REQ-25's 4 named cases PLUS the contract-review FIND-001/FIND-002
+# leading-zero-octal hazard.
+#
+# WHY 10#$n, not just a stricter regex: a plain "^[0-9]+$"-validated string like "08" is syntactically
+# all-digits, but bash's OWN arithmetic evaluator ($(( )) / numeric "[ -eq ]") parses a leading-zero digit
+# string as OCTAL, and "8"/"9" are not valid octal digits -- this raises a runtime "value too great for
+# base" error (a crash/stderr leak), not a clean fail-closed. "$((10#$n))" explicitly forces BASE-10
+# interpretation of $n, so "08" correctly normalizes to 8 (never misread as octal) regardless of leading
+# zeros. This is the single normalization point every caller of $n (both the "-eq 0" check right below and
+# the modulo consumer at the AUTONOMY branch) relies on, so the guard is applied ONCE, deliberately, here --
+# not incidentally at one call site and absent at another (FIND-002).
 _modeb_ratio_n() {
   local raw="${ARTICLE_MODEB_RATIO:-}"
   if [ -z "$raw" ] && [ -f "$MODEB_RATIO_FILE" ]; then
@@ -94,12 +104,19 @@ _modeb_ratio_n() {
   if [ -z "$raw" ]; then
     return 1
   fi
-  local n
+  local digits
   if [[ "$raw" =~ ^1-in-([0-9]+)$ ]]; then
-    n="${BASH_REMATCH[1]}"
+    digits="${BASH_REMATCH[1]}"
   elif [[ "$raw" =~ ^[0-9]+$ ]]; then
-    n="$raw"
+    digits="$raw"
   else
+    return 1
+  fi
+  # Explicit base-10 normalization (strips any leading zeros safely) -- if THIS itself somehow fails (e.g.
+  # a pathological digit string outside bash's integer range), that is "a parse error" per REQ-25 and MUST
+  # fail closed to Mode A exactly like every other malformed case, never crash the wake.
+  local n
+  if ! n=$((10#$digits)) 2>/dev/null; then
     return 1
   fi
   if [ "$n" -eq 0 ] 2>/dev/null; then
@@ -111,13 +128,22 @@ _modeb_ratio_n() {
 
 # Atomically increments and returns the install's own persistent per-wake counter (REQ-25: "1-in-N wakes
 # run Mode B" needs a runtime-mutable, cross-invocation counter, not just a stored ratio value). A corrupted
-# (non-numeric) counter file resets to 0 rather than crashing or misresolving.
+# (non-numeric, OR a leading-zero digit string like "08" -- FIND-001) counter file resets to 0 rather than
+# crashing or misresolving. Same "$((10#..))" base-10-forcing normalization as _modeb_ratio_n, applied here
+# too (FIND-002: the fix must be consistent at every arithmetic site, not just one).
 _modeb_next_wake_count() {
   local cur=0
   if [ -f "$MODEB_COUNTER_FILE" ]; then
     cur="$(cat "$MODEB_COUNTER_FILE" 2>/dev/null | tr -d '[:space:]')"
   fi
   case "$cur" in (''|*[!0-9]*) cur=0 ;; esac
+  # Base-10-force the sanitized digit string before arithmetic -- a leading-zero survivor of the above
+  # digit-only sanitizer (e.g. a file externally corrupted to "08") would otherwise hit the SAME
+  # octal-misparse hazard as the ratio value; a normalization failure here is treated as "corrupted", i.e.
+  # resets to 0, exactly like the non-digit case above.
+  if ! cur=$((10#$cur)) 2>/dev/null; then
+    cur=0
+  fi
   local nxt=$((cur + 1))
   local tmp
   tmp="$(mktemp "$ARTICLE_DIR/state/.mode-b-wake-count.XXXXXX")"
@@ -130,8 +156,17 @@ effective_mode="A"
 if [ "$AUTONOMY" = "on" ]; then
   if ratio_n="$(_modeb_ratio_n)"; then
     wake_n="$(_modeb_next_wake_count)"
-    if [ $((wake_n % ratio_n)) -eq 0 ]; then
-      effective_mode="B"
+    # FIND-002: the SAME explicit, deliberate base-10-forcing guard used inside _modeb_ratio_n's "-eq 0"
+    # check is applied HERE too, right before the modulo that actually decides effective_mode -- not just at
+    # one call site. Both $wake_n and $ratio_n are already base-10-normalized by their producer functions
+    # above, so this re-normalization should always succeed; it exists so THIS site's fail-closed behavior
+    # is deliberate/tested (identical guard, identical outcome), never incidental on bash's own arithmetic
+    # short-circuiting. Any normalization failure here (belt-and-suspenders) fails closed to Mode A, same as
+    # every other malformed-ratio case in REQ-25 -- it never crashes the wake.
+    if wake_n_safe=$((10#$wake_n)) 2>/dev/null && ratio_n_safe=$((10#$ratio_n)) 2>/dev/null; then
+      if [ $((wake_n_safe % ratio_n_safe)) -eq 0 ]; then
+        effective_mode="B"
+      fi
     fi
   fi
 fi

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-25 states 'a div/mod-by-zero or parse error SHALL be caught' (an explicit, deliberate error-handling requirement) for the ratio-consultation logic. Tracing the actual code in run.sh shows this requirement is only PARTIALLY implemented, and inconsistently between the two call sites of the same hazard: at line 105 ('if [ \"$n\" -eq 0 ] 2>/dev/null'), the author explicitly redirects stderr to /dev/null around a numeric comparison -- circumstantial evidence the author is already aware bash's numeric evaluator can raise an error here (the ONLY realistic error source for a regex-validated all-digit string reaching '-eq' is the leading-zero/octal case described in FIND-001) -- yet the identical hazard at the OTHER call site that actually performs the mod computation, line 133 ('if [ $((wake_n % ratio_n)) -eq 0 ]'), has NO such suppression and no try/catch-equivalent guard at all. This is an inconsistent, incomplete implementation of the 'SHALL be caught' requirement: one occurrence of the exact same class of error is defensively muted, the other -- the one that actually decides whether effective_mode becomes 'B' -- is not, meaning the correctness of the fail-closed behavior for this input class currently depends on incidental bash control-flow semantics (a failed arithmetic expansion happening to make the enclosing '[ ]' test evaluate false) rather than on code that was deliberately written and tested to handle it, which is what REQ-25's 'SHALL be caught' text requires.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "105,133",
+    "snippet": "if [ \"$n\" -eq 0 ] 2>/dev/null; then   # error suppressed here\n  return 1\nfi\n...\nif [ $((wake_n % ratio_n)) -eq 0 ]; then   # NOT suppressed / guarded here\n  effective_mode=\"B\"\nfi"
+  },
+  "recommendation": "Same fix as FIND-001 (reject leading-zero digit strings at the regex/validation stage in _modeb_ratio_n, before either call site can ever receive an unsafe operand) closes this gap at its source; alternatively, wrap the line-133 modulo with the same explicit error-suppression-and-fail-closed pattern already used at line 105, and add a test proving the specific behavior (not merely that it 'happens to work').",
+  "routeToPhase": "2b"
+}

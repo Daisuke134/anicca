@@ -1,0 +1,130 @@
+{
+  "sprintNumber": 4,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-4.md",
+    "contractDigest": "9145c0d2bab8c22933013680032f50304811401a157a06d3091aaf3470280477"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/lib/note_browser_common.py:221-436",
+          "description": "confirm_and_publish() independently read in full: it is genuinely the single unit owning the eyecatch/visuals gate, price/type gate+selection, the real click, and the try/except/finally exception safety, exactly as REQ-23 requires"
+        },
+        {
+          "type": "file",
+          "location": "grep -rF 'el.click(); return true;} return false;' skills/profitable-article-writer --include='*.py'",
+          "description": "independently (not trusting test-prop24a's own claim) re-ran the exact click-anchor grep myself: exactly ONE hit, lib/note_browser_common.py. Same for the get_by_text(...).first.click(timeout=4000) fallback anchor: exactly ONE hit, same file"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/run.sh (whole file, grep 'note-publish-live')",
+          "description": "independently confirmed 0 hits -- run.sh never references note-publish-live.py; REQ-21's exclusion from run.sh's call graph is unaffected by this sprint's wiring"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/note-mode-b-publish.py:63 and lib/note-publish-live.py:94",
+          "description": "both files import confirm_and_publish from note_browser_common (not a copy); neither file wraps the call in its own try/except, confirming the exception-safety wrapper genuinely lives in exactly one place"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/state/live-publishes.jsonl:9,11,13 + evidence/sprint-4-green-phase.log:61-64",
+          "description": "cross-checked the GREEN-phase claim of a real note.com publish against ne94efe526c9a: the state file independently records 3 separate real, timestamped, PASS:true logged-out verifications of ne94efe526c9a status=published, consistent with (not merely asserted by) the green-phase log's own narrative"
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/run.sh:89-137",
+          "description": "traced the actual _modeb_ratio_n()/_modeb_next_wake_count() control flow by hand for all 4 documented malformed-ratio shapes (missing, N=0, negative, non-integer 'abc') -- all 4 correctly resolve to Mode A, matching test-prop26a. However, a 5th realistic malformed shape (leading-zero digit string, e.g. '08') is accepted by both validating regexes yet is not a bash-arithmetic-safe integer -- see FIND-001 for the full trace"
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-prop24c-modeB-real-success-via-runsh.sh + evidence/sprint-4-green-phase.log:61-64,88-97",
+          "description": "independently verified the REAL success path is genuinely reachable THROUGH run.sh itself (never note-publish-live.py or note-mode-b-publish.py invoked directly by the test): the test's own postcheck is a fresh, separate authenticated GET, and the green-phase log's independently-recorded live-publishes.jsonl entries corroborate a real status:draft->published transition on ne94efe526c9a, never the flagship nfb2ace9f0ed8"
+        },
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-prop25a-modeB-unconfirmed-verify.sh:37-47",
+          "description": "independently traced run.sh's UNCONFIRMED path: confirm_and_publish is called exactly once (verified via the test's own call-count log mechanism, which I traced through run.sh's subprocess invocation and note-mode-b-publish.py's ARTICLE_NOTE_BROWSER_COMMON_DIR override to confirm it is genuinely reachable, not merely asserted) and no retry occurs in the same wake"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/run.sh:105,133",
+          "description": "see FIND-002: REQ-25's explicit 'a div/mod-by-zero or parse error SHALL be caught' requirement is inconsistently implemented across the two sites that touch the same ratio value -- one site suppresses the associated bash numeric-eval error, the other does not"
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/profitable-article-writer/tests/test-prop24b-modeA-zero-calls-fault-injection.sh:32-70",
+          "description": "independently traced the ARTICLE_NOTE_BROWSER_COMMON_DIR test-injection seam end-to-end: run.sh (line 60ish, invoked with the env var set at the process level) spawns lib/note-mode-b-publish.py as a real subprocess which inherits the env var via normal OS process-environment inheritance, and note-mode-b-publish.py:58-63 genuinely inserts the override directory at sys.path[0], ahead of its own directory -- confirming the dynamic call-count fault-injection is a REAL subprocess-level substitution, not a same-process mock masquerading as one"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/run.sh:129-137",
+          "description": "independently re-derived why all 6 of test-prop24b's corrupted scenarios correctly resolve to zero confirm_and_publish calls: for 5 of the 6, _modeb_ratio_n() returns failure (1) or AUTONOMY!='on', so the 'if [ \"$effective_mode\" = \"B\" ]' branch (the ONLY branch that can reach lib/note-mode-b-publish.py) is never entered at all -- this is a sound, non-tautological mechanism, not an accident of the fake module never being exercised"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/tests/test-prop21b-single-price-live-regression.sh, test-prop22a/22b/22c/24c",
+          "description": "independently grepped the flagship key nfb2ace9f0ed8 across the whole tests/ tree myself: it appears ONLY as the hardcoded FLAGSHIP_DRAFT_KEY safety-guard literal (with an explicit hard-exit-3 SAFETY ABORT if it were ever set equal to the actual test draft key) in exactly the 4 files the sprint's own green-phase log claims, and never as an actual --draft-key/ARTICLE_MODEB_NOTE_KEY argument"
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-4-red-phase.log:1-201",
+          "description": "read in full: 33 test files, 24 PASS / 9 FAIL, and cross-checked each of the 9 documented failure reasons against the actual pre-Sprint-4 code shape described (confirm_and_publish not existing, no ratio-consultation logic, unconditional Mode-B) -- the stated failure reasons are internally consistent with genuine RED-phase behavior, not fake-to-fail boilerplate"
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-4-green-phase.log:1-104",
+          "description": "read in full: 33/33 PASS, and independently counted the actual test-*.sh files on disk (33) to confirm the RED/GREEN summary line's '33 test files' is not a stale/copy-pasted number"
+        },
+        {
+          "type": "file",
+          "location": "skills/profitable-article-writer/lib/config.sh:11-25",
+          "description": "confirmed no hardcoded AUTONOMY=on / fixed-ratio default exists anywhere in the declarative config file (PROP-26's T1 no-hardcoded-default requirement); run.sh:73 defaults AUTONOMY to 'off'"
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-401", "CRIT-402", "CRIT-403", "CRIT-404", "CRIT-405"],
+    "duplicateFindings": []
+  }
+}

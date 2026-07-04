@@ -1,0 +1,38 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+This is the RED-phase evidence for the Sprint-4 Phase-3 contract-review findings fix round (FIND-001,
+FIND-002; .vcsdd/features/profitable-article-writer/reviews/contracts/sprint-4/output/findings/).
+
+FIND-001/FIND-002 summary: run.sh's ratio-validation regexes (_modeb_ratio_n, lines ~98/~100) and the
+wake-counter file sanitizer (_modeb_next_wake_count, line ~120) accept leading-zero digit strings (e.g.
+"08", "09", "1-in-08") as syntactically valid, but bash's arithmetic evaluator ($(( )) / numeric "[ -eq ]")
+parses a leading-zero digit string as OCTAL -- and "8"/"9" are not valid octal digits -- raising a runtime
+"value too great for base" error. Line 105 circumstantially suppresses stderr around one comparison; line
+133 (the actual modulo deciding Mode B) had no equivalent guard.
+
+Command: copied skills/profitable-article-writer to a scratch dir, restored run.sh to its PRE-FIX
+(git HEAD) content inside that copy ONLY, left the new discriminating test file
+(tests/test-prop26d-leading-zero-octal-failclosed.sh) and every other existing test file UNCHANGED
+(rewired the copy's internal SKILL= path to the scratch copy, no other edit), then ran
+tests/run-red.sh against that scratch copy -- i.e. the NEW test ran against the OLD, pre-fix run.sh, and
+every OTHER (already-passing) test ran unchanged as the regression baseline.
+
+=== test-prop26d-leading-zero-octal-failclosed.sh (new test, against PRE-FIX run.sh) ===
+  - FAIL case 1 (ARTICLE_MODEB_RATIO='08') -> no raw bash octal-misparse error text leaked to output/stderr
+  - FAIL case 2 (ARTICLE_MODEB_RATIO='09') -> no raw bash octal-misparse error text leaked to output/stderr
+  - FAIL case 3 (ARTICLE_MODEB_RATIO='1-in-08') -> no raw bash octal-misparse error text leaked to output/stderr
+  - FAIL case 4 (wake-counter file='08', ratio=5) -> no raw bash octal-misparse error text leaked to output/stderr
+  - FAIL case 4 (wake-counter file='08', ratio=5) -> resolves to DRAFT
+  - FAIL case 4 -> leading-zero counter '08' base-10-normalizes to 8 then increments to 9 (got '08'), not corrupted/reset
+FAIL (6)
+rc=1
+
+=== full regression baseline (all 34 files, run against PRE-FIX run.sh + the new test) ===
+RED-PHASE SUMMARY: 34 test files, 33 PASS, 1 FAIL
+FAILING:
+  - test-prop26d-leading-zero-octal-failclosed.sh
+
+(all 33 pre-existing test files, including test-prop26a/b/c which already covered the 4 REQ-25-named
+malformed-ratio cases + runtime mutation + 1-in-N end-to-end, PASS unchanged against the pre-fix run.sh --
+proving this round's fix target is genuinely a NEW gap, not a regression in already-covered behavior.)

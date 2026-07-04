@@ -1,0 +1,146 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+This is the GREEN-phase evidence for the Sprint-4 Phase-3 contract-review findings fix round
+(FIND-001, FIND-002).
+
+Fix: _modeb_ratio_n() and _modeb_next_wake_count() now explicitly base-10-force every ratio/counter
+digit string via "$((10#$digits))" BEFORE it is ever used in bash arithmetic, so a leading-zero
+shape (e.g. "08", "09", "1-in-08") is correctly normalized to its decimal value (never
+octal-misparsed, never a raw "value too great for base" crash) instead of relying on the old
+"^[0-9]+$" regex alone. A normalization failure (belt-and-suspenders; cannot occur for a
+regex-filtered pure-digit string within bash's integer range) fails closed to Mode A, same as every
+other REQ-25 malformed case. The SAME guard is also applied, identically, right before the modulo at
+the AUTONOMY branch (previously line ~133, the FIND-002 gap) -- not just at the _modeb_ratio_n
+"-eq 0" check (previously line ~105) -- so the fail-closed behavior is now deliberate and
+consistent at every arithmetic site, not incidental at one and absent at the other.
+
+Command: bash skills/profitable-article-writer/tests/run-red.sh (full suite, real run.sh, post-fix)
+
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find004-browser-exception-safety.sh ===
+  case 1 output: __RAISED__=True
+__MSG__=simulated add_cookies failure (malformed cookie / launch flake)
+__CLOSE_CALLS__=1
+  case 2 output: __OK__=False
+__REASON__=an unexpected browser-session error occurred: simulated cloakbrowser launch failure. No publish click can be confirmed to have succeeded from this failure alone; if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome.
+  case 3 output: __OK__=False
+__REASON__=an unexpected browser-session error occurred: simulated mid-session DOM error (note.com layout changed unexpectedly). No publish click can be confirmed to have succeeded from this failure alone; if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome.
+__CLOSE_CALLS__=1
+PASS -- FIND-004 (Sprint-4 update): browser-session exceptions never surface as raw tracebacks, never leak a context, and always resolve to a clean refusal, now proven at the shared confirm_and_publish unit
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop21b-single-price-live-regression.sh ===
+  tool output: Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+note-set-single-price: heading containing 'まとめ' not found (paid-line skipped)
+SINGLE_PRICE_TYPE: paid
+SINGLE_PRICE_VALUE: 500
+SINGLE_PRICE_PANEL_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-panel-ne94efe526c9a.png
+SINGLE_PRICE_LINE_INSERTED: false
+SINGLE_PRICE_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-ne94efe526c9a.png
+PASS -- FIND-005: note-set-single-price.py's call to the shared select_paid_price() is LIVE-regression-verified against TEST draft ne94efe526c9a, no behavior change from the Sprint-2.5 extraction
+
+=== test-prop22a-live-publish-wiring.sh ===
+PASS -- PROP-22a wiring/fail-closed gates all confirmed, zero browser action on any refusal path
+
+=== test-prop22b-live-publish-real-click.sh ===
+  precheck (independent, real): {"status": "published", "eyecatch": true, "img_count": 1}
+  tool output: Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+NOTE_LIVE_CLICKED: 更新する
+NOTE_LIVE_URL: https://note.com/anicca123/n/ne94efe526c9a
+NOTE_LIVE_SCREENSHOT: /Users/anicca/.cloak/note-work/live-publish-ne94efe526c9a.png
+  postcheck (independent, real): {"status": "published"}
+PASS -- PROP-22b: note-publish-live.py fired a REAL 投稿する/更新する click against TEST draft ne94efe526c9a, independently confirmed live
+
+=== test-prop22c-price-type-refusal-branches.sh ===
+PASS -- FIND-003 (Sprint-4 update): all 3 price/type-mismatch refusal branches, now in the SHARED confirm_and_publish, independently exercised, each naming its own specific missing piece
+
+=== test-prop23-independent-live-verify.sh ===
+PASS -- PROP-23 independent logged-out verify (200 AND content-match) + state recording confirmed
+
+=== test-prop24a-shared-publish-click-single-source.sh ===
+PASS -- PROP-24 structural: the publish-click statement + exception-safety wrapper exist in exactly ONE shared file, imported by both callers
+
+=== test-prop24b-modeA-zero-calls-fault-injection.sh ===
+PASS -- PROP-24 fault-injection: Mode A makes ZERO dynamic calls to the shared publish function under any corrupted branch-selection input
+
+=== test-prop24c-modeB-real-success-via-runsh.sh ===
+  run.sh output: WAKE_RESULT: PUBLISHED (rounds_used=1, verify=SUCCESS, draft_key=ne94efe526c9a)
+  postcheck (independent, real): {"status": "published"}
+PASS -- PROP-24 real success path: run.sh's Mode-B branch fired a REAL click via the shared function against TEST draft ne94efe526c9a
+
+=== test-prop25a-modeB-unconfirmed-verify.sh ===
+PASS -- PROP-25 (REQ-24) UNCONFIRMED path: verify failure recorded, never assumed success, never retried in the same wake
+
+=== test-prop26a-malformed-ratio-failclosed.sh ===
+PASS -- PROP-26 (REQ-25) all 4 malformed-ratio cases fail closed to Mode A, no crash
+
+=== test-prop26b-runtime-mutation.sh ===
+PASS -- PROP-26 runtime mutation: changing the ratio config value changes wake behavior with no redeploy
+
+=== test-prop26c-1-in-N-end-to-end.sh ===
+PASS -- PROP-26 1-in-N end-to-end: exactly N-1 Mode-A + 1 Mode-B over N consecutive wakes
+
+=== test-prop26d-leading-zero-octal-failclosed.sh ===
+PASS -- FIND-001/FIND-002 fix: leading-zero ratio/wake-counter values fail closed cleanly where malformed, and normalize CORRECTLY (never octal-misparsed) where they are a legitimate value
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 34 test files, 34 PASS, 0 FAIL
