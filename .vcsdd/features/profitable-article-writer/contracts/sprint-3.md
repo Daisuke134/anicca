@@ -2,7 +2,7 @@
 sprintNumber: 3
 feature: profitable-article-writer
 scope: "Sprint 2.5 (tool-tracked as sprint 3, state.json sprintCount=3): the standalone, human/main-agent-invoked ONE-OFF real-publish tool (REQ-21/PROP-22, lib/note-publish-live.py) and its INDEPENDENT post-publish verification (REQ-22/PROP-23, lib/note-verify-live.py). Both are explicitly OUT of run.sh's call graph, OUT of Mode B (AUTONOMY=on), and do NOT satisfy REQ-2's zero-human-in-Mode-B invariant — REQ-2 remains scoped to run.sh's own automated publish branch (REQ-7). This sprint's acceptance surface is: (1) lib/note-publish-live.py refuses fail-closed with zero browser action on every gate (NOTE_LIVE_PUBLISH unset, missing --draft-key, unconfirmed pre-publish state) — proven hermetically (T1); (2) lib/note-publish-live.py has a REAL success path, exercised end-to-end against the note.com TEST draft n39ef09f828f7 (never the flagship nfb2ace9f0ed8) — an always-refuse stub cannot pass this (T2, real browser/network); (3) lib/note-verify-live.py is a SEPARATE process from the publish tool, does a logged-out fetch, and PASSes only on 200 AND a title/note-ID content match, recording the result to state for V4 tracking. Distribution (X/Threads), the daily runtime-loop wiring (Sprint 4), and self-heal/self-improve (Sprint 5) remain explicitly OUT of this contract."
-status: draft
+status: approved
 negotiationRound: 0
 criteria:
   - id: CRIT-201
