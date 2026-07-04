@@ -102,6 +102,29 @@ One article → funnel → per-platform native monetization → real money verif
   for a non-existent path). The live URL + timestamp + this independent verification's result SHALL be recorded
   to state for V4 (earn) tracking to begin against it.
 
+## Mode-B in-loop publish (Sprint 4, Dais 2026-07-04: "then wire that in, yes, we have to")
+
+REQ-21's tool proved the mechanism works but requires a human/main-agent hand on the trigger. This section wires
+the SAME mechanism into the unattended daily loop so no human/Opus ever triggers it again.
+
+- **REQ-23 Mode-B publish branch, in-loop.** WHEN `run.sh` runs WITH `AUTONOMY=on` (Mode B, REQ-7) AND V0∧V0.5
+  PASS, THEN `run.sh` SHALL perform the equivalent of REQ-21's confirm→click sequence itself, by calling a
+  SHARED, importable core function that BOTH the standalone `lib/note-publish-live.py` tool AND `run.sh`'s
+  Mode-B branch call (the logic SHALL NOT be duplicated/reinvented). The SAME fail-closed pre-publish checks
+  (price/type/eyecatch/visuals confirmed before any click) and the SAME exception-safety (try/except/finally,
+  no leaked browser context, no raw traceback — the REQ-21/FIND-004 fix) apply unchanged. This branch is the
+  ONLY code path allowed to reach a real publish click from an unattended wake; Mode A (`AUTONOMY=off`) SHALL
+  remain structurally unable to reach it (REQ-6 unaffected, grep-verifiable).
+- **REQ-24 Mode-B post-publish verify, in-loop.** Immediately after a Mode-B publish click, `run.sh` SHALL
+  invoke the SAME independent-verification logic as REQ-22's standalone verifier (logged-out fetch, 200 AND
+  content-match) and record the result to state. IF verification fails or is inconclusive THEN the wake SHALL
+  record an UNCONFIRMED-publish state (never silently assume success) for a later wake or self-heal (REQ-17,
+  Sprint 5) to reconcile — it SHALL NOT retry-publish the same draft blindly (risking a duplicate/garbled post).
+- **REQ-25 Graduation is per-install, gradual, and explicit.** `AUTONOMY=on` SHALL be an explicit per-install
+  configuration value, not a code default. An install MAY run a MIX (e.g. 1-in-N wakes in Mode B, the rest Mode
+  A) during a trust-ramp period; this ratio is a state/config value the installer (human or, once REQ-18
+  self-improve lands, the skill itself) sets — not hardcoded in `run.sh`.
+
 ## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
 
 - **REQ-17 Self-heal.** WHILE running unattended, IF a wake fails (crash, stuck gate, publish error, expired/blocked
