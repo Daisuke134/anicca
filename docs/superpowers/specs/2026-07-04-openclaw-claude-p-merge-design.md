@@ -927,3 +927,34 @@ KNOWLEDGE every earn-affiliate-type AI should carry, not a one-off patch)。
    (または要件無し)のcampaignで小さく実績を作り、並行して通常投稿(既存clip
    loop等)でフォロワーを積み上げ、フォロワー数が増えるにつれて高単価
    campaignへ段階的に移行する、という順序が正しい。」
+
+### 18.5 Task #14実装完了(2026-07-04、fresh evidence)
+
+- `decide.py`にJOIN状態を追加(SELECT→JOIN→CLIP、既存test 8/8+1件追加で通過)
+- `join_campaign.py`新規実装(campaign参加を実際に試み、フォロワー要件エラーを
+  検出、成功/失敗を正直に判定)
+- `run.sh`にJOINケース実装: 成功ならphase=CLIP、失敗ならcampaignを`clipped`
+  リストに永久追加してphase=idleに戻し、SELECTが同じcampaignを二度と選ばないよう
+  にする
+- `SKILL.md`にDOMAIN KNOWLEDGE(「アフィリエイト収益化には信頼/フォロワー基盤が
+  先に必要」)+ Statusセクションを実態に合わせて全面更新(過去の
+  「wired + validated」という不正確な記載を訂正)
+- commit `6c996fb`、`Daisuke134/anicca`にpush済み
+
+**★ここでも2回目のcollective self-improvementが発生(fresh evidence)★**
+(commit `0631388`): 私が実装した`join_campaign.py`には**レースコンディション
+バグ**があった — promote.funのフォロワー要件警告は非同期(JS側の per-account
+チェック)で表示されるため、固定`time.sleep(1)`では表示前にsubmitボタンを
+押してしまい、「joined:true」という**偽の成功**を報告する可能性があった。
+clip-promote-core自身がこれを実行結果から発見し、①最大8秒間のポーリングで
+警告を待つ ②submit実行後にも再度モーダル状態を検証(まだ開いていれば
+`join-not-confirmed`という正直な理由を返す)という修正を行い、commit+push
+まで完遂した。
+
+**実証結果**: state.jsonの`clipped`リストに`["jx73b3sj4rryr074zps8n6xcfh89nt02",
+"thomas-rhett-content"]`が正しく記録され、phase=idleへ正常に戻ったことを確認
+(fresh evidence)。次のwakeでSELECTが別candidateを試すか、正直に
+`no-eligible-campaign`を返す設計が機能している。mail報告(バグ発見〜修正〜
+再検証の経緯を含む)も送信済み(HTTP 200)。
+
+Task #14完了。
