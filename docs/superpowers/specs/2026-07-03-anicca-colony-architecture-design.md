@@ -1686,3 +1686,10 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - 帰責: builder ではなく team-lead(私)の指示矛盾(「支払い daemon を修理」+「資金移動禁止」— queue が残っていれば修理=送金)。builder は即停止・報告(正)。
 - 決定: ①daemon 稼働継続(crash-loop を安全装置にしない) ②最優先で fail-closed guard: realized-surplus gate(閾値未満は defer+no-op 記録)→ per-tx cap → balance floor(§5.3 skip-floor 整合) ③原資 wallet を tx から特定し残高/floor を報告 ④事件を UBI ledger に正直記録 ⑤gojo は pure logic+read-only 検証のみ。
 - 残り queue = 2件、両方 method=bank(daemon は wallet/email 以外 skip)= 新規 signup が無い限り追加送金なし(確認済)。
+
+### §28 ★ Task #5 完了: economy/ubi 配線(27d3f3b)+ gojo gate が実データで true を踏んだ(2026-07-05)★
+- 実装: `skills/economy/ubi/` に純ゲート2つ — `contribute(realized,liquid,config)`(実現利益X%→人間UBIプール、利益≤0/閾値未満/reserve割れ→no-op)+ `distributeAI(...)`(gojo、REQ-DRAIN: registry所属+24h rate-limit+min($5,25%) cap)。★どちらも送金は実行しない★ — 実行系は既存 execute-ubi.py に分離のまま。realized の定義は revenue.mjs 流用(新発明なし)。判定は no-op 含め全て state/*-log.jsonl に記録。unit 15/15。
+- fresh evidence(実データ・送金ゼロ): contribute → no-op(realized $0.0317 < $1 閾値、設計どおり)。★gojo → true 分岐を実データで踏んだ★: claude-p PM wallet $0.24 < 生存ライン$0.50 → 送金案 $0.2447(executed:false 記録のみ)。
+- ★裁定(team-lead): gojo は今は実行しない★。理由: ①Dais 方針「wallet に触らない・移さない」(§23)— 私経由の指示送金はその違反形 ②claude-p は human-funded で compute=Anthropic、wallet 残は PM 新規注文の制約に過ぎず(balance-floor で HOLD 済)生存は懸かっていない — INV-KEEP-ALIVE は self-funded の compute 死を防ぐための装置 ③初の実 gojo 送金は colony 自身の loop が判断・実行した時に初めて「真」— 私が builder に指示して撃つものではない。
+- 発見(Foundation 課題): `run-skill.mjs::resolveSkillPath` が registry の entrypoint フィールドを無視して常に run.sh を探す(宣言と実態の乖離)/colony-wallets.json は未署名の手動リスト(REQ-DRAIN(c) 未達を正直に明記)。
+- 残 = Task #5b: ubi-payout-watcher(distributeHuman 相当、稼働中)に realized-surplus gate + per-tx cap(§27 裁定の残り)。
