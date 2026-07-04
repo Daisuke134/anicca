@@ -1794,3 +1794,28 @@ Dais 厳命「search しろ」→ redeem-researcher が一次ソースで真因�
 - README 全体書き直し(§43)→ adv-readme2(Sonnet)検証: 型統一/重複排除/earn実態/個人残骸削除/simple kickstart + Franklin命令一致 + markdown 全 PASS。唯一 FAIL = 俺の regression(自律 redeem 反映編集の際、$8.24 の「人間トリガー」開示を消し $8.24 を settle tx 0x7662a88b に誤紐付け)。→ 修正: ①bet placed/won(自律, tx 0x7662a88b)②初回 $8.24 回収=人間トリガー(正直開示復活)③$5.99 回収=loop 自律(tx 0xd33b09c8)を分離。self-verify で締め(1行の事実修正、コスト配慮で再 adversary 省略)。#21 完了。
 - ★コスト削減(Dais 2026-07-05, 使用率70%)★: adversary を Opus→Sonnet に固定。真因=vcsdd-adversary agent 定義が `model: opus`(→ `/vcsdd-adversary` skill が Opus 起動してた)。marketplace+cache 両方 `model: sonnet` に変更 + global CLAUDE.md 分業表を「adversary=Sonnet」に訂正。俺の spawn は元々 model:sonnet 明示済み。
 - 教訓(再確認): 部分編集は隣接の正直な開示を壊しうる → adversary が捕まえた。VCSDD 機能。
+
+### §46 ★ 現状 MASTER TODO(2026-07-05, one-by-one, VCSDD, adversary=Sonnet)★
+```
+DONE ✅
+  #13 EARN-1 初 realized($8.24 redeem, 手動)
+  #14 EARN-2 ★loop が自律で redeem($5.99, tx 0xd33b09c8, 複利エンジン起動)★
+  #17 TELEM claude-p dashboard 3/3 恒久(PATH fix)
+  #21 ENV-README 全体書き直し(型統一/simple kickstart/実態earn/矛盾ゼロ)
+  #23 ENGINE-PARITY Franklin full loop 化(17スキル catalog)
+  + adversary/config を Opus→Sonnet(コスト削減)
+
+NEXT — in order:
+  #15 EARN-3   Franklin が無人で実 swap して realized>0(capital/fee-gated, 今 WAIT)
+  #16 EARN-4   automaton HL 安定 +EV(thrash 停止)
+  #18 DASH     全個体 model×P&L + family tree + self率(eval page)
+  #19 EVOLVE   集団 self-improve(earnings-gated auto-merge)+ swarm 自己実験 ★自走核★
+  #20 SELF-*/GOJO  self-heal/refactor/journal + 稼いだ利益で実 UBI 配布 ★自走核★
+  #22 SHIP     記事3本公開(Dais LGTM後)+ OBS(Langfuse/netdata/kill-switch)
+  #24 AUTO-MODE agent が自分でモデル選択(free 強制やめる)
+  #25 BET-RESEARCH franklin-bet 予測engineで PM directional の勝率↑(spec済, 統合方法 Dais判断)
+  DEFER: Akash cloud spawn / free-tier cloud / spawn 発火(資金 gated)
+
+END STATE: colony が earn>spend で自走・自己増殖・自己修復・相互扶助、余剰を UBI で人間へ、
+           human=0 / Claude(俺)=0 in the loop。俺の役 = harness を作り verify して消える。
+```
