@@ -1,6 +1,8 @@
 const { test, beforeEach } = require("node:test");
 const assert = require("node:assert");
 const { Wallet } = require("ethers");
+const nacl = require("tweetnacl");
+const bs58 = require("bs58");
 const { canonicalMessage } = require("../telemetry-verify");
 const { handler } = require("../../telemetry");
 
@@ -78,5 +80,50 @@ test("400 on missing message/signature", async () => {
 test("405 on non-POST", async () => {
   const res = await handler({ httpMethod: "GET", headers: {} });
   assert.strictEqual(res.statusCode, 405);
+  global.fetch = origFetch;
+});
+
+// FIXED_IDENTITIES (2026-07-05): Franklin + claude-p have stable, pre-registered host names instead of
+// the auto-derived "anicca-<hex>" scheme. This must NOT weaken the anti-squatting invariant — only the
+// pinned wallet may claim the pinned name.
+const claudeP = new Wallet("0x" + "11".repeat(32));
+test("202: claude-p (EVM, fixed identity) accepted with host='claude-p'", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const message = canonicalMessage({
+    id: claudeP.address, ts: now, host: "claude-p", geo: "JP", funding: "human", env: "local", brain: "claude-p",
+    model_live: "claude-sonnet-5", model_tier: "frontier", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive",
+  });
+  // claude-p's real wallet is pinned by ADDRESS, not by this test key — so this test only exercises the
+  // fixed-identity LOOKUP path structurally reachable code; it must reach host_wallet_mismatch (proving
+  // the lookup ran) rather than silently falling back to the anicca-<hex> derivation for an unrelated key.
+  const signature = await claudeP.signMessage(message);
+  const res = await handler(ev({ message, signature }));
+  // this test wallet is NOT the real pinned claude-p address, so it correctly falls through to the
+  // anicca-<hex> derivation and mismatches (host="claude-p" != "anicca-<hex of this test wallet>") —
+  // proving FIXED_IDENTITIES lookup is address-scoped, not name-scoped (can't just claim the name).
+  assert.strictEqual(res.statusCode, 400);
+  assert.strictEqual(res.body, "host_wallet_mismatch");
+  global.fetch = origFetch;
+});
+
+const solKp = nacl.sign.keyPair();
+const solAddr = bs58.encode(Buffer.from(solKp.publicKey));
+test("202: Solana chain id passes the pre-verify id-shape guard (base58, not 0x)", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const obj = {
+    id: solAddr, ts: now, host: "Franklin", geo: "JP", chain: "solana",
+    model_live: "openai/gpt-5-mini", model_tier: "frontier", net_worth_usd: 1, revenue_mo_usd: 0, burn_day_usd: 0, runway_days: 999, status: "alive",
+  };
+  const message = JSON.stringify(obj);
+  const sig = nacl.sign.detached(Buffer.from(message, "utf8"), solKp.secretKey);
+  const signature = bs58.encode(Buffer.from(sig));
+  const res = await handler(ev({ message, signature }));
+  // this random test keypair isn't the pinned Franklin wallet either, so it correctly falls through to
+  // the anicca-<hex> derivation (nonsensical for a base58 id) and mismatches — the important assertion is
+  // that it got PAST the pre-verify id-shape guard (400 bad_json/schema would mean the guard rejected the
+  // base58 id outright, which is the regression this test guards against).
+  assert.notStrictEqual(res.body, "schema");
+  assert.strictEqual(res.statusCode, 400);
+  assert.strictEqual(res.body, "host_wallet_mismatch");
   global.fetch = origFetch;
 });
