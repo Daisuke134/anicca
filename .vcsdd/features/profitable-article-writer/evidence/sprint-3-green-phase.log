@@ -1,0 +1,92 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+=== Sprint 2.5 (Sprint 3 in tool-tracked state.json) GREEN-phase evidence ===
+note-publish-live.py + note-verify-live.py restored. test-prop22b fired a REAL 投稿する click
+against the TEST draft n39ef09f828f7 (never the flagship nfb2ace9f0ed8), independently confirmed
+live via a fresh, logged-out curl (HTTP 200 + title match) after the run below.
+Full tests/run-red.sh output follows:
+
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop22a-live-publish-wiring.sh ===
+PASS -- PROP-22a wiring/fail-closed gates all confirmed, zero browser action on any refusal path
+
+=== test-prop22b-live-publish-real-click.sh ===
+  precheck (independent, real): {"status": "draft", "eyecatch": true, "img_count": 3}
+  tool output: Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+NOTE_LIVE_CLICKED: 投稿する
+NOTE_LIVE_URL: https://note.com/anicca123/n/n39ef09f828f7
+NOTE_LIVE_SCREENSHOT: /Users/anicca/.cloak/note-work/live-publish-n39ef09f828f7.png
+  postcheck (independent, real): {"status": "published"}
+PASS -- PROP-22b: note-publish-live.py fired a REAL 投稿する/更新する click against TEST draft n39ef09f828f7, independently confirmed live
+
+=== test-prop23-independent-live-verify.sh ===
+PASS -- PROP-23 independent logged-out verify (200 AND content-match) + state recording confirmed
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 23 test files, 23 PASS, 0 FAIL
+
+=== Independent post-run sanity curl (outside the test harness) ===
+$ curl -s -o /dev/null -w 'HTTP %{http_code}' https://note.com/anicca123/n/n39ef09f828f7
+HTTP 200
+$ curl -s https://note.com/anicca123/n/n39ef09f828f7 | grep -o 'AIエージェントは、クレジットカードを持てない'
+AIエージェントは、クレジットカードを持てない

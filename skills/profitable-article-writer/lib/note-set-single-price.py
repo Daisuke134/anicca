@@ -41,7 +41,7 @@ import os
 import sys
 import time
 
-from note_browser_common import load_note_cookies, open_editor_ready
+from note_browser_common import load_note_cookies, open_editor_ready, select_paid_price
 
 WORK = os.environ.get("NOTE_WORK_DIR", os.path.expanduser("~/.cloak/note-work"))
 COOKIES_FILE = os.environ.get("NOTE_COOKIES_FILE", os.path.join(WORK, "note-cookies.json"))
@@ -65,50 +65,15 @@ def main() -> int:
             return 1
         time.sleep(2)
 
-        for b in pg.query_selector_all("button,a"):
-            if (b.text_content() or "").strip() == "公開に進む":
-                b.click()
-                time.sleep(3)
-                break
-
-        # Select 記事タイプ=有料 (id="paid", name="is_paid") -- click the ROW, not the (visually hidden)
-        # input directly; a direct input.click(force=True) does not register the React onChange (verified
-        # empirically), but clicking the row/label that visually contains "有料" does.
-        box = pg.evaluate(
-            """()=>{
-              const inp = document.getElementById('paid');
-              if(!inp) return null;
-              let el = inp;
-              for(let i=0;i<8;i++){
-                el = el.parentElement;
-                if(!el) break;
-                if((el.textContent||'').includes('有料')){
-                  const r = el.getBoundingClientRect();
-                  return {x:r.x, y:r.y, w:r.width, h:r.height};
-                }
-              }
-              return null;
-            }"""
-        )
-        if not box:
+        # 記事タイプ=有料 selection + price fill: SHARED with lib/note-publish-live.py (Sprint 2.5,
+        # REQ-21/PROP-22) via note_browser_common.select_paid_price() -- extracted here (Sprint 2.5) so
+        # neither script re-invents the sequence. This script's own behavior/stdout is unchanged.
+        sel = select_paid_price(pg, price)
+        if not sel["row_found"]:
             print("note-set-single-price: could not locate the 有料 radio row (note.com DOM may have changed)", file=sys.stderr)
             return 1
-        pg.mouse.click(box["x"] + 20, box["y"] + box["h"] / 2)
-        time.sleep(1.5)
-
-        paid_checked = pg.evaluate(
-            """()=>{const r=[...document.querySelectorAll('input[type=radio][name="is_paid"]')];
-                    const p=r.find(i=>i.value==='paid'); return p? p.checked : false;}"""
-        )
-        print(f"SINGLE_PRICE_TYPE: {'paid' if paid_checked else 'free'}")
-
-        price_filled = None
-        if pg.query_selector("#price") is not None:
-            pg.fill("#price", str(price))
-            pg.locator("#price").blur()
-            time.sleep(1)
-            price_filled = pg.eval_on_selector("#price", "e=>e.value")
-        print(f"SINGLE_PRICE_VALUE: {price_filled or ''}")
+        print(f"SINGLE_PRICE_TYPE: {'paid' if sel['paid_checked'] else 'free'}")
+        print(f"SINGLE_PRICE_VALUE: {sel['price_filled'] or ''}")
 
         # Sprint-2 contract-review FIND-001 fix: capture the 公開に進む overlay WHILE 記事タイプ=有料 and
         # the price are still visibly selected/filled on screen -- BEFORE キャンセル closes it below. This

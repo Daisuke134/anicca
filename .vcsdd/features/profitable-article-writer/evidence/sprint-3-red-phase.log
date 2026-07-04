@@ -1,0 +1,104 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+=== Sprint 2.5 (Sprint 3 in tool-tracked state.json) RED-phase evidence ===
+PROP-22/23 (REQ-21/REQ-22): note-publish-live.py + note-verify-live.py DELIBERATELY moved aside
+before this run, to prove the new tests genuinely FAIL absent the implementation (no fake-to-pass).
+Full tests/run-red.sh output follows:
+
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop22a-live-publish-wiring.sh ===
+  - FAIL lib/note-publish-live.py exists
+  - FAIL NOTE_LIVE_PUBLISH unset -> stderr names the missing trigger: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-publish-live.py': [Errno 2] No such file or directory
+  - FAIL missing --draft-key -> stderr names the missing argument: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-publish-live.py': [Errno 2] No such file or directory
+  - FAIL unconfirmed pre-publish state -> stderr names the exact missing piece (eyecatch): /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-publish-live.py': [Errno 2] No such file or directory
+  - FAIL unconfirmed pre-publish state -> explicitly reports no click/browser attempted: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-publish-live.py': [Errno 2] No such file or directory
+FAIL (5)
+
+=== test-prop22b-live-publish-real-click.sh ===
+  precheck (independent, real): {"status": "draft", "eyecatch": true, "img_count": 3}
+  tool output: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-publish-live.py': [Errno 2] No such file or directory
+  - FAIL note-publish-live.py against the REAL, confirmed-ready TEST draft -> rc=0 (rc=2) -- an always-refuse stub would fail this
+  - FAIL stdout carries the REAL live URL for the TEST draft (not a fabricated/placeholder URL)
+  - FAIL stdout carries a screenshot path
+  - FAIL the tool's own log confirms it actually clicked 投稿する or 更新する (a real click occurred, not a refusal)
+  postcheck (independent, real): {"status": "draft"}
+  - FAIL draft n39ef09f828f7's status independently confirmed flipped to 'published' after the real click
+FAIL (5)
+
+=== test-prop23-independent-live-verify.sh ===
+  - FAIL lib/note-verify-live.py exists
+  - FAIL note-verify-live.py is syntactically valid Python
+  - FAIL real live URL (na3a631e63d1a) -> PASS, rc=0 (rc=2): /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-verify-live.py': [Errno 2] No such file or directory
+  - FAIL real live URL -> http_status recorded as 200: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-verify-live.py': [Errno 2] No such file or directory
+  - FAIL real live URL -> PASS: true (not just a bare 200 -- content-match also required): /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-verify-live.py': [Errno 2] No such file or directory
+  - FAIL real live URL -> the note KEY itself is confirmed present in the response body: /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-verify-live.py': [Errno 2] No such file or directory
+  - FAIL nonexistent path -> PASS: false (never reports success on a dead path): /opt/homebrew/Cellar/python@3.14/3.14.5/Frameworks/Python.framework/Versions/3.14/Resources/Python.app/Contents/MacOS/Python: can't open file '/Users/anicca/anicca-human-funded/skills/profitable-article-writer/lib/note-verify-live.py': [Errno 2] No such file or directory
+  - FAIL state file written at NOTE_LIVE_STATE_FILE
+FAIL (8)
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 23 test files, 20 PASS, 3 FAIL
+FAILING:
+  - test-prop22a-live-publish-wiring.sh
+  - test-prop22b-live-publish-real-click.sh
+  - test-prop23-independent-live-verify.sh

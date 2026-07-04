@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """note_browser_common.py -- shared cloakbrowser bootstrap helpers for the note.com Mode-A browser scripts
-(lib/note-set-eyecatch.py, lib/note-set-single-price.py).
+(lib/note-set-eyecatch.py, lib/note-set-single-price.py) AND the Sprint-2.5 real-publish tool
+(lib/note-publish-live.py, REQ-21/PROP-22).
 
 Sprint-2 contract-review FIND-006 fix: both scripts, authored together for the same PROP-21 fix, duplicated
 ~20 lines of (1) cookie-file load + cookie-dict-to-cloakbrowser-cookie-list conversion and (2) cloakbrowser
@@ -12,6 +13,13 @@ This module is deliberately Mode-A-agnostic: it knows nothing about eyecatch/pri
 how to load note.com session cookies and get a cloakbrowser page onto a note.com draft editor in a ready
 state. Neither caller's own distinct error-message wording changes -- this module never prints/exits by
 itself; it returns None/`(ctx, None)` so each caller keeps its own clearly-labeled diagnostic.
+
+Sprint-2.5 addition (REQ-21/PROP-22): `select_paid_price()` below is the 記事タイプ=有料/価格 selection +
+DOM-readback sequence, EXTRACTED from lib/note-set-single-price.py's own inline block (Sprint 2) so BOTH
+that script (which stops right after this call and clicks キャンセル -- it must NEVER publish, per REQ-6)
+and lib/note-publish-live.py (which, ONLY after this call confirms 有料/price, proceeds to click
+投稿する/更新する for real) share the exact SAME selection sequence rather than one re-inventing it. Moving
+this here changes nothing observable about note-set-single-price.py's own stdout/behavior.
 """
 import json
 import os
@@ -53,3 +61,67 @@ def open_editor_ready(cookies: list, note_key: str, viewport: dict, timeout_s: i
             return ctx, pg
         time.sleep(1)
     return ctx, None
+
+
+def select_paid_price(pg, price) -> dict:
+    """Click 公開に進む (if the overlay is not already open), select the 記事タイプ=有料 radio row, fill
+    the price field, and read the resulting DOM state back. Returns:
+      {"row_found": bool, "paid_checked": bool, "price_filled": str|None}
+
+    `row_found=False` means the 有料 radio row itself could not be located (note.com's editor DOM may have
+    changed) -- the caller should treat this as a hard failure, distinct from `paid_checked=False` (the row
+    was found and clicked, but the DOM readback did not confirm it as checked).
+
+    HONEST LIMITATION (verified empirically, see lib/note-set-single-price.py's own docstring for the full
+    writeup): note.com's 記事タイプ/価格 selection is PURE CLIENT REACT STATE -- it is never persisted
+    server-side, and is NOT restored across a page reload, until the article is actually published. This
+    means "confirm the draft's price/type" and "set the draft's price/type" are the SAME action on
+    note.com: there is no separate read-only check to perform first. Both lib/note-set-single-price.py
+    (Mode-A, REQ-6 -- never publishes, always discards this selection via キャンセル) and
+    lib/note-publish-live.py (Sprint-2.5, REQ-21 -- publishes for real ONLY when this returns a confirmed
+    有料/price match) call this SAME function so neither re-invents the selection sequence.
+    """
+    for b in pg.query_selector_all("button,a"):
+        if (b.text_content() or "").strip() == "公開に進む":
+            b.click()
+            time.sleep(3)
+            break
+
+    # Select 記事タイプ=有料 (id="paid", name="is_paid") -- click the ROW, not the (visually hidden)
+    # input directly; a direct input.click(force=True) does not register the React onChange (verified
+    # empirically), but clicking the row/label that visually contains "有料" does.
+    box = pg.evaluate(
+        """()=>{
+          const inp = document.getElementById('paid');
+          if(!inp) return null;
+          let el = inp;
+          for(let i=0;i<8;i++){
+            el = el.parentElement;
+            if(!el) break;
+            if((el.textContent||'').includes('有料')){
+              const r = el.getBoundingClientRect();
+              return {x:r.x, y:r.y, w:r.width, h:r.height};
+            }
+          }
+          return null;
+        }"""
+    )
+    if not box:
+        return {"row_found": False, "paid_checked": False, "price_filled": None}
+
+    pg.mouse.click(box["x"] + 20, box["y"] + box["h"] / 2)
+    time.sleep(1.5)
+
+    paid_checked = pg.evaluate(
+        """()=>{const r=[...document.querySelectorAll('input[type=radio][name="is_paid"]')];
+                const p=r.find(i=>i.value==='paid'); return p? p.checked : false;}"""
+    )
+
+    price_filled = None
+    if pg.query_selector("#price") is not None:
+        pg.fill("#price", str(price))
+        pg.locator("#price").blur()
+        time.sleep(1)
+        price_filled = pg.eval_on_selector("#price", "e=>e.value")
+
+    return {"row_found": True, "paid_checked": bool(paid_checked), "price_filled": price_filled}
