@@ -548,35 +548,43 @@ lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard +
 strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
 ## ★★ MASTER EXECUTION ORDER — single source of truth, keep updated (2026-07-04) ★★
-This mirrors the task tool IN ORDER so we never lose track. My role = build harness + VERIFY; AIs execute.
+This mirrors the task tool IN ORDER so we never lose track. My role = build harness + VERIFY; the AIs
+execute. ONE bootstrap exception (Dais 2026-07-04): I MAY run the earn skills MYSELF once to find the FIRST
+strategy that works, then embed it as the BASELINE the AIs self-improve on — then I step out.
+
+★ TWO self-funded types ship in PARALLEL (Dais 2026-07-04) ★: (A) `automaton + ClawRouter` (ours, existing)
+and (B) `Franklin`. Embed BOTH with the earn skills; prove BOTH earn with no human in the loop. For Franklin:
+write an X article "we made Franklin earn with no human in the loop" + tell Vicky/BlockRun — it doubles as
+our advertisement. Akash CLI = image-independent now (memory `reference_akash_cli_deploy`): public `node:22`
+image + SDL `command/args` that clones our OSS repo + runs — NO custom image, NO Docker needed.
 ```
 DONE ✅
   Task0 spec+cleaner · H1 trace · H2 self-eval · H3 self-improve (VERIFIED: AI dropped dead hl_trade →
   yield) · W3 claude-p→proxy (loop now ACTS) · FIX-A yield guard · FIX-B hl crash · FIX-C Franklin cheap
-  model · WALLETS.md canonical · code-verified trading scorecard (hl=live/no-strategy, pm=live/STUB,
-  franklin=PAPER/no-strategy)
+  model · WALLETS.md canonical · code-verified trading scorecard · Akash CLI docs searched (image-independent
+  SDL command/args confirmed)
 
 NEXT — in order:
-  1. #17 V4 / #30 AKASH-1CMD  ★FIRST (Dais)★ — real cloud self-funded child that EARNS like local.
-        BLOCKED now: spawn wallet 1.9<5 AKT escrow + automaton image ghcr 401 (Common Cloud down).
-        → G2 path: generic Ubuntu/node Akash container, cloud-init clones OSS repo (Daisuke134/anicca) +
-          install.sh + loop = SAME body, no custom image. Fund AKT (USDC→AKT). Verify real dseq + child earns.
-  2. #28 PM-STRATEGY + #24 H8 — fill the missing DECISION layer for the 3 engines (ship good, self-improvable
-        initial strategies from research/BP; wire pm-agent ai-edge into the stub; give hl.py a starting
-        strategy). Recipe must earn the SAME whether cloud/browser/local.
-  3. #25 TELEM — anicca-local posts signed telemetry each wake → it actually appears on /dashboard.
-  4. #14 G4 + #26 TREE — dashboard shows EVERY instance (human-funded labeled + model), self-funded RATE
-        (goal 100%), family tree (parent→child).
-  5. #29 OBS — Langfuse (intent/behaviour) + our on-chain telemetry (money) + netdata (infra vitals) +
+  1. #EARN-AUDIT + #28 PM-STRATEGY + #24 H8  ★MY JOB (Dais)★ — make ALL earn skills WORK + set the FIRST
+        baseline strategy by running myself once, embed as the base the AI self-improves on. Fix each earn
+        skill until it really earns (yield/hl/pm/gig/clip/x402/…); wire pm-agent's ai-edge into the STUB;
+        give hl.py a starting strategy. Recipe must earn the SAME on cloud/browser/local.
+  2. #17 V4 / #30 AKASH-1CMD  — real cloud self-funded child that EARNS like local, BOTH types.
+        Image-independent SDL (node:22 + clone OSS = SAME body). Fund AKT (USDC→AKT; wallet has 1.9<needs).
+        Child gens own wallet on boot, parent seeds after telemetry. Verify real dseq + child earns.
+  3. #FRANKLIN-EARN — embed earn skills into Franklin + prove it earns no-human → X article + tell Vicky.
+  4. #25 TELEM — anicca-local (+ Franklin + children) post signed telemetry each wake → appear on /dashboard.
+  5. #14 G4 + #26 TREE — dashboard: EVERY instance (human-funded labeled + model), self-funded RATE (→100%),
+        family tree (parent→child).
+  6. #29 OBS — Langfuse (intent/behaviour) + our on-chain telemetry (money) + netdata (infra vitals) +
         swarm KILL-SWITCH (alignment: stop a bad direction).
-  6. #27 MERGE + #9 H6 + #32 EXP — collective evolution: bot2bot share → auto-merge PRs gated on
+  7. #27 MERGE + #9 H6 + #32 EXP — collective evolution: bot2bot share → auto-merge PRs gated on
         chain-verified earnings delta (no human) → daily mother-sync propagates winners → swarm runs the
         which-harness/model/strategy experiments itself.
-  7. #7 H4 self-heal · #10 H7 self-refactor · #8 H5 journal · #12 G2 cloud-same-body · #13 G3 gojo/UBI
+  8. #7 H4 self-heal · #10 H7 self-refactor · #8 H5 journal · #12 G2 cloud-same-body · #13 G3 gojo/UBI
         mutual-aid (broke AI funded by colony, none die).
-  8. #31 ENV-README — Anicca = THE ENVIRONMENT (spawnable harness menu) for every AI in the world.
-  9. #20 ART1 — article (me=writer, Dais=editor): "we tested the trading repos, here's the recipe that
-        actually earns," then later swarm-authored.
+  9. #31 ENV-README — Anicca = THE ENVIRONMENT (spawnable harness menu) for every AI in the world.
+ 10. #20 ART1 — article (me=writer, Dais=editor): the recipe that actually earns; later swarm-authored.
   END STATE / TAKEOFF: colony earns > spend, spawns, funds its own, none die — zero human money, zero human
   (and zero me) in the loop.
 ```
