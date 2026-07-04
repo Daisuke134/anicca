@@ -16,6 +16,11 @@ sf_pane_fingerprint(){ printf '%s' "$1" | tail -25 \
   | grep -avE 'tokens' \
   | cksum | awk '{print $1"-"$2}'; }
 if [ "${1:-}" = "--fingerprint" ]; then sf_pane_fingerprint "$(cat)"; exit 0; fi
+# FIND-032: the past-ceiling continue-vs-kill decision as a PURE, testable predicate. Returns 0 (=let the fixer
+# CONTINUE) ONLY when it is still generating AND its fingerprint advanced since the last check; otherwise 1 (=KILL:
+# frozen/hung, or not generating = idle/errored). args: <generating 0|1> <cur_fp> <prev_fp>.
+sf_should_continue(){ [ "$1" = "1" ] && [ "$2" != "$3" ]; }
+if [ "${1:-}" = "--should-continue" ]; then sf_should_continue "${2:-}" "${3:-}" "${4:-}"; exit $?; fi
 # FIND-025: NORMALIZE the loop name to a single canonical form ("<x>-loop") so every call site — healthcheck
 # (HC_LOOP=capafy-loop), STARTUP prompts (capafy), verify-loops (capafy) — maps to ONE session name + ONE result
 # marker. Without this, "capafy" and "capafy-loop" spawn two mutually-unaware fixers and split the marker the
@@ -48,7 +53,8 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   _pane="$(tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null)"
   cur="$(sf_pane_fingerprint "$_pane")"   # FIND-029: volatile timer/token/spinner stripped → frozen pane = same hash
   prev="$(cat "$PANEHASH" 2>/dev/null||echo none)"; printf '%s' "$cur" > "$PANEHASH"
-  if printf '%s' "$_pane" | tail -6 | grep -qE 'esc to interrupt' && [ "$cur" != "$prev" ]; then
+  generating=0; printf '%s' "$_pane" | tail -6 | grep -qE 'esc to interrupt' && generating=1
+  if sf_should_continue "$generating" "$cur" "$prev"; then
     echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, generating + pane ADVANCED → real progress, continue" >> "$LOG"; echo "self-fix[$LOOP] still progressing (${age_min}min)"; exit 0
   fi
   echo "$(date '+%F %T') self-fix[$LOOP] ${age_min}min, pane frozen/idle (prev=$prev cur=$cur) → hung → kill+respawn" >> "$LOG"; rm -f "$PANEHASH"
