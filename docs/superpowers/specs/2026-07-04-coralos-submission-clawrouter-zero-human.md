@@ -359,12 +359,39 @@ PHASE B — downgrade to zero-human (brain = ClawRouter, Tier 1, the real submis
   ── R1c/R1d EXIT GATE: B5 true; SUBMITTED config points at ClawRouter — SATISFIED ──
 
 PHASE C — wrap as an unattended loop + submit
-  [ ] C1  Wrap A5+B4 as a loop (wake → bid → sell → settle → self-report), matching R6
+  [x] C0  R5 GAP FOUND + FIXED 2026-07-05: A5 earlier only patched examples/txodds/server/
+          proxy.ts (the single-agent web demo). The OFFICIAL demo requirement (WANT->BID->
+          AWARD->DEPOSITED->DELIVERED->RELEASED) actually runs through coral-agents/
+          seller-agent/src/service.ts + examples/txodds/coral/round.ts — a SEPARATE codebase,
+          still TxLine-only. Fixed: added the same 'anicca' service branch there (4 new tests,
+          6/6 GREEN), buyer now WANTs 'anicca' instead of 'txline'. Also found + fixed 2 real
+          infra bugs live: (a) coral-server rejects undeclared toml options — had to add
+          CLAWROUTER_URL/ANICCA_DASHBOARD_URL to coral-agent.toml; (b) our generated
+          ARBITER_KEYPAIR_B58 isn't the arbiter program's on-chain configured admin, so
+          SETTLEMENT_MODE must be 'direct' not 'arbiter' (same fallback the single-agent path
+          already uses). Installed colima (Docker wasn't running) + docker-compose plugin,
+          built both agent Docker images from source, ran `docker compose up -d coral && npm
+          run coral` for REAL — full round completed: 3 sellers bid, seller-worldcup won
+          AWARD, DEPOSITED 0.001 SOL, DELIVERED, RELEASED. Real tx:
+          `4p79RhXcw3iHdD2hbWZzasDPNuk9NbBvGnSLEqtCeG4mxTJ5wTLDAuiPuJgUcTfbXUQvzWzzFUt1qiY5NsbGczZU`
+          -> https://explorer.solana.com/tx/4p79RhXcw3iHdD2hbWZzasDPNuk9NbBvGnSLEqtCeG4mxTJ5wTLDAuiPuJgUcTfbXUQvzWzzFUt1qiY5NsbGczZU?cluster=devnet
+          confirmed `Finalized`. **R5 is now genuinely satisfied — the official one-command
+          judge demo (`docker compose up -d coral && npm run coral`) actually works end-to-end
+          on this fork, trading Anicca's own service.** Pushed to
+          `Daisuke134/solana_coralOS@7367721`. Disk hygiene: colima grew to ~5.2GB mid-run
+          (host disk hit 1.8Gi free, a real risk) — stopped + fully deleted colima immediately
+          after capturing evidence, reclaimed to 7.0Gi free. Docker/colima are NOT required to
+          stay installed for anything else in this repo; a judge re-running the demo would
+          need their own Docker runtime (documented in C6/README, not this machine's problem).
+  [ ] C1  Wrap A5+B4 as a loop (wake → bid → sell → settle → self-report), matching R6.
+          NOTE: C0's proof was a single manual round, not yet a self-scheduling unattended
+          loop — C1/C2 still genuinely open.
   [ ] C2  Run the loop unattended for ≥1 full cycle with neither Dais nor Claude operating it
   [ ] C3  telemetry-poster (or an equivalent) reports the run so it's visible on our dashboard too
   [ ] C4  5-slide deck (lead with the settlement / Explorer link, per their own guidance)
   [ ] C5  3-min demo video (Problem → Solution → Demo → Team)
-  [ ] C6  Public repo cleanup: no keys committed, .env.example only
+  [ ] C6  Public repo cleanup: no keys committed, .env.example only; README notes Docker is
+          required to run the multi-agent round (judges need their own Docker/colima)
   [ ] C7  Submit on the Superteam listing before 2026-07-20
   [ ] C8  fresh-context adversary review of the whole submission (spec fidelity + no-mock E2E)
 ```
