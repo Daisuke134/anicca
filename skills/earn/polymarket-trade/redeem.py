@@ -212,34 +212,46 @@ def _mint_relayer_api_key(acct) -> str:
         "Origin": "https://polymarket.com",
         "Referer": "https://polymarket.com/",
     })
-    nonce = s.get(f"{gamma}/nonce", timeout=20).json().get("nonce")
-    issued = (
-        _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.")
-        + f"{_dt.datetime.now(_dt.timezone.utc).microsecond // 1000:03d}Z"
-    )
-    fields = {
-        "domain": "polymarket.com", "address": acct.address,
-        "statement": "Welcome to Polymarket! Sign to connect.",
-        "uri": "https://polymarket.com", "version": "1", "chainId": 137,
-        "nonce": nonce, "issuedAt": issued,
-    }
-    plaintext = (
-        f"{fields['domain']} wants you to sign in with your Ethereum account:\n"
-        f"{acct.address}\n\n{fields['statement']}\n\n"
-        f"URI: {fields['uri']}\nVersion: {fields['version']}\n"
-        f"Chain ID: {fields['chainId']}\nNonce: {nonce}\nIssued At: {issued}"
-    )
-    sig_hex = "0x" + acct.sign_message(encode_defunct(text=plaintext)).signature.hex()
-    combined = json.dumps(fields, separators=(",", ":")) + ":::" + sig_hex
-    bearer = base64.b64encode(combined.encode()).decode()
-    s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
-    r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth", json={}, timeout=20)
-    r.raise_for_status()
-    data = r.json()
-    api_key = data.get("apiKey") or data.get("api_key")
-    if not api_key:
-        raise RuntimeError(f"relayer auth did not return an apiKey: {json.dumps(data)[:300]}")
-    return api_key
+    # The SIWE nonce is single-use and the relayer auth can 400 on a stale/racy nonce or a
+    # transient hiccup (observed live 2026-07-05). Retry with a FRESH nonce each attempt so the
+    # loop collects the win on its own without a human — a periodic pass will succeed even if one
+    # attempt is rejected. (#14 EARN-2: autonomous redeem must be resilient, not one-shot.)
+    import time as _time
+    last_err = None
+    for attempt in range(4):
+        try:
+            nonce = s.get(f"{gamma}/nonce", timeout=20).json().get("nonce")
+            issued = (
+                _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.")
+                + f"{_dt.datetime.now(_dt.timezone.utc).microsecond // 1000:03d}Z"
+            )
+            fields = {
+                "domain": "polymarket.com", "address": acct.address,
+                "statement": "Welcome to Polymarket! Sign to connect.",
+                "uri": "https://polymarket.com", "version": "1", "chainId": 137,
+                "nonce": nonce, "issuedAt": issued,
+            }
+            plaintext = (
+                f"{fields['domain']} wants you to sign in with your Ethereum account:\n"
+                f"{acct.address}\n\n{fields['statement']}\n\n"
+                f"URI: {fields['uri']}\nVersion: {fields['version']}\n"
+                f"Chain ID: {fields['chainId']}\nNonce: {nonce}\nIssued At: {issued}"
+            )
+            sig_hex = "0x" + acct.sign_message(encode_defunct(text=plaintext)).signature.hex()
+            combined = json.dumps(fields, separators=(",", ":")) + ":::" + sig_hex
+            bearer = base64.b64encode(combined.encode()).decode()
+            s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
+            r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth", json={}, timeout=20)
+            r.raise_for_status()
+            data = r.json()
+            api_key = data.get("apiKey") or data.get("api_key")
+            if not api_key:
+                raise RuntimeError(f"relayer auth did not return an apiKey: {json.dumps(data)[:300]}")
+            return api_key
+        except Exception as e:  # noqa: BLE001 — best-effort auth, retried with a fresh nonce
+            last_err = e
+            _time.sleep(2 * (attempt + 1))
+    raise RuntimeError(f"relayer auth failed after 4 attempts: {last_err}")
 
 
 def build_client():
