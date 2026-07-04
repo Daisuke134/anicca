@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "relatedCriteria": ["CRIT-203"],
+  "description": "note-publish-live.py's own docstring (and REQ-21) promises: 'ANY of (a)/(b)/(c) failing => refuse, close any open browser session, exit 1, and print the EXACT missing piece on stderr.' The call `ctx, pg = open_editor_ready(cookies, note_key, {...})` (main(), line 184) sits OUTSIDE the surrounding try/finally block (the try starts on the very next line). note_browser_common.open_editor_ready() (lib/note_browser_common.py, lines 44-63) has NO try/except around `launch_context()`, `ctx.add_cookies(cookies)`, or `pg.goto(...)` -- any of which can realistically raise (a cloakbrowser launch failure, a malformed-cookie exception, or a navigation timeout on `pg.goto(..., timeout=45000)`, all ordinary real-world failure modes for browser automation). If any of these raises: (1) the exception propagates uncaught out of main(), producing a raw Python traceback instead of the documented clean refusal message -- REQ-21's 'report the exact blocking reason' is violated; (2) because the exception occurs on the tuple-unpacking assignment itself, `ctx` is never bound in main()'s scope, so the `finally: ctx.close()` block a few lines below is never reached for THIS ctx -- any browser context that launch_context() already created before the exception (e.g. add_cookies or goto failing after a successful launch) is never closed, a real resource leak (an orphaned headless browser process) on a tool designed for real, unattended-adjacent invocation. This directly contradicts the 'close any open browser session' guarantee stated in the tool's own header docstring (lines 35-36).",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-publish-live.py",
+    "lineRange": "184-186",
+    "snippet": "ctx, pg = open_editor_ready(cookies, note_key, {\"width\": 1280, \"height\": 1400})\ntry:\n    if pg is None:"
+  },
+  "corroboratingEvidence": [
+    {"filePath": "skills/profitable-article-writer/lib/note_browser_common.py", "lineRange": "44-63", "note": "open_editor_ready has no try/except around launch_context/add_cookies/goto"},
+    {"filePath": "skills/profitable-article-writer/lib/note-publish-live.py", "lineRange": "35-36", "note": "docstring promise this code path violates on an exception"}
+  ],
+  "routeToPhase": "2b"
+}

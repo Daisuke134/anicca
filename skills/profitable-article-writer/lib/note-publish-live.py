@@ -34,6 +34,12 @@ SAFETY GATES (all fail-closed, cheapest/safest first, checked BEFORE any browser
           it into note_browser_common.py precisely so this file could reuse it, not re-invent it).
      ANY of (a)/(b)/(c) failing => refuse, close any open browser session, exit 1, and print the EXACT
      missing piece on stderr. No 投稿する/更新する click is ever attempted.
+  Sprint-3 contract-review FIND-004 fix: the ENTIRE browser-session lifecycle below (from
+    open_editor_ready() through the final click-or-refuse decision) runs inside one try/except/finally.
+    ANY unexpected exception (a browser-launch failure, a cookie/navigation error, an unforeseen DOM
+    change) is caught and re-reported through this SAME clean-refusal stderr path -- never a raw
+    traceback -- and the browser context is always closed in `finally` (guarded so it never double-closes
+    or crashes if the context was never created).
   4. Only when (a) AND (b) AND (c) all confirm does this file proceed, IN THE SAME BROWSER SESSION that
      just confirmed (c), to click 有料エリア設定 (note.com's next-step button once 有料/price are selected
      -- required to reach the screen the 投稿する/更新する button lives on; note-set-single-price.py
@@ -181,8 +187,9 @@ def main() -> int:
         print(f"note-publish-live: REFUSED -- NOTE_COOKIES_FILE missing at {cookies_file!r}", file=sys.stderr)
         return 1
 
-    ctx, pg = open_editor_ready(cookies, note_key, {"width": 1280, "height": 1400})
+    ctx = None
     try:
+        ctx, pg = open_editor_ready(cookies, note_key, {"width": 1280, "height": 1400})
         if pg is None:
             print(
                 f"note-publish-live: REFUSED for draft {note_key!r} -- the editor never reached the "
@@ -282,11 +289,25 @@ def main() -> int:
         print(f"NOTE_LIVE_SCREENSHOT: {shot}")
         print(f"NOTE_LIVE_CLICKED: {clicked_label}", file=sys.stderr)
         return 0
+    except Exception as e:
+        # Sprint-3 contract-review FIND-004 fix: ANY unexpected exception anywhere in the browser-session
+        # lifecycle above (open_editor_ready's own launch/cookie/navigation failure, or an unforeseen DOM
+        # error during select_paid_price/the click sequence) is caught HERE and re-reported through the
+        # SAME clean-refusal stderr shape every other gate in this file uses -- never a raw traceback.
+        print(
+            f"note-publish-live: REFUSED for draft {note_key!r} -- an unexpected browser-session error "
+            f"occurred: {e}. No publish click can be confirmed to have succeeded from this failure alone; "
+            f"if this happened after a click attempt, verify the draft's live status independently via "
+            f"lib/note-verify-live.py before assuming either outcome.",
+            file=sys.stderr,
+        )
+        return 1
     finally:
-        try:
-            ctx.close()
-        except Exception:
-            pass
+        if ctx is not None:
+            try:
+                ctx.close()
+            except Exception:
+                pass
 
 
 if __name__ == "__main__":

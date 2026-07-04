@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "test_coverage",
+  "severity": "major",
+  "relatedCriteria": ["CRIT-201"],
+  "description": "CRIT-201's passThreshold requires proving 'no file in run.sh's own call graph (lib/note_publish.sh, gates/, identity/) invokes note-publish-live.py' -- wording that implies the WHOLE gates/ directory. The actual implementation of tests/test-prop22a-live-publish-wiring.sh only enumerates gates/v0.sh and gates/v05.sh in CALL_GRAPH_FILES; it OMITS gates/publish-gate.sh, which genuinely exists (skills/profitable-article-writer/gates/publish-gate.sh) and IS part of run.sh's own Mode-B call graph (run.sh invokes it directly at the AUTONOMY=on publish step). publish-gate.sh is the single most safety-relevant file to guard here -- it is literally the fail-closed publish gate REQ-2/REQ-7 depend on -- yet it is the one file the test's own CALL_GRAPH_FILES list fails to check. On today's disk state publish-gate.sh happens not to reference note-publish-live.py (independently confirmed by a full-tree grep), so the CURRENT wiring is safe, but the TEST does not structurally guard against a future regression in exactly the file where such a regression would be most dangerous (it would let a Mode-B autonomous run reach the real-publish tool without a human, directly violating REQ-2/REQ-21's structural-exclusion guarantee, with zero test failure to catch it).",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh",
+    "lineRange": "41-51",
+    "snippet": "CALL_GRAPH_FILES=\"$SKILL/lib/note_publish.sh $SKILL/gates/v0.sh $SKILL/gates/v05.sh\"\n[ -d \"$SKILL/identity\" ] && CALL_GRAPH_FILES=\"$CALL_GRAPH_FILES $(find \"$SKILL/identity\" -type f 2>/dev/null)\""
+  },
+  "corroboratingEvidence": [
+    {"filePath": "skills/profitable-article-writer/gates/publish-gate.sh", "note": "exists on disk, is run.sh's actual Mode-B publish-call-graph file, and is NOT in CALL_GRAPH_FILES"},
+    {"filePath": "contracts/sprint-3.md", "lineRange": "10-12", "note": "CRIT-201 passThreshold text names 'gates/' generically, implying full-directory coverage"}
+  ],
+  "routeToPhase": "2b"
+}

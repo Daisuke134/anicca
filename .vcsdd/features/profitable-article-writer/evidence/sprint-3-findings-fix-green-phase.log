@@ -1,0 +1,101 @@
+=== test-find002-locale-safe-sentences.sh ===
+PASS — FIND-002 fix: gates/v05.sh (e) is locale-safe, unlike the old byte-wise tr splitter
+
+=== test-find003-missing-draft-path-wiring-error.sh ===
+PASS — FIND-003 fix: supplied-but-missing ARTICLE_REAL_DRAFT_PATH is logged as a distinct wiring error, unlike the intentional no-path safety-net
+
+=== test-find004-browser-exception-safety.sh ===
+  case 1 output: __RAISED__=True
+__MSG__=simulated add_cookies failure (malformed cookie / launch flake)
+__CLOSE_CALLS__=1
+  case 2 output: note-publish-live: REFUSED for draft 'nLAUNCHFAILTEST' -- an unexpected browser-session error occurred: simulated cloakbrowser launch failure. No publish click can be confirmed to have succeeded from this failure alone; if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome.
+__RC__=1
+  case 3 output: note-publish-live: REFUSED for draft 'nMIDSESSIONFAILTEST' -- an unexpected browser-session error occurred: simulated mid-session DOM error (note.com layout changed unexpectedly). No publish click can be confirmed to have succeeded from this failure alone; if this happened after a click attempt, verify the draft's live status independently via lib/note-verify-live.py before assuming either outcome.
+__RC__=1
+__CLOSE_CALLS__=1
+PASS -- FIND-004: browser-session exceptions never surface as raw tracebacks, never leak a context, and always resolve to a clean refusal
+
+=== test-find005-redact-secrets-in-error-output.sh ===
+PASS — FIND-005 fix: cookie/session/token-shaped content is redacted before re-emission, ordinary diagnostics are untouched
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop21b-single-price-live-regression.sh ===
+  tool output: Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+note-set-single-price: heading containing 'まとめ' not found (paid-line skipped)
+SINGLE_PRICE_TYPE: paid
+SINGLE_PRICE_VALUE: 500
+SINGLE_PRICE_PANEL_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-panel-n39ef09f828f7.png
+SINGLE_PRICE_LINE_INSERTED: false
+SINGLE_PRICE_SCREENSHOT: /Users/anicca/.cloak/note-work/single-price-n39ef09f828f7.png
+PASS -- FIND-005: note-set-single-price.py's call to the shared select_paid_price() is LIVE-regression-verified against TEST draft n39ef09f828f7, no behavior change from the Sprint-2.5 extraction
+
+=== test-prop22a-live-publish-wiring.sh ===
+PASS -- PROP-22a wiring/fail-closed gates all confirmed, zero browser action on any refusal path
+
+=== test-prop22b-live-publish-real-click.sh ===
+  precheck (independent, real): {"status": "published", "eyecatch": true, "img_count": 3}
+  tool output: Update available: cloakbrowser 0.3.30 → 0.4.7. Run: pip install --upgrade cloakbrowser
+NOTE_LIVE_CLICKED: 更新する
+NOTE_LIVE_URL: https://note.com/anicca123/n/n39ef09f828f7
+NOTE_LIVE_SCREENSHOT: /Users/anicca/.cloak/note-work/live-publish-n39ef09f828f7.png
+  postcheck (independent, real): {"status": "published"}
+PASS -- PROP-22b: note-publish-live.py fired a REAL 投稿する/更新する click against TEST draft n39ef09f828f7, independently confirmed live
+
+=== test-prop22c-price-type-refusal-branches.sh ===
+PASS -- FIND-003: all 3 price/type-mismatch refusal branches independently exercised, each naming its own specific missing piece
+
+=== test-prop23-independent-live-verify.sh ===
+PASS -- PROP-23 independent logged-out verify (200 AND content-match) + state recording confirmed
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 26 test files, 26 PASS, 0 FAIL

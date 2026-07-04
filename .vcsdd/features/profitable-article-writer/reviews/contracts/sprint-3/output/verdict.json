@@ -1,0 +1,66 @@
+{
+  "sprintNumber": 3,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-3.md",
+    "contractDigest": "0a41203f5b56ec9b3bd61d383ffb1855b0b0b96e0580c83ec901867dcbc18f8d"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-publish-live.py:130-161", "description": "NOTE_LIVE_PUBLISH=1 checked first with zero prior I/O (line 133); --draft-key is argparse required=True with no default (lines 144-148) -- both halves of CRIT-201's trigger contract verified present in source"},
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh (full file read)", "description": "grep-confirmed zero references to note-publish-live.py anywhere in run.sh, lib/note_publish.sh, gates/v0.sh, gates/v05.sh, gates/publish-gate.sh (identity/ does not exist) -- current wiring is genuinely excluded, but see FIND-001 for a gap in the TEST's own coverage of this claim"},
+        {"type": "test-output", "location": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh case (a)", "description": "structural grep passes on today's disk state"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-green-phase.log:55-62", "description": "test-prop22b's real invocation independently confirmed: precheck eyecatch=true/img_count=3, tool clicked 投稿する, postcheck status flipped draft->published -- the REAL success path genuinely fires and is genuinely exercised, not a stub"},
+        {"type": "file", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-green-phase.log:88-92", "description": "independent post-hoc curl (outside the test harness) confirms HTTP 200 + article title string present in the live page body"},
+        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-3-red-phase.log:51-79", "description": "RED phase genuinely fails all 3 new PROP-22/23 test files when the implementation files are moved aside (no fake-to-pass)"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop22b-live-publish-real-click.sh:22-28", "description": "CRIT-204's flagship-key safety invariant (TEST_DRAFT_KEY != FLAGSHIP_DRAFT_KEY, hard-exit 3) is present and correct"},
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop22b-live-publish-real-click.sh:98", "description": "post-hoc grep confirms the flagship key nfb2ace9f0ed8 never appears in the tool's own stdout for the test run"},
+        {"type": "file", "location": "grep across skills/profitable-article-writer/tests/test-prop22*.sh", "description": "nfb2ace9f0ed8 never appears as an argument to note-publish-live.py/note-verify-live.py in any test file (only appears in SKILL.md prose and the test's own safety-guard constant)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-verify-live.py:1-116", "description": "verified: never imports/execs/subprocess-calls note-publish-live.py, never reads NOTE_COOKIES_FILE, uses stdlib urllib only (no requests/cloakbrowser), computes PASS = (status==200) AND (key_in_body OR title_in_body) -- not a bare 200"},
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop23-independent-live-verify.sh:16-18", "description": "structural greps for both the no-import and no-cookie-env-read invariants are present and correctly worded to allow docstring mentions but reject real invocations/reads"},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-verify-live.py:87-96", "description": "state recording (key+ts+url) is unconditional (best-effort, non-fatal on write failure) so both PASS and FAIL invocations accumulate to NOTE_LIVE_STATE_FILE per REQ-22"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205"],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "relatedCriteria": ["CRIT-202"],
+  "description": "CRIT-202's description claims 'Every REQ-21 pre-publish confirmation criterion (記事タイプ=有料, 価格=NOTE_PRICE, eyecatch present, >=1 visual figure present) is independently checkable, and an UNCONFIRMED state on ANY ONE of them blocks the click with the EXACT missing piece reported.' In the actual implementation, the '>=1 visual figure' refusal branch (lib/note-publish-live.py lines 120-126, the img_count<1 check) is NEVER exercised by any test. tests/test-prop22a-live-publish-wiring.sh's only fixture for this gate (case d) sets eyecatch=None AND img_count=0 simultaneously, so the eyecatch check on line 113 short-circuits and returns False before the img_count check on line 120 is ever reached. There is no fixture with eyecatch SET but zero <img> tags, so the img-count refusal's own exact-reason stderr message ('draft has ZERO <img> tags...') is completely untested code -- for a fail-closed gate on a real, irreversible publish tool, this is a genuine gap between the contract's claimed edge-case coverage and what is actually tested.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-publish-live.py",
+    "lineRange": "113-126",
+    "snippet": "if not eyecatch:\n    return (False, f\"eyecatch NOT set on draft {note_key!r} ...\", status)\nif img_count < 1:\n    return (False, f\"draft {note_key!r} has ZERO <img> tags in its body ...\", status)"
+  },
+  "corroboratingEvidence": [
+    {"filePath": "skills/profitable-article-writer/tests/test-prop22a-live-publish-wiring.sh", "lineRange": "86-87", "note": "stub fixture sets eyecatch: None AND body with 0 <img> tags together, so only the eyecatch branch is ever hit"}
+  ],
+  "routeToPhase": "2b"
+}

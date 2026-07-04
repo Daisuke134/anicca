@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "test_coverage",
+  "severity": "major",
+  "relatedCriteria": ["CRIT-203", "CRIT-204"],
+  "description": "This sprint's own design decisions section states the extraction of note_browser_common.select_paid_price() was done 'so BOTH that script [note-set-single-price.py] ... and lib/note-publish-live.py ... share the exact SAME selection sequence rather than one re-inventing it,' and both note-publish-live.py's and note-set-single-price.py's docstrings assert 'Moving this here changes nothing observable about note-set-single-price.py's own stdout/behavior.' That claim has NO live/E2E regression test backing it for note-set-single-price.py, the refactor's ORIGINAL caller. tests/test-prop21-visual-and-single-price.sh (which is this sprint's only test touching note-set-single-price.py) is explicitly a 'structural/static oracle (grep + python3 -m py_compile)' per its own header comment -- it never executes the script against a real or stubbed browser session, and never asserts SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE/SINGLE_PRICE_PANEL_SCREENSHOT output post-refactor. The ONLY live proof that select_paid_price() still behaves correctly is test-prop22b-live-publish-real-click.sh's green-phase run -- but that exercises the function through the NEW caller, note-publish-live.py, not through note-set-single-price.py. A regression specific to note-set-single-price.py's call site (e.g. a difference in how its own control flow interacts with the shared function, or an accidental change to the panel-screenshot-before-cancel sequence documented as CRIT-105's own required artifact) would go completely undetected by this sprint's test suite.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop21-visual-and-single-price.sh",
+    "lineRange": "12-13",
+    "snippet": "# This is a structural/static oracle (grep + python -m py_compile) -- it proves the WIRING is pointed at the\n# right calls, not a live network/browser assertion (those require real creds; see Sprint-2 evidence dir)."
+  },
+  "corroboratingEvidence": [
+    {"filePath": "skills/profitable-article-writer/lib/note_browser_common.py", "lineRange": "17-22", "note": "select_paid_price extracted this sprint specifically to be shared by both scripts"},
+    {"filePath": "skills/profitable-article-writer/lib/note-set-single-price.py", "lineRange": "68-70", "note": "docstring asserts unchanged behavior with no test backing that specific claim"}
+  ],
+  "routeToPhase": "2b"
+}

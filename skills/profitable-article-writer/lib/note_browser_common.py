@@ -50,17 +50,31 @@ def open_editor_ready(cookies: list, note_key: str, viewport: dict, timeout_s: i
     Returns `(ctx, pg)` on success. Returns `(ctx, None)` if the editor never reached the ready state
     within `timeout_s` -- the caller is responsible for `ctx.close()` in BOTH cases (this function never
     closes the context itself, since a caller may still want the context alive for its own diagnostics).
+
+    Sprint-3 contract-review FIND-004 fix: `launch_context()` succeeding but `add_cookies()`/`new_page()`/
+    `goto()`/the readiness poll then raising (a realistic cloakbrowser-launch flake, a malformed-cookie
+    exception, or a navigation timeout) used to leak that already-created context -- the exception propagated
+    out of this function BEFORE it ever returned a `(ctx, ...)` tuple, so no caller could ever obtain a handle
+    to close it. This function now closes any context IT created, best-effort, before re-raising, so no
+    caller-side exception handler can ever inherit an orphaned headless browser process from this function.
     """
     ctx = launch_context(headless=True, humanize=False)
-    ctx.add_cookies(cookies)
-    pg = ctx.new_page()
-    pg.set_viewport_size(viewport)
-    pg.goto(f"https://editor.note.com/notes/{note_key}/edit/", wait_until="domcontentloaded", timeout=45000)
-    for _ in range(timeout_s):
-        if "公開に進む" in pg.evaluate("()=>document.body.innerText"):
-            return ctx, pg
-        time.sleep(1)
-    return ctx, None
+    try:
+        ctx.add_cookies(cookies)
+        pg = ctx.new_page()
+        pg.set_viewport_size(viewport)
+        pg.goto(f"https://editor.note.com/notes/{note_key}/edit/", wait_until="domcontentloaded", timeout=45000)
+        for _ in range(timeout_s):
+            if "公開に進む" in pg.evaluate("()=>document.body.innerText"):
+                return ctx, pg
+            time.sleep(1)
+        return ctx, None
+    except Exception:
+        try:
+            ctx.close()
+        except Exception:
+            pass
+        raise
 
 
 def select_paid_price(pg, price) -> dict:

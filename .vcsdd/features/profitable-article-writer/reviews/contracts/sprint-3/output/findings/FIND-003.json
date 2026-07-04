@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "relatedCriteria": ["CRIT-202", "CRIT-203"],
+  "description": "REQ-21's fail-closed contract explicitly covers the 記事タイプ=有料/価格=NOTE_PRICE confirmation gate (gate 3c): 'if the pre-publish state (price/type/visuals) cannot be confirmed for that exact key, it SHALL NOT click publish and SHALL report the exact blocking reason.' The three refusal branches implementing this in lib/note-publish-live.py (row_found is False at lines 196-202; paid_checked is False at lines 203-209; price_filled mismatch at lines 210-216) have ZERO dedicated test coverage. No hermetic/mocked test drives select_paid_price() to return row_found=False, paid_checked=False, or a mismatched price_filled and asserts the corresponding refusal message + non-zero exit + no-click. The only test that reaches this code at all is the live test-prop22b-live-publish-real-click.sh, which by design only exercises the ALL-CONFIRMED success path (the precheck in that test explicitly asserts eyecatch/img_count are already satisfied, and the test's own PASS condition requires rc=0 and a real click). A real-money publish tool's own price/type mismatch refusal path -- arguably the single most safety-critical branch, since a price mismatch publishing an article at the wrong price is exactly the kind of defect REQ-21 exists to prevent -- is therefore never actually verified to refuse correctly.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-publish-live.py",
+    "lineRange": "195-217",
+    "snippet": "sel = select_paid_price(pg, price)\nif not sel[\"row_found\"]: ... return 1\nif not sel[\"paid_checked\"]: ... return 1\nif sel[\"price_filled\"] != str(price): ... return 1"
+  },
+  "routeToPhase": "2b"
+}
