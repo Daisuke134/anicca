@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "3",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -112,11 +112,18 @@
       "timestamp": "2026-07-04T10:02:48.783Z",
       "reason": "Sprint-2 contract-review PASS (3 rounds, genuine fixes each round); 17/17 tests green; entering Phase 3 implementation adversary review",
       "sprint": 2
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-04T10:58:16.206Z",
+      "reason": "Sprint-2 impl adversary PASS r4, 0 findings, all 5 dims",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 2,
-    "5": 1,
+    "5": 2,
     "6": 1,
     "1a": 2,
     "1b": 1,
@@ -723,8 +730,8 @@
   },
   "gates": {
     "3": {
-      "verdict": "FAIL",
-      "timestamp": "2026-07-04T10:14:48.457Z",
+      "verdict": "PASS",
+      "timestamp": "2026-07-04T10:58:16.203Z",
       "reviewedBy": "adversary"
     },
     "1c": {
@@ -748,5 +755,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T10:54:19.067Z"
+  "updatedAt": "2026-07-04T10:58:16.206Z"
 }
