@@ -1,10 +1,25 @@
-# pm-trade — Polymarket base agent, run AS-IS (W1)
+# pm-trade — Polymarket base agent + BASELINE ALPHA (W1 + #28)
 
-**The strategy is NOT here and never will be.** The base agent
-[`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does its OWN market
-analysis (paid per-request via BlockRun x402), its OWN sizing (its Kelly config), and its OWN execution
-(py-clob-client, EOA direct `signature_type=0`). This skill is a thin harness: run it for real, record
-the trace, stay out of the way. (SSOT: colony spec §0.25 THE PIVOT + §10 W1.)
+The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the
+market fetch, x402-paid AI analysis, Kelly sizing, and live execution (py-clob-client, EOA
+`signature_type=0`). ★ Its `generate_recommendations` shipped as a STUB (hardcoded prob 0.55, ignored the
+AI) so it never had real alpha. ★
+
+## BASELINE ALPHA (battle-tested seed, self-improvable — the recipe, applied to the agent 2026-07-04)
+`src/agent.py::generate_recommendations` is wired to the REAL alpha (verified live):
+- for each liquid market (volume ≥ $10k, price 2–98%): call `analyzer.compare_market(question, market_price)`
+  → the AI returns its own PROBABILITY + CONFIDENCE; edge = ai_prob − market_price.
+- **BET GATE (the tunable knobs the AI self-improves):** only bet when `|edge| ≥ MIN_EDGE` (default 0.15)
+  AND `confidence ≥ MIN_CONFIDENCE` (default 7/10). Side = YES if edge>0 else NO. Size = fractional Kelly.
+- Nothing about WHICH market/side is hardcoded — only the discipline (high edge + high conviction). The AI
+  tunes MIN_EDGE / MIN_CONFIDENCE across runs (H1-H3).
+Verified 2026-07-04: on 20 real markets the alpha produced genuine AI edges (Spain WC mkt12%/AI15%,
+France mkt35%/AI30%…) and correctly placed 0 bets (no market cleared 15%-edge+conf7 = efficient market) —
+vs the old stub which bet on everything. To PROPAGATE: apply this same wiring when setting up the agent for
+any instance/child (it lives in the agent's `src/agent.py`, not this skill).
+
+This skill is otherwise a thin harness: run for real, record the trace, let the AI self-improve the knobs.
+(SSOT: colony spec §0.25 + ROLE v3 "I create the baseline alpha, they self-improve from there".)
 
 ## Run
 
