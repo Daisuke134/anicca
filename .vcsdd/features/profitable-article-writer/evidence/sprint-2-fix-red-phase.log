@@ -1,0 +1,17 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+Command: cd skills/profitable-article-writer && git stash push -- lib/note_publish.sh && bash tests/test-prop21-visual-and-single-price.sh
+(the two new lib/*.py files were left on disk; only the OLD lib/note_publish.sh wiring was restored, to
+isolate the wiring-routing assertions PROP-21 exists to catch)
+
+  - FAIL lib/note_publish.sh's run_note_mode_a_publish routes through note_create_rich_draft (visuals+eyecatch)
+  - FAIL lib/note_publish.sh's run_note_mode_a_publish routes through note_set_single_price (single ¥ gate, not membership)
+FAIL (2)
+rc=1
+
+Full regression baseline (16 pre-existing test files) confirmed still green with the OLD note_publish.sh in
+place (git stash pop was NOT yet run for this check point):
+  bash tests/run-red.sh -> 16/16 PASS (unaffected by the note_publish.sh stash since those tests exercise
+  gates/v0.sh, gates/v05.sh, run.sh's topic/gate/abort wiring, and PROP-20's own note_publish.sh hermetic
+  seam via NOTE_PUBLISH_TEST_FORCE, none of which read note_create_rich_draft/note_set_single_price).
