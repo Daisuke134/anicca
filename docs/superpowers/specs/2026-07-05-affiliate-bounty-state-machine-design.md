@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV6(GATE 1ラウンド1-5 FAIL、measure_commission.pyのクロスリポジトリ配線を具体化) |
+| 状態 | spec REV7(GATE 1ラウンド1-6 FAIL、$STATE未定義クラッシュ/エラー握りつぶし/未使用引数を修正) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -220,10 +220,23 @@ def _amazon_report_fn():
         return {"error": f"amazon_report.py did not return valid JSON: {out.stdout[:200]!r} {out.stderr[:200]!r}"}
 
 def _ledger_record_fn(row):
-    """record-affiliate-earn.mjsをsubprocessで呼ぶ。INV-1〜5はmjs側が検証するので
-    ここでは二重チェックしない(失敗したら例外をそのまま伝播、握りつぶさない)。"""
+    """record-affiliate-earn.mjsをsubprocessで呼ぶ。INV-1〜5はmjs側が検証する。
+    ★GATE 1ラウンド6のfinding FIND-2を反映★: 元の設計は「例外をそのまま伝播、
+    握りつぶさない」という意図だったが、実際には呼び出し元run.shが`2>/dev/null
+    || true`で全て握りつぶすため、意図と真逆に「一番見えにくい場所で握りつぶす」
+    結果になっていた。正しい扱い: このヘルパー内で例外をcatchし、`measure_commission`
+    が返す結果辞書に`ledger_error`として含める(例外を上に投げない、しかし
+    エラー内容は最終的なJSON出力に必ず現れるようにする — run.shが`2>/dev/null`
+    しても標準出力(stdout)のJSONは失われない)。"""
     p = os.path.join(AFFILIATE_SLIDESHOW_SCRIPTS, "record-affiliate-earn.mjs")
-    subprocess.run(["node", p, "--row", json.dumps(row)], check=True, timeout=15)
+    try:
+        subprocess.run(["node", p, "--row", json.dumps(row)], check=True, timeout=15,
+                        capture_output=True, text=True)
+        return None  # 成功
+    except subprocess.CalledProcessError as e:
+        return f"record-affiliate-earn.mjs REJECTED: {e.stderr.strip()[:300]}"
+    except Exception as e:
+        return f"record-affiliate-earn.mjs invocation failed: {e}"
 
 if __name__ == "__main__":
     import argparse
@@ -231,16 +244,40 @@ if __name__ == "__main__":
     ap.add_argument("--watermark", required=True)
     ap.add_argument("--wake", required=True)
     a = ap.parse_args()
-    result = measure_commission(a.watermark, _ledger_record_fn, time.time(), _amazon_report_fn)
+    ledger_errors = []
+    def _ledger_wrapper(row):
+        err = _ledger_record_fn(row)
+        if err:
+            ledger_errors.append(err)
+    result = measure_commission(a.watermark, _ledger_wrapper, time.time(), _amazon_report_fn)
+    result["wake"] = a.wake   # ラウンド6 finding FIND-3: 未使用だった--wakeを出力に含める(トレーサビリティ用)
+    if ledger_errors:
+        result["ledger_errors"] = ledger_errors   # 空でなければ「記録しようとしたが失敗した」ことがJSON出力に必ず残る
     print(json.dumps(result, ensure_ascii=False))
 ```
 
 ### `run.sh`への配線(REQ-A3、clip run.shのREQ-008と同じ位置関係)
 
+★GATE 1ラウンド6で発見(FIND-1、critical)★: 現行`affiliate/run.sh`には`STATE`という
+変数が存在しない(`HOME_DIR`/`QUEUE`/`POSTED`/`ACCTS`/`POSTER`/`CDP_DIR`/`PY`のみ)。
+`run.sh:7`は`set -uo pipefail`(nounset)のため、未定義の`$STATE`を参照した瞬間に
+**スクリプト全体が即座に異常終了する**(既存のPOSTロジックにすら到達しない —
+「POSTをブロックしない」どころか全体をクラッシュさせていた)。`STATE`を明示的に
+定義する行を、既存の`mkdir -p "$QUEUE" "$POSTED"`(現行17行目)の近くに追加する:
+
 ```bash
+# 既存17行目 mkdir -p "$QUEUE" "$POSTED" の直前または直後に追加
+STATE="$HOME_DIR/anicca/skills/earn/affiliate/state"
+mkdir -p "$QUEUE" "$POSTED" "$STATE"
+
+# ...(既存のPOST用ロジック本体はこのまま)...
+
 # MEASURE: 毎wake無条件に1回、アカウント全体のコミッション増分だけ確認。
-# POSTを一切ブロックしない(REQ-008と同型)。
-"$PY" "$HOME/anicca/skills/earn/affiliate/measure_commission.py" \
+# POSTを一切ブロックしない(REQ-008と同型)。measure_commission.py自身が
+# 例外を握りつぶさずJSON出力に含める設計(上記FIND-2修正)なので、ここでの
+# `2>/dev/null || true`はプロセスの異常終了(タイムアウト等)だけを無害化する
+# ためのものであり、実際のエラー内容(ledger_errors等)はstdoutのJSONに残る。
+"$PY" "$HOME_DIR/anicca/skills/earn/affiliate/measure_commission.py" \
   --watermark "$STATE/commission-watermark.json" --wake "$WAKE" 2>/dev/null || true
 
 # 以降、既存のPOSTロジック(SET選択→アカウント選択→投稿)は完全に無変更で継続
@@ -517,7 +554,21 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   (`~/.claude/skills/earn-affiliate-slideshow/scripts/`)にあり、この2つへの
   具体的な橋渡し(subprocess呼び出し等)が一度も書かれていなかった
   (REQ-B1の1点目がラウンド3で指摘されたのと同種の「疑似コード無し」欠落)。
-- **ラウンド6(REV6、本ファイル)**: `measure_commission.py`の`__main__`ブロック+
-  `_amazon_report_fn`/`_ledger_record_fn`という2つのsubprocessヘルパーを追加、
-  クロスリポジトリ配線を具体化(REQ-A3)。次はこのREV6を再度fresh-context
-  adversaryにかけ、PASSするまで実装に進まない。
+- **ラウンド6**: FAIL。fresh-context Sonnet adversaryの指摘: (a)★致命的★
+  追加した`run.sh`スニペットが未定義の`$STATE`変数を参照しており、既存の
+  `affiliate/run.sh`には`STATE`という変数が無い。`run.sh:7`は`set -uo pipefail`
+  (nounset)のため、この参照だけで**スクリプト全体が即座にクラッシュ**する —
+  「POSTをブロックしない」どころか全処理を止めていた(FIND-1、ラウンド5で
+  指摘された`$SK`と同種の未定義変数問題の再発) (b) `_ledger_record_fn`の
+  コメントが「例外を握りつぶさず伝播する」と書いていたが、実際には呼び出し元
+  run.shが`2>/dev/null || true`で全て握りつぶすため、意図と真逆に「一番見え
+  にくい場所で握りつぶす」結果になっていた(FIND-2) (c) `--wake`引数を
+  受け取るが一度も使っていない、意味の無い必須引数だった(FIND-3、non-blocking)。
+  検証の結果、(a)(b)は正当かつcritical、(c)も直すべきと判断。
+- **ラウンド7(REV7、本ファイル)**: `affiliate/run.sh`に`STATE`変数定義+
+  `mkdir -p`を追加する具体的な差分を明記(FIND-1修正)。`_ledger_record_fn`を
+  例外を投げず結果文字列を返す設計に変更し、`measure_commission.py`の`__main__`が
+  それを`ledger_errors`として最終JSON出力に必ず含めるようにした(run.shが
+  stderrを捨てても、stdoutのJSONにはエラーが残る、FIND-2修正)。`--wake`を
+  出力JSONに含めてトレーサビリティ用途に実際に使うようにした(FIND-3修正)。
+  次はこのREV7を再度fresh-context adversaryにかけ、PASSするまで実装に進まない。
