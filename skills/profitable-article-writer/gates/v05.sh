@@ -101,10 +101,14 @@ fi
 # Sprint 1 wires no live judge_v05 call yet (Sprint 2 integration seam, same as run.sh's real topic-pick
 # seam) — ARTICLE_JUDGE_V05_RESPONSE unset/missing => (a)-(d) stay fail-closed false above.
 
-# (e) readability: >= 70% of sentences are <= 60 characters. Split on '.', '!', '?'; drop headings/blank
-# lines/empty fragments.
+# (e) readability: >= 70% of sentences are <= 60 characters. Split on sentence-terminal punctuation —
+# BOTH ASCII ('.', '!', '?') AND Japanese full-width equivalents ('。', '！', '？') — so this stays correct
+# for the language this skill actually ships (REQ-19: a Japanese note DRAFT). An ASCII-only split treats an
+# entire well-punctuated Japanese paragraph as one giant "sentence" (since it contains no ASCII terminator),
+# which almost always exceeds 60 chars and makes crit_e permanently false regardless of how short the real
+# sentences are (Sprint-2 PROP-18 fix). Drop headings/blank lines/empty fragments.
 plain="$(echo "$body" | grep -vE '^#' | grep -vE '^[[:space:]]*$')"
-sentences="$(echo "$plain" | tr '.!?' '\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')"
+sentences="$(echo "$plain" | tr '.!?。！？' '\n\n\n\n\n\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')"
 total=0
 short=0
 while IFS= read -r s; do

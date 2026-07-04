@@ -89,10 +89,11 @@ else
   # Real topic-pick/research-assessment is AGENT JUDGMENT (per the purity-boundary map in
   # verification-architecture.md) performed by the running model BEFORE invoking this deterministic wake
   # script, never a hardcoded classifier inside this shell file (per building-effective-ai-agents.md).
-  # Sprint 1 wires no live agent-judgment call yet (that is the Sprint 2 integration seam) — so a real,
-  # non-test wake fails CLOSED to SKIPPED rather than ever emitting an unreviewed/unresearched article.
-  topic=""
-  research="insufficient"
+  # REQ-19/Sprint 2: the running agent supplies its own topic + research-sufficiency verdict via
+  # ARTICLE_REAL_TOPIC/ARTICLE_REAL_RESEARCH. Absent/insufficient => fail-closed SKIPPED, the unchanged
+  # Sprint-1 default (REQ-4b) — this file itself still makes no topic/research judgment call.
+  topic="${ARTICLE_REAL_TOPIC:-}"
+  research="${ARTICLE_REAL_RESEARCH:-insufficient}"
 fi
 
 if [ -z "$topic" ] || [ "$research" != "sufficient" ]; then
@@ -112,6 +113,14 @@ fi
 # ---------------------------------------------------------------------------------------------------------
 generate_draft() {
   local topic="$1" out="$2"
+  if [ "${ARTICLE_TEST:-}" != "1" ] && [ -n "${ARTICLE_REAL_DRAFT_PATH:-}" ] && [ -f "${ARTICLE_REAL_DRAFT_PATH:-}" ]; then
+    # REQ-19/Sprint 2 real content-gen hook: the running agent (never this deterministic shell script) has
+    # ALREADY researched and written the real article to ARTICLE_REAL_DRAFT_PATH, per the purity-boundary
+    # map (craft writing = agent judgment, verification-architecture.md). Use that real content VERBATIM —
+    # never the boilerplate template below, which stays reserved for ARTICLE_TEST=1 hermetic tests only.
+    cp "$ARTICLE_REAL_DRAFT_PATH" "$out"
+    return 0
+  fi
   cat > "$out" <<EOF
 # ${topic}: the pattern most people miss in the first 10 hours
 
@@ -237,10 +246,35 @@ EOF
 fi
 
 # Mode A: stop at draft, notify the human (URL + screenshot) for review — never publish (REQ-6).
+#
+# REQ-19/Sprint 2, PROP-20: if the caller asked for a real note.com DRAFT (ARTICLE_NOTE_TITLE set), attempt
+# it via the REUSED, existing note-publish pipeline (lib/note_publish.sh — never rebuilt here). Any failure
+# at any step degrades to the Sprint-1 safe placeholder below; this NEVER crashes the wake and NEVER fakes a
+# URL. lib/note_publish.sh's own NOTE_PUBLISH_TEST_FORCE seam keeps this branch hermetically testable
+# independent of ARTICLE_TEST (each side-effect area owns its own test-injection seam, same convention as
+# ARTICLE_TEST_FORCE_V0/V05 for the gates).
+notify_url="pending-human-review"
+notify_screenshot="pending-human-review"
+if [ -n "${ARTICLE_NOTE_TITLE:-}" ]; then
+  # shellcheck disable=SC1091
+  source "$SKILL_DIR/lib/note_publish.sh"
+  note_out="$(run_note_mode_a_publish "$draft_path" "$ARTICLE_NOTE_TITLE" "${ARTICLE_NOTE_KEY:-new}" "${ARTICLE_NOTE_PRICE:-500}" "${ARTICLE_NOTE_PAYWALL_HEADING:-}" 2>&1)"; note_rc=$?
+  if [ $note_rc -eq 0 ]; then
+    real_url="$(echo "$note_out" | grep -oE '^NOTE_URL: .*' | sed 's/^NOTE_URL: //')"
+    real_shot="$(echo "$note_out" | grep -oE '^NOTE_SCREENSHOT: .*' | sed 's/^NOTE_SCREENSHOT: //')"
+    [ -n "$real_url" ] && notify_url="$real_url"
+    [ -n "$real_shot" ] && notify_screenshot="$real_shot"
+  else
+    echo "note-publish wiring did not complete (degrading to the safe placeholder, never faking a URL): $note_out" >&2
+  fi
+fi
+
 notify_path="$ARTICLE_DIR/notify.json"
 notify_tmp="$(mktemp "$ARTICLE_DIR/.notify.json.XXXXXX")"
+notify_url_json="$(json_escape "$notify_url")"
+notify_shot_json="$(json_escape "$notify_screenshot")"
 cat > "$notify_tmp" <<EOF
-{"draft_path": "$draft_path", "url": "pending-human-review", "screenshot": "pending-human-review"}
+{"draft_path": "$draft_path", "url": "$notify_url_json", "screenshot": "$notify_shot_json"}
 EOF
 mv "$notify_tmp" "$notify_path"
 

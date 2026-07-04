@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "1a",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -77,6 +77,34 @@
       "reason": "Start Sprint 2: real content-gen + real note DRAFT + daily executor/verifier roles",
       "sprint": 1,
       "nextSprintHint": 2
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-04T09:00:00.000Z",
+      "reason": "Sprint 2 verification-architecture.md updated: PROP-18/19/20 added (JP-punctuation V0.5 fix, real generate_draft hook, real note-publish wiring)",
+      "sprint": 2
+    },
+    {
+      "from": "1b",
+      "to": "2a",
+      "timestamp": "2026-07-04T09:05:00.000Z",
+      "reason": "Sprint-2 contract written (contracts/sprint-2.md); RED tests written for PROP-18/19/20 and confirmed failing against pre-fix code, regression baseline (14/14 Sprint-1 tests) green",
+      "sprint": 2
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-04T09:20:00.000Z",
+      "reason": "GREEN: gates/v05.sh JP-punctuation fix, run.sh real generate_draft hook, lib/note_publish.sh + run.sh Mode-A wiring implemented; 16/16 tests green (13 Sprint-1 + PROP-18/19/20)",
+      "sprint": 2
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-04T09:25:00.000Z",
+      "reason": "Refactor pass complete, tests remain 16/16 green; a real (non-test) wake was executed producing a real note.com DRAFT as Sprint-2 verification evidence. Phase 3 (fresh-context adversary review) and 1c-equivalent human/Dais sign-off for Sprint 2 NOT yet performed in this session — left for the next VCSDD pipeline pass.",
+      "sprint": 2
     }
   ],
   "iterations": {
@@ -602,6 +630,36 @@
         "createdAt": "2026-07-04T08:07:42.373Z",
         "createdInPhase": "complete",
         "externalId": "REQ-20"
+      },
+      {
+        "beadId": "BEAD-045",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "resolved",
+        "linkedBeads": ["BEAD-005"],
+        "createdAt": "2026-07-04T09:00:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-18"
+      },
+      {
+        "beadId": "BEAD-046",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "resolved",
+        "linkedBeads": ["BEAD-043"],
+        "createdAt": "2026-07-04T09:00:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-19"
+      },
+      {
+        "beadId": "BEAD-047",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md",
+        "status": "resolved",
+        "linkedBeads": ["BEAD-043"],
+        "createdAt": "2026-07-04T09:00:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-20"
       }
     ]
   },

@@ -55,9 +55,11 @@ skills/profitable-article-writer/
 ├── run.sh                1-wake entrypoint
 ├── lib/config.sh          declarative constants (loop cost-tier; no LLM in the earn/verify path)
 ├── gates/v0.sh             render/slop gate
-├── gates/v05.sh            V0.5 fixed binary craft checklist gate
+├── gates/v05.sh            V0.5 fixed binary craft checklist gate (readability splits on ASCII AND JP 。！？)
 ├── gates/publish-gate.sh   fail-closed publish wiring (V0 ∧ V0.5 ⇒ publish, else never)
 ├── identity/accounts.sh    per-install credential registry / self-create-or-flag
+├── lib/note_publish.sh     Mode-A real note.com DRAFT wiring (REUSES the existing ai-entity-article-writer
+│                           note-publish pipeline + note_mcp.create_draft; never rebuilds either — Sprint 2)
 └── tests/                  VSDD RED-phase oracle tests, one file per proof obligation (PROP-*)
 ```
 
@@ -73,11 +75,15 @@ skills/profitable-article-writer/
 ## Status
 
 Current phase: see `.vcsdd/features/profitable-article-writer/state.json`'s `currentPhase` (canonical,
-cannot drift out of sync with this doc). As of Sprint 1's implementation-review round: Phase 2c (refactor
-complete) — every script under this directory is a real, non-stub implementation (`run.sh`, `gates/*.sh`,
-`identity/accounts.sh`); the `tests/` oracle suite (`tests/run-red.sh`) passes green, no `NOT_IMPLEMENTED`
-marker remains anywhere. Sprint-1 scope is deferred-real-integration for content-gen, note/rail publish, and
-earn (see `.vcsdd/features/profitable-article-writer/contracts/sprint-1.md`'s "Explicitly OUT of Sprint 1").
+cannot drift out of sync with this doc). As of Sprint 2: Phase 2c (refactor complete) — `tests/run-red.sh`
+is 16/16 green (13 from Sprint 1 + PROP-18/19/20). Sprint 2 wired: (1) `gates/v05.sh`'s readability
+arithmetic now recognizes Japanese terminal punctuation (。！？), not just ASCII, fixing a real blocker for
+the skill's actual output language; (2) `run.sh`'s `generate_draft` real-mode hook uses the running agent's
+own real, researched content via `ARTICLE_REAL_DRAFT_PATH` (never the boilerplate template) when supplied,
+staying fail-closed to SKIPPED otherwise; (3) `lib/note_publish.sh` wires Mode-A to a REAL note.com DRAFT by
+REUSING the existing `ai-entity-article-writer/scripts/note-publish/` pipeline + `note_mcp.create_draft`
+(never rebuilt). Phase 3 (fresh-context adversary review) for Sprint 2 has not yet run in this session — see
+`.vcsdd/features/profitable-article-writer/contracts/sprint-2.md`.
 
 **Test coverage: wiring vs real-gate mechanics.** Most `test-prop*.sh` files (PROP-2/5/6/9/14/15 etc.) drive
 `gates/v0.sh` and `gates/v05.sh` via `ARTICLE_TEST_FORCE_V0`/`ARTICLE_TEST_FORCE_V05` — a deterministic

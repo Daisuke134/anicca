@@ -34,6 +34,10 @@ One article → funnel → per-platform native monetization → real money verif
   REQ-3's semantic check lives); (e) readability, measured mechanically: ≥70% of
   sentences are ≤60 characters (mobile-scannable) — an objective, computable threshold, not a subjective judgment.
   Any FALSE ⇒ V0.5 FAIL. (Resolves FIND-008/009, iter2 FIND-002/003, iter3 FIND-001.)
+  **Edge case (Sprint 2, PROP-18):** criterion (e)'s sentence-splitter SHALL recognize Japanese full-width
+  terminal punctuation (。！？) as sentence boundaries, in addition to ASCII ('.','!','?') — REQ-19's daily
+  executor writes a JAPANESE note DRAFT, and an ASCII-only splitter collapses an entire well-punctuated
+  Japanese paragraph into one sentence, permanently failing (e) regardless of true sentence length.
 - **REQ-6** WHEN V0+V0.5 PASS AND mode = A (AUTONOMY=off, default), the skill SHALL stop at a note DRAFT and notify
   the human (URL + screenshot) for review; it SHALL NOT publish.
 - **REQ-7** WHEN V0+V0.5 PASS AND mode = B (AUTONOMY=on), the skill SHALL publish directly, then distribute to reach platforms.
@@ -94,6 +98,14 @@ One article → funnel → per-platform native monetization → real money verif
   (me / the main agent) via a real browser look at the posted draft — NOT by the executor grading itself. The
   executor posts; the verifier checks. (This is the Mode-A trust ramp: executor drafts daily, verifier approves;
   once trusted, Mode B flips to autonomous publish, and self-heal/self-improve (Sprint 5) removes the verifier too.)
+  **Sprint-2 note-publish integration (PROP-19/20):** the real note DRAFT post SHALL REUSE the existing, already-
+  proven `ai-entity-article-writer/scripts/note-publish/` pipeline (auth, eyecatch/目次/paywall-gate, verify) — it
+  is NEVER rebuilt. The one genuinely-missing piece (creating a BRAND-NEW note draft, as opposed to updating the
+  pre-existing Automaton note) SHALL use `note_mcp.api.articles.create_draft` — the SAME underlying library the
+  reused pipeline's own `note-stage2-publish.py` already depends on for `update_article` — so no non-Automaton
+  article can ever overwrite the live published Automaton note (that note's numeric id stays hardcoded-and-guarded
+  in the upstream script; the new-draft path never touches it). Any failure in the create/gate/verify chain SHALL
+  degrade to the Mode-A safe placeholder (REQ-6) rather than crash the wake or fabricate a URL.
 
 ## Purity-boundary candidates (refined in 1b)
 
