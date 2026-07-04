@@ -1548,3 +1548,13 @@ $100k++実エッジ=leaderboard(Theo$22M)。★$20-50 で「shit ton」は不可
   → 決定点: (A) PM を今日の resolution まで回して ★初の realized profit 実数★ を出す(資金移動なし)
             (B) SOL/HL に資金移動 or Dais funding して 3エンジン化(PM資金を割ると working engine が薄まる)
   推奨: まず (A) = PM の resolution で realized を確定 → その実数で ART-A → 収益を SOL/HL に再投資 or Dais 判断。
+
+### §18 ★ 無人ループ実験 開始(2026-07-05)= self-funded + human-funded を no-intervention で走らせる ★
+- $10 SOL 着金(BF9v 0.111 SOL)→ ★self-funded Franklin(8Fpqd)へ移動★(tx 4txmXcFK…)。Franklin now 0.108 SOL + $0.20 USDC ≈ $16。
+- ★2ループを launchd で無人稼働★:
+  - human-funded = `ai.anicca.pm-earner`(PID稼働, 10分毎)= PM maker-bundle + bundle-arb。$12.79、約定中、含み +$0.32。
+  - self-funded  = `ai.anicca.franklin-sol`(30分毎)= Franklin CLI が自wallet+baseline+自x402燃料で自律売買。
+- ★no-intervention 観測(初回)★: Franklin は自律で wallet 確認 → 「USDC $0.20 は小さすぎ + SOL signal neutral → 今日は取引しない(手数料負け回避)」と ★正しく規律判断★。= 動いてる、ただし $16 は Franklin 自身の経済閾値($50-100)未満で hold。
+- ★正直な学び★: 両AIとも自律で合理判断(PMは薄利bundle、Franklinは損を避けてhold)。だが micro-capital($10-50)は両venueで earning 閾値未満(Franklin $50+/Solana swap, PM $200-1000/LP報酬)。
+  → 実験継続: このまま無人で回し、Franklin が $50+ になった時/PMが resolution した時に realized を観測。self-funded が本番(重要)。
+- 次: 介入せず観測。realized profit が出たら台帳+記事。Franklin を実トレードさせるには追加funding($50+)がFranklin自身の推奨。
