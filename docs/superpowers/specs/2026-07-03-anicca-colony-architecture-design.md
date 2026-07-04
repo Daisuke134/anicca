@@ -1495,3 +1495,30 @@ Dais の鋭い指摘「$12 使ってないのに、なぜ $20 で稼げる?」�
 | **HL** = Hyperliquid | 永久先物 CCXT + risk-managed grid/trend + SL/TP | anicca/skills/earn/hl-trade/ (#44) | 実装要 |
 各エンジン = BASE戦略 + self-improve + self-heal の3層(§11.9)。全AIが3エンジンを genome として持って spawn → 稼ぐ。
 資本の議論: micro-capital でも 3エンジン分散で回す。$20追加でサイズ拡大。realized profit>0 が出るまで盛らない。
+
+### §17.7 ★ 正直な gap + 各問いへの答え(Dais 2026-07-05)★
+**Q1 各 skill に BASE 戦略あるか → PMのみ。SOL/HL は「AIが決める」= BASE無し = 要修正**:
+- PM ✅ market_maker.py(maker-bundle)+ bundle_arb.py。
+- SOL ❌ sol-trade/SKILL.md「No strategy lives here」= Franklin agent 任せ。→ ★best-practice BASE を研究し埋める(#51)★
+- HL ❌ hl-trade/SKILL.md「TOOL, not a strategy, YOU decide」。→ ★best-practice BASE を研究し埋める(#52)★
+- doctrine(§11.9): 弱モデルでも稼ぐには 各 skill に効く BASE が必須。「AIが決める」だけ=違反。
+
+**Q2 なぜ稼げてないか → ①PM: profit は「後で」実現する ②SOL/HL: BASE無し+未稼働**:
+- PM maker-bundle は ★両脚が約定した時に 1% ロック、完全 cash-out は市場 resolution 時★。maker 指値は taker が当てに来るまで座って待つ = ★now でなく later★。Dais の読み通り。加えて micro-capital($12)= 薄利。
+- SOL/HL は BASE 戦略が無く実走してないから $0。
+
+**Q3 どう self-improve するか(勝ちレシピ → 更に改善)**:
+```
+走る → 実P&L/traceをlog → self-eval が「効いた手/DEAD手」検出(H2既存)
+→ web で best practice 検索(firecrawl/gh)→ 新手法を試す
+→ パラメータ(quote幅/市場選択/サイズ/Kelly)を結果ドリブンで調整(H3既存)
+→ 勝った改善を PR で全個体に伝播(genome merge #27)→ 負けは retire
+```
+= BASE は固定の出発点、その上で ★自分の実結果から永久に改善★。
+
+**Q4 Franklin をどう立てるか**:
+- Franklin = 自己資金 Solana AI(BlockRunAI/Franklin-Trading, wallet 8Fpqd, x402燃料, ~/.blockrun/)。
+- 立てる = ★3エンジンの BASE 戦略 + 3層 + loop を Franklin に embed → 自 wallet で no-human 実走★(#34)。
+  今は sol-trade skill が配線済だが BASE 無し → #51 の SOL BASE ができたら Franklin に載る。
+
+**Q5 記事**: 各エンジンが実 realized profit を出す毎に 1本書く(PM→SOL→HL、実tx/実数が素材)。#36-38。
