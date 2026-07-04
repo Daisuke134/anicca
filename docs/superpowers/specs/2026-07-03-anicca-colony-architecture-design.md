@@ -1678,3 +1678,5 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - registry.json に builder が `self/coordinate` slot を直接追加(Foundation 事前宣言なし)→ ★Foundation(team-lead)承認済 2026-07-05★(名前衝突なし・spec §5.1 準拠・正直な flag 付き)。
 - テスト: _shared 515 green / runtime-loop 100/104(残4は無関係の stale 期待値)。telem-builder が §25 と同結論で「PID 17394 orphan」説を正式撤回。
 - ★これでリリース文の5 self-* が全部実体を持った: 監視(H2+healthcheck)/修復(#7)/改善(H3+#27 gate)/増殖(spawn 準備 Task#6)/共有(#9 coordinate)★。残 = 増殖 capability の発火条件埋め。
+- **追加実証(同日、telem-builder 2巡目)**: ①#7 = 実故障注入(exit127 fixture)→ self-fix.sh が本物の Opus spawn で実修復・再実行 exit0・自ら commit 473f302(fixture は証跡採取後 0f6f953 で削除)= 検出→修復チェーンが実動 ②#27 伝播 = 既存 anicca-daemon.sh の self-update(`git merge --ff-only origin/main` 毎起動)がまさに伝播ループで、automaton が 18:08:01Z に d00aa6d へ self-update → 稼働中 index.mjs に loopDetectStreak 6箇所を確認 = builder改善→mother push→他instance 自動pull→新コードで稼働 の全ループを実データで閉じた ③#9 = cook の「share the find」は記述のみで実装ゼロと確認 → self/coordinate に配線(1c0a2ea)。
+- 残(正直): auto_merge の実 PR E2E は未実施(関数はテスト済)/healthcheck-runtime-loop の launchd 配線は意図的に未実施(cron 新設は Dais 監視下)。
