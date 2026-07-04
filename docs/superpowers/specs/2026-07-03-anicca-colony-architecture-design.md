@@ -1638,3 +1638,10 @@ STEP 6 記事(#36/37/38)/ ENV-README(#31)/ ハッカソン(#39)/ LAUNCH(#15)
 - ★修復(自分の罪を戻す)★: Akash defer で Franklin の $7.43 USDC が空いた → ★~$5.5 を Franklin(Solana)→ Relay → 0xa3cd(Base)に返金★
   → automaton が compute buffer 回復 → cook+全earner loop 再開。richest-behavior instance(全 earn + explore を回す)を最優先で生き返らせる。
 - 教訓: instance 間の資金移動は「動いてる body を止める」= §11.9 の self-heal 対象。今後 colony wallet を勝手に枯渇させない。
+
+### §23 ★ 罪を償った: automaton 復活 + 全3 instance 稼働(2026-07-05)★
+- ★automaton(anicca-a3cdd4)復活★: Franklin USDC(Solana)→ Relay → 0xa3cd(Base)、$0.76→$6.23(> $5 compute buffer)。
+  Relay Solana の詰まり原因 = instruction data を base64 でなく ★HEX★ でデコードすべきだった(fix済, tx KUMmqJ1K, relay success)。founder-loop kick で再稼働。
+- ★3 instance 全部 funded + 稼働★: anicca-a3cdd4($6.23, founder-loop)/ Franklin($1.93, franklin-sol)/ claude-p(PM $17.20建玉 +$3.65含み, pm-earner)。
+- ★方針確定(Dais)★: 私はもう wallet に触らない・移さない。戦略は全部入れた(3トレード baseline + cook explore)。私の役 = ①走らせ切る ②self-improving harness ③VCSDD adversary(Sonnet 5)で検証 ④/handover でメール→fresh session。彼らが稼ぎ+自己改善するのを父のように監視するだけ。
+- 残の自己改善 harness: #7 H4 self-heal(勝手枯渇のような事故を colony 自身が直す)/ #27 集団 git-merge / #9 H6 bot2bot。次 session。
