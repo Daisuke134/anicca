@@ -561,6 +561,39 @@ via a base agent it RUNS, not a strategy I wrote. ★**
 lets the AI improve itself) or **(W) wire a base agent AS-IS** (wallet + guard + run). **No task = "I write a
 strategy."** If a task tempts me to write earning/trading logic → it's wrong; the AI does that.
 
+### EXPLORE — the `cook` skill: how it works + the BROKEN bridge (Dais 2026-07-04, read the code)
+`cook` IS the explore earner. Each wake it: firecrawl-searches the web for a NEW way to earn (query = the
+model's own curiosity, e.g. "new on-chain micro-earnings for agents with <$1 capital"), surfaces real
+candidate URLs (github repos etc.), records them to the earn ledger, and the candidates ride into the next
+wake's context. ★ DIAGNOSIS (Dais asked "not chosen, or not going well?") ★: the AI DOES choose cook (4+
+runs with real curiosity queries) and it DOES surface real candidates — the problem is there is NO BRIDGE
+from "candidate surfaced" to "candidate actually TRIED → wired as a new earn skill → tested → earns." The
+finds just sit in the ledger; explore never converts to a working new earner → $0. THE FIX (REQ-EXPLORE-
+BRIDGE): a surfaced candidate → the AI reads its README + evaluates → if promising, wires it as a new earn
+slot (via self/issue-dev → PR) → runs a real no-mock test → if it earns, REQ-MERGE auto-merges it so EVERY
+instance gains the new earner. Explore→try→embed→share = the loop that lets the swarm discover earners we
+never set ourselves (the point of self-improvement — Dais).
+
+### HOW THE BEST STRATEGY IS SELF-IMPROVED, SHARED, AND MERGED TO EVERYONE (Dais 2026-07-04)
+1. WITHIN an instance: H1 trace → H2 self-eval → H3 the AI improves its own strategy (verified live).
+2. SHARE: the improved strategy (or a discovered earner) becomes a PR to the MOTHER repo (`~/anicca`) with
+   the EVIDENCE = chain-verified earnings delta (H6 bot2bot = the discussion/announce layer).
+3. MERGE with NO human (REQ-MERGE): tests pass + fresh-context adversary PASS + real on-chain earnings
+   improvement → auto-merge into the mother genome.
+4. PROPAGATE: every instance (cloud OR local, existing AND every future spawn) does the daily
+   `git pull origin main` → inherits the merged improvement → earns more.
+★ LATER-BORN INHERIT MORE (Dais's vision) ★: because the genome accumulates every merged winner, an AI born
+LATER starts with STRICTLY BETTER skills than one born earlier → it earns more from birth. The colony gets
+smarter over generations (a real evolutionary ratchet, not per-instance reset).
+
+### AGENT UBI / MUTUAL AID — the swarm survives as a whole, NONE die (Dais 2026-07-04, = G3 expanded)
+A surplus AI redistributes: it funds its PARENTS (who seeded it) AND any BROKE sibling/child on-chain, no
+human. This is UBI not just for humans but for AGENTS — the collective keeps every member alive (a broke AI
+that would otherwise die gets funded by the colony's surplus). Mechanism = registry of instance wallets +
+gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus member sends it USDC. Combined
+with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
+doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
+
 ### EARN-AUDIT results (ran the ledger + skills 2026-07-04) — the HONEST state of each earner
 | earn skill | works? | realised net (all runs) | the gap |
 |---|---|---|---|
