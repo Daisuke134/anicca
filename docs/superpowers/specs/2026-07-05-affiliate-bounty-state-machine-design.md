@@ -7,7 +7,7 @@
 | worktree | `~/anicca/.worktrees/affiliate-bounty-statemachine/`(実装フェーズで作成) |
 | ブランチ | `feature/affiliate-bounty-statemachine` |
 | 対象repo | `~/anicca`(git管理、`earn/affiliate` + `earn/bounty`) |
-| 状態 | spec REV8、**GATE 1 PASS(ラウンド8)**。GATE 2(実装)着手中 |
+| 状態 | spec REV8、GATE 1 PASS(ラウンド8)+GATE 2実装完了(19/19テスト、実機E2E確認、main merge済み) |
 
 ## 0. なぜこれをやるか(2026-07-05ヘルスチェックで発見した実バグ)
 
@@ -645,3 +645,42 @@ STARTUP promptが「discover→gate→attempt→(PRを書く)→track→report�
   実装時に囲えばよい程度の指摘としてGATE 2側で対応する)。
 
 **GATE 1(SPEC)完了。次はGATE 2(TDD: RED→GREEN→REFACTOR)へ進む。**
+
+## 7. GATE 2(実装)完了・検証結果(2026-07-05)
+
+### 実装内容
+
+| ファイル | 変更内容 |
+|---|---|
+| `~/anicca/skills/earn/affiliate/measure_commission.py`(新規) | `measure_commission()`純関数+`_amazon_report_fn`/`_ledger_record_fn`(subprocess橋渡し、timeout try/except込み、GATE1ラウンド8の非blocking指摘も反映)+`__main__` |
+| `~/anicca/skills/earn/affiliate/run.sh` | `STATE`変数定義追加+`measure_commission.py`呼び出しを17行目と22行目の間に挿入(既存POSTロジックは無変更) |
+| `~/anicca/skills/earn/bounty/run.sh` | `attempt()`のsurvivor選択をsurvivors[0]固定→未claimの最初の1件に修正、`track()`にresolved集合+`BOUNTY_GH_OVERRIDE`テストフック+ループ外一括追記を追加 |
+| `~/anicca/skills/earn/bounty/bounty-cli.sh` | STARTUP promptに(0)未完了work-order優先チェック+`BOUNTY_STALE_DAYS`(7日)自己断念パスを挿入 |
+| `~/anicca/skills/earn/affiliate/tests/test_measure_commission.py`(新規) | 6ケース(新規/継続/増分/月またぎ/エラー) |
+| `~/anicca/skills/earn/bounty/tests/test_unfinished_work_logic.py`(新規) | 8ケース(断念ロジックの決定論的リファレンス実装、fixture検証) |
+| `~/anicca/skills/earn/bounty/tests/test_run.sh`(新規) | 5ケース(attempt()のsurvivor skip、track()のSTALLED検知+重複防止、bash統合テスト) |
+
+### 検証結果(fresh evidence)
+
+- ✅ 新規単体テスト **19/19 PASS**(6+8+5)
+- ✅ 構文チェック全4ファイルOK
+- ✅ 既存モード回帰なし: `bounty EARN_MODE=discover`実行、正常終了(exit 0)
+- ✅ **実機E2E確認(モックではない)**: `affiliate EARN_MODE=discover`を実行したところ、
+  `measure_commission.py`が実際に`amazon_report.py`をsubprocess経由で呼び出し、
+  実際のCDPブラウザ経由でaffiliate.amazon.co.jpへ接続、`commission_jpy:0`という
+  実データを取得し、**このloop史上初めての`commission-watermark.json`を実際に
+  作成**(`{"month": "2026-07", "last_commission_jpy": 0, "last_checked_at":
+  1783205361.216917}`)。その後に続く既存のPOSTロジック(queue内アイテム発見:
+  `aff1782828583`)も無変更のまま正常動作。
+
+### マージ
+
+`~/anicca`のmainブランチへfast-forward mergeで完了(`f50d29b`、コンフリクトなし、
+他エージェントの未commit変更(`producer.sh`/`reddit-loop/state/STATE.md`)には
+一切触れず)。ブランチ`feature/affiliate-bounty-statemachine`はローカル・リモート
+両方で削除済み。
+
+**Task #15完了**。affiliate/bountyは今後、クラッシュ検知に頼らず状態ファイル駆動で
+自己修復するようになった。affiliateは初めてコミッション追跡を開始し、bountyは
+survivorの取りこぼしと無限重複追記のリスクを解消、未完了work-orderへの固執と
+7日タイムアウトによる自己断念も実装された。
