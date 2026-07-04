@@ -1,0 +1,7 @@
+{
+  "reviewType": "spec", "feature": "profitable-article-writer", "mode": "strict", "phase": "1c", "iteration": 10,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "scope": "Sprint 4 round 3 - verify iteration-9 FIND-001 (malformed-ratio fail-closed) resolved, final sanity pass",
+  "priorIteration": {"iteration":9,"verdict":"FAIL","findingsToVerify":["FIND-001"]}
+}
