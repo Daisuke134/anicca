@@ -130,10 +130,41 @@ d.update({'phase':'POST'})
 json.dump(d,open(p,'w'))" 2>/dev/null
     emit "clip:produced-for-$SLUG (queued in ~/clips/queue-clip-promote, ready for POST)"; exit 0
     ;;
-  POST|SUBMIT|WITHDRAW|STALLED)
-    # Wired in subsequent increments (post via ig-reels-poster to a WARMED account with a
-    # campaign-specific caption/tag override / submit / withdraw), each under run_step.
-    # Until wired, narrate honestly — NO fake success.
+  POST)
+    # REQ-4: post via ig-reels-poster to a WARMED account only (~/.cloak/clip-accounts.json
+    # status=="ready"). Currently only @aiclipsvault (port 9223) is ready -- the SAME account
+    # the earn/clip loop itself posts to. KNOWN RISK (not yet mitigated): two independent
+    # loops (earn/clip hourly, earn/clip-promote every 2h) could in principle race for the
+    # same browser tab; the schedules make actual collision unlikely but not impossible --
+    # revisit if collisions are observed in practice.
+    #
+    # CAPTION GAP (deliberate, safety-first): this cut posts the clip's own GENERIC caption
+    # as-is. Campaign-specific required tags/CTA (e.g. thomas-rhett-content's mandatory
+    # "@humanschool @milesadcox" / CTA line) are NOT yet applied -- each campaign's Rules tab
+    # wording differs enough that a hardcoded per-campaign template is the wrong shape
+    # (judgment call, better suited to an agent reading the Rules tab than a bash case
+    # statement); deferred as a follow-up. Because publishing content that fails a
+    # campaign's stated requirements risks the submission being rejected or the account
+    # being penalized, THIS STEP STAYS --dry (verify-only, discards, never actually posts)
+    # until the caption gap is closed. Do not flip to --live before that.
+    ACCT_JSON="${CLIP_ACCOUNTS:-$HOME/.cloak/clip-accounts.json}"
+    READY="$("$PY" -c "import json;d=json.load(open('$ACCT_JSON'));r=[a for a in d if a.get('status')=='ready'];print(json.dumps(r[0]) if r else '')" 2>/dev/null)"
+    [ -n "$READY" ] || { emit "post:no-warm-account"; exit 0; }
+    HANDLE="$("$PY" -c "import json,sys;print(json.loads(sys.argv[1])['handle'])" "$READY" 2>/dev/null)"
+    ACCT_PORT="$("$PY" -c "import json,sys;print(json.loads(sys.argv[1])['port'])" "$READY" 2>/dev/null)"
+    CLIP_FILE="$(ls "$HOME/clips/queue-clip-promote"/*.mp4 2>/dev/null | head -1)"
+    [ -n "$CLIP_FILE" ] || { emit "post:no-clip-in-queue"; exit 0; }
+    CAP_FILE="${CLIP_FILE%.mp4}.txt"
+    [ -f "$CAP_FILE" ] || CAP_FILE="/dev/null"
+    POSTER="$HOME/anicca-project/.claude/skills/ig-reels-poster/scripts/post_reel.py"
+    RES="$(CDP_PORT="$ACCT_PORT" run_step "$STEP_DEADLINE_S" "$PY" "$POSTER" --video "$CLIP_FILE" --caption-file "$CAP_FILE" --handle "$HANDLE" --dry 2>/dev/null | tail -1)"; rc=$?
+    blocked_or "post-dry-verify" "$rc" "post:dry-verify-failed"
+    emit "post:dry-verify-ok-for-$HANDLE-campaign-tags-not-yet-applied-staying-dry: $RES"
+    exit 0
+    ;;
+  SUBMIT|WITHDRAW|STALLED)
+    # Wired in subsequent increments (submit the live post URL to the campaign / withdraw),
+    # each under run_step. Until wired, narrate honestly — NO fake success.
     emit "execute:$TRANS:not-yet-wired"; exit 0
     ;;
   *)
