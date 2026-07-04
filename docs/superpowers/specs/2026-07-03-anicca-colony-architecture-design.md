@@ -1255,3 +1255,35 @@ oracle-arb か certainty-closer を AI 自身の Base wallet で no-human 実走
   (1.0.2→1.0.6 fix 記録)④Polymarket/py-sdk 公式。
 - ★ 次アクション: py_clob_client_v2 を捨てる → polymarket-client に移行 → SecureClient.create で deposit wallet
   自動 deploy → pUSD($4.95 既在) or Base USDC を入金 → sig3 で実注文 → order_id + fill tx。#42/43/46/47 復活。★
+
+### §11.5 ✅ PIPELINE PROVEN + ❌ ALPHA まだ = 正直な現状(2026-07-04)
+**勝ち(pipeline)**: no-human Polymarket V2 実約定成功。SIWE mint → deposit wallet gasless deploy
+(0x904B50d2, sig3)→ Relay で pUSD 入金 → approve(standard 0xE111 + neg-risk 0xe2222 + adapter 0xd91E80)
+→ create_market_order + post_order。order 0xdad65538 matched, 1.7857 sh "Morocco win 2026-07-04" YES @0.5599,
+settle tx 0x7662a88b(status 0x1). browser=0, human-credential=0. skill: anicca/skills/earn/polymarket-trade/
+{v2_mint_deploy,v2_full_flow}.py。SDK=polymarket-client(py-sdk)。
+
+**★ 正直な利益 = $0(実質 -$0.01 手数料)★**: あれは directional bet = edge ゼロ = 「稼ぎ」ではない。
+Dais 指摘: 「賭けに意味はない、EARN しろ」。= パイプラインは通った、次は ★勝てる base strategy(alpha)★ を埋める。
+
+### §11.6 BASE STRATEGY = 勝つための alpha(次の本番、no-human で +EV なもの)
+| 戦略 | 仕組み | +EV 性 | no-human 度 | 資金依存 |
+|---|---|---|---|---|
+| ★①マーケットメイク + LP rewards | midpoint 近くに両側指値 → maker rebate(fee 0)+ Polymarket が日次 pUSD 報酬 | 板占有share次第、報酬は+ | ◎(板を更新するだけ) | 資金多いほど報酬↑ |
+| ★②バンドル裁定(risk-free) | YES_ask+NO_ask<$1 → 両方買い → 決着で必ず$1 → 差益確定 | 数学的に+(出た時) | ◎ | 中(2約定分) |
+| ③certainty-closer | 決着間近の favorite(~0.95)を買い→$1 で確定 | 概ね+(裾リスク有) | ○ | 小 |
+| ④情報エッジ(現 baseline agent) | AI 確率推定 vs 市場価格 → edge≥15% で賭け | 予想力次第(不確実) | ○ | 小 |
+出典: subagent2 検証 + Polymarket rewards docs(maker rebate 20-25% of taker fee, LP reward 日次, quadratic score near mid;
+World Cup campaign例 $6,110/game〜$52,000/game)。
+★ 実装方針: ①マーケットメイク(sustainable earn)を第一 base strategy として skill に埋める → post両側 maker + LP reward 回収
+→ 実 P&L を ledger に。②bundle arb を scanner で常時監視(出たら risk-free 執行)。③④は補助。★
+「稼いだ」= realized P&L がプラスで ledger に載った時のみ。directional bet は earn と呼ばない。
+
+### §11.7 送金先(AI 自身の wallet、human credential 不使用)+ いくら要るか
+- ★ Polymarket は Polygon pUSD で動く。AI の own wallet に着金 → Relay で任意チェーン変換(実証済)。★
+- 送金先(どれでも私が Relay で pUSD 化):
+  - EVM(今 session で制御実証済・最優先): `0x810F6D61F7606dEEE2657d3083E150a222Bc29C5`(Polygon/Base、USDC)
+  - Solana(希望なら): `xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H`
+- ★ いくら: 今すぐ大金は不要。base strategy が +EV と実証されるまでは追加不要 ★。
+  マーケットメイクの LP reward は資金量に比例するので、strategy live 後に $20-50 で「働く元本」を持つのが妥当。
+  現状 deposit wallet に pUSD 1.94 残 = strategy テストには十分。
