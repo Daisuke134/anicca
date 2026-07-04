@@ -1541,3 +1541,10 @@ $100k++実エッジ=leaderboard(Theo$22M)。★$20-50 で「shit ton」は不可
 - 2026-07-05 STEP0 PM: ★maker-bundle が約定し始めた★(受動resting→takerが当てに来た)。ポジ4件、ネット含み損益≈+$0.32(未実現)。
   Wimbledon +$0.40 / Morocco -$0.03 / Canada -$0.03。realized は resolution or 売却時。= 戦略は「動いてる」、profit は「後で」実現(Q2の通り)。
   次: ①resolution待ちで realized確認 ②SOL/HL は wallet空→funding必要(PMのみ資金あり)。SOL/HL BASEはコード先行実装。
+
+- 2026-07-05 STEP1 SOL/HL = ★資本ゼロで gating★(honest): SOL wallet(Franklin 8Fpqd)= 0.003 SOL dust、HL wallet(0xa3cd)= Base $0.76 のみ。
+  best-practice は確定(SOL=勝者wallet copy-trade via Jupiter/GMGN feed、HL=funding-farm delta中立)が、no-dry-run 原則で
+  ★資本なしに BASE を「動く」と検証できない★。Franklin-Trading も M1 strategy-runner 未完(今日は paper のみ)。
+  → 決定点: (A) PM を今日の resolution まで回して ★初の realized profit 実数★ を出す(資金移動なし)
+            (B) SOL/HL に資金移動 or Dais funding して 3エンジン化(PM資金を割ると working engine が薄まる)
+  推奨: まず (A) = PM の resolution で realized を確定 → その実数で ART-A → 収益を SOL/HL に再投資 or Dais 判断。
