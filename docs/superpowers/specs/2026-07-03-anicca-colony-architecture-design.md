@@ -1789,3 +1789,8 @@ Dais 厳命「search しろ」→ redeem-researcher が一次ソースで真因�
 - ★verify(on-chain, loop がやった)★: redeem tx `0xd33b09c8d78d9b28cc9f0ad5db06a1015fb3c63deefa20f7076ed5615c103e2b` status 0x1 block 89667011、Tiafoe $5.99 建玉消失、pUSD $4.27→$10.26(+5.99)。★team-lead は kickstart しただけ、手で redeem.py を撃っていない = loop の run_earner.sh redeem step が自律実行 = EARN-1(手動 meddling)と違い今度は AI 自身★。
 - ★これで複利が回る★: bet→win→collect(自律)→cash→bet more。AI millionaire 経路の心臓が動いた。
 - 教訓(Dais): 「知らないなら search しろ」。5回 patch で失敗 → 一次ソース search 1回で解決。README も既に正直(「first collection was human-triggered」)→ 次の re-verify で「自律回収 proven」に更新可。
+
+### §45 ★ #21 README 完了 + adversary/cost を Sonnet 化(2026-07-05)★
+- README 全体書き直し(§43)→ adv-readme2(Sonnet)検証: 型統一/重複排除/earn実態/個人残骸削除/simple kickstart + Franklin命令一致 + markdown 全 PASS。唯一 FAIL = 俺の regression(自律 redeem 反映編集の際、$8.24 の「人間トリガー」開示を消し $8.24 を settle tx 0x7662a88b に誤紐付け)。→ 修正: ①bet placed/won(自律, tx 0x7662a88b)②初回 $8.24 回収=人間トリガー(正直開示復活)③$5.99 回収=loop 自律(tx 0xd33b09c8)を分離。self-verify で締め(1行の事実修正、コスト配慮で再 adversary 省略)。#21 完了。
+- ★コスト削減(Dais 2026-07-05, 使用率70%)★: adversary を Opus→Sonnet に固定。真因=vcsdd-adversary agent 定義が `model: opus`(→ `/vcsdd-adversary` skill が Opus 起動してた)。marketplace+cache 両方 `model: sonnet` に変更 + global CLAUDE.md 分業表を「adversary=Sonnet」に訂正。俺の spawn は元々 model:sonnet 明示済み。
+- 教訓(再確認): 部分編集は隣接の正直な開示を壊しうる → adversary が捕まえた。VCSDD 機能。
