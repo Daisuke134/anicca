@@ -3,7 +3,8 @@
   "language": "japanese",
   "plansDirectory": ".cursor/plans",
   "enableAllProjectMcpServers": true,
-  "model": "claude-opus-4-7",
+  "model": "claude-fable-5",
+  "effortLevel": "xhigh",
   "maxTurns": 100,
   "contextCompression": true,
   "permissions": {
@@ -152,5 +153,6 @@
       "Deploying"
     ]
   },
-  "outputStyle": "concise"
+  "outputStyle": "concise",
+  "autoCompactEnabled": true
 }
