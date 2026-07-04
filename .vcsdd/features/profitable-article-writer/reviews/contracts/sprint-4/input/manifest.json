@@ -1,2 +1,3 @@
-{"reviewType":"contract","featureName":"profitable-article-writer","sprintNumber":4,"contractPath":"contracts/sprint-4.md","contractDigest":"9145c0d2bab8c22933013680032f50304811401a157a06d3091aaf3470280477",
+{"reviewType":"contract","featureName":"profitable-article-writer","sprintNumber":4,"round":2,"contractPath":"contracts/sprint-4.md","contractDigest":"9145c0d2bab8c22933013680032f50304811401a157a06d3091aaf3470280477",
+"priorRound":{"verdict":"FAIL","findings":["FIND-001 critical: leading-zero digit strings crash via bash octal misparse","FIND-002 major: inconsistent guard between two arithmetic sites"]},
 "artifactsToReview":{"spec":["specs/behavioral-spec.md","specs/verification-architecture.md"],"tests":["skills/profitable-article-writer/tests/"],"source":["skills/profitable-article-writer/"]}}
