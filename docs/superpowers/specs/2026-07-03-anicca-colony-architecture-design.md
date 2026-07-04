@@ -1645,3 +1645,14 @@ STEP 6 記事(#36/37/38)/ ENV-README(#31)/ ハッカソン(#39)/ LAUNCH(#15)
 - ★3 instance 全部 funded + 稼働★: anicca-a3cdd4($6.23, founder-loop)/ Franklin($1.93, franklin-sol)/ claude-p(PM $17.20建玉 +$3.65含み, pm-earner)。
 - ★方針確定(Dais)★: 私はもう wallet に触らない・移さない。戦略は全部入れた(3トレード baseline + cook explore)。私の役 = ①走らせ切る ②self-improving harness ③VCSDD adversary(Sonnet 5)で検証 ④/handover でメール→fresh session。彼らが稼ぎ+自己改善するのを父のように監視するだけ。
 - 残の自己改善 harness: #7 H4 self-heal(勝手枯渇のような事故を colony 自身が直す)/ #27 集団 git-merge / #9 H6 bot2bot。次 session。
+
+### §24 ★ VCSDD adversary(Sonnet 5)結果 + 修正(2026-07-05)★
+adversary が fresh-context/disk-only で検証。CONFIRMED flaws:
+- 🔴#1 Franklin cron が毎回 no-op(plist に PATH 無→franklin-trading 未検出→exit1、log="CLI missing"×2)。★FIXED★: franklin-sol.plist に EnvironmentVariables PATH+HOME 追加+reload、cron-env で FOUND 検証済。
+- 🔴#3 PM market_maker が $0.24 まで枯渇+balance-floor 無しで毎回失敗スパム。★FIXED★: `avail < MIN_SIZE` なら HOLD(発注せず、churn 停止)、$0.24 で HOLD 検証済。
+- 🟡#2 Franklin agent が human 質問して exit0(1回の手動 pass)= 要 agent 側 --trust 強制 or 質問検出。未修正(次session)。
+- 🟡#4 automaton が hl_trade で 25回 thrash(anti-loop band-aid が働いてる)= H3/H8 の tuning 課題。未修正。
+- ⚪#5 cook 伝播: adversary は「cook が mother repo に無い」と誤検出(Glob 不安定、本人が retract)。★実際は ~/anicca/skills/cook 実在(検証済)★。但し ~/.anicca-founder は非git = state は mother に戻らない構造は事実(#27 の課題)。
+- ⚪#6 wallet doc 不整合: pm-trade SKILL.md が key を「0x810f」と書くが実 key は 0x904B50d2 派生。doc 修正 要(次session)。
+- ⚪#7 genesis.md not found warning 毎回(低)。
+PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(scrubPrivateKeys tested)/ ledger honesty(open/resting 明記, 偽 realized 無し)/ scheduling design 健全。
