@@ -113,3 +113,15 @@ Publishing already works; DEMAND is the gap → the loop must LEARN what sells:
 
 ### 10d. The harness ties them
 `claude -p` GLVS loop drives both engines: reads real revenue, picks the highest-EV self-improvement across LM + Capafy, verifies real side-effect, updates STATE.md, repeats — human + main-agent out of the loop. Reddit demand-gen (#10) feeds LM. Self-heal (money-path-monitor pattern) catches auth/expiry outages like the 6-week Capafy token death.
+
+## 11. THE LOOP ITSELF — the self-improve + self-heal mechanism (Dais 2026-07-04: "the loop itself" is the product)
+The engines (LM, Capafy, Reddit) are interchangeable; the PRODUCT is the LOOP mechanism that makes them improve + heal with no human. Every cycle (claude-p, launchd), in order:
+0. **HEAL FIRST** — health-check EVERY revenue surface before anything else: auth alive (Capafy/Stripe/Gemini/Composio tokens not expired), endpoints 200 (LM /health, aniccaai.com, pay-link), crons firing (log freshness). If broken → auto-fix (re-auth via email-OTP, restart, rollback) or ONE escalation. ★This step is what was missing — the Capafy token died and the "daily money cron" ran dead for 6 weeks with nobody noticing.★ Generalize the money-path-monitor into a per-surface heartbeat.
+1. **READ** — STATE.md + live metrics (LM funnel, Capafy sales, spend, current winners).
+2. **JUDGE** (agent, no hardcode) — the single highest-EV action to increase REAL revenue now.
+3. **ACT** — do that one action (raise quality toward market BP, not raw supply).
+4. **VERIFY** — real side-effect only (new Stripe sub / new Capafy subscriber / retention), + fresh-context adversary. "Published / posted" ≠ success; money moved = success.
+5. **STATE** — persist what was tried, how the metric moved, next hypothesis; scale winners, retire losers. Conversation is volatile; STATE.md is durable.
+→ next cycle, human + main-agent out. Roll out L1 report-only → L2 assisted → L3 unattended.
+
+**Invariant**: the loop must be able to detect + heal its own breakage (self-heal) AND move a real revenue metric over time (self-improve). A loop that only publishes/posts (no heal, no revenue-verify) is the failure mode we just found. Build the HARNESS (this mechanism) first; the engines plug into it.
