@@ -77,6 +77,20 @@ One article → funnel → per-platform native monetization → real money verif
   after 3 rounds THEN it SHALL abort the wake (produce no publish) and record the failure. It SHALL NEVER publish a
   failing draft (fail-closed). (Resolves FIND-003.)
 
+## Real publish (Sprint 2.5, Dais 2026-07-04: "the note is not actually published, we have to have it actually published, after the verification")
+
+- **REQ-21 Real Mode-B publish path.** The skill SHALL provide a REAL publish path (`lib/note-publish-live.py` or
+  equivalent) that, given a note draft key already carrying a validated 記事タイプ=有料/¥500 configuration and a
+  cover + visuals, drives the browser to click 投稿する/更新する for real, making the draft PUBLIC. This path
+  SHALL be structurally distinct from Mode A's draft-only scripts (which SHALL continue to NEVER contain a
+  投稿する/更新する click target — REQ-6 is unaffected). The real-publish path SHALL require an explicit,
+  separate trigger (env var or CLI flag, e.g. `NOTE_LIVE_PUBLISH=1`) so it can never fire from the default Mode-A
+  wake. SHALL fail closed: if the pre-publish state (price/type/visuals) cannot be confirmed, it SHALL NOT click
+  publish and SHALL report the exact blocking reason.
+- **REQ-22 Post-publish verification (V1 real).** After a real publish, the skill SHALL verify — with a
+  logged-out HTTP fetch of the public URL (no stored cookies) — that the article is publicly reachable (200),
+  and SHALL record the live URL + timestamp to state for V4 (earn) tracking to begin against it.
+
 ## Self-operation (self-heal + self-improve — zero Opus + zero human, Dais 2026-07-04)
 
 - **REQ-17 Self-heal.** WHILE running unattended, IF a wake fails (crash, stuck gate, publish error, expired/blocked

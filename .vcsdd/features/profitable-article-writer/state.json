@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "complete",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -133,14 +133,29 @@
       "timestamp": "2026-07-04T11:03:49.737Z",
       "reason": "Sprint-2 4-D convergence, globally-unique finding IDs",
       "sprint": 2
+    },
+    {
+      "from": "complete",
+      "to": "1a",
+      "timestamp": "2026-07-04T11:17:51.066Z",
+      "reason": "Sprint 2.5: Mode-B real publish capability (Dais 2026-07-04 explicit go)",
+      "sprint": 2,
+      "nextSprintHint": 3
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-04T11:18:41.985Z",
+      "reason": "REQ-21/22 authored",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 2,
     "5": 2,
     "6": 2,
-    "1a": 2,
-    "1b": 1,
+    "1a": 3,
+    "1b": 2,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -829,6 +844,26 @@
         "createdAt": "2026-07-04T11:03:49.683Z",
         "createdInPhase": "3",
         "externalId": "FIND-018"
+      },
+      {
+        "beadId": "BEAD-061",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:18:41.982Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-21"
+      },
+      {
+        "beadId": "BEAD-062",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:18:41.984Z",
+        "createdInPhase": "1a",
+        "externalId": "REQ-22"
       }
     ]
   },
@@ -859,5 +894,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T11:03:49.737Z"
+  "updatedAt": "2026-07-04T11:18:41.985Z"
 }
