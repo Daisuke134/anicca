@@ -792,3 +792,27 @@ state.json: phase=POST に正しく前進
 3. SUBMITケース: promote.funのcampaignページに投稿URLを提出するUI操作を新規実装
    (未調査、次ステップで詳細ページの提出フォームを確認する)
 4. WITHDRAW/RECORDは既存`record-payout.mjs`が対応済み(SKILL.md記載+コード確認済み)
+
+### 17.6 POST実装完了(2026-07-04)+ collective self-improvementの実例(fresh evidence)
+
+`run.sh`のPOSTケースを実装(`~/.cloak/clip-accounts.json`のready account(@aiclipsvault、
+port 9223)を使い、`~/clips/queue-clip-promote/`のクリップをig-reels-poster/scripts/
+post_reel.pyで検証)。campaign固有の必須タグ付け(§17.3で判明)がまだキャプションに
+反映されていないため、安全のため**意図的に検証専用モードのまま**とし、実投稿
+(--live)は次段階に据え置く設計でcommit `e61cae7`push。
+
+**★ ここでclip-promote-core自身が私のバグを発見・修正・検証・pushまで完遂した ★**
+(commit `1e5e5c1`): 私が実装した`--dry`という明示フラグは、実は`post_reel.py`に
+存在しないオプションだった(SKILL.mdの「`--dry` (DEFAULT, safe)」は「`--live`を
+省略すれば自動的にdry-run」という意味で、明示フラグではなかった)。この結果argparseが
+`unrecognized arguments: --dry`でexit(2)、ブラウザ操作が一切実行される前に即座に
+失敗していた。**clip-promote-core自身がこの実行結果を見て根本原因を診断し、
+`--dry`フラグを削除する修正を行い、手動で再実行して実際にcomposer/caption/share
+手前まで到達する実スクリーンショットで検証し、commit+pushまで完遂した**。これは
+私が代行するのではなく、AIが自分の道具の不具合を自分で見つけて直す
+という、collective self-improvementの実例そのもの(spec §8「私が代わりにやるな」
+の理想形が実現した最初の具体例)。
+
+**現状**: POST遷移は実装済みで、実際にIGの投稿フロー(composer→caption→share手前)
+まで動作確認済み(dry-run、実投稿はしていない)。次はcampaign固有タグ付けの実装
+→実際の`--live`投稿→SUBMIT実装、という順。
