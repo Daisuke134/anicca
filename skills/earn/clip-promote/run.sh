@@ -157,7 +157,11 @@ json.dump(d,open(p,'w'))" 2>/dev/null
     CAP_FILE="${CLIP_FILE%.mp4}.txt"
     [ -f "$CAP_FILE" ] || CAP_FILE="/dev/null"
     POSTER="$HOME/anicca-project/.claude/skills/ig-reels-poster/scripts/post_reel.py"
-    RES="$(CDP_PORT="$ACCT_PORT" run_step "$STEP_DEADLINE_S" "$PY" "$POSTER" --video "$CLIP_FILE" --caption-file "$CAP_FILE" --handle "$HANDLE" --dry 2>/dev/null | tail -1)"; rc=$?
+    # post_reel.py has NO --dry flag -- dry is its DEFAULT (omitting --live IS the dry-run);
+    # passing --dry made argparse exit(2) with "unrecognized arguments: --dry" before any
+    # browser step ran (confirmed live 2026-07-04: manual run without --dry reached DRY-ok
+    # with real screenshots of the caption+share step; with --dry it failed instantly).
+    RES="$(CDP_PORT="$ACCT_PORT" run_step "$STEP_DEADLINE_S" "$PY" "$POSTER" --video "$CLIP_FILE" --caption-file "$CAP_FILE" --handle "$HANDLE" 2>/dev/null | tail -1)"; rc=$?
     blocked_or "post-dry-verify" "$rc" "post:dry-verify-failed"
     emit "post:dry-verify-ok-for-$HANDLE-campaign-tags-not-yet-applied-staying-dry: $RES"
     exit 0
