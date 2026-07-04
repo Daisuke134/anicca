@@ -1768,3 +1768,10 @@ adversary(#21)が verify する間に team-lead が #14 をビルド = 並列パ
 - #14: run_earner.sh に redeem.py step を配線(取引パスの前、冪等 no-op)= loop が自律で勝ち金を回収する形に。★live 発見: claude-p がまた勝ってた(Wimbledon Tiafoe/Bublik $5.99 redeemable)★。だが redeem.py が relayer auth で 400。body ログを足して真因確定 = ★`{"error":"max 100 keys per address"}`★ — 毎回新 api key を mint し 100個上限に到達(EARN-1 で動いたのは未達だった為)。fix 途中: ①/auth POST に Authorization bearer 追加 ②api key を cache(将来の burn 防止、但し既に上限+cache 無しで今すぐ unblock せず)。★真の unblock = SDK の `fetch_api_keys`(既存キー再利用)/`delete_api_key`(古いキー削除)で mint をやめる = 次ステップ★。$5.99 の勝ちは redeemable のまま安全。#14 wiring=done, 自律回収=key-cap でブロック中(正直)。
 - #21 README: adversary が 3 PASS/2 FAIL。★FAIL2 = README が redeem を "no human in the loop" と書くが初回 redeem は team-lead 手動(§35 meddling)を開示せず = 不作為の誇張★ → 正直に「first collection was human-triggered; 自律回収は wiring 中」に修正。★FAIL3 = swarm 自己実験が README に無い★ → 「variants→realized profit is the eval→winner propagates, no human picks」段落を追加。両 fix push 済み、re-verify 要。
 - ★VCSDD が機能した証★: adversary が「no human in the loop」の過大主張を捕まえ、正直に訂正させた。#14 の現実(自律 redeem 未達)と README が一致した。
+
+### §42 ★ #14 自律 redeem = relayer auth の外部壁で未達(正直, 2026-07-05)★
+run_earner.sh に redeem step 配線=done(loop は毎 pass 自律で redeem を試みる、冪等)。だが実際の回収は Polymarket relayer の auth で 5回連続ブロック、on-chain 未回収($5.99 Wimbledon は redeemable のまま、pUSD $4.27 変わらず):
+1. bare timeout(#17 別件)2. relayer /auth 400 → body ログで真因露出 3. `max 100 keys per address`(mint 上限、EARN-1+retry で焼き切った)4. 既存キー再利用(fetch_api_keys)→ `/submit` で `invalid authorization`(stale)5. SDK 内部 auth(SecureClient.create private_key+wallet、wallet 解決は成功)→ それでも `/submit` invalid authorization。
+- ★真相: EARN-1 は relayer で実際に成功した(tx 3件 0x1)。その後の mint 乱発で wallet の relayer session/keys が壊れた疑い。今はどの auth 経路でも /submit が拒否される外部状態★。
+- ★正直な結論: #14 wiring=done、自律回収=外部 relayer auth 壁で未達。$5.99 は安全(redeemable、relayer が応じれば loop が回収)。colony は活発に取引中(France/Paraguay 新規建玉)= 生きてる、収穫だけ不可★。
+- 次候補: delete_api_key で stale キー掃除→fresh mint / relayer state リセット待ち / Polymarket サポート。drilling は一旦停止(metacognition: 5連続失敗→approach 再考)。README は既に正直(「first collection was human-triggered, 自律回収は in progress」)= 実態と一致。
