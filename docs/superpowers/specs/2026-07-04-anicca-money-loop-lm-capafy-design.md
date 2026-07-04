@@ -161,3 +161,9 @@ The Capafy publish (`daily_loop.sh`) and the money-measurement spine (`~/anicca/
 Current live reading: LM_MRR $0.0, Capafy $0.0, monthly $0.0, heal=none — honest "$0, bottleneck = DEMAND".
 ### Next (completes #8)
 Wrap this spine in the always-on claude-p pattern (copy earn/clip): `lm-capafy-cli.sh` (tmux + headless claude STARTUP that registers a recurring cron) + `lm-capafy-healthcheck.sh` (launchd 5-min, flock+pidfile+stuck-detection→selfheal-request) + launchd plist. Add the ACT step: after READ/STATE, the claude-p agent picks the single highest-EV self-improve action (LM funnel fix / Capafy listing→winner / Reddit demand) and VERIFIES a real $ delta next wake. Both AIs reference the canonical capafy-autopublish via symlink.
+
+## 16. SPLIT into two loops (2026-07-05, Dais) — 1 product = 1 loop
+Correction: I wrongly combined LM + Capafy into one lm-capafy-loop. They are two different products (different work/cadence/metrics) — like earn/clip vs earn/affiliate are separate. SPLIT (anicca main d65cc7d):
+- `~/anicca/skills/self/capafy-loop/` — Capafy $ monthly payout (latest month), 3d leading indicator, HEAL auth+publish-freshness. 7 tests green.
+- `~/anicca/skills/self/life-manager-loop/` — LM Stripe $ MRR (expand price, live-shape verified), HEAL LM /health + Stripe. 6 tests green.
+Each carries the full VCSDD-proven anti-fake spine (error→NA never masked-$0, $ not count, NA→READ-FAILED, selfheal-request on HEAL, seams). Combined lm-capafy-loop deleted. Live: both $0, honest. A thin aggregator (task) will read both STATEs for total-vs-$200. Each loop then gets its own always-on cli.sh+healthcheck+launchd (copy earn/clip) + ACT.
