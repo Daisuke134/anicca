@@ -276,35 +276,20 @@ def _mint_relayer_api_key(acct) -> str:
 
 
 def build_client():
-    """Authenticate the official polymarket-client SDK as the EOA signer acting for
-    the already-deployed deposit wallet, so redeem_positions() dispatches through
-    the gasless relayer exactly like the deploy/approve calls in v2_mint_deploy.py."""
+    """Authenticate the official polymarket-client SDK for the deposit wallet, letting the SDK
+    manage its OWN relayer credentials. Verified live 2026-07-05: SecureClient.create(private_key,
+    wallet) resolves the deposit wallet and handles /submit auth itself — no manual api-key minting.
+    (The old manual path minted a fresh relayer key every run, hit the relayer's "max 100 keys per
+    address" cap, and reusing a fetched key gave "invalid authorization"; letting the SDK own auth
+    sidesteps both, so the loop can redeem forever with no human.)"""
     from dotenv import load_dotenv
     load_dotenv(AGENT_ENV)
     key = os.environ["POLYGON_WALLET_PRIVATE_KEY"]
     key = key if key.startswith("0x") else "0x" + key
 
-    from eth_account import Account
-    from polymarket.auth import RelayerApiKey
     from polymarket.clients.secure import SecureClient
 
-    acct = Account.from_key(key)
-    tmp = SecureClient._create(private_key=key, validate_credentials=True)
-    creds = tmp._ctx.credentials
-    # Reuse an EXISTING relayer api key instead of minting a fresh one every run. The relayer caps
-    # mints ("max 100 keys per address", hit live 2026-07-05 after EARN-1 + retries), while
-    # fetch_api_keys() returns the keys this signer already owns (verified: 1 valid key present).
-    # Only mint if the signer truly has none. This is what lets the loop redeem forever, no human.
-    try:
-        existing = tmp.fetch_api_keys()
-    except Exception:  # noqa: BLE001 — fall back to mint if the fetch itself fails
-        existing = ()
-    tmp.close()
-    api_key = existing[0] if existing else _mint_relayer_api_key(acct)
-    client = SecureClient.create(
-        private_key=key, credentials=creds,
-        api_key=RelayerApiKey(key=api_key, address=acct.address),
-    )
+    client = SecureClient.create(private_key=key, wallet=DEPOSIT_WALLET)
     if str(client.wallet).lower() != DEPOSIT_WALLET.lower():
         client.close()
         raise RuntimeError(
