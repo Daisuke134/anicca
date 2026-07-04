@@ -2,6 +2,10 @@
 # Polymarket no-human earner loop: bundle-arb hunt + market-making refresh.
 # Runs one pass; schedule via launchd/cron every ~10min for continuous earning.
 set -uo pipefail
+# launchd gives a bare PATH (/usr/bin:/bin) with no node/gtimeout → telemetry POST silently
+# failed and dropped claude-p off the dashboard (recurring #17). Set a portable PATH here so it
+# works under launchd on any machine (homebrew on Apple Silicon, /usr/local on Intel, /usr on Linux).
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin"
 VENV="/Users/operator/.anicca-founder/agents/polymarket-agent/.venv-pysdk/bin/python"
 DIR="/Users/operator/anicca/skills/earn/polymarket-trade"
 LOG="$DIR/earner.log"
