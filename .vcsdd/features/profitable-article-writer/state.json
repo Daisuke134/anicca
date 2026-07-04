@@ -506,6 +506,66 @@
         "createdAt": "2026-07-03T19:49:00.497Z",
         "createdInPhase": "2c",
         "externalId": "PROP-17"
+      },
+      {
+        "beadId": "BEAD-037",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-001.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.552Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-001"
+      },
+      {
+        "beadId": "BEAD-038",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-002.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.556Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-002"
+      },
+      {
+        "beadId": "BEAD-039",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-003.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.557Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-003"
+      },
+      {
+        "beadId": "BEAD-040",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-004.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.558Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-004"
+      },
+      {
+        "beadId": "BEAD-041",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-005.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.559Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-005"
+      },
+      {
+        "beadId": "BEAD-042",
+        "type": "adversary-finding",
+        "artifactPath": "reviews/sprint-1/output/findings/FIND-006.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T07:50:56.560Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-006"
       }
     ]
   },
@@ -536,5 +596,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T07:50:16.862Z"
+  "updatedAt": "2026-07-04T07:50:56.560Z"
 }
