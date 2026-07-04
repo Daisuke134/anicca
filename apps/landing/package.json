@@ -15,6 +15,8 @@
   "dependencies": {
     "@radix-ui/react-accordion": "^1.2.12",
     "@radix-ui/react-slot": "^1.0.2",
+    "@solana/spl-token": "^0.4.14",
+    "@solana/web3.js": "^1.98.4",
     "bs58": "^5.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "2.1.1",
