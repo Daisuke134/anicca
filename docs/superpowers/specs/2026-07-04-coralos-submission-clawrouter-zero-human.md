@@ -235,6 +235,13 @@ airdrop-and-faucets** (official Solana docs), which lists 6 real acquisition pat
     hackathon participant's own local validator, seeded independently, sidesteps the shared
     rate-limit entirely. |
 
+| 12 | **RESOLVED 2026-07-05**: Dais manually funded the buyer wallet via `faucet.solana.com`
+    (human-solved CAPTCHA — the automation blockers found in #1-#11 were specific to
+    `solana airdrop`/raw RPC/PoW-faucet/Discord-signup CAPTCHA, not the web faucet's own UI, which
+    just needed one human click-through). Confirmed: `solana balance
+    AJ99EemzNHpkdjpMJ9aXfLthvfQYkjSXUjYrQr3853MN --url https://api.devnet.solana.com` → **5 SOL**.
+    REQ-5 (funding precondition) is now satisfied. |
+
 **Money clarification (answering Dais directly):** devnet SOL has **zero monetary value** and
 **cannot be purchased** — it only comes from the above faucets. Sending real mainnet SOL to any
 wallet does **not** credit a devnet balance (separate ledgers). Real money IS useful for a
@@ -263,12 +270,11 @@ PHASE A — prove the mechanism works (brain = ChatGPT subscription, Tier 3, sca
   [x] A1  Fork trilltino/solana_coralOS -> github.com/Daisuke134/solana_coralOS
   [x] A2  Fix the monorepo build: build packages/agent-runtime, link into examples/txodds
           (root-caused: file: dependency needs agent-runtime installed+built FIRST; fixed)
-  [~] A3  ORIGINAL (superseded): funded a LOCAL validator wallet — invalid for this target,
-          the escrow program is public-devnet-only. Real A3 = get PUBLIC devnet SOL, still
-          BLOCKED (see funding-blocker log above, entries #10-11: PoW faucet hits the same
-          rate limit at its internal airdrop step; root cause = shared official-faucet
-          rate limit, not a tool problem). Next untried real options: Discord faucet
-          bots, Tino's Shippers Telegram ask, retry devnetfaucet.org OAuth properly.
+  [x] A3  RESOLVED 2026-07-05 (see funding-blocker log entry #12): Dais manually funded
+          `AJ99EemzNHpkdjpMJ9aXfLthvfQYkjSXUjYrQr3853MN` via faucet.solana.com's own web UI
+          (human solves the CAPTCHA — every AUTOMATED path (#1-#11: CLI/RPC/PoW/Discord
+          signup) was blocked, but the plain web faucet just needed one human click).
+          `solana balance ... --url https://api.devnet.solana.com` -> 5 SOL confirmed.
   [x] A9  BONUS (not on the critical path, but proves capability + unblocks task #8):
           self-build + self-deploy the escrow/arbiter to MY OWN `solana-test-validator` —
           real `anchor build && anchor deploy --provider.cluster localnet`, real tx sigs,
@@ -281,14 +287,33 @@ PHASE A — prove the mechanism works (brain = ChatGPT subscription, Tier 3, sca
           boundReference()/order — now sources Anicca's real on-chain net_worth/revenue from
           aniccaai.com/dashboard.json instead of TxLine odds. RED (3/3 fail) -> GREEN (3/3
           pass) -> pushed to the fork.
-  [ ] A6  Run the real escrow settle (npm run dev's /api/settle, or demo:coral) end-to-end —
-          BLOCKED on A3 (needs a funded public-devnet buyer wallet).
-  [ ] A7  VERIFY: real DEPOSIT + RELEASE Explorer links for the escrow lifecycle (fresh
-          evidence, no mock, HARD 0.31) — BLOCKED on A6.
-  [ ] A8  Retry devnetfaucet.org properly: either fix the GitHub-session carry-over
-          (playwright-cli state-load only updates the cookie jar, not an already-instantiated
-          page's auth state — need state-load BEFORE first navigation, or a fresh context) OR
-          use Tino's Shippers Telegram / a Discord faucet bot instead.
+  [x] A6  DONE 2026-07-05: killed a stale proxy process (port 8801, no LLM key wired), wired
+          `OPENAI_API_KEY` + `LLM_PROVIDER=openai` into the repo `.env`, restarted `npm run
+          proxy` fresh, hit `GET /api/settle?amount=0.001&fixtureId=18185036` against
+          `https://api.devnet.solana.com`. Result: `{"ok":true,"mode":"direct",...}` — arbiter
+          path threw `NotArbiter` (expected per README: setup.js's arbiter keypair isn't the
+          configured arbiter) and correctly fell back to the direct buyer-released escrow, per
+          the documented fallback behavior — not a bug, not a mock.
+  [x] A7  VERIFIED 2026-07-05, fresh evidence, no mock:
+          - DEPOSIT: `2eVohw53ndLLKf7uz1BvRWbVpNx155y4msJg6kBTS837jB5NaWvToVmQ28WAB9yMtwgxMznCRANs7MYLqMuaMMRU`
+            -> https://explorer.solana.com/tx/2eVohw53ndLLKf7uz1BvRWbVpNx155y4msJg6kBTS837jB5NaWvToVmQ28WAB9yMtwgxMznCRANs7MYLqMuaMMRU?cluster=devnet
+          - RELEASE: `JbqJUj9t98R8XNZjgnJWJoQoBJoq8qjvUuwmJctUqyrMnfGDpEqb1sfEu37cz7NBTr3CMvKRRqSBBSTL6eWsfvo`
+            -> https://explorer.solana.com/tx/JbqJUj9t98R8XNZjgnJWJoQoBJoq8qjvUuwmJctUqyrMnfGDpEqb1sfEu37cz7NBTr3CMvKRRqSBBSTL6eWsfvo?cluster=devnet
+          - Escrow PDA: `BGMdLe9AvpYAdykG1QexFtd2Vpg3aPxw9MwSMuyJaEPi`
+          - Both confirmed `Finalized` via `solana confirm`. Balance deltas confirmed: buyer
+            5 -> 4.97416288 SOL, seller 0 -> 0.001 SOL (exact settle amount, real 2-party
+            transfer, not self-pay). **R1b exit gate (A7 true) is now satisfied.**
+  [~] A8  HONEST GAP FOUND (separate from this feature, tracked as new follow-up, NOT
+          blocking): the settle response's `order` was `{"source":"anicca","agentId":
+          "18185036","fallback":true,"error":"no leaderboard entry"}` — REQ-2 (deterministic
+          fallback, never crash) is proven, but REQ-1's non-fallback happy path (real Anicca
+          net_worth/revenue replacing the fallback) did NOT get exercised, because
+          `https://aniccaai.com/dashboard.json` currently has **no `leaderboard` key at all**
+          (`updated_at` on that file is stale, 2026-06-05 — the sprint-1/2/3 leaderboard-sync
+          code exists and is tested, but `render-dashboard.mjs` isn't actually running against
+          production yet). This is a real, separate production gap — filed as a new item, not
+          silently worked around. devnetfaucet.org's GitHub-OAuth path is deprioritized (A3 is
+          done via the simpler manual faucet.solana.com route instead).
 
 PHASE D — submission artifacts (ZERO code required, can start NOW in parallel with A3/A6/A7)
   [ ] D1  Draft the 5-slide deck outline (customer / what it sells / why they pay / the economy
