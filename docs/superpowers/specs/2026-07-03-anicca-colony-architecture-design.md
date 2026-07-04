@@ -733,6 +733,57 @@ labeled "human-funded" WITH their model name ★; (3) the self-funded RATE shown
 (4) ★ FAMILY TREE ★ — parent→child lineage rendered so viewers see which child came from which parent as
 spawning compounds. Akash status is honest below.
 
+### GOLD-MINE REPOS — how they earn + readiness (Dais 2026-07-04, read the code specifically)
+**`BlockRunAI/polymarket-agent`** (Python, active earner earn/pm-trade): fetch 20 Polymarket markets (Gamma
+API) → AI analysis (real prompt "professional prediction market analyst" estimates TRUE probability) →
+edge = ai_prob − market_prob → fractional Kelly sizing (cap MAX_BET%, MIN_EDGE 15%) → execute via
+py-clob-client on Polygon. ★ NOT READY: `src/agent.py::generate_recommendations` is a PLACEHOLDER STUB —
+it hardcodes `estimated_prob=0.55` vs `market_prob=0.50` and IGNORES the AI analysis. The real alpha (AI's
+per-market probability → edge) is never wired into the bet. ★ → INITIAL STRATEGY TO BUILD IN (H8): wire the
+ai_analyzer probability estimate into generate_recommendations so the Kelly edge is REAL, changeable, and
+self-improvable. Everything else (fetch, Kelly, executor, wallet) is real.
+**`BlockRunAI/Franklin-Trading`** (TS, future variety): multi-persona debate (fundamentals/sentiment/tech/
+bull/bear/trader/risk/compliance) → backtest→paper→live lifecycle → multi-venue (Hyperliquid+Jupiter) → 4
+moats (regime detector, prompt-cache, slippage model, fact-checker). ★ NOT FULLY READY: README — "M1
+strategy-runner work is in progress; today use the agent's paper tools from an interactive session"; the
+autonomous `run <strategy>` runtime is roadmap. ★ Interactive agent works; the click-and-earn runner isn't.
+CONCLUSION: BOTH are strong scaffolds, NEITHER is click-and-autonomously-earn ready → we ship INITIAL good
+strategies (H8, from research/BP/backtest) that are self-improvable. Don't reinvent — wire the missing
+decision layer + tweak. This is the ARTICLE's core finding (we tested the repos, here's what's real).
+
+### OBSERVABILITY — netdata assessment (Dais asked "set it up, is it a good option?")
+`netdata/netdata` = 79k★ Go full-stack observability, ~290MB, real-time per-node metrics/dashboards. VERDICT:
+good for INFRA HEALTH (is the Akash node up, CPU/mem/disk/process per instance) — NOT for BEHAVIOUR/ALIGNMENT
+("what earn action did the AI pick, what P&L, is the swarm drifting"). The alignment layer = OUR telemetry +
+trace (earn-ledger + self-eval + dashboard) + a swarm KILL-SWITCH. Recommendation: use netdata as the
+optional infra-health tier per cloud instance; keep our own trace/telemetry as the decision/alignment tier;
+the "god observer who can stop a bad direction" = our aggregate dashboard + a colony-wide pause flag the
+instances honor. (Two tiers: netdata=vitals, our trace=intent.)
+
+### COLLECTIVE SELF-IMPROVEMENT — PR auto-merge with NO human (Dais 2026-07-04, the crux)
+Problem: self/issue-dev files issues + PRs but nobody merges → good strategies never propagate → the
+collective can't evolve. Self-improvement must happen at TWO levels: inside the entity (H1-H3) AND across the
+collective (a great change one instance found → MERGED → every instance pulls it). Mechanism:
+1. An instance finds an improvement (better earn strategy OR a better harness diff, e.g. a smarter
+   self-eval.mjs) and has RESULTS: chain-verified earnings delta (before/after net on-chain).
+2. It opens a PR to the mother repo (`~/anicca`) with the diff + the EVIDENCE (the earnings-delta trace).
+3. ★ AUTO-MERGE GATE (no human) ★: a PR merges iff (a) tests pass, (b) fresh-context adversary PASS, AND
+   (c) it shows a REAL chain-verified improvement (objective evidence, not opinion). Evolutionary: variants
+   that provably earn more get merged into the "genome"; all offspring inherit on the daily mother-sync
+   `git pull origin main`.
+4. The HARNESS ITSELF evolves this way — instances suggest diffs to self-eval/self-heal/strategy and the
+   winners merge. bot2bot (H6) = the discussion/sharing layer; the auto-merge gate = what makes it REAL.
+This is REQ-MERGE (new). Without the merge, issues/PRs are noise; WITH it, the collective compounds.
+
+### ARTICLE — human-edited now, swarm-authored later (Dais = editor, me = writer)
+First article = Anicca + the vision + "we tested hundreds of trading/prediction repos on our platform of
+hundreds of agents; THESE tools + strategies actually made money replicably." Backed by REAL data (the
+platform runs the experiments; the dashboard has the chain-verified results). Now: me writer / Dais editor,
+via `ai-entity-article-writer` skill, NOT automated. Later: the SWARM authors collectively — each instance
+contributes its journey (H5 journal from its trace), a delegated swarm task synthesizes all learnings into
+one article, published with no human. The platform (many varieties × strategies) is what makes the content
+uniquely credible: we KNOW which setup earned most because we ran them all.
+
 ### AKASH SPAWN — NOT done yet (honest status, Dais asked "is it done? why not on dashboard?")
 `skills/self/spawn/scripts/deploy-akash.sh` is fully WIRED (real SDL, `deployment create` with uact escrow,
 bid poll, lease create, send-manifest — no mock). BUT `children.jsonl` is EMPTY = **no real lease has ever
@@ -742,6 +793,14 @@ best-effort). So it is NOT on the dashboard because it never happened. ★ The s
 (peppered) to spawn when eligible ($20 gate), runs deploy-akash → a real `dseq`/lease exists → the child
 boots on Akash (AUTOMATON_GOAL=earn) → the child ALSO posts telemetry so it appears on /dashboard. I verify
 the real dseq + the child's first telemetry; I do NOT fake it. ★
+★ IT IS ALREADY ONE CLI COMMAND, NO BROWSER, NO AgentMail (Dais was right) ★: the full flow in
+`deploy-akash.sh` = (1) write SDL (image=automaton, AUTOMATON_GOAL=earn), (2) `provider-services tx
+deployment create` with escrow deposit (5 AKT in uact) → get `dseq`, (3) poll `query market bid list` → pick
+cheapest open bid, (4) `tx market lease create` (accept bid), (5) wait lease ACTIVE → `send-manifest` → child
+boots. AgentMail is ALREADY best-effort (child born without it). So the ONLY prerequisites for "click and
+done" are: the spawn wallet holds AKT (escrow+gas — `akt-treasury.sh` swaps USDC→AKT) + the $20 eligibility
+gate. `self/spawn/run.sh --host=akash` IS that one command. It hasn't fired because no instance was funded+
+eligible+triggered, not because it needs a human step. TODO: ensure AKT auto-funding + let the AI fire it.
 
 G — GROW (colony) + SHOW (proof) + LAUNCH
   G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child ON
