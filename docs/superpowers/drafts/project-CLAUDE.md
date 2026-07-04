@@ -6,27 +6,19 @@
 
 BP（best practice）= 答え。オリジナルは書かない。判断には最低1つの引用（英/日で検索、ソース名+URL+核心の引用）を付ける。引用のない判断は削除する。
 
-## 開発方式 = Superpowers spec-driven development（全実装に必須）
+## 開発の道具立て（GLVS の Build/Verify 段で使う superpowers skill 群）
 
-skill/cron/spec/mobile app/blog/画像/動画/cold email/browser flow を問わず、全実装は以下8段階を通す。
+開発方式そのものは `~/.claude/CLAUDE.md` の GLVS（Goal→Loop→Verify→State）が唯一の外枠。このプロジェクトでは GLVS の各段で以下の superpowers skill を道具として呼ぶ（並列の独立必須プロセスにしない）。
 
-```
-1. using-superpowers              毎メッセージ最初に skill router を通す
-2. brainstorming                  spec作成 → docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md
-3. writing-plans                  spec → plan（2-5分単位のタスク + ファイルパス）
-                                   → docs/superpowers/plans/YYYY-MM-DD-<topic>.md
-4. using-git-worktrees            .worktrees/<feature>/ で分離（例外: ~/.openclaw runtime store は直接編集）
-5. executing-plans / subagent-driven-development
-   ├ test-driven-development         RED → GREEN → REFACTOR
-   ├ verification-before-completion  IDENTIFY → RUN → READ → VERIFY → CLAIM
-   ├ systematic-debugging            根本原因 → パターン → 仮説 → 修正
-   └ dispatching-parallel-agents     2+ の独立した失敗に対して
-6. requesting-code-review         spec 準拠 → コード品質の順で確認
-7. receiving-code-review          実装前に検証、形だけの同意はしない
-8. finishing-a-development-branch  テスト確認 → merge/PR/keep/discard を提示 → push → worktree cleanup
-```
+| GLVS の段 | 呼ぶ skill | 内容 |
+|---|---|---|
+| Goal 具体化 | brainstorming → writing-plans | spec を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`、plan を `docs/superpowers/plans/YYYY-MM-DD-<topic>.md` に書く |
+| 分離 | using-git-worktrees | `.worktrees/<feature>/`（例外: `~/.openclaw` runtime store は直接編集） |
+| Build | test-driven-development / systematic-debugging / dispatching-parallel-agents | RED→GREEN→REFACTOR、根本原因分析、2+独立失敗の並列処理 |
+| Verify | verification-before-completion / requesting-code-review / receiving-code-review | IDENTIFY→RUN→READ→VERIFY→CLAIM、spec準拠→品質の順でレビュー |
+| 完了 | finishing-a-development-branch | テスト確認 → push → worktree cleanup |
 
-spec → plan → worktree → 実装(TDD+検証) → review → finish+push、いずれの段階もスキップしない。仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う（後回しにしない）。
+仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う（後回しにしない）。spec に「任意」「optional」「推奨」は書かない — 全て MUST として書く。タスクリストは source of truth。終わっていない作業を completed と書かない。
 
 ## HONESTY / VERIFICATION（詳細は `.claude/rules/honesty.md` 参照）
 
@@ -34,7 +26,7 @@ symbol/function/import の存在は使う前に Read/Grep/依存ファイルの�
 
 Hook 配線: PostToolUse (`.claude/hooks/scripts/post-edit-verify.sh`) が Edit/Write 後に構文チェックを自動実行。Stop hook (`.claude/hooks/scripts/stop-verify-claims.sh`) が session 終了前に直近編集の構文チェックを実行。`.claude/agents/fact-checker.md`（Read/Grep/Glob/Bash のみ）で commit 前の独立監査を行う。
 
-## HARD RULE #6 exception
+## メール triage は LLM 直判断でよい例外
 
 `anicca-inbox` skill 内のメール triage/draft は LLM 直判断でよい（1スレッドごとの分類であり、cron 化した固定判断ではないため）。詳細 → `docs/superpowers/specs/` 内の anicca-inbox-autonomy-design spec §12。
 
@@ -171,7 +163,7 @@ Web検索/コード内シンボル操作/ブラウザ/Mac操作の既定は `~/.
 └────────────────────────────────────────────────────────────────┘
 ```
 
-### HARD RULE: Anicca は aniccaai.com に直接書き込まない
+### aniccaai.com への書き込み制限
 
 | 主体 | 書いてよい場所 | 書いてはいけない場所 |
 |---|---|---|

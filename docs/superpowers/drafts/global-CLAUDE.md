@@ -82,7 +82,9 @@ UI/frontend を作る前に必ず `gpt-tasteskill`（設計規律）→ 実装�
 | ディスク管理手順 | `rules/disk-hygiene.md` |
 | 資金調達先への応募 | memory `feedback_funder_apply_must_use_application_kit_hinagata` |
 | CAPTCHA/OAuth/3DS 突破手順 | skill `tier-a-bypass` |
+| トークン節約 CLI | `rtk` 経由でhook自動最適化、`rtk gain`/`rtk discover` は直接実行 → `~/.claude/RTK.md` |
+| 不可侵 store（削除・移動禁止） | `~/.cloak` `~/anicca-rtdash` `~/anicca-monk-factory` `~/.claude/projects/*/memory/` `**/state/*.jsonl` |
 
-## 言語
+## 出力形式・言語
 
-回答は常に日本語。
+回答は常にテーブル/ビジュアル形式で書く（箇条書き単体にしない）。日本語で書く。

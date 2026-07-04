@@ -10,11 +10,11 @@
 ## フロー
 
 ```bash
-git worktree add ../anicca-<task> -b feature/<task>  # 作成
-cd ../anicca-<task>                                   # 作業
+git worktree add .worktrees/<task> -b feature/<task>  # 作成
+cd .worktrees/<task>                                   # 作業
 # 完了後
 cd /path/to/anicca-project && git merge feature/<task>
-git worktree remove ../anicca-<task> && git branch -d feature/<task>
+git worktree remove .worktrees/<task> && git branch -d feature/<task>
 ```
 
 ## Spec ルール
