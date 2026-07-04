@@ -35,6 +35,7 @@ skills/*/data/
 skills/*/pdfs/
 skills/*/queue/
 skills/*/state/
+skills/*/*/state/
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 skills/*/state/wallet.encrypted
 skills/*/work/
