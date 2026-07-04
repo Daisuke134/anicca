@@ -11,14 +11,25 @@ function utcMidnightTs(nowMs) {
   return Math.floor(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) / 1000);
 }
 
+// Sprint-6 S6.5: `readers` is either ONE flat reader object (back-compat — used for every row,
+// the original single-chain call style) OR a { base, solana, ... } map dispatched per row.chain
+// (default 'base'). Duck-typed: a flat reader has usdcBalanceAtomic as an own function.
+function readerFor(readers, chain) {
+  if (typeof readers.usdcBalanceAtomic === "function") return readers; // flat reader, back-compat
+  return readers[chain]; // may be undefined -> caller's try/catch marks unverified
+}
+
 // rows: validated telemetry rows. reader: { nativeBalanceWei, usdcBalanceAtomic, ethUsdPrice,
-// externalInflowsUsd }. Returns new rows with net_worth_usd/revenue_* set from chain + *_src flags.
-function enrichOnChain(rows, reader, nowMs = Date.now()) {
+// externalInflowsUsd } OR a per-chain map of such readers. Returns new rows with
+// net_worth_usd/revenue_* set from chain + *_src flags.
+function enrichOnChain(rows, readers, nowMs = Date.now()) {
   const mStart = monthStartTs(nowMs);
   const midnight = utcMidnightTs(nowMs);
   return rows.map((row) => {
     const e = { ...row };
     const ex = excludeSet(row);
+    const reader = readerFor(readers, row.chain || "base");
+    if (!reader) { e.net_worth_src = "unverified"; e.earn_src = "unverified"; return e; }
     // net worth = on-chain USDC + native*price (dimensioned USD)
     try {
       const usdc = Number(reader.usdcBalanceAtomic(row.id)) / 1e6;

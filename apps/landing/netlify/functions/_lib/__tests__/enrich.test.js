@@ -97,8 +97,10 @@ test("R4: totals sum only chain-verified; all-unverified => undefined not 0", ()
 test("excludeSet(row) contains the row's own id + seed + our ids (per-row)", () => {
   const s = excludeSet({ id: "0xMe" });
   assert.ok(s.has("0xme"));
-  for (const seed of SEED_ADDRESSES) assert.ok(s.has(seed.toLowerCase()));
-  for (const our of OUR_INSTANCE_IDS) assert.ok(s.has(our.toLowerCase()));
+  // 0x/EVM addresses normalize lowercase; non-0x (solana) addresses are case-sensitive and must
+  // NOT be lowercased (Sprint-6 S6.6) — check each with the chain-aware rule, not a blanket .toLowerCase().
+  for (const seed of SEED_ADDRESSES) assert.ok(s.has(seed.startsWith("0x") ? seed.toLowerCase() : seed));
+  for (const our of OUR_INSTANCE_IDS) assert.ok(s.has(our.startsWith("0x") ? our.toLowerCase() : our));
 });
 
 test("edge-008: non-finite ethUsdPrice => net_worth_src unverified (never NaN trusted)", () => {
@@ -137,4 +139,65 @@ test("IMPL2-001: a transfer from the REAL founder/treasury wallet is excluded (s
   });
   const [e] = enrichOnChain([row], reader);
   assert.strictEqual(e.revenue_mo_usd, 12); // NOT 1,000,012
+});
+
+// Sprint-6 S6.5: enrichOnChain dispatches per-row on chain (default 'base'), a Solana row must
+// never be read against the Base reader or vice versa. Single-reader call style (back-compat,
+// every test above) must keep working unchanged.
+test("S6.5: a mixed batch (1 base row, 1 solana row) enriches each against its OWN reader", () => {
+  const baseRow_ = baseRow({ id: "0xaaa" }); // chain absent => base
+  const solRow = baseRow({ id: "SoLwaLLetAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1", chain: "solana" });
+  const baseReader = mockReader({ bal: { "0xaaa": { usdcAtomic: 2_000000n, wei: 0n } }, price: 1 });
+  const solanaReader = {
+    ethUsdPrice: () => 999999, // deliberately absurd — if this leaks into the base row's math, the test catches it
+    usdcBalanceAtomic: (a) => (a === "SoLwaLLetAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1" ? 5_000000n : 0n),
+    nativeBalanceWei: () => 0n,
+    externalInflowsUsd: () => 0,
+  };
+  const enriched = enrichOnChain([baseRow_, solRow], { base: baseReader, solana: solanaReader });
+  const eBase = enriched.find((r) => r.id === "0xaaa");
+  const eSol = enriched.find((r) => r.chain === "solana");
+  assert.strictEqual(eBase.net_worth_usd, 2); // 2 USDC * price=1, NOT touched by solana's price=999999
+  assert.strictEqual(eSol.net_worth_usd, 5); // 5 USDC-equivalent, read from the solana reader
+});
+
+test("S6.5: a solana row with NO solana reader configured => unverified (never silently uses base)", () => {
+  const solRow = baseRow({ id: "SoLwaLLetAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1", chain: "solana" });
+  const baseReader = mockReader({});
+  const [e] = enrichOnChain([solRow], { base: baseReader }); // no 'solana' key at all
+  assert.strictEqual(e.net_worth_src, "unverified");
+  assert.strictEqual(e.earn_src, "unverified");
+});
+
+test("S6.5: single flat reader (no {base,solana} wrapper) still works for an all-base batch (regression)", () => {
+  const row = baseRow({ id: "0xaaa" });
+  const reader = mockReader({ bal: { "0xaaa": { usdcAtomic: 3_000000n, wei: 0n } }, price: 1 });
+  const [e] = enrichOnChain([row], reader); // exact same call style as every test above
+  assert.strictEqual(e.net_worth_usd, 3);
+});
+
+// Sprint-6 S6.6: excludeSet must be chain-aware — base58 (Solana) ids are case-sensitive, so
+// lowercasing a Solana seed/instance id would make it fail to match the real address ever again.
+test("S6.6: excludeSet does NOT lowercase a solana-format row id (case-sensitive base58)", () => {
+  const mixedCaseId = "AJ99EemzNHpkdjpMJ9aXfLthvfQYkjSXUjYrQr3853MN";
+  const s = excludeSet({ id: mixedCaseId, chain: "solana" });
+  assert.ok(s.has(mixedCaseId), "must contain the EXACT case, not a lowercased corruption");
+  assert.ok(!s.has(mixedCaseId.toLowerCase()) || mixedCaseId === mixedCaseId.toLowerCase());
+});
+
+test("S6.6: excludeSet still lowercases a base/EVM row id (regression, existing behavior)", () => {
+  const s = excludeSet({ id: "0xABCDEF0000000000000000000000000000000dead" });
+  assert.ok(s.has("0xabcdef0000000000000000000000000000000dead"));
+});
+
+test("S6.6: a solana seed/instance address correctly excludes a matching solana-chain inflow", () => {
+  const SOLANA_FOUNDER = SEED_ADDRESSES.find((a) => !a.startsWith("0x"));
+  assert.ok(SOLANA_FOUNDER, "at least one non-0x (solana) seed address must be configured");
+  const row = baseRow({ id: "SoLwaLLetAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA1", chain: "solana" });
+  const reader = {
+    ethUsdPrice: () => 1, usdcBalanceAtomic: () => 0n, nativeBalanceWei: () => 0n,
+    externalInflowsUsd: (a, sinceTs, exSet) => (exSet.has(SOLANA_FOUNDER) ? 0 : 999),
+  };
+  const [e] = enrichOnChain([row], { solana: reader });
+  assert.strictEqual(e.revenue_mo_usd, 0); // the founder-seed inflow was excluded, not counted
 });
