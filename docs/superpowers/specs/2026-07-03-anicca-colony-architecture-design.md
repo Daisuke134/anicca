@@ -602,6 +602,24 @@ H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
        never delete). Rationale: 2026-07-04 the blind cleaner deleted the in-use polymarket-agent clone
        mid-W1; a cleaner that cannot ask "is this in use?" must not decide deletions alone.
 
+M — MONEY MONITOR (Dais 2026-07-04 "are they making money and how much"). MEASURED live 2026-07-04 ~07:20 JST:
+     ★ HUMAN-FUNDED colony (founder 0x810f + HL acct 0xa3cd):
+       - Hyperliquid perp acct: $8.75 (real, active) — the loop's AI keeps picking hl_trade "close ETH";
+         realized per close = pennies, mostly NEGATIVE (−0.0011, −0.0014, +0.0017, 0…) → ~$0/slightly−.
+       - Polygon USDC.e $5.98 (pm-trade bankroll — agent's edge criterion unmet → 0 trades, idle).
+       - Base yield aUSDC $0.3153 (grew from 0.19 — the ONLY thing net-positive) + Base USDC $0.30.
+       - x402_sell: server LIVE + public URL advertised, earn = $0 (no buyers = demand bottleneck).
+       - yield via loop = BLOCKED by MALICE-GUARD ("yield-defi not an own-identity channel") — a
+         guard misconfig eating the AI's yield action (fixable setup).
+       - gig historical: +$0.315 (one settle). NET since loop turned on: ≈ $0, slightly negative on HL churn.
+     ★ SELF-FUNDED (Franklin Solana 8Fpqd): $0.42, DOWN from $1.33 seed = −$0.91 burned on opus-4.8
+       thinking (its OWN x402 wallet), $0 earned → NET NEGATIVE. Needs a cheaper model (setup) or it dies.
+     ★ VERDICT: the loop now ACTS every wake (huge vs 0 actions before), but EARNING ≈ $0 / slightly−.
+       Bottlenecks = (a) demand: x402 has no buyers; (b) the AI churns hl_trade "close" (loop_detect
+       fired) instead of diversifying = exactly what H2/H3 self-eval/self-improve must fix; (c) 3 fixable
+       setup bugs: yield MALICE-GUARD block, hl.py line-146 traceback (intermittent crash), Franklin on
+       opus-4.8 (too expensive for its bankroll). ★ Honest: acting ≠ earning yet. ★
+
 V — VERIFICATION MATRIX (Dais 2026-07-04: "we have to verify every one of them and keep iterating until
      that verification is done"). EVERY capability × EVERY instance type must be VERIFIED with a real
      no-mock run (fresh evidence: tx hash / trace line / live URL). A cell stays open until green — we
