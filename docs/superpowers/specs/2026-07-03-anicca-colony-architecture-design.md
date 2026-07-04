@@ -112,6 +112,20 @@ it; I hand it to the base agent + build the harness. **Smell = if my diff contai
 cook?"** — on hearing it I immediately revert any strategy code. Mirrored to memory
 `feedback_build_the_harness_not_do_their_work` + this spec is SSOT.
 
+### ROLE CLARIFIED v3 (Dais 2026-07-04) — I CREATE THE BASELINE ALPHA by running it myself, then embed it
+This SUPERSEDES the strict "verifier only / never write strategy" reading for the BOOTSTRAP. Dais verbatim:
+"the trade needs an alpha, and that's why YOU create the alpha — that is your job: run it, make a good basic
+strategy, make it work, and embed it into each of them. We give them a BATTLE-TESTED skill so they can earn
+from the start AND self-improve + self-heal from there." So my job now, explicitly:
+1. RUN the earners myself (trade/yield/etc) to FIND a good BASELINE strategy that actually earns.
+2. EMBED that battle-tested baseline into each earn skill as the starting point.
+3. The AIs START from that working baseline and SELF-IMPROVE / SELF-HEAL from there (H1-H3, H4).
+4. Then I step out — the baseline is the seed, the swarm evolves it (H8 = the shipped baseline; EXP/MERGE =
+   the evolution). "Never write strategy" still bans me hand-holding ONE instance forever or faking results;
+   it does NOT ban creating the shared, battle-tested, self-improvable baseline every instance inherits.
+Reconciliation: giving a good default strategy ≠ being permanently in the loop; it's the SEED the loop needs
+(weak models can't bootstrap alpha from zero — §H8). Battle-tested baseline IN, then autonomy.
+
 ### SETUP → RUN → WATCH (Dais 2026-07-04 second correction — even BUG FIXES are not mine)
 **Dais verbatim (2026-07-04):** "you set up -> they run and you watch … each ai fixes, improves itself and
 its tools so they earn more money ok?? you should not be fixing these things yourself … your job is simple.
