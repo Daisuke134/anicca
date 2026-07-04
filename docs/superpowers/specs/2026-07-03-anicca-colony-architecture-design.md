@@ -1459,3 +1459,8 @@ Dais 指摘「なぜ金が少ない/trading に全部入れろ」→ 監査で�
 2. 両側MM の約定/LP報酬を監視 → realized profit>0 を台帳へ。
 3. Dais の Solana 入金が来たら Relay で pUSD 追加 → 元本を積む。
 原則: 実 realized profit が出るまで 記事/launch はしない(no-scam)。
+
+### §17.3-DONE(2026-07-04): 全額 trading 統合 完了
+- ✅ USDC.e→pUSD 変換完了: transfer_erc20(deposit wallet→0x810f) → Relay(tx 097295181170a89…) → deposit wallet。
+- ✅ deposit wallet pUSD = ★12.791★(詰まり回収分$10.93含め全資金を pUSD で1箇所に集約)+ Morocco建玉$1.01。
+- ✅ 両側MM LIVE(orders 0xcd75314c/0xc59559c7)。次 = 約定/LP報酬監視 → realized profit>0 を台帳へ + 資金増でMM市場数を拡大。
