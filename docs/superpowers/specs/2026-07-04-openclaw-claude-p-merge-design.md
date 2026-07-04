@@ -403,3 +403,57 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 
 **フェーズ7: 将来構想**(着手しない、方針記録のみ)
 - spawn-anywhere基盤
+
+## 12. clip収益の実フロー確定(2026-07-04、Dais質問「お金は実際に誰から来るのか」への回答、fresh grep)
+
+`~/anicca/skills/earn/clip-promote/SKILL.md` + `decide.py` + `~/anicca/skills/earn/clip/
+producer.sh` を実際に読んで確認した、clip収益の正確な全体像(推測ではなく一次ソース確認):
+
+```
+①お金の本当の出どころ = 広告主/ブランド企業
+  企業が「コンテンツをバイラルに拡散してほしい」というマーケティング予算
+  ($1,000〜$8,000/campaign)をpromote.fun(Solana上のper-viewクリッピング報酬
+  プラットフォーム)にエスクロー投入。フォロワー数不要、per-view後払い
+  (view 1000回あたり$0.20〜$3、Vyro/Clipping.net/Promote.funで相場が近い)。
+              ↓
+②SELECT(clip-promote slot) — ACTIVEなIG許可キャンペーンを1つ選ぶ
+              ↓
+③CLIP(clip slot / producer.sh) — 人気YouTube長尺動画(例: The Diary of a CEO)
+  から見どころを自動抽出(whisper→highlight→9:16→字幕焼付)
+              ↓
+④POST(clip slot) — 自作IGアカウントに投稿
+⑤SUBMIT(clip-promote slot) — 投稿URLをpromote.funに提出
+⑥MEASURE(clip-promote slot) — view数計測、報酬が積み上がる
+⑦WITHDRAW(clip-promote slot) — キャンペーン終了後、Solana walletへ引き出し
+⑧RECORD(clip-promote slot) — オンチェーン着金確認後にのみ収益記録
+  (record-payout.mjsがsig confirmed + usdcDelta>0を検証、未確認/重複sigは拒否)
+```
+
+### 正直な現状ギャップ(fresh確認、2026-07-04)
+
+| ステップ | 状態 |
+|---|---|
+| ①〜④(campaign選定は除く動画生成・投稿) | ✅ 実際に稼働(Task #6で実clip生成・投稿を確認済み) |
+| ⑤〜⑧(campaign提出→計測→引き出し = clip-promote slot) | ❌ **cron/launchdに一切登録されていない**(`launchctl list`にclip-promote関連ジョブ0件、`state/`ディレクトリも空=1回も実行された形跡なし) |
+
+**結論**: 動画は作って投稿できているが、お金を実際に受け取る出口(clip-promote)がまだ繋がっていない。**現状のclip収益は$0**。これが既存§7 フェーズ1 Task A2(promote.fun harness構築)の具体的な中身であり、フェーズ1最優先である理由そのもの。
+
+## 13. mail報告cron再登録問題(2026-07-04、Task #3で発見、全loop共通の教訓)
+
+Task #3(clip loopのmail報告E2E確認)の過程で、clip-core自身にCronList自己診断を指示した結果、
+重大な技術的事実が判明した:
+
+**発見**: claude-p loopの`cron="7 * * * *"`は、STARTUPプロンプント内で**初回起動時に一度だけ
+CronCreateされる**。cli.shファイルを後から書き換えても、**既に登録済みのcronジョブのprompt
+文字列は自動更新されない**(CronCreateは「無ければ作る」ロジックのため、既存ジョブをスキップ
+する)。実際、mail報告を追加した後もclip-coreの登録済みcronは「古いプロンプト(mail報告言及
+なし)」のままだった。
+
+**対応**: clip-core自身に「CronListで確認→古ければCronDelete+CronCreateで再登録」を指示し、
+自己修復させた(私が代行したのではなく、clip-core自身がツールを実行した)。新job ID
+`2a762630`、毎時7分、現行clip-cli.shのSTARTUPと同一内容で再登録済み。次の自然発火(21:07 JST)
+で実際にmail報告が届くか確認中(Task #3)。
+
+**汎用的な教訓**: cli.sh編集だけでは足りず、**既に稼働中の他4 loop(affiliate/video/bounty/
+gig)でも同様に「登録済みcronが古いプロンプントのままか」を確認し、必要なら同様の自己診断
++再登録が必要**(Task #4に反映)。
