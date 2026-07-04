@@ -132,6 +132,26 @@ def test_auto_merge_fails_closed_on_missing_verdict_keys(monkeypatch, tmp_path):
     assert not any("merge" in c for c in calls)
 
 
+def test_auto_merge_rejects_nan_earnings_delta(monkeypatch, tmp_path):
+    """adversary FIND (2026-07-05): float('nan') passed isinstance(..., (int,float)) AND
+    `nan <= 0` is always False, so the old check let NaN bypass the fail-closed gate entirely."""
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    verdict = {**_GOOD_VERDICT, "earnings_delta_usd": float("nan")}
+    result = auto_merge(slot="gig", pr_number=42, verdict=verdict)
+    assert result["merged"] is False, "NaN earnings_delta_usd must fail-closed, never merge"
+    assert not any("merge" in c for c in calls)
+
+
+def test_auto_merge_rejects_infinite_earnings_delta(monkeypatch, tmp_path):
+    monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
+    calls = _capture_gh(monkeypatch)
+    verdict = {**_GOOD_VERDICT, "earnings_delta_usd": float("inf")}
+    result = auto_merge(slot="gig", pr_number=42, verdict=verdict)
+    assert result["merged"] is False, "+inf earnings_delta_usd must fail-closed, never merge"
+    assert not any("merge" in c for c in calls)
+
+
 def test_auto_merge_logs_every_decision(monkeypatch, tmp_path):
     monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
     _capture_gh(monkeypatch)

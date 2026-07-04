@@ -59,8 +59,11 @@ print(json.dumps({'open_positions': open_count, 'value_usd': round(value, 6), 'u
 }
 
 # ---- 1. anicca-a3cdd4 (automaton) --------------------------------------------------------------
+# NOTE (spec §25 correction, adversary FIND 2026-07-05): anicca-a3cdd4's REAL launchd loop is
+# com.anicca.daemon (body ~/.anicca) -- "ai.anicca.founder-loop" is a SEPARATE, unrelated job
+# (claude-p's proxy body, wallet 0x810f). This script previously reported the wrong loop's status.
 A3_BAL=$(erc20 "$BASE" "$BUSDC" "$A3CDD4_ADDR")
-A3_LOOP=$(loop_status founder-loop)
+A3_LOOP=$(loop_status anicca.daemon)
 A3_OUT=/Users/operator/.automaton/state/telemetry.json
 mkdir -p "$(dirname "$A3_OUT")"
 python3 -c "
@@ -71,7 +74,7 @@ doc = {
     'wallet': {'address': '$A3CDD4_ADDR', 'chain': 'base', 'asset': 'USDC'},
     'balance_usd': float('$A3_BAL' or 0),
     'pnl': None,
-    'loop': {'name': 'founder-loop', 'launchd_label': 'ai.anicca.founder-loop', 'status': '$A3_LOOP'},
+    'loop': {'name': 'com.anicca.daemon', 'launchd_label': 'com.anicca.daemon', 'status': '$A3_LOOP'},
     'generated_at': '$(now_iso)',
     'generated_at_epoch': $(now_epoch),
     'source': 'public RPC read (base-rpc.publicnode.com), no private key accessed'

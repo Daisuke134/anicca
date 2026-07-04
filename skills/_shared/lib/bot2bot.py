@@ -6,6 +6,7 @@ PROP-B4 (no human-touch in escalation labels).
 from __future__ import annotations
 
 import json
+import math
 import re
 import subprocess
 import time
@@ -182,8 +183,17 @@ def _merge_gate(verdict: dict) -> tuple[bool, str]:
     if adversary_verdict != "PASS":
         return False, f"adversary_verdict is not 'PASS' (got {adversary_verdict!r})"
     earnings_delta = verdict.get("earnings_delta_usd")
-    if not isinstance(earnings_delta, (int, float)) or isinstance(earnings_delta, bool) or earnings_delta <= 0:
-        return False, f"earnings_delta_usd is not a positive number (got {earnings_delta!r})"
+    # adversary FIND (2026-07-05): float('nan') IS an instance of float and `nan <= 0` is ALWAYS
+    # False, so the old check let a NaN earnings_delta fall through the fail-closed guard entirely
+    # and merge. math.isfinite() rejects NaN and +/-inf explicitly; isinstance(bool) still excluded
+    # first since bool is a subclass of int (True/False must never be read as 1/0 here).
+    if (
+        isinstance(earnings_delta, bool)
+        or not isinstance(earnings_delta, (int, float))
+        or not math.isfinite(earnings_delta)
+        or earnings_delta <= 0
+    ):
+        return False, f"earnings_delta_usd is not a positive finite number (got {earnings_delta!r})"
     return True, "tests_pass=True, adversary_verdict=PASS, earnings_delta_usd>0"
 
 

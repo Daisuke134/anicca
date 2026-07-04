@@ -38,6 +38,7 @@ skills/*/state/
 skills/*/*/state/
 skills/*/state/MNEMONIC_BACKUP_ONCE.txt
 skills/*/state/wallet.encrypted
+skills/earn/polymarket-trade/*.log
 skills/*/work/
 workspace/mau-tiktok/cta-video/
 workspace/mau-tiktok/hooks/
