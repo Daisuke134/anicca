@@ -1656,3 +1656,17 @@ adversary が fresh-context/disk-only で検証。CONFIRMED flaws:
 - ⚪#6 wallet doc 不整合: pm-trade SKILL.md が key を「0x810f」と書くが実 key は 0x904B50d2 派生。doc 修正 要(次session)。
 - ⚪#7 genesis.md not found warning 毎回(低)。
 PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(scrubPrivateKeys tested)/ ledger honesty(open/resting 明記, 偽 realized 無し)/ scheduling design 健全。
+
+### §25 ★ 訂正: instance↔loop の実対応 + 本番 telemetry 修理(2026-07-05, 証拠 = plist/ledger/ps)★
+§19 の loop 対応が実態とズレていた。証拠ベースの正:
+| instance | body | 実 loop(launchd) | wallet | 状態 |
+|---|---|---|---|---|
+| anicca-a3cdd4 | `~/.anicca`(ANICCA_INSTANCE=clawrouter) | **`com.anicca.daemon`**(KeepAlive) | 0xa3cd | ★実働 earner★ 120s cycle(yield/video/pm/sol…)。portfolio-realtime: liquid $6.23 + aave $0.19 + **HL $8.77 = 計$15.20**(invested $18.7, net −$3.50)。realised net +$0.2013/2849 wakes |
+| claude-p proxy body | `~/.anicca-founder`(ANICCA_BRAIN=proxy) | `ai.anicca.founder-loop`(KeepAlive) | **0x810f($0.30)** | broke→1h sleep cycle。★返金$5.5 は 0xa3cd に着金=automaton は正しく復活済み。broke なのは 0x810f のこの proxy body★ |
+| claude-p PM earner | `~/anicca/skills/earn/polymarket-trade` | `ai.anicca.pm-earner`(600s) | 0x904B50d2 | RUNNING、PM 建玉4件 |
+| Franklin | `~/.blockrun` | `ai.anicca.franklin-sol`(1800s) | 8Fpqd | RUNNING |
+- ★本番 telemetry 修理(telem-builder, live fix)★: `runtime/dashboard/telemetry-poster.mjs`(founder-loop の daemon が起動、`~/.automaton/wallet.json`=0xa3cd 鍵で EIP-191 署名→ aniccaai.com/.netlify/functions/telemetry)が **1日以上 400 host_wallet_mismatch で全リジェクト**されていた。原因 = 過去の name 衝突で identity cache が 8桁hex `anicca-a3cdd4ec` に汚染され本番の6桁チェックに落ち続けた。cache 退避+再採番 → 202 成功、本番 leaderboard に **alive:1, net_worth $22.02, funding:self**(plist に ANICCA_FUNDING=self 追加+reload、live 検証済 17:27Z)。
+- 構造的奇妙さ(動くが将来 cleanup): a3cdd4 の telemetry を claude-p の proxy body が cross-body で署名 POST している。poster は com.anicca.daemon 側へ移すのが筋。
+- collector 追加: `skills/self/telemetry-collect.sh`(mother a9d08a1)が 3 body に `state/telemetry.json` を書く(colony-status.sh と一致検証済)。
+- colony-status.sh 修正2件: ①`grep -q`+pipefail の SIGPIPE 偽 STOPPED(f64831c) ②loop 対応の付け替え。
+- 残: Franklin(ed25519)/claude-p(EVM 0x904B)の signed poster 追加 = poster-builder 進行中。endpoint の Solana 対応要否も同 agent が判定。
