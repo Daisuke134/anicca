@@ -412,9 +412,16 @@ PHASE C — wrap as an unattended loop + submit
           still a manual production step.
   [~] C5  3-min video SCRIPT drafted (same `SUBMISSION.md`, timestamped Problem/Solution/Demo/
           Team beats) — not yet recorded/edited, that's still a manual production step.
-  [ ] C6  Public repo cleanup: no keys committed, .env.example only; README notes Docker is
-          required to run the multi-agent round (judges need their own Docker/colima)
-  [ ] C7  Submit on the Superteam listing before 2026-07-20
+  [x] C6  DONE 2026-07-05: audited the whole repo — `.env` gitignored + `git log --all -- .env`
+          empty (never committed), no `sk-proj-`/`sk-ant-api`/`am_us_`-shaped strings anywhere
+          in tracked source. `.env.example` updated with the new clawrouter/anicca vars.
+          README (`examples/txodds/coral/README.md`) now documents 2 real gotchas found live:
+          (1) coral-server doesn't build agent images itself, pulls from a registry and 404s —
+          must `docker build` both first; (2) a freshly-generated arbiter keypair isn't the
+          program's on-chain admin, so this fork defaults to `SETTLEMENT_MODE=direct`. Pushed
+          to `Daisuke134/solana_coralOS@e6a32a8`.
+  [ ] C7  Submit on the Superteam listing before 2026-07-20 — BLOCKED behind C3's live E2E
+          (task #21) + C8's adversary pass; do not submit with a known-untested code path.
   [ ] C8  fresh-context adversary review of the whole submission (spec fidelity + no-mock E2E)
 ```
 
