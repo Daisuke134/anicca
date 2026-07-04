@@ -188,3 +188,50 @@ Claude/free-glmで切り替え)の延長線上にある構想であり、新規�
 
 **フェーズ5: 将来構想(着手しない、方針記録のみ)**
 10. spawn-anywhere基盤(OpenClaw/Hermes/どこでもAI spawn可能に、Two modes拡張)
+
+## 8. Dais指摘(2026-07-04)への対応: 「私が代わりにやるな、hundreds of self-funded AIsを考えろ」
+
+**Dais verbatim**: 「もし私(Claude Code)が一度だけ代わりにやってしまったら、それは実は
+有害(harmful)だ。この世界には何百ものself-funded AIが存在することになる。全員が同じ
+スキルで自分自身で稼げる必要がある。1回だけ代わりにやることは、全AIの進歩と成功を
+妨げている」。
+
+これを受けて、Task #2(ClawRouter専用IGアカウントの自律作成)の実装方針を再検討した。
+
+### 発見: ClawRouterの現アーキテクチャでは`ig-account-create`は原理的に実行不可能
+
+`~/anicca/runtime/loop/prompt.mjs`を確認したところ、ClawRouter(genesis daemon)は
+`run_skill(slot, args)`という**単一の固定ツールしか持たない**(claude-p側のような
+フルツールセット=Bash/Read/Edit等は無い)。一方`~/.claude/skills/ig-account-create/
+SKILL.md`の実行手順(「Proven flow」)は、画面上の座標クリック(`clickxy`)・要素の
+可視性判定(`getBoundingClientRect().height>0`)・スクロール確認等、**本質的に視覚的な
+LLM judgmentが必須**なステップの連続(claude-pのようなagentic loop = スクリーンショット
+を見て毎回判断、が無いと完結できない)。
+
+さらに、`ig-account-create`は`skills/registry.json`のslot一覧にも登録されておらず、
+ClawRouterは`run_skill`経由でこのスキル自体を呼び出す手段を持たない。
+
+### 選択肢(実装はまだしていない、方針記録のみ)
+
+| 案 | 内容 | 課題 |
+|---|---|---|
+| A | `ig-account-create`をregistry.jsonに新規slot登録し、その`run.sh`内でfree/glm-4.7
+自身を使ったvision-in-the-loopミニエージェント(スクリーンショット→判断→clickxy→
+リトライ)を実装する | free/glm-4.7のvision対応確認が必要。実装コスト大 |
+| B | run.sh/producer.sh側で完結する決定論的スクリプト化 | 座標クリック等の適応的判断が
+必須な部分は原理的に決定論化できない(画面レイアウト変化に対応できない) |
+| C(却下) | claude-p(私ではなく、既にig-account-create実績のある別のAnicca instance)が
+ClawRouter用アカウントを代わりに作る | Dais指摘に反する — 「hundreds of self-funded AIs」
+全員が自分でできる必要がある以上、他のAIが肩代わりしてもスケールしない |
+
+**結論**: 案Aが唯一の恒久解だが実装コストが高い。今回のセッションではまず**Task #6
+(私が代わりにproducer.shを実行するのではなく、ClawRouter自身が次のwakeで自然に
+`earn/clip`を選び、producer.shが自動実行されるのを"監視するだけ"に徹する)**に先に
+着手し、案Aの実装(vision-in-the-loop harness)は次のタスクとして別途着手する。
+
+### 私の役割の再確認(このタスク全体を通じて厳守)
+
+- ★ producer.sh/run.shを手動実行しない。ClawRouterのwake(120秒毎)を観察するだけ ★
+- ★ ig-account-createを代わりに実行しない。ClawRouterが自分で実行できる"道具"
+  (registry slot + vision-in-the-loop harness)を用意するだけ ★
+- harness(足場)を作ることと、実際にタスクを代行することの境界線を常に意識する
