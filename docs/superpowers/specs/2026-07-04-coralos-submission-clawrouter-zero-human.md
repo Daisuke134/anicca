@@ -94,10 +94,27 @@ delivery the escrow releases funds to Anicca's wallet. Anicca ALREADY runs an x4
 
 ## Requirements (EARS)
 
-- **R1 (free-tier brain, no human key)** The submission agent SHALL route its LLM calls through a
-  local ClawRouter proxy pinned to a FREE model (e.g. `nvidia/gpt-oss-120b` or `blockrun/auto`
-  constrained to free), with NO human-owned API key present in its environment. Evidence: the run
-  succeeds with `ANTHROPIC_API_KEY`/`OPENAI_API_KEY` UNSET.
+- **R1 (two-phase brain — prove capability FIRST, then downgrade to zero-human)** Dais's
+  verbatim call (2026-07-04): run Phase-A on the strong brain first; only flip to ClawRouter once
+  Phase-A CONFIRMS the loop actually earns money. This is the correct verification order — prove
+  the mechanism works before optimizing for purity, so a zero-human failure never gets confused
+  with a strategy failure.
+  - **R1a (Phase A — capability proof, ChatGPT subscription)** The submission agent SHALL first run
+    its `deliverService()` + seller-bidding brain on the **existing ChatGPT/OpenAI subscription**
+    (Tier 3 from the ladder above — allowed by CoralOS, human-key-powered). Goal: confirm the
+    WANT→BID→AWARD→DEPOSIT→DELIVER→RELEASE loop actually settles a REAL on-chain payment to
+    Anicca's wallet at least once. This is a capability/mechanism test, not the final entry.
+  - **R1b (Phase A exit criterion)** Phase A is DONE when ≥1 real Solana devnet settlement lands
+    in Anicca's seller wallet (Explorer link captured) using the ChatGPT-powered brain. Until this
+    is true, do NOT spend effort on ClawRouter integration — a broken mechanism wrapped in a purer
+    brain is still broken.
+  - **R1c (Phase B — downgrade to ClawRouter, zero human key)** ONCE R1b is confirmed, swap the
+    brain to a ClawRouter free-tier model (same `deliverService`/bidding code, only the LLM call
+    target changes — the shim is provider-agnostic per LLM.md, env-var flip, no code change). Re-run
+    the SAME loop and confirm it STILL settles with human keys UNSET. This is the actual submission
+    brain (Tier 1 — the zero-human claim).
+  - **R1d (final state)** The submitted artifact SHALL run on ClawRouter (R1c), not the ChatGPT
+    subscription (R1a is a scaffolding step, explicitly not shipped as the final brain).
 - **R2 (self-paid escalation, optional)** WHERE a paid model is needed, the agent SHALL pay per
   request via x402 USDC from its OWN wallet (no human card). Absent a balance, it stays on the free
   tier (never blocks).
@@ -123,7 +140,10 @@ delivery the escrow releases funds to Anicca's wallet. Anicca ALREADY runs an x4
 
 | Req | Proof (real) |
 |---|---|
-| R1 | run the agent with human keys UNSET; ClawRouter :8402 serves a free model; a real completion returns |
+| R1a | ChatGPT-subscription-powered run; the bidding/delivery code exists and executes |
+| R1b | ≥1 real Solana devnet settlement in Anicca's wallet, Explorer link captured, brain=ChatGPT |
+| R1c | SAME loop re-run on ClawRouter free tier; ≥1 real settlement with human keys UNSET |
+| R1d | final submitted repo's `.env`/config points at ClawRouter, not a human OpenAI/Anthropic key |
 | R2 | (optional) a paid model call settles an x402 USDC micropayment from Anicca's wallet — tx on Base/Solana |
 | R3 | start wallet at $0; after a run, EARNED balance > 0 with an on-chain inflow from an external counterparty |
 | R4 | net worth aggregates a Solana wallet + a Base wallet in one USD figure; a Solana-only earner ranks |
@@ -140,15 +160,50 @@ delivery the escrow releases funds to Anicca's wallet. Anicca ALREADY runs an x4
   EARNED the most in the window wins. Prize TBA. This spec's ClawRouter+multi-chain work feeds BOTH:
   the same zero-human free-compute earner competes in both.
 
-## Setup plan (complete it — no falling short)
+## TODO checklist (SSOT — VCSDD, one at a time, mark off as we go)
 
-1. `curl -fsSL https://blockrun.ai/ClawRouter-update | bash` (or npm + `clawrouter setup`); pin a free
-   model; verify a completion with human keys unset (R1).
-2. Fork `trilltino/solana_coralOS`; fix the monorepo build (`build packages/agent-runtime` → link into
-   `examples/txodds`); fund the devnet buyer at faucet.solana.com (GitHub sign-in); run `npm run dev`
-   → real settle → Explorer link.
-3. Replace `deliverService()` with Anicca's service; seller brain → ClawRouter free tier.
-4. Wrap as a loop (R6); capture artifacts (R7); submit.
+Method: **VCSDD** (spec → RED → GREEN → fresh-context adversary → NO-MOCK E2E) per item. No skipping
+ahead — each `[ ]` requires real evidence (Explorer link / real completion / real balance) before
+the next one starts.
+
+```
+PHASE A — prove the mechanism works (brain = ChatGPT subscription, Tier 3, scaffolding only)
+  [ ] A1  Fork trilltino/solana_coralOS (public fork under our org/account)
+  [ ] A2  Fix the monorepo build: build packages/agent-runtime, link into examples/txodds
+          (this is the ERR_MODULE_NOT_FOUND from the earlier run — root-cause it, don't skip)
+  [ ] A3  Fund the devnet buyer wallet at faucet.solana.com (GitHub sign-in)
+  [ ] A4  Wire LLM_PROVIDER=openai + our ChatGPT/OpenAI key into .env (Tier 3, temporary)
+  [ ] A5  Replace deliverService() with Anicca's real output (the x402/earn-signal body)
+  [ ] A6  Run npm run dev (or npm run demo:coral for the multi-agent round) end-to-end
+  [ ] A7  VERIFY: a real Solana devnet tx lands in Anicca's seller wallet — capture the
+          Explorer link (fresh evidence, no mock, per HARD 0.31)
+  ── R1b EXIT GATE: A7 must be true before Phase B starts ──
+
+PHASE B — downgrade to zero-human (brain = ClawRouter, Tier 1, the real submission)
+  [ ] B1  Install ClawRouter (curl -fsSL https://blockrun.ai/ClawRouter-update | bash, or
+          npm i -g @blockrun/clawrouter && clawrouter setup); confirm :8402 proxy is up
+  [ ] B2  Flip LLM_PROVIDER to route through ClawRouter's free tier (env-var only, no code
+          change per LLM.md's provider-agnostic shim)
+  [ ] B3  Unset ANTHROPIC_API_KEY / OPENAI_API_KEY from the run environment
+  [ ] B4  Re-run the SAME loop (A5's deliverService, A2's build) end-to-end
+  [ ] B5  VERIFY: a real Solana devnet tx lands in Anicca's seller wallet with human keys
+          UNSET — capture the Explorer link (fresh evidence)
+  ── R1c/R1d EXIT GATE: B5 must be true; the SUBMITTED config must point at ClawRouter ──
+
+PHASE C — wrap as an unattended loop + submit
+  [ ] C1  Wrap A5+B4 as a loop (wake → bid → sell → settle → self-report), matching R6
+  [ ] C2  Run the loop unattended for ≥1 full cycle with neither Dais nor Claude operating it
+  [ ] C3  telemetry-poster (or an equivalent) reports the run so it's visible on our dashboard too
+  [ ] C4  5-slide deck (lead with the settlement / Explorer link, per their own guidance)
+  [ ] C5  3-min demo video (Problem → Solution → Demo → Team)
+  [ ] C6  Public repo cleanup: no keys committed, .env.example only
+  [ ] C7  Submit on the Superteam listing before 2026-07-20
+  [ ] C8  fresh-context adversary review of the whole submission (spec fidelity + no-mock E2E)
+```
+
+Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
+submission). Partnership outreach to Tino/Imperial = task #10 (send AFTER A7, so we have proof —
+"we actually did it" per Dais's own reasoning).
 
 ## Out of scope / honest limits
 - Free-tier models are capable but not frontier; if a task needs frontier reasoning the agent self-pays
