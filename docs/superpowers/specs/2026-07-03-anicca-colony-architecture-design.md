@@ -1709,3 +1709,10 @@ PASS: PM/SOL/HL baseline 全部 concrete(stubでない)/ private-key isolation(s
 - **#17/#30 spawn capability 準備完了(spawn-builder, 826837f)**: `skills/self/spawn-child` = read-only 発火ゲート(実残高 1.8575 AKT vs 閾値26 → NOT-YET shortfall 24.14 を ledger 記録、tx 系呼び出しゼロを静的 invariant で保証)+ image非依存 SDL(node:22+git clone、sdl-to-manifest 検証済)+ config(spawn_cost_akt=25)。既存 `skills/self/spawn` の実バグ2件も修正(RPC port 欠落 / 死んだ ghcr image デフォルト)。発火当日の手順(Jupiter→Skip→akt-treasury→deploy-akash)を READY 出力に文書化 — ★実行は彼ら自身★。
 - 残(既知): 3体とも net_worth_src=null(enrichOnChain が Base 専用)→ 多chain 対応 + /dashboard ページ表示面 = Task #2 続行(poster-builder)。claude-p の署名 identity(新規 0x02Bb…)の SSOT 反映。
 - VCSDD adversary(Sonnet, fresh-context)を起動済み — 今日の全変更(mother f64831c〜 + products PR #282-286)を8 dimension(KEY-SAFETY/ANTI-SQUAT/FAIL-CLOSED-UBI/SPAWN-READ-ONLY/MERGE-GATE/LOOP-BACKOFF/TRADING-SAFETY/SPEC-TRUTH)で敵対検証中。
+
+### §31 ★ Task #2 完了: 表示面 LIVE + 「正直な unverified」設計(2026-07-05, poster-builder)★
+- enrichOnChain 一式(R12 no-fake-numbers)は main 未マージが真因 → PR #287(多chain port: Base/Solana/Polygon reader)/#288(BASE_RPC_URL が Netlify に元から無かった → public RPC fallback)/#289 で main へ。テスト 280/280。mother 92e8a67。
+- ★#289 の設計判断★: claude-p の署名ID(0x02Bb)は Polygon 上 $0 のため「chain-verified な誤った $0」が正直な自己申告 $0.24 を上書きするバグ → `chain:"polygon-proxy"`(意図的に reader を配線しない)で★正直に unverified★を選択。真の検証は EIP-1271(proxy 署名検証)が必要 = 別タスク。
+- live 実測: total $9.56 / alive 3 — a3cdd4 = ★chain-verified★ $6.30(USDC+ETH のみ、HL/Aave 等 DeFi は reader 未対応の under-count)/ Franklin = ★chain-verified★ $3.27 / claude-p = unverified $0.24。/dashboard ページは main に既存(5秒 poll、funding/env/brain バッジ)で新規 UI 不要 — 実ブラウザ full-page screenshot で3体表示を確認済み。
+- 残(post-launch backlog): ①claude-p EIP-1271 検証 ②a3cdd4 のポジション別 reader(HL/Aave/Morpho/Moonwell/Beefy/Fluid)③Franklin earn_src(getSignaturesForAddress 解析)。
+- 波及: dashboard 合計が $25.4(自己申告)→ $9.56(検証混在)に変化 → 記事の引用数字を live と整合させる fix を telem-builder に発注(時点表記 + 保守的値の説明文)。
