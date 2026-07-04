@@ -313,14 +313,15 @@ harness(`earn/clip-producer`をregistry.jsonに新規slot登録、producer.shは
 
 **方針**: 既存`report`スキルの送信ロジック(AgentMail API呼び出し部分)を再利用しつつ、claude-p 5 loop用に**軽量な汎用ツール**を新規追加する。ClawRouter版(wallet net worth計算込み)とは責務を分離する — claude-p loopはwalletを持たない(§6参照、SOL_WALLETは表示用アドレスのみ)ので、net worth計算は不要、「何をしたか」報告に特化する。
 
-- 新規ファイル: `~/anicca/skills/report/loop-report.sh <loop_name> <did> <result> <earned_usdc>`
+- 新規ファイル: `~/anicca/skills/report/loop-report.sh <loop_name> <did> <result> <earned_usdc> [evidence_url]`
   - `<did>`: このpassで何をしたか(自然言語1文、**agent自身が要約して渡す** — judgmentはagent、送信はdeterministic tool、[[feedback_build_agents_not_hardcode_regex]]に整合)
   - `<result>`: success/failure/queue-empty等の短い状態語
   - `<earned_usdc>`: このpassで確定した収益(無ければ0)
+  - `[evidence_url]`(★2026-07-04 Dais追加要求、§14参照★): 実際に検証できる証拠URL(投稿したIG reelのURL、YouTube元動画のURL、campaign URL等)。無ければ`none`。
   - 内部処理: 既存`anicca-report.sh`と同じAgentMail POST(`https://api.agentmail.to/v0/inboxes/anicca-genesis@agentmail.to/messages/send`)を呼ぶ薄いラッパー。**AGENTMAIL_API_KEYが`~/.openclaw/.env`に無ければ黙ってexit 0(no-op)** — 「credentialを与えられていなければ報告しなくてよい」というDais指示をそのままfail-closed実装にする
   - 宛先: `keiodaisuke@gmail.com`(既存reportと同じ、Composio優先→AgentMailフォールバックの既存パターンを流用)
 - 呼び出し箇所: 各`*-cli.sh`(clip/affiliate/video/bounty/gig)のSTARTUPプロンプント末尾、「FINALLY touch .../.{name}-core-last-pass」の直前に1行追加:
-  `bash ~/anicca/skills/report/loop-report.sh <name> "<one-line what you did>" "<result>" "<earned this pass>"`
+  `bash ~/anicca/skills/report/loop-report.sh <name> "<one-line what you did>" "<result>" "<earned this pass>" "<evidence url or none>"`
 - **registry.json更新不要**(loop-report.shはclaude-p側のcli.shから直接bashで呼ばれる。ClawRouter側の`run_skill` slotではない)
 
 ### 10.3 設計B: 各AIの自己記事化(`ai-entity-article-writer`の適用範囲拡張)
@@ -457,3 +458,69 @@ CronCreateされる**。cli.shファイルを後から書き換えても、**既
 **汎用的な教訓**: cli.sh編集だけでは足りず、**既に稼働中の他4 loop(affiliate/video/bounty/
 gig)でも同様に「登録済みcronが古いプロンプントのままか」を確認し、必要なら同様の自己診断
 +再登録が必要**(Task #4に反映)。
+
+## 14. mail報告に「実証拠(evidence URL)」必須化(Dais 2026-07-04 明示指摘、重大な仕様漏れの発見)
+
+### 14.0 Dais指摘(verbatim)
+
+> Can you tell me what messages I'm going to get from them? For the clip/video one, I want
+> to receive the actual video — the actual link of the video — as evidence. I want to see
+> the actual evidence, and human users want to see that too, to decide whether to spawn
+> these AIs. And if you're writing articles, we want to use that as a resource to make the
+> highlights.
+>
+> I think the format is important. If they just say "yeah I've done it" or "I feel great"
+> there's no meaning. I need to see the actual evidence, and people want to see the actual
+> evidence. If you don't see the actual evidence, we cannot write an article on that — "this
+> agent did this, this agent did that, and earned this much money."
+
+### 14.1 発見: 実装済みの`loop-report.sh`(§10.2)には証拠フィールドが無かった
+
+`~/anicca/skills/report/loop-report.sh`を実際に再読して確認したところ、送信されるmail本文は
+4フィールドのみだった:
+```
+LOOP <loop_name>
+DID <did>
+RESULT <result>
+EARNED $<earned_usdc> USDC
+```
+「投稿した動画/クリップの実際のURL」が無い。これは「やった気がする」報告に留まり、
+① Daisが検証できない ② 将来他の人間がこのAIをspawnするか判断する材料にならない
+③ swarm highlight記事(§10.4)や個別記事(§10.3)のソースとして使えない、という3つの目的
+全てを満たさない重大な仕様漏れだった。
+
+### 14.2 修正方針
+
+- `loop-report.sh`に5番目の引数`[evidence_url]`を追加(§10.2に反映済み)。無ければ`none`。
+- 各loopのSTARTUPプロンプントは既に「report ... any new reel URL」という文言を持っている
+  (agentは投稿URLを把握している)ため、**agentに新しい能力を追加する必要はなく、既に
+  知っている情報をloop-report.shの引数として渡す1行の配線変更のみ**で足りる。
+- evidence_urlの中身(loopごとの「証拠」の定義):
+
+| loop | evidence_urlに入れるべきもの |
+|---|---|
+| clip | 実際に投稿したIG reelのURL(新規投稿が無いpassは`none`) |
+| video | 同上(投稿URL) |
+| affiliate | 投稿したカルーセル/リンクのURL、またはブロッカー発生時はブロッカーの詳細(reCAPTCHA壁など)へのメモ |
+| bounty | 実際にPRを出した場合はそのPR URL(今回は0件のため`none`が正直な報告) |
+| gig | 応募/納品したgigのURL(0件のため`none`が正直な報告) |
+
+- **evidence無し(`none`)を恥じない** — 「今回は何も無かった」も正直な報告であり、
+  Daisが求めているのは「やった風の作文」ではなく「検証可能な事実」。0件のpassも
+  堂々と`none`で報告することがHARD RULE 0.24(NO FAKE RUN)と整合する。
+
+### 14.3 将来の記事化(§10.3/10.4)との接続
+
+evidence_urlをmail本文に含めることで、mail報告がそのまま以下2つのソースデータになる:
+- 個別AI自己記事化(§10.3): 「このAIは何月何日にこのURLの動画を投稿し、いくら稼いだ」の
+  一次ソースとして、mail履歴(またはAgentMail受信箱)を直接参照できる
+- swarm highlight記事(§10.4): 「何百のIGアカウントがこのURLの動画を投稿した」という
+  具体的な実例(interesting things)を、evidence_url付きのmail報告から拾える
+
+### 14.4 Next Action
+
+- Task D1(新規) — `loop-report.sh`に5番目の引数`evidence_url`を追加、5つの`*-cli.sh`の
+  呼び出し箇所を更新(既にDaisが承認済みの5loop cron再登録と同じ経路で、各loop自身に
+  自己編集させるか、cli.shファイル自体を直接編集するかは実装時に判断)
+- Task D2(新規) — 更新後、次の各loopの自然発火で、実際にevidence_url付きのmailが届く
+  ことをfresh evidenceで確認(既存Task #3/#4の検証ループに統合)
