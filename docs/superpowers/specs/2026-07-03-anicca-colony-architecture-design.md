@@ -1751,6 +1751,8 @@ ledger 実データの engine 叩き分布: automaton HL2089/PM45/SOL13、claude
   - ✅ dashboard 継続(202, net ~$3.0)、crash なし、sol-trade も継続。
   - ⚠️ `tier=broke`(ANICCA_WALLET_ADDRESS unset)= ★バグでなく設計通り★(anicca-daemon.sh:117 に明記「unset for Franklin is correct, non-fatal」)。loop の balance/tier は EVM 専用(Base USDC, 0x…40hex)、Franklin は Solana wallet なので tier=broke のまま。各 skill は自分の .env で自分の wallet を使うので独立に動く。
 - ★スキルレベルの parity 達成★。但し実際に PM/HL で稼ぐには EVM/Polygon 資金が要る(Franklin=Solana のみ)= capital-gated(EARN-3/#15)。「全スキルを持つ」は達成、「全スキルで稼ぐ」は資金次第。
+- ★adversary(fresh, adv-franklin)判定 = DONE 1-6 全 PASS★: catalog に17系統全部(PM=earn/polymarket-trade, HL=hl_trade 含む、sol 一本足でない)/ THINK 実 HTTP 継続 / sol-trade は実 Solana 残高($1.27-1.44)を読んで稼働 / dashboard 202 / crash なし(tier=broke は設計通り non-fatal)/ rollback 用 .disabled 現存。PM/HL が未選択なのは hardcoded gating でなく(index.mjs:208「no hardcoded avoid rule」)モデルが EVM 資金ゼロを理解した自律判断 = #15 スコープ。
+- ★CONFIRMED finding(要フォロー、実害): Franklin が free モデル(llama-4-maverick)でなく有料 gpt-5-mini(~$0.009/req)を多用 = self-funded の推論代 leak。free 固定(--no-fallback)の意図と実使用が食い違い。→ 透明に修正する(self-funded が金を溶かさない原則)。★
 - ★プロセス変更(Dais 2026-07-05)★: 今後 team-lead が main で透明にビルド(全コマンドが Dais に見える)、検証は fresh VCSDD adversary。opaque な builder subagent は使わない(遅い+不透明+meddling リスク=redeem-builder/franklin-parity-builder の教訓)。
 
 ### §40 ★ #17 TELEM: claude-p が dashboard から落ち続けた根本を2段で修正(2026-07-05, team-lead 透明ビルド)★
