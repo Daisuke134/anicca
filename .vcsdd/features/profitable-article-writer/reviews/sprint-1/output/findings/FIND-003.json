@@ -1,6 +1,6 @@
 {
   "findingId": "FIND-003",
-  "dimension": "implementation_correctness",
+  "dimension": "spec_fidelity",
   "category": "requirement_mismatch",
   "severity": "low",
   "description": "run.sh interpolates the raw $topic value directly into a hand-built JSON string with no escaping, in two places: the 3-round-abort failure record (run.sh:167-168) and the publish-gate-recheck-failed failure record (run.sh:197-198). If topic contains a double-quote character or an embedded newline, the resulting line appended to $ARTICLE_DIR/state/failures.jsonl is either invalid JSON (broken quoting) or spans multiple physical lines (breaking the one-JSON-object-per-line JSONL contract that REQ-17's future self-heal log-reading depends on). Today this is latent because run.sh's own test-mode topic values are developer-controlled literals (e.g. 'AI agents'), but topic is documented (run.sh:69, REQ-4) as the injected/agent-picked value and is NOT sanitized before being embedded in JSON, so the very first real (Sprint-2-wired) agent-chosen topic containing a quote or apostrophe-adjacent character silently corrupts the failure ledger with no error surfaced.",
