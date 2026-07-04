@@ -55,7 +55,7 @@
       "entrypoint": "run.sh",
       "status": "live",
       "spec": "colony spec §5.1 Channel A (bot2bot) / #9 H6, 2026-07-05",
-      "summary": "INFO-SHARING (bot2bot): share ONE strategy lesson with the colony (args.note+args.topic) or poll peers' open lessons for a topic. Wires the already-tested skills/_shared/lib/bot2bot.py into an actual run_skill slot. NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) — added directly by the builder per team-lead's Task #4 assignment; flagged for Foundation review.",
+      "summary": "INFO-SHARING (bot2bot): share ONE strategy lesson with the colony (args.note+args.topic) or poll peers' open lessons for a topic. Wires the already-tested skills/_shared/lib/bot2bot.py into an actual run_skill slot. NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) — added directly by the builder per team-lead's Task #4 assignment; Foundation-approved 2026-07-05.",
       "owner": "wf-a:self-spawn"
     },
     "economy/ubi": {
