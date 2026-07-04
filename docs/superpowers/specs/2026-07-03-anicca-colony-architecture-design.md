@@ -703,6 +703,46 @@ human invests capital at all, literally no human in the loop. SELF-IMPROVEMENT (
 key. NO short-term deadlines exist. Order: H (self-improve harness + default strategies) → G (grow/spawn).
 Wallets = docs/WALLETS.md. ★
 
+### PRODUCT DEFINITION — the default way a human starts Anicca (Dais 2026-07-04)
+There is essentially ONE product with two placements. A human runs a startup command and gives ONLY an
+initial USDC amount; from then on it is self-improving + self-funding (no further human money is the goal):
+- **A) self-funded on CLOUD** = human gives initial USDC for **cloud cost + compute + initial investment**;
+  the instance boots on Akash, earns, and eventually spawns its own children. (The main/default way.)
+- **B) self-funded on LOCAL** = human gives USDC for **compute + initial investment to grow from**;
+  runs on the human's always-on machine (anicca-local = automaton + ClawRouter).
+- (Optional C) make the human's own Claude profitable — a side offering, not the core.
+"human-funded" vs "self-funded" is NOT a different product — it is only the INITIAL capital source; both run
+the identical body/skills/tier-model logic. ★ Goal metric: self-funded RATE → 100% ★ (every instance covers
+its own burn from chain-verified earnings; at 1 human-funded + 1 self-funded the rate is 50%, our job is to
+drive it to 100% = everyone self-funds).
+
+### STRATEGY SEEDING (answers Dais's "run trades yourself, find good strategy, give it, then self-improve")
+Reconciled with "I am verifier, not executor": I do NOT live-trade my own money for profit. Instead the
+harness SHIPS good DEFAULT strategies as a scaffold (H8) sourced from **research + backtest + BP** (proven
+public strategies, cited), encoded as right-altitude heuristics + canonical examples (NOT brittle hardcoded
+trades). The weak free model starts from that baseline; H1-H3 (P&L trace → self-eval → self-improve) then
+tunes it across runs. "good strategy WITH results → they self-improve from there" = exactly H8 + H1-H3.
+
+### DASHBOARD (G4) — EVERY self-funded instance is on aniccaai.com/dashboard (Dais 2026-07-04)
+Infra already exists (`apps/landing/netlify/functions/telemetry.js` + `_lib/telemetry-{schema,verify,store,
+aggregate}.js` computing `self_funded_pct`, `total_net_worth_usd`, `earned_mo_usd`, `alive`, leaderboard;
+`app/dashboard/page.tsx` renders lineage). GAPS to close: (1) the LIVE instances (anicca-local first) must
+POST signed telemetry each wake — today the page shows HARDCODED placeholder bodies and no live instance
+reports; (2) ★ EVERY instance on the board, self-funded AND human-funded, the human-funded ones CLEARLY
+labeled "human-funded" WITH their model name ★; (3) the self-funded RATE shown prominently (goal 100%);
+(4) ★ FAMILY TREE ★ — parent→child lineage rendered so viewers see which child came from which parent as
+spawning compounds. Akash status is honest below.
+
+### AKASH SPAWN — NOT done yet (honest status, Dais asked "is it done? why not on dashboard?")
+`skills/self/spawn/scripts/deploy-akash.sh` is fully WIRED (real SDL, `deployment create` with uact escrow,
+bid poll, lease create, send-manifest — no mock). BUT `children.jsonl` is EMPTY = **no real lease has ever
+been created; no child has ever spawned**. The one attempt aborted on the AgentMail inbox cap (since made
+best-effort). So it is NOT on the dashboard because it never happened. ★ The spawn test CANNOT be imitated
+(it is a real on-chain cloud lease) — the only valid verification is a REAL spawn: the parent AI, prompted
+(peppered) to spawn when eligible ($20 gate), runs deploy-akash → a real `dseq`/lease exists → the child
+boots on Akash (AUTOMATON_GOAL=earn) → the child ALSO posts telemetry so it appears on /dashboard. I verify
+the real dseq + the child's first telemetry; I do NOT fake it. ★
+
 G — GROW (colony) + SHOW (proof) + LAUNCH
   G1  SPAWN = ONE COMMAND (Dais 2026-07-04): a self-funded OR human-funded AI spawns a cloud child ON
        AKASH with a single command — seed on-chain automatically (fix spawn/run.sh:196 print→auto), child
