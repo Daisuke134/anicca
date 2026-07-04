@@ -126,10 +126,13 @@ def cmd_close(args):
                 pnl = round(float(p.get("unrealizedPnl", 0) or 0), 4)
     except Exception:
         pass
+    # No open position on this coin → market_close returns None/empty. Report cleanly instead of
+    # crashing on r.get(...) (the AI often re-picks "close ETH" after it is already flat).
     r = ex.market_close(args.coin)
     time.sleep(2)
     st = info.user_state(w.address)
-    print(json.dumps({"closed": args.coin, "result": r.get("status"),
+    status = r.get("status") if isinstance(r, dict) else "no_position"
+    print(json.dumps({"closed": args.coin, "result": status,
                       "closed_pnl_usd": pnl,
                       "account_value_usd": round(float(st["marginSummary"]["accountValue"]), 4)}, indent=2))
 
