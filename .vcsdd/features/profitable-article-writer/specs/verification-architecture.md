@@ -49,7 +49,7 @@ The judgment column is the AGENT's (right-altitude prompts), never a hardcoded c
 ```
  V0   render/slop        note-publish vision gate (existing)                 T2
  V0.5 craft              fresh-context adversary scores draft (hook/CTA/free-as-letter/readability)  T2  ← NEW
- V1   published/live     logged-out visitor, URL 200                          T2
+ V1   published/live     logged-out visitor: 200 AND page content proves the article rendered (title/note-ID, not bare 200)  T2/T3
  V2   reach              views/impressions recorded                           T3  (Spec 2)
  V3   convert            free→paid→backend CTR + email capture                 T3  (Spec 2)
  V4   earn ★DONE★        by mode: self-funded=on-chain USDC (record-earn anti-fake) / human-funded=platform sale API  T3  ✅
