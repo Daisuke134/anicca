@@ -1762,3 +1762,9 @@ claude-p が何度直しても dashboard から脱落(alive:2)する再発の真
 - 真因2: pm-earner.plist に PATH 未設定(以前足した PATH が builder 作業で消えていた)→ launchd 既定 PATH に node/gtimeout 無し → `node: command not found`。→ run_earner.sh 冒頭で portable PATH を export(標準ディレクトリ=US Mac/クラウドでも効く=§38「どこでも動く」)。
 - ★verify(live)★: kickstart 後 `claude-p net 4.27 -> 202 {"ok":true}` を実ログ確認 → 本番 dashboard `alive:3`(claude-p $4.27 / a3cdd4 $6.29 / Franklin $2.88)復帰を curl 確認。
 - 教訓: launchd job は PATH 非依存(スクリプト冒頭で export)にしないと mac の timeout/gtimeout + homebrew node で必ず落ちる。§24 franklin cron・§34 pm-earner gtimeout と同じ根。
+
+### §41 ★ #14 EARN-2(自律 redeem)+ #21 README を並列で(team-lead 透明ビルド, 2026-07-05)★
+adversary(#21)が verify する間に team-lead が #14 をビルド = 並列パイプライン成立。両方で real な発見:
+- #14: run_earner.sh に redeem.py step を配線(取引パスの前、冪等 no-op)= loop が自律で勝ち金を回収する形に。★live 発見: claude-p がまた勝ってた(Wimbledon Tiafoe/Bublik $5.99 redeemable)★。だが redeem.py が relayer auth で 400。body ログを足して真因確定 = ★`{"error":"max 100 keys per address"}`★ — 毎回新 api key を mint し 100個上限に到達(EARN-1 で動いたのは未達だった為)。fix 途中: ①/auth POST に Authorization bearer 追加 ②api key を cache(将来の burn 防止、但し既に上限+cache 無しで今すぐ unblock せず)。★真の unblock = SDK の `fetch_api_keys`(既存キー再利用)/`delete_api_key`(古いキー削除)で mint をやめる = 次ステップ★。$5.99 の勝ちは redeemable のまま安全。#14 wiring=done, 自律回収=key-cap でブロック中(正直)。
+- #21 README: adversary が 3 PASS/2 FAIL。★FAIL2 = README が redeem を "no human in the loop" と書くが初回 redeem は team-lead 手動(§35 meddling)を開示せず = 不作為の誇張★ → 正直に「first collection was human-triggered; 自律回収は wiring 中」に修正。★FAIL3 = swarm 自己実験が README に無い★ → 「variants→realized profit is the eval→winner propagates, no human picks」段落を追加。両 fix push 済み、re-verify 要。
+- ★VCSDD が機能した証★: adversary が「no human in the loop」の過大主張を捕まえ、正直に訂正させた。#14 の現実(自律 redeem 未達)と README が一致した。
