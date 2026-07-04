@@ -56,6 +56,16 @@ restart() {
   fi
   if [ "$count" -ge 5 ]; then
     echo "$(date '+%F %T') backoff: $count restarts in last 60min — not restarting (likely persistent failure)" >> "$LOG"
+    # self-heal-harness spec: give-up = the monitor layer can't fix this by restarting
+    # alone. Write a task file instead of just logging — the NEXT time this loop's
+    # own claude-p core wakes (next cron tick), its STARTUP prompt tells it to read
+    # this file and diagnose/fix itself (or file a self/issue-dev issue if it can't).
+    # No human, no Opus, no dev-Claude-Code session reads this — only the loop itself.
+    local task_file="$HOME/.openclaw/state/.clip-core-selfheal-request.json"
+    if [ ! -f "$task_file" ] || [ "$(( $(date +%s) - $(stat -f %m "$task_file" 2>/dev/null || echo 0) ))" -gt 3600 ]; then
+      printf '{"loop":"clip","ts":"%s","reason":"%s","restarts_last_60min":%d,"note":"healthcheck gave up restarting this loop after repeated failures. Read this on your next wake: diagnose the root cause yourself (check logs, run the failing command manually), fix the code if you can, verify the fix works, then delete this file. If you cannot fix it yourself, invoke self/issue-dev to file a GitHub issue on the mother repo instead."}\n' \
+        "$(date -u +%FT%TZ)" "${1:-unknown}" "$count" > "$task_file" 2>/dev/null
+    fi
     return
   fi
   echo "$now" >> "$RESTART_LOG"
