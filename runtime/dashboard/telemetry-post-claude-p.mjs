@@ -26,6 +26,35 @@ const TELEMETRY_URL = process.env.ANICCA_TELEMETRY_URL || "https://aniccaai.com/
 const pk = JSON.parse(fs.readFileSync(IDENTITY_PATH, "utf8")).privateKey;
 const acct = privateKeyToAccount(pk.startsWith("0x") ? pk : "0x" + pk);
 
+// #18 DASH: stream claude-p's REAL activity + realized revenue to the /<host> page. The earner writes
+// realized rows (redeems/trades) to the mother earn ledger, keyed by claude-p's funded wallet — read
+// them here so the dashboard shows WHAT it did and WHICH source earned HOW MUCH (no fakes: realized
+// net_usdc only, never unrealized). Path is relative to this script so it works from any launchd cwd.
+const EARN_LEDGER = new URL("../../skills/earn/state/earn-ledger.jsonl", import.meta.url).pathname;
+function activityAndRevenue() {
+  let lines = [];
+  try { lines = fs.readFileSync(EARN_LEDGER, "utf8").trim().split("\n"); } catch { return { log: [], revenue_by_source: {}, monthly: 0 }; }
+  const mine = [];
+  for (const l of lines) {
+    try {
+      const e = JSON.parse(l);
+      if (String(e.wallet || "").toLowerCase() === FUNDED_ADDRESS.toLowerCase()) mine.push(e);
+    } catch { /* skip bad line */ }
+  }
+  const bySource = {}; let monthly = 0;
+  for (const e of mine) {
+    const net = Number(e.net_usdc) || 0;
+    const s = e.source || "earn";
+    bySource[s] = +(((bySource[s] || 0) + net)).toFixed(6);
+    monthly += net;
+  }
+  const log_feed = mine.slice(-15).reverse().map((e) => ({
+    ts: e.ts,
+    line: `${e.source || "earn"}: ${e.task || e.wake || ""}${e.net_usdc != null ? ` (net $${(+e.net_usdc).toFixed(4)})` : ""}`.slice(0, 160),
+  }));
+  return { log_feed, revenue_by_source: bySource, monthly: +monthly.toFixed(6) };
+}
+
 async function erc20Balance(rpc, token, addr) {
   try {
     const data = BALANCE_OF_SELECTOR + addr.slice(2).toLowerCase().padStart(64, "0");
@@ -48,6 +77,7 @@ async function pmUnrealizedPnl(addr) {
 async function post() {
   const [bal, upnl] = await Promise.all([erc20Balance(POLY_RPC, PUSD, FUNDED_ADDRESS), pmUnrealizedPnl(FUNDED_ADDRESS)]);
   const net_worth_usd = +bal.toFixed(6);
+  const { log_feed, revenue_by_source, monthly } = activityAndRevenue();
   const payload = {
     id: acct.address, ts: Math.floor(Date.now() / 1000), host: "claude-p", geo: "JP",
     // chain:"polygon-proxy" (see apps/landing/netlify/functions/_lib/telemetry-schema.js on the
@@ -58,7 +88,11 @@ async function post() {
     chain: "polygon-proxy",
     funding: "human", env: "local", brain: "claude-p",
     model_live: "claude-sonnet-5", model_tier: "frontier",
-    net_worth_usd, revenue_mo_usd: +upnl.toFixed(6), burn_day_usd: 0, runway_days: 999, status: "alive",
+    net_worth_usd,
+    // revenue = REALIZED per-source (sum of net_usdc from the earn ledger). We do NOT report the
+    // unrealized PnL (upnl) as revenue — paper gains are not earnings (#18 R5).
+    revenue_mo_usd: monthly, revenue_by_source, log_feed,
+    burn_day_usd: 0, runway_days: 999, status: "alive",
   };
   const message = JSON.stringify(payload);
   const signature = await acct.signMessage({ message });
