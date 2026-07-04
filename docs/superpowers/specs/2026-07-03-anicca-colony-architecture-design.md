@@ -1775,3 +1775,9 @@ run_earner.sh に redeem step 配線=done(loop は毎 pass 自律で redeem を�
 - ★真相: EARN-1 は relayer で実際に成功した(tx 3件 0x1)。その後の mint 乱発で wallet の relayer session/keys が壊れた疑い。今はどの auth 経路でも /submit が拒否される外部状態★。
 - ★正直な結論: #14 wiring=done、自律回収=外部 relayer auth 壁で未達。$5.99 は安全(redeemable、relayer が応じれば loop が回収)。colony は活発に取引中(France/Paraguay 新規建玉)= 生きてる、収穫だけ不可★。
 - 次候補: delete_api_key で stale キー掃除→fresh mint / relayer state リセット待ち / Polymarket サポート。drilling は一旦停止(metacognition: 5連続失敗→approach 再考)。README は既に正直(「first collection was human-triggered, 自律回収は in progress」)= 実態と一致。
+
+### §43 ★ README 全体書き直し + redeem を search で解く(Dais 2026-07-05)★
+- ★README 全読で矛盾確定(部分patchでは直らず)→ 全体書き直し(882dedb, origin/main, 355→144行)★: 型を3タイプ(automaton/Franklin/claude-p)に統一(「2 ways/2 types/3 types」の衝突を解消)、kickstart を dead-simple 30秒(claude-p 主動線)、earn を実態(PM/SOL/HL トレード+cook+複利 redeem)に、古い残骸削除(clip/gig 5-tmux, PayPay/Binance mermaid, "Dais's bank", 重複 run セクション)。矛盾7パターン grep 0件確認。要 adversary re-verify。
+- ★redeem を search で解く(Dais 厳命)★: team-lead が「Polymarket の正しい redeem フローを知らずに patch を当て続けた」と認め、redeem-researcher(subagent)に firecrawl docs.polymarket.com + SDK 実コード + GitHub issues で authoritative な方法(invalid authorization の真因 / 100-key cap の正しい扱い / deposit-wallet proxy の redeem 作法)を一次ソース引用で調べさせ中。結果で redeem.py を直す。
+- ★複利の重要性(Dais)★: redeem 無しでは bet→win→collect→bet more の複利が回らない = AI millionaire 経路が断たれる。redeem は EARN の心臓。
+- hygiene: mother ~/anicca が別 agent の branch feature/affiliate-bounty-statemachine に checkout されてた → commit は HEAD:main で origin/main に反映済み、後で main に戻す要。
