@@ -37,6 +37,10 @@ export const ALLOWED_EARN_SOURCES = new Set([
   "yield", "yield-aave-v3", "yield-beefy-morpho", "yield-beefy", "yield-fluid", "yield-morpho",
   "yield-moonwell", "yield-defi", "invest-eth-dca",
   "hl-trade", "hl", // own-wallet Hyperliquid perp (own identity, own funds)
+  // own-wallet Polymarket CTF/neg-risk redeem: collecting an ALREADY-WON resolved
+  // position back into the SAME deposit wallet (own identity, own funds, no
+  // external transfer). Added 2026-07-05 (earn-redeem-winnings, EARN-1).
+  "polymarket-redeem",
   "token-launch", "token", // own token launch (own identity)
   "content", "x402-serve",
   // promote.fun per-view clipping: Anicca's OWN IG account + OWN Solana wallet payout (own identity).

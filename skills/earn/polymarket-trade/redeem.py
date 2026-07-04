@@ -1,0 +1,439 @@
+#!/usr/bin/env python3
+"""
+redeem.py — collect (redeem) claude-p's RESOLVED, redeemable Polymarket positions,
+turning open unrealized value into realized pUSD cash in the SAME deposit wallet.
+
+WHY THIS FILE EXISTS
+--------------------
+Trading (v2_recipe.py / v2_full_flow.py) only OPENS positions. Nothing in this repo
+ever collected a win — every position sat "redeemable=True" with real cash owed and
+$0 actually realized. This is that missing last step: colony's first realized profit.
+
+THE MECHANISM (verified against the installed SDK, not guessed)
+-----------------------------------------------------------------
+The deposit wallet (`0x904B50d2…`, ERC-1167 proxy, POLY_1271 sig_type=3) is NOT an
+EOA, so it can't sign its own transactions — every write goes through Polymarket's
+gasless relayer, signed by the owner EOA (`0x810F6D61…`). This is the exact same
+relayer path `v2_mint_deploy.py` already proved live for wallet deployment: SIWE
+mint (no browser) -> RelayerApiKey -> `polymarket.clients.secure.SecureClient`.
+
+That installed SDK (`polymarket-client` 0.1.0b13, in `.venv-pysdk`) ships a native
+`SecureClient.redeem_positions(condition_id=...)` (secure.py:2188). It already knows
+how to pick the right on-chain path per market:
+  - regular CTF market  -> `ConditionalTokens.redeemPositions` via the collateral
+    adapter (`normalize_market_position_context`, positions.py:66-95)
+  - neg-risk market      -> the neg-risk collateral adapter instead
+by reading the market's OWN `negRisk` flag (fetched via `list_markets`) — this is
+mechanical dispatch on a fixed on-chain fact, not a strategy judgment, so it is
+correctly deterministic code (R5), same as picking a URL scheme.
+
+TWO REAL SDK GAPS FOUND (verified live, fixed here, not worked around blindly):
+  1. `redeem_positions()`'s own market lookup omits `closed=True`, and Gamma's
+     `/markets` endpoint silently excludes closed/resolved markets unless that
+     flag is explicit (verified: `curl gamma-api/markets?slug=X` -> `[]`,
+     `...&closed=true` -> the market). Since redeem() only ever targets RESOLVED
+     (closed) markets, the wrapper always raised "No market found". Fixed by
+     calling the same low-level primitives with `closed=True` in the lookup
+     (`redeem_condition`, below).
+  2. Before ANY redeem, the deposit wallet must grant the adapter contract
+     ERC-1155 `setApprovalForAll` on the raw ConditionalTokens contract — verified
+     by `eth_call` simulation: redeeming without it reverts
+     `"ERC1155: need operator approval for 3rd party transfers"`; querying
+     `CTF.isApprovedForAll(deposit_wallet, collateral_adapter)` on-chain returned
+     `False`. This is the one-time step Polymarket's own web UI does silently
+     before a user's first redeem; `ensure_ctf_operator_approval` does it here,
+     idempotently (checks `isApprovedForAll` first, only sends a tx if needed).
+     It authorizes redemption only — it cannot move pUSD/USDC and is fully
+     revocable (`approved=False`).
+
+Sources (quoted, no guessing):
+  - installed `polymarket` package, `clients/secure.py::redeem_positions`,
+    `::approve_erc1155_for_all`, and
+    `_internal/actions/relayer/positions.py::normalize_market_position_context`
+    (ground truth — this IS what ships, not docs about it).
+  - `v2_mint_deploy.py` (this dir) — the proven-live SIWE/RelayerApiKey mint flow,
+    reused verbatim here via `_mint_relayer_api_key`.
+  - data-api `https://data-api.polymarket.com/positions` — the source of which
+    conditions are `redeemable=True` and how much they're worth right now.
+  - live `eth_call` against Polygon mainnet (this session, 2026-07-05) — confirmed
+    each conditionId's `payoutDenominator`/`payoutNumerators` on the raw CTF
+    contract is set (i.e. genuinely resolved on-chain), and confirmed the missing
+    ERC-1155 approval as the exact revert cause. Note: `CTF.getPositionId` shows
+    the actually-held ERC-1155 token IDs are derived from **USDC.e** collateral
+    (`0x2791Bca1…`), not pUSD, even though V2 trading itself settles in pUSD —
+    this script still passes `env.collateral_token` (pUSD) to the adapter call
+    exactly as the SDK's own `redeem_positions()` does (unchanged from its
+    internal code), since the adapter (not raw CTF) is the actual call target and
+    is Polymarket's own tested conversion path; the real payout currency is
+    confirmed empirically after the tx (pUSD balance check), not assumed here.
+
+Ledger: results are appended via the CANONICAL earn-ledger writer
+(`~/anicca/skills/earn/lib/record.mjs`) — this file does not reimplement the
+GATE-0 classifier or the malice-guard; it only derives the {earn,cost,tx,status}
+facts and hands them to the existing writer.
+
+NO DRY RUN — running `main()` submits real on-chain redeem transactions.
+"""
+from __future__ import annotations
+
+import json
+import os
+import subprocess
+import sys
+import time
+
+DATA_API = "https://data-api.polymarket.com"
+DEPOSIT_WALLET = "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
+AGENT_ENV = os.path.expanduser("~/.anicca-founder/agents/polymarket-agent/.env")
+LEDGER_RECORD_JS = os.path.expanduser("~/anicca/skills/earn/lib/record.mjs")
+POLYGON_RPC = os.getenv("POLYGON_RPC", "https://polygon-bor-rpc.publicnode.com")
+
+# Verified against the installed SDK's PRODUCTION Environment (environments.py) —
+# the raw Gnosis Conditional Tokens Framework contract and the two Polymarket
+# redeem adapters (standard vs neg-risk) that must be granted ERC-1155 operator
+# rights before they can redeem on the deposit wallet's behalf.
+CTF_ADDRESS = "0x4D97DCd97eC945f40cF65F87097ACe5EA0476045"
+COLLATERAL_ADAPTER = "0xAdA100Db00Ca00073811820692005400218FcE1f"
+NEG_RISK_COLLATERAL_ADAPTER = "0xadA2005600Dec949baf300f4C6120000bDB6eAab"
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from v2_recipe import pusd_balance  # noqa: E402  (reuse the verified balance reader)
+
+
+# ---------------------------------------------------------------------------
+# PURE FUNCTIONS — no network, no chain, no relayer. Unit-tested in test_redeem.py.
+# ---------------------------------------------------------------------------
+
+def dedupe_redeemable_conditions(positions: list[dict]) -> list[dict]:
+    """Collapse a data-api /positions response into one row per redeemable
+    conditionId. A resolved market can list BOTH its winning and losing outcome
+    as separate rows sharing one conditionId (e.g. Wimbledon: Flavio $10 win +
+    Karen $0 loss) — `redeem_positions(condition_id=...)` redeems the whole
+    condition in one on-chain call, so this function sums the legs the wallet
+    actually holds rather than issuing one redeem per leg."""
+    by_condition: dict[str, dict] = {}
+    for p in positions:
+        if not p.get("redeemable"):
+            continue
+        cid = p["conditionId"]
+        row = by_condition.setdefault(cid, {
+            "conditionId": cid,
+            "title": p.get("title"),
+            "negativeRisk": bool(p.get("negativeRisk")),
+            "currentValue": 0.0,
+            "initialValue": 0.0,
+            "cashPnl": 0.0,
+        })
+        row["currentValue"] += float(p.get("currentValue") or 0)
+        row["initialValue"] += float(p.get("initialValue") or 0)
+        row["cashPnl"] += float(p.get("cashPnl") or 0)
+    return sorted(by_condition.values(), key=lambda r: -r["currentValue"])
+
+
+def classify_market_type(negative_risk: bool) -> str:
+    """R5: which on-chain redeem path a condition needs. This is a fixed fact
+    the market itself carries (its own negRisk flag), not a strategy decision —
+    purely informational/logging here since the installed SDK dispatches the
+    actual call internally (see module docstring)."""
+    return "neg_risk" if negative_risk else "standard"
+
+
+def redeem_operator_for(negative_risk: bool) -> str:
+    """R5: which contract must be granted ERC-1155 operator rights (and is the
+    redeem call target) for a condition — mechanical dispatch on the market's own
+    on-chain flag, mirroring `normalize_market_position_context`'s
+    `neg_risk_collateral_adapter if neg_risk else collateral_adapter` choice
+    (positions.py:92), not re-derived or guessed."""
+    return NEG_RISK_COLLATERAL_ADAPTER if negative_risk else COLLATERAL_ADAPTER
+
+
+def compute_recovered_amount(pusd_before: float, pusd_after: float) -> float:
+    """R2 check: cash that landed in the deposit wallet from this redeem batch.
+    Never negative — a decrease means something ELSE moved funds out during the
+    run and that must be investigated, never silently reported as a recovery."""
+    delta = round(pusd_after - pusd_before, 6)
+    if delta < 0:
+        raise ValueError(
+            f"pUSD balance DECREASED ({pusd_before} -> {pusd_after}); refusing to "
+            "report a negative recovery as a redeem result"
+        )
+    return delta
+
+
+def build_ledger_line(row: dict, tx_hash: str, status: str) -> dict:
+    """R3: the earn-ledger.jsonl line for one redeemed condition.
+    earn_usdc = gross cash the CTF/neg-risk contract paid out for this condition
+    (the first ledger touch for this position — the original buy was never itself
+    ledgered); cost_usdc = the original stake; record.mjs derives
+    net_usdc = earn - cost = the realized profit for this condition."""
+    return {
+        "wallet": DEPOSIT_WALLET.lower(),
+        "source": "polymarket-redeem",
+        "task": row["title"],
+        "earn_usdc": round(row["currentValue"], 6),
+        "cost_usdc": round(row["initialValue"], 6),
+        "tx": tx_hash,
+        "status": status,
+        "chain": "polygon",
+        "external": True,
+        "wake": f"redeem-{row['conditionId'][:10]}",
+    }
+
+
+# ---------------------------------------------------------------------------
+# I/O BOUNDARY — network, chain, relayer. This is the surface to scrutinize.
+# ---------------------------------------------------------------------------
+
+def fetch_positions(wallet: str = DEPOSIT_WALLET) -> list[dict]:
+    import requests
+    r = requests.get(
+        f"{DATA_API}/positions",
+        params={"user": wallet, "sizeThreshold": 0.001, "limit": 100},
+        timeout=20,
+    )
+    r.raise_for_status()
+    data = r.json()
+    return data if isinstance(data, list) else []
+
+
+def _mint_relayer_api_key(acct) -> str:
+    """SIWE mint of a Polymarket RelayerApiKey (no browser, no CDP account) — the
+    exact flow proven live in v2_mint_deploy.py, reused so redeem doesn't have to
+    re-derive it. Returns the relayer apiKey string."""
+    import base64
+    import datetime as _dt
+    import requests
+    from eth_account.messages import encode_defunct
+
+    gamma = "https://gamma-api.polymarket.com"
+    s = requests.Session()
+    s.headers.update({
+        "User-Agent": "Mozilla/5.0",
+        "Origin": "https://polymarket.com",
+        "Referer": "https://polymarket.com/",
+    })
+    nonce = s.get(f"{gamma}/nonce", timeout=20).json().get("nonce")
+    issued = (
+        _dt.datetime.now(_dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.")
+        + f"{_dt.datetime.now(_dt.timezone.utc).microsecond // 1000:03d}Z"
+    )
+    fields = {
+        "domain": "polymarket.com", "address": acct.address,
+        "statement": "Welcome to Polymarket! Sign to connect.",
+        "uri": "https://polymarket.com", "version": "1", "chainId": 137,
+        "nonce": nonce, "issuedAt": issued,
+    }
+    plaintext = (
+        f"{fields['domain']} wants you to sign in with your Ethereum account:\n"
+        f"{acct.address}\n\n{fields['statement']}\n\n"
+        f"URI: {fields['uri']}\nVersion: {fields['version']}\n"
+        f"Chain ID: {fields['chainId']}\nNonce: {nonce}\nIssued At: {issued}"
+    )
+    sig_hex = "0x" + acct.sign_message(encode_defunct(text=plaintext)).signature.hex()
+    combined = json.dumps(fields, separators=(",", ":")) + ":::" + sig_hex
+    bearer = base64.b64encode(combined.encode()).decode()
+    s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
+    r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth", json={}, timeout=20)
+    r.raise_for_status()
+    data = r.json()
+    api_key = data.get("apiKey") or data.get("api_key")
+    if not api_key:
+        raise RuntimeError(f"relayer auth did not return an apiKey: {json.dumps(data)[:300]}")
+    return api_key
+
+
+def build_client():
+    """Authenticate the official polymarket-client SDK as the EOA signer acting for
+    the already-deployed deposit wallet, so redeem_positions() dispatches through
+    the gasless relayer exactly like the deploy/approve calls in v2_mint_deploy.py."""
+    from dotenv import load_dotenv
+    load_dotenv(AGENT_ENV)
+    key = os.environ["POLYGON_WALLET_PRIVATE_KEY"]
+    key = key if key.startswith("0x") else "0x" + key
+
+    from eth_account import Account
+    from polymarket.auth import RelayerApiKey
+    from polymarket.clients.secure import SecureClient
+
+    acct = Account.from_key(key)
+    api_key = _mint_relayer_api_key(acct)
+    tmp = SecureClient._create(private_key=key, validate_credentials=True)
+    creds = tmp._ctx.credentials
+    tmp.close()
+    client = SecureClient.create(
+        private_key=key, credentials=creds,
+        api_key=RelayerApiKey(key=api_key, address=acct.address),
+    )
+    if str(client.wallet).lower() != DEPOSIT_WALLET.lower():
+        client.close()
+        raise RuntimeError(
+            f"money-safety abort: client resolved to wallet {client.wallet}, "
+            f"expected the known deposit wallet {DEPOSIT_WALLET}"
+        )
+    return client
+
+
+def is_ctf_operator_approved(owner: str, operator: str) -> bool:
+    """Read-only on-chain check (no tx) — does `owner` already trust `operator`
+    to move its CTF ERC-1155 tokens? Verified live 2026-07-05: this was False for
+    our deposit wallet against both redeem adapters before this feature existed,
+    which is the actual root cause of the 'ERC1155: need operator approval for
+    3rd party transfers' revert."""
+    from web3 import Web3
+    w3 = Web3(Web3.HTTPProvider(POLYGON_RPC))
+    c = w3.eth.contract(address=w3.to_checksum_address(CTF_ADDRESS), abi=[{
+        "constant": True,
+        "inputs": [{"name": "owner", "type": "address"}, {"name": "operator", "type": "address"}],
+        "name": "isApprovedForAll", "outputs": [{"name": "", "type": "bool"}], "type": "function",
+    }])
+    return c.functions.isApprovedForAll(
+        w3.to_checksum_address(owner), w3.to_checksum_address(operator)
+    ).call()
+
+
+def ensure_ctf_operator_approval(client, operator: str) -> str | None:
+    """One-time on-chain permission grant: authorize `operator` (one of
+    Polymarket's own redeem adapters) to move the deposit wallet's RESOLVED CTF
+    position tokens so it can redeem them on our behalf. This grants redemption
+    rights ONLY — it cannot move pUSD/USDC, and is fully revocable
+    (`approved=False`) at any time. Idempotent: returns None (no tx sent) if
+    already approved. Uses the SDK's own public `approve_erc1155_for_all`."""
+    if is_ctf_operator_approved(DEPOSIT_WALLET, operator):
+        return None
+    handle = client.approve_erc1155_for_all(
+        token_address=CTF_ADDRESS, operator_address=operator, approved=True,
+        metadata=f"approve redeem operator {operator}"[:64],
+    )
+    outcome = handle.wait()
+    return outcome.transaction_hash
+
+
+def redeem_condition(client, condition_id: str) -> dict:
+    """R1: submit the redeem tx for one condition and wait for a terminal on-chain
+    outcome.
+
+    The SDK's own convenience wrapper `SecureClient.redeem_positions()` has a
+    real bug for our exact use case: internally it calls
+    `list_markets(condition_ids=[condition_id])` WITHOUT `closed=True`, and the
+    Gamma API silently omits closed (resolved) markets unless `closed` is
+    explicitly requested (verified live: `curl gamma-api/markets?slug=...`
+    returns `[]`, `?slug=...&closed=true` returns the market) — so the wrapper
+    always raises `UserInputError("No market found")` for exactly the resolved
+    markets redeem() exists to handle.
+
+    This calls the SAME underlying primitives the wrapper would
+    (`normalize_market_position_context` + `ctf_redeem_positions_call` +
+    `client._dispatch_single_call`, secure.py:2232-2246) but fetches the market
+    with `closed=True` first. Dispatch still picks standard vs neg-risk purely
+    from the market's own `negRisk` flag (R5) — only the market LOOKUP changed."""
+    from polymarket._internal.actions.relayer.positions import (
+        normalize_market_position_context,
+    )
+    from polymarket.calls import ctf_redeem_positions_call
+
+    page = client.list_markets(condition_ids=[condition_id], closed=True, page_size=1).first_page()
+    markets = page.items
+    if not markets:
+        raise RuntimeError(f"No market found for condition {condition_id} (even with closed=True)")
+    if len(markets) != 1:
+        raise RuntimeError(f"Expected exactly one market for {condition_id}, got {len(markets)}")
+
+    env = client._ctx.environment
+    context = normalize_market_position_context(
+        markets[0],
+        context=f"condition {condition_id}",
+        collateral_adapter=env.collateral_adapter,
+        neg_risk_collateral_adapter=env.neg_risk_collateral_adapter,
+        conditional_tokens=env.conditional_tokens,
+        neg_risk_adapter=env.neg_risk_adapter,
+    )
+    call = ctf_redeem_positions_call(
+        ctf=context.adapter_address,
+        collateral=env.collateral_token,
+        condition_id=context.condition_id,
+    )
+    handle = client._dispatch_single_call(call, metadata=f"redeem {condition_id}"[:64])
+    outcome = handle.wait()
+    return {"tx_hash": outcome.transaction_hash, "transaction_id": outcome.transaction_id}
+
+
+def fetch_receipt_status(tx_hash: str, max_wait_s: int = 120) -> str:
+    """Independent on-chain confirmation (do not just trust the relayer's own
+    success signal) — read the real Polygon receipt so the DONE criteria's
+    'polygonscan status 0x1' claim is backed by fresh RPC evidence, not the SDK."""
+    from web3 import Web3
+    w3 = Web3(Web3.HTTPProvider(POLYGON_RPC))
+    deadline = time.time() + max_wait_s
+    while time.time() < deadline:
+        receipt = w3.eth.get_transaction_receipt(tx_hash)
+        if receipt is not None:
+            return hex(receipt.status)
+        time.sleep(3)
+    raise TimeoutError(f"no receipt for {tx_hash} after {max_wait_s}s")
+
+
+def record_ledger_line(line: dict, ledger_path: str | None = None) -> bool:
+    """R3/R4 bookkeeping: append via the CANONICAL earn-ledger writer (record.mjs)
+    so the malice-guard + GATE-0 classifier stay the single source of truth —
+    this file does not reimplement ledger schema or profitability rules."""
+    args = ["node", LEDGER_RECORD_JS, json.dumps(line)]
+    if ledger_path:
+        args.append(ledger_path)
+    result = subprocess.run(args, capture_output=True, text=True, timeout=30)
+    if result.returncode != 0:
+        raise RuntimeError(f"record.mjs failed: {result.stderr.strip()}")
+    return "PROFITABLE" in result.stdout
+
+
+def main() -> int:
+    positions = fetch_positions(DEPOSIT_WALLET)
+    rows = dedupe_redeemable_conditions(positions)
+    if not rows:
+        print("no redeemable conditions found — nothing to do")
+        return 0
+
+    print(f"found {len(rows)} redeemable condition(s):")
+    for row in rows:
+        kind = classify_market_type(row["negativeRisk"])
+        print(f"  - {row['title']!r} conditionId={row['conditionId']} "
+              f"value=${row['currentValue']:.4f} type={kind}")
+
+    before = pusd_balance(DEPOSIT_WALLET)
+    print(f"pUSD before: {before}")
+
+    client = build_client()
+    results = []
+    try:
+        for row in rows:
+            operator = redeem_operator_for(row["negativeRisk"])
+            approve_tx = ensure_ctf_operator_approval(client, operator)
+            if approve_tx:
+                print(f"  approved CTF operator {operator}: tx={approve_tx}")
+            print(f"redeeming {row['conditionId']} ({row['title']!r}) ...")
+            tx = redeem_condition(client, row["conditionId"])
+            status = fetch_receipt_status(tx["tx_hash"])
+            print(f"  tx={tx['tx_hash']} status={status}")
+            line = build_ledger_line(row, tx_hash=tx["tx_hash"], status=status)
+            profitable = record_ledger_line(line)
+            results.append({**tx, "status": status, "row": row, "profitable": profitable})
+    finally:
+        client.close()
+
+    after = pusd_balance(DEPOSIT_WALLET)
+    recovered = compute_recovered_amount(before, after)
+    print(f"pUSD after: {after}  (recovered: {recovered})")
+
+    for r in results:
+        print(json.dumps({
+            "conditionId": r["row"]["conditionId"],
+            "title": r["row"]["title"],
+            "tx_hash": r["tx_hash"],
+            "status": r["status"],
+            "profitable": r["profitable"],
+        }, ensure_ascii=False))
+
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
