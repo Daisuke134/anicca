@@ -1160,3 +1160,45 @@ untrusted inputなし)を追加。
 
 **Task #5完了**。記事はGitHub Pages(`https://daisuke134.github.io/anicca/`)で
 実際に公開され、VCSDD(Sonnet adversary 3ラウンド)+実URL E2E確認の両方を通過した。
+
+## 21. Task #12(SUBMIT/WITHDRAW)独立再調査 + Task #8着手(2026-07-05)
+
+Dais指示「for 8 and 12, gonna be big task so lets do with sdd... searching deep
+with subagents... with vcsdd」を受け、deep-researcher subagent 2体を並列起動して
+Task #8とTask #12を深掘り調査した。
+
+### 21.1 Task #12: SUBMIT/WITHDRAW UIの外部情報は独立に「存在しない」と再確認
+
+§19.1で私自身が確認した「join済みcampaignが無くUI未観察」という結論を、別の
+fresh-context subagentが独立に再検証:
+- promote.fun自身の公開ページ(faq/how-it-works/creators等)はSPAでJS描画に
+  依存しており静的フェッチでは中身が取得不可。
+- レビュー記事(findclout.com)はbrand側フローのみ描写、creator側のSUBMIT/
+  WITHDRAW画面には言及なし。
+- このマシン上のどのAIセッション・worktreeも**一度もcampaignにJOIN成功して
+  いない**ことを`SKILL.md`/`join_campaign.py`/`clip-promote-state.json`/
+  `~/.cloak/promotefun-anicca.json`の実ファイルから確認(スクリーンショット等の
+  副産物も皆無)。
+
+**結論**: SUBMIT/WITHDRAWの実装ブロッカーは想像上のものではなく、独立した調査でも
+再現する構造的事実。実機観察以外に確認手段が無いため、**引き続き実装を保留**し、
+`earn/clip`(通常投稿loop)によるフォロワー蓄積を待つ、という既存方針([[feedback_build_agents_not_hardcode_regex]]
+とも整合— 見ていないUIを推測実装しない)を継続する。新規のspec/実装はTask #12
+については行わない(行うべきことが無いため)。
+
+### 21.2 Task #8: clip cloudアダプタ設計 — spec作成完了、VCSDDへ
+
+Dais 2026-07-05 verbatim(動機、詳細は新specに転記):
+> we gotta make it so that every one of these AI in this world can go earn
+> money with the skills that we made... most of us would not be able to live
+> on the local place.
+
+deep-researcher subagentの調査結果を踏まえ、新規spec
+`docs/superpowers/specs/2026-07-05-clip-cloud-adapter-design.md`を作成:
+- 既存§15の5層分解を土台に、過剰実装回避のため**層①(ブラウザhost抽象化)と
+  層③(動画生成のポータビリティ)のみ**を今回のスコープとし、層②(視覚判断、
+  既存最大の難所)④(wallet)⑤(スケジューリング)は明示的に別フェーズへ先送り。
+- `~/anicca-oss/.worktrees/adapters`・`akash`は`00-MASTER.md`(2026-06-11)で
+  方針転換済みの旧世代実装と判明、直接再利用は不可だがwallet-factory/Akash SDL
+  パターンは参考情報として記録。
+- 次のステップ: `vcsdd:vcsdd-adversary`(Sonnet)によるspec review(GATE 1)。
