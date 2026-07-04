@@ -78,3 +78,7 @@ Verified `anicca-capafy-daily-publish` (09:00 JST daily). TWO failures found:
 
 ### Execution directive (Dais 2026-07-04)
 NO human in the loop. Execute the TODO one-by-one IN ORDER, never skip. #9 (Capafy revive) → #6 (LM E1/funnel) → #10 (Reddit loop) → #8 (harness). Each item run to real-side-effect verification before the next.
+
+## 8b. VERIFY conclusion — Capafy earns $0 (demand, not publishing, is the wall)
+Fresh query (token re-authed 2026-07-04): 19 published agents, **ALL 0 sales, $0 revenue, $0 payout (below_threshold)**. Statuses mixed — some `status=0` (draft, never submitted), some `status=4` (LISTED but 0 sales). The marketplace DOES have demand (memory: top sellers 68/57/56 sales) → our listings are just not competitive/discoverable → $0.
+**Decision (data-driven)**: Capafy's bottleneck = DEMAND, not publish volume. Pumping more daily listings = supply into a market where ours get $0 = waste. Token is fixed (the cheap existing cron can keep running), but Capafy is **LOW-ROI**; the money loop's effort goes to Life Manager (real product, real $20/mo) + Reddit demand-gen. Capafy stays a background cron, NOT a loop focus, until/unless a demand fix (competitive listings in proven niches, or promotion) is proven to convert. This is itself a self-improve signal: measure→reallocate away from a $0 engine.
