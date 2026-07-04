@@ -1752,3 +1752,10 @@ ledger 実データの engine 叩き分布: automaton HL2089/PM45/SOL13、claude
   - ⚠️ `tier=broke`(ANICCA_WALLET_ADDRESS unset)= ★バグでなく設計通り★(anicca-daemon.sh:117 に明記「unset for Franklin is correct, non-fatal」)。loop の balance/tier は EVM 専用(Base USDC, 0x…40hex)、Franklin は Solana wallet なので tier=broke のまま。各 skill は自分の .env で自分の wallet を使うので独立に動く。
 - ★スキルレベルの parity 達成★。但し実際に PM/HL で稼ぐには EVM/Polygon 資金が要る(Franklin=Solana のみ)= capital-gated(EARN-3/#15)。「全スキルを持つ」は達成、「全スキルで稼ぐ」は資金次第。
 - ★プロセス変更(Dais 2026-07-05)★: 今後 team-lead が main で透明にビルド(全コマンドが Dais に見える)、検証は fresh VCSDD adversary。opaque な builder subagent は使わない(遅い+不透明+meddling リスク=redeem-builder/franklin-parity-builder の教訓)。
+
+### §40 ★ #17 TELEM: claude-p が dashboard から落ち続けた根本を2段で修正(2026-07-05, team-lead 透明ビルド)★
+claude-p が何度直しても dashboard から脱落(alive:2)する再発の真因を、team-lead が自分でログを段階的に読んで確定・修正:
+- 真因1: run_earner.sh:17 の claude-p 専用 telemetry 行が `timeout` を直書き(poster-builder が既存 run() ヘルパーを迂回して追加)。mac に bare `timeout` は無い(gtimeout のみ)→ command-not-found → POST 飛ばず。→ run() 経由に修正。
+- 真因2: pm-earner.plist に PATH 未設定(以前足した PATH が builder 作業で消えていた)→ launchd 既定 PATH に node/gtimeout 無し → `node: command not found`。→ run_earner.sh 冒頭で portable PATH を export(標準ディレクトリ=US Mac/クラウドでも効く=§38「どこでも動く」)。
+- ★verify(live)★: kickstart 後 `claude-p net 4.27 -> 202 {"ok":true}` を実ログ確認 → 本番 dashboard `alive:3`(claude-p $4.27 / a3cdd4 $6.29 / Franklin $2.88)復帰を curl 確認。
+- 教訓: launchd job は PATH 非依存(スクリプト冒頭で export)にしないと mac の timeout/gtimeout + homebrew node で必ず落ちる。§24 franklin cron・§34 pm-earner gtimeout と同じ根。
