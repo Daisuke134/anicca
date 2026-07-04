@@ -150,3 +150,14 @@ Honest answers to Dais's questions about what I actually did:
 
 ### Corrected target architecture (unify into ONE claude-p loop)
 The Capafy publish (`daily_loop.sh`) and the money-measurement spine (`~/anicca/skills/self/lm-capafy-loop/loop.sh`) are currently SEPARATE. Target = ONE claude-p always-on loop (`lm-capafy-loop`, ~/anicca/skills, Claude-subscription, tmux+launchd healthcheck like earn/clip): HEAL → READ (LM funnel + Capafy sales) → JUDGE → **ACT calls the engines** (Capafy `daily_loop.sh` / LM funnel fix / Reddit) → VERIFY real revenue → STATE. The OpenClaw cron becomes redundant once the always-on loop drives publishing. Both AIs reference the ONE canonical skill via symlink. Next (#8): wrap lm-capafy-loop in cli.sh+healthcheck+launchd (copy earn/clip pattern) and make ACT invoke the Capafy engine.
+
+## 15. lm-capafy-loop measurement spine — CONVERGED (VCSDD PASS, 2026-07-05)
+`~/anicca/skills/self/lm-capafy-loop/{loop.sh,test-loop.sh}` (anicca main). 4 fresh-context adversary rounds, 17 findings, ALL fixed; iter-4 = PASS all 5 dimensions ("measurement spine converged, never lets a fake/masked/wrong number through"). Anti-fake invariants (each test-covered, 12 tests green, live-verified, prod files untouched):
+- error body → NA, NEVER masked as $0 (Capafy payout/trend + Stripe). NA → status READ-FAILED (fail-safe).
+- revenue = real $ (Stripe MRR from expand=data.items.data.price, verified vs a live $5/mo sub; year→/12; $0 subs→$0), NOT a subscription count.
+- Capafy monthly = the LATEST payout-month record (not max-ever, which would report a historical peak forever after a collapse). 3-day trend is a labeled leading indicator, NEVER summed into the monthly goal.
+- HEAL-FIRST: Capafy auth + Stripe live-key + **publish-loop-ran-≤2d** (the 6-week-silent-death guard) + NEVER-RAN branch. On any HEAL → writes a selfheal-request.json handoff (removed when healthy) so the claude-p loop self-fixes next wake.
+- Full test seam (LMCAP_TEST/FIXTURE/LOGFILE/REQ/DIR) → tests never touch prod creds or the real daily_loop.log.
+Current live reading: LM_MRR $0.0, Capafy $0.0, monthly $0.0, heal=none — honest "$0, bottleneck = DEMAND".
+### Next (completes #8)
+Wrap this spine in the always-on claude-p pattern (copy earn/clip): `lm-capafy-cli.sh` (tmux + headless claude STARTUP that registers a recurring cron) + `lm-capafy-healthcheck.sh` (launchd 5-min, flock+pidfile+stuck-detection→selfheal-request) + launchd plist. Add the ACT step: after READ/STATE, the claude-p agent picks the single highest-EV self-improve action (LM funnel fix / Capafy listing→winner / Reddit demand) and VERIFIES a real $ delta next wake. Both AIs reference the canonical capafy-autopublish via symlink.
