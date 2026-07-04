@@ -3,10 +3,18 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # v2 (2026-07-04, タスク#7): pkill-by-name + backoff, ported from gig-healthcheck.sh —
 # see clip-healthcheck.sh for the full incident writeup (tmux socket loss → duplicate
 # cores → Load Avg 8.99 across 4 loops, real occurrence confirmed via `ps aux`).
+# v4 (2026-07-04, self-heal-harness spec): mkdir atomic lock so overlapping healthcheck
+# runs can't race each other's DEAD→restart sequence — see clip-healthcheck.sh for detail.
 set -uo pipefail
 SOCK="/tmp/anicca-bounty-tmux.sock"; SESSION="anicca-bounty-core"
 LOG="$HOME/.openclaw/logs/bounty-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/.openclaw/state/.bounty-core-restart-log"
+
+LOCK_DIR="/tmp/.bounty-healthcheck.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  exit 0
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 
 restart() {
   mkdir -p "$HOME/.openclaw/state"

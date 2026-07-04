@@ -19,10 +19,23 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # is the real one" from outside is unreliable; do not re-add without a verified-safe method.
 # Existing orphans from past incidents must be cleaned up MANUALLY (`ps aux | grep`, compare
 # start times, kill all but the one attached to `tmux ... list-sessions`) — see Task #7.
+#
+# v4 (2026-07-04, self-heal-harness spec, Sutando+Cronicle patterns): add a self-exclusion
+# lock so overlapping healthcheck runs (launchd firing before the prior run finished) can
+# never race each other's DEAD→pkill-then-restart sequence — this race is a strong
+# candidate for HOW the v2 pkill-by-name still let duplicates through. macOS has no
+# `flock` binary (confirmed absent, unlike Linux), so this uses mkdir as an atomic lock
+# (same proven pattern as ~/scripts/disk-cleaner.sh's LOCK_DIR).
 set -uo pipefail
 SOCK="/tmp/anicca-clip-tmux.sock"; SESSION="anicca-clip-core"
 LOG="$HOME/.openclaw/logs/clip-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/.openclaw/state/.clip-core-restart-log"
+
+LOCK_DIR="/tmp/.clip-healthcheck.lock"
+if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+  exit 0   # a prior healthcheck run is still in flight — skip silently, don't race it
+fi
+trap 'rmdir "$LOCK_DIR" 2>/dev/null' EXIT
 
 restart() {
   mkdir -p "$HOME/.openclaw/state"
