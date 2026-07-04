@@ -11,10 +11,30 @@ OpenClaw/Hermes/どこでもspawn可能にしたい。まず全loopが正しく�
 
 ### 1.1 「Life Managerは既にクラウドにある」→ 不正確
 
-`Daisuke134/life-manager`は実在する public repo(1 star、最終push 2026-06-20)だが、
-Railway/Docker/Fly等の本番デプロイ設定が存在せず、`.env.example`はプレースホルダのまま
-(`you@gmail.com`等)、`gh api .../deployments`も空。**実際にクラウドで稼働している証拠は
-確認できなかった**。「クラウドにあるから消していい」という前提は成立しない。
+**★訂正(2026-07-04、Dais指摘で判明した調査ミス)★**: 上記1.1は誤りだった。前回の
+subagentは`Daisuke134/life-manager`という**OSS配布用の別リポジトリ**だけを見ており、
+Daisが実際に運営している本番環境を見落としていた。正しい実態(`~/.claude/projects/.../
+memory/reference_life_manager_deploy_and_stripe_link.md` + `reference_life_manager_
+launch_state_and_reply_by_email.md`より):
+
+- 本番実体 = `apps/life-call`(raw Node httpサーバー、**Railway** Project Anicca/service
+  life-call/production、mainブランチpushで自動デプロイ)+ Supabase(`cycgdwndgfgdbnndithc`)
+- v1は**Telegram(@LifeManagerBotbot)で正式ローンチ済み**(onboarding: name→calendar
+  (Composio連携)→phone→pay(Stripe)、Daisが実際にdogfoodしE2E確認済み)
+- Web版: `/life-manager`(フルマーケティングページ、公開済み)、`/lm`はTelegram優先の
+  ため意図的に「coming soon」ゲート中(`/lm?tg=<chatId>`は実オンボーディング動作)
+- Stripe決済ページ稼働中($20/mo、`buy.stripe.com/9B600j6C204S7LadIG2880V`)
+
+**「クラウドに既にある」は正しかった**。統合方針の判断材料としては、OpenClaw内の
+`anicca-life-*`系cronはDais個人用の実験/前身であり、**本番はクラウド側(Railway
+life-call)**という位置づけになる。
+
+**Stripe実課金の確認結果(2026-07-04、本人へ正直に報告)**: `STRIPE_SECRET_KEY`で実際に
+subscriptions一覧を取得したところ、7件全てが`canceled`(キャンセル済み)、かつ全て
+同一customer(`cus_T5RqnJTcQ6xWlw`)だった。これはmemory記載の「lm_users=3 rows
+(all Dais's own tests)」と符合し、少なくとも**この確認範囲では外部顧客の実課金は
+見つからなかった**。もし別の決済チャネルや別のStripeアカウントで実際に課金が発生して
+いるなら、その情報源を教えていただきたい — 推測では書かない。
 
 ### 1.2 OpenClawの`anicca-life-*`系14 job → ほとんどLife Managerと無関係
 
