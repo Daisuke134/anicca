@@ -26,6 +26,8 @@ echo "[2] Franklin        SELF-funded  (Franklin-Trading, Solana)"
 echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-sol)=$(loop franklin-sol)"
 echo ""
 echo "[3] claude-p (me)   human-funded (this Claude → PM earner)"
+# 0x904B50d2 holds the real funds (ERC-1167 proxy, no private key of its own -> cannot EIP-191 sign);
+# telemetry is signed by a SEPARATE dedicated identity 0x02Bb... (~/.anicca-founder/state/telemetry-identity.json).
 echo "    wallet 0x904B50d2…  pUSD=\$$(erc20 $POLY $PUSD 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74)   loop(pm-earner)=$(loop pm-earner)  proxy-loop(founder-loop,0x810f)=$(loop founder-loop)"
 DW=0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74
 echo -n "    PM positions: "
