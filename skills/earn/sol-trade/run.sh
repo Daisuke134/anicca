@@ -8,7 +8,7 @@ SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SKILL_DIR/../state"; mkdir -p "$STATE_DIR"
 TRACE="$STATE_DIR/sol-trade.trace.jsonl"
 MAX_SPEND="${SOL_TRADE_MAX_SPEND:-0.25}"   # money-safety: per-pass LLM spend cap (USD)
-FT_MODEL="${SOL_TRADE_MODEL:-openai/gpt-5-mini}"   # FREE tool-caller: don't bleed the bankroll (FIX-C)
+FT_MODEL="${SOL_TRADE_MODEL:-openai/gpt-5-mini}"   # cheapest WORKING tool-caller (~pennies/session), don't bleed the bankroll (FIX-C)
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
