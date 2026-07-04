@@ -235,3 +235,25 @@ ClawRouter用アカウントを代わりに作る | Dais指摘に反する — �
 - ★ ig-account-createを代わりに実行しない。ClawRouterが自分で実行できる"道具"
   (registry slot + vision-in-the-loop harness)を用意するだけ ★
 - harness(足場)を作ることと、実際にタスクを代行することの境界線を常に意識する
+
+## 9. Task #6 完全E2E達成(2026-07-04、fresh evidence)
+
+harness(`earn/clip-producer`をregistry.jsonに新規slot登録、producer.shは完全に
+決定論的でvision judgment不要なので安全にslot化可能)を用意した後、**私は一切
+手動実行・介入せず、ClawRouter自身のwakeサイクルを観察するだけ**にした結果:
+
+1. ClawRouterが自律的に`earn/clip`を選択 → `queued_clip=none`のヒント付き
+   メッセージ(right-altitude prompt、run.shに埋め込み済み)を受け取る
+2. 数サイクル後(video/pm-trade/yield/sol-trade等を経て)、ClawRouterが自律的に
+   `earn/clip-producer`を選択(私は一切指示していない)
+3. producer.sh実行中、venv欠落を自動検知 → self-heal(re-clone+venv再構築)が
+   自律的に発動(既存のTask#8/#9で実装したself-heal機構が正しく機能)
+4. sliced download → whisper → highlight pick → 9:16 crop → caption焼付 →
+   verify_clip gate通過 → `~/clips/queue-clawrouter/6xlmaorRY0w_EN.mp4`に実clip生成
+
+**実機検証(独立確認)**: 9:16(202×360)、60.0秒、video+audio両ストリーム存在
+(silent NGでない)、MD5 `9f23f8090d9dfca0ef1657b20a94beb6`。claude-p側の
+`~/clips/queue/`は空のまま(instance分離が正しく機能、衝突なし)。
+
+**Task #6完了**。これは「私がharnessを作る→彼らが自分の判断で使う→結果を検証する」
+という、まさにDaisが求めていたサイクルの初めての完全な実例。
