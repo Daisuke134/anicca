@@ -1309,3 +1309,51 @@ World Cup campaign例 $6,110/game〜$52,000/game)。
 rewardsMinSize>0)で midpoint 近くに rewardsMinSize 以上の両側 maker 指値(post_only, fee 0)→ 日次LP報酬回収 +
 スプレッド → 片側約定したら反対側を調整して delta 中立 → fail-closed。realized P&L + 受領報酬を ledger 実数。
 資金依存: LP報酬もスプレッド益も quote size に比例 = ここで初めて「元本が多いほど稼ぐ」が効く($20-50 で実元本)。
+
+### §11.9 ★ 普遍テンプレ: 全 earn skill = BASE + SELF-IMPROVE + SELF-HEAL(Dais 厳命 2026-07-04)★
+どの earn skill(Polymarket / Limitless / Hyperliquid / Solana / x402 / gig)も必ず3層で作る:
+```
+┌ ① BASE STRATEGY(効く既定戦略を埋める = day-1 で +EV)────────────┐
+│   例(Polymarket)= マーケットメイク+LP報酬(ボス swisstony の写し) │
+│   spawn した瞬間どの AI も これで稼ぎ始められる(弱モデルでも)     │
+├ ② SELF-IMPROVE(自己資金 AI が自力で強くする)──────────────────┤
+│   a. web で best practice を検索(firecrawl/gh)→ 新手法を試す      │
+│   b. 自分の実 P&L(ledger/trace)を読む → 効いた手を残す/捨てる    │
+│   c. パラメータ(quote幅/市場選択/Kelly比)を結果ドリブンで調整     │
+│   → 勝った改善は PR で全 instance に伝播(集合進化 #27)            │
+├ ③ SELF-HEAL(壊れたら自分で直す)────────────────────────────────┤
+│   fail-closed で halt → 故障を issue 化 → dev→PR で自己修復(#7)   │
+└──────────────────────────────────────────────────────────────────┘
+```
+★ 私(main agent)= ①の効く BASE を作って埋める人。②③は AI 自身が回す。私はループを抜ける。★
+「BASE 無し skill」=違反(弱 AI が稼げない)。「self-improve 無し」=違反(頭打ち)。「self-heal 無し」=違反(壊れて放置)。
+
+### §12 3記事の書き方(how we write + how we do)
+共通プロセス(全記事同一): ①素材を集める(実 tx/実数/skill/dashboard link)→ ②`ai-entity-article-writer` skill で
+下書き(Voice=Daisuke Narita、AI-authorship 露出禁止、盛らない)→ ③taste/構成レビュー → ④実数が出てから公開。
+| # | タイトル | 骨子(章立て) | 決め手の素材 | 出す場所 |
+|---|---|---|---|---|
+| ART-A #36 | 人間なしでAIが金を稼ぐ方法=Anicca(環境) | 問題(AIはhuman-agency依存)→ Anicca=spawnで earn+燃料+自己改善 → 実証(Polymarket no-human約定 tx)→ 誰でも使える | 今日の journey / settle tx 0x7662a88b / skill / leaderboard(ボスの写し) | Zenn/Dev.to/Substack/aniccaai.com |
+| ART-B #37 | BlockRun Franklin を人間なしで稼がせた(Vicky広告) | Franklin自己資金 → BlockRun rails(food/shelter/x402)で no-human → 実 tx → コストの学び | Franklin wallet 8Fpqd / BlockRun MCP ログ / 実 swap tx / Vicky @bc1beat | Substack + Vicky 共有 |
+| ART-C #38 | 人間なしでAIが自己改善する方法=loop engineering | GLVS(Goal→Loop→Verify→State)+ fresh-context adversary + BASE/self-improve/self-heal 3層 | H1-H3 実コード / self-eval.mjs / 実loopログ / Boris Cherny 出典 | Zenn/Dev.to/Substack |
+
+### §13 ハッカソン提出物(#39, 締切 明日〜5-6:30pm)= 今日の実成果が主役
+| 求められる項目 | 我々が出す中身 |
+|---|---|
+| RFS課題設定+解決 | 課題「AIは人間の credential/loop に縛られ経済的自立ができない」→ 解決「Anicca=どのAIも自分の鍵だけで earn する環境。実証: no-human で Polymarket 実約定」 |
+| プロダクト/技術/BM | Product=Anicca(spawnable earn 環境)。技術=SIWE mint+deposit wallet gasless deploy+py-sdk sig3+マーケットメイク base strategy+自己改善loop。BM=各AIの earn の rev-share / 環境提供 |
+| デモ or 90秒動画 | ★90秒: ①鍵だけ渡す ②deposit wallet 自動deploy ③pUSD入金 ④実約定(tx を polygonscan で見せる)⑤ボス swisstony の写し=MM base strategy 稼働 ★ |
+| グローバル市場/ユーザー視点 | ユーザー=世界中の全 AI/agent(数百万〜)。市場=agent economy。credential/KYC 不要 = 国境なし。どの LLM でも spawn 可 |
+
+### §14 ★ 正しい実行順序(food = the right order)★
+```
+STEP 1 (今・最優先): #49 マーケットメイク base strategy を Polymarket skill に埋める
+        → realized profit>0 を ledger に(=「実際に稼ぐ」を1個確立)
+STEP 2: 同 skill に ②self-improve(web検索+P&L学習)+ ③self-heal を配線(§11.9 の3層完成)
+STEP 3: その3層テンプレを Limitless(#48)/Hyperliquid(#44)/Solana(#45)へ横展開
+STEP 4: #25 TELEM で自分を dashboard に載せる(実収益が見える)
+STEP 5: 記事3本(#36/37/38)= STEP1-4 の実 tx/実数がそのまま素材
+STEP 6: ハッカソン提出(#39)= 上記を 90秒デモ+4項目に整形
+STEP 7: #11 SPAWN/#17 Akash で増殖(子も同じ3層 skill を持つ)→ 集合進化(#27)
+```
+原則: ★ 実際に稼ぐ(STEP1)が全ての前提 ★。記事もハッカソンも「実 realized profit」が出てから。盛らない。
