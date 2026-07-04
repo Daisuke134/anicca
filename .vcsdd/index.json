@@ -53,7 +53,23 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-07-03T22:42:34.341Z"
+    },
+    "clawrouter-zero-human": {
+      "status": "active",
+      "createdAt": "2026-07-04T12:52:49.007Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T12:52:49.007Z"
+    },
+    "coralos-anicca-seller": {
+      "status": "active",
+      "createdAt": "2026-07-04T13:11:59.957Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T13:11:59.957Z"
     }
   },
-  "activeFeature": "portfolio-self-improve-loop"
+  "activeFeature": "coralos-anicca-seller"
 }

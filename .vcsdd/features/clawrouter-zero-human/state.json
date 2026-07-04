@@ -1,0 +1,17 @@
+{
+  "featureName": "clawrouter-zero-human",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-clawrouter-zero-human-1783169569008",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T12:52:49.007Z",
+  "updatedAt": "2026-07-04T12:52:49.007Z"
+}

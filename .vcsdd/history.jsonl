@@ -57,3 +57,5 @@
 {"timestamp":"2026-07-03T18:38:03.744Z","event":"phase_transition","featureName":"clip-clawrouter-instance-provision","from":"1c","to":"2a","iteration":2,"phase":"2a"}
 {"timestamp":"2026-07-03T18:38:03.745Z","event":"sprint_started","featureName":"clip-clawrouter-instance-provision","sprintNumber":2,"phase":"2a"}
 {"timestamp":"2026-07-03T22:42:34.344Z","event":"feature_created","featureName":"portfolio-self-improve-loop","mode":"lean"}
+{"timestamp":"2026-07-04T12:52:49.011Z","event":"feature_created","featureName":"clawrouter-zero-human","mode":"lean","language":"typescript"}
+{"timestamp":"2026-07-04T13:11:59.961Z","event":"feature_created","featureName":"coralos-anicca-seller","mode":"lean","language":"typescript"}
