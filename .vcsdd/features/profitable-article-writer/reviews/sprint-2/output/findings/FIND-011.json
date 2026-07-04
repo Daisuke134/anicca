@@ -1,39 +1,18 @@
 {
   "findingId": "FIND-011",
-  "resolutionStatus": "OPEN",
-  "dimension": "spec_fidelity",
-  "category": "spec_gap",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
   "severity": "high",
-  "criterion": "N/A (lib/note_publish.sh header comment + tests/test-prop21-visual-and-single-price.sh header comment vs actual, current implementation)",
-  "description": "NEW (not previously flagged; the identical class of defect FIND-009/FIND-010 closed in specs/behavioral-spec.md and specs/verification-architecture.md remains OPEN in TWO source-tree files that were in this review's own manifest scope: skills/profitable-article-writer/lib/note_publish.sh and skills/profitable-article-writer/tests/test-prop21-visual-and-single-price.sh. (1) lib/note_publish.sh:31 states 'lib/note-create-rich-draft.py ... orchestrates note_mcp's EXISTING create_draft/upload_body_image/upload_eyecatch_image/generate_image_html' -- this is FALSE about the actual, current implementation: lib/note-create-rich-draft.py (read in full) imports and calls ONLY create_draft, upload_body_image, and generate_image_html from note_mcp -- it never imports or calls upload_eyecatch_image, and its OWN docstring (lines 12-18) explicitly states 'EYECATCH IS DELIBERATELY NOT HANDLED HERE ... this script's author first tried note_mcp.api.images.upload_eyecatch_image and it reproducibly raises ... lib/note-set-eyecatch.py uses the editor's own 画像を追加 button instead'. This directly contradicts note_publish.sh's OWN correct explanation ELEVEN lines earlier (lines 10-15: 'this one genuinely needs the BROWSER path ... not note_mcp's upload_eyecatch_image API -- that call was tried first and reproducibly raises...') and its OWN correct comment at line 163. The file is self-contradictory: lines 10-15 and 163 correctly say eyecatch is NOT via note_mcp's API; line 31 incorrectly claims note-create-rich-draft.py orchestrates that exact API call. (2) tests/test-prop21-visual-and-single-price.sh:6 states '2. NO eyecatch/cover -> the same file [note-create-rich-draft.py] must call note_mcp's upload_eyecatch_image.' -- also FALSE and self-contradictory within the SAME test file: lines 31-32 (the actual defect-2 section header) correctly say 'eyecatch/cover wiring exists (browser path -- the note_mcp API path is a confirmed live missing-url bug...)', and the executable assertions at lines 33-38 correctly test lib/note-set-eyecatch.py for the 画像を追加 browser button, never asserting anything about note-create-rich-draft.py calling upload_eyecatch_image. The top-of-file summary comment was never updated when the actual (correct) fix diverged from the original plan it describes. Both instances are stale/wrong DOCUMENTATION EMBEDDED IN THE ACTUAL IMPLEMENTATION AND TEST SOURCE files this review's manifest lists (artifactsToReview.source/tests), not merely in the Phase-1 spec documents FIND-009/FIND-010 already fixed -- meaning the Round-2 fix for this exact defect class was incomplete: it corrected the spec layer but missed the source-code and test-code layer where the same false claim independently exists, in two more places, self-contradicting within their own files.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. lib/note_publish.sh now defines _note_redact_secrets() (lines 91-119): a two-pass python3 redactor that (1) redacts every cookie VALUE loaded from NOTE_COOKIES_FILE wherever it appears verbatim in sub-step output, and (2) generically redacts any 'cookie|session|token|auth'-keyed value via regex. EVERY non-zero-return branch in run_note_mode_a_publish (create failure line 232-234, missing-key line 238-240, eyecatch failure line 249-251, price failure line 257-259, verify non-PASS line 275-277) now pipes its raw captured output through _note_redact_secrets BEFORE re-emission to stderr -- confirmed by reading all 5 branches. tests/test-find005-redact-secrets-in-error-output.sh proves this with a synthetic secret-looking string ('SUPERSECRET_TOKEN_...') injected via a hermetic fake sub-step script: the secret does NOT appear verbatim in the final stderr output, a [REDACTED] marker appears in its place (proving redaction ran, not silent dropping), AND a control case with ordinary non-secret diagnostic text ('connection refused') passes through UNCHANGED (no over-redaction). Confirmed as a genuinely new, previously-failing (against pre-fix source, which had no _note_redact_secrets at all) test via the red-phase evidence log.",
   "evidence": {
     "filePath": "skills/profitable-article-writer/lib/note_publish.sh",
-    "lineRange": "29-31",
-    "snippet": "#   - lib/note-create-rich-draft.py (this skill's own file, NOT ai-entity-article-writer's) — orchestrates\n#     note_mcp's EXISTING create_draft/upload_body_image/upload_eyecatch_image/generate_image_html."
+    "lineRange": "230-259",
+    "snippet": "create_out=\"$(note_create_rich_draft \"$draft_path\" \"$title\" 2>&1)\"; create_rc=$?\nif [ $create_rc -ne 0 ]; then\n  create_out_redacted=\"$(printf '%s' \"$create_out\" | _note_redact_secrets)\"\n  echo \"run_note_mode_a_publish: note_create_rich_draft failed: $create_out_redacted\" >&2\n  return 1\nfi"
   },
-  "additionalEvidence": [
-    {
-      "type": "file",
-      "location": "skills/profitable-article-writer/lib/note_publish.sh",
-      "description": "Lines 10-15 and 163 of the SAME file correctly state eyecatch is NOT via note_mcp's upload_eyecatch_image API (that call reproducibly fails), directly contradicting line 31's claim that note-create-rich-draft.py orchestrates it."
-    },
-    {
-      "type": "file",
-      "location": "skills/profitable-article-writer/lib/note-create-rich-draft.py",
-      "description": "Full source read: imports only create_draft, generate_image_html (from note_mcp.api.articles) and upload_body_image (from note_mcp.api.images) -- no upload_eyecatch_image import or call anywhere. Docstring lines 12-18 explicitly documents eyecatch is deliberately NOT handled in this file."
-    },
-    {
-      "type": "file",
-      "location": "skills/profitable-article-writer/tests/test-prop21-visual-and-single-price.sh",
-      "lineRange": "6",
-      "description": "Top-of-file summary comment '2. NO eyecatch/cover -> the same file must call note_mcp's upload_eyecatch_image' is stale/wrong, contradicted by the SAME file's own lines 31-32 (correct explanation) and lines 33-38 (the actual executable assertions, which test lib/note-set-eyecatch.py's 画像を追加 button, never note_mcp's upload_eyecatch_image on note-create-rich-draft.py)."
-    }
-  ],
-  "routeToPhase": "2c",
+  "routeToPhase": "2b",
   "resolution": {
     "status": "fixed",
     "fixedInSprint": 2,
-    "fixedInPhase": "3",
-    "notes": "comment/doc corrected to match actual implementation, no logic change"
+    "fixedInPhase": "3"
   }
 }

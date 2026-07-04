@@ -1,14 +1,18 @@
 {
   "findingId": "FIND-007",
-  "resolutionStatus": "RESOLVED",
-  "dimension": "structural_integrity",
-  "category": "spec_gap",
-  "severity": "low",
-  "criterion": "CRIT-103,CRIT-104",
-  "description": "ROUND-2 VERIFICATION: RESOLVED. run.sh's top-of-file INTERFACE comment now includes a dedicated 'Sprint-2 REAL-MODE env vars' block (lines 20-36) documenting ARTICLE_REAL_TOPIC, ARTICLE_REAL_RESEARCH, ARTICLE_REAL_DRAFT_PATH (including the supplied-but-missing wiring-error behavior from the FIND-003 fix), ARTICLE_NOTE_TITLE, ARTICLE_NOTE_KEY, ARTICLE_NOTE_PRICE, and ARTICLE_NOTE_PAYWALL_HEADING -- every Sprint-2 real-mode env var the script's own logic consumes is now documented in the file's own authoritative interface header.",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. lib/note-set-single-price.py now takes a dedicated viewport screenshot (SINGLE_PRICE_PANEL_SCREENSHOT, named single-price-panel-<note_key>.png) at lines 113-123, positioned BEFORE the キャンセル click loop at lines 128-132 -- i.e. captured WHILE 記事タイプ=有料 and 価格=500 are still visibly selected/filled on screen, exactly as CRIT-105's round-3 correction requires. I directly opened and visually inspected both required artifacts: ~/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png (the original CRIT-105-designated draft) and ~/.cloak/note-work/single-price-panel-n39ef09f828f7.png (a second, independent real Mode-A wake). Both images clearly show the live 公開設定 overlay with the 有料 radio SELECTED (filled circle vs unfilled 無料), 価格 field containing '500', and the overlay's own キャンセル/有料エリア設定 buttons still visible (proving capture occurred before the overlay closed). This is corroborated by .vcsdd/features/profitable-article-writer/evidence/sprint-2-findings-fix-find001-live-evidence.log documenting two independent real (non-forced) runs.",
   "evidence": {
-    "filePath": "skills/profitable-article-writer/run.sh",
-    "lineRange": "20-36",
-    "snippet": "#   Sprint-2 REAL-MODE env vars (REQ-19; used only when ARTICLE_TEST is NOT \"1\" -- contract-review FIND-007):\n#   env in:  ARTICLE_REAL_TOPIC ... ARTICLE_REAL_RESEARCH ... ARTICLE_REAL_DRAFT_PATH ...\n#   env in:  ARTICLE_NOTE_TITLE ... ARTICLE_NOTE_KEY ... ARTICLE_NOTE_PRICE ... ARTICLE_NOTE_PAYWALL_HEADING ..."
+    "filePath": "skills/profitable-article-writer/lib/note-set-single-price.py",
+    "lineRange": "113-132",
+    "snippet": "panel_shot = os.path.join(WORK, f\"single-price-panel-{note_key}.png\")\npg.screenshot(path=panel_shot)\nprint(f\"SINGLE_PRICE_PANEL_SCREENSHOT: {panel_shot}\")\n# Close the publish overlay (キャンセル ...)\nfor b in pg.query_selector_all(\"button,a\"):\n    if (b.text_content() or \"\").strip() == \"キャンセル\": b.click(); ..."
+  },
+  "routeToPhase": "2b",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
   }
 }

@@ -1,22 +1,18 @@
 {
   "findingId": "FIND-010",
-  "resolutionStatus": "RESOLVED",
   "dimension": "spec_fidelity",
-  "category": "spec_gap",
+  "category": "requirement_mismatch",
   "severity": "high",
-  "criterion": "N/A (specs/verification-architecture.md PROP-21 row vs actual lib/note-set-eyecatch.py implementation)",
-  "description": "ROUND-3 VERIFICATION: RESOLVED. specs/verification-architecture.md's PROP-21 row (line 43) now reads: 'a REAL eyecatch/cover (`lib/note-set-eyecatch.py`, via the editor's own 画像を追加 button — `note_mcp.upload_eyecatch_image` was tried and reproducibly fails per that script's docstring, so it is NOT used)'. This is verified byte-for-byte consistent with lib/note-set-eyecatch.py's own docstring (lines 7-16: no note_mcp import at all, only `from note_browser_common import load_note_cookies, open_editor_ready`; the docstring explicitly documents the note_mcp API path was tried first and reproducibly raises 'API response missing required field url'). PROP-21's row is now aligned with behavioral-spec.md REQ-19's Round-2 correction, SKILL.md lines 65-67/97-101, and the contract's CRIT-106 passThreshold. The class of defect FIND-009 closed in behavioral-spec.md is now also closed in its sibling verification-architecture.md.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. contracts/sprint-2.md's CRIT-104 passThreshold now reads 'grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT (verify subcommand only) and lib/note-create-rich-draft.py -- this skill's own thin orchestration script, which itself calls note_mcp.api.articles.create_draft/...' -- naming the file that actually contains the literal string 'create_draft' (lib/note-create-rich-draft.py), not lib/note_publish.sh directly. Confirmed mechanically: lib/note_publish.sh (source read in full) never contains the literal string 'create_draft' itself; it calls note_create_rich_draft() (a distinctly-named local function) which execs lib/note-create-rich-draft.py, and THAT file is the one containing note_mcp's create_draft call (grep-verified by tests/test-prop21-visual-and-single-price.sh line 26 against $RICH_DRAFT_PY, the correct file). The criterion is now mechanically grep-verifiable exactly as worded, closing the criteria-to-artifact mapping defect.",
   "evidence": {
-    "filePath": ".vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
-    "lineRange": "43",
-    "snippet": "a REAL eyecatch/cover (`lib/note-set-eyecatch.py`, via the editor's own 画像を追加 button — `note_mcp.upload_eyecatch_image` was tried and reproducibly fails per that script's docstring, so it is NOT used)"
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "99-102",
+    "snippet": "**Round-3 correction (FIND-004)**: CRIT-104's passThreshold literally named `note_mcp.api.articles.create_draft` as a direct call inside `lib/note_publish.sh`, but the literal string `create_draft` only appears in `lib/note-create-rich-draft.py` ... FIXED by naming the correct file in the passThreshold."
   },
-  "additionalEvidence": [
-    {
-      "type": "file",
-      "location": "skills/profitable-article-writer/lib/note-set-eyecatch.py",
-      "description": "Docstring lines 7-16 confirms: note_mcp.api.images.upload_eyecatch_image was tried FIRST and reproducibly raises 'API response missing required field url'; the editor's own 画像を追加 button is used instead, verified to persist (survives reload, appears in GET /v3/notes/{key}'s eyecatch field). No note_mcp import anywhere in this file."
-    }
-  ],
-  "routeToPhase": "N/A - resolved"
+  "routeToPhase": "1b",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
+  }
 }

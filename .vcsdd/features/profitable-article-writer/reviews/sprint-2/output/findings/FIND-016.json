@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "ROUND-3 VERIFICATION: RESOLVED. specs/verification-architecture.md's PROP-21 row (line 43) now reads: 'a REAL eyecatch/cover (`lib/note-set-eyecatch.py`, via the editor's own 画像を追加 button — `note_mcp.upload_eyecatch_image` was tried and reproducibly fails per that script's docstring, so it is NOT used)'. This is verified byte-for-byte consistent with lib/note-set-eyecatch.py's own docstring (lines 7-16: no note_mcp import at all, only `from note_browser_common import load_note_cookies, open_editor_ready`; the docstring explicitly documents the note_mcp API path was tried first and reproducibly raises 'API response missing required field url'). PROP-21's row is now aligned with behavioral-spec.md REQ-19's Round-2 correction, SKILL.md lines 65-67/97-101, and the contract's CRIT-106 passThreshold. The class of defect FIND-009 closed in behavioral-spec.md is now also closed in its sibling verification-architecture.md.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "43-43",
+    "snippet": "a REAL eyecatch/cover (`lib/note-set-eyecatch.py`, via the editor's own 画像を追加 button — `note_mcp.upload_eyecatch_image` was tried and reproducibly fails per that script's docstring, so it is NOT used)"
+  },
+  "routeToPhase": "1a",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
+  }
+}

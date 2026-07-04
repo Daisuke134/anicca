@@ -1,7 +1,7 @@
 {
   "featureName": "profitable-article-writer",
   "mode": "strict",
-  "currentPhase": "5",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -119,19 +119,33 @@
       "timestamp": "2026-07-04T10:58:16.206Z",
       "reason": "Sprint-2 impl adversary PASS r4, 0 findings, all 5 dims",
       "sprint": 2
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-04T11:00:48.978Z",
+      "reason": "Sprint-2 formal hardening complete, verdict schema-conformed",
+      "sprint": 2
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-04T11:03:49.737Z",
+      "reason": "Sprint-2 4-D convergence, globally-unique finding IDs",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 2,
     "5": 2,
-    "6": 1,
+    "6": 2,
     "1a": 2,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
     "2c": 1,
-    "complete": 1
+    "complete": 2
   },
   "proofObligations": [],
   "traceability": {
@@ -699,32 +713,122 @@
       {
         "beadId": "BEAD-049",
         "type": "adversary-finding",
-        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-010.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-007.json",
         "status": "resolved",
         "linkedBeads": [],
-        "createdAt": "2026-07-04T10:47:50.482Z",
+        "createdAt": "2026-07-04T11:03:49.673Z",
         "createdInPhase": "3",
-        "externalId": "FIND-010"
+        "externalId": "FIND-007"
       },
       {
         "beadId": "BEAD-050",
         "type": "adversary-finding",
-        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-011.json",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-008.json",
         "status": "resolved",
         "linkedBeads": [],
-        "createdAt": "2026-07-04T10:54:19.064Z",
+        "createdAt": "2026-07-04T11:03:49.677Z",
         "createdInPhase": "3",
-        "externalId": "FIND-011"
+        "externalId": "FIND-008"
       },
       {
         "beadId": "BEAD-051",
         "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-009.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.677Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-009"
+      },
+      {
+        "beadId": "BEAD-052",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-010.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.678Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-010"
+      },
+      {
+        "beadId": "BEAD-053",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-011.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.679Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-011"
+      },
+      {
+        "beadId": "BEAD-054",
+        "type": "adversary-finding",
         "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-012.json",
         "status": "resolved",
         "linkedBeads": [],
-        "createdAt": "2026-07-04T10:54:19.067Z",
+        "createdAt": "2026-07-04T11:03:49.680Z",
         "createdInPhase": "3",
         "externalId": "FIND-012"
+      },
+      {
+        "beadId": "BEAD-055",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-013.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.680Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-013"
+      },
+      {
+        "beadId": "BEAD-056",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-014.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.681Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-014"
+      },
+      {
+        "beadId": "BEAD-057",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-015.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.681Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-015"
+      },
+      {
+        "beadId": "BEAD-058",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-016.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.682Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-016"
+      },
+      {
+        "beadId": "BEAD-059",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-017.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.683Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-017"
+      },
+      {
+        "beadId": "BEAD-060",
+        "type": "adversary-finding",
+        "artifactPath": ".vcsdd/features/profitable-article-writer/reviews/sprint-2/output/findings/FIND-018.json",
+        "status": "resolved",
+        "linkedBeads": [],
+        "createdAt": "2026-07-04T11:03:49.683Z",
+        "createdInPhase": "3",
+        "externalId": "FIND-018"
       }
     ]
   },
@@ -755,5 +859,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T10:58:16.206Z"
+  "updatedAt": "2026-07-04T11:03:49.737Z"
 }

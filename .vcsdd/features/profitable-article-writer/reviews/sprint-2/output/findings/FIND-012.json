@@ -1,28 +1,18 @@
 {
   "findingId": "FIND-012",
-  "resolutionStatus": "OPEN",
-  "dimension": "spec_fidelity",
-  "category": "spec_gap",
-  "severity": "medium",
-  "criterion": "N/A (SKILL.md 'Real Mode-A wake evidence' line vs the contract's CRIT-105 Round-3-corrected qualifying evidence artifact)",
-  "description": "SKILL.md line 115-118 ('Real Mode-A wake evidence (2026-07-04): draft https://note.com/anicca123/n/nfb2ace9f0ed8 -- cover set, hero diagram + 2 inline figures embedded, 記事タイプ=有料/¥500/paid-line confirmed via live DOM (screenshot ~/.cloak/note-work/single-price-nfb2ace9f0ed8.png)') still cites the OLD, superseded screenshot filename single-price-nfb2ace9f0ed8.png as the confirming evidence. Per the contract's own CRIT-105 Round-3 correction (FIND-001) and the resolved reviews/sprint-2/output/findings/FIND-001.json, that specific file was taken AFTER the 公開に進む overlay was already closed via キャンセル and 'never actually showed the panel at all' -- the contract-designated, human/verifier-reviewable artifact is now single-price-panel-nfb2ace9f0ed8.png (which does exist on disk, verified: /Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png, captured while the overlay was still open with 有料/¥500 visibly selected). SKILL.md's evidence-summary prose was written before the FIND-001 fix and was never updated to point at the corrected panel screenshot, even though the correct file is sitting right next to the stale one it cites. This does not affect any grading criterion's actual pass/fail (CRIT-105's passThreshold and the sprint-2/output/findings/FIND-001.json resolution both correctly reference single-price-panel-nfb2ace9f0ed8.png), and does not misdescribe the underlying mechanism -- it is a stale citation of which screenshot constitutes sufficient evidence, in a document a future reader/verifier could rely on. Non-blocking (does not affect CRIT-105 grading, which is independently satisfied by the actual panel screenshots), filed for completeness given this round's explicit mandate to sweep for doc/evidence drift of this shape.",
+  "dimension": "structural_integrity",
+  "category": "duplication",
+  "severity": "low",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. A new shared module, lib/note_browser_common.py, now hosts load_note_cookies() (cookie-file load + list-of-dicts conversion) and open_editor_ready() (cloakbrowser session bootstrap + navigate + poll-for-公開に進む), the ~20 previously-duplicated lines. Both lib/note-set-eyecatch.py (line 31: 'from note_browser_common import load_note_cookies, open_editor_ready') and lib/note-set-single-price.py (line 44, same import) now delegate to this module instead of re-implementing the logic. Each caller retains its own distinct error-message wording (the module returns None/(ctx, None) rather than printing/exiting itself), preserving each script's own diagnostics.",
   "evidence": {
-    "filePath": "skills/profitable-article-writer/SKILL.md",
-    "lineRange": "115-118",
-    "snippet": "Real Mode-A wake evidence (2026-07-04): draft `https://note.com/anicca123/n/nfb2ace9f0ed8` — cover set, hero diagram + 2 inline figures embedded, 記事タイプ=有料/¥500/paid-line confirmed via live DOM (screenshot `~/.cloak/note-work/single-price-nfb2ace9f0ed8.png`)."
+    "filePath": "skills/profitable-article-writer/lib/note_browser_common.py",
+    "lineRange": "24-55",
+    "snippet": "def load_note_cookies(cookies_file: str) -> Optional[list]: ...\ndef open_editor_ready(cookies: list, note_key: str, viewport: dict, timeout_s: int = 20): ..."
   },
-  "additionalEvidence": [
-    {
-      "type": "artifact",
-      "location": "/Users/anicca/.cloak/note-work/single-price-panel-nfb2ace9f0ed8.png",
-      "description": "The contract-correct evidence artifact (CRIT-105 Round-3 correction / FIND-001 resolution) exists on disk in the same directory as the stale file SKILL.md cites, but SKILL.md's prose was never updated to point at it."
-    }
-  ],
   "routeToPhase": "2c",
   "resolution": {
     "status": "fixed",
     "fixedInSprint": 2,
-    "fixedInPhase": "3",
-    "notes": "comment/doc corrected to match actual implementation, no logic change"
+    "fixedInPhase": "3"
   }
 }

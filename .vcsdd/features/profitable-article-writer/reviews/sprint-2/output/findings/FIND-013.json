@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "structural_integrity",
+  "category": "code_structure",
+  "severity": "low",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. run.sh's top-of-file INTERFACE comment now includes a dedicated 'Sprint-2 REAL-MODE env vars' block (lines 20-36) documenting ARTICLE_REAL_TOPIC, ARTICLE_REAL_RESEARCH, ARTICLE_REAL_DRAFT_PATH (including the supplied-but-missing wiring-error behavior from the FIND-003 fix), ARTICLE_NOTE_TITLE, ARTICLE_NOTE_KEY, ARTICLE_NOTE_PRICE, and ARTICLE_NOTE_PAYWALL_HEADING -- every Sprint-2 real-mode env var the script's own logic consumes is now documented in the file's own authoritative interface header.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "20-36",
+    "snippet": "#   Sprint-2 REAL-MODE env vars (REQ-19; used only when ARTICLE_TEST is NOT \"1\" -- contract-review FIND-007):\n#   env in:  ARTICLE_REAL_TOPIC ... ARTICLE_REAL_RESEARCH ... ARTICLE_REAL_DRAFT_PATH ...\n#   env in:  ARTICLE_NOTE_TITLE ... ARTICLE_NOTE_KEY ... ARTICLE_NOTE_PRICE ... ARTICLE_NOTE_PAYWALL_HEADING ..."
+  },
+  "routeToPhase": "2c",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
+  }
+}

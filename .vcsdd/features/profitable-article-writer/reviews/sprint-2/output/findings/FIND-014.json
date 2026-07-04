@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. tests/test-prop19-real-content-hook.sh's states (a) and (b) were rewritten: both fixtures are now deliberately constructed to PASS the REAL (non-FORCE) gates/v0.sh + gates/v05.sh in round 1 (a real ARTICLE_JUDGE_V05_RESPONSE is supplied; I independently hand-verified the readability arithmetic on both fixtures satisfies the >=70%-short-sentences threshold and gates/v0.sh's line-count>3 requirement), and both states now assert `grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\"` explicitly (lines 52, 67) -- not merely `rc -eq 0`, which run.sh also returns on ABORTED. This closes the tautology: the test can no longer pass identically whether the wake reaches DRAFT or silently ABORTS. Confirmed as a genuinely new, previously-failing assertion by re-reading the current test file and cross-checking gates/v0.sh's real line_count>3 requirement and gates/v05.sh's real sentence-arithmetic against the actual fixture content.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh",
+    "lineRange": "46-52",
+    "snippet": "OUT=\"$(ARTICLE_DIR=\"$T\" AUTONOMY=off ARTICLE_JUDGE_V05_RESPONSE=\"$RESP\" ARTICLE_REAL_TOPIC=\"x402\" ARTICLE_REAL_RESEARCH=sufficient ARTICLE_REAL_DRAFT_PATH=\"$FIXTURE\" bash \"$SKILL/run.sh\" 2>&1)\"; rc=$?\n...\nok \"$(grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\" 2>/dev/null && echo 1 || echo 0)\" \"FIND-008: the wake actually reached last_wake_result: DRAFT (not merely rc=0, which run.sh also returns on ABORTED) ...\""
+  },
+  "routeToPhase": "2a",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
+  }
+}

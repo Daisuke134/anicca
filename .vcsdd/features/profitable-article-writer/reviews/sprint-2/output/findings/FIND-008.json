@@ -1,18 +1,18 @@
 {
   "findingId": "FIND-008",
-  "resolutionStatus": "RESOLVED",
-  "dimension": "implementation_correctness",
-  "category": "test_quality",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
   "severity": "high",
-  "criterion": "CRIT-103",
-  "description": "ROUND-2 VERIFICATION: RESOLVED. tests/test-prop19-real-content-hook.sh's states (a) and (b) were rewritten: both fixtures are now deliberately constructed to PASS the REAL (non-FORCE) gates/v0.sh + gates/v05.sh in round 1 (a real ARTICLE_JUDGE_V05_RESPONSE is supplied; I independently hand-verified the readability arithmetic on both fixtures satisfies the >=70%-short-sentences threshold and gates/v0.sh's line-count>3 requirement), and both states now assert `grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\"` explicitly (lines 52, 67) -- not merely `rc -eq 0`, which run.sh also returns on ABORTED. This closes the tautology: the test can no longer pass identically whether the wake reaches DRAFT or silently ABORTS. Confirmed as a genuinely new, previously-failing assertion by re-reading the current test file and cross-checking gates/v0.sh's real line_count>3 requirement and gates/v05.sh's real sentence-arithmetic against the actual fixture content.",
+  "description": "ROUND-2 VERIFICATION: RESOLVED. gates/v05.sh's real (non-FORCE) criterion-(e) arithmetic now runs a python3 `re.split(r\"[.!?。！？]\", text)` (lines 128-137) as the PRIMARY path -- codepoint-safe regardless of ambient locale -- and only falls back to `tr` (lines 139-149) if python3 is genuinely absent, with LC_ALL/LANG explicitly forced to a UTF-8 locale in that fallback (never an inherited ambient C/POSIX locale). A NEW dedicated discriminating test, tests/test-find002-locale-safe-sentences.sh, proves BOTH halves of the requirement: (1) a CONTROL section reproduces the OLD byte-wise `tr` splitter forced under LC_ALL=C on a genuinely-long Japanese sentence and shows it computes the WRONG verdict (crit_e=true); (2) the CURRENT gates/v05.sh, run under the SAME LC_ALL=C on the SAME fixture, computes the CORRECT verdict (crit_e=false). The red-phase evidence log (.../evidence/sprint-2-findings-fix-red-phase.log) shows this exact test FAILING against the pre-fix source, and the green-phase log shows it PASSING post-fix -- proving the fix is real and the test is discriminating, not tautological.",
   "evidence": {
-    "filePath": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh",
-    "lineRange": "46-52",
-    "snippet": "OUT=\"$(ARTICLE_DIR=\"$T\" AUTONOMY=off ARTICLE_JUDGE_V05_RESPONSE=\"$RESP\" ARTICLE_REAL_TOPIC=\"x402\" ARTICLE_REAL_RESEARCH=sufficient ARTICLE_REAL_DRAFT_PATH=\"$FIXTURE\" bash \"$SKILL/run.sh\" 2>&1)\"; rc=$?\n...\nok \"$(grep -q 'last_wake_result: DRAFT' \"$T/STATE.md\" 2>/dev/null && echo 1 || echo 0)\" \"FIND-008: the wake actually reached last_wake_result: DRAFT (not merely rc=0, which run.sh also returns on ABORTED) ...\""
+    "filePath": "skills/profitable-article-writer/gates/v05.sh",
+    "lineRange": "128-149",
+    "snippet": "if command -v python3 >/dev/null 2>&1; then\n  read -r total short <<PYOUT\n$(printf '%s' \"$plain\" | python3 -c 'import re,sys; text=sys.stdin.read(); sentences=[s.strip() for s in re.split(r\"[.!?。！？]\", text) if s.strip()]; print(len(sentences), sum(1 for s in sentences if len(s)<=60))')\nPYOUT\nelse\n  sentences=\"$(printf '%s' \"$plain\" | LC_ALL=\"${LC_ALL:-en_US.UTF-8}\" LANG=\"${LANG:-en_US.UTF-8}\" tr '.!?。！？' ...)\""
   },
-  "additionalEvidence": [
-    {"type": "file", "location": "skills/profitable-article-writer/gates/v0.sh", "description": "Real line_count>3 check re-verified: state (a)'s fixture has 7 lines, passes."},
-    {"type": "file", "location": "skills/profitable-article-writer/gates/v05.sh", "description": "Real sentence arithmetic re-verified by hand: state (a) fixture achieves 6/7 sentences <=60 chars (85.7%>=70%)."}
-  ]
+  "routeToPhase": "2b",
+  "resolution": {
+    "status": "fixed",
+    "fixedInSprint": 2,
+    "fixedInPhase": "3"
+  }
 }
