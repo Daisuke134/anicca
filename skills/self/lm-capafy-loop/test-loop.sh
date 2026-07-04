@@ -1,41 +1,22 @@
 #!/usr/bin/env bash
-# test-loop.sh — behavioral tests for the anti-fake invariants (FIND-004). Uses the LMCAP_TEST fixture
-# seam so NO live credential is touched. Asserts the VALUE lines (the anti-fake core), not just status.
+# test-loop.sh — anti-fake behavioral tests. Uses seams so NO live cred and NO real prod file is touched
+# (FIND-011: LMCAP_LOGFILE + LMCAP_REQ are temp; the real daily_loop.log is never touched).
 set -uo pipefail
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-LOOP="$HERE/loop.sh"; PASS=0; FAIL=0
-run(){ # <fixture-json-for-cap_acct> <cap_trend> <lm_subs> <codes...>
-  local T; T="$(mktemp -d)"; local F="$T/fx"; local S="$T/state"; mkdir -p "$F" "$S"
-  printf '%s' "$1" > "$F/cap_acct.json"; echo 200 > "$F/cap_acct.code"
-  printf '%s' "$2" > "$F/cap_trend.json"; echo 200 > "$F/cap_trend.code"
-  printf '%s' "$3" > "$F/lm_subs.json";  echo 200 > "$F/lm_subs.code"
-  # fresh fake capafy loop log so the staleness heal doesn't fire
-  mkdir -p "$HOME/.openclaw/skills/capafy-autopublish/state"; touch "$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
-  LMCAP_TEST=1 LMCAP_FIXTURE="$F" LMCAP_DIR="$T" STRIPE_SECRET_KEY="sk_live_test" bash "$LOOP" >/dev/null 2>&1
-  cat "$S/STATE.md"; rm -rf "$T"
-}
-assert(){ local label="$1" got="$2" want="$3"; if echo "$got" | grep -qE "$want"; then echo "  ✓ $label"; PASS=$((PASS+1)); else echo "  ✗ $label — wanted /$want/, got: $(echo "$got"|tr '\n' '|')"; FAIL=$((FAIL+1)); fi; }
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; LOOP="$HERE/loop.sh"; PASS=0; FAIL=0
+# run <cap_acct> <cap_payout> <cap_trend> <lm_subs> <log_age_days>
+run(){ local T; T="$(mktemp -d)"; local F="$T/fx" S="$T/state" LOG="$T/daily_loop.log" RQ="$T/req.json"; mkdir -p "$F" "$S"
+  printf '%s' "$1">"$F/cap_acct.json"; printf '%s' "$2">"$F/cap_payout.json"; printf '%s' "$3">"$F/cap_trend.json"; printf '%s' "$4">"$F/lm_subs.json"
+  touch "$LOG"; [ "${5:-0}" -gt 0 ] && touch -t "$(date -v-${5}d +%Y%m%d%H%M 2>/dev/null || date -d "-${5} days" +%Y%m%d%H%M)" "$LOG"
+  LMCAP_TEST=1 LMCAP_FIXTURE="$F" LMCAP_DIR="$T" LMCAP_LOGFILE="$LOG" LMCAP_REQ="$RQ" STRIPE_SECRET_KEY="sk_live_test" bash "$LOOP" >/dev/null 2>&1
+  echo "REQEXISTS=$([ -f "$RQ" ] && echo yes || echo no)"; cat "$S/STATE.md"; rm -rf "$T"; }
+a(){ if echo "$2"|grep -qE "$3"; then echo "  ✓ $1"; PASS=$((PASS+1)); else echo "  ✗ $1 — want /$3/, got:$(echo "$2"|grep -E "$4"|head -1)"; FAIL=$((FAIL+1)); fi; }
+ACC='{"code":0,"data":{"email":"x"}}'; PAY0='{"code":0,"data":[{"amount":0.0,"payoutMonth":"2026-06"}]}'; T0='{"code":0,"data":{"data":[{"netRevenue":0}]}}'; SUBS0='{"object":"list","data":[]}'
 
-OK='{"code":0,"data":{"email":"x"}}'
-echo "TEST A: Capafy sales API ERROR (code 401) → capafy rev = NA, NOT masked as 0 (FIND-002)"
-OUT="$(run "$OK" '{"code":401,"msg":"expired"}' '{"object":"list","data":[]}')"
-assert "capafy error → NA" "$OUT" '^capafy_net_revenue_usd_3d: NA'
+echo "A: Capafy payout ERROR → capafy_monthly NA not 0 (FIND-002)"; O="$(run "$ACC" '{"code":401}' "$T0" "$SUBS0" 0)"; a "payout err→NA" "$O" '^capafy_monthly_payout_usd: NA' 'capafy_monthly'
+echo "B: Stripe ERROR → lm_mrr NA + READ-FAILED (FIND-002/003)"; O="$(run "$ACC" "$PAY0" "$T0" '{"error":{"message":"bad"}}' 0)"; a "stripe err→NA" "$O" '^lm_mrr_usd: NA' 'lm_mrr'; a "→READ-FAILED" "$O" '^status: READ-FAILED' 'status'
+echo "C: real \$20/mo sub (live shape items.data.price.unit_amount) → 20.0 (FIND-001/013)"; O="$(run "$ACC" "$PAY0" "$T0" '{"object":"list","data":[{"items":{"data":[{"quantity":1,"price":{"unit_amount":2000,"recurring":{"interval":"month"}}}]}}]}' 0)"; a "real \$20→20.0" "$O" '^lm_mrr_usd: 20.0' 'lm_mrr'; a "→EARNING" "$O" '^status: EARNING' 'status'
+echo "D: true \$0 → 0.0 + NO revenue"; O="$(run "$ACC" "$PAY0" "$T0" "$SUBS0" 0)"; a "monthly 0.0" "$O" '^monthly_revenue_usd: 0.0' 'monthly_revenue'; a "→NO revenue" "$O" '^status: NO realised' 'status'
+echo "E: STALE publish log (5d) → HEAL CAPAFY-LOOP-STALE (FIND-008/011, freshness tested, real log untouched)"; O="$(run "$ACC" "$PAY0" "$T0" "$SUBS0" 5)"; a "stale→heal" "$O" 'CAPAFY-LOOP-STALE' 'heal_first'; a "→selfheal-request written" "$O" '^REQEXISTS=yes' 'REQEXISTS'
+echo "F: healthy → NO selfheal-request"; O="$(run "$ACC" "$PAY0" "$T0" "$SUBS0" 0)"; a "healthy→no req" "$O" '^REQEXISTS=no' 'REQEXISTS'
 
-echo "TEST B: Stripe API ERROR body → lm_mrr = NA + status READ-FAILED, NOT \$0 (FIND-002/003)"
-OUT="$(run "$OK" '{"code":0,"data":{"data":[{"netRevenue":0}]}}' '{"error":{"message":"bad key"}}')"
-assert "stripe error → NA" "$OUT" '^lm_mrr_usd: NA'
-assert "NA → READ-FAILED status" "$OUT" '^status: READ-FAILED'
-
-echo "TEST C: real \$20/mo sub → lm_mrr = 20.0 (DOLLARS not count) (FIND-001)"
-OUT="$(run "$OK" '{"code":0,"data":{"data":[{"netRevenue":0}]}}' '{"object":"list","data":[{"items":{"data":[{"quantity":1,"price":{"unit_amount":2000,"recurring":{"interval":"month"}}}]}}]}')"
-assert "real \$20 sub → 20.0" "$OUT" '^lm_mrr_usd: 20.0'
-assert "earning status" "$OUT" '^status: EARNING'
-
-echo "TEST D: healthy but genuinely \$0 → honest 0.0 + NO-revenue status (true zero is fine)"
-OUT="$(run "$OK" '{"code":0,"data":{"data":[{"netRevenue":0},{"netRevenue":0}]}}' '{"object":"list","data":[]}')"
-assert "true zero capafy → 0.0" "$OUT" '^capafy_net_revenue_usd_3d: 0.0'
-assert "0 → NO revenue status" "$OUT" '^status: NO realised revenue'
-
-echo ""
-echo "=== RESULT: $PASS passed, $FAIL failed ==="
-[ "$FAIL" = 0 ] && echo "ALL GREEN" || exit 1
+echo ""; echo "=== $PASS passed, $FAIL failed ==="; [ "$FAIL" = 0 ] && echo ALL_GREEN || exit 1
