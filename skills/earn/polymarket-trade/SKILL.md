@@ -16,14 +16,32 @@
 > 4. **FEES** — `fee = rate·p·(1−p)·shares`, makers 0. Sources: py-clob-client-v2
 >    issue #92 + crp4222/pmq war-story.md + installed py_clob_client_v2 1.0.2.
 >
-> ### 💵 EARNINGS LEDGER (honest, no scam — this is WHY we're not a money-printer)
-> | date | engine | in | realized P&L | note |
-> |---|---|---|---|---|
-> | 2026-07-04 | polymarket-v2 | $5 pUSD ready | **$0** | pipeline proven to order-post; last gate = registered deposit wallet |
+> ### ✅ THE NO-HUMAN PATH THAT WORKS (proven live 2026-07-04, browser=0, human-credentials=0)
+> The full E2E is in `v2_mint_deploy.py` (SIWE→relayer key→deposit-wallet deploy) +
+> `v2_full_flow.py` (approve→build→post a real order). Steps, all from the AI's OWN key:
+> 1. **SIWE mint** (no browser): GET `gamma-api/nonce` → EIP-4361 `personal_sign`
+>    ("Welcome to Polymarket! Sign to connect.") → GET `gamma-api/login`
+>    `Authorization: Bearer base64(JSON(fields):::0xsig)` → cookies →
+>    POST `relayer-v2/relayer/api/auth {}` → **RelayerApiKey {apiKey,address}**.
+> 2. **Deploy deposit wallet** (gasless via relayer, EOA only signs):
+>    `SecureClient.create(private_key, credentials=creds, api_key=RelayerApiKey(...))`
+>    auto-derives (`derive_beacon_deposit_wallet_address`) + deploys the POLY_1271
+>    (sig_type 3) wallet. Ours: `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`.
+> 3. **Fund**: Relay any-chain USDC → Polygon pUSD → the deposit wallet.
+> 4. **Approve** pUSD to ALL exchanges the market may use: standard `0xE111…`,
+>    neg-risk `0xe2222…`, neg-risk-adapter `0xd91E80…` (World-Cup "Will X win" =
+>    neg-risk → the neg-risk approve is REQUIRED or you get `allowance is not enough`).
+> 5. **Trade**: `create_market_order(...)` builds a SignedOrder (maker=signer=deposit
+>    wallet, sig_type 3); `post_order(order)` posts it. SDK = `polymarket-client`
+>    (py-sdk). ⚠️ `py-clob-client-v2` (PyPI 1.0.2) is the DEAD one — do not use.
 >
-> ★ We publish the real number even when it's $0. "This repo earns you money"
-> with nothing on-chain = the scam we refuse to be. Number goes up only when a
-> real fill settles. ★
+> ### 💵 EARNINGS LEDGER (honest — real on-chain only)
+> | date | engine | in | position / P&L | proof |
+> |---|---|---|---|---|
+> | 2026-07-04 | polymarket-v2 | ~$3 pUSD | **1.7857 shares "Morocco win 2026-07-04" YES @ 0.5599 = $0.99** (open) | order `0xdad65538…` matched; settle tx `0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3` (status 0x1, block 89644078); data-api confirms position |
+>
+> ★ FIRST REAL no-human position placed. browser=0, human-credentials=0. The number
+> moves only on real on-chain fills — this row is a verified settle tx, not a claim. ★
 
 
 The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the

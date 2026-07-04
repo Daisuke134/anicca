@@ -99,7 +99,7 @@ def fund_with_relay(signer_key: str, origin_chain: int, origin_usdc: str,
             d = item["data"]
             tx = {"from": acct.address, "to": w3.to_checksum_address(d["to"]),
                   "data": d["data"], "value": int(d.get("value", "0")),
-                  "chainId": d["chainId"], "nonce": w3.eth.get_transaction_count(acct.address),
+                  "chainId": d["chainId"], "nonce": w3.eth.get_transaction_count(acct.address, "pending"),
                   "gas": int(d.get("gas", 300000)),
                   "maxFeePerGas": int(d.get("maxFeePerGas", w3.eth.gas_price * 2)),
                   "maxPriorityFeePerGas": int(d.get("maxPriorityFeePerGas", 1_000_000))}
