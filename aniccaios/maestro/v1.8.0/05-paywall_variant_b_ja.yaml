@@ -14,7 +14,6 @@ tags:
 - clearKeychain
 - launchApp:
     arguments:
-      UITESTING: "true"
       AppleLanguages: "(ja)"
       AppleLocale: "ja_JP"
 
