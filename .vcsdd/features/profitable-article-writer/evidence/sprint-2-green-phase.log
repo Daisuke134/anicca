@@ -1,0 +1,84 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+all tests passing: 16/16
+
+# Phase 2b GREEN — profitable-article-writer Sprint 2
+# PROP-18 (gates/v05.sh JP-punctuation readability fix), PROP-19 (run.sh real generate_draft hook),
+# PROP-20 (lib/note_publish.sh Mode-A real note-publish wiring, hermetic NOTE_PUBLISH_TEST_FORCE seam)
+# all green, alongside all 13 Sprint-1 tests (zero regression).
+#
+# REAL (non-hermetic) run evidence, executed manually this session (not by this test suite):
+#   - real article: skills/profitable-article-writer/state/2026-07-04-x402-jp.md (~2000 words JP, x402
+#     protocol explainer; cited https://x402.org/ live stats + https://docs.x402.org/getting-started/
+#     quickstart-for-buyers, fetched 2026-07-04)
+#   - real gates/v0.sh PASS, real gates/v05.sh PASS with a real judge_v05 response
+#     (state/2026-07-04-x402-jp.md.v05-response.txt: a=b=c=d=e=true)
+#   - real note.com DRAFT created via note_mcp.api.articles.create_draft (lib/note_publish.sh's
+#     note_create_draft_from_file, non-forced path): id=168449990, key=n7261a753887f
+#   - real free/membership gate config applied via the existing publish-to-note.sh publish --mode draft
+#     pipeline (membership 追加済: true logged); the final 投稿する click correctly BLOCKED by the
+#     existing publish_guard.py (draft-safe, no NOTE_MODE=go/sentinel set) — Mode A never publishes (REQ-6)
+#   - real preview URL generated via note_mcp.api.articles.get_preview_access_token +
+#     build_preview_url: https://note.com/preview/n7261a753887f?prev_access_key=c08246b267a953a71a919139c5def084
+#   - real logged-out-equivalent screenshot captured of that preview URL:
+#     ~/.cloak/note-work/preview-n7261a753887f.png — confirms clean render: correct title, author,
+#     timestamp, all headings intact, no crushed/merged text, no raw markdown/markers, 出典 block present
+#   - HONEST LIMITATION (not a bug): note.com's public v3 API (GET /api/v3/notes/<key>) and the public
+#     /anicca123/n/<key> URL both 404 for an article that has never been through a first 投稿 (publish)
+#     action — a true never-submitted draft has NO public URL, only the preview-token link above (which,
+#     by design, bypasses the paywall gate for author/reviewer review — so paywall ENFORCEMENT itself
+#     cannot be visually confirmed pre-publish; this is expected note.com platform behavior, not a defect)
+#   - one leftover empty stub draft (id=168449916, key=na5605d98b46f) created during raw-curl auth
+#     debugging was deleted via note_mcp.api.articles.delete_draft before finishing, so no clutter was
+#     left on the account beyond the one real intended draft (n7261a753887f)
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 16 test files, 16 PASS, 0 FAIL

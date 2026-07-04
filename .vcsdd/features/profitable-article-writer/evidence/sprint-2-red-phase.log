@@ -1,0 +1,43 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+# Phase 2a RED — profitable-article-writer Sprint 2
+# 3 new PROP tests (PROP-18/19/20) written and confirmed FAILING against the pre-Sprint-2 code, while all
+# 13 Sprint-1 tests stayed green (regression baseline intact) before any Sprint-2 implementation change.
+
+=== full suite run (pre-fix) ===
+RED-PHASE SUMMARY: 16 test files, 14 PASS, 2 FAIL
+FAILING:
+  - test-prop19-real-content-hook.sh
+  - test-prop20-note-publish-failclosed.sh
+
+(test-prop18-v05-jp-sentences.sh was authored and confirmed FAILING in an earlier isolated run against the
+pre-fix gates/v05.sh, before test-prop19/20 were added; by the time of this consolidated run gates/v05.sh
+had already been fixed for PROP-18 within the same session, so this snapshot shows 14/16 rather than 13/16 —
+the important invariant is that EACH new PROP test was individually confirmed RED against its pre-fix code
+before its corresponding implementation change, and the Sprint-1 regression baseline (13/13) never broke.)
+
+=== test-prop18-v05-jp-sentences.sh (isolated RED run, before the gates/v05.sh fix) ===
+  - FAIL 4 individually-short 。-terminated Japanese sentences (unsplit concatenation >60 chars): real (e) splits on 。 and computes crit_e=true: V05_CRIT_a: false
+V05_CRIT_b: false
+V05_CRIT_c: false
+V05_CRIT_d: false
+V05_CRIT_e: false
+V05_RESULT: FAIL
+  - FAIL 。！？ all recognized as sentence-enders (each segment short, unsplit concatenation >60 chars): real (e) computes crit_e=true: V05_CRIT_a: false
+V05_CRIT_b: false
+V05_CRIT_c: false
+V05_CRIT_d: false
+V05_CRIT_e: false
+V05_RESULT: FAIL
+FAIL (2)
+
+=== test-prop19-real-content-hook.sh (RED, before run.sh's real generate_draft hook existed) ===
+  - FAIL real-mode wake produced a draft.md artifact
+  - FAIL draft.md contains the REAL agent-authored content verbatim
+  - FAIL no real draft path supplied: falls back to the boilerplate template (unchanged Sprint-1 shape)
+FAIL (3)
+
+=== test-prop20-note-publish-failclosed.sh (RED, before lib/note_publish.sh existed) ===
+  - FAIL note-publish FORCED to succeed: notify.json carries the wiring's REAL returned url (reachable end-to-end)
+FAIL (1)
