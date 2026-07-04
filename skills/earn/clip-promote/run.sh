@@ -92,11 +92,49 @@ pick=json.loads('''$PICK'''); d.update({'phase':'CLIP','campaign_id':pick['slug'
 json.dump(d,open(p,'w'))" 2>/dev/null
     emit "select:$SLUG (cpm=$("$PY" -c "import json,sys;print(json.loads(sys.argv[1])['cpm'])" "$PICK"))"; exit 0
     ;;
-  CLIP|POST|SUBMIT|WITHDRAW|STALLED)
-    # Wired in subsequent #14 increments (clip via earn-clip-rewards / post via ig-reels-poster to a WARMED
-    # account / submit / withdraw), each under run_step. POST is gated on a Day-7-warmed account (REQ-4 +
-    # promote.fun's own "warm the account up properly" rule). Until wired, narrate honestly — NO fake success.
-    emit "execute:$TRANS:not-yet-wired (#14)"; exit 0
+  CLIP)
+    # REQ-2/REQ-3: extract the selected campaign's source video URL (deterministic: first
+    # youtube.com/youtu.be link on its detail page -- verified 2026-07-04 this works for
+    # campaigns whose provided content IS a YouTube video, e.g. thomas-rhett-content's
+    # "Podcast 1/2" links; campaigns that only offer a Google Drive folder, e.g. crocs,
+    # return no URL and are honestly reported as not-auto-clippable rather than faked).
+    # Then reuse the EXISTING earn/clip producer.sh (yt-dlp+whisper+crop, proven engine) to
+    # produce a queued clip under a SEPARATE clip-promote instance queue (ANICCA_INSTANCE=
+    # clip-promote => ~/clips/queue-clip-promote, never mixes with the earn/clip loop's own
+    # queue). NOTE: producer.sh's own caption template (generic clip-loop hashtags) does NOT
+    # satisfy THIS campaign's required tags/CTA -- that override happens in POST (not yet
+    # wired), which is the step that actually publishes.
+    SLUG="$("$PY" -c "import json;print(json.load(open('$STATE')).get('campaign_id',''))" 2>/dev/null)"
+    [ -n "$SLUG" ] || { emit "clip:no-campaign-id-in-state"; exit 0; }
+    PF_PORT="${CLIP_PROMOTE_CDP_PORT:-9222}"
+    PF_TID="$(curl -sS --max-time 5 "http://localhost:$PF_PORT/json/list" 2>/dev/null | "$PY" -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d=[]
+print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null)"
+    [ -n "$PF_TID" ] || { emit "clip:no-promote-tab (login session not open on :$PF_PORT)"; exit 0; }
+    SRC_URL="$(run_step "$STEP_DEADLINE_S" env CDP_DIR="$CDP_DIR" PF_TID="$PF_TID" CDP_PORT="$PF_PORT" \
+              "$PY" "$SK/fetch_source_video.py" "$SLUG" 2>/dev/null)"; rc=$?
+    blocked_or "clip-fetch-source" "$rc" "clip:fetch-source-failed"
+    if [ -z "$SRC_URL" ]; then
+      emit "clip:no-usable-source-video (campaign $SLUG has no auto-extractable YouTube link)"; exit 0
+    fi
+    PRODUCER_RC=0
+    ANICCA_INSTANCE=clip-promote run_step "$STEP_DEADLINE_S" bash "$HOME/anicca/skills/earn/clip/producer.sh" --url "$SRC_URL" >/tmp/clip-promote-producer.log 2>&1 || PRODUCER_RC=$?
+    blocked_or "clip-produce" "$PRODUCER_RC" "clip:produce-failed (see /tmp/clip-promote-producer.log)"
+    if ! ls "$HOME/clips/queue-clip-promote"/*.mp4 >/dev/null 2>&1; then
+      emit "clip:producer-ran-but-no-clip-in-queue (see /tmp/clip-promote-producer.log)"; exit 0
+    fi
+    "$PY" -c "import json,os
+p='$STATE'; d=json.load(open(p)) if os.path.exists(p) else {}
+d.update({'phase':'POST'})
+json.dump(d,open(p,'w'))" 2>/dev/null
+    emit "clip:produced-for-$SLUG (queued in ~/clips/queue-clip-promote, ready for POST)"; exit 0
+    ;;
+  POST|SUBMIT|WITHDRAW|STALLED)
+    # Wired in subsequent increments (post via ig-reels-poster to a WARMED account with a
+    # campaign-specific caption/tag override / submit / withdraw), each under run_step.
+    # Until wired, narrate honestly — NO fake success.
+    emit "execute:$TRANS:not-yet-wired"; exit 0
     ;;
   *)
     emit "unknown-transition:$TRANS"; exit 0
