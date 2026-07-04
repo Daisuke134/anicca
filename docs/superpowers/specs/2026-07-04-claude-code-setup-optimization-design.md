@@ -46,7 +46,7 @@ read-only 監査（3 Explore 並列）で判明: ①ディスク92% ②CLAUDE.md
 | T4 | Phase 2 安全性: permissions 再設計 / シークレット env 化 + ローテーション / MCP 一本化（x-search・computer-use 削除） | 一部 |
 | T5 | Phase 3 CLAUDE.md diet: global 18K→6K、project 49K→15K。**D1/D2 適用**（camofox 記述削除、履歴文体→現在形上書き、「3箇所同期」全廃、precedence 表 1 個、~/.hermes 等 stale 削除） | no |
 | T6 | Phase 4 skills 大掃除: SKILL.md 欠落10修復、description 20+ 補完、クラスタ統合、43衝突解消、commands/ 12本移行 | 一部 |
-| T7 | Phase 5 PC 再編: ~/Projects + ~/Archive 新設、参照 grep → 移動、Desktop 183→<10、.bak 掃除 | **yes** |
+| T7 | Phase 5 PC 再編: ~/Projects + ~/Archive 新設、参照 grep → 移動、Desktop 183→<10、.bak 掃除。重複 clone は T2 調査で確定済: 残す = `~/work/camofox-browser`（2026-05-23、17日新）+ `~/Developer/video-use`（2026-05-14、29日新）、削除 = `~/Developer/camofox-browser` + `~/anicca-video-lab/video-use`（remote 同一の真正重複） | **yes** |
 | T8 | Phase 6 運用定着: disk-guard hook、ログアーカイブ cron、fact-checker global 昇格 | no |
 
 ## 境界
