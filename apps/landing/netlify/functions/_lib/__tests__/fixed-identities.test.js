@@ -2,8 +2,11 @@ const { test } = require("node:test");
 const assert = require("node:assert");
 const { FIXED_IDENTITIES, expectedHost } = require("../fixed-identities");
 
-test("claude-p's EVM address (any case) resolves to host 'claude-p'", () => {
-  const addr = "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"; // mixed-case, as it appears in CLAUDE.md/SSOT
+test("claude-p's dedicated signing identity (any case) resolves to host 'claude-p'", () => {
+  // NOT the funded Polymarket proxy (0x904B…) — that's an ERC-1167 smart-contract wallet with no
+  // private key, so it can't sign EIP-191. This is the dedicated signing-only identity generated for
+  // claude-p's telemetry reports (2026-07-05 finding, see the comment above FIXED_IDENTITIES).
+  const addr = "0x02Bb6b2aF70DBf2c367C1B69aCA9858BF3525502";
   assert.strictEqual(expectedHost(addr), "claude-p");
   assert.strictEqual(expectedHost(addr.toLowerCase()), "claude-p");
 });
