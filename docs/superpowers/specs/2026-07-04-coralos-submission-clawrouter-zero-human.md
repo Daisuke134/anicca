@@ -383,11 +383,29 @@ PHASE C — wrap as an unattended loop + submit
           after capturing evidence, reclaimed to 7.0Gi free. Docker/colima are NOT required to
           stay installed for anything else in this repo; a judge re-running the demo would
           need their own Docker runtime (documented in C6/README, not this machine's problem).
-  [ ] C1  Wrap A5+B4 as a loop (wake → bid → sell → settle → self-report), matching R6.
-          NOTE: C0's proof was a single manual round, not yet a self-scheduling unattended
-          loop — C1/C2 still genuinely open.
-  [ ] C2  Run the loop unattended for ≥1 full cycle with neither Dais nor Claude operating it
-  [ ] C3  telemetry-poster (or an equivalent) reports the run so it's visible on our dashboard too
+  [~] C1  Re-read `buyer-agent/src/index.ts` this round: the loop already exists (`while(true)`:
+          wake → decide → settle → sleep(CYCLE_MS) → repeat) — NOT new code. What was missing
+          was self-report (R6's last clause) — see C3.
+  [ ] C2  Run the loop unattended for ≥1 full cycle with neither Dais nor Claude operating it —
+          BLOCKED behind C3's live verification (same Docker session would prove both at once).
+  [~] C3  IMPLEMENTED, unit-verified, NOT YET live-E2E-verified (honest partial):
+          `coral-agents/seller-agent/src/telemetry.ts` (buildRoundPayload/canonicalMessage/
+          reportRound) fires on RELEASED/ARBITER_RELEASED, signs via ed25519
+          (chain:'solana', same wire format as apps/landing's telemetry-verify.js), ALWAYS
+          reports `net_worth_usd:0, revenue_mo_usd:0` (devnet SOL is fake money — never
+          reported as real), tags `'coralos-hackathon'`, log_feed spells out devnet/test-only
+          + the round/sig. 8 new unit tests, real ed25519 keypair, all GREEN. Wired into
+          index.ts + round.ts (SELLER_KEYPAIR_B58 forwarded) + coral-agent.toml (new options
+          declared). Pushed to `Daisuke134/solana_coralOS@901a255`.
+          **BLOCKED on live E2E**: reinstalled colima to rebuild the seller-agent image with
+          this new code — host disk hit **1.3Gi free mid-rebuild** (colima's own baseline VM
+          costs ~3-4GB before any image build even starts). Per disk-hygiene HARD RULE, STOPPED
+          before the second build, deleted colima immediately, disk recovered to 4.4Gi. This
+          machine does not currently have enough sustained headroom for back-to-back
+          colima+2-image-build cycles without also freeing other caches each time. Real,
+          disclosed gap — NOT worked around by skipping the live proof and claiming done.
+          Next attempt: free more disk first (candidates: `~/.npm` 1.6G, more `~/.cache/
+          anicca-clones/*` stale clones) OR do the live E2E on a machine with more free disk.
   [ ] C4  5-slide deck (lead with the settlement / Explorer link, per their own guidance)
   [ ] C5  3-min demo video (Problem → Solution → Demo → Team)
   [ ] C6  Public repo cleanup: no keys committed, .env.example only; README notes Docker is
