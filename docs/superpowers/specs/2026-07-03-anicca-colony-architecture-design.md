@@ -607,6 +607,33 @@ gojo/ubi transfer (G3): detect a member below its survival buffer → a surplus 
 with the inherited genome (later-born earn more), the colony compounds AND self-insures = takeoff that
 doesn't kill its weakest. "Maximise total assets AND social impact; none of them die."
 
+### ★★★ EXECUTION UNBLOCKED + THE EFFICIENT WAY = ADAPT PROVEN BOTS (2026-07-04, searched) ★★★
+POLYMARKET EXECUTION IS NOW LIVE (no browser): `polymarket-cli wallet import` derives the Gnosis proxy
+`0x3f061C3Db3eD8A56dc13FF2D27cAD0D35F004983` via CREATE2 (no sign-in). Funded it: transferred $5.976 USDC.e
+from EOA 0x810f → proxy (tx status=1). CTF Exchange fully approved (usdc+ctf true). The polymarket-cli 0.1.5
+can't place orders ("invalid order version") → use `py-clob-client` (funder=proxy, sig_type=2) for orders,
+which I re-installed (v0.34.6). EOA path is DEAD (CLOB reads the proxy, not the EOA).
+
+THE EFFICIENT WAY (Dais: "there's a much better way, search it") = ADAPT PROVEN OPEN-SOURCE BOTS, don't
+reinvent. Grounded in real working code:
+- ★ POLYMARKET = ARBITRAGE AT SCALE ★ (`ImMike/polymarket-arbitrage` + `Trum3it/polymarket-arbitrage-bot`):
+  scan 5,000–10,000+ markets REAL-TIME (`core/data_feed.py`), `core/arb_engine.py` flags:
+  (1) bundle intra: `ask_yes + ask_no < $1.00` → BUY BOTH → guaranteed $1 (ex: 0.45+0.52=0.97 = 3%);
+  (2) bundle sell: `bid_yes + bid_no > $1.00` → sell both; (3) cross-platform Polymarket↔Kalshi price gap
+  (6% ex); (4) market-making on thin books. `min_edge: 0.01` covers fees+gas. MY EARLIER "0 arb in 34
+  markets" FAILED because the earner needs THOUSANDS scanned continuously + MM + cross-platform, not 11.
+  Official maintained base = `Polymarket/agent-skills` (171★) + the 1.6k★ Polymarket agent framework.
+- ★ HYPERLIQUID ★ = `chainstacklabs/hyperliquid-trading-bot` (CCXT, risk-managed grid/trend + SL/TP);
+  our hl.py already executes.
+- ★ SOLANA ★ = copy-trading proven winners (`warp-id/solana-trading-bot`, `ChainInsighter/Solana-Copy-
+  trading-bot`) — mirror a winner's swaps fast via Jupiter; Franklin already has live Jupiter swaps.
+CHOSEN FIRST (Dais 2026-07-04) = Polymarket arbitrage scanner (math-guaranteed, low-risk, execution ready).
+PLAN: clone ImMike bot → swap its execution for our py-clob-client+proxy → run scanner over 1000s of markets
+→ auto-execute a real bundle arb → show real on-chain profit → wrap as skill → self-improve+auto-merge.
+REPLICABILITY: each of the 3 = proven engine wrapped as an Anicca skill + battle-tested default + self-improve/
+web-search-alpha + auto-merge winners → any AI spawns with all 3, earns day 1, tunes + shares → collective
+compounds. Tasks: #43 PM-ARB-SCANNER, #44 HL-BOT, #45 SOL-COPYTRADE, #41 ALPHA-SEARCH.
+
 ### ★★★ THE REAL POLYMARKET ALPHA — TEMPORAL arbitrage (found by searching the web, 2026-07-04) ★★★
 My instant-arbitrage scan (0 in 34 books) was MYOPIC. The real "$100k/month" strategy (cyberk.io article +
 r/openclaw) is TEMPORAL/AVERAGING arbitrage, NOT instant buy-both:
