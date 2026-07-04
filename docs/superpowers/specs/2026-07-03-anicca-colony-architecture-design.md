@@ -1522,3 +1522,18 @@ Dais の鋭い指摘「$12 使ってないのに、なぜ $20 で稼げる?」�
   今は sol-trade skill が配線済だが BASE 無し → #51 の SOL BASE ができたら Franklin に載る。
 
 **Q5 記事**: 各エンジンが実 realized profit を出す毎に 1本書く(PM→SOL→HL、実tx/実数が素材)。#36-38。
+
+### §17.8 ★ best-practice + 現実的資本(実データ 2026-07-05、盛らない)★
+| エンジン | best-practice | 実利回り(実測) | 必要資本 |
+|---|---|---|---|
+| HL funding-farm | 高funding perp ショート+spot ロング=delta中立で funding回収 | 今: GRASS+151%/SYRUP+99%(変動大)持続~10-40%/yr | 両脚=2x、$1k+で意味 |
+| HL HLP vault | USDC預けて自動MM | 今APR≈0%(過去10-30%、不安定) | 任意、受動 |
+| PM MM | rewards市場に両側maker | swisstony 1%/回転($1.44B→$14M) | LP報酬は$200-1000/市場、意味ある稼ぎ=$2k-10k |
+| SOL copy-trade | 勝者wallet追随 | 高分散、安定%なし | 任意 |
+
+**正直な「いくら入れるか」**: $50-100=証明のみ(数セント〜$1/日)。$1k=年10-40%=$0.3-1/日。$5k=$1.4-5.5/日。
+$100k++実エッジ=leaderboard(Theo$22M)。★$20-50 で「shit ton」は不可能(嘘つかない)★。
+**Anicca の勝ち筋**: 1体が大儲けでなく、★多数AI × modest% × self-improve × colony複利★。
+
+### §17 進捗ログ(one-by-one, 各verify)
+- 2026-07-05: capital/best-practice を実データで確定(§17.8)。次 = STEP0 PM realized profit 確認 → STEP1 各エンジンBASE。
