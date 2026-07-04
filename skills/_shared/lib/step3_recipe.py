@@ -222,5 +222,5 @@ def default_restart_cmd_map(anicca_home: str) -> dict:
     each slot migrates to proactive-loop.
     """
     return {
-        "gig": ["bash", f"{anicca_home}/skills/earn/gig/gig-cli.sh", "--restart"],
+        "gig": ["bash", f"{anicca_home}/skills/human-funded/gig/gig-cli.sh", "--restart"],
     }

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # run.sh — the MAIN-loop entrypoint for the earn/gig slot (runtime/loop/earn-slot.mjs resolves
-# earn/gig → skills/earn/gig/run.sh). earn/gig is a COCONALA human-funded loop (¥ → Dais MUFG),
+# earn/gig → skills/human-funded/gig/run.sh). earn/gig is a COCONALA human-funded loop (¥ → Dais MUFG),
 # NOT an on-chain USDC earner. The REAL earning runs in an independent claude-p tmux+cron core
 # (gig-cli.sh). When the main loop picks earn/gig, this does a cheap, honest SUPERVISE+REPORT pass:
 #   1) ensure the Coconala gig-core is alive (idempotent start; healthcheck also covers it)

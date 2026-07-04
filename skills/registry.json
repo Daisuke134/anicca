@@ -112,9 +112,9 @@
       "owner": "wf-a:earn",
       "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
     },
-    "earn/gig": {
+    "human-funded/gig": {
       "track": "A",
-      "dir": "skills/earn/gig",
+      "dir": "skills/human-funded/gig",
       "entrypoint": "run.sh",
       "status": "live",
       "spec": "2026-06-30-gig-earn-core-recipe-design.md (autonomous loop) + 2026-06-29-earn-gig-slot-design.md (D8 pivot)",
@@ -139,8 +139,9 @@
       "spec": "2026-07-04-openclaw-claude-p-merge-design.md §8",
       "summary": "LOCAL: ON-DEMAND wrapper around earn/clip's producer.sh (fully deterministic: sliced yt-dlp DL -> whisper -> highlight pick -> 9:16 crop -> caption burn -> verify_clip gate, NO visual/CDP judgment). Lets a self-funded automaton decide FOR ITSELF to produce a fresh clip when it notices earn/clip reporting queued_clip=none, instead of only waiting for the daily launchd cron."
     },
-    "earn/affiliate": {
+    "human-funded/affiliate": {
       "status": "declared",
+      "dir": "skills/human-funded/affiliate",
       "summary": "affiliate post + commission tracking → USDC"
     },
     "earn/video": {
@@ -152,9 +153,9 @@
       "spec": "2026-06-29-earn-video-slot-vcsdd-spec (ROUND-8 OVERALL PASS)",
       "summary": "LOCAL: faceless-video earn slot. ONE bounded transition/wake (create->warmup->affiliate@day7->post->record). Warmup = dedicated anti-throttle CloakBrowser (real distinct reels). Post = live+verified (published+post_url). record_earn = fail-closed on-chain only. No human, no fake-success. Launcher: video-cli.sh (--model sonnet, tmux sock /tmp/anicca-video-tmux.sock, cron 23 */4 * * *)."
     },
-    "earn/bounty": {
+    "human-funded/bounty": {
       "track": "A",
-      "dir": "skills/earn/bounty",
+      "dir": "skills/human-funded/bounty",
       "entrypoint": "run.sh",
       "status": "live",
       "owner": "bounty",

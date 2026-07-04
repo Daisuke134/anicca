@@ -8,12 +8,12 @@ from lib.manifest import skill_writes_own_manifest  # FAIL until 2b
 
 
 # Python AST attack corpus — skill at /path/to/skill/run.py
-SKILL_DIR = "/Users/operator/anicca/skills/earn/gig"
+SKILL_DIR = "/Users/operator/anicca/skills/human-funded/gig"
 
 
 def test_direct_literal_write_detected():
     src = (
-        "with open('/Users/operator/anicca/skills/earn/gig/manifest.json', 'w') as f:\n"
+        "with open('/Users/operator/anicca/skills/human-funded/gig/manifest.json', 'w') as f:\n"
         "    f.write('{}')\n"
     )
     assert skill_writes_own_manifest(src, SKILL_DIR) is True

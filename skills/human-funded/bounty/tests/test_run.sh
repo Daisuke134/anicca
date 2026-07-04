@@ -2,9 +2,9 @@
 # Integration tests for the bounty run.sh fixes (docs/superpowers/specs/
 # 2026-07-05-affiliate-bounty-state-machine-design.md §3/§5, VCSDD REQ-B1 items 1+2).
 # Runs a COPY of run.sh in an isolated temp dir (run.sh's $STATE is $HERE/state, no env
-# override exists) so this never touches the real ~/anicca/skills/earn/bounty/state/.
+# override exists) so this never touches the real ~/anicca/skills/human-funded/bounty/state/.
 set -u
-SRC="$HOME/anicca/skills/earn/bounty/run.sh"
+SRC="$HOME/anicca/skills/human-funded/bounty/run.sh"
 PY=/opt/homebrew/bin/python3; [ -x "$PY" ] || PY=python3
 PASS=0; FAIL=0
 ok(){ echo "  ok  $1"; PASS=$((PASS+1)); }

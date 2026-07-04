@@ -26,12 +26,20 @@ build order + which ones to ship first lives in a spec inside this same worktree
 and is finalized by Dais's go before any code lands):
 
   ・ affiliate (e.g. Amazon Associates JP, moshimo, A8) — needs installer's
-    Amazon Associates account
+    Amazon Associates account — 済(2026-07-05, physically moved from
+    `skills/earn/affiliate/` here, Task #16)
   ・ content royalty (note, Substack, dev.to) — needs installer's platform sessions
   ・ Capafy publisher — needs installer's Capafy API key
   ・ app-store ASO — needs installer's App Store Connect API key
-  ・ Fiverr / Coconala / Upwork gig — needs installer's account + Payoneer
+  ・ Fiverr / Coconala / Upwork gig — needs installer's account + Payoneer —
+    済(2026-07-05, physically moved from `skills/earn/gig/` here as `gig/`,
+    Task #16; Coconala + Dais MUFG account, not Fiverr/Upwork yet)
   ・ social poster (X, TikTok, IG, YT) — needs installer's account creds
+  ・ bounty (Algora GitHub bounties) — needs installer's GitHub account
+    (`Daisuke134`) to comment/fork/PR as that identity — 済(2026-07-05,
+    physically moved from `skills/earn/bounty/` here, Task #16; not in the
+    original candidate list above, added because it shares the same
+    Dais-personal-credential constraint)
 
 ★ Anti-pattern (= the thing this convention exists to PREVENT) ★
 

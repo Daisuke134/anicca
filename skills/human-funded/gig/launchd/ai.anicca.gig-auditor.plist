@@ -4,7 +4,7 @@
 <dict>
   <key>Label</key><string>ai.anicca.gig-auditor</string>
   <key>ProgramArguments</key>
-  <array><string>/bin/bash</string><string>/Users/operator/anicca/skills/earn/gig/auditor.sh</string></array>
+  <array><string>/bin/bash</string><string>/Users/operator/anicca/skills/human-funded/gig/auditor.sh</string></array>
   <key>StartCalendarInterval</key><dict><key>Minute</key><integer>45</integer></dict>
   <key>StandardOutPath</key><string>/Users/operator/.openclaw/logs/gig-auditor.out.log</string>
   <key>StandardErrorPath</key><string>/Users/operator/.openclaw/logs/gig-auditor.err.log</string>
