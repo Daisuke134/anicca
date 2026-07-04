@@ -17,6 +17,7 @@ ENGINE="$HOME/.cache/anicca-clones/AI-Youtube-Shorts-Generator"
 PY="$ENGINE/.venv/bin/python"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
 QUEUE="$CLIP_QUEUE"; mkdir -p "$QUEUE"
+POSTED="$CLIP_POSTED"; mkdir -p "$POSTED"
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 export LOCAL_WHISPER_MODEL=tiny
 export GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
@@ -47,11 +48,19 @@ self_heal_engine() {
 [ -x "$PY" ] || self_heal_engine
 [ -x "$PY" ] || { emit "self-heal ran but venv still missing ($PY)"; exit 0; }
 
-# pick a trending single-speaker money/AI long-form if no url (engine's channel default)
+# pick a trending single-speaker money/AI long-form if no url (engine's channel default).
+# Scan the channel's recent videos and skip any already produced (POSTED or QUEUE) --
+# the channel's #1 video doesn't change daily, and always grabbing it re-clips the same
+# source repeatedly (duplicate-content/shadowban risk on the posting account).
 if [ -z "$URL" ]; then
-  VID=$("$PY" -m yt_dlp --flat-playlist --playlist-end 1 --print "%(id)s" \
-        "https://www.youtube.com/@theDiaryOfACEO/videos" 2>/dev/null | head -1)
-  [ -n "$VID" ] && URL="https://www.youtube.com/watch?v=$VID"
+  while IFS= read -r CAND; do
+    [ -n "$CAND" ] || continue
+    if [ ! -f "$POSTED/${CAND}_EN.mp4" ] && [ ! -f "$QUEUE/${CAND}_EN.mp4" ]; then
+      VID="$CAND"; break
+    fi
+  done < <("$PY" -m yt_dlp --flat-playlist --playlist-end 10 --print "%(id)s" \
+        "https://www.youtube.com/@theDiaryOfACEO/videos" 2>/dev/null)
+  [ -n "${VID:-}" ] && URL="https://www.youtube.com/watch?v=$VID"
 fi
 [ -n "$URL" ] || { emit "no source url"; exit 0; }
 
