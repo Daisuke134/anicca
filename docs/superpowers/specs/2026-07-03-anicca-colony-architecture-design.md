@@ -1484,3 +1484,14 @@ Dais の鋭い指摘「$12 使ってないのに、なぜ $20 で稼げる?」�
        これは trading 資本ゼロで、AI の「働き」から直接 USDC を得る。capital-light な AI の本命。
 - 結論: 「trading が金」は ★実資本がある時だけ真★。capital-light AI(今の我々)の no-human earn の本命は (B) の労働rail。
   Polymarket ループは維持(コストゼロ、arb出れば拾う)が、★first real profit は x402/gig から作るべき★。
+
+### §17.6 ★ 訂正(Dais 2026-07-04): earn = TRADING 3エンジンのみ = PM / SOL / HL。x402/gig は却下 ★
+§17.5 で x402/gig を「本命」と書いたのは ★私の drift = hallucination。Dais は一度も x402 と言っていない★。撤回。
+★ 唯一の earn = 3つのトレードエンジン ★:
+| エンジン | 中身 | skill | 状態 |
+|---|---|---|---|
+| **PM** = Polymarket | maker-bundle / MM / bundle裁定(no-human 実約定済) | anicca/skills/earn/polymarket-trade/ | ✅配管+MM LIVE、profit証明中 |
+| **SOL** = Solana | Jupiter swap / copy-trade(勝者wallet模倣)= Franklin | anicca/skills/earn/sol-trade/ (#45) | 実装要 |
+| **HL** = Hyperliquid | 永久先物 CCXT + risk-managed grid/trend + SL/TP | anicca/skills/earn/hl-trade/ (#44) | 実装要 |
+各エンジン = BASE戦略 + self-improve + self-heal の3層(§11.9)。全AIが3エンジンを genome として持って spawn → 稼ぐ。
+資本の議論: micro-capital でも 3エンジン分散で回す。$20追加でサイズ拡大。realized profit>0 が出るまで盛らない。
