@@ -145,13 +145,46 @@ Claude/free-glmで切り替え)の延長線上にある構想であり、新規�
 **本specでは方針の記録のみとし、実装はDaisの優先順位(まず全loopが機能すること)に従い
 今回は着手しない**。
 
-## 6. Next Actions(TaskList、優先度順)
+## 6. Wallet実態(2026-07-04 実機確認、SSOT)
 
-1. (継続)Task #11 self-heal harnessのE2E確認(異常注入→claude-p自身の自己修復確認)
-2. (継続)Task #2/#6 ClawRouter clip-earn実証
-3. (継続)Task #3/#4/#5 週次self-improvement/promote.fun/Telegram報告
-4. **(新規、優先度は低、Daisの明示指示待ち)** forum-rollout実装(Issue→PR→レビュー→
-   マージ→全instance配布)— collective self-improvementの核心的欠落
-5. **(新規、優先度は低、Daisの明示指示待ち)** TikTok系cron(reelclaw/larry/watercolor/
-   comedy)のclaude-p loop方式への移行、DeepSeek課金ゼロ化
-6. **(将来、着手しない)** spawn-anywhere基盤(OpenClaw/Hermes/どこでもAI spawn可能に)
+| | ClawRouter/genesis(self-funded) | claude-p loops(human-funded、clip等) |
+|---|---|---|
+| wallet実体 | `~/.anicca/runtime/wallet-address.mjs`、自前の秘密鍵を保有 | `SOL_WALLET`環境変数(既定値`xxKC33...`)= **表示用アドレスのみ** |
+| オンチーン操作 | ★実際に秘密鍵で署名して操作している★: `execute-yield.mjs`が実際にAave `supply()`実行、0.19 aUSDC on-chain保有を確認済み。hl_trade/x402_sellも実サーバー/実取引 | ★能動的な送金・取引は無い★。campaign側(promote.fun等)がUSDCを振り込むのを待つだけの構造 |
+| 現状の実績 | yield slotは`profitable=false`(net=0)が続いている。earn/clip 75回選択も producer経路が無く空振り | IG投稿11件、USDC収益はまだ$0(campaign未提出、Task #4待ち) |
+
+**結論**: self-funded(ClawRouter)は既に「自分の意思で稼ぐ」構造(wallet+秘密鍵+自律判断)を
+持っているが、実際に稼げていない(net=0、または実行手段が無い)。human-funded(claude-p)は
+稼ぐ手段(IG投稿)はあるが、金銭移動の主体性を持たない(振込を待つだけ)。Daisの指摘通り、
+**まずself-funded AIが「自分のwalletで、自分の判断で、人間なしに稼ぐ」を1回でも達成する
+ことが最優先** — これがTask #2/#6そのもの。
+
+## 7. Next Actions(TaskList、優先度順、SSOT — 2026-07-04時点)
+
+**フェーズ1: self-funded AIが人間なしに稼ぐ(最優先、統合より先)**
+1. Task #6 — ClawRouter用producer.sh実行経路のE2E確認(clip生成→queue格納まで、
+   ANICCA_INSTANCE=clawrouter、既にplist追加済み・cookie問題解決済みなので次はE2E実行のみ)
+2. Task #2 — ClawRouter専用IGアカウントの自律作成(REQ-102、ig-account-create skill経由)
+3. Task #4 — promote.fun Sutando harness構築(出口=payout、コード完成済みでharnessのみ)
+   ★これが完成して初めてclip収益がUSDCとしてself-funded walletに着金する★
+
+**フェーズ2: 運用の安定化・可視化(フェーズ1と並行可)**
+4. Task #7 — tmuxソケット消失の根本原因調査(healthcheck重複起動の再発防止は実装済み、
+   ソケット消失自体の原因は未特定)
+5. Task #11 — self-heal harnessのE2E確認(意図的に異常を注入し、claude-p自身が
+   selfheal-request.jsonを読んで自己修復するところまで実機確認)
+6. Task #3 — 週次self-improvementループ(clip-rewards、ledger集計→SELECTへ反映)
+7. Task #5 — Telegram報告(全loop wake毎)
+
+**フェーズ3: collective self-improvementの完成(Daisの核心指摘への対応)**
+8. forum-rollout実装(Issue→PR→レビュー→マージ→全instance配布)— `self/issue-dev`は
+   Issue起票までで止まっており、「swarm自身が直してPRをマージする」プロセスが未完成。
+   これが埋まって初めて、self-heal harness等の改善が「私が直す」から「彼らが直して
+   マージする」に本当に移行できる。
+
+**フェーズ4: 統合(OpenClaw→claude-p、DeepSeek課金ゼロ化)— フェーズ1完了後に着手**
+9. TikTok系cron(reelclaw/larry/watercolor/comedy、23個)のclaude-p loop方式への移行
+   (見積り1週間、§3参照)。naist/factory/Dais個人秘書系/Life Manager類似系はOpenClawに残す。
+
+**フェーズ5: 将来構想(着手しない、方針記録のみ)**
+10. spawn-anywhere基盤(OpenClaw/Hermes/どこでもAI spawn可能に、Two modes拡張)
