@@ -68,5 +68,19 @@
         }
       ]
     }
-  ]
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005",
+      "CRIT-006",
+      "CRIT-007"
+    ]
+  }
 }
