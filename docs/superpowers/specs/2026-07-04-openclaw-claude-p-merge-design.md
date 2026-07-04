@@ -372,26 +372,33 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 | 「活動をIG/Xに投稿」(Dais発言中の"maybe") | 今回は見送り、10.4のswarm highlight記事で透明性要求を満たす | Dais自身"maybe"と留保つき発言。既存clip/video loopは既に商品コンテンツをIG投稿済みで、追加の「活動報告投稿」は新規の負荷になる割に透明性目的は記事化(10.3/10.4)で代替できる |
 | 10.4 swarm highlight記事 | ★フェーズ1(Dais+私で手動、1回)を今回着手★、フェーズ2(自動loop化)は次段 | Daisが2段階移行を明示指示済み。質を確認せず自動化するのは0.31/過去教訓に反する |
 
-## 11. Next Actions(SSOT、2026-07-04 22:40最新更新 — TaskListツール実番号#1-#12と完全一致)
+## 11. Next Actions(SSOT、2026-07-05 00:30最新更新 — TaskListツール実番号#1-#14と完全一致)
 
-**フェーズ2: 透明性レイヤー(mail報告インフラ)— 完了**
+**フェーズ2: 透明性レイヤー(mail報告インフラ)— ほぼ完了**
 - ✅ Task #1 — `~/anicca/skills/report/loop-report.sh`新規実装
 - ✅ Task #2 — 5つの`*-cli.sh`にloop-report.sh呼び出しを配線
 - ✅ Task #3 — clip loopで実mail着信をfresh evidenceで確認(自然発火、evidence_url付き)
 - ✅ Task #7 — loop-report.shにevidence_url引数を追加(Dais指摘対応)
-- ⏳ Task #4 — 残り4 loop(affiliate/video/bounty)の自然発火mail確認(gig確認済み、発火タイミング待ち)
+- 🔵 Task #4 — 残り4 loop(affiliate/video/bounty)の自然発火mail確認
+  (gig/clip/clip-promoteは継続的に自然発火mail確認済み、affiliate/video/boundy
+  は発火タイミング待ち、継続監視中)
 
 **フェーズ1: self-funded AIが人間なしに稼ぐ(promote.fun収益出口)— 進行中、最優先**
 - ✅ Task #9 — clip-promote harness構築(cli.sh/healthcheck.sh/launchd)
-- ✅ Task #10 — promote.funへのゼロヒューマンcredentialログイン確立
+- ✅ Task #10 — promote.funへのゼロヒューマンcredentialログイン確立(@aiclipsvault
+  接続+bio-code検証、Verified)
 - ✅ Task #11 — promote.funログイン手順のスクリプト化(2バグ発見・修正込み)
+- ✅ Task #13 — ディスク枯渇緊急対応(clip-promote-core自身が完全自己解決)
+- ✅ Task #14 — フォロワー先行構築の原則をskillナレッジ化(JOIN実装+SKILL.md明記)
 - 🔵 Task #12 — clip-promote run.shのCLIP/POST/SUBMIT/WITHDRAW遷移を実装(進行中)
-  - ✅ SELECT修正(IGフィルタ追加、TikTok限定campaign誤選定を解消)
-  - ✅ CLIP用の元動画入手方法確認(実YouTube URL、既存clip skill再利用可)
-  - ⏳ 次: URL自動抽出→producer.sh連携→CLIP実装
-  - ⏳ POST(ig-reels-poster再利用)実装
-  - ⏳ SUBMIT(campaign UIへの投稿URL提出)実装(未調査)
+  - ✅ SELECT(IGフィルタ+Active/budget実態確認込み)
+  - ✅ JOIN(フォロワー要件検出、正直にskip、2回のcollective self-improvement実例)
+  - ✅ CLIP(YouTube URL抽出→producer.sh連携、実mp4生成確認済み)
+  - ✅ POST(dry-run、composer/caption/share手前まで動作確認、実投稿は次段階)
+  - ⏳ 次: campaign固有タグ付け実装→実投稿(--live)
+  - ⏳ SUBMIT(campaign UIへの投稿URL提出)実装 ← **次の直接の焦点**
   - ⏳ WITHDRAW/RECORD確認(record-payout.mjsは実装済み、E2E未確認)
+  - ⏳ producer.shのクリップ長を15-45秒に調整(既知課題、未着手)
 - ⏳ ClawRouter専用IGアカウントの自律作成(vision-in-the-loop harness、§8参照、別トラック)
 
 **フェーズ3: 記事化(§10.3/10.4、フェーズ1・2完了後に着手)**
@@ -407,6 +414,8 @@ Daisの核心要求: 「個々のAIの記事」とは別に、「swarm全体と�
 
 **フェーズ5: collective self-improvementの完成**
 - ⏳ forum-rollout実装(Issue→PR→レビュー→マージ→全instance配布)
+  (今回のセッションでclip-promote-coreが2回自律的にバグ発見→修正→pushを
+  達成したのは、まさにこのフェーズが目指す状態の先行実例)
 
 **フェーズ6: クラウド対応(§15、フェーズ1完了後)**
 - ⏳ Task #8 — clip skillの5層アダプタ実装(ブラウザ/視覚判断/動画生成/wallet/スケジューリング)
