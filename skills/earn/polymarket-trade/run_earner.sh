@@ -14,4 +14,6 @@ run "$VENV" "$DIR/market_maker.py" >> "$LOG" 2>&1 || echo "[$(ts)] market_maker 
 echo "[$(ts)] === pass done ===" >> "$LOG"
 
 # Signed telemetry POST (#25 TELEM) — fail-safe: never affects the trading passes above.
-timeout 20 node /Users/operator/anicca/runtime/dashboard/telemetry-post-claude-p.mjs >> "$DIR/telemetry-post.log" 2>&1 || true
+# use run() helper (gtimeout/timeout/none): mac has no bare `timeout`, so a direct call is
+# command-not-found under launchd and silently drops claude-p off the dashboard (recurring #17).
+run node /Users/operator/anicca/runtime/dashboard/telemetry-post-claude-p.mjs >> "$DIR/telemetry-post.log" 2>&1 || true
