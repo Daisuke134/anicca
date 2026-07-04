@@ -696,3 +696,24 @@ crocsキャンペーン(SELECTが選んだ対象)は`Accepted Platforms`が**Tik
 campaigns一覧ページには「All Platforms」ドロップダウンフィルタがあり、IG対応
 キャンペーン(COPA90/THOMAS RHETT等、アイコンで確認済み)も存在する。Task #12
 再開時はまずこのIGフィルタを`select_campaigns.py`に追加することから着手する。
+
+### 17.1 IGフィルタ修正完了(2026-07-04、fresh evidence)
+
+`select_campaigns.py`の`fetch_live()`に、campaignsページ移動後「All Platforms」
+ドロップダウン→「Instagram」選択のステップを追加(`cdp.click_by_text`利用)。
+このフィルタはクライアントサイド状態のみでURLに反映されないため、毎回UI操作で
+選び直す必要がある(deep-link不可、fresh grep確認済み)。既存unit test 5/5維持。
+commit `bc89a83`、`Daisuke134/anicca`にpush済み。
+
+**実証**(clip-promote-core自身が実行): state.jsonをリセット→修正版SELECTを
+再実行→実際に`thomas-rhett-content`(IG対応、budget$8,400、CPM$3.00)が選定され、
+state fileへの書き込みで裏付け(fabrication無し)。旧`crocs`(TikTok限定)は
+候補から除外された。mail報告済み(HTTP 200)。
+
+### 17.2 次のサブステップ: CLIP実装の準備
+
+次はrun.shの`CLIP|POST|SUBMIT|WITHDRAW`ケース(95-103行目、現在
+`not-yet-wired (#14)`)を実装する。まず`thomas-rhett-content`キャンペーンの詳細
+ページで、クリップ元動画の入手方法(content library等)を確認してから、既存の
+`earn-clip-rewards`(クリップ生成)・`ig-reels-poster`(IG投稿)を再利用する
+具体的な実装方針を固める。
