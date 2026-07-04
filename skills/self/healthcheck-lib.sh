@@ -1,8 +1,11 @@
 #!/usr/bin/env bash
-# healthcheck-lib.sh — ONE shared supervisor used by every loop's healthcheck (FIND-011: no more byte-identical
-# copies). Detects, in order: (a) DEAD session, (b) STUCK-asking-a-human interactive prompt (FIND-001), (c) STALE
-# no-liveness heartbeat, (d) running-but-producing-NOTHING output staleness (FIND-009). Recovers by restart with
-# backoff, and on give-up it calls self-fix.sh DIRECTLY to spawn an Opus fixer (FIND-006) — never just a dead note.
+# healthcheck-lib.sh — ONE shared supervisor used by every loop's healthcheck (FIND-011). Detects, in order:
+# (a) DEAD session, (b) STUCK-asking-a-human interactive prompt (FIND-001), (c) STALE liveness heartbeat, (d)
+# running-but-producing-NOTHING output staleness (FIND-009). Recovers by restart w/ backoff; on give-up it calls
+# self-fix.sh DIRECTLY to spawn an Opus fixer (FIND-006).
+# AUTHORITATIVE success signal = the REAL output artifact (published.jsonl / posts.jsonl freshness, cross-checked
+# live by verify-loops.sh) — NOT any self-graded marker (FIND-015): a fixer that lies "SUCCESS" but leaves the
+# output stale is re-escalated here anyway, because (d) reads the artifact, never the marker.
 # Caller sets: HC_LOOP HC_SOCK HC_SESSION HC_HB HC_START HC_STALE_MIN HC_CLI HC_OUTPUT HC_OUTPUT_STALE_HRS HC_SELFFIX_HINT
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
@@ -14,8 +17,18 @@ hc_run() {
   local STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
   local LOG="$HOME/.openclaw/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
   local RESTART_LOG="$STATE/.$LOOP-restart-log"
-  local LOCK_DIR="/tmp/.$LOOP-healthcheck.lock"; mkdir "$LOCK_DIR" 2>/dev/null || return 0; trap 'rmdir "$LOCK_DIR" 2>/dev/null' RETURN
   local now; now=$(date +%s)
+
+  # FIND-013: lock with a staleness escape hatch. A healthcheck killed abnormally must not disable self-heal forever
+  # — if the lock is older than 10min it is stale (each run finishes in seconds), so steal it.
+  local LOCK_DIR="/tmp/.$LOOP-healthcheck.lock"
+  if ! mkdir "$LOCK_DIR" 2>/dev/null; then
+    local lage=$(( ( now - $(stat -f %m "$LOCK_DIR" 2>/dev/null||echo "$now") ) / 60 ))
+    if [ "$lage" -ge 10 ]; then rmdir "$LOCK_DIR" 2>/dev/null||true; mkdir "$LOCK_DIR" 2>/dev/null || return 0
+      echo "$(date '+%F %T') stole stale lock (${lage}min)" >> "$LOG"
+    else return 0; fi
+  fi
+  trap 'rmdir "$LOCK_DIR" 2>/dev/null' RETURN
 
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
     echo "$(date '+%F %T') give-up → self-fix.sh $LOOP" >> "$LOG"
@@ -32,28 +45,30 @@ hc_run() {
   # (a) DEAD
   if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then _restart "$LOOP DEAD"; return; fi
 
-  # (b) STUCK asking a human (FIND-001): the interactive picker leaves unmistakable strings in the pane. A healthy
-  # idle after a pass does NOT contain these. Detect + restart (re-runs the STARTUP which is wired to act, not ask).
+  # (b) STUCK asking a human (FIND-001/014): fire ONLY on unambiguous input-await markers of Claude Code's interactive
+  # picker/confirm/free-text, AND ONLY when the session is NOT actively generating. Active generation always shows
+  # "esc to interrupt"; an idle-await prompt never does. This prevents false-restarting healthy long-running work.
   local pane; pane="$(tmux -S "$SOCK" capture-pane -t "$SESSION" -p 2>/dev/null | tail -25)"
-  if printf '%s' "$pane" | grep -qE 'Enter to select|Type something|↑/↓ to navigate|Do you want to proceed|Chat about this|esc to (cancel|interrupt)'; then
-    echo "$(date '+%F %T') STUCK: interactive prompt detected (asking a human) → restart" >> "$LOG"; _restart "STUCK asking human"; return
+  if printf '%s' "$pane" | grep -qE 'Enter to select|↑/↓ to navigate|Type something\.|Do you want to proceed'; then
+    if ! printf '%s' "$pane" | grep -qE 'esc to interrupt'; then
+      echo "$(date '+%F %T') STUCK: idle interactive prompt (awaiting human input) → restart" >> "$LOG"; _restart "STUCK asking human"; return
+    fi
   fi
 
   # (c) liveness heartbeat stale
-  local hb_age
-  if [ ! -f "$HB" ]; then local m; m="$(stat -f %m "$START" 2>/dev/null||echo "$now")"; hb_age=$(( (now-m)/60 ))
+  local hb_age m
+  if [ ! -f "$HB" ]; then m="$(stat -f %m "$START" 2>/dev/null||echo "$now")"; hb_age=$(( (now-m)/60 ))
     if [ "$hb_age" -ge "$STALE_MIN" ]; then _restart "no pass in ${hb_age}min"; return; fi
   else hb_age=$(( (now-$(stat -f %m "$HB" 2>/dev/null||echo "$now"))/60 ))
     if [ "$hb_age" -ge "$STALE_MIN" ]; then _restart "STALE ${hb_age}min"; return; fi
   fi
 
-  # (d) running but producing NOTHING real (FIND-009): heartbeat can be "fresh" while STEP2/3 keep no-opping. If the
-  # real output artifact hasn't changed in OUT_STALE_HRS, the loop is alive-but-useless → escalate to a self-fix.
+  # (d) running but producing NOTHING real (FIND-009): the real output artifact is the ONLY success signal. If it has
+  # not changed in OUT_STALE_HRS the loop is alive-but-useless (or a self-fix lied) → escalate a self-fix, once per window.
   if [ -n "$OUTPUT" ]; then
     local o_age=99999
     [ -f "$OUTPUT" ] && o_age=$(( (now-$(stat -f %m "$OUTPUT" 2>/dev/null||echo 0))/3600 ))
     if [ "$o_age" -ge "$OUT_STALE_HRS" ]; then
-      # don't spam: only escalate once per OUT_STALE_HRS window (marker mtime guard)
       local MK="$STATE/.$LOOP-output-stale-escalated"
       if [ ! -f "$MK" ] || [ "$(( (now-$(stat -f %m "$MK" 2>/dev/null||echo 0))/3600 ))" -ge "$OUT_STALE_HRS" ]; then
         touch "$MK"; _selffix "$SELFFIX_HINT (no real output for ${o_age}h; the loop is alive but STEP2/STEP3 produce nothing — find why and fix it so a real side-effect happens)."
