@@ -36,13 +36,13 @@ human-zero の SaaS signup/login/決済/Turnstile/hCaptcha/reCAPTCHA/3DS 突破�
 
 ## 実行環境
 
-Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行する。自分自身に SSH しない。VPS は使わない。
+Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行する。自分自身に SSH しない。MacBook へは `ssh cbns03@100.108.140.123` で接続できる。VPS は使わない。
 
 ## ローカル + push 先マップ
 
 | ローカル path | Push 先 origin | 役割 |
 |---|---|---|
-| `~/anicca-project/`（★唯一の products working tree★） | `github.com/Daisuke134/anicca-products`（public） | iOS/web/api/mobile（aniccaai.com 含む）。Anicca instance からの直接 write は禁止、Dais + Claude Code のみ編集可 |
+| `~/anicca-project/`（products working tree はここ1つのみ） | `github.com/Daisuke134/anicca-products`（public） | iOS/web/api/mobile（aniccaai.com 含む）。Anicca instance からの直接 write は禁止、Dais + Claude Code のみ編集可 |
 | `~/.openclaw/` | `github.com/Daisuke134/anicca-dais`（private） | 本番 Anicca-OpenClaw: gateway/cron/skills/state |
 | `~/anicca/` | `github.com/Daisuke134/anicca`（public OSS） | OSS フレームワーク本体 |
 
@@ -114,7 +114,7 @@ Web検索/コード内シンボル操作/ブラウザ/Mac操作の既定は `~/.
 ## ミニマム folder tree
 
 ```
-~/anicca-project/                          # ★唯一の products folder★
+~/anicca-project/                          # products folder（唯一）
 ├── aniccaios/                             # iOS Swift app（release は fastlane）
 ├── apps/
 │   ├── api/                               # Node/Express API (Railway)
@@ -123,7 +123,7 @@ Web検索/コード内シンボル操作/ブラウザ/Mac操作の既定は `~/.
 │       ├── content/blog/                  # Dais owned blog factory
 │       └── data/research/                 # topic queue（Dais owned）
 ├── mobile-apps/                           # factory apps
-├── .github/workflows/netlify-deploy.yml   # ★1個だけ★
+├── .github/workflows/netlify-deploy.yml   # これ1個だけ
 └── docs/superpowers/{specs,plans}/        # SDD spec + plan
 
 ~/.openclaw/                               # 本番 Anicca-OpenClaw、cron 正本

@@ -46,5 +46,5 @@ git rm --cached <path> && echo "<path>/" >> .gitignore && git commit -m "fix: re
 |--------|------|
 | 作業場所 | 原則ワークツリー。ドキュメントのみdev直接可 |
 | ブランチ作成 | dev→main後、mainからrelease/x.x.x |
-| マージ | 絶対禁止。チェックリスト→ユーザーOK待ち |
+| マージ | 検証（adversary PASS + E2E green）後に agent が実行。`gh pr merge --merge --delete-branch` で branch 同時削除。人間の承認待ちなし |
 | 並列開発 | Git Worktrees（worktree.md参照） |
