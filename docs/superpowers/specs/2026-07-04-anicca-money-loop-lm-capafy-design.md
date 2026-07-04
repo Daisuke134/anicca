@@ -141,3 +141,12 @@ Corrected the architecture per Dais: the money loop runs the **claude-p way** (~
 - **GOAL-check + atomic STATE.md**: goal = LM+Capafy revenue > Dais spend; STATE holds the real numbers + heal status + next action.
 - **VERIFIED live 2026-07-04**: ran it — heal=none (all surfaces healthy), LM_subs=0, Capafy_net_3d=$0.0, honest status "NO realised external revenue yet — bottleneck = DEMAND". No fabrication.
 This spine is the measurement backbone; the ACT (self-improve action = agent judgment) + the always-on cli.sh/healthcheck/launchd wrapper (claude-p cron cadence, self-heal restart) come next (#8), following the clip pattern exactly.
+
+## 14. Correction (Dais 2026-07-05) — I missed a Claude-side duplicate; plan clarified
+Honest answers to Dais's questions about what I actually did:
+- **Capafy publish scheduling**: I repointed the OpenClaw CRON (jobs.json, 09:00) → `daily_loop.sh` (which spawns `claude -p sonnet`). This is a HYBRID (OpenClaw cron triggers a claude-p run), NOT yet a pure always-on claude-p loop (tmux+launchd like earn/clip). Imperfect.
+- **Old vs new**: on the OpenClaw side I DID delete the old (standalone `capafy-publisher`+`capafy-user`, `daily_publish.sh`, `publish_chain.sh`, `.bak`) and kept the new working one (`capafy-autopublish` + vendored + `daily_loop.sh`).
+- **Both AIs — I MISSED one**: there were TWO separate real copies of `capafy-autopublish` — `~/.claude/skills/` (stale, 6/28) and `~/.openclaw/skills/` (fixed, 7/4). I only fixed the OpenClaw one → the Claude-side copy was another stale duplicate. **FIXED 2026-07-05**: `~/.claude/skills/capafy-autopublish` is now a **symlink → the canonical `~/.openclaw/skills/capafy-autopublish`**, so both AIs share ONE fixed copy (vendored token, no `daily_publish.sh`, no divergence).
+
+### Corrected target architecture (unify into ONE claude-p loop)
+The Capafy publish (`daily_loop.sh`) and the money-measurement spine (`~/anicca/skills/self/lm-capafy-loop/loop.sh`) are currently SEPARATE. Target = ONE claude-p always-on loop (`lm-capafy-loop`, ~/anicca/skills, Claude-subscription, tmux+launchd healthcheck like earn/clip): HEAL → READ (LM funnel + Capafy sales) → JUDGE → **ACT calls the engines** (Capafy `daily_loop.sh` / LM funnel fix / Reddit) → VERIFY real revenue → STATE. The OpenClaw cron becomes redundant once the always-on loop drives publishing. Both AIs reference the ONE canonical skill via symlink. Next (#8): wrap lm-capafy-loop in cli.sh+healthcheck+launchd (copy earn/clip pattern) and make ACT invoke the Capafy engine.
