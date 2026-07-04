@@ -117,3 +117,38 @@ health-check.py側の別ロジック。day/night切替の専用実装も存在�
 - 実機で「意図的にqueueを空にする」「意図的にcookieを壊す」等の異常を注入し、claude-p自身が
   次回wakeでselfheal-request.jsonを読んで診断・修正を試みることをE2E確認(人間・Opus不使用)
 - 少なくとも1回、claude-p自身がself/issue-devを呼んでGitHub Issueを立てるところまで実機確認
+
+## 6. 実装結果(2026-07-04、完了)
+
+①②③④⑤のうち、②(pidfile+プロセス実体二重検証、Cronicle方式)は**見送り**とした。
+理由: 実装前に検討したところ、判定を誤ると「本来ALIVEな正規プロセスをDEAD扱いする」リスクが
+③(詰まり検知)実装中に実際に発現した(下記参照)のと同種のパターンであり、外部プロセスから
+「これが本物か」を安全に判定する手段が確立できていない状態で追加するのは危険と判断。
+
+①(mkdir atomicロック)③(詰まり検知)④(give-upタスクファイル)⑤(cli.sh自己診断指示)は
+全5loopに実装・実機検証・push済み:
+
+- ①: 5loop全てに`/tmp/.<name>-healthcheck.lock`のmkdir atomicロックを追加。healthcheck自体の
+  多重起動(launchdが前回実行完了前に次を起動)によるDEAD判定の競合を防止。
+- ③: gig-healthcheck.shの実証済みSTALE検知パターン(`.last-pass`タイムスタンプ+`.last-start`
+  猶予期間+DEAD/first-pending/STALE/fresh の4分岐)を、clip(90分)/video(360分)/
+  affiliate・bounty(1560分)の各cron頻度に応じたSTALE_MINでverbatim移植。
+  **実装中に発見・修正したバグ**: `.last-start`が存在しない場合の`stat`失敗フォールバックが
+  `echo 0`(epoch-0=1970年)になっており、既存(移行前起動)セッションでSTART_AGEが
+  約2900万分という巨大値になり、実機で実際に誤って即時restartを引き起こした
+  (clip-coreで実際に発生、実害は軽微=セッション再起動のみ、正規プロセスの誤killではない)。
+  フォールバックを`date +%s`(現在時刻)に修正し、以後誤判定なしを実機確認。
+- ④: backoff上限(60分5回)到達時、`~/.openclaw/state/.<loop>-core-selfheal-request.json`に
+  構造化タスク(loop名/理由/再起動回数/次にすべきこと)を書き込む処理を追加。1時間以内の
+  重複書き込みは抑制。
+- ⑤: 各loopのcronプロンプト冒頭に「まずselfheal-request.jsonを確認し、あれば自分で診断・
+  修正、ダメならself/issue-devを呼ぶ」指示を追加。**既知の制約**: 既存の登録済みcron
+  (`.claude/scheduled_tasks.json`)のプロンプト文字列は、CronListで「既存job有り」と
+  判定されると再登録されないため、通常運用では古いプロンプトのまま動き続ける可能性がある。
+  ただし「詰まってhealthcheckがrestartする瞬間」にこそ新しいSTARTUP(=自己修復ロジック)が
+  効くため、設計としては理にかなっている。恒久的なcronプロンプト更新の仕組みは別タスク。
+
+**未実施(次回以降の課題)**: 完了条件の「実機で異常を注入してE2E確認」「claude-p自身が
+self/issue-devを呼ぶところまでの実機確認」は、backoff上限到達(60分5回の実際の失敗)を
+安全に人為的に再現する方法がまだ無いため未実施。次回、意図的に壊れたコマンドをrun.sh等に
+一時的に仕込んで実機確認する計画。
