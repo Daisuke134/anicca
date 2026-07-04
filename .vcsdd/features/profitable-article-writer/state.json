@@ -903,16 +903,16 @@
     },
     "1c": {
       "verdict": "PASS",
-      "timestamp": "2026-07-03T19:21:29.756Z",
+      "timestamp": "2026-07-04T11:34:21.553Z",
       "reviewedBy": "human",
       "adversaryVerdict": "PASS",
-      "adversaryReviewedAt": "2026-07-03T16:02:14.344Z",
+      "adversaryReviewedAt": "2026-07-04T11:34:21.550Z",
       "details": {
         "approvedBasedOn": "adversary"
       },
       "humanVerdict": "PASS",
       "humanApproved": true,
-      "humanApprovedAt": "2026-07-03T19:21:29.756Z"
+      "humanApprovedAt": "2026-07-04T11:34:21.553Z"
     },
     "2c": {
       "verdict": "PASS",
@@ -922,5 +922,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T11:19:42.190Z"
+  "updatedAt": "2026-07-04T11:34:21.553Z"
 }

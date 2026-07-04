@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-22 does not specify WHO/WHAT PROCESS performs the post-publish logged-out verification fetch, and this ambiguity directly contradicts the sprint-plan's own framing. behavioral-spec.md REQ-22 says only 'the skill SHALL verify ... with a logged-out HTTP fetch' — read literally, 'the skill' can mean the SAME note-publish-live.py process that just performed the click, doing a self-check immediately afterward. That is NOT a genuinely independent verification (a script checking its own work in the same run can share the same bug that caused a false-success claim, or can fetch a URL it computed/assumed rather than one it re-derived from the actual post-publish page state). Contrast this with verification-architecture.md's Sprint 2.5 line: 'the already-verified draft ... goes live for real, V1-real verified by the main agent via logged-out fetch' — which assigns verification to 'the main agent' (a separate actor/process from the publish script, following the same maker-checker split already established for Mode-A drafts by REQ-20: 'the executor posts; the verifier checks'). REQ-21/22 never states that the note-publish-live.py process and the REQ-22 verification step must be separate invocations/actors; a future implementation could legitimately fold REQ-22's check into note-publish-live.py itself, which would fail the task's own independence bar ('genuinely independent ... not trusting the publish script's own claim') and would silently abandon the maker-checker pattern REQ-20 established one requirement earlier in the same file.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/behavioral-spec.md",
+    "lineRange": "90-92",
+    "snippet": "REQ-22 Post-publish verification (V1 real). After a real publish, the skill SHALL verify — with a logged-out HTTP fetch of the public URL (no stored cookies) — that the article is publicly reachable (200)..."
+  },
+  "routeToPhase": "1b"
+}

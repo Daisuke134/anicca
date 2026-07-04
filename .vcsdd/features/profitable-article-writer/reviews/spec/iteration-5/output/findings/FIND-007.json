@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-21 is titled 'Real Mode-B publish path' and REQ-2 explicitly defines Mode-B as the state where the zero-human-in-the-runtime-loop invariant holds ('At RUNTIME in Mode B (write→gate→publish→verify) there is no human click/OTP/approval/delivery'). But the described Sprint-2.5 use of this exact capability (verification-architecture.md line 70-71: 'the already-verified draft nfb2ace9f0ed8 goes live for real, V1-real verified by the main agent via logged-out fetch') is a one-off, manually-triggered action on a single pre-identified, human/main-agent-already-reviewed draft, checked afterward by 'the main agent' (per REQ-20, the main agent/Opus verifier is explicitly 'out of the daily loop' — i.e. this is a supervised, non-runtime action, structurally identical in spirit to Mode-A's trust-ramp human gate, REQ-6, not to Mode-B's zero-human runtime invariant). Calling this a 'Mode-B' capability while it is actually exercised as a manually-invoked, human-supervised bridge action is a mislabeling that risks a future implementer treating REQ-21 as already satisfying REQ-2's zero-human Mode-B claim for note real-publish, when the only currently-specified/approved use case for it is explicitly NOT zero-human (it requires a human/main-agent to identify the draft key and to run the verification afterward).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "70-71",
+    "snippet": "Sprint 2.5 (Dais 2026-07-04): real Mode-B publish path (PROP-22,23) — the already-verified draft nfb2ace9f0ed8 goes live for real, V1-real verified by the main agent via logged-out fetch."
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "PROP-22 (verification-architecture.md:40) supplies zero test criteria for the AFFIRMATIVE case of REQ-21 — i.e. no assertion that when NOTE_LIVE_PUBLISH=1 IS set and the pre-publish price/type/visuals state IS confirmed, note-publish-live.py actually drives the 投稿する/更新する click and the draft becomes public. All three listed criteria in PROP-22 ('absent → refuses, no click'; 'Mode-A scripts contain zero 投稿する/更新する references'; 'fails closed ... if ... not confirmed') are negative/refusal assertions. A stub implementation of note-publish-live.py that ALWAYS refuses to publish (never clicks, regardless of NOTE_LIVE_PUBLISH value or confirmed state) would satisfy 100% of PROP-22's literal criteria while completely failing REQ-21's actual purpose (Dais verbatim in behavioral-spec.md:80: 'the note is not actually published, we have to have it actually published'). This is the exact failure mode called out in the adversarial-check instructions: a test suite that would pass even if the critical behavior is unhandled. Every other fail-closed PROP in this same document (PROP-5, PROP-6, PROP-13, PROP-15, PROP-20) explicitly pairs its negative/wiring assertion with a separate, named, no-mock/live test proving the positive real path also works (e.g. PROP-20: 'T1 (wiring, injected seam); T3 for the real live-wake evidence'). PROP-22 has no such pairing.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "40",
+    "snippet": "| PROP-22 | REQ-21 | real Mode-B publish path requires NOTE_LIVE_PUBLISH=1 (absent → refuses, no click); Mode-A scripts (note-set-single-price.py etc.) contain zero 投稿する/更新する references (grep, unchanged from Sprint 2); fails closed (no click) if pre-publish state (price/type/visuals) is not confirmed first | T2 | ✅ |"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,44 @@
+{
+  "verdict": "FAIL",
+  "feature": "profitable-article-writer",
+  "reviewType": "spec",
+  "phase": "1c",
+  "iteration": 6,
+  "scope": "Sprint 2.5 REQ-21/22 revision, round 2 - verify all 7 iteration-5 findings resolved + fresh adversarial pass",
+  "priorFindings": {
+    "FIND-001": "RESOLVED",
+    "FIND-002": "RESOLVED",
+    "FIND-003": "RESOLVED",
+    "FIND-004": "RESOLVED",
+    "FIND-005": "RESOLVED",
+    "FIND-006": "RESOLVED",
+    "FIND-007": "RESOLVED"
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:82-96 (REQ-21)", "description": "REQ-21 now explicitly titled 'Real ONE-OFF publish tool — NOT wired into run.sh, NOT Mode B'; states the tool is 'structurally excluded' from run.sh/AUTONOMY-branch/daily-wake, requires NOTE_LIVE_PUBLISH=1 AND a named --draft-key (no default/wildcard), fails closed on unconfirmed price/type/visuals, and explicitly requires a real success-path (not satisfiable by an always-refuse stub). Resolves FIND-001 and FIND-006."},
+        {"type": "file", "location": "specs/behavioral-spec.md:97-103 (REQ-22)", "description": "REQ-22 now explicitly requires verification 'be performed by a SEPARATE process/invocation from the publish tool itself (the tool's own stdout claim is not sufficient)' and requires checking 'BOTH a 200 status AND the presence of page content proving the specific article rendered (e.g. the article title or note ID in the HTML)' explicitly to guard against an SPA-shell 200 false-positive. Resolves FIND-004 and FIND-005."},
+        {"type": "file", "location": "specs/behavioral-spec.md:88-89 and specs/verification-architecture.md:70-73", "description": "REQ-21 and the Sprint 2.5 plan blurb both now explicitly state 'This does NOT satisfy, and SHALL NOT be described as satisfying, REQ-2's zero-human-in-Mode-B invariant — REQ-2 remains scoped to run.sh's own automated publish branch (REQ-7)'. Resolves FIND-007."},
+        {"type": "file", "location": "specs/behavioral-spec.md:90-91, 43, 41-42, 121-125", "description": "Cross-checked REQ-21/22 against REQ-2 (zero-human scoped to run.sh Mode-B), REQ-6 (Mode-A draft-only, unaffected, grep-verifiable, explicitly stated), REQ-7 (Mode-B automated branch, REQ-21 tool structurally excluded from it), and REQ-20 (main-agent verifier for Mode-A drafts, a distinct verification moment from REQ-22's independent-process live-URL check) — no contradiction found."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:40", "description": "PROP-22 now names two concrete test files (test-prop22a-live-publish-wiring.sh for T1 wiring/refusal, test-prop22b-live-publish-real-click.sh for T2 real success-path with an explicit 'an always-refuse stub fails this test' clause) with a T1(wiring)+T2(real success path) tier split matching the PROP-5/6/13/15/20 convention. Resolves FIND-001, FIND-002, FIND-003."},
+        {"type": "file", "location": "specs/verification-architecture.md:41", "description": "PROP-23 now names test-prop23-independent-live-verify.sh, requires the fetch be a separate process from the publish tool, and requires 200+title/note-ID content match. Resolves FIND-004, FIND-005 at the proof-obligation level."}
+      ]
+    }
+  },
+  "summary": "All 7 iteration-5 findings are RESOLVED with concrete, citable text changes in both specs/behavioral-spec.md (REQ-21/22) and specs/verification-architecture.md (PROP-22/23, Sprint 2.5 blurb): the real-click success path is now a required, named, non-stub-satisfiable T2 test; PROP-22/23 name concrete test files; PROP-22 has the same T1-wiring/T2-real-success tier split used elsewhere in the document; REQ-22 verification is now explicitly a separate process/invocation, not the publish tool's own claim; REQ-22 now requires page-content proof (title/note-ID) in addition to bare 200, closing the SPA-shell false-positive gap; REQ-21 is now unambiguous that the tool is structurally excluded from run.sh's call graph and requires an explicit --draft-key with no wildcard/default; and REQ-21/the Sprint-2.5 plan text now explicitly state this does NOT satisfy REQ-2's zero-human Mode-B invariant, with REQ-2 rescoped to run.sh's own automated branch. However, a fresh adversarial pass surfaced ONE new defect INTRODUCED by this exact revision: strengthening REQ-22/PROP-23 (200 -> 200+content-check, T2 -> T2/T3) was not propagated to the 'Verification ladder as executable gates' summary table in the same file (verification-architecture.md line 52), which still reads 'V1 published/live | logged-out visitor, URL 200 | T2'. Before this round the two were consistent (both said bare-200); after this round's fix they now directly contradict each other within the SAME document, creating a real risk that a future reader treats the weaker ladder-row description as the actual V1 bar and re-introduces the exact SPA-shell false-positive this round closed. Cross-checked REQ-21/22 against REQ-2, REQ-6, REQ-7, REQ-20 for internal consistency — no contradictions found beyond the ladder-table staleness above.",
+  "findingsCount": 1,
+  "convergenceSignals": {
+    "priorFindingsResolved": 7,
+    "priorFindingsUnresolved": 0,
+    "newFindings": 1
+  }
+}

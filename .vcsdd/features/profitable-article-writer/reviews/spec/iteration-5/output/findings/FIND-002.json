@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "PROP-22 names NO test file and NO concrete test methodology for its 'fails closed (no click) if pre-publish state (price/type/visuals) is not confirmed first' claim — unlike every other fail-closed / gating PROP in the same table, which is exemplary about specificity: PROP-5 names tests/test-prop5-failclosed-publish.sh and the exact injection env vars (ARTICLE_TEST_FORCE_V0/V05); PROP-6 names tests/test-prop6-modeA-draft.sh; PROP-15 reuses the same seam; PROP-18 names tests/test-prop18-v05-jp-sentences.sh; PROP-19 names tests/test-prop19-real-content-hook.sh; PROP-20 names tests/test-prop20-note-publish-failclosed.sh; PROP-21 names tests/test-prop21-visual-and-single-price.sh. PROP-22 and PROP-23 are the ONLY two proof obligations in the entire document that cite no test file at all, yet REQ-21/22 govern the single highest-stakes, irreversible, real-money action in the whole spec. Without a named injected-seam (e.g. a documented 'NOTE_PUBLISH_LIVE_TEST_FORCE_STATE_UNCONFIRMED' hook analogous to ARTICLE_TEST_FORCE_V0), the 'fails closed if not confirmed' claim is unfalsifiable at spec-review time and cannot be checked for regression later.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "27-45",
+    "snippet": "PROP-5..PROP-21 each cite a specific tests/test-propN-*.sh file and injection seam; PROP-22 (line 40) and PROP-23 (line 41) cite none."
+  },
+  "routeToPhase": "1b"
+}

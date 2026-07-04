@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "This revision correctly STRENGTHENED REQ-22/PROP-23's V1 real-publish check from a bare HTTP-200 to '200 AND page content proving the specific article rendered (title/note-ID)' with tier 'T2/T3' — but the 'Verification ladder as executable gates' summary table in the SAME file (verification-architecture.md line 52) was NOT updated in parallel: it still reads 'V1 published/live | logged-out visitor, URL 200 | T2', i.e. bare-200-only and T2-only. Before this round's revision, REQ-22 and this ladder row were CONSISTENT (both said '200' only); after this round's targeted strengthening of REQ-22/PROP-23 (which correctly fixed FIND-005's SPA-shell-false-positive concern), the ladder row was left behind, so the document now internally contradicts itself about what V1 requires: PROP-23 (the binding proof-obligation table, correctly) demands 200+content-match at T2/T3, while the ladder overview (line 52, incorrectly) still describes V1 as 200-only at T2. A future implementer or grader skimming only the ladder table (a common shorthand reference for 'what does gate X require') would build/accept a strictly weaker V1 check than PROP-23 mandates, silently re-introducing exactly the SPA-shell false-positive risk this round's revision was meant to close.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "52 (vs. 41, 97-103 of behavioral-spec.md)",
+    "snippet": "V1   published/live     logged-out visitor, URL 200                          T2   <-- stale; PROP-23 (line 41) requires '200 AND ... article's title/note-ID ... T2/T3'"
+  },
+  "routeToPhase": "1b"
+}

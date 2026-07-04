@@ -1,0 +1,20 @@
+{
+  "verdict": "FAIL",
+  "feature": "profitable-article-writer",
+  "reviewType": "spec",
+  "phase": "1c",
+  "iteration": 5,
+  "scope": "Sprint 2.5 addition only: REQ-21, REQ-22, PROP-22, PROP-23",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005", "FIND-006", "FIND-007"]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003"]
+    }
+  },
+  "summary": "REQ-21/REQ-22 authorize a real, irreversible, monetized publish action but leave four material spec-fidelity gaps unresolved: (1) the invocation topology of note-publish-live.py — whether it is a standalone manually-invoked tool or wired into run.sh's automated Mode-B branch, and whether AUTONOMY and NOTE_LIVE_PUBLISH must both be true together — is never stated, which is precisely the kind of ambiguity that could let a stray leftover env var cause an unattended future wake to real-publish an unreviewed article; (2) REQ-22 does not specify that the post-publish verification must be performed by a process/actor separate from the publish script itself, contradicting the sprint-plan's own 'verified by the main agent' framing and REQ-20's established maker-checker split; (3) REQ-22's bare-HTTP-200 check is a weaker oracle than the already-proven 'ground-truth API + logged-out screenshot check' this same spec mandates be reused (REQ-20) and is potentially defeated entirely by client-side-rendered 404 pages on SPA-style sites; (4) labeling this capability 'Mode-B' while its only currently-specified use is a human/main-agent-supervised one-off action risks a future implementer treating it as already satisfying REQ-2's zero-human invariant. On verification-readiness, PROP-22 is the weakest proof obligation in the entire document for the highest-stakes requirement in it: it names no test file (unlike every other fail-closed PROP in the same table), asserts only negative/refusal outcomes and supplies ZERO test criteria that the actual click ever fires when it should — a stub that always refuses to publish would pass PROP-22 in full — and it lacks the T1-wiring/T3-real-live-evidence split this document's own convention requires for any PROP touching a real external side-effect. These are blocker-level gaps for a strict-mode, financial/irreversible-action spec gate; REQ-21/22/PROP-22/23 must be tightened before Phase 2a.",
+  "findingsCount": 7
+}

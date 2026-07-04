@@ -1,0 +1,41 @@
+{
+  "verdict": "PASS",
+  "feature": "profitable-article-writer",
+  "reviewType": "spec",
+  "phase": "1c",
+  "iteration": 7,
+  "scope": "Sprint 2.5 REQ-21/22, round 3 - verify FIND-008 (V1 ladder staleness) resolved, final full-set sanity pass",
+  "priorFindings": {
+    "FIND-008": "RESOLVED"
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:82-103 (REQ-21, REQ-22)", "description": "REQ-21 (standalone one-off tool, NOT in run.sh call graph, NOTE_LIVE_PUBLISH=1 + named --draft-key, fail-closed, real success-path required, does NOT satisfy REQ-2) and REQ-22 (independent-process verification, logged-out fetch, 200 AND page-content proof of title/note-ID, recorded to state for V4) remain internally coherent and unchanged in substance since iteration-6 PASS on this dimension; re-read in full, no drift."},
+        {"type": "file", "location": "specs/verification-architecture.md:40-41 (PROP-22, PROP-23)", "description": "PROP-22/23 statements match REQ-21/22 verbatim in substance (standalone/wiring/fail-closed/real-click for PROP-22; separate-process/200+content/SPA-shell guard for PROP-23), both required:true, correct tiers (T1 wiring + T2 real-click for PROP-22; T2/T3 for PROP-23)."},
+        {"type": "file", "location": "specs/verification-architecture.md:70-73 (Sprint 2.5 plan line)", "description": "Plan-line text ('V1-real independently verified by a separate process (not the tool's own claim) via logged-out fetch + content check') matches PROP-23/REQ-22's strengthened wording exactly -- no stale 'bare fetch' phrasing remains here either."},
+        {"type": "grep", "location": "specs/*.md, pattern 'URL 200|returns 200|bare.?200|logged-out'", "description": "Grepped every occurrence of the V1-fetch language across both spec files: all four sites (PROP-23 line 41, ladder row line 52, Sprint-2.5 plan line 73, REQ-22 lines 97-103) now say the same thing -- 200 AND page-content proof, never bare-200. Zero remaining stale occurrences."},
+        {"type": "cross-check", "location": "REQ-2 (behavioral-spec.md:10-16), REQ-6 (41-42), REQ-7 (43), REQ-20 (121-125) vs REQ-21/22", "description": "Re-verified all four boundary requirements against REQ-21/22 in this final pass: REQ-2's zero-human invariant stays scoped to run.sh Mode-B and REQ-21 explicitly disclaims satisfying it; REQ-6's Mode-A draft-only/no-publish-click guarantee is explicitly stated as unaffected and grep-verifiable; REQ-7's Mode-B automated branch is explicitly the thing REQ-21 is structurally excluded from; REQ-20's main-agent browser verification of the DAILY DRAFT (quality/slop/paywall) is a distinct verification moment from REQ-22's independent-process live-URL fetch (post-real-publish, content-existence check) -- different purpose, different mechanism, no contradiction. No new drift introduced by the FIND-008 fix."},
+        {"type": "cross-check", "location": "contracts/sprint-2.md + evidence/sprint-2-*.log vs verification-architecture.md:72 draft-key reference", "description": "Verified the Sprint-2.5 plan's named draft key `nfb2ace9f0ed8` is NOT a stale/typo'd duplicate of the earlier-mentioned `n7261a753887f` (PROP-21): grep across contracts/sprint-2.md and the sprint-2 evidence logs confirms these are two distinct, well-documented drafts -- n7261a753887f = the FIRST, pre-fix, defective live-wake draft (text-only, no eyecatch, membership monetization) that PROP-21 was written to fix; nfb2ace9f0ed8 = the SECOND, post-fix draft with visuals/eyecatch/single-¥500-price already verified (contract-approved CRIT-105/106 evidence). Naming this specific already-verified draft in the Sprint 2.5 plan blurb is consistent context, not a spec-contract conflict -- REQ-21 itself correctly requires a generic, caller-supplied --draft-key with no default/wildcard baked into the tool."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:52", "description": "FIND-008 verified RESOLVED: the 'Verification ladder as executable gates' V1 row now reads 'logged-out visitor: 200 AND page content proves the article rendered (title/note-ID, not bare 200)  T2/T3' -- this is now word-for-word aligned with PROP-23 (line 41: '...returns 200 AND the response body contains the article's title/note-ID (not just any 200 -- guards an SPA-shell false-positive)') in both the substantive check (200+content, not bare-200) and the tier (T2/T3 matches PROP-23's T2/T3, corrected from the stale T2-only)."},
+        {"type": "file", "location": "specs/verification-architecture.md:41 (PROP-23) and behavioral-spec.md:97-103 (REQ-22)", "description": "Re-confirmed PROP-23 and REQ-22 remain mutually consistent (separate-process verification, 200+content, recorded to state for V4) and that this consistency was preserved (not accidentally broken) by the FIND-008 fix -- the fix only touched the ladder-table summary row, not the binding PROP-23/REQ-22 text."},
+        {"type": "consistency", "location": "specs/verification-architecture.md (full document re-read)", "description": "No other summary/overview table or restated description of V1 exists elsewhere in the document that could harbor a second, undetected stale copy -- the ladder table (line 52) was the only other place V1's bar was restated outside PROP-23 itself, and it is now fixed. Full document re-read start to finish for iteration-7 confirms zero remaining stale restatements."}
+      ]
+    }
+  },
+  "summary": "FIND-008 is RESOLVED: the V1 row in the 'Verification ladder as executable gates' table (verification-architecture.md:52) now matches PROP-23's strengthened requirement exactly -- both text (200 AND page-content proof of title/note-ID, explicitly 'not bare 200') and tier (T2/T3, not T2-only). A full final consistency pass across every site touched over the three rounds -- REQ-21, REQ-22, PROP-22, PROP-23, the Sprint-2.5 plan blurb, and the V1 ladder row -- found no remaining internal contradiction and full alignment with the boundary requirements REQ-2 (zero-human scoped to Mode-B/run.sh, REQ-21 explicitly disclaims satisfying it), REQ-6 (Mode-A draft-only/no-publish-click unaffected, grep-verifiable), REQ-7 (Mode-B automated branch, REQ-21 structurally excluded from it), and REQ-20 (main-agent draft-quality verification is a distinct verification moment from REQ-22's independent live-URL fetch, no overlap/conflict). The two different note.com draft keys appearing in the document (n7261a753887f in PROP-21, nfb2ace9f0ed8 in the Sprint-2.5 plan) were checked against contracts/sprint-2.md and the sprint-2 evidence logs and confirmed to be two distinct, correctly-documented real drafts (pre-fix vs. post-fix), not a stale duplicate/typo. Zero open findings. Recommend proceeding to Dais's explicit spec sign-off and then Phase 2a (Red).",
+  "findingsCount": 0,
+  "convergenceSignals": {
+    "priorFindingsResolved": 1,
+    "priorFindingsUnresolved": 0,
+    "newFindings": 0
+  }
+}

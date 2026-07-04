@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "PROP-22 is tiered T2 only, with no T3 (live E2E) split for the real, non-forced click mechanics. This breaks the established pattern in the same document where any PROP touching a real live external side-effect explicitly separates the hermetic/injected-seam wiring proof (T1/T2) from a required real live-wake evidence proof (T3) — e.g. PROP-20: 'T1 (wiring, injected seam); T3 for the real live-wake evidence', PROP-5/6/13/15: 'T1 (wiring, injected seam; real gates no-mock at T2 via test-v0-real.sh/test-v05-real.sh)'. REQ-21's actual payload is 'drives the browser to click 投稿する/更新する for real, making the draft PUBLIC' — an irreversible live action that, by this document's own established convention, requires a T3 proof obligation distinct from any hermetic stub test. As written, PROP-22 could be satisfied entirely by mocked/hermetic T2 tests and never actually prove a real click against the real note.com editor ever succeeds.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/verification-architecture.md",
+    "lineRange": "40,44",
+    "snippet": "PROP-22 row ends '| T2 | ✅ |' with no T3 real-live-wake evidence citation, contrasted with PROP-20's '| T1 (wiring, injected seam); T3 for the real live-wake evidence | ✅ |'"
+  },
+  "routeToPhase": "1b"
+}

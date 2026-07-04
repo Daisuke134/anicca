@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-22's verification bar ('a logged-out HTTP fetch of the public URL ... returns 200') is a REGRESSION from the already-proven, more rigorous verification method this same spec establishes and mandates be reused: REQ-20 states the reused note-publish pipeline's own 'verify subcommand's ground-truth API + logged-out screenshot check' is the proven mechanism and 'that part is NEVER rebuilt.' A bare HTTP 200 status check is materially weaker than an API-ground-truth-plus-screenshot check: many modern SPA/CSR-architected sites (note.com's editor and article pages are client-rendered) return HTTP 200 for the server shell on essentially any path, including deleted/private/not-found articles, because routing and 'not found' rendering happen client-side after the JS bundle loads — a raw HTTP fetch never executes that JS and so cannot see the client-rendered content. REQ-22 does not explain why REQ-21/22's real-publish V1 check should use a strictly weaker oracle than the Mode-A draft check it sits right next to in the same document, nor does it instruct reuse of the existing verify subcommand. This is an unexplained deviation from this spec's own established reuse principle ('that part is NEVER rebuilt') for the single highest-stakes, irreversible check in the document.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-human-funded/.vcsdd/features/profitable-article-writer/specs/behavioral-spec.md",
+    "lineRange": "90-92,115-117",
+    "snippet": "REQ-22: '...a logged-out HTTP fetch of the public URL (no stored cookies) — that the article is publicly reachable (200)...' vs REQ-20: '...the verify subcommand's ground-truth API + logged-out screenshot check... that part is NEVER rebuilt.'"
+  },
+  "routeToPhase": "1b"
+}
