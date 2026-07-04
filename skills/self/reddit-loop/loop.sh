@@ -1,40 +1,55 @@
 #!/usr/bin/env bash
-# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds life-manager-loop). This is
-# NOT revenue; it measures the DEMAND engine's health/progress honestly. Anti-fake: a signup is "attributed"
-# only if a real marker exists; karma/age come from the account ledger the ACT writes; nothing is invented.
+# reddit-loop/loop.sh — ONE no-human wake of the Reddit demand-gen loop (feeds life-manager-loop). This is NOT
+# revenue; it measures the DEMAND engine's health/progress honestly. Anti-fake: a signup/post counts only if a real
+# marker (posts.jsonl / attributed-signups.jsonl) exists; karma comes from the account ledger; nothing is invented.
 # Seams: RD_TEST=1 + RD_ACCOUNTS=<file> + RD_DIR + RD_REQ.
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; DIR="${RD_DIR:-$HERE}"; STATE_MD="$DIR/state/STATE.md"; mkdir -p "$DIR/state"
 REQ="${RD_REQ:-$HOME/.openclaw/state/reddit-loop-selfheal-request.json}"
 ACCTS="${RD_ACCOUNTS:-$HOME/.cloak/reddit-accounts.json}"
+POSTS="$DIR/state/posts.jsonl"; SIGN="$DIR/state/attributed-signups.jsonl"
+now=$(date +%s)
+# FIND-010: safe non-empty-line count (never chain ||echo after grep -c).
+count(){ [ -f "$1" ] || { echo 0; return; }; local n; n="$(grep -c . "$1" 2>/dev/null)"; echo "${n:-0}"; }
 HEAL=""; add_heal(){ HEAL="$HEAL$1; "; }
-# HEAL: is there at least one reddit account provisioned?
+# HEAL: at least one account? (creation is honest — NEVER covertly bypass Reddit's signup CAPTCHA; a one-time human
+# CAPTCHA relay is the allowed human=compute step, or operate an existing disclosed builder account.)
 N_ACCT=0
-if [ -f "$ACCTS" ]; then N_ACCT="$(python3 -c "import json,sys;d=json.load(open('$ACCTS'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"; fi
-[ "$N_ACCT" -ge 1 ] 2>/dev/null || add_heal "NO-REDDIT-ACCOUNT → self-provision one (CloakBrowser :9222 + Gmail plus-address keiodaisuke+reddit<tag>@gmail.com, OTP via gog gmail; same zero-human flow as ig-account-create)"
-# HEAL: CloakBrowser daily-driver reachable (needed to act)?
+[ -f "$ACCTS" ] && N_ACCT="$(python3 -c "import json;d=json.load(open('$ACCTS'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
+[ "$N_ACCT" -ge 1 ] 2>/dev/null || add_heal "NO-REDDIT-ACCOUNT → operate an existing disclosed builder account, or create one honestly (normal signup; if a CAPTCHA blocks it, that ONE step is a human=compute relay — do NOT auto-bypass anti-bot controls); meanwhile use self-promo-welcome subs' scheduled threads"
+# HEAL: CloakBrowser daily-driver reachable?
 if [ "${RD_TEST:-}" != "1" ]; then
   curl -s --max-time 5 -o /dev/null http://127.0.0.1:9222/json/version 2>/dev/null || add_heal "CLOAKBROWSER-DOWN(:9222) → start the daily-driver"
 fi
-# READ: karma + age + attributed signups (from the ledger the ACT maintains)
+# READ: karma + posts + signups (all from real markers)
 KARMA="$(python3 -c "import json;d=json.load(open('$ACCTS'));a=(d if isinstance(d,list) else d.get('accounts',[]));print(sum(int(x.get('comment_karma',0)) for x in a))" 2>/dev/null||echo 0)"
-SIGNUPS="$(grep -c . "$DIR/state/attributed-signups.jsonl" 2>/dev/null||echo 0)"
+NPOST="$(count "$POSTS")"; SIGNUPS="$(count "$SIGN")"
 PREV="$(grep -E '^comment_karma_total:' "$STATE_MD" 2>/dev/null|awk '{print $2}'|tail -1)"; PREV="${PREV:-n/a}"
+# FIND-008: posts-freshness guard — an account with NO post in >2 days is a stalled demand engine (mirrors capafy's
+# publish-loop-freshness death guard), so the loop's own MEASURE surfaces it rather than looking healthy.
+POST_FRESH="never"
+if [ -f "$POSTS" ] && [ "$NPOST" -gt 0 ] 2>/dev/null; then
+  age_h=$(( (now-$(stat -f %m "$POSTS" 2>/dev/null||echo 0))/3600 )); [ "$age_h" -le 48 ] && POST_FRESH="fresh(${age_h}h)" || POST_FRESH="REDDIT-POSTS-STALE(${age_h}h)"
+fi
 if [ -n "$HEAL" ]; then STATUS="HEAL-NEEDED — ${HEAL}"
-else STATUS="ACT — post ONE honest DISCLOSED builder contribution this pass in a self-promo-welcome sub (r/SideProject / r/SomebodyMakeThis / relevant feedback thread): 'I built a small ADHD-lateness tool, free to try, feedback welcome'. No karma-farming, no covert warm-then-shill. Answer genuine replies. karma=$KARMA (informational only). Log real posts→posts.jsonl, real signups→attributed-signups.jsonl"; fi
+elif [ "$NPOST" -eq 0 ] 2>/dev/null; then STATUS="ACT-FIRST-POST — no post yet: make ONE honest DISCLOSED builder post in a self-promo-welcome sub (r/SideProject / r/SomebodyMakeThis / relevant feedback thread), 'I built a small ADHD-lateness tool, free to try, feedback welcome'. Log it to posts.jsonl."
+elif [ "$POST_FRESH" != "${POST_FRESH#REDDIT-POSTS-STALE}" ]; then STATUS="STALE — $POST_FRESH: engine stalled, make ONE honest disclosed contribution this pass and log to posts.jsonl"
+else STATUS="ACT — post ONE more honest DISCLOSED contribution / answer genuine replies; no karma-farming, no covert shill. Log real posts→posts.jsonl, real signups→attributed-signups.jsonl (karma=$KARMA informational)"; fi
 if [ -n "$HEAL" ]; then mkdir -p "$(dirname "$REQ")"; printf '{"loop":"reddit","ts":"%s","heal":"%s"}\n' "$(date -u +%FT%TZ)" "${HEAL//\"/}" > "$REQ"; else rm -f "$REQ" 2>/dev/null||true; fi
 TMP="$STATE_MD.tmp.$$"
 {
-  echo "# Reddit demand-gen loop — STATE (feeds life-manager-loop; authentic conversation, NOT broadcast)"
-  echo "goal: drive REAL LM signups via genuine community participation (trust, not link-drops). Attributed signup = a real marker only."
+  echo "# Reddit demand-gen loop — STATE (feeds life-manager-loop; HONEST DISCLOSED participation, NOT covert/broadcast)"
+  echo "goal: drive REAL LM signups via transparent builder participation. A post/signup counts ONLY if logged with a real URL."
   echo "last_wake_utc: $(date -u +%FT%TZ)"
   echo "heal_first: ${HEAL:-account present ✓, CloakBrowser ✓}"
   echo "reddit_accounts: $N_ACCT"
   echo "comment_karma_total: $KARMA"
   echo "prev_comment_karma_total: $PREV"
+  echo "posts_made: $NPOST"
+  echo "posts_freshness: $POST_FRESH"
   echo "attributed_lm_signups: $SIGNUPS"
   echo "status: $STATUS"
   echo "selfheal_request: ${HEAL:+written→$REQ}${HEAL:-none}"
-  echo "next: HEAL→self-provision account / start CloakBrowser; WARMING→genuine value-first comments only (agent decides each, no scripts), grow karma; READY→one authentic builder-story + answer questions, never pushy; log any reddit→LM signup to state/attributed-signups.jsonl."
+  echo "next: HEAL→get an honest account + CloakBrowser up; else post ONE disclosed builder contribution in a self-promo-welcome sub and LOG it to posts.jsonl (real URL); answer genuine replies; log any reddit→LM signup to attributed-signups.jsonl. Never covert, never ask a human."
 } > "$TMP" && mv "$TMP" "$STATE_MD"
-echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA signups=$SIGNUPS | heal=${HEAL:-none} | $STATUS"
+echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA posts=$NPOST($POST_FRESH) signups=$SIGNUPS | heal=${HEAL:-none} | $STATUS"
