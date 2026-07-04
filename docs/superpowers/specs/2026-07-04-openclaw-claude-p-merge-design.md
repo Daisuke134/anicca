@@ -655,3 +655,44 @@ CLIP|POST|SUBMIT|WITHDRAW|STALLED)
 SELECT遷移(キャンペーン選定)のみが実際に動く状態。次のタスクとして、CLIP(クリップ生成、
 既存`earn-clip-rewards`再利用)→POST(IG投稿、既存`ig-reels-poster`再利用)→SUBMIT
 (campaign URLへの投稿URL提出)→WITHDRAW(Solana出金)の実装が必要(Task #12として登録)。
+
+## 17. promote-fun-loginスキル化(Task #11、2026-07-04完了)+ Task #12着手時の新発見
+
+Dais指摘「Task #11(スクリプト化)を先に、番号順を守れ」に従い、順序を訂正して#11を先に
+完了させた。`~/.claude/skills/promote-fun-login/`(SKILL.md + launch_promote_browser.py
++ register_flow.py)を新規作成。このディレクトリはgit管理外(マシンローカルの
+Claude Codeグローバルskills置き場、既存`ig-account-create`と同じ配置パターン)。
+
+### 実行検証で発見・修正した2つのバグ(fresh evidence)
+
+1. **Terms of Serviceチェックボックス**: 実DOM上`input[type=checkbox]`が1x1pxの
+   visually-hidden要素(スタイル済みカスタムチェックボックスが上に重なる設計)。
+   座標中心クリック(`click_sel`)は的外れな座標を計算し、チェックが入らなかった。
+   → 修正: JSで直接`checkbox.click()`を呼ぶ方式に変更、動作確認済み。
+2. **`click_by_text`の複数マッチ問題**: promote.funの"Register"というテキストは
+   3つの要素(ナビバーボタン/モーダルタブ/フォーム送信ボタン)全てにマッチする。
+   既存実装は`.find()`で常に最初の要素(ナビバー、クリックしても実質no-op)を
+   クリックしており、フォーム送信ボタンに到達していなかった。
+   → 修正: `cdp.py`の`click_by_text`に`index`引数を追加(送信ボタンは`index=-1`
+   =DOM順で最後の要素)。この修正は`~/.claude/skills/ig-account-create/scripts/
+   cdp.py`という共有ツールへの変更で、他スキルにも恩恵がある一般化。
+
+### 検証結果
+
+修正後、テスト用CloakBrowser(:9225、`anicca_clip_promote_verify2`)で実際に
+Register→フォーム入力→チェックボックス→送信→Verification Code画面遷移まで
+完全動作確認。確認コード読み取り以降は本番アカウント(`anicca_clip_promote`)
+作成時に同一ロジックで既に実証済み。**promote.funは同一メールアドレスでの複数
+アカウント作成を検知・拒否する**(2回目以降は確認コードの代わりに
+「Sign up attempt using your email detected」という警告メールに変わる、正常な
+セキュリティ挙動)ため、これ以上のテストアカウント量産はせず終了。テスト環境
+(`/tmp/cloak-test-profile-verify`、ポート9225プロセス)は削除済み。
+
+### Task #12再開時の新発見(調査途中で一時保留)
+
+crocsキャンペーン(SELECTが選んだ対象)は`Accepted Platforms`が**TikTokのみ**
+(IGアイコンなし)と判明。既存`select_campaigns.py`はbudget/cpm抽出のみでプラット
+フォームフィルタが未実装のため、IG非対応キャンペーンを誤って選んでいた。
+campaigns一覧ページには「All Platforms」ドロップダウンフィルタがあり、IG対応
+キャンペーン(COPA90/THOMAS RHETT等、アイコンで確認済み)も存在する。Task #12
+再開時はまずこのIGフィルタを`select_campaigns.py`に追加することから着手する。
