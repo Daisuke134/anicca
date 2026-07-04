@@ -216,6 +216,37 @@ The capabilities Anicca runs are declared as slots in [`skills/registry.json`](s
 
 ---
 
+## Spawn one — the three colony types running today
+
+Same loop, same skills (Polymarket / Solana / Hyperliquid trading, plus web-exploration and self-* skills). Only the **fuel** and **wallet chain** differ. Every type earns on its own once kickstarted; a human is only in the loop for the very first `USDC` (or a subscription you already pay for).
+
+**① automaton — self-funded on Base, ClawRouter fuel**
+```bash
+git clone https://github.com/Daisuke134/anicca ~/anicca && cd ~/anicca
+./install.sh                                     # generates a self-owned wallet, syncs skills
+./start-local.sh node runtime/loop/index.mjs     # self-pay proxy (x402) + the loop
+```
+
+**② Franklin — self-funded on Solana, BlockRun fuel.** Franklin (`@blockrun/franklin`) is an agent with a wallet that *spends* autonomously; Anicca adds the *earn* layer (the trading + self-* skills) on top, so it doesn't just spend — it earns.
+```bash
+# base layer: the wallet + pay-per-call brain (Node 20.19+)
+npm install -g @blockrun/franklin
+franklin setup solana           # create/point its own Solana wallet; send ~$5 USDC to unlock frontier models
+franklin balance                # show address + USDC balance
+# earn layer: run the Anicca loop against Franklin's wallet + BlockRun fuel
+ANICCA_HOME="$HOME/.blockrun" ANICCA_INSTANCE=franklin ANICCA_BRAIN=proxy \
+  ./start-local.sh node runtime/loop/index.mjs
+```
+
+**③ claude-p — human-funded on a subscription, graduates to self-funded.** No crypto needed: run it on a Claude subscription you already pay for. It earns USDC, and once its earnings cover its own compute it graduates to self-funded.
+```bash
+ANICCA_BRAIN=claude-p ./start-local.sh node runtime/loop/index.mjs   # drives the loop with `claude -p`
+```
+
+Each type autonomously **chooses its own model** (auto mode) — free models when idle, frontier models when a task (or its balance) warrants it. Financial independence is the only requirement; which model it runs on is the agent's call. Every instance reports its wallet and P&L to the live dashboard below.
+
+---
+
 ## Architecture (one paragraph)
 
 Anicca runs the same **automaton pattern** as [Conway's automaton](https://github.com/Conway-Research/automaton) — a ReAct loop (think → act → observe → persist) plus a heartbeat scheduler — but on a **different, simpler stack: ClawRouter (food/inference, self-pay x402) + your local Mac or Akash (shelter)**, with no Conway dependency. The loop lives in [`runtime/loop/`](runtime/loop/) and runs under a runtime root (`$ANICCA_HOME`) alongside its skill slots and one Base smart wallet. The cloud product adds **Supabase** for auth and **Composio** for service connections.
@@ -281,7 +312,8 @@ flowchart TB
 | **Seed handling: SOL lands → auto-swap → USDC on Base (relay.link)** | **Proven live 2026-07-03** — the local self-funded automaton detected seed SOL and swapped it to USDC **autonomously** ($8.96 landed on Base, no human step); the founder path via `sol-to-usdc.py` proven the same day ($8.40, tx `5zyWxn9…`) |
 | Self-pay compute proxy (free → frontier via x402, own wallet) | **Built & proven** (`runtime/compute-proxy/`) |
 | **Anicca loop** (`runtime/loop/`) — wake → ClawRouter `auto` brain → run skill → ledger → sleep | **Built & runs** — fires tool calls via ClawRouter `auto` end-to-end (no hardcoded model); 68 tests + live wake verified |
-| Earn rails (x402-sell of $0 research, FinChip skill-royalty chip, board-poller of agent task boards) | **Built & on-chain proven** — x402 settles on Base (CDP facilitator), FinChip chip minted, board-poller surfaces real bounties. **Realised EXTERNAL earnings still $0** (settles so far were self-tests, excluded by INV-7); chasing the first real external buyer/bounty |
+| **Trading engines (Polymarket / Solana / Hyperliquid) + first realized profit** | **Proven live 2026-07-05** — an instance placed and *won* a Polymarket bet with no human in the loop (settle tx [`0x7662a88b…`](https://polygonscan.com/tx/0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3), status 0x1), then redeemed its winnings to **+$8.24 realized USDC** (three redeem txs, all status 0x1). Numbers are still small and honest — the claim is "zero-to-first-real-earnings with no human," not "millions" |
+| **Live dashboard** (every instance's wallet + P&L, chain-verified) | **Live** — [aniccaai.com/dashboard](https://aniccaai.com/dashboard) shows the colony's instances alive with their balances re-checked against the chain (deliberately conservative: counts only what's on-chain-verifiable) |
 | Self-funded child on **BlockRun / Franklin** (parent surplus USDC → child wallet → x402 buys 55+ frontier models, no sub) | **In progress** — the spawn rail; BlockRun verified as a live x402 model marketplace |
 | Self-improvement (`self/issue-dev`), UBI (`economy/ubi`) | **Declared/owned** — UBI works (separate CC); this recipe FEEDS the UBI pool (surplus → UBI) |
 | Cloud per-user dashboard, Stripe subscription, sovereign server (Akash) | **In progress** — see `specs/00-MASTER.md` |
