@@ -48,6 +48,12 @@ def main():
     except Exception as e: print("  cancel_all:", str(e)[:60])
     ba=c.get_balance_allowance(asset_type="COLLATERAL"); avail=int(ba.balance)/1e6
     print("deposit wallet pUSD:", avail)
+    # BALANCE FLOOR (adversary fix): a two-sided min-size bundle costs ~MIN_SIZE*1.0 pUSD.
+    # If we can't afford even one bundle, HOLD this pass instead of spamming failed orders.
+    if avail < MIN_SIZE * 1.0:
+        print(f"  HOLD: cash ${avail:.2f} < one min bundle (~${MIN_SIZE*1.0:.2f}). "
+              f"Not placing (positions will free cash on resolution). No churn.")
+        c.close(); return 0
     for sp in SPENDERS:
         if int(ba.allowances.get(sp,0))<1: c.approve_erc20(token_address=PUSD,spender_address=sp,amount="max").wait()
 
