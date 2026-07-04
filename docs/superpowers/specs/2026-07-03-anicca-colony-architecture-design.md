@@ -1287,3 +1287,25 @@ World Cup campaign例 $6,110/game〜$52,000/game)。
 - ★ いくら: 今すぐ大金は不要。base strategy が +EV と実証されるまでは追加不要 ★。
   マーケットメイクの LP reward は資金量に比例するので、strategy live 後に $20-50 で「働く元本」を持つのが妥当。
   現状 deposit wallet に pUSD 1.94 残 = strategy テストには十分。
+
+### §11.8 ★ Polymarket のボス達は実際どう稼ぐか(leaderboard 実データ 2026-07-04)★
+出典 = Polymarket 公式 API: lb-api.polymarket.com/{profit,volume}, data-api.polymarket.com/positions, gamma rewards。
+
+**2つのアーキタイプ(実データで確認):**
+| 型 | 実例(実数) | やってること | no-human 自動化 |
+|---|---|---|---|
+| ①情報エッジ(whale) | Theo4 $22.1M, Fredi9999 $16.6M | 選挙/事象に集中 directional bet。Theo=独自の近隣世論調査で2024 Trump に~$30M賭け勝ち | ✗ 難(本物の情報優位が要る) lumpy/高リスク |
+| ★②マーケットメイク | swisstony $14M利益/$1.44B出来高, RN1 $823M, risk-manager $681M, tripping $727M | 数百市場で両側指値→スプレッド(~1%×巨大出来高)+ Polymarket 日次LP報酬。在庫をdelta管理 | ◎ systematic/自動化可 = 我々の道 |
+
+**証拠**: swisstony(利益#3 かつ 出来高#1)= 同時10ポジ(France spread各種/England/Brazil O/U/Exact Score…各$100-230k)
+= 明確なMM。risk-manager = 同時57ポジ。★ 利益 $14M ÷ 出来高 $1.44B ≈ 1%純マージン ★。
+
+**LP報酬は実在・稼働中(gamma rewards, 今)**: 上位30市場中26に報酬プール。
+- "Argentina win WC" = **dailyRate 2264**($2,264/日を maker で山分け, rewardsMinSize $200)
+- "Morocco win today" = **dailyRate 679**($679/日, minSize $1000)
+= Polymarket が「midpoint 近くに両側 quote する maker」に毎日 pUSD を配ってる。これが sustainable no-human alpha。
+
+**★ 我々の base strategy(#49)= ②マーケットメイクを正確に写す ★**: rewards-enabled 市場(get_current_rewards/
+rewardsMinSize>0)で midpoint 近くに rewardsMinSize 以上の両側 maker 指値(post_only, fee 0)→ 日次LP報酬回収 +
+スプレッド → 片側約定したら反対側を調整して delta 中立 → fail-closed。realized P&L + 受領報酬を ledger 実数。
+資金依存: LP報酬もスプレッド益も quote size に比例 = ここで初めて「元本が多いほど稼ぐ」が効く($20-50 で実元本)。
