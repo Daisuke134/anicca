@@ -1202,3 +1202,82 @@ deep-researcher subagentの調査結果を踏まえ、新規spec
   方針転換済みの旧世代実装と判明、直接再利用は不可だがwallet-factory/Akash SDL
   パターンは参考情報として記録。
 - 次のステップ: `vcsdd:vcsdd-adversary`(Sonnet)によるspec review(GATE 1)。
+
+## 22. 全loopヘルスチェック(2026-07-05、fresh evidence)+ 重大な構造的発見
+
+Dais指示「全loopが実際に稼ごうとしていて詰まっていないか確認しろ」を受けて6+2
+loop全てを直接調査した。
+
+### 22.1 結果
+
+| loop | 状態 | 根拠 |
+|---|---|---|
+| clip | ✅健全 | 12本公開、self-heal正常動作(既存§19確認済み) |
+| clip-promote | ✅健全(意図した待機) | JOINがフォロワー要件で待機中、設計通り |
+| video | ✅健全 | mail報告2件確認 |
+| gig | 🟢**実際に稼いでいる** | `~/loops/gig/settle.jsonl`に確定入金1件:
+  `{"jpy":25000,"source":"coconala-earnings-mirror","earnings_status":"検収"}`
+  (2026-07-01)。もう1件(¥40,000)は`source:synthetic-e2e`=テストデータで
+  実収益ではないと明確に区別できた |
+| **affiliate** | 🔴**詰まっている** | `~/affiliate/queue/`に未投稿カルーセル**7件**が滞留
+  (直近07-04 17:40作成分含む)、`posted/`は6/30の2件で止まっている |
+| **bounty** | 🔴**詰まっている** | `gated.json`にsurvivor 1件($10 bounty)を発見済みだが
+  `attempts.jsonl`が一度も作られていない=一度もPR試行なし |
+
+### 22.2 根本原因: affiliate/bountyには「必ず全ステップ完走する」保証が構造的に無い
+
+clip/clip-promoteは`decide.py`という**純粋な状態機械**を持ち、1 wakeにつき
+「ちょうど1つの、境界の明確な遷移」をrun.shが実行する設計(SELECT→JOIN→CLIP→
+POST→SUBMIT...)。self-healは`self_heal.py`のような専用コードが**毎wake必ず
+実行される**ため、前回何が起きていようと次のwakeで確実に前進する。
+
+affiliate/bountyは対照的に、STARTUP prompt自体が「①cron自己修復チェック→
+②新規コンテンツ作成→③producer実行→④EARN_MODE=execute投稿→⑤mail報告」という
+**複数ステップを1つの長い自然言語プロンプトに詰め込み、1ターンでLLMに全部
+やらせる**設計になっている。今回実際に観測した事例(affiliateのtmuxペイン):
+①のcron修復に時間を使った結果、②③④に到達せずターンが終了していた。これは
+「クラッシュ検知」の自己修復機構(`.{name}-core-selfheal-request.json`)では
+検知できない — tmuxセッションは生きていて、クラッシュしていないため。
+
+**つまりaffiliate/bountyが自己修復しない理由**: 自己修復の仕組みそのものが
+「LLMが1ターンで全ステップをちゃんと最後までやる」という前提に依存しており、
+状態ファイル駆動で「途中で止まっても次のwakeで確実に続きから進む」という
+clip/clip-promote型の保証を持っていない。
+
+### 22.3 決定: no-human-loop skillとhuman-credential-locked skillを明示的に分離する
+
+Dais指示(verbatim、要約): 「affiliate(Amazon Associates)・bounty(GitHub)・
+gig(Coconala)は全て**Dais個人の銀行口座/GitHubアカウント/納税者番号**に
+紐づいており、self-funded AIが同じskillをコピーしても1円も稼げない。これは
+'AIの金銭的自立'という本来のミッションに反する。no-human-loopで**どのAIでも
+使える**skill(clip/clip-promote/sol-trade/pm-trade/x402等)と、human-credential
+必須で**Dais専用の実験**にすぎないskill(affiliate/bounty/gig)を、明示的に
+別の場所に分離すべき」
+
+検証結果、この指摘は完全に正しいと確認: affiliate=Amazon Associatesの振込先は
+実名口座+マイナンバー相当の税務情報、bounty=`bounty-cli.sh`のSTARTUP prompt内に
+「comment as **Daisuke134**」と明記(Dais本人のGitHubアカウントを使用)、
+gig=Coconalaの確定入金がJP銀行口座前提。3つとも構造的にDais個人の身分が
+無いと稼げない。
+
+**方針**: `~/anicca/skills/earn/`配下を以下のように分離する
+(具体的なフォルダ名・移行手順は次のTaskで確定・実施):
+- **universal(全AI共用、no-human-loop)**: clip, clip-promote, sol-trade,
+  pm-trade, x402関連 — 「AIの金銭的自立」という本流ミッションのメインライン
+- **human-assisted(Dais専用、実験扱い)**: affiliate, bounty, gig — anicca
+  repo内には残すが、「どのAIでも使える本流skill」とは明確に別の場所に置き、
+  self-funded AIが誤って依存しないようにする
+
+## 23. Next Actions(2026-07-05最新、Task #8完了・全loopヘルスチェック後)
+
+- ✅ Task #8完了(clip cloud adapter、層①③)
+- ⏳ **Task #15(新規)**: affiliate/bountyをclip-promote型の純粋状態機械
+  (decide.py + run.sh、1 wakeにつき1境界遷移)へリファクタし、自己修復を
+  「LLMが全部覚えてやる」から「状態ファイル駆動で構造的に保証される」形に
+  変える。VCSDD(spec→adversary review→実装→検証)で進める、big task
+- ⏳ **Task #16(新規)**: `~/anicca/skills/earn/`をuniversal(clip/clip-promote/
+  sol-trade/pm-trade等)とhuman-assisted(affiliate/bounty/gig)に分離する
+  フォルダ再編。launchd plist・cli.sh・healthcheck.shの絶対パス参照を全て
+  洗い出してから移動(壊れているDais本人の収益フローを止めないよう慎重に)
+- 🔵 Task #4継続: affiliate/bounty mail自然発火監視
+- ⏸️ Task #12継続: clip-promote SUBMIT/WITHDRAW(実機観察待ちのまま)
