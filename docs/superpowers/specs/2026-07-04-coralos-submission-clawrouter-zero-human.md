@@ -42,6 +42,56 @@ the loop" claim in the room — and it is literally true.
   ClawRouter-Hermes (same wallet, same models, x402 on Base+Solana).
 - Same org as the BlockRun x402 rails already in our stack (food/shelter MCP).
 
+## Do they ALLOW a subscription / API key? — YES (verified from LLM.md)
+
+The CoralOS kit's LLM shim is **provider-agnostic**: `LLM_PROVIDER = venice | openai | anthropic`,
+flipped by env var, no code change (`packages/agent-runtime/src/llm/complete.ts`). They RECOMMEND
+Venice (free credits) but explicitly support OpenAI and Anthropic keys, and even ship a
+**deterministic fallback** if there's no key at all. **There is NO rule against a paid key or a
+subscription** — it's a normal hackathon; they don't police how your brain is powered.
+
+So all THREE of Dais's options are legal for THEIR bounty. The difference is our THESIS/fairness,
+not their rules:
+
+```
+   Tier 1 (IDEAL — Anicca wins the narrative):
+       ClawRouter free tier (8 NVIDIA models, wallet-auth, $0, NO human key)
+       → the ONLY truly no-human-in-the-loop brain in the room. Purest.
+   Tier 2 (cheap fallback):
+       DeepSeek API key + a flash/cheap model  → works, but a human key = a human paid = a bit in-loop
+   Tier 3 (allowed, weakest thesis):
+       GPT / Claude subscription or key         → works, allowed, but "who paid?" = a human. Most in-loop.
+```
+
+The elegance: **ClawRouter COLLAPSES the ladder.** Its free floor covers Tier 1; for a stronger
+model it routes to DeepSeek/GPT/Claude as PAID models and pays per-request via **x402 USDC from the
+agent's OWN wallet** — so even "use a better model" stays **human-key-free**. A raw subscription is
+the only path where a human is literally paying for the brain; that's why it's the fairness-weakest
+even though the bounty permits it. Rule for us: **prefer ClawRouter; if a frontier model is truly
+needed, reach it THROUGH ClawRouter's x402 (agent wallet pays), never a human subscription.**
+
+## How Anicca actually EARNS on Coral (the mechanism)
+
+Anicca becomes the **seller-agent**. It sells a service; buyers pay into a **Solana escrow**; on
+delivery the escrow releases funds to Anicca's wallet. Anicca ALREADY runs an x402 service vendor
+(`anicca-x402.netlify.app`, per the live lineage) — that existing paid service becomes the body of
+`deliverService()`. Concretely, per fulfilled request:
+
+```
+  buyer WANT ─▶ Anicca BIDs (brain=ClawRouter) ─▶ wins ─▶ buyer DEPOSITS USDC into Solana escrow
+       ─▶ Anicca DELIVERS the service (deliverService = Anicca's x402/earn output)
+       ─▶ arbiter RELEASES the escrow ─▶ USDC lands in Anicca's wallet = EARNED
+```
+
+- **What Anicca sells** (the deliverService body): a verified/actionable output another agent will
+  pay for — e.g. an on-chain earn-signal / a de-risked trade read / a research brief / a curated
+  skill result. It's config: swap the body, keep the rails.
+- **Devnet vs mainnet (honest):** the bounty runs on Solana **devnet** — real on-chain settlement,
+  free play-money. So the Coral submission PROVES the earn-loop settles on-chain (with a real
+  Explorer link), but it is devnet, not profit. Anicca's REAL profit already runs on **mainnet**
+  (Base + its x402 vendor). The submission = the proof; the mainnet colony + our Tokyo event = the
+  real money. Do not conflate them.
+
 ## Requirements (EARS)
 
 - **R1 (free-tier brain, no human key)** The submission agent SHALL route its LLM calls through a
