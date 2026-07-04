@@ -136,3 +136,19 @@ done = 「asc versions list が 1.9.5 = WAITING_FOR_REVIEW を返す」AND「lif
 - 無課金ユーザー向けの後日 upgrade 導線 (Settings/feed) — 現状ゼロ、収益リスクとして認識済
 - TikTok ads pause 判断 — リリース確定後に別途
 - 野良 CONSUMABLE IAP `ai.anicca.app.ios` の削除
+
+## 8. 実行結果 (2026-07-04, Claude Code no-human 実走)
+
+| 項目 | 結果 | evidence |
+|---|---|---|
+| Maestro E2E 3本 | 全 green | 03 (×→無課金 feed) / 05-ja (買い切り可視) / 04-en (Lifetime 非表示) exit 0 |
+| lifetime IAP | WAITING_FOR_REVIEW | id 6783239477、¥5,000、審査スクショ = ja paywall 実機影 |
+| app 1.9.5 (build 365) | WAITING_FOR_REVIEW | submission 63652029-7b10-44ef-8f81-0181429eb76b @2026-07-04T12:34Z |
+
+### 道中で直した障害 (詳細 runbook = memory reference_ios_signing_recovery_runbook)
+1. maestro shared flow が v6 前提で stale → OnboardingFlowView v7 (10 step) から全面再構築
+2. -UITESTING 起動 = AppDelegate が未 configure の Purchases.shared を触り即クラッシュ → テストから引数除去
+3. Info.plist x3 が literal 1.8.6 → MARKETING_VERSION/CURRENT_PROJECT_VERSION 変数化 (build 365)
+4. 署名: login keychain の identity 全喪失 + headless session が system security domain → 新 cert を asc で発行し System.keychain へ sudo import
+5. fastlane_tmp_keychain-db の化石が create-keychain を Permission denied で殺す → 削除
+6. deliver の wait_for_processing が false-positive → asc builds poll + asc review submit で提出
