@@ -451,8 +451,34 @@ PHASE C — wrap as an unattended loop + submit
             fallback) -> resolved by the same TRACE=1 evidence as FIND-003.
           All fixes pushed: `Daisuke134/solana_coralOS@6221d9f` (FIND-001),
           `@b6e1916` (FIND-004/005/006), `@d022bc7` (FIND-003/008 + the real bug fix),
-          `@f3c84eb` (FIND-002). ROUND 2 (re-verify the fixes, especially the still-open
-          telemetry-URL live re-check) not yet run.
+          `@f3c84eb` (FIND-002).
+
+          ROUND 2 fresh-context re-verify DONE 2026-07-05 — verdict: FAIL again, 5 findings
+          (the adversary independently re-checked every round-1 claim, including confirming
+          commit hashes via `.git/refs/remotes/origin/main` itself since its sandbox also had
+          no Bash). All 5 addressed same-session:
+          - FIND-001 (SUBMISSION.md Slide 5 said round-1 fixes were "all fixed and
+            re-verified" when the telemetry-URL fix specifically was NOT re-verified live —
+            same overstatement PATTERN as round-1's FIND-002, recurring in a different slide)
+            -> corrected the wording to disclose this precisely.
+          - FIND-002 (the 2 new TRACE-run tx sigs had only bare Explorer-URL log lines, no
+            `solana confirm -v` transcript, contradicting SUBMISSION.md's persisted-evidence
+            claim) -> ran `solana confirm -v` for both, appended to
+            `evidence/tx-confirmations.txt` (both `Status:Ok`, `Finalized`).
+          - FIND-003 (the judge-facing `examples/txodds/coral/README.md` — NOT the
+            sub-package one round-1 fixed — still showed the pre-R5/R6 diagram: `service=
+            txline`, `settlement=arbiter`, `ARBITER_RELEASED`, and its env-list omitted every
+            new option, directly contradicting its OWN later prose about
+            `SETTLEMENT_MODE=direct`) -> rewrote the diagram + env list to match the actual
+            submitted flow.
+          - FIND-004 (`buyer-agent/src/goal.ts`, pre-existing upstream dead code, never
+            disclosed) -> doc-comment added: it's the ORIGINAL kit's fork-template for a
+            different demo, inert-by-design (index.ts reads env directly instead).
+          - FIND-005 (adversary's own sandbox had no Bash, same limitation as round 1) -> not
+            a repo issue; it self-corroborated via git ref objects, sufficient.
+          All fixes pushed: `Daisuke134/solana_coralOS@499be56`. Full regression: seller-agent
+          28/28 GREEN, packages/agent-runtime 37/37 GREEN. ROUND 3 (targeted re-check of these
+          5, watching for a 3rd instance of the same overclaiming pattern) not yet run.
 ```
 
 Cross-references: multi-chain GAIN work = task #8 (separate spec/track, not blocking this
