@@ -50,6 +50,10 @@ test("chain:'polygon' is a known, accepted value (same 0x id shape as base)", ()
   const r = validate({ ...valid, chain: "polygon" });
   assert.strictEqual(r.ok, true);
 });
+test("chain:'polygon-proxy' is a known, accepted value (delegate-signed, always unverified by design)", () => {
+  const r = validate({ ...valid, chain: "polygon-proxy" });
+  assert.strictEqual(r.ok, true);
+});
 test("rejects an unknown chain value", () => {
   const r = validate({ ...valid, chain: "ethereum" });
   assert.strictEqual(r.ok, false);

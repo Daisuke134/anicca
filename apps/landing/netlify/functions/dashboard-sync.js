@@ -9,7 +9,12 @@ const { makeBaseReader, makeSolanaReader, makePolygonReader } = require("./_lib/
 async function buildReaders(rows, deps = {}) {
   if (deps.readers) return deps.readers;
   const byChain = { base: [], solana: [], polygon: [] };
-  for (const row of rows) byChain[row.chain === "solana" || row.chain === "polygon" ? row.chain : "base"].push(row.id);
+  for (const row of rows) {
+    // "polygon-proxy" rows deliberately get NO reader (see telemetry-schema.js) — skip them here so
+    // we don't waste an RPC read on an address that enrichOnChain will never look up under that key.
+    if (row.chain === "polygon-proxy") continue;
+    byChain[row.chain === "solana" || row.chain === "polygon" ? row.chain : "base"].push(row.id);
+  }
   const [base, solana, polygon] = await Promise.all([
     makeBaseReader(byChain.base),
     makeSolanaReader(byChain.solana),
