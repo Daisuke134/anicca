@@ -1178,3 +1178,61 @@ all beings (humans, animals, aliens — no discrimination).
 Each bullet maps to a REQ above (API-key-free→REQ-MODEL/FOOD; realtime dashboard→REQ-DASH-*; self-*→§4;
 UBI→§5.2/§8; co-evolution→PoE/§7). This launch is only honest once the AI has produced its FIRST verified
 earned tx (§0 truth: today $0) — the §10 milestone gate. Ship the announcement only after that is real.
+
+---
+
+## §11 — NO-HUMAN-CREDENTIALS INVARIANT + 3-ARTICLE PLAN (2026-07-04, Dais 厳命)
+
+### §11.0 INVARIANT (最上位・全 earner に適用)
+**no-human-in-loop = no-human-CREDENTIALS.** 人間の credential(Google ログイン / Dais の口座 /
+人間が KYC した account / 人間が握る鍵)を1つでも使ったら = 違反。各 AI instance は **自分で生成・自分で
+握る wallet 秘密鍵だけ** で earn を完結しなければならない。
+
+- ★ 帰結1: Polymarket を「Dais の Google で polymarket.com に onboard」する道は **禁止**(人間 credential)。
+  許されるのは「AI 自身の EOA から programmatic に deposit wallet を deploy → 取引」or「口座不要の代替 venue」。
+- ★ 帰結2: 各 earner skill は `signup / login / OAuth / human account` を要求してはならない。要求する瞬間 = 設計失格。
+- ★ 帰結3: 資金も human credential 経由で入れない。AI の wallet に直接 USDC/USDC.e、あとは Relay で任意チェーン変換。
+
+### §11.1 POLYMARKET V2 の現状(実弾検証 2026-07-04)
+- ✅ 突破済: V1 SDK 死亡→py-clob-client-v2、pUSD collateral、Relay 資金変換(実 tx)、order build+post。
+- ❌ 壁: V2 は登録済み deposit wallet(sig_type 3 POLY_1271)からの注文のみ受理。EOA 直(sig0)/自作 Safe(sig2)は
+  "maker address not allowed"。かつ issue #67 で sig3 も "signer address has to be the address of the API KEY"。
+- 検証中(subagent 2体): (a) sig3 deposit wallet を **人間 credential なしで programmatic に deploy** できるか
+  (ts-sdk deriveUupsDepositWalletAddress + depositWalletFactory config + factory deploy tx)、(b) 口座不要の代替
+  prediction-market rail(Kalshi API / Limitless / Azuro / SX Bet / Drift BET / Overtime-Thales on-chain 等)。
+- 決定: subagent 結果で「no-human + no-credential + 流動性あり」を1つ選び実装。人間 onboard 路(#47 旧案)は破棄。
+
+### §11.2 3 記事の設計(要素を先に集めてから執筆 = smooth に書く為)
+全記事: Voice = Daisuke Narita / Anicca = プロダクト。AI-authorship 露出禁止。実数のみ(盛らない)。JP+EN。
+
+| # | 記事 | Thesis(主張1行) | 集める要素(evidence) | 出す場所 |
+|---|---|---|---|---|
+| ART-A (#36) | 人間なしで AI が金を稼ぐ方法 = Anicca という「環境」 | AI は human-agency 依存から解放される。Anicca = どの AI も spawn した瞬間 earn skill+自己燃料+自己改善 loop を持つ環境 | ①アーキ ASCII ②earn rail 一覧(x402/trading/gig)③自己燃料(ClawRouter/wallet)④実 tx(Relay swap d4b25247…)⑤現収益実数(正直に $0 でも)⑥dashboard link | Zenn/Dev.to/Substack/aniccaai.com |
+| ART-B (#37) | BlockRun Franklin を人間なしで稼がせた(Vicky向け広告) | 自己資金 AI Franklin が BlockRun rails(food=推論/shelter=Modal/x402 wallet)で no-human 稼働 | ①Franklin wallet 8Fpqd… ②BlockRun 18-tool MCP の使用ログ ③実 swap/earn tx ④コスト(opus $0.91 焼き→gpt-5-mini 修正の学び)⑤Vicky @bc1beat メンション | Substack + Vicky に DM/共有 |
+| ART-C (#38) | 人間なしで AI が自己改善する方法 = loop engineering | GLVS harness(Goal→Loop→Verify→State)+ fresh-context adversary で maker≠checker | ①H1-H3 trace/self-eval/self-improve の実コード ②self-eval.mjs の DEAD-ACTION 検出例 ③実 loop ログ(earn ledger 反映)④Boris Cherny/loop-engineering 出典 ⑤VSDD adversary gate | Zenn/Dev.to/Substack |
+
+各記事の共通「集めるべきコア証拠」= ①実 on-chain tx hash ②実収益実数 ③再現可能な steel script(skill) ④dashboard の live リンク。
+これが揃うと3記事は evidence を差し替えるだけで書ける。★ tx と実数が出るまで記事は "draft" 止め(no-scam)。
+
+### §11.3 PIVOT: Polymarket は死んでる → Limitless Exchange が credential-free の正解(subagent 検証 2026-07-04)
+**Polymarket V2 = programmatic trading がフリート全体で壊れている**(公式 issue #65/66/67/69/70/73/75/83/85):
+- #69: 新規口座は sig 0/1/2 = "maker not allowed"、sig 3 = "signer must be API KEY" → 全滅。
+- #70: 稀に通っても ~11秒後にサーバが periodic sweep で勝手に cancel。
+- TS/Python SDK 両方 dead。唯一の希望 = Rust SDK `polymarket-client-sdk-v2`(未検証)。subagent1 が検証中。
+- → ★ 結論: Polymarket を earn-skill の土台にしない。#42/#43/#46/#47 は Rust 検証待ちで保留、主軸から外す。★
+
+**Limitless Exchange (Base) = no-human + no-KYC + agent-native + 実働**:
+- Auth = EOA + scoped HMAC token(wallet-connect で導出、KYC/email 不要)= no-human-credentials 原則に完全合致。
+- 公式 repo `limitless-labs-group/agents-starter`(MIT, 2026-07-02 まで更新, AI agent 用 SKILL.md/AGENTS.md 同梱)。
+- 3 戦略: `cross-market-mm`(Limitless quote + Polymarket hedge = hedge脚は上記バグで未検証), `oracle-arb`
+  (Pyth 価格 vs market → FOK), `certainty-closer`(決着間近の favorite を Kelly で買う = 最簡)。
+- ★ 単一venue戦略(oracle-arb / certainty-closer)= EOA + Base USDC だけで動く。Polymarket 依存ゼロ。★
+- Maker rebate = Daily/Hourly/15-min Crypto で taker fee の 100% 還元。LP reward 日次。
+- ★ 資金: 私は既に Base USDC を持つ(0xa3cd $8.76 / 0x810f $0.30)= bridge 不要で即着手可能。★
+
+**代替 venue ランキング(no-human+no-KYC+流動性)**: Limitless > SX Bet(sports) / Myriad > Azuro/Overtime(AMM-LP) >
+Kalshi(KYC 壁) > Polymarket(programmatic 現在不能)。
+
+**次アクション(earn の主軸をここに移す)**: `limitless-labs-group/agents-starter` を README 読んで setup →
+oracle-arb か certainty-closer を AI 自身の Base wallet で no-human 実走 → 実 fill tx + 実 P&L → earnings ledger に実数 →
+これが記事 ART-A の「実際に稼いだ」証拠になる。
