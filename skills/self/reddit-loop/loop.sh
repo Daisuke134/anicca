@@ -21,8 +21,7 @@ KARMA="$(python3 -c "import json;d=json.load(open('$ACCTS'));a=(d if isinstance(
 SIGNUPS="$(grep -c . "$DIR/state/attributed-signups.jsonl" 2>/dev/null||echo 0)"
 PREV="$(grep -E '^comment_karma_total:' "$STATE_MD" 2>/dev/null|awk '{print $2}'|tail -1)"; PREV="${PREV:-n/a}"
 if [ -n "$HEAL" ]; then STATUS="HEAL-NEEDED — ${HEAL}"
-elif [ "$KARMA" -lt 50 ] 2>/dev/null; then STATUS="WARMING — karma $KARMA (<50): keep making genuine value-first comments in r/ADHD etc; do NOT post product links yet (new/low-karma accounts get auto-removed)"
-else STATUS="READY — karma $KARMA: post occasional genuine builder-story + answer real questions; product surfaces naturally as the lateness pain, never pushy; track reddit→LM signups"; fi
+else STATUS="ACT — post ONE honest DISCLOSED builder contribution this pass in a self-promo-welcome sub (r/SideProject / r/SomebodyMakeThis / relevant feedback thread): 'I built a small ADHD-lateness tool, free to try, feedback welcome'. No karma-farming, no covert warm-then-shill. Answer genuine replies. karma=$KARMA (informational only). Log real posts→posts.jsonl, real signups→attributed-signups.jsonl"; fi
 if [ -n "$HEAL" ]; then mkdir -p "$(dirname "$REQ")"; printf '{"loop":"reddit","ts":"%s","heal":"%s"}\n' "$(date -u +%FT%TZ)" "${HEAL//\"/}" > "$REQ"; else rm -f "$REQ" 2>/dev/null||true; fi
 TMP="$STATE_MD.tmp.$$"
 {
