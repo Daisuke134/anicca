@@ -26,8 +26,16 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # candidate for HOW the v2 pkill-by-name still let duplicates through. macOS has no
 # `flock` binary (confirmed absent, unlike Linux), so this uses mkdir as an atomic lock
 # (same proven pattern as ~/scripts/disk-cleaner.sh's LOCK_DIR).
+#
+# v5 (2026-07-04, self-heal-harness spec): STALE detection, ported verbatim from
+# gig-healthcheck.sh (the one loop that never suffered a duplicate-pile-up). Detects
+# "tmux session alive but the in-session hourly cron stopped firing" via a heartbeat
+# file the cron prompt touches only on a genuinely COMPLETED pass (clip-cli.sh STARTUP
+# now does `FINALLY touch .clip-core-last-pass`). STALE_MIN=90 matches clip's hourly
+# cadence (gig uses the same 90min for its hourly cadence too).
 set -uo pipefail
 SOCK="/tmp/anicca-clip-tmux.sock"; SESSION="anicca-clip-core"
+HB="$HOME/.openclaw/state/.clip-core-last-pass"; START="$HOME/.openclaw/state/.clip-core-last-start"; STALE_MIN=90
 LOG="$HOME/.openclaw/logs/clip-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/.openclaw/state/.clip-core-restart-log"
 
@@ -54,12 +62,25 @@ restart() {
   pkill -f "claude --name $SESSION" 2>/dev/null || true
   pkill -f "tmux -S $SOCK new-session" 2>/dev/null || true
   sleep 1
-  echo "$(date '+%F %T') clip-core DEAD → restarting" >> "$LOG"
+  echo "$(date '+%F %T') ${1:-clip-core DEAD} → restarting" >> "$LOG"
   bash "$HOME/anicca/skills/earn/clip/clip-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
-if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
-  echo "$(date '+%F %T') clip-core ALIVE" >> "$LOG"
+if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
+  restart "clip-core DEAD"
+elif [ ! -f "$HB" ]; then
+  # NOTE: if $START itself is missing (e.g. a session started before this healthcheck
+  # version existed), fall back to "now" (age=0) instead of epoch-0 — epoch-0 made
+  # START_AGE ~30M minutes and triggered an immediate false restart (caught same session).
+  START_MTIME="$(stat -f %m "$START" 2>/dev/null || date +%s)"
+  START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
+  if [ "$START_AGE" -ge "$STALE_MIN" ]; then
+    restart "clip-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+  else
+    echo "$(date '+%F %T') clip-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+  fi
+elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || date +%s)) / 60 ))" -ge "$STALE_MIN" ]; then
+  restart "clip-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
-  restart
+  echo "$(date '+%F %T') clip-core ALIVE+fresh" >> "$LOG"
 fi
