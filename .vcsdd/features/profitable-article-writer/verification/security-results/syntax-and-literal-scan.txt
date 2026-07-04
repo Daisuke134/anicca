@@ -1,0 +1,19 @@
+# Captured security-hardening tool outputs — profitable-article-writer Sprint 1 (2026-07-04T07:49:22Z)
+
+## bash -n syntax check (every script)
+  OK   run.sh
+  OK   gates/v0.sh
+  OK   gates/v05.sh
+  OK   gates/publish-gate.sh
+  OK   identity/accounts.sh
+  OK   lib/config.sh
+  OK   tests/run-red.sh
+
+## provider/model/API-key literal scan (expect 0 in real logic; 'sonnet' tier label allowed)
+matches:
+(eval):11: no matches found: --include=*.sh
+  (none)
+
+## suite result
+===================================================
+RED-PHASE SUMMARY: 13 test files, 13 PASS, 0 FAIL
