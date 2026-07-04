@@ -1,0 +1,17 @@
+{
+  "featureName": "coralos-anicca-seller",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-coralos-anicca-seller-1783170719959",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T13:11:59.957Z",
+  "updatedAt": "2026-07-04T13:11:59.957Z"
+}
