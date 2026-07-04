@@ -27,7 +27,7 @@
 | worktree(anicca OSS分) | `~/anicca`側は別途`.worktrees/clip-cloud-adapter/`(`producer.sh`用) |
 | ブランチ | `feature/clip-cloud-adapter`(git管理下の2リポジトリそれぞれで作成) |
 | 対象repo | `~/anicca`(git管理、`earn/clip`本体) + `~/anicca-project`(git管理、`launch_clip_browser.py`) + `~/.claude/skills/`(**git管理外**、cdp.py系・pipeline.py系はこちら、直接編集のみ) |
-| 状態 | spec REV6(GATE 1ラウンド1-5 FAIL、指摘反映。ラウンド6審査待ち) |
+| 状態 | spec REV6、**GATE 1 PASS(ラウンド6)**。GATE 2(実装)着手中 |
 
 ### REQ→変更ファイル→git管理モード 対応表(ラウンド5指摘、implementer向けサマリ)
 
@@ -294,5 +294,8 @@ cookie無し実行にフォールバックする設計が実装済み**(2026-07-
   手動で突き合わせる必要があると指摘。
 - **ラウンド6(REV6、本ファイル)**: 「開発環境」section内にREQ→変更ファイル→
   git管理モードの対応表を新設し、6ファイルそれぞれの扱いを1箇所で一覧できる
-  ようにした。次はこのREV6を再度fresh-context adversaryにかけ、PASSするまで
-  実装に進まない。
+  ようにした。
+- **ラウンド6: PASS。** 対応表の6ファイル全件が既存の検証結果と矛盾なく確認され、
+  §6の過去ラウンド履歴(旧citation含む)は「過去の誤りとして明記されている
+  記述」であり生きた主張ではないと判定。全文再読でも新規の矛盾なし。
+  **GATE 1(SPEC)完了。次はGATE 2(TDD: RED→GREEN→REFACTOR)へ進む。**
