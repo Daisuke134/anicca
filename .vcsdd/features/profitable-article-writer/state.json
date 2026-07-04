@@ -693,8 +693,8 @@
   },
   "gates": {
     "3": {
-      "verdict": "PASS",
-      "timestamp": "2026-07-03T20:39:39.566Z",
+      "verdict": "FAIL",
+      "timestamp": "2026-07-04T10:14:48.457Z",
       "reviewedBy": "adversary"
     },
     "1c": {
@@ -718,5 +718,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-03T15:16:08.410Z",
-  "updatedAt": "2026-07-04T10:02:48.799Z"
+  "updatedAt": "2026-07-04T10:14:48.457Z"
 }

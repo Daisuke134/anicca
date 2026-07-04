@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "criterion": "CRIT-103,CRIT-104",
+  "description": "run.sh's own top-of-file INTERFACE comment (lines 1-23) documents only the Sprint-1 ARTICLE_TEST_* env vars (ARTICLE_DIR, AUTONOMY, ARTICLE_TEST, ARTICLE_TEST_TOPIC, ARTICLE_TEST_RESEARCH, ARTICLE_TEST_V0_RESULTS, ARTICLE_TEST_V05_RESULTS, ARTICLE_TEST_MODE). It omits every Sprint-2 real-mode env var the script's own logic actually consumes: ARTICLE_REAL_TOPIC / ARTICLE_REAL_RESEARCH / ARTICLE_REAL_DRAFT_PATH (used at lines 95-96, 116) and ARTICLE_NOTE_TITLE / ARTICLE_NOTE_KEY / ARTICLE_NOTE_PRICE / ARTICLE_NOTE_PAYWALL_HEADING (used at lines 263-266). A reader relying solely on run.sh's own documented interface (the single most authoritative place to learn how to invoke this entrypoint) would not discover how to invoke the real REQ-19 daily-executor path or the real Mode-A note-publish path at all.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "1-23",
+    "snippet": "#   env in:  ARTICLE_DIR ... AUTONOMY ... ARTICLE_TEST=1 ... ARTICLE_TEST_TOPIC ... ARTICLE_TEST_RESEARCH ... ARTICLE_TEST_V0_RESULTS ... ARTICLE_TEST_V05_RESULTS ... ARTICLE_TEST_MODE\n(no mention anywhere in this header of ARTICLE_REAL_TOPIC/ARTICLE_REAL_RESEARCH/ARTICLE_REAL_DRAFT_PATH/ARTICLE_NOTE_TITLE/ARTICLE_NOTE_KEY/ARTICLE_NOTE_PRICE/ARTICLE_NOTE_PAYWALL_HEADING, all of which are read later in the same file)"
+  },
+  "routeToPhase": "2c"
+}

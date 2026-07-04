@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "criterion": "CRIT-105",
+  "description": "CRIT-105's passThreshold requires the second, post-PROP-21-fix draft (key nfb2ace9f0ed8) evidence screenshot to show '記事タイプ=有料/¥500 in the live DOM'. The actual delivered screenshot at ~/.cloak/note-work/single-price-nfb2ace9f0ed8.png does NOT show this: it is a full-page screenshot of the plain article body (title, paragraphs, embedded figures, 出典 section) with no publish/price panel visible anywhere. This is not a labeling accident -- it is the direct, inevitable result of lib/note-set-single-price.py's own control flow: the script opens the 公開に進む (proceed-to-publish) overlay, selects the 有料 radio and fills the price field (lines 73-116), then explicitly closes that overlay via a キャンセル click (lines 118-125, done deliberately so the body editor underneath becomes interactable for the paid-line insertion), and ONLY THEN takes its single full-page screenshot (lines 165-167) -- after the overlay is already closed. There is no earlier screenshot capturing the panel while the 有料/¥500 state is visibly on-screen. I visually inspected the delivered PNG directly (via image read) and confirmed no such panel is present at any point in the captured page. The SINGLE_PRICE_TYPE/SINGLE_PRICE_VALUE facts are only proven programmatically (via a DOM eval, printed to stdout) -- not visually, as CRIT-105 explicitly requires for the human/verifier (REQ-20) browser review.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-set-single-price.py",
+    "lineRange": "104-125,165-167",
+    "snippet": "for b in pg.query_selector_all(\"button,a\"):\n    if (b.text_content() or \"\").strip() == \"キャンセル\":\n        b.click()\n        time.sleep(2)\n        break\n...\nshot = os.path.join(WORK, f\"single-price-{note_key}.png\")\npg.screenshot(path=shot, full_page=True)"
+  },
+  "additionalEvidence": [
+    {"type": "artifact", "location": "/Users/anicca/.cloak/note-work/single-price-nfb2ace9f0ed8.png", "description": "Delivered evidence PNG visually inspected directly: shows only the plain article body ending at the 出典 section; no 記事タイプ/有料/¥500 publish-settings panel is visible anywhere in the full-page capture."}
+  ],
+  "routeToPhase": "2b"
+}

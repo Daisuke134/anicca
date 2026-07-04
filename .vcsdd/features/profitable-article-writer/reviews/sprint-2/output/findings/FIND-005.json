@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "criterion": "CRIT-104",
+  "description": "lib/note_publish.sh's run_note_mode_a_publish captures each Python sub-step's COMBINED stdout+stderr verbatim via `2>&1` into $create_out (line 177), $eyecatch_out (line 192), $price_out (line 199), and $verify_out (line 205), then re-emits that raw captured text verbatim to its own stderr on any non-zero return (lines 179, 194, 201, 218) with NO redaction/sanitization whatsoever. Every one of these subprocess calls loads the install's stored NOTE_COOKIES_FILE and drives either an HTTP client (note_mcp) or a real browser session (cloakbrowser) authenticated with those cookies. If note_mcp or cloakbrowser ever raises an exception whose message embeds request/response detail (a realistic failure mode for HTTP/browser client libraries -- e.g. an error body echoing a Set-Cookie header, a session/auth token, or a redirected URL containing a token), that content propagates unredacted into the wake's stderr/log stream. CRIT-104's own passThreshold is explicitly concerned with credential leakage into 'the human/verifier-facing evidence artifact', but the only test coverage that exists (tests/test-prop20-note-publish-failclosed.sh) checks the STATIC SHAPE of notify.json only -- no test in the suite simulates a sub-step exception containing credential-shaped content and asserts it is excluded/redacted from the wake's stderr output. This is a real, untested credential-leak surface distinct from (and not covered by) the notify.json-only check that exists today.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note_publish.sh",
+    "lineRange": "176-219",
+    "snippet": "create_out=\"$(note_create_rich_draft \"$draft_path\" \"$title\" 2>&1)\"; create_rc=$?\nif [ $create_rc -ne 0 ]; then\n  echo \"run_note_mode_a_publish: note_create_rich_draft failed: $create_out\" >&2\n  return 1\nfi"
+  },
+  "routeToPhase": "2b"
+}

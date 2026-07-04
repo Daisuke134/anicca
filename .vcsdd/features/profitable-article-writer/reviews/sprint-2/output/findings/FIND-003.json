@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "major",
+  "criterion": "CRIT-103",
+  "description": "run.sh's generate_draft real-content hook only checks `[ -n \"${ARTICLE_REAL_DRAFT_PATH:-}\" ] && [ -f \"${ARTICLE_REAL_DRAFT_PATH:-}\" ]` to decide between state (a) (real content, verbatim) and state (b) (boilerplate safety-net). This means a caller that SUPPLIES a real ARTICLE_REAL_DRAFT_PATH pointing at a NON-EXISTENT file (e.g. a typo, a race condition where the file hasn't been written yet, or a wiring bug in the real daily-executor) silently falls through to the SAME undocumented boilerplate branch as state (b) -- with ZERO stderr diagnostic anywhere distinguishing 'caller never intended a real draft' from 'caller intended a real draft but the path was wrong'. Neither PROP-19's row in verification-architecture.md nor CRIT-103's passThreshold acknowledges this 'path supplied but missing' sub-case as a distinct, intentional state, and no test in tests/test-prop19-real-content-hook.sh exercises it. In the real REQ-19 daily-executor path (which per the spec always supplies topic/research and the draft together), a wiring bug of this exact shape would cause the wake to silently draft/publish Sprint-1 boilerplate content under Mode A instead of the agent's real researched article, completely undetected, defeating PROP-19's entire purpose.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "114-129",
+    "snippet": "generate_draft() {\n  local topic=\"$1\" out=\"$2\"\n  if [ \"${ARTICLE_TEST:-}\" != \"1\" ] && [ -n \"${ARTICLE_REAL_DRAFT_PATH:-}\" ] && [ -f \"${ARTICLE_REAL_DRAFT_PATH:-}\" ]; then\n    cp \"$ARTICLE_REAL_DRAFT_PATH\" \"$out\"\n    return 0\n  fi\n  cat > \"$out\" <<EOF\n# ${topic}: the pattern most people miss in the first 10 hours\n..."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,63 @@
+{
+  "sprintNumber": 2,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-2.md",
+    "methodologyNote": "This review tool has NO Bash/execution tool available in this session -- tests/run-red.sh could NOT be independently executed by this adversary. The evidence log at .vcsdd/features/profitable-article-writer/evidence/sprint-2-green-phase.log claims 17/17 test files PASS, and this claim was cross-checked (not re-executed) by: (a) confirming all 17 named test files actually exist on disk with matching names, (b) statically tracing gates/v0.sh, gates/v05.sh, run.sh, and lib/note_publish.sh line-by-line against each test file's assertions to independently verify the claimed PASS/FAIL outcomes are consistent with the code as written, and (c) directly viewing (image-read) the two delivered real-wake evidence screenshots referenced by CRIT-105. Static tracing surfaced concrete, citable defects (see findings) that a green test run alone would not reveal, including one (FIND-008) that shows a specific test assertion is a near-tautology given run.sh's own always-exit-0 design."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-009"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:101-108", "description": "REQ-19 reviewed against lib/note_publish.sh's actual routing; REQ-19's 'eyecatch/paywall-gate reuse, never rebuilt' claim is stale relative to the Sprint-2 implementation's own candid header admission that those specific sub-scripts were abandoned and replaced."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:1-221", "description": "Verified note_publish.sh does reuse $NOTE_PUBLISH_SCRIPT for verify and note_mcp's create_draft transitively for draft creation (REQ-19's core claim holds for those two facts)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop18-v05-jp-sentences.sh:1-56", "description": "Verified all 3 sub-fixtures are internally discriminating (unsplit concatenation >60 chars, each real sentence <=60) as CRIT-102 requires; separately identified that the underlying tr-based splitter mechanism (gates/v05.sh:111) is not proven safe against arbitrary real Japanese prose or unpinned locale, an edge case the narrow fixtures do not cover."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-005", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-create-rich-draft.py:1-168", "description": "Verified real note_mcp.create_draft/upload_body_image/generate_image_html calls exist, error paths return non-zero with stderr reasons, never fabricate a visual URL."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py:1-179", "description": "Verified the 有料 radio selection and price fill logic, and confirmed (via grep) no 投稿する/更新する click target exists anywhere in the file -- Mode-A's REQ-6 fail-closed gate is preserved."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-006", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:60-221", "description": "Confirmed run_note_mode_a_publish's partial-failure policy matches CRIT-106's structural requirement: step-1 (create) failure aborts before any key exists; step-2/3 (eyecatch/price) failures are logged to stderr but never abort or fabricate the returned key/URL."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/state/2026-07-04-x402-jp.md:1-81", "description": "Verified the real evidence article does NOT contain the Sprint-1 boilerplate marker string ('burn 10+ hours') and DOES contain a '## 出典' section with 2 real https:// citation links (x402.org, docs.x402.org) -- CRIT-105's clause (i)/(ii) on the article artifact are satisfied."},
+        {"type": "image", "location": "/Users/anicca/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png", "description": "Directly viewed: confirms a real cover/eyecatch image and embedded hero/inline-figure diagrams are visibly rendered in the second (post-fix) draft -- this half of CRIT-105's visual evidence requirement is satisfied."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 9,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-102", "CRIT-103", "CRIT-104", "CRIT-105", "CRIT-106"],
+    "duplicateFindings": []
+  }
+}

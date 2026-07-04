@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "edge_case_coverage",
+  "severity": "major",
+  "criterion": "CRIT-102",
+  "description": "gates/v05.sh's real criterion-(e) sentence splitter uses `tr '.!?。！？' '\\n\\n\\n\\n\\n\\n'` to recognize both ASCII and Japanese full-width terminal punctuation as sentence boundaries. `tr` (GNU coreutils in particular, and any invocation running under the C/POSIX locale -- the common default for minimal/cron/headless environments such as the unattended `claude -p` daily-executor wake this gate is designed for, per REQ-19) operates byte-wise, not full-Unicode-codepoint-wise. The three Japanese punctuation marks encode to multi-byte UTF-8 sequences (。=E3 80 82, ！=EF BC 81, ？=EF BC 9F) whose continuation bytes (0x80, 0x82, 0xBC, 0x9F, plus the shared lead byte 0xE3) also appear as continuation/lead bytes inside countless OTHER, unrelated Japanese characters (e.g. the common hiragana あ is E3 81 82, sharing byte 0x82 with 。's third byte). Because SET2 in this `tr` call is entirely composed of the repeated single byte '\\n', ANY byte from SET1 that a byte-oriented `tr` matches gets translated to a newline -- risking spurious sentence-boundary insertion in the middle of ordinary Japanese words/characters that have nothing to do with real sentence-ending punctuation, corrupting the (e) percentage computation on real-world Japanese prose in ways the narrow, repetitive test fixtures in tests/test-prop18-v05-jp-sentences.sh do not exercise. No file under skills/profitable-article-writer pins LANG/LC_ALL/LC_CTYPE (grep across the whole skill tree for 'LANG=|LC_ALL|LC_CTYPE|locale' returns zero matches), so the real behavior of this gate depends entirely on whatever locale the invoking shell happens to have -- an untested, unpinned edge case directly relevant to REQ-19's real unattended Japanese-content wake.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/gates/v05.sh",
+    "lineRange": "110-126",
+    "snippet": "plain=\"$(echo \"$body\" | grep -vE '^#' | grep -vE '^[[:space:]]*$')\"\nsentences=\"$(echo \"$plain\" | tr '.!?。！？' '\\n\\n\\n\\n\\n\\n' | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' | grep -vE '^$')\""
+  },
+  "additionalEvidence": [
+    {"type": "grep", "location": "skills/profitable-article-writer/", "description": "grep for LANG=|LC_ALL|LC_CTYPE|locale across the whole skill tree returns 0 matches -- no locale is ever pinned for this arithmetic."}
+  ],
+  "routeToPhase": "2b"
+}

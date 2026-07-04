@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "criterion": "CRIT-106",
+  "description": "lib/note-set-eyecatch.py and lib/note-set-single-price.py -- both authored in this same sprint -- duplicate ~20 lines of near-identical logic verbatim: the cookie-file existence check + JSON load + cookie-dict-to-list conversion (compare note-set-eyecatch.py lines 44-52 to note-set-single-price.py lines 49-54), and the cloakbrowser session bootstrap + navigate + 'wait up to 20s for 公開に進む to appear in body innerText' polling loop (compare note-set-eyecatch.py lines 54-68 to note-set-single-price.py lines 56-70) -- differing only in one viewport-height constant and one log string. Neither file factors this into a shared helper module (e.g. a lib/note_browser_common.py), despite both files living in the same lib/ directory and being written together for the same PROP-21 fix.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-set-eyecatch.py",
+    "lineRange": "44-68",
+    "snippet": "if not os.path.isfile(COOKIES_FILE): ...\nwith open(COOKIES_FILE) as f: ck = json.load(f)\ncookies = [{\"name\": k, \"value\": v, \"domain\": \".note.com\", \"path\": \"/\"} for k, v in ck.items()]\nctx = launch_context(headless=True, humanize=False)\n... for _ in range(20): if \"公開に進む\" in pg.evaluate(...): loaded = True; break"
+  },
+  "additionalEvidence": [
+    {"type": "file", "location": "skills/profitable-article-writer/lib/note-set-single-price.py", "description": "Lines 49-70 duplicate the same cookie-load + session-bootstrap + wait-for-公開に進む block almost verbatim."}
+  ],
+  "routeToPhase": "2c"
+}

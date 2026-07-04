@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "criterion": "CRIT-104",
+  "description": "CRIT-104's passThreshold literally states: 'grep confirms lib/note_publish.sh calls the EXISTING $NOTE_PUBLISH_SCRIPT and note_mcp.api.articles.create_draft'. I read lib/note_publish.sh in full: the literal string 'create_draft' never appears anywhere in that file (it only appears in lib/note-create-rich-draft.py, a different file, at the point where THAT file imports note_mcp's create_draft). The criterion as worded therefore does not correspond to a real, greppable fact about the named file. No test file in the suite (tests/test-prop20-note-publish-failclosed.sh, tests/test-prop21-visual-and-single-price.sh) actually performs this grep against lib/note_publish.sh either -- test-prop21 greps 'create_draft' against $RICH_DRAFT_PY (the correct file), never against $NOTE_PUBLISH_SH. This is a genuine criteria-to-artifact mapping defect: CRIT-104's own passThreshold cannot be mechanically verified as written against the file it names, which is exactly the kind of non-binary-evaluable criterion structural_integrity review is meant to catch.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/lib/note_publish.sh",
+    "lineRange": "1-221",
+    "snippet": "(grep -c 'create_draft' lib/note_publish.sh == 0; the only calls this file makes are to $NOTE_PUBLISH_SCRIPT (verify subcommand only, line 154) and to $NOTE_CREATE_RICH_DRAFT_PY / $NOTE_SET_EYECATCH_PY / $NOTE_SET_SINGLE_PRICE_PY as external python scripts, lines 104-105, 124, 142)"
+  },
+  "routeToPhase": "1b"
+}
