@@ -240,9 +240,11 @@ def _mint_relayer_api_key(acct) -> str:
             sig_hex = "0x" + acct.sign_message(encode_defunct(text=plaintext)).signature.hex()
             combined = json.dumps(fields, separators=(",", ":")) + ":::" + sig_hex
             bearer = base64.b64encode(combined.encode()).decode()
-            s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
-            r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth", json={}, timeout=20)
-            r.raise_for_status()
+            login = s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
+            r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth",
+                       headers={"Authorization": "Bearer " + bearer}, json={}, timeout=20)
+            if r.status_code != 200:
+                raise RuntimeError(f"relayer /auth {r.status_code}: {r.text[:200]} | login {login.status_code}: {login.text[:120]}")
             data = r.json()
             api_key = data.get("apiKey") or data.get("api_key")
             if not api_key:
