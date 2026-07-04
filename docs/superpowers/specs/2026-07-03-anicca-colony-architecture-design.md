@@ -1819,3 +1819,24 @@ NEXT — in order:
 END STATE: colony が earn>spend で自走・自己増殖・自己修復・相互扶助、余剰を UBI で人間へ、
            human=0 / Claude(俺)=0 in the loop。俺の役 = harness を作り verify して消える。
 ```
+
+### §47 ★ #18 DASH: activity+revenue feed を real-time 化 → 実ブラウザで verify(Dais「hardcode でなく real-time で見せろ」2026-07-05)★
+
+**Dais 厳命**: 「are they in realtime?? Not some hardcoded motherfucker... verify means going to the browser and seeing that shit」。
+
+**症状(修正前)**: claude-p と Franklin の `/<host>` ページが "No measurable revenue / waiting for the next wake…" のまま。
+**根本原因**: 両 poster(telemetry-post-claude-p.mjs / telemetry-post-franklin.mjs)が net_worth と未実現しか送らず、ページが読む `log`(shape {ts,kind,slot,model,note})と `revenue_by_source` を送っていなかった。ページは `log_feed` でなく `log` を読む。
+
+**修正**:
+- telemetry-post-claude-p.mjs: `activityAndRevenue()` を追加。mother earn-ledger(state/earn-ledger.jsonl)から wallet==0x904B50d2 の realized 行だけ拾い、revenue_by_source(source 別 net_usdc 合計) + log(直近15) を送る。未実現 PnL は revenue に載せない(paper gain は earnings でない)。
+- telemetry-post-franklin.mjs: `activityLog()` を追加。~/.blockrun/state/ledger.jsonl の直近15 wake を log(ts,kind,slot,model,note) で送る。Franklin の realized は $0(edge<fee で正しく WAIT)なので revenue_by_source={}/revenue=0 と正直に。
+
+**real-time verification(実ブラウザ, playwright-cli, 2026-07-05)**:
+1. ★hardcode でない証明★: 同一 URL(Franklin ページ)を時刻差で fresh load → 最新エントリが 08:28:39 → 08:33:11 と変化。実 wake を追従。hardcode なら不変。
+2. ★pipeline が real-time の証明★: dashboard-sync の Franklin log 最新 ts(08:33:11) == 実 ledger の直近 wake(08:33:11) == daemon の直近 POST。Franklin は約2分ごと wake → 毎 pass fresh log を POST。
+3. ★ページの live-poll★: AgentClient.tsx は `setInterval(load, 4000)` で4秒 poll(コード確認)。実ユーザーの focused ブラウザなら4秒ごと自動更新。
+4. ★正直な caveat★: 俺の headless テストタブの自動 poll は throttle された(reload なしで進まず)= Chromium headless の background-tab timer throttle(memory `reference_dedicated_antithrottle_browser_for_video_playback.md` の既知挙動)。ページのバグでなくテストハーネス側の制約。fresh load は毎回 current を返す。
+
+**claude-p 側 verify(先行, playwright-cli)**: Live activity に redeem 6件 + Revenue by source "polymarket-redeem $8.47" 表示を実ブラウザで確認済み。
+
+**status**: #18 の「activity+revenue feed が real-time」サブ目標 = DONE(実ブラウザ verify 済)。#18 残り(全個体 model×P&L eval page + family tree + self-funded 率)= 継続。両 poster は origin/main に push 済み。
