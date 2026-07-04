@@ -72,6 +72,9 @@ def main():
     by=round(best_bid(book_yes),3)
     book_no=c.get_order_book(token_id=no)
     bn=round(best_bid(book_no),3)
+    try: c.cancel_all(); print("  cancel-and-replace: cleared old quotes")  # avoid stacking each loop pass
+    except Exception as e: print("  cancel_all:", str(e)[:60])
+    ba=c.get_balance_allowance(asset_type="COLLATERAL")
     MIN_SIZE=5      # Polymarket CLOB minimum order size = 5 shares
     avail=int(ba.balance)/1e6
     orders=[]
