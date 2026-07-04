@@ -93,16 +93,46 @@ Dais verbatim: 「ライフタイムのプランが日本語で出ればいい�
 - 本セッションの成果物 = コード変更 + Maestro yaml + 本 spec を push + draft PR。
 - ビルド/E2E/提出は Mac 上で以下を実行 (§7)。
 
-## 7. Mac 側リリース手順 (Dais が実行)
+## 7. リリース手順 (2026-07-04 改訂: Claude Code が Mac 上で no-human 実行)
+
+Dais 決定 (2026-07-04 verbatim 要約): ① free trial (intro offer) は **持たない** — ソフトペイウォールのみで出す。
+② 検証は人間でなく AI 自身が E2E で行い、green まで反復する。③ 提出は asc CLI / fastlane で行う。
+
+### 7.1 ASC 実査結果 (2026-07-04, asc CLI + RevenueCat MCP fresh evidence)
+
+| 項目 | 状態 |
+|---|---|
+| live version | 1.9.4 READY_FOR_SALE → 本リリースは **1.9.5** (spec 旧記載 1.9.1 は stale) |
+| lifetime IAP `ai.anicca.app.ios.lifetime` (id 6783239477) | MISSING_METADATA。価格 ¥5,000 (JPY base)・en/ja ローカライズ済。残欠 = 審査スクショ + 提出 |
+| introductory offers (free trial) | 全サブスク 0 件 (API total=0)。**本リリースでは作らない (Dais 決定)** |
+| 本番コード trial 表示 | `hasTrialEligibility { false }` — trial 文言は出ない。この状態を維持 (ASC と整合) |
+| RC current offering `anicca_variant_b` | Monthly/Annual/Weekly/Lifetime 配線済。コード変更不要 |
+
+### 7.2 実行手順 (実行者 = Claude Code, release/1.9.5 worktree)
 
 ```bash
+# 0. PR #268 merge 済 (main 09194e54)。worktree .worktrees/release-1.9.5
 cd aniccaios
-# 1. バージョン bump (App Store は同一ビルド番号を再提出不可)
-fastlane set_version version:1.9.1   # or 適宜
-# 2. Maestro E2E (simulator)
+fastlane set_version version:1.9.5           # 済
+# 1. simulator build + Maestro E2E 3本 (green まで fix→再走反復)
+fastlane build_for_simulator
 maestro test maestro/onboarding/03-soft-paywall.yaml
-# 3. 完全自動リリース (build → upload → wait → submit for review)
+maestro test maestro/v1.8.0/04-paywall_variant_b_en.yaml
+maestro test maestro/v1.8.0/05-paywall_variant_b_ja.yaml
+# 2. ja paywall スクショ (買い切りカード可視) を IAP 審査スクショに転用
+asc iap review-screenshots ... (upload) && asc iap submit --id 6783239477
+# 3. 完全リリース (build → upload → wait → submit for review)
 fastlane full_release
+# 4. verify: asc versions list → 1.9.5 WAITING_FOR_REVIEW / asc iap view → lifetime 提出済
 ```
 
-`fastlane full_release` = build+upload+wait_for_processing+submit_review。完了で「審査待ち(Waiting for Review)」状態になる。
+### 7.3 Done 条件 (GLVS goal)
+
+done = 「asc versions list が 1.9.5 = WAITING_FOR_REVIEW を返す」AND「lifetime IAP が審査提出済 state」AND
+「Maestro 3 本 green の screenshot evidence (ja=買い切り可視 / en=Lifetime 非表示 / ×→feed-scroll 到達)」。
+
+### 7.4 スコープ外 (次イテレーション)
+
+- 無課金ユーザー向けの後日 upgrade 導線 (Settings/feed) — 現状ゼロ、収益リスクとして認識済
+- TikTok ads pause 判断 — リリース確定後に別途
+- 野良 CONSUMABLE IAP `ai.anicca.app.ios` の削除
