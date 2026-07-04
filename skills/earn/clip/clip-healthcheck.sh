@@ -11,6 +11,14 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 #   (a) pkill by PROCESS NAME before restart — survives even when the socket itself is gone
 #   (b) backoff cap (max 5 restarts/60min) — stops a runaway restart loop from burning the
 #       Claude subscription if the underlying cause recurs faster than we can fix it
+#
+# NOTE (2026-07-04, same session): an "also reap orphans on every ALIVE check" v3 attempt
+# was tried and REVERTED — both a pane_pid-based and a newest-by-start-time heuristic each
+# ended up killing the one genuinely live process (verified: session went from ALIVE to
+# "no server running" right after a reap). Auto-detecting "which of N same-named processes
+# is the real one" from outside is unreliable; do not re-add without a verified-safe method.
+# Existing orphans from past incidents must be cleaned up MANUALLY (`ps aux | grep`, compare
+# start times, kill all but the one attached to `tmux ... list-sessions`) — see Task #7.
 set -uo pipefail
 SOCK="/tmp/anicca-clip-tmux.sock"; SESSION="anicca-clip-core"
 LOG="$HOME/.openclaw/logs/clip-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
