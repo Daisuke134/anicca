@@ -3,8 +3,18 @@ per-view clipping). No I/O, no browser: given the pipeline state + now (epoch se
 transition this wake should run. Testable in isolation (tests/test_decide.py). Mirrors earn/video/decide.py.
 
 The clip-promote lifecycle (one campaign-clip item at a time, then free the slot for the next):
-  SELECT    no active item            → pick an ACTIVE campaign that allows IG, not already clipped
-  CLIP      campaign chosen           → produce a 15-45s 1080x1920 clip (earn-clip-rewards)
+  SELECT    no active item            → pick an ACTIVE, IG-eligible, not-already-clipped campaign
+  JOIN      campaign selected         → actually join it on promote.fun. A campaign's minimum-follower
+                                         requirement is INVISIBLE until join is attempted (its Rules tab
+                                         is locked pre-join) — REQ-1b (2026-07-04, follower-gate reality
+                                         discovered live: 15/17 IG-eligible campaigns were already Ended/
+                                         budget-exhausted despite showing "Live"; the 2 genuinely open
+                                         ones both required 200/2000 followers against our 0-follower
+                                         fresh account). If join fails on a follower-count gate, record
+                                         the campaign as PERMANENTLY skipped (never worth retrying until
+                                         our follower count changes) and go back to SELECT for the next
+                                         candidate — never fabricate progress past a gate we didn't clear.
+  CLIP      campaign chosen + joined  → produce a 15-45s 1080x1920 clip (earn-clip-rewards)
   POST      clip ready                → post --live to a WARMED account, capture the post URL
   SUBMIT    posted                    → submit the post URL to the campaign on promote.fun
   MEASURE   submitted+accepted        → read views; loop here until the campaign ENDS or it STALLS
@@ -15,6 +25,14 @@ The clip-promote lifecycle (one campaign-clip item at a time, then free the slot
 DONE = a RECORD wake only. Every other wake prints earned_usdc:0 and keeps the slot `declared`.
 DEAD_ZERO_HOURS (default 48) is the honest dead-vs-early-zero discriminator: a shadowban can't be
 detected directly (a throttled reel still resolves + stays accepted), so 0 views past the bound = dead.
+
+★ DOMAIN KNOWLEDGE every affiliate/campaign-monetization AI should carry (Dais 2026-07-04 verbatim):
+"in order to do good money-making affiliate work, you have to earn trust and followers first." A
+0-follower brand-new account cannot usually join a paying campaign directly — most campaigns gate on a
+minimum follower count. The fix is NOT to keep hunting for a zero-requirement campaign forever; it is to
+run the account's REGULAR posting loop (earn/clip, same @handle) in parallel so it organically accrues
+followers/trust, and let this SELECT/JOIN loop keep politely reporting no-eligible-campaign until the
+account's real follower count clears a campaign's bar. Two loops, one shared account, patience by design.
 """
 
 DEAD_ZERO_HOURS_DEFAULT = 48
@@ -31,6 +49,8 @@ def decide(state, now):
         return "SELECT"
     if phase == "SELECT":
         return "SELECT"
+    if phase == "JOIN":
+        return "JOIN"
     if phase == "CLIP":
         return "CLIP"
     if phase == "POST":
