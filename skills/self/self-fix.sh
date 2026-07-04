@@ -1,19 +1,42 @@
 #!/usr/bin/env bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
-# self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a money loop
-# (sonnet) hits a code/automation blocker it cannot fix in-pass, it calls this to spawn a detached, full-power
-# OPUS claude that actually diagnoses → edits the mother-repo code → VERIFIES by running it and confirming the
-# REAL side-effect → commits + pushes. That is how the loops self-improve their own code without babysitting.
+# self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
+# code/automation blocker it cannot fix in-pass, it (or a healthcheck) calls this to spawn a detached, full-power
+# OPUS claude that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
+# → writes a result marker. That is how the loops self-improve their own code without babysitting.
 # Usage: self-fix.sh <loop-name> "<blocker + concrete fix hint>"
-# Idempotent: one self-fix session per loop at a time (skips if already running).
 set -uo pipefail
 LOOP="${1:?loop name}"; BLOCKER="${2:?blocker+hint}"
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"; SESSION="anicca-selffix-$LOOP"
 CLAUDE="$(command -v claude || echo /opt/homebrew/bin/claude)"
+STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
-# one fixer per loop; don't stack
-if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then echo "$(date '+%F %T') self-fix[$LOOP] already running — skip" >> "$LOG"; echo "self-fix[$LOOP] already running"; exit 0; fi
-TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a full-power Opus dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human; a blocker is not stop. BLOCKER + HINT: ${BLOCKER}. DO: (1) reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks); (2) fix the code in the mother repo (~/anicca or ~/.openclaw) — if the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (thin script opens the page, then YOU look at real screenshots and decide each click/type, loop until the real success signal); (3) VERIFY with a REAL side-effect (an actually-published skill URL / a real posted comment / the tool actually succeeding once) — a patch that only compiles is NOT done, no dry runs, no fake success; (4) git add -A && commit && push in the correct repo (verify remote first); (5) clear the loop's selfheal-request json if the fix resolves it. If after honest effort it is truly impossible, THEN invoke self/issue-dev with a precise diagnosis. Report what you fixed + the real evidence at the end."
+RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
+STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
+MAX_FIXER_MIN=45                              # a fixer older than this is presumed hung → kill+respawn (FIND-005)
+
+# FIND-005: skip only if a RECENT fixer is still running; if it is older than MAX_FIXER_MIN, it is hung → replace it.
+if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
+  age_min=999; [ -f "$STARTMARK" ] && age_min=$(( ( $(date +%s) - $(cat "$STARTMARK" 2>/dev/null||echo 0) ) / 60 ))
+  if [ "$age_min" -lt "$MAX_FIXER_MIN" ]; then
+    echo "$(date '+%F %T') self-fix[$LOOP] running (${age_min}min<${MAX_FIXER_MIN}) — skip" >> "$LOG"; echo "self-fix[$LOOP] already running (${age_min}min)"; exit 0
+  fi
+  echo "$(date '+%F %T') self-fix[$LOOP] HUNG (${age_min}min≥${MAX_FIXER_MIN}) → kill+respawn" >> "$LOG"
+  tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
+fi
+
+# FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
+# in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
+printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
+TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a full-power Opus dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
+DO, in order:
+(1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks).
+(2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
+(3) VERIFY with a REAL side-effect — an actually-published skill URL you then curl and see live / a real posted comment URL / the tool actually succeeding once end-to-end. A patch that only compiles is NOT done. No dry runs, no fake success, no 'should work'.
+(4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under ~/.openclaw (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under ~/anicca (remote = anicca, public). Never commit ~/.openclaw runtime state or secrets.
+(5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
+If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
 tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model opus --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"
-echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (opus): ${BLOCKER:0:80}" >> "$LOG"
-echo "self-fix[$LOOP] spawned (opus, detached). log: $LOG"
+date +%s > "$STARTMARK"
+echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (opus): ${BLOCKER:0:90}" >> "$LOG"
+echo "self-fix[$LOOP] spawned (opus, detached). result→$RESULT log→$LOG"
