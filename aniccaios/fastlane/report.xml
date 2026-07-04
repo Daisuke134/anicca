@@ -5,27 +5,27 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000151">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.00048">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="1: build_app" time="13.296674">
+      <testcase classname="fastlane.lanes" name="1: build_app" time="120.45334">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="2: xcrun simctl boot &apos;iPhone 16 Pro&apos; 2&gt;/dev/null || true" time="0.110419">
+      <testcase classname="fastlane.lanes" name="2: xcrun simctl boot &apos;iPhone 16 Pro&apos; 2&gt;/dev/null || true" time="0.213163">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="3: open -a Simulator" time="0.116373">
+      <testcase classname="fastlane.lanes" name="3: open -a Simulator" time="0.088647">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="4: notification" time="0.304391">
+      <testcase classname="fastlane.lanes" name="4: notification" time="0.362085">
         
       </testcase>
     

@@ -17,8 +17,6 @@ tags:
       UITESTING: "true"
       AppleLanguages: "(ja)"
       AppleLocale: "ja_JP"
-    env:
-      PAYWALL_VARIANT: "test"
 
 - runFlow: ./_onboarding_to_paywall.yaml
 
