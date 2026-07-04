@@ -125,3 +125,11 @@ The engines (LM, Capafy, Reddit) are interchangeable; the PRODUCT is the LOOP me
 → next cycle, human + main-agent out. Roll out L1 report-only → L2 assisted → L3 unattended.
 
 **Invariant**: the loop must be able to detect + heal its own breakage (self-heal) AND move a real revenue metric over time (self-improve). A loop that only publishes/posts (no heal, no revenue-verify) is the failure mode we just found. Build the HARNESS (this mechanism) first; the engines plug into it.
+
+## 12. Current cleanup state + the claude-p decision (2026-07-04)
+Investigated the Capafy scheduling reality:
+- **The smart self-improving loop was BUILT but NEVER powered on.** `scripts/daily_loop.sh` (fires `claude -p --model sonnet` on `DAILY_LOOP.md`, uses `publish_one.sh` → **vendored** capafy-publisher) exists, but there is NO launchd job loaded and the cron does not point at it → it never ran. The only thing that ever ran = the OLD cron → `daily_publish.sh` → **standalone** `~/.openclaw/skills/capafy-publisher` (died 2026-06-22, token expired).
+- **DONE**: fresh token copied into the vendored configs (verified code 0); `.bak`/`.bak.original` cruft deleted.
+- **DECISION (per Dais's standing "merge OpenClaw crons into claude-p" direction, which supersedes the old "no claude-cli in cron" rule FOR THIS)**: go **claude-p**. Repoint the cron `anicca-capafy-daily-publish` (09:00 JST) → `daily_loop.sh` (Sonnet, 1 listing/run, `--max-turns 40`, cheap + quota-capped). Then DELETE the old path: `daily_publish.sh`, standalone `~/.openclaw/skills/{capafy-publisher,capafy-user}`, `cfo-earner-capafy` (0 cron refs). This powers on the self-improving loop for the first time.
+- This is #11 (cleanup) fusing into #8 (the harness): the "repoint to daily_loop.sh claude-p" IS turning on the self-improving mechanism (§11). Coordinate with `2026-07-04-openclaw-claude-p-merge-design.md` (same claude-p direction).
+- **Self-heal gap to close (§11 step 0)**: nothing noticed the loop was dead for 6 weeks OR never wired. The harness's HEAL-FIRST heartbeat must assert "the money cron actually fired + published in the last N days" and re-arm/alert if not.
