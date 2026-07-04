@@ -22,6 +22,13 @@ eq "frozen body, only timer/tokens changed → SAME fingerprint (hang detectable
 F3="$(printf '⏺ NEW: found the bug, editing publish_finish.sh now\n✢ Deploying… (59m · esc to interrupt)' | bash "$SF" --fingerprint)"
 ne "real new text → DIFFERENT fingerprint (progress)" "$F1" "$F3"
 
+echo "(D) FIND-032 past-ceiling continue-vs-kill decision (sf_should_continue)"
+dec(){ bash "$SF" --should-continue "$1" "$2" "$3" >/dev/null 2>&1 && echo CONTINUE || echo KILL; }
+a "generating + fingerprint advanced → CONTINUE" "$(dec 1 hashA hashB)" 'CONTINUE'
+a "generating + fingerprint FROZEN → KILL (hung)" "$(dec 1 hashA hashA)" 'KILL'
+a "not generating (idle/errored) → KILL" "$(dec 0 hashA hashB)" 'KILL'
+a "first check (prev=none) generating → CONTINUE" "$(dec 1 hashA none)" 'CONTINUE'
+
 echo "(C) FIND-026/031 real lock acquire/steal via hc_acquire_lock"
 source "$H/healthcheck-lib.sh"; now=$(date +%s)
 D="$(mktemp -d)"; LK="$D/.lk"
