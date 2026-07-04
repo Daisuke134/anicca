@@ -19,13 +19,14 @@ loop(){ [ -n "$(launchctl list 2>/dev/null | grep "$1")" ] && echo RUNNING || ec
 echo "════════════ ANICCA COLONY — LIVE SSOT ($(date -u +%Y-%m-%dT%H:%MZ)) ════════════"
 echo ""
 echo "[1] anicca-a3cdd4   SELF-funded  (automaton + ClawRouter)"
-echo "    wallet 0xa3CDd4…C21  Base USDC=\$$(erc20 $BASE $BUSDC 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21)   loop(founder-loop)=$(loop founder-loop)"
+# a3cdd4 の実 loop = com.anicca.daemon (body ~/.anicca)。founder-loop は claude-p の proxy body (~/.anicca-founder, 0x810f)
+echo "    wallet 0xa3CDd4…C21  Base USDC=\$$(erc20 $BASE $BUSDC 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21)(+HL口座は別途)   loop(com.anicca.daemon)=$(loop anicca.daemon)"
 echo ""
 echo "[2] Franklin        SELF-funded  (Franklin-Trading, Solana)"
 echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-sol)=$(loop franklin-sol)"
 echo ""
 echo "[3] claude-p (me)   human-funded (this Claude → PM earner)"
-echo "    wallet 0x904B50d2…  pUSD=\$$(erc20 $POLY $PUSD 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74)   loop(pm-earner)=$(loop pm-earner)"
+echo "    wallet 0x904B50d2…  pUSD=\$$(erc20 $POLY $PUSD 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74)   loop(pm-earner)=$(loop pm-earner)  proxy-loop(founder-loop,0x810f)=$(loop founder-loop)"
 DW=0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74
 echo -n "    PM positions: "
 curl -s -m8 "https://data-api.polymarket.com/positions?user=$DW&sizeThreshold=0.1" 2>/dev/null | python3 -c "import sys,json;d=json.load(sys.stdin);d=d if isinstance(d,list) else [];print(f'{len(d)} open, value \${sum(p.get(\"currentValue\",0) for p in d):.2f}, unrealized P&L \${sum(p.get(\"cashPnl\",0) for p in d):+.3f}')" 2>/dev/null
