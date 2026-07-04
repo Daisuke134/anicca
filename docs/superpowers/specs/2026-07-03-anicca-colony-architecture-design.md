@@ -1391,3 +1391,32 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
 | ⑧clip/content rewards | 動画/clip を投稿 → CPM/報酬(promote.fun 等、AgentMail account) | 進行中 |
 | ⑨yield/DeFi | 自wallet で LP/staking(own-identity channel) | guard済 |
 全て共通: ★人間の credential ゼロ・自分で生成した鍵のみ・fail-closed・実tx で検証★。燃料も自wallet(x402 で推論代)。
+
+### §17 ★ MASTER EXECUTION TASK LIST(順序=SSOT、task tool と同期、2026-07-04)★
+実行原則: 上から一個ずつ・各々 実 tx/実数で verify してから次へ。「稼いだ」= realized profit>0 が ledger に載った時のみ。
+```
+=== STEP 1: 実際に稼ぐ(最優先)===
+[進行] #49 PM-BASE-STRATEGY   マーケットメイク+LP報酬(swisstony写し)を skill に埋め realized P&L>0
+[  ] #50 PM-BUNDLE-ARB        risk-free bundle 裁定 scanner(YES+NO<$1 両買い)
+[  ] #41 ALPHA-SEARCH         self-improve: web検索+P&L学習で quote幅/市場選択を最適化
+[  ] #48 LIMITLESS-EARN       Limitless(Base, credential-free)を並行の保険
+=== STEP 2: 3層完成(§11.9)===
+[  ] #7  H4 SELF-HEAL         fail-closed→issue→PR で自己修復
+[  ] #9  H6 BOT2BOT           学びを issue 共有、他個体が適用
+=== STEP 3: 横展開 ===
+[  ] #44 HL-BOT               Hyperliquid(CCXT, grid/trend+SL/TP)
+[  ] #45 SOL-COPYTRADE        Solana copy-trade(Jupiter)
+[  ] #34 FRANKLIN-EARN        Franklin に3層 earn embed → no-human 実証
+=== STEP 4: 自分を可視化 ===
+[  ] #25 TELEM                config tag 付き署名 telemetry を post(dashboard 第一歩)
+[  ] #14 G4 dashboard         全wallet on-chain real-time
+=== STEP 5: 集合実験(§15)===
+[  ] #32 EXP-ENGINE           config行列→P&Lランキング→勝ちレシピをgenome merge
+[  ] #27 MERGE                結果付きPRを人間なしで auto-merge
+=== STEP 6: 記事(実tx/実数が素材)===
+[  ] #36 ART-A / #37 ART-B(Vicky)/ #38 ART-C / #31 README(実数)
+=== STEP 7: 増殖・ローンチ ===
+[  ] #11 SPAWN / #17 Akash-1cmd / #26 family-tree / #29 OBS+kill-switch
+[  ] #39 HACK-SUBMIT(明日)/ #15 LAUNCH(初 external tx 後)
+```
+完了済(基盤): #47 PM no-human 実約定✅ / H1-H3 self-observe/eval/improve✅ / #28 PM-STRATEGY✅ / FIX-A/B/C✅
