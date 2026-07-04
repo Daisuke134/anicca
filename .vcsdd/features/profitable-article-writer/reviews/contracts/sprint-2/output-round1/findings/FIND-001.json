@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "CRIT-103's passThreshold invents a third reachable state that is NOT in PROP-19 and directly contradicts it. PROP-19 (specs/verification-architecture.md:41) describes exactly TWO real-mode states for generate_draft: 'uses ... real research+craft content ... VERBATIM -- never the ARTICLE_TEST=1 boilerplate template -- and stays fail-closed to SKIPPED (REQ-4b) when no real topic/research has been supplied'. CRIT-103's passThreshold (contracts/sprint-2.md:22) instead requires: '(b) topic set but no real draft path -> falls back to the boilerplate template'. This is a THIRD state absent from PROP-19, and it requires the implementation to emit the boilerplate template (a template article) precisely in the case PROP-19 says the hook must 'never' use the boilerplate template in real mode. It also contradicts REQ-4b (specs/behavioral-spec.md:27-28): 'IF ... research is insufficient for a genuinely useful piece, THEN the skill SHALL SKIP the wake (produce NO article) rather than emit a thin/slop piece.' Topic-only-with-no-real-draft-path is exactly 'research insufficient for a genuinely useful piece' -- REQ-4b mandates SKIP, but CRIT-103 mandates emitting the boilerplate template (a thin/slop piece) instead. A Phase 3 implementation that faithfully satisfies CRIT-103 as literally written would VIOLATE both PROP-19 and REQ-4b. This criterion is not traceable to a real, consistent REQ/PROP -- it is traceable to a REQ/PROP it contradicts.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "18-22",
+    "snippet": "passThreshold: \"tests/test-prop19-real-content-hook.sh covers all three states: (a) real draft path supplied -> verbatim real content in draft.md, boilerplate marker ABSENT (b) topic set but no real draft path -> falls back to the boilerplate template (c) nothing supplied -> SKIPPED, unchanged from Sprint 1.\""
+  },
+  "routeToPhase": "1c"
+}

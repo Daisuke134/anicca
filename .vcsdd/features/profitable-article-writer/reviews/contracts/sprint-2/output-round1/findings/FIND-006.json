@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-16 (specs/behavioral-spec.md:64-70) establishes that human-funded note verification reads a sale event 'via the stored NOTE_SESSION_COOKIE', and REQ-15 requires per-install credential isolation with 'NO shared/Dais accounts'. CRIT-105 (contracts/sprint-2.md:28-32) requires capturing 'a real note.com draft key/URL ... its JSON output + a screenshot file ... as evidence for the human/verifier to review', and CRIT-104 (lines 23-27) requires the wiring's 'returned url/screenshot into notify.json'. No criterion in this contract requires verifying that NOTE_SESSION_COOKIE, note_mcp auth tokens, or any other stored credential is never written into notify.json, the captured JSON verify-output, or the screenshot files that CRIT-105 explicitly designates as human/browser-reviewable evidence artifacts. Evidence artifacts and notify.json commonly get committed to state/logs; a credential leaked into one of them is a real, concrete secret-handling gap that none of CRIT-101..106 gate on.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "23-32",
+    "snippet": "CRIT-104: \"...carries the wiring's own returned url/screenshot into notify.json.\" / CRIT-105: \"...its JSON output + a screenshot file are captured as evidence for the human/verifier to review in a browser (REQ-20).\" -- neither criterion requires a check that no credential/session-cookie value is present in these artifacts."
+  },
+  "routeToPhase": "1c"
+}

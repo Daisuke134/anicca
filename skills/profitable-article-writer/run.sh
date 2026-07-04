@@ -116,8 +116,13 @@ generate_draft() {
   if [ "${ARTICLE_TEST:-}" != "1" ] && [ -n "${ARTICLE_REAL_DRAFT_PATH:-}" ] && [ -f "${ARTICLE_REAL_DRAFT_PATH:-}" ]; then
     # REQ-19/Sprint 2 real content-gen hook: the running agent (never this deterministic shell script) has
     # ALREADY researched and written the real article to ARTICLE_REAL_DRAFT_PATH, per the purity-boundary
-    # map (craft writing = agent judgment, verification-architecture.md). Use that real content VERBATIM —
-    # never the boilerplate template below, which stays reserved for ARTICLE_TEST=1 hermetic tests only.
+    # map (craft writing = agent judgment, verification-architecture.md). Use that real content VERBATIM.
+    # PROP-19 note: this is state (a) of generate_draft's 3-state precedence (verification-architecture.md,
+    # PROP-19 row) -- the ONLY state where the boilerplate template below is guaranteed never used. States
+    # (b) (topic/research declared but ARTICLE_REAL_DRAFT_PATH absent -- falls through to the boilerplate
+    # below as a documented wiring safety-net, never reached by the real daily-executor loop which always
+    # supplies the draft together with topic/research) and (c) (nothing supplied -- fail-closed SKIPPED,
+    # handled earlier in the wake before generate_draft is even called) are NOT gated by this branch.
     cp "$ARTICLE_REAL_DRAFT_PATH" "$out"
     return 0
   fi

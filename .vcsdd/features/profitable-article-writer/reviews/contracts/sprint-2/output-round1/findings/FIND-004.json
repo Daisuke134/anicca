@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "CRIT-105's passThreshold contains a non-binary, undefined qualifier: 'A real article markdown file exists with real, cited content (not template text)'. Unlike REQ-5(e)'s explicit mechanical threshold ('an objective, computable threshold, not a subjective judgment', specs/behavioral-spec.md:35), CRIT-105 gives no computable definition of what counts as 'cited' (a URL? a named source? a quote?) or how many citations satisfy it. Two reviewers could reach opposite PASS/FAIL verdicts on the identical artifact. This is exactly the grade-inflation risk the contract-review dimension is meant to catch: a criterion worded as an aspiration ('real, cited content') rather than a concrete, reproducible check.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "28-32",
+    "snippet": "passThreshold: \"A real article markdown file exists with real, cited content (not template text); a real note.com draft key/URL was created via note_mcp's create_draft (not injected/forced) ...\""
+  },
+  "routeToPhase": "1c"
+}

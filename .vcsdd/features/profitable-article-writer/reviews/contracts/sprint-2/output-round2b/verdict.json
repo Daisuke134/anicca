@@ -1,0 +1,67 @@
+{
+  "sprintNumber": 2,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "56de4982ac69f5e3af69955076de5d707801f7f34aaa17ea1d63fc78c1ccc967"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:41 (PROP-19)", "description": "Read fresh: PROP-19's row now explicitly enumerates the three-state precedence and states verbatim that state (a)'s 'never boilerplate' guarantee is 'scoped to the case a real draft path IS supplied, not an unconditional guarantee across all three states.' This is genuinely self-consistent and matches CRIT-103."},
+        {"type": "file", "location": "contracts/sprint-2.md:15-17 (CRIT-103)", "description": "CRIT-103's description and passThreshold now use identical scoping language ('the ONLY state PROP-19's never-boilerplate guarantee is scoped to') as the corrected PROP-19 row -- the prior contract-vs-spec textual contradiction (round-2 FIND-001) is resolved at this layer."},
+        {"type": "file", "location": "specs/behavioral-spec.md:93-95 (REQ-19)", "description": "REQ-19 describes the daily wake as one linear 'research -> write -> V0/V0.5 -> post' claude -p session; combined with the purity-boundary map (craft writing = agent judgment, not the shell script), this supports the claim that the real caller always supplies topic/research and the authored draft together, making state (b) genuinely unreachable from the real REQ-19 loop and therefore not a REQ-4b violation in practice."},
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh:116-121", "description": "FAIL: the actual generate_draft hook's own comment at line 120 says the boilerplate heredoc is 'reserved for ARTICLE_TEST=1 hermetic tests only', but the guard at line 116 is false (falling through to that exact boilerplate) whenever ARTICLE_TEST!=1 AND ARTICLE_REAL_DRAFT_PATH is unset/missing -- i.e. real mode, state (b). The unconditional 'ARTICLE_TEST=1-only' claim the spec/contract correction retracted is still asserted, falsely, in the code's own comment. See FIND-001."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh:14-46", "description": "Read the full test body: all three PROP-19 states (real draft verbatim / topic+research-only fallback to boilerplate / nothing supplied SKIP) are exercised with concrete, discriminating fixtures (a real-content marker string, a boilerplate marker string, and a STATE.md SKIPPED assertion) -- coverage itself is not the defect here (see FIND-002 for the separate self-documentation contradiction in this same file)."},
+        {"type": "file", "location": "contracts/sprint-2.md:74-101 (CRIT-102, CRIT-104..106 narrative)", "description": "Spot-checked: CRIT-102/104/105/106 text is byte-identical to the round-2 pass that found them resolved/PASS -- no regression in these criteria's wording."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh:2-4 vs 30-38", "description": "FAIL: the test file's own header docstring makes the same unconditional 'never boilerplate' claim the spec/contract correction retracted, while the file's own section (b) tests and asserts the opposite (boilerplate IS used in real mode when no draft path is supplied). This is the exact proof artifact CRIT-103 designates -- it does not cleanly trace to a non-contradicted state when read as a whole file. See FIND-002."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:176-220, run_note_mode_a_publish", "description": "Spot-checked unchanged since round 2: step-1 (create) failure returns before any key is assigned (176-181); step-2/3 (eyecatch/price) failures are logged to stderr without aborting or fabricating success; real NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY are still echoed from the real key. No regression to CRIT-104/106's grading."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh (grep for cookie/token/NOTE_COOKIES_FILE)", "description": "Re-grepped fresh: matches are confined to file-path-only diagnostics, never a raw cookie/token value reaching stdout or notify.json. CRIT-104's credential-leak clause still holds; no regression."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-2.md (criteria block, CRIT-102..106)", "description": "Confirmed CRIT-101 remains removed and no criterion re-grades another criterion's test file (CRIT-102/test-prop18, CRIT-103/test-prop19, CRIT-104/test-prop20+credential-grep, CRIT-105/real-wake-evidence, CRIT-106/test-prop21+partial-failure-grep each remain distinct, non-overlapping evidence surfaces) -- no regression from round 2's structural_integrity PASS."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/state/2026-07-04-x402-jp.md", "description": "Re-confirmed via Glob the artifact still exists on disk; round-2 verified it lacks the Sprint-1 boilerplate marker and contains a real '## 出典' section with externally-fetched https:// URLs -- no regression to CRIT-105's objective binary check."},
+        {"type": "file", "location": "/Users/anicca/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png, /Users/anicca/.cloak/note-work/single-price-nfb2ace9f0ed8.png", "description": "Re-confirmed both real, post-PROP-21-fix screenshot artifacts still exist on disk at their absolute paths -- CRIT-105/106's live-wake evidence has not regressed since round 2."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-102", "CRIT-103", "CRIT-104", "CRIT-105", "CRIT-106"],
+    "duplicateFindings": []
+  }
+}

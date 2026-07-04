@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 2,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "56de4982ac69f5e3af69955076de5d707801f7f34aaa17ea1d63fc78c1ccc967"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:41", "description": "PROP-19 row states the 3-state precedence verbatim, scoping the 'never boilerplate' guarantee to state (a) only."},
+        {"type": "file", "location": "contracts/sprint-2.md:15-17 (CRIT-103)", "description": "CRIT-103 wording matches PROP-19's 3-state precedence exactly (a/b/c) with the same scoping language."},
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh:116-128", "description": "generate_draft's comment now states the same 3-state precedence verbatim ('this is state (a) ... the ONLY state where the boilerplate template below is guaranteed never used'), replacing the prior unconditional claim FIND-001 (round 2) flagged."},
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh:1-11", "description": "Test file's header comment now states the same 3-state precedence verbatim, no longer contradicted by its own section (b) body (lines 36-44), which correctly asserts the boilerplate marker IS present in the documented safety-net state."},
+        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-green-phase.log:161-224", "description": "Log's own 'Phase 2c documentation-consistency fix' section confirms the comment-only fix and a fresh 17/17 PASS re-run after it, matching the manifest's claim."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh:20-52", "description": "All three PROP-19 states are exercised: (a) real draft verbatim + boilerplate marker absent, (b) topic+research set / no draft path -> boilerplate fallback, (c) nothing supplied -> STATE.md SKIPPED."},
+        {"type": "file", "location": "skills/profitable-article-writer/tests/test-prop18-v05-jp-sentences.sh:14-27", "description": "CRIT-102's fixture is genuinely discriminating: 4 sentences of ~45 chars each (each <=60) whose unsplit concatenation is ~184 chars (>60) -- an ASCII-only splitter and a working 。-aware splitter produce opposite crit_e verdicts on this exact input. No regression from the prior round."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:176-220", "description": "CRIT-106's partial-failure policy holds exactly as described: note_create_rich_draft failing (rc!=0, lines 177-181) returns before any key exists; note_set_eyecatch (190-196) and note_set_single_price (198-202) failures are only echoed to stderr and never abort the function or fabricate a URL -- the real key/url is still returned (204-220). No regression."},
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh:266-282", "description": "CRIT-104's credential non-leak guarantee holds: run.sh captures run_note_mode_a_publish's combined stdout+stderr into note_out but only ever extracts NOTE_URL:/NOTE_SCREENSHOT: prefixed lines via grep -oE for notify.json (268-271, 279-282); on failure the raw note_out goes only to run.sh's own stderr (273), never to notify.json. lib/note_publish.sh itself only echoes NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY to stdout (lines 166-168, 214-216); every other message is redirected >&2. No regression."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:64,150-155", "description": "CRIT-104's reuse guarantee holds: NOTE_PUBLISH_SCRIPT (the existing ai-entity-article-writer pipeline) is still called, now only for the 'verify' subcommand; the old membership-hardcoded 'publish' subcommand call is gone (confirmed absent by tests/test-prop21-visual-and-single-price.sh:52)."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-create-rich-draft.py:91-92,139", "description": "note_mcp.api.articles.create_draft is imported and called directly (not reimplemented), matching PROP-20/CRIT-104's 'never rebuilt' requirement; grep 'create_draft' also matches lib/note_publish.sh's own comment at line 31, so the passThreshold's literal grep oracle is satisfiable."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/state/2026-07-04-x402-jp.md:77-80", "description": "CRIT-105's real-article check holds: no 'burn 10+ hours' boilerplate marker found; a '## 出典' section exists listing real https:// URLs (x402.org, docs.x402.org)."},
+        {"type": "file", "location": "/Users/anicca/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png and /Users/anicca/.cloak/note-work/single-price-nfb2ace9f0ed8.png", "description": "Both post-PROP-21-fix screenshot artifacts CRIT-105 designates (for the SECOND draft, key nfb2ace9f0ed8, distinct from the flagged pre-fix n7261a753887f draft) exist on disk, confirmed via direct filesystem glob."},
+        {"type": "test-output", "location": ".vcsdd/features/profitable-article-writer/evidence/sprint-2-green-phase.log:158-159,223-224", "description": "Full suite (bash tests/run-red.sh) re-run after the PROP-21 fix and again after the comment-only fix: 17/17 PASS both times, including test-prop21-visual-and-single-price.sh."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-102", "CRIT-103", "CRIT-104", "CRIT-105", "CRIT-106"],
+    "duplicateFindings": []
+  }
+}

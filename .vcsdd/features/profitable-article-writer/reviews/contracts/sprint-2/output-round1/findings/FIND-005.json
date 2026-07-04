@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "PROP-21 (specs/verification-architecture.md:43) introduces a new THREE-STEP sub-pipeline (note_create_rich_draft -> note_set_eyecatch -> note_set_single_price) inside run_note_mode_a_publish. No CRIT-XXX in this contract tests the partial-failure edge cases this new chaining introduces (e.g. rich-draft image upload succeeds but eyecatch upload then fails; eyecatch succeeds but price-setting then fails). CRIT-106 (contracts/sprint-2.md:33-37) is explicitly limited to a 'structural/static oracle (file existence + grep + python3 -m py_compile)' -- it can never observe a mid-chain runtime failure. CRIT-104's fail-closed test (test-prop20-note-publish-failclosed.sh) only covers the OUTER note_publish.sh wrapper's overall success/failure via NOTE_PUBLISH_TEST_FORCE, not the inner 3-step visuals/eyecatch/price chain PROP-21 adds. The contract therefore has zero binary criterion for what happens when step 2 or 3 of the new chain fails after step 1 has already succeeded (partial-completion state) -- a real, foreseeable edge case for a 3-call remote-upload sequence.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "33-37",
+    "snippet": "passThreshold: \"tests/test-prop21-visual-and-single-price.sh is green: ... lib/note_publish.sh's run_note_mode_a_publish routes through note_create_rich_draft + note_set_eyecatch + note_set_single_price and no longer calls the old membership-hardcoded ... subcommand.\" (no partial-failure/mid-chain state is required anywhere in the criteria)"
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "CRIT-101's description claims traceability to REQ-20 ('REQ-19/REQ-20 and the REQ-5(e) Japanese-punctuation edge case are traceable to a passing test') but its passThreshold never actually evaluates anything about REQ-20. REQ-20 (specs/behavioral-spec.md:96-108) is specifically about the VERIFIER role: 'Verification of what the loop posted ... SHALL be done by the verifier (me / the main agent) via a real browser look at the posted draft -- NOT by the executor grading itself.' CRIT-101's passThreshold (contracts/sprint-2.md:12) only requires 'PROP-18/19/20 each have a named test file ... and all three are green' -- three deterministic shell tests, none of which exercise or check the human/verifier-browser-review behavior REQ-20 describes. A reviewer grading CRIT-101 PASS/FAIL from its own passThreshold text can never actually confirm REQ-20 compliance; the description over-claims scope its own binary check does not cover.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "8-12",
+    "snippet": "description: \"REQ-19/REQ-20 and the REQ-5(e) Japanese-punctuation edge case are traceable to a passing test.\"\n    weight: 0.17\n    passThreshold: \"PROP-18/19/20 each have a named test file (tests/test-prop18-v05-jp-sentences.sh, tests/test-prop19-real-content-hook.sh, tests/test-prop20-note-publish-failclosed.sh) and all three are green.\""
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,19 @@
+{
+  "featureName": "profitable-article-writer",
+  "sprintNumber": 2,
+  "reviewType": "contract",
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "56de4982ac69f5e3af69955076de5d707801f7f34aaa17ea1d63fc78c1ccc967",
+  "negotiationRound": 1,
+  "round": "2-corrected-v2",
+  "priorFindings": [
+    "reviews/contracts/sprint-2/output-round2b/findings/FIND-001.json (previous pass: spec/contract prose now consistent, but run.sh's own comment and tests/test-prop19-real-content-hook.sh's own header comment still asserted the OLD unconditional 'never boilerplate' claim, contradicted by their own bodies)"
+  ],
+  "specsToRead": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "instructions": "This is a further correction pass, same round (negotiationRound stays 1, verdict.iteration must be 2). Since the last review, run.sh's comment at the generate_draft real-content branch and tests/test-prop19-real-content-hook.sh's header comment were BOTH rewritten to explicitly state the 3-state precedence (matching the corrected specs/verification-architecture.md PROP-19 row and contracts/sprint-2.md CRIT-103), instead of the old unconditional 'never boilerplate' claim. NO test assertions or behavior changed -- comment-only fix; the full suite (bash skills/profitable-article-writer/tests/run-red.sh) was re-run and is still 17/17 PASS (see .vcsdd/features/profitable-article-writer/evidence/sprint-2-green-phase.log, the last appended section). Re-read skills/profitable-article-writer/run.sh (the generate_draft function, lines ~108-140) and skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh (full file) FRESH, alongside specs/verification-architecture.md's PROP-19 row and contracts/sprint-2.md's CRIT-103. Confirm whether the chain (spec -> contract -> code -> test, all four layers) is now genuinely, fully self-consistent about generate_draft's 3-state behavior, with no remaining contradiction anywhere in that chain. Also spot-check CRIT-102/104/105/106 have not regressed. If you find ANY remaining inconsistency (in this chain or elsewhere in the contract), FAIL with concrete file:line evidence. If the chain now genuinely holds together end to end, PASS. Do not rubber-stamp -- verify by actually reading the current file contents, not by trusting this description.
+
+Write verdict.json with reviewContext.reviewType='contract', reviewContext.contractPath='contracts/sprint-2.md', reviewContext.contractDigest as given above (do not invent a different digest), and iteration = negotiationRound + 1 = 2. Findings go in reviews/contracts/sprint-2/output/findings/FIND-NNN.json (fresh numbering, dir was cleared). You may ONLY write under reviews/contracts/sprint-2/output/**. Work from disk only."
+}

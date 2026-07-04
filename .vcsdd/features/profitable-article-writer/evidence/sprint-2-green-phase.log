@@ -1,6 +1,6 @@
 target-feature-tests: PASS
 regression-baseline: PASS
-all tests passing: 16/16
+all tests passing: 17/17 (16 base + PROP-21 fix-cycle below)
 
 # Phase 2b GREEN — profitable-article-writer Sprint 2
 # PROP-18 (gates/v05.sh JP-punctuation readability fix), PROP-19 (run.sh real generate_draft hook),
@@ -81,4 +81,144 @@ PASS — real (non-FORCE) gates/v0.sh mechanics
 PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
 
 ===================================================
-RED-PHASE SUMMARY: 16 test files, 16 PASS, 0 FAIL
+RED-PHASE SUMMARY: 16 test files, 16 PASS, 0 FAIL (pre-PROP-21-fix snapshot; see consolidated 17/17 run below)
+
+
+# ---------------------------------------------------------------------------
+# Phase 2c fix-cycle addendum (same sprint, PROP-21) — profitable-article-writer
+# A fresh-context adversary review of the real live-wake draft above (key n7261a753887f) found 3 real
+# defects: (1) NO visuals in the body (text-only, violates REQ-3's "VISUAL explainer"), (2) NO eyecatch/
+# cover image, (3) monetization wired to メンバーシップ (membership) instead of REQ-8's native ¥500 single
+# 有料note. PROP-21 was added (verification-architecture.md + contracts/sprint-2.md CRIT-106) and a new
+# RED test (tests/test-prop21-visual-and-single-price.sh) was authored and confirmed FAILING against the
+# pre-fix lib/note_publish.sh wiring (see evidence/sprint-2-fix-red-phase.log), then GREEN after adding
+# lib/note-create-rich-draft.py (upload_body_image + generate_image_html + create_draft),
+# lib/note-set-eyecatch.py (画像を追加), and lib/note-set-single-price.py (有料, never メンバーシップ, no
+# 投稿する/更新する click target), and rewiring lib/note_publish.sh's run_note_mode_a_publish to route
+# through all three instead of the old membership-hardcoded `$NOTE_PUBLISH_SCRIPT publish` subcommand
+# (full RED+GREEN detail: evidence/sprint-2-fix-red-phase.log / evidence/sprint-2-fix-green-phase.log).
+#
+# Consolidated full-suite re-run after the PROP-21 fix (target-feature-tests: PASS, regression-baseline: PASS):
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+Command: cd skills/profitable-article-writer && bash tests/run-red.sh
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 17 test files, 17 PASS, 0 FAIL
+
+# ---------------------------------------------------------------------------
+# Phase 2c documentation-consistency fix (same sprint, contract-review round 2 correction)
+# Contract-review round 2 (fresh-context adversary) found that after PROP-19's spec wording was corrected
+# to state its 3-state precedence explicitly, run.sh:117-121's own comment and
+# tests/test-prop19-real-content-hook.sh's own header comment still asserted the OLD, now-contradicted
+# unconditional "never boilerplate" claim, self-contradicted by their own bodies (run.sh's real-mode
+# boilerplate heredoc IS reachable in state (b); the test's own section (b), lines 30-38, asserts the
+# boilerplate marker IS present). Fixed: both comments now state the 3-state precedence verbatim-matching
+# the corrected specs/verification-architecture.md PROP-19 row. NO behavior/assertion change — comment-only
+# (Phase 2c refactor scope). Re-ran full suite after the comment fix:
+
+=== test-json-escape-fallback.sh ===
+PASS — json_escape sed-fallback branch produces valid JSONL (FIND-006)
+
+=== test-prop1-no-model-literal.sh ===
+PASS — PROP-1 model-agnostic (static tree + dynamic wake artifact + proven non-vacuous)
+
+=== test-prop10-per-install-creds.sh ===
+PASS — PROP-10 per-install credential gating
+
+=== test-prop12-account-absent.sh ===
+PASS — PROP-12 account-absent -> self-create-or-flag, never a loud failure
+
+=== test-prop14-topic-skip.sh ===
+PASS — PROP-14 no-viable-topic/insufficient-research -> SKIP, never slop
+
+=== test-prop15-3round-abort.sh ===
+PASS — PROP-15 3-round abort, no publish, failure recorded
+
+=== test-prop18-v05-jp-sentences.sh ===
+PASS — PROP-18 real gates/v05.sh (e) recognizes Japanese sentence punctuation
+
+=== test-prop19-real-content-hook.sh ===
+PASS — PROP-19 real content-gen hook uses real content, fails closed with nothing supplied
+
+=== test-prop2-no-human-modeB.sh ===
+PASS — PROP-2 Mode B has no human-gating call
+
+=== test-prop20-note-publish-failclosed.sh ===
+PASS — PROP-20 Mode-A real note-publish wiring is reachable and fail-closed
+
+=== test-prop21-visual-and-single-price.sh ===
+PASS — PROP-21 visuals+eyecatch+single-price wiring replaces the pure-text/membership defects
+
+=== test-prop3-no-external-run.sh ===
+PASS — PROP-3 no external-repo/tool execution, no run-claims
+
+=== test-prop5-failclosed-publish.sh ===
+PASS — PROP-5 fail-closed publish wiring (only both-PASS reaches publish)
+
+=== test-prop6-modeA-draft.sh ===
+PASS — PROP-6 Mode A stops at draft + notify, never publishes
+
+=== test-prop9-model-policy.sh ===
+PASS — PROP-9 model policy (sonnet tier, no-LLM earn/verify path, fail-closed on flip)
+
+=== test-v0-real.sh ===
+PASS — real (non-FORCE) gates/v0.sh mechanics
+
+=== test-v05-real.sh ===
+PASS — real (non-FORCE) gates/v05.sh mechanics (readability arithmetic + judge_v05 parser)
+
+===================================================
+RED-PHASE SUMMARY: 17 test files, 17 PASS, 0 FAIL

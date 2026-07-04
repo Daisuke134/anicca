@@ -74,8 +74,8 @@
       "status": "active",
       "createdAt": "2026-07-03T15:16:08.410Z",
       "mode": "strict",
-      "currentPhase": "complete",
-      "updatedAt": "2026-07-04T07:53:20.028Z"
+      "currentPhase": "3",
+      "updatedAt": "2026-07-04T10:02:48.799Z"
     }
   },
   "activeFeature": "profitable-article-writer"

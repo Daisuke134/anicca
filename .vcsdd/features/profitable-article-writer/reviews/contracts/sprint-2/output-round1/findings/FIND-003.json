@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "CRIT-101 grades exactly the same underlying fact that CRIT-102, CRIT-103, and CRIT-104 already grade, violating the non-overlap requirement for a contract acceptance surface. CRIT-101's entire passThreshold (contracts/sprint-2.md:12) is 'PROP-18/19/20 each have a named test file ... and all three are green' -- i.e. tests/test-prop18-v05-jp-sentences.sh, tests/test-prop19-real-content-hook.sh, and tests/test-prop20-note-publish-failclosed.sh all pass. But CRIT-102 (lines 13-17) already requires test-prop18-...sh to pass with a specific discriminating fixture, CRIT-103 (lines 18-22) already requires test-prop19-...sh to pass covering three states, and CRIT-104 (lines 23-27) already requires test-prop20-...sh to pass proving fail-closed behavior. Any Phase-3 implementation that satisfies CRIT-102+CRIT-103+CRIT-104 automatically satisfies CRIT-101 -- CRIT-101 contributes zero additional discriminating information while still carrying its own 0.17 weight, double-counting the same evidence across 4 of the 6 criteria (67% of total weight over 3 distinct test files).",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "8-27",
+    "snippet": "CRIT-101 passThreshold: \"PROP-18/19/20 each have a named test file ... and all three are green.\" (lines 8-12) vs CRIT-102/103/104 (lines 13-27) which individually re-grade those same three files."
+  },
+  "routeToPhase": "1c"
+}

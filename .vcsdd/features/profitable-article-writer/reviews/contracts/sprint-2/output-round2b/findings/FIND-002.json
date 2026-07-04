@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "tests/test-prop19-real-content-hook.sh -- the exact test file contracts/sprint-2.md:17 (CRIT-103's passThreshold) and specs/verification-architecture.md:41 (PROP-19) both cite as the proof oracle -- contradicts itself. Its own header docstring (lines 2-4) makes the SAME unconditional 'never the ARTICLE_TEST=1 boilerplate template' claim that the corrected PROP-19 row explicitly retracted (PROP-19 now scopes that guarantee to state (a) ONLY). But the test's own body, section (b) (lines 30-38), deliberately invokes run.sh in REAL (non-ARTICLE_TEST) mode with ARTICLE_REAL_TOPIC/ARTICLE_REAL_RESEARCH set and ARTICLE_REAL_DRAFT_PATH unset, and asserts (line 38) that the output DOES contain the boilerplate marker string. A reviewer or future maintainer reading only the header (the normal first read of a VSDD oracle file) is told an absolute invariant the file's own subsequent assertions falsify one paragraph later -- this is the same class of defect flagged in round 2 (prose claims an absolute guarantee a documented, tested branch violates), now located in the artifact CRIT-103 grades directly rather than in the spec. This is not a coverage gap (all 3 states ARE exercised correctly) -- it is a self-contradictory oracle whose own documentation misrepresents the behavior it proves, undermining CRIT-103's claim to 'cleanly trace' to a consistent chain of spec -> contract -> test.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop19-real-content-hook.sh",
+    "lineRange": "2-4,30-38",
+    "snippet": "# VSDD oracle — PROP-19 (REQ-19, Sprint 2): run.sh's REAL (non-ARTICLE_TEST) generate_draft hook uses the\n# running agent's OWN real research+craft content (supplied via ARTICLE_REAL_DRAFT_PATH) VERBATIM, never the\n# ARTICLE_TEST=1 boilerplate template ...\n...\n# ---------- (b) real mode, no ARTICLE_REAL_DRAFT_PATH set but topic+research ARE set -> falls back to the\n# existing boilerplate template ...\nok \"$([ -f \"$draft2\" ] && grep -qF \"$BOILERPLATE_MARKER\" \"$draft2\" && echo 1 || echo 0)\" \"no real draft path supplied: falls back to the boilerplate template (unchanged Sprint-1 shape)\""
+  },
+  "routeToPhase": "2c"
+}

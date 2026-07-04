@@ -1,8 +1,14 @@
 #!/usr/bin/env bash
-# VSDD oracle — PROP-19 (REQ-19, Sprint 2): run.sh's REAL (non-ARTICLE_TEST) generate_draft hook uses the
-# running agent's OWN real research+craft content (supplied via ARTICLE_REAL_DRAFT_PATH) VERBATIM, never the
-# ARTICLE_TEST=1 boilerplate template — and stays fail-closed to SKIPPED (Sprint-1 default, REQ-4b) when no
-# real topic/research has been supplied, exactly as before this change (zero regression).
+# VSDD oracle — PROP-19 (REQ-19, Sprint 2): run.sh's REAL (non-ARTICLE_TEST) generate_draft hook has exactly
+# THREE reachable states (see verification-architecture.md's PROP-19 row for the canonical statement):
+#   (a) a real draft (ARTICLE_REAL_DRAFT_PATH) is supplied -> the running agent's OWN real research+craft
+#       content is used VERBATIM; the ARTICLE_TEST=1 boilerplate template is NEVER used in this state.
+#   (b) topic/research are declared but no real draft path has been handed off yet -> a documented WIRING
+#       SAFETY-NET falls back to the boilerplate template (never a crash, never an empty file); this is NOT
+#       the REQ-4b "insufficient research" SKIP trigger and is never reached by the real daily-executor loop
+#       (REQ-19), which always supplies topic/research and the authored draft together in one call.
+#   (c) nothing at all is supplied -> fail-closed SKIPPED (Sprint-1 default, REQ-4b), zero regression from
+#       before this change.
 set -uo pipefail
 SKILL="/Users/anicca/anicca-human-funded/skills/profitable-article-writer"
 fails=0

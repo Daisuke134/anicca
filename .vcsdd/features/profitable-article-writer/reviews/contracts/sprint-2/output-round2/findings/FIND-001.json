@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Round-1 FIND-001 is NOT genuinely resolved -- it was reworded with justifying prose, but the underlying passThreshold behavior is UNCHANGED and still contradicts PROP-19's literal text. PROP-19 (specs/verification-architecture.md:41) states, unconditionally, that 'run.sh's real (non-ARTICLE_TEST) generate_draft hook uses the running agent's OWN real research+craft content ... VERBATIM -- never the ARTICLE_TEST=1 boilerplate template'. CRIT-103's revised passThreshold (contracts/sprint-2.md:17) still requires state (b): 'topic+research flags set but no real draft path -> falls back to the boilerplate template'. This is still, textually, the real (non-ARTICLE_TEST) hook emitting the ARTICLE_TEST=1 boilerplate template -- exactly what PROP-19 says 'never' happens. The revision only adds narrative ('a wiring safety-net distinct from REQ-4b's SKIP trigger', 'NEVER fires in the real daily-executor path') without changing PROP-19's own wording or the test requirement itself; a Phase-3 implementation that faithfully satisfies CRIT-103's passThreshold as literally written STILL emits the boilerplate template from the real hook, still contradicting PROP-19's absolute 'never' clause. The REQ-4b half of the contradiction is only partially addressed: the new text argues 'research flags ARE set' so REQ-4b's 'insufficient research' trigger doesn't literally apply, but REQ-4b's actual concern (specs/behavioral-spec.md:27-28) is 'research is insufficient for a genuinely useful piece' -- and a state where flags say research happened but NO authored draft content has been handed off IS a state with no genuinely useful piece available yet. Emitting the boilerplate template in that state is precisely 'a thin/slop piece' REQ-4b says to avoid via SKIP, not emit. CRIT-103 remains a criterion that is not cleanly traceable to a consistent, non-contradicted REQ/PROP pair -- it is traceable to proof obligations it still conflicts with on their own literal terms.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "13-17",
+    "snippet": "passThreshold: \"tests/test-prop19-real-content-hook.sh covers all three states: (a) real draft path supplied -> verbatim real content in draft.md, boilerplate marker ABSENT (b) topic+research flags set but no real draft path -> falls back to the boilerplate template, a wiring safety-net distinct from REQ-4b's SKIP trigger (c) NOTHING supplied ... -> SKIPPED per REQ-4b\""
+  },
+  "routeToPhase": "1c"
+}

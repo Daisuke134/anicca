@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "The contract's own scope statement (contracts/sprint-2.md:4) commits Sprint 2 to BOTH '(4) actually RUN one real wake end-to-end ... a real note.com DRAFT created + gated + verified' AND '(5) fix the 3 real defects the live-wake evidence draft exposed: no visuals, no eyecatch, and membership monetization instead of REQ-8's native ¥500 single ... note (PROP-21)'. But the 'Explicitly OUT of Sprint 2' section (lines 76-78) waives exactly the evidence that would show item (5) was actually fixed in reality: 'a live (non-static) browser/network run of the visuals/eyecatch/price wiring beyond the structural oracle ... is optional confirming evidence, not a contract gate.' Combined with CRIT-105's real-wake requirement being satisfiable by the PRE-existing live-wake evidence draft (key n7261a753887f, referenced at line 69 and 37) -- the SAME draft the contract says exposed the 3 defects -- and CRIT-106 being purely static (file existence + grep + py_compile, lines 33-37), no criterion in this contract requires that a genuinely NEW real note.com draft, produced after the PROP-21 fix, actually renders visuals/eyecatch/single-price in the live environment. The contract can be graded fully PASS while the only real, human-reviewable evidence artifact (CRIT-105) remains the OLD, admittedly-defective draft. This leaves the sprint's own stated scope item (5) uncovered by any binary, real-evidence criterion.",
+  "evidence": {
+    "filePath": ".vcsdd/features/profitable-article-writer/contracts/sprint-2.md",
+    "lineRange": "76-78",
+    "snippet": "\"a live (non-static) browser/network run of the visuals/eyecatch/price wiring beyond the structural oracle (PROP-21 is proven statically for this sprint -- a further live-wake re-run with a new real note draft is optional confirming evidence, not a contract gate).\""
+  },
+  "routeToPhase": "1c"
+}

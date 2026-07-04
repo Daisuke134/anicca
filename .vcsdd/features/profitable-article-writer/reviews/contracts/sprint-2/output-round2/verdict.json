@@ -1,0 +1,66 @@
+{
+  "sprintNumber": 2,
+  "feature": "profitable-article-writer",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "4bf2e3299ffc8e2aef04d222e73f7f46b97a7a7ff079a6b92bd2778b6bf0a669"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-2.md:8-32", "description": "CRIT-101 confirmed REMOVED and its weight redistributed (0.2 each across CRIT-102..106) -- round-1 FIND-002/FIND-003 genuinely resolved: no CRIT-XXX now double-grades the same 3 test files, and no criterion over-claims REQ-20 coverage it doesn't test."},
+        {"type": "file", "location": "specs/verification-architecture.md:41 (PROP-19)", "description": "Compared PROP-19's literal 'never the ARTICLE_TEST=1 boilerplate template' clause against CRIT-103's revised state-(b) passThreshold (contracts/sprint-2.md:17) -- the contradiction round-1 flagged persists; only justifying prose was added, not a behavioral change. See FIND-001."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-2.md:28-32 (CRIT-106 partial-failure grep clause)", "description": "Round-1 FIND-005 (PROP-21 3-step chain had zero partial-failure criterion) is genuinely resolved: CRIT-106 was extended with a concrete, grep-verifiable partial-failure policy."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:176-220 (run_note_mode_a_publish)", "description": "Verified against the real implementation: note_create_rich_draft failure returns 1 at line 178-181 BEFORE `key` is ever assigned (line 182); note_set_eyecatch failure (line 192-196) and note_set_single_price failure (line 198-202) are each logged to stderr without calling `return`, and the function still echoes the real (never fake) NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY derived from the actual `key` at lines 214-216. This matches CRIT-106's claimed partial-failure policy exactly."},
+        {"type": "file", "location": "contracts/sprint-2.md:109-111 (Explicitly OUT section)", "description": "The remaining gap (no dedicated RUNTIME fault-injection test for the eyecatch/price sub-steps, only a static/grep oracle) is explicitly disclosed as an accepted, deferred scope limitation for this sprint, not a hidden gap -- acceptable for a contract acceptance surface."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-2.md:13-17 (CRIT-103, dimension=implementation_correctness)", "description": "CRIT-103 itself is filed under the implementation_correctness dimension and is the criterion carrying the unresolved contradiction in FIND-001; this dimension inherits that FAIL."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh + lib/note-create-rich-draft.py + lib/note-set-eyecatch.py + lib/note-set-single-price.py", "description": "grep'd all four files for NOTE_COOKIES_FILE / cookie / token usage -- confirmed round-1 FIND-006 genuinely resolved: every diagnostic print only ever emits the cookies FILE PATH on a missing-file error, never the loaded cookie JSON's contents, a raw cookie value, or a token string. run_note_mode_a_publish's stdout is limited to NOTE_URL/NOTE_SCREENSHOT/NOTE_KEY as CRIT-104 requires."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-2.md (criteria block, CRIT-102..106)", "description": "Confirmed old CRIT-101 is gone and no remaining criterion re-grades the same test file another criterion already grades -- CRIT-102/test-prop18, CRIT-103/test-prop19, CRIT-104/test-prop20+credential-grep, CRIT-105/real-wake-evidence, CRIT-106/test-prop21+partial-failure-grep are each distinct evidence surfaces. Round-1 FIND-003 resolved."},
+        {"type": "file", "location": "contracts/sprint-2.md:23-27 (CRIT-104)", "description": "Round-1 FIND-004's non-binary 'real, cited content' qualifier was replaced (now under CRIT-105) with two objective checks; verified against the real artifact below."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/state/2026-07-04-x402-jp.md", "description": "Read the full file: confirmed it does NOT contain the string 'burn 10+ hours', and confirmed it contains a real '## 出典' heading (line 77) followed by two real https:// URLs (x402.org, docs.x402.org) at lines 79-80. CRIT-105's objective binary check genuinely holds against the real artifact -- round-1 FIND-004 resolved."},
+        {"type": "file", "location": "~/.cloak/note-work/eyecatch-nfb2ace9f0ed8.png and ~/.cloak/note-work/single-price-nfb2ace9f0ed8.png", "description": "Both files confirmed to exist via Glob and opened via Read as real, non-trivial screenshots: eyecatch-nfb2ace9f0ed8.png shows the SECOND (post-fix) draft's editor with a real cover/hero image and title rendered; single-price-nfb2ace9f0ed8.png shows the same draft scrolled full-page with multiple real embedded inline diagram figures further down the body. This is the SECOND, post-PROP-21-fix draft (key nfb2ace9f0ed8), distinct from the OLD flagged draft (n7261a753887f, whose only artifact on disk is preview-n7261a753887f.png) -- round-1 FIND-007 (stale-evidence loophole) genuinely resolved."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-102", "CRIT-103", "CRIT-104", "CRIT-105", "CRIT-106"],
+    "duplicateFindings": []
+  }
+}
