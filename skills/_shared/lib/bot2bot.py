@@ -27,14 +27,35 @@ _HUMAN_BODY_PHRASES = [
 ]
 
 
+# bot2bot coordination ALWAYS targets the OSS mother repo, regardless of the calling process's cwd.
+# FIND (live, 2026-07-05): a bare `gh issue create` (no -R) fell back to gh's cwd-detected repo and
+# filed a real issue on Daisuke134/anicca-products instead of the mother — closed as noise
+# (anicca-products#284). Every repo-scoped call is now explicitly pinned; `gh api user` (no repo
+# concept) is exempt.
+_REPO = "Daisuke134/anicca"
+_REPO_SCOPED_COMMANDS = {"issue", "label", "pr"}
+
+
 def _gh_call(*args, **kw) -> str:
     """Default subprocess wrapper; tests monkeypatch via 'lib.bot2bot._gh_call'."""
     cmd = ["gh"] + list(args)
+    if args and args[0] in _REPO_SCOPED_COMMANDS:
+        cmd = ["gh", args[0], "-R", _REPO] + list(args[1:])
     try:
         out = subprocess.check_output(cmd, timeout=30, stderr=subprocess.DEVNULL)
         return out.decode("utf-8")
     except Exception:
         return ""
+
+
+def _ensure_label(kind: str) -> None:
+    """Best-effort idempotent label creation. `gh issue create --label X` FAILS HARD if X does not
+    already exist in the repo (verified live 2026-07-05: NONE of the bot2bot-* labels had ever been
+    created, so post() had never actually succeeded despite sprint-2's mocked tests passing — a
+    second latent gap alongside the hardcoded-author bug). A repeat call (label already exists) is
+    a harmless no-op failure we ignore; _gh_call already swallows the exception either way."""
+    _gh_call("label", "create", f"bot2bot-{kind}", "--color", "BFD4F2",
+             "--description", f"bot2bot: {kind}")
 
 
 def post(*, slot: str, kind: str, body_text: str) -> str:
@@ -51,6 +72,7 @@ def post(*, slot: str, kind: str, body_text: str) -> str:
 
     label = f"bot2bot-{kind}"
     title = f"[bot2bot][{slot}][{kind}]"
+    _ensure_label(kind)
     url = _gh_call("issue", "create", "--label", label, "--title", title, "--body", body_text)
     url = url.strip() or f"local://no-gh"
 
@@ -60,20 +82,36 @@ def post(*, slot: str, kind: str, body_text: str) -> str:
     return url
 
 
-_ANICCA_BOT_AUTHOR = "anicca-bot"
+_ANICCA_BOT_AUTHOR = "anicca-bot"  # fallback only — see _resolve_bot_author (§9 FIND, 2026-07-05)
+
+_DEFAULT_POLL_KINDS = ["review-requested", "opinion-requested", "escalation", "pr-mentioned"]
 
 
-def poll(*, slot: str) -> list[dict]:
-    """REQ-B2 (FIND-008 + FIND-2-001 fix): fetch ALL bot2bot-* labels filtered by
-    author=anicca-bot (= the sibling AI instance's signed comments), slot-filter via
-    title prefix. Empty list if none. NEVER crashes.
+def _resolve_bot_author() -> str:
+    """The GH login issues are ACTUALLY filed under in this deployment (verified live 2026-07-05:
+    `gh api user` returns the human owner's own login, e.g. 'Daisuke134' — there is no separate
+    'anicca-bot' account; every instance currently shares one gh CLI session). The original
+    hardcoded author:anicca-bot filter would silently match ZERO real issues forever (a latent bug
+    the mocked sprint-2 tests never exercised). Resolve dynamically so poll() matches reality;
+    fall back to the literal _ANICCA_BOT_AUTHOR constant if the lookup fails (fail-safe: an
+    unresolved identity narrows the poll to nothing rather than crashing or over-matching)."""
+    out = _gh_call("api", "user", "--jq", ".login")
+    return out.strip() or _ANICCA_BOT_AUTHOR
+
+
+def poll(*, slot: str, kinds: list[str] | None = None) -> list[dict]:
+    """REQ-B2 (FIND-008 + FIND-2-001 fix): fetch bot2bot-<kind> labeled issues filtered by the
+    CURRENT gh identity (see _resolve_bot_author), slot-filter via title prefix. `kinds` defaults to
+    the sprint-2 set (review-requested/opinion-requested/escalation/pr-mentioned); pass e.g.
+    kinds=["lesson"] to poll a different channel (used by self/coordinate for cross-instance
+    strategy lessons, #9). Empty list if none. NEVER crashes.
     """
+    kinds = kinds or _DEFAULT_POLL_KINDS
+    label_terms = " ".join(f"label:bot2bot-{k}" for k in kinds)
+    author = _resolve_bot_author()
     out = _gh_call(
         "issue", "list",
-        "--search",
-        f"author:{_ANICCA_BOT_AUTHOR} "
-        f"label:bot2bot-review-requested label:bot2bot-opinion-requested "
-        f"label:bot2bot-escalation label:bot2bot-pr-mentioned",
+        "--search", f"author:{author} {label_terms}",
         "--state", "open", "--json", "url,title,body,createdAt,author",
     )
     if not out.strip() or out.strip() == "[]":
@@ -85,7 +123,7 @@ def poll(*, slot: str) -> list[dict]:
     parsed = [parse_bot2bot_issue(j) for j in raw]
     # Filter by slot AND by author (= defense in depth: --search filters server-side,
     # this client-side filter rejects any rogue rows that slipped through).
-    return [t for t in parsed if t.get("slot") == slot and t.get("author") == _ANICCA_BOT_AUTHOR]
+    return [t for t in parsed if t.get("slot") == slot and t.get("author") == author]
 
 
 def parse_bot2bot_issue(gh_json: dict) -> dict:
