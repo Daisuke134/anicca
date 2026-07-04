@@ -13,7 +13,10 @@ STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
 STARTMARK="$STATE/.self-fix-$LOOP.started"    # epoch when the current fixer was spawned (FIND-005 stale-guard)
-MAX_FIXER_MIN=45                              # a fixer older than this is presumed hung → kill+respawn (FIND-005)
+MAX_FIXER_MIN=180                             # FIND-023: a fixer older than 3h is presumed hung → kill+respawn. Set
+                                              # ABOVE any legitimate fix duration (a real fix rarely needs >3h) so the
+                                              # 6h audit re-invocation cannot kill an in-progress long fix; only a
+                                              # genuinely stuck session (>3h) is replaced, still within the 6h window.
 
 # FIND-005: skip only if a RECENT fixer is still running; if it is older than MAX_FIXER_MIN, it is hung → replace it.
 if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then

@@ -20,8 +20,12 @@ LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 # reddit: only escalate if an account exists (else it is legitimately pre-provision)
 NACC=0; [ -f "$HOME/.cloak/reddit-accounts.json" ] && NACC="$(python3 -c "import json;d=json.load(open('$HOME/.cloak/reddit-accounts.json'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
 { [ "$NACC" -ge 1 ] 2>/dev/null && [ "$(stale_hrs "$POSTS")" -ge 30 ]; } && bash "$SELF/self-fix.sh" reddit "audit: reddit has an account but no real post in >30h (posts.jsonl stale). Make it post one honest disclosed contribution and log the URL." >> "$LOG" 2>&1 || true
-# LM has no daily artifact; if its liveness heartbeat is stale the healthcheck restarts it — the audit just surfaces it.
-LM_NOTE=""; [ "$(( $(stale_hrs "$LMHB")/1 ))" -ge 26 ] && LM_NOTE=" | ⚠ LM last-pass stale ${LMHB}"
+# LM has no daily artifact; if its liveness heartbeat is stale the healthcheck restarts it — the audit surfaces both
+# the staleness (in HOURS, FIND-022 bug fix: was interpolating the file PATH) and the live Stripe MRR so a no-op LM
+# loop is visible in every 6h report.
+LMH="$(stale_hrs "$LMHB")"
+LM_MRR="$(grep -E '^lm_mrr_usd:' "$SELF/life-manager-loop/state/STATE.md" 2>/dev/null|awk '{print $2}'|tail -1)"; LM_MRR="${LM_MRR:-NA}"
+if [ "$LMH" -ge 26 ] 2>/dev/null; then LM_NOTE=" | ⚠ LM last-pass STALE ${LMH}h, mrr=\$$LM_MRR"; else LM_NOTE=" | LM last-pass ${LMH}h, mrr=\$$LM_MRR"; fi
 
 # send the honest scorecard to the report channel (visibility = no-op auto-detection for every loop incl LM)
 if [ -x "$SELF/../report/loop-report.sh" ]; then
