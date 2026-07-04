@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-24 (behavioral-spec.md:118-122) is asymmetric: it specifies in detail what happens on the FAILURE/inconclusive verify branch ('the wake SHALL record an UNCONFIRMED-publish state ... it SHALL NOT retry-publish the same draft blindly'), but for the SUCCESS branch it only says generically 'record the result to state' with no equivalent rigor. Compare to REQ-22 (behavioral-spec.md:97-103), the standalone-tool analogue, which explicitly requires on success that 'the live URL + timestamp + this independent verification's result SHALL be recorded to state for V4 (earn) tracking to begin against it.' REQ-24 never restates this success-path recording requirement for the in-loop path. PROP-25 (verification-architecture.md:43) mirrors this asymmetry: it only tests 'on verify FAIL/inconclusive -> wake records UNCONFIRMED ... AND does NOT retry-publish' -- there is no PROP anywhere in the table (PROP-24 or PROP-25) that requires a test asserting 'on verify PASS after an in-loop Mode-B publish, the wake records a CONFIRMED/live state with URL+timestamp so V4 tracking begins.' PROP-24's own test only covers reaching the click (T2, real success-path, non-flagship draft), not the subsequent verify-and-record-success step. Net effect: an implementation that ALWAYS records UNCONFIRMED (i.e. never actually distinguishes a genuine verify PASS from a FAIL) would satisfy every stated REQ-23/24/25 + PROP-24/25/26 test literally, while silently breaking V4 earn tracking for every real successful publish -- a false-negative-by-omission that the spec does not require any test to catch.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "118-122",
+    "snippet": "run.sh SHALL invoke the SAME independent-verification logic as REQ-22's standalone verifier (logged-out fetch, 200 AND content-match) and record the result to state. IF verification fails or is inconclusive THEN the wake SHALL record an UNCONFIRMED-publish state..."
+  },
+  "routeToPhase": "1c"
+}

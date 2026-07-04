@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-23 (behavioral-spec.md:110) gates on a binary condition -- 'WHEN `run.sh` runs WITH `AUTONOMY=on` (Mode B, REQ-7) AND V0 wedge V0.5 PASS' -- treating AUTONOMY as a single static per-install toggle. REQ-25 (behavioral-spec.md:123-126), introduced in the SAME sprint, changes the mental model to a per-wake, ratio-derived mode: 'An install MAY run a MIX (e.g. 1-in-N wakes in Mode B, the rest Mode A) during a trust-ramp period; this ratio is a state/config value the installer ... sets.' The two requirements are never explicitly reconciled: REQ-23 never states that the 'AUTONOMY=on' condition it gates on is the EFFECTIVE, per-wake value computed FROM REQ-25's ratio/state (as opposed to a raw static env var read once). Left unresolved, an implementer can satisfy REQ-23's literal wording (checking a static `AUTONOMY` env var at top of run.sh) completely independently of REQ-25's ratio/config mechanism, in which case REQ-25's ratio value is read into state but never actually consulted to decide the wake's mode -- i.e. the 'gradual, explicit' trust-ramp control described in REQ-25 becomes dead configuration that has zero effect on which branch REQ-23 actually takes. This is a genuine internal-consistency gap between two requirements introduced in the same section, not merely a documentation nit, because REQ-25 is the SOLE mechanism REQ-25 relies on to keep the real, irreversible publish click throttled during the trust-ramp period.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "110,123-126",
+    "snippet": "REQ-23: WHEN `run.sh` runs WITH `AUTONOMY=on` (Mode B, REQ-7) ... / REQ-25: this ratio is a state/config value the installer (human or, once REQ-18 self-improve lands, the skill itself) sets -- not hardcoded in `run.sh`."
+  },
+  "routeToPhase": "1c"
+}

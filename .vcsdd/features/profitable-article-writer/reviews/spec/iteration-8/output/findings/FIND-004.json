@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-25 (behavioral-spec.md:123-126) requires 'AUTONOMY=on SHALL be an explicit per-install configuration value, not a code default.' PROP-26 (verification-architecture.md:44) operationalizes this as 'read from install config/state, never hardcoded in run.sh (grep: no hardcoded `AUTONOMY=on` default in source)'. The grep oracle's scope ('in source') is ambiguous about whether it covers install-time config TEMPLATE / scaffolding files (e.g. an install.sh or config.default.json that the installer writes on first run) in addition to run.sh's own code. As stated, an implementation could satisfy the literal grep by moving the hardcoded default OUT of run.sh and INTO a bundled install-time config template that ships with `AUTONOMY: 'on'` (or a MODE_B_RATIO pre-set to always-Mode-B) pre-filled as ITS OWN default -- functionally identical to a hardcoded default (every fresh install starts fully autonomous out of the box) while passing the cited grep, since the string never appears literally 'in run.sh'. Given this sprint explicitly frames REQ-25 as the safety-relevant 'trust ramp' mechanism gating how often an irreversible, monetized, public-visibility action fires, the proof obligation needs to explicitly extend the grep/oracle to all install-time config templates/scaffolding the skill ships (not just run.sh or ambiguously 'source'), and/or explicitly state the required SAFE DEFAULT (e.g. 'a fresh install with no explicit ratio/AUTONOMY config set MUST behave as Mode A only, per REQ-6's existing off-default') so that a config-file-equivalent-to-hardcoded-default cannot slip through.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "44",
+    "snippet": "`AUTONOMY` / the Mode-B ratio is read from install config/state, never hardcoded in run.sh (grep: no hardcoded `AUTONOMY=on` default in source)"
+  },
+  "routeToPhase": "1c"
+}

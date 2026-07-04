@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-23 (behavioral-spec.md:110-117) requires run.sh to call 'a SHARED, importable core function that BOTH the standalone `lib/note-publish-live.py` tool AND run.sh's Mode-B branch call (the logic SHALL NOT be duplicated/reinvented)', and states the SAME exception-safety (try/except/finally, no leaked browser context) and SAME fail-closed pre-publish checks 'apply unchanged in the in-loop call path'. PROP-24 (verification-architecture.md:42) operationalizes 'not duplicated/reinvented' as 'grep: no duplicated/reinvented logic', which is not a mechanically executable grep pattern -- 'duplicated logic' is a semantic property, not a literal string. Neither REQ-23 nor PROP-24 defines the FUNCTION BOUNDARY of the 'shared core': does the shared unit include the pre-publish confirmation AND the try/except/finally exception-safety wrapper (i.e. is the entire hardened unit, including error handling, one importable function both callers invoke as-is), or is the shared unit just the bare click() call, leaving each caller (the standalone CLI tool and run.sh's Mode-B branch) free to wrap their OWN try/except/finally and their OWN pre-publish confirmation around it? REQ-21's original tool required an explicit `NOTE_LIVE_PUBLISH=1` trigger AND a named `--draft-key` (no default/wildcard) as its safety gate; REQ-23 does not say whether that trigger-check lives INSIDE the shared core function (meaning run.sh must supply it) or OUTSIDE it in the CLI-only wrapper (meaning run.sh's call path never exercises that specific safety gate at all). Without a concrete definition of what is inside vs. outside the shared unit, a future implementer can satisfy the letter of REQ-23/PROP-24 by literally reusing only the click() primitive while re-implementing (copy-pasting) the exception-safety and pre-publish-check logic separately in run.sh -- exactly the silent-divergence / lost-FIND-004-fix risk this review was asked to check for.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "42",
+    "snippet": "`run.sh`'s Mode-B branch (AUTONOMY=on) calls the SAME shared confirm->click core function REQ-21's tool uses (grep: no duplicated/reinvented logic); ... fail-closed pre-publish checks + exception-safety (try/except/finally, no context leak) apply unchanged in the in-loop call path"
+  },
+  "routeToPhase": "1c"
+}

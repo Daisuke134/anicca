@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "blocker",
+  "description": "REQ-23 (behavioral-spec.md:110-117) asserts 'Mode A (AUTONOMY=off) SHALL remain structurally unable to reach it (REQ-6 unaffected, grep-verifiable)' for a NEW topology where the real publish click now lives inside a SHARED, importable core function that run.sh itself imports/calls from its Mode-B branch. PROP-24 (verification-architecture.md:42) operationalizes this as: 'Mode-A branch (AUTONOMY=off) remains grep-provably unable to reach a publish click (unchanged from Sprint 1-2)'. This is insufficient: the Sprint 1-2 grep target was 'Mode-A's OWN scripts (note-set-single-price.py etc.) contain zero 投稿する/更新する references' -- a check on FILES that never imported the click logic at all. Now that run.sh itself imports the shared click function (for its Mode-B branch), a plain string-absence grep over Mode-A's own script files no longer proves anything about run.sh's own control flow: a bug where run.sh's AUTONOMY=off branch also calls (or falls through to) the shared confirm->click function would leave the OLD grep target (note-set-single-price.py etc.) untouched and green, while the actual invariant is silently broken. PROP-6 (verification-architecture.md:28) already established the correct methodology for exactly this class of risk -- a DYNAMIC injected-seam wiring test ('test-prop6-modeA-draft.sh ... asserting the Mode-A branch itself never calls publish regardless of gate outcome') -- but PROP-24 does not require extending/reusing that dynamic call-count assertion to the NEW shared publish-click call site. Without an explicit requirement for a dynamic test that stubs V0/V0.5 PASS + AUTONOMY=off and asserts the shared confirm->click function's call count is exactly 0 inside run.sh, REQ-23/PROP-24's 'structurally unable to reach it' claim is not actually falsifiable by the cited grep, which is precisely the ambiguous-wording risk the review was asked to check for (Mode A silently gaining a real-publish path).",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "110-117",
+    "snippet": "This branch is the ONLY code path allowed to reach a real publish click from an unattended wake; Mode A (`AUTONOMY=off`) SHALL remain structurally unable to reach it (REQ-6 unaffected, grep-verifiable)."
+  },
+  "routeToPhase": "1c"
+}

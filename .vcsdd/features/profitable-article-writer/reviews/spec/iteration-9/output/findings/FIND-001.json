@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-25 (behavioral-spec.md:130-137) and PROP-26 (verification-architecture.md:44) now correctly require that the effective per-wake mode be computed from a RUNTIME-mutable, non-hardcoded, non-template-equivalent ratio/mix config value, and that a test prove 'setting the ratio to 1-in-N actually produces N-1 Mode-A wakes and 1 Mode-B wake over N consecutive wakes' -- this resolves iteration-8 FIND-004/005 for the HAPPY-PATH ratio case. However, neither REQ-25 nor PROP-26 specifies or tests the BOUNDARY/MALFORMED-INPUT behavior of the ratio computation itself: (a) N=0 (division-by-zero or modulo-by-zero in a naive 'wake_count % N == 0' implementation of '1-in-N'), (b) a missing/unset/never-initialized ratio config value at first boot (before any install-time write has occurred), and (c) a negative or non-integer N. Given the skill's OWN repeatedly-stated fail-closed idiom elsewhere (REQ-5/PROP-5 fail-closed WIRING, REQ-14 'SHALL NEVER publish a failing draft', REQ-24 'never silently assume success'), the reader can infer an intended fail-closed default (malformed/absent ratio => Mode A only, no publish), but REQ-25 never states this explicitly, and PROP-26's proof obligation only tests a well-formed 'ratio=1-in-N' happy path -- there is no proof obligation requiring a test that asserts 'N=0 / missing / malformed ratio config => the branch-selection logic resolves to Mode A (never Mode B), and does not crash into an unhandled exception whose catch-path could default the effective mode to Mode B.' Because REQ-25's ratio-derived effective mode is the SOLE mechanism REQ-23 relies on to keep the real, irreversible, monetized publish click throttled during the trust-ramp period (verification-architecture.md:78-80: 'this is what makes Sprint 2.5's manual proof unattended for real'), an implementation that has an off-by-one or unhandled-exception bug specifically in this boundary case would silently defeat the entire graduation/throttle safety property this sprint exists to add, with zero test coverage to catch it.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "130-137",
+    "snippet": "REQ-25 Graduation is per-install, gradual, explicit, and ACTUALLY CONSULTED. The effective per-wake mode SHALL be computed from an install-level ratio/mix configuration value (e.g. \"1-in-N wakes run Mode B\") ... a test SHALL prove that setting the ratio to \"1-in-N\" actually produces N-1 Mode-A wakes and 1 Mode-B wake over N consecutive wakes, not merely that the ratio value is stored."
+  },
+  "routeToPhase": "1c"
+}

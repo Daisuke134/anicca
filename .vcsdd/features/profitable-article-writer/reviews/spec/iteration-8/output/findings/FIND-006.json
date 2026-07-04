@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "In the Proof Obligations table (verification-architecture.md:42-44), PROP-24 (REQ-23, the publish-click wiring) and PROP-25 (REQ-24, in-loop verify/unconfirmed-recording) are both marked `required: true` (✅), but PROP-26 (REQ-25, the AUTONOMY/Mode-B-ratio 'graduation is per-install, gradual, and explicit' safety governor) is marked NOT required (--). This is inconsistent given the sprint's own stated purpose ('this is what makes Sprint 2.5's manual proof unattended for real', verification-architecture.md:78-80) and the review context that this exact change removes the human hand from an irreversible, monetized, public-visibility action: REQ-25/PROP-26 is precisely the throttle/graduation control that limits how much of the fleet is exposed to that irreversible action at once. Making the throttle mechanism itself an OPTIONAL (non-required-for-convergence) proof obligation while the publish-click mechanics it is meant to gate are mandatory is an anti-leniency violation -- a Sprint 4 implementation could ship with PROP-24/25 fully green and PROP-26 simply skipped/deferred, meaning the ratio/graduation safety net is never actually verified before this sprint is declared converged.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "42-44",
+    "snippet": "| PROP-24 | REQ-23 | ... | T1 (wiring) + T2 (real success path, non-flagship test draft) | ✅ |\n| PROP-25 | REQ-24 | ... | T2 | ✅ |\n| PROP-26 | REQ-25 | ... | T1/T2 | — |"
+  },
+  "routeToPhase": "1c"
+}
