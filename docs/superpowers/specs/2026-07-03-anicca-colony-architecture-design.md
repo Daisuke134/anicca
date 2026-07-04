@@ -590,7 +590,12 @@ H — BUILD THE SELF-IMPROVEMENT HARNESS (this is the PRODUCT — the heart)
   H3  self-improve (THE AI FIXES ITSELF, local+cloud, no human/other-AI): the loop feeds each AI its OWN
        trace+eval; the AI decides "this is dead, try Y / change my approach" and writes it back to its state
        so next pass behaves differently. (We give the trace + the ask; the AI does the judgment — no
-       hardcoded rules.) DONE = gig stops repeating the dead action on its own.
+       hardcoded rules.) ★ BUILT + VERIFIED LIVE 2026-07-04 ★: `self-eval.mjs` (5 tests) reads the earn
+       ledger, flags DEAD actions (hl-trade ×22 = $0 → "DEAD stop"), and `prompt.mjs` injects the AI's
+       realised P&L per action. RESULT: after the injection the AI's next wakes flipped from hl_trade churn
+       to cook → yield → yield — it dropped the dead action and moved to the ONE earner that actually made
+       money (yield), with NO hardcoded "avoid hl" rule. The self-improvement spine works for this model on
+       this case. (Caveat per Dais: weak free models need shipped default strategies too — H8.)
   H4  self-heal parity: same loop lets the AI fix its OWN breakage (stale dashboard, 400-erroring endpoint)
        via issue-dev→PR→forum-rollout — I stop hand-fixing. (part of #11)
   H5  journal/article: the SAME trace → each AI writes its journey (tried/failed/won/learned); a collective
