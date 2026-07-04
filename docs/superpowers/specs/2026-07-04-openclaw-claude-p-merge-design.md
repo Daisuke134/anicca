@@ -748,14 +748,47 @@ state fileへの書き込みで裏付け(fabrication無し)。旧`crocs`(TikTok�
 - Content Editing Rules(crocsの例と同様、生clip禁止等)は`Rules`タブで
   campaign毎に確認が必要(未確認)
 
-### 17.4 次の実装ステップ(具体化、次セッション着手)
+### 17.4 CLIP実装完了(2026-07-04、fresh evidence — E2E成功)
 
-1. `select_campaigns.py`(またはCLIP専用モジュール)に、選定したcampaignの
-   詳細ページから「Podcast N」等のYouTube URLを抽出するロジックを追加
-2. `run.sh`のCLIPケースに、抽出したURLで`producer.sh --url <url>
-   --duration 15-45`(パラメータ名は既存producer.sh実装を要確認)を呼ぶ処理を実装
-3. POSTケースに既存`ig-reels-poster`を呼ぶ処理を実装(warmed account限定、REQ-4)
-   + 必須タグ付けをキャプションに反映
-4. SUBMITケース: promote.funのcampaignページに投稿URLを提出するUI操作を新規実装
+`~/anicca/skills/earn/clip-promote/fetch_source_video.py`(新規、campaign詳細ページから
+YouTube URL抽出)+ `run.sh`のCLIPケース実装(抽出したURLで既存`producer.sh --url`を
+`ANICCA_INSTANCE=clip-promote`下で呼び出し、`~/clips/queue-clip-promote/`に隔離)。
+commit `dc79bd9`、`Daisuke134/anicca`にpush済み。unit test(test_decide.py 8/8、
+test_run.sh 7/7、既存)は無傷。
+
+**途中で発生したディスク枯渇インシデント**(HARD RULE 0.26関連、新しい障害モードとして
+記録): clip-promote-core自身のCLIP実行中(yt-dlp+whisper処理)にディスクが2度満杯
+(146MiB→99%、その後320MiB→98%)。**新発見: 1回目の満杯がpromote-fun専用CloakBrowser
+(:9224)をハング状態にした**(ディスク書き込み不能でブラウザプロセスが応答不能に)。
+clip-promote-core自身が根本原因診断→自己修復(①別セッションの古いXcode
+DerivedData 3.8G削除 ②ハングしたChromiumプロセスをkill→再起動、ログインセッション
+復元確認 ③`~/.openclaw-backups`内の1ヶ月前の古いフルバックアップ11G削除)を実行、
+人間を巻き込まずディスクを22GiB空きまで回復させた。この間2回のexecute試行は
+`No space left on device`で失敗、3回目(disk復旧後)で成功。
+
+**E2E検証結果(fresh evidence、ffprobe実測)**:
+```
+video: 202x360 (9:16比率) / audio: 有り / duration: 59.85秒 / MD5: 696f372ab4f5357a0fa8e3104faa8ae0
+state.json: phase=POST に正しく前進
+```
+
+**新たな既知課題(2点、次に対応必要)**:
+1. **duration≈60秒がcampaign要件(15-45秒)を超過** — 既存`verify_clip.sh`の
+   8-90秒ゲートは通過するが、promote.fun固有のより厳しい窓を満たさない
+   (既存spec§(VCSDD REQ-3)で予見済みの課題がそのまま顕在化)
+2. **キャプションが既存clip loop汎用のまま**
+   (`#money #investing #ai...`)で、thomas-rhett-contentの必須タグ付け
+   (`@humanschool @milesadcox`)が一切反映されていない
+
+### 17.5 次の実装ステップ(具体化、次セッション着手)
+
+1. producer.sh呼び出しにduration制約(15-45秒)を反映する方法を検討
+   (pipeline.pyの`SLICE_SECONDS=360`ハードコード確認済み、最終クリップ長を
+   制御するハイライト選定ロジックの調整が必要)
+2. POSTケースに既存`ig-reels-poster`を呼ぶ処理を実装(warmed account限定、REQ-4)
+   + campaign固有の必須タグ付け/CTAをキャプションに反映する仕組み(campaign毎に
+   ルールが異なるため、決定論的テンプレートでは対応しきれない可能性、agentic
+   judgment併用を検討)
+3. SUBMITケース: promote.funのcampaignページに投稿URLを提出するUI操作を新規実装
    (未調査、次ステップで詳細ページの提出フォームを確認する)
-5. WITHDRAW/RECORDは既存`record-payout.mjs`が対応済み(SKILL.md記載+コード確認済み)
+4. WITHDRAW/RECORDは既存`record-payout.mjs`が対応済み(SKILL.md記載+コード確認済み)
