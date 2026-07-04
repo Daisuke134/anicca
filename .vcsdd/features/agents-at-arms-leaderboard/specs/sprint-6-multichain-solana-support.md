@@ -101,20 +101,37 @@ heartbeat + real on-chain read, never a trusted client-reported number.
 ## TODO checklist (SSOT, VCSDD, one at a time)
 
 ```
-[ ] T1  RED: telemetry-schema.test — chain-absent (regression), chain:'base' explicit,
-        chain:'solana' valid base58, chain:'solana' with 0x-id (must fail)
-[ ] T2  GREEN: telemetry-schema.js — add optional chain field + base58 validator branch
-[ ] T3  RED: telemetry-verify.test — solana ed25519 sign/verify roundtrip (tweetnacl + bs58,
-        add as devDependency if not already present — CHECK package.json first, HARD RULE #6
-        exception doesn't apply here, this is real new dep, confirm via npm ls tweetnacl bs58)
-[ ] T4  GREEN: telemetry-verify.js — chain branch, case-sensitive compare for solana
-[ ] T5  RED+GREEN: spawn-register.js — chain param, solana signer path
-[ ] T6  RED+GREEN: chain-reader.js — makeSolanaReader (native SOL + USDC-SPL + inflows + price)
-[ ] T7  RED+GREEN: enrich.js — per-row chain dispatch to the matching reader
-[ ] T8  RED+GREEN: leaderboard-constants.js — chain-aware excludeSet/SEED_ADDRESSES
-[ ] T9  UI: AgentLeaderboard.tsx chain badge (S6.7), browser-verified screenshot
-[ ] T10 Docs: sprint-4 spec + Luma page — add the Solana wallet variant (S6.8)
-[ ] T11 Fresh-context adversary review (vcsdd-adversary) on T1-T10 as a batch
+[x] T1  DONE — schema.test.js: 7 new tests (chain-absent, base explicit, solana valid,
+        solana+0x rejected, base+solana-id rejected, unknown chain rejected, excluded-chars)
+[x] T2  DONE — telemetry-schema.js: optional chain field + base58 validator branch, 12/12 GREEN
+[x] T3  DONE — verify.test.js: real ed25519 sign/verify roundtrip via tweetnacl+bs58 (bs58
+        pinned to ^5.0.0 for plain CJS interop, confirmed via npm ls)
+[x] T4  DONE — telemetry-verify.js: chain branch, case-sensitive (no signer_mismatch concept
+        for ed25519 — collapsed into bad_signature, documented why in the code)
+[x] T5  DONE — spawn-register.js + telemetry-store.js: chain param, solana signer path,
+        normalizeId (0x-prefix-only lowercasing) so solana ids never get corrupted on store
+[x] T6  DONE — chain-reader-solana.js: makeSolanaReader (native SOL, USDC-SPL via
+        getParsedTokenAccountsByOwner filtered by mint, price via Coinbase SOL-USD,
+        externalInflowsUsd via getSignaturesForAddress+getParsedTransaction with a
+        balance-decrease sender heuristic). 7 unit tests + a live smoke test against REAL
+        public devnet (native=4.96 SOL, price=$81.98, usdc=0 — all correct)
+[x] T7  DONE — enrich.js: per-row chain dispatch ({base,solana} map OR back-compat flat
+        reader), 3 new S6.5 tests, no cross-chain leakage
+[x] T8  DONE — leaderboard-constants.js: chain-aware excludeSet/SEED_ADDRESSES (normalize by
+        0x-prefix, not blanket .toLowerCase()), added the real Solana founder wallet
+        (BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX) to SEED_ADDRESSES
+[x] T9  DONE — AgentLeaderboard.tsx: chain field + badge + chain-aware Explorer link.
+        tsc --noEmit clean; npm run dev + CloakBrowser screenshot confirms /dashboard renders
+        with no errors (empty-state only — no real leaderboard rows existed at screenshot
+        time; task #18 fixed that gap in a LATER, separate action — the badge itself wasn't
+        re-screenshotted against real data this round, an honest small gap)
+[x] T10 DONE (spec half) — sprint-4-participant-flow.md now shows both the Base and the
+        Solana wallet variant (S6.8), converging on the same chain-agnostic GAIN leaderboard.
+        NOT done (Luma page half) — the live lu.ma/atfpxptu event page itself was not
+        updated with the Solana variant this round (would need the luma-event skill's
+        browser-automation flow); tracked as a small open follow-up.
+[ ] T11 Fresh-context adversary review (vcsdd-adversary) on T1-T10 as a batch — NOT yet run
+        (the CoralOS submission's own adversary rounds took priority this session)
 [ ] T12 NO-MOCK E2E: register one real Solana-chain instance end-to-end against the LIVE
         aniccaai.com API (not local dev server) — real signed heartbeat, real schema pass,
         confirm it appears correctly tagged on /dashboard

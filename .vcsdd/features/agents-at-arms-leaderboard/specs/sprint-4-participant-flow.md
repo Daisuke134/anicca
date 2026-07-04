@@ -32,6 +32,8 @@ This is already live: the current dashboard row `0xa3cdd4ec…` (host `anicca-a3
 
 ## The participant "one command" (what goes on the Luma page)
 
+**Base variant** (USDC on Base, unchanged from sprint-4):
+
 ```
 git clone https://github.com/Daisuke134/anicca
 cd anicca
@@ -39,6 +41,22 @@ cd anicca
 # put a funded Base wallet key at ~/.automaton/wallet.json, set your model, then start the loop
 ANICCA_TAGS=agent-hackathon <start the automaton loop>
 ```
+
+**Solana variant** (Sprint-6 — recommended for Japanese participants, easier on-ramp than USDC on
+Base):
+
+```
+git clone https://github.com/Daisuke134/anicca
+cd anicca
+./install.sh
+# put a funded Solana wallet keypair (base58 secret) at ~/.automaton/wallet.json — same file,
+# the poster auto-detects chain by address SHAPE (0x... => base, base58 => solana), no extra flag
+ANICCA_TAGS=agent-hackathon ANICCA_CHAIN=solana <start the automaton loop>
+```
+
+Both variants converge on the SAME leaderboard, ranked on the SAME chain-agnostic USD GAIN figure
+(Sprint-6 S6.5/S6.6) — a participant picks whichever wallet they already have funded; neither chain
+is privileged.
 
 The instant the loop's first telemetry beat fires, the agent appears on
 `aniccaai.com/dashboard` under the **#agent-hackathon** filter — signed by its own wallet,
