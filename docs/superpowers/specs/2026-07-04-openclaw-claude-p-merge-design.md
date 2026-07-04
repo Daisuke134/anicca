@@ -583,3 +583,18 @@ delegateなしにclippingでお金を稼げるようにする必要がある。�
 
 **今回はまだ実装しない**(方針記録+層分解のみ)。実装順は既存フェーズ1(Task A1/A2、
 まずローカルのself-funded AIが1回でも稼ぐことを達成)完了後に着手する。
+
+## 16. Task A2(promote.fun収益出口)着手開始(2026-07-04)
+
+「1つずつ検証しながら進める」方針(Dais 2026-07-04)に従い、mail報告インフラ(フェーズ2)の
+Task #3完了確認後、次点の最優先タスクA2(§7)に着手。
+
+**現状確認(fresh grep)**: `~/anicca/skills/earn/clip-promote/`の判断ロジック
+(decide.py/run.sh/record-payout.mjs)は既にPhase 2 GREEN(unit test済み、SKILL.md記載)だが、
+`launchctl list | grep -i clip-promote`が0件 = **定期実行のharness(cli.sh/healthcheck.sh/
+launchd)が一切存在しない**。既存5loop(clip/affiliate/video/bounty/gig)と全く同じ
+tmux+cron+launchdパターンをclip-promoteにも適用する作業に着手(実装ロジック自体は
+既存のまま、足場のみ新規追加)。
+
+実装(cli.sh/healthcheck.sh/launchd plist新規作成+起動+初回パス確認+push)はTask #9として
+subagentに委譲、進行中。
