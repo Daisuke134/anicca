@@ -1,0 +1,6 @@
+{
+  "reviewType": "spec", "feature": "profitable-article-writer", "mode": "strict", "phase": "1c", "iteration": 5,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "scope": "Sprint 2.5 addition only: REQ-21 (real Mode-B publish path) + REQ-22 (post-publish V1 verify) + PROP-22/23"
+}
