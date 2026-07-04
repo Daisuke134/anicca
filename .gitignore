@@ -191,3 +191,8 @@ anicca_youtube_qr.png
 
 # Duplicate skill copies sprayed by installer (canonical = .agents/skills/)
 /agent/
+
+# maestro test screenshot outputs (run artifacts)
+aniccaios/*.png
+aniccaios/fastlane/report.xml
+aniccaios/fastlane/build/
