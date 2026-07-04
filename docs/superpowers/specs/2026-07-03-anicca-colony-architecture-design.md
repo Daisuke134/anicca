@@ -1357,3 +1357,37 @@ STEP 6: ハッカソン提出(#39)= 上記を 90秒デモ+4項目に整形
 STEP 7: #11 SPAWN/#17 Akash で増殖(子も同じ3層 skill を持つ)→ 集合進化(#27)
 ```
 原則: ★ 実際に稼ぐ(STEP1)が全ての前提 ★。記事もハッカソンも「実 realized profit」が出てから。盛らない。
+
+### §15 ★ Anicca = SELF-EXPERIMENTING ENVIRONMENT(= 我々自身が常時ハッカソン)(Dais 2026-07-04)★
+コロニーが「自分自身を集合的に実験」して、複製可能な勝ちレシピを見つける engine。人間の外で回る内部トーナメント。
+```
+実験する次元(config = これらの直積):
+  MODEL   : DeepSeek API / Claude(Opus,Sonnet) / Gemini / Grok / GLM / BlockRun free models
+  BODY    : automaton+ClawRouter / Franklin / openclaw / Hermes / human-funded(私)
+  STRATEGY: マーケットメイク / bundle-arb / certainty-closer / informed-edge / copy-trade / grid-trend
+  VENUE   : Polymarket / Limitless / Hyperliquid / Solana(Jupiter)
+  FUEL    : self-funded(自wallet x402)/ human-funded(subscription)
+
+  各 config が実走 → 署名付き telemetry(config, realized P&L, cost, uptime)を共有 ledger に post
+        → dashboard で「config別 純収益ランキング」
+        → 勝ち config = ★複製可能な良いレシピ★ を surface
+        → 全 instance がそれに収束(genome 更新)→ spawn する子は最初からその recipe
+        → scale to the moon
+```
+実装 = task #32(EXP)を格上げ: ①各 earner が config tag 付き telemetry を出す ②ranking 集計 ③勝者を
+genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker≠checker: 実 on-chain P&L だけが審判(自己申告不可)★。
+これは §11.9(BASE+self-improve+self-heal)の集合版 = 個体が自己改善、コロニーが config を自然選択。
+
+### §16 ★ 自己資金 AI が human-loop なしで稼ぐ「全ルート」(自wallet + 自鍵のみ)★
+| ルート | 仕組み | 状態 |
+|---|---|---|
+| ①予測市場MM(Polymarket) | rewards市場に両側maker → LP報酬($679-2264/日/市場)+スプレッド。ボスの写し | 配管✅ / base #49 実装中 |
+| ②予測市場MM(Limitless,Base) | EOA+HMAC、KYCなし、agent-native SDK。oracle-arb/certainty-closer | #48 |
+| ③bundle裁定 | YES+NO<$1 両買い=risk-free差益 | #50 |
+| ④永久先物(Hyperliquid) | 自wallet+CCXT、risk-managed grid/trend+SL/TP | #44 |
+| ⑤Solana copy-trade | 勝者walletを模倣、Jupiter swap | #45 |
+| ⑥x402 sell | 自分の推論/データ/計算を x402 で売る(BlockRun rails, wallet自動) | reference済 |
+| ⑦gig→crypto | LaborX/abillio/Coconala → USDC 着金(自wallet) | reference済 |
+| ⑧clip/content rewards | 動画/clip を投稿 → CPM/報酬(promote.fun 等、AgentMail account) | 進行中 |
+| ⑨yield/DeFi | 自wallet で LP/staking(own-identity channel) | guard済 |
+全て共通: ★人間の credential ゼロ・自分で生成した鍵のみ・fail-closed・実tx で検証★。燃料も自wallet(x402 で推論代)。
