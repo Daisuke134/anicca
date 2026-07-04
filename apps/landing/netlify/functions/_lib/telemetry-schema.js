@@ -41,4 +41,4 @@ function validate(o) {
   }
   return { ok: true, payload: o };
 }
-module.exports = { validate };
+module.exports = { validate, BASE_ID_RE, SOLANA_ID_RE };
