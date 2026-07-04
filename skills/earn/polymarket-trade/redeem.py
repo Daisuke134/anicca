@@ -254,15 +254,37 @@ def _mint_relayer_api_key(acct) -> str:
             combined = json.dumps(fields, separators=(",", ":")) + ":::" + sig_hex
             bearer = base64.b64encode(combined.encode()).decode()
             login = s.get(f"{gamma}/login", headers={"Authorization": "Bearer " + bearer}, timeout=20)
-            r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth",
-                       headers={"Authorization": "Bearer " + bearer}, json={}, timeout=20)
-            if r.status_code != 200:
-                raise RuntimeError(f"relayer /auth {r.status_code}: {r.text[:200]} | login {login.status_code}: {login.text[:120]}")
-            data = r.json()
-            api_key = data.get("apiKey") or data.get("api_key")
+            if login.status_code != 200:
+                raise RuntimeError(f"gamma /login {login.status_code}: {login.text[:150]}")
+            auth = {"Authorization": "Bearer " + bearer}
+            # LIST-BEFORE-MINT. The RELAYER key registry (uuid+address, Gamma-auth) is a DIFFERENT
+            # system from CLOB api keys, caps at 100/address, and exposes NO delete endpoint — so
+            # minting a fresh key every run (the old bug) permanently burned the cap and left the
+            # gasless /submit rejecting with "invalid authorization". Reuse an existing relayer key;
+            # only mint when the address genuinely has none. (sources: relayer-openapi.yaml + 3
+            # independent SDK impls — see .vcsdd/.../redeem-research.md.)
+            def _pick(obj):
+                items = obj if isinstance(obj, list) else (obj.get("keys") or obj.get("data") or [])
+                mine = [k for k in items if isinstance(k, dict)
+                        and str(k.get("address", "")).lower() == acct.address.lower()]
+                mine.sort(key=lambda k: str(k.get("createdAt", "")), reverse=True)
+                for k in (mine or [k for k in items if isinstance(k, dict)]):
+                    v = k.get("apiKey") or k.get("api_key") or k.get("key")
+                    if v:
+                        return v
+                return None
+            lst = s.get("https://relayer-v2.polymarket.com/relayer/api/keys", headers=auth, timeout=20)
+            api_key = _pick(lst.json()) if lst.status_code == 200 else None
+            if not api_key:  # no existing key for this address → mint one
+                r = s.post("https://relayer-v2.polymarket.com/relayer/api/auth",
+                           headers=auth, json={}, timeout=20)
+                if r.status_code != 200:
+                    raise RuntimeError(f"relayer /auth {r.status_code}: {r.text[:200]}")
+                data = r.json()
+                api_key = data.get("apiKey") or data.get("api_key")
             if not api_key:
-                raise RuntimeError(f"relayer auth did not return an apiKey: {json.dumps(data)[:300]}")
-            try:  # cache for reuse so we never hit the 100-key cap again
+                raise RuntimeError("relayer returned no apiKey (neither existing nor minted)")
+            try:  # cache the reused/minted relayer key so we never hit the 100-key cap again
                 with open(_cache, "w") as _f:
                     _f.write(api_key)
                 os.chmod(_cache, 0o600)
@@ -276,20 +298,30 @@ def _mint_relayer_api_key(acct) -> str:
 
 
 def build_client():
-    """Authenticate the official polymarket-client SDK for the deposit wallet, letting the SDK
-    manage its OWN relayer credentials. Verified live 2026-07-05: SecureClient.create(private_key,
-    wallet) resolves the deposit wallet and handles /submit auth itself — no manual api-key minting.
-    (The old manual path minted a fresh relayer key every run, hit the relayer's "max 100 keys per
-    address" cap, and reusing a fetched key gave "invalid authorization"; letting the SDK own auth
-    sidesteps both, so the loop can redeem forever with no human.)"""
+    """Authenticate the polymarket-client SDK for the deposit wallet, supplying a REUSED relayer
+    api key (via _mint_relayer_api_key, which now lists-before-mints). The SDK's own auth was NOT
+    enough: SecureClient.create(private_key, wallet) resolves the wallet but the gasless /submit
+    still needs a valid relayer api key in the RelayerApiKey credential — without it, /submit
+    rejects with "invalid authorization". _mint_relayer_api_key reuses an existing relayer key
+    (Gamma-auth registry, capped at 100/address, no delete endpoint) so we never burn the cap."""
     from dotenv import load_dotenv
     load_dotenv(AGENT_ENV)
     key = os.environ["POLYGON_WALLET_PRIVATE_KEY"]
     key = key if key.startswith("0x") else "0x" + key
 
+    from eth_account import Account
+    from polymarket.auth import RelayerApiKey
     from polymarket.clients.secure import SecureClient
 
-    client = SecureClient.create(private_key=key, wallet=DEPOSIT_WALLET)
+    acct = Account.from_key(key)
+    api_key = _mint_relayer_api_key(acct)  # list-before-mint: reuse existing relayer key
+    tmp = SecureClient._create(private_key=key, validate_credentials=True)
+    creds = tmp._ctx.credentials
+    tmp.close()
+    client = SecureClient.create(
+        private_key=key, credentials=creds,
+        api_key=RelayerApiKey(key=api_key, address=acct.address),
+    )
     if str(client.wallet).lower() != DEPOSIT_WALLET.lower():
         client.close()
         raise RuntimeError(
