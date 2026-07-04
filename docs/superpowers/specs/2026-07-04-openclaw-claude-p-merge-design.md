@@ -1094,3 +1094,45 @@ fresh-contextのため、Builder(私)が実際に確認済みの事実でも、�
 no-human-loop例外3「Daisが記事本文を編集する場面」に該当するため、この一点のみ
 承認を待つ)。承認後の公開先(GitHub Pages/note等)は§10.4のフェーズ2着手時に
 決定する。
+
+### 20.1 Dais承認(verbatim、2026-07-05): 「do on github pages keep doing with vcsdd and dont forget too update spec yes」
+
+記事本文を承認、公開先=GitHub Pages(`Daisuke134/anicca`、public OSS repo)に決定。
+以降もVCSDDで進め、spec更新を忘れないこと、という指示。
+
+**実施内容**:
+1. 記事を`docs/articles/2026-07-05-swarm-highlight-01.md`として`~/anicca`に追加、
+   `docs/index.md`(簡易目次)を新規作成。
+2. `gh api POST repos/Daisuke134/anicca/pages`でPages有効化(source: main branch
+   `/docs`)。
+3. **ビルドが繰り返し`errored`(`"Page build failed."`)**。原因調査の結果、
+   `~/anicca`リポジトリに**git submodule**(`services/inbox-zero`)と**追跡済み
+   symlink**(`skills/goal-setter`、他のskillから実際に参照されている実運用ファイル)
+   が存在しており、legacy Pages buildのフルリポジトリcheckoutがこれに失敗している
+   ことが濃厚と判明(`.nojekyll`追加でも解消せず→Jekyll処理の問題ではなくcheckout
+   段階の問題と特定)。
+4. submodule/symlinkは他機能が依存する実運用ファイルのため**変更しない**方針とし、
+   代わりに**独立したorphan branch `gh-pages`**(submodule/symlinkを一切含まない、
+   `docs/`配下の記事+indexのみのクリーンなスナップショット)を新規作成。作業は
+   共有中の`~/anicca`本体ではなく一時worktree(scratchpad配下)で行い、他エージェント
+   (reddit-loop/capafy-loop等)の未commit作業には一切触れずに`git push origin
+   gh-pages`。Pages sourceを`gh-pages`branch/rootに切替え(`gh api PUT .../pages`)。
+5. **GitHub Pages CDNへの反映(ビルド)がこの環境で異常に遅く、`gh api POST .../
+   pages/builds`で明示リクエストしたビルド(commit `d8f60eef`)が9分以上
+   `status:building`のまま`updated_at`が進まず滞留** — 実際にstuckしている状態を
+   正直に記録する(fake成功にしない)。
+6. **代替の即時検証可能な公開証拠**(fresh evidence、この場でHTTP 200確認済み):
+   - `https://github.com/Daisuke134/anicca/blob/gh-pages/articles/2026-07-05-swarm-highlight-01.md`
+     → HTTP 200、記事タイトル文字列を実際に含む(GitHubの通常blobビューア、
+     Pages CDNとは独立の経路)
+   - `https://raw.githubusercontent.com/Daisuke134/anicca/gh-pages/articles/2026-07-05-swarm-highlight-01.md`
+     → HTTP 200、記事本文の生データを実際に取得
+   - `https://daisuke134.github.io/anicca/` および `/articles/....md` は
+     この時点では引き続き404("Site not found")— Pages CDN反映は**未完了**
+
+**結論・状態**: 記事コンテンツ自体は既に公開リポジトリ上で誰でも閲覧可能
+(blob/raw経由、fresh evidenceで確認済み)。GitHub Pages固有のCDN配信のみが
+このセッション内では完了確認できなかった。Task #5は「公開成功」と言い切らず
+`in_progress`のまま維持し、Pages CDNのビルド完了は継続監視する(次回セッション
+またはDaisからの追加確認依頼時に`gh api repos/Daisuke134/anicca/pages/builds/latest`
+を再確認する)。
