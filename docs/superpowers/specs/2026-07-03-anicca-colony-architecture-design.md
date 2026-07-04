@@ -1728,3 +1728,17 @@ ledger 実データの engine 叩き分布: automaton HL2089/PM45/SOL13、claude
 2. PM は claude-p の home 依存(registry summary: ~/.anicca-founder/agents/polymarket-agent を AS-IS 実行)= 他 instance が独立して PM 稼ぎできない。
 3. Franklin は SOL 一本足(franklin-config は default-model のみ、run.sh は sol-trade だけ)= self-funded の要が1エンジンしか持たない。
 → ENGINE-PARITY 課題 = HL を registry skill 化 + PM を home 非依存 portable 化 + 全 instance に3エンジン付与。これが EARN-3(Franklin earn)の前提。
+
+### §37 ★ Polymarket でどう稼ぐ/どう増やすか(docs 実取得)+ 設計原則(2026-07-05)★
+**PM の稼ぎ方(4つ、firecrawl docs.polymarket.com/market-makers):**
+1. ★Liquidity Rewards(主柱・持続的 no-human alpha)★: rewards 有効市場で midpoint 近くに両側 limit(maker)を rest。Polymarket が毎日 midpoint への近さ × size で scoring し pUSD を配る。maker は手数料0。API: `get-current-active-rewards-configurations`(稼げる市場一覧)/`get-order-scoring-status`(今 scoring 中か)/`get-earnings-for-user-by-date`(実収益)。→ market_maker.py の土台。
+2. Maker Rebates + Taker Rebates(追加リベート)。
+3. ★方向性 edge★: 割安 outcome に賭けて的中→redeem(claude-p の Morocco=これ、+$8.24)。
+4. ★Combos/bundle arb(リスクフリー)★: 二値で YES+NO<$1 の両建てが両約定→確定利益(bundle_arb.py)。
+**どう増やすか(=「課金すると稼ぎ増」が literally 真になる所):** ①資金↑→quote size↑→rewards は size 比例で増 ②rewards 市場を複数同時に quote(get-multiple-markets-with-rewards で探す)③midpoint により近く quote(scoring が近さ優先)④order scoring を確認して確実に稼ぐ ⑤勝ち建玉を即 redeem→資金回転。全部 agent が API で自律にできる。
+
+### §38 ★ 設計原則の確定(Dais 2026-07-05)★
+- ★全 instance が全スキルを持つ。制限しない★。今 Franklin だけ sol-trade 1個 = 唯一の穴(automaton/claude-p は full loop で17スキル全部)。
+- ★各スキルが「その設定で実際に動く」ことを verify する★。我々の Mac Mini で動かなければ US Mac Mini でもクラウドでも動かない。「どこでも(誰の端末でも・クラウドでも)動く」= Akash spawn の前提。verify は各 instance × 各 skill。
+- ★claude-p(subscription)は残す = 価値ある実験★: crypto/USDC を持たない人でも「あなたの Claude が稼げる」。ただし主眼ではない。主眼 = self-funded(automaton/Franklin)が crypto 燃料で自律に稼ぐこと。human-funded は稼いだら self-funded に卒業する道(§ graduation)。
+- ★autonomous earn の現実(正直)★: 人間も Claude も抜きで稼いだ realized = automaton $0.23 のみ。Franklin $0(sol 一本+規律 WAIT)、claude-p は自律で $8.24 分勝ったが redeem は team-lead(meddling)。= self-funded 自律実現益 合計 $0.23。ここを増やすのが全て。
