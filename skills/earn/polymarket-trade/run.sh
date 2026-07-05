@@ -25,26 +25,44 @@ if [ ! -d "$AGENT_HOME" ]; then
   exit 1
 fi
 
-# --- per-instance identity resolution (#26 EQUALIZE, R3) -----------------------------
-# claude-p 温存 (R6, zero regression): if POLYGON_WALLET_PRIVATE_KEY is ALREADY resolvable
-# the way it is today — either exported in this shell's env, or present in the agent's own
-# .env (python's load_dotenv() reads it there; we check existence only, never the value) —
-# we export NOTHING and change NOTHING: the agent resolves its key exactly as before.
-# Only when NEITHER exists (a genuinely unconfigured / fresh instance) do we reach for
-# resolve-identity to give THIS instance its own key (env override / $ANICCA_HOME wallet /
-# legacy $HOME wallet) and export it. If that also comes up empty, fail closed: skip + warn
-# (R5, money-safety) instead of letting the agent crash mid-run.
-if [ -z "${POLYGON_WALLET_PRIVATE_KEY:-}" ] && ! grep -q '^POLYGON_WALLET_PRIVATE_KEY=.\+' "$AGENT_HOME/.env" 2>/dev/null; then
+# --- per-instance identity resolution (#26 EQUALIZE, R3; #27 fix, 2026-07-05) ----------
+# BUG FIXED (#27, cross-instance money leak): the OLD order skipped resolve-identity
+# whenever the SHARED agent .env already had a POLYGON_WALLET_PRIVATE_KEY (claude-p's own
+# 0x810f) — so automaton/Franklin, which run this SAME script via their own body copies
+# WITHOUT an explicit key export, would fall through to that shared key and sign/trade on
+# claude-p's wallet, not their own. Fix: resolve THIS instance's OWN key FIRST.
+#
+# ANICCA_HOME-gated (not "call resolve-identity unconditionally and trust it comes back
+# empty for claude-p" — VERIFIED that assumption is false on this shared machine): with
+# ANICCA_HOME unset, resolve-identity.mjs's OWN default derivation falls back to
+# $HOME/.anicca, which — on THIS box — IS automaton's real home, so an unset-ANICCA_HOME
+# call does NOT come back empty, it returns automaton's key. So we only ATTEMPT
+# resolve-identity when ANICCA_HOME is EXPLICITLY set in the environment — which is true
+# for automaton (com.anicca.daemon.plist exports ANICCA_HOME=~/.anicca) and Franklin
+# (ai.anicca.franklin-loop.plist exports ANICCA_HOME=~/.blockrun), and NEVER true for
+# claude-p (its only production pm-trade job, ai.anicca.pm-earner.plist, has no
+# EnvironmentVariables and calls run_earner.sh directly, bypassing this file entirely; an
+# ad-hoc run of THIS file with ANICCA_HOME unset now safely falls through to the agent
+# .env below instead of silently grabbing automaton's key). resolve-identity itself is
+# still EFFECTIVE_HOME-gated (#28) so a foreign home never returns the wrong instance's key.
+if [ -z "${POLYGON_WALLET_PRIVATE_KEY:-}" ]; then
   RESOLVE_IDENTITY="$SKILL_DIR/../lib/resolve-identity.mjs"
   RESOLVED_EVM_KEY=""
-  [ -f "$RESOLVE_IDENTITY" ] && RESOLVED_EVM_KEY="$(node "$RESOLVE_IDENTITY" evm 2>/dev/null || true)"
+  if [ -n "${ANICCA_HOME:-}" ] && [ -f "$RESOLVE_IDENTITY" ]; then
+    RESOLVED_EVM_KEY="$(node "$RESOLVE_IDENTITY" evm 2>/dev/null || true)"
+  fi
   if [ -n "$RESOLVED_EVM_KEY" ]; then
-    export POLYGON_WALLET_PRIVATE_KEY="$RESOLVED_EVM_KEY"
-  else
+    export POLYGON_WALLET_PRIVATE_KEY="$RESOLVED_EVM_KEY"   # this instance's OWN EOA
+  elif ! grep -q '^POLYGON_WALLET_PRIVATE_KEY=.\+' "$AGENT_HOME/.env" 2>/dev/null; then
+    # neither an explicit-ANICCA_HOME per-instance key NOR an agent .env key -> fail
+    # closed: skip + warn (R5, money-safety) instead of letting the agent crash mid-run.
     echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"skip\",\"reason\":\"no-identity-key\"}" >> "$TRACE"
-    echo "no EVM identity key resolvable (env / agent .env / \$ANICCA_HOME / \$HOME) — skipping pm-trade pass" >&2
+    echo "no EVM identity key resolvable (env / \$ANICCA_HOME / agent .env) — skipping pm-trade pass" >&2
     exit 0
   fi
+  # else: ANICCA_HOME unset (or resolve came back empty) BUT the agent .env has a key ->
+  # claude-p/founder path, python's load_dotenv() uses it (0x810f = its OWN EOA).
+  # PRESERVED — zero behavior change from before this fix.
   unset RESOLVED_EVM_KEY
 fi
 
