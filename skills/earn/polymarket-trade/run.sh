@@ -66,6 +66,57 @@ if [ -z "${POLYGON_WALLET_PRIVATE_KEY:-}" ]; then
   unset RESOLVED_EVM_KEY
 fi
 
+# --- EVOLVE genome wiring (#19, 2026-07-05) --------------------------------------------------
+# load_genome (+ mutate on the exploration cadence) supplies pick.py's EXPLORATION knobs ONLY —
+# MIN_EDGE / MIN_CONF / RESOLVE_HORIZON_DAYS / MAX_CANDIDATES / EARN_CONSENSUS_MODELS (spec
+# 2026-07-05-evolve-earnings-gated-self-improve-design.md §2.2). Which market/side to bet is
+# STILL pick.py's own model judgment (HARD #0, unchanged) — genome never touches that.
+# EARN_GENOME_MUTATE_EVERY (default 5) = explore once every M passes; each exploration draw is
+# independent from the current baseline+override (never a compounding mutation-of-a-mutation).
+GENOME_LIB="$SKILL_DIR/../lib/genome.mjs"
+GENOME_COUNTER="$STATE_DIR/genome-pass-counter.json"
+if [ -f "$GENOME_LIB" ] && command -v node >/dev/null 2>&1; then
+  GENOME_ENV="$(EARN_GENOME_COUNTER_FILE="$GENOME_COUNTER" node "$GENOME_LIB" --maybe-mutate 2>>"$TRACE")"
+  if [ -n "$GENOME_ENV" ]; then eval "$GENOME_ENV"; fi
+fi
+# money-safety (HARD, spec §3): caps are NEVER part of the genome — genome.mjs's own
+# FORBIDDEN_CAP_KEYS guard already strips them from every genome object it can ever produce, but
+# this line is run.sh's OWN explicit, auditable "genome cannot win" guarantee: these three names
+# are fixed here, unconditionally, AFTER the genome eval, so nothing above can ever override them.
+export MAX_BET_SIZE=2
+export POLY_MIN_ORDER=1
+if [ -n "${EARN_GENOME_ID:-}" ]; then
+  MIN_EDGE="${MIN_EDGE:-}" MIN_CONF="${MIN_CONF:-}" RESOLVE_HORIZON_DAYS="${RESOLVE_HORIZON_DAYS:-}" \
+  MAX_CANDIDATES="${MAX_CANDIDATES:-}" EARN_CONSENSUS_MODELS="${EARN_CONSENSUS_MODELS:-}" \
+  EARN_GENOME_ID="$EARN_GENOME_ID" EARN_GENOME_MUTATED="${EARN_GENOME_MUTATED:-0}" TRACE_FILE="$TRACE" \
+  python3 <<'PY'
+import json, os, datetime
+
+def num(v):
+    try:
+        return float(v) if "." in v else int(v)
+    except (ValueError, TypeError):
+        return v
+
+rec = {
+    "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "slot": "earn/pm-trade",
+    "action": "genome",
+    "genome_id": os.environ["EARN_GENOME_ID"],
+    "mutated": os.environ.get("EARN_GENOME_MUTATED") == "1",
+    "genome": {
+        "MIN_EDGE": num(os.environ.get("MIN_EDGE", "")),
+        "MIN_CONF": num(os.environ.get("MIN_CONF", "")),
+        "RESOLVE_HORIZON_DAYS": num(os.environ.get("RESOLVE_HORIZON_DAYS", "")),
+        "MAX_CANDIDATES": num(os.environ.get("MAX_CANDIDATES", "")),
+        "EARN_CONSENSUS_MODELS": os.environ.get("EARN_CONSENSUS_MODELS", ""),
+    },
+}
+with open(os.environ["TRACE_FILE"], "a") as f:
+    f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+PY
+fi
+
 # #27: ensure THIS instance's deposit wallet is REGISTERED via the bridge Collateral Onramp (idempotent)
 # + approve the neg-risk spenders, so EVERY self-funded AI can trade on Polymarket from birth. Registry
 # gate is the CONFIRMED root cause of "error resolving address" — never raw-deploy + raw-transfer pUSD;
@@ -210,7 +261,7 @@ ORDER_OUT=$(timeout 120 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/place_order.p
 # stdout had "[valid result JSON][trailing noise]" concatenated on one line, so
 # plain json.loads() choked and a real fill got recorded as a failure. place_order.py's
 # own root fix guarantees clean stdout now; this stays as a second, independent layer.
-ORDER_JSON="${ORDER_OUT:-{}}" MARKET="$MARKET" END_DATE="$END_DATE" EDGE="$EDGE" CONFIDENCE="$CONFIDENCE" CONSENSUS="$CONSENSUS" RC="$ORDER_RC" TRACE_FILE="$TRACE" python3 <<'PY'
+ORDER_JSON="${ORDER_OUT:-{}}" MARKET="$MARKET" END_DATE="$END_DATE" EDGE="$EDGE" CONFIDENCE="$CONFIDENCE" CONSENSUS="$CONSENSUS" RC="$ORDER_RC" TRACE_FILE="$TRACE" EARN_GENOME_ID="${EARN_GENOME_ID:-}" python3 <<'PY'
 import json, os, datetime
 
 def recover(raw):
@@ -258,6 +309,9 @@ rec = {
     "edge": os.environ.get("EDGE"),
     "confidence": os.environ.get("CONFIDENCE"),
     "consensus": os.environ.get("CONSENSUS"),
+    # EVOLVE (#19): which genome was active for THIS bet, so evolve.mjs can join a later
+    # on-chain redeem back to the genome that earned it (attribution, spec §2.3).
+    "genome_id": os.environ.get("EARN_GENOME_ID") or None,
     "exit": int(os.environ["RC"]),
     "order": order,
 }
