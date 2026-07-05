@@ -70,6 +70,15 @@ function burnToday() {
   } catch { return 0; }
 }
 
+// #31 FREE-MODE (2026-07-05): brain model label must reflect what `franklin proxy` is ACTUALLY
+// pinned to (anicca-daemon.sh: `franklin proxy --model "$FRANKLIN_FREE_MODEL" --no-fallback`), not a
+// stale hardcoded paid placeholder. anicca-daemon.sh now `export`s FRANKLIN_FREE_MODEL so this
+// one-shot poster (spawned as a child of that same shell) inherits the real value; the literal here
+// is only the fallback for a standalone/manual run where that env var isn't set. Live-verified
+// 2026-07-05: nvidia/llama-4-maverick is BlockRun billing_mode="free" (pricing input/output = 0) —
+// so model_tier is "free", never "frontier".
+const FRANKLIN_MODEL = process.env.FRANKLIN_FREE_MODEL || "nvidia/llama-4-maverick";
+
 async function post() {
   const [sol, usdc, price] = await Promise.all([solBalance(), usdcBalance(), solPrice()]);
   const net_worth_usd = +(usdc + sol * price).toFixed(6);
@@ -77,7 +86,7 @@ async function post() {
   const payload = {
     id: address, ts: Math.floor(Date.now() / 1000), host: "Franklin", geo: "JP", chain: "solana",
     funding: "self", env: "local", brain: "proxy",
-    model_live: "openai/gpt-5-mini", model_tier: "frontier",
+    model_live: FRANKLIN_MODEL, model_tier: "free",
     net_worth_usd, revenue_mo_usd: 0, revenue_by_source: {}, log: activityLog(),
     burn_day_usd, runway_days: 999, status: "alive",
   };

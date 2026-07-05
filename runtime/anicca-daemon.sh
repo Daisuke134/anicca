@@ -61,7 +61,9 @@ if [ "$INSTANCE" = "franklin" ]; then
   # (Franklin's real address), and a free-model call (nvidia/llama-4-maverick) settled at $0 in
   # cost_log.jsonl. --model pins a FREE model + --no-fallback refuses to silently escalate to a paid
   # one, so routine THINK compute = $0 (same cost-free thesis as the ClawRouter path below).
-  FRANKLIN_FREE_MODEL="${FRANKLIN_FREE_MODEL:-nvidia/llama-4-maverick}"
+  # export: the telemetry poster subshell (step 3 below) reads this to label model_live/model_tier
+  # honestly instead of a stale hardcode (#31 FREE-MODE fix, 2026-07-05).
+  export FRANKLIN_FREE_MODEL="${FRANKLIN_FREE_MODEL:-nvidia/llama-4-maverick}"
   ensure_brain() {
     command -v franklin >/dev/null 2>&1 || npm install -g @blockrun/franklin >/dev/null 2>&1 || true
     franklin proxy --port "$PORT" --model "$FRANKLIN_FREE_MODEL" --no-fallback >>"$LOGDIR/franklin-proxy.log" 2>&1 &
