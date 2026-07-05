@@ -139,8 +139,15 @@ data/spawns.json
 ```bash
 # Optional overrides — a fresh spawn generates its own isolated wallet by default (core/wallet.mjs).
 # VINEYARD_HOME=/absolute/path/to/vineyard/data   # defaults to ~/.vineyard
-# VINEYARD_EVM_PRIVATE_KEY=0x...                  # override instead of the generated per-instance wallet
-# VINEYARD_SOLANA_PRIVATE_KEY=...                 # override (base58)
+#
+# There is NO global VINEYARD_EVM_PRIVATE_KEY / VINEYARD_SOLANA_PRIVATE_KEY override. A persistent
+# process (api/server.mjs) serves MANY instance ids over its lifetime — any such env var would resolve
+# to the SAME key for every id, which is the exact cross-instance key leak REQ-003 forbids. Bring-
+# your-own-key is instead an explicit, id-scoped SPAWN-TIME parameter only:
+#   vineyard spawn --key 0x... --solana-key <base58>          (CLI)
+#   curl -X POST /spawn -d '{"key":"0x...","solanaKey":"..."}' (API)
+# — see core/wallet.mjs's generateWallet(id, env, overrideKeys) for the resolution rule.
+#
 # SOURCE_KEY=0x...                                # a PRE-REGISTERED Polymarket wallet's key — needed for
 #                                                  # the very first bridge registration on a brand-new
 #                                                  # deployment (see plan discrepancy D8)
@@ -167,7 +174,7 @@ Expected: one commit, `chore: scaffold vineyard repo...`
 - Create: `~/vineyard/core/wallet.mjs`
 - Test: `~/vineyard/core/wallet.test.mjs`
 
-This is the Vineyard-native replacement for anicca's `~/anicca/skills/earn/lib/resolve-identity.mjs`. Function names/priority-order pattern are kept close to the original (env override → per-instance file → null, fail-closed, never throws), but the anicca-specific "legacy `$HOME/.automaton`" back-compat branch is intentionally **not** ported — a brand-new repo has no prior shared-wallet convention to honor, and every instance's home is always the explicit `<VINEYARD_HOME>/instances/<id>/` directory (never an ambiguous default). EVM keygen uses `viem`'s `generatePrivateKey`/`privateKeyToAccount` (same as anicca's `runtime/compute-proxy/start-local.sh`); Solana keygen uses Node's built-in `crypto.generateKeyPairSync('ed25519')` + manual base58 (the exact algorithm read from anicca's `runtime/compute-proxy/ensure-solana-wallet.mjs`, verbatim, no `@solana/web3.js` dependency needed for pure keygen).
+This is the Vineyard-native replacement for anicca's `~/anicca/skills/earn/lib/resolve-identity.mjs`. Function names are kept close to the original, but the priority-order pattern is deliberately NARROWER: resolution (`resolveEvmPrivateKey`/`resolveSolanaSecret`) is per-instance-file → null ONLY — there is no ambient/global env-var override step at all (see this file's header note and REQ-003; anicca's original had one, but it is a real cross-instance leak in Vineyard's persistent multi-instance `api/server.mjs` topology, so it is not ported). The anicca-specific "legacy `$HOME/.automaton`" back-compat branch is likewise intentionally **not** ported — a brand-new repo has no prior shared-wallet convention to honor, and every instance's home is always the explicit `<VINEYARD_HOME>/instances/<id>/` directory (never an ambiguous default). The ONLY bring-your-own-key path is `generateWallet`'s id-scoped `overrideKeys` parameter at spawn time, which is validated/normalized once, written into that one id's own file, and never re-read from `process.env` by any resolver. EVM keygen uses `viem`'s `generatePrivateKey`/`privateKeyToAccount` (same as anicca's `runtime/compute-proxy/start-local.sh`); Solana keygen uses Node's built-in `crypto.generateKeyPairSync('ed25519')` + manual base58 (the exact algorithm read from anicca's `runtime/compute-proxy/ensure-solana-wallet.mjs`, verbatim, no `@solana/web3.js` dependency needed for pure keygen).
 
 - [ ] **Step 1: Write the failing test for `generateWallet`**
 
@@ -178,6 +185,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
 import { generateWallet, instanceDir, vineyardHome } from './wallet.mjs';
 
 function tmpHome(prefix) {
@@ -223,6 +231,39 @@ test('generateWallet: two different ids get two different wallets', () => {
   assert.notEqual(a.evm.address, b.evm.address);
   assert.notEqual(a.solana.address, b.solana.address);
 });
+
+// --- overrideKeys: the ONLY bring-your-own-key path (REQ-003) — id-scoped, spawn-time only ---
+
+test('generateWallet: overrideKeys.evmPrivateKey seeds a fresh id\'s wallet.json instead of generating a random key', () => {
+  const home = tmpHome('vy-wallet-override-evm');
+  const env = { VINEYARD_HOME: home };
+  const suppliedPk = generatePrivateKey(); // stands in for an operator's own pre-funded key
+  const result = generateWallet('gamma', env, { evmPrivateKey: suppliedPk });
+  assert.equal(result.evm.address, privateKeyToAccount(suppliedPk).address);
+  const raw = JSON.parse(fs.readFileSync(path.join(instanceDir('gamma', env), 'wallet.json'), 'utf8'));
+  assert.equal(raw.privateKey, suppliedPk);
+});
+
+test('generateWallet: overrideKeys.solanaSecretKey seeds a fresh id\'s solana.json instead of generating a random key', () => {
+  const home = tmpHome('vy-wallet-override-sol');
+  const env = { VINEYARD_HOME: home };
+  const donor = generateWallet('donor-throwaway', env); // a real generated key, reused as a stand-in "operator's own key"
+  const donorSecret = JSON.parse(fs.readFileSync(path.join(instanceDir('donor-throwaway', env), 'solana.json'), 'utf8')).secretKey;
+  const result = generateWallet('epsilon', env, { solanaSecretKey: donorSecret });
+  assert.equal(result.solana.address, donor.solana.address);
+});
+
+test('generateWallet: overrideKeys is IGNORED once wallet.json/solana.json already exist for the id — an existing instance\'s identity can never be swapped out from under it', () => {
+  const home = tmpHome('vy-wallet-override-ignore');
+  const env = { VINEYARD_HOME: home };
+  const first = generateWallet('zeta', env); // real first spawn, generates its own keys
+  const attemptedSwap = generateWallet('zeta', env, {
+    evmPrivateKey: generatePrivateKey(),
+    solanaSecretKey: 'not-even-checked-because-it-must-be-ignored',
+  });
+  assert.equal(attemptedSwap.evm.address, first.evm.address, 're-spawn must ignore overrideKeys.evmPrivateKey once identity already exists');
+  assert.equal(attemptedSwap.solana.address, first.solana.address, 're-spawn must ignore overrideKeys.solanaSecretKey once identity already exists');
+});
 ```
 
 - [ ] **Step 2: Run the test to verify it fails**
@@ -238,6 +279,13 @@ Expected: FAIL — `Cannot find module './wallet.mjs'`
 // with the anicca-specific legacy-shared-wallet back-compat branch intentionally dropped — see this
 // plan's header note on why a fresh repo has no such convention to honor. Fail-closed everywhere:
 // any missing/malformed file returns null, this module never throws.
+//
+// KEY ISOLATION (REQ-003): there is NO ambient/global env-var override for key resolution. A
+// persistent process (api/server.mjs) serves MANY instance ids over its lifetime — a global env
+// override would resolve to the SAME key for every id, which is exactly the cross-instance leak this
+// module exists to prevent. The ONLY way an operator's own pre-funded key ever enters the system is
+// the explicit, id-scoped `overrideKeys` param to `generateWallet()` at spawn time (below), which is
+// written into exactly that one id's own wallet.json/solana.json and never read from process.env again.
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
@@ -289,12 +337,57 @@ function base58(buf) {
   return out + digits.reverse().map((d) => B58_ALPHABET[d]).join('');
 }
 
+/** Inverse of base58() — decodes a base58 string back to a Buffer. Returns null on invalid input. */
+function base58Decode(str) {
+  if (typeof str !== 'string' || str.length === 0) return null;
+  let bytes = [0];
+  for (const char of str) {
+    const value = B58_ALPHABET.indexOf(char);
+    if (value === -1) return null;
+    let carry = value;
+    for (let j = 0; j < bytes.length; j++) {
+      carry += bytes[j] * 58;
+      bytes[j] = carry & 0xff;
+      carry >>= 8;
+    }
+    while (carry) {
+      bytes.push(carry & 0xff);
+      carry >>= 8;
+    }
+  }
+  for (const char of str) {
+    if (char === '1') bytes.push(0);
+    else break;
+  }
+  return Buffer.from(bytes.reverse());
+}
+
+/**
+ * Validate a caller-supplied Solana secret key: base58, the SAME 64-byte seed+pubkey wire format
+ * generateWallet() itself produces (the standard Keypair.secretKey shape). Returns
+ * {address, secretKey, secretKeyBytes} or null if the input does not decode to exactly 64 bytes.
+ */
+function normalizeSolanaSecret(base58Secret) {
+  const decoded = base58Decode(base58Secret);
+  if (!decoded || decoded.length !== 64) return null;
+  const pub = decoded.subarray(32);
+  return { address: base58(pub), secretKey: base58Secret, secretKeyBytes: [...decoded] };
+}
+
 /**
  * Generate (or return the existing) EVM + Solana keypair for instance `id`, persisted under
  * <VINEYARD_HOME>/instances/<id>/{wallet.json,solana.json}, chmod 600. Idempotent.
+ *
+ * `overrideKeys` (optional) is the ONLY bring-your-own-key path (REQ-003) — it is scoped to exactly
+ * this one `id` and is silently IGNORED if wallet.json/solana.json already exists (a re-spawn of an
+ * existing id can never have its identity swapped out from under it):
+ *   - `overrideKeys.evmPrivateKey` (0x-prefixed or bare hex) written into wallet.json instead of
+ *     generating a fresh key.
+ *   - `overrideKeys.solanaSecretKey` (base58, 64-byte seed+pubkey format) written into solana.json
+ *     instead of generating a fresh key; invalid input is ignored and a fresh key is generated instead.
  * @returns {{id: string, evm: {address: string}, solana: {address: string}}}
  */
-export function generateWallet(id, env = process.env) {
+export function generateWallet(id, env = process.env, overrideKeys = {}) {
   const dir = instanceDir(id, env);
   fs.mkdirSync(dir, { recursive: true });
 
@@ -303,7 +396,8 @@ export function generateWallet(id, env = process.env) {
   if (fs.existsSync(walletPath)) {
     evm = JSON.parse(fs.readFileSync(walletPath, 'utf8'));
   } else {
-    const pk = generatePrivateKey();
+    const suppliedKey = normalizeEvmKey(overrideKeys.evmPrivateKey);
+    const pk = suppliedKey || generatePrivateKey();
     evm = { privateKey: pk, address: privateKeyToAccount(pk).address };
     fs.writeFileSync(walletPath, JSON.stringify(evm, null, 2));
     fs.chmodSync(walletPath, 0o600);
@@ -314,11 +408,16 @@ export function generateWallet(id, env = process.env) {
   if (fs.existsSync(solPath)) {
     solana = JSON.parse(fs.readFileSync(solPath, 'utf8'));
   } else {
-    const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
-    const pub = publicKey.export({ type: 'spki', format: 'der' }).subarray(-32);
-    const seed = privateKey.export({ type: 'pkcs8', format: 'der' }).subarray(-32);
-    const secret = Buffer.concat([seed, pub]);
-    solana = { address: base58(pub), secretKey: base58(secret), secretKeyBytes: [...secret] };
+    const supplied = normalizeSolanaSecret(overrideKeys.solanaSecretKey);
+    if (supplied) {
+      solana = supplied;
+    } else {
+      const { publicKey, privateKey } = crypto.generateKeyPairSync('ed25519');
+      const pub = publicKey.export({ type: 'spki', format: 'der' }).subarray(-32);
+      const seed = privateKey.export({ type: 'pkcs8', format: 'der' }).subarray(-32);
+      const secret = Buffer.concat([seed, pub]);
+      solana = { address: base58(pub), secretKey: base58(secret), secretKeyBytes: [...secret] };
+    }
     fs.writeFileSync(solPath, JSON.stringify(solana, null, 2));
     fs.chmodSync(solPath, 0o600);
   }
@@ -328,20 +427,17 @@ export function generateWallet(id, env = process.env) {
 
 /**
  * Resolve instance `id`'s OWN EVM private key. Fail-closed: null if `id` has no wallet.json yet
- * or the file is malformed. NEVER reads another instance's directory — this IS the key-isolation
- * boundary (there is no shared/legacy fallback path for it to leak through).
+ * or the file is malformed. NEVER reads another instance's directory and NEVER consults any
+ * ambient/global env var — this IS the key-isolation boundary (REQ-003). The only way a key other
+ * than a freshly-generated one enters the system is generateWallet()'s id-scoped `overrideKeys`
+ * param at spawn time, which is already persisted in this exact id's own wallet.json by the time
+ * this function runs — there is no second, parallel env-var path.
  */
 export function resolveEvmPrivateKey(id, env = process.env) {
-  const override = normalizeEvmKey(env.VINEYARD_EVM_PRIVATE_KEY);
-  if (override) return override;
-  const fromFile = readJsonField(path.join(instanceDir(id, env), 'wallet.json'), 'privateKey');
-  return fromFile ? normalizeEvmKey(fromFile) : null;
+  return readJsonField(path.join(instanceDir(id, env), 'wallet.json'), 'privateKey');
 }
 
 export function resolveSolanaSecret(id, env = process.env) {
-  if (typeof env.VINEYARD_SOLANA_PRIVATE_KEY === 'string' && env.VINEYARD_SOLANA_PRIVATE_KEY.length > 0) {
-    return env.VINEYARD_SOLANA_PRIVATE_KEY;
-  }
   return readJsonField(path.join(instanceDir(id, env), 'solana.json'), 'secretKey');
 }
 
@@ -358,7 +454,7 @@ export function resolveAddresses(id, env = process.env) {
 - [ ] **Step 4: Run the test to verify it passes**
 
 Run: `cd ~/vineyard && node --test core/wallet.test.mjs`
-Expected: PASS — 5 tests, 0 failures
+Expected: PASS — 8 tests, 0 failures (2 `vineyardHome` + 3 `generateWallet` + 3 `overrideKeys`)
 
 - [ ] **Step 5: Commit**
 
@@ -415,38 +511,49 @@ test('ISOLATION: A and B both spawned -> resolveEvmPrivateKey(A) never equals re
   assert.equal(privateKeyToAccountAddress(keyB), b.evm.address);
 });
 
-test('ISOLATION: env override for the CURRENT process never leaks into a DIFFERENT instance id\'s resolution', () => {
-  // env.VINEYARD_EVM_PRIVATE_KEY is a global override by design (single-instance CLI invocation
-  // convention) — this test documents that a per-instance FILE lookup (the id-scoped path) is the
-  // isolation boundary that matters for the multi-instance loop/API server, and confirms it still
-  // resolves the id-scoped file correctly when no override is set.
-  const home = tmpHome('vy-isolate-noleak');
-  const env = { VINEYARD_HOME: home };
-  const a = generateWallet('instance-a', env);
-  const keyA = resolveEvmPrivateKey('instance-a', env);
-  assert.equal(privateKeyToAccountAddress(keyA), a.evm.address);
-  assert.equal(resolveEvmPrivateKey('instance-c', env), null);
+test('REGRESSION: setting env.VINEYARD_EVM_PRIVATE_KEY on the process has ZERO effect on resolveEvmPrivateKey for ANY id (the ambient-override footgun is structurally gone, not just removed by convention)', () => {
+  const home = tmpHome('vy-isolate-noambient-evm');
+  const envClean = { VINEYARD_HOME: home };
+  const a = generateWallet('instance-a', envClean);
+  const keyWithoutAmbient = resolveEvmPrivateKey('instance-a', envClean);
+  const envWithAmbient = {
+    VINEYARD_HOME: home,
+    VINEYARD_EVM_PRIVATE_KEY: '0xdeadbeef00000000000000000000000000000000000000000000000000000001',
+  };
+  const keyWithAmbient = resolveEvmPrivateKey('instance-a', envWithAmbient);
+  assert.equal(keyWithAmbient, keyWithoutAmbient, 'an ambient env var must never change the resolved key for an EXISTING id');
+  assert.equal(privateKeyToAccountAddress(keyWithAmbient), a.evm.address);
+  // and for an id that was never spawned — the ambient var must not "fill in" a key either
+  assert.equal(resolveEvmPrivateKey('instance-never-spawned', envWithAmbient), null);
+});
+
+test('REGRESSION: setting env.VINEYARD_SOLANA_PRIVATE_KEY on the process has ZERO effect on resolveSolanaSecret for ANY id', () => {
+  const home = tmpHome('vy-isolate-noambient-sol');
+  const envClean = { VINEYARD_HOME: home };
+  generateWallet('instance-a', envClean);
+  const secretWithoutAmbient = resolveSolanaSecret('instance-a', envClean);
+  const envWithAmbient = { VINEYARD_HOME: home, VINEYARD_SOLANA_PRIVATE_KEY: 'fakeAmbientSolanaSecretThatMustNeverBeReturned' };
+  const secretWithAmbient = resolveSolanaSecret('instance-a', envWithAmbient);
+  assert.equal(secretWithAmbient, secretWithoutAmbient, 'an ambient env var must never change the resolved secret for an EXISTING id');
+  assert.equal(resolveSolanaSecret('instance-never-spawned', envWithAmbient), null);
 });
 
 function privateKeyToAccountAddress(pk) {
   // local re-derivation via viem, independent of wallet.mjs's own generation path, so this test does
   // not just trust wallet.mjs's own bookkeeping.
-  return privateKeyToAccountFromViem(pk);
+  return privateKeyToAccount(pk).address;
 }
 ```
 
-- [ ] **Step 2: Add the missing viem import used by the new helper**
+- [ ] **Step 2: No additional import needed**
 
-```javascript
-// add near the top of ~/vineyard/core/wallet.test.mjs, alongside the existing imports
-import { privateKeyToAccount as privateKeyToAccountFromViem_ } from 'viem/accounts';
-function privateKeyToAccountFromViem(pk) { return privateKeyToAccountFromViem_(pk).address; }
-```
+Task 2 already imports `{ generatePrivateKey, privateKeyToAccount }` from `'viem/accounts'` at the top of `~/vineyard/core/wallet.test.mjs` — `privateKeyToAccountAddress` above reuses that same binding directly, so there is nothing to add here.
 
 - [ ] **Step 3: Run the full wallet test suite**
 
 Run: `cd ~/vineyard && node --test core/wallet.test.mjs`
-Expected: PASS — 9 tests, 0 failures (5 from Task 2 + 4 isolation tests)
+Expected: PASS — 13 tests, 0 failures (8 from Task 2 + 2 FAIL-CLOSED + 1 ISOLATION + 2 ambient-env-var
+REGRESSION tests from Task 3)
 
 - [ ] **Step 4: Commit**
 
@@ -602,7 +709,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { appendLedger, readLedger, realizedPnl } from './ledger.mjs';
+import { appendLedger, readLedger, realizedPnl, sumRealized } from './ledger.mjs';
 
 function tmpDataDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), `${prefix}-`));
@@ -642,6 +749,13 @@ test('realizedPnl: a skip/wait line with no earn/cost/net fields contributes 0, 
   appendLedger('z4', { engine: 'hyperliquid', status: 'wait' }, dataDir);
   assert.equal(realizedPnl('z4', dataDir), 0);
 });
+
+test('sumRealized: PURE kernel — sums an in-memory array of already-parsed lines, zero I/O, same math as realizedPnl', () => {
+  assert.equal(sumRealized([{ net_usdc: 0.03 }, { net_usdc: 1.2 }]), 1.23);
+  assert.equal(sumRealized([{ earn_usdc: 5, cost_usdc: 2 }]), 3);
+  assert.equal(sumRealized([{ status: 'wait' }]), 0);
+  assert.equal(sumRealized([]), 0);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -679,28 +793,38 @@ export function readLedger(id, dataDir) {
   return fs.readFileSync(p, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l));
 }
 
-/** Realized P&L = sum of every line's net_usdc (or earn_usdc - cost_usdc, or 0). Never NaN. */
-export function realizedPnl(id, dataDir) {
-  return readLedger(id, dataDir).reduce((sum, line) => {
+/**
+ * PURE KERNEL (no I/O): sum an ALREADY-PARSED array of ledger-line objects into a realized P&L
+ * number. `net_usdc` wins if present; else `earn_usdc - cost_usdc`; else 0 for a skip/wait line.
+ * Never NaN. This is the exact function Phase 5's purity audit greps for
+ * (verification-architecture.md's Purity Boundary Map).
+ */
+export function sumRealized(lines) {
+  return lines.reduce((sum, line) => {
     const net = typeof line.net_usdc === 'number'
       ? line.net_usdc
       : (Number(line.earn_usdc || 0) - Number(line.cost_usdc || 0));
     return sum + (Number.isFinite(net) ? net : 0);
   }, 0);
 }
+
+/** Realized P&L for instance `id` = sumRealized(readLedger(id, dataDir)). The only I/O is the read. */
+export function realizedPnl(id, dataDir) {
+  return sumRealized(readLedger(id, dataDir));
+}
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd ~/vineyard && node --test core/ledger.test.mjs`
-Expected: PASS — 5 tests, 0 failures
+Expected: PASS — 6 tests, 0 failures (5 existing + 1 direct `sumRealized` pure-kernel test)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd ~/vineyard
 git add core/ledger.mjs core/ledger.test.mjs
-git commit -m "feat(core): ledger.mjs realized P&L jsonl (append/read/sum)"
+git commit -m "feat(core): ledger.mjs realized P&L jsonl (append/read/sum), sumRealized pure kernel"
 ```
 
 ---
@@ -752,7 +876,9 @@ function parseFlags(args) {
 async function cmdSpawn(args) {
   const { flags } = parseFlags(args);
   const id = flags.id || newId();
-  const wallet = generateWallet(id);
+  // --key/--solana-key are the ONLY bring-your-own-key path (REQ-003) — id-scoped, spawn-time only.
+  // generateWallet() silently ignores these if wallet.json/solana.json already exists for `id`.
+  const wallet = generateWallet(id, process.env, { evmPrivateKey: flags.key, solanaSecretKey: flags['solana-key'] });
   const row = registerSpawn({
     id,
     evm: wallet.evm.address,
@@ -821,7 +947,9 @@ app.use(express.json());
 
 app.post('/spawn', (req, res) => {
   const id = req.body?.id || crypto.randomBytes(4).toString('hex');
-  const wallet = generateWallet(id);
+  // body.key/body.solanaKey are the ONLY bring-your-own-key path (REQ-003) — id-scoped, spawn-time
+  // only. generateWallet() silently ignores these if wallet.json/solana.json already exists for `id`.
+  const wallet = generateWallet(id, process.env, { evmPrivateKey: req.body?.key, solanaSecretKey: req.body?.solanaKey });
   const row = registerSpawn({
     id,
     evm: wallet.evm.address,
@@ -903,7 +1031,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { readCostBasis, recordDeposit, recordWithdraw, seedIfEmpty } from './lib/cost-basis.mjs';
+import { readCostBasis, recordDeposit, recordWithdraw, seedIfEmpty, applyDelta } from './lib/cost-basis.mjs';
 
 function tmpFile(prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `${prefix}-`));
@@ -942,6 +1070,16 @@ test('two different files (two instances) never mix state', () => {
   recordDeposit('fluid', 7, fileA);
   assert.equal(readCostBasis(fileB).fluid, undefined);
 });
+
+test('applyDelta: PURE kernel — returns a NEW object with venue adjusted and floored at 0, never mutates the input, zero I/O', () => {
+  const input = Object.freeze({ fluid: 2 });
+  const afterWithdrawTooMuch = applyDelta(input, 'fluid', -10);
+  assert.equal(afterWithdrawTooMuch.fluid, 0); // floored at 0, never negative
+  assert.equal(input.fluid, 2); // input object itself is untouched
+  const afterDeposit = applyDelta(input, 'aave', 1.5);
+  assert.equal(afterDeposit.aave, 1.5);
+  assert.equal(afterDeposit.fluid, 2); // other venues preserved
+});
 ```
 
 - [ ] **Step 3: Run test to verify it fails**
@@ -956,6 +1094,9 @@ Expected: FAIL — `Cannot find module './lib/cost-basis.mjs'`
 // adapted ONLY so every function takes an explicit `filePath` instead of one hardcoded shared-HOME
 // path (Vineyard runs N instances under one VINEYARD_HOME; anicca assumed one shared HOME per agent).
 // The venue-basis bookkeeping logic itself (deposit/withdraw/floor-at-0/seed-if-empty) is unchanged.
+// `applyDelta` is the PURE kernel (no I/O, no mutation) Phase 5's purity audit greps for
+// (verification-architecture.md's Purity Boundary Map) — `adjust` is the thin effectful wrapper
+// (read -> applyDelta -> write) around it.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -971,12 +1112,23 @@ function write(o, filePath) {
 export function recordDeposit(venue, usd, filePath) { return adjust(venue, +Number(usd), filePath); }
 export function recordWithdraw(venue, usd, filePath) { return adjust(venue, -Number(usd), filePath); }
 
+/**
+ * PURE KERNEL (no I/O, no mutation of `costBasisObj`): returns a NEW object with `venue`'s value
+ * adjusted by `delta` and floored at 0. Assumes `venue` is a truthy string and `delta` is finite —
+ * the effectful wrapper `adjust()` below validates those before ever calling this.
+ */
+export function applyDelta(costBasisObj, venue, delta) {
+  const next = { ...costBasisObj };
+  next[venue] = Math.max(0, +(((next[venue] || 0) + delta)).toFixed(6));
+  return next;
+}
+
 function adjust(venue, delta, filePath) {
   if (!venue || !Number.isFinite(delta)) return null;
-  const o = readCostBasis(filePath);
-  o[venue] = Math.max(0, +(((o[venue] || 0) + delta)).toFixed(6));
-  write(o, filePath);
-  return o[venue];
+  const current = readCostBasis(filePath);
+  const next = applyDelta(current, venue, delta);
+  write(next, filePath);
+  return next[venue];
 }
 
 export function seedIfEmpty(seed, filePath) {
@@ -993,7 +1145,7 @@ export function seedIfEmpty(seed, filePath) {
 - [ ] **Step 5: Run test to verify it passes**
 
 Run: `cd ~/vineyard && node --test engines/cost-basis.test.mjs`
-Expected: PASS — 5 tests, 0 failures
+Expected: PASS — 6 tests, 0 failures (5 existing + 1 direct `applyDelta` pure-kernel test)
 
 - [ ] **Step 6: Write the failing test for `engines/yield.mjs`'s exported `run()` shape**
 
@@ -1076,7 +1228,12 @@ with:
 import { fileURLToPath } from 'node:url';
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   const path2 = await import('node:path');
-  run({ evmPrivateKey: process.env.VINEYARD_EVM_PRIVATE_KEY, costBasisFile: process.env.VINEYARD_COST_BASIS_FILE })
+  // MANUAL_YIELD_KEY is a standalone convenience env var for THIS direct `node engines/yield.mjs`
+  // invocation ONLY — it is never read by core/wallet.mjs and has no effect on any other instance
+  // id's key resolution (there is no ambient/global key override anywhere in this system; see
+  // REQ-003/core/wallet.mjs). Deliberately NOT named VINEYARD_EVM_PRIVATE_KEY to avoid implying that
+  // deleted, unsafe ambient-override concept still exists.
+  run({ evmPrivateKey: process.env.MANUAL_YIELD_KEY, costBasisFile: process.env.VINEYARD_COST_BASIS_FILE })
     .then(out)
     .catch((e) => out({ error: String(e?.message || e) }));
 }
@@ -1090,7 +1247,7 @@ Expected: PASS — 1 test, 0 failures
 
 - [ ] **Step 10: Manual (non-automated) verification note — HARD RULE 0.24**
 
-A REAL deploy/refill/hold pass requires a Base-funded EVM wallet holding idle USDC. This is a separate manual verification step to run once a spawned instance is actually funded: `VINEYARD_EVM_PRIVATE_KEY=<funded key> node -e "import('./engines/yield.mjs').then(m => m.run({evmPrivateKey: process.env.VINEYARD_EVM_PRIVATE_KEY, costBasisFile: '/tmp/vy-cb-manual.json'}).then(r => console.log(r)))"` — expect a real `{kind:"yield", action:"deploy"|"refill"|"hold", ...}` object with either a real `tx` hash or an honest `hold`. Do NOT claim this step passed without running it against a real funded wallet.
+A REAL deploy/refill/hold pass requires a Base-funded EVM wallet holding idle USDC. This is a separate manual verification step to run once a spawned instance is actually funded: `MANUAL_YIELD_KEY=<funded key> node -e "import('./engines/yield.mjs').then(m => m.run({evmPrivateKey: process.env.MANUAL_YIELD_KEY, costBasisFile: '/tmp/vy-cb-manual.json'}).then(r => console.log(r)))"` — expect a real `{kind:"yield", action:"deploy"|"refill"|"hold", ...}` object with either a real `tx` hash or an honest `hold`. `MANUAL_YIELD_KEY` is a one-off convenience for this direct manual invocation only — it is NOT the ambient key-override design that FIND-001/002 required removing (there is no such override anywhere in `core/wallet.mjs`); this key is passed as an explicit `run()` parameter, exactly like the production `core/loop.mjs` caller does. Do NOT claim this step passed without running it against a real funded wallet.
 
 - [ ] **Step 11: Commit**
 

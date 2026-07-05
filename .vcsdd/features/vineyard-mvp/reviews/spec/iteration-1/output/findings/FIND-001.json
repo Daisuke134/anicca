@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "blocking",
+  "description": "REQ-003 (behavioral-spec.md:86-91), the requirement explicitly labeled 'CRITICAL, single most important requirement in this feature', asserts the global env override VINEYARD_EVM_PRIVATE_KEY 'is a single-process-invocation convention, not a cross-instance leak path'. This claim is FALSE for one of the two production consumers of `resolveEvmPrivateKey` that REQ-015 (behavioral-spec.md:329-345) itself mandates must exist with parity to the CLI: `api/server.mjs` is a PERSISTENT Express server (`app.listen(PORT, ...)`, ground-truth plan `docs/superpowers/plans/2026-07-05-vineyard-mvp.md:846-848`) that serves MANY different instance `id`s over its lifetime via `/fund`, `/trade`, `/redeem` (plan lines 2245-2286), each calling `resolveEvmPrivateKey(id)` with NO explicit `env` argument, i.e. implicitly `process.env` (plan lines 2247, 2268, 2283). `core/wallet.mjs`'s actual resolution order (plan lines 334-339) checks `env.VINEYARD_EVM_PRIVATE_KEY` FIRST and returns it immediately for ANY id if set, before ever consulting the per-instance file. `.env.example` (plan line ~142-143) documents this override as a normal, standing configuration option with no restriction to 'one instance per process'. Consequence: if an operator sets VINEYARD_EVM_PRIVATE_KEY on the long-running API server process (a config the spec itself allows and documents), then EVERY instance id that hits /fund, /trade, or /redeem on that server resolves to the SAME single key regardless of which instance's wallet.json actually exists on disk -- the exact cross-instance key leak REQ-003 says 'SHALL NEVER' happen, in the exact multi-instance-per-process API topology (spec section 'Vineyard supports N simultaneous instances under one VINEYARD_HOME', plan line 889) that REQ-002/REQ-015 explicitly design for. The requirement's own parenthetical reassurance is an unverified, incorrect hand-wave rather than a real behavioral constraint on api/server.mjs.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/behavioral-spec.md",
+    "lineRange": "86-91",
+    "snippet": "REQ-003: Fail-closed key isolation — CRITICAL... (or the global env override, which is a single-process-invocation convention, not a cross-instance leak path) and SHALL NEVER read, fall back to, or return another instance's key"
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "334-339, 846-848, 2245-2287",
+    "snippet": "export function resolveEvmPrivateKey(id, env = process.env) { const override = normalizeEvmKey(env.VINEYARD_EVM_PRIVATE_KEY); if (override) return override; ... }  /* server */ app.listen(PORT, ...)  /* routes */ app.post('/fund', async (req,res)=>{ const pk = resolveEvmPrivateKey(id); ... }); app.post('/trade', ...); app.post('/redeem', ...)"
+  },
+  "routeToPhase": "1c"
+}

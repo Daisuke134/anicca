@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "moderate",
+  "description": "The ground-truth plan documents discrepancy D2 (docs/superpowers/plans/2026-07-05-vineyard-mvp.md:20): the design spec assumed Vineyard's Polymarket engine derives its continuous production trading loop from the 3 listed anicca files, but in reality the continuously-run market-picking logic lives in a SEPARATE external repo (`BlockRunAI/polymarket-agent`) that the plan explicitly decides NOT to vendor ('Vineyard does not vendor that second external agent repo... vendoring a whole second proprietary agent contradicts self-contained'). This is a real, named, deliberate scope-narrowing decision exactly analogous to D8 (REQ-007) and the brain.mjs automatic-candidate narrowing (REQ-013), both of which the behavioral-spec.md explicitly surfaces in dedicated Edge Cases / Acceptance Criteria and in the 'Scope boundary note' section (behavioral-spec.md:406-424) whose stated purpose is 'flagged here rather than silently invented one way or the other'. D2, however, has no corresponding REQ-level statement anywhere in behavioral-spec.md and is not mentioned in the Scope boundary note despite that section's explicit policy of surfacing exactly this class of gap. REQ-009's edge cases (behavioral-spec.md:205-209) mention only that side/size/market selection is caller-supplied, which is consistent with D2's outcome but never states the actual reason (Vineyard intentionally excludes the external polymarket-agent repo from its runtime dependencies) -- an implementer or reviewer reading only behavioral-spec.md would not learn that a second, real, working automatic-trading agent exists and was deliberately left out, unlike D8's bootstrap requirement which IS called out explicitly (REQ-007) precisely so it isn't 'silently glossed over'.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/behavioral-spec.md",
+    "lineRange": "406-424",
+    "snippet": "Scope boundary note (gap flagged between the two ground-truth documents, not silently resolved)... This narrowing is carried over from the plan, not invented here... flagged here rather than silently invented one way or the other."
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "20",
+    "snippet": "D2 | ... The actual continuously-run Polymarket market-picking logic lives in a separate GitHub repo, BlockRunAI/polymarket-agent... | Vineyard does not vendor that second external agent repo (the spec explicitly requires Vineyard to not depend on anicca at runtime, and vendoring a whole second proprietary agent contradicts 'self-contained')."
+  },
+  "routeToPhase": "1c"
+}

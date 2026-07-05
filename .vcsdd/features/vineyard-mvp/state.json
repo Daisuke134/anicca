@@ -603,8 +603,25 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-05T06:56:03.921Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "findings": [
+          "FIND-001",
+          "FIND-002",
+          "FIND-003",
+          "FIND-004"
+        ]
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-05T06:56:03.921Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-05T06:38:04.334Z",
-  "updatedAt": "2026-07-05T06:47:53.034Z"
+  "updatedAt": "2026-07-05T06:56:03.922Z"
 }

@@ -1,0 +1,37 @@
+{
+  "feature": "vineyard-mvp",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:58-424", "description": "Confirmed all 18 REQ-001..018 each map to exactly one design-spec/plan-derived requirement, and every §8 money-safety invariant (key isolation, bridge-onramp-only funding, on-chain-verified ledger, no dry run) has a corresponding REQ (003, 006, 005, 018 respectively) -- structural mapping is otherwise complete."},
+        {"type": "file", "location": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md:334-339,846-848,2245-2287", "description": "Ground-truth wallet.mjs/api-server.mjs code shows REQ-003's 'single-process-invocation convention, not a cross-instance leak path' claim about the VINEYARD_EVM_PRIVATE_KEY override is factually incorrect for the persistent multi-instance api/server.mjs topology REQ-015 mandates (FIND-001)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:39-60", "description": "Confirmed every REQ-001..018 has exactly one corresponding PROP-001..018 with a stated Tier and required flag, and the 10 required:true obligations are money-safety-relevant (PROP-003,004,005,006,010,012,013,014,017,018) -- the REQ<->PROP structural mapping is complete."},
+        {"type": "file", "location": "specs/verification-architecture.md:45", "description": "PROP-003's fast-check fuzzing plan for the single most important, required:true proof obligation does not cover the env-override-plus-multi-instance-per-process scenario that is the actual reachable leak path in the ground-truth code (FIND-002)."},
+        {"type": "file", "location": "specs/verification-architecture.md:19-20", "description": "Purity Boundary Map's claims for core/ledger.mjs's realizedPnl and engines/lib/cost-basis.mjs's adjust do not match how those functions are actually implemented in the ground-truth plan (I/O is inline, not wrapped around a separable pure kernel) -- imprecise for the exact accounting logic REQ-005/REQ-008 depend on (FIND-003)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

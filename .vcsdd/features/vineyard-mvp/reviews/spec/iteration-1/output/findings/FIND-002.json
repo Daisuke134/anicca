@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "blocking",
+  "description": "PROP-003 (verification-architecture.md:45), the ONE proof obligation the document itself calls 'the single most important proof obligation in this feature' and marks Tier 2 / required:true, specifies its Phase-5 hardening as 'fast-check property-based fuzzing generating many random instance-id pairs (including adversarial ids sharing prefixes/substrings) and asserting resolveEvmPrivateKey/resolveSolanaSecret for id B never equals, derives from, or falls back to id A's material'. This fuzzing plan only varies the two ID arguments passed to resolveEvmPrivateKey; it does not vary or even mention the `env` argument (specifically env.VINEYARD_EVM_PRIVATE_KEY) or the persistent-multi-id-per-process topology of api/server.mjs. As shown in FIND-001, the actual documented leak path is not an id-derivation bug but an env-override precedence bug that reproduces identically for EVERY id pair once VINEYARD_EVM_PRIVATE_KEY is set on a long-lived process -- a scenario the specified fast-check strategy (vary id A vs id B, same implicit env) will never generate, so the Tier-2 hardening for this feature's single most safety-critical property has a concrete, nameable gap between what it tests and what the real deployment topology (REQ-015's persistent API server) exposes. The Phase-5 hand-off notes (verification-architecture.md:95-96) reiterate that PROP-003 is the 'money-safety core' to re-verify, but give no instruction to test the override-plus-multiple-live-instances scenario either.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/verification-architecture.md",
+    "lineRange": "45",
+    "snippet": "PROP-003 | Fail-closed key isolation... | 2 | true | node:test baseline... hardened in Phase 5 with fast-check property-based fuzzing generating many random instance-id pairs... asserting resolveEvmPrivateKey/resolveSolanaSecret for id B never equals, derives from, or falls back to id A's material"
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "386-436",
+    "snippet": "Task 3's 4 isolation tests all construct env = { VINEYARD_HOME: home } with no VINEYARD_EVM_PRIVATE_KEY set -- the override-active branch of resolveEvmPrivateKey is never exercised by any currently-specified or currently-planned isolation test/fuzz strategy"
+  },
+  "routeToPhase": "1c"
+}

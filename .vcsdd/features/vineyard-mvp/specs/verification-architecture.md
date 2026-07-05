@@ -16,16 +16,17 @@ tooling below is chosen per-module rather than assuming one language-specific fo
 | `engines/polymarket.mjs`'s `parseFundOutput`, `parseTradeOutput`, `parseRedeemOutput` | Pure string→JSON parsers over an explicit stdout string; throw on empty input, never read/write anything. |
 | `engines/hyperliquid.mjs`'s `parseHlOutput` | Pure `JSON.parse` over the trimmed stdout string. |
 | `engines/solana.mjs`'s `lastLines(text, n)` | Pure string slicing. |
-| `core/ledger.mjs`'s `realizedPnl`'s summation kernel | The fold/reduce arithmetic (`net_usdc` vs `earn_usdc - cost_usdc` vs `0`, `Number.isFinite` guard) is pure over the array `readLedger` returns; it is the accounting logic Phase 5 will audit most closely for REQ-005/PROP-005. |
-| `engines/lib/cost-basis.mjs`'s `adjust`/`seedIfEmpty` arithmetic kernel | The floor-at-0 delta math and seed-if-empty merge logic are pure given an in-memory object; only the exported wrapper functions layer file I/O around this kernel. |
+| `core/ledger.mjs`'s `sumRealized(lines)` | Pure fold over an ALREADY-PARSED array of ledger-line objects (`net_usdc` vs `earn_usdc - cost_usdc` vs `0`, `Number.isFinite` guard) — zero I/O, referentially transparent. This is the exact accounting logic Phase 5 audits most closely for REQ-005/PROP-005. `realizedPnl(id, dataDir)` is NOT itself pure — it is a 1-line composition (`sumRealized(readLedger(id, dataDir))`) that calls the effectful `readLedger`; it lives in the effectful-shell table below, not here. |
+| `engines/lib/cost-basis.mjs`'s `applyDelta(costBasisObj, venue, delta)` | Pure — takes an already-read cost-basis object, returns a NEW object with `venue`'s value adjusted and floored at 0 (never mutates its input, zero I/O). `adjust(venue, delta, filePath)` is NOT itself pure (read → `applyDelta` → write); it lives in the effectful-shell table below as a thin wrapper around this kernel. NOTE: `seedIfEmpty(seed, filePath)` was NOT split the same way — it still performs its own inline `readCostBasis`/`write` I/O and is classified as effectful below, not here (unlike `adjust`, no pure kernel has been extracted from it in this feature's scope). |
 
 ### Effectful shell (real side effects — I/O, subprocess, network, on-chain broadcast)
 | Module.function | Side effect |
 |---|---|
 | `core/wallet.mjs`'s `generateWallet`, `resolveEvmPrivateKey`, `resolveSolanaSecret`, `resolveAddresses` | Filesystem read/write of key material (`wallet.json`/`solana.json`, `chmod 600`); `generateWallet` additionally calls real CSPRNG (`generatePrivateKey()`, `crypto.generateKeyPairSync`) — non-deterministic by design on first call, deterministic (idempotent) thereafter via the file it wrote. |
 | `core/registry.mjs`'s `readRegistry`/`writeRegistry`/`registerSpawn`/`updateSpawn` | Filesystem read/write of `spawns.json`; `registerSpawn` also stamps a non-deterministic wall-clock `created: new Date().toISOString()`. |
-| `core/ledger.mjs`'s `appendLedger`/`readLedger` | Filesystem append/read of `<id>.jsonl`; `appendLedger` stamps a wall-clock `ts`. |
-| `engines/yield.mjs`'s `run()` | Real RPC calls (Base chain), real on-chain deploy/refill transactions, real cost-basis file I/O. |
+| `core/ledger.mjs`'s `appendLedger`/`readLedger`, and `realizedPnl(id, dataDir)` | Filesystem append/read of `<id>.jsonl`; `appendLedger` stamps a wall-clock `ts`. `realizedPnl` is the thin effectful composition `sumRealized(readLedger(id, dataDir))` — its only I/O is the `readLedger` call; the summation itself is the pure `sumRealized` kernel above. |
+| `engines/lib/cost-basis.mjs`'s `readCostBasis`/`write`/`adjust`/`seedIfEmpty` | Filesystem read/write of `cost-basis.json`. `adjust(venue, delta, filePath)` is a thin wrapper (`read → applyDelta → write`) around the pure `applyDelta` kernel above; `seedIfEmpty` performs its own inline read/write and has no separated pure kernel in this feature's scope. |
+| `engines/yield.mjs`'s `run()` | Real RPC calls (Base chain), real on-chain deploy/refill transactions, real cost-basis file I/O (via the above `engines/lib/cost-basis.mjs` functions). |
 | `engines/polymarket.mjs`'s `fund()`, `trade()`, `redeem()` | `child_process.execFile` spawning real Python processes that make real HTTP calls (Polymarket gamma-api/relayer-v2) and submit real on-chain orders/redemptions on Polygon. |
 | `engines/hyperliquid.mjs`'s `account()`, `market()`, `open()`, `close()` | `child_process.execFile` spawning `hl.py`, which makes real Hyperliquid API calls and can open/close real leveraged positions. |
 | `engines/solana.mjs`'s `run()`, `setup()` | `child_process.spawn` of `run.sh` → `franklin-trading`, an autonomous agent that makes real x402 model-payment calls and real Solana/Jupiter transactions; `HOME` env override is the isolation mechanism (a real, deliberate side-effect boundary, not an accidental one). |
@@ -41,13 +42,13 @@ inside files declared pure above — any hit is a boundary violation to investig
 | ID | Description | Tier | Required | Tool |
 |----|---|---|---|---|
 | PROP-001 | Repo scaffold structure matches the declared tree (dirs, `package.json` fields, `.gitignore` entries) — REQ-001 | 0 | false | manual code inspection / `git log` |
-| PROP-002 | `generateWallet(id)` is idempotent (same id → same address on re-call) and distinct ids never collide — REQ-002 | 1 | false | node:test (`core/wallet.test.mjs`) |
-| PROP-003 | **Fail-closed key isolation: instance B can NEVER resolve or sign with instance A's key** — REQ-003 (the single most important proof obligation in this feature) | 2 | **true** | node:test baseline (`core/wallet.test.mjs`, already written + passing per plan Task 3: "FAIL-CLOSED"/"ISOLATION" tests) hardened in Phase 5 with `fast-check` property-based fuzzing generating many random instance-id pairs (including adversarial ids sharing prefixes/substrings) and asserting `resolveEvmPrivateKey`/`resolveSolanaSecret` for id B never equals, derives from, or falls back to id A's material |
+| PROP-002 | `generateWallet(id, env, overrideKeys)` is idempotent (same id → same address on re-call, `overrideKeys` silently ignored once an identity exists) and distinct ids never collide — REQ-002 | 1 | false | node:test (`core/wallet.test.mjs`) |
+| PROP-003 | **Fail-closed key isolation: instance B can NEVER resolve or sign with instance A's key, and no ambient/global env var can ever override any id's resolved key** — REQ-003 (the single most important proof obligation in this feature) | 2 | **true** | node:test baseline (`core/wallet.test.mjs`, Task 3: "FAIL-CLOSED"/"ISOLATION" tests) PLUS the "REGRESSION: ambient env var has zero effect on ANY id's resolution" tests (Task 3, added after the Phase-1c fix removed the ambient-override code path entirely — there is no longer a footgun to fuzz; these regression tests instead prove the deleted branch cannot silently reappear) hardened in Phase 5 by re-running both test families against many adversarial instance-id pairs (including ids sharing prefixes/substrings) via `fast-check` property-based generation of id pairs, confirming `resolveEvmPrivateKey`/`resolveSolanaSecret` for id B never equals, derives from, or falls back to id A's material for any generated pair |
 | PROP-004 | Registry never persists/exposes private key material; duplicate `id` registration is rejected — REQ-004 | 1 | **true** | node:test (`core/registry.test.mjs`) + grep-based static check (no `privateKey`/`secretKey` string reaches `registerSpawn`/`updateSpawn` call sites) |
-| PROP-005 | Ledger only ever records a real subprocess/tx-derived number or an honest skip/wait marker; `realizedPnl` is always `Number.isFinite`, never `NaN`, never fabricated — REQ-005 | 1 | **true** | node:test (`core/ledger.test.mjs`) + code-path audit of `core/loop.mjs`'s `normalizeResult()` (every field it emits must trace back to the engine's own returned object, never invented) |
+| PROP-005 | Ledger only ever records a real subprocess/tx-derived number or an honest skip/wait marker; `realizedPnl` is always `Number.isFinite`, never `NaN`, never fabricated — REQ-005 | 1 | **true** | node:test (`core/ledger.test.mjs`, including a direct unit test of the pure `sumRealized(lines)` kernel over in-memory arrays) + code-path audit of `core/loop.mjs`'s `normalizeResult()` (every field it emits must trace back to the engine's own returned object, never invented) |
 | PROP-006 | Polymarket funding ALWAYS routes through the bridge onramp (`fund_via_bridge.py`); no code path performs a raw pUSD transfer or raw deposit-wallet deploy — REQ-006 | 2 | **true** | exhaustive call-site enumeration (every path from `vineyard fund`/`POST /fund` to a chain-touching call is traced and shown to terminate in exactly one subprocess invocation, `fund_via_bridge.py`) + node:test (`engines/polymarket.test.mjs` fund-half) |
 | PROP-007 | A fresh deployment's first-ever Polymarket registration without a registered `SOURCE_KEY` fails with the script's own explicit, actionable error — never hangs, never silently no-ops — REQ-007 (D8) | 1 | false | manual verification note (plan Task 8 Step 8) + documentation-presence check (README/llms.txt state the bootstrap requirement) |
-| PROP-008 | `engines/yield.mjs` + `engines/lib/cost-basis.mjs` never mix two instances' cost-basis state; `run({evmPrivateKey:null})` fails closed — REQ-008 | 1 | false | node:test (`engines/cost-basis.test.mjs`, `engines/yield.test.mjs`) |
+| PROP-008 | `engines/yield.mjs` + `engines/lib/cost-basis.mjs` never mix two instances' cost-basis state; `run({evmPrivateKey:null})` fails closed — REQ-008 | 1 | false | node:test (`engines/cost-basis.test.mjs`, including a direct unit test of the pure `applyDelta(costBasisObj, venue, delta)` kernel over in-memory objects; `engines/yield.test.mjs`) |
 | PROP-009 | `parseTradeOutput` correctly parses `place_order.py`'s real single-line JSON shape and throws a clear error on empty stdout — REQ-009 | 1 | false | node:test (`engines/polymarket.test.mjs` trade-half) against a real-format fixture |
 | PROP-010 | `redeem.py`'s `DEPOSIT_WALLET` is resolved ONLY from `POLYMARKET_DEPOSIT_WALLET` env (raises/fails closed if absent — never silently falls back to the original hardcoded founder-wallet constant); `parseRedeemOutput` correctly handles 0..N per-condition rows — REQ-010 (D6) | 1 | **true** | node:test (`engines/polymarket.test.mjs` redeem-half) + Python-side inspection that the hardcoded `DEPOSIT_WALLET = "0x904B50d2..."` literal no longer exists in the copied file (`grep -c "0x904B50d2" redeem.py` → 0) |
 | PROP-011 | `parseHlOutput` correctly parses all 4 real `hl.py` output shapes (account/market/open/skipped); `BLOCKRUN_WALLET_KEY` is always injected so `hl.py`'s fragile relative-path fallback is never reached — REQ-011 (D7) | 1 | false | node:test (`engines/hyperliquid.test.mjs`) against real-format fixtures |
@@ -73,26 +74,32 @@ inside files declared pure above — any hit is a boundary violation to investig
   dependency-injected fakes — never a live network/chain call.
 - **Tier 2** (lightweight formal methods — property-based fuzzing over the input space + exhaustive
   call-path enumeration, standing in for a full model-checker given this stack has no Rust component):
-  PROP-003 (fail-closed key isolation — hardened with `fast-check` generating many adversarial
-  instance-id pairs, since this is money-safety-critical and a handful of example-based tests, while
-  necessary, are not sufficient on their own to claim "never" for an unbounded id space), PROP-006
-  (bridge-onramp-only funding — exhaustive enumeration of every call path from the `fund` verb to a
-  chain-touching operation, showing all of them terminate in the one approved subprocess), PROP-012
-  (Solana `HOME`-scoped isolation — repeatable, structural directory-tree verification across multiple
-  instance ids, not a single anecdotal run).
+  PROP-003 (fail-closed key isolation — the ambient-override footgun FIND-001/FIND-002 identified in the
+  Phase 1c spec-review gate is now structurally removed from `core/wallet.mjs`; Phase 5 hardens this
+  property by (a) `fast-check` generating many adversarial instance-id pairs to fuzz the id-scoped
+  file-resolution boundary, and (b) re-running the "ambient env var has zero effect" regression test to
+  confirm the deleted override branch has not silently reappeared — since this is money-safety-critical
+  and a handful of example-based tests, while necessary, are not sufficient on their own to claim "never"
+  for an unbounded id space), PROP-006 (bridge-onramp-only funding — exhaustive enumeration of every call
+  path from the `fund` verb to a chain-touching operation, showing all of them terminate in the one
+  approved subprocess), PROP-012 (Solana `HOME`-scoped isolation — repeatable, structural directory-tree
+  verification across multiple instance ids, not a single anecdotal run).
 - **Tier 3** (strong formal proof): **none required for this feature.** This codebase is Node.js/Python/
   Bash; SMT-based tools like Kani are Rust-specific and do not apply. If a stronger guarantee is later
   desired for PROP-003 specifically, `core/wallet.mjs`'s key-resolution logic has a small, finite branch
-  space (env override → per-instance file → `null`) that would be amenable to a lightweight model-checking
-  tool (e.g. TLA+ on the resolver's state machine) as a future stretch item — this is explicitly NOT
-  blocking Phase 6 for this feature; Tier 2's exhaustive/property-based coverage is the accepted bar.
+  space (per-instance file → `null` — there is no ambient env-override branch to model at all, that
+  branch has been deleted) that would be amenable to a lightweight model-checking tool (e.g. TLA+ on the
+  resolver's state machine) as a future stretch item — this is explicitly NOT blocking Phase 6 for this
+  feature; Tier 2's exhaustive/property-based coverage is the accepted bar.
 
 ## Phase 5 hand-off notes
 
 - `verification/purity-audit.md` (Phase 5) should diff the Purity Boundary Map above against `grep -n
   "fs\.\|child_process\|execFile\|spawn(\|fetch(\|requests\." across every file this document classifies
   as "pure" — any hit is a declared-vs-observed boundary violation to resolve before Phase 6.
-- `verification/security-report.md` (Phase 5) should specifically re-verify PROP-003 (isolation),
+- `verification/security-report.md` (Phase 5) should specifically re-verify PROP-003 (isolation, INCLUDING
+  a grep confirming `core/wallet.mjs` contains zero references to `VINEYARD_EVM_PRIVATE_KEY`/
+  `VINEYARD_SOLANA_PRIVATE_KEY` — the ambient-override code path must never silently reappear),
   PROP-004 (no key leak in registry), PROP-010 (no hardcoded founder-wallet fallback survives in the
   copied `redeem.py`), and PROP-018 (no fake/mock/dry-run code path) as its money-safety core.
 - All 10 `required: true` proof obligations above must reach `status: "proved"` in `state.json` before

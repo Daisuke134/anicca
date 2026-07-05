@@ -13,8 +13,10 @@ docs copy pass) — these need their own follow-up VCSDD features once this back
 ## Purity boundary analysis (summary — full map in verification-architecture.md)
 
 - **Pure/deterministic core (candidates)**: `base58()` keygen encoding, `pickEngine()` (brain.mjs),
-  `realizedPnl()`'s summation arithmetic, all `parse*Output()` / `lastLines()` string-and-JSON parsers
-  (polymarket.mjs, hyperliquid.mjs, solana.mjs), `cost-basis.mjs`'s `adjust()`/`seedIfEmpty()` arithmetic.
+  `ledger.mjs`'s `sumRealized()` summation kernel (the pure fold `realizedPnl()` composes with the
+  effectful `readLedger()`), all `parse*Output()` / `lastLines()` string-and-JSON parsers (polymarket.mjs,
+  hyperliquid.mjs, solana.mjs), `cost-basis.mjs`'s `applyDelta()` arithmetic kernel (the pure floor-at-0
+  delta math `adjust()` composes with effectful read/write) and `seedIfEmpty()`'s merge logic.
   These take explicit inputs (a string, a plain object) and return a value with no I/O of their own.
 - **Effectful shell**: `wallet.mjs`'s `generateWallet()`/`resolveEvmPrivateKey()`/`resolveSolanaSecret()`
   (filesystem read/write of key material), `registry.mjs` (spawns.json read/write), `ledger.mjs`'s
@@ -70,10 +72,13 @@ a `package.json` declaring `bin: vineyard`, Node `>=20`, and `@blockrun/franklin
 - `~/vineyard` is a **separate repo**, never a subdirectory of the anicca monorepo (design §1).
 
 ### REQ-002: Per-instance wallet generation (idempotent, isolated)
-**EARS**: WHEN `vineyard spawn` (or `core/wallet.mjs`'s `generateWallet(id)`) is called for an instance id
-THE SYSTEM SHALL create (or, if already present, return unchanged) an EVM keypair (`viem`
-`generatePrivateKey`/`privateKeyToAccount`) and a Solana ed25519 keypair (Node `crypto.generateKeyPairSync`
-+ base58) persisted at `<VINEYARD_HOME>/instances/<id>/{wallet.json,solana.json}`.
+**EARS**: WHEN `vineyard spawn` (or `core/wallet.mjs`'s `generateWallet(id, env, overrideKeys)`) is
+called for an instance id THE SYSTEM SHALL create (or, if already present, return unchanged) an EVM
+keypair (`viem` `generatePrivateKey`/`privateKeyToAccount`) and a Solana ed25519 keypair (Node
+`crypto.generateKeyPairSync` + base58) persisted at
+`<VINEYARD_HOME>/instances/<id>/{wallet.json,solana.json}` — UNLESS the caller supplies
+`overrideKeys.evmPrivateKey`/`overrideKeys.solanaSecretKey` (the id-scoped bring-your-own-key path,
+see REQ-003), in which case the supplied key is written instead of a freshly-generated one.
 **Edge Cases**:
 - Re-spawning the SAME id must be idempotent — it must return the identical EVM + Solana address on the
   second call, never regenerate (plan Task 2, test "generateWallet: idempotent").
@@ -85,10 +90,17 @@ THE SYSTEM SHALL create (or, if already present, return unchanged) an EVM keypai
 
 ### REQ-003: Fail-closed key isolation — CRITICAL, single most important requirement in this feature
 **EARS**: WHEN any code path (a wrapper, the loop, the CLI/API) resolves a private key for instance id
-`X` THE SYSTEM SHALL resolve ONLY the key material stored under `<VINEYARD_HOME>/instances/X/`
-(or the global env override, which is a single-process-invocation convention, not a cross-instance
-leak path) and SHALL NEVER read, fall back to, or return another instance's key — a resolution for an
-unspawned or foreign id SHALL return `null`, never throw, and never silently substitute someone else's key.
+`X` THE SYSTEM SHALL resolve ONLY the key material stored under `<VINEYARD_HOME>/instances/X/` and
+SHALL NEVER read, fall back to, or return another instance's key — a resolution for an unspawned or
+foreign id SHALL return `null`, never throw, and never silently substitute someone else's key. THE
+SYSTEM SHALL NOT expose any ambient/global environment-variable override for key resolution (a
+persistent process — `api/server.mjs` — serves MANY instance ids over its lifetime, so any such
+override would resolve to the SAME key for every id, which is the exact cross-instance leak this
+requirement forbids). The ONLY way an operator's own pre-funded key ever enters the system is an
+explicit, id-scoped `overrideKeys` parameter to `generateWallet(id, env, overrideKeys)` supplied at
+SPAWN TIME ONLY (CLI `vineyard spawn --key/--solana-key`, API `POST /spawn {key, solanaKey}`), which is
+written into exactly that one id's own `wallet.json`/`solana.json` and never read from `process.env`
+again by any resolver.
 **Edge Cases**:
 - Instance B has no wallet yet → `resolveEvmPrivateKey('B')`/`resolveSolanaSecret('B')` return `null`,
   never throw, and never fall back to instance A's key (plan Task 3, "FAIL-CLOSED" tests).
@@ -97,15 +109,27 @@ unspawned or foreign id SHALL return `null`, never throw, and never silently sub
   via an independent `viem` re-derivation, not just trusting `wallet.mjs`'s own bookkeeping).
 - A malformed or corrupted `wallet.json` for id `X` must resolve to `null` for `X`, not throw, and must
   never cause a fallback read of any other instance's directory.
+- Setting `VINEYARD_EVM_PRIVATE_KEY`/`VINEYARD_SOLANA_PRIVATE_KEY` on the process (e.g. a leftover env
+  var on a long-running `api/server.mjs`) has ZERO effect on `resolveEvmPrivateKey`/`resolveSolanaSecret`
+  for ANY id — both functions read ONLY the id-scoped file, never `process.env`, for key material (plan
+  Task 3, "REGRESSION: ambient env var has zero effect" tests). This is verified structurally (the code
+  path does not exist), not merely by convention.
+- `generateWallet(id, env, overrideKeys)`'s `overrideKeys` is silently IGNORED once `wallet.json`/
+  `solana.json` already exists for `id` — a re-spawn of an existing id can never have its identity
+  swapped out from under it (plan Task 2, "overrideKeys is IGNORED" idempotent-ignore test).
 - This is the ONE property that, if it silently regressed, would let a bug in one instance's code path
   drain a different instance's real funds — treat any weakening of this boundary as a P0 defect.
 **Acceptance Criteria**:
-- `core/wallet.test.mjs` (plan Tasks 2-3) — 9 tests total, 0 failures, including the 4 explicit
-  isolation assertions added in Task 3, already implemented and passing per the ground-truth plan.
+- `core/wallet.test.mjs` (plan Tasks 2-3) — 13 tests total, 0 failures: 8 from Task 2 (2 `vineyardHome`
+  + 3 `generateWallet` + 3 `overrideKeys`) and 5 from Task 3 (2 FAIL-CLOSED + 1 ISOLATION + 2
+  ambient-env-var-zero-effect REGRESSION).
 - No function in `core/wallet.mjs` ever iterates over `<VINEYARD_HOME>/instances/*` to find a "similar"
   or "legacy shared" wallet — the anicca-specific legacy-shared-`$HOME`-fallback branch is intentionally
   NOT ported (plan Task 2 introduction) because a fresh repo has no such convention to honor and every
   such fallback is a potential isolation leak.
+- Static/structural check: `core/wallet.mjs`'s `resolveEvmPrivateKey`/`resolveSolanaSecret` never read
+  `env.VINEYARD_EVM_PRIVATE_KEY`/`env.VINEYARD_SOLANA_PRIVATE_KEY` (or any other ambient env var) —
+  `grep -n "VINEYARD_EVM_PRIVATE_KEY\|VINEYARD_SOLANA_PRIVATE_KEY" core/wallet.mjs` returns 0 hits.
 
 ### REQ-004: Spawn registry — public-safe metadata only
 **EARS**: WHEN an instance is registered (`registerSpawn`) THE SYSTEM SHALL persist only public-safe
@@ -130,12 +154,14 @@ P&L number.
 **Edge Cases**:
 - `realizedPnl` sums `net_usdc` when present, else falls back to `earn_usdc - cost_usdc`, else contributes
   `0` for a skip/wait line — the sum must be `Number.isFinite`, never `NaN`, regardless of which lines
-  are present (plan Task 5, all 5 `ledger.test.mjs` cases).
+  are present (plan Task 5, all 5 `realizedPnl`/`readLedger`/`appendLedger` `ledger.test.mjs` cases —
+  plus a 6th, direct `sumRealized` pure-kernel test over in-memory arrays).
 - A ledger read on an instance with no jsonl file yet returns `[]`, never throws.
 - Two different instance ids' ledgers must never mix — `readLedger('z2', dataDir)` must never include a
   line appended for `'z3'`.
 **Acceptance Criteria**:
-- `core/ledger.test.mjs` (plan Task 5) — 5 tests, 0 failures.
+- `core/ledger.test.mjs` (plan Task 5) — 6 tests, 0 failures (5 existing + 1 direct unit test of the
+  pure `sumRealized(lines)` kernel over in-memory arrays, no tmp files needed).
 - `core/loop.mjs`'s `normalizeResult()` is the only place that shapes an engine's raw result into a
   ledger line, and it always derives `net_usdc` from the engine's own real returned fields — it never
   invents a P&L value that the engine itself did not report.
@@ -190,7 +216,9 @@ anicca-style shared-`$HOME` file.
   different files (two instances) never mix state").
 - `recordWithdraw` floors the venue basis at 0, never negative (plan Task 7, cost-basis test).
 **Acceptance Criteria**:
-- `engines/cost-basis.test.mjs` (5 tests) + `engines/yield.test.mjs` (1 test), 0 failures.
+- `engines/cost-basis.test.mjs` (6 tests — 5 existing + 1 direct unit test of the pure
+  `applyDelta(costBasisObj, venue, delta)` kernel over in-memory objects) + `engines/yield.test.mjs`
+  (1 test), 0 failures.
 - A REAL deploy/refill/hold pass against a funded EVM wallet is a documented, separate manual
   verification step (plan Task 7 Step 10) — not claimed as covered by the automated unit test.
 
@@ -422,3 +450,14 @@ the explicit, human/agent-directed `vineyard trade` command (REQ-009, REQ-013), 
 automatically. This spec (REQ-013) encodes the plan's narrower, documented scope as the requirement,
 not the design diagram's more automatic-sounding framing — flagged here rather than silently invented
 one way or the other.
+
+A third, related narrowing (plan discrepancy D2): the design's assumption that `engines/polymarket.mjs`
+derives its production trading loop from the 3 listed anicca files does not hold — the actual
+continuously-run Polymarket market-picking logic lives in a **separate external repo**,
+`BlockRunAI/polymarket-agent`, which Vineyard does **NOT** vendor (vendoring a whole second proprietary
+autonomous agent would contradict the design's own "self-contained, does not depend on anicca at
+runtime" requirement). For this MVP, Polymarket order-picking happens exclusively through the explicit,
+parameterized `place_order.py` / `vineyard trade` command (REQ-009) with operator/agent-supplied
+`tokenId`/`side`/`amountUsd`/`maxPrice` — **NOT** an autonomous, continuously-running market-picking loop
+like anicca's separate `polymarket-agent` service. This is a deliberate scope boundary carried over from
+the plan (D2), not an oversight silently glossed over.

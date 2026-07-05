@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "The Purity Boundary Map (verification-architecture.md:19-20) lists 'core/ledger.mjs's realizedPnl's summation kernel' and 'engines/lib/cost-basis.mjs's adjust/seedIfEmpty arithmetic kernel' under the 'Pure / deterministic core (no I/O, referentially transparent given explicit inputs)' table (header, line 11), with the justification 'only the exported wrapper functions layer file I/O around this kernel'. This implies a real code-level separation exists between a pure computation and an effectful wrapper. As specified in the ground-truth plan, no such separation exists: `realizedPnl(id, dataDir)` (plan lines 683-690) directly calls the file-reading `readLedger(id, dataDir)` inside its own body and IS the exported function -- there is no separate, exported-or-internal pure kernel function distinct from it. Likewise `adjust(venue, delta, filePath)` (plan lines 974-980), the function `recordDeposit`/`recordWithdraw` call, itself calls `readCostBasis(filePath)` (I/O) and `write(o, filePath)` (I/O) inline with the arithmetic -- it is not a pure kernel wrapped by I/O, it IS the I/O-performing function. This mismatches the doc's own stated Phase-5 audit method (verification-architecture.md:92-94: 'diff this declared boundary against the observed one... grep for fs.\\|child_process...\\|fetch(...\\|requests\\. inside files declared pure above'), which is a file-level check, not a function-level or call-graph check -- so a naive application of the doc's own instructions would either wrongly flag the entire (partially-effectful, partially-legitimately-pure) core/ledger.mjs and engines/lib/cost-basis.mjs files as boundary violations, or a looser interpretation would silently accept `realizedPnl`/`adjust` as 'pure' despite performing real file I/O on every call -- for exactly the accounting/cost-basis logic REQ-005/REQ-008 depend on for money-safety honesty. Neither behavioral-spec.md nor the ground-truth plan defines a refactor that actually extracts a pure `computeRealizedPnl(lines)` / pure cost-basis delta function distinct from the file-touching orchestrator, so the purity claim as currently worded does not match the code it purports to describe.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/verification-architecture.md",
+    "lineRange": "19-20",
+    "snippet": "core/ledger.mjs's realizedPnl's summation kernel | ...is pure over the array readLedger returns... | engines/lib/cost-basis.mjs's adjust/seedIfEmpty arithmetic kernel | ...only the exported wrapper functions layer file I/O around this kernel."
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "683-690, 974-980",
+    "snippet": "export function realizedPnl(id, dataDir) { return readLedger(id, dataDir).reduce((sum, line) => {...}, 0); }  ... function adjust(venue, delta, filePath) { ... const o = readCostBasis(filePath); ... write(o, filePath); ... }"
+  },
+  "routeToPhase": "1c"
+}
