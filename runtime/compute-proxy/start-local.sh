@@ -54,6 +54,17 @@ fi
 # send SOL here, the funding daemon swaps it to USDC on Base. No human key, no deps.
 node "$HERE/ensure-solana-wallet.mjs" || echo "[local] WARN: solana wallet gen skipped"
 
+# --- 1c. born-with-Polygon (#27 EQUALIZE): self-owned Polymarket deposit wallet --
+# The moment this instance has its OWN EVM key (step 1 above), it can also own a
+# Polymarket CLOB V2 deposit wallet — deployed GASLESS via Polymarket's relayer (the
+# EOA only signs a SIWE message; no funds needed or moved). This just grants the
+# ADDRESS; funding it (pUSD / bridged USDC) is a separate, later, deliberate step —
+# see skills/earn/polymarket-trade/SKILL.md. Best-effort / non-blocking: any missing
+# python/pip/network never fails wallet creation (see ensure-polymarket-deposit-wallet.sh).
+EFFECTIVE_HOME="${ANICCA_HOME:-$HOME/.anicca}"
+bash "$HERE/ensure-polymarket-deposit-wallet.sh" "$WALLET" "$EFFECTIVE_HOME" \
+  || echo "[local] WARN: Polymarket deposit-wallet bootstrap skipped (non-blocking)"
+
 # --- 2. start the x402 self-pay proxy ----------------------------------
 # Readiness is proven by a real routed path (/v1/chat/completions), NOT /v1/models
 # (proxy.mjs returns an empty data:[] for /models, so a 200 there proves nothing).
