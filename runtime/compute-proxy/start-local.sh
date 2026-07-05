@@ -23,24 +23,34 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${COMPUTE_PROXY_PORT:-8402}"
-WALLET="$HOME/.automaton/wallet.json"
+# per-instance EVM identity (#26 EQUALIZE, R4): prefer $ANICCA_HOME so every instance is
+# isolated (its own key → its own on-chain identity, comparable P&L). Fall back to the legacy
+# shared $HOME path ONLY if a live instance already has a wallet there — never regenerate or
+# relocate an existing wallet, so a running instance's identity never changes. A fresh spawn
+# with ANICCA_HOME set is born with its OWN wallet under $ANICCA_HOME.
+EFFECTIVE_HOME="${ANICCA_HOME:-$HOME/.anicca}"
+WALLET="$EFFECTIVE_HOME/.automaton/wallet.json"
+LEGACY_WALLET="$HOME/.automaton/wallet.json"
+if [ ! -f "$WALLET" ] && [ -f "$LEGACY_WALLET" ]; then
+  WALLET="$LEGACY_WALLET"
+fi
 # Free BlockRun model = $0/call, no key. Frontier (paid) is chosen by your loop
 # when the wallet has USDC; override with ANICCA_MODEL to pin one.
 FREE_MODEL="${ANICCA_FREE_MODEL:-nvidia/deepseek-v4-flash}"
 
 # --- 1. self-owned wallet (no human key) -------------------------------
 if [ ! -f "$WALLET" ]; then
-  mkdir -p "$HOME/.automaton"
-  node -e '
-    const {generatePrivateKey,privateKeyToAccount}=require("'"$HERE"'/node_modules/viem/accounts");
-    const fs=require("fs"); const pk=generatePrivateKey();
-    fs.writeFileSync(process.env.HOME+"/.automaton/wallet.json",
+  mkdir -p "$(dirname "$WALLET")"
+  WALLET_PATH="$WALLET" node -e '
+    const {generatePrivateKey,privateKeyToAccount}=require("'"$HERE"'/../node_modules/viem/accounts");
+    const fs=require("fs"); const pk=generatePrivateKey(); const wp=process.env.WALLET_PATH;
+    fs.writeFileSync(wp,
       JSON.stringify({privateKey:pk,address:privateKeyToAccount(pk).address},null,2));
-    fs.chmodSync(process.env.HOME+"/.automaton/wallet.json",0o600);
+    fs.chmodSync(wp,0o600);
     console.error("[local] created self-owned wallet "+privateKeyToAccount(pk).address);
   '
 else
-  echo "[local] wallet preserved: $(node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json")).address)')"
+  echo "[local] wallet preserved: $(WALLET_PATH="$WALLET" node -e 'console.log(JSON.parse(require("fs").readFileSync(process.env.WALLET_PATH)).address)')"
 fi
 
 # --- 1b. self-owned Solana wallet (fund via Binance SOL -> auto-swap to USDC) --
@@ -79,12 +89,12 @@ export ANICCA_MODEL="${ANICCA_MODEL:-auto}"
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 # Expose the self-owned wallet address so the loop can read its balance (tier selection).
 # Derive from the private key when the wallet file has no `address` field (older format).
-export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node -e '
+export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(WALLET_PATH="$WALLET" node -e '
   try {
-    const w=JSON.parse(require("fs").readFileSync(process.env.HOME+"/.automaton/wallet.json"));
+    const w=JSON.parse(require("fs").readFileSync(process.env.WALLET_PATH));
     if (w.address) { console.log(w.address); }
     else if (w.privateKey) {
-      const {privateKeyToAccount}=require("'"$HERE"'/node_modules/viem/accounts");
+      const {privateKeyToAccount}=require("'"$HERE"'/../node_modules/viem/accounts");
       console.log(privateKeyToAccount(w.privateKey).address);
     }
   } catch(e){ process.exit(0); }

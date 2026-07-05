@@ -23,6 +23,29 @@ if [ ! -d "$AGENT_HOME" ]; then
   exit 1
 fi
 
+# --- per-instance identity resolution (#26 EQUALIZE, R3) -----------------------------
+# claude-p 温存 (R6, zero regression): if POLYGON_WALLET_PRIVATE_KEY is ALREADY resolvable
+# the way it is today — either exported in this shell's env, or present in the agent's own
+# .env (python's load_dotenv() reads it there; we check existence only, never the value) —
+# we export NOTHING and change NOTHING: the agent resolves its key exactly as before.
+# Only when NEITHER exists (a genuinely unconfigured / fresh instance) do we reach for
+# resolve-identity to give THIS instance its own key (env override / $ANICCA_HOME wallet /
+# legacy $HOME wallet) and export it. If that also comes up empty, fail closed: skip + warn
+# (R5, money-safety) instead of letting the agent crash mid-run.
+if [ -z "${POLYGON_WALLET_PRIVATE_KEY:-}" ] && ! grep -q '^POLYGON_WALLET_PRIVATE_KEY=.\+' "$AGENT_HOME/.env" 2>/dev/null; then
+  RESOLVE_IDENTITY="$SKILL_DIR/../lib/resolve-identity.mjs"
+  RESOLVED_EVM_KEY=""
+  [ -f "$RESOLVE_IDENTITY" ] && RESOLVED_EVM_KEY="$(node "$RESOLVE_IDENTITY" evm 2>/dev/null || true)"
+  if [ -n "$RESOLVED_EVM_KEY" ]; then
+    export POLYGON_WALLET_PRIVATE_KEY="$RESOLVED_EVM_KEY"
+  else
+    echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"skip\",\"reason\":\"no-identity-key\"}" >> "$TRACE"
+    echo "no EVM identity key resolvable (env / agent .env / \$ANICCA_HOME / \$HOME) — skipping pm-trade pass" >&2
+    exit 0
+  fi
+  unset RESOLVED_EVM_KEY
+fi
+
 # money-safety guard #2: per-trade cap lives in the agent's own config
 # (.env MAX_BET_PERCENTAGE × INITIAL_BANKROLL, plus executor MAX_BET_SIZE).
 cd "$AGENT_HOME"
