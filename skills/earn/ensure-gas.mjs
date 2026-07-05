@@ -8,6 +8,7 @@ import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import fs from "fs";
+import { loadEvmKey } from "./lib/resolve-identity.mjs";
 
 const RPC = process.env.BASE_RPC_URL || "https://mainnet.base.org";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
@@ -18,11 +19,10 @@ const TOPUP_ETH = parseFloat(process.env.GAS_TOPUP_ETH || "0.0006");   // restor
 const SWAP_USD = parseFloat(process.env.GAS_SWAP_USD || "2");          // if no WETH, swap this much USDC->WETH first
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
-function loadKey() {
-  const k = (process.env.PKVAR && process.env[process.env.PKVAR]) || process.env.BLOCKRUN_WALLET_KEY;
-  if (k) return k.startsWith("0x") ? k : "0x" + k;
-  try { const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8")); return w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey; } catch { return null; }
-}
+// #28: env-first (PKVAR indirection / BLOCKRUN_WALLET_KEY) then GATED per-instance file resolution.
+// Never read the shared $HOME/.automaton/wallet.json directly (that let a foreign spawn sign with
+// another instance's key). null → main() aborts ("no wallet key").
+function loadKey() { return loadEvmKey(); }
 const erc20 = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },

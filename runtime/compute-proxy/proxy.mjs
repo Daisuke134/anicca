@@ -6,9 +6,10 @@
 import http from "http";
 import fs from "fs";
 import { BlockrunClient } from "@blockrun/llm";
-const walletPath = (process.env.HOME || "") + "/.automaton/wallet.json";
-const pk = JSON.parse(fs.readFileSync(walletPath, "utf8")).privateKey;
-process.env.BASE_CHAIN_WALLET_KEY = pk.startsWith("0x") ? pk : "0x" + pk;
+import { loadEvmKey } from "../../skills/earn/lib/resolve-identity.mjs";
+// #28: compute-pay with THIS instance's own gated per-instance key — never a borrowed legacy key.
+const pk = loadEvmKey();
+if (pk) process.env.BASE_CHAIN_WALLET_KEY = pk;
 const br = new BlockrunClient();
 const PORT = process.env.COMPUTE_PROXY_PORT || 8402;
 // Strip any ClawRouter profile prefix/word the caller might send; map to a concrete frontier id.

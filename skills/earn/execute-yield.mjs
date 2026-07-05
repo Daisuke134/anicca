@@ -13,6 +13,7 @@
 // Honest: own-capital accrual (external:false, kind:"yield"); every action is a real on-chain tx.
 import { createPublicClient, createWalletClient, http, fallback } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { loadEvmKey } from "./lib/resolve-identity.mjs";
 import { base } from "viem/chains";
 import fs from "fs";
 import { recordDeposit, recordWithdraw } from "./lib/cost-basis.mjs";
@@ -45,14 +46,10 @@ const MIN_DEPLOY = Math.round(parseFloat(process.env.YIELD_MIN_DEPLOY_USDC || "1
 const REFILL_AT = Math.round(RESERVE * 0.6); // refill the buffer once liquid drops below 60% of it
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
-function loadKey() {
-  // PKVAR names the env var that HOLDS the key (e.g. "BLOCKRUN_WALLET_KEY") — resolve it INDIRECTLY.
-  // The old `process.env.PKVAR` used the var NAME as the key string → "invalid private key, got string"
-  // and earn silently failed (no yield ever deployed). run.sh always passes PKVAR, so this was fatal.
-  const k = (process.env.PKVAR && process.env[process.env.PKVAR]) || process.env.BLOCKRUN_WALLET_KEY;
-  if (k) return k.startsWith("0x") ? k : "0x" + k;
-  try { const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8")); return w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey; } catch { return null; }
-}
+// #28: env-first (PKVAR indirection / BLOCKRUN_WALLET_KEY — the loop always passes PKVAR) then GATED
+// per-instance file resolution. Never read the shared $HOME wallet directly (a foreign spawn would
+// then sign with another instance's key). null → caller aborts.
+function loadKey() { return loadEvmKey(); }
 const erc20 = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
   { name: "allowance", type: "function", stateMutability: "view", inputs: [{ type: "address" }, { type: "address" }], outputs: [{ type: "uint256" }] },

@@ -87,6 +87,24 @@ export function resolveEvmPrivateKey({ home, env } = {}) {
 }
 
 /**
+ * The EVM key loader every earn skill / util uses (#28). Preserves the loop's per-instance env
+ * convention: a named env key wins (PKVAR indirection or BLOCKRUN_WALLET_KEY), else the GATED
+ * per-instance file resolution (resolveEvmPrivateKey — EFFECTIVE_HOME first, legacy only for the
+ * rightful owner, foreign spawn → null). Returns a 0x-prefixed key or null. Callers MUST treat null
+ * as fail-closed (abort/skip) — NEVER read $HOME/.automaton/wallet.json directly, which let a foreign
+ * spawn sign with another instance's money key.
+ *
+ * @param {{env?: Record<string, string>}} [opts]
+ * @returns {string|null}
+ */
+export function loadEvmKey({ env } = {}) {
+  const e = env || process.env;
+  const named = (e.PKVAR && e[e.PKVAR]) || e.BLOCKRUN_WALLET_KEY;
+  if (named) return normalizeEvmKey(named);
+  return resolveEvmPrivateKey({ env: e });
+}
+
+/**
  * Resolve THIS instance's own Solana signing secret (base58, immutable, pure read — no throw).
  *
  * @param {{home?: string, env?: Record<string, string>}} [opts]

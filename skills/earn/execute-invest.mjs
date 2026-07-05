@@ -11,6 +11,7 @@
 // verified separately and only added once proven — this leg is the safe, always-valid investment.
 import { createPublicClient, createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
+import { loadEvmKey } from "./lib/resolve-identity.mjs";
 import { base } from "viem/chains";
 import fs from "fs";
 
@@ -24,11 +25,9 @@ const STEP_USD = parseFloat(process.env.INVEST_STEP_USD || "1");     // DCA step
 const FEE = 500;
 
 function out(o) { process.stdout.write(JSON.stringify(o) + "\n"); }
-function loadKey() {
-  const k = (process.env.PKVAR && process.env[process.env.PKVAR]) || process.env.BLOCKRUN_WALLET_KEY;
-  if (k) return k.startsWith("0x") ? k : "0x" + k;
-  try { const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8")); return w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey; } catch { return null; }
-}
+// #28: env-first (PKVAR indirection / BLOCKRUN_WALLET_KEY) then GATED per-instance file resolution.
+// Never read the shared $HOME wallet directly (a foreign spawn would sign with another instance's key).
+function loadKey() { return loadEvmKey(); }
 const erc20 = [
   { name: "approve", type: "function", stateMutability: "nonpayable", inputs: [{ type: "address" }, { type: "uint256" }], outputs: [{ type: "bool" }] },
   { name: "balanceOf", type: "function", stateMutability: "view", inputs: [{ type: "address" }], outputs: [{ type: "uint256" }] },

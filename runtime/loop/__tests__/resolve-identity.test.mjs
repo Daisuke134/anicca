@@ -9,6 +9,7 @@ import path from 'node:path';
 import {
   resolveEvmPrivateKey,
   resolveSolanaSecret,
+  loadEvmKey,
 } from '../../../skills/earn/lib/resolve-identity.mjs';
 
 function tmpDir(prefix) {
@@ -216,4 +217,25 @@ test('fresh ANICCA_HOME: EVM + Solana keys generated under it resolve back via r
   // isolation: files live ONLY under freshHome/.automaton, nowhere else
   assert.ok(fs.existsSync(path.join(freshHome, '.automaton', 'wallet.json')));
   assert.ok(fs.existsSync(path.join(freshHome, '.automaton', 'solana.json')));
+});
+
+// ---------------------------------------------------------------------------
+// loadEvmKey (#28): env-named key first, then GATED per-instance file resolution.
+// ---------------------------------------------------------------------------
+test('loadEvmKey ①: PKVAR-named env key wins', () => {
+  assert.equal(loadEvmKey({ env: { PKVAR: 'MY_KEY', MY_KEY: '0x' + 'a'.repeat(64) } }), '0x' + 'a'.repeat(64));
+});
+test('loadEvmKey ②: BLOCKRUN_WALLET_KEY used when no PKVAR (normalized)', () => {
+  assert.equal(loadEvmKey({ env: { BLOCKRUN_WALLET_KEY: 'b'.repeat(64) } }), '0x' + 'b'.repeat(64));
+});
+test('loadEvmKey ③: no env key -> gated resolveEvmPrivateKey (default-home owner gets legacy)', () => {
+  const legacyHome = tmpDir('eq-load-legacy');
+  writeWalletJson(legacyHome, '0x' + '5'.repeat(64));
+  assert.equal(loadEvmKey({ env: { ANICCA_HOME: path.join(legacyHome, '.anicca'), HOME: legacyHome } }), '0x' + '5'.repeat(64));
+});
+test('loadEvmKey gated (#28): foreign spawn, no env key, legacy present -> null (no inheritance)', () => {
+  const legacyHome = tmpDir('eq-load-foreign-legacy');
+  const foreignHome = tmpDir('eq-load-foreign-spawn');
+  writeWalletJson(legacyHome, '0x' + 'f'.repeat(64));
+  assert.equal(loadEvmKey({ env: { ANICCA_HOME: foreignHome, HOME: legacyHome } }), null);
 });
