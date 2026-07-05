@@ -25,15 +25,16 @@ import express from "express";
 import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { privateKeyToAccount } from "viem/accounts";
+import { loadEvmKey } from "../lib/resolve-identity.mjs";
 
 function payTo() {
   if (process.env.X402_PAYTO) return process.env.X402_PAYTO;
-  try {
-    const w = JSON.parse(readFileSync(homedir() + "/.automaton/wallet.json", "utf8"));
-    return w.address;
-  } catch {
-    throw new Error("set X402_PAYTO (no ~/.automaton/wallet.json)");
-  }
+  // #28: derive THIS instance's own payTo address from its gated per-instance key — never the shared
+  // $HOME wallet's address (which would route another instance's earnings to the wrong wallet).
+  const pk = loadEvmKey();
+  if (pk) return privateKeyToAccount(pk).address;
+  throw new Error("set X402_PAYTO (no per-instance EVM key resolvable)");
 }
 
 const PRICE = process.env.X402_PRICE || "$0.003";

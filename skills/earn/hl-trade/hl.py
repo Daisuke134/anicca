@@ -22,6 +22,7 @@ Env: PKVAR / BLOCKRUN_WALLET_KEY / ~/.automaton/wallet.json (signing key).
 import argparse
 import json
 import os
+import subprocess
 import sys
 import time
 
@@ -41,7 +42,17 @@ def _key():
     pkvar = os.environ.get("PKVAR")
     k = (os.environ.get(pkvar) if pkvar else None) or os.environ.get("BLOCKRUN_WALLET_KEY")
     if not k:
-        k = json.load(open(os.path.expanduser("~/.automaton/wallet.json")))["privateKey"]
+        # #28: GATED per-instance resolution via the shared resolver CLI (EFFECTIVE_HOME first, legacy
+        # only for the rightful owner, foreign spawn -> empty). NEVER read the shared $HOME wallet
+        # directly — that let a foreign spawn sign HL trades with another instance's money key.
+        ri = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "lib", "resolve-identity.mjs")
+        try:
+            k = subprocess.run(["node", ri, "evm"], capture_output=True, text=True, timeout=10).stdout.strip() or None
+        except Exception:
+            k = None
+    if not k:
+        sys.stderr.write("hl-trade: no per-instance EVM key resolvable (env / $ANICCA_HOME / owner-legacy) — refusing to sign\n")
+        sys.exit(2)
     return k if k.startswith("0x") else "0x" + k
 
 

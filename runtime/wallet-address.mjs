@@ -4,6 +4,8 @@
 // tier. Run from a dir where viem resolves (runtime/compute-proxy).
 import { privateKeyToAccount } from "viem/accounts";
 import fs from "fs";
-const w = JSON.parse(fs.readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8"));
-const pk = w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey;
-process.stdout.write((w.address || privateKeyToAccount(pk).address) + "\n");
+import { loadEvmKey } from "../skills/earn/lib/resolve-identity.mjs";
+// #28: derive THIS instance's address from its gated per-instance key (foreign spawn → null → prints
+// nothing, so the daemon does not set ANICCA_WALLET_ADDRESS to another instance's address).
+const pk = loadEvmKey();
+if (pk) process.stdout.write(privateKeyToAccount(pk).address + "\n");

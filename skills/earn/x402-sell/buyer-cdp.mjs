@@ -6,9 +6,10 @@ import { createWalletClient, http } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
 import { base } from "viem/chains";
 import { readFileSync } from "node:fs";
+import { loadEvmKey } from "../lib/resolve-identity.mjs";
 
-const w = JSON.parse(readFileSync(process.env.HOME + "/.automaton/wallet.json", "utf8"));
-let pk = w.privateKey.startsWith("0x") ? w.privateKey : "0x" + w.privateKey;
+const pk = loadEvmKey(); // #28: gated per-instance key (foreign spawn → null, never a borrowed legacy key)
+if (!pk) { console.error("buyer-cdp: no per-instance EVM key resolvable (env / $ANICCA_HOME / owner-legacy) — refusing"); process.exit(2); }
 const account = privateKeyToAccount(pk);
 console.log("buyer:", account.address);
 
