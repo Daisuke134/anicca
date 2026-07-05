@@ -32,7 +32,10 @@ and: *"any agent can download this with ease."* Ease-of-onboarding for an agent 
 criterion, not an afterthought.
 
 Interface = **CLI + REST API + llms.txt** (machine-readable — another AI can spawn/run/monitor instances
-programmatically) **+ a polished Web App UI** (see §6). **NO MCP** — Dais verbatim: *"No it is because
+programmatically) — this is the actual product surface and the hackathon submission deliverable is the
+**GitHub URL**, not a hosted web app (Dais clarified 2026-07-05: *"we don't need to do the web app...
+because we just need to submit the GitHub URL"*). A lightweight **visual** of a web app exists only as an
+asset for the demo video (see §6, revised). **NO MCP** — Dais verbatim: *"No it is because
 it's made for agents"* — CLI + REST API + llms.txt already give an agent a machine-readable path; an MCP
 server is an unnecessary extra layer. Ships its own dashboard, derives (copies + repackages) the proven
 anicca engines — does not depend on anicca at runtime. Dais verbatim: *"we can drive everything from kind
@@ -160,21 +163,24 @@ vineyard/
 
 Key-isolation source: `~/anicca/skills/earn/lib/resolve-identity.mjs` (verified exists).
 
-## 6. Web App UI
+## 6. Web App UI — REVISED 2026-07-05: demo-video visual only, not a shipped product requirement
 
-Dais verbatim: *"I just wanted to make it some kind of like web app kind of thing... with taste skills...
-we wanna make it super easy."* This elevates the `dashboard/` component from a bare data table (as in the
-original franklin-earn spec) to a fully designed Web App UI:
+Dais clarified 2026-07-05: *"we don't need to do that yet... because we just need to submit the GitHub
+URL. And just for the hyperframe demo video we just have the web app... we just have like a [visual],
+right?"* This **downgrades** §6 from a required, backend-wired product feature to a **lightweight visual
+asset** used only inside the hyperframes demo video (§7):
 
-- **MUST invoke `Skill → gpt-tasteskill` before writing any dashboard frontend code** (project HARD RULE
-  0.38) — Python layout randomization, AIDA structure, real motion (GSAP/motion), no cheap meta-labels.
-- Functionally: a "spawn" call-to-action that hits `POST /spawn` (+ `/fund`, `/run`), and a live table of
-  every spawned instance — wallet × engine × model × realized P&L, each row linking to the on-chain
-  explorer (Polygonscan / Solscan) for verification.
-- **MUST be verified rendered in a real browser** (CloakBrowser daily-driver or agent-browser screenshot)
-  before being marked done — "it compiles" is not sufficient (HARD RULE 0.31/0.38).
-- Not a new independent subsystem — it is the human-facing skin over the same REST API an agent would call
-  directly. No logic lives only in the UI.
+- The hackathon submission deliverable is the **GitHub repo URL**. There is no requirement to host, deploy,
+  or browser-verify a live web app as part of "done."
+- What's still needed: a good-looking **static or thin, unwired UI mock** (still worth a quick
+  `Skill → gpt-tasteskill` pass so it doesn't look cheap on camera) showing a "spawn" button + a
+  wallet × engine × P&L table — but it does **not** need to actually call `POST /spawn` or any real
+  endpoint. It exists purely as a visual for the demo video's beats (§7), not as a tested product surface.
+- Not browser-verified-as-a-feature (HARD RULE 0.31/0.38's "must render correctly in production" bar does
+  not apply here, since this is a demo asset, not a shipped feature) — it only needs to look right on
+  camera for the video capture/composition.
+- The REAL product interface remains CLI + REST API + llms.txt (§1) — the visual never substitutes for
+  those in the actual repo's functionality.
 
 ## 7. Demo video — hyperframes-composited, NOT a raw screen capture
 
@@ -186,9 +192,9 @@ thousand."* This is a **hyperframes motion-graphics composition**, not unedited 
 - **Core beat = an animated money counter**: real ledger P&L climbing from **$0 → the real end figure**
   (whatever it actually is at filming time) — the emotional payoff, built with hyperframes' animated-number
   primitives (tween + easing), not a static screenshot of a number.
-- **Still shows the Web App UI**: browser/web app open → "spawn" clicked → instance born → dashboard live —
-  can use real screenshots/screen-recording of the UI as *source assets*, but the final cut is an edited,
-  paced, hyperframes composition, not raw unedited footage.
+- **Still shows the web app visual**: the §6 visual (spawn button + table mockup) appears in the composition
+  as a scene — it does not need to be a real, working, clicked-through UI (§6 revised); it is set dressing,
+  while the money-counter and the real on-chain data are the substance.
 - **No dry run / no fake numbers — HARD RULE 0.24 still applies at full strength**: the counter MUST
   animate toward a REAL number read from the actual ledger (`data/ledgers/<id>.jsonl`) after a real
   `vineyard run` produced a real on-chain tx. Stylized presentation of real data ≠ fabricated data — never
@@ -201,7 +207,7 @@ thousand."* This is a **hyperframes motion-graphics composition**, not unedited 
   5. Dashboard settles on the live, on-chain-linked total
 - Fits inside the hackathon's own demo requirement ("デモまたは90秒以内のデモ動画"); a tight cut (~15s,
   flexible) stays well under the 90s cap.
-- Sequenced last in the TODO — needs a working web app (§6) + at least one real engine pass with real
+- Sequenced last in the TODO — needs the §6 visual asset + at least one real engine pass with real
   ledger data (§9.3) to build the counter and UI shots from.
 
 ## 8. Money-safety invariants (copied from anicca #26/#28 — unchanged)
@@ -216,7 +222,7 @@ thousand."* This is a **hyperframes motion-graphics composition**, not unedited 
 1. `vineyard spawn` creates an instance with its own isolated EVM+Solana wallet, recorded in spawns.json.
 2. `vineyard fund <id> <amt>` registers + funds its Polymarket deposit via the bridge onramp (verified: `get_balance_allowance` resolves).
 3. `vineyard run <id> --once` places a real on-chain action on ≥1 engine (tx status 0x1) and writes it to the ledger.
-4. Web App UI (gpt-tasteskill-built, browser-verified) shows wallet × engine × realized P&L with on-chain links, and a working "spawn" call-to-action.
+4. A web app **visual** (spawn button + wallet×engine×P&L table mockup, §6 revised) exists as a demo-video asset — not required to be backend-wired or browser-verified as a shipped feature. Submission deliverable = GitHub URL.
 5. `llms.txt` + REST API let an AI do 1–4 with zero human clicks.
 6. README one-command quickstart works from a clean clone — "any agent can download this with ease."
 7. Hyperframes demo video exists: an animated money-counter ($0 → real end figure) + Web App UI beats, composited from real ledger data and real UI captures of 1–4 actually running (not a raw screen capture, not fake numbers).
@@ -238,10 +244,10 @@ thousand."* This is a **hyperframes motion-graphics composition**, not unedited 
 | D | `vineyard fund` → register+fund Polymarket deposit via bridge onramp | C |
 | E | Wire all 4 engines (polymarket/yield/hyperliquid/solana) from verified anicca sources | B |
 | F | `vineyard run` → earn loop (wake→pick→earn→ledger) with a real on-chain tx | C, D, E |
-| G | Web App UI: invoke gpt-tasteskill → build dashboard (spawn CTA + live wallet×engine×P&L+links) → browser-verify | F |
+| G | ~~Web App UI (backend-wired, browser-verified)~~ **REVISED — quick visual mockup only** (spawn button + wallet×engine×P&L table look, gpt-tasteskill pass, NOT wired to real API), for demo-video use only. Submission = GitHub URL, not a hosted app | F |
 | H | llms.txt + REST API + OpenAPI (`/openapi.json`) — zero-human-click agent path | C–F |
 | I | README one-command quickstart, verified from a clean clone | B–H |
-| J | Hyperframes-composited demo video: animated $0→real-figure money counter + Web App UI beats, built from real ledger data + real UI captures (not raw screen capture, not fake numbers) | F, G |
+| J | Hyperframes-composited demo video: animated $0→real-figure money counter + the §6 visual as a scene, built from real ledger data (not raw screen capture, not fake numbers) | F, G |
 | K | Update hackathon submission docs to match final scope (Vineyard name, drop Polymarket-only + MCP framing, no "Franklin" name) | G, J |
 | L | VCSDD pipeline over B–J: init → spec (1a/1b) → spec-review gate (1c) → RED (2a) → GREEN (2b) → refactor (2c) → adversary review (3, fresh context) → hardening (5) → convergence (6) | — |
 
