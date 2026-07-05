@@ -95,12 +95,54 @@ elif ...(既存のHBベースSTALE判定、変更なし。$HBはこの分岐に�
   だが、一貫性のため同様に素のstatへ変更する)
 ```
 
-### REQ-2: 6ファイル全てに同一修正を適用
+### REQ-2: 6ファイル全てに同一修正を適用(adversary round1 F2/F3を受けて訂正)
 
-対象: `clip-healthcheck.sh`(85行目付近)、`clip-promote-healthcheck.sh`
-(69行目付近)、`video-healthcheck.sh`(54行目付近)、`bounty-healthcheck.sh`
-(51行目付近)、`affiliate-healthcheck.sh`(52行目付近)、
-`gig-healthcheck.sh`(56行目、epoch-0パターンから同じreseed方式に統一)。
+**主要箇所(START_AGE計算)**: `clip-healthcheck.sh:85`、
+`clip-promote-healthcheck.sh:69`、`video-healthcheck.sh:54`、
+`bounty-healthcheck.sh:51`、`affiliate-healthcheck.sh:52`、
+`gig-healthcheck.sh:56`。
+
+**F2訂正(重大)**: gig-healthcheck.shは他5ファイルと異なり`$START`という
+シェル変数が存在せず、56行目で`$HOME/gig/.last-start`を直接inline記述
+している(`$HB`/`STALE_MIN`はローカル変数として存在するが`$START`相当は
+無い)。したがってgigへの適用は他5ファイルのような1行置換ではなく、
+まず`START="$HOME/gig/.last-start"`という変数宣言を追加してから
+同じreseedロジックを適用する(構造を他5ファイルに揃える)。
+
+**F3訂正**: REQ-1の`elif ...(既存のHBベースSTALE判定...)`と書いた
+dead-code箇所(`$HB`存在確認後のstat、実際には`-f "$HB"`が真であることが
+保証されているため`|| date +%s`に到達しないが、一貫性のため修正対象に
+含める)の具体的な行番号を明記する: `clip-healthcheck.sh:92`、
+`clip-promote-healthcheck.sh:76`、`video-healthcheck.sh:61`、
+`bounty-healthcheck.sh:58`、`affiliate-healthcheck.sh:59`、
+`gig-healthcheck.sh:62`。これらは`stat -f %m "$HB" 2>/dev/null || date +%s`
+(またはgigは`|| echo 0`相当)を、フォールバック無しの素の
+`stat -f %m "$HB"`に変更する(到達しないコードなので実質的にリスクは
+無いが、コードレビュー時の混乱を避けるため)。
+
+### REQ-4(新規、adversary round1 F4を受けて追加): 同一バグの確定箇所を別タスクとして記録
+
+`skills/self/healthcheck-lib.sh:78`(`capafy-loop`/`reddit-loop`/
+`life-manager-loop`の3ループが共有する統合healthcheck関数)に、
+全く同一の「マーカー不在→現在時刻フォールバック」バグが実在することを
+Read確認済み(`m="$(stat -f %m "$START" 2>/dev/null||echo "$now")"`)。
+これは「疑い」ではなく確定事実であり、共有関数1箇所の修正で3ループ
+全てに波及するため6ファイル個別修正よりも低コスト。ただしDais指示は
+明示的に「every **earn** loop」であり、この3ループはearn loopではない
+(self/系の別カテゴリ)ため、**Task #18のスコープには含めない**。
+TaskListに別タスク(Task #25)として記録し、Task #18完了後にDaisの判断を
+仰ぐ。
+
+### F5(adversary round1、既知の限界として受容): reseed周期とdisk cleanupの周期が重なるケース
+
+もし外部要因(disk cleanupなど)が`STALE_MIN`より短い周期でマーカーを
+繰り返し削除し続けた場合、reseedのたびにage=0にリセットされ続け、
+実質的に検知が「恒久的disable」ではなく「一時的disable の繰り返し」に
+緩和されるだけで完全解決しない。ただしこのシナリオは「同一マーカーが
+STALE_MIN(clip等=90分、affiliate/bounty=1560分)未満の周期で繰り返し
+消失し続ける」という非常に特殊な外部要因を要し、既存のdisk hygiene
+ルール(`~/.claude/rules/disk-hygiene.md`、safe-list運用)で別途対応
+すべき問題。本specのスコープ外として明記し、YAGNIとする。
 
 ### REQ-3: 既存のDEAD/backoff/lock機構は変更しない
 
