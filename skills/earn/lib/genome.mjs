@@ -125,11 +125,22 @@ export function mutate(genome, { rng = Math.random, count } = {}) {
   for (const key of chosen) {
     const spec = MUTATION_SPEC[key];
     const current = Number(next[key]);
-    const base = Number.isFinite(current) ? current : Number(SAFE_DEFAULT_GENOME[key]);
+    const rawBase = Number.isFinite(current) ? current : Number(SAFE_DEFAULT_GENOME[key]);
+    // Defense-in-depth #1: clamp the BASE itself before stepping. A genome fed into mutate()
+    // might already carry an out-of-range value for this knob (e.g. a malformed override file,
+    // or repeated/chained mutation over many exploration passes) — re-anchoring to the safe
+    // range FIRST guarantees the result below can never compound outward across generations.
+    const base = Math.min(spec.max, Math.max(spec.min, rawBase));
     const direction = rng() < 0.5 ? -1 : 1;
     let value = base + direction * spec.step;
+    // Defense-in-depth #2: clamp after stepping (the actual excursion guard for THIS mutation —
+    // e.g. MIN_EDGE at its floor 0.05 moving -0.03 must land back at 0.05, never 0.02).
     value = Math.min(spec.max, Math.max(spec.min, value));
     value = spec.decimals === 0 ? Math.round(value) : Number(value.toFixed(spec.decimals));
+    // Defense-in-depth #3: re-clamp AFTER rounding too — toFixed()/Number() on a boundary value
+    // could in theory introduce a hair of floating-point drift; never trust rounding alone to
+    // preserve a hard floor/ceiling.
+    value = Math.min(spec.max, Math.max(spec.min, value));
     next[key] = value;
   }
   return next;

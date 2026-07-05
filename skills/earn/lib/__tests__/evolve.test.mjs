@@ -136,6 +136,33 @@ test("evaluatePromotion: beats baseline AND >=K redeems -> promote", () => {
   assert.equal(verdict.promote, true);
 });
 
+// MUST-FIX 1 (adversary, money-safety HARD 0.24): "less-negative" must NEVER promote. A
+// challenger that beats a losing baseline only by losing less money is still a net-losing
+// strategy — auto-adopting it would lock in a losing genome. The challenger must clear an
+// absolute net-positive floor (realized_usdc > 0), not merely outperform baseline.
+test("evaluatePromotion: challenger less-negative than a losing baseline -> NO promote (net-positive floor)", () => {
+  const summary = new Map([
+    [ID_A, { genome_id: ID_A, realized_usdc: -5, redeem_count: 3 }], // baseline: net LOSS -$5
+    [ID_B, { genome_id: ID_B, realized_usdc: -2, redeem_count: 3 }], // challenger: net LOSS -$2 (less bad, still a loss)
+  ]);
+  const verdict = evaluatePromotion({ summary, baselineId: ID_A, mutantId: ID_B, minRedeems: 3 });
+  assert.equal(verdict.promote, false, "-2 > -5 must NOT promote — the challenger still lost money");
+  assert.match(verdict.reason, /challenger-not-net-positive/);
+});
+
+test("evaluatePromotion: baseline has no on-chain history (defaults to 0) -> a net-positive challenger still promotes", () => {
+  const summary = new Map([[ID_B, { genome_id: ID_B, realized_usdc: 2, redeem_count: 3 }]]);
+  const verdict = evaluatePromotion({ summary, baselineId: ID_A, mutantId: ID_B, minRedeems: 3 });
+  assert.equal(verdict.promote, true, "baseline defaults to {realized_usdc:0}; a net-positive challenger clears both floors");
+});
+
+test("evaluatePromotion: challenger itself net-negative with NO baseline history -> NO promote", () => {
+  const summary = new Map([[ID_B, { genome_id: ID_B, realized_usdc: -1, redeem_count: 3 }]]);
+  const verdict = evaluatePromotion({ summary, baselineId: ID_A, mutantId: ID_B, minRedeems: 3 });
+  assert.equal(verdict.promote, false);
+  assert.match(verdict.reason, /challenger-not-net-positive/);
+});
+
 test("promote() writes the canonical baseline-genome.json AND git-commits it", () => {
   const repo = tmpDir("evolve-promote-");
   initGitRepo(repo);
@@ -157,6 +184,40 @@ test("promote() writes the canonical baseline-genome.json AND git-commits it", (
 
   const log = execFileSync("git", ["log", "-1", "--format=%s"], { cwd: repo }).toString();
   assert.match(log, /promote genome/);
+});
+
+// LOW-SEV fix (adversary, repo safety): promote() must NEVER sweep unrelated staged/working-tree
+// changes into its commit on a shared checkout. Simulates exactly the observed real scenario
+// (another process's edit sitting staged in ~/anicca while a promotion runs).
+test("promote() is path-scoped: an unrelated STAGED file is never swept into the promotion commit", () => {
+  const repo = tmpDir("evolve-promote-pathscope-");
+  initGitRepo(repo);
+  const canonicalPath = path.join(repo, "baseline-genome.json");
+  fs.writeFileSync(canonicalPath, JSON.stringify(GENOME_A));
+  const unrelatedPath = path.join(repo, "unrelated-other-file.txt");
+  fs.writeFileSync(unrelatedPath, "seed\n");
+  execFileSync("git", ["add", "."], { cwd: repo });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "-q", "-m", "seed both files"], {
+    cwd: repo,
+  });
+
+  // Simulate a concurrent, unrelated process staging a change to a DIFFERENT file right before
+  // promote() runs (exactly what was observed live on the shared ~/anicca checkout).
+  fs.writeFileSync(unrelatedPath, "modified by an unrelated concurrent process\n");
+  execFileSync("git", ["add", unrelatedPath], { cwd: repo });
+
+  promote(GENOME_B, { canonicalPath, cwd: repo });
+
+  const committedFiles = execFileSync("git", ["show", "--name-only", "--format=", "HEAD"], { cwd: repo })
+    .toString()
+    .trim()
+    .split("\n")
+    .filter(Boolean);
+  assert.deepEqual(committedFiles, ["baseline-genome.json"], "the commit must touch ONLY baseline-genome.json");
+
+  // The unrelated file's staged change must still be sitting in the index, untouched/uncommitted.
+  const stagedDiff = execFileSync("git", ["diff", "--cached", "--name-only"], { cwd: repo }).toString().trim();
+  assert.equal(stagedDiff, "unrelated-other-file.txt", "the unrelated staged change must remain staged, not committed");
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -206,6 +267,60 @@ test("E2E PROMOTE: genome B (realized $3, 3 on-chain redeems) beats baseline A (
   assert.deepEqual(writtenBaseline, GENOME_B, "baseline-genome.json now holds B's actual knob values");
 
   console.log("SYNTHETIC E2E PROMOTE result:", JSON.stringify(result, null, 2));
+});
+
+// MUST-FIX 1 regression E2E (adversary): a challenger that is still net-LOSING must never be
+// promoted just because it loses LESS than a losing baseline. baseline realized -$5, challenger
+// realized -$2, BOTH with >=3 on-chain-verified redeems — must NOT promote, and no commit made.
+test("E2E NO-PROMOTE (still-losing challenger): baseline -$5, challenger -$2, both >=3 redeems -> NO promote", async () => {
+  const repo = tmpDir("evolve-e2e-nopromote-lessnegative-");
+  initGitRepo(repo);
+  const canonicalPath = path.join(repo, "baseline-genome.json");
+  fs.writeFileSync(canonicalPath, JSON.stringify(GENOME_A, null, 2) + "\n");
+  execFileSync("git", ["add", "baseline-genome.json"], { cwd: repo });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "-q", "-m", "seed baseline A"], {
+    cwd: repo,
+  });
+
+  const stateDir = path.join(repo, "state");
+  const tracePath = path.join(stateDir, "pm-trade.trace.jsonl");
+  const ledgerPath = path.join(stateDir, "earn-ledger.jsonl");
+
+  const trace = [
+    ...tradeTrace({ ts: "2026-07-01T00:00:00Z", genome: GENOME_A, genomeIdValue: ID_A, market: "A-market-1" }),
+    ...tradeTrace({ ts: "2026-07-01T01:00:00Z", genome: GENOME_A, genomeIdValue: ID_A, market: "A-market-2" }),
+    ...tradeTrace({ ts: "2026-07-01T02:00:00Z", genome: GENOME_A, genomeIdValue: ID_A, market: "A-market-3" }),
+    ...tradeTrace({ ts: "2026-07-02T00:00:00Z", genome: GENOME_B, genomeIdValue: ID_B, market: "B-market-1" }),
+    ...tradeTrace({ ts: "2026-07-02T01:00:00Z", genome: GENOME_B, genomeIdValue: ID_B, market: "B-market-2" }),
+    ...tradeTrace({ ts: "2026-07-02T02:00:00Z", genome: GENOME_B, genomeIdValue: ID_B, market: "B-market-3" }),
+  ];
+  writeJsonl(tracePath, trace);
+
+  // baseline A: realized -$5 total across 3 on-chain redeems (a real losing genome).
+  // mutant B:  realized -$2 total across 3 on-chain redeems — loses LESS, but still a net loss.
+  const ledger = [
+    redeemRow({ ts: 1783296000, market: "A-market-1", earn: 3, cost: 5, tx: "0xA0001" }), // net -2
+    redeemRow({ ts: 1783296100, market: "A-market-2", earn: 3, cost: 5, tx: "0xA0002" }), // net -2
+    redeemRow({ ts: 1783296200, market: "A-market-3", earn: 3, cost: 4, tx: "0xA0003" }), // net -1  (sum -5)
+    redeemRow({ ts: 1783382400, market: "B-market-1", earn: 3, cost: 4, tx: "0xB0001" }), // net -1
+    redeemRow({ ts: 1783386000, market: "B-market-2", earn: 2, cost: 2.5, tx: "0xB0002" }), // net -0.5
+    redeemRow({ ts: 1783389600, market: "B-market-3", earn: 2, cost: 2.5, tx: "0xB0003" }), // net -0.5  (sum -2)
+  ];
+  writeJsonl(ledgerPath, ledger);
+
+  const before = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+  const result = await runEvolve({ ledgerPath, tracePath, canonicalPath, minRedeems: 3, cwd: repo });
+  const after = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+
+  assert.equal(result.summary[ID_A].realized_usdc, -5);
+  assert.equal(result.summary[ID_B].realized_usdc, -2);
+  assert.equal(result.promoted, false, "-2 beats -5 but is still a LOSS — must never promote (HARD 0.24)");
+  assert.match(result.evaluations[ID_B].reason, /challenger-not-net-positive/);
+  assert.equal(before, after, "no commit must have been made");
+  const stillBaseline = JSON.parse(fs.readFileSync(canonicalPath, "utf8"));
+  assert.deepEqual(stillBaseline, GENOME_A, "baseline-genome.json must be untouched");
+
+  console.log("SYNTHETIC E2E NO-PROMOTE (still-losing challenger, -5 vs -2) result:", JSON.stringify(result, null, 2));
 });
 
 test("E2E NO-PROMOTE (paper rows only): mutant B has no on-chain tx -> never promoted", async () => {

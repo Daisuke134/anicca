@@ -81,10 +81,14 @@ if [ -f "$GENOME_LIB" ] && command -v node >/dev/null 2>&1; then
 fi
 # money-safety (HARD, spec §3): caps are NEVER part of the genome — genome.mjs's own
 # FORBIDDEN_CAP_KEYS guard already strips them from every genome object it can ever produce, but
-# this line is run.sh's OWN explicit, auditable "genome cannot win" guarantee: these three names
-# are fixed here, unconditionally, AFTER the genome eval, so nothing above can ever override them.
+# these lines are run.sh's OWN explicit, auditable "genome (or any env) cannot win" guarantee:
+# all three names are fixed here, unconditionally (hard override, not a `:-` soft default), AFTER
+# the genome eval, so nothing above — genome or a pre-set env var — can ever override them.
+# MAX_PASS_SPEND lives here too (not further down at the strategy-chain site) for symmetry with
+# MAX_BET_SIZE/POLY_MIN_ORDER: all THREE caps are asserted fixed at the same single choke point.
 export MAX_BET_SIZE=2
 export POLY_MIN_ORDER=1
+export MAX_PASS_SPEND=2
 if [ -n "${EARN_GENOME_ID:-}" ]; then
   MIN_EDGE="${MIN_EDGE:-}" MIN_CONF="${MIN_CONF:-}" RESOLVE_HORIZON_DAYS="${RESOLVE_HORIZON_DAYS:-}" \
   MAX_CANDIDATES="${MAX_CANDIDATES:-}" EARN_CONSENSUS_MODELS="${EARN_CONSENSUS_MODELS:-}" \
@@ -131,7 +135,8 @@ fi
 # pass spend is a fixed small number regardless of wallet balance-at-read-time, not a fraction of
 # it. bundle_arb.py / market_maker.py / place_order.py each read this independently and cap their
 # own leg to it — see SKILL.md "per-pass risk envelope" for the resulting worst-case pass total.
-export MAX_PASS_SPEND="${MAX_PASS_SPEND:-2}"
+# (MAX_PASS_SPEND is now hard-set once, above, right after the genome eval alongside MAX_BET_SIZE/
+# POLY_MIN_ORDER — #19 EVOLVE symmetry fix — so it's already exported by the time we reach here.)
 
 # append_strategy_trace <action> <output-text> <exit-code> — one structured
 # trace line per strategy pass (H1). Shared by the two EXISTING working
