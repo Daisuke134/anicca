@@ -22,7 +22,8 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
 
 ## Requirements(EARS)
 - R1: THE system SHALL 各 instance の EVM 署名鍵を `resolve-identity` で per-instance に解決する。優先順:
-  ① env `ANICCA_EVM_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/wallet.json` → ③(後方互換)既存の agent `.env` の `POLYGON_WALLET_PRIVATE_KEY`。
+  ① env `ANICCA_EVM_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/wallet.json` → ③(後方互換)legacy shared `$HOME/.automaton/wallet.json` → ④ null。
+  ※ 「agent `.env` の `POLYGON_WALLET_PRIVATE_KEY`」の後方互換は resolver ではなく pm-trade `run.sh`(R3)側で担う — run.sh は resolver を呼ぶ前に env/agent.env を先に見て claude-p を温存する(FIND-003 明確化)。
 - R2: THE system SHALL Solana 署名鍵を per-instance に解決する。優先順: ① env `ANICCA_SOLANA_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/solana.json` → ③(後方互換)`~/.blockrun/.solana-session`。
 - R3: WHEN pm-trade を run する THE system SHALL R1 で解決した鍵を `POLYGON_WALLET_PRIVATE_KEY` として agent に渡す(env が既に有ればそれを尊重=claude-p 温存)。
 - R4: THE identity 生成 SHALL per-instance に隔離される。EVM wallet が現状 `$HOME/.automaton/wallet.json`(1台で共有)である点を、`$ANICCA_HOME` 配下へ隔離できるようにする(既存 live 個体のパスは壊さない=追加的に `$ANICCA_HOME` を優先、無ければ `$HOME` fallback)。
@@ -45,3 +46,11 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
 ## 開発環境
 - repo: `~/anicca`(mother, push は `git push origin HEAD:main`)。実装は worktree 不要な小 diff だが、触るファイルは上記 DONE の範囲に限定。
 - VCSDD strict。実装 = Sonnet subagent。adversary = fresh Sonnet(disk のみ)。
+
+## Adversary round 1(fresh Sonnet, 2026-07-05)→ FIND-001 修正済
+- **FIND-001(致命, FAIL→修正)**: 初版 R4 の legacy-fallback が「`$WALLET` 不在 & legacy 実在」だけで legacy に再代入 → この Mac に automaton の実 wallet(`$HOME/.automaton/wallet.json`)が在るため、fresh spawn が automaton の EVM 鍵を継承してしまう欠陥。俺の初回 E2E は wallet を事前手書きしたため分岐を踏まず見逃した(adversary が実機ファイル Read で立証)。
+  - 修正: path 解決を単一 helper `runtime/compute-proxy/resolve-wallet-path.sh` に切り出し、legacy-fallback を「EFFECTIVE_HOME == `$HOME/.anicca`(= default-home の正当な legacy 所有者)の時だけ」に限定。automaton は plist で `ANICCA_HOME=$HOME/.anicca` を明示設定しているので温存され、異なる `$ANICCA_HOME` の spawn/Franklin は自前 wallet になる。
+  - 実機実証(legacy 実在下): fresh spawn(`ANICCA_HOME=/tmp/eq-real`)→ `/tmp/eq-real/.automaton/wallet.json`(隔離OK)、automaton(`ANICCA_HOME=$HOME/.anicca`)→ `$HOME/.automaton/wallet.json`(温存OK)。
+- **FIND-002(修正)**: 隔離を手書きファイルでなく **実 shipped bash ロジックを叩く** `runtime/compute-proxy/__tests__/resolve-wallet-path.test.mjs`(6ケース、FIND-001 回帰含む)で検証。
+- **FIND-003(修正)**: spec R1 の ③ を「legacy `$HOME/.automaton/wallet.json`」に訂正、agent `.env` 後方互換は run.sh(R3)側と明記。
+- viem パス修正($HERE/../node_modules)+ 回帰ゼロ(config/tier/PROP-021 の fail は未変更ファイル由来)は adversary も確認。→ round 2 で再検証。
