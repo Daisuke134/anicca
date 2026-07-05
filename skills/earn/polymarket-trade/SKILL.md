@@ -91,6 +91,16 @@
 >   3. Then `create_or_derive_api_key` (create-path succeeds for a fresh registered account), approve
 >      pUSD FROM the deposit wallet via a relayer `WALLET` batch, and place orders with maker=signer=
 >      deposit wallet, signature_type=3.
+>
+> ★ CONFIRMED WORKING 2026-07-05 (Franklin, a FRESH self-funded EOA, browser=0): (1) POST
+>   bridge.polymarket.com/deposit {"address": deposit_wallet} → EVM bridge addr; (2) send pUSD (a
+>   supported bridge asset, Polygon min $2) THROUGH that bridge addr (relayer transfer_erc20 from any
+>   REGISTERED wallet — e.g. mutual-aid from automaton) → onramp status COMPLETED → deposit wallet
+>   REGISTERED (get_balance_allowance resolves) and any previously-stuck direct-sent pUSD becomes
+>   spendable; (3) approve pUSD to the NEG-RISK spenders `0xe2222d279d744050d28e00520010520000310F59`
+>   (exchange) + `0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296` (adapter) — NOT `0x4bFb41d5…` (blocked,
+>   not on the allowed list); (4) create_market_order FAK + post_order → matched. Franklin bought 3.284
+>   sh "Amanda Janoo Vermont Gov YES" for $2, order 0x6fa9b74a…, settle tx 0x057511e7… status 0x1.
 > Bake steps 1-2 into the spawn/born-with flow so every self-funded AI is REGISTERED at birth. Never
 > raw-deploy the proxy or raw-transfer pUSD to it — that produces the stuck/unregistered state above.
 
