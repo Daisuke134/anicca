@@ -16,6 +16,24 @@ reason:"Token ID not available in simplified mode"`）。実際に動く V2 実�
 **「resolve が近い市場を優先」する軸が無い**（`fetch_active_markets` は volume 降順ソート）→
 WC2026/選挙のような遠期市場に着地 → 勝っても回収が数ヶ月先 → realized $0。
 
+## 0.5 CORRECTION — verified against live traces + git (2026-07-05)
+
+実データで確認: **alpha は既に存在する。作り直さない。** firing loop
+(`polymarket-trade/run.sh` → `main.py --live`) が既存 alpha に未接続なだけ。
+- 証拠: automaton の `pm-trade.trace.jsonl` = **61 live-pass 全て trades:0/null**、
+  claude-p = 4 pass 全て 0。stub の `execute_trades` を叩いてるだけ。
+- ledger の realized 6件は**全て `polymarket-redeem`**（Morocco +$2.99 等）。勝った
+  directional の「買い」は俺の手動 bootstrap（v2_full_flow の TID ハードコード）、
+  loop は **redeem のみ自律**（#14）。git に autonomous buy を配線した commit は無い。
+- **既存の working 戦略**（実注文を置く）: `market_maker.py`=BASE#1(MM bundle 無リスク)、
+  `bundle_arb.py`=BASE#2(YES+NO<$1 arb)、+ directional edge=既存 `AIAnalyzer.consensus_analysis`
+  + `get_smart_money_summary`。既存 loop `run_earner.sh` が MM/arb を呼ぶ配線の手本。
+
+→ 修正版の作業(§2 を superseded): **既存 market_maker/bundle_arb を run.sh に配線して
+stub を置換** + **唯一欠けてる directional 自律買い**(pick.py=既存 analyzer を import、
+place_order.py=v2_full_flow 汎用化)を足すだけ。§2.1 の pick.py は「新規 analyzer を書く」の
+ではなく「既存 `consensus_analysis`+`get_smart_money_summary` を import して使う」。
+
 ## 1. Goal（検証可能な完了条件）
 
 **DONE** = PM earn loop が発火したとき、対象 instance が **自分で**:
