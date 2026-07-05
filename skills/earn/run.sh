@@ -158,9 +158,25 @@ try:
  print('|'.join(f\"{x.get('coin')} sz={x.get('szi')} entry={x.get('entry')} uPnL={x.get('uPnL')}\" for x in p))
 except Exception: print('')" 2>/dev/null)
 
+  # #16 ANTI-CHURN GUARD (money-safety rate-limit, NOT a trade decision — same category as the loop-detect
+  # cooldown): automaton thrashed HL ~138 fills/day, opening+closing tiny ETH longs minutes apart so fees
+  # ate the edge and net ~flat. Rate-limit BRAIN-driven open/close to >= HL_COOLDOWN_MIN apart so a thesis
+  # can develop and fees don't churn the account. The exchange-side stop/take (set on open) still
+  # auto-closes regardless — this only blocks whim re-trades, never a real SL/TP exit.
+  HL_LAST="$HLDIR/.last-trade-ts"; HL_COOLDOWN_MIN="${HL_COOLDOWN_MIN:-60}"
+  _hl_now=$(date +%s); _hl_last=$(cat "$HL_LAST" 2>/dev/null || echo 0)
+  _hl_since=$(( (_hl_now - _hl_last) / 60 ))
+  if { [ "$ACTION" = "close" ] || { [ -n "$SIDE" ] && [ -n "$SIZE" ]; }; } && [ "$_hl_since" -lt "$HL_COOLDOWN_MIN" ]; then
+    echo "[earn] hl anti-churn: last trade ${_hl_since}min ago < ${HL_COOLDOWN_MIN}min → HOLD (no churn); exchange SL/TP still active"
+    TASK="hl-cooldown — holding ${POS:-flat} (${_hl_since}min since last trade, min ${HL_COOLDOWN_MIN})"
+    JSON=$(python3 -c "import json,sys; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':sys.argv[1][:160],'earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))" "$TASK" 2>/dev/null)
+    OUT=$(record_line "$JSON"); echo "[earn] hl cooldown -> $OUT"; exit 0
+  fi
+
   # MANAGE: the model decided to close (action=close), OR a stop/take got hit — realise the position.
   if [ "$ACTION" = "close" ] && [ -n "$POS" ]; then
     RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" close "$COIN" 2>&1)
+    date +%s > "$HL_LAST" 2>/dev/null || true   # #16: stamp the trade time for the anti-churn cooldown
     echo "[earn] hl close $COIN -> $RES"
     PNL=$(printf '%s' "$RES" | python3 -c "import json,sys
 try: print(json.load(sys.stdin).get('closed_pnl_usd',0) or 0)
@@ -195,6 +211,7 @@ except Exception: print(0)" 2>/dev/null || echo 0)
   fi
   ARGS=(open "$COIN" "$SIDE" "$SIZE"); [ -n "$SL" ] && ARGS+=(--sl "$SL"); [ -n "$TP" ] && ARGS+=(--tp "$TP")
   RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" "${ARGS[@]}" 2>&1)
+  date +%s > "$HL_LAST" 2>/dev/null || true   # #16: stamp the trade time for the anti-churn cooldown
   echo "[earn] hl open result: $RES"
   JSON=$(python3 -c "import json,sys; r=json.loads('''$RES''') if '''$RES'''.strip().startswith('{') else {}; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl $SIDE $COIN \$$SIZE','earn_usdc':0,'cost_usdc':0,'tx':r.get('oid','') or r.get('status',''),'wake':'$WAKE'}))" 2>/dev/null || python3 -c "import json;print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-open','earn_usdc':0,'cost_usdc':0,'wake':'$WAKE'}))")
   OUT=$(record_line "$JSON"); echo "[earn] hl recorded -> $OUT"; exit 0
