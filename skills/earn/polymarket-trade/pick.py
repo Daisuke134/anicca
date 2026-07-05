@@ -4,9 +4,10 @@ pick.py — ALPHA: PM autonomous market/side/size picker (#25 spec §2.1).
 
 NOTHING about WHICH market or WHICH side is hardcoded here (HARD #0 / #1 of
 this task). The MODEL decides:
-  - multi-model consensus (AIAnalyzer.consensus_analysis, 3 cheap models via
-    BlockRun: GPT + Gemini + Claude) estimates the true probability and votes
-    BULLISH/BEARISH/MIXED,
+  - multi-model consensus (AIAnalyzer.consensus_analysis, 3 FREE BlockRun
+    models — NVIDIA-hosted llama-4-maverick + qwen3-next + mistral-nemotron,
+    $0 inference, #31; env-overridable via EARN_CONSENSUS_MODELS) estimates the
+    true probability and votes BULLISH/BEARISH/MIXED,
   - smart-money / whale signal (get_smart_money_summary) is fed into that
     same consensus call as context.
 This file only: fetches candidates, filters/sorts them (resolve-soon +
