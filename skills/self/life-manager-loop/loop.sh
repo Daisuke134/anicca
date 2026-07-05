@@ -57,3 +57,15 @@ TMP="$STATE_MD.tmp.$$"
   echo "next: HEAL-NEEDED→fix (a selfheal-request was written); READ-FAILED→recompute; else ACT: read the Telegram funnel (start→calendar→phone→pay→retain), fix the ONE weakest step OR drive Reddit demand; VERIFY a real new paid Stripe sub."
 } > "$TMP" && mv "$TMP" "$STATE_MD"
 echo "[life-manager-loop] MRR=\$$LM_MRR | heal=${HEAL:-none} | $STATUS"
+
+# Liveness heartbeat (FIND-032): touch it HERE, in the deterministic MEASURE core (runs first on every
+# pass — startup + daily cron — completes in ~2s, cannot derail). Previously the heartbeat was touched
+# ONLY at the very end of the open-ended STARTUP/cron pass ("FINALLY touch"), AFTER STEP2 ACT — a
+# rabbit-hole-prone agentic task (funnel/Telegram-bot debugging) that can run for hours and never return
+# to the touch. That starved the heartbeat → healthcheck STALE → restart → pkill kills the in-progress
+# claude → fresh claude re-enters the same STEP2 → still no touch within the 5-min window → STALE again
+# → restart loop that kills the very session that would refresh the heartbeat → give-up → self-fix.
+# The healthcheck contract is "liveness + stuck-detection only" (revenue truth = verify-loops.sh), so
+# liveness must mean "the loop executed its measurable core this pass", NOT "an open-ended money task
+# fully completed". Skip under test mode so the real prod heartbeat is never touched by test-loop.sh.
+[ "${LM_TEST:-}" = "1" ] || { mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.life-manager-loop-last-pass" 2>/dev/null; } || true
