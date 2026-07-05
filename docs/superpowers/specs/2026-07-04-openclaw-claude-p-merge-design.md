@@ -1427,3 +1427,65 @@ daily-driverで1タップ再ログインする、(b) postMessageベースの正�
 が「マーカー不在→現在時刻扱い」になっている点**(全6 loop共通の
 healthcheck.shパターンに同じ実装、`stat ... || date +%s`)。Task #18の
 descriptionをこの訂正済みの根本原因に合わせて更新済み。
+
+## 25. self-heal / self-improve 監査 — 全6 loop横断(2026-07-05 23:30、Dais明示指示)
+
+### 25.0 Dais指摘(verbatim)
+
+> lets do one by one. with vcsdd. i have to make sure every earn loop self heals
+> and self imporves so i and you can be out of the loop. and verify that they
+> self heal ans d self imporve so they make more money!
+
+「人間(Dais)も私(Claude)もloopから外れられる」ためには、①壊れたら自分で
+直る(self-heal) ②稼ぎ方自体を自分で学習して改善する(self-improve) の
+両方が全6 loopに構造として存在し、かつ検証済みである必要がある。
+
+### 25.1 fresh grep監査結果(全6 cli.sh)
+
+| loop | self-heal(selfheal-request.jsonパターン) | self-improve(strategy.json/lessons.jsonl/do_improve) |
+|---|---|---|
+| clip | ✅ | ❌ 無し |
+| clip-promote | ✅ | ❌ 無し |
+| video | ✅ | ❌ 無し |
+| gig | ✅ | ✅ **唯一の実装例**(§25.2参照) |
+| bounty | ✅ | ❌ 無し |
+| affiliate | ✅ | ❌ 無し |
+
+**結論**: self-healは全6 loopに共通実装済み
+(「healthcheckが諦めたら.{name}-core-selfheal-request.jsonを自分で読んで
+根本原因を直す」パターン)。**self-improveはgig 1つのみ**。残り5 loopは
+「壊れたら直る」は出来ても「稼ぎ方そのものが下手なままずっと同じことを
+繰り返す」状態であり、Daisの「out of the loop」条件を満たしていない。
+
+### 25.2 gigの実装パターン(唯一の実証例、複製対象)
+
+`~/anicca/skills/human-funded/gig/`:
+- `passprep.py` — 決定的pass-prep。`strategy.json`を`strategy.default.json`
+  から初期化(壊れていれば復旧)、`skip_categories`が全カテゴリを除外して
+  しまう縮退を防ぐskip-floor強制、`pass_count`と`improve_cadence_passes`
+  から`do_improve`(このpassでIMPROVE STEPを走らせるか)を計算
+- `~/gig/lessons.jsonl` — 各applyの結果(accepted/rejected/needs_human/
+  unsustainable等)+reason+lessonを追記
+- **B3 LEARN**: 結果が出たrequestごとにlessons.jsonlへ記録
+- **B4 IMPROVE STEP**(`do_improve`がtrueの時のみ): 直近50件のlessonsから
+  category別accept_rateを計算 → `strategy.json`の`priority_categories`/
+  `skip_categories`/`proposal_templates`/`price_defaults`を更新
+- **B5 BOT-TO-BOT SHARE**: 初回accept等の重要lessonを`gh issue create
+  --label gig-lesson`でmother repoに公開 → 他instanceがPRE-STEPで
+  `gh issue list --label gig-lesson`して読む(群知能的伝播)
+
+### 25.3 実行計画(Dais指示通り「one by one、VCSDD」)
+
+優先順位(自己修復の信頼性が土台なので先に片付ける):
+1. **Task #18**(healthcheck.sh STALE検知フォールバック修正)— 全6 loop
+   共通のバグで、self-improveの成否を測る土台(「稼ぎが悪いから直した」
+   のか「そもそも動いていなかった」のかを混同しないため先に直す)
+2. **Task #19**(affiliate IGログイン復旧)— 実害(投稿停止)が出ている
+   ため次点
+3. **新規Task #20〜24**(self-improve構築、1 loopずつ): clip → 
+   clip-promote → video → bounty → affiliate の順(データ量/検証しやすさ
+   の順、cronの頻度が高いloopほど1セッション内でE2E検証しやすいため
+   clipを最初にする)。各タスクはgigの§25.2パターンを土台にVCSDD
+   (spec→fresh Sonnet adversary→実装→実機E2E確認)で進める。
+
+Task #18/#19の完了後、Task #20から着手する。
