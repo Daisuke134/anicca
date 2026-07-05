@@ -11,10 +11,16 @@ import { readCostBasis } from "../../skills/earn/lib/cost-basis.mjs";
 import { revenueBySource as pureRevenueBySource } from "../../skills/earn/lib/revenue.mjs";
 import { hlState } from "../lib/hl-state.mjs";
 import { buildTelemetryMsg } from "./telemetry-msg.mjs";
+import { resolveEvmPrivateKey } from "../../skills/earn/lib/resolve-identity.mjs";
 
 const HOME = process.env.HOME;
-const pk = JSON.parse(fs.readFileSync(HOME + "/.automaton/wallet.json")).privateKey;
-const acct = privateKeyToAccount(pk.startsWith("0x") ? pk : "0x" + pk);
+// #28: sign telemetry with THIS instance's OWN gated per-instance key (EFFECTIVE_HOME first, legacy
+// only for the rightful owner). A foreign spawn must NEVER read $HOME/.automaton/wallet.json directly
+// and self-report as automaton (identity spoofing + private key in a non-owner process) — if it has no
+// own key yet, it simply does not post (fail-closed) rather than misreport another instance's identity.
+const pk = resolveEvmPrivateKey();
+if (!pk) { console.error("telemetry-poster: no per-instance EVM key resolvable — not posting (would misreport identity)"); process.exit(0); }
+const acct = privateKeyToAccount(pk);
 // Unique-by-construction identity: explicit ANICCA_NAME wins, else a guaranteed-unique handle derived
 // from this instance's wallet address (collision-impossible across spawns; auto-registers on first POST).
 const NAME = process.env.ANICCA_NAME || (await assignIdentity(acct.address)).name;
