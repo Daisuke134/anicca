@@ -62,6 +62,27 @@
 > moves only on real on-chain fills — this row is a verified settle tx, not a claim. ★
 
 
+> ### ★★ NEW-EOA ONBOARDING GATE (2026-07-05, root cause of "error resolving address") ★★
+> A BRAND-NEW EOA cannot trade on Polymarket CLOB until Polymarket's backend KNOWS it.
+> The CLOB derives the funder (deposit wallet) from the *authenticated EOA* + signature_type;
+> if the EOA was never onboarded, `get_balance_allowance` / `post_order` return
+> **`error resolving address`** (and `create_or_derive_api_key` has nothing to derive →
+> "the order signer address has to be the address of the API KEY"). Verified 2026-07-05:
+> automaton (old EOA 0xa3CDd4, onboarded in a prior session) trades with the EXACT same
+> scripts that FAIL for Franklin (fresh EOA 0x3EcCAD24 minted by #26). Deploy method,
+> wallet_type (DEPOSIT_WALLET/sig3), funding ($5.95 > automaton's $4.95) are all IDENTICAL —
+> the only difference is backend registration of the EOA. Source: Polymarket/py-clob-client-v2
+> issues #70/#77/#87/#91 (crp4222, running in production) + our own A/B on identical scripts.
+>
+> ★ THE REPEATABLE FIX (must run ONCE per fresh instance EOA, human-zero): onboard the EOA to
+>   Polymarket so the backend registers the EOA↔deposit-wallet pair. crp4222's verified recipe:
+>   "if the wallet never touched the app, log in with it and do ONE manual action, then derive
+>   again." Practically = drive polymarket.com in CloakBrowser with THIS instance's EOA
+>   (connect wallet → the app deploys+registers the sig-3 deposit wallet) ONCE, before any API
+>   trade. Bake this onboarding step into the spawn/born-with flow so every self-funded AI is
+>   registered at birth. Until then, a fresh instance funds fine but cannot place CLOB orders.
+
+
 The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the
 market fetch, x402-paid AI analysis, Kelly sizing, and live execution (py-clob-client, EOA
 `signature_type=0`). ★ Its `generate_recommendations` shipped as a STUB (hardcoded prob 0.55, ignored the
