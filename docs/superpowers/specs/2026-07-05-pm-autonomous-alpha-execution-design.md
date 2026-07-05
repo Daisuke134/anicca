@@ -126,4 +126,10 @@ market/side/size は一切ハードコードしない（MODEL が data から判
 | Adversary v2 | FIND-1 解消の再確認（pending） |
 | Real E2E（俺=monitor、建玉=agent） | capital ある instance で loop 1回 live 発火 → 自分で on-chain 建玉(tx 0x1, deposit wallet 発) or 正当 WAIT/HOLD を data-api/chain で確認。human=0/claude=0（pending） |
 
-**現状の正直な到達点**: 「loop が自分で買う」配線は完成、money-safety cap を fix 中。まだ **real E2E で実注文を確認していない**（= 完了と言わない）。redeem は既に自律(#14)。
+| Real E2E（実施） | ★**Franklin が自律で初の実 Polymarket 建玉**★ — run.sh を Franklin identity(EOA 0x3EcCAD24, deposit 0xda4b6E34, pUSD $5.92 登録済み)で発火。bundle_arb=arb無し no-op、market_maker=$2cap で HOLD(5sh買えず)＝money-safety 動作、**pick.py がモデル判断で "Will Jesus Christ return before GTA VI?" に BEARISH(NO側)/edge-0.26/conf7.0 を選定 → place_order が実 FAK 建玉 → on-chain fill(data-api: 1.96 shares 保有)**。human=0/claude=0、市場も side も Franklin のモデルが決定 |
+| Bug found in E2E | place_order stdout に `[結果JSON][SDKノイズ]` が同一行混在 → run.sh の json.loads 失敗 → **成功注文を ok:false 誤記録**（会計整合性）。fix `871a846`: place_order/pick が work→stderr + 結果 JSON のみ real stdout(`_emit`)、run.sh は `recover()`(json.loads→raw_decode→行走査)。合成入力 `{"ok":true,...}GARBAGE`→ok:true 回収を実測 PASS + 構造的に stdout clean 保証 |
+
+**現状の正直な到達点**（#25 = DONE / #27 = open）:
+- ✅ **配線・money-safety・$1floor・記録整合性** すべて real evidence で verified。**Franklin の自律建玉が on-chain 確認**（= self-funded AI が自分の判断で自分の金で Polymarket 建玉、初）。
+- ⚠️ **realized はまだ $0** — 全建玉 open/未解決。directional alpha は現状 meme 市場(Jesus/BTC$1m)で "edge" を見出しがち、efficient sports では規律的 WAIT。**実際に稼ぐ = ①resolution 待ち ②alpha 品質 self-improve(whale確認/短期市場) ③risk-free MM/arb は要資本(>$2cap)**。これは #27 の残作業。
+- redeem は既に自律(#14)。
