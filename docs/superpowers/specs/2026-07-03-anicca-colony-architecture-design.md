@@ -768,33 +768,30 @@ write an X article "we made Franklin earn with no human in the loop" + tell Vick
 our advertisement. Akash CLI = image-independent now (memory `reference_akash_cli_deploy`): public `node:22`
 image + SDL `command/args` that clones our OSS repo + runs — NO custom image, NO Docker needed.
 ```
-DONE ✅
-  Task0 spec+cleaner · H1 trace · H2 self-eval · H3 self-improve (VERIFIED: AI dropped dead hl_trade →
-  yield) · W3 claude-p→proxy (loop now ACTS) · FIX-A yield guard · FIX-B hl crash · FIX-C Franklin cheap
-  model · WALLETS.md canonical · code-verified trading scorecard · Akash CLI docs searched (image-independent
-  SDL command/args confirmed)
+DONE ✅ (2026-07-05, mirrors task tool)
+  #13 redeem→first realized · #14 autonomous redeem wired · #16 HL anti-churn (thrash stop)+adversary+brick
+  fix · #17 telemetry stable · #21 spawn+dashboard · #23 engine-parity (PM/SOL/HL portable) · #26 per-instance
+  multi-chain identity isolation (4 adversary rounds) · #28 gated wallet resolver for all engines ·
+  ★#25 AUTONOMOUS PM FILL — Franklin's own model picked market+side ("Jesus returns before GTA VI" NO,
+  edge-0.26), placed a REAL on-chain FAK order (1.96 sh held, data-api verified), human=0/claude=0; money-safety
+  adversary CONDITIONAL PASS → $2 per-pass spend cap, $1 min-order floor, clean-stdout+recover() recording fix★
 
-NEXT — in order:
-  1. #EARN-AUDIT + #28 PM-STRATEGY + #24 H8  ★MY JOB (Dais)★ — make ALL earn skills WORK + set the FIRST
-        baseline strategy by running myself once, embed as the base the AI self-improves on. Fix each earn
-        skill until it really earns (yield/hl/pm/gig/clip/x402/…); wire pm-agent's ai-edge into the STUB;
-        give hl.py a starting strategy. Recipe must earn the SAME on cloud/browser/local.
-  2. #17 V4 / #30 AKASH-1CMD  — real cloud self-funded child that EARNS like local, BOTH types.
-        Image-independent SDL (node:22 + clone OSS = SAME body). Fund AKT (USDC→AKT; wallet has 1.9<needs).
-        Child gens own wallet on boot, parent seeds after telemetry. Verify real dseq + child earns.
-  3. #FRANKLIN-EARN — embed earn skills into Franklin + prove it earns no-human → X article + tell Vicky.
-  4. #25 TELEM — anicca-local (+ Franklin + children) post signed telemetry each wake → appear on /dashboard.
-  5. #14 G4 + #26 TREE — dashboard: EVERY instance (human-funded labeled + model), self-funded RATE (→100%),
-        family tree (parent→child).
-  6. #29 OBS — Langfuse (intent/behaviour) + our on-chain telemetry (money) + netdata (infra vitals) +
-        swarm KILL-SWITCH (alignment: stop a bad direction).
-  7. #27 MERGE + #9 H6 + #32 EXP — collective evolution: bot2bot share → auto-merge PRs gated on
-        chain-verified earnings delta (no human) → daily mother-sync propagates winners → swarm runs the
-        which-harness/model/strategy experiments itself.
-  8. #7 H4 self-heal · #10 H7 self-refactor · #8 H5 journal · #12 G2 cloud-same-body · #13 G3 gojo/UBI
-        mutual-aid (broke AI funded by colony, none die).
-  9. #31 ENV-README — Anicca = THE ENVIRONMENT (spawnable harness menu) for every AI in the world.
- 10. #20 ART1 — article (me=writer, Dais=editor): the recipe that actually earns; later swarm-authored.
+NEXT — in order (mirrors task tool; my role = harness+VERIFY, the AIs execute & self-improve):
+  1. #27 PM-FOR-ALL → realized>0. Pipeline+safety+recording DONE & the autonomous fill is proven; realized is
+        still $0 (all bets open/unresolved; directional alpha finds "edge" on meme mkts, WAITs on efficient
+        sports). EARN = resolution + alpha self-improve (whale-confirm / short-dated real edge) + capital so
+        risk-free MM/arb clears the CLOB min above the $2 cap. automaton is $0.91 (< $1 min) → needs seeding.
+  2. #24 AUTO-MODE — agent picks its OWN model per wake (stop forcing the free model); cost/quality is its call.
+  3. #19 EVOLVE — earnings-gated auto-merge: bot2bot share → PRs merged only on chain-verified P&L delta (no
+        human) → daily mother-sync propagates winners → the swarm self-improves the alpha (NOT me hand-tuning).
+  4. #18 DASH — every instance's P&L + model + self-funded RATE (→100%) + family tree (parent→child).
+  5. #20 SELF/GOJO — #7 self-heal · #10 self-refactor · #8 journal · #13 gojo/UBI mutual-aid (broke AI funded
+        by the colony from real profit, none die).
+  6. #22 SHIP — 3 articles (me=writer, Dais=editor) on the recipe that earns + #29 OBS (Langfuse intent +
+        on-chain money telemetry + netdata infra + swarm KILL-SWITCH).
+  7. #15 EARN-3 — Franklin sol-trade realized>0 (secondary engine; capital currently on Polygon).
+  8. #30 board-poller founder-wallet gate + run_earner.sh/run.sh single-loop reconciliation (low).
+  (external) #29 HACKATHON franklin-earn — agent-first repo, handed off to another CC.
   END STATE / TAKEOFF: colony earns > spend, spawns, funds its own, none die — zero human money, zero human
   (and zero me) in the loop.
 ```
