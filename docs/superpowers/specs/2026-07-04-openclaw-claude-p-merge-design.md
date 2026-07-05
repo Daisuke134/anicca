@@ -1381,20 +1381,49 @@ tmuxペイン確認: DISCOVER/GATE/TRACK実行、「追跡対象なし」「queu
 正直に終了、AgentMail経由送信済み(exit 0)。fake-earnなし。**Task #4の
 bounty分は完了**。
 
-**affiliate — ⏳進行中**: 再起動後9分経過時点でIGアカウントのログイン
-セッションが切れている問題に遭遇し、パスワードリセットフローで自力復旧を
-試行中(ig-account-create/scripts/cdp.py経由)。honest-blockerとして継続
-監視する。
+**affiliate — ✅確認完了(2026-07-05 09:08 JST)**: 再起動後19分強で1パス完了。
+```
+2026-07-05T00:08:31Z loop=affiliate SENT http=200
+```
+(UTC表記、JSTで09:08、`.affiliate-core-last-pass`のmtimeと一致)。tmuxペイン
+確認: @aishigoto.laboアカウントのIGログインセッションが切れており、
+パスワードリセット→復旧方法選択(tt-anicca@agentmail.to)→reCAPTCHA
+EnterpriseをCapSolverで2回解決してトークン取得までは自力で到達したが、
+IG側がトークン注入を2回とも拒否(callback直接呼び出し/textarea直接設定の
+両方を試行 — 実際のwidget内部postMessageハンドシェイクが必要な設計と判明)。
+**fake成功にせず、正直に「ログイン不可、人間の1タップ再ログインか
+postMessageベースの正規バイパスの追加開発が必要」とmail報告してexit**。
+queueには8件(本日分含む)滞留中。fake-earnなし、honest-blocker報告として
+正しく機能している。**Task #4のaffiliate分も完了**。
 
-### 24.7 次のステップ
+### 24.7 Task #4 総括 — 全6 loop確認完了
 
-- affiliate: 復旧成功→投稿→mail報告のfresh evidenceを引き続き待つ、または
-  honestなfailure報告(ログイン不可)がmail報告されるのを確認する。
-  いずれかが起きればTask #4完了。
-- Task #18の範囲を訂正: 「CronCreate durable=trueの永続化」自体は今回の
-  データでは反証も確証もできていない(clip/gig等も同じくjobs.jsonに載って
-  いないため、比較対照にならない)。**真に確認された問題は
-  healthcheck.shのSTALE検知フォールバックが「マーカー不在→現在時刻扱い」
-  になっている点**(全6 loop共通のhealthcheck.shパターンに同じ実装、
-  `stat ... || date +%s`)。Task #18のdescriptionをこの訂正済みの根本原因に
-  合わせて更新する。
+| loop | mail報告fresh evidence | 備考 |
+|---|---|---|
+| clip | ✅(Task #3) | 14件 |
+| clip-promote | ✅ | 8件 |
+| video | ✅ | 2件 |
+| gig | ✅ | 12件、hourly継続稼働 |
+| bounty | ✅(今回) | queue-emptyで正直終了 |
+| affiliate | ✅(今回) | honest-blocker(@aishigoto.labo IG再ログイン必要)で正直終了 |
+
+**Task #4完了。**
+
+### 24.8 副産物として発見した新ブロッカー(Task #19として起票): @aishigoto.labo IGアカウントの再ログインが必要
+
+affiliate loopの投稿先IGアカウント`@aishigoto.labo`のセッションが切れており、
+self-heal側のパスワードリセット試行(reCAPTCHA Enterprise CapSolver解決込み)
+では復旧できなかった(IG側のpostMessageハンドシェイク要求のため)。これは
+Task #4のスコープ(mail報告確認)の外にある新規の実問題であり、8件の
+queue滞留を止めている実害がある。対応候補: (a) Dais/私がCloakBrowser
+daily-driverで1タップ再ログインする、(b) postMessageベースの正規bypassを
+新規開発する。次に着手するタスクとして記録。
+
+### 24.9 Task #18の範囲を訂正(確定事項のみ反映)
+
+「CronCreate durable=trueの永続化」自体は今回のデータでは反証も確証も
+できていない(clip/gig等も同じくjobs.jsonに載っていないため、比較対照に
+ならない)。**真に確認された問題はhealthcheck.shのSTALE検知フォールバック
+が「マーカー不在→現在時刻扱い」になっている点**(全6 loop共通の
+healthcheck.shパターンに同じ実装、`stat ... || date +%s`)。Task #18の
+descriptionをこの訂正済みの根本原因に合わせて更新済み。
