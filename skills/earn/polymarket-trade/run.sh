@@ -46,6 +46,16 @@ if [ -z "${POLYGON_WALLET_PRIVATE_KEY:-}" ] && ! grep -q '^POLYGON_WALLET_PRIVAT
   unset RESOLVED_EVM_KEY
 fi
 
+# #27: ensure THIS instance's deposit wallet is REGISTERED via the bridge Collateral Onramp (idempotent)
+# + approve the neg-risk spenders, so EVERY self-funded AI can trade on Polymarket from birth. Registry
+# gate is the CONFIRMED root cause of "error resolving address" — never raw-deploy + raw-transfer pUSD;
+# always fund THROUGH the bridge (see SKILL.md "DEPOSIT-WALLET REGISTRY GATE" + fund_via_bridge.py).
+# Best-effort / non-blocking: an already-registered wallet just re-approves; an unfunded one no-ops.
+if [ -f "$SKILL_DIR/fund_via_bridge.py" ] && [ -x "$AGENT_HOME/.venv/bin/python" ]; then
+  "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/fund_via_bridge.py" >> "$TRACE" 2>&1 \
+    || echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"register-skip\"}" >> "$TRACE"
+fi
+
 # money-safety guard #2: per-trade cap lives in the agent's own config
 # (.env MAX_BET_PERCENTAGE × INITIAL_BANKROLL, plus executor MAX_BET_SIZE).
 cd "$AGENT_HOME"
