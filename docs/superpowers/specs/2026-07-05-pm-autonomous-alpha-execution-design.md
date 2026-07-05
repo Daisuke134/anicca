@@ -133,3 +133,11 @@ market/side/size は一切ハードコードしない（MODEL が data から判
 - ✅ **配線・money-safety・$1floor・記録整合性** すべて real evidence で verified。**Franklin の自律建玉が on-chain 確認**（= self-funded AI が自分の判断で自分の金で Polymarket 建玉、初）。
 - ⚠️ **realized はまだ $0** — 全建玉 open/未解決。directional alpha は現状 meme 市場(Jesus/BTC$1m)で "edge" を見出しがち、efficient sports では規律的 WAIT。**実際に稼ぐ = ①resolution 待ち ②alpha 品質 self-improve(whale確認/短期市場) ③risk-free MM/arb は要資本(>$2cap)**。これは #27 の残作業。
 - redeem は既に自律(#14)。
+
+## 8. 🔴 CRITICAL money-safety finding (#27 deploy 中に発覚、2026-07-05)
+
+**bug**: `run.sh` の identity block は「共有 agent .env(`~/.anicca-founder/.env`)に POLYGON_WALLET_PRIVATE_KEY があれば resolve-identity をスキップ」する。この共有 .env の鍵 = **0x810f = claude-p の EOA**（その Polymarket deposit = 0x904B50d2）。→ automaton/Franklin の agent が（鍵を明示 export せず）earn を回すと、**自分の EOA でなく claude-p の 0x810f で署名 → claude-p の wallet で建玉する cross-instance leak**。実測確認: ANICCA_HOME=~/.anicca + 鍵未 export で earn python は `0x810F…` を解決（automaton 0xa3CDd4 でなく）。Franklin の E2E が正しく動いたのは俺が鍵を明示 export したから。claude-p 自身の run_earner.sh 経路は 0x810f=自分の EOA なので無事。
+
+**暫定対応**: 両 self-funded body(`~/.anicca`,`~/.blockrun`)の `polymarket-trade/KILL` を touch して earn を停止（誤 wallet 建玉を防ぐ）。
+
+**恒久 fix（VCSDD）**: `run.sh` identity block を「まず resolve-identity(ANICCA_HOME) を解決して export（instance 自身の EOA を使う）、resolve-identity が空のときだけ agent .env にフォールバック」に変更。#28 の EFFECTIVE_HOME gating で foreign home は空を返す（fail-closed）。検証 = automaton→0xa3CDd4(deposit 0x2953)/Franklin→0x3EcCAD24(deposit 0xda4b)/claude-p→0x810f(deposit 0x904B、不変)を各々が使うことを実測 + fresh adversary。PASS 後に KILL 解除。
