@@ -1,13 +1,15 @@
 #!/bin/bash
-# pm-trade run.sh — THIN HARNESS. THIS FILE DECIDES NOTHING. (spec §0.25)
-# The base agent (BlockRunAI/polymarket-agent) does its OWN analysis / sizing /
-# execution with its OWN wallet. This wrapper only: kill-switch gate → one real
-# live pass (NO dry-run, HARD 0.24) → append a structured trace line (H1).
+# pm-trade run.sh — THIN HARNESS. THIS FILE DECIDES NOTHING. (spec §0.25, #25)
+# pick.py (the model: multi-model consensus + smart-money/whale signal) decides
+# WHICH market/side/amount; place_order.py executes the working V2 FAK flow with
+# THIS instance's own wallet. This wrapper only: kill-switch gate → identity/
+# registration → one real live pass (NO dry-run, HARD 0.24) → structured trace (H1).
 set -u
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SKILL_DIR/../state"; mkdir -p "$STATE_DIR"
 TRACE="$STATE_DIR/pm-trade.trace.jsonl"
 AGENT_HOME="${PM_TRADE_AGENT_HOME:-$HOME/.anicca-founder/agents/polymarket-agent}"
+export PM_TRADE_AGENT_HOME="$AGENT_HOME"
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
@@ -56,27 +58,112 @@ if [ -f "$SKILL_DIR/fund_via_bridge.py" ] && [ -x "$AGENT_HOME/.venv/bin/python"
     || echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"register-skip\"}" >> "$TRACE"
 fi
 
-# money-safety guard #2: per-trade cap lives in the agent's own config
-# (.env MAX_BET_PERCENTAGE × INITIAL_BANKROLL, plus executor MAX_BET_SIZE).
-cd "$AGENT_HOME"
-OUT=$(printf 'yes\n' | timeout 900 .venv/bin/python main.py --live 2>&1); RC=$?
-echo "$OUT" | tail -40
-
-TRADES=$(echo "$OUT" | sed -n 's/.*Trades executed: \([0-9][0-9]*\).*/\1/p' | tail -1)
-TAIL_ERR=""
-[ "$RC" -ne 0 ] && TAIL_ERR=$(echo "$OUT" | tail -3 | tr '\n' ' ')
-
-TRACE_FILE="$TRACE" RC="$RC" TRADES="${TRADES:-}" ERR="$TAIL_ERR" python3 - <<'PY'
+# append_strategy_trace <action> <output-text> <exit-code> — one structured
+# trace line per strategy pass (H1). Shared by the two EXISTING working
+# strategies below (bundle_arb.py / market_maker.py print human-readable
+# text, not JSON, so we tail their output rather than re-parse it).
+append_strategy_trace() {
+  ACTION="$1" OUT_TEXT="$2" RC="$3" TRACE_FILE="$TRACE" python3 <<'PY'
 import json, os, datetime
 rec = {
     "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "slot": "earn/pm-trade",
-    "action": "live-pass",
+    "action": os.environ["ACTION"],
     "exit": int(os.environ["RC"]),
-    "trades": int(os.environ["TRADES"]) if os.environ["TRADES"] else None,
-    "error": os.environ["ERR"] or None,
+    "output_tail": os.environ["OUT_TEXT"].strip().splitlines()[-6:],
 }
 with open(os.environ["TRACE_FILE"], "a") as f:
     f.write(json.dumps(rec, ensure_ascii=False) + "\n")
 PY
-exit "$RC"
+}
+
+# BASE STRATEGY #2 — risk-free bundle arbitrage scan (bundle_arb.py, EXISTING
+# working alpha, unchanged — do not reinvent). Self-gating: no-ops ("no
+# risk-free bundle arb ≥0.5% right now") when the market is efficient; buys
+# both legs (FOK) only on a real locked edge.
+ARB_OUT=$(timeout 200 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/bundle_arb.py" 2>&1); ARB_RC=$?
+echo "$ARB_OUT" | tail -10
+append_strategy_trace "bundle-arb" "$ARB_OUT" "$ARB_RC"
+
+# BASE STRATEGY #1 — maker-bundle quoting (market_maker.py, EXISTING working
+# alpha, unchanged). Self-gating: HOLDs ("cash < one min bundle") instead of
+# spamming failed orders when underfunded; else cancel-and-replace resting
+# post-only quotes.
+MM_OUT=$(timeout 200 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/market_maker.py" 2>&1); MM_RC=$?
+echo "$MM_OUT" | tail -10
+append_strategy_trace "market-maker" "$MM_OUT" "$MM_RC"
+
+# DIRECTIONAL AUTONOMOUS BUY (#25, NEW — the genuinely-missing piece): pick.py
+# (multi-model consensus + smart-money/whale signal picks market/side/size,
+# fail-closed to WAIT) -> place_order.py (generalized working V2 FAK exec).
+# money-safety guard #2: per-trade cap enforced in pick.py (Kelly size, capped)
+# AND again in place_order.py (AMOUNT<=MAX_BET_SIZE, default $2). Neither the
+# market nor the side is ever decided here — only the model (pick.py) decides.
+PICK_OUT=$(timeout 300 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/pick.py" 2>>"$TRACE"); PICK_RC=$?
+
+if [ "$PICK_RC" -ne 0 ] || [ -z "$PICK_OUT" ]; then
+  echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"error\",\"error\":\"pick.py failed rc=$PICK_RC\"}" >> "$TRACE"
+  exit 0
+fi
+
+# Parse pick.py's one-line JSON. WAIT -> trace + exit 0 (no-churn, no trade).
+# Trade -> print a single TAB-separated line the shell can `read` (no bash
+# JSON dependency); this is bookkeeping/parsing of a fixed format, not judgment.
+DECISION=$(PICK_JSON="$PICK_OUT" TRACE_FILE="$TRACE" python3 <<'PY'
+import json, os, datetime
+
+def now():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+def clean(v):
+    return str(v).replace("\t", " ").replace("\n", " ")
+
+try:
+    pick = json.loads(os.environ["PICK_JSON"])
+except Exception as e:
+    pick = {"action": "WAIT", "reason": f"unparseable-pick-output:{e}"}
+
+if pick.get("action") == "WAIT":
+    rec = {"ts": now(), "slot": "earn/pm-trade", "action": "wait", "reason": pick.get("reason")}
+    with open(os.environ["TRACE_FILE"], "a") as f:
+        f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+    print("WAIT")
+else:
+    fields = [clean(pick.get(k, "")) for k in
+              ("token_id", "side", "amount", "market", "end_date", "edge", "confidence", "consensus")]
+    print("TRADE\t" + "\t".join(fields))
+PY
+)
+
+if [ "$DECISION" = "WAIT" ]; then
+  exit 0
+fi
+
+IFS=$'\t' read -r _ TOKEN_ID SIDE AMOUNT MARKET END_DATE EDGE CONFIDENCE CONSENSUS <<< "$DECISION"
+export TOKEN_ID SIDE AMOUNT
+
+ORDER_OUT=$(timeout 120 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/place_order.py" 2>>"$TRACE"); ORDER_RC=$?
+
+ORDER_JSON="${ORDER_OUT:-{}}" MARKET="$MARKET" END_DATE="$END_DATE" EDGE="$EDGE" CONFIDENCE="$CONFIDENCE" CONSENSUS="$CONSENSUS" RC="$ORDER_RC" TRACE_FILE="$TRACE" python3 <<'PY'
+import json, os, datetime
+try:
+    order = json.loads(os.environ["ORDER_JSON"])
+except Exception as e:
+    order = {"ok": False, "error": f"unparseable place_order output: {e}"}
+rec = {
+    "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+    "slot": "earn/pm-trade",
+    "action": "trade",
+    "market": os.environ.get("MARKET"),
+    "end_date": os.environ.get("END_DATE"),
+    "edge": os.environ.get("EDGE"),
+    "confidence": os.environ.get("CONFIDENCE"),
+    "consensus": os.environ.get("CONSENSUS"),
+    "exit": int(os.environ["RC"]),
+    "order": order,
+}
+with open(os.environ["TRACE_FILE"], "a") as f:
+    f.write(json.dumps(rec, ensure_ascii=False) + "\n")
+PY
+
+exit "$ORDER_RC"
