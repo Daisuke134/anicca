@@ -79,17 +79,24 @@ restart() {
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "clip-core DEAD"
 elif [ ! -f "$HB" ]; then
-  # NOTE: if $START itself is missing (e.g. a session started before this healthcheck
-  # version existed), fall back to "now" (age=0) instead of epoch-0 — epoch-0 made
-  # START_AGE ~30M minutes and triggered an immediate false restart (caught same session).
-  START_MTIME="$(stat -f %m "$START" 2>/dev/null || date +%s)"
-  START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
-  if [ "$START_AGE" -ge "$STALE_MIN" ]; then
-    restart "clip-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+  if [ ! -f "$START" ]; then
+    # $START marker itself missing (e.g. wiped by external cleanup). Both "now" and epoch-0
+    # fallbacks caused real incidents (now = STALE detection permanently disabled; epoch-0 =
+    # immediate false restart of a healthy session). Don't guess: reseed the marker now and
+    # let the NEXT healthcheck pass (5min later) measure from a real timestamp. A genuinely
+    # stuck session is still caught within STALE_MIN of this reseed.
+    touch "$START"
+    echo "$(date '+%F %T') clip-core: .last-start marker missing -- reseeded now, will re-check next pass" >> "$LOG"
   else
-    echo "$(date '+%F %T') clip-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+    START_MTIME="$(stat -f %m "$START")"
+    START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
+    if [ "$START_AGE" -ge "$STALE_MIN" ]; then
+      restart "clip-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+    else
+      echo "$(date '+%F %T') clip-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+    fi
   fi
-elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || date +%s)) / 60 ))" -ge "$STALE_MIN" ]; then
+elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
   restart "clip-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
   echo "$(date '+%F %T') clip-core ALIVE+fresh" >> "$LOG"

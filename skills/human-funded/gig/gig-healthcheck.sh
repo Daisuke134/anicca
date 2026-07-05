@@ -13,7 +13,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 # healthchecks — see clip-healthcheck.sh for the full writeup).
 set -uo pipefail
 SOCK="/tmp/anicca-gig-tmux.sock"; SESSION="anicca-gig-core"
-HB="$HOME/gig/.last-pass"; STALE_MIN=90
+HB="$HOME/gig/.last-pass"; START="$HOME/gig/.last-start"; STALE_MIN=90
 LOG="$HOME/.openclaw/logs/gig-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/gig/.restart-log"
 
@@ -53,13 +53,23 @@ elif [ ! -f "$HB" ]; then
   # .last-pass is created ONLY by a COMPLETED pass (NOT at startup — startup seeds .last-start).
   # So a missing .last-pass right after boot is normal; give a grace window since .last-start before
   # treating "never completed a pass" as a failure (else we'd kill the core mid-first-pass = restart loop).
-  START_AGE="$(( ($(date +%s) - $(stat -f %m "$HOME/gig/.last-start" 2>/dev/null || echo 0)) / 60 ))"
-  if [ "$START_AGE" -ge "$STALE_MIN" ]; then
-    restart "gig-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+  if [ ! -f "$START" ]; then
+    # $START marker itself missing (e.g. wiped by external cleanup). An epoch-0 fallback here
+    # (as this file used to have) made START_AGE ~30M minutes and triggered an immediate false
+    # restart of a healthy session; a "now" fallback (as the other 5 loops' healthchecks used)
+    # instead permanently disables STALE detection. Don't guess: reseed the marker now and let
+    # the NEXT healthcheck pass (5min later) measure from a real timestamp.
+    touch "$START"
+    echo "$(date '+%F %T') gig-core: .last-start marker missing -- reseeded now, will re-check next pass" >> "$LOG"
   else
-    echo "$(date '+%F %T') gig-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+    START_AGE="$(( ($(date +%s) - $(stat -f %m "$START")) / 60 ))"
+    if [ "$START_AGE" -ge "$STALE_MIN" ]; then
+      restart "gig-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+    else
+      echo "$(date '+%F %T') gig-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+    fi
   fi
-elif [ "$(( ($(date +%s) - $(stat -f %m "$HB" 2>/dev/null || echo 0)) / 60 ))" -ge "$STALE_MIN" ]; then
+elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
   # FIND-005: -ge to match auditor's >=90 threshold exactly
   restart "gig-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
