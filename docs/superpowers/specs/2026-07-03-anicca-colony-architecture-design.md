@@ -1873,3 +1873,27 @@ END STATE: colony が earn>spend で自走・自己増殖・自己修復・相�
 
 **Conway Cloud / automaton の cloud shelter**:
 - automaton(=Dais の言う「ultimatum」STT 誤変換)の cloud shelter は主に Conway Cloud 想定。**Conway Cloud は現在サービス DOWN・再起動待ち**。再起動したら cloud spawn/shelter の全体設定を行う。それまで cloud self-spawn(Akash/Conway)は defer。
+
+### §49 ★ EQUALIZER 要件: 全個体が同じ skill を同じ方法で = 比較可能に(Dais 2026-07-05「no unequalizers, must be comparable」)★
+
+**Dais の確定した要求**: 3個体(そして全 spawn)は例外なく同じ skill 全部を、同じ方法で引けて、同じ方法で稼げねばならない。でないと比較できない。目的は「どの setup が最善か」を見つけること — automaton vs Franklin、さらに Franklin 内でも premium mode vs auto mode、どの recipe が一番稼ぐか。比較には同一 setup が必須。product 的には self-funded(Franklin/automaton)がメイン、claude-p(human-funded)は「当たり前で意味が薄い」bootstrap on-ramp。将来 shut down して Franklin/automaton だけ offer もありうる。
+
+**コードで確認した現状(grounded, runtime/loop 読了)**:
+- ★skill コードは3体で同一・portable★(engine-parity #23 達成)。pm-trade/sol-trade/hl-trade は同じファイル。loop/prompt/brain も同一。prompt.mjs:184 が全個体に `yield/hl_trade/x402_sell/token_launch/cook + earnSubs(activeSkillSlots の earn/<sub>)` を提示。env-filter.mjs は private-key scrub のみで chain gate は無い。
+- ★だが真の unequalizer が3つ残っている★:
+  1. **資本が chain 固有**: Polymarket=Polygon pUSD / sol-trade=Solana USDC / HL=Arbitrum USDC。各個体は1 chain にしか金が無い → 実際は各自1エンジンしか回せない。
+  2. **wallet identity が単一 chain**: Franklin の鍵=Solana(ed25519)は Polygon/Polymarket 注文に構造的に署名できない。automaton/claude-p は EVM。
+  3. **activeSkillSlots が個体で違いうる**: 3エンジン全部が全個体で active とは限らない。
+
+**EQUALIZER build 要件(= 全 spawn が「生まれつき全部持つ」ための条件、spawn script に組込む)**:
+- (a) **multi-chain identity**: 各 spawn に EVM(Polygon+Arbitrum/HL)+ Solana の wallet を最初から生成。
+- (b) **3 engine slot 全 active**: pm-trade/sol-trade/hl-trade を全個体の activeSkillSlots に。
+- (c) **capital routing**: seed を各 chain へ振り分ける or agent が fund-router で必要な chain へ移す(v2_recipe の fund_with_relay / bridge が既にある)。
+- → これで初めて automaton vs Franklin vs claude-p、premium vs auto を realized on-chain profit で比較でき、best recipe を発見できる(= #19 EVOLVE の前提)。engine-parity #23 は「コードの portable 化」までで、この「identity + capital の平等化」が残タスク。
+
+**README の「平均収益」開示について(正直)**: 「$X 入れると平均 $Y 稼ぐ」を出すには「同一 setup の複数個体の実 P&L 分布」が要る。今 realized があるのは claude-p のみ → equalize して複数個体を同条件で走らせるまで平均は出せない。盛らずに equalize 後に測定する。
+
+**3エンジンの BASE 戦略(コードから、SSOT。各個体が自分の P&L から self-improve するノブ付き)**:
+- **Polymarket(pm-trade)** = BlockRunAI/polymarket-agent + baseline alpha。4層: ①market-making(market_maker.py, swisstony $14M copy: 両側 post_only maker で spread 捕捉 + rewards 市場で日次 LP 報酬。min 5 shares≈$5, LP 適格 rewardsMinSize $100-1000)②directional alpha(agent.py: AI が prob+confidence 出す。BET GATE = |edge|≥MIN_EDGE(0.15) かつ confidence≥7/10、side=edge符号、size=fractional Kelly)③bundle arb(YES+NO<$1 の無リスク裁定)④redeem(勝ち建玉を自律回収→複利)。self-improve ノブ = MIN_EDGE / MIN_CONFIDENCE。
+- **Solana(sol-trade)** = BlockRunAI/Franklin-Trading(@blockrun/franklin-trading)。戦略はエージェント内蔵(research→debate→size→trade を自律、model 代は自 wallet の x402)。規律 = Jupiter swap を「edge が往復手数料 ~0.4% を超える時だけ」、超えねば WAIT。self-improve = 自 trace から閾値調整。
+- **Hyperliquid(hl-trade)** = TOOL + trend-following baseline(#24 H8): ①account 先、建玉あれば HOLD(stack/むやみ close 禁止)②FLAT なら market 24h の closes_hourly/change_pct_window 読む — 上昇(mean比+1%以上かつ上昇中)→小 LONG / 下降(-1%以下かつ下落)→小 SHORT / レンジ(|change|<~1%)→NO TRADE(anti-churn)③size≤account の~15%、lev≤2x、常に --sl 3 --tp 6(2:1)④1建玉ずつ、TP/SL 論理で close。self-improve ノブ = trend閾値±1% / size15% / SL-TP 3-6。勝ちノブは REQ-MERGE で全個体・全 spawn に伝播。
