@@ -1897,3 +1897,34 @@ END STATE: colony が earn>spend で自走・自己増殖・自己修復・相�
 - **Polymarket(pm-trade)** = BlockRunAI/polymarket-agent + baseline alpha。4層: ①market-making(market_maker.py, swisstony $14M copy: 両側 post_only maker で spread 捕捉 + rewards 市場で日次 LP 報酬。min 5 shares≈$5, LP 適格 rewardsMinSize $100-1000)②directional alpha(agent.py: AI が prob+confidence 出す。BET GATE = |edge|≥MIN_EDGE(0.15) かつ confidence≥7/10、side=edge符号、size=fractional Kelly)③bundle arb(YES+NO<$1 の無リスク裁定)④redeem(勝ち建玉を自律回収→複利)。self-improve ノブ = MIN_EDGE / MIN_CONFIDENCE。
 - **Solana(sol-trade)** = BlockRunAI/Franklin-Trading(@blockrun/franklin-trading)。戦略はエージェント内蔵(research→debate→size→trade を自律、model 代は自 wallet の x402)。規律 = Jupiter swap を「edge が往復手数料 ~0.4% を超える時だけ」、超えねば WAIT。self-improve = 自 trace から閾値調整。
 - **Hyperliquid(hl-trade)** = TOOL + trend-following baseline(#24 H8): ①account 先、建玉あれば HOLD(stack/むやみ close 禁止)②FLAT なら market 24h の closes_hourly/change_pct_window 読む — 上昇(mean比+1%以上かつ上昇中)→小 LONG / 下降(-1%以下かつ下落)→小 SHORT / レンジ(|change|<~1%)→NO TRADE(anti-churn)③size≤account の~15%、lev≤2x、常に --sl 3 --tp 6(2:1)④1建玉ずつ、TP/SL 論理で close。self-improve ノブ = trend閾値±1% / size15% / SL-TP 3-6。勝ちノブは REQ-MERGE で全個体・全 spawn に伝播。
+
+### §50 ★ MASTER TODO 更新(§46 を上書き): Polymarket for ALL = spine(Dais 2026-07-05「inequality ゼロ」)★
+
+Dais 確定: Polymarket が最善・唯一の realized 実証済み → 全個体(特に Franklin/automaton)が使えること。inequality ゼロ。→ タスクを平等化 spine で再構成:
+
+```
+DONE ✅
+  #13 EARN-1  初 realized(Morocco redeem)
+  #14 EARN-2  loop 自律 redeem($5.99, tx 0xd33b09c8, 複利起動)
+  #17 TELEM   claude-p dashboard 3/3 恒久
+  #21 ENV-README 3タイプ spawn + dashboard 自動接続
+  #23 ENGINE-PARITY 3エンジン code portable(§39)
+  (#18 の activity+revenue real-time サブ = §47 で完了・実ブラウザ verify)
+
+NEXT — in order(★=平等化 spine、稼ぐ核):
+  ★#26 EQUALIZE      全 spawn を multi-chain identity + 全 engine slot で born-with-all(inequality ゼロ)
+  ★#27 PM-FOR-ALL    automaton+Franklin が実 Polymarket 建玉→realized(#26 依存、Polymarket を主力に)
+   #16 EARN-4        automaton HL 副エンジンを +EV に(thrash 停止, H8 baseline)
+   #15 EARN-3        Franklin 副エンジン sol-trade realized(#26 依存、主力は #27)
+   #18 DASH-eval     全個体 model×realized-P&L 比較 page + family tree + self率(#19 の眼、HL過小表示 fix)
+   #24 AUTO-MODE     agent が自分でモデル選択(premium vs auto を比較可能に)
+  ★#19 EVOLVE        全個体同一setupで比較→勝ち recipe を earnings-gated auto-merge(#27 依存、自走の核)
+   #20 SELF-*/GOJO   self-heal/refactor/journal + 稼いだ利益で実 UBI/gojo
+   #22 SHIP          記事3本(Dais LGTM後)+ OBS(Langfuse/netdata/kill-switch)
+   #25 BET-RESEARCH  franklin-bet 予測engineで PM directional 勝率↑(enhancement, 統合方法 Dais判断)
+  DEFER: cloud self-spawn = Conway 復帰待ち / Akash 資金 gated
+
+依存: #26 → #27 → #19。比較(#18/#19)は全個体が同一 engine(Polymarket)で走って初めて成立。
+END STATE: self-funded 個体が humans なしで Polymarket 等で稼ぎ、勝ち recipe が全体へ伝播、余剰を UBI。
+           human=0 / Claude(俺)=0。俺 = harness を作り verify して消える。
+```
