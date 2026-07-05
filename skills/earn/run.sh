@@ -165,6 +165,11 @@ except Exception: print('')" 2>/dev/null)
   # auto-closes regardless — this only blocks whim re-trades, never a real SL/TP exit.
   HL_LAST="$HLDIR/.last-trade-ts"; HL_COOLDOWN_MIN="${HL_COOLDOWN_MIN:-60}"
   _hl_now=$(date +%s); _hl_last=$(cat "$HL_LAST" 2>/dev/null || echo 0)
+  # #16 robustness (adversary a604b23): a corrupt/partial .last-trade-ts or a non-numeric HL_COOLDOWN_MIN
+  # must NEVER brick the wake. Under `set -u` a non-numeric value in $(( )) is a FATAL "unbound variable"
+  # that aborts the whole HL block silently (exit 0). Coerce both to safe integers first.
+  case "$_hl_last" in ''|*[!0-9]*) _hl_last=0 ;; esac
+  case "$HL_COOLDOWN_MIN" in ''|*[!0-9]*) HL_COOLDOWN_MIN=60 ;; esac
   _hl_since=$(( (_hl_now - _hl_last) / 60 ))
   if { [ "$ACTION" = "close" ] || { [ -n "$SIDE" ] && [ -n "$SIZE" ]; }; } && [ "$_hl_since" -lt "$HL_COOLDOWN_MIN" ]; then
     echo "[earn] hl anti-churn: last trade ${_hl_since}min ago < ${HL_COOLDOWN_MIN}min → HOLD (no churn); exchange SL/TP still active"
