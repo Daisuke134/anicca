@@ -174,3 +174,43 @@ STALE_MIN(clip等=90分、affiliate/bounty=1560分)未満の周期で繰り返�
   「every earn loop」であり対象外。ただし同じ根本原因を抱えている可能性が
   高いため、Task #18完了後にNext Actionsとして記録するに留める)
 - healthcheckの実行頻度(launchd `StartInterval`)自体の変更は行わない
+
+## 5. GATE 2完了・検証結果(2026-07-05)
+
+**実装**: 6ファイル(clip/clip-promote/video/bounty/affiliate/gig の各
+`*-healthcheck.sh`)+新規テスト`skills/_shared/__tests__/test_healthcheck_stale_fallback.sh`。
+gigは既存に`$START`変数が無かったため新規追加(F2訂正通り)。
+
+**GATE 1 adversary(round1)**: FAIL → F2(gigの`$START`変数欠如)・F3(dead-code
+箇所の行番号記載漏れ)・F4(`skills/self/healthcheck-lib.sh:78`に同一バグが
+確定済み、Task #25として起票)を反映してspec修正 → 再レビュー無しで
+GATE2着手(design自体はadversaryが是認、記述の完全性のみの指摘だったため)。
+
+**GATE 2 adversary(実装レビュー)**: PASS。
+- reseed設計が6ファイル全てに正確に実装されていることを確認(git diff読解)
+- gigの`START=`変数新規追加を確認、旧inlineパス参照ゼロ
+- dead-code箇所(6ファイル)も一貫して素の`stat`に統一されていることを確認
+- 新規テスト`test_healthcheck_stale_fallback.sh`を実際に実行し**30/30 PASS**
+  (専用tmuxソケット+`mktemp -d`の隔離tmpdirのみ操作、本番の`.clip-core-*`
+  マーカーやtmuxセッションには一切触れないことを確認済み)
+- 全6ファイル`bash -n`構文チェックPASS
+- 既存ロジック(DEAD検知/backoff/mkdir lock/selfheal-request.json)は
+  diffに含まれず非改変であることを確認
+
+**CRITICAL(プロセス、ロジックとは別軸)**: 実装中、並行して動いている別
+claude-pセッション(genome/evolve harness作業、commit `df16d92`)が同じ
+共有作業ツリー(`~/anicca`本体、worktree不使用)で`git checkout main`を
+行った結果、私のcommitが意図した`feature/healthcheck-stale-fallback-fix`
+ブランチではなく`main`に直接乗ってしまっていた(Task #16と同種の並行編集
+衝突リスクが再度顕在化)。adversaryが指摘し、自分で`git merge-base`にて
+「origin/mainからのclean fast-forward、対象7ファイルのみ」であることを
+検証した上で、`git push origin main`で直接反映(`df16d92..532dab1`)。
+古い(fixを含まない)featureブランチはローカル・リモート双方で削除した。
+
+**教訓**: disk逼迫時にworktreeを避けてメインツリー直接作業する判断は
+Task #16と同様に今回も同じ種類のリスクを生んだ。次回以降、他エージェントの
+並行作業が疑われる状況(このrepoは複数claude-pセッションが同時に動く)では、
+disk容量が許す限りworktreeを使うか、少なくとも`git commit`直後に
+`git log --oneline -1`と`git branch --show-current`で着地先を必ず確認する。
+
+**Task #18完了。** origin/main = `532dab1`。
