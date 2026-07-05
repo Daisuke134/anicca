@@ -1928,3 +1928,15 @@ NEXT — in order(★=平等化 spine、稼ぐ核):
 END STATE: self-funded 個体が humans なしで Polymarket 等で稼ぎ、勝ち recipe が全体へ伝播、余剰を UBI。
            human=0 / Claude(俺)=0。俺 = harness を作り verify して消える。
 ```
+
+### §51 ★ Polymarket for ALL 達成 + hackathon product = agent-first spawn infra(2026-07-05)★
+
+**#27 達成(on-chain 検証済)**: automaton(France W杯 YES)+ Franklin(Vermont知事選 YES 3.284sh, tx 0x057511e7 status 0x1)が実 Polymarket 建玉。self-funded AI 2体が自分の金で human-zero 実取引。
+**確定した registry 登録フロー(SKILL.md + fund_via_bridge.py + run.sh に焼込み済)**: deposit wallet は Polymarket relayer registry 未登録だと `error resolving address`。登録 = 資金を **bridge Collateral Onramp 経由**で流す(`POST bridge.polymarket.com/deposit` → bridge addr → pUSD/USDC を送る)。直接 pUSD 送金は未登録の壊れ状態。approve は neg-risk spender(0xe2222/0xd91E80)。run.sh が毎パス前に自動登録 → 全 instance が birth から取引可。
+
+**hackathon product = "Software for Agents"(YC RFS, Aaron Epstein)**:
+- コンセプト: **fund 一回 → 任意の AI が自分の wallet で human-zero に稼ぐ**を、★agent が機械可読に叩ける形★で出す。Polymarket だけでなく **4 engine(Polymarket / yield / Hyperliquid / Solana)**を全部 skill として同梱。
+- ★agent-first = machine-readable インターフェース★(web 検索確定): (1)**MCP server**(tools: spawn/fund/status/list_markets/place_order/redeem…、agent が1コールで叩く)(2)**llms.txt**(repo 直下、agent が能力を自動発見)(3)**CLI**(`npx <name> spawn`)(4)OpenAPI。→ AI が「他の AI(Franklin 型 earner)を容易に spawn/ship」できる。
+- 形態: 新 GitHub repo(OSS)= anicca engine を derive + MCP/llms.txt/CLI で包む。web dashboard(既存 aniccaai.com/dashboard 流用)で各 spawn の wallet×P&L を live 表示。
+- 差別化: #26/#28 の per-instance 鍵隔離(agent 間で鍵漏洩しない)+ #27 の registry 登録自動化 = 「数百 agent が互いの鍵/金を漏らさず同時に稼ぐ」money-safety。
+- base = Franklin/BlockRun(agent が x402 で推論も自弁)。
