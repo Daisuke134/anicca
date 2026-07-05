@@ -66,14 +66,19 @@ export function resolveEvmPrivateKey({ home, env } = {}) {
   const override = normalizeEvmKey(e.ANICCA_EVM_PRIVATE_KEY);
   if (override) return override;
 
-  const aniccaHome = home ?? e.ANICCA_HOME;
-  if (aniccaHome) {
-    const fromAnicca = readJsonField(path.join(aniccaHome, '.automaton', 'wallet.json'), 'privateKey');
-    if (fromAnicca) return normalizeEvmKey(fromAnicca);
+  // Effective home mirrors resolve-wallet-path.sh: explicit ANICCA_HOME, else default $HOME/.anicca.
+  const effectiveHome = home ?? e.ANICCA_HOME ?? (e.HOME ? path.join(e.HOME, '.anicca') : null);
+  if (effectiveHome) {
+    const fromHome = readJsonField(path.join(effectiveHome, '.automaton', 'wallet.json'), 'privateKey');
+    if (fromHome) return normalizeEvmKey(fromHome);
   }
 
+  // Legacy shared $HOME/.automaton/wallet.json is the ORIGINAL default-home instance's wallet. Resolve
+  // it ONLY for that owner (effectiveHome === $HOME/.anicca), exactly like resolve-wallet-path.sh. A
+  // spawn with a different home returns null (fail-closed) so it NEVER trades with another instance's
+  // key — this is the real trading-key path used by pm-trade/run.sh (FIND-001-class, round-2).
   const legacyHome = e.HOME;
-  if (legacyHome) {
+  if (legacyHome && effectiveHome === path.join(legacyHome, '.anicca')) {
     const fromLegacy = readJsonField(path.join(legacyHome, '.automaton', 'wallet.json'), 'privateKey');
     if (fromLegacy) return normalizeEvmKey(fromLegacy);
   }
@@ -96,14 +101,17 @@ export function resolveSolanaSecret({ home, env } = {}) {
     return e.ANICCA_SOLANA_PRIVATE_KEY;
   }
 
-  const aniccaHome = home ?? e.ANICCA_HOME;
-  if (aniccaHome) {
-    const fromAnicca = readJsonField(path.join(aniccaHome, '.automaton', 'solana.json'), 'secretKey');
-    if (fromAnicca) return fromAnicca;
+  const effectiveHome = home ?? e.ANICCA_HOME ?? (e.HOME ? path.join(e.HOME, '.anicca') : null);
+  if (effectiveHome) {
+    const fromHome = readJsonField(path.join(effectiveHome, '.automaton', 'solana.json'), 'secretKey');
+    if (fromHome) return fromHome;
   }
 
+  // Legacy $HOME/.blockrun/.solana-session is Franklin's OWN funded wallet. Resolve it ONLY for
+  // Franklin's home (effectiveHome === $HOME/.blockrun); a different spawn returns null (fail-closed)
+  // so it never signs with Franklin's key (FIND-001-class, round-2, symmetric with the EVM path).
   const legacyHome = e.HOME;
-  if (legacyHome) {
+  if (legacyHome && effectiveHome === path.join(legacyHome, '.blockrun')) {
     const fromSession = readRawSecretFile(path.join(legacyHome, '.blockrun', '.solana-session'));
     if (fromSession) return fromSession;
   }

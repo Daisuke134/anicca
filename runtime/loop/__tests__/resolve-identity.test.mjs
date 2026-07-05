@@ -72,12 +72,23 @@ test('EVM ②: resolves from $ANICCA_HOME/.automaton/wallet.json when no env ove
 // ---------------------------------------------------------------------------
 // EVM: R1 priority ③ back-compat $HOME/.automaton/wallet.json
 // ---------------------------------------------------------------------------
-test('EVM ③: falls back to $HOME/.automaton/wallet.json when $ANICCA_HOME has no wallet', () => {
-  const aniccaHome = tmpDir('eq-evm-anicca3'); // exists but no wallet.json inside
+test('EVM ③: default-home owner (ANICCA_HOME === $HOME/.anicca) falls back to legacy $HOME/.automaton/wallet.json', () => {
   const legacyHome = tmpDir('eq-evm-legacy3');
   writeWalletJson(legacyHome, '0x' + '3'.repeat(64));
-  const key = resolveEvmPrivateKey({ env: { ANICCA_HOME: aniccaHome, HOME: legacyHome } });
+  // effective home IS the default $HOME/.anicca → the legitimate legacy owner (matches resolve-wallet-path.sh)
+  const key = resolveEvmPrivateKey({ env: { ANICCA_HOME: path.join(legacyHome, '.anicca'), HOME: legacyHome } });
   assert.equal(key, '0x' + '3'.repeat(64));
+});
+
+// round-2 FIND (FIND-001-class on the real trading-key path): a spawn with a DIFFERENT $ANICCA_HOME must
+// NEVER inherit the running instance's legacy $HOME wallet — it fails closed to null instead of signing
+// pm-trade orders with another instance's money key.
+test('EVM ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.anicca, no own wallet yet) does NOT inherit legacy -> null', () => {
+  const legacyHome = tmpDir('eq-evm-foreign-legacy');
+  const foreignHome = tmpDir('eq-evm-foreign-spawn'); // a different instance's home, wallet not generated yet
+  writeWalletJson(legacyHome, '0x' + 'e'.repeat(64)); // the running instance's real key
+  const key = resolveEvmPrivateKey({ env: { ANICCA_HOME: foreignHome, HOME: legacyHome } });
+  assert.equal(key, null);
 });
 
 test('EVM ③: falls back to $HOME/.automaton/wallet.json when ANICCA_HOME is unset', () => {
@@ -143,12 +154,22 @@ test('Solana ②: resolves from $ANICCA_HOME/.automaton/solana.json when no env 
 // ---------------------------------------------------------------------------
 // Solana: R2 priority ③ back-compat ~/.blockrun/.solana-session
 // ---------------------------------------------------------------------------
-test('Solana ③: falls back to $HOME/.blockrun/.solana-session when $ANICCA_HOME has no solana.json', () => {
-  const aniccaHome = tmpDir('eq-sol-anicca3'); // exists but no solana.json inside
+test('Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session', () => {
   const legacyHome = tmpDir('eq-sol-legacy3');
   writeSolanaSession(legacyHome, 'legacy-secret-b58-3');
-  const secret = resolveSolanaSecret({ env: { ANICCA_HOME: aniccaHome, HOME: legacyHome } });
+  // effective home IS $HOME/.blockrun → Franklin, the legitimate owner of .solana-session
+  const secret = resolveSolanaSecret({ env: { ANICCA_HOME: path.join(legacyHome, '.blockrun'), HOME: legacyHome } });
   assert.equal(secret, 'legacy-secret-b58-3');
+});
+
+// round-2 FIND (symmetric with the EVM path): a foreign spawn must NOT inherit Franklin's funded
+// .solana-session — fail-closed to null.
+test('Solana ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.blockrun) does NOT inherit .solana-session -> null', () => {
+  const legacyHome = tmpDir('eq-sol-foreign-legacy');
+  const foreignHome = tmpDir('eq-sol-foreign-spawn');
+  writeSolanaSession(legacyHome, 'franklin-real-secret');
+  const secret = resolveSolanaSecret({ env: { ANICCA_HOME: foreignHome, HOME: legacyHome } });
+  assert.equal(secret, null);
 });
 
 // ---------------------------------------------------------------------------
