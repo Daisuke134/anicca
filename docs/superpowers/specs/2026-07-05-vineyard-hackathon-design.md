@@ -1,4 +1,4 @@
-# selffund (working codename) — AI financial-independence CLI, hackathon build
+# Vineyard — AI financial-independence CLI, hackathon build
 
 **Hackathon**: YC RFS #3 "Software for Agents" (Aaron Epstein). **Status**: brainstorm → design, iterating
 with Dais across voice-dictated turns (2026-07-04/05). Supersedes the build-target scope of
@@ -8,31 +8,36 @@ paths there are verified to exist in `~/anicca/skills/earn/`). Does NOT replace 
 `software-for-agents-submission.md`, `2026-07-05-anicca-compiled-submission.md`) — those need a follow-up
 copy pass once this spec is final (tracked as TODO item K below), not a blocker for the build.
 
-## 0. Naming (provisional, explicitly open)
+## 0. Naming — LOCKED 2026-07-05
 
-- **Working codename: `selffund`** (repo name + CLI binary, e.g. `npx selffund spawn`). NOT "Franklin".
-- **Why not Franklin**: Dais verbatim (2026-07-05 voice): *"we shouldn't actually mention the name of
+- **Product / repo name: `Vineyard`. CLI binary: `vineyard`** (e.g. `npx vineyard spawn`). Dais verbatim:
+  *"vineyard — this is the name of the product... of the repository."* No longer provisional.
+- **Why not "Franklin"**: Dais verbatim (2026-07-05 voice): *"we shouldn't actually mention the name of
   Franklin or everything because it's just about AI as a whole... AI achieving self-fund... financial
-  independence."* The product must read as "AI-in-general achieves financial independence," not one named
+  independence."* The product reads as "AI-in-general achieves financial independence," not one named
   persona. "Franklin" stays as the internal name of an already-existing self-funded AI instance in the
-  Anicca colony (`docs/WALLETS.md`, wallet `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`) — it is not the
-  hackathon product's brand.
-- **Why `selffund`**: matches the existing internal vocabulary already used across the colony architecture
-  spec (`self-funded` vs `human-funded` instance types, `docs/superpowers/specs/2026-07-03-anicca-colony-architecture-design.md`)
-  — reuses an established term instead of inventing new branding. Trivially renamed later (repo rename +
-  `sed` over `bin`/`package.json`/`llms.txt` — near-zero cost), so this is not a load-bearing decision.
-- **Open**: if Dais wants a different name, swap it in before scaffolding (TODO item A).
+  Anicca colony (`docs/WALLETS.md`, wallet `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`) — it is not this
+  product's brand.
+- `selffund` (the interim working codename used in the first draft of this spec) is retired — replaced
+  everywhere by `Vineyard`/`vineyard`.
 
 ## 1. What it is
 
-A **new, self-contained OSS repo** (not the anicca monorepo). `git clone` + one command → spawn a
-self-funded AI: it owns its own wallet and earns its own money across **4 on-chain engines**
+A **new, self-contained OSS repo** (not the anicca monorepo) called **Vineyard**. `git clone` + one command
+→ spawn a self-funded AI: it owns its own wallet and earns its own money across **4 on-chain engines**
 (Polymarket / yield / Hyperliquid / Solana), with **no human and no Claude in the loop** after a one-time
-seed. Interface = **CLI + REST API + llms.txt** (machine-readable — another AI can spawn/run/monitor
-instances programmatically) **+ a polished Web App UI** (new requirement, see §6). **NO MCP** — Dais
-verbatim: *"No it is because it's made for agents"* — CLI + REST API + llms.txt already give an agent a
-machine-readable path; an MCP server is an unnecessary extra layer for this repo's job. Ships its own
-dashboard, derives (copies + repackages) the proven anicca engines — does not depend on anicca at runtime.
+seed. Dais verbatim (2026-07-05, JP): *"機械可読インターフェースを中心に設計された、エージェントファースト
+なソフトウェア"* ("software designed around a machine-readable interface at its core, agent-first") —
+and: *"any agent can download this with ease."* Ease-of-onboarding for an agent is a first-class success
+criterion, not an afterthought.
+
+Interface = **CLI + REST API + llms.txt** (machine-readable — another AI can spawn/run/monitor instances
+programmatically) **+ a polished Web App UI** (see §6). **NO MCP** — Dais verbatim: *"No it is because
+it's made for agents"* — CLI + REST API + llms.txt already give an agent a machine-readable path; an MCP
+server is an unnecessary extra layer. Ships its own dashboard, derives (copies + repackages) the proven
+anicca engines — does not depend on anicca at runtime. Dais verbatim: *"we can drive everything from kind
+of the [stuff] that we made with Anicca"* — Vineyard is a clean re-packaging of already-working anicca
+engines, not new trading research.
 
 Scope confirmed 2026-07-05 (Dais verbatim): *"we're not just gonna do polymarket stuff... we're gonna do
 everything"* — all 4 engines ship, not a Polymarket-only product (that was the earlier, narrower "Predikt"
@@ -47,22 +52,24 @@ submission framing — now superseded).
                                               │ (human-zero from here on)
                                               ▼
    ┌──────────────────────────────────────────────────────────────────────┐
-   │                       selffund (working codename)                    │
+   │                              V I N E Y A R D                          │
    │     "AI achieves financial independence" — agent-first,              │
-   │     machine-readable OSS repo (separate from the anicca monorepo)    │
+   │     machine-readable-interface-centered OSS repo                     │
+   │     (separate from the anicca monorepo; any agent downloads w/ ease) │
    └───────────────────────────────┬──────────────────────────────────────┘
                                    │
         ┌──────────────┬──────────┼──────────┬───────────────────┐
         ▼              ▼          ▼          ▼                   ▼
    ┌─────────┐   ┌───────────┐ ┌────────┐ ┌───────────────────────────┐
    │  CLI    │   │ REST API  │ │llms.txt│ │  Web App UI                │
-   │spawn/run│   │POST/GET,  │ │machine-│ │  built w/ gpt-tasteskill    │
-   │/status  │   │same verbs │ │readable│ │  (HARD RULE 0.38): spawn    │
-   │/dashboard│  │as CLI     │ │index   │ │  button, live wallet ×      │
-   └────┬────┘   └─────┬─────┘ └───┬────┘ │  engine × realized P&L,     │
-        │              │           │      │  on-chain links, "super easy"│
-        └──────┬───────┴───────────┘      └─────────────┬─────────────┘
-               ▼                                        │ same underlying API
+   │`vineyard│   │POST/GET,  │ │machine-│ │  built w/ gpt-tasteskill    │
+   │ spawn/  │   │same verbs │ │readable│ │  (HARD RULE 0.38): spawn    │
+   │ run/    │   │as CLI     │ │index   │ │  button, live wallet ×      │
+   │ status` │   │           │ │        │ │  engine × realized P&L,     │
+   └────┬────┘   └─────┬─────┘ └───┬────┘ │  on-chain links, "super easy"│
+        │              │           │      └─────────────┬─────────────┘
+        └──────┬───────┴───────────┘                    │ same underlying API
+               ▼                                        │
    ┌───────────────────────────────────────────┐         │
    │  CORE                                      │◀────────┘
    │  wallet.mjs  = per-instance key isolation   │
@@ -87,7 +94,7 @@ submission framing — now superseded).
    │  │           │ │        │ │             │ │ WAIT      │      │
    │  └───────────┘ └────────┘ └─────────────┘ └───────────┘      │
    │      each = a TOOL + baseline strategy a weak model can run   │
-   │      derived from anicca (paths verified §5), brain picks     │
+   │      derived 1:1 from anicca (paths verified §5), brain picks │
    └───────────────────────────────┬───────────────────────────────┘
                                    ▼
                   ┌─────────────────────────────────────┐
@@ -100,10 +107,10 @@ submission framing — now superseded).
 ## 3. Repo layout
 
 ```
-selffund/
-├── README.md                 # human quickstart
+vineyard/
+├── README.md                 # human quickstart — "any agent can download this with ease"
 ├── llms.txt                  # ★machine-readable capability index★
-├── package.json               # bin: "selffund" -> cli/index.mjs ; scripts: api, dashboard
+├── package.json               # bin: "vineyard" -> cli/index.mjs ; scripts: api, dashboard
 ├── cli/index.mjs              # spawn|fund|run|status|list|trade|redeem|dashboard
 ├── api/server.mjs             # Express REST, same verbs as HTTP
 ├── core/
@@ -131,14 +138,14 @@ selffund/
 
 | CLI | HTTP | does |
 |---|---|---|
-| `selffund spawn [--fund N] [--engine pm\|yield\|hl\|sol]` | `POST /spawn` | own EVM+Solana wallet, register in spawns.json, print address + id |
-| `selffund fund <id> <amount> [--chain]` | `POST /fund` | route USDC to Polymarket deposit **through the bridge onramp** (registers it), or top up EVM/Solana |
-| `selffund run <id>` | `POST /run` | start the earn loop (`--once` = single pass) |
-| `selffund status <id>` | `GET /status/:id` | wallet balances + open positions + realized P&L |
-| `selffund list` | `GET /list` | all instances + live P&L |
-| `selffund trade <id> --engine <e> ...` | `POST /trade` | one manual engine action |
-| `selffund redeem <id>` | `POST /redeem` | collect resolved winnings → compound |
-| `selffund dashboard` | (serves) | open the Web App UI |
+| `vineyard spawn [--fund N] [--engine pm\|yield\|hl\|sol]` | `POST /spawn` | own EVM+Solana wallet, register in spawns.json, print address + id |
+| `vineyard fund <id> <amount> [--chain]` | `POST /fund` | route USDC to Polymarket deposit **through the bridge onramp** (registers it), or top up EVM/Solana |
+| `vineyard run <id>` | `POST /run` | start the earn loop (`--once` = single pass) |
+| `vineyard status <id>` | `GET /status/:id` | wallet balances + open positions + realized P&L |
+| `vineyard list` | `GET /list` | all instances + live P&L |
+| `vineyard trade <id> --engine <e> ...` | `POST /trade` | one manual engine action |
+| `vineyard redeem <id>` | `POST /redeem` | collect resolved winnings → compound |
+| `vineyard dashboard` | (serves) | open the Web App UI |
 
 `llms.txt` lists every command + one-line usage + link to this spec.
 
@@ -153,7 +160,7 @@ selffund/
 
 Key-isolation source: `~/anicca/skills/earn/lib/resolve-identity.mjs` (verified exists).
 
-## 6. Web App UI (new requirement, 2026-07-05)
+## 6. Web App UI
 
 Dais verbatim: *"I just wanted to make it some kind of like web app kind of thing... with taste skills...
 we wanna make it super easy."* This elevates the `dashboard/` component from a bare data table (as in the
@@ -169,7 +176,7 @@ original franklin-earn spec) to a fully designed Web App UI:
 - Not a new independent subsystem — it is the human-facing skin over the same REST API an agent would call
   directly. No logic lives only in the UI.
 
-## 7. Demo video (new requirement, 2026-07-05) — hyperframes, 15 seconds
+## 7. Demo video — hyperframes, 15 seconds
 
 Dais verbatim: wants to "make a video on hyperframes... a fifteen second demo video of how this whole thing
 works... you click on that web app and things go and spawn." This is the flow to capture:
@@ -197,39 +204,39 @@ works... you click on that web app and things go and spawn." This is the flow to
 
 ## 9. DONE criteria
 
-1. `selffund spawn` creates an instance with its own isolated EVM+Solana wallet, recorded in spawns.json.
-2. `selffund fund <id> <amt>` registers + funds its Polymarket deposit via the bridge onramp (verified: `get_balance_allowance` resolves).
-3. `selffund run <id> --once` places a real on-chain action on ≥1 engine (tx status 0x1) and writes it to the ledger.
+1. `vineyard spawn` creates an instance with its own isolated EVM+Solana wallet, recorded in spawns.json.
+2. `vineyard fund <id> <amt>` registers + funds its Polymarket deposit via the bridge onramp (verified: `get_balance_allowance` resolves).
+3. `vineyard run <id> --once` places a real on-chain action on ≥1 engine (tx status 0x1) and writes it to the ledger.
 4. Web App UI (gpt-tasteskill-built, browser-verified) shows wallet × engine × realized P&L with on-chain links, and a working "spawn" call-to-action.
 5. `llms.txt` + REST API let an AI do 1–4 with zero human clicks.
-6. README one-command quickstart works from a clean clone.
+6. README one-command quickstart works from a clean clone — "any agent can download this with ease."
 7. 15s hyperframes demo video exists, built from real captured footage of 1–4 actually running.
 8. VCSDD adversary PASS (fresh context, disk-only) + my own browser/on-chain E2E verify, both green.
 
 ## 10. Relationship to existing hackathon docs
 
 - `docs/hackathon/franklin-earn-product-spec.md` — engine-derivation source of truth, paths verified here; superseded only on naming/MCP/scope framing (this doc is now canonical for the build).
-- `docs/hackathon/{Predikt-Software-for-Agents-Submission.en.md,software-for-agents-submission.md}` — Polymarket-only + MCP-mentioning submission drafts; need a follow-up copy pass (TODO K) to match the final 4-engine, no-MCP, no-"Franklin" scope. Not a build blocker.
+- `docs/hackathon/{Predikt-Software-for-Agents-Submission.en.md,software-for-agents-submission.md}` — Polymarket-only + MCP-mentioning submission drafts; need a follow-up copy pass (TODO K) to match the final Vineyard/4-engine/no-MCP scope. Not a build blocker.
 - `docs/hackathon/2026-07-05-anicca-compiled-submission.md` — broadest "Anicca" framing; may end up the better base for the actual submission text since it already avoids naming a single persona.
 
 ## 11. Full TODO (ordered)
 
 | # | Item | Depends on |
 |---|---|---|
-| A | Confirm/lock working codename (`selffund` unless Dais changes it) | — |
-| B | Scaffold new standalone repo: `cli/ api/ core/ engines/ dashboard/ media/ llms.txt README` | A |
-| C | `selffund spawn` → own EVM+Solana wallet (copy `resolve-identity.mjs`, key isolation) | B |
-| D | `selffund fund` → register+fund Polymarket deposit via bridge onramp | C |
+| A | ~~Lock working codename~~ **DONE — `Vineyard` / `vineyard`** | — |
+| B | Scaffold new standalone repo `vineyard/`: `cli/ api/ core/ engines/ dashboard/ media/ llms.txt README` | A |
+| C | `vineyard spawn` → own EVM+Solana wallet (copy `resolve-identity.mjs`, key isolation) | B |
+| D | `vineyard fund` → register+fund Polymarket deposit via bridge onramp | C |
 | E | Wire all 4 engines (polymarket/yield/hyperliquid/solana) from verified anicca sources | B |
-| F | `selffund run` → earn loop (wake→pick→earn→ledger) with a real on-chain tx | C, D, E |
+| F | `vineyard run` → earn loop (wake→pick→earn→ledger) with a real on-chain tx | C, D, E |
 | G | Web App UI: invoke gpt-tasteskill → build dashboard (spawn CTA + live wallet×engine×P&L+links) → browser-verify | F |
 | H | llms.txt + REST API + OpenAPI (`/openapi.json`) — zero-human-click agent path | C–F |
 | I | README one-command quickstart, verified from a clean clone | B–H |
 | J | 15s hyperframes demo video from real captured footage of the working flow | F, G |
-| K | Update hackathon submission docs to match final scope (drop Polymarket-only + MCP framing, no "Franklin" name) | A, G, J |
+| K | Update hackathon submission docs to match final scope (Vineyard name, drop Polymarket-only + MCP framing, no "Franklin" name) | G, J |
 | L | VCSDD pipeline over B–J: init → spec (1a/1b) → spec-review gate (1c) → RED (2a) → GREEN (2b) → refactor (2c) → adversary review (3, fresh context) → hardening (5) → convergence (6) | — |
 
-## Open items (need Dais's word, not blocking further design work)
+## Open items (not blocking further design work)
 
-- Final product name if not `selffund`.
 - Whether the demo video (§7) IS the hackathon's official demo submission or a separate teaser asset.
+- npm package name `vineyard` availability — check at scaffold time (TODO B), rename trivially if taken.
