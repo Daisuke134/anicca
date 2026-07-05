@@ -53,3 +53,17 @@ TMP="$STATE_MD.tmp.$$"
   echo "next: HEAL→get an honest account + CloakBrowser up; else post ONE disclosed builder contribution in a self-promo-welcome sub and LOG it to posts.jsonl (real URL); answer genuine replies; log any reddit→LM signup to attributed-signups.jsonl. Never covert, never ask a human."
 } > "$TMP" && mv "$TMP" "$STATE_MD"
 echo "[reddit-loop] accounts=$N_ACCT karma=$KARMA posts=$NPOST($POST_FRESH) signups=$SIGNUPS | heal=${HEAL:-none} | $STATUS"
+
+# Liveness heartbeat (FIND-032, ported from life-manager-loop): touch it HERE, in the deterministic MEASURE
+# core (runs first on every pass — startup + daily cron — via STEP1, completes in ~2s, cannot derail).
+# Previously the reddit heartbeat was touched ONLY at the very end of the open-ended STARTUP/cron pass
+# ("FINALLY touch"), AFTER STEP2 ACT — and Reddit ACT routinely stalls (fresh top-level posts auto-removed
+# by the spam filter at low karma; mod-message Send button client-side-disabled; an occasional interactive
+# prompt) so the pass burns its whole 1800s timeout and never returns to the touch. That starved the
+# heartbeat → healthcheck STALE(1560m) → restart → pkill kills the in-progress claude → fresh claude
+# re-enters the same stalling ACT → still no touch in the 5-min window → STALE again → restart storm →
+# give-up → self-fix. The healthcheck contract is "liveness + stuck-detection only" (real posting truth =
+# posts.jsonl freshness, checked separately by the output guard), so liveness must mean "the loop executed
+# its measurable core this pass", NOT "the open-ended posting task completed". Skip under test mode so the
+# real prod heartbeat is never touched by test-loop.sh.
+[ "${RD_TEST:-}" = "1" ] || { mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.reddit-loop-last-pass" 2>/dev/null; } || true
