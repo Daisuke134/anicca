@@ -105,23 +105,85 @@
 > raw-deploy the proxy or raw-transfer pUSD to it — that produces the stuck/unregistered state above.
 
 
-The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the
-market fetch, x402-paid AI analysis, Kelly sizing, and live execution (py-clob-client, EOA
-`signature_type=0`). ★ Its `generate_recommendations` shipped as a STUB (hardcoded prob 0.55, ignored the
-AI) so it never had real alpha. ★
+The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) provides the
+data/analysis modules this skill imports: market fetch, x402-paid AI analysis, smart-money/whale signals,
+and Kelly sizing. ★ Its own `PolymarketAgent.execute_trades()` (`src/agent.py`) shipped as a STUB
+(`status:"skipped", reason:"Token ID not available in simplified mode"`) — it recommended but never
+actually traded. `run.sh` no longer calls `main.py --live` (that path is dead for this skill; the stub
+never placed an order). ★
 
-## BASELINE ALPHA (battle-tested seed, self-improvable — the recipe, applied to the agent 2026-07-04)
-`src/agent.py::generate_recommendations` is wired to the REAL alpha (verified live):
+## ★★ run.sh NOW CHAINS THREE FAIL-CLOSED STRATEGIES PER PASS (#25, 2026-07-05) ★★
+`run.sh` no longer calls `main.py --live`. It now runs, in order, after the identity/registration blocks:
+
+1. **`bundle_arb.py`** — BASE STRATEGY #2, risk-free bundle arb scan. **EXISTING, working, unchanged** —
+   this task did not rebuild it, only wired it into the firing loop. Self-gating: prints "no risk-free
+   bundle arb ≥0.5% right now" and no-ops when the market is efficient; buys both legs (FOK) only on a
+   real locked edge (`ask_YES + ask_NO + fees < $1`).
+2. **`market_maker.py`** — BASE STRATEGY #1, maker-bundle quoting. **EXISTING, working, unchanged.**
+   Self-gating: HOLDs ("cash < one min bundle") instead of spamming failed orders when underfunded; else
+   cancel-and-replace resting post-only quotes (BUY YES@bid + BUY NO@bid, sum<0.995).
+3. **`pick.py` → `place_order.py`** — the genuinely-missing piece this task built: an autonomous
+   **directional** buy (neither arb nor market-making — a real edge/confidence call on ONE side of ONE
+   market). Both are new files, both fail-closed. Details below.
+
+Each strategy is independently self-gating/fail-closed (arb no-ops when efficient, MM holds when
+underfunded, pick.py WAITs when no edge clears), so chaining all three in one pass is safe — worst case
+several of them no-op in the same pass. Every pass appends one structured trace line per strategy to
+`../state/pm-trade.trace.jsonl` (H1).
+
+⚠️ `bundle_arb.py` / `market_maker.py` were NOT modified by this task (per spec: wire existing alpha, don't
+reinvent it) — their sizing (up to ~90% of the deposit-wallet balance per pass) and hardcoded constants
+(`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) are pre-existing, already-verified-live risk parameters, separate
+from the `MAX_BET_SIZE` cap that applies only to the new directional path (`pick.py`/`place_order.py`).
+There is also a separate `run_earner.sh` (hardcoded single-instance paths, `.venv-pysdk`) that already
+invokes `redeem.py` + `bundle_arb.py` + `market_maker.py` on its own schedule — if both it and this
+skill's `run.sh` are scheduled for the same instance, they can fire the same self-gating strategies
+concurrently; that's a pre-existing scheduling question (cron config), out of this file's scope.
+
+### `pick.py` → `place_order.py` (the new directional-buy path)
+Neither hardcodes a market or a side — the MODEL (multi-model consensus + smart-money signal) decides;
+the code only filters/sizes/caps:
+
+1. **`pick.py`** (ALPHA — imports the base agent's own modules, judgment stays with the model):
+   - `fetch_active_markets(min_odds, max_odds, min_liquidity)` → candidates, re-sorted **resolve-soonest
+     first** (primary key), volume desc (secondary); anything resolving beyond `RESOLVE_HORIZON_DAYS`
+     (default 14) is dropped — this is the fix for "WC2026/election markets = payout months away".
+   - For each candidate (capped by `MAX_CANDIDATES`, default 5, a cost bound not a judgment call):
+     `get_smart_money_summary(market_id)` (whale/smart-money signal, async) is fed straight into
+     `AIAnalyzer.consensus_analysis(question, yes_odds, whale_data=...)` — the 3-model consensus that was
+     previously wired but never actually fed the whale data.
+   - **GATE:** only acts when `abs(avg_edge) >= MIN_EDGE` (0.15) AND `avg_confidence >= MIN_CONF` (7) AND
+     `consensus != "MIXED"`. Sizes with `KellyCriterion`, capped by `MAX_BET_SIZE` (default $2).
+   - Emits **one line of JSON** on stdout: either a trade candidate
+     (`token_id, side, outcome, amount, market, end_date, edge, confidence, consensus`) or, whenever
+     nothing qualifies OR a signal is unavailable, `{"action":"WAIT","reason":...}` — **fail-closed, never
+     a default bet.** Verified live 2026-07-05: read-only run correctly WAITed
+     (`no-short-dated-liquid-candidates`) because the soonest real market resolved in 14.7 days, just past
+     the 14-day horizon — proof the horizon filter is real, not decorative.
+2. **`place_order.py`** (EXECUTION — the exact working V2 flow from `v2_full_flow.py`, generalized):
+   reads `TOKEN_ID` / `SIDE` (BUY only) / `AMOUNT` from env (argv fallback), re-caps `AMOUNT<=MAX_BET_SIZE`
+   again (defense in depth), then SecureClient sig-3 bootstrap → relayer-key mint (SIWE) → idempotent
+   neg-risk approve → `get_order_book` → best ask → `create_market_order(..., order_type="FAK")` →
+   `post_order`. Emits one line of JSON: `{token_id, amount, order_id, post_result, ok}`.
+
+`run.sh` parses `pick.py`'s JSON: `WAIT` → append `{"action":"wait",...}` to the trace and exit 0
+(no-churn); a trade candidate → export `TOKEN_ID/SIDE/AMOUNT` and run `place_order.py`, appending its
+result to the trace either way. The identity-resolution block, `fund_via_bridge.py` registration step, and
+kill-switch are unchanged (spec §2.3, §6 — those files were never touched).
+
+## BASELINE ALPHA (legacy — `src/agent.py::generate_recommendations`, NOT the pm-trade run path)
+The base agent's own `agent.py::generate_recommendations`/`main.py --live` path (documented below) still
+exists in the agent's repo and is real (not the 0.55 stub), but **`run.sh` no longer calls it** — this
+skill's trade path is `pick.py` → `place_order.py` above. Kept here for anyone driving the base agent
+directly (outside this skill):
 - for each liquid market (volume ≥ $10k, price 2–98%): call `analyzer.compare_market(question, market_price)`
   → the AI returns its own PROBABILITY + CONFIDENCE; edge = ai_prob − market_price.
 - **BET GATE (the tunable knobs the AI self-improves):** only bet when `|edge| ≥ MIN_EDGE` (default 0.15)
   AND `confidence ≥ MIN_CONFIDENCE` (default 7/10). Side = YES if edge>0 else NO. Size = fractional Kelly.
-- Nothing about WHICH market/side is hardcoded — only the discipline (high edge + high conviction). The AI
-  tunes MIN_EDGE / MIN_CONFIDENCE across runs (H1-H3).
+- Nothing about WHICH market/side is hardcoded — only the discipline (high edge + high conviction).
 Verified 2026-07-04: on 20 real markets the alpha produced genuine AI edges (Spain WC mkt12%/AI15%,
 France mkt35%/AI30%…) and correctly placed 0 bets (no market cleared 15%-edge+conf7 = efficient market) —
-vs the old stub which bet on everything. To PROPAGATE: apply this same wiring when setting up the agent for
-any instance/child (it lives in the agent's `src/agent.py`, not this skill).
+vs the old stub which bet on everything.
 
 This skill is otherwise a thin harness: run for real, record the trace, let the AI self-improve the knobs.
 (SSOT: colony spec §0.25 + ROLE v3 "I create the baseline alpha, they self-improve from there".)
@@ -129,7 +191,8 @@ This skill is otherwise a thin harness: run for real, record the trace, let the 
 ## Run
 
 ```bash
-./run.sh    # one real live pass. NO dry-run mode exists (HARD 0.24).
+./run.sh    # one real live pass: bundle_arb.py -> market_maker.py -> pick.py -> (WAIT | place_order.py).
+            # NO dry-run mode exists (HARD 0.24).
 ```
 
 - Agent home: `~/.anicca-founder/agents/polymarket-agent` (override: `PM_TRADE_AGENT_HOME`).
@@ -152,20 +215,29 @@ This skill is otherwise a thin harness: run for real, record the trace, let the 
 
 | Guard | How |
 |---|---|
-| kill-switch | `touch KILL` in this dir → next run exits without trading. `rm KILL` to resume |
-| per-trade cap | agent's own config: `.env` `MAX_BET_PERCENTAGE` × `INITIAL_BANKROLL`, executor `MAX_BET_SIZE` |
+| kill-switch | `touch KILL` in this dir → next run exits without trading (before any of the 3 strategies run). `rm KILL` to resume |
+| per-trade cap (directional path) | `pick.py` Kelly-sizes + caps by `MAX_BET_SIZE` (default $2); `place_order.py` re-caps `AMOUNT<=MAX_BET_SIZE` again |
+| per-trade risk (arb/maker paths) | `bundle_arb.py` / `market_maker.py`'s own pre-existing constants (`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) — unchanged by this task |
 | no dry-run | not provided, by design — a run is always real |
 
 ## Trace (self-observe, H1)
 
-Every pass appends one JSON line to `../state/pm-trade.trace.jsonl`:
-`{ts, slot, action, exit, trades, error}`. The self-improvement loop reads this.
+Every pass appends one structured JSON line per strategy to `../state/pm-trade.trace.jsonl`:
+- `{ts, slot, action:"bundle-arb"|"market-maker", exit, output_tail}` for the two existing strategies.
+- `{ts, slot, action:"wait", reason}` when `pick.py` found no qualifying directional candidate.
+- `{ts, slot, action:"trade", market, end_date, edge, confidence, consensus, exit, order}` when
+  `place_order.py` executed a directional buy.
+The self-improvement loop reads this.
 
 ## If a run errors (self-heal, H4)
 
-You — the running agent reading this — fix it yourself: read the traceback, edit the file in
-`$PM_TRADE_AGENT_HOME`, re-run until the pass completes. Do NOT change the agent's strategy, thresholds,
-or sizing to force a trade; "0 trades because my edge criterion wasn't met" is a CORRECT outcome.
+You — the running agent reading this — fix it yourself: read the traceback. For the directional path,
+edit `pick.py`/`place_order.py` in this skill dir, or the base agent's `src/` modules they import from
+`$PM_TRADE_AGENT_HOME` if the fetch/analysis itself is broken. For the arb/maker paths, `bundle_arb.py` /
+`market_maker.py` are unchanged from their proven-live form — fix a genuine bug, don't touch their risk
+constants to force a trade. Re-run until the pass completes. Do NOT change any strategy's thresholds or
+sizing to force a trade; "WAIT because my edge criterion wasn't met" / "no arb right now" / "HOLD, cash
+too low" are all CORRECT outcomes.
 Known past fixes (bootstrap, 2026-07-04): Gamma API returns numeric fields as strings (normalized in
 `src/market/polymarket.py::_to_float`); dead default RPC replaced with `POLYGON_RPC_URL` env
 (default `polygon-bor-rpc.publicnode.com`); `agent.py` passed a wallet object where the executor needs
