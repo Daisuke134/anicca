@@ -2,10 +2,13 @@
 """
 place_order.py — EXECUTION: generalized V2 FAK order placement (#25 spec §2.2).
 
-The EXACT working path as v2_full_flow.py (SecureClient sig-3 credential
-bootstrap + relayer-key mint via SIWE + get_order_book + create_market_order
-FAK + post_order), generalized so TOKEN_ID/SIDE/AMOUNT are INPUTS, never
-hardcoded. WHICH market/side/amount is entirely pick.py's (the model's)
+The EXACT working path that used to live in v2_full_flow.py (SecureClient sig-3
+credential bootstrap + relayer-key mint via SIWE + get_order_book +
+create_market_order FAK + post_order), generalized so TOKEN_ID/SIDE/AMOUNT are
+INPUTS, never hardcoded. v2_full_flow.py itself was DELETED (#25 adversary fix
+#2) — it hardcoded a TID and was standalone-runnable, a footgun now that this
+file supersedes it; nothing else imported/called it (verified via grep before
+removal). WHICH market/side/amount is entirely pick.py's (the model's)
 decision — this file only executes it and enforces the money-safety cap.
 
 Inputs (env preferred, positional argv fallback):
@@ -57,7 +60,7 @@ def fail(reason):
 
 def mint_relayer_key(acct):
     """SIWE (no browser) -> gamma-api/login -> relayer-v2/relayer/api/auth
-    -> apiKey. Identical to v2_full_flow.py / fund_via_bridge.py."""
+    -> apiKey. Same recipe as fund_via_bridge.py's mint_relayer_key()."""
     s = requests.Session()
     s.headers.update({
         "User-Agent": "Mozilla/5.0",
@@ -106,7 +109,7 @@ def approve_spenders(client):
 def best_ask_price(order_book):
     asks = getattr(order_book, "asks", [])
     if not asks:
-        return 0.58  # last-resort fallback, matches v2_full_flow.py's proven value
+        return 0.58  # last-resort fallback, matches the original proven-live value
     return min(float(getattr(a, "price", None) or a["price"]) for a in asks)
 
 

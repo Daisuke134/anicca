@@ -17,8 +17,11 @@
 >    issue #92 + crp4222/pmq war-story.md + installed py_clob_client_v2 1.0.2.
 >
 > ### ✅ THE NO-HUMAN PATH THAT WORKS (proven live 2026-07-04, browser=0, human-credentials=0)
-> The full E2E is in `v2_mint_deploy.py` (SIWE→relayer key→deposit-wallet deploy) +
-> `v2_full_flow.py` (approve→build→post a real order). Steps, all from the AI's OWN key:
+> The full E2E was proven in `v2_mint_deploy.py` (SIWE→relayer key→deposit-wallet deploy) +
+> `v2_full_flow.py` (approve→build→post a real order). `v2_full_flow.py` was DELETED 2026-07-05
+> (#25 adversary fix #2 — it hardcoded a TID and was a standalone-runnable footgun); the same
+> proven recipe now lives, generalized (TOKEN_ID/SIDE/AMOUNT as inputs), in `place_order.py`
+> (see "AUTONOMOUS PICK→PLACE PATH" below). Steps, all from the AI's OWN key:
 > 1. **SIWE mint** (no browser): GET `gamma-api/nonce` → EIP-4361 `personal_sign`
 >    ("Welcome to Polymarket! Sign to connect.") → GET `gamma-api/login`
 >    `Authorization: Bearer base64(JSON(fields):::0xsig)` → cookies →
@@ -131,14 +134,34 @@ underfunded, pick.py WAITs when no edge clears), so chaining all three in one pa
 several of them no-op in the same pass. Every pass appends one structured trace line per strategy to
 `../state/pm-trade.trace.jsonl` (H1).
 
-⚠️ `bundle_arb.py` / `market_maker.py` were NOT modified by this task (per spec: wire existing alpha, don't
-reinvent it) — their sizing (up to ~90% of the deposit-wallet balance per pass) and hardcoded constants
-(`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) are pre-existing, already-verified-live risk parameters, separate
-from the `MAX_BET_SIZE` cap that applies only to the new directional path (`pick.py`/`place_order.py`).
+### ★ PER-PASS RISK ENVELOPE (2026-07-05, adversary MUST-FIX) — the accepted worst-case spend ★
+`run.sh` exports `MAX_PASS_SPEND` (default **$2**) BEFORE the strategy chain. All three strategies read
+it independently and cap their own leg to it — this bounds worst-case pass spend to a **fixed** small
+number regardless of the wallet's balance-at-read-time (the earlier note "up to ~90% of balance" was the
+gap the adversary caught: `bundle_arb.py`/`market_maker.py` had no dollar ceiling, only a % of whatever
+the wallet happened to hold):
+- `bundle_arb.py`: `budget_shares = MAX_PASS_SPEND/(ask_yes+ask_no)`; if that's `<5` shares (CLOB min),
+  HOLD — no order. Final `shares = max(5, min(msz, avail*0.9/(ay+an), budget_shares))`, so once the
+  `budget_shares>=5` gate passes, spend is bounded at `shares*(ay+an) <= MAX_PASS_SPEND`.
+- `market_maker.py`: `total_budget = min(avail*0.9, MAX_PASS_SPEND)` split evenly across up to
+  `MAX_MARKETS` picks; any pick whose share of that budget can't afford `MIN_SIZE` shares of both legs
+  is skipped (HOLD, no order) instead of being forced up to `MIN_SIZE` (the old behavior, which could
+  have exceeded the budget). Sum across all picks is bounded at `MAX_PASS_SPEND`.
+- `pick.py`/`place_order.py` (directional): Kelly-sized, capped by `MAX_BET_SIZE` (default $2, its own
+  separate knob — kept distinct from `MAX_PASS_SPEND` since it's a per-trade cap on ONE side of ONE
+  market, not a per-strategy-pass cap).
+
+**Worst-case one pass = bundle_arb(≤$2) + market_maker(≤$2) + directional(≤$2) = a FIXED ≤~$6 total,
+independent of wallet balance.** `bundle_arb.py` / `market_maker.py` themselves were otherwise NOT
+modified (per spec: wire existing alpha, don't reinvent it) — their arb-detection / margin / cancel-
+and-replace logic and other hardcoded constants (`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) are
+pre-existing, already-verified-live parameters.
+
 There is also a separate `run_earner.sh` (hardcoded single-instance paths, `.venv-pysdk`) that already
 invokes `redeem.py` + `bundle_arb.py` + `market_maker.py` on its own schedule — if both it and this
 skill's `run.sh` are scheduled for the same instance, they can fire the same self-gating strategies
-concurrently; that's a pre-existing scheduling question (cron config), out of this file's scope.
+concurrently (each still bounded by its own `MAX_PASS_SPEND` read at call time); that's a pre-existing
+scheduling question (cron config), out of this file's scope.
 
 ### `pick.py` → `place_order.py` (the new directional-buy path)
 Neither hardcodes a market or a side — the MODEL (multi-model consensus + smart-money signal) decides;
@@ -160,7 +183,8 @@ the code only filters/sizes/caps:
      a default bet.** Verified live 2026-07-05: read-only run correctly WAITed
      (`no-short-dated-liquid-candidates`) because the soonest real market resolved in 14.7 days, just past
      the 14-day horizon — proof the horizon filter is real, not decorative.
-2. **`place_order.py`** (EXECUTION — the exact working V2 flow from `v2_full_flow.py`, generalized):
+2. **`place_order.py`** (EXECUTION — the exact working V2 flow that used to live in the now-deleted
+   `v2_full_flow.py`, generalized):
    reads `TOKEN_ID` / `SIDE` (BUY only) / `AMOUNT` from env (argv fallback), re-caps `AMOUNT<=MAX_BET_SIZE`
    again (defense in depth), then SecureClient sig-3 bootstrap → relayer-key mint (SIWE) → idempotent
    neg-risk approve → `get_order_book` → best ask → `create_market_order(..., order_type="FAK")` →
@@ -216,8 +240,9 @@ This skill is otherwise a thin harness: run for real, record the trace, let the 
 | Guard | How |
 |---|---|
 | kill-switch | `touch KILL` in this dir → next run exits without trading (before any of the 3 strategies run). `rm KILL` to resume |
+| per-pass fixed spend ceiling (ALL 3 strategies) | `run.sh` exports `MAX_PASS_SPEND` (default $2); `bundle_arb.py`/`market_maker.py`/`pick.py` each cap their own leg to it — see "PER-PASS RISK ENVELOPE" above (fixed ≤~$6/pass, independent of wallet balance) |
 | per-trade cap (directional path) | `pick.py` Kelly-sizes + caps by `MAX_BET_SIZE` (default $2); `place_order.py` re-caps `AMOUNT<=MAX_BET_SIZE` again |
-| per-trade risk (arb/maker paths) | `bundle_arb.py` / `market_maker.py`'s own pre-existing constants (`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) — unchanged by this task |
+| per-trade risk (arb/maker paths) | `bundle_arb.py` / `market_maker.py`'s own pre-existing constants (`FEE_RATE`, `EDGE`, `MIN_SIZE`, `MARGIN`) — unchanged by this task except the new `MAX_PASS_SPEND` cap above |
 | no dry-run | not provided, by design — a run is always real |
 
 ## Trace (self-observe, H1)
