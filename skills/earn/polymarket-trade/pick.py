@@ -78,6 +78,7 @@ MIN_LIQUIDITY = _env_float("MIN_LIQUIDITY", 5000.0)
 MIN_ODDS = _env_float("MIN_ODDS", 0.15)
 MAX_ODDS = _env_float("MAX_ODDS", 0.85)
 MAX_BET_SIZE = _env_float("MAX_BET_SIZE", 2.0)
+POLY_MIN_ORDER = _env_float("POLY_MIN_ORDER", 1.0)  # Polymarket min marketable order value ($1) — exchange constraint, not judgment
 MAX_CANDIDATES = _env_int("MAX_CANDIDATES", 5)
 
 
@@ -154,7 +155,13 @@ def size_bet(kelly, ai_prob, market_prob, avg_edge, avg_conf):
         # to zero (e.g. rounding at the fractional-Kelly cap). Never used to
         # force a bet on a candidate that didn't qualify.
         amount = kelly.bankroll * abs(avg_edge) * (avg_conf / 10.0) * 0.5
-    return round(min(amount, MAX_BET_SIZE), 2)
+    amount = min(amount, MAX_BET_SIZE)
+    # Floor at the exchange minimum ($1): a marketable BUY below POLY_MIN_ORDER is
+    # rejected by Polymarket ("invalid amount ... min size: 1"). Platform constraint,
+    # not judgment. If the cap is below the min, no valid bet exists -> 0 -> caller WAITs.
+    if amount < POLY_MIN_ORDER:
+        amount = POLY_MIN_ORDER if MAX_BET_SIZE >= POLY_MIN_ORDER else 0.0
+    return round(amount, 2)
 
 
 def main():
