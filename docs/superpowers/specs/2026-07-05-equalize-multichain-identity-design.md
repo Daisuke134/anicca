@@ -62,3 +62,10 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
   - 実機実証(実 legacy wallet 実在下): foreign spawn(`ANICCA_HOME=/tmp/adv-spawn-no-wallet-yet`)→ `resolveEvmPrivateKey`=null(automaton 鍵でない=false)、automaton(`$HOME/.anicca`)→ legacy 鍵(温存=true)。
   - test: `resolve-identity.test.mjs` に foreign 継承拒否ケースを EVM/Solana 両方追加 → 16/16 pass。resolve-wallet-path 6/6 維持。
 - round-1 の FIND-001(R4)は round-2 で PASS 再確認済。→ round-3 で R1 修正を再検証。
+
+## Scope 訂正(round-2 後の自 sweep, 2026-07-05)— 共有 wallet 読みは pervasive、#28 へ
+自 grep sweep で判明: 「`$HOME/.automaton/wallet.json` を無条件で直読み」する engine が pm-trade 以外にも多数存在（`ensure-gas.mjs:24 loadKey()`、`hl-trade/hl.py:44`、`execute-yield.mjs`、`execute-invest.mjs`、`x402-sell/serve.mjs`、`buyer-cdp.mjs`、`runtime/wallet-address.mjs`、`runtime/compute-proxy/proxy.mjs`）。これらは $ANICCA_HOME を無視し共有 legacy を使う = §49 の identity 未平等の本体。
+
+- **#26(このスライス)の確定スコープ**: ★pm-trade の鍵解決を per-instance に gate★ + ★wallet 生成 path を per-instance に隔離(resolve-wallet-path.sh)★。両者 2ラウンドの adversary + 実機実証で verified。これは #27(automaton/Franklin を Polymarket earner に)を unblock するのに十分(→#27 は pm-trade のみ使う)。
+- **#28(新規, 平等化の完成)**: hl-trade/sol-trade/yield/invest/x402/gas + runtime utils の全 wallet 読みを、gated な resolver(EFFECTIVE_HOME 優先 + legacy は正当所有者限定)経由に統一する。money-safety: fresh spawn がこれら engine を走らせる前、かつ #19 の公平な engine 横断比較の前に必須。現 live 個体は env/設定済み鍵で動くため現時点の実害は無い(fresh spawn は未 spawn)。
+- 現状 live 3個体は安全(automaton/Franklin/claude-p は各自の env/設定で鍵解決)。危険は「自前 wallet 未生成の新 spawn がこれら engine を走らせた時」だけで、それは #28 完了後にしか起きない順序。
