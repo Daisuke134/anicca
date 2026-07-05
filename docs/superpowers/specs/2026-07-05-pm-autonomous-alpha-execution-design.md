@@ -141,3 +141,5 @@ market/side/size は一切ハードコードしない（MODEL が data から判
 **暫定対応**: 両 self-funded body(`~/.anicca`,`~/.blockrun`)の `polymarket-trade/KILL` を touch して earn を停止（誤 wallet 建玉を防ぐ）。
 
 **恒久 fix（VCSDD）**: `run.sh` identity block を「まず resolve-identity(ANICCA_HOME) を解決して export（instance 自身の EOA を使う）、resolve-identity が空のときだけ agent .env にフォールバック」に変更。#28 の EFFECTIVE_HOME gating で foreign home は空を返す（fail-closed）。検証 = automaton→0xa3CDd4(deposit 0x2953)/Franklin→0x3EcCAD24(deposit 0xda4b)/claude-p→0x810f(deposit 0x904B、不変)を各々が使うことを実測 + fresh adversary。PASS 後に KILL 解除。
+
+**✅ FIXED + VERIFIED (`9e22655`, 2026-07-05)**: builder が俺の提案の欠陥も catch — resolve-identity は ANICCA_HOME 未設定時 `$HOME/.anicca`(=automaton)へ default するので「無条件 call」だと claude-p が automaton の鍵を掴む逆 leak。正しい fix = **ANICCA_HOME が明示設定されてる時だけ resolve**（automaton の com.anicca.daemon / Franklin の franklin-loop は設定、claude-p の pm-earner は未設定で run_earner.sh 経由）。独立検証（実 run.sh ロジックで3 instance sim）で automaton→0xa3CDd4 / Franklin→0x3EcCAD24 / claude-p→0x810f を確認、bash -n OK。fixed code を両 body に再同期、KILL 解除。→ 各 self-funded instance が**自分の wallet で**安全に自律 earn 可能。残: automaton 資本 seed + realized は resolution/#19 self-improve。
