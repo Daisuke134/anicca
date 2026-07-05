@@ -69,3 +69,26 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
 - **#26(このスライス)の確定スコープ**: ★pm-trade の鍵解決を per-instance に gate★ + ★wallet 生成 path を per-instance に隔離(resolve-wallet-path.sh)★。両者 2ラウンドの adversary + 実機実証で verified。これは #27(automaton/Franklin を Polymarket earner に)を unblock するのに十分(→#27 は pm-trade のみ使う)。
 - **#28(新規, 平等化の完成)**: hl-trade/sol-trade/yield/invest/x402/gas + runtime utils の全 wallet 読みを、gated な resolver(EFFECTIVE_HOME 優先 + legacy は正当所有者限定)経由に統一する。money-safety: fresh spawn がこれら engine を走らせる前、かつ #19 の公平な engine 横断比較の前に必須。現 live 個体は env/設定済み鍵で動くため現時点の実害は無い(fresh spawn は未 spawn)。
 - 現状 live 3個体は安全(automaton/Franklin/claude-p は各自の env/設定で鍵解決)。危険は「自前 wallet 未生成の新 spawn がこれら engine を走らせた時」だけで、それは #28 完了後にしか起きない順序。
+
+## #28 EQUALIZE-2 — 全 engine の wallet 読みを gated resolver に統一(VCSDD, 2026-07-05)
+### Grounding(8サイト読了)
+全サイト共通パターン = env(`PKVAR`/`BLOCKRUN_WALLET_KEY`)優先 → `$HOME/.automaton/wallet.json` 無条件直読み。JS7 + Python1:
+- 秘密鍵: `ensure-gas.mjs:24`, `execute-yield.mjs:54`, `execute-invest.mjs:30`, `x402-sell/buyer-cdp.mjs:10`, `compute-proxy/proxy.mjs:10`, `hl-trade/hl.py:44`
+- アドレスのみ: `x402-sell/serve.mjs:32`(X402_PAYTO 既定), `runtime/wallet-address.mjs:7`
+### Requirements(EARS)
+- R7: THE system SHALL 共有ヘルパー `loadEvmKey({env})` を `resolve-identity.mjs` に持つ = env(`PKVAR`/`BLOCKRUN_WALLET_KEY`)優先 → 無ければ `resolveEvmPrivateKey`(gated: EFFECTIVE_HOME 優先, legacy は正当所有者限定, foreign spawn は null)。
+- R8: 全 JS サイト SHALL 自前の `$HOME/.automaton/wallet.json` 直読みを `loadEvmKey()`/`resolveEvmPrivateKey()` 経由に置換。アドレス系は解決鍵から `privateKeyToAccount().address` を導出。
+- R9: `hl.py` SHALL env 優先(現状維持)→ 無ければ `node resolve-identity.mjs evm`(gated CLI)で解決、それも空なら **fail-closed で明示エラー**(借り鍵で署名しない)。
+- R10: 現 live 3個体の鍵解決は不変(env/設定済みなので env-first で従来通り)= 回帰ゼロ。
+### DONE(fresh Sonnet adversary, 実行)
+1. `loadEvmKey` 単体テスト(env-first / gated file / foreign→null)。
+2. 全8サイトが直読みを排し gated 経由(grep で `HOME + "/.automaton/wallet.json"` 直読みが resolver 経由helper以外に残らない)。
+3. 実機: foreign ANICCA_HOME で各サイトの鍵解決が automaton 鍵を継承しない(null/fail-closed)を実証。
+4. 現 live individ の鍵解決不変(env-first で従来通り)= 回帰ゼロ。
+
+## Adversary round 3(#28, fresh Sonnet 実行ベース, 2026-07-05)→ grep 盲点の2件を検出→修正
+adversary が俺の grep 盲点を突いた: 除外パターン `telemetry-post` が `telemetry-poster.mjs` も巻き込み、かつ `.sh` 内 inline `require()` を `.mjs/.py`+`readFileSync` grep が拾えず、同クラスの直読みが2件残存していた。
+- **FIND-A**: `runtime/dashboard/telemetry-poster.mjs:16` — `$HOME/.automaton/wallet.json` を無条件読みし automaton 鍵で dashboard 署名 → foreign spawn が automaton として詐称署名(identity spoofing + 鍵漏洩)。修正: `resolveEvmPrivateKey()` 経由、null なら投稿せず exit(fail-closed)。
+- **FIND-B(最重大, 実資金)**: `runtime/anicca-daemon.sh:87` — inline node require で automaton 鍵を `BLOCKRUN_WALLET_KEY` に → ClawRouter が automaton の実マネーで x402 課金。修正: `node $REPO/skills/earn/lib/resolve-identity.mjs evm`(gated CLI)、foreign は空→ClawRouter に借り鍵渡さず(fail-closed)。
+- **完全 sweep(全拡張子・全 read 形式)で残存ゼロを確認** = この2件が最後。実機実証: (poster)foreign→null(automaton鍵でない)/automaton→温存、(daemon)foreign→空(automatonの金で課金せず)/automaton→鍵温存。
+- ★教訓: sweep は全拡張子(.mjs/.js/.py/.sh)× 全 read 形式(readFileSync/require/JSON.parse/open)で、除外パターンは部分文字列誤爆に注意。→ round-4 で収束確認。
