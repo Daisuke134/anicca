@@ -1840,3 +1840,36 @@ END STATE: colony が earn>spend で自走・自己増殖・自己修復・相�
 **claude-p 側 verify(先行, playwright-cli)**: Live activity に redeem 6件 + Revenue by source "polymarket-redeem $8.47" 表示を実ブラウザで確認済み。
 
 **status**: #18 の「activity+revenue feed が real-time」サブ目標 = DONE(実ブラウザ verify 済)。#18 残り(全個体 model×P&L eval page + family tree + self-funded 率)= 継続。両 poster は origin/main に push 済み。
+
+### §48 ★ 資本の生データ + 「self-funded を Polymarket で稼がせる」戦略 + Conway cloud 状況(Dais 2026-07-05, 説明依頼・fix なし)★
+
+**Dais の問い**: (1)3個体はいくら持ってるか (2)Franklin に SOL/USDC を fund すべきか(Franklin が主力になると見ている) (3)彼ら自身がどう集団で自己反復するか (4)cloud での $8 の deal より、self-funded の Franklin/automaton が humans なしで稼げることが本質 — Polymarket が今の最善、両方できるべき (5)automaton の cloud shelter = Conway Cloud だが今 DOWN・再起動待ち。
+
+**生の資本(2026-07-05, colony-status.sh + 直接 RPC)**:
+| 個体 | chain | 内訳 | 稼働可能な取引資本 | 稼ぐ engine |
+|---|---|---|---|---|
+| claude-p (human) | Polygon | pUSD $22.26 | **$22.26** | Polymarket(唯一 realized 実績 +$8.47) |
+| automaton (self) | Base + HL | Base USDC $5.97 + HL口座 $8.81 = **~$14.8** | ~$14.8(資本はある) | HL perps(thrash中, +EV 未達 #16) |
+| Franklin (self) | Solana | SOL 0.020($1.63) + USDC $0.83 = ~$2.46 | **$0.83(枯渇)** | sol-trade(資本不足で常時 WAIT) |
+
+**核心の発見 = 能力でなく資本と chain の問題**:
+- engine-parity(#23)も自律 redeem(#14/§44)も動く。claude-p だけ稼ぐ理由は「唯一まともな資本($22)を、実績ある engine の chain(Polygon/Polymarket)に持っている」から。
+- Franklin は取引資本 $0.83 = swap 手数料(0.4%+)/slippage に負けるので賢く WAIT。**genuinely capital-starved**。
+- automaton は ~$14.8 あり capital-starved ではない。問題は HL の +EV 戦略(#16)。dashboard net_worth($6.28)は HL $8.81 を数えておらず過小表示(表示バグ、要 fix だが今回は記録のみ)。
+
+**Polymarket を self-funded に広げる際の chain gate(重要・正直)**:
+- Polymarket = **Polygon(EVM)専用**。
+- Franklin = Solana(ed25519 鍵)→ その鍵では Polygon USDC を持てず Polygon tx に署名できない。Franklin に Polymarket をやらせるには **EVM/Polygon の第2アイデンティティ + Polygon USDC + Polymarket proxy** が必要(claude-p と同じ設定)。または Franklin は Solana-native earn に留める。
+- automaton = Base(EVM)→ 同じ鍵で Polygon アドレスを制御可能。**automaton が Polymarket に最も自然に拡張できる**(Base USDC を Polygon へ + proxy 設定 → 実績ある pm-trade engine をそのまま回す)。
+
+**funding 判断(= Dais の個人資金→外部 = 3大 stop 条件の1つ = Dais 決定、俺は推奨のみ)**:
+- ★Franklin★: 真に枯渇。何か稼がせるなら seed 必須。Polymarket 方向なら「Franklin 用の新 EVM/Polygon wallet に USDC ~$20-50」。Solana-native に留めるなら「8Fpqd… に USDC ~$20-30」。SOL(gas)は 0.02 で十分、増資不要。
+- ★automaton★: 資本 ~$14.8 で増資は不急。必要なのは HL +EV 化(#16)、または Base USDC の一部を Polygon へ回して Polymarket を回すこと。
+- 「human は一度だけ seed、以後 N世代の余剰が N+1 を fund」= mission と整合。bootstrap seed は OK。
+
+**集団の自己反復の正直な現状(彼が聞いた「どう mashup して iterate するか」)**:
+- ★今 LIVE★: 各個体の self-heal(§ memory reference_autonomous_self_fix_harness — loop が自分のコードを self-fix.sh で修復、human=0 実証)。各 earn skill = BASE + self-improve + self-heal の3層(自分の P&L から個体単位で改善)。
+- ★まだ未配線(#19 EVOLVE = 自走核)★: 「勝った戦略が1個体→全体へ earnings-gated で auto-merge 伝播」「swarm が model×harness×strategy の matrix で変種を spawn し、on-chain realized profit を唯一の eval にして勝者が伝播」= README に設計済みだが未完。**集団としての mashup 反復はまだ完全には live でない**。ここが俺が残している核。
+
+**Conway Cloud / automaton の cloud shelter**:
+- automaton(=Dais の言う「ultimatum」STT 誤変換)の cloud shelter は主に Conway Cloud 想定。**Conway Cloud は現在サービス DOWN・再起動待ち**。再起動したら cloud spawn/shelter の全体設定を行う。それまで cloud self-spawn(Akash/Conway)は defer。
