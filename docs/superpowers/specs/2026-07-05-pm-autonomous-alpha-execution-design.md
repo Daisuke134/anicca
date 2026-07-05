@@ -85,6 +85,11 @@ market/side/size は一切ハードコードしない（MODEL が data から判
 - MUST: deposit wallet は必ず bridge onramp 経由で register（raw-deploy / raw-transfer 禁止）。
 - MUST: on-chain-verified のみ realized 計上。paper/dry は計上しない。
 - MUST: `MAX_BET_SIZE` は小さく（default $2）。size/side/market は MODEL 判断、コードは cap のみ。
+- MUST（adversary FIND-1）: **1 pass の合算 spend を固定額に bound する。** `MAX_PASS_SPEND`（default $2）で
+  bundle_arb / market_maker が各々投じる USD を cap（従来は残高の~90%＝無制限）→ worst-case pass =
+  arb$2 + MM$2 + directional$2 = **残高非依存の固定 ~$6**。cap 未満で CLOB 最小(5sh)を満たせなければ HOLD。
+- MUST（follow-up）: sibling `run_earner.sh`（launchd, 10min, MM/arb/redeem）と run.sh の同一 wallet
+  二重実行 race は上記 fixed cap で「co-fire しても小額固定」に bound。恒久的な単一ループ化は #30 隣で対応。
 
 ## 4. self-improve（loop が自分でチューニング）
 `MIN_EDGE / MIN_CONF / RESOLVE_HORIZON_DAYS / MAX_BET_SIZE` は loop が自分の realized P&L から
@@ -110,3 +115,15 @@ market/side/size は一切ハードコードしない（MODEL が data から判
 - `~/anicca/skills/earn/polymarket-trade/run.sh`（配線置換）
 - `~/anicca/skills/earn/polymarket-trade/SKILL.md`（新経路を記述）
 - 変更しない: `fund_via_bridge.py`（register）、`redeem.py`（回収）、resolve-identity。
+
+## 7. 検証ログ（GLVS Verify — 実施記録）
+
+| 段 | 結果 |
+|---|---|
+| Build v1 | `dee2d3c` — stub(`main.py --live`)撤去 → 既存 bundle_arb→market_maker→pick→place の3戦略 chain。pick.py は既存 `AIAnalyzer.consensus_analysis`+`get_smart_money_summary`+`fetch_active_markets` を import（再発明せず）。read-only 実行で `{"action":"WAIT","reason":"no-short-dated-liquid-candidates"}`（最短 14.73日 > 14日 horizon）= fail-closed 正常 |
+| Adversary v1（fresh Sonnet, disk-only） | **CONDITIONAL PASS**。A ハードコード無・B WAIT fail-closed・C5 per-trade cap 二重・C7 key isolation・C8 bridge register・D9 stub 完全死・D10 set -u brick 無・D11 syntax/compile・D12 dry-run 無 = 全 PASS 実証。**FIND-1（MEDIUM-HIGH, must-fix）= 合算 spend 無制限**（arb/MM が残高~90%、fixed cap 無・run_earner.sh と race 可）。FIND-2(LOW)=v2_full_flow TID 残存。FIND-3(INFO)=fetch_markets print 混入（run.sh 防御 parse で WAIT に安全劣化） |
+| Build v2（fix, in progress） | FIND-1: `MAX_PASS_SPEND=$2` で arb/MM を cap → worst-case pass 固定 ~$6（残高非依存）。FIND-2: v2_full_flow 削除。FIND-3: print→stderr |
+| Adversary v2 | FIND-1 解消の再確認（pending） |
+| Real E2E（俺=monitor、建玉=agent） | capital ある instance で loop 1回 live 発火 → 自分で on-chain 建玉(tx 0x1, deposit wallet 発) or 正当 WAIT/HOLD を data-api/chain で確認。human=0/claude=0（pending） |
+
+**現状の正直な到達点**: 「loop が自分で買う」配線は完成、money-safety cap を fix 中。まだ **real E2E で実注文を確認していない**（= 完了と言わない）。redeem は既に自律(#14)。
