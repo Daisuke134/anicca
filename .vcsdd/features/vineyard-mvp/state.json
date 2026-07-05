@@ -606,22 +606,22 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-05T06:56:03.921Z",
+      "timestamp": "2026-07-05T07:19:22.577Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 1,
+        "iteration": 2,
         "findings": [
-          "FIND-001",
-          "FIND-002",
-          "FIND-003",
-          "FIND-004"
-        ]
+          "FIND-005",
+          "FIND-006",
+          "FIND-007"
+        ],
+        "note": "FIND-001..004 confirmed closed; 2 new blocking findings (id path-traversal, no API auth on money-moving routes)"
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-05T06:56:03.921Z"
+      "adversaryReviewedAt": "2026-07-05T07:19:22.577Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-05T06:38:04.334Z",
-  "updatedAt": "2026-07-05T06:56:03.922Z"
+  "updatedAt": "2026-07-05T07:19:22.577Z"
 }

@@ -109,7 +109,7 @@ touch data/.gitkeep
     "node": ">=20"
   },
   "scripts": {
-    "test": "node --test core/*.test.mjs engines/*.test.mjs",
+    "test": "node --test core/*.test.mjs engines/*.test.mjs api/*.test.mjs",
     "api": "node api/server.mjs"
   },
   "dependencies": {
@@ -137,6 +137,11 @@ data/spawns.json
 - [ ] **Step 4: Write `.env.example`**
 
 ```bash
+# REQUIRED before running `npm run api` (api/server.mjs) — REQ-020/FIND-006. The API server
+# REFUSES TO START without this set, since /fund, /trade, /redeem move real money and must be
+# authenticated (Bearer token). Generate one with: openssl rand -hex 32
+# VINEYARD_API_KEY=
+#
 # Optional overrides — a fresh spawn generates its own isolated wallet by default (core/wallet.mjs).
 # VINEYARD_HOME=/absolute/path/to/vineyard/data   # defaults to ~/.vineyard
 #
@@ -186,7 +191,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { generatePrivateKey, privateKeyToAccount } from 'viem/accounts';
-import { generateWallet, instanceDir, vineyardHome } from './wallet.mjs';
+import { generateWallet, instanceDir, vineyardHome, isValidId } from './wallet.mjs';
 
 function tmpHome(prefix) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), `${prefix}-`));
@@ -295,7 +300,22 @@ export function vineyardHome(env = process.env) {
   return env.VINEYARD_HOME || path.join(env.HOME || process.cwd(), '.vineyard');
 }
 
+// SECURITY (REQ-019): `id` is fully caller-controlled (CLI --id, POST /spawn {id}) and is used
+// directly as a filesystem path segment below — an unvalidated id like "../../etc" would let
+// instanceDir() resolve OUTSIDE <VINEYARD_HOME>/instances/, an arbitrary-file-write vector. This is
+// the ONE choke point every function in this file that builds a per-id path (generateWallet,
+// resolveEvmPrivateKey, resolveSolanaSecret, resolveAddresses) already routes through, so validating
+// here protects all of them without needing to remember to validate at every call site.
+export const ID_PATTERN = /^[a-z0-9][a-z0-9_-]{0,63}$/;
+
+export function isValidId(id) {
+  return typeof id === 'string' && ID_PATTERN.test(id);
+}
+
 export function instanceDir(id, env = process.env) {
+  if (!isValidId(id)) {
+    throw new Error(`invalid instance id: ${JSON.stringify(id)}`);
+  }
   return path.join(vineyardHome(env), 'instances', id);
 }
 
@@ -543,6 +563,37 @@ function privateKeyToAccountAddress(pk) {
   // not just trust wallet.mjs's own bookkeeping.
   return privateKeyToAccount(pk).address;
 }
+
+// --- isValidId / instanceDir: path-traversal / arbitrary-file-write guard (REQ-019, FIND-005) ---
+
+test('isValidId: rejects path-traversal and other unsafe id shapes', () => {
+  assert.equal(isValidId('../etc'), false);
+  assert.equal(isValidId('a/b'), false);
+  assert.equal(isValidId('.'), false);
+  assert.equal(isValidId('..'), false);
+  assert.equal(isValidId(''), false);
+  assert.equal(isValidId('a'.repeat(65)), false, '65 chars exceeds the 64-char cap');
+  assert.equal(isValidId('-leading-dash'), false);
+  assert.equal(isValidId('_leading-underscore'), false);
+  assert.equal(isValidId('has/slash'), false);
+  assert.equal(isValidId('has\\backslash'), false);
+  assert.equal(isValidId('has\0null'), false);
+});
+
+test("isValidId: accepts safe ids, including the real newId() shape (crypto.randomBytes(4).toString('hex'))", () => {
+  assert.equal(isValidId('alpha'), true);
+  assert.equal(isValidId('instance-a'), true);
+  assert.equal(isValidId('a1b2c3d4'), true);
+  assert.equal(isValidId('a_b-c9'), true);
+});
+
+test('instanceDir: throws for a path-traversal id BEFORE any filesystem access — nothing is created at the unsafe resolved path', () => {
+  const home = tmpHome('vy-traversal');
+  const env = { VINEYARD_HOME: home };
+  const unsafeResolved = path.join(home, 'instances', '../../tmp/evil');
+  assert.throws(() => instanceDir('../../tmp/evil', env), /invalid instance id/);
+  assert.equal(fs.existsSync(unsafeResolved), false, 'instanceDir must throw before ever touching the filesystem');
+});
 ```
 
 - [ ] **Step 2: No additional import needed**
@@ -552,15 +603,15 @@ Task 2 already imports `{ generatePrivateKey, privateKeyToAccount }` from `'viem
 - [ ] **Step 3: Run the full wallet test suite**
 
 Run: `cd ~/vineyard && node --test core/wallet.test.mjs`
-Expected: PASS — 13 tests, 0 failures (8 from Task 2 + 2 FAIL-CLOSED + 1 ISOLATION + 2 ambient-env-var
-REGRESSION tests from Task 3)
+Expected: PASS — 16 tests, 0 failures (8 from Task 2 + 2 FAIL-CLOSED + 1 ISOLATION + 2 ambient-env-var
+REGRESSION tests + 3 id-validation/path-traversal-guard tests, all from Task 3)
 
 - [ ] **Step 4: Commit**
 
 ```bash
 cd ~/vineyard
 git add core/wallet.test.mjs
-git commit -m "test(core): fail-closed per-instance key isolation assertions (spec §8)"
+git commit -m "test(core): fail-closed per-instance key isolation + id path-traversal guard assertions (spec §8, REQ-019)"
 ```
 
 ---
@@ -631,6 +682,12 @@ Expected: FAIL — `Cannot find module './registry.mjs'`
 
 ```javascript
 // ~/vineyard/core/registry.mjs — spawns.json CRUD. Public-safe metadata only, never key material.
+// SECURITY (REQ-019): unlike core/wallet.mjs's instanceDir()-scoped functions, nothing here builds a
+// filesystem path FROM `id` — every row lives inside the ONE shared vineyardHome()/spawns.json file,
+// so an unsafe `id` string cannot cause a path-traversal write here. `id`-format safety for the
+// FILESYSTEM is still enforced upstream: every caller (cli/index.mjs's cmdSpawn, api/server.mjs's
+// POST /spawn) always calls generateWallet()/instanceDir() BEFORE registerSpawn(), so an invalid id
+// is already rejected before registerSpawn ever runs.
 import fs from 'node:fs';
 import path from 'node:path';
 import { vineyardHome } from './wallet.mjs';
@@ -756,6 +813,12 @@ test('sumRealized: PURE kernel — sums an in-memory array of already-parsed lin
   assert.equal(sumRealized([{ status: 'wait' }]), 0);
   assert.equal(sumRealized([]), 0);
 });
+
+test('appendLedger/readLedger: reject a path-traversal id before any filesystem access (REQ-019, FIND-005 — ledgerPath is a SECOND independent per-id path choke point, reuses wallet.mjs\'s isValidId)', () => {
+  const dataDir = tmpDataDir('vy-ledger-traversal');
+  assert.throws(() => appendLedger('../../tmp/evil', { engine: 'yield', status: 'skip' }, dataDir), /invalid instance id/);
+  assert.throws(() => readLedger('../../tmp/evil', dataDir), /invalid instance id/);
+});
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -769,8 +832,16 @@ Expected: FAIL — `Cannot find module './ledger.mjs'`
 // ~/vineyard/core/ledger.mjs — on-chain-verified realized P&L ONLY, never paper (spec §8).
 import fs from 'node:fs';
 import path from 'node:path';
+import { isValidId } from './wallet.mjs';
 
+// SECURITY (REQ-019): this is a SECOND, independent per-id path-construction choke point (a
+// separate `dataDir` root from core/wallet.mjs's `vineyardHome`) — `${id}.jsonl` is just as
+// caller-controlled and path-traversal-prone as instanceDir()'s `id` segment, so it reuses the SAME
+// isValidId() guard rather than inventing a second validation rule.
 function ledgerPath(id, dataDir) {
+  if (!isValidId(id)) {
+    throw new Error(`invalid instance id: ${JSON.stringify(id)}`);
+  }
   return path.join(dataDir, 'ledgers', `${id}.jsonl`);
 }
 
@@ -817,14 +888,15 @@ export function realizedPnl(id, dataDir) {
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd ~/vineyard && node --test core/ledger.test.mjs`
-Expected: PASS — 6 tests, 0 failures (5 existing + 1 direct `sumRealized` pure-kernel test)
+Expected: PASS — 7 tests, 0 failures (5 existing + 1 direct `sumRealized` pure-kernel test + 1
+id-path-traversal-guard test, REQ-019)
 
 - [ ] **Step 5: Commit**
 
 ```bash
 cd ~/vineyard
 git add core/ledger.mjs core/ledger.test.mjs
-git commit -m "feat(core): ledger.mjs realized P&L jsonl (append/read/sum), sumRealized pure kernel"
+git commit -m "feat(core): ledger.mjs realized P&L jsonl (append/read/sum), sumRealized pure kernel, id path-traversal guard (REQ-019)"
 ```
 
 ---
@@ -878,6 +950,11 @@ async function cmdSpawn(args) {
   const id = flags.id || newId();
   // --key/--solana-key are the ONLY bring-your-own-key path (REQ-003) — id-scoped, spawn-time only.
   // generateWallet() silently ignores these if wallet.json/solana.json already exists for `id`.
+  // REQ-019/FIND-005: an invalid --id (e.g. containing "../") makes instanceDir() throw inside
+  // generateWallet() below — that throw propagates up through this async function to main()'s
+  // top-level `.catch()` (bottom of this file), which already prints the message to stderr and sets
+  // a non-zero exit code, so an invalid --id is a clean, documented CLI failure, never an unhandled
+  // crash — no separate try/catch is needed here.
   const wallet = generateWallet(id, process.env, { evmPrivateKey: flags.key, solanaSecretKey: flags['solana-key'] });
   const row = registerSpawn({
     id,
@@ -939,13 +1016,48 @@ Expected: a JSON array with exactly the one row spawned in Step 2.
 // ~/vineyard/api/server.mjs — Express REST, same verbs as the CLI (spec §4).
 import express from 'express';
 import crypto from 'node:crypto';
-import { generateWallet } from '../core/wallet.mjs';
+import { generateWallet, isValidId } from '../core/wallet.mjs';
 import { registerSpawn, readRegistry, findSpawn } from '../core/registry.mjs';
 
 const app = express();
 app.use(express.json());
 
-app.post('/spawn', (req, res) => {
+// REQ-019/FIND-005: `id` is caller-controlled and is used as a filesystem path segment inside
+// core/wallet.mjs's instanceDir()/core/ledger.mjs's ledgerPath() — both now throw for an invalid id.
+// Several routes below are ASYNC Express 4 handlers; a synchronous throw inside an async handler
+// becomes an UNHANDLED PROMISE REJECTION (Express 4 does not await/catch a handler's returned
+// promise) rather than a clean HTTP error — left unguarded this would be a new crash/DoS vector
+// introduced by the id-validation fix itself. This middleware validates `id` up front, BEFORE any
+// handler runs, so an invalid id always returns a clean 400 and never reaches a throwing function.
+function requireValidId(req, res, next) {
+  const id = req.body?.id ?? req.params?.id;
+  if (id !== undefined && !isValidId(id)) {
+    return res.status(400).json({ error: 'invalid instance id' });
+  }
+  next();
+}
+
+// REQ-020/FIND-006: money-moving routes (/fund, /trade, /redeem) require this bearer token. There is
+// intentionally NO default — an unset VINEYARD_API_KEY refuses to start the server at all (below),
+// so a deployment can never accidentally go live unauthenticated.
+const API_KEY = process.env.VINEYARD_API_KEY;
+
+// REQ-020/FIND-006: constant-time comparison — `===` on the raw header would be a timing
+// side-channel on the key itself. Falls back to `false` (never throws) on a length mismatch, since
+// crypto.timingSafeEqual() requires equal-length buffers.
+function requireApiKey(req, res, next) {
+  const header = req.headers.authorization || '';
+  const expected = `Bearer ${API_KEY}`;
+  const headerBuf = Buffer.from(header);
+  const expectedBuf = Buffer.from(expected);
+  const authorized = headerBuf.length === expectedBuf.length && crypto.timingSafeEqual(headerBuf, expectedBuf);
+  if (!authorized) {
+    return res.status(401).json({ error: 'unauthorized' });
+  }
+  next();
+}
+
+app.post('/spawn', requireValidId, (req, res) => {
   const id = req.body?.id || crypto.randomBytes(4).toString('hex');
   // body.key/body.solanaKey are the ONLY bring-your-own-key path (REQ-003) — id-scoped, spawn-time
   // only. generateWallet() silently ignores these if wallet.json/solana.json already exists for `id`.
@@ -964,7 +1076,7 @@ app.get('/list', (_req, res) => {
   res.json(readRegistry());
 });
 
-app.get('/status/:id', (req, res) => {
+app.get('/status/:id', requireValidId, (req, res) => {
   const row = findSpawn(req.params.id);
   if (!row) return res.status(404).json({ error: 'unknown id' });
   res.json(row);
@@ -972,6 +1084,13 @@ app.get('/status/:id', (req, res) => {
 
 const PORT = process.env.PORT || 3000;
 if (process.argv[1] && process.argv[1].endsWith('server.mjs')) {
+  // REQ-020/FIND-006: fail-closed by design — a deployment must not go live with real-money routes
+  // (/fund, /trade, /redeem) unauthenticated. /spawn, /list, /status stay deliberately unauthenticated
+  // (see REQ-020) so this refusal is solely about the money-moving surface, not the whole server.
+  if (!API_KEY) {
+    console.error('VINEYARD_API_KEY is not set — refusing to start the API server with money-moving routes unauthenticated');
+    process.exit(1);
+  }
   app.listen(PORT, () => console.log(`vineyard API listening on :${PORT}`));
 }
 
@@ -983,7 +1102,7 @@ export default app;
 ```bash
 cd ~/vineyard
 npm install
-VINEYARD_HOME=/tmp/vy-smoke-api PORT=3999 node api/server.mjs &
+VINEYARD_HOME=/tmp/vy-smoke-api VINEYARD_API_KEY=smoke-test-key PORT=3999 node api/server.mjs &
 API_PID=$!
 sleep 1
 curl -s -X POST http://localhost:3999/spawn -H 'Content-Type: application/json' -d '{"fund":5}'
@@ -992,14 +1111,16 @@ kill $API_PID
 rm -rf /tmp/vy-smoke-api
 ```
 
-Expected: `POST /spawn` returns `201` with a JSON row; `GET /list` returns a JSON array containing that row.
+Expected: `POST /spawn` returns `201` with a JSON row; `GET /list` returns a JSON array containing that
+row. (`VINEYARD_API_KEY` must be set or the process exits 1 immediately — REQ-020/FIND-006 — even
+though `/spawn`/`/list` themselves stay unauthenticated.)
 
 - [ ] **Step 6: Commit**
 
 ```bash
 cd ~/vineyard
 git add cli/index.mjs api/server.mjs package-lock.json
-git commit -m "feat(cli,api): spawn + list commands wired to core/wallet+registry"
+git commit -m "feat(cli,api): spawn + list commands wired to core/wallet+registry; id validation + fail-closed API-key startup (REQ-019/020)"
 ```
 
 ---
@@ -2397,9 +2518,12 @@ const ENGINES = { yield: yieldEngine, solana: solanaEngine, polymarket: polymark
 const DATA_DIR = process.env.VINEYARD_DATA_DIR || 'data';
 ```
 
-Add routes (before the `app.listen(...)` block):
+Add routes (before the `app.listen(...)` block). `requireValidId` is already defined in `api/server.mjs`
+from Task 6 (reused here, not redefined). `requireApiKey` (also Task 6) gates ONLY `/fund`, `/trade`,
+`/redeem` — the real money-moving verbs (REQ-020/FIND-006) — `/run` and `/status/:id/full` stay
+unauthenticated by the same deliberate ease-of-onboarding scope as `/spawn`/`/list`/`/status`:
 ```javascript
-app.post('/fund', async (req, res) => {
+app.post('/fund', requireApiKey, requireValidId, async (req, res) => {
   const { id, amount, sourceKey } = req.body || {};
   const pk = resolveEvmPrivateKey(id);
   if (!pk) return res.status(404).json({ error: `no wallet for id ${id}` });
@@ -2408,19 +2532,19 @@ app.post('/fund', async (req, res) => {
   res.json(result);
 });
 
-app.post('/run', async (req, res) => {
+app.post('/run', requireValidId, async (req, res) => {
   const { id, engine } = req.body || {};
   const line = await runOnce({ id, dataDir: DATA_DIR, engines: ENGINES, candidates: engine ? [engine] : undefined });
   res.json(line);
 });
 
-app.get('/status/:id/full', (req, res) => {
+app.get('/status/:id/full', requireValidId, (req, res) => {
   const spawn = findSpawn(req.params.id);
   if (!spawn) return res.status(404).json({ error: 'unknown id' });
   res.json({ ...spawn, realized_pnl_usdc: realizedPnl(req.params.id, DATA_DIR), ledger: readLedger(req.params.id, DATA_DIR) });
 });
 
-app.post('/trade', async (req, res) => {
+app.post('/trade', requireApiKey, requireValidId, async (req, res) => {
   const { id, engine, ...params } = req.body || {};
   const pk = resolveEvmPrivateKey(id);
   let result;
@@ -2434,7 +2558,7 @@ app.post('/trade', async (req, res) => {
   res.json(result);
 });
 
-app.post('/redeem', async (req, res) => {
+app.post('/redeem', requireApiKey, requireValidId, async (req, res) => {
   const { id } = req.body || {};
   const spawn = findSpawn(id);
   const pk = resolveEvmPrivateKey(id);
@@ -2449,7 +2573,7 @@ Note: `findSpawn` is already imported in `api/server.mjs` from Task 6 — no dup
 
 ```bash
 cd ~/vineyard
-VINEYARD_HOME=/tmp/vy-smoke-api2 VINEYARD_DATA_DIR=/tmp/vy-smoke-api2-data PORT=3998 node api/server.mjs &
+VINEYARD_HOME=/tmp/vy-smoke-api2 VINEYARD_DATA_DIR=/tmp/vy-smoke-api2-data VINEYARD_API_KEY=smoke-test-key PORT=3998 node api/server.mjs &
 API_PID=$!
 sleep 1
 ID=$(curl -s -X POST http://localhost:3998/spawn -d '{}' -H 'Content-Type: application/json' | node -pe 'JSON.parse(require("fs").readFileSync(0)).id' 2>/dev/null || curl -s -X POST http://localhost:3998/spawn -d '{}' -H 'Content-Type: application/json' | python3 -c "import json,sys;print(json.load(sys.stdin)['id'])")
@@ -2460,12 +2584,129 @@ rm -rf /tmp/vy-smoke-api2 /tmp/vy-smoke-api2-data
 
 Expected: `/run` returns a ledger-line JSON object with `engine` + `status` fields (an honest skip/error given an unfunded wallet — never a fabricated success).
 
-- [ ] **Step 6: Commit**
+- [ ] **Step 6: Write `api/server.test.mjs` — auth + id-validation routing tests (REQ-019/REQ-020, FIND-005/FIND-006)**
+
+Routing/auth tests only — NEVER a real trade/fund/redeem call. Sets required env BEFORE the static
+import of `api/server.mjs` (its `API_KEY`/`DATA_DIR` are module-level consts read once at import time).
+Uses Node's built-in `fetch`/`http` against a real `app.listen(0)` — no new test dependency (no
+`supertest`) is added to `package.json`.
+
+```javascript
+// ~/vineyard/api/server.test.mjs
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+
+const TEST_API_KEY = 'test-only-key-do-not-use-in-prod';
+process.env.VINEYARD_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'vy-api-test-home-'));
+process.env.VINEYARD_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'vy-api-test-data-'));
+process.env.VINEYARD_API_KEY = TEST_API_KEY;
+
+const { default: app } = await import('../api/server.mjs');
+
+async function listen() {
+  const server = app.listen(0);
+  await new Promise((resolve) => server.once('listening', resolve));
+  return { server, baseUrl: `http://127.0.0.1:${server.address().port}` };
+}
+
+test('POST /fund without an Authorization header returns 401 and never reaches the engine', async () => {
+  const { server, baseUrl } = await listen();
+  try {
+    const res = await fetch(`${baseUrl}/fund`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: 'no-auth-attempt', amount: 5 }),
+    });
+    assert.equal(res.status, 401);
+    assert.deepEqual(await res.json(), { error: 'unauthorized' });
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /fund with a wrong bearer token also returns 401 (constant-time comparison rejects a length/content mismatch)', async () => {
+  const { server, baseUrl } = await listen();
+  try {
+    const res = await fetch(`${baseUrl}/fund`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer not-the-right-key' },
+      body: JSON.stringify({ id: 'wrong-key-attempt', amount: 5 }),
+    });
+    assert.equal(res.status, 401);
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /fund with the CORRECT bearer token passes the auth gate (routing test only — no engine is dependency-injected into api/server.mjs, so this proves auth success via the route\'s own existing 404-unspawned-id branch, never a real subprocess call)', async () => {
+  const { server, baseUrl } = await listen();
+  try {
+    const res = await fetch(`${baseUrl}/fund`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${TEST_API_KEY}` },
+      body: JSON.stringify({ id: 'no-wallet-for-this-id', amount: 5 }),
+    });
+    // resolveEvmPrivateKey returns null for an unspawned id, so the route's existing fail-closed 404
+    // branch fires WITHOUT ever calling polymarketEngine.fund — this proves the request got PAST the
+    // auth gate (401 would mean auth blocked it; 404 proves auth passed and real route logic ran).
+    assert.notEqual(res.status, 401);
+    assert.equal(res.status, 404);
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /spawn, GET /list, GET /status/:id remain accessible with NO auth header (deliberate scope — only money-moving routes are gated, REQ-020)', async () => {
+  const { server, baseUrl } = await listen();
+  try {
+    const spawnRes = await fetch(`${baseUrl}/spawn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({}),
+    });
+    assert.equal(spawnRes.status, 201);
+    const spawned = await spawnRes.json();
+
+    const listRes = await fetch(`${baseUrl}/list`);
+    assert.equal(listRes.status, 200);
+
+    const statusRes = await fetch(`${baseUrl}/status/${spawned.id}`);
+    assert.equal(statusRes.status, 200);
+  } finally {
+    server.close();
+  }
+});
+
+test('POST /spawn with a path-traversal id is rejected 400, not a crash or a written file (REQ-019/FIND-005 at the API level)', async () => {
+  const { server, baseUrl } = await listen();
+  try {
+    const res = await fetch(`${baseUrl}/spawn`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id: '../../tmp/evil' }),
+    });
+    assert.equal(res.status, 400);
+    assert.deepEqual(await res.json(), { error: 'invalid instance id' });
+  } finally {
+    server.close();
+  }
+});
+```
+
+- [ ] **Step 7: Run the new API test file**
+
+Run: `cd ~/vineyard && node --test api/server.test.mjs`
+Expected: PASS — 5 tests, 0 failures.
+
+- [ ] **Step 8: Commit**
 
 ```bash
 cd ~/vineyard
-git add cli/index.mjs api/server.mjs
-git commit -m "feat(cli,api): fund/run/status/trade/redeem verbs wired to core/loop + all 4 engines"
+git add cli/index.mjs api/server.mjs api/server.test.mjs
+git commit -m "feat(cli,api): fund/run/status/trade/redeem verbs wired to core/loop + all 4 engines; API-key auth on money-moving routes + id validation middleware (REQ-019/020)"
 ```
 
 ---
@@ -2633,8 +2874,11 @@ node cli/index.mjs run <id>                # one pass of the automatic earn loop
 node cli/index.mjs status <id>             # wallet + realized P&L + ledger
 ```
 
-Same actions over HTTP (for another agent): `npm run api` then `POST /spawn`, `POST /run`,
-`GET /status/:id/full`. Full contract: `llms.txt` + `openapi.json`.
+Same actions over HTTP (for another agent): set `VINEYARD_API_KEY` first (see `.env.example` — REQUIRED,
+`npm run api` refuses to start without it since `/fund`/`/trade`/`/redeem` move real money), then
+`npm run api`, then `POST /spawn`, `POST /run`, `GET /status/:id/full` — and pass
+`Authorization: Bearer $VINEYARD_API_KEY` on `/fund`/`/trade`/`/redeem` specifically (`/spawn`/`/list`/
+`/status`/`/run` stay unauthenticated by design — REQ-020). Full contract: `llms.txt` + `openapi.json`.
 
 ## First-time setup — the one human touch-point
 
@@ -2658,6 +2902,11 @@ Same actions over HTTP (for another agent): `npm run api` then `POST /spawn`, `P
   Collateral Onramp (`engines/python/polymarket/fund_via_bridge.py`).
 - On-chain-verified earnings only — `core/ledger.mjs` records realized, tx-verified P&L, never paper.
 - No dry run — every `run`/`trade`/`redeem` is a real pass; a `skip`/`wait` result is honest, not fake.
+- `id` is validated against a safe filesystem-path pattern before it ever reaches a path segment
+  (`core/wallet.mjs`'s `isValidId`/`instanceDir`) — an unsafe id is rejected, never used to write
+  outside `<VINEYARD_HOME>/instances/` or `data/ledgers/` (REQ-019).
+- `/fund`, `/trade`, `/redeem` require `Authorization: Bearer $VINEYARD_API_KEY`; the API refuses to
+  start at all if that key isn't set (REQ-020).
 
 ## Architecture
 
@@ -2706,13 +2955,16 @@ git commit -m "docs: README one-command quickstart, verified from a clean clone 
 
 ```bash
 cd ~/vineyard
-node --test core/*.test.mjs engines/*.test.mjs
+node --test core/*.test.mjs engines/*.test.mjs api/*.test.mjs
 ```
 
-Expected: every test file from Tasks 2-14 passes — `core/wallet.test.mjs` (9), `core/registry.test.mjs` (5),
-`core/ledger.test.mjs` (5), `core/brain.test.mjs` (4), `core/loop.test.mjs` (3), `engines/cost-basis.test.mjs` (5),
-`engines/yield.test.mjs` (1), `engines/polymarket.test.mjs` (9), `engines/hyperliquid.test.mjs` (5),
-`engines/solana.test.mjs` (3) — 49 tests total, 0 failures.
+Expected: every test file from Tasks 2-15 passes — `core/wallet.test.mjs` (16 — 8 generation/idempotency
++ 2 FAIL-CLOSED + 1 ISOLATION + 2 ambient-env-var REGRESSION + 3 id-validation/path-traversal-guard,
+REQ-019), `core/registry.test.mjs` (5), `core/ledger.test.mjs` (7 — 5 existing + 1 `sumRealized` pure-
+kernel + 1 id-path-traversal-guard, REQ-019), `core/brain.test.mjs` (4), `core/loop.test.mjs` (3),
+`engines/cost-basis.test.mjs` (5), `engines/yield.test.mjs` (1), `engines/polymarket.test.mjs` (9),
+`engines/hyperliquid.test.mjs` (5), `engines/solana.test.mjs` (3), `api/server.test.mjs` (5 — auth +
+id-validation routing tests, REQ-019/REQ-020) — 63 tests total, 0 failures.
 
 - [ ] **Step 2: Run the copied Python pure-function tests**
 
@@ -2780,7 +3032,10 @@ applied continuously while executing Tasks 1-17 (fresh-context adversary review 
 - **I** (README quickstart) → Task 17, verified from a genuinely clean clone twice (Task 17 Step 2, Task 18 Step 3).
 - Money-safety invariants (spec §8) → per-instance isolation tests (Task 3), bridge-onramp-only funding
   (Task 8, D8 documented), on-chain-verified ledger only (Task 5, `ledger.mjs`'s `net_usdc`/`earn_usdc`-`cost_usdc`
-  shape), no dry-run (every engine task's Step "Manual (non-automated) verification note").
+  shape), no dry-run (every engine task's Step "Manual (non-automated) verification note"), `id`
+  path-traversal validation at every per-id path choke point — `core/wallet.mjs`'s `instanceDir` and
+  `core/ledger.mjs`'s `ledgerPath` (Tasks 2, 3, 5, REQ-019, closing FIND-005), and API-key auth on the
+  real money-moving REST routes `/fund`/`/trade`/`/redeem` (Task 15, REQ-020, closing FIND-006).
 - G/J/K/L exclusions are stated up front (plan header) and re-confirmed at Task 18 Step 6 — no silent scope creep.
 
 **2. Placeholder scan** — searched for "TBD"/"implement later"/"add error handling"/"similar to Task N"/

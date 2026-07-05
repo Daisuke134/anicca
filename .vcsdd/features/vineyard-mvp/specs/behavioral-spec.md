@@ -8,7 +8,10 @@ treated as authoritative over the design spec's original assumptions wherever th
 all 4 engines wired, earn loop, llms.txt+REST+OpenAPI, README quickstart). **Explicitly out of scope**
 for this feature's DONE gate: TODO **G** (Web App UI), **J** (hyperframes demo video), **K** (submission
 docs copy pass) — these need their own follow-up VCSDD features once this backend is real and running
-(see "Scope boundary note" at the end of this document).
+(see "Scope boundary note" at the end of this document). **REQ-019/REQ-020** were added in the Phase 1c
+spec-review gate (iteration 2 → 3) to close FIND-005 (id path-traversal / arbitrary-file-write) and
+FIND-006 (no auth on money-moving API routes) — they are additional security invariants on top of the
+same B-I scope, not new functional scope.
 
 ## Purity boundary analysis (summary — full map in verification-architecture.md)
 
@@ -44,7 +47,12 @@ docs copy pass) — these need their own follow-up VCSDD features once this back
 - **Security constraints**: `wallet.json`/`solana.json` are written `chmod 600`. Private key material
   (`privateKey`, `secretKey`, `secretKeyBytes`) is NEVER returned by `resolveAddresses()`, `GET /list`,
   `GET /status/:id`, or logged to stdout/ledger — only public addresses and public-safe metadata cross
-  those boundaries.
+  those boundaries. Every instance `id` — fully caller-controlled via CLI `--id`/`POST /spawn {id}` —
+  MUST be validated against a safe filesystem-path character set before it is ever used to build a path
+  segment (`instances/<id>/`, `ledgers/<id>.jsonl`); an invalid id is rejected, never used to read/write
+  outside its intended directory (REQ-019). The real money-moving REST routes (`POST /fund`,
+  `POST /trade`, `POST /redeem`) MUST require a caller-supplied bearer token matching a server-configured
+  API key; the API server MUST refuse to start at all if that key is unset (REQ-020).
 - **Reproducibility/supply-chain**: Python dependency versions are pinned exactly to the versions
   verified installed in the real anicca venvs (plan D9: `polymarket-client==0.1.0b13`,
   `hyperliquid-python-sdk==0.24.0`, `eth-account==0.13.7`, `python-dotenv==1.2.2`, `web3==7.16.0`,
@@ -428,6 +436,84 @@ documented as a SEPARATE, explicitly-labeled manual verification step, never sil
   one masquerading as the other (plan Tasks 7 Step 10, 8 Step 8, 9 Step 6, 10 Step 8, 11 Step 6, 12 Step 8).
 - Grep-level check: none of the engine `.mjs`/`.py` files contain the literal words
   "fake"/"dry"/"mock"/"dummy"/"simulated" in a code path that would execute during a real invocation.
+
+### REQ-019: `id` format validation — closes FIND-005 (path-traversal / arbitrary-file-write)
+**EARS**: WHEN any code path (CLI `--id`, `POST /spawn {id}`, or any subsequent resolution/registration
+call for an already-spawned `id`) is given an instance `id` THE SYSTEM SHALL validate it against the
+safe pattern `^[a-z0-9][a-z0-9_-]{0,63}$` BEFORE that `id` is ever used to build a filesystem path
+segment, and SHALL reject an invalid `id` with a clear, documented error — NEVER silently truncate,
+sanitize-and-continue, or use an unvalidated `id` in a `path.join()` call. This applies at EVERY
+independent per-id path-construction choke point in the codebase, not just one: `core/wallet.mjs`'s
+`instanceDir(id, env)` (used by `generateWallet`/`resolveEvmPrivateKey`/`resolveSolanaSecret`/
+`resolveAddresses`) and `core/ledger.mjs`'s `ledgerPath(id, dataDir)` (used by `appendLedger`/
+`readLedger`, and transitively `realizedPnl`) — these are TWO separate modules with two separate path
+roots (`<VINEYARD_HOME>/instances/` vs `<VINEYARD_DATA_DIR>/ledgers/`), so validating in only one of
+them would leave the other exploitable.
+**Edge Cases**:
+- `id` containing `../` segments (e.g. `"../../tmp/evil"`), an absolute path, a bare `.`/`..`, an empty
+  string, a string over 64 characters, a leading `-`/`_`, a `/` or `\` anywhere, or a null byte — ALL
+  rejected; `instanceDir`/`ledgerPath` throw `invalid instance id: <id>` BEFORE any `fs.mkdirSync`/
+  `fs.writeFileSync`/`fs.appendFileSync` call, never after (plan Task 2/Task 3/Task 5's new tests).
+- A safe id (lowercase alphanumeric + `-`/`_`, 1-64 chars) is always accepted, including the real
+  `newId()` shape (`crypto.randomBytes(4).toString('hex')`) — this is verified explicitly by a test,
+  never merely assumed (plan Task 3).
+- `core/registry.mjs`'s `registerSpawn`/`updateSpawn`/`findSpawn` do NOT themselves need this guard —
+  they never construct a filesystem path from `id` (every row lives in the one shared `spawns.json`) —
+  but every caller (`cmdSpawn`, `POST /spawn`) always calls `generateWallet()` (which validates via
+  `instanceDir`) BEFORE `registerSpawn()`, so an invalid id never reaches the registry either.
+- At the API layer, an invalid `id` on `POST /spawn` (and any other route consuming `id`) MUST return a
+  clean `400 {"error": "invalid instance id"}` — NEVER an unhandled promise rejection / process crash.
+  Several of these routes are async Express 4 handlers, which do NOT catch a synchronous throw from a
+  called function the same way a synchronous handler would — the fix must account for this, not just
+  assume a `try/catch` inside one handler is sufficient for all of them.
+- At the CLI layer, an invalid `--id` produces a non-zero exit code and the error message on stderr —
+  never a stack-trace crash with no exit code, and never a silently-succeeding, wrong result.
+**Acceptance Criteria**:
+- `core/wallet.test.mjs` (plan Task 3 addendum) — 3 additional tests (16 cumulative in the file):
+  `isValidId` rejects every unsafe shape listed above and accepts every safe shape listed above;
+  `instanceDir("../../tmp/evil", env)` throws AND `fs.existsSync` on the unsafe resolved path is `false`.
+- `core/ledger.test.mjs` (plan Task 5 addendum) — 1 additional test (7 cumulative): `appendLedger`/
+  `readLedger` reject the same path-traversal id, proving the SECOND choke point is independently
+  guarded, not merely assumed covered by `core/wallet.mjs`'s fix.
+- `api/server.test.mjs` (plan Task 15, NEW file) includes a `POST /spawn` case with a path-traversal
+  `id` asserting `400` + `{"error": "invalid instance id"}` — never a crash, a 500, or a written file.
+- Static/structural check: `core/wallet.mjs`'s `instanceDir` and `core/ledger.mjs`'s `ledgerPath` are the
+  ONLY two functions in the codebase that build a path from a caller-supplied `id`, and both call
+  `isValidId`/throw before their `path.join`.
+
+### REQ-020: API-key authentication on money-moving routes — closes FIND-006
+**EARS**: WHEN a caller invokes `POST /fund`, `POST /trade`, or `POST /redeem` (the routes that move
+real money — register/fund a Polymarket deposit wallet, place a real market order, or collect real
+winnings) THE SYSTEM SHALL require an `Authorization: Bearer <token>` header whose token matches the
+server's configured `VINEYARD_API_KEY` environment variable, compared in constant time — and SHALL
+respond `401 {"error": "unauthorized"}` for a missing or incorrect token, NEVER invoking the underlying
+engine call. THE SYSTEM SHALL refuse to start the API server AT ALL (non-zero exit, clear stderr
+message) if `VINEYARD_API_KEY` is unset — this is a fail-closed default, not an opt-in. `POST /spawn`,
+`GET /list`, and `GET /status/:id`[`/full`] SHALL remain deliberately unauthenticated — this feature's
+own §1 "ease of onboarding" goal (any agent can discover and try the product with zero setup) requires
+these read/spawn-only, non-money-moving routes to stay frictionless; this is a documented scope
+boundary, not an oversight.
+**Edge Cases**:
+- No `Authorization` header at all → `401`, and the route's underlying engine function (e.g.
+  `polymarketEngine.fund`) is never invoked — a missing key must never be treated as "no key required."
+- A present but WRONG bearer token (including a token of a different length than the real key) → `401`
+  via `crypto.timingSafeEqual` on equal-length buffers (falling back to `false`, never throwing, on a
+  length mismatch) — `===` on the raw header is explicitly forbidden as a timing side-channel on the key.
+- `VINEYARD_API_KEY` unset when `api/server.mjs` is run as its own process → the process exits 1 before
+  `app.listen` is ever called — the server never silently comes up unauthenticated.
+- `POST /spawn`/`GET /list`/`GET /status/:id` succeed with NO `Authorization` header present at all —
+  confirming the gated set is exactly `{/fund, /trade, /redeem}`, never accidentally widened or narrowed.
+**Acceptance Criteria**:
+- `api/server.test.mjs` (plan Task 15, NEW file) — 5 tests, 0 failures: `POST /fund` without a header
+  returns 401 and never reaches the engine; `POST /fund` with a wrong bearer token returns 401; `POST
+  /fund` with the CORRECT bearer token passes the auth gate (proven via the route's own existing
+  fail-closed 404-unspawned-id branch, never a real subprocess call); `POST /spawn`/`GET /list`/`GET
+  /status/:id` all succeed with no auth header; `POST /spawn` with a path-traversal id returns 400
+  (REQ-019, tested in the same file).
+- `.env.example` documents `VINEYARD_API_KEY` as REQUIRED (not optional) with a one-line generation
+  note; `README.md`'s quickstart states it must be set before `npm run api`.
+- Static/structural check: `requireApiKey` middleware is applied to exactly `/fund`, `/trade`, `/redeem`
+  in `api/server.mjs` — never to `/spawn`, `/list`, `/status/:id`, `/status/:id/full`, or `/run`.
 
 ---
 
