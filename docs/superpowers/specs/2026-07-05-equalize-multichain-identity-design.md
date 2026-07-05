@@ -22,9 +22,10 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
 
 ## Requirements(EARS)
 - R1: THE system SHALL 各 instance の EVM 署名鍵を `resolve-identity` で per-instance に解決する。優先順:
-  ① env `ANICCA_EVM_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/wallet.json` → ③(後方互換)legacy shared `$HOME/.automaton/wallet.json` → ④ null。
+  ① env `ANICCA_EVM_PRIVATE_KEY` → ② `$EFFECTIVE_HOME/.automaton/wallet.json`(EFFECTIVE_HOME = 明示 `ANICCA_HOME`、無ければ default `$HOME/.anicca`) → ③(後方互換, **EFFECTIVE_HOME == `$HOME/.anicca` の default-home 所有者のみ**)legacy shared `$HOME/.automaton/wallet.json` → ④ null。
+  ★round-2 critical★: ③ を無条件にすると、自前 wallet 未生成の foreign spawn が別個体(automaton)の実マネー鍵を継承する(pm-trade/run.sh が実取引に使う経路)。よって ③ は正当な legacy 所有者(default-home)限定、それ以外は null で fail-closed。resolve-wallet-path.sh(R4)と同一原理。
   ※ 「agent `.env` の `POLYGON_WALLET_PRIVATE_KEY`」の後方互換は resolver ではなく pm-trade `run.sh`(R3)側で担う — run.sh は resolver を呼ぶ前に env/agent.env を先に見て claude-p を温存する(FIND-003 明確化)。
-- R2: THE system SHALL Solana 署名鍵を per-instance に解決する。優先順: ① env `ANICCA_SOLANA_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/solana.json` → ③(後方互換)`~/.blockrun/.solana-session`。
+- R2: THE system SHALL Solana 署名鍵を per-instance に解決する。優先順: ① env `ANICCA_SOLANA_PRIVATE_KEY` → ② `$EFFECTIVE_HOME/.automaton/solana.json` → ③(後方互換, **EFFECTIVE_HOME == `$HOME/.blockrun` = Franklin のみ**)`~/.blockrun/.solana-session` → ④ null。R1 と対称に、foreign spawn は Franklin の funded 鍵を継承しない(fail-closed)。
 - R3: WHEN pm-trade を run する THE system SHALL R1 で解決した鍵を `POLYGON_WALLET_PRIVATE_KEY` として agent に渡す(env が既に有ればそれを尊重=claude-p 温存)。
 - R4: THE identity 生成 SHALL per-instance に隔離される。EVM wallet が現状 `$HOME/.automaton/wallet.json`(1台で共有)である点を、`$ANICCA_HOME` 配下へ隔離できるようにする(既存 live 個体のパスは壊さない=追加的に `$ANICCA_HOME` を優先、無ければ `$HOME` fallback)。
 - R5(fail-closed): 鍵が解決できない engine は「その engine をスキップして warn ログ」で早期 return(throw で loop を殺さない)。money-safety。
@@ -54,3 +55,10 @@ Polymarket を全個体の主力に。これは #27(PM-FOR-ALL)の前提 build�
 - **FIND-002(修正)**: 隔離を手書きファイルでなく **実 shipped bash ロジックを叩く** `runtime/compute-proxy/__tests__/resolve-wallet-path.test.mjs`(6ケース、FIND-001 回帰含む)で検証。
 - **FIND-003(修正)**: spec R1 の ③ を「legacy `$HOME/.automaton/wallet.json`」に訂正、agent `.env` 後方互換は run.sh(R3)側と明記。
 - viem パス修正($HERE/../node_modules)+ 回帰ゼロ(config/tier/PROP-021 の fail は未変更ファイル由来)は adversary も確認。→ round 2 で再検証。
+
+## Adversary round 2(fresh Sonnet, 実行ベース, 2026-07-05)→ 同種の R1 バグ検出→修正
+- **round-2 finding(致命, FIND-001 と同クラス, 実取引経路)**: round-1 は R4(`resolve-wallet-path.sh`, wallet 生成 path)だけ直し、**R1(`skills/earn/lib/resolve-identity.mjs`, pm-trade/run.sh が実取引の鍵解決に使う経路)の legacy fallback を無条件のまま残していた**。adversary が node 実行で実証: `resolveEvmPrivateKey({env:{ANICCA_HOME:"/tmp/spawn-no-wallet", HOME:実}})` が automaton の実 legacy 秘密鍵を返す(`key===legacy → true`)。安全性が「start-local.sh が必ず run.sh より先に走り $ANICCA_HOME wallet を生成する」という未保証の順序前提に依存していた。
+  - 修正: `resolveEvmPrivateKey`/`resolveSolanaSecret` の legacy fallback を EFFECTIVE_HOME 限定に(EVM=`$HOME/.anicca`、Solana=`$HOME/.blockrun`)、resolve-wallet-path.sh と対称。foreign spawn は null で fail-closed(自前 wallet 未生成なら pm-trade は skip、他個体の鍵で取引しない)。
+  - 実機実証(実 legacy wallet 実在下): foreign spawn(`ANICCA_HOME=/tmp/adv-spawn-no-wallet-yet`)→ `resolveEvmPrivateKey`=null(automaton 鍵でない=false)、automaton(`$HOME/.anicca`)→ legacy 鍵(温存=true)。
+  - test: `resolve-identity.test.mjs` に foreign 継承拒否ケースを EVM/Solana 両方追加 → 16/16 pass。resolve-wallet-path 6/6 維持。
+- round-1 の FIND-001(R4)は round-2 で PASS 再確認済。→ round-3 で R1 修正を再検証。
