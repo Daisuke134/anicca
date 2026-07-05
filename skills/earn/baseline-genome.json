@@ -1,0 +1,7 @@
+{
+  "MIN_EDGE": 0.15,
+  "MIN_CONF": 7,
+  "RESOLVE_HORIZON_DAYS": 14,
+  "MAX_CANDIDATES": 5,
+  "EARN_CONSENSUS_MODELS": "nvidia/llama-4-maverick,nvidia/qwen3-next-80b-a3b-instruct,nvidia/mistral-nemotron"
+}
