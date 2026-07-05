@@ -23,17 +23,13 @@ set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PORT="${COMPUTE_PROXY_PORT:-8402}"
-# per-instance EVM identity (#26 EQUALIZE, R4): prefer $ANICCA_HOME so every instance is
-# isolated (its own key → its own on-chain identity, comparable P&L). Fall back to the legacy
-# shared $HOME path ONLY if a live instance already has a wallet there — never regenerate or
-# relocate an existing wallet, so a running instance's identity never changes. A fresh spawn
-# with ANICCA_HOME set is born with its OWN wallet under $ANICCA_HOME.
-EFFECTIVE_HOME="${ANICCA_HOME:-$HOME/.anicca}"
-WALLET="$EFFECTIVE_HOME/.automaton/wallet.json"
-LEGACY_WALLET="$HOME/.automaton/wallet.json"
-if [ ! -f "$WALLET" ] && [ -f "$LEGACY_WALLET" ]; then
-  WALLET="$LEGACY_WALLET"
-fi
+# per-instance EVM identity (#26 EQUALIZE, R4): the wallet path is resolved by a single sourced
+# helper (unit-tested) so every instance gets its OWN isolated wallet under its OWN $ANICCA_HOME,
+# while ONLY the original default-home instance keeps the legacy shared $HOME wallet. A spawn with
+# a different $ANICCA_HOME never inherits another instance's key (see resolve-wallet-path.sh).
+# shellcheck source=resolve-wallet-path.sh
+. "$HERE/resolve-wallet-path.sh"
+WALLET="$(resolve_wallet_path)"
 # Free BlockRun model = $0/call, no key. Frontier (paid) is chosen by your loop
 # when the wallet has USDC; override with ANICCA_MODEL to pin one.
 FREE_MODEL="${ANICCA_FREE_MODEL:-nvidia/deepseek-v4-flash}"
