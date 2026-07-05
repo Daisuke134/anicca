@@ -62,25 +62,37 @@
 > moves only on real on-chain fills — this row is a verified settle tx, not a claim. ★
 
 
-> ### ★★ NEW-EOA ONBOARDING GATE (2026-07-05, root cause of "error resolving address") ★★
-> A BRAND-NEW EOA cannot trade on Polymarket CLOB until Polymarket's backend KNOWS it.
-> The CLOB derives the funder (deposit wallet) from the *authenticated EOA* + signature_type;
-> if the EOA was never onboarded, `get_balance_allowance` / `post_order` return
-> **`error resolving address`** (and `create_or_derive_api_key` has nothing to derive →
-> "the order signer address has to be the address of the API KEY"). Verified 2026-07-05:
-> automaton (old EOA 0xa3CDd4, onboarded in a prior session) trades with the EXACT same
-> scripts that FAIL for Franklin (fresh EOA 0x3EcCAD24 minted by #26). Deploy method,
-> wallet_type (DEPOSIT_WALLET/sig3), funding ($5.95 > automaton's $4.95) are all IDENTICAL —
-> the only difference is backend registration of the EOA. Source: Polymarket/py-clob-client-v2
-> issues #70/#77/#87/#91 (crp4222, running in production) + our own A/B on identical scripts.
+> ### ★★ DEPOSIT-WALLET REGISTRY GATE (2026-07-05, CONFIRMED root cause of "error resolving address") ★★
+> A deposit wallet must be in **Polymarket's relayer WALLET REGISTRY** before any CLOB call works.
+> Symptoms of an UNregistered wallet (all reproduced 2026-07-05, browser=0):
+>   - `get_balance_allowance` / order → **`error resolving address`**
+>   - `transfer_erc20` from it → **`wallet registry validation failed: wallet 0x… is not registered`**
+>   - `create_or_derive_api_key` create-path 400 + derive has nothing → "the order signer address has
+>     to be the address of the API KEY".
+> Verified: automaton (0xa3CDd4) trades with the EXACT scripts that FAIL for Franklin (0x3EcCAD24) —
+> same SDK, same wallet_type=DEPOSIT_WALLET/sig3, Franklin MORE funded ($5.95 > $4.95). The ONLY
+> difference is registry membership. NOT the EOA age, NOT a browser (none used), NOT funding amount.
 >
-> ★ THE REPEATABLE FIX (must run ONCE per fresh instance EOA, human-zero): onboard the EOA to
->   Polymarket so the backend registers the EOA↔deposit-wallet pair. crp4222's verified recipe:
->   "if the wallet never touched the app, log in with it and do ONE manual action, then derive
->   again." Practically = drive polymarket.com in CloakBrowser with THIS instance's EOA
->   (connect wallet → the app deploys+registers the sig-3 deposit wallet) ONCE, before any API
->   trade. Bake this onboarding step into the spawn/born-with flow so every self-funded AI is
->   registered at birth. Until then, a fresh instance funds fine but cannot place CLOB orders.
+> ★ WHY #26/#27 born-with BROKE it: `ensure-polymarket-deposit-wallet.py` deployed the ERC-1167/1967
+>   proxy on-chain via a raw/SIWE path, then I funded it by sending pUSD DIRECTLY to the deposit
+>   wallet (POL→pUSD swap). That leaves the wallet **on-chain-deployed but NOT in the registry** — and
+>   it can no longer be `WALLET-CREATE`d ("wallet already deployed"), so it is STUCK/unregisterable.
+>
+> ★ THE CORRECT REPEATABLE FLOW (docs: https://docs.polymarket.com/trading/deposit-wallets +
+>   /trading/bridge/deposit). Registration is done by the RELAYER `WALLET-CREATE` **and/or by funding
+>   THROUGH Polymarket's Collateral Onramp (the Bridge)** — NOT by a raw deploy + raw pUSD transfer:
+>   1. Let the SDK create+register the deposit wallet on a FRESH EOA via `SecureClient.create(...)`
+>      (runs `submit_deposit_wallet_create` = WALLET-CREATE). Do NOT pre-deploy the proxy yourself.
+>   2. FUND THROUGH THE BRIDGE, not by a direct transfer: `POST https://bridge.polymarket.com/deposit
+>      {"address": <deposit wallet>}` → returns per-chain bridge addresses (evm/svm/…) →
+>      send **USDC / USDC.e** (a supported asset; Polygon USDC.e min $2) to the returned EVM bridge
+>      address. The Collateral Onramp wraps it to pUSD, credits the deposit wallet, AND registers it.
+>      (pUSD sent directly to the deposit wallet does NOT go through the onramp → no registration.)
+>   3. Then `create_or_derive_api_key` (create-path succeeds for a fresh registered account), approve
+>      pUSD FROM the deposit wallet via a relayer `WALLET` batch, and place orders with maker=signer=
+>      deposit wallet, signature_type=3.
+> Bake steps 1-2 into the spawn/born-with flow so every self-funded AI is REGISTERED at birth. Never
+> raw-deploy the proxy or raw-transfer pUSD to it — that produces the stuck/unregistered state above.
 
 
 The base agent [`BlockRunAI/polymarket-agent`](https://github.com/BlockRunAI/polymarket-agent) does the
