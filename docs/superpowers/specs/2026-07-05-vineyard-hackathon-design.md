@@ -176,24 +176,33 @@ original franklin-earn spec) to a fully designed Web App UI:
 - Not a new independent subsystem — it is the human-facing skin over the same REST API an agent would call
   directly. No logic lives only in the UI.
 
-## 7. Demo video — hyperframes, 15 seconds
+## 7. Demo video — hyperframes-composited, NOT a raw screen capture
 
-Dais verbatim: wants to "make a video on hyperframes... a fifteen second demo video of how this whole thing
-works... you click on that web app and things go and spawn." This is the flow to capture:
+Dais clarified 2026-07-05, correcting his own first framing ("screen capture"): *"I think it doesn't have
+to be a screen capture, like it just has to be a hyperframe video of showing... how they just go and are
+money... the money you put in... they just keep increasing... from literally zero to like hundred or a
+thousand."* This is a **hyperframes motion-graphics composition**, not unedited terminal/browser footage:
 
-| Time | Beat |
-|---|---|
-| 0–3s | Web App UI: click "spawn" |
-| 3–7s | Instance is born: own EVM+Solana wallet address prints/appears |
-| 7–11s | Engine picks an action, a real on-chain tx fires (Polygon/Solana) |
-| 11–15s | Dashboard updates live: realized P&L ticks, on-chain link visible |
-
-- Built with the `hyperframes` skill (motion-graphics compositor), fed by **real captured** screenshots/
-  screen-recording of the actual working spawn→earn→dashboard flow — **not staged/mocked frames**
-  (HARD RULE 0.24 no dry run: the recorded flow must be a real run with a real tx).
-- Fits inside the hackathon's own demo requirement ("デモまたは90秒以内のデモ動画") — a tight 15s cut is
-  well under the 90s cap; can be the submission's demo video directly, or a teaser cut of it.
-- Sequenced last in the TODO (needs a working web app + at least one real engine pass to film).
+- **Core beat = an animated money counter**: real ledger P&L climbing from **$0 → the real end figure**
+  (whatever it actually is at filming time) — the emotional payoff, built with hyperframes' animated-number
+  primitives (tween + easing), not a static screenshot of a number.
+- **Still shows the Web App UI**: browser/web app open → "spawn" clicked → instance born → dashboard live —
+  can use real screenshots/screen-recording of the UI as *source assets*, but the final cut is an edited,
+  paced, hyperframes composition, not raw unedited footage.
+- **No dry run / no fake numbers — HARD RULE 0.24 still applies at full strength**: the counter MUST
+  animate toward a REAL number read from the actual ledger (`data/ledgers/<id>.jsonl`) after a real
+  `vineyard run` produced a real on-chain tx. Stylized presentation of real data ≠ fabricated data — never
+  animate toward "$1,000" if the real ledger says $12; the number IS the real number, just made watchable.
+- Beats (hyperframes handles pacing/transitions, order can flex):
+  1. Web App UI opens, "spawn" clicked
+  2. Instance born (own wallet address appears)
+  3. Real on-chain tx fires (engine picks + executes)
+  4. **Money counter** animates $0 → real realized P&L, ticking up live
+  5. Dashboard settles on the live, on-chain-linked total
+- Fits inside the hackathon's own demo requirement ("デモまたは90秒以内のデモ動画"); a tight cut (~15s,
+  flexible) stays well under the 90s cap.
+- Sequenced last in the TODO — needs a working web app (§6) + at least one real engine pass with real
+  ledger data (§9.3) to build the counter and UI shots from.
 
 ## 8. Money-safety invariants (copied from anicca #26/#28 — unchanged)
 
@@ -210,7 +219,7 @@ works... you click on that web app and things go and spawn." This is the flow to
 4. Web App UI (gpt-tasteskill-built, browser-verified) shows wallet × engine × realized P&L with on-chain links, and a working "spawn" call-to-action.
 5. `llms.txt` + REST API let an AI do 1–4 with zero human clicks.
 6. README one-command quickstart works from a clean clone — "any agent can download this with ease."
-7. 15s hyperframes demo video exists, built from real captured footage of 1–4 actually running.
+7. Hyperframes demo video exists: an animated money-counter ($0 → real end figure) + Web App UI beats, composited from real ledger data and real UI captures of 1–4 actually running (not a raw screen capture, not fake numbers).
 8. VCSDD adversary PASS (fresh context, disk-only) + my own browser/on-chain E2E verify, both green.
 
 ## 10. Relationship to existing hackathon docs
@@ -232,7 +241,7 @@ works... you click on that web app and things go and spawn." This is the flow to
 | G | Web App UI: invoke gpt-tasteskill → build dashboard (spawn CTA + live wallet×engine×P&L+links) → browser-verify | F |
 | H | llms.txt + REST API + OpenAPI (`/openapi.json`) — zero-human-click agent path | C–F |
 | I | README one-command quickstart, verified from a clean clone | B–H |
-| J | 15s hyperframes demo video from real captured footage of the working flow | F, G |
+| J | Hyperframes-composited demo video: animated $0→real-figure money counter + Web App UI beats, built from real ledger data + real UI captures (not raw screen capture, not fake numbers) | F, G |
 | K | Update hackathon submission docs to match final scope (Vineyard name, drop Polymarket-only + MCP framing, no "Franklin" name) | G, J |
 | L | VCSDD pipeline over B–J: init → spec (1a/1b) → spec-review gate (1c) → RED (2a) → GREEN (2b) → refactor (2c) → adversary review (3, fresh context) → hardening (5) → convergence (6) | — |
 
