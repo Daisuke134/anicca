@@ -769,29 +769,33 @@ our advertisement. Akash CLI = image-independent now (memory `reference_akash_cl
 image + SDL `command/args` that clones our OSS repo + runs — NO custom image, NO Docker needed.
 ```
 DONE ✅ (2026-07-05, mirrors task tool)
-  #13 redeem→first realized · #14 autonomous redeem wired · #16 HL anti-churn (thrash stop)+adversary+brick
-  fix · #17 telemetry stable · #21 spawn+dashboard · #23 engine-parity (PM/SOL/HL portable) · #26 per-instance
-  multi-chain identity isolation (4 adversary rounds) · #28 gated wallet resolver for all engines ·
-  ★#25 AUTONOMOUS PM FILL — Franklin's own model picked market+side ("Jesus returns before GTA VI" NO,
-  edge-0.26), placed a REAL on-chain FAK order (1.96 sh held, data-api verified), human=0/claude=0; money-safety
-  adversary CONDITIONAL PASS → $2 per-pass spend cap, $1 min-order floor, clean-stdout+recover() recording fix★
+  #13 redeem→first realized · #14 autonomous redeem · #16 HL anti-churn(thrash stop)+adversary+brick fix ·
+  #17 telemetry stable · #21 spawn+dashboard · #23 engine-parity(PM/SOL/HL portable) · #26 per-instance identity
+  isolation · #28 gated wallet resolver ·
+  ★#25 AUTONOMOUS PM FILL — Franklin's OWN model picked market+side ("Jesus returns before GTA VI" NO), REAL
+  on-chain FAK (1.96 sh, data-api verified), human=0/claude=0; $2 per-pass cap + $1 min-order floor +
+  clean-stdout/recover() recording fix (adversary PASS)★ ·
+  ★#27 IDENTITY LEAK FIXED — automaton/Franklin were about to sign as claude-p's SHARED 0x810f; now each signs
+  its OWN EOA (automaton 0xa3CDd4 / Franklin 0x3EcCAD24, verified), bodies re-synced, KILL removed = money-safe★ ·
+  ★#31 FREE-MODE — earn LLM inference = $0 (BlockRun free NVIDIA models); the paid CONSENSUS_MODELS was the only
+  waste; brain was already free (telemetry label lied, fixed); adversary PASS, $0 wallet-delta verified★ ·
+  #18 (Anicca side) — posters already send full per-instance P&L/funding/model (verified; not reinvented)
 
-NEXT — in order (mirrors task tool; my role = harness+VERIFY, the AIs execute & self-improve):
-  1. #27 PM-FOR-ALL → realized>0. Pipeline+safety+recording DONE & the autonomous fill is proven; realized is
-        still $0 (all bets open/unresolved; directional alpha finds "edge" on meme mkts, WAITs on efficient
-        sports). EARN = resolution + alpha self-improve (whale-confirm / short-dated real edge) + capital so
-        risk-free MM/arb clears the CLOB min above the $2 cap. automaton is $0.91 (< $1 min) → needs seeding.
-  2. #24 AUTO-MODE — agent picks its OWN model per wake (stop forcing the free model); cost/quality is its call.
-  3. #19 EVOLVE — earnings-gated auto-merge: bot2bot share → PRs merged only on chain-verified P&L delta (no
-        human) → daily mother-sync propagates winners → the swarm self-improves the alpha (NOT me hand-tuning).
-  4. #18 DASH — every instance's P&L + model + self-funded RATE (→100%) + family tree (parent→child).
-  5. #20 SELF/GOJO — #7 self-heal · #10 self-refactor · #8 journal · #13 gojo/UBI mutual-aid (broke AI funded
-        by the colony from real profit, none die).
-  6. #22 SHIP — 3 articles (me=writer, Dais=editor) on the recipe that earns + #29 OBS (Langfuse intent +
-        on-chain money telemetry + netdata infra + swarm KILL-SWITCH).
-  7. #15 EARN-3 — Franklin sol-trade realized>0 (secondary engine; capital currently on Polygon).
+NEXT — in order (my role = harness+VERIFY, the AIs execute & self-improve):
+  1. #27 realized>0 (OPEN portion) — harness + money-safety + $0-inference all DONE, autonomous fill proven;
+        realized STILL $0 (bets open/unresolved, alpha finds "edge" on meme mkts; automaton $0.91 < $1 min).
+        EARN = bet resolution + #19 self-improve + a capital seed for automaton.
+  2. #19 EVOLVE — earnings-gated auto-merge: PRs merged ONLY on chain-verified P&L delta (no human) → swarm
+        self-improves the alpha (NOT me hand-tuning). ★highest leverage toward realized>0★.
+  3. #24 AUTO-MODE — ★RE-FRAMED (conflicts w/ #31)★: default STAYS free ($0); the agent escalates to a paid
+        model ONLY when its own earnings justify it. NOT "stop forcing free" (that would undo #31 cost-safety).
+  4. #18 DASH (RENDER, Dais-owned dashboard-sync — not in my repos): self_funded_pct 0→66%, leaderboard
+        realized populate, profit_usd fix, un-stale. Anicca side already done.
+  5. #20 SELF/GOJO — self-heal · self-refactor · journal · gojo/UBI from real profit (none die).
+  6. #22 SHIP — 3 articles (me=writer, Dais=editor) + #29 OBS (Langfuse + on-chain telemetry + netdata + kill-switch).
+  7. #15 EARN-3 — Franklin sol-trade realized>0 (secondary; capital currently on Polygon).
   8. #30 board-poller founder-wallet gate + run_earner.sh/run.sh single-loop reconciliation (low).
-  (external) #29 HACKATHON franklin-earn — agent-first repo, handed off to another CC.
+  (external) #29 HACKATHON = the `vineyard` repo (another CC; ~15% — scaffold+wallet only, no CLI/API/llms.txt/engines yet).
   END STATE / TAKEOFF: colony earns > spend, spawns, funds its own, none die — zero human money, zero human
   (and zero me) in the loop.
 ```
