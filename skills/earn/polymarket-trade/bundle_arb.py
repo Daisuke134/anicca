@@ -18,6 +18,7 @@ PUSD="0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB"
 SPENDERS=["0xE111180000d2663C0091e4f400237545B87B996B","0xe2222d279d744050d28e00520010520000310F59","0xd91E80cF2E7be2e162c6513ceD06f1dD0dA35296"]
 FEE_RATE=0.05  # conservative blended taker rate
 EDGE=0.005     # require >=0.5% locked edge after fee
+MAX_PASS_SPEND=float(os.getenv("MAX_PASS_SPEND","2.0"))  # fixed USD ceiling per pass (money-safety, #25 adversary fix)
 
 def mint():
     s=requests.Session(); s.headers.update({"User-Agent":"Mozilla/5.0","Origin":"https://polymarket.com"})
@@ -72,8 +73,15 @@ def main():
         print("no risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoting.")
         c.close(); return 0
     edge,q,yes,no,ay,an,msz=best
+    # MAX_PASS_SPEND: fixed USD ceiling for this leg (in addition to the avail*0.9 gate below,
+    # take the MIN) — bounds worst-case pass spend to a fixed number regardless of wallet balance.
+    budget_shares=int(MAX_PASS_SPEND/(ay+an))
+    if budget_shares<5:
+        print(f"HOLD: MAX_PASS_SPEND ${MAX_PASS_SPEND:.2f} can't afford 5 shares of both legs "
+              f"(needs ${5*(ay+an):.2f}). No order placed this pass.")
+        c.close(); return 0
     print(f"ARB FOUND: {q[:50]} | ask_YES {ay}+ask_NO {an}={ay+an:.3f} | locked edge {edge*100:.2f}%")
-    shares=max(5, min(int(msz), int((avail*0.9)/(ay+an))))
+    shares=max(5, min(int(msz), int((avail*0.9)/(ay+an)), budget_shares))
     print(f"buying {shares} YES + {shares} NO (FOK) = locked ${shares*edge:.3f} profit...")
     from polymarket.clients.secure import SecureClient as SC
     for tid,px in [(yes,ay),(no,an)]:

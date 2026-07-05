@@ -21,6 +21,7 @@ SPENDERS=["0xE111180000d2663C0091e4f400237545B87B996B","0xe2222d279d744050d28e00
 MIN_SIZE=5           # CLOB min order = 5 shares
 MAX_MARKETS=3        # spread across up to 3 markets
 MARGIN=0.995         # require yes_bid+no_bid <= 0.995 (locked >=0.5% if both fill)
+MAX_PASS_SPEND=float(os.getenv("MAX_PASS_SPEND","2.0"))  # fixed USD ceiling per pass (money-safety, #25 adversary fix)
 
 def mint():
     s=requests.Session(); s.headers.update({"User-Agent":"Mozilla/5.0","Origin":"https://polymarket.com"})
@@ -76,12 +77,20 @@ def main():
         if len(picks)>=MAX_MARKETS: break
     if not picks:
         print("no profitable maker-bundle market found this pass."); c.close(); return 0
-    per = max(MIN_SIZE, int((avail*0.9)/len(picks)/1.0))  # shares per leg, budget-split
+    # MAX_PASS_SPEND: fixed USD ceiling for the TOTAL quoted across all markets this pass (in
+    # addition to the avail*0.9 gate above, take the MIN) — bounds worst-case pass spend to a
+    # fixed number regardless of wallet balance (#25 adversary fix).
+    total_budget = min(avail*0.9, MAX_PASS_SPEND)
+    per_market_budget = total_budget/len(picks)
     placed=0
     for s,q,yes,no,by,bn in picks:
-        # size so both legs affordable within per-market budget
-        budget = avail*0.9/len(picks)
-        size = max(MIN_SIZE, min(int(budget/(by+bn)), 200))
+        # size so both legs stay within this market's share of the fixed per-pass budget
+        size = int(per_market_budget/(by+bn))
+        if size < MIN_SIZE:
+            print(f"MKT {q[:42]:42} HOLD: budget ${per_market_budget:.2f} < {MIN_SIZE} sh both legs "
+                  f"(needs ${MIN_SIZE*(by+bn):.2f}). Skipping, no order placed.")
+            continue
+        size = min(size, 200)
         print(f"MKT {q[:42]:42} YES {by}+NO {bn}={s:.3f} lock {(1-s)*100:.1f}% -> {size} sh/leg")
         for tid,px in [(yes,by),(no,bn)]:
             try:

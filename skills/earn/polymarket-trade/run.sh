@@ -58,6 +58,12 @@ if [ -f "$SKILL_DIR/fund_via_bridge.py" ] && [ -x "$AGENT_HOME/.venv/bin/python"
     || echo "{\"ts\":\"$(now)\",\"slot\":\"earn/pm-trade\",\"action\":\"register-skip\"}" >> "$TRACE"
 fi
 
+# money-safety guard #3 (#25 adversary MUST-FIX): fixed USD ceiling PER STRATEGY, so worst-case
+# pass spend is a fixed small number regardless of wallet balance-at-read-time, not a fraction of
+# it. bundle_arb.py / market_maker.py / place_order.py each read this independently and cap their
+# own leg to it — see SKILL.md "per-pass risk envelope" for the resulting worst-case pass total.
+export MAX_PASS_SPEND="${MAX_PASS_SPEND:-2}"
+
 # append_strategy_trace <action> <output-text> <exit-code> — one structured
 # trace line per strategy pass (H1). Shared by the two EXISTING working
 # strategies below (bundle_arb.py / market_maker.py print human-readable
