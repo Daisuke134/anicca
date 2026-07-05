@@ -21,20 +21,42 @@ Inputs (env preferred, positional argv fallback):
   MAX_BET_SIZE (default 2)   hard cap on AMOUNT (money-safety, not judgment)
   PM_TRADE_AGENT_HOME        override for the base agent home (default below)
 
-Output: exactly one line of JSON on stdout:
+Output: exactly one line of JSON on the REAL stdout (guaranteed clean — see below):
   {"token_id","amount","order_id","post_result","ok"}
 On any failure before an order can be attempted: {"ok": false, "error": "..."}
 (exit code 1). Never places a fake/simulated order — no dry-run path exists.
+
+CLEAN-STDOUT GUARANTEE (#25 adversary fix, accounting integrity, 2026-07-05):
+a real Franklin fill ("Will Jesus Christ return before GTA VI?", NO, ~$1,
+CONFIRMED filled on-chain) was mis-logged ok:false by run.sh because the
+polymarket SDK (imported inside main(), during mint/credential-bootstrap)
+printed to stdout and merged onto the SAME line as the result JSON, breaking
+run.sh's json.loads(). Fix: `sys.stdout` at process start is captured as
+`_REAL_STDOUT` before anything runs; ALL work (SDK import, SIWE mint,
+approve, order book, order placement) runs under
+`contextlib.redirect_stdout(sys.stderr)`, so any stray SDK/library print
+lands on stderr. The ONLY thing ever written to `_REAL_STDOUT` is the single
+final `_emit(...)` call — stdout is guaranteed to be exactly one clean JSON
+line, so a real fill is never again mis-recorded as a parse failure.
 """
 import os
 import sys
 import json
 import base64
 import datetime
+import contextlib
 import requests
 from eth_account import Account
 from eth_account.messages import encode_defunct
 from dotenv import load_dotenv
+
+_REAL_STDOUT = sys.stdout  # capture BEFORE any import/work that might print
+
+
+def _emit(obj):
+    """The ONLY function allowed to write to the real, captured stdout."""
+    print(json.dumps(obj), file=_REAL_STDOUT, flush=True)
+
 
 AGENT_HOME = os.environ.get(
     "PM_TRADE_AGENT_HOME",
@@ -54,7 +76,9 @@ def _arg(i):
 
 
 def fail(reason):
-    print(json.dumps({"ok": False, "error": reason}))
+    """Uses _emit (real stdout) so it's clean even when called from inside
+    the redirect_stdout(sys.stderr) block in main()."""
+    _emit({"ok": False, "error": reason})
     sys.exit(1)
 
 
@@ -113,7 +137,11 @@ def best_ask_price(order_book):
     return min(float(getattr(a, "price", None) or a["price"]) for a in asks)
 
 
-def main():
+def _run():
+    """All the actual work. Called ONLY from inside main()'s
+    redirect_stdout(sys.stderr) block, so any print() anywhere in this call
+    graph (the polymarket SDK's import/mint/approve/order-book/post_order
+    machinery) lands on stderr, never merging onto the final result line."""
     token_id = os.environ.get("TOKEN_ID") or _arg(1)
     side = (os.environ.get("SIDE") or _arg(2) or "BUY").upper()
     amount_raw = os.environ.get("AMOUNT") or _arg(3)
@@ -174,15 +202,24 @@ def main():
         except Exception:
             post_result = str(response)
 
-        print(json.dumps({
+        _emit({
             "token_id": token_id,
             "amount": amount,
             "order_id": getattr(response, "order_id", None),
             "post_result": post_result,
             "ok": bool(getattr(response, "ok", False)),
-        }))
+        })
     finally:
         client.close()
+
+
+def main():
+    """Entry point. Redirects sys.stdout to stderr for the ENTIRE run
+    (SDK import, mint, approve, order-book, post_order) so stdout stays
+    clean; _emit()/fail() write to _REAL_STDOUT directly, so they're
+    unaffected by the redirect."""
+    with contextlib.redirect_stdout(sys.stderr):
+        _run()
 
 
 if __name__ == "__main__":

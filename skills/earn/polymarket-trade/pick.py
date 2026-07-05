@@ -28,18 +28,38 @@ Env (all optional, defaults shown — self-improve loop tunes these, spec §4):
                            consensus+whale analysis on (cost bound, not judgment)
   PM_TRADE_AGENT_HOME      override for the base agent home (default below)
 
-Output: exactly one line of JSON on stdout.
+Output: exactly one line of JSON on the REAL stdout (guaranteed clean — see below).
   qualifying candidate found ->
     {"token_id","side":"BUY","outcome":"YES"|"NO","amount","market","end_date",
      "edge","confidence","consensus"}
   nothing qualifies, or a required signal is unavailable ->
     {"action":"WAIT","reason":"<why>"}   (fail-closed — never a default bet)
+
+CLEAN-STDOUT GUARANTEE (#25 adversary fix, accounting integrity, 2026-07-05):
+a real Franklin fill was once mis-logged ok:false because an imported module
+printed to stdout and merged onto the same line as the result JSON, breaking
+run.sh's json.loads(). Fix: `sys.stdout` at process start is captured as
+`_REAL_STDOUT` before any heavy import; ALL work (imports, market fetch, AI
+analysis, whale signal) runs under `contextlib.redirect_stdout(sys.stderr)`,
+so any stray print() from this file's own imports or the base agent's src.*
+modules lands on stderr. The ONLY thing ever written to `_REAL_STDOUT` is the
+single final `_emit(...)` call below — stdout is guaranteed to be exactly one
+clean JSON line.
 """
 import os
 import sys
 import json
 import asyncio
+import contextlib
 from datetime import datetime, timezone
+
+_REAL_STDOUT = sys.stdout  # capture BEFORE any import that might print
+
+
+def _emit(obj):
+    """The ONLY function allowed to write to the real, captured stdout."""
+    print(json.dumps(obj), file=_REAL_STDOUT, flush=True)
+
 
 AGENT_HOME = os.environ.get(
     "PM_TRADE_AGENT_HOME",
@@ -47,14 +67,15 @@ AGENT_HOME = os.environ.get(
 )
 sys.path.insert(0, AGENT_HOME)
 
-from dotenv import load_dotenv  # noqa: E402
+with contextlib.redirect_stdout(sys.stderr):
+    from dotenv import load_dotenv  # noqa: E402
 
-load_dotenv(os.path.join(AGENT_HOME, ".env"))
+    load_dotenv(os.path.join(AGENT_HOME, ".env"))
 
-from src.market.polymarket import fetch_active_markets  # noqa: E402
-from src.analysis.ai_analyzer import get_analyzer  # noqa: E402
-from src.signals.trades import get_smart_money_summary  # noqa: E402
-from src.utils.kelly import KellyCriterion  # noqa: E402
+    from src.market.polymarket import fetch_active_markets  # noqa: E402
+    from src.analysis.ai_analyzer import get_analyzer  # noqa: E402
+    from src.signals.trades import get_smart_money_summary  # noqa: E402
+    from src.utils.kelly import KellyCriterion  # noqa: E402
 
 
 def _env_float(name, default):
@@ -83,8 +104,10 @@ MAX_CANDIDATES = _env_int("MAX_CANDIDATES", 5)
 
 
 def wait(reason):
-    """Fail-closed exit: emit WAIT, never a default market/side/bet."""
-    print(json.dumps({"action": "WAIT", "reason": reason}))
+    """Fail-closed exit: emit WAIT, never a default market/side/bet.
+    Uses _emit (real stdout) so it's clean even when called from inside the
+    redirect_stdout(sys.stderr) block in main()."""
+    _emit({"action": "WAIT", "reason": reason})
     sys.exit(0)
 
 
@@ -164,7 +187,12 @@ def size_bet(kelly, ai_prob, market_prob, avg_edge, avg_conf):
     return round(amount, 2)
 
 
-def main():
+def _run():
+    """All the actual work. Called ONLY from inside main()'s
+    redirect_stdout(sys.stderr) block, so any print() anywhere in this call
+    graph (this file's own helpers, or the base agent's src.* modules —
+    fetch_active_markets, consensus_analysis, get_smart_money_summary, etc.)
+    lands on stderr, never merging onto the final result line."""
     analyzer = get_analyzer()
     if analyzer is None:
         wait("analyzer-unavailable")
@@ -227,7 +255,7 @@ def main():
     if amount <= 0:
         wait("zero-size-after-cap")
 
-    print(json.dumps({
+    _emit({
         "token_id": token_id,
         "side": "BUY",
         "outcome": outcome,
@@ -237,7 +265,15 @@ def main():
         "edge": avg_edge,
         "confidence": avg_conf,
         "consensus": consensus,
-    }))
+    })
+
+
+def main():
+    """Entry point. Redirects sys.stdout to stderr for the ENTIRE run so
+    stdout stays clean; _emit()/wait() write to _REAL_STDOUT directly, so
+    they're unaffected by the redirect."""
+    with contextlib.redirect_stdout(sys.stderr):
+        _run()
 
 
 if __name__ == "__main__":

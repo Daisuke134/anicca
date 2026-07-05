@@ -254,6 +254,31 @@ Every pass appends one structured JSON line per strategy to `../state/pm-trade.t
   `place_order.py` executed a directional buy.
 The self-improvement loop reads this.
 
+### ★ ACCOUNTING-INTEGRITY FIX (2026-07-05) — a real fill was once mis-logged ok:false ★
+Franklin autonomously placed a REAL order ("Will Jesus Christ return before GTA VI?", NO, ~$1,
+CONFIRMED filled on-chain: data-api showed 1.96 shares held) — but `run.sh` recorded it as
+`{"ok":false,"error":"unparseable place_order output: Extra data..."}` because `place_order.py`'s
+stdout had `[valid result JSON][trailing noise]` concatenated on the SAME line (an imported
+module — polymarket SDK / mint / etc. — printed to stdout during the run), breaking a plain
+`json.loads()`. A real fill was undercounted as a failure. Two independent layers now guard
+against this:
+- **ROOT FIX** (`pick.py` / `place_order.py`): `sys.stdout` is captured as `_REAL_STDOUT` at
+  process start, before any import. `main()` runs the ENTIRE call graph (imports, market fetch,
+  AI analysis, whale signal / SDK mint, approve, order-book, post_order) under
+  `contextlib.redirect_stdout(sys.stderr)`. The only function allowed to write to `_REAL_STDOUT`
+  is `_emit(obj)` (`wait()`/`fail()` also route through it). Stdout is guaranteed to be exactly
+  one clean JSON line — verified live: `json.load()` of the WHOLE captured stdout succeeds with
+  no "Extra data" error.
+- **DEFENSE** (`run.sh`, both the pick-output parse and the place_order-output parse): a
+  `recover(raw)` helper replaces plain `json.loads()` — tries whole-string parse, then
+  `json.JSONDecoder().raw_decode()` (recovers the leading JSON object even with trailing noise
+  on the same line — this is the exact bug shape), then the last line that parses as a dict.
+  Only truly unrecoverable output falls back to `{"ok":false,"error":"unparseable","raw_tail":...}`
+  (place_order) / WAIT (pick — a polluted pick must never be silently misread as "no candidate",
+  which would skip a real qualifying trade). Unit-tested with the coordinator's exact repro
+  string `'{"ok":true,"order_id":"0xABC","token_id":"123"}GARBAGE_TRAILING'` → recovers
+  `{"ok": true, "order_id": "0xABC", "token_id": "123"}`, not a false failure.
+
 ## If a run errors (self-heal, H4)
 
 You — the running agent reading this — fix it yourself: read the traceback. For the directional path,

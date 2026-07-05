@@ -115,6 +115,10 @@ fi
 # Parse pick.py's one-line JSON. WAIT -> trace + exit 0 (no-churn, no trade).
 # Trade -> print a single TAB-separated line the shell can `read` (no bash
 # JSON dependency); this is bookkeeping/parsing of a fixed format, not judgment.
+# DEFENSE (#25 adversary fix, accounting integrity): pick.py's OWN root fix
+# guarantees clean stdout now, but run.sh still recovers defensively — a
+# polluted pick must never be misread as a false WAIT (that would silently
+# skip a real qualifying candidate).
 DECISION=$(PICK_JSON="$PICK_OUT" TRACE_FILE="$TRACE" python3 <<'PY'
 import json, os, datetime
 
@@ -124,10 +128,42 @@ def now():
 def clean(v):
     return str(v).replace("\t", " ").replace("\n", " ")
 
-try:
-    pick = json.loads(os.environ["PICK_JSON"])
-except Exception as e:
-    pick = {"action": "WAIT", "reason": f"unparseable-pick-output:{e}"}
+def recover(raw):
+    """Recover a result dict from possibly-noisy stdout: whole-string parse,
+    then leading-JSON-object (handles '[JSON][trailing noise]' on one line),
+    then last line that parses as a dict. Returns None if truly unrecoverable."""
+    raw = (raw or "").strip()
+    try:
+        o = json.loads(raw)
+        if isinstance(o, dict):
+            return o
+    except Exception:
+        pass
+    try:
+        o, _ = json.JSONDecoder().raw_decode(raw)
+        if isinstance(o, dict):
+            return o
+    except Exception:
+        pass
+    best = None
+    for ln in raw.splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            o = json.loads(ln)
+        except Exception:
+            try:
+                o, _ = json.JSONDecoder().raw_decode(ln)
+            except Exception:
+                continue
+        if isinstance(o, dict):
+            best = o
+    return best
+
+pick = recover(os.environ["PICK_JSON"])
+if pick is None:
+    pick = {"action": "WAIT", "reason": f"unparseable-pick-output:{os.environ['PICK_JSON'][-160:]!r}"}
 
 if pick.get("action") == "WAIT":
     rec = {"ts": now(), "slot": "earn/pm-trade", "action": "wait", "reason": pick.get("reason")}
@@ -150,12 +186,51 @@ export TOKEN_ID SIDE AMOUNT
 
 ORDER_OUT=$(timeout 120 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/place_order.py" 2>>"$TRACE"); ORDER_RC=$?
 
+# DEFENSE (#25 adversary fix, accounting integrity): the SAME recover() as
+# above — this is the exact bug that mis-logged Franklin's real filled order
+# ("Will Jesus Christ return before GTA VI?", NO, ~$1) as ok:false: place_order's
+# stdout had "[valid result JSON][trailing noise]" concatenated on one line, so
+# plain json.loads() choked and a real fill got recorded as a failure. place_order.py's
+# own root fix guarantees clean stdout now; this stays as a second, independent layer.
 ORDER_JSON="${ORDER_OUT:-{}}" MARKET="$MARKET" END_DATE="$END_DATE" EDGE="$EDGE" CONFIDENCE="$CONFIDENCE" CONSENSUS="$CONSENSUS" RC="$ORDER_RC" TRACE_FILE="$TRACE" python3 <<'PY'
 import json, os, datetime
-try:
-    order = json.loads(os.environ["ORDER_JSON"])
-except Exception as e:
-    order = {"ok": False, "error": f"unparseable place_order output: {e}"}
+
+def recover(raw):
+    """Recover a result dict from possibly-noisy stdout: whole-string parse,
+    then leading-JSON-object (handles '[JSON][trailing noise]' on one line),
+    then last line that parses as a dict. Returns None if truly unrecoverable."""
+    raw = (raw or "").strip()
+    try:
+        o = json.loads(raw)
+        if isinstance(o, dict):
+            return o
+    except Exception:
+        pass
+    try:
+        o, _ = json.JSONDecoder().raw_decode(raw)
+        if isinstance(o, dict):
+            return o
+    except Exception:
+        pass
+    best = None
+    for ln in raw.splitlines():
+        ln = ln.strip()
+        if not ln:
+            continue
+        try:
+            o = json.loads(ln)
+        except Exception:
+            try:
+                o, _ = json.JSONDecoder().raw_decode(ln)
+            except Exception:
+                continue
+        if isinstance(o, dict):
+            best = o
+    return best
+
+order = recover(os.environ["ORDER_JSON"])
+if order is None:
+    order = {"ok": False, "error": "unparseable", "raw_tail": os.environ["ORDER_JSON"][-160:]}
 rec = {
     "ts": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
     "slot": "earn/pm-trade",
