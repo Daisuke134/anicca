@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "No test anywhere in the fork (coral-agents/seller-agent/src/bidder.test.ts, coral-agents/buyer-agent/src/buyer.test.ts) exercises the real network hop the live Docker demo depends on for its zero-human-key claim: bidder.test.ts's decideBid tests (lines 9-39) all inject the `llm` function directly in-process (dependency injection), never calling the real complete() -> ClawRouter HTTP round-trip through host.docker.internal:8402 that the actual containerized C0 run required. Critically, the test at bidder.test.ts lines 35-38 ('falls back to a floor bid when the LLM errors') proves that a real LLM success (price clamped down to floor) and a total LLM connectivity failure produce the IDENTICAL observable output (`bid:true, priceSol:floor`) -- meaning even a perfect test suite passing 100% green cannot itself distinguish 'ClawRouter genuinely answered' from 'ClawRouter was unreachable and the deterministic fallback silently fired', and no test or captured log for the actual C0 Docker run closes that gap either. This is a structural edge-case coverage hole in the verification architecture, not just a missing individual test case: the single most important edge case for this submission's central claim (LLM reachable vs LLM unreachable, from inside the real container/network topology) is exactly the one case that is unobservable everywhere in the current test + evidence trail.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/bidder.test.ts",
+    "lineRange": "35-38",
+    "snippet": "it('falls back to a floor bid when the LLM errors', async () => {\n  const d = await decideBid(want, cfg, async () => { throw new Error('llm down') })\n  expect(d).toMatchObject({ bid: true, priceSol: 0.0004 })\n})"
+  },
+  "routeToPhase": "2b"
+}

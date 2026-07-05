@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "This round-2 review's own sandbox provided Read/Write/Edit/Grep/Glob tools only — no Bash, no curl, no WebFetch — despite the task instructing 'you have Bash — use it'. This is the same class of gap as round-1's own FIND-007 (adversary had no Bash/git). As a direct consequence I could NOT independently query https://api.devnet.solana.com for ANY of the 7 tx signatures now in scope (the 5 in tx-confirmations.txt + the 2 new ones from the TRACE run), could not run `git ls-remote`/`git fetch` myself against the live GitHub remote, and could not execute `npx vitest run` for packages/agent-runtime or coral-agents/seller-agent to confirm the claimed '10/10 GREEN' / '6/6 GREEN' / '8 new unit tests GREEN' results. I partially mitigated the git-history question by reading git's own on-disk ref object .git/refs/remotes/origin/main (= f3c84eb25f7a40c39717413b03e75fc2d8378643, matching local HEAD reflog and all 5 originally-cited commit hashes in order) — this is reasonably strong evidence FIND-007 is genuinely resolved, since that file is normally only written by a real `git fetch` against the remote. But it is a local artifact, not a live network query, and is theoretically forgeable by direct file edit without ever fetching. The RPC tx-confirmation content and the test-pass claims remain UNVERIFIED BY AN INDEPENDENT EXECUTION and must not be treated as adversary-confirmed until a reviewer with real Bash/network access re-checks them.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/.git/refs/remotes/origin/main",
+    "lineRange": "1",
+    "snippet": "f3c84eb25f7a40c39717413b03e75fc2d8378643"
+  },
+  "supportingEvidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/.git/logs/HEAD",
+    "lineRange": "1-11",
+    "snippet": "reflog shows clone@0d82563 -> d9fc893 -> bac9ab6 -> 7367721 -> 901a255 -> ff7ead7 -> e6a32a8 -> 6221d9f -> b6e1916 -> d022bc7 -> f3c84eb, matching all 5 originally-cited commit prefixes in order"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-021",
+  "dimension": "robustness",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "test-healthcheck-lib.sh does not source healthcheck-lib.sh and call its real predicate; it hand-copies the predicate into a local stuck() function (test-healthcheck-lib.sh:6-8) that is claimed to be 'copied verbatim' from hc_run case (b) (healthcheck-lib.sh:52-56). As of this review the two ARE byte-identical (grep-confirmed: both use the exact regex 'Enter to select|↑/↓ to navigate|Type something\\.|Do you want to proceed' gated by absence of 'esc to interrupt'), so FIND-014 is genuinely resolved today. But because the test exercises a duplicate string rather than the production code path, a future edit to healthcheck-lib.sh's predicate (e.g. adding a new idle-prompt marker, or changing the active-generation marker text if Claude Code's CLI UI changes) can silently diverge from the test without the test ever failing, reintroducing the exact false-positive-restart risk FIND-014 was raised to close, with the test suite still reporting GREEN. This is a structural verification-readiness gap, not a currently-active bug.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+    "lineRange": "6-8",
+    "snippet": "stuck(){ local pane=\"$1\"\n  printf '%s' \"$pane\" | grep -qE 'Enter to select|...' \\\n    && ! printf '%s' \"$pane\" | grep -qE 'esc to interrupt'; }"
+  },
+  "routeToPhase": "2b"
+}

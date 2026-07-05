@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "status": "NEW (sharpens the still-unresolved half of iteration-1 FIND-006)",
+  "description": "The design spec's GOAL is a MONTHLY comparison: 'LM Stripe revenue + Capafy subscription revenue > Dais monthly spend (~$200/mo)' (spec section 4/11/13; restated verbatim in loop.sh:95). LM_MRR (loop.sh:55-69) is now a genuine monthly-recurring-revenue figure (correctly annualized/normalized: `if iv=='year': amt=amt/12.0`), so FIND-001 is fixed for LM. But CAP_REV (loop.sh:41-51) is still explicitly a 3-DAY trailing window — the field is even named `capafy_net_revenue_usd_3d` (loop.sh:100) — with no monthly normalization or accumulation. loop.sh:86-87 nonetheless does `TOTAL=LM_MRR+CAP_REV` and labels the result 'EARNING $TOTAL/mo', i.e. it adds a monthly run-rate to a 3-day snapshot and reports the sum AS a monthly figure. This is a unit-mismatch bug that misrepresents the goal comparison: a Capafy burst of $60 net revenue in 3 days (real, not fabricated) would report as if Capafy contributed $60/mo, when the actual monthly run rate implied by that 3-day window is closer to $600/mo (or, if it was a one-off, $0/mo going forward) — either an under- or over-statement, but definitely not the literal $60 the code adds. This is iteration-1 FIND-006's second, unaddressed half (the note said 'no mechanism ... to reconcile a rolling 3-day snapshot against a MONTHLY spend comparison'); only the LM_SUBS-is-a-count half of FIND-006/001 was fixed.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "86-87,100",
+    "snippet": "TOTAL=\"$(python3 -c \\\"print(round(${LM_MRR}+${CAP_REV},2))\\\" ...)\"\nif awk \\\"BEGIN{exit !($TOTAL>0)}\\\" ...; then STATUS=\\\"EARNING \\$$TOTAL/mo (LM \\$$LM_MRR + Capafy \\$$CAP_REV) — grow toward \\$$SPEND\\\"\n...\necho \\\"capafy_net_revenue_usd_3d: $CAP_REV\\\""
+  },
+  "fix": "Either normalize CAP_REV to a monthly run-rate before summing (e.g. CAP_REV*10 as a rough 3d->30d extrapolation, clearly labeled as an estimate) or keep the two figures reported separately without a combined '/mo' label that implies they share units; document the reconciliation explicitly in STATE.md so the GOAL comparison against $200/mo is not silently wrong.",
+  "routeToPhase": "2b"
+}

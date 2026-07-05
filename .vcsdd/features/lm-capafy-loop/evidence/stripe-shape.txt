@@ -1,0 +1,4 @@
+FIND-017 evidence — real Stripe subscription shape (queried live 2026-07-04, status=all expand=data.items.data.price):
+  subs found: 1 | status: canceled | items: 1
+  items.data[0].price.unit_amount: 500  | recurring.interval: month | quantity: 1
+=> parser reads (s.items.data[].price.unit_amount)/100 * qty, year→/12. Matches live shape. (0 ACTIVE subs today → live MRR=$0.0, correct.)

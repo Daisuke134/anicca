@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-019",
+  "dimension": "anti_fake_measurement",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "verify-loops.sh's liveurl() (lines 12-16) extracts the LAST http(s) URL found ANYWHERE in the whole ledger file via `grep -oE 'https?://...' \"$f\" | tail -1`, not the URL specifically belonging to the newest jsonl record. If the newest appended line in published.jsonl/posts.jsonl happened to omit a url field (e.g. a malformed write from a buggy pass), liveurl() would silently fall back to curling an OLDER url from a previous line and report LIVE, masking the fact that the most recent record is malformed/URL-less. This is a minor but real gap in the anti-fake curl check the FIND-007 fix added -- it verifies 'a URL that exists somewhere in the file is live', not 'the most recent claimed publish/post is live'.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/verify-loops.sh",
+    "lineRange": "12-13",
+    "snippet": "u=\"$(grep -oE 'https?://[^\"[:space:]]+' \"$f\" 2>/dev/null | tail -1)\""
+  },
+  "routeToPhase": "2b"
+}

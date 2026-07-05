@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "anti_fake_measurement",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "verify-loops.sh, the script whose entire purpose is proving real side-effects, never checks a live URL for either capafy or reddit despite the claim requiring exactly that ('a real published skill URL', 'a real posted Reddit comment URL'). For capafy it extracts only a `title` field from the last published.jsonl line; for reddit it only counts lines in posts.jsonl and reports mtime freshness. Neither branch reads a `url` field or curls it to confirm the artifact is actually live. Both checks reduce to 'does a log line exist and is it recent' -- i.e. trusting the same actor's self-report, not an independent observation.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/verify-loops.sh",
+    "lineRange": "8-17",
+    "snippet": "echo \"[capafy]  published.jsonl: $CNT skills total | newest: $(fresh \"$PUB\") | last title: $(tail -1 \"$PUB\" 2>/dev/null | python3 -c 'import sys,json;print(json.loads(sys.stdin.read()).get(\"title\",\"?\")[:45])' ...)\"\n...\nNPOST=$(grep -c . \"$POSTS\" 2>/dev/null||echo 0)\necho \"[reddit]  accounts: $NACC | posts logged: $NPOST | posts ledger: $(fresh \"$POSTS\")\""
+  },
+  "concreteFailureScenario": "The capafy publish pipeline appends a line to published.jsonl with a title but the listing was actually rejected by Capafy moderation seconds later; verify-loops.sh still reports it as a fresh, counted 'published' skill because it never checks a URL or re-queries Capafy for the listing's live status. Same for reddit: a stale/placeholder or dead-link URL logged in posts.jsonl would read identically to a genuinely live posted comment.",
+  "routeToPhase": "2b"
+}

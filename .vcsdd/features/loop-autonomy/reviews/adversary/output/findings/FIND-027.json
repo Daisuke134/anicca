@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-027",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "priorFindingRef": "FIND-023",
+  "status": "NOT RESOLVED (fix defeats the timeout for the most likely real-world hang class)",
+  "description": "self-fix.sh:33 adds a pane-liveness check before killing a fixer past MAX_FIXER_MIN=180: `tmux ... capture-pane ... | tail -6 | grep -qE 'esc to interrupt'` -> if present, 'still working, let it continue', exit 0 without killing. The comment at self-fix.sh:31-32 frames this as distinguishing 'actively generating (real progress)' from 'idle/stuck'.\n\nThis is a false dichotomy for the dominant real-world hang mode of an agent doing browser/network automation (which this fixer explicitly does -- CloakBrowser CDP, curl, git, etc., per the TASK prompt at self-fix.sh:43-50). Claude Code's CLI displays 'esc to interrupt' for the ENTIRE duration a tool call is outstanding, including while the tool itself is blocked on something that will never return (e.g. a curl with no --max-time hitting a dead host, a Playwright/CDP `waitForSelector` with no timeout against a page that never reaches the expected state, a `git push` hanging on an interactive credential prompt that never resolves because --dangerously-skip-permissions suppressed the visible prompt). In every one of these cases the pane's last frame legitimately shows a live, ticking 'esc to interrupt' spinner even though the process is deadlocked and will NEVER make further progress or finish. The new check therefore reads this as 'still working' and refuses to kill it -- forever, since every future self-fix.sh invocation re-runs the exact same check against the exact same frozen-but-spinning pane.\n\nThe net effect: MAX_FIXER_MIN, the very mechanism this round's fix was supposed to strengthen, is now unconditionally defeated for the single most probable class of hang in a heavy-browser-automation fixer. The system trades 'occasionally kills a slow-but-real fix' (round-4's concern) for 'never kills the most common kind of genuinely stuck fixer' -- which is at least as damaging to the CLAIM's 'self-heal ... no babysitting' promise, since an indefinitely wedged tmux session + a live Opus process is a silent resource leak that nothing in this codebase will ever terminate without a human manually running `tmux kill-session`.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "26-38",
+    "snippet": "if [ \"$age_min\" -lt \"$MAX_FIXER_MIN\" ]; then ... skip; exit 0; fi\nif tmux -S \"$SOCK\" capture-pane -t \"$SESSION\" -p 2>/dev/null | tail -6 | grep -qE 'esc to interrupt'; then\n  echo ... STILL GENERATING -- let it continue >> \"$LOG\"; exit 0\nfi\n... kill+respawn"
+  },
+  "note": "No automated test exercises this branch at all (see FIND-028); this is a static-trace finding based on documented Claude Code CLI behavior (the spinner/'esc to interrupt' footer is tied to 'a tool call or generation is outstanding', not to 'forward progress is happening').",
+  "routeToPhase": "2b"
+}

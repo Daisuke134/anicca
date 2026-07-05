@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "coral-agents/buyer-agent/src/llm_buyer.ts (class LLMBuyerStrategy, hardwired to `new Anthropic()`, no ClawRouter/LLM_PROVIDER support at all) is dead code with respect to the actual submitted CoralOS market flow: coral-agents/buyer-agent/src/index.ts's real market loop uses pickWinner() (index.ts lines 53-71), which calls the provider-agnostic complete() from @pay/agent-runtime, NOT LLMBuyerStrategy. llm_buyer.ts is referenced only by its own file and by buyer.test.ts's import of the unrelated parse402 helper (confirmed via grep: no other reference to LLMBuyerStrategy anywhere in the repo). Its docstring ('the agent-economy primitive... Claude, given a goal, fetches a paid endpoint...') and un-updated Anthropic-only implementation is left in the fork with no comment marking it as legacy/unused for THIS submission's actual flow, creating a real risk that a judge reading the codebase (not just running the demo command) concludes the buyer's core decision loop is Anthropic-hardwired and therefore NOT zero-human-key -- directly undermining the submission's central differentiation claim.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/buyer-agent/src/llm_buyer.ts",
+    "lineRange": "1-20,71-81",
+    "snippet": "/**\n * LLMBuyerStrategy - the agent-economy primitive.\n * ...\n * Lives in buyer-agent (not the core SDK) because it depends on `@anthropic-ai/sdk`\n */\n...\nexport class LLMBuyerStrategy {\n  async purchase(...): Promise<string> {\n    const llm = new Anthropic()"
+  },
+  "routeToPhase": "2b"
+}

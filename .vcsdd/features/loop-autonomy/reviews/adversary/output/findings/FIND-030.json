@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-030",
+  "round": 6,
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "title": "Zero automated test coverage for self-fix.sh's hang-vs-progress branch (the exact mechanism re-patched this round for FIND-027)",
+  "description": "test-self-fix.sh's part (A) invokes self-fix.sh with SELF_FIX_DRYRUN=1 (test-self-fix.sh:10-17), which hits self-fix.sh:21 ('if [ \"${SELF_FIX_DRYRUN:-}\" = \"1\" ]; then ... exit 0; fi') and returns BEFORE the code ever reaches the 'already running' tmux-session check at self-fix.sh:28, let alone the pane-cksum hang-vs-progress logic at self-fix.sh:33-45. No other test file (test-healthcheck-lib.sh only exercises hc_is_stuck_pane(), a different predicate for detecting an idle human-input-await prompt, unrelated to self-fix.sh's kill/continue decision) invokes self-fix.sh with a live/mocked tmux session to exercise this branch. This means the entire mechanism this round's patch was written to fix (FIND-023/FIND-027) -- the code the manifest explicitly asked me to re-verify -- has NO automated regression test. A future edit that flips the boolean logic, breaks the PANEHASH read/write, or removes the kill-session call would not be caught by any GREEN test run.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/test-self-fix.sh",
+    "lineRange": "9-17",
+    "snippet": "S=\"$(SELF_FIX_DRYRUN=1 bash \"$SF\" capafy hint 2>&1)\" ... (DRYRUN exits at self-fix.sh:21, never reaching lines 27-45)"
+  },
+  "routeToPhase": "3"
+}

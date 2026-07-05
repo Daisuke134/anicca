@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-018",
+  "dimension": "robustness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "capafy-loop and life-manager-loop each have a test-loop.sh exercising their loop.sh's HEAL/error-path logic (payout-err->NA, stale->heal+req, never-ran, healthy->no-req, etc.), consistent with this repo's own TDD mandate. reddit-loop has NO test file at all for reddit-loop/loop.sh (glob of /Users/anicca/anicca/skills/self/reddit-loop/* shows only launchd/, state/, reddit-loop-healthcheck.sh, loop.sh, reddit-loop-cli.sh -- no test-loop.sh). This means the FIND-008 fix (posts-freshness guard, loop.sh:28-33) and the FIND-010 fix (safe count(), loop.sh:12-13) as applied to reddit-loop are entirely unverified by any automated test, unlike the equivalent capafy fixes which are asserted by capafy-loop/test-loop.sh. This is a pre-existing gap the fix pass did not close even while adding new untested logic to this exact file.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop",
+    "lineRange": "n/a",
+    "snippet": "directory listing: launchd/, state/, reddit-loop-healthcheck.sh, loop.sh, reddit-loop-cli.sh -- no test-loop.sh present"
+  },
+  "routeToPhase": "2b"
+}

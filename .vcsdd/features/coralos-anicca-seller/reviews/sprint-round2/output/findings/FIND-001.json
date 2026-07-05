@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "SUBMISSION.md Slide 5 (the judge-facing deck) claims the fresh-context adversary's findings were 'all fixed and re-verified' — but the very issue it names in the same sentence (the empty-string URL bug in the self-report path, i.e. round-1 FIND-003's sub-bug) is documented by the builder's own evidence as NOT re-verified live. evidence/trace-clawrouter-multiagent-round.txt (the artifact that discovered the bug) says verbatim: 'NOT yet re-verified live (this session ran out of disk immediately after finding this) — tracked as an open follow-up alongside task #21.' The parent spec's own TODO checklist marks this item '[~]' (partial), never '[x]'. This is the exact overstatement pattern round-1 FIND-002 was raised to eliminate ('the submission deck must not claim more verification than actually happened'), recurring in a different slide of the same fixed document.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/SUBMISSION.md",
+    "lineRange": "91-93",
+    "snippet": "Adversarial self-review: this submission went through a fresh-context adversary pass that found real issues (a stale sub-manifest, an imprecise code comment, an empty-string URL bug in the self-report path) — all fixed and re-verified, logged honestly rather than hidden."
+  },
+  "contradictingEvidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/evidence/trace-clawrouter-multiagent-round.txt",
+    "lineRange": "36-40",
+    "snippet": "FIXED in coral-agents/seller-agent/src/telemetry.ts (changed `??` to `||`) and, defensively, in packages/agent-runtime/src/llm/complete.ts's CLAWROUTER_URL resolution ... NOT yet re-verified live (this session ran out of disk immediately after finding this) — tracked as an open follow-up alongside task #21."
+  },
+  "routeToPhase": "2b"
+}

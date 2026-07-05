@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-024",
+  "dimension": "robustness",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "description": "self-fix.sh's hung-fixer kill path (lines 24-26: `tmux -S \"$SOCK\" kill-session -t \"$SESSION\" ...; pkill -f \"claude --name $SESSION\" ...`) terminates the tmux pane and any process whose argv literally contains the string 'claude --name <SESSION>', but does not kill a process group and cannot reach detached grandchild processes the fixer's own claude session may have spawned during up to 45 minutes of autonomous work (e.g. a background curl/python helper it started with & , an additional nested tmux session it created itself while debugging, or a self/issue-dev invocation per its own TASK text step 6). tmux kill-session sends SIGHUP to the pane's foreground process; children that double-fork, ignore SIGHUP, or were started detached will be orphaned. Combined with FIND-023's kill-and-respawn churn, every forced restart is a potential additional orphan-leak point, not just a single one-time risk.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "24-26",
+    "snippet": "echo \"...HUNG...kill+respawn\" >> \"$LOG\"\ntmux -S \"$SOCK\" kill-session -t \"$SESSION\" 2>/dev/null||true; pkill -f \"claude --name $SESSION\" 2>/dev/null||true; sleep 1"
+  },
+  "routeToPhase": "2b"
+}

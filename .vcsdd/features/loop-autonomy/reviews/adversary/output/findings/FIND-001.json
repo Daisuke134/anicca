@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "autonomy",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "No technical mechanism prevents a loop from repeating the known prior failure (a human-menu response instead of acting). The 'never ask a human' rule exists only as prose inside the STARTUP prompt string; the claude CLI is invoked without any non-interactive/print flag or post-hoc transcript check, so nothing stops a turn from ending on plain text (e.g. a menu of options) with no tool call. Because the tmux session is detached with nobody attached to answer, such a turn simply sits idle forever. The ONLY corrective mechanism is the heartbeat-staleness check, which needs up to 26 hours (STALE_MIN=1560 minutes) before it even notices, let alone fixes anything.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+    "lineRange": "9,13",
+    "snippet": "STARTUP='... ABSOLUTE RULE: you NEVER ask a human or stop for direction ...' ... tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$TASK\""
+  },
+  "concreteFailureScenario": "The sonnet session reproduces the previously-observed behaviour: it ends its turn with a text menu ('Option A: ... Option B: ... which would you like?') instead of calling a tool. Nobody is attached to the detached tmux pane to answer. The heartbeat file (.reddit-loop-last-pass) is never touched because STEP4 never runs. reddit-loop-healthcheck.sh (STALE_MIN=1560, line 6) only flags this as STALE after 26 hours, during which the loop is fully autonomy-broken and nothing in the wiring detects or corrects it.",
+  "routeToPhase": "2b"
+}

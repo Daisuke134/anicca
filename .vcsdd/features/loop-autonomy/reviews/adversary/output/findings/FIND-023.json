@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-023",
+  "dimension": "self_heal",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "self-fix.sh's hung-fixer detection (MAX_FIXER_MIN=45, line 16) is defeated by verify-loops-audit.sh's own re-invocation cadence. ai.anicca.verify-loops-audit.plist sets StartInterval=21600 (6 hours). verify-loops-audit.sh:19/22 unconditionally calls `bash self-fix.sh <loop> \"...\"` again every single 6h tick as long as the loop's real output artifact remains stale (which it necessarily will for the entire duration a genuine fix is still in progress, since the artifact only becomes fresh once the fix actually succeeds). Because 6 hours (360 min) vastly exceeds the 45-minute hung threshold, at the very next audit tick after a fixer spawns (worst case ~6h later, but the fixer's age at that point is virtually always >=45min), self-fix.sh's own guard (lines 19-26) will classify a STILL-LEGITIMATELY-WORKING fixer as 'HUNG' and kill+respawn it, resetting STARTMARK (line 40) back to 0. Since the TASK the fixer is dispatched to run (self-fix.sh:31-38) explicitly requires reproduce+root-cause+rebuild-two-layer-agentic-browser-flow+live-E2E-verify+cross-repo-commit -- realistically well over 45 minutes for non-trivial bugs -- this creates a repeating kill-and-restart-from-scratch cycle that can prevent ANY sufficiently complex fix from ever completing: every ~6h (or sooner, via the loop's own daily STEP0/STEP2 self-fix call) the in-progress work is discarded and restarted. This directly undermines the core claim under review ('self-fix.sh...edits+runs+VERIFIES(real side-effect)+commits') for any fix that legitimately needs more than 45 minutes.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "16,19-26,40",
+    "snippet": "MAX_FIXER_MIN=45 ... if [ \"$age_min\" -lt \"$MAX_FIXER_MIN\" ]; then ...skip...; fi ... kill-session ... date +%s > \"$STARTMARK\""
+  },
+  "routeToPhase": "2b"
+}

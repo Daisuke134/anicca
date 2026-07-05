@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "status": "NEW (partial residual of FIND-011)",
+  "description": "FIND-011's core defeat (test touching the real prod log path) is genuinely fixed: loop.sh:15 now reads `LP=\"${LMCAP_LOGFILE:-$HOME/.openclaw/.../daily_loop.log}\"` and test-loop.sh's run() always passes `LMCAP_LOGFILE=\"$LOG\"` pointing at a per-test tempfile, so the real production log is never opened or touched by the test suite. Test E (test-loop.sh:19) exercises the STALE branch (age=5d -> CAPAFY-LOOP-STALE + selfheal-request written) with a real assertion. However, the OTHER heal branch on the same line of code — `CAPAFY-LOOP-NEVER-RAN` (loop.sh:74, the `else` when the file does not exist at all) — has zero test coverage: run()'s helper always does `touch \"$LOG\"` unconditionally (test-loop.sh:9) before optionally backdating its mtime, so the file always exists in every test case; no test ever passes a log path that doesn't exist. This is a real, currently-untested code path (distinct wording/heal message from STALE) that a future refactor could silently break without any test failing.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+    "lineRange": "9,19",
+    "snippet": "touch \"$LOG\"; [ \"${5:-0}\" -gt 0 ] && touch -t \"...\" \"$LOG\"\n... echo \"E: STALE publish log (5d) ...\"; O=\"$(run ... 5)\"; a \"stale->heal\" ... 'CAPAFY-LOOP-STALE' ...\n# no test ever calls run() with a $LOG path that is never created"
+  },
+  "evidence2": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "71-74",
+    "snippet": "if [ -f \"$LP\" ]; then\n  AGE=...\n  [ \"$AGE\" -le 2 ] || add_heal \"CAPAFY-LOOP-STALE(${AGE}d) ...\"\nelse add_heal \"CAPAFY-LOOP-NEVER-RAN -> wire+fire daily_loop.sh\"; fi"
+  },
+  "fix": "Add a test G: run() with a LOG path that is never touched/created (or extend run() to accept a sentinel like age=-1 meaning 'do not create the file') and assert heal_first contains 'CAPAFY-LOOP-NEVER-RAN'.",
+  "routeToPhase": "2b"
+}

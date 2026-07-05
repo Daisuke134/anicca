@@ -1,0 +1,138 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 4,
+    "scope": "final convergence check: independent re-verification of round-3 FIND-020..FIND-024 builder-claimed resolutions, plus a fresh adversarial hunt for regressions/new defects, against current disk state",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r3.json",
+    "toolLimitation": "IMPORTANT: this session's actual tool grant is Read/Write/Edit/Grep/Glob ONLY -- no Bash tool is available (confirmed by inspecting the tool list at session start), despite the task instructions asking to run `bash -n` and execute 4 test files for real counts. `bash -n` was NOT executed. No test file was literally run. All findings below are STATIC-TRACE (full manual read of every script cited, line-by-line trace of test assertions against production logic, plus Glob-based ground-truth checks of actual on-disk state files where possible -- e.g. .self-fix-*.result existence was verified by direct Glob, which IS live disk evidence, not a trace prediction). Test pass/fail counts are PREDICTIONS, not executed results, and are labeled as such.",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/launchd/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/state/STATE.md (real artifact, contains a genuine autonomous fix record: PR #281, commit 49135e3a1, Railway deploy c31adb35)",
+      "/Users/anicca/.openclaw/state/.self-fix-capafy-loop.result (real artifact, on-disk ground truth)",
+      "/Users/anicca/.openclaw/state/.self-fix-capafy-loop.started",
+      "prior findings FIND-003, FIND-004, FIND-005, FIND-006 (re-read to rule out duplicate reporting of the round-4 new finding)"
+    ]
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-020",
+      "status": "NOT RESOLVED (code-level claim is false; risk is masked operationally, not fixed in code)",
+      "note": "Re-examined healthcheck-lib.sh:33-39. The builder's claim ('mkdir atomic + lost-steal returns 0') is true ONLY for the single initial `mkdir` on line 34 -- that part was already correct before round 3. The steal path itself (lines 35-38: `rmdir \"$LOCK_DIR\" ... ; mkdir \"$LOCK_DIR\" ... || return 0`) is NOT an atomic compound operation across two processes: if two invocations A and B both observe the lock as stale (age>=10min) at nearly the same time, A's rmdir+mkdir can succeed, and then B's rmdir (which does not check who owns the directory) unconditionally deletes A's freshly-created lock, after which B's own mkdir also succeeds. Both A and B then pass the `|| return 0` guard and BOTH execute hc_run's body concurrently -- the exact double-run this fix was supposed to close. The `return 0`-for-the-loser guarantee the builder cites literally cannot fire in this interleaving, because B's mkdir does not fail. The practical exploit window is reduced by launchd's default one-running-instance-per-Label scheduling plus ThrottleInterval=60 on the plist (capafy-loop/launchd/ai.anicca.capafy-loop-healthcheck.plist:6), which is an OPERATIONAL mitigation, not a code fix, and does not protect against a manual/ad-hoc re-invocation of the same healthcheck script or a launchd sleep/wake catch-up double-fire. Verdict: the specific safety property asked about (loser always gets return 0) is FALSE as written."
+    },
+    {
+      "findingId": "FIND-021",
+      "status": "RESOLVED",
+      "note": "Confirmed: hc_is_stuck_pane() is defined once in healthcheck-lib.sh:16-20, and test-healthcheck-lib.sh:6 sources healthcheck-lib.sh directly (`source \".../healthcheck-lib.sh\"`) and calls the real hc_is_stuck_pane function (test-healthcheck-lib.sh:7) with no local re-implementation. No duplication remains; the test exercises the production predicate, not a copy. All 6 test cases (idle picker->FIRE, active-generation-with-esc-to-interrupt->OK, healthy-idle->OK, free-text-await->FIRE, confirm-dialog->FIRE, active-searching-with-esc-to-interrupt->OK) were re-traced by hand against the current predicate and all 6 are still predicted to pass."
+    },
+    {
+      "findingId": "FIND-022",
+      "status": "RESOLVED",
+      "note": "The literal bug (LM_NOTE interpolating the file path instead of the hours) is fixed: verify-loops-audit.sh:26-28 now computes LMH via stale_hrs() (a real integer hour count) and LM_MRR via a grep+awk of the loop's own STATE.md, and LM_NOTE:28 interpolates `${LMH}h` and `$LM_MRR` correctly -- confirmed by direct read, not just the inline comment. Additionally confirmed (going one level deeper than the round-3 review did) that life-manager-loop/loop.sh:24-39 computes LM_MRR via a genuinely independent, deterministic curl to the live Stripe Subscriptions API (not an LLM self-report), so the value the audit surfaces is grounded in real Stripe data on every daily LM pass, not a self-graded marker. Residual (non-blocking) caveat: the audit itself does not re-curl Stripe at audit time -- it only displays whatever loop.sh last wrote -- so if the daily LM cron silently stopped running loop.sh's STEP1 while still touching the heartbeat, MRR would go stale without necessarily tripping LMH; this was not observed on disk (STATE.md:3 last_wake_utc is consistent with the last-pass heartbeat) and is not being raised as a new finding since it is inherent to a once-daily-cadence measurement, not a defect in this fix."
+    },
+    {
+      "findingId": "FIND-023",
+      "status": "PARTIALLY RESOLVED -- downgraded severity, not closed",
+      "note": "Confirmed self-fix.sh:16 sets MAX_FIXER_MIN=180 (was 45). This closes the specific critical failure mode from round 3 (45min was clearly shorter than a normal fix). However the underlying design flaw is unchanged: the hung-fixer determination (self-fix.sh:22-29) is PURELY a wall-clock age check against STARTMARK, with no reuse of the pane-liveness heuristic the codebase already has and uses elsewhere for exactly this purpose (hc_is_stuck_pane / 'esc to interrupt' detection in healthcheck-lib.sh:16-20,58-63). Any genuinely-still-working fixer (e.g. a slow browser-automation rebuild, a flaky CI loop) that legitimately runs longer than 180 minutes WILL be killed and respawned from scratch by the next self-fix.sh invocation, discarding all progress, on the code's own comment's unverified assumption that 'a real fix rarely needs >3h' (self-fix.sh:16-19). Severity reduced from critical to major because 180min is materially more realistic than 45min, but the finding is not resolved, only its acuteness reduced."
+    },
+    {
+      "findingId": "FIND-024",
+      "status": "CONFIRMED STILL PRESENT, unchanged, builder correctly characterized as minor",
+      "note": "self-fix.sh:28 (`tmux -S \"$SOCK\" kill-session ...; pkill -f \"claude --name $SESSION\" ...`) still only targets the tmux session and the specific named claude process; it does not enumerate or kill any grandchild processes (background browser automation, curl/python helpers) the fixer may have spawned with & or nohup during its run. Agreed this is minor in isolation, but it compounds with the still-open FIND-023 gap: every forced kill-respawn cycle of a legitimately-long-running fixer is one more orphan-leak opportunity, not zero as the 'minor, accepted' framing implies in isolation."
+    }
+  ],
+  "newFindingsThisRound": [
+    {
+      "findingId": "FIND-025",
+      "severity": "critical",
+      "summary": "self-fix.sh's loop-name argument is inconsistent across call sites: healthcheck-lib.sh's automated escalation uses the LONG form ('capafy-loop', 'reddit-loop', 'life-manager-loop'), while every other call site (the LLM's own STEP0/ACT-failure self-heal prompts, verify-loops-audit.sh's independent stale-output escalation, and verify-loops.sh's own result-marker display) uses the SHORT form ('capafy', 'reddit', 'life-manager'). Since self-fix.sh derives both its tmux de-dup session name and its RESULT marker filename from this single un-normalized argument, this splits the SAME loop into two disjoint identities. CONFIRMED ON DISK, not theoretical: /Users/anicca/.openclaw/state/.self-fix-capafy-loop.result exists with a real SUCCESS record (commit e86bb98e, published skill, HTTP-200-verified logo URL, ledger 11->12), while .self-fix-capafy.result -- the filename verify-loops.sh actually reads -- does not exist. The system's own anti-fake verifier is already blind to a real, successful self-fix event. The same name split also means healthcheck-lib.sh's case-(d) output-stale escalation (HC_OUTPUT_STALE_HRS=30 for both capafy and reddit) and verify-loops-audit.sh's independent >=30h stale-output escalation for the SAME artifacts can spawn two mutually-unaware, full-power Opus dev sessions against the identical blocker with no coordination."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "autonomy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:16-20,58-63", "description": "Idle-vs-active-generation predicate re-traced against test-healthcheck-lib.sh (6/6 predicted pass); no path found where the loops or self-fix.sh block on or request human input except the explicitly-disclosed, policy-sanctioned CAPTCHA human=compute relay in reddit-loop/loop.sh:15-19 and reddit-loop-cli.sh:9, which is consistent with the project's own human=compute-only doctrine and is not a blocking-on-human violation."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:34-41", "description": "Spawned-fixer TASK prompt explicitly forbids asking a human or presenting a menu; 'blocker is not stop' language present in all three *-loop-cli.sh STARTUP prompts."}
+      ]
+    },
+    {
+      "name": "self_heal",
+      "verdict": "FAIL",
+      "findings": ["FIND-020", "FIND-023", "FIND-025"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh", "description": "FIND-006 (give-up path never spawning a fixer) and FIND-004 (ambiguous repo) confirmed still fixed on re-read -- healthcheck-lib.sh:42-45 directly spawns self-fix.sh on give-up, and self-fix.sh:39 grounds the two repos concretely. But the round-3 major/critical gaps in the self-heal MECHANISM itself (lock-steal race, hung-fixer kill ceiling, and the newly-found namespace split enabling duplicate concurrent fixers) remain open."}
+      ]
+    },
+    {
+      "name": "anti_fake_measurement",
+      "verdict": "FAIL",
+      "findings": ["FIND-025"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/verify-loops.sh:9-17", "description": "FIND-019 newest-record-only liveurl() and FIND-010 safe non-empty count() both re-confirmed correct by direct read."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/life-manager-loop/state/STATE.md and loop.sh:24-39", "description": "LM revenue measurement re-confirmed as a genuinely independent, deterministic live-Stripe curl, not a self-graded marker -- positive evidence."},
+        {"type": "disk", "location": "/Users/anicca/.openclaw/state/.self-fix-capafy-loop.result (exists) vs .self-fix-capafy.result (does not exist)", "description": "Direct Glob confirms a real, successful self-fix event is invisible to the system's own anti-fake 'self-fix result markers' verifier due to the FIND-025 namespace split -- a concrete, present-day failure of the exact property (real artifact as the sole authoritative signal, always surfaced) the CLAIM asserts."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-020", "FIND-024", "FIND-025"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh:8, reddit-loop-cli.sh:9, life-manager-loop-cli.sh:8 vs healthcheck-lib.sh:44", "description": "Confirmed the same self-fix.sh entry point is invoked with two different naming conventions across the codebase depending on call site, with no shared constant/normalization function -- a structural naming-consistency defect, not just an edge-case bug."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "description": "Sources the real production predicate (FIND-021 resolved); 6 cases traced, all predicted GREEN. NOTE: predicted, not executed -- no Bash tool available this session."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "description": "6 assertions traced against loop.sh's real Stripe-fetch + NA/READ-FAILED/EARNING branch logic, all predicted GREEN. NOTE: predicted, not executed."}
+      ]
+    }
+  ],
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY (no Bash tool available in this session -- confirmed at session start; requested `bash -n` and live test execution could NOT be performed). All counts below are hand-traced predictions against the exact production code read this round, not live command output.",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed)"},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed)"}
+    ],
+    "note": "capafy-loop/test-loop.sh and reddit-loop/test-loop.sh were not re-read this round (no code changes to their subject files were claimed by the builder for round 3->4 findings); round-3's predictions of 7/7 and 9/9 GREEN respectively stand unverified by execution.",
+    "syntaxCheck": "bash -n NOT executed (no Bash tool). Manual read of every script cited above found no unmatched quotes/braces/if-fi/case-esac."
+  },
+  "finalAssessment": {
+    "systemSound": false,
+    "summary": "The system is NOT sound. Two genuinely new, disk-confirmed defects were found this round that were not present in the round-3 finding set: (1) FIND-020's fix is a false safety claim -- the lock-steal path is still a TOCTOU race at the code level, only masked by launchd scheduling behavior, not eliminated; (2) FIND-025, a critical, disk-CONFIRMED (not merely traced) loop-name inconsistency that (a) makes the system's own anti-fake verifier blind to at least one real, already-happened successful self-fix, and (b) creates a concrete path for two independent full-power Opus fixers to be spawned concurrently, unaware of each other, against the same blocker. FIND-023's fix genuinely reduces severity (45min->180min) but does not close the underlying design gap (no pane-liveness check reused for fixer-hung detection). No path was found where the system waits for un-sanctioned human input, and no fabricated/masked success was found for the loops' own STATE.md revenue reporting (that part is genuinely sound, backed by live Stripe/HTTP checks) -- but the self-heal layer's own internal bookkeeping is demonstrably inconsistent and, in the capafy case, already silently failing to report a real success to the intended verifier today."
+  },
+  "convergenceSignals": {
+    "findingCount": 6,
+    "priorFindingsFullyResolvedCount": 2,
+    "priorFindingsPartialOrDowngradedCount": 2,
+    "priorFindingsNotResolvedCount": 1,
+    "newFindingsCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["autonomy", "self_heal", "anti_fake_measurement", "structural_integrity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

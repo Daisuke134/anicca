@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "anti_fake_measurement",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "reddit-loop/loop.sh (the automated per-wake health/measurement function) never references posts.jsonl at all -- it only reads comment_karma_total from the account ledger and attributed_lm_signups. Unlike capafy, which has an explicit '6-week-death guard' asserting the publish pipeline actually ran within 2 days (loop.sh:45), reddit-loop has NO equivalent freshness guard verifying that a real post/comment has actually been made recently.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+    "lineRange": "10-24",
+    "snippet": "HEAL=\"\"; add_heal(){ HEAL=\"$HEAL$1; \"; }\n# HEAL: is there at least one reddit account provisioned?\n... [ \"$N_ACCT\" -ge 1 ] ... add_heal \"NO-REDDIT-ACCOUNT ...\"\n# HEAL: CloakBrowser daily-driver reachable ...\n... KARMA=... SIGNUPS=... (no reference to posts.jsonl anywhere in this file)"
+  },
+  "concreteFailureScenario": "The model repeatedly decides STEP2 is a no-op ('no self-promo-welcome sub found today') for weeks. reddit-loop/loop.sh keeps reporting STATUS=\"ACT — post ONE ...\" forever; no HEAL is ever triggered and no restart is ever forced by the automated health function, because nothing in it checks whether an actual post has happened recently -- only a human manually running verify-loops.sh would ever notice.",
+  "routeToPhase": "2b"
+}

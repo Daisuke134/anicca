@@ -1,0 +1,84 @@
+{
+  "feature": "lm-capafy-loop",
+  "reviewType": "impl",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewedFile": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "reviewedTestFile": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+    "referenceModel": "/Users/anicca/anicca/skills/self/founder-loop/founder-loop.sh",
+    "authoritativeSpec": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-04-anicca-money-loop-lm-capafy-design.md",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/lm-capafy-loop/reviews/impl/iteration-1/output/verdict.json",
+    "executionNote": "Read/Grep/Glob only, no Bash in this session; static trace only, no live execution. No manifest.json existed at reviews/impl/iteration-2/input/; located spec via the prior iteration's verdict.json and confirmed via Glob/Read."
+  },
+  "priorFindingsDisposition": {
+    "FIND-001": "RESOLVED — loop.sh:55-69 computes real $ MRR (unit_amount/100, year->/12), $0-price items contribute $0.",
+    "FIND-002": "RESOLVED — loop.sh:46 (Capafy code!=0/missing data -> NA) and loop.sh:59 (Stripe 'error' key/object!=list -> NA); single fetch per surface feeds both the value and its own error check, no TOCTOU on the value derivation itself.",
+    "FIND-003": "RESOLVED — loop.sh:84 emits 'READ-FAILED (...) — DO NOT trust, recompute before acting' on NA, distinct from both EARNING and the demand-bottleneck string.",
+    "FIND-004": "PARTIALLY RESOLVED — test-loop.sh now exists with a real LMCAP_TEST/LMCAP_FIXTURE seam and 4 fixture-driven cases asserting VALUE lines, not just status. BUT see NEW FIND-011: the test harness's own workaround for an untested code path pollutes real production state and leaves the FIND-008 staleness/never-ran branches with zero test coverage.",
+    "FIND-005": "RESOLVED — the loose `^[0-9.]+$` numeric guard is gone entirely; the new design emits a clean python round() float or the literal string 'NA' and only does shell arithmetic once NA has been ruled out by exact string comparison.",
+    "FIND-006": "PARTIALLY RESOLVED — prior-STATE read is now implemented (loop.sh:79, prev_lm_mrr_usd persisted at loop.sh:99), fixing the 'no history' half. The unit-mismatch half (3-day Capafy snapshot vs monthly goal) is NOT fixed; see NEW FIND-012 (loop.sh:86-87 sums a monthly LM_MRR with a 3-day CAP_REV and labels it '$TOTAL/mo').",
+    "FIND-007": "STILL OPEN — see FIND-010. STATUS at loop.sh:83-89 is still a single if/elif/else 'winner' chain; a real EARNING figure computed this wake is dropped from the STATUS narrative whenever any unrelated HEAL condition fires.",
+    "FIND-008": "PARTIALLY RESOLVED — cron/log freshness check now exists and is logically correct (loop.sh:72-76, stat mtime <=2d else STALE/NEVER-RAN). The auto-fix/escalation half of the spec requirement is still not implemented; see FIND-014. Also see FIND-011: the one and only place this check's behavior is exercised (test-loop.sh) actively suppresses it by touching the real production log file rather than a fixture.",
+    "FIND-009": "RESOLVED — loop.sh:34 case-guards STRIPE_SECRET_KEY (sk_live_* passes; empty -> STRIPE-KEY-MISSING heal; anything else -> STRIPE-KEY-NOT-LIVE heal), and any HEAL-NEEDED condition suppresses the EARNING status even if a $ figure was computed from a non-live key this wake."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-012", "FIND-014"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:55-69", "description": "LM $ MRR computation verified correct and in dollars (FIND-001 resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:79,99", "description": "Prior-STATE read/carry-forward verified (FIND-006 history half resolved)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-011"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:73-76", "description": "Stale/never-ran log-age branching logic verified correct by static trace."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-013", "FIND-012"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:46,59", "description": "Both Capafy and Stripe parsers verified to fail-safe to NA on an error-shaped body, never masking as 0 (FIND-002/003 resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:34", "description": "Stripe live-key guard verified to fire on empty/non-live key (FIND-009 resolved)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-010", "FIND-011"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh:91-103", "description": "STATE.md write verified atomic (tmp + mv), matching founder-loop.sh's pattern."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-011", "FIND-013"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh:20-37", "description": "Verified 4 fixture-driven test cases exist and assert VALUE lines (not just status strings), a genuine improvement over iteration 1's zero tests."}
+      ]
+    }
+  ],
+  "antiFakeAssessment": {
+    "neverFabricatesOrMasksARevenueNumber": "MOSTLY YES for the specific 'API-error-as-$0' failure mode iteration 1 flagged (FIND-002/003 fully resolved: an error body now yields the string 'NA' + status READ-FAILED, never a fabricated 0). HOWEVER two residual risks remain that a fresh reader could still be misled by: (1) FIND-012 — a real 3-day Capafy figure is arithmetically combined with a real monthly LM figure and reported as a single '$X/mo' EARNING number, which is not fabricated but IS mislabeled/wrong-unit, so the headline dollar total can still be trusted less than it appears; (2) FIND-010 — a real positive EARNING figure computed this wake can be fully hidden by an unrelated HEAL-NEEDED string, an omission (not a fabrication) but still a trust-relevant gap in the one field most likely to be skimmed.",
+    "criticalNewRisk": "FIND-011 — the test suite itself, on the very invariant (FIND-008, the 6-week silent Capafy death) this build claims to have fixed, has a real side effect that resets the real production staleness clock and provides zero coverage of the STALE/NEVER-RAN heal branches. This is the most serious finding of this iteration: the fix that was supposed to close the original incident is unverified and, if the test suite is ever run on this machine, actively defeats itself in production."
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [
+      {"newId": "FIND-010", "duplicatesPrior": "FIND-007", "relationship": "restates as still-open, unchanged code"},
+      {"newId": "FIND-014", "duplicatesPrior": "FIND-008", "relationship": "restates the escalation/auto-fix half of FIND-008 that remains unaddressed"},
+      {"newId": "FIND-012", "duplicatesPrior": "FIND-006", "relationship": "sharpens the unit-mismatch half of FIND-006 that remains unaddressed"}
+    ]
+  }
+}

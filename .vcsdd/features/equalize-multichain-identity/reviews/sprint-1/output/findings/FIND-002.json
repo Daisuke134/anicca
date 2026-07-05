@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "description": "DONE#3 explicitly requires running the REAL identity-generation path with a fresh throwaway ANICCA_HOME ('実行 fresh evidence'). The shipped test that claims to cover this ('fresh ANICCA_HOME: EVM + Solana keys generated under it resolve back via resolve-identity', resolve-identity.test.mjs:179-198) never invokes start-local.sh or ensure-solana-wallet.mjs at all -- it manually calls writeWalletJson()/writeSolanaJson() test helpers to hand-write the exact files the real scripts would be expected to produce, then only exercises resolveEvmPrivateKey/resolveSolanaSecret (the READ side). Because it bypasses the actual bash generation logic entirely, this test is structurally incapable of catching FIND-001 (the legacy-fallback collision in start-local.sh) -- it would pass identically whether or not start-local.sh's generation is broken. No 'fresh evidence' run-log/artifact for start-local.sh exists anywhere on disk: searched /private/tmp for any eq-test* directory/log -- none found (only synthetic os.tmpdir() dirs created and deleted by the unit tests themselves). The commit message (git log HEAD, .git/COMMIT_EDITMSG) claims '実行確認' ('fresh ANICCA_HOME E2Eで EVM+Solana隔離生成→解決を実行確認') but no artifact substantiates an actual start-local.sh execution, and the real on-disk state of $HOME/.automaton/wallet.json (see FIND-001) shows that such a real run on this machine would NOT have produced the claimed isolated generation.",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/resolve-identity.test.mjs",
+    "lineRange": "179-198",
+    "snippet": "writeWalletJson(freshHome, evmPk, evmAddr);\nwriteSolanaJson(freshHome, solSecret, solAddr);\nconst resolvedEvm = resolveEvmPrivateKey({ env: { ANICCA_HOME: freshHome } });\n// ^ never calls start-local.sh / ensure-solana-wallet.mjs -- files are hand-written by the test"
+  },
+  "routeToPhase": "3"
+}

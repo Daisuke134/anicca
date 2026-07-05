@@ -1,0 +1,17 @@
+{
+  "featureName": "env-readme-spawn",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-env-readme-spawn-1783203063953",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T22:11:03.952Z",
+  "updatedAt": "2026-07-04T22:11:03.952Z"
+}

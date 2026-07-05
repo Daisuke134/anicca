@@ -1,0 +1,17 @@
+{
+  "featureName": "earn-redeem-winnings",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-earn-redeem-winnings-1783197582130",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T20:39:42.129Z",
+  "updatedAt": "2026-07-04T20:39:42.129Z"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-028",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The 4 test files present in this scope (test-healthcheck-lib.sh, capafy-loop/test-loop.sh, reddit-loop/test-loop.sh, life-manager-loop/test-loop.sh) exercise loop.sh measurement/STATE.md logic and the hc_is_stuck_pane() interactive-prompt predicate ONLY. None of them exercise either of the two mechanisms that were specifically re-patched this round to address FIND-020 and FIND-023: (a) healthcheck-lib.sh's lock acquire/steal/owner-file/TOCTOU logic (lines 33-45), and (b) self-fix.sh's hung-fixer wall-clock + pane-liveness kill logic (lines 26-38). There is no test-self-fix.sh and no lock-race test in test-healthcheck-lib.sh. Confirmed by exhaustive Glob of skills/self/**/* -- no file matching that description exists. As a direct consequence, both FIND-026 (permanent lock-out after hard-kill) and FIND-027 (unkillable hung fixer) were found only by manual line-by-line static trace; an automated suite would have caught neither, and any FUTURE edit to these two files can silently re-break or re-regress them while the existing 4 test files stay GREEN, giving false confidence.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self",
+    "lineRange": "n/a (absence finding)",
+    "snippet": "Glob(\"skills/self/**/*\") lists test-healthcheck-lib.sh, capafy-loop/test-loop.sh, reddit-loop/test-loop.sh, life-manager-loop/test-loop.sh, money-total.test.sh, founder-loop/test-*.sh -- none named for self-fix.sh or for the lock/steal path in healthcheck-lib.sh."
+  },
+  "routeToPhase": "2b"
+}

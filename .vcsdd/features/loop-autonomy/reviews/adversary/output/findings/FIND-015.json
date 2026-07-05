@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "self_heal",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "FIND-003 ('self-fix.sh fired-and-forgot; no programmatic verification of the fix') is NOT resolved, only reworded. self-fix.sh now writes a RESULT marker file (line 30, 'RUNNING <ts>') and its prose TASK (lines 31-38) instructs the spawned Opus session to eventually write 'SUCCESS <ts> <evidence>' or 'FAIL <ts> <why>' to that same file (step 5). But self-fix.sh itself never reads back or validates that RESULT file's final content -- it spawns the tmux session at line 39 and returns immediately. Nothing in the codebase re-curls the 'evidence' URL the fixer claims, re-runs the originally-failing check, or verifies the fixer actually committed anything. The only consumer of the RESULT file is verify-loops.sh:33 (`cat \"$r\"`), which is a MANUAL diagnostic script (see FIND-016) that merely prints whatever the fixer wrote -- it does not independently verify the claim. This means a fixer that writes 'SUCCESS ... published https://fake-or-stale-url' is indistinguishable from a real fix: the same LLM that performed the fix is also the sole grader of its own success, with zero independent/automated check. This directly contradicts the system's own anti-fake mandate ('Success = only REAL observable side-effects... never faked/masked').",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "30-39",
+    "snippet": "printf 'RUNNING %s\\n' \"$(date -u +%FT%TZ)\" > \"$RESULT\" ... tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" \"$CLAUDE\" ... -- \"$TASK\""
+  },
+  "routeToPhase": "2b"
+}

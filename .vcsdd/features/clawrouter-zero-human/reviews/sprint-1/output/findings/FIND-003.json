@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "R1's own stated discipline ('prove capability on the strong brain FIRST, only then downgrade to ClawRouter, so a zero-human failure is never confused with a strategy failure') was not applied to the multi-agent/escrow code path that actually produced the tx cited in SUBMISSION.md. Checklist item C0 itself discovers that this path is 'a SEPARATE codebase, still TxLine-only' from the single-agent examples/txodds/server/proxy.ts that R1a/R1b/B5 actually exercised on a strong brain -- yet no Phase-A (strong-brain) run of the multi-agent path is recorded anywhere; C0's first-ever real run of coral-agents/seller-agent + coral-agents/buyer-agent already had LLM_PROVIDER=clawrouter set globally (Phase B ran, and closed its exit gate, before Phase C started). Compounding this: coral-agents/seller-agent/src/bidder.ts decideBid() (lines 39-69) and coral-agents/buyer-agent/src/index.ts pickWinner() (lines 53-71) both silently swallow ANY llm-call failure inside a bare try/catch and fall back to deterministic behavior (bid-at-floor / cheapest-wins) with no distinguishing trace captured for the C0 run -- unlike B5's proxy.ts run, no '[llm] provider=clawrouter' trace line is quoted anywhere for C0. docker-compose.yml (lines 38-40) routes the ClawRouter proxy via `host.docker.internal:8402`, a networking path that was never independently confirmed reachable from inside the actual colima-based containers used for C0 (colima's host.docker.internal support was not verified in this session and is not addressed anywhere in the repo). Because seller-worldcup (the observed AWARD winner in C0) also carries the lowest FLOOR_SOL (0.00045 vs 0.00065/0.00085), its win is exactly the outcome BOTH a working-ClawRouter run AND an all-sellers-silently-fell-back-to-floor run would produce -- the evidence cannot distinguish the two. R1c/R1d's 'exit gate satisfied' claim is therefore unsupported for the actual submitted multi-agent demo; it is only supported for the separate single-agent proxy.ts path (B5).",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/buyer-agent/src/index.ts",
+    "lineRange": "53-71",
+    "snippet": "try {\n  ...\n  const parsed = parseJsonReply<{ by?: string; reason?: string }>(await complete({ system, user, maxTokens: 100 }))\n  ...\n} catch {\n  /* fall through to deterministic choice */\n}\nreturn { winner: pickCheapest(pool)!, reason: 'cheapest available' }"
+  },
+  "routeToPhase": "2b"
+}

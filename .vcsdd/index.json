@@ -69,7 +69,54 @@
       "language": "typescript",
       "currentPhase": "init",
       "updatedAt": "2026-07-04T13:11:59.957Z"
+    },
+    "earn-redeem-winnings": {
+      "status": "active",
+      "createdAt": "2026-07-04T20:39:42.129Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T20:39:42.129Z"
+    },
+    "engine-parity-franklin": {
+      "status": "active",
+      "createdAt": "2026-07-04T21:28:45.664Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T21:28:45.664Z"
+    },
+    "env-readme-spawn": {
+      "status": "active",
+      "createdAt": "2026-07-04T22:11:03.952Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T22:11:03.952Z"
+    },
+    "bet-research-predict": {
+      "status": "active",
+      "createdAt": "2026-07-04T23:03:27.824Z",
+      "mode": "strict",
+      "language": "python",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T23:03:27.824Z"
+    },
+    "dash-activity-revenue": {
+      "status": "active",
+      "createdAt": "2026-07-04T23:15:12.714Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-04T23:15:12.714Z"
+    },
+    "vineyard-mvp": {
+      "status": "active",
+      "createdAt": "2026-07-05T06:38:04.334Z",
+      "mode": "strict",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-05T06:47:34.595Z"
     }
   },
-  "activeFeature": "coralos-anicca-seller"
+  "activeFeature": "vineyard-mvp"
 }

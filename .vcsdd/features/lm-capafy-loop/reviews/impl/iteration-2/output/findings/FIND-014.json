@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "status": "STILL_OPEN_FROM_ITERATION_1 (partial)",
+  "priorFindingId": "FIND-008",
+  "description": "Iteration-1 FIND-008 had two parts: (a) HEAL must check cron/log freshness, and (b) on HEAL-NEEDED the spec requires 'auto-fix (re-auth via email-OTP, restart, rollback) or ONE escalation' (design spec section 11 point 0). Part (a) is now fixed (loop.sh:72-76, see FIND-011 for a residual test-coverage caveat on this exact check). Part (b) remains unimplemented: on any HEAL-NEEDED condition (Capafy auth down, Stripe key missing/not-live, Capafy loop stale/never-ran), loop.sh only writes a suggested manual-fix string into STATE.md/HEAL (loop.sh:30, 40, 75-76) and the one-line stdout summary (loop.sh:104) — there is no auto-fix action taken and no escalation (e.g. Telegram ping) sent anywhere in the file. This is the same gap named in the spec's own motivating incident (section 8/12: 'the cron does not point at daily_loop.sh -> it never ran' went unnoticed for 6 weeks) — a STATE.md file nobody reads is exactly as silent as a log nobody reads, unless something pings a human/agent on HEAL-NEEDED.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "30,34,40,75-76",
+    "snippet": "HEAL=\"\"; add_heal(){ HEAL=\"$HEAL$1; \"; }\n... add_heal \"STRIPE-KEY-MISSING\" ...\n... add_heal \"CAPAFY-LOOP-STALE(...)... \"\n(no notification/escalation call anywhere in the file; STATE.md is the only sink)"
+  },
+  "fix": "Either wire a lightweight escalation (e.g. shell out to the existing Telegram-ping pattern used by the money-path-monitor skill) when HEAL is non-empty, or explicitly amend the design spec to descope auto-fix/escalation for this measurement-only harness (as a deliberate, documented narrowing) and rely on a human/agent reading STATE.md each wake.",
+  "routeToPhase": "2b"
+}

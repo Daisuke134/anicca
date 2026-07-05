@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-022",
+  "dimension": "anti_fake_measurement",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The life-manager-loop portion of FIND-015/FIND-016 is NOT resolved, only partially compensated. life-manager-loop-healthcheck.sh intentionally leaves HC_OUTPUT unset (documented at lines 3-4: 'revenue truth is verified by verify-loops.sh'), so healthcheck-lib.sh's case (d) artifact-vs-marker check (the mechanism that makes FIND-015 true for capafy/reddit) never runs for LM -- meaning a self-fix or a STEP2 pass that falsely claims 'fixed the funnel, revenue growing' for LM has NO automated real-artifact check anywhere in the codebase. verify-loops-audit.sh (the compensating control) only ever computes LM's HEARTBEAT staleness (stale_hrs \"$LMHB\", i.e. .life-manager-loop-last-pass, which is touched unconditionally by the STARTUP cron prompt every pass regardless of outcome) -- it never reads lm_mrr_usd from life-manager-loop/state/STATE.md nor calls Stripe itself, despite verify-loops.sh:32's own text implying 'revenue via Stripe verify' happens. Additionally, verify-loops-audit.sh:24 has an independent bug: `LM_NOTE=\"...LM last-pass stale ${LMHB}\"` interpolates $LMHB, which is the FILE PATH string ($HOME/.openclaw/state/.life-manager-loop-last-pass), not the computed staleness-hours from stale_hrs(\"$LMHB\") -- so even the one LM signal this audit does surface renders as a useless/misleading path string instead of an hours count in the report channel message.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+    "lineRange": "23-24",
+    "snippet": "LM_NOTE=\"\"; [ \"$(( $(stale_hrs \"$LMHB\")/1 ))\" -ge 26 ] && LM_NOTE=\" | ⚠ LM last-pass stale ${LMHB}\""
+  },
+  "routeToPhase": "2b"
+}

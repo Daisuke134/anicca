@@ -1,0 +1,17 @@
+{
+  "featureName": "engine-parity-franklin",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-engine-parity-franklin-1783200525664",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T21:28:45.664Z",
+  "updatedAt": "2026-07-04T21:28:45.664Z"
+}

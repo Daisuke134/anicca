@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "robustness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The three healthcheck scripts are structurally identical copy-pastes (same STALE_MIN=1560, same lock/backoff logic, same give-up dead-end from FIND-006) with no shared library. A fix applied to one has to be manually re-applied to the other two; as-is, all three currently share the identical give-up dead-end.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+    "lineRange": "1-23",
+    "snippet": "# capafy-loop-healthcheck.sh — launchd supervisor (5min). Ported from earn/clip/clip-healthcheck.sh: ... (byte-identical restart()/backoff logic to reddit-loop-healthcheck.sh and life-manager-loop-healthcheck.sh)"
+  },
+  "concreteFailureScenario": "FIND-006 is fixed only in capafy-loop-healthcheck.sh (e.g. by adding a direct self-fix.sh call in the give-up branch); reddit-loop-healthcheck.sh and life-manager-loop-healthcheck.sh silently retain the original dead-end because there is no shared code path forcing consistency.",
+  "routeToPhase": "2b"
+}

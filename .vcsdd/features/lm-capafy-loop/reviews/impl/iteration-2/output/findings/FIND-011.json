@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "critical",
+  "status": "NEW",
+  "description": "The new HEAL freshness check (loop.sh:72-76, the FIND-008 fix) reads a HARDCODED, non-relocatable production path: `$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log` — unlike every other surface in this script, this path has NO LMCAP_TEST/LMCAP_DIR seam. Because of that, test-loop.sh's own run() helper cannot exercise this check in isolation and instead does this on EVERY test invocation (test-loop.sh:13): `mkdir -p \"$HOME/.openclaw/skills/capafy-autopublish/state\"; touch \"$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log\"` — i.e. it reaches OUTSIDE the test's sandboxed $T/$F dirs and mutates the REAL production file that the REAL (non-test) invocation of loop.sh reads to decide 'has the Capafy publish cron actually fired in the last 2 days'. Two concrete consequences: (1) NONE of the 4 test cases ever exercises the STALE or NEVER-RAN heal branches (loop.sh:75-76) — the exact FIND-008 invariant ('the 6-week silent Capafy-token death guard') has ZERO test coverage; the workaround exists purely to suppress it. (2) Worse, this is a real side effect on shared state: on the SAME machine that runs this harness in production (this repo, this $HOME), running `test-loop.sh` — e.g. in CI, pre-commit, or just re-verifying the fix — resets the real daily_loop.log mtime to 'now', which SILENTLY REFRESHES the production staleness clock even if the real Capafy publish cron has been dead for weeks. This recreates, via the test suite itself, precisely the failure mode the invariant was built to catch (6-week silent death going unnoticed) — a test that is supposed to prove FIND-008 is fixed instead has the power to mask a real recurrence of FIND-008 on every run.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+    "lineRange": "12-13",
+    "snippet": "# fresh fake capafy loop log so the staleness heal doesn't fire\nmkdir -p \"$HOME/.openclaw/skills/capafy-autopublish/state\"; touch \"$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log\""
+  },
+  "evidence2": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "72",
+    "snippet": "LP=\"$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log\"   # no LMCAP_DIR/LMCAP_TEST seam"
+  },
+  "fix": "Add a test seam for the cron-log path (e.g. `LP=\"${LMCAP_LOOP_LOG:-$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log}\"`), have test-loop.sh point LMCAP_LOOP_LOG at a fixture file inside $T instead of touching the real production log, and add explicit test cases for both CAPAFY-LOOP-STALE (old mtime) and CAPAFY-LOOP-NEVER-RAN (no file) so the FIND-008 invariant actually has coverage instead of being unconditionally suppressed.",
+  "routeToPhase": "2b"
+}

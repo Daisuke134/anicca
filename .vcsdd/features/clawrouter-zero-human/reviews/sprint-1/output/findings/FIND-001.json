@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "No independently-checkable evidence artifact exists on disk anywhere for any of the 5 cited on-chain transaction signatures (2eVohw53ndLLKf7uz1BvRWbVpNx155y4msJg6kBTS837jB5NaWvToVmQ28WAB9yMtwgxMznCRANs7MYLqMuaMMRU, JbqJUj9t98R8XNZjgnJWJoQoBJoq8qjvUuwmJctUqyrMnfGDpEqb1sfEu37cz7NBTr3CMvKRRqSBBSTL6eWsfvo, 4p79RhXcw3iHdD2hbWZzasDPNuk9NbBvGnSLEqtCeG4mxTJ5wTLDAuiPuJgUcTfbXUQvzWzzFUt1qiY5NsbGczZU, 2JL3mk2m8GuEsf64KJ1yifDuBSZmSeLKUKGPtjeeFphCwMmrBAuKZGHBTo8skF5fsLALexoEjZw5D3p2oH4XvKLq, 51YnRDSHYR7BQrTBxWaRfKTn6h8GCzVfw9AFPHezY3U6Hw8Y8UeNBmymSMpPEt1fshmGotCdVEFEgGAZjFesUdXo). A repo-wide grep for these signatures in both /Users/anicca/anicca-project and /Users/anicca/.cache/anicca-clones/solana_coralOS returns matches ONLY in prose (the design-spec markdown and SUBMISSION.md) -- no saved 'solana confirm' stdout, no saved RPC JSON response, no screenshot. This is a REPEAT of an already-identified gap: the prior fresh-context adversary round on this same submission thread (.vcsdd/features/coralos-anicca-seller/reviews/spec/iteration-1/output/verdict.md, FIND-010) explicitly required 'stdout+solana confirm output be saved to a timestamped file under .vcsdd/features/.../evidence/' -- that requirement was never implemented in any of the subsequent A7/B5/C0 evidence captures. Additionally, this review session had no network-capable tool (no Bash/curl/WebFetch) available to independently query https://api.devnet.solana.com or Solana Explorer as the review task explicitly instructed ('the single most important thing to verify'). Given the task's own framing that this is the single most important claim to check, the complete absence of any retained, independently-checkable artifact -- only self-reported prose citing tx signatures -- means this claim cannot be scored PASS; it must be treated as unverified evidence, which is itself a no-mock-evidence violation per this repo's own evidence-capture conventions.",
+  "evidence": {
+    "filePath": "docs/superpowers/specs/2026-07-04-coralos-submission-clawrouter-zero-human.md",
+    "lineRange": "297-305,349-358,374-378",
+    "snippet": "Both confirmed `Finalized` via `solana confirm`. (no saved stdout file referenced or found anywhere on disk; only the signature strings themselves are recorded in prose)"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "self_heal",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "self-fix.sh tells the spawned dev to fix 'the mother repo (~/anicca or ~/.openclaw)' without ever resolving which repo actually contains the broken code path for THIS loop, or what the process cwd is when it runs `git add -A && commit && push`. The two repos are different git remotes (per CLAUDE.md: ~/anicca -> public OSS anicca repo; ~/.openclaw -> private anicca-dais repo) with independent history.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "16",
+    "snippet": "TASK=\"... (2) fix the code in the mother repo (~/anicca or ~/.openclaw) ... (4) git add -A && commit && push in the correct repo (verify remote first); ...\""
+  },
+  "concreteFailureScenario": "capafy-loop's actual publish pipeline lives at ~/.openclaw/skills/capafy-autopublish/scripts/daily_loop.sh (referenced directly in capafy-loop-cli.sh:8, 'CAPAFY-LOOP-STALE ... run bash ~/.openclaw/skills/capafy-autopublish/scripts/daily_loop.sh'), i.e. the private anicca-dais repo, not ~/anicca. If the spawned Opus dev edits and commits inside ~/anicca instead (or in an ambiguous cwd), the fix never reaches the file the loop actually executes; the loop re-reports the identical 'publish pipeline broken' blocker on the very next pass, and self-fix.sh's own idempotency guard (line 15) will then treat any retry attempt while the stale session lingers as 'already running — skip'.",
+  "routeToPhase": "2b"
+}

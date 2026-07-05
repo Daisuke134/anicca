@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-025",
+  "dimension": "anti_fake_measurement",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "The self-fix.sh loop-name argument is NOT consistent across call sites, splitting the de-dup guard, the tmux session namespace, and the RESULT marker file into two disjoint identities for the SAME conceptual loop. healthcheck-lib.sh's automated escalation (_selffix, called from hc_run's DEAD/STUCK/STALE/output-stale paths) invokes `self-fix.sh \"$HC_LOOP\"` where HC_LOOP is the LONG form ('capafy-loop', 'reddit-loop', 'life-manager-loop' -- set in each *-healthcheck.sh wrapper). Every OTHER call site -- the LLM's own STEP0/ACT-failure self-heal inside capafy-loop-cli.sh and reddit-loop-cli.sh and life-manager-loop-cli.sh, verify-loops-audit.sh's independent stale-output escalation, and verify-loops.sh's own 'self-fix result markers' display loop -- all use the SHORT form ('capafy', 'reddit', 'life-manager', no '-loop' suffix). Since self-fix.sh derives BOTH its de-dup tmux session name (SOCK/SESSION) AND its RESULT marker filename directly from this single argument with no normalization, 'capafy-loop' and 'capafy' are two completely unrelated identities to the script.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "10,14",
+    "snippet": "SOCK=\"/tmp/anicca-selffix-$LOOP-tmux.sock\"; SESSION=\"anicca-selffix-$LOOP\"\n...\nRESULT=\"$STATE/.self-fix-$LOOP.result\"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)"
+  },
+  "crossReferences": [
+    {"filePath": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh", "lineRange": "44", "value": "bash self-fix.sh \"$LOOP\" (LOOP=$HC_LOOP, LONG form, e.g. 'capafy-loop')"},
+    {"filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh", "lineRange": "6", "value": "HC_LOOP=\"capafy-loop\""},
+    {"filePath": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh", "lineRange": "6", "value": "HC_LOOP=\"reddit-loop\""},
+    {"filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh", "lineRange": "8", "value": "STARTUP prompt: 'bash ~/anicca/skills/self/self-fix.sh capafy ...' (SHORT form, used twice: STEP0 self-heal and ACT-failure path)"},
+    {"filePath": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh", "lineRange": "9", "value": "STARTUP prompt: 'bash ~/anicca/skills/self/self-fix.sh reddit ...' (SHORT form)"},
+    {"filePath": "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh", "lineRange": "8", "value": "STARTUP prompt: 'bash ~/anicca/skills/self/self-fix.sh life-manager ...' (SHORT form)"},
+    {"filePath": "/Users/anicca/anicca/skills/self/verify-loops-audit.sh", "lineRange": "19,22", "value": "bash self-fix.sh capafy ... / bash self-fix.sh reddit ... (SHORT form)"},
+    {"filePath": "/Users/anicca/anicca/skills/self/verify-loops.sh", "lineRange": "34", "value": "for L in capafy reddit life-manager; do r=\"$HOME/.openclaw/state/.self-fix-$L.result\" (SHORT form only)"}
+  ],
+  "diskConfirmedEvidence": "Glob of /Users/anicca/.openclaw/state/ confirms the LONG-form files exist: .self-fix-capafy-loop.result (containing a real SUCCESS line: commit e86bb98e to anicca-dais, published skill agent 7686597754, logo URL returning HTTP 200, published.jsonl ledger 11->12) and .self-fix-capafy-loop.started. The SHORT-form files verify-loops.sh actually reads -- .self-fix-capafy.result, .self-fix-reddit.result, .self-fix-life-manager.result -- do NOT exist (zero Glob matches). This is not a theoretical race: it is ALREADY happening. A real, successfully-verified autonomous fix occurred and is invisible to the system's own anti-fake verifier script today.",
+  "concreteFailureScenario": "(1) Invisibility: verify-loops.sh's '--- self-fix result markers ---' section (the human/agent-facing anti-fake summary) will never print the outcome of any fixer spawned via the automated healthcheck-lib.sh escalation path, because it looks up the wrong filename. Confirmed on disk right now. (2) Duplicate concurrent fixers: capafy-loop-healthcheck.sh sets HC_OUTPUT_STALE_HRS=30 (case (d) in healthcheck-lib.sh) and verify-loops-audit.sh independently escalates the SAME published.jsonl at the SAME >=30h threshold (verify-loops-audit.sh:19) -- but via the SHORT name. When published.jsonl goes stale >=30h, BOTH the per-loop healthcheck (session 'anicca-selffix-capafy-loop') and the 6h audit (session 'anicca-selffix-capafy') can spawn INDEPENDENT, mutually-unaware, full-power Opus dev sessions against the identical blocker, each free to edit/commit/push the same files with no coordination -- self-fix.sh's own 'already running -- skip' de-dup guard (self-fix.sh:22-26) cannot see across the two namespaces. Identical structural risk exists for reddit (HC_OUTPUT_STALE_HRS=30 vs audit's stale_hrs(POSTS)>=30, self-fix.sh reddit-loop vs self-fix.sh reddit).",
+  "routeToPhase": "2b"
+}

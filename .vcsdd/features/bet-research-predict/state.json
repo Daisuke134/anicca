@@ -1,0 +1,17 @@
+{
+  "featureName": "bet-research-predict",
+  "mode": "strict",
+  "language": "python",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-bet-research-predict-1783206207826",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T23:03:27.824Z",
+  "updatedAt": "2026-07-04T23:03:27.824Z"
+}

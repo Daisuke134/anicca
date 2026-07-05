@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-031",
+  "round": 6,
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "title": "test-self-fix.sh part (B) 'stale-lock recovery' does not actually invoke the production steal path (hc_run); it asserts generic Unix filesystem behavior plus a literal source-string grep",
+  "description": "test-self-fix.sh:19-23 claims to test 'FIND-026 stale-lock recovery: a NON-EMPTY stale lock (owner file present) MUST be removable by the steal path'. What it actually does: (1) creates a throwaway temp dir with an 'owner' file inside and confirms plain `rmdir` fails on it (test-self-fix.sh:21) -- this is a well-known, version-independent Unix filesystem fact unrelated to any code in this repository; (2) confirms `rm -rf` removes that same throwaway dir (test-self-fix.sh:22) -- again generic shell behavior, not an invocation of hc_run; (3) greps healthcheck-lib.sh for the literal substring 'rm -rf \"$LOCK_DIR\" 2>/dev/null||true' (test-self-fix.sh:23) -- a source-text match, not a behavioral check. At no point does the test set HC_LOOP/HC_SOCK/HC_SESSION/etc, source healthcheck-lib.sh, and call hc_run() against a pre-seeded non-empty stale LOCK_DIR to confirm the REAL steal sequence (rm -rf -> mkdir re-create -> owner-file write -> TOCTOU re-check at healthcheck-lib.sh:34-45) actually completes and the lock is usable again afterward. A regression that breaks the re-mkdir call, the owner re-verification, or the RETURN trap would leave this test fully GREEN, because none of those lines are executed by this test.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/test-self-fix.sh",
+    "lineRange": "19-23",
+    "snippet": "LOCK=\"$(mktemp -d)/.lk\"; mkdir \"$LOCK\"; echo 99999 > \"$LOCK/owner\"\nrmdir \"$LOCK\" 2>/dev/null && ... || echo ok premise\nrm -rf \"$LOCK\" 2>/dev/null; [ ! -d \"$LOCK\" ] && ... ok\ngrep -q 'rm -rf \"$LOCK_DIR\" 2>/dev/null||true' \"$H/healthcheck-lib.sh\" && ... ok"
+  },
+  "routeToPhase": "3"
+}

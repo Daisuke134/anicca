@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "status": "OPEN (unverified from disk, residual of FIND-013)",
+  "description": "The Stripe LM_MRR parser now requests the deeper expand path `expand[]=data.items.data.price` (loop.sh:53) and reads `it.get('price')` expecting an embedded object with `unit_amount`/`recurring.interval` (loop.sh:62-64). The review brief states this shape was 'confirmed by the builder' against a real live subscription, but no artifact evidencing that live capture (a saved real Stripe response, a dated log line, a comment citing a specific verified account/subscription ID) exists anywhere on disk in this skill directory, the spec, or STATE.md — grep across the repo and skill dir found no such evidence file. Separately, the one real production run captured in STATE.md (state/STATE.md:5, `lm_mrr_usd: 0.0`) is not proof the shape assumption is correct: with zero active subscriptions the `for s in d.get('data',[])` loop never executes, so this code path (walking into `items.data[].price`) has never actually been exercised against a real non-empty Stripe response, only against the hand-written fixture in test-loop.sh:17. The failure mode if the assumption is wrong is fail-safe (NA, per the existing broad except-clause at loop.sh:68), so this is not an anti-fake violation, but the claim that this is 'live-verified' is not substantiated by anything on disk.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "53,62-64",
+    "snippet": "LM_BODY=\"$(fetch lm_subs 'https://api.stripe.com/v1/subscriptions?status=active&limit=100&expand[]=data.items.data.price' ...)\"\n...\npr=it.get('price');  pr=pr if isinstance(pr,dict) else {}\namt=(pr.get('unit_amount') or 0)/100.0"
+  },
+  "evidence2": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/state/STATE.md",
+    "lineRange": "5",
+    "snippet": "lm_mrr_usd: 0.0   # zero active subs means the items[].price walk was never exercised live"
+  },
+  "fix": "Once a real, non-zero LM subscription exists, capture the actual Stripe response body once (redacting the key) into a fixture file checked into the skill dir (e.g. `fixtures/real-lm-subs-example.json`) and diff test-loop.sh's SUBS fixture against it, so the 'live-verified' claim is backed by an artifact instead of an unlogged one-off run.",
+  "routeToPhase": "5"
+}

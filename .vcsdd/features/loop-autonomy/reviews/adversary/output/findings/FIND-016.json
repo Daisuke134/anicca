@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-016",
+  "dimension": "anti_fake_measurement",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "FIND-009 ('unconditional touch last-pass let a no-op look healthy') is resolved for capafy and reddit (both have HC_OUTPUT wired to a real artifact -> the (d) output-staleness branch in healthcheck-lib.sh auto-escalates to self-fix, and both loops' healthcheck plists are present under ~/Library/LaunchAgents with StartInterval=300, i.e. actually scheduled). It is NOT resolved for life-manager-loop. life-manager-loop-healthcheck.sh deliberately leaves HC_OUTPUT unset (documented rationale: revenue events are rare), so the automated 5-min healthcheck for LM only ever checks liveness/stuck-menu/26h-heartbeat-staleness -- and the heartbeat is touched unconditionally by the STARTUP cron prompt regardless of whether STEP2 ACT did anything real. The stated compensating control, verify-loops.sh, is a MANUAL script: grep across /Users/anicca/Library/LaunchAgents and /Users/anicca/.openclaw for 'verify-loops' returns zero matches -- it is not wired into any launchd plist or cron job. So an LM loop that runs daily, always reports 'no-op', and always touches its heartbeat would show 'ALIVE+fresh' forever in the automated healthcheck and NEVER trigger a self-fix escalation; the only way anyone would notice is if a human manually runs verify-loops.sh, which reintroduces exactly the human-babysitting dependency the claim says does not exist.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+    "lineRange": "3-12",
+    "snippet": "NOTE: LM's real success = a new paid Stripe subscriber... so HC_OUTPUT is intentionally unset (liveness + stuck-detection only). Revenue truth is verified by verify-loops.sh."
+  },
+  "routeToPhase": "2b"
+}

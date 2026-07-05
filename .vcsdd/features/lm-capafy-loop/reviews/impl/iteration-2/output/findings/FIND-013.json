@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "status": "NEW",
+  "description": "The LM_MRR parser (loop.sh:55-69) assumes Stripe's `GET /v1/subscriptions?...&expand[]=data.items` returns, for each subscription item, a fully-embedded Price object at `it['price']` with a numeric `unit_amount` and `recurring.interval` (`pr.get('unit_amount')`, `(pr.get('recurring') or {}).get('interval')`). This exact shape is hand-constructed in test-loop.sh's fixtures (e.g. test-loop.sh:30: `{\"price\":{\"unit_amount\":2000,\"recurring\":{\"interval\":\"month\"}}}`), so the tests pass by definition regardless of whether that assumption matches Stripe's REAL response shape for this account/API version. This is the classic fixture-vs-reality trap: I cannot execute curl from this review session to confirm the live shape, but if the real account's subscription items return `price` as a bare ID string (older API versions / certain expand configurations do this) rather than an embedded object, `pr.get('unit_amount')` on a string raises AttributeError, which the broad `except Exception: print('NA')` (loop.sh:69) silently converts to NA — the anti-fake invariant holds (no fabricated number), but the practical effect is that LM_MRR would resolve to NA on EVERY real production wake, permanently forcing STATUS into 'READ-FAILED' and making the harness functionally useless for its stated purpose (measuring real LM $ MRR) despite all 4 unit tests being green. This risk is unverified from disk alone and should be confirmed against one real Stripe API response before this is trusted as 'working'.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "54,62-63",
+    "snippet": "LM_BODY=\"$(fetch lm_subs 'https://api.stripe.com/v1/subscriptions?status=active&limit=100&expand[]=data.items' -u \\\"${STRIPE_SECRET_KEY:-x}:\\\")\"\n...\nfor it in (s.get('items',{}) or {}).get('data',[]):\n    pr=it.get('price') or {}; amt=(pr.get('unit_amount') or 0)/100.0"
+  },
+  "evidence2": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+    "lineRange": "30",
+    "snippet": "'{\"object\":\"list\",\"data\":[{\"items\":{\"data\":[{\"quantity\":1,\"price\":{\"unit_amount\":2000,\"recurring\":{\"interval\":\"month\"}}}]}}]}'"
+  },
+  "fix": "Run loop.sh once against the real Stripe key (already sk_live per .env) and Read the resulting STATE.md/lm_mrr_usd value; if it comes back NA while Dais's dashboard shows real active LM subs, the `price` field needs a deeper expand path (e.g. `expand[]=data.items.data.price`) or a defensive `if isinstance(pr,str): fetch price by ID` fallback. Do not treat the 4 green fixture tests as proof the live path works.",
+  "routeToPhase": "2b"
+}

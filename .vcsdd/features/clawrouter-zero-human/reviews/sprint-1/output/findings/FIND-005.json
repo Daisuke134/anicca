@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "coral-agents/seller-agent/src/telemetry.test.ts's 'canonicalMessage (regression guard vs apps/landing telemetry-verify.js field order)' test (lines 71-80) never imports or references the real file (apps/landing/netlify/functions/_lib/telemetry-verify.js or telemetry-schema.js) at all -- it only asserts that canonicalMessage's own output contains a key list hardcoded a SECOND time inside the same test file. It is tautological: it will keep passing even if the two codebases' field sets diverge, providing zero actual regression protection against the real endpoint. Separately, telemetry.ts's own comment (lines 45-46: 'the two codebases must agree byte-for-byte on what gets signed, or the real verifier 401s') is factually inaccurate: apps/landing/netlify/functions/_lib/telemetry-verify.js (lines 27-51) verifies the ed25519 signature against the raw `message` bytes exactly as sent -- it never recomputes/re-serializes canonicalMessage server-side for comparison -- and only additionally schema-validates the parsed payload via telemetry-schema.js's validate(). Byte-for-byte agreement with the reference canonicalMessage implementation is not actually required for acceptance; only passing the hand-rolled schema (field types/ranges in telemetry-schema.js) is. The comment overstates a coupling that doesn't exist while the ACTUAL requirement (schema conformance) is undocumented in telemetry.ts.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/telemetry.test.ts",
+    "lineRange": "71-80",
+    "snippet": "describe('canonicalMessage (regression guard vs apps/landing telemetry-verify.js field order)', () => {\n  it('produces the exact field set the aniccaai.com verifier expects', () => {\n    const msg = canonicalMessage(buildRoundPayload({...}))\n    const parsed = JSON.parse(msg)\n    for (const k of ['id', 'ts', ...]) { expect(parsed).toHaveProperty(k) }\n  })\n})"
+  },
+  "routeToPhase": "2b"
+}

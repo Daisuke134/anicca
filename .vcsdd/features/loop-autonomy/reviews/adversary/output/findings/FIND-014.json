@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "autonomy",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "The FIND-001/002 fix (healthcheck-lib.sh case (b), lines 35-40) detects a 'stuck asking human' state by grep-matching the last 25 lines of the tmux pane against 'Enter to select|Type something|↑/↓ to navigate|Do you want to proceed|Chat about this|esc to (cancel|interrupt)' and unconditionally restarts the session on a match. 'esc to interrupt' is the standard Claude Code CLI status-line hint shown while a turn is ACTIVELY GENERATING/running a tool — not exclusively while idle waiting on a human menu. Because these are long-running claude-p sessions (STEP2 ACT can run CloakBrowser automation for many minutes), a 5-minute healthcheck poll has a real chance of capturing the pane mid-turn, matching this pattern, and restarting a healthy, actively-working session. Given _restart's backoff (>=5 restarts/60min -> _selffix), a run of false positives would not just interrupt real work but spawn an unwarranted Opus self-fix session diagnosing a non-existent bug. There is zero test coverage for this claim anywhere in the repo (grep for 'healthcheck-lib' across skills/self turns up only the 3 thin wrappers that source it; no test-healthcheck-lib.sh or equivalent exists, unlike capafy-loop/test-loop.sh and life-manager-loop/test-loop.sh which DO test their respective loop.sh). The comment at healthcheck-lib.sh:36 ('A healthy idle after a pass does NOT contain these') is an unverified assertion, not a proven invariant.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+    "lineRange": "35-40",
+    "snippet": "if printf '%s' \"$pane\" | grep -qE 'Enter to select|Type something|↑/↓ to navigate|Do you want to proceed|Chat about this|esc to (cancel|interrupt)'; then ... _restart \"STUCK asking human\"; return; fi"
+  },
+  "routeToPhase": "2b"
+}

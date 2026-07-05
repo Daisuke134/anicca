@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "SUBMISSION.md Slide 2 ('What it sells') states unqualified: \"deliverService('anicca <agentId>') returns Anicca's own real, verified net worth and monthly earnings -- not a canned demo string, not the kit's stock sports-odds oracle.\" This is contradicted by the codebase's own current, honestly-disclosed state: the parent design spec's own item A8 discloses that https://aniccaai.com/dashboard.json currently has NO `leaderboard` key at all (stale since 2026-06-05), which means `anicaService()` in coral-agents/seller-agent/src/service.ts (lines 21-38) can only ever take the `fallback:true, error:'no leaderboard entry'` branch (service.ts line 28) in current production -- the 'real net worth' happy-path branch (service.ts lines 29-33) has never been exercised in ANY captured evidence anywhere in this session, including the C0 multi-agent round whose actual DELIVERED payload content is never shown or captured in the spec/checklist at all. Slide 2's confident, unqualified claim directly contradicts this. Only Slide 5 partially hedges ('when no matching row exists yet it fails open with an honest fallback:true marker'), producing an internally inconsistent deck where the headline value proposition (Slide 2, the slide a judge reads first for 'what does it sell') overstates what has actually been demonstrated.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/SUBMISSION.md",
+    "lineRange": "36-42",
+    "snippet": "`deliverService('anicca <agentId>')` returns Anicca's **own real, verified net worth and monthly\nearnings** -- not a canned demo string, not the kit's stock sports-odds oracle."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-032",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "supersedes": "FIND-030 (partially resolved, not closed)",
+  "description": "self-fix.sh's actual hang-vs-progress DECISION branch (the code that decides whether to kill+respawn a past-ceiling fixer) is still completely untested. Round 7 fixed the root defect from FIND-029 (sf_pane_fingerprint now strips digits/spinner-glyphs/'tokens' lines before cksum, lines 13-17) and test-self-fix.sh Part (B) now genuinely and non-tautologically tests THAT function directly via a new `--fingerprint` seam (self-fix.sh:18): F1==F2 for a frozen body with only a ticking timer/token-counter, F1!=F3 for real new text. That part of the fix is real and verified correct by trace. However, the STATEFUL branch that CONSUMES this fingerprint to make the actual kill-or-continue decision -- self-fix.sh:38-56 (has-session check, age_min computed from STARTMARK at line 39, the PANEHASH read/write pair at lines 49-50, and the compound boolean at line 51: `grep -qE 'esc to interrupt' && [ \"$cur\" != \"$prev\" ]` that decides continue-vs-fall-through-to-kill at lines 54-55) -- is exercised by ZERO test in test-self-fix.sh or anywhere else in the 5 files reviewed. The `--fingerprint` seam at line 18 is a hard `exit 0` that returns BEFORE line 23 (LOOP normalization) and long before line 38, so no test in the suite ever reaches lines 38-56 through any code path, real or seamed.",
+  "concreteScenario": "A future edit that flips line 51's `&&` to `||`, or drops the `esc to interrupt` conjunct, or gets the STARTMARK age arithmetic wrong (e.g. seconds vs minutes), or breaks the PANEHASH write-then-compare ordering so `prev` always equals `cur` (permanently 'frozen' -> fixer never allowed to continue past ceiling even while genuinely working) or always differs (permanently 'progressing' -> a genuinely hung fixer NEVER gets killed, silently defeating the CLAIM's item (d): 'a hang that IS eventually killed') would not be caught by test-self-fix.sh, test-healthcheck-lib.sh, or any of the 3 loop test-loop.sh files -- all of which currently pass and would continue to report GREEN.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "38-56 (decision branch, untested) vs 13-18 (fingerprint function, now tested by test-self-fix.sh:16-23 via the --fingerprint seam)",
+    "snippet": "if printf '%s' \"$_pane\" | tail -6 | grep -qE 'esc to interrupt' && [ \"$cur\" != \"$prev\" ]; then\n  echo ... continue ...; exit 0\nfi\n... kill-session ..."
+  },
+  "note": "This is a coverage gap (verification_readiness), not a demonstrated logic bug -- manual trace of lines 38-56 found the boolean and age-comparison logic to be CORRECT as currently written. The finding is that no regression test protects this correctness going forward, unlike the now well-covered pure fingerprint function and the now well-covered hc_acquire_lock() (FIND-031, genuinely resolved this round).",
+  "routeToPhase": "2b"
+}

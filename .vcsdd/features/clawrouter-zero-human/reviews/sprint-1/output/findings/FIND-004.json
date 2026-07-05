@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "coral-agents/seller-agent/coral-agent.toml and coral-agents/seller-agent/README.md were not updated alongside the C0/C3 code changes made to files in the SAME package (service.ts, telemetry.ts, index.ts). The toml's [options] table (lines 18-35) declares no ANICCA_DASHBOARD_URL, SELLER_KEYPAIR_B58, ANICCA_TELEMETRY_URL, or CLAWROUTER_URL, still defaults SERVICES to \"txline\" (not \"anicca,txline\"), and its description/readme fields never mention the 'anicca' service or self-report at all. The README's Files table (lines 27-34) does not list telemetry.ts, and its prose (line 3-5) still reads 'It is intentionally TxODDS-only for the demo.' Only the separate coral-agents/seller-worldcup/coral-agent.toml (the manifest round.ts actually uses via idName='seller-worldcup') correctly declares the new options. Given the spec's own C0 finding that 'coral-server rejects undeclared toml options,' this manifest/README drift means: (a) a judge reading the seller-agent package's own docs -- the natural place to look, and the one its own README 'Test'/'Env' sections point at -- gets a materially incomplete and actively misleading picture of what R5/R6 implemented, and (b) if the base seller-agent manifest were ever launched directly (rather than via the seller-worldcup wrapper), it could not accept the new env vars at all.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/README.md",
+    "lineRange": "3-5,26-46",
+    "snippet": "It is intentionally TxODDS-only for the demo; generic CoinGecko/Jupiter/news services are no longer routed\nthrough this seller path.\n... | `src/service.ts` | TxODDS delivery: fixtures, odds, edge |\n(telemetry.ts is absent from this table entirely)"
+  },
+  "routeToPhase": "2b"
+}

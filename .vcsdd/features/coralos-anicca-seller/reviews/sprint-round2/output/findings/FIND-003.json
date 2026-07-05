@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "Round-1 FIND-004 ('stale/contradictory seller-agent manifest+README') was fixed only in coral-agents/seller-agent/coral-agent.toml and coral-agents/seller-agent/README.md. The higher-level, judge-facing examples/txodds/coral/README.md — the exact directory SUBMISSION.md's 'one command a judge can run' points a judge at — was left internally self-contradictory: its architecture diagram still shows the pre-R5/R6 shape (WANT service=txline, AWARD to=seller-worldcup, settlement=arbiter, ARBITER_RELEASED), and its env-var bullet list never mentions SELLER_KEYPAIR_B58, ANICCA_TELEMETRY_URL, ANICCA_DASHBOARD_URL, CLAWROUTER_URL, or LLM_PROVIDER=clawrouter — while the SAME file's later prose correctly states SETTLEMENT_MODE=direct is now this fork's default and documents the docker-build-first gotcha. A judge reading this file top-to-bottom hits a direct contradiction (arbiter vs direct; txline vs anicca) that FIND-004 was supposed to eliminate fork-wide, not just in one sub-package.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/examples/txodds/coral/README.md",
+    "lineRange": "13-27",
+    "snippet": "buyer-agent\\n  -> WANT service=txline arg=\"edge <fixtureId>\"\\n\\nseller-worldcup   -> BID price=0.00045  specialist\\n...\\nbuyer-agent\\n  -> AWARD to=seller-worldcup\\n  <- ESCROW_REQUIRED reference=<bound-order-hash> settlement=arbiter\\n  -> DEPOSITED settlement=arbiter vault=<vault PDA>\\n  <- DELIVERED {teams, odds, LLM/fallback read}\\n  -> ARBITER_RELEASED sig=<devnet tx>"
+  },
+  "contradictingEvidence": [
+    {
+      "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/examples/txodds/coral/README.md",
+      "lineRange": "63-68",
+      "snippet": "this fork's .env defaults to SETTLEMENT_MODE=direct — a real 2-party buyer-released escrow — because a freshly setup.js-generated ARBITER_KEYPAIR_B58 is NOT the on-chain admin arbiter..."
+    },
+    {
+      "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/examples/txodds/coral/round.ts",
+      "lineRange": "121-122",
+      "snippet": "BUYER_SERVICE: str('anicca'), BUYER_ARG: str(env.ANICCA_AGENT_ID ?? '0x810f6d61f7606deee2657d3083e150a222bc29c5'),\\nMARKET_SELLERS: str('seller-worldcup,seller-fast,seller-premium'), ...llm,"
+    }
+  ],
+  "routeToPhase": "2b"
+}

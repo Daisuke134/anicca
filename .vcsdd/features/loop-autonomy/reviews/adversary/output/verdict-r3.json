@@ -1,0 +1,149 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 3,
+    "scope": "independent re-verification of round-2 FIND-013..FIND-019 against current disk state, fresh context, plus adversarial hunt for regressions introduced by the round-3 fix pass",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r2.json",
+    "toolLimitation": "IMPORTANT: this review session's actual tool grant was Read/Write/Edit/Grep/Glob only -- NO Bash tool was available, despite the task instructions asserting 'You HAVE a Bash tool'. `bash -n` was therefore NOT literally executed on any script, and none of the 4 test files (test-healthcheck-lib.sh, capafy-loop/test-loop.sh, life-manager-loop/test-loop.sh, reddit-loop/test-loop.sh) were literally run. Instead: (1) every script was read in full and manually checked for balanced quotes/braces/if-fi/case-esac (no imbalance found in any of the 15 scripts read); (2) every test file's assertions were traced by hand against the exact corresponding loop.sh/healthcheck-lib.sh logic, line by line, to predict pass/fail. These are STATIC-TRACE predictions, not executed results, and are reported as such below -- they are not being claimed as live command output.",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/launchd/ai.anicca.verify-loops-audit.plist",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/launchd/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/issue-dev/run.sh",
+      "/Users/anicca/anicca/skills/report/loop-report.sh (existence only, via Glob)",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.reddit-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.life-manager-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.verify-loops-audit.plist"
+    ]
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-013",
+      "status": "RESOLVED-WITH-NEW-REGRESSION",
+      "note": "10-min stale-lock steal path added (healthcheck-lib.sh:24-30) -- a healthcheck killed abnormally no longer permanently disables self-heal. However the stat-check-then-steal sequence is not atomic: two concurrent invocations can both pass the staleness check and both successfully mkdir in sequence (the second one's rmdir deletes the first one's freshly-created lock), causing a double-run of hc_run. See NEW FIND-020 (major). ThrottleInterval=60 on the healthcheck plists (capafy-loop-healthcheck.plist:6) reduces but does not eliminate the practical likelihood."
+    },
+    {
+      "findingId": "FIND-014",
+      "status": "RESOLVED",
+      "note": "healthcheck-lib.sh:52-56 now requires BOTH an idle-prompt marker present AND 'esc to interrupt' absent before firing a restart, correctly distinguishing idle-awaiting-human from actively-generating. test-healthcheck-lib.sh added with 6 cases (idle picker->FIRE, active-generation-with-menu-word->OK, healthy-idle->OK, free-text-await->FIRE, confirm-dialog->FIRE, active-searching->OK); manual trace of every case against the exact predicate in healthcheck-lib.sh confirms all 6 assertions would pass. Residual structural risk noted separately as NEW FIND-021 (test hand-copies the predicate instead of sourcing it -> drift risk, not a live bug today)."
+    },
+    {
+      "findingId": "FIND-015",
+      "status": "PARTIALLY-RESOLVED",
+      "note": "For capafy and reddit: RESOLVED. healthcheck-lib.sh case (d) (lines 66-80) makes the real output artifact's mtime -- not the self-fix RESULT marker -- the sole gate for whether a fixer's claim is trusted; a lying 'SUCCESS' with a stale artifact gets re-escalated (debounced to once per OUT_STALE_HRS). For life-manager-loop: NOT resolved. HC_OUTPUT is deliberately unset (life-manager-loop-healthcheck.sh:3-4), so case (d) never runs for LM, and no other automated mechanism checks a life-manager self-fix or STEP2 claim against real Stripe/MRR data. See NEW FIND-022."
+    },
+    {
+      "findingId": "FIND-016",
+      "status": "RESOLVED-WITH-CAVEAT",
+      "note": "verify-loops-audit.sh + ai.anicca.verify-loops-audit.plist confirmed present under the LIVE /Users/anicca/Library/LaunchAgents/ (not just a template), StartInterval=21600 (6h); it runs verify-loops.sh, logs the scorecard, sends it to the report channel, and escalates capafy/reddit staleness to self-fix.sh. The literal 'not scheduled' defect is fixed. Caveat 1: its LM coverage is heartbeat-only and has an independent variable-interpolation bug (LM_NOTE prints the file path, not the staleness hours) -- see NEW FIND-022. Caveat 2: this same 6h unconditional re-invocation of self-fix.sh is what causes the NEW critical thrash bug -- see FIND-023."
+    },
+    {
+      "findingId": "FIND-017",
+      "status": "RESOLVED",
+      "note": "grep -P '\\\\\\$' against both capafy-loop-cli.sh and life-manager-loop-cli.sh returns zero matches; direct read of both files' STARTUP strings confirms 'revenue is $0' now appears with a clean literal dollar sign, no stray backslash."
+    },
+    {
+      "findingId": "FIND-018",
+      "status": "RESOLVED",
+      "note": "reddit-loop/test-loop.sh now exists (31 lines, 9 assertions) covering: no-account->HEAL NO-REDDIT-ACCOUNT, honest no-CapSolver-leak, account-present-no-posts->ACT-FIRST-POST with no HEAL, posts_made line-count integrity (FIND-010 no-corruption), posts-fresh->ACT, posts-stale(>48h)->REDDIT-POSTS-STALE/STALE. Manual trace of every assertion against reddit-loop/loop.sh's actual HEAL/POST_FRESH/STATUS logic predicts all 9 pass."
+    },
+    {
+      "findingId": "FIND-019",
+      "status": "RESOLVED",
+      "note": "verify-loops.sh:14 now does `tail -1 \"$f\" | grep -oE 'https?://...' | head -1` -- extracts the URL from the LAST LINE only (the newest jsonl record), not from anywhere in the whole file as before. Confirmed by direct read; matches the fix's own inline comment."
+    }
+  ],
+  "newFindingsThisRound": [
+    {"findingId": "FIND-020", "severity": "major", "summary": "healthcheck-lib.sh stale-lock steal (the FIND-013 fix) has a TOCTOU race allowing two concurrent healthchecks to both believe they hold the lock and double-run hc_run."},
+    {"findingId": "FIND-021", "severity": "minor", "summary": "test-healthcheck-lib.sh hand-duplicates the stuck-predicate instead of sourcing it; currently identical but can silently drift from the real predicate."},
+    {"findingId": "FIND-022", "severity": "major", "summary": "verify-loops-audit.sh's life-manager coverage is heartbeat-only (not artifact/Stripe-verified) and has a variable-interpolation bug: LM_NOTE prints the file path instead of the computed staleness-hours."},
+    {"findingId": "FIND-023", "severity": "critical", "summary": "self-fix.sh's MAX_FIXER_MIN=45min hung-threshold is defeated by verify-loops-audit.sh's unconditional 6-hour re-invocation while an artifact stays stale, causing any real fix that legitimately needs >45min to be killed-and-restarted from scratch repeatedly, potentially forever."},
+    {"findingId": "FIND-024", "severity": "minor", "summary": "self-fix.sh's hung-fixer kill path (tmux kill-session + pkill -f pattern) can orphan grandchild processes the fixer spawned during its run; each FIND-023 churn cycle is an additional leak opportunity."}
+  ],
+  "dimensions": [
+    {
+      "name": "autonomy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:48-56", "description": "Idle-vs-active-generation predicate verified correct via matching test-healthcheck-lib.sh (6/6 predicted pass by manual trace); prior FIND-001/002/014 false-positive-restart risk closed."}
+      ]
+    },
+    {
+      "name": "self_heal",
+      "verdict": "FAIL",
+      "findings": ["FIND-020", "FIND-022", "FIND-023", "FIND-024"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:16-26,40", "description": "FIND-005/FIND-013 hung-fixer + stale-lock guards are structurally present and correct in isolation, but interact destructively with verify-loops-audit.sh's 6h cadence (FIND-023, critical) and introduce a lock-steal race (FIND-020, major)."}
+      ]
+    },
+    {
+      "name": "anti_fake_measurement",
+      "verdict": "FAIL",
+      "findings": ["FIND-022"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/verify-loops.sh:12-17", "description": "FIND-019 newest-record-only liveurl() confirmed correct for capafy and reddit."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "description": "9/9 assertions predicted pass by manual trace against reddit-loop/loop.sh."}
+      ]
+    },
+    {
+      "name": "robustness",
+      "verdict": "FAIL",
+      "findings": ["FIND-020", "FIND-021", "FIND-024"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh:8 and life-manager-loop/life-manager-loop-cli.sh:8", "description": "FIND-017 stray-backslash escaping bug confirmed fixed via Grep (zero matches for backslash-dollar) in both files."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh, capafy-loop/test-loop.sh, life-manager-loop/test-loop.sh", "description": "FIND-018 reddit-loop test gap closed; all 3 loop test suites traced to 100% predicted pass (see testRunResults)."}
+      ]
+    },
+    {
+      "name": "honesty_ethics_consistency",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh (STARTUP string) and reddit-loop/loop.sh:15-19", "description": "No CapSolver/tier-a-bypass wording anywhere in reddit-loop/*; explicit honest disclosure requirement retained; test-loop.sh's inline no-leak assertion (line 12) predicted pass."}
+      ]
+    }
+  ],
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY (no Bash tool available in this session; results are hand-traced predictions against the exact production code read, not live command output)",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN"},
+      {"file": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN"},
+      {"file": "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh", "predictedPassed": 7, "predictedFailed": 0, "predictedResult": "GREEN"},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN"}
+    ],
+    "totalPredictedPassed": 28,
+    "totalPredictedFailed": 0,
+    "syntaxCheck": "bash -n NOT executed (no Bash tool); manual read of all 19 scripts in scope found no unmatched quotes/braces/if-fi/case-esac in any of them."
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "priorFindingsFullyResolvedCount": 5,
+    "priorFindingsPartialOrCaveatedCount": 2,
+    "priorFindingsNotResolvedCount": 0,
+    "newFindingsCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["autonomy", "self_heal", "anti_fake_measurement", "robustness", "honesty_ethics_consistency"],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "feature": "coralos-anicca-seller",
+  "reviewContext": {
+    "reviewType": "round2-reverification",
+    "round": 2,
+    "priorRoundFindingIds": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-007", "FIND-008"],
+    "repoReviewed": "/Users/anicca/.cache/anicca-clones/solana_coralOS",
+    "repoRemote": "github.com/Daisuke134/solana_coralOS",
+    "specReviewed": "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-04-coralos-submission-clawrouter-zero-human.md",
+    "toolConstraintDisclosure": "This review's sandbox exposed Read/Write/Edit/Grep/Glob only — no Bash/curl/WebFetch — despite the task assuming Bash access. Independent RPC confirmation of tx signatures and independent vitest execution were NOT possible; see FIND-005."
+  },
+  "sprintNumber": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00+09:00",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/bidder.test.ts:10-38", "description": "Real assertions on floor/budget clamping, non-inventory refusal, and LLM-error fallback (not tautological)"},
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/escrow.guard.test.ts:8-12", "description": "Devnet-only RPC guard rejects mainnet by regex-matched error, verified"},
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/telemetry.test.ts:60-68", "description": "reportRound never throws on network failure or non-ok response (S-C3.5), asserted directly"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/telemetry.ts:18", "description": "The claimed `??`->`||` fix for ANICCA_TELEMETRY_URL is present and correctly reasoned in the code comment (lines 13-17)"},
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/packages/agent-runtime/src/llm/complete.ts:120-126", "description": "The same `??`->`||` fix for CLAWROUTER_URL is present, correctly reasoned, and consistent with round.ts's own separate `??` forwarding at examples/txodds/coral/round.ts:75"},
+        {"type": "file", "location": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/seller-agent/src/service.ts:21-38", "description": "anicaService() fails open with fallback:true on both upstream-non-ok and thrown-exception paths, never crashes deliverService()"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": []
+    }
+  ],
+  "perOriginalFindingVerdict": {
+    "FIND-001": "PARTIALLY_RESOLVED — evidence/tx-confirmations.txt exists with plausible, internally-consistent solana confirm -v transcripts for the original 5 tx sigs (balances/slots/program IDs cross-check cleanly), but this reviewer could not independently query devnet RPC to confirm them live (tool constraint, see FIND-005), AND the fix's evidentiary standard was not extended to the 2 new tx sigs the TRACE run later produced (see FIND-002).",
+    "FIND-002": "RESOLVED IN SLIDE 2, REGRESSED IN SLIDE 5 — Slide 2's fallback:true disclosure is honest and specific. But Slide 5 introduces a new overstatement ('all fixed and re-verified') that is false for the FIND-003 sub-bug per the builder's own trace-file admission. See FIND-001 (this round).",
+    "FIND-003": "MOSTLY RESOLVED, ONE SUB-ITEM HONESTLY STILL OPEN — the `??`->`||` code fix is present and correct in both telemetry.ts and complete.ts (verified by direct read); the trace file's ClawRouter-not-fallback evidence is real and specific (non-templated bid reasoning on both buyer and seller sides). The spec is honest that the fix itself was not re-verified live (matches this task's expectation) — but SUBMISSION.md (a different artifact) is NOT equally honest about this, see FIND-001.",
+    "FIND-004": "RESOLVED IN THE SUB-PACKAGE, NOT FORK-WIDE — coral-agents/seller-agent/coral-agent.toml and coral-agents/seller-agent/README.md are now accurate. examples/txodds/coral/README.md — the actual judge-facing file — was missed and is now internally self-contradictory (see FIND-003, this round).",
+    "FIND-005": "RESOLVED — telemetry.ts's comment now accurately describes what apps/landing/netlify/functions/_lib/telemetry-verify.js actually does (parses verbatim message bytes, recovers signer, runs telemetry-schema.js's validate()) — cross-checked directly against that file's real source and it matches. telemetry.test.ts's 'canonicalMessage field checklist' test is honestly labeled as a manual cross-reference, not a tautological byte-for-byte claim.",
+    "FIND-006": "RESOLVED — llm_buyer.ts's new doc-comment accurately discloses it is legacy/unused by the submitted CoralOS round; cross-checked against buyer-agent/src/index.ts, which indeed uses `complete()`/`pickWinner()` from @pay/agent-runtime directly, never LLMBuyerStrategy.",
+    "FIND-007": "RESOLVED, INDEPENDENTLY RE-CONFIRMED — this reviewer read solana_coralOS/.git/refs/remotes/origin/main directly (=f3c84eb25f7a40c39717413b03e75fc2d8378643), which matches the local HEAD reflog tip and, walking back through .git/logs/HEAD, all 5 originally-cited commit hashes (d9fc893, 7367721, 901a255, e6a32a8, ff7ead7) are present in the correct chronological order. This is real, on-disk git evidence, not a restatement of the builder's claim, though it is a local artifact rather than a live network query (tool constraint, see FIND-005).",
+    "FIND-008": "SAME EVIDENCE AS FIND-003 — the trace file's non-fallback JSON completions on both buyer and seller sides (provider=clawrouter model=eco, followed by real varying reasoning text, not the deterministic fallback shape) is genuine, specific, hard-to-fabricate-by-accident evidence that ClawRouter (not silent fallback) fired in the multi-agent round."
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

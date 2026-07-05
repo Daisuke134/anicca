@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "Spec R1 literally states EVM priority tier ③ is '(後方互換)既存の agent .env の POLYGON_WALLET_PRIVATE_KEY'. The shipped resolve-identity.mjs does NOT implement that -- its own tier ③ is '$HOME/.automaton/wallet.json (back-compat, legacy shared path)' (resolve-identity.mjs:13,75-79), a completely different file/format. The agent-.env back-compat that R1 literally names is instead achieved by a SEPARATE mechanism entirely outside resolve-identity.mjs: polymarket-trade/run.sh's own grep-based bypass check (run.sh:35, 'if env empty AND agent .env has no POLYGON_WALLET_PRIVATE_KEY line -> only then call resolve-identity'). The DONE#1 acceptance text ('単体テストで3経路(env / $ANICCA_HOME / 後方互換)を検証') is ambiguous about which '後方互換' it means, and the shipped unit tests (resolve-identity.test.mjs:73-88) test the $HOME/.automaton/wallet.json tier, not the agent-.env tier described in R1's own prose. This is a documentation-fidelity gap: a future maintainer reading R1 in isolation would look for the agent-.env fallback INSIDE resolve-identity.mjs and not find it, because it actually lives in run.sh's separate bypass-check, undocumented as such in R1.",
+  "evidence": {
+    "filePath": "docs/superpowers/specs/2026-07-05-equalize-multichain-identity-design.md",
+    "lineRange": "24-25",
+    "snippet": "R1: ... 優先順:① env `ANICCA_EVM_PRIVATE_KEY` → ② `$ANICCA_HOME/.automaton/wallet.json` → ③(後方互換)既存の agent `.env` の `POLYGON_WALLET_PRIVATE_KEY`。"
+  },
+  "conflictingImplementation": {
+    "filePath": "skills/earn/lib/resolve-identity.mjs",
+    "lineRange": "75-79"
+  },
+  "routeToPhase": "3"
+}

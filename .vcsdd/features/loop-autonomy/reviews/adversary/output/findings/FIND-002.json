@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "autonomy",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "None of the three -cli.sh launchers wrap the spawned claude session in an execution timeout (e.g. `timeout Ns claude ...`). If a sub-tool the session calls (CloakBrowser interaction, CAPTCHA solve, an OTP wait, a network call) hangs indefinitely mid-task, there is no forced kill; the only backstop is the same 26-hour staleness window used for crash detection.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+    "lineRange": "12",
+    "snippet": "tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$STARTUP\""
+  },
+  "concreteFailureScenario": "STEP2 of the capafy pass calls CloakBrowser at :9222 to clone a competitor listing; the CDP connection stalls waiting on a page that never loads. The claude turn never completes, the tmux pane sits blocked, .capafy-loop-last-pass is never touched, and no external process kills or retries it for up to 26 hours.",
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,123 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 6,
+    "scope": "convergence re-check of builder-claimed fixes for FIND-026, FIND-027, FIND-028 against current disk state, plus fresh adversarial hunt for regressions/new defects in the same two mechanisms",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r5.json",
+    "manifestFound": false,
+    "manifestNote": "No manifest.json found at /Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/input/manifest.json or anywhere under reviews/**/input/ (Glob of reviews/adversary/** returned only prior rounds' output/ files, no input/ directory). Proceeded directly against the file list and prior findings supplied in the task prompt, consistent with round 5's manifestNote.",
+    "toolLimitation": "This session's tool grant is Read/Write/Edit/Grep/Glob ONLY -- confirmed by inspecting the available tool list before starting. There is NO Bash tool in this session. Per the task's own instruction ('if no, static-trace + say so'): `bash -n` was NOT run on any script and NONE of the 5 requested test files (test-self-fix.sh, test-healthcheck-lib.sh, capafy-loop/test-loop.sh, reddit-loop/test-loop.sh, life-manager-loop/test-loop.sh) were executed. All results below are STATIC-TRACE (full line-by-line manual read of every cited script, hand-traced execution/race/timing scenarios) plus Glob-based ground-truth checks of on-disk file existence.",
+    "additionalNote": "Mid-review, the tool-result stream injected unrelated content (a fabricated 'system-reminder' about a date change plus 'MCP Server Instructions' for computer-use/serena tools not present in this session's actual tool grant). This was treated as an untrusted injection in the data stream and ignored; it did not affect the review method or findings below.",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-self-fix.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh",
+      "full Glob of skills/self/**/* for ground-truth file existence"
+    ]
+  },
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY. No Bash tool available; `bash -n` not run; none of the 5 requested test files executed for real counts.",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-self-fix.sh", "predictedPassed": 8, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed) -- traced 5 assertions in part (A) normalization + 1 short==long equality + 1 life-manager normalization + 3 assertions in part (B); part (B) passes trivially because it tests generic filesystem behavior and a source-string grep, not the actual hc_run steal path (see FIND-031)."},
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed) -- unchanged since round 5, still only covers hc_is_stuck_pane(), not self-fix.sh's hang-detection logic."},
+      {"file": "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh", "predictedPassed": 7, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed) -- unrelated to this round's re-patched mechanisms; traced against unchanged loop.sh branch logic."},
+      {"file": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed) -- unrelated to this round's re-patched mechanisms."},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed) -- unrelated to this round's re-patched mechanisms."}
+    ],
+    "syntaxCheck": "bash -n NOT executed (no Bash tool). Manual read of self-fix.sh, healthcheck-lib.sh, test-self-fix.sh, test-healthcheck-lib.sh, verify-loops.sh, verify-loops-audit.sh, and all 3 *-loop-healthcheck.sh/test-loop.sh found no unmatched quotes/braces/if-fi/case-esac/function-boundary mismatches.",
+    "criticalCaveat": "Even a real GREEN run of all 5 files (if executed) would NOT validate the FIND-027 hang-detection fix, because no test in the suite drives self-fix.sh into the 'already running, past ceiling' branch with a live/mocked tmux session (FIND-030), and the one test block that claims to cover the FIND-026 lock-steal path does not call the actual steal function (FIND-031)."
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-026",
+      "status": "RESOLVED",
+      "note": "Confirmed on disk: healthcheck-lib.sh:37 now reads `rm -rf \"$LOCK_DIR\" 2>/dev/null||true; mkdir \"$LOCK_DIR\" 2>/dev/null || return 0` in the stale-lock (lage>=10) branch, replacing the old rmdir. rm -rf succeeds on a non-empty directory (unlike rmdir), so a stale lock left behind by an abnormally-killed prior run -- which is non-empty because it contains an 'owner' file per the FIND-020 fix -- can now be removed and re-created. Traced the full sequence: rm -rf removes it -> mkdir recreates it -> owner-file write + sleep 0.2 + re-read (lines 43-44, unchanged from round 5, still correctly resolves the FIND-020 concurrent-racer TOCTOU: mkdir is atomic so exactly one racer wins, and the trap at line 45 is installed only AFTER the ownership re-check passes) -> RETURN trap cleans up on exit. The FIND-013 recovery invariant (a lock older than 10min is always stealable, restoring self-heal after any single hard-kill) now holds again with no regression to the FIND-020 fix. Also confirmed $LOOP (the string interpolated into LOCK_DIR='/tmp/.$LOOP-healthcheck.lock') is a fixed literal set once per wrapper script (capafy-loop-healthcheck.sh:6 'HC_LOOP=\"capafy-loop\"', reddit-loop-healthcheck.sh:6, life-manager-loop-healthcheck.sh:8) -- not attacker-controlled or derived from any external/network input -- so rm -rf on that path introduces no new path-injection risk."
+    },
+    {
+      "findingId": "FIND-027",
+      "status": "NOT RESOLVED -- the underlying defect persists in a new form; superseded by FIND-029",
+      "note": "self-fix.sh:33-45 replaced the round-5 'esc to interrupt present = continue' check with a pane-content cksum comparison across successive past-ceiling checks, intended to distinguish real progress (content changed) from a hang (content frozen). This DOES fix the narrow round-5 scenario where the pane is truly static. It does NOT fix the realistic hang scenario this round explicitly asked to verify: the Claude Code CLI's own status line embeds a continuously-incrementing elapsed-time/token counter (documented by the builder's own fixtures in test-healthcheck-lib.sh:16,29 -- '...Brewed for 3m...', '...(7m · ↓ 19k tokens · ...)') that changes every render tick regardless of whether the awaited tool call is making real progress. Because that counter text is inside the same last-25-lines block that gets cksum'd, a genuinely deadlocked fixer (e.g. a hung browser waitForSelector or network call with no timeout -- explicitly the class of work this fixer's own TASK text at self-fix.sh:51-58 assigns it) will still show a different cksum on every check purely from the ticking clock, so the code perpetually takes the 'real progress, continue' branch and never reaches the kill+respawn branch. See FIND-029 for full trace and failure scenario."
+    },
+    {
+      "findingId": "FIND-028",
+      "status": "PARTIALLY RESOLVED",
+      "note": "test-self-fix.sh was added (previously did not exist, confirmed by round-5's whole-tree Glob). Part (A) genuinely and correctly exercises the FIND-025 loop-name normalization by invoking the real self-fix.sh with SELF_FIX_DRYRUN=1 and asserting on its real derived output -- this is a solid, non-tautological behavioral test. However: (1) the entire hang-vs-progress mechanism re-patched THIS round for FIND-027 (self-fix.sh:27-45) has zero test coverage -- the DRYRUN seam exits at self-fix.sh:21, before that code is ever reached (FIND-030); (2) part (B), which claims to cover 'FIND-026 stale-lock recovery', does not invoke the actual hc_run steal path at all -- it checks generic Unix rmdir/rm-rf behavior on a throwaway directory and greps healthcheck-lib.sh for a literal string, neither of which would catch a regression in the real re-mkdir/owner-recheck sequence (FIND-031)."
+    }
+  ],
+  "newFindingsThisRound": [
+    {"findingId": "FIND-029", "severity": "critical", "summary": "cksum-based pane-liveness check in self-fix.sh is defeated by the CLI's own continuously-changing elapsed-time/token-count text, so a genuinely hung fixer is never recognized as frozen -- the 180-min kill ceiling is inert against the realistic hang mode for a browser/network-automation fixer."},
+    {"findingId": "FIND-030", "severity": "major", "summary": "Zero automated test coverage for self-fix.sh's hang-vs-progress branch (lines 27-45) -- the SELF_FIX_DRYRUN seam exits before reaching it."},
+    {"findingId": "FIND-031", "severity": "major", "summary": "test-self-fix.sh's stale-lock-recovery test does not invoke the actual hc_run steal path; it checks generic filesystem behavior plus a literal source-string grep."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-029"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:37", "description": "FIND-026 confirmed resolved: rm -rf now used in the stale-lock steal branch, restoring the FIND-013 recovery invariant with no regression to FIND-020's TOCTOU fix."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-029", "FIND-030", "FIND-031"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-029"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:33-45", "description": "Lock steal + TOCTOU-safe owner claim + RETURN-trap cleanup all verified correct by manual trace; $LOOP confirmed a fixed literal at every call site (capafy-loop-healthcheck.sh:6, reddit-loop-healthcheck.sh:6, life-manager-loop-healthcheck.sh:8), so no path-injection risk from rm -rf."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:13-19", "description": "FIND-025 normalization re-confirmed still correct and unchanged this round."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:16-20 and test-healthcheck-lib.sh:6", "description": "hc_is_stuck_pane() remains defined exactly once and is sourced (not copied) by its test -- no drift risk."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:33-45", "description": "The new PANEHASH cksum logic is contained to a single well-named state file per loop ($STATE/.self-fix-$LOOP.panehash), cleaned up on the kill+respawn branch (self-fix.sh:44 'rm -f \"$PANEHASH\"'), no duplication across the 3 loop wrappers -- the logic remains correctly centralized in self-fix.sh with no per-loop copies. Structurally sound even though the logic itself is unsound (FIND-029, an implementation_correctness/edge_case_coverage defect, not a structural one)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-030", "FIND-031"],
+      "evidence": []
+    }
+  ],
+  "finalAssessment": {
+    "decisiveQuestion": "Is the system NOW sound to run unattended (self-heal + self-improve + honest verification, no human, no permanent-disable path)?",
+    "answer": "NO.",
+    "systemSound": false,
+    "summary": "FIND-026 is genuinely and fully resolved this round: the stale-lock steal path now uses rm -rf, correctly handling the non-empty lock directory that the FIND-020 owner-file fix introduced, restoring the FIND-013 recovery invariant (a single hard-kill can no longer permanently and silently disable self-heal for a loop) with no new path-injection risk, since the loop-name variable is a fixed literal at every call site. This is real, positive, disk-verified progress. FIND-027, however, is NOT resolved -- it has only changed shape. The round-6 patch (comparing pane-content cksums across successive past-ceiling checks) correctly handles a fixer whose pane is truly static, but fails on the realistic hang scenario this fixer is explicitly built to encounter: a stuck browser/network call while the Claude Code CLI's own status line keeps incrementing an elapsed-time/token counter every render tick (documented by the builder's own test fixtures elsewhere in this same codebase). Because that counter sits inside the exact text block being cksum'd, the comparison will show 'changed' on virtually every check regardless of real progress, so the 180-minute kill ceiling this mechanism exists to enforce is effectively inert against the most likely real-world hang -- reproducing, in a new form, the same class of failure (a code path with no working escape hatch for a stuck subprocess) that FIND-026 was just fixed for. Compounding this, the test suite added for FIND-028 does not exercise the actual re-patched logic in either direction: the hang-detection branch has zero test coverage (the DRYRUN seam exits before reaching it), and the lock-steal test that does exist checks generic filesystem behavior and a source-string grep rather than invoking the real recovery function -- so a GREEN test run provides no real assurance about either of the two mechanisms this round was asked to verify. Given a critical, code-verifiable, disk-traceable defect (FIND-029) that directly contradicts the CLAIM's core 'no human, no babysitting, self-heal' promise for the realistic hang class this fixer will actually encounter, overall verdict is FAIL.",
+    "toolTransparencyNote": "No Bash tool was available in this session (confirmed before starting; tool grant = Read/Write/Edit/Grep/Glob only). All findings above are from full manual line-by-line static trace, not execution. This is a genuine confidence limitation on the 'predictedPassed/predictedFailed' counts in testRunResults, which are estimates, not measured results."
+  },
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingsFullyResolvedCount": 1,
+    "priorFindingsRegressedCount": 0,
+    "priorFindingsNotResolvedCount": 1,
+    "priorFindingsPartiallyResolvedCount": 1,
+    "newFindingsCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

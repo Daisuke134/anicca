@@ -1,0 +1,40 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "always-on claude-p loops: capafy, life-manager, reddit — self-heal (self-fix.sh) + anti-fake verification (verify-loops.sh)",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/issue-dev/run.sh",
+      "/Users/anicca/anicca/skills/self/issue-dev/SKILL.md",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.reddit-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.life-manager-loop-healthcheck.plist"
+    ]
+  },
+  "dimensions": [
+    {"name": "autonomy", "verdict": "FAIL", "findings": ["FIND-001", "FIND-002"], "evidence": []},
+    {"name": "self_heal", "verdict": "FAIL", "findings": ["FIND-003", "FIND-004", "FIND-005", "FIND-006"], "evidence": []},
+    {"name": "anti_fake_measurement", "verdict": "FAIL", "findings": ["FIND-007", "FIND-008", "FIND-009"], "evidence": []},
+    {"name": "robustness", "verdict": "FAIL", "findings": ["FIND-010", "FIND-011"], "evidence": []},
+    {"name": "honesty_ethics_consistency", "verdict": "FAIL", "findings": ["FIND-012"], "evidence": []}
+  ],
+  "convergenceSignals": {
+    "findingCount": 12,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["autonomy", "self_heal", "anti_fake_measurement", "robustness", "honesty_ethics_consistency"],
+    "duplicateFindings": []
+  }
+}

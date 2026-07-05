@@ -1,0 +1,125 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 7,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 7,
+    "scope": "convergence re-check of builder-claimed fixes for FIND-029 (hang-detection defeated by CLI timer/token counter), FIND-030 (hang branch untested), FIND-031 (lock steal only grep-tested), against current disk state",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r6.json",
+    "manifestFound": false,
+    "manifestNote": "No manifest.json found at .vcsdd/features/loop-autonomy/reviews/adversary/input/manifest.json (Glob of reviews/**/input/** returned zero results). Proceeded directly against the file list and prior findings supplied in the task prompt, consistent with rounds 5 and 6.",
+    "toolLimitation": "This session's tool grant is Read/Write/Edit/Grep/Glob ONLY -- there is no Bash tool. Per the task's own fallback instruction, this is stated explicitly and NO `bash -n` syntax check and NO execution of any of the 5 requested test files was performed. All results are STATIC-TRACE: full line-by-line manual read of every cited script plus hand-execution of every test assertion against the current source (tracing sed/tr/grep/cksum semantics, sh variable expansion, and mkdir/stat/touch filesystem behavior by hand).",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-self-fix.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh"
+    ],
+    "unrelatedInjectionNote": "Mid-session, the tool-result stream again injected an unrelated 'system-reminder' about a date change plus fabricated 'MCP Server Instructions' for computer-use/serena tools that are not part of this session's actual tool grant (same pattern noted in round 6's verdict). Treated as untrusted content in the data stream and ignored; did not affect method or findings."
+  },
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY. No Bash tool available; nothing executed for real.",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-self-fix.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Traced all 9 assertions: (A) 4 loop-name-normalization checks (unchanged from round 6, still correct) (B) 2 NEW hang-fingerprint checks -- hand-traced sed/tr/grep/cksum semantics: frozen body + only timer/tokens differing -> the volatile '...tokens...' status line is dropped WHOLESALE by `grep -avE 'tokens'` and remaining digits stripped by sed, so F1==F2 (frozen->same hash, correct); new substantive text in F3 survives the strip -> F1!=F3 (progress->different hash, correct) (C) 3 NEW hc_acquire_lock checks -- traced against real mkdir/stat/touch semantics: acquire-when-free succeeds, immediate re-acquire on the still-fresh (same-second) lock correctly refuses via the lage<10 branch, and a manufactured non-empty stale lock (owner file + touch -t 202607010000, well over 10min old) is correctly stolen via rm -rf+mkdir+re-verify."},
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Unchanged since round 5/6; still only covers hc_is_stuck_pane(), which remains correct by trace."},
+      {"file": "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh", "predictedPassed": 7, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Re-read this round: file is byte-identical in structure to round 6's trace, 7 `a()` assertions, unrelated to this round's re-patched mechanisms."},
+      {"file": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Re-read this round: 9 assertions (1+1+3+2+2), unchanged, unrelated to this round's re-patched mechanisms."},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Re-read this round: 6 assertions, unchanged, unrelated to this round's re-patched mechanisms."}
+    ],
+    "syntaxCheck": "bash -n NOT executed (no Bash tool). Manual read of all reviewed scripts found no unmatched quotes/braces/if-fi/case-esac/function-boundary mismatches.",
+    "criticalCaveat": "A predicted GREEN across all 5 files this round would, unlike round 6, provide REAL assurance for two of the three previously-open mechanisms: (1) the exact FIND-029 fingerprint defect (timer/token-counter defeating hang detection) is now directly tested with real frozen-vs-progress fixtures via a genuine `--fingerprint` seam, and (2) the FIND-031 lock-steal path now invokes the real, extracted hc_acquire_lock() function (sourced, not copied) that hc_run() itself calls, covering acquire/refuse-fresh/steal-stale-nonempty. It would NOT, however, provide assurance for the stateful decision branch that consumes the fingerprint (self-fix.sh:38-56) -- see FIND-032."
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-029",
+      "status": "RESOLVED",
+      "note": "self-fix.sh:13-17 now defines sf_pane_fingerprint(), which strips ALL digits and the literal 'esc to interrupt' (sed), strips a specific spinner-glyph set '✻✳✶✢⏺◐◓◑◒·↑↓…' (tr -d), and drops entire lines containing the word 'tokens' (grep -avE) BEFORE cksum. Hand-traced against the exact round-6 counterexample fixtures ('✻ Brewed for 3m · esc to interrupt', '✢ Searching… (7m · ↓ 19k tokens · esc to interrupt)') and the builder's new test-self-fix.sh:19-23 fixtures: a genuinely frozen fixer whose only change between checks is the elapsed-time/token-count status line now produces an IDENTICAL fingerprint (that whole status line is dropped wholesale by the 'tokens' line-filter, and any leftover digits elsewhere are stripped), while a fixer that emits genuinely new substantive text (a new tool call, new reasoning) produces a DIFFERENT fingerprint because that text is not digits/spinner-glyphs/a-tokens-line. The 180min kill ceiling (self-fix.sh:32,40) can now actually fire against the realistic hang class (stuck browser/network call with a ticking CLI status line) that defeated the round-6 patch. Residual, non-blocking caveat: the tr -d spinner-glyph set (✻✳✶✢⏺◐◓◑◒) is a fixed enumeration, not a class-based strip (e.g. not '[[:^ascii:]]' or a documented exhaustive Braille-spinner range); if the real Claude Code CLI ever renders a distinct spinner glyph outside this set on its ticking status line, that glyph would survive the strip and could defeat frozen-detection again. Grepped the entire skills/self tree for every other spinner/status-line fixture in this codebase (test-healthcheck-lib.sh, test-self-fix.sh) and found no glyph outside the covered set, so there is no on-disk evidence of an actual gap -- but this cannot be proven exhaustively without a live CLI capture, which is outside this review's evidence base. Recorded as a non-blocking note, not a finding, because it is unprovable speculation rather than a demonstrated defect."
+    },
+    {
+      "findingId": "FIND-030",
+      "status": "PARTIALLY RESOLVED -- superseded in narrower form by FIND-032",
+      "note": "The exact defect FIND-029 identified (the pure fingerprint function) now has direct, non-tautological test coverage via test-self-fix.sh Part (B) and the new `--fingerprint` seam at self-fix.sh:18. This closes the most severe part of the original gap. However, the STATEFUL decision branch that consumes the fingerprint -- self-fix.sh:38-56 (has-session check, STARTMARK age_min arithmetic, PANEHASH read/write across invocations, and the compound boolean at line 51 that actually decides continue-vs-kill) -- remains completely untested; the --fingerprint seam is a hard exit at line 18, before LOOP normalization (line 23) and long before line 38, so no test reaches that branch through any path. See FIND-032 for the concrete regression scenario this leaves open."
+    },
+    {
+      "findingId": "FIND-031",
+      "status": "RESOLVED",
+      "note": "healthcheck-lib.sh:26-36 now defines hc_acquire_lock(LOCK_DIR, now) as a standalone function, and hc_run() at line 50 calls this SAME function (`hc_acquire_lock \"$LOCK_DIR\" \"$now\" || return 0`) -- no duplicated inline logic, no drift risk. test-self-fix.sh:26-34 sources healthcheck-lib.sh (not a copy) and drives the real function through three real scenarios against a real tmp directory: (1) acquire on an empty/no-lock dir succeeds, (2) an immediate second acquire on the still-fresh (same-second, lage=0<10) lock correctly refuses, (3) a manufactured NON-EMPTY stale lock (owner file present, mtime forced to 2026-07-01 via touch -t, comfortably >=10min old relative to 'now') is correctly stolen via the rm -rf+mkdir+re-verify sequence. This is genuine behavioral coverage of the real production function, not a filesystem-generality check or a source-string grep as in round 6."
+    }
+  ],
+  "newFindingsThisRound": [
+    {"findingId": "FIND-032", "severity": "major", "summary": "self-fix.sh's hang-vs-progress DECISION branch (lines 38-56: age_min computation, PANEHASH persistence, and the compound continue/kill boolean at line 51) has zero test coverage; only the pure fingerprint helper it calls is tested. A future regression in the boolean/age logic (e.g. a genuinely hung fixer never being recognized as frozen, or a genuinely progressing fixer being killed prematurely) would ship silently GREEN."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:13-17,49-55", "description": "The CLAIM's hang-detection requirement is now implemented in a way that matches the spec intent: a genuinely frozen pane (no new substantive content, only a ticking status line) yields a stable fingerprint and is distinguishable from real progress, per hand-trace against both round-6's counterexample fixtures and the builder's new test fixtures."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:26-36,50", "description": "hc_acquire_lock() correctly implements the FIND-013/020/026 lock-steal-with-owner-recheck contract, and hc_run consumes the same function -- no spec/implementation drift."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/test-self-fix.sh:16-23", "description": "Frozen-vs-progress edge case now has concrete, hand-traceable fixtures matching the exact failure mode round 6/7 asked about (ticking elapsed-time + token-counter status line)."},
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/test-self-fix.sh:25-34", "description": "Lock acquire / refuse-fresh / steal-stale-nonempty edge cases now covered against the real function."},
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh:11-29", "description": "Stuck-asking-a-human vs active-generation vs healthy-idle edge cases remain correctly covered, unchanged since round 5."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:38-56", "description": "Manual line-by-line trace of the full has-session/age/fingerprint/decision branch found the logic internally consistent and correct as written: skip-if-recent (age_min<180), else fingerprint-compare, continue only if actively generating (esc to interrupt) AND content changed since last check, otherwise kill-session+pkill+respawn. No off-by-one, no unguarded variable expansion under `set -u` (all HC_*/self-fix locals have defaults via ${VAR:-} or ${VAR:?} guards), no logic inversion found."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:26-36", "description": "hc_acquire_lock TOCTOU handling re-confirmed correct: mkdir is atomic (one winner among concurrent racers), owner-file write+sleep+re-check closes the race, RETURN trap (installed in hc_run, line 51) cleans up only after the caller's logic completes."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:13-18 and test-self-fix.sh:19-23", "description": "sf_pane_fingerprint() is defined exactly once and is invoked by its test via the real `--fingerprint` CLI seam (subprocess), not copied/reimplemented -- no drift risk."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:26-36 and test-self-fix.sh:26", "description": "hc_acquire_lock() is defined exactly once and sourced (not copied) by its test and by hc_run() -- no drift risk."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh, reddit-loop/reddit-loop-healthcheck.sh, life-manager-loop/life-manager-loop-healthcheck.sh", "description": "Re-read this round: all three remain thin, near-identical wrappers over the single shared hc_run(), no per-loop duplication of the lock/fingerprint/decision logic."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-032"],
+      "evidence": []
+    }
+  ],
+  "finalAssessment": {
+    "decisiveQuestion": "Is the system NOW sound to run unattended (self-heal + self-improve + honest verification, no human, no permanent-disable path, no success-without-real-side-effect, a hang that IS eventually killed)?",
+    "answer": "NOT YET -- one genuine coverage gap remains, but the two critical/major mechanisms this round targeted are otherwise soundly fixed.",
+    "systemSound": false,
+    "summary": "Genuine, disk-verified progress this round on both open critical/major items: FIND-029 (the CLI's ticking elapsed-time/token-counter status line defeating hang detection) is RESOLVED -- sf_pane_fingerprint() now strips digits, spinner glyphs, and drops the entire volatile status line wholesale before hashing, hand-traced correct against both the round-6 counterexample and the builder's new fixtures, and is now directly, non-tautologically unit-tested. FIND-031 (lock-steal only grep-tested) is RESOLVED -- hc_acquire_lock() is a real extracted function that hc_run() itself calls, and the new tests drive that exact function through acquire/refuse/steal scenarios against real filesystem state. Manual trace of the full self-fix.sh:38-56 branch and the loop-name normalization, restart-backoff, and output-staleness-escalation logic in healthcheck-lib.sh found no new logic defects, no permanent-disable path, and no success-without-real-side-effect path (RESULT is always written as RUNNING then SUCCESS/FAIL with 'real evidence' required by the fixer's own TASK text, and verify-loops.sh cross-checks the artifact independently via curl, never trusting the marker alone). The one remaining genuine gap is FIND-032 (major, not critical): the stateful decision branch that CONSUMES the now-correct fingerprint (self-fix.sh:38-56, specifically the age_min computation and the line-51 compound boolean) has zero test coverage of its own -- only the pure helper function it calls is tested. This is a real, non-cosmetic verification-readiness gap: a future regression in that branch (an inverted boolean, a units mistake in the age arithmetic, a broken PANEHASH read/write ordering) could silently make the 180-minute kill ceiling inert again, or conversely cause a genuinely-progressing fixer to be killed prematurely, and no test in this codebase would catch either regression. Because this is a genuine, concrete, file:line-cited MAJOR flaw directly bearing on the CLAIM's item (d) ('a hang that IS eventually killed'), overall verdict is FAIL, though narrower in scope than any prior round -- only verification_readiness fails, and it fails only on missing regression-test coverage for logic that was itself found correct by manual trace, not on a demonstrated bug."
+  },
+  "convergenceSignals": {
+    "findingCount": 1,
+    "priorFindingsFullyResolvedCount": 2,
+    "priorFindingsRegressedCount": 0,
+    "priorFindingsNotResolvedCount": 0,
+    "priorFindingsPartiallyResolvedCount": 1,
+    "newFindingsCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

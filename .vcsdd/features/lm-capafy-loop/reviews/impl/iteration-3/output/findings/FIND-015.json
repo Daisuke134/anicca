@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-015",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "status": "NEW",
+  "description": "The Capafy 'monthly' payout parser (loop.sh:32-41) does NOT select the current/latest month's payout record — it takes the MAXIMUM `amount` across ALL records ever returned by `/agent/developer/payout-record`: `max((r.get('amount',0) for r in recs), default=0)`. The API's own record shape carries a `payoutMonth` field (visible in test-loop.sh:13's fixture: `{\"amount\":0.0,\"payoutMonth\":\"2026-06\"}`), but the parser never reads or filters on it. Consequence: if Capafy ever has one strong month (e.g. $500 in 2026-05) followed by weaker or zero months since, this code will report `capafy_monthly_payout_usd: 500.0` and STATUS `EARNING $.../mo` FOREVER after that month, on every future wake, regardless of what Capafy actually paid out this month or last month. This is not a fabricated/masked-error number (INV-1..5 still hold — the value is genuinely returned by the API), but it directly violates the stated INV-6 goal on this exact line ('Capafy MONTHLY revenue from payout-record (real month, apples-to-apples with MRR)', loop.sh:31) and the design spec's monthly-vs-monthly comparison (spec section 4/11/13, 'LM Stripe revenue + Capafy subscription revenue > Dais monthly spend'). A stale historical high becomes indistinguishable from the current month's real number in both STATE.md and the loop's own JUDGE step, which is exactly the kind of 'looks trustworthy but is wrong' number this review round was asked to hunt for. It also means the loop can never correctly detect a Capafy revenue COLLAPSE (e.g. token death, demand drop) once one good month has occurred, because the max will keep reporting the historical peak.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "31-41",
+    "snippet": "# Capafy MONTHLY revenue from payout-record (real month, apples-to-apples with MRR) (FIND-012)\nCAP_PAY=\"$(fetch cap_payout https://api.capafy.ai/agent/developer/payout-record ...)\"\nCAP_MO=\"$(printf '%s' \"$CAP_PAY\" | python3 -c \"\n...\n    recs=d['data'] if isinstance(d['data'],list) else []\n    print(round(float(max((r.get('amount',0) for r in recs), default=0)),2))\n...\")\""
+  },
+  "evidence2": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+    "lineRange": "13",
+    "snippet": "PAY0='{\"code\":0,\"data\":[{\"amount\":0.0,\"payoutMonth\":\"2026-06\"}]}'  # only ONE record in every fixture used by every test; a multi-month fixture that would expose the max()-vs-current-month bug was never written, so all 6 tests are green regardless of whether the selection logic is right"
+  },
+  "fix": "Filter/select the record whose payoutMonth matches the current UTC year-month (e.g. `datetime.utcnow().strftime('%Y-%m')`) rather than max()-ing amounts across all history; if no record matches the current month, that should resolve to NA/0 with an explicit note ('no payout record for this month yet'), not silently fall back to an unrelated month's figure. Add a test fixture with 2+ payout records of different payoutMonth/amount (one current, one a larger historical value) asserting the CURRENT month's amount is picked, not the max.",
+  "routeToPhase": "2b"
+}

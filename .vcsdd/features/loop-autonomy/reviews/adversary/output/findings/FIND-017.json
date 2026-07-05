@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-017",
+  "dimension": "robustness",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "capafy-loop-cli.sh and life-manager-loop-cli.sh both build STARTUP as a fully single-quoted bash string (`STARTUP='...'`). Inside single quotes, backslash has no special meaning -- it is a literal character. Both files contain exactly one `\\$` sequence each (grep-confirmed) intended to produce a literal dollar sign in the prompt text (e.g. 'revenue is \\$0'), but since single quotes never expand `$` in the first place, the backslash was unnecessary and is NOT consumed -- the literal two-character sequence backslash-dollar is what actually gets sent to the spawned claude process ('revenue is \\$0' rather than 'revenue is $0'). Not a shell syntax error and unlikely to derail the LLM's understanding, but it is a real escaping mistake left in place by this fix pass and pollutes the exact prompt text with a stray backslash.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+    "lineRange": "8",
+    "snippet": "revenue is \\$0 and the wall is our listings are not competitive/discoverable"
+  },
+  "routeToPhase": "2b"
+}

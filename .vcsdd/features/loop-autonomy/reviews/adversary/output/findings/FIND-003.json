@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "self_heal",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "self-fix.sh's verification requirement ('VERIFY with a REAL side-effect ... a patch that only compiles is NOT done') exists only as text inside the spawned Opus prompt. The launcher itself is fire-and-forget: it spawns the tmux session and immediately echoes 'spawned', with no follow-up check that a commit landed, that the failing action was actually re-run, or that any side effect occurred.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "17-19",
+    "snippet": "tmux -S \"$SOCK\" new-session -d -s \"$SESSION\" \"$CLAUDE\" --name \"$SESSION\" --model opus --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$TASK\"\necho \"$(date '+%F %T') self-fix[$LOOP] SPAWNED (opus): ${BLOCKER:0:80}\" >> \"$LOG\"\necho \"self-fix[$LOOP] spawned (opus, detached). log: $LOG\""
+  },
+  "concreteFailureScenario": "The spawned Opus dev diagnoses the bug, writes an explanation, but never actually runs `git commit`/`git push` (e.g. it runs out of turns or crashes mid-way). self-fix.sh has already returned success ('spawned') to its caller and nothing downstream ever notices the fix never landed; the loop will hit the identical blocker again on its next pass.",
+  "routeToPhase": "2b"
+}

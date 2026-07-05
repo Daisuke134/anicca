@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "coral-agents/buyer-agent/src/goal.ts exports BUYER_GOAL, BUYER_REQUEST, TARGET_AGENT, BUYER_MAX_SOL, QUOTE_WAIT_MS, DELIVERY_WAIT_MS, CYCLE_INTERVAL_MS but is never imported by any other file in the buyer-agent package — src/index.ts reads its own process.env.BUYER_SERVICE/BUYER_ARG/CYCLE_INTERVAL_MS directly instead of this module's constants. This is pre-existing dead code, untouched by any of the 8 round-1 fixes, and is exactly the class of issue round-1 FIND-006 flagged elsewhere in the same repo (undocumented/unused code) — this instance was missed and remains undocumented as dead.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/coral-agents/buyer-agent/src/goal.ts",
+    "lineRange": "1-31",
+    "snippet": "export const BUYER_GOAL = `...`\nexport const BUYER_REQUEST = process.env.BUYER_REQUEST || 'SOL to USDC swap quote'\nexport const TARGET_AGENT = process.env.TARGET_AGENT || 'seller-agent'"
+  },
+  "verificationNote": "Grep across coral-agents/buyer-agent for \"from './goal\" / \"BUYER_GOAL\" / \"TARGET_AGENT\" returns only goal.ts's own definitions — no importer found in src/index.ts, src/wallet.ts, src/escrow.ts, src/arbiter.ts, src/guard.ts, or src/llm_buyer.ts.",
+  "routeToPhase": "3"
+}

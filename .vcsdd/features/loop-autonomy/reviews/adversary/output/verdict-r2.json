@@ -1,0 +1,100 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 2,
+    "scope": "re-verification of prior 12 FAIL findings against current disk state, fresh context, plus adversarial hunt for regressions introduced by the fix pass",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict.json",
+    "toolLimitation": "This review environment provides only Read/Write/Edit/Grep/Glob (no Bash tool). All 'bash -n' parse checks and quote-balance checks were done by static/manual analysis (character-count of quote characters via Grep -o, tracing control flow by reading) rather than by literally executing bash -n or launchctl list. This is noted per-finding where it affects confidence.",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.reddit-loop-healthcheck.plist",
+      "/Users/anicca/Library/LaunchAgents/ai.anicca.life-manager-loop-healthcheck.plist",
+      "/Users/anicca/.openclaw/cron/jobs.json"
+    ]
+  },
+  "priorFindingsResolution": [
+    {"findingId": "FIND-001", "claimedFix": "5-min interactive-menu detection in healthcheck-lib.sh replacing 26h-only backstop", "status": "NOT-RESOLVED", "note": "Architecture improved (case (b), healthcheck-lib.sh:35-40, launchd StartInterval=300 confirmed), but the detection regex includes 'esc to (cancel|interrupt)', which is Claude Code's standard active-generation status line, not an idle-only marker. Zero test coverage exists to prove this does not false-positive on a healthy, actively-working long-running pass. See NEW FIND-014."},
+    {"findingId": "FIND-002", "claimedFix": "same as FIND-001", "status": "NOT-RESOLVED", "note": "Same evidence as FIND-001."},
+    {"findingId": "FIND-003", "claimedFix": "RESULT marker file written by the spawned fixer", "status": "NOT-RESOLVED", "note": "self-fix.sh never reads back or independently validates the RESULT file; the same LLM that performs the fix is the sole grader of its own SUCCESS/FAIL claim. See NEW FIND-015."},
+    {"findingId": "FIND-004", "claimedFix": "explicit ground-truth + git rev-parse/remote -v discovery instructions in self-fix.sh TASK step 4", "status": "RESOLVED", "note": "self-fix.sh:36 gives concrete ground truth (~/.openclaw=anicca-dais private, ~/anicca=anicca public) and a discovery method rather than a guess. Residual risk: unenforced (same root cause as FIND-003/FIND-015 -- no post-commit check confirms the LLM actually obeyed), but the design pattern itself is sound and matches this org's build-agents-not-hardcode-decisions doctrine."},
+    {"findingId": "FIND-005", "claimedFix": "MAX_FIXER_MIN=45 stale-guard: kill+respawn a hung fixer instead of permanent skip", "status": "RESOLVED", "note": "self-fix.sh:16-26 verified: age_min computed from STARTMARK, hung fixer (age>=45min) is killed and replaced; STARTMARK correctly rewritten at line 40 on every real spawn."},
+    {"findingId": "FIND-006", "claimedFix": "give-up path calls self-fix.sh directly instead of writing a dead note", "status": "RESOLVED", "note": "healthcheck-lib.sh _selffix() (lines 20-23) does `bash .../self-fix.sh $LOOP \"$1\"`; wired into both the restart-backoff give-up path (line 27) and the output-staleness give-up path (line 59)."},
+    {"findingId": "FIND-007", "claimedFix": "verify-loops.sh actually curls the recorded URL", "status": "RESOLVED", "note": "liveurl() (verify-loops.sh:12-16) does a real `curl -s -o /dev/null -w '%{http_code}' --max-time 12 -L` and classifies LIVE/DEAD by status code. Minor caveat: see NEW FIND-019 (grabs the last URL anywhere in the file, not necessarily from the newest record)."},
+    {"findingId": "FIND-008", "claimedFix": "posts-freshness guard added to reddit-loop", "status": "RESOLVED", "note": "reddit-loop/loop.sh:28-33 computes POST_FRESH with a 48h threshold and surfaces REDDIT-POSTS-STALE in STATUS. Untested though -- see NEW FIND-018."},
+    {"findingId": "FIND-009", "claimedFix": "output-staleness escalation (healthcheck-lib.sh case (d)) replacing the unconditional heartbeat touch as the sole health signal", "status": "PARTIALLY-RESOLVED", "note": "Resolved for capafy and reddit (both wire HC_OUTPUT to a real artifact and both healthcheck plists are actually present under ~/Library/LaunchAgents with StartInterval=300). NOT resolved for life-manager-loop: HC_OUTPUT is deliberately unset there, and the documented compensating control (verify-loops.sh) is not wired into any launchd plist or cron job (grep confirmed zero matches). See NEW FIND-016."},
+    {"findingId": "FIND-010", "claimedFix": "count() no longer double-prints '0\\n0' on an empty/missing file", "status": "RESOLVED", "note": "verify-loops.sh:9 and reddit-loop/loop.sh:13 both capture grep -c into a local var before echoing a single value; correct fix, confirmed via manual trace of both call sites."},
+    {"findingId": "FIND-011", "claimedFix": "one shared healthcheck-lib.sh instead of 3 byte-identical copies", "status": "RESOLVED", "note": "capafy/life-manager/reddit healthcheck.sh are now ~12-line thin wrappers that source healthcheck-lib.sh and set HC_* env vars; confirmed by reading all three."},
+    {"findingId": "FIND-012", "claimedFix": "reddit loop no longer covertly bypasses signup CAPTCHA; honest human=compute relay instead", "status": "RESOLVED", "note": "reddit-loop-cli.sh STARTUP and reddit-loop/loop.sh HEAL message both explicitly forbid covert auto-bypass and specify a one-time human relay for that single step while the loop proceeds autonomously otherwise; no CapSolver/tier-a-bypass reference remains anywhere in reddit-loop/*."}
+  ],
+  "dimensions": [
+    {
+      "name": "autonomy",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-014"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:35-40", "description": "Interactive-menu detection added and launchd-scheduled every 5min (plist StartInterval=300, confirmed), a real architectural fix -- but the pattern's core string 'esc to interrupt' is the standard active-generation UI marker, not idle-only, and there is zero test asserting it does not false-positive on real work."}
+      ]
+    },
+    {
+      "name": "self_heal",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-013", "FIND-015"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:16-26,40", "description": "FIND-005 hung-fixer stale-guard verified correct via STARTMARK epoch math."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:20-23", "description": "FIND-006 give-up->self-fix wiring verified correct."}
+      ]
+    },
+    {
+      "name": "anti_fake_measurement",
+      "verdict": "FAIL",
+      "findings": ["FIND-009", "FIND-016", "FIND-019"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/verify-loops.sh:12-16", "description": "FIND-007 real curl-based liveurl() verified for capafy and reddit."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh:28-33", "description": "FIND-008 posts-freshness guard verified present."}
+      ]
+    },
+    {
+      "name": "robustness",
+      "verdict": "FAIL",
+      "findings": ["FIND-013", "FIND-017", "FIND-018"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/verify-loops.sh:9 and reddit-loop/loop.sh:13", "description": "FIND-010 count() fix verified correct in both locations by manual trace."},
+        {"type": "file", "location": "3x healthcheck.sh files", "description": "FIND-011 dedup to healthcheck-lib.sh verified (byte-identical copies eliminated)."}
+      ]
+    },
+    {
+      "name": "honesty_ethics_consistency",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh (STARTUP string) and reddit-loop/loop.sh:15-19", "description": "FIND-012 verified resolved: explicit prohibition on covert CAPTCHA auto-bypass, honest human=compute relay carve-out, and a non-covert fallback path (self-promo-welcome subs) that keeps the loop acting autonomously. Grep for CapSolver/tier-a-bypass in reddit-loop/* returns no matches."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 19,
+    "priorFindingsResolvedCount": 9,
+    "priorFindingsPartialCount": 1,
+    "priorFindingsNotResolvedCount": 2,
+    "newFindingsCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["autonomy", "self_heal", "anti_fake_measurement", "robustness", "honesty_ethics_consistency"],
+    "duplicateFindings": []
+  }
+}

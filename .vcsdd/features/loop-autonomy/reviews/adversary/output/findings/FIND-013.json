@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-013",
+  "dimension": "self_heal",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "NEW regression introduced by the FIND-011 fix. healthcheck-lib.sh:17 acquires a per-loop lock via `mkdir \"$LOCK_DIR\" 2>/dev/null || return 0` and releases it only via `trap 'rmdir \"$LOCK_DIR\" 2>/dev/null' RETURN`. A RETURN trap fires only on normal function completion/return; it does NOT fire if the healthcheck process is killed abnormally mid-run (SIGKILL from an OOM, a `pkill -f claude` pattern collision, or the Mac sleeping mid-launchd-invocation). If that happens once, `/tmp/.$LOOP-healthcheck.lock` is left behind forever, and EVERY subsequent 5-minute launchd invocation of that loop's healthcheck silently returns 0 at line 17 before ever reaching the DEAD/STUCK/STALE/OUTPUT-staleness checks or _selffix. This is exactly the 'permanently blocked guard' failure class the builder explicitly fixed for self-fix.sh (FIND-005, via STARTMARK age + MAX_FIXER_MIN=45 hung-guard) but did NOT apply to the new lock it introduced in the same fix pass. There is no stale-lock max-age check anywhere in healthcheck-lib.sh. Net effect: a single abnormal kill of one healthcheck invocation permanently and silently disables self-heal/self-fix escalation for that loop, with no symptom other than the per-loop healthcheck log simply going quiet.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+    "lineRange": "17",
+    "snippet": "local LOCK_DIR=\"/tmp/.$LOOP-healthcheck.lock\"; mkdir \"$LOCK_DIR\" 2>/dev/null || return 0; trap 'rmdir \"$LOCK_DIR\" 2>/dev/null' RETURN"
+  },
+  "routeToPhase": "2b"
+}

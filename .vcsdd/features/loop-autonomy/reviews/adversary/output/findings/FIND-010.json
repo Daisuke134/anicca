@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "robustness",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "`grep -c . <file> 2>/dev/null||echo 0` produces a MULTI-LINE captured value whenever the target file exists but is EMPTY (0 matching lines): grep -c prints '0' to stdout but exits status 1 (no lines matched), so the `||echo 0` fallback ALSO fires inside the same command substitution, yielding the literal two-line string '0\\n0'. This exact pattern occurs at verify-loops.sh:9, verify-loops.sh:15, and reddit-loop/loop.sh:21.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop/loop.sh",
+    "lineRange": "21",
+    "snippet": "SIGNUPS=\"$(grep -c . \"$DIR/state/attributed-signups.jsonl\" 2>/dev/null||echo 0)\""
+  },
+  "concreteFailureScenario": "Before any real reddit->LM signup has ever occurred, attributed-signups.jsonl exists (touched by mkdir -p / initial state) but is empty, so SIGNUPS becomes the two-line string '0\\n0'. loop.sh:35 then writes `echo \"attributed_lm_signups: $SIGNUPS\"` into STATE.md, silently inserting a stray extra '0' line into the state file. This is the exact 'grep -c returning multiline' bug class explicitly flagged for review, and it will corrupt any future parser that assumes one line per key in STATE.md.",
+  "routeToPhase": "2b"
+}

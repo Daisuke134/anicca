@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "self_heal",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "self-fix.sh's one-fixer-per-loop guard is a permanent block, not a bounded retry: if the spawned Opus session ever hangs (crashes into a stalled tool call, runs out of context, or itself produces a stuck interactive state inside its own detached tmux pane — the exact same class of bug flagged in FIND-001/002 but for the FIXER itself), `tmux has-session` stays true indefinitely. Every future self-fix.sh call for that loop then silently no-ops forever with no timeout, no escalation, and no automatic recovery.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/self-fix.sh",
+    "lineRange": "15",
+    "snippet": "if tmux -S \"$SOCK\" has-session -t \"$SESSION\" 2>/dev/null; then echo \"$(date '+%F %T') self-fix[$LOOP] already running — skip\" >> \"$LOG\"; echo \"self-fix[$LOOP] already running\"; exit 0; fi"
+  },
+  "concreteFailureScenario": "The self-fix Opus session for 'reddit' gets stuck (e.g. mid-CDP call it cannot resolve). Every subsequent day, reddit-loop's STEP0 calls self-fix.sh again for the same blocker; each call sees the stale tmux session as 'already running' and skips, forever. The only way out is a human manually killing `/tmp/anicca-selffix-reddit-tmux.sock` — reintroducing exactly the human-babysitting dependency the claim says does not exist.",
+  "routeToPhase": "2b"
+}

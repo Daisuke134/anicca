@@ -1,0 +1,119 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 5,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 5,
+    "scope": "convergence check: independent re-verification of builder-claimed fixes for FIND-020, FIND-023, FIND-025 against current disk state, plus fresh adversarial hunt for regressions",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r4.json",
+    "manifestFound": false,
+    "manifestNote": "No manifest.json found under .vcsdd/features/loop-autonomy/reviews/**/input/. Proceeded directly against the file list and prior findings supplied in the task prompt.",
+    "toolLimitation": "This session's tool grant is Read/Write/Edit/Grep/Glob ONLY -- confirmed by inspecting the available tool list before starting. No Bash tool exists in this session. `bash -n` was NOT run and none of the 4 test files were executed. All results below are STATIC-TRACE (full line-by-line manual read of every cited script, hand-traced execution/race scenarios) plus Glob-based ground-truth checks of on-disk file existence, which IS live evidence for existence claims (not predictions).",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/life-manager-loop-cli.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh",
+      "full Glob of skills/self/**/* to confirm no test-self-fix.sh exists"
+    ]
+  },
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY. No Bash tool available; `bash -n` not run; test files not executed.",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed)"},
+      {"file": "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh", "predictedPassed": 7, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed) -- 7 assertion lines traced against loop.sh branch logic"},
+      {"file": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed) -- assertions counted across the 4 scenario blocks"},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, not executed)"}
+    ],
+    "syntaxCheck": "bash -n NOT executed (no Bash tool). Manual read of self-fix.sh, healthcheck-lib.sh, verify-loops.sh, verify-loops-audit.sh, test-healthcheck-lib.sh, and all 3 *-loop-cli.sh/*-loop-healthcheck.sh found no unmatched quotes/braces/if-fi/case-esac.",
+    "criticalCaveat": "None of these 4 GREEN test files touch the two mechanisms actually re-patched this round (self-fix.sh hung-fixer kill logic; healthcheck-lib.sh lock-steal/TOCTOU logic). A fully-green test run (real or predicted) says nothing about FIND-026/FIND-027 below. See FIND-028."
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-025",
+      "status": "RESOLVED",
+      "note": "self-fix.sh:13 normalizes every incoming loop-name argument (`LOOP=\"${LOOP%-loop}-loop\"`) BEFORE deriving SOCK/SESSION/RESULT/STARTMARK (lines 14,18,19) -- confirmed the normalization happens first, so no derived value can split. Traced every call site: healthcheck-lib.sh:49 passes the long form via HC_LOOP ('capafy-loop' etc, set identically in capafy-loop-healthcheck.sh:6, reddit-loop-healthcheck.sh:6, life-manager-loop-healthcheck.sh:8); verify-loops-audit.sh:19,22 pass the short form ('capafy','reddit'); all 3 *-loop-cli.sh STARTUP prompts pass the short form ('capafy','reddit','life-manager') when the in-loop agent self-escalates. Both forms normalize to the identical 'x-loop' string. verify-loops.sh:34 now iterates `for L in capafy-loop reddit-loop life-manager-loop` reading `.self-fix-$L.result` -- exactly matching self-fix.sh's normalized RESULT path. Grepped the whole ~/anicca tree for 'self-fix-' and found only this one producer/one consumer pair, both consistent. No remaining split found."
+    },
+    {
+      "findingId": "FIND-023",
+      "status": "NOT RESOLVED -- new finding FIND-027 supersedes with a fuller characterization",
+      "note": "MAX_FIXER_MIN raised 45->180 (self-fix.sh:20) and a pane-liveness check added (self-fix.sh:33) before killing. Verified this correctly prevents killing a fixer that is mid-token-generation. However the check cannot distinguish 'actively generating' from 'blocked forever on an outstanding tool call that will never return' (network hang, browser wait with no timeout, etc.) -- both show the identical persistent 'esc to interrupt' footer. Since the fixer's own TASK explicitly does heavy browser/network automation (self-fix.sh:43-50), this is the realistic hang mode, not an edge case. See FIND-027 for full trace."
+    },
+    {
+      "findingId": "FIND-020",
+      "status": "REGRESSED -- the concurrent-racer TOCTOU is closed, but a new, more severe permanent-lockout defect was introduced",
+      "note": "Verified the owner-file-write + sleep 0.2 + re-read (healthcheck-lib.sh:43-44) does correctly resolve the specific double-run race described in the round-4 verdict: mkdir is atomic, so exactly one racer's mkdir call can create the directory at any given instant, and the owner re-check + deferred trap installation (trap set only AFTER the ownership check passes, at line 45) ensures a losing racer bails at line 44 without ever installing a cleanup trap that could delete the winner's lock. That specific safety property (mkdir atomic + loser gets return 0) now holds. HOWEVER, writing 'owner' inside LOCK_DIR makes the directory non-empty for as long as it is held, which breaks the plain `rmdir` used in the STALE-lock steal path (line 37): rmdir only succeeds on an empty directory. If a healthcheck run is abnormally killed (SIGKILL / sleep-wake reap / OOM) AFTER acquiring the lock but before its RETURN trap fires -- exactly the FIND-013 scenario this same lock exists to recover from, per the code's own comment at lines 31-32 -- the leftover non-empty lock directory can NEVER be stolen again: rmdir fails silently (ENOTEMPTY, swallowed), mkdir then fails (EEXIST), and `|| return 0` fires with ZERO log output. This permanently and silently disables ALL healthcheck functions (dead-session restart, stuck-prompt restart, staleness restart, output-stale self-fix escalation) for that loop. See FIND-026 for full reproduction trace."
+    }
+  ],
+  "newFindingsThisRound": [
+    {"findingId": "FIND-026", "severity": "critical", "summary": "Owner-file fix for FIND-020 breaks rmdir-based stale-lock recovery (FIND-013 invariant) -> permanent silent healthcheck lockout for a loop after any single hard-kill."},
+    {"findingId": "FIND-027", "severity": "major", "summary": "Pane-liveness fix for FIND-023 cannot distinguish real progress from a genuinely hung/blocked tool call (both show 'esc to interrupt') -> the wall-clock kill ceiling is defeated for the most likely real hang class in a browser/network-automation fixer."},
+    {"findingId": "FIND-028", "severity": "major", "summary": "Zero automated test coverage for either mechanism re-patched this round (self-fix.sh kill logic; healthcheck-lib.sh lock-steal/TOCTOU logic) -- all 4 existing test files are GREEN and irrelevant to FIND-026/FIND-027."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-026", "FIND-027"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-026", "FIND-027", "FIND-028"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-026", "FIND-027"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:13", "description": "FIND-025 normalization confirmed correct: strips then re-adds '-loop' before any derived path is computed."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/verify-loops.sh:34", "description": "Confirmed reads the normalized '-loop' marker filenames, matching self-fix.sh's RESULT path exactly -- FIND-025 positive evidence."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:13-19", "description": "Single normalization point feeds all derived identifiers (SOCK, SESSION, RESULT, STARTMARK, LOG) -- no duplicated name-construction logic across call sites; each call site simply passes its own convenient short/long form and relies on the one shared normalization, which is the correct DRY pattern for this fix."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh:16-20 and test-healthcheck-lib.sh:6", "description": "hc_is_stuck_pane() remains defined exactly once and is sourced (not copied) by its test -- no drift risk, confirmed by direct read."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-028"],
+      "evidence": []
+    }
+  ],
+  "finalAssessment": {
+    "decisiveQuestion": "Is the system NOW sound enough to run unattended (self-heal + self-improve + honest verification, no human, no babysitting)?",
+    "answer": "NO.",
+    "systemSound": false,
+    "summary": "FIND-025 (the loop-name namespace split) is genuinely and fully resolved -- confirmed by tracing every call site plus a whole-tree grep for the marker-file naming pattern; this is a real, positive fix. FIND-023 and FIND-020, however, were each 'fixed' by trading the originally-reported failure mode for a different, and in FIND-020's case more severe, failure mode: (1) the owner-file mechanism added to close FIND-020's concurrent-racer race makes the lock directory non-empty, which breaks the plain-rmdir stale-lock-steal recovery this SAME lock depends on for resilience against abnormal termination (a scenario the code's own adjacent comment explicitly says must not happen) -- one hard-kill silently and permanently disables all self-heal functions for that loop, with no log trace; (2) the pane-liveness check added to close FIND-023's wall-clock-kill-of-real-work concern cannot distinguish genuine progress from a genuinely deadlocked/hung tool call, both of which show the identical 'esc to interrupt' footer -- so the entire 180-minute ceiling is now inert against the single most likely hang mode (a stuck network/browser call) for a fixer whose job is explicitly heavy browser/network automation. Neither of these two re-patched mechanisms has ANY automated test coverage, so both defects would have gone undetected by a green test run and can silently recur on any future edit. Given a critical-severity, code-verifiable, disk-traceable defect (FIND-026) that directly contradicts the CLAIM's core 'self-heal ... no babysitting' promise, overall verdict is FAIL."
+  },
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingsFullyResolvedCount": 1,
+    "priorFindingsRegressedCount": 1,
+    "priorFindingsNotResolvedCount": 1,
+    "newFindingsCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+    "duplicateFindings": []
+  }
+}

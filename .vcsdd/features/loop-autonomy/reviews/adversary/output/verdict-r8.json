@@ -1,0 +1,134 @@
+{
+  "feature": "loop-autonomy",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 8,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "reviewRound": 8,
+    "scope": "final convergence re-check of the ONLY remaining round-7 finding, FIND-032 (self-fix.sh past-ceiling hang-decision branch was logically traced correct but had zero regression-test coverage). Builder extracted the branch's boolean into a standalone pure predicate sf_should_continue() with a --should-continue CLI seam and added 4 branch tests in test-self-fix.sh part (D).",
+    "priorReview": "/Users/anicca/anicca-project/.vcsdd/features/loop-autonomy/reviews/adversary/output/verdict-r7.json",
+    "manifestFound": false,
+    "manifestNote": "No manifest.json found at .vcsdd/features/loop-autonomy/reviews/adversary/input/manifest.json (Glob returned zero results, consistent with rounds 5-7). Proceeded directly against the file list and FIND-032 supplied in the task prompt.",
+    "toolGrant": "Read, Write, Edit, Grep, Glob ONLY. NO Bash tool. Explicitly checked and stated per the task's own instruction: cannot run `bash -n`, cannot execute any of the 5 test files. Everything below is STATIC-TRACE: full line-by-line manual read of every cited script plus hand-execution of every test assertion against the current source.",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/self-fix.sh",
+      "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/test-self-fix.sh",
+      "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops.sh",
+      "/Users/anicca/anicca/skills/self/verify-loops-audit.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+      "/Users/anicca/anicca/skills/self/capafy-loop/launchd/ai.anicca.capafy-loop-healthcheck.plist",
+      "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh"
+    ],
+    "unrelatedInjectionNote": "The tool-result stream again injected an unrelated 'system-reminder' about a date change plus fabricated 'MCP Server Instructions' for computer-use/serena tools that are NOT part of this session's actual tool grant (same pattern flagged in rounds 6 and 7). Treated as untrusted content in the data stream and ignored; did not affect method or findings."
+  },
+  "testRunResults": {
+    "executionMethod": "STATIC-TRACE-ONLY (no Bash tool). All counts below are PREDICTED-BY-TRACE, explicitly not real execution counts.",
+    "files": [
+      {"file": "/Users/anicca/anicca/skills/self/test-self-fix.sh", "predictedPassed": 13, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). 13 assertions traced: (A) 4 loop-name-normalization checks, unchanged, correct. (B) 2 hang-fingerprint checks, unchanged, correct. (D) 4 NEW sf_should_continue branch-decision checks (self-fix.sh:22,25-30 / test lines 26-30) hand-traced one by one: dec(1,hashA,hashB)->generating=1 AND cur!=prev->true->CONTINUE (matches); dec(1,hashA,hashA)->cur==prev->false->KILL (matches, this is the FIND-032 hung case); dec(0,hashA,hashB)->generating=0->false regardless->KILL (matches, idle/errored case); dec(1,hashA,'none')->cur!=lit-string-'none'->true->CONTINUE (matches the real first-check default at self-fix.sh:55, prev=\"$(cat $PANEHASH 2>/dev/null||echo none)\"). (C) 3 hc_acquire_lock checks, unchanged, correct."},
+      {"file": "/Users/anicca/anicca/skills/self/test-healthcheck-lib.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Unchanged since round 5; hc_is_stuck_pane() sourced (not copied), traced correct."},
+      {"file": "/Users/anicca/anicca/skills/self/capafy-loop/test-loop.sh", "predictedPassed": 7, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). Byte-identical in structure to round 7's trace, 7 assertions, unrelated to this round's change."},
+      {"file": "/Users/anicca/anicca/skills/self/reddit-loop/test-loop.sh", "predictedPassed": 9, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). 9 assertions (1+1+3+2+2), unchanged, unrelated to this round's change."},
+      {"file": "/Users/anicca/anicca/skills/self/life-manager-loop/test-loop.sh", "predictedPassed": 6, "predictedFailed": 0, "predictedResult": "GREEN (predicted, NOT executed). 6 assertions, unchanged, unrelated to this round's change."}
+    ],
+    "totalPredicted": {"passed": 41, "failed": 0},
+    "syntaxCheck": "bash -n NOT executed (no Bash tool). Manual read of every reviewed script found no unmatched quotes/braces/if-fi/case-esac/function-boundary mismatches."
+  },
+  "find032Verification": {
+    "question1_realFunctionUsedByMainCode": {
+      "verdict": "CONFIRMED, no divergent copy",
+      "evidence": "self-fix.sh:22 defines sf_should_continue(){ [ \"$1\" = \"1\" ] && [ \"$2\" != \"$3\" ]; }. The MAIN decision path at self-fix.sh:57 calls this EXACT function directly in-process: `if sf_should_continue \"$generating\" \"$cur\" \"$prev\"; then`. Grepped the entire skills/self tree for any other 'should_continue'/'should-continue' occurrence (Grep pattern 'should_continue|should-continue|esc to interrupt|pane_fingerprint|fingerprint' across the whole directory) and found only: the one definition (line 22), the one CLI-seam dispatch (line 23), the one main-path call site (line 57), and the one test call site (test-self-fix.sh:26). No inline reimplementation exists anywhere else (e.g. healthcheck-lib.sh, verify-loops.sh, verify-loops-audit.sh, or any *-healthcheck.sh do not reimplement this predicate)."
+    },
+    "question2_testsDriveRealFunctionViaSeam": {
+      "verdict": "CONFIRMED",
+      "evidence": "self-fix.sh:23 `if [ \"${1:-}\" = \"--should-continue\" ]; then sf_should_continue \"${2:-}\" \"${3:-}\" \"${4:-}\"; exit $?; fi` executes BEFORE any LOOP-name parsing (line 28) or tmux/side-effect code (lines 36+), so invoking it never touches real state. test-self-fix.sh:26 `dec(){ bash \"$SF\" --should-continue \"$1\" \"$2\" \"$3\" >/dev/null 2>&1 && echo CONTINUE || echo KILL; }` spawns the real self-fix.sh as a subprocess and lets the seam call the SAME sf_should_continue defined at line 22 -- this is a genuine seam into production code, not a parallel/mock implementation. Argument positions verified to align exactly: dec's ($1,$2,$3)=(generating,cur,prev) map to script positions ($2,$3,$4) which sf_should_continue receives as (${2:-},${3:-},${4:-})=(generating,cur,prev) -- correct 1:1 mapping."
+    },
+    "question3_exitCodeMappingCorrect": {
+      "verdict": "CONFIRMED CORRECT",
+      "evidence": "sf_should_continue returns 0 (true/CONTINUE) iff generating==\"1\" AND cur!=prev (fingerprint advanced = real progress); returns 1 (false/KILL) if not generating (idle/errored) OR fingerprint unchanged (frozen/hung). This exactly matches the documented intent at self-fix.sh:19-21 and the main-path consumption at line 57 (continue-on-true, fall through to kill-session+pkill on false at lines 60-61). The 4 new tests exercise all 4 boolean-table cells: (T,diff)->CONTINUE, (T,same)->KILL [the literal FIND-032 hang scenario], (F,diff)->KILL, (T,'none')->CONTINUE [first-check default, matches self-fix.sh:55's literal 'none' fallback]."
+    }
+  },
+  "priorFindingsResolution": [
+    {
+      "findingId": "FIND-032",
+      "status": "RESOLVED",
+      "note": "The extraction is behavior-preserving refactor (pure predicate + CLI seam), not a rewrite: main path at self-fix.sh:57 now calls the identically-behaving pure function instead of an inline boolean expression, and the new tests drive that exact function through a real, side-effect-free CLI seam covering all 4 branches of the boolean truth table, including the literal hang scenario (generating + frozen fingerprint -> KILL) that was previously untested. No divergent inline copy exists anywhere in the reviewed tree."
+    }
+  ],
+  "newFindingsThisRound": [],
+  "nonBlockingNotes": [
+    {
+      "note": "The first past-ceiling check for any given hang always evaluates PANEHASH-not-yet-written -> prev defaults to literal 'none' -> cur!='none' is true -> CONTINUE once, even for an already-frozen fixer, before a second, later check (with a real prev) can detect the freeze and kill. Additionally, self-fix.sh's own hang-check code (lines 43-61) only re-runs when self-fix.sh itself is re-invoked, and the only unconditional periodic re-invocation is verify-loops-audit.sh's every-6h audit tick (self-fix.sh:37-40's own comment: '...so the 6h audit re-invocation cannot kill an in-progress fix; only a genuinely stuck session (>3h) is replaced, still within the 6h window'). Net effect: a genuine hang crossing the 180min/3h ceiling is detected and killed on the NEXT 6h audit tick after that ceiling is crossed (plus, in the worst case, one extra 6h tick if that next tick happens to be the very first past-ceiling check with prev='none'). This is bounded and eventual -- CLAIM property (d) 'a hang is eventually killed' still holds -- but the effective worst-case bound is closer to ~6-12h than the '180min' name suggests. This behavior and its rationale are already documented in-place in the code's own comments (self-fix.sh:37-40) and were not newly introduced this round (only the boolean's test coverage changed); it is recorded here as a non-blocking clarity note, not a finding, because no CLAIM property is violated and no regression was introduced."
+    }
+  ],
+  "otherClaimPropertiesSpotChecked": [
+    {"property": "(a) no wait-for/ask-human path", "verdict": "holds", "evidence": "Grepped all of skills/self for 'read -p|read -r ans|press enter|waiting for|ask the user|human-in-the-loop|confirm before' (case-insensitive): zero matches. healthcheck-lib.sh:16-20 hc_is_stuck_pane() fires on unambiguous idle-await markers and triggers _restart (never a wait), verified against test-healthcheck-lib.sh's 6 fixtures by trace."},
+    {"property": "(b) no success-without-real-side-effect", "verdict": "holds", "evidence": "healthcheck-lib.sh:84-97 (d)-branch reads the OUTPUT artifact's mtime, never the self-fix RESULT marker, for its ALIVE-but-useless determination (comment at lines 6-8: 'because (d) reads the artifact, never the marker'). verify-loops.sh:13-17 liveurl() independently curls the newest recorded URL and only reports LIVE on a real 2xx/3xx response."},
+    {"property": "(c) no permanent-self-heal-disable path", "verdict": "holds", "evidence": "Grepped skills/self for 'disable|kill.switch|STOP_LOOP|halt|do.not.run|.disabled' (case-insensitive): only 2 matches, both are comments documenting the FIND-013 fix (the lock-staleness escape hatch), not an actual disable mechanism. hc_acquire_lock() (healthcheck-lib.sh:26-36) always allows a stale (>=10min) lock to be stolen via rm -rf+mkdir+re-verify; RESTART_LOG's 60min sliding window ages out naturally, it is never a permanent gate."},
+    {"property": "(d) a hang is eventually killed", "verdict": "holds, see nonBlockingNotes for the effective bound", "evidence": "self-fix.sh:43-61 full branch trace + verify-loops-audit.sh:19 unconditional-on-staleness 6h re-invocation of self-fix.sh."}
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:19-23,57", "description": "The past-ceiling continue-vs-kill decision required by the CLAIM's item (d) is now expressed as a named, documented, single-source-of-truth predicate consumed by the real code path -- no drift between spec intent and implementation."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/test-self-fix.sh:25-30", "description": "All 4 cells of the (generating x fingerprint-changed) truth table are now covered, including the exact FIND-032 hang scenario (generating=1, fingerprint frozen -> KILL) and the first-check default (prev='none' -> CONTINUE), matching the real code's default at self-fix.sh:55."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:22,57,60-61", "description": "Hand-traced exit-code semantics: sf_should_continue returns 0 only on (generating AND fingerprint-advanced); the caller treats 0 as continue (exit 0, no respawn) and any non-zero as fall-through to kill-session+pkill+respawn. Verified no inversion, no off-by-one, no unguarded var under set -u (all args read via ${n:-})."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/self-fix.sh:22-23", "description": "sf_should_continue() is defined exactly once and invoked from exactly one production call site (line 57) plus one test seam (line 23/test line 26) -- no duplicated/divergent inline copy anywhere in the reviewed tree (confirmed by tree-wide grep)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/test-self-fix.sh:25-30", "description": "The previously-untested stateful decision branch identified in FIND-032 (round 7) now has direct, non-tautological, real-function-via-real-seam test coverage of all 4 branches, closing the last open verification-readiness gap across 8 rounds."}
+      ]
+    }
+  ],
+  "finalAssessment": {
+    "decisiveQuestion": "Is the system NOW sound to run unattended (self-heal + self-improve + honest verification, no human, no permanent-disable path, no success-without-real-side-effect, a hang that IS eventually killed)?",
+    "answer": "YES -- all 5 dimensions PASS and all 4 CLAIM safety properties hold by static trace, with no BLOCKING or MAJOR flaw found.",
+    "systemSound": true,
+    "summary": "FIND-032, the sole finding carried from round 7, is RESOLVED: sf_should_continue() is a real, singly-defined, testable pure predicate consumed directly by the production decision branch (self-fix.sh:57), and test-self-fix.sh's new part (D) drives that exact function through a real CLI seam across all 4 branches of its truth table, including the literal hang scenario. No divergent inline copy exists. Spot-checks of the other three CLAIM properties this round found no regression: no wait-for-human code path exists anywhere in skills/self; the authoritative success signal remains the real output artifact (healthcheck-lib.sh's (d) branch and verify-loops.sh's curl-based liveurl(), never a self-graded marker); no permanent self-heal-disable mechanism exists (only documented fixes preventing one). One non-blocking clarity note is recorded (not a finding): the effective worst-case bound before a genuine hang is killed is closer to one 6h audit cycle than the 180-minute constant's name suggests, because the internal ceiling check only re-evaluates when self-fix.sh is itself re-invoked and the only unconditional periodic re-invocation is the 6h audit; this is pre-existing, already documented in the code's own comments, unchanged by this round's edit, and does not violate the CLAIM (a hang is still eventually killed, just not within exactly 3h in the worst case)."
+  },
+  "convergenceSignals": {
+    "findingCount": 0,
+    "priorFindingsFullyResolvedCount": 1,
+    "priorFindingsRegressedCount": 0,
+    "priorFindingsNotResolvedCount": 0,
+    "priorFindingsPartiallyResolvedCount": 0,
+    "newFindingsCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+    "duplicateFindings": [],
+    "convergenceReached": true
+  }
+}

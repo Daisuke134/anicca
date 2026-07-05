@@ -1,0 +1,80 @@
+{
+  "sprintNumber": 1,
+  "feature": "equalize-multichain-identity",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "docs/superpowers/specs/2026-07-05-equalize-multichain-identity-design.md",
+    "targetRepo": "~/anicca (origin/main)",
+    "reviewedCommit": "16424f4",
+    "note": "No pre-existing manifest.json was found for this feature; this review was performed directly against the file set and DONE checklist given in the review request. No Bash/exec tool was available in this session, so `git diff 86fb875..16424f4` and `node --test` could not be executed literally. In place of execution, all 14 resolve-identity.test.mjs assertions were manually traced line-by-line against the implementation logic (documented in FIND-002), and the critical start-local.sh defect (FIND-001) was established by directly reading the actual on-disk state of $HOME/.automaton/wallet.json (a real, pre-existing file) and deterministically tracing the bash conditional logic against that confirmed state -- not by speculation."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs:63-82", "description": "R1 EVM priority order (env -> $ANICCA_HOME -> legacy $HOME -> null) implemented as literally specified for the resolver itself"},
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs:92-112", "description": "R2 Solana priority order implemented as specified"},
+        {"type": "file", "location": "skills/earn/polymarket-trade/run.sh:26-47", "description": "R3 wiring + claude-p preservation matches spec intent"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs", "description": "127-line single-responsibility module, clear doc comments explaining priority order and fail-closed contract, no duplication with existing skills/earn/ensure-gas.mjs loadKey() normalization convention (explicitly referenced, not reimplemented divergently)"},
+        {"type": "file", "location": "skills/earn/polymarket-trade/run.sh:26-47", "description": "additive block, clearly commented, variable names (RESOLVE_IDENTITY, RESOLVED_EVM_KEY) accurate and unambiguous"},
+        {"type": "file", "location": "runtime/compute-proxy/start-local.sh:26-36", "description": "additive block with clear naming (EFFECTIVE_HOME/WALLET/LEGACY_WALLET); no dead code introduced"},
+        {"type": "file", "location": "runtime/loop/__tests__/integration.test.mjs, tier.test.mjs, config.test.mjs", "description": "grepped for resolve-identity/start-local/POLYGON_WALLET_PRIVATE_KEY/ANICCA_EVM_PRIVATE_KEY/ANICCA_SOLANA_PRIVATE_KEY -- zero references; these suites exercise skills/earn/run.sh (generic dispatcher) and unrelated .mjs modules only, confirming no coupling was introduced into unrelated test surfaces"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    }
+  ],
+  "nonGoalCompliance": {
+    "verdict": "PASS",
+    "evidence": [
+      {"type": "file", "location": "runtime/loop/balance.mjs", "description": "remains EVM/Base-only (regex ^0x[0-9a-fA-F]{40}$), no Solana branch added -- non-goal 'balance.mjs の Solana 対応' not violated"},
+      {"type": "grep", "location": "skills/earn/polymarket-trade/run.sh", "description": "grepped for sol-trade|hl-trade|solana|Solana -- zero matches; sol-trade/hl-trade wiring (non-goal) untouched"},
+      {"type": "grep", "location": "repo-wide grep for resolve-identity", "description": "only referenced from polymarket-trade/run.sh, the new lib file, and its test -- no deposit/funding/mint/redeem script touched"}
+    ]
+  },
+  "regressionCheck": {
+    "verdict": "PASS_WITH_CAVEAT",
+    "note": "Confirmed via live-file evidence (grep count=1 non-empty match) that /Users/anicca/.anicca-founder/agents/polymarket-agent/.env already contains POLYGON_WALLET_PRIVATE_KEY=<value>, so run.sh's bypass condition (line 35) is true today and resolve-identity is never invoked for claude-p's current live setup -- zero behavioral change confirmed against the REAL current environment, not just by reading the diff. Existing test suites (integration/tier/config) do not import any #26-changed file (confirmed by grep), so they cannot regress from this change. Could not literally execute `node --test runtime/loop/__tests__/resolve-identity.test.mjs` (no Bash tool available this session) -- all 14 test cases were manually traced against the implementation and are logically consistent with PASS, but this is a traced verification, not an executed one."
+  },
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["DONE-1", "DONE-2", "DONE-3", "DONE-4", "DONE-5"],
+    "doneStatus": {
+      "DONE-1": "PASS -- resolve-identity implements R1/R2 priority order; 14 unit tests trace-verified to cover env/$ANICCA_HOME/back-compat/fail-closed for both chains (resolve-identity.test.mjs)",
+      "DONE-2": "PASS -- run.sh injects the resolved key only when POLYGON_WALLET_PRIVATE_KEY is absent from both shell env and agent .env; live-verified claude-p's actual agent .env already has the key set (grep count=1), so today's behavior is provably unchanged",
+      "DONE-3": "FAIL -- see FIND-001 (fresh spawn on this shared-$HOME machine would silently inherit the LIVE legacy EVM wallet instead of generating an isolated one) and FIND-002 (the 'fresh evidence' integration test never runs the actual generation script, so it cannot catch this)",
+      "DONE-4": "PASS -- resolve-identity.mjs never throws (try/catch around every fs read); run.sh treats a null resolved key as skip+warn+exit 0 (run.sh:41-45), not a crash",
+      "DONE-5": "FAIL (via DONE-3) -- claude-p's existing path is provably unregressed, but DONE-3's own fresh-spawn isolation goal is not met, which is the core regression-relevant claim of this feature"
+    },
+    "duplicateFindings": []
+  }
+}

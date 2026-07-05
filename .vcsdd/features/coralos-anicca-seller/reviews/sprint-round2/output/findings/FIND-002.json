@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "Round-1 FIND-001's fix (evidence/tx-confirmations.txt) persists raw `solana confirm -v` transcripts for only the 5 tx signatures generated during the earlier A7/B5/C0 runs. The later TRACE=1 Docker round used to resolve FIND-003/FIND-008 produced TWO NEW on-chain tx signatures — deposit `4J2RTuTVe68zcG59UXypHnRxMS64FS1yEEC7ewyaAQxqNvYUydWSHXnBsWBsdio8SYsLjUDtS4HAWhsJL1kjNX7n` and release `3okbZwoenNGBbrTufJdUZTDDqzgLte6njCMMf2KK7iGwSmDBihjZaiWM53PzmRCkKtEXkvs15HmBoJxEr5SmCFsX` — that appear ONLY as bare Explorer-URL log lines inside evidence/trace-clawrouter-multiagent-round.txt; no `solana confirm -v` transcript for either exists anywhere in the repo (confirmed: evidence/tx-confirmations.txt contains exactly 5 '===' blocks, none matching either new signature). Yet SUBMISSION.md Slide 5 claims 'raw solana confirm -v output persisted' for BOTH cited Explorer links, including the second (unconfirmed-transcript) one. The very evidence used to justify closing FIND-003/FIND-008 does not meet the evidentiary bar FIND-001 itself established.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/evidence/trace-clawrouter-multiagent-round.txt",
+    "lineRange": "13-15",
+    "snippet": "[buyer]   deposit tx: https://explorer.solana.com/tx/4J2RTuTVe68zcG59UXypHnRxMS64FS1yEEC7ewyaAQxqNvYUydWSHXnBsWBsdio8SYsLjUDtS4HAWhsJL1kjNX7n?cluster=devnet\\n[buyer] round 1: RELEASED to seller-premium - https://explorer.solana.com/tx/3okbZwoenNGBbrTufJdUZTDDqzgLte6njCMMf2KK7iGwSmDBihjZaiWM53PzmRCkKtEXkvs15HmBoJxEr5SmCFsX?cluster=devnet"
+  },
+  "contradictingEvidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/SUBMISSION.md",
+    "lineRange": "76-80",
+    "snippet": "DEPOSITED → DELIVERED → RELEASED, TWO independent real rounds, Explorer-verified, both Finalized (raw `solana confirm -v` output persisted at evidence/tx-confirmations.txt + evidence/trace-clawrouter-multiagent-round.txt): ... https://explorer.solana.com/tx/3okbZwoenNGBbrTufJdUZTDDqzgLte6njCMMf2KK7iGwSmDBihjZaiWM53PzmRCkKtEXkvs15HmBoJxEr5SmCFsX?cluster=devnet"
+  },
+  "routeToPhase": "2b"
+}

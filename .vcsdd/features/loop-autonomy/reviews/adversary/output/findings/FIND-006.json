@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "self_heal",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The healthcheck 'give up' path never invokes self-fix.sh directly; it only writes a static selfheal-request.json and returns, relying on a future SUCCESSFUL launch of the very loop session that is currently failing to launch. If the root cause is in the launch mechanism itself (broken $CLAUDE path, corrupted cli.sh, tmux socket/permission failure) rather than something only reachable from inside a running claude turn, there is no code path that ever spawns an Opus dev to fix the launcher -- the note simply sits unread forever.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/capafy-loop/capafy-loop-healthcheck.sh",
+    "lineRange": "14-16",
+    "snippet": "if [ \"$count\" -ge 5 ]; then echo \"$(date '+%F %T') backoff $count/60min — delegating to loop\" >> \"$LOG\"\n    if [ ! -f \"$REQ\" ] || [ \"$(( $(date +%s) - $(stat -f %m \"$REQ\" 2>/dev/null||echo 0) ))\" -gt 3600 ]; then\n      printf '{\"loop\":\"capafy\", ... \"note\":\"healthcheck gave up. Next wake: diagnose+fix yourself, verify, rm this; else self/issue-dev then rm.\"}\\n' ... > \"$REQ\" 2>/dev/null; fi; return; fi"
+  },
+  "concreteFailureScenario": "capafy-loop-cli.sh gets corrupted (e.g. a bad edit breaks its bash syntax) so every tmux new-session invocation exits immediately. Healthcheck restarts it 5 times within an hour, hits backoff, writes the note, and 'delegates to loop' -- but the loop can never launch to read that note. This is identical across all three loops (life-manager-loop-healthcheck.sh:14-16, reddit-loop-healthcheck.sh:14) since it is a copy-pasted pattern.",
+  "routeToPhase": "2b"
+}

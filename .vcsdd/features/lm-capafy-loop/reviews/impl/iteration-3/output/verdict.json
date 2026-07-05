@@ -1,0 +1,76 @@
+{
+  "feature": "lm-capafy-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "impl",
+    "scope": "iteration-3 (final convergence)",
+    "filesReviewed": [
+      "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+      "/Users/anicca/anicca/skills/self/lm-capafy-loop/test-loop.sh",
+      "/Users/anicca/anicca/skills/self/lm-capafy-loop/state/STATE.md",
+      "/Users/anicca/anicca-project/docs/superpowers/specs/2026-07-04-anicca-money-loop-lm-capafy-design.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/lm-capafy-loop/reviews/impl/iteration-1/output/verdict.json",
+      "/Users/anicca/anicca-project/.vcsdd/features/lm-capafy-loop/reviews/impl/iteration-2/output/verdict.json"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-015"],
+      "evidence": [
+        {"type": "file", "location": "loop.sh:24-25", "description": "sk_live guard confirmed (FIND-009 resolved)"},
+        {"type": "file", "location": "loop.sh:36-41,42-50,79-82", "description": "3-day leading indicator is no longer summed into the monthly goal; TOTAL = LM_MRR + CAP_MO only (FIND-012 core mix-up resolved)"},
+        {"type": "file", "location": "loop.sh:31-41", "description": "but CAP_MO itself is max()-over-all-history, not the current month, re-opening the monthly-vs-monthly spec goal at a deeper layer — FIND-015"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-016"],
+      "evidence": [
+        {"type": "test-file", "location": "test-loop.sh:15-20", "description": "6 tests cover error->NA (A,B), real $ MRR (C), true $0 (D), stale-log heal + selfheal-request (E), healthy-no-request (F)"},
+        {"type": "gap", "location": "test-loop.sh:9", "description": "CAPAFY-LOOP-NEVER-RAN branch (loop.sh:74) never tested — run() always touches the log file first"},
+        {"type": "gap", "location": "test-loop.sh:13", "description": "every fixture has exactly one payout record — the max()-vs-current-month selection bug (FIND-015) can never be caught by any existing test"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-015", "FIND-017"],
+      "evidence": [
+        {"type": "file", "location": "loop.sh:54-68", "description": "LM_MRR error/list-shape guard, unit_amount/100, year->/12 normalization, $0 items contribute $0 — all confirmed correct (FIND-001, FIND-002, FIND-005 resolved)"},
+        {"type": "file", "location": "loop.sh:33-41", "description": "Capafy monthly figure = max(amount) across ALL payout records regardless of payoutMonth — will report a stale historical peak forever after one good month (FIND-015, critical)"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "loop.sh:1-9", "description": "header cleanly documents INV-1..6 + the 4 seams; every external surface (Capafy acct/payout/trend, Stripe subs, cron-freshness log, selfheal-request, state dir) now has a consistent LMCAP_* env seam — no more hardcoded prod path (FIND-011 fully resolved: loop.sh:14-15)"},
+        {"type": "file", "location": "loop.sh:82-86", "description": "STATUS composition now shows the earning figure even under HEAL-NEEDED via EARN_NOTE (FIND-007 resolved)"},
+        {"type": "file", "location": "loop.sh:89", "description": "selfheal-request written on HEAL, removed when healthy (FIND-014 core requirement implemented)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-016", "FIND-017"],
+      "evidence": [
+        {"type": "test-file", "location": "test-loop.sh:1-11", "description": "seam correctness verified: LMCAP_LOGFILE/LMCAP_REQ/LMCAP_DIR are all per-test tempfiles; grep for the real prod path `daily_loop.log` inside test-loop.sh finds only the reference in loop.sh's default fallback, never a literal touch of it — FIND-011's pollution defeat is genuinely closed"},
+        {"type": "gap", "location": "n/a", "description": "no on-disk artifact substantiates the claimed live-verification of the Stripe items.data.price shape (FIND-017); STATE.md's one real run had 0 active subs so never exercised that parsing branch"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-005", "FIND-007", "FIND-009", "FIND-011", "part of FIND-012", "core of FIND-014"],
+    "priorFindingsPartial": ["FIND-013 (fail-safe risk narrowed but still unverified live, tracked as FIND-017)"],
+    "newFindings": ["FIND-015 (critical)", "FIND-016 (minor)", "FIND-017 (minor)"],
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

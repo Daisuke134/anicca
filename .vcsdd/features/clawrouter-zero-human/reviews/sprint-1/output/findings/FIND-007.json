@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "The specific git commit hashes cited in the design spec (d9fc893 for B2, 7367721 and 4p79RhXc.../round.ts changes for C0, 901a255 for C3, e6a32a8 for C6, ff7ead7 for C4/SUBMISSION.md) could not be verified against actual repository history. /Users/anicca/.cache/anicca-clones/solana_coralOS is a SHALLOW, single-commit clone: .git/shallow lists exactly one commit (0d825631759b5d61aabf0292468a057ef2673a88), which matches neither refs/remotes/origin/main's own packed-refs entry format expectations nor any of the cited short hashes as a prefix. No Bash/git-capable tool was available in this review session to run `git log --oneline -20` or fetch full history from the remote either, so I cannot confirm the cited hashes exist, are ancestors of the current HEAD, or correspond to the diffs described. Note: the file CONTENTS I read (complete.ts, service.ts, telemetry.ts, index.ts, round.ts, coral-agent.toml, .env.example) do substantively match the spec's prose description of what changed, so the code-level functional claims are corroborated by direct inspection -- only the specific commit-hash citations remain unverified, unconfirmed evidence rather than checked facts.",
+  "evidence": {
+    "filePath": "/Users/anicca/.cache/anicca-clones/solana_coralOS/.git/shallow",
+    "lineRange": "1",
+    "snippet": "0d825631759b5d61aabf0292468a057ef2673a88"
+  },
+  "routeToPhase": "2b"
+}

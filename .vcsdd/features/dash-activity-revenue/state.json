@@ -1,0 +1,17 @@
+{
+  "featureName": "dash-activity-revenue",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-dash-activity-revenue-1783206912715",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-04T23:15:12.714Z",
+  "updatedAt": "2026-07-04T23:15:12.714Z"
+}

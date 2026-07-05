@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "minor",
+  "status": "STILL_OPEN_FROM_ITERATION_1",
+  "priorFindingId": "FIND-007",
+  "description": "Iteration-1 FIND-007 ('STATUS is a winner-takes-all overwrite, HEAL-NEEDED silently drops a concurrent real EARNING signal') was NOT addressed in this iteration. Current loop.sh:83-89 is still a single if/elif/else chain with the exact same shape: `if [ -n \"$HEAL\" ]; then STATUS=\"HEAL-NEEDED — $HEAL\"` unconditionally wins even when LM_MRR/CAP_REV were successfully computed as real positive dollar figures in the SAME wake (e.g. Stripe key is fine and LM_MRR=$500, but Capafy auth happens to be down this wake -> STATUS becomes only 'HEAL-NEEDED — CAPAFY-AUTH-DOWN...', the fact that $500 real LM MRR exists this wake is dropped from the narrative STATUS field, even though the raw `lm_mrr_usd:` line is still printed separately in STATE.md). The fix suggested in iteration 1 (compose both concerns, e.g. 'EARNING $500/mo + HEAL-NEEDED (Capafy down)') was not implemented; the code was rewritten for FIND-001/002/003 but this specific structural finding was left untouched.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/lm-capafy-loop/loop.sh",
+    "lineRange": "83-89",
+    "snippet": "if [ -n \"$HEAL\" ]; then STATUS=\"HEAL-NEEDED — $HEAL\"\nelif [ \"$LM_MRR\" = \"NA\" ] || [ \"$CAP_REV\" = \"NA\" ]; then STATUS=\"READ-FAILED (LM_MRR=$LM_MRR Capafy=$CAP_REV) — a real total cannot be summed; DO NOT trust, recompute before acting\"\nelse\n  TOTAL=\"$(python3 -c \"print(round(${LM_MRR}+${CAP_REV},2))\" 2>/dev/null || echo NA)\"\n  if awk \"BEGIN{exit !($TOTAL>0)}\" 2>/dev/null; then STATUS=\"EARNING \\$$TOTAL/mo ...\"\n  else STATUS=\"NO realised revenue yet ...\"; fi\nfi"
+  },
+  "fix": "Compose STATUS so a real positive LM_MRR/CAP_REV figure computed this wake is never hidden behind a HEAL-NEEDED string for an unrelated surface, e.g. 'HEAL-NEEDED — CAPAFY-AUTH-DOWN(...) | meanwhile LM MRR=$500 (real, computed this wake)'.",
+  "routeToPhase": "2b"
+}

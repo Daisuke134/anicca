@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-020",
+  "dimension": "self_heal",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "NEW regression introduced by the FIND-013 fix. healthcheck-lib.sh:24-30 adds a 10-minute stale-lock steal path: `if ! mkdir \"$LOCK_DIR\"; then lage=...; if [ \"$lage\" -ge 10 ]; then rmdir \"$LOCK_DIR\"||true; mkdir \"$LOCK_DIR\" || return 0; ...`. The staleness check (stat) and the steal (rmdir+mkdir) are NOT atomic together: if two invocations of the SAME loop's healthcheck are alive at the same time (plausible after a macOS sleep/wake catch-up burst, or if a prior run hung), both can independently observe lage>=10, both call rmdir (idempotent no-op on the second), then both call mkdir -- the first mkdir succeeds and creates a fresh lock, the second process's rmdir (which does not re-check staleness) deletes that fresh lock, and the second process's mkdir then also succeeds. Both processes now believe they hold the exclusive lock and run the full hc_run body concurrently (double DEAD/STUCK/STALE checks, double _restart pkill/bash --restart calls, potential double _selffix spawn attempts). Mitigated somewhat by ThrottleInterval=60 in the healthcheck plists (capafy-loop/launchd/ai.anicca.capafy-loop-healthcheck.plist:6) which makes exact-timing overlap less likely under normal conditions, but the race is real and specifically reachable in the exact abnormal-kill scenario the FIND-013 fix was designed to recover from -- i.e. the fix for the 'permanent lock' bug reintroduces a 'double-run' bug in the same narrow window.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/healthcheck-lib.sh",
+    "lineRange": "24-30",
+    "snippet": "if ! mkdir \"$LOCK_DIR\" 2>/dev/null; then\n  local lage=...\n  if [ \"$lage\" -ge 10 ]; then rmdir \"$LOCK_DIR\" 2>/dev/null||true; mkdir \"$LOCK_DIR\" 2>/dev/null || return 0\n  ...  else return 0; fi\nfi"
+  },
+  "routeToPhase": "2b"
+}

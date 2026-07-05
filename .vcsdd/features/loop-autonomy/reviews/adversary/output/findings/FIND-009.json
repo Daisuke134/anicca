@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "anti_fake_measurement",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "All three STARTUP prompts instruct 'FINALLY touch ~/.openclaw/state/.<loop>-last-pass' unconditionally after STEP4 REPORT, regardless of whether STEP2/STEP3 produced any real side effect or the report itself was logged as 'failure'/'no-op'. Since the ONLY automated liveness/health signal each healthcheck uses is this heartbeat file's mtime, a loop that repeatedly fails or no-ops still reads as 'ALIVE+fresh' for up to 26 hours, masking zero real progress from the one unattended system that runs every 5 minutes.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+    "lineRange": "9",
+    "snippet": "STEP4 REPORT: bash ~/anicca/skills/report/loop-report.sh reddit \"...\" <success|failure|no-op> 0 \"<url or none>\". FINALLY touch ~/.openclaw/state/.reddit-loop-last-pass."
+  },
+  "concreteFailureScenario": "The reddit loop reports 'failure' every day for a week (e.g. CloakBrowser repeatedly can't complete a post) but still touches .reddit-loop-last-pass each time per the unconditional FINALLY instruction. reddit-loop-healthcheck.sh (lines 18-20) reads this heartbeat as fresh and never restarts or escalates -- the loop is functionally dead but reports as healthy for as long as the model keeps reaching STEP4's touch line before giving up.",
+  "routeToPhase": "2b"
+}

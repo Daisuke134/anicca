@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "start-local.sh's EVM-wallet legacy fallback silently reuses the LIVE, already-running instance's private key for a brand-new instance instead of generating an isolated per-instance key -- the exact opposite of R4/Goal/DONE#3. Code trace: EFFECTIVE_HOME=${ANICCA_HOME:-$HOME/.anicca}; WALLET=$EFFECTIVE_HOME/.automaton/wallet.json; LEGACY_WALLET=$HOME/.automaton/wallet.json; if [ ! -f \"$WALLET\" ] && [ -f \"$LEGACY_WALLET\" ]; then WALLET=\"$LEGACY_WALLET\"; fi. On THIS actual deployment machine (the only place this ever runs -- CLAUDE.md: 'Mac Mini... で直接実行する'), $HOME/.automaton/wallet.json ALREADY EXISTS with a live private key (verified by directly reading /Users/anicca/.automaton/wallet.json, which contains a real privateKey + createdAt:2026-03-04). Since ANICCA_HOME derives from $HOME everywhere in this repo (install.sh:26, anicca-daemon.sh:24, start-local.sh:89 all use ${ANICCA_HOME:-$HOME/.anicca}), every instance on this machine shares the same $HOME. Running DONE#3's own prescribed test -- `ANICCA_HOME=/tmp/eq-test ./start-local.sh` -- with a genuinely fresh /tmp dir would hit: WALLET (/tmp/eq-test/.automaton/wallet.json) does not exist AND LEGACY_WALLET exists -> WALLET is reassigned to the LEGACY file -> the '[ ! -f \"$WALLET\" ]' check at line 42 is now false -> the else branch fires ('wallet preserved') reading the EXISTING legacy wallet -> NO file is ever written under /tmp/eq-test/.automaton/wallet.json, and ANICCA_WALLET_ADDRESS (step 3, line 92) is derived from the SAME shared legacy wallet. The fresh spawn ends up with the SAME EVM identity as the pre-existing instance, not its own. This directly contradicts the Goal statement ('fresh spawn は自分専用の EVM+Solana 鍵で3エンジンを引ける') and DONE#3 ('EVM+Solana の鍵ファイルが $ANICCA_HOME 配下に隔離生成され'). Note the asymmetry: ensure-solana-wallet.mjs (the Solana counterpart) has NO such legacy-reuse fallback -- `const home = process.env.ANICCA_HOME || process.env.HOME || ''` only, so Solana IS correctly isolated. Only the EVM path is broken.",
+  "evidence": {
+    "filePath": "runtime/compute-proxy/start-local.sh",
+    "lineRange": "26-54",
+    "snippet": "EFFECTIVE_HOME=\"${ANICCA_HOME:-$HOME/.anicca}\"\nWALLET=\"$EFFECTIVE_HOME/.automaton/wallet.json\"\nLEGACY_WALLET=\"$HOME/.automaton/wallet.json\"\nif [ ! -f \"$WALLET\" ] && [ -f \"$LEGACY_WALLET\" ]; then\n  WALLET=\"$LEGACY_WALLET\"\nfi\n... \nif [ ! -f \"$WALLET\" ]; then\n  # generate\nelse\n  echo \"[local] wallet preserved: ...\"\nfi"
+  },
+  "supportingEvidence": {
+    "filePath": "/Users/anicca/.automaton/wallet.json",
+    "note": "Read directly on disk during review: contains a real privateKey + createdAt 2026-03-04 -- confirms the legacy shared file exists on THIS machine, which is a precondition for the collision described above."
+  },
+  "routeToPhase": "3"
+}

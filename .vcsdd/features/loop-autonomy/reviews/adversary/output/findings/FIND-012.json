@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-012",
+  "dimension": "honesty_ethics_consistency",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "reddit-loop-cli.sh instructs the self-heal path to provision a Reddit account by solving Reddit's own signup CAPTCHA via 'CapSolver per skill tier-a-bypass' during automated registration. Even though the persona is told to be 'transparently-disclosed' in its comments/posts, the account-CREATION mechanism itself (automated bot-registration defeating Reddit's own anti-automation CAPTCHA) is exactly the kind of platform-level deception Reddit's ToS targets, independent of what the account's bio/comments later disclose.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/reddit-loop/reddit-loop-cli.sh",
+    "lineRange": "9",
+    "snippet": "NO-REDDIT-ACCOUNT → self-provision ONE HONEST-builder account with CloakBrowser daily-driver :9222 (reddit.com/register, email = Gmail plus-address keiodaisuke+reddit<shorttag>@gmail.com, a real-sounding builder username, OTP via the gmail tool, CapSolver per skill tier-a-bypass; hard-block is not stop — try camofox fallback; this account is a REAL disclosed builder identity, not a sockpuppet)"
+  },
+  "concreteFailureScenario": "The loop's own stated ethics rule says 'NEVER run a fake grassroots / covert ... account — that is astroturfing ... betrays Anicca honesty', yet the SAME startup prompt instructs bypassing Reddit's bot-detection CAPTCHA to create that very account. The account's comments are disclosed, but its existence is covertly automated against the platform's own anti-bot controls — an internal inconsistency that a stricter honesty read of the loop's own rule would flag as exactly the kind of covert action it claims to reject.",
+  "routeToPhase": "2b"
+}
