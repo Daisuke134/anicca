@@ -92,3 +92,9 @@ adversary が俺の grep 盲点を突いた: 除外パターン `telemetry-post`
 - **FIND-B(最重大, 実資金)**: `runtime/anicca-daemon.sh:87` — inline node require で automaton 鍵を `BLOCKRUN_WALLET_KEY` に → ClawRouter が automaton の実マネーで x402 課金。修正: `node $REPO/skills/earn/lib/resolve-identity.mjs evm`(gated CLI)、foreign は空→ClawRouter に借り鍵渡さず(fail-closed)。
 - **完全 sweep(全拡張子・全 read 形式)で残存ゼロを確認** = この2件が最後。実機実証: (poster)foreign→null(automaton鍵でない)/automaton→温存、(daemon)foreign→空(automatonの金で課金せず)/automaton→鍵温存。
 - ★教訓: sweep は全拡張子(.mjs/.js/.py/.sh)× 全 read 形式(readFileSync/require/JSON.parse/open)で、除外パターンは部分文字列誤爆に注意。→ round-4 で収束確認。
+
+## Adversary round 4(#28 収束確認, fresh Sonnet 実行ベース, 2026-07-05)→ PASS(収束)
+- ★PASS★: `.automaton/wallet.json` / `.blockrun/.solana-session` 共有直読みの脆弱性クラスを exhaustive sweep(rg 全拡張子・全 read 形式、部分文字列除外の盲点なし)で **実コード残存ゼロ** 確認。実コードで鍵を使う全ファイルが loadEvmKey()/resolve-identity CLI 経由。
+- 実機実証: foreign spawn→null/空(automaton 鍵/金を継承せず fail-closed)、automaton→poster/daemon 両経路とも `0xa3CDd4`(実 wallet)に解決=温存。telemetry-poster は foreign 時 exit(0) で投稿せず(fetch 未到達を実行確認)。resolver 20/20 + wallet-path 6/6 pass。
+- 新規 finding(PASS 阻害せず): `board-poller/bb-*.mjs`(15) が founder wallet(0x810f)を無ゲート直読み=第3系統の同一アンチパターン。ただし run.sh なし・registry 未登録で loop 到達不能・放棄コード → #30 で削除/gate。
+- ★#26 + #28 = identity 平等化 完了(4ラウンド adversary 収束)。fresh spawn は自分の per-instance 鍵でしか署名・課金できない = マルチエージェント稼ぎ基盤の money-safety 確立。#27(実 funding+建玉)を unblock。
