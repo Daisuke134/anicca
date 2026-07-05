@@ -122,8 +122,12 @@ export function summarizeByGenome(ledgerRows, traceLines) {
 /**
  * evaluatePromotion({summary, baselineId, mutantId, minRedeems}) — the GATE (spec §2.3): a
  * mutant genome is promotion-eligible ONLY when (a) it has >= minRedeems on-chain-verified
- * redeems (K, kills a statistically-meaningless single lucky bet) AND (b) its chain-verified
- * realized P&L beats baseline's. Pure decision function (no I/O) so it's directly unit-testable.
+ * redeems (K, kills a statistically-meaningless single lucky bet), (b) it is itself NET-POSITIVE
+ * (realized_usdc > 0 — an absolute floor, spec §3/HARD 0.24: a genome that merely loses LESS
+ * money than baseline is still a net-losing strategy and must NEVER be auto-adopted), AND
+ * (c) its chain-verified realized P&L beats baseline's (baseline's floor is itself clamped at 0,
+ * so a baseline that is currently losing money can't be "beaten" by another loser). Pure decision
+ * function (no I/O) so it's directly unit-testable.
  */
 export function evaluatePromotion({ summary, baselineId, mutantId, minRedeems = DEFAULT_MIN_REDEEMS }) {
   const baseline = summary.get(baselineId) || { realized_usdc: 0, redeem_count: 0 };
@@ -132,13 +136,19 @@ export function evaluatePromotion({ summary, baselineId, mutantId, minRedeems = 
   if (mutant.redeem_count < minRedeems) {
     return { promote: false, reason: `below-K-redeems (${mutant.redeem_count}<${minRedeems})` };
   }
-  if (!(mutant.realized_usdc > baseline.realized_usdc)) {
+  // HARD 0.24 (money-safety): "less-negative" is NOT a promotion — the challenger must clear an
+  // absolute net-positive floor, not just outperform a baseline that may itself be losing money.
+  if (!(mutant.realized_usdc > 0)) {
+    return { promote: false, reason: `challenger-not-net-positive (${mutant.realized_usdc}<=0)` };
+  }
+  const baselineFloor = Math.max(baseline.realized_usdc, 0);
+  if (!(mutant.realized_usdc > baselineFloor)) {
     return {
       promote: false,
-      reason: `does-not-beat-baseline (${mutant.realized_usdc}<=${baseline.realized_usdc})`,
+      reason: `does-not-beat-baseline (${mutant.realized_usdc}<=${baselineFloor})`,
     };
   }
-  return { promote: true, reason: "beats-baseline-chain-verified" };
+  return { promote: true, reason: "beats-baseline-chain-verified-net-positive" };
 }
 
 function git(args, cwd) {
@@ -160,7 +170,12 @@ export function promote(genome, { canonicalPath = CANONICAL_BASELINE_PATH, cwd }
   const repoRoot = cwd || path.resolve(path.dirname(canonicalPath), "..", "..");
   const id = computeGenomeId(genome);
   fs.writeFileSync(canonicalPath, JSON.stringify(genome, null, 2) + "\n");
-  git(["add", canonicalPath], repoRoot);
+  git(["add", "--", canonicalPath], repoRoot);
+  // Path-scoped commit (repo-safety): `~/anicca` is a shared checkout other processes may also be
+  // touching concurrently (observed live — unrelated healthcheck scripts sitting modified in the
+  // working tree). `git commit -- <path>` commits ONLY changes to that pathspec regardless of
+  // what else happens to be staged, so a promotion can never sweep unrelated changes into its
+  // commit.
   git(
     [
       "-c",
@@ -170,6 +185,8 @@ export function promote(genome, { canonicalPath = CANONICAL_BASELINE_PATH, cwd }
       "commit",
       "-m",
       `feat(evolve): promote genome ${id} — chain-verified realized P&L beats baseline`,
+      "--",
+      canonicalPath,
     ],
     repoRoot,
   );
