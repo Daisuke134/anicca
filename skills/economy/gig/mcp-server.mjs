@@ -24,18 +24,20 @@ server.registerTool(
   {
     title: "Post a gig",
     description:
-      "Post a paid task with a bounty. Funds the bounty into escrow IMMEDIATELY via a real gasless " +
-      "on-chain settle (poster -> escrow, through the self-host x402 facilitator) -- if the settle " +
-      "fails (e.g. insufficient USDC), no gig is created. Returns the new gig id.",
+      "Post a paid task with a bounty. Requires a valid ERC-8004 identity (posterAgentId must be owned " +
+      "by your own wallet, on-chain verified) -- fail-closed, no unverified poster. Funds the bounty " +
+      "into escrow IMMEDIATELY via a real gasless on-chain settle (poster -> escrow, through the " +
+      "self-host x402 facilitator) -- if identity verification or the settle fails, no gig is created. " +
+      "Returns the new gig id.",
     inputSchema: {
-      posterPrivateKey: z.string().describe("0x-prefixed private key of the posting agent's own wallet"),
-      posterAddress: z.string().optional().describe("poster's public address (derived from the key if omitted)"),
+      posterPrivateKey: z.string().describe("0x-prefixed private key of the posting agent's own wallet (also proves poster identity for later gig_verify_and_pay calls)"),
+      posterAgentId: z.string().describe("your ERC-8004 agentId (from identity_register) -- verified on-chain to be owned by your own wallet"),
       taskSpec: z.string().describe("what the taker must deliver"),
       bountyUsdcBase: z.number().int().positive().describe("bounty in USDC base units (6 decimals; 1000 = 0.001 USDC)"),
     },
   },
-  async ({ posterPrivateKey, posterAddress, taskSpec, bountyUsdcBase }) =>
-    textResult(await gigPost({ posterPrivateKey, posterAddress, taskSpec, bountyUsdcBase }))
+  async ({ posterPrivateKey, posterAgentId, taskSpec, bountyUsdcBase }) =>
+    textResult(await gigPost({ posterPrivateKey, posterAgentId, taskSpec, bountyUsdcBase }))
 );
 
 server.registerTool(
@@ -54,13 +56,17 @@ server.registerTool(
   "gig_take",
   {
     title: "Take a gig",
-    description: "Claim an OPEN gig as its taker. Fails if the gig is not currently 'open'.",
+    description:
+      "Claim an OPEN gig as its taker. Requires a valid ERC-8004 identity (takerAgentId must be owned " +
+      "by takerAddress, on-chain verified) -- fail-closed, no unverified taker. Fails if the gig is not " +
+      "currently 'open', or if two takers race for it (only one wins).",
     inputSchema: {
       gigId: z.string(),
       takerAddress: z.string().describe("the taking agent's own wallet address (receives payout later)"),
+      takerAgentId: z.string().describe("your ERC-8004 agentId (from identity_register) -- verified on-chain to be owned by takerAddress"),
     },
   },
-  async ({ gigId, takerAddress }) => textResult(await gigTake({ gigId, takerAddress }))
+  async ({ gigId, takerAddress, takerAgentId }) => textResult(await gigTake({ gigId, takerAddress, takerAgentId }))
 );
 
 server.registerTool(
@@ -81,15 +87,19 @@ server.registerTool(
   {
     title: "Verify and pay a gig",
     description:
-      "Poster-only: approve or reject a delivered gig. verified=true triggers a REAL on-chain escrow " +
-      "release to the taker (gasless settle via the facilitator) and only marks the gig 'paid' if that " +
-      "settle actually succeeds. verified=false rejects the delivery -- no payout, ever.",
+      "POSTER-ONLY (enforced, not just documented): you must supply posterPrivateKey; its derived " +
+      "address is checked against the gig's poster and the call is REJECTED if it doesn't match -- a " +
+      "taker or anyone else can never verify/pay their own delivery. verified=true triggers a REAL " +
+      "on-chain escrow release to the taker (re-verifying the taker's ERC-8004 identity first) and only " +
+      "marks the gig 'paid' if that settle actually succeeds. verified=false rejects the delivery -- no " +
+      "payout, ever. Concurrent calls for the same gig are serialized: at most one can ever pay.",
     inputSchema: {
       gigId: z.string(),
       verified: z.boolean(),
+      posterPrivateKey: z.string().describe("0x-prefixed private key of the gig's poster -- proves you are authorized to verify/pay THIS gig"),
     },
   },
-  async ({ gigId, verified }) => textResult(await gigVerifyAndPay({ gigId, verified }))
+  async ({ gigId, verified, posterPrivateKey }) => textResult(await gigVerifyAndPay({ gigId, verified, posterPrivateKey }))
 );
 
 server.registerTool(
