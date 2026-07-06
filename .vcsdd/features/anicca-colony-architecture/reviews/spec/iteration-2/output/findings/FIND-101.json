@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-101",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "ITER-1 FIND-008 NOT FIXED (verbatim recurrence). Section 3 (line 97-98) explicitly REMOVES the `gig` earner: 'Removed: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates INV-MODE.' Section 5.3 (line 213) still designates that same removed earner as the canonical reference implementation for the skip-floor invariant: '(gig `passprep.py` FIND-005 is the reference implementation.)' This is the identical contradiction flagged in iteration-1 FIND-008, carried forward unchanged: INV-KEEP-ALIVE points at a component the spec itself deletes two sections earlier, and the external 'FIND-005' identifier is still undefined/unlinked inside this document.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "97-98, 213",
+    "snippet": "Removed: `gig` (Coconala/dealwork) ... requires a bank account + KYC = human credential = violates INV-MODE. [[section 5.3]] (gig `passprep.py` FIND-005 is the reference implementation.)"
+  },
+  "iterationHistory": "iteration-1 FIND-008 — carried forward unresolved",
+  "routeToPhase": "1a"
+}

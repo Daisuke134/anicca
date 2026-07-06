@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "scripts/usdc-balance.py prints its result with Python's bare `print(int(r[\"result\"], 16) / 10**6)`. For a very small non-zero balance (e.g. exactly 1 raw unit = 0.000001 USDC) Python renders this in scientific notation ('1e-06'); for a sufficiently large balance it could similarly switch to exponential form. Every current call site in run.sh double-quotes the captured value before use, so no literal shell word-splitting bug was found, but there is no test (unit or fixture) proving that a scientific-notation string round-trips correctly through `Number(process.argv[...])` in the decideSpawn/buildSeedPlan node -e invocations, nor through jq/bash arithmetic contexts, before real money is at stake.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/usdc-balance.py",
+    "lineRange": "17",
+    "snippet": "print(int(r[\"result\"], 16) / 10**6)"
+  },
+  "routeToPhase": "2b"
+}

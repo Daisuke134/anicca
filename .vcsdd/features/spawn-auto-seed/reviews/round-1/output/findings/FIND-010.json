@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-3 only requires buildSeedPlan to throw when parentBalanceUsdc < seedUsdc; neither the spec nor the implementation enforces that the parent retain any reserve after seeding. Because REQ-1 makes minBalanceUsdc operator-configurable and ANICCA_SEED_USDC (run.sh) is independently operator-configurable, an operator (or a verification run whose overrides leak into the real dotenv per FIND-006) can set ANICCA_SPAWN_MIN_BALANCE <= ANICCA_SEED_USDC, letting a parent legally spawn a child using its ENTIRE on-chain balance and immediately re-enter low_balance dormancy with $0 left for its own future operations. Neither the spec's edge-case discussion nor lib/__tests__/seed.test.js enumerates or tests a 'parent must retain a reserve after seeding' invariant.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/seed.js",
+    "lineRange": "16-18",
+    "snippet": "if (typeof parentBalanceUsdc !== \"number\" || !Number.isFinite(parentBalanceUsdc) || parentBalanceUsdc < seedUsdc) {\n    throw new Error(`parent balance ${parentBalanceUsdc} < seed ${seedUsdc} — cannot seed`);\n  }"
+  },
+  "routeToPhase": "2b"
+}

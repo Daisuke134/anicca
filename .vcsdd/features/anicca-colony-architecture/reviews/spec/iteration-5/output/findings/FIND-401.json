@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-401",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "§3's header 'Earners = crypto-native only (gig is OUT)' and body text '**Removed**: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates INV-MODE' is stated as a flat, unscoped, already-settled fact — with NO carve-out for the HUMAN-FUNDED mode that §2 explicitly defines and keeps as a legitimate 'sub-variant/on-ramp' (§2 table: 'HUMAN-FUNDED ... helpful because compute is scarce and a human already pays for it'). Contrast with the immediately adjacent sentence in the SAME paragraph, which DOES scope its removal correctly: '`clip`/`affiliate` MUST NOT be in a cloud child's earn line (... local-only per REQ-PORTABILITY)' — i.e. clip/affiliate get an explicit local-vs-cloud carve-out, gig gets none. On disk, `skills/registry.json` (the SSOT `install.sh` reads to sync every skill slot into the runtime body — its own header calls it 'Anicca capability registry (SSOT)') lists `earn/gig` with `status: \"live\"` (not 'declared', not 'retired' like the fat `earn` slot at line 16-24 which explicitly says '(retired — split into yield/hl_trade/x402_sell/token_launch)'). `runtime/loop/earn-slot.mjs::isEarnSlot()` resolves any `earn/<sub>` slot (including `earn/gig`) into the loop's rotation, and `skills/earn/gig/run.sh` is a live entrypoint that supervises an independent, actively-running claude-p tmux+cron core (`gig-cli.sh`, hourly cron per registry.json's own summary) which is driving Coconala freelance applications end-to-end TODAY, settling real ¥ to Dais's MUFG bank account — i.e. it is the founder/human-funded instance's only currently-operating real-money earner. The spec's own §0 REALITY CHECK is grounded in exactly this founder instance (Base 0x810f, 'me/claude-p'). A builder reading §3 literally ('gig is OUT', 'Removed') has no way to know whether to leave the live, revenue-producing earn/gig slot alone (because it's human-funded, out of INV-MODE's self-funded-only scope) or to decommission it (because the doc states it as already removed with no qualifier) — and §10's Implementation order lists no task anywhere to migrate/decommission/keep gig, so this ambiguity is never resolved downstream either. This is the same class of defect FIND-302 (iteration-4) found and got fixed for REQ-DASH-TRUTH: a status claim ('removed'/'done') not reconciled against the actual, currently-running code it contradicts.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "97-100",
+    "snippet": "## 3. Earners = crypto-native only (gig is OUT)\n\n**Removed**: `gig` (Coconala/dealwork) — requires a bank account + KYC = human credential = violates INV-MODE. `clip`/`affiliate` MUST NOT be in a cloud child's earn line (they carry account/human-touch risk; local-only per REQ-PORTABILITY).",
+    "contradictedBy": [
+      "/Users/operator/anicca/skills/registry.json:97-105 (earn/gig entry: status:\"live\", owner:\"wf-a:earn-gig\", summary describes an active autonomous Coconala loop settling real ¥ to Dais MUFG)",
+      "/Users/operator/anicca/runtime/loop/earn-slot.mjs:9-12 (isEarnSlot() resolves any 'earn/'-prefixed slot, including earn/gig, into the live loop rotation — not filtered out)",
+      "/Users/operator/anicca/skills/earn/gig/run.sh:1-17 (live entrypoint supervising an independent tmux+cron Coconala core, gig-cli.sh)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

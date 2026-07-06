@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-301",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "FIND-201 (iteration-3) is only PARTIALLY resolved. REQ-PORTABILITY's TIER-1 sentence (§4, line 169) now correctly conditions cloud/local parity on REQ-CLOUD-SAME-BODY landing first ('cloud **once REQ-CLOUD-SAME-BODY is done** (until then the cloud child boots the wrong Conway body — §4 ④ — and this parity does not yet hold)'). But REQ-CLOUD-EARN, four lines later (line 179), still makes the SAME unconditioned claim the original FIND-201 flagged: 'a cloud child ships earning with TIER 1 (browser-free) on day one' — with no cross-reference to REQ-CLOUD-SAME-BODY or acknowledgment that, per the SAME section's row ④ (line 153), the cloud-init boot loader today clones and execs an entirely different external codebase (Conway-Research/automaton, verified still true on disk at cloud-init.sh:57,68), meaning NONE of our skills tree (earn/pm-trade etc.) is even loaded on a cloud child today, let alone 'ships... on day one.' REQ-CLOUD-EARN contradicts REQ-CLOUD-SAME-BODY's own row ④ exactly as REQ-PORTABILITY used to, just one requirement over. The fix that resolved REQ-PORTABILITY's half of FIND-201 was not applied to REQ-CLOUD-EARN's half.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "153, 169, 179",
+    "snippet": "line 153: '★WRONG BODY: cloud-init.sh:68 git clones the EXTERNAL Conway-Research/automaton ... So cloud ≠ local body today — a bug.' vs line 169 (FIXED): 'once REQ-CLOUD-SAME-BODY is done (until then ... parity does not yet hold)' vs line 179 (NOT FIXED): 'REQ-CLOUD-EARN: a cloud child ships earning with TIER 1 (browser-free) on day one' — no conditioning clause.",
+    "contradictedBy": [
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh:57 (ExecStart=/usr/bin/node /opt/automaton/dist/index.js --run)",
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh:68 (git clone ... Conway-Research/automaton, still present, verified on disk this iteration)"
+    ]
+  },
+  "iterationHistory": "iteration-3 FIND-201 — half-fixed (REQ-PORTABILITY sentence corrected) but REQ-CLOUD-EARN sentence in the same section carries forward the identical unconditioned claim, unfixed.",
+  "routeToPhase": "1a"
+}

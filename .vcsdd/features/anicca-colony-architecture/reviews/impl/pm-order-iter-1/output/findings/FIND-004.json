@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "run.sh interpolates the raw $DECISION JSON string (produced by decide.py, decide.py:184 `print(json.dumps(out))`) directly into a Python triple-quoted string literal via shell substitution, three separate times: `d=json.loads('''$DECISION''')`. decide.py's JSON always includes a free-text 'question' field sourced verbatim from Polymarket's public Gamma API (decide.py: `m.get('question')`, an externally-controlled string any market creator can set). JSON does not escape single quotes, so a question string containing the sequence `'''` (or crafted to look like `foo''';import os;os.system(\"...\");x='''bar`) breaks out of the Python string literal and is executed as arbitrary Python code inside the same process tree that holds the wallet private key (order.py/_load_key reads ~/.anicca-founder/wallet.json). This is an unsandboxed code-injection path driven entirely by untrusted third-party market metadata, not user input the operator controls.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/run.sh",
+    "lineRange": "26-29",
+    "snippet": "TOK=$(\"$PY\" -c \"import json,sys; d=json.loads('''$DECISION'''); print(d.get('token_id') or d.get('token') or '')\" 2>/dev/null)\nSIDE=$(\"$PY\" -c \"import json,sys; d=json.loads('''$DECISION'''); print(d.get('side') or '')\" 2>/dev/null)\n..."
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/decide.py",
+    "lineRange": "108-125,164"
+  },
+  "routeToPhase": "2b"
+}

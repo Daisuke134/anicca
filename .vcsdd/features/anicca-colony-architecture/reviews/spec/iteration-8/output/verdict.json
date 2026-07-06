@@ -1,0 +1,78 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "spec/iteration-8",
+  "phase": "1a",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 8,
+  "note": "No input/manifest.json existed at reviews/spec/iteration-8/input/ at review time (input dir does not exist on disk); reviewed directly against the file named in the task (specs/behavioral-spec.md) plus its full referenced disk surface, consistent with iterations 6-7's approach. This is a convergence-confirmation round after iter-7's groundedness FAIL (2 findings).",
+  "priorIterationFindingsVerified": {
+    "FIND-701": {
+      "status": "MOOT / FALSE POSITIVE (confirmed against current disk)",
+      "evidence": "FIND-701 (iter-7) cited apps/landing/public/dashboard.json:660-746 containing a populated leaderboard[] array with placeholder wallets (0xc0ffee2222, 0xdead3333, 0xbeef4444) and fabricated aggregate figures (total_net_worth_usd:2140, earned_mo_usd:680.25, self_funded_pct:75). Re-read of the CURRENT file at /Users/operator/anicca-project/apps/landing/public/dashboard.json (the only dashboard.json under apps/landing/public on disk) shows: exactly 660 numbered lines (cat -n), ending at the `lineage[]` array closing brace on line 660 -- there is NO leaderboard[] key anywhere in the file (grep for 'leaderboard', '0xc0ffee', '0xdead', '0xbeef', 'total_net_worth_usd' = zero matches). updated_at at line 2 = '2026-06-01T00:00:46.650Z' -- matching, not contradicting, REQ-DASH-TRUTH's 'stale (2026-06-01, wallet:null)' description. lineage[0] ('anicca-001-claude') wallet field = null, also matching. The spec's own added parenthetical at behavioral-spec.md:276-279 ('the currently-served public/dashboard.json is the CLEAN stale 2026-06-01 version -- verified 659 lines, zero placeholder rows') is accurate (the 659 vs 660 discrepancy is a wc-l-vs-cat-n trailing-newline counting convention, not a substantive error -- not raised as a finding). FIND-701 is confirmed moot: it read a transient bot-pollution state (commit 2e02d475 reverted it) that does not exist on the current disk."
+    },
+    "FIND-702": {
+      "status": "RESOLVED (confirmed against current disk)",
+      "evidence": "behavioral-spec.md:221 now reads '`skills/economy/ubi` -- registry stub `economy/ubi`, **to build**; NOT the separate already-built `skills/ubi/` human-funded outflow engine.)' -- the 'econ' typo is fixed to 'economy'. Cross-checked skills/registry.json:97-101 confirms the sibling 'earn/gig' entry pattern (dir/entrypoint/status/spec keys) is the registry's real shape; grep for 'economy/ubi' in registry.json returns 1 match (the declared stub), confirming the spec's path string now matches a real registry-declared slot. The spec also now explicitly disambiguates the pre-existing, unrelated top-level skills/ubi/ directory from this colony stub, closing the confusion FIND-702 flagged."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md §3 table + earn/gig row", "description": "Cross-checked skills/registry.json:97-101: 'earn/gig' status:'live', dir:'skills/earn/gig' -- matches spec's claim it is 'currently running' and the founder's only operating real-money earner."},
+        {"type": "file", "location": "specs/behavioral-spec.md:69,78-86 (REQ-MODEL)", "description": "runtime/loop/config.mjs:47-49 confirms ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL all = 'free/glm-4.7'; config.mjs:36 confirms 'Do NOT use auto (routes to PAID, drains wallet)' verbatim. REQ-MODEL's claims are byte-for-byte grounded."},
+        {"type": "file", "location": "runtime/loop/__tests__/config.test.mjs:51-53", "description": "Confirmed the named test-vs-code drift is still real (test expects nvidia/deepseek-v4-flash / deepseek-r1-0528 / gpt-4o-mini, code returns free/glm-4.7 on all tiers) -- the spec names this honestly rather than hiding it, per its own text 'a real test-vs-code bug to reconcile.'"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:223-228 (REQ-DRAIN)", "description": "Anti-drain edge cases (rate-limit, max-gift cap formula, registry-signature requirement, sender reserve) remain concretely specified with a stated verification test (non-registry address + over-cap request both rejected)."},
+        {"type": "file", "location": "specs/behavioral-spec.md:363-371 (REQ-EXTERNAL / OQ3)", "description": "Anti-gaming edge case (fresh throwaway EOA laundering an 'external' counterparty) is explicitly named and bounded (counterparty must also be a net USDC source over time), not hand-waved as a residual unknown."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/scripts/cloud-init.sh:68,57", "description": "Re-confirmed line 68 still clones the external Conway-Research/automaton and line 57 still execs /opt/automaton/dist/index.js -- the WRONG BODY bug §4④ describes is still accurately described as an OPEN gap (REQ-CLOUD-SAME-BODY), not falsely claimed fixed."},
+        {"type": "file", "location": "skills/self/spawn/run.sh:196", "description": "Re-confirmed this line is still a human-facing echo/print ('Seed the child wallet with $X ... and it wakes on its own'), matching the spec's claim that automated on-chain seed transfer is the #1 remaining spawn gap, not yet built."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md §10 (scope note)", "description": "Scope boundary (design/architecture doc; each REQ its own VCSDD feature; §11 YC context demoted to non-gating) remains internally coherent and matches the document's actual structure -- 11 numbered sections, each with a distinct concern, no overlap discovered."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "apps/landing/netlify/functions/_lib/enrich.js (grep 'the ONLY chain caller')", "description": "Confirmed the comment exists verbatim in the current file, backing REQ-DASH-TRUTH's claim that the on-chain verification engine already exists and should not be rebuilt."},
+        {"type": "file", "location": "apps/landing/app/dashboard/page.tsx (grep 'AgentLeaderboard')", "description": "Confirmed the component reference exists in the current file, backing the spec's citation of the render wiring."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs (grep 'isProfitable')", "description": "Confirmed the exported function exists, backing REQ-DASH-TRUTH/OQ3's citation of the shared external-earn gate used by both the dashboard grader and the eval grader (single judgment path)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorFindingsResolvedCount": 2,
+    "priorFindingsOpenCount": 0,
+    "newFindingsThisIteration": 0
+  },
+  "readyForPhase1cExit": true,
+  "readyForPhase1cExitReason": "Both iteration-7 groundedness findings are closed against the CURRENT on-disk state, verified fresh (not trusted from prior review text): FIND-702 (skills/econ/ubi typo) is fixed at behavioral-spec.md:221 to skills/economy/ubi and cross-confirmed against registry.json. FIND-701 (dashboard.json fabricated-leaderboard citation) is confirmed a false positive -- re-reading the current file shows no leaderboard[] key, no placeholder wallets, and updated_at/wallet:null values that match, not contradict, the spec's own 'stale' claim; the spec has also added an explicit disk-checked disclaimer (behavioral-spec.md:276-279) documenting this rejection. A fresh independent re-check of six additional load-bearing citations (config.mjs model defaults + banned-auto comment, config.test.mjs drift, cloud-init.sh Conway-clone bug, spawn/run.sh:196 human-print, enrich.js chain-caller comment, page.tsx leaderboard wiring, ledger.mjs isProfitable export, registry.json earn/gig live status) all match the spec's descriptions exactly, char-for-char or behavior-for-behavior. All five dimensions PASS with zero new findings. Across 8 rounds the finding trend (10,10,5,3,1,1,2,0) has reached zero live findings with no fabricated or manufactured issues added this round. This spec is READY for Phase-1c exit (Dais human-architect sign-off)."
+}

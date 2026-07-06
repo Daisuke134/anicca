@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-702",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "§5.2 (Channel B) cites the colony-UBI build target as `skills/econ/ubi` -- 'to build' -- but no such path exists on disk. The actual registry-declared (status:\"declared\", i.e. stubbed, not built) slot for this exact purpose is `skills/economy/ubi` (note 'economy', not 'econ'), per `skills/registry.json:43-48` ('\"economy/ubi\": { ... \"dir\": \"skills/economy/ubi\", \"entrypoint\": \"ubi.js\", \"status\": \"declared\", \"spec\": \"27 §3 UBI\" }'). Separately, and more confusingly, a DIFFERENT, already fully-built and extensively tested top-level `skills/ubi/` directory exists (distribute-ubi.mjs, bank-watcher.mjs, gmo-furikomi.mjs, kotani-payout.mjs, crossmint-offramp.mjs, gda-distribute.mjs, 12+ test files, RUNBOOK.md) -- this is the human-funded founder's own earn-to-human UBI outflow engine (a different mechanism from the colony gojo/mutual-aid Channel-B this spec describes), not the stub this spec means. A builder following the spec's exact path string could either create a wrong/duplicate directory (breaking the registry SSOT invariant that 'builders only ADD files inside their slot's dir and NEVER edit this registry') or mistake the already-built founder `skills/ubi/` for the colony-Channel-B implementation target.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "220-221",
+    "snippet": "A shared Treasury distributes UBI. (`skills/self/gojo` = \"revive a dying AI by sending USDC\", `skills/econ/ubi` -- **to build**.)",
+    "contradictedBy": [
+      "/Users/operator/anicca/skills/registry.json:43-48 (declared slot path is 'skills/economy/ubi', not 'skills/econ/ubi')",
+      "/Users/operator/anicca/skills/ubi/SKILL.md:1-8 (a separate, already-live, fully-tested top-level skills/ubi/ directory exists for a different purpose -- the founder's earn->human UBI outflow -- and could be mistaken for this spec's colony-Channel-B target)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

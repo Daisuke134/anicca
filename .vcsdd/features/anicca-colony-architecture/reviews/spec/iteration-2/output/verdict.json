@@ -1,0 +1,81 @@
+{
+  "sprintNumber": null,
+  "feature": "anicca-colony-architecture",
+  "reviewType": "spec",
+  "phase": "1c",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "targetSpec": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "manifest": "none-present",
+    "priorIteration": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/reviews/spec/iteration-1/output/verdict.json",
+    "iteration1FindingsStatus": {
+      "FIND-001": "FIXED — §4 row 4 now says 'boot is BUILT' and cites cloud-init.sh + deploy-akash.sh correctly; run.sh:196 correctly identified as the one real gap.",
+      "FIND-002": "FIXED — OQ4 marked RESOLVED, seed-transfer correctly reframed as the #1 spawn task rather than an open question.",
+      "FIND-003": "PARTIALLY ADDRESSED — INV-MODE now scoped to 'credentials' not 'seed capital', softening the tension, but the self-funded-%-must-trend-to-100% headline metric (line 58) is still asserted without a measurement definition that accounts for the mandatory human USDC seed at bootstrap; see also FIND-105 (net-worth figures still inconsistent for the one 'proven' instance).",
+      "FIND-004": "PARTIALLY FIXED — see new finding FIND-106: a hedge clause was added but the unearned 'positioned first' claim is still stated as part of a 'verified' landscape verdict.",
+      "FIND-005": "NOT FIXED — see new finding FIND-105: the a3cdd4 net-worth figure is now $8.96 (§0) vs ~$16 (§2) for the same instance, still unreconciled; self-funded-% metric definition still absent.",
+      "FIND-006": "NOT FIXED — see new finding FIND-102: 'de-prioritized' and 'stretch slot' hedge words survive verbatim, and a NEW direct contradiction was introduced (earn/audit 'Dropped' in §3 vs 'kept as ... stretch slot' in §9).",
+      "FIND-007": "PARTIALLY FIXED — the dangling 'INV-7' citation was removed and REQ-DASH-TRUTH/REQ-DASH-CARD now have concrete field-level acceptance criteria; REQ-SHELTER (line 230) still has no verifiable acceptance condition (which host, how self-payment is proven on-chain).",
+      "FIND-008": "NOT FIXED — see new finding FIND-101: gig is still removed in §3 yet still cited as the skip-floor reference implementation in §5.3, verbatim unchanged.",
+      "FIND-009": "NOT FIXED — see new finding FIND-107: §10 still bundles 5 always-on phases + 3 one-shot deliverables each 'via VCSDD', and §11 (YC/c0mpiled pitch) remains embedded with zero REQ/INV/testable criteria.",
+      "FIND-010": "SUBSTANTIALLY FIXED — REQ-DRAIN (§5.2) now specifies rate-limit, cap formula, registry-authenticity, gas reserve, and a verifiable-test clause; residual gap is unbound numeric constants (see new finding FIND-110) and OQ3 (PoE oracle trust) remains fully open (see new finding FIND-108)."
+    },
+    "sourcesCheckedOnDisk": [
+      "/Users/operator/anicca/THESIS.md",
+      "/Users/operator/anicca/runtime/anicca-daemon.sh",
+      "/Users/operator/anicca/runtime/loop/tier.mjs",
+      "/Users/operator/anicca/runtime/loop/config.mjs",
+      "/Users/operator/anicca/skills/self/spawn/run.sh",
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh",
+      "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "/Users/operator/anicca/skills/self/spawn/scripts/sign-telemetry.py",
+      "/Users/operator/anicca-project/apps/landing/netlify/functions/telemetry.js",
+      "/Users/operator/anicca-project/apps/landing/netlify/functions/_lib/telemetry-verify.js",
+      "/Users/operator/anicca-project/apps/landing/netlify/functions/dashboard-sync.js"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "internal_consistency",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102", "FIND-103", "FIND-104"],
+      "evidence": []
+    },
+    {
+      "name": "completeness",
+      "verdict": "FAIL",
+      "findings": ["FIND-102"],
+      "evidence": []
+    },
+    {
+      "name": "groundedness",
+      "verdict": "FAIL",
+      "findings": ["FIND-104", "FIND-105", "FIND-106"],
+      "evidence": []
+    },
+    {
+      "name": "scope_coherence",
+      "verdict": "FAIL",
+      "findings": ["FIND-107"],
+      "evidence": []
+    },
+    {
+      "name": "open_question_adequacy",
+      "verdict": "FAIL",
+      "findings": ["FIND-108", "FIND-109", "FIND-110"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 10,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "iteration1RegressionCount": 3,
+    "iteration1PartialCount": 3,
+    "iteration1FixedCount": 2,
+    "newFindingsThisIteration": 5
+  }
+}

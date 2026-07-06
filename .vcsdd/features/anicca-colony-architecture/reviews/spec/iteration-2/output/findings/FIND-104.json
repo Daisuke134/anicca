@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "groundedness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The spec claims the 'automaton' runner IS `~/anicca/runtime/` (§2, line 66: 'the automaton — a standalone custom Node runtime `~/anicca/runtime/` (`anicca-daemon.sh` supervised ... -> `compute-proxy` :8402 -> `loop/index.mjs` ReAct loop) ... verified: `index.mjs` has zero openclaw/hermes imports') and REQ-PORTABILITY (line 163-166) claims TIER 1 earning 'Runs byte-identical local and cloud ... there is no \"works local not cloud\" gap by construction.' This is contradicted by the ACTUAL cloud-boot artifacts the spec itself credits as 'BUILT' in §4 row (4): `skills/self/spawn/scripts/cloud-init.sh:68` runs `git clone --depth 1 https://github.com/Conway-Research/automaton /opt/automaton` and `cloud-init.sh:57` execs `/usr/bin/node /opt/automaton/dist/index.js --run` as the systemd unit -- NOT `anicca-daemon.sh`, NOT `$REPO/runtime/loop/index.mjs`. `deploy-akash.sh:46` deploys `image: ghcr.io/conway-research/automaton:latest`, again a different external container image. The spec never once mentions the name 'Conway-Research/automaton' anywhere, never reconciles it with the `~/anicca/runtime` codebase it spent §2/§4/REQ-PORTABILITY describing in detail, and never explains whether these are the same code (an OSS mirror) or a genuinely different, unverified body. As written, the spawned-child boot path installs unverified, undocumented external code that has never been shown to implement the self-monitor/self-heal/self-improve/bot2bot/earn behaviors the rest of the spec attributes to 'the automaton.' The REQ-PORTABILITY 'byte-identical local and cloud' claim is false on the evidence of the very scripts the spec cites as proof of readiness.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh",
+    "lineRange": "57, 68",
+    "snippet": "git clone --depth 1 https://github.com/Conway-Research/automaton /opt/automaton ... ExecStart=/usr/bin/node /opt/automaton/dist/index.js --run",
+    "contradictedBy": [
+      "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:66 (runner described as `~/anicca/runtime/` + `loop/index.mjs`)",
+      "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:163-166 (REQ-PORTABILITY: 'byte-identical local and cloud')",
+      "/Users/operator/anicca/skills/self/spawn/scripts/deploy-akash.sh:46 (image: ghcr.io/conway-research/automaton:latest)",
+      "/Users/operator/anicca/runtime/anicca-daemon.sh:76 (the ACTUAL local runner: exec node $REPO/runtime/loop/index.mjs)"
+    ]
+  },
+  "routeToPhase": "1a"
+}

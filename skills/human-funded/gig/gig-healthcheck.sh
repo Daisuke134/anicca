@@ -69,6 +69,20 @@ elif [ ! -f "$HB" ]; then
       echo "$(date '+%F %T') gig-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
     fi
   fi
+elif [ -f "$START" ] && [ "$(stat -f %m "$START")" -gt "$(stat -f %m "$HB")" ]; then
+  # A restart happened AFTER the last completed pass (HB is from an old pass, START is fresh).
+  # Must grace this like the "$HB missing" branch above, using START's age -- NOT HB's. HB's age
+  # alone never resets on restart, so without this branch STALE fires on every 5min healthcheck
+  # tick forever once any pass has ever completed, killing every freshly-restarted session before
+  # a full browser-driven pass (many talk-room replies + applications) can finish. This is what
+  # caused the 2026-07-05->07-06 incident: 20+ restarts in a loop, HB stuck at pass196, never
+  # graced, until the 5-restarts/60min backoff gave up and filed a selfheal-request.
+  START_AGE="$(( ($(date +%s) - $(stat -f %m "$START")) / 60 ))"
+  if [ "$START_AGE" -ge "$STALE_MIN" ]; then
+    restart "gig-core STALE since restart (no completed pass in >=${START_AGE}min since last restart)"
+  else
+    echo "$(date '+%F %T') gig-core ALIVE (pass pending since restart, ${START_AGE}min since restart)" >> "$LOG"
+  fi
 elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
   # FIND-005: -ge to match auditor's >=90 threshold exactly
   restart "gig-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"

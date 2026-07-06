@@ -5,7 +5,7 @@
 # (USDC lands in our wallet; CDP only facilitates + catalogs, never custodies — no private key on the server).
 # Product = $0 research-product.mjs (Wikipedia + HN + Jina). Public via Tailscale Funnel.
 set -u
-DIR=/Users/operator/anicca-human-funded/skills/earn/x402-sell
+DIR=/Users/operator/anicca/skills/earn/x402-sell
 # load CDP facilitator creds (existing account) — never echoed
 set -a; . /Users/operator/.openclaw/.env 2>/dev/null || true; set +a
 export X402_PAYTO="0x810f6d61f7606deee2657d3083e150a222bc29c5"

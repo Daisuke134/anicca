@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "order.py's own 'triple-gate' re-check (DRY/EXEC/GATE, order.py:38-45) reads PM_PAPER_PASS from ITS OWN process environment via os.getenv, but run.sh never `export`s PM_PAPER_PASS before invoking order.py (run.sh:17-18 assign a plain, non-exported shell variable). Two failure modes follow: (a) if PM_PAPER_PASS is absent from the ambient/launchd environment (the realistic case, since it is purely computed inside run.sh from gate.py's stdout each run), order.py's own GATE will ALWAYS evaluate to os.getenv(None)==\"1\" -> False, so the intended real-order path can NEVER be reached through run.sh at all -- the 'wire the real executor' path in SKILL.md/run.sh is structurally dead code; or (b) if an operator statically sets PM_PAPER_PASS=1 in the launchd/cron environment (a plausible mistake given DRY_RUN/EARN_MODE ARE meant to be set that way), order.py's gate becomes a permanent rubber-stamp of a stale value completely decoupled from gate.py's live ledger computation -- reintroducing exactly the 'spoofable env var' vulnerability gate.py's own docstring (gate.py:2-6) claims was fixed (adversary FIND-004), just one layer lower. Either way, the documented 'all three gates must hold' safety property (order.py:2-5) is not actually true for the run.sh-driven code path as written.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/run.sh",
+    "lineRange": "12-18",
+    "snippet": "DRY_RUN=\"${DRY_RUN:-true}\"\nEARN_MODE=\"${EARN_MODE:-observe}\"\nBANKROLL=\"${PM_BANKROLL:-8}\"\nGATE_OUT=\"$(\"$PY\" \"$HERE/gate.py\" 2>/dev/null | head -1)\"\nPM_PAPER_PASS=\"${GATE_OUT#PM_PAPER_PASS=}\"; PM_PAPER_PASS=\"${PM_PAPER_PASS:-0}\"\n# ^ never exported; order.py (line 31) will not see this value in its own environ unless it was ALREADY an exported var before run.sh started."
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+    "lineRange": "38-45"
+  },
+  "routeToPhase": "2b"
+}

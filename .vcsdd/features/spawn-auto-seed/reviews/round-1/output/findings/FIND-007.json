@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "Every spawn attempt (success or seed-failure) appends TWO rows to the append-only children.jsonl ledger for one logical child: a provisional row via buildChildSpec (appended before droplet provisioning, run.sh:130-133 / observed 'new' variant run.sh:136-139) and a second final-or-failed row after telemetry/seed (run.sh:185-188, or 'new' variant run.sh:218-221 / 194-197 / 201-204). lib/ledger.js's readChildren does no dedup by child_id, and lib/spawn-decision.js:27 gates purely on `children.length >= maxChildren`. With the hardcoded default maxChildren=1 this happens to still block after one real child (2 rows >= 1), masking the bug -- but REQ-1 explicitly makes maxChildren operator-configurable via ANICCA_SPAWN_MAX_CHILDREN. Setting it to 2 to intentionally allow two children would incorrectly go dormant after only ONE real spawn, because that spawn already wrote 2 ledger rows (>= 2). None of lib/__tests__/spawn-decision.test.js's tests construct a children array using this real double-row-per-child shape (every test uses exactly one synthetic row per intended child, e.g. test 'max_children blocks even when not rate-limited and rich (custom cap)' at spawn-decision.test.js:45-51), so this REQ-1 x pre-existing-ledger-shape interaction is untested and would silently halve any operator-configured maxChildren value.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/spawn-decision.js",
+    "lineRange": "27",
+    "snippet": "if (children.length >= maxChildren) {\n    return { eligible: false, reason: \"max_children\" };\n  }"
+  },
+  "routeToPhase": "2b"
+}

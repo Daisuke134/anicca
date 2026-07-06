@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "run.sh's real-order branch will fire MULTIPLE real orders for the SAME trading window instead of the intended ONE. decide.py's `_already_traded_window` idempotency guard only controls whether a row is APPENDED to paper-positions.jsonl (setting out['recorded']=false when a window was already traded, decide.py:173-175) — but decide.py still populates token_id/side/price/stake_usdc in its printed decision UNCONDITIONALLY (decide.py:164-166) regardless of the `recorded` flag. run.sh's execute-branch (run.sh:26-31) extracts token_id/side/price/stake from that JSON and only checks that TOK and SIDE are non-empty (run.sh:30) — it never inspects `recorded`. Per SKILL.md the cron fires run.sh 'every ~1 min during a window' (a window is 5 min), so once DRY_RUN=false/EARN_MODE=execute/gate PASS are live, a single momentum signal that persists across the window (very likely, since BTC momentum doesn't reset every minute) will cause order.py to be invoked and POST A REAL ORDER on every single cron tick of that window (~5x), not once. This is uncontrolled real-money order duplication.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/run.sh",
+    "lineRange": "25-32",
+    "snippet": "if [ \"$DRY_RUN\" = \"false\" ] && [ \"$EARN_MODE\" = \"execute\" ] && [ \"$PM_PAPER_PASS\" = \"1\" ]; then\n  TOK=$(...)\n  SIDE=$(...)\n  ...\n  if [ -n \"$TOK\" ] && [ \"$SIDE\" != \"\" ]; then\n    \"$PY\" \"$HERE/order.py\" \"$TOK\" \"$PRICE\" \"$STAKE\" \"$SIDE\"; exit 0\n  fi"
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/decide.py",
+    "lineRange": "164-175"
+  },
+  "routeToPhase": "2b"
+}

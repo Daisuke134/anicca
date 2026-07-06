@@ -1,0 +1,76 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "spec/iteration-5",
+  "phase": "1a",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 5,
+  "priorIterationFindingsVerified": {
+    "FIND-301": {
+      "status": "RESOLVED",
+      "evidence": "REQ-CLOUD-EARN (behavioral-spec.md:179-183) now reads 'a cloud child ships earning with TIER 1 (browser-free) as soon as REQ-CLOUD-SAME-BODY boots our own `runtime/loop/index.mjs` on the host (NOT before — today cloud-init boots the wrong Conway body per §4 ④)' — the unconditioned 'on day one' claim FIND-301 flagged is gone; it now cross-references REQ-CLOUD-SAME-BODY exactly as REQ-PORTABILITY's sentence (line 169) already did. Verified against disk: skills/self/spawn/scripts/cloud-init.sh:57,68 still clones/boots Conway-Research/automaton (the bug the requirement is conditioned on remains accurately described)."
+    },
+    "FIND-302": {
+      "status": "RESOLVED",
+      "evidence": "REQ-DASH-TRUTH (behavioral-spec.md:251-259) now names and reconciles with the existing pipeline: 'apps/landing/netlify/functions/_lib/enrich.js::enrichOnChain is the ONLY chain caller ... backed by _lib/chain-reader.js ... a Supabase instances table, and components/site/AgentLeaderboard.tsx wired into app/dashboard/page.tsx:156' and states the real gap as (a) stale served dashboard.json, (b) register the two live wallets, (c) confirm deploy runs it — not a rebuild. Verified on disk: apps/landing/netlify/functions/_lib/chain-reader.js, _lib/enrich.js, dashboard-sync.js, supabase/instances.sql, components/site/AgentLeaderboard.tsx, app/dashboard/page.tsx:156 all exist and match the described behavior verbatim (enrichOnChain overwrites self-asserted numbers, flags net_worth_src:'unverified' on failure; AgentLeaderboard renders em-dash for non-chain figures). apps/landing/public/dashboard.json confirmed still stale on disk (updated_at 2026-06-01T00:00:46Z, lineage[].wallet: null) — matching the spec's stated 'real gap' exactly."
+    },
+    "FIND-303": {
+      "status": "RESOLVED",
+      "evidence": "Line 4 now reads 'Status: Phase 1a, revised through adversary iteration 4 (finding trend 10→10→5→3; scope/completeness/open-q dims PASS; addressing the remaining consistency+groundedness findings toward Phase-1c exit)' — no longer claims 'iteration 2'; correctly reflects that iteration-2 and iteration-3 rounds (and their finding counts) already occurred, matching reviews/spec/iteration-{2,3,4}/output/verdict.json on disk."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "internal_consistency",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:169,179-183", "description": "REQ-PORTABILITY and REQ-CLOUD-EARN now both correctly condition TIER-1 cloud parity on REQ-CLOUD-SAME-BODY; the FIND-301 contradiction is gone."},
+        {"type": "file", "location": "specs/behavioral-spec.md:210-215,340-342", "description": "REQ-DRAIN caps (§5.2) and OQ2's numeric survival floor ($0.50) are mutually consistent, no contradiction found."},
+        {"type": "file", "location": "specs/behavioral-spec.md:153,238-243", "description": "REQ-SHELTER's acceptance criteria correctly reference REQ-CLOUD-SAME-BODY rather than assuming the boot loader is already fixed."}
+      ]
+    },
+    {
+      "name": "completeness_must_only",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md", "description": "No 'optional/推奨/任意' language found anywhere in the document (grep-verified); every REQ-* is phrased as MUST or as a resolved decision."},
+        {"type": "file", "location": "specs/behavioral-spec.md:9 (Status line, iteration-4 carry-forward)", "description": "completeness dimension was already PASS at iteration-4 and no regression was introduced by the iteration-5 edits (only REQ-CLOUD-EARN's conditioning clause and the Status line changed)."}
+      ]
+    },
+    {
+      "name": "groundedness",
+      "verdict": "FAIL",
+      "findings": ["FIND-401"],
+      "evidence": []
+    },
+    {
+      "name": "scope_coherence",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:364-369", "description": "§10's scope note (per FIND-009/107) still correctly frames this as a design/architecture doc whose REQs each become their own VCSDD feature, and correctly demotes §11 (YC prep) to context-not-requirements; unchanged and still coherent at iteration-5."}
+      ]
+    },
+    {
+      "name": "open_question_adequacy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:336-360", "description": "All 5 open questions (§9) remain resolved to concrete, in-spec decisions (OQ1 leans on existing telemetry transport pending impl-time confirmation, OQ2→REQ-DRAIN with numeric caps, OQ3→REQ-EXTERNAL anti-gaming rule, OQ4 resolved with the real remaining blocker named, OQ5 lists verified candidate earners); none hides a load-bearing unknown as settled."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorFindingsResolvedCount": 3,
+    "priorFindingsOpenCount": 0,
+    "newFindingsThisIteration": 1
+  },
+  "readyForPhase1cExit": false,
+  "readyForPhase1cExitReason": "3 of 3 carried-over findings from iteration-4 (FIND-301/302/303) are verified RESOLVED on disk. However a NEW material groundedness defect (FIND-401) was found this iteration: §3 flatly states gig is 'Removed'/'OUT' with no self-funded-vs-human-funded scoping, directly contradicted by skills/registry.json (earn/gig status:\"live\"), runtime/loop/earn-slot.mjs (routes earn/gig into the live loop), and skills/earn/gig/run.sh (an actively running Coconala earner settling real money to the founder instance today). This must be fixed (either scope the removal to self-funded/cloud only, matching the clip/affiliate carve-out pattern, or add an explicit decommission task to §10) before Phase-1c exit."
+}

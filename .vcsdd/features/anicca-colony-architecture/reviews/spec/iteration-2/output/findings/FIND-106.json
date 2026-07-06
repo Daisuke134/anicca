@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-106",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "ITER-1 FIND-004 only partially addressed. §1 (line 45-47) still states as part of a 'verified 2026-07-03' landscape verdict that 'Anicca is *positioned* first on (b) [public real-time P&L] and (d) [profit redistributed to humans as UBI]' — a hedge clause was added ('a claim we EARN only once a real surplus exists (today: $0, see §0)') but the sentence still asserts the 'first' positioning as a present-tense, verified fact rather than an aspirational target. Criterion (d) is specifically 'profit redistributed to humans as UBI' — with $0 verified profit (§7, line 286-288: 'verified external income across ALL instances = $0') there has been zero redistribution, so 'positioned first' on a redistribution axis with nothing yet redistributed remains an unearned claim dressed as verified status, just with a footnote attached instead of being removed or moved to a target/roadmap framing.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "45-47, 286-288",
+    "snippet": "Anicca is *positioned* first on (b) and (d) — a claim we EARN only once a real surplus exists (today: $0, see §0) ... [vs] verified external income across ALL instances = $0"
+  },
+  "iterationHistory": "iteration-1 FIND-004 — partially fixed (hedge added) but core unearned-claim-as-verified-fact issue remains",
+  "routeToPhase": "1a"
+}

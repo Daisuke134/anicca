@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-303",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "The document's own process-status metadata is stale relative to disk. Line 4 states: 'Status: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).' But `.vcsdd/features/anicca-colony-architecture/reviews/spec/` on disk contains completed iteration-1, iteration-2, AND iteration-3 review rounds (iteration-3/output/verdict.json + FIND-201..205), meaning this document has already been revised twice more since the Status line was last written (it addressed iteration-2's FIND-101..110 and iteration-3's FIND-201..205, per the textual fixes verified this iteration: REQ-DASH-TRUTH concrete acceptance, OQ2 numeric survival floor, the 'positioned first' rewording, etc.). A fresh reader (including the next adversary or a builder) relying on line 4 alone would believe only iteration-1's 10 findings have been addressed and iteration-2/3 rounds never happened, understating how much adversarial back-and-forth already occurred on this doc.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "4",
+    "snippet": "- **Status**: Phase 1a, iteration 2 (adversary iter-1 = FAIL on all 5 dims, 10 findings; this rev addresses them).",
+    "contradictedBy": [
+      "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/reviews/spec/iteration-2/output/verdict.json",
+      "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/reviews/spec/iteration-3/output/verdict.json"
+    ]
+  },
+  "routeToPhase": "1a"
+}

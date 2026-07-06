@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "scripts/seed-child.py conflates 'receipt wait timed out' with 'transfer failed'. `w3.eth.wait_for_transaction_receipt(h, timeout=180)` (line 42) raises `TimeExhausted` when the tx is broadcast (h is already a valid, submitted hash) but simply not mined within 180s. That exception propagates out of main() and is caught only by the outer, generic `except Exception as e:` handler (lines 50-56), which has no access to the local variable `h` and therefore can never surface the tx hash it lost. The observed 'new' run.sh treats any nonzero exit from seed-child.py identically -- it writes a ledger row with `seed_status:\"failed\"` and NO tx hash field at all, then exits 1. This means a REAL on-chain transfer can be silently in flight (and may later confirm, moving real USDC) while every durable record (ledger + stdout) says the seed failed, with no hash preserved anywhere to reconcile against. This directly undermines REQ-5's requirement that the final colony row be an honest, accurate record of what happened on-chain, and creates a double-spend risk if the run is naively retried.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/seed-child.py",
+    "lineRange": "41-56",
+    "snippet": "h = w3.eth.send_raw_transaction(acct.sign_transaction(tx).raw_transaction)\nr = w3.eth.wait_for_transaction_receipt(h, timeout=180)\n...\nexcept Exception as e:\n    print(f\"seed-child: {e}\", file=sys.stderr)\n    sys.exit(1)"
+  },
+  "routeToPhase": "2b"
+}

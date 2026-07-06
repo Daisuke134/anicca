@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "The two-mode comparison table (§2) states, in the SELF-FUNDED column, 'Claude NOT available (needs a human sub)' (line 67). REQ-MODEL, describing the model-change for that SAME self-funded default (line 76-78), states: 'frontier pins (`anthropic/claude-opus-4.8`, `xai/grok-4`) still allowed.' These directly conflict inside the same document: one line says a self-funded instance cannot use Claude/Opus at all (needs a human subscription), the next says pinning to claude-opus-4.8 is an allowed frontier choice for that identical self-funded default model. No distinction (e.g. 'Claude via wallet-paid ClawRouter API' vs 'Claude via a human's subscription login') is drawn anywhere to reconcile this.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "67, 76-78",
+    "snippet": "| Model | ... Claude NOT available (needs a human sub). | Claude (Sonnet ceiling, Opus forbidden) | ... REQ-MODEL: ... frontier pins (`anthropic/claude-opus-4.8`, `xai/grok-4`) still allowed."
+  },
+  "routeToPhase": "1a"
+}

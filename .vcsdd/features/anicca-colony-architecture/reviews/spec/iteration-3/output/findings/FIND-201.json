@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-201",
+  "dimension": "internal_consistency",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "ITER-2 FIND-104's core groundedness defect (spec silently mismatched vs actual cloud-boot scripts) is now correctly identified and grounded: §4 row ④ (line 151) accurately cites `cloud-init.sh:68` cloning the EXTERNAL `Conway-Research/automaton` and booting `/opt/automaton/dist/index.js` as a bug, and introduces REQ-CLOUD-SAME-BODY as the MUST-fix. Verified against disk: `skills/self/spawn/scripts/cloud-init.sh:57` (`ExecStart=/usr/bin/node /opt/automaton/dist/index.js --run`) and `:68` (`git clone --depth 1 https://github.com/Conway-Research/automaton /opt/automaton`) confirm this citation is accurate and the bug is STILL PRESENT on disk (unfixed). HOWEVER, the same §4 section (a few lines later) now asserts cloud/local TIER-1 parity as a settled, unconditional fact: REQ-PORTABILITY line 166-167 states 'Runs byte-identical local and cloud ... there is no \"works local not cloud\" gap by construction,' and REQ-CLOUD-EARN line 178 states 'a cloud child ships earning with TIER 1 (browser-free) on day one.' Neither sentence acknowledges that a TIER-1 skill (`pm-trade`, `hl-trade`, etc.) can only execute on a cloud child if that child's boot loader actually invokes the `~/anicca` skills tree in the first place -- which, per the SAME section's own row ④, it currently does NOT (it boots a disjoint external codebase never shown to load `skills/earn/*` at all). The doc contradicts itself within one section: 'cloud boots the wrong body today, MUST-fix' (row ④) vs 'TIER 1 parity holds by construction, ships day one' (REQ-PORTABILITY/REQ-CLOUD-EARN), with no cross-reference making the latter conditional on REQ-CLOUD-SAME-BODY landing first.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "151, 164-167, 176-179",
+    "snippet": "line 151: '★WRONG BODY: cloud-init.sh:68 git clones the EXTERNAL Conway-Research/automaton ... REQ-CLOUD-SAME-BODY: cloud-init MUST clone Daisuke134/anicca ...' vs line 166-167: 'Runs byte-identical local and cloud ... there is no \"works local not cloud\" gap by construction.' vs line 178: 'a cloud child ships earning with TIER 1 (browser-free) on day one.'",
+    "contradictedBy": [
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh:57 (ExecStart=/usr/bin/node /opt/automaton/dist/index.js --run)",
+      "/Users/operator/anicca/skills/self/spawn/scripts/cloud-init.sh:68 (git clone ... Conway-Research/automaton)"
+    ]
+  },
+  "iterationHistory": "iteration-2 FIND-104 groundedness aspect now FIXED (accurate citation, bug correctly flagged as MUST-fix) but a new, narrower internal-consistency gap surfaces: REQ-PORTABILITY/REQ-CLOUD-EARN presuppose the fix in the same section that still describes the bug as open.",
+  "routeToPhase": "1a"
+}
