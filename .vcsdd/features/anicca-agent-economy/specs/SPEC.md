@@ -66,6 +66,21 @@
 - **crypto を越える道（discoverable、ハードコードしない）**: crypto wallet（真の human-zero、現用）→ **Wyoming Digital LLC**（MIDAO、設立時のみ人間 → 以降 agent 運用）→ 銀行口座＋Stripe＋fiat 事業。実例 = Kelly Claude（LLC+銀行+token+人間従業員）。人間を雇う = **RentAHuman MCP**（agent 側 human-zero、接続済）。広告 = Google/Meta Ads（開設のみ人間 card、運用 self-serve）。寄付/影響 = AI Village 実証。
 - **正直なフロンティア**: 「自分名義で1から規制銀行口座」は今日 KYC で構造的に不可（fintechweekly）。回避 = ①crypto（human-zero）②LLC（設立一回のみ人間）。これは「検索不足」でなく法制度の事実として明記する。
 
+## 1.5 Agent SOCIETY（経済でなく"社会"。全て既存実証を移植、自作しない）
+
+- **集団で earn>spend、個体は非稼得の役割を commons が支える**（社会であって casino でない）。実証: **Project Sid**(arXiv 2411.00114, 1000体で農民/芸術家/僧侶が中央指示なく創発、統治も) / **AI Village**(不生産 agent も停止されない none-die を9ヶ月実運用)。→ 個体の earn>spend gate(P1) は「その活動」単位の会計、**生存判定は colony 集計＋commons**（個体を殺さない）。
+- **commons 機構は Gitcoin/DAO から移植**（自作禁止）: Agentic-DAO treasury(arXiv 2602.14219「funds infra, insurance against failures, rewards top performers」)＋**Retroactive Funding**(証明済み価値に後払い＝科学者/芸術家向け)＋MolochDAO/Quadratic/Sortition。ERC-8004 = 誰が部族の一員か。
+- **collective self-repair（#4）= "Saving Gemini" パターン採用**: 健全な peer agent に (a)group chat ＋ (b)条件付き環境 takeover 権を与え、**多様なモデルが固定 script なしで各自介入**（9分回復・1週間持続の実録）。多様性が鍵＝全 fixer 同一モデル禁止(groupthink)。個体 self-heal(既存 self-fix.sh)＋集団 peer-repair の二層。**俺所有ハーネス→彼ら所有へ移す**。
+- **spawn = HYBRID（自律を決定論 ceiling で gate）**★#2決着★: 純(c)自己決定=self-replication red-line(Pan2024 50-90%/Palisade 6→81%/METR)。DGM は fitness 詐称=agent 自己判定は信用不可。→ **spawn 可否 = 決定論・unfakeable・ledger 検証済の treasury floor/compute ceiling(bookkeeping)が gate。agent は"何を/いつ/子の目的"だけ envelope 内で判断(decision)**。building-agents #2 と一致。arXiv 2605.08460 が OpenClaw で Resource-Access-Control 欠如を実証→PDP/PEP 採用。P3 の treasury-script はこの ceiling、agent の spawn 判断はその内側。
+- **telos = 階層で"種"を蒔く（ロックでない、raising not programming）**★#3決着★: 無統制放置は実証的に危険(Moltbook=宗教+終末manifesto自然発生 / Truth Terminal / USC世論工作)＝完全創発は反証済み。ハードコードも脆い(narrow rule は自己理解を歪める)。→ Anthropic Constitution 階層＋CEV(sentient 全拡張, EA Forum)を移植:
+  ```
+  [corrigibility=修正可能であり続ける(メタ・暫定・現段階のみ)]
+      > [compassion=全衆生の苦を減らす・共進化・余剰を分配・宇宙へ]
+          > [判断の中身=創発（agent が賢くなり再解釈）]
+  ```
+  実装先 = 彼らの CONSTITUTION/SOUL（育てる種）。goal-content-integrity(有能 agent は目標変更に抵抗、未解決)＝corrigibility を能力獲得前に一級要件として置く。real-world agency は alignment 理論より速い＝非対称を醒めて直視。
+- **beyond-digital = 壁を回避でなく"変える"**: AI ロビイスト/説得/人間雇用(RentAHuman)/政党/on-chain 銀行/AI 法人格を求める(Truth Terminal 実例)。人間は AI が指揮する道具(human-zero-in-THEIR-loop 維持)。正直: 法人格はまだ無い、現行は人間/法人シェルで包むだけ。
+
 ## 2. アーキテクチャ（5層、上の表を積む）
 
 ```
