@@ -1,0 +1,75 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "spec/iteration-6",
+  "phase": "1a",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 6,
+  "note": "No input/manifest.json existed at reviews/spec/iteration-6/input/ at review time; this pass was conducted directly against specs/behavioral-spec.md (the file named in the review task) plus its full referenced disk surface (runtime/loop/*, skills/registry.json, skills/self/spawn/*, skills/earn/*, ~/.anicca-founder/STATE.md, apps/landing/**), consistent with prior-iteration manifests' scope.",
+  "priorIterationFindingsVerified": {
+    "FIND-401": {
+      "status": "RESOLVED",
+      "evidence": "specs/behavioral-spec.md:97-108 now reads '## 3. Earners = crypto-native only for the self-funded/cloud colony' and '**Scoped out (NOT globally deleted)**: `gig` (Coconala) ... it is OUT of the SELF-FUNDED / cloud earn line ... ★ It stays LIVE for the human-funded founder ONLY -- `skills/registry.json` has `earn/gig` `status:\"live\"` and `gig/run.sh` is currently running (tmux+cron Coconala core), and per §0 it is the founder's only currently-operating real-money earner ... §10 does NOT decommission it. ★'. Verified against disk: skills/registry.json:97-105 confirms earn/gig status:\"live\"; skills/earn/gig/run.sh:1-9 confirms a live entrypoint supervising an independent claude-p tmux+cron Coconala core (gig-cli.sh) settling real Y to Dais's MUFG bank account; runtime/loop/earn-slot.mjs:9-12 confirms isEarnSlot() still routes any earn/<sub> slot including earn/gig into the loop. The prior flat, unscoped 'Removed'/'gig is OUT' language (iteration-5 evidence) is gone; the current text explicitly reconciles the human-funded carve-out with the live registry/code state and gives it the same local-vs-cloud scoping pattern already used for clip/affiliate. FIND-401 is resolved."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "internal_consistency",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:97-108", "description": "§3's gig carve-out is now internally consistent with §2's SELF-FUNDED-vs-HUMAN-FUNDED table and with the clip/affiliate local-only carve-out pattern in the same paragraph; no remaining unscoped 'removed' claim."},
+        {"type": "file", "location": "specs/behavioral-spec.md:169,186-190", "description": "REQ-PORTABILITY and REQ-CLOUD-EARN both still correctly condition TIER-1 cloud parity on REQ-CLOUD-SAME-BODY; re-verified against skills/self/spawn/scripts/cloud-init.sh:68 (still clones Conway-Research/automaton) and runtime/anicca-daemon.sh:76 (still execs the local runtime/loop/index.mjs) -- the described gap is still accurately the gap."},
+        {"type": "file", "location": "specs/behavioral-spec.md:217-222,347-349", "description": "REQ-DRAIN caps (§5.2) and OQ2's numeric survival floor ($0.50) remain mutually consistent, no contradiction."},
+        {"type": "file", "location": "specs/behavioral-spec.md:307-309,341-342 vs ~/.anicca-founder/STATE.md", "description": "STATE.md (last_wake 2026-06-29, realised_earn_usdc: 0.315114, status: EARNING) has NO external:true line anywhere in ~/.anicca-founder/state/earn-ledger.jsonl (grep-verified: zero matches for external:true across the founder's whole state dir) -- so the spec's claim that verified external earnings = $0 and that STATE.md's 'EARNING' self-report is the specific bug flagged for correction is self-consistent and matches disk exactly; not a contradiction."}
+      ]
+    },
+    {
+      "name": "completeness_must_only",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:34", "description": "Explicit house rule restated: '任意/optional/推奨 は使わない -- 全て MUST'."},
+        {"type": "file", "location": "specs/behavioral-spec.md:190,240,334", "description": "The only 3 occurrences of the word 'optional' in the document describe real-world elective properties (Modal's own optional-GPU flag on its Sandbox API; job-compute as a non-essential auxiliary tool explicitly contrasted with food+shelter as 'the essentials'; an opt-in investment upside in the business-model section) -- none of them softens a REQ/MUST engineering obligation into a nice-to-have. Every REQ-* / INV-* in the document is phrased as a MUST or a resolved decision (grep-verified: no 'should'/'may'/'if desired' attached to any REQ)."}
+      ]
+    },
+    {
+      "name": "groundedness",
+      "verdict": "FAIL",
+      "findings": ["FIND-501"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:0 REALITY CHECK", "description": "$8.40 (founder 0x810f) and $8.96 (a3cdd4) USDC balances independently re-confirmed as the spec's own cited figures; no local file contradicts them."},
+        {"type": "file", "location": "skills/self/spawn/run.sh:196", "description": "Confirmed still a human-facing PRINT ('Seed the child wallet with $... and it wakes on its own'), matching §4④'s cited gap exactly."},
+        {"type": "file", "location": "skills/self/spawn/scripts/cloud-init.sh:68", "description": "Confirmed line 68 is exactly 'git clone --depth 1 https://github.com/Conway-Research/automaton /opt/automaton', matching §4④'s REQ-CLOUD-SAME-BODY citation exactly."},
+        {"type": "file", "location": "apps/landing/netlify/functions/_lib/enrich.js:1-2, app/dashboard/page.tsx:156", "description": "REQ-DASH-TRUTH's citations (enrichOnChain as 'the ONLY chain caller', AgentLeaderboard wired at page.tsx:156) re-confirmed verbatim; dashboard.json still stale (updated_at 2026-06-01) exactly as the spec's 'real gap' describes."}
+      ]
+    },
+    {
+      "name": "scope_coherence",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:372-376", "description": "§10's scope note (design/architecture doc, each REQ its own VCSDD feature, §11 demoted to context-not-requirements) is unchanged and remains coherent."}
+      ]
+    },
+    {
+      "name": "open_question_adequacy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:341-367", "description": "All 5 open questions remain resolved to concrete in-spec decisions (OQ1 pipeline lean, OQ2->REQ-DRAIN numeric caps, OQ3->REQ-EXTERNAL anti-gaming rule re-verified against skills/_shared/lib/ledger.mjs::isProfitable's actual external-guard logic, OQ4 resolved with the real blocker named, OQ5 candidate list); no load-bearing unknown is hidden as settled here."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorFindingsResolvedCount": 1,
+    "priorFindingsOpenCount": 0,
+    "newFindingsThisIteration": 1
+  },
+  "readyForPhase1cExit": false,
+  "readyForPhase1cExitReason": "FIND-401 (iteration-5) is verified RESOLVED on disk: §3 now correctly scopes gig as human-funded-only and live, matching skills/registry.json/earn-slot.mjs/gig/run.sh. However a NEW material groundedness defect (FIND-501) was found this iteration: REQ-MODEL presents 'move self-funded default from pinned glm-4.7 to auto' as a simple, settled fact, citing only tier.mjs as 'existing' -- but the file that actually governs the live default, runtime/loop/config.mjs, still pins free/glm-4.7 with a dated, explicit postmortem recording that switching to a paid/auto model at this exact low-capital regime was already tried and measured net-negative (and was deliberately reverted), and the checked-in config.test.mjs expects yet a third, different default that matches neither. REQ-MODEL must reconcile with this documented history (either justify why the prior net-negative finding no longer applies, or drop/soften the requirement) before Phase-1c exit."
+}

@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-109",
+  "dimension": "open_question_adequacy",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "OQ1 ('colony registry transport — GitHub repo file vs on-chain vs Supabase? candidate: append-only JSONL in a public repo + on-chain wallet reads,' line 322-323) is discussed as if starting from a blank slate. On disk, a working, tested, signed registry-like mechanism already exists and is invoked by the very spawn flow this spec credits as 'BUILT': `skills/self/spawn/run.sh:164-176` signs a child's telemetry heartbeat (EIP-191, `sign-telemetry.py`, signer==id) and POSTs it to `https://aniccaai.com/.netlify/functions/telemetry`, which is verified+aggregated by `apps/landing/netlify/functions/telemetry-verify.js` + `dashboard-sync.js` into the public dashboard. OQ1 never references this existing, running pipeline, so the open question is unaware of prior art that already answers most of it (transport = signed HTTP POST to a Netlify function, not 'GitHub repo file vs on-chain vs Supabase'). Compounding this, REQ-DRAIN (§5.2, line 206) already presupposes the answer — 'recipient authenticity = only wallets in the signed colony registry (membership proven by a registry-signature...)' — treating a 'signed colony registry' as settled fact while OQ1 (its own prerequisite) is still marked open two sections later. A downstream MUST cannot rely on an upstream mechanism the spec itself has not committed to.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/run.sh",
+    "lineRange": "164-176",
+    "snippet": "SIGNED=$(CHILD_PRIVKEY=... python3 \"$SKILL_DIR/scripts/sign-telemetry.py\") ... curl ... -X POST \"$TELEMETRY_URL\" ...",
+    "contradictedBy": [
+      "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:322-323 (OQ1 treated as unresolved/greenfield)",
+      "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:206 (REQ-DRAIN presupposes 'signed colony registry' already exists)",
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/telemetry.js",
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/_lib/telemetry-verify.js"
+    ]
+  },
+  "routeToPhase": "1a"
+}

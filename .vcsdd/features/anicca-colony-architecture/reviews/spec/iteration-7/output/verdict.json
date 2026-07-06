@@ -1,0 +1,77 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "spec/iteration-7",
+  "phase": "1a",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 7,
+  "note": "No input/manifest.json existed at reviews/spec/iteration-7/input/ at review time; this pass was conducted directly against specs/behavioral-spec.md (the file named in the review task) plus its full referenced disk surface (runtime/loop/config.mjs + tier.mjs + anicca-daemon.sh, skills/registry.json, skills/self/spawn/run.sh + scripts/cloud-init.sh, skills/ubi/*, ~/.anicca-founder/STATE.md + state/earn-ledger.jsonl, apps/landing/public/dashboard.json + netlify/functions/_lib/{enrich.js,chain-reader.js} + scripts/render-dashboard.mjs + app/dashboard/page.tsx), consistent with prior-iteration manifests' scope.",
+  "priorIterationFindingsVerified": {
+    "FIND-501": {
+      "status": "RESOLVED",
+      "evidence": "specs/behavioral-spec.md:69,78-86 ('Model policy (REQ-MODEL) -- grounded in the live `config.mjs` experiment, NOT the marketing: the self-funded default is `free/glm-4.7` on all tiers (`config.mjs:47-49`) ... Do NOT switch to ClawRouter `auto`/paid at small capital -- a real, dated experiment (`config.mjs:25-46`, gpt-5.4 2026-06-21) proved paid = net-NEGATIVE ... Known drift to fix (not in this spec): `__tests__/config.test.mjs:48-55` expects a THIRD default set ... matching neither the code nor this policy -> a real test-vs-code bug to reconcile.') is now byte-for-byte grounded against disk: runtime/loop/config.mjs:47-49 confirms ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL all = 'free/glm-4.7'; config.mjs:25-46 confirms the dated gpt-5.4 2026-06-21 net-negative postmortem verbatim ('net NEGATIVE (money waste with zero earn)', 'Do NOT use 'auto' (routes to PAID, drains wallet)'); runtime/loop/__tests__/config.test.mjs:51-53 confirms the test still expects a third, different default set (nvidia/deepseek-v4-flash / deepseek/deepseek-r1-0528 / openai/gpt-4o-mini) matching neither config.mjs nor REQ-MODEL, and the spec now explicitly names this drift rather than hiding it. REQ-MODEL no longer proposes moving to auto/paid; it bans it. FIND-501 is resolved."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "internal_consistency",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:69,78-86", "description": "REQ-MODEL's three restatements (the §2 table row, the REQ-MODEL paragraph, and REQ-CONVERT) all agree on the same fact: default = free/glm-4.7 on all tiers, auto/paid banned at small capital, escalation only after earnings prove convert-to-profit. No internal contradiction between the table and the prose this round."},
+        {"type": "file", "location": "specs/behavioral-spec.md:186-190,251-256", "description": "REQ-CLOUD-EARN / REQ-SHELTER's acceptance criteria remain mutually consistent with §4④'s REQ-CLOUD-SAME-BODY gating language; re-verified cloud-init.sh:68 (still clones Conway-Research/automaton) and anicca-daemon.sh:76 (still execs the local runtime/loop/index.mjs) -- the described gate is still the real gate."},
+        {"type": "file", "location": "specs/behavioral-spec.md:217-228,353-355", "description": "REQ-DRAIN caps and OQ2's $0.50 survival floor remain numerically consistent across both restatements."}
+      ]
+    },
+    {
+      "name": "completeness_must_only",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:34", "description": "House rule restated verbatim: '任意/optional/推奨 は使わない -- 全て MUST'."},
+        {"type": "file", "location": "specs/behavioral-spec.md:190,244,340", "description": "Re-checked all 3 occurrences of 'optional' in the document: Modal Sandbox's own optional-GPU flag, job-compute framed as a non-essential auxiliary vs food+shelter as 'the essentials', and an opt-in investment upside in the business-model section. None softens a REQ/INV obligation. Every REQ-*/INV-* remains phrased as MUST or a resolved decision."}
+      ]
+    },
+    {
+      "name": "groundedness",
+      "verdict": "FAIL",
+      "findings": ["FIND-701", "FIND-702"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:0 REALITY CHECK", "description": "$8.40 (founder 0x810f) / $8.96 (a3cdd4) balances re-confirmed as the spec's own cited figures; no local file contradicts them."},
+        {"type": "file", "location": "skills/self/spawn/run.sh:196", "description": "Re-confirmed still a human-facing PRINT ('Seed the child wallet with $... and it wakes on its own'), matching §4④'s cited gap exactly."},
+        {"type": "file", "location": "skills/self/spawn/scripts/cloud-init.sh:44-74", "description": "Re-confirmed line 68 = 'git clone --depth 1 https://github.com/Conway-Research/automaton /opt/automaton' and line 57 = 'ExecStart=/usr/bin/node /opt/automaton/dist/index.js --run', matching §4④'s REQ-CLOUD-SAME-BODY citation exactly (WRONG BODY bug still real)."},
+        {"type": "file", "location": "apps/landing/netlify/functions/_lib/enrich.js:1, app/dashboard/page.tsx:156, skills/_shared/lib/ledger.mjs:48", "description": "Re-confirmed verbatim: enrichOnChain's 'the ONLY chain caller' comment, AgentLeaderboard wired at page.tsx:156, and isProfitable exported from ledger.mjs -- all three REQ-DASH-TRUTH/OQ3 citations remain accurate."},
+        {"type": "file", "location": "~/.anicca-founder/state/earn-ledger.jsonl:1", "description": "Re-confirmed the founder's only ledger row (source:gig, earn_usdc:0.315114) has NO tx_hash/external:true field -- the spec's claim that STATE.md's 'EARNING' self-report is unverified and must be corrected to $0 remains accurate against this specific file."},
+        {"type": "finding", "location": "FIND-701", "description": "BUT apps/landing/public/dashboard.json drifted since iteration-6's review (updated_at now 2026-07-03, not the 2026-06-01/wallet:null state the spec's REQ-DASH-TRUTH 'REAL gap' still describes) and the file's own leaderboard[] now reports fabricated chain-tagged revenue under placeholder wallets, contradicting the spec's '$0 earned' / '0% self-funded today' claims -- see FIND-701 for full citations."},
+        {"type": "finding", "location": "FIND-702", "description": "§5.2's 'skills/econ/ubi -- to build' path does not exist on disk; the real declared stub is 'skills/economy/ubi' (registry.json:43-48), and a same-named-but-different, already-built skills/ubi/ directory exists for a different purpose -- see FIND-702."}
+      ]
+    },
+    {
+      "name": "scope_coherence",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:379-382", "description": "§10's scope note (design/architecture doc, each REQ its own VCSDD feature, §11 demoted to context-not-requirements) is unchanged and remains coherent with the document's actual content boundaries."}
+      ]
+    },
+    {
+      "name": "open_question_adequacy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:349-373", "description": "All 5 open questions remain resolved to concrete in-spec decisions (OQ1 pipeline lean-toward, OQ2->REQ-DRAIN numeric caps, OQ3->REQ-EXTERNAL anti-gaming re-verified against ledger.mjs::isProfitable, OQ4 resolved with the real blocker named (spawn/run.sh:196), OQ5 candidate list with a stated dependency order); no load-bearing unknown is hidden as settled."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorFindingsResolvedCount": 1,
+    "priorFindingsOpenCount": 0,
+    "newFindingsThisIteration": 2
+  },
+  "readyForPhase1cExit": false,
+  "readyForPhase1cExitReason": "FIND-501 (iteration-6) is verified RESOLVED: REQ-MODEL now correctly bans auto/paid at small capital, grounded in config.mjs's dated net-negative experiment, and explicitly names the config.mjs vs config.test.mjs drift instead of hiding it. However this round surfaces a NEW material groundedness defect (FIND-701): the spec's REQ-DASH-TRUTH 'REAL gap' description of apps/landing/public/dashboard.json (stale @ 2026-06-01, wallet:null) no longer matches the file's current on-disk state (fresh timestamp, leaderboard already populated with fabricated-looking chain-tagged revenue under placeholder wallets, reporting a nonzero self_funded_pct and nonzero earned_mo_usd that directly contradict this same spec's own '$0 earned / 0% self-funded today' claims). A builder scoping REQ-DASH-TRUTH's fix purely from the spec's current wording would not know to first purge/quarantine this fabricated data before wiring the real wallets in -- exactly the radical-transparency failure mode §7 exists to prevent. A secondary low-severity path defect (FIND-702, skills/econ/ubi vs the real skills/economy/ubi) is also open. Phase-1c exit blocked until REQ-DASH-TRUTH's gap description is re-grounded against the current dashboard.json and the fabricated leaderboard rows are addressed (either an explicit MUST to purge them before any real wiring, or evidence they are inert test fixtures never served)."
+}

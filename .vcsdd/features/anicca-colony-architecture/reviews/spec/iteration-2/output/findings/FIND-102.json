@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "completeness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "ITER-1 FIND-006 NOT FIXED. Line 34 still pledges: '\"任意/optional/推奨\" は使わない（HARD 0.7）— 全て MUST。' Yet the exact same hedge-word violations survive verbatim: line 98 'clip/affiliate are de-prioritized (account/human-touch risk)' and line 333 'kept as `earn/audit` stretch slot for a strong model.' Worse, the 'stretch slot' phrase now directly contradicts section 3's own explicit removal of that same earner two sections earlier (line 109: '~~`earn/audit` / bounty~~ REMOVED — verified NOT no-human ... Dropped.'). So this is not only an unfixed HARD-0.7 hedge but a NEW direct in-doc contradiction: is `earn/audit` in scope (a 'stretch slot') or out of scope ('Dropped')? The spec asserts both.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "34, 98, 109-113, 333-334",
+    "snippet": "line 109: '~~earn/audit / bounty~~ REMOVED ... Dropped.' vs line 333: 'kept as earn/audit stretch slot for a strong model. KYC-below-threshold = confirm on first real payout.'"
+  },
+  "iterationHistory": "iteration-1 FIND-006 — carried forward unresolved, plus new contradiction introduced",
+  "routeToPhase": "1a"
+}

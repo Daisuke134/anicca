@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "No test in seed.test.js exercises a seedUsdc value that is a classic IEEE-754 float-representation artifact (e.g. 0.1 + 0.2 = 0.30000000000000004, or a value like 1.005) to confirm `Math.round(seedUsdc * 10 ** USDC_DECIMALS)` (lib/seed.js:19) lands on the exact intended integer unit count rather than being off by one near a .5 rounding boundary. The two tested fractional cases (seedUsdc: 1 and seedUsdc: 0.25) both convert to exact binary fractions and cannot expose this class of bug. ANICCA_SEED_USDC is operator-supplied and unvalidated by run.sh beyond Number() coercion, and any future caller that computes seedUsdc programmatically (e.g. a percentage of balance) would hit exactly this failure mode with no test guarding against it -- for a function whose entire job is correctly denominating a real on-chain USDC transfer, this is a meaningful coverage gap even though Math.round is robust for the specific literal values currently used in practice.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/seed.js",
+    "lineRange": "19",
+    "snippet": "const amountUnits = Math.round(seedUsdc * 10 ** USDC_DECIMALS);"
+  },
+  "routeToPhase": "2b"
+}

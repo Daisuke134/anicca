@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "lib/seed.js, scripts/seed-child.py and scripts/usdc-balance.py are new, tested, well-formed modules, but as of the current run.sh (see FIND-001) none of them are require()'d, sourced, or invoked from the skill's production entrypoint. grep across skills/self/spawn/run.sh for usdc-balance, seed-child, buildSeedPlan and finalizeSeedRow returns zero matches. This is the exact 'cron/skill exists but is never wired into the real path' anti-pattern this org's own memory calls out (feedback_earn_skill_must_have_verification_engine / HARD 0.24 NO FAKE RUN): unit-tested pure functions with no caller are dead code from the perspective of the actual product, and `node --test` passing on lib/__tests__/seed.test.js proves nothing about whether a real spawn ever seeds a child.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "1-197",
+    "snippet": "grep -n 'usdc-balance|seed-child|buildSeedPlan|finalizeSeedRow|SEED_TX|ANICCA_SPAWN_MIN_BALANCE' skills/self/spawn/run.sh -> No matches found"
+  },
+  "routeToPhase": "2b"
+}

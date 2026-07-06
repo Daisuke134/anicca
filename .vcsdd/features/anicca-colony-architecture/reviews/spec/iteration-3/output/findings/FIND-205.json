@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-205",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "ITER-2 FIND-106 NOT FIXED — text is essentially unchanged from the prior iteration. §1 line 45-47 still states, inside a paragraph headed 'Landscape verdict (verified 2026-07-03)': 'Anicca is *positioned* first on (b) [public real-time P&L] and (d) [profit redistributed to humans as UBI] — a claim we EARN only once a real surplus exists (today: $0, see §0).' Criterion (d) is literally 'profit redistributed to humans as UBI'; §7 (line 289-291) confirms 'verified external income across ALL instances = $0' and zero redistribution has occurred. The hedge clause ('a claim we EARN only once...') was already present in iteration 2 and flagged as insufficient because it still asserts 'positioned first' as part of a sentence explicitly labeled 'verified' rather than reframing it as an aspirational/target claim or moving it out of the 'verified' verdict paragraph. No textual change was made between iteration 2 and iteration 3 on this point.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "45-47, 289-291",
+    "snippet": "**Landscape verdict (verified 2026-07-03)**: ... Anicca is *positioned* first on (b) and (d) — a claim we EARN only once a real surplus exists (today: $0, see §0) ... [vs §7] verified external income across ALL instances = $0"
+  },
+  "iterationHistory": "iteration-2 FIND-106 — carried forward completely unresolved (no textual change).",
+  "routeToPhase": "1a"
+}

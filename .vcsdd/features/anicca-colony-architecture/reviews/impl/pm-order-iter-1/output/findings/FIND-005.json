@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "order.py has NO independent, hard-coded ceiling on the order size it will submit to the CLOB. It fully trusts the `size_usdc` argument passed in from decide.py/run.sh (order.py:37,71-72) with zero defense-in-depth cap. decide.py's own caps (lib.position_size max_bet_pct=0.05, lib.risk_gate daily/drawdown caps) are all proportional to a caller-supplied `bankroll` (decide.py:139 reads PM_BANKROLL env or argv[1], default 8) -- if that env var or argv is ever misconfigured/too large in the calling context (cron/launchd), the computed stake scales with it and order.py will post it unquestioned. There is also no validation that `price` is within (0,1) or that computed `shares` is above the exchange's minimum order size before calling create_and_post_order (order.py:71-72) -- a price of 0 raises an uncaught ZeroDivisionError (crash, no order, but ungraceful) while a tiny/zero size is passed straight through to the live endpoint.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+    "lineRange": "62-72",
+    "snippet": "acct_key = _load_key()\n...\nclient.set_api_creds(client.create_or_derive_api_creds())\nshares = round(size_usdc / price, 2)\nresp = client.create_and_post_order(OrderArgs(token_id=token_id, price=price, size=shares, side=BUY))"
+  },
+  "routeToPhase": "2b"
+}

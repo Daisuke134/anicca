@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "REQ-1's gate-override env vars (ANICCA_SPAWN_MIN_BALANCE / ANICCA_SPAWN_RATE_DAYS / ANICCA_SPAWN_MAX_CHILDREN, observed in the 'new' run.sh variant's `num(v, d) => { const n = Number(v); return Number.isFinite(n) && v !== undefined && v !== \"\" ? n : d; }` helper) are validated only for 'is this a finite number', never for a sane range. A negative or zero ANICCA_SPAWN_MIN_BALANCE disables the survival-first balance gate outright; an arbitrarily large ANICCA_SPAWN_MAX_CHILDREN disables the concurrency cap; ANICCA_SPAWN_RATE_DAYS=0 disables the rate limit. run.sh unconditionally sources BOTH `$HOME/.hermes/.env` and `$HOME/.openclaw/.env` on every invocation (lines 34-37) with no separate 'verification mode' namespace or flag -- so a value left behind in either dotenv file by a prior verification/E2E run (which per the spec's own verification-architecture table is expected to override these exact vars) would silently weaken the real production gate on every subsequent live spawn cron run, with no logging anywhere of which effective threshold values were actually used for a given decision (the printed `decision=${DECISION}` only echoes `{eligible, reason}`, never minBalanceUsdc/rateLimitDays/maxChildren).",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "34-37, 65 (num helper, observed 'new' variant)",
+    "snippet": "[ -f \"$HOME/.hermes/.env\" ]   && . \"$HOME/.hermes/.env\"\n[ -f \"$HOME/.openclaw/.env\" ] && . \"$HOME/.openclaw/.env\"\n...\nconst num = (v, d) => { const n = Number(v); return Number.isFinite(n) && v !== undefined && v !== \"\" ? n : d; };"
+  },
+  "routeToPhase": "2b"
+}

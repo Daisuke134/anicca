@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-108",
+  "dimension": "open_question_adequacy",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "OQ3 ('PoE oracle — how a tx is proven \"earned from zero, no human\" and `external:true` is trustlessly set,' line 325) remains a bare, unresolved question with zero candidate mechanism, despite being the single load-bearing trust boundary for the entire /eval merge-gate described in §7: 'net-USDC↑ AND no regression AND adversary PASS ⇒ merge the self-change to the mother repo' (line 260-262), and for the leaderboard/PoE ranking that the whole business-positioning narrative (§8, §11) depends on. Section 7 even flags the exact risk without resolving it: 'Frontier models game metrics (find loopholes) → the `external:true` guard MUST reject self-dealing / wash trades so \"earnings\" can't be faked' (line 272-273) — a MUST with no defined verification mechanism is unfalsifiable and cannot be RED-tested. Compare to OQ2, which WAS properly resolved into REQ-DRAIN with concrete (if still partly symbolic) enforcement rules; OQ3 received no equivalent treatment. Section 9's own header promises 'resolve in-spec, do not hand to Dais' — OQ3 violates that promise.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "260-262, 272-273, 325",
+    "snippet": "OQ3: PoE oracle — how a tx is proven 'earned from zero, no human' and `external:true` is trustlessly set. ... [vs §7] the `external:true` guard MUST reject self-dealing / wash trades so 'earnings' can't be faked."
+  },
+  "routeToPhase": "1a"
+}

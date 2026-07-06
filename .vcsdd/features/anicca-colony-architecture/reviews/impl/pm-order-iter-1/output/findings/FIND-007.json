@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "order.py writes its own, separate ledger (~/loops/earn-pm-trade/orders.jsonl, order.py:74-79) that shares NO key (no window_end_ms, no trade-id) with decide.py's paper-positions.jsonl (decide.py:177-182). Worse, decide.py hardcodes `\"mode\": \"paper\"` on every recorded row (decide.py:178) with no awareness of whether EARN_MODE=execute actually fired a real order for that same decision via run.sh/order.py. Consequence: once real execution is live, gate.py's PM_PAPER_PASS computation (gate.py:_load_resolved, filters only on src=='momentum'/status=='resolved') will keep blending REAL-money outcomes into what it treats as a 'paper' sample with no way to distinguish them, and there is no code path anywhere that reconciles a real order_id against the paper-ledger row it was supposed to correspond to. This is a structural coupling failure between the two effectful shells that the spec (SKILL.md) never calls out.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/decide.py",
+    "lineRange": "177-183",
+    "snippet": "row = {\"ts\": int(time.time()), \"src\": \"momentum\", \"mode\": \"paper\", \"token_id\": tok, \"side\": side, ...}\nwith open(LEDGER, \"a\") as f:\n    f.write(json.dumps(row) + \"\\n\")"
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+    "lineRange": "74-79"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,11 +1,13 @@
-# Reddit demand-gen loop — STATE (feeds life-manager-loop; authentic conversation, NOT broadcast)
-goal: drive REAL LM signups via genuine community participation (trust, not link-drops). Attributed signup = a real marker only.
-last_wake_utc: 2026-07-04T15:51:29Z
-heal_first: NO-REDDIT-ACCOUNT → self-provision one (CloakBrowser :9222 + Gmail plus-address keiodaisuke+reddit<tag>@gmail.com, OTP via gog gmail; same zero-human flow as ig-account-create); 
-reddit_accounts: 0
-comment_karma_total: 0
-prev_comment_karma_total: n/a
+# Reddit demand-gen loop — STATE (feeds life-manager-loop; HONEST DISCLOSED participation, NOT covert/broadcast)
+goal: drive REAL LM signups via transparent builder participation. A post/signup counts ONLY if logged with a real URL.
+last_wake_utc: 2026-07-05T19:12:29Z
+heal_first: account present ✓, CloakBrowser ✓
+reddit_accounts: 1
+comment_karma_total: 1
+prev_comment_karma_total: 1
+posts_made: 2
+posts_freshness: fresh(0h)
 attributed_lm_signups: 0
-status: HEAL-NEEDED — NO-REDDIT-ACCOUNT → self-provision one (CloakBrowser :9222 + Gmail plus-address keiodaisuke+reddit<tag>@gmail.com, OTP via gog gmail; same zero-human flow as ig-account-create); 
-selfheal_request: written→/Users/anicca/.openclaw/state/reddit-loop-selfheal-request.jsonNO-REDDIT-ACCOUNT → self-provision one (CloakBrowser :9222 + Gmail plus-address keiodaisuke+reddit<tag>@gmail.com, OTP via gog gmail; same zero-human flow as ig-account-create); 
-next: HEAL→self-provision account / start CloakBrowser; WARMING→genuine value-first comments only (agent decides each, no scripts), grow karma; READY→one authentic builder-story + answer questions, never pushy; log any reddit→LM signup to state/attributed-signups.jsonl.
+status: ACT — post ONE more honest DISCLOSED contribution / answer genuine replies; no karma-farming, no covert shill. Log real posts→posts.jsonl, real signups→attributed-signups.jsonl (karma=1 informational)
+selfheal_request: none
+next: HEAL→get an honest account + CloakBrowser up; else post ONE disclosed builder contribution in a self-promo-welcome sub and LOG it to posts.jsonl (real URL); answer genuine replies; log any reddit→LM signup to attributed-signups.jsonl. Never covert, never ask a human.

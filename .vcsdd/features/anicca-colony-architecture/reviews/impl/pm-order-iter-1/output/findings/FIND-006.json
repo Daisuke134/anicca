@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "The real order path has no try/except around `client.create_and_post_order(...)` (order.py:72). If the CLOB API call throws (network error, signature rejection, HTTP error after the order was actually accepted server-side, response-parsing exception, etc.), the script crashes uncaught BEFORE reaching the ledger write at order.py:74-79. This means: (1) no local record is ever created for an order that may have actually posted server-side, (2) there is no reconciliation/retry-detection mechanism, so a subsequent cron tick has no way to know a real order for this token/window may already be in flight or filled, compounding the duplicate-order risk in FIND-001. A money-moving code path with zero failure handling is not verification-ready.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+    "lineRange": "62-79",
+    "snippet": "resp = client.create_and_post_order(OrderArgs(token_id=token_id, price=price, size=shares, side=BUY))\noid = (resp or {}).get(\"orderID\") or (resp or {}).get(\"id\")\n# ^ no try/except around create_and_post_order; ledger write only happens after this line succeeds"
+  },
+  "routeToPhase": "2b"
+}

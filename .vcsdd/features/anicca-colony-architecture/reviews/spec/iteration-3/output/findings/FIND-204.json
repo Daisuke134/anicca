@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-204",
+  "dimension": "completeness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-SHELTER (line 232-233: 'a spawned child MUST boot its runner (automaton) on a cloud host it pays for itself, so the colony is not capped by one machine's atoms') still has zero verifiable acceptance criteria: it does not say WHICH host qualifies (DigitalOcean per §6 'where human-funded runs now' vs Akash 'primary target' vs Modal 'not a 24/7 daemon' vs Conway 'closed today') for a self-funded spawn, nor HOW 'pays for itself' is proven on-chain (which wallet, which tx pattern, checked how/by whom). This exact gap was first flagged in iteration-2 FIND-007 as a residual (unfixed) portion of that finding; the text is byte-for-byte unchanged since then. Three consecutive review iterations (1, 2, now 3) have passed without this REQ receiving the same field-level acceptance treatment §7's REQ-DASH-TRUTH/REQ-DASH-CARD already got -- it remains un-RED-testable as written.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "232-233",
+    "snippet": "**REQ-SHELTER**: a spawned child MUST boot its runner (automaton) on a cloud host it pays for itself, so the colony is not capped by one machine's atoms."
+  },
+  "iterationHistory": "iteration-2 FIND-007 residual portion — carried forward unchanged, now a 3-iteration-old un-remediated gap.",
+  "routeToPhase": "1a"
+}

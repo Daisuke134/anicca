@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-202",
+  "dimension": "internal_consistency",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "ITER-2 FIND-102's direct contradiction (earn/audit 'Dropped' in §3 vs 'kept as stretch slot' in §9) IS now fixed: §9's bounty note (line 345-347) explicitly states '`earn/audit` is DROPPED entirely (consistent with §3), not kept.' However the very next clause is a garbled, unclosed editing artifact: '(superseded note: for a strong model. KYC-below-threshold = confirm on first real payout.' (line 347-348) -- the parenthesis is never closed, 'for a strong model' has no antecedent noun/clause it modifies, and 'KYC-below-threshold = confirm on first real payout' reads as a live conditional escape hatch (implying audit COULD be used if KYC falls below some threshold, to be confirmed at first payout) directly undercutting the 'DROPPED entirely' sentence one clause earlier. This is leftover cruft from a prior draft that was not fully deleted; as written it reintroduces ambiguity about whether earn/audit is unconditionally out of scope or conditionally revivable, exactly the class of hedge HARD 0.7 (line 34) forbids.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "345-348",
+    "snippet": "**`earn/audit` is DROPPED entirely** (consistent with §3), not kept. (superseded note: for a strong model. KYC-below-threshold = confirm on first real payout."
+  },
+  "iterationHistory": "iteration-2 FIND-102 direct contradiction FIXED; new dangling/unclosed-parenthetical defect introduced in the same location during the fix.",
+  "routeToPhase": "1a"
+}

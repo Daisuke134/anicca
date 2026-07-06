@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "buildSeedPlan's `!parentWallet || !childWallet` guard (lib/seed.js:10-12, throws 'parent/child wallet required') has zero test coverage -- no test in lib/__tests__/seed.test.js ever passes a falsy/missing parentWallet or childWallet. Also untested: the exact boundary `parentBalanceUsdc === seedUsdc`, which per REQ-3 (only '<' throws) must SUCCEED; the current suite only tests strictly-less-than ('throws when balance < seed', seed.test.js:30-32) and never confirms the equality boundary actually returns a plan instead of throwing. A regression that changed '<' to '<=' would pass every existing test while silently blocking legitimate exact-balance seeds.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/__tests__/seed.test.js",
+    "lineRange": "1-48",
+    "snippet": "(no test constructs { parentWallet: undefined } / { childWallet: '' } / { parentBalanceUsdc: seedUsdc } anywhere in this file)"
+  },
+  "routeToPhase": "2b"
+}

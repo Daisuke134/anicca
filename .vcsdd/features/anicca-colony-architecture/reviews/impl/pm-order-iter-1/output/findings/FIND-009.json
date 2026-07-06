@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-009",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "Zero automated tests exercise order.py, run.sh, or decide.py's main() wiring. The claimed '29 tests, all GREEN' (SKILL.md, test_lib.py=12 + test_strategy.py=12 + test_resolve.py=5) cover ONLY the pure math in lib.py/momentum.py and gate.py's evaluate_gate/_load_resolved -- none of them invoke decide.py.main(), order.py.main(), or run.sh at all. There is no test proving: (a) DRY_RUN default truly blocks a real order given various env permutations, (b) run.sh actually withholds order.py invocation when PM_PAPER_PASS='0', (c) the token_id emitted for a DOWN decision is correct (this is exactly the untested path that hides FIND-002), (d) $DECISION with a quote/apostrophe in the market question does not break run.sh's python -c parsing (FIND-004), (e) a duplicate cron tick within the same window does not re-fire order.py (FIND-001). This is the single highest-risk file in the codebase (it moves real money) and it is the only one with 0% test coverage.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/SKILL.md",
+    "lineRange": "23",
+    "snippet": "`test_lib.py`(12)+`test_strategy.py`(12)+`test_resolve.py`(5) | 29 tests, all GREEN | --"
+  },
+  "crossReference": [
+    {"filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py", "lineRange": "1-85"},
+    {"filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/run.sh", "lineRange": "1-38"}
+  ],
+  "routeToPhase": "2a"
+}

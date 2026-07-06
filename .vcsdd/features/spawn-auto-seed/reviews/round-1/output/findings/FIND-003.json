@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The spec's own verification-architecture table (behavioral-spec.md:49) requires 'NO-MOCK E2E: ONE command spawns a real child ... with REAL SEED_TX visible on basescan; ... ledger row has provider_id + seed_tx'. As documented in FIND-001, the current run.sh has no code path capable of producing a seed_tx or calling the on-chain transfer tool at all, so this verification layer cannot currently pass against the real entrypoint regardless of how correct lib/seed.js and scripts/seed-child.py are in isolation. A verification architecture that can only be satisfied by files that the shipped entrypoint never calls is not verification-ready.",
+  "evidence": {
+    "filePath": "skills/self/spawn/spec/behavioral-spec.md",
+    "lineRange": "49",
+    "snippet": "| NO-MOCK E2E | ONE command spawns a real child (host=do boots; akash=sandbox lease) with REAL `SEED_TX` visible on basescan; child appears on live dashboard; ledger row has provider_id + seed_tx |"
+  },
+  "routeToPhase": "2b"
+}

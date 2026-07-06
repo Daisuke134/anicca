@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-107",
+  "dimension": "scope_coherence",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "ITER-1 FIND-009 NOT addressed. Section 10 (line 340-343) still bundles P1 self-heal, P2 self-improve parity, P3 bot2bot, P4 colony registry+gojo/ubi, P5 cloud spawn, plus L1 X-article, L2 demo video, L3 dashboard/eval+README, each explicitly 'via VCSDD' (i.e. each is its own separately-specced/tested/reviewed feature by the project's own methodology). Section 11 (line 345-370, 'YC / c0mpiled prep — RFS #3') remains embedded verbatim: a pitch/marketing/hackathon-submission section with zero REQ-*, INV-*, or testable acceptance criteria, inside a document titled 'Behavioral Spec.' The phases are still coupled, not independently shippable as the header implies: P4 depends on OQ1 (registry transport, still unresolved as MUST) and the still-unbound REQ-DRAIN caps; P5 depends on the unbuilt automated on-chain seed transfer (run.sh:196). This is one epic wearing a single-feature spec's clothes.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "340-343, 345-370",
+    "snippet": "Always-on layer: P1 self-heal ... -> P5 cloud spawn ... One-shot layer (also YC ammo): L1 X Article ... L2 90-sec hyperframes demo ... L3 dashboard/eval one page ... [section 11] YC / c0mpiled (2026-07-05, Ibaraki) prep — RFS #3"
+  },
+  "iterationHistory": "iteration-1 FIND-009 — not addressed at all",
+  "routeToPhase": "1a"
+}

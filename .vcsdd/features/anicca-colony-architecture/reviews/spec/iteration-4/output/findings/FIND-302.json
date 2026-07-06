@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-302",
+  "dimension": "groundedness",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-DASH-TRUTH (§7, lines 249-255) characterizes the dashboard as starting from a stale, self-reported, on-chain-unverified state today ('current `dashboard.json` is `updated_at 2026-06-01` with `wallet: null` and self-reported `mrr $27`/`net worth $16` that have NO on-chain backing = effectively fabricated') and frames on-chain-derived net_worth/earned fields, per-instance registration, and 'no self-reported numbers, no-fake' rendering as still-needed future work. This is NOT grounded against the actual current state of the repo: `apps/landing/netlify/functions/_lib/chain-reader.js` (live Base-mainnet RPC reader: `usdcBalanceAtomic`, `nativeBalanceWei`, `ethUsdPrice`, `externalInflowsUsd` via real `Transfer` event logs), `_lib/enrich.js` (`enrichOnChain` — overwrites self-asserted numbers with on-chain reads, flags `net_worth_src:'unverified'` on any read failure, explicit comment 'NaN price/balance ⇒ unverified, never trusted'), `netlify/functions/dashboard-sync.js` (comment: 'this endpoint MUST NOT serve raw self-reported rankings... self/seed money cannot buy rank'), a Supabase `instances` table (`supabase/instances.sql`: `net_worth_usd`, `revenue_mo_usd`, `burn_day_usd`, `runway_days`, RLS-protected), and a live `components/site/AgentLeaderboard.tsx` wired into `app/dashboard/page.tsx:156` that renders an em-dash (never a fake $0) for any `*_src !== 'chain'` figure — already implementing the exact on-chain-only, no-self-report, per-instance-registered semantics REQ-DASH-TRUTH/REQ-DASH-CARD ask for as new work. The spec's own grounding claim ('verified against actual code 2026-07-03') and its explicit mention of 'Dais-owned dashboard-sync' by name (line 247) show the author was aware this file exists, yet REQ-DASH-TRUTH's problem statement and acceptance criteria describe only the static `dashboard.json` file (which genuinely IS stale) and never reconcile with, extend, or even name this already-built on-chain leaderboard pipeline. A builder starting the REQ-DASH-TRUTH VCSDD feature from this spec would not know this infrastructure exists and could duplicate it or build a conflicting second data model instead of wiring the per-instance colony registry (§5.2) into the EXISTING `instances` table + `chain-reader.js`.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "247-255",
+    "snippet": "'REQ-DASH-TRUTH (dashboard is stale+fake today → fix): current `dashboard.json` is `updated_at 2026-06-01` with `wallet: null` and self-reported `mrr $27`/`net worth $16` that have NO on-chain backing = effectively fabricated. Every field MUST be on-chain / log derived...' — no mention of chain-reader.js/enrich.js/dashboard-sync.js/AgentLeaderboard.tsx/instances table, which already do this.",
+    "contradictedBy": [
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/_lib/chain-reader.js:1-54",
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/_lib/enrich.js:1-32",
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/dashboard-sync.js:1-24",
+      "/Users/anicca/anicca-project/apps/landing/supabase/instances.sql:1-13",
+      "/Users/anicca/anicca-project/apps/landing/components/site/AgentLeaderboard.tsx:1-24",
+      "/Users/anicca/anicca-project/apps/landing/app/dashboard/page.tsx:156"
+    ]
+  },
+  "routeToPhase": "1a"
+}

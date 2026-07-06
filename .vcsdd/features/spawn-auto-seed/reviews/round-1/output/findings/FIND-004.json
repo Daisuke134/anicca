@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "scripts/seed-child.py never verifies that the signing key it loads actually belongs to the parent address whose balance the money-safety gate (buildSeedPlan / usdc-balance.py) validated. It reads PARENT_WALLET_JSON, derives `acct = Account.from_key(pk)`, and only asserts `acct.address.lower() != child.lower()` (line 31) -- it never asserts `acct.address.lower() == <the address whose balance was checked>`. The balance used to satisfy REQ-3's `parentBalanceUsdc < seedUsdc` guard is read (in the observed 'new' run.sh variant) from wallet.json's `.address` field via usdc-balance.py, and that same `.address` string is what gets passed into buildSeedPlan as `parentWallet`. If wallet.json's `.address` field and `.private_key` field ever diverge (stale cache, manual edit, a future wallet-rotation bug, or ANICCA_WALLET_JSON pointed at a different file than the one whose balance was actually queried), the real on-chain transfer executes from whatever account the private key resolves to -- a completely different account than the one the balance gate validated -- silently defeating the entire 'never spend more than the parent has' invariant the feature exists to enforce.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/seed-child.py",
+    "lineRange": "21-31",
+    "snippet": "wallet_path = os.environ[\"PARENT_WALLET_JSON\"]\nw = json.load(open(wallet_path))\npk = w[\"private_key\"]\n...\nacct = Account.from_key(pk)\nassert acct.address.lower() != child.lower(), \"child == parent\""
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "When the momentum strategy picks side='DOWN', decide.py emits the WRONG token_id — it always uses the YES/UP token, so a real order would BUY the wrong outcome. find_btc_updown() (decide.py:98-126) only captures `token_yes: t[0]` in the returned dict (decide.py:124) and never captures the NO token id (t[1]). main() then does `tok = mk['token_yes']` (decide.py:144) and emits `token_id: tok` unconditionally in the output (decide.py:164-166) even though momentum.side_and_prob can return side='DOWN' with `price = no_price` (momentum.py:43). The result: for a DOWN decision, order.py would receive the YES token_id paired with the NO price/side='DOWN' -> BUY(UP-token, price=NO-ask). This directly buys exposure to the OPPOSITE outcome the strategy intended, at a mismatched price. This bug is INVISIBLE in the paper-trading loop because resolve.py's P&L math (resolve.py:67-68) only uses the recorded 'side' and 'entry_price' fields (both correct), never the token_id -- so 29 passing tests and a clean paper win-rate would give false confidence right up until a real order is placed.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/decide.py",
+    "lineRange": "121-126",
+    "snippet": "ay = _best_ask(t[0]); an = _best_ask(t[1])\n...\nreturn {\"yes\": ay, \"no\": an, \"question\": m.get(\"question\"), \"token_yes\": t[0], ...}"
+  },
+  "crossReference": [
+    {"filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/decide.py", "lineRange": "144,151,164-166"},
+    {"filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/momentum.py", "lineRange": "40-43"}
+  ],
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-105",
+  "dimension": "groundedness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "ITER-1 FIND-005's core number-conflation is NOT fixed. §0 (line 19-20) states 'local self-funded a3cdd4 Base 0xa3cdd4... = $8.96 USDC.' §2's mode table (line 70) states, for the SAME named instance, 'Proven instance `anicca-a3cdd4` (glm, ~$16 net worth).' The document gives two different net-worth figures for the identical instance with no timestamp, reconciliation, or explanation of what changed (nor which is current). This is the same unreconciled-figure pattern iteration-1 flagged; it was not corrected, only the specific numbers changed ($8 vs ~$16 is a new pairing of the same underlying defect).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "19-20, 70",
+    "snippet": "local self-funded a3cdd4 ... = $8.96 USDC ... [vs] Proven instance `anicca-a3cdd4` (glm, ~$16 net worth)"
+  },
+  "iterationHistory": "iteration-1 FIND-005 — partially carried forward (same defect class, new numbers)",
+  "routeToPhase": "1a"
+}

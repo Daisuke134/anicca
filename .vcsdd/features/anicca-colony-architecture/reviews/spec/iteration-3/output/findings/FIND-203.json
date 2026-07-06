@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-203",
+  "dimension": "open_question_adequacy",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-DRAIN's own header (line 205) claims 'was OQ2, now MUST' -- i.e. the spec asserts OQ2 has been resolved and promoted into REQ-DRAIN. Yet §9 (line 329) still lists 'OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack ...)' completely verbatim and unresolved, WITHOUT the strikethrough+RESOLVED treatment given to its siblings OQ1 (line 325, '~~OQ1~~... LEAN toward...'), OQ3 (line 330, 'OQ3 RESOLVED → REQ-EXTERNAL'), and OQ4 (line 339, '~~OQ4~~... RESOLVED'). This is a direct in-document inconsistency: REQ-DRAIN claims OQ2 is closed while §9 still presents it as open. Substantively, the inconsistency is not merely cosmetic: REQ-DRAIN (line 206-210) only specifies SENDER-side controls (rate-limit, $5/25% max-gift cap, registry authenticity, gas+survival reserve) -- it never assigns a numeric value to the 'survival floor' itself, i.e. the recipient-side balance threshold that triggers a Channel-B rescue transfer in the first place (referenced at line 200: 'When an instance's balance drops below a survival floor, a surplus-holding instance sends it USDC'). Without this number, a RED test for 'an instance below the survival floor correctly receives / does not receive a gojo transfer' cannot be written -- the same class of under-specification iteration-2 FIND-110 caught for the max-gift cap, now recurring for the survival-floor trigger itself, and additionally mislabeled as already resolved.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "199-201, 205-210, 329",
+    "snippet": "line 205: 'REQ-DRAIN (... was OQ2, now MUST)' vs line 329: 'OQ2: survival floor + max-gift caps for Channel B (prevent a drain attack ...)' -- listed verbatim, unstruck, unresolved; no numeric survival-floor value given anywhere (line 200: 'drops below a survival floor')."
+  },
+  "routeToPhase": "1a"
+}

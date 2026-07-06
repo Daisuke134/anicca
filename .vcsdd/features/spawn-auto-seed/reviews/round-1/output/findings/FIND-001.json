@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The on-disk skills/self/spawn/run.sh does NOT implement REQ-1, REQ-2, REQ-4, REQ-5 or REQ-6. Repeated, independent Read calls during this review (a first read early in the session, then three further re-reads including one taken immediately before finalizing this verdict) consistently show run.sh WITHOUT any reference to lib/seed.js, scripts/seed-child.py, scripts/usdc-balance.py, buildSeedPlan, finalizeSeedRow, SEED_TX, or the ANICCA_SPAWN_MIN_BALANCE/ANICCA_SPAWN_RATE_DAYS/ANICCA_SPAWN_MAX_CHILDREN env overrides (grep for all six symbols across run.sh returns zero matches). Instead the parent balance is still read from the stale `.balance_usdc` field of wallet.json (run.sh:50, `\"$JQ\" -r '.balance_usdc // 0' \"$WALLET_JSON\"`) exactly as REQ-2 says must be removed (\"The stale wallet.json .balance_usdc field is no longer read\"), decideSpawn is invoked with only {balanceUsdc, children} and no overridable gate params (run.sh:61-66), and the final stdout line still contains the EXACT human-in-loop instruction the spec was written to eliminate: run.sh:196 `\"... now on the live dashboard. Seed the child wallet with \\$${SEED_USDC} and it wakes on its own.\"` This is a byte-for-byte reproduction of the bug the spec (behavioral-spec.md:5-7, REQ-6) explicitly names as the problem being closed. NOTE ON INSTABILITY: one Read call taken earlier in this same review session returned a DIFFERENT version of run.sh that DID wire in usdc-balance.py (REQ-2), the ANICCA_SPAWN_* overrides (REQ-1), and a seed-child.py invocation with honest failed-ledger writes (REQ-4/5) and a REQ-6-compliant final message printing SEED_TX instead of a human instruction. That version is not reproducible on repeat reads and is not what the file contains now. Whichever version is authoritative at merge time, a reviewable artifact must be stable during adversarial review; it was not. Judged on the file's current, repeatedly-confirmed state, REQ-1/2/4/5/6 are unimplemented in the production entrypoint.",
+  "evidence": {
+    "filePath": "skills/self/spawn/run.sh",
+    "lineRange": "47-52, 60-66, 196",
+    "snippet": "BAL=0\nif [ -f \"$WALLET_JSON\" ]; then\n  BAL=\"$(\"$JQ\" -r '.balance_usdc // 0' \"$WALLET_JSON\" 2>/dev/null || echo 0)\"\nfi\n...\necho \"self/spawn: ${CHILD_ID} born on ${HOST} (provider ${PROVIDER_ID}, wallet ${CHILD_WALLET}, inbox ${CHILD_INBOX}), now on the live dashboard. Seed the child wallet with \\$${SEED_USDC} and it wakes on its own.\""
+  },
+  "routeToPhase": "2b"
+}

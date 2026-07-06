@@ -1,0 +1,61 @@
+{
+  "feature": "spawn-auto-seed",
+  "mode": "lean",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": "skills/self/spawn/spec/behavioral-spec.md",
+    "note": "No manifest.json / contract found at .vcsdd/features/spawn-auto-seed/reviews/round-1/input/; artifact set taken from the task description. run.sh content was observed to be UNSTABLE across repeated reads during this review — see FIND-001."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-008", "FIND-009", "FIND-010", "FIND-011"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-005", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/__tests__/seed.test.js",
+          "description": "buildSeedPlan / finalizeSeedRow happy-path and most throw branches ARE unit-tested in isolation (lines 9-42); reviewed and confirmed logically sound for the branches they cover."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/child-spec.js",
+          "description": "nextChildId + buildChildSpec reviewed for interface correctness; distinct-wallet guard and required-field guard are present and correctly shaped (lines 5-46)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 11,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

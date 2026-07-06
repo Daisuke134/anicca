@@ -1,0 +1,88 @@
+{
+  "sprintNumber": null,
+  "feature": "anicca-colony-architecture",
+  "reviewType": "spec",
+  "phase": "1c",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "targetSpec": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "manifest": "none-present (no input/manifest.json found for iteration-4; reviewed per task instructions against iteration-3 verdict/findings + fresh disk grounding)",
+    "priorIteration": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/reviews/spec/iteration-3/output/verdict.json",
+    "iteration3FindingsStatus": {
+      "FIND-201": "PARTIALLY RESOLVED — the REQ-PORTABILITY half of this finding is fixed (§4 line 169 now reads 'once REQ-CLOUD-SAME-BODY is done (until then... parity does not yet hold)'), but REQ-CLOUD-EARN (line 179, same section) still makes the identical unconditioned claim ('a cloud child ships earning with TIER 1 ... on day one') without acknowledging the still-present wrong-body bug at row ④. See FIND-301 (successor finding, narrower scope).",
+      "FIND-202": "RESOLVED — §9 (line 354-356) now reads cleanly: '`earn/audit` is DROPPED entirely (consistent with §3). No conditional revival.' The dangling unclosed parenthetical ('superseded note: for a strong model. KYC-below-threshold...') is gone. No conditional-revival hedge remains.",
+      "FIND-203": "RESOLVED — §9 line 336-338 now gives OQ2 the same strikethrough+RESOLVED treatment as its siblings ('~~OQ2~~ RESOLVED → REQ-DRAIN') and states a concrete numeric survival-floor threshold: 'wallet USDC < $0.50 (below the min viable earn stake + gas). Sender keeps a $0.50 + gas reserve.' REQ-DRAIN's header (line 208) and §9's OQ2 entry are now consistent (both mark OQ2 closed). A RED test can now be written against this number.",
+      "FIND-204": "RESOLVED — REQ-SHELTER (§6, lines 236-241) now has three concrete, chain/log-verifiable acceptance criteria: (a) an Akash lease/DO droplet booted `runtime/loop/index.mjs` per REQ-CLOUD-SAME-BODY, (b) an on-chain outflow tx paid the host cost from the child's own wallet, (c) a ledger line proves >=1 earn pass on that host. This is RED-testable where it was previously a bare MUST sentence.",
+      "FIND-205": "RESOLVED — §1 (lines 45-51) has been rewritten. The old sentence asserting Anicca is 'positioned first' inside a paragraph headed 'verified' is gone. It now reads 'Today Anicca has earned/redistributed $0 (§0), so we claim NOTHING as achieved. The bet: (b) and (d) are where no competitor is even trying, so they are ours to win IF the loop produces real surplus' — correctly reframed as an aspirational bet conditional on future surplus, not an achieved/verified fact. Consistent with §7's confirmed $0 external income."
+    },
+    "newFindingsThisIteration": ["FIND-301", "FIND-302", "FIND-303"],
+    "sourcesCheckedOnDisk": [
+      "/Users/anicca/anicca/skills/self/spawn/scripts/cloud-init.sh:50-74 (confirmed WRONG-BODY bug still present: line 57 execs /opt/automaton/dist/index.js, line 68 clones Conway-Research/automaton)",
+      "/Users/anicca/anicca/skills/self/spawn/run.sh:175-197 (confirmed line 196 is still a human-facing PRINT, not an automated seed transfer)",
+      "/Users/anicca/anicca/runtime/loop/tier.mjs (confirmed selectTier(balanceUsdc) -> broke|lean|funded exists as spec claims)",
+      "/Users/anicca/anicca/skills/_shared/lib/ledger.mjs (confirmed isProfitable() requires external===true, matches spec's grader description)",
+      "/Users/anicca/anicca/skills/earn/gig/* (confirmed skip-floor pattern lives only in the dropped `gig` earner, matching spec's 'model to copy' framing, not yet ported elsewhere)",
+      "/Users/anicca/anicca-project/apps/landing/public/dashboard.json (confirmed updated_at 2026-06-01 + mrr $27 + wallet:null as spec describes, but found NO 'net worth $16' field anywhere in this file)",
+      "/Users/anicca/anicca-project/apps/landing/netlify/functions/_lib/{chain-reader.js,enrich.js}, dashboard-sync.js, components/site/AgentLeaderboard.tsx, supabase/instances.sql, app/dashboard/page.tsx:156 (discovered: a live on-chain-verified per-instance leaderboard pipeline already exists and is wired into the dashboard page, entirely unreferenced by REQ-DASH-TRUTH/REQ-DASH-CARD — see FIND-302)"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "internal_consistency",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:169", "description": "REQ-PORTABILITY's TIER-1 parity claim now correctly conditioned on REQ-CLOUD-SAME-BODY landing first -- iteration-3 FIND-201's REQ-PORTABILITY half verified resolved."},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:345-356", "description": "earn/audit DROPPED-entirely language verified clean, no dangling parenthetical -- iteration-3 FIND-202 verified resolved, no new finding raised."}
+      ]
+    },
+    {
+      "name": "completeness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:236-241", "description": "REQ-SHELTER now carries 3 concrete, chain/log-verifiable acceptance criteria (a/b/c) -- iteration-3 FIND-204 verified resolved."},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:336-338", "description": "REQ-DRAIN/OQ2 survival-floor threshold now a concrete number ($0.50) -- iteration-3 FIND-203 verified resolved."},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:339-347,208-213,339-347", "description": "Swept remaining MUST-tagged requirements (REQ-EARN, REQ-EXTERNAL, REQ-PMTRADE, REQ-CONVERT, REQ-FUND, REQ-CLOUD-SAME-BODY, REQ-SELFHEAL-AUTONOMY, REQ-DASH-CARD, REQ-EXPLORE) for concrete, RED-testable acceptance detail appropriate to a Phase 1a design spec -- no bare aspirational MUSTs found this pass."}
+      ]
+    },
+    {
+      "name": "groundedness",
+      "verdict": "FAIL",
+      "findings": ["FIND-302", "FIND-303"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/scripts/cloud-init.sh:57,68", "description": "Re-confirmed on disk this iteration: spec's WRONG-BODY citation (Sec4 row 4) remains accurate -- cloud-init still clones Conway-Research/automaton and execs its dist/index.js."},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:45-51", "description": "Positioned-first rewording verified honest and consistent with $0 external earnings -- iteration-3 FIND-205 verified resolved, no new finding raised."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/tier.mjs and /Users/anicca/anicca/skills/_shared/lib/ledger.mjs", "description": "Fresh spot-check this iteration: selectTier() and isProfitable() exist and match the spec's descriptions exactly -- no drift found."}
+      ]
+    },
+    {
+      "name": "scope_coherence",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:362-365", "description": "Re-read scope note this iteration: still explicitly frames the doc as a multi-feature architecture spec with S11 (YC) as non-normative context gating no phase. No regression found."}
+      ]
+    },
+    {
+      "name": "open_question_adequacy",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md:332,336,339,348,351", "description": "Swept all 5 OQ entries (OQ1-OQ5) this iteration: each is either consistently struck-through+RESOLVED (OQ1, OQ2, OQ4), RESOLVED with a concrete a/b/c mechanism (OQ3), or left legitimately, honestly open with named candidates (OQ5, not falsely claimed resolved). No orphaned or contradictory OQ status remains -- iteration-3 FIND-203's inconsistency (REQ-DRAIN claiming OQ2 closed while Sec9 still listed it open) is gone."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "iteration3ResolvedCount": 4,
+    "iteration3PartiallyResolvedCount": 1,
+    "newFindingsThisIteration": 3,
+    "convergenceTrend": "Finding count and severity are dropping per-iteration (iter-1: 10, iter-2: 10, iter-3: 5, iter-4: 3), and 3 of 5 dimensions now PASS (completeness, scope_coherence, open_question_adequacy) vs 1 PASS in iteration-3. However this iteration surfaced one previously-undetected HIGH-severity groundedness defect (FIND-302: an existing on-chain leaderboard pipeline the spec is silent about) that iterations 1-3 missed entirely -- convergence is real but not yet complete. The spec is NOT ready to exit Phase 1c: FIND-301 (one-line fix: add the same REQ-CLOUD-SAME-BODY conditioning clause to REQ-CLOUD-EARN) and FIND-303 (one-line status bump) are trivial, but FIND-302 requires REQ-DASH-TRUTH/REQ-DASH-CARD to be rewritten to reconcile with (not silently duplicate or contradict) the already-built chain-reader.js/enrich.js/dashboard-sync.js/AgentLeaderboard.tsx/instances-table pipeline -- a substantive rewrite, not a wording fix, and therefore warrants at least one more review round."
+  }
+}

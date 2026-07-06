@@ -1,0 +1,57 @@
+{
+  "feature": "anicca-colony-architecture",
+  "reviewScope": "impl/pm-order-iter-1",
+  "targetFile": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+  "overallVerdict": "FAIL",
+  "safeToFireRealOrder": "NO",
+  "timestamp": "2026-07-04T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-009"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-009"],
+      "evidence": [
+        {"type": "positive-check", "location": "order.py:38", "description": "Confirmed by direct read: DRY = os.getenv('DRY_RUN','true') != 'false' -> defaults to True (DRY) when DRY_RUN is unset, so the DEFAULT path (no env vars set) cannot post an order. This one specific claim in the review request is VERIFIED TRUE."},
+        {"type": "positive-check", "location": "run.sh:12-13,25", "description": "Confirmed: run.sh's own top-level gate also defaults DRY_RUN=true, EARN_MODE=observe, so run.sh itself will not call order.py in the real branch by default either."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 9,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "topDefects": [
+    "FIND-001 (critical): run.sh ignores decide.py's per-window idempotency flag ('recorded') -> will fire a REAL order on every ~1-minute cron tick within the same 5-minute window instead of once, once execution is enabled.",
+    "FIND-002 (critical): decide.py always emits the YES/UP token_id even when side='DOWN' -> a DOWN decision would BUY THE WRONG OUTCOME TOKEN at a mismatched (NO) price. Invisible in paper mode because resolve.py's P&L math never checks token_id.",
+    "FIND-003 (critical): run.sh never exports PM_PAPER_PASS to order.py's environment, so order.py's own internal 3-gate re-check is either permanently unreachable (dead real-path) or a stale rubber-stamp if an operator statically sets the var -- the advertised 'gate re-checked in order.py' safety property does not hold as wired.",
+    "FIND-004 (critical): run.sh shell-interpolates decide.py's JSON (which embeds an untrusted, free-text Polymarket market 'question' string) directly into a Python triple-quoted string literal inside `python3 -c` calls -> a crafted market question can break out and execute arbitrary code in the same process that holds the wallet private key.",
+    "FIND-009 (critical): 0 of the 29 passing tests touch order.py, run.sh, or decide.py's main() -- the only file in this slot that moves real money has no automated test coverage at all, including no test of the DRY_RUN default, the token_id-for-DOWN path, or duplicate-window firing."
+  ],
+  "verificationNote": "The specific claim in the review request (\"DRY_RUN (default) initialized ClobClient + derived CLOB creds ... and posted NOTHING\") was independently re-derived from the code and IS TRUE for the default env (order.py:38, run.sh:12-13). That does not make the executor safe: FIND-001/002/003/004 show that once the three real-mode env vars ARE set (which is the entire point of building this file), the code will duplicate-fire orders, buy the wrong token on DOWN signals, run an effectively decoupled/dead re-check gate, and is exposed to a code-injection path via untrusted market text -- all before a single test exists to catch any of it."
+}

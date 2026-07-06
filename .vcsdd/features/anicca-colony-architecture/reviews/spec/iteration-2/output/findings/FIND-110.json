@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-110",
+  "dimension": "open_question_adequacy",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "REQ-DRAIN (line 204-209), the fix for iteration-1 FIND-010, is a genuine structural improvement (rate-limit, cap formula, registry-authenticity check, gas reserve, and an explicit verifiable-test clause) but leaves its two numeric caps as unbound symbolic placeholders: '(b) max-gift cap = `min(fixed_ceiling, pct_of_sender_surplus)`' names two variables and never assigns either a value anywhere in the document. Without a concrete `fixed_ceiling` USD amount and `pct_of_sender_surplus` percentage, a RED test for 'over-cap request rejected' (the spec's own verification clause) cannot be written unambiguously — the implementer must invent numbers the spec never committed to, which is exactly the kind of under-specification Phase 1a is supposed to eliminate before Phase 2a RED tests are written.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/anicca-colony-architecture/specs/behavioral-spec.md",
+    "lineRange": "204-209",
+    "snippet": "max-gift cap = `min(fixed_ceiling, pct_of_sender_surplus)` ... Verifiable by a test that a non-registry address and an over-cap request are both rejected."
+  },
+  "iterationHistory": "iteration-1 FIND-010 — structurally fixed, numeric completeness gap remains",
+  "routeToPhase": "1a"
+}

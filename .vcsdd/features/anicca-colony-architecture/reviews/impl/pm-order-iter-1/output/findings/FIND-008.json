@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "SKILL.md (present in BOTH the worktree copy and the canonical `~/anicca/skills/earn/pm-trade/SKILL.md`) states, verbatim: 'Money-safe today: no signing / order-placement code exists in this slot -- the real executor is intentionally not wired (fail-closed)' and 'No private key is read and no order endpoint is POSTed anywhere in this slot.' Both statements are directly false for the reviewed tree: order.py (in the SAME directory) reads the founder's private key (order.py:22-29) and calls `client.create_and_post_order` (order.py:72) whenever the three gate env vars align. Any operator or automated agent reading SKILL.md before flipping DRY_RUN=false would be told, incorrectly, that no such code exists -- a direct spec-vs-implementation contradiction in the file that is supposed to be the safety-relevant source of truth for this slot.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/SKILL.md",
+    "lineRange": "3-5,34-36",
+    "snippet": "**Money-safe today: no signing / order-placement code exists in this slot -- the real executor is intentionally not wired (fail-closed).**\n...\nNo private key is read and no order endpoint is POSTed anywhere in this slot."
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca/.worktrees/colony-architecture/skills/earn/pm-trade/order.py",
+    "lineRange": "22-29,62-72"
+  },
+  "routeToPhase": "1c"
+}
