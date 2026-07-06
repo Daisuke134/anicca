@@ -86,6 +86,12 @@ DATA_API = "https://data-api.polymarket.com"
 DEPOSIT_WALLET = "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
 AGENT_ENV = os.path.expanduser("~/.anicca-founder/agents/polymarket-agent/.env")
 LEDGER_RECORD_JS = os.path.expanduser("~/anicca/skills/earn/lib/record.mjs")
+LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl")
+EARN_GUARD_JS = os.path.expanduser("~/anicca/skills/_shared/lib/earn-guard.mjs")
+# P1 (spec §3/§4): the SAME kill-switch file run.sh (the trading entrypoint, same dir as this
+# script) already checks at the top of every pass — writing it here means a cumulative-net
+# HALT stops the NEXT trading pass with zero changes to run.sh itself.
+KILL_SWITCH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "KILL")
 POLYGON_RPC = os.getenv("POLYGON_RPC", "https://polygon-bor-rpc.publicnode.com")
 
 # Verified against the installed SDK's PRODUCTION Environment (environments.py) —
@@ -443,6 +449,30 @@ def record_ledger_line(line: dict, ledger_path: str | None = None) -> bool:
     return "PROFITABLE" in result.stdout
 
 
+def check_cumulative_halt(wallet: str, source: str, ledger_path: str | None = None) -> tuple[bool, str]:
+    """P1 (spec §3/§4): ask the shared CUMULATIVE earn>spend guard (earn-guard.mjs) whether
+    this wallet+source has gone insolvent (or has ledger numbers it can't trust) across every
+    redeem ever recorded, not just this one condition. Fail-closed like record_ledger_line: an
+    unexpected error running the guard itself is treated as a HALT, never silently ignored —
+    this function never raises."""
+    args = ["node", EARN_GUARD_JS, "check", wallet, source, ledger_path or LEDGER_PATH]
+    try:
+        result = subprocess.run(args, capture_output=True, text=True, timeout=30)
+    except Exception as e:  # noqa: BLE001 — fail-closed: can't check -> assume HALT
+        return True, f"guard-error:{e}"
+    if result.returncode == 0:
+        return False, ""
+    return True, result.stderr.strip() or f"guard exited {result.returncode}"
+
+
+def write_kill_switch(reason: str) -> None:
+    """Trip the SAME kill-switch file run.sh (this skill's trading entrypoint) already checks
+    at the top of every pass — a cumulative HALT here stops the NEXT trading pass with zero
+    changes to run.sh's own logic."""
+    with open(KILL_SWITCH, "w") as f:
+        f.write(f"P1 fail-closed HALT ({time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}): {reason}\n")
+
+
 def main() -> int:
     positions = fetch_positions(DEPOSIT_WALLET)
     rows = dedupe_redeemable_conditions(positions)
@@ -474,6 +504,14 @@ def main() -> int:
             line = build_ledger_line(row, tx_hash=tx["tx_hash"], status=status)
             profitable = record_ledger_line(line)
             results.append({**tx, "status": status, "row": row, "profitable": profitable})
+            # P1 (spec §3/§4): after EVERY redeem, re-check the cumulative earn>spend
+            # invariant. HALT -> stop redeeming further conditions THIS pass AND trip the
+            # kill-switch so the trading entrypoint (run.sh) refuses the NEXT pass too.
+            halted, reason = check_cumulative_halt(DEPOSIT_WALLET.lower(), "polymarket-redeem")
+            if halted:
+                write_kill_switch(reason)
+                print(f"P1 GUARD: cumulative net breach ({reason}) — wrote KILL switch, stopping redeem pass.")
+                break
     finally:
         client.close()
 
