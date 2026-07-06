@@ -50,7 +50,7 @@ restart() {
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "video-core DEAD"
-elif [ ! -f "$HB" ]; then
+else
   if [ ! -f "$START" ]; then
     # $START marker itself missing (e.g. wiped by external cleanup). Both "now" and epoch-0
     # fallbacks caused real incidents (now = STALE detection permanently disabled; epoch-0 =
@@ -59,16 +59,24 @@ elif [ ! -f "$HB" ]; then
     touch "$START"
     echo "$(date '+%F %T') video-core: .last-start marker missing -- reseeded now, will re-check next pass" >> "$LOG"
   else
+    # REF = the more recent of "last completed pass" and "last restart". Comparing against
+    # $HB alone is wrong: a fresh restart never touches $HB (only $START), so once $HB goes
+    # stale once it stays stale across every future restart -- the very next healthcheck tick
+    # (5min later) would see an ancient $HB and kill the brand-new session again, before a
+    # real pass (browser warmup + video gen + post + on-chain confirm) can finish. Real
+    # incident: 2026-07-06 04:33 -> 18:42, 14h crash loop, 40+ restarts, zero completed passes.
+    # Anchoring on max($HB, $START) gives every fresh restart its own full $STALE_MIN grace
+    # window, while still killing a session that goes stale again after that grace expires.
+    HB_MTIME=0
+    [ -f "$HB" ] && HB_MTIME="$(stat -f %m "$HB")"
     START_MTIME="$(stat -f %m "$START")"
-    START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
-    if [ "$START_AGE" -ge "$STALE_MIN" ]; then
-      restart "video-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
+    REF_MTIME=$HB_MTIME
+    [ "$START_MTIME" -gt "$REF_MTIME" ] && REF_MTIME=$START_MTIME
+    AGE_MIN="$(( ($(date +%s) - REF_MTIME) / 60 ))"
+    if [ "$AGE_MIN" -ge "$STALE_MIN" ]; then
+      restart "video-core STALE (no pass in >=${AGE_MIN}min since last start/pass; in-session cron likely stopped)"
     else
-      echo "$(date '+%F %T') video-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
+      echo "$(date '+%F %T') video-core ALIVE (last pass/start ${AGE_MIN}min ago)" >> "$LOG"
     fi
   fi
-elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
-  restart "video-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
-else
-  echo "$(date '+%F %T') video-core ALIVE+fresh" >> "$LOG"
 fi
