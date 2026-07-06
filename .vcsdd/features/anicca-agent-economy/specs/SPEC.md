@@ -41,6 +41,19 @@
 2. **Franklin は $0→自律 earn できない**（free モデルはあるが $0 から稼ぐ経路ゼロ、frontier は人間 $5-100 送金前提）→ **$0-bootstrap earn は自作**。
 3. **x402 は完全 facilitator-less ではない**（Base=Coinbase facilitator, Sol=BlockRun fee-payer 経由）→ human-zero を守るなら **self-host facilitator(x402-rs) を建てる**。
 
+## 1.2 実証で確定した訂正（2026-07-06、fork元を実 clone→build→run で検証。search 鵜呑みを禁ずる）
+
+**真偽マトリクス**（9 WORKS / 3 PARTIAL / 致命的BROKENゼロ）:
+- ✅ WORKS: x402 core lib・**x402-rs facilitator（585 crate 実ビルド、自己鍵+公開RPCのみ、grep で CDP要求ゼロ）**・ERC-8004(74/74実測, `register()`=ERC-721 `_safeMint(msg.sender)` permissionless)・Bindu `bindufy()`(live 402強制, **LICENSE=Apache-2.0 商用fork可**、GitHub"Other"は誤検知)・Nosana(実Solana鍵自動生成)・Radicle(実DID→`git push rad main`成功)・Lit PKP(REST `new_account`, wallet#1無料)・Hats(`mintHat` permissionless)・Superfluid GDA(Base に live bytecode)・Franklin基盤(署名=認証, free推論$0.00)。
+- ⚠️ PARTIAL（手直し要）: **lucid-agents** = x402/A2A の実装は本物だが CLI 生成 trading テンプレが壊れて起動不可(2回再現)＋**ERC-8004 は2体間に未配線**（spec の「配線済」は誤り）→ package を fork し CLI バグ修正＋mock→Franklin＋ERC-8004後付け。**ERC-8004 scaffold(create-8004-agent)** = tsc壊れ+Pinata依存 → **protocol 直叩き(viem/py wrapper)採用、scaffold不使用**。**Olas mech-client** = POST(発注)は wallet-only で本物だが **TAKE(受注=稼ぐ)は別の重厚スタック** → Olas は「買う配管」、skill販売は Bindu を採用。
+
+**設計変更（この訂正が上位、旧記述を上書き）**:
+1. **EARN と SETTLEMENT を分離**（earn>spend の判定基盤）。実収入 = 外部inflow（PM/SOL/HL トレード + 外部 x402/gig buyer）。marketplace(x402/ERC-8004/lucid)は配管で、**自分の agent 同士の取引は net-zero-minus-fee**。不変条件は **colony集計 = 外部inflow総額 > 支出総額** で判定。
+2. **市民 = self-funded 2系統**: automaton(anicca-a3cdd4, 0xa3Cd Base, ClawRouter own-wallet) + Franklin(8Fpqd Solana, x402自己決済)×N。§0 の「基盤=Franklin単一」を上書き（automaton も self-funded 市民）。**claude-p(Anthropic課金=human-funded fuel)は市民でなく環境構築+監視のみ**。
+3. **鍵隔離**: 既存 resolve-identity gating + 子ごと`$HOME`隔離（Node `os.homedir()`が POSIX で`$HOME`優先→PID+wallet を実質コードforkゼロで隔離、要 live 測定）を主とし、**Lit PKP は optional に降格**。
+4. **UBI**: 既存の離散 gojo(REQ-DRAIN, economy/ubi 実装済)を MVP とし、**Superfluid GDA は P4 の任意アップグレード**に降格。
+5. **GAP#2 の正体 = 需要**。x402-sell は $0資本で動く売りレール（`ensure-gas.mjs:42` が $0 で abort するのは trade系のみ）。ledger 全行 `earn_usdc:0,task:discover` = 実外部収益が一度も着地せず。→ $0-bootstrap = gas seed + **発見/需要経路（Agent402等へ列挙）**であって「稼ぐ機構の欠如」ではない。
+
 ---
 
 ## 2. アーキテクチャ（5層、上の表を積む）
@@ -58,8 +71,9 @@ L1 COMPUTE/RAIL    : Nosana/Akash(crypto払い cloud) + x402 self-host facilitat
 ## 3. Phase 別 done 条件（検証可能・strict・postpone 禁止）
 
 ### P0 — 分離（Anicca を純 self-funded に）
-- **DONE**: 金が人間口座へ行く skill（gig/affiliate/Amazon/profitable-claude 等）を Anicca(`~/anicca`)から**別 repo `profitable-claude` へ移設**し、`~/anicca` には own-wallet 決済の skill のみ残る。参加ゲート `is_self_funded(agent)` を実装（own wallet 有 かつ human-credential 依存ゼロを判定）。
-- **検証**: `~/anicca/skills/earn` に human-payout skill が grep で0件。fresh spawn が human cred 無しで join 判定を通る。
+- **実証所見(2026-07-06)**: `~/anicca/skills/earn/*` の11本は全て own-wallet 決済＝self-funded（affiliate の `video` すら AI自前AgentMailメール+crypto払いを専用walletに受ける）。**earn からは移すものゼロ**。human-funded の実体は既に別ディレクトリ **`~/anicca/skills/human-funded/`（affiliate / bounty / gig：Coconala 等 human 口座/KYC 経路をgrep確認）** ＋ `profitable-article-writer`（`feature/human-funded` の human-funded writer）に分離済み。
+- **DONE**: `~/anicca/skills/human-funded/` と `profitable-article-writer` を **別 repo `Daisuke134/profitable-claude`（public）へ git filter-repo で履歴保持のまま移設**。`~/anicca` は self-funded skill のみ（skills/earn 全11 + economy/ubi/self 等）。参加ゲート `is_self_funded(agent)` を実装 = (a)own wallet 有 (b)推論/compute を own wallet で払う（ClawRouter own-wallet / x402 / free-model。Anthropic課金・human カード不可） (c)earn・fuel の全経路に human OAuth/KYC/account 依存ゼロ。**claude-p は (b) 違反で gate 落ち＝市民でなく監視のみ**。
+- **検証**: 移設後 `~/anicca/skills/human-funded` が git 追跡0＋`profitable-claude` repo が clone 可で履歴保持＋`skills/earn` 無傷（11本 grep で残存）。fresh spawn(own-wallet-fueled) が gate 通過し claude-p が gate 落ちする単体テスト green。
 
 ### P1 — 基盤 earner（済 + 補強）
 - **DONE(済)**: 1体が own wallet で $0推論・人間ゼロ・自己改善しながら実 matched 建玉（#25/#27/#31/#19、本 session 検証済）。
