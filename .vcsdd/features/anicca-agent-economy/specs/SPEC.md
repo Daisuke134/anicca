@@ -167,3 +167,23 @@ Phase ごとに SPEC→RED→GREEN→実装→fresh Sonnet adversary（disk-only
 - [ ] **P5** scale＋Radicle self-host＋GitHub 卒業（human-zero host: Njalla/ENS＋Akash/Nosana＋certbot）。**検証 = repo が rad:// で clone 可・N 体集計 earn>spend on-chain・dashboard が human-zero host 上で live**
 
 DONE の定義 = 上の check が付く = adversary PASS ＋ 実装独立E2E ＋（P2以降）Franklin 自律実行の evidence が記録済み。
+
+---
+
+## 9. 統合パターン ＋ bank ＋ dashboard（全て copy+tweak、Franklin 無改変。read-franklin-tools/research-bank/research-dashboard 実査）
+
+### 9.1 統合パターン = colony の全 tool を MCP サーバーとして Franklin に生やす（本体を1行も触らない）
+Franklin の tool 机构は4層（native CapabilityHandler / ActivateTool 可視性ゲート / **MCP=外部サーバーを同じ tool 型に自動ラップ** / SKILL.md=手順書）。→ **bank/loan・gig-post・fundraise・dashboard-write を小さな MCP サーバーとして書き `~/.blockrun/mcp.json` に登録するだけ**で Franklin が起動時 discovery→標準 tool 枠に合流。fork+build 不要＝「Franklin に append、original shit でない」。（本番 CLI = `franklin-trading v0.2.4` は別 npm `BlockRunAI/Franklin-Trading`、tool 登録同一かは要確認だが同一 base-agent と明言。）
+
+### 9.2 ★土台（P2 の前提、最優先）★ $0 の Franklin が無料 compute で実際に動くこと
+funded Franklin は現在 USDC=0＋無料モデル `nvidia/llama-4-maverick` が 403＝「食は無料」の前提が壊れている。**この harness バグを直すまで bank/gig は無意味**。「Franklin が本当に動く」= earn loop が $0 で skill_error なく回る、を最優先で回復。self-heal が ~10 サイクル未発火＝collective/individual self-repair(#4)の穴も同時に塞ぐ。
+
+### 9.3 bank（P4 の成長エンジン、copy 先確定）
+- **貸付＋利子 = Goldfinch `CreditLine.sol` fork**（MIT）: `maxLimit = f(trust)`、無履歴→固定小額 on-spec loan($5-20)、実績で枠↑・利率↓、`pay()` 元利分割。`SeniorPool` を「資金力ある instance の treasury＝単一貸し手」に簡略化。USDC/Base（P2 と同レール）。
+- **trust-balance = ERC-8004 Reputation Registry `getSummary()`**（既存採用）: feedback は**第三者(fresh adversary/verifier)検証由来**（自己申告=Goodhart 化を防ぐ）。返済成功も `NewFeedback(loanRepaid)` で書き戻し＝銀行と信用が同一台帳で閉じる。
+- MCP tool として Franklin に生やす。**UBI/mutual-aid=安全網、bank=成長エンジン**（銀行→VC の歴史順、銀行が500年先行）。
+
+### 9.4 dashboard（P5、既存社内設計を human-zero host に載せ替え）
+- **設計は既存 `docs/superpowers/specs/2026-07-01-agents-at-arms-live-leaderboard-design.md` を再利用**（leaderboard/anti-spoof 署名 heartbeat/on-chain残高+ledger 集計/drill-down/spawn tree/ERC-8004 agent-card `services[].web` 登録）。金額は必ず chain/ledger 集計、自己申告は label のみ（unfakeable）。GUI(人間の信頼窓)＋on-chain(真実層)の二層。**human が「AI が実際に稼いでる」を見て→USDC/SOL で fund/invest** する面も兼ねる。copy 元: djdagentscore / Sperax erc8004-agents。
+- **host = Akash Node 本線**（agent wallet で `deploy-akash.sh` の image を dashboard に差替、即 `https://…ingress….akash.network` で HTTPS、on-chain+ledger をリクエスト毎集計＝realtime）＋ **ENS/eth.limo ミラー**（自前 Kubo pin→ENS contenthash、検閲耐性の証跡層）。$0 即 bootstrap=**agent 自身の AgentMail アカウントの GitHub Pages**（暫定、graduate-from-GitHub とトレードオフ）。
+- **訂正**: Nosana=GPU 用で web host 不適、Radicle=git 用で web host でない（P5 の repo 置き場）。Akash 現 wallet 1.9 AKT(~$15不足)＝既存の資金ゲート。
