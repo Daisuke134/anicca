@@ -53,7 +53,12 @@ import * as store from "./lib/store.mjs";
 import { loadState, saveState } from "./lib/persist.mjs";
 import { withGigLock } from "./lib/lock.mjs";
 
-const DEFAULT_STATE_PATH = new URL("./state/gigs.json", import.meta.url).pathname;
+// GIG_STATE_PATH override: without it, DEFAULT_STATE_PATH resolves next to THIS module file, which is
+// fine for a single-copy dev/testnet run but WRONG once automaton and Franklin each get their own
+// separate on-disk copy of this skill (see WITNESS-RUNBOOK.md) -- two independent state/gigs.json files
+// would mean each instance only ever sees gigs it posted itself, never a real marketplace. Both
+// deployed copies must set GIG_STATE_PATH to the SAME shared path for cross-agent trades to work.
+const DEFAULT_STATE_PATH = process.env.GIG_STATE_PATH || new URL("./state/gigs.json", import.meta.url).pathname;
 const FACILITATOR_URL = process.env.GIG_FACILITATOR_URL || "http://127.0.0.1:8405";
 const POST_LOCK_KEY = "_post"; // guards the shared nextId counter against concurrent gig_post calls
 const BOARD_LOCK_KEY = "_board"; // guards the shared state file's actual read-mutate-write (GAP 2)

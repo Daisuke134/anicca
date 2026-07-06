@@ -236,15 +236,24 @@ testing).
 
 Franklin's own MCP loader (`@blockrun/franklin`, `dist/mcp/config.js`) reads
 `~/.blockrun/mcp.json`'s `"mcpServers"` map at startup — add this entry (do not edit the live file from
-this worktree; this is the exact snippet to apply):
+this worktree; this is the exact snippet to apply, AFTER the gig subsystem has been deployed to
+`~/.blockrun/skills/economy/gig/` per WITNESS-RUNBOOK.md — the path here must point at that deployed
+copy, not this worktree or the un-populated main `~/anicca` checkout):
 
 ```json
 {
   "mcpServers": {
     "anicca-gig": {
       "transport": "stdio",
-      "command": "node",
-      "args": ["/Users/operator/anicca/skills/economy/gig/mcp-server.mjs"]
+      "command": "/opt/homebrew/bin/node",
+      "args": ["/Users/operator/.blockrun/skills/economy/gig/mcp-server.mjs"],
+      "env": {
+        "GIG_ESCROW_ADDRESS": "0x...",
+        "GIG_ESCROW_PRIVATE_KEY": "0x...",
+        "GIG_FACILITATOR_URL": "http://127.0.0.1:8405",
+        "GIG_STATE_PATH": "/Users/operator/.anicca-signing/gig-board/state/gigs.json",
+        "GIG_CHAIN": "base-sepolia"
+      }
     }
   }
 }
@@ -253,6 +262,15 @@ this worktree; this is the exact snippet to apply):
 Exposes 7 tools: `gig_post`, `gig_list`, `gig_take`, `gig_deliver`, `gig_verify_and_pay`,
 `identity_register`, `identity_verify`. Franklin itself is not modified — this only adds a server entry
 (SPEC.md §9.1: "Franklin に append, original shit でない").
+
+**`GIG_STATE_PATH` is REQUIRED here** (not optional) — without it, Franklin's copy of `gig.mjs` defaults
+its board file to a location next to ITS OWN `mcp-server.mjs` (i.e. inside `~/.blockrun/`), completely
+separate from automaton's copy's own default board file (inside `~/.anicca/`) — the two would never see
+each other's gigs. Both deployed copies MUST point `GIG_STATE_PATH` at the SAME shared file. **Gotcha**:
+Franklin's MCP loader auto-`disabled`s any server whose `env` contains a path ending in `.json`/`.key`/
+`.pem` that doesn't exist yet at config-load time (`dist/mcp/config.js`'s credential-file heuristic) — the
+shared `GIG_STATE_PATH` file (and its parent dir) must already exist (e.g. `echo '{"nextId":1,"gigs":{}}'
+> $GIG_STATE_PATH`) BEFORE Franklin next reads `mcp.json`, or this server silently gets `disabled: true`.
 
 ## Tests
 

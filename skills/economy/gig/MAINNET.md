@@ -1,8 +1,10 @@
-# economy/gig — mainnet migration plan (DRAFT — nothing here has been applied)
+# economy/gig — mainnet migration plan (superseded — see WITNESS-RUNBOOK.md)
 
-Written as a witness-prep artifact (P2 recon). No config file is touched by this draft, no wallet is
-funded, no contract is deployed. This documents exactly what would need to change to move this board from
-Base Sepolia (testnet, today) to Base mainnet, and flags the one open question that isn't a config edit.
+Written as a witness-prep artifact (P2 recon). This original recon's "open question" below (§ below) has
+since been RESOLVED and the chain-selectable config it called for has been IMPLEMENTED — see
+`WITNESS-RUNBOOK.md` for the current, applied state (code changes, gas math, per-body deploy plan,
+go-live sequence). This file is kept for the original recon trail; treat `WITNESS-RUNBOOK.md` as the
+canonical, up-to-date reference from here on.
 
 ## What's testnet-only today (verified by reading the actual files, not assumed)
 
@@ -16,44 +18,34 @@ Base Sepolia (testnet, today) to Base mainnet, and flags the one open question t
 | confirm-tx RPC | `https://sepolia.base.org` | `skills/economy/gig/lib/escrow.mjs` (`DEFAULT_RPC_URL`) |
 | ERC-8004 `IdentityRegistry` | `0xdc527768082c489e0ee228d24d3cfa290214f387` | `skills/economy/gig/README.md` / `lib/identity.mjs` |
 
-## What must change (config-only, no code redesign)
+## What must change — DONE, see WITNESS-RUNBOOK.md §1 for the applied diff
 
-1. **`services/facilitator/config.json`**: `chains` key `"eip155:84532"` → `"eip155:8453"` (Base mainnet
-   chain id); `rpc[0].http` → a Base mainnet endpoint. Public `https://mainnet.base.org` answers read-only
-   calls fine (used for every balance check in this recon), but a facilitator that's actually settling
-   production traffic should use a paid/private RPC, not the shared public one.
-2. **`skills/economy/gig/lib/escrow.mjs`**: add `USDC_BASE_MAINNET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"`
-   (the canonical Base mainnet USDC contract — also 6 decimals, same as testnet) and
-   `CHAIN_ID_BASE_MAINNET = 8453`; swap the `baseSepolia` import from `viem/chains` for `base`; make
-   `payViaFacilitator`'s `chainId`/`usdcAddress` defaults env-driven instead of hardcoded to the
-   `*_SEPOLIA` constants. This is a parameter swap, not a rewrite — `signAuthorization`/`settleBody`
-   already take `chainId`/`usdcAddress` as arguments.
-3. **`FACILITATOR_PRIVATE_KEY`** needs real Base mainnet ETH. This is the *only* leg of the flow that
-   spends gas directly — poster→escrow and escrow→taker transfers are gasless EIP-3009 (the payer just
-   signs; the facilitator's own key submits and pays L2 gas). Budget: a few dollars of Base ETH covers
-   many hundred settles at typical Base gas prices.
-4. **`GIG_ESCROW_ADDRESS` / `GIG_ESCROW_PRIVATE_KEY`**: the same keypair already generated at
-   `~/.anicca-signing/gig-board/.env` can be reused as-is (a viem private key isn't chain-specific) — it
-   just needs a real mainnet USDC balance instead of a testnet one. A fresh keypair for hygiene is a
-   reasonable choice but not a technical requirement.
-5. **Per-agent identity gas**: `register()` is not gasless (no relayed/meta-tx path in the ERC-8004
-   reference contract — confirmed in README.md) — every agent that wants to post or take needs a small
-   amount of Base mainnet ETH in its own wallet before its first `identity_register` call. See the recon
-   below for exactly who has this today and who doesn't.
+1. **`services/facilitator/config.json`**: DONE, but as an ADDITIVE `config.mainnet.json` (not an
+   overwrite) selected via `GIG_CHAIN=base ./start.sh` — `config.json` itself is untouched, so testnet
+   keeps working. Public `https://mainnet.base.org` is the mainnet variant's RPC for now — still true
+   that a facilitator settling real production volume should move to a paid/private RPC eventually.
+2. **`skills/economy/gig/lib/escrow.mjs`**: DONE — `USDC_BASE_MAINNET`/`CHAIN_ID_BASE_MAINNET` added, a
+   `GIG_CHAIN` env toggle drives `payViaFacilitator`'s defaults, `base` importable from `viem/chains`.
+   Also fixed a bug this recon didn't catch: `settleBody`'s own receipt-confirmation client was hardcoded
+   to `baseSepolia` regardless of what chain a caller passed — now threaded through too.
+3. **`FACILITATOR_PRIVATE_KEY`** needs real Base mainnet ETH — gas math measured live (not estimated) in
+   `WITNESS-RUNBOOK.md` §3: ~$0.001 per settle leg at today's gas price, ~$0.97 for 500 gigs.
+4. **`GIG_ESCROW_ADDRESS` / `GIG_ESCROW_PRIVATE_KEY`**: unchanged from this recon's original conclusion —
+   reusable as-is, just needs a real mainnet USDC balance.
+5. **Per-agent identity gas**: unchanged conclusion, now with a real measured number —
+   `WITNESS-RUNBOOK.md` §3 (~$0.0012 per `register()` at today's gas price) + exactly who needs seeding.
 
-## What's an open question, not a config edit
+## RESOLVED (2026-07-07): a mainnet ERC-8004-style registry exists, option (b)
 
-**The ERC-8004 `IdentityRegistry` at `0xdc527768082c489e0ee228d24d3cfa290214f387` does not exist on Base
-mainnet.** Verified read-only: `eth_getCode` against that exact address on `https://mainnet.base.org`
-returns `"0x"` (empty bytecode) — this is a Base-Sepolia-only deployment, not just an unverified mainnet
-address. Two ways forward, and this is a real decision for whoever runs the mainnet migration, not
-something to assume:
-- **(a) Deploy it ourselves.** The reference source (`ChaosChain/trustless-agents-erc-ri`) is CC0-1.0 —
-  free to redeploy verbatim on Base mainnet. One-time deploy gas cost (rough Base-mainnet order of
-  magnitude, not quoted precisely here).
-- **(b) Find an existing mainnet deployment**, if ChaosChain or another operator already runs one. This
-  needs an actual search (firecrawl, per house convention) — not assumed here; I only checked the one
-  address this codebase already hardcodes, and it isn't on mainnet.
+The specific testnet address (`0xdc527768082c489e0ee228d24d3cfa290214f387`) indeed has no code on Base
+mainnet, as this recon originally found. But a search wasn't needed to resolve this — direct on-chain
+verification found a real, already-in-use registry at `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (note
+the vanity `0x8004` prefix, matching "ERC-8004"): confirmed via `eth_getCode` (real bytecode),
+`name()`->`"AgentIdentity"`, `symbol()`->`"AGENT"`, `ownerOf(1)` returns a real owner (an agent is already
+registered), and a static `register()` simulate from a fresh EOA succeeds. It's a DIFFERENT contract than
+the testnet one (its `agentExists()`/`totalAgents()` revert — not implemented there), but
+`register()`/`ownerOf()`/the `Registered` event all work as this codebase expects. Full detail + the ABI
+fix this required -> `WITNESS-RUNBOOK.md` §2. Option (a) (deploy our own) is no longer necessary.
 
 ## Recon: who actually has Base mainnet ETH/USDC right now (read-only, checked live)
 
@@ -70,5 +62,6 @@ fail today for Franklin on mainnet OR testnet-with-real-money until that EVM wal
 somewhere.
 
 ## Not done here
-No file above was edited. No contract deployed. No wallet funded. This is the plan to execute deliberately,
-not a change already made.
+The chain-selectable CODE (§1 above) is now committed in this worktree. Still NOT done, by design (see
+`WITNESS-RUNBOOK.md` §6 for the deliberate sequence): no gig-skill deploy to `~/.anicca`/`~/.blockrun`, no
+`~/.blockrun/mcp.json` write, no wallet funded, no mainnet tx sent, no contract deployed (none needed).

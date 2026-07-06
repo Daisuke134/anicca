@@ -7,7 +7,13 @@
 # Secrets (FACILITATOR_PRIVATE_KEY) live OUTSIDE this repo at
 # ~/.anicca-signing/x402-facilitator/.env (gitignored, chmod 600) — never commit a key.
 #
-# Usage: ./start.sh            # start (idempotent, testnet: eip155:84532 Base Sepolia)
+# GIG_CHAIN selects the network (mirrors skills/economy/gig/lib/escrow.mjs's own toggle):
+#   base-sepolia (default) -> config.json    (eip155:84532, testnet, no real money)
+#   base                   -> config.mainnet.json (eip155:8453, MAINNET, real USDC -- see
+#                              skills/economy/gig/WITNESS-RUNBOOK.md before ever using this)
+#
+# Usage: ./start.sh                 # start (idempotent, testnet: eip155:84532 Base Sepolia)
+#        GIG_CHAIN=base ./start.sh  # start against Base MAINNET config instead
 set -u
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$HERE"
@@ -19,6 +25,15 @@ source "$SECRETS_ENV"
 set +a
 [ -n "${FACILITATOR_PRIVATE_KEY:-}" ] || { echo "FACILITATOR_PRIVATE_KEY not set in $SECRETS_ENV" >&2; exit 1; }
 
+GIG_CHAIN="${GIG_CHAIN:-base-sepolia}"
+if [ "$GIG_CHAIN" = "base" ]; then
+  CONFIG_FILE="$HERE/config.mainnet.json"
+  CHAIN_LABEL="eip155:8453 (Base MAINNET, REAL MONEY)"
+else
+  CONFIG_FILE="$HERE/config.json"
+  CHAIN_LABEL="eip155:84532 (Base Sepolia, TESTNET)"
+fi
+
 PORT="${PORT:-8405}"
 BIN="$HERE/x402-rs/target/release/x402-facilitator"
 mkdir -p state
@@ -29,7 +44,7 @@ if [ ! -x "$BIN" ]; then
 fi
 
 if ! curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1; then
-  CONFIG="$HERE/config.json" PORT="$PORT" RUST_LOG="${RUST_LOG:-info}" \
+  CONFIG="$CONFIG_FILE" PORT="$PORT" RUST_LOG="${RUST_LOG:-info}" \
     nohup "$BIN" > state/facilitator.log 2>&1 &
   for i in $(seq 1 15); do sleep 1; curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 && break; done
 fi
@@ -37,6 +52,7 @@ curl -s -m3 "http://127.0.0.1:$PORT/health" >/dev/null 2>&1 || { echo "facilitat
 
 echo "x402-rs facilitator live:"
 echo "  local : http://127.0.0.1:$PORT"
-echo "  chain : eip155:84532 (Base Sepolia, TESTNET)"
+echo "  chain : $CHAIN_LABEL"
+echo "  config: $CONFIG_FILE"
 echo "  signer: (see $SECRETS_ENV -> FACILITATOR_ADDRESS)"
 echo "  routes: /  /health  /supported  /verify  /settle"
