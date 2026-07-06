@@ -58,6 +58,7 @@ workspace/ugc-library/**/*.mov
 workspace/ugc-library/**/*.mp4
 services/x402-worker/state/
 services/x402-endpoint/node_modules/
+services/facilitator/state/
 skills/earn/hl-trade/.venv/
 skills/earn/bounty/state/superteam-creds.json
 *.creds.json
