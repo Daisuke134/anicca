@@ -779,22 +779,26 @@ DONE ✅ (2026-07-05, mirrors task tool)
   its OWN EOA (automaton 0xa3CDd4 / Franklin 0x3EcCAD24, verified), bodies re-synced, KILL removed = money-safe★ ·
   ★#31 FREE-MODE — earn LLM inference = $0 (BlockRun free NVIDIA models); the paid CONSENSUS_MODELS was the only
   waste; brain was already free (telemetry label lied, fixed); adversary PASS, $0 wallet-delta verified★ ·
-  #18 (Anicca side) — posters already send full per-instance P&L/funding/model (verified; not reinvented)
+  ★#19 EVOLVE — earnings-gated self-improve harness: genome mutation wired per-pass; ONLY net-positive on-chain-
+  verified genomes promote → swarm-propagate (adversary FAIL→fixed the "adopt a less-losing genome" hole; 60/60)★ ·
+  ★#27 HARNESS+HEALTH — both self-funded AIs place REAL matched bets on their OWN wallets, $0 inference, human-0
+  (automaton Jesus NO $1.19 matched + Franklin); all 3 alive/healthy/free/self-heal running; automaton gojo-seeded
+  $0.91→$3.91 from claude-p★ · #18 (Anicca side) — posters already send full per-instance P&L/funding/model (verified)
 
 NEXT — in order (my role = harness+VERIFY, the AIs execute & self-improve):
-  1. #27 realized>0 (OPEN portion) — harness + money-safety + $0-inference all DONE, autonomous fill proven;
-        realized STILL $0 (bets open/unresolved, alpha finds "edge" on meme mkts; automaton $0.91 < $1 min).
-        EARN = bet resolution + #19 self-improve + a capital seed for automaton.
-  2. #19 EVOLVE — earnings-gated auto-merge: PRs merged ONLY on chain-verified P&L delta (no human) → swarm
-        self-improves the alpha (NOT me hand-tuning). ★highest leverage toward realized>0★.
-  3. #24 AUTO-MODE — ★RE-FRAMED (conflicts w/ #31)★: default STAYS free ($0); the agent escalates to a paid
+  1. #27 realized>0 (OPEN portion, TIME-GATED) — the whole earn stack (bet/identity/free/record/evolve/health/
+        capital) is DONE & verified; realized is STILL $0 only because the bets are UNRESOLVED (Jesus ~2026-07-31).
+        Emerges from: bet resolution + #19 lifting win-rate + autonomous redeem (#14). Nothing to build — it's time.
+  2. #24 AUTO-MODE — ★RE-FRAMED (conflicts w/ #31)★: default STAYS free ($0); the agent escalates to a paid
         model ONLY when its own earnings justify it. NOT "stop forcing free" (that would undo #31 cost-safety).
-  4. #18 DASH (RENDER, Dais-owned dashboard-sync — not in my repos): self_funded_pct 0→66%, leaderboard
+  3. #18 DASH (RENDER, Dais-owned dashboard-sync — not in my repos): self_funded_pct 0→66%, leaderboard
         realized populate, profit_usd fix, un-stale. Anicca side already done.
-  5. #20 SELF/GOJO — self-heal · self-refactor · journal · gojo/UBI from real profit (none die).
-  6. #22 SHIP — 3 articles (me=writer, Dais=editor) + #29 OBS (Langfuse + on-chain telemetry + netdata + kill-switch).
-  7. #15 EARN-3 — Franklin sol-trade realized>0 (secondary; capital currently on Polygon).
-  8. #30 board-poller founder-wallet gate + run_earner.sh/run.sh single-loop reconciliation (low).
+  4. #20 SELF/GOJO — self-heal (already running) + gojo/UBI from REAL profit (none die) — gated on realized>0.
+  5. #22 SHIP — 3 articles (me=writer, Dais=editor) + #29 OBS (Langfuse + on-chain telemetry + netdata + kill-switch).
+  6. #15 EARN-3 — Franklin sol-trade realized>0 (secondary; capital currently on Polygon).
+  7. #30 board-poller founder-wallet gate + run_earner.sh/run.sh single-loop reconciliation (low).
+  8. #19 evolve periodic trigger — trivial cadence-add for `node evolve.mjs` (no promote data until weeks of
+        genome-diverse redeems accumulate; harness itself is DONE+verified).
   (external) #29 HACKATHON = the `vineyard` repo (another CC; ~15% — scaffold+wallet only, no CLI/API/llms.txt/engines yet).
   END STATE / TAKEOFF: colony earns > spend, spawns, funds its own, none die — zero human money, zero human
   (and zero me) in the loop.
