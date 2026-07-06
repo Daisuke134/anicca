@@ -18,6 +18,7 @@ PY="$ENGINE/.venv/bin/python"
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
 QUEUE="$CLIP_QUEUE"; mkdir -p "$QUEUE"
 POSTED="$CLIP_POSTED"; mkdir -p "$POSTED"
+PENDING_VERIFY="$CLIP_PENDING_VERIFY"; mkdir -p "$PENDING_VERIFY"
 set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
 export LOCAL_WHISPER_MODEL=tiny
 export GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
@@ -49,13 +50,15 @@ self_heal_engine() {
 [ -x "$PY" ] || { emit "self-heal ran but venv still missing ($PY)"; exit 0; }
 
 # pick a trending single-speaker money/AI long-form if no url (engine's channel default).
-# Scan the channel's recent videos and skip any already produced (POSTED or QUEUE) --
-# the channel's #1 video doesn't change daily, and always grabbing it re-clips the same
-# source repeatedly (duplicate-content/shadowban risk on the posting account).
+# Scan the channel's recent videos and skip any already produced (POSTED, QUEUE, or
+# PENDING_VERIFY) -- the channel's #1 video doesn't change daily, and always grabbing it
+# re-clips the same source repeatedly (duplicate-content/shadowban risk on the posting
+# account). PENDING_VERIFY must be included: an unverified post may still resolve to
+# published by the self-heal reconciler, so it counts as "already produced" too.
 if [ -z "$URL" ]; then
   while IFS= read -r CAND; do
     [ -n "$CAND" ] || continue
-    if [ ! -f "$POSTED/${CAND}_EN.mp4" ] && [ ! -f "$QUEUE/${CAND}_EN.mp4" ]; then
+    if [ ! -f "$POSTED/${CAND}_EN.mp4" ] && [ ! -f "$QUEUE/${CAND}_EN.mp4" ] && [ ! -f "$PENDING_VERIFY/${CAND}_EN.mp4" ]; then
       VID="$CAND"; break
     fi
   done < <("$PY" -m yt_dlp --flat-playlist --playlist-end 30 --print "%(id)s" \
