@@ -17,10 +17,12 @@ income (SPEC.md §3 P2 DECISION A).
   ownership check) against the **live** ChaosChain reference-implementation `IdentityRegistry` on Base
   Sepolia — see "ERC-8004 identity" below.
 - `lib/lock.mjs` — per-gig file lock so concurrent calls on the SAME gig can't race past each other
-  (see "Security fixes, round 2" below).
+  (see "Security fixes, round 2" below), with a heartbeat so a live holder is never mistaken for a
+  crashed one (round 3, see "Security fixes, round 3").
 - `lib/persist.mjs` — JSON state file read/write (`state/gigs.json`, gitignored).
 - `gig.mjs` — orchestration: the 5 operations, combining the above, with poster-auth + ERC-8004 gating
-  + per-gig locking (round-2 security fixes).
+  + per-gig locking (round-2 security fixes) + a fresh-read-before-write board lock so unrelated gigs'
+  saves can never clobber each other (round 3).
 - `mcp-server.mjs` — MCP stdio server exposing the 5 operations + 2 identity tools to Franklin.
 - `scripts/e2e-testnet.mjs` — real, no-mock full-loop proof on Base Sepolia, INCLUDING re-proof that
   both adversary-found drains now fail (see "Security fixes, round 2").
@@ -187,6 +189,49 @@ seconds after its funding tx had a confirmed receipt. Fixed with a bounded retry
 transient reason string — confirmed it resolves the race without masking a genuine insufficient-balance
 error (only retries when the reason is `insufficient_funds`; any other rejection fails immediately).
 
+## Security fixes, round 3 (2 residual concurrency gaps — not fund-theft, but real data-loss bugs)
+
+A second adversary pass over the round-2 fix confirmed all 3 fund-drain findings closed, but found 2
+concurrency gaps that would bite once automaton + Franklin are separate concurrent launchd loops
+sharing this board:
+
+- **GAP 1 (stale-lock steal)**: `lib/lock.mjs`'s `STALE_MS=30000` let a second caller STEAL a lock
+  after 30s even from a holder that was still genuinely (legitimately) working — a real settle+retry
+  sequence measured at 16.79s plus network/confirmation on top can exceed 30s under congestion,
+  reopening the finding-2 double-pay race.
+- **GAP 2 (cross-gig shared-state clobber)**: the per-gigId lock never protected the SHARED
+  `state/gigs.json` file — `persist.mjs` is a full-file overwrite with no version check, so a slow
+  operation on gig X would compute its save from a state snapshot taken BEFORE its slow network step,
+  and that late save would silently revert a concurrent `gig_take` on an unrelated gig Y back to
+  `'open'` — the legit taker's assignment would vanish from the persisted board.
+
+**Fixes**:
+
+- **GAP 1**: `lib/lock.mjs`'s `withGigLock` now HEARTBEATS the lock file's mtime (every `heartbeatMs`,
+  default 5s) for as long as `fn()` is running, so a LIVE holder's lock never looks stale to anyone
+  else — staleness (`staleMs`, default 60s, raised from 30s) now only ever indicates a genuinely dead
+  (crashed) holder, never a merely slow one. Both are injectable for fast, deterministic testing.
+- **GAP 2**: `gig.mjs`'s new `applyAndSave()` is now the ONLY place that ever writes to disk — it
+  re-reads the board FRESH from disk immediately before applying a mutation, inside a dedicated global
+  `"_board"` lock. The (possibly slow) network settle still only holds the per-gigId/`"_post"` lock;
+  the board lock is held only for the brief local read-mutate-write, so unrelated gigs still process
+  concurrently, but no write can ever be computed from data older than the instant it's persisted.
+
+**RED→GREEN**: 4 new tests — `__tests__/lock.test.mjs` (3: heartbeat prevents steal-while-alive, a
+genuinely dead holder's lock IS reclaimable, unrelated lock keys never contend) +
+`__tests__/gig.test.mjs`'s `★GAP 2★` test (a slow verify_and_pay on gig X, racing a concurrent take on
+gig Y, confirms Y's take survives in the final persisted board). Each gap's specific mechanism (the
+heartbeat; the fresh-read-before-write) was temporarily reverted and the exact corresponding test (and
+only that test) failed, then restored — full suite 21/21 green. See
+`.vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes-round3.md` for transcripts.
+
+**Real testnet re-proof**: re-ran the full `scripts/e2e-testnet.mjs` (both attack re-proofs from round
+2) against the round-3 code — both still correctly rejected/serialized (self-verify attack rejected;
+concurrent real settles → exactly 1 paid). On-chain reconciliation of the escrow address still nets
+out exactly (deposits − releases = current balance; releases to the taker = taker's current balance) —
+no hidden double-payout anywhere, across the full combined history (rounds 1–3 plus the adversary's own
+testing).
+
 ## Wiring to Franklin (MCP) — NOT applied here, witness step for the team lead
 
 Franklin's own MCP loader (`@blockrun/franklin`, `dist/mcp/config.js`) reads
@@ -215,14 +260,19 @@ Exposes 7 tools: `gig_post`, `gig_list`, `gig_take`, `gig_deliver`, `gig_verify_
 npm test   # node --test __tests__/*.test.mjs
 ```
 
-17/17 pass:
+21/21 pass:
 - `__tests__/store.test.mjs` (10) — pure lifecycle transitions + the ★core★ fail-closed guarantee:
   `applyVerifyAndPay` refuses to mark a gig `'paid'` without a real `payoutTx`.
-- `__tests__/gig.test.mjs` (7, new in round 2) — orchestration-layer tests with injected fake
-  `pay`/`verifyIdentityFn` (fast, deterministic, no real network): non-poster rejection (finding 1),
-  concurrent-call double-pay prevention (finding 2), ERC-8004 identity gating at post/take/payout-time
-  (finding 3).
+- `__tests__/gig.test.mjs` (8, 7 from round 2 + 1 from round 3) — orchestration-layer tests with
+  injected fake `pay`/`verifyIdentityFn` (fast, deterministic, no real network): non-poster rejection
+  (finding 1), concurrent-call double-pay prevention (finding 2), ERC-8004 identity gating at
+  post/take/payout-time (finding 3), cross-gig shared-state clobber prevention (round-3 gap 2).
+- `__tests__/lock.test.mjs` (3, new in round 3) — `lib/lock.mjs` unit tests: a live holder's heartbeat
+  prevents its lock from being stolen (gap 1), a genuinely dead holder's lock IS reclaimable, unrelated
+  lock keys never contend.
 
-Every guard in both files was verified RED→GREEN by temporarily reverting it and confirming the exact
-corresponding test (and only that test) fails, then restoring — see
-`.vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes.md` for the transcripts.
+Every guard in all three files was verified RED→GREEN by temporarily reverting it and confirming the
+exact corresponding test (and only that test) fails, then restoring — see
+`.vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes.md` (rounds 1-2) and
+`.vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes-round3.md` (round 3) for the
+transcripts.

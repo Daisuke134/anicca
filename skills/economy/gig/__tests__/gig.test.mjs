@@ -212,3 +212,51 @@ test("★FINDING 3★ gig_verify_and_pay RE-verifies taker identity at payout ti
   const list = await gigList({ statePath });
   assert.equal(list.gigs[0].status, "delivered", "gig must remain 'delivered', never falsely 'paid'");
 });
+
+// ============ GAP 2 (round 3): cross-gig shared-state clobber ============
+
+test("★GAP 2★ a SLOW verify_and_pay on gig X does not clobber a concurrent take on unrelated gig Y", async () => {
+  const statePath = await tmpState();
+  const payoutCounter = { n: 0 };
+
+  // gig X: already open->taken->delivered, about to be verify_and_paid SLOWLY
+  const gigXId = await postTakenDelivered(statePath, payoutCounter);
+  // gig Y: freshly posted, still OPEN -- someone else is about to take it while X is mid-settle
+  const postedY = await gigPost({
+    posterPrivateKey: POSTER_PK,
+    posterAgentId: "8",
+    taskSpec: "gig Y, unrelated to gig X",
+    bountyUsdcBase: 1000,
+    statePath,
+    pay: fakePay(payoutCounter),
+    verifyIdentityFn: validIdentity,
+  });
+  assert.equal(postedY.ok, true, "setup: gig Y post must succeed");
+  const gigYId = postedY.gig.id;
+
+  const SLOW_MS = 150;
+  const xPromise = gigVerifyAndPay({
+    gigId: gigXId,
+    verified: true,
+    posterPrivateKey: POSTER_PK,
+    statePath,
+    pay: slowFakePay(payoutCounter, SLOW_MS), // X's write won't happen until well after Y's take completes
+    verifyIdentityFn: validIdentity,
+  });
+  // let X's operation start (load its snapshot, begin its slow "network" step) before Y's take fires
+  await new Promise((r) => setTimeout(r, 20));
+  const yTakeResult = await gigTake({ gigId: gigYId, takerAddress: TAKER_ADDR, takerAgentId: "9", statePath, verifyIdentityFn: validIdentity });
+
+  const xResult = await xPromise;
+
+  assert.equal(yTakeResult.ok, true, "gig Y's take call itself must report success");
+  assert.equal(xResult.ok, true, "gig X's verify_and_pay must also succeed (they're unrelated gigs, both should proceed)");
+  assert.equal(xResult.paid, true);
+
+  const finalList = await gigList({ statePath });
+  const finalY = finalList.gigs.find((g) => g.id === gigYId);
+  const finalX = finalList.gigs.find((g) => g.id === gigXId);
+  assert.equal(finalY.status, "taken", "gig Y's take must SURVIVE in the final persisted board, not be silently reverted to 'open' by X's later save");
+  assert.equal(finalY.taker, TAKER_ADDR);
+  assert.equal(finalX.status, "paid", "gig X's own payout must also be correctly persisted");
+});
