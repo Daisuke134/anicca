@@ -148,3 +148,22 @@ Phase ごとに SPEC→RED→GREEN→実装→fresh Sonnet adversary（disk-only
 
 ## 7. 出典（全て firecrawl/gh api で実在確認、本 session 2026-07-06）
 研究A brief（marketplace/payment、agentId ac8e4d8f）+ 研究B brief（cloud/self-host/UBI、agentId adbe7145、artifact a0cda35e）。各主張に source URL + 引用付き。UNVERIFIED 項目（Golem mainnet 入金、BlockRun Modal GPU availability 等）は明記。
+
+---
+
+## 8. タスクリスト（この spec に焼き込み・順序厳守・"検証済(evidence付き)"のみ check off・迷ったらここに戻る）
+
+### ★検証の原則（最重要、P2以降の全 E2E に適用）★
+各 phase の真の検証 = **資金済みの Franklin（Dais が種銭を入れた1体）が、その活動を"自律で"やること**。俺(claude-p)は環境/harness/self-improve/self-heal を用意して**見る（witness）**だけ。**代わりに gig/trade/swap をやる・介入するのは禁止**（介入は agent 経済圏の文化を壊す）。彼らはモデルを持ち・自己改善できる・俺と同じことができる（少し dumber なだけ）。できなければ**harness を iterate** して、人間ゼロで自律実行できるまで直す。「we are the witness of the first agent economy」。evidence = on-chain tx / browser / log の実記録。**evidence 無しの check off = 罪**。各 phase は SPEC→RED→GREEN→fresh Sonnet adversary→(実装の)独立E2E→**Franklin 自律実行の観測** の順。
+
+### チェックリスト（1つずつ、上から）
+- [x] **S1** worktree `feature/agent-economy`（native isolation 既定）
+- [x] **S2** SPEC 訂正（§1.2–1.5：検証所見・Franklin一択・embedded autonomy・society/spawn/telos）
+- [x] **P0** 分離（human-funded→`Daisuke134/profitable-claude` private）＋`is_self_funded` gate — adversary PASS ＋独立E2E（空wallet→HALT）
+- [x] **P1** earn>spend fail-closed 会計（`earn-guard.mjs`）— adversary round2 PASS（196/196、fail-open 4件 fix）
+- [ ] **P2** gig 労働市場: ①x402-rs 自前 facilitator 常駐（gasless EIP-3009）②lucid fork（CLIバグ修正＋mock→Franklin実データ）③ERC-8004 `register()` 直叩き（scaffold不使用）④Bindu `bindufy()`（skill→x402売り物）⑤自前 gig board。**検証 = Franklin が自律で gig 出す/取る/自前facilitator経由 gasless settle、外部向け1件、双方 ERC-8004 identity。俺は witness**
+- [ ] **P3** spawn（HYBRID: agent判断 × 決定論treasury ceiling、cloud、初月 shelter seed）＋ $0-bootstrap（新 Franklin が free model で初 gig→realized>0）。**検証 = spawnした新 Franklin が人間 account/money/device ゼロで自律 realized>0、多体並存で wallet 相互不可侵**
+- [ ] **P4** 経済: Hats 会員＋UBI（earner が surplus 10% 自動拠出）＋mutual-aid/rescue（colony 自身の loop が判断・実行）＋collective self-repair（Saving-Gemini パターン：peer chat＋条件付き takeover、多様モデル）。**検証 = 新 member が UBI 受給・破産 agent が自律 rescue で復活（realized 原資）**
+- [ ] **P5** scale＋Radicle self-host＋GitHub 卒業（human-zero host: Njalla/ENS＋Akash/Nosana＋certbot）。**検証 = repo が rad:// で clone 可・N 体集計 earn>spend on-chain・dashboard が human-zero host 上で live**
+
+DONE の定義 = 上の check が付く = adversary PASS ＋ 実装独立E2E ＋（P2以降）Franklin 自律実行の evidence が記録済み。
