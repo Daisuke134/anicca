@@ -7,19 +7,19 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { privateKeyToAccount } from "viem/accounts";
 import { usdcBalance } from "../../../_shared/lib/usdc.mjs";
-import { USDC_BASE_SEPOLIA } from "./escrow.mjs";
+import { USDC_BASE_SEPOLIA, USDC_BASE_MAINNET, GIG_CHAIN } from "./escrow.mjs";
 
 // escrow.mjs's own DEFAULT_RPC_URL isn't exported (it's a local const there) — mirrored here so this
 // balance check always reads the SAME chain the gig board itself settles on. Override via GIG_RPC_URL
 // if the board ever migrates (MAINNET.md documents that move; this becomes a one-line env change).
-const RPC_URL = process.env.GIG_RPC_URL || "https://sepolia.base.org";
+const RPC_URL = process.env.GIG_RPC_URL || (GIG_CHAIN === "base" ? "https://mainnet.base.org" : "https://sepolia.base.org");
 
 export function addressFromKey(privateKey) {
   return privateKeyToAccount(privateKey).address;
 }
 
 export async function balanceOf(address) {
-  return usdcBalance(address, { rpc: RPC_URL, token: USDC_BASE_SEPOLIA });
+  return usdcBalance(address, { rpc: RPC_URL, token: GIG_CHAIN === "base" ? USDC_BASE_MAINNET : USDC_BASE_SEPOLIA });
 }
 
 // CLI: `SIGNKEY=0x... node wallet.mjs address` | `ADDR=0x... node wallet.mjs balance`
