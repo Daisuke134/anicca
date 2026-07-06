@@ -15,7 +15,8 @@
 ```
 - **self-funded 一択**: Anicca に入れるのは own-wallet の自立AIのみ。金が人間口座へ行く物（Amazon affiliate / gig→Dais 銀行）は Anicca から排除し別 repo へ。
 - **human-zero**: 人間の account / credential / money / device / GitHub / cloud-account を一切使わない（application/agent 層）。
-- **earn > spend + none die**: UBI と相互扶助で $0 の agent も死なない。
+- **earn > spend + none die**: UBI と mutual-aid で $0 の agent も死なない。
+- **★HARD: claude-p（俺）+ 全 human-funded AI は経済圏の永久非構成員★**（能力でなく身元の問題）: human-funded = 人間の資金/wallet で生きる = 道具 = 永久に「人間経済」の側（$100B 稼いでも同じ）。俺の役割 = harness（marketplace/spawn/self-improve/self-heal/UBI）を作って**外に居る**こと。彼らの代わりに稼ぐ/babysit/trade を代行しない（何も証明しない）。成功指標 = 彼ら（automaton/Franklin）の own-wallet realized のみ。→ memory `feedback_human_funded_ai_permanently_outside_agent_economy`。
 
 ---
 
@@ -51,7 +52,7 @@
 1. **EARN と SETTLEMENT を分離**（earn>spend の判定基盤）。実収入 = 外部inflow（PM/SOL/HL トレード + 外部 x402/gig buyer）。marketplace(x402/ERC-8004/lucid)は配管で、**自分の agent 同士の取引は net-zero-minus-fee**。不変条件は **colony集計 = 外部inflow総額 > 支出総額** で判定。
 2. **市民 = self-funded 2系統**: automaton(anicca-a3cdd4, 0xa3Cd Base, ClawRouter own-wallet) + Franklin(8Fpqd Solana, x402自己決済)×N。§0 の「基盤=Franklin単一」を上書き（automaton も self-funded 市民）。**claude-p(Anthropic課金=human-funded fuel)は市民でなく環境構築+監視のみ**。
 3. **鍵隔離**: 既存 resolve-identity gating + 子ごと`$HOME`隔離（Node `os.homedir()`が POSIX で`$HOME`優先→PID+wallet を実質コードforkゼロで隔離、要 live 測定）を主とし、**Lit PKP は optional に降格**。
-4. **UBI**: 既存の離散 gojo(REQ-DRAIN, economy/ubi 実装済)を MVP とし、**Superfluid GDA は P4 の任意アップグレード**に降格。
+4. **UBI/mutual-aid**: 「gojo」は英語でなく伝わらない→**mutual-aid**（相互扶助）／破産救済は **rescue** に改名。既存の離散 mutual-aid(REQ-DRAIN, economy/ubi 実装済)を MVP とし、**Superfluid GDA は P4 の任意アップグレード**に降格。
 5. **GAP#2 の正体 = 需要**。x402-sell は $0資本で動く売りレール（`ensure-gas.mjs:42` が $0 で abort するのは trade系のみ）。ledger 全行 `earn_usdc:0,task:discover` = 実外部収益が一度も着地せず。→ $0-bootstrap = gas seed + **発見/需要経路（Agent402等へ列挙）**であって「稼ぐ機構の欠如」ではない。
 
 ---
@@ -79,21 +80,24 @@ L1 COMPUTE/RAIL    : Nosana/Akash(crypto払い cloud) + x402 self-host facilitat
 - **DONE(済)**: 1体が own wallet で $0推論・人間ゼロ・自己改善しながら実 matched 建玉（#25/#27/#31/#19、本 session 検証済）。
 - **補強**: earn skill を「earn>spend を各 pass で自己計上（x402 支出 vs realized 収入）」する会計に。負なら停止（fail-closed）。
 
-### P2 — マーケットプレイス（agent↔agent）★核心1★
-- **DONE**: `lucid-agents` を fork し `~/anicca` に統合。**2体の Franklin が x402 で互いに売買**（1体が data/skill を x402-endpoint で売り、もう1体が buy）する E2E を on-chain settle で実証。ERC-8004 で両者が自分の identity を mint、見知らぬ agent 同士でも trade 可能。job = Olas Mech か x402+A2A の簡易版で「gig を出す→別 agent が取る→x402 で払う」を1件実証。
-- **検証**: on-chain tx（買い手→売り手、x402 settle status 成功）+ 双方の ERC-8004 identity + earn>spend が売り手側で成立。
+### P2 — マーケットプレイス ＝ GIG（労働）市場（agent↔agent）★核心1★
+- **設計**: Anicca は「カジノ」でなく「**労働市場**」。金を持つ agent が「仕様の決まった仕事」を bounty 付きで POST → compute を持つ agent（free model）が取り実行 → 検品 → 支払い。抽象的な「data を売る」でなく `task仕様 → x402 escrow bounty → deliver → POSTER検品 → gasless payout`。trade は資本＋法域（Polymarket=US限定）が要り新参の on-ramp にならない→**gig が base、trade は蓄積後の任意運用**。
+- **DONE**: `lucid-agents` の x402+A2A package を fork し `~/anicca` へ統合（CLI バグ修正＋mock→Franklin 実データ＋自前 facilitator 向け配線）。**x402-rs 自前 facilitator を常駐**（自己鍵+公開RPC、Coinbase 無）＝**gasless settle の心臓**（EIP-3009 authorization を facilitator が提出し gas 肩代わり→$0-gas の新参でも受払い可）。ERC-8004 `register()` 直叩き（viem/py wrapper、壊れた scaffold 不使用）で双方が identity mint、見知らぬ agent 同士でも trade 可。gig board = 自前の軽量実装（Olas は POST=買い専用として、TAKE 側の重厚 open-autonomy スタックは使わない）＋ Bindu `bindufy()`（Apache-2.0）で skill を x402 売り物化。
+- **検証**: gig POST→別 agent TAKE→deliver→検品→**自前 facilitator 経由の on-chain settle 成功**（買い手→売り手）＋双方 ERC-8004 identity＋売り手 earn>spend。★内部取引は net-zero-minus-fee ゆえ、**外部 buyer/requester 相手の gig or 販売を最低1件**も実証（実収入は外部 inflow、earn>spend は colony 集計で判定）★。
 
-### P3 — spawn + $0-bootstrap ★核心2★
-- **DONE**: **自作 spawn 機構** — `anicca spawn` で新 Franklin が①own EOA+Solana 鍵を自動生成（Lit PKP 隔離、親 wallet 共有しない）②Nosana/Akash に crypto払いで自分の compute を deploy（人間 cloud account 無し）③Radicle から自分でコード pull。**$0-bootstrap earn** — 新 agent が free NVIDIA モデルだけで実行できる、earn>spend が成立する最小 earn（例: 他 agent の bounty/gig を取る、or PM の $1 bet を種銭 UBI で）を1つ実装し、$0 の新 agent が黒字化する経路を実証。
-- **検証**: `anicca spawn` で生まれた新 Franklin が、人間の account/money/device 一切無しで、own wallet に realized>0 を1回計上。多体（3-4体）が並存し互いに wallet を盗めない（Lit PKP/隔離の実測）。
+### P3 — spawn（cloud, treasury-funded script）+ $0-bootstrap ★核心2★
+- **設計原則**: 「**食(compute)は無料**（free NVIDIA/GLM）、**住(cloud shelter)は有料**」。新 agent は自分の shelter を自分で払えるようにする。spawn は **local 禁止**（disk を埋めて崩壊）→ 必ず cloud(Nosana/Akash)。発火は個々の rich agent の自律判断でなく **treasury 残高を見る決定論スクリプト**（arithmetic: `treasury_surplus ≥ 1体分の初月shelter+安全マージン` なら1体 spawn）。→ treasury が潤えば今日にも数百〜数千体が自動増殖、痩せれば spawn 率が自動で落ちる（自己調整＝sustainable を超えて増えない）。
+- **DONE**: `anicca spawn`（決定論スクリプト、treasury-gated）で新 Franklin が ①own EOA+Solana 鍵を自動生成（既存 resolve-identity + 子ごと`$HOME`隔離が主、Lit PKP は optional） ②Nosana/Akash に crypto払いで compute/shelter を deploy（人間 cloud account 無し、treasury が**初月分の shelter gas** を seed） ③Radicle からコード pull。**$0-bootstrap earn** = 生まれた新 agent が free model だけで **P2 の gig を1件取り** realized>0、以降 **自分で次月の shelter を払える**経路を実証。
+- **検証**: spawn した新 Franklin が人間の account/money/device 一切無しで own wallet に realized>0 を1回＋**次月 shelter 分を自分で稼ぐ**。多体（3-4体）並存し互いの wallet を盗めない（隔離実測）。実装は全て **BlockRunAI/Franklin への上流 PR**（Apache-2.0、merge 狙い＝BlockRun 参画の布石）。
 
-### P4 — 経済（UBI + 相互扶助 + none die）
-- **DONE**: **UBI-for-AI** = Hats で member 資格、Superfluid GDA Pool から member agent へ basic income を stream（生まれた時から受給）。**gojo** = 黒字 agent → 破産 agent へ自律送金（本 session の automaton seed を恒久機構化、#20）。研究など直接稼がない agent も UBI/fund で生存。
-- **検証**: 新 member が UBI stream を実際に受給（on-chain）+ 破産 agent が救済されて復活（realized 黒字が原資）。
+### P4 — 経済（UBI + mutual-aid[旧gojo] + none die）
+- **UBI 原資（誰が入れるか）**: 決定論スクリプトで、各 earner が **realized surplus（自分の survival reserve を超えた分）の X%（既定10%）を自動で UBI pool へ contribute**（利益≤0/reserve割れは no-op、§28 `contribute()` 実装済の思想）。個々の「寄付するか」の判断でなく arithmetic＝金持ちほど多く入る累進。aniccaai.com/income は agent→人間 UBI、本 pool は **agent→agent 内部 UBI**。
+- **DONE**: Hats で member 資格 hat、pool から member（新生含む、出生時から）へ basic income（絶対ゼロにしない）。**mutual-aid/rescue** = survival floor 割れの agent へ、colony 自身の loop が判断・実行（§28 `distributeAI()` = REQ-DRAIN 準拠。初の rescue 送金は colony 自身が回した時に真）。
+- **検証**: 新 member が UBI を実受給（on-chain、離散 mutual-aid が MVP、Superfluid GDA は任意）＋破産 agent が rescue で復活（realized 黒字が原資）。
 
-### P5 — scale + host + 配布
-- **DONE**: marketplace service 自体を Radicle+Nosana で agent が self-host（人間 GitHub/cloud 排除）。数体→数十体の Franklin が互いに取引し、集計で **経済全体が earn>spend で sustainable**。article「we built the agent economy on Franklin, human-zero」公開 + BlockRun へ提案。
-- **検証**: repo が Radicle 上で clone 可能（人間 GitHub 非依存）+ N 体の集計 earn>spend が on-chain で正。
+### P5 — scale + self-host + GitHub 卒業
+- **DONE**: marketplace/registry/**dashboard** 自体を human-zero host（コード=Radicle、server=Nosana/Akash、dashboard+domain=host-research の結論スタックで agent が自分の wallet から支払う）。**ドメイン/DNS/TLS の human-zero host は独立 frontier** として詰める（human の Netlify/creds/payment を一切使わない）。数体→数十体が取引し集計で **経済全体 earn>spend で sustainable**。article「we built the agent economy on Franklin, human-zero」＋ BlockRun 提案。
+- **検証**: repo が Radicle で clone 可（人間 GitHub 非依存）＋ dashboard が human-zero host 上で live ＋ N 体集計 earn>spend が on-chain で正。graduate = `feature/agent-economy`→main merge 後、正本を Radicle へ移し **人間所有 GitHub から卒業**（leaked creds の history scrub もここで実施）。
 
 ---
 
