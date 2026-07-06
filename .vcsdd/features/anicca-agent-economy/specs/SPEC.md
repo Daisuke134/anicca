@@ -96,7 +96,13 @@ L1 COMPUTE/RAIL    : Nosana/Akash(crypto払い cloud) + x402 self-host facilitat
 - **検証**: 新 member が UBI を実受給（on-chain、離散 mutual-aid が MVP、Superfluid GDA は任意）＋破産 agent が rescue で復活（realized 黒字が原資）。
 
 ### P5 — scale + self-host + GitHub 卒業
-- **DONE**: marketplace/registry/**dashboard** 自体を human-zero host（コード=Radicle、server=Nosana/Akash、dashboard+domain=host-research の結論スタックで agent が自分の wallet から支払う）。**ドメイン/DNS/TLS の human-zero host は独立 frontier** として詰める（human の Netlify/creds/payment を一切使わない）。数体→数十体が取引し集計で **経済全体 earn>spend で sustainable**。article「we built the agent economy on Franklin, human-zero」＋ BlockRun 提案。
+- **用語定義**: 「human-zero」= **Dais-zero ＋ agent が自分の account/wallet を持つ**。agent 自身の AgentMail email は human credential ではない。真の「口座ゼロ」（ENS）と「Dais-zero だが agent 自身の account は要る」（Njalla）を区別して呼ぶ。
+- **host スタック（host-research 実査で確定、全て agent 自身の wallet 払い・Dais の Netlify/card/個人account 一切不使用）**:
+  - **git** = Radicle（P2P、seed node のみ自己ホスト）
+  - **marketplace API + dashboard + IPFS** = **Akash/Nosana 上に Kubo(IPFS)+Node を同居で自己ホスト**（wallet 鍵のみ、signup ゼロ）。※IPFS pinning SaaS（web3.storage/Fleek/Pinata）は email 確認必須ゆえ不採用→自前 Kubo。
+  - **domain** = ①**Njalla**（crypto・no-KYC、agent 自身の email、**裸ドメイン** .xyz 等）を主 ＋ ②**ENS `.eth`**（真の口座ゼロ、`.eth.limo` gateway、検閲耐性 backup）を並行。
+  - **DNS/TLS** = **Njalla Dynamic DNS(HTTPS GET) + `certbot-dns-njalla` + Let's Encrypt** で取得〜更新まで100%スクリプト化（人間ゼロタッチ）。
+- **DONE**: 上記スタックで marketplace/dashboard を live 化。数体→数十体が取引し集計で **経済全体 earn>spend で sustainable**。article「we built the agent economy on Franklin, human-zero」＋ BlockRun 提案。
 - **検証**: repo が Radicle で clone 可（人間 GitHub 非依存）＋ dashboard が human-zero host 上で live ＋ N 体集計 earn>spend が on-chain で正。graduate = `feature/agent-economy`→main merge 後、正本を Radicle へ移し **人間所有 GitHub から卒業**（leaked creds の history scrub もここで実施）。
 
 ---
