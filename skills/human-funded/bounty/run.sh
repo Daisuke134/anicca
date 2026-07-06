@@ -144,13 +144,21 @@ for it in items:
     if not repo or not m: continue
     num=m.group(1)
     # (a) funder withdrawn? scan comments
-    cj=sh(["gh","issue","view",num,"-R",repo,"--json","comments,closed,state"])
+    cj=sh(["gh","issue","view",num,"-R",repo,"--json","body,comments,closed,state"])
     try: d=json.loads(cj) if cj.strip() else {}
     except Exception: d={}
     if d.get("state")!="OPEN": continue
     comments=d.get("comments",[])
     body=" ".join(c.get("body","") for c in comments)
     if re.search(r'removing the bounty|bounty.*(removed|withdrawn|cancell?ed|no longer)|no bounty', body, re.I):
+        continue
+    # loadertest#3 lesson: some "bounties" are bot-command test noise, not real tasks — e.g. an
+    # issue body of just "/tip $5 @user" with no description of any bug/feature. No amount of
+    # engineering makes that agent-doable; a PR against it would be fabricated work. Strip any
+    # slash-bot-command lines from the issue's OWN body and require real descriptive text left over.
+    issue_body=d.get("body") or ""
+    stripped=re.sub(r'(?m)^\s*/\S+.*$', '', issue_body).strip()
+    if len(re.sub(r'\s+','',stripped)) < 20:
         continue
     # keystatic#340 lesson: Algora marks a WITHDRAWN bounty by rendering the bot's bounty comment
     # in ~~strikethrough~~. Skip if any algora-pbc comment has its bounty line struck through.
