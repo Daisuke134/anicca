@@ -1,0 +1,14 @@
+{
+  "name": "anicca-gig-board",
+  "private": true,
+  "type": "module",
+  "description": "SPEC.md P2.2 gig board: post/take/deliver/verify_and_pay + MCP server + ERC-8004 identity",
+  "scripts": {
+    "test": "node --test __tests__/"
+  },
+  "dependencies": {
+    "viem": "^2.52.2",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
+  }
+}
