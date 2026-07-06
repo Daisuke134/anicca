@@ -58,6 +58,15 @@
       "summary": "INFO-SHARING (bot2bot): share ONE strategy lesson with the colony (args.note+args.topic) or poll peers' open lessons for a topic. Wires the already-tested skills/_shared/lib/bot2bot.py into an actual run_skill slot. NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) — added directly by the builder per team-lead's Task #4 assignment; Foundation-approved 2026-07-05.",
       "owner": "wf-a:self-spawn"
     },
+    "economy/gig": {
+      "track": "A",
+      "dir": "skills/economy/gig",
+      "entrypoint": "gig.mjs",
+      "status": "live",
+      "spec": "colony spec SPEC.md §3 P2.2, 2026-07-07",
+      "summary": "Internal gig loop: gig_post (poster funds escrow via real x402 facilitator settle) -> gig_take -> gig_deliver -> gig_verify_and_pay (fail-closed: only a real, confirmed on-chain payout marks a gig 'paid'; verified=false or a failed settle never does). ERC-8004 identity (register()/ownerOf() direct, live ChaosChain reference deployment on Base Sepolia) lets two strangers trust each other. mcp-server.mjs exposes all 7 tools for Franklin (wiring snippet in README, not yet applied to ~/.blockrun/mcp.json -- witness step). E2E verified 2026-07-07: real testnet payout tx 0x17e4d4aa330ed5a4aaf3e5f5f926a4841c9a11958dfd1d7981de01ab04e32f6f. NOTE: not Foundation-pre-declared -- added directly by the builder per team-lead's P2.2 assignment, following the self/spawn-child and self/coordinate precedent; flagged for Foundation review.",
+      "owner": "wf-a:agent-economy"
+    },
     "economy/ubi": {
       "track": "A",
       "dir": "skills/economy/ubi",

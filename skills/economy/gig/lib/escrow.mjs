@@ -1,0 +1,110 @@
+// economy/gig/lib/escrow.mjs — pays USDC through the ALREADY-BUILT self-host x402-rs facilitator
+// (services/facilitator, P2.1, running at 127.0.0.1:8405) using the exact EIP-3009
+// transferWithAuthorization flow proven live in services/facilitator/scripts/settle-test.mjs
+// (real tx 0x383e9369... on Base Sepolia). This module does NOT reinvent x402 or the facilitator --
+// it is the same signing + /verify + /settle sequence, parameterized for (from,to,amount) so gig.mjs
+// can call it twice per completed gig: once poster -> escrow (post), once escrow -> taker (verify_and_pay).
+//
+// "Escrow" here = a custody keypair the gig-board process holds (GIG_ESCROW_PRIVATE_KEY), not a
+// Solidity escrow contract -- documented limitation (see README "Escrow model"), consistent with the
+// P2.2 MVP scope (fail-closed release gating is enforced in lib/store.mjs, not by a contract).
+import { privateKeyToAccount } from "viem/accounts";
+import { createPublicClient, http as viemHttp } from "viem";
+import { baseSepolia } from "viem/chains";
+import { randomBytes } from "node:crypto";
+
+export const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
+export const CHAIN_ID_BASE_SEPOLIA = 84532;
+const DEFAULT_RPC_URL = "https://sepolia.base.org";
+
+async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds }) {
+  const payer = privateKeyToAccount(privateKey);
+  const now = Math.floor(Date.now() / 1000);
+  const nonce = "0x" + randomBytes(32).toString("hex");
+  const authorization = {
+    from: payer.address,
+    to,
+    value: String(amountBase),
+    validAfter: String(now - 60),
+    validBefore: String(now + validitySeconds),
+    nonce,
+  };
+  const domain = { name: "USDC", version: "2", chainId, verifyingContract: usdcAddress };
+  const types = {
+    TransferWithAuthorization: [
+      { name: "from", type: "address" },
+      { name: "to", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "validAfter", type: "uint256" },
+      { name: "validBefore", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+    ],
+  };
+  const signature = await payer.signTypedData({ domain, types, primaryType: "TransferWithAuthorization", message: authorization });
+  const paymentRequirements = {
+    scheme: "exact",
+    network: `eip155:${chainId}`,
+    amount: String(amountBase),
+    payTo: to,
+    maxTimeoutSeconds: validitySeconds,
+    asset: usdcAddress,
+    extra: { name: "USDC", version: "2" },
+  };
+  const paymentPayload = { x402Version: 2, accepted: paymentRequirements, payload: { signature, authorization } };
+  return { payerAddress: payer.address, body: { x402Version: 2, paymentPayload, paymentRequirements } };
+}
+
+async function postJson(url, body) {
+  const res = await fetch(url, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const json = await res.json().catch(() => ({}));
+  return { httpOk: res.ok, status: res.status, json };
+}
+
+/**
+ * settleBody — run /verify then /settle against the facilitator for an already-signed payload, then
+ * WAIT for the settle tx to actually be mined before reporting success. This matters because the gig
+ * board chains settles back-to-back (post funds escrow, then later release pays out of that same
+ * escrow) -- the facilitator's /settle response only confirms the tx was BROADCAST, and the very next
+ * settle's own /verify preflight does an on-chain balance check that a still-pending tx hasn't updated
+ * yet (hit exactly this race in the first E2E run: escrow-release failed with "insufficient_funds"
+ * moments after a real, ultimately-successful escrow-funding tx). Fail-closed, no crash: any failure
+ * returns { ok:false, stage, reason, raw } instead of throwing (matches
+ * services/x402-endpoint/verify.mjs's structured-error contract).
+ */
+export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_URL }) {
+  const verify = await postJson(`${facilitatorUrl}/verify`, body);
+  if (!verify.httpOk || verify.json.isValid !== true) {
+    return { ok: false, stage: "verify", reason: verify.json.invalidReason || `http ${verify.status}`, raw: verify.json };
+  }
+  const settle = await postJson(`${facilitatorUrl}/settle`, body);
+  if (!settle.httpOk || settle.json.success !== true) {
+    return { ok: false, stage: "settle", reason: settle.json.errorReason || `http ${settle.status}`, raw: settle.json };
+  }
+  const tx = settle.json.transaction;
+  const publicClient = createPublicClient({ chain: baseSepolia, transport: viemHttp(rpcUrl) });
+  const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
+  if (receipt.status !== "success") {
+    return { ok: false, stage: "confirm", reason: `settle tx reverted on-chain: ${tx}`, raw: settle.json };
+  }
+  return { ok: true, tx, payer: settle.json.payer };
+}
+
+/**
+ * payViaFacilitator — sign + settle a gasless USDC transfer (from,to,amountBase) through the
+ * self-host facilitator. `privateKey` never leaves this process; the facilitator only ever sees the
+ * already-signed EIP-3009 payload (the payer's key signs off-chain, the facilitator's OWN key pays L2
+ * gas). This is the ONE function gig.mjs calls for both "poster funds escrow" and "escrow pays taker".
+ */
+export async function payViaFacilitator({
+  privateKey,
+  to,
+  amountBase,
+  facilitatorUrl,
+  chainId = CHAIN_ID_BASE_SEPOLIA,
+  usdcAddress = USDC_BASE_SEPOLIA,
+  validitySeconds = 300,
+}) {
+  const { payerAddress, body } = await signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds });
+  const result = await settleBody({ facilitatorUrl, body });
+  return { ...result, payerAddress, to, amountBase };
+}
