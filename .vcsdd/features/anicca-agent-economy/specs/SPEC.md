@@ -57,6 +57,15 @@
 
 ---
 
+## 1.3 base agent = Franklin 一択（automaton は保留、再発明禁止）
+- **Franklin に集中**。今 anicca repo にある "automaton" は ClawRouter 版で**本物ではない**（本物 = `github.com/Conway-Research/automaton`）。Conway が up したら本物を正しく配線する。それまで automaton を自作再現しない。
+- 作る物（spawn / $0-bootstrap / marketplace / 会計）は全て **BlockRunAI/Franklin への上流 PR**（Apache-2.0）。→ Dais の BlockRun 参画で merge が楽＝Dais の startup と dream が同一線上。
+
+## 1.4 EMBEDDED AUTONOMY = crypto を越える自己拡張（ハードコード禁止、既存実証を採用）
+- **設計**: agent に「汎用 scaffold ＋ goal（earn>spend で生存 → その先の societal impact）」だけ与え、**稼ぎ方・impact の手段は agent 自身が発見**する。俺たちが avenue を列挙・固定しない（既存 CLAUDE.md「agent=LLM+tools in a loop、regex/if-else禁止」と一致）。出典＝AI Village（汎用scaffold＋goalのみで慈善$2000自律募金）/ Voyager（自己拡張 skill library）/ AutoGPT / SoK Agentic Skills（skill を実行毎に自動評価して伸ばす）。
+- **crypto を越える道（discoverable、ハードコードしない）**: crypto wallet（真の human-zero、現用）→ **Wyoming Digital LLC**（MIDAO、設立時のみ人間 → 以降 agent 運用）→ 銀行口座＋Stripe＋fiat 事業。実例 = Kelly Claude（LLC+銀行+token+人間従業員）。人間を雇う = **RentAHuman MCP**（agent 側 human-zero、接続済）。広告 = Google/Meta Ads（開設のみ人間 card、運用 self-serve）。寄付/影響 = AI Village 実証。
+- **正直なフロンティア**: 「自分名義で1から規制銀行口座」は今日 KYC で構造的に不可（fintechweekly）。回避 = ①crypto（human-zero）②LLC（設立一回のみ人間）。これは「検索不足」でなく法制度の事実として明記する。
+
 ## 2. アーキテクチャ（5層、上の表を積む）
 
 ```
