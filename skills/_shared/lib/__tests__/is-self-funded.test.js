@@ -140,6 +140,97 @@ test("fail-closed: fuel object missing entirely -> FAIL", () => {
   );
 });
 
+// ---------------------------------------------------------------------------
+// FIND-P0-1 (adversary, Phase 3): humanDependencies must fail-closed like the wallet/fuel
+// legs. The old implementation coerced any non-array humanDependencies to [] (treated as
+// "no dependency"), so a typo'd/malformed value wrongly PASSED the gate. Fixed: missing or
+// non-array humanDependencies now DENIES, exactly like a missing/malformed wallet or fuel.
+// ---------------------------------------------------------------------------
+test("FIND-P0-1 adversary repro: humanDependencies is a bare string ('oauth'), not an array -> FAIL", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: "oauth",
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: humanDependencies is null -> FAIL (not coerced to 'no dependency')", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: null,
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: humanDependencies is a number -> FAIL", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: 1,
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: humanDependencies is a plain object -> FAIL", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: { oauth: true },
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: humanDependencies is a non-empty array -> FAIL (regression guard)", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: ["oauth"],
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: humanDependencies omitted entirely -> FAIL (missing, same as malformed)", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+    }),
+    false,
+  );
+});
+
+test("FIND-P0-1: legit pass case still PASSES (explicit empty array, unaffected by the fix)", () => {
+  assert.equal(
+    isSelfFunded({
+      wallet: { evm: true },
+      fuel: { provider: "x402" },
+      humanDependencies: [],
+    }),
+    true,
+  );
+});
+
+test("FIND-P0-1: selfFundedReasons reports the malformed type, not a silent pass", () => {
+  const reasons = selfFundedReasons({
+    wallet: { evm: true },
+    fuel: { provider: "x402" },
+    humanDependencies: "oauth",
+  });
+  assert.ok(reasons.some((r) => r.startsWith("human-dependency:not-an-array:string")));
+});
+
 test("selfFundedReasons on a fully-passing agent returns an empty array", () => {
   assert.deepEqual(
     selfFundedReasons({

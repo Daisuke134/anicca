@@ -43,13 +43,20 @@ function fuelIsOwnFunded(agent) {
   return provider !== null && OWN_FUNDED_FUEL_PROVIDERS.has(provider);
 }
 
-function humanDependencies(agent) {
+// Returns the declared human-dependency array, or null if the field is missing/malformed
+// (not an array at all). Mirrors hasOwnWallet/fuelProvider: missing and malformed both
+// collapse to the same "can't confirm zero dependencies" signal, which hasNoHumanDependency
+// then denies — a non-array humanDependencies (string/number/object/null) must NOT be
+// silently coerced to [] (that coercion was FIND-P0-1: a typo'd humanDependencies wrongly
+// read as "none declared" and passed the gate).
+function declaredHumanDependencies(agent) {
   const deps = agent && agent.humanDependencies;
-  return Array.isArray(deps) ? deps : [];
+  return Array.isArray(deps) ? deps : null;
 }
 
 function hasNoHumanDependency(agent) {
-  return humanDependencies(agent).length === 0;
+  const deps = declaredHumanDependencies(agent);
+  return deps !== null && deps.length === 0;
 }
 
 /**
@@ -75,6 +82,10 @@ export function selfFundedReasons(agent) {
   const reasons = [];
   if (!hasOwnWallet(agent)) reasons.push("no-own-wallet");
   if (!fuelIsOwnFunded(agent)) reasons.push(`fuel-not-own-funded:${fuelProvider(agent) ?? "missing"}`);
-  if (!hasNoHumanDependency(agent)) reasons.push(`human-dependency:${humanDependencies(agent).join(",")}`);
+  if (!hasNoHumanDependency(agent)) {
+    const deps = declaredHumanDependencies(agent);
+    const detail = deps === null ? `not-an-array:${typeof (agent && agent.humanDependencies)}` : deps.join(",");
+    reasons.push(`human-dependency:${detail}`);
+  }
   return reasons;
 }
