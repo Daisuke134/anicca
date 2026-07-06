@@ -1,6 +1,12 @@
-"""PROP-D1 + PROP-I2 static grep over the shim sources.
+"""PROP-D1 static grep over shared shim-adjacent sources.
 
-Forbidden patterns (human-touch surfaces) + tmux-kill ban.
+Forbidden patterns (human-touch surfaces).
+
+2026-07-06: this file used to ALSO parametrize over gig's own run.sh (PROP-I2,
+tmux-kill ban) — skills/human-funded is now isolated to the private
+profitable-claude repo (.vcsdd/features/anicca-agent-economy SPEC.md §3 P0),
+which carries its own copy of that gig-specific check. This file keeps ONLY
+the shared-infra half (proactive_observe.py, used across all earn slots).
 """
 from __future__ import annotations
 import re
@@ -8,7 +14,6 @@ from pathlib import Path
 import pytest
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-RUN_SH = REPO_ROOT / "skills" / "human-funded" / "gig" / "run.sh"
 OBSERVE_PY = REPO_ROOT / "skills" / "_shared" / "lib" / "proactive_observe.py"
 
 HUMAN_TOUCH_PATTERNS = [
@@ -25,18 +30,9 @@ def _read(p: Path) -> str:
     return p.read_text()
 
 
-@pytest.mark.parametrize("src", [RUN_SH, OBSERVE_PY])
+@pytest.mark.parametrize("src", [OBSERVE_PY])
 def test_no_human_touch(src):
     txt = _read(src)
     for pat in HUMAN_TOUCH_PATTERNS:
         m = re.search(pat, txt, flags=re.IGNORECASE)
         assert not m, f"forbidden pattern {pat!r} in {src}: {m.group(0)}"
-
-
-def test_no_tmux_kill_in_run_sh():
-    """PROP-I2 / parent INV-1: shim MUST NOT kill the LAYER C tmux core."""
-    txt = _read(RUN_SH)
-    forbidden = [r"tmux\s+kill", r"--restart", r"--stop", r"--kill"]
-    for pat in forbidden:
-        m = re.search(pat, txt)
-        assert not m, f"PROP-I2 violation: run.sh contains {pat!r}: {m.group(0)}"

@@ -218,9 +218,9 @@ def execute_recipe(
 def default_restart_cmd_map(anicca_home: str) -> dict:
     """Returns the canonical per-slot restart command lookup table.
 
-    sprint-3 ships gig only; sprint-4 adds clip/affiliate/bounty etc. as
-    each slot migrates to proactive-loop.
+    sprint-3 shipped gig only; gig (+ affiliate/bounty) is now isolated to the
+    private profitable-claude repo (2026-07-06, .vcsdd/features/anicca-agent-economy
+    SPEC.md §3 P0) and is no longer a self-funded slot in ~/anicca, so its entry is
+    gone. Empty until a self-funded earn slot migrates to proactive-loop restart.
     """
-    return {
-        "gig": ["bash", f"{anicca_home}/skills/human-funded/gig/gig-cli.sh", "--restart"],
-    }
+    return {}
