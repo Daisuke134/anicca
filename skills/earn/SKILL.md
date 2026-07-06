@@ -61,6 +61,14 @@ fi
 `$SOURCE` may be `""` to check the per-agent (wallet-wide) scope only, when the wake doesn't yet know
 which specific source it will use this pass. Exit 0 = solvent, exit 1 = HALT (reason on stderr).
 
+**Do NOT gate this call on `$WALLET` being non-empty** (e.g. `if [ -n "$WALLET" ] && ! node ...`).
+That was FIND-A (adversary round 2): when identity resolution fails, `$WALLET` is empty, the `&&`
+short-circuits, and the guard never runs at all — the wake proceeds and its loss gets recorded under
+a literal `"unknown"` wallet, invisible to every real-wallet-scoped check forever. ALWAYS call the
+guard unconditionally; `earn-guard.mjs check` itself fail-closed HALTs (exit 1, reason
+`missing-wallet`) on an empty/missing wallet — a broken identity is exactly when the wake must NOT
+proceed, never a reason to skip the check.
+
 **Wired today:**
 - `earn/run.sh` — the guard clause above, checked once at the very top (wallet-wide scope; every
   strategy branch — 0xwork/yield/swap/hl/token — inherits it for free).

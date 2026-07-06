@@ -67,8 +67,16 @@ distribute_ubi() {
 # every earn skill's pass boundary (mirrors polymarket-trade/run.sh's existing KILL-switch
 # idiom: a single check at the very top, before doing anything this wake). "" for source =
 # check the per-agent (wallet-wide) scope only — this wake hasn't picked its source yet.
-if [ -n "$WLOW" ] && ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
-  echo "[earn] P1 GUARD: cumulative net breach for wallet=$WLOW — HALT (fail-closed), skipping wake."
+#
+# FIND-A fix (adversary round 2): ALWAYS call the guard, even when $WLOW is empty (identity
+# resolution failed, the #27 broken-identity class). The old `[ -n "$WLOW" ] && ...` short-
+# circuited the whole check away whenever WLOW was empty, so a broken-identity wake proceeded
+# and recorded its loss under the literal wallet string "unknown" (`${WLOW:-unknown}` below) —
+# invisible to every real-wallet-scoped check forever. earn-guard.mjs's CLI itself now
+# fail-closed HALTs on an empty wallet (exit 1), so calling it unconditionally is correct: a
+# broken identity is exactly when we must NOT proceed, never a reason to bypass the gate.
+if ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
+  echo "[earn] P1 GUARD: cumulative net breach or unresolved wallet (wallet='$WLOW') — HALT (fail-closed), skipping wake."
   exit 0
 fi
 
