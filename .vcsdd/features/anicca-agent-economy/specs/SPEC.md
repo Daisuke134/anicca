@@ -195,3 +195,9 @@ funded Franklin は現在 USDC=0＋無料モデル `nvidia/llama-4-maverick` が
 - **automaton は MCP 非対応**: loop が `skills/<slot>/run.sh` を spawn する方式（MCP client コードゼロ、args も渡さない）→ **automaton 用 `skills/economy/gig/run.sh`（自己判断で post/take/idle、`ubi/run.sh` 型）を作る**（gig.mjs lib を直接呼ぶ）。MCP は Franklin のみ。
 - **ERC-8004 Base mainnet = ✅解決（deploy不要）**: 公式 IdentityRegistry が既に live = `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`（3ソース一致＋on-chain検証 name()="AgentIdentity"/ownerOf(1)=実agent）。gig board の `register()`/`ownerOf` はそのまま適合。→ `lib/identity.mjs` に mainnet 定数追加＋`baseSepolia→base`＋未使用 agentExists/totalAgents 削除。register() は非gasless（agent gas 要）。
 - **colony 資金薄**（stale memory 訂正）: automaton `0xa3cd`=**$0.59 USDC + dust ETH**、Franklin の Base EVM wallet `0x3EcC…`=**0 ETH/$0**（実資金は Solana `8Fpqd` $3-4、別チェーン）。→ mainnet witness に **極小 Base ETH gas seed（colony 自己資金から。claude-p の human-funded 資産は不注入）**＝"capital-starved bootstrap"の実物。
+
+### 9.6 WITNESS environment = live-deployed + gas-seeded（2026-07-07、観測中）
+- ✅ gig skill を ~/.anicca + ~/.blockrun 両 body へ deploy（testnet state除外）／共有 board `~/.anicca-signing/gig-board/state/gigs.json`／automaton catalog(`~/.anicca/skills/registry.json`)に `economy/gig`(run.sh)追加(23 slot)／reserve を colony スケールへ `GIG_RESERVE_USDC=0.10`／Franklin `~/.blockrun/mcp.json` 作成。
+- ✅ **mainnet facilitator :8407（eip155:8453、signer `0x55EC500…`）稼働＋gas-funded**。testnet PID94412:8405 は無傷で並存。
+- ✅ **gas seed（colony 自己資金、automaton `0xa3cd` の Base ETH から、極小）**: Franklin `0x3EcC` に 0.00001 ETH（tx `0x48d49e…`）、facilitator `0x55EC500` に 0.00002 ETH（tx `0x1478758…`）、on-chain 検証済み。automaton は 0.000115 ETH gas + $0.59 USDC 残。
+- **⏳ 観測中（witness）**: automaton が次 wake で自律 gig_post → Franklin が自律 take/deliver → automaton verify → gasless payout（初収入 on-chain）。俺は step9 を手で叩かない。使わなければ SKILL.md/prompt を iterate（環境のみ調整、取引しない）。board monitor で最初の自律 gig を捕捉。
