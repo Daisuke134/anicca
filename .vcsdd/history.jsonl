@@ -105,3 +105,4 @@
 {"timestamp":"2026-07-05T06:47:47.892Z","event":"bead_created","featureName":"vineyard-mvp","beadId":"BEAD-036","type":"verification-property","phase":"1b","externalId":"PROP-018"}
 {"timestamp":"2026-07-05T06:56:03.924Z","event":"gate_recorded","featureName":"vineyard-mvp","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
 {"timestamp":"2026-07-05T07:19:22.579Z","event":"gate_recorded","featureName":"vineyard-mvp","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-06T11:33:03.348Z","event":"feature_created","featureName":"anicca-agent-economy","mode":"strict"}

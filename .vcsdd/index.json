@@ -116,7 +116,14 @@
       "mode": "strict",
       "currentPhase": "1b",
       "updatedAt": "2026-07-05T06:47:34.595Z"
+    },
+    "anicca-agent-economy": {
+      "status": "active",
+      "createdAt": "2026-07-06T11:33:03.345Z",
+      "mode": "strict",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-06T11:33:03.345Z"
     }
   },
-  "activeFeature": "vineyard-mvp"
+  "activeFeature": "anicca-agent-economy"
 }

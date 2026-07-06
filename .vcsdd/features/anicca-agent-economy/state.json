@@ -1,0 +1,16 @@
+{
+  "featureName": "anicca-agent-economy",
+  "mode": "strict",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-anicca-agent-economy-1783337583346",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-06T11:33:03.345Z",
+  "updatedAt": "2026-07-06T11:33:03.345Z"
+}
