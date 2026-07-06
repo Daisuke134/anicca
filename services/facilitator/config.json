@@ -1,0 +1,19 @@
+{
+  "port": 8405,
+  "host": "127.0.0.1",
+  "chains": {
+    "eip155:84532": {
+      "eip1559": true,
+      "signers": ["$FACILITATOR_PRIVATE_KEY"],
+      "rpc": [
+        {
+          "http": "https://sepolia.base.org"
+        }
+      ]
+    }
+  },
+  "schemes": [
+    { "id": "v2-eip155-exact", "chains": "eip155:84532" },
+    { "id": "v1-eip155-exact", "chains": "eip155:84532" }
+  ]
+}

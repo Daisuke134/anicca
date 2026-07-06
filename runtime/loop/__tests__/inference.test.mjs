@@ -1,0 +1,78 @@
+/**
+ * inference.test.mjs — thinkProxy/httpPost must not swallow HTTP-level error responses.
+ *
+ * Root cause (agent-economy #F1, 2026-07-06): Franklin's free-model brain
+ * (`franklin proxy` -> sol.blockrun.ai) intermittently 403s ("NVIDIA API error: 403
+ * Forbidden Authorization failed") — confirmed live and TRANSIENT (a raw repro:
+ * 503, 503, 200 on three successive identical requests). inference.mjs already has
+ * a retry loop (REQ-001: 3 attempts, 2s back-off) built for exactly this, but
+ * httpPost() previously resolved on ANY response regardless of status code — so a
+ * non-2xx error body got JSON.parse'd and returned as if it were a valid
+ * completion, and the retry loop never fired because no exception was thrown.
+ *
+ * Contract: httpPost must reject on non-2xx so thinkProxy's existing retry loop
+ * actually engages; think() must eventually surface a real completion if a later
+ * attempt succeeds, and must throw (not return a garbage "completion") if every
+ * attempt keeps failing.
+ */
+
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import http from 'node:http';
+import { think } from '../inference.mjs';
+
+const baseCtx = (over) => ({
+  wakeId: 'W1', walletAddress: '0xabc', balanceUsdc: 1.23, tier: 'lean',
+  model: 'nvidia/llama-4-maverick', positionsSummary: '', recentSlots: [],
+  recentLedgerLines: [], activeSkillSlots: [], skillCatalog: {}, ...over,
+});
+
+// Starts a server whose response sequence is driven by `statuses` (one entry
+// consumed per request; the last entry repeats if more requests arrive than
+// entries). Non-2xx entries return the real BlockRun/NVIDIA passthrough shape
+// captured live; 200 entries return a minimal valid chat/completions body.
+function startMockProxy(statuses) {
+  let i = 0;
+  const server = http.createServer((req, res) => {
+    const status = statuses[Math.min(i, statuses.length - 1)];
+    i += 1;
+    res.writeHead(status, { 'Content-Type': 'application/json' });
+    if (status >= 200 && status < 300) {
+      res.end(JSON.stringify({
+        id: 'msg_test', choices: [{ message: { role: 'assistant', content: 'ok' } }],
+      }));
+    } else {
+      res.end(JSON.stringify({
+        type: 'error',
+        error: { type: 'api_error', message: 'NVIDIA API error: 403 {"status":403,"title":"Forbidden","detail":"Authorization failed"}' },
+      }));
+    }
+  });
+  return new Promise((resolve) => {
+    server.listen(0, '127.0.0.1', () => resolve({ server, requestCount: () => i }));
+  });
+}
+
+test('think(): all attempts 403 -> throws instead of returning the error body as a completion', async () => {
+  const { server } = await startMockProxy([403, 403, 403]);
+  try {
+    const { port } = server.address();
+    await assert.rejects(
+      () => think(baseCtx(), { ANICCA_BRAIN: 'proxy', OPENAI_BASE_URL: `http://127.0.0.1:${port}/v1` }),
+    );
+  } finally {
+    server.close();
+  }
+});
+
+test('think(): transient 403s then 200 -> retry loop recovers a real completion', async () => {
+  const { server, requestCount } = await startMockProxy([403, 403, 200]);
+  try {
+    const { port } = server.address();
+    const result = await think(baseCtx(), { ANICCA_BRAIN: 'proxy', OPENAI_BASE_URL: `http://127.0.0.1:${port}/v1` });
+    assert.equal(result.choices[0].message.content, 'ok');
+    assert.equal(requestCount(), 3); // proves it actually retried past the two 403s
+  } finally {
+    server.close();
+  }
+});

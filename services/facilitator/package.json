@@ -1,0 +1,8 @@
+{
+  "name": "x402-facilitator-service",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "viem": "^2.52.2"
+  }
+}
