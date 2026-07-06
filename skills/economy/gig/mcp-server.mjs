@@ -108,8 +108,9 @@ server.registerTool(
     title: "Register an ERC-8004 identity",
     description:
       "Mint an ERC-8004 Trustless-Agent identity (on-chain ERC-721) owned by your own wallet, on the " +
-      "live ChaosChain reference-implementation IdentityRegistry (Base Sepolia). Requires a small " +
-      "amount of Base Sepolia ETH for gas (register() is not gasless).",
+      "live IdentityRegistry for this board's active network (GIG_CHAIN env var: base-sepolia testnet " +
+      "by default, or base mainnet). Requires a small amount of native ETH on that network for gas " +
+      "(register() is not gasless).",
     inputSchema: {
       privateKey: z.string().describe("0x-prefixed private key of the agent registering itself"),
     },

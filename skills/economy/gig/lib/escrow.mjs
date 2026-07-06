@@ -8,14 +8,34 @@
 // "Escrow" here = a custody keypair the gig-board process holds (GIG_ESCROW_PRIVATE_KEY), not a
 // Solidity escrow contract -- documented limitation (see README "Escrow model"), consistent with the
 // P2.2 MVP scope (fail-closed release gating is enforced in lib/store.mjs, not by a contract).
+//
+// CHAIN-SELECTABLE (see WITNESS-RUNBOOK.md): GIG_CHAIN=base-sepolia (default, testnet) or
+// GIG_CHAIN=base (mainnet, real USDC) picks which network payViaFacilitator/settleBody settle
+// against. Testnet stays the default so nothing here changes behavior unless GIG_CHAIN=base is set.
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, http as viemHttp } from "viem";
-import { baseSepolia } from "viem/chains";
+import { base, baseSepolia } from "viem/chains";
 import { randomBytes } from "node:crypto";
 
 export const USDC_BASE_SEPOLIA = "0x036CbD53842c5426634e7929541eC2318f3dCF7e";
 export const CHAIN_ID_BASE_SEPOLIA = 84532;
-const DEFAULT_RPC_URL = "https://sepolia.base.org";
+// Base mainnet USDC (canonical, Circle-issued -- verified live via eth_getCode on
+// https://mainnet.base.org 2026-07-07, same 6-decimal token as testnet). See MAINNET.md /
+// WITNESS-RUNBOOK.md for the go-live checklist.
+export const USDC_BASE_MAINNET = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+export const CHAIN_ID_BASE_MAINNET = 8453;
+
+// GIG_CHAIN selects which network payViaFacilitator/settleBody default to when a caller doesn't
+// override chainId/usdcAddress/rpcUrl/chain explicitly -- 'base-sepolia' (default, testnet, no real
+// money) or 'base' (mainnet, real money). Unset/anything else falls back to testnet, fail-safe.
+export const GIG_CHAIN = process.env.GIG_CHAIN === "base" ? "base" : "base-sepolia";
+
+const CHAIN_PROFILES = {
+  "base-sepolia": { chain: baseSepolia, chainId: CHAIN_ID_BASE_SEPOLIA, usdcAddress: USDC_BASE_SEPOLIA, rpcUrl: "https://sepolia.base.org" },
+  base: { chain: base, chainId: CHAIN_ID_BASE_MAINNET, usdcAddress: USDC_BASE_MAINNET, rpcUrl: "https://mainnet.base.org" },
+};
+const ACTIVE_CHAIN = CHAIN_PROFILES[GIG_CHAIN];
+const DEFAULT_RPC_URL = process.env.GIG_RPC_URL || ACTIVE_CHAIN.rpcUrl;
 
 async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds }) {
   const payer = privateKeyToAccount(privateKey);
@@ -85,8 +105,12 @@ async function verifyWithRetry(facilitatorUrl, body) {
  * for an already-signed payload, then WAIT for the settle tx to actually be mined before reporting
  * success. Fail-closed, no crash: any failure returns { ok:false, stage, reason, raw } instead of
  * throwing (matches services/x402-endpoint/verify.mjs's structured-error contract).
+ * `chain`/`rpcUrl` default to GIG_CHAIN's own profile -- ALWAYS pass the same chain the payload was
+ * actually signed/settled against (a caller that overrides payViaFacilitator's chainId/usdcAddress but
+ * not this must override rpcUrl/chain here too, or receipt confirmation silently queries the wrong
+ * network).
  */
-export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_URL }) {
+export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_URL, chain = ACTIVE_CHAIN.chain }) {
   const verify = await verifyWithRetry(facilitatorUrl, body);
   if (!verify.httpOk || verify.json.isValid !== true) {
     return { ok: false, stage: "verify", reason: verify.json.invalidReason || `http ${verify.status}`, raw: verify.json };
@@ -96,7 +120,7 @@ export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_UR
     return { ok: false, stage: "settle", reason: settle.json.errorReason || `http ${settle.status}`, raw: settle.json };
   }
   const tx = settle.json.transaction;
-  const publicClient = createPublicClient({ chain: baseSepolia, transport: viemHttp(rpcUrl) });
+  const publicClient = createPublicClient({ chain, transport: viemHttp(rpcUrl) });
   const receipt = await publicClient.waitForTransactionReceipt({ hash: tx });
   if (receipt.status !== "success") {
     return { ok: false, stage: "confirm", reason: `settle tx reverted on-chain: ${tx}`, raw: settle.json };
@@ -109,17 +133,21 @@ export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_UR
  * self-host facilitator. `privateKey` never leaves this process; the facilitator only ever sees the
  * already-signed EIP-3009 payload (the payer's key signs off-chain, the facilitator's OWN key pays L2
  * gas). This is the ONE function gig.mjs calls for both "poster funds escrow" and "escrow pays taker".
+ * chainId/usdcAddress/rpcUrl/chain all default to GIG_CHAIN's active profile (testnet unless
+ * GIG_CHAIN=base) -- overriding one without the others is the caller's responsibility to keep consistent.
  */
 export async function payViaFacilitator({
   privateKey,
   to,
   amountBase,
   facilitatorUrl,
-  chainId = CHAIN_ID_BASE_SEPOLIA,
-  usdcAddress = USDC_BASE_SEPOLIA,
+  chainId = ACTIVE_CHAIN.chainId,
+  usdcAddress = ACTIVE_CHAIN.usdcAddress,
+  rpcUrl = DEFAULT_RPC_URL,
+  chain = ACTIVE_CHAIN.chain,
   validitySeconds = 300,
 }) {
   const { payerAddress, body } = await signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds });
-  const result = await settleBody({ facilitatorUrl, body });
+  const result = await settleBody({ facilitatorUrl, body, rpcUrl, chain });
   return { ...result, payerAddress, to, amountBase };
 }
