@@ -38,6 +38,10 @@ mint a GATE-0 "profit" — only genuinely external revenue counts. This is enfor
 - `verify-tx.mjs` reports the receipt status; the `0x1` requirement is enforced by `ledger.mjs isProfitable()` + `run.sh`. `usdc.mjs` confirms a real before/after balance delta.
 - `ledger.mjs` never rewrites prior lines (immutable); `isProfitable()` is the single source of truth
   for "did this wake actually make money."
+- `earn-guard.mjs` (P1, spec §3/§4) is the CUMULATIVE layer on top of `isProfitable()`: it sums every
+  recorded `net_usdc` for a wallet/skill and HALTs fail-closed the moment the running total would go
+  negative, or the moment a ledger line's numbers can't be trusted. See `SKILL.md`'s "P1 fail-closed
+  CUMULATIVE guard" section for the one-line integration pattern + which skills are wired.
 
 ## Verify a wake (fresh evidence, not a claim)
 ```bash

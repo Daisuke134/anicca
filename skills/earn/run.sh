@@ -63,6 +63,15 @@ distribute_ubi() {
   echo "[earn] ubi -> ${UBI_OUT:-noop}"
 }
 
+# P1 (spec §3/§4) fail-closed cumulative-net guard — the ONE-LINE integration pattern for
+# every earn skill's pass boundary (mirrors polymarket-trade/run.sh's existing KILL-switch
+# idiom: a single check at the very top, before doing anything this wake). "" for source =
+# check the per-agent (wallet-wide) scope only — this wake hasn't picked its source yet.
+if [ -n "$WLOW" ] && ! node "$HERE/../_shared/lib/earn-guard.mjs" check "$WLOW" "" "$LEDGER"; then
+  echo "[earn] P1 GUARD: cumulative net breach for wallet=$WLOW — HALT (fail-closed), skipping wake."
+  exit 0
+fi
+
 if [ "$MODE" = "discover" ]; then
   # Discovery wake: the agent found candidates but executed nothing on-chain yet.
   # Record a narrate line so the ledger shows the wake happened. NEVER counts as GATE-0.
