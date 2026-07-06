@@ -71,10 +71,7 @@ case "$TRANS" in
     # REQ-1: fetch ACTIVE campaigns from the logged-in promote.fun tab + rank by cpm*budget; pick the top
     # not-yet-clipped, advance state to CLIP. REQ-1a: none eligible → narrate idle.
     PF_PORT="${CLIP_PROMOTE_CDP_PORT:-9222}"
-    PF_TID="$(curl -sS --max-time 5 "http://localhost:$PF_PORT/json/list" 2>/dev/null | "$PY" -c "import json,sys
-try: d=json.load(sys.stdin)
-except Exception: d=[]
-print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null)"
+    PF_TID="$(find_promote_tab "$PF_PORT")"
     if [ -z "$PF_TID" ]; then emit "select:no-promote-tab (login session not open on :$PF_PORT)"; exit 0; fi
     CLIPPED="$("$PY" -c "import json,os;p='$STATE';d=json.load(open(p)) if os.path.exists(p) else {};print(','.join(d.get('clipped',[])))" 2>/dev/null)"
     RANKED="$(run_step "$STEP_DEADLINE_S" env CDP_DIR="$CDP_DIR" PF_TID="$PF_TID" CDP_PORT="$PF_PORT" \
@@ -105,10 +102,7 @@ json.dump(d,open(p,'w'))" 2>/dev/null
     SLUG="$("$PY" -c "import json;print(json.load(open('$STATE')).get('campaign_id',''))" 2>/dev/null)"
     [ -n "$SLUG" ] || { emit "join:no-campaign-id-in-state"; exit 0; }
     PF_PORT="${CLIP_PROMOTE_CDP_PORT:-9222}"
-    PF_TID="$(curl -sS --max-time 5 "http://localhost:$PF_PORT/json/list" 2>/dev/null | "$PY" -c "import json,sys
-try: d=json.load(sys.stdin)
-except Exception: d=[]
-print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null)"
+    PF_TID="$(find_promote_tab "$PF_PORT")"
     [ -n "$PF_TID" ] || { emit "join:no-promote-tab (login session not open on :$PF_PORT)"; exit 0; }
     JOIN_RES="$(run_step "$STEP_DEADLINE_S" env CDP_DIR="$CDP_DIR" PF_TID="$PF_TID" CDP_PORT="$PF_PORT" \
               "$PY" "$SK/join_campaign.py" "$SLUG" 2>/dev/null)"; rc=$?
@@ -145,10 +139,7 @@ json.dump(d,open(p,'w'))" 2>/dev/null
     SLUG="$("$PY" -c "import json;print(json.load(open('$STATE')).get('campaign_id',''))" 2>/dev/null)"
     [ -n "$SLUG" ] || { emit "clip:no-campaign-id-in-state"; exit 0; }
     PF_PORT="${CLIP_PROMOTE_CDP_PORT:-9222}"
-    PF_TID="$(curl -sS --max-time 5 "http://localhost:$PF_PORT/json/list" 2>/dev/null | "$PY" -c "import json,sys
-try: d=json.load(sys.stdin)
-except Exception: d=[]
-print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null)"
+    PF_TID="$(find_promote_tab "$PF_PORT")"
     [ -n "$PF_TID" ] || { emit "clip:no-promote-tab (login session not open on :$PF_PORT)"; exit 0; }
     SRC_URL="$(run_step "$STEP_DEADLINE_S" env CDP_DIR="$CDP_DIR" PF_TID="$PF_TID" CDP_PORT="$PF_PORT" \
               "$PY" "$SK/fetch_source_video.py" "$SLUG" 2>/dev/null)"; rc=$?

@@ -34,3 +34,31 @@ blocked_or() { # blocked_or <step-name> <rc> <narrate-msg-on-nonzero>
   if [ "$rc" -eq 124 ]; then emit "blocked:human:$step"; exit 0; fi
   if [ "$rc" -ne 0 ]; then emit "$msg"; exit 0; fi
 }
+
+_promote_tab_lookup() { # _promote_tab_lookup <port> -> tab id or empty
+  local port="$1"
+  curl -sS --max-time 5 "http://localhost:$port/json/list" 2>/dev/null | "$PY" -c "import json,sys
+try: d=json.load(sys.stdin)
+except Exception: d=[]
+print(next((t['id'] for t in d if t.get('type')=='page' and 'promote.fun' in (t.get('url') or '')),''))" 2>/dev/null
+}
+
+find_promote_tab() { # find_promote_tab <port> -> prints tab id (empty if truly unavailable)
+  local port="$1" tid
+  tid="$(_promote_tab_lookup "$port")"
+  [ -n "$tid" ] && { echo "$tid"; return 0; }
+  # No tab found. Root cause proven 2026-07-06: the dedicated CDP browser on this port is a
+  # bare `nohup` process with no supervisor (unlike the tmux-supervised core loop) -- a
+  # resource-exhaustion incident (or any crash) silently kills it and nothing restarts it, so
+  # the same "no-promote-tab" blocker recurs every wake until an agent manually relaunches it.
+  # Relaunch here instead (idempotent: launch_promote_browser.py no-ops if the port is already
+  # bound) and retry once after it boots + restores the persisted login session.
+  if ! curl -sS --max-time 3 "http://localhost:$port/json/version" >/dev/null 2>&1; then
+    nohup /Users/operator/.openclaw/skills/_shared/venv-cloak/bin/python3 \
+      "$HOME/.claude/skills/promote-fun-login/scripts/launch_promote_browser.py" \
+      >/tmp/promote-browser.log 2>&1 &
+    disown
+    sleep 6
+  fi
+  _promote_tab_lookup "$port"
+}
