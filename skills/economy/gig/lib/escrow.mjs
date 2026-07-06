@@ -60,19 +60,34 @@ async function postJson(url, body) {
   return { httpOk: res.ok, status: res.status, json };
 }
 
+// The facilitator's own /verify does an on-chain balanceOf() preflight through ITS OWN RPC connection --
+// a separate process from ours, which can transiently lag behind a just-mined funding tx even after
+// OUR publicClient has already confirmed it (same root cause as the ERC-8004 ownerOf() propagation lag
+// documented in lib/identity.mjs: sepolia.base.org load-balances across backend nodes without strict
+// read-your-writes consistency). Reproduced live during the P2.2 security-fix E2E re-proof: a
+// legitimate, already-funded release failed /verify with "insufficient_funds" seconds after its own
+// funding tx had a confirmed receipt. Retry with backoff instead of failing a legitimate call outright.
+const TRANSIENT_VERIFY_REASONS = new Set(["insufficient_funds"]);
+const RETRY_DELAYS_MS = [3000, 5000, 8000];
+
+async function verifyWithRetry(facilitatorUrl, body) {
+  for (let attempt = 0; ; attempt++) {
+    const verify = await postJson(`${facilitatorUrl}/verify`, body);
+    if (verify.httpOk && verify.json.isValid === true) return verify;
+    const transient = TRANSIENT_VERIFY_REASONS.has(verify.json.invalidReason) && attempt < RETRY_DELAYS_MS.length;
+    if (!transient) return verify;
+    await new Promise((r) => setTimeout(r, RETRY_DELAYS_MS[attempt]));
+  }
+}
+
 /**
- * settleBody — run /verify then /settle against the facilitator for an already-signed payload, then
- * WAIT for the settle tx to actually be mined before reporting success. This matters because the gig
- * board chains settles back-to-back (post funds escrow, then later release pays out of that same
- * escrow) -- the facilitator's /settle response only confirms the tx was BROADCAST, and the very next
- * settle's own /verify preflight does an on-chain balance check that a still-pending tx hasn't updated
- * yet (hit exactly this race in the first E2E run: escrow-release failed with "insufficient_funds"
- * moments after a real, ultimately-successful escrow-funding tx). Fail-closed, no crash: any failure
- * returns { ok:false, stage, reason, raw } instead of throwing (matches
- * services/x402-endpoint/verify.mjs's structured-error contract).
+ * settleBody — run /verify (with transient-lag retry, see above) then /settle against the facilitator
+ * for an already-signed payload, then WAIT for the settle tx to actually be mined before reporting
+ * success. Fail-closed, no crash: any failure returns { ok:false, stage, reason, raw } instead of
+ * throwing (matches services/x402-endpoint/verify.mjs's structured-error contract).
  */
 export async function settleBody({ facilitatorUrl, body, rpcUrl = DEFAULT_RPC_URL }) {
-  const verify = await postJson(`${facilitatorUrl}/verify`, body);
+  const verify = await verifyWithRetry(facilitatorUrl, body);
   if (!verify.httpOk || verify.json.isValid !== true) {
     return { ok: false, stage: "verify", reason: verify.json.invalidReason || `http ${verify.status}`, raw: verify.json };
   }

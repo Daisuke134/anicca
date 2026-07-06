@@ -4,7 +4,7 @@
   "type": "module",
   "description": "SPEC.md P2.2 gig board: post/take/deliver/verify_and_pay + MCP server + ERC-8004 identity",
   "scripts": {
-    "test": "node --test __tests__/"
+    "test": "node --test __tests__/*.test.mjs"
   },
   "dependencies": {
     "viem": "^2.52.2",

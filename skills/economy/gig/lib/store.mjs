@@ -35,20 +35,23 @@ export function getGig(state, gigId) {
 
 /**
  * applyPost — create a new OPEN gig. Called by gig.mjs AFTER the poster's bounty has already been
- * settled into escrow on-chain (postTx is real evidence, not invented here).
+ * settled into escrow on-chain (postTx is real evidence, not invented here) AND after gig.mjs has
+ * already verified `posterAgentId` really is owned by `poster` (ERC-8004, SPEC.md §3 P2.2 finding 3).
  */
-export function applyPost(state, { poster, taskSpec, bountyUsdcBase, escrowAddress, postTx }) {
+export function applyPost(state, { poster, posterAgentId, taskSpec, bountyUsdcBase, escrowAddress, postTx }) {
   const id = String(state.nextId);
   const now = new Date().toISOString();
   const gig = {
     id,
     poster,
+    posterAgentId,
     taskSpec,
     bountyUsdcBase,
     escrowAddress,
     postTx,
     status: OPEN,
     taker: null,
+    takerAgentId: null,
     deliverable: null,
     verified: null,
     payoutTx: null,
@@ -59,13 +62,18 @@ export function applyPost(state, { poster, taskSpec, bountyUsdcBase, escrowAddre
   return { ok: true, state: next, gig };
 }
 
-export function applyTake(state, gigId, takerAddress) {
+/**
+ * applyTake — assign a taker. `takerAgentId` is recorded (gig.mjs already verified it's owned by
+ * `takerAddress`, ERC-8004 SPEC.md §3 P2.2 finding 3) so gig.mjs can re-verify it again at payout time
+ * without the caller having to resupply it.
+ */
+export function applyTake(state, gigId, takerAddress, takerAgentId) {
   const gig = state.gigs[gigId];
   if (!gig) return { ok: false, reason: `no such gig ${gigId}` };
   if (gig.status !== OPEN) {
     return { ok: false, reason: `gig ${gigId} is '${gig.status}', not 'open' -- cannot take` };
   }
-  const updated = { ...gig, status: TAKEN, taker: takerAddress, updatedAt: new Date().toISOString() };
+  const updated = { ...gig, status: TAKEN, taker: takerAddress, takerAgentId, updatedAt: new Date().toISOString() };
   const next = { ...state, gigs: { ...state.gigs, [gigId]: updated } };
   return { ok: true, state: next, gig: updated };
 }
