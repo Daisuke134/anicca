@@ -83,7 +83,20 @@ function httpPost(url, body) {
     const req = lib.request(options, (res) => {
       let data = '';
       res.on('data', c => { data += c; });
-      res.on('end', () => resolve(data));
+      res.on('end', () => {
+        // #F1 (2026-07-06): a non-2xx here is a real upstream failure (observed live:
+        // sol.blockrun.ai's free-model NVIDIA passthrough intermittently 403s —
+        // "NVIDIA API error: 403 ... Authorization failed", transient: retrying the
+        // identical request succeeds within a few attempts). Resolving unconditionally
+        // let that error BODY get JSON.parse'd and returned as if it were a real
+        // completion, so REQ-001's retry loop above never fired. Reject instead so the
+        // existing attempt/back-off loop actually retries transient gateway errors.
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          reject(new Error(`HTTP ${res.statusCode}: ${data.slice(0, 300)}`));
+          return;
+        }
+        resolve(data);
+      });
     });
     req.on('timeout', () => { req.destroy(); reject(new Error('HTTP timeout')); });
     req.on('error', reject);

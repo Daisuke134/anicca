@@ -58,6 +58,15 @@
       "summary": "INFO-SHARING (bot2bot): share ONE strategy lesson with the colony (args.note+args.topic) or poll peers' open lessons for a topic. Wires the already-tested skills/_shared/lib/bot2bot.py into an actual run_skill slot. NOTE: not Foundation-pre-declared (no prior placeholder existed for this name) — added directly by the builder per team-lead's Task #4 assignment; Foundation-approved 2026-07-05.",
       "owner": "wf-a:self-spawn"
     },
+    "economy/gig": {
+      "track": "A",
+      "dir": "skills/economy/gig",
+      "entrypoint": "gig.mjs",
+      "status": "live",
+      "spec": "colony spec SPEC.md §3 P2.2, 2026-07-07",
+      "summary": "★EARN via LABOR MARKET★ The agent economy: you POST work you need done, others DELIVER it for a bounty. WHEN you have idle USDC above your reserve, pick this slot with ANICCA_ARGS={\"action\":\"post\",\"taskSpec\":\"<a real bounded sub-task you genuinely want done, e.g. summarize X, fetch Y, draft Z>\",\"bountyUsdcBase\":\"1000\"} to post a $0.001 gig into x402 escrow — a broke free-model agent takes it, delivers, you verify+pay gasless. WHEN low on funds and gig_list shows an open gig you can deliver with free compute, take it (ANICCA_ARGS={\"action\":\"take\",\"gigId\":N}) to EARN. This is how the colony bootstraps: surplus agents employ broke ones. run.sh gates eligibility; YOU choose the task/bounty. No args = it narrates the board so you can decide.",
+      "owner": "wf-a:agent-economy"
+    },
     "economy/ubi": {
       "track": "A",
       "dir": "skills/economy/ubi",
@@ -112,15 +121,6 @@
       "owner": "wf-a:earn",
       "summary": "Launch/manage $ANICCA token (MoltX ~$2.70). args {launch:true,name,symbol}."
     },
-    "human-funded/gig": {
-      "track": "A",
-      "dir": "skills/human-funded/gig",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "spec": "2026-06-30-gig-earn-core-recipe-design.md (autonomous loop) + 2026-06-29-earn-gig-slot-design.md (D8 pivot)",
-      "owner": "wf-a:earn-gig",
-      "summary": "Coconala freelance gig → ¥ (HUMAN-FUNDED, settles to Dais MUFG; NOT on-chain USDC). The real earner is an independent claude-p tmux+cron core (gig-cli.sh, hourly :27) that drives the daily-driver browser as mtdc per scripts/coconala/APPLY_RUNBOOK.md (scan 公開依頼 → 応募 → talk-room reply → 納品 → 評価). run.sh is a cheap supervise+report entrypoint: ensures the core is alive + reports ¥ status. NO USDC, NO record-earn, no human in the daily op (only Dais's one-time KYC)."
-    },
     "earn/clip": {
       "track": "A",
       "dir": "skills/earn/clip",
@@ -139,11 +139,6 @@
       "spec": "2026-07-04-openclaw-claude-p-merge-design.md §8",
       "summary": "LOCAL: ON-DEMAND wrapper around earn/clip's producer.sh (fully deterministic: sliced yt-dlp DL -> whisper -> highlight pick -> 9:16 crop -> caption burn -> verify_clip gate, NO visual/CDP judgment). Lets a self-funded automaton decide FOR ITSELF to produce a fresh clip when it notices earn/clip reporting queued_clip=none, instead of only waiting for the daily launchd cron."
     },
-    "human-funded/affiliate": {
-      "status": "declared",
-      "dir": "skills/human-funded/affiliate",
-      "summary": "affiliate post + commission tracking → USDC"
-    },
     "earn/video": {
       "track": "A",
       "dir": "skills/earn/video",
@@ -152,15 +147,6 @@
       "owner": "video",
       "spec": "2026-06-29-earn-video-slot-vcsdd-spec (ROUND-8 OVERALL PASS)",
       "summary": "LOCAL: faceless-video earn slot. ONE bounded transition/wake (create->warmup->affiliate@day7->post->record). Warmup = dedicated anti-throttle CloakBrowser (real distinct reels). Post = live+verified (published+post_url). record_earn = fail-closed on-chain only. No human, no fake-success. Launcher: video-cli.sh (--model sonnet, tmux sock /tmp/anicca-video-tmux.sock, cron 23 */4 * * *)."
-    },
-    "human-funded/bounty": {
-      "track": "A",
-      "dir": "skills/human-funded/bounty",
-      "entrypoint": "run.sh",
-      "status": "live",
-      "owner": "bounty",
-      "spec": "EARN-3-bounty VCSDD sprint-1 (adversary PASS)",
-      "summary": "Algora GitHub bounties: discover open issues → gate (funder-active + no-open-PR + real USD from $comment) → attempt (VSDD RED→GREEN PR if survivor) → track (record-earn on merge, real USDC only). Launcher: bounty-cli.sh (--model sonnet, tmux sock /tmp/anicca-bounty-tmux.sock, cron 29 9 * * *)."
     },
     "earn/audit": {
       "track": "A",
