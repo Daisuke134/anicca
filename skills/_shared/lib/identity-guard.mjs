@@ -48,6 +48,10 @@ export const ALLOWED_EARN_SOURCES = new Set([
   "promote.fun", "clip-promote", "ig-clip",
   "cook", // own-identity web exploration (no funds moved)
   "discover", // narrate-only discovery wake
+  // economy/gig internal gig-market (P2.2): Anicca posting/taking/delivering/collecting payouts on the
+  // gig board using its OWN wallet + OWN ERC-8004 on-chain identity (posterAgentId/takerAgentId are
+  // always derived from THIS instance's own key, never a user's) -- own identity, added 2026-07-07.
+  "gig",
 ]);
 
 // Sources that smell of using a USER's identity to earn. Explicit denylist so a typo'd or
