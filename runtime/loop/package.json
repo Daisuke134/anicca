@@ -5,8 +5,8 @@
   "type": "module",
   "main": "index.mjs",
   "scripts": {
-    "test": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/integration.test.mjs",
-    "test:unit": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs",
+    "test": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/integration.test.mjs",
+    "test:unit": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs",
     "test:integration": "node --test __tests__/integration.test.mjs"
   },
   "engines": {
