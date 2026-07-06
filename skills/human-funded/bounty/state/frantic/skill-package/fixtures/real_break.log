@@ -1,5 +1,0 @@
-npm run build
-src/payments/charge.ts:42:18 - error TS2322: Type 'string' is not assignable to type 'number'.
-✕ payments > charges the correct amount
-AssertionError: expected 1000 but got "1000"
-Tests failed: 1 of 84
