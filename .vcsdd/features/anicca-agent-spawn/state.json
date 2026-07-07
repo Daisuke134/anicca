@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "2a",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -96,6 +96,13 @@
       "timestamp": "2026-07-07T20:23:33.449Z",
       "reason": "Sprint 2 Phase 1c PASSED at iteration 3 (fresh adversary, zero findings). Opening TDD RED phase for REQ-307 executeSpawnAttempt + real call-site wiring for REQ-201/202/204/205/302/303/305.",
       "sprint": 2
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-07T20:39:49.400Z",
+      "reason": "RED phase confirmed independently: 5 new tests genuinely fail (module/script not found), 123 pre-existing tests pass unchanged. Opening GREEN phase to implement spawn-orchestrator.mjs + gen-solana-wallet.sh.",
+      "sprint": 2
     }
   ],
   "iterations": {
@@ -106,7 +113,7 @@
     "1b": 3,
     "1c": 2,
     "2a": 2,
-    "2b": 1,
+    "2b": 2,
     "2c": 1,
     "complete": 1
   },
@@ -3018,5 +3025,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T20:35:35.142Z"
+  "updatedAt": "2026-07-07T20:39:49.400Z"
 }
