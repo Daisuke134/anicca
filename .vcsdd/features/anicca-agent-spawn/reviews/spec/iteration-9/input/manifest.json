@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 9,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 8,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-8/output/findings/",
+    "note": "3 findings, 2 critical, the 4th consecutive variant in the REQ-101/105/403 wallet-identity area: FIND-701 (critical) resolved by exporting a second named constant, COORDINATOR_HOME, from the SAME registry-path.mjs module as CITIZENS_REGISTRY_PATH (computed once via os.homedir() at module-load time, mirroring PROP-103d's structural discipline exactly), new PROP-403f. FIND-702 (major) resolved by rewriting PROP-105g from a citation-presence check into an actual mechanical re-derivation check (reads the real private key in memory, computes the address via privateKeyToAccount, diffs against citizens.json, fails hard on mismatch) with an explicit carve-out reconciling this against REQ-105's existence-only secrets discipline. FIND-703 (critical) resolved by adding a new coLocatedWithCoordinator: boolean field to REQ-105's schema (seeded true for both real citizens), REQ-305's append logic always sets it false for spawned children, and REQ-403's audit enumeration now filters explicitly on this real field instead of an undefined implicit notion of co-located -- also fixed the vacuous EARS clause that promised a check that could never fire for the one kind of instance this feature actually produces. New PROP-105h, PROP-305f."
+  },
+  "note": "Verify each of the 3 fixes actually holds -- note that registry-path.mjs does NOT YET EXIST on disk (confirmed by the builder this iteration; it is a planned Phase-2 module) -- so verification here is necessarily against the SPEC's own internal consistency (does it correctly and completely specify what this not-yet-built module must export and how every call site must use it), not against a real file. Re-read resolve-identity.mjs fresh to confirm COORDINATOR_HOME (via os.homedir()) genuinely produces a value compatible with the legacy-fallback branch's real logic. Confirm PROP-105g's rewritten mechanical-check description is genuinely executable as specified (not just more detailed prose). Confirm coLocatedWithCoordinator's addition doesn't leave any OTHER part of the spec (e.g. REQ-101's balance aggregation, REQ-402's lifecycle tracking) silently assuming the old undefined co-located notion. This feature is now on iteration 9 with 45+ cumulative findings across 8 prior iterations, four of them variants of the same wallet-identity failure class (FIND-501 -> FIND-601 -> FIND-603 -> FIND-701/703). Do a full fresh pass over the REST of the spec too, and specifically consider whether this recurring failure class is now GENUINELY closed or whether a fifth variant is still lurking (e.g., does the NEW coLocatedWithCoordinator field itself need a canonical-source discipline the same way homeDir and now COORDINATOR_HOME did, or is a literal true/false seed value/append-time constant sufficiently unambiguous that no fifth variant is possible here?)."
+}

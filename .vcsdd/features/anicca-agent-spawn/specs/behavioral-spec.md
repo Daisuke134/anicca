@@ -1,12 +1,13 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 7, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 8, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
 resolved AND spec review iteration-6 findings FIND-501..504 resolved AND spec review iteration-7
-findings FIND-601..604 resolved — see changelogs below)
+findings FIND-601..604 resolved AND spec review iteration-8 findings FIND-701..703 resolved — see
+changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -113,6 +114,21 @@ key material:
 | FIND-602 | major | Two purity-boundary SUMMARY tables (behavioral-spec.md's own overview table, verification-architecture.md's Purity Boundary Map) — never touched again after iteration 5's REQ-304 correction — are corrected to match REQ-304/PROP-304e's already-accurate body text: the Akash `uact` funding route is a multi-hop Skip API bridge enterable from EITHER current citizen's own native chain (Franklin via Solana/Jupiter, automaton via Base/CCTP), never Solana-only. A third, incidental stale phrase in REQ-303's own prose ("the Jupiter→Skip-API bridge") is corrected for the same reason. |
 | FIND-603 | critical | REQ-403's live-audit worked examples and PROP-403b are corrected from a bare `{home: citizen.homeDir}` invocation shape (which silently depends on the audit script's own ambient `process.env.HOME`) to an EXPLICIT, fully-constructed `env` object (`{home, env: {HOME, ANICCA_HOME}}`) — the exact shape `resolve-identity.mjs`'s own reused test suite actually exercises in all 20 of its cases. A new proof obligation, PROP-403e, requires this explicit-env shape and tests it under a stripped/launchd-style minimal environment. |
 | FIND-604 | major | A new proof obligation, PROP-101h, adds the missing dual-wallet-both-chains-fail-simultaneously fixture: a citizen with BOTH `walletAddress.evm` AND `walletAddress.solana` populated, both chains' queries failing at once, asserting `readCitizenBalances` returns exactly `0` — never throws, never `NaN`, never double-subtracts `perCitizenReserveUsd`. |
+
+## Changelog (iteration 7 spec review → iteration 8)
+
+Iteration 7's spec review FAILed with 3 findings (2 critical, 1 major — FIND-701/702/703; all findings
+across iterations 1-7 were reconfirmed genuinely resolved against the real, current source). Each is
+resolved by a specific, cited design decision, grounded in a fresh re-read of
+`~/anicca/skills/self/spawn/lib/registry-path.mjs`'s real current exports (confirmed: at iteration 7 this
+module is a PLANNED file, not yet created on disk — its only planned export, per REQ-103, is
+`CITIZENS_REGISTRY_PATH`) and `~/anicca/skills/earn/lib/resolve-identity.mjs`'s exact resolution logic:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-701 | critical | REQ-403's "Explicit-env correction" left the coordinator host's own real `$HOME` value as an unresolved placeholder phrase ("sourced from a registry/coordinator constant") with no canonical constant actually defined anywhere — the same class of un-pinned-input hazard REQ-103 already closed for `CITIZENS_REGISTRY_PATH`. A SECOND named constant, `COORDINATOR_HOME`, is now exported from that SAME shared module, `~/anicca/skills/self/spawn/lib/registry-path.mjs` (REQ-403, new "Canonical coordinator-HOME constant" subsection), computed ONCE via Node's `os.homedir()` at module-load time — never `process.env.HOME` read ad hoc, never hardcoded. REQ-403's live-audit script MUST import and use this SAME constant for every `env.HOME` value it passes to `resolveEvmPrivateKey`/`resolveSolanaSecret`. A new proof obligation, PROP-403f (mirroring PROP-103d's structural discipline exactly), requires a source-grep/import-identity check confirming zero independent `os.homedir()`/`process.env.HOME` reads anywhere else in this feature's audit-script code path. |
+| FIND-702 | major | PROP-105g is rewritten from a citation-presence check ("the adversary confirms the commit/PR cites a verification method") to an actual mechanical re-derivation: Phase 3 verification now REQUIRES a real script/test that reads the real private-key file in memory (the same `viem`'s `privateKeyToAccount` pattern already used for the automaton wallet), computes the address, and DIFFS it against `citizens.json`'s stored `walletAddress`, failing hard on any mismatch — never merely checking that a commit/PR cites the right KIND of verification. A new explicit carve-out reconciles this with REQ-105's "file EXISTENCE only — content never read/printed" phrase: reading a private-key file's content IN-MEMORY for THIS SPECIFIC re-derivation purpose is explicitly permitted and required (never logging/printing/persisting the raw key itself — only the DERIVED address may ever be logged/compared), distinct from and not contradicting the general "existence only" discipline used elsewhere in this spec. |
+| FIND-703 | critical | REQ-105's citizen record schema gains a new field, `coLocatedWithCoordinator: boolean` — both of today's seeded citizens (automaton, Franklin) are seeded `true` (genuinely co-located on the same Mac Mini today); REQ-305's append-on-spawn logic now ALWAYS sets this to `false` for any newly-spawned child (per REQ-301's absolute mandate, every spawned child is cloud-hosted, never co-located — a structural constant, not a judgment call). REQ-403's live-audit enumeration now explicitly filters `citizens.filter(c => c.coLocatedWithCoordinator === true)`, making PROP-403d's "no code path invokes the resolvers against a cloud-hosted child's homeDir" claim mechanically enforceable. REQ-403's EARS clause is reworded to remove its vacuous promise ("before any newly-spawned CO-LOCATED child is permitted... a category REQ-301 makes structurally impossible"): the live-comparison half runs only among citizens with `coLocatedWithCoordinator === true` (today: automaton + Franklin), while every spawned child (always `false`) is structurally excluded from this check's candidate set and covered only by REQ-403's static grep-sweep half. New proof obligations PROP-105h (seed/schema correctness of the new field) and PROP-305f (every REQ-305 append sets it to exactly `false`) are added. |
 
 ## Scope of this increment (read first)
 
@@ -592,7 +608,7 @@ Boolean(wallet.solana)` — never address strings):
 
 The full record shape is therefore `{id: string, wallet: {evm?: boolean, solana?: boolean},
 walletAddress: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[]}`
-plus ONE additional field this feature needs and `isSelfFunded()` itself does not read (revised, resolves
+plus TWO additional fields this feature needs and `isSelfFunded()` itself does not read (revised, resolves
 FIND-302: the prior second additional field, `telemetryPath`, is REMOVED from this schema — REQ-101's
 balance lookup no longer depends on a coordinator-local file path per citizen; see REQ-101's revised
 `readCitizenBalances`, which reads each citizen's balance via public RPC keyed on `walletAddress` above,
@@ -604,6 +620,21 @@ REQ-301, exclusively cloud-hosted):
   — itself now scoped to co-located instances only for this increment (resolves FIND-303; see REQ-403) —
   to learn each CO-LOCATED running instance's own HOME without a second, parallel instance-enumeration
   mechanism (resolves FIND-202).
+- `coLocatedWithCoordinator: boolean` — **new, resolves FIND-703 (critical):** a structural classifier,
+  never a judgment call, distinguishing a citizen genuinely co-located on the SAME physical host as the
+  coordinator (REQ-106) from a citizen that is cloud-hosted (REQ-301). Prior to this field, REQ-403's
+  live-comparison half's own enumeration ("the current set of CO-LOCATED running instances") had no
+  registry-level way to be computed at all — `citizens.json`'s schema carried no field distinguishing
+  the two, yet REQ-301 mandates every spawned child is cloud-hosted and REQ-305 mandates every spawned
+  child is appended into this SAME registry, so the instant the first child spawns, `citizens.json`
+  necessarily mixes co-located and cloud-hosted entries with no schema-level way to tell them apart.
+  THE SYSTEM SHALL seed this field as `true` for both of today's citizens (automaton, Franklin — both
+  genuinely co-located on the same Mac Mini today, see the seed data below) and THE SYSTEM SHALL,
+  per REQ-305, ALWAYS append `false` for this field on every newly-spawned child — never `true`, since
+  REQ-301's own absolute mandate makes a co-located spawned child structurally impossible this
+  increment. REQ-403's live-audit enumeration reads THIS field directly (`citizens.filter(c =>
+  c.coLocatedWithCoordinator === true)`) rather than relying on any undefined/implicit notion of
+  "co-located" — see REQ-403's corrected Acceptance Criteria.
 
   **Corrected, resolves FIND-501 (critical — the most serious defect found across all six spec-review
   iterations of this feature):** an earlier revision of this field stored BOTH of today's seeded
@@ -663,7 +694,8 @@ a markdown doc — precisely the class of source that just failed here:
     "walletAddress": { "evm": "0xB9dd3B67921B354c656523d6851537988F31DD56" },
     "fuel": { "provider": "clawrouter-own-wallet" },
     "humanDependencies": [],
-    "homeDir": "/Users/anicca/.anicca"
+    "homeDir": "/Users/anicca/.anicca",
+    "coLocatedWithCoordinator": true
   },
   {
     "id": "Franklin",
@@ -671,10 +703,16 @@ a markdown doc — precisely the class of source that just failed here:
     "walletAddress": { "solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9" },
     "fuel": { "provider": "x402" },
     "humanDependencies": [],
-    "homeDir": "/Users/anicca/.blockrun"
+    "homeDir": "/Users/anicca/.blockrun",
+    "coLocatedWithCoordinator": true
   }
 ]
 ```
+
+**(resolves FIND-703)** Both seed entries carry `"coLocatedWithCoordinator": true` — accurate as of
+2026-07-07, since both automaton and Franklin genuinely run on the same physical coordinator host (the
+Mac Mini, REQ-106). This is a structural fact about physical placement, not an inference from `homeDir`
+or any other field — it is recorded explicitly so REQ-403's live-audit enumeration never has to guess.
 
 Both entries' `homeDir` values are ALREADY-RESOLVED absolute paths — never a `$HOME`-template string —
 because this spec's author already knows the real, concrete path each citizen uses at seed time
@@ -746,6 +784,11 @@ seed set above is a fixed literal this spec's author already verified against li
   REQ-402/REQ-101's productivity exclusion (`"bootstrap_failed"`, `active_since`) is a SEPARATE concern
   that lives EXCLUSIVELY in `ledger.js` — see REQ-101's `filterProductiveCitizens` join and REQ-402 —
   this registry intentionally carries neither field (resolves FIND-201's location contradiction).
+- **(resolves FIND-703)** Every seeded (and later appended, REQ-305) entry carries a
+  `coLocatedWithCoordinator: boolean` field. Both of today's seeded entries have this set to `true`; a
+  structural check confirms REQ-403's live-audit enumeration filters on
+  `citizens.filter(c => c.coLocatedWithCoordinator === true)` rather than any undefined/implicit
+  "co-located" notion — see PROP-105h.
 
 ---
 
@@ -1462,7 +1505,14 @@ own documented contract exactly — resolves FIND-104), walletAddress: {evm: chi
 childSolanaAddress-if-generated} (the actual address STRING(s) — a SEPARATE field from `wallet`, never
 passed to `isSelfFunded()`), fuel: {provider: "free-model"} (per REQ-401's exclusive free-model fuel
 requirement), humanDependencies: [], homeDir: <the child's own resolved absolute `HOME`/`ANICCA_HOME`
-directory, REQ-203 — resolves FIND-202>}` — NO `telemetryPath` field (removed from this schema,
+directory, REQ-203 — resolves FIND-202>, coLocatedWithCoordinator: false}` — **resolves FIND-703:** THE
+SYSTEM SHALL ALWAYS set `coLocatedWithCoordinator` to exactly `false` for every REQ-305 append — never
+`true`, and never a computed/inferred value — because REQ-301's own absolute mandate makes a
+co-located spawned child structurally impossible this increment (every child is deployed exclusively via
+REQ-302 or REQ-303, never onto the coordinator host itself); this is a fixed structural constant for this
+increment, not a judgment call an implementer evaluates per spawn. This is the field REQ-403's
+live-audit enumeration filters on to correctly EXCLUDE every spawned child from its live-comparison
+half's candidate set (resolves FIND-703; see REQ-403) — NO `telemetryPath` field (removed from this schema,
 resolves FIND-302; REQ-101's balance lookup for this child, like every other citizen, goes through the
 registry-driven public-RPC `readCitizenBalances` step keyed on `walletAddress` above) — so REQ-101's
 NEXT evaluation includes the new citizen automatically, without any separate manual or out-of-band
@@ -1533,6 +1583,10 @@ spawn-triggered append — a permanent closure of the hazard, not merely a t=0 c
   structural check confirms it never contains a `$HOME`/`ANICCA_HOME` template string (resolves
   FIND-202), and the appended record carries NO `telemetryPath` field at all (removed, resolves
   FIND-302).
+- **(resolves FIND-703)** Every REQ-305 append sets `coLocatedWithCoordinator` to EXACTLY `false` — a
+  structural/Tier-0 check confirms no code path in this feature's diff ever appends `true` (or any
+  computed value) for this field, and an integration test on a real fixture append confirms the written
+  record's `coLocatedWithCoordinator` is `false` — see PROP-305f.
 - The real `buildChildSpec` call underlying this append supplies concrete values for all seven required
   fields per REQ-206's derivation rules (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`
   included, not just the identity-anchor pair) — resolves FIND-204.
@@ -1714,7 +1768,7 @@ or blocks a replacement spawn (that remains gated purely by REQ-102's own arithm
 
 ---
 
-### REQ-403: Wallet mutual non-interference audit (live-comparison half scoped to co-located instances this increment — resolves FIND-303)
+### REQ-403: Wallet mutual non-interference audit (live-comparison half scoped to co-located instances this increment — resolves FIND-303; enumeration keyed on `coLocatedWithCoordinator`, resolves FIND-703)
 **EARS**: WHEN N ≥ 2 instances (any mix of pre-existing citizens and newly-spawned children) run
 concurrently, THE SYSTEM SHALL provide a deterministic audit combining two independently-scoped halves:
 (a) a static, grep-based source audit across every skill script and cron/job config, checking all three
@@ -1725,16 +1779,26 @@ method this project's own wallet-rotation work already established (memory
 produces, INCLUDING a cloud-hosted child, because REQ-303's SDL boots that child by `git clone`-ing the
 SAME OSS repo this static grep already runs against (no separate remote-source-audit mechanism is
 needed for this half); with (b) a live runtime comparison — reusing `resolve-identity.mjs`'s existing
-exported resolvers, invoked once per CO-LOCATED running instance with that instance's OWN `HOME`/
+exported resolvers, invoked once per instance in REQ-105's registry whose `coLocatedWithCoordinator`
+field is exactly `true` (resolves FIND-703 — never an undefined/implicit "co-located" notion; today this
+set is exactly `{automaton, Franklin}`, and any future EXCEPTIONAL co-located addition would also be
+included by construction, though none is anticipated) with that instance's OWN `HOME`/
 `ANICCA_HOME` (read from REQ-105's registry's `homeDir` field, an already-resolved absolute path, PLUS an
 EXPLICITLY-CONSTRUCTED `env` object — never ambient `process.env` — see Acceptance Criteria and the
-Explicit-env correction below, resolves FIND-603) — that PROVES no two CO-LOCATED instances' resolved EVM or Solana signing keys are
-ever equal, and no CO-LOCATED instance's resolved key-file PATH ever points inside another CO-LOCATED
-instance's own home directory, before any newly-spawned CO-LOCATED child is permitted to participate in
-REQ-401's bootstrap.
+Explicit-env correction below, resolves FIND-603) — that PROVES no two `coLocatedWithCoordinator===true`
+instances' resolved EVM or Solana signing keys are ever equal, and no such instance's resolved key-file
+PATH ever points inside another such instance's own home directory. **Corrected, resolves FIND-703:**
+every newly-spawned child is, per REQ-301's own absolute mandate, ALWAYS `coLocatedWithCoordinator:
+false` (REQ-305) — a co-located spawned child is structurally impossible this increment, so this
+live-comparison half NEVER runs against, and NEVER gates, a newly-spawned child's participation in
+REQ-401's bootstrap; every spawned child is structurally EXCLUDED from this half's candidate set by
+construction (its registry record's own `coLocatedWithCoordinator` value) and is covered ONLY by half
+(a)'s static grep-sweep, which remains a blocking gate for it exactly as for any co-located instance
+(see the Edge Cases below — this replaces an earlier, vacuous promise that this check runs "before any
+newly-spawned co-located child" participates, a category that can never exist this increment).
 
-**Scoping correction (resolves FIND-303):** `resolve-identity.mjs`'s exported resolvers
-(`resolveEvmPrivateKey`/`resolveSolanaSecret`) are a PURE LOCAL-FILESYSTEM primitive
+**Scoping correction (resolves FIND-303, enumeration corrected FIND-703):** `resolve-identity.mjs`'s
+exported resolvers (`resolveEvmPrivateKey`/`resolveSolanaSecret`) are a PURE LOCAL-FILESYSTEM primitive
 (`fs.readFileSync` against `path.join(effectiveHome, '.automaton', 'wallet.json')`, confirmed by direct
 read of that module's real source) — the coordinator process invoking them can only ever resolve a key
 that lives on the coordinator's OWN local disk. Per REQ-301, a spawned child's wallet material lives
@@ -1743,13 +1807,15 @@ cannot `fs.readFileSync` into, and this feature never transmits a child's own pr
 to the coordinator over the network for comparison (that would itself violate REQ-201's private-key-
 handling discipline — "must never appear in any log file, stdout capture that reaches persistent logs,
 or process list," reasonably extended here to "or any network transmission"). THE SYSTEM SHALL therefore
-SCOPE the live-comparison half of this audit, for THIS INCREMENT ONLY, to co-located instances — today,
-automaton + Franklin, both on the Mac Mini per REQ-106 — mirroring REQ-106's own already-established
-"this increment only, future work for multi-host" precedent. A cloud-hosted spawned child is EXEMPT from
-the live-comparison check until a future increment adds a genuine remote-audit mechanism (e.g. a
-self-check script deployed to the child that reports only a boolean PASS/FAIL result — never key
-material — back to the coordinator). The STATIC grep-sweep half (a) is UNAFFECTED by this scoping and
-continues to cover a cloud-hosted child's deployed source, per the EARS clause above.
+SCOPE the live-comparison half of this audit, for THIS INCREMENT ONLY, to instances whose registry
+record's `coLocatedWithCoordinator` field is `true` — today, automaton + Franklin, both on the Mac Mini
+per REQ-106 — mirroring REQ-106's own already-established "this increment only, future work for
+multi-host" precedent. A cloud-hosted spawned child (`coLocatedWithCoordinator: false`, structurally
+guaranteed by REQ-305/REQ-301) is EXEMPT from the live-comparison check until a future increment adds a
+genuine remote-audit mechanism (e.g. a self-check script deployed to the child that reports only a
+boolean PASS/FAIL result — never key material — back to the coordinator). The STATIC grep-sweep half (a)
+is UNAFFECTED by this scoping and continues to cover a cloud-hosted child's deployed source, per the EARS
+clause above.
 
 **Seed-data correction (resolves FIND-501 — critical):** the live-comparison half (b) is only a genuine
 proof if the `homeDir` values it reads (REQ-105's registry) are each citizen's REAL, DISTINCT
@@ -1782,6 +1848,33 @@ mechanism (`readCitizenBalances`, REQ-101) reads exclusively `walletAddress` via
 never reads or references `homeDir` at all (REQ-105's own Acceptance Criteria/PROP-105f already pin
 `homeDir` as consumed ONLY by this REQ-403 audit) — confirmed explicitly, no residual doubt.
 
+**Canonical coordinator-HOME constant, `COORDINATOR_HOME` (resolves FIND-701 — critical):** the
+Explicit-env correction below requires supplying "the coordinator host's own real `$HOME`" as
+`env.HOME` on every invocation — but leaving this as an unresolved prose phrase (as an earlier revision
+of this section did) gives a Phase 2 implementer at least two ways to comply that BOTH silently defeat
+this section's own purpose: (a) hardcode the literal string `/Users/anicca` independently inside the
+audit script (no canonical source, drifts silently if the coordinator host or its home directory ever
+changes, with no structural check to catch a second, differently-hardcoded copy elsewhere), or (b)
+independently call `os.homedir()`/read `process.env.HOME` once at audit-script startup (reintroducing
+exactly the ambient-environment coupling this section's own Explicit-env correction exists to
+eliminate for any OTHER invocation context — a multi-user host, a differently-configured launchd job, a
+future second coordinator). This is the SAME class of un-pinned-input hazard REQ-103 already closed for
+`CITIZENS_REGISTRY_PATH` via a single named, exported constant — REQ-403 now receives the identical
+discipline: THE SYSTEM SHALL export a SECOND named constant, `COORDINATOR_HOME`, from the SAME shared
+module REQ-103 already introduces, `~/anicca/skills/self/spawn/lib/registry-path.mjs` (confirmed, by
+direct read, 2026-07-07: this module does not yet exist on disk — it is a Phase-2-created file, and its
+only planned export prior to this correction was `CITIZENS_REGISTRY_PATH`) — computed EXACTLY ONCE, at
+module-load time, via Node's `os.homedir()` (the canonical, OS-level API for "this process's own real
+home directory," robust regardless of which environment variables happen to be set at any given call
+site — NEVER `process.env.HOME` read ad hoc inside the audit script itself, and NEVER a hardcoded literal
+string). REQ-403's live-audit script SHALL import and use this SAME `COORDINATOR_HOME` constant for
+EVERY `env.HOME` value it passes to `resolveEvmPrivateKey`/`resolveSolanaSecret` — never independently
+re-reading `process.env.HOME`/`os.homedir()` a second time at the call site, never hardcoding. On this
+coordinator host, `COORDINATOR_HOME` currently resolves to `/Users/anicca` (confirmed live, 2026-07-07,
+via `os.homedir()`) — every literal `/Users/anicca` value appearing in this section's worked examples
+below IS `COORDINATOR_HOME`'s resolved value on THIS host, never an independently-sourced or
+independently-hardcoded copy. See PROP-403f for the corresponding structural check.
+
 **Explicit-env correction (resolves FIND-603 — critical):** `resolve-identity.mjs`'s real legacy-fallback
 gate depends on a SECOND, separate input this section's own prior worked examples never modeled. Reading
 its actual source: `resolveEvmPrivateKey`/`resolveSolanaSecret` both open with `const e = env ||
@@ -1797,14 +1890,16 @@ reused test suite (`runtime/loop/__tests__/resolve-identity.test.mjs`) never exe
 `{home: X}`-only shape: every one of its 20 test cases passes an explicit `env` object containing BOTH
 `HOME` and (where applicable) `ANICCA_HOME` together. THE SYSTEM SHALL therefore specify that REQ-403's
 live-audit script ALWAYS invokes both resolvers with an EXPLICIT, fully-constructed `env` object —
-`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: <the coordinator host's own real $HOME,
-sourced from a registry/coordinator constant>, ANICCA_HOME: citizen.homeDir}})` (and symmetrically for
-`resolveSolanaSecret`) — NEVER the bare `{home: X}` shape this section's own prior worked examples used,
-which depends on that same ambient value being correct by accident (a launchd-style cron invocation is
-not guaranteed to set `process.env.HOME` identically to an interactive shell's). See PROP-403e for the
-corresponding proof obligation, including a stripped/launchd-style minimal-`process.env` fixture proving
+`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: COORDINATOR_HOME, ANICCA_HOME:
+citizen.homeDir}})` (and symmetrically for `resolveSolanaSecret`) — `COORDINATOR_HOME` being the SAME
+canonical, `os.homedir()`-derived constant defined immediately above (resolves FIND-701; NEVER the vague
+"sourced from a registry/coordinator constant" phrase an earlier revision left unresolved, and NEVER the
+bare `{home: X}` shape this section's own prior worked examples used, which depends on that same ambient
+value being correct by accident — a launchd-style cron invocation is not guaranteed to set
+`process.env.HOME` identically to an interactive shell's). See PROP-403e for the corresponding
+explicit-env proof obligation (including a stripped/launchd-style minimal-`process.env` fixture proving
 the explicit-`env` invocation makes the audit's result independent of its own launcher's ambient
-environment.
+environment) and PROP-403f for the `COORDINATOR_HOME`-import-identity structural check.
 
 **Edge Cases**:
 - The static grep audit finds a hardcoded/templated path in a cloud-init script or SDL that could
@@ -1827,20 +1922,25 @@ environment.
   — silent "probably fine by analogy" reasoning is not permitted for a money-safety check.
 
 **Acceptance Criteria**:
-- A repeatable audit script exists that, given the current set of CO-LOCATED running instances' own
-  `HOME` values — read directly from REQ-105's colony citizen registry's `homeDir` field (an
+- A repeatable audit script exists that, given REQ-105's colony citizen registry, (1) runs the static
+  grep sweep across the WHOLE fleet (co-located AND cloud-hosted, since the latter's deployed source is
+  the same repo, per the EARS clause above) and reports zero cross-instance path references, and (2)
+  enumerates its live-comparison candidate set via `citizens.filter(c => c.coLocatedWithCoordinator ===
+  true)` (resolves FIND-703 — never an undefined/implicit "co-located" notion; today this evaluates to
+  exactly `{automaton, Franklin}`), reading each such instance's own `homeDir` field (an
   ALREADY-RESOLVED absolute path per REQ-105's schema — resolves FIND-202; the same registry REQ-101
-  aggregates over, no second, parallel instance-enumeration mechanism is introduced for this audit),
-  (1) runs the static grep sweep across the WHOLE fleet (co-located AND cloud-hosted, since the
-  latter's deployed source is the same repo, per the EARS clause above) and reports zero cross-instance
-  path references, and (2) invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per CO-LOCATED
-  instance's own `homeDir`, ALWAYS passing an EXPLICIT `env` object (`{HOME: <the coordinator host's own
-  real $HOME>, ANICCA_HOME: citizen.homeDir}` — never a bare `{home: X}` call relying on ambient
-  `process.env`, resolves FIND-603, see PROP-403e), and asserts pairwise inequality across all resolved
-  keys — this increment's live-comparison scope is co-located instances only (resolves FIND-303); a
-  cloud-hosted child is exempted from step (2) and is covered only by step (1) this increment.
-- Given a deliberately-injected test fixture where two fake CO-LOCATED instances share a `HOME`
-  (negative test), the audit correctly reports a collision — proving the check is not vacuously passing.
+  aggregates over, no second, parallel instance-enumeration mechanism is introduced for this audit), then
+  invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per candidate's own `homeDir`, ALWAYS passing
+  an EXPLICIT `env` object (`{HOME: COORDINATOR_HOME, ANICCA_HOME: citizen.homeDir}` — `COORDINATOR_HOME`
+  imported from `registry-path.mjs`, resolves FIND-701 — never a bare `{home: X}` call relying on ambient
+  `process.env`, resolves FIND-603, see PROP-403e/PROP-403f), and asserts pairwise inequality across all
+  resolved keys — this increment's live-comparison scope is exactly the `coLocatedWithCoordinator===true`
+  set (resolves FIND-303/FIND-703); every spawned child (`coLocatedWithCoordinator: false`, by
+  construction per REQ-305) is structurally excluded from step (2)'s candidate set and is covered only by
+  step (1).
+- Given a deliberately-injected test fixture where two fake instances both have
+  `coLocatedWithCoordinator: true` and share a `HOME` (negative test), the audit correctly reports a
+  collision — proving the check is not vacuously passing.
 - **(resolves FIND-501, corrected resolves FIND-603)** Given today's two real, corrected registry
   entries, invoking `resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca',
   ANICCA_HOME: '/Users/anicca/.anicca'}})` — the EXPLICIT-`env` shape, never the bare `{home: X}` shape
