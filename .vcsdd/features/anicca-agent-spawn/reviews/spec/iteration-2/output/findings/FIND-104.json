@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-105 claims the new colony-wallets.json record shape carries 'EXACTLY the fields isSelfFunded()/selfFundedReasons() ... already require' and specifies that shape as `wallet: {evm?: string, solana?: string}` (behavioral-spec.md line 294) -- i.e. STRING address values. But the actual, existing `is-self-funded.mjs` module this claims exact compatibility with types the same field as BOOLEAN: its own JSDoc (`@param {{wallet?: {evm?: boolean, solana?: boolean}, ...}} agent`, is-self-funded.mjs line 65) and its `hasOwnWallet()` implementation (`return Boolean(wallet.evm) || Boolean(wallet.solana)`, lines 30-34) both document/implement `wallet.evm`/`wallet.solana` as presence-FLAGS, not address values. The claim of exact field-shape compatibility is therefore not literally true (it happens to work only because `Boolean(<any non-empty string>)` is also `true` -- an accidental compatibility via JS truthiness coercion, not a documented contract). This matters because REQ-305 (behavioral-spec.md lines 745-746) simultaneously requires the SAME field to hold a genuine, usable address value on spawn-registry-append (`wallet: {evm: childWallet, solana: childSolanaAddress-if-generated}`) -- i.e. this spec's own two requirements (REQ-105 and REQ-305) both need `wallet.evm`/`wallet.solana` to be real address strings for their own purposes (e.g. any future consumer needing the actual address, not just a boolean flag), while the pure function they claim EXACT shape-compatibility with declares and enforces a boolean-only contract. Neither REQ-105 nor the Purity Boundary Map row for is-self-funded.mjs acknowledges or reconciles this type mismatch. An implementer who takes 'EXACTLY the fields ... already require' literally and follows is-self-funded.mjs's own documented type (boolean) would produce a registry that satisfies isSelfFunded() but discards the actual address data other parts of this same spec need from the identical field.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "292-295",
+    "snippet": "each carrying EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()` ... already require -- `{id: string, wallet: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[]}`"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "lineRange": "62-70", "note": "JSDoc types agent.wallet as {evm?: boolean, solana?: boolean}, not string"},
+    {"filePath": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "lineRange": "30-34", "note": "hasOwnWallet() implementation: Boolean(wallet.evm) || Boolean(wallet.solana) -- a presence-flag check, not an address consumer"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "745-747", "note": "REQ-305 requires the same wallet.evm/wallet.solana fields to carry real address values on registry-append"}
+  ],
+  "routeToPhase": "1c"
+}

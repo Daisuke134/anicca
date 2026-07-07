@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 2,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-1/output/findings/",
+    "note": "6 findings: FIND-001 (critical, buildChildSpec unmodified-reuse contradiction) resolved via new REQ-206 (accept childInbox OR agentEvmAddress+agentId). FIND-002 (critical, no dynamic citizen registry) resolved via new REQ-105 (extend colony-wallets.json, REQ-305 appends on spawn). FIND-003 (major, cloud multi-host lock/ledger) resolved via new REQ-106 (scope decision evaluation to single coordinator host, declare multi-host as future work). FIND-004 (medium, reinvented ensure-agent-id logic) resolved via REQ-204 reuse. FIND-005 (low, wrong citation) fixed. FIND-006 (medium, unspecified cloud target selection) resolved via new REQ-306 (deterministic selectCloudTarget)."
+  },
+  "note": "Verify each of the 6 fixes actually holds by re-reading the real source files cited (child-spec.js, colony-wallets.json, ensure-agent-id.mjs, lock.mjs) fresh -- do not accept the revision's own claims about what these files do without checking. Also check whether the 4 new REQs (105, 106, 206, 306) introduce any NEW inconsistency with the rest of the spec."
+}

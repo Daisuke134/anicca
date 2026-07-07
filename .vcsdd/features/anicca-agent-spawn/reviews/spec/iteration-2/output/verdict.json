@@ -1,0 +1,41 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "note": "Fresh-context adversary review. Per the manifest's explicit instruction, iteration 1's 6 claimed fixes (FIND-001..006) were NOT accepted at face value -- every real cited source file was re-read fresh: child-spec.js + its test suite, colony-wallets.json, ensure-agent-id.mjs + its test suite, lock.mjs, is-self-funded.mjs, identity.mjs, resolve-identity.mjs, spawn-decision.js, ledger.js, gen-wallet.sh, akt-treasury.sh, economy/ubi/run.sh + ubi.js, and ~/.blockrun/mcp.json, plus the project's own on-disk canonical wallet ledger (docs/WALLETS.md). Iteration 1's 6 findings are each independently confirmed RESOLVED as claimed (REQ-105/106/206/306 are real, substantive additions, not restatements) -- FIND-001..006 are NOT re-raised. However, this pass found 4 NEW defects, one of them critical: REQ-105/305's repurposing of colony-wallets.json as the surplus-aggregation registry does not address that the file's current 2nd entry is claude-p's own human-funded wallet (confirmed via docs/WALLETS.md), directly threatening the same HARD invariant this feature exists to enforce. Two further findings show REQ-206 (the FIND-001 fix) and REQ-103 (the FIND-003 fix) each contain their own new internal ambiguity/contradiction not caught before this pass."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102", "FIND-103", "FIND-104"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "buildChildSpec re-read fresh; confirmed today's code still unconditionally requires childInbox exactly as iteration-1's FIND-001 described -- REQ-206 correctly specifies this as a to-be-made change (Phase 1c spec, not yet implemented), consistent with Phase 1c scope"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/ensure-agent-id.mjs", "description": "confirmed REQ-204's citation is accurate: cachePath()'s ANICCA_HOME/HOME gating, registerFn/verifyFn injection pattern, and cache-hit/re-verify/fall-through logic all match the spec's description exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs", "description": "confirmed isLockStale/tryCreateLockFile/reclaimStaleLock reused-unmodified claims are accurate, but found the withGigLock(statePath, lockKey, fn) signature's mandatory statePath argument is never addressed by REQ-103 (FIND-103)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-103"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+    "newFindingsThisIteration": ["FIND-101", "FIND-102", "FIND-103", "FIND-104"]
+  }
+}

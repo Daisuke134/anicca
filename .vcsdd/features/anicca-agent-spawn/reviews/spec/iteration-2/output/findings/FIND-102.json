@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-206's own EARS clause directly contradicts its own edge case. The EARS sentence (behavioral-spec.md line 559-560) states the two identity anchors are required 'at least ONE of these two anchors, never both, and never neither' -- read plainly, this specifies mutual exclusivity (an XOR: exactly one of childInbox / the ERC-8004 pair, never both present at once). But REQ-206's own Edge Cases section (lines 584-586) explicitly states the opposite: 'Both childInbox AND the ERC-8004 pair are present simultaneously (a future hybrid child with both an inbox and an on-chain identity): THE SYSTEM SHALL accept this without error -- \"at least one\" is a minimum, not an exclusive-or.' An implementer reading only the binding EARS clause (as EARS clauses are meant to be read -- the normative requirement statement) would correctly implement XOR validation (reject when both anchors are present), which then directly VIOLATES the edge case's explicitly-required behavior one paragraph later. This is not a wording nitpick: REQ-206 is the requirement that resolves iteration 1's critical FIND-001 (buildChildSpec's identity-anchor validation), so an ambiguous core validation rule here reintroduces exactly the kind of unimplementable-as-specified defect iteration 1 was about. Compounding this, NONE of REQ-206's own Acceptance Criteria (lines 588-598) or verification-architecture.md's PROP-206a/b/c/d (lines 108-111) test the 'both anchors present' path at all -- only childInbox-only, ERC-8004-pair-only, neither, and half-pair-only are covered. A Phase 3 test suite could therefore fully satisfy every stated acceptance criterion and PROP while still implementing the literal EARS reading (reject-if-both), silently failing the edge case's explicitly-required accept-both behavior -- exactly the 'tests that would pass even if a critical edge case were unhandled' failure mode this review is required to catch.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "556-560",
+    "snippet": "THE SYSTEM SHALL accept as a valid \"identity anchor\" for the child EITHER (a) a non-empty `childInbox` string ... OR (b) the pair `agentEvmAddress` ... AND `agentId` ... requiring at least ONE of these two anchors, never both, and never neither."
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "584-586", "note": "the directly contradicting edge case: 'THE SYSTEM SHALL accept this without error -- \"at least one\" is a minimum, not an exclusive-or'"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "588-598", "note": "Acceptance Criteria list four fixtures (childInbox-only unchanged, ERC-8004-only succeeds, neither throws, half-pair throws) but no fixture for 'both present' at all"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md", "lineRange": "108-111", "note": "PROP-206a/b/c/d likewise never test the both-present case"}
+  ],
+  "routeToPhase": "1c"
+}
