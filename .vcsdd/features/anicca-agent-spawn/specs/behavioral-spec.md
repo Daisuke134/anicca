@@ -2559,8 +2559,11 @@ append — a permanent closure of the hazard, not merely a t=0 check.
   unaffected — the append is never lost, stashed, or overwritten by the concurrent git operation, and
   the git operation is never blocked or corrupted by the concurrent append (the two touch disjoint
   filesystem locations by construction).
-- **(new, sprint-2, resolves FIND-2002)** A failure occurs in REQ-201/202/203/306/302/303 — i.e.,
-  BEFORE an identity anchor (`agentEvmAddress`+`agentId`, REQ-204) exists at all — meaning
+- **(new, sprint-2, resolves FIND-2002; corrected, sprint-2 iteration 2, resolves FIND-S2-001)** A
+  failure occurs in REQ-201/202/203/306/302/303/204 — i.e., BEFORE a COMPLETE identity anchor
+  (`agentEvmAddress`+`agentId`, REQ-204) exists — INCLUDING a failure at REQ-204 itself (a REQ-204
+  failure means no `agentId` was recorded, per REQ-204's own Edge Case, so the anchor's second half is
+  still missing at that moment) — meaning
   `buildChildSpec` cannot yet be called (its own required-anchor validation would throw): see REQ-307's
   own edge case for the exact resolution (a minimal `{child_id, status:"failed", attempted_ms, error}`
   row appended directly via `ledger.js::appendChild`, never via `buildChildSpec`) — this is the SAME
@@ -2674,7 +2677,13 @@ steps, REQ-306's cloud-target selection, REQ-302's or REQ-303's deploy (includin
 and REQ-305's ledger/registry append — via exactly ONE new, named entry-point function,
 `executeSpawnAttempt({ initialSkills, drivingCitizenWallet, nowMs = Date.now() }) → Promise<{ status:
 "active"|"failed", childId, error? }>`, exported from a NEW module,
-`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`. **This closes the one gap a full sweep of this
+`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`. **(new, sprint-2, resolves FIND-S2-002)** This
+list of covered requirements is a SCOPE catalog only — stated in a fixed reading order for enumeration
+convenience — it is NOT an ordering statement, and MUST NOT be read as implying REQ-201 through REQ-206
+execute as one contiguous block before REQ-306: the Canonical call order section immediately below is
+the SOLE authoritative statement of execution sequence (e.g. REQ-306's step 3 precedes REQ-202's step
+4, per PROP-202d's own binding), and this EARS clause permanently defers to it rather than restating any
+ordering of its own. **This closes the one gap a full sweep of this
 spec found (2026-07-08): every individual step (REQ-201-206, REQ-301-306) already has its own pinned
 signature, but no function anywhere before this correction was named as the thing that calls them all,
 in order, inside REQ-103's lock — the Purity Boundary Map's own row list (all "REQ-201/202/etc.
@@ -2706,14 +2715,23 @@ restatement of any step's own logic):
    (gated on `isSelfFunded()`).
 
 **Edge Cases**:
-- A failure occurs at step 1, 2, 3, 4, or 5 (REQ-201/202/203/306/302/303) — i.e., BEFORE step 6
-  (REQ-204) ever produces an `agentId` — meaning NEITHER of `buildChildSpec`'s two identity-anchor
-  shapes (`childInbox`, never produced by this feature's design, or the `agentEvmAddress`+`agentId`
-  pair) is yet available (new, resolves FIND-2002, critical: REQ-305's own EARS clause promises "a
-  partially-completed attempt SHALL be recorded with status failed" for ANY failure from REQ-201
-  THROUGH REQ-303, but its own cited mechanism, `buildChildSpec`, structurally CANNOT construct a row
-  without an identity anchor that does not yet exist this early — an unaddressed gap until this
-  correction): THE SYSTEM SHALL append a MINIMAL row directly via `ledger.js::appendChild` — NEVER via
+- A failure occurs at step 1, 2, 3, 4, 5, or 6 (REQ-201/202/203/306/302/303/204) — i.e., BEFORE step 6
+  (REQ-204) has SUCCESSFULLY produced a usable `agentId`, INCLUDING a failure AT step 6 itself
+  (**corrected, sprint-2 iteration 2, resolves FIND-S2-001, critical**: step 6 IS the step that produces
+  the SECOND half of the identity anchor, so a failure DURING step 6 — e.g. REQ-204's own Edge Case,
+  "the registration transaction succeeds but its `Registered` event cannot be decoded... no `agentId`
+  recorded" — means the anchor is NOT yet complete at the moment of that failure; iteration 1 wrongly
+  classified a step-6 failure as occurring "after an identity anchor already exists", which would have
+  routed it into the `buildChildSpec`-based path below — but `buildChildSpec` structurally THROWS a
+  `missing identity anchor` error when only `agentEvmAddress` (step 2) is present and `agentId` (step 6)
+  is not, per REQ-206's own Edge Case, producing either an uncaught exception or no ledger row at all)
+  — meaning NEITHER of `buildChildSpec`'s two identity-anchor shapes (`childInbox`, never produced by
+  this feature's design, or the `agentEvmAddress`+`agentId` pair) is yet available (resolves FIND-2002,
+  critical: REQ-305's own EARS clause promises "a partially-completed attempt SHALL be recorded with
+  status failed" for ANY failure from REQ-201 THROUGH REQ-303, but its own cited mechanism,
+  `buildChildSpec`, structurally CANNOT construct a row without an identity anchor that does not yet
+  exist this early — an unaddressed gap until this correction, now extended through step 6 as well):
+  THE SYSTEM SHALL append a MINIMAL row directly via `ledger.js::appendChild` — NEVER via
   `buildChildSpec`, whose own required-anchor validation cannot yet be satisfied — carrying at minimum
   `{child_id, status:"failed", attempted_ms, error}` (`child_id` from `nextChildId`, which needs no
   identity anchor; `attempted_ms` set to `nowMs`, establishing this AS that `child_id`'s true first row,
@@ -2722,10 +2740,11 @@ restatement of any step's own logic):
   `filterProductiveCitizens`/REQ-102's `deriveRecentSpawnAttempts` already key only on
   `status`/`attempted_ms`/`active_since`, never on `buildChildSpec`'s other, optional fields, so this
   minimal row is already sufficient input for both.
-- A failure occurs at step 6, 7, 8, or 9 (REQ-204/205/206/305) — i.e., AFTER an identity anchor already
-  exists: THE SYSTEM SHALL record the failure via the ALREADY-specified `buildChildSpec`-based path
-  REQ-305 describes, exactly as today — this function adds no second, competing failure-recording path
-  for this later window.
+- A failure occurs at step 7, 8, or 9 (REQ-205/206/305) — i.e., AFTER step 6 (REQ-204) has GENUINELY
+  SUCCEEDED and a real `agentId` exists, so the full identity anchor (`agentEvmAddress`+`agentId`)
+  genuinely exists at the moment of failure: THE SYSTEM SHALL record the failure via the
+  ALREADY-specified `buildChildSpec`-based path REQ-305 describes, exactly as today — this function
+  adds no second, competing failure-recording path for this later window.
 - The `"colony-spawn"` lock (REQ-103) is held for this function's ENTIRE execution, steps 1-9
   inclusive, released only in a `finally` block after step 9 completes OR after any step's failure has
   been ledgered (mirrors `withGigLock`'s own existing `try/finally` release discipline — REQ-307
@@ -2747,9 +2766,10 @@ restatement of any step's own logic):
   OWN caller before `executeSpawnAttempt` is ever invoked) and no LLM/prompt reference — mirrors
   REQ-104's own structural check, extended to this new function.
 - An integration test triggers a failure at each of steps 1 through 9 in turn and confirms: (a) for
-  steps 1-5, a minimal `{child_id, status:"failed", attempted_ms, error}` row is appended directly
-  (never via `buildChildSpec`); (b) for steps 6-9, the existing `buildChildSpec`-based failure path
-  (REQ-305) is used; (c) in every case, no row anywhere claims `status:"active"` for that `child_id`.
+  steps 1-6 (**corrected, sprint-2 iteration 2, resolves FIND-S2-001**), a minimal `{child_id,
+  status:"failed", attempted_ms, error}` row is appended directly (never via `buildChildSpec`); (b) for
+  steps 7-9, the existing `buildChildSpec`-based failure path (REQ-305) is used; (c) in every case, no
+  row anywhere claims `status:"active"` for that `child_id`.
 - An integration test confirms the `"colony-spawn"` lock (REQ-103) is held from before step 1 begins
   until after step 9 completes (or a failure is ledgered), reusing PROP-103e's own staggered-race proof
   method against this REAL function rather than a fixture stand-in for it.

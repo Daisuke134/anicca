@@ -1,0 +1,30 @@
+{
+  "findingId": "FIND-S2-002",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": [],
+  "category": "three_statements_diverge",
+  "severity": "moderate",
+  "description": "REQ-307's EARS clause states the scope of what executeSpawnAttempt executes as a flat list -- 'REQ-201 through REQ-206's identity-generation steps, REQ-306's cloud-target selection, REQ-302's or REQ-303's deploy (including REQ-304's funding), and REQ-305's ledger/registry append' (behavioral-spec.md:2672-2674) -- which groups REQ-201 through REQ-206 together as a single leading block, followed by REQ-306, followed by deploy. Read literally as an ordering statement, this contradicts the Canonical call order (behavioral-spec.md:2691-2706), which correctly interleaves these: step 1 REQ-203, step 2 REQ-201, step 3 REQ-306, step 4 REQ-202, step 5 deploy, step 6 REQ-204, step 7 REQ-205, step 8 REQ-206, step 9 REQ-305. In particular, the EARS clause's grouping implies REQ-202 (part of the 'REQ-201 through REQ-206' block) executes BEFORE REQ-306 -- the exact opposite of the Canonical call order's step 3-before-step-4 sequencing, which the spec's own text says 'is what makes REQ-202's own already-specified PROP-202d binding possible at all' (behavioral-spec.md:2696-2697), since REQ-202's conditional Solana wallet generation is fed step 3's deployTarget return value directly. An implementer or reviewer who reads only the EARS clause (without cross-referencing the separately-labeled Canonical call order section) could reasonably derive an order that breaks PROP-202d's real-derivation binding. The Canonical call order section and the Acceptance Criteria are themselves mutually consistent and correctly state the true step order and lock scope (Acceptance Criteria explicitly says 'in the canonical order above', deferring to that section) -- so this is a documentation-clarity gap in the EARS clause specifically, not a defect in the binding mechanisms themselves.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2672-2674",
+      "snippet": "execute the ENTIRE remainder of that spawn attempt -- REQ-201 through REQ-206's identity-generation steps, REQ-306's cloud-target selection, REQ-302's or REQ-303's deploy (including REQ-304's funding), and REQ-305's ledger/registry append"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2691-2697",
+      "snippet": "3. REQ-306's selectCloudTarget... 4. REQ-202's conditional Solana wallet generation, fed step 3's own deployTarget return value directly (this ordering -- step 3 before step 4 -- is what makes REQ-202's own already-specified PROP-202d binding possible at all)."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2741-2744",
+      "snippet": "A structural/Tier-0 check confirms exactly ONE function, executeSpawnAttempt... calls REQ-201 through REQ-305's own already-exported functions/scripts in the canonical order above"
+    }
+  ],
+  "recommendation": "Add an explicit disclaimer to REQ-307's EARS clause (mirroring the disclaimer already present at the start of the Canonical call order paragraph) stating that the EARS clause's listing is a scope catalog, not an ordering statement, and that ONLY the Canonical call order section below governs sequencing -- closing the ambiguity for any reader who does not cross-reference both sections.",
+  "routeToPhase": "1a"
+}

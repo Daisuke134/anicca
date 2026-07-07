@@ -1,0 +1,54 @@
+{
+  "findingId": "FIND-S2-001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "internally_inconsistent_edge_case_boundary",
+  "severity": "critical",
+  "description": "REQ-307's own new Edge Cases section (behavioral-spec.md:2708-2728) draws the boundary between the two failure-recording paths at the WRONG step, and FIND-2002's own fix -- which this sprint claims resolves 'REQ-305's own EARS clause promises a partially-completed attempt SHALL be recorded... but its own cited mechanism, buildChildSpec, structurally CANNOT construct a row without an identity anchor that does not yet exist this early' -- does NOT actually close the gap for a failure occurring at step 6 (REQ-204) itself, only for steps 1-5. REQ-307's canonical call order names step 6 as 'REQ-204's ERC-8004 registration' -- i.e., step 6 IS the step that produces the SECOND half of the identity anchor, `agentId` (the first half, `agentEvmAddress`, comes from step 2). The second Edge Case bullet (behavioral-spec.md:2725-2728) explicitly classifies 'A failure occurs at step 6, 7, 8, or 9 (REQ-204/205/206/305) -- i.e., AFTER an identity anchor already exists' as using the existing buildChildSpec-based path. But a failure occurring AT/DURING step 6 means REQ-204's own registration call did not successfully return an agentId -- meaning the identity anchor is NOT yet complete at the moment of that failure, the EXACT SAME structural problem FIND-2002 identifies for steps 1-5. This is not a hypothetical: REQ-204's own pre-existing, unmodified Edge Case (behavioral-spec.md:1860-1861) already states this explicitly for its own most-cited failure mode: 'The registration transaction succeeds but its Registered event cannot be decoded (a malformed/odd log): treated as a REQ-305 failure (no agentId recorded), never a fabricated/guessed agentId.' No agentId recorded == the agentEvmAddress+agentId pair is incomplete == buildChildSpec's own identity-anchor validation (REQ-206's Edge Case, behavioral-spec.md:1992-1995: 'only ONE half of the ERC-8004 pair is present... THE SYSTEM SHALL throw a missing identity anchor error') will THROW if called for this exact case. So an implementer following REQ-307's Edge Case 2 literally -- 'record the failure via the buildChildSpec-based path REQ-305 describes' -- for a step-6 failure would call buildChildSpec with agentEvmAddress set but agentId missing, which throws 'missing identity anchor', producing either an uncaught exception (no ledger row at all) or requiring the implementer to silently improvise a mechanism this spec never describes. Both outcomes violate CRIT-203's own pass threshold (contracts/sprint-2.md) -- 'FAIL if any step's failure produces no row, a wrongly-shaped row, or a row misread' -- and PROP-307c's identical Tier-1/2 acceptance test (verification-architecture.md:516) cannot be satisfied as currently specified for the step-6 injection case. This same misclassification is replicated verbatim in verification-architecture.md's PROP-307c row ('steps 1-5 (before an identity anchor exists)... steps 6-9 (after an identity anchor exists)'). The correct boundary is: steps 1-6 (through and including a FAILED step-6 attempt) use the minimal direct ledger.js::appendChild path; only steps 7-9 -- i.e., after step 6 SUCCEEDS and genuinely produces an agentId -- may use the buildChildSpec-based path. REQ-305's own new sprint-2 Edge Case (behavioral-spec.md:2562-2568) makes the identical error, explicitly listing 'REQ-201/202/203/306/302/303' (steps 1-5) as the 'before an identity anchor exists' set and implicitly excluding REQ-204 (step 6) from it.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2725-2728",
+      "snippet": "A failure occurs at step 6, 7, 8, or 9 (REQ-204/205/206/305) -- i.e., AFTER an identity anchor already exists: THE SYSTEM SHALL record the failure via the ALREADY-specified buildChildSpec-based path REQ-305 describes, exactly as today"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2700-2701 (Canonical call order, step 6)",
+      "snippet": "6. REQ-204's ERC-8004 registration (requires the child's EVM wallet from step 2 and a reachable shelter from step 5)."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "1860-1861 (REQ-204's own pre-existing, unmodified Edge Case)",
+      "snippet": "The registration transaction succeeds but its Registered event cannot be decoded (a malformed/odd log): treated as a REQ-305 failure (no agentId recorded), never a fabricated/guessed agentId."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "1992-1995 (REQ-206's identity-anchor validation Edge Case)",
+      "snippet": "Neither childInbox nor the agentEvmAddress+agentId pair is present, or only ONE half of the ERC-8004 pair is present (e.g. agentEvmAddress set but agentId missing): THE SYSTEM SHALL throw a missing identity anchor error"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "516 (PROP-307c)",
+      "snippet": "steps 1-5 (before an identity anchor exists) append a minimal {child_id, status:\"failed\", attempted_ms, error} row directly via ledger.js::appendChild, NEVER via buildChildSpec; steps 6-9 (after an identity anchor exists) use the existing buildChildSpec-based REQ-305 failure path"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2562-2568 (REQ-305's own new sprint-2 Edge Case, FIND-2002)",
+      "snippet": "A failure occurs in REQ-201/202/203/306/302/303 -- i.e., BEFORE an identity anchor (agentEvmAddress+agentId, REQ-204) exists at all... see REQ-307's own edge case for the exact resolution"
+    },
+    {
+      "type": "spec",
+      "filePath": "contracts/sprint-2.md",
+      "lineRange": "CRIT-203",
+      "snippet": "no row anywhere ever claims status:\"active\" for a failed attempt (PROP-307c, resolves FIND-2002)... FAIL if any step's failure produces no row, a wrongly-shaped row, or a row misread by the sprint-1 aggregation functions."
+    }
+  ],
+  "recommendation": "Move step 6 (REQ-204) into the 'minimal direct ledger.js::appendChild' bucket in both REQ-307's Edge Cases (behavioral-spec.md) and PROP-307c (verification-architecture.md): steps 1-6 (any failure up through and including a failed REQ-204 attempt, i.e. one that does not produce a usable agentId) use the minimal row; only steps 7-9 (REQ-205/206/305), reachable ONLY once step 6 has genuinely SUCCEEDED and a real agentId exists, use the buildChildSpec-based path. Update REQ-305's own FIND-2002 Edge Case (behavioral-spec.md:2562-2568) to list 'REQ-201/202/203/306/302/303/204' (through and including REQ-204) as the 'before a complete identity anchor exists' set, not just 'REQ-201/202/203/306/302/303'. Re-verify the CRIT-203/PROP-307c integration test plan explicitly covers a step-6-failure fixture whose expected recording path is the minimal direct append, not buildChildSpec.",
+  "routeToPhase": "1a"
+}

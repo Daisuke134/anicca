@@ -1,0 +1,61 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "sprint": 2,
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-2.md"
+    ],
+    "scope": "Narrow sprint-2 delta review: (1) spot-check the 'ZERO new content needed' claim for REQ-201/202/203/204/205/206/301/302/303/304/305/306/401/402/403; (2) review the one genuinely new requirement, REQ-307 (executeSpawnAttempt) and PROP-307a-d, plus FIND-2001/FIND-2002; (3) review contracts/sprint-2.md's 8 CRIT criteria and its 35+3 deferred-obligation disposition against state.json."
+  },
+  "priorFindingsVerification": [],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-001", "FIND-S2-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:2669-2757 (REQ-307, full section, read in full)",
+          "description": "REQ-307's EARS clause, Canonical call order, Edge Cases, and Acceptance Criteria were read as one unit and cross-checked against REQ-204 (behavioral-spec.md:1834-1881), REQ-206 (behavioral-spec.md:1915-2009), and REQ-305 (behavioral-spec.md:2443-2602, including its own new sprint-2 FIND-2002 Edge Case at 2562-2568). Found a critical internal contradiction (FIND-S2-001): REQ-307's Edge Cases classify a failure AT step 6 (REQ-204, the step that produces the agentId half of the identity anchor) as occurring 'AFTER an identity anchor already exists' and therefore routable through the existing buildChildSpec-based failure path -- but REQ-204's own pre-existing, unmodified Edge Case explicitly states a REQ-204 failure means 'no agentId recorded', and REQ-206's own Edge Case says buildChildSpec THROWS if only one half of the identity-anchor pair is present. This means FIND-2002's fix, as specified, does not actually close the gap for the step-6 failure mode -- it only covers steps 1-5. The identical misclassification is replicated in verification-architecture.md's PROP-307c. Also found a moderate three-statements-diverge risk (FIND-S2-002): REQ-307's EARS clause lists REQ-201-206 as a block before REQ-306, which, read literally as an ordering claim, contradicts the Canonical call order's step-3-before-step-4 sequencing (REQ-306 before REQ-202) that PROP-202d's binding depends on."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md (REQ-201:1693-1736, REQ-303:2138-2337, REQ-304:2340-2440, REQ-306:2611-2666, REQ-401:2761-2796, REQ-402:2799-2843, plus REQ-101/102 treasury-gate.mjs rows in verification-architecture.md:241-247)",
+          "description": "Spot-checked 6 of the 15 REQs the contract claims needed zero new content (REQ-201, REQ-303, REQ-304, REQ-306, REQ-401, REQ-402), reading each one's full EARS clause, Edge Cases, and Acceptance Criteria. All six are genuinely complete, concrete, and implementable -- no vague placeholder text found. REQ-303 in particular was checked specifically because the contract's Scope section claims it 'itself already specifies' the two genuinely-new pieces (the child-specific SDL HOME=/root variant and the post-lease secrets-injection step) that sprint-2 only needs to implement, not author -- confirmed true by direct read (behavioral-spec.md:2223-2272). The 'Pre-existing spec confirmation' claim in contracts/sprint-2.md holds up for every REQ spot-checked."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-001", "FIND-S2-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md:514-517 (PROP-307a-d), :268 (Purity Boundary Map row for spawn-orchestrator.mjs), :709-1025 (full Gate section)",
+          "description": "PROP-307a-d are individually well-formed (correct Tier assignments, concrete Tool/Method text) and the Purity Boundary Map row for spawn-orchestrator.mjs correctly classifies it as new Effectful Shell code with zero decision logic. However, PROP-307c's acceptance test cannot be satisfied as literally specified for a step-6 failure injection, per FIND-S2-001 (the buildChildSpec-based path it names would itself throw 'missing identity anchor' for that case, producing no ledger row -- directly violating CRIT-203's own FAIL condition, 'FAIL if any step's failure produces no row'). Separately (FIND-S2-003), the '## Gate' section -- this spec's own designated single Phase-3 checklist, which received a dedicated new entry '(8a)' when REQ-306 was introduced -- has ZERO entry referencing REQ-307/PROP-307a-d anywhere across its 11 numbered items; entry (8), covering REQ-305's failure-injection guarantee, does not cite PROP-307c even though PROP-307c is what extends that same guarantee to the new 9-step canonical order. This breaks the document's own established per-REQ Gate-entry convention."
+        },
+        {
+          "type": "file",
+          "location": "state.json (proofObligations array, cross-referenced via each entry's `artifact` field against contracts/sprint-2.md's 35+3 PROP ID lists)",
+          "description": "Programmatically verified: all 35 'targeted for closure' PROP IDs plus all 3 'explicitly NOT targeted (Tier-3)' PROP IDs contracts/sprint-2.md names are present in state.json (join key: each state.json entry's `artifact` field, e.g. 'specs/verification-architecture.md#PROP-201a', not the top-level sequential `id` field, which uses an unrelated PROP-0NN numbering scheme) and are ALL currently marked `required:false` -- an exact 38/38 match in both directions (no contract-named PROP missing from state.json's required:false set, and no OTHER state.json required:false entry outside the contract's named 38). Also verified the 4 PROPs the contract says were 'restored to required:true/proved' this sprint (PROP-106a, PROP-403a, PROP-105g, PROP-202e) are indeed required:true/status:proved in state.json. CRIT-206's disposition claim is internally consistent -- no finding here."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208", "REQ-307", "PROP-307a", "PROP-307b", "PROP-307c", "PROP-307d"],
+    "duplicateFindings": [],
+    "note": "This was a narrow, small-delta review as the manifest instructed -- not a full re-review of the already-20-times-hardened sprint-1 spec. The 'ZERO new content needed' claim for the 15 named REQs was spot-checked (6 of them, exceeding the requested minimum of 4) and holds up genuinely. The contract's own 35+3 deferred-obligation disposition (CRIT-205/CRIT-206) was cross-checked against the real state.json and is internally consistent -- no finding there. However, the ONE genuinely new piece of content this sprint added, REQ-307 (and its mirrored PROP-307c in verification-architecture.md), contains a real, critical, load-bearing defect: the failure-recording boundary FIND-2002 claims to fix is drawn one step too late, leaving a failure at step 6 (REQ-204) itself without any valid recording mechanism per the spec's own text, and directly contradicting REQ-204's own pre-existing Edge Case. This is exactly the class of defect this review was specifically asked to hunt for (whether FIND-2002's fix closes the gap for EVERY ONE of the 9 steps), and it does not. A second, more minor divergence-risk was found in the EARS clause's ordering language, and a third, more minor gap was found in the Gate section's missing REQ-307 entry. Route to Phase 1a: fix REQ-307's Edge Cases (and PROP-307c) to move step 6 into the minimal-direct-append bucket, fix REQ-305's own FIND-2002 Edge Case to include REQ-204 in its 'before anchor exists' step list, add the EARS-clause ordering disclaimer, and add a Gate entry '(8b)' for PROP-307a-d -- then re-review."
+  }
+}

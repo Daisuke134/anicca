@@ -1,0 +1,30 @@
+{
+  "findingId": "FIND-S2-003",
+  "dimension": "verification_readiness",
+  "additionalDimensions": [],
+  "category": "missing_gate_entry",
+  "severity": "moderate",
+  "description": "verification-architecture.md's own established convention is that every REQ group gets both Proof-Obligation-table rows AND a corresponding numbered entry in the '## Gate' section (the Phase-3 adversarial-review checklist) -- e.g. when REQ-306 was introduced it received PROP-306a-e rows AND a dedicated Gate entry '(8a)' (verification-architecture.md:990-999) sitting alongside REQ-305's entry '(8)'. REQ-307 breaks this pattern: PROP-307a-d rows exist in the Proof Obligations table (verification-architecture.md:514-517) and the Purity Boundary Map has a row for spawn-orchestrator.mjs (line 268), but a full scan of the '## Gate' section (lines 709-1025+, entries (1) through (11)) finds ZERO mention of REQ-307, executeSpawnAttempt, spawn-orchestrator.mjs, or PROP-307a/b/c/d anywhere. Entry (8), which covers REQ-305's no-partial-spawn guarantee, cites only PROP-305b/c/d/e/f/g and does not mention PROP-307c even though PROP-307c is the proof obligation that actually supersedes/extends REQ-305's per-step failure-injection guarantee to the new 9-step canonical order. Phase 3 (vcsdd-adversary implementation review) for this sprint would need to independently notice PROP-307a-d exist (from the Proof Obligations table) since the Gate section -- which is this spec's own designated single checklist for what Phase 3 'must confirm' -- gives it no explicit instruction to do so, unlike every other REQ group in this document.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "990-999 (Gate entry 8a, added when REQ-306 was introduced)",
+      "snippet": "(8a) REQ-306's cloud-target selection is confirmed deterministic and bookkeeping-only... (PROP-306a/b/d)... (PROP-306c)... (PROP-306e)"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "976-988 (Gate entry 8, REQ-305, no PROP-307c citation)",
+      "snippet": "(8) REQ-305's no-partial-spawn guarantee is proven by injecting a failure at EACH step in the chain in turn... (PROP-305b)... (PROP-305c...)... (PROP-305d)... (PROP-305e...)... (PROP-305f...)"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "514-517",
+      "snippet": "PROP-307a | REQ-307 ... | PROP-307b | REQ-307 ... | PROP-307c | REQ-307 ... | PROP-307d | REQ-307 ..."
+    }
+  ],
+  "recommendation": "Add a new Gate entry (e.g. '(8b)', immediately after '(8a)') explicitly citing PROP-307a/b/c/d by name and describing what the Phase-3 adversary must confirm: the single-call-graph-root structural check, the no-judgment-logic structural check, the per-step failure-recording integration test (once FIND-S2-001's step-6 boundary correction is applied), and the lock-scope integration test -- mirroring the style and level of detail already used for entries (8a) and (2).",
+  "routeToPhase": "1a"
+}
