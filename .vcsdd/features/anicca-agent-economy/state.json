@@ -35,11 +35,18 @@
       "timestamp": "2026-07-07T03:20:00.000Z",
       "reason": "Architect escalation approved: Phase 1c hit its 3-iteration cap still FAIL, but FIND-101/102 (the iteration-2 blockers) are confirmed resolved and the sole remaining blocker (FIND-201, a narrow REQ-204 scoping gap) was recommended by the adversary itself as a targeted patch rather than a 4th full spec pass. Approved by Dais 2026-07-07 via AskUserQuestion. See escalations/1c-iteration-limit-2026-07-07.md.",
       "escalationApproved": true
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-07T03:22:12.000Z",
+      "reason": "iteration 4 targeted patch resolving FIND-201: REQ-204's removal list now names the 4th phrase ('the highest-leverage move is to POST') plus a generalized binding criterion (remove ANY ranking/imperative language in the COLONY BOOTSTRAP PRIORITY block or its referenced paragraphs, named phrases are an illustrative minimum); PROP-204a/PROP-203b now required to agree on the same verdict",
+      "iteration": 4
     }
   ],
   "iterations": {
-    "1a": 3,
-    "1b": 3,
+    "1a": 4,
+    "1b": 4,
     "1c": 2
   },
   "proofObligations": [
@@ -131,5 +138,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T03:20:00.000Z"
+  "updatedAt": "2026-07-07T03:22:12.000Z"
 }

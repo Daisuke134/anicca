@@ -2,11 +2,13 @@
 
 **feature**: anicca-agent-economy · **mode**: strict · **increment**: gig-board concurrency
 hardening + bootstrap-reserve catalog eligibility gate + business.blockrun.ai seller-channel
-research spike · **日付**: 2026-07-07 · **revision**: iteration 3 (Phase 1c adversary review
+research spike · **日付**: 2026-07-07 · **revision**: iteration 4 (Phase 1c adversary review
 iteration 1 returned FAIL with 6 findings, FIND-001..FIND-006, resolved by iteration 2; iteration 2
-review returned FAIL with 2 CRITICAL findings, FIND-101/FIND-102 — this revision resolves both; see
-`reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json` and
-`reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json` for the original findings)
+review returned FAIL with 2 CRITICAL findings, FIND-101/FIND-102, resolved by iteration 3; iteration
+3 review returned FAIL with 1 HIGH finding, FIND-201 — this revision resolves it; see
+`reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json`,
+`reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json`, and
+`reviews/spec/iteration-3/output/findings/FIND-201.json` for the original findings)
 
 ## Scope of this increment (read first)
 
@@ -428,8 +430,11 @@ or any steering text that tells the model WHICH of the remaining options to pref
 ### REQ-204: Retire the pre-existing prompt-level steering block once the eligibility gate lands
 **EARS**: WHEN this increment's REQ-201/202 eligibility gate is implemented and wired into the wake
 loop, THE SYSTEM SHALL remove or neutralize the pre-existing `## ★COLONY BOOTSTRAP PRIORITY★`
-steering block (and its adjoining imperative ranking language — "Prefer this over re-yielding
-surplus" and the "MINDSET: ... it is almost never 'yield again'" framing) from
+steering block, together with ANY ranking/imperative language found anywhere within that block or
+within any paragraph it references or duplicates (e.g. the `economy/gig` bullet inside the `## Your
+earn tools` section) that tells the model WHICH slot to prefer over the others — including, at
+minimum, "Prefer this over re-yielding surplus", the "MINDSET: ... it is almost never 'yield
+again'" framing, and "the highest-leverage move is to POST" (resolves FIND-201) — from
 `runtime/loop/prompt.mjs`'s `buildSystemPrompt`.
 
 **Why this requirement exists (resolves FIND-005)**: `runtime/loop/prompt.mjs` as it exists on
@@ -443,24 +448,54 @@ the design-compliant SUCCESSOR to that prompt-hack: once the gate can structural
 option space by balance, the prompt no longer needs to (and, per REQ-203's own principle, must
 not) also tell the model which remaining option to prefer. Leaving both mechanisms in place
 simultaneously after this increment ships would mean REQ-203's "no steering text" principle is
-false of the codebase in the very increment that establishes it.
+false of the codebase in the very increment that establishes it. **This applies wherever the
+ranking language physically sits, not only inside the block's own literal string boundaries
+(resolves FIND-201)**: a ranking phrase one paragraph away from the block — e.g. the `economy/gig`
+bullet inside the `## Your earn tools` section, which as of this spec's writing also states "the
+highest-leverage move is to POST", five lines before the already-named "Prefer this over
+re-yielding surplus" in the exact same bullet — is functionally identical steering and would leave
+REQ-203's principle just as false if left in place.
 
 **Edge Cases**:
 - The `## Tips from a senior who has run these (advice, NOT rules — adapt, do not copy blindly)`
   section is explicitly out of scope for removal — it is already self-labeled as non-binding advice
-  rather than an imperative instruction, and REQ-204 targets only the imperative/ranking language
-  named above.
+  rather than an imperative instruction.
+- **The named phrases above are a MINIMUM, not an exhaustive or exclusive list (resolves
+  FIND-201)**: REQ-204's actual scope is every ranking/imperative phrase found anywhere within the
+  `## ★COLONY BOOTSTRAP PRIORITY★` block itself, and anywhere within any paragraph that block
+  references or duplicates (e.g. the `economy/gig` bullet inside the `## Your earn tools` section).
+  As of this spec's writing that bullet contains a fourth such phrase not previously named — "the
+  highest-leverage move is to POST" — sitting five lines before "Prefer this over re-yielding
+  surplus" in that same bullet. A future spec revision or Phase 3 finding that surfaces yet another
+  unnamed ranking/imperative phrase within this same scope does NOT require a new requirement or a
+  spec amendment before it must be removed — REQ-204 already covers it under this generalized
+  criterion; only the illustrative list of named examples may need updating for clarity.
 - If retiring this block is deferred to a later increment for any reason, that deferral MUST be
   explicitly flagged in this increment's own completion evidence as a KNOWN, temporary violation of
   REQ-203 — never silently treated as if REQ-203 were already fully satisfied.
 
 **Acceptance Criteria**:
-- The diff landed by this increment removes or neutralizes the `## ★COLONY BOOTSTRAP PRIORITY★`
-  block's imperative "MUST" / "Do this BEFORE X" language and the "Prefer this over re-yielding
-  surplus" / "it is almost never 'yield again'" ranking phrases from `buildSystemPrompt`'s output.
+- The diff landed by this increment removes or neutralizes, AT LEAST, the `## ★COLONY BOOTSTRAP
+  PRIORITY★` block's imperative "MUST" / "Do this BEFORE X" language, the "Prefer this over
+  re-yielding surplus" / "it is almost never 'yield again'" ranking phrases, and "the
+  highest-leverage move is to POST" (the `economy/gig` bullet inside `## Your earn tools`) from
+  `buildSystemPrompt`'s output — these named phrases are illustrative minimum examples, not the
+  full scope (see the generalized criterion below).
+- **GENERALIZED, BINDING criterion (resolves FIND-201)**: the diff removes or neutralizes ANY
+  ranking/imperative/preference-ordering language — any text that scores, ranks, or tells the model
+  WHICH of the remaining slots to prefer over the others — found anywhere within the `## ★COLONY
+  BOOTSTRAP PRIORITY★` block itself, or anywhere within any paragraph that block references or
+  duplicates (including, but not limited to, the `economy/gig` bullet inside `## Your earn tools`).
+  The named phrases above are the minimum known instances at spec-writing time, not an exhaustive
+  or exclusive list. A Phase 3 adversary that finds ANY slot-preference-ranking phrase of
+  equivalent strength still present anywhere in this scope — named in this spec or not — MUST treat
+  REQ-204 as NOT satisfied.
 - A Phase 3 adversary reading the FULL current file (not only this increment's diff) confirms no
   equivalent-strength imperative steering/ranking text remains anywhere in the file's binding
-  (non-"tips", non-"advice") sections.
+  (non-"tips", non-"advice") sections. This criterion, the generalized criterion above, and
+  PROP-203b / PROP-204a in verification-architecture.md MUST always reach the same PASS/FAIL
+  conclusion for the same code state — a discrepancy between them indicates one of the checks was
+  applied too narrowly and must be redone at the scope described here.
 
 ---
 
