@@ -34,6 +34,22 @@
 //     (possibly slow) network step still only holds the per-gigId/"_post" lock; the board lock is held
 //     only for the brief, local read-mutate-write, preserving throughput across unrelated gigs.
 //
+// anicca-agent-economy REQ-102 (Phase 2b, GREEN -- a genuine new finding from the Phase 2a RED evidence,
+// see evidence/sprint-1-red-phase.log §2): extending GAP 2's 2-gigId scenario to THREE OR MORE distinct,
+// FAST, concurrent gigIds reproducibly rejected one of them outright -- the shared "_board" lock is the
+// SAME fail-closed, non-queueing primitive as the per-gigId locks, so two unrelated gigIds' board-lock
+// acquisitions landing in the same instant made one lose with no retry, even though nothing about
+// fund-safety required that rejection (only ONE gigId's lock -- the one actually being mutated -- needs
+// to stay strictly fail-closed for fund-safety; REQ-103's double-pay/self-verify tests exercise THAT
+// lock, never the shared board lock). FIX: `applyAndSave()` below retries its OWN acquisition of the
+// "_board" lock with a short, bounded backoff -- safe specifically because the board lock's own critical
+// section is brief (a local read-mutate-write; the slow network settle already completed before
+// `applyAndSave` is ever called) and holds no funds-moving side effect of its own. This retry is added
+// ONLY around the "_board" lock in `applyAndSave`; `withGigLock`'s general per-gigId/`"_post"` behavior
+// (lib/lock.mjs) is untouched and remains fail-closed/non-queueing, preserving every REQ-103 invariant
+// (a genuine SAME-gigId double-pay attempt must still be rejected outright, never retried into a second
+// settle).
+//
 // Escrow model (documented limitation, see README): GIG_ESCROW_PRIVATE_KEY is a custody keypair the
 // gig-board process holds -- not a Solidity escrow contract. Fail-closed release is enforced in
 // lib/store.mjs (applyVerifyAndPay refuses to mark 'paid' without a real payoutTx) and here (payout is
@@ -62,6 +78,12 @@ const DEFAULT_STATE_PATH = process.env.GIG_STATE_PATH || new URL("./state/gigs.j
 const FACILITATOR_URL = process.env.GIG_FACILITATOR_URL || "http://127.0.0.1:8405";
 const POST_LOCK_KEY = "_post"; // guards the shared nextId counter against concurrent gig_post calls
 const BOARD_LOCK_KEY = "_board"; // guards the shared state file's actual read-mutate-write (GAP 2)
+// REQ-102: bounded retry knobs for the shared "_board" lock ONLY (see the header comment above) -- brief
+// enough that they never meaningfully delay a genuinely uncontended write, but wide enough to absorb two
+// or three FAST, unrelated gigIds' board-lock acquisitions landing in the same instant.
+const BOARD_LOCK_RETRY_ATTEMPTS = 40;
+const BOARD_LOCK_RETRY_DELAY_MS = 5;
+const BOARD_LOCK_CONTENDED_REASON = `'${BOARD_LOCK_KEY}' is currently being processed by another call`;
 
 function escrowAddress() {
   return process.env.GIG_ESCROW_ADDRESS || null;
@@ -80,17 +102,25 @@ function escrowPrivateKey() {
  * on failure.
  */
 async function applyAndSave(statePath, mutateFn, lockConfig) {
-  return withGigLock(
-    statePath,
-    BOARD_LOCK_KEY,
-    async () => {
-      const state = await loadState(statePath); // always the freshest on-disk state at write time
-      const result = mutateFn(state);
-      if (result.ok) await saveState(statePath, result.state);
-      return result;
-    },
-    lockConfig
-  );
+  for (let attempt = 0; attempt < BOARD_LOCK_RETRY_ATTEMPTS; attempt++) {
+    const outcome = await withGigLock(
+      statePath,
+      BOARD_LOCK_KEY,
+      async () => {
+        const state = await loadState(statePath); // always the freshest on-disk state at write time
+        const result = mutateFn(state);
+        if (result.ok) await saveState(statePath, result.state);
+        return result;
+      },
+      lockConfig
+    );
+    const lostBoardLockRace = outcome.ok === false && typeof outcome.reason === "string" && outcome.reason.startsWith(BOARD_LOCK_CONTENDED_REASON);
+    if (!lostBoardLockRace) return outcome; // real success, OR a real business-logic/fund-safety rejection -- never retried
+    // The shared board lock's own critical section is brief and safe to retry (see header comment) --
+    // unlike a per-gigId lock loss, which must stay a real rejection for fund-safety.
+    await new Promise((r) => setTimeout(r, BOARD_LOCK_RETRY_DELAY_MS));
+  }
+  return { ok: false, reason: `${BOARD_LOCK_CONTENDED_REASON} -- rejected after ${BOARD_LOCK_RETRY_ATTEMPTS} bounded retries (fail-closed)` };
 }
 
 /**
