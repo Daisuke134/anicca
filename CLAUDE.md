@@ -39,7 +39,7 @@ human-zero の SaaS signup/login/決済/Turnstile/hCaptcha/reCAPTCHA/3DS 突破�
 
 | dashboard名 | 実体 | 燃料 | 種別 | wallet | earn | loop |
 |---|---|---|---|---|---|---|
-| **anicca-a3cdd4** | automaton + ClawRouter | ClawRouter 自wallet | ★SELF-funded★ | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21`(Base) | 汎用 | `com.anicca.daemon`(body `~/.anicca`) |
+| **anicca-a3cdd4** | automaton + ClawRouter | ClawRouter 自wallet | ★SELF-funded★ | `0xB9dd3B67921B354c656523d6851537988F31DD56`(Base、2026-07-07 04:47 UTC鍵漏洩によりローテーション済み。旧`0xa3CDd4...`は失効) | 汎用 | `com.anicca.daemon`(body `~/.anicca`) |
 | **Franklin** | Franklin-Trading | 自wallet x402 | ★SELF-funded★ | `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`(Sol) | SOL trade | `ai.anicca.franklin-sol` |
 | **claude-p(私)** | この Claude → PM earner | Anthropic課金 | human-funded | `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`(Polygon pUSD) | PM trade | `ai.anicca.pm-earner`(+proxy body=`founder-loop`,0x810f) |
 

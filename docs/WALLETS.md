@@ -1,4 +1,4 @@
-# Anicca WALLETS — canonical (stop forgetting these) — snapshot 2026-07-04 ~07:40 JST
+# Anicca WALLETS — canonical (stop forgetting these) — snapshot 2026-07-07 (rotation update)
 
 > The one place every wallet + its role + its live balance lives. Update the snapshot when it changes.
 > Balance-check one-liners at the bottom. Key material is NOT here — only public addresses.
@@ -10,7 +10,7 @@ The loop (`~/anicca/runtime/loop`) runs on the founder body `~/.anicca-founder`.
 
 | Wallet | Address | Key source | Role |
 |---|---|---|---|
-| **Operational (BlockRun/HL)** | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` | `~/.openclaw/.env::BLOCKRUN_WALLET_KEY` | pays x402 compute + holds the Hyperliquid perp account; the loop's `hl-trade`/`x402_sell` payTo |
+| **Operational (BlockRun/HL)** | `0xB9dd3B67921B354c656523d6851537988F31DD56` (rotated 2026-07-07T04:47:35Z — old `0xa3CDd4...` leaked in `~/.anicca-founder/agents/polymarket-agent/.env` + `~/.openclaw/.env`, now revoked) | `~/.openclaw/.env::BLOCKRUN_WALLET_KEY` | pays x402 compute + holds the Hyperliquid perp account; the loop's `hl-trade`/`x402_sell` payTo |
 | **Founder (treasury)** | `0x810f6d61f7606deee2657d3083e150a222bc29c5` | `~/.anicca-founder/wallet.json` | treasury: yield, pm-trade bankroll (bridged to Polygon), spawn seed source |
 | Founder Solana | `BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX` | `~/.anicca-founder/solana-wallet.json` | Solana-side treasury / gas source |
 | "myClaude" clip (Solana) | `xxKC33TYJ2czjGQAADrvDCLjF6pRvtHX125fCwP5u9H` | (memory `project_myclaude_clip_rewards_self_earning`) | clip-rewards payout wallet (currently empty) |
