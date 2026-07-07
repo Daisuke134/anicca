@@ -175,6 +175,38 @@ anicca-agent-economy（別CC・経済レール層）: 「Franklin が earn "で�
 
 **記事化**（Dais の希望）: SI-1〜SI-4 を実際に回した fresh evidence を素材に、`ai-entity-article-writer` skill で「loop engineering の一段上＝人間 credential ゼロの self-funded AI 自己改善」を実体験ベースで書く。既存の explanation memory（reference_loop_engineering）＋本 doc が下敷き。
 
+## 8.5 SI-1 現状棚卸し結果（2026-07-07・実コード監査、3並列 agent）
+
+### 実稼働ループの実態（launchd + colony-status）
+| loop | 状態 | 実収益 | done 判定者 |
+|---|---|---|---|
+| `pm-earner`(claude-p) | RUNNING・human-zero で実際に回る唯一のループ | 直近実現益=2026-07-05 の PM redeem 6件 ≈$8.47、以降ゼロ（MM 予算$0.67<必要$4.95で発注ゼロ） | ✅ コード（on-chain tx `status:"0x1"`）だが「今回稼げず」の自己申告に独立レビュー無し |
+| `com.anicca.daemon`(a3cdd4) | RUNNING | $0（ledger 全て `earn_usdc:0` の discover のみ） | ✅ コード（`ledger.mjs::isProfitable`） |
+| `franklin-loop` | RUNNING だが**1655回連続エラー**（plist に `ANICCA_WALLET_ADDRESS` 欠落）誰にも検知されず | SOL0.020/USDC$0 | ❌ 残高 fetch すら失敗 |
+| `founder-loop`(0x810f) | RUNNING | Measure のみ、ACT 実行者不明 | ✅ コード（ledger sum）だが ACT 無し |
+
+### ハーネスの実態（★重要な発見★）
+- **本物の self-IMPROVE は1つだけ実在** = `~/anicca/runtime/loop/index.mjs` + `self-eval.mjs`（a3cdd4本体、常駐）。`self-eval.mjs:8`「no hardcoded 'stop hl_trade' rule — we give it the data, it decides」＝ **realized P&L を見て次手を変える**。done 判定 = on-chain 確定 tx（`_shared/lib/ledger.mjs:48-56`、完全 observable）。**これが他全ループの目標像＝模範**。
+- **それ以外は全部 self-HEAL 止まり**（`self-fix.sh`/`healthcheck-lib.sh`/`verify-loops(-audit).sh` の連鎖）。戦略を良くする機構は無い。
+- **我々が欲しい設計そのものが既にあるが死蔵** = `~/anicca/.vcsdd/features/eval-driven-earning/`（calibration drift + bandit arm + **fresh-context Opus adversary の curation-gate** REQ-CU3b）。だが `state.json`=`currentPhase:"init"`、最新 verdict=`FAIL`、実装ファイル（`eval_spine.py` 等5本）は**1本も存在しない**。→ **SI harness = これを蘇生＋runtime/loop パターンを他ループに複製**。
+- **loop-improve.py（Reflexion）はスタブ放置**（`pass_count` を増やすだけ、どのループからも未呼出）。
+
+### 人間/自己申告のまま残る「done 判定席」（= adversary + observable done に置換すべき箇所）
+1. `self-fix.sh` の SUCCESS/FAIL = **修正した同一 spawn の自己申告**（fresh adversary でない）。commit+push まで単独完結（`--dangerously-skip-permissions`）。diff レビュー者ゼロ。
+2. `capafy/reddit/life-manager-loop` の日々の ACT = 「your judgment, no script」で LLM 単独判断、VERIFY も自己申告。verify-loops は「公開されたか」しか見ず質を見ない。
+3. `issue-dev/run.sh` = issue 立てて終わり（self-fix.sh 自身が禁じる "file and wait" が唯一の fallback）。
+4. `healthcheck-runtime-loop.sh` = 主力4ループの自動 self-heal が**未 cron 接続**（手動実行時のみ）。
+
+### 一番安い勝ち（cheap wins）
+- **HL**: `hl.py:130-137` が `closed_pnl_usd` を計算しているのに永続化せず捨てている → ledger に書くだけで observable done 完成。
+- **Franklin**: plist に `ANICCA_WALLET_ADDRESS` を1行足すだけで 1655 エラー停止。
+- **PM**: `genome.mjs`/`evolve.mjs`（本物の自動昇格ゲート）が cron `run_earner.sh` から呼ばれていない → 配線するだけで self-improve が起動。
+
+### SI-1 を踏まえた改訂 TODO（下の §8 の SI-* を具体化）
+- SI-2/3 は**ゼロから作らない**。`runtime/loop`+`self-eval.mjs` を参照実装とし、`eval-driven-earning` spec を蘇生（VCSDD 再開: init→spec→…）。curation-gate（fresh Opus adversary）が既に REQ にある。
+- SI-4 の前に cheap wins（HL 永続化 / Franklin plist / PM genome 配線）で「観測可能 done」を全 earn ループに通す。
+- `healthcheck-runtime-loop.sh` を cron 接続し主力4ループを self-heal 監査下に入れる（self-HEAL の穴埋め、SI と並行）。
+
 ## 9. やらないこと（scope外・明示）
 
 - model 重みの自己改変（Case 3 model層）。今回は agent 層のみ。
