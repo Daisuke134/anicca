@@ -1,0 +1,11 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "overall": "FAIL",
+  "findingsCount": 2,
+  "summary": "iteration-1 の4件（FIND-001 blocking/FIND-002 major/FIND-003, FIND-004 minor）は全て改訂本文で実際に解消されている（disk確認済み）。しかし disk 照合により新規に2件の blocking な不整合を発見した: FIND-005はREQ-P4の『ssot-guardとdisk-guardがUserPromptSubmit内で同居』という実ファイル確認済み主張が現在のdiskと不一致（実際はUserPromptSubmitはssot-guard単独、disk-guardはSessionStart側）でPROP-P4の受入基準が充足不能。FIND-006はREQ-P7aのself-fix.sh行番号表（67-76/77）が実ファイルと不一致（正しくは67-74/75、他7ファイルの行番号は全て照合済みで正確）で、FIND-001対策の核であるposition-based検証機構がこの1ファイルで機能しない。"
+}

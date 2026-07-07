@@ -1,0 +1,9 @@
+{
+  "reviewType": "spec",
+  "artifactsToReview": [
+    ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+    ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+    "docs/superpowers/specs/2026-07-07-fable5-config-slimdown-design.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"]
+}

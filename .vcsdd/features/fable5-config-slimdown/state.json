@@ -1,7 +1,7 @@
 {
   "featureName": "fable5-config-slimdown",
   "mode": "lean",
-  "currentPhase": "1b",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -12,11 +12,24 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-07T10:32:59.750Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-07T11:05:51.613Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-07T11:05:51.619Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 1,
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -454,8 +467,16 @@
       }
     ]
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:05:51.603Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-07T11:05:51.603Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-07T10:26:19.528Z",
-  "updatedAt": "2026-07-07T10:33:51.178Z"
+  "updatedAt": "2026-07-07T11:05:51.619Z"
 }

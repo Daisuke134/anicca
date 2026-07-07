@@ -1,0 +1,7 @@
+{
+  "findingId": "FIND-008",
+  "severity": "minor",
+  "dimension": "verification_readiness",
+  "description": "PROP-P4's verification method (b) computes ACTUAL as `jq -c '.UserPromptSubmit | map(select((.hooks // []) | length > 0)) | sort' p4-post-hooks.json`. If an implementer removes the entire `UserPromptSubmit` key from `.hooks` (rather than leaving it as an empty array `[]`, which the spec's edge-case text implies is the expected minimal edit — 'matcher-groupごと削除してもよい' only discusses removing an array element, not the top-level key), `.UserPromptSubmit` would be `null` in post-hooks.json, and `null | map(...)` errors out in jq ('Cannot iterate over null'), causing verify.sh to crash rather than cleanly FAIL. This is inconsistent with check (a) in the same PROP-P4, which already defends against this exact case via `.UserPromptSubmit // []`.",
+  "suggestedFix": "Add the same `// []` defaulting to check (b)'s ACTUAL (and, for symmetry, EXPECTED) jq pipelines, e.g. `jq -c '(.UserPromptSubmit // []) | map(...)' `, so a missing/null key degrades gracefully to a clean FAIL/empty-array comparison instead of a jq runtime error."
+}
