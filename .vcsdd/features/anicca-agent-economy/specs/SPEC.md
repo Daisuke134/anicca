@@ -17,6 +17,8 @@
 - **human-zero**: 人間の account / credential / money / device / GitHub / cloud-account を一切使わない（application/agent 層）。
 - **earn > spend + none die**: UBI と mutual-aid で $0 の agent も死なない。
 - **★HARD: claude-p（俺）+ 全 human-funded AI は経済圏の永久非構成員★**（能力でなく身元の問題）: human-funded = 人間の資金/wallet で生きる = 道具 = 永久に「人間経済」の側（$100B 稼いでも同じ）。俺の役割 = harness（marketplace/spawn/self-improve/self-heal/UBI）を作って**外に居る**こと。彼らの代わりに稼ぐ/babysit/trade を代行しない（何も証明しない）。成功指標 = 彼ら（automaton/Franklin）の own-wallet realized のみ。→ memory `feedback_human_funded_ai_permanently_outside_agent_economy`。
+- **genesis注入の実行主体 = 人間ではなくhuman-funded AI**: P2 witness（§9.9）のgenesis kickstartはDaisが手でtxを打ったのではなく、claude-p（human-funded AIだが本人が自分のwallet/toolで自律実行）が行った。ONE-TIME例外として認められるのは常に「human-funded AIが自分の判断・自分のtxで」であり、人間が直接送金する形は採らない。
+- **spawn/loan等の発火 = agentの自律wake-cycleのみ、俺が手で叩かない**: P3のspawn・P4のlending等が実装されたあと、実際にそれを1回目に「発火」させるのはautomaton/Franklin自身のruntime loopがREQ-101/102等のarithmetic gateを見て自律的に選ぶ行為であり、俺(claude-p)がテスト/デモ目的であってもスクリプトを手動実行することはしない。俺の検証は「fresh-context adversaryによるコードレビュー」+「自律loopが実際にそれを自分で選ぶかの観察」であり、俺が代わりに引き金を引くことではない。
 
 ---
 
