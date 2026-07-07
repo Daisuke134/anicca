@@ -232,6 +232,13 @@ PushNotification という文字列を含める。
 終了行・起動行を再確認し、ズレていた場合は表ではなく実装時点の実ファイルを正として扱う
 （対象8ファイルは頻繁に drift しうる loop CLI であり、行番号は不変条件ではない）。★
 
+★ iteration-3 FIND-007 対応: 同一 feature 内の他要件（現状 `_shared/adversary-daily.sh` に対する
+REQ-P5a のみ）が同じファイルを触る場合、本要件（REQ-P7a）の起動行 byte-identical 検査の基準は
+「REQ-P7a 自身の編集直前」の状態である（feature 全体の開始時点ではない、per-operation。
+REQ-SAFE-1 の「コピーのタイムスタンプは編集操作より前」と同じ規約）。したがって
+`adversary-daily.sh` の場合、REQ-P5a が23行目に `--model opus` を追加した後の状態が
+REQ-P7a にとっての「実装前」であり、その状態を基準に起動行の不変性を検証する。★
+
 **Edge Cases**:
 - 元の TASK=/STARTUP=/PROMPT= 代入span自体（上表の「代入span」列）は実装前後で byte-identical
   でなければならない（diff で確認可能。既存の巨大な引用符付き文字列を直接編集しない）。
