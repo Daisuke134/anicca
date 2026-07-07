@@ -1,0 +1,47 @@
+{
+  "promote": true,
+  "reason": "The diff raises `min_edge` from 0.15 to 0.24, and I verified at pm_backtest_strategy.py:63 that this threshold is a pure SELECTION gate (`if edge < min_edge or confidence < min_confidence: return 0.0`) \u2014 `base_stake` is untouched at 5.0, so this is a genuine change to WHICH trades are taken (it drops marginal-edge bets in the 0.15\u20130.24 band and keeps only higher-edge ones), NOT a leverage/stake-multiplier that could only move a mean/stddev score via float noise. This is economically sound edge-selection logic, and the code stays entirely inside the single evolvable `score_candidate` function. The risk-adjusted improvement is real and not fragile: worst_window_oos_net_usd=4.53 is comfortably non-negative (no hidden bad OOS window / EDGE-5), std_oos_net_usd=3.27 is a healthy nonzero (no near-zero-variance ratio artifact), combined_score 2.44 vs baseline 1.26, and the trip-wire confirms it is not an implausible >3x jump. Both deterministic stages passed and scope_guard confirmed nothing outside the EVOLVE-BLOCK changed. My only reservation is the thin 3-point OOS sample, but every substantive check is positive and the mechanism is legitimate, so I am willing to promote it into the committed backtest baseline.",
+  "adversary_verdict": "PASS",
+  "adversary_invoked": true,
+  "adversary_cost_usd": 0.35314199999999996,
+  "adversary_session_id": "8593a18a-4186-4c7b-83cc-ac866f69eda4",
+  "dry_run": true,
+  "promote_result": {
+    "committed": false,
+    "reason": "dry-run: promote_if_approved/promote.promote was never called (zero file/git side effects)",
+    "would_promote": true
+  },
+  "assessment": {
+    "candidate_path": "/private/tmp/claude-501/-Users-anicca-anicca-project/6f743509-fd31-4d51-b0fe-383ec8fb6af7/scratchpad/smoke_candidate/candidate.py",
+    "scope_guard_ok": true,
+    "scope_guard_reason": "scope-guard-pass",
+    "stage1_pass": true,
+    "stage2_pass": true,
+    "combined_score": 2.4384568716289445,
+    "baseline_stage2_score": 1.262807048935334,
+    "population_best_used": 1.262807048935334,
+    "tripwire_flagged": false,
+    "tripwire_clear": true,
+    "mean_oos_net_usd": 7.977454198435389,
+    "std_oos_net_usd": 3.271517446649064,
+    "worst_window_oos_net_usd": 4.526752095788865,
+    "window_pairs": [
+      {
+        "train_window": 0,
+        "test_window": 1,
+        "oos_net_usd": 12.371837069480357
+      },
+      {
+        "train_window": 2,
+        "test_window": 3,
+        "oos_net_usd": 7.033773430036945
+      },
+      {
+        "train_window": 4,
+        "test_window": 5,
+        "oos_net_usd": 4.526752095788865
+      }
+    ],
+    "eligible_for_adversary_review": true
+  }
+}
