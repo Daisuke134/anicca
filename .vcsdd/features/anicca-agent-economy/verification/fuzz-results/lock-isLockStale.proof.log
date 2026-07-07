@@ -1,0 +1,12 @@
+✔ PROP-101b (fast-check): isLockStale(nowMs, mtimeMs, staleMs) === (nowMs - mtimeMs > staleMs) for all non-negative integer triples (7.795625ms)
+✔ PROP-101b (fast-check, boundary-focused): values within +/-3ms of the staleMs boundary are classified correctly (2.213125ms)
+✔ PROP-101a (fast-check): a heartbeat-refreshed lock (heartbeatMs < staleMs) is never stale across randomized tick counts (2.281875ms)
+✔ PROP-101a/b (fast-check, negative control): once heartbeats stop, isLockStale eventually becomes true after staleMs elapses (0.441125ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 84.050583

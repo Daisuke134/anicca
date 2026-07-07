@@ -1,0 +1,13 @@
+✔ PROP-201a/201d/201e/201f (fast-check): below threshold, survival == alwaysAvailable OR tag==='safe' OR hasOpenRiskPosition (57.832125ms)
+✔ PROP-201b (fast-check): at or above threshold, the full unfiltered slot list is returned regardless of tags/carve-outs (33.696416ms)
+✔ PROP-201c (fast-check): invalid reserveThresholdUsdc always falls back to the documented default, gate never disabled (1.750792ms)
+✔ PROP-202a (fast-check): filterCatalog(inputA) is unaffected by an intervening filterCatalog(inputB) call, for random inputA/inputB pairs (64.279791ms)
+✔ PROP-201h (fast-check): hasOpenRiskPositionOfYield matches an independent oracle across randomized ledgers (11.37275ms)
+ℹ tests 5
+ℹ suites 0
+ℹ pass 5
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 242.029875
