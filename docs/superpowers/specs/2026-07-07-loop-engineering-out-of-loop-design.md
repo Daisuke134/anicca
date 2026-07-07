@@ -207,6 +207,13 @@ anicca-agent-economy（別CC・経済レール層）: 「Franklin が earn "で�
 - SI-4 の前に cheap wins（HL 永続化 / Franklin plist / PM genome 配線）で「観測可能 done」を全 earn ループに通す。
 - `healthcheck-runtime-loop.sh` を cron 接続し主力4ループを self-heal 監査下に入れる（self-HEAL の穴埋め、SI と並行）。
 
+## 8.6 学び（2026-07-07）: 「loop は goal を含むのか?」の決定（→ 詳細 `docs/loop-engineering/01-loop-vs-goal-resolved.md`）
+
+- 概念レベル: loop は goal を含む（「ループ=タスク+チェック」、チェック=goal）。Dais の直感は正しい。
+- ツールレベル: 逆。`/goal` = ループ + 独立チェッカー(fresh Haiku、毎ターン合否)。`/loop` = タイマー再実行で**チェッカー内蔵なし**（停止は同一エージェントの自己申告 `ScheduleWakeup(stop:true)`）。公式: "completion is decided by a fresh model rather than the one doing the work"（code.claude.com/docs/en/goal）。
+- ★真の軸 = done を"誰が"判定するか（自己申告 vs 独立）★。「loop だけで済ませる」= 独立チェッカーを捨てる = 素の Ralph Wiggum（"deterministically bad"、停止は人間の hawk-watching 依存）。**無人＋金銭では自己判定は禁物**。
+- Anicca の帰結: **loop(cadence) + done は独立判定**。稼ぎ round の done = on-chain realized 行（Haiku より強い偽造不能な外部シグナル）。コード変更の done = fresh adversary(Opus)。これが「Money is the perfect done-condition」の安全論的意味。
+
 ## 9. やらないこと（scope外・明示）
 
 - model 重みの自己改変（Case 3 model層）。今回は agent 層のみ。

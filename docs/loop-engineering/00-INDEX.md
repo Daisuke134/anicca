@@ -10,7 +10,7 @@
 |---|---|---|---|
 | 序 | `../superpowers/specs/2026-07-07-loop-engineering-goldmine.md` | 全ソース精読の金脈（loop eng定義/RSI/Replit continual learning/cobus実装）+ 全ASCII | ✅ 記事本体の下敷き |
 | 設計 | `../superpowers/specs/2026-07-07-loop-engineering-out-of-loop-design.md` | 実装設計（out-of-loop 3段・SI-*フェーズ・SI-1棚卸し結果・cheap wins） | ✅ 実行計画の正本 |
-| 02 | `01-loop-vs-goal-resolved.md` | ★「loop は goal を含むのか?」の決定的解決（概念 vs ツール、外部一次情報つき）★ | 作成中 |
+| 01 | `01-loop-vs-goal-resolved.md` | ★「loop は goal を含むのか?」の決定的解決（概念=YES / ツール=逆に/goalがloopを含む / 真の軸=done を誰が判定するか）★ | ✅ 完了（外部一次情報つき） |
 
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
