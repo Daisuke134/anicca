@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-1803",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "A genuinely different class of defect from the recurring pinned-input-derivation gap (FIND-1801/1802, this same review): REQ-303's own text is internally self-contradictory about WHEN, or even WHETHER, REQ-304's extensively-corrected Akash AKT multi-hop Skip API funding bridge (the subject of three prior fix rounds -- FIND-402, FIND-502, FIND-602) is ever actually triggered, creating a real risk that this bridge is unreachable dead orchestration as currently specified -- meaning every Akash deploy attempt whose signing wallet is genuinely short on native AKT would simply fail forever, rather than self-fund via the route REQ-304 so carefully documents.\n\nThe contradiction: REQ-303's 'Funding-readiness gate reuse' paragraph states, immediately after describing computeSpawnGate's ready:false outcome as 'a deploy failure, REQ-305, never a fabricated dseq' -- 'funding the AKT shortfall itself (the multi-hop Skip API bridge, REQ-304 ...) is what THIS feature adds; the gate merely decides whether that bridge needs to run at all.' This final clause reads as asserting a CAUSAL relationship: computeSpawnGate's ready:false result is what determines whether the Skip API bridge runs (i.e., ready:false SHOULD trigger the bridge). But the SAME requirement's own dedicated Edge Case, stated a few lines later, unconditionally forecloses that exact reading: 'The computeSpawnGate readiness check reports ready:false (insufficient AKT even after accounting for buffer_akt): THE SYSTEM SHALL treat this identically to the \"mint cancels\" edge case above -- a deploy failure under REQ-305, akt-treasury.sh/deploy-akash.sh are never invoked, and no dseq is fabricated.' This Edge Case says ready:false is ALWAYS an immediate deploy failure with NOTHING further invoked (not even akt-treasury.sh's own uact-mint step, let alone a NEW Skip API bridge step) -- it never describes the bridge being attempted first, nor computeSpawnGate being re-evaluated after the bridge lands funds.\n\nGiven this, there is no other named trigger point anywhere in either spec document for REQ-304's Akash-specific Skip API bridge. A grep of both files for 'funding_route'/'Skip API'/'computeSpawnGate' confirms: REQ-304 describes WHAT the bridge does and HOW it is entered (Solana-Jupiter vs Base-CCTP first hop, per PROP-304e), but neither REQ-303 nor REQ-304 ever states the actual sequencing/trigger condition under which this bridge executes relative to REQ-303's own computeSpawnGate call -- 'the gate merely decides whether that bridge needs to run at all' is the ONLY sentence in either document that even gestures at a trigger relationship, and it is contradicted by the very next Edge Case in the SAME requirement. If the literal Edge Case wording is what an implementer follows (as it is the more specific, EARS-styled, unconditional 'THE SYSTEM SHALL' statement), REQ-304's entire Akash AKT-funding mechanism -- the subject of three whole prior fix iterations -- would never actually execute in the real orchestration this spec describes; every Akash deploy needing an AKT top-up would simply fail, never attempt the documented bridge. No proof obligation resolves this: PROP-303d only asserts ready:false is treated as a deploy failure (consistent with either reading, since it does not test whether the bridge was attempted first), and PROP-304d/PROP-304e only test the bridge's own mechanics IF it is invoked -- neither establishes WHEN/whether it actually is, for a real Akash deploy attempt.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2133-2139",
+      "snippet": "If `computeSpawnGate` returns `ready:false`, THE SYSTEM SHALL treat this identically to the \"ACT mint cancels\" edge case below (a deploy failure, REQ-305, never a fabricated `dseq`) -- funding the AKT shortfall itself (the multi-hop Skip API bridge, REQ-304 ...) is what THIS feature adds; the gate merely decides whether that bridge needs to run at all. -- this final clause implies computeSpawnGate's result determines whether the bridge runs, directly after the same sentence states ready:false is unconditionally a deploy failure"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2198-2201",
+      "snippet": "The `computeSpawnGate` readiness check reports `ready:false` (insufficient AKT even after accounting for `buffer_akt`): THE SYSTEM SHALL treat this identically to the \"mint cancels\" edge case above -- a deploy failure under REQ-305, `akt-treasury.sh`/`deploy-akash.sh` are never invoked, and no `dseq` is fabricated. -- this unconditional EARS-styled Edge Case never mentions the Skip API bridge being attempted, or computeSpawnGate being re-evaluated after it lands funds; it directly conflicts with the bridge-triggering implication two paragraphs earlier"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2255-2305",
+      "snippet": "REQ-304's 'AKT funding route correction' section fully describes WHAT the Skip API bridge does and HOW it is entered (Solana/Jupiter vs Base/CCTP first hop, per PROP-304e) -- it never once states the sequencing/trigger condition under which this bridge is actually invoked relative to REQ-303's own computeSpawnGate call for a real Akash deploy attempt"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "883-902",
+      "snippet": "Gate item (7) requires confirming REQ-304's funding-source constraint 'behaviorally' and that 'the REAL multi-hop route ... is followed rather than an unsupported same-chain single-transfer assumption' -- but has no sub-clause requiring the adversary to confirm WHEN/whether this route is actually reachable given REQ-303's own ready:false-always-fails Edge Case wording; Gate item (6a) likewise cites PROP-303d for the ready:false-is-a-deploy-failure behavior without cross-referencing item (7)'s bridge requirement at all"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "464-465",
+      "snippet": "PROP-304d/PROP-304e test the Skip API bridge's own mechanics (which entry hop is used, that funds land on the expected chain) assuming the bridge IS invoked -- neither obligation, nor any other in this table, establishes the actual trigger condition/sequencing under which the bridge is invoked relative to REQ-303's computeSpawnGate call for a real Akash deploy attempt"
+    }
+  ],
+  "routeToPhase": "1a"
+}

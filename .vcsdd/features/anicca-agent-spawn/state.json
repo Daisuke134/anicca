@@ -2556,21 +2556,23 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T16:51:43.993Z",
+      "timestamp": "2026-07-07T17:07:40.779Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 18,
+        "iteration": 19,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-1701"
+          "FIND-1801",
+          "FIND-1802",
+          "FIND-1803"
         ],
-        "note": "FIND-1601 and its sweep-found filterProductiveCitizens sibling gap reconfirmed genuinely resolved. 1 new critical finding: FIND-1701 -- decideColonySpawn's own colonySurplusUsd parameter (its first-listed, single most consequential input, gating whether ANY spawn happens at all) lacked the real-derivation binding sentence and dedicated proof obligation its immediate signature-siblings recentSpawnAttempts/childrenProvisioning already received (FIND-1401/FIND-1501). This is the 6th consecutive iteration (14-18) to surface an instance of this recurring pinned-input-derivation failure class. Resolved same-session: new binding sentence bound to computeColonySurplusUsd({citizens: filterProductiveCitizens(...), perCitizenReserveUsd}), new PROP-102k (Tier 1/2), explicit resolution of the multi-evaluation-per-wake edge case grounded honestly in REQ-103's actual lock scope (lock does NOT cover REQ-101/102's evaluation phase), plus a complete closeout pass over decideColonySpawn's full 8-parameter signature (1 fixed, 1 minor default-symmetry fix for maxConcurrentSpawns, 6 confirmed already adequate). Spec bumped to revision iteration 18. Full details: reviews/spec/iteration-18/RESOLUTION-NOTES.md. Awaiting iteration-19 fresh-adversary re-review (manifest already written to reviews/spec/iteration-19/input/manifest.json)."
+        "note": "FIND-1701 (iteration 18's critical finding) reconfirmed genuinely resolved, including independent re-verification of the REQ-103-lock-scope honesty claim and an independent re-spot-check of decideColonySpawn's own 8-parameter closeout table (all 8 rows confirmed accurate). This iteration's own mandated full-spec sweep (beyond decideColonySpawn, which iteration 18 already exhaustively closed) surfaced 3 new findings, none on decideColonySpawn itself: FIND-1801 (major) -- filterProductiveCitizens's bootstrapWindowDays lacks an explicit default and a by-construction identity proof against REQ-402's BOOTSTRAP_WINDOW_DAYS, despite REQ-101's own prose claiming they are the same window (a scalar-constant sub-class of the recurring failure, the PROP-402e/PROP-206g treatment never applied here). FIND-1802 (critical) -- computeSpawnGate's balanceAkt (REQ-303), its own first-listed/most-consequential parameter, has no real-derivation binding anywhere, unlike its immediate signature-siblings costAkt/bufferAkt which ARE bound to spawn-child/config.json -- the 7th confirmed instance of the exact recurring pinned-input-derivation class, now found outside the REQ-101/102/202 cluster. FIND-1803 (critical) -- a genuinely different defect class: REQ-303's own text is internally self-contradictory about whether computeSpawnGate's ready:false result triggers REQ-304's Skip-API AKT funding bridge or unconditionally aborts the deploy before that bridge ever runs -- as literally worded, REQ-304's entire AKT-funding mechanism (subject of 3 prior fix rounds, FIND-402/502/602) may be unreachable dead orchestration. Full verdict: reviews/spec/iteration-19/output/verdict.json."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T16:51:43.993Z"
+      "adversaryReviewedAt": "2026-07-07T17:07:40.779Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T16:51:43.996Z"
+  "updatedAt": "2026-07-07T17:07:40.780Z"
 }

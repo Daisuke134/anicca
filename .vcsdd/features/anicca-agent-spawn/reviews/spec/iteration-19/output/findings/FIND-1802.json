@@ -1,0 +1,47 @@
+{
+  "findingId": "FIND-1802",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "A further, independent instance of the recurring pinned-input-derivation failure class (the SAME class responsible for FIND-1401/1501/1601/1701 across iterations 14-18, and FIND-1801 in this SAME review): `computeSpawnGate({balanceAkt, costAkt, bufferAkt})` -- the Akash-specific funding-readiness gate REQ-303 reuses from `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js` -- has its `costAkt`/`bufferAkt` parameters explicitly bound to `spawn-child/config.json`'s own real values, but its own FIRST-listed parameter, `balanceAkt` -- the single most consequential input to this gate, since it IS the live quantity being tested for sufficiency against the deploy's real cost -- has NO stated derivation anywhere in either spec document: no named query function, no 'never hand-assembled, always the direct return value of X()' binding sentence, and no citation of any real mechanism (e.g. a `provider-services`/`akash query bank balances`-class call against the specific signing wallet's actual current AKT holdings, at the moment of this specific deploy attempt) analogous to what `colonySurplusUsd` now has via PROP-102k or `deployTarget` has via PROP-202d.\n\nThis is NOT the same 'exempt raw runtime primitive' category the iteration-18 closeout table correctly established for `nowMs` or for `selectCloudTarget`'s own `nosanaPriceUsd`/`akashPriceUsd`/`nosanaAvailable`/`akashAvailable` inputs. Those raw-leaf inputs are each explicitly and completely described as fed by 'an effectful price/availability query step' -- that IS their entire stated source, and no other named function in this spec could plausibly feed them instead. `balanceAkt` is different: REQ-303's own prose asserts a specific, real-world fact is being tested ('the signing wallet's current AKT balance') but never names the function/CLI call that produces this figure, while its own immediate signature-siblings `costAkt`/`bufferAkt` ARE bound to a named, real source (`spawn-child/config.json`) one clause later in the exact same sentence. This is the identical asymmetry-in-the-same-signature shape that made colonySurplusUsd (FIND-1701) and deployTarget (FIND-1601a) genuine findings rather than false positives.\n\nThe hazard is concrete: without a named source, an implementer could hardcode a stale/cached AKT balance, query the WRONG address (e.g. the coordinator's own general-purpose wallet rather than the specific signing wallet REQ-303 designates for this deploy), or read the balance at a moment that predates a just-completed AKT top-up -- silently causing either a false 'ready' (an under-funded deploy is attempted) or a false 'not ready' (a genuinely fundable deploy is wrongly aborted, consuming a REQ-305 cooldown-relevant failure slot for no real reason). No proof obligation in verification-architecture.md would catch any of these mistakes: PROP-303d (the only proof obligation touching this call site) asserts only that `costAkt`/`bufferAkt` are read from `config.json`'s real values and that `ready:false` is treated as a deploy failure -- it is silent on `balanceAkt`'s own binding.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2120-2126",
+      "snippet": "BEFORE invoking `akt-treasury.sh`/`deploy-akash.sh`, THE SYSTEM SHALL determine whether the signing wallet's current AKT balance is sufficient by calling the existing, already-unit-tested `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt})` -- reusing `spawn-child/config.json`'s own real, already-documented `spawn_cost_akt` (default 25) and `buffer_akt` (default 1) values as `costAkt`/`bufferAkt` -- rather than defining a competing, Akash-specific numeric threshold from scratch. costAkt/bufferAkt are bound to a named real source in this SAME sentence; balanceAkt, the function's own first-listed parameter, is not bound to any named source anywhere in this paragraph, or anywhere else in either spec document"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2198-2201",
+      "snippet": "The `computeSpawnGate` readiness check reports `ready:false` (insufficient AKT even after accounting for `buffer_akt`): THE SYSTEM SHALL treat this identically to the \"mint cancels\" edge case above -- a deploy failure under REQ-305, `akt-treasury.sh`/`deploy-akash.sh` are never invoked, and no `dseq` is fabricated. This edge case, too, never states where the balanceAkt value feeding this readiness check comes from"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2231-2234",
+      "snippet": "computeSpawnGate({balanceAkt, costAkt: config.spawn_cost_akt, bufferAkt: config.buffer_akt}) (from ~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js, reused unmodified) is called before every Akash deploy attempt, with costAkt/bufferAkt read from spawn-child/config.json's own real values -- never a competing, independently-invented Akash-specific threshold. The Acceptance Criteria bullet repeats the SAME asymmetry: costAkt/bufferAkt are bound inline to config.*, balanceAkt is left as a bare identifier"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "234",
+      "snippet": "Purity Boundary Map row for akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt}): 'REQ-303 calls it, with costAkt/bufferAkt read from config.json's own real values (spawn_cost_akt: 25, buffer_akt: 1), as the Akash-specific funding-READINESS check' -- again names a real source for costAkt/bufferAkt only; the row is silent on balanceAkt's own source"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "458",
+      "snippet": "PROP-303d: 'computeSpawnGate({balanceAkt, costAkt: config.spawn_cost_akt, bufferAkt: config.buffer_akt}) ... is called before every Akash deploy attempt, with costAkt/bufferAkt read from spawn-child/config.json's own real values, and a ready:false result is treated as a REQ-305 deploy failure' -- the Tier 0/1 method column tests only the costAkt/bufferAkt binding and the config-vs-competing-threshold structural check; no Tier 1/2 obligation anywhere in this table requires a control-flow read or integration test proving balanceAkt is the real, freshly-queried signing-wallet AKT balance rather than a hand-assembled/stale/wrong-wallet figure"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "870-881",
+      "snippet": "Gate item (6a): 'the Akash-readiness check calls the existing, unmodified spawn-child/lib/akt-cost-gate.js::computeSpawnGate (with spawn_cost_akt/buffer_akt read from spawn-child/config.json) rather than a competing threshold (PROP-303d)' -- requires confirmation only of costAkt/bufferAkt's binding; no sub-clause anywhere in item (6)/(6a) requires the adversary to confirm balanceAkt's own real-derivation binding, unlike item (1)'s explicit PROP-102k requirement for the structurally identical colonySurplusUsd hazard"
+    }
+  ],
+  "routeToPhase": "1a"
+}

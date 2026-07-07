@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-1801",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "This iteration's mandated task was to sweep the ENTIRE rest of the spec (not just decideColonySpawn) for one more possible instance of the recurring pinned-input-derivation failure class (six confirmed instances across iterations 14-18: recentSpawnAttempts, childrenProvisioning, measured_last_shelter_cost_usd, deployTarget, initialSkills, filterProductiveCitizens's own ledgerRows/citizens, and decideColonySpawn's own colonySurplusUsd). Doing so surfaces a closely related, previously-uncaught gap on a FOURTH parameter of the very same function (`filterProductiveCitizens`) whose `ledgerRows`/`citizens` arguments were just hardened in iterations 17-18: its `bootstrapWindowDays` parameter has neither an explicit stated default anywhere in this document, nor a proof obligation confirming its real, passed-in value is, by construction, identical to REQ-402's own `BOOTSTRAP_WINDOW_DAYS` constant, which REQ-101's own prose textually claims it mirrors ('the same window REQ-402 itself applies').\n\nThis is structurally closer to FIND-1301 (SPAWN_COOLDOWN_DAYS's own previously-missing default) and to the established 'two independently-named, cross-requirement values must be identical BY CONSTRUCTION, never merely coincidentally equal' discipline this document already applies twice elsewhere -- PROP-402e for BOOTSTRAP_WINDOW_DAYS/SPAWN_COOLDOWN_DAYS, and PROP-206g for seedUsdc/REQ-204's gas-seed transfer amount -- but was never itself applied to this specific pair (REQ-101's own `bootstrapWindowDays` parameter vs. REQ-402's `BOOTSTRAP_WINDOW_DAYS` constant), even though REQ-101's own prose explicitly asserts they are 'the same window.'\n\nConcretely: nothing in either spec document states `bootstrapWindowDays`'s numeric default, and no proof obligation (PROP-101a through PROP-101j, the complete REQ-101 proof-obligation set) requires a control-flow read or mutation fixture confirming the real REQ-101 orchestration's passed-in `bootstrapWindowDays` value is derived from/identical to REQ-402's `BOOTSTRAP_WINDOW_DAYS` (default 14) rather than an independently-declared literal that merely happens to also read 14 today. An implementer could hardcode a diverging value (e.g. a stale config default, or a typo'd literal) for REQ-101's own real-time safeguard window without any test ever catching the divergence from REQ-402's real constant. Severity is assessed as MAJOR rather than critical: REQ-101's window-overdue exclusion is an explicit real-time safeguard layered ON TOP of REQ-402's own separately-scheduled relabeling job (the ledger row's `bootstrap_failed` status is the primary, permanent exclusion mechanism once that job has run) -- a divergent `bootstrapWindowDays` would only matter during the transient window before REQ-402's own job executes, not create a permanent or unbounded fund-safety hole the way `colonySurplusUsd`'s staleness (FIND-1701) or `balanceAkt`'s missing binding (FIND-1802, this same review) would.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "634-635, 672-676",
+      "snippet": "a new, pure join function `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}) -> citizens[]` ... EXCLUDED if that (last-appended) row's `status` is already `\"bootstrap_failed\"`, OR if that row's `status` is `\"active\"` with no recorded REQ-401 success and `nowMs - active_since >= bootstrapWindowDays * 86400000` (the same window REQ-402 itself applies, checked here too as a real-time safeguard so REQ-101 never has to wait for REQ-402's own separately-scheduled relabeling job to have already run this wake) -- this is the ONLY place bootstrapWindowDays's real meaning is discussed; no numeric default and no by-construction identity claim against REQ-402's own constant is ever stated"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "798-836",
+      "snippet": "REQ-101's own Acceptance Criteria block (the filterProductiveCitizens bullet and the new ledgerRows/citizens real-derivation bullet resolving the FIND-1601 sweep gap) never states bootstrapWindowDays's default value anywhere -- unlike REQ-102's own Acceptance Criteria (behavioral-spec.md:1014-1019), which explicitly states cooldownDays/failureCooldownCap/maxConcurrentSpawns's defaults at this SAME level for the structurally analogous decideColonySpawn signature"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2611-2614",
+      "snippet": "REQ-402's own EARS clause: 'IF a child instance marked \"active\" has NOT achieved REQ-401's success criterion within BOOTSTRAP_WINDOW_DAYS (default 14, reusing REQ-102's own SPAWN_COOLDOWN_DAYS constant...)' -- REQ-402 explicitly defaults and names its own constant; REQ-101's bootstrapWindowDays, used for a textually-identical purpose ('the same window'), receives no equivalent treatment anywhere"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "387",
+      "snippet": "PROP-101d tests filterProductiveCitizens's own exclusion logic given an ALREADY-SUPPLIED bootstrapWindowDays fixture value -- it never tests that the real orchestration's actual passed-in value equals REQ-402's real BOOTSTRAP_WINDOW_DAYS constant. No PROP-101 entry (PROP-101a through PROP-101j, the complete set) mirrors PROP-402e's own 'identical by construction, never merely coincidentally equal' discipline for this specific pair"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "486",
+      "snippet": "PROP-402e: 'BOOTSTRAP_WINDOW_DAYS's configured value is the IDENTICAL value to SPAWN_COOLDOWN_DAYS's configured value (REQ-102) -- never merely coincidentally equal ... mirroring this spec's own established discipline that two cross-requirement-dependent values MUST be identical by construction, the SAME rule REQ-206's own seedUsdc/REQ-204 gas-seed-transfer-amount identity check already applies' -- this exact discipline exists in this document for the SPAWN_COOLDOWN_DAYS/BOOTSTRAP_WINDOW_DAYS pair and for the seedUsdc pair, but was never extended to REQ-101's own bootstrapWindowDays parameter, which the same BOOTSTRAP_WINDOW_DAYS constant is supposed to feed"
+    }
+  ],
+  "routeToPhase": "1a"
+}
