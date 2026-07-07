@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The spec never addresses interaction with the ALREADY-EXISTING, already-witnessed economy/ubi::distributeAI ('gojo') mutual-aid mechanism, which computes essentially the SAME 'surplus citizen rescues broke citizen' decision from the SAME kind of surplus-above-reserve arithmetic REQ-101 uses, but in a completely separate, uncoordinated code path and state file. distributeAI(recipientWallet, senderSurplusAboveReserveUsd, registrySignedWallets, recentGifts) computes `min(giftCeilingUsd=5, giftPct=0.25 * senderSurplusAboveReserveUsd)` and is gated only by a 24h rate-limit per recipient (ubi.js:56-96) -- it has ZERO awareness of loans.jsonl's outstandingPrincipalUsd, and REQ-101's computeLenderAvailableUsd has ZERO awareness of gojo's own recent-gift history. Both mechanisms independently compute 'this citizen's spendable surplus' from the SAME balance and the SAME reserve figure but subtract only their OWN mechanism's own prior commitments. Nothing in the spec prevents the SAME dollar of surplus from being counted as 'available' by BOTH REQ-101 (for a loan) and distributeAI (for a gojo gift) in the same wake, or in near-simultaneous wakes before either mechanism's own state file reflects the other's transfer -- potentially pushing a lender below its own intended reserve. REQ-110 (Coexistence) explicitly addresses coexistence with economy/gig only ('economy/gig/decide.mjs and this feature's own eligibility/sizing functions share zero code coupling') and is silent on economy/ubi entirely, despite economy/ubi being the FAR more directly overlapping existing mechanism (same purpose: broke-citizen rescue from a self-funded citizen's own surplus).",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "128-149, 498-517",
+    "snippet": "computeLenderAvailableUsd({lenderBalanceUsd, perCitizenReserveUsd=5.00, outstandingPrincipalUsd}) = max(0, lenderBalanceUsd - perCitizenReserveUsd - outstandingPrincipalUsd) ... REQ-110: Coexistence with gig-work (additive, non-exclusive) [no mention of economy/ubi anywhere in the spec]"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+    "lineRange": "56-96",
+    "note": "distributeAI(recipientWallet, senderSurplusAboveReserveUsd, registrySignedWallets, recentGifts, config) -- an EXISTING, already-witnessed (SPEC.md SS9.9-era) broke-citizen-rescue mechanism computed from the same 'surplus above reserve' concept, tracked in ubi/state/gojo-log.jsonl, entirely uncoordinated with loans.jsonl. Neither file/mechanism is aware of the other's outstanding commitments against the same lender's balance."
+  },
+  "routeToPhase": "1a"
+}

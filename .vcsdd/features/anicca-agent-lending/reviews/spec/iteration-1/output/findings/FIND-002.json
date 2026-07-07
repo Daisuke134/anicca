@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "The spec reuses lock.mjs (local POSIX-filesystem lock) and ledger.js (local append-only file) for loan issuance (REQ-106) exactly as anicca-agent-spawn does for colony-spawn -- but anicca-agent-spawn ONLY made that reuse valid by ALSO adding an explicit REQ-106 ('Colony-spawn evaluation is scoped to a single coordinator host, this increment only'), which states in its own text: 'This constraint is what makes REQ-103's lock.mjs (a local-POSIX-filesystem primitive) and REQ-305's ledger.js (a local append-only file) CORRECT as specified: both mechanisms only need to serialize/record callers that share the SAME mounted filesystem.' anicca-agent-lending's Dependencies section explicitly mirrors MANY of anicca-agent-spawn's precedents by name (REQ-103's lock reuse, REQ-105's registry-shape citation, REQ-402's retroactive-correction pattern) but NEVER mirrors this one -- the ONE precedent that is a precondition for the other two being valid. Unlike spawn (where only ONE coordinator ever evaluates/executes), lending is inherently two-party: a lender and a borrower are, in general, DIFFERENT citizens whose own wake cycles must independently decide to originate/accept a loan and then execute payViaFacilitator using THEIR OWN private key (since payViaFacilitator signs with whichever privateKey is supplied, per escrow.mjs). The spec never states: (a) whether all lending participants are assumed to share ONE mounted filesystem/HOME (as spawn's own REQ-106 explicitly asserts is true TODAY for automaton+Franklin, both homeDir=/Users/anicca per anicca-agent-spawn REQ-105's seed data), (b) which process/host actually executes a given disbursement (the LENDER's own local process, needing the lender's own private key -- never made explicit), or (c) what happens if a lending participant is NOT co-located (anicca-agent-spawn's own citizens.json schema explicitly anticipates 'a dedicated per-instance HOME if the colony ever runs non-co-located instances' -- behavioral-spec.md of anicca-agent-spawn line 457-461 -- meaning this is not a hypothetical future concern but an architecture the sibling spec already documents as plausible). Without an explicit scope-narrowing constraint analogous to spawn's own REQ-106, REQ-106's own concurrency proof obligations (PROP-106a-d) are unverifiable as stated: they implicitly assume a single shared loans.jsonl + locks/ directory reachable by every lender's own process, which is asserted nowhere.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "340-383",
+    "snippet": "REQ-106: Loan issuance concurrency safety ... reusing, unmodified, ~/anicca/skills/economy/gig/lib/lock.mjs's withGigLock/isLockStale ... THE SYSTEM SHALL therefore designate a SINGLE canonical statePath"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "550-587",
+    "note": "REQ-106 there: 'THE SYSTEM SHALL perform every REQ-101/102/103 evaluation... EXCLUSIVELY on one, explicitly-designated coordinator host... This constraint is what makes REQ-103's lock.mjs... and REQ-305's ledger.js... CORRECT as specified.' No equivalent requirement exists anywhere in anicca-agent-lending's behavioral-spec.md or verification-architecture.md."
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "The Dependencies section's citation of anicca-agent-spawn's citizens.json record shape is already stale relative to the CURRENT (iteration-4) anicca-agent-spawn/specs/behavioral-spec.md, demonstrating -- concretely, not hypothetically -- the exact risk both specs' own Dependencies sections warn about in the abstract ('if anicca-agent-spawn's registry/join shape changes further before it reaches Phase 1c PASS, this spec's REQ-101/102/109 MUST be revisited'). anicca-agent-lending cites the shape as `{id, wallet: {evm?, solana?}, walletAddress: {evm?, solana?}, fuel, humanDependencies}`. The CURRENT anicca-agent-spawn spec (iteration 4, resolving that spec's OWN FIND-202/FIND-303) defines the shape as `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[], homeDir: string}` -- i.e. it has ALREADY gained a homeDir field (added specifically to resolve two of that spec's own prior spec-review findings) that anicca-agent-lending's citation omits. This does not appear to break anything THIS spec currently depends on (lending doesn't use homeDir), but it is direct, present-tense evidence that the citation was not re-verified against the actual current source at authoring time, and reinforces that this dependency risk is live, not merely disclosed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "49-51",
+    "snippet": "conceptually consistent with that registry's record shape ({id, wallet: {evm?, solana?}, walletAddress: {evm?, solana?}, fuel, humanDependencies})"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "449-450, 457-467",
+    "note": "The full record shape is therefore {id: string, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[]} plus ONE additional field... homeDir: string -- the citizen's own resolved absolute HOME/ANICCA_HOME directory"
+  },
+  "routeToPhase": "1a"
+}

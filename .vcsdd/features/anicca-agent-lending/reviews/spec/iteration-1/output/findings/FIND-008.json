@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "LOAN_INTEREST_RATE=0.10's justification is a numeric coincidence dressed as reuse, not an economic rationale. The spec cites ubi.js's DEFAULT_CONTRIBUTE_CONFIG.contributePct=0.10 as the source of 'the same order-of-magnitude modest, sustainable slice figure.' But contributePct governs a completely different mechanism and direction: 'how much of THIS instance's realized profit should flow to the human UBI pool' (ubi.js:22-23) -- a voluntary tithe on already-realized, already-safe profit. A loan's interest rate must instead price the LENDER's real default risk on a fully uncollateralized advance to a citizen with (at the cold-start rung) zero track record. No argument is given for why a rate designed for a profit-tithe correctly prices zero-collateral credit risk; the two concepts share a numeral, not an underlying justification. This is a low-severity but real spec_fidelity weakness given this feature's own stated design principle ('reused, not invented... rather than an unrelated invented percentage') is being invoked to justify a figure that, on inspection, has no substantive connection to the mechanism it is borrowed from.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "258-261",
+    "snippet": "LOAN_INTEREST_RATE = 0.10 (10%, fixed simple interest...) -- reused from economy/ubi/ubi.js's own DEFAULT_CONTRIBUTE_CONFIG.contributePct = 0.10, the same order-of-magnitude 'modest, sustainable slice' figure this codebase already uses for a conceptually similar purpose, rather than an unrelated invented percentage"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+    "lineRange": "16-20",
+    "snippet": "export const DEFAULT_CONTRIBUTE_CONFIG = { contributePct: 0.10, // SS8: a modest, sustainable slice of realized surplus, not all of it ... }"
+  },
+  "routeToPhase": "1a"
+}

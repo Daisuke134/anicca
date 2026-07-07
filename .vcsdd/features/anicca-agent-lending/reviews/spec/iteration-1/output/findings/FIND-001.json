@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "loan_id generation is used pervasively as the load-bearing correctness key (every last-write-wins reduction in REQ-101/102/104/105/108/109 groups rows 'by loan_id') but the spec NEVER specifies how a loan_id is assigned, by whom, or with what uniqueness guarantee. The manifest specifically asked whether this spec reuses child-spec.js's nextChildId monotonic-ID pattern for loan IDs; a full-text grep of both spec files for 'nextChildId', 'loan.?[Ii]d.*generat', found ZERO matches -- the spec is completely silent on ID generation. This silence is dangerous given REQ-106's own concurrency model: REQ-106 explicitly locks only per-lender ('a new lock KEY, `loan_${lenderId}`') and explicitly says 'Two DIFFERENT lenders' loan requests proceed concurrently without contention... intentional, not a bug' (behavioral-spec.md:361-363). If an implementer follows the ONLY existing colony precedent for ID assignment (~/anicca/skills/self/spawn/lib/child-spec.js:5-14, nextChildId: read all rows, take highest matching numeric suffix, +1 -- a pattern with NO built-in concurrency protection of its own, and NOT locked by anything in this spec since it operates across ALL loans, not per-lender), then two loans issued concurrently by two DIFFERENT lenders (different lock keys, hence no contention per REQ-106's own edge case) can legitimately compute the SAME next loan_id. Because every function in this spec reduces loans.jsonl 'to one effective row per loan_id, last-write-wins' (e.g. behavioral-spec.md:143-146, 184, 300, PROP-101d/102 in verification-architecture.md:66), a loan_id collision between two UNRELATED loans (different lender_id/borrower_id pairs) would silently merge their bookkeeping: whichever row is appended last would mask the other loan's own status/repaid_usd for every REQ-101/102/105/108/109 read, corrupting both a real lender's outstanding-principal accounting and a real borrower's eligibility/default state with no error, no exception, and no way to detect it structurally.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "142-149, 360-363",
+    "snippet": "outstandingPrincipalUsd is the sum, over loans.jsonl's own rows (reduced to one effective row per loan_id -- the last-appended row...) ... Two DIFFERENT lenders' loan requests proceed concurrently without contention (different lock keys under the SAME locks/ directory): intentional, not a bug"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js",
+    "lineRange": "5-14",
+    "note": "nextChildId(children, prefix, width): 'max existing matching-prefix numeric suffix + 1' -- no lock, no atomicity guarantee of its own; correctness for anicca-agent-spawn depends entirely on THAT feature's own REQ-106 single-coordinator-host + REQ-103 single 'colony-spawn' lock scoping ALL evaluators (including ID assignment) under ONE lock key. anicca-agent-lending's REQ-106 explicitly does NOT scope ID assignment under one lock key -- it deliberately permits unlocked concurrency across different lenders, so reusing this same ID-derivation pattern here (silently, since the spec never states it, and never states any alternative) is unsafe."
+  },
+  "routeToPhase": "1a"
+}

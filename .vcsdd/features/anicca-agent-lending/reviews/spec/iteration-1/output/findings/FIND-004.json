@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-104/REQ-105's justification for FIRST_LOAN_USD=0.02 conflates two different economic roles and does not establish a plausible repayment pathway, despite PROP-105a explicitly claiming to 'resolve arXiv 2602.14219 SS4.2.2's unsolved gap.' SPEC.md SS9.9's cited event is: claude-p (human-funded, genesis, one-time) sent Franklin#2 a $0.02 USDC bounty; Franklin#2 POSTED that $0.02 as a gig bounty; Franklin#1 TOOK the gig, delivered, and RECEIVED the $0.02 payout ('Franklin#1's final USDC balance=0.02, independently verified'). So the historical precedent proves $0.02 is 'big enough to reward a completed TAKE' -- it says nothing about whether $0.02 is enough for a BORROWER (a future bounty POSTER, per this feature's own framing of the cold-start problem as 'neither could afford to fund a bounty') to generate REPAYMENT capacity. A borrower who takes a $0.02 loan and spends it POSTING a bounty has SPENT capital, not earned it; the counterparty who TAKES that bounty is the one who earns the $0.02, not the borrower. The spec never explains how the original borrower is expected to accumulate $0.022 (or, at higher rungs of the ladder, e.g. $2.56*1.10=$2.816) within LOAN_REPAYMENT_WINDOW_DAYS=14 to actually repay -- REQ-110 explicitly disclaims tracking loan-proceeds provenance/use ('this feature does not track loan-proceeds provenance once disbursed... out of scope'), so there is no mechanism, assumption, or even acknowledged-as-unverified claim anywhere connecting 'receives a cold-start loan' to 'therefore has a realistic repayment path.' This gap directly undercuts the spec's own strongest claim (verification-architecture.md's Gate item 2: 'the adversary MUST explicitly confirm this resolution, not merely that the arithmetic is internally consistent') -- the arithmetic is internally consistent, but the ECONOMIC resolution of the cold-start problem (as opposed to its collateral-free SIZING) is asserted, not established.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "254-258, 303-311",
+    "snippet": "FIRST_LOAN_USD = 0.02 -- reused, not invented: the EXACT bounty amount (bountyUsdcBase: 20000 = 0.02 USDC) SPEC.md SS9.9's own real gig #3 already proved is 'enough to complete one real gig' in this exact system... resolving the cold-start problem WITHOUT any collateral, any external credit-score oracle, or any hand-waved 'trust the agent' assumption"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/specs/SPEC.md",
+    "lineRange": "222-223",
+    "note": "genesis資金（claude-p 0x810fより、human-funded一度限り）: Franklin#2へ...USDC bounty 0.02 tx... gig #3 lifecycle: post→take→deliver→verify_and_pay... Franklin#1の最終USDC残高=0.02. The $0.02 that 'proved useful' flowed FROM the poster (funded by a human genesis injection) TO the taker -- it was never earned BY the party who would, under this spec's design, be the analogous cold-start loan RECIPIENT/borrower."
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "The Dependencies section mischaracterizes payViaFacilitator's real call contract and omits a real, mandatory infrastructure precondition. escrow.mjs's actual exported signature is `payViaFacilitator({ privateKey, to, amountBase, facilitatorUrl, chainId, usdcAddress, domainName, rpcUrl, chain, validitySeconds })` -- `facilitatorUrl` has NO default value in the function itself (unlike chainId/usdcAddress/rpcUrl/chain, which all default from GIG_CHAIN's ACTIVE_CHAIN profile). Every real call site in this codebase (gig.mjs:158, gig.mjs:288) explicitly supplies `facilitatorUrl: FACILITATOR_URL`, itself sourced from `process.env.GIG_FACILITATOR_URL || 'http://127.0.0.1:8405'` (gig.mjs:78) -- i.e. payViaFacilitator structurally REQUIRES a reachable, running x402-rs facilitator SERVICE (a real local process at a real port) for every call, not merely a wallet + amount. The spec's Dependencies section (behavioral-spec.md line 78-86) describes this as 'a generic payViaFacilitator({privateKey, to, amountBase}) call from whichever side is paying' -- omitting facilitatorUrl entirely from both the described signature AND from any discussion of where the loan-issuance/repayment code obtains it, whether the facilitator is assumed to already be running as a persistent colony service, or what happens (fail-closed behavior, retry, alerting) if it is not reachable when a loan needs to be disbursed or repaid. Separately, and more fundamentally: since the PAYER's own privateKey must be supplied to sign (payer.address is derived from privateKey inside signAuthorization, escrow.mjs:52), and lending is two-party (lender pays at issuance, borrower pays at repayment), the spec never states WHICH PROCESS -- running under whose credentials/environment -- actually invokes payViaFacilitator for a given loan, i.e. how a lender's OWN private key becomes available to the code path that decided (possibly via a colony-wide match across many citizens' registry/balance data) that THIS lender should lend to THAT borrower. Neither the behavioral-spec.md's Dependencies/REQ-107 section nor verification-architecture.md's Gate section requires confirming facilitator-service reachability as a precondition anywhere in the Tier-2/Tier-3 verification strategy.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+    "lineRange": "150-165",
+    "snippet": "export async function payViaFacilitator({ privateKey, to, amountBase, facilitatorUrl, chainId = ACTIVE_CHAIN.chainId, ... })"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/gig.mjs",
+    "lineRange": "78, 158, 288",
+    "note": "const FACILITATOR_URL = process.env.GIG_FACILITATOR_URL || 'http://127.0.0.1:8405'; ... pay({privateKey: posterPrivateKey, to: escrow, amountBase: bountyUsdcBase, facilitatorUrl: FACILITATOR_URL}) -- every real call site supplies facilitatorUrl explicitly; anicca-agent-lending's behavioral-spec.md:82-86 never mentions this parameter or the running-service precondition it implies."
+  },
+  "routeToPhase": "1a"
+}

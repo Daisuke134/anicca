@@ -861,8 +861,31 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-07T10:31:46.457Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "reviewerModel": "opus-4.8",
+        "findings": [
+          "FIND-001",
+          "FIND-002",
+          "FIND-003",
+          "FIND-004",
+          "FIND-005",
+          "FIND-006",
+          "FIND-007",
+          "FIND-008"
+        ],
+        "note": "8 findings, 2 critical: FIND-001 -- loan_id generation/uniqueness never specified despite being the load-bearing key for every last-write-wins reduction; REQ-106 deliberately allows different lenders to proceed without lock contention, so a naive shared-counter ID scheme could collide. FIND-002 -- lock.mjs/ledger.js reuse never got the single-coordinator-host scoping justification that made this SAME reuse valid in anicca-agent-spawn REQ-106; lending is inherently two-party (lender+borrower are different citizens). FIND-003 (major) -- payViaFacilitator Dependencies citation omits the mandatory facilitatorUrl param and the running x402-rs facilitator service precondition. FIND-004 (major) -- the $0.02 cold-start justification conflates gig-TAKE-reward precedent with borrower-repayment-capacity, no plausible repayment pathway established. FIND-005 (major) -- zero coordination with the already-existing economy/ubi gojo mutual-aid mechanism, same surplus dollar could be double-counted by both. FIND-006 (medium) -- citizens.json shape citation already stale vs current anicca-agent-spawn spec (missing homeDir). FIND-007 (major) -- verifyRepayment falsely claims escrow.mjs reuse (it has no Transfer-log parsing); the real hardened precedent with a documented bug-fix history is founder-loop/record-earn.mjs. FIND-008 (minor) -- 10% interest rate reuse-from-ubi.js justification is a numeric coincidence, not real reasoning."
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-07T10:31:46.457Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T10:19:32.250Z"
+  "updatedAt": "2026-07-07T10:31:46.470Z"
 }

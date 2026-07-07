@@ -1,0 +1,59 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/decide.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/gig.mjs",
+      "/Users/anicca/anicca/skills/economy/ubi/run.sh",
+      "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+      "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js",
+      "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/specs/SPEC.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js:5-14", "description": "nextChildId's real derivation pattern read and confirmed to have no independent concurrency protection; not referenced anywhere in the lending spec despite the manifest's explicit prompt to check this reuse"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs:150-165", "description": "payViaFacilitator's real signature confirmed to require facilitatorUrl with no default; spec's Dependencies section omits this parameter"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/specs/SPEC.md:216-225", "description": "P2 WITNESS SS9.9 full text confirms the $0.02 figure originated from a human-funded genesis injection to the POSTER, received by the TAKER -- not evidence of a borrower's own repayment capacity"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/ubi.js:56-96", "description": "distributeAI (gojo) confirmed to be an existing, unrelated broke-citizen-rescue mechanism computed from the same surplus-above-reserve concept, uncoordinated with loans.jsonl"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:449-467", "description": "current (iteration-4) citizens.json shape confirmed to include a homeDir field the lending spec's citation omits"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/ubi.js:16-20", "description": "contributePct=0.10 confirmed to govern an unrelated profit-tithe mechanism, not a risk-priced lending rate"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:550-587", "description": "sibling spec's own REQ-106 confirmed to be the necessary precondition for lock.mjs/ledger.js reuse to be correct; no analogous requirement exists in the lending spec"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:56,82-88", "description": "the colony's actual, already-hardened Transfer-log-verification pattern (with a documented prior bug fix, FIND-704) confirmed to exist and not be cited/required by REQ-108/PROP-108b"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs:124-140", "description": "confirmed escrow.mjs's settleBody contains no Transfer-event-log parsing at all, contradicting the verification-architecture.md's characterization of what is being 'reused'"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 8,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

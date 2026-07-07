@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-108's verifyRepayment module (verification-architecture.md line 26) is classified as reusing 'escrow.mjs's own already-imported viem/createPublicClient dependency,' implying the new module inherits an already-hardened pattern. In fact escrow.mjs contains NO Transfer-event-log parsing code at all: settleBody (escrow.mjs:124-140) only calls publicClient.waitForTransactionReceipt({hash}) and checks receipt.status -- it never reads receipt.logs, never checks topics, never extracts from/to/value. The actual, already-hardened precedent for exactly the operation REQ-108/PROP-108b requires (decode an ERC-20 Transfer log, verify from/to addresses, extract value) exists elsewhere in this codebase and is not cited: ~/anicca/skills/self/founder-loop/record-earn.mjs (lines 56, 82-88) implements topic0==Transfer-signature matching, a CONTRACT-address allowlist filter, and -- critically -- an EXACT zero-padded-address equality check for the `to` topic, with an inline comment documenting a PREVIOUSLY-FIXED real bug: '// FIND-704: exact padded-topic equality, not a suffix match.' The same file's header also documents FIND-603 ('never trust the RPC's server-side filter for a money invariant'). Because the lending spec neither cites nor requires reuse of this already-proven, already-bug-fixed pattern, an implementation built purely from this spec's own description ('reusing escrow.mjs's own already-imported viem/createPublicClient dependency') has a real, concrete risk of re-deriving Transfer-log parsing from scratch and re-introducing the SAME class of address-matching bug (a naive substring/suffix match instead of exact zero-padded topic equality) that record-earn.mjs's own FIND-704 already had to fix once in this exact colony.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md",
+    "lineRange": "26",
+    "snippet": "verifyRepayment({txHash, expectedFrom, expectedTo, rpcUrl}) | EFFECTFUL (new) | An RPC getTransactionReceipt + Transfer event-log read, reusing escrow.mjs's own already-imported viem/createPublicClient dependency"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "56, 82-88",
+    "snippet": "const TRANSFER_TOPIC = \"0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef\"; ... .filter((l) => ... String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase() === \"0x\" + \"0\".repeat(24) + wlow) // FIND-704: exact padded-topic equality, not a suffix match"
+  },
+  "routeToPhase": "1a"
+}
