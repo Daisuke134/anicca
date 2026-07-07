@@ -85,6 +85,10 @@ export function sumRecentGojoGiftsUsd(gojoLogRows, nowMs, lookbackHours = 24, le
 // REQ-102 — isBorrowerEligible
 // ===========================================================================
 
+// Six possible `reason` values, in check order: "self_loan" (condition (d), FIND-402) — "not_evm"
+// (REQ-107's chain/asset scope narrowing; not one of REQ-102's own four named conditions (a)-(d), and
+// checked separately from them, but never colliding with any of the other five values here) —
+// "not_self_funded" (a) — "not_broke_enough" (b) — "outstanding_loan" (c) — "ok".
 export function isBorrowerEligible({ borrowerAgent, loanRows, borrowerId, borrowerBalanceUsd, lenderId }) {
   // (d) self-loan exclusion — checked FIRST, before any other condition (resolves FIND-402).
   if (lenderId === borrowerId) return { eligible: false, reason: "self_loan" };

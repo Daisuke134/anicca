@@ -48,10 +48,13 @@ function extractValueUsd(log) {
   return raw / 1e6;
 }
 
-// Some getLogs-style responses (or minimal RPC fixtures) omit a native `transactionHash` field on the
-// raw log entry; a real production RPC always includes one, but the caller still needs SOMETHING
-// non-empty to record if it is ever absent — derive a stable identifier from the log's own topics+data
-// rather than fabricating a claim about which transaction this is.
+// A standards-compliant eth_getLogs response ALWAYS includes a native `transactionHash` field on every
+// log entry (the Ethereum JSON-RPC log-object schema guarantees it) — this fallback branch is
+// unreachable against any real, correctly-behaving RPC, so it can never silently mask a bug in a normal
+// response; it exists ONLY to handle a malformed/non-standard response (or a minimal test fixture) that
+// omits the field. In that case the caller still needs SOMETHING non-empty to record — derive a stable
+// identifier from the log's own topics+data rather than fabricating a claim about which transaction
+// this is.
 function extractTxHash(log) {
   if (log && typeof log.transactionHash === "string" && log.transactionHash.length > 0) {
     return log.transactionHash;
