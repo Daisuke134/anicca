@@ -110,8 +110,9 @@ not a proven claim).
   - perCitizenReserveUsd)`, `perCitizenReserveUsd` defaulting to `5.00`) — it deliberately reuses that same
   default rather than inventing a second, competing reserve figure. **This feature does NOT modify
   `anicca-agent-spawn`'s own function signatures or files** (avoiding a tight coupling between two
-  independently-evolving specs); instead it composes a SECOND, lending-owned filter pass
-  (`excludeDefaultedBorrowers`, REQ-109) that runs AFTER `filterProductiveCitizens`'s output. **REQ-113
+  independently-evolving specs); instead it composes a SECOND, lending-owned balance-adjustment pass
+  (`adjustBalancesForOutstandingDebt`, REQ-109 — a debt-proportional adjustment, never a whole-citizen
+  removal, resolves FIND-204) that runs AFTER `filterProductiveCitizens`'s output. **REQ-113
   below is the standing, non-optional discipline this feature actually relies on to stay correct against
   this moving-target dependency: it is NOT sufficient to get this citation right once, during spec
   review — whoever begins this feature's own Phase 2a implementation MUST re-read
@@ -200,8 +201,9 @@ not a proven claim).
 | Reputation-capital sizing ladder | **Pure core (new)** | `computeLoanCapUsd`/`countSuccessfulOnTimeRepayments` — deterministic function of a repayment COUNT read from this feature's own ledger, no external oracle, no model judgment. |
 | Loan issuance decision | **Pure core (new)** | `decideLoan` — boolean comparison of already-computed numbers. |
 | Default detection | **Pure core (new)** | `detectDefaultedLoans` — deterministic elapsed-time comparison over already-read rows. |
-| Cross-feature defaulted-borrower exclusion | **Pure core (new)** | `excludeDefaultedBorrowers` — a SECOND, lending-owned filter composed after (never inside) `anicca-agent-spawn`'s own `filterProductiveCitizens`. |
-| Per-lender loan-ID sequencing | **Pure core (new)** | `nextLoanSequenceForLender(loanRows, lenderId)` — deterministic `max(matching `loan_${lenderId}_` prefix's numeric suffix) + 1` over already-read rows, zero I/O; computed inside REQ-106's existing per-lender lock. Treats `"provisioning"`/`"disbursement_failed"`/`"active"` rows for the SAME `loan_id` as one already-claimed sequence number (last-write-wins) — never reuses `n` while a `"provisioning"` row lacks a terminal follow-up (resolves FIND-103). |
+| Cross-feature defaulted-borrower balance adjustment | **Pure core (new)** | `adjustBalancesForOutstandingDebt` — a SECOND, lending-owned, debt-PROPORTIONAL balance adjustment (never a whole-citizen removal, resolves FIND-204) composed after (never inside) `anicca-agent-spawn`'s own `filterProductiveCitizens`. |
+| Per-lender loan-ID sequencing | **Pure core (new)** | `nextLoanSequenceForLender(loanRows, lenderId)` — deterministic `max(matching `loan_${lenderId}_` prefix's numeric suffix) + 1` over already-read rows, zero I/O; computed inside REQ-106's existing per-lender lock. Treats `"provisioning"`/`"disbursement_failed"`/`"active"`/`"disbursement_uncertain"` rows for the SAME `loan_id` as one already-claimed sequence number (last-write-wins) — never reuses `n` while a `"provisioning"` OR `"disbursement_uncertain"` row lacks a terminal follow-up (resolves FIND-103 and FIND-201). |
+| Cold-start kill-switch enforcement | **Pure core (new)** | `evaluateColdStartKillSwitch({sampleSize, rate, defaultedCount}) → {paused, reason}` — deterministic threshold check over `computeColdStartRepaymentRate`'s own output, zero I/O; called by REQ-106's issuance step before acquiring the per-lender lock for any cold-start loan request (resolves FIND-203). |
 | Read-only gojo-commitment awareness | **Pure core (new)** | `sumRecentGojoGiftsUsd(gojoLogRows, nowMs, lookbackHours, lenderId)` — deterministic sum over already-read `gojo-log.jsonl` rows within a lookback window, GATED to `lenderId === GOJO_SENDER_ID` (`"anicca-a3cdd4"`, today's only real gojo sender) — returns `0` unconditionally for any other lender (resolves FIND-102). Zero I/O. REQ-101. |
 | Cold-start monitoring (experimental-hypothesis tracking) | **Pure core (new)** | `computeColdStartRepaymentRate({loanRows, n})` — deterministic outcome-rate arithmetic over the first `n` loans whose `successfulOnTimeRepayments`, re-derived over each borrower's own strictly-earlier rows (never a stored field), is `0` at issuance — NOT equivalent to "borrower's first-ever loan" (resolves FIND-107). Zero I/O, zero judgment. REQ-105. |
 | Loan ledger (dedicated file, existing generic primitive reused) | **Effectful shell (existing code, new file)** | `ledger.js::readChildren`/`appendChild`, reused unmodified, pointed at `~/anicca/skills/economy/lending/state/loans.jsonl`. |
@@ -223,12 +225,15 @@ not a proven claim).
   defaults to "eligible" or "repaid"); private key material is NEVER written into `loans.jsonl` (only
   wallet ADDRESSES, matching `citizens.json`'s own `walletAddress`/`wallet` field-split discipline);
   every disbursement/repayment is independently re-verified on-chain, never trusted from either party's
-  self-report (REQ-108); a crash strictly between an irreversible on-chain transfer and its own ledger
-  record can never cause a double-disbursement or a permanently untracked transfer (REQ-106's two-phase
-  provisional/follow-up record + on-chain reconciliation, resolves FIND-103); repayment-verification and
-  default-detection writes to the SAME loan_id can never race past each other (REQ-108/109's shared
-  per-loan lock, resolves FIND-104); the money-safety invariant (REQ-111) is enforced structurally, not by
-  runtime trust.
+  self-report (REQ-108); a crash — OR an in-process, non-crash exception from the SAME still-alive
+  process (resolves this revision's own FIND-201) — strictly between an irreversible on-chain transfer
+  and its own ledger record can never cause a double-disbursement or a permanently untracked transfer
+  (REQ-106's two-phase provisional/follow-up record + on-chain reconciliation, now unified across BOTH the
+  crash-recovery and in-process-exception paths, resolves FIND-103 and FIND-201); a repayment `txHash`
+  already credited anywhere in the ledger — same loan or a different one — can never be credited again
+  (REQ-108's replay-rejection check, resolves FIND-202); repayment-verification and default-detection
+  writes to the SAME loan_id can never race past each other (REQ-108/109's shared per-loan lock, resolves
+  FIND-104); the money-safety invariant (REQ-111) is enforced structurally, not by runtime trust.
 
 ---
 
@@ -246,8 +251,16 @@ its computed available-surplus is strictly greater than `0`, where available sur
 computeLenderAvailableUsd({
   lenderBalanceUsd, perCitizenReserveUsd = 5.00, outstandingPrincipalUsd, recentGojoGiftsUsd = 0
 })
-  = max(0, lenderBalanceUsd - perCitizenReserveUsd - outstandingPrincipalUsd - recentGojoGiftsUsd)
+  = +(Math.max(0, lenderBalanceUsd - perCitizenReserveUsd - outstandingPrincipalUsd - recentGojoGiftsUsd)).toFixed(6)
 ```
+
+Clamped via the SAME `.toFixed(6)` money-precision convention already established colony-wide
+(`~/anicca/skills/economy/ubi/ubi.js::contribute()` line 40, `const raw = +(totalRealizedProfitUsd *
+cfg.contributePct).toFixed(6)`; `~/anicca/skills/economy/gig/decide.mjs::decideGigAction()` line 44,
+`const surplusUsdc = +(balanceUsdc - reserveUsdc).toFixed(6)`) — this is the SAME class of chained-
+subtraction floating-point arithmetic that convention exists to protect (resolves this revision's own
+FIND-206, which found every dollar-denominated function this feature introduces was previously specified
+as unclamped).
 
 `perCitizenReserveUsd` defaults to `5.00`, the SAME `RESERVE`/`perCitizenReserveUsd` constant already
 established colony-wide (`economy/ubi/run.sh`'s `RESERVE=5.0`, `economy/gig/decide.mjs`'s
@@ -259,7 +272,9 @@ SAME "last-write-wins" reading convention `anicca-agent-spawn` REQ-101 already e
 of `principal_usd - repaid_usd` for every row where `lender_id === lenderId` AND `status` is `"active"`
 OR `"defaulted"` — a defaulted loan's unrecovered principal PERMANENTLY reduces that lender's own future
 available surplus (it is a real, uncollected loss) until an explicit future write-off mechanism (not
-built this increment) resolves it; a `"repaid"` row contributes `0`.
+built this increment) resolves it; a `"repaid"` row contributes `0`. `sumOutstandingPrincipalUsd`'s own
+summed result is likewise clamped via `+(sum).toFixed(6)` — the SAME established money-precision
+convention (resolves FIND-206).
 
 `recentGojoGiftsUsd` is a NEW, ONE-WAY, minimal awareness of `economy/ubi`'s already-existing "gojo"
 mutual-aid mechanism (see Dependencies section), computed by
@@ -294,7 +309,9 @@ a silently-claimed bidirectional guarantee): `ubi.js`/`run.sh` themselves remain
 subtracted from `distributeAI`'s own surplus computation, so gojo can still double-count a citizen's own
 committed loan principal as "available to gift." This feature does NOT modify `ubi.js`/`run.sh` to fix
 that reverse direction — out of scope this increment, left to a future increment or explicit operator
-action.
+action. `sumRecentGojoGiftsUsd`'s own summed result is likewise clamped via `+(sum).toFixed(6)` — the SAME
+established money-precision convention this codebase already establishes for dollar arithmetic (resolves
+FIND-206).
 
 **Edge Cases**:
 - A citizen fails `isSelfFunded()`: excluded as a lender candidate regardless of its raw balance
@@ -324,7 +341,9 @@ action.
 
 **Acceptance Criteria**:
 - `computeLenderAvailableUsd`, `sumOutstandingPrincipalUsd`, and `sumRecentGojoGiftsUsd` are pure, zero
-  I/O, given already-fetched/already-read inputs.
+  I/O, given already-fetched/already-read inputs, and each returns its result clamped via the established
+  `.toFixed(6)` money-precision convention (resolves FIND-206) — every numeric assertion below is against
+  that CLAMPED value.
 - A lender with `balance=$8`, `reserve=$5`, `outstandingPrincipal=$1` → available `= max(0, 8-5-1) = $2`.
 - A lender whose `isSelfFunded()` check is `false` contributes `0` available surplus regardless of
   balance.
@@ -452,8 +471,11 @@ complexity" and this project's own anti-slop bias):
   `BOOTSTRAP_WINDOW_DAYS` default (both `14`) — a new/broke citizen needs roughly this long to complete
   its own first gig-settlement cycle (REQ-401 of that same feature), so a loan's repayment window is set
   to the SAME already-established colony timescale rather than an unrelated new number.
-- `total_due_usd = principal_usd * (1 + LOAN_INTEREST_RATE)` — simple interest, computed once at
-  issuance, never recalculated.
+- `total_due_usd = +(principal_usd * (1 + LOAN_INTEREST_RATE)).toFixed(6)` — simple interest, computed
+  once at issuance, never recalculated, clamped via the SAME established `.toFixed(6)` money-precision
+  convention this codebase already uses for dollar arithmetic (`ubi.js::contribute()` line 40,
+  `decide.mjs::decideGigAction()` line 44) — never an unclamped floating-point multiplication (resolves
+  this revision's own FIND-206).
 
 **Edge Cases**:
 - A loan's principal is anything other than the exact value REQ-105's ladder computes for that
@@ -467,7 +489,9 @@ complexity" and this project's own anti-slop bias):
 - Partial repayment (cumulative `repaid_usd < total_due_usd`) does not close the loan — see REQ-108.
 
 **Acceptance Criteria**:
-- `total_due_usd` for `FIRST_LOAN_USD` = `0.02 * 1.10 = 0.022`.
+- `total_due_usd` for `FIRST_LOAN_USD` = `+(0.02 * 1.10).toFixed(6) = 0.022` — the assertion is against
+  the CLAMPED value (resolves FIND-206), consistent across every Acceptance Criterion this feature states
+  for a money-denominated formula.
 - A structural/Tier-0 check confirms no code path in this feature accepts a borrower- or lender-supplied
   principal/rate/window value that overrides these fixed constants (except REQ-105's ladder OUTPUT,
   itself fully deterministic from bookkeeping inputs).
@@ -482,8 +506,11 @@ exactly the cold-start gap arXiv 2602.14219 §4.2.2 identifies but never resolve
 
 ```
 computeLoanCapUsd({ successfulOnTimeRepayments, firstLoanUsd = 0.02, maxLoanUsd = 5.00 })
-  = min(maxLoanUsd, firstLoanUsd * (2 ** successfulOnTimeRepayments))
+  = +(Math.min(maxLoanUsd, firstLoanUsd * (2 ** successfulOnTimeRepayments))).toFixed(6)
 ```
+
+Clamped via the SAME established `.toFixed(6)` money-precision convention as `computeLenderAvailableUsd`
+above (resolves FIND-206).
 
 `successfulOnTimeRepayments` = `countSuccessfulOnTimeRepayments(loanRows, borrowerId)`, a pure count
 (zero I/O) of that borrower's own `loans.jsonl` rows (reduced to one effective row per `loan_id`,
@@ -554,6 +581,27 @@ result below `0.80` (once `sampleSize >= 10`) as a hard signal to PAUSE new cold
 the unverified assumption that an AI agent has repayment incentives comparable to a human borrower's social/
 credit-score incentives (a limitation this spec does not claim is resolved). While `sampleSize < 10`, ANY single
 default is itself the review trigger — do not wait for a statistically-sized sample before raising a flag.
+
+**Kill-switch enforcement mechanism (resolves this revision's own FIND-203 — a real contradiction with
+this SAME requirement's own pre-existing Edge Case below, and a zero-backing-proof-obligation gap):** THE
+SYSTEM SHALL implement the pause decision above as a new, pure, zero-I/O function,
+`evaluateColdStartKillSwitch({ sampleSize, rate, defaultedCount }) → { paused: boolean, reason: string }`,
+fed directly by `computeColdStartRepaymentRate`'s own already-specified output (computed over the SAME
+`loanRows` already read for this evaluation, `n` defaulting to `20` as already specified): `paused = true`
+when EITHER `(sampleSize >= 10 AND rate < 0.80)` OR `(sampleSize < 10 AND defaultedCount >= 1)` —
+otherwise `paused = false`. Loan issuance (REQ-106) SHALL call this function, BEFORE acquiring the
+`` `loan_${lenderId}` `` lock (the SAME "pure, read-only eligibility check runs before the effectful
+critical section" discipline REQ-101/102 already establish), for ANY loan request where the borrower's
+OWN `successfulOnTimeRepayments === 0` at issuance (i.e. a genuine cold-start loan, per this requirement's
+own definition above) — an established borrower's non-cold-start renewal loan is NEVER paused by this
+mechanism, since the kill-switch's entire purpose is to gate the SPECIFIC hypothesis this requirement's
+own sizing ladder is testing (zero-reputation issuance), not lending in general. WHEN
+`evaluateColdStartKillSwitch` returns `paused: true`, THE SYSTEM SHALL refuse to issue that specific loan
+(`reason: "cold_start_paused"`, no disbursement attempted, no `loans.jsonl` row appended, mirroring
+REQ-102's own existing fail-closed refusal shape) — this is the concrete, testable implementation of the
+"PAUSE new cold-start... loan issuance" SHALL above, closing the zero-backing-proof-obligation gap this
+revision's own FIND-203 identified.
+
 `FIRST_LOAN_USD` is, in summary, the smallest concrete unit this codebase has PROVEN can move
 value meaningfully in this economy, used here as a starting hypothesis for cold-start lending — not a
 proven answer to whether cold-start lending works economically. `maxLoanUsd` defaults to `5.00` — the SAME
@@ -577,17 +625,24 @@ well-established borrower's loan "small" per this increment's own scope.
   it simply does not ADD.
 - `successfulOnTimeRepayments` is somehow negative/non-integer (malformed input): treated as `0` (the
   cold-start floor), fail-closed — never a larger, unearned cap.
-- `computeColdStartRepaymentRate`'s sample is small (e.g. `sampleSize < 5`): THE SYSTEM SHALL NOT treat
-  a small-sample rate as statistically conclusive — the function still returns the exact count/rate
-  (never hides or refuses to compute it), but this spec does not attach a decision rule ("auto-disable
-  lending if rate < X") to it this increment; a human or a future increment interprets the signal.
+- `computeColdStartRepaymentRate`'s sample is small (e.g. `sampleSize < 10`): `computeColdStartRepaymentRate`
+  itself still ALWAYS returns the exact count/rate regardless of sample size — it NEVER hides, refuses to
+  compute, or otherwise withholds the number merely because the sample is small (this part of the original
+  framing was correct and remains unchanged). **Corrected this revision (resolves this revision's own
+  FIND-203, a direct contradiction with the kill-switch paragraph above):** this spec DOES attach a binding
+  decision rule to that number, stated in full above — once `sampleSize >= 10`, a `rate` below `0.80` is
+  the defined pause signal; while `sampleSize < 10`, ANY single default is itself the pause signal
+  (`evaluateColdStartKillSwitch`, above). This is no longer left to a human or a future increment to
+  interpret — it is THIS increment's own binding kill-switch rule, enforced by `evaluateColdStartKillSwitch`
+  before any NEW cold-start loan is issued.
 
 **Acceptance Criteria**:
 - `computeLoanCapUsd({successfulOnTimeRepayments: 0}) === 0.02` (exact cold-start SIZING resolution case
   — this is what is proven; see the honest reframing above for what is NOT claimed proven).
 - `computeLoanCapUsd({successfulOnTimeRepayments: 1}) === 0.04`,
   `computeLoanCapUsd({successfulOnTimeRepayments: 7}) === 2.56`,
-  `computeLoanCapUsd({successfulOnTimeRepayments: 8}) === 5.00` (capped, not `5.12`).
+  `computeLoanCapUsd({successfulOnTimeRepayments: 8}) === 5.00` (capped, not `5.12`) — every assertion
+  above is against `computeLoanCapUsd`'s own `.toFixed(6)`-clamped return value (resolves FIND-206).
 - `countSuccessfulOnTimeRepayments` is pure, zero I/O, and excludes any `on_time:false` or
   non-`"repaid"` row from its count.
 - `decideLoan({ lenderAvailableUsd, loanAmountUsd })` (pure) returns `eligible:true` only when
@@ -601,6 +656,18 @@ well-established borrower's loan "small" per this increment's own scope.
   `successfulOnTimeRepayments` is still `0`) both appear in the cold-start candidate set — asserting
   `computeColdStartRepaymentRate` does NOT treat "cold-start" as synonymous with "first-ever loan"
   (resolves FIND-107).
+- `evaluateColdStartKillSwitch({sampleSize:10, rate:0.7, defaultedCount:3}) === {paused:true}` — a
+  below-threshold rate at a statistically-sized sample triggers the pause.
+- `evaluateColdStartKillSwitch({sampleSize:3, rate:0.667, defaultedCount:1}) === {paused:true}` — a SINGLE
+  default while `sampleSize<10` triggers the SAME pause, even though the raw rate (`0.667`) is itself above
+  `0.80`'s own threshold, per the small-sample rule.
+- `evaluateColdStartKillSwitch({sampleSize:15, rate:0.87, defaultedCount:2}) === {paused:false}` — a
+  healthy rate at a statistically-sized sample does NOT pause issuance.
+- A fixture wiring `evaluateColdStartKillSwitch`'s `paused:true` output into REQ-106's own issuance step
+  confirms a NEW cold-start loan request (`successfulOnTimeRepayments===0`) is refused
+  (`reason:"cold_start_paused"`, zero disbursement, zero `loans.jsonl` append) — while a concurrent,
+  non-cold-start renewal loan for an established borrower is UNAFFECTED by the same paused state (new
+  PROP-105g, resolves FIND-203).
 
 ---
 
@@ -659,14 +726,18 @@ never lose track even if step 4 fails)" pattern (its own step 3, read this sessi
    ever attempted.
 2. THE SYSTEM SHALL THEN attempt the disbursement transfer (`payViaFacilitator`).
 3. THE SYSTEM SHALL THEN `appendChild` a FOLLOW-UP row for the SAME `loan_id` recording the REAL outcome:
-   `status: "active"` (with the real `txHash`) if the transfer succeeded, or `status:
-   "disbursement_failed"` if it did not.
+   `status: "active"` (with the real `txHash`) if the transfer succeeded, `status:
+   "disbursement_failed"` if it cleanly did not, or `status: "disbursement_uncertain"` if an in-process
+   exception during this step leaves the real outcome unknown to this process (see the In-process
+   exception paragraph below, resolves this revision's own FIND-201).
 
-`nextLoanSequenceForLender(loanRows, lenderId)` SHALL treat a `"provisioning"`, `"disbursement_failed"`, OR
-`"active"` row for the SAME `loan_id` as ALL belonging to the SAME already-claimed sequence number `n`
-(last-write-wins, the SAME convention every other reduction in this spec already uses) — it SHALL NEVER
-recompute or reuse `n` for a NEW attempt while a `"provisioning"` row for that `n` exists with no terminal
-follow-up row yet. Instead, a caller that reclaims a stale `loan_${lenderId}` lock (REQ-106's existing
+`nextLoanSequenceForLender(loanRows, lenderId)` SHALL treat a `"provisioning"`, `"disbursement_failed"`,
+`"active"`, OR `"disbursement_uncertain"` row for the SAME `loan_id` as ALL belonging to the SAME
+already-claimed sequence number `n` (last-write-wins, the SAME convention every other reduction in this
+spec already uses) — it SHALL NEVER recompute or reuse `n` for a NEW attempt while a `"provisioning"` row
+for that `n` exists with no terminal follow-up row yet, NOR while a `"disbursement_uncertain"` row for
+that `n` exists with no CORRECTING follow-up row yet (see the In-process exception paragraph below).
+Instead, a caller that reclaims a stale `loan_${lenderId}` lock (REQ-106's existing
 heartbeat/`isLockStale` mechanism) and finds the last-appended row for the highest `n` is still
 `"provisioning"` (the crashed attempt never reached step 3 above) SHALL, BEFORE deciding to retry or mark
 the attempt failed, perform a REAL on-chain lookup for whether a matching disbursement transaction actually
@@ -680,6 +751,45 @@ real transfer into the ledger, never losing track of it) and SHALL NOT disburse 
 NO matching transfer, THE SYSTEM SHALL append a `"disbursement_failed"` follow-up row for the stalled
 attempt, and only THEN is `n+1` available as the next new attempt's sequence number for this lender.
 
+**In-process (non-crash) exception during disbursement (resolves this revision's own FIND-201 — a
+DISTINCT double-disbursement/untracked-transfer hazard the crash-recovery mechanism above does not, by
+itself, close):** the crash-recovery mechanism above is triggered ONLY when a caller reclaims a STALE
+`loan_${lenderId}` lock — but `payViaFacilitator`'s own on-chain settle can genuinely succeed and THEN
+throw an exception from the SAME, still-alive process, strictly AFTER `/settle` has already returned
+`success:true` (i.e. the real transfer has already been broadcast): concretely,
+`escrow.mjs::settleBody`'s own `await publicClient.waitForTransactionReceipt({hash: tx})` (line 135) has
+NO try/catch around it and can genuinely throw (RPC timeout, network error, receipt-not-found-within-
+polling-window) in exactly this window. Because `withGigLock`'s own `try { return await fn(); } finally {
+clearInterval(heartbeat); await release(statePath, lockKey); }` (`lock.mjs` lines 203-208) releases the
+lock NORMALLY (via `fs.unlink`) whenever `fn()` throws — NEVER leaving it stale — an uncaught exception
+from step 2 above would otherwise propagate straight out of `fn()` without EVER reaching step 3's
+follow-up append, and the NEXT caller for this SAME lender would take the normal fast acquire path
+(`tryCreateLockFile`, `lock.mjs` line 156), NOT the stale-reclaim path (`reclaimStaleLock`, lines 128-151)
+the crash-recovery mechanism above depends on to trigger `reconcileProvisionalDisbursement` — so that
+reconciliation would NEVER fire for this failure mode at all, despite `nextLoanSequenceForLender` still
+treating the highest `n`'s `"provisioning"` row as claimed with no terminal follow-up. THE SYSTEM SHALL
+THEREFORE wrap step 2 above (the `payViaFacilitator` call) in its OWN try/catch, INSIDE `fn()` itself —
+never merely called bare — so that regardless of whether that call (a) resolves `{ok:true}` with a real
+`txHash`, (b) resolves `{ok:false}` (the clean, already-specified `disbursement_failed` case below), OR
+(c) THROWS an exception mid-call, a follow-up row is ALWAYS appended by `fn()` BEFORE `fn()` itself
+returns or (re-)throws. On catching such an in-process exception, THE SYSTEM SHALL append the follow-up
+row with `status: "disbursement_uncertain"` (never `"disbursement_failed"`, which would falsely claim
+CERTAINTY that no transfer occurred, and never `"active"`, which would falsely claim certainty that one
+did) — honestly recording that this process does not know the transfer's real on-chain outcome. THE
+SYSTEM SHALL make `reconcileProvisionalDisbursement` (specified above for the stale-lock-reclaim crash
+case) ALSO the mechanism that resolves a `"disbursement_uncertain"` row — UNIFYING both recovery paths
+into ONE reconciliation mechanism, rather than two, only one of which is actually wired up: whenever
+`nextLoanSequenceForLender` finds the last-appended row for this lender's highest `n` is
+`"disbursement_uncertain"`, THE SYSTEM SHALL, at the START of the NEXT loan-issuance attempt for this
+SAME lender — inside THAT attempt's own freshly-acquired `loan_${lenderId}` lock, NOT gated on a
+stale-lock reclaim for this failure mode, since the lock here was never left stale — perform the SAME
+real on-chain lookup (`reconcileProvisionalDisbursement`, by expected lender→borrower `walletAddress.evm`/
+principal amount, in the block range since the `"provisioning"` row's own `provisioned_ms`) already
+specified above, BEFORE computing/using `n+1`. If a matching, finalized `Transfer` is found, append a
+correcting follow-up row (`status: "active"`, the discovered real `txHash`); if none is found, append
+`status: "disbursement_failed"` instead. Only after this reconciliation completes does `n+1` become
+available as the next new sequence number for this lender.
+
 **Disbursement failure (resolves this revision's own FIND-003 — the facilitator-service precondition):**
 the "disbursement transfer" step of this critical section (above) calls `payViaFacilitator` (Dependencies
 section) with `facilitatorUrl` resolved via the SAME `GIG_FACILITATOR_URL`-env-then-`127.0.0.1:8405`
@@ -690,6 +800,17 @@ two-phase record above: the FOLLOW-UP row is appended with `status: "disbursemen
 normally (never left stuck), and this specific `n` is terminally closed — a subsequent attempt for this
 SAME lender computes a NEW `n+1`, never silently proceeding as if funds had moved and never a `loans.jsonl`
 row claiming `"active"` for a loan that was never actually funded.
+
+**Lock-key disambiguation (resolves this revision's own FIND-205 — a mislabeling in this SAME
+requirement's own Acceptance Criteria below):** THIS requirement's own two-phase provisional/follow-up
+ledger append (steps 1 and 3 above) is appended ONLY under this requirement's OWN per-lender
+`` `loan_${lenderId}` `` lock — NEVER under REQ-108/109's own, separate per-loan `` `loan_${loan_id}` ``
+lock. REQ-108/109's per-loan lock governs ONLY their own LATER, independent repayment-verification/
+default-detection status-transition appends on an ALREADY-ACTIVE loan (a loan that has already completed
+THIS requirement's own issuance critical section) — it is never acquired, nested, or otherwise involved
+during issuance itself. These are two DELIBERATELY DIFFERENT locks protecting two DIFFERENT critical
+sections at two DIFFERENT points in a loan's own lifecycle, and no code path in this feature ever acquires
+BOTH locks for the SAME append.
 
 **Edge Cases**:
 - Two DIFFERENT lenders' loan requests proceed concurrently without contention (different lock keys
@@ -713,6 +834,13 @@ row claiming `"active"` for a loan that was never actually funded.
   transaction's own real `txHash` and does NOT disburse a second time. Two callers, one crashing exactly
   in this window, must never both cause a real transfer to leave the lender's wallet for the SAME `n` (new
   PROP-106g).
+- The SAME process (no crash) catches an in-process exception thrown from `payViaFacilitator` AFTER its
+  own on-chain settle already succeeded (e.g. `waitForTransactionReceipt`'s own RPC timeout, resolves
+  this revision's own FIND-201): `fn()` appends `status: "disbursement_uncertain"` and the lock is
+  released NORMALLY (never stale) — the NEXT caller for this lender therefore takes the normal fast
+  acquire path, NOT the stale-reclaim path, and MUST reconcile the `"disbursement_uncertain"` row via the
+  SAME on-chain lookup (`reconcileProvisionalDisbursement`) BEFORE computing a new `n+1` — a clean lock
+  release is NEVER, by itself, proof that the ledger is already terminally resolved for this `n`.
 - A live, heartbeating holder is never stolen from, however long its critical section legitimately
   runs — this property is inherited, not re-derived, from the existing lock.
 - A future call site hardcodes its own literal `loans.jsonl` path string instead of importing
@@ -722,10 +850,16 @@ row claiming `"active"` for a loan that was never actually funded.
 - The facilitator service is unreachable (connection refused, timeout) at disbursement time: treated
   identically to any other `payViaFacilitator` failure above — fail closed, no ledger row, lock released,
   retriable next wake.
+- A NEW cold-start loan request (`successfulOnTimeRepayments===0` for that borrower) is evaluated while
+  REQ-105's `evaluateColdStartKillSwitch` returns `paused:true`: THE SYSTEM SHALL refuse BEFORE ever
+  acquiring the `` `loan_${lenderId}` `` lock (`reason:"cold_start_paused"`) — zero disbursement attempt,
+  zero ledger row, exactly as any other REQ-101/102 pre-lock eligibility refusal (resolves FIND-203).
 
 **Acceptance Criteria**:
 - The loan-issuance critical section (REQ-101 read → REQ-102/104/105 compute → `n =
-  nextLoanSequenceForLender(...)` → disbursement transfer → REQ-108/109 ledger append) is wrapped by
+  nextLoanSequenceForLender(...)` → disbursement transfer → THIS REQUIREMENT'S OWN two-phase provisional/
+  follow-up ledger append, above — NEVER REQ-108/109's own, separate per-loan ledger append; see the
+  lock-key disambiguation note above, resolves this revision's own FIND-205) is wrapped by
   `withGigLock(LOANS_LEDGER_PATH, `loan_${lenderId}`, fn)`, using the SAME `lock.mjs` module, never a
   reimplementation.
 - Given two concurrent callers both targeting the SAME lender and both observing sufficient available
@@ -748,6 +882,20 @@ row claiming `"active"` for a loan that was never actually funded.
   a reclaiming caller's on-chain lookup (`reconcileProvisionalDisbursement`) finds the crashed attempt's
   own real transaction and appends the recovering `"active"` row WITHOUT calling `payViaFacilitator`
   again — zero double-transfer (new PROP-106g's own binding test).
+- A fixture where `payViaFacilitator` is injected to (a) successfully complete `/settle` and (b) then
+  THROW during `waitForTransactionReceipt` (mocked RPC timeout): confirms `fn()` catches this exception
+  INSIDE the lock, appends a follow-up row with `status: "disbursement_uncertain"` before returning/
+  throwing, and the lock is released normally (not left stale). A SEPARATE fixture confirms that the NEXT
+  loan-issuance attempt for this SAME lender, upon finding this `"disbursement_uncertain"` row as the
+  highest `n`, invokes `reconcileProvisionalDisbursement` BEFORE computing `n+1` — finding a real matching
+  transfer corrects the row to `"active"`; finding none corrects it to `"disbursement_failed"` — and
+  `payViaFacilitator` is never invoked a second time for this SAME `n` in either case (new PROP-106h,
+  resolves FIND-201).
+- A structural/Tier-0 check confirms REQ-106's own two-phase provisional/follow-up append (this
+  requirement's own steps 1 and 3) never acquires, references, or is nested inside REQ-108/109's own
+  per-loan `` `loan_${loan_id}` `` lock — the two locks' critical sections are structurally disjoint (new
+  PROP-106i, resolves FIND-205's mislabeling by making the distinction independently checkable, not merely
+  asserted in prose).
 
 ---
 
@@ -948,6 +1096,28 @@ already does, never assumed pre-filtered correctly by the provider. Attribution 
 event log, NOT a bare before/after balance delta, so an unrelated coincidental inflow to the lender's
 wallet in the same window is never mistaken for a repayment.
 
+**`txHash` uniqueness / replay-rejection (resolves this revision's own FIND-202 — a critical double-credit/
+replay risk the three checks above do not, by themselves, close):** the three checks above (receipt
+success + finalized block; exact `to`/`from` topic-equality; `value` reaching `total_due_usd` when summed
+with priors) are satisfied IDENTICALLY whether the caller supplies a genuinely NEW, never-before-credited
+transaction hash or RESUBMITS a `txHash` that was ALREADY verified and credited — toward THIS SAME
+`loan_id` OR toward ANY OTHER `loan_id` in this colony's ledger. THE SYSTEM SHALL THEREFORE, BEFORE
+crediting any `value` toward a claimed repayment's `total_due_usd`, read the FULL `loans.jsonl` ledger and
+collect the set of every `txHash` ALREADY recorded on a previously-verified, credited repayment row (every
+row this feature itself appended after a PRIOR successful `verifyRepayment` call, across ALL `loan_id`s,
+never merely the one currently under verification) — and REJECT the newly-claimed `txHash` (crediting `0`,
+exactly as any other failed-verification case) if it is already present in that set, regardless of how
+genuinely valid/finalized/correctly-attributed that transaction otherwise is. This closes BOTH: (a) a
+SAME-loan replay, where a caller resubmits an already-credited `txHash` against its OWN `loan_id`
+repeatedly, attempting to inflate the cumulative `repaid_usd` sum past `total_due_usd` using only ONE real
+transfer; and (b) a CROSS-loan replay, where a borrower who genuinely repaid an EARLIER loan (`loan_id` A)
+resubmits THAT loan's already-credited `txHash` as claimed proof of repayment toward a LATER loan
+(`loan_id` B) to the SAME lender — `verifyRepayment`'s own three checks would otherwise pass identically
+for both loans, since the underlying transaction is real, finalized, and its `from`/`to` still match. This
+is performed IN-PROCESS by `verifyRepayment` itself, over already-read ledger rows (the SAME full read
+this function already performs for REQ-101/108's own last-write-wins reductions elsewhere in this spec) —
+zero new I/O, never a per-loan-scoped check alone.
+
 **Per-loan write discipline (resolves this revision's own FIND-104 — a race between concurrent repayment
 verification and default detection):** Because REQ-109's own default-detection sweep and this
 requirement's own repayment-verification call both `appendChild` NEW status-transition rows to the SAME
@@ -958,7 +1128,12 @@ lock, key `` `loan_${loan_id}` `` — DELIBERATELY DIFFERENT from REQ-106's own 
 `` `loan_${lenderId}` `` issuance lock (a different natural key for a different critical section:
 issuance contends on the LENDER's own surplus; repayment/default status transitions contend on ONE
 EXISTING loan's own status), using the SAME `withGigLock` mechanism and the SAME `LOANS_LEDGER_PATH`
-`statePath`. This ensures a repayment-verification call and a default-detection sweep for the SAME
+`statePath`. **This per-loan lock is NEVER acquired, nested, or otherwise involved during REQ-106's own
+issuance-time critical section** — REQ-106's own two-phase provisional/follow-up ledger append (its own
+steps 1 and 3) is appended EXCLUSIVELY under REQ-106's own per-lender lock, never under this lock
+(resolves this revision's own FIND-205, which found REQ-106's own Acceptance Criteria mislabeling its own
+issuance-time append as a "REQ-108/109 ledger append"). This ensures a repayment-verification call and a
+default-detection sweep for the SAME
 `loan_id`, launched concurrently, can NEVER both append: exactly one acquires the `loan_${loan_id}` lock
 and completes its read-verify-append; the other observes the lock held, fails closed (`reason:
 "lock_held"`), and defers to its own next scheduled pass (REQ-109's sweep already runs on a schedule; a
@@ -973,6 +1148,15 @@ evaluates it).
 - The repayment transaction succeeds but moves LESS than the amount still owed (a partial repayment):
   `repaid_usd` is updated to the new cumulative total, but the loan remains `"active"` — it is not
   marked `"repaid"` until the cumulative total reaches `total_due_usd`.
+- A caller resubmits a `txHash` that was already verified and credited toward THIS SAME `loan_id`'s own
+  `repaid_usd`: THE SYSTEM SHALL reject it (credit `0`, logged as a replay attempt) — it does NOT
+  double-count the same real transfer twice toward the SAME loan's own `total_due_usd` (resolves
+  FIND-202).
+- A caller submits a `txHash` that was already verified and credited toward a DIFFERENT `loan_id` (a
+  cross-loan replay — e.g. resubmitting an earlier, already-repaid loan's own transaction as claimed proof
+  for a later loan to the SAME lender): THE SYSTEM SHALL reject it identically (credit `0`, logged) — a
+  real, finalized, correctly-attributed transaction is still rejected if its `txHash` is already recorded
+  as credited anywhere else in the ledger (resolves FIND-202).
 - The claimed transaction hash does not exist, reverted, its block is not yet finalized, or its
   `Transfer` event's `to` address is NOT an EXACT zero-padded match for the lender's own recorded wallet
   (a substring/suffix match is NEVER sufficient, per `FIND-704` above): THE SYSTEM SHALL credit `0`
@@ -1002,6 +1186,14 @@ evaluates it).
   zero-padded match for the borrower's own wallet is correctly REJECTED (credits `0`) — proving the
   `from`-side EXTENSION is genuinely implemented as an exact-equality check, not the unchecked substring
   `record-earn.mjs` itself uses for that field (resolves FIND-105).
+- A fixture with a real, valid, finalized, correctly-attributed `txHash` already credited once toward its
+  own `loan_id`'s `total_due_usd`: a SECOND `verifyRepayment` call resubmitting the SAME `txHash` against
+  the SAME `loan_id` is rejected, crediting `0` — the loan's `repaid_usd` is NOT incremented a second
+  time.
+- A SEPARATE fixture proves the CROSS-loan replay case: a `txHash` already credited toward loan A (a
+  different `loan_id`) is rejected when resubmitted as claimed proof of repayment toward loan B —
+  crediting `0` for loan B despite the underlying transaction being genuinely valid/finalized (new
+  PROP-108e, resolves FIND-202).
 - A repayment-verification call and a default-detection sweep for the SAME `loan_id`, launched
   concurrently (`Promise.all`), never both append a new row: an integration test proves exactly one
   acquires the `loan_${loan_id}` lock and appends; the other returns `reason:"lock_held"` and appends
@@ -1019,15 +1211,51 @@ revision's own FIND-104) — never an unlocked read-then-append, since this exac
 simultaneously be undergoing repayment verification. THE SYSTEM SHALL NOT silently continue offering that
 borrower further loans: REQ-102's no-outstanding-obligation
 condition (c) already structurally blocks this, since a `"defaulted"` row IS a currently-open, non-
-`"repaid"` obligation. THE SYSTEM SHALL ALSO exclude that borrower from any colony-wide surplus/eligible-
-citizen aggregation this codebase performs (today: `anicca-agent-spawn`'s `computeColonySurplusUsd`/
-`filterProductiveCitizens`) — realized via a SECOND, lending-owned filter pass,
-`excludeDefaultedBorrowers({citizens, loanRows}) → citizens[]` (pure, zero I/O, excludes any citizen with
-a currently-`"defaulted"` row as `borrower_id`), composed AFTER `filterProductiveCitizens`'s own output
-and BEFORE `computeColonySurplusUsd` runs. This feature does NOT modify `anicca-agent-spawn`'s own
-function signature or source — the composition itself is how this feature avoids a tight coupling to a
-sibling spec still independently evolving (see Dependencies section; this composition point MUST be
-revisited if that spec's registry/join shape changes further).
+`"repaid"` obligation (this rule is unaffected by the fix below — REQ-102 was already correct; only the
+colony-surplus SIDE EFFECT, next, was disproportionate). THE SYSTEM SHALL ALSO adjust that borrower's own
+contribution to any colony-wide surplus/eligible-citizen aggregation this codebase performs (today:
+`anicca-agent-spawn`'s `computeColonySurplusUsd`/`filterProductiveCitizens`) to REFLECT its own
+currently-defaulted, unrecovered debt — realized via a SECOND, lending-owned composition pass,
+`adjustBalancesForOutstandingDebt({citizens, loanRows}) → citizens[]` (pure, zero I/O; resolves this
+revision's own FIND-204, which found the PRIOR design here, `excludeDefaultedBorrowers`, disproportionate).
+
+**This is a balance ADJUSTMENT, not a citizen REMOVAL (corrects the prior design):** the prior
+`excludeDefaultedBorrowers` function REMOVED a defaulted citizen's entire record from the array feeding
+`computeColonySurplusUsd`, zeroing that citizen's WHOLE current balance's contribution to colony-wide
+spawn-eligibility surplus — disproportionate to a debt that, per REQ-104, can be as small as `$0.022`, and
+PERMANENT (per this SAME requirement's own no-write-off-mechanism edge case below), with no bound relative
+to the citizen's own actual, possibly much larger, unrelated balance. `adjustBalancesForOutstandingDebt`
+instead returns the SAME array of citizens, at the SAME length (no citizen is EVER removed from the
+array), with EACH citizen's own already-resolved liquid-balance figure — the SAME figure
+`anicca-agent-spawn`'s own `computeColonySurplusUsd` reads to perform its own `max(0, balance_i −
+perCitizenReserveUsd)` arithmetic (re-read this session, `anicca-agent-spawn`
+`specs/behavioral-spec.md` REQ-101, lines 280-283/398-401: `computeColonySurplusUsd({citizens,
+perCitizenReserveUsd})` runs on already-fetched, already-attached per-citizen balance figures, never
+re-fetching balance itself) — reduced by EXACTLY that citizen's own `outstandingDefaultedDebtUsd(loanRows,
+citizenId)`: the sum, over `loanRows` reduced to one effective row per `loan_id` (last-write-wins, the
+SAME reduction convention REQ-101's own `sumOutstandingPrincipalUsd` already establishes), of
+`principal_usd − repaid_usd` for every row where `borrower_id === citizenId` AND `status === "defaulted"`
+— clamped with the SAME `max(0, ...)` floor REQ-101 already applies elsewhere (a citizen's adjusted
+balance never goes negative even if its debt exceeds its current balance) and, per this revision's own
+FIND-206, the SAME `.toFixed(6)` money-precision clamp this codebase already establishes (see REQ-101's
+own `computeLenderAvailableUsd` above). Every OTHER field on each citizen record (including `wallet`,
+`walletAddress`, `fuel`, `humanDependencies`, `homeDir`) passes through UNCHANGED (a spread-copy, never a
+mutation, per this project's own immutability convention) — only the balance figure is adjusted, and only
+for a citizen that IS currently a defaulted borrower; a citizen who is NOT currently a defaulted borrower
+is returned with its balance figure UNCHANGED (`outstandingDefaultedDebtUsd = 0` for it). This composition
+runs AFTER `filterProductiveCitizens`'s own output and BEFORE `computeColonySurplusUsd`'s own `max(0,
+balance_i − perCitizenReserveUsd)` step — the debt is subtracted from the citizen's OWN balance FIRST, and
+`computeColonySurplusUsd` then applies its own reserve subtraction on TOP of that already-adjusted figure,
+exactly as REQ-101's own arithmetic-ordering convention already establishes for `computeLenderAvailableUsd`
+(reserve/outstanding/gojo are all subtracted from the SAME base figure, in sequence, never compounding
+independently). Its adjustment is scoped ONLY to `anicca-agent-spawn`'s own colony-surplus/spawn-
+eligibility aggregation — it does NOT alter that citizen's REAL on-chain balance, nor any OTHER
+computation in this codebase that reads a citizen's raw balance (e.g. this SAME citizen's own REQ-101
+lender-eligibility check, if it later becomes a lender, still reads its real, unadjusted balance). This
+feature still does NOT modify `anicca-agent-spawn`'s own function signature or source — the composition
+itself, now a debt-proportional adjustment rather than a whole-citizen removal, is how this feature avoids
+a tight coupling to a sibling spec still independently evolving (see Dependencies section; this
+composition point MUST be revisited if that spec's registry/join shape changes further).
 
 **Edge Cases**:
 - A repayment-verification call (REQ-108) is evaluating this SAME `loan_id` at the same moment this sweep
@@ -1048,21 +1276,33 @@ revisited if that spec's registry/join shape changes further).
   increment — left to a future increment or explicit operator action, mirroring `anicca-agent-spawn`
   REQ-402's identical "no auto-teardown policy this increment" precedent.
 - A currently-`"defaulted"` borrower is NOT thereby excluded from `economy/ubi`'s own gojo mutual-aid
-  distribution (a survival-floor gift, not a loan) — `excludeDefaultedBorrowers` scopes ONLY to this
-  feature's OWN loan-eligibility/colony-surplus composition (REQ-101/102), and is never consulted by, or
-  wired into, `ubi.js`'s own recipient-eligibility logic. THE SYSTEM deliberately does NOT create a single
-  combined "in good standing colony-wide" status: a defaulted borrower is excluded from NEW loans but
-  remains eligible for the SAME unconditional mutual-aid gift any other citizen below its own survival
+  distribution (a survival-floor gift, not a loan) — `adjustBalancesForOutstandingDebt` scopes ONLY to
+  this feature's OWN loan-eligibility/colony-surplus composition (REQ-101/102), and is never consulted by,
+  or wired into, `ubi.js`'s own recipient-eligibility logic. THE SYSTEM deliberately does NOT create a
+  single combined "in good standing colony-wide" status: a defaulted borrower is excluded from NEW loans
+  but remains eligible for the SAME unconditional mutual-aid gift any other citizen below its own survival
   reserve would receive — this avoids a permanent, compounding death-spiral where one missed loan
   repayment also cuts off the colony's own baseline survival safety net.
+- `adjustBalancesForOutstandingDebt`'s adjustment is scoped EXCLUSIVELY to `anicca-agent-spawn`'s own
+  colony-surplus/spawn-eligibility aggregation — it does NOT alter that citizen's real on-chain balance,
+  nor any OTHER computation in this codebase that reads a citizen's raw balance (resolves FIND-204).
 
 **Acceptance Criteria**:
 - `detectDefaultedLoans({loanRows, nowMs})` is pure, zero I/O, and returns exactly the `loan_id`s whose
   last-appended row is `"active"`, past `due_ms`, and `repaid_usd < total_due_usd` — no others.
-- `excludeDefaultedBorrowers({citizens, loanRows})` is pure, zero I/O, excludes exactly the citizens with
-  a currently-`"defaulted"` row as `borrower_id`, and passes through unfiltered every other citizen.
-- A structural/Tier-0 check confirms neither `detectDefaultedLoans` nor `excludeDefaultedBorrowers` ever
-  mutates or deletes an existing `loans.jsonl` row.
+- `adjustBalancesForOutstandingDebt({citizens, loanRows})` is pure, zero I/O, returns the SAME `citizens`
+  array at the SAME length (no citizen is ever removed), reducing ONLY a currently-defaulted borrower's own
+  balance figure by exactly its own `outstandingDefaultedDebtUsd` (clamped at `0`), and passing every OTHER
+  citizen through with its balance figure UNCHANGED (resolves FIND-204 — corrects the prior disproportionate
+  whole-citizen-removal design).
+- A fixture citizen with balance `$50` and exactly ONE `"defaulted"` loan row as `borrower_id` with
+  `principal_usd - repaid_usd = 0.022` (REQ-104's own smallest possible cold-start default) →
+  `adjustBalancesForOutstandingDebt` returns that citizen's balance as exactly `$49.978`, NOT `$0` —
+  proving the fix is debt-proportional, not a full exclusion (new PROP-109f, resolves FIND-204). A
+  SEPARATE fixture where the citizen's own currently-defaulted debt EXCEEDS its current balance (balance
+  `$0.01`, debt `$5.00`) confirms the adjusted balance clamps at exactly `$0`, never negative.
+- A structural/Tier-0 check confirms neither `detectDefaultedLoans` nor `adjustBalancesForOutstandingDebt`
+  ever mutates or deletes an existing `loans.jsonl` row.
 - The effectful caller's `"defaulted"` append step acquires the SAME `loan_${loan_id}` lock REQ-108
   specifies before appending — a structural/Tier-0 check confirms no call site appends a REQ-108/REQ-109
   status-transition row without first acquiring this lock (new PROP-109e, resolves FIND-104).

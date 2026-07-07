@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 4,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 3,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-3/output/findings/",
+    "note": "6 findings, 3 critical: FIND-201 (in-process exception during disbursement bypassed reconciliation) resolved via a try/catch inside fn() appending status:'disbursement_uncertain' on exception, unified with reconcileProvisionalDisbursement, new PROP-106h. FIND-202 (no txHash deduplication, replay risk) resolved via a full-ledger txHash-uniqueness check in verifyRepayment, new PROP-108e covering same-loan and cross-loan replay. FIND-203 (architect's kill-switch contradicted an adjacent edge case, zero backing PROP) resolved via a new evaluateColdStartKillSwitch function + rewritten edge case + new PROP-105g. FIND-204 (disproportionate whole-citizen exclusion for any-size default) resolved by renaming excludeDefaultedBorrowers to adjustBalancesForOutstandingDebt -- a debt-proportional balance reduction, not a citizen removal, new PROP-109f. FIND-205 (REQ-106/108 lock-labeling contradiction) resolved via an explicit lock-key disambiguation paragraph + fixed acceptance criteria, new PROP-106i. FIND-206 (missing .toFixed(6) money-precision convention) resolved by applying it to all dollar-denominated pure functions."
+  },
+  "note": "Verify each of the 6 fixes actually holds by re-reading the real source files fresh (escrow.mjs, lock.mjs, ubi.js, decide.mjs, anicca-agent-spawn's CURRENT REQ-101 for the adjustBalancesForOutstandingDebt composition point). In particular: (1) walk through FIND-201's fix yourself -- does the try/catch genuinely guarantee a follow-up row is appended in EVERY exception scenario, including an exception thrown from WITHIN the catch block's own reconciliation attempt; (2) confirm FIND-202's txHash uniqueness check doesn't introduce a performance/correctness issue at scale (reading the full ledger for every verification) and that it correctly handles a txHash appearing in an ALREADY-REJECTED/failed row (should that count as 'already credited'?); (3) confirm FIND-203's evaluateColdStartKillSwitch is actually wired into REQ-102's borrower-eligibility gate (does pausing cold-start issuance actually PREVENT a new loan from being issued, or is it just a computed flag nobody checks?); (4) confirm FIND-204's adjustBalancesForOutstandingDebt composition is correct against anicca-agent-spawn's CURRENT computeColonySurplusUsd signature (re-read that sibling spec fresh, it may have changed further -- it was at iteration 8 FAIL as of this note). Also do a full fresh pass over the REST of the spec -- this feature has FAILed all 3 prior iterations with 21 cumulative findings; do not assume convergence."
+}
