@@ -128,17 +128,17 @@
       "status": "active",
       "createdAt": "2026-07-07T07:54:18.175Z",
       "mode": "strict",
-      "currentPhase": "1b",
-      "updatedAt": "2026-07-07T08:11:34.057Z"
+      "currentPhase": "2a",
+      "updatedAt": "2026-07-07T20:23:33.449Z"
     },
     "anicca-agent-lending": {
       "status": "active",
       "createdAt": "2026-07-07T10:06:12.029Z",
       "mode": "strict",
       "language": "typescript",
-      "currentPhase": "init",
-      "updatedAt": "2026-07-07T10:06:12.029Z"
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-07T20:34:48.532Z"
     }
   },
-  "activeFeature": "anicca-agent-lending"
+  "activeFeature": "anicca-agent-spawn"
 }

@@ -1223,7 +1223,9 @@
         "linkedBeads": [
           "BEAD-048",
           "BEAD-049",
-          "BEAD-050"
+          "BEAD-050",
+          "BEAD-147",
+          "BEAD-151"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1236,7 +1238,8 @@
         "status": "active",
         "linkedBeads": [
           "BEAD-051",
-          "BEAD-052"
+          "BEAD-052",
+          "BEAD-148"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1281,7 +1284,8 @@
         "linkedBeads": [
           "BEAD-058",
           "BEAD-059",
-          "BEAD-098"
+          "BEAD-098",
+          "BEAD-149"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1300,7 +1304,8 @@
           "BEAD-100",
           "BEAD-101",
           "BEAD-132",
-          "BEAD-133"
+          "BEAD-133",
+          "BEAD-149"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1336,7 +1341,8 @@
           "BEAD-085",
           "BEAD-109",
           "BEAD-117",
-          "BEAD-123"
+          "BEAD-123",
+          "BEAD-150"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -2798,7 +2804,11 @@
           "BEAD-139",
           "BEAD-140",
           "BEAD-141",
-          "BEAD-142"
+          "BEAD-142",
+          "BEAD-143",
+          "BEAD-144",
+          "BEAD-145",
+          "BEAD-146"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1a"
@@ -2809,7 +2819,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-307a",
         "status": "active",
         "linkedBeads": [
-          "BEAD-138"
+          "BEAD-138",
+          "BEAD-143"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1b",
@@ -2821,7 +2832,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-307b",
         "status": "active",
         "linkedBeads": [
-          "BEAD-138"
+          "BEAD-138",
+          "BEAD-144"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1b",
@@ -2833,7 +2845,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-307c",
         "status": "active",
         "linkedBeads": [
-          "BEAD-138"
+          "BEAD-138",
+          "BEAD-145"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1b",
@@ -2845,11 +2858,116 @@
         "artifactPath": "specs/verification-architecture.md#PROP-307d",
         "status": "active",
         "linkedBeads": [
-          "BEAD-138"
+          "BEAD-138",
+          "BEAD-146"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1b",
         "externalId": "PROP-307d"
+      },
+      {
+        "beadId": "BEAD-143",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::PROP-307a structural + call-order",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-138",
+          "BEAD-139"
+        ],
+        "createdAt": "2026-07-07T20:35:35.126Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-144",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::PROP-307b structural no-judgment/no-LLM",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-138",
+          "BEAD-140"
+        ],
+        "createdAt": "2026-07-07T20:35:35.131Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-145",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::PROP-307c 9-step failure matrix (steps 1-9)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-138",
+          "BEAD-141"
+        ],
+        "createdAt": "2026-07-07T20:35:35.134Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-146",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::PROP-307d colony-spawn lock scope (staggered race)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-138",
+          "BEAD-142"
+        ],
+        "createdAt": "2026-07-07T20:35:35.135Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-147",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::REQ-204 call-site wiring (ensureAgentId/registerIdentity)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-010"
+        ],
+        "createdAt": "2026-07-07T20:35:35.137Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-148",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::REQ-205 call-site wiring (mcp.json write ordering)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-011"
+        ],
+        "createdAt": "2026-07-07T20:35:35.138Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-149",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::REQ-302/303 call-site wiring (deploy step, PROP-202d target-derivation)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-014",
+          "BEAD-015"
+        ],
+        "createdAt": "2026-07-07T20:35:35.140Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-150",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs::REQ-305 call-site wiring (ledger active row + citizens.json registry append)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-017"
+        ],
+        "createdAt": "2026-07-07T20:35:35.141Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-151",
+        "type": "test-case",
+        "artifactPath": "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs::CRIT-207 gen-solana-wallet.sh output shape + live cross-check",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-010"
+        ],
+        "createdAt": "2026-07-07T20:35:35.142Z",
+        "createdInPhase": "2a"
       }
     ]
   },
@@ -2900,5 +3018,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T20:23:33.449Z"
+  "updatedAt": "2026-07-07T20:35:35.142Z"
 }
