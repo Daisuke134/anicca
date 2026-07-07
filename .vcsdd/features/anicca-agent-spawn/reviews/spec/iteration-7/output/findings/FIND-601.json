@@ -1,0 +1,47 @@
+{
+  "findingId": "FIND-601",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-105's fixed literal seed array assigns 'anicca-a3cdd4' (automaton) the wallet address `walletAddress.evm: \"0xB9dd3B67921B354c656523d6851537988F31DD56\"`, and the surrounding prose claims this seed set was verified 'per `~/anicca/skills/self/colony-status.sh`'s own live output AND this project's own `CLAUDE.md` colony table.' A fresh read of the ACTUAL CLAUDE.md colony table (the file the spec itself cites as a verification source) shows a DIFFERENT address for the SAME citizen id: `CLAUDE.md:42` lists anicca-a3cdd4's wallet as `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` (Base), explicitly labelled 'ClawRouter 自wallet'. This exact same `0xa3CDd4...` address is independently corroborated by `docs/WALLETS.md:13` ('Operational (BlockRun/HL) | 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21 | ~/.openclaw/.env::BLOCKRUN_WALLET_KEY | pays x402 compute + holds the Hyperliquid perp account; the loop's hl-trade/x402_sell payTo') AND by `docs/WALLETS.md:52-55` ('Telemetry SIGNING identity != funding wallet ... For anicca-a3cdd4 (EVM, 0xa3cd...) ... the funding wallet IS the signing key -- no distinction needed'). Meanwhile the DIFFERENT address the spec actually seeded, `0xB9dd3B67921B354c656523d6851537988F31DD56`, is real and does appear in the codebase -- but only in a SEPARATE cluster of files (`colony-status.sh:23`'s hardcoded dashboard-status query, and `colony-wallets.json`'s own entry #1, a file this SAME feature's REQ-105 explicitly and repeatedly says it must never repurpose or treat as a source of truth for citizen classification) -- never in CLAUDE.md or WALLETS.md, the two canonical sources REQ-105's own prose claims to have cross-checked against. This is not a cosmetic citation slip: REQ-101's colony-surplus aggregation and REQ-304's shelter/gas-seed funding transfers both operate EXCLUSIVELY on `walletAddress.evm` via public-RPC balance queries and on-chain transfers (REQ-101: 'readCitizenBalances({citizens}) ... queries EACH citizen's balance directly from PUBLIC CHAIN RPC, keyed on that citizen's own walletAddress'). If `0xa3CDd4...` (WALLETS.md's documented 'Operational' wallet, with a live $8.82 balance as of the project's own 2026-07-04 snapshot) is automaton's real funding wallet while `0xB9dd3B...` is a different address (e.g. a stale/legacy/telemetry-only identity), then REQ-101 would aggregate the WRONG balance (very plausibly $0, silently defeating the entire treasury-gate feature this increment exists to build) and REQ-304 would attempt to fund a spawn FROM the wrong address entirely. Nowhere does the spec reconcile this conflict, acknowledge that two different canonical sources disagree, or establish which address `resolve-identity.mjs`'s resolved private key for automaton's homeDir (`/Users/anicca/.anicca` -> legacy `/Users/anicca/.automaton/wallet.json`) actually derives to -- i.e. REQ-105/REQ-403 never assert, let alone verify, that the seeded `walletAddress.evm` and the key material `resolveEvmPrivateKey` resolves for the SAME citizen are the SAME underlying wallet. This is exactly the class of 'walk the real code + cross-check every canonical source' verification failure FIND-501 was supposed to have taught this feature to avoid.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "601-627",
+      "snippet": "THE SYSTEM SHALL seed citizens.json ... containing ONLY the entities this spec's author has verified, as of 2026-07-07, are genuinely self-funded colony citizens (per ~/anicca/skills/self/colony-status.sh's own live output and this project's own CLAUDE.md colony table ...) [...] { \"id\": \"anicca-a3cdd4\", \"wallet\": { \"evm\": true }, \"walletAddress\": { \"evm\": \"0xB9dd3B67921B354c656523d6851537988F31DD56\" }, ...}"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca-project/CLAUDE.md",
+      "lineRange": "42",
+      "snippet": "| **anicca-a3cdd4** | automaton + ClawRouter | ClawRouter 自wallet | ★SELF-funded★ | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21`(Base) | 汎用 | `com.anicca.daemon`(body `~/.anicca`) |"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca-project/docs/WALLETS.md",
+      "lineRange": "13",
+      "snippet": "| **Operational (BlockRun/HL)** | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` | `~/.openclaw/.env::BLOCKRUN_WALLET_KEY` | pays x402 compute + holds the Hyperliquid perp account; the loop's hl-trade/x402_sell payTo |"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca-project/docs/WALLETS.md",
+      "lineRange": "49-55",
+      "snippet": "## Telemetry SIGNING identity != funding wallet (2026-07-05, poster-builder) ... For anicca-a3cdd4 (EVM, 0xa3cd...) and Franklin (Solana, 8Fpqd...) the funding wallet IS the signing key -- no distinction needed."
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/colony-status.sh",
+      "lineRange": "21-23",
+      "snippet": "echo \"[1] anicca-a3cdd4   SELF-funded  (automaton + ClawRouter)\" ... echo \"    wallet 0xB9dd3B...D56  Base USDC=$(erc20 $BASE $BUSDC 0xB9dd3B67921B354c656523d6851537988F31DD56)...\""
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/economy/ubi/colony-wallets.json",
+      "lineRange": "1-5",
+      "snippet": "[\"0xB9dd3B67921B354c656523d6851537988F31DD56\", \"0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74\", \"8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9\"]"
+    }
+  ],
+  "routeToPhase": "1a"
+}

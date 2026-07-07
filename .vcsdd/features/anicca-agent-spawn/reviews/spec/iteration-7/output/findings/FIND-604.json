@@ -1,0 +1,23 @@
+{
+  "findingId": "FIND-604",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "This iteration's manifest specifically asked whether PROP-101g's mixed-failure fixture leaves the 'both chains fail simultaneously' case ambiguous for a dual-wallet citizen. The prose is not mathematically ambiguous (per-chain independent fail-closing composes to 0+0=0 when both legs fail), but the Proof Obligations table -- the actual, binding, testable checklist Phase 3 implementation is graded against -- has NO dedicated fixture/PROP ID for this exact case. PROP-101f's fixture is explicitly 'both chains succeed'. PROP-101g's fixture is explicitly 'exactly ONE chain's query fails/times out/returns non-finite while the OTHER chain's query genuinely SUCCEEDS' (and the symmetric case) -- it explicitly does NOT cover both legs failing. PROP-101c's fixture ('A failed/timed-out/non-finite/negative public-RPC balance query for a citizen contributes 0') is worded generically for 'a citizen' and was written BEFORE the dual-wallet distinction existed (it is REQ-101's original, single-chain-citizen fail-closed proof, reused for automaton/Franklin today, who are each single-chain); nowhere does its own Tier/fixture description in verification-architecture.md ('mocked readCitizenBalances fixture returning an error/non-finite value for one citizen') explicitly instantiate a fixture where a SINGLE citizen has BOTH `walletAddress.evm` AND `walletAddress.solana` populated and BOTH legs fail simultaneously. This is a genuine test-coverage gap of the exact kind Dimension 2 (edge case coverage) asks to be caught: an implementation could correctly satisfy PROP-101f (both succeed -> sum) and PROP-101g (exactly one fails -> other chain's value only) while still THROWING, returning `NaN`, or double-penalizing (e.g. subtracting `perCitizenReserveUsd` twice) in the specific 'both legs of one dual-wallet citizen fail at once' path -- and no fixture anywhere in the Proof Obligations table (PROP-101a through PROP-101g) would catch that regression, because none of them instantiates it. Given this feature currently has NO real dual-wallet citizen in its own seed data (both automaton and Franklin are single-chain today per REQ-105's seed array) and REQ-202 states the dual-wallet shape only becomes real once a Nosana-path CHILD is spawned, this is exactly the kind of narrow, easy-to-miss combinatorial edge case that a first real Nosana-path child's implementation could hit un-tested.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "147-153",
+      "snippet": "PROP-101c ... A failed/timed-out/non-finite/negative public-RPC balance query for a citizen contributes 0 ... PROP-101f ... A citizen record carrying BOTH walletAddress.evm AND walletAddress.solana populated has readCitizenBalances sum both chains' independently-normalized USD balances ... PROP-101g ... if exactly ONE chain's query fails/times out/returns non-finite while the OTHER chain's query genuinely SUCCEEDS ... distinct from PROP-101f's both-succeed fixture and PROP-101c's whole-citizen-failure fixture"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "344-351",
+      "snippet": "(resolves FIND-503) A citizen's registry record carries BOTH walletAddress.evm AND walletAddress.solana populated, and exactly ONE chain's query FAILS ... while the OTHER chain's query SUCCEEDS ... THE SYSTEM SHALL fail closed at the level of the INDIVIDUAL FAILING CHAIN ONLY -- no edge case anywhere in this list explicitly instantiates the both-fail-simultaneously sub-case for a dual-wallet citizen"
+    }
+  ],
+  "routeToPhase": "1a"
+}

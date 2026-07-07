@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-603",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-105/REQ-403's iteration-6 fix for FIND-501 corrects `homeDir` to each citizen's real, distinct root (`/Users/anicca/.anicca` for automaton, `/Users/anicca/.blockrun` for Franklin) and its own worked example claims `resolveEvmPrivateKey({home: '/Users/anicca/.anicca'})` resolves via the legacy-fallback branch to `/Users/anicca/.automaton/wallet.json`. Walking `resolve-identity.mjs`'s REAL source line-by-line (as this iteration's manifest required) shows this claim is true ONLY under an assumption the spec never states or pins down as a testable requirement: `effectiveHome` is computed from the `home` parameter (i.e. from `homeDir`, correctly registry-sourced), but the legacy-fallback gate that ACTUALLY performs the resolution reads a SECOND, entirely separate variable -- `const legacyHome = e.HOME;` (line 80/131) -- taken from `env.HOME` if an `env` object is passed, or from bare `process.env.HOME` if it is not (the exact invocation shape `resolveEvmPrivateKey({home: '...'})` shown throughout REQ-105/REQ-403/PROP-403b uses, since it passes no `env` key at all). The gate `effectiveHome === path.join(legacyHome, '.anicca')` only holds -- and the legacy `/Users/anicca/.automaton/wallet.json` file only gets read -- if this SEPARATE, ambient `legacyHome` value happens to equal the literal string `/Users/anicca`. REQ-105's registry schema stores `homeDir` (the FIRST input) but has no field, and REQ-403's acceptance criteria impose no requirement, for how the audit script is supposed to guarantee the SECOND input (`env.HOME`/ambient `process.env.HOME`) is correct at invocation time. This is not a hypothetical nitpick: the REUSED, unmodified test suite this spec cites as its own proof (`runtime/loop/__tests__/resolve-identity.test.mjs`) NEVER exercises the bare `{home: X}`-only call pattern the spec's own acceptance criteria describe -- literally every one of its 20 test cases explicitly passes BOTH `env.HOME` and `env.ANICCA_HOME` together (e.g. lines 51, 69, 80, 91, 98, 109, 138, 151, 162, 172, 183, 234, 240) -- so the exact invocation shape REQ-403's live audit is specified to use has zero existing test coverage proving it behaves as claimed. If REQ-403's Phase 2/3 audit script (or ANY REQ-101/305 call path that relies on this same legacy-fallback resolution) is ever invoked from a context where ambient `process.env.HOME` is not exactly `/Users/anicca` -- e.g. a launchd job with a stripped/different environment, a scenario this exact project has previously documented as a real, recurring macOS gotcha class for its own cron/launchd-driven loops -- BOTH `resolveEvmPrivateKey`/`resolveSolanaSecret` silently return `null` for BOTH citizens on every chain, reproducing EXACTLY the same 'vacuous audit, no real key material ever read' failure mode iteration 6 named as 'the most serious defect found across all six spec-review iterations of this feature' (FIND-501) -- just via a second, currently-unaddressed trigger the FIND-501 fix does not cover. `resolve-identity.mjs`'s resolvers are also explicitly claimed elsewhere in this spec to be a 'PURE LOCAL-FILESYSTEM primitive' consumed only via the registry's `homeDir` field -- but the real function's behavior in fact depends on this second, unmodeled, ambient/global input, which is a genuine purity-boundary gap this spec does not disclose.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs",
+      "lineRange": "63-87",
+      "snippet": "export function resolveEvmPrivateKey({ home, env } = {}) { const e = env || process.env; ... const effectiveHome = home ?? e.ANICCA_HOME ?? (e.HOME ? path.join(e.HOME, '.anicca') : null); ... const legacyHome = e.HOME; if (legacyHome && effectiveHome === path.join(legacyHome, '.anicca')) { const fromLegacy = readJsonField(path.join(legacyHome, '.automaton', 'wallet.json'), 'privateKey'); ...} return null; }"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/runtime/loop/__tests__/resolve-identity.test.mjs",
+      "lineRange": "76-82, 158-164",
+      "snippet": "const key = resolveEvmPrivateKey({ env: { ANICCA_HOME: path.join(legacyHome, '.anicca'), HOME: legacyHome } }); ... const secret = resolveSolanaSecret({ env: { ANICCA_HOME: path.join(legacyHome, '.blockrun'), HOME: legacyHome } }); -- every test in this suite passes env.HOME explicitly; none exercises the bare {home: X} call shape REQ-403's own worked examples use"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1699-1709",
+      "snippet": "resolveEvmPrivateKey({home: '/Users/anicca/.anicca'}) resolves via the legacy $HOME/.automaton/wallet.json path (effectiveHome === path.join(HOME,'.anicca') holds for the real process HOME on this host, /Users/anicca) ... -- the spec's own text concedes this depends on 'the real process HOME', an ambient value never captured as a registry field or acceptance criterion"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "227",
+      "snippet": "PROP-403b | REQ-403 | With N >= 2 real running CO-LOCATED instances ... invoked against each citizen's own CORRECTED, DISTINCT homeDir ... shows no equal keys -- no mention anywhere of the second, ambient env.HOME input the resolver's real legacy-fallback branch also requires"
+    }
+  ],
+  "routeToPhase": "1a"
+}

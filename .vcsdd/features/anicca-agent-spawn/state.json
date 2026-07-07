@@ -2010,24 +2010,24 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T11:02:55.800Z",
+      "timestamp": "2026-07-07T11:35:06.333Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 6,
+        "iteration": 7,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-501",
-          "FIND-502",
-          "FIND-503",
-          "FIND-504"
+          "FIND-601",
+          "FIND-602",
+          "FIND-603",
+          "FIND-604"
         ],
-        "note": "All 5 iteration-5 findings reconfirmed resolved. 4 new findings: FIND-501 (critical, most serious defect across all 6 iterations) -- REQ-105 seeds homeDir as an IDENTICAL bare /Users/anicca for both citizens, framed as expected-not-a-bug, but resolve-identity.mjs (independently traced with its own test suite) proves each citizens REAL root is distinct (automaton=/Users/anicca/.anicca, Franklin=/Users/anicca/.blockrun) and the resolver deliberately returns null for anything else -- so REQ-403s live wallet-audit as specified would resolve null for BOTH real citizens today, producing a false no-collision pass without ever reading either real key. Survived two prior rounds (FIND-202, FIND-303) that touched this field without checking its seed value against the resolvers real semantics. FIND-502 (major) -- REQ-304/PROP-304d over-attribute the Jupiter SOL->USDC hop to config.jsons funding_route field (that field literally never mentions Jupiter; its solana/8453 label is itself ambiguous and unexamined re: whether automatons Base wallet could also fund via this route). FIND-503 (major) -- dual evm+solana balance summing never disambiguates per-chain vs whole-citizen fail-closing when one chains query fails while the other succeeds. FIND-504 (minor) -- no adversary pass has ever captured a raw dated --help transcript for lease-shell/nosana job ssh as reviewable on-disk evidence; this reviewers own tools lacked shell access to independently execute them."
+        "note": "4 findings, 2 critical: FIND-601 (critical) -- REQ-105 seeds automatons walletAddress.evm as 0xB9dd3B67... but CLAUDE.md:42 and docs/WALLETS.md:13/49-55 (the two canonical sources the spec itself claims to have cross-checked) both document a DIFFERENT address, 0xa3CDd4..., as automatons real Operational/funding wallet -- risks the entire treasury gate aggregating/funding from the wrong address. FIND-603 (critical) -- resolve-identity.mjs legacy-fallback resolution depends on a SECOND, unmodeled ambient input (env.HOME/process.env.HOME) never captured by homeDir or REQ-403s acceptance criteria; the reused test suite never exercises the bare {home:X} call shape the spec itself uses -- a second, unaddressed trigger for the exact same vacuous-null-audit failure mode FIND-501 named as the most serious defect across all iterations. FIND-602/604 (major) -- two purity-boundary summary tables never updated for iteration-6s PROP-304e correction, still describe Akash funding as Solana-only; no PROP fixture instantiates a dual-wallet citizen with BOTH chains failing simultaneously. 7 consecutive iterations, 38+ cumulative findings, convergence not yet reached."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T11:02:55.800Z"
+      "adversaryReviewedAt": "2026-07-07T11:35:06.333Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T11:21:44.113Z"
+  "updatedAt": "2026-07-07T11:35:06.335Z"
 }

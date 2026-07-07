@@ -1,0 +1,59 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T13:30:00Z",
+  "iteration": 7,
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-501",
+      "status": "genuinely resolved for its own stated claim (homeDir distinctness + non-null resolution) -- but see NEW FIND-603 for an adjacent, unaddressed dependency this fix does not cover",
+      "evidence": "Walked the real resolve-identity.mjs source line-by-line with the corrected seed values. Confirmed via Glob that /Users/anicca/.anicca/.automaton/wallet.json does NOT exist (so the effectiveHome-first-priority branch correctly falls through) and that /Users/anicca/.automaton/wallet.json DOES exist (so the legacy-fallback branch for automaton resolves non-null). Confirmed via Glob that /Users/anicca/.blockrun/.automaton/solana.json does NOT exist and /Users/anicca/.blockrun/.solana-session DOES exist (symmetric confirmation for Franklin's Solana resolution). Both corrected homeDir values genuinely produce non-null results as claimed, PROVIDED the invoking process's ambient env.HOME/process.env.HOME literally equals '/Users/anicca' -- an assumption the spec's own text concedes ('holds for the real process HOME on this host') but never pins down as a registry field or acceptance criterion. This residual gap is filed as new FIND-603, not re-opening FIND-501 itself."
+    },
+    {
+      "findingId": "FIND-502",
+      "status": "genuinely resolved for its own literal citation-split claim -- but see NEW FIND-602 for a residual internal-consistency gap the fix introduced elsewhere in the spec",
+      "evidence": "Fresh read of /Users/anicca/anicca/skills/self/spawn-child/config.json:7 confirms funding_route literally reads 'solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)' with no mention of Jupiter/SOL/USDC, exactly as the spec now claims. Fresh read of /Users/anicca/anicca/skills/self/spawn-child/SKILL.md:61-67 confirms the Jupiter SOL->USDC pre-step is documented there, separately, exactly as cited. Fresh read of /Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs confirms CHAIN_ID_BASE_MAINNET=8453 (line 26) and USDC_BASE_MAINNET='0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913' (line 25), exactly matching PROP-304e's citation. The dual-entry-point claim (Solana-via-Jupiter+CCTP, Base-via-CCTP-only) is internally coherent and well-cited in REQ-304's own body text. However, two OTHER, separate purity-boundary-summary locations in this spec were never updated to reflect this correction -- filed as new FIND-602."
+    },
+    {
+      "findingId": "FIND-503",
+      "status": "genuinely resolved for its own specified case (exactly one chain fails, the other succeeds) -- but see NEW FIND-604 for an adjacent, still-unaddressed case this iteration's manifest specifically asked to be checked",
+      "evidence": "Re-read REQ-101's edge cases (behavioral-spec.md:344-351) and PROP-101g (verification-architecture.md:153) end-to-end: the 'exactly one chain fails, one succeeds' case is unambiguously specified with a dedicated fixture requirement. However, no PROP ID or fixture anywhere in the Proof Obligations table (PROP-101a through PROP-101g) explicitly instantiates the 'BOTH chains of one dual-wallet citizen fail simultaneously' case -- filed as new FIND-604."
+    },
+    {
+      "findingId": "FIND-504",
+      "status": "genuinely resolved",
+      "evidence": "Read reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt in full. Confirms a real, dated, on-disk transcript containing 'provider-services lease-shell --help' output (with a genuine --stdin flag, matching the spec's citation) and 'nosana job ssh --help' output ('Open an SSH shell into a running job ... Usage: nosana job ssh [options] <job> [port]'), matching REQ-302/303's inline citations verbatim. A future Read-only reviewer can verify this claim directly from disk as intended."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-601", "FIND-602"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/CLAUDE.md", "description": "Line 42's colony table gives automaton (anicca-a3cdd4) a DIFFERENT EVM wallet address (0xa3CDd4...) than REQ-105's own seeded walletAddress.evm (0xB9dd3B...), even though REQ-105's own prose claims this exact file was cross-checked as a verification source"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/docs/WALLETS.md", "description": "Lines 13 and 49-55 independently corroborate 0xa3CDd4... as automaton's real, documented 'Operational' funding wallet with a live balance, directly conflicting with the seeded 0xB9dd3B... address"},
+        {"type": "spec", "location": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:207", "description": "Purity boundary analysis overview table's 'Shelter-cost funding transfer' row still describes the Akash funding path as Solana/Jupiter-only, never updated for iteration 6's PROP-304e Base/CCTP correction"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-603", "FIND-604"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "Lines 63-87/115-138 show the legacy-fallback resolution depends on a SECOND, ambient input (env.HOME / process.env.HOME) never modeled by REQ-105's homeDir registry field or pinned down by any REQ-403 acceptance criterion"},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/__tests__/resolve-identity.test.mjs", "description": "Confirmed every existing test case passes env.HOME explicitly; none exercises the bare {home: X}-only invocation shape REQ-403's own worked example uses, so that exact call path is untested"},
+        {"type": "spec", "location": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md:147-153", "description": "Proof Obligations table (PROP-101a-g) has no dedicated fixture for a dual-wallet citizen whose BOTH chains fail simultaneously"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "priorFindingsResolvedCount": 4,
+    "newFindingsThisIteration": 4,
+    "allCriteriaEvaluated": false,
+    "note": "This is a spec review (Phase 1c), not a strict contract/sprint review -- no CRIT-XXX enumeration applies. All 4 iteration-6 findings (FIND-501..504) are reconfirmed genuinely resolved on their own specific, literal terms via fresh reads of every cited real source file (resolve-identity.mjs walked line-by-line with the corrected seed values for BOTH citizens, confirming non-null resolution as claimed; config.json/SKILL.md/escrow.mjs citations for FIND-502 confirmed byte-accurate; the FIND-504 evidence transcript confirmed real and on-disk). This iteration's full fresh pass (not limited to the prior 4 findings) surfaced 4 new findings. FIND-601 (critical) is arguably as serious as FIND-501: REQ-105's own prose claims the seed data was verified against CLAUDE.md's colony table, but that exact file lists a DIFFERENT wallet address for the same citizen than what was actually seeded -- discovered by literally opening the cited verification source and comparing, the same kind of check FIND-501's own resolution narrative modeled. FIND-603 (critical) shows FIND-501's fix, while correct on its own narrow terms, does not fully close the class of bug it was meant to close: resolve-identity.mjs's legacy-fallback resolution depends on a second, ambient input this spec never models, and the reused test suite never exercises the exact invocation shape the spec's own worked examples rely on. FIND-602 and FIND-604 are internal-consistency and test-coverage gaps directly responsive to this iteration's manifest instructions (b) and (c). Convergence has NOT occurred -- 7 consecutive iterations, 38+ cumulative findings, and this iteration again surfaced a critical-severity defect in the exact REQ-105/REQ-403 wallet-identity area that FIND-501, FIND-202, and FIND-303 all previously touched without fully closing.",
+    "duplicateFindings": []
+  }
+}

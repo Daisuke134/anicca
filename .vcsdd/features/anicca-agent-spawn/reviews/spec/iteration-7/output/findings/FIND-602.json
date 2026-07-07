@@ -1,0 +1,34 @@
+{
+  "findingId": "FIND-602",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "PROP-304e (iteration 6, resolving FIND-502) establishes that automaton's Base-native USDC can fund an Akash deploy's AKT requirement DIRECTLY via a CCTP-first-hop Skip API route (no Jupiter, no Solana leg at all), and REQ-304's own detailed body text (behavioral-spec.md:1337-1343) and its own Acceptance Criteria (behavioral-spec.md:1369-1372) correctly state 'EITHER of the colony's two current citizens can independently enter this documented route' and explicitly forbid 'hardcoding a Solana-only entry when a Base-native citizen's surplus is the one actually being spent.' However, TWO separate overview/summary tables in this same spec -- both explicitly the designated 'purity boundary' reference for Phase 2/3 implementers -- were never updated to reflect this and still describe the funding transfer as if the ONLY route is Solana/Jupiter: (1) behavioral-spec.md's own 'Purity boundary analysis (overview)' table, row 'Shelter-cost funding transfer' (line 207), still reads 'For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer (Jupiter SOL->USDC, then Skip API 4-hop `smart_relay` USDC(solana)->AKT(akashnet-2) via `noble-1`/`osmosis-1`)' with zero mention of the Base/CCTP alternative, and is annotated '(revised iteration 5, resolves FIND-402(c))' -- i.e. it was never touched again for iteration 6's PROP-304e correction. (2) verification-architecture.md's Purity Boundary Map, the corresponding row (line 61), likewise still reads 'a multi-hop Jupiter+Skip-API bridge, reusing spawn-child/config.json's own documented funding_route, for Akash's uact requirement specifically (revised iteration 5, resolves FIND-402)' and its own explanatory cell says the bridge is one 'neither current citizen's wallet natively holds AKT' without ever noting that automaton's own Base-native USDC can enter that SAME bridge directly. This is precisely the 'does anything else still assume Franklin/Solana is the ONLY funding source for Akash' inconsistency this iteration's manifest asked to be checked for -- and the answer is yes: an implementer who reads ONLY these two purity-boundary summary tables (which is exactly how they are framed and used elsewhere in this spec -- 'file/function level' maps meant to be read before diving into individual REQ bodies) would reasonably conclude the Akash funding path is Solana-only and could hardcode exactly the anti-pattern PROP-304e/REQ-304's own Acceptance Criteria explicitly prohibit. The two tables are not wrong in isolation (Franklin's route genuinely does go through Jupiter), but they are now STALE and INCOMPLETE relative to the corrected, more detailed REQ-304 body -- an internal inconsistency this spec's own explicit editorial discipline (elsewhere it repeatedly cross-updates every affected location for a given finding, e.g. FIND-104's wallet/walletAddress split) failed to apply here.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "207",
+      "snippet": "For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer (Jupiter SOL->USDC, then Skip API 4-hop `smart_relay` USDC(solana)->AKT(akashnet-2) via `noble-1`/`osmosis-1`) reusing `spawn-child/config.json`'s own already-documented `funding_route` ... (revised iteration 5, resolves FIND-402(c))."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "61",
+      "snippet": "new funding-transfer step: single-signer, single-transaction ... for SAME-CHAIN transfers; a multi-hop Jupiter+Skip-API bridge, reusing spawn-child/config.json's own documented funding_route, for Akash's uact requirement specifically (revised iteration 5, resolves FIND-402) | ... NOT to Akash's uact requirement, which genuinely needs the multi-hop bridge neither current citizen's wallet natively holds."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1337-1343",
+      "snippet": "meaning EITHER of the colony's two current citizens can independently enter this documented route to fund an Akash deploy's AKT requirement, not only Franklin. See PROP-304e for the corresponding proof obligation."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "209",
+      "snippet": "PROP-304e | REQ-304 | ... never a stray/internally-conflated label; the actually-funding citizen's own wallet chain determines which entry is used"
+    }
+  ],
+  "routeToPhase": "1a"
+}
