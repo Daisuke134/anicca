@@ -1,0 +1,9 @@
+{"timestamp":"2026-07-07T10:26:19.531Z","event":"feature_created","featureName":"fable5-config-slimdown","mode":"lean"}
+{"timestamp":"2026-07-07T10:32:59.749Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-07T10:32:59.750Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-07T10:40:20.075Z","event":"gate_recorded","featureName":"fable5-config-slimdown","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T10:56:33.648Z","event":"gate_recorded","featureName":"fable5-config-slimdown","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T11:05:51.612Z","event":"gate_recorded","featureName":"fable5-config-slimdown","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T11:05:51.614Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-07T11:05:51.620Z","event":"phase_transition","featureName":"fable5-config-slimdown","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-07T11:05:51.620Z","event":"sprint_started","featureName":"fable5-config-slimdown","sprintNumber":1,"phase":"2a"}

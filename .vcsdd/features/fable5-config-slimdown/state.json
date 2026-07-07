@@ -1,0 +1,537 @@
+{
+  "featureName": "fable5-config-slimdown",
+  "mode": "lean",
+  "currentPhase": "complete",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-07T10:32:59.746Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-07T10:32:59.750Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-07T11:05:51.613Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-07T11:05:51.619Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-07T11:15:46.916Z",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-07T11:39:30.413Z",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-07T11:39:39.497Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-07T11:46:41.732Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-07T11:53:58.237Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-07T11:55:22.045Z",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1,
+    "complete": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-fable5-config-slimdown-1783419979529",
+    "beads": [
+      {
+        "beadId": "BEAD-001",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-101"
+        ],
+        "externalId": "REQ-P1",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-002",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-102"
+        ],
+        "externalId": "REQ-P2a",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-003",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-103",
+          "BEAD-104"
+        ],
+        "externalId": "REQ-P2b",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-004",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-105"
+        ],
+        "externalId": "REQ-P3a",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-005",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-106"
+        ],
+        "externalId": "REQ-P3b",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-006",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-107"
+        ],
+        "externalId": "REQ-P4",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-007",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-108"
+        ],
+        "externalId": "REQ-P5a",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-008",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-109"
+        ],
+        "externalId": "REQ-P5b",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-009",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-110"
+        ],
+        "externalId": "REQ-P6a",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-010",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-111"
+        ],
+        "externalId": "REQ-P6b",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-011",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-112"
+        ],
+        "externalId": "REQ-P6c",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-012",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-113"
+        ],
+        "externalId": "REQ-P7a",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-013",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-114"
+        ],
+        "externalId": "REQ-P7b",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-014",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-115"
+        ],
+        "externalId": "REQ-P7c",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-015",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-116"
+        ],
+        "externalId": "REQ-P8",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-016",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-117"
+        ],
+        "externalId": "REQ-SAFE-1",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-017",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-118"
+        ],
+        "externalId": "REQ-SAFE-2",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-018",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-119"
+        ],
+        "externalId": "REQ-SAFE-3",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-019",
+        "type": "spec-requirement",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/behavioral-spec.md",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-120"
+        ],
+        "externalId": "REQ-SAFE-4",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-101",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-001"
+        ],
+        "externalId": "PROP-P1",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-102",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "externalId": "PROP-P2a",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-103",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-003"
+        ],
+        "externalId": "PROP-P2b-shell",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-104",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-003"
+        ],
+        "externalId": "PROP-P2b-judgment",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-105",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-004"
+        ],
+        "externalId": "PROP-P3a",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-106",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-005"
+        ],
+        "externalId": "PROP-P3b",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-107",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-006"
+        ],
+        "externalId": "PROP-P4",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-108",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-007"
+        ],
+        "externalId": "PROP-P5a",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-109",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-008"
+        ],
+        "externalId": "PROP-P5b",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-110",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-009"
+        ],
+        "externalId": "PROP-P6a",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-111",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-010"
+        ],
+        "externalId": "PROP-P6b",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-112",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-011"
+        ],
+        "externalId": "PROP-P6c",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-113",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-012"
+        ],
+        "externalId": "PROP-P7a",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-114",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-013"
+        ],
+        "externalId": "PROP-P7b",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-115",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-014"
+        ],
+        "externalId": "PROP-P7c",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-116",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-015"
+        ],
+        "externalId": "PROP-P8",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-117",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-016"
+        ],
+        "externalId": "PROP-SAFE-1",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-118",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-017"
+        ],
+        "externalId": "PROP-SAFE-2",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-119",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-018"
+        ],
+        "externalId": "PROP-SAFE-3",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-120",
+        "type": "verification-property",
+        "artifactPath": ".vcsdd/features/fable5-config-slimdown/specs/verification-architecture.md",
+        "status": "draft",
+        "linkedBeads": [
+          "BEAD-019"
+        ],
+        "externalId": "PROP-SAFE-4",
+        "createdInPhase": "1b"
+      }
+    ]
+  },
+  "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:46:41.725Z",
+      "reviewedBy": "adversary"
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:54:23.317Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "basis": "finding diminishment 4->2->0(minor-only)->0; impl review 0 findings; findingBeadCoverage ok"
+      }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:05:51.603Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-07T11:05:51.603Z"
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-07T10:26:19.528Z",
+  "updatedAt": "2026-07-07T11:55:22.046Z"
+}

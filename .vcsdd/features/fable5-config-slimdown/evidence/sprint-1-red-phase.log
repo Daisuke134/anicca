@@ -1,0 +1,24 @@
+[FAIL] PROP-P1: git-context-lite.sh: no contradiction blocks, CLAUDE.md ref present, secrets guidance kept, bash -n OK
+[FAIL] PROP-P2a: loop-engineering.md deleted + backup exists
+[FAIL] PROP-P2b-shell: session-architecture.md <=20 lines, banned strings absent, backup exists
+[SKIP] PROP-P2b-judgment: tier-2: manual — fresh-context adversary confirms 4-point substance in session-architecture.md
+[FAIL] PROP-P3a: move-ref-check.log exists with >=27 recorded grep runs (27 = 3 files x 3 dirs x 3 path forms)
+[FAIL] PROP-SAFE-4: alias of PROP-P3a (MOVE REF-CHECK gate), same evidence, not re-implemented
+[FAIL] PROP-P3b: 3 files moved rules/->references/, CLAUDE.md references updated, context7.md untouched
+[FAIL] PROP-P4: settings.json UserPromptSubmit ssot-guard removed via pre/post snapshot-diff, SessionStart unchanged, valid JSON
+[FAIL] PROP-P5a: adversary-daily.sh invokes claude with --model opus
+[FAIL] PROP-P5b: CLAUDE.md model-division table contains 'refusal' fallback wording (tier-0 half only; tier-2 semantic-correctness half is adversary-only, not scored here)
+[FAIL] PROP-P6a: worktree .claude/settings.json effortLevel == high, valid JSON
+[FAIL] PROP-P6b: live checkout .claude/settings.json effortLevel == high, committed and pushed to origin/feature/clip-rewards
+[FAIL] PROP-P6c: CLAUDE.md model-division main row states high (xhigh temporary-only)
+[FAIL] PROP-P7a: 8 loop-CLI files: PushNotification append line structurally inside runtime prompt value (assign-span/launch-line untouched, per-file line table)
+[SKIP] PROP-P7b: tier-2: manual — fresh-context adversary confirms wording fidelity of the 8 append lines + position double-check
+[SKIP] PROP-P7c: tier-2: manual E2E — main agent spawns claude -p --model sonnet and captures a real PushNotification tool_result (task #6)
+[FAIL] PROP-P8: superpowers hooks.json: SessionStart using-superpowers entry removed, valid JSON, other hooks unchanged vs backup
+[FAIL] PROP-SAFE-1: 6 pre-edit backups exist under /Users/anicca/.claude/backups/fable5-slimdown-2026-07-07, timestamped before their edit
+[PASS] PROP-SAFE-2: settings.json (x2) + hooks.json all valid JSON (this invariant holds before AND after implementation, so a pre-implementation PASS here is expected, not a weak-assertion signal)
+[FAIL] PROP-SAFE-3: cozempic hooks / enabledPlugins / includeGitInstructions unchanged (backup vs live), context7.md md5 matches 2026-07-07 baseline
+---
+TOTAL: 1 PASS / 16 FAIL (3 SKIP, tier-2, not counted)
+new-feature-tests: FAILING (16 impl PROPs fail pre-implementation, 1 invariant PASS expected, 3 tier-2 SKIP)
+regression-baseline: PASS (invariant PROP-SAFE-2 JSON-validity passing pre-implementation; no existing test suite impacted)

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "features": {
+    "fable5-config-slimdown": {
+      "status": "active",
+      "createdAt": "2026-07-07T10:26:19.528Z",
+      "mode": "lean",
+      "currentPhase": "2a",
+      "updatedAt": "2026-07-07T11:05:51.619Z"
+    }
+  },
+  "activeFeature": "fable5-config-slimdown"
+}
