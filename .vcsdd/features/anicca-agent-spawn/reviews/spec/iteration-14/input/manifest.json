@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 14,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 13,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-13/output/findings/",
+    "note": "2 findings, 1 critical: FIND-1201 -- REQ-103's lock critical-section scope unified across all three of its internally-inconsistent statements (EARS clause, statePath prose, Acceptance Criteria) to ONE canonical scope: REQ-201's wallet generation THROUGH REQ-305's ledger append actually completing. New PROP-103e (staggered-timing race fixture) added. FIND-1202 -- new function computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) exposed as a pure sibling of computeColonySurplusUsd (which now calls it and sums its output, by construction). New PROP-101i added."
+  },
+  "note": "Verify FIND-1201's fix: confirm all three of REQ-103's scope statements (EARS clause, statePath prose, Acceptance Criteria) now say the IDENTICAL thing with no residual ambiguity, and that PROP-103e's staggered-timing fixture actually tests something PROP-103a's simultaneous-race fixture does not (i.e. it is not a redundant duplicate). Verify FIND-1202's fix: confirm computeColonySurplusUsd's spec text actually says it calls computePerCitizenSurplusUsd and sums it (not an independently-written parallel reduce), and that REQ-304's per-citizen ceiling check binds to computePerCitizenSurplusUsd by name. This feature has now FAILed 13 consecutive spec-review iterations -- do a full fresh, skeptical pass over the ENTIRE spec (REQ-101 through REQ-403), not just the two areas just patched. Pay special attention to whether any OTHER requirement still has the same class of multi-statement-scope inconsistency that FIND-1201 just found in REQ-103."
+}

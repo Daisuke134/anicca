@@ -1,8 +1,32 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 12, revised
-(spec review iteration-11 findings FIND-1101/1102 resolved — REQ-102's `decideColonySpawn` signature is
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 13, revised
+(spec review iteration-12 findings FIND-1201/1202 resolved — REQ-103's `"colony-spawn"` lock critical
+section, previously stated with THREE mutually inconsistent scopes across its EARS clause ("and
+beyond", open-ended), its own prose ("REQ-101 through REQ-305"), and its binding Acceptance Criteria
+("REQ-201 through REQ-205, and the decision to proceed into REQ-3xx" — textually EXCLUDING REQ-206's
+ledger append, REQ-304's funding, and REQ-305's append), is unified to ONE identical scope, stated
+IDENTICALLY in all three places: the lock is held from REQ-201's wallet generation THROUGH REQ-305's
+ledger append actually completing (the new citizen durably recorded in `citizens.json`) — never released
+any earlier, closing the staggered (non-simultaneous) double-spawn/double-funding race the narrower
+Acceptance-Criteria reading would have permitted (a second evaluator arriving AFTER a first evaluator's
+REQ-205 completes but WHILE its REQ-304/REQ-305 are still executing). A new proof obligation, PROP-103e,
+adds the missing STAGGERED-timing fixture — a first evaluator's REQ-304 funding step is deliberately
+delayed, and a second evaluator's repeated lock-acquire attempts throughout that entire delay all fail,
+succeeding only after the first evaluator's REQ-305 append has actually landed — proving the lock's real
+scope, not merely the REQ-201-205 sub-window PROP-103a alone exercises (resolves FIND-1201, critical).
+Separately, REQ-101 gains a new sibling pure function, `computePerCitizenSurplusUsd({citizens,
+perCitizenReserveUsd}) → Array<{citizenId, surplusUsd}>`, exposing EACH citizen's own `max(0, balance_i -
+perCitizenReserveUsd)` term individually — the SAME per-citizen arithmetic `computeColonySurplusUsd`
+already sums, now separately named and independently callable; `computeColonySurplusUsd` is now
+specified to be implemented by CALLING this function and summing its output, so the aggregate and the
+per-citizen breakdown can never silently diverge (mirroring REQ-206's own "two independently-derived
+numbers must be identical by construction" discipline). REQ-304's per-citizen ceiling-check Acceptance
+Criteria now cites this function BY NAME as the value each citizen's transfer is checked against, and a
+new proof obligation, PROP-101i, tests both the function's own per-citizen correctness and its
+by-construction consistency with `computeColonySurplusUsd`'s aggregate sum (resolves FIND-1202, major) —
+AND spec review iteration-11 findings FIND-1101/1102 resolved — REQ-102's `decideColonySpawn` signature is
 extended from a single scalar `lastSpawnAttemptMs` to a richer `recentSpawnAttempts:
 Array<{ts, outcome}>` (reusing the SAME array-scan pattern
 `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves for its own rate-limit
@@ -222,6 +246,19 @@ resolved by a specific, cited design decision, grounded in a full re-read of
 | FIND-1101 | critical | REQ-102's `decideColonySpawn` and REQ-305's failure-cap edge case previously described DIRECTLY CONTRADICTORY cooldown-consumption rules that could not both be satisfied by one implementation (REQ-102's own EARS clause claimed a failed attempt restarts the FULL cooldown "success OR failure," while REQ-305 claimed a failed attempt is EXEMPT from consuming the cooldown up to a cap of 3) — and REQ-102's own pinned `decideColonySpawn` signature used a single scalar `lastSpawnAttemptMs`, which structurally cannot express "how many of the recent attempts were failures," making REQ-305's cap-of-3 rule unimplementable against REQ-102's own contract. This is fixed by extending `decideColonySpawn`'s signature from the scalar `lastSpawnAttemptMs` to a richer `recentSpawnAttempts: Array<{ts: number, outcome: "success"\|"failure"}>` — reusing the SAME array-scan discipline `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves out for its own rate-limit check (`children.some(c => typeof c.spawned_ms === "number" && c.spawned_ms >= windowStart)`, confirmed by direct read, 2026-07-07), generalized from "an array of successes only" to "an array of attempts, each carrying its own `outcome`." The ONE reconciled rule both REQ-102 and REQ-305 now describe: a SUCCESSFUL attempt within `SPAWN_COOLDOWN_DAYS` is ALWAYS a hard cooldown gate, regardless of how many failures also occurred in the same window; a FAILED attempt is cooldown-EXEMPT strictly below `FAILURE_COOLDOWN_CAP` (default `3`, the SAME cap REQ-305 already specified) but becomes cooldown-TRIGGERING, identically to a success, once the cap is reached within that same window — closing REQ-305's own "engineer repeated failures to attempt unlimited spawns" gap. REQ-102's EARS clause, Edge Cases, and Acceptance Criteria, and REQ-305's EARS clause and Edge Case, are both rewritten to state this IDENTICAL reconciled behavior. PROP-102b and PROP-305c (verification-architecture.md) are corrected to test the SAME reconciled logic from their respective sides (success-triggers-cooldown vs. failure-cap-triggers-cooldown), and a new proof obligation, PROP-305g, adds the exact "3 failures reached, cooldown now applies" boundary fixture (2 failures → still eligible; 3 failures → rate-limited), distinct from PROP-305c's own "3 failures then a 4th attempt" fixture. |
 | FIND-1102 | major | REQ-304's own edge case already specifies, as real supported behavior, that a spawn can proceed via multi-citizen sequential co-funding (two separate single-signer transfers from two different citizens' own wallets, landing on the SAME child wallet, when no single citizen alone has enough surplus) — but no proof obligation anywhere exercised this SUCCESS path; PROP-304c only tested the BLOCKED path (no single citizen sufficient, aggregate insufficient too — a distinct scenario). A new proof obligation, PROP-304f, is added with a concrete fixture: citizen A transfers a partial amount, citizen B transfers the remaining amount sequentially (never simultaneously) to the same child wallet, and the child wallet's final balance equals the FULL required funding amount — asserting the spawn proceeds and both transfers are independently traceable in the funding ledger (each carrying its own paying citizen's identity, per REQ-304's existing memo/log requirement). REQ-304's own Acceptance Criteria gains a matching new bullet describing this success path explicitly, plus a clarifying rule that the per-transfer ceiling check applies to EACH citizen's own transfer against THAT citizen's own certified contribution, never a single combined ceiling checked against the whole aggregate for one citizen's individual transfer (closing the ambiguity the review's own evidence raised about how PROP-304b's ceiling check interacts with a SUM of two transfers). |
 
+## Changelog (iteration 12 spec review → iteration 13)
+
+Iteration 12's spec review FAILed with 2 findings (1 critical, 1 major — FIND-1201/1202; all findings
+across iterations 1-12 were reconfirmed genuinely resolved against the real, current source). Each is
+resolved by a specific, cited design decision, grounded in a full re-read of REQ-103's own three
+scope-statements (EARS clause, statePath prose, Acceptance Criteria) side by side and of REQ-304's own
+FIND-1102 resolution against REQ-101's actually-specified functions:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1201 | critical | REQ-103's `"colony-spawn"` lock critical section previously carried THREE mutually inconsistent scopes within the SAME requirement — its EARS clause said "REQ-201's identity generation and beyond" (open-ended), its own statePath prose said "REQ-101 through REQ-305", and its binding Acceptance Criteria said only "REQ-201 through REQ-205, and the decision to proceed into REQ-3xx" (textually excluding REQ-206's ledger-row assembly, REQ-304's funding transfer(s), and REQ-305's append) — the narrowest of the three being what a Phase 2 implementer/Phase 3 verifier actually builds/tests against, and insufficient to prevent a genuine STAGGERED double-spawn/double-funding race (a second evaluator arriving after a first evaluator releases the lock post-REQ-205 but while its REQ-304/REQ-305 are still executing). All three statements are corrected to state the IDENTICAL scope: the lock is held from REQ-201 through REQ-305's ledger append actually completing, never released earlier. A new proof obligation, PROP-103e, adds the missing staggered-timing fixture (a delayed REQ-304 funding step, with a second evaluator's lock-acquire attempts failing throughout the entire delay), and the Gate's item (2) (verification-architecture.md) is corrected to require this fixture in addition to PROP-103a's simultaneous-race fixture. |
+| FIND-1202 | major | REQ-304's own FIND-1102 resolution required each citizen's own transfer to be checked against "THAT citizen's own certified surplus-above-reserve contribution", but no function anywhere exposed that value per-citizen — only `computeColonySurplusUsd`'s aggregate SUM existed. A new sibling pure function, REQ-101's `computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) → Array<{citizenId, surplusUsd}>`, now exposes exactly that value, one citizen at a time; `computeColonySurplusUsd` is specified to be implemented by calling this function and summing its output (never an independently-maintained second reduce), guaranteeing the aggregate and the per-citizen breakdown can never diverge. REQ-304's ceiling-check Acceptance Criteria now cites this function by name, and a new proof obligation, PROP-101i (verification-architecture.md), tests its per-citizen correctness and its by-construction consistency with `computeColonySurplusUsd`'s own sum. |
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -407,6 +444,25 @@ public dashboard (not read by this feature). `perCitizenReserveUsd` defaults to 
 consistency, the exact `RESERVE = 5.0` constant `economy/ubi/run.sh` already uses for the same "don't
 count money a citizen needs for its own survival" purpose — not a new number invented for this feature).
 
+**Per-citizen surplus, exposed individually (new, resolves FIND-1202; REQ-304's ceiling check depends on
+this):** `computeColonySurplusUsd`'s own aggregate is a SUM over per-citizen terms, `max(0, balance_i -
+perCitizenReserveUsd)` — but until this revision no requirement exposed any ONE citizen's own term as a
+standalone, individually-checkable value, even though REQ-304's own per-transfer ceiling check needs
+EXACTLY that ("each citizen's own transfer against THAT citizen's own certified surplus-above-reserve
+contribution"). A new, sibling pure function, same file, `~/anicca/skills/self/spawn/lib/
+treasury-gate.mjs::computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) →
+Array<{citizenId: string, surplusUsd: number}>`, runs on the SAME `filterProductiveCitizens`-filtered
+input `computeColonySurplusUsd` itself consumes, and returns EACH citizen's own `max(0, balance_i -
+perCitizenReserveUsd)` term individually, keyed by `citizenId` (`citizens[].id`) — the IDENTICAL
+per-citizen arithmetic `computeColonySurplusUsd` already sums, now also exposed one citizen at a time.
+`computeColonySurplusUsd` SHALL be implemented by CALLING this function and summing its returned
+`surplusUsd` values — never by an independently-written, separately-maintained reduce — so the aggregate
+and the per-citizen breakdown can never silently diverge (the SAME "two independently-derived numbers
+must be identical by construction, never merely close" discipline REQ-206's own edge case already
+establishes for `seedUsdc`/REQ-204's gas-seed amount). REQ-304's per-citizen ceiling check reads THIS
+function's output directly, by name, for its own ceiling comparison — never re-deriving `max(0,
+balance_i - reserve)` a second, independent time inside its own funding code.
+
 **Dual-chain balance handling (resolves FIND-404):** A citizen record legitimately carries BOTH
 `walletAddress.evm` AND `walletAddress.solana` simultaneously — this is the EXPECTED shape for every
 Nosana-path child this feature ever produces (REQ-201 unconditionally generates an EVM wallet for every
@@ -490,6 +546,12 @@ indivisible unit.
 **Acceptance Criteria**:
 - Pure function, e.g. `computeColonySurplusUsd({ citizens, perCitizenReserveUsd }) → number`, takes
   already-fetched balance data as input and performs zero I/O itself.
+- **(new, resolves FIND-1202)** A new sibling pure function, `computePerCitizenSurplusUsd({ citizens,
+  perCitizenReserveUsd }) → Array<{citizenId, surplusUsd}>`, returns one `{citizenId, surplusUsd}` record
+  per input citizen (`surplusUsd = max(0, balance_i - perCitizenReserveUsd)`, the IDENTICAL per-citizen
+  term `computeColonySurplusUsd` sums); `computeColonySurplusUsd`'s own returned total is confirmed, BY
+  CONSTRUCTION (it calls this function internally and sums its output), to equal the SUM of every
+  returned `surplusUsd` value on the SAME fixture — the two can never independently drift apart.
 - Given a fixture citizen with a nonzero, independently-verifiable balance on BOTH its `walletAddress.evm`
   AND `walletAddress.solana` fields, `readCitizenBalances` returns a total equal to the SUM of both
   chains' own USD-normalized values (each normalized via the existing `ethPrice()`/`solPrice()`
@@ -618,9 +680,13 @@ WHETHER to spawn — see REQ-104.
 **EARS**: WHEN two or more evaluation LOOPS — always running on the SAME single coordinator host per
 REQ-106, this increment — independently evaluate REQ-102's gate in the same or an overlapping wake
 window and BOTH observe `eligible:true`, THE SYSTEM SHALL ensure that at most ONE of them actually
-proceeds to REQ-201's identity generation and beyond — the other(s) SHALL detect the lock is held,
-decline to proceed, and log a no-op (never silently duplicate a spawn, and never queue indefinitely
-waiting for the lock).
+proceeds past REQ-201's identity generation, and SHALL hold the `"colony-spawn"` lock continuously
+through REQ-305's ledger append actually completing (the new citizen durably recorded in
+`citizens.json`) — this is the lock's ENTIRE critical section, stated identically here, in this
+requirement's own statePath prose below, and in its Acceptance Criteria (resolves FIND-1201: no
+"and beyond" open-ended phrasing, and no narrower reading that releases the lock any earlier) — the
+other(s) SHALL detect the lock is held, decline to proceed, and log a no-op (never silently duplicate a
+spawn, and never queue indefinitely waiting for the lock).
 
 This reuses, unmodified, the same generic per-resource file lock already adversary-hardened for the P2
 gig board (`~/anicca/skills/economy/gig/lib/lock.mjs`, including its `isLockStale` pure predicate and
@@ -647,10 +713,14 @@ function `~/anicca/skills/self/spawn/lib/state-path.js` already exports and
 `~/anicca/skills/self/spawn/run.sh` (lines 39-45) already calls for `children.jsonl`'s own durable
 location (confirmed by direct read: `STATE_DIR="$(... resolveStateDir({ env: process.env, home:
 process.env.HOME }) ...)"`; `COLONY="$STATE_DIR/children.jsonl"`, real default on this coordinator
-host today: `~/.hermes/state/children.jsonl`). This is a natural fit, since the critical section this
-lock protects IS "read the durable `citizens.json` + decide + possibly append to it" (REQ-101 through
-REQ-305), and the durable state dir is EXACTLY where a live-appended, must-never-be-lost ledger
-belongs, per `state-path.js`'s own header comment documenting the real 2026-06 incident this mechanism
+host today: `~/.hermes/state/children.jsonl`). This is a natural fit: the lock's critical section is
+REQ-201's wallet generation THROUGH REQ-305's ledger append actually completing (resolves FIND-1201 —
+the IDENTICAL scope this requirement's EARS clause and Acceptance Criteria both state; REQ-101's earlier
+registry read and REQ-102's decision themselves run OUTSIDE the lock, since REQ-102's gate function is
+pure and needs no mutual exclusion of its own, per its own edge case above — only the ACT of proceeding
+on a `true` decision needs the lock), and the durable state dir is EXACTLY where a live-appended,
+must-never-be-lost ledger belongs, per `state-path.js`'s own header comment documenting the real 2026-06
+incident this mechanism
 exists to prevent (a spawn ledger written to `/tmp` was deleted by the OS tmp-cleaner — the SAME
 failure class a git-tracked, live-mutated file would risk from routine `git checkout`/`git worktree
 add\|remove`/`git pull` instead of a tmp-sweep). EVERY call site that acquires the `"colony-spawn"`
@@ -685,11 +755,14 @@ full two-artifact design).
   content is ever touched by it (see PROP-105k).
 
 **Acceptance Criteria**:
-- The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx)
-  is wrapped by the existing `withGigLock`-equivalent helper (or a directly analogous
-  `withColonyLock("colony-spawn", fn)`) using the SAME `lock.mjs` module, not a reimplementation, with
-  `statePath` set to the single exported `CITIZENS_REGISTRY_PATH` constant from `registry-path.mjs` —
-  never an independently hardcoded string.
+- The colony-spawn critical section (REQ-201's wallet generation THROUGH REQ-305's ledger append
+  ACTUALLY COMPLETING — the new citizen durably recorded in `citizens.json` — resolves FIND-1201: the
+  IDENTICAL scope this requirement's own EARS clause and statePath prose both state, never released any
+  earlier, e.g. not merely through REQ-205 or "the decision to proceed into REQ-3xx") is wrapped by the
+  existing `withGigLock`-equivalent helper (or a directly analogous `withColonyLock("colony-spawn",
+  fn)`) using the SAME `lock.mjs` module, not a reimplementation, with `statePath` set to the single
+  exported `CITIZENS_REGISTRY_PATH` constant from `registry-path.mjs` — never an independently hardcoded
+  string.
 - Given two concurrent callers both observing `eligible:true`, an integration test proves exactly one
   reaches REQ-201's wallet-generation step during the run; the other's attempt is recorded as
   `reason:"lock_held"` and makes zero wallet-generation calls.
@@ -1833,10 +1906,12 @@ path for the Akash target specifically, never a single-signer single-transaction
   funding amount, and BOTH transfers SHALL be independently traceable in the funding ledger (each
   carrying its own paying citizen's identity, per the memo/log requirement above) — this is the
   co-funding SUCCESS path, distinct from the no-single-citizen-sufficient BLOCKED path the edge case
-  above also describes when co-funding capability does not (yet) exist. The per-transfer ceiling check
-  (above) applies to EACH citizen's own transfer against THAT citizen's own certified
-  surplus-above-reserve contribution — never a single combined ceiling checked against the whole
-  aggregate amount for one citizen's individual transfer.
+  above also describes when co-funding capability does not (yet) exist. **(resolves FIND-1202)** The
+  per-transfer ceiling check (above) applies to EACH citizen's own transfer against THAT citizen's own
+  certified surplus-above-reserve contribution — read directly, by name, from REQ-101's
+  `computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd})` output for that citizen's `citizenId`
+  (never an independently re-derived or re-summed aggregate value) — never a single combined ceiling
+  checked against the whole aggregate amount for one citizen's individual transfer.
 
 ---
 
