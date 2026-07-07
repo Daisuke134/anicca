@@ -3,7 +3,7 @@
 // deterministic arithmetic/boolean logic over already-known bookkeeping facts (REQ-103: no model
 // judgment, no LLM call, no heuristic scoring beyond the declared reputation ladder) — see
 // .vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md (REQ-101..REQ-114) and
-// specs/verification-architecture.md (PROP-101a..PROP-114f).
+// specs/verification-architecture.md (PROP-101a..PROP-114g).
 import { isSelfFunded } from "../../../_shared/lib/is-self-funded.mjs";
 
 // ===========================================================================
@@ -251,7 +251,12 @@ export function computeOverallDefaultRateUsd({ loanRows } = {}) {
     const principal = finiteOr(row.principal_usd, 0) >= 0 ? finiteOr(row.principal_usd, 0) : 0;
     totalIssuedUsd += principal;
     if (row.status === "defaulted") {
-      totalDefaultedUsd += Math.max(0, principal - finiteOr(row.repaid_usd, 0));
+      // repaid_usd is floored the SAME way principal already is above — a malformed/negative
+      // repaid_usd must never SUBTRACT a negative and thereby INFLATE the loss beyond principal
+      // (resolves FIND-C02: repaid_usd:-5 on principal_usd:1 previously yielded a nonsensical 600%
+      // defaultRateUsd instead of the fail-closed, worst-case-assumed 100%).
+      const repaid = finiteOr(row.repaid_usd, 0) >= 0 ? finiteOr(row.repaid_usd, 0) : 0;
+      totalDefaultedUsd += Math.max(0, principal - repaid);
     }
   }
   totalIssuedUsd = +totalIssuedUsd.toFixed(6);
@@ -267,7 +272,11 @@ export function computeRecentDefaultLossUsd({ loanRows, nowMs, windowDays = RECE
   );
   let sum = 0;
   for (const row of rows) {
-    sum += Math.max(0, finiteOr(row.principal_usd, 0) - finiteOr(row.repaid_usd, 0));
+    // Same fail-closed floor as computeOverallDefaultRateUsd above, applied to BOTH inputs here since
+    // this function (unlike the one above) had no floor on either before this fix (FIND-C02).
+    const principal = finiteOr(row.principal_usd, 0) >= 0 ? finiteOr(row.principal_usd, 0) : 0;
+    const repaid = finiteOr(row.repaid_usd, 0) >= 0 ? finiteOr(row.repaid_usd, 0) : 0;
+    sum += Math.max(0, principal - repaid);
   }
   return { totalRecentDefaultLossUsd: +sum.toFixed(6), windowDays };
 }

@@ -3,7 +3,7 @@
 // first failing assertion (module not found) — this is the intended RED-phase signal. GREEN = Phase
 // 2b implements ../lending-gate.mjs to make all of this pass, per
 // .vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md (REQ-101 through REQ-114) and
-// specs/verification-architecture.md (PROP-101a..PROP-114f).
+// specs/verification-architecture.md (PROP-101a..PROP-114g).
 //
 // Scope note: this file covers Tier 1 (pure-function unit tests) and Tier 1/2 mocked-wiring fixtures
 // ONLY. Tier 0 structural/source-read obligations (PROP-103a, PROP-104b, PROP-105h, PROP-106d/i/m's
@@ -568,4 +568,25 @@ test("PROP-114f: volume-dilution-defeat proof — 9 unrelated healthy repaid loa
     totalRecentDefaultLossUsd: recentLoss.totalRecentDefaultLossUsd,
   });
   assert.equal(killSwitch.paused, true, "the NEW absolute-loss signal catches what the ratio alone would miss due to volume dilution (resolves FIND-602)");
+});
+
+test("PROP-114g: a malformed/negative repaid_usd on a defaulted row is FLOORED to 0 before subtraction, never inflating the loss above principal_usd (resolves FIND-C02, round-2 contract review)", () => {
+  const nowMs = 100_000_000;
+  const inWindowMs = nowMs - 1 * 86400000;
+  const negativeRepaidRows = [
+    { loan_id: "loan_x", status: "defaulted", principal_usd: 1, repaid_usd: -5, defaulted_ms: inWindowMs },
+  ];
+  const zeroRepaidRows = [
+    { loan_id: "loan_x", status: "defaulted", principal_usd: 1, repaid_usd: 0, defaulted_ms: inWindowMs },
+  ];
+
+  const negativeResult = computeOverallDefaultRateUsd({ loanRows: negativeRepaidRows });
+  const zeroResult = computeOverallDefaultRateUsd({ loanRows: zeroRepaidRows });
+  assert.equal(negativeResult.totalDefaultedUsd, 1, "repaid_usd:-5 must contribute exactly principal_usd (1), not 1 - (-5) = 6");
+  assert.deepEqual(negativeResult, zeroResult, "a negative repaid_usd:-5 row must be indistinguishable from a repaid_usd:0 row — never inflating totalDefaultedUsd/defaultRateUsd above what repaid_usd:0 would produce");
+
+  const negativeLoss = computeRecentDefaultLossUsd({ loanRows: negativeRepaidRows, nowMs, windowDays: 14 });
+  const zeroLoss = computeRecentDefaultLossUsd({ loanRows: zeroRepaidRows, nowMs, windowDays: 14 });
+  assert.equal(negativeLoss.totalRecentDefaultLossUsd, 1, "same fail-closed floor applies to computeRecentDefaultLossUsd's own accumulation");
+  assert.deepEqual(negativeLoss, zeroLoss);
 });
