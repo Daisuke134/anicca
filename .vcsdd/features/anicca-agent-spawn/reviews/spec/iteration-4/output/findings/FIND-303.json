@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-303",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "REQ-403's live wallet mutual non-interference audit cannot execute against any real spawned child, despite PROP-403b explicitly requiring exactly that. REQ-403's 'live runtime comparison' half reuses resolve-identity.mjs's exported resolveEvmPrivateKey/resolveSolanaSecret, 'invoked once per running instance with that instance's OWN HOME/ANICCA_HOME (read from REQ-105's registry's homeDir field).' resolve-identity.mjs's own real source (confirmed by direct read) is a pure LOCAL filesystem read: it resolves effectiveHome from the passed-in home/env, then calls fs.readFileSync(path.join(effectiveHome, '.automaton', 'wallet.json'), ...) -- there is no network call, no remote-exec, no RPC anywhere in this module. For the coordinator process (running on the single coordinator host per REQ-106) to invoke this against a cloud-hosted child's actual home directory, that home directory would have to be locally mounted/readable from the coordinator -- but REQ-301 mandates the child's wallet material and persistent state live EXCLUSIVELY on its remote Nosana/Akash lease, a physically separate filesystem the coordinator cannot fs.readFileSync into. The spec never specifies any remote-exec/SSH mechanism to run this audit ON the child's own host, nor any (money-safety-violating) mechanism for the child to transmit its own private key material back to the coordinator for comparison -- which would itself contradict REQ-201's own private-key-handling discipline ('must never appear in any log file, stdout capture that reaches persistent logs, or process list'), reasonably extended to 'or over a network transmission,' though the spec never states this extension either. REQ-403's Acceptance Criteria and PROP-403b both require this live comparison to run 'once ≥ 2 real instances exist... including, ideally, an actual spawned child' -- as specified, this cannot be satisfied for any child that actually exists per REQ-301's own mandatory topology. This is the SAME root architectural gap as FIND-302 (no specified mechanism for the coordinator to read a remote child's own local state), manifesting here as an unimplementable security-audit acceptance criterion rather than a broken surplus calculation.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-403 (~line 1199-1237)",
+      "snippet": "'a live runtime comparison -- reusing resolve-identity.mjs's existing exported resolvers, invoked once per running instance with that instance's OWN HOME/ANICCA_HOME'"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs",
+      "lineRange": "63-87",
+      "snippet": "export function resolveEvmPrivateKey({ home, env } = {}) { ... const fromHome = readJsonField(path.join(effectiveHome, '.automaton', 'wallet.json'), 'privateKey'); ... } -- readJsonField uses fs.readFileSync, a purely local-disk primitive with no network path"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "PROP-403b (~line 172)",
+      "snippet": "\"With N >= 2 real running instances (enumerated from REQ-105's registry, including at least one newly-spawned child), pairwise comparison of resolveEvmPrivateKey/resolveSolanaSecret outputs shows no equal keys...\""
+    }
+  ],
+  "routeToPhase": "1a"
+}

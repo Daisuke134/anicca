@@ -1,0 +1,43 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "iteration": 4,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "note": "Fresh-context adversary review, zero prior conversational context. Per the manifest's explicit instruction, iteration 3's 6 claimed fixes (FIND-201..206) were NOT accepted at face value -- every real cited source file was re-read fresh: /Users/anicca/anicca/skills/self/spawn/lib/ledger.js, /Users/anicca/anicca/skills/self/spawn/lib/child-spec.js (+ __tests__/child-spec.test.js), /Users/anicca/anicca/skills/self/spawn/run.sh, /Users/anicca/anicca/install.sh, /Users/anicca/anicca/identity/genesis.md, /Users/anicca/anicca/skills/economy/ubi/run.sh, plus /Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs, /Users/anicca/anicca/skills/economy/gig/lib/lock.mjs, /Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs, /Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js, /Users/anicca/anicca/skills/economy/gig/lib/ensure-agent-id.mjs, /Users/anicca/anicca/skills/self/telemetry-collect.sh, and /Users/anicca/anicca/skills/self/spawn/scripts/akt-treasury.sh for the broader fresh pass. All 6 of iteration 3's findings (FIND-201..206) ARE confirmed genuinely resolved AS STATED against the real, current on-disk source: (a) run.sh:136 literally reads '\"${ANICCA_GENERATION:-1}\"', confirming REQ-206's generation=1 default claim; (b) install.sh:77-94 literally copies REPO_ROOT/identity/genesis.md verbatim into ANICCA_HOME when present (only falling back to a DIFFERENT literal heredoc text if that repo file is absent), and identity/genesis.md is confirmed a real, existing, hashable canonical file, grounding REQ-206's constitutionHash claim; (c) economy/ubi/run.sh:68 literally defines RESERVE = 5.0 and its bal() helper literally falls back to balance_native.usdc (line 76-79), grounding REQ-101's reuse claim exactly; (d) REQ-402's promised children_bootstrap_failed feed into REQ-102 is genuinely removed with an explicit, structurally-checkable non-effect (PROP-402d); (e) REQ-101's vestigial claude-p directory-listing edge case is genuinely deleted; (f) REQ-206's 'at least one, not XOR' EARS rewrite remains internally consistent. HOWEVER, a deeper, mechanism-level (not merely location/contradiction-level) fresh pass over the SAME areas these 6 fixes touch, plus the rest of both documents, surfaces 5 NEW defects, three of them critical, that were not caught by iteration 3's review: (1) FIND-201's fix (the new filterProductiveCitizens join against ledger.js rows) assumes ledger.js supports updating/keying an existing row by child_id, but the real, cited ledger.js (confirmed unmodified per the spec's own Purity Boundary claim) only supports raw JSONL append with zero update/dedup capability, and the pre-existing run.sh demonstrably produces MULTIPLE rows per child_id in real usage -- the spec never specifies how filterProductiveCitizens reconciles duplicate child_id matches, the exact gap the iteration-4 manifest asked to be checked. (2) FIND-202/205's fix (telemetryPath as an already-resolved absolute local path) works for today's 2 co-located citizens but is structurally unreachable for any actual spawned child, which REQ-301 mandates must run exclusively on a remote cloud lease -- no mechanism is specified for a cloud-hosted child's telemetry to ever reach the coordinator's local disk, and the one real precedent in this codebase (telemetry-collect.sh) only ever operates for co-located instances. (3) The SAME root gap independently breaks REQ-403's live wallet audit: resolve-identity.mjs's real source is confirmed to be a pure local fs.readFileSync-based resolver, unusable by the coordinator against a remotely-hosted child's own wallet files, making PROP-403b's 'including an actual spawned child' requirement unimplementable as specified. Two further, lower-severity-but-still-major findings round out the pass: a 'wallet' field-name collision across three incompatible shapes (child-spec.js's row: address string; citizens.json: boolean flags; walletAddress: address strings) that the spec's own FIND-104 precedent should have prevented but does not address here; and REQ-306's claim to reuse 'already-available' AKT/USD and NOS/SOL/USD price-conversion mechanisms, which a full read of akt-treasury.sh and a repo-wide grep confirm do not actually exist anywhere in this codebase."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-301", "FIND-302", "FIND-303", "FIND-304", "FIND-305"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh", "description": "Line 136 re-read fresh: \"${ANICCA_GENERATION:-1}\" confirms REQ-206's generation=1 default claim holds"},
+        {"type": "file", "location": "/Users/anicca/anicca/install.sh", "description": "Lines 77-94 re-read fresh: genesis.md is copied verbatim from the repo when present; identity/genesis.md independently confirmed to exist as real content -- REQ-206's constitutionHash grounding holds"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/run.sh", "description": "Line 68 (RESERVE = 5.0) and lines 70-79 (bal()'s balance_native.usdc fallback) re-read fresh -- REQ-101's reuse claims hold exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "description": "Full file re-read: only readChildren/appendChild exported, no update/dedup primitive -- FIND-301, the join mechanism REQ-101/305/402 depend on is underspecified for duplicate child_id rows"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "Lines 63-87 re-read: pure local fs.readFileSync-based resolver -- FIND-303, cannot execute against a remotely-hosted spawned child"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-301", "FIND-302", "FIND-303", "FIND-305"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsResolved": ["FIND-201", "FIND-202", "FIND-203", "FIND-204", "FIND-205", "FIND-206"],
+    "newFindingsThisIteration": ["FIND-301", "FIND-302", "FIND-303", "FIND-304", "FIND-305"]
+  }
+}

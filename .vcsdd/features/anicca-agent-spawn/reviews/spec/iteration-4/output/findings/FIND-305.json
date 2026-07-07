@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-305",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-306's normalization edge case claims '...normalize both to a USD-equivalent estimate using the SAME already-available price-conversion mechanism this project's own akt-treasury.sh already documents (an observed AKT/ACT/USD rate) and an equivalent, already-available NOS/SOL/USD rate -- never... inventing a new pricing oracle for this feature.' This claim is not grounded in any real, reusable code. akt-treasury.sh (read in full) contains NO live USD price query anywhere -- it only compares NATIVE-denominated balances (uact/uakt via 'akash query bank balances') against fixed native-unit thresholds (ACT_BUFFER_UACT, MIN_MINT); the 'P_mint~=0.66' figure the spec alludes to is a ONE-TIME HISTORICAL OBSERVATION recorded in a source comment (line 9), not a callable, already-available live rate-query function or API a new selectCloudTarget-feeding step could invoke. A grep across the entire ~/anicca/skills tree for any Nosana/SOL/NOS price-conversion utility (nosana|market.*price|SOL.*price, case-insensitive) found zero matches for any such mechanism -- no NOS/SOL/USD rate utility exists anywhere in this codebase. Both halves of REQ-306's price-normalization claim are therefore describing infrastructure that must be newly built for this feature, directly contradicting the requirement's own explicit framing ('never... inventing a new pricing oracle for this feature') -- the same class of false-reuse claim iteration 1's FIND-001 originally flagged for buildChildSpec, recurring here for the price-oracle dependency REQ-306's own price-ordering/tie-breaker Tier-1 tests (PROP-306a/b) implicitly assume is a solved, already-available input.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/akt-treasury.sh",
+      "lineRange": "1-73",
+      "snippet": "balance(){ \"$AKASH\" query bank balances \"$ADDR\" -o json ... } -- entire script compares native uact/uakt integers against native-unit thresholds; no USD price query anywhere; line 9's 'P_mint~=0.66' is a comment documenting a historical, one-time-observed constant, not a live rate mechanism"
+    },
+    {
+      "type": "search",
+      "filePath": "grep across ~/anicca/skills for nosana|market.*price|SOL.*price (case-insensitive)",
+      "lineRange": "n/a",
+      "snippet": "12 files matched, none of them a NOS/SOL/USD price-conversion utility (matches were polymarket-trade/hl-trade scripts, unrelated trace/log files, and a deploy-akash test script referencing 'market' in an Akash-CLI sense only)"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-306 Edge Cases (~line 1072-1077)",
+      "snippet": "'THE SYSTEM SHALL normalize both to a USD-equivalent estimate using the SAME already-available price-conversion mechanism this project's own akt-treasury.sh already documents... and an equivalent, already-available NOS/SOL/USD rate -- never... inventing a new pricing oracle for this feature.'"
+    }
+  ],
+  "routeToPhase": "1a"
+}

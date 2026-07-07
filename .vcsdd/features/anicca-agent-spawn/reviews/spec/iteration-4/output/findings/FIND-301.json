@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-301",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "FIND-201's resolution (REQ-101's new filterProductiveCitizens join, REQ-305/REQ-402's 'set active_since'/'flip status in that SAME ledger.js row') is built on an assumed keyed/mutable-row abstraction that the real, cited ledger.js does not have and that the spec itself commits to leaving UNMODIFIED. ledger.js exports exactly two functions: readChildren (parses every line, returns them all, unfiltered, undeduplicated) and appendChild (raw JSONL append, no key, no upsert). There is no update-by-child_id, no upsert, no 'find and mutate the row for this child_id' primitive anywhere in the file or its own test suite (__tests__/ledger.test.js only ever exercises DISTINCT child_ids per row; it never tests two rows sharing one child_id). Yet REQ-305 requires 'in that SAME ledger.js row, ALSO set a new field active_since' when a child transitions provisioning->active, and REQ-402 requires flipping status 'in that SAME ledger row' from active->bootstrap_failed (and back, per its own retroactive-correction edge case). Given ledger.js is append-only, the only way to record either transition is to APPEND A NEW LINE with the same child_id -- meaning a single child_id will legitimately have MULTIPLE ledger rows over its lifecycle (provisioning, then active, possibly later bootstrap_failed, possibly later corrected back to active). This exact multi-row-per-child_id pattern is independently confirmed as the REAL, already-established convention in this codebase: the superseded run.sh (lines 124-140, 200-220) appends a 'provisioning' row, then LATER appends a SECOND row with the SAME child_id and an updated status (seed_failed or active) for every single real spawn attempt -- proving readChildren's raw output routinely contains duplicate child_id rows in production usage. Neither REQ-101's filterProductiveCitizens contract, REQ-101's Acceptance Criteria, nor PROP-101d's fixture description ever specifies how to reconcile multiple ledgerRows entries sharing one child_id into 'the' row a citizen is matched against -- PROP-101d's own fixture assumes exactly one row per test citizen, never testing the duplicate-id case. This is precisely the ambiguity the iteration-4 manifest asked to be checked ('what happens with duplicate child_id matches') and it is unresolved: an implementation could take the FIRST row per child_id (meaning a child would NEVER be observed as active/bootstrap_failed by filterProductiveCitizens, since its first-ever row is always 'provisioning'), the LAST row (the only correct reading, but never specified), or something nondeterministic -- and no test in this spec's own acceptance criteria would catch the wrong choice, since PROP-101d never exercises >1 row per id.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "lineRange": "1-27",
+      "snippet": "module.exports = { readChildren, appendChild };"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/__tests__/ledger.test.js",
+      "lineRange": "26-32",
+      "snippet": "test(\"appendChild is append-only (preserves prior rows)\", () => { ... appendChild(f, { child_id: \"anicca-c001\" }); appendChild(f, { child_id: \"anicca-c002\" }); ... }); // never tests the SAME child_id appended twice"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/run.sh",
+      "lineRange": "124-140, 200-220",
+      "snippet": "appendChild(...) writes a 'provisioning' ROW (line 137-140), then a LATER, SEPARATE appendChild call writes a SECOND row with the SAME child_id and status:'seed_failed' (200-205) OR status:'active' (213-220) -- proving duplicate-child_id rows are the real, existing runtime behavior this ledger already produces"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-101 (~line 156-166), REQ-305 (~line 973-990), REQ-402 (~line 1136-1146)",
+      "snippet": "'a citizen WITH a matching ledger row is EXCLUDED if that row's status is...' (singular 'that row'); 'in that SAME ledger.js row, ALSO set a new field active_since'; 'flips exactly those past the window to \"bootstrap_failed\" in that SAME ledger row'"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "Purity Boundary Map, ledger.js row (~line 39)",
+      "snippet": "\"Effectful Shell (existing, reused unmodified) + new registry-append side effect\" | \"~/anicca/skills/self/spawn/lib/ledger.js::appendChild/readChildren\" | \"EFFECTFUL (existing)\" | \"Append-only JSONL; already implemented, unmodified.\""
+    }
+  ],
+  "routeToPhase": "1a"
+}

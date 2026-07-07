@@ -1,0 +1,28 @@
+{
+  "findingId": "FIND-304",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The key name 'wallet' is reused across this feature's own artifacts with THREE mutually incompatible shapes, and the spec -- despite explicitly and repeatedly disambiguating a closely related field (walletAddress vs wallet in citizens.json, the entire resolution of FIND-104) -- never once flags or disambiguates this second collision. (1) child-spec.js::buildChildSpec's real, existing, unmodified returned row stores wallet as a bare STRING (the child's own address): 'wallet: childWallet' (child-spec.js:37), confirmed by its own test fixture (child-spec.test.js:36: assert.strictEqual(spec.wallet, '0xCHILD...')). REQ-206/REQ-305 both route through this exact function/row shape unmodified. (2) REQ-105/citizens.json's registry record defines wallet as a BOOLEAN presence-flag OBJECT: '{evm?: boolean, solana?: boolean}' -- explicitly NOT an address. (3) REQ-105's own SEPARATE walletAddress field carries the actual address STRING(s) for citizens.json. So within the SAME feature's own diff, 'wallet' means 'an address string' in one file (ledger.js rows, via child-spec.js) and 'a pair of booleans' in another (citizens.json), while the semantic equivalent of ledger.js's wallet field (an address string) is called walletAddress, not wallet, in citizens.json. A fresh implementer cross-referencing REQ-206's derivation table against REQ-105's registry schema in the same sitting has a concrete, evidenced opportunity to conflate these -- exactly the class of confusion FIND-104's entire resolution (splitting wallet/walletAddress in ONE file) was designed to close, left open in the adjacent file this same spec also modifies.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js",
+      "lineRange": "35-46",
+      "snippet": "return { child_id: childId, wallet: childWallet, parent_wallet: parentWallet, ... }"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/__tests__/child-spec.test.js",
+      "lineRange": "36",
+      "snippet": "assert.strictEqual(spec.wallet, \"0xCHILD00000000000000000000000000000000B\");"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-105 (~line 382-391)",
+      "snippet": "'wallet: {evm?: boolean, solana?: boolean} -- a presence-flag pair...'; 'walletAddress: {evm?: string, solana?: string} -- the actual address string(s)... this field is NEVER passed to isSelfFunded()'"
+    }
+  ],
+  "routeToPhase": "1a"
+}

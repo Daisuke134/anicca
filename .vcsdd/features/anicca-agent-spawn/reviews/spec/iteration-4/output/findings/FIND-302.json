@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-302",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-101/REQ-105's balance-lookup mechanism cannot actually reach any cloud-hosted child, contradicting REQ-305's own claim that a successful spawn makes REQ-101's NEXT aggregation 'include the new citizen automatically.' REQ-105 defines telemetryPath as 'the citizen's own state/telemetry.json path... an ALREADY-RESOLVED absolute path,' and verification-architecture.md's Purity Boundary Map states the balance read is a plain 'fs.readFile of each citizen's own state/telemetry.json, located via REQ-105's registry telemetryPath field.' This is a coordinator-LOCAL filesystem read (fs.readFile), executed on the single coordinator host (REQ-106). But REQ-301 mandates every spawned child's runtime and persistent state live EXCLUSIVELY on a remote Nosana/Akash cloud lease -- 'never onto the machine currently running the spawning process itself.' A cloud-hosted child's own telemetry.json therefore lives only on that remote lease's own filesystem; the coordinator process has no local path to it at all, regardless of what string is written into citizens.json's telemetryPath field for that child. Nothing in REQ-101/105/305/402/403 specifies HOW a cloud-hosted child's balance data ever reaches the coordinator's local disk at the path the registry records. The one real, existing precedent in this codebase for writing a citizen's telemetry.json (skills/self/telemetry-collect.sh) does NOT establish a working cross-host pattern either: it is run ON the coordinator host and queries PUBLIC RPC endpoints directly by each citizen's KNOWN WALLET ADDRESS (not by reading any file belonging to that citizen), but it is hardcoded to exactly today's 3 co-located instances (anicca-a3cdd4/Franklin/claude-p, all writing under paths on the SAME Mac Mini) and is never extended, registry-driven, or even mentioned anywhere in this spec to cover a future spawned child. Because citizens.json ALREADY stores each citizen's walletAddress (REQ-105), the fixable path forward would be a registry-driven, coordinator-run, public-RPC-based telemetry generator keyed on walletAddress (the ONE mechanism this codebase has actually verified works regardless of physical host) -- but the spec as written commits to telemetryPath-as-a-local-file-path being the retrieval mechanism, and never specifies the missing population step for any child that (per REQ-301) can never be co-located with the coordinator.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-105 (~line 392-400), REQ-301 (~line 831-838)",
+      "snippet": "'telemetryPath: string -- the citizen's own state/telemetry.json path... stored as an ALREADY-RESOLVED ABSOLUTE PATH'; REQ-301: 'THE SYSTEM SHALL NOT provision any child instance's runtime... or persistent state on the same physical/virtual host as any existing colony citizen's own runtime... never onto the machine currently running the spawning process itself'"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "~line 29",
+      "snippet": "\"Effectful Shell\" | \"~/anicca/skills/self/spawn/lib/colony-balances.mjs::readCitizenBalances()\" | \"Reads each known citizen's state/telemetry.json, located via REQ-105's registry telemetryPath field -- an ALREADY-RESOLVED absolute path\""
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/telemetry-collect.sh",
+      "lineRange": "8-11, 61-137",
+      "snippet": "Hardcoded 3-instance block (anicca-a3cdd4 -> ~/.automaton, Franklin -> ~/.blockrun, claude-p -> ~/.anicca-founder), each queried via public RPC (base-rpc.publicnode.com / api.mainnet-beta.solana.com / polygon-bor-rpc.publicnode.com) by a HARDCODED wallet address constant, all writing to paths on the SAME local machine -- proves this script only ever operates for co-located instances, establishing no cross-host precedent"
+    }
+  ],
+  "routeToPhase": "1a"
+}

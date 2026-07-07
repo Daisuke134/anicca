@@ -1737,25 +1737,25 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T09:22:34.878Z",
+      "timestamp": "2026-07-07T09:55:03.718Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 3,
+        "iteration": 4,
+        "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-201",
-          "FIND-202",
-          "FIND-203",
-          "FIND-204",
-          "FIND-205",
-          "FIND-206"
+          "FIND-301",
+          "FIND-302",
+          "FIND-303",
+          "FIND-304",
+          "FIND-305"
         ],
-        "note": "All 4 iteration-2 findings reconfirmed genuinely resolved via fresh source re-read. 6 NEW findings on full fresh pass (not just delta): FIND-201 (critical) -- REQ-105 registry has no active_since/bootstrap_failed field, but REQ-402/PROP-402c claim to read exactly that from the registry while REQ-402 EARS itself says it lives in the ledger instead -- no join step specified anywhere. FIND-202 (major) -- REQ-403 needs each instance real HOME from the registry but registry has no such field, only an unresolved telemetryPath template. FIND-203 (major) -- REQ-402 promises feeding children_bootstrap_failed into REQ-102 but REQ-102 pinned signature has no such parameter. FIND-204 (critical) -- fresh re-read of real child-spec.js:16-34 confirms buildChildSpec still unconditionally requires parentWallet/generation/seedUsdc/constitutionHash, none specified anywhere in REQ-201-306, contradicting REQ-206/PROP-206d claim that the diff is limited to identity-anchor fields. FIND-205 (medium) -- telemetryPath /Users/anicca template string has no resolution mechanism specified. FIND-206 (low) -- REQ-101 retains a vestigial directory-scan edge case unreachable under the registry-only design."
+        "note": "All 6 iteration-3 findings reconfirmed genuinely resolved via fresh source re-read (first review conducted with Opus 4.8 per Dais 2026-07-07 model-policy change). 5 NEW findings, 3 critical -- deeper mechanism-level gaps behind the location-level fixes: FIND-301 (critical) -- ledger.js is append-only with no update-by-key primitive; duplicate child_id rows are the REAL existing convention (proven by run.sh:124-220), but filterProductiveCitizens never specifies latest-row-wins reconciliation. FIND-302 (critical) -- REQ-101/105 balance lookup is a coordinator-local fs.readFile, but REQ-301 mandates children run EXCLUSIVELY on remote cloud -- no mechanism specified for a remote childs telemetry to reach the coordinators local disk. FIND-303 (critical) -- same root gap: REQ-403s live wallet audit reuses resolve-identity.mjs, a pure local fs.readFileSync primitive, against a child that per REQ-301 can never be co-located. FIND-304 (major) -- wallet field has 3 incompatible shapes across child-spec.js/ledger.js (string) vs citizens.json (boolean), unresolved despite FIND-104 fixing an adjacent collision. FIND-305 (major) -- REQ-306 falsely claims an already-available AKT/NOS/SOL USD price-conversion mechanism; akt-treasury.sh has no live price query, repo-wide grep confirms no such utility exists anywhere."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T09:22:34.878Z"
+      "adversaryReviewedAt": "2026-07-07T09:55:03.718Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T09:41:40.196Z"
+  "updatedAt": "2026-07-07T09:55:03.721Z"
 }
