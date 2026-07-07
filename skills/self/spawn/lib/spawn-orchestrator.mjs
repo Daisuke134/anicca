@@ -59,6 +59,30 @@ function appendSpecFailure(ledgerFile, spec, { attemptedMs, error }) {
   appendChild(ledgerFile, { ...spec, status: "failed", attempted_ms: attemptedMs, error: errorMessage(error) });
 }
 
+// Every REQ-201/202/203/204/205/306/302/303 call site below shares the exact same shape: run a
+// deps-or-default effectful step, and on either a thrown error OR (for the "ok"-shaped results)
+// result.ok === false, record a failure row and signal the caller to return early. This helper is
+// the single place that shape lives; `onFailure` lets step 7 (REQ-205) redirect the failure row to
+// appendSpecFailure's buildChildSpec-based shape instead of the default minimal one, without
+// duplicating the try/catch/requireOk logic itself.
+async function runStep({ ledgerFile, childId, nowMs, run, requireOk = false, defaultErrorMessage, onFailure }) {
+  const recordFailure = onFailure || ((error) => appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error }));
+  let result;
+  try {
+    result = await run();
+  } catch (e) {
+    const error = errorMessage(e);
+    recordFailure(error);
+    return { failed: true, error };
+  }
+  if (requireOk && (!result || !result.ok)) {
+    const error = (result && result.error) || defaultErrorMessage;
+    recordFailure(error);
+    return { failed: true, error };
+  }
+  return { failed: false, value: result };
+}
+
 async function appendCitizenRecord(citizensRegistryFile, record) {
   let records = [];
   try {
@@ -171,38 +195,39 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     const childId = nextChildId(readChildren(ledgerFile), "anicca-c");
 
     // Step 1 (REQ-203): HOME/ANICCA_HOME distinctness, before any key generation.
-    let homeResult;
-    try {
-      homeResult = deps.checkHomeDistinct
-        ? await deps.checkHomeDistinct({ childId, citizensRegistryFile })
-        : await defaultCheckHomeDistinct({ childId, citizensRegistryFile });
-    } catch (e) {
-      homeResult = { ok: false, error: errorMessage(e) };
-    }
-    if (!homeResult || !homeResult.ok) {
-      const error = (homeResult && homeResult.error) || "home distinctness check failed";
-      appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error });
-      return { status: "failed", childId, error };
-    }
-    const homeDir = homeResult.homeDir;
+    const homeStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () =>
+        deps.checkHomeDistinct
+          ? deps.checkHomeDistinct({ childId, citizensRegistryFile })
+          : defaultCheckHomeDistinct({ childId, citizensRegistryFile }),
+      requireOk: true,
+      defaultErrorMessage: "home distinctness check failed",
+    });
+    if (homeStep.failed) return { status: "failed", childId, error: homeStep.error };
+    const homeDir = homeStep.value.homeDir;
 
     // Step 2 (REQ-201): child EVM wallet generation.
-    let evmWallet;
-    try {
-      evmWallet = deps.generateEvmWallet ? await deps.generateEvmWallet() : defaultGenerateEvmWallet();
-    } catch (e) {
-      appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error: e });
-      return { status: "failed", childId, error: errorMessage(e) };
-    }
+    const evmStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () => (deps.generateEvmWallet ? deps.generateEvmWallet() : defaultGenerateEvmWallet()),
+    });
+    if (evmStep.failed) return { status: "failed", childId, error: evmStep.error };
+    const evmWallet = evmStep.value;
 
     // Step 3 (REQ-306): a fresh cloud-target selection for THIS attempt.
-    let cloudTarget;
-    try {
-      cloudTarget = deps.selectCloudTarget ? await deps.selectCloudTarget() : await defaultSelectCloudTarget();
-    } catch (e) {
-      appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error: e });
-      return { status: "failed", childId, error: errorMessage(e) };
-    }
+    const cloudStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () => (deps.selectCloudTarget ? deps.selectCloudTarget() : defaultSelectCloudTarget()),
+    });
+    if (cloudStep.failed) return { status: "failed", childId, error: cloudStep.error };
+    const cloudTarget = cloudStep.value;
     if (cloudTarget === "none") {
       const error = "no cloud target available (neither nosana nor akash)";
       appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error });
@@ -212,43 +237,44 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     // Step 4 (REQ-202): conditional Solana wallet generation, fed step 3's own return value directly.
     let solanaWallet = null;
     if (needsSolanaWallet({ initialSkills, deployTarget: cloudTarget })) {
-      try {
-        solanaWallet = deps.generateSolanaWallet ? await deps.generateSolanaWallet() : defaultGenerateSolanaWallet();
-      } catch (e) {
-        appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error: e });
-        return { status: "failed", childId, error: errorMessage(e) };
-      }
+      const solanaStep = await runStep({
+        ledgerFile,
+        childId,
+        nowMs,
+        run: () => (deps.generateSolanaWallet ? deps.generateSolanaWallet() : defaultGenerateSolanaWallet()),
+      });
+      if (solanaStep.failed) return { status: "failed", childId, error: solanaStep.error };
+      solanaWallet = solanaStep.value;
     }
 
     // Step 5 (REQ-302/303): deploy, selected by step 3's own return value.
-    let deployResult;
-    try {
-      deployResult = deps.deploy
-        ? await deps.deploy({ target: cloudTarget, childId, childWallet: evmWallet.address })
-        : defaultDeploy({ target: cloudTarget, childId });
-    } catch (e) {
-      deployResult = { ok: false, error: errorMessage(e) };
-    }
-    if (!deployResult || !deployResult.ok) {
-      const error = (deployResult && deployResult.error) || "deploy failed";
-      appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error });
-      return { status: "failed", childId, error };
-    }
+    const deployStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () =>
+        deps.deploy
+          ? deps.deploy({ target: cloudTarget, childId, childWallet: evmWallet.address })
+          : defaultDeploy({ target: cloudTarget, childId }),
+      requireOk: true,
+      defaultErrorMessage: "deploy failed",
+    });
+    if (deployStep.failed) return { status: "failed", childId, error: deployStep.error };
 
     // Step 6 (REQ-204): ERC-8004 registration -- the second half of the identity anchor.
-    let identityResult;
-    try {
-      identityResult = deps.registerIdentity
-        ? await deps.registerIdentity({ childPrivateKey: evmWallet.privateKey })
-        : await defaultRegisterIdentity({ childPrivateKey: evmWallet.privateKey, childHomeDir: homeDir });
-    } catch (e) {
-      identityResult = { ok: false, error: errorMessage(e) };
-    }
-    if (!identityResult || !identityResult.ok) {
-      const error = (identityResult && identityResult.error) || "identity registration failed";
-      appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error });
-      return { status: "failed", childId, error };
-    }
+    const identityStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () =>
+        deps.registerIdentity
+          ? deps.registerIdentity({ childPrivateKey: evmWallet.privateKey })
+          : defaultRegisterIdentity({ childPrivateKey: evmWallet.privateKey, childHomeDir: homeDir }),
+      requireOk: true,
+      defaultErrorMessage: "identity registration failed",
+    });
+    if (identityStep.failed) return { status: "failed", childId, error: identityStep.error };
+    const identityResult = identityStep.value;
 
     // The identity anchor is now complete -- every failure from here on uses the buildChildSpec-based
     // recording path (REQ-305), never the minimal direct-append row above.
@@ -282,14 +308,18 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
       return { status: "failed", childId, error: errorMessage(e) };
     }
 
-    // Step 7 (REQ-205): mcp.json write.
-    try {
-      const mcpResult = deps.writeMcpConfig ? await deps.writeMcpConfig() : defaultWriteMcpConfig({ childHomeDir: homeDir, childId });
-      if (!mcpResult || !mcpResult.ok) throw new Error((mcpResult && mcpResult.error) || "mcp.json write failed");
-    } catch (e) {
-      appendSpecFailure(ledgerFile, spec, { attemptedMs: nowMs, error: e });
-      return { status: "failed", childId, error: errorMessage(e) };
-    }
+    // Step 7 (REQ-205): mcp.json write. The identity anchor is already complete here, so a failure
+    // is recorded via appendSpecFailure's buildChildSpec-shaped row, never the minimal one above.
+    const mcpStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () => (deps.writeMcpConfig ? deps.writeMcpConfig() : defaultWriteMcpConfig({ childHomeDir: homeDir, childId })),
+      requireOk: true,
+      defaultErrorMessage: "mcp.json write failed",
+      onFailure: (error) => appendSpecFailure(ledgerFile, spec, { attemptedMs: nowMs, error }),
+    });
+    if (mcpStep.failed) return { status: "failed", childId, error: mcpStep.error };
 
     // Step 9 (REQ-305): ledger append (the "active" row) + citizen-registry append, gated on
     // isSelfFunded(). A failure here (e.g. the ledger file itself cannot be written) is allowed to
