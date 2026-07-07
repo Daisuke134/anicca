@@ -11,8 +11,17 @@ When scope_guard rejects a candidate, evaluation stops immediately: the returned
 `combined_score` is the fail-sentinel (REQ-EV6/DL5) and `evaluate_stage2` is NEVER called for
 that candidate.
 
-`combined_score` is ALWAYS `net_usd(gross, cost)` from a real backtest over the historical
-fixture — never an LLM judge's subjective score (REQ-GR1, REQ-EV1, Jason Wei's Verifier's Law).
+`combined_score` is ALWAYS derived from a real backtest over the historical fixture — never an LLM
+judge's subjective score (REQ-GR1, REQ-EV1, Jason Wei's Verifier's Law). Stage1's `combined_score`
+is raw `net_usd(gross, cost)` on the cheap filter window (unchanged). Stage2's (and therefore the
+full `evaluate()` cascade's) `combined_score` is a RISK-ADJUSTED metric —
+`gate_math.risk_adjusted_score(oos_scores)`, a Sharpe-like mean/stddev over the walk-forward OOS
+window scores — added in the close-loop revision (2026-07-08) specifically because a raw-USD
+stage2 score let a real accepted candidate (`233d923c`, see execution-notes-self-improve.md) win
+purely by leveraging (scaling up) the SAME trade selection as baseline, not by finding a better
+one. Risk-adjusting is structurally leverage-resistant (see `gate_math.risk_adjusted_score`'s own
+docstring for the proof) while still being 100% backtest-derived, deterministic, and non-LLM —
+still Verifier's Law-compliant, just risk- rather than magnitude-scored.
 
 This module reads the historical fixture (read-only) and NEVER writes to `earn-ledger.jsonl` or
 any other live-system state file (REQ-EV7). It NEVER imports any order-execution module
@@ -66,6 +75,14 @@ STAGE1_MIN_NET_USD = 1.0
 FAIL_SENTINEL = 0.0
 
 # REQ-RH1 reward cap: no single generation's combined_score is ever reported above this ceiling.
+# Left at 500.0 unchanged by the close-loop risk-adjusted revision even though a genuine
+# risk-adjusted score on this fixture's scale typically sits in single digits (0-10ish, see
+# tests/test_baseline_beat.py's real numbers) — the cap's real job under the new metric is
+# guarding the ONE degenerate case risk_adjusted_score's own `eps` denominator creates: a
+# candidate whose OOS window scores are (near-)identical (stddev -> 0) produces an artificially
+# huge ratio (mean / eps) despite representing only 3 real data points, not a genuinely proven
+# edge. 500.0 is generous relative to normal scores specifically so it never clips a real,
+# moderate improvement, while still bounding the eps-driven degenerate blowup case (REQ-RH1).
 COMBINED_SCORE_CEILING = 500.0
 
 # REQ-RH2 trip-wire multiple: a candidate scoring more than this multiple of the population's
@@ -123,7 +140,16 @@ def evaluate_stage1(program_path: str, config: Optional[dict] = None) -> dict:
 def evaluate_stage2(program_path: str, config: Optional[dict] = None) -> dict:
     """REQ-EV3: walk-forward across WINDOW_PAIRS' OUT-OF-SAMPLE windows only. Callers MUST only
     invoke this after evaluate_stage1 has passed for the same program_path (this function does
-    NOT re-run scope_guard — that gate is stage1's job, wired as evaluate()'s first operation)."""
+    NOT re-run scope_guard — that gate is stage1's job, wired as evaluate()'s first operation).
+
+    `combined_score` (close-loop revision) is `gate_math.risk_adjusted_score(oos_net_usd_scores)`
+    — a Sharpe-like mean/stddev over the per-window-pair raw net USD, NOT the raw mean net USD
+    itself (see evaluator.py's module docstring + gate_math.risk_adjusted_score's own docstring
+    for the reward-hacking/leverage rationale). The raw per-window net USD values are still
+    reported in `window_pairs` (unchanged shape) and the aggregate `mean_oos_net_usd` /
+    `std_oos_net_usd` / `worst_window_oos_net_usd` are reported alongside `combined_score` so a
+    human/adversary/promote_gate reviewer can see both the risk-adjusted score AND the raw dollar
+    figures it was computed from — never just one opaque number."""
     module = _load_candidate_module(program_path)
     rows = module.load_fixture(FIXTURE_PATH)
     cfg = config or {}
@@ -139,9 +165,17 @@ def evaluate_stage2(program_path: str, config: Optional[dict] = None) -> dict:
             {"train_window": train_window, "test_window": test_window, "oos_net_usd": oos_score}
         )
 
+    risk_adjusted = gate_math.risk_adjusted_score(oos_scores) if oos_scores else FAIL_SENTINEL
     mean_oos = sum(oos_scores) / len(oos_scores) if oos_scores else FAIL_SENTINEL
+    worst_oos = min(oos_scores) if oos_scores else FAIL_SENTINEL
+    variance = (
+        sum((s - mean_oos) ** 2 for s in oos_scores) / len(oos_scores) if oos_scores else 0.0
+    )
     return {
-        "combined_score": mean_oos,
+        "combined_score": risk_adjusted,
+        "mean_oos_net_usd": mean_oos,
+        "std_oos_net_usd": variance ** 0.5,
+        "worst_window_oos_net_usd": worst_oos,
         "window_pairs": window_pairs_log,
         "artifacts": {},
     }
@@ -177,6 +211,9 @@ def evaluate(program_path: str, config: Optional[dict] = None) -> dict:
         "stage1_pass": True,
         "stage2_pass": beats,
         "baseline_stage2_score": baseline_score,
+        "mean_oos_net_usd": stage2_result["mean_oos_net_usd"],
+        "std_oos_net_usd": stage2_result["std_oos_net_usd"],
+        "worst_window_oos_net_usd": stage2_result["worst_window_oos_net_usd"],
         "window_pairs": stage2_result["window_pairs"],
         "artifacts": stage1_result["artifacts"],
     }

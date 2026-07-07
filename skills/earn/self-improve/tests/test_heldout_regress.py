@@ -1,17 +1,25 @@
 """Required test 3 (delegated task spec): a candidate that improves stage1 (looks profitable on
-the small cheap-filter window) but REGRESSES on stage2's walk-forward out-of-sample aggregate is
-NOT promoted — the promotion gate returns False even though the in-sample signal looked good.
+the small cheap-filter window) but REGRESSES on stage2's risk-adjusted walk-forward out-of-sample
+score is NOT promoted — the promotion gate returns False even though the in-sample signal looked
+good.
 
 Traces to behavioral-spec.md REQ-EV2/EV3/EV4/RH4, EDGE-5 (a single lucky window must never
 produce a false promotion); verification-architecture.md PROP-SI-EV3/RH4.
 
 The "regressing" candidate hardcodes LOOSE thresholds (min_edge=0.10, min_confidence=0.0 — bets
-on almost every historical row) directly in its EVOLVE-BLOCK defaults. Against the real fixture
-this scores +4.54 net USD on stage1's window (window 0 alone, comfortably above
-evaluator.STAGE1_MIN_NET_USD=1.0) but a MEAN out-of-sample net of -3.10 across stage2's 3
-walk-forward window pairs — worse than the baseline's own out-of-sample floor (max(baseline, 0)).
-These exact numbers were derived by running the real backtest harness over the real committed
-fixture (see scratchpad gen_fixture.py sweep) before being hardcoded here as fixed expectations.
+on almost every historical row) directly in its EVOLVE-BLOCK defaults.
+
+Close-loop revision (2026-07-08, Gap 2): `combined_score` for stage2 is now a Sharpe-like
+risk-adjusted metric (`gate_math.risk_adjusted_score`), not raw mean OOS net USD (see evaluator.py's
+module docstring) — over the regenerated fixture (`strategies/fixtures/pm_history.csv`, see
+`generate_fixture.py`) this loose-threshold candidate's RAW mean OOS net USD is actually *higher*
+than baseline's (it bets on far more rows, including a real edge some of the time), which is
+exactly the trap a raw-magnitude metric falls into: it looks like an improvement in aggregate.
+Its risk profile gives it away — one window (test_window=5) loses badly (-11.93), so its
+inter-window standard deviation (~13.76) swamps its mean, and its risk-adjusted score (~0.47) is
+clearly BELOW baseline's own (~1.26). This is precisely the reward-hacking-by-variance failure
+mode the risk-adjusted metric exists to catch (see gate_math.risk_adjusted_score's docstring) —
+demonstrated here with a real, current, non-hypothetical candidate, not a strawman.
 """
 import evaluator
 from conftest import patched_baseline_code, read_baseline_code, write_candidate_with_fixtures
@@ -25,7 +33,7 @@ def _regressing_candidate_code() -> str:
     )
 
 
-def test_regressing_candidate_passes_stage1_but_scores_below_zero_on_stage2_oos(tmp_path):
+def test_regressing_candidate_passes_stage1_but_scores_worse_than_baseline_on_stage2_oos(tmp_path):
     baseline_code = read_baseline_code()
     candidate_code = _regressing_candidate_code()
 
@@ -39,10 +47,15 @@ def test_regressing_candidate_passes_stage1_but_scores_below_zero_on_stage2_oos(
     assert stage1["combined_score"] > evaluator.STAGE1_MIN_NET_USD
 
     stage2 = evaluator.evaluate_stage2(candidate_path)
-    assert stage2["combined_score"] < 0.0, (
-        "regressing candidate must score NEGATIVE mean out-of-sample net USD "
-        f"(got {stage2['combined_score']})"
+    baseline_stage2 = evaluator.baseline_stage2_score()
+    assert stage2["combined_score"] < baseline_stage2, (
+        "regressing candidate's risk-adjusted stage2 score must score BELOW baseline's "
+        f"(got candidate={stage2['combined_score']}, baseline={baseline_stage2})"
     )
+    # It gets there via variance, not via a genuinely negative worst window being the WHOLE story:
+    # confirm the specific failure mode is a blown-out worst window swamping the mean.
+    assert stage2["worst_window_oos_net_usd"] < 0.0
+    assert stage2["std_oos_net_usd"] > 0.0
 
 
 def test_regressing_candidate_is_not_promoted_end_to_end(tmp_path):
