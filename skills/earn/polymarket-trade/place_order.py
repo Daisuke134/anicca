@@ -42,12 +42,9 @@ line, so a real fill is never again mis-recorded as a parse failure.
 import os
 import sys
 import json
-import base64
-import datetime
 import contextlib
 import requests
 from eth_account import Account
-from eth_account.messages import encode_defunct
 from dotenv import load_dotenv
 
 _REAL_STDOUT = sys.stdout  # capture BEFORE any import/work that might print
@@ -82,38 +79,16 @@ def fail(reason):
     sys.exit(1)
 
 
+# ROOT CAUSE FIX (2026-07-07): this used to carry its own per-call mint that POSTed a
+# brand-new relayer key EVERY invocation -> contributes to Polymarket's 100-keys-per-
+# address cap (the same cap that killed market_maker.py/bundle_arb.py for 3 days, see
+# relayer_auth.py docstring). Now reuses the SAME list-before-mint + cached
+# implementation redeem.py already proved live, instead of a third drifting copy.
+from relayer_auth import mint_relayer_api_key
+
+
 def mint_relayer_key(acct):
-    """SIWE (no browser) -> gamma-api/login -> relayer-v2/relayer/api/auth
-    -> apiKey. Same recipe as fund_via_bridge.py's mint_relayer_key()."""
-    s = requests.Session()
-    s.headers.update({
-        "User-Agent": "Mozilla/5.0",
-        "Origin": "https://polymarket.com",
-        "Referer": "https://polymarket.com/",
-    })
-    nonce = s.get("https://gamma-api.polymarket.com/nonce", timeout=20).json()["nonce"]
-    now = datetime.datetime.now(datetime.timezone.utc)
-    iss = now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{now.microsecond // 1000:03d}Z"
-    fields = {
-        "domain": "polymarket.com",
-        "address": acct.address,
-        "statement": "Welcome to Polymarket! Sign to connect.",
-        "uri": "https://polymarket.com",
-        "version": "1",
-        "chainId": 137,
-        "nonce": nonce,
-        "issuedAt": iss,
-    }
-    plaintext = (
-        f"polymarket.com wants you to sign in with your Ethereum account:\n{acct.address}\n\n"
-        f"{fields['statement']}\n\nURI: https://polymarket.com\nVersion: 1\nChain ID: 137\n"
-        f"Nonce: {nonce}\nIssued At: {iss}"
-    )
-    sig = "0x" + acct.sign_message(encode_defunct(text=plaintext)).signature.hex()
-    b64 = base64.b64encode((json.dumps(fields, separators=(",", ":")) + ":::" + sig).encode()).decode()
-    s.get("https://gamma-api.polymarket.com/login", headers={"Authorization": "Bearer " + b64}, timeout=20)
-    resp = s.post("https://relayer-v2.polymarket.com/relayer/api/auth", json={}, timeout=20).json()
-    return resp.get("apiKey") or resp.get("api_key")
+    return mint_relayer_api_key(acct)
 
 
 def approve_spenders(client):
