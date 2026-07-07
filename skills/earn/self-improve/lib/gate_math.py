@@ -7,6 +7,7 @@ NFR-ED1 / test_eval_spine_no_io.py pattern — see verification-architecture.md 
 
 Traces to behavioral-spec.md:
   - net_usd                  -> REQ-GR2, REQ-EV1
+  - risk_adjusted_score      -> REQ-EV1/RH1/RH5 (close-loop revision — see its own docstring)
   - apply_score_cap          -> REQ-RH1
   - is_implausible_jump      -> REQ-RH2
   - marker_lines/diff_in_scope -> REQ-DL2
@@ -32,6 +33,55 @@ def net_usd(gross_usd: float, cost_usd: float) -> float:
     """gross - cost. Mirrors skills/_shared/lib/ledger.mjs::deriveLine's earn_usdc - cost_usdc
     exactly (REQ-GR2, REQ-EV1)."""
     return float(gross_usd) - float(cost_usd)
+
+
+def risk_adjusted_score(oos_scores: Iterable[float], eps: float = 1e-9) -> float:
+    """Sharpe-like risk-adjusted fitness over a candidate's out-of-sample window scores (close-loop
+    Gap 2 fix, replacing a raw-USD `combined_score` for stage2/promotion purposes): mean(oos) /
+    max(population_stddev(oos), eps).
+
+    Rationale (Marcos Lopez de Prado, "The Three Types of Backtests" — a strategy's backtest must
+    be judged on risk-adjusted, not raw, return, precisely because raw return can be inflated by
+    leverage/variance without any genuine edge; Sharpe ratio is the canonical risk-adjusted return
+    measure this generalizes) + Lilian Weng, "Reward Hacking in Reinforcement Learning" (a fitness
+    that rewards raw magnitude invites reward hacking via variance/leverage amplification rather
+    than genuine improvement — exactly what happened to this feature's own real accepted candidate
+    `233d923c`, see execution-notes-self-improve.md's "HONEST re-read" section: identical trade
+    selection to baseline in every OOS window, stake merely scaled up, inter-window stddev ~5x the
+    claimed mean improvement).
+
+    Structural property this buys (proven EXACTLY, not just approximately — see
+    test_risk_adjusted_fitness.py::test_risk_adjusted_score_is_invariant_to_uniform_positive_leverage
+    and its end-to-end counterpart against the real fixture): for any candidate whose stake
+    function is baseline's own decision multiplied by a POSITIVE CONSTANT k (a pure leverage
+    change — same trades selected, same weights relative to each other, only overall size
+    changed), every oos_scores[i] scales by the same k (net_usd is linear in stake when the
+    selected-row set is unchanged), so mean(oos)*k / max(stddev(oos)*k, eps) is EXACTLY
+    mean(oos)/max(stddev(oos), eps/k) — and whenever the real stddev clears the `eps` floor (true
+    for every realistic dollar-figure backtest; `eps` only matters in the fully-degenerate
+    zero-variance case below), that reduces to `mean(oos)*k / (stddev(oos)*k)` = the identical,
+    k-independent ratio. Deliberately `max(stddev, eps)` rather than `stddev + eps`: adding a fixed
+    eps to a POSITIVE stddev is NOT scale-invariant under multiplication by k (the additive eps
+    shrinks in relative terms as k grows, so a leverage-only candidate would keep inching the
+    ratio up — a genuine, if tiny, reward-hacking crack); `max(stddev, eps)` has no such term to
+    shrink, so the invariance is exact rather than asymptotic. `eps` only ever activates in the
+    fully-degenerate case (stddev == 0, i.e. every OOS window scored identically), which is exactly
+    the artifact `COMBINED_SCORE_CEILING` (REQ-RH1) exists to cap. A genuine selection change (e.g.
+    raising the edge/confidence bar to concentrate on rows where the fixture's real signal is
+    strongest) changes WHICH trades are selected, which can genuinely raise the ratio — this is the
+    only way `risk_adjusted_score` rewards a candidate. Population (not sample) stddev is used
+    (divide by n, not n-1): the ≥3 window pairs (REQ-EV3) are the full outcome set being scored, not
+    a sample estimating a larger population.
+
+    Returns 0.0 for an empty `oos_scores` (consistent with FAIL_SENTINEL's fail-closed convention
+    — REQ-EV6)."""
+    scores = [float(s) for s in oos_scores]
+    if not scores:
+        return 0.0
+    mean = sum(scores) / len(scores)
+    variance = sum((s - mean) ** 2 for s in scores) / len(scores)
+    stddev = variance ** 0.5
+    return mean / max(stddev, eps)
 
 
 def apply_score_cap(raw_score: float, ceiling: float) -> float:
