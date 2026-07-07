@@ -1,0 +1,72 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 2,
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-2.md"
+    ],
+    "scope": "Fresh-context, from-scratch Phase 1c iteration-2 review of anicca-agent-lending sprint-2, focused primarily on independently verifying iteration-1's single finding (FIND-S2-001, a pinned-input-derivation completeness gap in REQ-116) is genuinely, adequately fixed across all three artifacts, plus one more full skeptical pass over REQ-115/REQ-116, PROP-115a-d/PROP-116a-e, Gate item 12, and contracts/sprint-2.md's 7 CRIT criteria for any other defect the fix may have introduced or left unaddressed."
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-S2-001",
+      "status": "resolved",
+      "evidence": "behavioral-spec.md REQ-116's Edge Cases section (lines 2441-2448) now carries a new bullet substantively equivalent to REQ-115's own precedent (lines 2334-2339): 'loanId/txHash are supplied by THIS function's OWN caller ... executeRepaymentClaim does not itself decide WHETHER a repayment claim is genuine or which loan it applies to ... neither value is ever hand-assembled, regenerated, or internally derived' -- and additionally, correctly, closes the parallel concern for executeDefaultDetectionSweep ('its own candidate loan_id[] list is ALWAYS the direct return value of detectDefaultedLoans ... never hand-assembled'), which REQ-115 has no analog of (REQ-115 takes no such internally-derived-candidate-list parameter). The bullet explicitly self-cites 'resolves FIND-S2-001, mirrors REQ-115's own lenderId/borrowerId closure above'. verification-architecture.md's Proof Obligations table gained a new row, PROP-116e (line 188, Tier '1/2'), whose description and verification method ('structural/Tier-1 control-flow read confirming loanId/txHash parameters are used exactly as received ... never regenerated, looked up, or derived internally ... PLUS a Tier-2 integration test confirming a caller-supplied loanId/txHash pair is passed through unmodified') mirrors the exact real-source-read discipline this same document already establishes for PROP-105h/PROP-114c/PROP-109g -- genuinely adequate to catch a future implementation that internally derives loanId instead of requiring it as a caller-supplied argument, since a control-flow read of the kind PROP-105h/PROP-109g already require would directly catch e.g. an internal loans.jsonl scan/lookup inserted before verifyRepayment is called. Gate item 12 (lines 505-531) was updated to explicitly cite PROP-116e ('PROP-116e, resolves FIND-S2-001'), so Phase 3's own binding checklist item, not merely prose, now covers this obligation. contracts/sprint-2.md's CRIT-207 description/passThreshold and the contract's own body prose (line 63) were updated from 'PROP-116a-d' to 'PROP-116a-e' with zero stale 'PROP-116a-d' references remaining anywhere in the file (confirmed via grep). No three-way restatement drift found between the behavioral-spec.md bullet, the PROP-116e table entry, and the Gate-12 citation -- all three state the identical claim in compatible language."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-116 Edge Cases (lines 2441-2448), cross-checked against REQ-115's own Edge Cases (lines 2334-2339)",
+          "description": "Independently re-read REQ-116's new bullet in full (not merely trusted the manifest's summary) and confirmed it closes the identical pinned-input-derivation defect class FIND-S2-001 identified, using the same 'supplied by THIS function's OWN caller ... does not itself decide WHETHER' framing REQ-115 already established, while correctly extending it to cover executeDefaultDetectionSweep's own candidate-list provenance (a distinct sub-concern REQ-115 does not need, since executeLoanIssuanceAttempt has no analogous internally-derived list). No restatement drift, no new contradiction with REQ-108/109's own already-hardened text, and no incidental edit to any other requirement's text found anywhere in the diff region (REQ-101 through REQ-114's own line locations were spot-checked against contracts/sprint-2.md's own 'Pre-existing spec confirmation' citations and found unchanged)."
+        },
+        {
+          "type": "test",
+          "location": "live node invocation of the real, exported `validateApprovedSprintContract('anicca-agent-lending', 2)` plus a verbatim-extracted copy of the real `parseStructuredFrontmatter`/`coerceFrontmatterScalar` functions (lines 463-519 of vcsdd-state.js), run directly against the current contracts/sprint-2.md",
+          "description": "Independently re-derived the manifest's own non-truncation claim rather than trusting it. All 7 CRIT criteria parsed to the SAME description/passThreshold lengths iteration-1 independently measured (CRIT-201: 614/489, CRIT-202: 503/287, CRIT-203: 1077/488, CRIT-204: 570/826, CRIT-205: 576/444, CRIT-206: 716/590, CRIT-207: 433/262) -- correctly unchanged for CRIT-207 since its own edit ('PROP-116a-d' to 'PROP-116a-e') is a single-character substitution, not a length-changing edit. All 7 criteria's `weight` fields sum to exactly 1.0. The real, exported `validateApprovedSprintContract` returned `{ok:false, reason:\"Sprint contract sprint-2.md must have status: approved before Phase 3\"}` -- schema/frontmatter parsing itself raised no error (7-criterion array, `sprintNumber`/`feature`/`scope`/`criteria`/`negotiationRound`/`status` fields, per-criterion `id`/`dimension`/`description`/`weight`/`passThreshold` shape all intact), and the ONLY failure is the expected, correct one (contract remains `status: draft`, awaiting Phase 1c PASS). A grep of the full contract file confirms zero remaining 'PROP-116a-d' or 'PROP-115a-d/PROP-116a-d' stale references anywhere -- all four occurrences (frontmatter scope line 6, CRIT-207 description line 40, CRIT-207 passThreshold line 42, body-prose line 63) now correctly read 'PROP-115a-d/PROP-116a-e' or 'PROP-116a-e'."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md, Gate item 12 (lines 505-531) and Proof Obligations table (line 188)",
+          "description": "Confirmed Gate item 12 was correctly updated to cite PROP-116e by ID with the exact claim ('loanId/txHash are always caller-supplied (never hand-assembled internally) ... resolves FIND-S2-001'), and the Proof Obligations table row for PROP-116e is complete and correctly shaped (REQ column, Tier '1/2', Required 'true', a two-part Tier-1-control-flow-read-plus-Tier-2-integration-test method). This part of FIND-S2-001's fix is genuinely adequate and closes the Phase-3-binding half of the gap."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md, '## Verification Strategy' section (lines 190-282), cross-checked by grep for every sprint-2 PROP ID",
+          "description": "A fresh skeptical pass over this section (which this document uses, consistently, to group every proof obligation -- sprint-1 and sprint-2 alike -- by tier with a short justifying clause) found that PROP-116e is the ONLY one of the nine sprint-2 obligations never cited there: PROP-115a/b and PROP-116a/b appear together at line 244; PROP-115c and PROP-115d appear at lines 266-267; PROP-116c and PROP-116d appear at lines 270-271; a grep for 'PROP-116e' across lines 190-282 returns zero matches. This is FIND-S2-002 -- a new, narrow, but genuine completeness gap this iteration's own fix introduced (the fix added the table row and the Gate citation but never threaded PROP-116e into this narrative summary section, unlike its eight sprint-2 siblings)."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-115 Acceptance Criteria (lines 2341-2363) cross-checked against verification-architecture.md's PROP-115a-d",
+          "description": "Verified that REQ-115's own 'lenderId/borrowerId supplied by caller' closure (its Edge Cases bullet, lines 2334-2339) has NO corresponding PROP number in verification-architecture.md at all -- it is backed by prose only, never a scored proof obligation. This means REQ-116's own newly-added PROP-116e is not a like-for-like mirror of REQ-115's existing precedent but actually exceeds it (REQ-116's closure is now backed by both a spec-prose Edge Case AND a Tier-1/2 proof obligation cited at Gate-12, where REQ-115's equivalent closure is backed by prose alone). This asymmetry is NOT a defect -- iteration-1 already accepted REQ-115's prose-only closure as adequate and only asked for REQ-116 to reach prose-parity, which this fix delivers and then some -- but is noted here as a residual asymmetry a future iteration could optionally address by adding a symmetric PROP-115e, purely for the reviewer's own transparency, not as a blocking finding."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-115", "REQ-116", "PROP-115a", "PROP-115b", "PROP-115c", "PROP-115d", "PROP-116a", "PROP-116b", "PROP-116c", "PROP-116d", "PROP-116e", "Gate-12", "CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207"],
+    "duplicateFindings": [],
+    "note": "FIND-S2-001 is genuinely, adequately resolved: REQ-116's new Edge Case bullet closes the same pinned-input-derivation defect class REQ-115 already closes, PROP-116e's composite Tier-1/Tier-2 method mirrors this document's own established real-source-read discipline (PROP-105h/PROP-114c/PROP-109g) and is adequate to catch the defect class it targets, Gate item 12 correctly cites it, and contracts/sprint-2.md's schema/parsing independently re-verified as non-truncated and unchanged in length (as expected for a single-character 'd'->'e' edit) via a live invocation of the real validateApprovedSprintContract function plus a verbatim-extracted copy of the real frontmatter parser -- no regression, no restatement drift, no fabricated claim found anywhere in this fix. However, this iteration's own fresh, skeptical full pass found one NEW, narrow finding the fix itself introduced: PROP-116e was added to the Proof Obligations table and cited in Gate item 12, but never threaded into the '## Verification Strategy' section's own Tier 1/Tier 2 narrative paragraphs, where all eight of its sprint-2 sibling PROPs (115a/b/c/d, 116a/b/c/d) are consistently cited. This is FIND-S2-002 -- a single-sentence, single-location fix (add a PROP-116e citation to the existing Tier 2 paragraph near its sibling PROP-116d), not a design rework, and should converge in iteration 3. Route to Phase 1a."
+  }
+}

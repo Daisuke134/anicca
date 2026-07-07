@@ -1,0 +1,30 @@
+{
+  "findingId": "FIND-S2-002",
+  "dimension": "verification_readiness",
+  "additionalDimensions": [],
+  "category": "traceability_completeness",
+  "severity": "minor",
+  "description": "PROP-116e (the new proof obligation added this iteration to resolve FIND-S2-001, confirming `loanId`/`txHash` are always caller-supplied for `executeRepaymentClaim` and `executeDefaultDetectionSweep`'s candidate list is always `detectDefaultedLoans`'s own direct return value) is correctly present in the Proof Obligations table (Tier `1/2`, line 188) and correctly cited in Gate item 12 (line 527, 'PROP-116e, resolves FIND-S2-001'). However, it is the ONLY one of the nine sprint-2 proof obligations (PROP-115a/b/c/d, PROP-116a/b/c/d/e) that is NOT cited by ID anywhere in the '## Verification Strategy' section's own Tier 1/Tier 2 narrative paragraphs (lines 190-282) — the section that groups every OTHER proof obligation in this document (sprint-2 and pre-existing alike) by tier with a short justifying clause. PROP-115a/b and PROP-116a/b are cited together at line 244; PROP-115c/PROP-115d at lines 266-267; PROP-116c/PROP-116d at lines 270-271. PROP-116e has zero citations in this section. This is a narrow but genuine internal-consistency gap this iteration's own fix introduced: a reader who consults ONLY the 'Verification Strategy' section (a legitimate way to read this document, since it exists specifically to summarize which tier proves which obligation and why) would not learn PROP-116e exists at all, even though it is fully specified elsewhere in the same file.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "line 188 (Proof Obligations table, PROP-116e row)",
+      "snippet": "| PROP-116e | REQ-116 | `loanId`/`txHash` (for `executeRepaymentClaim`) are supplied by THIS function's OWN caller ... | 1/2 | true | structural/Tier-1 control-flow read ... PLUS a Tier-2 integration test ... |"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "lines 505-531 (Gate item 12)",
+      "snippet": "...and that `executeRepaymentClaim`'s `loanId`/`txHash` are always caller-supplied (never hand-assembled internally) and `executeDefaultDetectionSweep`'s own candidate list is always `detectDefaultedLoans`'s direct return value, never a hand-derived substitute (PROP-116e, resolves FIND-S2-001)."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "lines 190-282 ('## Verification Strategy' section, Tier 1 and Tier 2 narrative paragraphs)",
+      "snippet": "Tier 1 paragraph (line 243-247) cites 'PROP-115a/b, PROP-116a/b'; Tier 2 paragraph (lines 266-267, 270-271) cites 'PROP-115c', 'PROP-115d', 'PROP-116c', 'PROP-116d'. A grep for 'PROP-116e' across lines 190-282 returns zero matches -- every other sprint-2 PROP (115a/b/c/d, 116a/b/c/d) appears at least once in this section; PROP-116e appears nowhere in it."
+    }
+  ],
+  "recommendation": "Add a short PROP-116e citation to the '## Verification Strategy' section, mirroring how PROP-116d/PROP-115d are already cited there (e.g. append to the Tier 2 paragraph near the existing PROP-116d citation at line 271: '...and its own caller-supplied `loanId`/`txHash`-provenance check, closing the same pinned-input-derivation defect class REQ-115 already closes for `lenderId`/`borrowerId` (PROP-116e, resolves FIND-S2-001).'). This is a single-sentence addition to an already-existing paragraph, not a design change, and should converge in the next iteration.",
+  "routeToPhase": "1a"
+}

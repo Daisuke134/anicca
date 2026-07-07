@@ -268,8 +268,10 @@ resolved AND spec review iteration-2 findings FIND-101..107 resolved — see
   PROP-106g/PROP-106h/PROP-106k/PROP-106l/PROP-106n/PROP-106o/PROP-106p's own "wired into a live issuance
   attempt" residual scope); REQ-116's repayment-claim-vs-default-sweep race check against the REAL
   orchestrator functions (PROP-116c, new sprint-2 — closes REQ-108's own PROP-108d/PROP-109e residual
-  scope) and its real-append `defaulted_ms`/stale-candidate-skip check (PROP-116d, new sprint-2 — closes
-  PROP-109g's own residual scope).
+  scope), its real-append `defaulted_ms`/stale-candidate-skip check (PROP-116d, new sprint-2 — closes
+  PROP-109g's own residual scope), and its `loanId`/`txHash` caller-supplied-provenance control-flow read
+  plus integration test (PROP-116e, new sprint-2 — resolves FIND-S2-001, mirrors PROP-105h's/PROP-109g's
+  own real-source-read discipline).
 - **Tier 3** (live, no-mock E2E, HARD RULE 0.24): REQ-108's real repayment-verification E2E (PROP-108a)
   — a real disbursement transfer (`payViaFacilitator`), a real repayment transfer, and an independent,
   separately-performed, finalized-block-confirmed RPC re-verification. **Per the Tier-3 policy this
