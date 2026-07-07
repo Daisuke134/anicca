@@ -91,15 +91,25 @@ code that would acquire `lock.mjs`'s nested per-lender/per-borrower `withGigLock
 `reconcileProvisionalDisbursement`/`verifyRepayment` as part of that live flow. No such orchestrator
 file exists anywhere in this diff as of this sprint. Consequently, the Tier-2/3 proof obligations
 that depend on that orchestration actually existing and running — PROP-106a/b/n (concurrent
-issuance / cross-lender double-borrow race), PROP-106g/h/k/l wired into a live issuance attempt
+issuance / cross-lender double-borrow race), PROP-106e's Tier-2 half (concurrent real disbursement
+calls against two distinct lenders, distinct from its already-satisfiable Tier-1 per-lender-namespacing
+half), PROP-106f (fail-closed disbursement-failure handling, requires the real orchestrator call site
+to inject a mocked `payViaFacilitator` into), PROP-106g/h/k/l wired into a live issuance attempt
 (today they are exercised directly against `reconcileProvisionalDisbursement` in isolation, not via a
-real issuance call site), PROP-106p (fresh lock-protected kill-switch re-check), PROP-108c/d
+real issuance call site), PROP-106o (`issued_ms`/`due_ms` computed from the real active-row append
+timing), PROP-106p (fresh lock-protected kill-switch re-check), PROP-108c/d
 (partial-repayment transition and the repayment-vs-default-sweep lock race), and PROP-112a's
 runtime co-location check — are NOT satisfied by this sprint and MUST NOT be scored as delivered
 against this contract. This is a scope boundary, not a hidden defect: this sprint's own stated scope
 (see the Scope section above) is the pure-core/verification/reconciliation layer only. Building the
 orchestrator against these four modules, and closing the listed proof obligations, is tracked as a
 separate, future sprint.
+
+**Completeness correction (2026-07-08, Phase 5 formal hardening)**: PROP-106e's Tier-2 half, PROP-106f,
+and PROP-106o were found during Phase 5 to share this identical root cause but were omitted from the
+original enumeration above — added here for completeness. No scope change: these three obligations
+were always structurally out of reach without the orchestrator: this is a documentation-accuracy fix,
+not a new scope decision.
 
 ## Formatting note (2026-07-08)
 

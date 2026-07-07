@@ -65,7 +65,7 @@
       "id": "PROP-001",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101a",
       "beadId": "BEAD-012"
     },
@@ -73,7 +73,7 @@
       "id": "PROP-002",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101b",
       "beadId": "BEAD-013"
     },
@@ -81,7 +81,7 @@
       "id": "PROP-003",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101c",
       "beadId": "BEAD-014"
     },
@@ -89,7 +89,7 @@
       "id": "PROP-004",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101d",
       "beadId": "BEAD-015"
     },
@@ -97,7 +97,7 @@
       "id": "PROP-005",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101e",
       "beadId": "BEAD-016"
     },
@@ -105,7 +105,7 @@
       "id": "PROP-006",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-102a",
       "beadId": "BEAD-017"
     },
@@ -113,7 +113,7 @@
       "id": "PROP-007",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-102b",
       "beadId": "BEAD-018"
     },
@@ -121,7 +121,7 @@
       "id": "PROP-008",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-102c",
       "beadId": "BEAD-019"
     },
@@ -129,7 +129,7 @@
       "id": "PROP-009",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-102d",
       "beadId": "BEAD-020"
     },
@@ -145,7 +145,7 @@
       "id": "PROP-011",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-104a",
       "beadId": "BEAD-022"
     },
@@ -161,7 +161,7 @@
       "id": "PROP-013",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-104c",
       "beadId": "BEAD-024"
     },
@@ -169,7 +169,7 @@
       "id": "PROP-014",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105a",
       "beadId": "BEAD-025"
     },
@@ -177,7 +177,7 @@
       "id": "PROP-015",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105b",
       "beadId": "BEAD-026"
     },
@@ -185,7 +185,7 @@
       "id": "PROP-016",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105c",
       "beadId": "BEAD-027"
     },
@@ -193,7 +193,7 @@
       "id": "PROP-017",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105d",
       "beadId": "BEAD-028"
     },
@@ -201,23 +201,23 @@
       "id": "PROP-018",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105e",
       "beadId": "BEAD-029"
     },
     {
       "id": "PROP-019",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106a",
       "beadId": "BEAD-030"
     },
     {
       "id": "PROP-020",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106b",
       "beadId": "BEAD-031"
     },
@@ -225,7 +225,7 @@
       "id": "PROP-021",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106c",
       "beadId": "BEAD-032"
     },
@@ -241,7 +241,7 @@
       "id": "PROP-023",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-107a",
       "beadId": "BEAD-034"
     },
@@ -257,7 +257,7 @@
       "id": "PROP-025",
       "tier": 3,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108a",
       "beadId": "BEAD-036"
     },
@@ -265,15 +265,15 @@
       "id": "PROP-026",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108b",
       "beadId": "BEAD-037"
     },
     {
       "id": "PROP-027",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-108c",
       "beadId": "BEAD-038"
     },
@@ -281,7 +281,7 @@
       "id": "PROP-028",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109a",
       "beadId": "BEAD-039"
     },
@@ -289,7 +289,7 @@
       "id": "PROP-029",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109b",
       "beadId": "BEAD-040"
     },
@@ -305,7 +305,7 @@
       "id": "PROP-031",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109d",
       "beadId": "BEAD-042"
     },
@@ -337,7 +337,7 @@
       "id": "PROP-035",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101f",
       "beadId": "BEAD-047"
     },
@@ -345,23 +345,23 @@
       "id": "PROP-036",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105f",
       "beadId": "BEAD-048"
     },
     {
       "id": "PROP-037",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106e",
       "beadId": "BEAD-049"
     },
     {
       "id": "PROP-038",
       "tier": 1,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106f",
       "beadId": "BEAD-050"
     },
@@ -376,16 +376,16 @@
     {
       "id": "PROP-040",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106g",
       "beadId": "BEAD-053"
     },
     {
       "id": "PROP-041",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-108d",
       "beadId": "BEAD-054"
     },
@@ -409,15 +409,15 @@
       "id": "PROP-044",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105g",
       "beadId": "BEAD-057"
     },
     {
       "id": "PROP-045",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106h",
       "beadId": "BEAD-058"
     },
@@ -433,7 +433,7 @@
       "id": "PROP-047",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108e",
       "beadId": "BEAD-060"
     },
@@ -441,7 +441,7 @@
       "id": "PROP-048",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109f",
       "beadId": "BEAD-061"
     },
@@ -456,16 +456,16 @@
     {
       "id": "PROP-050",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106k",
       "beadId": "BEAD-063"
     },
     {
       "id": "PROP-051",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106l",
       "beadId": "BEAD-064"
     },
@@ -473,7 +473,7 @@
       "id": "PROP-052",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-102e",
       "beadId": "BEAD-065"
     },
@@ -481,23 +481,23 @@
       "id": "PROP-053",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106m",
       "beadId": "BEAD-066"
     },
     {
       "id": "PROP-054",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106n",
       "beadId": "BEAD-067"
     },
     {
       "id": "PROP-055",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106o",
       "beadId": "BEAD-068"
     },
@@ -505,7 +505,7 @@
       "id": "PROP-056",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114a",
       "beadId": "BEAD-070"
     },
@@ -513,7 +513,7 @@
       "id": "PROP-057",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114b",
       "beadId": "BEAD-071"
     },
@@ -529,15 +529,15 @@
       "id": "PROP-059",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114d",
       "beadId": "BEAD-073"
     },
     {
       "id": "PROP-060",
       "tier": 2,
-      "required": true,
-      "status": "pending",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-106p",
       "beadId": "BEAD-074"
     },
@@ -545,7 +545,7 @@
       "id": "PROP-061",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114e",
       "beadId": "BEAD-075"
     },
@@ -553,7 +553,7 @@
       "id": "PROP-062",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114f",
       "beadId": "BEAD-076"
     },
@@ -569,7 +569,7 @@
       "id": "PROP-064",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114g",
       "beadId": "BEAD-078"
     },
@@ -577,7 +577,7 @@
       "id": "PROP-065",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101g",
       "beadId": "BEAD-079"
     },
@@ -585,7 +585,7 @@
       "id": "PROP-066",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108f",
       "beadId": "BEAD-080"
     }
@@ -1635,5 +1635,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T16:31:55.101Z"
+  "updatedAt": "2026-07-07T16:55:27.375Z"
 }

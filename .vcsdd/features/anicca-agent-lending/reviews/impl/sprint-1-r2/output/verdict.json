@@ -1,0 +1,145 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-agent-lending",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-gate.mjs",
+          "description": "CRIT-001: `grep -n \"import\" lending-gate.mjs` returns exactly one line (line 7, `import { isSelfFunded } from \"../../../_shared/lib/is-self-funded.mjs\"`); a follow-up grep for fs./fetch(/require(.http/readFileSync/Date.now() across the whole file returns zero hits. Every nowMs figure (computeRecentDefaultLossUsd, detectDefaultedLoans) is an explicit parameter, never internal Date.now()."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-gate.mjs:100-117",
+          "description": "CRIT-003: control-flow read of isBorrowerEligible confirms check order: (d) self-loan (line 102, reason:'self_loan') FIRST, then REQ-107 wallet.evm gate (line 106, reason:'not_evm'), then (a) not_self_funded (line 108), (b) not_broke_enough (line 111), (c) outstanding_loan (line 116), else 'ok' -- six reason strings, pairwise distinct by inspection."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+          "description": "CRIT-003 named tests re-run by adversary: 'PROP-102e: a self-loan candidate ... is rejected FIRST' PASS; 'REQ-107/PROP-107a: a Solana-only borrower ... is excluded' PASS (targeted re-run: `node --test lending-gate.test.mjs` filtered output, both lines show ✔, 56/56 pass in that file, 0 fail)."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-verify.mjs:84-117",
+          "description": "CRIT-005: verifyRepayment's alreadyCredited check (line 85) runs and returns (line 86) BEFORE the first RPC call (eth_getTransactionReceipt, line 90) -- confirmed by direct source read of statement order. matchesTransferLog (lines 33-44) compares topics[1] (from, line 41) and topics[2] (to, line 42) via strict `!==` string equality against zero-padded topics -- no .includes/.endsWith/.startsWith found anywhere in the file (grep confirms zero hits for those methods)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs",
+          "description": "CRIT-005 named tests re-run by adversary, all PASS: same-loan-replay (PROP-108e), cross-loan-replay (PROP-108e), to-topic-suffix-only-rejection (PROP-108b/FIND-704), from-topic-suffix-only-rejection (PROP-108b/FIND-105), un-finalized-block-rejection (PROP-108a) -- 14/14 pass in targeted re-run of this file, 0 fail."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+          "description": "CRIT-007 named tests re-run by adversary, all PASS: 'PROP-106e (Tier-1 half): ... per-lender -- two different lenders never collide', 'PROP-106e/PROP-106g/PROP-106h/PROP-106k: ... unterminated' , 'PROP-106m: resolveLoanLockAcquisitionOrder ... BOTH possible orderings'."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-gate.mjs / skills/economy/gig/decide.mjs / skills/economy/ubi/run.sh",
+          "description": "CRIT-008: `grep -rn DEFAULT_LOW_USDC skills/economy/lending/lib/` finds only a documentary comment (line 16, no import statement); `grep -rn 'from.*decide' skills/economy/lending/lib/` finds zero hits; `grep -n 'BORROWER_LOW_USD|GOJO_SENDER_ID' skills/economy/gig/decide.mjs skills/economy/ubi/run.sh` each find zero hits. Zero-coupling holds in both directions."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+          "description": "CRIT-004 named tests re-run by adversary, PASS: 'PROP-114d: evaluateColdStartKillSwitch=false but evaluateOverallDefaultKillSwitch=true ... still refuses issuance' and 'PROP-114f: volume-dilution-defeat proof'. Source read of evaluateOverallDefaultKillSwitch (lending-gate.mjs:304) confirms the absolute-loss branch comparison is literally `totalRecentDefaultLossUsd >= RECENT_DEFAULT_LOSS_THRESHOLD_USD` (>=, never strict >)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs",
+          "description": "CRIT-006 named tests re-run by adversary, PASS: 'reconcileProvisionalDisbursement only ever READS on-chain state -- never invokes any transfer/settle call itself' (spied eth_sendRawTransaction handler never invoked) and 'PROP-106f/PROP-106g: reconcileProvisionalDisbursement reports no match when the on-chain lookup finds nothing'. Source read confirms reconcileProvisionalDisbursement (lending-verify.mjs:124-133) calls only eth_getLogs, no write/broadcast RPC method anywhere in its body."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/adversarial-gate.mjs",
+          "description": "Adversary-written standalone adversarial script against lending-gate.mjs (10 scenarios: multi-loan debt accumulation for same defaulted borrower, negative/Infinity principal_usd flooring, NaN nowMs in detectDefaultedLoans, negative n in computeColdStartRepaymentRate, null borrowerAgent in isBorrowerEligible, corrupted duplicate loan_id across two different lender_id values, NaN totalRecentDefaultLossUsd, negative principal in computeTotalDueUsd, degenerate same-id resolveLoanLockAcquisitionOrder) -- executed, 0 failures, 0 uncaught throws. Every scenario either fails closed (never inflates surplus, never masks a default in the reachable real-caller path) or is a documented, non-reachable internal-invariant edge (e.g. NaN nowMs/negative n are never producible by the real caller, which always passes Date.now()/a fixed positive constant)."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/adversarial-verify.mjs",
+          "description": "Adversary-written standalone adversarial script against lending-verify.mjs (8 scenarios: zero-value Transfer log rejection, empty '0x' data field, null receipt.logs, null receipt entirely, null finalizedBlock, RPC-level JSON error response, reconcileProvisionalDisbursement with a loanRow missing wallet fields, txHash:undefined against a ledger row lacking tx_hash) -- executed, 0 failures, 0 uncaught throws. Every malformed-RPC-shape scenario fails closed (credited:0, rejected:true) rather than throwing or crediting."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/repro-find902.mjs",
+          "description": "Adversary-written standalone repro, executed independently of the test suite: sumOutstandingPrincipalUsd(rows=[{principal_usd:1, repaid_usd:1.05, total_due_usd:1.10, status:'active'}], 'L1') === 0 (never -0.05); feeding that 0 into computeLenderAvailableUsd({lenderBalanceUsd:6, perCitizenReserveUsd:5, outstandingPrincipalUsd:0}) === 1 (never 1.05). FIND-902 genuinely fixed."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/repro-find901.mjs",
+          "description": "Adversary-written standalone repro, executed independently of the test suite: verifyRepayment against a structurally-matching Transfer log with data:'not-valid-hex-data' returns {credited:0, rejected:true} without throwing (threw=false); verifyRepayment against a receipt with blockNumber:'not-hex' likewise returns {credited:0, rejected:true} without throwing. FIND-901 genuinely fixed, both variants (log.data and receipt.blockNumber)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/*.test.mjs",
+          "description": "Full target-feature suite independently re-run by the adversary: `cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs` -> tests 79, pass 79, fail 0, cancelled 0, skipped 0, todo 0, exit clean. Matches the manifest's own expected count for commit 46eb1e1. Note: contract sprint-1.md's CRIT-002 passThreshold text still literally states 'exactly 75/75', which is now stale -- round-1's own genuine fixes for FIND-901/902 added exactly 4 new regression tests (PROP-101g, two PROP-108f cases, PROP-114g), 75+4=79. This round's own manifest explicitly names 79/79 (commit 46eb1e1) as the expected fresh-verified count, so 79/79 is treated as satisfying CRIT-002's underlying intent (independently-verified genuine greenness, not merely accepted from a log) even though the contract document's own literal number was not updated after round 1. This is a documentation-currency observation, not an implementation defect -- no FIND filed."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/economy/lending",
+          "description": "CRIT-009 + Known Residual Scope Boundary: `find skills/economy/lending -type f` lists exactly the 4 lib files + 4 test files (lending-path.mjs, lending-gate.mjs, gojo-read.mjs, lending-verify.mjs + their __tests__ counterparts) -- no orchestrator file exists anywhere in this diff. lending-path.mjs contains no function exports, only the LOANS_LEDGER_PATH constant (confirmed via `grep -n \"^export\"`). gojo-read.mjs's only side-effecting call is fs.readFileSync -- grep for writeFileSync/appendFileSync in that file returns zero hits. Every network call in lending-verify.mjs goes through the single local rpcCall helper -- grep for `fetch(` in that file finds exactly one hit, inside rpcCall itself (line 17)."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending",
+          "description": "Known Residual Scope Boundary re-confirmed structurally: `grep -rln withGigLock skills/economy/lending/` and `grep -rln payViaFacilitator skills/economy/lending/` both return zero hits anywhere in the feature's diff -- no code path acquires the per-lender/per-borrower locks or invokes the disbursement primitive outside of unit-test fixtures already reviewed. The PROP-106a/b/n, PROP-106g/h/k/l-wired-into-a-live-call, PROP-106p, PROP-108c/d, PROP-112a obligations remain honestly un-scored against this contract, matching the contract's own stated boundary."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/*.test.mjs",
+          "description": "CRIT-002: adversary independently executed `cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs` fresh (not accepted from any log) -- 79/79 pass, 0 fail, 0 cancelled, 0 skipped, 0 todo, process exited cleanly."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/__tests__/lending-gate.test.mjs:15-29",
+          "description": "REQ-113/PROP-113a: this file's own header documents a dated (2026-07-08), written re-read confirmation of anicca-agent-spawn's THEN-CURRENT specs/behavioral-spec.md and state.json (currentPhase, pipeline shape, coLocatedWithCoordinator field presence) immediately before Phase 2a began -- satisfies REQ-113's own acceptance criterion as a process/documentation gate, independently re-read by this adversary."
+        }
+      ]
+    }
+  ],
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-07T16:35:00.000Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-1.md"
+  },
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009"]
+  }
+}
