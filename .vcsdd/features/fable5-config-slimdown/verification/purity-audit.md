@@ -1,9 +1,13 @@
-# Purity Audit — fable5-config-slimdown (Phase 5, Formal Hardening)
+# Purity Boundary Audit — fable5-config-slimdown (Phase 5, Formal Hardening)
 
 Per `specs/verification-architecture.md` §Purity boundary map, the entire verification surface
 (`tests/verify.sh`) is declared **Pure (read-only)**; all effectful work (file edits, deletes,
 moves, commits, pushes) belongs to the *implementation* step, which is out of scope for this
 script. This audit mechanically confirms `tests/verify.sh` contains no write-capable command.
+
+## Declared Boundaries
+
+Declared in specs/verification-architecture.md purity boundary map: tests/verify.sh is read-only (pure observation); implementation (Phase 2b) is the only side-effect layer; NL judgment is delegated to fresh-context adversary.
 
 ## Method
 
@@ -13,7 +17,7 @@ Grepped `tests/verify.sh` (373 lines) for every shell token that can mutate file
 comparison/discard that touches no persistent file, or (c) a false positive (comment prose or a
 string literal that is only ever *compared against*, never executed).
 
-## Findings
+## Observed Boundaries
 
 ### Redirection (`>`, `>>`)
 
@@ -88,7 +92,7 @@ exactly: the only commands executed by `tests/verify.sh` are `grep`, `jq`, `wc -
 `bash -n` (syntax check, no execution) — every one of them read-only, plus `printf`/`echo` for
 its own PASS/FAIL/SKIP report lines to stdout, which is not a file write either.
 
-## Conclusion
+## Summary
 
 **PASS.** `tests/verify.sh` performs zero filesystem write operations. All apparent `>` hits are
 comments, jq comparison operators, or string literals under comparison rather than shell

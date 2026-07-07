@@ -54,7 +54,7 @@ author appended after running the script — not part of `verify.sh`'s own outpu
 the fresh run in this session **reproduces** the sprint-1 GREEN result byte-for-byte on the
 script's own output, run independently in Phase 5, not copy-pasted from that log.
 
-## 2. 20 PROP final-state table
+## Proof Obligations (20 PROP final-state table)
 
 | PROP | Requirement | Tier | Verified by | Result |
 |---|---|---|---|---|
@@ -87,7 +87,7 @@ above by the adversary verdict (`reviews/impl/iteration-1/output/verdict.json`, 
 `findingsCount: 0`) and the live E2E log (`evidence/e2e-2026-07-07.log`). 20/20 PROPs are closed;
 0 open.
 
-## Conclusion
+## Summary
 
 **PASS.** All 17 Tier-0/1 obligations reproduce PASS on a fresh, independent execution in this
 Phase-5 session (not a re-quote); the remaining 3 Tier-2 obligations are backed by fresh-context

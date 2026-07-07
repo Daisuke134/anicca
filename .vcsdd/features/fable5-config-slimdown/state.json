@@ -1,7 +1,7 @@
 {
   "featureName": "fable5-config-slimdown",
   "mode": "lean",
-  "currentPhase": "3",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -41,16 +41,37 @@
       "to": "3",
       "timestamp": "2026-07-07T11:39:39.497Z",
       "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-07T11:46:41.732Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-07T11:53:58.237Z",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-07T11:55:22.045Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -489,6 +510,19 @@
     ]
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:46:41.725Z",
+      "reviewedBy": "adversary"
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T11:54:23.317Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "basis": "finding diminishment 4->2->0(minor-only)->0; impl review 0 findings; findingBeadCoverage ok"
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-07T11:05:51.603Z",
@@ -499,5 +533,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T10:26:19.528Z",
-  "updatedAt": "2026-07-07T11:39:39.498Z"
+  "updatedAt": "2026-07-07T11:55:22.046Z"
 }
