@@ -1,8 +1,22 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 1 (first
-draft)
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 2 (spec
+review iteration-1 findings FIND-001..006 resolved — see changelog below)
+
+## Changelog (iteration 1 → iteration 2)
+
+Spec review iteration 1 FAILed with 6 findings. Each is resolved by a specific, cited design decision
+(not a vague "will fix later"):
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-001 | critical | `child-spec.js::buildChildSpec` is corrected from a false "reused unmodified" claim to a small, backward-compatible validation extension (new REQ-206): its identity-anchor requirement now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair — never both required. |
+| FIND-002 | critical | The dynamic citizen registry is specified explicitly (new REQ-105): `economy/ubi/colony-wallets.json` is extended from a flat address array into an array of `{id, wallet, fuel, humanDependencies, telemetryPath}` records that `isSelfFunded()` can consume directly; REQ-305 appends a new record to it on every successful spawn. |
+| FIND-003 | major | This increment's scope is explicitly narrowed (new REQ-106): all REQ-101/102/103 evaluation happens on ONE designated coordinator host (the Mac Mini already running automaton); cloud-deployed children never evaluate the colony-spawn gate themselves in this increment (spawn chaining is out of scope, deferred). This is what makes `lock.mjs`/`ledger.js` (local-filesystem primitives) correct as specified. |
+| FIND-004 | medium | REQ-204's "already-registered" defensive edge case is rewritten to reuse the existing, already-tested `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` wrapper instead of re-deriving the same cache/verify/register-once logic from scratch. |
+| FIND-005 | low | REQ-204's citation of "SPEC.md §9.9" for the gas-seed tx hashes is corrected to the actual section, "SPEC.md §9.6". |
+| FIND-006 | medium | The Nosana-vs-Akash cloud-target selection that REQ-302/303 presupposed is now itself specified (new REQ-306): a deterministic, price/availability-based comparison — bookkeeping, never a model judgment call. |
 
 ## Scope of this increment (read first)
 
@@ -38,6 +52,19 @@ directory (a 2026-06-16 DigitalOcean + AgentMail single-lineage design predating
 ERC-8004 pivot documented in SPEC.md §1.3) is also out of scope: Phase 2 MAY reuse its pure,
 still-valid primitives (see the Purity Boundary table below) but replacing its DO/AgentMail-specific
 provisioning code is a Phase 2b implementation decision, not something this spec mandates either way.
+Reusing those primitives is NOT always "unmodified" — see REQ-206 for the one, small,
+backward-compatible exception (`child-spec.js`'s identity-anchor validation).
+
+**Single-coordinator-host scope constraint (added iteration 2, resolves FIND-003)**: this increment
+does NOT build a multi-host colony-spawn architecture. REQ-106 makes this explicit: every REQ-101/
+102/103 evaluation (and the resulting REQ-201-305 execution) runs exclusively on ONE, designated
+coordinator host — currently the Mac Mini already running automaton's own loop (this project's own
+`CLAUDE.md`: "Mac Mini（`anicca-mac-mini-1`...）で直接実行する"). A cloud-deployed child does NOT
+itself evaluate the colony-spawn gate in this increment — spawn CHAINING (a child spawning its own
+child) is explicitly deferred to a future increment. This is the scope boundary that makes REQ-103's
+`lock.mjs` (a local-POSIX-filesystem primitive) and REQ-305's `ledger.js` (a local append-only file)
+correct AS SPECIFIED: neither mechanism needs to serialize/record callers on different physical hosts,
+because this increment guarantees there is only ever one evaluator host.
 
 ## Nosana/Akash documentation re-verification (performed 2026-07-07, before writing REQ群C)
 
@@ -60,21 +87,23 @@ scripts remain aligned with current upstream documentation.
 
 | Concern | Classification | Why |
 |---|---|---|
-| Colony self-funded citizen filter | **Pure core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded(agent)` — already implements exactly the "own wallet + own-funded fuel + zero human deps" test this feature's REQ-101 needs to decide which balances even count toward the colony surplus. No new judgment logic is written; REQ-101 calls this existing, already-tested function. |
+| Colony self-funded citizen filter | **Pure core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded(agent)` — already implements exactly the "own wallet + own-funded fuel + zero human deps" test this feature's REQ-101 needs to decide which balances even count toward the colony surplus. No new judgment logic is written; REQ-101 calls this existing, already-tested function on each RECORD supplied by REQ-105's registry (below) — `isSelfFunded()` itself is untouched; only its INPUT source is now specified. |
+| Colony citizen registry (data source for REQ-101) | **Effectful shell (existing, extended — schema migration, REQ-105)** | `~/anicca/skills/economy/ubi/colony-wallets.json`, extended from its current flat bare-address-array shape into an array of `{id, wallet, fuel, humanDependencies, telemetryPath}` records — the exact shape `isSelfFunded()` already requires, plus `telemetryPath` for REQ-101's balance lookup. A one-time, backward-compatible migration of the existing 3 entries (REQ-105), not a new file/mechanism. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). |
 | Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. |
-| Per-child identity record assembly | **Pure core (existing, reused unmodified)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID + distinct-wallet assertion, already pure and unit-tested; reused for REQ-201-205's child record. |
-| Cross-instance spawn mutual exclusion (lock predicate) | **Pure core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` — the already-adversary-hardened staleness predicate from the P2 concurrency-hardening sprint (`anicca-agent-economy` REQ-101). REQ-103 reuses the SAME generic file-lock module under a new lock key (`"colony-spawn"`), not a new lock implementation. |
-| Balance/telemetry reads across colony instances | **Effectful shell** | `fs.readFile` of each citizen's `state/telemetry.json` (the exact pattern `~/anicca/skills/economy/ubi/run.sh` already uses to read `$HOME/.automaton/state/telemetry.json` / `$HOME/.blockrun/state/telemetry.json`) — real I/O, not inferred. |
+| Per-child identity record assembly | **Pure core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID (unchanged) + an identity-anchor validation that now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair, never requiring both (REQ-206). This corrects iteration 1's false "reused unmodified" claim (FIND-001): the distinct-wallet assertion and every other existing field/behavior are untouched, and a regression test locks in that today's `childInbox`-only callers still succeed identically. |
+| Cross-instance spawn mutual exclusion (lock predicate) | **Pure core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` — the already-adversary-hardened staleness predicate from the P2 concurrency-hardening sprint (`anicca-agent-economy` REQ-101). REQ-103 reuses the SAME generic file-lock module under a new lock key (`"colony-spawn"`), not a new lock implementation. This module's local-POSIX-filesystem guarantee is sufficient ONLY because REQ-106 scopes every evaluator to a single coordinator host this increment (FIND-003) — it is not claimed to solve cross-host mutual exclusion. |
+| Cloud target selection (Nosana vs Akash) | **Pure core (new) + Effectful shell (new)** | A pure comparison function `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` (deterministic, price-based, never a model judgment — REQ-306) fed by an effectful price/availability query step against each provider's own CLI/API. Resolves FIND-006 (REQ-302/303 presupposed this selection without ever specifying it). |
+| Balance/telemetry reads across colony instances | **Effectful shell** | `fs.readFile` of each citizen's `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field (the exact pattern `~/anicca/skills/economy/ubi/run.sh` already uses to read `$HOME/.automaton/state/telemetry.json` / `$HOME/.blockrun/state/telemetry.json`) — real I/O, not inferred. |
 | Child EVM wallet generation | **Effectful shell** | `~/anicca/skills/self/spawn/scripts/gen-wallet.sh` — `openssl`+`python3` subprocess, real entropy source, reused unmodified. |
 | Child Solana keypair generation | **Effectful shell (new)** | New script analogous to `gen-wallet.sh` but ed25519/Solana-shaped (REQ-202); real entropy source. |
 | `$HOME`/`ANICCA_HOME` isolation at process launch | **Effectful shell** | Setting an env var at process spawn time is an OS-level side effect; the isolation PROPERTY it produces (a distinct resolved path) is what REQ-203 specifies and what `~/anicca/skills/earn/lib/resolve-identity.mjs` already relies on for existing instances. |
-| ERC-8004 `register()` | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/identity.mjs::registerIdentity` — a real on-chain transaction (mainnet registry `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` on Base, chain 8453; testnet `0xdc527768082c489e0ee228d24d3cfa290214f387` on Base-Sepolia; both independently re-verified live 2026-07-07 per that file's own header). |
+| ERC-8004 `register()` | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/identity.mjs::registerIdentity`/`verifyIdentity`, called THROUGH the existing, already-tested `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` cache-then-verify-then-register-once wrapper (not re-derived from scratch — resolves FIND-004) — a real on-chain transaction (mainnet registry `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` on Base, chain 8453; testnet `0xdc527768082c489e0ee228d24d3cfa290214f387` on Base-Sepolia; both independently re-verified live 2026-07-07 per that file's own header). |
 | gig-board `mcp.json` generation | **Effectful shell (new, template reused)** | File write following the exact shape of the already-live, verified `~/.blockrun/mcp.json`. |
 | Nosana job deploy | **Effectful shell (new)** | Real `nosana job post` subprocess against a real Solana-settled market; genuinely new for this project (REQ-302). |
 | Akash job deploy | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` + `akt-treasury.sh` — already implemented, already tested against a real sandbox-2 chain per those scripts' own inline evidence references; reused unmodified with a new child SDL/`CHILD_ID` (REQ-303). |
 | Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). |
-| Spawn ledger append | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented. |
+| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`economy/ubi/colony-wallets.json`) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
 | REQ-104 (bookkeeping-only design constraint) | **Not code — a design constraint, verified structurally** | Directly analogous to `anicca-agent-economy`'s REQ-203 ("Design-constraint requirement — bookkeeping only, never judgment"): not independently unit-testable in the normal sense; verified by a Phase 3 structural code read (no scoring/ranking/preference logic anywhere in REQ-101-103's diff), not a runtime assertion. |
@@ -88,13 +117,15 @@ scripts remain aligned with current upstream documentation.
 ### REQ-101: Colony self-funded surplus aggregation
 **EARS**: WHEN any component needs to know how much surplus the colony has available to fund a new
 spawn, THE SYSTEM SHALL compute it as the sum, over every **self-funded** citizen only (per
-`isSelfFunded()`, `~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified), of
-`max(0, balance_i − perCitizenReserveUsd)`, where `balance_i` is that citizen's own most-recently-read
-liquid balance (read from its own `state/telemetry.json`, the same file the existing
-`economy/ubi/run.sh` already reads) and `perCitizenReserveUsd` defaults to `5.00` (reusing, for
-consistency, the exact `RESERVE = 5.0` constant `economy/ubi/run.sh` already uses for the same
-"don't count money a citizen needs for its own survival" purpose — not a new number invented for this
-feature).
+`isSelfFunded()`, `~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified, called on each
+record supplied by REQ-105's colony citizen registry — the candidate citizen list itself is READ from
+that registry, never hardcoded inline in this aggregation), of `max(0, balance_i −
+perCitizenReserveUsd)`, where `balance_i` is that citizen's own most-recently-read liquid balance
+(read from its own `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field —
+the same file the existing `economy/ubi/run.sh` already reads) and `perCitizenReserveUsd` defaults to
+`5.00` (reusing, for consistency, the exact `RESERVE = 5.0` constant `economy/ubi/run.sh` already uses
+for the same "don't count money a citizen needs for its own survival" purpose — not a new number
+invented for this feature).
 
 **Edge Cases**:
 - A citizen's `telemetry.json` is missing, unreadable, or its `balance_usd` field is
@@ -154,10 +185,11 @@ to spawn — see REQ-104.
 - `colonySurplusUsd` is EXACTLY equal to `SPAWN_THRESHOLD_USD`: treated as **eligible** (the boundary
   is inclusive, `>=`, matching the existing `catalog-gate.mjs`/`tier.mjs` "at or above" convention
   already used elsewhere in this codebase for the same class of threshold comparison).
-- Two or more spawn evaluations run in the same wake cycle (e.g. because both automaton's and
-  Franklin's own loops independently evaluate the colony-wide gate): the gate function ITSELF is pure
-  and may return `eligible:true` from both evaluations — REQ-103 is what prevents both from acting on
-  that `true` result simultaneously; REQ-102 does not need to know about concurrency.
+- Two or more spawn evaluations run in the same wake cycle (e.g. because two independently-scheduled
+  loops on the SAME coordinator host, per REQ-106, both evaluate the colony-wide gate — this increment
+  never has evaluations racing across DIFFERENT physical hosts, see REQ-106): the gate function ITSELF
+  is pure and may return `eligible:true` from both evaluations — REQ-103 is what prevents both from
+  acting on that `true` result simultaneously; REQ-102 does not need to know about concurrency.
 - `SPAWN_COOLDOWN_DAYS` has NOT elapsed since the last attempt, but `colonySurplusUsd` has grown far
   past the threshold in the meantime: still **not eligible**, `reason:"rate_limited"` — surplus size
   never overrides the cooldown (mirrors `spawn-decision.js`'s existing ordering: balance → rate-limit →
@@ -181,22 +213,27 @@ to spawn — see REQ-104.
 ---
 
 ### REQ-103: Cross-instance spawn mutual exclusion
-**EARS**: WHEN two or more colony instances independently evaluate REQ-102's gate in the same or an
-overlapping wake window and BOTH observe `eligible:true`, THE SYSTEM SHALL ensure that at most ONE of
-them actually proceeds to REQ-201's identity generation and beyond — the other(s) SHALL detect the
-lock is held, decline to proceed, and log a no-op (never silently duplicate a spawn, and never queue
-indefinitely waiting for the lock).
+**EARS**: WHEN two or more evaluation LOOPS — always running on the SAME single coordinator host per
+REQ-106, this increment — independently evaluate REQ-102's gate in the same or an overlapping wake
+window and BOTH observe `eligible:true`, THE SYSTEM SHALL ensure that at most ONE of them actually
+proceeds to REQ-201's identity generation and beyond — the other(s) SHALL detect the lock is held,
+decline to proceed, and log a no-op (never silently duplicate a spawn, and never queue indefinitely
+waiting for the lock).
 
 This reuses, unmodified, the same generic per-resource file lock already adversary-hardened for the P2
 gig board (`~/anicca/skills/economy/gig/lib/lock.mjs`, including its `isLockStale` pure predicate and
 its atomic `fs.rename`-based reclaim fix from that lock's own REQ-101), acquired under a new, distinct
 lock key (e.g. `"colony-spawn"`) rather than any gig-specific key — this is a new lock KEY on an
-EXISTING lock MECHANISM, not new lock-implementation code.
+EXISTING lock MECHANISM, not new lock-implementation code. Per REQ-106, this local-POSIX-filesystem
+lock is sufficient because every caller in this increment shares the SAME mounted filesystem on the
+SAME coordinator host — this requirement does NOT claim to solve mutual exclusion across physically
+separate hosts (see REQ-106's own known-limitation edge case for that future scenario).
 
 **Edge Cases**:
-- Two instances race to acquire the `"colony-spawn"` lock within the same millisecond: POSIX exclusive
-  file creation (`fs.open(..., "wx")`, the existing mechanism's own atomicity guarantee) ensures exactly
-  one succeeds; the other's `acquire()` call fails immediately (fail-closed, no retry-queue).
+- Two evaluation loops on the coordinator host race to acquire the `"colony-spawn"` lock within the
+  same millisecond: POSIX exclusive file creation (`fs.open(..., "wx")`, the existing mechanism's own
+  atomicity guarantee) ensures exactly one succeeds; the other's `acquire()` call fails immediately
+  (fail-closed, no retry-queue).
 - The instance holding the lock crashes mid-spawn (dies before releasing): the existing heartbeat +
   `isLockStale` mechanism reclaims the lock after `staleMs` of no heartbeat, exactly as it already does
   for gig-board operations — REQ-103 does not need a second staleness mechanism.
@@ -248,6 +285,84 @@ the eligibility ARITHMETIC, never the agent's own in-envelope choices.
 
 ---
 
+### REQ-105: Colony citizen registry — dynamic, extensible, spawn-appended (resolves FIND-002)
+**EARS**: WHEN REQ-101 needs the list of citizens to evaluate, THE SYSTEM SHALL read that list from a
+single, versioned JSON registry file (`~/anicca/skills/economy/ubi/colony-wallets.json`), extended
+from its CURRENT flat bare-address-array shape (`["0x...", "0x...", "8Fpqd..."]`) into an array of
+citizen-record objects, each carrying EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
+(`~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified) already require —
+`{id: string, wallet: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies:
+string[]}` — plus ONE additional field this feature needs and `isSelfFunded()` itself does not read,
+`telemetryPath: string` (the citizen's own `state/telemetry.json` absolute or `$HOME`-relative path,
+used by REQ-101's balance lookup). THE SYSTEM SHALL migrate the registry's current 3 bare-address
+entries into this shape as a one-time, backward-compatible data migration (Phase 2b), preserving each
+entry's existing wallet address value(s) unchanged — this spec does not leave the target schema
+ambiguous.
+
+**Edge Cases**:
+- The registry file is missing, unparseable, or one record is missing a required field: THE SYSTEM
+  SHALL exclude only that INDIVIDUAL malformed record from REQ-101's aggregation (fail-closed
+  per-record, matching REQ-101's own missing-telemetry fail-closed convention) — one bad record never
+  aborts aggregation for every OTHER valid citizen.
+- A record's `wallet`/`fuel`/`humanDependencies` fields are well-formed but `isSelfFunded()` itself
+  returns `false` for that record (e.g. `fuel.provider` not in `OWN_FUNDED_FUEL_PROVIDERS`): excluded
+  from the surplus sum exactly as REQ-101 already specifies — REQ-105 supplies DATA, REQ-101 still
+  owns the JUDGMENT of who counts; REQ-105 does not duplicate or override that gate.
+- Two records share the same `id`: THE SYSTEM SHALL treat this as a malformed registry and exclude
+  BOTH duplicate-id records from aggregation until corrected, rather than arbitrarily picking one.
+
+**Acceptance Criteria**:
+- After migration, the registry file parses as an array of objects each satisfying `{id, wallet, fuel,
+  humanDependencies, telemetryPath}`, and calling the existing, unmodified `isSelfFunded()` on any one
+  record's `{wallet, fuel, humanDependencies}` sub-object returns a boolean without throwing.
+- A round-trip test confirms migrating the pre-existing 3 entries preserves each one's known-good
+  `isSelfFunded()` verdict (migration does not silently reclassify any existing citizen).
+- REQ-402c (a `"bootstrap_failed"` child's exclusion) and REQ-403 (the wallet non-interference audit's
+  "current set of running instances") both read their citizen list from THIS SAME registry — no second,
+  parallel citizen-enumeration mechanism exists anywhere in this spec.
+
+---
+
+### REQ-106: Colony-spawn evaluation is scoped to a single coordinator host, this increment only (resolves FIND-003)
+**EARS**: THE SYSTEM SHALL perform every REQ-101/102/103 evaluation (colony surplus aggregation,
+threshold gate, and `"colony-spawn"` lock acquisition) EXCLUSIVELY on one, explicitly-designated
+coordinator host for the full duration of this increment — currently the Mac Mini
+(`anicca-mac-mini-1`) on which automaton's own loop already runs (this project's own `CLAUDE.md`:
+"Mac Mini（`anicca-mac-mini-1`...）で直接実行する"). A cloud-deployed child instance (REQ-301-303)
+SHALL NOT itself evaluate REQ-101/102/103 or attempt to acquire the `"colony-spawn"` lock during this
+increment — spawn CHAINING (a child later spawning its own child) is explicitly OUT OF SCOPE,
+deferred to a future increment. This constraint is what makes REQ-103's `lock.mjs` (a local-POSIX-
+filesystem primitive) and REQ-305's `ledger.js` (a local append-only file) CORRECT as specified: both
+mechanisms only need to serialize/record callers that share the SAME mounted filesystem, which holds
+precisely because every evaluator in this increment IS that one coordinator host.
+
+**Edge Cases**:
+- Multiple LOOPS on the SAME coordinator host (e.g. automaton's own cron-driven wake and a separately-
+  scheduled evaluation) race to evaluate REQ-102/103 in the same window: this is the scenario REQ-103's
+  lock already handles (both are local callers sharing one filesystem) — this is the ONLY concurrency
+  scenario this increment's lock/ledger design needs to survive, and it replaces iteration 1's
+  now-corrected edge case that conflated this with a cross-host scenario.
+- A future increment extends the colony to genuinely multiple physical coordinator hosts (e.g. once a
+  spawned child is itself permitted to evaluate REQ-102/103): THE SYSTEM as specified in THIS increment
+  does NOT support that topology — `lock.mjs`/`ledger.js` would need to be replaced or backed by
+  networked/shared storage (a shared network filesystem, a database-backed lock, or a distributed
+  consensus mechanism) before multi-host colony-spawn evaluation is safe. This is an explicit,
+  documented, KNOWN LIMITATION of this increment, not an oversight.
+- The coordinator host itself becomes unavailable (hardware failure, network partition from the cloud
+  providers): no OTHER host picks up colony-spawn evaluation in this increment (single coordinator, by
+  design) — an accepted single-point-of-failure for this increment's scope, matching the colony's
+  actual current topology (every existing citizen's own loop already runs on this same Mac Mini today).
+
+**Acceptance Criteria**:
+- A structural/Tier-0 check confirms `lock.mjs`'s acquire/release path and `ledger.js`'s read/write
+  path are invoked from exactly one designated coordinator-host code entry point in this feature's
+  implementation, with no code path that invokes them from a cloud-deployed child's own runtime.
+- This spec's own scope section states spawn chaining is out of scope, so a fresh adversary reviewing
+  REQ-103/REQ-305 does not need to (and must not be asked to) prove multi-host correctness for this
+  increment.
+
+---
+
 ## REQ群B: 新規 instance identity 生成（P2 実証済み手順の再利用、車輪の再発明禁止）
 
 ### REQ-201: Child EVM (Base) wallet generation
@@ -257,10 +372,12 @@ child's own secp256k1/Base-EVM keypair via `~/anicca/skills/self/spawn/scripts/g
 BEFORE any cloud provisioning or on-chain action for that child occurs, and SHALL verify the resulting
 address is a real keccak256-derived Ethereum address (not the script's own documented sha256 fallback,
 which is not a valid Ethereum address — see Edge Cases) and is distinct from every existing colony
-citizen's own EVM address (reusing `child-spec.js::buildChildSpec`'s existing distinct-wallet
-assertion, which already throws if `childWallet === parentWallet`; REQ-201 generalizes that same check
-to "distinct from ALL existing citizens," not merely the one parent that happened to initiate the
-attempt).
+citizen's own EVM address (reusing `child-spec.js::buildChildSpec`'s existing, UNTOUCHED distinct-
+wallet assertion, which already throws if `childWallet === parentWallet`; REQ-201 generalizes that same
+check to "distinct from ALL existing citizens," not merely the one parent that happened to initiate the
+attempt). This generated address ALSO becomes `buildChildSpec`'s `agentEvmAddress` identity-anchor
+field once REQ-204 registers it (see REQ-206) — REQ-201 itself only generates and validates the
+keypair; it does not call `buildChildSpec`.
 
 **Edge Cases**:
 - The host running `gen-wallet.sh` lacks a real keccak implementation (its own comment: "not a real eth
@@ -354,34 +471,51 @@ project's own `resolve-identity.mjs`/`ensure-agent-id.mjs` already gate on for e
 
 ### REQ-204: ERC-8004 identity registration for the child
 **EARS**: WHEN the child's own EVM wallet (REQ-201) exists and its cloud shelter (REQ-302/303) is
-reachable, THE SYSTEM SHALL register the child's ERC-8004 identity by calling `register()` on the
-already-live registry contract — mainnet `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (Base, chain
-8453) or testnet `0xdc527768082c489e0ee228d24d3cfa290214f387` (Base-Sepolia, chain 84532), selected by
-the same `GIG_CHAIN` env toggle the existing `~/anicca/skills/economy/gig/lib/identity.mjs` already
-uses — reusing that module's `registerIdentity()` function UNMODIFIED, signed with the child's OWN
-private key (`msg.sender` = the child's own address, matching the existing "each agent registers
-itself" discipline), and SHALL record the returned `agentId` and transaction hash in the spawn ledger
-(REQ-305) before the child may be marked `"active"`.
+reachable, THE SYSTEM SHALL register the child's ERC-8004 identity by calling the existing
+`~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId({privateKey: childPrivateKey,
+cacheFile: <child's own isolated cache path>})` — NOT `identity.mjs::registerIdentity()` directly —
+reusing `ensureAgentId`'s already-implemented, already-tested cache-then-verify-then-register-once
+wrapper UNMODIFIED (resolves FIND-004: this is the SAME defensive "don't double-register" logic REQ-204
+needs, already built and covered by that module's own test suite; REQ-204 does not re-derive it).
+`ensureAgentId` itself calls `registerIdentity()`/`verifyIdentity()` against the already-live registry
+contract — mainnet `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` (Base, chain 8453) or testnet
+`0xdc527768082c489e0ee228d24d3cfa290214f387` (Base-Sepolia, chain 84532), selected by the same
+`GIG_CHAIN` env toggle it already uses — signed with the child's OWN private key (`msg.sender` = the
+child's own address, matching the existing "each agent registers itself" discipline). Because
+`ensureAgentId`'s own cache path is gated on `ANICCA_HOME`/`HOME` exactly as `resolve-identity.mjs`
+already is (that module's own header: "so a foreign spawn ... can never read/reuse another instance's
+cached agentId"), passing the child's own isolated `$HOME` (REQ-203) as `cacheFile`'s basis is
+sufficient — no new per-child cache-scoping logic is needed. THE SYSTEM SHALL record the returned
+`agentId` and transaction hash in the spawn ledger (REQ-305) before the child may be marked `"active"`.
 
 **Edge Cases**:
 - `register()` reverts for insufficient gas (the child's fresh wallet starts at exactly `0 ETH`): THE
   SYSTEM SHALL fund it with a ONE-TIME, minimal gas seed transferred from a self-funded citizen's own
   wallet — sized to cover exactly one `register()` call plus the child's first gig-board interaction,
-  the SAME class of transfer SPEC.md §9.9 already performed and evidenced on-chain (tx `0x48d49e…`
+  the SAME class of transfer SPEC.md §9.6 already performed and evidenced on-chain (tx `0x48d49e…`
   /`0x1478758…`), never an open-ended top-up, and never sourced from a human-funded wallet (REQ-304
   governs the funding SOURCE constraint).
 - The registration transaction succeeds but its `Registered` event cannot be decoded (a malformed/odd
   log): treated as a REQ-305 failure (no `agentId` recorded), never a fabricated/guessed agentId.
 - The SAME child wallet somehow already holds an agentId (should be impossible for a genuinely fresh
-  key, but checked defensively via `verifyIdentity`/`ownerOf` before calling `register()` a second
-  time): skip re-registration, reuse the existing agentId, log the anomaly for audit.
+  key): THE SYSTEM SHALL rely EXCLUSIVELY on `ensureAgentId`'s own existing cache-hit/`verifyIdentity`
+  re-check path (already reads a cached `{address, agentId}` pair, re-verifies via `verifyIdentity`
+  before trusting it, and falls through to a fresh `register()` only if that re-check fails) — REQ-204
+  does not implement a second, parallel "already-registered" check; the anomaly (a fresh key already
+  owning an agentId) is logged by `ensureAgentId`'s own `cached:true` return value, which REQ-305's
+  ledger write surfaces for audit.
 
 **Acceptance Criteria**:
-- `registerIdentity({ privateKey: childPrivateKey })` is called with no modification to
-  `identity.mjs`'s existing signature/ABI/registry-address constants.
+- `ensureAgentId({ privateKey: childPrivateKey, cacheFile: <child's own isolated path> })` is called
+  with no modification to `ensure-agent-id.mjs`'s or `identity.mjs`'s existing logic, signature, ABI,
+  or registry-address constants.
 - A successful registration produces a real, independently-re-verifiable transaction hash and a
   numeric `agentId`; both are appended to the spawn ledger (REQ-305) in the same row that eventually
   marks the child `"active"`.
+- A fixture where `ensureAgentId`'s injected `verifyFn` reports an existing, matching cached agentId
+  results in ZERO calls to `registerFn` (i.e. `register()` is never invoked a second time) — reusing
+  that module's own existing test double pattern (`registerFn`/`verifyFn` injection), not a new mock
+  harness built from scratch for this feature.
 
 ---
 
@@ -416,6 +550,55 @@ modification to Franklin's own source required.
 
 ---
 
+### REQ-206: `buildChildSpec`'s identity-anchor validation — backward-compatible extension (resolves FIND-001)
+**EARS**: WHEN a new child record is assembled via `~/anicca/skills/self/spawn/lib/child-spec.js::
+buildChildSpec` (called from REQ-305's ledger-append step), THE SYSTEM SHALL accept as a valid
+"identity anchor" for the child EITHER (a) a non-empty `childInbox` string (the pre-existing
+AgentMail-based anchor, unchanged in shape and validation from today's already-shipped design) OR (b)
+the pair `agentEvmAddress` (identical to `childWallet`, REQ-201) AND `agentId` (the numeric ERC-8004
+identifier `ensureAgentId`/REQ-204 returns), both present and non-empty — requiring at least ONE of
+these two anchors, never both, and never neither. This corrects iteration 1's false claim that
+`buildChildSpec` is reused "unmodified" (FIND-001: today's code throws `missing required field
+"childInbox"` for `undefined`/`null`/`""`, and this feature's own design never produces an AgentMail
+inbox at all): `buildChildSpec` requires a SMALL, backward-compatible validation/signature extension
+— adding the optional `agentEvmAddress`/`agentId` pair and relaxing `childInbox` from unconditionally-
+required to "required only if the ERC-8004 pair is absent" — never a rewrite of its existing
+distinct-wallet assertion, monotonic-ID logic (`nextChildId`), or returned row shape (which gains two
+new optional fields, `agent_evm_address`/`agent_id`, alongside its existing, unchanged fields).
+
+**Edge Cases**:
+- An existing (hypothetical future) caller that still passes a non-empty `childInbox` and omits
+  `agentEvmAddress`/`agentId` entirely (the old AgentMail-only design, e.g. today's
+  `~/anicca/skills/self/spawn/run.sh`'s own happy path where `AGENTMAIL_API_KEY` is set and a real
+  inbox is minted) MUST continue to succeed with an identical returned row shape to today's — this is
+  the binding backward-compatibility contract; a regression test locks this in.
+- A caller (this feature's own REQ-305 integration) passes `agentEvmAddress`+`agentId` and omits
+  `childInbox` (or passes it as `""`/`null`, which is exactly what this feature's spawn flow does,
+  since it never mints an AgentMail inbox): THE SYSTEM SHALL accept this as a valid identity anchor and
+  NOT throw the pre-existing "missing childInbox" error — this is the specific behavior iteration 1
+  incorrectly assumed already existed.
+- Neither `childInbox` nor the `agentEvmAddress`+`agentId` pair is present, or only ONE half of the
+  ERC-8004 pair is present (e.g. `agentEvmAddress` set but `agentId` missing): THE SYSTEM SHALL throw
+  a `missing identity anchor` error — exactly as strict as today's all-required validation, never
+  silently defaulting to a placeholder identity.
+- Both `childInbox` AND the ERC-8004 pair are present simultaneously (a future hybrid child with both
+  an inbox and an on-chain identity): THE SYSTEM SHALL accept this without error — "at least one" is a
+  minimum, not an exclusive-or.
+
+**Acceptance Criteria**:
+- A regression test fixture identical to the existing `child-spec.test.js`'s "assembles a complete,
+  distinct-wallet spec" case (non-empty `childInbox`, no `agentEvmAddress`/`agentId`) passes UNCHANGED
+  after this modification.
+- A new test fixture supplying `agentEvmAddress`+`agentId` and omitting `childInbox` succeeds, and the
+  returned row carries `agent_evm_address`/`agent_id`.
+- A new test fixture supplying NEITHER anchor throws; a fixture supplying only HALF of the ERC-8004
+  pair also throws.
+- A structural diff of `child-spec.js` confirms the change is limited to the required-field validation
+  and the returned row's field list — `nextChildId`, the distinct-wallet assertion, and every other
+  existing field/behavior are byte-identical to today's.
+
+---
+
 ## REQ群C: cloud deployment（新規、local 禁止）
 
 ### REQ-301: Local spawn is structurally forbidden
@@ -443,7 +626,9 @@ as any existing colony citizen's own runtime. Every child SHALL be deployed excl
 
 ### REQ-302: Nosana deploy path
 **EARS**: WHEN a spawn attempt (REQ-102/103) proceeds and Nosana is the selected cloud target for that
-attempt, THE SYSTEM SHALL provision the child's compute using the Nosana CLI (`@nosana/cli`, confirmed
+attempt (the selection ITSELF — Nosana vs Akash — is specified by REQ-306, not by this requirement;
+REQ-302 governs only the Nosana-specific execution once selected), THE SYSTEM SHALL provision the
+child's compute using the Nosana CLI (`@nosana/cli`, confirmed
 current 2026-07-07 per the re-verification table above; installed via `npm install -g @nosana/cli`),
 pointed at the child's OWN pre-generated, isolated Solana keypair (REQ-202) — via whatever
 env/flag the installed CLI version exposes for supplying an existing key file — rather than letting the
@@ -476,8 +661,9 @@ output format: `Job: https://explore.nosana.com/jobs/<id>`) before considering t
 ---
 
 ### REQ-303: Akash deploy path (reuse existing, already-implemented scripts)
-**EARS**: WHEN a spawn attempt proceeds and Akash is the selected cloud target for that attempt, THE
-SYSTEM SHALL provision the child's compute using the existing, already-implemented
+**EARS**: WHEN a spawn attempt proceeds and Akash is the selected cloud target for that attempt (per
+REQ-306's selection mechanism — see REQ-302's own note), THE SYSTEM SHALL provision the child's compute
+using the existing, already-implemented
 `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` (`provider-services` CLI, confirmed still the
 current, officially-documented Akash deployment CLI per the re-verification table above) together with
 `~/anicca/skills/self/spawn/scripts/akt-treasury.sh` (ACT top-up via `akash tx bme mint-act`, confirmed
@@ -546,23 +732,37 @@ spawn attempt, and by an amount not exceeding what REQ-102 approved.
 **EARS**: IF any step from REQ-201 through REQ-303 fails, THE SYSTEM SHALL leave no ledger entry
 claiming the child is `"active"`; a partially-completed attempt SHALL be recorded with status
 `"failed"` (or `"provisioning"` only while genuinely still in progress, per the existing
-`child-spec.js::buildChildSpec`'s own `status:"provisioning"` initial value) together with the
-specific failing step and error message, any already-spent, non-refundable resource (e.g. an Akash
-deployment deposit not yet converted into an active lease) SHALL be logged for colony accounting, and
-REQ-102's `SPAWN_COOLDOWN_DAYS` timer SHALL NOT be considered "consumed" by a failed attempt — mirroring
-this project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zero and leaves an
-honest provisioning/failed ledger row, never a fabricated success").
+`child-spec.js::buildChildSpec`'s own `status:"provisioning"` initial value, assembled via REQ-206's
+identity-anchor rules using the child's own `agentEvmAddress`+`agentId` once REQ-204 completes — this
+feature's children never carry a `childInbox`) together with the specific failing step and error
+message, any already-spent, non-refundable resource (e.g. an Akash deployment deposit not yet
+converted into an active lease) SHALL be logged for colony accounting, and REQ-102's
+`SPAWN_COOLDOWN_DAYS` timer SHALL NOT be considered "consumed" by a failed attempt — mirroring this
+project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zero and leaves an honest
+provisioning/failed ledger row, never a fabricated success"). WHEN, and only when, a spawn attempt
+completes and the child is marked `"active"` (REQ-204+REQ-205 both complete), THE SYSTEM SHALL ALSO
+append a new record for that child to REQ-105's colony citizen registry
+(`economy/ubi/colony-wallets.json`) — `{id: child_id, wallet: {evm: childWallet, solana:
+childSolanaAddress-if-generated}, fuel: {provider: "free-model"} (per REQ-401's exclusive free-model
+fuel requirement), humanDependencies: [], telemetryPath: <child's own isolated telemetry.json path>}`
+— so REQ-101's NEXT evaluation includes the new citizen automatically, without any separate manual or
+out-of-band registry-edit step (resolves FIND-002's "how does the registry grow" gap).
 
 **Edge Cases**:
 - The cloud deploy (REQ-302/303) succeeds but ERC-8004 registration (REQ-204) subsequently fails: the
   child remains `"provisioning"`, is EXCLUDED from REQ-101's colony-surplus aggregation (it is not yet
-  a citizen), and registration is retried up to a bounded retry window (to avoid wasting an
-  already-paid, non-refundable lease) before the lease itself is torn down and the attempt marked
-  `"failed"`.
+  a citizen, and NO registry record is appended for it yet), and registration is retried up to a
+  bounded retry window (to avoid wasting an already-paid, non-refundable lease) before the lease itself
+  is torn down and the attempt marked `"failed"`.
 - A failed attempt's cooldown-exemption (above) could in principle be exploited to attempt unlimited
   spawns by engineering repeated "failures": THE SYSTEM SHALL cap the number of failed attempts counted
   within any single `SPAWN_COOLDOWN_DAYS` window (default cap `3`) — beyond that cap, further attempts
   within the window ARE rate-limited exactly as a successful spawn would be, closing this gap.
+- The ledger write (`"active"`) succeeds but the SUBSEQUENT registry-append write fails (e.g. a
+  transient filesystem error): THE SYSTEM SHALL retry the registry-append on the NEXT wake before any
+  further spawn evaluation runs — a child marked `"active"` in the ledger but absent from the registry
+  is a detectable inconsistency (the next REQ-101 aggregation run reconciles it), never a silent,
+  permanent gap.
 
 **Acceptance Criteria**:
 - A structural/Tier-0 check of the ledger-writing code path confirms every write path that can leave a
@@ -571,6 +771,53 @@ honest provisioning/failed ledger row, never a fabricated success").
 - An integration test that injects a failure at each of REQ-201/202/203/204/205/302/303 in turn
   confirms the resulting ledger row's `status` and `error` fields correctly identify the failing step,
   and that REQ-101's next aggregation run excludes that child.
+- An integration test confirms that marking a child `"active"` appends a new, correctly-shaped record
+  to REQ-105's registry, and that a FAILED attempt appends NO registry record at all.
+
+---
+
+### REQ-306: Deterministic cloud-target selection — Nosana vs Akash (resolves FIND-006)
+**EARS**: WHEN a spawn attempt (REQ-102/103) proceeds and REQ-301's local-spawn-prohibition applies,
+THE SYSTEM SHALL select which of Nosana (REQ-302) or Akash (REQ-303) is "the selected cloud target for
+that attempt" via a single, deterministic, bookkeeping decision function `selectCloudTarget({
+nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd }) → "nosana"|"akash"|"none"` — NEVER a
+model/LLM judgment call (consistent with REQ-104's bookkeeping-only discipline, extended here to
+cloud-target selection). THE SYSTEM SHALL query BOTH providers' current price/availability for the
+SAME minimal workload spec immediately before each spawn attempt (Nosana: the CLI's own market-price
+query for the configured market address; Akash: the `provider-services query market bid list`-
+equivalent for the configured SDL) and SELECT the provider whose quoted price, normalized to a common
+USD-equivalent estimate, is LOWER, given both are currently available (at least one biddable
+node/market at query time). IF exactly one provider is currently available, THAT provider is selected
+regardless of price. IF NEITHER provider is currently available, THE SYSTEM SHALL treat this as a
+deploy failure under REQ-305 (no cloud target selected, no child record ever reaches beyond
+`"provisioning"`) — this mirrors REQ-302/303's own existing "no open market/bid" failure paths,
+generalized to the selection step itself.
+
+**Edge Cases**:
+- Both providers quote the exact same normalized USD price (a tie): THE SYSTEM SHALL default
+  deterministically to `"nosana"` (a fixed, documented tie-breaker — arbitrary but CONSISTENT, never
+  randomized, so identical inputs always produce the identical selection — bookkeeping determinism,
+  matching REQ-104's own discipline).
+- A price quote cannot be directly compared because the two providers price in different native tokens
+  (Nosana: NOS/SOL-denominated; Akash: AKT/`uact`-denominated): THE SYSTEM SHALL normalize both to a
+  USD-equivalent estimate using the SAME already-available price-conversion mechanism this project's
+  own `akt-treasury.sh` already documents (an observed AKT/ACT/USD rate) and an equivalent,
+  already-available NOS/SOL/USD rate — never comparing raw native-token quantities across different
+  currencies, and never inventing a new pricing oracle for this feature.
+- The selection function's own PRICE QUERIES are I/O (effectful), but the COMPARISON/decision logic is
+  pure given the two already-fetched quotes — mirroring this spec's existing effectful-shell-feeds-
+  pure-core pattern (REQ-101's `readCitizenBalances`/`computeColonySurplusUsd` split); `selectCloudTarget`
+  itself performs zero I/O.
+
+**Acceptance Criteria**:
+- Pure function `selectCloudTarget({ nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd })
+  → "nosana"|"akash"|"none"`, zero I/O, given already-fetched quotes as input.
+- `nosanaPriceUsd < akashPriceUsd`, both available → `"nosana"`. The reverse → `"akash"`. Equal prices,
+  both available → `"nosana"` (documented tie-breaker). `nosanaAvailable=false`, `akashAvailable=true`
+  → `"akash"` regardless of price (and vice versa). Both unavailable → `"none"`.
+- REQ-302's and REQ-303's own EARS clauses ("Nosana/Akash is the selected cloud target for that
+  attempt") are satisfied exactly when this function returns the matching string — no other selection
+  path exists anywhere in this spec.
 
 ---
 
@@ -644,9 +891,12 @@ arithmetic, unaffected by how many prior attempts failed).
 **Acceptance Criteria**:
 - A scheduled/wake-triggered check compares `now - active_since` against `BOOTSTRAP_WINDOW_DAYS` for
   every `"active"` child lacking a recorded REQ-401 success, and flips exactly those past the window to
-  `"bootstrap_failed"` — no others.
-- REQ-101's aggregation function, given a child flagged `"bootstrap_failed"`, excludes its balance from
-  the productive-surplus sum even if that balance is nonzero (e.g. residual gas-seed dust).
+  `"bootstrap_failed"` — no others. Every child this check considers is one already present in REQ-105's
+  colony citizen registry (REQ-305 appends it there on activation) — REQ-402 does not maintain a second,
+  separate list of children.
+- REQ-101's aggregation function, given a child flagged `"bootstrap_failed"` in REQ-105's registry,
+  excludes its balance from the productive-surplus sum even if that balance is nonzero (e.g. residual
+  gas-seed dust).
 
 ---
 
@@ -679,8 +929,10 @@ home directory, before any newly-spawned child is permitted to participate in RE
   — silent "probably fine by analogy" reasoning is not permitted for a money-safety check.
 
 **Acceptance Criteria**:
-- A repeatable audit script exists that, given the current set of running instances' own `HOME` values,
-  (1) runs the static grep sweep and reports zero cross-instance path references, and (2) invokes
+- A repeatable audit script exists that, given the current set of running instances' own `HOME` values
+  — read from REQ-105's colony citizen registry (the same registry REQ-101 aggregates over; no second,
+  parallel instance-enumeration mechanism is introduced for this audit), (1) runs the static grep sweep
+  and reports zero cross-instance path references, and (2) invokes
   `resolveEvmPrivateKey`/`resolveSolanaSecret` once per instance's own `HOME` and asserts pairwise
   inequality across all resolved keys.
 - Given a deliberately-injected test fixture where two fake instances share a `HOME` (negative test),
