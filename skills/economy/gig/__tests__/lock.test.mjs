@@ -14,7 +14,7 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { withGigLock, isLockStale } from "../lib/lock.mjs";
+import { withGigLock, isLockStale, isSafeLockKey } from "../lib/lock.mjs";
 
 async function tmpStatePath() {
   const d = await fs.mkdtemp(path.join(os.tmpdir(), "lock-test-"));
@@ -191,4 +191,66 @@ test("PROP-101d: two different lock keys, BOTH in the stale-reclaim branch, neve
   ]);
   assert.equal(a.ok, true, "keyC's reclaim must succeed independent of keyD");
   assert.equal(b.ok, true, "keyD's reclaim must succeed independent of keyC");
+});
+
+// ============================================================================
+// SEC-1 (Phase 5 security-report.md): path traversal via unsanitized lockKey. A caller-supplied gigId
+// used to flow straight into lockPaths()'s `${lockKey}.lock` filename interpolation with no character
+// restriction -- `path.join` collapses "../" segments, so a crafted gigId could make the lock file land
+// OUTSIDE the intended <statePath-dir>/locks/ directory (live-verified PoC, see security-report.md).
+// mcp-server.mjs's zod schema is the PRIMARY fix (constrains gigId before it reaches here); these tests
+// cover the SECOND, independent layer inside lib/lock.mjs itself, which protects any direct caller of
+// withGigLock (bypassing the MCP schema entirely, e.g. a Node script importing gig.mjs directly).
+// ============================================================================
+
+test("SEC-1: isSafeLockKey rejects a path-traversal lock key, accepts every real lock key shape", () => {
+  assert.equal(
+    isSafeLockKey("../../../../../../../../../../tmp/anicca-poc-escaped-file-live"),
+    false,
+    "a traversal sequence must be rejected"
+  );
+  assert.equal(isSafeLockKey("../etc/passwd"), false, "any '../' segment must be rejected");
+  assert.equal(isSafeLockKey("a/b"), false, "an embedded path separator must be rejected");
+  assert.equal(isSafeLockKey("/etc/passwd"), false, "an absolute path must be rejected");
+  assert.equal(isSafeLockKey(""), false, "an empty string must be rejected");
+  assert.equal(isSafeLockKey(null), false, "a non-string (null) must be rejected");
+  assert.equal(isSafeLockKey(undefined), false, "a non-string (undefined) must be rejected");
+  assert.equal(isSafeLockKey(42), false, "a non-string (number) must be rejected");
+
+  // every real lock key this module actually uses in production must remain accepted:
+  assert.equal(isSafeLockKey("1"), true, "a real gigId (String(state.nextId)) must be accepted");
+  assert.equal(isSafeLockKey("42"), true, "a real multi-digit gigId must be accepted");
+  assert.equal(isSafeLockKey("_post"), true, "the internal POST_LOCK_KEY must be accepted");
+  assert.equal(isSafeLockKey("_board"), true, "the internal BOARD_LOCK_KEY must be accepted");
+  assert.equal(isSafeLockKey("g1"), true, "an alphanumeric test-style key must be accepted");
+});
+
+test("★SEC-1★ withGigLock REJECTS a path-traversal lock key fail-closed -- fn() never runs, no file is created outside locks/", async () => {
+  const statePath = await tmpStatePath();
+  const escapedTarget = path.join(os.tmpdir(), `anicca-sec1-test-escape-${process.pid}`);
+  await fs.rm(escapedTarget, { force: true }).catch(() => {});
+
+  let fnRan = false;
+  const maliciousGigId = "../../../../../../../../../../tmp/anicca-poc-escaped-file-live";
+  const result = await withGigLock(statePath, maliciousGigId, async () => {
+    fnRan = true;
+    return { ok: true };
+  });
+
+  assert.equal(result.ok, false, "an unsafe lock key must be rejected, not silently accepted");
+  assert.match(result.reason, /unsafe lock key/, "the rejection reason must name the SEC-1 guard");
+  assert.equal(fnRan, false, "fn() must NEVER run for an unsafe lock key -- no queueing, no partial execution");
+
+  const escapedExists = await fs.stat(path.join(os.tmpdir(), "anicca-poc-escaped-file-live")).then(() => true).catch(() => false);
+  assert.equal(escapedExists, false, "no lock file may ever be created outside the intended locks/ directory");
+
+  const lockDirExists = await fs.stat(path.join(path.dirname(statePath), "locks")).then(() => true).catch(() => false);
+  assert.equal(lockDirExists, false, "an unsafe key must be rejected before even the locks/ directory is created");
+});
+
+test("SEC-1: withGigLock still works normally for a real numeric gigId lock key (no regression)", async () => {
+  const statePath = await tmpStatePath();
+  const result = await withGigLock(statePath, "7", async () => ({ ok: true, ran: true }));
+  assert.equal(result.ok, true, "a normal numeric gigId lock key must continue to work exactly as before");
+  assert.equal(result.ran, true);
 });
