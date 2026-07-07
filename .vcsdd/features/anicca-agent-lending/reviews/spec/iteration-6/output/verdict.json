@@ -1,0 +1,64 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 6,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T14:15:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-401", "FIND-402", "FIND-403"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-401",
+      "status": "genuinely resolved",
+      "note": "Re-read lock.mjs's real withGigLock(statePath, lockKey, fn, opts) signature fresh (lines 187-209) and walked the nested dual-lock design with concrete IDs. REQ-106 now acquires BOTH loan_${lenderId} AND loan_borrower_${borrowerId} for every issuance attempt (behavioral-spec.md:750-756, 767-791), in the order resolveLoanLockAcquisitionOrder returns (line 803), and -- critically -- takes 'a FRESH read of loans.jsonl' and re-evaluates REQ-102(a)-(d) 'while BOTH locks are held ... BEFORE proceeding to REQ-101's own availability recheck' (lines 782-786). Confirmed this fresh read genuinely observes the LATEST committed state, not a stale pre-lock snapshot: ledger.js's appendChild is a plain, synchronous fs.appendFileSync (confirmed via this feature's own repeated citations, e.g. behavioral-spec.md:914-916), so any prior holder's committed write is durably on disk before withGigLock's finally block releases that SAME lock (lock.mjs:203-208) -- and since the fresh read is specified to occur strictly AFTER acquiring the shared loan_borrower_${borrowerId} lock (never before), a second attempt's re-check is structurally guaranteed to see any first attempt's already-appended row. Walked PROP-106n's own concrete scenario (two lenders L1/L2, same borrower B): the two attempts share exactly one lock key (loan_borrower_B); whichever acquires it first proceeds to disburse; the other's re-check, performed only after acquiring that SAME key once released, correctly observes reason:outstanding_loan and refuses. This closes the original cross-lender double-borrowing hole. No remaining gap found in the double-borrowing fix itself -- see FIND-501 below for a SEPARATE, new issue found in this SAME lock-acquisition-order mechanism's own stated JUSTIFICATION (not its correctness)."
+    },
+    {
+      "findingId": "FIND-402",
+      "status": "genuinely resolved",
+      "note": "REQ-102's new condition (d) (behavioral-spec.md:411-426) requires lenderId !== borrowerId, checked FIRST, before (a)/(b)/(c) and before REQ-101's own availability computation ever runs (confirmed also in REQ-106's own Acceptance Criteria, line 1099-1100, and Edge Cases, line 1037-1041: 'rejected by REQ-102(d) BEFORE ANY other step of this critical section runs ... before EITHER lock is acquired'). PROP-102e (verification-architecture.md:110) binds a fixture where the self-loan candidate would otherwise pass every other condition, proving the exclusion is checked independently and first. Genuinely closes the self-loan free-reputation exploit at zero cost."
+    },
+    {
+      "findingId": "FIND-403",
+      "status": "genuinely resolved",
+      "note": "REQ-106's own text (behavioral-spec.md:855-867) is now unambiguous: issued_ms is a field on the FOLLOW-UP 'active' row ONLY, set to Date.now() at the moment THAT row is appended -- 'it is NEVER the provisional row's own provisioned_ms'. due_ms is always computed from this SAME value (REQ-109, line 1582-1584). PROP-106o (verification-architecture.md:136) binds a fixture where the provisional row is appended at T1 and the active row at a materially later T2, asserting issued_ms===T2 and due_ms computed from T2. The document also honestly discloses the residual reconciled-path timestamp asymmetry as an acknowledged, not-fully-resolved limitation (lines 868-881) rather than papering over it. No remaining gap found."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-502", "FIND-503"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:601-666", "description": "computeColdStartRepaymentRate/evaluateColdStartKillSwitch -- the ONLY automated default-risk monitoring/pause mechanism this feature builds -- is scoped exclusively to successfulOnTimeRepayments===0 loans, structurally excluding any default among established borrowers holding the largest ($0.04-$5.00) loans from ever influencing the pause decision"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:1-41", "description": "The document's own header still declares 'revision: iteration 3' and its Changelog tables stop at 'iteration 2 -> iteration 3', even though the body text demonstrably incorporates iteration 3/4/5 resolutions (FIND-201..403) throughout -- RESOLUTION-NOTES.md exist on disk for iterations 3-5 but are never referenced the way iteration-1/2's are"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-501"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs:153-158,174-179,187-209", "description": "withGigLock/acquire() is a single, non-blocking, fail-fast primitive with no retry/wait loop -- confirmed fresh this session -- meaning REQ-106's own 'textbook total-lock-ordering deadlock-avoidance' justification (behavioral-spec.md:793-802) describes a hold-and-wait scenario that cannot occur against this mechanism, independent of key-acquisition order"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:134", "description": "PROP-106m tests only that resolveLoanLockAcquisitionOrder returns a correctly-sorted key pair -- no proof obligation anywhere in the 149-item table attempts to construct, exercise, or measure an actual deadlock, because none is constructible against this lock mechanism"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
