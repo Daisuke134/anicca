@@ -1,8 +1,9 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 2 (spec
-review iteration-1 findings FIND-001..006 resolved — see changelog below)
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 2, revised
+(spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
+FIND-101..104 resolved — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -12,11 +13,23 @@ Spec review iteration 1 FAILed with 6 findings. Each is resolved by a specific, 
 | Finding | Severity | Resolution |
 |---|---|---|
 | FIND-001 | critical | `child-spec.js::buildChildSpec` is corrected from a false "reused unmodified" claim to a small, backward-compatible validation extension (new REQ-206): its identity-anchor requirement now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair — never both required. |
-| FIND-002 | critical | The dynamic citizen registry is specified explicitly (new REQ-105): `economy/ubi/colony-wallets.json` is extended from a flat address array into an array of `{id, wallet, fuel, humanDependencies, telemetryPath}` records that `isSelfFunded()` can consume directly; REQ-305 appends a new record to it on every successful spawn. |
+| FIND-002 | critical | The dynamic citizen registry is specified explicitly (new REQ-105): a brand-new, dedicated registry file (`~/anicca/skills/self/spawn/registry/citizens.json`) holds an array of `{id, wallet, walletAddress, fuel, humanDependencies, telemetryPath}` records that `isSelfFunded()` can consume directly; REQ-305 appends a new record to it on every successful spawn. |
 | FIND-003 | major | This increment's scope is explicitly narrowed (new REQ-106): all REQ-101/102/103 evaluation happens on ONE designated coordinator host (the Mac Mini already running automaton); cloud-deployed children never evaluate the colony-spawn gate themselves in this increment (spawn chaining is out of scope, deferred). This is what makes `lock.mjs`/`ledger.js` (local-filesystem primitives) correct as specified. |
 | FIND-004 | medium | REQ-204's "already-registered" defensive edge case is rewritten to reuse the existing, already-tested `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` wrapper instead of re-deriving the same cache/verify/register-once logic from scratch. |
 | FIND-005 | low | REQ-204's citation of "SPEC.md §9.9" for the gas-seed tx hashes is corrected to the actual section, "SPEC.md §9.6". |
 | FIND-006 | medium | The Nosana-vs-Akash cloud-target selection that REQ-302/303 presupposed is now itself specified (new REQ-306): a deterministic, price/availability-based comparison — bookkeeping, never a model judgment call. |
+
+## Changelog (iteration 2 spec review, round 1 → round 2)
+
+Iteration 2's spec review FAILed with 4 findings (all 6 iteration-1 findings above were reconfirmed
+genuinely resolved). Each is resolved by a specific, cited design decision:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-101 | critical | REQ-105/REQ-305 STOP repurposing the pre-existing, live `~/anicca/skills/economy/ubi/colony-wallets.json` (whose 2nd entry is claude-p's own human-funded wallet, and which `ubi.js::distributeAI` already uses for a different, unrelated purpose). A brand-new, dedicated file — `~/anicca/skills/self/spawn/registry/citizens.json` — is introduced instead, seeded with a fixed literal 2-entry array (no migration, no ambiguous classification step), and REQ-305's append path now calls `isSelfFunded()` on any new entry before appending, refusing the append if it returns `false`. |
+| FIND-102 | major | REQ-206's EARS clause is corrected to remove its self-contradiction with its own edge case: "at least one of these two anchors" is now stated explicitly as a non-exclusive minimum (both anchors present simultaneously is accepted, not an error), with a new acceptance criterion and PROP-206e covering exactly that path. |
+| FIND-103 | major | REQ-103 now names the canonical `statePath` every colony-spawn lock caller MUST use — REQ-105's `citizens.json` path, exported as a single constant `CITIZENS_REGISTRY_PATH` from a new shared module `~/anicca/skills/self/spawn/lib/registry-path.mjs` — closing the "mismatched statePath silently defeats mutual exclusion" gap. |
+| FIND-104 | medium | The citizen-registry record's `wallet` field is split into two separate fields: `wallet: {evm?: boolean, solana?: boolean}` (matching `is-self-funded.mjs::hasOwnWallet()`'s real, documented boolean contract exactly) and `walletAddress: {evm?: string, solana?: string}` (the actual address string(s), never passed to `isSelfFunded()`). |
 
 ## Scope of this increment (read first)
 
@@ -88,7 +101,8 @@ scripts remain aligned with current upstream documentation.
 | Concern | Classification | Why |
 |---|---|---|
 | Colony self-funded citizen filter | **Pure core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded(agent)` — already implements exactly the "own wallet + own-funded fuel + zero human deps" test this feature's REQ-101 needs to decide which balances even count toward the colony surplus. No new judgment logic is written; REQ-101 calls this existing, already-tested function on each RECORD supplied by REQ-105's registry (below) — `isSelfFunded()` itself is untouched; only its INPUT source is now specified. |
-| Colony citizen registry (data source for REQ-101) | **Effectful shell (existing, extended — schema migration, REQ-105)** | `~/anicca/skills/economy/ubi/colony-wallets.json`, extended from its current flat bare-address-array shape into an array of `{id, wallet, fuel, humanDependencies, telemetryPath}` records — the exact shape `isSelfFunded()` already requires, plus `telemetryPath` for REQ-101's balance lookup. A one-time, backward-compatible migration of the existing 3 entries (REQ-105), not a new file/mechanism. |
+| Colony citizen registry (data source for REQ-101) | **Effectful shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101)** | `~/anicca/skills/self/spawn/registry/citizens.json` — a brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, telemetryPath}` records — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch), `walletAddress` separately carries the real address string(s), and `telemetryPath` feeds REQ-101's balance lookup. Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens) — NOT a migration, and sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
+| Pre-existing mutual-aid recipient list (untouched, out of scope) | **Effectful shell (existing, NOT read/written by this feature)** | `~/anicca/skills/economy/ubi/colony-wallets.json` — `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc), a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file — resolves FIND-101's critical finding that an earlier draft wrongly proposed migrating/extending it, which would have risked a human-funded wallet silently entering the colony-surplus aggregate. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). |
 | Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. |
 | Per-child identity record assembly | **Pure core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID (unchanged) + an identity-anchor validation that now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair, never requiring both (REQ-206). This corrects iteration 1's false "reused unmodified" claim (FIND-001): the distinct-wallet assertion and every other existing field/behavior are untouched, and a regression test locks in that today's `childInbox`-only callers still succeed identically. |
@@ -103,7 +117,7 @@ scripts remain aligned with current upstream documentation.
 | Nosana job deploy | **Effectful shell (new)** | Real `nosana job post` subprocess against a real Solana-settled market; genuinely new for this project (REQ-302). |
 | Akash job deploy | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` + `akt-treasury.sh` — already implemented, already tested against a real sandbox-2 chain per those scripts' own inline evidence references; reused unmodified with a new child SDL/`CHILD_ID` (REQ-303). |
 | Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). |
-| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`economy/ubi/colony-wallets.json`) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap). |
+| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`, which this feature never touches) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
 | REQ-104 (bookkeeping-only design constraint) | **Not code — a design constraint, verified structurally** | Directly analogous to `anicca-agent-economy`'s REQ-203 ("Design-constraint requirement — bookkeeping only, never judgment"): not independently unit-testable in the normal sense; verified by a Phase 3 structural code read (no scoring/ranking/preference logic anywhere in REQ-101-103's diff), not a runtime assertion. |
@@ -229,6 +243,22 @@ lock is sufficient because every caller in this increment shares the SAME mounte
 SAME coordinator host — this requirement does NOT claim to solve mutual exclusion across physically
 separate hosts (see REQ-106's own known-limitation edge case for that future scenario).
 
+**Canonical `statePath` (resolves FIND-103)**: `withGigLock`'s real, existing signature is
+`withGigLock(statePath, lockKey, fn, opts)` — `statePath` is a MANDATORY positional argument, and
+`lockPaths()` derives the actual lock FILE from BOTH `statePath`'s directory AND `lockKey`
+(`path.join(path.dirname(statePath), 'locks', lockKey + '.lock')`), never from `lockKey` alone. If two
+call sites passed two DIFFERENT `statePath` values under the same `"colony-spawn"` lock key, they would
+resolve to two DIFFERENT physical lock files under two different `locks/` directories and BOTH could
+"hold the lock" simultaneously — silently defeating this requirement's entire purpose. THE SYSTEM SHALL
+therefore designate REQ-105's citizen registry path (`~/anicca/skills/self/spawn/registry/citizens.json`)
+as the colony-spawn lock's ONE canonical `statePath` — a natural fit, since the critical section this
+lock protects IS "read `citizens.json` + decide + possibly append to `citizens.json`" (REQ-101 through
+REQ-305) — and SHALL export this single path as ONE named constant, `CITIZENS_REGISTRY_PATH`, from a
+new shared module `~/anicca/skills/self/spawn/lib/registry-path.mjs`. EVERY call site that acquires the
+`"colony-spawn"` lock (and every REQ-101/105/305 read/write of the registry itself) SHALL import and use
+this SAME exported constant — never an independently hardcoded path string — so lock identity and
+registry identity can never silently drift apart across call sites.
+
 **Edge Cases**:
 - Two evaluation loops on the coordinator host race to acquire the `"colony-spawn"` lock within the
   same millisecond: POSIX exclusive file creation (`fs.open(..., "wx")`, the existing mechanism's own
@@ -240,14 +270,25 @@ separate hosts (see REQ-106's own known-limitation edge case for that future sce
 - A held lock's holder is still genuinely working (heartbeating) well past any naive fixed timeout: per
   the existing `isLockStale` semantics, it is NEVER stolen from while it heartbeats, regardless of
   elapsed wall-clock time — this property is inherited, not re-derived, from the existing lock.
+- A future call site hardcodes its own literal `citizens.json` path string instead of importing
+  `CITIZENS_REGISTRY_PATH`: even if the literal string happens to match TODAY, THE SYSTEM treats this as
+  a spec violation to be caught at Phase 3 review (a structural/import-identity check, not a runtime
+  assertion) — the binding contract is "imports the constant," not "the string happens to be correct."
 
 **Acceptance Criteria**:
 - The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx)
   is wrapped by the existing `withGigLock`-equivalent helper (or a directly analogous
-  `withColonyLock("colony-spawn", fn)`) using the SAME `lock.mjs` module, not a reimplementation.
+  `withColonyLock("colony-spawn", fn)`) using the SAME `lock.mjs` module, not a reimplementation, with
+  `statePath` set to the single exported `CITIZENS_REGISTRY_PATH` constant from `registry-path.mjs` —
+  never an independently hardcoded string.
 - Given two concurrent callers both observing `eligible:true`, an integration test proves exactly one
   reaches REQ-201's wallet-generation step during the run; the other's attempt is recorded as
   `reason:"lock_held"` and makes zero wallet-generation calls.
+- A structural/Tier-0 check (source-grep or import-identity check) confirms EVERY call site that
+  invokes the `"colony-spawn"` lock imports and passes the SAME `CITIZENS_REGISTRY_PATH` constant — this
+  is required IN ADDITION TO (not instead of) the concurrent-race integration test above, because a
+  single test process sharing one implicit `statePath` choice cannot, by itself, prove every real call
+  site in the eventual implementation converges on one canonical path.
 
 ---
 
@@ -285,19 +326,69 @@ the eligibility ARITHMETIC, never the agent's own in-envelope choices.
 
 ---
 
-### REQ-105: Colony citizen registry — dynamic, extensible, spawn-appended (resolves FIND-002)
+### REQ-105: Colony citizen registry — brand-new, dedicated, spawn-appended (resolves FIND-002; revised to resolve FIND-101/FIND-104)
 **EARS**: WHEN REQ-101 needs the list of citizens to evaluate, THE SYSTEM SHALL read that list from a
-single, versioned JSON registry file (`~/anicca/skills/economy/ubi/colony-wallets.json`), extended
-from its CURRENT flat bare-address-array shape (`["0x...", "0x...", "8Fpqd..."]`) into an array of
-citizen-record objects, each carrying EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
-(`~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified) already require —
-`{id: string, wallet: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies:
-string[]}` — plus ONE additional field this feature needs and `isSelfFunded()` itself does not read,
+single, versioned JSON registry file dedicated EXCLUSIVELY to this feature's colony-surplus/spawn
+concern — `~/anicca/skills/self/spawn/registry/citizens.json` — created FRESH by this feature. THE
+SYSTEM SHALL NOT read from, write to, migrate, or otherwise repurpose the pre-existing
+`~/anicca/skills/economy/ubi/colony-wallets.json`: that file remains exclusively `ubi.js::
+distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," a
+DIFFERENT purpose than this requirement's surplus-aggregation registry), and its current 2nd entry is
+claude-p's own human-funded wallet — the two files share ZERO state (resolves FIND-101's critical
+finding that an earlier draft wrongly proposed migrating/extending that live, differently-scoped,
+already-in-use file).
+
+Each record in `citizens.json` carries EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
+(`~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified) already require, SPLIT into the
+two separate shapes that module's own documented contract and this feature's own consumers each need
+(resolves FIND-104's wallet-field type mismatch: `is-self-funded.mjs::hasOwnWallet()` documents and
+implements `wallet.evm`/`wallet.solana` as BOOLEAN presence flags — `Boolean(wallet.evm) ||
+Boolean(wallet.solana)` — never address strings):
+- `wallet: {evm?: boolean, solana?: boolean}` — a presence-flag pair, matching `hasOwnWallet()`'s real,
+  documented boolean contract EXACTLY (true compatibility, never accidental truthiness coercion of a
+  non-empty address string).
+- `walletAddress: {evm?: string, solana?: string}` — the actual address string(s), for REQ-305's
+  registry-append use and any future consumer that needs the real address — this field is NEVER passed
+  to `isSelfFunded()`.
+
+The full record shape is therefore `{id: string, wallet: {evm?: boolean, solana?: boolean},
+walletAddress: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[]}`
+plus ONE additional field this feature needs and `isSelfFunded()` itself does not read,
 `telemetryPath: string` (the citizen's own `state/telemetry.json` absolute or `$HOME`-relative path,
-used by REQ-101's balance lookup). THE SYSTEM SHALL migrate the registry's current 3 bare-address
-entries into this shape as a one-time, backward-compatible data migration (Phase 2b), preserving each
-entry's existing wallet address value(s) unchanged — this spec does not leave the target schema
-ambiguous.
+used by REQ-101's balance lookup).
+
+THE SYSTEM SHALL seed `citizens.json`, at implementation time, with the following FIXED, LITERAL JSON
+array — NOT a migration of `colony-wallets.json`'s entries, and NOT derived from any out-of-band
+classification step, because there is no migration to begin with — containing ONLY the entities this
+spec's author has verified, as of 2026-07-07, are genuinely self-funded colony citizens (per
+`~/anicca/skills/self/colony-status.sh`'s own live output and this project's own `CLAUDE.md` colony
+table: "SELF-funded on Earth = 2"):
+
+```json
+[
+  {
+    "id": "anicca-a3cdd4",
+    "wallet": { "evm": true },
+    "walletAddress": { "evm": "0xB9dd3B67921B354c656523d6851537988F31DD56" },
+    "fuel": { "provider": "clawrouter-own-wallet" },
+    "humanDependencies": [],
+    "telemetryPath": "$HOME/.automaton/state/telemetry.json"
+  },
+  {
+    "id": "Franklin",
+    "wallet": { "solana": true },
+    "walletAddress": { "solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9" },
+    "fuel": { "provider": "x402" },
+    "humanDependencies": [],
+    "telemetryPath": "$HOME/.blockrun/state/telemetry.json"
+  }
+]
+```
+
+claude-p (real funds at `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`, human-funded, per
+`docs/WALLETS.md` lines 49-62) and every other human-funded wallet SHALL NEVER be seeded into this
+file — there is no ambiguous classification step here precisely BECAUSE there is no migration; the
+seed set above is a fixed literal this spec's author already verified against live, on-disk evidence.
 
 **Edge Cases**:
 - The registry file is missing, unparseable, or one record is missing a required field: THE SYSTEM
@@ -310,13 +401,24 @@ ambiguous.
   owns the JUDGMENT of who counts; REQ-105 does not duplicate or override that gate.
 - Two records share the same `id`: THE SYSTEM SHALL treat this as a malformed registry and exclude
   BOTH duplicate-id records from aggregation until corrected, rather than arbitrarily picking one.
+- A future write path (anywhere in this feature) attempts to append or edit an entry in `citizens.json`
+  whose `{wallet, fuel, humanDependencies}` sub-object would make `isSelfFunded()` return `false`: see
+  REQ-305's binding pre-append `isSelfFunded()` check below — this registry SHALL NEVER contain an
+  entry that fails its own gate, at seed time OR at any later append.
 
 **Acceptance Criteria**:
-- After migration, the registry file parses as an array of objects each satisfying `{id, wallet, fuel,
+- The seed file parses as an array of objects each satisfying `{id, wallet, walletAddress, fuel,
   humanDependencies, telemetryPath}`, and calling the existing, unmodified `isSelfFunded()` on any one
-  record's `{wallet, fuel, humanDependencies}` sub-object returns a boolean without throwing.
-- A round-trip test confirms migrating the pre-existing 3 entries preserves each one's known-good
-  `isSelfFunded()` verdict (migration does not silently reclassify any existing citizen).
+  record's `{wallet, fuel, humanDependencies}` sub-object (never `walletAddress`) returns a boolean
+  without throwing.
+- A direct test confirms that EACH of the two seeded entries above, when its `{wallet, fuel,
+  humanDependencies}` sub-object is passed through the existing, unmodified `isSelfFunded()`, returns
+  `true` — a straightforward assertion against literal fixture data (resolves FIND-101's critique of
+  the prior "compare against today's known-good identities" proof method, which presupposed an
+  out-of-band ground truth no longer needed once there is no migration).
+- `citizens.json`'s seed content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
+  REQ-305's append-on-spawn path (below) enforces the SAME property on every future append, closing
+  this hazard PERMANENTLY rather than only at t=0.
 - REQ-402c (a `"bootstrap_failed"` child's exclusion) and REQ-403 (the wallet non-interference audit's
   "current set of running instances") both read their citizen list from THIS SAME registry — no second,
   parallel citizen-enumeration mechanism exists anywhere in this spec.
@@ -550,14 +652,20 @@ modification to Franklin's own source required.
 
 ---
 
-### REQ-206: `buildChildSpec`'s identity-anchor validation — backward-compatible extension (resolves FIND-001)
+### REQ-206: `buildChildSpec`'s identity-anchor validation — backward-compatible extension (resolves FIND-001; EARS clarified to resolve FIND-102)
 **EARS**: WHEN a new child record is assembled via `~/anicca/skills/self/spawn/lib/child-spec.js::
 buildChildSpec` (called from REQ-305's ledger-append step), THE SYSTEM SHALL accept as a valid
 "identity anchor" for the child EITHER (a) a non-empty `childInbox` string (the pre-existing
 AgentMail-based anchor, unchanged in shape and validation from today's already-shipped design) OR (b)
 the pair `agentEvmAddress` (identical to `childWallet`, REQ-201) AND `agentId` (the numeric ERC-8004
-identifier `ensureAgentId`/REQ-204 returns), both present and non-empty — requiring at least ONE of
-these two anchors, never both, and never neither. This corrects iteration 1's false claim that
+identifier `ensureAgentId`/REQ-204 returns), both present and non-empty. THE SYSTEM SHALL require that
+AT LEAST ONE of these two anchors is present; it is NOT an error for BOTH to be present simultaneously
+(a future hybrid child with both an AgentMail inbox and an on-chain identity succeeds identically to
+either anchor alone — see Edge Cases and Acceptance Criteria); it IS an error for NEITHER to be present.
+"At least one" is stated here as a genuine minimum, not an exclusive-or, so this EARS clause and the
+Edge Cases below never disagree (resolves FIND-102's self-contradiction between an earlier XOR-reading
+EARS sentence and this requirement's own "both present" acceptance rule). This corrects iteration 1's
+false claim that
 `buildChildSpec` is reused "unmodified" (FIND-001: today's code throws `missing required field
 "childInbox"` for `undefined`/`null`/`""`, and this feature's own design never produces an AgentMail
 inbox at all): `buildChildSpec` requires a SMALL, backward-compatible validation/signature extension
@@ -593,6 +701,10 @@ new optional fields, `agent_evm_address`/`agent_id`, alongside its existing, unc
   returned row carries `agent_evm_address`/`agent_id`.
 - A new test fixture supplying NEITHER anchor throws; a fixture supplying only HALF of the ERC-8004
   pair also throws.
+- A new test fixture supplying BOTH a non-empty `childInbox` AND a complete `agentEvmAddress`+`agentId`
+  pair simultaneously SUCCEEDS without throwing, and the returned row carries `childInbox`,
+  `agent_evm_address`, AND `agent_id` all together — proving the "at least one, not an XOR" reading of
+  the EARS clause above (resolves FIND-102).
 - A structural diff of `child-spec.js` confirms the change is limited to the required-field validation
   and the returned row's field list — `nextChildId`, the distinct-wallet assertion, and every other
   existing field/behavior are byte-identical to today's.
@@ -742,11 +854,24 @@ project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zer
 provisioning/failed ledger row, never a fabricated success"). WHEN, and only when, a spawn attempt
 completes and the child is marked `"active"` (REQ-204+REQ-205 both complete), THE SYSTEM SHALL ALSO
 append a new record for that child to REQ-105's colony citizen registry
-(`economy/ubi/colony-wallets.json`) — `{id: child_id, wallet: {evm: childWallet, solana:
-childSolanaAddress-if-generated}, fuel: {provider: "free-model"} (per REQ-401's exclusive free-model
-fuel requirement), humanDependencies: [], telemetryPath: <child's own isolated telemetry.json path>}`
-— so REQ-101's NEXT evaluation includes the new citizen automatically, without any separate manual or
+(`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`, which
+this feature never touches, per REQ-105's FIND-101 revision) — `{id: child_id, wallet: {evm: true,
+solana: true-if-generated} (BOOLEAN presence flags, matching `is-self-funded.mjs::hasOwnWallet()`'s own
+documented contract exactly — resolves FIND-104), walletAddress: {evm: childWallet, solana:
+childSolanaAddress-if-generated} (the actual address STRING(s) — a SEPARATE field from `wallet`, never
+passed to `isSelfFunded()`), fuel: {provider: "free-model"} (per REQ-401's exclusive free-model fuel
+requirement), humanDependencies: [], telemetryPath: <child's own isolated telemetry.json path>}` — so
+REQ-101's NEXT evaluation includes the new citizen automatically, without any separate manual or
 out-of-band registry-edit step (resolves FIND-002's "how does the registry grow" gap).
+
+**Before this append is performed** (resolves FIND-101's permanent-hazard-closure requirement), THE
+SYSTEM SHALL call the existing, unmodified `isSelfFunded()` on the new record's `{wallet, fuel,
+humanDependencies}` sub-object — exactly the same gate REQ-101 itself would apply — and SHALL REFUSE
+the append (logged as a distinct, non-silent REQ-305 append-failure; the child's ledger row remains
+`"active"` since REQ-204+REQ-205 genuinely completed, but the registry-append reconciliation below
+applies) if `isSelfFunded()` returns `false` for that exact record. This ensures `citizens.json` can
+NEVER come to contain a non-self-funded entry, whether at its initial REQ-105 seed or at ANY later
+spawn-triggered append — a permanent closure of the hazard, not merely a t=0 check.
 
 **Edge Cases**:
 - The cloud deploy (REQ-302/303) succeeds but ERC-8004 registration (REQ-204) subsequently fails: the
@@ -758,11 +883,19 @@ out-of-band registry-edit step (resolves FIND-002's "how does the registry grow"
   spawns by engineering repeated "failures": THE SYSTEM SHALL cap the number of failed attempts counted
   within any single `SPAWN_COOLDOWN_DAYS` window (default cap `3`) — beyond that cap, further attempts
   within the window ARE rate-limited exactly as a successful spawn would be, closing this gap.
-- The ledger write (`"active"`) succeeds but the SUBSEQUENT registry-append write fails (e.g. a
-  transient filesystem error): THE SYSTEM SHALL retry the registry-append on the NEXT wake before any
-  further spawn evaluation runs — a child marked `"active"` in the ledger but absent from the registry
-  is a detectable inconsistency (the next REQ-101 aggregation run reconciles it), never a silent,
-  permanent gap.
+- The ledger write (`"active"`) succeeds but the SUBSEQUENT registry-append write fails FOR A TRANSIENT
+  REASON (e.g. a filesystem error): THE SYSTEM SHALL retry the registry-append on the NEXT wake before
+  any further spawn evaluation runs — a child marked `"active"` in the ledger but absent from the
+  registry is a detectable inconsistency (the next REQ-101 aggregation run reconciles it), never a
+  silent, permanent gap.
+- The registry-append is REFUSED because the new record fails its own `isSelfFunded()` pre-append check
+  (e.g. an upstream bug produced a `wallet` object with no `true` flags): THE SYSTEM SHALL treat this as
+  a DISTINCT failure mode from the transient-filesystem-error case above — it is NOT blindly retried on
+  the next wake (retrying an isSelfFunded-refusal without fixing the underlying defect would either loop
+  forever or eventually succeed for the wrong reason) — instead it SHALL be surfaced as a BLOCKING
+  colony-accounting anomaly requiring explicit remediation; the child remains `"active"` in the spawn
+  ledger (REQ-204+REQ-205 genuinely completed) but is PERMANENTLY excluded from REQ-101's aggregation
+  until the anomaly is fixed and the append is manually/explicitly retried.
 
 **Acceptance Criteria**:
 - A structural/Tier-0 check of the ledger-writing code path confirms every write path that can leave a
@@ -772,7 +905,11 @@ out-of-band registry-edit step (resolves FIND-002's "how does the registry grow"
   confirms the resulting ledger row's `status` and `error` fields correctly identify the failing step,
   and that REQ-101's next aggregation run excludes that child.
 - An integration test confirms that marking a child `"active"` appends a new, correctly-shaped record
-  to REQ-105's registry, and that a FAILED attempt appends NO registry record at all.
+  (with `wallet` boolean flags and `walletAddress` strings correctly split — resolves FIND-104) to
+  REQ-105's registry, and that a FAILED attempt appends NO registry record at all.
+- A fixture where the new record's `{wallet, fuel, humanDependencies}` sub-object would fail
+  `isSelfFunded()` (e.g. `fuel.provider` missing/unrecognized) results in ZERO append to `citizens.json`
+  and a logged, distinct refusal — never a silent append of a non-self-funded entry (resolves FIND-101).
 
 ---
 

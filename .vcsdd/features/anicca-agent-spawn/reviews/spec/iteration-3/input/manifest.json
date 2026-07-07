@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 3,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 2,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-2/output/findings/",
+    "note": "4 findings: FIND-101 (critical, colony-wallets.json repurposing risk -- claude-p's own human-funded wallet sat unclassified in the file REQ-105/305 planned to aggregate colony surplus from) resolved by abandoning the repurposing entirely -- REQ-105 now creates a brand-new, dedicated ~/anicca/skills/self/spawn/registry/citizens.json, seeded with a fixed literal 2-entry array (automaton + Franklin only), colony-wallets.json left completely untouched/out-of-scope, and REQ-305's append path now calls isSelfFunded() before every append and refuses if false (permanent closure, not just t=0). FIND-102 (major, REQ-206 EARS/edge-case self-contradiction over both-anchors-present) resolved by rewriting the EARS clause to state at-least-one/not-XOR explicitly, adding a 5th acceptance fixture and new PROP-206e. FIND-103 (major, withGigLock's mandatory statePath argument never specified, risking silent lock-identity drift across call sites) resolved by designating citizens.json's own path as the canonical statePath, exported as a single CITIZENS_REGISTRY_PATH constant from a new registry-path.mjs module, with new PROP-103d requiring a structural check that every call site imports this same constant. FIND-104 (medium, wallet.evm/solana typed as strings in the spec but implemented as booleans in is-self-funded.mjs) resolved by splitting the citizen record into two fields: wallet:{evm?:boolean,solana?:boolean} (exact match to isSelfFunded()'s real boolean contract) and walletAddress:{evm?:string,solana?:string} (the real address strings for REQ-305/other consumers, never passed to isSelfFunded())."
+  },
+  "note": "Verify each of the 4 fixes actually holds by re-reading the real source files cited fresh (is-self-funded.mjs, lock.mjs, child-spec.js) and the actual current content of colony-wallets.json and docs/WALLETS.md -- do not accept the revision's own claims without checking. In particular: (1) confirm citizens.json is a genuinely NEW, separate path with zero shared state with colony-wallets.json anywhere in the spec; (2) confirm no seed entry in the new citizens.json literal array could plausibly be a human-funded wallet; (3) confirm REQ-103's canonical statePath claim doesn't introduce a NEW inconsistency (e.g. registry-path.mjs not otherwise referenced, or REQ-105/305 not actually using the same constant); (4) confirm the wallet/walletAddress split is applied consistently everywhere the record shape is described (REQ-105, REQ-305, verification-architecture.md Purity Boundary Map), not just in one spot. Also check whether these 4 fixes introduced any NEW inconsistency elsewhere in the spec (e.g. any other requirement that still references the old single wallet:{evm?:string} shape, or still assumes colony-wallets.json)."
+}
