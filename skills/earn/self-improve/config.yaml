@@ -5,24 +5,47 @@
 # venv — see execution-notes-self-improve.md "Stage-2 real run"): `EvaluatorConfig.cascade_thresholds`
 # (default [0.5, 0.75, 0.9]) and `DatabaseConfig.num_islands` (default 5).
 
-max_iterations: 20  # small — this is a cheap/local proving run, not a production sweep
-checkpoint_interval: 5  # top-level Config field (NOT database.checkpoint_interval)
+max_iterations: 40  # raised from 20 (close-loop revision, 2026-07-08): the prior 10-iteration
+                    # real run's tracked "best" never moved off the unmodified seed program — more
+                    # attempts is the cheap, non-gaming lever (this run stays $0, free-tier only).
+checkpoint_interval: 10  # top-level Config field (NOT database.checkpoint_interval). Raised from
+                         # 5 -> 10 for 40 iterations to cut checkpoint-write disk churn on this
+                         # box's tight local disk (df showed <900Mi free before this run — see
+                         # execution-notes-self-improve.md's close-loop-2 section).
 
 llm:
   # Endpoint = the colony's own local ClawRouter proxy (127.0.0.1:8402), backed by the
   # SELF-FUNDED anicca-a3cdd4 automaton's own wallet (0xa3CDd4Ec... on Base) — NOT a human's
   # personal API key/subscription (REQ-OE4 / no-human-loop invariant). Wallet balance is $0.00
-  # (verified via `clawrouter wallet` 2026-07-07), so only a FREE-tier model can be used — this
-  # is a structural guarantee against any spend, not just a policy.
-  # model id = "free/mistral-large-3-675b": verified LIVE 2026-07-07 (curl to the running local
-  # proxy) to return HTTP 200 at $0 cost, response model tag matching the request (not silently
-  # downgraded). Earlier attempt used "nvidia/glm-4.7" (aliases to the much weaker free/seed-oss-36b,
-  # 36B) — a real 25-iteration run on that model produced 9 real LLM-generated candidates, ALL of
-  # which scope_guard correctly rejected as out-of-scope edits (the weak model kept rewriting
-  # load_fixture/_stake_for_row outside the EVOLVE-BLOCK too), then the model's free-tier daily
-  # quota hit 429. Switched to this larger (675B) free model for a better chance of the LLM
-  # respecting the SEARCH/REPLACE diff scope. Both are genuinely $0 (wallet balance is $0.00,
-  # confirmed via `clawrouter wallet` — no spend is even possible).
+  # (verified via `clawrouter wallet` 2026-07-08 again), so only a FREE-tier model can be used —
+  # this is a structural guarantee against any spend, not just a policy.
+  #
+  # MODEL CHOICE (re-verified LIVE 2026-07-08, close-loop-2 revision): built a standalone harness
+  # (`/private/tmp/.../scratchpad/test_model_diff.py`, same system_message + the real diff_user.txt
+  # shape openevolve sends) and fired the REAL current program at both candidate free models via
+  # direct curl to the local proxy — not a guess, an actual side-by-side sample:
+  #  - free/mistral-large-3-675b (the sole model the prior 10-iteration run used): 3/3 real samples
+  #    (temperature 0.5, 0.9, 1.15) each produced a SEARCH/REPLACE block whose closing fence was the
+  #    literal text `>>>>>>>` with NO trailing ` REPLACE` — openevolve's own parser
+  #    (utils/code_utils.py::extract_diffs, regex `r"<<<<<<< SEARCH\n(.*?)=======\n(.*?)>>>>>>> REPLACE"`)
+  #    requires that exact literal, so every one of these 3 samples silently fails to parse as ANY
+  #    diff at all ("No valid diffs found in response") — a chronic per-model formatting habit on
+  #    this task, reproduced at 3 different temperatures, not a truncation artifact (all 3 completed
+  #    with finish_reason=stop well under the 8192-token cap tested) and not solely the rate-limit
+  #    problem this file previously blamed alone.
+  #  - free/qwen3.5-122b-a10b: 1/1 live sample (temperature 0.7, before its own free-tier bucket
+  #    also 429'd on a second call) produced a byte-correct `<<<<<<< SEARCH` / `=======` /
+  #    `>>>>>>> REPLACE` block, reproducing the ENTIRE score_candidate function body (including the
+  #    EVOLVE-BLOCK-START/END marker lines, unmodified, at the same relative position) — verified by
+  #    hand against `lib/gate_math.py::diff_in_scope` that this specific shape (whole-block replace,
+  #    markers preserved verbatim) computes identical fixed-region prefix/suffix to baseline and
+  #    therefore PASSES scope_guard, not just "looks like a diff".
+  # Conclusion: qwen3.5-122b-a10b is the model with demonstrated correct diff-format compliance on
+  # THIS task; mistral-large-3-675b is kept as a second ensemble entry purely for request-volume
+  # redundancy across a SEPARATE free-tier rate-limit bucket (confirmed independently 200/429 from
+  # each other live) — its low format-compliance means most of its samples are wasted iterations,
+  # never a harmful one (a failed parse just leaves the tracked best unchanged), so keeping it costs
+  # nothing but adds a second bucket to draw from when qwen's own bucket is exhausted.
   api_base: "http://127.0.0.1:8402/v1"
   api_key: "unused-local-proxy-no-auth"  # the local ClawRouter proxy does not check this value
   # openevolve's OpenAI client ALWAYS includes `top_p` in the request body (even when None), and
@@ -30,43 +53,35 @@ llm:
   # received null") — confirmed live 2026-07-07 in the first trial run (every LLM call failed
   # before this fix). Must be a real number.
   top_p: 1.0
-  # The free-tier bucket for this model is a SHORT rolling-window rate limit, not a hard daily cap
-  # — confirmed live 2026-07-07: mistral-large-3-675b 429'd after ~14 calls in one run, then a
-  # plain curl a few minutes later returned 200 again. Longer retries/retry_delay let a single
-  # generation call ride out the window instead of failing the whole iteration.
-  retries: 5
-  retry_delay: 20
-  # THREE entries of the SAME free model at DIFFERENT temperatures, instead of one `primary_model`,
-  # via openevolve's own LLMEnsemble (real mechanism: llm/ensemble.py::_sample_model does a
-  # weighted random.choice over `llm.models` on every single generate_with_context call — this is
-  # NOT a custom addition, it is openevolve's documented multi-model-ensemble feature, used here for
-  # its designed purpose: request diversity). This fixes two things confirmed live 2026-07-07 with a
-  # single fixed-temperature `primary_model`:
-  #  1. At generation 0 (single seed program, no population yet) openevolve's own prompt is BYTE-
-  #     IDENTICAL across "iterations" (evolution_round is never interpolated into the rendered
-  #     template; prompt.template_variations defaults to {} = no stochasticity content). A fixed
-  #     temperature means every iteration sends the literal same request body. The local ClawRouter
-  #     proxy has a live response cache (`clawrouter cache` showed hits>0) — so iteration 1 alone
-  #     ever reaches a real generation; iterations 2-N all "complete" in <1s each, served straight
-  #     from cache, with the exact same (good-or-bad) content as iteration 1. A run stuck on one bad
-  #     generation-0 sample can therefore never see a second real sample no matter how many
-  #     `--iterations` are requested.
-  #  2. free/mistral-large-3-675b's own diff-formatting reliability varies noticeably by
-  #     temperature (a direct reproduction of the exact generation-0 prompt returned a valid
-  #     multi-hunk SEARCH/REPLACE diff at temperature=0.9 but "No valid diffs found" at 0.7 in one
-  #     harness run and again at 0.9 in another — i.e. real sample-to-sample variance, not solely a
-  #     temperature effect). Sampling across 3 temperatures per call (instead of 1 fixed value)
-  #     both changes the request bytes (defeats the cache) and gives 3x the chance of landing a
-  #     well-formed, in-scope diff per generation-0 attempt.
+  # max_tokens raised from openevolve's own default (4096) to 8192 (close-loop-2, 2026-07-08):
+  # live test responses (explanatory prose + diff) ran 11.8k-16.1k chars — comfortably under 8192
+  # tokens but close enough to the 4096-token default that a verbose sample could plausibly be cut
+  # off mid-diff on some future longer response. This is pure headroom, not a fitness/gate change.
+  max_tokens: 8192
+  # The free-tier bucket for each model is a SHORT rolling-window rate limit, not a hard daily cap
+  # — confirmed live both 2026-07-07 (mistral) and 2026-07-08 (qwen, 429'd after 2 calls within a
+  # couple minutes). Raised retries/retry_delay again (5/20s -> 8/25s) to let a single generation
+  # call ride out a short window instead of failing the whole iteration outright.
+  retries: 8
+  retry_delay: 25
+  # Ensemble of TWO different free models (was: one model x 3 temperatures) via openevolve's own
+  # LLMEnsemble (llm/ensemble.py::_sample_model — a weighted random.choice over `llm.models` on
+  # every generate_with_context call; not a custom addition). Weight biased 2:2:1 toward
+  # qwen3.5-122b-a10b (demonstrated correct SEARCH/REPLACE format above) while still drawing from
+  # mistral-large-3-675b's separate rate-limit bucket for extra request volume when qwen's own
+  # bucket is exhausted. Different temperatures per qwen entry keep the same cache-defeat property
+  # documented in this file's prior revision (fixed single-temperature requests are byte-identical
+  # at generation 0 and get served from the local proxy's own response cache instead of a fresh
+  # sample).
   models:
-    - name: "free/mistral-large-3-675b"
+    - name: "free/qwen3.5-122b-a10b"
       temperature: 0.5
-      weight: 1.0
-    - name: "free/mistral-large-3-675b"
+      weight: 2.0
+    - name: "free/qwen3.5-122b-a10b"
       temperature: 0.9
-      weight: 1.0
+      weight: 2.0
     - name: "free/mistral-large-3-675b"
-      temperature: 1.15
+      temperature: 0.7
       weight: 1.0
 
 prompt:
@@ -95,6 +110,24 @@ prompt:
     outside the block is automatically and unconditionally rejected before it is ever scored, so
     such an edit wastes the whole attempt. Confine 100% of your proposed changes to the body of the
     single function between the markers.
+
+    Your SEARCH/REPLACE diff MUST end its final line with the exact literal text `>>>>>>> REPLACE`
+    (all seven `>` characters immediately followed by a single space and the word REPLACE) — a
+    closing fence of `>>>>>>>` alone, without the trailing ` REPLACE`, or any other variation, is not
+    recognized as a diff at all and your entire response is silently discarded before it is ever
+    scored, wasting the whole attempt. Double-check this exact closing line before finishing.
+
+    The highest-leverage lever inside the evolvable function is the trade-SELECTION logic: the
+    thresholds (`min_edge`, `min_confidence`) and any equivalent condition that decides WHICH
+    candidates get a nonzero stake at all. The fitness score is a Sharpe-like ratio (mean divided by
+    standard deviation) over several out-of-sample windows, so uniformly scaling the stake SIZE
+    (e.g. changing `base_stake` alone) on an otherwise-UNCHANGED set of selected trades cannot move
+    that ratio — it scales the numerator and denominator identically and is not a productive place
+    to spend your edits. Tightening the selection condition so only higher-conviction opportunities
+    are taken (dropping marginal/noisy edge cases that hurt the worst-case window) tends to raise
+    this kind of risk-adjusted score far more reliably than resizing stakes. Prefer exploring
+    selection thresholds, new combining features over the given inputs, or genuinely different
+    selection logic over stake-size-only changes.
 
 database:
   # Persist the program database + per-program prompt/response logs to disk (real openevolve
