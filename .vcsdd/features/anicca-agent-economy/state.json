@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-economy",
   "mode": "strict",
-  "currentPhase": "5",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -110,6 +110,13 @@
       "timestamp": "2026-07-07T06:29:53.000Z",
       "sprint": 1,
       "reason": "Phase 3 PASS (gates.3), all 8 CRIT confirmed via live execution + on-chain re-attack, 1 non-blocking info finding (FIND-501, no real data lost). Advancing to Phase 5 (formal hardening)."
+    },
+    {
+      "from": "5",
+      "to": "complete",
+      "timestamp": "2026-07-07T06:55:22.000Z",
+      "sprint": 1,
+      "reason": "Phase 5 (formal hardening) complete: semgrep (0 automated findings, 1 manual live-verified SEC-1 path-traversal finding fixed anyway), purity audit (no drift from declared boundaries), fast-check property tests for all 11 required Tier-1 obligations (~20,000 randomized cases). All 25/25 required proof obligations proved. Phase 6 convergence check (gates.6) PASS: all 4 dimensions converged (finding diminishment 6->0 and 1->0, specificity verified, 8/8 criteria coverage, 0 duplicates), 0 open adversary-finding beads, all hardening artifacts present. anicca-agent-economy sprint 1 is COMPLETE."
     }
   ],
   "iterations": {
@@ -760,7 +767,14 @@
         "createdAt": "2026-07-07T03:07:19.000Z",
         "createdInPhase": "1b",
         "externalId": "PROP-201i"
-      }
+      },
+      { "beadId": "BEAD-100", "type": "adversary-finding", "externalId": "FIND-001", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-001.json", "linkedBeads": [] },
+      { "beadId": "BEAD-101", "type": "adversary-finding", "externalId": "FIND-002", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-002.json", "linkedBeads": [] },
+      { "beadId": "BEAD-102", "type": "adversary-finding", "externalId": "FIND-003", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-003.json", "linkedBeads": [] },
+      { "beadId": "BEAD-103", "type": "adversary-finding", "externalId": "FIND-004", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-004.json", "linkedBeads": [] },
+      { "beadId": "BEAD-104", "type": "adversary-finding", "externalId": "FIND-005", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-005.json", "linkedBeads": [] },
+      { "beadId": "BEAD-105", "type": "adversary-finding", "externalId": "FIND-006", "status": "resolved", "artifactPath": "reviews/contracts/sprint-1/round-0/output/findings/FIND-006.json", "linkedBeads": [] },
+      { "beadId": "BEAD-106", "type": "adversary-finding", "externalId": "FIND-501", "status": "resolved", "artifactPath": "reviews/impl/sprint-1/output/findings/FIND-501.json", "linkedBeads": [] }
     ]
   },
   "gates": {
@@ -807,9 +821,24 @@
       "adversaryVerdict": "PASS",
       "adversaryReviewedAt": "2026-07-07T06:08:50.000Z",
       "humanApproval": "status: approved set per Dais's blanket 'no human in loop, don't stop, full verify, no half-ass' directive (2026-07-07)."
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T06:55:22.000Z",
+      "reviewedBy": "orchestrator",
+      "details": {
+        "findingDiminishment": "Contract-review: round-0 findingCount=6 -> round-1 findingCount=0. Impl-review (Phase 3): findingCount=1 (FIND-501, non-blocking) -> 0 after fixing the root cause (~/anicca commit 3d56f6d, e2e-testnet.mjs usage-comment now requires dedicated GIG_STATE_PATH/GIG_CHAIN/GIG_FACILITATOR_URL overrides). Both dimensions strictly diminishing to 0.",
+        "findingSpecificity": "All evidence filePath/location values in reviews/contracts/sprint-1/round-0/output/findings/FIND-00{1..6}.json and reviews/impl/sprint-1/output/findings/FIND-501.json independently re-checked to exist on disk -- none hallucinated.",
+        "criteriaCoverage": "8/8 CRIT-001..008 evaluated with allCriteriaEvaluated=true in both reviews/contracts/sprint-1/round-1/output/verdict.json and reviews/impl/sprint-1/output/verdict.json.",
+        "duplicateDetection": "duplicateFindings: [] in both verdicts.",
+        "openFindingBeads": "0 open adversary-finding beads -- all 7 (BEAD-100..106, covering FIND-001..006 and FIND-501) are status:resolved.",
+        "formalHardeningArtifacts": "verification/{verification-report.md,security-report.md,purity-audit.md} all exist, written after entering Phase 5 (06:29:53Z); verification/security-results/ contains semgrep-raw.json + semgrep-report.txt; all 25/25 required proofObligations are status:proved.",
+        "findingTraceability": "All 7 sprint-1 findings (contract round-0 FIND-001..006, impl-review FIND-501) have matching adversary-finding beads.",
+        "additionalHardening": "SEC-1 (path traversal via unsanitized gigId in lock.mjs, found live during Phase 5's security audit, out of this sprint's 25 PROPs but fixed anyway per Dais's no-half-ass directive): fixed in ~/anicca commit e773c23 (zod regex allowlist + isSafeLockKey defense-in-depth), PoC re-verified closed, 51/51 tests pass."
+      }
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T06:46:26.573Z"
+  "updatedAt": "2026-07-07T06:55:22.000Z"
 }

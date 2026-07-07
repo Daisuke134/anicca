@@ -89,6 +89,14 @@
   },
   "blockingFindings": [],
   "nonBlockingFindings": ["FIND-501"],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "originalFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008"],
+    "duplicateFindings": [],
+    "findingResolution": "FIND-501 (info, non-blocking, out-of-scope of the 8 CRIT items) root-caused to scripts/e2e-testnet.mjs's own usage comment instructing operators to source the SHARED production gig-board/.env (GIG_STATE_PATH points at automaton+Franklin's real witness board by design) without overriding it for test runs. Fixed 2026-07-07 in ~/anicca commit 3d56f6d: usage comment now requires GIG_STATE_PATH/GIG_CHAIN/GIG_FACILITATOR_URL overrides to dedicated test values for any future test/adversary run. findingCount reduced 1 -> 0 post-fix; no code defect existed in any of the 8 CRIT items themselves."
+  },
   "testExecutionSummary": {
     "skills/economy/gig full suite": "48/48 PASS, re-run 3x, zero flakiness",
     "runtime/loop full suite (npm test)": "84/88 PASS, 4 pre-existing unrelated failures (tier.test.mjs/config.test.mjs env-dependent model-name defaults) -- confirmed via `git show bd85dc2^:runtime/loop/__tests__/tier.test.mjs` byte-identical to the current file, i.e. untouched by this sprint's edits and therefore not a regression this sprint introduced",
