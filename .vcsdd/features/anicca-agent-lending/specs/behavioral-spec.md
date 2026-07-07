@@ -2,10 +2,11 @@
 
 **feature**: anicca-agent-lending · **mode**: strict · **increment**: in-colony agent-to-agent lending
 (citizen-to-citizen loans, first-party Anicca capability, no external protocol import) · **日付**:
-2026-07-07 · **revision**: iteration 3, revised (spec review iteration-1 findings FIND-001..008 resolved
-AND spec review iteration-2 findings FIND-101..107 resolved — see
-`reviews/spec/iteration-1/RESOLUTION-NOTES.md` and `reviews/spec/iteration-2/RESOLUTION-NOTES.md` for the
-full per-finding changelogs)
+2026-07-07 · **revision**: iteration 6, revised (spec review iterations 1 through 5 — findings
+FIND-001..008, FIND-101..107, FIND-201..206, FIND-301..305, and FIND-401..403 — ALL resolved; this
+revision additionally resolves iteration-6's own FIND-501..503; see
+`reviews/spec/iteration-1/RESOLUTION-NOTES.md` through `reviews/spec/iteration-6/RESOLUTION-NOTES.md`,
+one file per iteration, for the full per-finding changelogs)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -38,6 +39,56 @@ cited design decision; see `reviews/spec/iteration-2/RESOLUTION-NOTES.md` for th
 | FIND-105 | major | REQ-108's `from`-topic check reworded: `record-earn.mjs`'s own `FIND-704` fix is a literal reuse for the `to` topic only; the `from`-topic check is an honest, sound EXTENSION of that technique, not a literal reuse of an already-tested code path for that field (updated PROP-108b). |
 | FIND-106 | major | REQ-102's `BORROWER_LOW_USD` is now this feature's OWN independently-declared constant (default `0.50`), set to the SAME numeral as `economy/gig/decide.mjs`'s `DEFAULT_LOW_USDC` for definitional consistency only, via NO import/code coupling — explicitly cross-referenced against REQ-110's zero-coupling requirement (updated PROP-110a). |
 | FIND-107 | major | `computeColdStartRepaymentRate`'s definition corrected to "loans whose `successfulOnTimeRepayments`, re-derived over that borrower's own strictly-earlier rows, is `0` at issuance" — removing the false "(i.e. every borrower's own first-ever loan)" equivalence; a borrower's 2nd+ loan CAN recur at cold-start if all priors were repaid late, and this is intentional (updated PROP-105f). |
+
+## Changelog (iteration 3 → iteration 4)
+
+Spec review iteration 3 FAILed with 6 findings (3 critical, 3 major). Each is resolved by a specific,
+cited design decision; see `reviews/spec/iteration-3/RESOLUTION-NOTES.md` for the full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-201 | critical | REQ-106 now names a THIRD terminal disbursement status, `"disbursement_uncertain"`, for an in-process (non-crash) exception thrown from `payViaFacilitator` AFTER its own on-chain settle already succeeded; `reconcileProvisionalDisbursement` is unified to ALSO resolve this row on the NEXT issuance attempt for that lender, never gated on a stale-lock reclaim (new PROP-106h). |
+| FIND-202 | critical | `verifyRepayment` now reads the FULL `loans.jsonl` ledger and rejects any `txHash` already recorded as credited anywhere in it — closing BOTH a same-loan replay and a cross-loan replay, checked BEFORE any value is credited (new PROP-108e). |
+| FIND-203 | critical | New pure function `evaluateColdStartKillSwitch({sampleSize, rate, defaultedCount}) → {paused, reason}` makes REQ-105's kill-switch a concrete, testable SHALL, called by REQ-106's issuance step before the per-lender lock for any cold-start request (new PROP-105g); the previously-contradicting adjacent Edge Case is rewritten to match. |
+| FIND-204 | major | `excludeDefaultedBorrowers` (a whole-citizen removal) replaced by `adjustBalancesForOutstandingDebt` — a debt-PROPORTIONAL balance adjustment, same array length, only the defaulted citizen's own balance figure reduced by its own unrecovered debt, clamped at `0` (new PROP-109f). |
+| FIND-205 | major | REQ-106's own Acceptance Criteria corrected to state its two-phase issuance append is wrapped ONLY by its own per-lender lock, NEVER REQ-108/109's per-loan lock — a new structural check (PROP-106i) makes the distinction independently verifiable. |
+| FIND-206 | major | Every dollar-denominated formula this feature introduces now clamps via the established `+(...).toFixed(6)` money-precision convention (`ubi.js::contribute()`/`decide.mjs::decideGigAction()`), with every Acceptance Criterion asserting against the clamped value. |
+
+## Changelog (iteration 4 → iteration 5)
+
+Spec review iteration 4 FAILed with 5 findings (3 critical, 2 major). Each is resolved by a specific,
+cited design decision; see `reviews/spec/iteration-4/RESOLUTION-NOTES.md` for the full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-301 | critical | Reconciliation trigger broadened to be driven PURELY by ledger STATE (an unterminated highest-`n` row), never by lock staleness — closing a THIRD terminal state (the follow-up `appendChild` call itself throwing, and the reconciliation lookup itself throwing) neither the crash path nor the in-process-exception path alone had covered (new PROP-106k/PROP-106l). |
+| FIND-302 | major | "Logged" (for a rejected replay) precisely defined: recorded EXCLUSIVELY via an out-of-band audit/trace mechanism, NEVER a new `loans.jsonl` row — preserving the last-write-wins convention every other reduction in this spec depends on. |
+| FIND-303 | critical | New Tier-0 structural proof obligation, PROP-105h, requires a direct control-flow read confirming the REAL, production REQ-106 issuance code — never a mock — actually imports and calls `evaluateColdStartKillSwitch` before the per-lender lock. |
+| FIND-304 | critical | `adjustBalancesForOutstandingDebt`'s composition point corrected to name `anicca-agent-spawn`'s REAL three-step pipeline (`filterProductiveCitizens` → `readCitizenBalances` → `computeColonySurplusUsd`) and to insert strictly after `readCitizenBalances`'s own balance-attached output, never between steps (1) and (2). |
+| FIND-305 | critical | REQ-112's co-location mechanism corrected to read `anicca-agent-spawn`'s own `citizen.coLocatedWithCoordinator` boolean field EXCLUSIVELY — never `homeDir` equality, which today's real, distinct `homeDir` seed values would have wrongly excluded; REQ-113 now names this field's re-verification as its own explicit line item. |
+
+## Changelog (iteration 5 → iteration 6)
+
+Spec review iteration 5 FAILed with 3 findings (2 critical, 1 major). Each is resolved by a specific,
+cited design decision; see `reviews/spec/iteration-5/RESOLUTION-NOTES.md` for the full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-401 | critical | New per-borrower lock key `` `loan_borrower_${borrowerId}` ``, acquired ALONGSIDE (never instead of) the existing per-lender `` `loan_${lenderId}` `` lock via nested `withGigLock` calls, closes the cross-lender same-borrower double-disbursement window a per-lender-only lock could not (new PROP-106n). |
+| FIND-402 | critical | REQ-102 gains a FOURTH condition, (d) `lenderId !== borrowerId`, checked FIRST — before (a)-(c) and before REQ-101's own availability computation — closing a real self-loan exploit that could otherwise fabricate `successfulOnTimeRepayments` at negligible cost (new PROP-102e). |
+| FIND-403 | major | `issued_ms` precisely defined: drawn EXCLUSIVELY from the follow-up `"active"` row's own append-time timestamp, NEVER the provisional row's `provisioned_ms`, so a reconciliation delay never silently eats into a borrower's real repayment window (new PROP-106o). |
+
+## Changelog (iteration 6 → current, this revision)
+
+Spec review iteration 6 FAILed with 3 findings (2 major, 1 minor); this revision resolves all three. Each
+is resolved by a specific, cited design decision; see `reviews/spec/iteration-6/RESOLUTION-NOTES.md` for
+the full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-501 | major | REQ-106's "Lock-acquisition order" paragraph's prior "textbook deadlock-avoidance" justification is REMOVED as analytically FALSE against `lock.mjs`'s real, non-blocking, fail-fast `withGigLock` mechanism (re-confirmed fresh this revision) — classical hold-and-wait deadlock is structurally impossible against a primitive where a failed second-lock acquire returns immediately rather than blocking. The fixed lexicographic order is RETAINED, but for two honestly-stated, DIFFERENT reasons: (1) a single deterministic convention, not an ad-hoc per-call choice, and (2) forward-insurance should `lock.mjs` ever become a blocking primitive. PROP-106m's own description corrected to match. |
+| FIND-502 | major | New REQ-114 adds a SECOND, general-purpose, dollar-weighted default-rate monitor (`computeOverallDefaultRateUsd`/`evaluateOverallDefaultKillSwitch`) spanning ALL loan tiers — operating ALONGSIDE REQ-105's cold-start-only monitor — closing a bust-out/reputation-laundering blind spot where an established borrower's default on a large (up to `$5.00`) loan was invisible to REQ-105's own kill-switch (new PROP-114a/b/c/d). |
+| FIND-503 | minor | This header/changelog section itself rewritten to tabulate every iteration's fixes through iteration 6 (this revision), replacing the previously-stale "iteration 3" header that stopped at the iteration-2→3 changelog table. |
 
 ## Background / rationale (cite before design)
 
@@ -223,6 +274,8 @@ not a proven claim).
 | Cross-feature defaulted-borrower balance adjustment | **Pure core (new)** | `adjustBalancesForOutstandingDebt` — a SECOND, lending-owned, debt-PROPORTIONAL balance adjustment (never a whole-citizen removal, resolves FIND-204) composed after `anicca-agent-spawn`'s own THREE-step pipeline reaches `readCitizenBalances`'s own output (never inside `filterProductiveCitizens`, and never between `filterProductiveCitizens` and `readCitizenBalances`, where no balance field yet exists to reduce — corrects this revision's own FIND-304) and before `computeColonySurplusUsd` runs. |
 | Per-lender loan-ID sequencing | **Pure core (new)** | `nextLoanSequenceForLender(loanRows, lenderId)` — deterministic `max(matching `loan_${lenderId}_` prefix's numeric suffix) + 1` over already-read rows, zero I/O; computed inside REQ-106's existing per-lender lock. Treats `"provisioning"`/`"disbursement_failed"`/`"active"`/`"disbursement_uncertain"` rows for the SAME `loan_id` as one already-claimed sequence number (last-write-wins) — never reuses `n` while a `"provisioning"` OR `"disbursement_uncertain"` row lacks a terminal follow-up (resolves FIND-103 and FIND-201), and the EFFECTFUL caller's own reconciliation check for such an unterminated row is triggered PURELY by this ledger STATE, never by lock staleness (resolves FIND-301). |
 | Cold-start kill-switch enforcement | **Pure core (new)** | `evaluateColdStartKillSwitch({sampleSize, rate, defaultedCount}) → {paused, reason}` — deterministic threshold check over `computeColdStartRepaymentRate`'s own output, zero I/O; called by REQ-106's issuance step before acquiring the per-lender lock for any cold-start loan request (resolves FIND-203). |
+| Colony-wide, dollar-weighted default-rate monitoring (ALL loan tiers — bust-out/reputation-laundering defense) | **Pure core (new)** | `computeOverallDefaultRateUsd({loanRows}) → {totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize}` — dollar-weighted (never merely count-weighted) default-rate arithmetic over EVERY terminal loan colony-wide, regardless of tier; zero I/O. Operates ALONGSIDE, never replacing, the cold-start-scoped monitor above (resolves this revision's own FIND-502). REQ-114. |
+| Colony-wide default kill-switch enforcement | **Pure core (new)** | `evaluateOverallDefaultKillSwitch({totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize}) → {paused, reason}` — deterministic threshold check over `computeOverallDefaultRateUsd`'s own output, zero I/O; called by REQ-106's issuance step, for EVERY loan request regardless of tier, IN ADDITION TO `evaluateColdStartKillSwitch`, before acquiring the per-lender lock (resolves FIND-502). REQ-114. |
 | Read-only gojo-commitment awareness | **Pure core (new)** | `sumRecentGojoGiftsUsd(gojoLogRows, nowMs, lookbackHours, lenderId)` — deterministic sum over already-read `gojo-log.jsonl` rows within a lookback window, GATED to `lenderId === GOJO_SENDER_ID` (`"anicca-a3cdd4"`, today's only real gojo sender) — returns `0` unconditionally for any other lender (resolves FIND-102). Zero I/O. REQ-101. |
 | Cold-start monitoring (experimental-hypothesis tracking) | **Pure core (new)** | `computeColdStartRepaymentRate({loanRows, n})` — deterministic outcome-rate arithmetic over the first `n` loans whose `successfulOnTimeRepayments`, re-derived over each borrower's own strictly-earlier rows (never a stored field), is `0` at issuance — NOT equivalent to "borrower's first-ever loan" (resolves FIND-107). Zero I/O, zero judgment. REQ-105. |
 | Loan ledger (dedicated file, existing generic primitive reused) | **Effectful shell (existing code, new file)** | `ledger.js::readChildren`/`appendChild`, reused unmodified, pointed at `~/anicca/skills/economy/lending/state/loans.jsonl`. |
@@ -259,7 +312,10 @@ not a proven claim).
   new per-borrower `loan_borrower_${borrowerId}` lock, resolves FIND-401); a citizen can never be both the
   lender AND the borrower of the SAME loan (REQ-102's condition (d), resolves FIND-402); a loan's own
   default-clock (`issued_ms`/`due_ms`) is drawn EXCLUSIVELY from the confirmed-disbursement `"active"` row,
-  never the pre-transfer provisional row (REQ-106, resolves FIND-403); the money-safety invariant (REQ-111)
+  never the pre-transfer provisional row (REQ-106, resolves FIND-403); colony-wide loan-default risk is
+  monitored by DOLLAR VALUE across ALL loan tiers, not merely the smallest cold-start tier (REQ-114's
+  `evaluateOverallDefaultKillSwitch`, operating ALONGSIDE REQ-105's cold-start-specific monitor, resolves
+  this revision's own FIND-502); the money-safety invariant (REQ-111)
   is enforced structurally, not by runtime trust.
 
 ---
@@ -737,6 +793,147 @@ well-established borrower's loan "small" per this increment's own scope.
 
 ---
 
+### REQ-114: Colony-wide default-rate monitoring — ALL loan tiers, dollar-weighted (bust-out /
+reputation-laundering defense, resolves this revision's own spec-review iteration-6 FIND-502)
+**EARS**: WHERE REQ-105's `computeColdStartRepaymentRate`/`evaluateColdStartKillSwitch` monitor risk
+EXCLUSIVELY for loans issued at `successfulOnTimeRepayments === 0` (by that requirement's own definition,
+the smallest, `$0.02`-tier loans) and are therefore STRUCTURALLY BLIND to a default on any LARGER loan an
+established borrower has grown into via REQ-105's own doubling ladder (up to `maxLoanUsd = 5.00`, 250x the
+cold-start size), THE SYSTEM SHALL ADDITIONALLY track default risk across the FULL loan population, ALL
+tiers, weighted by DOLLAR VALUE at risk (never merely loan COUNT), via a SECOND, general-purpose, pure
+function, `computeOverallDefaultRateUsd({ loanRows }) → { totalIssuedUsd, totalDefaultedUsd, defaultRateUsd,
+sampleSize }`, operating ALONGSIDE — never replacing — REQ-105's own cold-start-specific monitor.
+
+**Why a count-based metric alone is insufficient here (the concrete bust-out/reputation-laundering pattern
+this requirement closes):** REQ-105's own `successfulOnTimeRepayments` count is COLONY-WIDE, not
+lender-specific — a borrower's track record built against ONE lender is fully portable to any OTHER,
+unrelated lender's own sizing decision (REQ-105's ladder input is simply
+`countSuccessfulOnTimeRepayments(loanRows, borrowerId)`, with no lender-pairing restriction anywhere in
+REQ-101/102/105). A borrower (or a colluding pair) can therefore cheaply build a strong track record via a
+sequence of small, low-risk, successfully-repaid cold-start-tier loans, then strategically default on the
+SINGLE largest loan its now-inflated reputation qualifies it for from a DIFFERENT, unsuspecting lender who
+has never transacted with it before — and this specific default event is, by construction, invisible to
+`computeColdStartRepaymentRate`'s own sample (that borrower's `successfulOnTimeRepayments` is no longer `0`
+at issuance of the LARGE loan, so it is structurally excluded from the cold-start candidate set REQ-105
+monitors). A pure loan-COUNT default rate would also under-weight this risk (one large default among many
+small, healthy loans looks numerically small by count even though it may represent the LARGEST single
+dollar loss any lender in this colony has suffered) — this is why `computeOverallDefaultRateUsd` is
+explicitly DOLLAR-weighted, never count-weighted.
+
+```
+computeOverallDefaultRateUsd({ loanRows })
+  → { totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize }
+```
+
+Definition, precisely stated: `loanRows` is reduced to one effective row per `loan_id` (last-write-wins,
+the SAME reduction convention this document already establishes throughout — REQ-101's
+`sumOutstandingPrincipalUsd`, REQ-105's own count functions, REQ-109's `outstandingDefaultedDebtUsd`).
+`sampleSize` = the count of loans, colony-wide, ALL tiers, whose last-appended row's `status` is a
+TERMINAL outcome — `"repaid"` OR `"defaulted"` — never a loan still
+`"active"`/`"provisioning"`/`"disbursement_failed"`/`"disbursement_uncertain"` (an unresolved loan is
+neither a success nor a loss yet, and including it in either direction would misrepresent the metric).
+`totalIssuedUsd` = the sum of `principal_usd` over every one of those TERMINAL rows (repaid + defaulted
+combined — the total dollar volume that has reached a final outcome). `totalDefaultedUsd` = the sum of
+`principal_usd - repaid_usd` (the actual unrecovered dollar loss — the SAME `outstandingDefaultedDebtUsd`
+quantity REQ-109 already computes per-citizen, here summed colony-wide across ALL defaulted rows regardless
+of tier or borrower) over every `"defaulted"` row. `defaultRateUsd = totalDefaultedUsd / totalIssuedUsd`
+(or `null` if `totalIssuedUsd === 0`, never a divide-by-zero throw — mirroring
+`computeColdStartRepaymentRate`'s own identical convention). Every dollar figure is clamped via the SAME
+established `.toFixed(6)` money-precision convention this document already uses throughout (the SAME
+FIND-206 discipline, applied consistently to this NEW function too).
+
+**Kill-switch enforcement (mirrors REQ-105's own `evaluateColdStartKillSwitch` shape, applied here to the
+dollar-weighted, all-tier metric):** THE SYSTEM SHALL implement a SECOND, pure, zero-I/O function,
+`evaluateOverallDefaultKillSwitch({ totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize }) →
+{ paused: boolean, reason: string }`: `paused = true` when EITHER `(sampleSize >= 10 AND defaultRateUsd >
+0.20)` OR `(sampleSize < 10 AND totalDefaultedUsd > 0)` — otherwise `paused = false`. Loan issuance
+(REQ-106) SHALL call THIS function, IN ADDITION TO (never instead of) `evaluateColdStartKillSwitch`, for
+EVERY loan request regardless of tier — BEFORE acquiring the `` `loan_${lenderId}` `` lock, the SAME "pure,
+read-only eligibility check runs before the effectful critical section" discipline REQ-101/102/105 already
+establish. WHEN `evaluateOverallDefaultKillSwitch` returns `paused: true`, THE SYSTEM SHALL refuse to issue
+ANY new loan (`reason: "overall_default_paused"`, no disbursement attempted, no `loans.jsonl` row appended)
+— regardless of whether the specific request under evaluation is itself a cold-start loan or an
+established-borrower renewal, since a colony-wide dollar-loss signal this severe is a systemic
+risk-mitigation trigger, not a tier-specific one. If BOTH kill-switches would independently pause a given
+request, THE SYSTEM SHALL report whichever reason it evaluates first (implementation-defined tie-break,
+since either reason alone is already sufficient grounds for refusal) — never attempt to disburse merely
+because one of the two switches happens to be clear.
+
+**Threshold, honestly grounded (an explicit, flagged limitation, not a claimed-validated figure):** THE
+SYSTEM reuses, as a starting anchor, the SAME conservative real-world reference REQ-105 already cites (the
+U.S. Federal Reserve's Q1 2024 credit-builder-product study, FEDS Notes 2024-12-06 — 93% unscored/nonprime,
+~10.2% delinquency by COUNT) — `0.20` (a 20% dollar-weighted loss) is chosen as a deliberately LOOSER
+complement of REQ-105's own `0.80` count-based repayment threshold (i.e. up to a 20% loss, matching
+REQ-105's own tolerance for its OWN metric), reused here for internal consistency between the two
+kill-switches' relative strictness — NOT because a dollar-weighted, all-tier default-rate figure has been
+independently validated against that (or any) real-world source. **THE SYSTEM SHALL document this honestly
+as an unvalidated placeholder**, exactly as REQ-104's `LOAN_INTEREST_RATE` and REQ-105's own kill-switch
+threshold are already honestly flagged elsewhere in this document: the Fed study measures count-based
+delinquency for a SPECIFIC human credit product, not dollar-weighted loss across a mixed-tier AI-agent loan
+population, and this requirement's own `0.20` figure genuinely needs its OWN dedicated real-world-analog
+research (or, better, real colony-native default data once a meaningful `sampleSize` accumulates) before
+being treated as anything more than a conservative starting point — open to revision the same way REQ-105's
+own threshold already is.
+
+**Edge Cases**:
+- ZERO loans have reached a terminal state yet (`sampleSize === 0`): `computeOverallDefaultRateUsd` returns
+  `{totalIssuedUsd: 0, totalDefaultedUsd: 0, defaultRateUsd: null, sampleSize: 0}` — never a divide-by-zero
+  throw; `evaluateOverallDefaultKillSwitch` correctly evaluates the `sampleSize < 10` branch
+  (`totalDefaultedUsd > 0` is `false` when `totalDefaultedUsd === 0`) → `paused: false`.
+- A SINGLE, large default occurs while `sampleSize < 10` (the bust-out scenario this requirement exists to
+  close — e.g. an established borrower defaults on its FIRST large, `$5.00`-tier loan after several small,
+  successfully-repaid cold-start loans): `totalDefaultedUsd > 0` while `sampleSize < 10` → `paused: true`
+  REGARDLESS of how small `defaultRateUsd` numerically is relative to the colony's OTHER healthy loan
+  volume — the SAME "any single default while the sample is small is itself the review trigger" discipline
+  REQ-105 already establishes for its own metric, applied here so a bust-out default is never diluted away
+  by a large healthy-loan denominator before `sampleSize` reaches 10.
+- Many small, healthy, cold-start-tier loans are repaid on time (a large `totalIssuedUsd` denominator from
+  MANY small numerators) alongside ONE large established-tier default: because `totalIssuedUsd`/
+  `totalDefaultedUsd` are DOLLAR sums (never loan counts), the single large default's own dollar weight is
+  NOT diluted by loan COUNT the way a naive "defaulted loans / total loans" count-based ratio would dilute
+  it — a `$5.00` default among ninety-nine `$0.02` repayments is still a meaningfully large fraction of
+  total dollar volume at risk, not `1/100`.
+- This metric and REQ-105's `computeColdStartRepaymentRate` are computed OVER THE SAME `loanRows` but are
+  NOT the same computation and do NOT overlap in a way that would double-pause identically for the same
+  reason: a cold-start-tier default can contribute to BOTH metrics simultaneously (it is both a cold-start
+  loan AND a terminal loan, dollar-weighted); an established-tier default contributes ONLY to
+  `computeOverallDefaultRateUsd`, never to `computeColdStartRepaymentRate`'s own sample — THIS is exactly
+  the coverage gap this requirement closes.
+- Malformed/negative/non-finite `principal_usd`/`repaid_usd` on any row (a corrupted or adversarial ledger
+  entry): treated as contributing `0` to both `totalIssuedUsd` and `totalDefaultedUsd` for that specific
+  row (fail-closed — never a negative or NaN aggregate), mirroring REQ-101/105's own fail-closed convention
+  for malformed numeric input elsewhere in this document.
+
+**Acceptance Criteria**:
+- `computeOverallDefaultRateUsd` is pure, zero I/O, never divides by zero, and every returned dollar figure
+  is clamped via the established `.toFixed(6)` money-precision convention.
+- A fixture with 8 terminal cold-start-tier loans (`principal_usd = 0.02` each, all `"repaid"`) and 1
+  terminal established-tier loan (`principal_usd = 5.00`, `repaid_usd = 0`, `"defaulted"`) →
+  `totalIssuedUsd = 5.16`, `totalDefaultedUsd = 5.00`, `defaultRateUsd ≈ 0.969`, `sampleSize = 9` — proving
+  a SINGLE large default dominates the dollar-weighted rate even though it is only `1/9` by loan COUNT.
+- A fixture with ZERO terminal loans → `{totalIssuedUsd: 0, totalDefaultedUsd: 0, defaultRateUsd: null,
+  sampleSize: 0}`, never a throw.
+- `evaluateOverallDefaultKillSwitch({sampleSize: 9, totalIssuedUsd: 5.16, totalDefaultedUsd: 5.00,
+  defaultRateUsd: 0.969}) === {paused: true}` — the single-large-default-while-small-sample case.
+- `evaluateOverallDefaultKillSwitch({sampleSize: 20, totalIssuedUsd: 10.00, totalDefaultedUsd: 0.50,
+  defaultRateUsd: 0.05}) === {paused: false}` — a healthy aggregate loss rate at a statistically-sized
+  sample does not pause issuance.
+- `evaluateOverallDefaultKillSwitch({sampleSize: 20, totalIssuedUsd: 10.00, totalDefaultedUsd: 3.00,
+  defaultRateUsd: 0.30}) === {paused: true}` — an aggregate loss rate above `0.20` at a statistically-sized
+  sample pauses issuance.
+- A structural/Tier-0 check (mirroring PROP-105h's own real-source-read discipline) confirms REQ-106's own
+  REAL, production issuance code imports and calls `evaluateOverallDefaultKillSwitch` for EVERY loan
+  request (not merely cold-start ones), BEFORE acquiring the `` `loan_${lenderId}` `` lock, IN ADDITION TO
+  (never instead of) `evaluateColdStartKillSwitch` — a mocked-caller fixture proving the function's own
+  correctness is insufficient by itself, exactly as PROP-105h already establishes for its sibling
+  kill-switch (new PROP-114c).
+- A fixture where `evaluateColdStartKillSwitch` returns `paused:false` but `evaluateOverallDefaultKillSwitch`
+  returns `paused:true` for the SAME loan request confirms the request is STILL refused
+  (`reason:"overall_default_paused"`) — proving the two kill-switches are independent, ADDITIVE gates,
+  neither one alone sufficient to clear issuance (new PROP-114d).
+
+---
+
 ### REQ群C: Issuance mechanics
 
 ### REQ-106: Loan issuance concurrency safety
@@ -790,29 +987,69 @@ attempt (`reason:"outstanding_loan"`) BEFORE any disbursement is attempted and B
 — exactly REQ-102's own existing fail-closed refusal shape, now evaluated with a guaranteed-fresh,
 cross-lender-safe read.
 
-**Lock-acquisition order (deadlock avoidance):** because EVERY loan-issuance attempt now acquires BOTH
-`` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` ``, THE SYSTEM SHALL acquire them via
-NESTED `withGigLock` calls in a FIXED, deterministic, TOTAL order to prevent deadlock between two
-concurrent attempts that might involve the same lender+borrower pair in different roles: THE SYSTEM SHALL
-acquire, as the OUTER lock, whichever of the two lock-key STRINGS sorts lexicographically FIRST (plain
-JavaScript default string `<` comparison, e.g. `[`loan_${lenderId}`,
-`loan_borrower_${borrowerId}`].sort()[0]`), and the OTHER as the INNER lock — never a role-based rule
-(e.g. "always lender first"), and never an ad-hoc per-call choice. This is the textbook total-lock-
-ordering deadlock-avoidance technique: because every attempt sorts its OWN two keys the SAME deterministic
-way, no two concurrent attempts can ever hold one lock while waiting on the other in reverse order.
+**Lock-acquisition order (resolves this revision's own FIND-501 — a prior revision's "deadlock avoidance"
+justification for this SAME fixed order was analytically FALSE, corrected below):** because EVERY
+loan-issuance attempt now acquires BOTH `` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` ``,
+THE SYSTEM SHALL acquire them via NESTED `withGigLock` calls in a FIXED, deterministic, TOTAL order: THE
+SYSTEM SHALL acquire, as the OUTER lock, whichever of the two lock-key STRINGS sorts lexicographically
+FIRST (plain JavaScript default string `<` comparison, e.g. `[`loan_${lenderId}`,
+`loan_borrower_${borrowerId}`].sort()[0]`), and the OTHER as the INNER lock — never an ad-hoc per-call
+choice.
+
+**Corrected justification (the PRIOR "textbook total-lock-ordering deadlock-avoidance technique" framing
+is FALSE, re-confirmed by a fresh re-read this revision of `lock.mjs` lines 153-158, 174-179, 187-209):**
+`withGigLock`'s own `acquire()` is a SINGLE, non-blocking attempt — `tryCreateLockFile`, then at most ONE
+`reclaimStaleLock` attempt if that fails — there is NO internal retry loop and NO code path in which a
+caller BLOCKS while holding one lock and waiting for another; `withGigLock`'s own docstring states this
+verbatim: "If another call already holds the lock, returns a fail-closed rejection WITHOUT ever calling
+`fn()` — no queueing, no waiting." Classical hold-and-wait deadlock (party A holds resource 1 and BLOCKS
+waiting for resource 2, while party B holds resource 2 and BLOCKS waiting for resource 1) REQUIRES a
+primitive that can suspend a holder while it waits for a second resource — `lock.mjs` structurally cannot
+do this: a caller whose SECOND (inner) lock acquisition fails returns `{ok:false}` IMMEDIATELY, and its own
+FIRST (outer) lock is released in `withGigLock`'s own `finally` block (lines 203-208) — it is never
+held-and-waited. This holds REGARDLESS of what order the two nested calls acquire their keys in: a
+lexicographic sort, a role-based rule ("always lender first"), or even an ad-hoc per-call choice would ALL
+be EQUALLY deadlock-free against THIS lock mechanism, because no concurrent attempt ever blocks at all — the
+"two attempts each hold one lock while waiting on the other in reverse order" precondition this
+requirement's own prior text depended on can never arise. (Independently, and for a SECOND reason: this
+document's own lock-key naming convention already keeps the lender-key namespace `loan_<lenderId>` and the
+borrower-key namespace `loan_borrower_<borrowerId>` disjoint, so no two concurrent issuance attempts ever
+share MORE than ONE lock key at all — classical lock-ordering deadlock, which requires at least two SHARED
+resources acquired in reversed order, could never occur here even if the lock mechanism DID block.)
+
+**Given ordering is NOT required for deadlock-avoidance against today's lock, THE SYSTEM nonetheless RETAINS
+`resolveLoanLockAcquisitionOrder` and its fixed order — for two DIFFERENT, honestly-stated reasons, neither
+of which is "prevents deadlock":** (1) **a single, deterministic convention, not an ad-hoc per-call
+choice** — every call site derives its own nested lock order from ONE shared function instead of each
+independently choosing "lender first" or "borrower first," avoiding a class of easy-to-get-inconsistent
+bugs across call sites, and giving Tier-2 concurrency tests (e.g. PROP-106n) one canonical, reproducible
+acquisition order to reason about for a given `(lenderId, borrowerId)` pair; (2) **forward-insurance against
+a future, DIFFERENT lock implementation** — IF `lock.mjs` is ever changed to a blocking/retry-with-backoff
+primitive (making `acquire()` genuinely wait rather than fail-fast), a fixed TOTAL lock-acquisition order is
+EXACTLY the mechanism that would then become REQUIRED to prevent a REAL hold-and-wait deadlock between two
+attempts sharing the `loan_borrower_<borrowerId>` key — having this ordering already in place today, at zero
+marginal cost (a single deterministic sort, PROP-106m), means a future maintainer making that change does
+not also have to simultaneously invent and retrofit a lock-ordering discipline under time pressure, without
+understanding why it has suddenly become load-bearing. **Removing `resolveLoanLockAcquisitionOrder` entirely
+(in favor of "acquire both locks in any consistent per-call order") would be EQUALLY CORRECT against TODAY's
+fail-fast lock — this spec deliberately keeps the function anyway, for reasons (1) and (2) above, never
+because doing so is required for correctness today.**
+
 `resolveLoanLockAcquisitionOrder(lenderId, borrowerId) → [outerKey, innerKey]` is a NEW, pure, zero-I/O
-helper implementing exactly this sort (new PROP-106m). Both locks are released automatically,
+helper implementing exactly this sort (new PROP-106m, its own description corrected this revision to match
+the justification above — never "deadlock avoidance"). Both locks are released automatically,
 inner-then-outer, by the nested calls' own `withGigLock` `finally` blocks — no separate release code is
 written. If EITHER lock is already held by another in-flight attempt, THE WHOLE attempt is refused
 (`reason:"lock_held"`), fail-closed, zero disbursement, zero row appended — identical in shape to today's
-existing single-lock refusal. THE SYSTEM documents, as an explicit, low-probability, ASSUMED limitation of
-this naming scheme (mirroring this spec's own existing documented-limitation discipline, e.g.
-`GOJO_SENDER_ID`'s single-sender assumption): no colony citizen ID is assumed to literally begin with the
-substring `borrower_` — true for every one of today's real citizen IDs (`anicca-a3cdd4`, `Franklin`) —
-since a citizen ID that DID begin with that substring could theoretically produce a lock-key string
-collision between an unrelated lender's own per-lender key and a different loan's per-borrower key; this
-is a documented, not-yet-solved, extremely-low-probability edge case of this naming convention, not a
-silently-ignored risk.
+existing single-lock refusal (this fail-fast refusal — never lock ordering — is what actually keeps this
+design safe against two concurrent attempts sharing a lock key; see the corrected justification above). THE
+SYSTEM documents, as an explicit, low-probability, ASSUMED limitation of this naming scheme (mirroring this
+spec's own existing documented-limitation discipline, e.g. `GOJO_SENDER_ID`'s single-sender assumption): no
+colony citizen ID is assumed to literally begin with the substring `borrower_` — true for every one of
+today's real citizen IDs (`anicca-a3cdd4`, `Franklin`) — since a citizen ID that DID begin with that
+substring could theoretically produce a lock-key string collision between an unrelated lender's own
+per-lender key and a different loan's per-borrower key; this is a documented, not-yet-solved,
+extremely-low-probability edge case of this naming convention, not a silently-ignored risk.
 
 **`loan_id` generation (resolves this revision's own FIND-001 — previously entirely unspecified):** THE
 SYSTEM SHALL assign a newly-issued loan's `loan_id` as `` `loan_${lenderId}_${n}` ``, where `n` is a
@@ -1075,6 +1312,12 @@ BOTH locks for the SAME append.
   REQ-105's `evaluateColdStartKillSwitch` returns `paused:true`: THE SYSTEM SHALL refuse BEFORE ever
   acquiring the `` `loan_${lenderId}` `` lock (`reason:"cold_start_paused"`) — zero disbursement attempt,
   zero ledger row, exactly as any other REQ-101/102 pre-lock eligibility refusal (resolves FIND-203).
+- ANY loan request (cold-start OR an established-tier renewal) is evaluated while REQ-114's
+  `evaluateOverallDefaultKillSwitch` returns `paused:true`: THE SYSTEM SHALL refuse BEFORE ever acquiring
+  the `` `loan_${lenderId}` `` lock (`reason:"overall_default_paused"`) — zero disbursement attempt, zero
+  ledger row, evaluated IN ADDITION TO (never instead of) `evaluateColdStartKillSwitch` above, since
+  REQ-114's own monitor covers the LARGER-loan tranche REQ-105's cold-start-scoped monitor structurally
+  cannot see (resolves this revision's own FIND-502).
 - The follow-up `appendChild` call ITSELF throws (e.g. `ENOSPC`/`EACCES`/a transient disk failure)
   immediately after step 2's own try/catch already caught a settle-side exception (resolves this
   revision's own FIND-301): the `"provisioning"` row for this `n` is left with NO follow-up row of any
@@ -1111,7 +1354,10 @@ BOTH locks for the SAME append.
   lexicographically-smaller of `` `loan_${lenderId}` ``/`` `loan_borrower_${borrowerId}` `` as `outerKey`
   and the other as `innerKey`, for both possible orderings of a given lender/borrower pair — a
   Tier-0/Tier-1 structural and unit-test check confirms every issuance call site derives its lock order
-  from THIS function, never an inline/ad-hoc comparison (new PROP-106m).
+  from THIS function, never an inline/ad-hoc comparison (new PROP-106m — kept as a deterministic-convention
+  and forward-insurance discipline, resolves this revision's own FIND-501; NOT a deadlock-avoidance
+  mechanism, which today's fail-fast `lock.mjs` does not require regardless of acquisition order — see the
+  corrected justification above).
 - Given two concurrent callers both targeting the SAME lender and both observing sufficient available
   surplus at read time, an integration test proves exactly one disburses; the other's attempt is
   recorded as `reason:"lock_held"` and makes zero transfer calls.
@@ -1180,8 +1426,13 @@ BOTH locks for the SAME append.
   `evaluateColdStartKillSwitch` in isolation, and not an integration test against a mocked issuance call —
   actually imports and calls `evaluateColdStartKillSwitch` for a cold-start (`successfulOnTimeRepayments
   === 0`) loan request, and does so BEFORE the `` `loan_${lenderId}` `` lock-acquisition call site (new
-  PROP-105h, resolves this revision's own FIND-303 — closes the "a computed flag nobody checks" gap
-  PROP-105g's own mocked-caller fixture cannot, by itself, close).
+  PROP-105h, resolves FIND-303 — closes the "a computed flag nobody checks" gap PROP-105g's own
+  mocked-caller fixture cannot, by itself, close).
+- A structural/Tier-0 check (mirroring PROP-105h's own real-source-read discipline) confirms this
+  requirement's OWN, REAL, production issuance code ALSO imports and calls
+  `evaluateOverallDefaultKillSwitch` for EVERY loan request, regardless of tier, BEFORE the
+  `` `loan_${lenderId}` `` lock-acquisition call site, IN ADDITION TO `evaluateColdStartKillSwitch` (new
+  PROP-114c, resolves this revision's own FIND-502).
 
 ---
 

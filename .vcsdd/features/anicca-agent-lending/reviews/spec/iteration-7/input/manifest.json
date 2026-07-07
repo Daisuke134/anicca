@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 7,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 6,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-6/output/findings/",
+    "note": "3 findings, 0 critical but real: FIND-501 -- corrected the false deadlock-avoidance rationale (withGigLock is fail-fast/non-blocking, classical deadlock structurally impossible regardless of order); resolveLoanLockAcquisitionOrder retained for two honestly-stated different reasons (deterministic convention + forward-insurance). FIND-502 -- added new REQ-114, a second dollar-weighted default-rate monitor (computeOverallDefaultRateUsd/evaluateOverallDefaultKillSwitch) covering ALL loan tiers, operating alongside the existing cold-start-only monitor, closing the bust-out blind spot; threshold (0.20) honestly flagged as not independently validated. FIND-503 -- stale changelog fixed, full iteration 3-6 history tabulated."
+  },
+  "note": "Verify each of the 3 fixes actually holds. For FIND-501: re-read lock.mjs's withGigLock fresh and confirm the corrected rationale is now analytically accurate (no false deadlock-avoidance claim remains anywhere, including in verification-architecture.md's own rows). For FIND-502: confirm new REQ-114 is properly wired into REQ-106's issuance flow (does evaluateOverallDefaultKillSwitch actually get CALLED, with a Tier-0 structural proof of wiring, matching the same rigor PROP-105h already established for the cold-start kill-switch -- or does REQ-114 repeat the exact 'exists but never proven to be called' gap FIND-303 already caught once for the OTHER kill-switch?). This feature has FAILed all 6 prior iterations. Do a full fresh, skeptical pass over the ENTIRE spec, including the brand-new REQ-114 section itself (newly-written code is exactly where fresh defects hide) and the interaction between REQ-105's and REQ-114's two now-parallel kill-switches (do they ever conflict, double-count, or leave a gap between their respective thresholds?)."
+}
