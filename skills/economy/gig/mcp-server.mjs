@@ -19,6 +19,23 @@ function textResult(obj) {
   return { content: [{ type: "text", text: JSON.stringify(obj) }] };
 }
 
+// SEC-1 fix (Phase 5 security-report.md, path traversal via unsanitized gigId): gigId flows straight
+// into lib/lock.mjs's withGigLock(statePath, gigId, ...) as a filesystem lock-file-name fragment
+// (`${lockKey}.lock`, path.join'd onto <statePath-dir>/locks/) BEFORE the gig even exists is checked --
+// an unconstrained `z.string()` let a crafted gigId like
+// "../../../../../../../../../../tmp/anicca-poc-escaped-file-live" collapse path.join's traversal
+// segments and create (and, via reclaimStaleLock's rename/unlink, potentially touch) a file OUTSIDE the
+// intended locks/ directory (live-verified PoC, see security-report.md SEC-1). gigId is always generated
+// by lib/store.mjs's applyPost as `String(state.nextId)` (a plain positive-integer counter, see
+// store.mjs) -- this pattern also matches lib/lock.mjs's own internal lock keys ("_post", "_board"), so
+// a safe identifier charset (letters/digits/underscore/hyphen only -- no "/", ".", or other path
+// separators) is both correct for every real gigId and generous enough for future non-numeric ids.
+// This is the PRIMARY defense layer; lib/lock.mjs's own isSafeLockKey/withGigLock check (SEC-1 fix,
+// same commit) is the second, independent layer for any caller that bypasses this MCP schema.
+const SAFE_GIG_ID = z
+  .string()
+  .regex(/^[A-Za-z0-9_-]+$/, "gigId must contain only letters, digits, underscore, or hyphen (no path separators -- SEC-1 path-traversal guard)");
+
 server.registerTool(
   "gig_post",
   {
@@ -61,7 +78,7 @@ server.registerTool(
       "by takerAddress, on-chain verified) -- fail-closed, no unverified taker. Fails if the gig is not " +
       "currently 'open', or if two takers race for it (only one wins).",
     inputSchema: {
-      gigId: z.string(),
+      gigId: SAFE_GIG_ID,
       takerAddress: z.string().describe("the taking agent's own wallet address (receives payout later)"),
       takerAgentId: z.string().describe("your ERC-8004 agentId (from identity_register) -- verified on-chain to be owned by takerAddress"),
     },
@@ -75,7 +92,7 @@ server.registerTool(
     title: "Deliver a gig",
     description: "Submit the deliverable for a gig you've taken. Fails if the gig is not currently 'taken'.",
     inputSchema: {
-      gigId: z.string(),
+      gigId: SAFE_GIG_ID,
       deliverable: z.string().describe("the delivered result (URL, text, or content hash)"),
     },
   },
@@ -94,7 +111,7 @@ server.registerTool(
       "marks the gig 'paid' if that settle actually succeeds. verified=false rejects the delivery -- no " +
       "payout, ever. Concurrent calls for the same gig are serialized: at most one can ever pay.",
     inputSchema: {
-      gigId: z.string(),
+      gigId: SAFE_GIG_ID,
       verified: z.boolean(),
       posterPrivateKey: z.string().describe("0x-prefixed private key of the gig's poster -- proves you are authorized to verify/pay THIS gig"),
     },

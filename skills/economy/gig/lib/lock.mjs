@@ -41,7 +41,42 @@ import { randomUUID } from "node:crypto";
 const DEFAULT_STALE_MS = 60_000; // must exceed any realistic settle+retry duration by a wide margin
 const DEFAULT_HEARTBEAT_MS = 5_000; // refresh well before staleMs could ever be reached by a live holder
 
+// SEC-1 fix (Phase 5 security-report.md, path traversal via unsanitized gigId/lockKey): lockPaths()
+// below builds a real filesystem path by string-interpolating `lockKey` directly into a filename
+// (`${lockKey}.lock`) and joining it onto the locks/ directory. `path.join` COLLAPSES ".." segments
+// instead of rejecting them, so an unsanitized lockKey (a caller-supplied gigId, in production) such as
+// "../../../../../../../../../../tmp/anicca-poc-escaped-file-live" resolves OUTSIDE the intended
+// <statePath-dir>/locks/ directory entirely -- a live PoC this session created (and, via
+// reclaimStaleLock's rename/unlink path, could touch) a file at that escaped location while the lock
+// was "held" (see security-report.md SEC-1). The PRIMARY fix is mcp-server.mjs's zod schema constraining
+// gigId's character set before it ever reaches here (same commit); THIS is the SECOND, independent
+// layer, so any caller of withGigLock -- gigId, "_post", "_board", or a future lock key -- is protected
+// even if some future caller forgets the schema-level guard or calls gig.mjs's exported functions
+// directly (bypassing mcp-server.mjs entirely, which any Node script importing gig.mjs already can).
+const SAFE_LOCK_KEY_PATTERN = /^[A-Za-z0-9_-]+$/;
+
+/**
+ * isSafeLockKey — pure predicate (mirrors isLockStale's shape below): is `lockKey` restricted to a safe
+ * filename-fragment character set (letters, digits, underscore, hyphen -- no "/", ".", or other path
+ * separators)? This is the exact character set every real lock key already uses: gigId is always
+ * `String(state.nextId)` (lib/store.mjs's applyPost, a plain positive-integer counter) and the module's
+ * own internal keys are "_post"/"_board" (gig.mjs) -- so this is not a behavior change for any legitimate
+ * caller, only a rejection of keys that were never valid gig identifiers in the first place.
+ */
+export function isSafeLockKey(lockKey) {
+  return typeof lockKey === "string" && lockKey.length > 0 && SAFE_LOCK_KEY_PATTERN.test(lockKey);
+}
+
+function assertSafeLockKey(lockKey) {
+  if (!isSafeLockKey(lockKey)) {
+    throw new Error(
+      `unsafe lock key ${JSON.stringify(lockKey)} -- must match ${SAFE_LOCK_KEY_PATTERN.source} (SEC-1 path-traversal guard, lib/lock.mjs)`
+    );
+  }
+}
+
 function lockPaths(statePath, lockKey) {
+  assertSafeLockKey(lockKey); // second layer -- see SEC-1 comment above
   const dir = path.join(path.dirname(statePath), "locks");
   return { dir, file: path.join(dir, `${lockKey}.lock`) };
 }
@@ -142,8 +177,20 @@ async function touch(statePath, lockKey) {
  * -- no queueing, no waiting, no window where two callers can both reach a network settle for the same
  * resource. While `fn()` runs, the lock's mtime is heartbeated so a live holder is never mistaken for
  * a stale one, however long `fn()` legitimately takes.
+ *
+ * SEC-1: an unsafe `lockKey` (one that isn't `isSafeLockKey`, e.g. contains "../") is rejected HERE,
+ * before `acquire()`/`lockPaths()` ever touch the filesystem, returning the module's normal
+ * `{ok:false, reason}` shape -- never letting `assertSafeLockKey`'s thrown Error escape as an unhandled
+ * rejection (which could otherwise crash the whole process, turning a path-traversal attempt into a
+ * denial-of-service on top of it).
  */
 export async function withGigLock(statePath, lockKey, fn, { staleMs = DEFAULT_STALE_MS, heartbeatMs = DEFAULT_HEARTBEAT_MS } = {}) {
+  if (!isSafeLockKey(lockKey)) {
+    return {
+      ok: false,
+      reason: `unsafe lock key ${JSON.stringify(lockKey)} -- rejected (fail-closed, SEC-1 path-traversal guard; must match ${SAFE_LOCK_KEY_PATTERN.source})`,
+    };
+  }
   const got = await acquire(statePath, lockKey, staleMs);
   if (!got) {
     return {
