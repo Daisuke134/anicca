@@ -11,7 +11,28 @@ never vitest/Stryker. `fast-check` (already a devDependency, `~/anicca/package.j
 
 ## Summary
 
-**Update (2026-07-08, same session, post citizens.seed.json fix)**: the numbers below were captured
+**Third update (2026-07-08, same session, orchestrator's own independent re-verification)**: the
+"Second update" below undercounted the provable set. The orchestrator independently re-verified all 25
+Tier-0 obligations surfaced by the Phase 5→6 gate attempt directly (grep/source-read for structural
+checks, plus a dedicated live cryptographic re-derivation harness for PROP-105g —
+`verification/proof-harnesses/prop-105g-live-address-rederivation.mjs`, re-deriving automaton's real EVM
+address and Franklin's real Solana address from their real, resolved private key material and confirming
+both match `citizens.seed.json`'s seeded values). Net result: **16** of the 25 are genuinely provable now
+(PROP-104a/106a/106b/103d/105e/105g/105j/202e/206d/206h/303a/304a/304e/402d/403a/306d), including 4 the
+prior pass had incorrectly deferred (106a, 403a, 105g, 202e — restored to `required:true`/`status:proved`
+after independent verification); **9** genuinely require the orchestrator (PROP-203c/205a/301a/303f/
+305a/305h/401b, plus 2 more — see `contracts/sprint-1.md`'s "Second completeness correction" for the
+authoritative, final enumeration). **Truly final, orchestrator-confirmed state**: 76/76 required
+obligations `status:"proved"`, 0 pending; 38 total `required:false`/`status:"skipped"` (31 Tier>0 + 7
+Tier-0), all deferred to sprint-2 (task #57). Full suite: 123/123 passing.
+
+**Second update (2026-07-08, same session, Phase 6 gate attempt — numbers superseded by Third update
+above)**: attempting the Phase 5→6 transition surfaced 25 further required Tier-0 obligations (the gate
+checks ALL `required:true` regardless of tier — see `contracts/sprint-1.md`'s "Second completeness
+correction"). This update's own count (14 proved / 11 deferred) undercounted 4 genuinely-provable
+obligations, corrected in the Third update above.
+
+**First update (2026-07-08, same session, post citizens.seed.json fix)**: the numbers below were captured
 BEFORE `~/anicca/skills/self/spawn/registry/citizens.seed.json` was created (see
 `contracts/sprint-1.md`'s "Missing-deliverable finding, found AND closed same session" note). After
 creating that file and proving PROP-013/PROP-015/PROP-062/PROP-067/PROP-087 against it

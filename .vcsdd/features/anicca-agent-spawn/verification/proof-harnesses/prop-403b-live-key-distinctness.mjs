@@ -7,10 +7,11 @@
 // (PROP-403e: never a bare {home:X} call). Never logs/prints the resolved key material itself — only
 // booleans (non-null / equality) ever leave this process, matching resolve-identity.mjs's own R5
 // "never logs the key material" discipline.
-import os from "node:os";
+// PROP-403f: every call site that supplies env.HOME imports and passes the SAME exported
+// COORDINATOR_HOME constant from registry-path.mjs -- never an independently hardcoded literal or
+// an independent os.homedir() call (which would defeat the point of a single canonical source).
 import { resolveEvmPrivateKey, resolveSolanaSecret } from "file:///Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs";
-
-const COORDINATOR_HOME = os.homedir();
+import { COORDINATOR_HOME } from "file:///Users/anicca/anicca/skills/self/spawn/lib/registry-path.mjs";
 
 const citizens = [
   { id: "automaton", homeDir: `${COORDINATOR_HOME}/.anicca` },
