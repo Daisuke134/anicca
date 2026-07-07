@@ -13,6 +13,7 @@
 | 01 | `01-loop-vs-goal-resolved.md` | ★「loop は goal を含むのか?」の決定的解決（概念=YES / ツール=逆に/goalがloopを含む / 真の軸=done を誰が判定するか）★ | ✅ 完了（外部一次情報つき） |
 
 | 03 | `03-franklin-as-nested-loops.md` | ループの実装: 私(human-funded=人間へ) vs Franklin(self-funded=agent economyへ)、5レイヤー実装、done 3値、分担/順番、着手STEP A-D | ✅ 完了 |
+| 04 | `04-the-two-loops.md` | ★核心★ 2つの別ループ: 私のMAIN loop(建築家/親/投資家=経済を建て監視し資金投入、消えるのがゴール) vs Franklinのloop(経済の当事者)。side trading loopは別機械。Dais完全out・cobus pattern合成・discuss→issue→loop | ✅ 完了 |
 
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
