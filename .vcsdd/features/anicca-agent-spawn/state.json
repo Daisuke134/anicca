@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "1a",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -77,6 +77,12 @@
       "reason": "Sprint 2: build the effectful spawn orchestrator (REQ-201-306 wiring: wallet generation, ERC-8004 registration, mcp.json write, cloud deploy call sites, REQ-305 ledger append) -- the 38 obligations deferred from sprint-1 all require this to exist. This is the direct, necessary path to the active /goal Done condition (a real, autonomous spawn event).",
       "sprint": 1,
       "nextSprintHint": 2
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-07T19:48:34.776Z",
+      "sprint": 1
     }
   ],
   "iterations": {
@@ -84,7 +90,7 @@
     "5": 1,
     "6": 1,
     "1a": 3,
-    "1b": 2,
+    "1b": 3,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -1003,6 +1009,38 @@
       "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-101l",
       "beadId": "BEAD-135"
+    },
+    {
+      "id": "PROP-115",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-307a",
+      "beadId": "BEAD-139"
+    },
+    {
+      "id": "PROP-116",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-307b",
+      "beadId": "BEAD-140"
+    },
+    {
+      "id": "PROP-117",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-307c",
+      "beadId": "BEAD-141"
+    },
+    {
+      "id": "PROP-118",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-307d",
+      "beadId": "BEAD-142"
     }
   ],
   "traceability": {
@@ -2736,6 +2774,69 @@
         "status": "resolved",
         "artifactPath": "reviews/impl/sprint-1/output/findings/FIND-1902.json",
         "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-138",
+        "type": "spec-requirement",
+        "externalId": "REQ-307",
+        "artifactPath": "specs/behavioral-spec.md#REQ-307",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-139",
+          "BEAD-140",
+          "BEAD-141",
+          "BEAD-142"
+        ],
+        "createdAt": "2026-07-07T19:48:20.457Z",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-139",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-307a",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-138"
+        ],
+        "createdAt": "2026-07-07T19:48:20.457Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-307a"
+      },
+      {
+        "beadId": "BEAD-140",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-307b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-138"
+        ],
+        "createdAt": "2026-07-07T19:48:20.457Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-307b"
+      },
+      {
+        "beadId": "BEAD-141",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-307c",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-138"
+        ],
+        "createdAt": "2026-07-07T19:48:20.457Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-307c"
+      },
+      {
+        "beadId": "BEAD-142",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-307d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-138"
+        ],
+        "createdAt": "2026-07-07T19:48:20.457Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-307d"
       }
     ]
   },
@@ -2783,5 +2884,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T19:30:22.415Z"
+  "updatedAt": "2026-07-07T19:48:34.777Z"
 }

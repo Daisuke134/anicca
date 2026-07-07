@@ -2559,6 +2559,13 @@ append — a permanent closure of the hazard, not merely a t=0 check.
   unaffected — the append is never lost, stashed, or overwritten by the concurrent git operation, and
   the git operation is never blocked or corrupted by the concurrent append (the two touch disjoint
   filesystem locations by construction).
+- **(new, sprint-2, resolves FIND-2002)** A failure occurs in REQ-201/202/203/306/302/303 — i.e.,
+  BEFORE an identity anchor (`agentEvmAddress`+`agentId`, REQ-204) exists at all — meaning
+  `buildChildSpec` cannot yet be called (its own required-anchor validation would throw): see REQ-307's
+  own edge case for the exact resolution (a minimal `{child_id, status:"failed", attempted_ms, error}`
+  row appended directly via `ledger.js::appendChild`, never via `buildChildSpec`) — this is the SAME
+  "partially-completed attempt SHALL be recorded" promise this requirement's own EARS clause already
+  makes, stated once, canonically, at REQ-307, never restated independently here.
 
 **Acceptance Criteria**:
 - A structural/Tier-0 check of the ledger-writing code path confirms every write path that can leave a
@@ -2656,6 +2663,96 @@ generalized to the selection step itself.
 - REQ-302's and REQ-303's own EARS clauses ("Nosana/Akash is the selected cloud target for that
   attempt") are satisfied exactly when this function returns the matching string — no other selection
   path exists anywhere in this spec.
+
+---
+
+### REQ-307: The spawn orchestrator's single entry-point function (new, sprint-2, resolves FIND-2001)
+**EARS**: WHEN REQ-102/103 jointly permit a spawn attempt to proceed (`decideColonySpawn` returns
+`eligible:true` AND the `"colony-spawn"` lock, per REQ-103, is successfully acquired), THE SYSTEM SHALL
+execute the ENTIRE remainder of that spawn attempt — REQ-201 through REQ-206's identity-generation
+steps, REQ-306's cloud-target selection, REQ-302's or REQ-303's deploy (including REQ-304's funding),
+and REQ-305's ledger/registry append — via exactly ONE new, named entry-point function,
+`executeSpawnAttempt({ initialSkills, drivingCitizenWallet, nowMs = Date.now() }) → Promise<{ status:
+"active"|"failed", childId, error? }>`, exported from a NEW module,
+`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`. **This closes the one gap a full sweep of this
+spec found (2026-07-08): every individual step (REQ-201-206, REQ-301-306) already has its own pinned
+signature, but no function anywhere before this correction was named as the thing that calls them all,
+in order, inside REQ-103's lock — the Purity Boundary Map's own row list (all "REQ-201/202/etc.
+acceptance criteria are enforced here" citations) had no row for this binding function itself.** This
+function SHALL contain NO decision/judgment logic of its own (mirrors REQ-104's bookkeeping-only
+discipline and this project's own pre-existing `~/anicca/skills/self/spawn/run.sh`'s header comment,
+"Decision core is pure JS ... this shell only orchestrates") — it is PURE SEQUENCING AND ERROR
+PROPAGATION over the already-specified pure/narrow modules, calling each in the canonical order below
+and never re-deriving, re-computing, or hardcoding any value those modules already own.
+
+**Canonical call order** (never varied, never partially reordered — each step's own REQ number retains
+full ownership of that step's internal behavior; this paragraph states ONLY the sequencing, not a
+restatement of any step's own logic):
+1. REQ-203's HOME/ANICCA_HOME distinctness check (BEFORE any key generation).
+2. REQ-201's EVM wallet generation.
+3. REQ-306's `selectCloudTarget` (a fresh price/availability query for THIS attempt, never a
+   cached/earlier evaluation).
+4. REQ-202's conditional Solana wallet generation, fed step 3's own `deployTarget` return value
+   directly (this ordering — step 3 before step 4 — is what makes REQ-202's own already-specified
+   PROP-202d binding possible at all).
+5. REQ-302 (Nosana) or REQ-303 (Akash) deploy, selected by step 3's own return value — REQ-303's own
+   internal two-pass funding-gate sequencing (REQ-304) runs entirely within this step.
+6. REQ-204's ERC-8004 registration (requires the child's EVM wallet from step 2 and a reachable
+   shelter from step 5).
+7. REQ-205's `mcp.json` write.
+8. REQ-206's `buildChildSpec` assembly (identity anchor = step 2's `agentEvmAddress` + step 6's
+   `agentId`).
+9. REQ-305's ledger append (the `"active"` row, `active_since` set) and citizen-registry append
+   (gated on `isSelfFunded()`).
+
+**Edge Cases**:
+- A failure occurs at step 1, 2, 3, 4, or 5 (REQ-201/202/203/306/302/303) — i.e., BEFORE step 6
+  (REQ-204) ever produces an `agentId` — meaning NEITHER of `buildChildSpec`'s two identity-anchor
+  shapes (`childInbox`, never produced by this feature's design, or the `agentEvmAddress`+`agentId`
+  pair) is yet available (new, resolves FIND-2002, critical: REQ-305's own EARS clause promises "a
+  partially-completed attempt SHALL be recorded with status failed" for ANY failure from REQ-201
+  THROUGH REQ-303, but its own cited mechanism, `buildChildSpec`, structurally CANNOT construct a row
+  without an identity anchor that does not yet exist this early — an unaddressed gap until this
+  correction): THE SYSTEM SHALL append a MINIMAL row directly via `ledger.js::appendChild` — NEVER via
+  `buildChildSpec`, whose own required-anchor validation cannot yet be satisfied — carrying at minimum
+  `{child_id, status:"failed", attempted_ms, error}` (`child_id` from `nextChildId`, which needs no
+  identity anchor; `attempted_ms` set to `nowMs`, establishing this AS that `child_id`'s true first row,
+  per REQ-305's own `attempted_ms`-lifecycle rule). No later, successful `buildChildSpec`-shaped row is
+  ever retroactively required for an attempt that failed this early — REQ-101's
+  `filterProductiveCitizens`/REQ-102's `deriveRecentSpawnAttempts` already key only on
+  `status`/`attempted_ms`/`active_since`, never on `buildChildSpec`'s other, optional fields, so this
+  minimal row is already sufficient input for both.
+- A failure occurs at step 6, 7, 8, or 9 (REQ-204/205/206/305) — i.e., AFTER an identity anchor already
+  exists: THE SYSTEM SHALL record the failure via the ALREADY-specified `buildChildSpec`-based path
+  REQ-305 describes, exactly as today — this function adds no second, competing failure-recording path
+  for this later window.
+- The `"colony-spawn"` lock (REQ-103) is held for this function's ENTIRE execution, steps 1-9
+  inclusive, released only in a `finally` block after step 9 completes OR after any step's failure has
+  been ledgered (mirrors `withGigLock`'s own existing `try/finally` release discipline — REQ-307
+  introduces no new release logic, only a new `fn` body passed into the EXISTING
+  `withGigLock`/`withColonyLock` wrapper REQ-103 already specifies).
+- `initialSkills`/`drivingCitizenWallet` are supplied by THIS function's OWN caller (the wake-cycle
+  scheduler that already evaluated REQ-102/103) — `executeSpawnAttempt` does not itself decide or
+  default either value; `initialSkills` is the SAME agent-chosen value REQ-104's carve-out and
+  REQ-202's own PROP-202e already govern, and `drivingCitizenWallet` is REQ-206's own "the citizen that
+  evaluated REQ-101/102/103 and is driving this spawn attempt" value, unchanged.
+
+**Acceptance Criteria**:
+- A structural/Tier-0 check confirms exactly ONE function, `executeSpawnAttempt`, in exactly ONE new
+  module (`spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own already-exported
+  functions/scripts in the canonical order above — no second, competing orchestration entry point
+  exists anywhere in the diff.
+- A structural/Tier-0 check confirms `executeSpawnAttempt`'s own function body contains no
+  arithmetic/boolean eligibility logic (that belongs exclusively to `decideColonySpawn`, called by ITS
+  OWN caller before `executeSpawnAttempt` is ever invoked) and no LLM/prompt reference — mirrors
+  REQ-104's own structural check, extended to this new function.
+- An integration test triggers a failure at each of steps 1 through 9 in turn and confirms: (a) for
+  steps 1-5, a minimal `{child_id, status:"failed", attempted_ms, error}` row is appended directly
+  (never via `buildChildSpec`); (b) for steps 6-9, the existing `buildChildSpec`-based failure path
+  (REQ-305) is used; (c) in every case, no row anywhere claims `status:"active"` for that `child_id`.
+- An integration test confirms the `"colony-spawn"` lock (REQ-103) is held from before step 1 begins
+  until after step 9 completes (or a failure is ledgered), reusing PROP-103e's own staggered-race proof
+  method against this REAL function rather than a fixture stand-in for it.
 
 ---
 
