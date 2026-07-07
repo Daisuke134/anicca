@@ -14,11 +14,18 @@
       "to": "1b",
       "timestamp": "2026-07-07T02:30:05.000Z",
       "reason": "Phase 1b: verification-architecture.md written (PROP-101a..PROP-302a, purity boundary map, tiers 0-3)"
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-07T02:49:20.000Z",
+      "reason": "iteration 2 revision addressing Phase 1c iteration-1 FAIL (FIND-001..FIND-006): BOOTSTRAP_RESERVE_USDC default=20 documented, hasOpenRiskPositionOf carve-out added (REQ-201/PROP-201f) resolving the hl_trade close-vs-exclude deadlock, alwaysAvailable registry flag added (REQ-201/PROP-201e), isLockStale extraction made binding (REQ-101), new REQ-204/PROP-204a to remove the pre-existing COLONY BOOTSTRAP PRIORITY steering block, Tier-3 independence requirement added (REQ-103/PROP-103b)",
+      "iteration": 2
     }
   ],
   "iterations": {
-    "1a": 1,
-    "1b": 1
+    "1a": 2,
+    "1b": 2
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -35,13 +42,15 @@
     { "id": "PROP-201c", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-020" },
     { "id": "PROP-201d", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-021" },
     { "id": "PROP-201e", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-022" },
+    { "id": "PROP-201f", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-031" },
     { "id": "PROP-202a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-023" },
     { "id": "PROP-202b", "tier": 2, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-024" },
     { "id": "PROP-203a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-025" },
     { "id": "PROP-203b", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-026" },
     { "id": "PROP-301a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-027" },
     { "id": "PROP-301b", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-028" },
-    { "id": "PROP-302a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-029" }
+    { "id": "PROP-302a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-029" },
+    { "id": "PROP-204a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-032" }
   ],
   "traceability": {
     "epicId": "VCSDD-anicca-agent-economy-1783337583346",
@@ -49,7 +58,7 @@
       { "beadId": "BEAD-001", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-101", "status": "active", "linkedBeads": ["BEAD-009", "BEAD-010", "BEAD-011", "BEAD-012"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-101" },
       { "beadId": "BEAD-002", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-102", "status": "active", "linkedBeads": ["BEAD-013", "BEAD-014", "BEAD-015"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-102" },
       { "beadId": "BEAD-003", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-103", "status": "active", "linkedBeads": ["BEAD-016", "BEAD-017"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-103" },
-      { "beadId": "BEAD-004", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-201", "status": "active", "linkedBeads": ["BEAD-018", "BEAD-019", "BEAD-020", "BEAD-021", "BEAD-022"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-201" },
+      { "beadId": "BEAD-004", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-201", "status": "active", "linkedBeads": ["BEAD-018", "BEAD-019", "BEAD-020", "BEAD-021", "BEAD-022", "BEAD-031"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-201" },
       { "beadId": "BEAD-005", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-202", "status": "active", "linkedBeads": ["BEAD-023", "BEAD-024"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-202" },
       { "beadId": "BEAD-006", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-203", "status": "active", "linkedBeads": ["BEAD-025", "BEAD-026"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-203" },
       { "beadId": "BEAD-007", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-301", "status": "active", "linkedBeads": ["BEAD-027", "BEAD-028"], "createdAt": "2026-07-07T02:30:05.000Z", "createdInPhase": "1a", "externalId": "REQ-301" },
@@ -74,7 +83,10 @@
       { "beadId": "BEAD-026", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-203b", "status": "active", "linkedBeads": ["BEAD-006"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-203b" },
       { "beadId": "BEAD-027", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-301a", "status": "active", "linkedBeads": ["BEAD-007"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-301a" },
       { "beadId": "BEAD-028", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-301b", "status": "active", "linkedBeads": ["BEAD-007"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-301b" },
-      { "beadId": "BEAD-029", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-302a", "status": "active", "linkedBeads": ["BEAD-008"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-302a" }
+      { "beadId": "BEAD-029", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-302a", "status": "active", "linkedBeads": ["BEAD-008"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-302a" },
+      { "beadId": "BEAD-030", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-204", "status": "active", "linkedBeads": ["BEAD-032"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1a", "externalId": "REQ-204" },
+      { "beadId": "BEAD-031", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-201f", "status": "active", "linkedBeads": ["BEAD-004"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1b", "externalId": "PROP-201f" },
+      { "beadId": "BEAD-032", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-204a", "status": "active", "linkedBeads": ["BEAD-030"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1b", "externalId": "PROP-204a" }
     ]
   },
   "gates": {
@@ -93,5 +105,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T02:41:11.000Z"
+  "updatedAt": "2026-07-07T02:49:20.000Z"
 }
