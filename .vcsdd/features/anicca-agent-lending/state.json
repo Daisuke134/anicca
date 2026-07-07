@@ -2,7 +2,7 @@
   "featureName": "anicca-agent-lending",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "complete",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -55,13 +55,28 @@
       "timestamp": "2026-07-07T17:02:43.322Z",
       "sprint": 1,
       "reason": "Phase 5 (formal hardening) complete: 47/47 required proof obligations proved (19 deferred to sprint-2, all one root cause, matching the already-PASSed contract scope boundary). Semgrep 0 findings (261 rules), purity audit confirms zero drift, 10 new fast-check property tests (~4500 generated-input runs), 89/89 total tests passing. Phase 6 convergence check (gates.6) PASS: all 4 dimensions converged (finding diminishment 2->0 and 1->0, specificity verified, 9/9 criteria coverage, 0 duplicates, 0 open adversary-finding beads, all hardening artifacts present). anicca-agent-lending sprint-1 is COMPLETE."
+    },
+    {
+      "from": "complete",
+      "to": "1a",
+      "timestamp": "2026-07-07T20:20:14.213Z",
+      "reason": "Sprint 2: build the effectful loan-issuance/repayment orchestrator that wires sprint-1's pure/narrow lending-gate.mjs/lending-verify.mjs/gojo-read.mjs modules (lock acquisition, ledger append, escrow payViaFacilitator invoke, reconcile/verify) into a single, real, runnable loan-issuance+repayment flow, closing the 19 orchestrator-blocked deferred PROPs documented in contracts/sprint-1.md's own Known residual scope boundary section.",
+      "sprint": 1,
+      "nextSprintHint": 2
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-07T20:34:48.530Z",
+      "reason": "Sprint 2 Phase 1a/1b spec work complete: REQ-115 (executeLoanIssuanceAttempt) + REQ-116 (executeRepaymentClaim/executeDefaultDetectionSweep) added to behavioral-spec.md, PROP-115a-d/PROP-116a-d + Gate item 12 added to verification-architecture.md, contracts/sprint-2.md drafted (7 CRIT criteria, schema-valid, no line-wrap truncation). Ready for Phase 1c fresh-adversary review.",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
-    "1a": 1,
-    "1b": 1,
+    "1a": 2,
+    "1b": 2,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -1691,5 +1706,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T17:02:43.322Z"
+  "updatedAt": "2026-07-07T20:34:48.532Z"
 }
