@@ -1,0 +1,61 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 8,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T19:15:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-601", "FIND-602", "FIND-603"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-601",
+      "status": "genuinely resolved",
+      "note": "Re-read REQ-106's 'Kill-switch re-verification inside this SAME lock-protected fresh-check' subsection in full (behavioral-spec.md:1123-1149), its Edge Case (lines 1483-1492), its Acceptance Criteria (lines 1513-1520, 1600-1627), and PROP-105h/PROP-114c/PROP-106p in verification-architecture.md (lines 131, 134, 152). The critical-section ordering now explicitly lists 'BOTH kill-switches' fresh re-check' between the REQ-102(a)-(c) recheck and the REQ-101 recheck, all performed 'while BOTH locks are held' and 'as part of the SAME fresh-read critical section already specified above ... NEVER a second, independently-taken snapshot.' PROP-105h and PROP-114c are both EXTENDED to require a SECOND, separate real-code call site inside the lock-protected fresh-check, not merely the pre-lock call site (mirroring the same 'real code, not a mock' discipline FIND-303 already established). This genuinely closes the TOCTOU window FIND-601 identified: every individual issuance attempt, regardless of lock contention with any other attempt, performs its OWN fresh read and re-evaluates both kill-switches against current ledger state at the moment its own locks are acquired -- the two-different-lenders/two-different-borrowers race the original finding cited (behavioral-spec.md:1425-1434) no longer bypasses this, since zero lock CONTENTION between two attempts does not mean either attempt skips its own fresh recheck."
+    },
+    {
+      "findingId": "FIND-602",
+      "status": "NOT genuinely resolved -- the mechanism intended to close this finding is added, but a new, closely-related defect (reported below as FIND-701) reopens the EXACT scenario this finding's own rationale describes",
+      "note": "The general mechanism FIND-602 asked for -- a second, absolute, volume-dilution-immune signal (`computeRecentDefaultLossUsd`/the third `evaluateOverallDefaultKillSwitch` branch) -- is genuinely present and wired alongside the ratio (behavioral-spec.md:840-1067; PROP-114e/PROP-114c in verification-architecture.md). However, this fresh pass found the threshold comparison for that new branch (`totalRecentDefaultLossUsd > RECENT_DEFAULT_LOSS_THRESHOLD_USD`, a strict `>`) cannot, as literally specified, ever be tripped by a SINGLE bust-out default at REQ-105's own `maxLoanUsd` ceiling ($5.00) acting alone -- because `RECENT_DEFAULT_LOSS_THRESHOLD_USD` is DELIBERATELY set equal to that SAME $5.00 ceiling, and no single loan under this spec's own ladder can ever exceed it. This directly contradicts the requirement's own stated rationale for choosing that threshold value ('BY ITSELF, already sufficient to trip this signal', behavioral-spec.md:880-884) and the document's own worked Edge Case (line 1002, which asserts a value that 'EQUALS' the threshold still trips `paused:true`) -- both false under the literal `>` operator. Because the ratio signal is precisely the one FIND-602 already proved can be diluted below 0.20 by co-existing healthy loan volume, this boundary bug means the EXACT single-largest-loan bust-out scenario REQ-114 exists to close can, once again, slip through BOTH signals in a maturing colony whenever the bust-out default lands at exactly $5.00 rather than a value assembled from multiple smaller defaults. See FIND-701 for the full evidentiary detail, including the internally-inconsistent fixture pair (PROP-114b's own $5.01 fixture vs. PROP-114f's own $5.00-exactly fixture) that makes this a demonstrable, not merely hypothetical, defect."
+    },
+    {
+      "findingId": "FIND-603",
+      "status": "genuinely resolved",
+      "note": "The self-loan-exclusion Edge Case (behavioral-spec.md:1435-1440) and its matching Acceptance Criterion (lines 1514-1517) both now explicitly name BOTH `evaluateColdStartKillSwitch` AND `evaluateOverallDefaultKillSwitch` as steps that never run for a self-loan candidate, each citing 'resolves this revision's own spec-review iteration-7 FIND-603.' No remaining cross-reference in the document names only the cold-start switch in this context."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-701"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:1-2212", "description": "Full fresh read of the entire behavioral spec (both pages) performed this session, REQ-101 through REQ-114 traced end-to-end against their own Acceptance Criteria and cross-references; no new defect found in REQ-101/102/103/104/106/107/108/109/110/111/112/113 beyond the item below"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:880-885,924-927,997-1004,1052-1066", "description": "REQ-114's new absolute-loss threshold rationale, SHALL-clause comparison operator, worked Edge Case, and two Acceptance-Criteria fixtures (PROP-114f's $5.00-exact fixture vs. the separate $5.01 fixture) traced arithmetically and found mutually inconsistent -- FIND-701"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-701", "FIND-702"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:1-449", "description": "Full fresh read of the entire 449-line verification architecture (both pages), all 171 PROP rows and the full Gate section traced against their corresponding REQ text"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:29,133,137", "description": "PROP-114b/PROP-114f's third-branch fixtures traced against the literal `>` formula stated in the same file's own Pure-Core purity-map row -- PROP-114f's own headline dilution-defeat fixture is unsatisfiable by a correct implementation of the stated formula -- FIND-701"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:136-137,161-166", "description": "Grepped every defaulted_ms occurrence across both spec files (9 in behavioral-spec.md, 3 in verification-architecture.md); confirmed none binds the REAL, production REQ-109 default-append code to actually set this field -- only pure-function fixtures that assume it is already correctly populated -- FIND-702"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
