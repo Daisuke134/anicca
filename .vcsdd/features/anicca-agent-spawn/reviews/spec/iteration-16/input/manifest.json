@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 16,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 15,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-15/output/findings/",
+    "note": "1 finding, critical: FIND-1401 -- recentSpawnAttempts had no specified derivation from ledger.js's real rows. Fix: new attempted_ms field (first-row-sets, later-rows-copy-forward, mirroring active_since's exact precedent, child-spec.js itself NOT modified) + new pure function deriveRecentSpawnAttempts({ledgerRows}) in treasury-gate.mjs (same file as filterProductiveCitizens), one entry per child_id, success-permanence rule for bootstrap_failed relabeling, in-flight exclusion. New PROP-102f (4-case unit fixture), PROP-102g (real-derivation integration discipline, mirrors PROP-101d/e), PROP-305h (attempted_ms field-lifecycle structural check)."
+  },
+  "note": "Verify FIND-1401's fix: confirm attempted_ms is genuinely specified to be set once on the first ledger.js row per child_id and copied forward unchanged on every subsequent row (failed/active/bootstrap_failed), confirm deriveRecentSpawnAttempts's four-case mapping (failure/success/success-then-bootstrap_failed-stays-success/in-flight-excluded) is unambiguous and correctly closes the double-counting and retroactive-flip hazards the finding raised, and confirm REQ-102's real orchestration is specified to call this function directly (never a hand-rolled reimplementation). Confirm child-spec.js/buildChildSpec and ledger.js's own readChildren/appendChild signatures are genuinely NOT modified (this should be a purely additive fix). This feature has now FAILed 15 consecutive spec-review iterations. Do a full fresh, skeptical pass over the ENTIRE spec (REQ-101 through REQ-403) once more -- this session has repeatedly found that a fresh full re-read surfaces one new, previously-uncaught issue even when the targeted fix itself is clean (this is exactly how iteration-15's own FIND-1401 was discovered, while verifying iteration-14's FIND-1301 fix). Look for any other real-system-derivation gap of the same class: a pure function's input treated as an already-given fixture in every proof obligation, with no specified mechanism deriving it from this feature's own real, persisted state."
+}

@@ -1,0 +1,42 @@
+{
+  "reviewType": "spec",
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 15,
+  "priorIterationFindingReconfirmation": {
+    "FIND-1301": "GENUINELY RESOLVED. Grepped behavioral-spec.md's REQ-102 (lines 609-710) and confirmed it now explicitly states 'SPAWN_COOLDOWN_DAYS defaults to 14 (resolves FIND-1301) -- reusing ~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn's own existing rateLimitDays parameter default (line 11) for consistency with prior art' (lines 623-626), matching every sibling constant's discipline in the same requirement (MIN_SHELTER_USD=5.00, SAFETY_MARGIN_MULTIPLIER=2, FAILURE_COOLDOWN_CAP=3, MAX_CONCURRENT_SPAWNS=1, all still present with their own defaults, lines 612, 643-654). Independently read the REAL, current ~/anicca/skills/self/spawn/lib/spawn-decision.js (not merely trusting the spec's citation): confirmed line 11 literally reads `rateLimitDays = 14,` inside decideSpawn's destructured parameters -- the citation is accurate, not fabricated, and the line-number citation is exact. REQ-102's own Acceptance Criteria (lines 692-693) restates the identical default: 'cooldownDays defaults to 14, identical to SPAWN_COOLDOWN_DAYS's own default above (resolves FIND-1301) -- never independently configurable to a different value'. REQ-402 (behavioral-spec.md:2192-2195) now cites this correctly and non-circularly: 'BOOTSTRAP_WINDOW_DAYS (default 14, reusing REQ-102's own SPAWN_COOLDOWN_DAYS constant -- which REQ-102 itself now states defaults to 14 (resolves FIND-1301) -- for internal consistency)' -- this resolves to a real REQ-102 statement, not a backward reference to a definition that does not exist. New proof obligation PROP-402e (verification-architecture.md:362) is genuinely new and adequately specific: its Tier-0 half requires the implementation to derive BOOTSTRAP_WINDOW_DAYS FROM (re-export/alias/direct-assignment from) the SAME SPAWN_COOLDOWN_DAYS value 'never a second, independently-declared literal that merely happens to also read 14 today,' and its Tier-1 half adds a MUTATION fixture: 'change SPAWN_COOLDOWN_DAYS's configured value and assert BOOTSTRAP_WINDOW_DAYS changes identically alongside it' -- this mutation test is mechanically sufficient to fail an implementation that hardcodes BOOTSTRAP_WINDOW_DAYS as an independent literal `14` that merely happens to numerically match today, exactly the concern the iteration-15 manifest raised; a hardcoded-independent-literal implementation would pass the naive `===` equality assertion at t=0 but fail the mutation fixture the instant SPAWN_COOLDOWN_DAYS's configured value is changed in the test, since the hardcoded literal would not follow. The Gate's item (10) (verification-architecture.md:744-762) and item (4a)'s analogous seedUsdc-identity precedent both correctly require this. FIND-1301 is genuinely and completely resolved."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1401"],
+      "evidence": [
+        {"type": "spec", "location": "specs/behavioral-spec.md:609-710 (REQ-102, full re-read)", "description": "Confirmed FIND-1301's fix is genuine and complete: SPAWN_COOLDOWN_DAYS now has an explicit default (14), correctly cited to spawn-decision.js's real rateLimitDays=14 default (line 11, independently verified by reading that file directly)"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:2191-2266 (REQ-402, full re-read)", "description": "Confirmed REQ-402's BOOTSTRAP_WINDOW_DAYS citation to REQ-102's SPAWN_COOLDOWN_DAYS default now resolves to a real, existing statement -- no longer circular/implied"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:1-2449 (full fresh read, REQ-101 through REQ-403)", "description": "Actively hunted for OTHER constants used repeatedly but never given an explicit default at their point of definition (the exact FIND-1301 omission class) -- none found: MIN_SHELTER_USD, SAFETY_MARGIN_MULTIPLIER, FAILURE_COOLDOWN_CAP, MAX_CONCURRENT_SPAWNS, perCitizenReserveUsd, BOOTSTRAP_WINDOW_DAYS, spawn_cost_akt, buffer_akt, and the gseq/oseq lease-shell defaults all have explicit, cited default statements at their point of use"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:609-710, 421-425, 1953-1973, 2191-2266 (REQ-102, REQ-101, REQ-305, REQ-402, cross-read)", "description": "NEW FINDING (FIND-1401, critical): REQ-102's own reconciled Cooldown Check requires `recentSpawnAttempts: Array<{ts, outcome}>` as its pinned input, but no function/rule anywhere in this document specifies how this array is derived from ledger.js's real rows -- unlike REQ-101's exactly analogous need (filterProductiveCitizens, fully specified). Verified against the REAL, current ~/anicca/skills/self/spawn/lib/child-spec.js that buildChildSpec's returned row carries no timestamp field of any kind (only REQ-305's active_since, set only on success), meaning there is no specified data source for a failed attempt's `ts` value, and the status-to-outcome mapping for a `bootstrap_failed` relabeling (which occurs AFTER a prior success) is never stated, creating a real behavioral ambiguity in the cooldown-consumption rule iteration-11's critical FIND-1101 fix established"},
+        {"type": "file", "location": "~/anicca/skills/self/spawn/lib/spawn-decision.js:11", "description": "Confirmed `rateLimitDays = 14,` is the real, current default -- REQ-102's citation is accurate"},
+        {"type": "file", "location": "~/anicca/skills/self/spawn/lib/child-spec.js:35-46", "description": "Confirmed buildChildSpec's real, current returned row has no generic timestamp field -- supports FIND-1401's evidence that recentSpawnAttempts' `ts` value for a failed attempt has no specified data source"},
+        {"type": "file", "location": "~/anicca/skills/self/spawn/lib/ledger.js:1-24", "description": "Confirmed ledger.js enforces no row schema of its own -- the row shape (and therefore timestamp availability) is entirely determined by the caller (buildChildSpec/REQ-305), supporting FIND-1401"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1401"],
+      "evidence": [
+        {"type": "spec", "location": "specs/verification-architecture.md:1-797 (full fresh read)", "description": "Confirmed PROP-402e is genuinely new, correctly wired into the Gate's item (10) (lines 744-762) and into Tier-0/Tier-1 verification strategy (lines 409-410, 451), and its mutation-fixture design would genuinely fail a hardcoded-independent-literal implementation of BOOTSTRAP_WINDOW_DAYS"},
+        {"type": "spec", "location": "specs/verification-architecture.md:279-282 (PROP-102b), 345-350 (PROP-305c/PROP-305g), 358-362 (PROP-402a-e)", "description": "All proof obligations touching recentSpawnAttempts treat it as an already-given unit-test fixture; none test the real derivation of this array from ledger.js's actual rows -- no PROP-101d/PROP-101e-equivalent integration proof exists for it, meaning a wrong or divergent real-world derivation could not be caught by any specified test (supports FIND-1401)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "note": "FIND-1301 (iteration 13-14's finding) is genuinely, fully resolved -- zero residual issues found on independent re-verification, including a fresh live read of the cited real source file. However, this iteration's mandated fresh, skeptical full re-read (per the manifest's own instruction to hunt for sibling omissions of the FIND-1301 class) surfaced a new, independently-discovered, critical finding (FIND-1401) in a different but adjacent part of the same mechanism (REQ-102/103's cooldown gate) that was not caught in any of the prior 14 iterations. This is not a sibling of the FIND-1301 omission class itself (no other constant lacks an explicit default) -- it is a distinct class of gap (a required data structure with no specified derivation from the real, cited system-of-record artifacts) uncovered by the same fresh-eyes discipline. Convergence signal is therefore mixed: FIND-1301 shows genuine progress (finding count would have been 0 on the requested topic), but FIND-1401's severity and its four-iterations-deep latency argue against declaring convergence yet."
+  }
+}

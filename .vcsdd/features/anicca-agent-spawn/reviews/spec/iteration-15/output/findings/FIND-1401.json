@@ -1,0 +1,53 @@
+{
+  "findingId": "FIND-1401",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-102's reconciled Cooldown Check (the mechanism iteration-11's critical FIND-1101 fix, iteration-12's PROP-305g boundary fixture, and this very iteration's FIND-1301 default-value fix all depend on) requires, as its own pinned input, `recentSpawnAttempts: Array<{ts: number, outcome: \"success\"|\"failure\"}>` -- 'one entry per completed spawn attempt' (behavioral-spec.md:615-616). Nowhere in this document is there any specified function, mechanism, or rule that DERIVES this array from the real system state this feature actually persists (`ledger.js`'s JSONL rows, read via `readChildren`) -- unlike REQ-101's exactly analogous need, which IS given a named, fully-specified pure join function, `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` (behavioral-spec.md:421-425, 440-444). `decideColonySpawn`'s own Acceptance Criteria (behavioral-spec.md:687-695) treats `recentSpawnAttempts` purely as an already-given INPUT to a zero-I/O pure function -- correct for unit-testing `decideColonySpawn` in isolation, but the spec never specifies WHAT effectful or pure step actually PRODUCES this array from `ledger.js`'s real rows at runtime, and every proof obligation that touches it (PROP-102b, PROP-305c, PROP-305g) only ever exercises it as an injected test fixture, never as the output of a real derivation over real ledger data (verification-architecture.md: PROP-102b/PROP-305c/PROP-305g rows) -- there is no PROP-101d-equivalent integration proof anywhere for this array.\n\nThis gap is not merely cosmetic; it is concretely unimplementable as specified, verified by direct reads of the two REAL, already-existing artifacts this feature's own REQ-206/REQ-305 assemble every ledger row from:\n\n1. **No timestamp field exists on a `\"failed\"` (or `\"provisioning\"`) row for `ts` to be drawn from.** `~/anicca/skills/self/spawn/lib/child-spec.js::buildChildSpec` (confirmed by direct read, lines 35-45) returns exactly `{child_id, wallet, parent_wallet, inbox, generation, seed_usdc, constitution_hash, identity, status}` -- NO generic timestamp/creation-time field of any kind. REQ-305 (behavioral-spec.md:1970-1973) only ever adds a timestamp field, `active_since`, and ONLY 'WHEN, and only when, a spawn attempt completes and the child is marked \"active\"' -- a `\"failed\"` row (REQ-305's own EARS clause, behavioral-spec.md:1953-1955: 'a partially-completed attempt SHALL be recorded with status \"failed\"... together with the specific failing step and error message') is never specified to carry ANY timestamp field. There is therefore no real, cited data source anywhere in this feature for the `ts` value REQ-102's own Cooldown Check formula (`inWindow = recentSpawnAttempts.filter(a => a.ts >= windowStart)`, behavioral-spec.md:627-628) requires for every `outcome:\"failure\"` entry -- the exact class of 'claimed mechanism does not actually exist in the cited real artifact' defect this spec has repeatedly found and fixed elsewhere (e.g. FIND-401's post-boot secrets channel, FIND-701's un-pinned `$HOME` hazard). The spec's own citation ('reusing the SAME array-scan discipline `spawn-decision.js::decideSpawn` already proves out for its own rate-limit check over `children[].spawned_ms`', behavioral-spec.md:618-622) reuses only the ALGORITHM SHAPE (scan an array, compare `ts >= windowStart`) -- it does not establish that this feature's OWN row shape (`buildChildSpec`'s output, which has no `spawned_ms`-equivalent field either) can actually supply that value; `spawned_ms` belongs to a different, legacy calling convention this feature does not reuse for its own ledger rows.\n\n2. **The status-to-outcome mapping is unspecified and ambiguous for `\"bootstrap_failed\"`.** `ledger.js` rows carry `status` values (confirmed real values in use across this spec: `\"provisioning\"`, `\"active\"`, `\"failed\"`, `\"bootstrap_failed\"` -- REQ-305/REQ-402), never an `outcome` field. The spec never states the mapping rule from `status` to `outcome`. A plausible reading -- `\"failed\"` -> `outcome:\"failure\"`, `\"active\"` -> `outcome:\"success\"`, `\"provisioning\"` excluded (tracked separately via `childrenProvisioning`/`MAX_CONCURRENT_SPAWNS`) -- is never stated as the binding rule, and critically does not resolve what happens when a child's LAST row (per REQ-101's own last-write-wins convention, behavioral-spec.md:438-444) becomes `\"bootstrap_failed\"` (REQ-402, appended as a NEW row for a child that was already `\"active\"`, behavioral-spec.md:2200-2211): does that spawn attempt's `recentSpawnAttempts` entry remain `outcome:\"success\"` (the original, cooldown-triggering activation event, per REQ-102's own rule that 'a successful attempt... is ALWAYS cooldown-triggering'), or does the later `\"bootstrap_failed\"` relabeling retroactively flip it to `outcome:\"failure\"` (potentially UN-consuming a cooldown that should have been permanently triggered by the success, or conversely counting one real spawn attempt as BOTH a success entry AND a separate failure entry toward `FAILURE_COOLDOWN_CAP` if an implementer naively maps every distinct ledger row to its own `recentSpawnAttempts` entry rather than reducing by `child_id` first)? REQ-101's own last-write-wins reduction is explicitly scoped to `filterProductiveCitizens`'s aggregation-membership question ('is this citizen currently productive'), never stated to also govern `recentSpawnAttempts`'s cooldown-history question ('did this spawn ATTEMPT succeed or fail') -- these are two different questions the same underlying rows must answer, and only one of them has a specified reduction rule.\n\nBecause this is the CORE gate controlling how often the colony may attempt a new, real-money, cloud-cost-incurring spawn (REQ-102/103), and because the specific mechanism it parameterizes was already the subject of FOUR prior fix iterations (FIND-1101 critical, PROP-305g's iteration-12 boundary fixture, and this iteration's own FIND-1301 fix) without this gap being caught, this is rated critical rather than major: as specified, no implementer can correctly derive `recentSpawnAttempts` from this feature's own real, cited ledger artifacts for the failure case, and two independent implementers (or the same implementer choosing differently for the `bootstrap_failed` case) could produce silently divergent, non-equivalent cooldown behavior.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "615-628",
+      "snippet": "the colony maintains `recentSpawnAttempts: Array<{ ts: number, outcome: \"success\"|\"failure\" }>` -- one entry per completed spawn attempt ... Given `windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS` and `inWindow = recentSpawnAttempts.filter(a => a.ts >= windowStart)` -- no function anywhere derives this array from ledger.js's real rows"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "421-425",
+      "snippet": "REQ-101's exactly analogous need IS given a named, fully-specified pure join function: `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}) -> citizens[]` -- no equivalent function is ever named for recentSpawnAttempts"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1953-1973",
+      "snippet": "IF any step from REQ-201 through REQ-303 fails... a partially-completed attempt SHALL be recorded with status \"failed\"... [no timestamp field specified]... THE SYSTEM SHALL, in that SAME ledger.js row, ALSO set a new field `active_since`... [only ever set on success]"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2200-2211",
+      "snippet": "REQ-402's bootstrap_failed relabeling is implemented as appendChild-ing a NEW row carrying the SAME child_id... this new row becomes \"the\" effective row... via filterProductiveCitizens's last-write-wins reduction -- a rule explicitly scoped to REQ-101's aggregation-membership question, never stated to also govern recentSpawnAttempts's cooldown-history question"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/self/spawn/lib/child-spec.js",
+      "lineRange": "35-46",
+      "snippet": "return { child_id: childId, wallet: childWallet, parent_wallet: parentWallet, inbox: childInbox, generation, seed_usdc: seedUsdc, constitution_hash: constitutionHash, identity: `Daughter of Anicca ${constitutionHash}`, status: \"provisioning\" } -- confirmed: no generic timestamp field of any kind on the real, current returned row"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/self/spawn/lib/ledger.js",
+      "lineRange": "1-24",
+      "snippet": "readChildren/appendChild operate on arbitrary JSONL rows with no schema enforcement -- confirms the row shape (and therefore whether a timestamp exists) is determined entirely by the caller (buildChildSpec/REQ-305), not by ledger.js itself"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "279-282, 345-350, 357-361",
+      "snippet": "PROP-102b/PROP-305c/PROP-305g all inject `recentSpawnAttempts` as an already-given unit-test fixture; no proof obligation anywhere tests the real derivation of this array from real ledger.js rows (unlike PROP-101d/PROP-101e for filterProductiveCitizens/readCitizenBalances)"
+    }
+  ],
+  "routeToPhase": "1a"
+}

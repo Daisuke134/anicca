@@ -1,8 +1,35 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 14, revised
-(spec review iteration-13 finding FIND-1301 resolved — REQ-102's own `SPAWN_COOLDOWN_DAYS` constant,
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 15, revised
+(spec review iteration-15 finding FIND-1401 resolved — REQ-102's own Cooldown Check pinned
+`recentSpawnAttempts: Array<{ts, outcome}>` as an input, but no function anywhere derived this array
+from `~/anicca/skills/self/spawn/lib/ledger.js`'s real rows — unlike REQ-101's exactly analogous need,
+satisfied by a named, fully-specified pure join function, `filterProductiveCitizens`; two concrete gaps
+made this unimplementable: (a) no ledger row carried any timestamp field a failed/in-flight attempt's
+`ts` could be drawn from (REQ-305 only ever set `active_since`, and only on success), and (b) the
+status→outcome mapping was unspecified for a LATER `"bootstrap_failed"` relabeling of an already-`
+"active"` child. Resolved by: REQ-305 now specifies a new field, `attempted_ms`, set to `nowMs` on the
+very FIRST `ledger.js` row ever appended for a given `child_id` (the initial `"provisioning"` row) and
+copied forward UNCHANGED onto every later row for that SAME `child_id` (a `"failed"` row, an `"active"`
+row, or REQ-402's `"bootstrap_failed"` row) — never a freshly-generated timestamp for a follow-up row —
+following the EXACT precedent this SAME requirement already establishes for `active_since` (an extra
+field the caller merges into `buildChildSpec`'s base returned object before `appendChild`, `child-
+spec.js` itself untouched); a new pure function, same file as `filterProductiveCitizens`,
+`deriveRecentSpawnAttempts({ledgerRows}) → Array<{ts, outcome}>`, groups `ledgerRows` by `child_id` and
+maps EACH group to exactly one entry — `outcome:"success"` PERMANENTLY if that `child_id` ever reached
+`"active"` (a later `"bootstrap_failed"` row never retroactively flips this, per REQ-102's own existing
+"a successful attempt is ALWAYS cooldown-triggering" rule), else `outcome:"failure"` if its last row is
+`"failed"`, else EXCLUDED entirely if its last row is still `"provisioning"` (an in-flight attempt,
+already tracked separately via `childrenProvisioning`) — one entry per `child_id`, never per raw row,
+closing the double-counting hazard; REQ-102's real orchestration is specified to call this function
+directly over `readChildren`'s real output, never a hand-rolled reimplementation at the call site
+(mirroring REQ-101's own `filterProductiveCitizens` integration discipline); new proof obligations
+PROP-102f (the four-case unit fixture: failure, success, success-then-bootstrap_failed,
+in-flight-excluded), PROP-102g (the real-derivation integration discipline), and PROP-305h (the
+`attempted_ms` field-lifecycle structural check) are added, and the Gate's item (1) is extended to
+require this (resolves FIND-1401, critical) — AND spec review iteration-13 finding FIND-1301 resolved —
+REQ-102's own `SPAWN_COOLDOWN_DAYS` constant,
 used repeatedly throughout its Cooldown Check and REQ-305's failure-cap reconciliation but never itself
 given an explicit default value anywhere in this document — unlike every sibling constant in the SAME
 requirement (`MIN_SHELTER_USD` defaults to `5.00`, `SAFETY_MARGIN_MULTIPLIER` defaults to `2`,
@@ -287,6 +314,18 @@ constant's default statement in the same requirement, and of the real, existing
 |---|---|---|
 | FIND-1301 | major | REQ-102's own `SPAWN_COOLDOWN_DAYS` constant was used repeatedly throughout REQ-102's Cooldown Check and REQ-305's failure-cap reconciliation (5 uses total) but its own default numeric value was never stated anywhere in this document — unlike every sibling constant in the SAME requirement (`MIN_SHELTER_USD` defaults to `5.00`, `SAFETY_MARGIN_MULTIPLIER` defaults to `2`, `FAILURE_COOLDOWN_CAP` defaults to `3`, `MAX_CONCURRENT_SPAWNS` defaults to `1`); the only place a value (`14`) appeared was REQ-402's `BOOTSTRAP_WINDOW_DAYS`, which asserted it was "reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant" — a backward citation to a definition that did not actually exist at its cited location. REQ-102's Cooldown Check paragraph now explicitly states `SPAWN_COOLDOWN_DAYS` defaults to `14`, reusing `spawn-decision.js::decideSpawn`'s own existing `rateLimitDays` parameter default (line 11) for consistency with prior art (the SAME citation discipline this spec's own `SAFETY_MARGIN_MULTIPLIER` default already uses for `akt-treasury.sh`'s "2×" convention) — never inventing an unrelated value; REQ-102's Acceptance Criteria gains the matching `cooldownDays` default. REQ-402's existing citation to "REQ-102's own `SPAWN_COOLDOWN_DAYS` constant" now correctly resolves to a default REQ-102 actually states. A new proof obligation, PROP-402e (verification-architecture.md), verifies `BOOTSTRAP_WINDOW_DAYS` and `SPAWN_COOLDOWN_DAYS` are configured to the IDENTICAL value by construction, never merely coincidentally equal — mirroring this spec's own established "identical by construction, never merely close" discipline already used for REQ-206's `seedUsdc`/REQ-204 gas-seed-transfer-amount pair. |
 
+## Changelog (iteration 14 spec review → iteration 15)
+
+Iteration 14's spec review FAILed with 1 finding (critical — FIND-1401; FIND-1301 was reconfirmed
+genuinely resolved against the real, current source, including a fresh live read of the cited
+`spawn-decision.js`). Resolved by a specific, cited design decision, grounded in a full re-read of
+REQ-102's Cooldown Check side by side with REQ-101's own `filterProductiveCitizens` precedent, and of
+the real, current `~/anicca/skills/self/spawn/lib/child-spec.js`/`ledger.js`:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1401 | critical | REQ-102's Cooldown Check pinned `recentSpawnAttempts: Array<{ts, outcome}>` as an input, but no function anywhere derived this array from `ledger.js`'s real rows — unlike REQ-101's exactly analogous need, satisfied by a named, fully-specified pure join function, `filterProductiveCitizens`. Two concrete gaps made this unimplementable: (a) `buildChildSpec`'s real, current returned row (confirmed by direct read) carries no generic timestamp field at all, and REQ-305 only ever set a timestamp field, `active_since`, on the SUCCESS path — never on a `"failed"`/`"provisioning"` row — so no cited data source existed anywhere for a failed or in-flight attempt's `ts` value; (b) the status→outcome mapping was never stated for a LATER `"bootstrap_failed"` relabeling (REQ-402) of an already-`"active"` child, leaving it ambiguous whether that spawn attempt's `recentSpawnAttempts` entry stays `outcome:"success"` or flips to `outcome:"failure"`, and whether a naive per-row mapping could double-count one real attempt as both. Resolved by: (1) REQ-305 now specifies a new field, `attempted_ms`, set to `nowMs` on the very FIRST `ledger.js` row ever appended for a given `child_id` (the initial `"provisioning"` row) and copied forward UNCHANGED onto every later row for that SAME `child_id` (a `"failed"` row, an `"active"` row, or REQ-402's `"bootstrap_failed"` row) — never a freshly-generated timestamp for a follow-up row — following the EXACT precedent this SAME requirement already establishes for `active_since` (an extra field the caller merges into `buildChildSpec`'s base returned object before `appendChild`; `child-spec.js`/`buildChildSpec` itself is NOT modified). (2) A new sibling pure function, same file as `filterProductiveCitizens`, `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::deriveRecentSpawnAttempts({ledgerRows}) → Array<{ts, outcome}>`, groups `ledgerRows` by `child_id` and maps EACH group to exactly ONE entry: `outcome:"success"` PERMANENTLY if that `child_id` ever reached `"active"` (a later `"bootstrap_failed"` row never retroactively flips this, per REQ-102's own existing "a successful attempt is ALWAYS cooldown-triggering" rule); else `outcome:"failure"` if its last (last-write-wins) row is `"failed"`; else EXCLUDED entirely if its last row is still `"provisioning"` (an in-flight attempt, already tracked separately via `childrenProvisioning`/`MAX_CONCURRENT_SPAWNS`, never double-counted here) — one entry per `child_id`, never per raw row, closing the double-counting hazard. (3) REQ-102's real orchestration is now specified to call `deriveRecentSpawnAttempts({ledgerRows: readChildren(...)})` directly, never a hand-rolled reimplementation at the call site (mirroring REQ-101's own `filterProductiveCitizens` integration discipline). Three new proof obligations are added (verification-architecture.md): PROP-102f (Tier 1, the four-case unit fixture: a plain failure, a plain success, a success-then-`bootstrap_failed` attempt that must remain `outcome:"success"` with its ORIGINAL `attempted_ms` and must never also appear as a second, extra failure entry, and an in-flight `"provisioning"`-only attempt that must be excluded entirely), PROP-102g (Tier 1/2, confirming the real orchestration calls `deriveRecentSpawnAttempts` over real `readChildren` output rather than reimplementing the logic inline, mirroring PROP-101d/PROP-101e's own real-derivation discipline), and PROP-305h (Tier 0, confirming `attempted_ms` is set on the first row per `child_id` and copied forward unchanged onto every later row for that `child_id`, including REQ-402's `"bootstrap_failed"` row) — and the Gate's item (1) is extended to require all three. |
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -382,7 +421,7 @@ scripts remain aligned with current upstream documentation.
 | Colony citizen registry — DURABLE RUNTIME FILE (data source for REQ-101; revised to resolve FIND-101/202/302/304/901) | **Effectful shell (BRAND NEW, dedicated, durable, OUT-OF-GIT-TREE)** | `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`) = `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/citizens.json`, alongside `~/.hermes/state/children.jsonl`) — a location immune to `git checkout`/`git worktree add\|remove`/`git pull` on `~/anicca` (resolves FIND-901). Bootstrapped ONCE from `citizens.seed.json`'s content verbatim if absent, then diverges permanently via REQ-305's runtime appends — the git-tracked seed template above is never touched again (PROP-105k). Holds the SAME record shape as the seed template — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch; UNRELATED to `child-spec.js`'s own returned-row `wallet` STRING field, resolves FIND-304), `walletAddress` separately carries the real address string(s) and is what REQ-101's `readCitizenBalances` keys its RPC query on, and `homeDir` is an ALREADY-RESOLVED absolute path (never an unresolved `$HOME` template, resolves FIND-202) feeding REQ-403's now co-located-only-scoped audit (resolves FIND-303). This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
 | Pre-existing mutual-aid recipient list (untouched, out of scope) | **Effectful shell (existing, NOT read/written by this feature)** | `~/anicca/skills/economy/ubi/colony-wallets.json` — `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc), a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file — resolves FIND-101's critical finding that an earlier draft wrongly proposed migrating/extending it, which would have risked a human-funded wallet silently entering the colony-surplus aggregate. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded, currently-productive citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). Fed exclusively by `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})`, a new pure join function that cross-references REQ-105's registry against `ledger.js`'s rows to exclude `"bootstrap_failed"`/window-overdue children before this sum ever runs (resolves FIND-201). |
-| Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. |
+| Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. Fed by `deriveRecentSpawnAttempts({ledgerRows})`, a new pure sibling function (same file as `filterProductiveCitizens`) that groups `ledger.js`'s rows by `child_id` and maps each group to one `{ts, outcome}` entry, reading `ts` from the new `attempted_ms` field REQ-305 sets on each child's first row and copies forward onto every later row (resolves FIND-1401). |
 | Per-child identity record assembly | **Pure core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID (unchanged) + an identity-anchor validation that now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair, never requiring both (REQ-206). This corrects iteration 1's false "reused unmodified" claim (FIND-001): the distinct-wallet assertion and every other existing field/behavior are untouched, and a regression test locks in that today's `childInbox`-only callers still succeed identically. `buildChildSpec`'s OTHER four already-mandatory fields (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`) are unchanged CODE but now have an explicit spec-level derivation rule each (REQ-206, resolves FIND-204) — the function's own source is not modified for these four; only the caller-supplied values are now specified. |
 | Cross-instance spawn mutual exclusion (lock predicate) | **Pure core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` — the already-adversary-hardened staleness predicate from the P2 concurrency-hardening sprint (`anicca-agent-economy` REQ-101). REQ-103 reuses the SAME generic file-lock module under a new lock key (`"colony-spawn"`), not a new lock implementation. This module's local-POSIX-filesystem guarantee is sufficient ONLY because REQ-106 scopes every evaluator to a single coordinator host this increment (FIND-003) — it is not claimed to solve cross-host mutual exclusion. |
 | Cloud target selection (Nosana vs Akash) | **Pure core (new) + Effectful shell (new)** | A pure comparison function `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` (deterministic, price-based, never a model judgment — REQ-306) fed by an effectful price/availability query step against each provider's own CLI/API, INCLUDING a genuinely NEW USD-normalization price-fetch step (one public spot-price API call per native token, reusing the exact fail-closed pattern already established by `ethPrice()`/`solPrice()` elsewhere in this codebase — resolves FIND-305's false "already-available oracle" claim; `akt-treasury.sh` has no live USD price query). Resolves FIND-006 (REQ-302/303 presupposed this selection without ever specifying it). |
@@ -397,7 +436,7 @@ scripts remain aligned with current upstream documentation.
 | Akash-specific AKT funding-readiness gate (reused, new to this feature — resolves FIND-402) | **Pure core (existing, reused unmodified) + effectful config read** | `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt}) → {ready, reason, thresholdAkt, shortfallAkt}` — already implemented, already unit-tested (`lib/__tests__/akt-cost-gate.test.js`); REQ-303 calls it with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values (`spawn_cost_akt: 25`, `buffer_akt: 1`) BEFORE invoking `akt-treasury.sh`/`deploy-akash.sh` — a DIFFERENT, narrower concern than REQ-102's colony-wide `MIN_SHELTER_USD`/`SPAWN_THRESHOLD_USD` (cross-cloud aggregate USD surplus), never a competing reimplementation of it. |
 | Nosana job deploy — post-boot secrets-injection (new, resolves FIND-401's Nosana-side analog) | **Effectful shell (new)** | A NEW orchestration step delivering the child's pre-generated Solana/EVM wallet material onto a `RUNNING` Nosana job via `nosana job ssh <job> [port]` (confirmed-present CLI primitive, `job ssh --help`, invoked live 2026-07-07, raw transcript captured at `reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt` — resolves FIND-504) — genuinely new, never previously specified; the exact non-interactive invocation shape is confirmed against the actually-installed CLI at Phase 2, not asserted here as already-proven (REQ-302). |
 | Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer via Skip API's `smart_relay` 4-hop bridge into `akashnet-2`, reusing `spawn-child/config.json`'s own already-documented `funding_route` — the SAME bridge is enterable from EITHER of the colony's two current citizens' own native chains: Franklin via Solana (Jupiter SOL→USDC, then a CCTP-first-hop transfer) or automaton via Base (a CCTP-first-hop transfer directly from Base-native USDC, no Jupiter step needed, per PROP-304e's live-confirmed alternative entry) — NOT a single-signer single-transaction transfer for this specific target, since neither citizen's wallet natively holds AKT (revised iteration 5, resolves FIND-402(c); revised iteration 7, resolves FIND-602 — corrected from a stale Solana/Jupiter-only summary that was never updated for iteration 6's PROP-304e correction, to match REQ-304/PROP-304e's own already-accurate body text). |
-| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, never from `citizens.json` (resolves FIND-201). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry — the DURABLE runtime file at `CITIZENS_REGISTRY_PATH` (resolved via `resolveStateDir`, e.g. `~/.hermes/state/citizens.json` — NEVER the git-tracked seed template `citizens.seed.json`, and NEVER `economy/ubi/colony-wallets.json`, which this feature never touches — resolves FIND-901) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
+| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`, and a new `attempted_ms` field REQ-305 sets on the FIRST row ever appended for a `child_id` and copies forward unchanged onto every later row for that `child_id`, resolves FIND-1401) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, and REQ-102's new `deriveRecentSpawnAttempts` reads `attempted_ms`, never from `citizens.json` (resolves FIND-201/FIND-1401). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry — the DURABLE runtime file at `CITIZENS_REGISTRY_PATH` (resolved via `resolveStateDir`, e.g. `~/.hermes/state/citizens.json` — NEVER the git-tracked seed template `citizens.seed.json`, and NEVER `economy/ubi/colony-wallets.json`, which this feature never touches — resolves FIND-901) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
 | REQ-104 (bookkeeping-only design constraint) | **Not code — a design constraint, verified structurally** | Directly analogous to `anicca-agent-economy`'s REQ-203 ("Design-constraint requirement — bookkeeping only, never judgment"): not independently unit-testable in the normal sense; verified by a Phase 3 structural code read (no scoring/ranking/preference logic anywhere in REQ-101-103's diff), not a runtime assertion. |
@@ -639,6 +678,38 @@ This is the ONE reconciled rule both REQ-102 and REQ-305 describe: a successful 
 cooldown-triggering; a failed attempt is cooldown-EXEMPT strictly below `FAILURE_COOLDOWN_CAP` and
 cooldown-TRIGGERING once the cap is reached — never two different behaviors.
 
+**Deriving `recentSpawnAttempts` from real ledger rows (new, resolves FIND-1401, critical):** nothing
+above specifies WHERE `recentSpawnAttempts` comes from at runtime. REQ-101's exactly analogous need
+(turning `ledger.js`'s raw rows into an aggregation-ready shape) is satisfied by a named,
+fully-specified pure function, `filterProductiveCitizens` — this Cooldown Check gains the identical
+treatment. A new, sibling pure function, same file, `~/anicca/skills/self/spawn/lib/
+treasury-gate.mjs::deriveRecentSpawnAttempts({ledgerRows}) → Array<{ts: number, outcome:
+"success"|"failure"}>`, zero I/O, is THE SOLE mechanism that produces this array, and REQ-102's real
+orchestration calls it directly over `readChildren`'s real output
+(`deriveRecentSpawnAttempts({ledgerRows: readChildren(...)})`) — never a hand-rolled reimplementation
+at the call site (mirroring REQ-101's own `filterProductiveCitizens` integration discipline). It works
+as follows:
+1. GROUP `ledgerRows` by `child_id` (the same grouping key `filterProductiveCitizens` already uses).
+2. For each `child_id` group, `ts` = that group's `attempted_ms` field — a new field REQ-305 (below)
+   specifies is set to `nowMs` on the FIRST ledger.js row ever appended for that `child_id` and copied
+   forward, unchanged, onto every later row for the SAME `child_id`; it is therefore identical across
+   every row in the group by construction, so any row's value suffices, though the group's FIRST
+   (earliest-appended) row is the canonical source.
+3. `outcome` — IF ANY row in the group ever reached `status:"active"` at some point in its history,
+   `outcome:"success"` PERMANENTLY: a LATER `"bootstrap_failed"` row (REQ-402) for that SAME `child_id`
+   does NOT retroactively flip this entry to `"failure"`, per this SAME Cooldown Check's own rule above
+   that "a successful attempt is ALWAYS cooldown-triggering" — REQ-402's relabeling is a
+   productivity/aggregation fact for REQ-101 (via `filterProductiveCitizens`'s OWN, separate reduction),
+   never a cooldown-history fact for this function. ELSE, if the group's LAST (last-write-wins) row is
+   `status:"failed"`, `outcome:"failure"`. ELSE (the group's last row is still `status:"provisioning"` —
+   an attempt genuinely still in flight), EXCLUDE that `child_id` from the returned array entirely: an
+   in-flight attempt is already counted, separately, via `childrenProvisioning`/`MAX_CONCURRENT_SPAWNS`
+   (above) and must never ALSO appear in `recentSpawnAttempts`, which would double-count it.
+4. Exactly ONE entry per `child_id` group is ever returned — never one entry per raw ledger row —
+   closing the double-counting hazard a naive per-row mapping would create (e.g. treating a success AND
+   its own earlier `"provisioning"` row, or a success AND a later `"bootstrap_failed"` row, as two
+   separate attempts).
+
 `SPAWN_THRESHOLD_USD = MIN_SHELTER_USD * SAFETY_MARGIN_MULTIPLIER`, where:
 - `MIN_SHELTER_USD` defaults to `5.00` — a provisional anchor, NOT a live-market-verified figure
   (deliberately, since Nosana/Akash CPU-only small-workload pricing floats with AKT/SOL/NOS market
@@ -693,6 +764,11 @@ WHETHER to spawn — see REQ-104.
   own default above (resolves FIND-1301) — never independently configurable to a different value;
   `failureCooldownCap` defaults to `3` — identical to REQ-305's own
   cap, the SAME number, never independently configurable to a different value.
+- **(resolves FIND-1401)** `recentSpawnAttempts` is never hand-assembled by the calling
+  orchestration — it is ALWAYS the direct return value of `deriveRecentSpawnAttempts({ledgerRows:
+  readChildren(...)})` (defined above), one entry per `child_id` group, with in-flight
+  (`"provisioning"`-only) groups excluded and a group that ever reached `"active"` always mapped to
+  `outcome:"success"` regardless of any later `"bootstrap_failed"` relabeling.
 - Order of checks is surplus → cooldown → concurrency cap (each independently testable at its own
   boundary), matching the existing `spawn-decision.js` ordering convention (a broke colony never
   spawns whatever else is true).
@@ -1967,6 +2043,21 @@ rule (resolves FIND-1101: REQ-102 and REQ-305 no longer describe two different b
 this project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zero and leaves an
 honest provisioning/failed ledger row, never a fabricated success").
 
+**A stable attempt-timestamp field, `attempted_ms` (new, resolves FIND-1401, critical):** THE SYSTEM
+SHALL set a new field, `attempted_ms`, to `nowMs` on the very FIRST `ledger.js` row ever appended for a
+given `child_id` — the initial `status:"provisioning"` row assembled via `buildChildSpec` above — and
+EVERY LATER row appended for that SAME `child_id` (a `"failed"` row from this SAME requirement, an
+`"active"` row per the paragraph below, or REQ-402's `"bootstrap_failed"` row) SHALL copy forward that
+SAME original `attempted_ms` value, verbatim, from that child's first row — NEVER generate a new
+timestamp for a follow-up row. This follows the EXACT precedent this SAME requirement already
+establishes for `active_since` (below): an extra field the effectful caller merges into
+`buildChildSpec`'s base returned object before calling `appendChild` — `child-spec.js`/`buildChildSpec`
+itself is NOT modified for this, remaining exactly as classified in the Purity Boundary Map (Pure Core,
+existing, extended only for REQ-206's identity-anchor rule). This is the SOLE data source for REQ-102's
+Cooldown Check's `recentSpawnAttempts[].ts` value, via the new `deriveRecentSpawnAttempts` function
+(REQ-102, above) — closing FIND-1401's first gap, where no cited data source existed anywhere for a
+failed (or in-flight) row's timestamp.
+
 WHEN, and only when, a spawn attempt completes and the child is marked `"active"` (REQ-204+REQ-205 both
 complete), THE SYSTEM SHALL, in that SAME ledger.js row, ALSO set a new field `active_since` to the
 current timestamp (never omitted, never set earlier at the `"provisioning"` stage) — this is the SOLE
@@ -2071,6 +2162,11 @@ append — a permanent closure of the hazard, not merely a t=0 check.
 - Marking a child `"active"` ALSO sets that SAME ledger.js row's `active_since` field to the current
   timestamp (never omitted, never set at the earlier `"provisioning"` stage) — the field REQ-402's
   window check and REQ-101's `filterProductiveCitizens` join both read (resolves FIND-201).
+- **(new, resolves FIND-1401)** A structural/Tier-0 check confirms `attempted_ms` is set to `nowMs` on
+  the FIRST `ledger.js` row ever appended for a given `child_id`, and that every SUBSEQUENT row
+  appended for that SAME `child_id` (a `"failed"` row, an `"active"` row, or REQ-402's
+  `"bootstrap_failed"` row) carries the IDENTICAL `attempted_ms` value copied forward from that first
+  row — never a freshly-generated timestamp on a follow-up row (PROP-305h).
 - The appended `citizens.json` record's `homeDir` field is an ALREADY-RESOLVED absolute path — a
   structural check confirms it never contains a `$HOME`/`ANICCA_HOME` template string (resolves
   FIND-202), and the appended record carries NO `telemetryPath` field at all (removed, resolves
@@ -2200,8 +2296,10 @@ a second, competing copy of either fact there, resolving FIND-201's location con
 silently delete or destroy the child, its wallet, or its cloud lease. This relabeling is implemented as
 `ledger.js::appendChild`-ing a NEW row carrying the SAME `child_id` and `status:"bootstrap_failed"` —
 `ledger.js` itself gains NO update/upsert primitive and remains exactly `{readChildren, appendChild}`
-(the identical discipline REQ-101/REQ-305 already establish for every other lifecycle transition); this
-new row becomes "the" effective row for that citizen precisely because REQ-101's own
+(the identical discipline REQ-101/REQ-305 already establish for every other lifecycle transition) —
+this new row ALSO copies forward, unchanged, the SAME `attempted_ms` value REQ-305 set on that child's
+very first ledger row (never a freshly-generated timestamp for this relabeling row, resolves FIND-1401's
+second gap); this new row becomes "the" effective row for that citizen precisely because REQ-101's own
 `filterProductiveCitizens` join already reduces multiple rows sharing one `child_id` to the
 LAST-appended row before applying its exclusion rule (last-write-wins, REQ-101's own naming) — REQ-402
 does not introduce a second, competing reduction rule; it relies on that SAME one, by cross-reference,
@@ -2263,6 +2361,12 @@ or blocks a replacement spawn (that remains gated purely by REQ-102's own arithm
 - The `children_bootstrap_failed` count is recorded for observability only; a structural/Tier-0 check
   confirms REQ-102's `decideColonySpawn` signature and behavior are byte-identical whether or not any
   bootstrap failures have occurred (resolves FIND-203: no dangling REQ-402→REQ-102 data flow).
+- **(resolves FIND-1401)** REQ-102's `deriveRecentSpawnAttempts` treats a `child_id` that ever reached
+  `"active"` as `outcome:"success"` PERMANENTLY — a LATER `"bootstrap_failed"` relabeling for that SAME
+  `child_id` never retroactively flips its `recentSpawnAttempts` entry to `outcome:"failure"`, and never
+  creates a SECOND, additional entry for the same attempt; the relabeling row's `attempted_ms` is
+  confirmed identical to that `child_id`'s first row (never a new timestamp) — a unit fixture
+  (PROP-102f) confirms both properties together.
 
 ---
 
