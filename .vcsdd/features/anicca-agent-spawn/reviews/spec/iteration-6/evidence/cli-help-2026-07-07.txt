@@ -1,0 +1,98 @@
+==================================================================
+CLI --help evidence capture — anicca-agent-spawn, iteration-6
+Captured: 2026-07-07T11:07:42Z (UTC) / 2026-07-07 20:07:42 JST (local)
+Host: AniccanoMac-mini.local
+Purpose: resolve FIND-504 — capture raw, dated, on-disk transcript of both CLI
+primitives cited by REQ-302/REQ-303 (lease-shell / job ssh) so a future Read-only
+adversary can verify these commands/flags exist without shell access.
+==================================================================
+
+------------------------------------------------------------------
+$ which provider-services
+/opt/homebrew/bin/provider-services
+
+$ provider-services version (if available)
+v0.11.1
+
+$ provider-services lease-shell --help
+------------------------------------------------------------------
+do lease shell
+
+Usage:
+  provider-services lease-shell <service-name> <command> [flags]
+
+Flags:
+      --auth-type string         gateway auth type. jwt|mtls. defaults to mtls (default "jwt")
+      --dseq uint                deployment sequence
+      --from string              name or address of private key with which to sign
+      --gseq uint32              group sequence (default 1)
+  -h, --help                     help for lease-shell
+      --home string              the application home directory (default "/Users/anicca/.akash")
+      --keyring-backend string   select keyring's backend (os|file|kwallet|pass|test) (default "os")
+      --offline                  Offline mode (does not allow any online functionality)
+      --oseq uint32              order sequence (default 1)
+      --provider string          provider
+      --provider-url string      Provider URL for off-chain operations
+      --replica-index uint       replica index to connect to
+      --sign-mode string          (default "direct")
+      --stdin                    connect stdin
+      --tty                      connect an interactive terminal
+
+Global Flags:
+      --log_color              Pretty logging output. Applied only when log_format=plain
+      --log_format string      The logging format (json|plain) (default "plain")
+      --log_level string       The logging level (trace|debug|info|warn|error|fatal|panic) (default "info")
+      --log_timestamp string   Add timestamp prefix to the logs (rfc3339|rfc3339nano|kitchen)
+      --node string            The node address (default "http://localhost:26657")
+      --trace                  print out full stack trace on errors
+
+==================================================================
+
+------------------------------------------------------------------
+$ which nosana
+/opt/homebrew/bin/nosana
+
+$ nosana --version (if available)
+1.0.131
+
+$ nosana job ssh --help
+------------------------------------------------------------------
+  _   _                             
+ | \ | | ___  ___  __ _ _ __   __ _ 
+ |  \| |/ _ \/ __|/ _` | '_ \ / _` |
+ | |\  | (_) \__ \ (_| | | | | (_| |
+ |_| \_|\___/|___/\__,_|_| |_|\__,_|
+                                    
+Usage: nosana job ssh [options] <job> [port]
+
+Open an SSH shell into a running job
+
+Arguments:
+  job                             job address
+  port                            target SSH port for internal proxy mode
+
+Options:
+  --op <op>                       operation id to connect to
+  --ttl <seconds>                 temporary SSH authorization lifetime in
+                                  seconds (default: "300")
+  --proxy-host <host>             FRP TCPMUX HTTP CONNECT proxy host
+  --proxy-port <port>             FRP TCPMUX HTTP CONNECT proxy port (default:
+                                  "5002")
+  --proxy-stdio                   internal mode used by OpenSSH ProxyCommand
+  --ssh-command <command>         SSH executable (default: "ssh")
+  --node-url <url>                override node API URL
+  --insecure-skip-host-key-check  disable OpenSSH host key checking for this
+                                  connection
+  -n, --network <network>         network to run on (choices: "devnet",
+                                  "mainnet", default: "mainnet")
+  -w, --wallet <wallet>           path to wallet private key (default:
+                                  "~/.nosana/nosana_key.json")
+  --rpc <url>                     RPC node to use
+  --format <type>                 show result in the specified format (choices:
+                                  "text", "json", default: "text")
+  --verbose                       show more detailed result
+  -h, --help                      display help for command
+
+==================================================================
+End of capture.
+==================================================================

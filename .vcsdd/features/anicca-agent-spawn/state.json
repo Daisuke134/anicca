@@ -674,6 +674,22 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-304d",
       "beadId": "BEAD-102"
+    },
+    {
+      "id": "PROP-082",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-101g",
+      "beadId": "BEAD-103"
+    },
+    {
+      "id": "PROP-083",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-304e",
+      "beadId": "BEAD-104"
     }
   ],
   "traceability": {
@@ -690,7 +706,8 @@
           "BEAD-024",
           "BEAD-086",
           "BEAD-092",
-          "BEAD-096"
+          "BEAD-096",
+          "BEAD-103"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -910,7 +927,8 @@
           "BEAD-063",
           "BEAD-064",
           "BEAD-065",
-          "BEAD-102"
+          "BEAD-102",
+          "BEAD-104"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1962,6 +1980,30 @@
         "createdAt": "2026-07-07T10:47:42.201Z",
         "createdInPhase": "1b",
         "externalId": "PROP-304d"
+      },
+      {
+        "beadId": "BEAD-103",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-101g",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001"
+        ],
+        "createdAt": "2026-07-07T11:21:44.107Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-101g"
+      },
+      {
+        "beadId": "BEAD-104",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-304e",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-016"
+        ],
+        "createdAt": "2026-07-07T11:21:44.107Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-304e"
       }
     ]
   },
@@ -1987,5 +2029,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T11:02:55.803Z"
+  "updatedAt": "2026-07-07T11:21:44.113Z"
 }

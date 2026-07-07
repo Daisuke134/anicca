@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 7,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 6,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-6/output/findings/",
+    "note": "4 findings, 1 critical: FIND-501 (critical, most serious defect found across all iterations) -- REQ-105's homeDir seed was identical bare /Users/anicca for both citizens, but resolve-identity.mjs deliberately returns null for anything but each citizen's real distinct root -- fixed by seeding automaton=/Users/anicca/.anicca, Franklin=/Users/anicca/.blockrun, with independently-verified real key file paths cited in REQ-403's acceptance criteria; the co-located-does-not-mean-same-homeDir framing corrected. FIND-502 (major) -- funding-route citation now correctly splits config.json's literal 4-hop-bridge field from SKILL.md's Jupiter-prestep prose; ALSO investigated (not guessed) the solana/8453 ambiguity by live-querying Skip API's real /v2/info/chains and /v2/fungible/route endpoints, confirming 8453 is Base's real Skip chain ID and that automaton's Base-native USDC can fund AKT directly via CCTP, bypassing Jupiter/Solana entirely -- new PROP-304e. FIND-503 (major) -- dual-chain balance lookup now fails closed per-chain independently (one chain's failure never zeroes the other chain's successfully-fetched value), new PROP-101g with a mixed success/failure fixture. FIND-504 (minor) -- raw dated --help transcripts for provider-services lease-shell and nosana job ssh actually captured to reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt, cited by REQ-302/303."
+  },
+  "note": "Verify each of the 4 fixes actually holds by re-reading the real source files fresh (resolve-identity.mjs + its test suite, install.sh, the captured evidence/cli-help-2026-07-07.txt file, and independently sanity-check the Skip API claim if you can -- e.g. confirm the evidence cited for the CCTP/8453 claim is concretely traceable, not just asserted in prose). In particular: (1) confirm the corrected homeDir seed values actually produce non-null results when passed through resolve-identity.mjs's real resolution logic for BOTH citizens -- walk through the actual code path yourself; (2) confirm REQ-403's acceptance criteria citing exact resolved key file paths are accurate against the real module; (3) confirm the new PROP-304e's CCTP/Base-USDC funding claim doesn't introduce a NEW inconsistency elsewhere (e.g. does anything else in the spec still assume Franklin/Solana is the ONLY funding source for Akash?); (4) confirm PROP-101g's mixed-failure fixture is genuinely well-specified and doesn't leave the 'both chains fail' case ambiguous. Also do a full fresh pass over the REST of the spec -- this feature is now on iteration 7 with 34+ total findings across 6 prior iterations. Do not assume convergence."
+}
