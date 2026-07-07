@@ -1,0 +1,72 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-1.md",
+    "contractDigest": "a0c40d4a5c7581e5429a1a6f2d4dc5770222ffb07ade92bf3c05156b914bc7ce"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/treasury-gate.mjs:117-140", "description": "CRIT-003 independently re-verified: decideColonySpawn's three return statements are ordered surplus (line 121) -> cooldown/rate_limited (line 131) -> concurrency cap (line 135), exactly as claimed; PROP-102e's fixture (failing all three) re-run and confirmed it reports insufficient_surplus." },
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/treasury-gate.mjs:16-28,48-94", "description": "CRIT-005 independently re-verified: filterProductiveCitizens/deriveRecentSpawnAttempts/countChildrenProvisioning all call the SAME groupLedgerRowsByChildId helper (lines 51, 70, 88) -- no independently reimplemented grouping loop found anywhere in the file. PROP-102f/PROP-102h re-run and pass." },
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/child-spec.js + git diff 2236802~1..412a516", "description": "CRIT-008 independently re-verified via git diff across the full sprint commit range: nextChildId has ZERO lines touched (does not appear in the diff at all); the distinct-wallet throw (childWallet.toLowerCase()===parentWallet.toLowerCase()) is unchanged context, not a +/- line; the required-non-anchor loop dropped childInbox; a new hasInbox/hasErc8004 'at least one, never XOR' check was added. child-spec-erc8004.test.js (all PROP-206a-f) AND the pre-existing child-spec.test.js regression suite (7/7) both re-run and pass 100%." },
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/akash-funding-gate.mjs:8-19", "description": "CRIT-009 independently re-verified: queryBalanceAkt is called exactly once (line 9) before any ready check, attemptBridge is only reached inside the !firstPass.ready branch (line 15), and a second queryBalanceAkt/computeSpawnGate pass (lines 16-17) runs only after the bridge; the returned firstPassReady/bridgeAttempted flags match this exactly. All 5 named tests (PROP-303h(a)/(b)/(c), PROP-303g, PROP-303d) re-run and pass, confirming call-count assertions (1 vs 2) and the bridge-never-invoked-when-unnecessary fixture." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs", "description": "CRIT-004 independently re-verified: both 'PROP-101d: excludes bootstrap_failed / window-overdue-active...' and 'PROP-101d edge case: malformed active row...' pass in this session's own re-run; source read of filterProductiveCitizens (treasury-gate.mjs:48-62) confirms the bootstrap_failed/missing-active_since/window-overdue exclusion logic and the pass-through-if-no-row behavior match the criterion exactly." },
+        { "type": "test-output", "location": "skills/self/spawn/lib/__tests__/colony-balances.test.mjs", "description": "CRIT-006 independently re-verified: PROP-101g (one chain fails, other's value alone is used) and PROP-101h (both fail -> exactly 0, never throws/NaN) both pass in this session's own re-run; safeChainBalance (colony-balances.mjs:9-16) is called independently per populated chain and its own try/catch fails that one chain closed to 0, confirming per-chain (never whole-citizen) fail-closing." }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js (this session's own independent run)", "description": "Exit 0, tests 95, pass 95, fail 0, cancelled 0, skipped 0, todo 0 -- matches evidence/sprint-1-green-phase.log's own recorded 95/95 exactly, with no exception carved out for any test." },
+        { "type": "file", "location": "all 9 source files (treasury-gate.mjs, colony-balances.mjs, registry-path.mjs, citizens-registry.mjs, shelter-cost-ledger.js, cloud-target.mjs, needs-solana-wallet.mjs, akash-funding-gate.mjs, child-spec.js) plus their 3 reused dependencies (ledger.js, state-path.js, akt-cost-gate.js)", "description": "Fresh skeptical read of every in-scope source file (not just the CRIT-cited lines) found no bug beyond what the 11 CRIT criteria already cover -- no money-safety issue, no boundary/off-by-one bug, and no spec/code mismatch in the areas this sprint claims to deliver. shelter-cost-ledger.js's delegation to ledger.js's readChildren/appendChild was independently confirmed genuinely generic over (file, row), not a hidden children-only assumption." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/treasury-gate.mjs:1-3", "description": "CRIT-001 independently re-verified: the file's only import is isSelfFunded from ../../../_shared/lib/is-self-funded.mjs (itself confirmed pure by direct read -- zero fs/fetch/network); no fs/fetch/require('http')/readFileSync appears anywhere in the file; the only Date.now() reference is decideColonySpawn's own nowMs default parameter (line 111), never an internal call inside a function body." },
+        { "type": "file", "location": "~/anicca/skills/self/spawn/lib/citizens-registry.mjs", "description": "CRIT-007 independently re-verified: neither existsSync nor fs.stat( appears anywhere in the file; fs.open(registryPath, 'wx') (line 13) is the sole file-creation call, guarded by a try/catch that returns {created:false} on EEXIST without writing. PROP-105l's concurrent-race and late-bootstrap-after-append tests, plus the file's own source-text structural regex test, all re-run and pass." },
+        { "type": "test-output", "location": "git log --stat 2236802~1..412a516 -- skills/economy/gig/lib/lock.mjs skills/self/spawn-child/lib/akt-cost-gate.js skills/self/spawn/lib/state-path.js skills/_shared/lib/is-self-funded.mjs", "description": "CRIT-010 independently re-verified using the CORRECT sprint commit range (2236802 Phase 2a RED through 412a516 Phase 2c flaky-fix -- the manifest's cited d81ea65 is explicitly marked N/A/belongs to a different feature, anicca-agent-lending, and was correctly excluded). Zero commits in this range touch any of the four files; git status --porcelain on all four is empty (no uncommitted modifications either). Direct reads of all four files confirm none duplicates or reimplements logic from the other three." }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js", "description": "CRIT-002 independently re-verified: 95/95 passing, this session's own fresh execution, not accepted from the builder's log." },
+        { "type": "test-output", "location": "for i in $(seq 1 20); do node --test skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs; done (this session's own 20 consecutive standalone reruns)", "description": "CRIT-011 independently reproduced: 20/20 consecutive standalone runs pass, zero failures -- not accepted from the resolution notes' own 40/40 claim. Source read of colony-spawn-lock.test.mjs:43-56 confirms firstCaller's fn() calls signalLockHeld() as its first statement and the test awaits lockHeld (line 56) BEFORE its five-attempt loop begins (line 58). Cross-checked against lock.mjs's withGigLock (lines 187-208): acquire() (line 194) is awaited and must resolve true before fn() is ever called (line 204) -- structurally confirming fn()-internal signaling genuinely proves the lock is held on disk, not merely present in the test's prose." }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005",
+      "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011"
+    ],
+    "duplicateFindings": []
+  }
+}

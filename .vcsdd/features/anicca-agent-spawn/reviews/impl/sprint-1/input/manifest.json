@@ -1,0 +1,40 @@
+{
+  "reviewType": "implementation",
+  "phase": "3",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractStatus": "approved",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "contract": ["contracts/sprint-1.md"],
+    "source": [
+      "~/anicca/skills/self/spawn/lib/treasury-gate.mjs",
+      "~/anicca/skills/self/spawn/lib/colony-balances.mjs",
+      "~/anicca/skills/self/spawn/lib/registry-path.mjs",
+      "~/anicca/skills/self/spawn/lib/citizens-registry.mjs",
+      "~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js",
+      "~/anicca/skills/self/spawn/lib/cloud-target.mjs",
+      "~/anicca/skills/self/spawn/lib/needs-solana-wallet.mjs",
+      "~/anicca/skills/self/spawn/lib/akash-funding-gate.mjs",
+      "~/anicca/skills/self/spawn/lib/child-spec.js"
+    ],
+    "tests": [
+      "~/anicca/skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/colony-balances.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/registry-path.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/citizens-registry.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/shelter-cost-ledger.test.js",
+      "~/anicca/skills/self/spawn/lib/__tests__/cloud-target.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/needs-solana-wallet.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/child-spec-erc8004.test.js",
+      "~/anicca/skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/akash-funding-gate.test.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "This gate requires EXECUTION, unlike Phase 1c/contract-review. Independently re-run the full test suite yourself (do not accept 95/95 as sufficient from the log -- rerun it). Independently re-run colony-spawn-lock.test.mjs's PROP-103e at least 20 consecutive times yourself (this test was genuinely flaky ~15% before this sprint's Phase 2c fix -- do not accept the contract-review's own 20/20 as sufficient, re-verify fresh). This sprint's contract explicitly scopes OUT the effectful spawn orchestrator (wallet-gen/ERC-8004-registration/mcp.json/cloud-deploy call sites, REQ-304 co-funding, PROP-102k's own orchestration-binding claim) -- see the contract's own Known residual scope boundary section, do not penalize its absence. This feature gates real money/AKT-spend decisions (colony-spawn eligibility, Akash funding-gate) -- probe hard for money-safety edge cases (malformed inputs, boundary values, concurrent-evaluation races) beyond the 11 sprint-1 CRIT criteria and existing PROP obligations, following this session's own established pattern where anicca-agent-lending's own Phase 3 found 2 real bugs (FIND-901/902) beyond its own contract review's clean pass."
+}
