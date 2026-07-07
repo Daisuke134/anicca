@@ -1,0 +1,59 @@
+{
+  "findingId": "FIND-1201",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-103 states THREE mutually inconsistent scopes for the `\"colony-spawn\"` lock's critical section within the SAME requirement, and the narrowest of the three -- the one stated in REQ-103's own binding Acceptance Criteria, which is what a Phase 2 implementer and a Phase 3 verifier actually build/test against -- is too narrow to prevent the exact double-spawn/double-funding race REQ-102's MAX_CONCURRENT_SPAWNS check and REQ-304's funding-source constraint depend on the lock to prevent.\n\nThe three, mutually-inconsistent statements of scope:\n\n1. REQ-103's own EARS clause (behavioral-spec.md:617-624): '...THE SYSTEM SHALL ensure that at most ONE of them actually proceeds to REQ-201's identity generation AND BEYOND -- the other(s) SHALL detect the lock is held, decline to proceed...' -- 'and beyond' is open-ended, implying the lock's exclusivity extends indefinitely forward through the whole spawn attempt, not merely through REQ-205.\n\n2. REQ-103's own prose, in the very same requirement, describing WHY `CITIZENS_REGISTRY_PATH` is the correct lock `statePath` (behavioral-spec.md:650-652): 'This is a natural fit, since the critical section this lock protects IS \"read the durable `citizens.json` + decide + possibly append to it\" (REQ-101 through REQ-305)...' -- explicitly spanning REQ-101 all the way through REQ-305 (i.e. through REQ-3xx's cloud deploy, REQ-304's funding transfer(s), and REQ-305's final ledger + registry append).\n\n3. REQ-103's own Acceptance Criteria (behavioral-spec.md:688): 'The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx) is wrapped by the existing `withGigLock`-equivalent helper...' -- this is textually NARROWER than both (1) and (2): it enumerates REQ-201 through REQ-205 ONLY (which does not even include REQ-206, the buildChildSpec/ledger-row-assembly step, let alone REQ-304's funding transfer or REQ-305's append), plus 'the decision to proceed into REQ-3xx' -- most naturally read as the DECISION POINT itself, not the REQ-3xx execution that follows it. Nothing in this bullet says the lock is held THROUGH REQ-3xx/REQ-304/REQ-305; the most natural reading is that the lock is released once the decision to proceed is made, i.e. BEFORE cloud provisioning and funding actually execute.\n\nThis is not a stylistic inconsistency -- it is load-bearing for the exact double-spend property this feature's own REQ-102/REQ-304 rely on the lock to guarantee. REQ-102's own edge case (behavioral-spec.md:571-575) states plainly: 'the gate function ITSELF is pure and may return eligible:true from both evaluations -- REQ-103 is what prevents both from acting on that true result simultaneously; REQ-102 does not need to know about concurrency.' REQ-102 explicitly delegates ALL of the double-spawn-prevention duty to REQ-103's lock (plus, secondarily, to its own MAX_CONCURRENT_SPAWNS check against `childrenProvisioning`, which is itself sourced from ledger.js rows that only exist once REQ-206/REQ-305's append has actually happened). If Acceptance-Criteria reading (3) is what Phase 2 implements (lock held only through REQ-205 plus 'the decision'), then the following genuine race is possible and is NOT caught by anything else in this spec:\n\n  t0: Evaluator A calls decideColonySpawn() -> eligible:true (based on a ledger snapshot showing zero children provisioning).\n  t1: A acquires the 'colony-spawn' lock, runs REQ-201-205 (wallet gen, HOME isolation, ERC-8004 registration -- a real on-chain tx, REQ-204's own edge case notes this can revert/retry), then, per reading (3), releases the lock once it 'decides to proceed into REQ-3xx' -- BEFORE REQ-206's buildChildSpec/initial ledger append (which reading (3)'s literal 'REQ-201 through REQ-205' textually excludes) and BEFORE any REQ-3xx execution.\n  t2 (still within the same colony-spawn attempt's real-world duration -- REQ-303's own edge case notes Akash bid-polling alone is '30 attempts, existing default sleep', i.e. a real, multi-minute window): a SEPARATE, later-woken evaluation loop (per REQ-106's own edge case, 'Multiple LOOPS on the SAME coordinator host... race to evaluate REQ-102/103') calls decideColonySpawn() again. Because (a) REQ-102's own cooldown mechanism (`recentSpawnAttempts`) only records 'one entry per COMPLETED spawn attempt' (behavioral-spec.md:526-527) -- A's attempt has not completed yet, so it is invisible to the cooldown check -- and (b) the ledger's `childrenProvisioning` count is still 0 if A's initial provisioning row has not yet been durably appended (which, under reading (3), may not have happened, since REQ-206/appendChild sit textually outside 'REQ-201 through REQ-205'), this SECOND evaluator ALSO observes eligible:true.\n  t3: the lock is free (A released it at t1) -- the second evaluator acquires it, and independently proceeds through REQ-201-303, INCLUDING its own REQ-304 funding transfer, drawing from the SAME aggregate `colonySurplusUsd` snapshot A's own REQ-304 funding step is concurrently spending against -- a genuine double-spend of the colony's certified surplus, and two children being spawned when REQ-102's own `MAX_CONCURRENT_SPAWNS` (default 1) is supposed to permit only one in flight.\n\nThis exact class of hazard (a lock whose critical section ends before the state that a LATER evaluator's re-check depends on is durably written) is precisely what this spec elsewhere treats with great rigor -- e.g. FIND-1001's entire resolution (the atomic bootstrap fix) exists to close an analogous check-then-act/visibility race for `citizens.json`'s bootstrap. That same rigor has not been applied to REQ-103's own critical-section boundary, which is left textually ambiguous between three different scopes in the SAME requirement, with the narrowest (and only literally-Acceptance-Criteria-binding) one insufficient to prevent the race above.\n\nverification-architecture.md's own Proof Obligations confirm this gap is untested, not merely under-specified: PROP-103a (verification-architecture.md:247) tests ONLY 'two concurrent callers BOTH OBSERVING eligible:true' at effectively the same instant -- it never tests the STAGGERED scenario (a second evaluator arriving AFTER the first releases its lock but WHILE the first's REQ-3xx/REQ-304 is still executing), which is exactly the scenario Acceptance-Criteria reading (3) would allow. The Gate section's own item (2) (verification-architecture.md:563-571) repeats the same narrow framing ('a deliberately-induced concurrent race (two SIMULTANEOUS eligible:true evaluations)'). No proof obligation anywhere in this table requires proving that the initial 'provisioning' ledger row is durably visible (via `childrenProvisioning`) to any subsequent `decideColonySpawn()` evaluation BEFORE the colony-spawn lock is released -- which is the ONE property that would actually make Acceptance-Criteria reading (3) safe despite its narrow lock scope. As written, a Phase 3 adversary following PROP-103a/the Gate's item (2) verbatim would PASS an implementation that has exactly this double-spend race, because neither the requirement nor its proof obligations ever test the staggered-timing case.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "617-624",
+      "snippet": "THE SYSTEM SHALL ensure that at most ONE of them actually proceeds to REQ-201's identity generation and beyond — the other(s) SHALL detect the lock is held, decline to proceed, and log a no-op"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "650-652",
+      "snippet": "This is a natural fit, since the critical section this lock protects IS \"read the durable citizens.json + decide + possibly append to it\" (REQ-101 through REQ-305)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "688",
+      "snippet": "The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx) is wrapped by the existing withGigLock-equivalent helper"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "571-575",
+      "snippet": "the gate function ITSELF is pure and may return eligible:true from both evaluations — REQ-103 is what prevents both from acting on that true result simultaneously; REQ-102 does not need to know about concurrency"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "526-527",
+      "snippet": "recentSpawnAttempts: Array<{ ts: number, outcome: \"success\"|\"failure\" }> — one entry per completed spawn attempt, whichever the outcome"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1699-1701",
+      "snippet": "No open bid appears within deploy-akash.sh's existing poll window (30 attempts, existing default sleep): the script's own existing fail-closed behavior... is reused as-is"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "247",
+      "snippet": "PROP-103a | REQ-103 | Given two concurrent callers both observing eligible:true, exactly one reaches REQ-201's wallet-generation step..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "563-571",
+      "snippet": "REQ-103's mutual exclusion is proven under a deliberately-induced concurrent race (two simultaneous eligible:true evaluations)..."
+    }
+  ],
+  "routeToPhase": "1a"
+}

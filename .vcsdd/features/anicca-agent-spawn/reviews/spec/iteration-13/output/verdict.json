@@ -1,0 +1,43 @@
+{
+  "reviewType": "spec",
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 13,
+  "priorIterationFindingReconfirmation": {
+    "FIND-1101": "GENUINELY RESOLVED. Fresh read of ~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn (lines 6-32) confirms its real, current array-scan shape: `children.some((c) => typeof c.spawned_ms === \"number\" && Number.isFinite(c.spawned_ms) && c.spawned_ms >= windowStart)`. REQ-102's corrected Cooldown Check (behavioral-spec.md:525-546) and its Acceptance Criteria's `recentSpawnAttempts: Array<{ts, outcome}>` signature (behavioral-spec.md:592-599) genuinely generalize this SAME array-scan pattern (`recentSpawnAttempts.filter(a => a.ts >= windowStart)`) from 'an array of successes only' to 'an array of attempts, each carrying an outcome' -- a faithful, non-cosmetic reuse of the cited real pattern. REQ-102 (behavioral-spec.md:525-546, 567-613) and REQ-305 (behavioral-spec.md:1854-1859, 1912-1927) now state the IDENTICAL reconciled rule verbatim in both places -- 'a successful attempt in-window is always a hard cooldown gate; a failed attempt is cooldown-exempt strictly below FAILURE_COOLDOWN_CAP and cooldown-triggering once the cap is reached' -- with explicit cross-references each way ('resolves FIND-1101... REQ-102 and REQ-305 no longer describe two different behaviors'). No remaining contradiction was found anywhere else in either spec file that mentions cooldown/FAILURE_COOLDOWN_CAP/recentSpawnAttempts (grepped exhaustively). PROP-305g (verification-architecture.md:312) adds the exact 2-vs-3-failures boundary fixture as claimed.",
+    "FIND-1102": "GENUINELY RESOLVED. PROP-304f (verification-architecture.md:305) is a genuinely distinct code path from PROP-304c (verification-architecture.md:302): PROP-304c fixes 'aggregate above threshold, each individual citizen below deploy cost -> assert NO child record created, funding-shortfall no-op logged' (the BLOCKED/no-op path, zero transfers, zero ledger row). PROP-304f fixes 'citizen A surplus $6 + citizen B surplus $5, deploy cost $10 -> A transfers $6, B transfers the remaining $4 sequentially -> assert final child-wallet balance = $10 exactly, the spawn PROCEEDS (a child ledger row IS created), and both transfers are independently traceable' -- the SUCCESS/proceed path, exercising the actual funding-transfer execution and ledger-row-creation logic PROP-304c never touches (PROP-304c's own fixture never reaches a transfer or a ledger write at all). These are not a cosmetic variant of one another: one asserts a no-op with zero side effects, the other asserts two real transfers, an exact final balance, and a created child record. REQ-304's own Acceptance Criteria (behavioral-spec.md:1828-1839) states this success path explicitly and distinguishes it from the blocked path in the same paragraph the review claims it does."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1201", "FIND-1202"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js", "description": "Confirmed real array-scan rate-limit pattern (children.some over spawned_ms) that REQ-102's recentSpawnAttempts signature genuinely generalizes, resolving FIND-1101"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "description": "Confirmed module exports exactly {readChildren, appendChild}, no update/upsert primitive, consistent with every REQ-101/305/402 'no upsert' claim"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "Confirmed buildChildSpec's 7 required fields, distinct-wallet throw, and returned wallet:childWallet string field match REQ-206/REQ-304's citations exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/state-path.js", "description": "Confirmed resolveStateDir's real fail-closed /tmp-rejection behavior and default `${home}/.hermes/state` output matches REQ-105/REQ-103's CITIZENS_REGISTRY_PATH derivation citations exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh", "description": "Confirmed exact cited line ranges (124-140 provisioning append, 200-205 seed_failed append, 213-220 active append) genuinely support REQ-101's last-write-wins/duplicate-child_id justification"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "Confirmed resolveEvmPrivateKey/resolveSolanaSecret's real legacy-fallback gate (effectiveHome===path.join(legacyHome,'.anicca'/'.blockrun')) and traced the explicit-env COORDINATOR_HOME invocation shape end-to-end -- it genuinely resolves both citizens' real key material, resolving FIND-501/FIND-603/FIND-701/FIND-802 as claimed"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "description": "Confirmed hasOwnWallet's boolean contract and OWN_FUNDED_FUEL_PROVIDERS set {clawrouter-own-wallet, x402, free-model} match every citation in REQ-101/105/305/401"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/config.json", "description": "Confirmed spawn_cost_akt:25, buffer_akt:1, and the funding_route string are verbatim identical to REQ-303/304's citations"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/lib/akt-cost-gate.js", "description": "Confirmed computeSpawnGate's exact signature/return shape matches REQ-303/PROP-303d's citation"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:617-624,650-652,688", "description": "NEW FINDING: REQ-103 states three mutually inconsistent scopes for the colony-spawn lock's critical section within the same requirement -- see FIND-1201"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:1836-1839", "description": "NEW FINDING: REQ-304's per-citizen ceiling-check bullet depends on a per-citizen certified-contribution value no function in this spec is specified to expose -- see FIND-1202"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1201", "FIND-1202"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

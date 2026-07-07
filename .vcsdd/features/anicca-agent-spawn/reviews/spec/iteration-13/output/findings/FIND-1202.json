@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-1202",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-304's own new (iteration-12) Acceptance Criteria bullet resolving FIND-1102 requires a per-citizen ceiling check that no function anywhere in this spec is actually specified to compute or return, even though this spec is otherwise extremely disciplined about naming an exact, pinned function signature for every quantity a requirement depends on (e.g. `computeColonySurplusUsd`, `filterProductiveCitizens`, `decideColonySpawn`, `selectCloudTarget`, `CITIZENS_REGISTRY_PATH`, `COORDINATOR_HOME` all get an exact signature/definition).\n\nThe bullet in question (behavioral-spec.md:1836-1839, added to resolve FIND-1102): 'The per-transfer ceiling check (above) applies to EACH citizen's own transfer against THAT citizen's own certified surplus-above-reserve contribution — never a single combined ceiling checked against the whole aggregate amount for one citizen's individual transfer.' PROP-304f's own companion fixture (verification-architecture.md:305) repeats this: 'a companion fixture confirms each individual transfer amount is checked against ONLY that citizen's own certified contribution, never the whole aggregate amount.'\n\nBut REQ-101's ONLY specified aggregation function, `computeColonySurplusUsd({citizens, perCitizenReserveUsd}) -> number` (behavioral-spec.md:389, verification-architecture.md's Purity Boundary Map row for it), returns a single SUMMED number — it has no specified per-citizen breakdown output anywhere in this spec. Nothing in REQ-101, REQ-102, or REQ-304 names a function, or even an intermediate data shape (e.g. an array of `{citizenId, contributionUsd}` pairs), that REQ-304's own ceiling check could import/call to learn 'citizen A's own certified surplus-above-reserve contribution' as a standalone, individually-checkable value. The underlying arithmetic term (`max(0, balance_i - perCitizenReserveUsd)`) IS well-defined per REQ-101's prose, but it is defined only as an intermediate term INSIDE a sum, never as an exposed, independently-nameable output any OTHER requirement (here, REQ-304) can bind a proof obligation to.\n\nThis matters concretely for PROP-304f/PROP-304b: a Phase 2 implementer could satisfy `computeColonySurplusUsd`'s pinned signature exactly as specified while implementing it as a single reduce with no intermediate array ever retained or returned — in which case REQ-304's own ceiling-check bullet has no data source to call against, and PROP-304f's 'companion fixture' (verification-architecture.md:305) has nothing concrete to test: it would have to either (a) silently invent a new, unspecified per-citizen breakdown function/return shape at implementation time (an interpretation not fixed by this spec, unlike every other cross-requirement data dependency in this document, which is always pinned to an exact named export), or (b) recompute `max(0, balance_i - reserve)` a second time, independently, inside REQ-304's own funding code — which this spec never states either, and which would risk exactly the kind of \"two independently-derived numbers that must be identical by construction\" hazard this spec explicitly calls out and rejects elsewhere (e.g. REQ-206's own edge case: 'seedUsdc and REQ-204's actual gas-seed transfer amount ever diverge... THE SYSTEM treats this as a spec violation — the two MUST be the identical value by construction, never merely close').\n\nThis is a genuine spec gap (category: spec_gap) rather than a contradiction: the CONCEPT PROP-304f/REQ-304 depend on (each citizen's own certified surplus-above-reserve) is real and well-defined in prose, but no requirement in this document actually specifies the function/shape that exposes it to REQ-304's ceiling check, unlike every other analogous cross-requirement dependency in this spec.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1836-1839",
+      "snippet": "The per-transfer ceiling check (above) applies to EACH citizen's own transfer against THAT citizen's own certified surplus-above-reserve contribution — never a single combined ceiling checked against the whole aggregate amount for one citizen's individual transfer."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "389-390",
+      "snippet": "computeColonySurplusUsd({citizens, perCitizenReserveUsd}) then runs ONLY on filterProductiveCitizens's OUTPUT — never on the raw registry array"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "305",
+      "snippet": "PROP-304f | REQ-304 | ... a companion fixture confirms each individual transfer amount is checked against ONLY that citizen's own certified contribution, never the whole aggregate amount"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1471-1473",
+      "snippet": "seedUsdc and REQ-204's actual gas-seed transfer amount ever diverge (a future bug passing two different numbers into buildChildSpec vs the real on-chain gas-seed transfer): THE SYSTEM treats this as a spec violation — the two MUST be the identical value by construction, never merely close"
+    }
+  ],
+  "routeToPhase": "1a"
+}
