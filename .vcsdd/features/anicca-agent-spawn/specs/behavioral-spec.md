@@ -1,10 +1,10 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 3, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 4, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
-FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved — see changelogs
-below)
+FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
+iteration-4 findings FIND-301..305 resolved — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -45,6 +45,20 @@ cited design decision:
 | FIND-203 | major | REQ-402's promise to feed `children_bootstrap_failed` into REQ-102's gate evaluation is REMOVED — descoped to an observability-only bookkeeping count with an explicit, structurally-checkable non-effect on REQ-102's pinned signature/behavior. |
 | FIND-204 | critical | REQ-206 is extended (not just its identity-anchor clause) to specify concrete values/derivation for `buildChildSpec`'s other four already-mandatory fields: `parentWallet` (REQ-106's coordinator-host citizen's own wallet), `generation` (fixed `1`, reusing `run.sh`'s own existing default convention), `seedUsdc` (aliased exactly to REQ-204's gas-seed amount, explicitly distinct from REQ-303/304's shelter cost), and `constitutionHash` (a fixed SHA-256 of the already-shipped `identity/genesis.md` canonical genesis file). |
 | FIND-206 | low | REQ-101's vestigial "claude-p appears in the same telemetry-file directory listing" edge case is removed entirely — unreachable under the registry-only design REQ-105/101 specify. |
+
+## Changelog (iteration 3 spec review → iteration 4)
+
+Iteration 3's spec review (an Opus-model adversary pass, deeper scrutiny than prior Sonnet passes)
+FAILed with 5 NEW findings (all 6 iteration-1 findings, all 4 iteration-2-round-1 findings, and all
+6 iteration-2-round-2 findings were reconfirmed genuinely resolved against the real, current source).
+Each is resolved by a specific, cited design decision:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-301 | critical | REQ-101's `filterProductiveCitizens` join now explicitly specifies "last write wins": `ledger.js`'s real, append-only rows may legitimately contain MULTIPLE rows sharing one `child_id` (proven by `run.sh`'s own existing provisioning-row-then-status-row pattern), and the join MUST reduce these to exactly one effective row per `child_id` — the LAST-appended one — before applying its exclusion rule. `ledger.js` itself is untouched (no update/upsert primitive added). PROP-101d's own fixture is extended to cover the duplicate-`child_id` case. |
+| FIND-302 + FIND-303 | critical | REQ-101's balance lookup is redefined from a coordinator-local `fs.readFile` of a per-citizen `telemetryPath` (which structurally cannot reach a REQ-301-mandated remote child's own disk) to a NEW, registry-driven, coordinator-run PUBLIC-RPC balance query keyed on each citizen's `walletAddress` — generalizing `~/anicca/skills/self/telemetry-collect.sh`'s own already-proven, host-location-agnostic RPC-by-address pattern from 3 hardcoded instances to a registry-driven loop. `telemetryPath` is REMOVED from REQ-105's schema. Separately, REQ-403's LIVE wallet-comparison check (which depends on `resolve-identity.mjs`'s pure-local-filesystem resolvers and therefore has the same structural limitation) is explicitly SCOPED to co-located instances only for this increment (today: automaton + Franklin) — a cloud-hosted spawned child is exempt from the live check until a future increment adds a genuine remote-audit mechanism; REQ-403's STATIC grep-sweep half is unaffected and continues to cover a remote child's deployed source (which boots from the SAME git-cloned repo the grep already runs against). |
+| FIND-304 | major | A cross-file disambiguation note is added wherever REQ-206/REQ-305 describe `buildChildSpec`'s returned row: that row's pre-existing, unmodified `wallet` field (a bare address STRING, `child-spec.js:37`) is a completely separate field, in a completely separate file/schema, from `citizens.json`'s `wallet` field (a boolean presence-flag object, REQ-105) — the two share a name only by coincidence; neither file is renamed (same discipline FIND-104 already established for `wallet`/`walletAddress` within `citizens.json` itself). |
+| FIND-305 | major | REQ-306's false claim that USD-price normalization reuses "already-available" infrastructure is corrected: `akt-treasury.sh` has no live USD price query (its `P_mint≈0.66` is a one-time historical comment, not a callable rate), and no NOS/SOL/USD or AKT/USD utility exists anywhere in this codebase. REQ-306 now honestly specifies a MINIMAL, genuinely NEW price-fetch step (one public spot-price API call per native token), reusing the exact, already-proven, already-used PATTERN this codebase already applies three times for ETH-USD/SOL-USD (`telemetry-poster.mjs::ethPrice()`, `telemetry-post-franklin.mjs::solPrice()`, `execute-invest.mjs`'s own `ethPrice()`) rather than inventing a bespoke oracle design. |
 
 ## Scope of this increment (read first)
 
@@ -116,14 +130,14 @@ scripts remain aligned with current upstream documentation.
 | Concern | Classification | Why |
 |---|---|---|
 | Colony self-funded citizen filter | **Pure core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded(agent)` — already implements exactly the "own wallet + own-funded fuel + zero human deps" test this feature's REQ-101 needs to decide which balances even count toward the colony surplus. No new judgment logic is written; REQ-101 calls this existing, already-tested function on each RECORD supplied by REQ-105's registry (below) — `isSelfFunded()` itself is untouched; only its INPUT source is now specified. |
-| Colony citizen registry (data source for REQ-101) | **Effectful shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101/202/205)** | `~/anicca/skills/self/spawn/registry/citizens.json` — a brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, telemetryPath, homeDir}` records — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch), `walletAddress` separately carries the real address string(s), `telemetryPath`/`homeDir` are both ALREADY-RESOLVED absolute paths (never an unresolved `$HOME` template, resolves FIND-202/FIND-205) feeding REQ-101's balance lookup and REQ-403's audit respectively. This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens) — NOT a migration, and sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
+| Colony citizen registry (data source for REQ-101) | **Effectful shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101/202/302/304)** | `~/anicca/skills/self/spawn/registry/citizens.json` — a brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, homeDir}` records (`telemetryPath` REMOVED from this schema, resolves FIND-302) — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch; UNRELATED to `child-spec.js`'s own returned-row `wallet` STRING field, resolves FIND-304), `walletAddress` separately carries the real address string(s) and is what REQ-101's `readCitizenBalances` keys its RPC query on, and `homeDir` is an ALREADY-RESOLVED absolute path (never an unresolved `$HOME` template, resolves FIND-202) feeding REQ-403's now co-located-only-scoped audit (resolves FIND-303). This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens) — NOT a migration, and sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
 | Pre-existing mutual-aid recipient list (untouched, out of scope) | **Effectful shell (existing, NOT read/written by this feature)** | `~/anicca/skills/economy/ubi/colony-wallets.json` — `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc), a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file — resolves FIND-101's critical finding that an earlier draft wrongly proposed migrating/extending it, which would have risked a human-funded wallet silently entering the colony-surplus aggregate. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded, currently-productive citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). Fed exclusively by `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})`, a new pure join function that cross-references REQ-105's registry against `ledger.js`'s rows to exclude `"bootstrap_failed"`/window-overdue children before this sum ever runs (resolves FIND-201). |
 | Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. |
 | Per-child identity record assembly | **Pure core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID (unchanged) + an identity-anchor validation that now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair, never requiring both (REQ-206). This corrects iteration 1's false "reused unmodified" claim (FIND-001): the distinct-wallet assertion and every other existing field/behavior are untouched, and a regression test locks in that today's `childInbox`-only callers still succeed identically. `buildChildSpec`'s OTHER four already-mandatory fields (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`) are unchanged CODE but now have an explicit spec-level derivation rule each (REQ-206, resolves FIND-204) — the function's own source is not modified for these four; only the caller-supplied values are now specified. |
 | Cross-instance spawn mutual exclusion (lock predicate) | **Pure core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` — the already-adversary-hardened staleness predicate from the P2 concurrency-hardening sprint (`anicca-agent-economy` REQ-101). REQ-103 reuses the SAME generic file-lock module under a new lock key (`"colony-spawn"`), not a new lock implementation. This module's local-POSIX-filesystem guarantee is sufficient ONLY because REQ-106 scopes every evaluator to a single coordinator host this increment (FIND-003) — it is not claimed to solve cross-host mutual exclusion. |
-| Cloud target selection (Nosana vs Akash) | **Pure core (new) + Effectful shell (new)** | A pure comparison function `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` (deterministic, price-based, never a model judgment — REQ-306) fed by an effectful price/availability query step against each provider's own CLI/API. Resolves FIND-006 (REQ-302/303 presupposed this selection without ever specifying it). |
-| Balance/telemetry reads across colony instances | **Effectful shell** | `fs.readFile` of each citizen's `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field — an ALREADY-RESOLVED absolute path (e.g. `/Users/anicca/.automaton/state/telemetry.json`, `/Users/anicca/.blockrun/state/telemetry.json`, resolves FIND-205), the SAME physical files `~/anicca/skills/economy/ubi/run.sh` already reads via shell `$HOME` expansion (that script's `$HOME`-relative notation is a shell-level convenience; REQ-105's own JSON field is never a template string) — real I/O, not inferred. |
+| Cloud target selection (Nosana vs Akash) | **Pure core (new) + Effectful shell (new)** | A pure comparison function `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` (deterministic, price-based, never a model judgment — REQ-306) fed by an effectful price/availability query step against each provider's own CLI/API, INCLUDING a genuinely NEW USD-normalization price-fetch step (one public spot-price API call per native token, reusing the exact fail-closed pattern already established by `ethPrice()`/`solPrice()` elsewhere in this codebase — resolves FIND-305's false "already-available oracle" claim; `akt-treasury.sh` has no live USD price query). Resolves FIND-006 (REQ-302/303 presupposed this selection without ever specifying it). |
+| Balance/telemetry reads across colony instances | **Effectful shell (revised, resolves FIND-302)** | A NEW, coordinator-run, registry-driven public-RPC balance query, `readCitizenBalances({citizens})`, keyed on each citizen's own `walletAddress` (REQ-105) — generalizing `~/anicca/skills/self/telemetry-collect.sh`'s own existing hardcoded-3-instance RPC-by-address pattern (`erc20()`/`sol()`/`solusdc()` against public RPC endpoints) into a registry-driven loop, so it reaches a REQ-301-mandated cloud-hosted child's balance exactly as readily as a co-located citizen's (a public RPC call does not care where the querying process runs, unlike the coordinator-local `fs.readFile` this mechanism REPLACES — REQ-105's `telemetryPath` field is REMOVED as a result, its sole purpose now served by this walletAddress-keyed RPC read). Real I/O, not inferred. |
 | Child EVM wallet generation | **Effectful shell** | `~/anicca/skills/self/spawn/scripts/gen-wallet.sh` — `openssl`+`python3` subprocess, real entropy source, reused unmodified. |
 | Child Solana keypair generation | **Effectful shell (new)** | New script analogous to `gen-wallet.sh` but ed25519/Solana-shaped (REQ-202); real entropy source. |
 | `$HOME`/`ANICCA_HOME` isolation at process launch | **Effectful shell** | Setting an env var at process spawn time is an OS-level side effect; the isolation PROPERTY it produces (a distinct resolved path) is what REQ-203 specifies and what `~/anicca/skills/earn/lib/resolve-identity.mjs` already relies on for existing instances. |
@@ -157,37 +171,82 @@ contradiction between REQ-105's registry and REQ-402's ledger-based lifecycle st
    `~/anicca/skills/self/spawn/lib/ledger.js`'s own JSONL rows (`status`, `active_since`), NEVER in
    `citizens.json` (REQ-105's registry is deliberately minimal and carries neither field) — via a new,
    pure join function `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}) →
-   citizens[]`, zero I/O, matched by `citizens[].id` against `ledgerRows[].child_id`: a citizen with NO
-   matching ledger row (e.g. today's two seed citizens, automaton/Franklin, which were never spawned via
-   this feature) passes through unfiltered; a citizen WITH a matching ledger row is EXCLUDED if that
-   row's `status` is already `"bootstrap_failed"`, OR if that row's `status` is `"active"` with no
-   recorded REQ-401 success and `nowMs − active_since >= bootstrapWindowDays * 86400000` (the same
-   window REQ-402 itself applies, checked here too as a real-time safeguard so REQ-101 never has to wait
-   for REQ-402's own separately-scheduled relabeling job to have already run this wake).
+   citizens[]`, zero I/O, matched by `citizens[].id` against `ledgerRows[].child_id`.
+
+   **`ledgerRows` may legitimately contain MULTIPLE rows sharing one `child_id` (resolves FIND-301):**
+   `ledger.js` is real, existing, append-only JSONL, reused unmodified — it exports exactly
+   `readChildren`/`appendChild`, no update/upsert primitive, and this spec does NOT add one — so every
+   lifecycle transition (`"provisioning"` → `"active"`, or → `"bootstrap_failed"`, or a later
+   retroactive correction, REQ-402) is recorded by APPENDING A NEW LINE with the SAME `child_id`, never
+   by mutating an existing line. This is not hypothetical: the superseded `run.sh`'s own real, existing
+   behavior already does exactly this on every spawn attempt (`run.sh:124-140` appends a
+   `"provisioning"` row, then a LATER, SEPARATE `appendChild` call at `run.sh:200-205` or
+   `run.sh:213-220` appends a SECOND row with the SAME `child_id` and an updated `status`
+   (`"seed_failed"` or `"active"`) — proving `readChildren`'s raw output routinely contains duplicate
+   `child_id` rows in real production usage). Because JSONL append order is strictly chronological,
+   "that row" (the row a citizen with a matching `child_id` is evaluated against, below) MEANS the LAST
+   (highest array index / most-recently-appended) row for that `child_id` — last-write-wins is the
+   correct, and only specified, reading of "current status." `filterProductiveCitizens` MUST reduce
+   `ledgerRows` to exactly one effective row per `child_id` (its last-appended row) BEFORE applying the
+   exclusion rule below; it MUST NOT match against the FIRST row for a `child_id` (which would
+   incorrectly mean a child is NEVER observed past `"provisioning"`) nor pick nondeterministically among
+   duplicates.
+
+   A citizen with NO matching ledger row (e.g. today's two seed citizens, automaton/Franklin, which were
+   never spawned via this feature) passes through unfiltered; a citizen WITH a matching ledger row is
+   EXCLUDED if that (last-appended) row's `status` is already `"bootstrap_failed"`, OR if that row's
+   `status` is `"active"` with no recorded REQ-401 success and `nowMs − active_since >=
+   bootstrapWindowDays * 86400000` (the same window REQ-402 itself applies, checked here too as a
+   real-time safeguard so REQ-101 never has to wait for REQ-402's own separately-scheduled relabeling
+   job to have already run this wake).
 
 `computeColonySurplusUsd({citizens, perCitizenReserveUsd})` then runs ONLY on
 `filterProductiveCitizens`'s OUTPUT — never on the raw registry array — where `balance_i` is that
-citizen's own most-recently-read liquid balance (read from its own `state/telemetry.json`, located via
-REQ-105's registry `telemetryPath` field — an ALREADY-RESOLVED absolute path per REQ-105's schema below,
-never an unresolved `$HOME`-template string requiring a runtime substitution step, resolving
-FIND-202/FIND-205) and `perCitizenReserveUsd` defaults to `5.00` (reusing, for consistency, the exact
-`RESERVE = 5.0` constant `economy/ubi/run.sh` already uses for the same "don't count money a citizen
-needs for its own survival" purpose — not a new number invented for this feature).
+citizen's own most-recently-read liquid balance, obtained via a NEW, coordinator-run, registry-driven
+effectful step, `readCitizenBalances({citizens})` (`~/anicca/skills/self/spawn/lib/colony-balances.mjs`),
+that queries EACH citizen's balance directly from PUBLIC CHAIN RPC, keyed on that citizen's own
+`walletAddress` (REQ-105's registry field, already present) — generalizing, rather than reinventing, the
+EXACT mechanism `~/anicca/skills/self/telemetry-collect.sh` already proves works today (that script's
+own `erc20()`/`sol()`/`solusdc()` helpers query `base-rpc.publicnode.com`/`api.mainnet-beta.solana.com`
+by a hardcoded wallet-address CONSTANT per instance, writing a local `telemetry.json` as a SEPARATE,
+unrelated side effect this feature does not depend on) into a REGISTRY-DRIVEN loop over
+`citizens[].walletAddress` instead of 3 hardcoded constants (resolves FIND-302: a public RPC balance
+read does not care where the querying PROCESS runs, unlike a local `fs.readFile`, so this mechanism
+reaches a REQ-301-mandated cloud-hosted child's balance exactly as readily as it reaches a co-located
+citizen's — no coordinator-local filesystem access to the child's own disk is ever required).
+`telemetryPath` is REMOVED from REQ-105's registry schema (below) — its sole prior purpose (locating
+this balance) is now served by this walletAddress-keyed RPC mechanism instead; `telemetry-collect.sh`'s
+own separate `telemetry.json` output remains, unmodified, an independent, out-of-scope mechanism for the
+public dashboard (not read by this feature). `perCitizenReserveUsd` defaults to `5.00` (reusing, for
+consistency, the exact `RESERVE = 5.0` constant `economy/ubi/run.sh` already uses for the same "don't
+count money a citizen needs for its own survival" purpose — not a new number invented for this feature).
 
 **Edge Cases**:
-- A citizen's `telemetry.json` is missing, unreadable, or its `balance_usd` field is
-  missing/non-finite/negative: that citizen contributes **0** to the sum (fail-closed — never treated
-  as infinite/unknown-but-fine), matching the existing `tier.mjs`/`catalog-gate.mjs` convention of
-  "unparseable numeric input collapses to the safe default," here the safe default being "counts for
-  nothing until it can be read cleanly."
+- A citizen's public-RPC balance query fails, times out, or returns a non-finite/negative value:
+  that citizen contributes **0** to the sum (fail-closed — never treated as infinite/unknown-but-fine),
+  matching the existing `tier.mjs`/`catalog-gate.mjs` convention of "unparseable numeric input collapses
+  to the safe default," here the safe default being "counts for nothing until it can be read cleanly"
+  (resolves FIND-302: this replaces the prior "telemetry.json missing/unreadable" framing, which assumed
+  a coordinator-local file read that cannot reach a remote child).
+- A citizen's `child_id` has TWO OR MORE matching `ledger.js` rows with different `status` values (e.g.
+  a `"provisioning"` row followed later by an `"active"` row for the SAME child): `filterProductiveCitizens`
+  uses ONLY the LAST (most-recently-appended) row's `status`/`active_since` — never the first, never an
+  arbitrary pick (resolves FIND-301; `ledger.js` is real, append-only, and legitimately produces exactly
+  this shape per real spawn attempts, per `run.sh`'s own existing provisioning-row-then-status-row
+  pattern).
 - A citizen's matching ledger.js row has `status:"active"` but a missing/non-finite `active_since`
   (a malformed row): `filterProductiveCitizens` applies the SAME fail-closed convention as above —
   the citizen is excluded from the productive set until the row is corrected, never assumed fresh.
 - Exactly one self-funded citizen exists (current colony state, per §9.9/§9.5): the sum degenerates to
   that single citizen's own surplus-above-reserve; the formula requires no special case for N=1.
-- A citizen's balance is reported in a non-USD-denominated field only (e.g. only `balance_native`):
-  the aggregation MUST use the same USD-normalization `economy/ubi/run.sh` already performs (its own
-  `bal()` helper's fallback to `balance_native.usdc`) rather than inventing a second conversion path.
+- A citizen's on-chain balance is native-token-denominated only (e.g. a Solana citizen's SOL/native-USDC
+  holdings, exactly the shape `telemetry-collect.sh`'s own existing `sol()`/`solusdc()` helpers already
+  produce for Franklin — `balance_native: {sol, usdc}`, no single `balance_usd` field): THE SYSTEM SHALL
+  normalize to USD using the SAME already-proven, already-used spot-price pattern this codebase already
+  applies for exactly this purpose (`runtime/dashboard/telemetry-post-franklin.mjs::solPrice()`'s single
+  Coinbase SOL-USD spot-price call) rather than inventing a second conversion path — the identical
+  discipline `economy/ubi/run.sh`'s own `bal()` helper already applies for its own, differently-scoped
+  purpose.
 
 **Acceptance Criteria**:
 - Pure function, e.g. `computeColonySurplusUsd({ citizens, perCitizenReserveUsd }) → number`, takes
@@ -197,9 +256,10 @@ needs for its own survival" purpose — not a new number invented for this featu
 - Given a citizen whose `isSelfFunded()` check returns `false`, its balance (however large) contributes
   `0` regardless of magnitude.
 - `filterProductiveCitizens({ citizens, ledgerRows, nowMs, bootstrapWindowDays }) → citizens[]` is a
-  pure function, zero I/O, that excludes exactly the citizens whose matching ledger.js row is
-  `"bootstrap_failed"` or window-overdue-while-`"active"`, and passes through unfiltered any citizen
-  with no matching ledger row (resolves FIND-201).
+  pure function, zero I/O, that FIRST reduces `ledgerRows` to at most one effective row per `child_id`
+  (the LAST-appended row for that id — last-write-wins, resolves FIND-301), THEN excludes exactly the
+  citizens whose (reduced) matching row is `"bootstrap_failed"` or window-overdue-while-`"active"`, and
+  passes through unfiltered any citizen with no matching ledger row (resolves FIND-201).
 
 ---
 
@@ -388,24 +448,23 @@ Boolean(wallet.solana)` — never address strings):
 
 The full record shape is therefore `{id: string, wallet: {evm?: boolean, solana?: boolean},
 walletAddress: {evm?: string, solana?: string}, fuel: {provider: string}, humanDependencies: string[]}`
-plus TWO additional fields this feature needs and `isSelfFunded()` itself does not read:
-- `telemetryPath: string` — the citizen's own `state/telemetry.json` path, used by REQ-101's balance
-  lookup, stored as an ALREADY-RESOLVED ABSOLUTE PATH (e.g.
-  `/Users/anicca/.automaton/state/telemetry.json`) — NEVER an unresolved `$HOME`/`ANICCA_HOME` template
-  string. Unlike the bash scripts this pattern is modeled on (where the shell itself expands `$HOME`
-  before the string reaches the script), a JSON string value is inert data: nothing substitutes a
-  template placeholder inside it at read time. Whoever seeds or appends an entry (REQ-105's seed step or
-  REQ-305's append step) already knows the citizen's real, concrete path at write time, so the resolved
-  value is written directly — no runtime resolution step is ever needed or specified (resolves
-  FIND-205).
+plus ONE additional field this feature needs and `isSelfFunded()` itself does not read (revised, resolves
+FIND-302: the prior second additional field, `telemetryPath`, is REMOVED from this schema — REQ-101's
+balance lookup no longer depends on a coordinator-local file path per citizen; see REQ-101's revised
+`readCitizenBalances`, which reads each citizen's balance via public RPC keyed on `walletAddress` above,
+a mechanism that works identically whether that citizen is co-located with the coordinator or, per
+REQ-301, exclusively cloud-hosted):
 - `homeDir: string` — the citizen's own resolved absolute `HOME`/`ANICCA_HOME` directory (e.g.
   `/Users/anicca`, or a dedicated per-instance HOME if the colony ever runs non-co-located instances),
-  used exclusively by REQ-403's wallet mutual non-interference audit to learn each running instance's
-  own HOME without a second, parallel instance-enumeration mechanism (resolves FIND-202). Both of
-  today's seeded citizens (automaton, Franklin) legitimately share the identical `homeDir` value
-  (`/Users/anicca`, per REQ-106's single-coordinator-host scoping) THIS increment — that is expected,
-  not a bug, while still being a real field REQ-403 needs and a genuinely distinct value for any future,
-  non-co-located instance.
+  used exclusively by REQ-403's wallet mutual non-interference audit's LIVE comparison half — itself now
+  scoped to co-located instances only for this increment (resolves FIND-303; see REQ-403) — to learn
+  each CO-LOCATED running instance's own HOME without a second, parallel instance-enumeration mechanism
+  (resolves FIND-202). Both of today's seeded citizens (automaton, Franklin) legitimately share the
+  identical `homeDir` value (`/Users/anicca`, per REQ-106's single-coordinator-host scoping) THIS
+  increment — that is expected, not a bug. A future cloud-hosted child's `homeDir`, if ever recorded,
+  is NOT consulted by REQ-403's live check this increment (that check is co-located-only) — the field
+  is present on every record only so a future increment's remote-audit mechanism has somewhere to read
+  it from.
 
 THE SYSTEM SHALL seed `citizens.json`, at implementation time, with the following FIXED, LITERAL JSON
 array — NOT a migration of `colony-wallets.json`'s entries, and NOT derived from any out-of-band
@@ -422,7 +481,6 @@ table: "SELF-funded on Earth = 2"):
     "walletAddress": { "evm": "0xB9dd3B67921B354c656523d6851537988F31DD56" },
     "fuel": { "provider": "clawrouter-own-wallet" },
     "humanDependencies": [],
-    "telemetryPath": "/Users/anicca/.automaton/state/telemetry.json",
     "homeDir": "/Users/anicca"
   },
   {
@@ -431,17 +489,17 @@ table: "SELF-funded on Earth = 2"):
     "walletAddress": { "solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9" },
     "fuel": { "provider": "x402" },
     "humanDependencies": [],
-    "telemetryPath": "/Users/anicca/.blockrun/state/telemetry.json",
     "homeDir": "/Users/anicca"
   }
 ]
 ```
 
-Both entries' `telemetryPath`/`homeDir` are ALREADY-RESOLVED absolute paths — never `$HOME`-template
-strings — because this spec's author already knows the real, concrete path each citizen uses at seed
-time (resolves FIND-202/FIND-205). Both entries legitimately share the identical `homeDir`
-(`/Users/anicca`) because both citizens currently run co-located on the same coordinator host per
-REQ-106 — expected for this increment, not an error.
+Both entries' `homeDir` values are ALREADY-RESOLVED absolute paths — never a `$HOME`-template string —
+because this spec's author already knows the real, concrete path each citizen uses at seed time
+(resolves FIND-202). Both entries legitimately share the identical `homeDir` (`/Users/anicca`) because
+both citizens currently run co-located on the same coordinator host per REQ-106 — expected for this
+increment, not an error. Neither entry carries a `telemetryPath` field (removed, resolves FIND-302 —
+see above).
 
 claude-p (real funds at `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`, human-funded, per
 `docs/WALLETS.md` lines 49-62) and every other human-funded wallet SHALL NEVER be seeded into this
@@ -466,12 +524,12 @@ seed set above is a fixed literal this spec's author already verified against li
 
 **Acceptance Criteria**:
 - The seed file parses as an array of objects each satisfying `{id, wallet, walletAddress, fuel,
-  humanDependencies, telemetryPath, homeDir}`, and calling the existing, unmodified `isSelfFunded()` on
-  any one record's `{wallet, fuel, humanDependencies}` sub-object (never `walletAddress`) returns a
-  boolean without throwing.
-- Every seeded (and later appended, REQ-305) entry's `telemetryPath` and `homeDir` are ALREADY-RESOLVED
-  absolute paths — a structural check confirms neither field's value contains the literal substring
-  `$HOME` or `$ANICCA_HOME` anywhere in `citizens.json` (resolves FIND-202/FIND-205).
+  humanDependencies, homeDir}` (no `telemetryPath` field — removed, resolves FIND-302), and calling the
+  existing, unmodified `isSelfFunded()` on any one record's `{wallet, fuel, humanDependencies}`
+  sub-object (never `walletAddress`) returns a boolean without throwing.
+- Every seeded (and later appended, REQ-305) entry's `homeDir` is an ALREADY-RESOLVED absolute path — a
+  structural check confirms its value never contains the literal substring `$HOME` or `$ANICCA_HOME`
+  anywhere in `citizens.json` (resolves FIND-202).
 - A direct test confirms that EACH of the two seeded entries above, when its `{wallet, fuel,
   humanDependencies}` sub-object is passed through the existing, unmodified `isSelfFunded()`, returns
   `true` — a straightforward assertion against literal fixture data (resolves FIND-101's critique of
@@ -480,12 +538,12 @@ seed set above is a fixed literal this spec's author already verified against li
 - `citizens.json`'s seed content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
   REQ-305's append-on-spawn path (below) enforces the SAME property on every future append, closing
   this hazard PERMANENTLY rather than only at t=0.
-- REQ-403 (the wallet non-interference audit's "current set of running instances") reads its citizen
-  list AND each instance's `homeDir` directly from THIS SAME registry — no second, parallel
-  instance-enumeration mechanism exists anywhere in this spec. REQ-402/REQ-101's productivity exclusion
-  (`"bootstrap_failed"`, `active_since`) is a SEPARATE concern that lives EXCLUSIVELY in `ledger.js` —
-  see REQ-101's `filterProductiveCitizens` join and REQ-402 — this registry intentionally carries
-  neither field (resolves FIND-201's location contradiction).
+- REQ-403 (the wallet non-interference audit's "current set of co-located running instances," this
+  increment — resolves FIND-303) reads its citizen list AND each instance's `homeDir` directly from
+  THIS SAME registry — no second, parallel instance-enumeration mechanism exists anywhere in this spec.
+  REQ-402/REQ-101's productivity exclusion (`"bootstrap_failed"`, `active_since`) is a SEPARATE concern
+  that lives EXCLUSIVELY in `ledger.js` — see REQ-101's `filterProductiveCitizens` join and REQ-402 —
+  this registry intentionally carries neither field (resolves FIND-201's location contradiction).
 
 ---
 
@@ -738,6 +796,19 @@ required to "required only if the ERC-8004 pair is absent" — never a rewrite o
 distinct-wallet assertion, monotonic-ID logic (`nextChildId`), or returned row shape (which gains two
 new optional fields, `agent_evm_address`/`agent_id`, alongside its existing, unchanged fields).
 
+**Cross-file field-name disambiguation (resolves FIND-304):** `buildChildSpec`'s own, pre-existing,
+UNMODIFIED returned row carries a field literally named `wallet` (`child-spec.js:37`: `wallet:
+childWallet` — a bare address STRING; confirmed by its own existing test, `child-spec.test.js:36`:
+`assert.strictEqual(spec.wallet, "0xCHILD...")`). This is a COMPLETELY SEPARATE field, in a COMPLETELY
+SEPARATE file/schema, from REQ-105's `citizens.json` registry record's `wallet` field, which is a
+BOOLEAN presence-flag object (`{evm?: boolean, solana?: boolean}`, REQ-105). The two `wallet` fields
+share a name only by coincidence across two unrelated schemas this feature touches — this spec does NOT
+rename `child-spec.js`'s existing field (that would violate its "unmodified" contract, the same
+discipline already established above for this file) — implementers and reviewers MUST read each
+`wallet` field per its OWN file's schema and MUST NOT cross-reference the two (same class of
+disambiguation FIND-104 already performed for `wallet`/`walletAddress` WITHIN `citizens.json` itself;
+here it is a cross-file clarifying note, not a schema change).
+
 **The other four fields `buildChildSpec` already unconditionally requires** (`parentWallet`,
 `generation`, `seedUsdc`, `constitutionHash` — confirmed still mandatory at
 `~/anicca/skills/self/spawn/lib/child-spec.js:16-34`, unrelated to and untouched by the identity-anchor
@@ -982,12 +1053,24 @@ true, solana: true-if-generated} (BOOLEAN presence flags, matching `is-self-fund
 own documented contract exactly — resolves FIND-104), walletAddress: {evm: childWallet, solana:
 childSolanaAddress-if-generated} (the actual address STRING(s) — a SEPARATE field from `wallet`, never
 passed to `isSelfFunded()`), fuel: {provider: "free-model"} (per REQ-401's exclusive free-model fuel
-requirement), humanDependencies: [], telemetryPath: <child's own isolated, ALREADY-RESOLVED absolute
-telemetry.json path — never a `$HOME` template, resolves FIND-205>, homeDir: <the child's own resolved
-absolute `HOME`/`ANICCA_HOME` directory, REQ-203 — resolves FIND-202>}` — so REQ-101's NEXT evaluation
-includes the new citizen automatically, without any separate manual or out-of-band registry-edit step
-(resolves FIND-002's "how does the registry grow" gap). This registry record deliberately carries
-NEITHER `status` NOR `active_since` — those remain exclusively in the ledger.js row set above.
+requirement), humanDependencies: [], homeDir: <the child's own resolved absolute `HOME`/`ANICCA_HOME`
+directory, REQ-203 — resolves FIND-202>}` — NO `telemetryPath` field (removed from this schema,
+resolves FIND-302; REQ-101's balance lookup for this child, like every other citizen, goes through the
+registry-driven public-RPC `readCitizenBalances` step keyed on `walletAddress` above) — so REQ-101's
+NEXT evaluation includes the new citizen automatically, without any separate manual or out-of-band
+registry-edit step (resolves FIND-002's "how does the registry grow" gap). This registry record
+deliberately carries NEITHER `status` NOR `active_since` — those remain exclusively in the ledger.js
+row set above.
+
+**Cross-file field-name disambiguation (resolves FIND-304):** the `ledger.js` row this feature writes
+for each child (first paragraph above, assembled via `buildChildSpec`) already carries a field named
+`wallet` — this is `buildChildSpec`'s own, pre-existing, UNMODIFIED returned-row field (`child-spec.js:
+37`: `wallet: childWallet`, a bare address STRING; see REQ-206's own disambiguation note), NOT the
+boolean-shaped `wallet` object this same paragraph just appended to `citizens.json`. The two `wallet`
+fields — one in `ledger.js`'s JSONL rows (a string, untouched code) and one in `citizens.json`'s
+registry records (a boolean pair, REQ-105) — share a name only by coincidence across two unrelated
+files/schemas this feature touches; implementers and reviewers reading these two files side by side
+MUST read each `wallet` field per its OWN file's schema, never cross-reference the two.
 
 **Before this append is performed** (resolves FIND-101's permanent-hazard-closure requirement), THE
 SYSTEM SHALL call the existing, unmodified `isSelfFunded()` on the new record's `{wallet, fuel,
@@ -1038,9 +1121,10 @@ spawn-triggered append — a permanent closure of the hazard, not merely a t=0 c
 - Marking a child `"active"` ALSO sets that SAME ledger.js row's `active_since` field to the current
   timestamp (never omitted, never set at the earlier `"provisioning"` stage) — the field REQ-402's
   window check and REQ-101's `filterProductiveCitizens` join both read (resolves FIND-201).
-- The appended `citizens.json` record's `telemetryPath` and new `homeDir` field are both
-  ALREADY-RESOLVED absolute paths — a structural check confirms neither contains a `$HOME`/
-  `ANICCA_HOME` template string (resolves FIND-202/FIND-205).
+- The appended `citizens.json` record's `homeDir` field is an ALREADY-RESOLVED absolute path — a
+  structural check confirms it never contains a `$HOME`/`ANICCA_HOME` template string (resolves
+  FIND-202), and the appended record carries NO `telemetryPath` field at all (removed, resolves
+  FIND-302).
 - The real `buildChildSpec` call underlying this append supplies concrete values for all seven required
   fields per REQ-206's derivation rules (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`
   included, not just the identity-anchor pair) — resolves FIND-204.
@@ -1071,10 +1155,23 @@ generalized to the selection step itself.
   matching REQ-104's own discipline).
 - A price quote cannot be directly compared because the two providers price in different native tokens
   (Nosana: NOS/SOL-denominated; Akash: AKT/`uact`-denominated): THE SYSTEM SHALL normalize both to a
-  USD-equivalent estimate using the SAME already-available price-conversion mechanism this project's
-  own `akt-treasury.sh` already documents (an observed AKT/ACT/USD rate) and an equivalent,
-  already-available NOS/SOL/USD rate — never comparing raw native-token quantities across different
-  currencies, and never inventing a new pricing oracle for this feature.
+  USD-equivalent estimate. **Corrected (resolves FIND-305): this normalization is NOT already-available,
+  reused infrastructure.** `akt-treasury.sh` (read in full) contains no live USD price query anywhere —
+  it only compares NATIVE-denominated balances (`uact`/`uakt`, via `akash query bank balances`) against
+  fixed native-unit thresholds, and the `P_mint≈0.66` figure its own comment documents is a ONE-TIME
+  HISTORICAL OBSERVATION recorded at write time, not a callable, live rate function. A repo-wide grep
+  (`nosana|market.*price|SOL.*price`, case-insensitive, across `~/anicca/skills`) confirms no NOS/USD or
+  AKT/USD price-conversion utility exists anywhere in this codebase either. THE SYSTEM therefore requires
+  a MINIMAL, genuinely NEW price-fetch step — one public spot-price API call per native token — rather
+  than reusing a nonexistent oracle. This new step SHALL follow the exact, already-established,
+  already-used PATTERN this codebase already applies three times for ETH-USD/SOL-USD
+  (`runtime/dashboard/telemetry-poster.mjs::ethPrice()`, `runtime/dashboard/
+  telemetry-post-franklin.mjs::solPrice()`, `skills/earn/execute-invest.mjs`'s own `ethPrice()`: a single
+  `fetch()` to a public spot-price API, parsed to a number, fail-closed to `0` on any error) — a single
+  new call for AKT-USD (no existing utility covers Akash's native token) and, if Nosana's configured
+  market denominates in NOS rather than SOL, a single new analogous call for NOS-USD (the existing
+  `solPrice()` mechanism is reused AS-IS, unmodified, if the market is SOL-denominated) — never a
+  bespoke, multi-source, or judgment-based oracle design.
 - The selection function's own PRICE QUERIES are I/O (effectful), but the COMPARISON/decision logic is
   pure given the two already-fetched quotes — mirroring this spec's existing effectful-shell-feeds-
   pure-core pattern (REQ-101's `readCitizenBalances`/`computeColonySurplusUsd` split); `selectCloudTarget`
@@ -1196,20 +1293,41 @@ or blocks a replacement spawn (that remains gated purely by REQ-102's own arithm
 
 ---
 
-### REQ-403: Wallet mutual non-interference audit
+### REQ-403: Wallet mutual non-interference audit (live-comparison half scoped to co-located instances this increment — resolves FIND-303)
 **EARS**: WHEN N ≥ 2 instances (any mix of pre-existing citizens and newly-spawned children) run
-concurrently, THE SYSTEM SHALL provide a deterministic audit — combining (a) a static, grep-based
-source audit across every skill script and cron/job config, checking all three path-reference forms
-(`$HOME/...`, `~/...`, and the fully-resolved absolute form), reusing the exact method this project's
-own wallet-rotation work already established (memory
+concurrently, THE SYSTEM SHALL provide a deterministic audit combining two independently-scoped halves:
+(a) a static, grep-based source audit across every skill script and cron/job config, checking all three
+path-reference forms (`$HOME/...`, `~/...`, and the fully-resolved absolute form), reusing the exact
+method this project's own wallet-rotation work already established (memory
 `feedback_move_refcheck_must_cover_skill_scripts_and_home_forms`: "grep ~/.openclaw/skills +
-~/anicca/skills + cron in ALL 3 path forms") with (b) a live runtime comparison — reusing
-`resolve-identity.mjs`'s existing exported resolvers, invoked once per running instance with that
-instance's OWN `HOME`/`ANICCA_HOME` (read from REQ-105's registry's `homeDir` field, an
-already-resolved absolute path — see Acceptance Criteria) — that PROVES no two instances' resolved EVM
-or Solana signing keys
-are ever equal, and no instance's resolved key-file PATH ever points inside another instance's own
-home directory, before any newly-spawned child is permitted to participate in REQ-401's bootstrap.
+~/anicca/skills + cron in ALL 3 path forms") — this static half covers EVERY instance this increment
+produces, INCLUDING a cloud-hosted child, because REQ-303's SDL boots that child by `git clone`-ing the
+SAME OSS repo this static grep already runs against (no separate remote-source-audit mechanism is
+needed for this half); with (b) a live runtime comparison — reusing `resolve-identity.mjs`'s existing
+exported resolvers, invoked once per CO-LOCATED running instance with that instance's OWN `HOME`/
+`ANICCA_HOME` (read from REQ-105's registry's `homeDir` field, an already-resolved absolute path — see
+Acceptance Criteria) — that PROVES no two CO-LOCATED instances' resolved EVM or Solana signing keys are
+ever equal, and no CO-LOCATED instance's resolved key-file PATH ever points inside another CO-LOCATED
+instance's own home directory, before any newly-spawned CO-LOCATED child is permitted to participate in
+REQ-401's bootstrap.
+
+**Scoping correction (resolves FIND-303):** `resolve-identity.mjs`'s exported resolvers
+(`resolveEvmPrivateKey`/`resolveSolanaSecret`) are a PURE LOCAL-FILESYSTEM primitive
+(`fs.readFileSync` against `path.join(effectiveHome, '.automaton', 'wallet.json')`, confirmed by direct
+read of that module's real source) — the coordinator process invoking them can only ever resolve a key
+that lives on the coordinator's OWN local disk. Per REQ-301, a spawned child's wallet material lives
+EXCLUSIVELY on its own remote Nosana/Akash lease, a physically separate filesystem the coordinator
+cannot `fs.readFileSync` into, and this feature never transmits a child's own private key material back
+to the coordinator over the network for comparison (that would itself violate REQ-201's private-key-
+handling discipline — "must never appear in any log file, stdout capture that reaches persistent logs,
+or process list," reasonably extended here to "or any network transmission"). THE SYSTEM SHALL therefore
+SCOPE the live-comparison half of this audit, for THIS INCREMENT ONLY, to co-located instances — today,
+automaton + Franklin, both on the Mac Mini per REQ-106 — mirroring REQ-106's own already-established
+"this increment only, future work for multi-host" precedent. A cloud-hosted spawned child is EXEMPT from
+the live-comparison check until a future increment adds a genuine remote-audit mechanism (e.g. a
+self-check script deployed to the child that reports only a boolean PASS/FAIL result — never key
+material — back to the coordinator). The STATIC grep-sweep half (a) is UNAFFECTED by this scoping and
+continues to cover a cloud-hosted child's deployed source, per the EARS clause above.
 
 **Edge Cases**:
 - The static grep audit finds a hardcoded/templated path in a cloud-init script or SDL that could
@@ -1218,22 +1336,29 @@ home directory, before any newly-spawned child is permitted to participate in RE
   BLOCKING finding — the affected child(ren) SHALL NOT be marked `"active"` until fixed, even if no
   actual runtime collision has yet been observed (structural risk is enough to block, not requiring a
   live incident first).
-- The live runtime comparison finds an ACTUAL key collision (two instances resolve the identical signing
-  key): THE SYSTEM SHALL halt BOTH implicated instances from any further signing immediately (fail-closed
-  security-incident response), not merely log a warning and continue.
+- The live runtime comparison finds an ACTUAL key collision among CO-LOCATED instances (two co-located
+  instances resolve the identical signing key): THE SYSTEM SHALL halt BOTH implicated instances from any
+  further signing immediately (fail-closed security-incident response), not merely log a warning and
+  continue.
+- A cloud-hosted spawned child exists and is about to participate in REQ-401's bootstrap: THE SYSTEM
+  SHALL NOT block it on the live-comparison half (that check does not run for it this increment,
+  resolves FIND-303) — it IS still covered by the static grep-sweep half (a), which remains a blocking
+  gate for it exactly as for any co-located instance.
 - A new cloud-host template is added later (e.g. a third provider beyond Nosana/Akash) with a
   different environment-injection mechanism than either already-audited path: THE SYSTEM SHALL require
   the audit to be explicitly extended to that new mechanism before any child deployed via it is trusted
   — silent "probably fine by analogy" reasoning is not permitted for a money-safety check.
 
 **Acceptance Criteria**:
-- A repeatable audit script exists that, given the current set of running instances' own `HOME` values
-  — read directly from REQ-105's colony citizen registry's `homeDir` field (an ALREADY-RESOLVED absolute
-  path per REQ-105's schema, never derived from `telemetryPath` or any other field requiring runtime
-  `$HOME` substitution — resolves FIND-202; the same registry REQ-101 aggregates over, no second,
-  parallel instance-enumeration mechanism is introduced for this audit), (1) runs the static grep sweep
-  and reports zero cross-instance path references, and (2) invokes
-  `resolveEvmPrivateKey`/`resolveSolanaSecret` once per instance's own `homeDir` and asserts pairwise
-  inequality across all resolved keys.
-- Given a deliberately-injected test fixture where two fake instances share a `HOME` (negative test),
-  the audit correctly reports a collision — proving the check is not vacuously passing.
+- A repeatable audit script exists that, given the current set of CO-LOCATED running instances' own
+  `HOME` values — read directly from REQ-105's colony citizen registry's `homeDir` field (an
+  ALREADY-RESOLVED absolute path per REQ-105's schema — resolves FIND-202; the same registry REQ-101
+  aggregates over, no second, parallel instance-enumeration mechanism is introduced for this audit),
+  (1) runs the static grep sweep across the WHOLE fleet (co-located AND cloud-hosted, since the
+  latter's deployed source is the same repo, per the EARS clause above) and reports zero cross-instance
+  path references, and (2) invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per CO-LOCATED
+  instance's own `homeDir` and asserts pairwise inequality across all resolved keys — this increment's
+  live-comparison scope is co-located instances only (resolves FIND-303); a cloud-hosted child is
+  exempted from step (2) and is covered only by step (1) this increment.
+- Given a deliberately-injected test fixture where two fake CO-LOCATED instances share a `HOME`
+  (negative test), the audit correctly reports a collision — proving the check is not vacuously passing.

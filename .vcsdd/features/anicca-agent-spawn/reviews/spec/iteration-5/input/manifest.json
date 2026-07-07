@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 5,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 4,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-4/output/findings/",
+    "note": "5 findings, 3 critical (first Opus-model review): FIND-301 (ledger.js duplicate child_id rows, no reconciliation rule) resolved by specifying last-write-wins reduction in filterProductiveCitizens, extending PROP-101d's own fixture. FIND-302+FIND-303 (critical, same root architectural gap -- coordinator-local file reads structurally cannot reach a REQ-301-mandated remote-cloud-hosted child) resolved by: (a) REQ-101's balance lookup redefined as a new readCitizenBalances({citizens}) registry-driven PUBLIC RPC query keyed on walletAddress -- generalizing telemetry-collect.sh's already-proven pattern, works regardless of host location; telemetryPath field REMOVED entirely from REQ-105's schema (no longer needed); new PROP-101e. (b) REQ-403's live wallet-audit explicitly scoped to co-located instances ONLY this increment (mirroring REQ-106's own precedent), cloud-hosted children exempted from the live check (still covered by the static grep-sweep half), new PROP-403d. FIND-304 (major, wallet field 3-way shape collision) resolved via cross-file disambiguation notes in REQ-206/REQ-305, new PROP-206h. FIND-305 (major, false price-oracle reuse claim) resolved by admitting a genuinely new minimal price-fetch step is needed, reusing the SAME ethPrice()/solPrice() pattern already used 3x elsewhere in this codebase, new PROP-306e."
+  },
+  "note": "Verify each of the 5 fixes actually holds by re-reading the real source files cited fresh (ledger.js, run.sh, telemetry-poster.mjs, telemetry-post-franklin.mjs, telemetry-collect.sh, resolve-identity.mjs, child-spec.js + test, akt-treasury.sh, and wherever ethPrice()/solPrice() are actually defined) -- do not accept the revision's own claims without checking. In particular: (1) confirm readCitizenBalances's RPC-by-walletAddress design is actually complete and consistent -- does it correctly handle a citizen with BOTH evm and solana wallets, which chain takes priority, and does removing telemetryPath entirely leave any other requirement or PROP still referencing it (grep both files for the literal string 'telemetryPath' to confirm zero remaining references outside historical/changelog text)? (2) confirm REQ-403's co-located-only scoping for the live check doesn't leave a security gap unacknowledged -- is there now truly no way for a malicious/buggy cloud child to ever get its keys audited, and is that explicitly accepted as a known limitation rather than silently dropped? (3) confirm the new price-fetch step's citation of ethPrice()/solPrice() is real (read those functions directly) and that reusing them doesn't introduce a NEW inconsistency (e.g. do those functions already return exactly what REQ-306 needs, or did the revision overstate the reuse the same way FIND-305 originally caught?). (4) confirm PROP-101d's extended fixture (last-write-wins for duplicate child_id) is actually testable as described. Also continue a full fresh pass over the REST of the spec (not just the 5 fixed areas) for any other genuine defects -- this feature has now had 4 consecutive iterations each surfacing new, real, load-bearing defects (16+ findings total), so do not assume convergence and do not limit yourself to a delta-only check."
+}
