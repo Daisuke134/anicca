@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-902",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "critical",
+  "description": "sumOutstandingPrincipalUsd (lending-gate.mjs, REQ-101) computes `principal_usd - repaid_usd` per row with NO floor at 0 — unlike its own sibling functions in the SAME file, computeOverallDefaultRateUsd and computeRecentDefaultLossUsd, which this sprint's own FIND-C02 fix (commit c3b3eba) just added exactly this floor to. This is not merely a hypothetical/adversarial gap: REQ-104 fixes LOAN_INTEREST_RATE=0.10, so `total_due_usd = principal_usd * 1.10` is ALWAYS strictly greater than `principal_usd` for every real loan this feature issues. Any legitimate PARTIAL repayment on a still-`\"active\"` loan whose cumulative `repaid_usd` has passed the `principal_usd` threshold (but not yet reached `total_due_usd`) — an entirely ordinary, expected mid-repayment state, not a corrupted/adversarial row — makes that row's own `principal_usd - repaid_usd` contribution NEGATIVE. Independently reproduced: for lender L1 with ONE active loan (`principal_usd:1, repaid_usd:1.05, total_due_usd:1.10`), `sumOutstandingPrincipalUsd(rows, \"L1\")` returns `-0.05` instead of a floor-appropriate `0`. Fed into `computeLenderAvailableUsd({lenderBalanceUsd:6, perCitizenReserveUsd:5, outstandingPrincipalUsd:-0.05})`, the negative outstanding SUBTRACTS a negative, INFLATING the lender's own computed available surplus to `1.05` instead of the correct `1.00` (`balance(6) - reserve(5)`, with zero real outstanding-principal exposure once floored). This directly weakens REQ-101/REQ-111's own core money-safety invariant — a lender's own reserve-protected available surplus, the exact figure this feature's cold-start/sizing/kill-switch gates all depend on to decide whether a NEW loan may be issued — is silently computed HIGHER than the lender's real financial exposure justifies. None of PROP-101a-f's fixtures exercise a `repaid_usd > principal_usd` scenario on an `\"active\"` row (PROP-101d's own fixture only tests a `\"defaulted\"` row where `repaid_usd(0.3) < principal_usd(1)`, which never triggers this gap).",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/lending-gate.mjs",
+    "lineRange": "61-67",
+    "snippet": "export function sumOutstandingPrincipalUsd(loanRows, lenderId) {\n  const rows = reduceLastByLoanId(loanRows).filter(\n    (r) => r.lender_id === lenderId && (r.status === \"active\" || r.status === \"defaulted\")\n  );\n  const sum = rows.reduce((acc, r) => acc + (finiteOr(r.principal_usd, 0) - finiteOr(r.repaid_usd, 0)), 0);\n  return +sum.toFixed(6);\n}"
+  },
+  "routeToPhase": "2b",
+  "resolution": {
+    "status": "open"
+  }
+}

@@ -384,9 +384,15 @@ SAME "last-write-wins" reading convention `anicca-agent-spawn` REQ-101 already e
 of `principal_usd - repaid_usd` for every row where `lender_id === lenderId` AND `status` is `"active"`
 OR `"defaulted"` — a defaulted loan's unrecovered principal PERMANENTLY reduces that lender's own future
 available surplus (it is a real, uncollected loss) until an explicit future write-off mechanism (not
-built this increment) resolves it; a `"repaid"` row contributes `0`. `sumOutstandingPrincipalUsd`'s own
-summed result is likewise clamped via `+(sum).toFixed(6)` — the SAME established money-precision
-convention (resolves FIND-206).
+built this increment) resolves it; a `"repaid"` row contributes `0`. **Each row's own `principal_usd -
+repaid_usd` contribution is floored at `0` (`Math.max(0, ...)`) BEFORE summing across rows** — mirroring
+this SAME spec's own `computeOverallDefaultRateUsd`/`computeRecentDefaultLossUsd` floor precedent
+(REQ-114) — since REQ-104 fixes `total_due_usd = principal_usd * 1.10 > principal_usd` for every real
+loan, an ordinary partial repayment on an `"active"` row whose cumulative `repaid_usd` has passed
+`principal_usd` (but not yet `total_due_usd`) must never contribute a NEGATIVE amount that inflates
+`computeLenderAvailableUsd`'s reported surplus above the lender's real exposure (resolves Phase 3
+implementation-review sprint-1 FIND-902). `sumOutstandingPrincipalUsd`'s own summed result is likewise
+clamped via `+(sum).toFixed(6)` — the SAME established money-precision convention (resolves FIND-206).
 
 `recentGojoGiftsUsd` is a NEW, ONE-WAY, minimal awareness of `economy/ubi`'s already-existing "gojo"
 mutual-aid mechanism (see Dependencies section), computed by

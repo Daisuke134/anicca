@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-901",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "verifyRepayment (lending-verify.mjs) throws an UNCAUGHT SyntaxError instead of failing closed (`{credited:0, rejected:true}`) whenever the RPC response contains a malformed/non-hex numeric field in a place BigInt() is called without a try/catch: (1) the matched Transfer log's own `data` field (consumed by extractValueUsd, line 47: `Number(BigInt(log.data))`), (2) `receipt.blockNumber` (line 90), and (3) `finalizedBlock.number` (line 89). Independently reproduced twice: a structurally-matching Transfer log (correct address/topics) with `data: \"not-valid-hex-data\"` threw `SyntaxError: Cannot convert not-valid-hex-data to a BigInt` instead of returning a rejected result; a receipt with `blockNumber: \"not-hex\"` threw the identical class of error. This violates this feature's own stated NFR (\"fail-closed everywhere ... never throws\", mirrored by PROP-101c's identical 'never throws' discipline for computeLenderAvailableUsd, and REQ-108's own framing that a malformed/corrupted input must never silently produce an incorrect result NOR crash the caller). None of PROP-108a/b/e's fixtures exercise a malformed-hex-field RPC response — only well-formed-but-wrong-attribution or well-formed-but-unfinalized responses are tested. Since this sprint's own 'Known residual scope boundary' confirms no orchestrator exists yet to wrap verifyRepayment in a try/catch, a single malformed/misbehaving RPC response today would propagate as an unhandled promise rejection to whatever code eventually calls this function, rather than the documented graceful refusal. This does not itself cause an incorrect credit (nothing is credited when it throws), but it is a real robustness/availability gap in the same general class the manifest asked this review to probe — a malformed input silently (here: abruptly) escaping the fail-closed contract this codebase otherwise maintains everywhere.",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/lending-verify.mjs",
+    "lineRange": "46-104",
+    "snippet": "function extractValueUsd(log) {\n  const raw = Number(BigInt(log.data));\n  return raw / 1e6;\n}\n...\n  const finalizedNumber = finalizedBlock ? Number(BigInt(finalizedBlock.number)) : NaN;\n  const receiptBlockNumber = Number(BigInt(receipt.blockNumber));"
+  },
+  "routeToPhase": "2b",
+  "resolution": {
+    "status": "open"
+  }
+}
