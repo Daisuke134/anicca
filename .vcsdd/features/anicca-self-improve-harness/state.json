@@ -1,0 +1,41 @@
+{
+  "featureName": "anicca-self-improve-harness",
+  "mode": "strict",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-07T13:18:11.000Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-07T13:18:11.500Z"
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-07T14:00:00.000Z",
+      "note": "iteration-2 spec revision: addressed all 8 blocking findings in reviews/spec/iteration-1/output/verdict.json (FAIL on all 6 dimensions) — corrected the false EVOLVE-BLOCK-enforcement claim (openevolve provides none; scope_guard.py is sole enforcement, wired via new REQ-DL5), fixed REQ-OE5's islands citation (openevolve's own diversity rationale, not Sutton & Barto), added REQ-OE7 resolving /goal condition (5) (LOOP1 self-merge vs LOOP2 autonomous launchd trigger), added a distinct Done-table row for the harness's own impl adversary review, cited Weng's STOP warning in REQ-OE4's rationale, rewrote INV-3, and made the Architecture Decision that the evolvable unit is a new self-contained pm_backtest_strategy.py, not the live pick.py. Re-submitting for spec-review iteration-2."
+    }
+  ],
+  "iterations": {},
+  "proofObligations": [
+    "PROP-SI-OE1", "PROP-SI-OE2", "PROP-SI-OE3", "PROP-SI-OE4", "PROP-SI-OE5", "PROP-SI-OE6", "PROP-SI-OE7",
+    "PROP-SI-EV1", "PROP-SI-EV2", "PROP-SI-EV3", "PROP-SI-EV4", "PROP-SI-EV5", "PROP-SI-EV6", "PROP-SI-EV7",
+    "PROP-SI-DL1", "PROP-SI-DL2", "PROP-SI-DL3", "PROP-SI-DL4", "PROP-SI-DL5",
+    "PROP-SI-RH1", "PROP-SI-RH2", "PROP-SI-RH3", "PROP-SI-RH4", "PROP-SI-RH4b", "PROP-SI-RH5",
+    "PROP-SI-GR1", "PROP-SI-GR3", "PROP-SI-GR4"
+  ],
+  "traceability": {
+    "epicId": "VCSDD-anicca-self-improve-harness-1783862291000",
+    "beads": []
+  },
+  "gates": {
+    "1c_spec_review": "pending"
+  },
+  "sprintCount": 0,
+  "createdAt": "2026-07-07T13:18:11.000Z",
+  "updatedAt": "2026-07-07T14:00:00.000Z"
+}

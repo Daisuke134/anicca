@@ -1,0 +1,34 @@
+--- strategies/pm_backtest_strategy.py	2026-07-07 23:09:21
++++ /tmp/self_improve_verify/candidate.py	2026-07-08 00:23:12
+@@ -57,12 +57,30 @@
+     combination formulas, or sizing logic, not only threshold nudges."""
+     edge = candidate.get("edge", 0.0)
+     confidence = candidate.get("confidence", 0.0)
++    resolve_horizon_days = candidate.get("resolve_horizon_days", 0)
++    liquidity = market_features.get("liquidity", 0.0)
+     min_edge = config.get("min_edge", 0.15)
+     min_confidence = config.get("min_confidence", 6.0)
+     base_stake = config.get("base_stake", 5.0)
++
+     if edge < min_edge or confidence < min_confidence:
+         return 0.0
+-    return base_stake
++
++    def calculate_ratio(value, threshold):
++        return (value - threshold) / threshold if threshold > 0 else 0
++
++    edge_ratio = calculate_ratio(edge, min_edge)
++    confidence_ratio = calculate_ratio(confidence, min_confidence)
++
++    # Introduce non-linear scaling for edge and confidence ratios
++    edge_ratio = edge_ratio ** 1.5 if edge_ratio > 0 else 0  # Example non-linear scaling
++    confidence_ratio = confidence_ratio ** 1.2 if confidence_ratio > 0 else 0  # Example non-linear scaling
++
++    liquidity_factor = 1 + (liquidity / (1 + liquidity))
++    horizon_factor = 1 + (resolve_horizon_days / (30 + resolve_horizon_days))
++
++    stake = base_stake * (1 + edge_ratio + confidence_ratio) * liquidity_factor * horizon_factor
++    return max(0.0, stake)
+ # EVOLVE-BLOCK-END
+ 
+ 
