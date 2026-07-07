@@ -31,16 +31,16 @@ tier を使う（kani/hypothesis 等の formal tool は不要）:
 | PROP-P2a | REQ-P2a（loop-engineering.md 削除+backup） | 0 | true | `[ ! -f ~/.claude/rules/loop-engineering.md ] && [ -f ~/.claude/backups/fable5-slimdown-2026-07-07/loop-engineering.md ]` |
 | PROP-P2b-shell | REQ-P2b（session-architecture.md 行数+禁止語+backup） | 0 | true | `[ $(wc -l < $SA) -le 20 ] && ! grep -qE "Thinking Patterns|Dialectic|runAgent|opus-4-6|Hard bans" $SA && [ -f ~/.claude/backups/fable5-slimdown-2026-07-07/session-architecture.md ]` |
 | PROP-P2b-judgment | REQ-P2b（4点の意味内容が残存） | 2 | true | fresh-context adversary が `$SA` を読み、4点（独立tool call束ね/軽ツール優先/Edit優先/重い往復はsubagentへ）の趣旨がそれぞれ判読可能かを PASS/FAIL 判定 |
-| PROP-P3a | REQ-P3a/REQ-SAFE-4（MOVE REF-CHECK） | 0 | true | 3ファイル名 × `{~/.openclaw/skills, ~/anicca/skills, ~/.openclaw/cron}` × `{絶対パス, ~/, $HOME/}` の27通り grep、CLAUDE.md 以外の hit が0件であることを確認するスクリプト。1件でも hit → 当該ファイルは PROP-P3b 対象から除外し「report only」を PASS 条件とする |
+| PROP-P3a | REQ-P3a/REQ-SAFE-4（MOVE REF-CHECK、★ iteration-1 FIND-003 対応: ログ出力先を明示 ★） | 0 | true | 3ファイル名 × `{~/.openclaw/skills, ~/anicca/skills, ~/.openclaw/cron}` × `{絶対パス, ~/, $HOME/}` の27通り grep を実行し、各1回の実行結果を `.vcsdd/features/fable5-config-slimdown/evidence/move-ref-check.log` へ1行ずつ追記（ファイル名・検索ディレクトリ・パス形式・hit件数のフィールドを含む、計27行以上）するスクリプト。CLAUDE.md 以外の hit が0件であることを確認、1件でも hit → 当該ファイルは PROP-P3b 対象から除外し「report only」を PASS 条件とする。verify.sh は同ログの `[ -f <log> ] && [ $(wc -l < <log>) -ge 27 ]` を追加でアサートする |
 | PROP-P3b | REQ-P3b（移動先+CLAUDE.md 参照更新） | 0 | true（PROP-P3a を通過したファイルのみ） | `[ -f ~/.claude/references/<name>.md ] && [ ! -f ~/.claude/rules/<name>.md ]`（3ファイル分）`&& grep -q "references/loop-command.md" ~/.claude/CLAUDE.md && ! grep -q "rules/loop-command.md" ~/.claude/CLAUDE.md && [ -f ~/.claude/rules/context7.md ]` |
-| PROP-P4 | REQ-P4（SSOT guard 重複解消） | 0+1 | true | `jq -e '[.hooks.UserPromptSubmit // [] \| .[].hooks[]?.command \| select(test("ssot-guard"))] \| length == 0' ~/.claude/settings.json && jq -e '[.hooks.SessionStart[].hooks[]?.command \| select(test("ssot-guard"))] \| length == 1' ~/.claude/settings.json && jq . ~/.claude/settings.json` |
+| PROP-P4 | REQ-P4（SSOT guard 重複解消、★ iteration-1 FIND-002 major 対応: disk-guard 巻き込み削除の誤実装を検出する assertion 追加 ★） | 0+1 | true | `jq -e '[.hooks.UserPromptSubmit // [] \| .[].hooks[]?.command \| select(test("ssot-guard"))] \| length == 0' ~/.claude/settings.json && jq -e '[.hooks.UserPromptSubmit // [] \| .[].hooks[]?.command \| select(test("disk-guard"))] \| length == 1' ~/.claude/settings.json && jq -e '[.hooks.SessionStart[].hooks[]?.command \| select(test("ssot-guard"))] \| length == 1' ~/.claude/settings.json && jq . ~/.claude/settings.json`（実ファイル確認済み: `ssot-guard.sh` と `disk-guard.sh` は同一 matcher-group の同一 `hooks` 配列を共有するため、matcher-group ごと削除する誤実装は disk-guard 側の assertion で FAIL する） |
 | PROP-P5a | REQ-P5a（--model opus） | 0 | true | `grep -q -- '--model opus' ~/anicca/skills/_shared/adversary-daily.sh` |
 | PROP-P5b | REQ-P5b（refusal fallback 行、grep+judgment） | 0+2 | true | shell: `grep -q 'refusal' ~/.claude/CLAUDE.md`／judgment: adversary が追加行にセキュリティ監査・攻撃的サイバー系タスク＋Opus 4.8 fallback の趣旨が正しく含まれるか確認 |
 | PROP-P6a | REQ-P6a（worktree settings.json effortLevel） | 0+1 | true | `jq -e '.effortLevel == "high"' .claude/settings.json && jq . .claude/settings.json` |
 | PROP-P6b | REQ-P6b（live checkout settings.json effortLevel+push） | 0+1 | true | `jq -e '.effortLevel == "high"' /Users/anicca/anicca-project/.claude/settings.json && jq . /Users/anicca/anicca-project/.claude/settings.json`、かつ `git -C /Users/anicca/anicca-project status --porcelain .claude/settings.json` が空、かつ `git -C /Users/anicca/anicca-project log origin/feature/clip-rewards..HEAD --oneline -- .claude/settings.json` が空（= push 済み） |
 | PROP-P6c | REQ-P6c（モデル分業表メイン行） | 0 | true | `grep -q 'high。設計・監査・難デバッグ' ~/.claude/CLAUDE.md` |
-| PROP-P7a | REQ-P7a（8ファイル PushNotification 配線） | 0 | true | `grep -l "PushNotification" <8ファイル絶対パス> \| wc -l` が8 |
-| PROP-P7b | REQ-P7b（促し文の趣旨、adversary-daily.sh は FAIL限定） | 2 | true | fresh-context adversary が8ファイルそれぞれの追加文を読み、趣旨一致（7ファイルは一般文言、adversary-daily.sh は FAIL verdict 限定文言）を PASS/FAIL 判定 |
+| PROP-P7a | REQ-P7a（8ファイル PushNotification 配線、★ iteration-1 FIND-001 blocking 対応: 「ファイル内のどこかに文字列がある」から「実行時 prompt 値の内側にある」検証へ強化 ★） | 0 | true | 8ファイルそれぞれについて (a) REQ-P7a表の代入span（行範囲）を実装前バックアップと `diff` し byte-identical であること、(b) 代入spanの最終行+1行目から起動行-1行目までの範囲を `sed -n '<start>,<end>p' <file>` で抽出し、その範囲に対して `grep -E '^\s*(TASK\|STARTUP\|PROMPT)="\$\{?(TASK\|STARTUP\|PROMPT)\}?'`（該当ファイルの実際の変数名1つに固定して使う、バックリファレンスではなく定数）にマッチし、かつ "PushNotification" を含む行が1行以上存在すること、(c) 起動行自体を実装前バックアップと `diff` し byte-identical であること。8ファイル全てで (a)(b)(c) が PASS して初めて PROP-P7a は PASS |
+| PROP-P7b | REQ-P7b（促し文の趣旨、adversary-daily.sh は FAIL限定） | 2 | true | fresh-context adversary が8ファイルそれぞれの、PROP-P7a(b) で特定された自己参照 concatenation 追記行を読み、趣旨一致（7ファイルは一般文言、adversary-daily.sh は FAIL verdict 限定文言）を PASS/FAIL 判定。併せて追記行が代入span後・起動行前という正しい位置にあることも目視で二重確認する |
 | PROP-P7c | REQ-P7c（PushNotification 実送信 E2E） | 2 | true | `claude -p --model sonnet` を実起動し、PushNotification tool call + エラーなし tool_result が transcript に記録されることを確認（mock 禁止、HARD RULE 0.24） |
 | PROP-P8 | REQ-P8（hooks.json SessionStart entry 削除） | 0+1 | true | `jq -e '[.hooks.SessionStart // [] \| .[].hooks[]?.command \| select(test("session-start"))] \| length == 0' <hooks.json> && jq . <hooks.json>`、かつ SessionStart 以外の hook 配列が編集前後で byte-identical（`diff` ベース） |
 | PROP-SAFE-1 | REQ-SAFE-1（編集前バックアップ、6ファイル） | 0 | true | 6ファイル（git-context-lite.sh, loop-engineering.md, session-architecture.md, `~/.claude/settings.json`, worktree `.claude/settings.json`, `hooks.json`）それぞれについて `~/.claude/backups/fable5-slimdown-2026-07-07/<basename>` の存在 + mtime が対応する実装ファイルの最終編集より前であることを確認 |
@@ -77,8 +77,9 @@ Phase 3（adversarial review、fresh-context Opus）が以下を確認する:
 3. REQ-SAFE-3 の4不変条件（cozempic hook / enabledPlugins / includeGitInstructions / context7.md）が
    実装前後で完全一致している（diff/md5 の実際の出力を確認、「変更していないはず」の申告のみでは
    不可）。
-4. P3 の移動について、REQ-P3a のガードが実際に実行された証跡（27通り grep の実行ログ）が存在し、
-   report-only に分岐したファイルがあればその報告内容が記録されている。
+4. P3 の移動について、REQ-P3a のガードが実際に実行された証跡
+   （`.vcsdd/features/fable5-config-slimdown/evidence/move-ref-check.log`、27通り grep の実行ログ、
+   計27行以上）が存在し、report-only に分岐したファイルがあればその報告内容が記録されている。
 5. plugin cache 配下（P1・P2b・P8）の編集について、`.vcsdd/features/fable5-config-slimdown/tests/
    verify.sh` が恒久保存され、drift 再検知に使える状態であることを確認する。
 

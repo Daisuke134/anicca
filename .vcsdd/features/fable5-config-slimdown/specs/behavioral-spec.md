@@ -96,7 +96,11 @@ WebFetch 等の重い往復は subagent に吸収させる。
   発見箇所（ファイルパス+行）を報告する。この場合 REQ-P3b の当該ファイル分の目標状態は適用されない
   （移動しない旨の報告が正とみなされる）。
 **Acceptance Criteria**:
-- 3ファイル × 3ディレクトリ × 3パス形式 = 27通りの grep 結果が記録されている
+- 3ファイル × 3ディレクトリ × 3パス形式 = 27通りの grep 結果が
+  `.vcsdd/features/fable5-config-slimdown/evidence/move-ref-check.log` に記録されている
+  （★ iteration-1 FIND-003 対応: 1 grep 実行 = 1行、計27行以上。各行はファイル名・検索ディレクトリ・
+  パス形式・hit件数のフィールドを含む形式でなければならず、verify.sh がログの存在 + 行数 ≥27 を
+  機械的にアサートできる ★）
 - 参照ゼロ件のファイルのみ REQ-P3b へ進む
 
 ### REQ-P3b: 知識ファイルのオンデマンド化（REQ-P3a が全ファイルで zero-hit の場合の目標状態）
@@ -124,11 +128,19 @@ WebFetch 等の重い往復は subagent に吸収させる。
 - 編集前に元ファイルが `~/.claude/backups/fable5-slimdown-2026-07-07/settings.json.<date>` へ
   コピーされていなければならない。
 - `UserPromptSubmit` の他 entry（cozempic 由来含む）は一切変更してはならない。
+- ★ 実ファイル確認済みの重要な構造事実（iteration-1 FIND-002）: `UserPromptSubmit` の
+  `~/.claude/hooks/ssot-guard.sh` と `~/.claude/hooks/disk-guard.sh` は同一 matcher-group
+  オブジェクト（`matcher: "*"`）の同一 `hooks` 配列内に同居している。削除は matcher-group
+  オブジェクトごと消してはならず、その `hooks` 配列内から `ssot-guard` の command entry だけを
+  取り除く手術的な編集でなければならない。`disk-guard.sh` entry は本要件の対象外であり、削除後も
+  必ず1件残っていなければならない。
 - 削除の結果 `UserPromptSubmit` 配列自体が空になっても、キーが空配列のまま残るか丸ごと消えるかは
   どちらでもよい（検証は「ssot-guard に一致する entry が0件」のみを問う）。
 - 編集後、ファイル全体が `jq .` でパース可能でなければならない（REQ-SAFE-2）。
 **Acceptance Criteria**:
 - `jq -e '[.hooks.UserPromptSubmit // [] | .[].hooks[]?.command | select(test("ssot-guard"))] | length == 0' ~/.claude/settings.json`
+- `jq -e '[.hooks.UserPromptSubmit // [] | .[].hooks[]?.command | select(test("disk-guard"))] | length == 1' ~/.claude/settings.json`
+  （★ FIND-002 対応: matcher-group ごと巻き込み削除する誤実装を検出する ★）
 - `jq -e '[.hooks.SessionStart[].hooks[]?.command | select(test("ssot-guard"))] | length == 1' ~/.claude/settings.json`
 - `jq . ~/.claude/settings.json` が exit 0
 
@@ -177,27 +189,60 @@ xhigh に一時上げ）」へ更新する。
 **Acceptance Criteria**:
 - `grep -q 'high。設計・監査・難デバッグ' ~/.claude/CLAUDE.md`
 
-### REQ-P7a: loop CLI 群への PushNotification 促し文の配線
-**EARS**: WHEN fable5-config-slimdown の実装が完了した時点で、THE SYSTEM SHALL 次の8ファイルの
-spawn プロンプト定義箇所（`$TASK` 等）に PushNotification 使用を促す1行を追加する:
-`self/self-fix.sh`, `self/capafy-loop/capafy-loop-cli.sh`, `self/reddit-loop/reddit-loop-cli.sh`,
-`self/life-manager-loop/life-manager-loop-cli.sh`, `earn/clip-promote/clip-promote-cli.sh`,
-`earn/video/video-cli.sh`, `earn/clip/clip-cli.sh`, `_shared/adversary-daily.sh`
-（全て `~/anicca/skills/` 配下）。
+### REQ-P7a: loop CLI 群への PushNotification 促し文の配線（★ iteration-1 FIND-001 blocking 対応:
+追記位置を実行時 prompt 値の内側に構造的に固定する ★）
+**EARS**: WHEN fable5-config-slimdown の実装が完了した時点で、THE SYSTEM SHALL 次の8ファイルそれぞれに
+ついて、既存の TASK/STARTUP/PROMPT 変数の代入（1行または複数行にまたがる、下表「代入span」）の内容を
+一切改変せず、その代入が完了した直後の行から、その変数を実際に `claude`/`tmux` 起動へ渡す行
+（下表「起動行」）より前までの間に、変数への自己参照 concatenation で追記する新規1行
+`VAR="${VAR} <促し文>"`（または `VAR="$VAR <促し文>"`）を追加し、その追記行自体の中に
+PushNotification という文字列を含める。
+
+これにより追加文が「ファイル内のどこかに存在する」だけでなく「実際に spawn される claude セッションへ
+渡される prompt 値の一部として実行時に評価される」ことを構造的に保証する（既存の巨大な引用符付き文字列
+を直接編集して壊すリスクも同時に排除する）。全て `~/anicca/skills/` 配下。
+
+| ファイル | 変数名 | 代入span（行、実ファイル確認済み） | 起動行 |
+|---|---|---|---|
+| `self/self-fix.sh` | `TASK` | 67–76（複数行、`TASK="..."`） | 77（`tmux -S "$SOCK" new-session ... -- "$TASK"`） |
+| `self/capafy-loop/capafy-loop-cli.sh` | `STARTUP` | 8（単一行、`STARTUP='...'`） | 12（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
+| `self/reddit-loop/reddit-loop-cli.sh` | `STARTUP` | 9（単一行） | 13（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
+| `self/life-manager-loop/life-manager-loop-cli.sh` | `STARTUP` | 8（単一行） | 12（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
+| `earn/clip-promote/clip-promote-cli.sh` | `STARTUP` | 24（単一行） | 39（`"$CLAUDE" --name "$SESSION" ... -- "$STARTUP"`） |
+| `earn/video/video-cli.sh` | `STARTUP` | 17（単一行） | 32（`"$CLAUDE" --name "$SESSION" ... -- "$STARTUP"`） |
+| `earn/clip/clip-cli.sh` | `STARTUP` | 18（単一行） | 33（`"$CLAUDE" --name "$SESSION" ... -- "$STARTUP"`） |
+| `_shared/adversary-daily.sh` | `PROMPT` | 20–21（`PROMPT=$(sed ... || echo ...)`） | 23（`claude -p "$PROMPT" --output-format text ...`） |
+
 **Edge Cases**:
+- 元の TASK=/STARTUP=/PROMPT= 代入span自体（上表の「代入span」列）は実装前後で byte-identical
+  でなければならない（diff で確認可能。既存の巨大な引用符付き文字列を直接編集しない）。
+- `_shared/adversary-daily.sh` は特記（iteration-1 FIND-001 で確認済み）: 参照先の
+  `~/anicca/skills/_shared/adversary-daily-prompt.tmpl` は実在せず、`sed` は必ず失敗して
+  `echo "Review feature ${SLOT} per ..."` の fallback 文字列が実際の実行時 `$PROMPT` になる。
+  したがって追記行は `sed`/`echo` どちらの分岐が実行されたかに関わらず必ず通る位置
+  （= 分岐が確定した行21の後、起動行23の前、unconditional）に置かなければならない。
 - `adversary-daily.sh` の促し文は「FAIL verdict 時のみ通知」に限定した文言でなければならない
   （他7ファイルは「重要な結果が出たら」の一般文言）。
 - 促し文は「narration・定常報告には使わない」という抑制も含む。
+- 起動行（上表「起動行」列）自体は変更してはならない（`"$VAR"` 参照のまま、追記は変数の値側で
+  行う）。
 **Acceptance Criteria**:
-- `grep -l "PushNotification" <8ファイルパス>` の件数が8
+- 8ファイル全てで、代入span（上表）が実装前バックアップと byte-identical
+- 8ファイル全てで、代入span の最終行の次の行から起動行の前の行までの範囲内に、該当変数名を用いた
+  自己参照 concatenation パターン（例: `STARTUP="${STARTUP} ...` または `STARTUP="$STARTUP ...`、
+  `self-fix.sh` は `TASK=`、`adversary-daily.sh` は `PROMPT=`）にマッチし、かつ "PushNotification"
+  を含む行が最低1行存在する
+- 8ファイル全てで、起動行自体が実装前バックアップと byte-identical
 
 ### REQ-P7b: 促し文の内容妥当性（judgment tier）
-**EARS**: WHEN REQ-P7a の8ファイルへの追加が完了した時点で、THE SYSTEM SHALL 各追加文の意味内容が
-「重要な結果（数字・ID を含む成果、realized P&L、致命的エラー）が出たら PushNotification で Dais へ
-verbatim 送信してから終了する。narration・定常報告には使わない」という趣旨と一致していることを、
-fresh-context adversary のレビューで確認する。
+**EARS**: WHEN REQ-P7a の8ファイルへの追記が完了した時点で、THE SYSTEM SHALL 各ファイルの追記行
+（REQ-P7a の自己参照 concatenation 行）の意味内容が「重要な結果（数字・ID を含む成果、realized P&L、
+致命的エラー）が出たら PushNotification で Dais へ verbatim 送信してから終了する。narration・
+定常報告には使わない」という趣旨と一致していることを、fresh-context adversary のレビューで確認する。
 **Acceptance Criteria**:
 - adversary が8ファイル全てについて趣旨一致を PASS 判定
+- adversary は追記行が REQ-P7a の acceptance criteria が示す位置（代入span後・起動行前）に
+  実際にあることも併せて目視確認する（PROP-P7a の shell アサーションの独立ダブルチェック）
 
 ### REQ-P7c: PushNotification の実送信 E2E
 **EARS**: WHEN 検証フェーズで新規 `claude -p --model sonnet` 子セッションが起動された時点で、

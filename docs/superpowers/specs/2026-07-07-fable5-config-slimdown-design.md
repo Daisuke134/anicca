@@ -35,7 +35,7 @@ recon（Explore agent 2体、2026-07-07 実施）で全対象の実パス・行�
 | P4 | `~/.claude/settings.json` | UserPromptSubmit の ssot-guard entry 削除 |
 | P5 | `~/anicca/skills/_shared/adversary-daily.sh` | `--model opus` 追加 |
 | P6 | `~/anicca-project/.claude/settings.json`（worktree 版 + live checkout 版の両方） | `effortLevel: xhigh → high` |
-| P7 | `~/anicca/skills/{self/self-fix.sh, self/capafy-loop/capafy-loop-cli.sh, self/reddit-loop/reddit-loop-cli.sh, self/life-manager-loop/life-manager-loop-cli.sh, earn/clip-promote/clip-promote-cli.sh, earn/video/video-cli.sh, earn/clip/clip-cli.sh}` + spawn プロンプト定義箇所 | 通知促し文の追加 |
+| P7 | `~/anicca/skills/{self/self-fix.sh, self/capafy-loop/capafy-loop-cli.sh, self/reddit-loop/reddit-loop-cli.sh, self/life-manager-loop/life-manager-loop-cli.sh, earn/clip-promote/clip-promote-cli.sh, earn/video/video-cli.sh, earn/clip/clip-cli.sh, _shared/adversary-daily.sh}`（計8ファイル、本文と一致） + spawn プロンプト定義箇所 | 通知促し文の追加 |
 | P8 | `~/.claude/plugins/cache/superpowers-marketplace/superpowers/5.0.7/hooks/hooks.json` | SessionStart entry 削除 |
 | - | `docs/superpowers/specs/`（本 spec）、`.vcsdd/features/fable5-config-slimdown/` | spec + 検証 |
 
