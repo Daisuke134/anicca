@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 3,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 2,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-2/output/findings/",
+    "note": "7 findings, 3 critical: FIND-101 (anicca-agent-spawn citation stale AGAIN) resolved by making the dependency explicitly dynamic -- new REQ-113, a standing Phase-2a gate requiring a fresh re-read of anicca-agent-spawn's then-current state, not a frozen citation. FIND-102 (sumRecentGojoGiftsUsd lacked lenderId gating) resolved with a lenderId param + GOJO_SENDER_ID='anicca-a3cdd4' constant, returns 0 for any other lender. FIND-103 (double-disbursement on crash) resolved via a crash-safe two-phase issuance record (provisional row before payViaFacilitator, follow-up row after, plus reconcileProvisionalDisbursement on-chain check before any retry). FIND-104/105/106/107 (major) resolved: per-loan loan_${loan_id} lock added for REQ-108/109 writes; from-topic check honestly reframed as a new extension not a literal reuse; REQ-102/REQ-110 decide.mjs coupling contradiction resolved (independent constant, same numeral, zero import); cold-start/first-loan false equivalence corrected. Architect (not the builder) also directly added: a concrete kill-switch threshold for computeColdStartRepaymentRate (0.80 once sampleSize>=10, grounded in real FRB credit-builder-product data, cited), a researched (not built) future-work note on REQ-112's multi-host edge case citing a concrete HTTPS-claim-API + on-chain-claim-registry path, and a new REQ-109 edge case clarifying defaulted borrowers remain gojo/UBI-eligible (death-spiral prevention)."
+  },
+  "note": "Verify each of the 7 iteration-2 fixes AND the 3 architect-added items (kill-switch threshold, multi-host future-work note, gojo/UBI default-exclusion clarification) actually hold and are internally consistent -- re-read the real source files fresh (lock.mjs, ledger.js, escrow.mjs, run.sh's provisional-row precedent, ubi/run.sh + ubi.js, record-earn.mjs, decide.mjs, anicca-agent-spawn's CURRENT state.json/behavioral-spec.md header -- note anicca-agent-spawn is now itself on iteration 7+ of its own Phase 1c, so REQ-113's 'dynamic dependency' framing should be checked against whatever its ACTUAL current state is, not any specific number). In particular: (1) confirm the crash-safe two-phase issuance record (FIND-103 fix) genuinely closes the double-disbursement gap -- walk through the crash-during-disbursement scenario yourself against the real payViaFacilitator/ledger.js mechanics; (2) confirm the new per-loan loan_${loan_id} lock (FIND-104 fix) doesn't conflict with or deadlock against REQ-106's per-lender loan_${lenderId} lock in any real scenario; (3) confirm the architect's kill-switch threshold (0.80 at sampleSize>=10) is correctly wired to computeColdStartRepaymentRate's actual return shape; (4) confirm the gojo/UBI default-exclusion clarification doesn't contradict anything else in REQ-101/109. Also do a full fresh pass over the REST of the spec -- do not assume convergence, this feature has had FAILs on both iteration 1 and 2."
+}
