@@ -22,6 +22,8 @@
 
 | 08 | `08-evidence-eval-driven-earning-verdict.md` | ★証拠ベース評価（意見でなく引用）★ eval-driven-earning は hybrid=4/6 grounded・bandit(DA)とcalibration-drift(EV5)は misattributed invention。BP 3逸脱(非定常bandit/reward-hacking防御/検証と配分の分離)。reinvent回避=openevolve fork推奨 | ✅ 完了 |
 
+| 09 | `09-cobus-adoption-no-human-and-my-exit.md` | ★cobus構造は採るが人間ゲートは全部autonomousに置換(day one人間ゼロ・reportもしない)★ + ★私(claude-p)のexit設計(monitor→peer-repair/seed→treasury/build→meta-harnessにhand off→verify→消える)★ + 3ループASCII + full TODO + 記事タイトル案 | ✅ 完了 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
