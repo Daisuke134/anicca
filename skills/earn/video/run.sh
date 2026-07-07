@@ -53,12 +53,16 @@ case "$TRANS" in
       #   persona + the algo learns the niche. Tags configurable per account (AI-agnostic); default = money niche. ★
       NICHE="${EARN_VIDEO_NICHE_TAGS:-personalfinance,investing,moneytips,financetips,moneytok}"
       CDP_PORT="$WPORT" timeout "$WBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/warm_iso.py" --tid "$WTID" --handle "$HANDLE" --reels 6 --niche-tags "$NICHE" >/tmp/ev_warm.log 2>&1 || true
+      # ★ FIND-901: warm_iso.py's final JSON summary line only prints on clean exit — a `timeout $WBUD` SIGTERM
+      #   mid-candidate-loop kills it first, discarding real progress already logged. Fall back to counting the
+      #   "REAL DISTINCT" log lines it already flushed, so a truncated-but-real warmup still counts. ★
       WATCHED=$($PY -c "import json,sys
 try:
   for l in open('/tmp/ev_warm.log'):
     l=l.strip()
     if l.startswith('{') and 'reels_watched_real' in l: print(json.loads(l)['reels_watched_real']); break
-  else: print(0)
+  else:
+    print(sum(1 for l in open('/tmp/ev_warm.log') if 'REAL DISTINCT' in l))
 except: print(0)" 2>/dev/null)
       grep -q "STOP_BAN_SIGNAL" /tmp/ev_warm.log 2>/dev/null && BAN=1
     fi
