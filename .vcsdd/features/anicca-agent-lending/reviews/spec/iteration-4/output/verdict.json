@@ -1,0 +1,87 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 4,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T13:30:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-201", "FIND-202", "FIND-203", "FIND-204", "FIND-205", "FIND-206"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+      "/Users/anicca/anicca/skills/economy/gig/decide.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/state.json"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-201",
+      "status": "resolution INCOMPLETE -- a new, equally serious gap found one level deeper",
+      "note": "The try/catch around payViaFacilitator genuinely closes the ORIGINAL in-process-exception gap for the common case. But it introduces two new, unwrapped failure modes never addressed anywhere in the spec's SHALL/Edge-Case/Acceptance-Criteria text: (1) the disbursement_uncertain follow-up append itself is a plain fs.appendFileSync (ledger.js:20-24) that can itself throw, leaving a 'provisioning' row with NO terminal follow-up and a NON-stale (cleanly-released) lock -- a third terminal state the state machine never names and for which reconciliation is never triggered; (2) reconcileProvisionalDisbursement's own on-chain RPC lookup, invoked at the start of the NEXT issuance attempt, can itself throw, and the spec only ever describes its two SUCCESS outcomes, never this failure. See FIND-301."
+    },
+    {
+      "findingId": "FIND-202",
+      "status": "resolution PARTIALLY complete -- the specific manifest question is answered correctly, but a new ambiguity was found",
+      "note": "The replay-blocklist is correctly scoped to 'previously-verified, CREDITED' rows only, so a txHash appearing in an already-rejected row correctly does NOT count as already-credited (a transiently-rejected-then-later-finalized real transaction is not wrongly blacklisted). However, the Edge Cases' own 'logged as a replay attempt' language for rejected replays is never defined as either an out-of-band log or a NEW loans.jsonl append -- and if the latter, it risks corrupting the last-write-wins convention every other computation in this spec depends on. Separately, no canonical loans.jsonl row schema is ever given, and the generic txHash field name is never structurally distinguished between disbursement-side and repayment-side rows. See FIND-302."
+    },
+    {
+      "findingId": "FIND-203",
+      "status": "resolution INCOMPLETE -- the internal contradiction is fixed, but the enforcement mechanism itself is unverifiable against real code",
+      "note": "The prior contradiction between the kill-switch SHALL and an adjacent Edge Case is genuinely resolved. But evaluateColdStartKillSwitch has NO Tier-0 structural proof obligation anywhere in the 48-item verification-architecture.md requiring the REAL REQ-106 issuance implementation to actually call it -- the only backing proof obligation (PROP-105g) is a Tier-1 pure-function test plus a Tier-2 test wired against 'a MOCKED REQ-106 issuance call,' never a structural read of the real call site (contrast PROP-106d/PROP-106i, which DO demand this for other REQ-106 wiring facts). This means the kill-switch can remain a computed flag nobody checks in production. See FIND-303."
+    },
+    {
+      "findingId": "FIND-204",
+      "status": "resolution INCOMPLETE -- the debt-proportional formula is correct, but its composition-point description omits a required pipeline step",
+      "note": "adjustBalancesForOutstandingDebt's own arithmetic (debt-proportional, clamped at 0) is correct and well-tested (PROP-109b/f). But its stated insertion point ('AFTER filterProductiveCitizens's own output and BEFORE computeColonySurplusUsd') never mentions readCitizenBalances -- the effectful, coordinator-run step anicca-agent-spawn's CURRENT REQ-101 uses to attach the balance_i figure this pure function needs to already exist to reduce. Confirmed via grep: zero mentions of readCitizenBalances anywhere in this feature's own spec docs. See FIND-304."
+    },
+    {
+      "findingId": "FIND-205",
+      "status": "genuinely resolved",
+      "note": "REQ-106's own Acceptance Criteria (lines 858-864) now explicitly excludes REQ-108/109's per-loan lock from its own two-phase append, and a new Lock-key disambiguation paragraph (lines 804-813) plus a dedicated Tier-0 structural check (PROP-106i) make the distinction independently verifiable. No contradiction remains."
+    },
+    {
+      "findingId": "FIND-206",
+      "status": "genuinely resolved",
+      "note": "Every dollar-denominated pure function this feature introduces (computeLenderAvailableUsd, sumOutstandingPrincipalUsd, sumRecentGojoGiftsUsd, computeLoanCapUsd, total_due_usd) now explicitly applies the established .toFixed(6) money-precision convention, consistently, in EARS text, Edge Cases, and every Acceptance Criterion/PROP that asserts an exact numeric value."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-304", "FIND-305"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:1246-1250", "description": "adjustBalancesForOutstandingDebt's composition-point description never names readCitizenBalances, the sibling feature's own effectful balance-attaching step that must run between filterProductiveCitizens and computeColonySurplusUsd"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:296-309", "description": "Confirmed computeColonySurplusUsd consumes citizens with a balance_i figure attached by a SEPARATE, named, effectful function (readCitizenBalances) never mentioned in the lending spec"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:936-939", "description": "REQ-112 cites automaton and Franklin as both having homeDir '/Users/anicca' -- factually wrong against the sibling's current, corrected seed data"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:639-663", "description": "The exact bare-homeDir value the lending spec cites as current is the sibling spec's own self-described 'most serious defect found across all six spec-review iterations' (FIND-501), and co-location is now tracked via a dedicated coLocatedWithCoordinator field the lending spec never adopts"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-301", "FIND-302", "FIND-303"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js:20-24", "description": "appendChild is an unguarded fs.appendFileSync that can itself throw during the disbursement_uncertain follow-up append, a scenario REQ-106's own state machine never names"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:112", "description": "PROP-105g's own test method wires the kill-switch output into a MOCKED REQ-106 issuance call rather than requiring a structural read of the real call site, unlike PROP-106d/PROP-106i's Tier-0 checks for comparable wiring facts in the same requirement"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:1151-1159", "description": "The 'logged as a replay attempt' language for rejected replays is never defined as ledger-append vs out-of-band log, leaving PROP-108e's own verifiability against the last-write-wins convention ambiguous"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

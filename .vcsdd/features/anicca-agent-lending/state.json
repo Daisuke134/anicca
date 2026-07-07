@@ -1180,26 +1180,25 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T11:48:13.465Z",
+      "timestamp": "2026-07-07T12:25:20.722Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 3,
+        "iteration": 4,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-201",
-          "FIND-202",
-          "FIND-203",
-          "FIND-204",
-          "FIND-205",
-          "FIND-206"
+          "FIND-301",
+          "FIND-302",
+          "FIND-303",
+          "FIND-304",
+          "FIND-305"
         ],
-        "note": "6 findings, 3 critical: FIND-201 -- the crash-safe two-phase issuance fix never routes an IN-PROCESS exception from payViaFacilitator (escrow.mjs settleBody has no try/catch around waitForTransactionReceipt, called AFTER /settle already succeeded) through reconcileProvisionalDisbursement, since lock.mjs releases the lock cleanly on any throw rather than leaving it stale -- the follow-up row never gets appended. FIND-202 -- REQ-108 never de-duplicates by transaction hash, so a single finalized transfer can be replayed to inflate repaid_usd on one loan or across different loans. FIND-203 -- the architect-added kill-switch threshold directly contradicts an adjacent, un-updated Edge Case in the same requirement stating no decision rule is attached this increment, and has zero backing proof obligation. FIND-204/205/206 (major) -- excludeDefaultedBorrowers disproportionately zeros a defaulted borrowers ENTIRE balance (not just the debt) from colony surplus; REQ-106 mislabels its own issuance-time append as REQ-108/109s append, contradicting REQ-108s DELIBERATELY DIFFERENT lock framing; missing the codebases own established .toFixed(6) money-precision convention."
+        "note": "5 new findings, 3 critical. Only FIND-205/206 of the 6 prior findings are genuinely resolved -- FIND-201-204 each only partially fixed (hazard relocated/narrowed, not closed). FIND-301 (critical) -- the follow-up append itself is an unguarded fs.appendFileSync that can throw, creating a THIRD terminal state (stuck provisioning row + cleanly-released non-stale lock) no reconciliation trigger covers. FIND-302 (major) -- logged as a replay attempt is undefined: does it mean an out-of-band log or a new loans.jsonl row (which would corrupt last-write-wins semantics)? FIND-303 (critical) -- zero Tier-0 structural proof that evaluateColdStartKillSwitch is actually called by REQ-106s real issuance code, only a mocked integration test. FIND-304 (critical) -- adjustBalancesForOutstandingDebts composition point omits anicca-agent-spawns actual 3-step pipeline (filterProductiveCitizens -> readCitizenBalances -> computeColonySurplusUsd), needs to insert between steps 2 and 3 specifically. FIND-305 (critical) -- REQ-112 cites P3s OLD, since-fixed (FIND-501) homeDir seed data as current, and reinvents an equality-based co-location check P3s own spec now explicitly says is wrong -- should instead directly reuse P3s new coLocatedWithCoordinator field."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T11:48:13.465Z"
+      "adversaryReviewedAt": "2026-07-07T12:25:20.722Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T12:10:29.688Z"
+  "updatedAt": "2026-07-07T12:25:20.724Z"
 }
