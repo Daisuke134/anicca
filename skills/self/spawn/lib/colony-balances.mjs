@@ -18,6 +18,9 @@ async function safeChainBalance(fetchFn, address) {
 export async function readCitizenBalances({ citizens = [], fetchEvmBalanceUsd, fetchSolanaBalanceUsd } = {}) {
   const results = [];
   for (const citizen of citizens) {
+    // A null/undefined entry is skipped, never thrown on (PROP-101l) — the same graceful exclusion
+    // computeColonySurplusUsd already gives the identical malformed shape via isSelfFunded(null).
+    if (!citizen) continue;
     const walletAddress = (citizen && citizen.walletAddress) || {};
     let balanceUsd = 0;
     if (walletAddress.evm) {

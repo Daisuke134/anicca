@@ -48,6 +48,9 @@ export function computeColonySurplusUsd({ citizens = [], perCitizenReserveUsd = 
 export function filterProductiveCitizens({ citizens = [], ledgerRows = [], nowMs, bootstrapWindowDays = BOOTSTRAP_WINDOW_DAYS } = {}) {
   const groups = groupLedgerRowsByChildId(ledgerRows);
   return citizens.filter((citizen) => {
+    // A null/undefined entry is excluded, never thrown on (PROP-101l) — the same graceful
+    // exclusion isSelfFunded(null) already gives computeColonySurplusUsd for the identical shape.
+    if (!citizen || typeof citizen !== "object") return false;
     const group = groups.get(citizen.id);
     const row = group && group[group.length - 1];
     if (!row) return true;
@@ -118,7 +121,12 @@ export function decideColonySpawn({
     typeof colonySurplusUsd === "number" && Number.isFinite(colonySurplusUsd) && colonySurplusUsd >= 0
       ? colonySurplusUsd
       : 0;
-  if (surplus < spawnThresholdUsd) {
+  // Fail-closed (PROP-102l): a non-finite/malformed spawnThresholdUsd must never silently mean "no
+  // threshold" — `surplus < NaN`/`surplus < undefined` is always false in JS, which would fall through
+  // to eligible:true even at surplus:0. Treat it as unattainable so the surplus check can only deny.
+  const threshold =
+    typeof spawnThresholdUsd === "number" && Number.isFinite(spawnThresholdUsd) ? spawnThresholdUsd : Infinity;
+  if (surplus < threshold) {
     return { eligible: false, reason: "insufficient_surplus" };
   }
 
@@ -132,7 +140,18 @@ export function decideColonySpawn({
     return { eligible: false, reason: "rate_limited" };
   }
 
-  if (childrenProvisioning >= maxConcurrentSpawns) {
+  // Fail-closed (PROP-102l): non-finite childrenProvisioning is treated as "at capacity" (never
+  // silently bypassing the cap), and a non-finite/malformed maxConcurrentSpawns is treated as zero
+  // capacity — never an infinite/no-op cap.
+  const provisioning =
+    typeof childrenProvisioning === "number" && Number.isFinite(childrenProvisioning) && childrenProvisioning >= 0
+      ? childrenProvisioning
+      : Infinity;
+  const maxConcurrent =
+    typeof maxConcurrentSpawns === "number" && Number.isFinite(maxConcurrentSpawns) && maxConcurrentSpawns >= 0
+      ? maxConcurrentSpawns
+      : 0;
+  if (provisioning >= maxConcurrent) {
     return { eligible: false, reason: "max_concurrent_spawns" };
   }
 

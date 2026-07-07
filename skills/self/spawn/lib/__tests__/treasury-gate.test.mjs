@@ -275,3 +275,52 @@ test("PROP-102e: check order is surplus -> cooldown -> concurrency cap (a fixtur
   assert.equal(r.eligible, false);
   assert.equal(r.reason, "insufficient_surplus");
 });
+
+// ---- REQ-102: decideColonySpawn fail-closed coercion for spawnThresholdUsd/childrenProvisioning/maxConcurrentSpawns ----
+
+test("PROP-102l: undefined/null/NaN spawnThresholdUsd never falls through to eligible:true, even at colonySurplusUsd:0", () => {
+  for (const malformed of [undefined, null, NaN]) {
+    const r = decideColonySpawn(baseDecideArgs({ colonySurplusUsd: 0, spawnThresholdUsd: malformed }));
+    assert.equal(r.eligible, false);
+    assert.equal(r.reason, "insufficient_surplus");
+  }
+});
+
+test("PROP-102l: null/NaN childrenProvisioning never silently bypasses the concurrency cap", () => {
+  // undefined is intentionally excluded here: it triggers the parameter's own default (0), not this
+  // fail-closed coercion path, so it is not a "malformed" case for this specific parameter.
+  for (const malformed of [null, NaN]) {
+    const r = decideColonySpawn(
+      baseDecideArgs({ colonySurplusUsd: 100, spawnThresholdUsd: 10, childrenProvisioning: malformed, maxConcurrentSpawns: 1 })
+    );
+    assert.equal(r.eligible, false);
+    assert.equal(r.reason, "max_concurrent_spawns");
+  }
+});
+
+test("PROP-102l: null/NaN maxConcurrentSpawns is treated as zero capacity, never an infinite/no-op cap", () => {
+  // undefined is intentionally excluded here: it triggers the parameter's own default (1), not this
+  // fail-closed coercion path, so it is not a "malformed" case for this specific parameter.
+  for (const malformed of [null, NaN]) {
+    const r = decideColonySpawn(
+      baseDecideArgs({ colonySurplusUsd: 100, spawnThresholdUsd: 10, childrenProvisioning: 0, maxConcurrentSpawns: malformed })
+    );
+    assert.equal(r.eligible, false);
+    assert.equal(r.reason, "max_concurrent_spawns");
+  }
+});
+
+// ---- REQ-101: filterProductiveCitizens null-entry handling (consistency with computeColonySurplusUsd) ----
+
+test("PROP-101l: a null entry mixed into citizens is excluded gracefully, never thrown, consistent with computeColonySurplusUsd on the same fixture", () => {
+  const nowMs = 1_000_000_000_000;
+  const citizens = [null, baseCitizen("healthy"), undefined];
+  const ledgerRows = [];
+  assert.doesNotThrow(() => filterProductiveCitizens({ citizens, ledgerRows, nowMs, bootstrapWindowDays: 14 }));
+  const result = filterProductiveCitizens({ citizens, ledgerRows, nowMs, bootstrapWindowDays: 14 });
+  assert.deepEqual(result.map((c) => c.id), ["healthy"]);
+
+  const mixedForSurplus = [null, selfFundedCitizen({ id: "healthy", balanceUsd: 10 }), undefined];
+  assert.doesNotThrow(() => computeColonySurplusUsd({ citizens: mixedForSurplus, perCitizenReserveUsd: 0 }));
+  assert.equal(computeColonySurplusUsd({ citizens: mixedForSurplus, perCitizenReserveUsd: 0 }), 10);
+});
