@@ -85,3 +85,16 @@ test("REQ-101 dual-chain edge case: one chain populated, zero balance, other unp
   });
   assert.equal(result.find((r) => r.citizenId === "zeroEvm").balanceUsd, 0);
 });
+
+test("PROP-101l: a null entry mixed into citizens is skipped gracefully, never thrown, consistent with computeColonySurplusUsd on the same fixture", async () => {
+  const citizens = [null, citizen({ id: "healthy", evm: "0xEVM" }), undefined];
+  await assert.doesNotReject(() =>
+    readCitizenBalances({ citizens, fetchEvmBalanceUsd: async () => 5, fetchSolanaBalanceUsd: async () => 0 })
+  );
+  const result = await readCitizenBalances({
+    citizens,
+    fetchEvmBalanceUsd: async () => 5,
+    fetchSolanaBalanceUsd: async () => 0,
+  });
+  assert.deepEqual(result.map((r) => r.citizenId), ["healthy"]);
+});
