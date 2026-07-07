@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 12,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 11,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-11/output/findings/",
+    "note": "2 findings, 1 critical: FIND-1001 -- the bootstrap-copy is now a SINGLE atomic POSIX exclusive-create (fs.open(path,'wx')/O_CREAT|O_EXCL), modeled directly on lock.mjs::tryCreateLockFile's own proven shape -- success = bootstrap winner, EEXIST = write nothing, read only (covers both a racing bootstrap AND a real prior REQ-305 append). New PROP-105l with two fixtures (concurrent-race; late-bootstrap-after-real-append). FIND-1002 -- registry-path.mjs relabeled Effectful Shell (was falsely Pure Core), new PROP-105m requires a genuine Tier-2 test that COORDINATOR_HOME tracks the real process environment via a child process launched with a different real HOME."
+  },
+  "note": "Verify both fixes actually hold -- re-read lock.mjs::tryCreateLockFile fresh and confirm the bootstrap step's atomic exclusive-create genuinely mirrors its proven shape (no separate exists-check preceding the write anywhere). Confirm PROP-105m's Tier-2 test design (child process with different real HOME) would actually catch a COORDINATOR_HOME implementation that silently caches/hardcodes instead of genuinely reading os.homedir() fresh. This feature is now on iteration 12 with 50+ cumulative findings across 11 prior iterations. Do a full fresh, skeptical pass over the ENTIRE spec -- do not assume convergence just because recent iterations have had fewer findings (this project's own experience with the sibling anicca-agent-lending feature showed a decreasing-count trend can be a false signal). If you find nothing genuine after real effort, PASS -- but only if actually sound."
+}

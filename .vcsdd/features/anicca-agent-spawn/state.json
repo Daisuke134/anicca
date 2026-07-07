@@ -762,6 +762,22 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-105k",
       "beadId": "BEAD-113"
+    },
+    {
+      "id": "PROP-093",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-105l",
+      "beadId": "BEAD-114"
+    },
+    {
+      "id": "PROP-094",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-105m",
+      "beadId": "BEAD-115"
     }
   ],
   "traceability": {
@@ -845,7 +861,9 @@
           "BEAD-108",
           "BEAD-111",
           "BEAD-112",
-          "BEAD-113"
+          "BEAD-113",
+          "BEAD-114",
+          "BEAD-115"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -2193,6 +2211,30 @@
         "createdAt": "2026-07-07T13:22:40.991Z",
         "createdInPhase": "1b",
         "externalId": "PROP-105k"
+      },
+      {
+        "beadId": "BEAD-114",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-105l",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-005"
+        ],
+        "createdAt": "2026-07-07T13:48:03.607Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-105l"
+      },
+      {
+        "beadId": "BEAD-115",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-105m",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-005"
+        ],
+        "createdAt": "2026-07-07T13:48:03.607Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-105m"
       }
     ]
   },
@@ -2216,5 +2258,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T13:34:52.734Z"
+  "updatedAt": "2026-07-07T13:48:03.608Z"
 }

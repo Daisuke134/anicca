@@ -1,7 +1,7 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 10, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 11, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
@@ -10,8 +10,18 @@ findings FIND-601..604 resolved AND spec review iteration-8 findings FIND-701..7
 review iteration-9 findings FIND-801..802 resolved AND spec review iteration-10 finding FIND-901
 resolved — `citizens.json` SPLIT into a git-tracked seed template (`citizens.seed.json`) and a
 durable, out-of-git-tree runtime file (`CITIZENS_REGISTRY_PATH`, resolved via the SAME
-`resolveStateDir({env, home})` mechanism `run.sh` already uses for `children.jsonl`) — see changelogs
-below)
+`resolveStateDir({env, home})` mechanism `run.sh` already uses for `children.jsonl`) AND spec review
+iteration-10 findings FIND-1001..1002 resolved — REQ-105's one-time bootstrap step is corrected from a
+check-then-act ("does the file exist? then copy") to a single ATOMIC POSIX exclusive-create
+(`fs.open(path, 'wx')`, `O_CREAT|O_EXCL`) operation — the SAME atomic primitive
+`~/anicca/skills/economy/gig/lib/lock.mjs::tryCreateLockFile` already uses to close an identical class
+of check-then-act race (that module's own header comment documents a REAL prior double-pay bug this
+pattern exists to prevent) — making the bootstrap race-free against both concurrent first-access
+bootstraps AND a late/slow bootstrap racing an already-completed REQ-305 append (resolves FIND-1001,
+critical); AND `registry-path.mjs`'s Purity Boundary Map row is corrected from "Pure Core" to
+"Effectful Shell", consistent with `CITIZENS_REGISTRY_PATH`'s dependency on the already-Effectful
+`resolveStateDir` and `COORDINATOR_HOME`'s dependency on a real `os.homedir()` environment read
+(resolves FIND-1002, major) — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -170,7 +180,22 @@ matches `skills/self/spawn/registry/`, confirming that path would be git-tracked
 
 | Finding | Severity | Resolution |
 |---|---|---|
-| FIND-901 | critical | REQ-105's single `citizens.json` artifact — previously BOTH "a single, versioned JSON registry file" seeded once with fixed literal data AND, per REQ-305, a live runtime-append target forever after, sitting at a hardcoded path INSIDE the `~/anicca` git working tree (`~/anicca/skills/self/spawn/registry/citizens.json`) — is SPLIT into TWO distinct artifacts, reconciling the "versioned seed vs. live-append target" tension this project's own routine, frequently agent-automated `git pull`/`git checkout <branch>`/`git worktree add\|remove` operations on this SAME repo (`CLAUDE.md`/`worktree.md`) could otherwise silently conflict with, overwrite, or lose: (1) a git-tracked SEED TEMPLATE, `~/anicca/skills/self/spawn/registry/citizens.seed.json` — committed to git, read-only, NEVER mutated at runtime, existing purely to define the fixed literal starting content REQ-105 already specified; and (2) the actual LIVE, mutable runtime file, resolved via a NEW exported constant `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`, alongside `COORDINATOR_HOME`) as `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/children.jsonl`, so `CITIZENS_REGISTRY_PATH` resolves, by the identical mechanism, to `~/.hermes/state/citizens.json`) — a DURABLE, OUT-OF-GIT-TREE location, immune to every routine git operation above, exactly as `children.jsonl` already is. On first access, if `CITIZENS_REGISTRY_PATH`'s file does not yet exist, THE SYSTEM initializes it by copying `citizens.seed.json`'s content VERBATIM — a ONE-TIME bootstrap, never an ongoing sync — after which every REQ-305 runtime append happens ONLY at this durable location; the git-tracked seed template is never read from or written to again. REQ-103's lock `statePath`, REQ-105's own registry read, and REQ-403's audit enumeration ALL now cite this SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path. Two new proof obligations close this gap: PROP-105j (structural/Tier-0 — the git-tracked seed template is NEVER written to by any runtime code path) and PROP-105k (Tier 0 structural — `CITIZENS_REGISTRY_PATH`'s construction always routes through `resolveStateDir`, never a literal path inside the repo — PLUS a Tier 2 live test — a real `git checkout`/`git worktree add`/`git pull` on `~/anicca` does NOT affect the durable `citizens.json`'s content); see `verification-architecture.md` for both. |
+| FIND-901 | critical | REQ-105's single `citizens.json` artifact — previously BOTH "a single, versioned JSON registry file" seeded once with fixed literal data AND, per REQ-305, a live runtime-append target forever after, sitting at a hardcoded path INSIDE the `~/anicca` git working tree (`~/anicca/skills/self/spawn/registry/citizens.json`) — is SPLIT into TWO distinct artifacts, reconciling the "versioned seed vs. live-append target" tension this project's own routine, frequently agent-automated `git pull`/`git checkout <branch>`/`git worktree add\|remove` operations on this SAME repo (`CLAUDE.md`/`worktree.md`) could otherwise silently conflict with, overwrite, or lose: (1) a git-tracked SEED TEMPLATE, `~/anicca/skills/self/spawn/registry/citizens.seed.json` — committed to git, read-only, NEVER mutated at runtime, existing purely to define the fixed literal starting content REQ-105 already specified; and (2) the actual LIVE, mutable runtime file, resolved via a NEW exported constant `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`, alongside `COORDINATOR_HOME`) as `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/children.jsonl`, so `CITIZENS_REGISTRY_PATH` resolves, by the identical mechanism, to `~/.hermes/state/citizens.json`) — a DURABLE, OUT-OF-GIT-TREE location, immune to every routine git operation above, exactly as `children.jsonl` already is. On first access, if `CITIZENS_REGISTRY_PATH`'s file does not yet exist, THE SYSTEM initializes it by copying `citizens.seed.json`'s content VERBATIM — a ONE-TIME bootstrap, never an ongoing sync — after which every REQ-305 runtime append happens ONLY at this durable location; the git-tracked seed template is never read from or written to again. REQ-103's lock `statePath`, REQ-105's own registry read, and REQ-403's audit enumeration ALL now cite this SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path. Two new proof obligations close this gap: PROP-105j (structural/Tier-0 — the git-tracked seed template is NEVER written to by any runtime code path) and PROP-105k (Tier 0 structural — `CITIZENS_REGISTRY_PATH`'s construction always routes through `resolveStateDir`, never a literal path inside the repo — PLUS a Tier 2 live test — a real `git checkout`/`git worktree add`/`git pull` on `~/anicca` does NOT affect the durable `citizens.json`'s content); see `verification-architecture.md` for both. **[iteration 11 correction, FIND-1001]: this iteration's "on first access, IF the file does NOT yet exist, copy" framing was itself a check-then-act (TOCTOU) race — see the iteration 11 changelog and REQ-105's corrected, ATOMIC exclusive-create bootstrap below.]** |
+
+## Changelog (iteration 10 spec review → iteration 11)
+
+Iteration 10's spec review FAILed with 2 findings (1 critical, 1 major — FIND-1001/1002; all findings
+across iterations 1-10 were reconfirmed genuinely resolved against the real, current source). Each is
+resolved by a specific, cited design decision, grounded in a full re-read of
+`~/anicca/skills/economy/gig/lib/lock.mjs`'s real `tryCreateLockFile` implementation and its own header
+comment (documenting a REAL prior double-pay bug caused by an analogous check-then-act gap) and a
+re-read of this SAME feature's own `verification-architecture.md` Purity Boundary Map entries for
+`resolveStateDir` and `registry-path.mjs`:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1001 | critical | REQ-105's "one-time bootstrap" step is corrected from a check-then-act ("IF the file does NOT yet exist, THEN copy") — a classic TOCTOU race REQ-103's own `"colony-spawn"` lock does NOT protect (that lock's critical section starts at REQ-201's identity generation, per REQ-103's own Acceptance Criteria, never at REQ-101's earlier registry READ that triggers the bootstrap) — to a SINGLE atomic POSIX exclusive-create operation (`fs.open(CITIZENS_REGISTRY_PATH, 'wx')`, `O_CREAT\|O_EXCL`), the SAME primitive `lib/lock.mjs::tryCreateLockFile` already uses to close an identical class of race (that module's own header comment: two concurrent `gig_verify_and_pay(true)` calls both read status `'delivered'` before either wrote back, and both settled a real on-chain payout — the escrow was drained twice). Because POSIX exclusive-create can only ever succeed against a file that is truly nonexistent at the instant of the call, at most ONE writer, ever, successfully creates the durable file from the seed template; every other/later caller's exclusive-create fails with `EEXIST` and that caller writes nothing, simply reading the existing file as-is — this is true whether the "existing file" is another racer's just-completed bootstrap OR a real, already-appended REQ-305 citizen record, closing both the concurrent-bootstrap race AND the late-bootstrap-overwrites-a-real-append hazard in the SAME atomic step. A new proof obligation, PROP-105l, adds both concrete race fixtures (two-fixture: concurrent first-access race; late-bootstrap-after-real-append). |
+| FIND-1002 | major | `verification-architecture.md`'s Purity Boundary Map row for the new `registry-path.mjs` module (`CITIZENS_REGISTRY_PATH`/`COORDINATOR_HOME`) is corrected from "Pure Core" to "Effectful Shell" — `CITIZENS_REGISTRY_PATH` is built from `resolveStateDir`, which this SAME table already (correctly) classifies "Effectful Shell" two rows away, and `COORDINATOR_HOME` is built from Node's `os.homedir()`, a real OS/environment read, not a deterministic computation over its own inputs. A new proof obligation, PROP-105m, adds the missing Tier-2 (real-environment-dependent) proof that `COORDINATOR_HOME` genuinely tracks the real process environment's `os.homedir()` value rather than being treated as a fixed, zero-I/O constant — mirroring the rigor PROP-403e/PROP-403f already apply to this SAME module's other, correctly-classified properties. |
 
 ## Scope of this increment (read first)
 
@@ -686,13 +711,45 @@ is now SPLIT into exactly two artifacts:
    being `/tmp`-rooted — the same 2026-06 incident class that lost a prior spawn ledger to the OS
    tmp-cleaner) (see PROP-105k).
 
-**One-time bootstrap (never an ongoing sync):** on first access, IF `CITIZENS_REGISTRY_PATH`'s file
-does NOT yet exist, THE SYSTEM SHALL initialize it by copying `citizens.seed.json`'s content VERBATIM
-— a single, one-time bootstrap copy, never a repeated/periodic sync. Every subsequent REQ-101 read and
-every REQ-305 runtime append happens EXCLUSIVELY at this durable, out-of-tree location — the
-git-tracked seed template is NEVER read from or written to again after this one-time bootstrap.
-REQ-103's lock `statePath`, this requirement's own registry read, and REQ-403's audit enumeration ALL
-cite this SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path.
+**One-time bootstrap (never an ongoing sync) — ATOMIC, race-free exclusive-create (revised, resolves
+FIND-1001, critical):** an earlier revision of this step specified "on first access, IF
+`CITIZENS_REGISTRY_PATH`'s file does NOT yet exist, THEN copy `citizens.seed.json`'s content VERBATIM"
+— a classic check-then-act (TOCTOU) race that REQ-103's own `"colony-spawn"` lock does NOT protect,
+because that lock's critical section starts at REQ-201's identity generation (REQ-103's own Acceptance
+Criteria), never at REQ-101's earlier registry READ that is what actually triggers this bootstrap step.
+This is corrected to a SINGLE atomic filesystem operation: on first access, THE SYSTEM SHALL attempt to
+create `CITIZENS_REGISTRY_PATH`'s file using an EXCLUSIVE-CREATE operation — POSIX `O_CREAT|O_EXCL`
+semantics (`fs.open(path, 'wx')` or equivalent) — writing `citizens.seed.json`'s content VERBATIM as the
+new file's content, then closing the handle. This is the EXACT SAME atomic primitive
+`~/anicca/skills/economy/gig/lib/lock.mjs::tryCreateLockFile` already uses to close an identical class
+of check-then-act race (that module's own header comment documents a REAL prior double-pay bug this
+pattern exists to prevent: two concurrent `gig_verify_and_pay(true)` calls both read status `'delivered'`
+before either wrote back, and both settled a real on-chain payout — the escrow was drained twice).
+THE SYSTEM SHALL NEVER perform a separate "check if the file exists, then copy" sequence for this step —
+existence and creation SHALL be the SAME atomic filesystem call, never two:
+
+- If the exclusive-create SUCCEEDS: this caller is the bootstrap winner — the durable file now holds
+  the seed content verbatim, and bootstrap is complete.
+- If the exclusive-create FAILS with `EEXIST` (the file already exists — either because another
+  concurrent evaluator's bootstrap attempt already won this SAME race, OR because a real REQ-305 append
+  has already happened before this caller ever ran): THE SYSTEM SHALL NOT write anything at all — no
+  retry, no overwrite, no partial write — and SHALL simply proceed to READ the existing file exactly as
+  it already is.
+- Any OTHER exclusive-create failure (neither success nor `EEXIST`) fails closed exactly as
+  `tryCreateLockFile`'s own existing error-handling contract already does — never silently swallowed.
+
+This makes the bootstrap step naturally idempotent and race-free: because POSIX exclusive-create can
+only ever succeed against a file that is TRULY nonexistent at the instant of the call, AT MOST ONE
+writer, ever, across the entire lifetime of this durable file, successfully creates it from the seed
+template — and a real, already-appended citizen record (REQ-305) can NEVER be silently overwritten by a
+late/slow bootstrap attempt, because by the time that late attempt's exclusive-create runs, the file
+already exists (from the append), so the exclusive-create fails with `EEXIST` and the late caller falls
+through to a plain read, never a write. Every subsequent REQ-101 read and every REQ-305 runtime append
+happens EXCLUSIVELY at this durable, out-of-tree location — the git-tracked seed template is NEVER read
+from or written to again after whichever ONE caller's bootstrap exclusive-create succeeds. REQ-103's
+lock `statePath`, this requirement's own registry read, and REQ-403's audit enumeration ALL cite this
+SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path. See PROP-105l for
+the concurrent-race and late-append proof obligations this correction adds.
 
 Each record in the registry (whether in `citizens.seed.json` or the durable `citizens.json`) carries
 EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
@@ -881,7 +938,12 @@ live, 2026-07-07, via `os.homedir()`) — **every literal `/Users/anicca` value 
 `env.HOME`/coordinator-HOME value anywhere below in this section and in REQ-403 IS `COORDINATOR_HOME`'s
 resolved value on THIS host, never an independently-sourced or independently-hardcoded copy.** See
 PROP-403f for the corresponding structural check (zero independent `os.homedir()`/`process.env.HOME`
-reads anywhere else in this feature's audit-script code path).
+reads anywhere else in this feature's audit-script code path). **Purity note (resolves FIND-1002,
+major):** because `COORDINATOR_HOME` is a real read of ambient OS/environment state (`os.homedir()`) and
+`CITIZENS_REGISTRY_PATH` (above) is built from `resolveStateDir`, `registry-path.mjs` is classified
+"Effectful Shell" in `verification-architecture.md`'s Purity Boundary Map, never "Pure Core" — a
+zero-I/O, no-environment-control Tier-1 unit test is NOT sufficient to prove either constant's real
+behavior; see PROP-105m for the Tier-2, real-environment-dependent proof this correction adds.
 
 **Corrected, resolves FIND-501:** these two `homeDir` values are each citizen's own REAL, DISTINCT
 resolved `ANICCA_HOME` root — `/Users/anicca/.anicca` (automaton's real default, per `install.sh:26`)
@@ -933,6 +995,22 @@ seed set above is a fixed literal this spec's author already verified against li
   spec violation — the seed template is READ-ONLY at runtime, consulted only during the one-time
   bootstrap of `CITIZENS_REGISTRY_PATH`'s file, and NEVER written to by any runtime code path this
   feature adds (see PROP-105j).
+- **(new, resolves FIND-1001 — critical)** Two simulated "first access" callers (e.g. two
+  independently-scheduled evaluation loops on the coordinator host, per REQ-106's own edge case) both
+  observe `CITIZENS_REGISTRY_PATH`'s file does not yet exist and both attempt the bootstrap
+  exclusive-create within the same millisecond: because POSIX `O_CREAT|O_EXCL` (`fs.open(path, 'wx')`)
+  is atomic even across separate OS processes, THE SYSTEM SHALL guarantee exactly ONE caller's
+  exclusive-create succeeds (that caller wrote the seed content verbatim); the OTHER caller's
+  exclusive-create SHALL fail with `EEXIST`, and THAT caller SHALL write nothing and proceed directly to
+  reading the (now-existing) file — never a torn/partial/double write, and never two divergent copies of
+  the seed content (see PROP-105l).
+- **(new, resolves FIND-1001 — critical)** A real REQ-305 append has already happened (a genuine
+  successful spawn recorded a new citizen into the durable file) BEFORE a late/slow bootstrap attempt's
+  exclusive-create call ever runs: THE SYSTEM SHALL NOT overwrite or lose the already-appended record —
+  the late caller's exclusive-create fails with `EEXIST` (the file already exists, now WITH the real
+  appended record, not merely the seed content) exactly the same way it would against a plain
+  bootstrap-only file, so the late caller writes nothing and simply reads the existing, already-appended
+  content untouched (see PROP-105l).
 
 **Acceptance Criteria**:
 - The seed template (`citizens.seed.json`) parses as an array of objects each satisfying `{id, wallet,
@@ -951,6 +1029,18 @@ seed set above is a fixed literal this spec's author already verified against li
   UNCHANGED (PROP-105k, live half) — and a structural/Tier-0 grep across this feature's diff confirms
   ZERO write calls (`fs.writeFile`/`fs.writeFileSync`/equivalent) target `citizens.seed.json`'s path
   anywhere outside the one documented one-time bootstrap-read call site (PROP-105j).
+- **(new, resolves FIND-1001 — critical)** The bootstrap step is a SINGLE atomic exclusive-create
+  filesystem call (`fs.open(CITIZENS_REGISTRY_PATH, 'wx')`-equivalent, POSIX `O_CREAT|O_EXCL`) — a
+  structural/Tier-0 check confirms the bootstrap implementation contains no separate
+  `fs.existsSync`/`fs.stat`-then-`fs.writeFile` check-then-act pair for this specific step (PROP-105l,
+  structural half).
+- **(new, resolves FIND-1001 — critical)** Two fixtures prove this atomicity is race-free: (1) a
+  concurrent-race fixture — two simulated first-access callers attempt the bootstrap exclusive-create at
+  the same time — asserts exactly ONE succeeds and the other fails with `EEXIST` and proceeds to read
+  (never overwrites, never double-writes); (2) a late-bootstrap-after-real-append fixture — a real
+  REQ-305 append completes BEFORE a simulated late bootstrap attempt's exclusive-create call runs —
+  asserts the exclusive-create fails with `EEXIST` (the file already exists) and the already-appended
+  citizen record survives byte-identical, untouched by the late attempt (PROP-105l, live/Tier-2 half).
 - A direct test confirms that EACH of the two seeded entries above, when its `{wallet, fuel,
   humanDependencies}` sub-object is passed through the existing, unmodified `isSelfFunded()`, returns
   `true` — a straightforward assertion against literal fixture data (resolves FIND-101's critique of
