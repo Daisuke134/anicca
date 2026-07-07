@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 18,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 17,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-17/output/findings/",
+    "note": "1 finding, critical, two halves: FIND-1601 -- needsSolanaWallet's deployTarget had no binding to selectCloudTarget's real return value (fixed via new PROP-202d, mirroring PROP-102g/102i), and initialSkills had no specified source at all (resolved as an agent-judgment carve-out extension of REQ-104's existing goal-framing choice, new PROP-202e). PLUS: this iteration's builder ran a genuinely STRUCTURED sweep (a full table of every pure function x every parameter, classified CONSTANT/DERIVED-BOUND/AGENT-CHOICE/UNRESOLVED, documented in full in reviews/spec/iteration-17/RESOLUTION-NOTES.md) and found ONE MORE unresolved instance: filterProductiveCitizens itself (the function every prior fix had been citing as the established model to mirror) never actually had its own binding statement for its ledgerRows/citizens inputs, and PROP-102g's own citation claiming to mirror PROP-101d/PROP-101e's real-derivation discipline was not actually true (those PROPs test the function's internal correctness against fixtures, not a real-orchestration binding check). Fixed with new PROP-101j."
+  },
+  "note": "Verify all three fixes (PROP-202d, PROP-202e, PROP-101j) hold correctly. This is the 5th consecutive iteration to find an instance of this exact failure class (recentSpawnAttempts -> childrenProvisioning -> measured_last_shelter_cost_usd -> deployTarget+initialSkills -> filterProductiveCitizens's own inputs) across iterations 15-17. The prior iteration's builder used a genuinely exhaustive structured classification table (not free-form re-reading) and found only these 3 new items this round (down from 2 the round before, though this round's 2 counted as one combined finding) -- assess whether this represents real convergence of this specific failure class or whether the structured table itself may have mis-classified something as CONSTANT/DERIVED-BOUND/AGENT-CHOICE when it should be UNRESOLVED. Independently re-derive the FULL classification table yourself from scratch (do not just spot-check the builder's own table) -- every pure function, every parameter, your own classification -- and compare against the builder's table for any discrepancy. Also do a normal fresh skeptical pass over the rest of the spec for entirely different classes of defect."
+}

@@ -1,8 +1,52 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 16, revised
-(spec review iteration-16 finding FIND-1501 resolved — REQ-102's `decideColonySpawn` pinned
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 17, revised
+(spec review iteration-17 finding FIND-1601 resolved — REQ-202's `needsSolanaWallet({initialSkills,
+deployTarget}) → boolean` pinned TWO inputs with no real-system-state binding rule anywhere in this
+document: (a) `deployTarget` is now explicitly bound, in REQ-202's own text, to THAT SAME spawn
+attempt's `selectCloudTarget(...)` (REQ-306) direct return value — never hand-assembled by the calling
+orchestration, never a stale/earlier attempt's evaluation — mirroring the IDENTICAL "never hand-
+assembled, always the direct return value of X()" binding discipline FIND-1401/FIND-1501 already
+established for `recentSpawnAttempts`/`deriveRecentSpawnAttempts` and
+`childrenProvisioning`/`countChildrenProvisioning`; a new proof obligation, PROP-202d, adds the missing
+Tier-1/Tier-2 real-derivation integration check (mirroring PROP-102g/PROP-102i exactly), and the Gate's
+item (4) — which, until now, never once cited ANY of REQ-202's own three pre-existing proof obligations
+(PROP-202a/b/c) at all — now requires PROP-202a/b/d. (b) `initialSkills` had NO specified source
+anywhere in either spec document — not a default, not a derivation, not an explicit agent-judgment
+carve-out. Resolved by extending REQ-104's own, pre-existing agent-judgment carve-out ("what the child's
+initial goal framing/prompt should say" is the agent's own in-envelope choice) to explicitly ALSO name
+`initialSkills`: the spawning agent decides a new child's starting capabilities together with its goal
+framing, in the SAME in-envelope decision REQ-104 already grants — never a hardcoded fixed default (this
+feature's own purpose, per SPEC.md P3, is a new colony member choosing ITS OWN earning strategy, not a
+structural clone of its parent) and never a mechanical full copy of the driving citizen's own current
+skill roster (which would make every child structurally identical to its parent, defeating that same
+purpose); a new proof obligation, PROP-202e, adds the structural (Tier 0) check that `initialSkills` is
+never hardcoded/defaulted inside REQ-202's own orchestration — it is always the SAME value the spawning
+agent already chose, per REQ-104's carve-out, for that attempt — and the Gate's item (4) requires this
+too (resolves FIND-1601, critical) — AND, found during this SAME iteration's own mandated, genuinely
+exhaustive, checklist-driven full-parameter sweep (built as an explicit per-function, per-parameter
+classification table, rather than another free-form re-read, precisely because three consecutive prior
+sweeps each missed at least one sibling instance): REQ-101's own
+`filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` — the very function
+FIND-1401/FIND-1501's own resolutions repeatedly cited as the established PRECEDENT this binding
+discipline was modeled on — never itself stated the identical binding rule for its OWN `ledgerRows`
+(`ledger.js::readChildren()`'s real output) or `citizens` (a real `CITIZENS_REGISTRY_PATH` read)
+arguments, and PROP-102g's own citation claiming to "mirror PROP-101d/PROP-101e's own real-derivation
+discipline" does not actually hold up under a fresh, skeptical re-read: PROP-101d/PROP-101e are
+Tier-1/Tier-2 checks of `filterProductiveCitizens`/`readCitizenBalances`'s OWN internal correctness
+against already-supplied fixture inputs, never a check that REAL orchestration binds either function's
+inputs to a real `readChildren()`/registry-read call rather than a hand-rolled reimplementation at the
+call site. Resolved by adding the identical explicit "never hand-assembled" binding sentence REQ-102
+already uses to REQ-101's own text for `filterProductiveCitizens`'s `ledgerRows`/`citizens` arguments —
+and, by that same sentence's own reasoning, to `readCitizenBalances`'s `citizens` argument, which the
+existing prose already implied but never stated with the established phrase; a new proof obligation,
+PROP-101j, adds the missing Tier-1/Tier-2 real-derivation integration check (mirroring PROP-102g/
+PROP-102i exactly), and the Gate's item (1b) is extended to require it. This closes the FIFTH instance of
+this recurring failure class found across iterations 14-17 — see RESOLUTION-NOTES.md for this
+iteration's full parameter-by-parameter classification table covering EVERY OTHER pure function listed
+in the Purity Boundary Map, none of which surfaced any further UNRESOLVED instance) — AND spec review
+iteration-16 finding FIND-1501 resolved — REQ-102's `decideColonySpawn` pinned
 `childrenProvisioning` as a sibling input to `recentSpawnAttempts`, in the exact same signature, but no
 function anywhere derived this count from `ledger.js`'s real, append-only, duplicate-`child_id`-
 containing rows either — the identical failure class FIND-1401 (below) just fixed for its neighbor. A
@@ -372,6 +416,26 @@ preemptively in the same pass:
 | FIND-1501 | critical | `decideColonySpawn`'s pinned `childrenProvisioning` input — a sibling parameter to `recentSpawnAttempts` in the EXACT SAME function signature — had no specified derivation from `ledger.js`'s real, append-only, duplicate-`child_id`-containing rows, recreating BOTH of FIND-1401's own hazards on this sibling: (a) a naive per-row scan (rather than a last-write-wins reduction first) could double-count, or worse, PERMANENTLY count a child whose stale `"provisioning"` row was later superseded by `"active"`/`"failed"` — silently and permanently blocking all future spawns once even one child has ever been spawned; (b) it was unclear whether a child whose LAST row is `"bootstrap_failed"` (REQ-402) should still count as "in provisioning" (a naive scan might still find its earlier `"provisioning"` row). Resolved by a new sibling pure function, same file as `filterProductiveCitizens`/`deriveRecentSpawnAttempts`, `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::countChildrenProvisioning({ledgerRows}) → number`, which groups `ledgerRows` by `child_id`, reduces each group to its last-appended row (last-write-wins, the identical discipline already established), and counts exactly the groups whose last row's `status` is `"provisioning"` — a group whose last row is `"active"`, `"failed"`, or `"bootstrap_failed"` is NEVER counted, regardless of an earlier `"provisioning"` row for that same `child_id`. REQ-102's real orchestration now calls this function directly over `readChildren`'s real output, never a hand-rolled reimplementation at the call site — mirroring `deriveRecentSpawnAttempts`'s own integration discipline. Two new proof obligations are added (verification-architecture.md): PROP-102h (Tier 1, a four-case unit fixture: a child whose only row is `"provisioning"` → counted; a `"provisioning"` row followed by a later `"active"` row → NOT counted; a `"provisioning"` row followed by a later `"failed"` row → NOT counted; a `"provisioning"`→`"active"`→`"bootstrap_failed"` sequence → NOT counted) and PROP-102i (Tier 1/2, confirming the real orchestration calls `countChildrenProvisioning` over real `readChildren` output rather than reimplementing the count inline, mirroring PROP-102g's own discipline) — the Purity Boundary Map gains a new `countChildrenProvisioning` row, the `decideColonySpawn` row is updated to cite it for `childrenProvisioning`, and the Gate gains a new item (1g) requiring all of the above. |
 | (preemptive, found during this iteration's mandated sweep — not independently raised by the adversary) | major | REQ-102's `SPAWN_THRESHOLD_USD` formula named its `MIN_SHELTER_USD` override, `measured_last_shelter_cost_usd`, as sourced from "REQ-303's shelter-cost ledger" in prose only, with no named function specifying how that ledger's multiple, real, append-only entries (the SAME accrual shape `ledger.js`'s own rows already have) reduce to the ONE value actually used — the identical failure class, one step removed. Resolved by naming REQ-303's shelter-cost ledger module explicitly, a new, small, dedicated module `~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js` exporting EXACTLY `{readShelterCostEntries, appendShelterCostEntry}` (the SAME append-only-JSONL, no-update/upsert discipline `ledger.js` already establishes), and a new sibling pure function, same file as `filterProductiveCitizens`, `deriveMeasuredShelterCostUsd({shelterCostLedgerRows}) → number\|null`, which returns `null` on an empty ledger (no real deploy has ever completed — `MIN_SHELTER_USD` stays its provisional `5.00`) or the LAST-appended entry's `settledLeaseCostUsd` otherwise (last-write-wins — never an average, sum, or historical-max across the ledger's accumulated entries, and never the first-ever entry). A new proof obligation, PROP-102j, verifies both branches, and PROP-303c is corrected to cite this function by name rather than an unnamed "threshold computation". |
 
+## Changelog (iteration 17 spec review → iteration 18)
+
+Iteration 17's spec review FAILed with 1 finding (critical — FIND-1601; FIND-1501 and its sweep-found
+sibling gap were both reconfirmed genuinely resolved against the real, current source). The reviewer's
+own convergence note additionally mandated a genuinely exhaustive, checklist-driven full-parameter sweep
+— an explicit per-function, per-parameter classification table, not another free-form re-read — since
+three consecutive prior sweeps (iterations 15, 16, and the adversary's own iteration-17 pass) had each
+still missed at least one sibling instance of the identical failure class. That sweep surfaced one
+further gap, resolved preemptively in the same pass:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1601 | critical | REQ-202's `needsSolanaWallet({initialSkills, deployTarget}) → boolean` pinned two inputs with no real-system-state binding rule. **(a) `deployTarget`** is now explicitly bound, in REQ-202's own text, to THAT SAME spawn attempt's `selectCloudTarget(...)` (REQ-306) direct return value — never hand-assembled by the calling orchestration, never a stale/earlier attempt's evaluation — mirroring the identical discipline FIND-1401/FIND-1501 established for `recentSpawnAttempts`/`childrenProvisioning`; new proof obligation PROP-202d adds the missing Tier-1/Tier-2 real-derivation integration check (mirrors PROP-102g/PROP-102i). **(b) `initialSkills`** had no specified source anywhere — not a default, not a derivation, not an agent-judgment carve-out; resolved by extending REQ-104's existing agent-judgment carve-out ("what the child's initial goal framing/prompt should say") to explicitly also name `initialSkills` — the spawning agent chooses a new child's starting capabilities together with its goal framing, in the SAME in-envelope decision, never a hardcoded fixed default and never a mechanical full copy of the driving citizen's own current skill roster (this feature's own purpose is a new colony member choosing its own earning strategy, not a structural clone of its parent); new proof obligation PROP-202e adds the structural (Tier 0) check that `initialSkills` is never hardcoded/defaulted inside REQ-202's own orchestration. The Gate's item (4) — which never once cited any of REQ-202's own proof obligations at all — now requires PROP-202a/b/d/e. |
+| (preemptive, found during this iteration's own mandated exhaustive sweep — not independently raised by the adversary) | major | REQ-101's `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` — the very function FIND-1401/FIND-1501's own resolutions repeatedly cited as the established precedent for this binding discipline — never itself stated the "never hand-assembled, always the real function's direct return value" rule for its OWN `ledgerRows` (`ledger.js::readChildren()`'s real output) or `citizens` (a real `CITIZENS_REGISTRY_PATH` read) arguments; PROP-102g's own citation claiming to "mirror PROP-101d/PROP-101e's own real-derivation discipline" does not actually hold up under a fresh, skeptical re-read, since both of those obligations test the functions' own internal correctness against fixture inputs, never a real-orchestration binding check. Resolved by adding the identical explicit binding sentence to REQ-101 for `filterProductiveCitizens`'s `ledgerRows`/`citizens` arguments (and, by the same reasoning, `readCitizenBalances`'s `citizens` argument, which the existing prose already implied but never stated with the established phrase); a new proof obligation, PROP-101j, adds the missing Tier-1/Tier-2 real-derivation integration check (mirrors PROP-102g/PROP-102i), and the Gate's item (1b) is extended to require it. |
+
+This closes the fifth instance of this recurring failure class found across iterations 14-17 (see
+RESOLUTION-NOTES.md, `reviews/spec/iteration-17/`, for the full per-function, per-parameter
+classification table covering EVERY pure function listed in the Purity Boundary Map — no further
+UNRESOLVED instance was found beyond the one row above).
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -508,6 +572,20 @@ contradiction between REQ-105's registry and REQ-402's ledger-based lifecycle st
    `citizens.json` (REQ-105's registry is deliberately minimal and carries neither field) — via a new,
    pure join function `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}) →
    citizens[]`, zero I/O, matched by `citizens[].id` against `ledgerRows[].child_id`.
+
+   **Deriving `filterProductiveCitizens`'s inputs from real system state (new, resolves the sweep-found
+   sibling gap alongside FIND-1601):** `ledgerRows` is never hand-assembled by the calling
+   orchestration — it is ALWAYS the direct return value of `ledger.js::readChildren()`'s real output
+   (`filterProductiveCitizens({citizens: ..., ledgerRows: readChildren(...), ...})`), mirroring the
+   IDENTICAL "never hand-assembled, always the direct return value of X()" binding discipline REQ-102
+   (below) establishes for `deriveRecentSpawnAttempts`/`countChildrenProvisioning`'s own `ledgerRows`
+   arguments. `citizens` is likewise never hand-assembled — it is ALWAYS the direct return value of a
+   real read of REQ-105's colony citizen registry at its canonical `CITIZENS_REGISTRY_PATH` location
+   (never an independently reconstructed, cached, or partial citizen list). `computeColonySurplusUsd`'s
+   own `citizens` argument and `readCitizenBalances`'s own `citizens` argument (both below) are BOTH, in
+   turn, this SAME `filterProductiveCitizens`-filtered array, passed through unchanged — never
+   independently re-read from the registry or re-derived a second time — so the citizen set every
+   downstream step reasons about can never silently diverge.
 
    **`ledgerRows` may legitimately contain MULTIPLE rows sharing one `child_id` (resolves FIND-301):**
    `ledger.js` is real, existing, append-only JSONL, reused unmodified — it exports exactly
@@ -688,6 +766,13 @@ indivisible unit.
   (the LAST-appended row for that id — last-write-wins, resolves FIND-301), THEN excludes exactly the
   citizens whose (reduced) matching row is `"bootstrap_failed"` or window-overdue-while-`"active"`, and
   passes through unfiltered any citizen with no matching ledger row (resolves FIND-201).
+- **(new, resolves the sweep-found sibling gap alongside FIND-1601)** `filterProductiveCitizens`'s
+  `ledgerRows` argument is never hand-assembled by the calling orchestration — it is ALWAYS the direct
+  return value of `readChildren(...)` (`ledger.js`'s real output); its `citizens` argument is likewise
+  never hand-assembled — it is ALWAYS the direct return value of a real read of REQ-105's registry at
+  `CITIZENS_REGISTRY_PATH`. `computeColonySurplusUsd` and `readCitizenBalances` both receive this SAME
+  `filterProductiveCitizens`-filtered `citizens` array directly, never an independently re-read or
+  re-derived one.
 
 ---
 
@@ -981,8 +1066,13 @@ and is consistent with this project's own hard rule (`~/.claude/rules/building-e
 HARD RULE #1/#2: deterministic code owns arithmetic/bookkeeping; the agent owns everything that is
 genuinely a decision). What the agent DOES still decide, entirely inside this deterministic envelope
 (per SPEC.md §1.5's "spawn = HYBRID" design), is: *when* (within an eligible wake) to actually invoke
-the spawn flow, and *what the child's initial goal framing/prompt should say* — REQ-104 governs only
-the eligibility ARITHMETIC, never the agent's own in-envelope choices.
+the spawn flow, and *what the child's initial goal framing/prompt should say* — **(extended, new,
+resolves FIND-1601(b)): together with *what the child's initial skill set should be* — REQ-202's
+`initialSkills` parameter is this SAME in-envelope choice, decided by the spawning agent in the SAME
+step as the goal framing/prompt above, never a hardcoded fixed default and never a mechanical full copy
+of the driving citizen's own current skill roster (see REQ-202 for the full derivation this extension
+establishes)** — REQ-104 governs only the eligibility ARITHMETIC, never the agent's own in-envelope
+choices (which now explicitly include both the goal framing/prompt AND the initial skill set).
 
 **Edge Cases**:
 - A future change that makes `SPAWN_THRESHOLD_USD` itself computed by an LLM call (e.g. "ask the model
@@ -1507,6 +1597,30 @@ own CLI convention (auto-generating `~/.nosana/.nosana_key.json` on first run, r
 2026-07-07) as the evidence that "wallet-per-instance, zero signup, locally generated" is the current,
 live norm this feature's own generation script should match, rather than a bespoke design.
 
+**Deriving `needsSolanaWallet`'s inputs from real system state (new, resolves FIND-1601, critical):**
+neither the EARS clause above nor the Acceptance Criteria below previously specified WHERE either of
+`needsSolanaWallet({initialSkills, deployTarget})`'s two inputs actually comes from at runtime.
+
+`deployTarget` is never hand-assembled by the calling orchestration — it is ALWAYS the DIRECT return
+value of THAT SAME spawn attempt's `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable,
+akashPriceUsd})` call (REQ-306) — never a hand-rolled reimplementation, and never a stale/earlier
+evaluation carried over from a prior or different attempt. This mirrors the IDENTICAL "never
+hand-assembled, always the direct return value of X()" binding discipline REQ-102 establishes for
+`recentSpawnAttempts`/`deriveRecentSpawnAttempts` and `childrenProvisioning`/`countChildrenProvisioning`.
+This binding is not cosmetic: REQ-302's own EARS clause states the Nosana deploy step provisions the
+child's compute "pointed at the child's OWN pre-generated, isolated Solana keypair (REQ-202)" — i.e.
+REQ-302 structurally REQUIRES that REQ-202 already generated a Solana wallet for this specific child
+whenever Nosana ends up being THAT SAME attempt's real selected target. A hand-assembled or stale
+`deployTarget` that diverges from REQ-306's actual real-time selection for that attempt either (i)
+wrongly skips Solana keygen for a child REQ-302 will need it for (a hard, deploy-breaking failure of the
+entire Nosana path), or (ii) wastes a real, billable Solana keygen for a child that will never use it.
+
+`initialSkills` is never hardcoded or independently invented by REQ-202's own orchestration — it is
+ALWAYS the SAME initial-skill-set value the spawning agent already chose for this child, per REQ-104's
+own agent-judgment carve-out (extended, above, to explicitly cover this choice) — the identical value
+used to construct the child's own initial goal framing/prompt, never a second, independently-derived
+list.
+
 **Edge Cases**:
 - The child needs NEITHER a Solana-settled skill NOR Nosana deployment (e.g. it is deployed via Akash
   only, with an EVM-only initial skill set): THE SYSTEM SHALL skip Solana keypair generation entirely
@@ -1520,6 +1634,12 @@ live norm this feature's own generation script should match, rather than a bespo
   whether this step runs at all, before any key material is generated.
 - When it runs, the resulting keypair is captured directly into a 600-perm file under the child's own
   isolated `$HOME` (REQ-203), matching REQ-201's handling exactly.
+- **(new, resolves FIND-1601)** `deployTarget` is never hand-assembled by the calling orchestration —
+  it is ALWAYS the direct return value of THAT SAME spawn attempt's `selectCloudTarget(...)` call
+  (REQ-306), never a stale/earlier attempt's evaluation.
+- **(new, resolves FIND-1601)** `initialSkills` is never hardcoded/defaulted inside REQ-202's own
+  orchestration — it is ALWAYS the SAME value the spawning agent already chose, per REQ-104's
+  agent-judgment carve-out, for this child's initial skill set/goal framing.
 
 ---
 
