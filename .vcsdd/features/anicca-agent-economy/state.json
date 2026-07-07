@@ -61,7 +61,7 @@
   "iterations": {
     "1a": 6,
     "1b": 6,
-    "1c": 2
+    "1c": 3
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -133,23 +133,23 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T03:17:43.000Z",
+      "timestamp": "2026-07-07T04:24:52.000Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 3,
-        "findings": ["FIND-201"],
-        "note": "All 6 iteration-1 findings AND both iteration-2 findings (FIND-101, FIND-102) reconfirmed genuinely resolved via fresh independent re-verification against real source (registry.json, index.mjs, run.sh, hl.py) -- no regressions. ONE new, narrow finding: FIND-201 -- prompt.mjs contains a fourth ranking phrase ('the highest-leverage move is to POST') in the same paragraph as an already-named REQ-204 removal target, which REQ-204's own scoped acceptance criteria don't cover, creating a possible PROP-204a (narrow grep) vs PROP-203b (broad check) contradiction on identical code. Adversary recommended a targeted patch over a 4th full spec pass. Iteration cap (3) reached with FAIL -- escalated.",
+        "iteration": 6,
+        "findings": ["FIND-501"],
+        "note": "spec_fidelity PASS: REQ-204 removal confirmed clean (all remaining mentions are meta/historical), REQ-203/PROP-203b's 'new code only' rescoping verified against the real index.mjs/prompt.mjs (implementing REQ-201/202/203 genuinely never requires touching prompt.mjs). All prior findings (001-006, 101, 102) remain resolved; FIND-201/301/401/402/403 correctly mooted by the REQ-204 scope cut. verification_readiness FAIL on FIND-501 (high): the Gate section's numbered checklist has items for REQ-101/102/103/201/203/301 but NO item for REQ-202 or REQ-302, despite both having required:true proof obligations (PROP-202a/b, PROP-302a) -- same 'closed list turns out incomplete' defect class as FIND-201/301/401, but on 2 whole requirements not a phrase. Independent of the REQ-204 cut; mechanical fix (add 2 Gate items).",
         "priorIteration": {
-          "iteration": 2,
-          "findings": ["FIND-101", "FIND-102"],
-          "resolvedCount": 2
+          "iteration": 3,
+          "findings": ["FIND-201"],
+          "resolvedCount": 1
         }
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T03:17:43.000Z"
+      "adversaryReviewedAt": "2026-07-07T04:24:52.000Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T04:17:05.000Z"
+  "updatedAt": "2026-07-07T04:24:52.000Z"
 }

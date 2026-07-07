@@ -1,0 +1,13 @@
+{
+  "reviewType": "spec",
+  "iteration": 6,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "REQ-204 (the pre-existing prompt.mjs steering-text removal requirement) has been deleted entirely from this increment after 5 iterations failed to converge on a bounded removal scope (see reviews/spec/iteration-{3,4,5}/output/findings/ for the recurring defect class). Scope is now exactly REQ-101-103 (gig-board concurrency), REQ-201-203 (bootstrap-reserve catalog eligibility gate), REQ-301-302 (business.blockrun.ai research spike). REQ-203/PROP-203b were rescoped to only cover this increment's own NEW code (filterCatalog + index.mjs wiring), NOT prompt.mjs's pre-existing content. Verify: (1) the REQ-204 removal is clean (no dangling references, no orphaned acceptance criteria that still assume REQ-204 exists), (2) REQ-203/PROP-203b's narrower scope is internally consistent and doesn't quietly reintroduce a REQ-204-shaped obligation, (3) all previously-resolved findings (FIND-001..006, 101, 102, 201) remain resolved with no regression from this scope cut."
+}
