@@ -1,0 +1,35 @@
+{
+  "reviewType": "implementation",
+  "phase": "3",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractStatus": "approved",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "contract": ["contracts/sprint-1.md"],
+    "source": [
+      "~/anicca/skills/economy/lending/lib/lending-path.mjs",
+      "~/anicca/skills/economy/lending/lib/lending-gate.mjs",
+      "~/anicca/skills/economy/lending/lib/gojo-read.mjs",
+      "~/anicca/skills/economy/lending/lib/lending-verify.mjs"
+    ],
+    "tests": [
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-path.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/gojo-read.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-verify.test.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRound": {
+    "round": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/impl/sprint-1/output/findings/",
+    "note": "2 findings: FIND-902 (critical) -- sumOutstandingPrincipalUsd did not floor per-row (principal_usd-repaid_usd) at 0, inflating a lender's reported available surplus during ordinary mid-repayment states. FIND-901 (high) -- verifyRepayment threw an uncaught SyntaxError on malformed/non-hex RPC fields instead of failing closed. Both claimed fixed: FIND-902 via a Math.max(0,...) floor (new PROP-101g), FIND-901 via a new safeBigIntNumber helper + try/catch (new PROP-108f). 79/79 tests passing (~/anicca commit 46eb1e1)."
+  },
+  "note": "This is a FRESH, independent re-review (round 2) -- re-run the full test suite yourself (do not accept 79/79 from the log), and independently reproduce that BOTH FIND-901 and FIND-902 are genuinely fixed via your own standalone repro scripts (do not just read the diff). FIND-902's repro: a lender with one active loan {principal_usd:1, repaid_usd:1.05, total_due_usd:1.10} must now yield sumOutstandingPrincipalUsd=0 (never -0.05) and computeLenderAvailableUsd must return the correct balance-minus-reserve value. FIND-901's repro: a Transfer log with data:'not-valid-hex-data', and separately a receipt with blockNumber:'not-hex', must both make verifyRepayment return a rejected result, never throw. Continue probing for further money-safety/robustness edge cases beyond these two and the 9 sprint-1 CRIT criteria -- this feature has now needed 2 rounds of Phase-3 hardening; hold this round to the same high bar."
+}
