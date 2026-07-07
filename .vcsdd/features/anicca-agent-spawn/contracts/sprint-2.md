@@ -20,99 +20,44 @@ scope: The effectful spawn ORCHESTRATOR — the code that actually wires sprint-
 criteria:
   - id: CRIT-201
     dimension: structural_integrity
-    description: Exactly one function, `executeSpawnAttempt`, in exactly one new module
-      (`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own
-      already-exported functions/scripts in the canonical order REQ-307 states — no second, competing
-      orchestration entry point exists anywhere in the diff, and `~/anicca/skills/self/spawn/run.sh`
-      (the pre-existing AgentMail+DigitalOcean/Akash design, already classified "reused-but-superseded
-      prior art" in verification-architecture.md's own Purity Boundary Map) is neither modified nor
-      called by this sprint's new code.
+    description: Exactly one function, `executeSpawnAttempt`, in exactly one new module (`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own already-exported functions/scripts in the canonical order REQ-307 states — no second, competing orchestration entry point exists anywhere in the diff, and `~/anicca/skills/self/spawn/run.sh` (the pre-existing AgentMail+DigitalOcean/Akash design, already classified "reused-but-superseded prior art" in verification-architecture.md's own Purity Boundary Map) is neither modified nor called by this sprint's new code.
     weight: 0.15
-    passThreshold: A control-flow read of `spawn-orchestrator.mjs` confirms a single call-graph root
-      reaching every one of REQ-201/202/203/204/205/206/301/302/303/304/305/306's own exported
-      functions/scripts, in the order REQ-307's own "Canonical call order" states, and that
-      `~/anicca/skills/self/spawn/run.sh` appears in neither this sprint's commits nor its diff. FAIL
-      if a second orchestration path exists, if the canonical order is violated, or if `run.sh` is
-      touched.
+    passThreshold: A control-flow read of `spawn-orchestrator.mjs` confirms a single call-graph root reaching every one of REQ-201/202/203/204/205/206/301/302/303/304/305/306's own exported functions/scripts, in the order REQ-307's own "Canonical call order" states, and that `~/anicca/skills/self/spawn/run.sh` appears in neither this sprint's commits nor its diff. FAIL if a second orchestration path exists, if the canonical order is violated, or if `run.sh` is touched.
   - id: CRIT-202
     dimension: structural_integrity
-    description: `executeSpawnAttempt` itself contains no decision/judgment logic — no
-      arithmetic/boolean eligibility comparison and no LLM/prompt reference — mirroring REQ-104's
-      bookkeeping-only discipline, extended by REQ-307 to this new function (PROP-307b).
+    description: `executeSpawnAttempt` itself contains no decision/judgment logic — no arithmetic/boolean eligibility comparison and no LLM/prompt reference — mirroring REQ-104's bookkeeping-only discipline, extended by REQ-307 to this new function (PROP-307b).
     weight: 0.1
-    passThreshold: Structural grep of `spawn-orchestrator.mjs` finds no relational/threshold comparison
-      and no prompt/LLM-client reference. FAIL if either is found.
+    passThreshold: Structural grep of `spawn-orchestrator.mjs` finds no relational/threshold comparison and no prompt/LLM-client reference. FAIL if either is found.
   - id: CRIT-203
     dimension: edge_case_coverage
-    description: A failure injected at each of REQ-307's 9 canonical steps in turn is recorded
-      correctly — steps 1-5 (before an identity anchor exists) append a minimal
-      `{child_id, status:"failed", attempted_ms, error}` row directly via `ledger.js::appendChild`,
-      never via `buildChildSpec`; steps 6-9 use the existing `buildChildSpec`-based REQ-305 path; no row
-      anywhere ever claims `status:"active"` for a failed attempt (PROP-307c, resolves FIND-2002).
+    description: A failure injected at each of REQ-307's 9 canonical steps in turn is recorded correctly — steps 1-6 (before a complete identity anchor exists, since step 6/REQ-204 is itself the step that produces the anchor's agentId half) append a minimal `{child_id, status:"failed", attempted_ms, error}` row directly via `ledger.js::appendChild`, never via `buildChildSpec`; steps 7-9 use the existing `buildChildSpec`-based REQ-305 path, requiring step 6 to have genuinely succeeded first; no row anywhere ever claims `status:"active"` for a failed attempt (PROP-307c, resolves FIND-2002; boundary corrected per FIND-S2-001/FIND-S2-101 — NOT the disproven "steps 1-5/6-9" split).
     weight: 0.15
-    passThreshold: An integration test triggering a failure at each of the 9 steps against a real
-      `ledger.js` file confirms the above, AND confirms `filterProductiveCitizens`/
-      `deriveRecentSpawnAttempts` (REQ-101/102, sprint-1, unmodified) correctly treat every resulting
-      row as non-productive/failure regardless of which recording path produced it. FAIL if any step's
-      failure produces no row, a wrongly-shaped row, or a row misread by the sprint-1 aggregation
-      functions.
+    passThreshold: An integration test triggering a failure at each of the 9 steps against a real `ledger.js` file confirms the above, AND confirms `filterProductiveCitizens`/`deriveRecentSpawnAttempts` (REQ-101/102, sprint-1, unmodified) correctly treat every resulting row as non-productive/failure regardless of which recording path produced it. FAIL if any step's failure produces no row, a wrongly-shaped row, or a row misread by the sprint-1 aggregation functions.
   - id: CRIT-204
     dimension: structural_integrity
-    description: The `"colony-spawn"` lock (REQ-103, sprint-1, unmodified) is held from before
-      `executeSpawnAttempt`'s step 1 begins until after step 9 completes or a failure is ledgered —
-      never released any earlier (PROP-307d).
+    description: The `"colony-spawn"` lock (REQ-103, sprint-1, unmodified) is held from before `executeSpawnAttempt`'s step 1 begins until after step 9 completes or a failure is ledgered — never released any earlier (PROP-307d).
     weight: 0.1
-    passThreshold: Integration test reusing PROP-103e's own staggered-race method against the REAL
-      `executeSpawnAttempt` (steps 2-9 stubbed to fast, real-shaped fixture I/O) confirms the lock's
-      real scope over this actual function matches REQ-103's already-specified critical section. FAIL
-      if any staggered attempt during the delay window succeeds.
+    passThreshold: Integration test reusing PROP-103e's own staggered-race method against the REAL `executeSpawnAttempt` (steps 2-9 stubbed to fast, real-shaped fixture I/O) confirms the lock's real scope over this actual function matches REQ-103's already-specified critical section. FAIL if any staggered attempt during the delay window succeeds.
   - id: CRIT-205
     dimension: verification_readiness
-    description: Every one of the 35 non-Tier-3 obligations this sprint targets (see "Deferred-obligation
-      disposition" below) is either proved (structural/unit/integration) or explicitly re-deferred with
-      a stated reason — none is silently left `pending`.
+    description: Every one of the 35 non-Tier-3 obligations this sprint targets (see "Deferred-obligation disposition" below) is either proved (structural/unit/integration) or explicitly re-deferred with a stated reason — none is silently left `pending`.
     weight: 0.2
-    passThreshold: `state.json`'s proofObligations array, after this sprint's Phase 3/5, shows every
-      PROP ID in the "35 targeted" list as `status:"proved"` or, for any exception, a Phase-5 contract
-      note stating the specific reason it could not be closed this sprint (mirroring sprint-1's own
-      disposition style). FAIL if any targeted PROP is left `pending`.
+    passThreshold: state.json's proofObligations array, after this sprint's Phase 3/5, shows every PROP ID in the "35 targeted" list as `status:"proved"` or, for any exception, a Phase-5 contract note stating the specific reason it could not be closed this sprint (mirroring sprint-1's own disposition style). FAIL if any targeted PROP is left `pending`.
   - id: CRIT-206
     dimension: spec_fidelity
-    description: The 3 Tier-3 real-money obligations (PROP-302b, PROP-303b, PROP-401a) are NOT claimed
-      proved via a fixture/simulated deploy or a borrowed/historical artifact from a DIFFERENT feature
-      (e.g. `anicca-agent-lending`'s own prior Akash lease) — each requires either a genuinely NEW real
-      spend this sprint, or an explicit, honest re-deferral to a dedicated future checkpoint (this
-      project's own task #28, "P3実deploy検証チェックポイント(Phase5)").
+    description: The 3 Tier-3 real-money obligations (PROP-302b, PROP-303b, PROP-401a) are NOT claimed proved via a fixture/simulated deploy or a borrowed/historical artifact from a DIFFERENT feature (e.g. `anicca-agent-lending`'s own prior Akash lease) — each requires either a genuinely NEW real spend this sprint, or an explicit, honest re-deferral to a dedicated future checkpoint (this project's own task #28, "P3実deploy検証チェックポイント(Phase5)").
     weight: 0.1
-    passThreshold: A read of whichever artifact/evidence file claims these 3 PROPs proved confirms a
-      genuinely fresh on-chain transaction/job ID minted THIS sprint (not a citation of `2026-07-08`'s
-      read-only "zero existing leases" query from sprint-1's own contract, and not
-      `anicca-agent-lending`'s own historical artifact) — OR the contract explicitly re-defers them,
-      citing this section. FAIL if either is claimed proved via a stale/borrowed/simulated artifact.
+    passThreshold: A read of whichever artifact/evidence file claims these 3 PROPs proved confirms a genuinely fresh on-chain transaction/job ID minted THIS sprint (not a citation of 2026-07-08's read-only "zero existing leases" query from sprint-1's own contract, and not `anicca-agent-lending`'s own historical artifact) — OR the contract explicitly re-defers them, citing this section. FAIL if either is claimed proved via a stale/borrowed/simulated artifact.
   - id: CRIT-207
     dimension: implementation_correctness
-    description: `~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh` (genuinely new — confirmed
-      absent from the codebase as of this sprint's own Phase 1a research; no such file, and no
-      `@nosana/cli`-adjacent auto-keygen wrapper, exists anywhere under `~/anicca` today) follows the
-      SAME generation-discipline `gen-wallet.sh` already established (fresh entropy, `{address,
-      private_key, public_key}`-shaped JSON to stdout, 600-perm caller-redirected file, never logged).
+    description: `~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh` (genuinely new — confirmed absent from the codebase as of this sprint's own Phase 1a research; no such file, and no `@nosana/cli`-adjacent auto-keygen wrapper, exists anywhere under `~/anicca` today) follows the SAME generation-discipline `gen-wallet.sh` already established (fresh entropy, `{address, private_key, public_key}`-shaped JSON to stdout, 600-perm caller-redirected file, never logged).
     weight: 0.1
-    passThreshold: A structural read confirms the new script's output shape and permission discipline
-      match `gen-wallet.sh`'s own documented contract; a live invocation's generated Solana address
-      independently re-derives under a second keypair-derivation path (mirrors REQ-201's own
-      cross-check acceptance criterion, applied to REQ-202's new script). FAIL if the shape/discipline
-      diverges or no cross-check is performed.
+    passThreshold: A structural read confirms the new script's output shape and permission discipline match `gen-wallet.sh`'s own documented contract; a live invocation's generated Solana address independently re-derives under a second keypair-derivation path (mirrors REQ-201's own cross-check acceptance criterion, applied to REQ-202's new script). FAIL if the shape/discipline diverges or no cross-check is performed.
   - id: CRIT-208
     dimension: verification_readiness
-    description: This sprint's own Phase 1a/1b artifact (REQ-307 in behavioral-spec.md, PROP-307a-d in
-      verification-architecture.md, this contract) is reviewed by a fresh-context adversary
-      (Phase 1c) BEFORE Phase 2 (TDD) begins, exactly as sprint-1's own REQ-101-306/401-403 spec was
-      reviewed before ITS Phase 2 began — this sprint is not exempted from Phase 1c merely because most
-      of its underlying spec content pre-dates it.
+    description: This sprint's own Phase 1a/1b artifact (REQ-307 in behavioral-spec.md, PROP-307a-d in verification-architecture.md, this contract) is reviewed by a fresh-context adversary (Phase 1c) BEFORE Phase 2 (TDD) begins, exactly as sprint-1's own REQ-101-306/401-403 spec was reviewed before ITS Phase 2 began — this sprint is not exempted from Phase 1c merely because most of its underlying spec content pre-dates it.
     weight: 0.1
-    passThreshold: `state.json` shows a `"1b"->"1c"` transition with a recorded PASS verdict for this
-      sprint's own contract + REQ-307/PROP-307a-d, produced by a fresh `vcsdd-adversary` instance with
-      zero Builder context. FAIL if Phase 2 begins without this gate.
+    passThreshold: state.json shows a "1b"->"1c" transition with a recorded PASS verdict for this sprint's own contract + REQ-307/PROP-307a-d, produced by a fresh `vcsdd-adversary` instance with zero Builder context. FAIL if Phase 2 begins without this gate.
 ---
 
 ## Pre-existing spec confirmation (this sprint's own Phase 1a/1b finding)
