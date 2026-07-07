@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 4,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 3,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-3/output/findings/",
+    "note": "6 findings on a full fresh pass (not just delta-check): FIND-201 (critical, REQ-105 registry vs REQ-402 ledger location contradiction for active_since/bootstrap_failed) resolved by adding an explicit two-step citizen-list assembly in REQ-101: read self-funded subset from citizens.json, then JOIN against ledger.js's lifecycle state via a new pure function filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}), new PROP-101d. FIND-202/FIND-205 (major/medium, unresolved $HOME template + missing HOME field for REQ-403) resolved by making telemetryPath an already-resolved absolute path at seed/append time (no $HOME placeholder) and adding a new homeDir field, new PROP-105e/f. FIND-203 (major, dangling REQ-402->REQ-102 children_bootstrap_failed data flow) resolved by removing the promise entirely -- now observability-only, explicitly zero effect on decideColonySpawn's signature, new PROP-402d. FIND-204 (critical, buildChildSpec's 4 still-mandatory fields parentWallet/generation/seedUsdc/constitutionHash never addressed) resolved by extending REQ-206 with concrete derivation rules for all four, grounded in real source (child-spec.js:16-34, run.sh:136 ANICCA_GENERATION default, install.sh:78-93 genesis.md), new PROP-206f/g. FIND-206 (low, vestigial claude-p directory-listing edge case) resolved by deleting it entirely from REQ-101's Edge Cases."
+  },
+  "note": "Verify each of the 6 fixes actually holds by re-reading the real source files cited fresh (ledger.js, child-spec.js + its test file, run.sh, install.sh, identity/genesis.md) -- do not accept the revision's own claims without checking. In particular: (1) confirm filterProductiveCitizens's join semantics are fully specified (what happens on a malformed/missing ledger row, what happens with duplicate child_id matches) and that computeColonySurplusUsd's Purity Boundary Map entry still describes a zero-I/O pure function taking this function's OUTPUT; (2) confirm homeDir/telemetryPath's 'already resolved absolute path' claim is actually achievable given how REQ-105's seed/append paths are populated (does whoever calls REQ-305's append step actually know the real absolute HOME at that point, or does this just move the unresolved-template problem to a different call site?); (3) confirm REQ-206's four newly-derived field values (parentWallet/generation/seedUsdc/constitutionHash) don't introduce a NEW inconsistency with REQ-201/303/304's own descriptions of wallet generation, shelter cost, or multi-citizen co-funding; (4) confirm no other requirement or PROP still assumes the OLD single-field wallet shape, the OLD unresolved $HOME template, or the OLD 'REQ-402 feeds REQ-102' data flow anywhere else in either document. Also continue a full fresh pass over the REST of the spec (not just the 6 fixed areas) for any other genuine defects -- this project's history shows spec review keeps finding real, load-bearing defects across many iterations, so do not rubber-stamp and do not limit yourself to a delta-only check."
+}

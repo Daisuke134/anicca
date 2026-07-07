@@ -2,39 +2,43 @@
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: same as `behavioral-spec.md`
 (P3 colony-treasury-gated cloud spawn + $0-bootstrap verification) · **日付**: 2026-07-07 ·
-**revision**: iteration 2, revised (spec review iteration-1 findings FIND-001..006 resolved AND
-spec review iteration-2 findings FIND-101..104 resolved, mirrors `behavioral-spec.md`'s own
-changelogs: REQ-105/106/206/306 added, REQ-101/103/204/305 amended, then REQ-103/105/206/305
-further amended for FIND-101/102/103/104 — new registry path `citizens.json`, canonical
-`CITIZENS_REGISTRY_PATH` constant, `wallet`/`walletAddress` field split, and REQ-206's "at least
-one, not XOR" clarification)
+**revision**: iteration 3, revised (spec review iteration-1 findings FIND-001..006 resolved AND
+spec review iteration-2 findings FIND-101..104 resolved AND spec review iteration-3 findings
+FIND-201..206 resolved, mirrors `behavioral-spec.md`'s own changelogs: REQ-105/106/206/306 added,
+REQ-101/103/204/305 amended, then REQ-103/105/206/305 further amended for FIND-101/102/103/104 —
+new registry path `citizens.json`, canonical `CITIZENS_REGISTRY_PATH` constant, `wallet`/
+`walletAddress` field split, and REQ-206's "at least one, not XOR" clarification — then REQ-101's
+new `filterProductiveCitizens` join, REQ-105's new `homeDir` field + already-resolved
+`telemetryPath`, REQ-402's descoped `children_bootstrap_failed` observability-only count, and
+REQ-206's extension to `parentWallet`/`generation`/`seedUsdc`/`constitutionHash` for FIND-201..206)
 
 ## Purity Boundary Map (file/function level)
 
 | Layer | Location | Purity | Notes |
 |---|---|---|---|
 | **Pure Core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded`/`selfFundedReasons` | PURE | Already implemented, already unit-tested (`__tests__/is-self-funded.test.js`). REQ-101 calls this as-is, on each record's `{wallet, fuel, humanDependencies}` sub-object supplied by REQ-105's registry, to decide which citizens' balances even enter the aggregation; no new judgment logic. `wallet.evm`/`wallet.solana` are consumed here strictly in their documented BOOLEAN shape — `walletAddress` (the real address string(s), REQ-105/REQ-104 below) is a SEPARATE field never passed to this function (resolves FIND-104's type-mismatch finding). |
-| **Effectful Shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101)** | `~/anicca/skills/self/spawn/registry/citizens.json` | EFFECTFUL (new) | A brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel: {provider}, humanDependencies: [], telemetryPath}` records — the BOOLEAN-shaped `wallet` sub-object is the EXACT shape `isSelfFunded()` already requires (resolves FIND-104), `walletAddress` separately carries the real address string(s), and `telemetryPath` feeds REQ-101's balance lookup. Resolves FIND-002 (the previously-undefined dynamic citizen registry). Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens: automaton + Franklin) — NOT a migration, and sharing ZERO state with `~/anicca/skills/economy/ubi/colony-wallets.json` (next row) — resolves FIND-101's critical finding that an earlier draft wrongly proposed repurposing that live, differently-scoped file. |
+| **Effectful Shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101/202/205)** | `~/anicca/skills/self/spawn/registry/citizens.json` | EFFECTFUL (new) | A brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel: {provider}, humanDependencies: [], telemetryPath, homeDir}` records — the BOOLEAN-shaped `wallet` sub-object is the EXACT shape `isSelfFunded()` already requires (resolves FIND-104), `walletAddress` separately carries the real address string(s), and `telemetryPath`/`homeDir` are BOTH already-resolved absolute paths (never an unresolved `$HOME` template — resolves FIND-202/FIND-205), feeding REQ-101's balance lookup and REQ-403's audit respectively. This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Resolves FIND-002 (the previously-undefined dynamic citizen registry). Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens: automaton + Franklin) — NOT a migration, and sharing ZERO state with `~/anicca/skills/economy/ubi/colony-wallets.json` (next row) — resolves FIND-101's critical finding that an earlier draft wrongly proposed repurposing that live, differently-scoped file. |
 | **Effectful Shell (existing, UNTOUCHED, out of scope)** | `~/anicca/skills/economy/ubi/colony-wallets.json` | EFFECTFUL (existing, not read/written by this feature) | `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc) — a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file; listed here ONLY to make explicit (per FIND-101) that it is a separate, unmodified concern sharing zero state with `citizens.json` above. |
-| **Pure Core (new)** | new module, e.g. `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::computeColonySurplusUsd({citizens, perCitizenReserveUsd}) → number` | PURE (new) | Sum of `max(0, balance_i - reserve)` over `isSelfFunded()`-passing citizens only; zero I/O once given already-fetched balances. REQ-101's acceptance criteria. |
+| **Pure Core (new)** | new module, e.g. `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::computeColonySurplusUsd({citizens, perCitizenReserveUsd}) → number` | PURE (new) | Sum of `max(0, balance_i - reserve)` over `isSelfFunded()`-passing citizens only; zero I/O once given already-fetched balances. Runs ONLY on `filterProductiveCitizens`'s output (next row), never on the raw registry array. REQ-101's acceptance criteria. |
+| **Pure Core (new)** | new module, same file, `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays}) → citizens[]` | PURE (new) | Resolves FIND-201: a new join function, zero I/O, that cross-references REQ-105's registry (`citizens`) against `ledger.js`'s own rows (`ledgerRows`, matched by `id`===`child_id`) and excludes any citizen whose matching row is `"bootstrap_failed"` or window-overdue-while-`"active"`; a citizen with no matching row (e.g. today's two non-spawned seed citizens) passes through unfiltered. This is the ONLY place `status`/`active_since` cross REQ-101's aggregation boundary — `citizens.json` itself never carries either field. REQ-101/REQ-402's acceptance criteria. |
 | **Pure Core (new, extends existing pattern)** | new module, same file, `decideColonySpawn({colonySurplusUsd, spawnThresholdUsd, lastSpawnAttemptMs, nowMs, cooldownDays, childrenProvisioning, maxConcurrentSpawns}) → {eligible, reason}` | PURE (new) | Directly analogous in shape/discipline to the existing `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` (same `{eligible, reason}` return, same "no I/O" contract, same ordered-checks style) but colony-aggregate-scoped rather than single-parent-scoped. REQ-102/103/104's acceptance criteria are enforced here. |
-| **Pure Core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` | PURE (existing, extended) | `nextChildId` fully unchanged. `buildChildSpec`'s identity-anchor validation is extended (REQ-206) to accept EITHER `childInbox` (old AgentMail path, backward-compatible, unchanged behavior) OR the new `agentEvmAddress`+`agentId` pair (ERC-8004, this feature's actual path) — never both required. This CORRECTS iteration 1's false "reused unmodified" claim (FIND-001: today's code unconditionally throws on missing `childInbox`, and this feature never produces an AgentMail inbox). The distinct-wallet assertion (`childWallet === parentWallet` throw) and every other existing field/behavior are untouched; REQ-201 generalizes the CALLER's pre-check to "distinct from ALL citizens," not this constructor. |
+| **Pure Core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` | PURE (existing, extended) | `nextChildId` fully unchanged. `buildChildSpec`'s identity-anchor validation is extended (REQ-206) to accept EITHER `childInbox` (old AgentMail path, backward-compatible, unchanged behavior) OR the new `agentEvmAddress`+`agentId` pair (ERC-8004, this feature's actual path) — never both required. This CORRECTS iteration 1's false "reused unmodified" claim (FIND-001: today's code unconditionally throws on missing `childInbox`, and this feature never produces an AgentMail inbox). The distinct-wallet assertion (`childWallet === parentWallet` throw) and every other existing field/behavior are untouched; REQ-201 generalizes the CALLER's pre-check to "distinct from ALL citizens," not this constructor. The function's OTHER four already-mandatory fields (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`) receive NO code change at all — REQ-206 now specifies an explicit spec-level derivation rule for each (coordinator-host wallet / fixed `1` / aliased to REQ-204's gas seed / fixed hash of `identity/genesis.md`, respectively), resolving FIND-204 without touching this file a second time. |
 | **Pure Core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` | PURE (existing, adversary-hardened) | Already extracted and Tier-1-tested as part of `anicca-agent-economy`'s own REQ-101 (concurrency-hardening sprint). REQ-103 reuses this predicate — and the `acquire()`/`release()`/atomic-`fs.rename`-reclaim machinery built on it — under a NEW lock key (`"colony-spawn"`), not new lock logic. `withGigLock(statePath, lockKey, fn, opts)`'s lock-file identity depends on BOTH `statePath` AND `lockKey`; REQ-103 (revised to resolve FIND-103) therefore designates REQ-105's `citizens.json` path as the ONE canonical `statePath`, exported as `CITIZENS_REGISTRY_PATH` from a new `~/anicca/skills/self/spawn/lib/registry-path.mjs` module that every call site must import. Its local-POSIX-filesystem guarantee is sufficient ONLY because REQ-106 scopes every REQ-102/103 evaluator to a SINGLE coordinator host this increment (resolves FIND-003) — this module is never claimed to solve cross-host mutual exclusion. |
 | **Pure Core (new)** | new module `~/anicca/skills/self/spawn/lib/registry-path.mjs::CITIZENS_REGISTRY_PATH` | PURE (new, a constant) | Resolves FIND-103: the single, canonical absolute path to `citizens.json`, exported as ONE named constant so both REQ-103's lock `statePath` and REQ-101/105/305's own registry reads/writes converge on the identical value — never independently hardcoded per call site. |
 | **Pure Core (new)** | new module, e.g. `~/anicca/skills/self/spawn/lib/cloud-target.mjs::selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` | PURE (new) | Deterministic, price/availability-based comparison — bookkeeping, never a model judgment. Resolves FIND-006 (REQ-302/303 presupposed a selection step that was never itself specified). REQ-306's acceptance criteria are enforced here. |
-| **Effectful Shell** | new module, e.g. `~/anicca/skills/self/spawn/lib/colony-balances.mjs::readCitizenBalances()` | EFFECTFUL | Reads each known citizen's `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field — same file/pattern `~/anicca/skills/economy/ubi/run.sh` already reads (`$HOME/.automaton/state/telemetry.json`, `$HOME/.blockrun/state/telemetry.json`). Feeds REQ-101's pure aggregator; itself performs no aggregation logic. |
+| **Effectful Shell** | new module, e.g. `~/anicca/skills/self/spawn/lib/colony-balances.mjs::readCitizenBalances()` | EFFECTFUL | Reads each known citizen's `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field — an ALREADY-RESOLVED absolute path (e.g. `/Users/anicca/.automaton/state/telemetry.json`, `/Users/anicca/.blockrun/state/telemetry.json`), never an unresolved `$HOME` template requiring a runtime substitution step this module would otherwise need to perform (resolves FIND-205). Feeds REQ-101's pure aggregator; itself performs no aggregation logic. |
 | **Effectful Shell** | `~/anicca/skills/self/spawn/scripts/gen-wallet.sh` | EFFECTFUL (existing, reused unmodified) | `openssl`+`python3` subprocess, real entropy. REQ-201. |
 | **Effectful Shell (new)** | new script, e.g. `~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh` | EFFECTFUL (new) | Ed25519/Solana-shaped analog of `gen-wallet.sh`; real entropy, same 600-perm/never-logged discipline. REQ-202. |
 | **Effectful Shell** | env injection at process-launch boundary (cloud-init/SDL/job-definition for whichever of REQ-302/303 is used) | EFFECTFUL | Setting `HOME`/`ANICCA_HOME` at spawn time; the isolation PROPERTY it produces is what REQ-203 specifies. |
-| **Effectful Shell (existing, reused unmodified)** | `~/anicca/skills/earn/lib/resolve-identity.mjs::resolveEvmPrivateKey`/`resolveSolanaSecret` | EFFECTFUL (existing, already fail-closed) | Already implements the exact HOME-gated, fail-closed-on-foreign-spawn resolution REQ-203/403 depend on; reused unmodified. |
+| **Effectful Shell (existing, reused unmodified)** | `~/anicca/skills/earn/lib/resolve-identity.mjs::resolveEvmPrivateKey`/`resolveSolanaSecret` | EFFECTFUL (existing, already fail-closed) | Already implements the exact HOME-gated, fail-closed-on-foreign-spawn resolution REQ-203/403 depend on; reused unmodified. REQ-403's audit invokes these once per running instance using that instance's `homeDir` value read directly from REQ-105's registry (resolves FIND-202) — never a value derived from `telemetryPath` or any other field. |
 | **Effectful Shell (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/identity.mjs::registerIdentity`/`verifyIdentity`, invoked THROUGH `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` | EFFECTFUL (existing, live-verified 2026-07-07) | REQ-204 calls `ensureAgentId` (the existing cache-then-verify-then-register-once wrapper, already ANICCA_HOME-gated and already unit-tested), NOT `registerIdentity` directly — resolves FIND-004 (REQ-204's "already-registered" defensive check reuses this existing primitive rather than re-deriving the same logic). Real on-chain ERC-8004 `register()`/`ownerOf` calls against the already-live mainnet (`0x8004A169FB4a3325136EB29fA0ceB6D2e539a432`, Base 8453) or testnet (`0xdc527768082c489e0ee228d24d3cfa290214f387`, Base-Sepolia 84532) registry. |
 | **Effectful Shell (new, template reused)** | new file-write step producing `<child_home>/.blockrun/mcp.json` (or `.anicca/mcp.json`) | EFFECTFUL (new) | Copies the exact shape of the already-live `~/.blockrun/mcp.json`. REQ-205. |
 | **Effectful Shell (new)** | new wrapper around the `nosana` CLI (`nosana job post ...`) and its own market price-query for REQ-306's selection input | EFFECTFUL (new) | Real subprocess + real Solana-settled market transaction. REQ-302/306. Confirmed-current CLI per the re-verification table in behavioral-spec.md. |
 | **Effectful Shell (existing, reused unmodified)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh`, `~/anicca/skills/self/spawn/scripts/akt-treasury.sh`, and a `provider-services`-equivalent bid-price query for REQ-306's selection input | EFFECTFUL (existing, already implemented against real sandbox-2 chain per those scripts' own inline evidence citations) | REQ-303 reuses both unmodified, substituting only `CHILD_ID`/SDL content. REQ-306's Akash-side price query is new. |
 | **Effectful Shell (new)** | new funding-transfer step (single-signer, citizen-wallet → child-wallet or facilitator) | EFFECTFUL (new) | Real on-chain transfer, gated on REQ-102's already-certified amount and REQ-304's single-signer-only constraint. |
-| **Effectful Shell (existing, reused unmodified) + new registry-append side effect** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` | EFFECTFUL (existing) | Append-only JSONL; already implemented, unmodified. REQ-305. On success (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`citizens.json`, NOT `colony-wallets.json`) — a new, explicit write path (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if it would fail (resolves FIND-101). The appended record splits `wallet` (booleans) from `walletAddress` (strings), resolving FIND-104. |
+| **Effectful Shell (existing, reused unmodified) + new registry-append side effect** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` | EFFECTFUL (existing) | Append-only JSONL; already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's `status` and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"` — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read these fields from THESE rows, never from `citizens.json` (resolves FIND-201). REQ-305. On success (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`citizens.json`, NOT `colony-wallets.json`) — a new, explicit write path (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if it would fail (resolves FIND-101). The appended record splits `wallet` (booleans) from `walletAddress` (strings), resolving FIND-104, and carries already-resolved `telemetryPath`/`homeDir` values, resolving FIND-202/FIND-205. |
 | **Effectful Shell (new)** | new independent RPC balance-read step (before/after comparison) for REQ-401 | EFFECTFUL (new) | Mirrors the exact `eth_call balanceOf` method SPEC.md §9.9 already used to confirm Franklin#1's final balance independently of the parties' own self-report. |
-| **Effectful Shell + static analysis (new)** | new audit script combining (a) `grep -r` over skill scripts/cron config for all 3 path forms and (b) live invocation of `resolve-identity.mjs`'s exported resolvers per running instance, enumerated from REQ-105's registry | EFFECTFUL + STATIC (new) | REQ-403. The grep half is Tier 0 (no runtime execution of the AUDITED code, though the audit script itself runs); the live-comparison half is Tier 2/3 (requires N ≥ 2 real running instances). |
+| **Effectful Shell + static analysis (new)** | new audit script combining (a) `grep -r` over skill scripts/cron config for all 3 path forms and (b) live invocation of `resolve-identity.mjs`'s exported resolvers per running instance, enumerated from REQ-105's registry and its `homeDir` field (resolves FIND-202) | EFFECTFUL + STATIC (new) | REQ-403. The grep half is Tier 0 (no runtime execution of the AUDITED code, though the audit script itself runs); the live-comparison half is Tier 2/3 (requires N ≥ 2 real running instances). |
 | **Not code — design constraint** | REQ-104 (bookkeeping-only design constraint on REQ-101/102/103) | N/A | Directly analogous to `anicca-agent-economy`'s REQ-203; verified by Phase 3 structural code read (grep for LLM calls/prompt strings/scoring fields in the gate's own source), never a runtime assertion. |
 | **Not code — design constraint** | REQ-106 (single-coordinator-host scope constraint on REQ-101/102/103, this increment only) | N/A | Resolves FIND-003. Verified by a Phase 3 structural code read confirming `lock.mjs`/`ledger.js` are invoked from exactly one designated coordinator-host entry point, and that this spec's own scope section states spawn chaining is out of scope — never by proving multi-host correctness (explicitly not required this increment). |
 | **Not code — design constraint** | REQ-301 (local-spawn-forbidden structural constraint) | N/A | Verified by reading the deploy code path's artifact list post-attempt, not by running a probe against a hypothetical violation. |
@@ -49,27 +53,35 @@ one, not XOR" clarification)
   path references; REQ-106's single-coordinator-host entry-point check; REQ-103's structural
   import-identity check that every colony-spawn lock call site uses the SAME exported
   `CITIZENS_REGISTRY_PATH` constant, resolving FIND-103; REQ-105's structural check that its literal
-  seed array contains only the two verified self-funded entries).
+  seed array contains only the two verified self-funded entries; REQ-105's structural check that
+  `telemetryPath`/`homeDir` are never unresolved `$HOME` templates, resolving FIND-202/FIND-205;
+  REQ-402's structural check that `children_bootstrap_failed` has zero effect on REQ-102's pinned
+  signature, resolving FIND-203).
 - **Tier 1**: pure-function unit tests — deterministic fixtures, no filesystem/network/real
-  wall-clock sleep, fast (milliseconds). REQ-101's aggregation, REQ-102's gate, REQ-103's reused
-  `isLockStale` predicate (already Tier-1-proved upstream; this feature's own Tier-1 obligation is
-  only proving the NEW `"colony-spawn"` lock KEY is wired to it correctly, not re-proving the
-  predicate itself), REQ-105's registry-record-shape/malformed-record fixtures AND its direct
-  seed-data-passes-`isSelfFunded()` assertion (resolves FIND-101's "compare against today's
-  known-good identities" critique — this is now a straightforward literal-fixture assertion, not an
-  out-of-band-knowledge-dependent comparison), REQ-201/202's conditional-generation logic, REQ-206's
-  identity-anchor validation (both accepted paths, both rejection paths, AND the "both anchors
-  present is accepted, not an XOR" path — PROP-206e, resolves FIND-102), REQ-305's
-  isSelfFunded-refusal-before-append check (unit half, resolves FIND-101), REQ-306's
-  `selectCloudTarget` comparison (price/availability/tie-breaker branches), REQ-402's
-  window-boundary relabeling logic.
+  wall-clock sleep, fast (milliseconds). REQ-101's aggregation AND its new `filterProductiveCitizens`
+  join (resolves FIND-201), REQ-102's gate, REQ-103's reused `isLockStale` predicate (already
+  Tier-1-proved upstream; this feature's own Tier-1 obligation is only proving the NEW
+  `"colony-spawn"` lock KEY is wired to it correctly, not re-proving the predicate itself), REQ-105's
+  registry-record-shape/malformed-record fixtures AND its direct seed-data-passes-`isSelfFunded()`
+  assertion (resolves FIND-101's "compare against today's known-good identities" critique — this is
+  now a straightforward literal-fixture assertion, not an out-of-band-knowledge-dependent comparison)
+  AND its `homeDir`-is-never-passed-to-`isSelfFunded()` check (resolves FIND-202), REQ-201/202's
+  conditional-generation logic, REQ-206's identity-anchor validation (both accepted paths, both
+  rejection paths, AND the "both anchors present is accepted, not an XOR" path — PROP-206e, resolves
+  FIND-102) AND its `parentWallet`/`generation`/`seedUsdc`/`constitutionHash` derivation-rule fixtures
+  (PROP-206f/g, resolves FIND-204), REQ-305's isSelfFunded-refusal-before-append check (unit half,
+  resolves FIND-101), REQ-306's `selectCloudTarget` comparison (price/availability/tie-breaker
+  branches), REQ-402's window-boundary relabeling logic (now read from `ledger.js` rows, resolving
+  FIND-201).
 - **Tier 2**: integration tests — real module wiring (real `fs`, small injected timing constants,
   concurrent `Promise.all`/multi-process calls against the real lock/identity/resolve-identity
   modules) plus fresh-context adversary review of the disk artifacts (no live chain/cloud spend
   required for this tier). REQ-103's concurrent-attempt race, REQ-203's cross-instance
   `resolve-identity.mjs` non-leak test, REQ-204's `ensureAgentId` already-registered defensive test,
-  REQ-305's failure-injection-at-each-step test, registry-append-on-success test, and
-  isSelfFunded-refusal-before-append check (integration half, resolves FIND-101), REQ-403's
+  REQ-206's real full-seven-field `buildChildSpec` call (PROP-206f, resolves FIND-204), REQ-305's
+  failure-injection-at-each-step test, registry-append-on-success test (now also asserting
+  `active_since` is set and `telemetryPath`/`homeDir` are pre-resolved, resolving FIND-201/202/205),
+  and isSelfFunded-refusal-before-append check (integration half, resolves FIND-101), REQ-403's
   static-grep-plus-fixture-collision test.
 - **Tier 3**: live, no-mock E2E — real transactions/leases against the live (or, for a first-pass
   dry run, testnet/sandbox) chain and cloud provider, executed the same way the P2 gig-board
@@ -92,6 +104,7 @@ one, not XOR" clarification)
 | PROP-101a | REQ-101 | `computeColonySurplusUsd` sums `max(0, balance_i - reserve)` correctly over a mixed fixture (some above reserve, some below, some self-funded, some not) | 1 | true | unit test, fixed fixture, assert exact numeric output |
 | PROP-101b | REQ-101 | A citizen failing `isSelfFunded()` contributes `0` regardless of its raw balance magnitude | 1 | true | unit test: fixture citizen with `balance=1000` but `isSelfFunded()→false` → assert total unaffected by that balance |
 | PROP-101c | REQ-101 | Missing/unreadable/non-finite/negative `telemetry.json` data for a citizen contributes `0` (fail-closed), never throws | 1 | true | unit test: malformed/missing fixture files → function returns a finite number, never throws, never counts the bad entry as positive surplus |
+| PROP-101d | REQ-101 | `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` excludes exactly the citizens whose matching ledger.js row is `"bootstrap_failed"` or window-overdue-while-`"active"`, passes through unfiltered any citizen with NO matching ledger row, and performs zero I/O | 1 | true | unit test, fixed fixture: a citizen with a `"bootstrap_failed"` row, a citizen with an overdue `"active"` row (no REQ-401 success, `now - active_since >= bootstrapWindowDays`), a citizen with a healthy `"active"` row, and a citizen with NO matching row → assert the function returns exactly `{healthy citizen, no-row citizen}`, and that `computeColonySurplusUsd` is never called on the excluded two (resolves FIND-201) |
 | PROP-102a | REQ-102 | `colonySurplusUsd === spawnThresholdUsd` exactly → `eligible:true` (inclusive boundary) | 1 | true | unit test at the exact boundary value and at `boundary - 0.01` |
 | PROP-102b | REQ-102 | Cooldown gate overrides surplus size — surplus far above threshold does NOT bypass an unexpired cooldown | 1 | true | unit test: huge surplus, `lastSpawnAttemptMs` inside the cooldown window → `eligible:false, reason:"rate_limited"` |
 | PROP-102c | REQ-102 | `childrenProvisioning >= maxConcurrentSpawns` blocks eligibility regardless of surplus/cooldown | 1 | true | unit test: surplus and cooldown both satisfied, `childrenProvisioning=maxConcurrentSpawns` → `eligible:false, reason:"max_concurrent_spawns"` |
@@ -102,10 +115,12 @@ one, not XOR" clarification)
 | PROP-103c | REQ-103 | A live, heartbeating holder is never stolen from, however long its critical section legitimately runs | 1 | true | reuses the exact Tier-1 fixture proof already established upstream for `isLockStale` (no new proof needed — REQ-103's own obligation is only that the NEW `"colony-spawn"` key is wired through the same, already-proved mechanism) |
 | PROP-103d | REQ-103 | EVERY call site in the implementation that acquires the `"colony-spawn"` lock imports and passes the SAME exported `CITIZENS_REGISTRY_PATH` constant from `registry-path.mjs` — never an independently hardcoded path string | 0 | true | structural/Tier-0 check: source-grep or import-identity check across the diff confirming a single import site for `CITIZENS_REGISTRY_PATH` and zero literal `citizens.json` path strings hardcoded elsewhere (resolves FIND-103) |
 | PROP-104a | REQ-104 | `decideColonySpawn`/`computeColonySurplusUsd`'s source contains no network call, no prompt/LLM-client reference, and no scoring/ranking/free-text-recommendation field on its return value | 0 | true | Phase 3 structural grep/read of the diff; fails if any such reference is found, exactly as `anicca-agent-economy`'s PROP-203a/b already established for its own gate |
-| PROP-105a | REQ-105 | The seeded `citizens.json` parses as an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, telemetryPath}` objects, and `isSelfFunded()` (unmodified) accepts any one record's `{wallet, fuel, humanDependencies}` sub-object (never `walletAddress`) without throwing | 0/1 | true | Tier 0: structural JSON-shape check of the seed file; Tier 1: unit test calling `isSelfFunded()` on each seeded record's boolean `wallet` sub-object only |
+| PROP-105a | REQ-105 | The seeded `citizens.json` parses as an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, telemetryPath, homeDir}` objects, and `isSelfFunded()` (unmodified) accepts any one record's `{wallet, fuel, humanDependencies}` sub-object (never `walletAddress`) without throwing | 0/1 | true | Tier 0: structural JSON-shape check of the seed file; Tier 1: unit test calling `isSelfFunded()` on each seeded record's boolean `wallet` sub-object only |
 | PROP-105b | REQ-105 | A single malformed/incomplete registry record is excluded from REQ-101's aggregation without aborting aggregation for every OTHER valid citizen | 1 | true | unit test: fixture registry with one malformed record among 2 valid ones → assert aggregation returns the sum of only the 2 valid citizens, never throws |
 | PROP-105c | REQ-105 | `citizens.json`'s seed data, when each entry's `{wallet, fuel, humanDependencies}` sub-object is passed through the existing, unmodified `isSelfFunded()`, returns `true` for EVERY seeded entry | 1 | true | unit test: direct assertion against the literal seed fixture (both entries) — a straightforward assertion against literal fixture data, NOT an out-of-band-knowledge-dependent comparison (resolves FIND-101's critique that the prior "compare against today's known-good identities" proof method presupposed a ground truth the bare pre-existing file could never supply) |
 | PROP-105d | REQ-105 | `citizens.json` NEVER contains, at seed time or at any later append (see PROP-305e), an entry whose `{wallet, fuel, humanDependencies}` sub-object makes `isSelfFunded()` return `false` | 0/1 | true | Tier 0: structural check that the literal seed array (above) contains only the two verified self-funded entries and excludes claude-p/any human-funded wallet; Tier 1: unit test iterating the seed array asserting `isSelfFunded()===true` for all entries (resolves FIND-101's permanent-hazard-closure requirement) |
+| PROP-105e | REQ-105 | Every entry's `telemetryPath` and `homeDir` are ALREADY-RESOLVED absolute paths — neither field's value contains the literal substring `$HOME` or `$ANICCA_HOME` anywhere in `citizens.json`, at seed time or at any later append | 0 | true | structural/Tier-0 check: grep the seed file (and, at Phase 3, any real appended rows) for the literal substrings `$HOME`/`$ANICCA_HOME` — must find none (resolves FIND-202/FIND-205) |
+| PROP-105f | REQ-105 | `homeDir` is present and non-empty on every seeded/appended entry, and is consumed ONLY by REQ-403's audit — never passed to `isSelfFunded()` | 1 | true | unit test: fixture record's `homeDir` field is asserted present and is NOT among the keys `isSelfFunded()` reads (resolves FIND-202) |
 | PROP-106a | REQ-106 | `lock.mjs`'s acquire/release path and `ledger.js`'s read/write path are invoked from exactly one designated coordinator-host code entry point, with no code path invoking them from a cloud-deployed child's own runtime | 0 | true | structural read of the implementation's call graph; Phase 3 adversary confirms no child-side code path reaches `lock.mjs`/`ledger.js` |
 | PROP-106b | REQ-106 | This spec's own scope section explicitly states spawn chaining is out of scope | 0 | true | structural read of `behavioral-spec.md`'s scope section; a fresh adversary reviewing REQ-103/REQ-305 is not required to (and must not) prove multi-host correctness |
 | PROP-201a | REQ-201 | A `gen-wallet.sh` output whose address derives from the documented sha256-fallback path (no real keccak available) is detected and rejected, never used | 1/2 | true | unit/integration test: inject an environment where the keccak dependency is unavailable, assert the caller aborts rather than proceeding with the fallback address |
@@ -127,6 +142,8 @@ one, not XOR" clarification)
 | PROP-206c | REQ-206 | A fixture supplying NEITHER anchor throws; a fixture supplying only HALF of the ERC-8004 pair also throws | 1 | true | unit test: two fixtures (neither anchor; `agentEvmAddress` only) → assert both throw `missing identity anchor` |
 | PROP-206d | REQ-206 | A structural diff of `child-spec.js` confirms the change is limited to required-field validation and the returned row's field list; `nextChildId` and the distinct-wallet assertion are byte-identical to today's | 0 | true | structural diff of the file against its pre-modification version |
 | PROP-206e | REQ-206 | A fixture supplying BOTH a non-empty `childInbox` AND a complete `agentEvmAddress`+`agentId` pair simultaneously succeeds without throwing, and the returned row carries all three fields together | 1 | true | unit test: both-anchors-present fixture → assert success (never rejected as an XOR violation) — resolves FIND-102's EARS/edge-case self-contradiction |
+| PROP-206f | REQ-206 | A real `buildChildSpec` call from REQ-305's spawn flow supplies concrete values for all SEVEN required fields — `parentWallet` (REQ-106's coordinator-host citizen's own wallet, distinct from `childWallet`), `generation` (exactly `1`), `seedUsdc`, `constitutionHash`, plus the ERC-8004 identity anchor pair — and succeeds, with every field correctly present in the returned row | 1/2 | true | fixture/integration test: populate all seven fields per REQ-206's derivation rules and assert success + correct field presence — not just the two identity-anchor-focused fixtures (PROP-206a/b) (resolves FIND-204) |
+| PROP-206g | REQ-206 | `seedUsdc` passed into `buildChildSpec` is identical to the amount REQ-204 actually transferred as the gas seed for that same spawn attempt (never an independently-computed number), and `generation` is exactly `1` for every REQ-305 call in this increment | 1/2 | true | unit test: assert `seedUsdc === <REQ-204 gas-seed fixture amount>` and `generation === 1`; structural/Tier-0 check confirms no code path in this feature's diff passes any other `generation` value (resolves FIND-204) |
 | PROP-301a | REQ-301 | After a spawn attempt completes (success or failure), the initiating host retains no child-specific persistent runtime artifact (no lingering process, no child-specific systemd/launchd unit, no child wallet file left outside the child's own relocated home) | 0 | true | structural review of the deploy code path's post-attempt cleanup; Phase 3 adversary spot-checks a real attempt's initiating host afterward |
 | PROP-302a | REQ-302 | The Nosana deploy step never reads/writes the invoking host's own default `~/.nosana/` directory when acting on behalf of a child | 1/2 | true | unit/integration test asserting the CLI invocation's key-path argument/env points at the child's own isolated file, and that no file appears under the invoking host's own `~/.nosana/` as a side effect |
 | PROP-302b | REQ-302 | A real `nosana job post ... --wait` invocation for a child yields a job ID that independently resolves (via a separate query, not just the posting call's own stdout) to `RUNNING`/`COMPLETED` | 3 | true | live E2E against Nosana (devnet/cheapest mainnet market as a first pass, mainnet-class market for final completion per the Tier-3 policy above); independently re-query `https://explore.nosana.com/jobs/<id>` (or current CLI equivalent) |
@@ -149,54 +166,63 @@ one, not XOR" clarification)
 | PROP-401b | REQ-401 | The ledger entry recording success contains gig ID, tx hash, balance delta, and timestamp sufficient for a fresh adversary to re-derive the claim | 0 | true | structural check of the ledger row schema on a real success case |
 | PROP-402a | REQ-402 | A child exceeding `BOOTSTRAP_WINDOW_DAYS` without a recorded REQ-401 success is relabeled `"bootstrap_failed"`, and no others are | 1 | true | unit test: fixture set of children with varying `active_since` timestamps and success flags, assert exactly the correct subset is relabeled |
 | PROP-402b | REQ-402 | A late (post-window) success retroactively corrects the label back from `"bootstrap_failed"` | 1/2 | true | unit test: a child already labeled `"bootstrap_failed"` that subsequently produces a REQ-401-qualifying success → assert label correction on the next evaluation |
-| PROP-402c | REQ-402 | A `"bootstrap_failed"` child's balance is excluded from REQ-101's productive-surplus aggregation even if nonzero — read from REQ-105's registry, no second citizen list | 1 | true | unit test: fixture `"bootstrap_failed"` citizen (a REQ-105 registry record) with nonzero balance → assert `computeColonySurplusUsd` excludes it |
+| PROP-402c | REQ-402 | A `"bootstrap_failed"` child's balance is excluded from REQ-101's productive-surplus aggregation even if nonzero — the citizen record comes from REQ-105's registry, but the `"bootstrap_failed"` FLAG itself is read from its matching `ledger.js` row via `filterProductiveCitizens` (REQ-101), never from a second, competing copy in `citizens.json` (resolves FIND-201) | 1 | true | unit test: fixture citizen (a REQ-105 registry record) whose matching ledger.js row is `"bootstrap_failed"`, with nonzero registry-recorded balance → assert `filterProductiveCitizens` excludes it before `computeColonySurplusUsd` ever runs |
+| PROP-402d | REQ-402 | `children_bootstrap_failed` is recorded for observability only and has ZERO effect on REQ-102's `decideColonySpawn` signature or behavior (resolves FIND-203: no dangling REQ-402→REQ-102 data flow) | 0 | true | structural/Tier-0 check: `decideColonySpawn`'s pinned signature (REQ-102's own Acceptance Criteria) contains no `childrenBootstrapFailed`/`children_bootstrap_failed` parameter anywhere in the diff, and a fixture run with a nonzero bootstrap-failure count produces an IDENTICAL `decideColonySpawn` result to the same fixture with a zero count |
 | PROP-403a | REQ-403 | The static grep sweep (all 3 path forms, across skill scripts + cron/job configs) reports zero cross-instance path references in the current, real codebase | 0 | true | run the actual grep sweep against the real repo at Phase 3, not a fixture — must report zero findings for it to be considered proved on the CURRENT tree |
-| PROP-403b | REQ-403 | With N ≥ 2 real running instances (enumerated from REQ-105's registry, including at least one newly-spawned child), pairwise comparison of `resolveEvmPrivateKey`/`resolveSolanaSecret` outputs shows no equal keys, and no instance's resolved key-FILE PATH lies inside another instance's own home directory | 2/3 | true | live check: invoke the resolvers once per real running instance's own environment, assert pairwise inequality; Tier 3 once an actual spawned child exists to include in the comparison |
+| PROP-403b | REQ-403 | With N ≥ 2 real running instances (enumerated from REQ-105's registry, including at least one newly-spawned child), pairwise comparison of `resolveEvmPrivateKey`/`resolveSolanaSecret` outputs shows no equal keys, and no instance's resolved key-FILE PATH lies inside another instance's own home directory | 2/3 | true | live check: invoke the resolvers once per real running instance's own `homeDir` value (read directly from REQ-105's registry, resolves FIND-202), assert pairwise inequality; Tier 3 once an actual spawned child exists to include in the comparison |
 | PROP-403c | REQ-403 | A deliberately-injected fixture where two fake instances share a `HOME` is correctly flagged as a collision by the audit (negative-test / audit-is-not-vacuous check) | 1/2 | true | unit/integration test: two fixture "instances" with an identical `HOME` value → assert the audit reports a collision, proving the check would actually catch a real one |
 
 ## Verification Strategy
 
 - **Tier 0** (no runtime execution of the audited code): REQ-104's structural no-LLM/no-scoring
-  check (PROP-104a); REQ-105's registry-shape structural check (PROP-105a, structural half) and
-  seed-purity structural check (PROP-105d, structural half); REQ-106's single-coordinator-host
-  entry-point check and scope-statement check (PROP-106a/b); REQ-103's canonical-`statePath`
-  import-identity check (PROP-103d, resolves FIND-103); REQ-201's private-key-handling structural
-  check (PROP-201c, structural half); REQ-203's explicit-env-injection structural check
-  (PROP-203c); REQ-204's gas-seed-sizing structural check (PROP-204b, structural half); REQ-205's
-  `mcp.json` shape check (PROP-205a); REQ-206's structural-diff-limited-to-anchor-validation check
-  (PROP-206d); REQ-301's post-attempt-artifact structural check (PROP-301a); REQ-303's
-  unmodified-script-reuse structural check (PROP-303a); REQ-304's no-human-funded-source structural
-  check (PROP-304a); REQ-305's ledger-status-completeness structural check (PROP-305a); REQ-306's
-  zero-I/O pure-function check (PROP-306d); REQ-401's ledger-schema structural check (PROP-401b);
-  REQ-403's static grep sweep against the real current tree (PROP-403a).
-- **Tier 1** (pure-function unit tests): REQ-101's aggregation (PROP-101a/b/c); REQ-102's gate
-  (PROP-102a-e); REQ-103's reused `isLockStale` wiring (PROP-103b/c, reusing the already-proved
-  upstream fixtures); REQ-105's malformed-record-exclusion check (PROP-105b), direct
-  seed-data-passes-`isSelfFunded()` assertion (PROP-105c, resolves FIND-101), and seed-purity unit
-  check (PROP-105d, unit half); REQ-201/202's collision/conditional-generation checks (PROP-201b,
-  PROP-202a/c); REQ-203's pre-generation distinctness check (PROP-203a); REQ-204's defensive
-  already-registered check (PROP-204c, unit half); REQ-205's state-path-uniqueness check
-  (PROP-205b); REQ-206's identity-anchor validation (PROP-206a/b/c — both accepted paths and both
-  rejection paths — AND PROP-206e, the both-anchors-present accepted path, resolves FIND-102);
-  REQ-302's own-home-isolation check (PROP-302a, unit half); REQ-304's amount-ceiling and
+  check (PROP-104a); REQ-105's registry-shape structural check (PROP-105a, structural half),
+  seed-purity structural check (PROP-105d, structural half), and already-resolved-path structural
+  check (PROP-105e, resolves FIND-202/FIND-205); REQ-106's single-coordinator-host entry-point check
+  and scope-statement check (PROP-106a/b); REQ-103's canonical-`statePath` import-identity check
+  (PROP-103d, resolves FIND-103); REQ-201's private-key-handling structural check (PROP-201c,
+  structural half); REQ-203's explicit-env-injection structural check (PROP-203c); REQ-204's
+  gas-seed-sizing structural check (PROP-204b, structural half); REQ-205's `mcp.json` shape check
+  (PROP-205a); REQ-206's structural-diff-limited-to-anchor-validation check (PROP-206d) and
+  fixed-`generation`-value structural check (PROP-206g, structural half, resolves FIND-204);
+  REQ-301's post-attempt-artifact structural check (PROP-301a); REQ-303's unmodified-script-reuse
+  structural check (PROP-303a); REQ-304's no-human-funded-source structural check (PROP-304a);
+  REQ-305's ledger-status-completeness structural check (PROP-305a); REQ-306's zero-I/O pure-function
+  check (PROP-306d); REQ-401's ledger-schema structural check (PROP-401b); REQ-402's
+  no-effect-on-REQ-102 structural check (PROP-402d, resolves FIND-203); REQ-403's static grep sweep
+  against the real current tree (PROP-403a).
+- **Tier 1** (pure-function unit tests): REQ-101's aggregation (PROP-101a/b/c) AND its new
+  `filterProductiveCitizens` join (PROP-101d, resolves FIND-201); REQ-102's gate (PROP-102a-e);
+  REQ-103's reused `isLockStale` wiring (PROP-103b/c, reusing the already-proved upstream fixtures);
+  REQ-105's malformed-record-exclusion check (PROP-105b), direct seed-data-passes-`isSelfFunded()`
+  assertion (PROP-105c, resolves FIND-101), seed-purity unit check (PROP-105d, unit half), and
+  `homeDir`-never-passed-to-`isSelfFunded()` check (PROP-105f, resolves FIND-202); REQ-201/202's
+  collision/conditional-generation checks (PROP-201b, PROP-202a/c); REQ-203's pre-generation
+  distinctness check (PROP-203a); REQ-204's defensive already-registered check (PROP-204c, unit
+  half); REQ-205's state-path-uniqueness check (PROP-205b); REQ-206's identity-anchor validation
+  (PROP-206a/b/c — both accepted paths and both rejection paths — AND PROP-206e, the
+  both-anchors-present accepted path, resolves FIND-102) AND its `seedUsdc`-aliasing/
+  `generation`-fixed-at-`1` fixture (PROP-206g, unit half, resolves FIND-204); REQ-302's
+  own-home-isolation check (PROP-302a, unit half); REQ-304's amount-ceiling and
   individual-insufficiency checks (PROP-304b/c); REQ-305's cooldown-cap check (PROP-305c) and
   isSelfFunded-refusal-before-append check (PROP-305e, unit half, resolves FIND-101); REQ-306's
   price-ordering, tie-breaker, and availability-branch checks (PROP-306a/b/c); REQ-402's
-  window-boundary relabeling and exclusion checks (PROP-402a/c); REQ-403's negative-test
-  collision-detection check (PROP-403c, unit half).
+  window-boundary relabeling and exclusion checks (PROP-402a/c, now read from `ledger.js` rows,
+  resolving FIND-201); REQ-403's negative-test collision-detection check (PROP-403c, unit half).
 - **Tier 2** (integration, real module wiring + fresh-context adversary disk review, no live
   chain/cloud spend required): REQ-103's concurrent-attempt race (PROP-103a) and crashed-holder
   reclaim (PROP-103b, integration half); REQ-201's real 600-perm/own-home file check (PROP-201c,
   integration half); REQ-202's zero-invocation-when-unneeded check (PROP-202b); REQ-203's
   cross-instance `resolve-identity.mjs` non-leak test (PROP-203b); REQ-204's gas-seed-amount
   integration check (PROP-204b, integration half) and already-registered defensive check
-  (PROP-204c, integration half); REQ-302's own-home-isolation integration check (PROP-302a,
-  integration half); REQ-303's shelter-cost-ledger feedback check (PROP-303c); REQ-305's
-  failure-injection-at-each-step test (PROP-305b), registry-append-on-success test (PROP-305d), and
-  isSelfFunded-refusal-before-append check (PROP-305e, integration half); REQ-402's late-success
-  retroactive-correction test (PROP-402b); REQ-403's live pairwise-key check once ≥ 2 real
-  instances exist but before a fresh spawn (PROP-403b, integration half), and negative-test
-  collision-detection integration half (PROP-403c).
+  (PROP-204c, integration half); REQ-206's real full-seven-field `buildChildSpec` call (PROP-206f,
+  resolves FIND-204); REQ-302's own-home-isolation integration check (PROP-302a, integration half);
+  REQ-303's shelter-cost-ledger feedback check (PROP-303c); REQ-305's failure-injection-at-each-step
+  test (PROP-305b), registry-append-on-success test (PROP-305d, now also asserting `active_since` is
+  set on the ledger row and `telemetryPath`/`homeDir` are pre-resolved on the registry row, resolving
+  FIND-201/202/205), and isSelfFunded-refusal-before-append check (PROP-305e, integration half);
+  REQ-402's late-success retroactive-correction test (PROP-402b); REQ-403's live pairwise-key check
+  once ≥ 2 real instances exist but before a fresh spawn (PROP-403b, integration half), and
+  negative-test collision-detection integration half (PROP-403c).
 - **Tier 3** (live, no-mock E2E against real/testnet-first chain and cloud state, HARD RULE 0.24):
   REQ-204's real `register()` call (PROP-204a); REQ-302's real Nosana job deploy (PROP-302b);
   REQ-303's real Akash lease deploy (PROP-303b); REQ-401's independently-re-verified real gig
@@ -221,13 +247,23 @@ surplus→cooldown→cap sequence (PROP-102e) — a control-flow read, not merel
 (1a) REQ-105's colony citizen registry is read end-to-end confirming: the brand-new, dedicated
 `citizens.json` (NOT `colony-wallets.json`, which this feature never touches — resolves FIND-101)
 parses in the `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string,
-solana?: string}, fuel, humanDependencies, telemetryPath}` shape (PROP-105a, resolves FIND-104's
-wallet/walletAddress split) and its fixed literal seed data passes `isSelfFunded()` directly for
-every entry (PROP-105c — a straightforward fixture assertion, not an out-of-band comparison), that
-the seed set contains ZERO entries that would fail `isSelfFunded()` and specifically excludes
-claude-p/any human-funded wallet (PROP-105d), a single malformed record never aborts aggregation for
-other valid citizens (PROP-105b), and REQ-101/REQ-402c/REQ-403 all read their citizen list from this
+solana?: string}, fuel, humanDependencies, telemetryPath, homeDir}` shape (PROP-105a, resolves
+FIND-104's wallet/walletAddress split and FIND-202's `homeDir` addition) and its fixed literal seed
+data passes `isSelfFunded()` directly for every entry (PROP-105c — a straightforward fixture
+assertion, not an out-of-band comparison), that the seed set contains ZERO entries that would fail
+`isSelfFunded()` and specifically excludes claude-p/any human-funded wallet (PROP-105d), that
+`telemetryPath`/`homeDir` are always already-resolved absolute paths, never an unresolved `$HOME`
+template (PROP-105e, resolves FIND-202/FIND-205), a single malformed record never aborts aggregation
+for other valid citizens (PROP-105b), and REQ-101/REQ-403 both read their citizen list from this
 SAME registry — no second, undocumented citizen-enumeration mechanism exists anywhere in the diff;
+
+(1b) REQ-101's new `filterProductiveCitizens` join is read end-to-end confirming it is the ONLY place
+`status`/`active_since` cross the aggregation boundary — cross-referencing REQ-105's registry against
+`ledger.js`'s own rows (matched by `id`===`child_id`), excluding exactly the citizens whose matching
+row is `"bootstrap_failed"` or window-overdue-while-`"active"`, and passing through unfiltered any
+citizen with no matching row (PROP-101d) — before `computeColonySurplusUsd` ever runs (resolves
+FIND-201's location contradiction between REQ-105's registry and REQ-402's ledger-based lifecycle
+state), and that `citizens.json` itself is confirmed, by a structural read, to carry NEITHER field;
 
 (2) REQ-103's mutual exclusion is proven under a deliberately-induced concurrent race (two
 simultaneous `eligible:true` evaluations), confirming exactly one proceeds and the other logs
@@ -269,7 +305,10 @@ simultaneously is ACCEPTED, not rejected as an XOR violation (PROP-206e, resolve
 EARS/edge-case self-contradiction), and a structural diff confirms the change touched ONLY the
 required-field validation and returned-row field list — never `nextChildId` or the distinct-wallet
 assertion (PROP-206d) — this is the control-flow read that replaces iteration 1's now-corrected
-false "reused unmodified" claim (FIND-001);
+false "reused unmodified" claim (FIND-001); AND a real, full-seven-field `buildChildSpec` call
+supplies concrete, spec-derived values for `parentWallet`/`generation`/`seedUsdc`/`constitutionHash`
+(PROP-206f), with `seedUsdc` verified identical to REQ-204's actual gas-seed transfer amount and
+`generation` verified fixed at `1` (PROP-206g) — resolves FIND-204;
 
 (5) REQ-301's local-spawn-forbidden constraint holds — a real or simulated spawn attempt leaves no
 persistent child-specific artifact on the initiating host (PROP-301a);
@@ -306,17 +345,20 @@ accept either trading party's own self-report, and must perform its own fresh ba
 (PROP-401a);
 
 (10) REQ-402's bootstrap-timeout bookkeeping is proven at the boundary (exactly the children past
-the window are relabeled, no others — PROP-402a) and its non-punitive, retroactive-correction
-property is proven for a late success (PROP-402b), and its exclusion from REQ-101's aggregation
-while `"bootstrap_failed"` (PROP-402c);
+the window are relabeled, no others, reading `active_since`/`status` from `ledger.js`'s own rows —
+PROP-402a) and its non-punitive, retroactive-correction property is proven for a late success
+(PROP-402b), and its exclusion from REQ-101's aggregation while `"bootstrap_failed"` is confirmed to
+run EXCLUSIVELY through `filterProductiveCitizens` (PROP-402c, resolves FIND-201), and that the
+`children_bootstrap_failed` observability count has ZERO effect on REQ-102's pinned
+`decideColonySpawn` signature or behavior (PROP-402d, resolves FIND-203's dangling data-flow claim);
 
 (11) REQ-403's wallet mutual non-interference audit is run BY THE ADVERSARY ITSELF against the
 real, current tree (zero cross-instance path references, PROP-403a) and, once ≥ 2 real instances
-exist (enumerated from REQ-105's registry, including, ideally, an actual spawned child), against
-real running processes (pairwise key inequality, PROP-403b) — and the audit's own negative-test
-collision-detection is confirmed non-vacuous (PROP-403c) before its "zero findings" result on the
-real tree is trusted.
+exist (enumerated from REQ-105's registry via its `homeDir` field, resolves FIND-202, including,
+ideally, an actual spawned child), against real running processes (pairwise key inequality,
+PROP-403b) — and the audit's own negative-test collision-detection is confirmed non-vacuous
+(PROP-403c) before its "zero findings" result on the real tree is trusted.
 
-Any single BLOCKING finding under (1)-(11) (including sub-items 1a/2a/4a/8a) fails this Gate; Phase 4
-(implementation) may not be marked complete until all findings are resolved and a fresh adversary
+Any single BLOCKING finding under (1)-(11) (including sub-items 1a/1b/2a/4a/8a) fails this Gate; Phase
+4 (implementation) may not be marked complete until all findings are resolved and a fresh adversary
 pass confirms PASS, per this project's strict-mode VCSDD discipline (no postponement).
