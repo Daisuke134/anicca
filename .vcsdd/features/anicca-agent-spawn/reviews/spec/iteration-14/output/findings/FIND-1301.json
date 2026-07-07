@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-1301",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-102's own `SPAWN_COOLDOWN_DAYS` constant -- the value that defines the cooldown window for the ENTIRE cooldown-consumption mechanism iteration-11's critical FIND-1101 fix and iteration-9/10/11's PROP-305g boundary fixture all depend on -- is used repeatedly throughout REQ-102 and REQ-305 but its own default numeric value is never stated anywhere in this document. This is a genuine gap in a spec that is otherwise extremely disciplined about giving every other constant an explicit '`defaults to X`'/'(default `X`)' statement with a citation to precedent (this exact discipline is what FIND-006/FIND-305/FIND-402 were each individually resolved with).\n\nConcretely: `SPAWN_COOLDOWN_DAYS` is referenced 5 times in behavioral-spec.md (lines 246, 595, 639, 1929, 1995) and once in REQ-102's own Acceptance Criteria parameter list (`cooldownDays`, line ~656) -- in every one of these places it is used as a bare symbol in a formula (`windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS`) or referenced by name, but NO default numeric value is ever stated for it, unlike every sibling constant in the exact same requirement: `MIN_SHELTER_USD` defaults to `5.00` (line 611), `SAFETY_MARGIN_MULTIPLIER` defaults to `2` (line 618), `FAILURE_COOLDOWN_CAP` defaults to `3` (line 660, restated 4 more times elsewhere), `MAX_CONCURRENT_SPAWNS` defaults to `1` (line 584) -- REQ-102's own Acceptance Criteria bullet even lists `cooldownDays` immediately adjacent to `failureCooldownCap defaults to 3` (line 660) without giving `cooldownDays` an analogous default, showing this is an omission at the exact point the author's own writing pattern would naturally have included one.\n\nThe ONLY place a numeric value (`14`) appears anywhere near this constant is REQ-402 (behavioral-spec.md:2159), which defines a DIFFERENT constant, `BOOTSTRAP_WINDOW_DAYS`, as '(default `14`, reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant for internal consistency rather than inventing an unrelated window)'. This phrasing asserts BOOTSTRAP_WINDOW_DAYS's value is being REUSED FROM REQ-102 -- implying REQ-102 already established SPAWN_COOLDOWN_DAYS=14 -- but REQ-102 never actually states this value anywhere; the citation points backward at a definition that does not exist at its cited location. (Separately, the real, existing `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s own `rateLimitDays` parameter DOES default to `14` -- confirmed by direct read of that file, line 11 -- which is plausibly what REQ-102's author intended `SPAWN_COOLDOWN_DAYS` to inherit, matching this spec's own established discipline elsewhere of reusing an existing precedent value with an explicit citation (e.g. `SAFETY_MARGIN_MULTIPLIER`'s citation to `akt-treasury.sh`'s '2x' convention) -- but this spec never actually makes that citation for `SPAWN_COOLDOWN_DAYS` itself, so this remains an inference, not a specified value.)\n\nThis matters concretely: a Phase 2 implementer reading REQ-102 in isolation (its EARS clause, Cooldown Check paragraph, Edge Cases, and Acceptance Criteria all use the bare symbol `SPAWN_COOLDOWN_DAYS`/`cooldownDays`) has no way to know what number to configure -- they would have to either guess, or discover REQ-402's indirect, 1500-line-later citation and infer backward that the value must already be 14, or independently rediscover `spawn-decision.js`'s own `rateLimitDays=14` default that this spec never actually cites for this purpose. If two different implementers (or the same implementer at two different times) each independently guess a different value, REQ-402's own 'reusing REQ-102's own constant for internal consistency' rationale silently breaks -- `BOOTSTRAP_WINDOW_DAYS` and `SPAWN_COOLDOWN_DAYS` would diverge even though REQ-402's own text asserts they are, and must remain, the identical value. This is the same class of hazard this spec explicitly rejects elsewhere for other cross-requirement value dependencies (e.g. REQ-206's own edge case: 'seedUsdc and REQ-204's actual gas-seed transfer amount ever diverge... THE SYSTEM treats this as a spec violation -- the two MUST be the identical value by construction, never merely close') -- but no proof obligation anywhere in verification-architecture.md actually tests that `SPAWN_COOLDOWN_DAYS` and `BOOTSTRAP_WINDOW_DAYS` are configured to the identical value; a grep of verification-architecture.md confirms `SPAWN_COOLDOWN_DAYS` appears there ZERO times as its own named row.\n\nThis is a genuine spec_gap (not a logical contradiction like FIND-1201's three-way lock-scope inconsistency) -- REQ-102's cooldown LOGIC itself is fully and correctly specified (the ordering, the success-vs-failure-cap reconciliation FIND-1101 fixed, the boundary tests) -- but the constant that parameterizes it is never pinned to a value at its own point of definition, only implied indirectly and asymmetrically from a later, unrelated requirement.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "581-677",
+      "snippet": "REQ-102: Deterministic spawn threshold gate -- SPAWN_COOLDOWN_DAYS used throughout (windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS, etc.) with no default value ever stated for it in this requirement"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "610-661",
+      "snippet": "MIN_SHELTER_USD defaults to 5.00 ... SAFETY_MARGIN_MULTIPLIER defaults to 2 ... failureCooldownCap defaults to 3 -- every sibling constant in this same requirement gets an explicit default; cooldownDays does not"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "2157-2160",
+      "snippet": "IF a child instance marked \"active\" has NOT achieved REQ-401's success criterion within `BOOTSTRAP_WINDOW_DAYS` (default `14`, reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant for internal consistency rather than inventing an unrelated window)"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/self/spawn/lib/spawn-decision.js",
+      "lineRange": "6-13",
+      "snippet": "function decideSpawn({ balanceUsdc, children = [], nowMs = Date.now(), minBalanceUsdc = 20, rateLimitDays = 14, maxChildren = 1 } = {}) -- the real, existing precedent's own default is 14, never cited by REQ-102 for SPAWN_COOLDOWN_DAYS"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "1-774",
+      "snippet": "grep confirms 'SPAWN_COOLDOWN_DAYS' appears zero times anywhere in this file as its own named row/obligation -- no proof obligation ties it to a specific value or to BOOTSTRAP_WINDOW_DAYS's own value"
+    }
+  ],
+  "routeToPhase": "1a"
+}

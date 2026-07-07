@@ -1,0 +1,40 @@
+{
+  "reviewType": "spec",
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 14,
+  "priorIterationFindingReconfirmation": {
+    "FIND-1201": "GENUINELY RESOLVED. Read REQ-103's own EARS clause (behavioral-spec.md:680-689), its statePath prose (behavioral-spec.md:700-733, specifically 716-719), and its Acceptance Criteria (behavioral-spec.md:757-765) side by side: all three now state the IDENTICAL scope verbatim -- 'the lock is held from REQ-201's wallet generation THROUGH REQ-305's ledger append actually completing' -- with the EARS clause and Acceptance Criteria each explicitly cross-referencing the other two ('resolves FIND-1201: no \"and beyond\" open-ended phrasing, and no narrower reading that releases the lock any earlier'). No residual 'and beyond' open-ended phrasing or narrower 'REQ-201 through REQ-205, and the decision to proceed into REQ-3xx' phrasing remains anywhere outside the changelog's own historical description of the original bug (grepped both spec files for 'and beyond' and 'decision to proceed into REQ-3xx' -- only changelog/RESOLUTION-NOTES occurrences found). PROP-103e (verification-architecture.md:276) is a genuinely distinct fixture from PROP-103a (verification-architecture.md:272): PROP-103a proves interlock under a SIMULTANEOUS race (both evaluators observe eligible:true at the same instant); PROP-103e proves the lock remains held under a STAGGERED race where a second evaluator's lock-acquire attempts are issued repeatedly WHILE a first evaluator's REQ-304 funding call is deliberately delayed (i.e. strictly AFTER the first evaluator's REQ-201-205 have already completed) -- this genuinely exercises the specific failure mode reading (3) of the original three-way inconsistency would have permitted (the lock releasing early, between REQ-205 and REQ-305), which PROP-103a's simultaneous-race fixture structurally cannot exercise (a simultaneous race can pass even if the lock is held for only a few milliseconds, since both racers start at t0). The Gate's item (2) (verification-architecture.md:600-615) correctly requires PROP-103e 'IN ADDITION to PROP-103a's simultaneous-race fixture, since a simultaneous race alone cannot prove the lock is not released early somewhere between REQ-206 and REQ-305.' REQ-304's Acceptance Criteria (behavioral-spec.md:1901-1914) also correctly reflects the corrected lock scope by depending on REQ-101's per-citizen function being computed while the lock is genuinely held through the funding step.",
+    "FIND-1202": "GENUINELY RESOLVED. REQ-101's body (behavioral-spec.md:447-464) specifies `computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) -> Array<{citizenId, surplusUsd}>` as a new sibling pure function in the same file as `computeColonySurplusUsd`, and explicitly states `computeColonySurplusUsd` 'SHALL be implemented by CALLING this function and summing its returned surplusUsd values -- never by an independently-written, separately-maintained reduce.' REQ-101's Acceptance Criteria (behavioral-spec.md:549-554) restates this by-construction relationship. REQ-304's own Acceptance Criteria (behavioral-spec.md:1909-1914) now explicitly binds the per-transfer ceiling check to this function BY NAME: 'read directly, by name, from REQ-101's computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) output for that citizen's citizenId (never an independently re-derived or re-summed aggregate value)' -- this is the exact binding-by-name the iteration-13 review found missing. verification-architecture.md's Purity Boundary Map row (line 119) and PROP-101i (line 266) both specify the identical by-construction relationship and require a Tier-0 structural check (computeColonySurplusUsd's source literally calls computePerCitizenSurplusUsd and sums it) plus a Tier-1 fixture test proving per-citizen correctness AND aggregate-sum consistency on the same fixture; PROP-304f (line 331) is updated to read 'from REQ-101's computePerCitizenSurplusUsd(...) output for that citizen's citizenId,' and Gate items (1e)/(7) (lines 591-598, 677-696) both require the adversary to confirm this binding. No independently re-derived or re-summed parallel computation of the per-citizen term was found anywhere in either spec file."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1301"],
+      "evidence": [
+        {"type": "spec", "location": "specs/behavioral-spec.md:679-777 (REQ-103, full re-read)", "description": "Confirmed FIND-1201's fix: EARS clause, statePath prose, and Acceptance Criteria all state the identical lock-scope, cross-referencing each other"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:1815-1916 (REQ-304, full re-read)", "description": "Confirmed FIND-1202's fix: REQ-304's Acceptance Criteria binds the per-citizen ceiling check to computePerCitizenSurplusUsd by name"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:1-2413 (full fresh read, REQ-101 through REQ-403)", "description": "No other instance of the FIND-1201 class of bug (a requirement whose EARS clause, prose, and Acceptance Criteria state three mutually inconsistent scopes for the same rule) was found anywhere else in the document -- REQ-102/305's cooldown reconciliation, REQ-105's two-artifact design, REQ-206's identity-anchor 'at least one, not XOR' rule, REQ-304's AKT-route citation split, and REQ-403's coLocatedWithCoordinator scoping were all specifically checked for this pattern and found internally consistent across every restatement"},
+        {"type": "spec", "location": "specs/behavioral-spec.md:581-677,2157-2232 (REQ-102, REQ-402)", "description": "NEW FINDING: SPAWN_COOLDOWN_DAYS is used throughout REQ-102/REQ-305's cooldown mechanism but its own default numeric value is never stated in REQ-102 (unlike every sibling constant in the same requirement); REQ-402 later implies it equals 14 via a backward citation to 'REQ-102's own constant' that REQ-102 itself never actually states -- see FIND-1301"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js", "description": "Confirmed the real, existing decideSpawn's own rateLimitDays parameter defaults to 14 (line 11) -- the plausible source of REQ-402's implied value, but never cited by REQ-102 for SPAWN_COOLDOWN_DAYS itself"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1301"],
+      "evidence": [
+        {"type": "spec", "location": "specs/verification-architecture.md:1-774 (full fresh read)", "description": "Confirmed PROP-103e is a genuinely distinct fixture from PROP-103a (staggered vs simultaneous race), resolving FIND-1201's verification gap; confirmed PROP-101i requires both a structural (calls-and-sums) check and a fixture test, resolving FIND-1202's verification gap"},
+        {"type": "spec", "location": "specs/verification-architecture.md (grep for SPAWN_COOLDOWN_DAYS)", "description": "SPAWN_COOLDOWN_DAYS appears zero times as its own named proof obligation or row -- no test/check anywhere verifies its configured value, or verifies it equals BOOTSTRAP_WINDOW_DAYS as REQ-402's own text asserts it must, per FIND-1301"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

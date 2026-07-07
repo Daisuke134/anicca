@@ -1,8 +1,20 @@
 # Verification Architecture — anicca-agent-spawn (Phase 1b)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: same as `behavioral-spec.md`
-(P3 colony-treasury-gated cloud spawn + $0-bootstrap verification) · **日付**: 2026-07-07 ·
-**revision**: iteration 13, revised (spec review iteration-12 findings FIND-1201/1202 resolved —
+(P3 colony-treasury-gated cloud spawn + $0-bootstrap verification) · **日付**: 2026-07-08 ·
+**revision**: iteration 14, revised (spec review iteration-13 finding FIND-1301 resolved —
+REQ-102's own `SPAWN_COOLDOWN_DAYS` constant, used repeatedly throughout REQ-102's Cooldown Check and
+REQ-305's failure-cap reconciliation but never itself given an explicit default value anywhere in
+`behavioral-spec.md` — unlike every sibling constant in the SAME requirement — now explicitly defaults
+to `14` there, reusing `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s own existing
+`rateLimitDays` parameter default (line 11) for consistency with prior art; REQ-402's
+`BOOTSTRAP_WINDOW_DAYS` now correctly cites a REQ-102 default that actually exists rather than an
+implied one; a new proof obligation, PROP-402e, verifies `BOOTSTRAP_WINDOW_DAYS` and
+`SPAWN_COOLDOWN_DAYS` are configured to the IDENTICAL value by construction, never merely coincidentally
+equal — mirroring this spec's own established "identical by construction, never merely close"
+discipline already used for REQ-206's `seedUsdc`/REQ-204 gas-seed-transfer-amount pair (PROP-206g); the
+Gate's item (10) is extended to require this identity check (resolves FIND-1301, major) — AND spec
+review iteration-12 findings FIND-1201/1202 resolved —
 REQ-103's `"colony-spawn"` lock critical section, previously stated with THREE mutually inconsistent
 scopes across its EARS clause ("and beyond", open-ended), its own statePath prose ("REQ-101 through
 REQ-305"), and its binding Acceptance Criteria ("REQ-201 through REQ-205, and the decision to proceed
@@ -347,6 +359,7 @@ newly-captured on-disk evidence transcript rather than inline prose)
 | PROP-402b | REQ-402 | A late (post-window) success retroactively corrects the label back from `"bootstrap_failed"` | 1/2 | true | unit test: a child already labeled `"bootstrap_failed"` that subsequently produces a REQ-401-qualifying success → assert label correction on the next evaluation |
 | PROP-402c | REQ-402 | A `"bootstrap_failed"` child's balance is excluded from REQ-101's productive-surplus aggregation even if nonzero — the citizen record comes from REQ-105's registry, but the `"bootstrap_failed"` FLAG itself is read from its matching `ledger.js` row via `filterProductiveCitizens` (REQ-101), never from a second, competing copy in `citizens.json` (resolves FIND-201) | 1 | true | unit test: fixture citizen (a REQ-105 registry record) whose matching ledger.js row is `"bootstrap_failed"`, with nonzero registry-recorded balance → assert `filterProductiveCitizens` excludes it before `computeColonySurplusUsd` ever runs |
 | PROP-402d | REQ-402 | `children_bootstrap_failed` is recorded for observability only and has ZERO effect on REQ-102's `decideColonySpawn` signature or behavior (resolves FIND-203: no dangling REQ-402→REQ-102 data flow) | 0 | true | structural/Tier-0 check: `decideColonySpawn`'s pinned signature (REQ-102's own Acceptance Criteria) contains no `childrenBootstrapFailed`/`children_bootstrap_failed` parameter anywhere in the diff, and a fixture run with a nonzero bootstrap-failure count produces an IDENTICAL `decideColonySpawn` result to the same fixture with a zero count |
+| PROP-402e | REQ-402 | `BOOTSTRAP_WINDOW_DAYS`'s configured value is the IDENTICAL value to `SPAWN_COOLDOWN_DAYS`'s configured value (REQ-102) — never merely coincidentally equal, and never two independently-configurable literals that could silently drift apart (new, resolves FIND-1301, major) — mirroring this spec's own established discipline that two cross-requirement-dependent values MUST be identical by construction, the SAME rule REQ-206's own `seedUsdc`/REQ-204 gas-seed-transfer-amount identity check already applies ("the two MUST be the identical value by construction, never merely close") | 0/1 | true | Tier 0 (structural): read the configuration source confirming `BOOTSTRAP_WINDOW_DAYS` is derived FROM (re-exports, aliases, or is assigned directly from) the SAME `SPAWN_COOLDOWN_DAYS` constant/config value REQ-102 defines — never a second, independently-declared literal that merely happens to also read `14` today. Tier 1: unit test asserting `BOOTSTRAP_WINDOW_DAYS === SPAWN_COOLDOWN_DAYS` at runtime, plus a mutation fixture — change `SPAWN_COOLDOWN_DAYS`'s configured value and assert `BOOTSTRAP_WINDOW_DAYS` changes identically alongside it, never remaining pinned to a stale independent literal — proving the identity holds by construction, not by today's coincidental numeric match |
 | PROP-403a | REQ-403 | The static grep sweep (all 3 path forms, across skill scripts + cron/job configs) reports zero cross-instance path references in the current, real codebase | 0 | true | run the actual grep sweep against the real repo at Phase 3, not a fixture — must report zero findings for it to be considered proved on the CURRENT tree |
 | PROP-403b | REQ-403 | With N ≥ 2 real running instances whose registry record has `coLocatedWithCoordinator === true` (enumerated from REQ-105's registry via that exact field, resolves FIND-703 — today: automaton + Franklin), pairwise comparison of `resolveEvmPrivateKey`/`resolveSolanaSecret` outputs, invoked against each citizen's own CORRECTED, DISTINCT `homeDir` (resolves FIND-501 — never the bare, shared `$HOME` an earlier revision wrongly seeded) AND against an EXPLICITLY-CONSTRUCTED `env` object using the canonical `COORDINATOR_HOME` constant (resolves FIND-603/FIND-701 — never a bare `{home: X}` call relying on ambient `process.env.HOME`, never an independently-hardcoded or independently-`os.homedir()`-read HOME value), shows no equal keys, and no instance's resolved key-FILE PATH lies inside another instance's own home directory | 2 | true | live check: invoke the resolvers once per instance in `citizens.filter(c => c.coLocatedWithCoordinator === true)` (resolves FIND-703), using that instance's own `homeDir` value (read directly from REQ-105's registry, resolves FIND-202), ALWAYS passing an explicit `env: {HOME: COORDINATOR_HOME, ANICCA_HOME: citizen.homeDir}` object — `COORDINATOR_HOME` imported from `registry-path.mjs` (resolves FIND-701, see PROP-403f), never independently sourced — assert pairwise inequality. **Corrected, resolves FIND-501:** with the corrected seed values, `resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: COORDINATOR_HOME, ANICCA_HOME: '/Users/anicca/.anicca'}})` (automaton; `COORDINATOR_HOME` resolves to `/Users/anicca` on this host, confirmed live via `os.homedir()`, 2026-07-07) resolves via `resolve-identity.mjs`'s own existing legacy-fallback branch to `/Users/anicca/.automaton/wallet.json` — CONFIRMED PRESENT on disk, 2026-07-07, content never read/printed — and `resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: COORDINATOR_HOME, ANICCA_HOME: '/Users/anicca/.blockrun'}})` (Franklin) resolves via the symmetric legacy-fallback branch to `/Users/anicca/.blockrun/.solana-session` — CONFIRMED PRESENT on disk, 2026-07-07 — BOTH non-null, proving this check actually reads real key material; the PRIOR bare-`$HOME` seed value resolved `null` for both citizens on every chain (independently re-derived from the module's own gate: `effectiveHome === path.join(legacyHome,'.anicca')`/`.blockrun` both evaluate FALSE for the bare `/Users/anicca` value), which would have made this obligation vacuous. **Corrected, resolves FIND-603/FIND-701:** the invocation shape ITSELF is now always the explicit-`env` form above using the canonical `COORDINATOR_HOME` constant, never the bare `{home: X}` shape a prior revision used (which silently depended on the AUDIT SCRIPT's own ambient `process.env.HOME`), and never an independently-hardcoded/independently-`os.homedir()`-read HOME value (which would have reintroduced the identical ambient-coupling hazard one layer up). Corrected (resolves FIND-303/FIND-703): this obligation does NOT extend to Tier 3 and does NOT require "at least one newly-spawned child" this increment — `resolve-identity.mjs`'s resolvers are a pure local-filesystem primitive that structurally cannot reach a REQ-301-mandated remote child's own disk, and this feature never transmits a child's private key over the network for comparison; a cloud-hosted child (`coLocatedWithCoordinator: false`, by REQ-305) is structurally excluded from this obligation's candidate set until a future increment adds a genuine remote-audit mechanism (PROP-403d) |
 | PROP-403c | REQ-403 | A deliberately-injected fixture where two fake instances (both `coLocatedWithCoordinator: true`) share a `HOME` is correctly flagged as a collision by the audit (negative-test / audit-is-not-vacuous check) | 1/2 | true | unit/integration test: two fixture "instances" with an identical `HOME` value → assert the audit reports a collision, proving the check would actually catch a real one |
@@ -393,7 +406,8 @@ newly-captured on-disk evidence transcript rather than inline prose)
   `coLocatedWithCoordinator`-always-`false`-on-append structural half (PROP-305f, resolves FIND-703);
   REQ-306's zero-I/O pure-function check
   (PROP-306d); REQ-401's ledger-schema structural check (PROP-401b); REQ-402's no-effect-on-REQ-102
-  structural check (PROP-402d, resolves FIND-203); REQ-403's static grep sweep against the real
+  structural check (PROP-402d, resolves FIND-203) AND its `BOOTSTRAP_WINDOW_DAYS`/`SPAWN_COOLDOWN_DAYS`
+  identity structural half (PROP-402e, structural half, new, resolves FIND-1301); REQ-403's static grep sweep against the real
   current tree, now confirmed to cover a cloud-hosted child's deployed source too (PROP-403a,
   resolves FIND-303), its `coLocatedWithCoordinator===true`-enumeration structural check (PROP-403d,
   resolves FIND-303/FIND-703 — now a real, checkable field-filter, not an implicit notion), its
@@ -433,7 +447,9 @@ newly-captured on-disk evidence transcript rather than inline prose)
   reuse check (PROP-303d, unit half — reuses `spawn-child/lib/akt-cost-gate.js`'s own already-existing
   unit tests as already-sufficient arithmetic proof, resolves FIND-402); REQ-402's
   window-boundary relabeling and exclusion checks (PROP-402a/c, now read from `ledger.js` rows via a
-  NEW `appendChild` row rather than a mutation, resolving FIND-201/FIND-405); REQ-403's negative-test
+  NEW `appendChild` row rather than a mutation, resolving FIND-201/FIND-405) AND its
+  `BOOTSTRAP_WINDOW_DAYS`/`SPAWN_COOLDOWN_DAYS` identity unit check (PROP-402e, unit half, new, resolves
+  FIND-1301); REQ-403's negative-test
   collision-detection check (PROP-403c, unit half).
 - **Tier 2** (integration, real module wiring + fresh-context adversary disk review, no live
   chain/cloud spend required): REQ-101's registry-driven, host-location-agnostic
@@ -737,6 +753,13 @@ non-punitive, retroactive-correction property is proven for a late success
 run EXCLUSIVELY through `filterProductiveCitizens` (PROP-402c, resolves FIND-201), and that the
 `children_bootstrap_failed` observability count has ZERO effect on REQ-102's pinned
 `decideColonySpawn` signature or behavior (PROP-402d, resolves FIND-203's dangling data-flow claim);
+AND — resolves FIND-1301, major — that `BOOTSTRAP_WINDOW_DAYS`'s configured value is read as, or
+derived directly from, REQ-102's own `SPAWN_COOLDOWN_DAYS` constant (now `14` by that requirement's own
+stated default) rather than an independently-declared literal that merely happens to also read `14`
+today, and that a fixture changing `SPAWN_COOLDOWN_DAYS`'s configured value changes
+`BOOTSTRAP_WINDOW_DAYS` identically alongside it (PROP-402e) — mirroring the SAME "identical by
+construction, never merely close" discipline REQ-206's own `seedUsdc`/gas-seed-transfer-amount identity
+check (item (4a) above) already establishes for a different cross-requirement value pair;
 
 (11) REQ-403's wallet mutual non-interference audit is run BY THE ADVERSARY ITSELF against the
 real, current tree: the STATIC grep-sweep half covers zero cross-instance path references across the

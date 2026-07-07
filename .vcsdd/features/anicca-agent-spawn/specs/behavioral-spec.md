@@ -1,8 +1,24 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 13, revised
-(spec review iteration-12 findings FIND-1201/1202 resolved — REQ-103's `"colony-spawn"` lock critical
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 14, revised
+(spec review iteration-13 finding FIND-1301 resolved — REQ-102's own `SPAWN_COOLDOWN_DAYS` constant,
+used repeatedly throughout its Cooldown Check and REQ-305's failure-cap reconciliation but never itself
+given an explicit default value anywhere in this document — unlike every sibling constant in the SAME
+requirement (`MIN_SHELTER_USD` defaults to `5.00`, `SAFETY_MARGIN_MULTIPLIER` defaults to `2`,
+`FAILURE_COOLDOWN_CAP` defaults to `3`, `MAX_CONCURRENT_SPAWNS` defaults to `1`) — now explicitly
+defaults to `14`, reusing `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s own existing
+`rateLimitDays` parameter default (line 11) for consistency with prior art, rather than inventing an
+unrelated value (the SAME citation discipline this spec's own `SAFETY_MARGIN_MULTIPLIER` default already
+uses for `akt-treasury.sh`'s "2×" convention); REQ-102's Acceptance Criteria gains the matching
+`cooldownDays` default; REQ-402's `BOOTSTRAP_WINDOW_DAYS` (default `14`, reusing REQ-102's own
+`SPAWN_COOLDOWN_DAYS` constant) now correctly cites a REQ-102 default that actually exists, rather than
+an implied value REQ-102 never stated; and a new proof obligation, PROP-402e, verifies
+`BOOTSTRAP_WINDOW_DAYS` and `SPAWN_COOLDOWN_DAYS` are configured to the IDENTICAL value by construction,
+never merely coincidentally equal — mirroring this spec's own established "identical by construction,
+never merely close" discipline already used for REQ-206's `seedUsdc`/REQ-204 gas-seed-transfer-amount
+pair (resolves FIND-1301, major) — AND spec review iteration-12 findings FIND-1201/1202 resolved —
+REQ-103's `"colony-spawn"` lock critical
 section, previously stated with THREE mutually inconsistent scopes across its EARS clause ("and
 beyond", open-ended), its own prose ("REQ-101 through REQ-305"), and its binding Acceptance Criteria
 ("REQ-201 through REQ-205, and the decision to proceed into REQ-3xx" — textually EXCLUDING REQ-206's
@@ -258,6 +274,18 @@ FIND-1102 resolution against REQ-101's actually-specified functions:
 |---|---|---|
 | FIND-1201 | critical | REQ-103's `"colony-spawn"` lock critical section previously carried THREE mutually inconsistent scopes within the SAME requirement — its EARS clause said "REQ-201's identity generation and beyond" (open-ended), its own statePath prose said "REQ-101 through REQ-305", and its binding Acceptance Criteria said only "REQ-201 through REQ-205, and the decision to proceed into REQ-3xx" (textually excluding REQ-206's ledger-row assembly, REQ-304's funding transfer(s), and REQ-305's append) — the narrowest of the three being what a Phase 2 implementer/Phase 3 verifier actually builds/tests against, and insufficient to prevent a genuine STAGGERED double-spawn/double-funding race (a second evaluator arriving after a first evaluator releases the lock post-REQ-205 but while its REQ-304/REQ-305 are still executing). All three statements are corrected to state the IDENTICAL scope: the lock is held from REQ-201 through REQ-305's ledger append actually completing, never released earlier. A new proof obligation, PROP-103e, adds the missing staggered-timing fixture (a delayed REQ-304 funding step, with a second evaluator's lock-acquire attempts failing throughout the entire delay), and the Gate's item (2) (verification-architecture.md) is corrected to require this fixture in addition to PROP-103a's simultaneous-race fixture. |
 | FIND-1202 | major | REQ-304's own FIND-1102 resolution required each citizen's own transfer to be checked against "THAT citizen's own certified surplus-above-reserve contribution", but no function anywhere exposed that value per-citizen — only `computeColonySurplusUsd`'s aggregate SUM existed. A new sibling pure function, REQ-101's `computePerCitizenSurplusUsd({citizens, perCitizenReserveUsd}) → Array<{citizenId, surplusUsd}>`, now exposes exactly that value, one citizen at a time; `computeColonySurplusUsd` is specified to be implemented by calling this function and summing its output (never an independently-maintained second reduce), guaranteeing the aggregate and the per-citizen breakdown can never diverge. REQ-304's ceiling-check Acceptance Criteria now cites this function by name, and a new proof obligation, PROP-101i (verification-architecture.md), tests its per-citizen correctness and its by-construction consistency with `computeColonySurplusUsd`'s own sum. |
+
+## Changelog (iteration 13 spec review → iteration 14)
+
+Iteration 13's spec review FAILed with 1 finding (major — FIND-1301; all findings across iterations
+1-13 were reconfirmed genuinely resolved against the real, current source). Resolved by a specific,
+cited design decision, grounded in a full re-read of REQ-102's own text side by side with every sibling
+constant's default statement in the same requirement, and of the real, existing
+`~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s own `rateLimitDays` parameter default:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1301 | major | REQ-102's own `SPAWN_COOLDOWN_DAYS` constant was used repeatedly throughout REQ-102's Cooldown Check and REQ-305's failure-cap reconciliation (5 uses total) but its own default numeric value was never stated anywhere in this document — unlike every sibling constant in the SAME requirement (`MIN_SHELTER_USD` defaults to `5.00`, `SAFETY_MARGIN_MULTIPLIER` defaults to `2`, `FAILURE_COOLDOWN_CAP` defaults to `3`, `MAX_CONCURRENT_SPAWNS` defaults to `1`); the only place a value (`14`) appeared was REQ-402's `BOOTSTRAP_WINDOW_DAYS`, which asserted it was "reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant" — a backward citation to a definition that did not actually exist at its cited location. REQ-102's Cooldown Check paragraph now explicitly states `SPAWN_COOLDOWN_DAYS` defaults to `14`, reusing `spawn-decision.js::decideSpawn`'s own existing `rateLimitDays` parameter default (line 11) for consistency with prior art (the SAME citation discipline this spec's own `SAFETY_MARGIN_MULTIPLIER` default already uses for `akt-treasury.sh`'s "2×" convention) — never inventing an unrelated value; REQ-102's Acceptance Criteria gains the matching `cooldownDays` default. REQ-402's existing citation to "REQ-102's own `SPAWN_COOLDOWN_DAYS` constant" now correctly resolves to a default REQ-102 actually states. A new proof obligation, PROP-402e (verification-architecture.md), verifies `BOOTSTRAP_WINDOW_DAYS` and `SPAWN_COOLDOWN_DAYS` are configured to the IDENTICAL value by construction, never merely coincidentally equal — mirroring this spec's own established "identical by construction, never merely close" discipline already used for REQ-206's `seedUsdc`/REQ-204 gas-seed-transfer-amount pair. |
 
 ## Scope of this increment (read first)
 
@@ -591,9 +619,13 @@ cannot express "how many of the recent attempts were failures." This reuses the 
 discipline `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves out for its
 own rate-limit check (`children.some(c => typeof c.spawned_ms === "number" && c.spawned_ms >=
 windowStart)`), generalized here from "an array of successes only" to "an array of attempts, each
-carrying its own `outcome`" — exactly the richer shape REQ-305's failure-cap rule (below) needs. Given
-`windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS` and `inWindow = recentSpawnAttempts.filter(a =>
-a.ts >= windowStart)`:
+carrying its own `outcome`" — exactly the richer shape REQ-305's failure-cap rule (below) needs.
+`SPAWN_COOLDOWN_DAYS` defaults to `14` (resolves FIND-1301) — reusing
+`~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s own existing `rateLimitDays`
+parameter default (line 11) for consistency with prior art, rather than inventing an unrelated value —
+the SAME precedent this Cooldown Check's own array-scan discipline (above) already reuses from that
+module. Given `windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS` and `inWindow =
+recentSpawnAttempts.filter(a => a.ts >= windowStart)`:
 - IF any entry in `inWindow` has `outcome === "success"`: cooldown applies UNCONDITIONALLY (a hard
   gate) — a successful spawn always restarts the full cooldown, regardless of how many failures (if
   any) also occurred in the same window.
@@ -657,7 +689,9 @@ WHETHER to spawn — see REQ-104.
   boolean, reason: "ok"|"insufficient_surplus"|"rate_limited"|"max_concurrent_spawns" }`, no I/O.
   `recentSpawnAttempts: Array<{ ts: number, outcome: "success"|"failure" }>` (resolves FIND-1101 —
   REPLACES the prior single-scalar `lastSpawnAttemptMs`, which could not express "how many of the
-  recent attempts were failures"); `failureCooldownCap` defaults to `3` — identical to REQ-305's own
+  recent attempts were failures"); `cooldownDays` defaults to `14`, identical to `SPAWN_COOLDOWN_DAYS`'s
+  own default above (resolves FIND-1301) — never independently configurable to a different value;
+  `failureCooldownCap` defaults to `3` — identical to REQ-305's own
   cap, the SAME number, never independently configurable to a different value.
 - Order of checks is surplus → cooldown → concurrency cap (each independently testable at its own
   boundary), matching the existing `spawn-decision.js` ordering convention (a broke colony never
@@ -2156,7 +2190,8 @@ proxy for it).
 
 ### REQ-402: Bootstrap failure/timeout handling
 **EARS**: IF a child instance marked `"active"` has NOT achieved REQ-401's success criterion within
-`BOOTSTRAP_WINDOW_DAYS` (default `14`, reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant for
+`BOOTSTRAP_WINDOW_DAYS` (default `14`, reusing REQ-102's own `SPAWN_COOLDOWN_DAYS` constant — which
+REQ-102 itself now states defaults to `14` (resolves FIND-1301) — for
 internal consistency rather than inventing an unrelated window), THE SYSTEM SHALL relabel that child
 `"bootstrap_failed"` in the ledger — `~/anicca/skills/self/spawn/lib/ledger.js`'s own JSONL rows, the
 SOLE canonical owner of this lifecycle fact (REQ-105's `citizens.json` is deliberately minimal per its

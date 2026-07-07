@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 15,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 14,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-14/output/findings/",
+    "note": "1 finding, major: FIND-1301 -- REQ-102's own SPAWN_COOLDOWN_DAYS constant never had an explicit default value stated, unlike every sibling constant in the same requirement, while REQ-402 implied it via a circular backward citation. Fix: REQ-102 now states SPAWN_COOLDOWN_DAYS defaults to 14 (citing spawn-decision.js::decideSpawn's own rateLimitDays=14 precedent), REQ-402's citation now resolves to a real statement, and new PROP-402e verifies BOOTSTRAP_WINDOW_DAYS and SPAWN_COOLDOWN_DAYS are identical BY CONSTRUCTION (never coincidentally equal), mirroring REQ-206's seedUsdc/gas-seed identity-check discipline."
+  },
+  "note": "Verify FIND-1301's fix: confirm REQ-102 now states an explicit default for SPAWN_COOLDOWN_DAYS with a real, non-circular citation to spawn-decision.js's actual rateLimitDays=14 default; confirm REQ-402's own citation to REQ-102 now resolves to something REQ-102 actually says (not still circular); confirm PROP-402e's Tier-0 check would genuinely catch an implementation that declares BOOTSTRAP_WINDOW_DAYS as an independent literal that merely happens to equal 14 today, rather than a true derived-from-the-same-source value. This feature has now FAILed 14 consecutive spec-review iterations (with the last iteration dropping to a single finding, a positive convergence signal) -- do a full fresh, skeptical pass over the ENTIRE spec (REQ-101 through REQ-403) once more. Specifically hunt for any OTHER constant anywhere in this document that, like SPAWN_COOLDOWN_DAYS, is used repeatedly but never given its own explicit default statement at its point of definition -- this exact omission class has now appeared once (FIND-1301) and may have a sibling instance elsewhere."
+}
