@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-802",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "FIND-701 (iteration 8) was resolved by introducing a canonical, named `COORDINATOR_HOME` constant, exported from `registry-path.mjs` and computed once via `os.homedir()`, specifically so no call site in the audit-script CODE would ever independently hardcode or independently re-derive the coordinator host's own $HOME value. That fix (PROP-403f, a structural/Tier-0 check) is correctly scoped to 'this feature's audit-script code path' -- i.e. the Phase-2 implementation -- and this review confirms it genuinely closes the hazard AT THAT LAYER. However, the SAME literal, hardcoded value the constant exists to eliminate still appears, unexplained and un-cross-referenced, in the SPEC'S OWN PROSE in at least two places PROP-403f's structural check does not and cannot reach (it only greps the eventual Phase-2 diff, never the spec text itself): (1) REQ-105's own worked example (behavioral-spec.md:729-736) -- 'resolveEvmPrivateKey({home: ..., env: {HOME: \"/Users/anicca\", ANICCA_HOME: ...}})' -- with zero mention of COORDINATOR_HOME anywhere in REQ-105's section, despite REQ-105 being the FIRST place in the document this exact resolution pattern is illustrated; and (2) REQ-403's own 'Seed-data correction' subsection (behavioral-spec.md:1828-1839), which ALSO hardcodes the literal 'HOME: \"/Users/anicca\"' value -- and critically, this occurrence appears BEFORE the 'Canonical coordinator-HOME constant' paragraph that defines COORDINATOR_HOME and its own disclaimer (line 1873-1876: 'every literal /Users/anicca value appearing in this section's worked examples below IS COORDINATOR_HOME's resolved value') even exists in reading order -- a reader encountering lines 1828-1839 top-to-bottom has NO way yet to know this literal represents a canonical constant rather than an ad hoc hardcoded value, because the explanation that retroactively justifies it does not appear until 45 lines later. This is the identical failure mode FIND-701 itself described for the CODE layer -- 'an earlier revision of this section... gives a Phase 2 implementer at least two ways to comply that BOTH silently defeat this section's own purpose: (a) hardcode the literal string /Users/anicca independently... with no structural check to catch a second, differently-hardcoded copy' -- now recurring one layer up, in the SPEC TEXT itself, in exactly the REQ-101/105/403 wallet-identity area that has already produced four prior consecutive-iteration variants of this same class of defect (FIND-501 -> FIND-601 -> FIND-603 -> FIND-701/703). A Phase-2 implementer who reads REQ-105 in isolation (it appears earlier in the document and is never explicitly told to defer its own worked example to REQ-403's later, corrected treatment beyond a passing 'see REQ-403's Acceptance Criteria for the full derivation' pointer) has no textual signal that this literal value must be sourced from an imported constant rather than copied verbatim into their own implementation or a second, independent audit/debug script.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "729-736",
+      "snippet": "resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME: '/Users/anicca/.anicca'}}) reads /Users/anicca/.automaton/wallet.json (confirmed present) ... -- zero mention of COORDINATOR_HOME anywhere in REQ-105's section"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1828-1839",
+      "snippet": "resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: '/Users/anicca', ANICCA_HOME: citizen.homeDir}})/... resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME: '/Users/anicca/.anicca'}}) resolves via the legacy $HOME/.automaton/wallet.json path -- still the literal, appearing BEFORE the COORDINATOR_HOME definition at line 1851 in reading order"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1851-1876",
+      "snippet": "THE SYSTEM SHALL export a SECOND named constant, COORDINATOR_HOME ... every literal /Users/anicca value appearing in this section's worked examples below IS COORDINATOR_HOME's resolved value on THIS host -- this disclaimer appears AFTER, and therefore cannot retroactively govern a reader's understanding of, the un-annotated literal at lines 1828-1839 above it"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1944-1951",
+      "snippet": "invoking resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME: '/Users/anicca/.anicca'}}) ... contrast with the SAME Acceptance Criteria list's own bullet 1 (line ~1934), which correctly writes env: {HOME: COORDINATOR_HOME, ANICCA_HOME: citizen.homeDir} -- an internal inconsistency within one requirement's own Acceptance Criteria"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "265",
+      "snippet": "PROP-403f | ... structural/Tier-0 check: source-grep or import-identity check across the diff confirming a single import site for COORDINATOR_HOME in this feature's audit-script code path -- scoped explicitly to the eventual Phase-2 CODE diff, never to this spec's own prose, so it cannot and does not catch the recreation described above"
+    }
+  ],
+  "routeToPhase": "1a"
+}

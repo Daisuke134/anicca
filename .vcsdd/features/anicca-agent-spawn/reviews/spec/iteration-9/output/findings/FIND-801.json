@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-801",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "PROP-105g, as rewritten this iteration to resolve FIND-702, genuinely upgrades the walletAddress-verification check from a citation-presence check to an actual, mechanically-performed cryptographic re-derivation -- but the ONLY concrete tool/method it names anywhere, in either spec file, is `viem`'s `privateKeyToAccount` (verification-architecture.md's PROP-105g row: 'a real script/test reads the real private-key file's content IN-MEMORY ... computes the resulting address via privateKeyToAccount ... DIFFS the result against citizens.json's stored walletAddress ... FAILING HARD on any mismatch'; behavioral-spec.md's own 'actually performed' worked example: 'automaton's 0xB9dd3B... independently re-derived via privateKeyToAccount against ~/.automaton/wallet.json's real privateKey, cross-checked against colony-status.sh's own live balance query'). `viem::privateKeyToAccount` is an EVM-only (secp256k1) function -- it has no notion of, and cannot derive, an ed25519 Solana public key at all. REQ-105's own seed data (behavioral-spec.md's literal seed array) shows Franklin's registry record carries ONLY `walletAddress: {solana: '8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9'}` -- no `evm` field whatsoever -- meaning the ONE concrete re-derivation tool this proof obligation names is structurally inapplicable to fully half of the colony's real, current, in-scope citizens. Neither spec file names any Solana-equivalent cryptographic re-derivation library or method anywhere (confirmed via grep across both files for `Keypair`/`tweetnacl`/`@solana/web3`/`fromSecretKey`/any Solana-specific re-derivation reference: zero hits outside REQ-202's unrelated keypair-GENERATION context). This is not a one-time seed-data curiosity: REQ-202 unconditionally generates a Solana wallet for every Nosana-deployed child (the CLI's own quick-start docs this spec re-verified require a Solana-funded wallet), so REQ-305's append-time restatement of the SAME PROP-105g binding rule ('any FUTURE seed/append of a citizen's walletAddress MUST be verified the same way') will recur this same unaddressed gap for every future Nosana-path spawn -- the common case this whole feature exists to produce, not an edge case. REQ-105's own Acceptance Criteria offer a nominal escape hatch ('a direct cryptographic re-derivation ... OR a live on-chain balance query'), but PROP-105g's own Tier-2 description and the Gate section (item 1a) both narrow this back down to ONLY the private-key re-derivation method, explicitly rejecting a bare citation/claim as insufficient -- and even if 'a live on-chain balance query' were accepted as the alternative for a Solana-only citizen, neither spec file ever explains what such a query would actually PROVE (a funded address existing on-chain does not establish that the address was correctly derived from a specific private key -- a categorically weaker property than the re-derivation this proof obligation otherwise demands). PROP-105g, exactly as worded, is therefore not genuinely executable for a Solana-only citizen -- it is executable in prose detail for the one case (automaton, EVM) that happens to already have a worked example, but silently fails to generalize to the other real citizen (Franklin) and to the feature's own structurally-common future case (every Nosana-path child).",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "201",
+      "snippet": "a real script/test reads the real private-key file's content IN-MEMORY ... computes the resulting address via privateKeyToAccount (the same pattern already used this session for the automaton wallet), and DIFFS the result against citizens.json's stored walletAddress for that SAME citizen -- FAILING HARD (non-zero exit / test failure) on any mismatch"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "678-688",
+      "snippet": "a CRYPTOGRAPHIC RE-DERIVATION of each citizen's real, currently-in-use address directly from its own signing key material: ~/.automaton/wallet.json's actual privateKey, independently re-derived to an address via viem's privateKeyToAccount ... automaton's 0xB9dd3B67921B354c656523d6851537988F31DD56 below is automaton's real, current wallet, never a markdown snapshot"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "700-708",
+      "snippet": "{ \"id\": \"Franklin\", \"wallet\": { \"solana\": true }, \"walletAddress\": { \"solana\": \"8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9\" }, ... } -- no evm field at all; PROP-105g's only named re-derivation tool (viem::privateKeyToAccount) cannot operate on this record"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "882-891",
+      "snippet": "REQ-202: Child Solana keypair generation (conditional) -- generated ... OR the child will be deployed via Nosana (REQ-302, which itself requires a Solana-funded wallet) -- confirming every future Nosana-path child will ALSO carry a Solana-only or Solana-plus-EVM walletAddress that PROP-105g's append-time restatement must verify"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "775-780",
+      "snippet": "(a direct cryptographic re-derivation, e.g. viem's privateKeyToAccount against the real private-key file) OR a live on-chain balance query -- NEVER solely against a markdown documentation snapshot ... See PROP-105g (note: PROP-105g's own Tier-2 description and the Gate section never actually elaborate or accept the 'balance query' branch as sufficient, and never explain what it would prove about address-derivation correctness)"
+    }
+  ],
+  "routeToPhase": "1a"
+}

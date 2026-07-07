@@ -2136,23 +2136,22 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T12:05:23.861Z",
+      "timestamp": "2026-07-07T12:34:17.486Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 8,
+        "iteration": 9,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-701",
-          "FIND-702",
-          "FIND-703"
+          "FIND-801",
+          "FIND-802"
         ],
-        "note": "3 findings, 2 critical: FIND-601/602/604 reconfirmed genuinely resolved (verified against real files including live CLAUDE.md/WALLETS.md/colony-wallets.json on disk). FIND-603 only PARTIALLY resolved -- the explicit-env fix works at the function level but needs a value (coordinator hosts own real HOME) that no REQ/module/field ever canonically defines, unlike REQ-103s disciplined CITIZENS_REGISTRY_PATH treatment of the analogous hazard -- new FIND-701 (critical). FIND-702 (major) -- PROP-105g only checks that a commit/PR CITES a verification method, never that the citation is TRUE -- reproduces the exact citation-not-fact failure class this same iteration just fixed for FIND-601, one layer removed. FIND-703 (critical, the fourth variant of the recurring wallet-identity failure class across 4 consecutive iterations) -- REQ-105s registry schema has no field distinguishing co-located from cloud-hosted citizens, yet REQ-403s audit assumes it can enumerate co-located instances; the moment the first child is spawned (this features own core deliverable), citizens.json mixes both with no way to tell them apart."
+        "note": "2 findings (1 critical, 1 major), the 5th consecutive variant in the REQ-101/105/403 wallet-identity area. FIND-703 reconfirmed genuinely resolved (coLocatedWithCoordinator correctly needs no canonical-constant discipline, always a fixed literal). FIND-701/702 only partially resolved. FIND-801 (critical) -- PROP-105gs only named re-derivation tool (viem privateKeyToAccount) is EVM-only; Franklin is Solana-only and every future Nosana-path child will also need Solana verification -- no Solana-equivalent method specified anywhere. FIND-802 (major) -- the literal hardcoded /Users/anicca still appears unexplained in spec PROSE (REQ-105 worked example, REQ-403 Seed-data correction) BEFORE the COORDINATOR_HOME definition in reading order -- the identical un-pinned-literal hazard FIND-701 fixed at the code layer, recreated one layer up in the text itself, with an internal inconsistency where a later bullet in the SAME Acceptance Criteria correctly uses COORDINATOR_HOME while an earlier one hardcodes the literal."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T12:05:23.861Z"
+      "adversaryReviewedAt": "2026-07-07T12:34:17.486Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T12:23:48.525Z"
+  "updatedAt": "2026-07-07T12:34:17.487Z"
 }
