@@ -3,5 +3,8 @@
     "@solana/web3.js": "^1.98.4",
     "viem": "^2.52.2",
     "x402-express": "^1.2.0"
+  },
+  "devDependencies": {
+    "fast-check": "^4.8.0"
   }
 }
