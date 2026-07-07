@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 8,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 7,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-7/output/findings/",
+    "note": "3 findings, 0 critical, 2 major: FIND-601 -- both kill-switches now re-evaluated INSIDE the SAME lock-protected fresh-check REQ-101/102/105 already use, new PROP-106p race fixture (kill-switch healthy at pre-lock check, flips to paused before the fresh re-check -> refused at the fresh check). FIND-602 -- new complementary absolute dollar-loss signal (computeRecentDefaultLossUsd, threshold=$5.00/window=14 days, both grounded in existing anchors and flagged as unvalidated placeholders) added alongside the existing ratio, either tripping pauses issuance -- new PROP-114e/f including the core dilution-defeat fixture. FIND-603 -- cross-reference fixed."
+  },
+  "note": "Verify each of the 3 fixes actually holds. For FIND-601: confirm the fresh re-check genuinely re-evaluates BOTH kill-switches using ledger state read AFTER both locks are held, not a cached pre-lock result. For FIND-602: confirm PROP-114f's dilution-defeat fixture is genuinely correct (does the ratio really report false-negative at the stated numbers while the absolute signal catches it?) and that the new defaulted_ms field REQ-109 gained doesn't introduce any inconsistency with REQ-109's existing row-append discipline. This feature has FAILed all 7 prior iterations, though findings have trended toward major/minor rather than critical in recent rounds. Do a full fresh, skeptical pass over the ENTIRE spec -- do not assume convergence."
+}

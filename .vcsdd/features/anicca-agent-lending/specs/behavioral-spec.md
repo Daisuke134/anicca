@@ -2,10 +2,10 @@
 
 **feature**: anicca-agent-lending · **mode**: strict · **increment**: in-colony agent-to-agent lending
 (citizen-to-citizen loans, first-party Anicca capability, no external protocol import) · **日付**:
-2026-07-07 · **revision**: iteration 6, revised (spec review iterations 1 through 5 — findings
-FIND-001..008, FIND-101..107, FIND-201..206, FIND-301..305, and FIND-401..403 — ALL resolved; this
-revision additionally resolves iteration-6's own FIND-501..503; see
-`reviews/spec/iteration-1/RESOLUTION-NOTES.md` through `reviews/spec/iteration-6/RESOLUTION-NOTES.md`,
+2026-07-07 · **revision**: iteration 7, revised (spec review iterations 1 through 6 — findings
+FIND-001..008, FIND-101..107, FIND-201..206, FIND-301..305, FIND-401..403, and FIND-501..503 — ALL
+resolved; this revision additionally resolves iteration-7's own FIND-601..603; see
+`reviews/spec/iteration-1/RESOLUTION-NOTES.md` through `reviews/spec/iteration-7/RESOLUTION-NOTES.md`,
 one file per iteration, for the full per-finding changelogs)
 
 ## Changelog (iteration 1 → iteration 2)
@@ -89,6 +89,18 @@ the full detail per finding:
 | FIND-501 | major | REQ-106's "Lock-acquisition order" paragraph's prior "textbook deadlock-avoidance" justification is REMOVED as analytically FALSE against `lock.mjs`'s real, non-blocking, fail-fast `withGigLock` mechanism (re-confirmed fresh this revision) — classical hold-and-wait deadlock is structurally impossible against a primitive where a failed second-lock acquire returns immediately rather than blocking. The fixed lexicographic order is RETAINED, but for two honestly-stated, DIFFERENT reasons: (1) a single deterministic convention, not an ad-hoc per-call choice, and (2) forward-insurance should `lock.mjs` ever become a blocking primitive. PROP-106m's own description corrected to match. |
 | FIND-502 | major | New REQ-114 adds a SECOND, general-purpose, dollar-weighted default-rate monitor (`computeOverallDefaultRateUsd`/`evaluateOverallDefaultKillSwitch`) spanning ALL loan tiers — operating ALONGSIDE REQ-105's cold-start-only monitor — closing a bust-out/reputation-laundering blind spot where an established borrower's default on a large (up to `$5.00`) loan was invisible to REQ-105's own kill-switch (new PROP-114a/b/c/d). |
 | FIND-503 | minor | This header/changelog section itself rewritten to tabulate every iteration's fixes through iteration 6 (this revision), replacing the previously-stale "iteration 3" header that stopped at the iteration-2→3 changelog table. |
+
+## Changelog (iteration 7 → current, this revision)
+
+Spec review iteration 7 FAILed with 3 findings (2 major, 1 minor); this revision resolves all three. Each
+is resolved by a specific, cited design decision; see `reviews/spec/iteration-7/RESOLUTION-NOTES.md` for
+the full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-601 | major | REQ-106's own lock-protected fresh-check (added for FIND-401 to re-verify REQ-101/102/105's sizing/eligibility) now ALSO RE-EVALUATES BOTH `evaluateColdStartKillSwitch` and `evaluateOverallDefaultKillSwitch`, against the SAME fresh, lock-protected read of `loans.jsonl` already used for that recheck — closing a TOCTOU race where a kill-switch tripping strictly BETWEEN a specific attempt's own pre-lock check and its own later lock acquisition could otherwise still slip an issuance through, since neither switch is scoped to the specific `lenderId`/`borrowerId` pair whose locks are held (new PROP-106p; extends PROP-105h/PROP-114c). |
+| FIND-602 | major | REQ-114 gains a SECOND, complementary, ABSOLUTE dollar-loss-within-a-rolling-window signal (`computeRecentDefaultLossUsd`, feeding an extended `evaluateOverallDefaultKillSwitch`) — immune, by construction, to the volume-dilution failure mode its own dollar-weighted RATIO alone cannot close (a large volume of OTHER, unrelated, healthy loans diluting `defaultRateUsd` below `0.20` even as a genuine bust-out default lands); EITHER signal tripping is independently sufficient to pause (new PROP-114e/PROP-114f, extends PROP-114b/PROP-114c). REQ-109's `"defaulted"` row gains a new `defaulted_ms` field to support this signal's own rolling window. |
+| FIND-603 | minor | The self-loan-exclusion cross-reference (REQ-106's own Edge Case and Acceptance Criterion) now names `evaluateOverallDefaultKillSwitch` alongside `evaluateColdStartKillSwitch`. |
 
 ## Background / rationale (cite before design)
 
@@ -274,8 +286,8 @@ not a proven claim).
 | Cross-feature defaulted-borrower balance adjustment | **Pure core (new)** | `adjustBalancesForOutstandingDebt` — a SECOND, lending-owned, debt-PROPORTIONAL balance adjustment (never a whole-citizen removal, resolves FIND-204) composed after `anicca-agent-spawn`'s own THREE-step pipeline reaches `readCitizenBalances`'s own output (never inside `filterProductiveCitizens`, and never between `filterProductiveCitizens` and `readCitizenBalances`, where no balance field yet exists to reduce — corrects this revision's own FIND-304) and before `computeColonySurplusUsd` runs. |
 | Per-lender loan-ID sequencing | **Pure core (new)** | `nextLoanSequenceForLender(loanRows, lenderId)` — deterministic `max(matching `loan_${lenderId}_` prefix's numeric suffix) + 1` over already-read rows, zero I/O; computed inside REQ-106's existing per-lender lock. Treats `"provisioning"`/`"disbursement_failed"`/`"active"`/`"disbursement_uncertain"` rows for the SAME `loan_id` as one already-claimed sequence number (last-write-wins) — never reuses `n` while a `"provisioning"` OR `"disbursement_uncertain"` row lacks a terminal follow-up (resolves FIND-103 and FIND-201), and the EFFECTFUL caller's own reconciliation check for such an unterminated row is triggered PURELY by this ledger STATE, never by lock staleness (resolves FIND-301). |
 | Cold-start kill-switch enforcement | **Pure core (new)** | `evaluateColdStartKillSwitch({sampleSize, rate, defaultedCount}) → {paused, reason}` — deterministic threshold check over `computeColdStartRepaymentRate`'s own output, zero I/O; called by REQ-106's issuance step before acquiring the per-lender lock for any cold-start loan request (resolves FIND-203). |
-| Colony-wide, dollar-weighted default-rate monitoring (ALL loan tiers — bust-out/reputation-laundering defense) | **Pure core (new)** | `computeOverallDefaultRateUsd({loanRows}) → {totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize}` — dollar-weighted (never merely count-weighted) default-rate arithmetic over EVERY terminal loan colony-wide, regardless of tier; zero I/O. Operates ALONGSIDE, never replacing, the cold-start-scoped monitor above (resolves this revision's own FIND-502). REQ-114. |
-| Colony-wide default kill-switch enforcement | **Pure core (new)** | `evaluateOverallDefaultKillSwitch({totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize}) → {paused, reason}` — deterministic threshold check over `computeOverallDefaultRateUsd`'s own output, zero I/O; called by REQ-106's issuance step, for EVERY loan request regardless of tier, IN ADDITION TO `evaluateColdStartKillSwitch`, before acquiring the per-lender lock (resolves FIND-502). REQ-114. |
+| Colony-wide, dollar-weighted default-rate monitoring (ALL loan tiers — bust-out/reputation-laundering defense) | **Pure core (new)** | `computeOverallDefaultRateUsd({loanRows}) → {totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize}` — dollar-weighted (never merely count-weighted) default-rate arithmetic over EVERY terminal loan colony-wide, regardless of tier; zero I/O. Operates ALONGSIDE, never replacing, the cold-start-scoped monitor above (resolves this revision's own FIND-502). A SECOND, sibling pure function, `computeRecentDefaultLossUsd({loanRows, nowMs, windowDays}) → {totalRecentDefaultLossUsd, windowDays}`, closes a DIFFERENT dilution failure mode this ratio ALONE cannot close — dilution by unrelated loan VOLUME, not merely count — via an ABSOLUTE dollar-loss sum within a rolling window, immune to ratio-style dilution by construction (resolves this revision's own spec-review iteration-7 FIND-602). REQ-114. |
+| Colony-wide default kill-switch enforcement | **Pure core (new)** | `evaluateOverallDefaultKillSwitch({totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize, totalRecentDefaultLossUsd}) → {paused, reason}` — deterministic THREE-condition threshold check: the ratio-based and small-sample branches over `computeOverallDefaultRateUsd`'s own output (unchanged, resolves FIND-502), PLUS (this revision, resolves FIND-602) an absolute-loss branch over `computeRecentDefaultLossUsd`'s own output, immune to volume dilution — EITHER signal alone is sufficient to pause; called by REQ-106's issuance step, for EVERY loan request regardless of tier, IN ADDITION TO `evaluateColdStartKillSwitch`, before acquiring the per-lender lock, AND (this revision, resolves FIND-601) RE-EVALUATED a SECOND time inside REQ-106's own lock-protected fresh-check, against the SAME fresh read used for REQ-102/101/105's own recheck. REQ-114. |
 | Read-only gojo-commitment awareness | **Pure core (new)** | `sumRecentGojoGiftsUsd(gojoLogRows, nowMs, lookbackHours, lenderId)` — deterministic sum over already-read `gojo-log.jsonl` rows within a lookback window, GATED to `lenderId === GOJO_SENDER_ID` (`"anicca-a3cdd4"`, today's only real gojo sender) — returns `0` unconditionally for any other lender (resolves FIND-102). Zero I/O. REQ-101. |
 | Cold-start monitoring (experimental-hypothesis tracking) | **Pure core (new)** | `computeColdStartRepaymentRate({loanRows, n})` — deterministic outcome-rate arithmetic over the first `n` loans whose `successfulOnTimeRepayments`, re-derived over each borrower's own strictly-earlier rows (never a stored field), is `0` at issuance — NOT equivalent to "borrower's first-ever loan" (resolves FIND-107). Zero I/O, zero judgment. REQ-105. |
 | Loan ledger (dedicated file, existing generic primitive reused) | **Effectful shell (existing code, new file)** | `ledger.js::readChildren`/`appendChild`, reused unmodified, pointed at `~/anicca/skills/economy/lending/state/loans.jsonl`. |
@@ -313,9 +325,14 @@ not a proven claim).
   lender AND the borrower of the SAME loan (REQ-102's condition (d), resolves FIND-402); a loan's own
   default-clock (`issued_ms`/`due_ms`) is drawn EXCLUSIVELY from the confirmed-disbursement `"active"` row,
   never the pre-transfer provisional row (REQ-106, resolves FIND-403); colony-wide loan-default risk is
-  monitored by DOLLAR VALUE across ALL loan tiers, not merely the smallest cold-start tier (REQ-114's
+  monitored by DOLLAR VALUE across ALL loan tiers, not merely the smallest cold-start tier, via TWO
+  complementary, independently-sufficient signals — a dollar-weighted ratio AND an
+  absolute-dollar-loss-within-a-rolling-window sum immune to volume dilution (REQ-114's
   `evaluateOverallDefaultKillSwitch`, operating ALONGSIDE REQ-105's cold-start-specific monitor, resolves
-  this revision's own FIND-502); the money-safety invariant (REQ-111)
+  this revision's own FIND-502 and this revision's own spec-review iteration-7 FIND-602), and BOTH
+  kill-switches (REQ-105's and REQ-114's own) are re-verified a SECOND time inside REQ-106's own
+  lock-protected fresh-check, never trusted from their own single, pre-lock evaluation alone (resolves this
+  revision's own spec-review iteration-7 FIND-601); the money-safety invariant (REQ-111)
   is enforced structurally, not by runtime trust.
 
 ---
@@ -820,6 +837,64 @@ small, healthy loans looks numerically small by count even though it may represe
 dollar loss any lender in this colony has suffered) — this is why `computeOverallDefaultRateUsd` is
 explicitly DOLLAR-weighted, never count-weighted.
 
+**A SECOND, DIFFERENT dilution failure mode the dollar-weighted ratio ALONE does not close (resolves this
+revision's own spec-review iteration-7 FIND-602): dilution by loan VOLUME, not merely loan COUNT.** The
+dollar-weighting above correctly stops a naive COUNT-based ratio from under-weighting one large default
+among many small loans (the paragraph above). It does NOT, by itself, stop a DIFFERENT failure mode: once
+`sampleSize >= 10`, `defaultRateUsd = totalDefaultedUsd / totalIssuedUsd` can ALSO be diluted below the
+`0.20` pause threshold by a large VOLUME of OTHER, unrelated, HEALTHY large (established-tier,
+`$0.04`-`$5.00`) loans that happen to reach a terminal `"repaid"` state around the same time as the genuine
+bust-out default this requirement exists to catch — a colony with, say, 9 healthy `$5.00` established-tier
+repayments plus exactly ONE `$5.00` bust-out default yields `totalIssuedUsd=$50`, `totalDefaultedUsd=$5.00`,
+`defaultRateUsd=0.10` — BELOW `0.20`, so `paused:false`, even though the EXACT single-largest-loan default
+this requirement's own rationale (above) describes just occurred. This is precisely the state a MATURING
+colony (the whole point of REQ-105's own doubling ladder) will eventually reach, so this failure mode is not
+a remote edge case — it is the colony's own expected long-run trajectory. THE SYSTEM SHALL THEREFORE track a
+SECOND, complementary signal, ALONGSIDE (never replacing) the dollar-weighted RATIO below: an ABSOLUTE
+dollar-loss sum within a rolling window, via a NEW pure function,
+
+```
+computeRecentDefaultLossUsd({ loanRows, nowMs, windowDays = RECENT_DEFAULT_LOSS_WINDOW_DAYS })
+  → { totalRecentDefaultLossUsd, windowDays }
+```
+
+Definition: `loanRows` is reduced to one effective row per `loan_id` (last-write-wins, the SAME reduction
+convention this document already establishes throughout). `totalRecentDefaultLossUsd` is the sum, over
+every row whose LAST-appended status is `"defaulted"` AND whose own `defaulted_ms` field (a NEW field this
+revision adds to the `"defaulted"` row, REQ-109 — the wall-clock time at the moment THAT row itself is
+appended, mirroring REQ-106's own `issued_ms`-precision convention exactly) satisfies `nowMs - defaulted_ms
+< windowDays * 86400000`, of `principal_usd - repaid_usd` (the SAME unrecovered-loss quantity
+`totalDefaultedUsd`/`outstandingDefaultedDebtUsd` already compute elsewhere in this document) for that
+row — clamped via the SAME established `.toFixed(6)` money-precision convention. Because this is an
+ABSOLUTE SUM, never a ratio, it CANNOT be diluted by any volume of OTHER, unrelated, healthy loan
+activity — a `$5.00` bust-out default contributes exactly `$5.00` to this sum regardless of how many OTHER
+large loans also happen to be healthy and terminal in the SAME window. A `"defaulted"` row LATER
+retroactively corrected to `"repaid"` (REQ-109's own late-repayment edge case) is naturally excluded from
+this sum the moment that correction is appended — the last-write-wins reduction means its own last-appended
+row is no longer `"defaulted"` at all. Malformed/negative/non-finite `principal_usd`/`repaid_usd`/
+`defaulted_ms` on any row contributes `0` to the sum for that specific row (fail-closed, mirroring this
+requirement's own existing convention for `computeOverallDefaultRateUsd`).
+
+**Threshold and window, honestly grounded (resolves this revision's own FIND-602 — reuses THIS document's
+own existing order-of-magnitude anchors rather than inventing new, unrelated numbers):**
+`RECENT_DEFAULT_LOSS_THRESHOLD_USD` defaults to `5.00` — the SAME `maxLoanUsd`/`perCitizenReserveUsd`/
+`DEFAULT_RESERVE_USDC`/`MIN_SHELTER_USD` `$5.00` order-of-magnitude anchor this document ALREADY reuses
+deliberately, colony-wide, for internal consistency (REQ-101/105) — chosen here specifically so that ONE
+single bust-out default at REQ-105's own maximum possible loan size (`maxLoanUsd = $5.00`) is, BY ITSELF,
+already sufficient to trip this signal regardless of any OTHER healthy loan volume the ratio below can be
+diluted by — this is the EXACT scenario this requirement's own rationale (above) describes, made trip-safe
+against volume dilution by construction. `RECENT_DEFAULT_LOSS_WINDOW_DAYS` defaults to `14` — the SAME
+`LOAN_REPAYMENT_WINDOW_DAYS` colony timescale REQ-104 already establishes and reuses (rather than inventing
+a second, competing window figure) — a bust-out default landing anywhere within roughly one full
+loan-repayment cycle is within this signal's own lookback. **THE SYSTEM SHALL document this honestly as an
+unvalidated placeholder, exactly as REQ-105's own kill-switch threshold and this SAME requirement's own
+`0.20` ratio threshold already are:** no real-world precedent for an absolute-dollar-loss-within-a-rolling-
+window signal, specifically for AI-agent-to-AI-agent lending, was found in this session's search (the SAME
+search that grounded REQ-105's/this requirement's own ratio threshold, below, found no tier-specific OR
+absolute-dollar precedent either) — `$5.00`/`14 days` is a conservative starting point grounded in THIS
+document's own existing order-of-magnitude anchors, open to revision once real colony-native default data
+accumulates, never presented as an independently-validated figure.
+
 ```
 computeOverallDefaultRateUsd({ loanRows })
   → { totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize }
@@ -843,21 +918,37 @@ established `.toFixed(6)` money-precision convention this document already uses 
 FIND-206 discipline, applied consistently to this NEW function too).
 
 **Kill-switch enforcement (mirrors REQ-105's own `evaluateColdStartKillSwitch` shape, applied here to the
-dollar-weighted, all-tier metric):** THE SYSTEM SHALL implement a SECOND, pure, zero-I/O function,
-`evaluateOverallDefaultKillSwitch({ totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize }) →
-{ paused: boolean, reason: string }`: `paused = true` when EITHER `(sampleSize >= 10 AND defaultRateUsd >
-0.20)` OR `(sampleSize < 10 AND totalDefaultedUsd > 0)` — otherwise `paused = false`. Loan issuance
+dollar-weighted, all-tier metric — EXTENDED this revision, resolves FIND-602, to be fed by BOTH signals
+above):** THE SYSTEM SHALL implement a SECOND, pure, zero-I/O function,
+`evaluateOverallDefaultKillSwitch({ totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize,
+totalRecentDefaultLossUsd }) → { paused: boolean, reason: string }`: `paused = true` when ANY of THREE
+conditions hold — `(sampleSize >= 10 AND defaultRateUsd > 0.20)`, OR `(sampleSize < 10 AND
+totalDefaultedUsd > 0)`, OR (NEW this revision) `(totalRecentDefaultLossUsd > RECENT_DEFAULT_LOSS_THRESHOLD_USD)`
+— otherwise `paused = false`. The THIRD condition is deliberately independent of `sampleSize` entirely (it
+is an ABSOLUTE dollar sum, immune to volume dilution by construction, per the paragraph above) — EITHER the
+ratio-based signal OR the NEW absolute-loss signal alone is sufficient grounds to pause; `reason` reports
+which signal tripped (`"ratio_threshold_exceeded"`, `"small_sample_default"`, or
+`"recent_default_loss_threshold_exceeded"` — implementation-defined tie-break if more than one applies
+simultaneously, mirroring the existing tie-break rule below). Loan issuance
 (REQ-106) SHALL call THIS function, IN ADDITION TO (never instead of) `evaluateColdStartKillSwitch`, for
 EVERY loan request regardless of tier — BEFORE acquiring the `` `loan_${lenderId}` `` lock, the SAME "pure,
 read-only eligibility check runs before the effectful critical section" discipline REQ-101/102/105 already
-establish. WHEN `evaluateOverallDefaultKillSwitch` returns `paused: true`, THE SYSTEM SHALL refuse to issue
-ANY new loan (`reason: "overall_default_paused"`, no disbursement attempted, no `loans.jsonl` row appended)
+establish — and SHALL, for this call, ALSO compute `computeRecentDefaultLossUsd({loanRows, nowMs})` (above)
+and pass its `totalRecentDefaultLossUsd` into `evaluateOverallDefaultKillSwitch` alongside
+`computeOverallDefaultRateUsd`'s own existing outputs, never omitting the new signal's input. WHEN
+`evaluateOverallDefaultKillSwitch` returns `paused: true` (for ANY of the three internal reasons above), THE
+SYSTEM SHALL refuse to issue ANY new loan (`reason: "overall_default_paused"` at REQ-106's own
+issuance-refusal level — the SAME single external reason string regardless of WHICH of the three internal
+conditions tripped it, since REQ-106's own refusal shape does not need to distinguish them; the internal,
+finer-grained `reason` above is `evaluateOverallDefaultKillSwitch`'s own diagnostic return value only, no
+disbursement attempted, no `loans.jsonl` row appended)
 — regardless of whether the specific request under evaluation is itself a cold-start loan or an
 established-borrower renewal, since a colony-wide dollar-loss signal this severe is a systemic
-risk-mitigation trigger, not a tier-specific one. If BOTH kill-switches would independently pause a given
-request, THE SYSTEM SHALL report whichever reason it evaluates first (implementation-defined tie-break,
-since either reason alone is already sufficient grounds for refusal) — never attempt to disburse merely
-because one of the two switches happens to be clear.
+risk-mitigation trigger, not a tier-specific one. If BOTH kill-switches (REQ-105's cold-start switch AND
+THIS requirement's own switch) would independently pause a given request, THE SYSTEM SHALL report whichever
+reason it evaluates first (implementation-defined tie-break, since either reason alone is already sufficient
+grounds for refusal) — never attempt to disburse merely because one of the two switches happens to be
+clear.
 
 **Threshold, honestly grounded (an explicit, flagged limitation, not a claimed-validated figure):** THE
 SYSTEM reuses, as a starting anchor, the SAME conservative real-world reference REQ-105 already cites (the
@@ -903,6 +994,23 @@ own threshold already is.
   entry): treated as contributing `0` to both `totalIssuedUsd` and `totalDefaultedUsd` for that specific
   row (fail-closed — never a negative or NaN aggregate), mirroring REQ-101/105's own fail-closed convention
   for malformed numeric input elsewhere in this document.
+- The EXACT volume-dilution scenario this revision's own FIND-602 identifies: 9 OTHER, unrelated, healthy
+  established-tier (`$5.00`) loans reach `"repaid"` around the same time as ONE genuine `$5.00` bust-out
+  default (`sampleSize:10`, `totalIssuedUsd:$50`, `totalDefaultedUsd:$5.00`, `defaultRateUsd:0.10` — BELOW
+  the `0.20` ratio threshold, so the ratio signal ALONE would report `paused:false`): because the bust-out
+  default's own `defaulted_ms` falls within `RECENT_DEFAULT_LOSS_WINDOW_DAYS`, `totalRecentDefaultLossUsd =
+  $5.00`, which EQUALS `RECENT_DEFAULT_LOSS_THRESHOLD_USD` — `evaluateOverallDefaultKillSwitch` still
+  returns `paused:true` via the NEW absolute-loss signal, closing the exact dilution gap the ratio alone
+  leaves open (resolves FIND-602).
+- A large default's `defaulted_ms` falls OUTSIDE `RECENT_DEFAULT_LOSS_WINDOW_DAYS` (an old, already-priced-in
+  loss): excluded from `totalRecentDefaultLossUsd` regardless of its own dollar size — this signal is
+  deliberately a ROLLING, recent-window measure, never a permanent, ever-growing lifetime sum (the ratio
+  signal above already covers the permanent, colony-lifetime view).
+- Multiple SMALL defaults within the window, none individually reaching `RECENT_DEFAULT_LOSS_THRESHOLD_USD`
+  but summing ABOVE it (e.g. three separate `$2.00` established-tier defaults within the SAME 14-day
+  window): `totalRecentDefaultLossUsd` correctly sums across ALL of them (never merely the single largest)
+  and, once the sum exceeds the threshold, trips the pause — proving this signal catches an accumulating
+  BURST of losses, not merely one single oversized default.
 
 **Acceptance Criteria**:
 - `computeOverallDefaultRateUsd` is pure, zero I/O, never divides by zero, and every returned dollar figure
@@ -926,11 +1034,36 @@ own threshold already is.
   request (not merely cold-start ones), BEFORE acquiring the `` `loan_${lenderId}` `` lock, IN ADDITION TO
   (never instead of) `evaluateColdStartKillSwitch` — a mocked-caller fixture proving the function's own
   correctness is insufficient by itself, exactly as PROP-105h already establishes for its sibling
-  kill-switch (new PROP-114c).
+  kill-switch (new PROP-114c) — AND (extended this revision, resolves FIND-601) confirms a SECOND, separate
+  call site to THIS SAME function ALSO exists INSIDE the lock-protected fresh-check critical section,
+  re-evaluating it against the SAME fresh read already used for REQ-102(a)-(d)/REQ-101/REQ-104/105's own
+  recheck, IN ADDITION TO its own pre-lock call site — AND (extended this revision, resolves FIND-602)
+  confirms this SAME call site also computes `computeRecentDefaultLossUsd({loanRows, nowMs})` and passes its
+  `totalRecentDefaultLossUsd` output into `evaluateOverallDefaultKillSwitch`, never omitting this new input.
 - A fixture where `evaluateColdStartKillSwitch` returns `paused:false` but `evaluateOverallDefaultKillSwitch`
   returns `paused:true` for the SAME loan request confirms the request is STILL refused
   (`reason:"overall_default_paused"`) — proving the two kill-switches are independent, ADDITIVE gates,
   neither one alone sufficient to clear issuance (new PROP-114d).
+- `computeRecentDefaultLossUsd({loanRows, nowMs, windowDays})` is pure, zero I/O, never divides (it is a
+  sum, not a ratio), and sums ONLY `"defaulted"`-status (last-write-wins) rows' own `principal_usd -
+  repaid_usd` whose `defaulted_ms` falls within the window — every returned figure clamped via the
+  established `.toFixed(6)` money-precision convention (new PROP-114e, resolves this revision's own
+  FIND-602).
+- A fixture with 9 terminal, HEALTHY, established-tier (`principal_usd:5.00, repaid_usd:5.55,
+  status:"repaid"`) loans plus 1 terminal established-tier `"defaulted"` loan (`principal_usd:5.00,
+  repaid_usd:0`, `defaulted_ms` within the window) → `computeOverallDefaultRateUsd` alone yields
+  `defaultRateUsd:0.10` (`paused:false` from the ratio signal alone, since it is below `0.20`) — but
+  `computeRecentDefaultLossUsd` over the SAME `loanRows` yields `totalRecentDefaultLossUsd:5.00`, and
+  `evaluateOverallDefaultKillSwitch({..., totalRecentDefaultLossUsd:5.00})` STILL returns `paused:true` via
+  the NEW absolute-loss signal — proving the absolute signal catches a large default that the ratio ALONE
+  would miss due to volume dilution (new PROP-114f, resolves this revision's own FIND-602, the
+  requirement's own core dilution-defeat proof).
+- `evaluateOverallDefaultKillSwitch`'s THREE-condition pause rule is exhaustively unit-tested: the existing
+  ratio-based branch (unchanged, PROP-114b), the existing small-sample branch (unchanged, PROP-114b), AND
+  the NEW absolute-loss branch independently, e.g. `evaluateOverallDefaultKillSwitch({sampleSize:50,
+  totalIssuedUsd:200, totalDefaultedUsd:4.00, defaultRateUsd:0.02, totalRecentDefaultLossUsd:5.01}) ===
+  {paused:true}` — a HEALTHY ratio at a LARGE sample still pauses once the absolute-loss signal alone
+  crosses its own threshold (extends PROP-114b, resolves FIND-602).
 
 ---
 
@@ -986,6 +1119,34 @@ appended a `"provisioning"`/`"active"` row for this borrower in the interim), TH
 attempt (`reason:"outstanding_loan"`) BEFORE any disbursement is attempted and BEFORE any `n` is computed
 — exactly REQ-102's own existing fail-closed refusal shape, now evaluated with a guaranteed-fresh,
 cross-lender-safe read.
+
+**Kill-switch re-verification inside this SAME lock-protected fresh-check (resolves this revision's own
+spec-review iteration-7 FIND-601 — a TOCTOU race the pre-lock-only kill-switch check below cannot close):**
+REQ-105's `evaluateColdStartKillSwitch` and REQ-114's `evaluateOverallDefaultKillSwitch` (see the
+kill-switch Edge Cases below) are, by their own requirements' own text, each evaluated exactly ONCE — on a
+snapshot of `loanRows` read BEFORE either lock this requirement acquires is ever taken. Because BOTH
+monitors are COLONY-WIDE (never scoped to the specific `lenderId`/`borrowerId` pair whose locks this
+requirement holds), the per-lender/per-borrower locking above does NOT, by itself, close a race against
+either kill-switch's own PAUSE decision the way it closes REQ-102's own borrower-eligibility race: two
+loan-issuance attempts for TWO DIFFERENT lenders AND TWO DIFFERENT borrowers (the first Edge Case below —
+zero lock contention between them) can each independently read the SAME pre-pause `loanRows` snapshot, each
+observe `paused:false` at their own pre-lock check, and BOTH proceed toward disbursement even in the exact
+window where a just-landed default should be tripping one of these SAME kill-switches — this is
+structurally the SAME class of TOCTOU race FIND-401 already found and closed for borrower eligibility, but
+left open here for BOTH kill-switches' own pause decisions. THE SYSTEM SHALL THEREFORE, while BOTH locks
+are held, and as part of the SAME fresh-read critical section already specified above for
+REQ-102(a)-(d)/REQ-101/REQ-104/105 — NEVER a second, independently-taken snapshot — ALSO RE-EVALUATE
+`evaluateColdStartKillSwitch` (for a cold-start request, i.e. `successfulOnTimeRepayments===0` re-derived
+against this SAME fresh read) and `evaluateOverallDefaultKillSwitch` (for EVERY request, regardless of
+tier) against that SAME fresh read. If EITHER kill-switch's fresh, lock-protected re-evaluation now returns
+`paused:true` — regardless of what its OWN pre-lock evaluation returned moments earlier — THE SYSTEM SHALL
+refuse this specific issuance attempt (`reason:"cold_start_paused"`/`reason:"overall_default_paused"`, the
+SAME reason strings each switch's own pre-lock refusal already uses) BEFORE `n` is computed and BEFORE any
+disbursement is attempted — never proceeding merely because the EARLIER, pre-lock check happened to pass.
+This closes the arbitrary-duration window the pre-lock-only check leaves open: a kill-switch that trips
+strictly BETWEEN a caller's own pre-lock check and its own later lock acquisition can never again slip an
+issuance through, no matter how many OTHER, non-lock-contending concurrent attempts are already past their
+own initial check when it trips.
 
 **Lock-acquisition order (resolves this revision's own FIND-501 — a prior revision's "deadlock avoidance"
 justification for this SAME fixed order was analytically FALSE, corrected below):** because EVERY
@@ -1273,7 +1434,8 @@ BOTH locks for the SAME append.
   B never ends up with two simultaneously-open loans from different lenders (new PROP-106n).
 - A candidate loan where `lenderId === borrowerId` (a self-loan attempt): rejected by REQ-102(d) BEFORE
   ANY other step of this critical section runs — before REQ-101's surplus computation, before
-  `evaluateColdStartKillSwitch`, and before EITHER the `` `loan_${lenderId}` `` or the
+  `evaluateColdStartKillSwitch` AND `evaluateOverallDefaultKillSwitch` (resolves this revision's own
+  spec-review iteration-7 FIND-603), and before EITHER the `` `loan_${lenderId}` `` or the
   `` `loan_borrower_${borrowerId}` `` lock is ever acquired (resolves FIND-402) — zero disbursement
   attempt, zero ledger row, zero lock acquisition regardless of either party's balance.
 - The instance holding the lock crashes mid-issuance, BEFORE `payViaFacilitator` is even attempted (the
@@ -1318,6 +1480,16 @@ BOTH locks for the SAME append.
   ledger row, evaluated IN ADDITION TO (never instead of) `evaluateColdStartKillSwitch` above, since
   REQ-114's own monitor covers the LARGER-loan tranche REQ-105's cold-start-scoped monitor structurally
   cannot see (resolves this revision's own FIND-502).
+- A kill-switch (`evaluateColdStartKillSwitch` OR `evaluateOverallDefaultKillSwitch`) is HEALTHY
+  (`paused:false`) at the moment of a specific issuance attempt's own initial, pre-lock check, but a
+  DIFFERENT, concurrent event (e.g. another attempt's own default landing, or an unrelated loan reaching a
+  terminal `"defaulted"` state) flips that SAME kill-switch to `paused:true` strictly BETWEEN that pre-lock
+  check and this attempt's own later acquisition of both locks (resolves this revision's own spec-review
+  iteration-7 FIND-601 — a TOCTOU race the pre-lock-only check above cannot itself close): THE SYSTEM SHALL
+  catch this at the lock-protected fresh re-check specified above (Kill-switch re-verification subsection)
+  and refuse the attempt THERE, even though its own EARLIER, pre-lock check already passed — zero
+  disbursement, zero ledger row, regardless of how far past the initial check this specific attempt had
+  already progressed.
 - The follow-up `appendChild` call ITSELF throws (e.g. `ENOSPC`/`EACCES`/a transient disk failure)
   immediately after step 2's own try/catch already caught a settle-side exception (resolves this
   revision's own FIND-301): the `"provisioning"` row for this `n` is left with NO follow-up row of any
@@ -1339,11 +1511,15 @@ BOTH locks for the SAME append.
   double-transfer risk, since it only ever reads on-chain state, never disburses.
 
 **Acceptance Criteria**:
-- REQ-102(d)'s self-loan check (`lenderId !== borrowerId`) runs FIRST, before either lock is acquired,
-  refusing a self-loan candidate at zero cost (resolves FIND-402).
-- The loan-issuance critical section (a FRESH read of `loans.jsonl` → REQ-102(a)-(c) re-check → REQ-101
-  read/re-check → REQ-104/105 compute → `n = nextLoanSequenceForLender(...)` → disbursement transfer →
-  THIS REQUIREMENT'S OWN two-phase provisional/follow-up ledger append, above — NEVER REQ-108/109's own,
+- REQ-102(d)'s self-loan check (`lenderId !== borrowerId`) runs FIRST — before either lock is acquired, and
+  before EITHER `evaluateColdStartKillSwitch` OR `evaluateOverallDefaultKillSwitch` is ever evaluated
+  (resolves this revision's own spec-review iteration-7 FIND-603) — refusing a self-loan candidate at zero
+  cost (resolves FIND-402).
+- The loan-issuance critical section (a FRESH read of `loans.jsonl` → REQ-102(a)-(c) re-check → BOTH
+  kill-switches' fresh re-check (`evaluateColdStartKillSwitch`/`evaluateOverallDefaultKillSwitch`, resolves
+  this revision's own FIND-601) → REQ-101 read/re-check → REQ-104/105 compute → `n =
+  nextLoanSequenceForLender(...)` → disbursement transfer → THIS REQUIREMENT'S OWN two-phase
+  provisional/follow-up ledger append, above — NEVER REQ-108/109's own,
   separate per-loan ledger append; see the lock-key disambiguation note above, resolves this revision's
   own FIND-205) is wrapped by NESTED `withGigLock(LOANS_LEDGER_PATH, outerKey, fn)` /
   `withGigLock(LOANS_LEDGER_PATH, innerKey, fn)` calls, where `[outerKey, innerKey] =
@@ -1427,12 +1603,28 @@ BOTH locks for the SAME append.
   actually imports and calls `evaluateColdStartKillSwitch` for a cold-start (`successfulOnTimeRepayments
   === 0`) loan request, and does so BEFORE the `` `loan_${lenderId}` `` lock-acquisition call site (new
   PROP-105h, resolves FIND-303 — closes the "a computed flag nobody checks" gap PROP-105g's own
-  mocked-caller fixture cannot, by itself, close).
+  mocked-caller fixture cannot, by itself, close) — AND (extended this revision, resolves FIND-601)
+  confirms a SECOND, separate call site to this SAME function exists INSIDE the lock-protected fresh-check
+  critical section (after BOTH locks are acquired), re-evaluating it against the SAME fresh read already
+  used for REQ-102(a)-(d)/REQ-101/REQ-104/105's own recheck — never merely the pre-lock call site alone.
 - A structural/Tier-0 check (mirroring PROP-105h's own real-source-read discipline) confirms this
   requirement's OWN, REAL, production issuance code ALSO imports and calls
   `evaluateOverallDefaultKillSwitch` for EVERY loan request, regardless of tier, BEFORE the
   `` `loan_${lenderId}` `` lock-acquisition call site, IN ADDITION TO `evaluateColdStartKillSwitch` (new
-  PROP-114c, resolves this revision's own FIND-502).
+  PROP-114c, resolves this revision's own FIND-502) — AND (extended this revision, resolves FIND-601)
+  confirms a SECOND, separate call site to THIS SAME function ALSO exists INSIDE the lock-protected
+  fresh-check critical section, re-evaluating it against the SAME fresh read already used for
+  REQ-102(a)-(d)/REQ-101/REQ-104/105's own recheck, IN ADDITION TO its own pre-lock call site — AND
+  (extended this revision, resolves FIND-602) confirms this SAME call site also computes
+  `computeRecentDefaultLossUsd({loanRows, nowMs})` and passes its `totalRecentDefaultLossUsd` output into
+  `evaluateOverallDefaultKillSwitch`, never omitting this new input.
+- A fixture where a kill-switch's underlying inputs are HEALTHY (`paused:false`) at the moment of a
+  specific attempt's own pre-lock check, but the SAME kill-switch's inputs change (simulating a concurrent
+  event — e.g. a different, concurrent issuance attempt's own default landing) such that its fresh,
+  lock-protected re-evaluation (inside the SAME critical section as REQ-102(a)-(d)/REQ-101/REQ-104/105's
+  own fresh re-check) now returns `paused:true`, confirms the attempt is refused AT THAT FRESH RE-CHECK —
+  zero disbursement, zero ledger row appended — even though its own EARLIER, pre-lock check alone would
+  have permitted it (new PROP-106p, resolves this revision's own spec-review iteration-7 FIND-601).
 
 ---
 
@@ -1835,7 +2027,14 @@ is the `"active"` row's own append-time timestamp — see REQ-106's precise defi
 revision's own FIND-403 — NEVER the provisional row's own `provisioned_ms`) has passed AND
 its last-appended row's `repaid_usd` is still less than `total_due_usd`, THE SYSTEM SHALL, at the next
 scheduled evaluation, append a NEW row for that same `loan_id` with `status: "defaulted"` — never
-mutate or delete the existing row (append-only, matching `ledger.js`'s own discipline). This append is
+mutate or delete the existing row (append-only, matching `ledger.js`'s own discipline). This `"defaulted"`
+row ALSO carries a NEW `defaulted_ms` field (added this revision, resolves this revision's own spec-review
+iteration-7 FIND-602) — the wall-clock time (`Date.now()`) at the moment THIS row itself is appended,
+mirroring REQ-106's own `issued_ms`-precision convention exactly (set at confirmation/append time, never
+backdated) — required so REQ-114's own new rolling-window absolute-default-loss signal,
+`computeRecentDefaultLossUsd`, can determine whether a given default falls within its own lookback window.
+A row whose `status` is NOT `"defaulted"` (e.g. `"active"`, `"repaid"`) carries no `defaulted_ms` field.
+This append is
 performed STRICTLY INSIDE the SAME per-loan `loan_${loan_id}` lock REQ-108 specifies (resolves this
 revision's own FIND-104) — never an unlocked read-then-append, since this exact `loan_id` could
 simultaneously be undergoing repayment verification. THE SYSTEM SHALL NOT silently continue offering that
