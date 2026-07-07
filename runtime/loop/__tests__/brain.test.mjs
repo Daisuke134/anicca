@@ -1,14 +1,15 @@
 /**
- * inference.test.mjs — thinkProxy/httpPost must not swallow HTTP-level error responses.
+ * brain.test.mjs — thinkProxy/httpPost must not swallow HTTP-level error responses.
  *
- * Root cause (agent-economy #F1, 2026-07-06): Franklin's free-model brain
- * (`franklin proxy` -> sol.blockrun.ai) intermittently 403s ("NVIDIA API error: 403
- * Forbidden Authorization failed") — confirmed live and TRANSIENT (a raw repro:
- * 503, 503, 200 on three successive identical requests). inference.mjs already has
- * a retry loop (REQ-001: 3 attempts, 2s back-off) built for exactly this, but
- * httpPost() previously resolved on ANY response regardless of status code — so a
- * non-2xx error body got JSON.parse'd and returned as if it were a valid
- * completion, and the retry loop never fired because no exception was thrown.
+ * Root cause (agent-economy #F1, 2026-07-06; confirmed still live in brain.mjs 2026-07-07):
+ * Franklin's free-model brain (`franklin proxy` -> sol.blockrun.ai) intermittently
+ * 403/429s ("NVIDIA API error: 403 Forbidden Authorization failed" / rate-limit) —
+ * confirmed live and TRANSIENT. brain.mjs already has a retry loop (3 attempts, 2s
+ * back-off) built for exactly this, but httpPost() previously resolved on ANY
+ * response regardless of status code — so a non-2xx error body got JSON.parse'd and
+ * returned as if it were a valid completion, and the retry loop never fired because
+ * no exception was thrown. Live symptom: every masked failure surfaced as a harmless
+ * "narrate" wake instead of wake_error, hiding the real failure rate entirely.
  *
  * Contract: httpPost must reject on non-2xx so thinkProxy's existing retry loop
  * actually engages; think() must eventually surface a real completion if a later
@@ -19,7 +20,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import http from 'node:http';
-import { think } from '../inference.mjs';
+import { think } from '../brain.mjs';
 
 const baseCtx = (over) => ({
   wakeId: 'W1', walletAddress: '0xabc', balanceUsdc: 1.23, tier: 'lean',
@@ -72,6 +73,18 @@ test('think(): transient 403s then 200 -> retry loop recovers a real completion'
     const result = await think(baseCtx(), { ANICCA_BRAIN: 'proxy', OPENAI_BASE_URL: `http://127.0.0.1:${port}/v1` });
     assert.equal(result.choices[0].message.content, 'ok');
     assert.equal(requestCount(), 3); // proves it actually retried past the two 403s
+  } finally {
+    server.close();
+  }
+});
+
+test('think(): all attempts 429 (rate-limit) -> throws instead of masking as a narrate-able empty completion', async () => {
+  const { server } = await startMockProxy([429, 429, 429]);
+  try {
+    const { port } = server.address();
+    await assert.rejects(
+      () => think(baseCtx(), { ANICCA_BRAIN: 'proxy', OPENAI_BASE_URL: `http://127.0.0.1:${port}/v1` }),
+    );
   } finally {
     server.close();
   }
