@@ -118,11 +118,14 @@ async def cmd_start(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(
         f"Hi {user.first_name}! I'm Anicca — I watch your calendar and "
         "call you when you're running late, then mail your stakeholders "
-        "for you. $20/mo, cancel anytime.\n\n"
-        "Setup is ~2 min: name → phone → calendar link (optional) → "
-        "location share (optional) → payout pick (optional). Reply "
-        "'skip' on any optional step — you can always finish it later "
-        "with /connect or /payout.\n\n"
+        "for you. $20/mo, cancel anytime — ready whenever you are, no "
+        "setup required first:\n\n"
+        f"{STRIPE_LM_URL}\n\n"
+        "Want the full setup (calls + auto-mail) instead of just "
+        "browsing? Keep chatting here — ~2 min: name → phone → calendar "
+        "link (optional) → location share (optional) → payout pick "
+        "(optional). Reply 'skip' on any optional step — you can always "
+        "finish it later with /connect or /payout.\n\n"
         "First: what name should I call you in calls and emails?"
     )
 
