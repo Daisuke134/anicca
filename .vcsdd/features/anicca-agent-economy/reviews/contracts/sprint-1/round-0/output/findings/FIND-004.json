@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "low",
+  "description": "CRIT-005's description text cites 'PROP-201a-i' as within its scope ('REQ-201/203, PROP-201a-i, PROP-201g', contract line 86), which literally includes PROP-201i (the hl_trade lazy/fail-open query behavior). CRIT-006 separately and specifically grades PROP-201i via its own concrete passThreshold ('matching PROP-201i(a)/(b)/(c)'s three named tests', contract line 120). This leaves PROP-201i nominally graded under two different CRIT items with no stated precedence, contrary to this review's own requirement that contract criteria be 'non-overlapping.' In this specific case the ambiguity is low-risk because CRIT-006's passThreshold is the one with concrete, checkable substance (the deliberately-induced-failure test), while CRIT-005's passThreshold text does not actually re-test PROP-201i's specifics -- so no real double-grading occurs in practice. But the textual overlap is still a structural defect: a future negotiation round could plausibly claim PROP-201i is 'covered' by CRIT-005 alone (which does not concretely test it) while skipping CRIT-006's concrete checks, or vice versa treat the two as redundant and drop one.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/contracts/sprint-1.md",
+    "lineRange": "80-122",
+    "snippet": "REQ-201/203, PROP-201a-i, PROP-201g ... (CRIT-005)\n...\nmatching PROP-201i(a)/(b)/(c)'s three named tests (CRIT-006)"
+  },
+  "recommendation": "Narrow CRIT-005's cited proof-obligation range to 'PROP-201a-h' (excluding PROP-201i, which CRIT-006 already owns exclusively) to make the two CRIT items' scopes disjoint.",
+  "routeToPhase": "contract-negotiation-round-2"
+}

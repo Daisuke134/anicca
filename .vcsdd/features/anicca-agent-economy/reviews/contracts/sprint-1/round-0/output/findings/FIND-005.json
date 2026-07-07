@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "low",
+  "description": "sprint-1-green-phase.log's own narrative text (line 89, cited as supporting evidence by CRIT-001) states gig.test.mjs contains '12 pre-existing' tests plus the GAP 2 regression test plus 3 new REQ-102 tests. Directly counting the actual test() calls in skills/economy/gig/__tests__/gig.test.mjs today shows exactly 11 tests total (FINDING 1 x2, FINDING 2 x1, the same-gig take/deliver serialization test x1, FINDING 3 x3, GAP 2 x1, PROP-102a/b/c x3 = 11), of which only 8 predate this sprint's 3 new REQ-102 additions (8 + 3 = 11) -- not '12 pre-existing + GAP 2 + 3 new' (which would total 16 and overcounts by 5, or double-counts GAP 2 within the '12'). This does not change any of the contract's binding numeric claims (48/48 total, 11 tests in gig.test.mjs, 8 tests in lock.test.mjs all independently verified by direct count against the current files), so it does not itself invalidate any CRIT item's pass condition -- but it is a factual inaccuracy in a document the contract cites as authoritative supporting evidence (CRIT-001's passThreshold: 'Evidence on file: sprint-1-green-phase.log lines 17, 96-98, 288'), and in a strict-mode gate, evidence-log narrative accuracy matters for trust in the rest of the log's uncheckable claims (e.g., the exact millisecond timings and the Tier-3-adjacent claims this review could not independently execute).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/evidence/sprint-1-green-phase.log",
+    "lineRange": "88-92",
+    "snippet": "**48/48 PASS** -- includes all 8 lock.test.mjs tests (3 pre-existing + 5 REQ-101 new, all now reachable\nsince `isLockStale` is exported), all gig.test.mjs tests (12 pre-existing + the \\u2605GAP 2\\u2605 regression test +\n3 new REQ-102 tests, INCLUDING the previously-failing 3-way test), and store.test.mjs/decide.test.mjs/\nensure-agent-id.test.mjs unchanged."
+  },
+  "crossReference": {
+    "actualTestFile": "/Users/anicca/anicca/skills/economy/gig/__tests__/gig.test.mjs",
+    "actualTestCount": 11
+  },
+  "recommendation": "Correct sprint-1-green-phase.log:89's prose to '8 pre-existing + the \\u2605GAP 2\\u2605 regression test (already counted within those 8) + 3 new REQ-102 tests = 11', matching the file's actual contents.",
+  "routeToPhase": "contract-negotiation-round-2"
+}

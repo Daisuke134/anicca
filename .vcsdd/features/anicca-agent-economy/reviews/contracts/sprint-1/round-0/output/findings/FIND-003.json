@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "REQ-101's headline EARS behavior is liveness-based staleness ('WHILE a lock holder is still actively executing its critical section, THE SYSTEM SHALL NOT allow any other caller to acquire the same lock key, regardless of how much wall-clock time has elapsed'), concretely tested by lock.test.mjs's integration-level test named '\\u2605GAP 1\\u2605 a live holder's lock is NEVER stolen while it's still working past staleMs (heartbeat keeps it alive)' (skills/economy/gig/__tests__/lock.test.mjs:24-61). None of the 8 CRIT items name this test (or PROP-101a specifically) as a required-present-by-name check the way CRIT-002 explicitly names the Tier-2 atomicity test ('\\u2605PROP-101c (Tier 2, atomicity)\\u2605') and CRIT-004 explicitly names \\u2605FINDING 1\\u2605/\\u2605FINDING 2\\u2605/\\u2605FINDING 3\\u2605. CRIT-001's passThreshold only requires (a) the structural isLockStale extraction and (b) that 'lock.test.mjs's PROP-101a/b/c(purity-half)/d tests import and exercise isLockStale directly' -- it points to the generic '8/8 lock.test.mjs PASS' log line as supporting evidence rather than making the heartbeat-liveness test itself a named FAIL trigger. CRIT-004's aggregate 'exactly 48/48' count across the whole gig test suite would catch an outright test REMOVAL, but a future edit that silently renamed or replaced \\u2605GAP 1\\u2605 with a materially weaker test (e.g., one that only checks a single heartbeat tick instead of the full 3x-staleMs long-running scenario) while keeping the total test count at 48 would not trip any of CRIT-001/002/004's named-test FAIL conditions. REQ-101's own liveness scenario is the entire reason the round-3 heartbeat fix exists (see gig/lib/lock.mjs:15-22's header comment on the real double-pay drain this was built to close) -- it deserves the same explicit by-name protection CRIT-002 gives the atomicity test.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/__tests__/lock.test.mjs",
+    "lineRange": "24-61",
+    "snippet": "test(\"\\u2605GAP 1\\u2605 a live holder's lock is NEVER stolen while it's still working past staleMs (heartbeat keeps it alive)\", async () => { ... }"
+  },
+  "crossReference": {
+    "contractFile": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/contracts/sprint-1.md",
+    "contractLines": "9-26 (CRIT-001), 27-42 (CRIT-002), 60-79 (CRIT-004)"
+  },
+  "recommendation": "Add an explicit FAIL trigger to CRIT-001 (or a new CRIT) requiring the adversary to confirm the '\\u2605GAP 1\\u2605' heartbeat-liveness test is present BY NAME and passes when independently re-run, mirroring CRIT-002's treatment of the atomicity test.",
+  "routeToPhase": "contract-negotiation-round-2"
+}

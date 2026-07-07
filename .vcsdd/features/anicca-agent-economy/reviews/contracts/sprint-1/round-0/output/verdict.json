@@ -1,0 +1,66 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-agent-economy",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-1.md",
+    "contractDigest": "1eaf882f2d0df56d243723a3f95fec4e3056723ccc73df004650058ffd8c1954"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/contracts/sprint-1.md:9-155", "description": "CRIT-001 through CRIT-008 were each cross-checked against their cited REQ/PROP IDs in behavioral-spec.md and verification-architecture.md; 7 of 8 (CRIT-001,002,003,005,006,007,008) faithfully restate their source acceptance criteria. CRIT-004 does not (FIND-001): its enumerated FAIL list drops REQ-103/PROP-103b's own BINDING Tier-3 independent-execution requirement."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json:1-216", "description": "Verified all 17 status:'live' slots carry an explicit risk/alwaysAvailable field matching behavioral-spec.md REQ-201's classification table exactly (CRIT-005/PROP-201g substance confirmed by direct parse)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/__tests__/lock.test.mjs:24-194", "description": "Confirmed lock.test.mjs contains 8 tests covering REQ-101's heartbeat-liveness, dead-holder-reclaim, atomicity, and cross-key-independence edge cases from behavioral-spec.md's own Edge Cases section -- but none of the 8 CRIT items name the heartbeat-liveness test by name as CRIT-002 does for the atomicity test (FIND-003)."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/__tests__/catalog-gate.test.mjs:1-342", "description": "Confirmed 17 tests exhaustively cover REQ-201/202/203's edge cases (boundary equality, NaN/Infinity/negative fallback, untagged-slot default, pathological all-risky misconfiguration, both open-position carve-outs, lazy/fail-open hl_trade query) -- CRIT-005/006's edge-case mapping is otherwise sound."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs:62-116", "description": "Read isLockStale (exported pure predicate, lines 62-64), tryCreateLockFile (73-82), and reclaimStaleLock (93-116): the stale-reclaim path uses fs.rename to a unique per-process/UUID trash path (line 107) instead of the prior unlink-then-open sequence; POSIX rename atomicity w.r.t. the shared source path means exactly one of two concurrent reclaimers' renames can succeed (the other gets ENOENT), matching REQ-101's binding atomic-reclaim acceptance criterion and the knownResidualFindings entry describing this exact fix."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/gig.mjs:104-124", "description": "Read applyAndSave: bounded retry (BOARD_LOCK_RETRY_ATTEMPTS=40, _DELAY_MS=5) fires ONLY when the withGigLock rejection reason matches the exact BOARD_LOCK_CONTENDED_REASON prefix for the shared '_board' key -- a real business-logic rejection (e.g. already-paid) is never retried. Per-gigId locks (gigTake/gigDeliver/gigVerifyAndPay's own withGigLock(gigId,...) calls) never route through this retry, preserving REQ-103's fail-closed same-gig serialization. Matches the 3-way-race knownResidualFinding's described fix exactly."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/catalog-gate.mjs:63-138", "description": "Read filterCatalog/hasOpenRiskPositionOfYield/hasOpenRiskPositionOfHlTrade: pure set-arithmetic filter (alwaysAvailable override checked before risk tag; only exactly 'safe' exempts; open-position carve-out); hasOpenRiskPositionOfHlTrade's queryFn is invoked only when balanceUsdc is below the resolved threshold and resolves true (not false) on any queryFn rejection -- matches REQ-201/202/203 and PROP-201h/i precisely, no scoring/ranking field on the return type."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs:296-328, 138-165", "description": "Confirmed both hasOpenRiskPositionOf mechanisms (yield: reuse of the existing recentLedger scan at line 304/290-293 with zero new I/O; hl_trade: new queryHlTradeOpenPositions subprocess call at lines 145-165, invoked via hasOpenRiskPositionOfHlTrade's own internal lazy gate) and that the filtered eligibleSkillSlots (not the unfiltered activeSkillSlots) is what reaches assembleContext -> ctx.activeSkillSlots, which brain.mjs (grepped) passes to BOTH buildSystemPrompt(ctx) and getToolDefinitions(ctx.activeSkillSlots) -- so the gate narrows both the displayed list and the actual run_skill.slot enum, as CRIT-005/006 claim."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/prompt.mjs:139-172", "description": "Confirmed getToolDefinitions appends SLEEP_TOOL unconditionally regardless of the slots argument (PROP-201e's sleep-immunity claim), and that the pre-existing COLONY BOOTSTRAP PRIORITY/MINDSET/diversification text (lines 89, 98, 202-206) is untouched by this increment's diff, consistent with REQ-203's explicit out-of-scope note for REQ-204."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/context.mjs:39", "description": "Confirmed COMPUTE_RESERVE_USDC's existing default is 5, so DEFAULT_BOOTSTRAP_RESERVE_USDC=20 (catalog-gate.mjs:16) satisfies REQ-201's 20>=5 standing invariant."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/evidence/sprint-1-green-phase.log:1-374", "description": "Cross-checked (via Grep test( counts, not independent execution -- see FIND-006) that lock.test.mjs=8, gig.test.mjs=11, store.test.mjs=10, decide.test.mjs=13, ensure-agent-id.test.mjs=6 sum to exactly 48 (matching the log's claimed 48/48), catalog-gate.test.mjs=17 and registry-classification.test.mjs=3 match the log's claimed 17/17+3/3, and no .skip/.only/xtest markers exist in any of these files."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-004", "FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/specs/verification-architecture.md:43-66", "description": "Confirmed the Tier 0/1/2/3 taxonomy and its explicit statement that Tier 3 for REQ-101/102/103 MUST be a fresh, independent execution by the Phase 3 adversary itself -- this contract-review pass had no execution tooling to discharge that standard itself (disclosed in FIND-006), and the contract's own CRIT-004 does not force a future adversary to discharge it either (FIND-001)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008"],
+    "duplicateFindings": []
+  }
+}

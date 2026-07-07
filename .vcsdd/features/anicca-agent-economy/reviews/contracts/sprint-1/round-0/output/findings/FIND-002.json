@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "CRIT-004 (line 61) and CRIT-008 (line 143) both declare `dimension: regression_safety` in the contract's YAML frontmatter. 'regression_safety' is not one of the 5 canonical review dimensions this VCSDD process organizes verdicts and convergence signals around -- this review's own input manifest.json explicitly enumerates exactly ['spec_fidelity', 'edge_case_coverage', 'implementation_correctness', 'structural_integrity', 'verification_readiness'] as `reviewDimensions` (manifest.json:28-34), and the adversary role definition uses the same 5-dimension taxonomy for every verdict.json output. Because 2 of the 8 CRIT items are labeled with an undefined 6th dimension, there is no defined rule for which of the 5 official dimensions their PASS/FAIL should roll up into during Phase 3's verdict aggregation or Phase 6's convergence-signal computation -- a downstream aggregator has to silently invent a mapping (as this review itself had to do), which is exactly the kind of interpretive slack a strict-mode contract should not leave open.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/contracts/sprint-1.md",
+    "lineRange": "60-62, 142-144",
+    "snippet": "- id: CRIT-004\n    dimension: regression_safety\n    ...\n  - id: CRIT-008\n    dimension: regression_safety"
+  },
+  "crossReference": {
+    "manifestFile": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/reviews/contracts/sprint-1/input/manifest.json",
+    "manifestLines": "28-34"
+  },
+  "recommendation": "Re-label CRIT-004 and CRIT-008's `dimension` field to one of the 5 canonical values (both are naturally `spec_fidelity`, since they are regression-preservation checks against already-approved REQ-103/REQ-302 acceptance criteria, not a distinct taxonomy of their own).",
+  "routeToPhase": "contract-negotiation-round-2"
+}

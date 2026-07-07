@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-economy",
   "mode": "strict",
-  "currentPhase": "2c",
+  "currentPhase": "3",
   "phaseHistory": [
     {
       "from": "init",
@@ -96,6 +96,13 @@
       "timestamp": "2026-07-07T05:41:10.000Z",
       "sprint": 1,
       "reason": "Refactor complete: lock.mjs's duplicated atomic-create primitive extracted into tryCreateLockFile()/reclaimStaleLock() helpers, acquire() reduced to a 4-line dispatcher, no control-flow/return-value change. Other candidate refactors (gig.mjs retry, catalog-gate.mjs's two hasOpenRiskPositionOf branches, filterCatalog naming) evaluated and left as-is -- already clean or would be speculative generalization. Tests re-confirmed identical to Phase 2b (gig 48/48, runtime/loop unit 72/76, integration 12/12). evidence/sprint-1-green-phase.log updated with the post-refactor section, markers unchanged. Committed+pushed to ~/anicca (4a1143c)."
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-07T06:08:50.000Z",
+      "sprint": 1,
+      "reason": "Sprint-1 contract approved (gates.sprint-1-contract PASS, negotiation round 1/iteration 2, 0 findings). Advancing to Phase 3 (implementation adversary review), to be dispatched with an execution-capable (Bash/chain) agent per the contract's Execution-Tooling Note."
     }
   ],
   "iterations": {
@@ -187,9 +194,25 @@
       },
       "adversaryVerdict": "PASS",
       "adversaryReviewedAt": "2026-07-07T04:29:46.000Z"
+    },
+    "sprint-1-contract": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T06:08:50.000Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "contractPath": "contracts/sprint-1.md",
+        "contractDigestFinal": "49e0ea7036cd23df760bb0066579dcb98abd7115f80cf45de7bc12b0624e0810",
+        "negotiationRound": 1,
+        "iteration": 2,
+        "note": "Round 0 (iteration 1): FAIL, 6 findings (FIND-001..006), all contract-text/evidence-log precision issues -- implementation_correctness itself PASSED even in round 0 (code independently verified correct against the contract's 8 CRIT items). Round 1 (iteration 2, negotiation limit): all 6 findings confirmed resolved via direct re-check against contracts/sprint-1.md and evidence/sprint-1-green-phase.log; 1 non-blocking cosmetic line-number drift noted (not a wrong-section error) but not blocking. All 8 CRIT items evaluated, findingCount 0. Full history: reviews/contracts/sprint-1/round-{0,1}/.",
+        "executionToolingNote": "Contract now records that CRIT-002/003/004/006/007's execution-bound acceptance criteria (independent test re-run, live re-attack) are discharged by Phase 3's adversary (needs Bash/network capability, unlike the disk-only vcsdd-adversary type used for spec/contract review) -- Phase 3 must be dispatched accordingly."
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-07T06:08:50.000Z",
+      "humanApproval": "status: approved set per Dais's blanket 'no human in loop, don't stop, full verify, no half-ass' directive (2026-07-07)."
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T05:41:10.000Z"
+  "updatedAt": "2026-07-07T06:08:50.000Z"
 }

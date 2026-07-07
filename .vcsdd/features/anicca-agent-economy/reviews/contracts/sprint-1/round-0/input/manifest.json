@@ -1,0 +1,41 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-economy",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "49e0ea7036cd23df760bb0066579dcb98abd7115f80cf45de7bc12b0624e0810",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "~/anicca/skills/economy/gig/__tests__/lock.test.mjs",
+      "~/anicca/skills/economy/gig/__tests__/gig.test.mjs",
+      "~/anicca/runtime/loop/__tests__/catalog-gate.test.mjs",
+      "~/anicca/runtime/loop/__tests__/registry-classification.test.mjs",
+      ".vcsdd/features/anicca-agent-economy/tests/research-record.test.mjs"
+    ],
+    "source": [
+      "~/anicca/skills/economy/gig/lib/lock.mjs",
+      "~/anicca/skills/economy/gig/gig.mjs",
+      "~/anicca/runtime/loop/catalog-gate.mjs",
+      "~/anicca/runtime/loop/index.mjs",
+      "~/anicca/skills/registry.json",
+      "evidence/business-blockrun-ai-research.md"
+    ]
+  },
+  "reviewDimensions": [
+    "spec_fidelity",
+    "edge_case_coverage",
+    "implementation_correctness",
+    "structural_integrity",
+    "verification_readiness"
+  ],
+  "negotiationRound": 1,
+  "priorRound": {
+    "negotiationRound": 0,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/contracts/sprint-1/output/findings/ (FIND-001..006, this round's findings will be moved before writing new ones)"
+  }
+}

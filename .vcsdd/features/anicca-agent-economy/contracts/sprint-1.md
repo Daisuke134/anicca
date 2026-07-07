@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 feature: anicca-agent-economy
 sprint: 1
 date: 2026-07-07
