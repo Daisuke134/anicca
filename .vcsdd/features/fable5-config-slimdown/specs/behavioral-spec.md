@@ -120,28 +120,39 @@ WebFetch 等の重い往復は subagent に吸収させる。
 - `! grep -q "rules/loop-command.md" ~/.claude/CLAUDE.md`
 - `[ -f ~/.claude/rules/context7.md ]`（不変条件、移動されていないこと）
 
-### REQ-P4: SSOT guard の二重注入解消
-**EARS**: WHEN fable5-config-slimdown の実装が完了した時点で、THE SYSTEM SHALL
-`~/.claude/settings.json` の `hooks.UserPromptSubmit` から `ssot-guard` に一致する command entry を
-全て削除し、`hooks.SessionStart` 側の `ssot-guard` entry は1件のまま維持する。
+### REQ-P4: SSOT guard の二重注入解消（★ iteration-2 FIND-005 blocking 対応: 静的カウント前提を
+実行時 snapshot-diff 方式へ全面書き換え ★）
+**EARS**: WHEN fable5-config-slimdown の実装が完了した時点で、THE SYSTEM SHALL 編集直前の
+`~/.claude/settings.json` の `.hooks` オブジェクト全体を
+`.vcsdd/features/fable5-config-slimdown/evidence/p4-pre-hooks.json` へ jq でスナップショット保存し、
+`hooks.UserPromptSubmit` から `ssot-guard` に一致する command entry のみを外科的に削除し（削除の結果
+entry を含んでいた matcher-group の `hooks` 配列が空になった場合はその matcher-group ごと削除しても
+よい）、編集直後の `.hooks` オブジェクト全体を
+`.vcsdd/features/fable5-config-slimdown/evidence/p4-post-hooks.json` へ同様にスナップショット保存する。
 **Edge Cases**:
-- 編集前に元ファイルが `~/.claude/backups/fable5-slimdown-2026-07-07/settings.json.<date>` へ
-  コピーされていなければならない。
-- `UserPromptSubmit` の他 entry（cozempic 由来含む）は一切変更してはならない。
-- ★ 実ファイル確認済みの重要な構造事実（iteration-1 FIND-002）: `UserPromptSubmit` の
-  `~/.claude/hooks/ssot-guard.sh` と `~/.claude/hooks/disk-guard.sh` は同一 matcher-group
-  オブジェクト（`matcher: "*"`）の同一 `hooks` 配列内に同居している。削除は matcher-group
-  オブジェクトごと消してはならず、その `hooks` 配列内から `ssot-guard` の command entry だけを
-  取り除く手術的な編集でなければならない。`disk-guard.sh` entry は本要件の対象外であり、削除後も
-  必ず1件残っていなければならない。
-- 削除の結果 `UserPromptSubmit` 配列自体が空になっても、キーが空配列のまま残るか丸ごと消えるかは
-  どちらでもよい（検証は「ssot-guard に一致する entry が0件」のみを問う）。
+- ★ `~/.claude/settings.json` は当日中にも並行して drift する実運用ファイルであり、iteration-1
+  時点の「ssot-guard と disk-guard が UserPromptSubmit 内の同一 matcher-group に同居している」という
+  記述は本改訂時点（2026-07-07）で既に不正確と判明した（実装時点の実ファイルを再確認した結果:
+  `hooks.UserPromptSubmit` は `ssot-guard.sh` 単独の1エントリのみを含む1個の matcher-group。
+  `disk-guard.sh` は `hooks.SessionStart` 側の matcher:"*" グループで `ssot-guard.sh` と同居している）。
+  よって本要件は特定時点の固定構造（entry数・同居関係）を前提にせず、実装直前の実ファイルを
+  snapshot して diff する方式に一本化する。実装者は実装開始時点で改めて `jq '.hooks'` を実行して
+  現況を確認すること（この Edge Case に書かれた具体的な現況もその時点で drift している可能性がある）。
+- `hooks.SessionStart` の内容（disk-guard・ssot-guard・cozempic 全て）は本要件の編集対象外であり、
+  pre-hooks.json と post-hooks.json で完全に不変（canonical JSON 比較で byte-identical）でなければ
+  ならない。
+- `hooks.UserPromptSubmit` 内の ssot-guard 以外のいかなる entry（他 matcher-group、実装時点で
+  cozempic 由来 entry が存在する場合はそれも含む）も変更してはならない。
 - 編集後、ファイル全体が `jq .` でパース可能でなければならない（REQ-SAFE-2）。
 **Acceptance Criteria**:
-- `jq -e '[.hooks.UserPromptSubmit // [] | .[].hooks[]?.command | select(test("ssot-guard"))] | length == 0' ~/.claude/settings.json`
-- `jq -e '[.hooks.UserPromptSubmit // [] | .[].hooks[]?.command | select(test("disk-guard"))] | length == 1' ~/.claude/settings.json`
-  （★ FIND-002 対応: matcher-group ごと巻き込み削除する誤実装を検出する ★）
-- `jq -e '[.hooks.SessionStart[].hooks[]?.command | select(test("ssot-guard"))] | length == 1' ~/.claude/settings.json`
+- post-hooks.json の `.UserPromptSubmit` に `ssot-guard` に一致する command entry が0件
+- pre-hooks.json の `.UserPromptSubmit` から `ssot-guard` の command entry のみを jq で機械的に
+  取り除いた構造（除去後に空になった matcher-group をそのまま残すか削除するかは両方とも許容し、
+  比較時は両側とも「`hooks` 配列が空の matcher-group」を正規化して除外してから比較する）が、
+  post-hooks.json の `.UserPromptSubmit` と構造的に一致する（jq による同値比較、diff は
+  ssot-guard entry 除去 1点のみであることを機械的に保証する）
+- pre-hooks.json の `.SessionStart` と post-hooks.json の `.SessionStart` が canonical JSON で
+  byte-identical
 - `jq . ~/.claude/settings.json` が exit 0
 
 ### REQ-P5a: adversary の refusal fallback（--model opus 明示）
@@ -204,7 +215,7 @@ PushNotification という文字列を含める。
 
 | ファイル | 変数名 | 代入span（行、実ファイル確認済み） | 起動行 |
 |---|---|---|---|
-| `self/self-fix.sh` | `TASK` | 67–76（複数行、`TASK="..."`） | 77（`tmux -S "$SOCK" new-session ... -- "$TASK"`） |
+| `self/self-fix.sh` | `TASK` | 67–74（複数行、`TASK="..."`、閉じ引用符は74行目末尾） | 75（`tmux -S "$SOCK" new-session ... -- "$TASK"`） |
 | `self/capafy-loop/capafy-loop-cli.sh` | `STARTUP` | 8（単一行、`STARTUP='...'`） | 12（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
 | `self/reddit-loop/reddit-loop-cli.sh` | `STARTUP` | 9（単一行） | 13（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
 | `self/life-manager-loop/life-manager-loop-cli.sh` | `STARTUP` | 8（単一行） | 12（`tmux -S "$SOCK" new-session ... -- "$STARTUP"`） |
@@ -212,6 +223,14 @@ PushNotification という文字列を含める。
 | `earn/video/video-cli.sh` | `STARTUP` | 17（単一行） | 32（`"$CLAUDE" --name "$SESSION" ... -- "$STARTUP"`） |
 | `earn/clip/clip-cli.sh` | `STARTUP` | 18（単一行） | 33（`"$CLAUDE" --name "$SESSION" ... -- "$STARTUP"`） |
 | `_shared/adversary-daily.sh` | `PROMPT` | 20–21（`PROMPT=$(sed ... || echo ...)`） | 23（`claude -p "$PROMPT" --output-format text ...`） |
+
+★ iteration-2 FIND-006 対応: self-fix.sh 行は前回改訂時点の誤記（67–76/77）を修正した
+（正しくは67–74/75、75行目のtmux起動直後の76-77行目は`date +%s > "$STARTMARK"`と
+ログechoというspawn後のbookkeeping文であり、代入span/起動行のいずれにも該当しない）。
+他7行は2回にわたり実ファイルと照合済みで正確。★ 運用注記: 上表の行番号は本 spec 執筆時点
+（2026-07-07）の実ファイルに基づく。実装時点で改めて `grep -n`/`awk` で該当変数の代入開始行・
+終了行・起動行を再確認し、ズレていた場合は表ではなく実装時点の実ファイルを正として扱う
+（対象8ファイルは頻繁に drift しうる loop CLI であり、行番号は不変条件ではない）。★
 
 **Edge Cases**:
 - 元の TASK=/STARTUP=/PROMPT= 代入span自体（上表の「代入span」列）は実装前後で byte-identical
