@@ -216,7 +216,7 @@ not a proven claim).
 |---|---|---|
 | Self-funded gate (lender + borrower) | **Pure core (existing, reused unmodified)** | `is-self-funded.mjs::isSelfFunded` — zero new judgment logic. |
 | Lender available-surplus arithmetic | **Pure core (new)** | `computeLenderAvailableUsd`/`sumOutstandingPrincipalUsd` — deterministic arithmetic over already-fetched balances + already-read ledger rows, zero I/O. |
-| Borrower eligibility check | **Pure core (new)** | `isBorrowerEligible` — boolean logic over already-known facts (self-funded, balance, outstanding-obligation lookup). |
+| Borrower eligibility check | **Pure core (new)** | `isBorrowerEligible` — boolean logic over already-known facts (self-loan exclusion via `lenderId`, checked FIRST; self-funded; balance; outstanding-obligation lookup) — resolves this revision's own FIND-402. |
 | Reputation-capital sizing ladder | **Pure core (new)** | `computeLoanCapUsd`/`countSuccessfulOnTimeRepayments` — deterministic function of a repayment COUNT read from this feature's own ledger, no external oracle, no model judgment. |
 | Loan issuance decision | **Pure core (new)** | `decideLoan` — boolean comparison of already-computed numbers. |
 | Default detection | **Pure core (new)** | `detectDefaultedLoans` — deterministic elapsed-time comparison over already-read rows. |
@@ -227,7 +227,7 @@ not a proven claim).
 | Cold-start monitoring (experimental-hypothesis tracking) | **Pure core (new)** | `computeColdStartRepaymentRate({loanRows, n})` — deterministic outcome-rate arithmetic over the first `n` loans whose `successfulOnTimeRepayments`, re-derived over each borrower's own strictly-earlier rows (never a stored field), is `0` at issuance — NOT equivalent to "borrower's first-ever loan" (resolves FIND-107). Zero I/O, zero judgment. REQ-105. |
 | Loan ledger (dedicated file, existing generic primitive reused) | **Effectful shell (existing code, new file)** | `ledger.js::readChildren`/`appendChild`, reused unmodified, pointed at `~/anicca/skills/economy/lending/state/loans.jsonl`. |
 | Read-only gojo-log reader (new, read-only) | **Effectful shell (new)** | `readGojoLogRows(gojoLogPath)` — plain `fs.readFileSync` + line-split + `JSON.parse` over `~/anicca/skills/economy/ubi/state/gojo-log.jsonl`; NEVER writes, never uses `ledger.js` (that file is not this feature's own ledger). REQ-101. |
-| Loan-issuance mutual exclusion + repayment/default write discipline | **Effectful shell (existing, reused unmodified)** | `lock.mjs::withGigLock`/`isLockStale`, TWO distinct new lock keys: `loan_<lenderId>` (REQ-106, per-lender issuance) and `loan_<loan_id>` (REQ-108/109, per-loan repayment/default writes — resolves FIND-104), canonical `statePath` = `LOANS_LEDGER_PATH` for both. |
+| Loan-issuance mutual exclusion + repayment/default write discipline | **Effectful shell (existing, reused unmodified)** | `lock.mjs::withGigLock`/`isLockStale`, THREE distinct new lock keys: `loan_<lenderId>` (REQ-106, per-lender issuance — still alone owns `loan_id` sequencing correctness) and `loan_borrower_<borrowerId>` (REQ-106, NEW this revision, per-borrower cross-lender exclusivity on REQ-102's at-most-one-outstanding-loan invariant, resolves FIND-401 — both acquired together via `resolveLoanLockAcquisitionOrder`'s deterministic total order) and `loan_<loan_id>` (REQ-108/109, per-loan repayment/default writes — resolves FIND-104), canonical `statePath` = `LOANS_LEDGER_PATH` for all three. |
 | Disbursement / repayment transfer | **Effectful shell (existing, reused unmodified)** | `escrow.mjs::payViaFacilitator`. |
 | Independent repayment verification | **Effectful shell (new, reuses an already-hardened pattern)** | An RPC `getTransactionReceipt` + finalized-block + `Transfer`-log check, reusing `record-earn.mjs`'s own already-hardened `TRANSFER_TOPIC`-match/exact-padded-address-equality/finalized-block-scanning pattern (NOT `escrow.mjs`, which contains no log-parsing code — corrects this spec's own prior false claim, resolves FIND-007) and applying `anicca-agent-spawn` REQ-401's general "independent re-verification, never self-report" principle. |
 | REQ-103 (bookkeeping-only design constraint) | **Not code — a design constraint** | Verified by Phase 3 structural code read, not a runtime assertion (mirrors `anicca-agent-economy` REQ-203 / `anicca-agent-spawn` REQ-104). |
@@ -255,7 +255,12 @@ not a proven claim).
   and a rejected replay is recorded ONLY out-of-band, never as a new `loans.jsonl` row
   (REQ-108's replay-rejection check, resolves FIND-202 and FIND-302); repayment-verification and default-detection
   writes to the SAME loan_id can never race past each other (REQ-108/109's shared per-loan lock, resolves
-  FIND-104); the money-safety invariant (REQ-111) is enforced structurally, not by runtime trust.
+  FIND-104); a borrower can never hold two simultaneously-open loans from two DIFFERENT lenders (REQ-106's
+  new per-borrower `loan_borrower_${borrowerId}` lock, resolves FIND-401); a citizen can never be both the
+  lender AND the borrower of the SAME loan (REQ-102's condition (d), resolves FIND-402); a loan's own
+  default-clock (`issued_ms`/`due_ms`) is drawn EXCLUSIVELY from the confirmed-disbursement `"active"` row,
+  never the pre-transfer provisional row (REQ-106, resolves FIND-403); the money-safety invariant (REQ-111)
+  is enforced structurally, not by runtime trust.
 
 ---
 
@@ -403,9 +408,28 @@ outstanding loan at a time" rule (not a separate "unpaid past a threshold" clock
 simplest rule that (i) prevents a citizen from stacking multiple simultaneous loans and (ii) makes a
 default permanently block further borrowing until the defaulted row is explicitly resolved (REQ-109),
 satisfying the "avoid serial defaulting" requirement without inventing a second timing mechanism beyond
-REQ-104's own repayment window.
+REQ-104's own repayment window; and (d) `lenderId !== borrowerId` for the specific candidate loan under
+evaluation — a citizen SHALL NEVER be evaluated as, or permitted to become, BOTH the lender AND the
+borrower of the SAME loan (resolves this revision's own FIND-402 — closes a real self-loan exploit:
+without this exclusion, a self-funded citizen could costlessly self-loan-and-repay itself — REQ-104's
+smallest principal is `$0.02` plus `$0.002` interest, a trivial round-trip cost to a citizen paying
+itself — to inflate its own `successfulOnTimeRepayments` count for free, defeating REQ-105's entire
+cold-start risk-mitigation rationale (the reputation ladder is meant to reflect real, EXTERNAL
+counterparty trust, never a fabricated self-dealt track record) and silently corrupting
+`computeColdStartRepaymentRate`'s own kill-switch monitoring signal with manufactured "successful"
+repayments that carried zero real counterparty risk). Condition (d) is evaluated FIRST, before (a)/(b)/(c)
+and before REQ-101's own lender-availability computation ever runs for this candidate pair — a self-loan
+candidate is rejected at zero cost, before any surplus arithmetic, any balance read, and any lock
+acquisition (see REQ-106's own updated Acceptance Criteria below). Because self-loans are rejected
+STRUCTURALLY at issuance, no self-dealt row can ever exist in `loans.jsonl` — REQ-105's
+`computeColdStartRepaymentRate` therefore never needs its own separate self-loan-filtering logic; the
+corrupting rows this finding describes simply can never be created.
 
 **Edge Cases**:
+- A candidate loan where `lenderId === borrowerId` (the SAME citizen evaluated as both lender and
+  borrower of the same request): rejected under condition (d), regardless of that citizen's own balance,
+  surplus, or repayment history — a self-loan is never eligible, structurally, not merely discouraged
+  (resolves FIND-402).
 - A citizen has an `"active"` (not yet due) loan in good standing: NOT eligible for a second loan until
   the first is `"repaid"` — this is intentional (mirrors `anicca-agent-spawn` REQ-102's
   `MAX_CONCURRENT_SPAWNS=1` single-in-flight discipline), not an oversight.
@@ -419,11 +443,23 @@ REQ-104's own repayment window.
   resolves.
 
 **Acceptance Criteria**:
-- `isBorrowerEligible({ borrowerAgent, loanRows, borrowerId, borrowerBalanceUsd })` is pure, zero I/O,
-  returns `{eligible: boolean, reason: "ok"|"not_self_funded"|"not_broke_enough"|"outstanding_loan"}`.
-- A fixture borrower with `balance=$0.49`, `isSelfFunded()=true`, zero loan rows → `eligible:true`.
+- `isBorrowerEligible({ borrowerAgent, loanRows, borrowerId, borrowerBalanceUsd, lenderId })` is pure,
+  zero I/O, returns `{eligible: boolean, reason:
+  "ok"|"self_loan"|"not_self_funded"|"not_broke_enough"|"outstanding_loan"}` — `lenderId` is a NEW
+  parameter this revision adds (resolves FIND-402), required because condition (d)'s self-loan exclusion
+  is inherently a fact about the SPECIFIC candidate lender+borrower PAIR, not about the borrower alone;
+  condition (d) is checked FIRST, before (a)/(b)/(c), returning `reason:"self_loan"` immediately when
+  `lenderId === borrowerId`, before any other condition is even evaluated.
+- A fixture borrower with `balance=$0.49`, `isSelfFunded()=true`, zero loan rows, `lenderId !== borrowerId`
+  → `eligible:true`.
 - A fixture borrower with an `"active"` row for its own `borrower_id` → `eligible:false,
   reason:"outstanding_loan"`, regardless of how low its balance is.
+- A fixture loan request where `lenderId === borrowerId` (a self-funded citizen requesting a loan from
+  itself) is rejected with `eligible:false, reason:"self_loan"` BEFORE any lock is acquired or any surplus
+  check runs — asserted even when that SAME citizen would otherwise pass conditions (a)/(b)/(c) (e.g. its
+  own balance is genuinely below `BORROWER_LOW_USD` and it has zero outstanding loans) — proving the
+  self-loan exclusion is checked first and independently of every other condition (new PROP-102e, resolves
+  FIND-402).
 - `BORROWER_LOW_USD` is declared as its own independent constant inside this feature's own module — a
   structural/Tier-0 check (shared with REQ-110's PROP-110a) confirms no import of `DEFAULT_LOW_USDC` from
   `economy/gig/decide.mjs` exists anywhere in this feature's diff, and no import of this feature's own
@@ -563,10 +599,15 @@ should be told about, not a runtime-checked constraint.
 **Monitoring plan (this increment's cold-start design is an EXPERIMENTAL HYPOTHESIS, not a proven
 solution):** THE SYSTEM SHALL make it possible to track, at any time, the actual repayment outcome rate of
 cold-start loans via a new pure function, `computeColdStartRepaymentRate({ loanRows, n = 20 })` — over the
-first `n` (by `issued_ms` ascending, across ALL borrowers colony-wide) loans whose ORIGINATING row had
-`successfulOnTimeRepayments === 0` AT ISSUANCE TIME — full stop, this is the exact and ONLY definition
-(corrects this revision's own prior false parenthetical claim, resolves this revision's own FIND-107):
-**a "cold-start loan" is NOT equivalent to "a borrower's own first-ever loan."** Per this SAME
+first `n` (by `issued_ms` ascending — the `"active"` row's own append-time timestamp, per REQ-106's
+precise definition, resolves this revision's own FIND-403 — across ALL borrowers colony-wide) loans whose
+ORIGINATING row had `successfulOnTimeRepayments === 0` AT ISSUANCE TIME — full stop, this is the exact and
+ONLY definition (corrects this revision's own prior false parenthetical claim, resolves this revision's
+own FIND-107):
+**a "cold-start loan" is NOT equivalent to "a borrower's own first-ever loan."** Because REQ-102's
+condition (d) (this revision, resolves FIND-402) structurally forbids `lenderId === borrowerId` at
+issuance, this sample can also never include a self-dealt loan — no self-loan row can ever exist in
+`loans.jsonl` for it to count. Per this SAME
 requirement's own Edge Cases below, a late-but-eventually-repaid loan does NOT increment
 `successfulOnTimeRepayments`; combined with REQ-102's own "at most one outstanding loan at a time" rule, a
 borrower whose FIRST loan was repaid LATE still has `successfulOnTimeRepayments = 0` when their SECOND
@@ -699,14 +740,19 @@ well-established borrower's loan "small" per this increment's own scope.
 ### REQ群C: Issuance mechanics
 
 ### REQ-106: Loan issuance concurrency safety
-**EARS**: WHEN two or more loan-issuance evaluations against the SAME lender race in an overlapping
-wake window, THE SYSTEM SHALL ensure at most ONE actually disburses funds against that lender's
-surplus — reusing, unmodified, `~/anicca/skills/economy/gig/lib/lock.mjs`'s `withGigLock`/`isLockStale`/
-atomic-`fs.rename`-based stale-reclaim mechanism (the SAME already-adversary-hardened generic lock this
-colony already reuses for the gig board and, per `anicca-agent-spawn` REQ-103, for colony-spawn) under a
-NEW, lender-scoped lock key `` `loan_${lenderId}` `` (matching `isSafeLockKey`'s existing
-`[A-Za-z0-9_-]+` character-set constraint) — this is a new lock KEY on an EXISTING lock MECHANISM, never
-new lock-implementation code.
+**EARS**: WHEN two or more loan-issuance evaluations race in an overlapping wake window — EITHER against
+the SAME lender, OR against the SAME borrower regardless of which lender(s) are involved (resolves this
+revision's own FIND-401 — see the cross-lender same-borrower exclusion subsection below) — THE SYSTEM
+SHALL ensure at most ONE actually disburses funds against that lender's surplus AND at most ONE loan is
+ever concurrently open for that borrower, reusing, unmodified,
+`~/anicca/skills/economy/gig/lib/lock.mjs`'s `withGigLock`/`isLockStale`/atomic-`fs.rename`-based
+stale-reclaim mechanism (the SAME already-adversary-hardened generic lock this colony already reuses for
+the gig board and, per `anicca-agent-spawn` REQ-103, for colony-spawn) under TWO distinct new lock keys,
+BOTH acquired for EVERY issuance attempt: a lender-scoped key `` `loan_${lenderId}` `` (unchanged from
+prior revisions — it alone still owns `nextLoanSequenceForLender`'s per-lender sequencing correctness,
+below) AND a NEW, borrower-scoped key `` `loan_borrower_${borrowerId}` `` (matching `isSafeLockKey`'s
+existing `[A-Za-z0-9_-]+` character-set constraint, same as the lender key) — this is TWO new lock KEYS
+on the SAME EXISTING lock MECHANISM, never new lock-implementation code.
 
 `withGigLock`'s real signature is `withGigLock(statePath, lockKey, fn, opts)`; `statePath` determines
 which physical `locks/` directory the lock file lives under. THE SYSTEM SHALL therefore designate a
@@ -717,6 +763,56 @@ lock, or reads/writes `loans.jsonl` itself, SHALL import and use this SAME expor
 independently hardcoded path string — mirroring `anicca-agent-spawn` REQ-103's identical
 `CITIZENS_REGISTRY_PATH` discipline and closing the SAME "mismatched `statePath` silently defeats mutual
 exclusion" hazard that discipline exists to close.
+
+**Cross-lender same-borrower exclusion (resolves this revision's own FIND-401 — a real, unbounded-duration
+double-borrowing window a per-lender-only lock cannot close):** REQ-102's own condition (c) requires a
+borrower have ZERO currently-open loan obligations — but a lock scoped ONLY to `` `loan_${lenderId}` ``
+serializes issuance BY THE SAME LENDER, never ACROSS different lenders. Two DIFFERENT lenders, L1 and L2,
+each independently evaluating the SAME borrower B, can each freshly read `loans.jsonl`, each see B as
+having zero `"active"`/`"defaulted"` rows, and each proceed under their OWN, non-contending lock — both
+disbursing to B. Because a `"provisioning"`/`"disbursement_uncertain"` row (this requirement's own
+two-phase record, below) is NOT one of condition (c)'s excluded statuses, this window is not merely a
+millisecond-scale race: it can persist for an ARBITRARY duration (reconciliation for a given lender is
+only re-attempted at the start of that SAME lender's own NEXT issuance attempt, which may never come
+soon). THE SYSTEM THEREFORE SHALL, for EVERY loan-issuance attempt, ALSO acquire the borrower-scoped lock
+`` `loan_borrower_${borrowerId}` `` — in ADDITION to, never instead of, the existing per-lender lock (a
+single COMBINED lock key derived from both IDs was considered and REJECTED: it would fragment the
+per-lender sequence-number critical section by borrower, letting two DIFFERENT borrowers of the SAME
+lender proceed against STALE `loanRows` snapshots and reopening `nextLoanSequenceForLender`'s own
+collision-freedom guarantee, PROP-106e — the per-lender lock MUST remain a single, whole-lender critical
+section) — and SHALL, while BOTH locks are held, take a FRESH read of `loans.jsonl` and RE-EVALUATE
+REQ-102's own conditions (a)-(d) for this borrower against that fresh read BEFORE proceeding to REQ-101's
+own availability recheck, REQ-104/105 sizing, `n = nextLoanSequenceForLender(...)`, and disbursement —
+never relying on a borrower-eligibility read taken before either lock was acquired. If this fresh
+re-check finds the borrower NO LONGER eligible (e.g. a DIFFERENT lender's own concurrent attempt already
+appended a `"provisioning"`/`"active"` row for this borrower in the interim), THE SYSTEM SHALL refuse this
+attempt (`reason:"outstanding_loan"`) BEFORE any disbursement is attempted and BEFORE any `n` is computed
+— exactly REQ-102's own existing fail-closed refusal shape, now evaluated with a guaranteed-fresh,
+cross-lender-safe read.
+
+**Lock-acquisition order (deadlock avoidance):** because EVERY loan-issuance attempt now acquires BOTH
+`` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` ``, THE SYSTEM SHALL acquire them via
+NESTED `withGigLock` calls in a FIXED, deterministic, TOTAL order to prevent deadlock between two
+concurrent attempts that might involve the same lender+borrower pair in different roles: THE SYSTEM SHALL
+acquire, as the OUTER lock, whichever of the two lock-key STRINGS sorts lexicographically FIRST (plain
+JavaScript default string `<` comparison, e.g. `[`loan_${lenderId}`,
+`loan_borrower_${borrowerId}`].sort()[0]`), and the OTHER as the INNER lock — never a role-based rule
+(e.g. "always lender first"), and never an ad-hoc per-call choice. This is the textbook total-lock-
+ordering deadlock-avoidance technique: because every attempt sorts its OWN two keys the SAME deterministic
+way, no two concurrent attempts can ever hold one lock while waiting on the other in reverse order.
+`resolveLoanLockAcquisitionOrder(lenderId, borrowerId) → [outerKey, innerKey]` is a NEW, pure, zero-I/O
+helper implementing exactly this sort (new PROP-106m). Both locks are released automatically,
+inner-then-outer, by the nested calls' own `withGigLock` `finally` blocks — no separate release code is
+written. If EITHER lock is already held by another in-flight attempt, THE WHOLE attempt is refused
+(`reason:"lock_held"`), fail-closed, zero disbursement, zero row appended — identical in shape to today's
+existing single-lock refusal. THE SYSTEM documents, as an explicit, low-probability, ASSUMED limitation of
+this naming scheme (mirroring this spec's own existing documented-limitation discipline, e.g.
+`GOJO_SENDER_ID`'s single-sender assumption): no colony citizen ID is assumed to literally begin with the
+substring `borrower_` — true for every one of today's real citizen IDs (`anicca-a3cdd4`, `Franklin`) —
+since a citizen ID that DID begin with that substring could theoretically produce a lock-key string
+collision between an unrelated lender's own per-lender key and a different loan's per-borrower key; this
+is a documented, not-yet-solved, extremely-low-probability edge case of this naming convention, not a
+silently-ignored risk.
 
 **`loan_id` generation (resolves this revision's own FIND-001 — previously entirely unspecified):** THE
 SYSTEM SHALL assign a newly-issued loan's `loan_id` as `` `loan_${lenderId}_${n}` ``, where `n` is a
@@ -755,6 +851,34 @@ never lose track even if step 4 fails)" pattern (its own step 3, read this sessi
    "disbursement_failed"` if it cleanly did not, or `status: "disbursement_uncertain"` if an in-process
    exception during this step leaves the real outcome unknown to this process (see the In-process
    exception paragraph below, resolves this revision's own FIND-201).
+
+**`issued_ms`, precisely defined (resolves this revision's own FIND-403 — a real ambiguity between two
+candidate row timestamps this document previously left unstated):** `issued_ms` is a field on the
+FOLLOW-UP `"active"` row ONLY — set to the wall-clock time (`Date.now()`) at the moment THAT row is
+appended, i.e. the moment disbursement is CONFIRMED successful — it is NEVER the provisional row's own
+`provisioned_ms` (the moment issuance was first ATTEMPTED, before any transfer occurred). This is the
+correct choice for REQ-109's own default-clock purpose: a borrower's real, usable
+`LOAN_REPAYMENT_WINDOW_DAYS` window should count from when it actually RECEIVED usable funds, never from
+when issuance was merely attempted — a slow-to-reconcile provisional row must not silently eat into the
+borrower's own real repayment window. `due_ms = issued_ms + LOAN_REPAYMENT_WINDOW_DAYS * 86400000`
+(REQ-109) is therefore always computed from THIS SAME `"active"`-row `issued_ms` value, never from
+`provisioned_ms`. A `"provisioning"`, `"disbursement_failed"`, or `"disbursement_uncertain"` row carries
+NO `issued_ms` field at all (it is not yet, or never becomes, an issued loan) — `issued_ms` exists ONLY
+on a row whose `status` is (or, via a correcting reconciliation follow-up, becomes) `"active"`.
+**Acknowledged trade-off (documented, not resolved further this increment):** for the NORMAL
+(non-reconciled) path, `issued_ms` is set within, at most, a few seconds of the real on-chain transfer's
+own confirmation (`payViaFacilitator` returns only after `waitForTransactionReceipt` resolves) — the
+difference is negligible. For a RECONCILED path (a crash or in-process exception delays the follow-up
+append until a LATER loan-issuance attempt's own `reconcileProvisionalDisbursement` call finally appends
+the correcting `"active"` row), `issued_ms` is set at that LATER reconciliation moment, not at the real
+(earlier) on-chain transfer time — giving that specific loan a FRESHER, and therefore longer-feeling,
+`due_ms` window than an identically-timed normal-path loan would have received. THE SYSTEM SHALL NOT
+attempt to backdate `issued_ms` to the on-chain transfer's own real block timestamp to close this
+asymmetry this increment (that would require an additional `eth_getBlockByNumber` lookup this spec does
+not otherwise need) — this is an explicit, honestly-documented, low-probability limitation
+(reconciliation delays are expected to be rare and short, per this requirement's own crash-recovery
+design), not a silently-ignored one, mirroring this spec's own existing documented-limitation discipline
+elsewhere (e.g. `GOJO_SENDER_ID`'s single-sender assumption, REQ-112's single-coordinator-host scope).
 
 `nextLoanSequenceForLender(loanRows, lenderId)` SHALL treat a `"provisioning"`, `"disbursement_failed"`,
 `"active"`, OR `"disbursement_uncertain"` row for the SAME `loan_id` as ALL belonging to the SAME
@@ -879,9 +1003,11 @@ row claiming `"active"` for a loan that was never actually funded.
 
 **Lock-key disambiguation (resolves this revision's own FIND-205 — a mislabeling in this SAME
 requirement's own Acceptance Criteria below):** THIS requirement's own two-phase provisional/follow-up
-ledger append (steps 1 and 3 above) is appended ONLY under this requirement's OWN per-lender
-`` `loan_${lenderId}` `` lock — NEVER under REQ-108/109's own, separate per-loan `` `loan_${loan_id}` ``
-lock. REQ-108/109's per-loan lock governs ONLY their own LATER, independent repayment-verification/
+ledger append (steps 1 and 3 above) is appended under BOTH this requirement's OWN per-lender
+`` `loan_${lenderId}` `` lock AND, this revision, the NEW per-borrower `` `loan_borrower_${borrowerId}` ``
+lock (together, per the Cross-lender same-borrower exclusion / Lock-acquisition order subsections above,
+resolves FIND-401) — NEVER under REQ-108/109's own, separate per-loan `` `loan_${loan_id}` `` lock.
+REQ-108/109's per-loan lock governs ONLY their own LATER, independent repayment-verification/
 default-detection status-transition appends on an ALREADY-ACTIVE loan (a loan that has already completed
 THIS requirement's own issuance critical section) — it is never acquired, nested, or otherwise involved
 during issuance itself. These are two DELIBERATELY DIFFERENT locks protecting two DIFFERENT critical
@@ -889,11 +1015,30 @@ sections at two DIFFERENT points in a loan's own lifecycle, and no code path in 
 BOTH locks for the SAME append.
 
 **Edge Cases**:
-- Two DIFFERENT lenders' loan requests proceed concurrently without contention (different lock keys
-  under the SAME `locks/` directory): intentional, not a bug — mirrors `gig.mjs`'s own existing
-  per-`gigId` lock-key pattern (documented in `lock.mjs`'s own header comment). Per the `loan_id` scheme
-  above, this also means their two newly-assigned `loan_id`s are structurally guaranteed distinct
-  (different `lenderId` prefixes), with zero collision risk and zero need for a shared lock.
+- Two DIFFERENT lenders' loan requests targeting TWO DIFFERENT borrowers proceed concurrently without
+  lender-lock contention (different `` `loan_${lenderId}` `` keys under the SAME `locks/` directory):
+  intentional, not a bug — mirrors `gig.mjs`'s own existing per-`gigId` lock-key pattern (documented in
+  `lock.mjs`'s own header comment). Per the `loan_id` scheme above, this also means their two
+  newly-assigned `loan_id`s are structurally guaranteed distinct (different `lenderId` prefixes), with
+  zero collision risk. **Corrected this revision (resolves FIND-401):** two DIFFERENT lenders' loan
+  requests targeting the SAME borrower are NO LONGER contention-free — the NEW
+  `` `loan_borrower_${borrowerId}` `` lock (above) now serializes them, ensuring at most one succeeds; see
+  the new Edge Case immediately below and new PROP-106n.
+- Two DIFFERENT lenders, L1 and L2, both attempt to issue a loan to the SAME borrower B concurrently
+  (resolves this revision's own FIND-401): both acquire their OWN per-lender lock (`loan_L1`, `loan_L2` —
+  no contention there, per the Edge Case above) but BOTH also require the SAME `loan_borrower_B` lock —
+  exactly ONE of L1/L2 acquires it first (per the total lock-ordering rule above) and, holding BOTH its
+  own locks, re-checks REQ-102 with a fresh read, finds B still eligible, and proceeds to disburse and
+  append B's new `"provisioning"`/`"active"` rows. The OTHER, upon acquiring `loan_borrower_B` after the
+  first releases it, re-checks REQ-102's conditions with a FRESH read that NOW includes the first
+  attempt's own newly-appended row, finds B NO LONGER eligible (`reason:"outstanding_loan"`), and refuses
+  — zero disbursement, zero ledger row for the refused attempt. Exactly one of L1/L2 ever disburses to B;
+  B never ends up with two simultaneously-open loans from different lenders (new PROP-106n).
+- A candidate loan where `lenderId === borrowerId` (a self-loan attempt): rejected by REQ-102(d) BEFORE
+  ANY other step of this critical section runs — before REQ-101's surplus computation, before
+  `evaluateColdStartKillSwitch`, and before EITHER the `` `loan_${lenderId}` `` or the
+  `` `loan_borrower_${borrowerId}` `` lock is ever acquired (resolves FIND-402) — zero disbursement
+  attempt, zero ledger row, zero lock acquisition regardless of either party's balance.
 - The instance holding the lock crashes mid-issuance, BEFORE `payViaFacilitator` is even attempted (the
   provisional row was appended, but the process died before step 2 above): the existing heartbeat +
   `isLockStale` mechanism reclaims the lock after `staleMs` of no heartbeat, exactly as it already does
@@ -951,20 +1096,40 @@ BOTH locks for the SAME append.
   double-transfer risk, since it only ever reads on-chain state, never disburses.
 
 **Acceptance Criteria**:
-- The loan-issuance critical section (REQ-101 read → REQ-102/104/105 compute → `n =
-  nextLoanSequenceForLender(...)` → disbursement transfer → THIS REQUIREMENT'S OWN two-phase provisional/
-  follow-up ledger append, above — NEVER REQ-108/109's own, separate per-loan ledger append; see the
-  lock-key disambiguation note above, resolves this revision's own FIND-205) is wrapped by
-  `withGigLock(LOANS_LEDGER_PATH, `loan_${lenderId}`, fn)`, using the SAME `lock.mjs` module, never a
-  reimplementation.
+- REQ-102(d)'s self-loan check (`lenderId !== borrowerId`) runs FIRST, before either lock is acquired,
+  refusing a self-loan candidate at zero cost (resolves FIND-402).
+- The loan-issuance critical section (a FRESH read of `loans.jsonl` → REQ-102(a)-(c) re-check → REQ-101
+  read/re-check → REQ-104/105 compute → `n = nextLoanSequenceForLender(...)` → disbursement transfer →
+  THIS REQUIREMENT'S OWN two-phase provisional/follow-up ledger append, above — NEVER REQ-108/109's own,
+  separate per-loan ledger append; see the lock-key disambiguation note above, resolves this revision's
+  own FIND-205) is wrapped by NESTED `withGigLock(LOANS_LEDGER_PATH, outerKey, fn)` /
+  `withGigLock(LOANS_LEDGER_PATH, innerKey, fn)` calls, where `[outerKey, innerKey] =
+  resolveLoanLockAcquisitionOrder(lenderId, borrowerId)` (the lexicographically-ordered pair of
+  `` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` ``, resolves this revision's own FIND-401),
+  using the SAME `lock.mjs` module for BOTH, never a reimplementation.
+- `resolveLoanLockAcquisitionOrder(lenderId, borrowerId)` deterministically returns the
+  lexicographically-smaller of `` `loan_${lenderId}` ``/`` `loan_borrower_${borrowerId}` `` as `outerKey`
+  and the other as `innerKey`, for both possible orderings of a given lender/borrower pair — a
+  Tier-0/Tier-1 structural and unit-test check confirms every issuance call site derives its lock order
+  from THIS function, never an inline/ad-hoc comparison (new PROP-106m).
 - Given two concurrent callers both targeting the SAME lender and both observing sufficient available
   surplus at read time, an integration test proves exactly one disburses; the other's attempt is
   recorded as `reason:"lock_held"` and makes zero transfer calls.
 - A structural/Tier-0 check confirms EVERY call site that invokes the loan-issuance lock, or reads/writes
   `loans.jsonl`, imports and uses the SAME `LOANS_LEDGER_PATH` constant.
-- Given two concurrent callers targeting TWO DIFFERENT lenders (each with zero prior loan rows), each
-  disburses successfully and their two resulting `loan_id`s are distinct (`loan_${lenderA}_1` vs
-  `loan_${lenderB}_1`) — zero collisions, using only each lender's own existing per-lender lock.
+- Given two concurrent callers targeting TWO DIFFERENT lenders AND TWO DIFFERENT BORROWERS (each with
+  zero prior loan rows), each disburses successfully and their two resulting `loan_id`s are distinct
+  (`loan_${lenderA}_1` vs `loan_${lenderB}_1`) — zero collisions, using only each lender's own existing
+  per-lender lock; the NEW `` `loan_borrower_${borrowerId}` `` lock (resolves FIND-401) adds zero
+  contention between them since the two borrowers differ (updated this revision to state the
+  two-different-borrowers precondition explicitly — the SAME-borrower, different-lender case is now a
+  DIFFERENT, DELIBERATELY SERIALIZED scenario; see the next bullet, new PROP-106n).
+- Given two concurrent callers targeting TWO DIFFERENT lenders but the SAME borrower (resolves this
+  revision's own FIND-401): exactly ONE acquires the shared `` `loan_borrower_${borrowerId}` `` lock
+  first (per the total lock-ordering rule above) and, after re-checking REQ-102 with a fresh read,
+  disburses; the OTHER's own fresh re-check (performed after acquiring that SAME lock, once released)
+  finds the borrower `reason:"outstanding_loan"` and refuses — zero disbursement, zero ledger row for
+  the refused attempt (new PROP-106n).
 - A fixture where `payViaFacilitator` is injected to fail (mocked network error) confirms the FOLLOW-UP
   row is appended with `status: "disbursement_failed"` (the PROVISIONAL row already exists for this `n`)
   and the lock is released (a subsequent call for the SAME lender computes a NEW `n+1` and can immediately
@@ -977,6 +1142,11 @@ BOTH locks for the SAME append.
   a reclaiming caller's on-chain lookup (`reconcileProvisionalDisbursement`) finds the crashed attempt's
   own real transaction and appends the recovering `"active"` row WITHOUT calling `payViaFacilitator`
   again — zero double-transfer (new PROP-106g's own binding test).
+- A fixture where a loan's PROVISIONAL row is appended at time `T1` and its ACTIVE/follow-up row
+  (confirming successful disbursement) is appended at a LATER time `T2` (`T2 > T1`, simulating a
+  reconciliation delay per PROP-106g/h/k's own fixtures) asserts `issued_ms === T2` (the active row's own
+  append-time timestamp, NEVER `T1`/`provisioned_ms`), and `due_ms === T2 + LOAN_REPAYMENT_WINDOW_DAYS *
+  86400000` — computed from that SAME, correct `issued_ms` value (new PROP-106o, resolves FIND-403).
 - A fixture where `payViaFacilitator` is injected to (a) successfully complete `/settle` and (b) then
   THROW during `waitForTransactionReceipt` (mocked RPC timeout): confirms `fn()` catches this exception
   INSIDE the lock, appends a follow-up row with `status: "disbursement_uncertain"` before returning/
@@ -1409,7 +1579,9 @@ evaluates it).
 ---
 
 ### REQ-109: Default detection & handling
-**EARS**: WHEN a loan's `due_ms` (`issued_ms + LOAN_REPAYMENT_WINDOW_DAYS * 86400000`) has passed AND
+**EARS**: WHEN a loan's `due_ms` (`issued_ms + LOAN_REPAYMENT_WINDOW_DAYS * 86400000`, where `issued_ms`
+is the `"active"` row's own append-time timestamp — see REQ-106's precise definition, resolves this
+revision's own FIND-403 — NEVER the provisional row's own `provisioned_ms`) has passed AND
 its last-appended row's `repaid_usd` is still less than `total_due_usd`, THE SYSTEM SHALL, at the next
 scheduled evaluation, append a NEW row for that same `loan_id` with `status: "defaulted"` — never
 mutate or delete the existing row (append-only, matching `ledger.js`'s own discipline). This append is

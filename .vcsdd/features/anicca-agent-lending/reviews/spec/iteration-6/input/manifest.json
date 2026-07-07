@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 6,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 5,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-5/output/findings/",
+    "note": "3 findings, 2 critical: FIND-401 (no cross-lender enforcement) resolved via a SECOND, borrower-scoped lock (loan_borrower_${borrowerId}) acquired IN ADDITION to the existing per-lender lock, nested with a deterministic total lock order (resolveLoanLockAcquisitionOrder), re-checking REQ-102 fresh while both locks held. New PROP-106m/n. FIND-402 (self-loan exploit) resolved via a new REQ-102 condition (d) lenderId!==borrowerId, checked FIRST, new PROP-102e. FIND-403 (issued_ms ambiguity) resolved -- issued_ms is now explicitly the active row's own append-time timestamp, never the provisional row's, new PROP-106o. One residual limitation honestly documented as unresolved (reconciled-path timestamp asymmetry) rather than papered over."
+  },
+  "note": "Verify each of the 3 fixes actually holds -- re-read lock.mjs's real withGigLock(statePath, lockKey, fn, opts) signature fresh to confirm the nested dual-lock design is genuinely deadlock-free (walk through the lock-ordering logic yourself with concrete lenderId/borrowerId examples). Confirm the fresh re-check of REQ-102 while both locks are held is actually specified to read the LATEST ledger state (not a stale snapshot from before lock acquisition). This feature has FAILed all 5 prior iterations with 29 cumulative findings, though the finding COUNT has been decreasing each round (7->8->6->5->3) -- do a full fresh pass over the REST of the spec too, not just the 3 fixed areas, and consider whether convergence is now genuinely close or whether this is a false signal."
+}
