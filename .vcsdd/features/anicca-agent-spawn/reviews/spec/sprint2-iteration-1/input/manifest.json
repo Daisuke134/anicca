@@ -1,0 +1,16 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "sprint": 2,
+  "iteration": 1,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "contracts/sprint-2.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "This is sprint-2's Phase 1c review, a SMALL delta review, not a full re-review of the entire 2900+/1100+ line spec (which already PASSED spec review at iteration 20 for sprint 1). Sprint-2's own Phase 1a/1b work is narrow: (1) verify the claim that REQ-201/202/203/204/205/206/301/302/303/304/305/306/401/402/403 genuinely required ZERO new content -- spot-check this claim yourself against several of these REQs rather than trusting it blindly (this is a load-bearing claim for avoiding wasted duplicate spec-writing work). (2) Review the ONE genuinely new requirement, REQ-307 (the orchestrator entry point, executeSpawnAttempt, canonical 9-step call order) and its 4 new proof obligations PROP-307a-d, plus the FIND-2002 fix (the identity-anchor-gated ledger-append gap for pre-REQ-204 failures). (3) Review contracts/sprint-2.md's own 8 CRIT criteria and its deferred-obligation disposition (35 targeted for closure this sprint, 3 Tier-3 explicitly NOT targeted -- PROP-302b/303b/401a, all requiring genuine real spend, none allowed to be claimed proved via fixture/simulated/borrowed evidence per CRIT-206). Apply the SAME rigor this session's other spec-review cycles used: check for the recurring pinned-input-derivation class (does executeSpawnAttempt's own signature have any parameter lacking a real-derivation binding?), check for the 3-statements-diverge class (does REQ-307's EARS/prose/acceptance-criteria all say the identical thing about the lock scope/call order?), and verify FIND-2002's fix genuinely closes the gap it claims to (can EVERY one of the 9 canonical steps' failure modes actually be recorded, not just some)."
+}
