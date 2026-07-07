@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 17,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 16,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-16/output/findings/",
+    "note": "1 finding, critical: FIND-1501 -- decideColonySpawn's sibling parameter childrenProvisioning had the exact same unspecified-derivation gap FIND-1401 just fixed for recentSpawnAttempts. Fix: new countChildrenProvisioning({ledgerRows}) function (last-write-wins per child_id, counts only groups whose last row is exactly 'provisioning'), new PROP-102h (4-case fixture)/PROP-102i (real-derivation discipline). PLUS: the mandated full-spec sweep (explicitly requested by the iteration-16 reviewer's own convergence note) found ONE MORE sibling gap: spawnThresholdUsd's measured_last_shelter_cost_usd override had no specified derivation from REQ-303's real shelter-cost ledger entries. Fixed with a new shelter-cost-ledger.js module + deriveMeasuredShelterCostUsd({shelterCostLedgerRows}) function (null on empty, else last-appended entry's settledLeaseCostUsd, never avg/max/first), new PROP-102j (3-case fixture)."
+  },
+  "note": "Verify FIND-1501's fix and the sweep-found shelter-cost-ledger fix, both mirroring FIND-1401's exact shape (last-write-wins-per-child_id reduction, explicit bootstrap_failed/relabeling handling, real-orchestration binding). This feature has now FAILed 16 consecutive spec-review iterations, with a recurring pattern this session: THREE separate instances of the identical 'pinned pure-function input with no specified real-state derivation' gap have now been found across iterations 15-16 alone (recentSpawnAttempts, childrenProvisioning, measured_last_shelter_cost_usd), each discovered by the SAME kind of fresh full-spec sweep. Iteration-16's builder already swept every parameter of every function in the Purity Boundary Map (filterProductiveCitizens, readCitizenBalances, computeColonySurplusUsd, computePerCitizenSurplusUsd, deriveRecentSpawnAttempts, countChildrenProvisioning, decideColonySpawn, selectCloudTarget, needsSolanaWallet, deriveMeasuredShelterCostUsd) and found no further gap of this exact class. Your job this iteration: (1) verify the two specific fixes above hold correctly, (2) INDEPENDENTLY re-verify the builder's own sweep was actually exhaustive -- do not simply trust that no more instances exist; re-examine every pinned parameter of every pure function yourself, including ones the builder's sweep may have treated too quickly, (3) do a normal fresh skeptical pass over the rest of the spec (REQ-101 through REQ-403) for any OTHER class of defect entirely, not just this one pattern."
+}

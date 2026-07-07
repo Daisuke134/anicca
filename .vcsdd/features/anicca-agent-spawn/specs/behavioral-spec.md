@@ -1,8 +1,42 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 15, revised
-(spec review iteration-15 finding FIND-1401 resolved — REQ-102's own Cooldown Check pinned
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 16, revised
+(spec review iteration-16 finding FIND-1501 resolved — REQ-102's `decideColonySpawn` pinned
+`childrenProvisioning` as a sibling input to `recentSpawnAttempts`, in the exact same signature, but no
+function anywhere derived this count from `ledger.js`'s real, append-only, duplicate-`child_id`-
+containing rows either — the identical failure class FIND-1401 (below) just fixed for its neighbor. A
+new sibling pure function, same file as `filterProductiveCitizens`/`deriveRecentSpawnAttempts`,
+`countChildrenProvisioning({ledgerRows}) → number`, groups `ledgerRows` by `child_id`, reduces to the
+last-appended row per group (last-write-wins, the SAME discipline already established), and counts
+exactly the groups whose last row's `status` is `"provisioning"` — a group whose last row is
+`"active"`, `"failed"`, or `"bootstrap_failed"` is NEVER counted, regardless of an earlier
+`"provisioning"` row for that SAME `child_id` — closing both the double-counting hazard (a naive
+per-row scan) and the permanent-block hazard (a stale `"provisioning"` row never superseded in the
+count) FIND-1401 already closed for `recentSpawnAttempts`; REQ-102's real orchestration now calls this
+function directly over `readChildren`'s real output, mirroring `deriveRecentSpawnAttempts`'s own
+integration discipline; new proof obligations PROP-102h (Tier 1, four-case unit fixture) and PROP-102i
+(Tier 1/2, real-derivation integration discipline) are added, the Purity Boundary Map gains a new
+`countChildrenProvisioning` row and the `decideColonySpawn` row is updated to cite it, and the Gate's
+new item (1g) requires all this (resolves FIND-1501, critical) — AND, found during this SAME
+iteration's own mandated full-spec sweep for the identical failure class (never independently raised
+by the adversary, resolved here preemptively to close it before a third iteration could find it as a
+third sibling gap): REQ-102's `SPAWN_THRESHOLD_USD` formula named its `MIN_SHELTER_USD` override,
+`measured_last_shelter_cost_usd`, as sourced from "REQ-303's shelter-cost ledger" in prose only, with
+NO named function specifying how that ledger's multiple, real, append-only entries (the SAME shape
+`ledger.js`'s own rows already have) reduce to the ONE value actually used. Resolved by naming REQ-303's
+shelter-cost ledger module explicitly — a new, small, dedicated module,
+`~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js`, exporting EXACTLY
+`{readShelterCostEntries, appendShelterCostEntry}` (the SAME append-only-JSONL, no-update/upsert
+discipline `ledger.js` already establishes) — and a new sibling pure function, same file as
+`filterProductiveCitizens`, `deriveMeasuredShelterCostUsd({shelterCostLedgerRows}) → number|null`,
+which returns `null` on an empty ledger (no real deploy has ever completed — `MIN_SHELTER_USD` stays its
+provisional `5.00`) or the LAST-appended entry's `settledLeaseCostUsd` otherwise (last-write-wins —
+NEVER an average, sum, or historical-max across the ledger's accumulated entries, and never the
+FIRST-ever entry); a new proof obligation, PROP-102j, verifies both branches, and PROP-303c is corrected
+to cite this function by name rather than an unnamed "threshold computation" (resolves this
+preemptively-found gap) — AND spec review iteration-14 finding FIND-1401 resolved — REQ-102's own
+Cooldown Check pinned
 `recentSpawnAttempts: Array<{ts, outcome}>` as an input, but no function anywhere derived this array
 from `~/anicca/skills/self/spawn/lib/ledger.js`'s real rows — unlike REQ-101's exactly analogous need,
 satisfied by a named, fully-specified pure join function, `filterProductiveCitizens`; two concrete gaps
@@ -326,6 +360,18 @@ the real, current `~/anicca/skills/self/spawn/lib/child-spec.js`/`ledger.js`:
 |---|---|---|
 | FIND-1401 | critical | REQ-102's Cooldown Check pinned `recentSpawnAttempts: Array<{ts, outcome}>` as an input, but no function anywhere derived this array from `ledger.js`'s real rows — unlike REQ-101's exactly analogous need, satisfied by a named, fully-specified pure join function, `filterProductiveCitizens`. Two concrete gaps made this unimplementable: (a) `buildChildSpec`'s real, current returned row (confirmed by direct read) carries no generic timestamp field at all, and REQ-305 only ever set a timestamp field, `active_since`, on the SUCCESS path — never on a `"failed"`/`"provisioning"` row — so no cited data source existed anywhere for a failed or in-flight attempt's `ts` value; (b) the status→outcome mapping was never stated for a LATER `"bootstrap_failed"` relabeling (REQ-402) of an already-`"active"` child, leaving it ambiguous whether that spawn attempt's `recentSpawnAttempts` entry stays `outcome:"success"` or flips to `outcome:"failure"`, and whether a naive per-row mapping could double-count one real attempt as both. Resolved by: (1) REQ-305 now specifies a new field, `attempted_ms`, set to `nowMs` on the very FIRST `ledger.js` row ever appended for a given `child_id` (the initial `"provisioning"` row) and copied forward UNCHANGED onto every later row for that SAME `child_id` (a `"failed"` row, an `"active"` row, or REQ-402's `"bootstrap_failed"` row) — never a freshly-generated timestamp for a follow-up row — following the EXACT precedent this SAME requirement already establishes for `active_since` (an extra field the caller merges into `buildChildSpec`'s base returned object before `appendChild`; `child-spec.js`/`buildChildSpec` itself is NOT modified). (2) A new sibling pure function, same file as `filterProductiveCitizens`, `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::deriveRecentSpawnAttempts({ledgerRows}) → Array<{ts, outcome}>`, groups `ledgerRows` by `child_id` and maps EACH group to exactly ONE entry: `outcome:"success"` PERMANENTLY if that `child_id` ever reached `"active"` (a later `"bootstrap_failed"` row never retroactively flips this, per REQ-102's own existing "a successful attempt is ALWAYS cooldown-triggering" rule); else `outcome:"failure"` if its last (last-write-wins) row is `"failed"`; else EXCLUDED entirely if its last row is still `"provisioning"` (an in-flight attempt, already tracked separately via `childrenProvisioning`/`MAX_CONCURRENT_SPAWNS`, never double-counted here) — one entry per `child_id`, never per raw row, closing the double-counting hazard. (3) REQ-102's real orchestration is now specified to call `deriveRecentSpawnAttempts({ledgerRows: readChildren(...)})` directly, never a hand-rolled reimplementation at the call site (mirroring REQ-101's own `filterProductiveCitizens` integration discipline). Three new proof obligations are added (verification-architecture.md): PROP-102f (Tier 1, the four-case unit fixture: a plain failure, a plain success, a success-then-`bootstrap_failed` attempt that must remain `outcome:"success"` with its ORIGINAL `attempted_ms` and must never also appear as a second, extra failure entry, and an in-flight `"provisioning"`-only attempt that must be excluded entirely), PROP-102g (Tier 1/2, confirming the real orchestration calls `deriveRecentSpawnAttempts` over real `readChildren` output rather than reimplementing the logic inline, mirroring PROP-101d/PROP-101e's own real-derivation discipline), and PROP-305h (Tier 0, confirming `attempted_ms` is set on the first row per `child_id` and copied forward unchanged onto every later row for that `child_id`, including REQ-402's `"bootstrap_failed"` row) — and the Gate's item (1) is extended to require all three. |
 
+## Changelog (iteration 15 spec review → iteration 16)
+
+Iteration 15's spec review FAILed with 1 finding (critical — FIND-1501; FIND-1401 was reconfirmed
+genuinely resolved against the real, current source). The reviewer's own convergence note additionally
+mandated a full-spec sweep for the identical failure class, which surfaced one further gap, resolved
+preemptively in the same pass:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1501 | critical | `decideColonySpawn`'s pinned `childrenProvisioning` input — a sibling parameter to `recentSpawnAttempts` in the EXACT SAME function signature — had no specified derivation from `ledger.js`'s real, append-only, duplicate-`child_id`-containing rows, recreating BOTH of FIND-1401's own hazards on this sibling: (a) a naive per-row scan (rather than a last-write-wins reduction first) could double-count, or worse, PERMANENTLY count a child whose stale `"provisioning"` row was later superseded by `"active"`/`"failed"` — silently and permanently blocking all future spawns once even one child has ever been spawned; (b) it was unclear whether a child whose LAST row is `"bootstrap_failed"` (REQ-402) should still count as "in provisioning" (a naive scan might still find its earlier `"provisioning"` row). Resolved by a new sibling pure function, same file as `filterProductiveCitizens`/`deriveRecentSpawnAttempts`, `~/anicca/skills/self/spawn/lib/treasury-gate.mjs::countChildrenProvisioning({ledgerRows}) → number`, which groups `ledgerRows` by `child_id`, reduces each group to its last-appended row (last-write-wins, the identical discipline already established), and counts exactly the groups whose last row's `status` is `"provisioning"` — a group whose last row is `"active"`, `"failed"`, or `"bootstrap_failed"` is NEVER counted, regardless of an earlier `"provisioning"` row for that same `child_id`. REQ-102's real orchestration now calls this function directly over `readChildren`'s real output, never a hand-rolled reimplementation at the call site — mirroring `deriveRecentSpawnAttempts`'s own integration discipline. Two new proof obligations are added (verification-architecture.md): PROP-102h (Tier 1, a four-case unit fixture: a child whose only row is `"provisioning"` → counted; a `"provisioning"` row followed by a later `"active"` row → NOT counted; a `"provisioning"` row followed by a later `"failed"` row → NOT counted; a `"provisioning"`→`"active"`→`"bootstrap_failed"` sequence → NOT counted) and PROP-102i (Tier 1/2, confirming the real orchestration calls `countChildrenProvisioning` over real `readChildren` output rather than reimplementing the count inline, mirroring PROP-102g's own discipline) — the Purity Boundary Map gains a new `countChildrenProvisioning` row, the `decideColonySpawn` row is updated to cite it for `childrenProvisioning`, and the Gate gains a new item (1g) requiring all of the above. |
+| (preemptive, found during this iteration's mandated sweep — not independently raised by the adversary) | major | REQ-102's `SPAWN_THRESHOLD_USD` formula named its `MIN_SHELTER_USD` override, `measured_last_shelter_cost_usd`, as sourced from "REQ-303's shelter-cost ledger" in prose only, with no named function specifying how that ledger's multiple, real, append-only entries (the SAME accrual shape `ledger.js`'s own rows already have) reduce to the ONE value actually used — the identical failure class, one step removed. Resolved by naming REQ-303's shelter-cost ledger module explicitly, a new, small, dedicated module `~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js` exporting EXACTLY `{readShelterCostEntries, appendShelterCostEntry}` (the SAME append-only-JSONL, no-update/upsert discipline `ledger.js` already establishes), and a new sibling pure function, same file as `filterProductiveCitizens`, `deriveMeasuredShelterCostUsd({shelterCostLedgerRows}) → number\|null`, which returns `null` on an empty ledger (no real deploy has ever completed — `MIN_SHELTER_USD` stays its provisional `5.00`) or the LAST-appended entry's `settledLeaseCostUsd` otherwise (last-write-wins — never an average, sum, or historical-max across the ledger's accumulated entries, and never the first-ever entry). A new proof obligation, PROP-102j, verifies both branches, and PROP-303c is corrected to cite this function by name rather than an unnamed "threshold computation". |
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -421,7 +467,7 @@ scripts remain aligned with current upstream documentation.
 | Colony citizen registry — DURABLE RUNTIME FILE (data source for REQ-101; revised to resolve FIND-101/202/302/304/901) | **Effectful shell (BRAND NEW, dedicated, durable, OUT-OF-GIT-TREE)** | `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`) = `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/citizens.json`, alongside `~/.hermes/state/children.jsonl`) — a location immune to `git checkout`/`git worktree add\|remove`/`git pull` on `~/anicca` (resolves FIND-901). Bootstrapped ONCE from `citizens.seed.json`'s content verbatim if absent, then diverges permanently via REQ-305's runtime appends — the git-tracked seed template above is never touched again (PROP-105k). Holds the SAME record shape as the seed template — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch; UNRELATED to `child-spec.js`'s own returned-row `wallet` STRING field, resolves FIND-304), `walletAddress` separately carries the real address string(s) and is what REQ-101's `readCitizenBalances` keys its RPC query on, and `homeDir` is an ALREADY-RESOLVED absolute path (never an unresolved `$HOME` template, resolves FIND-202) feeding REQ-403's now co-located-only-scoped audit (resolves FIND-303). This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
 | Pre-existing mutual-aid recipient list (untouched, out of scope) | **Effectful shell (existing, NOT read/written by this feature)** | `~/anicca/skills/economy/ubi/colony-wallets.json` — `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc), a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file — resolves FIND-101's critical finding that an earlier draft wrongly proposed migrating/extending it, which would have risked a human-funded wallet silently entering the colony-surplus aggregate. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded, currently-productive citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). Fed exclusively by `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})`, a new pure join function that cross-references REQ-105's registry against `ledger.js`'s rows to exclude `"bootstrap_failed"`/window-overdue children before this sum ever runs (resolves FIND-201). |
-| Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. Fed by `deriveRecentSpawnAttempts({ledgerRows})`, a new pure sibling function (same file as `filterProductiveCitizens`) that groups `ledger.js`'s rows by `child_id` and maps each group to one `{ts, outcome}` entry, reading `ts` from the new `attempted_ms` field REQ-305 sets on each child's first row and copies forward onto every later row (resolves FIND-1401). |
+| Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. Fed by `deriveRecentSpawnAttempts({ledgerRows})`, a new pure sibling function (same file as `filterProductiveCitizens`) that groups `ledger.js`'s rows by `child_id` and maps each group to one `{ts, outcome}` entry, reading `ts` from the new `attempted_ms` field REQ-305 sets on each child's first row and copies forward onto every later row (resolves FIND-1401) — AND, for its sibling `childrenProvisioning` input, by `countChildrenProvisioning({ledgerRows})`, a new pure sibling function (same file, same grouping/last-write-wins discipline) that counts exactly the `child_id` groups whose last row's `status` is `"provisioning"` (resolves FIND-1501) — AND, for `spawnThresholdUsd`'s own `MIN_SHELTER_USD` override, by `deriveMeasuredShelterCostUsd({shelterCostLedgerRows})`, a new pure sibling function (same file) that reads the last-appended entry of the new `shelter-cost-ledger.js` module (resolves the sweep-found gap alongside FIND-1501). |
 | Per-child identity record assembly | **Pure core (existing, extended — small, backward-compatible modification, REQ-206)** | `~/anicca/skills/self/spawn/lib/child-spec.js::nextChildId`/`buildChildSpec` — monotonic ID (unchanged) + an identity-anchor validation that now accepts EITHER the old `childInbox` (AgentMail) OR the new `agentEvmAddress`+`agentId` (ERC-8004) pair, never requiring both (REQ-206). This corrects iteration 1's false "reused unmodified" claim (FIND-001): the distinct-wallet assertion and every other existing field/behavior are untouched, and a regression test locks in that today's `childInbox`-only callers still succeed identically. `buildChildSpec`'s OTHER four already-mandatory fields (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`) are unchanged CODE but now have an explicit spec-level derivation rule each (REQ-206, resolves FIND-204) — the function's own source is not modified for these four; only the caller-supplied values are now specified. |
 | Cross-instance spawn mutual exclusion (lock predicate) | **Pure core (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/lock.mjs::isLockStale(nowMs, mtimeMs, staleMs)` — the already-adversary-hardened staleness predicate from the P2 concurrency-hardening sprint (`anicca-agent-economy` REQ-101). REQ-103 reuses the SAME generic file-lock module under a new lock key (`"colony-spawn"`), not a new lock implementation. This module's local-POSIX-filesystem guarantee is sufficient ONLY because REQ-106 scopes every evaluator to a single coordinator host this increment (FIND-003) — it is not claimed to solve cross-host mutual exclusion. |
 | Cloud target selection (Nosana vs Akash) | **Pure core (new) + Effectful shell (new)** | A pure comparison function `selectCloudTarget({nosanaAvailable, nosanaPriceUsd, akashAvailable, akashPriceUsd}) → "nosana"\|"akash"\|"none"` (deterministic, price-based, never a model judgment — REQ-306) fed by an effectful price/availability query step against each provider's own CLI/API, INCLUDING a genuinely NEW USD-normalization price-fetch step (one public spot-price API call per native token, reusing the exact fail-closed pattern already established by `ethPrice()`/`solPrice()` elsewhere in this codebase — resolves FIND-305's false "already-available oracle" claim; `akt-treasury.sh` has no live USD price query). Resolves FIND-006 (REQ-302/303 presupposed this selection without ever specifying it). |
@@ -710,6 +756,32 @@ as follows:
    its own earlier `"provisioning"` row, or a success AND a later `"bootstrap_failed"` row, as two
    separate attempts).
 
+**Deriving `childrenProvisioning` from real ledger rows (new, resolves FIND-1501, critical):** the
+EARS clause above and the `MAX_CONCURRENT_SPAWNS` edge case below both describe what
+`childrenProvisioning` MEANS ("how many children are currently in `"provisioning"` state") but — until
+this revision — no function anywhere specified HOW this count is computed from `ledger.js`'s real,
+append-only, duplicate-`child_id`-containing rows: the exact same raw data source
+`filterProductiveCitizens` and `deriveRecentSpawnAttempts` (above) both already correctly derive their
+own outputs from. A new, sibling pure function, same file, `~/anicca/skills/self/spawn/lib/
+treasury-gate.mjs::countChildrenProvisioning({ledgerRows}) → number`, zero I/O, is THE SOLE mechanism
+that produces this count, and REQ-102's real orchestration calls it directly over `readChildren`'s real
+output (`countChildrenProvisioning({ledgerRows: readChildren(...)})`) — never a hand-rolled
+reimplementation at the call site (mirroring `deriveRecentSpawnAttempts`'s own integration discipline
+above). It works as follows:
+1. GROUP `ledgerRows` by `child_id` (the SAME grouping key `filterProductiveCitizens`/
+   `deriveRecentSpawnAttempts` already use).
+2. For each `child_id` group, reduce to the LAST-appended (last-write-wins) row — the SAME reduction
+   `filterProductiveCitizens` already performs before applying its own exclusion rule.
+3. COUNT exactly the groups whose LAST row's `status` is EXACTLY `"provisioning"`. A group whose last
+   row is `"active"`, `"failed"`, or `"bootstrap_failed"` is NEVER counted — regardless of whether an
+   EARLIER `"provisioning"` row exists somewhere in that SAME `child_id`'s history — closing both (a) the
+   double-counting hazard a naive per-row scan would create, and (b) the permanent-block hazard where a
+   child's stale `"provisioning"` row is never superseded in the count once that child resolves to
+   `"active"`/`"failed"`, which would otherwise leave `childrenProvisioning >= maxConcurrentSpawns`
+   permanently true and silently block every future spawn attempt forever.
+4. Return the resulting count as a plain number — never an array, never per-child detail — this
+   function answers only "how many," matching `MAX_CONCURRENT_SPAWNS`'s own bare-integer comparison.
+
 `SPAWN_THRESHOLD_USD = MIN_SHELTER_USD * SAFETY_MARGIN_MULTIPLIER`, where:
 - `MIN_SHELTER_USD` defaults to `5.00` — a provisional anchor, NOT a live-market-verified figure
   (deliberately, since Nosana/Akash CPU-only small-workload pricing floats with AKT/SOL/NOS market
@@ -717,7 +789,12 @@ as follows:
   order-of-magnitude anchor as REQ-101's `perCitizenReserveUsd` for internal consistency rather than
   inventing an unrelated number. **This default MUST be superseded by `measured_last_shelter_cost_usd`
   — the actual USD-equivalent cost recorded by REQ-303's shelter-cost ledger after the first real
-  deploy — the moment that ledger has at least one entry** (`MIN_SHELTER_USD = max(measured_last_shelter_cost_usd, 5.00)` once measured; `5.00` alone only before any real deploy has ever happened).
+  deploy — the moment that ledger has at least one entry** (`MIN_SHELTER_USD =
+  max(deriveMeasuredShelterCostUsd({shelterCostLedgerRows: readShelterCostEntries(...)}), 5.00)` once
+  `deriveMeasuredShelterCostUsd` returns non-`null`; `5.00` alone while it still returns `null`, i.e.
+  before any real deploy has ever completed — see REQ-303 for `deriveMeasuredShelterCostUsd`'s own
+  definition, added preemptively during this iteration's full-spec sweep alongside the FIND-1501 fix
+  above, the identical failure class one step removed).
 - `SAFETY_MARGIN_MULTIPLIER` defaults to `2` — reusing the exact "2×" convention already documented in
   this project's own `~/anicca/skills/self/spawn/scripts/akt-treasury.sh` (`ACT_BUFFER_UACT`'s comment:
   "target ACT on hand (≥ 2× min_mint so a few deploys never wait)"), applied here to the same
@@ -769,6 +846,12 @@ WHETHER to spawn — see REQ-104.
   readChildren(...)})` (defined above), one entry per `child_id` group, with in-flight
   (`"provisioning"`-only) groups excluded and a group that ever reached `"active"` always mapped to
   `outcome:"success"` regardless of any later `"bootstrap_failed"` relabeling.
+- **(new, resolves FIND-1501)** `childrenProvisioning` is never hand-assembled by the calling
+  orchestration — it is ALWAYS the direct return value of `countChildrenProvisioning({ledgerRows:
+  readChildren(...)})` (defined above): a count of `child_id` groups whose LAST (last-write-wins) row's
+  `status` is EXACTLY `"provisioning"` — a group whose last row is `"active"`, `"failed"`, or
+  `"bootstrap_failed"` is NEVER counted, regardless of an earlier `"provisioning"` row for that same
+  `child_id`.
 - Order of checks is surplus → cooldown → concurrency cap (each independently testable at its own
   boundary), matching the existing `spawn-decision.js` ordering convention (a broke colony never
   spawns whatever else is true).
@@ -1797,6 +1880,24 @@ reused as-is unless a child-specific variant is explicitly required). THE SYSTEM
 actual `AKASH_DEPOSIT` escrowed and, once observable, the real settled lease cost, into a persistent
 shelter-cost ledger that REQ-102's `measured_last_shelter_cost_usd` mechanism reads.
 
+**Naming the shelter-cost ledger and its derivation function (new, resolves the sweep-found sibling gap
+alongside FIND-1501):** this persistent shelter-cost ledger is a new, small, dedicated module,
+`~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js`, exporting EXACTLY
+`{readShelterCostEntries, appendShelterCostEntry}` — the SAME append-only-JSONL, no-update/upsert
+discipline `~/anicca/skills/self/spawn/lib/ledger.js` already establishes for children (this module
+never gains a mutation primitive either). THE SYSTEM SHALL append ONE entry per real deploy attempt,
+`{ts: number, settledLeaseCostUsd: number}`, at the point the settled lease cost first becomes
+observable (the provisional `AKASH_DEPOSIT`-only figure is logged for colony accounting per REQ-304's
+own memo/log discipline, but is NOT itself what `MIN_SHELTER_USD` reads once a real settled cost
+exists). REQ-102's `MIN_SHELTER_USD` override reads this ledger via a new sibling pure function, same
+file as `filterProductiveCitizens`, `~/anicca/skills/self/spawn/lib/
+treasury-gate.mjs::deriveMeasuredShelterCostUsd({shelterCostLedgerRows}) → number|null`: returns `null`
+on an empty ledger (no real deploy has ever completed), else reduces to the LAST-appended entry (the
+SAME last-write-wins discipline `filterProductiveCitizens`/`deriveRecentSpawnAttempts`/
+`countChildrenProvisioning` already apply to `ledger.js`'s own rows) and returns that entry's
+`settledLeaseCostUsd` — NEVER an average, sum, or historical-max across every accumulated entry, and
+NEVER the first-ever entry, even once many real deploys have accrued many ledger rows over time.
+
 **Funding-readiness gate reuse (resolves FIND-402):** BEFORE invoking `akt-treasury.sh`/
 `deploy-akash.sh`, THE SYSTEM SHALL determine whether the signing wallet's current AKT balance is
 sufficient by calling the existing, already-unit-tested
@@ -1901,10 +2002,13 @@ not touch; see RESOLUTION-NOTES.md).
 - `deploy-akash.sh CHILD_ID` and `akt-treasury.sh` are invoked with no source modification; their
   existing exit-code/stdout contract (dseq on stdout, non-zero exit + stderr message on any failure) is
   the sole success/failure signal this feature reads.
-- The real `AKASH_DEPOSIT` amount and (once queryable) the real settled lease cost are appended to a
-  shelter-cost ledger file that REQ-102 reads on its NEXT evaluation — the very first spawn therefore
-  uses the provisional `$5.00`/`$10.00` defaults, and every subsequent evaluation uses real measured
-  data once at least one successful deploy exists.
+- The real `AKASH_DEPOSIT` amount and (once queryable) the real settled lease cost are appended, via
+  the new `shelter-cost-ledger.js::appendShelterCostEntry`, to the shelter-cost ledger file that
+  REQ-102's `deriveMeasuredShelterCostUsd({shelterCostLedgerRows: readShelterCostEntries(...)})` reads
+  on its NEXT evaluation — the very first spawn therefore uses the provisional `$5.00`/`$10.00`
+  defaults (`deriveMeasuredShelterCostUsd` returns `null` on the still-empty ledger), and every
+  subsequent evaluation uses the LAST-appended entry's real measured data once at least one successful
+  deploy exists — never an average/max across multiple accumulated entries.
 - `computeSpawnGate({balanceAkt, costAkt: config.spawn_cost_akt, bufferAkt: config.buffer_akt})` (from
   `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js`, reused unmodified) is called before every
   Akash deploy attempt, with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values

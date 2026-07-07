@@ -842,6 +842,30 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-305h",
       "beadId": "BEAD-123"
+    },
+    {
+      "id": "PROP-103",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-102h",
+      "beadId": "BEAD-124"
+    },
+    {
+      "id": "PROP-104",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-102i",
+      "beadId": "BEAD-125"
+    },
+    {
+      "id": "PROP-105",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-102j",
+      "beadId": "BEAD-126"
     }
   ],
   "traceability": {
@@ -879,7 +903,10 @@
           "BEAD-028",
           "BEAD-029",
           "BEAD-121",
-          "BEAD-122"
+          "BEAD-122",
+          "BEAD-124",
+          "BEAD-125",
+          "BEAD-126"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -2403,6 +2430,42 @@
         "createdAt": "2026-07-07T15:28:59.479Z",
         "createdInPhase": "1b",
         "externalId": "PROP-305h"
+      },
+      {
+        "beadId": "BEAD-124",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-102h",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "createdAt": "2026-07-07T15:55:11.313Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-102h"
+      },
+      {
+        "beadId": "BEAD-125",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-102i",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "createdAt": "2026-07-07T15:55:11.313Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-102i"
+      },
+      {
+        "beadId": "BEAD-126",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-102j",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "createdAt": "2026-07-07T15:55:11.313Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-102j"
       }
     ]
   },
@@ -2426,5 +2489,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T15:28:59.481Z"
+  "updatedAt": "2026-07-07T15:55:11.314Z"
 }

@@ -1,0 +1,59 @@
+{
+  "findingId": "FIND-1501",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "FIND-1401's fix (iteration 15) is genuinely, completely resolved: `attempted_ms` is correctly specified as a first-row-sets/later-rows-copy-forward field (behavioral-spec.md REQ-305, lines 2046-2059), `deriveRecentSpawnAttempts({ledgerRows})` correctly implements the four-case mapping including the success-permanence rule for a later `bootstrap_failed` relabeling (behavioral-spec.md REQ-102, lines 681-711; REQ-402, lines 2297-2301, 2364-2369), REQ-102's real orchestration is bound to call this function directly (behavioral-spec.md line 767-771; verification-architecture.md PROP-102g, line 312; Gate item (1f), lines 646-656), and the three new proof obligations (PROP-102f, PROP-102g, PROP-305h) are each specific enough to genuinely catch an implementation bug (mismatch/mutation-style assertions, not restated prose). However, a fresh, full re-read of the ENTIRE spec (as this iteration's manifest itself instructed, precisely because this is how FIND-1401 was found while verifying FIND-1301's fix) surfaces a NEW instance of the EXACT SAME failure class, in the SAME requirement, on a SIBLING parameter of the SAME function signature that FIND-1401 just fixed: `decideColonySpawn`'s pinned `childrenProvisioning` input has no specified derivation from `ledger.js`'s real rows anywhere in either spec file.\n\nREQ-102's own EARS clause (behavioral-spec.md:648-652) and its binding Acceptance Criteria's pinned signature (`decideColonySpawn({..., childrenProvisioning, maxConcurrentSpawns}) -> {eligible, reason}`, behavioral-spec.md:758-760) require `childrenProvisioning` — a count of how many children are currently in `\"provisioning\"` status — as an input exactly analogous to `recentSpawnAttempts`. REQ-102's own edge case (behavioral-spec.md:751-753, `\"MAX_CONCURRENT_SPAWNS children are already `provisioning` (none yet resolved to `active` or `failed`)`\") describes WHAT this count means but never specifies HOW it is computed from `ledger.js`'s real, append-only, duplicate-`child_id`-containing rows (the exact same raw data source `filterProductiveCitizens` and the newly-added `deriveRecentSpawnAttempts` both consume). Nowhere in either spec file is there a named function (e.g. a `countChildrenProvisioning({ledgerRows})` sibling in the SAME `treasury-gate.mjs` file) that groups `ledgerRows` by `child_id`, reduces to the last-appended row per group (the SAME last-write-wins discipline REQ-101/FIND-301 and the just-fixed `deriveRecentSpawnAttempts`/FIND-1401 both require), and counts groups whose last row is `status:\"provisioning\"`.\n\nThis is not a cosmetic omission — it recreates BOTH of FIND-1401's own concrete hazards on this sibling parameter: (1) a naive implementation could count EVERY raw ledger row with `status:\"provisioning\"` rather than reducing to one entry per `child_id`'s last-appended row first — a child whose EARLIER `\"provisioning\"` row is followed by a LATER `\"active\"` or `\"failed\"` row (proven real, routine `ledger.js` behavior per `run.sh`'s own existing provisioning-row-then-status-row pattern, already cited at behavioral-spec.md:472-475 and REQ-101's own PROP-101d fixture) would then be double-counted or, worse, PERMANENTLY stuck counting toward `MAX_CONCURRENT_SPAWNS` even after it resolved to `\"active\"`/`\"failed\"` -- silently and permanently blocking every future spawn attempt (`childrenProvisioning >= maxConcurrentSpawns` forever true) once even one child has ever been spawned, since its now-stale `\"provisioning\"` row would never stop being counted. (2) the exact same class of ambiguity FIND-1401 raised for the `bootstrap_failed` relabeling case: is a child whose FIRST row is `\"provisioning\"` and whose LAST row is `\"bootstrap_failed\"` (REQ-402) still counted as \"in provisioning\" by a naive per-row scan (since a `\"provisioning\"` row for that `child_id` does exist somewhere in `ledgerRows`), or correctly excluded (since its last row is no longer `\"provisioning\"`)? No rule anywhere answers this.\n\nEvery proof obligation touching this parameter treats it as an already-given unit-test fixture, never as the output of a real derivation over real `ledger.js` data: PROP-102c (verification-architecture.md:308) is a bare `childrenProvisioning=maxConcurrentSpawns` fixture-value assertion — there is no PROP-102g-equivalent (the exact new obligation this same iteration just added for `recentSpawnAttempts`) proving the real orchestration derives this count from `readChildren`'s real output rather than a hand-maintained/incorrectly-scanned counter. The Purity Boundary Map's `decideColonySpawn` row (verification-architecture.md:148) lists `childrenProvisioning` in the pinned signature but cites no producing function for it (contrast the SAME row's now-correct citation of `deriveRecentSpawnAttempts` for `recentSpawnAttempts`). Gate item (1)/(1f) (verification-architecture.md:563-571, 646-656) — the section this same iteration's own fix just extended to bind `recentSpawnAttempts` to its real derivation — says nothing about confirming `childrenProvisioning`'s real derivation. Grepped the complete text of `MAX_CONCURRENT_SPAWNS`/`childrenProvisioning` across both spec files (7 total occurrences) — none of them specify or test a real-ledger-row derivation mechanism.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "648-652",
+      "snippet": "THE SYSTEM SHALL permit at most one new spawn attempt when, and only when, `colonySurplusUsd >= SPAWN_THRESHOLD_USD` AND the Cooldown Check below evaluates to \"not on cooldown\" AND fewer than `MAX_CONCURRENT_SPAWNS` (default `1`) children are currently in `\"provisioning\"` state. -- no function anywhere specifies how this count is computed from ledger.js's real rows"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "751-753",
+      "snippet": "`MAX_CONCURRENT_SPAWNS` children are already `\"provisioning\"` (none yet resolved to `\"active\"` or `\"failed\"`): not eligible, `reason:\"max_concurrent_spawns\"` -- describes the meaning of the count but never its derivation mechanism, nor whether duplicate/superseded rows are reduced first"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "758-760",
+      "snippet": "`decideColonySpawn({ colonySurplusUsd, spawnThresholdUsd, recentSpawnAttempts, nowMs, cooldownDays, failureCooldownCap, childrenProvisioning, maxConcurrentSpawns }) -> { eligible: boolean, reason: ... }` -- childrenProvisioning is pinned as an input exactly like recentSpawnAttempts was before this iteration's own FIND-1401 fix, but receives none of that fix's treatment"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "681-711",
+      "snippet": "the newly-added `deriveRecentSpawnAttempts({ledgerRows})` -- this iteration's own fix for FIND-1401 -- explicitly EXCLUDES provisioning-only groups from its returned array (\"EXCLUDE that child_id from the returned array entirely\") -- it does not, and was never meant to, produce childrenProvisioning's count; no sibling function fills this gap"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "472-475",
+      "snippet": "run.sh:124-140 appends a \"provisioning\" row, then a LATER, SEPARATE appendChild call ... appends a SECOND row with the SAME child_id and an updated status (\"seed_failed\" or \"active\") -- proving readChildren's raw output routinely contains duplicate child_id rows -- the exact real-world shape that would corrupt a naive per-row childrenProvisioning count"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "148",
+      "snippet": "Purity Boundary Map's decideColonySpawn row lists `childrenProvisioning` in the pinned signature but, unlike this SAME row's now-correct citation of `deriveRecentSpawnAttempts` for `recentSpawnAttempts`, cites no producing function for it"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "308",
+      "snippet": "PROP-102c | REQ-102 | `childrenProvisioning >= maxConcurrentSpawns` blocks eligibility regardless of surplus/cooldown | 1 | true | unit test: surplus and cooldown both satisfied, `childrenProvisioning=maxConcurrentSpawns` -> eligible:false -- an already-given fixture value, no PROP-102g-equivalent integration proof that this count is derived from real ledger.js rows"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "646-656",
+      "snippet": "Gate item (1f) -- this SAME iteration's own new gate item binding recentSpawnAttempts to deriveRecentSpawnAttempts's real derivation -- says nothing about childrenProvisioning's real derivation"
+    }
+  ],
+  "routeToPhase": "1a"
+}
