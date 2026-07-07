@@ -260,3 +260,179 @@ test("★GAP 2★ a SLOW verify_and_pay on gig X does not clobber a concurrent t
   assert.equal(finalY.taker, TAKER_ADDR);
   assert.equal(finalX.status, "paid", "gig X's own payout must also be correctly persisted");
 });
+
+// ============================================================================
+// anicca-agent-economy REQ-102 (Phase 2a, RED evidence note): the ★GAP 2★ test directly above this
+// section already exercises the 2-gigId outcome scenario, and (per the increment's own scope note in
+// behavioral-spec.md/verification-architecture.md) `gig.mjs`'s GAP-2 fix -- `applyAndSave()` re-reading
+// the board fresh under a single "_board" lock, with the network settle held OUTSIDE that lock -- was
+// already landed and adversary-verified in a PRIOR round (round 2/3, see gig.mjs's own header comment).
+// This increment's REQ-102 formalizes that existing behavior with a dedicated spec + fresh, more precise
+// tests (3-way concurrency, explicit call-order, explicit non-serialization timing) rather than
+// introducing new application logic. These new tests are therefore expected, in good faith, to PASS
+// immediately against the current code (this is recorded honestly in
+// evidence/sprint-1-red-phase.log as a "coverage-retrofit" case, per this increment's own precedent for
+// PROP-302a) -- they are not vacuous: each asserts a DIFFERENT, more precise proof obligation
+// (PROP-102a's 3-way extension, PROP-102b's call-order, PROP-102c's non-serialization timing) than the
+// pre-existing ★GAP 2★ test's single 2-gigId outcome assertion, and each would fail if a future edit
+// reintroduced the GAP-2 regression.
+// ============================================================================
+
+// PROP-102a (3-way extension): "three or more concurrent operations across three or more distinct
+// gigIds land in overlapping windows: every operation that returned {ok:true} to its caller must be
+// reflected in the final persisted state" (behavioral-spec.md REQ-102 edge case).
+test("★PROP-102a (3-way)★ three concurrent operations across THREE distinct gigIds all persist -- every {ok:true} result survives in the final board", async () => {
+  const statePath = await tmpState();
+  const payoutCounter = { n: 0 };
+
+  const gigAId = await postTakenDelivered(statePath, payoutCounter); // ready for a slow verify_and_pay
+  const postedB = await gigPost({
+    posterPrivateKey: POSTER_PK,
+    posterAgentId: "8",
+    taskSpec: "gig B, unrelated to gig A/C",
+    bountyUsdcBase: 1000,
+    statePath,
+    pay: fakePay(payoutCounter),
+    verifyIdentityFn: validIdentity,
+  });
+  const postedC = await gigPost({
+    posterPrivateKey: POSTER_PK,
+    posterAgentId: "8",
+    taskSpec: "gig C, unrelated to gig A/B",
+    bountyUsdcBase: 1000,
+    statePath,
+    pay: fakePay(payoutCounter),
+    verifyIdentityFn: validIdentity,
+  });
+  assert.equal(postedB.ok, true, "setup: gig B post must succeed");
+  assert.equal(postedC.ok, true, "setup: gig C post must succeed");
+
+  const [aResult, bResult, cResult] = await Promise.all([
+    gigVerifyAndPay({
+      gigId: gigAId,
+      verified: true,
+      posterPrivateKey: POSTER_PK,
+      statePath,
+      pay: slowFakePay(payoutCounter, 120), // gig A's settle is the slow one
+      verifyIdentityFn: validIdentity,
+    }),
+    gigTake({ gigId: postedB.gig.id, takerAddress: "0xTakerB000000000000000000000000000000B", takerAgentId: "20", statePath, verifyIdentityFn: validIdentity }),
+    gigTake({ gigId: postedC.gig.id, takerAddress: "0xTakerC000000000000000000000000000000C", takerAgentId: "21", statePath, verifyIdentityFn: validIdentity }),
+  ]);
+
+  assert.equal(aResult.ok, true, "gig A's verify_and_pay must succeed");
+  assert.equal(aResult.paid, true);
+  assert.equal(bResult.ok, true, "gig B's take must succeed");
+  assert.equal(cResult.ok, true, "gig C's take must succeed");
+
+  const finalList = await gigList({ statePath });
+  const finalA = finalList.gigs.find((g) => g.id === gigAId);
+  const finalB = finalList.gigs.find((g) => g.id === postedB.gig.id);
+  const finalC = finalList.gigs.find((g) => g.id === postedC.gig.id);
+  assert.equal(finalA.status, "paid", "gig A's payout must persist despite being the slow operation");
+  assert.equal(finalB.status, "taken", "gig B's take must survive, not be clobbered by gig A's later, slower write");
+  assert.equal(finalC.status, "taken", "gig C's take must survive, not be clobbered by gig A's later, slower write");
+});
+
+// PROP-102b: "Every write to the shared board file re-reads the board fresh from disk immediately
+// before applying its mutation (never reuses an in-memory snapshot captured before a slow, concurrent
+// step)" -- a CALL-ORDER assertion, not merely an outcome assertion (behavioral-spec.md REQ-102
+// acceptance criteria; verification-architecture.md PROP-102b explicitly calls for testing that the
+// write path's loadState call happens AFTER the slow step, not just that the final state is correct).
+//
+// Instrumented via a real monkey-patch of node:fs's `promises.readFile` (a genuine mutable object
+// property, not an ES-module live binding -- persist.mjs's `fs.readFile(...)` call looks this property
+// up fresh on every invocation, so patching it here observes every real disk read persist.mjs performs,
+// without requiring node's --experimental-test-module-mocks flag that the rest of this codebase's test
+// suites do not use).
+test("★PROP-102b★ applyAndSave's authoritative loadState read happens AFTER the slow settle resolves, not before it (call-order, not just outcome)", async () => {
+  const statePath = await tmpState();
+  const payoutCounter = { n: 0 };
+  const gigXId = await postTakenDelivered(statePath, payoutCounter);
+
+  const reads = []; // { t: <ms> } for every real fs.readFile call against THIS test's statePath
+  const originalReadFile = fs.readFile;
+  fs.readFile = async (...args) => {
+    if (String(args[0]) === statePath) reads.push({ t: Date.now() });
+    return originalReadFile.apply(fs, args);
+  };
+
+  let settleResolvedAt = null;
+  const SLOW_MS = 100;
+  const slowPay = async ({ privateKey, to, amountBase }) => {
+    await new Promise((r) => setTimeout(r, SLOW_MS));
+    settleResolvedAt = Date.now();
+    payoutCounter.n += 1;
+    return { ok: true, tx: `0xfaketx${payoutCounter.n}`, payerAddress: privateKeyToAccount(privateKey).address, to, amountBase };
+  };
+
+  try {
+    const result = await gigVerifyAndPay({
+      gigId: gigXId,
+      verified: true,
+      posterPrivateKey: POSTER_PK,
+      statePath,
+      pay: slowPay,
+      verifyIdentityFn: validIdentity,
+    });
+    assert.equal(result.ok, true);
+    assert.equal(result.paid, true);
+    assert.ok(settleResolvedAt !== null, "setup: the slow settle must actually have resolved");
+
+    const readsAfterSettle = reads.filter((r) => r.t >= settleResolvedAt);
+    assert.ok(
+      readsAfterSettle.length >= 1,
+      `at least one loadState read (the authoritative one feeding the actual write) must occur AT/AFTER the slow settle resolves (settleResolvedAt=${settleResolvedAt}, all reads=${JSON.stringify(reads)}) -- proves the write is not computed from a snapshot captured before the slow step`
+    );
+  } finally {
+    fs.readFile = originalReadFile; // never leave the monkey-patch in place for other tests in this file
+  }
+});
+
+// PROP-102c: "The (possibly slow) network/settle step for one gigId does not hold the shared-file lock
+// for its own duration — only the brief local read-mutate-write portion does — so unrelated gigIds'
+// writes are not needlessly serialized behind a slow network call" (behavioral-spec.md REQ-102
+// acceptance criteria). This is a TIMING assertion: gig Y's take must complete quickly, not be blocked
+// until gig X's slow settle finishes.
+test("★PROP-102c★ gig Y's take is NOT serialized behind gig X's slow settle -- it completes quickly, proving the shared-file lock is held only for the brief write, not the whole network step", async () => {
+  const statePath = await tmpState();
+  const payoutCounter = { n: 0 };
+  const gigXId = await postTakenDelivered(statePath, payoutCounter);
+  const postedY = await gigPost({
+    posterPrivateKey: POSTER_PK,
+    posterAgentId: "8",
+    taskSpec: "gig Y, unrelated to gig X",
+    bountyUsdcBase: 1000,
+    statePath,
+    pay: fakePay(payoutCounter),
+    verifyIdentityFn: validIdentity,
+  });
+  assert.equal(postedY.ok, true, "setup: gig Y post must succeed");
+  const gigYId = postedY.gig.id;
+
+  const SLOW_MS = 250;
+  const xPromise = gigVerifyAndPay({
+    gigId: gigXId,
+    verified: true,
+    posterPrivateKey: POSTER_PK,
+    statePath,
+    pay: slowFakePay(payoutCounter, SLOW_MS),
+    verifyIdentityFn: validIdentity,
+  });
+  // let X's operation begin its slow "network" step before Y's take fires
+  await new Promise((r) => setTimeout(r, 20));
+
+  const yStart = Date.now();
+  const yResult = await gigTake({ gigId: gigYId, takerAddress: TAKER_ADDR, takerAgentId: "9", statePath, verifyIdentityFn: validIdentity });
+  const yElapsedMs = Date.now() - yStart;
+
+  assert.equal(yResult.ok, true, "gig Y's take must succeed");
+  assert.ok(
+    yElapsedMs < SLOW_MS / 2,
+    `gig Y's take took ${yElapsedMs}ms -- it must complete quickly (well under half of gig X's ${SLOW_MS}ms slow settle), not be blocked for the duration of X's network step`
+  );
+
+  const xResult = await xPromise;
+  assert.equal(xResult.ok, true);
+  assert.equal(xResult.paid, true);
+});
