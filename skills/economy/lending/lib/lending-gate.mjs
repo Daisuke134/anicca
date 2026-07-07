@@ -62,7 +62,15 @@ export function sumOutstandingPrincipalUsd(loanRows, lenderId) {
   const rows = reduceLastByLoanId(loanRows).filter(
     (r) => r.lender_id === lenderId && (r.status === "active" || r.status === "defaulted")
   );
-  const sum = rows.reduce((acc, r) => acc + (finiteOr(r.principal_usd, 0) - finiteOr(r.repaid_usd, 0)), 0);
+  // Each row's own contribution is floored at 0 BEFORE summing — the SAME fail-closed floor
+  // computeOverallDefaultRateUsd/computeRecentDefaultLossUsd already apply below (FIND-C02) — since
+  // REQ-104 fixes total_due_usd > principal_usd for every real loan, an ordinary partial repayment on
+  // an "active" row can otherwise make repaid_usd exceed principal_usd, and an unfloored negative
+  // contribution would INFLATE computeLenderAvailableUsd's reported surplus (resolves FIND-902).
+  const sum = rows.reduce(
+    (acc, r) => acc + Math.max(0, finiteOr(r.principal_usd, 0) - finiteOr(r.repaid_usd, 0)),
+    0
+  );
   return +sum.toFixed(6);
 }
 

@@ -178,6 +178,43 @@ test("PROP-108e: verifyRepayment rejects a txHash already credited toward a DIFF
   }
 });
 
+test("PROP-108f: verifyRepayment fails closed (credits 0, rejected:true) rather than throwing when a structurally-matching Transfer log's own `data` field is malformed/non-hex (resolves FIND-901)", async () => {
+  const badDataLog = {
+    address: USDC,
+    topics: [TRANSFER_TOPIC, padTopicExact(BORROWER), padTopicExact(LENDER)],
+    data: "not-valid-hex-data",
+  };
+  const rpc = await startMockRpc({
+    eth_getTransactionReceipt: () => ({ status: "0x1", blockNumber: "0x64", logs: [badDataLog] }),
+    eth_getBlockByNumber: () => ({ number: "0x64" }),
+  });
+  try {
+    await assert.doesNotReject(async () => {
+      const result = await verifyRepayment({ txHash: "0xbaddata", expectedFrom: BORROWER, expectedTo: LENDER, rpcUrl: rpc.url, loanRows: [] });
+      assert.equal(result.credited, 0);
+      assert.equal(result.rejected, true);
+    });
+  } finally {
+    await rpc.close();
+  }
+});
+
+test("PROP-108f: verifyRepayment fails closed (credits 0, rejected:true) rather than throwing when the receipt's own blockNumber field is malformed/non-hex (resolves FIND-901)", async () => {
+  const rpc = await startMockRpc({
+    eth_getTransactionReceipt: () => ({ status: "0x1", blockNumber: "not-hex", logs: [transferLog({ from: BORROWER, to: LENDER, valueBase: 22000 })] }),
+    eth_getBlockByNumber: () => ({ number: "0x64" }),
+  });
+  try {
+    await assert.doesNotReject(async () => {
+      const result = await verifyRepayment({ txHash: "0xbadblock", expectedFrom: BORROWER, expectedTo: LENDER, rpcUrl: rpc.url, loanRows: [] });
+      assert.equal(result.credited, 0);
+      assert.equal(result.rejected, true);
+    });
+  } finally {
+    await rpc.close();
+  }
+});
+
 test("verifyRepayment credits a genuinely NEW, never-before-seen txHash normally (positive control for the replay-rejection tests above)", async () => {
   const rpc = await startMockRpc({
     eth_getTransactionReceipt: () => ({ status: "0x1", blockNumber: "0x64", logs: [transferLog({ from: BORROWER, to: LENDER, valueBase: 11000 })] }),
