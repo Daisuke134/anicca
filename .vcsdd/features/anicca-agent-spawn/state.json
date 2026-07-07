@@ -2157,22 +2157,21 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T12:34:17.486Z",
+      "timestamp": "2026-07-07T13:06:15.492Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 9,
+        "iteration": 10,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-801",
-          "FIND-802"
+          "FIND-901"
         ],
-        "note": "2 findings (1 critical, 1 major), the 5th consecutive variant in the REQ-101/105/403 wallet-identity area. FIND-703 reconfirmed genuinely resolved (coLocatedWithCoordinator correctly needs no canonical-constant discipline, always a fixed literal). FIND-701/702 only partially resolved. FIND-801 (critical) -- PROP-105gs only named re-derivation tool (viem privateKeyToAccount) is EVM-only; Franklin is Solana-only and every future Nosana-path child will also need Solana verification -- no Solana-equivalent method specified anywhere. FIND-802 (major) -- the literal hardcoded /Users/anicca still appears unexplained in spec PROSE (REQ-105 worked example, REQ-403 Seed-data correction) BEFORE the COORDINATOR_HOME definition in reading order -- the identical un-pinned-literal hazard FIND-701 fixed at the code layer, recreated one layer up in the text itself, with an internal inconsistency where a later bullet in the SAME Acceptance Criteria correctly uses COORDINATOR_HOME while an earlier one hardcodes the literal."
+        "note": "FIND-801/802 (iteration 9) both reconfirmed genuinely resolved -- the recurring wallet-identity failure class (5 consecutive variants: FIND-501->601->603->701/703->801/802) is now CLOSED. 1 new finding, critical: FIND-901 -- citizens.json is placed at a hardcoded path INSIDE the git working tree (~/anicca/skills/self/spawn/registry/citizens.json), described as both a versioned seed file AND a live runtime-append target, with the tension never reconciled. This project already has a purpose-built, adversary-tested durability mechanism for exactly this class of artifact (state-path.js::resolveStateDir, built after a REAL prior incident where a spawn ledger written to /tmp was deleted by the OS tmp-cleaner and the record was unrecoverable) -- run.sh already uses it to resolve its own children.jsonl to ~/.hermes/state/, outside the repo tree. citizens.json is not covered by .gitignore (skills/*/state/ pattern does not match skills/self/spawn/registry/), so it would be git-tracked by default -- meaning every runtime append leaves the tree dirty relative to what git tracks, and this repos own routine git pull/checkout/worktree operations (much of it unsupervised) could silently overwrite or lose live citizen records."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T12:34:17.486Z"
+      "adversaryReviewedAt": "2026-07-07T13:06:15.492Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T12:52:01.896Z"
+  "updatedAt": "2026-07-07T13:06:15.492Z"
 }

@@ -1,0 +1,47 @@
+{
+  "findingId": "FIND-901",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-103/REQ-105 place the brand-new, dedicated colony citizen registry file, `citizens.json`, at a hardcoded path INSIDE the git working tree -- `~/anicca/skills/self/spawn/registry/citizens.json`, exported as the constant `CITIZENS_REGISTRY_PATH` from a NEW module `~/anicca/skills/self/spawn/lib/registry-path.mjs` -- and REQ-105/REQ-305 specify that this file is BOTH (a) seeded once with 'a single, VERSIONED JSON registry file' of fixed literal data, AND (b) mutated forever after via live runtime appends every time a spawn succeeds (REQ-305: 'THE SYSTEM SHALL ALSO append a new record ... to REQ-105's colony citizen registry'). Neither spec file ever addresses whether this file is git-tracked, and neither ever reconciles the tension between 'versioned seed file' and 'live runtime append target' with this project's own git workflow (routine, frequently agent-automated `git pull`/`git checkout <branch>`/`git worktree add|remove` on this exact `~/anicca` repo, per this project's own CLAUDE.md and worktree.md rules).\n\nCritically, this is not a hypothetical concern: `~/anicca/skills/self/spawn/lib/` -- the EXACT directory REQ-103 is adding `registry-path.mjs` into -- ALREADY contains a purpose-built, adversary-tested module, `state-path.js::resolveStateDir({env, home})`, whose own header comment states the reason it exists verbatim: 'Durable state-dir resolution for the colony ledger (children.jsonl) + earn ledger. Fail-closed: REFUSE any /tmp-rooted path. The 2026-06 self-spawn E2E wrote children.jsonl to /tmp/spawn-live-state, which the OS tmp-cleaner deleted -- the colony record was lost and the verifier could not reproduce it.' This is the EXACT same class of artifact -- a colony/spawn ledger that grows via live appends and must never be silently lost -- that `citizens.json` now also is. The REAL, currently-used caller of this mechanism, `~/anicca/skills/self/spawn/run.sh` (lines 39-45), resolves the ledger's actual location via `resolveStateDir()`, defaulting to `~/.hermes/state/children.jsonl` -- a location deliberately OUTSIDE the repo's own working tree. `~/anicca/.gitignore` independently corroborates this convention: it already excludes exactly this class of directory (`skills/*/state/`, `skills/*/*/state/`), but `skills/self/spawn/registry/` (REQ-105's proposed new path) matches NEITHER pattern, so by the project's own current `.gitignore` rules `citizens.json` would, by default, be GIT-TRACKED.\n\nNeither behavioral-spec.md nor verification-architecture.md ever mentions `state-path.js`, `resolveStateDir`, `.gitignore`, 'durable', or 'tmp-clean' anywhere (confirmed by an exhaustive grep of both files for these exact terms and their close variants -- zero hits outside the unrelated `GIG_STATE_PATH`/PROP-205b citation, which concerns a DIFFERENT per-child MCP config path, not this registry). This means: if `citizens.json` is git-tracked (the plausible default given it isn't gitignored and REQ-105 itself calls it 'versioned'), every REQ-305 runtime append leaves the working tree in a dirty, uncommitted state relative to the file the repo actually tracks -- and this exact repo's own, currently-documented workflow performs routine `git pull`/`git checkout <branch>`/`git worktree add|remove` operations on this SAME working directory, much of it unsupervised/agent-automated per this project's own 'no-human-loop' policy. Any of these routine operations can conflict with, overwrite, stash-and-lose, or hard-reset an uncommitted `citizens.json` append -- silently destroying the record that a real, self-funded child (with a real, already-registered ERC-8004 identity and a real funded wallet) is a colony citizen at all, breaking REQ-101's next aggregation, REQ-403's audit enumeration, and REQ-402's lifecycle bookkeeping for that child, with no detection or recovery mechanism specified anywhere in this spec. This is exactly the same failure class -- and the same root cause (spawn-ledger-style live-mutating data stored somewhere volatile/tracked instead of a durable, out-of-tree state directory) -- that this project's OWN `state-path.js` was built, tested, and is still actively used (`run.sh`) specifically to prevent, one directory over from where REQ-103 is adding new code. No proof obligation in verification-architecture.md (Tier 0 through Tier 3, PROP-105a through PROP-105i, PROP-103d) tests durability, git-tracking status, or interaction with a routine git operation on `citizens.json` at all.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "601-611",
+      "snippet": "THE SYSTEM SHALL read that list from a single, versioned JSON registry file dedicated EXCLUSIVELY to this feature's colony-surplus/spawn concern -- `~/anicca/skills/self/spawn/registry/citizens.json` -- created FRESH by this feature."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1588-1590",
+      "snippet": "THE SYSTEM SHALL ALSO append a new record for that child to REQ-105's colony citizen registry (`~/anicca/skills/self/spawn/registry/citizens.json` ...)"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/state-path.js",
+      "lineRange": "1-18",
+      "snippet": "// Durable state-dir resolution for the colony ledger (children.jsonl) + earn ledger. Fail-closed: REFUSE any /tmp-rooted path. The 2026-06 self-spawn E2E wrote children.jsonl to /tmp/spawn-live-state, which the OS tmp-cleaner deleted -- the colony record was lost and the verifier could not reproduce it."
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/run.sh",
+      "lineRange": "39-45",
+      "snippet": "STATE_DIR=\"$(\"$NODE\" -e 'const { resolveStateDir } = require(process.argv[1] + \"/lib/state-path\"); ...' \"$SKILL_DIR\")\"\nCOLONY=\"$STATE_DIR/children.jsonl\""
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/.gitignore",
+      "lineRange": "37-40",
+      "snippet": "skills/*/state/\nskills/*/*/state/\nskills/*/state/MNEMONIC_BACKUP_ONCE.txt\nskills/*/state/wallet.encrypted"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "212-220",
+      "snippet": "PROP-105a ... PROP-105i -- none of these proof obligations test file durability, git-tracking status, or an interaction between a routine git operation and a live-appended citizens.json"
+    }
+  ],
+  "routeToPhase": "1a"
+}
