@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-economy",
   "mode": "strict",
-  "currentPhase": "2a",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -75,12 +75,20 @@
       "to": "2a",
       "timestamp": "2026-07-07T04:29:46.000Z",
       "reason": "Advancing to Phase 2a (TDD/RED) for REQ-101-103, 201-203, 301-302 (8 requirements, 25 proof obligations)."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-07T04:50:56.000Z",
+      "sprint": 1,
+      "reason": "RED phase complete. evidence/sprint-1-red-phase.log: new-feature-tests FAIL, regression-baseline PASS. New test files: skills/economy/gig/__tests__/{lock,gig}.test.mjs (appended), runtime/loop/__tests__/{catalog-gate,registry-classification}.test.mjs (new), .vcsdd/.../tests/research-record.test.mjs (new). Honestly-reported unexpected passes (PROP-102b/c, PROP-302a) classified as coverage-retrofit of already-adversary-verified prior-round code, not weakened tests. TWO genuine new findings surfaced during RED, carried into Phase 2b scope: (1) a 3-way cross-gigId test shows the shared '_board' lock is fail-closed/non-queueing -- can spuriously reject an unrelated caller under 3+-way concurrency; (2) a possible unlink-then-open race in acquire()'s stale-lock reclaim, currently masked by the isLockStale import failure, to verify once that extraction lands. Committed+pushed to both ~/anicca (bd85dc2) and anicca-project."
     }
   ],
   "iterations": {
     "1a": 7,
     "1b": 7,
-    "1c": 7
+    "1c": 7,
+    "2a": 1
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -167,5 +175,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T04:29:46.000Z"
+  "updatedAt": "2026-07-07T04:50:56.000Z"
 }
