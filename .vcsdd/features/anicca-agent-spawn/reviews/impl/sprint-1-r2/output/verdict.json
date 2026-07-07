@@ -1,0 +1,185 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-agent-spawn",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:110-159",
+          "description": "CRIT-003 re-confirmed: control-flow read of decideColonySpawn confirms the surplus check (line 129, reason:'insufficient_surplus') is the first return, the cooldown check (line 139, reason:'rate_limited') is the second, and the concurrency check (line 154, reason:'max_concurrent_spawns') is the third -- byte-identical order to round 1."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-003 independently re-run: 'PROP-102e: check order is surplus -> cooldown -> concurrency cap (a fixture failing all three reports the SURPLUS failure)' PASS."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:19-28,49-65,72-97",
+          "description": "CRIT-005 re-confirmed: groupLedgerRowsByChildId is the SAME shared helper called by filterProductiveCitizens (line 49), deriveRecentSpawnAttempts (line 73), and countChildrenProvisioning (line 91) -- no independently-reimplemented grouping loop found anywhere in the file (grep for a second 'for (const row of ledgerRows)'-shaped loop outside this one helper returns zero hits)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-005 named tests re-run: 'PROP-102f: deriveRecentSpawnAttempts maps ledger rows...' PASS; 'PROP-102h: countChildrenProvisioning counts only child_id groups whose LAST row is exactly provisioning' PASS."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/akash-funding-gate.mjs:1-19",
+          "description": "CRIT-009 re-confirmed: evaluateAkashFundingGate calls queryBalanceAkt() exactly once for the first pass (line 9) and, only if firstPass.ready is false, once more for the second pass (line 16) -- never cached/reused; attemptBridge (line 15) is skipped entirely on firstPass.ready:true (early return at line 12)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/akash-funding-gate.test.mjs",
+          "description": "CRIT-009 re-run: all 5 named tests (PROP-303h(a)/(b)/(c), PROP-303g, PROP-303d) PASS, including the query-call-count assertions and the attemptBridge-throws-if-invoked fixture (PROP-303d) confirming the bridge is genuinely never called when the first pass is already ready."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/child-spec.js:33-51",
+          "description": "CRIT-008 re-confirmed: hasInbox (line 35) / hasErc8004 (lines 36-42) are evaluated independently, the throw (line 43) fires ONLY when BOTH are false ('at least one', never an XOR); nextChildId (lines 5-14) and the case-insensitive distinct-wallet check (line 49) are unchanged from the pre-sprint version."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/child-spec-erc8004.test.js, skills/self/spawn/lib/__tests__/child-spec.test.js",
+          "description": "CRIT-008 re-run: both files pass 100% (child-spec-erc8004.test.js's 7 tests including PROP-206e's both-anchors-present case; child-spec.test.js's pre-existing regression suite unaffected)."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:48-65",
+          "description": "CRIT-004 re-confirmed: filterProductiveCitizens excludes bootstrap_failed (line 57), window-overdue-active with malformed/missing active_since fails closed (lines 59-61), and a citizen with no matching ledger row passes through unfiltered (line 56)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-004 named tests re-run: 'PROP-101d: excludes bootstrap_failed / window-overdue-active...' PASS; 'PROP-101d edge case: malformed active row...' PASS."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/colony-balances.mjs:9-16",
+          "description": "CRIT-006 re-confirmed: safeChainBalance wraps each chain's fetch call in its OWN try/catch, so an EVM throw/non-finite result and a Solana success (or vice versa) are resolved completely independently -- resolves FIND-503 exactly as documented."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/colony-balances.test.mjs",
+          "description": "CRIT-006 named tests re-run: 'PROP-101g: exactly one chain fails...' PASS; 'PROP-101h: both chains fail simultaneously...' PASS."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/repro-find1902.mjs, adversarial-probe1.mjs, adversarial-probe2.mjs, adversarial-probe3.mjs, adversarial-probe4.mjs",
+          "description": "Adversary-written standalone scripts, executed independently of the test suite, beyond the 11 CRIT criteria: (1) FIND-1902 repro confirms filterProductiveCitizens/readCitizenBalances/computeColonySurplusUsd all handle a [null, healthy, undefined] citizens fixture identically (exclude gracefully, never throw) and an empty-object citizen ({}) is also handled without throwing; (2) a 10-way concurrent bootstrapCitizensRegistry race (beyond the spec's own 2-caller fixture) still yields exactly one created:true and byte-identical final content; (3) decideColonySpawn given a recentSpawnAttempts array containing null/undefined/42/'str'/{}/non-numeric-ts/NaN-ts entries mixed with one real day-old success ignores every malformed entry and still correctly triggers rate_limited from the one valid entry; (4) selectCloudTarget/needsSolanaWallet/readCitizenBalances(missing fetch fns)/evaluateAkashFundingGate(negative costAkt, rejecting queryBalanceAkt) were each probed with NaN/negative/missing-callback/malformed-type inputs -- none throw uncaught, none silently produce an eligible-when-it-shouldn't-be result; selectCloudTarget's NaN-price branch deterministically resolves to 'akash' (not randomized, not a crash) but this input shape can never arise from this sprint's own documented real callers (fetchAktUsdPrice/fetchNosUsdPrice both already fail closed to 0, never NaN, per PROP-306e) so it is not a reachable real-caller path -- observation only, no FIND filed."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/adversarial-probe1.mjs",
+          "description": "One genuine structural observation (not a blocking finding): passing an explicit `null` (as opposed to an omitted/undefined key) for an array-shaped parameter -- citizens, ledgerRows, recentSpawnAttempts, the whole args object -- throws a TypeError in filterProductiveCitizens/deriveRecentSpawnAttempts/countChildrenProvisioning/computeColonySurplusUsd/computePerCitizenSurplusUsd/decideColonySpawn, rather than failing closed gracefully like FIND-1902's null-ENTRY-within-the-array fix. Judged non-blocking for three reasons: (a) this sprint's own documented real callers never produce a literal null for these parameters -- ledger.js::readChildren (reused unmodified, out of this sprint's scope per CRIT-010) returns [] on a missing file or itself throws on a corrupt file, never null, and citizens.json's registry read is likewise either a valid array or a thrown parse error upstream of these pure functions; (b) even in the unreachable hypothetical case, throwing is the SAFER failure direction for a money-gate (it aborts the spawn attempt entirely) rather than FIND-1901/1902's actual failure mode (silently proceeding as eligible:true or crediting garbage) -- the opposite class of bug; (c) no CRIT criterion, no PROP obligation, and no prose in behavioral-spec.md/verification-architecture.md specifies null-whole-array handling for any of these six functions, unlike spawnThresholdUsd's explicitly-named 'realistic failure mode' rationale for FIND-1901."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/repro-find1901.mjs",
+          "description": "FIND-1901 fix independently reproduced fresh, standalone, outside the test suite: decideColonySpawn with colonySurplusUsd:0 and spawnThresholdUsd of undefined/null/NaN all return {eligible:false, reason:'insufficient_surplus'} (never true); with colonySurplusUsd:100/spawnThresholdUsd:10 (surplus check passed), childrenProvisioning of null/NaN and maxConcurrentSpawns of null/NaN each independently still return {eligible:false, reason:'max_concurrent_spawns'} -- the concurrency cap is never bypassed. Sanity-checked the deliberately-excluded undefined case for childrenProvisioning/maxConcurrentSpawns too: this correctly triggers the parameter's own JS default (0 / 1 respectively), which is safe by construction, not a coercion bug -- matching the test suite's own documented rationale for excluding undefined from PROP-102l's malformed-value fixtures."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/repro-find1902.mjs",
+          "description": "FIND-1902 fix independently reproduced fresh, standalone: filterProductiveCitizens and readCitizenBalances both given citizens:[null, healthyCitizen, undefined] neither throw/reject, both exclude the null/undefined entries and return only the healthy citizen; computeColonySurplusUsd given the identical malformed shape (with a self-funded healthy citizen, balanceUsd:10) also does not throw and correctly returns 10 -- all three functions now handle the malformed shape identically, exactly as the manifest required."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/*.test.mjs, skills/self/spawn/lib/__tests__/*.test.js",
+          "description": "CRIT-002: adversary independently executed `cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js` fresh (not accepted from any log, captured to /tmp/spawn-test-run.log) -- tests 100, pass 100, fail 0, cancelled 0, skipped 0, todo 0, process exited 0. Matches the manifest's own expected count for commit 9681a89 exactly (round 1's 95 base tests + 3 PROP-102l cases + 2 PROP-101l cases = 100)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:110-159, skills/self/spawn/lib/colony-balances.mjs:18-35",
+          "description": "Direct source read of both fixes: decideColonySpawn's threshold/provisioning/maxConcurrent locals (lines 127-128, 146-153) each independently type/finite-check their raw parameter before use, coercing malformed values in the direction that can only make the gate MORE restrictive (threshold->Infinity, provisioning->Infinity, maxConcurrent->0), never less; filterProductiveCitizens (line 53) and readCitizenBalances (line 23) both gained an explicit truthy/typeof guard that excludes/skips a null or undefined citizen entry before any property access, consistent with computeColonySurplusUsd's pre-existing isSelfFunded(null)->false graceful handling of the identical shape."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs",
+          "description": "CRIT-001 re-confirmed: `grep -nE \"\\bfs\\b|fetch\\(|require\\(.?[\\\"']http|readFileSync\" skills/self/spawn/lib/treasury-gate.mjs` returns zero matches; the file's only import is isSelfFunded from ../../../_shared/lib/is-self-funded.mjs; the only Date.now() reference is decideColonySpawn's own default parameter (line 114), never an internal call inside a function body."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/citizens-registry.mjs",
+          "description": "CRIT-007 re-confirmed: `grep -nE \"existsSync|fs\\.stat\\(\" citizens-registry.mjs` returns zero matches (the prose comment mentioning 'exists? then copy' is documentation, not a call); fs.open(registryPath, \"wx\") (line 13) is the sole file-creation call -- a single atomic POSIX exclusive-create, never a separate existence check preceding a separate write."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/citizens-registry.test.mjs",
+          "description": "CRIT-007 named tests re-run: both PROP-105l concurrent/late-race tests PASS, plus the file's own structural regex test (existsSync/fs.stat absence + 'wx' presence) PASS."
+        },
+        {
+          "type": "shell-command",
+          "location": "git log 2236802..9681a89 -- skills/economy/gig/lib/lock.mjs skills/self/spawn-child/lib/akt-cost-gate.js skills/self/spawn/lib/state-path.js skills/_shared/lib/is-self-funded.mjs; git status --short <same 4 paths>",
+          "description": "CRIT-010 re-confirmed across the FULL sprint commit range (Phase 2a RED commit 2236802 through this round's own fix commit 9681a89 inclusive, one commit later than round 1's contract-cited range): zero commits touch any of the four reused-unmodified files, and git status shows all four clean in the working tree."
+        },
+        {
+          "type": "shell-command",
+          "location": "for i in 1..25: node --test skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs",
+          "description": "CRIT-011 re-verified fresh, this round: 25 consecutive standalone reruns, each showing pass=2 fail=0 -- 25/25, zero failures. Source re-read confirms firstCaller's fn() still calls signalLockHeld() as its first statement (line 51) and the test awaits lockHeld (line 56) BEFORE its five-attempt loop begins (line 58) -- the race-removing fix from Phase 2c is intact and unmodified this round."
+        },
+        {
+          "type": "shell-command",
+          "location": "grep -rl 'treasury-gate.mjs|colony-balances.mjs|citizens-registry.mjs|akash-funding-gate.mjs' skills/self/spawn/ --include=*.mjs --include=*.js (excluding __tests__); grep -n <all 9 module basenames> skills/self/spawn/run.sh",
+          "description": "Known residual scope boundary re-confirmed structurally: no file outside __tests__ imports/wires these modules together, and run.sh (the pre-existing orchestration entry point) references none of this sprint's 9 new/extended modules -- no effectful spawn orchestrator exists anywhere in this diff, exactly as the contract claims."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/*.test.mjs, skills/self/spawn/lib/__tests__/*.test.js",
+          "description": "CRIT-002: adversary independently executed the full target-feature suite fresh this round (not accepted from evidence/sprint-1-green-phase.log or any prior review's log) -- 100/100 pass, 0 fail, 0 cancelled, 0 skipped, 0 todo, clean exit."
+        },
+        {
+          "type": "shell-command",
+          "location": "for i in 1..25: node --test colony-spawn-lock.test.mjs",
+          "description": "REQ-verification-readiness: PROP-103e's determinism re-verified fresh for THIS round (a separate Phase-3 pass, per the manifest's own instruction not to reuse round 1's or Phase 2c's own recorded rerun counts) -- 25/25 consecutive standalone passes, 0 failures."
+        }
+      ]
+    }
+  ],
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T02:15:00.000Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-1.md"
+  },
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011"]
+  }
+}

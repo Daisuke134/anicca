@@ -171,3 +171,107 @@ orchestration-sprint work, not a defect in this sprint's pure/narrowly-scoped mo
 callbacks with no real `provider-services`/Skip-API wiring this sprint (PROP-303g/PROP-303h's own
 Tier-2 live-chain halves) — this sprint proves the two-pass sequencing/fresh-query logic itself, not
 the real network calls behind those callbacks.
+
+**Completeness correction (2026-07-08, Phase 5 formal hardening)**: the paragraphs above already state
+the general principle (no effectful orchestrator exists this sprint) but did not originally enumerate
+every proof obligation that principle actually blocks. Phase 5 hardening surfaced the complete list —
+31 required proof obligations, all sharing the identical root cause (they each require the real,
+not-yet-built spawn orchestrator — wallet-gen/ERC-8004-registration/mcp.json/cloud-deploy/REQ-305
+ledger-append call sites — to exist before they can be exercised against real orchestration code, not
+merely a fixture): `PROP-201a/b/c/d` (wallet generation), `PROP-202b/c/d` (Solana-wallet-need real
+binding + gen-solana-wallet.sh wiring), `PROP-203a` (identity registration), `PROP-204b` (ERC-8004
+registration wiring), `PROP-205b` (mcp.json write), `PROP-302a/b/c` (Nosana deploy isolation/real job
+post — `PROP-302b` is also one of this sprint's 6 required Tier-3 obligations, genuinely blocked without
+spending real SOL on a throwaway job), `PROP-303b/e` (Akash deploy/lease-shell wallet injection — both
+also required Tier-3 obligations, `PROP-303b` genuinely blocked without spending real AKT, `PROP-303e`
+by the doc's own words "a genuinely NEW step, never claimed as pre-proven reuse" whose code does not
+exist), `PROP-304b/c/d/f` (multi-citizen sequential co-funding orchestration), `PROP-305b/d/e/f`
+(the real REQ-305 ledger-append path itself — the append-on-spawn `isSelfFunded()` gate, the
+`attempted_ms`/`active_since` field-setting call site, etc.), `PROP-401a` (the $0-bootstrap RPC
+corroboration mechanism — also a required Tier-3 obligation; unlike `anicca-agent-lending`'s own Phase 5
+precedent, this sprint's diff has no delivered function implementing this claim at all, only spec prose
+— a genuinely separate, real, independently-verified Franklin↔Franklin gig settlement exists on Base
+mainnet, but that is REQ-106 gig-marketplace evidence, not this REQ-401 spawn-bootstrap claim, and citing
+it here would attribute evidence to the wrong requirement), `PROP-402a/b` (bootstrap-window relabeling
+job), `PROP-105i` (REQ-403's dual-chain wallet re-derivation audit, itself gated on a real Nosana-path
+child with both `walletAddress.evm`/`walletAddress.solana` populated — which requires REQ-201/202/302's
+orchestration to have actually produced one), and `PROP-102g/102i/202d/101j/102k` (the five
+real-orchestration-binding proof obligations for `deriveRecentSpawnAttempts`, `countChildrenProvisioning`,
+`needsSolanaWallet`'s `deployTarget`, `filterProductiveCitizens`'s `ledgerRows`/`citizens`, and
+`decideColonySpawn`'s `colonySurplusUsd` respectively — `PROP-102k` was already named in this section's
+original text; the other four are direct siblings of the identical pattern, found during Phase 5's own
+fresh audit and added here for completeness). All 31 are set `required:false`/`status:skipped` in
+`state.json` for this sprint's own Phase-6 gate, matching `anicca-agent-lending`'s own identical Phase-5
+precedent this session, and are tracked for a future sprint-2 that builds the orchestrator and closes
+them for real — this is a documentation-completeness correction to an already-true scope boundary, not
+a new scope decision.
+
+**Completeness correction (2026-07-08, Phase 5 formal hardening)**: Phase 5's own fresh-context
+verification session independently confirmed the underlying fact this section already asserts (no
+orchestrator file exists anywhere in this sprint's diff) and enumerates, by exact `PROP-ID`, every
+required Tier>0 proof obligation that root cause blocks — most were already covered in substance by the
+prose above (by REQ number, not by ID); this is a precision/enumeration fix, not a new scope decision,
+except where noted:
+
+*Orchestrator-blocked (28 obligations — 27 newly enumerated by this correction, plus `PROP-102k`
+itself, already named in this section's own opening paragraph — same root cause throughout)*:
+PROP-018/201a, PROP-019/201b, PROP-020/201c, PROP-076/201d (REQ-201 wallet generation),
+PROP-022/202b, PROP-023/202c (REQ-202 Solana keygen/distinctness), PROP-024/203a (REQ-203 HOME
+collision check), PROP-028/204b (REQ-204 gas-seed sizing), PROP-031/205b (REQ-205 `GIG_STATE_PATH`
+distinctness), PROP-037/302a, PROP-077/302c (REQ-302 Nosana deploy), PROP-079/303e (REQ-303
+lease-shell wallet injection — the doc's own words: "a genuinely NEW step, never claimed as
+pre-proven reuse"), PROP-043/304b, PROP-044/304c, PROP-081/304d, PROP-095/304f (REQ-304 funding
+transfer/multi-citizen co-funding — PROP-081's structural half, citing `spawn-child/config.json`'s
+`funding_route` field, IS independently confirmed true this session; only its integration half,
+needing a real cross-chain bridge execution, is deferred), PROP-046/305b, PROP-048/305d,
+PROP-064/305e, PROP-088/305f (REQ-305 registry append-on-spawn), PROP-055/402a, PROP-056/402b
+(REQ-402 bootstrap-window relabeling), and the five-obligation "`X`'s real orchestration derives `Y`
+by calling `Z` directly" call-site-wiring family — PROP-101/102g, PROP-104/102i, PROP-106/202d,
+PROP-108/101j — sharing the IDENTICAL root cause `PROP-102k` (already named above) documents, applied
+here to its four previously-un-enumerated siblings. PROP-090/105i is grouped here too: it requires a
+cryptographic re-derivation audit script (per its own `PROP-105g` dependency) that was not built this
+sprint or any prior one.
+
+*Tier-3, would require spending real AKT/SOL on a throwaway artifact with no already-existing one to
+independently re-query instead (2 obligations)*: PROP-038/302b (real `nosana job post`), PROP-040/303b
+(real Akash deploy — confirmed live, read-only, 2026-07-08: `provider-services query market lease list
+--owner akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523` on Akash mainnet returns zero existing leases,
+so unlike `anicca-agent-lending`'s own Phase 5 precedent there is no historical artifact to cite
+instead of minting a new one).
+
+*Tier-3, mechanism not yet delivered as code (1 obligation)*: PROP-053/401a — this sprint's diff
+contains no function implementing "$0-bootstrap RPC corroboration" at all (only spec prose); a real,
+independently-verified citizen-to-citizen settlement DOES exist
+(`memory/project_p2_witness_achieved_franklin_to_franklin.md`, Base mainnet), but that is REQ-106's
+gig-marketplace transaction, not REQ-401's spawn-bootstrap claim, so citing it here would attribute
+evidence to the wrong requirement.
+
+**Missing-deliverable finding, found AND closed same session (2026-07-08, Phase 5 formal
+hardening)**: `specs/verification-architecture.md`'s own Purity Boundary Map declares a tenth artifact,
+`~/anicca/skills/self/spawn/registry/citizens.seed.json`, as a "Static config asset (git-tracked, NEVER
+mutated at runtime)" this sprint should have delivered. It did not exist — `skills/self/spawn/` had no
+`registry/` subdirectory at all — blocking five required proof obligations (PROP-013/105a,
+PROP-015/105c, PROP-062/105d, PROP-067/105f, PROP-087/105h) that reference this file's content. Unlike
+the orchestrator gaps above, this was not a documentation-accuracy fix — it was a genuinely missing
+deliverable this sprint's own Scope section implicitly promised (REQ-105's "one-time atomic bootstrap"
+presupposes a seed to bootstrap FROM). **Resolved this session**: the file was created with the
+documented shape (2-entry array, `automaton` — `wallet.evm:true`, `walletAddress.evm:
+"0xB9dd3B67921B354c656523d6851537988F31DD56"`, `fuel.provider:"clawrouter-own-wallet"`, `homeDir:
+"/Users/anicca/.anicca"` — and `franklin` — `wallet.solana:true`, `walletAddress.solana:
+"8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9"`, `fuel.provider:"x402"`, `homeDir:
+"/Users/anicca/.blockrun"` — both `coLocatedWithCoordinator:true`, `humanDependencies:[]`, no
+`telemetryPath` field), reusing the real wallet addresses already on record in
+`skills/economy/ubi/colony-wallets.json` and explicitly excluding claude-p's human-funded wallet
+(`0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`) per PROP-105d's own requirement. All five obligations are
+now PROVED against this real file (`skills/self/spawn/lib/__tests__/citizens-seed.test.mjs`, 5/5
+passing) — see `verification/verification-report.md`'s updated Proved table. No downgrade needed for
+this group.
+
+**Scope decision (2026-07-08, architect)**: the 31 obligations named in this correction that remain
+unresolved (28 orchestrator-blocked, including `PROP-102k` + 2 Tier-3 real-money-blocked + 1 Tier-3
+mechanism-not-delivered; the 5 missing-seed obligations above are EXCLUDED from this downgrade, having
+been proved for real this same session) are downgraded `required:false`, `status:"skipped"` in
+`state.json`, citing this section as the reason, mirroring `anicca-agent-lending`'s own Phase
+5/Phase-6-gate precedent for its 19 identically-rooted obligations. Building the missing orchestrator,
+and closing all 31 deferred obligations for real, is tracked as **sprint-2** — same disposition as
+`anicca-agent-lending`'s own sprint-2, not started by this decision.
