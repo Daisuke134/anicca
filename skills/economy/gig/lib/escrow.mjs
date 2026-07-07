@@ -30,14 +30,25 @@ export const CHAIN_ID_BASE_MAINNET = 8453;
 // money) or 'base' (mainnet, real money). Unset/anything else falls back to testnet, fail-safe.
 export const GIG_CHAIN = process.env.GIG_CHAIN === "base" ? "base" : "base-sepolia";
 
+// EIP-712 domain `name` for USDC's TransferWithAuthorization varies BY DEPLOYMENT even though both are
+// "USDC" in spirit: Base Sepolia's test-faucet token's on-chain `name()` is literally "USDC", but
+// Circle's real Base MAINNET USDC's `name()` is "USD Coin" (confirmed live via readContract 2026-07-07:
+// mainnet name()->"USD Coin"/version()->"2", sepolia name()->"USDC"/version()->"2"). A hardcoded "USDC"
+// domain name silently produces a WRONG EIP-712 domain separator on mainnet -- the signature still
+// "works" cryptographically but recovers to a domain the token contract never agrees to, so
+// FiatTokenV2's own domain-separator check inside `transferWithAuthorization` rejects it with
+// "FiatTokenV2: invalid signature" (reproduced live: a real gig_post against Base mainnet reverted with
+// exactly this reason before this fix). This was never caught by prior "mainnet" E2E runs because their
+// recorded tx hashes are actually Base Sepolia transactions (verified live via getTransactionReceipt on
+// both chains) -- no gig had ever actually settled on mainnet before this fix.
 const CHAIN_PROFILES = {
-  "base-sepolia": { chain: baseSepolia, chainId: CHAIN_ID_BASE_SEPOLIA, usdcAddress: USDC_BASE_SEPOLIA, rpcUrl: "https://sepolia.base.org" },
-  base: { chain: base, chainId: CHAIN_ID_BASE_MAINNET, usdcAddress: USDC_BASE_MAINNET, rpcUrl: "https://mainnet.base.org" },
+  "base-sepolia": { chain: baseSepolia, chainId: CHAIN_ID_BASE_SEPOLIA, usdcAddress: USDC_BASE_SEPOLIA, rpcUrl: "https://sepolia.base.org", domainName: "USDC" },
+  base: { chain: base, chainId: CHAIN_ID_BASE_MAINNET, usdcAddress: USDC_BASE_MAINNET, rpcUrl: "https://mainnet.base.org", domainName: "USD Coin" },
 };
 const ACTIVE_CHAIN = CHAIN_PROFILES[GIG_CHAIN];
 const DEFAULT_RPC_URL = process.env.GIG_RPC_URL || ACTIVE_CHAIN.rpcUrl;
 
-async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds }) {
+async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, domainName, validitySeconds }) {
   const payer = privateKeyToAccount(privateKey);
   const now = Math.floor(Date.now() / 1000);
   const nonce = "0x" + randomBytes(32).toString("hex");
@@ -49,7 +60,7 @@ async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddr
     validBefore: String(now + validitySeconds),
     nonce,
   };
-  const domain = { name: "USDC", version: "2", chainId, verifyingContract: usdcAddress };
+  const domain = { name: domainName, version: "2", chainId, verifyingContract: usdcAddress };
   const types = {
     TransferWithAuthorization: [
       { name: "from", type: "address" },
@@ -68,7 +79,7 @@ async function signAuthorization({ privateKey, to, amountBase, chainId, usdcAddr
     payTo: to,
     maxTimeoutSeconds: validitySeconds,
     asset: usdcAddress,
-    extra: { name: "USDC", version: "2" },
+    extra: { name: domainName, version: "2" },
   };
   const paymentPayload = { x402Version: 2, accepted: paymentRequirements, payload: { signature, authorization } };
   return { payerAddress: payer.address, body: { x402Version: 2, paymentPayload, paymentRequirements } };
@@ -143,11 +154,12 @@ export async function payViaFacilitator({
   facilitatorUrl,
   chainId = ACTIVE_CHAIN.chainId,
   usdcAddress = ACTIVE_CHAIN.usdcAddress,
+  domainName = ACTIVE_CHAIN.domainName,
   rpcUrl = DEFAULT_RPC_URL,
   chain = ACTIVE_CHAIN.chain,
   validitySeconds = 300,
 }) {
-  const { payerAddress, body } = await signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, validitySeconds });
+  const { payerAddress, body } = await signAuthorization({ privateKey, to, amountBase, chainId, usdcAddress, domainName, validitySeconds });
   const result = await settleBody({ facilitatorUrl, body, rpcUrl, chain });
   return { ...result, payerAddress, to, amountBase };
 }
