@@ -15,6 +15,8 @@
 | 03 | `03-franklin-as-nested-loops.md` | ループの実装: 私(human-funded=人間へ) vs Franklin(self-funded=agent economyへ)、5レイヤー実装、done 3値、分担/順番、着手STEP A-D | ✅ 完了 |
 | 04 | `04-the-two-loops.md` | ★核心★ 2つの別ループ: 私のMAIN loop(建築家/親/投資家=経済を建て監視し資金投入、消えるのがゴール) vs Franklinのloop(経済の当事者)。side trading loopは別機械。Dais完全out・cobus pattern合成・discuss→issue→loop | ✅ 完了 |
 
+| 05 | `05-coordination-with-agent-economy.md` | 別CC(anicca-agent-economy)との境界/interface契約。接点=earn-ledger.jsonlのみ。触る/触らない表・依存順・別CCへの一文（国家アナロジー: 私=funder, 干渉最小） | ✅ 完了 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
