@@ -178,5 +178,17 @@ invoked ONLY when `balanceUsdc < BOOTSTRAP_RESERVE_USDC` for that wake — never
 the adversary must deliberately induce a query failure (e.g. an unreachable endpoint or an injected
 rejection) and confirm `hl_trade` remains visible in that case, and that this fail-open direction is
 intentional per REQ-201's stated fail-closed/fail-open split, not an accidental omission;
+(4c) **REQ-202's `filterCatalog` is confirmed to be a pure function of the current wake's balance and
+bookkeeping inputs only** — a control-flow read confirming no persisted/module-level state is read or
+written across successive calls, i.e. two calls in the same process with different inputs never leak
+into or affect one another (PROP-202a); AND a two-wake integration test through `index.mjs`
+demonstrating that a balance transition from below to at/above `BOOTSTRAP_RESERVE_USDC` between two
+wakes restores the exact pre-restriction slot set on the very next wake, with no lingering restriction
+or stale state carried over from the prior wake (PROP-202b; resolves FIND-501, REQ-202 half);
 (5) REQ-301's research record is spot-checked against the actual current state of the referenced
-GitHub PR/repo and `business.blockrun.ai` surface, not taken at face value.
+GitHub PR/repo and `business.blockrun.ai` surface, not taken at face value;
+(5a) **REQ-302's non-blocking guarantee holds for this increment's actual changes** — a structural
+grep/read of the gig-board witness runbook and its code path confirming no new gating condition was
+introduced that references REQ-301's research record's status or completion (PROP-302a; resolves
+FIND-501, REQ-302 half); the parallel gig-board witness track must be confirmed to proceed
+independently of whether the research record exists or is complete.

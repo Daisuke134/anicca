@@ -56,11 +56,18 @@
       "timestamp": "2026-07-07T04:17:05.000Z",
       "reason": "iteration 6 SCOPE CUT (Dais-approved, after web best-practice research confirmed REQ-201-203's eligibility-gate design independently matches 3 established patterns -- RL invalid action masking, OpenAI risk-tiered tool safeguards, Anthropic tool-curation/defer_loading): REQ-204 (pre-existing prompt.mjs steering-text removal) deleted from this increment entirely after iteration 5's Phase 1c review found a 3rd recurrence of the same defect class in buildUserMessage (FIND-401/402/403). Backlogged as an independent future increment. REQ-203/PROP-203b rescoped to cover only NEW code this increment adds (filterCatalog + index.mjs wiring), explicitly excluding audit of prompt.mjs's pre-existing content. REQ count 9->8, PROP count 26->25.",
       "iteration": 6
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-07T04:26:22.000Z",
+      "reason": "iteration 7 mechanical fix for FIND-501: verification-architecture.md's Gate checklist had no item for REQ-202 or REQ-302 despite both having required proof obligations. Added Gate items (4c) REQ-202 (PROP-202a/b: filterCatalog statelessness + two-wake restoration) and (5a) REQ-302 (PROP-302a: no new dependency from the witness track onto REQ-301). No REQ/PROP count change (8 REQ / 25 PROP).",
+      "iteration": 7
     }
   ],
   "iterations": {
-    "1a": 6,
-    "1b": 6,
+    "1a": 7,
+    "1b": 7,
     "1c": 3
   },
   "proofObligations": [
@@ -151,5 +158,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T04:24:52.000Z"
+  "updatedAt": "2026-07-07T04:26:22.000Z"
 }
