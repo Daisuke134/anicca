@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 11,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 10,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-10/output/findings/",
+    "note": "1 critical finding, FIND-901: citizens.json split into two artifacts -- a git-tracked, read-only seed template (citizens.seed.json) never mutated at runtime, and a DURABLE runtime file resolved via CITIZENS_REGISTRY_PATH = path.join(resolveStateDir({env, home}), 'citizens.json') -- reusing the SAME existing resolveStateDir mechanism run.sh already uses for children.jsonl, confirmed to resolve to ~/.hermes/state/ (outside the git tree) by direct read. One-time bootstrap copies the seed template's content into the durable file on first access; all REQ-305 runtime appends happen only at the durable location. New PROP-105j (seed template never written to) and PROP-105k (a LIVE, no-mock test that real git checkout/worktree/pull operations on ~/anicca do not affect the durable citizens.json)."
+  },
+  "note": "Verify the fix actually holds: re-read state-path.js and run.sh fresh to confirm resolveStateDir's real default output and that CITIZENS_REGISTRY_PATH's construction genuinely mirrors it. Confirm every place citizens.json was previously cited (REQ-103's lock statePath, REQ-403's audit enumeration, REQ-101/402's read paths) was correctly updated to the DURABLE path, not left pointing at the seed template by mistake. Also check whether this two-artifact split introduces any NEW inconsistency (e.g. does anything still assume citizens.json is a single file, or that the seed data and live data are the same object). This feature is now on iteration 11 with 48+ cumulative findings across 10 prior iterations. The wallet-identity failure class (5 consecutive variants) was confirmed closed at iteration 10 -- do a genuinely thorough full fresh pass over the ENTIRE spec, not just the citizens.json area, since this project's history shows new defect classes keep emerging in whichever area hasn't been recently scrutinized. If you find nothing genuine after a real, skeptical effort, PASS -- but do not PASS to make the iteration count stop, only because the spec is actually sound."
+}

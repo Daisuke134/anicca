@@ -1,13 +1,17 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 9, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 10, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
 resolved AND spec review iteration-6 findings FIND-501..504 resolved AND spec review iteration-7
 findings FIND-601..604 resolved AND spec review iteration-8 findings FIND-701..703 resolved AND spec
-review iteration-9 findings FIND-801..802 resolved — see changelogs below)
+review iteration-9 findings FIND-801..802 resolved AND spec review iteration-10 finding FIND-901
+resolved — `citizens.json` SPLIT into a git-tracked seed template (`citizens.seed.json`) and a
+durable, out-of-git-tree runtime file (`CITIZENS_REGISTRY_PATH`, resolved via the SAME
+`resolveStateDir({env, home})` mechanism `run.sh` already uses for `children.jsonl`) — see changelogs
+below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -147,6 +151,27 @@ and a LIVE re-derivation actually performed, 2026-07-07, against Franklin's real
 | FIND-801 | critical | PROP-105g's only named re-derivation tool, `viem`'s `privateKeyToAccount`, is secp256k1/EVM-only — structurally inapplicable to Franklin's Solana-only seeded record and to every future Nosana-path child (REQ-202 makes a Solana wallet the norm, not the exception, for that path). PROP-105g is corrected to a genuine TWO-BRANCH re-derivation method: EVM via `viem::privateKeyToAccount` against `walletAddress.evm` (unchanged); Solana via `@solana/web3.js::Keypair.fromSecretKey` (fed the real secret's `bs58`-decoded 64-byte form — the EXACT, already-proven conversion `telemetry-post-franklin.mjs` already performs against this SAME file) against `walletAddress.solana` — both already-real dependencies of this monorepo (`@solana/web3.js@^1.98.4` in `~/anicca/package.json`; `bs58@^5.0.0` in `~/anicca/runtime/package.json`, already imported by `telemetry-post-franklin.mjs`), no new dependency introduced. A citizen record with BOTH fields populated (REQ-202's expected Nosana-path shape) MUST pass BOTH branches independently (new PROP-105i). The Solana branch was ACTUALLY, LIVE re-derived against Franklin's real `~/.blockrun/.solana-session` (2026-07-07, `@solana/web3.js@1.98.4`+`bs58@6.0.0` installed to a disposable scratch directory OUTSIDE this repo for the check only): the derived address EXACTLY matches Franklin's seeded `walletAddress.solana`, `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` — a genuine, real, live-confirmed result, never a hypothetical. The previously weak, unelaborated "OR a live on-chain balance query" escape hatch is also corrected: a balance query may now only be cited as an ADDITIONAL corroboration (as already done for automaton, cross-checked against `colony-status.sh`), never a substitute for the re-derivation — a funded address existing on-chain does not by itself prove the address was correctly derived from a specific private key, a categorically weaker property. |
 | FIND-802 | major | The `COORDINATOR_HOME` constant's formal definition (previously introduced only in REQ-403, iteration 8) is moved UP into REQ-105 — the first point in this document's reading order that needs to express "the coordinator host's own real `$HOME`" as a worked-example value — so the symbol is established before ANY literal use anywhere in the document. REQ-403 no longer re-defines the constant; it now only POINTS to REQ-105's earlier definition. Every literal `/Users/anicca` occurrence used for this specific "coordinator's own HOME, passed as `env.HOME`" purpose in REQ-105's worked example and in REQ-403's Seed-data-correction section and Acceptance Criteria is replaced with the symbolic `COORDINATOR_HOME` reference — including the one Acceptance Criteria bullet that had drifted inconsistent with an earlier bullet in the SAME list (one already correctly wrote `COORDINATOR_HOME`, a later one still hardcoded the literal). The literal's current real value is now stated exactly ONCE, parenthetically, at its one definition point in REQ-105 — never restated or independently re-typed anywhere else in this spec. |
 
+## Changelog (iteration 9 spec review → iteration 10)
+
+Iteration 9's spec review FAILed with 1 NEW critical finding (FIND-901; all findings across
+iterations 1-9 were reconfirmed genuinely resolved against the real, current source). Resolved by a
+specific, cited design decision, grounded in a fresh full read of
+`~/anicca/skills/self/spawn/lib/state-path.js::resolveStateDir({env, home})` (its own header comment:
+"Durable state-dir resolution for the colony ledger (children.jsonl) + earn ledger. Fail-closed:
+REFUSE any /tmp-rooted path. The 2026-06 self-spawn E2E wrote children.jsonl to /tmp/spawn-live-state,
+which the OS tmp-cleaner deleted — the colony record was lost and the verifier could not reproduce
+it.") and `~/anicca/skills/self/spawn/run.sh` lines 39-45's own real, current caller of that function
+(`STATE_DIR="$("$NODE" -e '...resolveStateDir({ env: process.env, home: process.env.HOME })...')"`;
+`COLONY="$STATE_DIR/children.jsonl"` — confirming the real default this produces today on this
+coordinator host, `${HOME}/.hermes/state/children.jsonl`, i.e.
+`/Users/anicca/.hermes/state/children.jsonl` — deliberately OUTSIDE the `~/anicca` git working tree)
+and `~/anicca/.gitignore`'s current patterns (`skills/*/state/`, `skills/*/*/state/`, neither of which
+matches `skills/self/spawn/registry/`, confirming that path would be git-tracked by default):
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-901 | critical | REQ-105's single `citizens.json` artifact — previously BOTH "a single, versioned JSON registry file" seeded once with fixed literal data AND, per REQ-305, a live runtime-append target forever after, sitting at a hardcoded path INSIDE the `~/anicca` git working tree (`~/anicca/skills/self/spawn/registry/citizens.json`) — is SPLIT into TWO distinct artifacts, reconciling the "versioned seed vs. live-append target" tension this project's own routine, frequently agent-automated `git pull`/`git checkout <branch>`/`git worktree add\|remove` operations on this SAME repo (`CLAUDE.md`/`worktree.md`) could otherwise silently conflict with, overwrite, or lose: (1) a git-tracked SEED TEMPLATE, `~/anicca/skills/self/spawn/registry/citizens.seed.json` — committed to git, read-only, NEVER mutated at runtime, existing purely to define the fixed literal starting content REQ-105 already specified; and (2) the actual LIVE, mutable runtime file, resolved via a NEW exported constant `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`, alongside `COORDINATOR_HOME`) as `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/children.jsonl`, so `CITIZENS_REGISTRY_PATH` resolves, by the identical mechanism, to `~/.hermes/state/citizens.json`) — a DURABLE, OUT-OF-GIT-TREE location, immune to every routine git operation above, exactly as `children.jsonl` already is. On first access, if `CITIZENS_REGISTRY_PATH`'s file does not yet exist, THE SYSTEM initializes it by copying `citizens.seed.json`'s content VERBATIM — a ONE-TIME bootstrap, never an ongoing sync — after which every REQ-305 runtime append happens ONLY at this durable location; the git-tracked seed template is never read from or written to again. REQ-103's lock `statePath`, REQ-105's own registry read, and REQ-403's audit enumeration ALL now cite this SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path. Two new proof obligations close this gap: PROP-105j (structural/Tier-0 — the git-tracked seed template is NEVER written to by any runtime code path) and PROP-105k (Tier 0 structural — `CITIZENS_REGISTRY_PATH`'s construction always routes through `resolveStateDir`, never a literal path inside the repo — PLUS a Tier 2 live test — a real `git checkout`/`git worktree add`/`git pull` on `~/anicca` does NOT affect the durable `citizens.json`'s content); see `verification-architecture.md` for both. |
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -238,7 +263,8 @@ scripts remain aligned with current upstream documentation.
 | Concern | Classification | Why |
 |---|---|---|
 | Colony self-funded citizen filter | **Pure core (existing, reused unmodified)** | `~/anicca/skills/_shared/lib/is-self-funded.mjs::isSelfFunded(agent)` — already implements exactly the "own wallet + own-funded fuel + zero human deps" test this feature's REQ-101 needs to decide which balances even count toward the colony surplus. No new judgment logic is written; REQ-101 calls this existing, already-tested function on each RECORD supplied by REQ-105's registry (below) — `isSelfFunded()` itself is untouched; only its INPUT source is now specified. |
-| Colony citizen registry (data source for REQ-101) | **Effectful shell (BRAND NEW, dedicated file — REQ-105, revised to resolve FIND-101/202/302/304)** | `~/anicca/skills/self/spawn/registry/citizens.json` — a brand-new file created fresh by this feature, holding an array of `{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, homeDir}` records (`telemetryPath` REMOVED from this schema, resolves FIND-302) — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch; UNRELATED to `child-spec.js`'s own returned-row `wallet` STRING field, resolves FIND-304), `walletAddress` separately carries the real address string(s) and is what REQ-101's `readCitizenBalances` keys its RPC query on, and `homeDir` is an ALREADY-RESOLVED absolute path (never an unresolved `$HOME` template, resolves FIND-202) feeding REQ-403's now co-located-only-scoped audit (resolves FIND-303). This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Seeded with a FIXED LITERAL 2-entry array (the colony's only currently-verified self-funded citizens) — NOT a migration, and sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
+| Colony citizen registry — SEED TEMPLATE (git-tracked, read-only; new, resolves FIND-901) | **Static config asset (git-tracked, NEVER mutated at runtime)** | `~/anicca/skills/self/spawn/registry/citizens.seed.json` — a brand-new, git-tracked file created fresh by this feature, holding the FIXED LITERAL 2-entry starting array (`{id, wallet: {evm?: boolean, solana?: boolean}, walletAddress: {evm?: string, solana?: string}, fuel, humanDependencies, homeDir, coLocatedWithCoordinator: boolean}` records, `telemetryPath` REMOVED, resolves FIND-302). Read exactly ONCE, at the durable runtime file's one-time bootstrap copy (next row) — NEVER written to by any runtime code path this feature adds, and NEVER read again after that bootstrap (PROP-105j). Sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see below). |
+| Colony citizen registry — DURABLE RUNTIME FILE (data source for REQ-101; revised to resolve FIND-101/202/302/304/901) | **Effectful shell (BRAND NEW, dedicated, durable, OUT-OF-GIT-TREE)** | `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/registry-path.mjs`) = `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})` mechanism `~/anicca/skills/self/spawn/lib/state-path.js` already exports and `run.sh` already calls for `children.jsonl`'s own durable location (today: `~/.hermes/state/citizens.json`, alongside `~/.hermes/state/children.jsonl`) — a location immune to `git checkout`/`git worktree add\|remove`/`git pull` on `~/anicca` (resolves FIND-901). Bootstrapped ONCE from `citizens.seed.json`'s content verbatim if absent, then diverges permanently via REQ-305's runtime appends — the git-tracked seed template above is never touched again (PROP-105k). Holds the SAME record shape as the seed template — the BOOLEAN-shaped `wallet` field is the exact shape `isSelfFunded()` already requires (resolves FIND-104's type mismatch; UNRELATED to `child-spec.js`'s own returned-row `wallet` STRING field, resolves FIND-304), `walletAddress` separately carries the real address string(s) and is what REQ-101's `readCitizenBalances` keys its RPC query on, and `homeDir` is an ALREADY-RESOLVED absolute path (never an unresolved `$HOME` template, resolves FIND-202) feeding REQ-403's now co-located-only-scoped audit (resolves FIND-303). This registry deliberately carries NEITHER `status` NOR `active_since` — those lifecycle facts live exclusively in `ledger.js` (see below, resolves FIND-201). Sharing ZERO state with the pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json` (see next row). |
 | Pre-existing mutual-aid recipient list (untouched, out of scope) | **Effectful shell (existing, NOT read/written by this feature)** | `~/anicca/skills/economy/ubi/colony-wallets.json` — `ubi.js::distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," its own JSDoc), a DIFFERENT purpose than REQ-101's surplus aggregation. Its current 2nd entry is claude-p's own human-funded wallet (`docs/WALLETS.md` lines 49-62). This feature never reads, writes, or repurposes this file — resolves FIND-101's critical finding that an earlier draft wrongly proposed migrating/extending it, which would have risked a human-funded wallet silently entering the colony-surplus aggregate. |
 | Colony surplus aggregation | **Pure core (new)** | A sum of `max(0, balance_i - perCitizenReserveUsd)` over self-funded, currently-productive citizens only — deterministic arithmetic over already-fetched balances, no I/O once inputs are supplied (REQ-101). Fed exclusively by `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})`, a new pure join function that cross-references REQ-105's registry against `ledger.js`'s rows to exclude `"bootstrap_failed"`/window-overdue children before this sum ever runs (resolves FIND-201). |
 | Spawn eligibility gate | **Pure core (new, extends an existing pattern)** | `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already establishes the exact target shape (`{eligible, reason}`, pure, no I/O) this feature's colony-scoped gate follows — REQ-102 is a colony-aggregate generalization of that same pattern, not a new design. |
@@ -256,7 +282,7 @@ scripts remain aligned with current upstream documentation.
 | Akash-specific AKT funding-readiness gate (reused, new to this feature — resolves FIND-402) | **Pure core (existing, reused unmodified) + effectful config read** | `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt}) → {ready, reason, thresholdAkt, shortfallAkt}` — already implemented, already unit-tested (`lib/__tests__/akt-cost-gate.test.js`); REQ-303 calls it with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values (`spawn_cost_akt: 25`, `buffer_akt: 1`) BEFORE invoking `akt-treasury.sh`/`deploy-akash.sh` — a DIFFERENT, narrower concern than REQ-102's colony-wide `MIN_SHELTER_USD`/`SPAWN_THRESHOLD_USD` (cross-cloud aggregate USD surplus), never a competing reimplementation of it. |
 | Nosana job deploy — post-boot secrets-injection (new, resolves FIND-401's Nosana-side analog) | **Effectful shell (new)** | A NEW orchestration step delivering the child's pre-generated Solana/EVM wallet material onto a `RUNNING` Nosana job via `nosana job ssh <job> [port]` (confirmed-present CLI primitive, `job ssh --help`, invoked live 2026-07-07, raw transcript captured at `reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt` — resolves FIND-504) — genuinely new, never previously specified; the exact non-interactive invocation shape is confirmed against the actually-installed CLI at Phase 2, not asserted here as already-proven (REQ-302). |
 | Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer via Skip API's `smart_relay` 4-hop bridge into `akashnet-2`, reusing `spawn-child/config.json`'s own already-documented `funding_route` — the SAME bridge is enterable from EITHER of the colony's two current citizens' own native chains: Franklin via Solana (Jupiter SOL→USDC, then a CCTP-first-hop transfer) or automaton via Base (a CCTP-first-hop transfer directly from Base-native USDC, no Jupiter step needed, per PROP-304e's live-confirmed alternative entry) — NOT a single-signer single-transaction transfer for this specific target, since neither citizen's wallet natively holds AKT (revised iteration 5, resolves FIND-402(c); revised iteration 7, resolves FIND-602 — corrected from a stale Solana/Jupiter-only summary that was never updated for iteration 6's PROP-304e correction, to match REQ-304/PROP-304e's own already-accurate body text). |
-| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, never from `citizens.json` (resolves FIND-201). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`, which this feature never touches) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
+| Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, never from `citizens.json` (resolves FIND-201). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry — the DURABLE runtime file at `CITIZENS_REGISTRY_PATH` (resolved via `resolveStateDir`, e.g. `~/.hermes/state/citizens.json` — NEVER the git-tracked seed template `citizens.seed.json`, and NEVER `economy/ubi/colony-wallets.json`, which this feature never touches — resolves FIND-901) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
 | REQ-104 (bookkeeping-only design constraint) | **Not code — a design constraint, verified structurally** | Directly analogous to `anicca-agent-economy`'s REQ-203 ("Design-constraint requirement — bookkeeping only, never judgment"): not independently unit-testable in the normal sense; verified by a Phase 3 structural code read (no scoring/ranking/preference logic anywhere in REQ-101-103's diff), not a runtime assertion. |
@@ -515,21 +541,36 @@ lock is sufficient because every caller in this increment shares the SAME mounte
 SAME coordinator host — this requirement does NOT claim to solve mutual exclusion across physically
 separate hosts (see REQ-106's own known-limitation edge case for that future scenario).
 
-**Canonical `statePath` (resolves FIND-103)**: `withGigLock`'s real, existing signature is
-`withGigLock(statePath, lockKey, fn, opts)` — `statePath` is a MANDATORY positional argument, and
-`lockPaths()` derives the actual lock FILE from BOTH `statePath`'s directory AND `lockKey`
-(`path.join(path.dirname(statePath), 'locks', lockKey + '.lock')`), never from `lockKey` alone. If two
-call sites passed two DIFFERENT `statePath` values under the same `"colony-spawn"` lock key, they would
-resolve to two DIFFERENT physical lock files under two different `locks/` directories and BOTH could
-"hold the lock" simultaneously — silently defeating this requirement's entire purpose. THE SYSTEM SHALL
-therefore designate REQ-105's citizen registry path (`~/anicca/skills/self/spawn/registry/citizens.json`)
-as the colony-spawn lock's ONE canonical `statePath` — a natural fit, since the critical section this
-lock protects IS "read `citizens.json` + decide + possibly append to `citizens.json`" (REQ-101 through
-REQ-305) — and SHALL export this single path as ONE named constant, `CITIZENS_REGISTRY_PATH`, from a
-new shared module `~/anicca/skills/self/spawn/lib/registry-path.mjs`. EVERY call site that acquires the
-`"colony-spawn"` lock (and every REQ-101/105/305 read/write of the registry itself) SHALL import and use
-this SAME exported constant — never an independently hardcoded path string — so lock identity and
-registry identity can never silently drift apart across call sites.
+**Canonical `statePath` (resolves FIND-103; corrected, resolves FIND-901)**: `withGigLock`'s real,
+existing signature is `withGigLock(statePath, lockKey, fn, opts)` — `statePath` is a MANDATORY
+positional argument, and `lockPaths()` derives the actual lock FILE from BOTH `statePath`'s directory
+AND `lockKey` (`path.join(path.dirname(statePath), 'locks', lockKey + '.lock')`), never from `lockKey`
+alone. If two call sites passed two DIFFERENT `statePath` values under the same `"colony-spawn"` lock
+key, they would resolve to two DIFFERENT physical lock files under two different `locks/` directories
+and BOTH could "hold the lock" simultaneously — silently defeating this requirement's entire purpose.
+THE SYSTEM SHALL therefore designate REQ-105's citizen registry's **DURABLE RUNTIME location — never
+the git-tracked seed template** — as the colony-spawn lock's ONE canonical `statePath`, exported as ONE
+named constant, `CITIZENS_REGISTRY_PATH`, from a new shared module
+`~/anicca/skills/self/spawn/lib/registry-path.mjs`, computed as `path.join(resolveStateDir({env,
+home}), 'citizens.json')` — REUSING, not reimplementing, the SAME `resolveStateDir({env, home})`
+function `~/anicca/skills/self/spawn/lib/state-path.js` already exports and
+`~/anicca/skills/self/spawn/run.sh` (lines 39-45) already calls for `children.jsonl`'s own durable
+location (confirmed by direct read: `STATE_DIR="$(... resolveStateDir({ env: process.env, home:
+process.env.HOME }) ...)"`; `COLONY="$STATE_DIR/children.jsonl"`, real default on this coordinator
+host today: `~/.hermes/state/children.jsonl`). This is a natural fit, since the critical section this
+lock protects IS "read the durable `citizens.json` + decide + possibly append to it" (REQ-101 through
+REQ-305), and the durable state dir is EXACTLY where a live-appended, must-never-be-lost ledger
+belongs, per `state-path.js`'s own header comment documenting the real 2026-06 incident this mechanism
+exists to prevent (a spawn ledger written to `/tmp` was deleted by the OS tmp-cleaner — the SAME
+failure class a git-tracked, live-mutated file would risk from routine `git checkout`/`git worktree
+add\|remove`/`git pull` instead of a tmp-sweep). EVERY call site that acquires the `"colony-spawn"`
+lock (and every REQ-101/105/305 read/write of the registry itself) SHALL import and use this SAME
+exported constant — never an independently hardcoded path string, and never the git-tracked seed
+template's path — so lock identity and registry identity can never silently drift apart across call
+sites, and so a routine `git checkout`/`git worktree add\|remove`/`git pull` on the `~/anicca` repo
+(this project's own, frequently agent-automated workflow, per `CLAUDE.md`/`worktree.md`) can never
+conflict with, overwrite, or lose a REQ-305 runtime append (resolves FIND-901 — see REQ-105 for the
+full two-artifact design).
 
 **Edge Cases**:
 - Two evaluation loops on the coordinator host race to acquire the `"colony-spawn"` lock within the
@@ -542,10 +583,16 @@ registry identity can never silently drift apart across call sites.
 - A held lock's holder is still genuinely working (heartbeating) well past any naive fixed timeout: per
   the existing `isLockStale` semantics, it is NEVER stolen from while it heartbeats, regardless of
   elapsed wall-clock time — this property is inherited, not re-derived, from the existing lock.
-- A future call site hardcodes its own literal `citizens.json` path string instead of importing
+- A future call site hardcodes its own literal `citizens.json` path string (whether the git-tracked
+  seed template's path OR an independently-typed copy of the durable path) instead of importing
   `CITIZENS_REGISTRY_PATH`: even if the literal string happens to match TODAY, THE SYSTEM treats this as
   a spec violation to be caught at Phase 3 review (a structural/import-identity check, not a runtime
   assertion) — the binding contract is "imports the constant," not "the string happens to be correct."
+- A routine `git checkout <branch>`/`git worktree add|remove`/`git pull` runs on the `~/anicca` repo
+  while the colony-spawn lock is held or `citizens.json` has just been appended: because
+  `CITIZENS_REGISTRY_PATH` resolves entirely OUTSIDE the git working tree (resolves FIND-901), THE
+  SYSTEM SHALL be unaffected by this operation — neither the lock file nor the registry's live-appended
+  content is ever touched by it (see PROP-105k).
 
 **Acceptance Criteria**:
 - The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx)
@@ -598,19 +645,57 @@ the eligibility ARITHMETIC, never the agent's own in-envelope choices.
 
 ---
 
-### REQ-105: Colony citizen registry — brand-new, dedicated, spawn-appended (resolves FIND-002; revised to resolve FIND-101/FIND-104)
+### REQ-105: Colony citizen registry — brand-new, dedicated, spawn-appended, two-artifact durable design (resolves FIND-002; revised to resolve FIND-101/FIND-104/FIND-901)
 **EARS**: WHEN REQ-101 needs the list of citizens to evaluate, THE SYSTEM SHALL read that list from a
-single, versioned JSON registry file dedicated EXCLUSIVELY to this feature's colony-surplus/spawn
-concern — `~/anicca/skills/self/spawn/registry/citizens.json` — created FRESH by this feature. THE
-SYSTEM SHALL NOT read from, write to, migrate, or otherwise repurpose the pre-existing
-`~/anicca/skills/economy/ubi/colony-wallets.json`: that file remains exclusively `ubi.js::
+single, DURABLE, mutable registry file dedicated EXCLUSIVELY to this feature's colony-surplus/spawn
+concern, resolved via the exported constant `CITIZENS_REGISTRY_PATH` — never a hardcoded literal path
+at any call site. THE SYSTEM SHALL NOT read from, write to, migrate, or otherwise repurpose the
+pre-existing `~/anicca/skills/economy/ubi/colony-wallets.json`: that file remains exclusively `ubi.js::
 distributeAI`'s own recipient-eligibility list ("addresses proven to be real colony members," a
 DIFFERENT purpose than this requirement's surplus-aggregation registry), and its current 2nd entry is
 claude-p's own human-funded wallet — the two files share ZERO state (resolves FIND-101's critical
 finding that an earlier draft wrongly proposed migrating/extending that live, differently-scoped,
 already-in-use file).
 
-Each record in `citizens.json` carries EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
+**Two-artifact design (resolves FIND-901 — critical): a git-tracked SEED TEMPLATE, distinct from the
+durable, live-appended runtime file.** An earlier revision of this requirement conflated "a single,
+versioned JSON registry file" that is BOTH seeded once with fixed literal data AND, per REQ-305,
+mutated forever after via live runtime appends — sitting at a hardcoded path INSIDE the `~/anicca` git
+working tree — never reconciling that this project's own repo undergoes routine, frequently
+agent-automated `git pull`/`git checkout <branch>`/`git worktree add\|remove` operations (this
+project's own `CLAUDE.md`/`worktree.md`), any of which could silently conflict with, overwrite,
+stash-and-lose, or hard-reset an uncommitted, live-appended registry file if it lived inside the git
+working tree — which it WOULD by default, since `~/anicca/.gitignore`'s current patterns
+(`skills/*/state/`, `skills/*/*/state/`) do not match `skills/self/spawn/registry/`. This requirement
+is now SPLIT into exactly two artifacts:
+1. **A git-tracked SEED TEMPLATE**, `~/anicca/skills/self/spawn/registry/citizens.seed.json` — committed
+   to git as part of this feature's own versioned codebase, READ-ONLY, NEVER mutated at runtime by any
+   code path this feature adds. It exists purely to define the fixed, literal starting content this
+   requirement specifies below — nothing else ever writes to it (see PROP-105j).
+2. **The actual LIVE, mutable runtime file**, resolved via the exported constant `CITIZENS_REGISTRY_PATH`
+   (`~/anicca/skills/self/spawn/lib/registry-path.mjs`, alongside `COORDINATOR_HOME` below) as
+   `path.join(resolveStateDir({env, home}), 'citizens.json')` — REUSING, not reimplementing, the SAME
+   `resolveStateDir({env, home})` function `~/anicca/skills/self/spawn/lib/state-path.js` already
+   exports and `~/anicca/skills/self/spawn/run.sh` (lines 39-45) already calls, TODAY, for
+   `children.jsonl`'s own durable location (confirmed by direct read: `STATE_DIR="$(...
+   resolveStateDir({env: process.env, home: process.env.HOME}) ...)"`; `COLONY="$STATE_DIR/children.jsonl"`
+   — real default on this coordinator host: `~/.hermes/state/children.jsonl`). `CITIZENS_REGISTRY_PATH`
+   therefore resolves, by the SAME mechanism, to `~/.hermes/state/citizens.json` on this host — a
+   DURABLE, OUT-OF-GIT-TREE location, immune to every routine git operation listed above, exactly as
+   `children.jsonl` already is (and, per `state-path.js`'s own header comment, fail-closed against ever
+   being `/tmp`-rooted — the same 2026-06 incident class that lost a prior spawn ledger to the OS
+   tmp-cleaner) (see PROP-105k).
+
+**One-time bootstrap (never an ongoing sync):** on first access, IF `CITIZENS_REGISTRY_PATH`'s file
+does NOT yet exist, THE SYSTEM SHALL initialize it by copying `citizens.seed.json`'s content VERBATIM
+— a single, one-time bootstrap copy, never a repeated/periodic sync. Every subsequent REQ-101 read and
+every REQ-305 runtime append happens EXCLUSIVELY at this durable, out-of-tree location — the
+git-tracked seed template is NEVER read from or written to again after this one-time bootstrap.
+REQ-103's lock `statePath`, this requirement's own registry read, and REQ-403's audit enumeration ALL
+cite this SAME durable `CITIZENS_REGISTRY_PATH` — never the git-tracked seed template's path.
+
+Each record in the registry (whether in `citizens.seed.json` or the durable `citizens.json`) carries
+EXACTLY the fields `isSelfFunded()`/`selfFundedReasons()`
 (`~/anicca/skills/_shared/lib/is-self-funded.mjs`, reused unmodified) already require, SPLIT into the
 two separate shapes that module's own documented contract and this feature's own consumers each need
 (resolves FIND-104's wallet-field type mismatch: `is-self-funded.mjs::hasOwnWallet()` documents and
@@ -679,10 +764,13 @@ REQ-301, exclusively cloud-hosted):
   increment (that check is co-located-only) — the field is present on every record only so a future
   increment's remote-audit mechanism has somewhere to read it from.
 
-THE SYSTEM SHALL seed `citizens.json`, at implementation time, with the following FIXED, LITERAL JSON
-array — NOT a migration of `colony-wallets.json`'s entries, and NOT derived from any out-of-band
-classification step, because there is no migration to begin with — containing ONLY the entities this
-spec's author has verified, as of 2026-07-07, are genuinely self-funded colony citizens.
+THE SYSTEM SHALL seed the git-tracked template, `citizens.seed.json`, at implementation time, with the
+following FIXED, LITERAL JSON array — NOT a migration of `colony-wallets.json`'s entries, and NOT
+derived from any out-of-band classification step, because there is no migration to begin with —
+containing ONLY the entities this spec's author has verified, as of 2026-07-07, are genuinely
+self-funded colony citizens. This exact content is what the durable `CITIZENS_REGISTRY_PATH` file is
+initialized with, verbatim, at its one-time bootstrap (see the two-artifact design above) — the array
+below is never independently re-typed or diverged between the two artifacts at seed time.
 
 **Corrected, resolves FIND-601 (critical):** an earlier revision of this section cited "this project's
 own `CLAUDE.md` colony table" as ITS OWN verification source for `anicca-a3cdd4`'s seeded
@@ -830,27 +918,47 @@ seed set above is a fixed literal this spec's author already verified against li
   owns the JUDGMENT of who counts; REQ-105 does not duplicate or override that gate.
 - Two records share the same `id`: THE SYSTEM SHALL treat this as a malformed registry and exclude
   BOTH duplicate-id records from aggregation until corrected, rather than arbitrarily picking one.
-- A future write path (anywhere in this feature) attempts to append or edit an entry in `citizens.json`
-  whose `{wallet, fuel, humanDependencies}` sub-object would make `isSelfFunded()` return `false`: see
-  REQ-305's binding pre-append `isSelfFunded()` check below — this registry SHALL NEVER contain an
-  entry that fails its own gate, at seed time OR at any later append.
+- A future write path (anywhere in this feature) attempts to append or edit an entry in the durable
+  `citizens.json` whose `{wallet, fuel, humanDependencies}` sub-object would make `isSelfFunded()`
+  return `false`: see REQ-305's binding pre-append `isSelfFunded()` check below — this registry SHALL
+  NEVER contain an entry that fails its own gate, at seed time OR at any later append.
+- **(new, resolves FIND-901)** A routine `git checkout <branch>`/`git worktree add|remove`/`git pull`
+  runs on the `~/anicca` repo (this project's own, frequently agent-automated workflow) at any point
+  before, during, or after REQ-305 has appended runtime rows to the durable `citizens.json`: THE SYSTEM
+  SHALL be structurally unaffected — because `CITIZENS_REGISTRY_PATH` resolves entirely OUTSIDE the git
+  working tree (via `resolveStateDir`), no git operation on `~/anicca` ever reads, writes, stashes, or
+  resets the durable file's content (see PROP-105k).
+- **(new, resolves FIND-901)** A future code path attempts to write to the git-tracked seed template,
+  `citizens.seed.json` (e.g. an accidental "sync the seed forward" step): THE SYSTEM treats this as a
+  spec violation — the seed template is READ-ONLY at runtime, consulted only during the one-time
+  bootstrap of `CITIZENS_REGISTRY_PATH`'s file, and NEVER written to by any runtime code path this
+  feature adds (see PROP-105j).
 
 **Acceptance Criteria**:
-- The seed file parses as an array of objects each satisfying `{id, wallet, walletAddress, fuel,
-  humanDependencies, homeDir}` (no `telemetryPath` field — removed, resolves FIND-302), and calling the
-  existing, unmodified `isSelfFunded()` on any one record's `{wallet, fuel, humanDependencies}`
-  sub-object (never `walletAddress`) returns a boolean without throwing.
+- The seed template (`citizens.seed.json`) parses as an array of objects each satisfying `{id, wallet,
+  walletAddress, fuel, humanDependencies, homeDir}` (no `telemetryPath` field — removed, resolves
+  FIND-302), and calling the existing, unmodified `isSelfFunded()` on any one record's `{wallet, fuel,
+  humanDependencies}` sub-object (never `walletAddress`) returns a boolean without throwing.
 - Every seeded (and later appended, REQ-305) entry's `homeDir` is an ALREADY-RESOLVED absolute path — a
   structural check confirms its value never contains the literal substring `$HOME` or `$ANICCA_HOME`
-  anywhere in `citizens.json` (resolves FIND-202).
+  anywhere in `citizens.seed.json` or the durable `citizens.json` (resolves FIND-202).
+- **(new, resolves FIND-901)** `CITIZENS_REGISTRY_PATH`'s construction is confirmed, by a structural/
+  Tier-0 read of `registry-path.mjs`, to always route through `resolveStateDir({env, home})` — never a
+  literal path string inside the `~/anicca` git working tree (PROP-105k, structural half).
+- **(new, resolves FIND-901)** A live test that (1) writes a distinctive fixture record to the durable
+  `citizens.json` at `CITIZENS_REGISTRY_PATH`, (2) performs a real `git checkout`/`git worktree add`/
+  `git pull` on the `~/anicca` repo, and (3) re-reads the durable file, confirms the fixture record is
+  UNCHANGED (PROP-105k, live half) — and a structural/Tier-0 grep across this feature's diff confirms
+  ZERO write calls (`fs.writeFile`/`fs.writeFileSync`/equivalent) target `citizens.seed.json`'s path
+  anywhere outside the one documented one-time bootstrap-read call site (PROP-105j).
 - A direct test confirms that EACH of the two seeded entries above, when its `{wallet, fuel,
   humanDependencies}` sub-object is passed through the existing, unmodified `isSelfFunded()`, returns
   `true` — a straightforward assertion against literal fixture data (resolves FIND-101's critique of
   the prior "compare against today's known-good identities" proof method, which presupposed an
   out-of-band ground truth no longer needed once there is no migration).
-- `citizens.json`'s seed content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
-  REQ-305's append-on-spawn path (below) enforces the SAME property on every future append, closing
-  this hazard PERMANENTLY rather than only at t=0.
+- `citizens.seed.json`'s content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
+  REQ-305's append-on-spawn path (below) enforces the SAME property on every future append to the
+  durable `citizens.json`, closing this hazard PERMANENTLY rather than only at t=0.
 - **(resolves FIND-601, corrected resolves FIND-801)** Every seeded (and later appended, REQ-305)
   entry's `walletAddress` value is verified, at the time it is written, against that citizen's ACTUAL
   signing key material via a direct cryptographic re-derivation — EVM: `viem`'s `privateKeyToAccount`
@@ -1586,7 +1694,10 @@ current timestamp (never omitted, never set earlier at the `"provisioning"` stag
 field REQ-402's window check and REQ-101's `filterProductiveCitizens` join read (resolves FIND-201's
 location contradiction: this lifecycle fact lives exclusively in `ledger.js`, never in
 `citizens.json`). THE SYSTEM SHALL ALSO append a new record for that child to REQ-105's colony citizen
-registry (`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`,
+registry — the DURABLE runtime file at `CITIZENS_REGISTRY_PATH` (`~/anicca/skills/self/spawn/lib/
+registry-path.mjs`, resolved via `resolveStateDir({env, home})`, e.g. `~/.hermes/state/citizens.json`
+today — NEVER the git-tracked seed template, `citizens.seed.json`, which this append NEVER touches
+again after its one-time bootstrap read, resolves FIND-901; and NEVER `economy/ubi/colony-wallets.json`,
 which this feature never touches, per REQ-105's FIND-101 revision) — `{id: child_id, wallet: {evm:
 true, solana: true-if-generated} (BOOLEAN presence flags, matching `is-self-funded.mjs::hasOwnWallet()`'s
 own documented contract exactly — resolves FIND-104), walletAddress: {evm: childWallet, solana:
@@ -1623,9 +1734,10 @@ SYSTEM SHALL call the existing, unmodified `isSelfFunded()` on the new record's 
 humanDependencies}` sub-object — exactly the same gate REQ-101 itself would apply — and SHALL REFUSE
 the append (logged as a distinct, non-silent REQ-305 append-failure; the child's ledger row remains
 `"active"` since REQ-204+REQ-205 genuinely completed, but the registry-append reconciliation below
-applies) if `isSelfFunded()` returns `false` for that exact record. This ensures `citizens.json` can
-NEVER come to contain a non-self-funded entry, whether at its initial REQ-105 seed or at ANY later
-spawn-triggered append — a permanent closure of the hazard, not merely a t=0 check.
+applies) if `isSelfFunded()` returns `false` for that exact record. This ensures the durable
+`citizens.json` (at `CITIZENS_REGISTRY_PATH`) can NEVER come to contain a non-self-funded entry,
+whether at its initial REQ-105 bootstrap (from `citizens.seed.json`) or at ANY later spawn-triggered
+append — a permanent closure of the hazard, not merely a t=0 check.
 
 **Edge Cases**:
 - The cloud deploy (REQ-302/303) succeeds but ERC-8004 registration (REQ-204) subsequently fails: the
@@ -1650,6 +1762,12 @@ spawn-triggered append — a permanent closure of the hazard, not merely a t=0 c
   colony-accounting anomaly requiring explicit remediation; the child remains `"active"` in the spawn
   ledger (REQ-204+REQ-205 genuinely completed) but is PERMANENTLY excluded from REQ-101's aggregation
   until the anomaly is fixed and the append is manually/explicitly retried.
+- **(new, resolves FIND-901)** A REQ-305 append happens WHILE a routine `git checkout`/`git worktree
+  add|remove`/`git pull` is running concurrently on the `~/anicca` repo: because the append target,
+  `CITIZENS_REGISTRY_PATH`, resolves entirely outside the git working tree, THE SYSTEM SHALL be
+  unaffected — the append is never lost, stashed, or overwritten by the concurrent git operation, and
+  the git operation is never blocked or corrupted by the concurrent append (the two touch disjoint
+  filesystem locations by construction).
 
 **Acceptance Criteria**:
 - A structural/Tier-0 check of the ledger-writing code path confirms every write path that can leave a
@@ -1662,8 +1780,9 @@ spawn-triggered append — a permanent closure of the hazard, not merely a t=0 c
   (with `wallet` boolean flags and `walletAddress` strings correctly split — resolves FIND-104) to
   REQ-105's registry, and that a FAILED attempt appends NO registry record at all.
 - A fixture where the new record's `{wallet, fuel, humanDependencies}` sub-object would fail
-  `isSelfFunded()` (e.g. `fuel.provider` missing/unrecognized) results in ZERO append to `citizens.json`
-  and a logged, distinct refusal — never a silent append of a non-self-funded entry (resolves FIND-101).
+  `isSelfFunded()` (e.g. `fuel.provider` missing/unrecognized) results in ZERO append to the durable
+  `citizens.json` and a logged, distinct refusal — never a silent append of a non-self-funded entry
+  (resolves FIND-101).
 - Marking a child `"active"` ALSO sets that SAME ledger.js row's `active_since` field to the current
   timestamp (never omitted, never set at the earlier `"provisioning"` stage) — the field REQ-402's
   window check and REQ-101's `filterProductiveCitizens` join both read (resolves FIND-201).
@@ -1678,6 +1797,11 @@ spawn-triggered append — a permanent closure of the hazard, not merely a t=0 c
 - The real `buildChildSpec` call underlying this append supplies concrete values for all seven required
   fields per REQ-206's derivation rules (`parentWallet`, `generation`, `seedUsdc`, `constitutionHash`
   included, not just the identity-anchor pair) — resolves FIND-204.
+- **(new, resolves FIND-901)** A structural/Tier-0 check confirms every REQ-305 append call targets
+  `CITIZENS_REGISTRY_PATH` (imported from `registry-path.mjs`) — NEVER `citizens.seed.json`'s path — and
+  a real fixture append followed by a fresh `git status`/`git diff` on `~/anicca` confirms the append
+  produced ZERO changes to the git working tree (the durable file lives entirely outside it) — see
+  PROP-105k.
 
 ---
 
@@ -1867,7 +1991,9 @@ method this project's own wallet-rotation work already established (memory
 produces, INCLUDING a cloud-hosted child, because REQ-303's SDL boots that child by `git clone`-ing the
 SAME OSS repo this static grep already runs against (no separate remote-source-audit mechanism is
 needed for this half); with (b) a live runtime comparison — reusing `resolve-identity.mjs`'s existing
-exported resolvers, invoked once per instance in REQ-105's registry whose `coLocatedWithCoordinator`
+exported resolvers, invoked once per instance in REQ-105's registry — the DURABLE runtime file at
+`CITIZENS_REGISTRY_PATH`, never the git-tracked seed template `citizens.seed.json` (resolves FIND-901)
+— whose `coLocatedWithCoordinator`
 field is exactly `true` (resolves FIND-703 — never an undefined/implicit "co-located" notion; today this
 set is exactly `{automaton, Franklin}`, and any future EXCEPTIONAL co-located addition would also be
 included by construction, though none is anticipated) with that instance's OWN `HOME`/
