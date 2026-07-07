@@ -1,0 +1,13 @@
+{
+  "reviewType": "spec",
+  "iteration": 7,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "iteration 6 was spec_fidelity PASS / verification_readiness FAIL on FIND-501 only: the Gate checklist had no item for REQ-202 or REQ-302. A mechanical fix added Gate items (4c) and (5a) for these. Verify: (1) FIND-501 is genuinely resolved (Gate now references REQ-202's and REQ-302's proof obligations, not just a cosmetic line), (2) no other REQ/PROP is still missing from the Gate checklist (do a full cross-check of all 8 REQs against the Gate section, not just REQ-202/302), (3) nothing else regressed. If this is clean, this should be the final iteration for Phase 1c."
+}
