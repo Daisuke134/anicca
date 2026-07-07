@@ -1,0 +1,18 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-1/output/findings/",
+    "note": "Confirm FIND-001..FIND-006 are genuinely resolved, not just reworded. Also re-review the full spec fresh for any new issues introduced by the revision."
+  }
+}

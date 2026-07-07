@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-201's open-position carve-out (the FIND-003 fix) and verification-architecture.md's Purity Boundary Map both assert that `hasOpenRiskPositionOf(slotName)` is 'a bookkeeping fact... read directly off the instance's already-fetched position data (the same underlying position bookkeeping that populates `ctx.positionsSummary` today)'. I read the ACTUAL current code that computes `positionsSummary` in `runtime/loop/index.mjs` (lines 243-247): it scans `recentLedger` for the most recent entry whose `source` field STARTS WITH the literal string `'yield'` -- `recentLedger.find(l => String(l && l.source || '').startsWith('yield') && l.tx)` -- and produces a yield-only summary string. I then read `skills/earn/run.sh` (the code that actually writes hl_trade ledger entries, e.g. lines 194/206/238): every hl_trade ledger record is written with `source: 'hl-trade'`, which does NOT match the `startsWith('yield')` filter. This means `ctx.positionsSummary` TODAY structurally and permanently EXCLUDES all hl_trade activity -- there is no 'already-fetched' bookkeeping fact anywhere in the wake loop today that indicates whether an HL position is currently open. The only place that actually knows the live HL position state is `skills/earn/hl-trade/hl.py` (lines 67-73, a real Hyperliquid `clearinghouseState` API call), which is invoked only from inside the hl_trade skill's own script run (`run.sh` line 213, `$POS`) -- a live network call that is neither wired into `index.mjs`'s context assembly nor surfaced to `filterCatalog`. Implementing `hasOpenRiskPositionOf('hl_trade')` as specified therefore requires Phase 3 to invent an entirely NEW real-time I/O dependency (a fresh Hyperliquid position query on every wake, or a new derived-state mechanism scanning ledger history for an unmatched open action) that does not exist today and has zero specification: neither REQ-201 nor any PROP addresses (a) which mechanism actually supplies this signal, (b) whether it is queried every wake (cost/latency) or only when balance is below threshold, or (c) -- most critically for fund safety -- what `hasOpenRiskPositionOf` should return when this NEW live query fails, times out, or the underlying HL API is unreachable. If Phase 3 chooses fail-open (default `true` on query failure) to be safe against the FIND-003 deadlock, the gate is trivially defeated by any transient network hiccup (hl_trade stays visible indefinitely). If Phase 3 chooses fail-closed (default `false`), the exact FIND-003 deadlock this carve-out exists to close (an open, possibly losing, leveraged position with the only closing tool hidden by a below-threshold gate) can reopen on ordinary API flakiness -- undermining the increment's central FIND-003 fix while `verification-architecture.md` and PROP-201f present the carve-out as already resolved. This is the same class of defect as FIND-004 (a purity/data-flow claim in verification-architecture.md that does not match the real code it describes), left unaddressed by this revision for a NEW claim introduced specifically to resolve FIND-003.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/runtime/loop/index.mjs",
+    "lineRange": "243-247",
+    "snippet": "const lastYield = (Array.isArray(recentLedger) ? recentLedger : []).slice().reverse().find(l => String(l && l.source || '').startsWith('yield') && l.tx); const positionsSummary = lastYield ? `~$${lastYield.deposited_usdc ?? '?'} in ${lastYield.source} (last tx ${String(lastYield.tx).slice(0, 10)})` : '';"
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca/skills/earn/hl-trade/hl.py",
+    "lineRange": "67-73",
+    "snippet": "positions = [{\"coin\": p[\"position\"][\"coin\"], \"szi\": p[\"position\"][\"szi\"], ...} for p in st.get(\"assetPositions\", []) if float(p[\"position\"].get(\"szi\", 0)) != 0] ... \"open_positions\": positions"
+  },
+  "specCitation": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+    "lineRange": "207-212"
+  },
+  "routeToPhase": "1b"
+}

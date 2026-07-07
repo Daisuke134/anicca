@@ -92,15 +92,20 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T02:41:11.000Z",
+      "timestamp": "2026-07-07T02:57:51.000Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 1,
-        "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
-        "note": "3 critical spec_fidelity (undocumented BOOTSTRAP_RESERVE_USDC default; filterCatalog's 4-input signature can't satisfy the always-available-slot survival edge case; real functional deadlock between REQ-201's hl_trade exclusion and the existing liquidityDirective close-position steer) + 1 critical/2 high-medium verification_readiness (lock-staleness purity/tier claim contradicts real code; PROP-203b mischaracterizes prompt.mjs's baseline as neutral when it already contains directive steering text; Tier-3 re-verification instruction doesn't require independent re-execution vs accepting round-3 self-report)"
+        "iteration": 2,
+        "findings": ["FIND-101", "FIND-102"],
+        "note": "5 of iteration-1's 6 findings genuinely resolved (BOOTSTRAP_RESERVE_USDC default=20, alwaysAvailable signal, binding isLockStale extraction, corrected prompt.mjs baseline description, independent Tier-3 requirement). 2 NEW critical findings on the fixes themselves: FIND-101 -- REQ-201's untagged-defaults-to-risky rule, as literally specified, would exclude economy/gig/economy/ubi/self/* (zero of which have a registry.json risk tag today) from every broke instance, defeating the feature's own headline bootstrap scenario. FIND-102 -- hasOpenRiskPositionOf (the FIND-003 fix) claims to read 'already-fetched' position data, but ctx.positionsSummary structurally excludes hl_trade (filters to source.startsWith('yield') only); no real data source, query cadence, or fail-open/fail-closed behavior on query failure is actually specified.",
+        "priorIteration": {
+          "iteration": 1,
+          "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+          "resolvedCount": 5
+        }
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T02:41:11.000Z"
+      "adversaryReviewedAt": "2026-07-07T02:57:51.000Z"
     }
   },
   "sprintCount": 0,

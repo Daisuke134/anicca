@@ -1,0 +1,84 @@
+{
+  "phase": "1c",
+  "reviewType": "spec",
+  "feature": "anicca-agent-economy",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 2,
+  "priorIterationResolution": {
+    "FIND-001": {
+      "status": "RESOLVED",
+      "note": "behavioral-spec.md REQ-201 now states the literal default: 'BOOTSTRAP_RESERVE_USDC defaults to 20 (i.e. Number(process.env.BOOTSTRAP_RESERVE_USDC) || 20)', mirroring the exact idiom verified in runtime/loop/context.mjs:39 for COMPUTE_RESERVE_USDC (default 5). PROP-201c now asserts the literal fallback value and a standing 20>=5 invariant. Verified as a genuine, concrete fix, not a reword."
+    },
+    "FIND-002": {
+      "status": "RESOLVED",
+      "note": "filterCatalog's signature now carries a distinct alwaysAvailableOf(slotName) input, independent of riskTagOf, with explicit unconditional precedence ('included in the filtered output UNCONDITIONALLY, before the risk-tag check is even consulted'). PROP-201e and verification-architecture.md's Purity Boundary Map both reflect this new signal. The sleep meta-tool's independence is also correctly re-verified against the real code (runtime/loop/prompt.mjs's getToolDefinitions appends SLEEP_TOOL unconditionally at line 171, regardless of the slots argument). This specific ambiguity is genuinely closed -- though see FIND-101 for a new, distinct problem this mechanism's real-world wiring creates."
+    },
+    "FIND-003": {
+      "status": "PARTIALLY RESOLVED — new problem introduced, see FIND-102",
+      "note": "The behavioral-spec.md carve-out text (hasOpenRiskPositionOf) correctly identifies and narrates the liquidity.mjs deadlock (re-read runtime/loop/liquidity.mjs and confirmed the 'CLOSE a profitable HL position ... or withdraw idle yield' text and its COMPUTE_RESERVE_USDC trigger are accurately described) and the ordering invariant between BOOTSTRAP_RESERVE_USDC and COMPUTE_RESERVE_USDC is now explicit and correctly directioned (20 >= 5). However, the claim that hasOpenRiskPositionOf's input is 'already-fetched' bookkeeping identical to what populates ctx.positionsSummary today is factually false (re-verified against runtime/loop/index.mjs and skills/earn/run.sh) -- see FIND-102, a new critical finding."
+    },
+    "FIND-004": {
+      "status": "RESOLVED",
+      "note": "REQ-101's acceptance criteria now contain an explicit, unconditional BINDING clause requiring the isLockStale(nowMs, mtimeMs, staleMs) extraction, with an explicit instruction that a Phase 3 adversary finding the comparison still inlined MUST treat REQ-101 as unsatisfied regardless of integration-level behavior. This is no longer a non-binding parenthetical."
+    },
+    "FIND-005": {
+      "status": "RESOLVED",
+      "note": "Re-read the actual, current runtime/loop/prompt.mjs (lines 89-104) and confirmed the spec's quoted baseline text ('your FIRST action this wake MUST be economy/gig ... Do this BEFORE hl_trade / yield / anything else', 'Prefer this over re-yielding surplus', 'it is almost never yield again') is accurate to the real file, at the cited line range. REQ-204 is a new, binding requirement to retire this exact block, and PROP-203b/PROP-204a now instruct a full-file (not diff-only) read. The baseline mischaracterization is corrected."
+    },
+    "FIND-006": {
+      "status": "RESOLVED",
+      "note": "REQ-103's acceptance criteria and PROP-103b/the Gate section now explicitly forbid treating evidence/p2.2-security-fixes-round3.md's same-day, same-builder self-report as satisfying the Tier 3 obligation, and require the Phase 3 adversary's own independent invocation/transaction hashes/timestamps. This is now a binding, unambiguous instruction."
+    }
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-101"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json", "description": "Re-read all 18 slot entries fresh; confirmed zero 'risk' or 'alwaysAvailable' fields exist anywhere in the file today, including on economy/gig, economy/ubi, and every self/* slot that REQ-201's own EARS clause names as slots that must remain visible to a broke instance."},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md", "description": "Confirmed REQ-201's default-value fix (FIND-001) and alwaysAvailableOf mechanism (FIND-002) are both genuinely landed and internally consistent with each other, but their interaction with the untagged-slot fail-closed-by-default edge case creates a new, concrete contradiction against the requirement's own worked example (FIND-101)."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/liquidity.mjs", "description": "Re-read liquidityDirective in full; confirmed the FIND-003 narrative (COMPUTE_RESERVE_USDC-triggered close-or-withdraw steer) is accurately described in the revised REQ-201 carve-out text."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-102"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs", "description": "Re-read acquire()/withGigLock(); confirmed REQ-101's now-binding isLockStale extraction requirement, once implemented, would make the Tier-1 purity claim true of the actual code (FIND-004 genuinely resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs", "description": "Read the actual positionsSummary computation (lines 243-247): filters recentLedger strictly to entries whose source startsWith('yield'); confirmed this structurally excludes all hl_trade activity, contradicting verification-architecture.md's claim that hasOpenRiskPositionOf reads 'the same underlying position bookkeeping that populates ctx.positionsSummary today' (FIND-102)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/hl-trade/hl.py", "description": "Confirmed the only code that actually knows live HL open-position state is a real Hyperliquid clearinghouseState network call inside the hl_trade skill's own script, not surfaced to index.mjs/context.mjs/filterCatalog anywhere today -- the new bookkeeping signal this increment relies on for its fund-safety carve-out does not yet exist and its failure mode is entirely unspecified."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/prompt.mjs", "description": "Re-read the full file (lines 1-234); confirmed the FIND-005 baseline correction is accurate and REQ-204's target phrases are quoted correctly at the cited line range."}
+      ]
+    }
+  },
+  "blockingFindings": [
+    {
+      "findingId": "FIND-101",
+      "dimension": "spec_fidelity",
+      "severity": "critical",
+      "file": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+      "line": "236-258",
+      "summary": "REQ-201's fail-closed-by-default rule for untagged registry.json slots, combined with the real, current registry.json (which has zero risk/alwaysAvailable tags on economy/gig, economy/ubi, or any self/* slot), means a criteria-satisfying Phase 3 implementation would hide economy/gig -- the exact $0-capital earn mechanism broke instances are supposed to use -- from every broke instance, directly contradicting REQ-201's own EARS clause and this increment's stated purpose.",
+      "whyBlocking": "The requirement is not implementable as a single, unambiguous, self-consistent target: literal compliance with the acceptance criteria breaks the requirement's own stated intent and the feature's headline bootstrap scenario the moment the gate ships."
+    },
+    {
+      "findingId": "FIND-102",
+      "dimension": "verification_readiness",
+      "severity": "critical",
+      "file": "/Users/anicca/anicca/runtime/loop/index.mjs",
+      "line": "243-247",
+      "summary": "hasOpenRiskPositionOf is specified as reading 'already-fetched' position bookkeeping identical to ctx.positionsSummary, but positionsSummary today structurally excludes all hl_trade data (yield-only filter). The real HL position signal requires a brand-new, unspecified live network dependency with an entirely unaddressed failure mode (fail-open defeats the gate; fail-closed can reopen the exact FIND-003 deadlock this carve-out claims to close).",
+      "whyBlocking": "A purity/data-flow claim central to this revision's headline fix (FIND-003) does not match the real code it describes, and the missing failure-mode specification means the carve-out cannot be implemented safely without Phase 3 inventing unreviewed, safety-critical behavior."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsResolved": ["FIND-001", "FIND-002", "FIND-004", "FIND-005", "FIND-006"],
+    "priorIterationFindingsPartiallyResolved": ["FIND-003"]
+  }
+}
