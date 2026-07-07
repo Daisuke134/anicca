@@ -12,9 +12,10 @@
 | 設計 | `../superpowers/specs/2026-07-07-loop-engineering-out-of-loop-design.md` | 実装設計（out-of-loop 3段・SI-*フェーズ・SI-1棚卸し結果・cheap wins） | ✅ 実行計画の正本 |
 | 01 | `01-loop-vs-goal-resolved.md` | ★「loop は goal を含むのか?」の決定的解決（概念=YES / ツール=逆に/goalがloopを含む / 真の軸=done を誰が判定するか）★ | ✅ 完了（外部一次情報つき） |
 
+| 03 | `03-franklin-as-nested-loops.md` | ループの実装: 私(human-funded=人間へ) vs Franklin(self-funded=agent economyへ)、5レイヤー実装、done 3値、分担/順番、着手STEP A-D | ✅ 完了 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
-- `03-franklin-as-nested-loops.md` … Franklin の $0→earn→scale を META/OUTER/INNER 3層ループで実装する詳細設計
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
 - `05-evo-driven-development.md` … eval-driven-earning（calibration drift + bandit arm + fresh adversary curation-gate）の設計と復活
 - `06-continual-learning-3layers.md` … Replit の model/harness/context 3層を Anicca に写経した詳細
