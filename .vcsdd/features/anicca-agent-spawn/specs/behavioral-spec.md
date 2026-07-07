@@ -1,13 +1,13 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 8, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 9, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
 resolved AND spec review iteration-6 findings FIND-501..504 resolved AND spec review iteration-7
-findings FIND-601..604 resolved AND spec review iteration-8 findings FIND-701..703 resolved — see
-changelogs below)
+findings FIND-601..604 resolved AND spec review iteration-8 findings FIND-701..703 resolved AND spec
+review iteration-9 findings FIND-801..802 resolved — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -129,6 +129,23 @@ module is a PLANNED file, not yet created on disk — its only planned export, p
 | FIND-701 | critical | REQ-403's "Explicit-env correction" left the coordinator host's own real `$HOME` value as an unresolved placeholder phrase ("sourced from a registry/coordinator constant") with no canonical constant actually defined anywhere — the same class of un-pinned-input hazard REQ-103 already closed for `CITIZENS_REGISTRY_PATH`. A SECOND named constant, `COORDINATOR_HOME`, is now exported from that SAME shared module, `~/anicca/skills/self/spawn/lib/registry-path.mjs` (REQ-403, new "Canonical coordinator-HOME constant" subsection), computed ONCE via Node's `os.homedir()` at module-load time — never `process.env.HOME` read ad hoc, never hardcoded. REQ-403's live-audit script MUST import and use this SAME constant for every `env.HOME` value it passes to `resolveEvmPrivateKey`/`resolveSolanaSecret`. A new proof obligation, PROP-403f (mirroring PROP-103d's structural discipline exactly), requires a source-grep/import-identity check confirming zero independent `os.homedir()`/`process.env.HOME` reads anywhere else in this feature's audit-script code path. |
 | FIND-702 | major | PROP-105g is rewritten from a citation-presence check ("the adversary confirms the commit/PR cites a verification method") to an actual mechanical re-derivation: Phase 3 verification now REQUIRES a real script/test that reads the real private-key file in memory (the same `viem`'s `privateKeyToAccount` pattern already used for the automaton wallet), computes the address, and DIFFS it against `citizens.json`'s stored `walletAddress`, failing hard on any mismatch — never merely checking that a commit/PR cites the right KIND of verification. A new explicit carve-out reconciles this with REQ-105's "file EXISTENCE only — content never read/printed" phrase: reading a private-key file's content IN-MEMORY for THIS SPECIFIC re-derivation purpose is explicitly permitted and required (never logging/printing/persisting the raw key itself — only the DERIVED address may ever be logged/compared), distinct from and not contradicting the general "existence only" discipline used elsewhere in this spec. |
 | FIND-703 | critical | REQ-105's citizen record schema gains a new field, `coLocatedWithCoordinator: boolean` — both of today's seeded citizens (automaton, Franklin) are seeded `true` (genuinely co-located on the same Mac Mini today); REQ-305's append-on-spawn logic now ALWAYS sets this to `false` for any newly-spawned child (per REQ-301's absolute mandate, every spawned child is cloud-hosted, never co-located — a structural constant, not a judgment call). REQ-403's live-audit enumeration now explicitly filters `citizens.filter(c => c.coLocatedWithCoordinator === true)`, making PROP-403d's "no code path invokes the resolvers against a cloud-hosted child's homeDir" claim mechanically enforceable. REQ-403's EARS clause is reworded to remove its vacuous promise ("before any newly-spawned CO-LOCATED child is permitted... a category REQ-301 makes structurally impossible"): the live-comparison half runs only among citizens with `coLocatedWithCoordinator === true` (today: automaton + Franklin), while every spawned child (always `false`) is structurally excluded from this check's candidate set and covered only by REQ-403's static grep-sweep half. New proof obligations PROP-105h (seed/schema correctness of the new field) and PROP-305f (every REQ-305 append sets it to exactly `false`) are added. |
+
+## Changelog (iteration 8 spec review → iteration 9)
+
+Iteration 8's spec review FAILed with 2 findings (1 critical, 1 major — FIND-801/802; all findings
+across iterations 1-8 were reconfirmed genuinely resolved against the real, current source). Each is
+resolved by a specific, cited design decision, grounded in a fresh full read of
+`~/anicca/skills/earn/lib/resolve-identity.mjs::resolveSolanaSecret`/`readRawSecretFile`,
+`~/anicca/runtime/dashboard/telemetry-post-franklin.mjs` (this codebase's own already-proven,
+already-working base58-secret → Solana-address derivation pattern), `~/anicca/package.json` (confirming
+`@solana/web3.js` is ALREADY a real, existing dependency of this monorepo — no new dependency added),
+and a LIVE re-derivation actually performed, 2026-07-07, against Franklin's real
+`~/.blockrun/.solana-session` file:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-801 | critical | PROP-105g's only named re-derivation tool, `viem`'s `privateKeyToAccount`, is secp256k1/EVM-only — structurally inapplicable to Franklin's Solana-only seeded record and to every future Nosana-path child (REQ-202 makes a Solana wallet the norm, not the exception, for that path). PROP-105g is corrected to a genuine TWO-BRANCH re-derivation method: EVM via `viem::privateKeyToAccount` against `walletAddress.evm` (unchanged); Solana via `@solana/web3.js::Keypair.fromSecretKey` (fed the real secret's `bs58`-decoded 64-byte form — the EXACT, already-proven conversion `telemetry-post-franklin.mjs` already performs against this SAME file) against `walletAddress.solana` — both already-real dependencies of this monorepo (`@solana/web3.js@^1.98.4` in `~/anicca/package.json`; `bs58@^5.0.0` in `~/anicca/runtime/package.json`, already imported by `telemetry-post-franklin.mjs`), no new dependency introduced. A citizen record with BOTH fields populated (REQ-202's expected Nosana-path shape) MUST pass BOTH branches independently (new PROP-105i). The Solana branch was ACTUALLY, LIVE re-derived against Franklin's real `~/.blockrun/.solana-session` (2026-07-07, `@solana/web3.js@1.98.4`+`bs58@6.0.0` installed to a disposable scratch directory OUTSIDE this repo for the check only): the derived address EXACTLY matches Franklin's seeded `walletAddress.solana`, `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` — a genuine, real, live-confirmed result, never a hypothetical. The previously weak, unelaborated "OR a live on-chain balance query" escape hatch is also corrected: a balance query may now only be cited as an ADDITIONAL corroboration (as already done for automaton, cross-checked against `colony-status.sh`), never a substitute for the re-derivation — a funded address existing on-chain does not by itself prove the address was correctly derived from a specific private key, a categorically weaker property. |
+| FIND-802 | major | The `COORDINATOR_HOME` constant's formal definition (previously introduced only in REQ-403, iteration 8) is moved UP into REQ-105 — the first point in this document's reading order that needs to express "the coordinator host's own real `$HOME`" as a worked-example value — so the symbol is established before ANY literal use anywhere in the document. REQ-403 no longer re-defines the constant; it now only POINTS to REQ-105's earlier definition. Every literal `/Users/anicca` occurrence used for this specific "coordinator's own HOME, passed as `env.HOME`" purpose in REQ-105's worked example and in REQ-403's Seed-data-correction section and Acceptance Criteria is replaced with the symbolic `COORDINATOR_HOME` reference — including the one Acceptance Criteria bullet that had drifted inconsistent with an earlier bullet in the SAME list (one already correctly wrote `COORDINATOR_HOME`, a later one still hardcoded the literal). The literal's current real value is now stated exactly ONCE, parenthetically, at its one definition point in REQ-105 — never restated or independently re-typed anywhere else in this spec. |
 
 ## Scope of this increment (read first)
 
@@ -681,10 +698,51 @@ address directly from its own signing key material: `~/.automaton/wallet.json`'s
 independently re-derived to an address via `viem`'s `privateKeyToAccount` (performed live, 2026-07-07),
 cross-checked against `~/anicca/skills/self/colony-status.sh`'s own live on-chain balance query against
 that SAME address — both methods independently confirm `0xB9dd3B67921B354c656523d6851537988F31DD56`
-below is automaton's real, current wallet, never a markdown snapshot. See PROP-105g for the resulting
-binding rule this correction establishes: any FUTURE seed/append of a citizen's `walletAddress` MUST be
-verified the same way (against real signing key material or a live balance query), never solely against
-a markdown doc — precisely the class of source that just failed here:
+below is automaton's real, current wallet, never a markdown snapshot.
+
+**Corrected, resolves FIND-801 (critical) — the re-derivation method is TWO-BRANCH, EVM and Solana,
+never EVM-only:** `viem`'s `privateKeyToAccount` is a secp256k1/EVM-only function — it cannot derive,
+and was never claimed to derive, an ed25519 Solana public key. Franklin's own seeded record below
+carries ONLY `walletAddress.solana` (no `evm` field at all), and REQ-202 makes a Solana wallet the norm
+— not the exception — for every future Nosana-path child, so PROP-105g's binding rule MUST name a
+genuine Solana-equivalent re-derivation method, not merely an EVM one. `@solana/web3.js` (already a
+real, EXISTING dependency of this monorepo — `~/anicca/package.json`: `"@solana/web3.js": "^1.98.4"`,
+confirmed by direct read; no new dependency introduced) supplies it:
+`Keypair.fromSecretKey(secretKeyBytes)` followed by `.publicKey.toBase58()`. The exact byte format this
+needs is already established, real, WORKING code in this codebase:
+`~/anicca/runtime/dashboard/telemetry-post-franklin.mjs` (lines 11, 21-23) already reads Franklin's OWN
+`~/.blockrun/.solana-session` file and calls `bs58.decode(secretB58)` to get a 64-byte `Uint8Array` —
+that file's own comment confirms the shape: `"64 bytes: tweetnacl secretKey format == Solana
+Keypair.secretKey"`. A full read of `resolve-identity.mjs::readRawSecretFile` (the function
+`resolveSolanaSecret` actually calls for this same file) confirms this IS the exact real format
+`resolveSolanaSecret` returns: `fs.readFileSync(filePath, 'utf8').trim()` — a bare base58 STRING, no
+JSON wrapper, no array of bytes. `bs58` is likewise an already-real dependency of this monorepo
+(`~/anicca/runtime/package.json`: `"bs58": "^5.0.0"`, already imported by `telemetry-post-franklin.mjs`)
+— no new dependency for THIS conversion step either. PROP-105g's Solana branch is therefore: read
+`~/.blockrun/.solana-session`'s real content IN-MEMORY (the SAME in-memory-read carve-out FIND-702
+already established for the EVM branch — never log/print the raw secret), `bs58.decode()` it to a
+64-byte `Uint8Array` (the format `resolveSolanaSecret`'s base58 string converts to), pass that to
+`Keypair.fromSecretKey(secretKeyBytes)` (this call itself re-derives AND validates the embedded public
+key against the secret half, throwing on any internal mismatch — an extra integrity check the EVM path
+does not have an equivalent of), then `.publicKey.toBase58()` to obtain the address, and DIFF that
+address against `citizens.json`'s stored `walletAddress.solana` for that SAME citizen — FAILING HARD on
+any mismatch, mirroring the EVM branch's exact rigor. **This was ACTUALLY PERFORMED, not merely cited**
+(2026-07-07, `@solana/web3.js@1.98.4`+`bs58@6.0.0` installed to a disposable scratch directory OUTSIDE
+this repo, for the check only — never adding a new dependency to `~/anicca/package.json` itself, since
+Phase 2 will call the already-real in-repo dependency): reading `~/.blockrun/.solana-session`'s real
+content, `bs58.decode()`-ing it to a 64-byte secret, and calling
+`Keypair.fromSecretKey(secretKeyBytes).publicKey.toBase58()` returns
+`8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` — an EXACT match against Franklin's seeded
+`walletAddress.solana` below (never printed: the raw secret bytes themselves — only this derived public
+address). A citizen record with BOTH `walletAddress.evm` AND `walletAddress.solana` populated (the
+expected shape for every Nosana-path child, REQ-202) MUST pass BOTH branches independently — see
+PROP-105i.
+
+See PROP-105g for the resulting binding rule this correction establishes: any FUTURE seed/append of a
+citizen's `walletAddress` MUST be verified the same way — EVM via `viem::privateKeyToAccount` against
+`walletAddress.evm`; Solana via `@solana/web3.js::Keypair.fromSecretKey` against `walletAddress.solana`;
+whichever chain(s) that citizen's record populates, BOTH independently if both are populated — never
+solely against a markdown doc, precisely the class of source that just failed here:
 
 ```json
 [
@@ -716,21 +774,42 @@ or any other field — it is recorded explicitly so REQ-403's live-audit enumera
 
 Both entries' `homeDir` values are ALREADY-RESOLVED absolute paths — never a `$HOME`-template string —
 because this spec's author already knows the real, concrete path each citizen uses at seed time
-(resolves FIND-202). **Corrected, resolves FIND-501:** these two values are each citizen's own REAL,
-DISTINCT resolved `ANICCA_HOME` root — `/Users/anicca/.anicca` (automaton's real default, per
-`install.sh:26`) and `/Users/anicca/.blockrun` (Franklin's real legacy-Solana root) — NEVER the shared
-physical machine's bare `$HOME` (`/Users/anicca`) that an earlier revision of this seed data wrongly
-used for BOTH entries. Both citizens still run CO-LOCATED on the same physical coordinator host per
-REQ-106 (that scoping is unchanged and correct) — co-location is a fact about the PHYSICAL HOST, not
-about `homeDir`, and does not make the two citizens' `ANICCA_HOME` roots identical; each retains its own
-distinct root even while sharing a machine. A live filesystem check of this coordinator host (2026-07-07,
-file EXISTENCE only — content never read/printed, per this project's own secrets-handling discipline)
-confirms both corrected values resolve to real, distinct, non-null key material via
-`resolve-identity.mjs`'s own existing legacy-fallback path, invoked with an EXPLICIT `env` object (never
-the bare `{home: X}` shape — resolves FIND-603, see REQ-403's Explicit-env correction):
-`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME:
+(resolves FIND-202).
+
+**Canonical coordinator-HOME constant, `COORDINATOR_HOME` (defined HERE — the ONE place in this entire
+spec this literal value is stated; resolves FIND-802, moved up from REQ-403 so the symbol is
+established before ANY literal use anywhere in this document):** the worked example immediately below,
+and REQ-403's own live-audit worked examples further down this document, both need to express "the
+coordinator host's own real `$HOME`" as an `env.HOME` value passed into
+`resolveEvmPrivateKey`/`resolveSolanaSecret` — but only as an EXPORTED, NAMED CONSTANT, never
+independently hardcoded or independently re-derived at each usage site (the identical class of
+un-pinned-input hazard REQ-103 already closed for `CITIZENS_REGISTRY_PATH` via a single named, exported
+constant). THE SYSTEM SHALL export a constant, `COORDINATOR_HOME`, from the SAME shared module REQ-103
+already introduces, `~/anicca/skills/self/spawn/lib/registry-path.mjs`, computed EXACTLY ONCE, at
+module-load time, via Node's `os.homedir()` (the canonical OS-level API for "this process's own real
+home directory" — NEVER `process.env.HOME` read ad hoc at any call site, and NEVER a hardcoded literal
+string). On this coordinator host, `COORDINATOR_HOME` currently resolves to `/Users/anicca` (confirmed
+live, 2026-07-07, via `os.homedir()`) — **every literal `/Users/anicca` value appearing as an
+`env.HOME`/coordinator-HOME value anywhere below in this section and in REQ-403 IS `COORDINATOR_HOME`'s
+resolved value on THIS host, never an independently-sourced or independently-hardcoded copy.** See
+PROP-403f for the corresponding structural check (zero independent `os.homedir()`/`process.env.HOME`
+reads anywhere else in this feature's audit-script code path).
+
+**Corrected, resolves FIND-501:** these two `homeDir` values are each citizen's own REAL, DISTINCT
+resolved `ANICCA_HOME` root — `/Users/anicca/.anicca` (automaton's real default, per `install.sh:26`)
+and `/Users/anicca/.blockrun` (Franklin's real legacy-Solana root) — NEVER the shared physical machine's
+bare `$HOME` (`/Users/anicca`) that an earlier revision of this seed data wrongly used for BOTH entries.
+Both citizens still run CO-LOCATED on the same physical coordinator host per REQ-106 (that scoping is
+unchanged and correct) — co-location is a fact about the PHYSICAL HOST, not about `homeDir`, and does
+not make the two citizens' `ANICCA_HOME` roots identical; each retains its own distinct root even while
+sharing a machine. A live filesystem check of this coordinator host (2026-07-07, file EXISTENCE only —
+content never read/printed, per this project's own secrets-handling discipline) confirms both corrected
+values resolve to real, distinct, non-null key material via `resolve-identity.mjs`'s own existing
+legacy-fallback path, invoked with an EXPLICIT `env` object (never the bare `{home: X}` shape — resolves
+FIND-603, see REQ-403's Explicit-env correction):
+`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: COORDINATOR_HOME, ANICCA_HOME:
 '/Users/anicca/.anicca'}})` reads `/Users/anicca/.automaton/wallet.json` (confirmed present), and
-`resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
+`resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: COORDINATOR_HOME, ANICCA_HOME:
 '/Users/anicca/.blockrun'}})` reads `/Users/anicca/.blockrun/.solana-session` (confirmed present) — see
 REQ-403's Acceptance Criteria for the full derivation. Neither entry carries a `telemetryPath` field
 (removed, resolves FIND-302 — see above).
@@ -772,12 +851,21 @@ seed set above is a fixed literal this spec's author already verified against li
 - `citizens.json`'s seed content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
   REQ-305's append-on-spawn path (below) enforces the SAME property on every future append, closing
   this hazard PERMANENTLY rather than only at t=0.
-- **(resolves FIND-601)** Every seeded (and later appended, REQ-305) entry's `walletAddress` value is
-  verified, at the time it is written, against that citizen's ACTUAL signing key material (a direct
-  cryptographic re-derivation, e.g. `viem`'s `privateKeyToAccount` against the real private-key file) OR
-  a live on-chain balance query — NEVER solely against a markdown documentation snapshot
-  (`CLAUDE.md`/`docs/WALLETS.md`), which this iteration's own review proved can silently go stale after a
-  real key rotation without this spec's own seed data (already correct) being affected. See PROP-105g.
+- **(resolves FIND-601, corrected resolves FIND-801)** Every seeded (and later appended, REQ-305)
+  entry's `walletAddress` value is verified, at the time it is written, against that citizen's ACTUAL
+  signing key material via a direct cryptographic re-derivation — EVM: `viem`'s `privateKeyToAccount`
+  against the real private-key file, diffed against `walletAddress.evm`; Solana: `@solana/web3.js`'s
+  `Keypair.fromSecretKey` (fed the real secret's `bs58`-decoded 64-byte form) against the real secret
+  file, diffed against `walletAddress.solana` — whichever chain(s) that citizen's record populates, BOTH
+  independently if both are populated (REQ-202's expected Nosana-path shape, see PROP-105i) — NEVER
+  solely against a markdown documentation snapshot (`CLAUDE.md`/`docs/WALLETS.md`), which this
+  iteration's own review proved can silently go stale after a real key rotation without this spec's own
+  seed data (already correct) being affected. A live on-chain balance query MAY be cited as an
+  ADDITIONAL corroboration (as already done for automaton's address, cross-checked against
+  `colony-status.sh`) but is NEVER a substitute for the re-derivation above — a funded address existing
+  on-chain does not by itself prove that address was correctly derived from a specific private key, a
+  categorically weaker property (resolves FIND-801's critique that an unelaborated "balance query"
+  alternative never explained what it would prove). See PROP-105g/PROP-105i.
 - REQ-403 (the wallet non-interference audit's "current set of co-located running instances," this
   increment — resolves FIND-303) reads its citizen list AND each instance's `homeDir` directly from
   THIS SAME registry — no second, parallel instance-enumeration mechanism exists anywhere in this spec.
@@ -1825,19 +1913,21 @@ for EVERY chain for BOTH citizens (see REQ-105's corrected seed-data section for
 making this audit either vacuously "pass" on two `null` results or never actually exercise either
 citizen's real key material at all. With REQ-105's now-corrected seed values (`/Users/anicca/.anicca`
 for automaton, `/Users/anicca/.blockrun` for Franklin), a real invocation of
-`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: '/Users/anicca', ANICCA_HOME: citizen.homeDir}})`/
-`resolveSolanaSecret({home: citizen.homeDir, env: {HOME: '/Users/anicca', ANICCA_HOME: citizen.homeDir}})`
+`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: COORDINATOR_HOME, ANICCA_HOME: citizen.homeDir}})`/
+`resolveSolanaSecret({home: citizen.homeDir, env: {HOME: COORDINATOR_HOME, ANICCA_HOME: citizen.homeDir}})`
 — an EXPLICIT `env` object, never the bare `{home: citizen.homeDir}` shape an earlier revision of this
-section used (see the Explicit-env correction below, resolves FIND-603) — against each citizen's own
-corrected `homeDir` actually resolves that citizen's REAL key material (never `null`) via
-`resolve-identity.mjs`'s own existing legacy-fallback branch — confirmed by a live filesystem check
-of this coordinator host (2026-07-07, file EXISTENCE only, key CONTENT never read or printed):
-`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME:
+section used (see the Explicit-env correction below, resolves FIND-603), and `COORDINATOR_HOME` being
+the SAME canonical constant REQ-105 already defines above (resolves FIND-802 — never an
+independently-hardcoded literal at this call site) — against each citizen's own corrected `homeDir`
+actually resolves that citizen's REAL key material (never `null`) via `resolve-identity.mjs`'s own
+existing legacy-fallback branch — confirmed by a live filesystem check of this coordinator host
+(2026-07-07, file EXISTENCE only, key CONTENT never read or printed):
+`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: COORDINATOR_HOME, ANICCA_HOME:
 '/Users/anicca/.anicca'}})` resolves via the legacy `$HOME/.automaton/wallet.json` path
 (`effectiveHome === path.join(legacyHome,'.anicca')` holds because the EXPLICITLY-PASSED `env.HOME` is
-`/Users/anicca`) to `/Users/anicca/.automaton/wallet.json` — CONFIRMED PRESENT on disk; and
-`resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
-'/Users/anicca/.blockrun'}})` resolves via the legacy `$HOME/.blockrun/.solana-session` path
+`COORDINATOR_HOME`'s resolved value) to `/Users/anicca/.automaton/wallet.json` — CONFIRMED PRESENT on
+disk; and `resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: COORDINATOR_HOME,
+ANICCA_HOME: '/Users/anicca/.blockrun'}})` resolves via the legacy `$HOME/.blockrun/.solana-session` path
 (`effectiveHome === path.join(legacyHome,'.blockrun')` holds symmetrically) to
 `/Users/anicca/.blockrun/.solana-session` — CONFIRMED PRESENT on disk. THIS is what proves genuine
 pairwise key inequality: each citizen resolves ONLY its own real, non-null key material through its own
@@ -1848,32 +1938,19 @@ mechanism (`readCitizenBalances`, REQ-101) reads exclusively `walletAddress` via
 never reads or references `homeDir` at all (REQ-105's own Acceptance Criteria/PROP-105f already pin
 `homeDir` as consumed ONLY by this REQ-403 audit) — confirmed explicitly, no residual doubt.
 
-**Canonical coordinator-HOME constant, `COORDINATOR_HOME` (resolves FIND-701 — critical):** the
-Explicit-env correction below requires supplying "the coordinator host's own real `$HOME`" as
-`env.HOME` on every invocation — but leaving this as an unresolved prose phrase (as an earlier revision
-of this section did) gives a Phase 2 implementer at least two ways to comply that BOTH silently defeat
-this section's own purpose: (a) hardcode the literal string `/Users/anicca` independently inside the
-audit script (no canonical source, drifts silently if the coordinator host or its home directory ever
-changes, with no structural check to catch a second, differently-hardcoded copy elsewhere), or (b)
-independently call `os.homedir()`/read `process.env.HOME` once at audit-script startup (reintroducing
-exactly the ambient-environment coupling this section's own Explicit-env correction exists to
-eliminate for any OTHER invocation context — a multi-user host, a differently-configured launchd job, a
-future second coordinator). This is the SAME class of un-pinned-input hazard REQ-103 already closed for
-`CITIZENS_REGISTRY_PATH` via a single named, exported constant — REQ-403 now receives the identical
-discipline: THE SYSTEM SHALL export a SECOND named constant, `COORDINATOR_HOME`, from the SAME shared
-module REQ-103 already introduces, `~/anicca/skills/self/spawn/lib/registry-path.mjs` (confirmed, by
-direct read, 2026-07-07: this module does not yet exist on disk — it is a Phase-2-created file, and its
-only planned export prior to this correction was `CITIZENS_REGISTRY_PATH`) — computed EXACTLY ONCE, at
-module-load time, via Node's `os.homedir()` (the canonical, OS-level API for "this process's own real
-home directory," robust regardless of which environment variables happen to be set at any given call
-site — NEVER `process.env.HOME` read ad hoc inside the audit script itself, and NEVER a hardcoded literal
-string). REQ-403's live-audit script SHALL import and use this SAME `COORDINATOR_HOME` constant for
-EVERY `env.HOME` value it passes to `resolveEvmPrivateKey`/`resolveSolanaSecret` — never independently
-re-reading `process.env.HOME`/`os.homedir()` a second time at the call site, never hardcoding. On this
-coordinator host, `COORDINATOR_HOME` currently resolves to `/Users/anicca` (confirmed live, 2026-07-07,
-via `os.homedir()`) — every literal `/Users/anicca` value appearing in this section's worked examples
-below IS `COORDINATOR_HOME`'s resolved value on THIS host, never an independently-sourced or
-independently-hardcoded copy. See PROP-403f for the corresponding structural check.
+**Canonical coordinator-HOME constant, `COORDINATOR_HOME` (resolves FIND-701; formally DEFINED in
+REQ-105 above, resolves FIND-802 — moved up so the symbol is established before ANY literal use
+anywhere in this document, rather than being introduced only here, after this section's own worked
+examples had already used the bare literal):** the Explicit-env correction below requires supplying
+"the coordinator host's own real `$HOME`" as `env.HOME` on every invocation — REQ-105 above already
+exports this constant, `COORDINATOR_HOME`, from `~/anicca/skills/self/spawn/lib/registry-path.mjs` (the
+SAME module REQ-103 introduces for `CITIZENS_REGISTRY_PATH`), computed EXACTLY ONCE, at module-load
+time, via Node's `os.homedir()` — see REQ-105 for its full definition, rationale, and its ONE,
+parenthetical statement of its current real value on this host. REQ-403's live-audit script SHALL
+import and use this SAME `COORDINATOR_HOME` constant for EVERY `env.HOME` value it passes to
+`resolveEvmPrivateKey`/`resolveSolanaSecret` — never independently re-reading `process.env.HOME`/
+`os.homedir()` a second time at the call site, never hardcoding a literal copy of REQ-105's stated
+value. See PROP-403f for the corresponding structural check.
 
 **Explicit-env correction (resolves FIND-603 — critical):** `resolve-identity.mjs`'s real legacy-fallback
 gate depends on a SECOND, separate input this section's own prior worked examples never modeled. Reading
@@ -1892,7 +1969,7 @@ reused test suite (`runtime/loop/__tests__/resolve-identity.test.mjs`) never exe
 live-audit script ALWAYS invokes both resolvers with an EXPLICIT, fully-constructed `env` object —
 `resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: COORDINATOR_HOME, ANICCA_HOME:
 citizen.homeDir}})` (and symmetrically for `resolveSolanaSecret`) — `COORDINATOR_HOME` being the SAME
-canonical, `os.homedir()`-derived constant defined immediately above (resolves FIND-701; NEVER the vague
+canonical, `os.homedir()`-derived constant REQ-105 above defines (resolves FIND-701; NEVER the vague
 "sourced from a registry/coordinator constant" phrase an earlier revision left unresolved, and NEVER the
 bare `{home: X}` shape this section's own prior worked examples used, which depends on that same ambient
 value being correct by accident — a launchd-style cron invocation is not guaranteed to set
@@ -1941,13 +2018,17 @@ environment) and PROP-403f for the `COORDINATOR_HOME`-import-identity structural
 - Given a deliberately-injected test fixture where two fake instances both have
   `coLocatedWithCoordinator: true` and share a `HOME` (negative test), the audit correctly reports a
   collision — proving the check is not vacuously passing.
-- **(resolves FIND-501, corrected resolves FIND-603)** Given today's two real, corrected registry
-  entries, invoking `resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca',
-  ANICCA_HOME: '/Users/anicca/.anicca'}})` — the EXPLICIT-`env` shape, never the bare `{home: X}` shape
-  this section's own examples used before FIND-603 — returns a REAL, non-null EVM key resolved from
-  `/Users/anicca/.automaton/wallet.json` (confirmed present on disk, 2026-07-07), and invoking
-  `resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
-  '/Users/anicca/.blockrun'}})` returns a REAL, non-null Solana secret resolved from
+- **(resolves FIND-501, corrected resolves FIND-603/FIND-802)** Given today's two real, corrected
+  registry entries, invoking `resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME:
+  COORDINATOR_HOME, ANICCA_HOME: '/Users/anicca/.anicca'}})` — the EXPLICIT-`env` shape, never the bare
+  `{home: X}` shape this section's own examples used before FIND-603, and using the SAME
+  `COORDINATOR_HOME` constant every other invocation in this section uses, never an independently
+  hardcoded literal (resolves FIND-802's internal-inconsistency finding: this bullet previously
+  hardcoded the literal while the earlier bullet above it already correctly used the symbol) — returns a
+  REAL, non-null EVM key resolved from `/Users/anicca/.automaton/wallet.json` (confirmed present on disk,
+  2026-07-07), and invoking `resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME:
+  COORDINATOR_HOME, ANICCA_HOME: '/Users/anicca/.blockrun'}})` returns a REAL, non-null Solana secret
+  resolved from
   `/Users/anicca/.blockrun/.solana-session` (confirmed present on disk, 2026-07-07) — NEITHER resolution
   is `null`, proving the live-comparison half actually reads real key material under BOTH the corrected
   seed data AND the explicit-env invocation shape, not two vacuous `null` results as either the prior

@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 10,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 9,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-9/output/findings/",
+    "note": "2 findings, 1 critical: FIND-801 (critical) resolved by adding a genuine Solana re-derivation branch to PROP-105g (@solana/web3.js::Keypair.fromSecretKey + bs58 decode, both already-real dependencies) alongside the existing EVM branch -- the builder actually LIVE-RAN this against Franklin's real ~/.blockrun/.solana-session and confirmed the derived address (8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9) exactly matches the seeded walletAddress.solana. New PROP-105i requires BOTH branches pass for a dual-wallet citizen. FIND-802 (major) resolved by moving COORDINATOR_HOME's formal definition up into REQ-105 (before any literal use anywhere in the document) and converting every subsequent literal /Users/anicca occurrence (in this specific coordinator-HOME sense) to the symbolic reference, including the internally-inconsistent Acceptance Criteria bullet."
+  },
+  "note": "Verify each of the 2 fixes actually holds. For FIND-801: re-read resolve-identity.mjs's resolveSolanaSecret/readRawSecretFile fresh and independently confirm (re-run if you have shell access, or verify the logic by careful code reading if you don't -- disclose which) that the bs58-decode + Keypair.fromSecretKey + toBase58() pipeline genuinely produces Franklin's real seeded address. For FIND-802: grep both spec files for the literal string '/Users/anicca' yourself and confirm every remaining occurrence is either (a) legitimately not about the coordinator-HOME concept (e.g. a real evidence file path, historical bug narration) or (b) correctly replaced with COORDINATOR_HOME -- flag any occurrence that's neither. Also do a full fresh pass over the REST of the spec -- this feature is now on iteration 10 with 47+ cumulative findings across 9 prior iterations, five consecutive ones (FIND-501->601->603->701/703->801/802) touching the same REQ-101/105/403 wallet-identity area. If this iteration's fixes hold and no new defect is found anywhere in a genuinely thorough full pass, this would be the first PASS after 10 iterations -- do not rubber-stamp to make that happen; if you find nothing, be confident it's because the spec is actually sound now, not because you under-searched."
+}

@@ -2,7 +2,15 @@
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: same as `behavioral-spec.md`
 (P3 colony-treasury-gated cloud spawn + $0-bootstrap verification) · **日付**: 2026-07-07 ·
-**revision**: iteration 8, revised (spec review iteration-1 findings FIND-001..006 resolved AND
+**revision**: iteration 9, revised (spec review iteration-9 findings FIND-801..802 resolved —
+PROP-105g corrected to a genuine TWO-BRANCH re-derivation method, EVM via `viem::privateKeyToAccount`
+against `walletAddress.evm` AND Solana via `@solana/web3.js::Keypair.fromSecretKey` against
+`walletAddress.solana` (both already-real monorepo dependencies, no new dependency added), with a new
+PROP-105i covering the dual-populated-citizen conjunctive-pass case, and Franklin's Solana address
+LIVE re-derived and confirmed to match `citizens.json`'s seeded value; `COORDINATOR_HOME`'s definition
+already correctly used throughout this file — see `behavioral-spec.md`'s own iteration-9 changelog for
+FIND-802's fix, which was scoped to that file's prose reading-order, this file having already been
+internally consistent — AND spec review iteration-1 findings FIND-001..006 resolved AND
 spec review iteration-2 findings FIND-101..104 resolved AND spec review iteration-3 findings
 FIND-201..206 resolved AND spec review iteration-4 findings FIND-301..305 resolved AND spec review
 iteration-5 findings FIND-401..405 resolved AND spec review iteration-6 findings FIND-501..504
@@ -90,9 +98,14 @@ newly-captured on-disk evidence transcript rather than inline prose)
   check that `homeDir` is never an unresolved `$HOME` template, resolving FIND-202 (`telemetryPath` is
   removed from this schema entirely, resolving FIND-302 — there is nothing left to check for it);
   REQ-105's walletAddress-verification-method check, STRUCTURAL HALF ONLY (PROP-105g, resolves
-  FIND-601/FIND-702 — confirms a real re-derivation script/test exists in the diff and is wired to run
-  at Phase 3; the actual re-derivation EXECUTION itself is Tier 2, see below — never merely a citation
-  check); REQ-105's `coLocatedWithCoordinator`-schema structural check (PROP-105h, resolves FIND-703 —
+  FIND-601/FIND-702 — confirms a real re-derivation script/test exists in the diff COVERING BOTH the EVM
+  and Solana branches (corrected, resolves FIND-801 — `viem::privateKeyToAccount` alone is insufficient,
+  Franklin's Solana-only record and every future Nosana-path child need the `@solana/web3.js`
+  equivalent) and is wired to run at Phase 3; the actual re-derivation EXECUTION itself is Tier 2, see
+  below — never merely a citation check); REQ-105's dual-branch-conjunctive structural check (PROP-105i,
+  structural half, resolves FIND-801 — confirms the re-derivation script never short-circuits after only
+  one chain when a citizen record has both populated); REQ-105's `coLocatedWithCoordinator`-schema
+  structural check (PROP-105h, resolves FIND-703 —
   the seed array's `coLocatedWithCoordinator` values are both `true`, and the field is boolean-typed on
   every entry); REQ-305's structural check that every append sets `coLocatedWithCoordinator` to EXACTLY
   `false` (PROP-305f, structural half, resolves FIND-703); REQ-403's explicit-env-invocation structural
@@ -139,10 +152,14 @@ newly-captured on-disk evidence transcript rather than inline prose)
   required for this tier). REQ-101's `readCitizenBalances` registry-driven public-RPC query, proven
   against both a co-located citizen's and a simulated remote citizen's `walletAddress` alike (resolves
   FIND-302), REQ-103's concurrent-attempt race, REQ-105's walletAddress-verification-method check,
-  ACTUAL RE-DERIVATION HALF (PROP-105g, resolves FIND-702 — a real script/test reads the real
-  private-key file in memory, computes the address via `privateKeyToAccount`, and diffs it against
-  `citizens.json`'s stored `walletAddress`, failing hard on any mismatch — this is the runtime
-  re-performance the Tier-0 structural half above only confirms is wired up), REQ-203's cross-instance
+  ACTUAL RE-DERIVATION HALF, TWO-BRANCH (PROP-105g, resolves FIND-702/FIND-801 — EVM: a real script/test
+  reads the real private-key file in memory, computes the address via `privateKeyToAccount`, and diffs
+  it against `citizens.json`'s stored `walletAddress.evm`; Solana: a real script/test reads the real
+  secret file in memory, `bs58.decode()`s it, computes the address via
+  `Keypair.fromSecretKey(...).publicKey.toBase58()`, and diffs it against `walletAddress.solana` —
+  both failing hard on any mismatch, this is the runtime re-performance the Tier-0 structural half above
+  only confirms is wired up) AND its dual-populated-citizen conjunctive-pass check (PROP-105i, resolves
+  FIND-801), REQ-203's cross-instance
   `resolve-identity.mjs` non-leak test, REQ-204's `ensureAgentId` already-registered defensive test,
   REQ-206's real full-seven-field `buildChildSpec` call (PROP-206f, resolves FIND-204), REQ-305's
   failure-injection-at-each-step test, registry-append-on-success test (now also asserting
@@ -198,8 +215,9 @@ newly-captured on-disk evidence transcript rather than inline prose)
 | PROP-105d | REQ-105 | `citizens.json` NEVER contains, at seed time or at any later append (see PROP-305e), an entry whose `{wallet, fuel, humanDependencies}` sub-object makes `isSelfFunded()` return `false` | 0/1 | true | Tier 0: structural check that the literal seed array (above) contains only the two verified self-funded entries and excludes claude-p/any human-funded wallet; Tier 1: unit test iterating the seed array asserting `isSelfFunded()===true` for all entries (resolves FIND-101's permanent-hazard-closure requirement) |
 | PROP-105e | REQ-105 | Every entry's `homeDir` is an ALREADY-RESOLVED absolute path — its value never contains the literal substring `$HOME` or `$ANICCA_HOME` anywhere in `citizens.json`, at seed time or at any later append (no `telemetryPath` field exists to check — removed, resolves FIND-302) | 0 | true | structural/Tier-0 check: grep the seed file (and, at Phase 3, any real appended rows) for the literal substrings `$HOME`/`$ANICCA_HOME` — must find none (resolves FIND-202); also grep confirms zero occurrences of the key `telemetryPath` anywhere in `citizens.json` (resolves FIND-302) |
 | PROP-105f | REQ-105 | `homeDir` is present and non-empty on every seeded/appended entry, and is consumed ONLY by REQ-403's audit — never passed to `isSelfFunded()` | 1 | true | unit test: fixture record's `homeDir` field is asserted present and is NOT among the keys `isSelfFunded()` reads (resolves FIND-202) |
-| PROP-105g | REQ-105 | Every seeded (and later appended, REQ-305) entry's `walletAddress` value is verified, at the time it is written, against that citizen's ACTUAL signing key material via an ACTUAL, MECHANICALLY-PERFORMED cryptographic re-derivation (`viem`'s `privateKeyToAccount` against the real private-key file, read in memory) diffed against `citizens.json`'s stored `walletAddress` for that SAME citizen — NEVER solely against a static markdown documentation snapshot (`CLAUDE.md`/`docs/WALLETS.md`), which this iteration's own review proved can silently drift stale after a real key rotation without this spec's own seed data (already correct) being affected (resolves FIND-601), and NEVER merely a check that a commit/PR message CITES the right kind of verification method without the computation ever actually having been run (resolves FIND-702 — a citation-presence check is a materially weaker, non-equivalent substitute for this row's own binding rule and is explicitly rejected) | 0/2 | true | **Rewritten, resolves FIND-702 — this is an ACTUAL mechanical re-performance, never a citation check:** Tier 0 (structural): confirms a real re-derivation script/test exists in this feature's diff and is wired to run at Phase 3 for every seeded/appended `walletAddress`. Tier 2 (the binding check): a real script/test reads the real private-key file's content IN-MEMORY (e.g. `~/.automaton/wallet.json`'s real `privateKey`), computes the resulting address via `privateKeyToAccount` (the same pattern already used this session for the automaton wallet), and DIFFS the result against `citizens.json`'s stored `walletAddress` for that SAME citizen — FAILING HARD (non-zero exit / test failure) on any mismatch. **Carve-out (resolves FIND-702's secrets-handling reconciliation):** reading the private-key file's content IN-MEMORY, for THIS ONE specific re-derivation purpose, is explicitly PERMITTED and REQUIRED — narrower than, and not in conflict with, REQ-105's general "file EXISTENCE only — content never read/printed" discipline used elsewhere in this spec for checks that do not need to read secret content (e.g. REQ-403's live filesystem-existence check, which never needs this); the ONLY discipline retained here is that the raw private key itself is NEVER logged, printed, or persisted anywhere — only the DERIVED PUBLIC ADDRESS may ever be logged/compared/asserted on. Today's two seed entries are confirmed to satisfy this (automaton's `0xB9dd3B...` independently re-derived via `privateKeyToAccount` against `~/.automaton/wallet.json`'s real `privateKey`, cross-checked against `colony-status.sh`'s own live balance query, 2026-07-07 — this derivation was ACTUALLY PERFORMED, not merely cited) |
+| PROP-105g | REQ-105 | Every seeded (and later appended, REQ-305) entry's `walletAddress` value is verified, at the time it is written, against that citizen's ACTUAL signing key material via an ACTUAL, MECHANICALLY-PERFORMED cryptographic re-derivation — **TWO-BRANCH, corrected resolves FIND-801 (critical): EVM** (`viem`'s `privateKeyToAccount` against the real private-key file, read in memory, diffed against `walletAddress.evm`) **and Solana** (`@solana/web3.js`'s `Keypair.fromSecretKey` against the real secret file's `bs58`-decoded 64-byte form, read in memory, diffed against `walletAddress.solana`) — whichever chain(s) that citizen's record populates; a citizen with BOTH populated (REQ-202's expected Nosana-path shape) MUST pass BOTH branches independently (see PROP-105i) — NEVER solely against a static markdown documentation snapshot (`CLAUDE.md`/`docs/WALLETS.md`), which this iteration's own review proved can silently drift stale after a real key rotation without this spec's own seed data (already correct) being affected (resolves FIND-601), and NEVER merely a check that a commit/PR message CITES the right kind of verification method without the computation ever actually having been run (resolves FIND-702 — a citation-presence check is a materially weaker, non-equivalent substitute for this row's own binding rule and is explicitly rejected). A live on-chain balance query is NEVER an acceptable substitute for either branch — it does not prove derivation-correctness (resolves FIND-801's critique of this obligation's prior unelaborated "OR a live balance query" escape hatch), though it MAY be cited as additional corroboration | 0/2 | true | **Rewritten, resolves FIND-702 — this is an ACTUAL mechanical re-performance, never a citation check; corrected TWO-BRANCH, resolves FIND-801:** Tier 0 (structural): confirms a real re-derivation script/test exists in this feature's diff, covering BOTH the EVM and Solana branches (whichever a given citizen's record populates), and is wired to run at Phase 3 for every seeded/appended `walletAddress`. Tier 2 (the binding check), EVM branch: a real script/test reads the real private-key file's content IN-MEMORY (e.g. `~/.automaton/wallet.json`'s real `privateKey`), computes the resulting address via `privateKeyToAccount` (the same pattern already used this session for the automaton wallet), and DIFFS the result against `citizens.json`'s stored `walletAddress.evm` for that SAME citizen — FAILING HARD (non-zero exit / test failure) on any mismatch. Tier 2, Solana branch (new, resolves FIND-801): a real script/test reads the real secret file's content IN-MEMORY (e.g. `~/.blockrun/.solana-session`'s real base58-encoded 64-byte secret, per `resolve-identity.mjs::readRawSecretFile`'s own confirmed real return shape — a bare base58 string, no JSON wrapper), `bs58.decode()`s it to a 64-byte `Uint8Array` (the EXACT, already-proven conversion `~/anicca/runtime/dashboard/telemetry-post-franklin.mjs` already performs against this SAME file — `bs58` already a real dependency, `~/anicca/runtime/package.json`: `"bs58": "^5.0.0"`), computes the resulting address via `Keypair.fromSecretKey(secretKeyBytes).publicKey.toBase58()` (`@solana/web3.js` already a real dependency, `~/anicca/package.json`: `"@solana/web3.js": "^1.98.4"` — no new dependency introduced for either conversion), and DIFFS the result against `citizens.json`'s stored `walletAddress.solana` for that SAME citizen — FAILING HARD on any mismatch, identical rigor to the EVM branch. **Carve-out (resolves FIND-702's secrets-handling reconciliation, extended to the Solana branch):** reading either branch's key-material file content IN-MEMORY, for THIS ONE specific re-derivation purpose, is explicitly PERMITTED and REQUIRED — narrower than, and not in conflict with, REQ-105's general "file EXISTENCE only — content never read/printed" discipline used elsewhere in this spec for checks that do not need to read secret content (e.g. REQ-403's live filesystem-existence check, which never needs this); the ONLY discipline retained here is that the raw private key/secret itself is NEVER logged, printed, or persisted anywhere — only the DERIVED PUBLIC ADDRESS may ever be logged/compared/asserted on. Today's two seed entries are confirmed to satisfy this: automaton's `0xB9dd3B...` independently re-derived via `privateKeyToAccount` against `~/.automaton/wallet.json`'s real `privateKey`, cross-checked against `colony-status.sh`'s own live balance query, 2026-07-07 — ACTUALLY PERFORMED, not merely cited; Franklin's `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9` independently re-derived via `bs58.decode()` + `Keypair.fromSecretKey().publicKey.toBase58()` against `~/.blockrun/.solana-session`'s real secret, 2026-07-07 — likewise ACTUALLY PERFORMED (in a disposable scratch install of `@solana/web3.js`/`bs58` outside this repo, for the check only) and an EXACT match against the seeded value, resolving FIND-801 |
 | PROP-105h | REQ-105 | Every seeded entry's `coLocatedWithCoordinator` field is present, boolean-typed, and `true` for BOTH of today's seeded entries (automaton, Franklin — both genuinely co-located on the same Mac Mini today, REQ-106); no seed entry ever has this field `false` or missing (resolves FIND-703) | 0/1 | true | Tier 0: structural JSON-shape check of the seed file confirming `coLocatedWithCoordinator === true` for both literal entries; Tier 1: unit test asserting the seeded array's `coLocatedWithCoordinator` values equal `[true, true]` |
+| PROP-105i | REQ-105 | A citizen record with BOTH `walletAddress.evm` AND `walletAddress.solana` populated (REQ-202's expected shape for every Nosana-path child) has EACH populated chain independently re-derived and diffed via PROP-105g's two branches — passing ONLY if BOTH branches independently match; a mismatch on EITHER chain alone fails the whole check hard, never averaged/OR'd/skipped across chains, and neither branch's pass/fail result is ever inferred from the other (new, resolves FIND-801) | 0/2 | true | Tier 0 (structural): confirms the re-derivation script/test invokes BOTH branches (never short-circuiting after the first populated field) whenever a citizen record has both `walletAddress.evm` and `walletAddress.solana` populated. Tier 2 (the binding check): fixture/integration test with a dual-populated citizen record where (a) both branches match → overall PASS, (b) the EVM branch mismatches while the Solana branch matches → overall FAIL (never silently passing on the Solana match alone), and (c) the Solana branch mismatches while the EVM branch matches → overall FAIL (the symmetric case) — asserting the check is conjunctive (`AND`), never disjunctive (`OR`), across the two chains |
 | PROP-106a | REQ-106 | `lock.mjs`'s acquire/release path and `ledger.js`'s read/write path are invoked from exactly one designated coordinator-host code entry point, with no code path invoking them from a cloud-deployed child's own runtime | 0 | true | structural read of the implementation's call graph; Phase 3 adversary confirms no child-side code path reaches `lock.mjs`/`ledger.js` |
 | PROP-106b | REQ-106 | This spec's own scope section explicitly states spawn chaining is out of scope | 0 | true | structural read of `behavioral-spec.md`'s scope section; a fresh adversary reviewing REQ-103/REQ-305 is not required to (and must not) prove multi-host correctness |
 | PROP-201a | REQ-201 | A `gen-wallet.sh` output whose address derives from the documented sha256-fallback path (no real keccak available) is detected and rejected, never used | 1/2 | true | unit/integration test: inject an environment where the keccak dependency is unavailable, assert the caller aborts rather than proceeding with the fallback address |
@@ -271,9 +289,11 @@ newly-captured on-disk evidence transcript rather than inline prose)
   `telemetryPath`-free AND `coLocatedWithCoordinator`-typed, resolves FIND-302/FIND-703), seed-purity
   structural check (PROP-105d, structural half), already-resolved-path structural check (PROP-105e,
   resolves FIND-202, and confirms zero `telemetryPath` occurrences, resolves FIND-302), STRUCTURAL half
-  of its walletAddress-verification-method check (PROP-105g, resolves FIND-601/FIND-702 — confirms a
-  real re-derivation script/test exists and is wired to Phase 3; the binding re-derivation itself is
-  Tier 2, below), and its `coLocatedWithCoordinator` seed-schema check (PROP-105h, structural half,
+  of its walletAddress-verification-method check (PROP-105g, resolves FIND-601/FIND-702/FIND-801 —
+  confirms a real re-derivation script/test exists COVERING BOTH the EVM and Solana branches and is
+  wired to Phase 3; the binding re-derivation itself is Tier 2, below) AND its dual-branch-conjunctive
+  structural check (PROP-105i, structural half, resolves FIND-801), and its `coLocatedWithCoordinator`
+  seed-schema check (PROP-105h, structural half,
   resolves FIND-703); REQ-106's single-coordinator-host entry-point
   check and scope-statement check (PROP-106a/b); REQ-103's canonical-`statePath` import-identity
   check (PROP-103d, resolves FIND-103); a structural check that `ledger.js` remains exactly
@@ -333,9 +353,16 @@ newly-captured on-disk evidence transcript rather than inline prose)
   (PROP-101f, integration half, resolves FIND-404) AND its per-chain-independent fail-closing check
   (PROP-101g, integration half, resolves FIND-503) AND its dual-wallet-both-fail integration check
   (PROP-101h, integration half, resolves FIND-604); REQ-105's walletAddress-verification-method check,
-  BINDING RE-DERIVATION half (PROP-105g, integration half, resolves FIND-702 — the actual real script/
-  test that reads the real private-key file in memory, computes the address via `privateKeyToAccount`,
-  and diffs it against `citizens.json`'s stored `walletAddress`, failing hard on mismatch); REQ-302's
+  BINDING RE-DERIVATION half, TWO-BRANCH (PROP-105g, integration half, resolves FIND-702/FIND-801 —
+  the EVM branch: an actual real script/test that reads the real private-key file in memory, computes
+  the address via `privateKeyToAccount`, and diffs it against `citizens.json`'s stored
+  `walletAddress.evm`, failing hard on mismatch; the Solana branch, corrected resolves FIND-801: an
+  actual real script/test that reads the real secret file in memory, `bs58.decode()`s it to a 64-byte
+  secret, computes the address via `Keypair.fromSecretKey(...).publicKey.toBase58()`, and diffs it
+  against `citizens.json`'s stored `walletAddress.solana`, failing hard on mismatch — LIVE-CONFIRMED,
+  2026-07-07, against Franklin's real `~/.blockrun/.solana-session`, exact match) AND its
+  dual-populated-citizen conjunctive-pass check (PROP-105i, integration half, resolves FIND-801 — both
+  branches must independently match; either branch's mismatch fails the whole check); REQ-302's
   post-boot Nosana secrets-injection check
   (PROP-302c, integration half, resolves FIND-401's Nosana-side analog); REQ-303's post-lease-active
   Akash secrets-injection check (PROP-303e, integration half, resolves FIND-401); REQ-103's concurrent-attempt race
@@ -408,12 +435,19 @@ resolved `null` for both citizens on every chain), that BOTH seeded entries carr
 `coLocatedWithCoordinator: true` (PROP-105h, resolves FIND-703 — an accurate structural fact, not an
 inference), a single malformed record never aborts aggregation
 for other valid citizens (PROP-105b), that every seeded entry's `walletAddress` is INDEPENDENTLY
-RE-DERIVED — never merely CITED — from real signing key material or a live balance query (PROP-105g,
-resolves FIND-601/FIND-702: the adversary must confirm an ACTUAL re-derivation script/test was run,
-reading the real private-key file in memory and diffing the computed address against the stored
-`walletAddress`, failing hard on mismatch — a commit/PR message merely claiming the right kind of
-verification method, without the computation ever having been run, does NOT satisfy this obligation),
-and REQ-101/REQ-403 both read their citizen list from this SAME
+RE-DERIVED — never merely CITED, and never accepted via a live balance query alone — from real signing
+key material, via the CORRECT chain-specific tool (PROP-105g, corrected TWO-BRANCH resolves FIND-801:
+EVM entries via `viem::privateKeyToAccount` against `walletAddress.evm`; Solana entries via
+`@solana/web3.js::Keypair.fromSecretKey` against `walletAddress.solana` — `viem` alone is EVM-only and
+cannot cover Franklin's Solana-only record or any future Nosana-path child's Solana wallet, REQ-202)
+— resolves FIND-601/FIND-702/FIND-801: the adversary must confirm an ACTUAL re-derivation script/test
+was run for EVERY populated chain on a record (both, conjunctively, if both are populated — PROP-105i),
+reading the real private-key/secret file in memory and diffing the computed address against the stored
+`walletAddress.evm`/`walletAddress.solana` respectively, failing hard on mismatch — a commit/PR message
+merely claiming the right kind of verification method, without the computation ever having been run,
+does NOT satisfy this obligation; a live balance query alone likewise does NOT satisfy it (it does not
+prove derivation-correctness) and may only ever be cited as additional corroboration, and
+REQ-101/REQ-403 both read their citizen list from this SAME
 registry — no second, undocumented citizen-enumeration mechanism exists anywhere in the diff;
 
 (1b) REQ-101's new `filterProductiveCitizens` join is read end-to-end confirming it is the ONLY place
