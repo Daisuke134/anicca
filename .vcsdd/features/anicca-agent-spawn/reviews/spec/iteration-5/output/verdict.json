@@ -1,0 +1,63 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 5,
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-301",
+      "status": "genuinely resolved",
+      "evidence": "Fresh read of /Users/anicca/anicca/skills/self/spawn/lib/ledger.js confirms it still exports exactly {readChildren, appendChild}, no update/upsert primitive added. REQ-101's filterProductiveCitizens now explicitly specifies last-write-wins reduction of multiple rows sharing one child_id, with PROP-101d's fixture extended to include a two-row-same-child_id case. run.sh:124-140/200-220 (fresh read) independently confirms the real multi-row-per-child_id pattern this resolution is grounded in."
+    },
+    {
+      "findingId": "FIND-302",
+      "status": "genuinely resolved",
+      "evidence": "REQ-101/REQ-105 now specify readCitizenBalances({citizens}) as a registry-driven, coordinator-run, public-RPC query keyed on walletAddress, generalizing telemetry-collect.sh's real, confirmed erc20()/sol()/solusdc() RPC-by-address pattern (fresh read of telemetry-collect.sh confirms this pattern is real and host-location-agnostic). telemetryPath is confirmed removed from REQ-105's schema (grep for the literal string across both spec files: all remaining hits are changelog/historical prose or explicit 'REMOVED'/'resolves FIND-302' statements -- zero live schema references)."
+    },
+    {
+      "findingId": "FIND-303",
+      "status": "genuinely resolved as far as it goes, but see FIND-401",
+      "evidence": "REQ-403's live-comparison half is now explicitly, textually scoped to co-located instances only this increment (Scoping correction section, Edge Cases, Acceptance Criteria, PROP-403d all state this as an accepted, documented known limitation, not a silent drop), and the static grep-sweep half is explicitly claimed to still cover a cloud-hosted child because it boots from the same git-cloned repo. This latter claim is independently verified TRUE by fresh reading of deploy-akash.sh's SDL (git clone of the OSS repo). However, FIND-401 (this iteration, critical) identifies a deeper, previously-unnoticed structural problem in the SAME cross-host boundary this finding touches: there is no specified mechanism for the child's actual wallet material to ever reach that cloud-hosted process at all, which is a more fundamental gap than FIND-303's own scoping question."
+    },
+    {
+      "findingId": "FIND-304",
+      "status": "genuinely resolved",
+      "evidence": "Fresh read of child-spec.js:37 (wallet: childWallet, a string) and child-spec.test.js:36 (assert.strictEqual(spec.wallet, \"0xCHILD...\")) confirms the cited field/shape is real. Cross-file disambiguation notes are present in REQ-206, REQ-305, and the Purity Boundary Map, and PROP-206h/Tier-0 checklist item explicitly requires a structural check that the two `wallet` fields are never cross-assigned."
+    },
+    {
+      "findingId": "FIND-305",
+      "status": "genuinely resolved",
+      "evidence": "Fresh read of akt-treasury.sh (full file) confirms no live USD price query exists -- only native uact/uakt balance comparisons, with P_mint~=0.66 as a historical comment. Fresh read confirms ethPrice() is real in both telemetry-poster.mjs:68-70 and execute-invest.mjs:37-39, and solPrice() is real in telemetry-post-franklin.mjs:59-61 -- all three are single fetch()-to-Coinbase-spot, fail-closed-to-0, confirming the PATTERN-reuse claim (not a false 'already-available oracle' claim) is accurate. Repo-wide grep for AKT-USD/NOS-USD pricing utilities independently confirms none exist."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-402", "FIND-404", "FIND-405"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "description": "Confirmed append-only, {readChildren, appendChild} only -- grounds both the FIND-301 resolution and the new FIND-405 residual wording gap"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/", "description": "Real, live, already-tested prior-art skill overlapping REQ-102/303/304 scope, never cited in the spec (FIND-402)"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/sdl/child.yaml", "description": "Real external SDL template; contains no wallet-material injection channel, no HOME/ANICCA_HOME env (FIND-401, FIND-403)"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-403", "FIND-404"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/install.sh", "description": "Confirmed real contract: 'does NOT ask for API keys / private keys (handled out of band)' -- grounds FIND-401's Tier-3 unimplementability claim"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh", "description": "Confirmed real, unmodified default SDL never sets HOME/ANICCA_HOME, directly falsifying PROP-203c as currently claimed (FIND-403)"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "priorFindingsResolvedCount": 5,
+    "newFindingsThisIteration": 5,
+    "allCriteriaEvaluated": false,
+    "note": "This is a spec review (Phase 1c), not a strict contract/sprint review -- no CRIT-XXX enumeration applies. 5 new findings surfaced this iteration (FIND-401..405), 2 of them (FIND-401, FIND-402) via previously-unexamined real source artifacts (skills/self/spawn-child/, install.sh) that no prior iteration's adversary had located and read. This is the 5th consecutive FAIL iteration for this feature (16+ prior findings, all reconfirmed genuinely resolved, plus 5 new ones now). Convergence has NOT occurred -- each iteration continues to surface genuine, previously-undetected defects, indicating the underlying cross-host/cross-artifact reconciliation work (not merely wording fixes) remains incomplete.",
+    "duplicateFindings": []
+  }
+}

@@ -1821,25 +1821,25 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T09:55:03.718Z",
+      "timestamp": "2026-07-07T10:28:18.452Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 4,
+        "iteration": 5,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-301",
-          "FIND-302",
-          "FIND-303",
-          "FIND-304",
-          "FIND-305"
+          "FIND-401",
+          "FIND-402",
+          "FIND-403",
+          "FIND-404",
+          "FIND-405"
         ],
-        "note": "All 6 iteration-3 findings reconfirmed genuinely resolved via fresh source re-read (first review conducted with Opus 4.8 per Dais 2026-07-07 model-policy change). 5 NEW findings, 3 critical -- deeper mechanism-level gaps behind the location-level fixes: FIND-301 (critical) -- ledger.js is append-only with no update-by-key primitive; duplicate child_id rows are the REAL existing convention (proven by run.sh:124-220), but filterProductiveCitizens never specifies latest-row-wins reconciliation. FIND-302 (critical) -- REQ-101/105 balance lookup is a coordinator-local fs.readFile, but REQ-301 mandates children run EXCLUSIVELY on remote cloud -- no mechanism specified for a remote childs telemetry to reach the coordinators local disk. FIND-303 (critical) -- same root gap: REQ-403s live wallet audit reuses resolve-identity.mjs, a pure local fs.readFileSync primitive, against a child that per REQ-301 can never be co-located. FIND-304 (major) -- wallet field has 3 incompatible shapes across child-spec.js/ledger.js (string) vs citizens.json (boolean), unresolved despite FIND-104 fixing an adjacent collision. FIND-305 (major) -- REQ-306 falsely claims an already-available AKT/NOS/SOL USD price-conversion mechanism; akt-treasury.sh has no live price query, repo-wide grep confirms no such utility exists anywhere."
+        "note": "All 5 iteration-4 findings reconfirmed genuinely resolved. 5 NEW findings, 3 critical -- most serious: FIND-402 (critical) reveals a REAL, ALREADY-TESTED, already-documented sibling skill ~/anicca/skills/self/spawn-child/ that directly overlaps REQ-102/303/304 scope and was never once cited or reconciled anywhere in this spec across 5 iterations -- exactly the wheel-reinvention failure this project bans. That skill own config.json documents the REAL Akash funding route (25 AKT cost, 4-hop cross-chain bridge Solana->Noble->Osmosis->Akash) directly contradicting REQ-304 own single-signer-single-transfer claim. FIND-401 (critical) -- no channel exists anywhere in the real SDL/install.sh artifacts to inject a coordinator-pre-generated child wallet private key into the booted remote process; install.sh explicitly documents it never accepts private keys. FIND-403 (major) -- PROP-203c HOME/ANICCA_HOME env-injection claim is false against the real SDL files (neither sets it). FIND-404 (critical) -- REQ-101 balance aggregation never specifies how to handle a citizen with BOTH evm and solana walletAddress populated, which is the EXPECTED shape for every Nosana-path child. FIND-405 (major) -- REQ-402 bootstrap_failed relabeling never got the same last-write-wins appendChild clarification FIND-301 already gave REQ-101/305 sibling writes."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T09:55:03.718Z"
+      "adversaryReviewedAt": "2026-07-07T10:28:18.452Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T10:17:11.318Z"
+  "updatedAt": "2026-07-07T10:28:18.453Z"
 }

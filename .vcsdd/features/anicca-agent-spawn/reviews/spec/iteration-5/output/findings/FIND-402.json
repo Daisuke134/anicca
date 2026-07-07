@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-402",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["structural_integrity"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "A real, already-implemented, already-unit-tested, already-documented skill directly overlapping this feature's own REQ-102 (spawn threshold gate) / REQ-303 (Akash deploy) / REQ-304 (funding) scope exists at `~/anicca/skills/self/spawn-child/` and is never mentioned, cited, or reconciled anywhere in behavioral-spec.md or verification-architecture.md -- not even in the spec's own 'Explicitly OUT of scope' section, which names only the DIFFERENT, older `~/anicca/skills/self/spawn/` directory as prior art to reconcile with. Concretely: (a) `deploy-akash.sh`'s own comment (line 46) names `skills/self/spawn-child/sdl/child.yaml` as 'the existing image-independent template' -- exactly the artifact REQ-303 claims to reuse 'as-is unless a child-specific variant is explicitly required' -- yet neither REQ-303's text nor its Purity Boundary Map row ever cites this real file path, so the spec's own 'reused unmodified' claim is unverified against the actual artifact it presumably means (and see FIND-403 for what reading that real file reveals). (b) `spawn-child/config.json` + the already-tested `lib/akt-cost-gate.js` already implement a concrete, real, currently-used Akash-specific funding threshold (`spawn_cost_akt: 25` AKT, `buffer_akt: 1` AKT) for the EXACT SAME real-world decision REQ-102's `MIN_SHELTER_USD` provisional `$5.00`/`SPAWN_THRESHOLD_USD=$10.00` anchor is inventing from scratch, with zero cross-reference between the two -- this is precisely the 'search first, don't reinvent' failure this project's own hard rules exist to prevent, now manifesting inside this feature's own spec. (c) `spawn-child/config.json`'s `funding_route` field documents the ACTUAL, already-vetted mechanism for funding an AKT-denominated Akash escrow from either of the colony's two real self-funded citizens' actual holdings (Base USDC for anicca-a3cdd4, Solana SOL/USDC for Franklin) -- neither of which natively holds AKT -- via a 4-hop cross-chain bridge: Jupiter SOL->USDC, then Skip API `smart_relay` USDC(solana)->AKT(akashnet-2) routed through `noble-1`/`osmosis-1`. This directly contradicts REQ-304's characterization of shelter-cost funding as achievable via 'a single-signer, single-transaction transfer, matching the existing gojo/rescue transfer pattern already used in economy/ubi/run.sh' -- given the colony's actual current wallet composition, EVERY real Akash deploy this feature could ever fund requires exactly this multi-hop bridge conversion, not a same-chain single transfer, and REQ-304 as written never acknowledges this real, already-documented complexity or reuses the already-established route.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/SKILL.md",
+      "lineRange": "1-31, 72-96",
+      "snippet": "'self/spawn-child — Akash self-spawn READINESS gate ... spec §17-2 STEP5 / §20.1 / §20.2 / §21 / §21.1 STEP5 (2026-07-05)'; describes itself as sitting in front of '../spawn/run.sh --host=akash', already live, already tested (`node --test lib/__tests__/*.test.js`, `bash scripts/test-spawn-child.sh`)"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/config.json",
+      "lineRange": "1-10",
+      "snippet": "{\"spawn_cost_akt\": 25, \"buffer_akt\": 1, \"funding_route\": \"solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)\", \"sdl_template\": \"sdl/child.yaml\"}"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "lineRange": "45-47",
+      "snippet": "'external template (skills/self/spawn-child/sdl/child.yaml) -- image-independent (public node:22 base, git-clones the OSS repo at boot), so it never depends on a custom registry image being reachable.'"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-304 (~line 999-1020), Scope section (~line 90-98)",
+      "snippet": "REQ-304: '...a single-signer, single-transaction transfer, matching the existing gojo/rescue transfer pattern already used in economy/ubi/run.sh...'; Scope section names only '~/anicca/skills/self/spawn/' as the pre-existing directory to reconcile with, never mentioning skills/self/spawn-child/ anywhere in the document"
+    }
+  ],
+  "routeToPhase": "1a"
+}

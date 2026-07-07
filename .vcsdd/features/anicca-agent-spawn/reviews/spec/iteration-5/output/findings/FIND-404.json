@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-404",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-101's balance aggregation (`readCitizenBalances`/`computeColonySurplusUsd`) never specifies how to compute a single USD balance for a citizen whose registry record legitimately carries BOTH `walletAddress.evm` AND `walletAddress.solana` simultaneously -- and this is NOT a rare edge case: it is the EXPECTED shape for any Nosana-deployed spawned child, since REQ-201 unconditionally generates an EVM wallet for every single child while REQ-202 additionally generates a Solana wallet specifically WHEN the child is Nosana-deployed (REQ-302 itself requiring a Solana-funded wallet per the re-verified Nosana quick-start docs) -- meaning every Nosana-path child this feature ever successfully produces will have exactly this dual-wallet shape in `citizens.json` (per REQ-305's own append template: `walletAddress: {evm: childWallet, solana: childSolanaAddress-if-generated}`). None of REQ-101's Edge Cases, Acceptance Criteria, PROP-101a/c/e, nor REQ-105's schema documentation address whether such a citizen's two chains' balances are SUMMED into one total, whether one chain takes priority and the other is ignored, or whether this combination is itself treated as a malformed-record error -- despite this exact question ('does it correctly handle a citizen with BOTH evm and solana wallets, which chain takes priority') being explicitly named in this iteration's own review manifest as a specific item to re-verify. A citizen with a real, non-trivial balance on one chain and zero on the other would silently produce a materially different colony surplus figure depending on which unstated interpretation an implementer happens to choose -- directly affecting REQ-102's spawn-eligibility gate, a real-money decision this feature explicitly frames as deterministic bookkeeping (REQ-104) that must never be ambiguous.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-101 Edge Cases (~line 224-249)",
+      "snippet": "only two balance-shape edge cases are enumerated: a failed/non-finite RPC query (fail-closed to 0), and a purely-native-token-only balance (Solana SOL/USDC, no balance_usd field) normalized via solPrice() -- neither addresses a citizen record carrying BOTH walletAddress.evm AND walletAddress.solana simultaneously"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-202 (~line 630-639), REQ-305 (~line 1049-1059)",
+      "snippet": "REQ-202: 'IF ... the child will be deployed via Nosana (REQ-302, which itself requires a Solana-funded wallet) ... THE SYSTEM SHALL also generate a fresh ... Solana Ed25519 keypair for the child'; REQ-305's append template: 'walletAddress: {evm: childWallet, solana: childSolanaAddress-if-generated}' -- confirming every Nosana-path child legitimately carries both fields"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "PROP-101e (~line 126)",
+      "snippet": "'integration test: invoke readCitizenBalances against (a) a real co-located citizen's known walletAddress and (b) a fixture/simulated remote citizen's walletAddress with no corresponding local file on the test host at all' -- neither fixture (a) nor (b) exercises a citizen record with both evm and solana walletAddress fields populated"
+    },
+    {
+      "type": "manifest",
+      "filePath": "reviews/spec/iteration-5/input/manifest.json",
+      "lineRange": "n/a",
+      "snippet": "'does it correctly handle a citizen with BOTH evm and solana wallets, which chain takes priority' -- explicitly named as a re-verification item for this iteration; confirmed unresolved by direct reading of the current spec text"
+    }
+  ],
+  "routeToPhase": "1a"
+}

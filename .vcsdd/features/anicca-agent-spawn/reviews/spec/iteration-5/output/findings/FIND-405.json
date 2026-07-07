@@ -1,0 +1,28 @@
+{
+  "findingId": "FIND-405",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-402's own EARS clause and Acceptance Criteria retain the literal phrase 'flips exactly those past the window to \"bootstrap_failed\" in that SAME ledger row -- no others' (and the EARS clause itself: 'THE SYSTEM SHALL relabel that child \"bootstrap_failed\" in the ledger'). This is the identical class of wording iteration 4's FIND-301 identified as symptomatic of an assumed-but-nonexistent update/upsert primitive on `ledger.js` -- directly re-confirmed by this iteration's own fresh read: `ledger.js` still exports exactly `{readChildren, appendChild}`, with no update/mutate-by-child_id operation of any kind. FIND-301's resolution explicitly fixed this ambiguity for TWO of the ledger's other lifecycle writes -- REQ-101's `filterProductiveCitizens` join (explicitly documented as reducing MULTIPLE appended rows sharing one child_id via last-write-wins) and REQ-305's 'mark active' step (whose 'in that SAME ledger.js row, ALSO set ... active_since' is coherent precisely because it refers to the single new row THAT append call itself creates) -- but REQ-402's own 'bootstrap_failed' relabeling write was never given the equivalent explicit clarification that this operation, too, must be implemented as `appendChild`-ing a THIRD row with the same `child_id` (relying on `filterProductiveCitizens`'s last-write-wins reduction to make it read as a 'flip'), rather than literally mutating the prior `active` row in place -- an operation `ledger.js`'s real, confirmed, append-only, no-update contract cannot perform. A fresh implementer reading REQ-402 in isolation (as any of REQ-402's own Acceptance Criteria, taken literally, would have them do) has a concrete, evidenced opportunity to either attempt adding an update/upsert primitive to `ledger.js` -- directly contradicting the structural Tier-0 check elsewhere in this same document that `ledger.js` must remain byte-identical to `{readChildren, appendChild}` -- or to correctly append a new row while the spec's own words never confirm that reading for this specific write path the way they explicitly do for REQ-101/REQ-305's analogous writes.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-402 EARS + Acceptance Criteria (~line 1232-1244, ~1277-1281)",
+      "snippet": "'THE SYSTEM SHALL relabel that child \"bootstrap_failed\" in the ledger ... never silently delete or destroy the child'; Acceptance Criteria: '...flips exactly those past the window to \"bootstrap_failed\" in that SAME ledger row -- no others.' -- no mention anywhere in REQ-402 of this write being an appendChild call reduced via last-write-wins, unlike REQ-101/REQ-305's equivalent writes"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "lineRange": "1-26",
+      "snippet": "module.exports = { readChildren, appendChild }; -- no update/upsert-by-child_id primitive exists, re-confirmed by fresh direct read this iteration"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-101 (~line 176-193), resolves FIND-301",
+      "snippet": "the SAME lifecycle-write ambiguity IS explicitly resolved here for the filterProductiveCitizens join ('ledgerRows may legitimately contain MULTIPLE rows sharing one child_id ... last-write-wins is the correct, and only specified, reading') -- but this explicit reduction/last-write-wins language is never cross-referenced by REQ-402's own relabeling text"
+    }
+  ],
+  "routeToPhase": "1a"
+}

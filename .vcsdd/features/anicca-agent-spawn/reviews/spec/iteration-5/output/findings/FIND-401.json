@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-401",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-201/202 require the child's own EVM (and, conditionally, Solana) wallet material to be generated BEFORE cloud provisioning and 'immediately relocated into the child's own isolated $HOME and never persisted under the initiating host's own home' (REQ-301's own parenthetical). REQ-302/303 then deploy that SAME child onto a REQ-301-mandated, physically separate Nosana/Akash lease via artifacts this spec explicitly claims are reused 'UNMODIFIED' (REQ-303's own EARS clause; PROP-303a: 'invoked with no source modification'). Directly reading those cited, real, currently-existing artifacts shows there is NO channel anywhere in them for injecting that already-generated private key material into the booted remote process: the existing external SDL template `~/anicca/skills/self/spawn-child/sdl/child.yaml` (the ONLY external SDL template that exists in this codebase, and the one `deploy-akash.sh`'s own comment names as 'the existing image-independent template') and `deploy-akash.sh`'s own inline default SDL both boot the child via a bare `git clone --depth 1 https://github.com/Daisuke134/anicca /opt/anicca && cd /opt/anicca && ./install.sh && node runtime/loop/index.mjs` -- a fresh, secretless clone with zero volume mount, zero secrets env var, and zero fetch-from-URL step for wallet material. `install.sh` itself explicitly documents that it does NOT accept private keys ('What this does NOT do: ... Ask for API keys / private keys (handled out of band -- see .env.example)'), and creates `$ANICCA_HOME/.env` fresh from a template if one does not already exist -- it never overwrites/receives a pre-generated key. Consequently, the actual process that boots on the remote lease has no possible way to come into possession of the SPECIFIC `childWallet` address REQ-201 generated, REQ-204 registers under ERC-8004 (`ensureAgentId({privateKey: childPrivateKey, ...})`), and REQ-305 writes into the ledger/registry as that child's identity -- the deployed process would have to generate an entirely different wallet on its own first wake (or wait for an undocumented, out-of-band human/operator step, which this feature's own 'no human in the loop' framing forbids), permanently disconnecting the registered/ledgered identity from the actual running instance's real signing key. This is not a corner case: it applies to EVERY spawn this feature can ever produce, for BOTH cloud paths (Nosana job command and Akash SDL share the identical 'git clone + install.sh' bootstrap shape per the spec's own Purity Boundary Map row for gig-board mcp.json/ERC-8004 wiring, which itself assumes the child process already has a resolvable wallet before it can call ensureAgentId).",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-201 (~line 592-604), REQ-301 (~line 902-921)",
+      "snippet": "'THE SYSTEM SHALL generate the child's own secp256k1/Base-EVM keypair via gen-wallet.sh ... BEFORE any cloud provisioning or on-chain action for that child occurs'; REQ-301: '...provided the generated key is immediately relocated into the child's own isolated $HOME and never persisted under the initiating host's own home'"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/sdl/child.yaml",
+      "lineRange": "1-44",
+      "snippet": "services.automaton.image: node:22-bookworm; env: [AUTOMATON_GOAL=earn, ANICCA_CHILD_ID=${CHILD_ID}]; command/args: 'git clone --depth 1 https://github.com/Daisuke134/anicca /opt/anicca && cd /opt/anicca && ./install.sh && node runtime/loop/index.mjs' -- no secret/key env var, no volume, no fetch step anywhere"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "lineRange": "45-89",
+      "snippet": "the same git-clone/install.sh boot shape is the DEFAULT inline SDL used whenever AKASH_SDL_TEMPLATE is not set; comment at line 46-47 names 'skills/self/spawn-child/sdl/child.yaml' as the external, image-independent template this spec's REQ-303 is presumably referring to"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/install.sh",
+      "lineRange": "17-20, 65-75",
+      "snippet": "'What this does NOT do: ... Ask for API keys / private keys (handled out of band -- see .env.example)'; '.env' is created fresh from .env.example only if one does not already exist, never populated with an injected key"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-204 (~line 696-714)",
+      "snippet": "'THE SYSTEM SHALL register the child's ERC-8004 identity by calling ... ensureAgentId({privateKey: childPrivateKey, cacheFile: <child's own isolated cache path>})' -- never specifies whether this call, and the wallet it signs with, happens on the coordinator (using a key the deployed process never receives) or on the child post-boot (using a key the deployed process never had to begin with)"
+    }
+  ],
+  "routeToPhase": "1a"
+}

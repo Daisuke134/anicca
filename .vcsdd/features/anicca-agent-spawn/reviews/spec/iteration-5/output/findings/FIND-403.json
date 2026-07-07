@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-403",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-203's PROP-203c Tier-0 acceptance criterion is explicit and directly checkable right now, against real, already-existing artifacts: 'Every process-launch boundary used by REQ-302/303 explicitly sets HOME/ANICCA_HOME in its own artifact (SDL env:, job-definition env, cloud-init Environment=) -- never relies on a base-image default' (verification-architecture.md PROP-203c). Reading the actual, real, currently-existing artifacts this spec cites shows this criterion is currently FALSE for both of them: neither `deploy-akash.sh`'s own inline default SDL (the fallback used whenever `AKASH_SDL_TEMPLATE` is unset) nor the real, pre-existing external template `~/anicca/skills/self/spawn-child/sdl/child.yaml` (the ONLY external SDL template that exists anywhere in this codebase) sets `HOME` or `ANICCA_HOME` anywhere in their `env:` block -- both set only `AUTOMATON_GOAL=earn` and `ANICCA_CHILD_ID=${CHILD_ID}`, leaving `HOME` to whatever the `node:22-bookworm` base image's default user resolves to (implicitly `/root` for the default root user, i.e. a literal base-image default -- the exact thing this acceptance criterion prohibits). Since REQ-303 (PROP-303a) simultaneously requires these exact scripts/SDL artifacts to be reused 'with zero source modification (only CHILD_ID/SDL substitution)', REQ-203 and REQ-303 as currently specified cannot both be satisfied without a real SDL edit this spec never acknowledges is needed -- the identical 'falsely-claimed unmodified reuse' pattern iteration 1's FIND-001 (child-spec.js) and iteration 4's FIND-305 (akt-treasury.sh price oracle) already caught elsewhere in this same document, now recurring for the Akash SDL artifact and left uncaught through 4 prior review iterations because no reviewer had yet located and read the actual, pre-existing external SDL template this spec's REQ-303 implicitly depends on.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "PROP-203c (~line 153)",
+      "snippet": "'Every process-launch boundary used by REQ-302/303 explicitly sets HOME/ANICCA_HOME in its own artifact (SDL env:, job-definition env, cloud-init Environment=) -- never relies on a base-image default | 0 | true | structural read of the actual SDL/job-definition/cloud-init artifact used for a real deploy, confirming the explicit env line is present'"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/sdl/child.yaml",
+      "lineRange": "6-11",
+      "snippet": "services.automaton.env: [AUTOMATON_GOAL=earn, ANICCA_CHILD_ID=${CHILD_ID}] -- no HOME, no ANICCA_HOME anywhere in this file"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh",
+      "lineRange": "56-59",
+      "snippet": "the inline default SDL's env block: '- AUTOMATON_GOAL=earn', '- ANICCA_CHILD_ID=${CHILD_ID}' -- identically missing HOME/ANICCA_HOME"
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "PROP-303a (~line 170)",
+      "snippet": "'deploy-akash.sh/akt-treasury.sh are invoked with zero source modification (only CHILD_ID/SDL substitution) | 0 | true | structural diff: the scripts on disk are byte-identical to their pre-existing versions; only the SDL template/CHILD_ID argument passed in differs'"
+    }
+  ],
+  "routeToPhase": "1a"
+}
