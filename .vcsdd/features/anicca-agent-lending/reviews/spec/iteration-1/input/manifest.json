@@ -1,0 +1,14 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 1,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "Brand-new feature (P4): an in-colony agent-to-agent lending tool (a self-funded citizen with surplus lends a small amount to a broke/new citizen, tracked with simple interest and a repayment window, using a reputation-capital ladder to solve the cold-start problem for a zero-history borrower). 11 REQ (101-111), 34 PROP. This is a first-party capability -- no external protocol (Maple/Goldfinch/TrueFi/Cred) supports AI-agent borrowers, and the one academic proposal (arXiv 2602.14219) never resolves the cold-start problem; this spec's own resolution (a fixed $0.02 first loan requiring zero reputation, doubling per on-time repayment up to $5.00) is the part to scrutinize hardest since it has no external precedent to check against. Review with the same rigor as this project's sibling features (anicca-agent-economy, anicca-agent-spawn -- both required 4-7 iterations each to reach a genuinely sound spec): cross-check every claim against the ACTUAL current source files it references (ledger.js, lock.mjs, is-self-funded.mjs, gig/decide.mjs, gig/lib/escrow.mjs, ubi/run.sh + ubi.js, child-spec.js's nextChildId pattern), not just internal consistency of the spec text. Also note this feature explicitly depends on anicca-agent-spawn's citizens.json registry design, which is STILL MID-PIPELINE (currently iteration 5 of its own Phase 1c) and does not yet exist on disk (~/anicca/skills/self/spawn/registry/citizens.json is confirmed absent) -- flag clearly if this dependency creates any spec_fidelity risk beyond what this spec's own Dependencies section already acknowledges."
+}
