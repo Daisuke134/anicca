@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-504",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "description": "This iteration's own manifest explicitly instructed the reviewer to independently execute `provider-services lease-shell --help` and `nosana job ssh --help` before trusting FIND-401/402's resolution, rather than relying on the prior iteration's own claimed --help output. This review session's available tools were Read/Write/Edit/Grep/Glob only -- no shell/exec tool was available -- so that specific instruction could not be discharged: this reviewer could not independently execute, confirm, or contradict the spec's quoted --help text for either CLI this iteration. Glob searches for common global-install locations (/usr/local/bin, /opt/homebrew/bin, npm global @nosana/cli) found neither binary, which is inconclusive (they may be installed elsewhere, e.g. a user-specific nvm/Go bin path this reviewer's tools could not enumerate) -- this is disclosed as an honest review-process limitation, not a claim that the cited CLI primitives are false or fabricated. As of this iteration, no adversary pass in this feature's history has actually independently EXECUTED these two commands and captured a fresh, dated transcript as reviewable, on-disk evidence -- all citations so far (including iteration 5's own) are prose quotes embedded directly in the spec text, attributed to a 2026-07-07 check whose raw output was never saved to a file any subsequent Read-only reviewer could inspect. This does not by itself block this iteration's verdict (the other findings already do), but it should be tracked: recommend the Builder capture a raw, dated --help transcript for both CLIs into a small evidence file under this feature's directory (e.g. reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt) so a future Read-only adversary can verify it directly without requiring shell access, and that Phase 3's own Tier-3 obligations (PROP-302c/PROP-303e) still require a live, no-mock execution regardless of this spec-review-time gap.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/reviews/spec/iteration-6/input/manifest.json",
+      "lineRange": "19",
+      "snippet": "actually run `provider-services lease-shell --help` / `nosana job ssh --help` yourself to independently confirm these primitives are real, not just trust the prior iteration's claim"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "160-161",
+      "snippet": "provider-services lease-shell --help (installed CLI, checked live 2026-07-07): ... ; nosana job ssh --help (installed CLI, checked live 2026-07-07): ... -- prose citations, no captured transcript file exists anywhere in this feature's directory"
+    }
+  ],
+  "routeToPhase": "1b"
+}

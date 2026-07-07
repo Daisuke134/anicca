@@ -1968,25 +1968,24 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T10:28:18.452Z",
+      "timestamp": "2026-07-07T11:02:55.800Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 5,
+        "iteration": 6,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-401",
-          "FIND-402",
-          "FIND-403",
-          "FIND-404",
-          "FIND-405"
+          "FIND-501",
+          "FIND-502",
+          "FIND-503",
+          "FIND-504"
         ],
-        "note": "All 5 iteration-4 findings reconfirmed genuinely resolved. 5 NEW findings, 3 critical -- most serious: FIND-402 (critical) reveals a REAL, ALREADY-TESTED, already-documented sibling skill ~/anicca/skills/self/spawn-child/ that directly overlaps REQ-102/303/304 scope and was never once cited or reconciled anywhere in this spec across 5 iterations -- exactly the wheel-reinvention failure this project bans. That skill own config.json documents the REAL Akash funding route (25 AKT cost, 4-hop cross-chain bridge Solana->Noble->Osmosis->Akash) directly contradicting REQ-304 own single-signer-single-transfer claim. FIND-401 (critical) -- no channel exists anywhere in the real SDL/install.sh artifacts to inject a coordinator-pre-generated child wallet private key into the booted remote process; install.sh explicitly documents it never accepts private keys. FIND-403 (major) -- PROP-203c HOME/ANICCA_HOME env-injection claim is false against the real SDL files (neither sets it). FIND-404 (critical) -- REQ-101 balance aggregation never specifies how to handle a citizen with BOTH evm and solana walletAddress populated, which is the EXPECTED shape for every Nosana-path child. FIND-405 (major) -- REQ-402 bootstrap_failed relabeling never got the same last-write-wins appendChild clarification FIND-301 already gave REQ-101/305 sibling writes."
+        "note": "All 5 iteration-5 findings reconfirmed resolved. 4 new findings: FIND-501 (critical, most serious defect across all 6 iterations) -- REQ-105 seeds homeDir as an IDENTICAL bare /Users/anicca for both citizens, framed as expected-not-a-bug, but resolve-identity.mjs (independently traced with its own test suite) proves each citizens REAL root is distinct (automaton=/Users/anicca/.anicca, Franklin=/Users/anicca/.blockrun) and the resolver deliberately returns null for anything else -- so REQ-403s live wallet-audit as specified would resolve null for BOTH real citizens today, producing a false no-collision pass without ever reading either real key. Survived two prior rounds (FIND-202, FIND-303) that touched this field without checking its seed value against the resolvers real semantics. FIND-502 (major) -- REQ-304/PROP-304d over-attribute the Jupiter SOL->USDC hop to config.jsons funding_route field (that field literally never mentions Jupiter; its solana/8453 label is itself ambiguous and unexamined re: whether automatons Base wallet could also fund via this route). FIND-503 (major) -- dual evm+solana balance summing never disambiguates per-chain vs whole-citizen fail-closing when one chains query fails while the other succeeds. FIND-504 (minor) -- no adversary pass has ever captured a raw dated --help transcript for lease-shell/nosana job ssh as reviewable on-disk evidence; this reviewers own tools lacked shell access to independently execute them."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T10:28:18.452Z"
+      "adversaryReviewedAt": "2026-07-07T11:02:55.800Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T10:47:42.202Z"
+  "updatedAt": "2026-07-07T11:02:55.803Z"
 }

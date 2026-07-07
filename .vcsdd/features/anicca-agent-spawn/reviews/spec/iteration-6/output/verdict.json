@@ -1,0 +1,63 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T12:00:00Z",
+  "iteration": 6,
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-401",
+      "status": "genuinely resolved (core claim) -- but see FIND-504 for an unrepeated verification step",
+      "evidence": "Fresh read of /Users/anicca/anicca/skills/self/spawn-child/lib/akt-cost-gate.js confirms computeSpawnGate({balanceAkt, costAkt, bufferAkt}) -> {ready, reason, thresholdAkt, shortfallAkt} matches the spec's citation exactly. Fresh read of /Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh confirms the AKASH_SDL_TEMPLATE env-var-driven external-template mechanism the spec's REQ-303 relies on is real (lines 45-50), and that the default inline SDL (lines 52-89) sets no HOME/ANICCA_HOME. Fresh read of /Users/anicca/anicca/skills/self/spawn/scripts/cloud-init.sh confirms its header comment DOES claim 'Secrets are SCP'd to /opt/anicca.env after boot' (line 11) while /Users/anicca/anicca/skills/self/spawn/run.sh's real DO case (lines 144-162) contains no scp invocation anywhere -- independently confirming the spec's own honesty note is accurate, not a fabrication. This reviewer could NOT independently re-execute `provider-services lease-shell --help`/`nosana job ssh --help` this iteration (no shell/exec tool available in this session -- see new FIND-504); the two-phase boot-then-inject design itself, and its readiness-polling mechanism (deploy-akash.sh's own existing ACTIVE/SENT poll loops, lines 122-138; Nosana's `--wait` flag), are concretely and non-vaguely specified, resolving the manifest's explicit readiness-polling question."
+    },
+    {
+      "findingId": "FIND-402",
+      "status": "genuinely resolved (core multi-hop claim) -- but see NEW FIND-502 for a residual citation-precision gap in the same area",
+      "evidence": "Fresh read of /Users/anicca/anicca/skills/self/spawn-child/config.json confirms spawn_cost_akt:25, buffer_akt:1 match REQ-303's citation exactly, and that a funding_route field exists. Fresh read of /Users/anicca/anicca/skills/self/spawn-child/SKILL.md confirms the Jupiter-then-Skip-API 4-hop sequence is real, documented prior art (lines 61-67), and that akt-cost-gate.js is real, unit-tested prior art the spec correctly reuses rather than re-deriving. However, config.json's own funding_route field (line 7) literally reads 'solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2' -- it does not itself mention Jupiter/SOL/USDC, and the spec's REQ-304/PROP-304d attribute the full Jupiter-inclusive route to 'config.json's own funding_route field' when the Jupiter step is only in SKILL.md's prose. New finding FIND-502 filed for this precision gap; the underlying 'not a single-signer single-transaction' conclusion remains correct."
+    },
+    {
+      "findingId": "FIND-403",
+      "status": "genuinely resolved",
+      "evidence": "Fresh read of both /Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh's default inline SDL and /Users/anicca/anicca/skills/self/spawn-child/sdl/child.yaml confirms neither sets HOME/ANICCA_HOME anywhere (matches the spec's claim exactly). Confirmed spawn-child/sdl/child.yaml line 7 literally reads 'automaton:', matching REQ-303's citation of the SDL's own service name. Independently traced the specified fix's interaction with /Users/anicca/anicca/install.sh:26 (`ANICCA_HOME=\"${ANICCA_HOME:-$HOME/.anicca}\"`): with the new HOME=/root env line, a freshly-booted child's ANICCA_HOME correctly defaults to /root/.anicca at first wake, distinct from both existing citizens' real roots (/Users/anicca/.anicca and /Users/anicca/.blockrun respectively per FIND-501's evidence) -- no conflict found. This resolves part (b) of this iteration's manifest instruction (HOME=/root does not conflict with any other assumed ANICCA_HOME value)."
+    },
+    {
+      "findingId": "FIND-404",
+      "status": "genuinely resolved for the specified case -- but see NEW FIND-503 for an adjacent, unaddressed edge case",
+      "evidence": "REQ-101's text and PROP-101f's fixture explicitly specify SUM behavior over both chains for the 'both populated, at least one nonzero' shape. Fresh read of /Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs confirms hasOwnWallet() (`Boolean(wallet.evm) || Boolean(wallet.solana)`) tolerates a dual-true wallet object without any special-casing needed -- no double-counting risk found in the reserve-subtraction step (perCitizenReserveUsd is applied once per citizen regardless of chain count). However, no per-chain-query-FAILURE (as opposed to zero-balance) fixture exists for the dual-wallet case -- filed as new FIND-503."
+    },
+    {
+      "findingId": "FIND-405",
+      "status": "genuinely resolved",
+      "evidence": "Fresh re-read of REQ-402 confirms explicit, named cross-reference to REQ-101's last-write-wins reduction ('this new row becomes \"the\" effective row for that citizen precisely because REQ-101's own filterProductiveCitizens join already reduces multiple rows sharing one child_id to the LAST-appended row ... REQ-402 does not introduce a second, competing reduction rule'). Fresh read of /Users/anicca/anicca/skills/self/spawn/lib/ledger.js reconfirms it still exports exactly {readChildren, appendChild}, no update/upsert primitive -- consistent with the appendChild-not-mutation description."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-501", "FIND-502", "FIND-503"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "Real, current source of the resolvers REQ-403 names; its home/ANICCA_HOME-equality-gated resolution logic (lines 63-87, 115-138) is incompatible with REQ-105's shared bare-$HOME homeDir seed value"},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/__tests__/resolve-identity.test.mjs", "description": "Existing, already-passing test suite explicitly proves automaton's real root is $HOME/.anicca and Franklin's is $HOME/.blockrun, and that any other HOME/ANICCA_HOME value fails closed to null"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/config.json", "description": "funding_route field's literal value does not itself mention Jupiter/SOL/USDC, contrary to REQ-304's attribution"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-501", "FIND-504"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/install.sh", "description": "Line 26 confirms the real ANICCA_HOME default convention ($HOME/.anicca) that REQ-105's homeDir field does not follow for either seeded citizen"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/scripts/deploy-akash.sh", "description": "Confirmed real existing ACTIVE/SENT polling loops (lines 122-138) genuinely ground REQ-303's readiness-polling claim -- this part of the manifest's checklist is satisfied"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "priorFindingsResolvedCount": 5,
+    "newFindingsThisIteration": 4,
+    "allCriteriaEvaluated": false,
+    "note": "This is a spec review (Phase 1c), not a strict contract/sprint review -- no CRIT-XXX enumeration applies. All 5 iteration-5 findings (FIND-401..405) are reconfirmed genuinely resolved on their own specific terms via fresh reads of every cited real source file. This iteration's full fresh pass (not limited to the prior 5 findings) surfaced 4 new findings: FIND-501 (critical) is the most serious defect found across all 6 iterations of this feature to date -- REQ-403's own 'money-safety' live wallet-collision audit, as literally specified, cannot actually read either of today's two real citizens' real signing-key material, because REQ-105's homeDir seed value (bare, shared $HOME) does not match either citizen's real, distinct ANICCA_HOME root, a fact independently provable from resolve-identity.mjs's own pre-existing, already-passing test suite. This gap survived FIND-202 (added homeDir) and FIND-303 (scoped the live check to co-located instances) without either round checking the field's actual seeded value against the resolver's real semantics. FIND-502 and FIND-503 are lower-severity precision/edge-case gaps in the same REQ-304/REQ-101 areas the manifest asked to be scrutinized hardest. FIND-504 documents that this reviewer's tool access (Read/Write/Edit/Grep/Glob only, no shell/exec) prevented independently re-executing `provider-services lease-shell --help`/`nosana job ssh --help` as the manifest explicitly requested; this is disclosed as a review-process limitation, not evidence against those CLI primitives, and is recorded so a future pass with shell access (or a captured evidence transcript) can close it. Convergence has NOT occurred -- 6 consecutive iterations, 30+ cumulative findings, and this iteration's flagship finding (FIND-501) is arguably more fundamental than any single prior finding: it falsifies the one requirement (REQ-403) whose entire purpose is preventing a real, catastrophic wallet-collision failure mode, using evidence (the resolvers' own pre-existing test suite) that was available and readable during every one of the 5 prior review iterations.",
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-503",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-101's dual-chain balance-summing rule (resolves FIND-404) specifies that readCitizenBalances 'queries and USD-normalizes BOTH chains independently and returns their SUM,' and its Edge Cases explicitly cover the 'one chain is empty (zero balance)' sub-case ('A citizen with a nonzero balance on one chain and zero on the other still correctly contributes the sum ... no special case is needed'). Neither REQ-101's Edge Cases, Acceptance Criteria, nor PROP-101c/PROP-101f in verification-architecture.md disambiguate the DIFFERENT sub-case of one chain's query FAILING (RPC error/timeout/non-finite) while the OTHER chain's query succeeds with a real positive balance, for the SAME dual-wallet citizen. The pre-existing general fail-closed edge case ('A citizen's public-RPC balance query fails ... that citizen contributes 0 to the sum') is worded at the granularity of 'a citizen' (singular, whole-record), which predates FIND-404's dual-chain addition and was never revisited against it. This can be read either as (a) per-chain-query fail-closing (only the FAILING chain's contribution collapses to 0; the surviving chain's real balance still counts toward the sum -- consistent with how ethPrice()/solPrice() fail-close at the level of one price fetch, not a whole citizen), or (b) whole-citizen fail-closing (ANY one chain's query failure zeroes the citizen's ENTIRE balance, discarding the other chain's legitimately-fetched value). These two readings produce materially different colony-surplus numbers for exactly the new (post-FIND-404) dual-wallet-citizen shape REQ-202 guarantees every Nosana-path child will have. PROP-101f's own fixture only exercises the case where BOTH chains' queries succeed (one zero, one nonzero) -- it never exercises a mixed success/failure fixture, so no acceptance criterion would catch an implementer choosing either interpretation, and the two interpretations are not equivalent for money-safety purposes (interpretation (b) could cause a transient single-chain RPC hiccup to make the colony wrongly appear to have LESS surplus than it really has, potentially blocking an otherwise-eligible spawn; interpretation (a) risks the opposite -- if a bug silently drops a legitimately-larger balance on one chain while treating it as merely 'failed', the citizen still contributes the other, smaller chain's value rather than 0, which is less conservative than REQ-101's own general fail-closed intent).",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "281-286",
+      "snippet": "A citizen's public-RPC balance query fails, times out, or returns a non-finite/negative value: that citizen contributes 0 to the sum (fail-closed ...)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "307-313",
+      "snippet": "A citizen's registry record carries BOTH walletAddress.evm AND walletAddress.solana populated simultaneously ... readCitizenBalances queries and USD-normalizes BOTH chains independently and returns their SUM ... A citizen with a nonzero balance on one chain and zero on the other still correctly contributes the sum ... no special case is needed for the 'one chain is empty' sub-case."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "142, 145",
+      "snippet": "PROP-101c ... A failed/timed-out/non-finite/negative public-RPC balance query for a citizen contributes 0 (fail-closed), never throws | ... PROP-101f ... fixture citizen with a nonzero, independently-verifiable balance on BOTH chains -> assert the returned total equals the SUM of both chains' own ... normalized values (no mixed success/failure fixture specified)"
+    }
+  ],
+  "routeToPhase": "1a"
+}

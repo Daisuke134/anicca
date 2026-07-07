@@ -1,0 +1,34 @@
+{
+  "findingId": "FIND-502",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-304's AKT funding-route correction (resolves FIND-402) and PROP-304d both cite '~/anicca/skills/self/spawn-child/config.json's own funding_route field' as specifying the FULL route, including a first 'Jupiter SOL→USDC (Solana, same-chain swap)' hop, followed by the Skip API 4-hop bridge. A fresh, direct read of the real config.json shows its funding_route field's literal string value is only 'solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)' -- it does not mention Jupiter, SOL, or USDC anywhere, and its own first hop label 'solana/8453' conflates the Solana chain name with the literal string '8453' (which is Base's own EVM chain ID elsewhere in this same codebase, e.g. identity.mjs's IDENTITY_REGISTRY_BASE_MAINNET comment) -- an internally ambiguous label in the SOURCE file itself that the spec never flags or explains. The 'Jupiter SOL→USDC' step the spec attributes to config.json's field actually appears only as free-text prose in a DIFFERENT file, spawn-child/SKILL.md's own numbered list ('1. Jupiter: SOL → USDC (Solana) ... 2. Skip API 4-hop smart_relay ...'), which is not itself a machine-readable config field and is not cited anywhere in REQ-304/PROP-304d. The spec's phrasing over-attributes SKILL.md's prose to config.json's own field. The underlying multi-hop-route CONCLUSION (this is not a same-chain single-signer transfer) remains directionally correct and is the important part FIND-402 fixed, but the specific textual attribution 'config.json's own ... funding_route field specifies: Jupiter SOL→USDC ... THEN Skip API 4-hop ...' overstates what that one field literally contains, and the field's own 'solana/8453' ambiguity (does the route also support a Base-USDC source, given automaton's own wallet is Base-native?) is left unexamined even though it directly bears on whether automaton (not just Franklin) could ever independently fund an Akash deploy via this documented route.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1219-1227",
+      "snippet": "THE SYSTEM SHALL fund an Akash deploy's AKT requirement via the REAL, already-documented, already-vetted route ~/anicca/skills/self/spawn-child/config.json's own funding_route field specifies (confirmed by direct read, 2026-07-07): Jupiter SOL→USDC (Solana, same-chain swap), THEN Skip API 4-hop smart_relay USDC(solana)→AKT(akashnet-2) routed through noble-1/osmosis-1 ..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "200",
+      "snippet": "PROP-304d | REQ-304 | Funding an Akash deploy's AKT/uact requirement reuses the REAL, already-documented multi-hop route (~/anicca/skills/self/spawn-child/config.json's funding_route: Jupiter SOL→USDC, Skip API 4-hop smart_relay USDC(solana)→AKT(akashnet-2) via noble-1/osmosis-1) ..."
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/config.json",
+      "lineRange": "7",
+      "snippet": "\"funding_route\": \"solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)\""
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn-child/SKILL.md",
+      "lineRange": "61-67",
+      "snippet": "1. Jupiter: SOL → USDC (Solana) 2. Skip API 4-hop smart_relay: USDC(solana) → AKT(akashnet-2), recipient = this instance's Akash address 3. bash ../spawn/scripts/akt-treasury.sh ... 4. AKASH_SDL_TEMPLATE=sdl/child.yaml bash ../spawn/scripts/deploy-akash.sh <CHILD_ID> ..."
+    }
+  ],
+  "routeToPhase": "1a"
+}

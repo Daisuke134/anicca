@@ -1,0 +1,47 @@
+{
+  "findingId": "FIND-501",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "REQ-403's live wallet mutual non-interference audit (a self-described money-safety check) is specified to invoke resolve-identity.mjs's resolveEvmPrivateKey/resolveSolanaSecret 'once per CO-LOCATED running instance with that instance's OWN HOME/ANICCA_HOME (read from REQ-105's registry's homeDir field)'. REQ-105's own seed data sets BOTH of today's two real citizens' homeDir to the literal, identical, bare $HOME value '/Users/anicca', and REQ-105 explicitly asserts this identical value is 'expected, not a bug' because both citizens are co-located. A fresh read of the real resolve-identity.mjs and its own test suite proves this is factually incompatible with how these resolvers actually work: automaton's real ANICCA_HOME is '$HOME/.anicca' (confirmed by install.sh:26, `ANICCA_HOME=\"${ANICCA_HOME:-$HOME/.anicca}\"`, and by resolve-identity.test.mjs's own test 'EVM ③: default-home owner (ANICCA_HOME === $HOME/.anicca) falls back to legacy $HOME/.automaton/wallet.json'), and Franklin's real ANICCA_HOME-equivalent is '$HOME/.blockrun' (confirmed by resolve-identity.test.mjs's own test 'Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session'). The SAME test suite explicitly proves the negative case that matters here: 'EVM ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.anicca, no own wallet yet) does NOT inherit legacy -> null' and the symmetric Solana test -- i.e. resolve-identity.mjs is DELIBERATELY designed to return null for any HOME/ANICCA_HOME value that is not EXACTLY each citizen's own real, distinct root. Passing the bare, shared '/Users/anicca' value that REQ-105 stores for BOTH citizens into resolveEvmPrivateKey({home:'/Users/anicca'})/resolveSolanaSecret({home:'/Users/anicca'}) (whether via the `home` param or an equivalent env.HOME/env.ANICCA_HOME channel -- both were traced and produce the identical outcome) will therefore resolve to null for BOTH citizens, since neither citizen's real root equals the bare $HOME value -- NOT their real signing keys. REQ-403's audit as literally specified would consequently either (a) trivially report 'no collision' between two null results without ever having read either citizen's real key material -- a false sense of security for a requirement whose own text calls this a fail-closed 'security-incident response' gate -- or (b) if a future implementer special-cases null!=null as 'pass', the audit still never proves genuine pairwise inequality of REAL keys, defeating REQ-403's stated purpose entirely. This gap survived two prior review rounds that touched this exact field (FIND-202 added homeDir to REQ-105; FIND-303 scoped REQ-403's live check to co-located instances) without either round checking the field's LITERAL SEED VALUE against resolve-identity.mjs's real, already-tested resolution semantics. It also means REQ-105's own field definition is internally inconsistent: it defines homeDir as 'the citizen's own resolved absolute HOME/ANICCA_HOME directory' (implying each citizen's real, distinct value) while its seed data and 'expected, not a bug' framing store a SHARED, non-distinct, bare-$HOME value that is neither citizen's real ANICCA_HOME.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "525-535, 544-563, 565-570",
+      "snippet": "homeDir: string -- the citizen's own resolved absolute HOME/ANICCA_HOME directory ... Both entries legitimately share the identical homeDir value (/Users/anicca ...) THIS increment -- that is expected, not a bug. [seed data] \"homeDir\": \"/Users/anicca\" (both automaton and Franklin entries, identical)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1543-1547, 1589-1597",
+      "snippet": "a live runtime comparison -- reusing resolve-identity.mjs's existing exported resolvers, invoked once per CO-LOCATED running instance with that instance's OWN HOME/ANICCA_HOME (read from REQ-105's registry's homeDir field, an already-resolved absolute path ...)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "218",
+      "snippet": "PROP-403b | REQ-403 | With N >= 2 real running CO-LOCATED instances (enumerated from REQ-105's registry -- today: automaton + Franklin), pairwise comparison of resolveEvmPrivateKey/resolveSolanaSecret outputs shows no equal keys ..."
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs",
+      "lineRange": "63-87, 115-138",
+      "snippet": "const effectiveHome = home ?? e.ANICCA_HOME ?? (e.HOME ? path.join(e.HOME, '.anicca') : null); ... const legacyHome = e.HOME; if (legacyHome && effectiveHome === path.join(legacyHome, '.anicca')) { ... } (EVM); and the symmetric '.blockrun' check for Solana at line 132"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/runtime/loop/__tests__/resolve-identity.test.mjs",
+      "lineRange": "76-93, 158-174",
+      "snippet": "test('EVM ③: default-home owner (ANICCA_HOME === $HOME/.anicca) falls back to legacy $HOME/.automaton/wallet.json' ...); test('EVM ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.anicca, no own wallet yet) does NOT inherit legacy -> null' ...); test('Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session' ...); test('Solana ③ gated: foreign spawn ... does NOT inherit .solana-session -> null' ...)"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/install.sh",
+      "lineRange": "26",
+      "snippet": "ANICCA_HOME=\"${ANICCA_HOME:-$HOME/.anicca}\""
+    }
+  ],
+  "routeToPhase": "1a"
+}
