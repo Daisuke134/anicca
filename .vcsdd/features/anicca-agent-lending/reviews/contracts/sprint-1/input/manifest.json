@@ -1,0 +1,24 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "dfbe2d255fb89c7e36ee4f32e2958433db382b3359f36257a00604ca4a29bffd",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/economy/lending/lib/__tests__/lending-path.test.mjs",
+      "skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+      "skills/economy/lending/lib/__tests__/gojo-read.test.mjs",
+      "skills/economy/lending/lib/__tests__/lending-verify.test.mjs"
+    ],
+    "source": [
+      "skills/economy/lending/lib/lending-path.mjs",
+      "skills/economy/lending/lib/lending-gate.mjs",
+      "skills/economy/lending/lib/gojo-read.mjs",
+      "skills/economy/lending/lib/lending-verify.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Cross-repo: the spec files are at /Users/anicca/anicca-project/.vcsdd/features/anicca-agent-lending/specs/, but ALL test/source files listed above live in a DIFFERENT repo at /Users/anicca/anicca (paths listed are relative to that repo's root, e.g. read /Users/anicca/anicca/skills/economy/lending/lib/lending-gate.mjs). Commit d81ea65 (Green) + refactor commit (if any) on ~/anicca's main branch. This sprint's contract (contracts/sprint-1.md) explicitly scopes OUT the effectful loan-issuance orchestrator (does not exist yet) -- do not penalize its absence, that is a stated, honest scope boundary (see the contract's own knownResidualFindings), not a defect. Verify each CRIT-001 through CRIT-009 criterion by actually re-running the cited tests/reading the cited source yourself, not by trusting the contract's own prose."
+}

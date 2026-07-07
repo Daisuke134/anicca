@@ -1,0 +1,215 @@
+---
+status: draft
+feature: anicca-agent-lending
+sprint: 1
+date: 2026-07-08
+negotiationRound: 1
+scope: "Pure-core eligibility/sizing/monitoring layer (REQ-101/102/104/105/109/114), REQ-107's chain/asset
+  scope gate, REQ-106's pure per-lender sequencing/lock-order helpers, REQ-108's independent on-chain
+  repayment verification, and REQ-106's crash/uncertain-disbursement on-chain reconciliation lookup.
+  Files touched (all in ~/anicca, repo github.com/Daisuke134/anicca, branch main):
+  skills/economy/lending/lib/lending-path.mjs (new), skills/economy/lending/lib/lending-gate.mjs (new),
+  skills/economy/lending/lib/gojo-read.mjs (new), skills/economy/lending/lib/lending-verify.mjs (new),
+  and their four test files under skills/economy/lending/lib/__tests__/. This sprint does NOT include
+  the effectful issuance/repayment ORCHESTRATOR (the code that would acquire lock.mjs's nested
+  withGigLock pair, append ledger.js rows, and call escrow.mjs's payViaFacilitator together) — that
+  glue module does not exist yet anywhere in this diff; see knownResidualFindings."
+criteria:
+  - id: CRIT-001
+    dimension: spec_fidelity
+    description: >
+      Every function exported from lending-gate.mjs is pure — zero I/O (no fs, no fetch/network, no
+      Date.now()-based nondeterminism beyond parameters explicitly passed in) — matching the Purity
+      Boundary Map's classification of this module as "Pure Core" for REQ-101/102/104/105/106
+      (pure helpers only)/109/114 (verification-architecture.md lines 14-30).
+    weight: 0.15
+    passThreshold: >
+      A control-flow read of ~/anicca/skills/economy/lending/lib/lending-gate.mjs (287 lines) confirms
+      its only import is `isSelfFunded` from `../../../_shared/lib/is-self-funded.mjs` (itself pure),
+      and no function body anywhere in the file references `fs`, `fetch`, `require("http")`,
+      `readFileSync`, or any network/filesystem global. Every `nowMs` figure a function needs
+      (`computeRecentDefaultLossUsd`, `sumRecentGojoGiftsUsd`, `detectDefaultedLoans`) is an explicit
+      parameter, never an internal `Date.now()` call. FAIL if any I/O call or internal wall-clock read
+      is found anywhere in this file.
+  - id: CRIT-002
+    dimension: verification_readiness
+    description: >
+      The full target-feature test suite (`skills/economy/lending/lib/__tests__/*.test.mjs`) is
+      genuinely green, independently re-run by the Phase 3 adversary itself — not accepted from the
+      builder's own log.
+    weight: 0.15
+    passThreshold: >
+      Adversary runs `cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs`
+      itself and confirms the process exits 0 with exactly 75/75 passing (0 fail, 0 cancelled),
+      matching evidence/sprint-1-green-phase.log's own recorded count. FAIL if the count differs from
+      75/75, if any test is skipped/todo, or if the adversary does not actually execute the command
+      itself.
+  - id: CRIT-003
+    dimension: spec_fidelity
+    description: >
+      isBorrowerEligible checks condition (d) self-loan exclusion FIRST, then REQ-107's wallet.evm
+      chain-scope gate, then (a) self-funded, (b) below BORROWER_LOW_USD, (c) zero open obligation —
+      and its six possible `reason` values ("self_loan", "not_evm", "not_self_funded",
+      "not_broke_enough", "outstanding_loan", "ok") never collide with one another (REQ-102/REQ-107,
+      PROP-102e/PROP-107a).
+    weight: 0.15
+    passThreshold: >
+      A control-flow read of `isBorrowerEligible` in lending-gate.mjs (lines 88-106) confirms the
+      `lenderId === borrowerId` check is the first statement in the function body (returning
+      `reason:"self_loan"`), the `wallet.evm !== true` check is the second (returning
+      `reason:"not_evm"`), and the six literal reason strings used across the function are pairwise
+      distinct. PLUS an independent re-run of `node --test
+      skills/economy/lending/lib/__tests__/lending-gate.test.mjs` confirms PROP-102e's own named test
+      ("a self-loan candidate (lenderId===borrowerId) is rejected FIRST") and PROP-107a's own named
+      test ("a Solana-only borrower (no wallet.evm) is excluded from borrower eligibility") both pass.
+      FAIL if either check is reordered, if any reason string is reused for two different outcomes, or
+      if either named test fails/is missing.
+  - id: CRIT-004
+    dimension: edge_case_coverage
+    description: >
+      evaluateColdStartKillSwitch and evaluateOverallDefaultKillSwitch are independent, ADDITIVE gates
+      (either alone refuses issuance), and evaluateOverallDefaultKillSwitch's absolute-loss branch uses
+      `>=` (not `>`) against RECENT_DEFAULT_LOSS_THRESHOLD_USD, so a single bust-out default landing
+      EXACTLY at REQ-105's own $5.00 loan ceiling trips it by itself (resolves this feature's own
+      spec-review iteration-8 FIND-701).
+    weight: 0.1
+    passThreshold: >
+      Adversary re-runs lending-gate.test.mjs and confirms PROP-114d's own named test ("evaluateColdStartKillSwitch=false
+      but evaluateOverallDefaultKillSwitch=true for the SAME request still refuses issuance") and
+      PROP-114f's own named test ("volume-dilution-defeat proof") both pass; reads
+      `evaluateOverallDefaultKillSwitch`'s source (lending-gate.mjs lines 271-287) and confirms the
+      absolute-loss branch's comparison operator is literally `>=`, never `>`. FAIL if either named
+      test fails, or if the comparison is found to be strict `>`.
+  - id: CRIT-005
+    dimension: spec_fidelity
+    description: >
+      verifyRepayment rejects a txHash already credited anywhere in loans.jsonl — BOTH a same-loan
+      replay and a cross-loan replay — checked BEFORE any value is credited, and independently
+      re-verifies a claimed repayment against a finalized on-chain block via an exact,
+      zero-padded-address Transfer-log match on BOTH the `from` and `to` topics (never a suffix/substring
+      match on either side) (REQ-108, PROP-108a/b/e).
+    weight: 0.15
+    passThreshold: >
+      Adversary re-runs lending-verify.test.mjs and confirms, by name, the same-loan-replay test
+      (PROP-108e), the cross-loan-replay test (PROP-108e), the `to`-topic-suffix-only-rejection test
+      (PROP-108b/FIND-704), the `from`-topic-suffix-only-rejection test (PROP-108b/FIND-105), and the
+      un-finalized-block-rejection test (PROP-108a) all pass. Reads `verifyRepayment`'s source
+      (lending-verify.mjs lines 68-101) and confirms the `alreadyCredited` check runs before any RPC
+      call, and `matchesTransferLog` checks `topics[1]` (from) and `topics[2]` (to) both via strict
+      string equality against zero-padded addresses. FAIL if any named test fails, or if either topic
+      check is found to use `.includes`/`.endsWith` instead of exact equality.
+  - id: CRIT-006
+    dimension: edge_case_coverage
+    description: >
+      reconcileProvisionalDisbursement only ever READS on-chain state — it never itself invokes any
+      transfer/settle/broadcast call — and correctly reports found:false when no matching log exists
+      in the scanned block range (REQ-106, resolves FIND-103/FIND-201).
+    weight: 0.1
+    passThreshold: >
+      Adversary re-runs lending-verify.test.mjs and confirms the test named "reconcileProvisionalDisbursement
+      only ever READS on-chain state — never invokes any transfer/settle call itself" passes (asserting
+      a spied `eth_sendRawTransaction` handler is never invoked), AND the "reports no match when the
+      on-chain lookup finds nothing" test passes. Reads `reconcileProvisionalDisbursement`'s source
+      (lending-verify.mjs lines 108-117) and confirms it calls only `eth_getLogs` (a read method), never
+      any write/broadcast RPC method. FAIL if either named test fails or if any write-RPC method call is
+      found in this function's body.
+  - id: CRIT-007
+    dimension: spec_fidelity
+    description: >
+      nextLoanSequenceForLender is namespaced per-lender (two different lenders' own sequences never
+      collide) and treats "provisioning"/"disbursement_failed"/"active"/"disbursement_uncertain" rows
+      for the SAME loan_id as one already-claimed sequence number; resolveLoanLockAcquisitionOrder
+      deterministically returns [lexicographically-smaller key, other key] for both possible input
+      orderings (REQ-106, PROP-106e/PROP-106m).
+    weight: 0.1
+    passThreshold: >
+      Adversary re-runs lending-gate.test.mjs and confirms the PROP-106e per-lender-namespacing test,
+      the PROP-106e/g/h/k unterminated-row test, and the PROP-106m both-orderings test all pass by
+      name. FAIL if any of these three named tests fails.
+  - id: CRIT-008
+    dimension: spec_fidelity
+    description: >
+      REQ-110's zero-coupling requirement holds: this feature's own independently-declared constants
+      (BORROWER_LOW_USD, GOJO_SENDER_ID) are never imported from, and never imported by,
+      economy/gig/decide.mjs or economy/ubi/run.sh — a same-numeral definitional match, never a code
+      coupling.
+    weight: 0.05
+    passThreshold: >
+      A structural grep across skills/economy/lending/lib/*.mjs for any import of `DEFAULT_LOW_USDC`
+      or any other named export from `decide.mjs`/`run.sh` finds zero hits, AND a grep of
+      `decide.mjs`/`run.sh` for `BORROWER_LOW_USD` or `GOJO_SENDER_ID` finds zero hits (independently
+      confirmed this session: `grep -c` for both names against both files returned 0). FAIL if either
+      grep finds a hit.
+  - id: CRIT-009
+    dimension: verification_readiness
+    description: >
+      The purity-boundary discipline holds across this sprint's four modules as a set: lending-gate.mjs
+      is the sole pure-core module (zero I/O, CRIT-001); lending-path.mjs exports only a computed
+      constant (zero runtime logic beyond path.join); gojo-read.mjs and lending-verify.mjs are the ONLY
+      two modules in this sprint's diff that touch fs/network, and each does so for exactly one
+      narrowly-scoped purpose (gojo-read.mjs: read-only fs.readFileSync over gojo-log.jsonl;
+      lending-verify.mjs: JSON-RPC fetch calls only).
+    weight: 0.05
+    passThreshold: >
+      Adversary reads all four library files and confirms: lending-path.mjs contains no function
+      exports, only the `LOANS_LEDGER_PATH` constant; gojo-read.mjs's only side-effecting call is
+      `fs.readFileSync` (no `fs.writeFileSync`/`fs.appendFileSync` anywhere in the file); every
+      network call in lending-verify.mjs goes through the single local `rpcCall` helper (no direct
+      inline `fetch` elsewhere in the file). FAIL if any of these boundaries is violated.
+knownResidualFindings:
+  - "This sprint's four modules do NOT include the effectful loan-issuance/repayment ORCHESTRATOR — the
+    code that would acquire lock.mjs's nested per-lender/per-borrower withGigLock pair (via
+    resolveLoanLockAcquisitionOrder), append ledger.js's provisional/follow-up loans.jsonl rows via
+    LOANS_LEDGER_PATH, invoke escrow.mjs's payViaFacilitator for the actual USDC transfer, and invoke
+    reconcileProvisionalDisbursement/verifyRepayment as part of that live flow. No such orchestrator
+    file exists anywhere in this diff as of this sprint. Consequently, the Tier-2/3 proof obligations
+    that depend on that orchestration actually existing and running — PROP-106a/b/n (concurrent
+    issuance / cross-lender double-borrow race), PROP-106g/h/k/l wired into a live issuance attempt
+    (today they are exercised directly against reconcileProvisionalDisbursement in isolation, not via a
+    real issuance call site), PROP-106p (fresh lock-protected kill-switch re-check), PROP-108c/d
+    (partial-repayment transition and the repayment-vs-default-sweep lock race), and PROP-112a's
+    runtime co-location check — are NOT satisfied by this sprint and MUST NOT be scored as delivered
+    against this contract. This is a scope boundary, not a hidden defect: this sprint's own stated scope
+    (see frontmatter `scope`) is the pure-core/verification/reconciliation layer only. Building the
+    orchestrator against these four modules, and closing the listed proof obligations, is tracked as a
+    separate, future sprint."
+---
+
+## Scope
+
+This sprint delivers exactly the pure-core eligibility/sizing/monitoring layer plus the two effectful,
+narrowly-scoped modules needed to independently re-verify on-chain repayment and reconcile a
+crashed/uncertain disbursement — REQ-101, REQ-102, REQ-104, REQ-105, REQ-107, REQ-109, REQ-114 (fully,
+as pure functions), REQ-106 (its pure per-lender sequencing/lock-ordering helpers plus its crash/
+in-process-exception reconciliation lookup — NOT its live issuance orchestration), and REQ-108 (its
+independent on-chain repayment verification — NOT its live repayment-orchestration lock race). REQ-103/
+REQ-110/REQ-111 (design constraints: no LLM/scoring logic, zero coupling with `decide.mjs`, reuse of
+`isSelfFunded` unmodified) hold structurally across all four files in this diff, per CRIT-001/CRIT-008.
+
+Files touched (all in `~/anicca`, repo `github.com/Daisuke134/anicca`, branch `main`):
+- `skills/economy/lending/lib/lending-path.mjs` (new)
+- `skills/economy/lending/lib/lending-gate.mjs` (new)
+- `skills/economy/lending/lib/gojo-read.mjs` (new)
+- `skills/economy/lending/lib/lending-verify.mjs` (new)
+- `skills/economy/lending/lib/__tests__/lending-path.test.mjs` (new)
+- `skills/economy/lending/lib/__tests__/lending-gate.test.mjs` (new)
+- `skills/economy/lending/lib/__tests__/gojo-read.test.mjs` (new)
+- `skills/economy/lending/lib/__tests__/lending-verify.test.mjs` (new)
+
+Phase 2b/2c evidence on file: `evidence/sprint-1-green-phase.log` (target-feature-tests: PASS,
+regression-baseline: PASS — 75/75 in `skills/economy/lending/lib/__tests__`). Phase 2c refactor: two
+clarifying-comment tightenings in `lending-gate.mjs` (`isBorrowerEligible`'s six-value `reason` enum
+made explicit) and `lending-verify.mjs` (`extractTxHash`'s malformed-RPC-response fallback rationale
+made explicit) — zero behavior change, re-verified 75/75 green after each edit. No code duplication was
+found across the four modules requiring extraction; each module's responsibility (pure gate logic vs.
+path constant vs. read-only gojo-log reader vs. on-chain verification) was already cleanly separated at
+Green-phase.
+
+## Known residual scope boundary (see frontmatter `knownResidualFindings` for full detail)
+
+The effectful issuance/repayment orchestrator (nested lock acquisition + ledger append + facilitator
+call, wired together into one live flow) is NOT part of this sprint's deliverable and does not exist yet
+in this diff. The Tier-2/3 proof obligations that depend on that orchestration actually running
+(PROP-106a/b/n/p, PROP-108c/d, PROP-112a's runtime half) are out of this sprint's scope and MUST NOT be
+scored against this contract — they belong to a future sprint that builds the orchestrator against these
+four already-delivered modules.

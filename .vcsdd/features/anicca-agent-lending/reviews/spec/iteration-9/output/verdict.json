@@ -1,0 +1,70 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 9,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-07T21:30:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-701", "FIND-702"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-701",
+      "status": "genuinely resolved",
+      "note": "Grepped both spec files for every occurrence of `RECENT_DEFAULT_LOSS_THRESHOLD_USD` and every occurrence of `totalRecentDefaultLossUsd` (behavioral-spec.md lines 114, 895, 941, 1021, 1028; verification-architecture.md lines 29, 136) and confirmed the comparison operator is `>=` everywhere it is literally restated -- the SHALL-clause itself (behavioral-spec.md:941), its own inline correction note (behavioral-spec.md:942-946), the Pure-Core purity-map row (verification-architecture.md:29), and PROP-114b's own restated formula (verification-architecture.md:136). No stale strict `>` remains anywhere describing this specific comparison; the only other nearby occurrences of `>`/`exceed` are either unrelated prose ('never exceed $5.00', 'sum exceeds the threshold' as a plain-English restatement of >=, or the diagnostic `reason` string literal `recent_default_loss_threshold_exceeded`, which is just a label, not a restatement of the operator). The worked Edge Case (behavioral-spec.md:1016-1023, `totalRecentDefaultLossUsd = $5.00` 'EQUALS' the threshold, still `paused:true`) and PROP-114f's own headline dilution-defeat fixture (verification-architecture.md:140, exact fixture asserting `paused:true` at `totalRecentDefaultLossUsd:5.00`) are now both mathematically achievable under the corrected `>=` operator, and PROP-114b's separate `5.01`-just-above-threshold fixture (verification-architecture.md:136) remains equally satisfied by `>=` (5.01 >= 5.00). All three previously-conflicting statements in the document are now mutually consistent. Also independently re-derived the underlying math: `maxLoanUsd = $5.00` (REQ-105, behavioral-spec.md:755) is textually confirmed unchanged, so the single-max-size-bust-out-trips-it-alone design intent (behavioral-spec.md:897-900) is now realizable exactly as stated."
+    },
+    {
+      "findingId": "FIND-702",
+      "status": "genuinely resolved",
+      "note": "Confirmed PROP-109g exists as a new row in the Proof Obligations table (verification-architecture.md:170), Tier 0, Required:true, REQ-109/REQ-114, with Tool/Method text requiring 'source-grep or control-flow read of the REAL, production REQ-109 default-append call site confirming (a) its appendChild payload for a status:\"defaulted\" row includes defaulted_ms: Date.now() ... and (b) no appendChild payload for an \"active\"/\"repaid\" status-transition row includes this field' and explicitly disclaiming PROP-114e/PROP-114f's own hand-authored fixtures as sufficient evidence. Confirmed the matching Acceptance Criteria bullet exists in behavioral-spec.md (lines 2175-2185, immediately after PROP-109e's bullet), stating the identical binding real-code requirement and citing FIND-702 by name. Confirmed the Gate section's own item (5) (verification-architecture.md:389-399) requires the adversary to independently confirm this via direct control-flow read and explicitly forbids accepting PROP-114e/PROP-114f as sufficient. Confirmed the Verification tiers/Strategy sections (verification-architecture.md:55-56, 194-195) both cite PROP-109g by name alongside REQ-109's other Tier-0 checks. This mirrors PROP-105h's/PROP-106d's/PROP-114c's own established real-source-read discipline exactly, and would genuinely fail an implementation that sets defaulted_ms via a hand-populated fixture only, or omits/mistypes the field in the real append payload -- this is a binding, specific, checkable proof obligation, not a restatement of the prose definition."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:1-2245",
+          "description": "Full fresh read of the entire behavioral spec performed this session (four sequential Read passes covering the complete file), REQ-101 through REQ-114 traced end-to-end against their own Acceptance Criteria, Edge Cases, and cross-references. Re-derived REQ-114's THREE-condition kill-switch boundary arithmetic independently (sampleSize>=10/<10 partition is exhaustive and non-overlapping across both the cold-start and colony-wide switches; the ratio branch's strict `>0.20`/`<0.80` boundaries at REQ-105/REQ-114 are symmetric by design (0.80+0.20=1.00) and, unlike the now-fixed absolute-loss branch, are not contradicted by any worked example anywhere in either document -- no fixture anywhere asserts an outcome at exactly ratio=0.20 or rate=0.80 that would conflict with the stated strict operators). Checked REQ-101/102 (self-loan exclusion ordering, gojo-gift lender-gating), REQ-103 (bookkeeping-only constraint unchanged), REQ-104-108 (fixed loan terms, txHash same-loan and cross-loan replay rejection, exact zero-padded to/from address-equality attribution), REQ-109 (append-only default detection, debt-proportional balance adjustment, defaulted_ms field), REQ-110-113 (gig-coexistence zero-coupling, money-safety invariant, single-coordinator-host scope, dependency-freshness gate) -- no internal contradiction, no unreachable worked example, and no unresolved FIND found in any of these beyond the two already-tracked and now-resolved FIND-701/FIND-702."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:895-1086 (REQ-114 in full)",
+          "description": "Re-read REQ-114's entire section fresh, specifically hunting for a second boundary/off-by-one bug of the same class as FIND-701 per the task's own instruction to scrutinize this area further. Found none: the ratio-based branch's own strict inequality is internally consistent with every worked example in the document (no fixture computes an exact-boundary case for the ratio, unlike the absolute-loss branch's now-fixed prior defect, which had two directly conflicting worked examples in the SAME document). The sampleSize>=10/sampleSize<10 partition used identically by both REQ-105's and REQ-114's kill-switches is exhaustive with no gap or overlap."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:1-462",
+          "description": "Full fresh read of the entire verification architecture performed this session (three sequential Read passes covering the complete 462-line file), all Proof Obligation rows (PROP-101a through PROP-113a, including PROP-109g and the full PROP-114 family) and the full 11-item Gate section traced against their corresponding REQ text in behavioral-spec.md. Confirmed every REQ has at least one Gate item, every Tier-0 structural check for a 'real code, not a mock/fixture' fact (PROP-105h, PROP-106d, PROP-106i, PROP-109g, PROP-111a/b, PROP-112a, PROP-114c) is present and specifically worded to reject a mocked-caller or hand-authored-fixture proof as sufficient, and the Verification Strategy's Tier 0/1/2/3 breakdown correctly cites every PROP by ID with no orphaned required:true obligation missing from either the Verification Strategy section or the Gate section."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "REQ-101", "REQ-102", "REQ-103", "REQ-104", "REQ-105", "REQ-106", "REQ-107", "REQ-108",
+      "REQ-109", "REQ-110", "REQ-111", "REQ-112", "REQ-113", "REQ-114"
+    ],
+    "duplicateFindings": [],
+    "note": "This is the final Phase 1c spec-review iteration for this increment after 8 consecutive FAILs (iterations 1-8). Both of iteration-8's findings (FIND-701 critical, FIND-702 major) are independently re-verified as genuinely and completely resolved -- the >= correction holds everywhere the comparison is restated, and PROP-109g is a specific, binding, real-source-read proof obligation, not a restatement of prose. A full fresh, skeptical re-read of the entire spec found no new defect, including a targeted re-scrutiny of REQ-114's own two-signal design for a second instance of FIND-701's boundary-bug class (none found: the ratio branch's own strict-inequality boundaries are not contradicted by any worked example in either document, unlike the now-fixed absolute-loss branch). Phase 2 (TDD) may proceed."
+  }
+}
