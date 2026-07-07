@@ -204,3 +204,92 @@ committed baseline).
 worktree as raw evidence backing the summary above; the caller may choose what (if anything) under
 `runs/` to commit versus `.gitignore`. `config.yaml` now points at a live local endpoint + contains
 the working temperature-ensemble/system_message/db_path fields used for this real run (no secrets).
+
+## HONEST re-read of the +9.4486 candidate — NOT a validated strategy (fresh-context adversary finding, 2026-07-08)
+
+A fresh-context vcsdd-adversary review of this implementation (impl/iteration-1) independently
+re-derived the same numbers above (baseline=-0.3959371620826199, best=9.44855790310848,
+beats_baseline=True — bit-for-bit reproduced in a clean process) and confirmed scope_guard/no-
+human-credential/no-live-money all PASS. It also surfaced a finding this file must not let a later
+reader miss: **the accepted candidate `233d923c` is variance-amplification (stake-sizing/leverage
+on the SAME trade selection as baseline), not evidence of a better strategy.**
+
+- The candidate makes the IDENTICAL trade-selection decisions as baseline in every stage2 window
+  (n_trades matches baseline exactly: 10/9/12 in test windows 1/3/5). The LLM's only change is
+  scaling the stake size (leverage), not picking different/better trades.
+- Per-window OOS net USD: window(0→1)=+3.36, window(2→3)=+67.26, window(4→5)=-42.28 → mean=9.4486.
+  The inter-window standard deviation across just these 3 points is ~44.9 — nearly **5x** the mean
+  improvement over baseline (~9.85). One bad window (-42.28) is larger in magnitude than the whole
+  claimed edge.
+- edge/confidence correlate with actual outcome near zero in the worst OOS window (window 5:
+  corr(edge,outcome)=0.040, corr(confidence,outcome)=0.035, computed directly off
+  `strategies/fixtures/pm_history.csv`), and the single LARGEST stake in that window (highest edge
+  in-window) landed on a LOSING trade — a textbook noise-chasing / variance-amplification
+  signature, not a generalizing edge.
+
+**What is proven**: the MECHANISM works end-to-end — openevolve proposes a real LLM-authored
+bounded edit, `scope_guard` gates it to the EVOLVE-BLOCK (fail-closed, independently re-verified
+with 5 adversarial probes), `evaluator.py` scores it on a real disjoint-window walk-forward
+backtest, and a real accepted candidate's `combined_score` beats the real baseline's — all with no
+human in the loop and no human credential.
+
+**What is NOT proven**: that this specific candidate is a good trading strategy, or that it is safe
+to promote to any paper/live capital allocation. It is not. The per-candidate promotion adversary
+(REQ-RH4 step 3 — a FRESH vcsdd-adversary PASS on the specific candidate diff, required IN ADDITION
+to the numeric stage2 gate before ANY promotion) has correctly NOT been invoked for this candidate,
+and must not be until (at minimum) a stability re-check across more/different OOS windows is done.
+No promote.py call has ever happened for this candidate (no "self-improve" promote commit exists in
+git log) — this section exists so that evidence file is never mistaken for a promotion-ready
+result by a later reader (including a future instance of me).
+
+## Fix for adversary-verdict BLOCKING finding (impl/iteration-1) — REQ-OE7 wiring, 2026-07-08
+
+The adversary's FAIL was correct and reproducible: `run_evolve.sh` checked/invoked a binary name
+(`openevolve-run.py`) that does not exist anywhere on this machine (confirmed again independently:
+`ls <venv>/bin` after a fresh `pip install openevolve` shows only `openevolve-run`, no `.py`
+suffix) — every real/scheduled invocation of the committed script silently took the
+"openevolve-not-installed → skip, exit 0" branch and never ran real evolution. The evidence above
+(the +9.4486 run) was produced by a MANUAL `openevolve-run` call that bypassed `run_evolve.sh`
+entirely, which is exactly what the adversary flagged.
+
+Fixes applied (all under `skills/earn/self-improve/`):
+1. **Durable, non-scratchpad venv**: `python3 -m venv ~/.anicca-venvs/self-improve` (outside this
+   git repo, outside any session scratchpad — the earlier `<scratchpad>/venv-self-improve` used to
+   produce the +9.4486 evidence no longer exists, having been cleaned between sessions — this is
+   the actual root cause of why a durable path is required). Installed via
+   `~/.anicca-venvs/self-improve/bin/pip install --no-cache-dir openevolve openai`, then
+   `pip cache purge`. No heavy ML deps pulled in (no torch/etc — openevolve's own deps are small:
+   openai, pydantic, flask, numpy, pyyaml, tqdm); disk moved only 2.8Gi → 2.7Gi avail during
+   install (checked `df -h /` before/after per the disk-tight constraint). Verified
+   `~/.anicca-venvs/self-improve/bin/openevolve-run --help` works standalone.
+2. **`run_evolve.sh`**: now invokes `${OPENEVOLVE_BIN:-$HOME/.anicca-venvs/self-improve/bin/openevolve-run}`
+   by absolute path (no reliance on `command -v` / PATH lookup at all). The old silent
+   "not-installed → exit 0" branch is replaced with a LOUD failure: missing/non-executable binary
+   now logs a `FATAL` line to both the state log and stderr and `exit 1` — the script can no longer
+   pretend to succeed when openevolve isn't reachable.
+3. **`launchd/ai.anicca.self-improve-evolve.plist`**: added `WorkingDirectory` (the skill dir) and
+   an explicit `EnvironmentVariables` `PATH` (venv bin first, then standard system dirs) + `HOME`,
+   so a launchd-triggered run (which gets a minimal default PATH with no project/user
+   customization) resolves the same durable venv `run_evolve.sh` now references by absolute path.
+   Validated with `plutil -lint` (OK).
+4. **Re-verification under minimal PATH** (the actual proof, not just a code read): ran
+   ```
+   env -i HOME="$HOME" PATH=/usr/bin:/bin SELF_IMPROVE_ITERATIONS=2 bash skills/earn/self-improve/run_evolve.sh
+   ```
+   (`PATH` stripped to just `/usr/bin:/bin` — no venv, no homebrew, no project bin dirs — simulating
+   launchd's minimal environment; `SELF_IMPROVE_ITERATIONS=2` uses the script's existing env
+   override to keep the proof cheap). Script exited 0. The state log
+   (`skills/earn/state/self-improve-evolve.log`) and the new
+   `runs/run-20260707T162316Z/logs/openevolve_20260708_012317.log` show REAL openevolve startup —
+   `Initialized OpenAI LLM with model: free/mistral-large-3-675b`, `Initialized LLM ensemble...`,
+   a real LLM round-trip (`Error on attempt 1/6: degraded response: repetitive assistant loop.
+   Retrying...` — a genuine network response, not a canned skip message), `Starting process-based
+   evolution from iteration 1 for 2 iterations`, and a `best/best_program.py` + `best_program_info.json`
+   written to the new run dir — i.e. it reached and ran the real binary, NOT the
+   `skip openevolve-not-installed` branch that the adversary caught. This particular 2-iteration
+   run's LLM samples happened to return "No valid diffs found" (real sampling variance at n=2, not
+   a wiring failure — see the +9.4486 run above at n=30 for a real accepted candidate), so the
+   tracked "best" for this tiny proof run is just the unmodified seed program
+   (`combined_score=-4.4683, stage1_pass=false`) — this run's purpose is proving the SCRIPT+PLIST
+   wiring reaches real openevolve under a minimal PATH, not re-proving beats-baseline (already
+   proven and independently reproduced by the adversary above).
