@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 2,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-1/output/findings/",
+    "note": "8 findings, 2 critical: FIND-001 (loan_id generation unspecified) resolved via loan_id=loan_${lenderId}_${n}, a per-lender monotonic sequence computed inside the existing per-lender lock -- namespaced so cross-lender collisions are structurally impossible without a shared lock. FIND-002 (missing single-coordinator-host scoping) resolved via new REQ-112, a direct by-name analog of anicca-agent-spawn's REQ-106. FIND-003 (payViaFacilitator signature/facilitator-service precondition) resolved with the real full signature cited plus fail-closed disbursement behavior. FIND-004 ($0.02 cold-start repayment pathway unfounded) resolved by separating the proven sizing precedent from the unproven economic claim, framed as an explicit monitored hypothesis. FIND-005 (zero coordination with gojo/UBI) resolved via a new read-only sumRecentGojoGiftsUsd awareness, reverse-direction gap honestly left unsolved. FIND-006 (stale citizens.json citation) fixed. FIND-007 (verifyRepayment falsely claimed escrow.mjs reuse) fixed -- now cites record-earn.mjs's real Transfer-log/exact-address-equality pattern in BOTH spec files. FIND-008 (interest rate justification) fixed -- honest tunable-parameter framing."
+  },
+  "note": "Verify each of the 8 fixes actually holds by re-reading the real source files fresh (lock.mjs, ledger.js, escrow.mjs, gig.mjs's FACILITATOR_URL resolution, ubi.js + its real gojo-log.jsonl state file, record-earn.mjs's TRANSFER_TOPIC/exact-padded-address pattern, child-spec.js's nextChildId) -- do not accept the revision's own claims without checking. In particular: (1) confirm loan_id's per-lender-namespaced sequence genuinely cannot collide across lenders even without a shared lock -- walk through the actual concurrency scenario; (2) confirm new REQ-112's single-coordinator-host scoping is complete and doesn't leave any lock.mjs/ledger.js reuse elsewhere in the spec unscoped; (3) confirm the new sumRecentGojoGiftsUsd function's read of ubi's state file matches ubi.js's REAL state file format/location (read ubi.js fresh to verify the file path and record shape, not just trust the citation); (4) confirm record-earn.mjs's cited pattern is accurately reused in verifyRepayment's actual specified logic, not just cited but structurally mismatched. Also do a full fresh pass over the REST of the spec -- this is only iteration 2 of a brand-new feature, so continue looking hard for anything not yet caught, including interactions with anicca-agent-spawn's registry design (which is itself still mid-pipeline, currently iteration 6 of its own Phase 1c review)."
+}
