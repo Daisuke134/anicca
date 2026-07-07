@@ -1,0 +1,29 @@
+{
+  "reviewType": "implementation",
+  "phase": "3",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractStatus": "approved",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "contract": ["contracts/sprint-1.md"],
+    "source": [
+      "~/anicca/skills/economy/lending/lib/lending-path.mjs",
+      "~/anicca/skills/economy/lending/lib/lending-gate.mjs",
+      "~/anicca/skills/economy/lending/lib/gojo-read.mjs",
+      "~/anicca/skills/economy/lending/lib/lending-verify.mjs"
+    ],
+    "tests": [
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-path.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-gate.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/gojo-read.test.mjs",
+      "~/anicca/skills/economy/lending/lib/__tests__/lending-verify.test.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "This gate requires EXECUTION, unlike Phase 1c/contract-review. Independently re-run the full test suite yourself (do not accept the 76/76 evidence log as sufficient -- rerun it). This sprint's contract explicitly scopes OUT the effectful loan-issuance orchestrator (see contract's own Known residual scope boundary section) -- do not penalize its absence. Sprint-1 contract review (round 2) already found and the team fixed one real defect empirically (FIND-C02: computeOverallDefaultRateUsd/computeRecentDefaultLossUsd not flooring a malformed negative repaid_usd to 0, now fixed via commit c3b3eba on ~/anicca main, new PROP-114g added and tested) -- independently re-verify this fix genuinely holds by reproducing the exact repro case yourself (a defaulted loan row with principal_usd:1, repaid_usd:-5 must now produce the SAME result as repaid_usd:0, never an inflated aggregate). Also independently probe for further money-safety edge cases in the delivered pure-core/verification modules (malformed inputs, boundary values, replay/reconciliation races) beyond what the 9 sprint-1 CRIT criteria and existing PROP obligations already cover -- this feature's sibling spec-review process (anicca-agent-spawn) has this session repeatedly found that a fresh, skeptical, EXECUTION-based read surfaces real defects standard review misses; hold this implementation to the same bar."
+}
