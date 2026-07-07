@@ -61,7 +61,7 @@ if [ -z "$URL" ]; then
     if [ ! -f "$POSTED/${CAND}_EN.mp4" ] && [ ! -f "$QUEUE/${CAND}_EN.mp4" ] && [ ! -f "$PENDING_VERIFY/${CAND}_EN.mp4" ]; then
       VID="$CAND"; break
     fi
-  done < <("$PY" -m yt_dlp --flat-playlist --playlist-end 30 --print "%(id)s" \
+  done < <("$PY" -m yt_dlp --flat-playlist --playlist-end 150 --print "%(id)s" \
         "https://www.youtube.com/@theDiaryOfACEO/videos" 2>/dev/null)
   [ -n "${VID:-}" ] && URL="https://www.youtube.com/watch?v=$VID"
 fi
