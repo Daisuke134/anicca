@@ -2,13 +2,18 @@
 
 **feature**: anicca-agent-economy · **mode**: strict · **increment**: gig-board concurrency
 hardening + bootstrap-reserve catalog eligibility gate + business.blockrun.ai seller-channel
-research spike · **日付**: 2026-07-07 · **revision**: iteration 4 (Phase 1c adversary review
+research spike · **日付**: 2026-07-07 · **revision**: iteration 5 (Phase 1c adversary review
 iteration 1 returned FAIL with 6 findings, FIND-001..FIND-006, resolved by iteration 2; iteration 2
 review returned FAIL with 2 CRITICAL findings, FIND-101/FIND-102, resolved by iteration 3; iteration
-3 review returned FAIL with 1 HIGH finding, FIND-201 — this revision resolves it; see
-`reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json`,
-`reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json`, and
-`reviews/spec/iteration-3/output/findings/FIND-201.json` for the original findings)
+3 review returned FAIL with 1 HIGH finding, FIND-201, resolved by iteration 4; iteration 4 review
+returned FAIL with 1 HIGH finding, FIND-301 (the iteration-4 fix for FIND-201 introduced three
+mutually-inconsistent scope definitions for REQ-204, and a sibling `## MINDSET` section still
+contained an un-named ranking phrase) — this revision resolves it by replacing REQ-204's
+phrase-enumeration design with an unambiguous, Tier-0 whole-section-deletion criterion (see REQ-204
+below); see `reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json`,
+`reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json`,
+`reviews/spec/iteration-3/output/findings/FIND-201.json`, and
+`reviews/spec/iteration-4/output/findings/FIND-301.json` for the original findings)
 
 ## Scope of this increment (read first)
 
@@ -429,73 +434,108 @@ or any steering text that tells the model WHICH of the remaining options to pref
 
 ### REQ-204: Retire the pre-existing prompt-level steering block once the eligibility gate lands
 **EARS**: WHEN this increment's REQ-201/202 eligibility gate is implemented and wired into the wake
-loop, THE SYSTEM SHALL remove or neutralize the pre-existing `## ★COLONY BOOTSTRAP PRIORITY★`
-steering block, together with ANY ranking/imperative language found anywhere within that block or
-within any paragraph it references or duplicates (e.g. the `economy/gig` bullet inside the `## Your
-earn tools` section) that tells the model WHICH slot to prefer over the others — including, at
-minimum, "Prefer this over re-yielding surplus", the "MINDSET: ... it is almost never 'yield
-again'" framing, and "the highest-leverage move is to POST" (resolves FIND-201) — from
-`runtime/loop/prompt.mjs`'s `buildSystemPrompt`.
+loop, THE SYSTEM SHALL remove, in their **entirety**, the two markdown sections of
+`runtime/loop/prompt.mjs`'s `buildSystemPrompt` output whose heading line contains the substring
+`COLONY BOOTSTRAP PRIORITY` and whose heading line contains the substring `MINDSET` respectively —
+AND SHALL remove or reword the two specific ranking clauses named below inside the `economy/gig`
+bullet of the (otherwise-retained) `## Your earn tools` section — from `buildSystemPrompt`'s output.
 
-**Why this requirement exists (resolves FIND-005)**: `runtime/loop/prompt.mjs` as it exists on
-disk TODAY is **not** a neutral "you decide" baseline — it already contains a forceful, imperative
-steering block: *"your FIRST action this wake MUST be economy/gig ... Do this BEFORE hl_trade /
-yield / anything else"*, plus *"Prefer this over re-yielding surplus"* and *"it is almost never
-'yield again'"*. Per SPEC.md §9.6, this prompt-level text was itself the FIRST (and, per the
-project's own hard rule against hardcoded steering, non-compliant) attempt to solve "the model
-doesn't reliably pick `economy/gig`." REQ-201/202's objective, bookkeeping-only eligibility gate is
-the design-compliant SUCCESSOR to that prompt-hack: once the gate can structurally narrow the
-option space by balance, the prompt no longer needs to (and, per REQ-203's own principle, must
-not) also tell the model which remaining option to prefer. Leaving both mechanisms in place
-simultaneously after this increment ships would mean REQ-203's "no steering text" principle is
-false of the codebase in the very increment that establishes it. **This applies wherever the
-ranking language physically sits, not only inside the block's own literal string boundaries
-(resolves FIND-201)**: a ranking phrase one paragraph away from the block — e.g. the `economy/gig`
-bullet inside the `## Your earn tools` section, which as of this spec's writing also states "the
-highest-leverage move is to POST", five lines before the already-named "Prefer this over
-re-yielding surplus" in the exact same bullet — is functionally identical steering and would leave
-REQ-203's principle just as false if left in place.
+**Why REQ-204 was redesigned in this revision (resolves FIND-301)**: iterations 3 and 4 both tried
+to define REQ-204's scope as "the named phrases, plus any other phrase found in the block itself or
+in any paragraph the block references or duplicates." That phrasing produced THREE different scope
+statements across one requirement (a named-phrase list, a "block + what it references" bullet, and
+a "whole file's binding sections" bullet mirrored by PROP-203b), and iteration 4's adversary showed
+these three scopes disagree in practice: the `## MINDSET` section (current lines 98-103) is a
+**sibling** section of `## ★COLONY BOOTSTRAP PRIORITY★` (current lines 89-96) — it is neither the
+block itself nor a paragraph the block's own text references — yet it contains a ranking phrase
+("Re-yielding every wake = failure.", line 99) of equivalent strength to the ones already named.
+Enumerating phrases and reasoning about "what a block references" cannot be made airtight this way;
+every attempt so far has converged on finding one more un-named phrase in one more place. This
+revision abandons phrase-level enumeration and "references/duplicates" reasoning entirely. Instead
+it names the **two whole markdown sections whose entire content is ranking/imperative language, with
+no neutral information mixed in** — `## ★COLONY BOOTSTRAP PRIORITY★` (a section literally titled
+"priority", every line of which is imperative: "your FIRST action this wake MUST be...", "Do this
+BEFORE hl_trade / yield / anything else") and `## MINDSET` (all four of its bullets restate the same
+"yield is the wrong choice most wakes, prefer the other tools" ranking in different words: "You were
+funded to GROW the balance, not to sit. Re-yielding every wake = failure.", "Idle cash → yield ONCE.
+Then spend your wakes on...", "it is almost never 'yield again'") — and requires their unconditional,
+whole-section removal. A whole-section boundary ("this heading line through, but not including, the
+next line that is itself a `## ` heading") is a Tier-0, mechanically-checkable fact with no
+"references/duplicates" judgment call left in it.
+- **A note on the heading text itself**: the current, on-disk heading for the first section is
+  `## ★COLONY BOOTSTRAP PRIORITY (this period)★` — NOT the exact string `## ★COLONY BOOTSTRAP
+  PRIORITY★` that iterations 1-4 used as shorthand throughout this spec and its verification
+  architecture (the on-disk heading has `(this period)` inserted before the closing star). A literal
+  substring check for `## ★COLONY BOOTSTRAP PRIORITY★` would therefore NEVER match the current file
+  — meaning that exact check would report "absent" whether or not the block was actually removed,
+  silently passing a no-op diff. This revision's checks (below, and PROP-204a) anchor on the
+  substring `COLONY BOOTSTRAP PRIORITY` (the invariant words, without the decorative stars/
+  parenthetical) precisely to avoid this trap.
+- **The `economy/gig` bullet is retained, not deleted**: unlike the two named sections above, the
+  `## Your earn tools` section (current lines 69-87) is a necessary, mostly-neutral tool catalog —
+  it is the only place `buildSystemPrompt` documents what `economy/gig`, `yield`, `x402_sell`,
+  `hl_trade`, `token_launch`, `cook`, and `earn/<sub>` each do. Deleting the whole section, or the
+  whole `economy/gig` bullet, would remove information the model needs regardless of steering
+  concerns. Only its two specific ranking clauses are in scope for removal/rewording (named in
+  Acceptance Criteria below) — this is a bounded, single-bullet edit, not a new instance of
+  phrase-enumeration-across-an-unbounded-scope: the clauses are named exhaustively here (two, not
+  "a minimum"), inside one already-identified bullet, with no claim that other unnamed phrases might
+  also be in scope inside that same bullet.
 
 **Edge Cases**:
 - The `## Tips from a senior who has run these (advice, NOT rules — adapt, do not copy blindly)`
   section is explicitly out of scope for removal — it is already self-labeled as non-binding advice
-  rather than an imperative instruction.
-- **The named phrases above are a MINIMUM, not an exhaustive or exclusive list (resolves
-  FIND-201)**: REQ-204's actual scope is every ranking/imperative phrase found anywhere within the
-  `## ★COLONY BOOTSTRAP PRIORITY★` block itself, and anywhere within any paragraph that block
-  references or duplicates (e.g. the `economy/gig` bullet inside the `## Your earn tools` section).
-  As of this spec's writing that bullet contains a fourth such phrase not previously named — "the
-  highest-leverage move is to POST" — sitting five lines before "Prefer this over re-yielding
-  surplus" in that same bullet. A future spec revision or Phase 3 finding that surfaces yet another
-  unnamed ranking/imperative phrase within this same scope does NOT require a new requirement or a
-  spec amendment before it must be removed — REQ-204 already covers it under this generalized
-  criterion; only the illustrative list of named examples may need updating for clarity.
-- If retiring this block is deferred to a later increment for any reason, that deferral MUST be
-  explicitly flagged in this increment's own completion evidence as a KNOWN, temporary violation of
-  REQ-203 — never silently treated as if REQ-203 were already fully satisfied.
+  rather than an imperative instruction (unchanged from prior iterations).
+- **Adjudicated non-target, so it is not re-litigated as a new finding**: the `yield` bullet's own
+  text — "It is a BANK DEPOSIT — set and forget. Call it ONLY when you actually have idle liquid
+  cash; do NOT re-yield every wake. Once parked, move on." (current lines 77-79) — is judged NOT to
+  be in scope. It states a factual, idempotency property of the `yield` tool itself (calling it
+  again with no new idle cash is a no-op), the same way the `x402_sell` bullet states "needs buyers,
+  so your job is to CREATE DEMAND" or the `hl_trade` bullet states "open with a stop/take-profit
+  when you see a setup" — a usage constraint of the tool being described, not a comparison that
+  ranks `yield` against the OTHER remaining tools. This is textually distinct from the removed
+  MINDSET bullet "it is almost never 'yield again'", which explicitly invoked the full option set
+  ("what single action ... right now?") to rank `yield` last. If a future review disagrees with this
+  adjudication, it must open a new, narrowly-scoped requirement for that specific clause — it is not
+  read into REQ-204's scope by this revision.
+- If retiring these sections/clauses is deferred to a later increment for any reason, that deferral
+  MUST be explicitly flagged in this increment's own completion evidence as a KNOWN, temporary
+  violation of REQ-203 — never silently treated as if REQ-203 were already fully satisfied.
+- Whole-section removal leaves ordinary formatting residue (e.g. an extra blank line where a
+  section used to sit) that Phase 3 verification MUST NOT treat as a defect — the Tier-0 check below
+  is a content check (specific substrings absent), not a whitespace/line-count check.
 
 **Acceptance Criteria**:
-- The diff landed by this increment removes or neutralizes, AT LEAST, the `## ★COLONY BOOTSTRAP
-  PRIORITY★` block's imperative "MUST" / "Do this BEFORE X" language, the "Prefer this over
-  re-yielding surplus" / "it is almost never 'yield again'" ranking phrases, and "the
-  highest-leverage move is to POST" (the `economy/gig` bullet inside `## Your earn tools`) from
-  `buildSystemPrompt`'s output — these named phrases are illustrative minimum examples, not the
-  full scope (see the generalized criterion below).
-- **GENERALIZED, BINDING criterion (resolves FIND-201)**: the diff removes or neutralizes ANY
-  ranking/imperative/preference-ordering language — any text that scores, ranks, or tells the model
-  WHICH of the remaining slots to prefer over the others — found anywhere within the `## ★COLONY
-  BOOTSTRAP PRIORITY★` block itself, or anywhere within any paragraph that block references or
-  duplicates (including, but not limited to, the `economy/gig` bullet inside `## Your earn tools`).
-  The named phrases above are the minimum known instances at spec-writing time, not an exhaustive
-  or exclusive list. A Phase 3 adversary that finds ANY slot-preference-ranking phrase of
-  equivalent strength still present anywhere in this scope — named in this spec or not — MUST treat
-  REQ-204 as NOT satisfied.
-- A Phase 3 adversary reading the FULL current file (not only this increment's diff) confirms no
-  equivalent-strength imperative steering/ranking text remains anywhere in the file's binding
-  (non-"tips", non-"advice") sections. This criterion, the generalized criterion above, and
-  PROP-203b / PROP-204a in verification-architecture.md MUST always reach the same PASS/FAIL
-  conclusion for the same code state — a discrepancy between them indicates one of the checks was
-  applied too narrowly and must be redone at the scope described here.
+- **Whole-section removal (Tier 0, mechanical, resolves FIND-301)**: in `buildSystemPrompt`'s output,
+  there is no line that is a markdown heading (starts with `## `) containing the substring `COLONY
+  BOOTSTRAP PRIORITY`, and no line that is a markdown heading containing the substring `MINDSET`.
+  Because a "section" is defined as a heading line through, but not including, the next `## `
+  heading line, the absence of BOTH heading substrings is definitionally equivalent to the absence
+  of the two sections' entire bodies — there is no separate "and also check the body" step, and
+  therefore no residual-phrase judgment call for either of these two sections.
+- **Bounded clause removal inside the retained `economy/gig` bullet**: the exact substrings
+  "the highest-leverage move is to POST" and "Prefer this over re-yielding surplus" (current lines
+  71 and 76) are absent from `buildSystemPrompt`'s output, while the remainder of that bullet
+  (describing `post`/`take`/`deliver` mechanics) is still present in some form — confirming the
+  bullet was edited, not wholesale-deleted.
+- **Closed-inventory cross-check (structural link to PROP-203b, resolves the PROP-203b/PROP-204a
+  disagreement risk FIND-201 and FIND-301 both raised)**: as of this revision, a fresh, full re-read
+  of `runtime/loop/prompt.mjs` (performed while writing this revision) found that every
+  ranking/imperative phrase discovered across iterations 3 and 4 (FIND-201, FIND-301) falls inside
+  exactly one of the three targets above (the two whole sections, or the two named clauses in the
+  `economy/gig` bullet) or inside the self-labeled, already-out-of-scope `## Tips` section — none
+  falls outside all of these. This is why removing exactly these three targets is sufficient, not
+  merely necessary, to satisfy PROP-203b's broader "no steering text remains in the file's binding
+  sections" check for the CURRENT file (see verification-architecture.md's PROP-203b/PROP-204a
+  entailment note). A Phase 3 adversary MUST redo this same full-file, generic-marker re-read
+  (grepping for words like "must", "prefer", "highest", "priority", "first", "almost never", "do
+  not") against the file as it exists at review time and confirm every hit still falls into one of
+  these buckets: (a) inside one of this REQ's three removal targets, (b) inside the self-labeled
+  `## Tips` section, or (c) explicitly adjudicated as a non-target in this REQ's Edge Cases (the
+  `yield` bullet clause). A hit falling outside all three buckets means this REQ's target list is
+  incomplete and must be extended by spec amendment before REQ-204 may be marked satisfied — but,
+  unlike prior iterations, that amendment adds one more NAMED, BOUNDED target to a closed list; it
+  does not reopen the open-ended "block it references or duplicates" scope this revision retires.
 
 ---
 
