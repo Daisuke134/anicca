@@ -81,14 +81,21 @@ Layer 5  GUARDRAILS（柵、hook/config）
 ## 5. 具体的な着手順（実キー・実ファイル）
 
 ```
-STEP A (Franklin OBSERVE 復活・安全): franklin-loop.plist の wallet 解決を修正
-   現状: daemon が "ANICCA_WALLET_ADDRESS not set, using unknown" を1655回 → 残高読めず tier=broke 固定
-   正しい修正: a3cdd4(動作中 com.anicca.daemon)の wallet 解決方式に franklin を合わせる（band-aid でなく）
-   安全: SOL_TRADE_MAX_SPEND=0 のままなので金は1円も動かない
-STEP B (観測 done 配線): sol-trade の realized を earn-ledger.jsonl に書く配線（今は未配線=self-申告のみ）
-   参照: pm-earner の redeem.py→record.mjs→isProfitable のパターンをコピー
-STEP C (SELF-EVAL 移植): runtime/loop の self-eval.mjs を sol-trade に適用（ledger 読んで次手）
-STEP D (META 蘇生): eval-driven-earning VCSDD feature を init から再開（fresh adversary curation-gate）
+【訂正 2026-07-07 実コード確認】旧 STEP A（plist 修正）は誤り:
+  ・1655(現1686)エラーは *バグでなく意図的*。anicca-daemon.sh:119 が INSTANCE=franklin で wallet
+    derive をスキップ（balance.mjs は EVM 専用 /^0x..40$/、Franklin は Solana）。コメントに
+    「leaving ANICCA_WALLET_ADDRESS unset for Franklin is correct — keeps tier=broke, non-fatal」。
+    plist にアドレス直書きは 0x 正規表現が Solana を弾き機能しない（実測 false）。
+  ★真のブロッカー = Franklin が broke（実残高 SOL0.02/USDC0 ≈ $1.62 < $20 reserve）+ $0→earn の道＝
+    gig 市場(P2) が未 live。今トレードは3重ゲート(cron 無効/catalog-gate/残高<閾値)で "正しく"起きない。
+    Franklin の $0→earn 経路は trade でなく gig(P2, 別CC の lane)。★
+
+正しい着手順（訂正後）:
+  SI-2 私の lane: 再利用可能な「観測 done + self-eval」harness library を作る（gig/trade どの earn 経路でも
+       plug 可。runtime/loop/self-eval.mjs + _shared/lib/ledger.mjs を抽出・共通化）→ P2 live 即載せられる状態に
+  SI-3 done 判定を fresh adversary に置換（self-fix.sh の diff review 含む）
+  (cosmetic 中優先) Franklin loop の Solana 残高 OBSERVE を稼働中 telemetry-post-franklin.mjs 再利用で VCSDD 修正
+  SI-4 P2(gig 市場 live) 後: harness を Franklin gig loop に埋込。done=realized>0 が ledger
 境界: .vcsdd/features/anicca-agent-economy/ は触らない。別 worktree feature/anicca-self-improve-harness。
 ```
 

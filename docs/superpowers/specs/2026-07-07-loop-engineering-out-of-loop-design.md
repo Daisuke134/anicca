@@ -199,7 +199,7 @@ anicca-agent-economy（別CC・経済レール層）: 「Franklin が earn "で�
 
 ### 一番安い勝ち（cheap wins）
 - **HL**: `hl.py:130-137` が `closed_pnl_usd` を計算しているのに永続化せず捨てている → ledger に書くだけで observable done 完成。
-- **Franklin**: plist に `ANICCA_WALLET_ADDRESS` を1行足すだけで 1655 エラー停止。
+- ~~**Franklin**: plist に `ANICCA_WALLET_ADDRESS` を1行足すだけで 1655 エラー停止。~~ ← **【訂正 2026-07-07 実コード確認】この cheap win は誤り**。1655(現1686)エラーは *バグでなく意図的*：`anicca-daemon.sh:119` が `if [ "$INSTANCE" != "franklin" ]` で wallet derive をスキップ（`balance.mjs` は EVM 専用 `/^0x..40$/`、Franklin は Solana）。コメントに「leaving ANICCA_WALLET_ADDRESS unset for Franklin is correct — keeps tier=broke, non-fatal」と明記。plist にアドレス直書きは 0x 正規表現が Solana を弾くので**機能しない**（実測 false）。本筋 = 稼働中の `runtime/dashboard/telemetry-post-franklin.mjs` の Solana 残高コードを loop に再利用（VCSDD）。ただし**cosmetic**（log/tier 表示を直すだけ、earn は unblock しない）。**Franklin の真のブロッカー = broke（$1.62<$20 reserve）+ gig 市場(P2)未 live**。$0→earn 経路は trade でなく gig(P2, 別CC)。
 - **PM**: `genome.mjs`/`evolve.mjs`（本物の自動昇格ゲート）が cron `run_earner.sh` から呼ばれていない → 配線するだけで self-improve が起動。
 
 ### SI-1 を踏まえた改訂 TODO（下の §8 の SI-* を具体化）
