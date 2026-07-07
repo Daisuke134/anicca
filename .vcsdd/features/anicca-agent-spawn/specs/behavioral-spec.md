@@ -1,8 +1,21 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 11, revised
-(spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 12, revised
+(spec review iteration-11 findings FIND-1101/1102 resolved — REQ-102's `decideColonySpawn` signature is
+extended from a single scalar `lastSpawnAttemptMs` to a richer `recentSpawnAttempts:
+Array<{ts, outcome}>` (reusing the SAME array-scan pattern
+`~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves for its own rate-limit
+check over `children[].spawned_ms`), reconciling REQ-102/REQ-305's cooldown-consumption contradiction
+into ONE rule: a successful attempt in-window is always a hard cooldown gate; a failed attempt is
+cooldown-exempt only below `FAILURE_COOLDOWN_CAP` (default `3`), beyond which it triggers cooldown
+identically to a success; PROP-102b/PROP-305c are corrected to test this SAME reconciled logic, and a
+new proof obligation, PROP-305g, adds the exact "3 failures reached, cooldown now applies" boundary
+fixture (resolves FIND-1101, critical). Separately, REQ-304 gains a new proof obligation, PROP-304f,
+covering the multi-citizen SEQUENTIAL co-funding SUCCESS path — two citizens' own sequential
+single-signer transfers together fully funding one child wallet, distinct from PROP-304c's existing
+insufficient-funds no-op test (resolves FIND-1102, major) — AND spec review iteration-1 findings
+FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
 resolved AND spec review iteration-6 findings FIND-501..504 resolved AND spec review iteration-7
@@ -196,6 +209,18 @@ re-read of this SAME feature's own `verification-architecture.md` Purity Boundar
 |---|---|---|
 | FIND-1001 | critical | REQ-105's "one-time bootstrap" step is corrected from a check-then-act ("IF the file does NOT yet exist, THEN copy") — a classic TOCTOU race REQ-103's own `"colony-spawn"` lock does NOT protect (that lock's critical section starts at REQ-201's identity generation, per REQ-103's own Acceptance Criteria, never at REQ-101's earlier registry READ that triggers the bootstrap) — to a SINGLE atomic POSIX exclusive-create operation (`fs.open(CITIZENS_REGISTRY_PATH, 'wx')`, `O_CREAT\|O_EXCL`), the SAME primitive `lib/lock.mjs::tryCreateLockFile` already uses to close an identical class of race (that module's own header comment: two concurrent `gig_verify_and_pay(true)` calls both read status `'delivered'` before either wrote back, and both settled a real on-chain payout — the escrow was drained twice). Because POSIX exclusive-create can only ever succeed against a file that is truly nonexistent at the instant of the call, at most ONE writer, ever, successfully creates the durable file from the seed template; every other/later caller's exclusive-create fails with `EEXIST` and that caller writes nothing, simply reading the existing file as-is — this is true whether the "existing file" is another racer's just-completed bootstrap OR a real, already-appended REQ-305 citizen record, closing both the concurrent-bootstrap race AND the late-bootstrap-overwrites-a-real-append hazard in the SAME atomic step. A new proof obligation, PROP-105l, adds both concrete race fixtures (two-fixture: concurrent first-access race; late-bootstrap-after-real-append). |
 | FIND-1002 | major | `verification-architecture.md`'s Purity Boundary Map row for the new `registry-path.mjs` module (`CITIZENS_REGISTRY_PATH`/`COORDINATOR_HOME`) is corrected from "Pure Core" to "Effectful Shell" — `CITIZENS_REGISTRY_PATH` is built from `resolveStateDir`, which this SAME table already (correctly) classifies "Effectful Shell" two rows away, and `COORDINATOR_HOME` is built from Node's `os.homedir()`, a real OS/environment read, not a deterministic computation over its own inputs. A new proof obligation, PROP-105m, adds the missing Tier-2 (real-environment-dependent) proof that `COORDINATOR_HOME` genuinely tracks the real process environment's `os.homedir()` value rather than being treated as a fixed, zero-I/O constant — mirroring the rigor PROP-403e/PROP-403f already apply to this SAME module's other, correctly-classified properties. |
+
+## Changelog (iteration 11 spec review → iteration 12)
+
+Iteration 11's spec review FAILed with 2 findings (1 critical, 1 major — FIND-1101/1102; all findings
+across iterations 1-11 were reconfirmed genuinely resolved against the real, current source). Each is
+resolved by a specific, cited design decision, grounded in a full re-read of
+`~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn`'s real, current implementation:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1101 | critical | REQ-102's `decideColonySpawn` and REQ-305's failure-cap edge case previously described DIRECTLY CONTRADICTORY cooldown-consumption rules that could not both be satisfied by one implementation (REQ-102's own EARS clause claimed a failed attempt restarts the FULL cooldown "success OR failure," while REQ-305 claimed a failed attempt is EXEMPT from consuming the cooldown up to a cap of 3) — and REQ-102's own pinned `decideColonySpawn` signature used a single scalar `lastSpawnAttemptMs`, which structurally cannot express "how many of the recent attempts were failures," making REQ-305's cap-of-3 rule unimplementable against REQ-102's own contract. This is fixed by extending `decideColonySpawn`'s signature from the scalar `lastSpawnAttemptMs` to a richer `recentSpawnAttempts: Array<{ts: number, outcome: "success"\|"failure"}>` — reusing the SAME array-scan discipline `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves out for its own rate-limit check (`children.some(c => typeof c.spawned_ms === "number" && c.spawned_ms >= windowStart)`, confirmed by direct read, 2026-07-07), generalized from "an array of successes only" to "an array of attempts, each carrying its own `outcome`." The ONE reconciled rule both REQ-102 and REQ-305 now describe: a SUCCESSFUL attempt within `SPAWN_COOLDOWN_DAYS` is ALWAYS a hard cooldown gate, regardless of how many failures also occurred in the same window; a FAILED attempt is cooldown-EXEMPT strictly below `FAILURE_COOLDOWN_CAP` (default `3`, the SAME cap REQ-305 already specified) but becomes cooldown-TRIGGERING, identically to a success, once the cap is reached within that same window — closing REQ-305's own "engineer repeated failures to attempt unlimited spawns" gap. REQ-102's EARS clause, Edge Cases, and Acceptance Criteria, and REQ-305's EARS clause and Edge Case, are both rewritten to state this IDENTICAL reconciled behavior. PROP-102b and PROP-305c (verification-architecture.md) are corrected to test the SAME reconciled logic from their respective sides (success-triggers-cooldown vs. failure-cap-triggers-cooldown), and a new proof obligation, PROP-305g, adds the exact "3 failures reached, cooldown now applies" boundary fixture (2 failures → still eligible; 3 failures → rate-limited), distinct from PROP-305c's own "3 failures then a 4th attempt" fixture. |
+| FIND-1102 | major | REQ-304's own edge case already specifies, as real supported behavior, that a spawn can proceed via multi-citizen sequential co-funding (two separate single-signer transfers from two different citizens' own wallets, landing on the SAME child wallet, when no single citizen alone has enough surplus) — but no proof obligation anywhere exercised this SUCCESS path; PROP-304c only tested the BLOCKED path (no single citizen sufficient, aggregate insufficient too — a distinct scenario). A new proof obligation, PROP-304f, is added with a concrete fixture: citizen A transfers a partial amount, citizen B transfers the remaining amount sequentially (never simultaneously) to the same child wallet, and the child wallet's final balance equals the FULL required funding amount — asserting the spawn proceeds and both transfers are independently traceable in the funding ledger (each carrying its own paying citizen's identity, per REQ-304's existing memo/log requirement). REQ-304's own Acceptance Criteria gains a matching new bullet describing this success path explicitly, plus a clarifying rule that the per-transfer ceiling check applies to EACH citizen's own transfer against THAT citizen's own certified contribution, never a single combined ceiling checked against the whole aggregate for one citizen's individual transfer (closing the ambiguity the review's own evidence raised about how PROP-304b's ceiling check interacts with a SUM of two transfers). |
 
 ## Scope of this increment (read first)
 
@@ -493,11 +518,32 @@ indivisible unit.
 
 ### REQ-102: Deterministic spawn threshold gate
 **EARS**: WHEN REQ-101's colony surplus is computed, THE SYSTEM SHALL permit at most one new spawn
-attempt when, and only when, `colonySurplusUsd >= SPAWN_THRESHOLD_USD` AND at least
-`SPAWN_COOLDOWN_DAYS` (default `14`, reusing the exact `rateLimitDays` value already used by
-`spawn-decision.js`) have elapsed since the colony's last spawn attempt (success OR failure — see
-REQ-305) AND fewer than `MAX_CONCURRENT_SPAWNS` (default `1`) children are currently in
-`"provisioning"` state.
+attempt when, and only when, `colonySurplusUsd >= SPAWN_THRESHOLD_USD` AND the Cooldown Check below
+evaluates to "not on cooldown" AND fewer than `MAX_CONCURRENT_SPAWNS` (default `1`) children are
+currently in `"provisioning"` state.
+
+**Cooldown Check, reconciled with REQ-305 (resolves FIND-1101, critical):** the colony maintains
+`recentSpawnAttempts: Array<{ ts: number, outcome: "success"|"failure" }>` — one entry per completed
+spawn attempt, whichever the outcome — REPLACING a single scalar "last attempt" timestamp, which
+cannot express "how many of the recent attempts were failures." This reuses the SAME array-scan
+discipline `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` already proves out for its
+own rate-limit check (`children.some(c => typeof c.spawned_ms === "number" && c.spawned_ms >=
+windowStart)`), generalized here from "an array of successes only" to "an array of attempts, each
+carrying its own `outcome`" — exactly the richer shape REQ-305's failure-cap rule (below) needs. Given
+`windowStart = nowMs - SPAWN_COOLDOWN_DAYS * DAY_MS` and `inWindow = recentSpawnAttempts.filter(a =>
+a.ts >= windowStart)`:
+- IF any entry in `inWindow` has `outcome === "success"`: cooldown applies UNCONDITIONALLY (a hard
+  gate) — a successful spawn always restarts the full cooldown, regardless of how many failures (if
+  any) also occurred in the same window.
+- ELSE, let `failuresInWindow = inWindow.filter(a => a.outcome === "failure").length`. A failed
+  attempt is cooldown-EXEMPT — it does NOT by itself trigger the cooldown — UNLESS
+  `failuresInWindow >= FAILURE_COOLDOWN_CAP` (default `3`, identical to REQ-305's own cap), in which
+  case THE SYSTEM SHALL treat the window as under cooldown exactly as it would for a success, closing
+  the "engineer repeated failures to attempt unlimited spawns" gap REQ-305's own edge case identifies.
+
+This is the ONE reconciled rule both REQ-102 and REQ-305 describe: a successful attempt is ALWAYS
+cooldown-triggering; a failed attempt is cooldown-EXEMPT strictly below `FAILURE_COOLDOWN_CAP` and
+cooldown-TRIGGERING once the cap is reached — never two different behaviors.
 
 `SPAWN_THRESHOLD_USD = MIN_SHELTER_USD * SAFETY_MARGIN_MULTIPLIER`, where:
 - `MIN_SHELTER_USD` defaults to `5.00` — a provisional anchor, NOT a live-market-verified figure
@@ -515,8 +561,8 @@ REQ-305) AND fewer than `MAX_CONCURRENT_SPAWNS` (default `1`) children are curre
   which it recomputes from that measured figure.
 
 This is arithmetic bookkeeping (a numeric comparison against an already-known threshold and an
-already-known elapsed-time and an already-known in-flight count), not a value judgment about WHETHER
-to spawn — see REQ-104.
+already-known Cooldown Check result and an already-known in-flight count), not a value judgment about
+WHETHER to spawn — see REQ-104.
 
 **Edge Cases**:
 - `colonySurplusUsd` is EXACTLY equal to `SPAWN_THRESHOLD_USD`: treated as **eligible** (the boundary
@@ -527,10 +573,16 @@ to spawn — see REQ-104.
   never has evaluations racing across DIFFERENT physical hosts, see REQ-106): the gate function ITSELF
   is pure and may return `eligible:true` from both evaluations — REQ-103 is what prevents both from
   acting on that `true` result simultaneously; REQ-102 does not need to know about concurrency.
-- `SPAWN_COOLDOWN_DAYS` has NOT elapsed since the last attempt, but `colonySurplusUsd` has grown far
-  past the threshold in the meantime: still **not eligible**, `reason:"rate_limited"` — surplus size
-  never overrides the cooldown (mirrors `spawn-decision.js`'s existing ordering: balance → rate-limit →
-  cap, cooldown is a hard gate regardless of how much surplus exists).
+- The Cooldown Check (above) is under cooldown — either a successful attempt is within
+  `SPAWN_COOLDOWN_DAYS`, OR `FAILURE_COOLDOWN_CAP` recent failures have accumulated in the same
+  window — but `colonySurplusUsd` has grown far past the threshold in the meantime: still **not
+  eligible**, `reason:"rate_limited"` — surplus size never overrides an active cooldown (mirrors
+  `spawn-decision.js`'s existing ordering: balance → rate-limit → cap).
+- Fewer than `FAILURE_COOLDOWN_CAP` failed attempts have occurred within the current window and NO
+  successful attempt has occurred within it (resolves FIND-1101): the Cooldown Check does NOT apply
+  on failure-count alone — a new attempt remains eligible (surplus/concurrency checks permitting) —
+  see REQ-305's own edge case and PROP-305g for the exact boundary fixture (fewer than the cap → still
+  eligible; the cap reached → rate-limited).
 - `MAX_CONCURRENT_SPAWNS` children are already `"provisioning"` (none yet resolved to `"active"` or
   `"failed"`): not eligible, `reason:"max_concurrent_spawns"`, regardless of surplus/cooldown — a
   slow/stuck provisioning attempt does not silently permit unbounded parallel spawns.
@@ -538,14 +590,27 @@ to spawn — see REQ-104.
   (fail-closed — never eligible), matching REQ-101's own fail-closed convention.
 
 **Acceptance Criteria**:
-- Pure function, e.g. `decideColonySpawn({ colonySurplusUsd, spawnThresholdUsd, lastSpawnAttemptMs,
-  nowMs, cooldownDays, childrenProvisioning, maxConcurrentSpawns }) → { eligible: boolean, reason:
-  "ok"|"insufficient_surplus"|"rate_limited"|"max_concurrent_spawns" }`, no I/O.
+- Pure function, e.g. `decideColonySpawn({ colonySurplusUsd, spawnThresholdUsd, recentSpawnAttempts,
+  nowMs, cooldownDays, failureCooldownCap, childrenProvisioning, maxConcurrentSpawns }) → { eligible:
+  boolean, reason: "ok"|"insufficient_surplus"|"rate_limited"|"max_concurrent_spawns" }`, no I/O.
+  `recentSpawnAttempts: Array<{ ts: number, outcome: "success"|"failure" }>` (resolves FIND-1101 —
+  REPLACES the prior single-scalar `lastSpawnAttemptMs`, which could not express "how many of the
+  recent attempts were failures"); `failureCooldownCap` defaults to `3` — identical to REQ-305's own
+  cap, the SAME number, never independently configurable to a different value.
 - Order of checks is surplus → cooldown → concurrency cap (each independently testable at its own
   boundary), matching the existing `spawn-decision.js` ordering convention (a broke colony never
   spawns whatever else is true).
 - `colonySurplusUsd = spawnThresholdUsd` exactly → `eligible:true`.
 - `colonySurplusUsd = spawnThresholdUsd - 0.01` → `eligible:false, reason:"insufficient_surplus"`.
+- A `recentSpawnAttempts` entry with `outcome:"success"` inside the cooldown window → `eligible:false,
+  reason:"rate_limited"` UNCONDITIONALLY, regardless of how many (if any) `outcome:"failure"` entries
+  also occur in the same window (resolves FIND-1101).
+- Fewer than `failureCooldownCap` `outcome:"failure"` entries inside the window, and ZERO
+  `outcome:"success"` entries inside the window → the Cooldown Check does NOT apply on failure-count
+  alone (resolves FIND-1101).
+- `failureCooldownCap` or more `outcome:"failure"` entries inside the window (zero successes) →
+  `eligible:false, reason:"rate_limited"` — the failure cap itself becomes a hard gate, identical to a
+  success (resolves FIND-1101; see REQ-305's own edge case for the identical rule from that side).
 
 ---
 
@@ -1760,6 +1825,18 @@ path for the Akash target specifically, never a single-signer single-transaction
   enters the documented Skip API route at THAT citizen's own real first hop (`"solana"` for a
   Solana-native funder, `"8453"` for a Base-native funder) — never hardcoding a Solana-only entry when a
   Base-native citizen's surplus is the one actually being spent.
+- **(resolves FIND-1102)** Given two self-funded citizens, A and B, where NEITHER individually holds
+  enough surplus-above-reserve to cover the deploy cost alone but their surplus TOGETHER does, and A's
+  own single-signer transfer of a partial amount is followed SEQUENTIALLY (never simultaneously) by
+  B's own single-signer transfer of the remaining amount, both to the SAME child wallet: THE SYSTEM
+  SHALL complete both transfers, the child wallet's final balance SHALL equal the FULL required
+  funding amount, and BOTH transfers SHALL be independently traceable in the funding ledger (each
+  carrying its own paying citizen's identity, per the memo/log requirement above) — this is the
+  co-funding SUCCESS path, distinct from the no-single-citizen-sufficient BLOCKED path the edge case
+  above also describes when co-funding capability does not (yet) exist. The per-transfer ceiling check
+  (above) applies to EACH citizen's own transfer against THAT citizen's own certified
+  surplus-above-reserve contribution — never a single combined ceiling checked against the whole
+  aggregate amount for one citizen's individual transfer.
 
 ---
 
@@ -1774,9 +1851,12 @@ never carry a `childInbox`), and `parentWallet`/`generation`/`seedUsdc`/`constit
 as REQ-206 now specifies (resolves FIND-204)) together with the specific failing step and error
 message, any already-spent, non-refundable resource (e.g. an Akash deployment deposit not yet
 converted into an active lease) SHALL be logged for colony accounting, and REQ-102's
-`SPAWN_COOLDOWN_DAYS` timer SHALL NOT be considered "consumed" by a failed attempt — mirroring this
-project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zero and leaves an honest
-provisioning/failed ledger row, never a fabricated success").
+`SPAWN_COOLDOWN_DAYS` timer SHALL NOT be considered "consumed" by a failed attempt UNLESS that failure
+is itself the `FAILURE_COOLDOWN_CAP`-th (default `3`) recent failed attempt within the SAME window —
+see REQ-102's own reconciled Cooldown Check and the edge case below, which describe this IDENTICAL
+rule (resolves FIND-1101: REQ-102 and REQ-305 no longer describe two different behaviors) — mirroring
+this project's existing HARD RULE 0.24 ("NO FAKE RUN... any failed step exits non-zero and leaves an
+honest provisioning/failed ledger row, never a fabricated success").
 
 WHEN, and only when, a spawn attempt completes and the child is marked `"active"` (REQ-204+REQ-205 both
 complete), THE SYSTEM SHALL, in that SAME ledger.js row, ALSO set a new field `active_since` to the
@@ -1836,9 +1916,15 @@ append — a permanent closure of the hazard, not merely a t=0 check.
   bounded retry window (to avoid wasting an already-paid, non-refundable lease) before the lease itself
   is torn down and the attempt marked `"failed"`.
 - A failed attempt's cooldown-exemption (above) could in principle be exploited to attempt unlimited
-  spawns by engineering repeated "failures": THE SYSTEM SHALL cap the number of failed attempts counted
-  within any single `SPAWN_COOLDOWN_DAYS` window (default cap `3`) — beyond that cap, further attempts
-  within the window ARE rate-limited exactly as a successful spawn would be, closing this gap.
+  spawns by engineering repeated "failures": THE SYSTEM SHALL cap the number of failed attempts
+  counted within any single `SPAWN_COOLDOWN_DAYS` window (`FAILURE_COOLDOWN_CAP`, default `3`) — this
+  is the SAME `recentSpawnAttempts`-scanning cap REQ-102's own reconciled Cooldown Check applies
+  (resolves FIND-1101: REQ-102 and REQ-305 now describe the IDENTICAL reconciled rule, never two
+  different behaviors) — beyond that cap (i.e. once `FAILURE_COOLDOWN_CAP` `outcome:"failure"` entries
+  already exist in the window, with ZERO `outcome:"success"` entries in it), the NEXT attempt within
+  the SAME window is rate-limited exactly as a successful spawn would be, closing this gap. See
+  PROP-305g for the exact boundary fixture: fewer than the cap → still eligible; the cap reached →
+  rate-limited.
 - The ledger write (`"active"`) succeeds but the SUBSEQUENT registry-append write fails FOR A TRANSIENT
   REASON (e.g. a filesystem error): THE SYSTEM SHALL retry the registry-append on the NEXT wake before
   any further spawn evaluation runs — a child marked `"active"` in the ledger but absent from the

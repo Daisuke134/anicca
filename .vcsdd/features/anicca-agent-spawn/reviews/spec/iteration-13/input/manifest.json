@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 13,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 12,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-12/output/findings/",
+    "note": "2 findings, 1 critical: FIND-1101 -- decideColonySpawn's pinned signature extended from a scalar lastSpawnAttemptMs to recentSpawnAttempts: Array<{ts, outcome}>, reusing spawn-decision.js's real array-scan pattern; reconciled rule: success in-window is a hard gate, failure is exempt below FAILURE_COOLDOWN_CAP=3, gating once reached. REQ-102/REQ-305 now state the IDENTICAL rule, new PROP-305g tests the 2-vs-3-failures boundary. FIND-1102 -- REQ-304's multi-citizen sequential co-funding success path now has a concrete PROP (PROP-304f) with a real fixture (citizen A $6 + citizen B $4 = $10 full deploy cost, both transfers traceable), distinguished from PROP-304c's blocked-path test."
+  },
+  "note": "Verify both fixes actually hold -- re-read spawn-decision.js::decideSpawn fresh and confirm the new recentSpawnAttempts signature genuinely mirrors its real array-scan pattern. Confirm REQ-102 and REQ-305 now state the IDENTICAL reconciled cooldown rule with no remaining contradiction anywhere (check every place cooldown is mentioned in both spec files). Confirm PROP-304f's fixture genuinely exercises a DIFFERENT code path than PROP-304c, not a cosmetic variant. This feature is now on iteration 13 with 52+ cumulative findings across 12 prior iterations. Do a full fresh, skeptical pass over the ENTIRE spec -- do not assume convergence."
+}
