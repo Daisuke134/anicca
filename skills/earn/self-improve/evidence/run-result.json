@@ -1,0 +1,31 @@
+{
+  "baseline_score": -0.3959371620826199,
+  "best_score": 9.44855790310848,
+  "beats_baseline": true,
+  "iterations": 30,
+  "endpoint_used": "free/mistral-large-3-675b (via local ClawRouter proxy 127.0.0.1:8402, self-funded wallet, ensemble at temperature in {0.5, 0.9, 1.15})",
+  "scope_guard_ok": true,
+  "scope_guard_reason": "scope-guard-pass",
+  "stage1_pass": true,
+  "window_pairs_oos_net_usd": [
+    {
+      "train_window": 0,
+      "test_window": 1,
+      "oos_net_usd": 3.3600162782975644
+    },
+    {
+      "train_window": 2,
+      "test_window": 3,
+      "oos_net_usd": 67.26267685056268
+    },
+    {
+      "train_window": 4,
+      "test_window": 5,
+      "oos_net_usd": -42.27701941953481
+    }
+  ],
+  "candidate_program_id": "233d923c-0fb2-451f-ab94-90fa64b9cb8d",
+  "candidate_parent_id": "a11af17f-97fa-4714-92b7-4563a01b7021",
+  "run_id": "run6-20260707T151345Z",
+  "command": "openevolve-run strategies/pm_backtest_strategy.py evaluator.py --config config.yaml --iterations 30 --output runs/run6-20260707T151345Z --log-level INFO"
+}
