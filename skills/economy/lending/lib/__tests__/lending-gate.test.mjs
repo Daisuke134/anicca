@@ -131,6 +131,18 @@ test("PROP-101e: sumOutstandingPrincipalUsd is unaffected by any citizen-level i
   assert.equal(sumOutstandingPrincipalUsd(rows, "L1"), 0.02);
 });
 
+test("PROP-101g: sumOutstandingPrincipalUsd floors EACH row's own contribution at 0 before summing — an ordinary partial repayment on an active loan whose repaid_usd has passed principal_usd (but not yet total_due_usd, REQ-104's 10% rate) never goes negative, never inflates computeLenderAvailableUsd's reported surplus (resolves FIND-902)", () => {
+  const rows = [
+    { loan_id: "loan_L1_1", lender_id: "L1", status: "active", principal_usd: 1, repaid_usd: 1.05, total_due_usd: 1.1 },
+  ];
+  assert.equal(sumOutstandingPrincipalUsd(rows, "L1"), 0, "1 - 1.05 = -0.05 must be floored to 0, not left negative");
+  assert.equal(
+    computeLenderAvailableUsd({ lenderBalanceUsd: 6, perCitizenReserveUsd: 5, outstandingPrincipalUsd: sumOutstandingPrincipalUsd(rows, "L1") }),
+    1,
+    "balance(6) - reserve(5) - outstanding(0, correctly floored) = 1 — an unfloored -0.05 would have inflated this to 1.05"
+  );
+});
+
 test("PROP-101f: sumRecentGojoGiftsUsd sums only in-window, amount_usd>0 rows, and is GATED to lenderId===GOJO_SENDER_ID (resolves FIND-102)", () => {
   const nowMs = 1781450000000;
   const gojoLogRows = [

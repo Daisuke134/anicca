@@ -43,9 +43,22 @@ function matchesTransferLog(log, fromTopic, toTopic) {
   return true;
 }
 
+// A malformed/non-hex field from the RPC (log.data, receipt.blockNumber, finalizedBlock.number) makes
+// BigInt() throw a SyntaxError — caught here so a corrupted/misbehaving RPC response fails closed
+// (verifyRepayment's own {credited:0, rejected:true} shape) rather than propagating an uncaught throw
+// (resolves FIND-901).
+function safeBigIntNumber(hexValue) {
+  try {
+    return Number(BigInt(hexValue));
+  } catch {
+    return NaN;
+  }
+}
+
 function extractValueUsd(log) {
-  const raw = Number(BigInt(log.data));
-  return raw / 1e6;
+  const raw = safeBigIntNumber(log.data);
+  return raw / 1e6; // NaN / 1e6 === NaN — verifyRepayment's existing `!Number.isFinite(value)` check
+  // already rejects this, so no new branch is needed here.
 }
 
 // A standards-compliant eth_getLogs response ALWAYS includes a native `transactionHash` field on every
@@ -86,9 +99,9 @@ export async function verifyRepayment({ txHash, expectedFrom, expectedTo, rpcUrl
   } catch {
     return { credited: 0, rejected: true };
   }
-  const finalizedNumber = finalizedBlock ? Number(BigInt(finalizedBlock.number)) : NaN;
-  const receiptBlockNumber = Number(BigInt(receipt.blockNumber));
-  if (!Number.isFinite(finalizedNumber) || receiptBlockNumber > finalizedNumber) {
+  const finalizedNumber = finalizedBlock ? safeBigIntNumber(finalizedBlock.number) : NaN;
+  const receiptBlockNumber = safeBigIntNumber(receipt.blockNumber);
+  if (!Number.isFinite(finalizedNumber) || !Number.isFinite(receiptBlockNumber) || receiptBlockNumber > finalizedNumber) {
     return { credited: 0, rejected: true };
   }
 
