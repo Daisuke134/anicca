@@ -111,6 +111,23 @@ original enumeration above — added here for completeness. No scope change: the
 were always structurally out of reach without the orchestrator: this is a documentation-accuracy fix,
 not a new scope decision.
 
+**Second completeness correction (2026-07-08, Phase-6 gate check)**: five additional Tier-0 structural
+obligations were found, when attempting to enter Phase 6, to ALSO require the real, production
+issuance-critical-section code to exist before they can be checked, and were never previously named as
+in-scope OR out-of-scope anywhere: PROP-109e (the defaulted-append call site acquiring `loan_${loan_id}`
+before writing), PROP-106i (REQ-106's own issuance critical section never referencing the per-loan lock
+key), PROP-105h/PROP-114c (the real issuance module's own call sites for both kill-switches, including
+their required second, lock-protected re-check call sites), and PROP-109g (the real defaulted-append
+call site setting `defaulted_ms`) — each explicitly requires reading "the REAL, PRODUCTION
+issuance-critical-section code," which does not exist yet. A sixth, PROP-112a, was found to be only
+HALF checkable without the orchestrator: its structural grep half (no `homeDir`-equality comparison, no
+remote/networked lock construction) was independently verified against the delivered code and holds,
+but its own required "unit-test fixture asserting co-location eligibility via `coLocatedWithCoordinator`"
+needs an actual co-location-decision function that also does not exist in any of this sprint's four
+delivered modules — so it is deferred in full, not partially credited. All six are added to sprint-2's
+scope alongside the thirteen above (nineteen total proof obligations deferred, all sharing the identical
+root cause: no loan-issuance/repayment orchestrator exists yet in this sprint's diff).
+
 ## Formatting note (2026-07-08)
 
 This contract was originally drafted with YAML `>` folded block-scalar syntax for the `description`/

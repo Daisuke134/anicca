@@ -1,4 +1,4 @@
-# Security Report — anicca-agent-lending (Phase 5, Formal Hardening)
+# Security Hardening Report — anicca-agent-lending (Phase 5, Formal Hardening)
 
 ## Tooling
 
