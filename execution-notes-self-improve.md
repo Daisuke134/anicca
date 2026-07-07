@@ -293,3 +293,127 @@ Fixes applied (all under `skills/earn/self-improve/`):
    (`combined_score=-4.4683, stage1_pass=false`) — this run's purpose is proving the SCRIPT+PLIST
    wiring reaches real openevolve under a minimal PATH, not re-proving beats-baseline (already
    proven and independently reproduced by the adversary above).
+
+## Close-loop fix: 3 Stop-hook-review gaps, human-zero (2026-07-08)
+
+A Stop-hook review of the merged harness found 3 gaps, all provable on PAPER (not the live-money
+part). Fixed on branch `feature/self-improve-close-loop`, worktree
+`~/anicca/.worktrees/self-improve-close-loop`.
+
+### Gap 1 — OBSERVE: read realized P&L from earn-ledger.jsonl
+
+Added `lib/ledger_reader.py`: read-only Python mirror of
+`skills/_shared/lib/ledger.mjs::isProfitable`/`readLedger` (net_usdc>0, not a swap source,
+external===true, chain-correct confirmation — EVM tx+status=="0x1" or Solana sig+confirmed==true).
+INV-5 tension disclosed in the module's own docstring: this is a duplicated READ-ONLY view of one
+boolean rule, not a second ledger/writer — a subprocess->node round trip was rejected as the
+alternative (this harness has intentionally had zero subprocess dependency until now; `subprocess`
+is even on `scope_guard.py`'s own EVOLVE-BLOCK denylist). 13 pytest cases
+(`tests/test_ledger_reader.py`), including the exact fixture shapes `ledger.mjs` itself documents
+(EVM row, Solana row, narrate-only row excluded, swap row excluded even though net-positive,
+negative-net row excluded, unconfirmed-tx row excluded).
+
+Wired as an OBSERVE step at the START of `run_evolve.sh`, before EVOLVE: real output against the
+real ledger, 2026-07-08 —
+`{"ledger_path": ".../skills/earn/state/earn-ledger.jsonl", "total_rows": 30,
+"profitable_row_count": 6, "realized_net_usd": 8.4731}` — logged to
+`skills/earn/state/self-improve-evolve.log` every run, never blocking (a missing/sparse ledger
+degrades to an all-zero summary).
+
+### Gap 2 — risk-adjusted fitness (kill variance-amplification)
+
+`evaluator.py`'s stage2/promotion `combined_score` changed from raw mean OOS net USD to
+`gate_math.risk_adjusted_score` — Sharpe-like `mean(oos) / max(stddev(oos), eps)` (Lopez de Prado +
+Lilian Weng cited in the function's own docstring). Deliberately `max(stddev, eps)`, not
+`stddev + eps`: the additive form is NOT exactly scale-invariant under leverage (a real, if tiny,
+reward-hacking crack — caught by this feature's OWN test suite before being shipped, see
+`test_risk_adjusted_fitness.py` git history); `max()` makes leverage-invariance EXACT whenever the
+real stddev clears the eps floor (true for every realistic run).
+
+The ORIGINAL fixture (`strategies/fixtures/pm_history.csv`) had ~zero edge/confidence-outcome
+correlation (per the "HONEST re-read" section above), so raw-USD scoring could ONLY be improved by
+leveraging identical trade selection — exactly what candidate `233d923c` did. A risk-adjusted
+metric needs a fixture with a GENUINE, if noisy, edge to reward anything at all, so the fixture was
+regenerated deterministically: `strategies/fixtures/generate_fixture.py`, `SEED=192`, `ALPHA=0.5`
+(`true_prob = price + 0.5*edge + noise`) — confirmed `corr(edge, outcome) = 0.1503` on the
+regenerated data (weak-but-real, not free money).
+
+Real numbers off the regenerated fixture (not invented, reproduced by `tests/test_baseline_beat.py`
++ `tests/test_risk_adjusted_fitness.py`):
+- baseline (`min_edge=0.15, min_confidence=6.0, base_stake=5.0`): `combined_score=1.2628`,
+  `mean_oos_net_usd=5.6919`, `std_oos_net_usd=4.5073`, **`worst_window_oos_net_usd=-0.4732`**
+  (a genuinely losing OOS window).
+- hand-crafted GENUINE selection-change candidate (`min_edge: 0.15 -> 0.24`, nothing else changed):
+  `combined_score=2.4385` (beats baseline), `mean_oos_net_usd=7.9775` (mean UP),
+  `std_oos_net_usd=3.2715` (variance DOWN), **`worst_window_oos_net_usd=4.5268`** (worst window
+  flips to positive) — a genuine Pareto improvement, not a variance trick.
+- hand-crafted LEVERAGE-ONLY candidate (`base_stake: 5.0 -> 20.0`, thresholds unchanged, therefore
+  IDENTICAL trade selection every window): `combined_score` is numerically identical to baseline's
+  (`1.2628...` both, `math.isclose(rel_tol=1e-9)`) — proven both algebraically (docstring) and by a
+  real end-to-end evaluator run (`test_leverage_only_candidate_does_not_beat_baseline_on_real_fixture`)
+  that leverage alone cannot beat baseline under this metric.
+
+### Gap 3 — per-candidate promotion adversary (REQ-RH4) + full autonomous cycle
+
+Added `lib/promote_gate.py` (pure: `assess_candidate`/`decide_promotion`/`promote_if_approved`,
+unit-tested with zero LLM cost in `tests/test_adversary_disapprove.py` by mocking
+`lib.promote.promote`) + `lib/promote_gate_run.py` (effectful driver: builds the prompt, shells out
+to a FRESH `claude --model opus --dangerously-skip-permissions --print --output-format json
+--json-schema ... --max-budget-usd 1.00` — same pattern as `~/anicca/skills/self/self-fix.sh`'s
+adversary spawn, here synchronous since the verdict is needed before deciding to promote) +
+`promote_gate.sh` (thin shell entrypoint). REQ-RH4 order enforced structurally: stage2
+beats_baseline + trip-wire clear are checked BEFORE any LLM call — an ineligible candidate costs
+zero tokens. `run_evolve.sh` now runs the full cycle: OBSERVE -> EVOLVE -> promote_gate.sh -> log.
+
+**Found and fixed a real bug while proving this**: `lib.promote.promote(..., commit=False)` (a
+pre-existing file from before this close-loop revision) writes `baseline_path` to disk
+UNCONDITIONALLY — only the git-commit step is gated by `commit`. The first smoke test of
+`promote_gate.sh --dry-run` against a hand-crafted candidate actually overwrote the real
+`strategies/pm_backtest_strategy.py` in this worktree (caught immediately via `git status`/`git
+diff`, reverted with `git checkout --`, confirmed clean before proceeding). Fix: `--dry-run` in
+`promote_gate_run.py` now skips calling `promote_if_approved`/`promote.promote` entirely (zero file
+writes) rather than relying on `commit=False`'s partial/misleading protection — `lib/promote.py`
+itself was left untouched (out of this gap's scope, and nothing else in the repo depends on its
+`commit=False` behavior).
+
+**Smoke test (hand-crafted candidate, `--dry-run`, real adversary call, evidence in
+`evidence/close-loop/handcrafted_candidate_adversary_verdict.json`)**: the `min_edge=0.24` genuine
+selection-change candidate from Gap 2 was assessed as `eligible_for_adversary_review=true`
+(scope_guard PASS, stage1 PASS, stage2 beats_baseline, trip-wire clear), and the REAL fresh Opus
+adversary independently re-derived the numbers and returned `verdict=PASS`: *"a genuine selection/
+logic change... base_stake is untouched at 5.0, so this is unambiguously a selection/logic change...
+not a leverage/stake-multiplier... willing to promote into the committed backtest baseline"*
+(cost_usd≈$0.35–0.71 across 2 real calls). `--dry-run` correctly did NOT commit — `git status`
+confirmed the baseline file was untouched.
+
+**Real "RUN IT ONCE" proof (human-zero, minimal PATH, evidence in `evidence/close-loop/real_run_*`)**:
+`env -i HOME="$HOME" PATH=/usr/bin:/bin bash run_evolve.sh` (`SELF_IMPROVE_ITERATIONS=10`).
+OBSERVE logged the real ledger summary above. EVOLVE ran real openevolve against the free-tier
+model; every one of the 10 iterations across all 3 islands failed with `No valid diffs found in
+response` / `degraded response: repetitive assistant loop` (the free model's own diff-compliance
+flakiness, previously documented in this file — not a wiring failure: the run's own log shows real
+per-iteration LLM round-trips and retries). openevolve's own tracked "best" program therefore
+remained the UNMODIFIED generation-0 seed (`combined_score=1.2628`, byte-identical to baseline —
+confirmed via `diff`, zero lines). promote_gate's deterministic pre-check correctly marked this
+candidate `eligible_for_adversary_review=false` (`stage2_pass=false`: a tie against baseline never
+beats it, EDGE-2) and logged the rejection reason WITHOUT ever invoking the LLM adversary (zero
+token cost) — `verdict.json`: `{"promote": false, "reason": "deterministic gate not cleared before
+adversary review: ... stage2_pass=False ...", "adversary_invoked": false}`. Nothing was promoted;
+`strategies/pm_backtest_strategy.py` is unchanged (confirmed via `git status`).
+
+**Honest summary**: this run is a fully wired, human-zero, real proof of the OBSERVE->EVOLVE->
+promote_gate->log cycle, correctly and honestly rejecting a non-improving candidate without any
+LLM cost — it is NOT a proof that openevolve's free-tier model can currently find a real
+risk-adjusted improvement on its own within 10 iterations (it did not, this run). The separate
+hand-crafted-candidate smoke test (previous paragraph) proves the ADVERSARY step itself works
+end-to-end with a real opus call and a real, correct, cited PASS verdict — that mechanism is
+proven; a real openevolve-discovered accepted candidate under the NEW risk-adjusted metric remains
+future work (more iterations / a stronger free-tier model / more islands), same caveat class as
+this file's very first sections.
+
+**Fixture split disclosed**: the backtest fitness (Gap 2) uses the synthetic, documented-edge
+`pm_history.csv` fixture — real market-feature history per historical decision isn't available
+(earn-ledger.jsonl records outcomes/P&L, not the per-decision market features a backtest replay
+would need). `ledger_reader.py` (Gap 1) reads the REAL ledger for the OBSERVE/realized-P&L signal.
+A real-market-data backtest replay stays deferred, same as the original spec's own
+`out_of_scope_this_phase` framing.

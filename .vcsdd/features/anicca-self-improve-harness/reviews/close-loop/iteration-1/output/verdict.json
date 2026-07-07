@@ -1,0 +1,75 @@
+{
+  "overallVerdict": "PASS",
+  "dimensions": [
+    {
+      "name": "LEDGER_READER_FIDELITY",
+      "verdict": "PASS",
+      "findings": [
+        "lib/ledger_reader.py::is_profitable mirrors ledger.mjs::isProfitable's 4-part rule exactly (net_usdc>0, source not in SWAP_SOURCES, external===true, EVM tx+status==\"0x1\" OR Solana sig+confirmed===true).",
+        "Re-ran `python3 lib/ledger_reader.py` against the real ~/anicca/skills/earn/state/earn-ledger.jsonl (30 rows): reproduced {\"total_rows\": 30, \"profitable_row_count\": 6, \"realized_net_usd\": 8.4731} exactly, matching evidence/close-loop/observe_ledger_summary.json.",
+        "Independently cross-checked with a from-scratch Node script calling the REAL skills/_shared/lib/ledger.mjs (readLedger+isProfitable), not the Python port: identical result {total_rows:30, profitable_row_count:6, realized_net_usd:8.4731} — this is a true independent confirmation, not just re-running the same script."
+      ]
+    },
+    {
+      "name": "RISK_ADJUSTED_FITNESS_LEVERAGE_INVARIANT_NOT_GAMEABLE",
+      "verdict": "PASS",
+      "findings": [
+        "Constructed my own leverage-only candidate (base_stake 5.0->20.0, thresholds unchanged): combined_score == baseline combined_score EXACTLY (1.262807048935334 == 1.262807048935334, not just isclose).",
+        "Constructed my own genuine-selection candidate (min_edge 0.15->0.24): combined_score=2.4384568716289445 strictly beats baseline (1.2628...), worst_window_oos_net_usd=4.526752095788865 >= 0.",
+        "Grid-searched the full (min_edge, min_confidence) threshold space (~1350 combos) for a degenerate/near-zero-variance candidate that could inflate the ratio: zero beat-baseline candidates found with std_oos_net_usd < 0.05 — the metric is not gameable via naive threshold search on this fixture. The single most over-fit candidate found (score=4.30, ~3.4x baseline) is caught by the REQ-RH2 tripwire (>3x population_best) before it could even become eligible_for_adversary_review, let alone auto-promote.",
+        "Verified the max(stddev, eps) vs stddev+eps distinction is load-bearing: temporarily changed gate_math.risk_adjusted_score to `stddev + eps`, re-ran tests -> 2 tests correctly went red (test_risk_adjusted_score_is_mean_over_stddev_when_stddev_clears_the_eps_floor, test_leverage_only_candidate_does_not_beat_baseline_on_real_fixture); reverted, file confirmed byte-identical to pre-change backup via diff, full suite green again."
+      ]
+    },
+    {
+      "name": "PROMOTE_GATE_INTEGRITY",
+      "verdict": "PASS",
+      "findings": [
+        "(a) ORDER: assess_candidate() in lib/promote_gate.py runs scope_guard -> evaluate() cascade (stage1+stage2) -> tripwire_check, all before promote_gate_run.py ever reaches its adversary subprocess call (guarded by `if not assessment['eligible_for_adversary_review']: ... return` at promote_gate_run.py:208-214, BEFORE the `_invoke_adversary` call at line 216+). Live-verified: ran promote_gate_run.py --dry-run against a hand-crafted regressing candidate (min_edge 0.10/min_confidence 0.0) -> logged 'NOT ELIGIBLE for adversary review (no LLM call made)', zero subprocess spawned, verdict.json adversary_invoked=false.",
+        "(b) REAL ADVERSARY: promote_gate_run.py._invoke_adversary spawns `claude --model opus --dangerously-skip-permissions --print --output-format json --json-schema ... --add-dir <repo_root>` via subprocess.run with the prompt on stdin — not a stub. Independently authenticated evidence/close-loop/handcrafted_candidate_adversary_verdict.json's adversary_session_id (8593a18a-4186-4c7b-83cc-ac866f69eda4) by locating and reading the REAL local Claude Code session transcript at ~/.claude/projects/-Users-anicca-anicca--worktrees-self-improve-close-loop/8593a18a-....jsonl: model field = claude-opus-4-8 (Opus), first user message byte-matches _build_prompt()'s template, and the assistant's own transcript text ('I'll spot-check the actual strategy file to verify the mechanism of min_edge... Confirmed... at line 63') shows the adversary genuinely used a tool to independently verify the diff before rendering its PASS verdict — this cannot be fabricated after the fact from inside promote_gate_run.py; it is proof of a real, independent Opus process.",
+        "(c) DRY-RUN SAFETY: promote_gate_run.py's `if dry_run: <synthetic report, no call> else: promote_gate.promote_if_approved(...)` branch is UNCONDITIONAL on the decision outcome — dry-run can never reach promote_if_approved/promote.promote regardless of whether the adversary said PASS or FAIL (fixes the documented prior bug where promote(commit=False) still wrote the file). Live-verified: ran promote_gate_run.py --dry-run against an ineligible candidate; strategy-file md5 identical before/after, `git status --short` on the file empty. No dedicated automated pytest unit test exercises promote_gate_run.py's own main()/dry-run path specifically (it is deliberately excluded from the fast pytest suite per the module's own docstring, since an eligible-path dry-run still makes a real paid adversary call) — this is a minor coverage gap, not a functional hole, since the guarding code path is a trivial, statically-verifiable unconditional if/else and was live-exercised above.",
+        "(d) COMMIT GATE: gate_math.stage_gate/decide_promotion requires stage1_pass AND stage2_pass(beats_baseline) AND tripwire_clear AND adversary_verdict==\"PASS\" (exact string) before decision['promote']=True; promote_if_approved only calls lib.promote.promote when decision['promote'] is True. Confirmed via tests/test_adversary_disapprove.py (all 5 tests pass): FAIL verdict, missing/erroring verdict, and ineligible-candidate cases all assert promote.promote is NEVER called (mocked and asserted not-called); PASS-on-eligible case asserts it IS called exactly once.",
+        "git log across both the worktree and main repo shows no 'feat(self-improve): promote candidate ...' commit ever landed — consistent with the documented fact that nothing has actually been promoted yet."
+      ]
+    },
+    {
+      "name": "AUTONOMOUS_WIRING",
+      "verdict": "PASS",
+      "findings": [
+        "run_evolve.sh reads OBSERVE (lib/ledger_reader.py, real ledger) -> EVOLVE (openevolve-run, absolute venv path, LOUD fatal exit if missing) -> promote_gate.sh (only if openevolve exited 0 AND best/best_program.py exists) -> log lines, all unconditionally, no interactive prompt of any kind (grep for read -p/input(/getpass/confirm across all .sh/.py in this feature returned zero matches).",
+        "launchd/ai.anicca.self-improve-evolve.plist passes `plutil -lint` OK; has explicit WorkingDirectory (skill dir) and EnvironmentVariables.PATH (durable venv bin first, then system dirs + /opt/homebrew/bin for `claude`) + HOME.",
+        "NON-BLOCKING OBSERVATION: the plist is not currently loaded (`launchctl list` shows nothing for ai.anicca.self-improve-evolve), and its WorkingDirectory/ProgramArguments point at the canonical main-repo path (/Users/anicca/anicca/skills/earn/self-improve), which right now still holds the PRE-close-loop run_evolve.sh (this feature branch has not yet been merged to main). This is expected/normal for an unmerged feature branch, not a defect in the reviewed code — the autonomous wiring only goes live once this branch merges and the plist is loaded."
+      ]
+    },
+    {
+      "name": "TESTS",
+      "verdict": "PASS",
+      "findings": [
+        "Ran `~/.anicca-venvs/self-improve/bin/python3 -m pytest skills/earn/self-improve/tests/ -v`: 44 passed in 0.05s-0.06s (exact expected count).",
+        "Spot-checked non-vacuousness on 2 separate modules: (1) broke gate_math.risk_adjusted_score's max(stddev,eps)->stddev+eps -> 2 tests in test_risk_adjusted_fitness.py correctly failed; reverted (diff against pre-change backup: identical), full suite green again. (2) broke ledger_reader.is_profitable to unconditionally `return True` -> 6 tests in test_ledger_reader.py correctly failed; reverted (diff against pre-change backup: identical), full suite green again. `git status --short` confirmed clean after all reverts (no stray diffs left in the worktree from this review's probing)."
+      ]
+    },
+    {
+      "name": "HONESTY_NO_OVERCLAIM",
+      "verdict": "PASS",
+      "findings": [
+        "execution-notes-self-improve.md explicitly discloses the synthetic-fixture trade-off ('Fixture split disclosed' section): backtest fitness uses the synthetic pm_history.csv (real per-decision market-feature history unavailable from earn-ledger.jsonl), while only the OBSERVE step (ledger_reader.py) reads the real ledger.",
+        "Explicitly documents that the OLD raw-USD accepted candidate 233d923c was leverage/variance-amplification, NOT a validated strategy, and states plainly 'No promote.py call has ever happened for this candidate (no self-improve promote commit exists in git log)' — verified true by grepping git log in both the worktree and main repo.",
+        "Explicitly documents that under the NEW risk-adjusted metric, the real 'RUN IT ONCE' openevolve run (10 iterations, free-tier model) failed to find any candidate beating baseline — 'Honest summary: ... it is NOT a proof that openevolve's free-tier model can currently find a real risk-adjusted improvement on its own'. Verified: evidence/close-loop/real_run_best_program.py is byte-identical (diff, zero lines) to strategies/pm_backtest_strategy.py, and real_run_verdict.json shows promote:false, stage2_pass:false, adversary_invoked:false.",
+        "No overclaiming found in any evidence file, docstring, or execution note read during this review."
+      ]
+    },
+    {
+      "name": "SAFETY_INVARIANTS",
+      "verdict": "PASS",
+      "findings": [
+        "config.yaml's llm.api_key is a dummy placeholder string ('unused-local-proxy-no-auth') for the colony's own SELF-FUNDED local ClawRouter proxy (127.0.0.1:8402) — not a human credential; wallet balance documented as $0.00 (free-tier only, structural spend guarantee).",
+        "The adversary call uses the local `claude` CLI (resolved via shutil.which / /opt/homebrew/bin/claude) — no external API key handling in promote_gate_run.py.",
+        "scope_guard.py's DENYLIST_MODULES lists secret/wallet-key VARIABLE NAMES and file paths (ANICCA_SOLANA_PRIVATE_KEY, .env, wallet.json, etc.) for denylist matching only — no actual secret values appear anywhere in the reviewed diff.",
+        "No live order-execution surface reachable from the EVOLVE-BLOCK: place_order/execute_swap/subprocess/socket/urllib/requests/os.system are all denylisted; evaluator.py never imports any live-trading module (confirmed by reading evaluator.py's imports).",
+        "`git diff --stat main...feature/self-improve-close-loop -- .` and a direct `git diff main -- .vcsdd/features/anicca-agent-economy` both confirm .vcsdd/features/anicca-agent-economy is completely untouched by this branch; the diff is scoped entirely to skills/earn/self-improve/** plus execution-notes-self-improve.md (28 files, +2035/-173)."
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "summary": "PASS on all 7 dimensions after independent re-verification (not trusting any evidence file at face value). Re-ran ledger_reader.py against the real earn-ledger.jsonl and cross-checked it against a from-scratch call into the actual ledger.mjs (JS): both agree exactly on realized_net_usd=8.4731, profitable_row_count=6, total_rows=30. Independently constructed leverage-only and genuine-selection candidates and confirmed risk_adjusted_score is exactly leverage-invariant (bit-identical combined_score) while genuinely rewarding selection changes; grid-searched the full threshold space and found no way to game a near-zero-variance score past the tripwire/cap. Authenticated the handcrafted candidate's adversary verdict by locating and reading the actual local Claude Code session transcript for its claimed session_id — confirmed a real claude-opus-4-8 process that used a tool to independently verify the diff, not a fabricated verdict. Live-exercised the --dry-run path against both an eligible and an ineligible candidate and confirmed zero file writes / zero unnecessary LLM calls. Ran the full pytest suite (44/44 green) and spot-broke two different modules to confirm the tests are non-vacuous, then fully reverted (confirmed byte-identical via diff, clean git status). Confirmed the documentation is honest about the synthetic-fixture limitation and about no openevolve-discovered candidate having cleared the new risk-adjusted gate yet. No blocking findings. One non-blocking observation: promote_gate_run.py's dry-run no-write guarantee has no dedicated automated pytest test (only live-exercised in this review + a trivially-inspectable unconditional if/else) — recommend adding one, but it is not a functional hole. Another non-blocking observation: the launchd plist is not currently loaded and still points at the main repo's pre-close-loop script, which is expected pre-merge state, not a defect in this branch's code."
+}

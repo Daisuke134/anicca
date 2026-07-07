@@ -1,0 +1,33 @@
+{
+  "candidate_path": "/private/tmp/claude-501/-Users-anicca-anicca-project/6f743509-fd31-4d51-b0fe-383ec8fb6af7/scratchpad/smoke_candidate/candidate.py",
+  "scope_guard_ok": true,
+  "scope_guard_reason": "scope-guard-pass",
+  "stage1_pass": true,
+  "stage2_pass": true,
+  "combined_score": 2.4384568716289445,
+  "baseline_stage2_score": 1.262807048935334,
+  "population_best_used": 1.262807048935334,
+  "tripwire_flagged": false,
+  "tripwire_clear": true,
+  "mean_oos_net_usd": 7.977454198435389,
+  "std_oos_net_usd": 3.271517446649064,
+  "worst_window_oos_net_usd": 4.526752095788865,
+  "window_pairs": [
+    {
+      "train_window": 0,
+      "test_window": 1,
+      "oos_net_usd": 12.371837069480357
+    },
+    {
+      "train_window": 2,
+      "test_window": 3,
+      "oos_net_usd": 7.033773430036945
+    },
+    {
+      "train_window": 4,
+      "test_window": 5,
+      "oos_net_usd": 4.526752095788865
+    }
+  ],
+  "eligible_for_adversary_review": true
+}
