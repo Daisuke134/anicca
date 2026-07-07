@@ -1,0 +1,43 @@
+{
+  "reviewType": "implementation",
+  "phase": "3",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractStatus": "approved",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "contract": ["contracts/sprint-1.md"],
+    "source": [
+      "~/anicca/skills/self/spawn/lib/treasury-gate.mjs",
+      "~/anicca/skills/self/spawn/lib/colony-balances.mjs",
+      "~/anicca/skills/self/spawn/lib/registry-path.mjs",
+      "~/anicca/skills/self/spawn/lib/citizens-registry.mjs",
+      "~/anicca/skills/self/spawn/lib/shelter-cost-ledger.js",
+      "~/anicca/skills/self/spawn/lib/cloud-target.mjs",
+      "~/anicca/skills/self/spawn/lib/needs-solana-wallet.mjs",
+      "~/anicca/skills/self/spawn/lib/akash-funding-gate.mjs",
+      "~/anicca/skills/self/spawn/lib/child-spec.js"
+    ],
+    "tests": [
+      "~/anicca/skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/colony-balances.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/registry-path.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/citizens-registry.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/shelter-cost-ledger.test.js",
+      "~/anicca/skills/self/spawn/lib/__tests__/cloud-target.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/needs-solana-wallet.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/child-spec-erc8004.test.js",
+      "~/anicca/skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/akash-funding-gate.test.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRound": {
+    "round": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/impl/sprint-1/output/findings/",
+    "note": "All 11 CRIT criteria PASSed; 2 findings beyond the contract: FIND-1901 (critical) -- decideColonySpawn only fail-closed colonySurplusUsd, not spawnThresholdUsd/childrenProvisioning/maxConcurrentSpawns, causing a fail-OPEN result (eligible:true) when the threshold or provisioning count was NaN/undefined/null. FIND-1902 (high) -- filterProductiveCitizens/readCitizenBalances threw on a null citizens-array entry while sibling functions (computeColonySurplusUsd) handled it gracefully. Both claimed fixed: FIND-1901 via fail-closed coercion on all 3 params (malformed direction chosen so it can only make the gate MORE restrictive, never bypass it), reusing the spec's existing reason enum; FIND-1902 via graceful null-skip matching computeColonySurplusUsd's existing behavior. New PROP-102l, PROP-101l. 100/100 tests passing (~/anicca commit 9681a89)."
+  },
+  "note": "This is a FRESH, independent re-review (round 2). Re-run the full test suite yourself (100/100, do not accept the log). Independently reproduce BOTH fixes: FIND-1901's repro -- decideColonySpawn with colonySurplusUsd:0 and spawnThresholdUsd of undefined/null/NaN must now return eligible:false (never true); same for childrenProvisioning:NaN/maxConcurrentSpawns:NaN never bypassing the cap. FIND-1902's repro -- filterProductiveCitizens/readCitizenBalances with a null entry mixed into citizens must never throw, must exclude/skip it, consistent with computeColonySurplusUsd on the identical fixture. Re-verify colony-spawn-lock.test.mjs's PROP-103e determinism fresh again (20+ consecutive standalone runs) since this is a separate Phase-3 round. Continue probing for further money-safety/robustness edge cases beyond these two and the 11 CRIT criteria -- this feature has now needed 2 rounds of Phase-3 hardening (matching anicca-agent-lending's own pattern this session); hold this round to the same high bar."
+}
