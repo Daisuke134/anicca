@@ -4,7 +4,7 @@
   "plansDirectory": ".cursor/plans",
   "enableAllProjectMcpServers": true,
   "model": "claude-fable-5",
-  "effortLevel": "xhigh",
+  "effortLevel": "high",
   "maxTurns": 100,
   "contextCompression": true,
   "permissions": {
