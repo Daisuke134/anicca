@@ -130,7 +130,15 @@
       "mode": "strict",
       "currentPhase": "1b",
       "updatedAt": "2026-07-07T08:11:34.057Z"
+    },
+    "anicca-agent-lending": {
+      "status": "active",
+      "createdAt": "2026-07-07T10:06:12.029Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-07T10:06:12.029Z"
     }
   },
-  "activeFeature": "anicca-agent-spawn"
+  "activeFeature": "anicca-agent-lending"
 }

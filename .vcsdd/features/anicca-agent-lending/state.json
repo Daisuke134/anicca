@@ -1,0 +1,17 @@
+{
+  "featureName": "anicca-agent-lending",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-anicca-agent-lending-1783418772029",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-07T10:06:12.029Z",
+  "updatedAt": "2026-07-07T10:06:12.029Z"
+}

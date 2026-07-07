@@ -107,3 +107,10 @@
 {"timestamp":"2026-07-05T07:19:22.579Z","event":"gate_recorded","featureName":"vineyard-mvp","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
 {"timestamp":"2026-07-06T11:33:03.348Z","event":"feature_created","featureName":"anicca-agent-economy","mode":"strict"}
 {"timestamp":"2026-07-07T07:54:18.178Z","event":"feature_created","featureName":"anicca-agent-spawn","mode":"strict"}
+{"timestamp":"2026-07-07T08:11:34.057Z","event":"phase_transition","featureName":"anicca-agent-spawn","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-07T08:11:34.058Z","event":"phase_transition","featureName":"anicca-agent-spawn","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-07T08:23:39.084Z","event":"gate_recorded","featureName":"anicca-agent-spawn","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T08:49:03.578Z","event":"gate_recorded","featureName":"anicca-agent-spawn","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T09:22:34.880Z","event":"gate_recorded","featureName":"anicca-agent-spawn","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T09:55:03.725Z","event":"gate_recorded","featureName":"anicca-agent-spawn","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-07T10:06:12.032Z","event":"feature_created","featureName":"anicca-agent-lending","mode":"strict","language":"typescript"}
