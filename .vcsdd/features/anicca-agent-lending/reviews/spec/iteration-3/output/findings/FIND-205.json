@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-205",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-106's own Acceptance Criteria mislabels its own two-phase provisional/follow-up ledger append (REQ-106's own steps 1 and 3, the FIND-103 fix) as 'REQ-108/109 ledger append,' directly contradicting REQ-108/109's own explicit statement, in the SAME document, that their per-loan lock is a DIFFERENT lock protecting a DIFFERENT critical section. REQ-106's Acceptance Criteria (line 726-729) states: 'The loan-issuance critical section (REQ-101 read -> REQ-102/104/105 compute -> n = nextLoanSequenceForLender(...) -> disbursement transfer -> REQ-108/109 ledger append) is wrapped by withGigLock(LOANS_LEDGER_PATH, loan_${lenderId}, fn).' But REQ-106's own numbered step-by-step body text (lines 654-663) never once acquires a per-loan lock during issuance -- the provisional row (status:'provisioning') and the follow-up row (status:'active'/'disbursement_failed') are appended 'STILL INSIDE the SAME loan_${lenderId} lock' only. Meanwhile REQ-108 (line 957) explicitly states its own per-loan lock, key `loan_${loan_id}`, is 'DELIBERATELY DIFFERENT from REQ-106's own PER-LENDER `loan_${lenderId}` issuance lock' -- i.e. REQ-108/109's lock discipline is framed as governing ONLY repayment-verification/default-detection status transitions on an ALREADY-EXISTING active loan, never the initial issuance-time provisioning/active/disbursement_failed append. By labeling the issuance-time append as 'REQ-108/109 ledger append' in its own Acceptance Criteria, REQ-106 creates a genuine ambiguity: does the loan-issuance critical section ALSO need to acquire the per-loan `loan_${loan_id}` lock (nested inside the per-lender lock) for its own two-phase append, or is this phrase simply a loose, incorrect cross-reference to REQ-106's own append steps? Neither reading is explicitly confirmed anywhere else in the document, and an implementer following this Acceptance Criteria literally risks either wiring a needless (and, per the two lock keys' own naming scheme, contradictory) nested lock acquisition into issuance, or concluding REQ-108/109's lock discipline extends to issuance in a way REQ-106's own body text and REQ-108/109's own 'DELIBERATELY DIFFERENT' framing both explicitly deny.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "726-729",
+    "snippet": "The loan-issuance critical section (REQ-101 read -> REQ-102/104/105 compute -> n = nextLoanSequenceForLender(...) -> disbursement transfer -> REQ-108/109 ledger append) is wrapped by withGigLock(LOANS_LEDGER_PATH, `loan_${lenderId}`, fn), using the SAME lock.mjs module, never a reimplementation."
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "950-960",
+    "note": "REQ-108's own text: '...THE SYSTEM SHALL wrap the read-verify-append critical section of BOTH this requirement (REQ-108) and REQ-109's own default-detection-and-append step in a NEW, PER-LOAN lock, key `loan_${loan_id}` -- DELIBERATELY DIFFERENT from REQ-106's own PER-LENDER `loan_${lenderId}` issuance lock (a different natural key for a different critical section: issuance contends on the LENDER's own surplus; repayment/default status transitions contend on ONE EXISTING loan's own status)' -- directly at odds with REQ-106's own Acceptance Criteria calling the ISSUANCE-time append a 'REQ-108/109 ledger append.'"
+  },
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-203",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-105's newly-added 'Concrete kill-switch threshold' paragraph directly contradicts REQ-105's own, un-updated Edge Cases bullet a few lines below it -- a same-requirement internal contradiction the architect's addition introduced without reconciling the pre-existing text. Lines 551-556 state: 'THE SYSTEM SHALL treat a `computeColdStartRepaymentRate` result below `0.80` (once `sampleSize >= 10`) as a hard signal to PAUSE new cold-start ... loan issuance pending a design review ... While `sampleSize < 10`, ANY single default is itself the review trigger.' This is an explicit, binding SHALL behavior: the system must actually PAUSE issuance based on this metric. But REQ-105's own Edge Cases section, lines 580-583 (left unedited from the prior iteration), states the opposite: '`computeColdStartRepaymentRate`'s sample is small (e.g. `sampleSize < 5`): THE SYSTEM SHALL NOT treat a small-sample rate as statistically conclusive -- the function still returns the exact count/rate (never hides or refuses to compute it), but this spec does NOT attach a decision rule (\"auto-disable lending if rate < X\") to it this increment; a human or a future increment interprets the signal.' These two passages cannot both be true: one says the system SHALL automatically pause issuance on this signal (even on a single default while sampleSize<10); the other says this spec explicitly does NOT attach any such decision rule and leaves interpretation to a human. Separately, and independently blocking: the kill-switch's 'THE SYSTEM SHALL... PAUSE new cold-start ... loan issuance' behavior has ZERO backing anywhere in verification-architecture.md -- confirmed via a full-file grep for '0.80', 'kill-switch', and 'pause'/'PAUSE': zero matches in all 43 proof obligations. No pause/kill-switch function is named in the Purity Boundary Map (verification-architecture.md lines 9-35), REQ-102's own `isBorrowerEligible` reason enum (`'ok'|'not_self_funded'|'not_broke_enough'|'outstanding_loan'`, line 382 of behavioral-spec.md) has no branch for a paused/under-review state, and REQ-105's own Acceptance Criteria (lines 585-603) test only `computeColdStartRepaymentRate`'s raw arithmetic, never the pause behavior. As literally written, this is an unimplementable, untested 'SHALL' requirement that also contradicts an adjacent, un-reconciled edge case in the SAME requirement.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "544-556, 580-583",
+    "snippet": "THE SYSTEM SHALL treat a `computeColdStartRepaymentRate` result below `0.80` (once `sampleSize >= 10`) as a hard signal to PAUSE new cold-start ... loan issuance pending a design review ... [Edge Cases, same requirement] ... this spec does not attach a decision rule (\"auto-disable lending if rate < X\") to it this increment; a human or a future increment interprets the signal."
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md",
+    "lineRange": "1-261",
+    "note": "Full-document grep for '0.80'/'kill-switch'/'pause'/'PAUSE' across all 261 lines and all 43 PROP-* entries returns zero matches -- no proof obligation, Tier assignment, purity-boundary entry, or Gate item covers this kill-switch behavior at all."
+  },
+  "routeToPhase": "1a"
+}

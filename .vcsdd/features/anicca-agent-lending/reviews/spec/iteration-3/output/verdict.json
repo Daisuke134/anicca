@@ -1,0 +1,116 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T12:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-101", "FIND-102", "FIND-103", "FIND-104", "FIND-105", "FIND-106", "FIND-107"
+    ],
+    "architectAddedItemsChecked": [
+      "kill-switch threshold (REQ-105, 0.80 @ sampleSize>=10)",
+      "REQ-112 multi-host future-work note",
+      "REQ-109 gojo/UBI default-exclusion clarification"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/run.sh",
+      "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+      "/Users/anicca/anicca/skills/economy/ubi/run.sh",
+      "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/decide.mjs",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/state.json"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-101",
+      "status": "genuinely resolved",
+      "note": "REQ-113 correctly reframes the anicca-agent-spawn dependency as a standing re-verify-at-first-use process gate rather than a frozen citation. Re-verified this session against the REAL, current anicca-agent-spawn/state.json: gates.1c shows iteration 6, verdict FAIL, timestamp 2026-07-07T11:02:55.800Z, findings FIND-501..504 -- this EXACTLY matches what lending's own Dependencies section (lines 92-94) currently cites. On-disk review folders (.vcsdd/features/anicca-agent-spawn/reviews/spec/iteration-{1..6}) confirm iteration 6 is the actual latest, not a stale snapshot. The specific citation is accurate as of this review; REQ-113's discipline (never freeze it, re-read at Phase 2a) is sound design regardless of whether it drifts again later."
+    },
+    {
+      "findingId": "FIND-102",
+      "status": "genuinely resolved",
+      "note": "sumRecentGojoGiftsUsd now takes a lenderId parameter and is gated to GOJO_SENDER_ID='anicca-a3cdd4' throughout the EARS text, Edge Cases, and Acceptance Criteria (REQ-101), consistently with verification-architecture.md's PROP-101f. Re-confirmed against the real ubi/run.sh (lines 87-96): the gojo sender is indeed hardcoded to anicca-a3cdd4 with no sender field in gojo-log.jsonl rows."
+    },
+    {
+      "findingId": "FIND-103",
+      "status": "resolution is INCOMPLETE -- a new, equally serious double-disbursement gap was found in the fix itself",
+      "note": "The two-phase provisional/follow-up ledger record genuinely closes the PROCESS-CRASH scenario (a dead holder, stale lock, reclaimed via reconcileProvisionalDisbursement). But walking through the real escrow.mjs/lock.mjs mechanics this session reveals it does NOT close a distinct, equally realistic IN-PROCESS exception scenario: settleBody (escrow.mjs lines 124-140) has no try/catch around waitForTransactionReceipt, which runs AFTER /settle already succeeded; an exception here propagates uncaught through withGigLock's own try/finally (lock.mjs lines 203-208), releasing the lock CLEANLY (not stale) -- so the next caller takes the normal fast-path acquisition, never the stale-reclaim path reconcileProvisionalDisbursement is exclusively scoped to. See FIND-201."
+    },
+    {
+      "findingId": "FIND-104",
+      "status": "genuinely resolved for the substance (a distinct per-loan lock exists), but REQ-106's own Acceptance Criteria introduces a new labeling contradiction against it",
+      "note": "REQ-108/REQ-109 both correctly specify the NEW loan_${loan_id} lock, explicitly distinct from REQ-106's loan_${lenderId} lock, with a Tier-2 concurrent-race proof obligation (PROP-108d). However REQ-106's own Acceptance Criteria (line 728) mislabels its own issuance-time append as 'REQ-108/109 ledger append,' contradicting REQ-108's own 'DELIBERATELY DIFFERENT' framing (line 957). See FIND-205."
+    },
+    {
+      "findingId": "FIND-105",
+      "status": "genuinely resolved",
+      "note": "REQ-108 now honestly distinguishes literal reuse (to-topic) from a new, sound extension (from-topic), matching the real record-earn.mjs (lines 82-88, re-confirmed this session): FIND-704's exact-padded-equality fix applies only to topics[2] (to); topics[1] (from) is an unchecked substring, only ever set-membership-tested. The spec's wording and verification-architecture.md's PROP-108b now both correctly attribute this."
+    },
+    {
+      "findingId": "FIND-106",
+      "status": "genuinely resolved",
+      "note": "REQ-102 now declares BORROWER_LOW_USD as its own independent constant with explicit 'no import' language, consistent with REQ-110's zero-coupling Acceptance Criteria and PROP-110a. No contradiction remains."
+    },
+    {
+      "findingId": "FIND-107",
+      "status": "genuinely resolved",
+      "note": "The false 'i.e. every borrower's own first-ever loan' equivalence is removed; computeColdStartRepaymentRate's definition now explicitly requires re-deriving successfulOnTimeRepayments over each borrower's own strictly-earlier rows, and PROP-105f's fixture explicitly tests the recurrence case (a late-repaid first loan followed by a second, still-cold-start loan for the same borrower)."
+    }
+  ],
+  "architectAddedItemsVerification": [
+    {
+      "item": "kill-switch threshold (0.80 @ sampleSize>=10)",
+      "status": "NOT internally consistent -- contradicts an adjacent, un-updated Edge Case in the SAME requirement, and has zero backing proof obligation",
+      "note": "See FIND-203: REQ-105's kill-switch paragraph (lines 544-556) is a binding SHALL that directly contradicts REQ-105's own Edge Cases bullet (lines 580-583, 'this spec does not attach a decision rule ... to it this increment'), and is entirely absent from verification-architecture.md's 43 proof obligations (zero grep matches for '0.80'/'pause'/'kill-switch')."
+    },
+    {
+      "item": "REQ-112 multi-host future-work note",
+      "status": "internally consistent",
+      "note": "Framed honestly as researched-not-built, explicitly out of scope this increment, consistent with the Scope section and Gate item (10) in verification-architecture.md. No contradiction found."
+    },
+    {
+      "item": "REQ-109 gojo/UBI default-exclusion clarification",
+      "status": "internally consistent with REQ-101/109 in isolation, but the underlying excludeDefaultedBorrowers mechanism it references has a separate, unrelated cross-feature proportionality gap",
+      "note": "Re-confirmed against real ubi.js/run.sh: gojo's own recipient-targeting is a hardcoded 3-instance telemetry lookup + a separate colony-wallets.json registry, structurally disconnected from anicca-agent-spawn's filterProductiveCitizens/citizens.json -- so the claim 'never consulted by, or wired into, ubi.js's own recipient-eligibility logic' is factually true. However, excludeDefaultedBorrowers's OWN composition into anicca-agent-spawn's computeColonySurplusUsd (a claim made in the same requirement) has a real, unquantified, disproportionate blast-radius problem -- see FIND-204."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-203", "FIND-204", "FIND-205"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:544-556,580-583", "description": "REQ-105's kill-switch SHALL directly contradicts its own adjacent Edge Cases bullet in the same requirement"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:262-267", "description": "Confirmed computeColonySurplusUsd runs only on filterProductiveCitizens's output, meaning excludeDefaultedBorrowers's exclusion has a whole-balance, not debt-proportional, effect on spawn's own surplus aggregate"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:726-729,950-960", "description": "REQ-106's own Acceptance Criteria mislabels its own issuance-time ledger append as 'REQ-108/109 ledger append,' contradicting REQ-108's explicit 'DELIBERATELY DIFFERENT' lock-key framing"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-201", "FIND-202", "FIND-206"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs:124-140", "description": "settleBody has no try/catch around waitForTransactionReceipt, which runs after /settle already succeeded -- an uncaught exception here is never routed through REQ-106's own reconcileProvisionalDisbursement, which is scoped only to stale-lock reclaim"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:940-1008", "description": "REQ-108's repayment-verification mechanism never de-duplicates by txHash, within one loan or across loans -- confirmed no Acceptance Criterion or PROP tests this"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/ubi.js:29-54", "description": "This codebase's own established .toFixed(6) money-precision convention is never adopted anywhere in anicca-agent-lending's own dollar arithmetic, despite PROP-104a requiring exact-equality assertions against unclamped floating-point results"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

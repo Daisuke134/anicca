@@ -1075,27 +1075,26 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T11:04:26.072Z",
+      "timestamp": "2026-07-07T11:48:13.465Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 2,
+        "iteration": 3,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-101",
-          "FIND-102",
-          "FIND-103",
-          "FIND-104",
-          "FIND-105",
-          "FIND-106",
-          "FIND-107"
+          "FIND-201",
+          "FIND-202",
+          "FIND-203",
+          "FIND-204",
+          "FIND-205",
+          "FIND-206"
         ],
-        "note": "7 findings, 3 critical: FIND-101 -- anicca-agent-spawn citation stale AGAIN (cites iteration 4, real current state is iteration 5+ FAIL with critical remote-hosting findings) -- a direct recurrence of iteration-1s own FIND-006. FIND-102 (critical) -- sumRecentGojoGiftsUsd has no lenderId gating despite the specs own prose acknowledging gojo attribution is purely positional (hardcoded to anicca-a3cdd4 in run.sh) -- as specified, every OTHER lenders surplus gets wrongly reduced by that one citizens gifts. FIND-103 (critical) -- no atomicity between successful on-chain disbursement and the loans.jsonl append; a crash between the two lets a lock-reclaiming caller recompute the same sequence number and re-disburse -- real double-payment risk. FIND-104/105/106/107 (major) -- repayment/default writes share loans.jsonl with zero lock discipline (unlike issuance); from-topic Transfer-log check overclaims reuse of an already-hardened pattern that record-earn.mjs never actually implements for that field; REQ-102/REQ-110 directly contradict each other on decide.mjs code coupling; cold-start-loan definition falsely claims equivalence to first-ever-loan when late repayments can make it recur."
+        "note": "6 findings, 3 critical: FIND-201 -- the crash-safe two-phase issuance fix never routes an IN-PROCESS exception from payViaFacilitator (escrow.mjs settleBody has no try/catch around waitForTransactionReceipt, called AFTER /settle already succeeded) through reconcileProvisionalDisbursement, since lock.mjs releases the lock cleanly on any throw rather than leaving it stale -- the follow-up row never gets appended. FIND-202 -- REQ-108 never de-duplicates by transaction hash, so a single finalized transfer can be replayed to inflate repaid_usd on one loan or across different loans. FIND-203 -- the architect-added kill-switch threshold directly contradicts an adjacent, un-updated Edge Case in the same requirement stating no decision rule is attached this increment, and has zero backing proof obligation. FIND-204/205/206 (major) -- excludeDefaultedBorrowers disproportionately zeros a defaulted borrowers ENTIRE balance (not just the debt) from colony surplus; REQ-106 mislabels its own issuance-time append as REQ-108/109s append, contradicting REQ-108s DELIBERATELY DIFFERENT lock framing; missing the codebases own established .toFixed(6) money-precision convention."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T11:04:26.072Z"
+      "adversaryReviewedAt": "2026-07-07T11:48:13.465Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T11:28:10.104Z"
+  "updatedAt": "2026-07-07T11:48:13.466Z"
 }
