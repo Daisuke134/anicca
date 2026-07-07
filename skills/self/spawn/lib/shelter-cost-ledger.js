@@ -1,28 +1,15 @@
-// REQ-303: append-only JSONL shelter-cost ledger. Mirrors ledger.js's own no-update/upsert
-// discipline exactly — one entry per real deploy attempt, {ts, settledLeaseCostUsd}, appended once
-// the settled lease cost first becomes observable.
-const fs = require("node:fs");
-const path = require("node:path");
+// REQ-303: append-only JSONL shelter-cost ledger. ledger.js's readChildren/appendChild are already
+// generic over (file, row) despite their children-specific name — reused here unmodified rather than
+// re-implementing the identical read/append logic a second time. One entry per real deploy attempt,
+// {ts, settledLeaseCostUsd}, appended once the settled lease cost first becomes observable.
+const { readChildren, appendChild } = require("./ledger.js");
 
 function readShelterCostEntries(file) {
-  let raw;
-  try {
-    raw = fs.readFileSync(file, "utf8");
-  } catch (e) {
-    if (e && e.code === "ENOENT") return [];
-    throw e;
-  }
-  return raw
-    .split("\n")
-    .map((l) => l.trim())
-    .filter((l) => l.length > 0)
-    .map((l) => JSON.parse(l));
+  return readChildren(file);
 }
 
 function appendShelterCostEntry(file, row) {
-  fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.appendFileSync(file, JSON.stringify(row) + "\n");
-  return row;
+  return appendChild(file, row);
 }
 
 module.exports = { readShelterCostEntries, appendShelterCostEntry };

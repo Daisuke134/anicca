@@ -33,14 +33,27 @@ test("PROP-103e (staggered race, resolves FIND-1201): the lock remains held acro
   const fundingDelay = new Promise((resolve) => {
     releaseFundingDelay = resolve;
   });
+  // Deterministic hand-off (fixes a real ~1-in-5 flake): `withGigLock`'s own `acquire()` does
+  // async fs I/O (mkdir + O_EXCL open) scheduled on the libuv threadpool, so firing `firstCaller`
+  // below WITHOUT awaiting anything gives no guarantee its lock-file create wins the race against
+  // the loop's first attempt just a few lines later -- both calls' fs.open("wx") can be scheduled
+  // in either order. `fn()` only ever runs once `acquire()` has resolved `true` (the lock file
+  // genuinely exists), so signaling from inside `fn()` -- and awaiting that signal before the loop
+  // starts -- proves the lock is held on disk, with zero dependency on thread-pool scheduling order.
+  let signalLockHeld;
+  const lockHeld = new Promise((resolve) => {
+    signalLockHeld = resolve;
+  });
 
   const firstCaller = withGigLock(CITIZENS_REGISTRY_PATH, "colony-spawn", async () => {
     // Simulates REQ-201-205 (wallet gen, identity registration, mcp config) already completed;
     // REQ-304's funding call is still in flight.
+    signalLockHeld();
     await fundingDelay;
     // REQ-305's ledger append "completes" here — the lock releases only on return.
     return { ok: true, stage: "ledger-appended" };
   });
+  await lockHeld;
 
   for (let i = 0; i < 5; i++) {
     const attempt = await withGigLock(CITIZENS_REGISTRY_PATH, "colony-spawn", async () => ({ ok: true }));
