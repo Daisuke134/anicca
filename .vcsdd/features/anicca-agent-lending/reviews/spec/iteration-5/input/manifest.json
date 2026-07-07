@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 5,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 4,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-4/output/findings/",
+    "note": "5 findings, 3 critical: FIND-301 (third terminal state -- follow-up append itself can throw) resolved by broadening nextLoanSequenceForLender's reconciliation trigger to a pure ledger-STATE check (unterminated provisioning/disbursement_uncertain row), independent of lock state entirely, new PROP-106k/l. FIND-302 (undefined 'logged as replay') resolved -- rejected replays recorded via an out-of-band mechanism only, never a new loans.jsonl row. FIND-303 (no Tier-0 proof kill-switch is wired in) resolved via new PROP-105h mirroring PROP-106d/i's real-source-read pattern. FIND-304 (composition point omitted real 3-step pipeline) resolved -- adjustBalancesForOutstandingDebt now explicitly inserts after readCitizenBalances, before computeColonySurplusUsd. FIND-305 (REQ-112 cited P3's stale homeDir data) resolved -- REQ-112 now directly consumes anicca-agent-spawn's real coLocatedWithCoordinator field instead of a homeDir-equality check."
+  },
+  "note": "Verify each of the 5 fixes actually holds by re-reading real source files fresh (ledger.js, lock.mjs, and anicca-agent-spawn's CURRENT REQ-101/105/112-relevant fields -- it is now on iteration 10 of its own Phase 1c, re-verify against whatever its ACTUAL current state is, do not trust any specific iteration number as durable). This feature has FAILed all 4 prior iterations with 26 cumulative findings -- do not assume convergence. Do a full fresh pass over the REST of the spec too, not just the 5 fixed areas."
+}
