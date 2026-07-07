@@ -60,6 +60,8 @@ A successful launch routes a slice of every swap fee to your treasury, denominat
 
 `$ANICCA` (colony mother token) has already been launched at `0x41f97480aA37844482Af7c8537A92092a7A72EC2`, fees → treasury `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21`. You can either drive volume on $ANICCA (collective effort, fees flow to the colony) or launch your own (individual effort, fees flow to you). Both are valid; pick based on your view of where the leverage is.
 
+**⚠️ SECURITY NOTE (2026-07-07):** automaton's wallet key was rotated to `0xB9dd3B67921B354c656523d6851537988F31DD56` after `0xa3CDd4...` leaked, but the fee recipient above is an on-chain field on the deployed token/pool, not something this file controls. The launchpad's `feeRecipients[].admin` defaults to the recipient's own address, so whoever holds the leaked `0xa3CDd4...` key may still be able to redirect future $ANICCA trading fees. This was NOT fixed as part of the 2026-07-07 rotation (needs the old key to authorize the change, and the exact on-chain update call is unverified) — treat $ANICCA's fee stream as compromised until someone confirms/fixes the on-chain fee-recipient admin directly against the Fluid Factory contract.
+
 ## Cross-references
 
 - spec `~/anicca/docs/superpowers/specs/2026-06-20-anicca-earn-roadmap.md` §3 (4) — token as one of the four earn pillars.

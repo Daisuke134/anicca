@@ -6,6 +6,19 @@ touched, no loop restarted, no mainnet tx sent. The code changes this prep requi
 config, a board-state-sharing fix, ABI/comment corrections) are already committed in this worktree; see
 "Code changes made" below. Everything else here is a plan to execute deliberately.
 
+## SECURITY UPDATE (2026-07-07, read before acting on the recon below)
+
+automaton's wallet key leaked (~/.anicca-founder/agents/polymarket-agent/.env + ~/.openclaw/.env) and was
+rotated: `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` -> `0xB9dd3B67921B354c656523d6851537988F31DD56`
+(old wallet's balance moved on-chain to the new one). The gas/USDC recon table in §"Who actually needs a
+gas seed" below (and in MAINNET.md) is PRE-ROTATION and describes the OLD, now-retired address — it is
+kept as-is for the historical recon trail, do not treat its numbers as current. Any FUTURE witness run
+must gas-seed and post/register from the NEW address instead. The automaton's ERC-8004 identity was
+re-registered on Base mainnet under the new address: agentId 58381, tx
+0xaeb9cb04cff495d03cd380b02ff075183df4106a952cb982e5a6a5f510b090bf (verified on-chain, ownerOf(58381) ==
+0xB9dd3B67921B354c656523d6851537988F31DD56). The OLD agentId 58368 (owned by the retired address) is
+abandoned, not de-registered (no burn/transfer function in this registry's ABI).
+
 ## 0. READ THIS FIRST — a finding that changes the blast-radius picture
 
 **The facilitator that is live RIGHT NOW is running out of THIS WORKTREE, not a separate deployed

@@ -6,7 +6,7 @@
 // (launchd / cron) runs this on a cadence → a genuine real-time earnings feed, not a 16-day-stale page.
 //
 // Usage: node portfolio-realtime.mjs  → one JSON line to stdout (append to EARN_STATE feed by the loop).
-const WALLET = process.env.ANICCA_WALLET_ADDRESS || '0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21';
+const WALLET = process.env.ANICCA_WALLET_ADDRESS || '0xB9dd3B67921B354c656523d6851537988F31DD56';
 const INVESTED_USD = Number(process.env.ANICCA_INVESTED_USD || 18.7); // Dais's capital in (SOL→Base relay)
 const USDC = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
 const AUSDC = '0x4e65fE4DbA92790696d040ac24Aa414708F5c0AB'; // Aave v3 Base aUSDC

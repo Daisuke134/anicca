@@ -37,7 +37,7 @@ const WALLET_RE = /wallet=(0x[0-9a-fA-F]{40})/;
 const METHOD_RE = /method=(\w+)/;
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFER_LOG = join(__dirname, 'state', 'defer-log.jsonl');
-const A3CDD4_ADDR = '0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21';
+const A3CDD4_ADDR = '0xb9dd3b67921b354c656523d6851537988f31dd56'; // rotated 2026-07-07 (was 0xa3cdd4...)
 
 // Realized profit = the SAME figure telemetry-poster.mjs already reports (revenueBySource(...).total),
 // read from the live, already-verified dashboard-sync rather than recomputing on-chain positions here

@@ -21,7 +21,7 @@ import time
 from eth_account import Account
 from eth_account.messages import encode_typed_data
 
-PAY_TO = "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21"
+PAY_TO = "0xB9dd3B67921B354c656523d6851537988F31DD56"
 BASE_CHAIN_ID = 8453
 BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
 PRICE_ATOMIC = 1000

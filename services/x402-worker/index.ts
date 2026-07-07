@@ -1,6 +1,6 @@
 import { recoverTypedDataAddress } from "viem";
 
-const PAY_TO = "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21";
+const PAY_TO = "0xB9dd3B67921B354c656523d6851537988F31DD56";
 const BASE_CHAIN_ID = 8453;
 const BASE_USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
 const PRICE_ATOMIC = 1000n; // 0.001 USDC (6 decimals)

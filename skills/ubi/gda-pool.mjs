@@ -98,5 +98,13 @@ export async function sendGdaCall(calldata, { sendTx } = {}) {
 
 // LIVE UBI POOL (created 2026-06-21 on Base, tx 0xcb161a69061714c9af47f5c730eada1eb5a12e60addaa13fa9faa225f6ca2189):
 // token=USDCx 0xD04383398dD2426297da660F9CCA3d439AF9ce1b, admin=anicca 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21.
+// SECURITY NOTE (2026-07-07): automaton's wallet key was rotated to 0xB9dd3B67921B354c656523d6851537988F31DD56
+// after the 0xa3CDd4... key leaked, but the pool's on-chain `admin` field is IMMUTABLE state set at
+// createPool() time and still reads 0xa3CDd4... (verified via admin() view call, 2026-07-07) --
+// `distributionFromAnyAddress:false` means only that (compromised) address can distribute/update member
+// units on this pool. Residual risk is LOW today (pool USDCx balance verified = 0 at rotation time, and
+// the old address's own funds were already moved out) but NOT zero if this pool is ever refunded before
+// the admin role itself is migrated (recreate the pool with the new address as admin, or find/call a
+// pool-admin-transfer function if Superfluid's GDAv1 exposes one -- unverified, out of scope here).
 export const UBI_GDA_POOL = "0xEF0702A57bd465E77e048DCAFC6F532B761988d0";
 export const BASE_USDCX = "0xD04383398dD2426297da660F9CCA3d439AF9ce1b";

@@ -32,8 +32,11 @@ async function main() {
   if (!(amountUsdc > 0)) return out({ funded: false, reason: 'no amount' });
 
   const amount = String(Math.floor(amountUsdc * 1e6));
-  // address only (no key) — needed for the quote + the economic guard, which run BEFORE any signing.
-  const address = process.env.ANICCA_WALLET_ADDRESS || '0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21';
+  // Derive address from THIS instance's actual signing key (never a separate hardcoded/env fallback --
+  // that used to be able to drift from the real signer, so a quote/recipient could silently point at a
+  // DIFFERENT address than the one that actually signs+pays for the bridge tx; rotated 2026-07-07).
+  const account = privateKeyToAccount(loadKey());
+  const address = account.address;
 
   // 1) quote relay Base USDC -> Hyperliquid
   const q = await (await fetch('https://api.relay.link/quote', {
@@ -62,8 +65,7 @@ async function main() {
     });
   }
 
-  // 3) economic — now load the key and execute the relay steps (approve + deposit) with Anicca's own key.
-  const account = privateKeyToAccount(loadKey());
+  // 3) economic — execute the relay steps (approve + deposit) with the SAME key/address used for the quote above.
   const wallet = createWalletClient({ account, chain: base, transport: fallback(RPCS.map((u) => http(u, { timeout: 12000 }))) });
   const pub = createPublicClient({ chain: base, transport: fallback(RPCS.map((u) => http(u, { timeout: 12000 }))) });
   const hashes = [];

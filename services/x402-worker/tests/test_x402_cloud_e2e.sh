@@ -43,7 +43,7 @@ check "health 200" "200" "$code"
 code=$(curl -s -o "$TMP/body" -D "$TMP/hdr" -w "%{http_code}" "$BASE_URL/paid")
 check "unpaid 402" "402" "$code"
 grep -qi "^WWW-Authenticate: x402" "$TMP/hdr" && { echo "PASS: WWW-Authenticate x402 header"; PASS=$((PASS+1)); } || { echo "FAIL: missing WWW-Authenticate x402"; FAIL=$((FAIL+1)); }
-grep -qi "^x402-pay-to: 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21" "$TMP/hdr" && { echo "PASS: x402-pay-to header"; PASS=$((PASS+1)); } || { echo "FAIL: missing x402-pay-to"; FAIL=$((FAIL+1)); }
+grep -qi "^x402-pay-to: 0xB9dd3B67921B354c656523d6851537988F31DD56" "$TMP/hdr" && { echo "PASS: x402-pay-to header"; PASS=$((PASS+1)); } || { echo "FAIL: missing x402-pay-to"; FAIL=$((FAIL+1)); }
 grep -qi "^x402-asset: 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" "$TMP/hdr" && { echo "PASS: x402-asset USDC header"; PASS=$((PASS+1)); } || { echo "FAIL: missing x402-asset"; FAIL=$((FAIL+1)); }
 
 # 2. self-signed (signer != from) → 402 signer_not_from
