@@ -1,0 +1,39 @@
+{
+  "reviewType": "spec",
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 11,
+  "priorIterationFindingReconfirmation": {
+    "FIND-901": "GENUINELY RESOLVED. Fresh read of ~/anicca/skills/self/spawn/lib/state-path.js confirms resolveStateDir({env, home}) really defaults to `${home}/.hermes/state` and rejects /tmp-rooted paths. Fresh read of ~/anicca/skills/self/spawn/run.sh lines 39-45 confirms it really calls resolveStateDir({env: process.env, home: process.env.HOME}) for children.jsonl's durable location today. CITIZENS_REGISTRY_PATH's claimed construction (path.join(resolveStateDir({env, home}), 'citizens.json')) genuinely mirrors this. Every prior citation of a single citizens.json path (REQ-103's lock statePath at behavioral-spec.md:551-573, REQ-105's own read, REQ-305's append at behavioral-spec.md:1696-1701, REQ-403's audit enumeration at behavioral-spec.md:1993-1996) was checked and correctly points at the DURABLE CITIZENS_REGISTRY_PATH, never the seed template citizens.seed.json -- grep of both spec files for every citizens.json/citizens.seed.json/CITIZENS_REGISTRY_PATH occurrence found no stray reference back to the seed template. ~/anicca/.gitignore's current patterns (skills/*/state/, skills/*/*/state/) still do not match skills/self/spawn/registry/, so the seed template will genuinely be git-tracked as intended. The two-artifact split itself, however, introduces a NEW, previously-unaddressed hazard -- see FIND-1001."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1001", "FIND-1002"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/state-path.js", "description": "resolveStateDir's real default (${home}/.hermes/state, /tmp fail-closed) confirmed to match REQ-105/REQ-103's claims exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh", "description": "lines 39-45 confirmed as the real, current caller of resolveStateDir for children.jsonl, matching the spec's citation verbatim"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "resolveEvmPrivateKey/resolveSolanaSecret's real legacy-fallback gate logic re-read fresh; confirmed automaton's /Users/anicca/.anicca/.automaton/wallet.json does NOT exist (so the legacy branch genuinely fires) and /Users/anicca/.automaton/wallet.json DOES exist with a real privateKey, matching REQ-105/REQ-403's FIND-501/FIND-603 resolution exactly"},
+        {"type": "file", "location": "/Users/anicca/.blockrun/.solana-session", "description": "confirmed present with real base58 content, matching Franklin's claimed legacy-fallback resolution path"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "confirmed buildChildSpec still requires all 7 fields including childInbox unconditionally (line 25-30) and returns wallet:childWallet at line 37 -- matches REQ-206/REQ-304's citations exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs", "description": "confirmed USDC_BASE_MAINNET/CHAIN_ID_BASE_MAINNET=8453 match REQ-304/PROP-304e's citations exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/config.json", "description": "confirmed funding_route/spawn_cost_akt/buffer_akt literal values match REQ-303/304's citations exactly"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/identity.mjs", "description": "confirmed both ERC-8004 registry addresses match REQ-204's citations exactly"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1001", "FIND-1002"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

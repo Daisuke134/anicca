@@ -2199,21 +2199,22 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T13:06:15.492Z",
+      "timestamp": "2026-07-07T13:34:52.732Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 10,
+        "iteration": 11,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-901"
+          "FIND-1001",
+          "FIND-1002"
         ],
-        "note": "FIND-801/802 (iteration 9) both reconfirmed genuinely resolved -- the recurring wallet-identity failure class (5 consecutive variants: FIND-501->601->603->701/703->801/802) is now CLOSED. 1 new finding, critical: FIND-901 -- citizens.json is placed at a hardcoded path INSIDE the git working tree (~/anicca/skills/self/spawn/registry/citizens.json), described as both a versioned seed file AND a live runtime-append target, with the tension never reconciled. This project already has a purpose-built, adversary-tested durability mechanism for exactly this class of artifact (state-path.js::resolveStateDir, built after a REAL prior incident where a spawn ledger written to /tmp was deleted by the OS tmp-cleaner and the record was unrecoverable) -- run.sh already uses it to resolve its own children.jsonl to ~/.hermes/state/, outside the repo tree. citizens.json is not covered by .gitignore (skills/*/state/ pattern does not match skills/self/spawn/registry/), so it would be git-tracked by default -- meaning every runtime append leaves the tree dirty relative to what git tracks, and this repos own routine git pull/checkout/worktree operations (much of it unsupervised) could silently overwrite or lose live citizen records."
+        "note": "FIND-901 reconfirmed genuinely resolved (state-path.js/run.sh mechanism verified fresh, every citation correctly points at the durable path). 2 new findings: FIND-1001 (critical) -- the one-time bootstrap copy of citizens.seed.json into the durable file is an unprotected check-then-act race, structurally outside REQ-103s lock (which only wraps REQ-201-205, not the REQ-101 registry read that triggers bootstrap) -- two concurrent first-time readers could both attempt the copy, and worse, a slow racers non-atomic write could silently overwrite a just-appended real citizen record, the exact failure class FIND-901 was created to prevent, reached via a different vector. lock.mjs itself documents a real, analogous prior double-pay bug from an unprotected check-then-act gap. FIND-1002 (major) -- registry-path.mjs mislabeled Pure Core while built from resolveStateDir (labeled Effectful Shell two rows away) and os.homedir() (real OS/env state) -- risks under-scrutinized Phase 3 verification."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T13:06:15.492Z"
+      "adversaryReviewedAt": "2026-07-07T13:34:52.732Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T13:22:40.991Z"
+  "updatedAt": "2026-07-07T13:34:52.734Z"
 }

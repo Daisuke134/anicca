@@ -1,0 +1,53 @@
+{
+  "findingId": "FIND-1001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["edge_case_coverage", "verification_readiness", "implementation_correctness"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-105's 'one-time bootstrap' step -- 'on first access, IF CITIZENS_REGISTRY_PATH's file does NOT yet exist, THE SYSTEM SHALL initialize it by copying citizens.seed.json's content VERBATIM' -- is a classic check-then-act (TOCTOU) operation that this spec never protects with any concurrency primitive, even though this SAME spec explicitly designs for, and names, the exact scenario that races it: REQ-103's own edge case states 'Two evaluation loops on the coordinator host race to acquire the \"colony-spawn\" lock within the same millisecond' and 'Multiple LOOPS on the SAME coordinator host (e.g. automaton's own cron-driven wake and a separately-scheduled evaluation) race to evaluate REQ-102/103 in the same window' (REQ-106's own edge case, behavioral-spec.md:1005-1009). The bootstrap-copy is triggered by REQ-101's registry READ (behavioral-spec.md:302: 'READ the candidate citizen array from REQ-105's colony citizen registry'), which happens BEFORE REQ-102's threshold gate and BEFORE REQ-103's lock is ever attempted -- REQ-103's own Acceptance Criteria explicitly scope the lock's critical section to start at identity generation, NOT at the registry read: 'The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx) is wrapped by the existing withGigLock-equivalent helper' (behavioral-spec.md:598-601). This means the bootstrap-copy write is structurally OUTSIDE the one mutual-exclusion mechanism this feature builds.\n\nConcretely: if two independently-scheduled evaluation loops on the coordinator host both call REQ-101's registry read for the FIRST TIME (before CITIZENS_REGISTRY_PATH's file has ever been created), both can observe 'file does not exist', and both can proceed to copy citizens.seed.json's content into the durable file concurrently. The spec never specifies this copy as an atomic primitive (e.g. write-to-temp-then-fs.rename, or POSIX O_CREAT|O_EXCL the same way lock.mjs's own tryCreateLockFile uses `fs.open(file, \"wx\")` specifically to avoid this exact class of race -- lock.mjs's own header comment documents a REAL prior double-pay bug caused by an analogous check-then-act gap: 'two concurrent gig_verify_and_pay(true) calls both read status delivered before either wrote back... the escrow was drained twice'). Worse: if a REQ-305 append (a real successful spawn, recording a new citizen) completes and writes to the durable file in between one slow racer's exists-check and that racer's own (non-atomic, 'copy verbatim') write, the slow racer's bootstrap write can silently OVERWRITE and DESTROY the just-appended citizen record -- the exact 'colony citizen registry silently lost' failure class FIND-901 (iteration 9/10) was created specifically to close, but reached here through a different vector (concurrent bootstrap, not a git operation).\n\nNo edge case anywhere in REQ-105 (behavioral-spec.md:910-935) addresses concurrent bootstrap execution -- the listed edge cases only cover a missing/unparseable file, a record failing isSelfFunded(), duplicate ids, a future write to the seed template, and git operations. No proof obligation (PROP-105j, PROP-105k, or any other) tests a concurrent-bootstrap race or requires the bootstrap-copy to be atomic; PROP-105k's Tier-2 live test only exercises a single writer plus a git operation (verification-architecture.md:948-953/385-388), never two racing first-readers.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "689-695",
+      "snippet": "One-time bootstrap (never an ongoing sync): on first access, IF CITIZENS_REGISTRY_PATH's file does NOT yet exist, THE SYSTEM SHALL initialize it by copying citizens.seed.json's content VERBATIM -- a single, one-time bootstrap copy, never a repeated/periodic sync."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "597-601",
+      "snippet": "The colony-spawn critical section (REQ-201 through REQ-205, and the decision to proceed into REQ-3xx) is wrapped by the existing withGigLock-equivalent helper (or a directly analogous withColonyLock(\"colony-spawn\", fn))..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "296-310",
+      "snippet": "1. READ the candidate citizen array from REQ-105's colony citizen registry (`citizens.json`) -- never hardcoded inline in this aggregation..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1005-1009",
+      "snippet": "Multiple LOOPS on the SAME coordinator host (e.g. automaton's own cron-driven wake and a separately-scheduled evaluation) race to evaluate REQ-102/103 in the same window: this is the scenario REQ-103's lock already handles..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "910-935",
+      "snippet": "Edge Cases: The registry file is missing, unparseable... A record's wallet/fuel/humanDependencies fields... Two records share the same id... A future write path... A routine git checkout... A future code path attempts to write to the git-tracked seed template -- no concurrent-bootstrap edge case is listed anywhere in this section."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "234-235",
+      "snippet": "PROP-105j / PROP-105k -- PROP-105j only greps for writes to citizens.seed.json's path; PROP-105k's Tier-2 test only exercises a single fixture write plus a git checkout/worktree/pull, never two concurrent first-time bootstrap writers."
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "lineRange": "1-13",
+      "snippet": "Fixes a real double-pay drain an adversary found live: two concurrent gig_verify_and_pay(true) calls both read status 'delivered' before either wrote back, both settled a REAL on-chain payout, and the JSON ledger only recorded one (last-write-wins) -- the escrow was drained twice for a single gig."
+    }
+  ],
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-1002",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity", "structural_integrity"],
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "verification-architecture.md's own Purity Boundary Map classifies the NEW module `~/anicca/skills/self/spawn/lib/registry-path.mjs` (exporting `CITIZENS_REGISTRY_PATH` and `COORDINATOR_HOME`) as 'Pure Core (new, two constants)' -- but this classification directly contradicts the SAME document's own treatment of the underlying primitives these two constants are built from, two rows apart in the SAME table:\n\n(1) `CITIZENS_REGISTRY_PATH` is defined as `path.join(resolveStateDir({env, home}), 'citizens.json')` -- and `resolveStateDir` is explicitly classified, in the immediately-adjacent row of this same table, as '**Effectful Shell** (existing, reused unmodified -- new to this feature, resolves FIND-901) | `~/anicca/skills/self/spawn/lib/state-path.js::resolveStateDir({env, home})` | EFFECTFUL (existing, reused unmodified)'. A constant built by calling a function this same document calls EFFECTFUL cannot simultaneously be 'Pure Core' by this document's own stated convention.\n\n(2) `COORDINATOR_HOME` is defined as 'computed EXACTLY ONCE, at module-load time, via Node's `os.homedir()`' -- `os.homedir()` is a real OS-level read of ambient host/environment state (on most platforms it reads `$HOME`/the passwd database), not a deterministic computation over its own inputs; it is exactly the kind of 'hidden global/environment state' dependency a purity boundary exists to isolate into the effectful shell, not fold into the pure core.\n\nThis is not merely academic: this spec's OWN Verification Strategy assigns proof tiers based on this exact Pure-vs-Effectful distinction (Tier 0/1 = no runtime execution / no I/O; Tier 2/3 = real filesystem/env-dependent). Labeling `registry-path.mjs` 'Pure Core' invites a Phase 3 implementer or reviewer to treat `CITIZENS_REGISTRY_PATH`/`COORDINATOR_HOME` as testable with a zero-I/O, no-environment-control Tier-1 unit test -- but genuinely proving either constant's correctness (e.g. that COORDINATOR_HOME really does resolve `/Users/anicca` on this host, or that CITIZENS_REGISTRY_PATH really does route through resolveStateDir rather than a stale/cached value) requires controlling the real process environment/`os.homedir()`, i.e. genuinely effectful-shell-style Tier-2 testing -- exactly the kind of testing PROP-403e/PROP-403f (correctly) already specify for THIS SAME module's other properties. The mislabeling creates a live risk that this ONE row's own proof obligation (PROP-105k, PROP-103d, PROP-403f) gets under-scrutinized at Phase 3 specifically because the Purity Boundary Map tells a reviewer 'this is pure, nothing to check for hidden environment coupling here' -- precisely the failure mode the adversary's own purity_boundary check exists to catch.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "76",
+      "snippet": "| **Pure Core (new)** | new module `~/anicca/skills/self/spawn/lib/registry-path.mjs::CITIZENS_REGISTRY_PATH`, `::COORDINATOR_HOME` | PURE (new, two constants) | Resolves FIND-103: `CITIZENS_REGISTRY_PATH` is the single, canonical absolute path to the DURABLE `citizens.json`, computed as `path.join(resolveStateDir({env, home}), 'citizens.json')` ... New, resolves FIND-701 (critical): this SAME module ALSO exports `COORDINATOR_HOME` ... computed EXACTLY ONCE at module-load time via Node's `os.homedir()`"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "69",
+      "snippet": "| **Effectful Shell (existing, reused unmodified -- new to this feature, resolves FIND-901)** | `~/anicca/skills/self/spawn/lib/state-path.js::resolveStateDir({env, home})` | EFFECTFUL (existing, reused unmodified) | Already implemented, already the mechanism ... run.sh (lines 39-45) uses TODAY for children.jsonl's durable location"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/state-path.js",
+      "lineRange": "6-16",
+      "snippet": "function resolveStateDir({ env = process.env, home = process.env.HOME } = {}) { const requested = env.ANICCA_STATE_DIR || `${home}/.hermes/state`; ... }"
+    }
+  ],
+  "routeToPhase": "1a"
+}
