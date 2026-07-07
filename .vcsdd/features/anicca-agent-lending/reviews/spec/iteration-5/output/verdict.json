@@ -1,0 +1,83 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 5,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T13:45:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-301", "FIND-302", "FIND-303", "FIND-304", "FIND-305"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+      "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+      "/Users/anicca/anicca/skills/economy/ubi/run.sh",
+      "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/state.json"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-301",
+      "status": "genuinely resolved",
+      "note": "Cross-checked ledger.js:20-24 (appendChild is a plain fs.appendFileSync with no internal try/catch, confirmed can throw) and lock.mjs:187-209 (withGigLock's finally block releases the lock via fs.unlink on ANY exception thrown out of fn(), regardless of which line inside fn() threw). The revised spec text (behavioral-spec.md lines 765-827) correctly re-grounds the reconciliation trigger on LEDGER STATE alone (an unterminated 'provisioning'/'disbursement_uncertain' row for the lender's own highest n) rather than lock staleness, uniformly covering: (a) crash, (b) in-process payViaFacilitator exception, and (c) the follow-up appendChild call itself throwing -- the exact third terminal state the finding identified. It ALSO now specifies the second sub-gap (reconciliation lookup itself throwing): the attempt fails cleanly, zero row appended, zero sequence number consumed, lock released normally, safely retriable (lines 814-827). New Tier-2 proof obligations PROP-106k/PROP-106l (verification-architecture.md lines 130-131) back both cases with concrete fixtures. No remaining gap found."
+    },
+    {
+      "findingId": "FIND-302",
+      "status": "genuinely resolved",
+      "note": "'Logged,' precisely defined (behavioral-spec.md lines 1302-1319): a rejected replay (same-loan OR cross-loan) is recorded EXCLUSIVELY via an out-of-band mechanism, and THE SYSTEM SHALL NEVER append a new loans.jsonl row for it -- a binding SHALL with explicit rationale tied to the last-write-wins convention every other reduction in this spec depends on. Backed by a Tier-0 structural check (verification-architecture.md line ~139, PROP-108e: 'a structural/Tier-0 read of verifyRepayment's own replay-rejection branch confirming it never calls appendChild'). The finding's secondary point (no canonical row-schema table / no explicit discriminator between a disbursement-side txHash and a repayment-side txHash) is also substantively addressed: the replay-blocklist is now explicitly scoped to 'the set of every txHash ALREADY recorded on a previously-verified, credited REPAYMENT row (every row this feature itself appended after a PRIOR successful verifyRepayment call)' (lines 1286-1289) -- distinguishing by APPEND-SOURCE rather than by an explicit schema field, which is sufficient to close the security-relevant ambiguity (whether a loan's own disbursement txHash could be misread as an already-credited repayment and block a legitimate first repayment)."
+    },
+    {
+      "findingId": "FIND-303",
+      "status": "genuinely resolved",
+      "note": "New Tier-0 proof obligation PROP-105h (verification-architecture.md lines 120, 154-156) now explicitly requires a control-flow read of the REAL, PRODUCTION REQ-106 issuance code -- not PROP-105g's mocked-caller fixture -- confirming it imports and calls evaluateColdStartKillSwitch BEFORE acquiring the loan_${lenderId} lock. Gate item (2) (verification-architecture.md lines 235-240) explicitly instructs the adversary that PROP-105g's mock is NOT sufficient evidence and that PROP-105h's real-code read is required. The 'a computed flag nobody checks' gap is closed at the verification-obligation level."
+    },
+    {
+      "findingId": "FIND-304",
+      "status": "genuinely resolved, and independently re-verified against anicca-agent-spawn's ACTUAL CURRENT state (iteration 9, gates.1c FAIL, timestamp 2026-07-07T12:34:17.486Z, findings FIND-801/FIND-802 -- NOT the iteration-6/FIND-501..504 snapshot this document's own Dependencies/REQ-113 sections cite)",
+      "note": "Freshly re-read anicca-agent-spawn/specs/behavioral-spec.md this session (grepped for filterProductiveCitizens/readCitizenBalances/computeColonySurplusUsd): the real pipeline is confirmed still exactly the three steps this revision's fix describes -- filterProductiveCitizens (attaches no balance) -> readCitizenBalances (the ONLY balance-attaching, effectful, RPC-driven step) -> computeColonySurplusUsd (consumes the balance-attached output) -- lines 283-347 of the sibling spec. This feature's own composition-point text (behavioral-spec.md lines 1458-1470, verification-architecture.md line 23) now explicitly names all three steps and places adjustBalancesForOutstandingDebt correctly AFTER step 2 and BEFORE step 3. The sibling's OWN Phase 1c gate has moved on (iteration 9, unrelated FIND-801/802 about Solana wallet-verification tooling and a COORDINATOR_HOME prose-literal issue in REQ-403/REQ-105 -- neither touches the three-step pipeline shape or the citizens.json record shape), but the SUBSTANTIVE facts this feature's fix depends on (the pipeline shape itself) remain unchanged and accurate as of this actual, current read. REQ-113's own re-read discipline is confirmed sufficient in practice, not merely in theory."
+    },
+    {
+      "findingId": "FIND-305",
+      "status": "genuinely resolved, and independently re-verified against anicca-agent-spawn's ACTUAL CURRENT registry seed data",
+      "note": "Freshly re-read anicca-agent-spawn/specs/behavioral-spec.md this session, lines 752-765: current seed data confirms automaton at homeDir '/Users/anicca/.anicca' and Franklin at homeDir '/Users/anicca/.blockrun' (two distinct values, matching exactly what this revision's Dependencies section now cites, lines 104-106), BOTH carrying coLocatedWithCoordinator: true (line 756, 765, 770). REQ-112's own corrected mechanism (behavioral-spec.md lines 1067-1092) now reads citizen.coLocatedWithCoordinator exclusively, never homeDir equality, and its own Acceptance Criteria/PROP-112a explicitly forbid any homeDir-equality code path. This is confirmed still accurate against the sibling's real, current data, independent of that sibling's iteration-number churn (now iteration 9, unrelated findings)."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-402", "FIND-403"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:399-405", "description": "REQ-102's own stated invariant ('at most one outstanding loan at a time') is not actually enforced across different lenders -- REQ-106's per-lender lock (loan_${lenderId}) provides zero serialization for a borrower being evaluated concurrently, or across an unbounded reconciliation-delay window, by two DIFFERENT lenders"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:892-896", "description": "REQ-106's own Edge Cases explicitly frame cross-lender non-contention as 'intentional, not a bug' without ever acknowledging this defeats REQ-102's borrower-side single-in-flight invariant, the exact same class of gap (lock scope narrower than invariant scope) this spec has already hardened three times (FIND-103/FIND-201/FIND-301) for the lender side alone"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:266-406", "description": "No condition anywhere in REQ-101/102/105/111 requires lender_id !== borrower_id -- a self-funded citizen can self-loan-and-self-repay at negligible real cost to freely inflate successfulOnTimeRepayments, defeating REQ-105's core cold-start risk-mitigation rationale and corrupting computeColdStartRepaymentRate's own monitoring signal"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:540,566,581-583,1412,1514", "description": "issued_ms is used six times to drive REQ-109's default-detection clock and REQ-105's cold-start ordering but is never defined relative to REQ-106's own two distinct ledger-row timestamps (provisioned_ms vs. the follow-up active row), creating a real ambiguity in the crash-recovery/reconciliation-delay path this spec otherwise hardens carefully"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-401", "FIND-402", "FIND-403"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:108", "description": "PROP-102c is a static, non-concurrent fixture; it never exercises concurrent cross-lender evaluation of the SAME borrower"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:125-126", "description": "PROP-106e tests only loan_id collision-freedom across two different lenders -- it asserts nothing about whether the SAME borrower_id could appear as borrower on both concurrently-issued loans, so a fixture proving PROP-106e could still exhibit the FIND-401 double-loan bug undetected"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:97-150", "description": "Zero PROPs anywhere in the 149-line table require lender_id !== borrower_id, or specify issued_ms's set-point relative to REQ-106's two-phase provisional/active append"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
