@@ -1,12 +1,13 @@
-# Dais-Funded 自律トレードループ — 設計Spec (SSOT)
+# Dais-Funded 自律US株トレードループ — 設計Spec (SSOT)
 
 - **Date**: 2026-07-07
 - **Status**: DESIGN (実装未着手 / brainstorming → 本specがsource of truth)
 - **Owner**: claude-p (human-funded loop) / 立案 = メインClaude
 - **開発方式**: GLVS。本specはGoal段の成果物。Build/Verifyは本spec承認後にVCSDD実コマンドで回す
+- **改訂履歴**: 初版はcrypto(bitbank+freqtrade)だったが、Daisが「cryptoは別で既にやってる、記事のようなUS株botが欲しい」と明示 → **US株(Alpaca)本線に全面組み替え。cryptoは破棄。**
 
 > ⚠️ このspecは **Daisの実際の日本円(貯金)** を自律運用する。溶かしていい金ではない。
-> 全設計の第一原則は「勝つまで大金を賭けない」を**構造で強制**すること。
+> 第一原則は「勝つまで大金を賭けない」を**構造で強制**すること。
 
 ---
 
@@ -14,175 +15,163 @@
 
 | 項目 | 値 |
 |---|---|
-| products repo path | `~/anicca-project/` |
-| 現ブランチ | `feature/clip-rewards`(本spec docのみ。実装時は専用worktreeを切る) |
-| 実装時のworktree | `.worktrees/dais-trading-loop/`(branch `feature/dais-trading-loop`)を切ってから着手 |
-| ループ本体(身体) | `~/.anicca-dais/`(新規 `ANICCA_HOME`。既存colony bodyには一切触れない) |
-| 再利用元 | `~/anicca/skills/earn/`(3エンジン/ledger/guard)、`~/anicca/skills/self/`(self-fix/colony-status) |
-| fork元 | freqtrade(GPL-3.0、private内部利用) |
-| venue | bitbank(ccxt-native、standing-transfer on-ramp適合) |
+| products repo | `~/anicca-project/`(本spec docのみここ) |
+| 実装時worktree | `.worktrees/dais-trading-loop/`(branch `feature/dais-trading-loop`)を切ってから着手 |
+| bot本体(身体) | `~/anicca/skills/earn/us-stock-bot/` + 状態は `~/.anicca-dais/`(新規 `ANICCA_HOME`、既存colony bodyに触れない) |
+| 実行機 | Mac Mini(`anicca-mac-mini-1`)、TZ=Asia/Tokyo確認済、launchd |
+| venue(MVP) | **Alpaca** Trading API(日本居住者で開設可を実signup画面で確認済) |
+| venue(卒業先) | **Webull JP**(ウィブル証券、金商48号、JPY直入金・最低0円) |
 
 ---
 
 ## 1. 目的とゴール(検証可能な完了条件)
 
-**目的**: Daisの実円を、円安から逃がしつつ増やす。初回セットアップ以降は**人間ゼロ**で回す。
+**目的**: Daisの実円を、弱い円から**US株(米国株・ETF)**へ逃がしつつ増やす。初回セットアップ以降は**人間ゼロ**で回す(=記事「毎朝米国株を自動売買してSlackに報告するAIエージェント」の日本版)。
 
 **背景資金(Daisの申告)**:
 | 口座 | 額 | 役割 |
 |---|---|---|
-| MUFG | 約35万円 | 日常の生活費・支払い(触らない、原則) |
-| ゆうちょ | 約90万円 | 貯金 → ここから**少しずつ**投資に回す |
+| MUFG | 約35万円 | 生活費・支払い(触らない) |
+| ゆうちょ | 約90万円 | 貯金 → ここから**少しずつ**US株へ |
 
-**投入方針(Daisの言葉)**: 「$10 → $100 → 勝ち続けたら増額」。少額から始め、実証されたら増やす。
+**投入方針**: 「$10 → $100 → 勝ち続けたら増やす」。まずPaper(仮想売買)→実弾少額。
 
-**done条件(Milestoneごと、§9で詳細)**:
-- **M1完了** = 実金$100がE2Eで届き、ledgerに正しく記録され、monitoringが生きている(トレードはまだ)
-- **M2完了** = Track2算法loopが実金$10から稼働し、ledgerにrealized profit>0が**複数回**載る(実証ラダー開始)
-- **M3完了** = 実証を受けてTrack1(安全ベース)へ90万の大半を移し、円安からの継続escapeが自律で回る
+**done条件(Milestoneごと、§9)**:
+- **M1完了** = Paperで4戦略+AI審査+毎朝Slack日報(グラフ付き)+ledger+税ログexportが自律で回る。**実金ゼロ**
+- **M2完了** = 実金$100を投入しライブ稼働、$10→$100実証ラダーでledgerにrealized P&Lが複数回載る。safety(kill-switch/上限/累積赤字halt)発火をテスト確認
+- **M3完了** = 実証を受け規模拡大 + Webull JP(JP正規登録)へ卒業、90万の大半をTrack1(index DCA)へ
 
 ---
 
-## 2. 正直な前提(なぜ設計が保守的か) — 引用付き
+## 2. 正直な前提(なぜ保守的か) — 引用付き
 
-BP=答え。判断には引用を付ける(§CLAUDE.md)。この設計を保守的にする根拠:
-
-| 出典 | 核心の引用 | 含意 |
+| 出典 | 核心 | 含意 |
 |---|---|---|
-| freqtrade公式FAQ (freqtrade.io/en/stable/faq/) | "12 trades is just not enough to say anything… it will always be a gamble" | ツール自体にedgeはない |
-| stash86 / Bot Academy (botacademy.ddns.net、freqtrade公式が"Community showcase"でリンク) | "3年使ってzero long-term profitable strategy。バックテストは常に綺麗、最長8ヶ月で崩れる。100 botのうち生き残るのは約2つ" | retail algoの長期黒字は稀。edgeは**リサーチ規律**から来る |
-| Reuters 2026-12-04 (Stephen Jen) | キャリートレードは"ticking time bomb"、1998-10にUSDJPYが1日で134→120 | 小口レバFXは**元本超の自爆**、Daisのゴールの真逆 |
-| 日本FSA (2011) | "maximum allowable leverage reduced from 50 times to 25 times" | 規制当局自身が小口FXレバを繰り返し下げている=危険の証左 |
-| Investopedia | S&P500 1928–2026 real annualized ≈ 6.81% | 「弱い円から逃げて増やす」の最良の自律表現は**米株指数DCA** |
+| freqtrade公式FAQ | "it will always be a gamble" | retail algoにツール由来のedgeはない |
+| Bot Academy(stash86, 3年運用) | "zero long-term profitable strategy。バックテストは常に綺麗、最長8ヶ月で崩れる" | edgeは**リサーチ規律**から |
+| Investopedia | S&P500 1928–2026 real ≈ 6.81%/yr | 「円安から逃げて増やす」の最良の自律表現は**index DCA** |
+| 記事の4戦略の学術裏付け(検証済) | Momentum=Jegadeesh&Titman(1993)、Reversal=Jegadeesh(1990)、Low-vol anomaly、Dividend aristocrats | 記事の4戦略は「怪しい自作」でなく**教科書的ファクター**。ただし依然「勝つ保証はない」 |
 
-**結論**: 算法トレード(Track2)は「edgeが実証されるまで小口に封じ込める」。資金の大半はTrack1(低破綻リスクの安全ベース)で円安から逃がす。この二層構造が本設計の背骨。
+**結論**: 記事の4戦略botは学術的に健全だが、それでも「実証されるまで小口に封じ込める」。資金の大半はindex DCA(低破綻リスク)で円安から逃がす。二層構造が背骨。
 
 ---
 
-## 3. アーキテクチャ全体
+## 3. アーキテクチャ全体 — 2トラック(両方US株、Alpaca 1本)
 
 ```
-                     Dais の 実円 (ゆうちょ / MUFG)
-                              │
-              ┌───────────────┴─── Layer 1: オンランプ ───────────┐
-              │  初回まとまった額 = 手動振込 1回 (2FA 1回)         │
-              │  以後の継続 = 定額自動送金/自動振込 (窓口登録1回→ゼロ)│
-              └───────────────┬───────────────────────────────────┘
-                              ▼ (規制されたJP取引所 = bitbank の本人名義口座)
-              ┌─────────── Layer 2: トレード (API, 2FA不要, 完全自律) ───────────┐
-              │                                                                  │
-              │  Track 1: 安全ベース (資金の大半, M3で本格化)                     │
-              │    → 円安から逃げて着実に増やす (米株DCA or USD保有)              │
-              │                                                                  │
-              │  Track 2: 実験スライス (小口, M2から)                             │
-              │    → freqtrade fork on bitbank, crypto spot 算法                  │
-              │    → $10→$100→実証ゲート→段階増額                                │
-              │    → kill-switch / spend-cap / 累積赤字即停止                     │
-              └──────────────────────────────────────────────────────────────────┘
-                              │
-                              ▼
-              身体 = ~/.anicca-dais (ANICCA_FUNDING=human, fail-closed分離)
-              ledger = ~/.anicca-dais/skills/earn/state/earn-ledger.jsonl (既存format)
-              self-heal = self-fix.sh dais-loop "<blocker>" (無改変で動く)
+                Dais の 実円 (ゆうちょ / MUFG)
+                          │
+          ┌──── Layer 1: オンランプ(USD化) ────┐
+          │ 初回まとまった額 = 手動振込1回        │
+          │ 追加 = bank標準送金予約(送金は自動)  │
+          │ ※Alpacaは入金反映がAPI外=手動trigger │
+          └──────────────┬───────────────────────┘
+                          ▼ (Alpaca USD口座、本人名義KYC)
+          ┌──── Layer 2: トレード(Trading API, 完全自律) ────┐
+          │ Track 1: 安全ベース(資金の大半, M3で本格化)      │
+          │   → index DCA(VOO/VTI等)、buy&hold、円安escape   │
+          │ Track 2: 実験スライス(小口, M1 Paper→M2実弾)     │
+          │   → 記事の4戦略(配当貴族/モメンタム/リバーサル/  │
+          │     低ボラ) + AI審査ゲート + 毎朝Slack日報        │
+          │   → $10→$100→実証ゲート→段階増額               │
+          │   → kill-switch / 上限 / 累積赤字即停止           │
+          └──────────────────────────────────────────────────┘
+                          │
+                          ▼
+     身体 ~/.anicca-dais (ANICCA_FUNDING=human, fail-closed分離)
+     ledger = ~/.anicca-dais/skills/earn/state/earn-ledger.jsonl
+     税ログ = JPY建て取引ログ(確定申告用)を別途export
+     常駐 = launchd 平日6:00 JST / self-heal = self-fix.sh dais-loop
 ```
-
-**核心の分離**: Layer1(銀行)とLayer2(取引所API)は完全に切り離す。銀行側の自動化限界(2FA)はLayer2の自律性に影響しない。
 
 ---
 
 ## 4. オンランプ設計 (Layer 1) — 引用付き
 
-**確定した事実(調査1)**: 個人の銀行口座から振込をAPIで自動実行する手段は存在しない(MUFG/ゆうちょとも更新系APIは法人契約者限定、個人はIBログイン+2FA必須)。**2FAを迂回する手段(クレデンシャル保持+OTP代行等)は法規リスク領域につき本設計で採用しない。**
+Alpacaは**USD建てのみ**(JPY直接保有不可)。日本からの資金化:
 
-**唯一の正規・ゼロタッチ・ルート**:
+| 方法 | 内容 | コスト | 出典 |
+|---|---|---|---|
+| International Wire | JP銀行→USD建てSWIFT送金 | 送金元銀行手数料 + 出金$50 | alpaca.markets/support/wire-deposit「wire must be sent in USD」 |
+| Local Currency (CurrencyCloud) | JPYで送金→自動USD変換 | **1.5%(上限$40)** | alpaca.markets/learn/fund-live-trading-account(2026-01更新) |
+| **入金の自動化** | **不可**。"users cannot programmatically schedule deposits" | — | 同上 |
 
-| ステップ | 内容 | 人間タッチ |
-|---|---|---|
-| S0-a | bitbankで口座開設・KYC完了 → 専用入金口座(GMOあおぞら/住信SBIの本人名義)取得 | 1回(初期セットアップ) |
-| S0-b | ゆうちょ貯金窓口で「自動振込」を申込。送金先=bitbank専用口座、頻度=毎週or毎月、金額=固定額 | 1回(窓口来店) |
-| S0-c | 初回まとまった額の移動は、標準の窓口/IB振込を**1回だけ**手動実行 | 1回 |
-| S1〜 | 銀行の自動送金バッチ → bitbank専用口座へ振込入金 → 残高反映(翌営業日ラグ) | **ゼロ** |
-| S1〜 | ループがbitbank APIで入金履歴をポーリングし着金確認 | ゼロ(自動) |
+**確定した運用制約**: 売買は完全自律。だが**新規資金の投入だけは人間がAlpacaダッシュボードで手動**(bank側の標準送金予約で"送金"は自動化できるが、Alpaca側の着金・USD変換triggerはAPI外)。→ これは前段で合意済みの「初期セットアップ/資金投入の人間タッチ」と同性質。トレードループ本体には影響しない。
 
-- 出典(ゆうちょ): "貯金窓口でお申込みください"(jp-bank.japanpost.jp/kojin/sokin/jido/kj_sk_jd_jdfurikomi.html)
-- 出典(MUFG定額自動送金): "ご契約後は、お振り込みのためにお手続きいただく必要はありません"(bk.mufg.jp/tsukau/furikomi/teigakujidosoukin/index.html)
-- **AML注意**: 本人名義→本人名義KYC済み口座の標準振込は制限対象外の見込み。初回は少額でテストしてから本番額に移す(不正検知は生きたシステムのため)。
-
-**設計含意**: ループは「変動額を今すぐ送れ」を銀行に対して発行**しない**(2FA必須で不可能)。設計は常に「固定額が定期で流れ込む」前提。トレードロジックは取引所内残高の範囲でのみ動く。
+**卒業先Webull JP**ではこの制約が消える(JPY直接入金、変換摩擦なし)。
 
 ---
 
-## 5. トレード設計 (Layer 2)
+## 5. トレード設計 (Layer 2) — 検証済みスタック
 
-### 5.1 Track 2 — 実験スライス(M2から、本specの実装主対象)
+### 5.1 Track 2 — 実験スライス(記事のbot、M1 Paperから)
 
-| 項目 | 決定 | 根拠 |
+| 層 | 決定(2026-07-07検証済) | 出典/根拠 |
 |---|---|---|
-| venue | **bitbank** | ccxt-native + 公式`python-bitbankcc` → freqtradeがほぼ無改変。native `fetchOHLCV`。standing-transfer on-rampと適合(即時入金不要) |
-| bot base | **freqtrade fork(丸ごとcopy、混ぜない)** | 52k★、Hyperopt(Bayesian)+FreqAI(適応的ML再学習)=「自己改善」が最強。headless運用が本業設計。dry-run内蔵。Protections plugin(StoplossGuard/MaxDrawdown/CooldownPeriod)標準 |
-| 取引対象 | crypto spot(JPYペア)、**レバレッジなし** | レバは§2の自爆リスク。spot現物のみ |
-| 戦略規律 | walk-forward検証 / hyperoptパラメータは少数 / 新規dry-run期間を真のout-of-sampleとして扱う | edgeはツールでなく規律から来る(§2 stash86) |
-| GMOコイン | 代替として保持(将来ccxtアダプタを書く判断をした時) | 即時入金・最安手数料の利点はあるがccxt非対応=自作コスト |
+| 証券SDK | **`alpaca-py` v0.43.5**(旧`alpaca-trade-api`はarchived) | pypi/alpaca-py、公式docs「SDKs and Tools」 |
+| 端株注文 | `MarketOrderRequest(notional=金額)`、fractionalはDAYのみ | docs.alpaca.markets/docs/fractional-trading |
+| Paper | `TradingClient(..., paper=True)`で自動paper-api routing | alpaca-py README |
+| エンジン | **lumibot**(1.7k★、Alpacaネイティブ)を土台に4 Strategyサブクラス | github.com/Lumiwealth/lumibot |
+| 4戦略 | 配当貴族 / モメンタム(12mo) / 短期リバーサル / 低ボラ | §2の学術裏付け |
+| AI審査ゲート | ルールのシグナル→LLMがveto→採用/却下を理由付きで(judgment=model原則に合致) | 自作(既存OSSに決定版なし) |
+| 自然言語操作 | **公式 alpaca-mcp-server**(860★)→Claude Codeが「AI・半導体に寄せて」を審査+発注 | github.com/alpacahq/alpaca-mcp-server |
+| Slack日報 | **`slack_sdk` `files_upload_v2()`**(旧`files.upload`は2025-11-12 sunset済) | docs.slack.dev、scope=`files:write`+`chat:write` |
+| グラフ | matplotlib: 資産曲線 vs SPY(正規化) + 銘柄別P&L棒 | 標準 |
+| 常駐 | launchd `StartCalendarInterval`、平日6:00 JST | man launchd.plist、TZ=JST確認済 |
 
-**重要な現実(調査3)**: freqtradeはbitbankを「公式テスト済み」listには載せていない("we cannot guarantee they will work")。→ 実装前に **ccxtで直接bitbankへ最小実弾スパイク**(注文発行+残高/取引履歴のround-trip確認)を行い、freqtradeのexchange解決層に配線する前に動作を確定する。
+### 5.2 Track 1 — 安全ベース(index DCA、M3で本格化)
 
-### 5.2 Track 1 — 安全ベース(M3で本格化、instrumentは後で決定)
+- 役割: 資金の大半で円安から逃げ着実に増やす。VOO/VTI等の指数ETFを定時買付、buy&hold。
+- Alpacaの`notional`端株で$1から積立可。判断ゼロ(スケジュール実行のみ)=最も自律・最も低破綻。
+- M1/M2ではTrack1は最小(またはPaper)。実証後M3で90万の大半を移す。
 
-- 役割: 資金の大半で円安から逃げ、着実に増やす。
-- 候補(M3で決定): ①米株指数DCA(VOO/VTI via IBKR/IBSJ、$0最低額、JPY入金→USD資産購入で自動両替) ②USD/USDC保有(金利4%キャリー)。
-- 調査4順位: 米株DCA > USD保有 > crypto算法 > レバFX。
-- **本specのM1/M2ではTrack1は未実装**。M2で配管とedgeが実証されてから、instrumentを別途決定しM3で構築(別系統=colony crypto基盤は流用不可)。
-- 未検証: Alpacaの日本居住者受け入れ(一次情報未確認)。IBKR/IBSJが安全な既定候補。
+### 5.3 卒業パス(規模拡大時)
+
+実証されて規模を上げる段で、custodyを**Webull JP**(金商48号、JPY直入金、最低0円、公式Python SDK、US株+端株API)へ移す。API鍵発行に「入金→1〜2営業日審査→SMS/2FA」が要る点は初期セットアップで織り込む。lumibot非対応なのでstrategy層はWebull SDKへ移植(Alpacaで確立したロジックをcopy)。
 
 ---
 
 ## 6. マネーセーフティ(交渉不可・self-improveで変更不可)
 
-既存colony基盤に組込み済みの安全装置を**そのまま継承**する(調査5):
-
-| 装置 | 既存実装 | 挙動 |
+| 装置 | 実装 | 挙動 |
 |---|---|---|
-| 1パス上限 | `MAX_PASS_SPEND`(既定$2) | 全戦略合計で1パス≤約$6に固定。残高に関係なく上限一定 |
-| 1取引上限 | `MAX_BET_SIZE` | directional取引の1回額を制限 |
-| kill-switch | `touch KILL` | 各戦略実行前にチェック、存在すれば即停止 |
-| 累積赤字halt | `_shared/lib/earn-guard.mjs` | lifetime `net_usdc`が負に転じた瞬間fail-closed(skill単位AND wallet単位) |
-| genome分離 | `genome.mjs` | self-improveが触れる knob から `MAX_BET_SIZE`/`MAX_PASS_SPEND` は**明示的に除外**(安全上限は自己改善で緩められない) |
+| Paper-first | `paper=True` | M1は実金ゼロで全パイプライン検証 |
+| 1取引上限 | `MAX_TRADE_NOTIONAL` | 1発注のnotional上限 |
+| セクター集中上限 | 例30%(記事同様) | 「AIに寄せて」でも1セクター偏重を抑制 |
+| kill-switch | `touch KILL` | 各run先頭でチェック、あれば即停止 |
+| 累積赤字halt | `earn-guard.mjs`(既存流用) | lifetime実現損益が負でfail-closed |
+| 実証ラダー | `$10→$100→$1,000→段階増額` | ledgerにrealized profit>0が閾値回数出た時のみ昇格。負けたら登らない。人間承認不要 |
+| 低頻度 | rebalance頻度を抑制 | edge劣化対策 + 為替差益 雑所得イベント削減(§8) |
 
-**追加(本spec固有)**: 実証ゲート付き資金ラダー。
-```
-$10 →[ledgerにrealized profit>0が載る]→ $100 →[同]→ $1,000 →[同]→ 段階増額
-      ↑ このゲートを通らない限り資金はTrack1(安全ベース)に留まる
-```
-ラダーの昇格は`isProfitable()`(net_usdc>0 AND external===true AND tx confirmed)を満たす行が閾値回数出た時のみ。人間承認は不要だが、**負けたらラダーは自動で登らない**。
+`MAX_TRADE_NOTIONAL`/上限系はself-improveの調整対象から除外(安全上限は緩められない)。
 
 ---
 
-## 7. identity / wallet 分離(Daisの金を混ぜない)
+## 7. identity / 分離 / 再利用(車輪の再発明をしない)
 
 | 項目 | 決定 |
 |---|---|
-| 身体dir | `~/.anicca-dais`(新規)。`~/.anicca` `~/.blockrun` `~/.anicca-founder`には触れない |
-| wallet | `~/.anicca-dais/.automaton/wallet.json` + `solana.json` を新規生成 |
-| env | launchd plistで `ANICCA_HOME=~/.anicca-dais` `ANICCA_INSTANCE=dais-loop` `ANICCA_FUNDING=human` |
-| 分離保証 | `resolve-identity.mjs`は`ANICCA_HOME`ゲートでfail-closed。foreign homeは常に`null`を返す=他instanceのkeyを絶対に引かない(調査5で確認) |
-| citizen gate | `is-self-funded.mjs`で`isSelfFunded()===false`を**設計上assert**(fuel=human)。claude-pと同じ扱い |
-| 既存バグ修正 | `founder-loop.plist`が`ANICCA_FUNDING=self`と誤設定 → 新plistでは`human`を正しく設定(調査5指摘) |
+| 身体 | `~/.anicca-dais`(新規)、`ANICCA_INSTANCE=dais-us-stock`、`ANICCA_FUNDING=human` |
+| 分離 | 既存colony(automaton/Franklin/claude-p)と別body。混ざらない |
+| ledger | 既存 `earn/lib/ledger.mjs`+`record.mjs`+`earn-guard.mjs` を流用(ANICCA_HOMEを向けるだけ) |
+| self-heal | `self-fix.sh dais-us-stock "<blocker>"` 無改変で動く |
+| SSOT可視化 | `colony-status.sh`に4番目ブロック追加(Alpaca equity表示) |
+| secrets | Alpaca API key/secret、Slack bot token は `~/.anicca-dais/.env`(chmod600、git ignore)。CLI平文出力禁止 |
 
 ---
 
-## 8. 再利用インベントリ(車輪の再発明をしない)
+## 8. 税・規制(正直に、確定申告を実務可能にする)
 
-| コンポーネント | 再利用/新規 | 詳細 |
+| 論点 | 結論 | 出典 |
 |---|---|---|
-| ledger記録 | **再利用(無改変)** | `earn/lib/ledger.mjs`+`record.mjs`+`earn-guard.mjs`。`ANICCA_HOME`を向けるだけで`~/.anicca-dais/.../earn-ledger.jsonl`に自動記録 |
-| self-heal | **再利用(無改変)** | `self-fix.sh dais-loop "<blocker>"` がそのまま動く |
-| identity解決 | **再利用(無改変)** | `resolve-identity.mjs`(ANICCA_HOMEゲート) |
-| money-safety | **再利用** | `earn-guard.mjs`/genome分離パターン |
-| SSOT可視化 | **小改修** | `colony-status.sh`/`telemetry-collect.sh`に4番目のブロック追加(同じhelper、新wallet address) |
-| bot本体 | **新規(fork)** | freqtrade fork + bitbank配線 + 戦略 |
-| bitbank連携 | **新規(最小)** | ccxt `bitbank` を使用。必要なら薄いadapter(GMO採用時のみ`pybotters`のGMO実装を参照) |
-| 着金ポーラ | **新規(小)** | bitbank入金履歴API polling → 残高反映確認 |
-| Track1(安全ベース) | **新規(M3)** | IBKR/USD経路。colony crypto基盤は流用不可 |
+| US株譲渡益 | **申告分離20.315%**(crypto雑所得最大55%より明確に有利) | 国税庁No.1463 |
+| 口座区分 | 海外ブローカー=特定口座なし=**一般口座=自分で確定申告** | IBKR証券FAQ |
+| 米国配当 | W-8BENで10%源泉→外国税額控除 | 国税庁No.1240 |
+| 国外財産調書 | 5000万超で義務→Dais(~90万)は**対象外** | 国税庁No.7456 |
+| ⚠️ 為替差益 | 海外ブローカーはUSD現金で回すため「売却→USDでB購入」の度に為替差益が**雑所得**化しうる。**低頻度**設計で削減 | 楽天証券・国税庁通達57の3 |
+| ⚠️ Alpaca法的位置 | 日本金商登録なし=逆勧誘グレー。$100 MVPは実害小、**規模拡大でWebull JP(登録済)へ卒業** | 関東財務局 |
+
+**botの税ログexport仕様(必須)**: 約定日時 / 銘柄・数量・単価USD / 適用為替レート(同一金融機関TTS-TTB継続適用) / 円換算取得・売却額 / 配当と米国源泉10% / **USD現金移動履歴(為替差益用、最も漏れやすい)** / 年間JPY損益サマリー。→ 確定申告書へ転記可能な形で出力。**税理士に最終確認する項目**は§12に列挙。
 
 ---
 
@@ -190,38 +179,38 @@ $10 →[ledgerにrealized profit>0が載る]→ $100 →[同]→ $1,000 →[同]
 
 | M | 名前 | やること | 完了ゲート(検証可能) |
 |---|---|---|---|
-| **M1** | 配管検証 | 身体`~/.anicca-dais`生成、identity分離assert、bitbank口座+standing-transfer登録、実金$100を1回投入、着金ポーラ+ledger+monitoring稼働。**トレードは載せない** | 実金$100がbitbankに着金しAPIで確認でき、ledgerに記録され、`colony-status.sh`に4番目のinstanceが出る。identity分離テストがforeign-home=null を返す |
-| **M2** | 算法ON | freqtrade fork配線、ccxt-bitbank実弾スパイク合格、戦略をdry-runで検証後に実金$10で起動、実証ラダー開始 | ledgerに`isProfitable()===true`の行が複数回(閾値)載る。kill-switch/spend-cap/累積赤字haltが実際に発火することをテストで確認 |
-| **M3** | 本格escape | Track1 instrument決定(米株DCA vs USD保有)、90万の大半を移す、継続escape自律化 | Track1が自律で定期買付/保有し、円安escapeがE2Eで回る |
+| **M1** | Paperパイプライン | `~/.anicca-dais`生成、Alpaca **paper**口座、alpaca-py+lumibotで4戦略、AI審査ゲート、毎朝Slack日報(matplotlibグラフ+会社名+理由)、ledger、税ログexport、launchd平日6時JST、公式MCPでチャット操作。**実金ゼロ** | Paperで自律稼働し、毎朝Slackにグラフ付き日報が届き、MCPで「AI・半導体に寄せて」→注文一覧提示が動く。227件相当のテストgreen |
+| **M2** | 実金少額 | Alpacaへ$100を1回投入→ライブ切替、$10→$100実証ラダー。Track1 index DCAも開始。safety発火をテスト確認 | ledgerに実約定のrealized P&L行が複数、kill-switch/上限/累積赤字haltが実際に発火。税ログが実取引で埋まる |
+| **M3** | 規模拡大+卒業 | 実証を受け増額、**Webull JP**(JP登録)へcustody卒業、90万の大半をTrack1 DCAへ | Webull JPで自律稼働、円安escapeがE2Eで回る |
 
-各Mは独立にVCSDD(init→spec→spec-review→tdd→impl→adversary→harden→converge)で回す。
+各MはVCSDD(init→spec→spec-review→tdd→impl→adversary→harden→converge)で回す。
 
 ---
 
 ## 10. 検証アーキテクチャ(VCSDDへ接続)
 
-| 要件 | 検証方法(fresh evidence) |
+| 要件 | 検証(fresh evidence、dry禁止) |
 |---|---|
-| identity分離 | foreign `ANICCA_HOME`で`resolveEvmPrivateKey()`が`null`を返すユニットテスト。Daisのwalletが他instance keyを引かないこと |
-| オンランプ着金 | 実金の入金がbitbank入金履歴APIに現れ、残高に反映されることを実観測(dry不可) |
-| ledger正確性 | 実トレード後、`earn-ledger.jsonl`の行が実際のtx/statusと一致(MD5/tx confirmまで) |
-| money-safety発火 | KILLファイル/上限超過/累積赤字を人工的に起こし、実際に停止することを確認 |
-| edge実証 | dry-run out-of-sample期間 → 実金$10ラダー。realized profitはtx confirmedのみカウント(盛らない) |
-| E2E | メインが実ブラウザ/実API/実walletで自己完結確認。コンパイル成功だけでは完了としない |
+| Paperパイプライン | paperで実際にシグナル生成→審査→(paper)発注→Slack日報到達を実観測 |
+| Slack画像 | `files_upload_v2()`で実PNGがチャンネルに載る(URL確認) |
+| MCPチャット操作 | Claude Codeから自然言語→注文一覧提示→GO→paper反映をE2E |
+| 実約定/ledger | M2で実fill IDとledger行が一致(盛らない、tx/fill確認まで) |
+| safety発火 | KILL/上限超過/累積赤字を人工発生→実際に停止 |
+| 税ログ | 実取引後、JPY建てログが約定日レートで正しく出る |
+| identity分離 | foreign ANICCA_HOMEでkey解決がnull |
 
-adversary = fresh-context Opus 4.8(§CLAUDE.md model分業)。
+adversary = fresh-context Opus 4.8(`model: "claude-opus-4-8"`明示)。
 
 ---
 
 ## 11. スコープ外(YAGNI / 明示的除外)
 
-- ❌ レバレッジFX / レバレッジcrypto(§2の自爆リスク)
-- ❌ M3前に90万の大半を動かすこと(実証されるまで大金を賭けない)
-- ❌ 銀行2FAの迂回・自動振込のAPI化(法規リスク、技術的にも不可)
-- ❌ 即時入金(クイック入金)の自動化(構造上2FA必須、standing-transferで代替)
-- ❌ Track2の資金をon-chainへ出すこと(Dais選択=JP取引所native。規制取引所内にとどめる)
-- ❌ 複数venueの混在(NEVER-COMBINE。まずbitbankで勝者を1つ検証)
-- ❌ Track1とTrack2を1つのbotに混ぜること(別系統)
+- ❌ crypto(Daisは別で運用中、税も不利)
+- ❌ レバレッジ/信用(spot/cash現物のみ)
+- ❌ 高頻度/デイトレ(低頻度=edge劣化対策+為替差益 雑所得削減)
+- ❌ M3前に90万の大半を動かす
+- ❌ IBKR(初回最低100万円=start small不可)、moomoo(2026-06-19 FSA業務改善命令)
+- ❌ 入金の完全API自動化(Alpaca構造上不可、bank予約+手動triggerで代替)
 
 ---
 
@@ -229,19 +218,18 @@ adversary = fresh-context Opus 4.8(§CLAUDE.md model分業)。
 
 | 項目 | 状態 |
 |---|---|
-| bitbankのSBI買収(2026-06-28発表、$289M) | 統合過渡期。運用体制に不確実性 → M1で口座・API・出金が実際に動くことを実弾確認 |
-| freqtrade×bitbank非公式サポート | 実装前にccxt実弾スパイク必須(§5.1) |
-| **日本の税** | 暗号資産のトレード益=雑所得(総合課税、最大約55%)。米株=申告分離。**自律トレードでも課税・確定申告義務は残る**。M2稼働時に取引履歴をtax用にexportする仕組みを検討(本specのM2で扱う、Daisに要周知) |
-| Alpacaの日本居住者受け入れ | 一次情報未確認 → Track1はIBKR/IBSJを既定に |
-| AML不正検知 | 初回は少額テスト → 本番額(§4) |
-| algo edgeの不在 | §2の通り。二層構造+実証ラダーで封じ込め済み |
+| Alpaca日本KYC/入金の最終確認 | signup国選択で"Japan"可は実画面確認済。**実KYC・着金・API鍵発行はM1で本人情報で完走して確定**(検証時はhard-stopで未実行) |
+| Alpaca法的グレー(金商登録なし) | $100 MVPは実害小。規模拡大でWebull JP卒業。**弁護士確認**推奨 |
+| 為替差益 雑所得の実務計算 | 高頻度でのUSD再利用のFIFO等はグレー→**税理士確認**。低頻度設計で緩和 |
+| retail algoのedge不在 | §2の通り。二層構造+実証ラダーで封じ込め |
+| Webull JP API審査ラグ | 鍵発行に1〜2営業日+SMS/2FA。卒業時の初期セットアップに織り込む |
 
 ---
 
 ## 13. 次のステップ
 
 1. Daisが本specをレビュー・承認
-2. writing-plans skillで実装計画を作成(GLVSのGoal→Plan)
-3. worktree `feature/dais-trading-loop`を切る
-4. M1からVCSDD実コマンドで着手(`vcsdd-init` → ...)
+2. writing-plans skillでM1実装計画(GLVS Goal→Plan)
+3. worktree `feature/dais-trading-loop`
+4. M1からVCSDD実コマンド(`vcsdd-init`...)
 5. **実装はDais承認まで一切しない**(brainstorming HARD GATE + Dais明示指示)
