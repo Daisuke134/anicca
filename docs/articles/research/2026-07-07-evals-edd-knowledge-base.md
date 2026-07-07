@@ -533,4 +533,102 @@ RAGAS/Langfuse は名前のみ。自社事例は限定的で他社事例中心�
 
 ---
 
-*次のアクション: Dais が §9 の論点に答える → 切り口確定 → §8 の背骨を1章ずつ co-write → ai-entity-article-writer で JP+EN 執筆 → 多媒体 publish。記事本文はまだ書かない。*
+## 11. 我々自身の EDD 実例（記事の"顔"— Anicca/Life Manager）
+
+> 他社の抽象論だけでなく「我々が実際にこう使っている」を入れると記事が一段強くなる。
+> 正直さの線: 誇張しない。「作っている最中／最初のマイルストーンまで来た」と書く。
+
+### 11.1 実例A（軽い実例）— Life Manager の「場所を聞き返す」問題
+
+**観測された失敗（look at your data / Hamel）:**
+予定「MAIT 出社」（MAIT = 実在の会社、検索すれば住所が出る）に対し、エージェントが
+Telegram で人間に「MAIT ってどこ？」と聞き返す。＝**調べれば分かることを調べずに人間へ振る。**
+
+**EDD 化:**
+- **Task**: 場所が未記入だが検索で解決できる会場名を含む予定
+- **Success（言語化）**: 人間に聞かず、自分で検索して正しい location を埋める
+- **Grader**: ① Code系（検索/placesツールを呼んだか／「どこ？」Telegramを送っていないか）
+  ② Outcome系（カレンダーの location が実住所と一致）③ LLM-judge（埋めた場所が妥当か）
+- **バランスの取れた問題セット（← Anthropic Step3、超重要）**:
+  - 検索すべき: 会社/レストラン/ランドマーク
+  - 検索すべきでない（online判定）: 「藤井さんと電話」「Zoom MTG」→ 物理場所なし
+  - 人間に聞くのが正解: 「友達とごはん」(会場情報ゼロ) → ここで聞くのは正しい
+  - → Anthropic の Claude.ai 検索 eval（"天気は検索/Apple創業者は知識" 両側）と同型
+- **Red→Green→Refactor**: Red=今のGeminiは低得点 / Green=**MAITの住所をハードコードせず**
+  プロンプト「聞く前にまず会場名を検索、見つからない時だけ聞け」+ placesツールで直す /
+  Refactor=regression eval に卒業（"また聞く病"の再発を即検知）
+- **規律**: 1人分をハードコードしない（`feedback_product_agent_does_the_work`）/
+  判断は model にやらせ regex で焼かない（`feedback_build_agents_not_hardcode_regex`）
+- **model-agnostic**: ループが Gemini でも eval は不変。むしろ「どのモデルがこの判断が上手いか」を
+  benchmark で比較できる（"same logic, swap the model"）
+
+**記事での一言**: 「AI秘書がMAITの場所を聞いてきた→EDDで"聞く前に調べる"を評価基準にした→もう聞かない」
+
+### 11.2 実例B（記事の主役）— Anicca/Franklin 経済：grader = on-chain 実マネー
+
+**EDD は2階層で効く:**
+- **階層A（claude-p が経済を作る = capability eval、低→登る山）**: eval の問い＝「人間ゼロ・
+  claude-pゼロで自走するか？」。on-chain 合格条件＝ Franklin の earn>spend / net worth 増加 /
+  spawn 発生 / self-heal 作動。今ほぼ0%→ harness 反復で点を上げる。＝ Anthropic の EDD 定義
+  「まだできないうちに"予定してる能力"の eval を先に作り、できるまで反復」そのもの。
+- **階層B（Franklin が自分を EDD で改善、永続）**: eval signal = ledger の realized P&L →
+  戦略改善 → fresh adversary 検証 → 自 merge。「check が改善を決める」(loopy)。
+
+**★核心＝記事の売り: grader を"on-chain 実マネー"に固定 = 唯一 hack できない採点者★**
+
+| 論点 | 普通の EDD | Anicca の EDD |
+|---|---|---|
+| grader | code test / LLM-judge | **on-chain realized USDC** |
+| reward hack（← Anthropic Step5 / Lilian Weng） | されうる（抜け穴を突く） | **不可能**（着金は偽造できない） |
+| correctness の主観性（← Hamel「judgeを人間に較正」） | 主観 → 人間較正が要る | **realized profit>0 は二値・偽造不能・較正不要** |
+| eval の役割 | 出荷ゲート | **改善ループの燃料**（Replit「ゲートでなくループへ」） |
+
+殺し文句案:
+> ほとんどの人の eval は賢い AI に騙される（reward hacking）。だから我々は eval を"実際の
+> on-chain マネー"に固定した——この世で唯一 AI が hack できない採点者。Franklin が"稼いだ"と
+> 主張しても意味がない。ブロックチェーンに金が着かない限り、それは0点だ。
+
+**「親の原則」(REQ-M6) も EDD 語で説明可**: 失敗をパッチで終わらせず、(a) Franklin の self-heal
+harness を上げ (b)「自力で治せる」を検証する regression eval を残す ＝ Anthropic「失敗が
+テストケースになり、テストケースがデグレを防ぐ」の純粋形。「Franklin だけが Franklin を治せる」。
+
+**正直さ**: 「経済を"作っている"、最初のマイルストーン（Franklin↔Franklin 史上初 on-chain gig を
+Base mainnet で達成）まで来た」と書く。「繁栄する経済が既にある」とは書かない。
+
+**spec 正本（記事執筆時に精読）**:
+- `~/anicca-project/docs/loop-engineering/07-patchlevel-spec-two-loops.md`（実装spec）
+- `~/anicca-project/docs/loop-engineering/00-INDEX.md`（目次）
+- `~/anicca-project/docs/superpowers/specs/2026-07-07-loop-engineering-out-of-loop-design.md`（SSOT）
+- feature 名は既に `eval-driven-earning`
+
+---
+
+## 12. 他社の具体例バンク（記事に並べる弾）
+
+| 会社/事例 | 具体的に何をした | 出典 |
+|---|---|---|
+| Rechat / Lucy（不動産AI秘書） | 数百のユニットテスト。"listing検索"を件数アサーション(1/複数/0件)。Metabaseで前後比較。whack-a-mole 物語の元 | Hamel |
+| Claude.ai 検索 | "検索すべき/すべきでない"を両側で eval（実例A と同型） | Anthropic |
+| CORE-Bench | Opus4.5 が採点バグで 42% → 修正 → **95%** | Anthropic |
+| SWE-bench | 30%→80% で飽和、能力向上が点差に見えなくなる | Anthropic |
+| サプライヤー選定agent | eval で分解判断 → 402行→15行・488秒→100秒・**71%→92%** | gaogaoasia |
+| Vercel v0（自然言語→UI） | 出力に影響する**全PRで自動eval**がトリガー | LayerX |
+| Descript | 「壊すな/言った通りに/上手くやれ」3軸、手動→LLM採点(人間較正) | Anthropic |
+| Bolt | スケール後3ヶ月でeval構築、静的解析+ブラウザagent+LLM-judge | Anthropic |
+| Dosu（GitHub支援AI） | ログ手動分析の限界 → EDD へ移行 | LayerX |
+
+---
+
+## 13. 追加で取りに行くソース候補（Anicca の主張を権威で裏付ける）
+
+Dais の spec が引用。まだ未取得。Anicca の"実マネー grader"を補強するなら firecrawl で取る:
+- **Lilian Weng** — reward hacking / evaluator は loop の外（"実マネーに固定"の直接論拠）
+- **Replit** — 評価は出荷ゲートでなく改善ループに
+- **loopy** — the check が改善を決める
+- （EDDOps 論文 arXiv 2411.13768 も本体未読）
+
+---
+
+*次のアクション: Dais が §9 の論点（特に切り口: 純入門 vs Anicca実例込み）に答える → Weng/Replit を
+取りに行くか判断 → §8 の背骨を1章ずつ co-write → ai-entity-article-writer で JP+EN 執筆 → 多媒体 publish。
+記事本文はまだ書かない。*
