@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-lending",
+  "iteration": 9,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 8,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-8/output/findings/",
+    "note": "2 findings, 1 critical: FIND-701 -- boundary bug fixed, comparison changed from strict > to >=, so a loss AT the threshold now correctly trips the pause, consistent with the existing worked edge case and PROP-114f's own fixture (neither needed to change). FIND-702 -- new PROP-109g requires a real control-flow read confirming REQ-109's production default-append code actually sets defaulted_ms, not just a hand-authored test fixture."
+  },
+  "note": "Verify both fixes actually hold -- confirm the >= correction was applied EVERYWHERE this comparison appears (grep both files), not just the primary EARS clause. Confirm PROP-109g's structural check is genuinely specific enough to catch an implementation that forgets to set defaulted_ms. This feature has FAILed all 8 prior iterations. Do a full fresh, skeptical pass over the ENTIRE spec -- do not assume convergence, and specifically re-examine REQ-114's two-signal (ratio + absolute) design once more for any other boundary/edge inconsistency of the same class as FIND-701, since that finding shows this exact area is prone to off-by-one-style errors."
+}

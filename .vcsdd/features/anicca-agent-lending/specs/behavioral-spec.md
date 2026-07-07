@@ -2,11 +2,12 @@
 
 **feature**: anicca-agent-lending · **mode**: strict · **increment**: in-colony agent-to-agent lending
 (citizen-to-citizen loans, first-party Anicca capability, no external protocol import) · **日付**:
-2026-07-07 · **revision**: iteration 7, revised (spec review iterations 1 through 6 — findings
+2026-07-07 · **revision**: iteration 8, revised (spec review iterations 1 through 6 — findings
 FIND-001..008, FIND-101..107, FIND-201..206, FIND-301..305, FIND-401..403, and FIND-501..503 — ALL
-resolved; this revision additionally resolves iteration-7's own FIND-601..603; see
-`reviews/spec/iteration-1/RESOLUTION-NOTES.md` through `reviews/spec/iteration-7/RESOLUTION-NOTES.md`,
-one file per iteration, for the full per-finding changelogs)
+resolved; iteration-7's own FIND-601..603 resolved; this revision additionally resolves iteration-8's own
+FIND-701..702; see `reviews/spec/iteration-1/RESOLUTION-NOTES.md` through
+`reviews/spec/iteration-8/RESOLUTION-NOTES.md`, one file per iteration, for the full per-finding
+changelogs)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -101,6 +102,17 @@ the full detail per finding:
 | FIND-601 | major | REQ-106's own lock-protected fresh-check (added for FIND-401 to re-verify REQ-101/102/105's sizing/eligibility) now ALSO RE-EVALUATES BOTH `evaluateColdStartKillSwitch` and `evaluateOverallDefaultKillSwitch`, against the SAME fresh, lock-protected read of `loans.jsonl` already used for that recheck — closing a TOCTOU race where a kill-switch tripping strictly BETWEEN a specific attempt's own pre-lock check and its own later lock acquisition could otherwise still slip an issuance through, since neither switch is scoped to the specific `lenderId`/`borrowerId` pair whose locks are held (new PROP-106p; extends PROP-105h/PROP-114c). |
 | FIND-602 | major | REQ-114 gains a SECOND, complementary, ABSOLUTE dollar-loss-within-a-rolling-window signal (`computeRecentDefaultLossUsd`, feeding an extended `evaluateOverallDefaultKillSwitch`) — immune, by construction, to the volume-dilution failure mode its own dollar-weighted RATIO alone cannot close (a large volume of OTHER, unrelated, healthy loans diluting `defaultRateUsd` below `0.20` even as a genuine bust-out default lands); EITHER signal tripping is independently sufficient to pause (new PROP-114e/PROP-114f, extends PROP-114b/PROP-114c). REQ-109's `"defaulted"` row gains a new `defaulted_ms` field to support this signal's own rolling window. |
 | FIND-603 | minor | The self-loan-exclusion cross-reference (REQ-106's own Edge Case and Acceptance Criterion) now names `evaluateOverallDefaultKillSwitch` alongside `evaluateColdStartKillSwitch`. |
+
+## Changelog (iteration 8 → current, this revision)
+
+Spec review iteration 8 FAILed with 2 findings (1 critical, 1 major); this revision resolves both. Each is
+resolved by a specific, cited design decision; see `reviews/spec/iteration-8/RESOLUTION-NOTES.md` for the
+full detail per finding:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-701 | critical | `evaluateOverallDefaultKillSwitch`'s absolute-loss branch comparison corrected from strict `>` to `>=` (`totalRecentDefaultLossUsd >= RECENT_DEFAULT_LOSS_THRESHOLD_USD`) — a single bust-out default landing EXACTLY at REQ-105's own `maxLoanUsd = $5.00` ceiling now genuinely trips this signal by itself, matching this SAME requirement's own worked edge case and PROP-114f's own fixture (neither of which needed to change, since both already asserted `paused:true` at exactly `$5.00`). The prior strict `>` made the requirement's own stated design intent (a single max-size default trips it "by itself") mathematically unreachable, since no single loan issued under REQ-105's own ladder can ever exceed `$5.00`. |
+| FIND-702 | major | New Tier-0 structural proof obligation, PROP-109g, mirroring PROP-105h's/PROP-106d's/PROP-114c's own real-source-read discipline exactly, requires a direct control-flow read confirming REQ-109's own REAL, production default-append code — never a hand-authored test fixture with `defaulted_ms` already populated as literal data — genuinely sets `defaulted_ms: Date.now()` on every `"defaulted"` row it appends, and omits this field on every non-`"defaulted"` status-transition row. |
 
 ## Background / rationale (cite before design)
 
@@ -862,7 +874,10 @@ Definition: `loanRows` is reduced to one effective row per `loan_id` (last-write
 convention this document already establishes throughout). `totalRecentDefaultLossUsd` is the sum, over
 every row whose LAST-appended status is `"defaulted"` AND whose own `defaulted_ms` field (a NEW field this
 revision adds to the `"defaulted"` row, REQ-109 — the wall-clock time at the moment THAT row itself is
-appended, mirroring REQ-106's own `issued_ms`-precision convention exactly) satisfies `nowMs - defaulted_ms
+appended, mirroring REQ-106's own `issued_ms`-precision convention exactly — see REQ-109's own separate
+Tier-0 structural check, PROP-109g, resolves this revision's own spec-review iteration-8 FIND-702,
+confirming the REAL, production append code, not merely this prose definition, actually sets this field)
+satisfies `nowMs - defaulted_ms
 < windowDays * 86400000`, of `principal_usd - repaid_usd` (the SAME unrecovered-loss quantity
 `totalDefaultedUsd`/`outstandingDefaultedDebtUsd` already compute elsewhere in this document) for that
 row — clamped via the SAME established `.toFixed(6)` money-precision convention. Because this is an
@@ -923,8 +938,12 @@ above):** THE SYSTEM SHALL implement a SECOND, pure, zero-I/O function,
 `evaluateOverallDefaultKillSwitch({ totalIssuedUsd, totalDefaultedUsd, defaultRateUsd, sampleSize,
 totalRecentDefaultLossUsd }) → { paused: boolean, reason: string }`: `paused = true` when ANY of THREE
 conditions hold — `(sampleSize >= 10 AND defaultRateUsd > 0.20)`, OR `(sampleSize < 10 AND
-totalDefaultedUsd > 0)`, OR (NEW this revision) `(totalRecentDefaultLossUsd > RECENT_DEFAULT_LOSS_THRESHOLD_USD)`
-— otherwise `paused = false`. The THIRD condition is deliberately independent of `sampleSize` entirely (it
+totalDefaultedUsd > 0)`, OR (NEW this revision) `(totalRecentDefaultLossUsd >= RECENT_DEFAULT_LOSS_THRESHOLD_USD)`
+— otherwise `paused = false`. The third condition's comparison is corrected this revision from a strict `>`
+to `>=` (resolves this revision's own spec-review iteration-8 FIND-701 — the prior strict `>` made a single
+bust-out default landing EXACTLY at REQ-105's own `maxLoanUsd = $5.00` ceiling unable to trip this signal by
+itself, contradicting this SAME requirement's own worked edge case below and PROP-114f's own fixture,
+neither of which needed to change). The THIRD condition is deliberately independent of `sampleSize` entirely (it
 is an ABSOLUTE dollar sum, immune to volume dilution by construction, per the paragraph above) — EITHER the
 ratio-based signal OR the NEW absolute-loss signal alone is sufficient grounds to pause; `reason` reports
 which signal tripped (`"ratio_threshold_exceeded"`, `"small_sample_default"`, or
@@ -2034,7 +2053,10 @@ mirroring REQ-106's own `issued_ms`-precision convention exactly (set at confirm
 backdated) — required so REQ-114's own new rolling-window absolute-default-loss signal,
 `computeRecentDefaultLossUsd`, can determine whether a given default falls within its own lookback window.
 A row whose `status` is NOT `"defaulted"` (e.g. `"active"`, `"repaid"`) carries no `defaulted_ms` field.
-This append is
+**This prose definition, by itself, is not sufficient proof that the REAL, production append code below
+actually sets this field at append time** — see this requirement's own separate Tier-0 structural check
+(PROP-109g, resolves this revision's own spec-review iteration-8 FIND-702) for that real-code confirmation,
+mirroring PROP-105h's/PROP-106d's/PROP-114c's own real-source-read discipline exactly. This append is
 performed STRICTLY INSIDE the SAME per-loan `loan_${loan_id}` lock REQ-108 specifies (resolves this
 revision's own FIND-104) — never an unlocked read-then-append, since this exact `loan_id` could
 simultaneously be undergoing repayment verification. THE SYSTEM SHALL NOT silently continue offering that
@@ -2150,6 +2172,17 @@ composition point MUST be revisited if that spec's registry/join shape changes f
 - The effectful caller's `"defaulted"` append step acquires the SAME `loan_${loan_id}` lock REQ-108
   specifies before appending — a structural/Tier-0 check confirms no call site appends a REQ-108/REQ-109
   status-transition row without first acquiring this lock (new PROP-109e, resolves FIND-104).
+- A structural/Tier-0 check — mirroring PROP-105h's/PROP-106d's/PROP-114c's own real-source-read discipline
+  exactly — confirms the REAL, PRODUCTION effectful caller that appends a `status:"defaulted"` row (using
+  `detectDefaultedLoans`'s own output) genuinely sets `defaulted_ms: Date.now()` on that row's own append
+  payload at the moment of append, and that no call site appending a non-`"defaulted"` status-transition row
+  (`"active"`/`"repaid"`) includes a `defaulted_ms` field on its own payload — never merely a unit test of
+  `computeRecentDefaultLossUsd`/`computeOverallDefaultRateUsd` (PROP-114e/PROP-114f) against a hand-authored
+  fixture where `defaulted_ms` is already present as literal, hand-populated data (new PROP-109g, resolves
+  this revision's own spec-review iteration-8 FIND-702 — closes the gap where every stated PROP for
+  REQ-109/REQ-114 could pass while the real append code silently omits or mistypes this field, permanently
+  zeroing REQ-114's own absolute-loss signal in live production, since REQ-114's own fail-closed convention
+  treats a missing/malformed `defaulted_ms` as contributing `0` to the sum).
 
 ---
 
