@@ -49,11 +49,18 @@
       "timestamp": "2026-07-07T03:37:24.000Z",
       "reason": "iteration 5 STRUCTURAL fix for FIND-301 (root-cause, not another named-phrase patch): REQ-204 replaced phrase-enumeration with a bounded, unambiguous Tier-0 whole-section-deletion criterion -- delete the entire '## ★COLONY BOOTSTRAP PRIORITY★ (this period)★' section and the entire '## MINDSET' section (heading-line-through-next-##-heading, no judgment about what a block 'references'), plus 2 named clauses in the retained economy/gig bullet. PROP-204a redefined as a 4-substring absence check; PROP-203b redefined so PROP-204a PASS is structurally sufficient for it (implication, not coincidental agreement) -- eliminates the whack-a-mole class of finding (iterations 3 and 4 both failed on a newly-found un-named phrase under a narrower scope).",
       "iteration": 5
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-07T04:17:05.000Z",
+      "reason": "iteration 6 SCOPE CUT (Dais-approved, after web best-practice research confirmed REQ-201-203's eligibility-gate design independently matches 3 established patterns -- RL invalid action masking, OpenAI risk-tiered tool safeguards, Anthropic tool-curation/defer_loading): REQ-204 (pre-existing prompt.mjs steering-text removal) deleted from this increment entirely after iteration 5's Phase 1c review found a 3rd recurrence of the same defect class in buildUserMessage (FIND-401/402/403). Backlogged as an independent future increment. REQ-203/PROP-203b rescoped to cover only NEW code this increment adds (filterCatalog + index.mjs wiring), explicitly excluding audit of prompt.mjs's pre-existing content. REQ count 9->8, PROP count 26->25.",
+      "iteration": 6
     }
   ],
   "iterations": {
-    "1a": 5,
-    "1b": 5,
+    "1a": 6,
+    "1b": 6,
     "1c": 2
   },
   "proofObligations": [
@@ -79,7 +86,6 @@
     { "id": "PROP-301a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-027" },
     { "id": "PROP-301b", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-028" },
     { "id": "PROP-302a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-029" },
-    { "id": "PROP-204a", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-032" },
     { "id": "PROP-201g", "tier": 0, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-033" },
     { "id": "PROP-201h", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-034" },
     { "id": "PROP-201i", "tier": 2, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-035" }
@@ -116,9 +122,9 @@
       { "beadId": "BEAD-027", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-301a", "status": "active", "linkedBeads": ["BEAD-007"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-301a" },
       { "beadId": "BEAD-028", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-301b", "status": "active", "linkedBeads": ["BEAD-007"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-301b" },
       { "beadId": "BEAD-029", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-302a", "status": "active", "linkedBeads": ["BEAD-008"], "createdAt": "2026-07-07T02:30:06.000Z", "createdInPhase": "1b", "externalId": "PROP-302a" },
-      { "beadId": "BEAD-030", "type": "spec-requirement", "artifactPath": "specs/behavioral-spec.md#REQ-204", "status": "active", "linkedBeads": ["BEAD-032"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1a", "externalId": "REQ-204" },
+      { "beadId": "BEAD-030", "type": "spec-requirement", "status": "retired", "linkedBeads": [], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1a", "externalId": "REQ-204", "retiredAt": "2026-07-07T04:17:05.000Z", "retiredReason": "descoped to future backlog per iteration-6 scope cut, see FIND-401" },
       { "beadId": "BEAD-031", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-201f", "status": "active", "linkedBeads": ["BEAD-004"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1b", "externalId": "PROP-201f" },
-      { "beadId": "BEAD-032", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-204a", "status": "active", "linkedBeads": ["BEAD-030"], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1b", "externalId": "PROP-204a" },
+      { "beadId": "BEAD-032", "type": "verification-property", "status": "retired", "linkedBeads": [], "createdAt": "2026-07-07T02:49:20.000Z", "createdInPhase": "1b", "externalId": "PROP-204a", "retiredAt": "2026-07-07T04:17:05.000Z", "retiredReason": "descoped with REQ-204 per iteration-6 scope cut" },
       { "beadId": "BEAD-033", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-201g", "status": "active", "linkedBeads": ["BEAD-004"], "createdAt": "2026-07-07T03:07:19.000Z", "createdInPhase": "1b", "externalId": "PROP-201g" },
       { "beadId": "BEAD-034", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-201h", "status": "active", "linkedBeads": ["BEAD-004"], "createdAt": "2026-07-07T03:07:19.000Z", "createdInPhase": "1b", "externalId": "PROP-201h" },
       { "beadId": "BEAD-035", "type": "verification-property", "artifactPath": "specs/verification-architecture.md#PROP-201i", "status": "active", "linkedBeads": ["BEAD-004"], "createdAt": "2026-07-07T03:07:19.000Z", "createdInPhase": "1b", "externalId": "PROP-201i" }
@@ -145,5 +151,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T03:37:24.000Z"
+  "updatedAt": "2026-07-07T04:17:05.000Z"
 }

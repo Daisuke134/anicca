@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-403",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "REQ-204's Tier-0 acceptance criterion (behavioral-spec.md lines 508-515) claims self-sufficiency it does not actually have: 'Because a \"section\" is defined as a heading line through, but not including, the next \"## \" heading line, the absence of BOTH heading substrings is definitionally equivalent to the absence of the two sections' entire bodies -- there is no separate \"and also check the body\" step, and therefore no residual-phrase judgment call for either of these two sections.' This is only true if the section was deleted as one atomic heading+body edit. As a pure structural check, 'no line is a heading containing substring X' does NOT, by itself, prove the corresponding BODY paragraphs are also gone -- deleting only the heading line (leaving the body lines 90-96/99-103 in place) would cause those body lines to silently become a headerless continuation of whichever section precedes them (e.g. merged into the retained '## Your earn tools' section, or floating with no heading at all), which would still make PROP-204a's Tier-0 check (heading-substring-absence) PASS while every imperative sentence in that body ('your FIRST action this wake MUST be economy/gig...', 'Do this BEFORE hl_trade / yield / anything else', 'Re-yielding every wake = failure.') remains verbatim in buildSystemPrompt's actual output. REQ-204's text presents this as a property of PROP-204a alone ('there is no separate... step'), when in fact the only thing that would catch this specific naive-deletion failure mode is PROP-203b's SEPARATE full-file generic-marker re-scan (a different proof obligation, in a different table row) -- a real dependency REQ-204's own acceptance criteria never states as a DEPENDS-ON relationship. If a Phase 3 reviewer (or an automated check) treats PROP-204a's Tier-0 result as self-contained and sufficient, exactly as REQ-204's own wording invites, an incomplete deletion (heading removed, body orphaned) would be scored as satisfying REQ-204 while the actual steering content the requirement exists to remove is still present verbatim in the shipped prompt.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+    "lineRange": "508-515",
+    "snippet": "'Because a \"section\" is defined as a heading line through, but not including, the next \"## \" heading line, the absence of BOTH heading substrings is definitionally equivalent to the absence of the two sections' entire bodies -- there is no separate \"and also check the body\" step, and therefore no residual-phrase judgment call for either of these two sections.'"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/verification-architecture.md",
+    "lineRange": "86",
+    "snippet": "PROP-204a Tool/Method: '...Because \"section\" is defined (REQ-204) as heading-line-through-next-heading-line, (1) and (2) each definitionally prove the corresponding section's ENTIRE body is gone too -- there is no separate body-content judgment call.'"
+  },
+  "routeToPhase": "1a"
+}

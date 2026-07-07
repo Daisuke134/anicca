@@ -2,20 +2,28 @@
 
 **feature**: anicca-agent-economy · **mode**: strict · **increment**: same as
 `behavioral-spec.md` (gig-board concurrency hardening / bootstrap-reserve catalog gate /
-business.blockrun.ai seller-channel research) · **日付**: 2026-07-07 · **revision**: iteration 5
+business.blockrun.ai seller-channel research) · **日付**: 2026-07-07 · **revision**: iteration 6
 (Phase 1c adversary review iteration 1 returned FAIL with 6 findings, resolved by iteration 2;
 iteration 2 review returned FAIL with 2 CRITICAL findings, FIND-101/FIND-102, resolved by iteration
 3; iteration 3 review returned FAIL with 1 HIGH finding, FIND-201, resolved by iteration 4; iteration
-4 review returned FAIL with 1 HIGH finding, FIND-301 (REQ-204's phrase-enumeration / "references or
-duplicates" scope definition disagreed with PROP-203b's whole-file scope on a real, un-named phrase
-inside the sibling `## MINDSET` section) — this revision resolves it by replacing PROP-204a's scope
-with the same Tier-0 whole-section-deletion criterion behavioral-spec.md REQ-204 now uses, and by
-making PROP-204a a structurally-derived sufficient condition for PROP-203b rather than an
-independently-scoped, potentially-disagreeing check; see
+4 review returned FAIL with 1 HIGH finding, FIND-301, resolved by iteration 5's whole-section-deletion
+redesign of PROP-204a; iteration 5 review returned FAIL again with FIND-401/FIND-402/FIND-403 — a
+THIRD consecutive iteration in which the claimed-complete removal scope for `prompt.mjs` was
+disproven by a genuinely fresh full-file read (`buildUserMessage`'s pre-existing "overuse"/"avoid"
+diversification steering, lines 202-206, sat outside every one of PROP-204a's named targets), and
+PROP-203b's fixed-keyword-grep method was shown to be under-inclusive by construction. **Dais-approved
+decision (2026-07-07): REQ-204 and its proof obligation PROP-204a are split out of this increment
+entirely and tracked as an independent future backlog item**, rather than attempting a fourth
+redesign of their scope — see `reviews/spec/iteration-5/output/findings/FIND-401.json` for the
+finding that triggered the split, and behavioral-spec.md's Scope note for the corresponding spec-side
+change. PROP-203b is retained but is now scoped to auditing only the NEW code this increment
+introduces (`filterCatalog` and its `index.mjs` wiring), not `prompt.mjs`'s pre-existing content —
+see PROP-203b below. See prior iterations' resolved findings at
 `reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json`,
 `reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json`,
-`reviews/spec/iteration-3/output/findings/FIND-201.json`, and
-`reviews/spec/iteration-4/output/findings/FIND-301.json`)
+`reviews/spec/iteration-3/output/findings/FIND-201.json`,
+`reviews/spec/iteration-4/output/findings/FIND-301.json`, and
+`reviews/spec/iteration-5/output/findings/FIND-40{1,2,3}.json`)
 
 ## Purity Boundary Map (file/function level)
 
@@ -26,11 +34,11 @@ independently-scoped, potentially-disagreeing check; see
 | **Effectful Shell** | `skills/economy/gig/lib/lock.mjs` — `acquire()`/`release()`/`touch()`/`withGigLock()` (`fs.mkdir`, `fs.open('wx')`, `fs.stat`, `fs.unlink`, `fs.utimes`, `setInterval` heartbeat) | EFFECTFUL | Real filesystem + timer side effects; this is where REQ-101's atomicity/heartbeat behavior is actually enforced. `acquire()` calls the extracted `isLockStale` pure predicate instead of re-implementing the comparison inline. |
 | **Effectful Shell** | `skills/economy/gig/lib/persist.mjs` — `loadState`/`saveState` | EFFECTFUL | Full-file JSON read/write; REQ-102 is a property of WHEN this is called relative to the shared `"_board"` lock, not of this module's own logic. |
 | **Effectful Shell** | `skills/economy/gig/gig.mjs` — `applyAndSave()`, `gigPost`/`gigTake`/`gigDeliver`/`gigVerifyAndPay` | EFFECTFUL (orchestration) | Combines the pure `store.mjs` transitions with lock + persistence + network settle (`lib/escrow.mjs`) + identity check (`lib/identity.mjs`); REQ-101/102's acceptance criteria are properties of THIS module's call ordering. |
-| **Pure Core (new)** | new function, e.g. `runtime/loop/catalog-gate.mjs::filterCatalog({ balanceUsdc, allSlotNames, riskTagOf, alwaysAvailableOf, hasOpenRiskPositionOf, reserveThresholdUsdc }) → string[]` | PURE (new) | Directly analogous to the existing `runtime/loop/tier.mjs::selectTier` — no I/O, deterministic, given already-fetched bookkeeping inputs. Takes THREE independent per-slot bookkeeping signals (risk tag, always-available flag, open-position fact), not one — see behavioral-spec.md REQ-201 for why each is a bookkeeping fact, not judgment (resolves FIND-002 and FIND-003). `hasOpenRiskPositionOf` is passed in as an already-RESOLVED, synchronous `(slotName) → boolean` value — `filterCatalog` only ever calls whatever function it is given, so it stays pure and Tier 1 regardless of how expensive the REAL implementation of that function is upstream (see the `index.mjs` row below; resolves FIND-102's purity-classification half). This is where REQ-201/202/203/204's acceptance criteria are enforced and unit-tested. |
+| **Pure Core (new)** | new function, e.g. `runtime/loop/catalog-gate.mjs::filterCatalog({ balanceUsdc, allSlotNames, riskTagOf, alwaysAvailableOf, hasOpenRiskPositionOf, reserveThresholdUsdc }) → string[]` | PURE (new) | Directly analogous to the existing `runtime/loop/tier.mjs::selectTier` — no I/O, deterministic, given already-fetched bookkeeping inputs. Takes THREE independent per-slot bookkeeping signals (risk tag, always-available flag, open-position fact), not one — see behavioral-spec.md REQ-201 for why each is a bookkeeping fact, not judgment (resolves FIND-002 and FIND-003). `hasOpenRiskPositionOf` is passed in as an already-RESOLVED, synchronous `(slotName) → boolean` value — `filterCatalog` only ever calls whatever function it is given, so it stays pure and Tier 1 regardless of how expensive the REAL implementation of that function is upstream (see the `index.mjs` row below; resolves FIND-102's purity-classification half). This is where REQ-201/202/203's acceptance criteria are enforced and unit-tested. |
 | **Effectful Shell** | `runtime/loop/index.mjs` (registry read at ~L100-118, `fetchUsdcBalance` call at ~L190-196, resolving BOTH `hasOpenRiskPositionOf` mechanisms, wiring into `assembleContext`/`buildSystemPrompt`) | EFFECTFUL | Reads `skills/registry.json` from disk (including the per-slot `risk`/`alwaysAvailable` fields — see the classification table in behavioral-spec.md REQ-201), reads balance over RPC, and resolves open-position bookkeeping as TWO DIFFERENT mechanisms, not one (iteration-2's "reads already-fetched position data" claim was true for only one of them — resolves FIND-102): (a) `hasOpenRiskPositionOf('yield')` reads the SAME already-fetched ledger scan that already populates `ctx.positionsSummary` (`recentLedger.slice().reverse().find(l => String(l.source||'').startsWith('yield') && l.tx)`) — genuinely no new I/O, computed unconditionally every wake exactly as it is today; (b) `hasOpenRiskPositionOf('hl_trade')` is a NEW, lazy, effectful Hyperliquid `clearinghouseState`-backed query (reusing the same primitive `skills/earn/hl-trade/hl.py account` already calls), invoked ONLY when `balanceUsdc < BOOTSTRAP_RESERVE_USDC` for the current wake, defaulting to `true` on failure/timeout/unreachability — this is genuinely NEW effectful-shell surface this increment adds, not a reuse of existing data. Both are resolved to plain booleans here, BEFORE the pure `filterCatalog` above is called. |
 | **Config data (read, not inferred)** | `skills/registry.json` — a per-slot risk tag (`"risk": "capital"` / `"risk": "safe"`) AND a per-slot `"alwaysAvailable": true` flag (set on `report` and `cook`) | DATA, not code | A maintainer-set fact, not something the runtime infers from task content — this is what keeps REQ-203's "bookkeeping not judgment" constraint true: the classification of a SLOT as risky, or as always-available, is a static, human-reviewed fact; only whether the CURRENT balance clears the threshold, and whether the instance currently holds an open position, are computed at runtime from already-fetched (`yield`) or newly-and-lazily-fetched (`hl_trade`) data. **Phase 2 MUST write an explicit `risk`/`alwaysAvailable` value for all 17 slots currently `status: "live"` in this file (see behavioral-spec.md REQ-201's classification table) — the untagged-defaults-to-risky rule is a forward-compatibility net for future slots, never a substitute for classifying today's slots (resolves FIND-101).** |
-| **Prompt string-literal edit** | `runtime/loop/prompt.mjs::buildSystemPrompt` — TWO WHOLE markdown sections removed in their entirety: the section headed by the line containing `COLONY BOOTSTRAP PRIORITY` (on-disk heading is `## ★COLONY BOOTSTRAP PRIORITY (this period)★`, lines ~89-96 as of 2026-07-07) and the section headed by the line containing `MINDSET` (`## MINDSET: yield is the bank ...`, lines ~98-103 as of 2026-07-07) — PLUS two bounded ranking clauses removed/reworded inside the retained `economy/gig` bullet of `## Your earn tools` (lines ~70-76 as of 2026-07-07): "the highest-leverage move is to POST" and "Prefer this over re-yielding surplus." | N/A (hardcoded string literal, not computed) | **Baseline correction (resolves FIND-005): this file's CURRENT baseline is NOT a neutral "you decide" framing.** It already contains an imperative steering block ("your FIRST action this wake MUST be economy/gig ... Do this BEFORE hl_trade / yield / anything else"), a separate ranking phrase in the `economy/gig` bullet ("the highest-leverage move is to POST", FIND-201), and — resolves FIND-301 — a THIRD, sibling `## MINDSET` section restating the same "yield is (almost) never right" ranking in four different bullets ("Re-yielding every wake = failure.", "it is almost never 'yield again'"), none of which is textually "inside" or "referenced by" either of the other two. REQ-204 (revised this iteration) resolves this by naming exactly these two WHOLE sections for unconditional deletion (a Tier-0 heading-substring-absence check, not a "what does the block reference" judgment call) plus the two already-bounded clauses in the one retained bullet — closing the scope-definition gap FIND-301 found, rather than adding a fourth named phrase to an open-ended list. Verified structurally (Tier 0: full-file read, not diff-only), never by a runtime assertion. |
 | **Not code** | REQ-301/302 research record | N/A | A static markdown artifact produced by a research/investigation process (external repo/site reads); no purity classification applies — verified structurally (Tier 0), not executed. |
+| **OUT OF SCOPE for this increment** | `runtime/loop/prompt.mjs`'s pre-existing prompt-level steering text (`## COLONY BOOTSTRAP PRIORITY`, `## MINDSET`, `buildUserMessage`'s "overuse"/"avoid" diversification steering) | N/A — not classified here | Formerly REQ-204/PROP-204a in this document. Split out on 2026-07-07 as an independent future backlog item after three consecutive iterations (FIND-201, FIND-301, FIND-401) each found the "closed removal scope" claim disproven by a fresh full-file read — see the revision note above and `reviews/spec/iteration-5/output/findings/FIND-401.json`. This increment's own new code (REQ-201/202/203) introduces no new prompt-steering text of this kind; the pre-existing text's continued presence is not this increment's responsibility. |
 
 ## Verification tiers (this feature's convention, consistent with prior anicca-project VCSDD
 features, e.g. `clip-post-verify-hardening/specs/verification-architecture.md`)
@@ -82,21 +90,19 @@ features, e.g. `clip-post-verify-hardening/specs/verification-architecture.md`)
 | PROP-202a | REQ-202 | The filter is a pure function of the CURRENT wake's balance and bookkeeping inputs only — no persisted state across calls | 1 | true | unit test: two successive calls with different balances (below then above threshold) and different `hasOpenRiskPositionOf` results on the SAME process/module state return the correct output for each call independently, with no leakage between calls |
 | PROP-202b | REQ-202 | A balance transition from below to at/above threshold between two wakes restores the exact pre-restriction slot set on the very next wake | 1/2 | true | unit test at the pure-function level (PROP-201b already covers the pure case); Tier 2 integration test drives `runtime/loop/index.mjs`'s wiring across two simulated wakes with different fetched balances and asserts `activeSkillSlots`/`skillCatalog` match |
 | PROP-203a | REQ-203 | The filter's return type carries no score/rank/preference field | 0 | true | structural/type check: return value is a plain array of strings (or equivalent minimal set), reviewed at Phase 3 |
-| PROP-203b | REQ-203 | No prompt text generated by this increment recommends a specific remaining slot | 0 | true | **Phase 3 adversary structural read of the FULL current `runtime/loop/prompt.mjs` (not only this increment's diff — the baseline is NOT neutral "you decide" framing; see the Purity Boundary Map correction above and FIND-005), confirming (a) no NEW steering/ranking text was added by this increment, AND (b) a fresh grep of the FULL file for generic ranking/imperative markers ("must", "prefer", "highest", "priority", "first", "almost never", "do not", etc.) turns up no hit that falls OUTSIDE the three closed, named targets PROP-204a checks (the two whole sections + the two `economy/gig` clauses), the self-labeled `## Tips` section, or REQ-204's Edge-Cases-adjudicated `yield`-bullet non-target. **PROP-203b is deliberately the RE-DERIVATION step, run independently each iteration, that either confirms PROP-204a's closed target list is still complete for the current file, or — if it finds a new hit outside all of those buckets — proves the list is INCOMPLETE, in which case REQ-204/PROP-204a's target list must be extended (as a new named, bounded entry, not a re-opening of an unbounded "references/duplicates" scope) before either PROP may be marked PASS (resolves FIND-201 and FIND-301).** By construction this makes PROP-204a's closed-list PASS a SUFFICIENT condition for PROP-203b's broader claim whenever PROP-203b's own generic-marker re-scan finds nothing outside the list — the two checks cannot silently diverge the way FIND-301 found, because PROP-203b's job is explicitly to look for exactly the kind of un-named sibling phrase (e.g. the `## MINDSET` section) that caused that divergence, every time.** |
-| PROP-204a | REQ-204 | The two whole markdown sections named in REQ-204 (heading contains `COLONY BOOTSTRAP PRIORITY`; heading contains `MINDSET`) are absent in their entirety from `buildSystemPrompt`'s output, AND the two named ranking clauses inside the retained `economy/gig` bullet are absent | 0 | true | **structural check, Tier 0, closed scope (resolves FIND-301 — replaces the prior "block + whatever it references/duplicates" scope, which iteration 4's adversary showed disagrees with PROP-203b's whole-file scope on the sibling `## MINDSET` section): (1) confirm no line in `buildSystemPrompt`'s output is a markdown heading (`/^\s*##\s/`) containing the substring `COLONY BOOTSTRAP PRIORITY` — note this is the substring `COLONY BOOTSTRAP PRIORITY`, NOT the decorated string `## ★COLONY BOOTSTRAP PRIORITY★` used as shorthand in iterations 1-4, which never matched the actual on-disk heading (`## ★COLONY BOOTSTRAP PRIORITY (this period)★`) and would have silently passed a no-op diff; (2) confirm no line is a markdown heading containing the substring `MINDSET`; (3) confirm the exact substrings "the highest-leverage move is to POST" and "Prefer this over re-yielding surplus" are absent from the `economy/gig` bullet, while the rest of that bullet (post/take/deliver mechanics) is still present in some form. Because "section" is defined (REQ-204) as heading-line-through-next-heading-line, (1) and (2) each definitionally prove the corresponding section's ENTIRE body is gone too — there is no separate body-content judgment call. The self-labeled `## Tips ... advice, NOT rules` section remains out of scope per REQ-204's edge cases. This four-part check (2 headings + 2 clauses) is a closed, finite list — it is PROP-203b's job (see PROP-203b) to independently re-confirm, via a full-file generic-marker grep, that this closed list is still the COMPLETE inventory for the current file; if PROP-203b's re-scan finds a hit outside this list, PROP-204a's list must be extended before either PROP may PASS.** |
+| PROP-203b | REQ-203 | No prompt text generated by THIS INCREMENT'S NEW CODE recommends a specific remaining slot | 0 | true | **Phase 3 adversary structural read of the diff/new code this increment introduces (`filterCatalog`, its `index.mjs` wiring, and any registry-driven catalog narrowing) confirming no NEW steering/ranking text or preference logic was added by this increment. Scope note (post-REQ-204-split, 2026-07-07): PROP-203b is now scoped strictly to this increment's OWN new code — it is NOT an audit of `runtime/loop/prompt.mjs`'s pre-existing content (the `## COLONY BOOTSTRAP PRIORITY`/`## MINDSET` sections, `buildUserMessage`'s diversification steering, or any other pre-existing phrase). That broader, whole-file audit was formerly entangled with this PROP via PROP-204a; after three consecutive iterations (FIND-201, FIND-301, FIND-401) showed a "closed target list" for the whole file could not be made complete, REQ-204/PROP-204a were split out as an independent backlog item (see the revision note above and `reviews/spec/iteration-5/output/findings/FIND-401.json`). A Phase 3 adversary MUST NOT fail this PROP, or this increment's Gate, on the basis of pre-existing `prompt.mjs` content this increment did not add.** |
 | PROP-301a | REQ-301 | The research record exists under `evidence/` and contains all five required items (a)-(e) | 0 | true | structural check: file exists, each of (a)-(e) present as a distinct, evidenced section (not a bare unsupported claim) |
 | PROP-301b | REQ-301 | Each factual claim in the record cites at least one piece of concrete evidence (file/line, quoted API response, PR state + timestamp, or an explicit "checked X, not found" statement) | 0 | true | Phase 3 adversary spot-checks a sample of claims against the cited evidence (re-fetch the PR/repo state, re-run any quoted command) |
 | PROP-302a | REQ-302 | No code/process change in this increment introduces a dependency from the gig-board witness track onto REQ-301's completion | 0 | true | structural review: grep/read for any new gating condition referencing the research record's status in the witness runbook or gig-board code path — must find none |
 
 ## Verification Strategy
 
-- **Tier 0** (no runtime execution): REQ-203's structural "no ranking field" check, REQ-204's
-  whole-section removal of the `COLONY BOOTSTRAP PRIORITY` and `MINDSET` sections plus the two
-  bounded `economy/gig`-bullet clause removals (PROP-204a) together with PROP-203b's full-file
-  generic-marker re-scan that keeps that closed list honest, REQ-301/302's research-record
-  existence/citation/non-blocking checks, and REQ-201's registry-classification-completeness check
-  (PROP-201g: every currently-live `registry.json` slot carries an explicit `risk`/`alwaysAvailable`
-  tag — resolves FIND-101).
+- **Tier 0** (no runtime execution): REQ-203's structural "no ranking field" check, scoped strictly
+  to this increment's own new code (PROP-203a/b — REQ-204's `prompt.mjs` whole-file removal/audit is
+  split out of this increment as an independent backlog item, see the revision note above),
+  REQ-301/302's research-record existence/citation/non-blocking checks, and REQ-201's
+  registry-classification-completeness check (PROP-201g: every currently-live `registry.json` slot
+  carries an explicit `risk`/`alwaysAvailable` tag — resolves FIND-101).
 - **Tier 1** (pure-function unit tests): REQ-101's staleness predicate — **conditional on the
   `isLockStale(nowMs, mtimeMs, staleMs)` extraction landing first** (see REQ-101's binding
   acceptance criterion and the Purity Boundary Map) — and atomic-reclaim behavior in isolation;
@@ -140,30 +146,24 @@ regressions, AND the round-1 exploit scripts are re-attempted **by the adversary
 producing its own new transaction hashes** — the adversary must not accept
 `evidence/p2.2-security-fixes-round3.md`'s prior same-day, same-builder self-report as satisfying
 this obligation (resolves FIND-006);
-(4) REQ-201/203/204's catalog filter and prompt diff are read end-to-end to confirm: the filter
-contains no scoring/ranking/preference logic anywhere in its diff (only threshold comparisons and
-set arithmetic over the three bookkeeping signals — risk tag, always-available flag, open-position
-fact), the documented `BOOTSTRAP_RESERVE_USDC` default of `20` is the literal fallback value present
-in the code (resolves FIND-001), the `alwaysAvailable` mechanism is present and covers exactly
-`report`/`cook` (resolves FIND-002), and — reading the FULL current file, not just the diff, since
-the pre-increment baseline already contained steering text (resolves FIND-005) — BOTH of the two
-whole markdown sections REQ-204 names (heading containing `COLONY BOOTSTRAP PRIORITY`; heading
-containing `MINDSET`) are entirely absent (heading-through-next-heading, per REQ-204's section
-definition — note the on-disk heading is `## ★COLONY BOOTSTRAP PRIORITY (this period)★`, so the
-check anchors on the substring `COLONY BOOTSTRAP PRIORITY`, not the decorated shorthand string used
-in iterations 1-4, which never matched the file and would have silently passed a no-op diff), AND
-the two named ranking clauses ("the highest-leverage move is to POST", "Prefer this over
-re-yielding surplus") are absent from the retained `economy/gig` bullet inside `## Your earn tools`
-while the rest of that bullet's tool-mechanics text is still present (resolves FIND-201 and
-FIND-301) — has actually been removed or neutralized from `runtime/loop/prompt.mjs` as REQ-204
-requires. PROP-203b and PROP-204a MUST agree on the outcome of this read for the same code state:
-concretely, the adversary independently re-runs PROP-203b's full-file generic-marker grep ("must",
-"prefer", "highest", "priority", "first", "almost never", "do not", etc.) and confirms every hit
-falls inside PROP-204a's closed target list, the self-labeled `## Tips` section, or REQ-204's
-adjudicated `yield`-bullet non-target — a hit outside all three means PROP-204a's target list is
-incomplete and must be extended by spec amendment (as one more named, bounded entry, never by
-reopening the retired "references/duplicates" scope) before the gate can be marked PASS (resolves
-FIND-201 and, specifically, the `## MINDSET` sibling-section gap FIND-301 found);
+(4) REQ-201/203's catalog filter is read end-to-end (this increment's own new code only — see below)
+to confirm: the filter contains no scoring/ranking/preference logic anywhere in its diff (only
+threshold comparisons and set arithmetic over the three bookkeeping signals — risk tag,
+always-available flag, open-position fact), the documented `BOOTSTRAP_RESERVE_USDC` default of `20`
+is the literal fallback value present in the code (resolves FIND-001), the `alwaysAvailable`
+mechanism is present and covers exactly `report`/`cook` (resolves FIND-002), and no NEW prompt-text
+or steering language was introduced by this increment's own diff (`filterCatalog`, its `index.mjs`
+wiring, and any registry-driven catalog narrowing). **Scope note (2026-07-07, Dais-approved): REQ-204
+and PROP-204a — retiring `runtime/loop/prompt.mjs`'s PRE-EXISTING `## COLONY BOOTSTRAP PRIORITY` /
+`## MINDSET` sections and `buildUserMessage`'s diversification steering — are split out of this
+increment entirely and tracked as an independent future backlog item, after three consecutive spec
+iterations (FIND-201, FIND-301, FIND-401) each found a claimed "closed removal scope" for that
+pre-existing text disproven by a fresh full-file read (most recently: `buildUserMessage`'s
+"overuse"/"avoid" text at `prompt.mjs:202-206`, entirely outside `buildSystemPrompt` and every one of
+PROP-204a's prior named targets — see `reviews/spec/iteration-5/output/findings/FIND-401.json`). A
+Phase 3 adversary for THIS increment MUST NOT check for, or fail this Gate on the basis of, the
+presence or absence of that pre-existing `prompt.mjs` content — it is explicitly out of this
+increment's scope, not a silently-accepted regression;**
 (4a) **`skills/registry.json` has an explicit `risk`/`alwaysAvailable` value on all 17 currently-live
 slots, matching behavioral-spec.md REQ-201's classification table exactly, with none left to fall
 back on the untagged-defaults-to-risky rule (resolves FIND-101; PROP-201g)** — the adversary must

@@ -1,0 +1,13 @@
+{
+  "reviewType": "spec",
+  "iteration": 5,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "This is a STRUCTURAL fix, not another named-phrase patch, after iterations 3 and 4 both failed on the same recurring defect class (a newly-found un-named ranking phrase escaping a narrower removal scope). REQ-204 was rewritten to require whole-section deletion (the entire '## COLONY BOOTSTRAP PRIORITY' and '## MINDSET' sections, heading-through-next-heading, no judgment about what a block 'references') instead of enumerating phrases. PROP-204a is now a bounded 4-substring absence check; PROP-203b is redefined so PROP-204a's PASS structurally implies it, not just tends to coincide with it. Verify: (1) this bounded criterion is genuinely unambiguous (no remaining judgment call about scope), (2) it does not delete anything actually needed elsewhere, (3) the PROP-204a=>PROP-203b implication genuinely holds by re-reading prompt.mjs fresh for ANY ranking language outside the two named sections that would survive this deletion undetected."
+}

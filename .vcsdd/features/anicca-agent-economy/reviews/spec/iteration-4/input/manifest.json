@@ -1,0 +1,13 @@
+{
+  "reviewType": "spec",
+  "iteration": 4,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "This is the escalation-approved 4th attempt at the Phase 1c gate (see escalations/1c-iteration-limit-2026-07-07.md). Iterations 1-3 are fully resolved except FIND-201, a narrow REQ-204 scoping gap now patched. Confirm FIND-201 is resolved and the patch introduced no new contradiction. Do not re-litigate FIND-001..006/FIND-101/FIND-102 beyond a quick no-regression spot-check; focus primarily on the FIND-201 patch and its consistency with PROP-203b."
+}

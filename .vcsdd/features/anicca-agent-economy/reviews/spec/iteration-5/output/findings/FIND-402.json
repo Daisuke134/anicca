@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-402",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-203b's Tool/Method (verification-architecture.md line 85) is defined as a fixed, finite keyword grep against the full file ('must', 'prefer', 'highest', 'priority', 'first', 'almost never', 'do not', etc.') whose PASS is treated as proof of the semantic property REQ-203 actually cares about ('no steering text that tells the model WHICH of the remaining options to prefer'). A finite literal-keyword grep cannot, by construction, prove the absence of a semantic property -- it can only prove the absence of THOSE EXACT WORDS. This is demonstrated concretely by two independent escapes still present in the current file even after applying REQ-204's full removal scope (the two whole sections plus the two named economy/gig clauses): (1) FIND-401's own evidence shows the paraphrase 'it is FORBIDDEN this wake. Pick a DIFFERENT slot.' (prompt.mjs:206) is exactly as strong a piece of steering as anything removed by REQ-204, yet uses none of PROP-203b's listed marker words verbatim ('forbidden' and 'pick' are not on the list) -- it would only be caught by a grep that happened to also include those synonyms, which is not specified, and is not caught by the generic-marker list as literally written; (2) after removing the two named clauses ('the highest-leverage move is to POST', 'Prefer this over re-yielding surplus.') from the economy/gig bullet, the bullet's own opening framing, '★THE LABOR MARKET — the colony economy★' (prompt.mjs:70), remains the ONLY bullet among the six in '## Your earn tools' singled out with star/bold-style emphasis and the definite article 'THE' -- a typographic/rhetorical steering signal (implicitly marking this slot as more central than yield/x402_sell/hl_trade/token_launch/cook, which get plain tags like 'ONE-TIME.'/'RECURRING.') that contains none of the literal marker words and so is invisible to PROP-203b's grep regardless of how many times it is re-run. Because this feature's entire multi-iteration history (FIND-201, FIND-301, and now FIND-401) is a repeated pattern of 'one more un-named phrasing of the same steering idea evading a fixed enumeration', a verification method whose own completeness is itself bounded by a fixed word list is foreseeably fragile to exactly the same class of paraphrase-evasion that has already defeated three prior spec revisions -- it substitutes a syntactic proxy (do these literal words appear) for the semantic claim the requirement actually makes (does this text function as a preference signal), and the two are demonstrably NOT equivalent for this file. PROP-204a's Tier-0 PASS therefore cannot be relied upon to structurally imply PROP-203b's broader claim is true in the sense REQ-203 intends, only in the narrower sense of 'the specific listed words are absent' -- which is not what REQ-203's EARS clause requires.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/runtime/loop/prompt.mjs",
+    "lineRange": "70,206",
+    "snippet": "'  - economy/gig  : ★THE LABOR MARKET — the colony economy★ When you have USDC SURPLUS above your reserve,' ... '... it is FORBIDDEN this wake. Pick a DIFFERENT slot. ...'"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/verification-architecture.md",
+    "lineRange": "85-86",
+    "snippet": "PROP-203b Tool/Method: 'a fresh grep of the FULL file for generic ranking/imperative markers (\"must\", \"prefer\", \"highest\", \"priority\", \"first\", \"almost never\", \"do not\", etc.)' -- a fixed word list presented as sufficient to detect all remaining steering/ranking text."
+  },
+  "routeToPhase": "1b"
+}
