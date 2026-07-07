@@ -1,8 +1,34 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 17, revised
-(spec review iteration-17 finding FIND-1601 resolved — REQ-202's `needsSolanaWallet({initialSkills,
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 18, revised
+(spec review iteration-18 finding FIND-1701 resolved — REQ-102's `decideColonySpawn`'s own
+`colonySurplusUsd` parameter — the single most consequential value the function consumes, gating whether
+ANY spawn happens at all — had no "never hand-assembled, always the direct return value of X()" binding
+sentence and no dedicated real-derivation proof obligation, unlike its immediate signature-siblings
+`recentSpawnAttempts`/`childrenProvisioning`, which both already received this exact treatment
+(FIND-1401/FIND-1501). Resolved: `colonySurplusUsd` is now explicitly bound, in REQ-102's own text, to
+THAT SAME evaluation's `computeColonySurplusUsd({citizens: filterProductiveCitizens(...),
+perCitizenReserveUsd})` (REQ-101) direct return value — never hand-assembled, never a stale/earlier
+evaluation's cached aggregate. REQ-102's own "multiple evaluations in the same wake" edge case is
+explicitly resolved for this hazard: EACH separate evaluation MUST call this pipeline fresh, and REQ-103's
+`"colony-spawn"` lock is explicitly NOT relied upon as a substitute safety mechanism, since that lock's
+own critical section begins only at REQ-201 — strictly AFTER REQ-101/102's evaluation completes
+(confirmed by direct re-read of REQ-103's own statePath prose, which states this exactly) — so staleness
+of `colonySurplusUsd` is a hazard this binding closes directly, never one the lock happens to already
+prevent. A new proof obligation, PROP-102k, adds the missing Tier-1/Tier-2 real-derivation integration
+check (mirroring PROP-101j/PROP-102g/PROP-102i/PROP-202d exactly), and the Gate's item (1) is extended to
+require it. Separately, this iteration's own mandated full-signature closeout of `decideColonySpawn`
+(every one of its 8 parameters, re-classified with uniform rigor) confirmed
+`spawnThresholdUsd`/`recentSpawnAttempts`/`childrenProvisioning` already correctly bound, `nowMs`
+correctly exempt as a raw wall-clock primitive (mirroring `selectCloudTarget`'s own raw-I/O-leaf inputs,
+iteration 17), `cooldownDays`/`failureCooldownCap` already correctly defaulted — and surfaced one further,
+minor asymmetry: `maxConcurrentSpawns`'s own default (`1`) was stated only in REQ-102's EARS clause, never
+restated at the Acceptance-Criteria level the way `cooldownDays`/`failureCooldownCap` both are; a new
+Acceptance Criteria clause closes this (no new PROP needed, since PROP-102c already tests
+`maxConcurrentSpawns`'s behavior directly) — see RESOLUTION-NOTES.md, `reviews/spec/iteration-18/`, for
+the full per-parameter closeout table — AND spec review iteration-17 finding FIND-1601 resolved —
+REQ-202's `needsSolanaWallet({initialSkills,
 deployTarget}) → boolean` pinned TWO inputs with no real-system-state binding rule anywhere in this
 document: (a) `deployTarget` is now explicitly bound, in REQ-202's own text, to THAT SAME spawn
 attempt's `selectCloudTarget(...)` (REQ-306) direct return value — never hand-assembled by the calling
@@ -436,6 +462,41 @@ RESOLUTION-NOTES.md, `reviews/spec/iteration-17/`, for the full per-function, pe
 classification table covering EVERY pure function listed in the Purity Boundary Map — no further
 UNRESOLVED instance was found beyond the one row above).
 
+## Changelog (iteration 18 spec review → iteration 19)
+
+Iteration 18's spec review FAILed with 1 finding (critical — FIND-1701; iteration 17's own
+`priorIterationFindingReconfirmation` confirmed FIND-1601 and its sweep-found `filterProductiveCitizens`
+sibling gap both genuinely resolved against the real, current source). The reviewer performed a full,
+independent re-derivation of the per-function, per-parameter classification table this project's own
+methodology now mandates (not a spot-check of the iteration-17 builder's own table), and found exactly one
+discrepancy — this is the SIXTH instance of this recurring failure class across iterations 14-18, found on
+`decideColonySpawn` itself, the SAME function whose other two comparable parameters
+(`recentSpawnAttempts`/`childrenProvisioning`) were already fixed in the FIND-1101/1401/1501 line of work:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-1701 | critical | `decideColonySpawn`'s `colonySurplusUsd` parameter — its own FIRST-listed parameter, and the single most consequential value the function consumes (gating, alongside the cooldown/concurrency checks, whether ANY spawn happens at all) — had no "never hand-assembled, always the direct return value of X()" binding sentence and no dedicated real-derivation proof obligation, unlike its immediate signature-siblings `recentSpawnAttempts`/`childrenProvisioning`, which both already received this exact treatment in prior iterations. REQ-102's own "multiple evaluations in the same wake cycle" edge case already contemplates more than one `decideColonySpawn` evaluation running per wake — meaning a stale/cached/hand-rolled `colonySurplusUsd` reused across evaluations, or a shortcut inline recomputation that skips `filterProductiveCitizens`'s exclusion logic, was a real, concrete, previously-uncaught hazard. Resolved by adding the identical "never hand-assembled, always the direct return value of X()" binding sentence to REQ-102 for `colonySurplusUsd`, binding it to THAT SAME evaluation's `computeColonySurplusUsd({citizens: filterProductiveCitizens(...), perCitizenReserveUsd})` (REQ-101) call — and by explicitly resolving the "multiple evaluations" edge case for this specific hazard: EACH separate evaluation within one wake MUST call this pipeline fresh, and REQ-103's `"colony-spawn"` lock is explicitly documented as NOT providing this protection (its own statePath prose already states its critical section begins only at REQ-201, strictly after REQ-101/102's evaluation completes — confirmed by direct re-read before asserting this, since a false safety claim here would repeat this spec's own earlier FIND-501 mistake for a different mechanism). A new proof obligation, PROP-102k, adds the missing Tier-1/Tier-2 real-derivation integration check (mirroring PROP-101j/PROP-102g/PROP-102i/PROP-202d exactly), the Purity Boundary Map's `decideColonySpawn` row is updated to cite it, and the Gate's item (1) is extended to require it. |
+
+Separately, per this task's own dispatch, `decideColonySpawn`'s COMPLETE 8-parameter signature was
+re-classified one final time with uniform rigor (not merely the one flagged parameter) — see
+`reviews/spec/iteration-18/RESOLUTION-NOTES.md` for the full per-parameter closeout table. This confirmed
+`spawnThresholdUsd` (DERIVED-BOUND, fully specified formula `MIN_SHELTER_USD * SAFETY_MARGIN_MULTIPLIER`
+fed by `deriveMeasuredShelterCostUsd`, already correctly bound), `recentSpawnAttempts`/`childrenProvisioning`
+(DERIVED-BOUND, already fixed by FIND-1401/FIND-1501), `cooldownDays`/`failureCooldownCap` (CONSTANT,
+already explicitly defaulted at the Acceptance-Criteria level), and `nowMs` (a genuine raw wall-clock
+runtime primitive — "the evaluation's own current time at the moment of the call" — needing no derivation,
+the identical treatment iteration 17 already gave `selectCloudTarget`'s own four raw I/O-leaf inputs) all
+already correctly treated. It surfaced one further, minor asymmetry, closed preemptively in the same pass
+(no new FIND number, not independently raised by the adversary): `maxConcurrentSpawns`'s own default
+(`1`) was previously stated only in REQ-102's EARS clause, never restated at the Acceptance-Criteria level
+the way `cooldownDays`/`failureCooldownCap` both are — a new Acceptance Criteria clause now closes this
+(no new proof obligation needed, since `maxConcurrentSpawns`'s behavior is already directly tested by
+PROP-102c).
+
+This closes the sixth instance of this recurring failure class found across iterations 14-18 — see
+RESOLUTION-NOTES.md, `reviews/spec/iteration-18/`, for the full per-parameter closeout table specific to
+`decideColonySpawn`'s own complete signature.
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -809,6 +870,34 @@ This is the ONE reconciled rule both REQ-102 and REQ-305 describe: a successful 
 cooldown-triggering; a failed attempt is cooldown-EXEMPT strictly below `FAILURE_COOLDOWN_CAP` and
 cooldown-TRIGGERING once the cap is reached — never two different behaviors.
 
+**Deriving `colonySurplusUsd` from real system state (new, resolves FIND-1701, critical):**
+`colonySurplusUsd` is never hand-assembled by the calling orchestration — it is ALWAYS the DIRECT return
+value of THAT SAME evaluation's `computeColonySurplusUsd({citizens: filterProductiveCitizens({citizens: <a
+real `CITIZENS_REGISTRY_PATH` read>, ledgerRows: readChildren(...), nowMs, bootstrapWindowDays}),
+perCitizenReserveUsd})` call (REQ-101) — never a hand-rolled reimplementation of the aggregation at the
+call site, and never a stale/earlier evaluation's aggregate carried over from a prior evaluation. This
+mirrors the IDENTICAL "never hand-assembled, always the direct return value of X()" binding discipline
+this SAME function's own signature-siblings `recentSpawnAttempts`/`childrenProvisioning` already establish
+(below), and REQ-202's own `deployTarget` binding establishes for `selectCloudTarget(...)`. This binding is
+not cosmetic: `colonySurplusUsd` is the single most consequential value `decideColonySpawn` consumes —
+gated only by the cooldown/concurrency checks, it is the number that determines whether ANY spawn happens
+at all this wake. A hand-assembled or stale `colonySurplusUsd`, or a shortcut inline recomputation that
+skips `filterProductiveCitizens`'s exclusion logic (e.g. accidentally including a `"bootstrap_failed"`
+citizen's balance), would silently corrupt this decision without any other check in this spec catching it.
+
+**Each separate `decideColonySpawn` evaluation within one wake cycle MUST call `computeColonySurplusUsd`
+fresh (resolves, for this specific hazard, the "multiple evaluations in the same wake" edge case REQ-102's
+own edge cases below already contemplate):** REQ-103's `"colony-spawn"` lock does NOT provide staleness
+protection for `colonySurplusUsd` and MUST NOT be cited as though it did — REQ-103's own statePath prose
+is explicit that "REQ-101's earlier registry read and REQ-102's decision themselves run OUTSIDE the lock,
+since REQ-102's gate function is pure and needs no mutual exclusion of its own"; the lock's critical
+section begins only at REQ-201's wallet generation, strictly AFTER REQ-101/102's evaluation has already
+completed. THE SYSTEM SHALL therefore compute `colonySurplusUsd` via a FRESH `computeColonySurplusUsd(...)`
+call (over a fresh `filterProductiveCitizens(...)` call, over a fresh `readChildren(...)`/registry read)
+for EVERY separate `decideColonySpawn` evaluation this wake — never reusing an earlier evaluation's
+already-returned aggregate, and never caching it across evaluations, however close together in time they
+run.
+
 **Deriving `recentSpawnAttempts` from real ledger rows (new, resolves FIND-1401, critical):** nothing
 above specifies WHERE `recentSpawnAttempts` comes from at runtime. REQ-101's exactly analogous need
 (turning `ledger.js`'s raw rows into an aggregation-ready shape) is satisfied by a named,
@@ -925,7 +1014,17 @@ WHETHER to spawn — see REQ-104.
   recent attempts were failures"); `cooldownDays` defaults to `14`, identical to `SPAWN_COOLDOWN_DAYS`'s
   own default above (resolves FIND-1301) — never independently configurable to a different value;
   `failureCooldownCap` defaults to `3` — identical to REQ-305's own
-  cap, the SAME number, never independently configurable to a different value.
+  cap, the SAME number, never independently configurable to a different value; `maxConcurrentSpawns`
+  defaults to `1`, identical to `MAX_CONCURRENT_SPAWNS`'s own default above — never independently
+  configurable to a different value.
+- **(new, resolves FIND-1701)** `colonySurplusUsd` is never hand-assembled by the calling
+  orchestration — it is ALWAYS the direct return value of THAT SAME evaluation's
+  `computeColonySurplusUsd({citizens: filterProductiveCitizens(...), perCitizenReserveUsd})` call
+  (REQ-101), never a stale/earlier evaluation's cached aggregate. EACH separate `decideColonySpawn`
+  evaluation within one wake cycle calls this pipeline FRESH — REQ-103's `"colony-spawn"` lock does NOT
+  cover REQ-101/102's evaluation step (its critical section begins only at REQ-201), so this staleness
+  protection can never be attributed to that lock; a stale/cached/hand-rolled `colonySurplusUsd` is a
+  real, distinct hazard this binding closes.
 - **(resolves FIND-1401)** `recentSpawnAttempts` is never hand-assembled by the calling
   orchestration — it is ALWAYS the direct return value of `deriveRecentSpawnAttempts({ledgerRows:
   readChildren(...)})` (defined above), one entry per `child_id` group, with in-flight

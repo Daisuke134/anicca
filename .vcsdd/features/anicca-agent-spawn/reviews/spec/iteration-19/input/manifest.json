@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 19,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 18,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-18/output/findings/",
+    "note": "1 finding, critical: FIND-1701 -- decideColonySpawn's own colonySurplusUsd parameter (its first-listed, most consequential input) lacked the real-derivation binding its immediate signature-siblings (recentSpawnAttempts, childrenProvisioning) already had. Fixed with new PROP-102k, explicit per-evaluation-fresh-call requirement for the multi-evaluation-per-wake edge case (honestly grounded in REQ-103's actual lock scope, not a false safety claim), and a COMPLETE closeout pass over decideColonySpawn's full 8-parameter signature (colonySurplusUsd/spawnThresholdUsd/recentSpawnAttempts/nowMs/cooldownDays/failureCooldownCap/childrenProvisioning/maxConcurrentSpawns), documented in reviews/spec/iteration-18/RESOLUTION-NOTES.md's own per-parameter table."
+  },
+  "note": "Verify PROP-102k's fix holds, and verify the multiple-evaluations-per-wake safety claim is honest (REQ-103's lock genuinely does NOT cover REQ-101/102's evaluation phase, per REQ-103's own statePath prose -- confirm this is accurately cited, not a false safety net the way this spec's own earlier FIND-501 mistake was). Independently re-verify decideColonySpawn's own complete 8-parameter closeout table is accurate -- spot-check each of the 8 parameters against the builder's own conclusions (5 already fine, 1 newly fixed, 1 exempt-raw-primitive, 1 minor symmetry fix) rather than trusting the table at face value. This is the 6th consecutive iteration to find an instance of the pinned-input-derivation failure class (iterations 14-18), now specifically exhausted for decideColonySpawn's own signature -- do a full fresh, skeptical pass over the ENTIRE REST of the spec (REQ-101 through REQ-403, every OTHER pure function's signature, not just decideColonySpawn) for one more possible instance elsewhere, since this failure class has proven recurring across many different functions already. Also check for entirely different classes of defect."
+}
