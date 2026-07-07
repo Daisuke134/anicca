@@ -105,12 +105,18 @@ This sprint delivers:
 6. The REQ-305 ledger-append and citizen-registry-append call site (including FIND-2002's minimal
    early-failure row).
 
-Files touched (all in `~/anicca`, repo `github.com/Daisuke134/anicca`, branch `main`) — exact list
-finalized at Phase 2a (RED), expected to include: `skills/self/spawn/lib/spawn-orchestrator.mjs` (new),
-`skills/self/spawn/scripts/gen-solana-wallet.sh` (new), `skills/self/spawn/scripts/sdl/child.yaml` or
-equivalent child-specific SDL variant (new, small — REQ-303's own FIND-403 correction), a new
-lease-shell/job-ssh secrets-injection helper (new — REQ-303's own FIND-401 correction), plus test files
-under `skills/self/spawn/lib/__tests__/`. `run.sh`, `child-spec.js`, `ledger.js`, `treasury-gate.mjs`,
+Files touched (all in `~/anicca`, repo `github.com/Daisuke134/anicca`, branch `main`) — final list as
+delivered through Phase 2c (refactor): `skills/self/spawn/lib/spawn-orchestrator.mjs` (new, REQ-307's
+`executeSpawnAttempt` plus the internal `runStep` helper Phase 2c's refactor introduced to collapse the
+7 deps-or-default effectful call sites' identical try/catch/requireOk shape into one place — no exported
+surface change, no second orchestration path, CRIT-201 unaffected), `skills/self/spawn/scripts/
+gen-solana-wallet.sh` (new), plus test files under `skills/self/spawn/lib/__tests__/`
+(`spawn-orchestrator.test.mjs`, `gen-solana-wallet.test.mjs`). The `skills/self/spawn/scripts/sdl/
+child.yaml`-equivalent child-specific SDL variant and the lease-shell/job-ssh secrets-injection helper
+(REQ-303's own FIND-403/FIND-401 corrections) were NOT created this sprint — both belong exclusively to
+PROP-303b's real Akash deploy path, which the "Deferred-obligation disposition" section below explicitly
+re-defers as Tier-3 (not silently dropped; `defaultDeploy` continues to call the existing, unmodified
+`deploy-akash.sh` exactly as sprint-1 left it). `run.sh`, `child-spec.js`, `ledger.js`, `treasury-gate.mjs`,
 `colony-balances.mjs`, `registry-path.mjs`, `citizens-registry.mjs`, `akash-funding-gate.mjs`,
 `cloud-target.mjs`, `needs-solana-wallet.mjs`, `shelter-cost-ledger.js` are all reused UNMODIFIED
 (sprint-1 delivered and hardened them; this sprint calls them, never edits them, matching CRIT-201's own
