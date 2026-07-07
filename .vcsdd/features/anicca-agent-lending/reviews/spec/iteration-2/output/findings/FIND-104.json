@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-104",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-106 establishes rigorous lock.mjs mutual-exclusion discipline (a lender-scoped `loan_${lenderId}` key, a canonical LOANS_LEDGER_PATH constant, PROP-106a/b/c/d/e/f, multiple Tier-2 integration tests) exclusively for the LOAN-ISSUANCE critical section. REQ-108 (repayment verification + status-transition append) and REQ-109 (default detection + status-transition append) both write NEW rows to the SAME shared, mutable loans.jsonl file via the SAME reused ledger.js::appendChild primitive -- but neither requirement mentions lock.mjs, a lock key, or ANY mutual-exclusion discipline at all. This is precisely the 'lock.mjs/ledger.js reuse left unscoped' gap: two evaluations that race on the SAME loan_id -- e.g. a scheduled detectDefaultedLoans sweep crossing due_ms for a loan at the exact moment an independent verifyRepayment call is in flight for a genuine, just-landed repayment transaction for that SAME loan -- can each independently READ loans.jsonl (observing 'active', not-yet-credited), independently compute their own new row ('defaulted' vs 'repaid'), and independently APPEND, with the LAST-appended row winning per every function's own 'last-write-wins' reduction convention (REQ-101/102/105/108/109 all state this explicitly). Because this is a race on WRITE ORDER, not on TRUE chronological correctness, a legitimate repayment that verifiably landed before the sweep's own read could still be overwritten by a 'defaulted' row appended microseconds later by the racing sweep (or vice versa: a defaulted status masked by a late repayment append racing ahead of a should-have-defaulted determination) -- silently corrupting REQ-102's borrower-eligibility gate and REQ-105's reputation-ladder count with no error, exactly the SAME class of silent-merge hazard iteration-1's own FIND-001 already identified for issuance-time loan_id collisions, but here for repayment/default status transitions on an EXISTING loan_id, which REQ-106's own lock was never extended to cover.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "665-769",
+    "snippet": "### REQ-108: Repayment verification mechanism ... THE SYSTEM SHALL mark that loan \"repaid\" only after an INDEPENDENT on-chain check ... ### REQ-109: Default detection & handling ... THE SYSTEM SHALL, at the next scheduled evaluation, append a NEW row for that same loan_id with status: \"defaulted\" -- neither section mentions lock.mjs, withGigLock, or any lock key anywhere."
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "499-580",
+    "note": "REQ-106 is the ONLY requirement that invokes lock.mjs/withGigLock (\"a new lock KEY, loan_${lenderId}\") -- REQ-108/109's own Acceptance Criteria (PROP-108a/b/c, PROP-109a/b/c/d in verification-architecture.md) never require or test concurrent-repayment-vs-default-detection race safety, unlike REQ-106's own PROP-106a/b/e/f, which explicitly do test the analogous issuance-time race."
+  },
+  "routeToPhase": "1a"
+}

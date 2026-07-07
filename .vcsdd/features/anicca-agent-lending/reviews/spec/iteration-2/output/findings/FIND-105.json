@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-105",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "REQ-108/verifyRepayment (this revision's FIND-007 resolution) claims: 'the log's own from topic is decoded the same way and compared to the borrower's own recorded walletAddress.evm' -- i.e. that record-earn.mjs's already-hardened, exact-zero-padded-topic-equality pattern (the FIND-704 fix) governs BOTH the to-topic AND the from-topic check, and that this is a REUSE of an 'already-hardened' pattern rather than new logic. Re-read this session, record-earn.mjs's real parseRawLogs (lines 82-88) applies the FIND-704 exact-padded-equality check ONLY to the `to` topic (topics[2], matched via `'0x' + '0'.repeat(24) + wlow` against the file's own single, fixed founder wallet) -- the `from` topic (topics[1]) is extracted via an UNCHECKED substring operation, `'0x' + String(l.topics[1]).slice(26)`, with NO subsequent equality comparison against any expected address at all. record-earn.mjs never needs such a check for `from`: its own downstream logic (sumExternal, line 74-79) only tests SET MEMBERSHIP of the extracted `from` address against a small MY_WALLETS exclusion list (to tell 'external' from 'internal' inflows), never equality against ONE specific expected sender -- a fundamentally different verification shape than REQ-108's own requirement (exact equality against the borrower's ONE specific recorded walletAddress.evm). Applying exact-padded-equality to BOTH sides, as REQ-108 specifies, is a sound design choice and arguably MORE rigorous than record-earn.mjs's own precedent -- but it is a NEW extension of the pattern to a field record-earn.mjs's real code has never actually implemented, tested, or hardened this way. The spec's 'reusing THAT pattern, not re-deriving it' / 'already-hardened' framing overclaims confidence specifically for the from-side check, creating a real implementation risk: a Phase-3 implementer told to 'reuse record-earn.mjs's own already-hardened pattern' for BOTH addresses, who then actually opens record-earn.mjs to copy the pattern, will find the `from` side implemented as an unchecked slice with no equality test at all -- and may reproduce exactly that (an unchecked extraction) for the `from` check REQ-108 actually requires to be an exact match, silently reintroducing a variant of the EXACT bug class (a substring/loose match instead of exact equality) FIND-704 was supposed to have already closed once in this colony, this time on the side of the check that was never actually proven.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "683-690",
+    "snippet": "the to topic checked via EXACT zero-padded-address equality ... against the lender's own recorded walletAddress.evm ... the log's own from topic is decoded the same way and compared to the borrower's own recorded walletAddress.evm"
+  },
+  "crossCheck": {
+    "filePath": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+    "lineRange": "74-88",
+    "snippet": "function sumExternal(logs) { ... if (!MY_WALLETS.includes(String(lg.from || '').toLowerCase())) sum += ...; } function parseRawLogs(res) { ... .filter((l) => ... String(l.topics[0]).toLowerCase() === TRANSFER_TOPIC && String(l.topics[2]).toLowerCase() === '0x' + '0'.repeat(24) + wlow) // FIND-704 ... .map((l) => ({ from: '0x' + String(l.topics[1]).slice(26), value: ... })); }",
+    "note": "The FIND-704 exact-padded-equality fix (line 87) is applied ONLY to topics[2] (`to`); topics[1] (`from`) is extracted via unchecked slice (line 88) and only ever set-membership-tested afterward (line 77), never equality-checked against one expected address."
+  },
+  "routeToPhase": "1a"
+}

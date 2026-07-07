@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-106",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-102 and REQ-110 directly contradict each other on whether this feature couples to economy/gig/decide.mjs. REQ-102 states BORROWER_LOW_USD is set 'default 0.50, reusing economy/gig/decide.mjs's existing DEFAULT_LOW_USDC constant verbatim -- the SAME \"genuinely broke\" definition already established colony-wide, not a second, competing threshold.' The natural, and only literal, reading of 'reusing ... verbatim' is that this feature's own code imports DEFAULT_LOW_USDC from decide.mjs (mirroring how REQ-101 imports isSelfFunded from is-self-funded.mjs, or how REQ-106 imports withGigLock from lock.mjs -- the spec's own established pattern for 'reuse' elsewhere is always a real import). But REQ-110's own Acceptance Criteria states: 'A structural/Tier-0 check confirms economy/gig/decide.mjs and this feature's own eligibility/sizing functions share zero code coupling -- neither imports the other, and neither reads the other's state file.' These two requirements cannot both be literally true as written: either (a) lending-gate.mjs genuinely imports DEFAULT_LOW_USDC from decide.mjs, in which case REQ-110's Tier-0 structural check (PROP-110a) is GUARANTEED TO FAIL the moment it is actually run against the real diff, or (b) lending-gate.mjs merely re-declares its OWN separate BORROWER_LOW_USD=0.50 constant with no import at all, in which case REQ-102's own 'reusing ... verbatim' language is misleading -- it is not reusing the constant, it is duplicating its numeral into a THIRD independent declaration site (this codebase's own decide.mjs already has one; a hypothetical future third consumer would be a fourth), which is exactly the 'shares a numeral, not a justification' pattern iteration-1's own FIND-008 already flagged as a real weakness for LOAN_INTEREST_RATE -- and, worse, means a future change to decide.mjs's own DEFAULT_LOW_USDC would silently NOT propagate to this feature's own broke-threshold, defeating the entire stated purpose of reusing it ('not a second, competing threshold') the moment the two values ever drift. The spec must pick one of these two designs and state it unambiguously; as currently written it asserts both simultaneously.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "290-295",
+    "snippet": "its own current balance is strictly below BORROWER_LOW_USD (default 0.50, reusing economy/gig/decide.mjs's existing DEFAULT_LOW_USDC constant verbatim -- the SAME \"genuinely broke\" definition already established colony-wide, not a second, competing threshold)"
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "789-796",
+    "snippet": "A structural/Tier-0 check confirms economy/gig/decide.mjs and this feature's own eligibility/sizing functions share zero code coupling -- neither imports the other, and neither reads the other's state file.",
+    "note": "PROP-110a (verification-architecture.md line 108) restates the same 'zero coupling' claim as the binding Tier-0 acceptance test -- directly in tension with REQ-102's own 'reusing ... constant verbatim' language a few dozen lines earlier in the same document."
+  },
+  "routeToPhase": "1a"
+}

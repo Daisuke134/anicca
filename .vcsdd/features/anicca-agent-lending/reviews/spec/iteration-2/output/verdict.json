@@ -1,0 +1,103 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-007", "FIND-008"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js",
+      "/Users/anicca/anicca/skills/economy/gig/lib/escrow.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/gig.mjs",
+      "/Users/anicca/anicca/skills/economy/ubi/ubi.js",
+      "/Users/anicca/anicca/skills/economy/ubi/run.sh",
+      "/Users/anicca/anicca/skills/economy/ubi/state/gojo-log.jsonl",
+      "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs",
+      "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js",
+      "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs",
+      "/Users/anicca/anicca/skills/economy/gig/decide.mjs",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/state.json"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-001",
+      "status": "genuinely resolved",
+      "note": "Walked through the concurrency scenario directly: nextLoanSequenceForLender filters loans.jsonl by the STRUCTURED lender_id field (not by string-prefix-parsing loan_id, which is what child-spec.js::nextChildId does and which iteration-1 flagged as unsafe), so no ambiguity arises even if two different lenderIds share a textual prefix. n is computed strictly inside the SAME loan_${lenderId} lock, so two attempts for the SAME lender never race on n (withGigLock is fail-closed, never queued); two DIFFERENT lenders use different lock keys and different loan_id prefixes, so collision is structurally impossible. This is a real, sound improvement over child-spec.js's own weaker prefix-only matching."
+    },
+    {
+      "findingId": "FIND-002",
+      "status": "genuinely resolved (new REQ-112 present, but see FIND-101 for a related staleness/framing gap)",
+      "note": "REQ-112 explicitly states the single-coordinator-host precondition, extended correctly to BOTH lender and borrower (not just one evaluator, unlike spawn's own analogous case) with an explicit rationale for why this is a stronger requirement than spawn's. The literal FIND-002 gap (silence) is closed."
+    },
+    {
+      "findingId": "FIND-003",
+      "status": "genuinely resolved",
+      "note": "escrow.mjs re-read this session, lines 150-165: payViaFacilitator's real signature exactly matches the spec's citation (facilitatorUrl has no default; chainId/usdcAddress/domainName/rpcUrl/chain/validitySeconds do). gig.mjs's FACILITATOR_URL resolution pattern (process.env.GIG_FACILITATOR_URL || 'http://127.0.0.1:8405') is accurately described and the spec correctly requires reusing this same pattern."
+    },
+    {
+      "findingId": "FIND-004",
+      "status": "genuinely resolved",
+      "note": "REQ-104/105 now honestly separate the proven SIZING claim from the unproven ECONOMIC claim, and add computeColdStartRepaymentRate as a monitoring mechanism (though see FIND-107 for a real gap in that function's own operational definition)."
+    },
+    {
+      "findingId": "FIND-005",
+      "status": "resolution is INCOMPLETE -- a new, more serious bug (FIND-102) was introduced by the fix",
+      "note": "The spec does now read gojo-log.jsonl and honestly discloses the reverse-direction gap. But re-reading the real ubi/run.sh and the real gojo-log.jsonl row shape this session reveals the fix's own forward-direction attribution is unconditionally applied to every lender with no lenderId gate -- see FIND-102."
+    },
+    {
+      "findingId": "FIND-006",
+      "status": "the NARROW citation gap (missing homeDir) is fixed, but the underlying dependency-drift risk has RECURRED and worsened -- see FIND-101",
+      "note": "Re-read anicca-agent-spawn's ACTUAL current behavioral-spec.md and state.json this session: it is now at iteration 5 (FIND-401..405 also resolved), not iteration 4 as lending's Dependencies section states."
+    },
+    {
+      "findingId": "FIND-007",
+      "status": "genuinely resolved for the to-topic check; a related but distinct overclaim exists for the from-topic check -- see FIND-105",
+      "note": "escrow.mjs re-read this session, lines 124-140 (settleBody): confirmed to contain zero Transfer-log parsing, matching the spec's own corrected claim. record-earn.mjs re-read, lines 82-88: the TRANSFER_TOPIC/FIND-704 exact-padded-equality pattern is real and correctly cited for the to-topic check."
+    },
+    {
+      "findingId": "FIND-008",
+      "status": "genuinely resolved",
+      "note": "LOAN_INTEREST_RATE=0.10 is now honestly framed as a starting, tunable parameter, not a reuse of ubi.js's unrelated contributePct."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102", "FIND-106", "FIND-107"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md:1-8", "description": "Confirmed the real, current spawn spec self-describes as iteration 5 (FIND-401..405 resolved), not iteration 4 as lending's Dependencies section states; state.json's gates.1c confirms an iteration-5 Phase-1c FAIL with critical findings materially relevant to REQ-112's framing"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/run.sh:87-96", "description": "Confirmed the gojo sender identity is hardcoded to anicca-a3cdd4, and the real gojo-log.jsonl row has no sender field -- confirming REQ-101's sumRecentGojoGiftsUsd, which has no lenderId parameter, misattributes this single citizen's own commitments to every lender evaluation"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:290-295,789-796", "description": "REQ-102's 'reusing decide.mjs's constant verbatim' directly contradicts REQ-110's own Tier-0 acceptance criterion 'neither imports the other'"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:448-467", "description": "REQ-105's own edge cases (late repayment never increments successfulOnTimeRepayments) logically contradict computeColdStartRepaymentRate's own parenthetical claim that cold-start loans are 'every borrower's own first-ever loan'"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-103", "FIND-104", "FIND-105"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs:1-36,84-151", "description": "Confirmed the lock module protects against concurrent lockless callers and crashed-holder reclaim, but provides no protection for a single holder's own crash strictly between an already-succeeded external transfer and the local ledger append meant to record it -- a gap REQ-106/PROP-106f never addresses"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:665-769", "description": "Confirmed REQ-108/109 write to the SAME loans.jsonl file as REQ-106's locked issuance path, via the same ledger.js primitive, with zero lock-key/mutual-exclusion discipline specified anywhere for repayment or default-detection appends"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/founder-loop/record-earn.mjs:74-88", "description": "Confirmed record-earn.mjs's FIND-704 exact-padded-equality fix applies only to the to-topic; the from-topic is extracted unchecked and only ever set-membership-tested, not equality-tested against one expected address -- contradicting REQ-108's claim that the from-check is 'decoded the same way' as an already-hardened, already-proven pattern"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
