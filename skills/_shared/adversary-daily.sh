@@ -19,5 +19,6 @@ mkdir -p "$(dirname "$LOG")"
 # subagent_type=vcsdd:vcsdd-adversary (= the second fresh context layer).
 PROMPT=$(sed -e "s|{{SLOT}}|${SLOT}|g" -e "s|{{MODE}}|${MODE}|g" -e "s|{{EXTRA}}|${EXTRA}|g" "$PROMPT_TMPL" 2>/dev/null || \
          echo "Review feature ${SLOT} per ~/anicca/.vcsdd/features/${SLOT}/specs/ in mode ${MODE}.")
+PROMPT="${PROMPT} 検証結果がFAIL verdictだった場合のみ、終了前にPushNotificationツールでDaisへその要点をverbatim送信すること。PASSの場合やnarration・定常報告には使わない。"
 
-claude -p "$PROMPT" --output-format text 2>&1 | tee -a "$LOG"
+claude -p "$PROMPT" --model opus --output-format text 2>&1 | tee -a "$LOG"

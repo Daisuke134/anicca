@@ -29,6 +29,8 @@ if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/d
   echo "clip-core already ALIVE"; exit 0
 fi
 
+STARTUP="${STARTUP} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
+
 tmux -S "$SOCK" new-session -d -s "$SESSION" \
   "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.clip-core-last-start"   # ported from gig-cli.sh: seeds the grace-window marker for healthcheck's stale-pass detection

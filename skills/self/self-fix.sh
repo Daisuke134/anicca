@@ -72,6 +72,7 @@ DO, in order:
 (4) COMMIT IN THE CORRECT REPO: for EACH file you changed, cd into its directory, run 'git rev-parse --show-toplevel' and 'git remote -v' to confirm which repo it is, then commit+push THERE. Ground truth: the Capafy publish pipeline lives under ~/.openclaw (remote = anicca-dais, PRIVATE) — commit those there, NOT to anicca-products. The loop harness lives under ~/anicca (remote = anicca, public). Never commit ~/.openclaw runtime state or secrets.
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
+TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
 tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model opus --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"
 date +%s > "$STARTMARK"
 echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (opus): ${BLOCKER:0:90}" >> "$LOG"

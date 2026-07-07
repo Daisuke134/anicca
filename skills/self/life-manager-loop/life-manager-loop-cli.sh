@@ -9,6 +9,7 @@ STARTUP='You are the Anicca Life Manager money-loop core (claude-p, self-improvi
 status(){ tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo ALIVE || echo DEAD; }
 case "${1:-}" in --status) status; exit 0;; --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true;; esac
 if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then echo "life-manager-loop already ALIVE"; exit 0; fi
+STARTUP="${STARTUP} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
 tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.life-manager-loop-last-start"; sleep 2
 echo "life-manager-loop started ($(status))."
