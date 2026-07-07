@@ -2,9 +2,11 @@
 
 **feature**: anicca-agent-economy · **mode**: strict · **increment**: gig-board concurrency
 hardening + bootstrap-reserve catalog eligibility gate + business.blockrun.ai seller-channel
-research spike · **日付**: 2026-07-07 · **revision**: iteration 2 (Phase 1c adversary review
-iteration 1 returned FAIL with 6 findings, FIND-001..FIND-006 — this revision resolves all six;
-see `reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json` for the original findings)
+research spike · **日付**: 2026-07-07 · **revision**: iteration 3 (Phase 1c adversary review
+iteration 1 returned FAIL with 6 findings, FIND-001..FIND-006, resolved by iteration 2; iteration 2
+review returned FAIL with 2 CRITICAL findings, FIND-101/FIND-102 — this revision resolves both; see
+`reviews/spec/iteration-1/output/findings/FIND-00{1..6}.json` and
+`reviews/spec/iteration-2/output/findings/FIND-10{1,2}.json` for the original findings)
 
 ## Scope of this increment (read first)
 
@@ -37,7 +39,7 @@ Phase 2/3 verification cycle of their own:
 | Board mutation (`store.mjs`'s `applyPost`/`applyTake`/`applyDeliver`/`applyVerifyAndPay`) | **Pure core (existing, unchanged by this increment)** | Already a pure state-transition module; this increment does not touch it, only the read/lock/write plumbing around it. |
 | Board persistence (`lib/persist.mjs`'s `loadState`/`saveState`, `gig.mjs`'s `applyAndSave`) | **Effectful shell** | Full-file read/write; the safety property this increment specifies (REQ-102) is about WHEN this shell code re-reads relative to a concurrent write, which is why it needs its own acceptance criteria even though the mutation logic itself stays pure. |
 | Catalog eligibility filter (new, REQ-201/202) | **Pure core (new)** | `filterCatalog({ balanceUsdc, allSlotNames, riskTagOf, alwaysAvailableOf, hasOpenRiskPositionOf, reserveThresholdUsdc }) → string[]` — deterministic set arithmetic over already-fetched bookkeeping inputs, no I/O, directly analogous to the existing `tier.mjs::selectTier`. Three independent per-slot bookkeeping signals feed it (risk tag, always-available flag, open-position fact) — see REQ-201's design principle for why none of these three are "judgment." |
-| Registry read + balance fetch + open-position bookkeeping + wiring the filtered catalog into the prompt (`runtime/loop/index.mjs`) | **Effectful shell** | `fs.readFile(registry.json)` + RPC balance read + reading already-fetched position data (`positionsSummary`-equivalent bookkeeping) + threading the result into `assembleContext`/`buildSystemPrompt`. |
+| Registry read + balance fetch + open-position bookkeeping + wiring the filtered catalog into the prompt (`runtime/loop/index.mjs`) | **Effectful shell** | `fs.readFile(registry.json)` + RPC balance read + threading the result into `assembleContext`/`buildSystemPrompt`. Open-position bookkeeping is now TWO different things, not one: (a) `hasOpenRiskPositionOf('yield')` reuses the already-fetched ledger scan that also populates `ctx.positionsSummary` — genuinely no new I/O; (b) `hasOpenRiskPositionOf('hl_trade')` is a NEW, lazy Hyperliquid position query, invoked only when `balanceUsdc < BOOTSTRAP_RESERVE_USDC` — this is new I/O this increment introduces, not a reuse of existing data (corrects the iteration-2 mischaracterization; resolves FIND-102). Both are resolved to plain booleans in `index.mjs` BEFORE `filterCatalog` is called, so `filterCatalog` itself stays pure. |
 | Prompt steering-text retirement (REQ-204) | **Effectful-shell-adjacent, string-literal edit** | `runtime/loop/prompt.mjs::buildSystemPrompt`'s existing `## ★COLONY BOOTSTRAP PRIORITY★` string block is hardcoded prompt text, not computed; removing/neutralizing it is a diff to a string literal, verified structurally (Tier 0), not a runtime behavior with its own unit test. |
 | business.blockrun.ai / Franklin PR research (REQ-301/302) | **Not code — investigation activity** | Firecrawl/`gh` reads of an external repo/site; its only artifact is a static markdown research record, not an executable path. Classified separately from the pure/effectful split above. |
 
@@ -184,6 +186,45 @@ steer). The two thresholds answer two different questions over the identical bal
   `runtime/loop/context.mjs:39`. This is the literal value a Phase 3 builder MUST hardcode as the
   fallback — it is no longer left for Phase 3 to invent.
 
+**Registry classification for every currently-live slot — BINDING Phase 2 acceptance criterion
+(resolves FIND-101)**: iteration 1's adversary found that a literal, criteria-satisfying
+implementation of the "untagged live slot defaults to capital-risking" rule below would, TODAY,
+exclude `economy/gig`, `economy/ubi`, every `self/*` slot, and more from a broke instance's
+catalog — because not one of the 17 slots currently `status: "live"` in `skills/registry.json`
+carries any `risk` field yet. That would break this feature's own headline bootstrap scenario (a
+broke instance using `economy/gig` to earn with $0 capital) the moment this gate ships. This
+increment closes that gap by making explicit classification of today's registry a REQUIRED part of
+Phase 2, not an optional follow-up:
+
+| Slot | Classification | Why (grounded in the slot's own current code/summary) |
+|---|---|---|
+| `report` | `alwaysAvailable: true` | non-earn per-wake telemetry/report utility; touches no capital |
+| `cook` | `alwaysAvailable: true` | web-search exploration only (surfaces candidate URLs); touches no capital |
+| `self/spawn` | `risk: "safe"` | its own decision core (`lib/spawn-decision.js`) already gates real provisioning on the PARENT being profitable — reading/considering this slot while broke cannot itself put a broke instance's treasury at risk |
+| `self/spawn-child` | `risk: "safe"` | explicitly read-only per its own header comment: "PREPARATION ONLY ... Never executes a swap/mint/send/deployment-create itself" |
+| `self/issue-dev` | `risk: "safe"` | files a GitHub Issue from the instance's own logs; touches no funds |
+| `self/coordinate` | `risk: "safe"` | bot2bot info-sharing via GitHub issue post/poll; touches no funds |
+| `economy/gig` | `risk: "safe"` | this feature's own headline scenario: `take` earns with $0 capital; `post` is already internally gated ("run.sh gates eligibility" per its own registry summary) on the poster already holding idle USDC above its own reserve |
+| `economy/ubi` | `risk: "safe"` | `contribute()`/`distributeAI()` are fail-closed no-ops ("no profit/below threshold/would breach reserve") by the skill's own code — cannot deplete a broke instance's treasury |
+| `x402_sell` | `risk: "safe"` | its own registry summary: "THE recurring **$0-capital** earner"; runs/advertises a server, deploys no funds |
+| `earn/clip` | `risk: "safe"` | posts a pre-produced captioned clip via browser automation; deploys no funds |
+| `earn/clip-producer` | `risk: "safe"` | deterministic local media pipeline (download/whisper/crop/caption); deploys no funds |
+| `earn/video` | `risk: "safe"` | faceless-video creation/posting pipeline; deploys no funds |
+| `yield` | `risk: "capital"` — **carve-out applies**, see below | deposits real capital into a DeFi vault (Aave v3/Beefy) — genuine smart-contract exposure; `execute-yield.mjs` already self-gates new deposits to surplus above `COMPUTE_RESERVE_USDC` and WITHDRAWS below it, so the withdraw side must remain visible below `BOOTSTRAP_RESERVE_USDC` too |
+| `hl_trade` | `risk: "capital"` — **carve-out applies**, see below | leveraged perp trading (`hl.py open`) — the canonical capital-risking example named in REQ-201's own EARS clause |
+| `token_launch` | `risk: "capital"`, no carve-out | launching/managing a speculative token — the other capital-risking example named in REQ-201's own EARS clause; no distinct catalog-gated "close" action is described for it |
+| `earn/sol-trade` | `risk: "capital"`, no carve-out | the Franklin-Trading CLI trades the instance's own Solana bankroll end-to-end within one self-contained run; no separate catalog-gated close action exists for the gate to preserve |
+| `earn/polymarket-trade` | `risk: "capital"`, no carve-out | the Polymarket agent trades the instance's own wallet end-to-end within one self-contained run; same reasoning as `earn/sol-trade` |
+
+(`earn`, `earn/audit`, `earn/_probe` are `status: "declared"`, not `"live"` — `liveSlotNames()`
+already excludes them from the catalog entirely, so they need no risk classification for this gate
+to be safe; they are omitted from the table above for that reason, not because they are unclassified.)
+
+This table is the concrete Phase 2 work item: Phase 2 MUST write these exact `risk`/`alwaysAvailable`
+fields into `skills/registry.json` for all 17 currently-live slots as part of landing REQ-201/202,
+before the eligibility gate goes live. See Acceptance Criteria below for the binding form of this
+requirement.
+
 **Design principle (must hold, verified structurally not just behaviorally)**: this filter is a
 deterministic, numeric bookkeeping gate over WHICH options are offered — a risk-guardrail /
 treasury-safety layer, analogous to the existing `tier.mjs::selectTier` balance-based model
@@ -200,27 +241,78 @@ it. None of these three facts are inferred from task content or natural-language
 three are read directly off already-fetched bookkeeping state (`registry.json` fields and current
 position data), exactly like `riskTagOf` already was in iteration 1.
 
-**Open-position carve-out — resolves the hl_trade close-position deadlock (FIND-003)**: excluding a
-capital-risking slot below the reserve threshold applies **only to using that slot to take ON NEW
+**Open-position carve-out — resolves the hl_trade close-position deadlock (FIND-003), with its
+exact data source(s) and failure mode now specified per-mechanism (resolves FIND-102)**: excluding
+a capital-risking slot below the reserve threshold applies **only to using that slot to take ON NEW
 risk** (e.g. `hl_trade` called to `open` a fresh position, `token_launch` called to launch a new
 token). It does **NOT** apply when the instance needs that same slot to **close or withdraw an
-already-existing position** it currently holds. Concretely: `filterCatalog` takes an additional
-bookkeeping input, `hasOpenRiskPositionOf(slotName) → boolean` — a fact read directly off the
-instance's already-fetched position data (the same underlying position bookkeeping that populates
-`ctx.positionsSummary` today), answering only "does the instance currently hold an open exposure
-that this slot is the mechanism for closing/withdrawing?" This is a bookkeeping fact, not a
-judgment: it does not decide whether the model SHOULD close the position, or infer intent from any
-text — it only reports whether an existing position row exists. When
-`hasOpenRiskPositionOf(slot)` is `true`, that slot remains in the filtered catalog even while the
-balance is below `BOOTSTRAP_RESERVE_USDC`, specifically so `runtime/loop/liquidity.mjs`'s existing
-`liquidityDirective` steer (which, below `COMPUTE_RESERVE_USDC`, instructs the model to "CLOSE a
-profitable HL position ... or withdraw idle yield") is never given an instruction it has been
-structurally denied the tool to carry out. Without this carve-out, an instance below BOTH
-thresholds while holding an open `hl_trade` position would be told to close it and simultaneously
-have `hl_trade` removed from its catalog — a real functional deadlock trapping a possibly-losing
-leveraged position with no way to close it. With the carve-out, the deadlock cannot occur: being
-below the bootstrap reserve only ever blocks OPENING new capital-risking exposure, never closing
-existing exposure.
+already-existing position** it currently holds (this increment evidences this need for exactly
+`hl_trade` and `yield` — see the classification table above; `token_launch`/`earn/sol-trade`/
+`earn/polymarket-trade` have no distinct catalog-gated close action and so get no carve-out).
+Concretely: `filterCatalog` takes an additional bookkeeping input, `hasOpenRiskPositionOf(slotName)
+→ boolean` — a plain, already-RESOLVED synchronous boolean per slot that `runtime/loop/index.mjs`
+computes BEFORE calling `filterCatalog` (exactly like `balanceUsdc` itself is fetched async and then
+passed in as a plain number) — so `filterCatalog` remains pure and untouched by anything below; only
+`index.mjs`'s construction of the real `hasOpenRiskPositionOf` values changes. This is a bookkeeping
+fact, not a judgment: it does not decide whether the model SHOULD close the position, or infer
+intent from any text — it only reports whether an existing position row exists.
+
+Iteration 1/2 claimed a single, generic mechanism ("read directly off the instance's already-fetched
+position data... the same underlying bookkeeping that populates `ctx.positionsSummary` today") for
+ALL carved-out slots. FIND-102 showed this was only true for ONE of them. This increment therefore
+specifies TWO distinct, concrete, independently-verified mechanisms:
+
+- **`hasOpenRiskPositionOf('yield')` — genuinely already-fetched, no new I/O.** `index.mjs` already
+  computes, every wake, unconditionally: `recentLedger.slice().reverse().find(l =>
+  String(l.source||'').startsWith('yield') && l.tx)` (this is the exact expression that populates
+  `ctx.positionsSummary` today). `hasOpenRiskPositionOf('yield')` is simply `true` when that `find`
+  call returns a match, `false` otherwise — no new fetch, no new cost, no change to when this data is
+  computed. This is the one part of the original claim that was always literally true.
+- **`hasOpenRiskPositionOf('hl_trade')` — a NEW, lazy, dedicated query; the original claim was FALSE
+  for this slot.** `ctx.positionsSummary` structurally excludes `hl_trade`: every `hl_trade` ledger
+  record is written with `source: 'hl-trade'` (`skills/earn/run.sh`), which does not match the
+  `startsWith('yield')` filter above — there is no existing already-fetched signal for `hl_trade`'s
+  position state anywhere in the wake loop today (FIND-102's own evidence). This increment adds a new
+  query: `index.mjs` invokes the SAME Hyperliquid `clearinghouseState`-backed primitive
+  `skills/earn/hl-trade/hl.py account` already uses in production (`hl.py`'s `open_positions` array,
+  derived from `info.user_state(address).assetPositions` filtered to nonzero `szi`, `hl.py:64-73`) —
+  either by invoking `hl.py account` as a subprocess the same way `skills/earn/run.sh` already does,
+  or an equivalent direct call to the same Hyperliquid info endpoint — and treats a non-empty
+  `open_positions` array as `true`. **Lazy, not every-wake**: this query fires ONLY when
+  `balanceUsdc < BOOTSTRAP_RESERVE_USDC` for the current wake — when the balance is at/above
+  threshold, `filterCatalog` never needs `hasOpenRiskPositionOf` for any capital-risking slot at all
+  (PROP-201b: the full, unfiltered list is returned), so the query is simply never made in that case.
+  This bounds the new network cost to exactly the wakes where the answer is decision-relevant.
+
+**Fail-open default for `hasOpenRiskPositionOf('hl_trade')`'s new query — deliberately the OPPOSITE
+direction from this same requirement's own "fail-closed by default" rule for balance/config/
+untagged-slot failures (see the edge case below), and here is why that reversal is correct**: if the
+lazy Hyperliquid query fails, times out, or the HL API is unreachable, `hasOpenRiskPositionOf(
+'hl_trade')` returns **`true`** — it assumes a position MAY be open and keeps `hl_trade` visible —
+rather than `false`. Every OTHER fail-closed default in this requirement (unset/unparseable
+threshold, failed balance fetch, an untagged slot) fails toward EXCLUDING a slot, because wrongly
+excluding a slot the instance didn't actually need is a small, bounded harm (it just can't open new
+risk for one wake). Failing THIS ONE flag toward `false` instead would recreate the exact FIND-003
+deadlock: an instance below its own reserve, holding a real leveraged position, told by
+`liquidityDirective` to close it, would have `hl_trade` hidden by a transient network hiccup with no
+way to carry out the instruction it was just given — an unbounded, high-cost failure (a real
+leveraged position stuck open indefinitely) versus fail-open's bounded, low-cost failure (`hl_trade`
+stays visible for one extra wake despite no real open position; the model still decides whether to
+act on it — nothing forces a trade). This is not an inconsistency with REQ-203's general
+fail-closed posture; it is the SAME "minimize worst-case harm" principle correctly applied to a
+failure mode whose worst case runs in the opposite direction from every other failure this
+requirement handles.
+
+When `hasOpenRiskPositionOf(slot)` is `true` (by either mechanism above), that slot remains in the
+filtered catalog even while the balance is below `BOOTSTRAP_RESERVE_USDC`, specifically so
+`runtime/loop/liquidity.mjs`'s existing `liquidityDirective` steer (which, below
+`COMPUTE_RESERVE_USDC`, instructs the model to "CLOSE a profitable HL position ... or withdraw idle
+yield") is never given an instruction it has been structurally denied the tool to carry out. Without
+this carve-out, an instance below BOTH thresholds while holding an open `hl_trade` or `yield`
+position would be told to close/withdraw it and simultaneously have that slot removed from its
+catalog — a real functional deadlock trapping possibly-losing exposure with no way to close it. With
+the carve-out, the deadlock cannot occur: being below the bootstrap reserve only ever blocks OPENING
+new capital-risking exposure, never closing existing exposure.
 
 **Edge Cases**:
 - Balance is exactly equal to `BOOTSTRAP_RESERVE_USDC`: defined as "at or above" the threshold, so
@@ -236,7 +328,13 @@ existing exposure.
 - A slot that exists in `registry.json` with `status: "live"` but has no explicit risk tag: defaults
   to being treated as capital-risking (excluded while below threshold, subject to the open-position
   carve-out above) until a maintainer explicitly tags it as non-risking — fail-closed by default,
-  never fail-open by omission.
+  never fail-open by omission. **This default is a forward-compatibility safety net for slots added
+  AFTER this increment ships — it is NOT a mechanism this increment currently relies on for any
+  slot that is live today (resolves FIND-101).** The classification table above assigns an explicit
+  `risk` or `alwaysAvailable` tag to all 17 slots that are `status: "live"` in `registry.json` as of
+  this spec's writing, so at ship time zero live slots are untagged and this fallback path is never
+  actually exercised against the current registry. A future slot added later WITHOUT a risk tag does
+  fall back to this conservative default — that is the rule's entire and only purpose.
 - **Every currently-live slot happens to be tagged risky (e.g. a total misconfiguration) — resolves
   FIND-002**: a SECOND, independent bookkeeping signal — `alwaysAvailableOf(slotName) → boolean`,
   read from a new `alwaysAvailable: true` field a maintainer sets directly on specific slots in
@@ -262,6 +360,20 @@ existing exposure.
   alwaysAvailableOf, hasOpenRiskPositionOf, reserveThresholdUsdc }) → string[]` — it takes only
   already-fetched bookkeeping inputs and returns a plain list with no ordering/score metadata
   attached.
+- **BINDING (resolves FIND-101)**: as part of THIS increment's Phase 2 implementation (not deferred
+  to a later increment), every slot currently `status: "live"` in `registry.json` (the 17 slots
+  listed in the classification table above) MUST be given an explicit `"risk": "safe"` or `"risk":
+  "capital"` field, OR an `"alwaysAvailable": true` field, in `registry.json` itself, matching the
+  table's assignment. A Phase 3 adversary that finds any currently-live slot still untagged after
+  this increment ships MUST treat REQ-201 as NOT satisfied.
+- **BINDING (resolves FIND-102)**: `hasOpenRiskPositionOf('yield')` MUST be implemented as a
+  synchronous read of the same already-fetched ledger scan `index.mjs` already performs for
+  `ctx.positionsSummary` (no new I/O, no new query). `hasOpenRiskPositionOf('hl_trade')` MUST be
+  implemented as the lazy, threshold-gated Hyperliquid position query described above — invoked only
+  when `balanceUsdc < BOOTSTRAP_RESERVE_USDC` for the current wake, never on every wake — and MUST
+  default to `true` (not `false`) on any failure, timeout, or unreachability of that query. Every
+  other slot's `hasOpenRiskPositionOf` (any slot other than `yield`/`hl_trade`) returns `false`
+  unconditionally — no carve-out mechanism is specified or required for them.
 
 ### REQ-202: Automatic, non-sticky restoration once above the reserve
 **EARS**: WHEN an instance's realized liquid balance rises to at or above
@@ -291,7 +403,10 @@ threshold.
 that filter exclusively as arithmetic over objective, already-known bookkeeping facts (realized
 balance, a configured threshold, a per-slot risk tag that a human/maintainer sets in
 `registry.json`, a per-slot `alwaysAvailable` flag a maintainer sets in `registry.json`, and a
-per-slot open-position fact read from already-fetched position bookkeeping — none inferred by the
+per-slot open-position fact — for `yield`, read from the already-fetched ledger bookkeeping that
+also populates `ctx.positionsSummary`; for `hl_trade`, read from a new, lazy, threshold-gated
+Hyperliquid position query fired only when `balanceUsdc < BOOTSTRAP_RESERVE_USDC` (see REQ-201's
+open-position carve-out) — none inferred by the
 code at runtime from task content), and SHALL NOT implement, alongside or instead of it, any
 regex/keyword-based classification of task content, any scoring/ranking of the remaining options,
 or any steering text that tells the model WHICH of the remaining options to prefer.
