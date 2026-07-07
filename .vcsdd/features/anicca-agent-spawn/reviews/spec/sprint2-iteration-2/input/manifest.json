@@ -1,0 +1,19 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "sprint": 2,
+  "iteration": 2,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "contracts/sprint-2.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "priorIteration": {
+    "iteration": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/sprint2-iteration-1/output/findings/",
+    "note": "3 findings. FIND-S2-001 (critical): REQ-307's step-boundary corrected from 1-5/6-9 to 1-6/7-9 (step 6/REQ-204 is what produces the agentId half of the identity anchor -- a step-6 failure must use the minimal-direct-append path, never buildChildSpec). FIND-S2-002 (moderate): REQ-307's EARS clause now explicitly defers to the Canonical call order section rather than restating a possibly-divergent order. FIND-S2-003 (moderate): new Gate item (8b) added for PROP-307a-d."
+  },
+  "note": "Verify all 3 fixes hold. For FIND-S2-001 specifically: re-derive the 9-step boundary yourself from scratch (do not just check the new text reads '1-6'/'7-9' -- confirm step 6/REQ-204's own failure modes genuinely route to the minimal-append path in every sub-case, e.g. registration tx fails vs. registration succeeds but event undecodable) and confirm steps 7-9 genuinely never fire unless step 6 succeeded. For FIND-S2-002: confirm the EARS clause's new deferral sentence is unambiguous and doesn't itself introduce a new inconsistency. For FIND-S2-003: confirm Gate item (8b) is present, correctly placed, and cites the CORRECTED 1-6/7-9 boundary (not the old 1-5/6-9 one). This is sprint-2's own iteration-2 -- a small delta review on top of an already-mostly-stable spec. Also do one more fresh skeptical pass over REQ-307 and its immediate neighbors for any other defect."
+}
