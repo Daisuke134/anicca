@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-economy",
   "mode": "strict",
-  "currentPhase": "2b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -82,13 +82,29 @@
       "timestamp": "2026-07-07T04:50:56.000Z",
       "sprint": 1,
       "reason": "RED phase complete. evidence/sprint-1-red-phase.log: new-feature-tests FAIL, regression-baseline PASS. New test files: skills/economy/gig/__tests__/{lock,gig}.test.mjs (appended), runtime/loop/__tests__/{catalog-gate,registry-classification}.test.mjs (new), .vcsdd/.../tests/research-record.test.mjs (new). Honestly-reported unexpected passes (PROP-102b/c, PROP-302a) classified as coverage-retrofit of already-adversary-verified prior-round code, not weakened tests. TWO genuine new findings surfaced during RED, carried into Phase 2b scope: (1) a 3-way cross-gigId test shows the shared '_board' lock is fail-closed/non-queueing -- can spuriously reject an unrelated caller under 3+-way concurrency; (2) a possible unlink-then-open race in acquire()'s stale-lock reclaim, currently masked by the isLockStale import failure, to verify once that extraction lands. Committed+pushed to both ~/anicca (bd85dc2) and anicca-project."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-07T05:09:41.000Z",
+      "sprint": 1,
+      "reason": "GREEN phase complete. evidence/sprint-1-green-phase.log: target-feature-tests PASS, regression-baseline PASS. isLockStale extracted (lock.mjs), atomic fs.rename fixes the stale-lock reclaim race, bounded-backoff retry on the shared '_board' lock fixes the 3-way cross-gigId rejection (both RED-phase findings resolved). catalog-gate.mjs implemented (filterCatalog + yield/hl_trade hasOpenRiskPositionOf branches), wired into index.mjs, registry.json's 17 live slots classified. business-blockrun-ai-research.md written from real gh/firecrawl research: PR#83 confirmed buyer-only/stale/unmerged, no seller API exists anywhere in BlockRunAI's org, business.blockrun.ai DNS-fails, manual Telegram-only seller onboarding -- recommendation: deprioritize vs the self-built gig board. skills/economy/gig 48/48, runtime/loop unit 72/76 (4 pre-existing unrelated failures unchanged), integration 12/12. Committed+pushed: ~/anicca (cca874f), anicca-project (9c72172d6). A separate, higher-priority security incident (automaton wallet key leak) was also resolved in parallel during this phase -- wallet rotated to 0xB9dd3B67921B354c656523d6851537988F31DD56 across all live code + ERC-8004 identity re-registered (new agentId 58381), see project memory."
+    },
+    {
+      "from": "2c",
+      "to": "2c",
+      "timestamp": "2026-07-07T05:41:10.000Z",
+      "sprint": 1,
+      "reason": "Refactor complete: lock.mjs's duplicated atomic-create primitive extracted into tryCreateLockFile()/reclaimStaleLock() helpers, acquire() reduced to a 4-line dispatcher, no control-flow/return-value change. Other candidate refactors (gig.mjs retry, catalog-gate.mjs's two hasOpenRiskPositionOf branches, filterCatalog naming) evaluated and left as-is -- already clean or would be speculative generalization. Tests re-confirmed identical to Phase 2b (gig 48/48, runtime/loop unit 72/76, integration 12/12). evidence/sprint-1-green-phase.log updated with the post-refactor section, markers unchanged. Committed+pushed to ~/anicca (4a1143c)."
     }
   ],
   "iterations": {
     "1a": 7,
     "1b": 7,
     "1c": 7,
-    "2a": 1
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -175,5 +191,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T04:50:56.000Z"
+  "updatedAt": "2026-07-07T05:41:10.000Z"
 }
