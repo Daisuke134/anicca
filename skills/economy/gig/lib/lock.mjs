@@ -20,8 +20,23 @@
 // anyone else -- staleness now only ever indicates a genuinely dead (crashed) holder, never a merely
 // slow one. `staleMs`/`heartbeatMs` are injectable (tests use tiny values; production uses generous
 // defaults with a wide safety margin between the two).
+//
+// anicca-agent-economy REQ-101 (Phase 2b, GREEN): the staleness decision is a pure predicate --
+// `isLockStale(nowMs, mtimeMs, staleMs)` -- extracted out of acquire() and independently exported (was
+// previously inlined as `Date.now() - stat.mtimeMs > staleMs`). REQ-101 also closes a real reclaim race
+// the Phase 2a RED evidence surfaced: the OLD stale-reclaim branch did `fs.unlink(file)` then
+// `fs.open(file, "wx")`, and `unlink` is not scoped to "the file I just observed" -- a second racer's
+// `unlink` could delete the FIRST racer's freshly-recreated lock file, letting both racers'
+// `fs.open("wx")` calls each succeed in turn (both believing they hold the lock). FIX: reclaim now goes
+// through `fs.rename(file, <unique trash path>)` instead of `fs.unlink`. POSIX rename() REQUIRES its
+// source path to exist and is atomic with respect to concurrent renames of the same source -- when two
+// racers reach this line concurrently, exactly ONE rename can succeed (it atomically removes `file` from
+// that path); the other racer's rename call fails with ENOENT because the winner already moved it away.
+// This makes the reclaim step itself atomic (no unlink-then-recreate window), matching REQ-101's binding
+// acceptance criterion ("Reclaim uses an atomic filesystem primitive ... never a check-then-act pair").
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { randomUUID } from "node:crypto";
 
 const DEFAULT_STALE_MS = 60_000; // must exceed any realistic settle+retry duration by a wide margin
 const DEFAULT_HEARTBEAT_MS = 5_000; // refresh well before staleMs could ever be reached by a live holder
@@ -29,6 +44,23 @@ const DEFAULT_HEARTBEAT_MS = 5_000; // refresh well before staleMs could ever be
 function lockPaths(statePath, lockKey) {
   const dir = path.join(path.dirname(statePath), "locks");
   return { dir, file: path.join(dir, `${lockKey}.lock`) };
+}
+
+/**
+ * isLockStale — pure predicate (REQ-101, PROP-101a/b): is a lock whose file was last touched at
+ * `mtimeMs` stale as of `nowMs`, given a `staleMs` staleness window? Boundary is EXCLUSIVE: exactly
+ * `staleMs` elapsed is NOT yet stale (matches the original inline `Date.now() - stat.mtimeMs > staleMs`
+ * comparison this replaces). No I/O, no randomness -- deterministic given its three inputs, so a live
+ * holder's own `touch()` heartbeat (which advances `mtimeMs` every `heartbeatMs`) keeps this predicate
+ * returning `false` indefinitely, however long its total elapsed runtime grows.
+ *
+ * @param {number} nowMs
+ * @param {number} mtimeMs
+ * @param {number} staleMs
+ * @returns {boolean}
+ */
+export function isLockStale(nowMs, mtimeMs, staleMs) {
+  return (nowMs - mtimeMs) > staleMs;
 }
 
 async function acquire(statePath, lockKey, staleMs) {
@@ -43,18 +75,39 @@ async function acquire(statePath, lockKey, staleMs) {
     // Stale-lock recovery: a lock left behind by a CRASHED process must not wedge the board forever.
     // A live holder's heartbeat keeps mtime fresh, so this branch only ever fires for a genuinely dead
     // holder (no heartbeat for staleMs, which is set far past any realistic live-holder gap).
+    let stat;
     try {
-      const stat = await fs.stat(file);
-      if (Date.now() - stat.mtimeMs > staleMs) {
-        await fs.unlink(file).catch(() => {});
-        const handle = await fs.open(file, "wx");
-        await handle.close();
-        return true;
-      }
+      stat = await fs.stat(file);
     } catch {
-      // lost the race to another process clearing/recreating it -- fall through to "locked"
+      // the file vanished between our failed open() and this stat -- another caller already reclaimed
+      // (or released) it; fall through to "locked" (fail-closed -- never proceed on a guess).
+      return false;
     }
-    return false;
+    if (!isLockStale(Date.now(), stat.mtimeMs, staleMs)) {
+      return false; // genuinely still live (or not yet past the staleness window) -- do not touch it
+    }
+    // Atomic reclaim (resolves the RED-phase reclaim race, see file-header comment): fs.rename()
+    // requires its SOURCE path to exist, and POSIX rename is atomic w.r.t. concurrent renames of the
+    // same source -- so when two racers both reach here, exactly ONE rename can succeed; the other's
+    // source lookup fails with ENOENT because the winner already moved `file` away.
+    const trashFile = `${file}.stale-${process.pid}-${randomUUID()}`;
+    try {
+      await fs.rename(file, trashFile);
+    } catch (err) {
+      if (err && err.code === "ENOENT") return false; // lost the reclaim race to another caller
+      throw err;
+    }
+    await fs.unlink(trashFile).catch(() => {}); // best-effort cleanup, not part of the atomicity guarantee
+    try {
+      const handle = await fs.open(file, "wx");
+      await handle.close();
+      return true;
+    } catch (err) {
+      // Extremely narrow window: an unrelated FIRST-TIME acquire() call recreated `file` between our
+      // rename and this open. Treat as a lost race rather than crashing the caller.
+      if (err && err.code === "EEXIST") return false;
+      throw err;
+    }
   }
 }
 

@@ -19,6 +19,8 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { randomUUID } from 'node:crypto';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
 
 import { readDotenvFile } from './dotenv.mjs';
 import { loadConfig } from './config.mjs';
@@ -36,6 +38,14 @@ import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
 import { classifyEarnResult, defaultEarnLedgerPath } from './earn-detect.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
 import { liveSlotNames } from './prompt.mjs';
+import {
+  filterCatalog,
+  DEFAULT_BOOTSTRAP_RESERVE_USDC,
+  hasOpenRiskPositionOfYield,
+  hasOpenRiskPositionOfHlTrade,
+} from './catalog-gate.mjs';
+
+const execFileAsync = promisify(execFile);
 
 // Inline ULID generator (no npm dependency — uses crypto.randomUUID as entropy source)
 function ulid() {
@@ -99,8 +109,13 @@ let isProfitable;
 
 // Load the skill registry → live slots + catalog (spec 25 O1: the LLM picks
 // among the REAL live skills, not an opaque single "earn" slot).
+// anicca-agent-economy REQ-201: also capture each live slot's `risk`/`alwaysAvailable` classification
+// (maintainer-set DATA in registry.json, not something inferred at runtime) so the per-wake bootstrap-
+// reserve catalog gate below (filterCatalog) has real `riskTagOf`/`alwaysAvailableOf` inputs.
 let activeSkillSlots = [];
 let skillCatalog = {};
+let riskTagBySlot = {};
+let alwaysAvailableBySlot = {};
 {
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
   const registryPath = path.join(repoRoot, 'skills', 'registry.json');
@@ -108,13 +123,45 @@ let skillCatalog = {};
     const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
     activeSkillSlots = liveSlotNames(registry);
     for (const name of activeSkillSlots) {
-      skillCatalog[name] = (registry.slots[name] && registry.slots[name].summary) || '';
+      const slotDef = registry.slots[name] || {};
+      skillCatalog[name] = slotDef.summary || '';
+      riskTagBySlot[name] = slotDef.risk;
+      alwaysAvailableBySlot[name] = slotDef.alwaysAvailable === true;
     }
     process.stderr.write(`[loop] live skills: ${activeSkillSlots.join(', ') || '(none)'}\n`);
   } catch (err) {
     process.stderr.write(`[loop] WARNING: could not read registry.json (${err.message}); falling back to ['earn']\n`);
     activeSkillSlots = ['earn'];
   }
+}
+
+function riskTagOf(slotName) {
+  return riskTagBySlot[slotName];
+}
+function alwaysAvailableOf(slotName) {
+  return alwaysAvailableBySlot[slotName] === true;
+}
+
+/**
+ * queryHlTradeOpenPositions — the REAL Hyperliquid position query REQ-201's `hl_trade` open-position
+ * carve-out needs (see catalog-gate.mjs's hasOpenRiskPositionOfHlTrade, which invokes this ONLY when
+ * balanceUsdc < BOOTSTRAP_RESERVE_USDC for the current wake). Reuses the SAME primitive
+ * `skills/earn/hl-trade/hl.py account` already uses in production (its own `open_positions` array,
+ * derived from `info.user_state(address).assetPositions` filtered to nonzero `szi`) by invoking it as a
+ * subprocess -- the exact same tool `skills/earn/run.sh` already shells out to (same dedicated-venv
+ * resolution: `skills/earn/hl-trade/.venv/bin/python` if present, else plain `python3`), not a new API
+ * surface. Any failure (missing venv/deps, unfunded account, network) is caught by the caller
+ * (hasOpenRiskPositionOfHlTrade), which fails OPEN (assumes a position may exist) rather than crashing
+ * the wake loop or silently hiding `hl_trade` from an instance that might need it to close a position.
+ */
+async function queryHlTradeOpenPositions() {
+  const hlDir = path.join(ANICCA_HOME, 'skills', 'earn', 'hl-trade');
+  const hlScript = path.join(hlDir, 'hl.py');
+  const venvPython = path.join(hlDir, '.venv', 'bin', 'python');
+  let pythonBin = 'python3';
+  try { await fs.access(venvPython); pythonBin = venvPython; } catch { /* fall back to system python3 */ }
+  const { stdout } = await execFileAsync(pythonBin, [hlScript, 'account'], { timeout: 15000 });
+  return JSON.parse(stdout);
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -245,6 +292,41 @@ async function runOneWake() {
   const positionsSummary = lastYield
     ? `~$${lastYield.deposited_usdc ?? '?'} in ${lastYield.source} (last tx ${String(lastYield.tx).slice(0, 10)})`
     : '';
+
+  // 5b. anicca-agent-economy REQ-201/202/203: bootstrap-reserve catalog eligibility gate. Below
+  // BOOTSTRAP_RESERVE_USDC, hide capital-risking earn slots from THIS wake's catalog/tool menu --
+  // except a slot the instance currently needs to close/withdraw an ALREADY-open position in (the
+  // FIND-003 carve-out). `hasOpenRiskPositionOf('yield')` reuses the SAME already-fetched ledger scan
+  // as `positionsSummary` above (no new I/O); `hasOpenRiskPositionOf('hl_trade')` is resolved via the
+  // lazy, threshold-gated Hyperliquid query (catalog-gate.mjs's hasOpenRiskPositionOfHlTrade only
+  // actually calls queryHlTradeOpenPositions when liquidUsdc is below the reserve). Both booleans are
+  // fully resolved here, BEFORE the pure filterCatalog call, so filterCatalog itself stays pure.
+  const openPositionYield = hasOpenRiskPositionOfYield(recentLedger);
+  const openPositionHlTrade = await hasOpenRiskPositionOfHlTrade({
+    balanceUsdc: liquidUsdc,
+    reserveThresholdUsdc: DEFAULT_BOOTSTRAP_RESERVE_USDC,
+    queryFn: queryHlTradeOpenPositions,
+  });
+  function hasOpenRiskPositionOf(slotName) {
+    if (slotName === 'yield') return openPositionYield;
+    if (slotName === 'hl_trade') return openPositionHlTrade;
+    return false; // no carve-out mechanism specified/required for any other slot (REQ-201)
+  }
+  let eligibleSkillSlots = activeSkillSlots;
+  try {
+    eligibleSkillSlots = filterCatalog({
+      balanceUsdc: liquidUsdc,
+      allSlotNames: activeSkillSlots,
+      riskTagOf,
+      alwaysAvailableOf,
+      hasOpenRiskPositionOf,
+      reserveThresholdUsdc: DEFAULT_BOOTSTRAP_RESERVE_USDC,
+    });
+  } catch (err) {
+    process.stderr.write(`[loop] catalog-gate filterCatalog failed (${err.message}) — falling back to the full unfiltered catalog\n`);
+    eligibleSkillSlots = activeSkillSlots;
+  }
+
   const ctx = assembleContext({
     walletAddress,
     balanceUsdc: liquidUsdc, // REAL liquid (was broke?0:undefined → always 0, so the buffer steer saw $0 for everyone)
@@ -254,7 +336,7 @@ async function runOneWake() {
     genesisPrompt,
     wakeId,
     ts,
-    activeSkillSlots,
+    activeSkillSlots: eligibleSkillSlots,
     skillCatalog,
     positionsSummary,
     earnSteer,
