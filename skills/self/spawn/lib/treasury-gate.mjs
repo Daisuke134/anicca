@@ -13,6 +13,20 @@ function finiteBalance(citizen) {
   return typeof balance === "number" && Number.isFinite(balance) ? balance : 0;
 }
 
+// Shared by filterProductiveCitizens/deriveRecentSpawnAttempts/countChildrenProvisioning: groups
+// ledgerRows by child_id, preserving append order within each group so "the last row" is always
+// group[group.length - 1] (last-write-wins, the one reduction rule all three functions apply).
+function groupLedgerRowsByChildId(ledgerRows) {
+  const groups = new Map();
+  for (const row of ledgerRows) {
+    const id = row && row.child_id;
+    if (id === undefined || id === null) continue;
+    if (!groups.has(id)) groups.set(id, []);
+    groups.get(id).push(row);
+  }
+  return groups;
+}
+
 // REQ-101: each self-funded citizen's own max(0, balance - reserve) term, individually.
 // computeColonySurplusUsd is implemented by summing THIS function's output — never an
 // independently-written reduce — so the aggregate and per-citizen breakdown can never diverge.
@@ -32,14 +46,10 @@ export function computeColonySurplusUsd({ citizens = [], perCitizenReserveUsd = 
 // active_since, or "active" and nowMs - active_since >= bootstrapWindowDays * DAY_MS (window-overdue).
 // A citizen with no matching row passes through unfiltered.
 export function filterProductiveCitizens({ citizens = [], ledgerRows = [], nowMs, bootstrapWindowDays = BOOTSTRAP_WINDOW_DAYS } = {}) {
-  const lastRowByChildId = new Map();
-  for (const row of ledgerRows) {
-    const id = row && row.child_id;
-    if (id === undefined || id === null) continue;
-    lastRowByChildId.set(id, row);
-  }
+  const groups = groupLedgerRowsByChildId(ledgerRows);
   return citizens.filter((citizen) => {
-    const row = lastRowByChildId.get(citizen.id);
+    const group = groups.get(citizen.id);
+    const row = group && group[group.length - 1];
     if (!row) return true;
     if (row.status === "bootstrap_failed") return false;
     if (row.status === "active") {
@@ -57,13 +67,7 @@ export function filterProductiveCitizens({ citizens = [], ledgerRows = [], nowMs
 // else the group is still in-flight ("provisioning") and is excluded entirely (never double-counted
 // alongside countChildrenProvisioning).
 export function deriveRecentSpawnAttempts({ ledgerRows = [] } = {}) {
-  const groups = new Map();
-  for (const row of ledgerRows) {
-    const id = row && row.child_id;
-    if (id === undefined || id === null) continue;
-    if (!groups.has(id)) groups.set(id, []);
-    groups.get(id).push(row);
-  }
+  const groups = groupLedgerRowsByChildId(ledgerRows);
   const attempts = [];
   for (const rows of groups.values()) {
     const everActive = rows.some((r) => r.status === "active");
@@ -81,15 +85,10 @@ export function deriveRecentSpawnAttempts({ ledgerRows = [] } = {}) {
 // a group that later resolved to "active"/"failed"/"bootstrap_failed" is never counted, closing
 // both the double-counting and permanent-block hazards a naive per-row scan would create.
 export function countChildrenProvisioning({ ledgerRows = [] } = {}) {
-  const lastRowByChildId = new Map();
-  for (const row of ledgerRows) {
-    const id = row && row.child_id;
-    if (id === undefined || id === null) continue;
-    lastRowByChildId.set(id, row);
-  }
+  const groups = groupLedgerRowsByChildId(ledgerRows);
   let count = 0;
-  for (const row of lastRowByChildId.values()) {
-    if (row.status === "provisioning") count += 1;
+  for (const rows of groups.values()) {
+    if (rows[rows.length - 1].status === "provisioning") count += 1;
   }
   return count;
 }
