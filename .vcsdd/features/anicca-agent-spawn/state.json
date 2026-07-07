@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "complete",
+  "currentPhase": "1a",
   "phaseHistory": [
     {
       "from": "init",
@@ -69,13 +69,21 @@
       "timestamp": "2026-07-07T19:26:15.590Z",
       "reason": "Phase 6 convergence check PASS: all 4 dimensions converged (finding diminishment 2->0, specificity verified, 11/11 criteria coverage, 0 duplicates, 0 open adversary-finding beads, all hardening artifacts present, 72/72 required proof obligations proved). anicca-agent-spawn sprint-1 is COMPLETE. 42 obligations (31 Tier>0 + 11 Tier-0) deferred to sprint-2 per contracts/sprint-1.md Scope decision, same disposition as anicca-agent-lending.",
       "sprint": 1
+    },
+    {
+      "from": "complete",
+      "to": "1a",
+      "timestamp": "2026-07-07T19:30:22.414Z",
+      "reason": "Sprint 2: build the effectful spawn orchestrator (REQ-201-306 wiring: wallet generation, ERC-8004 registration, mcp.json write, cloud deploy call sites, REQ-305 ledger append) -- the 38 obligations deferred from sprint-1 all require this to exist. This is the direct, necessary path to the active /goal Done condition (a real, autonomous spawn event).",
+      "sprint": 1,
+      "nextSprintHint": 2
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
     "6": 1,
-    "1a": 2,
+    "1a": 3,
     "1b": 2,
     "1c": 1,
     "2a": 1,
@@ -2775,5 +2783,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T19:26:37.198Z"
+  "updatedAt": "2026-07-07T19:30:22.415Z"
 }
