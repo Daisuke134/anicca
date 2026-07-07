@@ -17,6 +17,9 @@
 
 | 05 | `05-coordination-with-agent-economy.md` | 別CC(anicca-agent-economy)との境界/interface契約。接点=earn-ledger.jsonlのみ。触る/触らない表・依存順・別CCへの一文（国家アナロジー: 私=funder, 干渉最小） | ✅ 完了 |
 
+| 06 | `06-harness-engineering-weng.md` | Lilian Weng「Harness Engineering for Self-Improvement」digest。harness⊃loop eng。Self-Harness 3段ループ、4警告(STOP弱モデル劣化/evaluator外/reward-hacking→on-chain/editable surface)、6失敗モード | ✅ 完了 |
+| 07 | `07-patchlevel-spec-two-loops.md` | ★patch-level 実装 spec★ LOOP2(Franklin self-improve harness: EARS H1-H8/ファイル計画/TDD/L1-L3/denylist) + LOOP1(meta) + VCSDD実行順。eval-driven-earning蘇生 | ✅ 完了・実装可 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
