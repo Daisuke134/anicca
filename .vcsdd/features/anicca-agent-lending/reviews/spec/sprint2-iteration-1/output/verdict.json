@@ -1,0 +1,80 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 2,
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-2.md"
+    ],
+    "scope": "Fresh-context, from-scratch Phase 1c iteration-1 review of anicca-agent-lending sprint-2's own new REQ-115/REQ-116 (behavioral-spec.md), PROP-115a-d/PROP-116a-d/Gate item 12 (verification-architecture.md), and CRIT-201..207 (contracts/sprint-2.md), plus an independent cross-check that REQ-101/102/104/105/106/108/109/112/114 received zero content changes and that REQ-115/116 correctly cite/reuse those requirements' own already-established behavior."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-001"],
+      "evidence": [
+        {
+          "type": "test",
+          "location": "git diff d3c185ad1 df2b5e9e8 -- specs/behavioral-spec.md (pre-sprint-2 commit vs. the sprint-2 spec commit), run live via `rtk git diff --no-compact`",
+          "description": "Independently re-derived the manifest's own 'REQ-101 through REQ-114 received zero content changes' claim rather than trusting it. The diff shows exactly +210 insertions, 0 deletions, all appended after the file's own pre-existing final line (2249) -- nothing above that line changed. REQ-101 (356), REQ-102 (482), REQ-103 (561), REQ-104 (598), REQ-105 (650), REQ-106 (1097), REQ-108 (1872), REQ-109 (2049), REQ-112 (1687), REQ-114 (831) were each individually re-read in full at their current line locations and found byte-for-byte consistent with contracts/sprint-2.md's own 'Pre-existing spec confirmation' section's citation-by-citation claim. Confirmed: the claim holds."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-115 (Canonical call order steps 1-9, Edge Cases) cross-checked against REQ-101/102/104/105/106/112/114's own already-hardened text",
+          "description": "REQ-115's 9-step canonical call order, its lock-key names (`loan_${lenderId}`/`loan_borrower_${borrowerId}`), its kill-switch call sites (`evaluateColdStartKillSwitch`/`evaluateOverallDefaultKillSwitch`), and its per-step failure-recording rules all match REQ-101/102/105/106/112/114's own already-specified text exactly, with no restatement drift found (the 'never a new failure-recording rule' framing holds under a fresh read). REQ-115's own Edge Cases explicitly close the pinned-input-derivation defect class for `lenderId`/`borrowerId` ('supplied by THIS function's OWN caller... does not itself decide WHETHER to attempt a loan')."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-116 (full text) cross-checked against REQ-108/109's own already-hardened text, and against REQ-115's own sibling precedent",
+          "description": "REQ-116's lock key (`loan_${loan_id}`), replay/rejection rule (never appends a row), partial-repayment transition, and default-detection append (`defaulted_ms`) all match REQ-108/109's own already-specified text. However, REQ-116 does NOT carry an equivalent statement to REQ-115's own 'supplied by THIS function's OWN caller' Edge Case for its own two identifier parameters, `loanId`/`txHash` (see FIND-S2-001) -- a genuine, fixable gap, not a second full defect class."
+        },
+        {
+          "type": "test",
+          "location": "manual node arithmetic re-derivation of contracts/sprint-2.md's own '19 deferred obligations, 15 issuance-side + 4 servicing-side' claim against contracts/sprint-1.md's own 'Known residual scope boundary' section",
+          "description": "Independently enumerated both sets rather than trusting the contract's own summary. sprint-1.md's own 19 (13 from its original enumeration + 6 from its 'Second completeness correction') = {106a,106b,106n,106e,106f,106g,106h,106k,106l,106o,106p,108c,108d,109e,106i,105h,114c,109g,112a}. sprint-2.md's own 15+4 = {106a,106b,106n,106e,106f,106g,106h,106k,106l,106o,106p,106i,105h,114c,112a} + {108c,108d,109e,109g}. Both sets are IDENTICAL (19 members each, no omission, no duplication, no fabricated ID) -- the 15-vs-4 issuance/servicing split is a genuine, lossless re-partition of sprint-1's own deferred set, not a re-scoping."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-001"],
+      "evidence": [
+        {
+          "type": "test",
+          "location": "live node invocation of the real `parseStructuredFrontmatter` function, extracted verbatim from /Users/anicca/.claude/plugins/cache/vcsdd-claude-code/vcsdd/1.0.0/scripts/lib/vcsdd-state.js, run directly against the actual current contracts/sprint-2.md",
+          "description": "Independently re-derived the manifest's own line-wrap-truncation claim rather than trusting it. Read the parser source directly (lines 463-509): its per-line regexes (`^([A-Za-z][A-Za-z0-9_-]*):\\s*(.*)$` and the nested `^\\s+([A-Za-z][A-Za-z0-9_-]*):\\s*(.*)$`) capture only the single physical line a key appears on, confirming a value wrapped onto a second physical line would be silently truncated. Then extracted and ran the real function against the actual current file: all 7 CRIT criteria's description/passThreshold parsed to 262-1077 characters each (CRIT-201: 614/489, CRIT-202: 503/287, CRIT-203: 1077/488, CRIT-204: 570/826, CRIT-205: 576/444, CRIT-206: 716/590, CRIT-207: 433/262) -- full intended multi-hundred-character text, not the 69-90 char truncated fragments the manifest says preceded past fixes elsewhere in this session. A raw read of the file confirms every criterion's description/passThreshold occupies exactly one physical line (`awk`-measured max line length in the file's frontmatter block: 1098 chars), with no YAML wrapping anywhere."
+        },
+        {
+          "type": "test",
+          "location": "live invocation of the real, exported `validateApprovedSprintContract('anicca-agent-lending', 2)` from the same real vcsdd-state.js module",
+          "description": "Ran the actual exported function (not a re-implementation). It returned `{ok:false, reason:\"Sprint contract sprint-2.md must have status: approved before Phase 3\"}` -- confirming schema/frontmatter validation itself passed (assertValidDocument did not throw on the 7-criterion array, the `sprintNumber`/`feature`/`scope`/`criteria`/`negotiationRound`/`status` field set, or any individual criterion's `id`/`dimension`/`description`/`weight`/`passThreshold` shape) and the ONLY failure is the expected, correct one (this contract is still `status: draft`). Independently cross-checked the frontmatter's field set against `/Users/anicca/.claude/plugins/cache/vcsdd-claude-code/vcsdd/1.0.0/schemas/vcsdd-contract.schema.json`'s own `additionalProperties: false` constraints at both the top level and the per-criterion level -- no disallowed field found, all 7 criteria's `weight` values sum to exactly 1.0."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md PROP-115a-d/PROP-116a-d and Gate item 12, cross-checked against REQ-115/REQ-116's own text and against contracts/sprint-2.md's CRIT-201..207",
+          "description": "PROP-115a-d and PROP-116a-d each correctly cite their own governing REQ, and Gate item 12 correctly restates all 8 PROPs' own binding obligations without introducing a divergent restatement (no 'three-statements-diverge' defect found across behavioral-spec.md/verification-architecture.md/contracts/sprint-2.md for either REQ-115's or REQ-116's lock-scope or call-order claims -- these were checked in both directions, sentence by sentence). However, per FIND-S2-001, none of PROP-116a/b nor any CRIT in contracts/sprint-2.md tests loanId/txHash provenance for `executeRepaymentClaim` -- the same gap propagates from behavioral-spec.md into this dimension, since nothing in this file or the contract would catch a future implementation that internally derives `loanId` instead of requiring it as a caller-supplied argument."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md's Design decision section (issuance vs. servicing split) cross-checked against REQ-106's PROP-106i and REQ-108's own explicit lock-scope statement",
+          "description": "The 15-vs-4 (issuance-blocked vs. servicing-blocked) split is grounded correctly: every issuance-side obligation names REQ-106's own per-lender/per-borrower critical section or REQ-112's co-location gate, evaluated AT ISSUANCE TIME; every servicing-side obligation names REQ-108/109's own per-loan lock on an ALREADY-ISSUED loan -- a structurally disjoint critical section per REQ-106's own PROP-106i. CRIT-204 correctly tests, structurally, that `executeRepaymentClaim`/`executeDefaultDetectionSweep` reference only `loan_${loan_id}` and never `loan_${lenderId}`/`loan_borrower_${borrowerId}`, and vice versa for `executeLoanIssuanceAttempt` -- no lock-scope confusion or missing lock found anywhere in this design. The two-separate-entry-points decision (rather than one conflated function) is genuinely sound, not merely asserted."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-115", "REQ-116", "PROP-115a", "PROP-115b", "PROP-115c", "PROP-115d", "PROP-116a", "PROP-116b", "PROP-116c", "PROP-116d", "Gate-12", "CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207"],
+    "duplicateFindings": [],
+    "note": "This is a strong first iteration: REQ-101 through REQ-114's own zero-content-change claim is independently confirmed via a live git diff (not trusted from the manifest), the 19-obligation issuance/servicing re-partition is independently confirmed lossless via manual set comparison, the two-orchestrator design split is genuinely sound (no lock-scope confusion found), and the contract's own schema/parsing is independently confirmed correct via live invocation of the real parser and the real validateApprovedSprintContract function (not merely trusted). The single finding, FIND-S2-001, is a real but narrow completeness gap: REQ-115 explicitly forecloses the pinned-input-derivation defect class for its own lenderId/borrowerId parameters, but REQ-116 (added in the SAME commit, by the SAME author, immediately following REQ-115) omits the equivalent statement for its own loanId/txHash parameters -- an asymmetry between two sibling requirements that both this manifest and this session's own prior review history explicitly flag as a recurring risk class worth catching early, before it becomes load-bearing at Phase 2a/3. This is a single-location-per-file fix (one new Edge Case bullet in behavioral-spec.md, one small PROP/Gate addition in verification-architecture.md, no change needed to contracts/sprint-2.md's own scored criteria unless the fix author chooses to add an 8th CRIT) and should converge in iteration 2 without further design rework. Route to Phase 1a."
+  }
+}

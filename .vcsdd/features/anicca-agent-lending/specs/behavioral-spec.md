@@ -2438,6 +2438,14 @@ PROP-106i distinction, now extended to this new module).
   `"disbursement_uncertain"` — never actually issued): treated as an ineligible target and refused
   (`{credited:0, status:"rejected", rejected:true}`) BEFORE `verifyRepayment` is ever invoked — this
   function never attempts repayment-verification against a loan that was never actually disbursed.
+- `loanId`/`txHash` are supplied by THIS function's OWN caller (whichever external channel/agent process
+  received the borrower's repayment claim) — `executeRepaymentClaim` does not itself decide WHETHER a
+  repayment claim is genuine or which loan it applies to before invocation, it only verifies and records
+  an ALREADY-PRESENTED claim; neither value is ever hand-assembled, regenerated, or internally derived by
+  this function (resolves FIND-S2-001, mirrors REQ-115's own `lenderId`/`borrowerId` closure above).
+  Likewise, `executeDefaultDetectionSweep` takes no externally-supplied identifier at all — its own
+  candidate `loan_id[]` list is ALWAYS the direct return value of `detectDefaultedLoans` (REQ-109), never
+  hand-assembled by this function's own caller or by any other means.
 
 **Acceptance Criteria**:
 - A structural/Tier-0 check confirms `executeRepaymentClaim` is the ONLY call site invoking

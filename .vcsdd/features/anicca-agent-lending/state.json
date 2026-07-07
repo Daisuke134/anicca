@@ -1658,6 +1658,145 @@
         "status": "resolved",
         "artifactPath": "reviews/contracts/sprint-1/output/findings/FIND-C02.json",
         "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-085",
+        "type": "spec-requirement",
+        "externalId": "REQ-115",
+        "artifactPath": "specs/behavioral-spec.md#REQ-115",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-086",
+          "BEAD-087",
+          "BEAD-088",
+          "BEAD-089"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-086",
+        "type": "verification-property",
+        "externalId": "PROP-115a",
+        "artifactPath": "specs/verification-architecture.md#PROP-115a",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-085"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-087",
+        "type": "verification-property",
+        "externalId": "PROP-115b",
+        "artifactPath": "specs/verification-architecture.md#PROP-115b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-085"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-088",
+        "type": "verification-property",
+        "externalId": "PROP-115c",
+        "artifactPath": "specs/verification-architecture.md#PROP-115c",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-085"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-089",
+        "type": "verification-property",
+        "externalId": "PROP-115d",
+        "artifactPath": "specs/verification-architecture.md#PROP-115d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-085"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-090",
+        "type": "spec-requirement",
+        "externalId": "REQ-116",
+        "artifactPath": "specs/behavioral-spec.md#REQ-116",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-091",
+          "BEAD-092",
+          "BEAD-093",
+          "BEAD-094",
+          "BEAD-095"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-091",
+        "type": "verification-property",
+        "externalId": "PROP-116a",
+        "artifactPath": "specs/verification-architecture.md#PROP-116a",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-092",
+        "type": "verification-property",
+        "externalId": "PROP-116b",
+        "artifactPath": "specs/verification-architecture.md#PROP-116b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-093",
+        "type": "verification-property",
+        "externalId": "PROP-116c",
+        "artifactPath": "specs/verification-architecture.md#PROP-116c",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-094",
+        "type": "verification-property",
+        "externalId": "PROP-116d",
+        "artifactPath": "specs/verification-architecture.md#PROP-116d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T05:32:43.000Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-095",
+        "type": "verification-property",
+        "externalId": "PROP-116e",
+        "artifactPath": "specs/verification-architecture.md#PROP-116e",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T05:50:00.000Z",
+        "createdInPhase": "1b"
       }
     ]
   },
@@ -1706,5 +1845,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T20:34:48.532Z"
+  "updatedAt": "2026-07-07T20:46:11.301Z"
 }

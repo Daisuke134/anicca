@@ -1,0 +1,36 @@
+{
+  "findingId": "FIND-S2-001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "pinned_input_derivation",
+  "severity": "moderate",
+  "description": "REQ-115 explicitly forecloses the pinned-input-derivation defect class for its own two identifier parameters: its Edge Cases section states, verbatim, 'lenderId/borrowerId are supplied by THIS function's OWN caller (whichever wake-cycle/agent process already evaluated REQ-101/102's own pure eligibility functions against a recent snapshot and decided an issuance attempt is worth making) -- executeLoanIssuanceAttempt does not itself decide WHETHER to attempt a loan, only HOW to safely execute an already-decided attempt.' REQ-116 introduces two structurally identical identifier parameters on executeRepaymentClaim -- loanId and txHash -- but contains NO equivalent statement anywhere in its EARS clause, Canonical call order, Edge Cases, or Acceptance Criteria confirming these are always the direct output of a real external caller decision (a genuine repayment claim event) rather than something this function -- or a future maintainer misreading this spec -- could derive, guess, or look up internally (e.g. 'scan loans.jsonl for this borrower's own active loan' instead of requiring the caller to supply loanId directly). REQ-116's 4th Edge Case bullet ('executeRepaymentClaim's loanId names a loan whose last-appended row is NOT active... treated as an ineligible target and refused') addresses loanId VALIDITY, a different concern from loanId PROVENANCE -- it does not close this gap. This asymmetry between REQ-115 (closed) and REQ-116 (open) is exactly the recurring defect class this session's other spec reviews (anicca-agent-lending sprint-1's own iterations, and this manifest's own explicit instruction) have repeatedly found and required closed, so leaving it open in the newer of the two sibling requirements, in the same commit, is a genuine regression against this feature's own established documentation discipline, not merely a stylistic nicety.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-115 Edge Cases, final bullet (line ~2460 in the current file, 'lenderId/borrowerId are supplied by THIS function's OWN caller...')",
+      "snippet": "`lenderId`/`borrowerId` are supplied by THIS function's OWN caller (whichever wake-cycle/agent process already evaluated REQ-101/102's own pure eligibility functions against a recent snapshot and decided an issuance attempt is worth making) -- `executeLoanIssuanceAttempt` does not itself decide WHETHER to attempt a loan, only HOW to safely execute an already-decided attempt."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "REQ-116, full EARS/Canonical-call-order/Edge-Cases/Acceptance-Criteria sections (current file, the REQ-116 heading through its closing '---')",
+      "snippet": "No sentence anywhere in REQ-116 states that `loanId`/`txHash` (executeRepaymentClaim's own two identifier parameters) are supplied by an external caller/claim event rather than derived, looked-up, or guessed internally by this function -- the closest bullet ('executeRepaymentClaim's loanId names a loan whose last-appended row is NOT active... treated as an ineligible target and refused') only covers loanId VALIDITY, never loanId PROVENANCE."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "PROP-116a, PROP-116b",
+      "snippet": "PROP-116a checks 'exactly one call-graph root' (structural uniqueness) and PROP-116b checks 'no arithmetic/boolean eligibility logic... and no LLM/prompt reference' (no decision logic) -- neither PROP tests or asserts that loanId/txHash are always caller-supplied rather than internally derived."
+    },
+    {
+      "type": "spec",
+      "filePath": "contracts/sprint-2.md",
+      "lineRange": "CRIT-201 through CRIT-207 (full criteria list)",
+      "snippet": "None of the 7 scored criteria test loanId/txHash provenance for executeRepaymentClaim -- CRIT-201/202 cover structural single-entry-point/no-judgment-logic, CRIT-203/204 cover edge-case-recording/lock-scope, CRIT-205/206/207 cover deferred-obligation-closure/Tier-3-honesty/Phase-1c-gating. This gap is therefore untested at every one of the three artifact layers, not merely undocumented in prose."
+    }
+  ],
+  "recommendation": "Add one Edge Case bullet to REQ-116, mirroring REQ-115's own precedent verbatim in structure: state that `loanId`/`txHash` (for `executeRepaymentClaim`) are supplied by this function's OWN caller (whichever mechanism bridges an external repayment claim -- e.g. a borrower-facing endpoint or wake-cycle process -- to this function) and that `executeRepaymentClaim` does not itself decide WHICH loan or WHICH transaction to check, only HOW to verify an already-presented claim; similarly note that `executeDefaultDetectionSweep` takes no such identifier parameter at all (it derives its own candidate list internally via `detectDefaultedLoans`, which is a fundamentally different, and already-sound, design -- worth stating explicitly so the asymmetry between the two REQ-116 functions is not itself mistaken for an oversight). Add a corresponding new Acceptance Criteria bullet to REQ-116 and a small addition to PROP-116a (or a new PROP-116e) in verification-architecture.md's Gate item 12, confirming a structural/Tier-0 read that `executeRepaymentClaim` never independently reads/scans `loans.jsonl` to select a `loan_id` before receiving one as an argument. This is a narrow, single-location-per-file fix (one new bullet in each of the three artifacts), not a design rework, and should converge in the next iteration.",
+  "routeToPhase": "1a"
+}

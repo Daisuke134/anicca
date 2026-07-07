@@ -3,7 +3,7 @@ status: draft
 feature: anicca-agent-lending
 sprintNumber: 2
 negotiationRound: 0
-scope: The effectful lending ORCHESTRATOR layer — the code that actually wires sprint-1's pure/narrow modules (lending-gate.mjs, lending-verify.mjs, gojo-read.mjs, lending-path.mjs) plus the two already-hardened, reused effectful modules (lock.mjs, escrow.mjs::payViaFacilitator) into two real, runnable flows. This sprint delivers REQ-115 (new, the loan-issuance orchestrator, executeLoanIssuanceAttempt) and REQ-116 (new, the loan-servicing orchestrator pair, executeRepaymentClaim + executeDefaultDetectionSweep) in a NEW module skills/economy/lending/lib/lending-orchestrator.mjs. REQ-101 through REQ-114 do NOT get new behavioral content this sprint beyond REQ-115/REQ-116 — they were already fully specified, EARS-clause-through-acceptance-criteria, across sprint-1's own 9 Phase-1c spec-review iterations (see the Pre-existing spec confirmation section below for the citation-by-citation proof of this claim). This sprint's own Phase 1a/1b work is this contract plus REQ-115/PROP-115a-d and REQ-116/PROP-116a-d — not a rewrite of any REQ-101 through REQ-114.
+scope: The effectful lending ORCHESTRATOR layer — the code that actually wires sprint-1's pure/narrow modules (lending-gate.mjs, lending-verify.mjs, gojo-read.mjs, lending-path.mjs) plus the two already-hardened, reused effectful modules (lock.mjs, escrow.mjs::payViaFacilitator) into two real, runnable flows. This sprint delivers REQ-115 (new, the loan-issuance orchestrator, executeLoanIssuanceAttempt) and REQ-116 (new, the loan-servicing orchestrator pair, executeRepaymentClaim + executeDefaultDetectionSweep) in a NEW module skills/economy/lending/lib/lending-orchestrator.mjs. REQ-101 through REQ-114 do NOT get new behavioral content this sprint beyond REQ-115/REQ-116 — they were already fully specified, EARS-clause-through-acceptance-criteria, across sprint-1's own 9 Phase-1c spec-review iterations (see the Pre-existing spec confirmation section below for the citation-by-citation proof of this claim). This sprint's own Phase 1a/1b work is this contract plus REQ-115/PROP-115a-d and REQ-116/PROP-116a-e — not a rewrite of any REQ-101 through REQ-114.
 criteria:
   - id: CRIT-201
     dimension: structural_integrity
@@ -37,9 +37,9 @@ criteria:
     passThreshold: A read of whichever artifact/evidence file claims PROP-108a proved confirms a genuinely fresh, real on-chain disbursement transaction hash AND a genuinely fresh, real on-chain repayment transaction hash minted THIS sprint through the real orchestrator functions (never a citation of sprint-1's own fixture-only test runs, and never a borrowed artifact from anicca-agent-economy's or anicca-agent-spawn's own prior live witnesses) — OR the contract explicitly re-defers it, citing this section. FAIL if PROP-108a is claimed proved via a fixture, a simulated transfer, or a borrowed artifact.
   - id: CRIT-207
     dimension: verification_readiness
-    description: This sprint's own Phase 1a/1b artifact (REQ-115/REQ-116 in behavioral-spec.md, PROP-115a-d/PROP-116a-d in verification-architecture.md, this contract) is reviewed by a fresh-context adversary (Phase 1c) BEFORE Phase 2 (TDD) begins, exactly as sprint-1's own REQ-101 through REQ-114 spec was reviewed before ITS Phase 2 began — this sprint is not exempted from Phase 1c merely because most of its underlying spec content pre-dates it.
+    description: This sprint's own Phase 1a/1b artifact (REQ-115/REQ-116 in behavioral-spec.md, PROP-115a-d/PROP-116a-e in verification-architecture.md, this contract) is reviewed by a fresh-context adversary (Phase 1c) BEFORE Phase 2 (TDD) begins, exactly as sprint-1's own REQ-101 through REQ-114 spec was reviewed before ITS Phase 2 began — this sprint is not exempted from Phase 1c merely because most of its underlying spec content pre-dates it.
     weight: 0.1
-    passThreshold: state.json shows a 1b to 1c transition with a recorded PASS verdict for this sprint's own contract plus REQ-115/REQ-116 and PROP-115a-d/PROP-116a-d, produced by a fresh vcsdd-adversary instance with zero Builder context. FAIL if Phase 2 begins without this gate.
+    passThreshold: state.json shows a 1b to 1c transition with a recorded PASS verdict for this sprint's own contract plus REQ-115/REQ-116 and PROP-115a-d/PROP-116a-e, produced by a fresh vcsdd-adversary instance with zero Builder context. FAIL if Phase 2 begins without this gate.
 ---
 
 ## Pre-existing spec confirmation (this sprint's own Phase 1a/1b finding)
@@ -60,7 +60,7 @@ Unlike spawn (a single linear attempt with one trigger), this feature's own resi
 distinct orchestration concerns with two genuinely different triggers, confirmed by reading each of the
 19 deferred obligations' own text in `contracts/sprint-1.md`'s "Known residual scope boundary" section
 against the specific flow it belongs to (see the Design decision section below) — this sprint's own
-Phase 1a/1b work is exactly these two additions (REQ-115/PROP-115a-d, REQ-116/PROP-116a-d), never a
+Phase 1a/1b work is exactly these two additions (REQ-115/PROP-115a-d, REQ-116/PROP-116a-e), never a
 rewrite or duplication of REQ-101 through REQ-114's own already-hardened text.
 
 ## Design decision: issuance and repayment/default are TWO separate orchestrator entry points, not one
