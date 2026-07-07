@@ -1,0 +1,41 @@
+{
+  "findingId": "FIND-703",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-403's live-comparison half (b) is repeatedly specified as running 'once per CO-LOCATED running instance', with that set 'enumerated from REQ-105's registry' (PROP-403b, PROP-403d, and REQ-403's own Acceptance Criteria all use this exact phrasing). But REQ-105's registry schema -- `{id, wallet, walletAddress, fuel, humanDependencies, homeDir}`, finalized and re-scrutinized across 7 prior iterations -- has NO field anywhere that distinguishes a co-located citizen from a cloud-hosted one. Today this is invisible because both seeded citizens happen to be co-located; but REQ-301 mandates that EVERY spawned child is, without exception, cloud-hosted (Nosana or Akash, never co-located with the coordinator), and REQ-305 mandates that every successfully-spawned child is appended into this SAME registry the moment it goes active. The instant the first child is spawned -- literally this feature's own core deliverable -- citizens.json will contain a mix of co-located and cloud-hosted entries with no schema-level way to tell them apart, yet PROP-403d's own binding acceptance criterion is 'no code path in this feature's diff invokes resolveEvmPrivateKey/resolveSolanaSecret against a cloud-hosted spawned child's homeDir.' Nothing in this spec -- no constant, no boolean field, no naming convention -- gives a Phase 2 implementer a canonical way to guarantee that, in contrast to the disciplined, single-named-constant treatment REQ-103 gives the structurally analogous 'must not silently hardcode/diverge across call sites' hazard for CITIZENS_REGISTRY_PATH. A naive implementation that simply loops over 'every entry in citizens.json' for the live-comparison step would attempt e.g. `resolveEvmPrivateKey({home: '/root/.anicca', env: {HOME: <coordinator HOME>, ANICCA_HOME: '/root/.anicca'}})` against a cloud-hosted child's homeDir -- a path that has no relationship whatsoever to any real file on the COORDINATOR's own local disk (the function only ever reads the coordinator's own filesystem, per REQ-403's own 'PURE LOCAL-FILESYSTEM primitive' framing) -- directly violating PROP-403d. Compounding this, REQ-403's own EARS clause states the live-audit half 'PROVES no two CO-LOCATED instances' ... keys are ever equal ... before any newly-spawned CO-LOCATED child is permitted to participate in REQ-401's bootstrap' -- but per REQ-301's own absolute mandate, a 'newly-spawned CO-LOCATED child' can never exist this increment (every child is cloud-hosted by construction). As literally worded, this clause therefore promises a gate that can never fire for the one and only kind of newly-spawned instance this feature ever produces, which is either vacuous/misleading prose left uncorrected when FIND-303 scoped the live-check away from children, or evidence the registry's missing location field was never actually reconciled with REQ-301/REQ-305's realities. This is a genuine fourth variant, in the same REQ-101/105/403 wallet-identity area that has now produced a new defect in FIND-501 -> FIND-601/602/603/604 -> this iteration, of the recurring pattern 'a resolution/audit mechanism silently assumes an input classification that the data model was never actually given a field to encode.'",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "593-606",
+      "snippet": "The full record shape is therefore {id: string, wallet: {...}, walletAddress: {...}, fuel: {...}, humanDependencies: string[]} plus ONE additional field ... homeDir: string -- (no field anywhere records whether this citizen is co-located or cloud-hosted)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1111-1124",
+      "snippet": "REQ-301: Local spawn is structurally forbidden ... Every child SHALL be deployed exclusively via REQ-302 (Nosana) or REQ-303 (Akash) ... never onto the machine currently running the spawning process itself"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1717-1734",
+      "snippet": "invoked once per CO-LOCATED running instance ... before any newly-spawned CO-LOCATED child is permitted to participate in REQ-401's bootstrap -- a category REQ-301 makes structurally impossible this increment"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "238",
+      "snippet": "PROP-403d | ... no code path in this feature's diff invokes resolveEvmPrivateKey/resolveSolanaSecret against a cloud-hosted spawned child's homeDir ... structural/Tier-0 check: read the audit script's enumeration source (no registry field exists for this enumeration to key on)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "492-499",
+      "snippet": "REQ-103's CITIZENS_REGISTRY_PATH: 'export this single path as ONE named constant ... EVERY call site ... SHALL import and use this SAME exported constant' -- the analogous discipline REQ-403 never applies to a co-located/cloud-hosted classifier"
+    }
+  ],
+  "routeToPhase": "1a"
+}

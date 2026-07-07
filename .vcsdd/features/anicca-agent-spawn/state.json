@@ -2073,24 +2073,23 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T11:35:06.333Z",
+      "timestamp": "2026-07-07T12:05:23.861Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 7,
+        "iteration": 8,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-601",
-          "FIND-602",
-          "FIND-603",
-          "FIND-604"
+          "FIND-701",
+          "FIND-702",
+          "FIND-703"
         ],
-        "note": "4 findings, 2 critical: FIND-601 (critical) -- REQ-105 seeds automatons walletAddress.evm as 0xB9dd3B67... but CLAUDE.md:42 and docs/WALLETS.md:13/49-55 (the two canonical sources the spec itself claims to have cross-checked) both document a DIFFERENT address, 0xa3CDd4..., as automatons real Operational/funding wallet -- risks the entire treasury gate aggregating/funding from the wrong address. FIND-603 (critical) -- resolve-identity.mjs legacy-fallback resolution depends on a SECOND, unmodeled ambient input (env.HOME/process.env.HOME) never captured by homeDir or REQ-403s acceptance criteria; the reused test suite never exercises the bare {home:X} call shape the spec itself uses -- a second, unaddressed trigger for the exact same vacuous-null-audit failure mode FIND-501 named as the most serious defect across all iterations. FIND-602/604 (major) -- two purity-boundary summary tables never updated for iteration-6s PROP-304e correction, still describe Akash funding as Solana-only; no PROP fixture instantiates a dual-wallet citizen with BOTH chains failing simultaneously. 7 consecutive iterations, 38+ cumulative findings, convergence not yet reached."
+        "note": "3 findings, 2 critical: FIND-601/602/604 reconfirmed genuinely resolved (verified against real files including live CLAUDE.md/WALLETS.md/colony-wallets.json on disk). FIND-603 only PARTIALLY resolved -- the explicit-env fix works at the function level but needs a value (coordinator hosts own real HOME) that no REQ/module/field ever canonically defines, unlike REQ-103s disciplined CITIZENS_REGISTRY_PATH treatment of the analogous hazard -- new FIND-701 (critical). FIND-702 (major) -- PROP-105g only checks that a commit/PR CITES a verification method, never that the citation is TRUE -- reproduces the exact citation-not-fact failure class this same iteration just fixed for FIND-601, one layer removed. FIND-703 (critical, the fourth variant of the recurring wallet-identity failure class across 4 consecutive iterations) -- REQ-105s registry schema has no field distinguishing co-located from cloud-hosted citizens, yet REQ-403s audit assumes it can enumerate co-located instances; the moment the first child is spawned (this features own core deliverable), citizens.json mixes both with no way to tell them apart."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T11:35:06.333Z"
+      "adversaryReviewedAt": "2026-07-07T12:05:23.861Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T11:53:20.468Z"
+  "updatedAt": "2026-07-07T12:05:23.863Z"
 }

@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-702",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "PROP-105g (this iteration's headline fix for FIND-601, and REQ-105's acceptance criterion for the walletAddress verification rule) is described as 'directly analogous to REQ-104's design-constraint verification', but its actual Tool/Method column specifies something meaningfully weaker: 'at Phase 3, the adversary confirms the commit/PR introducing any seeded OR appended walletAddress CITES either (a) an independent cryptographic re-derivation ... or (b) a live on-chain balance query ... never a bare citation of a markdown doc alone.' This is a check for the PRESENCE of a citation of the correct TYPE in prose (a commit message or PR description), not an independent re-performance of the cited computation. REQ-104's own analogous check, by contrast, greps/reads actual SOURCE CODE for the ABSENCE of a pattern (LLM calls, prompt strings) -- a deterministic, mechanically verifiable artifact. A future REQ-305-triggered append could carry a commit message that says 'verified via privateKeyToAccount against the real private key' without that computation ever actually having been run, or having been run against the wrong file/wrong citizen -- and PROP-105g, exactly as worded, would not catch this, because it only checks that a citation of the RIGHT KIND exists, never that the cited fact is TRUE. This reproduces, one layer removed, precisely the failure class FIND-601 itself just found and fixed this same iteration (a citation -- there, a markdown doc; here, a commit-message claim -- that LOOKS authoritative but was never independently re-verified against the real signing key material). A stronger, genuinely testable version of PROP-105g would require the fresh adversary (or an automated Phase-3 check) to INDEPENDENTLY perform the re-derivation itself (read the real private-key file in-memory, run it through a pinned function such as viem's privateKeyToAccount, and diff the result against citizens.json's stored walletAddress, failing hard on any mismatch) rather than merely confirming a citation's prose exists. Separately and more narrowly: PROP-105g's method (a) necessarily requires READING the real private-key file's content to perform the re-derivation, yet this spec repeatedly invokes a 'content never read/printed' secrets-handling discipline elsewhere (e.g. REQ-105's own seed-data section: 'file EXISTENCE only -- content never read/printed, per this project's own secrets-handling discipline') without ever explicitly reconciling the two -- a fresh, zero-context Phase-3 adversary encountering that phrase first could reasonably read it as prohibiting the exact read PROP-105g's own method (a) requires, and there is no explicit carve-out anywhere stating 'in-memory read for re-derivation is permitted, printing/logging is not'.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "178",
+      "snippet": "PROP-105g | REQ-105 | ... | 0 | true | structural/process check, not a runtime assertion (directly analogous to REQ-104's design-constraint verification): at Phase 3, the adversary confirms the commit/PR introducing any seeded OR appended walletAddress cites either (a) ... or (b) ... -- never a bare citation of a markdown doc alone"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "555-558",
+      "snippet": "REQ-104's own analogous check: 'verified via structural code review at Phase 3 (grep/read for any LLM call, prompt template, or scoring logic inside decideColonySpawn/computeColonySurplusUsd)' -- a source-code artifact check, not a commit-message citation check"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "688-690",
+      "snippet": "A live filesystem check of this coordinator host (2026-07-07, file EXISTENCE only -- content never read/printed, per this project's own secrets-handling discipline)"
+    }
+  ],
+  "routeToPhase": "1a"
+}

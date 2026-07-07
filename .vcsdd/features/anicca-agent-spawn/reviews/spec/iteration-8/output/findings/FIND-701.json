@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-701",
+  "dimension": "verification_readiness",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-403's 'Explicit-env correction' (this iteration's headline fix for FIND-603) requires the live-audit script to invoke both resolvers with `env: {HOME: <the coordinator host's own real $HOME, sourced from a registry/coordinator constant>, ANICCA_HOME: citizen.homeDir}`. This literal placeholder phrase -- 'sourced from a registry/coordinator constant' -- appears verbatim in exactly two places in this spec (behavioral-spec.md:1800-1801 and verification-architecture.md's PROP-403b row) and is NEVER resolved anywhere else: no REQ introduces a named constant, module, or `citizens.json` schema field to hold 'the coordinator host's own real $HOME'. This is a materially different treatment than the ANALOGOUS hazard REQ-103 already solved for `CITIZENS_REGISTRY_PATH`: REQ-103 explicitly exports ONE named constant from a new module (`registry-path.mjs`) specifically so every call site converges on an identical value instead of independently hardcoding it (PROP-103d then structurally verifies this). REQ-403 gives no equivalent discipline for the coordinator-host-HOME value that BOTH `resolveEvmPrivateKey` and `resolveSolanaSecret` invocations must supply identically for the legacy-fallback branch to fire correctly (`legacyHome = e.HOME; effectiveHome === path.join(legacyHome, '.anicca')` -- resolve-identity.mjs:80-81/131-132). Concretely, a Phase 2 implementer satisfying PROP-403e's own stated Tier-2 test (a stripped/launchd-style `process.env` fixture omitting HOME) has at least two ways to comply that BOTH silently defeat FIND-603's own stated purpose: (a) hardcode the literal `/Users/anicca` string independently inside the audit script (no canonical source, risk of drift the moment the coordinator host or its home directory ever changes, with zero structural check analogous to PROP-103d to catch a second, differently-hardcoded copy); or (b) source it from `os.homedir()`/`process.env.HOME` read ONCE at audit-script startup and threaded through as the 'explicit' env object -- which passes PROP-403e's own literal test (the value would still resolve correctly under THAT specific stripped-launchd fixture, since the reading happens before the strip is applied in most plausible implementations) while reintroducing exactly the ambient-environment coupling FIND-603 was written to eliminate for any OTHER invocation context where the ambient HOME genuinely differs (multi-user host, a differently-configured launchd job, a future second coordinator). PROP-403e's Tier-0 structural check ('confirms every call site passes an explicit env object literal') would not catch either failure mode, because both technically satisfy 'passes an explicit env object' -- the check never verifies WHERE the object's `HOME` value came from. This is the same class of un-pinned-input defect that produced FIND-501 (unmodeled `homeDir` distinctness) and FIND-603 (unmodeled second `env.HOME` input) in the immediately preceding two iterations -- it has not been eliminated, only relocated one layer up, in the exact REQ-101/105/403 area this iteration's manifest specifically asked to be scrutinized for a fourth variant.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1798-1807",
+      "snippet": "resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: <the coordinator host's own real $HOME, sourced from a registry/coordinator constant>, ANICCA_HOME: citizen.homeDir}})"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "236",
+      "snippet": "PROP-403e | ... {HOME: <coordinator-host's own real $HOME>, ANICCA_HOME: citizen.homeDir} ... Tier 0: structural read of the audit script's source confirms every ... call site passes an explicit env object literal (never a bare {home: X} call, never an implicit fallthrough to process.env)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "492-499",
+      "snippet": "SHALL therefore designate REQ-105's citizen registry path ... as the colony-spawn lock's ONE canonical statePath -- and SHALL export this single path as ONE named constant, CITIZENS_REGISTRY_PATH -- EVERY call site ... SHALL import and use this SAME exported constant, never an independently hardcoded path string (contrast: REQ-403 gives no analogous named-constant treatment for the coordinator-host HOME value)"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs",
+      "lineRange": "80-84",
+      "snippet": "const legacyHome = e.HOME; if (legacyHome && effectiveHome === path.join(legacyHome, '.anicca')) { const fromLegacy = readJsonField(path.join(legacyHome, '.automaton', 'wallet.json'), 'privateKey'); ...}"
+    }
+  ],
+  "routeToPhase": "1a"
+}

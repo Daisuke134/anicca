@@ -1,0 +1,62 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T15:00:00Z",
+  "iteration": 8,
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-601",
+      "status": "genuinely resolved",
+      "evidence": "Read /Users/anicca/.automaton/wallet.json directly: confirms real rotatedAt=2026-07-07T04:47:35.539Z and rotationReason fields (key exposed in ~/.anicca-founder/agents/polymarket-agent/.env + ~/.openclaw/.env). Read /Users/anicca/anicca-project/docs/WALLETS.md directly: line 13 now documents the ROTATED address 0xB9dd3B67921B354c656523d6851537988F31DD56 with an explicit note that the OLD 0xa3CDd4... is revoked/leaked -- matching REQ-105's seeded walletAddress.evm exactly. Read /Users/anicca/anicca-project/CLAUDE.md directly (not the session's cached system-reminder snapshot, which is stale): line 42 of the live file now also shows the corrected 0xB9dd3B67... address with the rotation note. Read /Users/anicca/anicca/skills/economy/ubi/colony-wallets.json: its own 1st entry is also already the corrected 0xB9dd3B67... address. All three real, independently-checkable sources are now mutually consistent with REQ-105's seed data; the iteration-7 discrepancy is genuinely closed."
+    },
+    {
+      "findingId": "FIND-602",
+      "status": "genuinely resolved",
+      "evidence": "Re-read the Purity boundary analysis overview table's 'Shelter-cost funding transfer' row (behavioral-spec.md) and the Purity Boundary Map's equivalent row (verification-architecture.md): both now state the Akash uact funding route is 'enterable from EITHER of the colony's two current citizens' own native chains' (Franklin/Solana/Jupiter or automaton/Base/CCTP), matching REQ-304/PROP-304e's own already-accurate body text. Grepped both spec files for the stale phrase pattern 'Jupiter...Skip-API bridge' (case-sensitive on the specific prior wording) -- the only two remaining occurrences are historical changelog entries describing the FIX itself (behavioral-spec.md:113, verification-architecture.md:27), not a live, uncorrected instance of the stale claim. Also re-verified the underlying citations this fix depends on directly from source: spawn-child/config.json:7's funding_route field, spawn-child/SKILL.md's Jupiter pre-step documentation, and escrow.mjs's CHAIN_ID_BASE_MAINNET=8453/USDC_BASE_MAINNET constants -- all byte-accurate to the spec's citations."
+    },
+    {
+      "findingId": "FIND-603",
+      "status": "partially resolved -- the specific mechanical gap it named is closed, but the underlying class of hazard is not eliminated, only relocated; see NEW FIND-701",
+      "evidence": "Read resolve-identity.mjs fresh line-by-line. Confirmed: passing a non-null, fully-constructed env object (per the spec's now-corrected worked examples, e.g. env: {HOME: '/Users/anicca', ANICCA_HOME: '/Users/anicca/.anicca'}) makes `const e = env || process.env` bind to the explicit object unconditionally -- the function genuinely never touches ambient process.env when this shape is used, which is exactly the property FIND-603 demanded. Walked the legacy-fallback branch: with citizen.homeDir='/Users/anicca/.anicca' and env.HOME='/Users/anicca', `effectiveHome === path.join(legacyHome, '.anicca')` evaluates true, correctly falling through to read the real, confirmed-present /Users/anicca/.automaton/wallet.json (I verified this file's existence and rotatedAt/privateKey fields directly). PROP-403e's stripped/launchd-style process.env Tier-2 test is a correct, meaningful test of the FUNCTION's own behavior. HOWEVER: the spec's own prescription for HOW the audit script is to construct env.HOME's value -- 'the coordinator host's own real $HOME, sourced from a registry/coordinator constant' -- names no actual constant, module, or schema field anywhere in either spec document (confirmed via grep: this exact phrase appears in exactly two places, both unresolved placeholders). This means FIND-603's underlying concern (an unmodeled, silently-load-bearing input to the resolvers) has been relocated from 'the resolver's own ambient process.env' to 'the audit script's own unspecified source for what value to put in the explicit env object' -- filed as new, critical FIND-701, since a Phase-2 implementer could satisfy PROP-403e's literal test while still reintroducing an ambient-environment dependency one layer up (e.g. sourcing the value from os.homedir()/process.env.HOME at audit-script startup)."
+    },
+    {
+      "findingId": "FIND-604",
+      "status": "genuinely resolved",
+      "evidence": "Confirmed PROP-101h exists in verification-architecture.md with a complete both-chains-fail-simultaneously fixture description (Tier 1/2, resolves FIND-604), cross-referenced in REQ-101's own edge cases (behavioral-spec.md:370-379) and Acceptance Criteria (behavioral-spec.md:393-397), and enumerated in the Gate section's item (1) alongside PROP-101f/PROP-101g as three explicitly-distinguished fixtures (both-succeed / exactly-one-fails / both-fail). This is a real, new, non-duplicate fixture -- distinct from PROP-101f (both succeed) and PROP-101g (exactly one fails) -- that did not exist before this iteration."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-703"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "Read fresh: confirms buildChildSpec's real, current signature/behavior matches every citation in REQ-206 exactly (line 37 wallet:childWallet string field, unconditional required-field loop including childInbox, distinct-wallet throw) -- no drift found here"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "description": "Read fresh: hasOwnWallet's Boolean(wallet.evm)||Boolean(wallet.solana) contract and OWN_FUNDED_FUEL_PROVIDERS Set exactly match every REQ-101/105 citation -- no drift found here"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "description": "Read fresh: confirms the module is still exactly {readChildren, appendChild}, no update/upsert primitive, matching REQ-101/305/402's repeated 'no drift found' claim"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh", "lineRange": "124-140, 200-205, 213-220, 136", "description": "Read fresh: confirms the exact three-appendChild-calls-per-child_id pattern REQ-101/FIND-301 cites, and the ANICCA_GENERATION:-1 default REQ-206 cites at line 136 -- no drift found here"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-701", "FIND-702"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "lineRange": "63-138", "description": "Confirmed the explicit-env invocation shape genuinely bypasses process.env at the function level (positive evidence for the part of FIND-603 that IS closed)"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs", "description": "Read fresh: withGigLock(statePath, lockKey, fn, opts) and lockPaths() signatures match REQ-103's citations exactly; isSafeLockKey's ^[A-Za-z0-9_-]+$ pattern accepts the literal lock key 'colony-spawn' with no issue -- no drift found here"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/ensure-agent-id.mjs", "description": "Read fresh: ensureAgentId's {privateKey, env, cacheFile, registerFn, verifyFn} signature and registerFn/verifyFn test-double injection pattern match REQ-204/PROP-204c's citations exactly -- no drift found here"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/lib/akt-cost-gate.js", "description": "Read fresh: computeSpawnGate({balanceAkt, costAkt, bufferAkt}) matches REQ-303/PROP-303d's citation exactly, including config.json's real spawn_cost_akt=25/buffer_akt=1 values"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingsResolvedCount": 3,
+    "priorFindingsPartiallyResolvedCount": 1,
+    "newFindingsThisIteration": 3,
+    "allCriteriaEvaluated": false,
+    "note": "This is a spec review (Phase 1c), not a strict contract/sprint review -- no CRIT-XXX enumeration applies. 3 of the 4 iteration-7 findings (FIND-601, FIND-602, FIND-604) are reconfirmed genuinely resolved via fresh reads of every cited real source file (wallet.json's rotatedAt field, docs/WALLETS.md, the live CLAUDE.md file on disk -- NOT this session's stale cached system-reminder snapshot of it, colony-wallets.json, spawn-child/config.json, escrow.mjs, and the full Proof Obligations/Gate text for PROP-101h). FIND-603 is only partially resolved: its own specific mechanical claim (never invoke the resolvers with an implicit/ambient env shape) is genuinely true at the function level, but the manifest's explicit instruction to 'walk through what happens if env.HOME is stripped/different from the explicit {home,env} invocation shape' surfaced that the FIX ITSELF depends on an unpinned value ('the coordinator host's own real $HOME, sourced from a registry/coordinator constant') that no REQ, module, or schema field in this spec actually defines -- filed as new, critical FIND-701. Per the manifest's specific instruction #2, PROP-105g was independently confirmed to be well-specified in its OUTCOME but weaker than claimed in its verification METHOD (a commit/PR citation-presence check, not an independent re-derivation) -- filed as new, major FIND-702. Per the manifest's instruction #3 (look hardest at REQ-101/105/403 for a fourth variant of the recurring wallet-identity failure class, and also check areas not touched recently), a full fresh pass over the entire spec plus direct reads of ~15 real source files this spec cites (child-spec.js, is-self-funded.mjs, ledger.js, gen-wallet.sh, ensure-agent-id.mjs, lock.mjs, spawn-decision.js, akt-cost-gate.js, spawn-child/config.json, spawn-child/sdl/child.yaml, install.sh, identity/genesis.md, escrow.mjs, identity.mjs, run.sh, colony-wallets.json, telemetry-post-franklin.mjs) found NO drift in any of the non-wallet-audit areas checked (REQ-102/103/104/201/202/204/205/206/301/303/304/306 citations all verified byte-accurate against real, current source) -- but DID find a genuine fourth variant in the exact REQ-101/105/403 area, filed as new, critical FIND-703: REQ-403's live-comparison half is specified to enumerate 'co-located instances' from REQ-105's registry, but that registry's schema (finalized across 7 iterations of scrutiny) has no field distinguishing co-located from cloud-hosted citizens, and REQ-301 guarantees every spawned child is cloud-hosted -- so the moment this feature's own core deliverable (a successful spawn) occurs, the registry mixes both kinds with no way to tell them apart, and REQ-403's own EARS clause ('before any newly-spawned CO-LOCATED child is permitted to participate') describes a scenario REQ-301 makes structurally impossible. Convergence has NOT occurred -- 8 consecutive iterations, 41+ cumulative findings, and this iteration again surfaced critical-severity defects in the exact REQ-101/105/403 wallet-identity area that FIND-501, FIND-601, and FIND-603 all previously touched without fully closing (a fifth and sixth consecutive-iteration recurrence in that same area, this time FIND-701/703, plus a distinct testability gap in FIND-702).",
+    "duplicateFindings": []
+  }
+}
