@@ -1,8 +1,52 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 18, revised
-(spec review iteration-18 finding FIND-1701 resolved — REQ-102's `decideColonySpawn`'s own
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-08 · **revision**: iteration 19, revised
+(spec review iteration-19 finding FIND-1803 resolved — REQ-303's own text was internally
+self-contradictory about whether `computeSpawnGate`'s `ready:false` result triggers REQ-304's Skip API
+AKT-funding bridge or unconditionally aborts the deploy before that bridge is ever attempted — the
+"Funding-readiness gate reuse" paragraph implied `ready:false` decides whether the bridge runs, while
+the requirement's own dedicated Edge Case stated `ready:false` is ALWAYS an immediate deploy failure
+with nothing further invoked, meaning REQ-304's entire, three-times-hardened bridge mechanism risked
+being unreachable dead orchestration as literally worded. Resolved with a genuine design decision,
+grounded in REQ-304's own PROP-304d test-method text (which already required the bridge's hops to land
+funds "before `akt-treasury.sh`'s existing `mint-act` step runs"): `computeSpawnGate` is now evaluated
+in EXACTLY two passes — the FIRST pass's `ready:false` is what triggers an attempt at REQ-304's bridge
+(never itself a REQ-305 failure); AFTER the bridge attempt completes, a SECOND `computeSpawnGate`
+evaluation runs, and ONLY that SECOND evaluation's `ready:false` is the actual REQ-305 deploy failure —
+a first-pass `ready:true` skips the bridge entirely. REQ-303's Edge Case is rewritten to describe only
+the SECOND evaluation's failure, and the main paragraph now states this full two-pass sequencing as the
+ONE unambiguous statement, resolving the contradiction. A new proof obligation, PROP-303h, proves this
+sequencing (three fixtures: first-pass-ready skips the bridge; first-pass-not-ready + successful bridge
+proceeds; first-pass-not-ready + still-insufficient second pass is the actual failure); the Purity
+Boundary Map's `computeSpawnGate` row and Gate items (6a)/(7) are updated and cross-referenced — AND
+spec review iteration-19 finding FIND-1802 resolved — `computeSpawnGate`'s own `balanceAkt` parameter —
+its FIRST-listed, most consequential input — had no named real-derivation source anywhere in either
+spec document, unlike its immediate signature-siblings `costAkt`/`bufferAkt`, which ARE bound to
+`spawn-child/config.json`'s real values one clause later in the same sentence. Resolved by reading the
+real `~/anicca/skills/self/spawn-child/run.sh`/`SKILL.md` source (not inventing a mechanism):
+`balanceAkt` is now explicitly bound to a FRESH `provider-services query bank balances <address>` call
+(address resolved via `provider-services keys show "$AKASH_KEY_NAME"`, the SAME signing wallet
+`costAkt`/`bufferAkt` are already scoped to), reusing `run.sh`'s own existing, already-fail-closed
+query+uakt→AKT-conversion logic verbatim, performed fresh at each evaluation. A new proof obligation,
+PROP-303g, verifies this binding by construction (mirrors PROP-102k/PROP-101j/PROP-202d/PROP-101k's own
+discipline); the Purity Boundary Map row and Gate item (6a) are updated accordingly — AND spec review
+iteration-19 finding FIND-1801 resolved — REQ-101's own
+`filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` — the very function
+FIND-1401/FIND-1501/FIND-1601's own resolutions repeatedly cited as the established precedent for this
+binding discipline — never itself stated an explicit default value for its own `bootstrapWindowDays`
+parameter, nor a proof obligation confirming this real, passed-in value is, by construction, identical
+to REQ-402's own `BOOTSTRAP_WINDOW_DAYS` constant, which REQ-101's own prose textually claims it mirrors
+("the same window REQ-402 itself applies"). Resolved: REQ-101's own Acceptance Criteria now explicitly
+states `bootstrapWindowDays` defaults to `14`, identical to REQ-402's own `BOOTSTRAP_WINDOW_DAYS`
+constant — never independently configurable to a different value — mirroring the exact treatment this
+document's own iteration-18 fix already gave `decideColonySpawn`'s own
+`cooldownDays`/`failureCooldownCap`/`maxConcurrentSpawns` defaults. A new proof obligation, PROP-101k,
+verifies `bootstrapWindowDays` and `BOOTSTRAP_WINDOW_DAYS` are configured to the IDENTICAL value by
+construction, never merely coincidentally equal — mirroring this spec's own established discipline
+already used for `BOOTSTRAP_WINDOW_DAYS`/`SPAWN_COOLDOWN_DAYS` (PROP-402e) and `seedUsdc`/REQ-204's
+gas-seed-transfer amount (PROP-206g); the Gate's item (1b) is extended to require this identity check —
+AND spec review iteration-18 finding FIND-1701 resolved — REQ-102's `decideColonySpawn`'s own
 `colonySurplusUsd` parameter — the single most consequential value the function consumes, gating whether
 ANY spawn happens at all — had no "never hand-assembled, always the direct return value of X()" binding
 sentence and no dedicated real-derivation proof obligation, unlike its immediate signature-siblings
@@ -834,6 +878,12 @@ indivisible unit.
   `CITIZENS_REGISTRY_PATH`. `computeColonySurplusUsd` and `readCitizenBalances` both receive this SAME
   `filterProductiveCitizens`-filtered `citizens` array directly, never an independently re-read or
   re-derived one.
+- **(new, resolves FIND-1801)** `bootstrapWindowDays` defaults to `14`, identical to REQ-402's own
+  `BOOTSTRAP_WINDOW_DAYS` constant (which itself defaults to `14`, reusing REQ-102's own
+  `SPAWN_COOLDOWN_DAYS` default) — never independently configurable to a different value, mirroring the
+  exact treatment this document's own iteration-18 fix already gave `decideColonySpawn`'s own
+  `cooldownDays`/`failureCooldownCap`/`maxConcurrentSpawns` defaults (REQ-102's Acceptance Criteria,
+  above).
 
 ---
 
@@ -2130,13 +2180,45 @@ answers the Akash-specific mechanical question "given Akash is the already-SELEC
 and REQ-102 already certified sufficient aggregate surplus, does the signing wallet's OWN AKT balance
 right now cover this deploy's real cost" — REQ-303 reuses it exactly as
 `~/anicca/skills/self/spawn-child/SKILL.md` itself already documents (its own "READY" branch: steps 1-4,
-ending in `deploy-akash.sh`), never re-deriving `spawn-child`'s already-tested arithmetic. If
-`computeSpawnGate` returns `ready:false`, THE SYSTEM SHALL treat this identically to the "ACT mint
-cancels" edge case below (a deploy failure, REQ-305, never a fabricated `dseq`) — funding the AKT
-shortfall itself (the multi-hop Skip API bridge, REQ-304 — Jupiter-first-hop if Solana-funded,
-CCTP-first-hop if Base-funded, per PROP-304e; corrected iteration 7, resolves FIND-602's stale
-Jupiter-only phrasing) is what THIS feature adds; the gate merely decides whether that bridge needs to
-run at all.
+ending in `deploy-akash.sh`), never re-deriving `spawn-child`'s already-tested arithmetic.
+
+**Deriving `balanceAkt` from real system state (new, resolves FIND-1802, critical):** `balanceAkt` —
+this function's own FIRST-listed parameter, and the single most consequential value it consumes, since
+it IS the live quantity being tested for sufficiency — is never hand-assembled or cached by REQ-303's
+own orchestration: it is ALWAYS the direct result of a FRESH `provider-services query bank balances
+<address>` call (`<address>` resolved via `provider-services keys show "$AKASH_KEY_NAME"` — the SAME
+signing wallet `costAkt`/`bufferAkt` are already scoped to, `spawn-child/config.json`'s own
+`akash_key_name`), performed at the moment of THAT SPECIFIC evaluation — reusing
+`~/anicca/skills/self/spawn-child/run.sh`'s own existing, already-fail-closed query+conversion logic
+verbatim (the `uakt`-denominated balance parsed from that query's real JSON output via
+`.balances[]? | select(.denom=="uakt") | .amount`, converted to AKT by dividing by `1e6`) rather than
+re-deriving a second, independently-written balance-query path. REQ-303's own orchestration performs
+this SAME fresh query immediately before EACH of the (at most two, see below) `computeSpawnGate`
+evaluations it makes — never a stale reading carried over from an earlier evaluation, and never the
+wrong wallet's balance.
+
+**`computeSpawnGate`'s exact two-pass sequencing relative to REQ-304's bridge (rewritten, resolves
+FIND-1803, critical — this is the ONE, unambiguous statement of this sequencing, superseding any other
+characterization elsewhere in this requirement):** THE SYSTEM SHALL evaluate `computeSpawnGate` in
+EXACTLY two passes for any deploy attempt whose first pass is insufficient, and never more than two:
+1. **First pass**, on the signing wallet's balance as it stands right now. If this FIRST evaluation
+   returns `ready:true`, THE SYSTEM SHALL proceed directly to `akt-treasury.sh`'s mint step (see the
+   Edge Cases below) WITHOUT ever attempting REQ-304's Skip API bridge — the bridge is never invoked
+   when the wallet is already sufficiently funded.
+2. If the FIRST evaluation instead returns `ready:false`, THIS is precisely what triggers an attempt at
+   funding the AKT shortfall via REQ-304's multi-hop Skip API bridge (Jupiter-first-hop if
+   Solana-funded, CCTP-first-hop if Base-funded, per PROP-304e; corrected iteration 7, resolves
+   FIND-602's stale Jupiter-only phrasing) — the FIRST evaluation's own `ready:false` result is NEVER
+   itself treated as a REQ-305 deploy failure; it is only ever the bridge-attempt trigger.
+3. AFTER that bridge attempt completes — whether it succeeds in landing funds or fails outright — THE
+   SYSTEM SHALL re-evaluate `computeSpawnGate` a SECOND time, with `balanceAkt` freshly re-queried per
+   the real-derivation binding above (so a successful bridge's newly-landed funds are actually
+   reflected, and a failed bridge's unchanged balance is likewise honestly reflected). ONLY this SECOND
+   evaluation's result is ever treated as final: a SECOND-pass `ready:true` proceeds to `akt-treasury.sh`'s
+   mint step exactly as the first-pass-ready case does; a SECOND-pass `ready:false` — meaning the bridge
+   attempt did not (or could not) bring the balance to sufficiency — IS the actual REQ-305 deploy
+   failure (identical treatment to the "ACT mint cancels" edge case below: `akt-treasury.sh`/
+   `deploy-akash.sh` are never invoked, no `dseq` is fabricated).
 
 **Child-specific SDL variant — explicit `HOME` (resolves FIND-403):** Direct reads confirm neither
 `deploy-akash.sh`'s inline default SDL nor the reused external template
@@ -2195,10 +2277,14 @@ not touch; see RESOLUTION-NOTES.md).
   outcome confirmed BEFORE `deploy-akash.sh` is invoked; if the mint cancels (output below
   `bme.params.min_mint`), THE SYSTEM SHALL treat this as a deploy failure (REQ-305) and never fabricate
   a `dseq`.
-- The `computeSpawnGate` readiness check reports `ready:false` (insufficient AKT even after accounting
-  for `buffer_akt`): THE SYSTEM SHALL treat this identically to the "mint cancels" edge case above — a
-  deploy failure under REQ-305, `akt-treasury.sh`/`deploy-akash.sh` are never invoked, and no `dseq` is
-  fabricated.
+- The SECOND, post-bridge `computeSpawnGate` evaluation ALSO reports `ready:false` (insufficient AKT
+  even after REQ-304's bridge attempt and after accounting for `buffer_akt`): THE SYSTEM SHALL treat
+  this identically to the "mint cancels" edge case above — a deploy failure under REQ-305,
+  `akt-treasury.sh`/`deploy-akash.sh` are never invoked, and no `dseq` is fabricated. This is DISTINCT
+  from the FIRST evaluation's own `ready:false` result (see the "exact two-pass sequencing" paragraph
+  above), which is NEVER itself treated as a REQ-305 failure — it is only ever the trigger for
+  attempting REQ-304's bridge in the first place (resolves FIND-1803's internal contradiction between
+  this Edge Case and the Funding-readiness gate reuse paragraph's own bridge-triggering clause).
 - No open bid appears within `deploy-akash.sh`'s existing poll window (30 attempts, existing default
   sleep): the script's own existing fail-closed behavior (non-zero exit, no dseq printed) is reused
   as-is; REQ-303 adds no new retry logic beyond what already exists.
@@ -2229,9 +2315,15 @@ not touch; see RESOLUTION-NOTES.md).
   subsequent evaluation uses the LAST-appended entry's real measured data once at least one successful
   deploy exists — never an average/max across multiple accumulated entries.
 - `computeSpawnGate({balanceAkt, costAkt: config.spawn_cost_akt, bufferAkt: config.buffer_akt})` (from
-  `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js`, reused unmodified) is called before every
-  Akash deploy attempt, with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values
-  — never a competing, independently-invented Akash-specific threshold.
+  `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js`, reused unmodified) is called EXACTLY TWICE
+  for any Akash deploy attempt whose first pass is insufficient (never once, never an unbounded/variable
+  number of times) — once BEFORE any REQ-304 bridge attempt, and once AFTER — both times with
+  `balanceAkt` freshly re-queried per its real-derivation binding above (resolves FIND-1802) and
+  `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values — never a competing,
+  independently-invented Akash-specific threshold. Only the SECOND evaluation's `ready:false` is ever
+  treated as the REQ-305 deploy failure; the FIRST evaluation's `ready:false` is only ever the REQ-304
+  bridge-attempt trigger, and a FIRST-pass `ready:true` skips the bridge and the second evaluation
+  entirely (resolves FIND-1803).
 - The rendered SDL actually submitted on-chain for a real deploy contains an explicit `HOME=/root` line
   in its `env:` block — a structural check of the ACTUAL post-`envsubst` artifact (not the template
   file alone), resolving FIND-403 and satisfying PROP-203c's "never a base-image default" requirement.

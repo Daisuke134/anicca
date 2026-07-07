@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 20,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 19,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-19/output/findings/",
+    "note": "3 findings. FIND-1801 (major): filterProductiveCitizens's bootstrapWindowDays now has an explicit default + by-construction identity binding to REQ-402's BOOTSTRAP_WINDOW_DAYS (new PROP-101k, mirrors PROP-402e/PROP-206g). FIND-1802 (critical, 8th confirmed instance of the recurring pinned-input-derivation class): computeSpawnGate's balanceAkt now bound to a real, freshly-queried 'provider-services query bank balances' call against the signing wallet -- verified against the REAL spawn-child/run.sh source before citing (new PROP-303g). FIND-1803 (critical, different defect class): REQ-303's own internal contradiction about whether computeSpawnGate's ready:false triggers REQ-304's Skip API bridge resolved via a genuine, spec-grounded design decision (bridge-first, two-pass sequencing -- justified by PROP-304d's own pre-existing 'before mint-act runs' wording, not invented from scratch) -- new PROP-303h."
+  },
+  "note": "Verify all three fixes hold. For FIND-1802/303g: independently confirm the cited real mechanism (provider-services query bank balances / keys show, uakt->AKT conversion) genuinely matches spawn-child/run.sh's actual current source -- do not trust the resolution notes' citation, read run.sh yourself. For FIND-1803/303h: this is a genuine design decision (bridge-first, two-pass sequencing) -- scrutinize it hard: does it actually resolve the contradiction cleanly, is it truly consistent with PROP-304d/e's own text, does the new Edge Case wording leave zero residual ambiguity about which computeSpawnGate call's ready:false is the real failure? This feature has now FAILed 19 consecutive spec-review iterations, with the recurring pinned-input-derivation class recurring 8 times (recentSpawnAttempts/childrenProvisioning/measured_last_shelter_cost_usd/deployTarget+initialSkills/filterProductiveCitizens-ledgerRows-citizens/colonySurplusUsd/bootstrapWindowDays/balanceAkt). Do a full fresh, skeptical pass over the ENTIRE spec once more for any remaining instance of this class (the akt-cost-gate/spawn-child area was previously under-scrutinized compared to the REQ-101/102/202 cluster -- check REQ-304/305/306/401/402/403 area especially closely for siblings), AND check for entirely different defect classes."
+}
