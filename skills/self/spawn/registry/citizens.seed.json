@@ -1,0 +1,20 @@
+[
+  {
+    "id": "automaton",
+    "wallet": { "evm": true },
+    "walletAddress": { "evm": "0xB9dd3B67921B354c656523d6851537988F31DD56" },
+    "fuel": { "provider": "clawrouter-own-wallet" },
+    "humanDependencies": [],
+    "homeDir": "/Users/operator/.anicca",
+    "coLocatedWithCoordinator": true
+  },
+  {
+    "id": "Franklin",
+    "wallet": { "solana": true },
+    "walletAddress": { "solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9" },
+    "fuel": { "provider": "x402" },
+    "humanDependencies": [],
+    "homeDir": "/Users/operator/.blockrun",
+    "coLocatedWithCoordinator": true
+  }
+]
