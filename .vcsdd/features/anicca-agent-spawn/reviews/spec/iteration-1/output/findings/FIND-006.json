@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-302 ('WHEN a spawn attempt ... proceeds and Nosana is the selected cloud target for that attempt') and REQ-303 ('WHEN a spawn attempt proceeds and Akash is the selected cloud target for that attempt') both presuppose that some prior step has already chosen Nosana vs. Akash for the current attempt, but no requirement in this spec (REQ-101 through REQ-403) defines that selection: not the criteria, not which layer decides it (deterministic bookkeeping per REQ-104's own bookkeeping-only principle, or an in-envelope agent choice per REQ-104's carve-out for 'what the child's initial goal framing/prompt should say'), and not what happens if neither/both are viable in a given wake. Neither the Purity Boundary table nor the Proof Obligations table in verification-architecture.md lists a 'selectCloudTarget'-equivalent function as pure, effectful, or otherwise verifiable. This is exactly the kind of enumerated-but-incomplete edge case this review was asked to hunt for: REQ-302/303's own edge cases enumerate failure modes WITHIN each already-chosen path in detail, but the prior branch point (which path gets chosen, and by what rule) is never specified, so a test suite could fully satisfy every REQ-302/REQ-303 acceptance criterion while the actual selection logic remains entirely unwritten, unreviewed, and unverified.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "444-445, 478-479",
+    "snippet": "### REQ-302: Nosana deploy path\n**EARS**: WHEN a spawn attempt (REQ-102/103) proceeds and Nosana is the selected cloud target for that attempt, ...\n\n### REQ-303: Akash deploy path ...\n**EARS**: WHEN a spawn attempt proceeds and Akash is the selected cloud target for that attempt, ..."
+  },
+  "additionalEvidence": [],
+  "routeToPhase": "1c"
+}

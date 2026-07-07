@@ -1,0 +1,14 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 1,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "note": "P3 (spawn) feature. 17 REQ (101-104 treasury gate, 201-205 identity generation, 301-305 cloud deploy via Nosana/Akash, 401-403 $0-bootstrap proof), 46 PROP. Background: this project just completed a related feature (anicca-agent-economy) whose Phase 1c review found REAL, load-bearing spec defects across 7 iterations (undocumented default values, signature mismatches with real code, a genuine functional deadlock between two mechanisms, and a recurring 'closed list turns out incomplete' defect class) -- review this spec with the same rigor: cross-check every claim against the ACTUAL current source files it references (gen-wallet.sh, spawn-decision.js, child-spec.js, ledger.js, is-self-funded.mjs, resolve-identity.mjs, deploy-akash.sh, akt-treasury.sh, economy/gig/lib/{lock,identity}.mjs), not just internal consistency of the spec text."
+}

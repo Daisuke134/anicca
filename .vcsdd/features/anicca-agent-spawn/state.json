@@ -1180,8 +1180,28 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-07T08:23:39.082Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "findings": [
+          "FIND-001",
+          "FIND-002",
+          "FIND-003",
+          "FIND-004",
+          "FIND-005",
+          "FIND-006"
+        ],
+        "note": "2 critical + 1 major + 2 medium + 1 low. FIND-001: child-spec.js::buildChildSpec cannot be reused UNMODIFIED as claimed -- it hard-requires childInbox (AgentMail, the OLD superseded design), throwing on empty string. FIND-002: no REQ specifies the dynamic citizen registry that isSelfFunded()/REQ-402c/REQ-403 all presuppose -- existing ubi/run.sh (hardcoded 3-dict) and colony-wallets.json (bare address array) cannot serve as it. FIND-003 (major): REQ-103 lock.mjs + REQ-305 ledger.js are POSIX-local-filesystem-only, but REQ-301 mandates cloud-only children on separate physical hosts -- no shared/networked storage mechanism specified for the cross-host guarantees PROP-103a/101a-c claim. FIND-004: REQ-204 re-specifies existing ensure-agent-id.mjs logic from scratch. FIND-005: wrong SPEC.md section citation (9.9 vs 9.6). FIND-006: Nosana-vs-Akash selection mechanism unspecified."
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-07T08:23:39.082Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T08:12:51.354Z"
+  "updatedAt": "2026-07-07T08:23:39.083Z"
 }

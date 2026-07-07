@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "low",
+  "description": "REQ-204's edge case cites 'SPEC.md §9.9' as the precedent evidencing a one-time gas-seed transfer via tx `0x48d49e…`/`0x1478758…`. Those exact truncated hashes do appear verbatim in SPEC.md, but at line 202 under section 9.6 ('WITNESS environment = live-deployed + gas-seeded'), not section 9.9 ('WITNESS 成立'). Section 9.9's own gas/bounty transfers are a DIFFERENT pair of transactions entirely (`0x9d51c71d…` ETH gas, `0x93f10472…` USDC bounty, for Franklin#2). The underlying claim (a real, one-time, independently-verifiable on-chain gas-seed precedent exists) is true, but the section citation directing a verifier to '§9.9' for this specific evidence is wrong, and following the citation as written would fail to locate the cited hashes.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy/specs/SPEC.md",
+    "lineRange": "202",
+    "snippet": "- ✅ **gas seed（colony 自己資金、automaton `0xa3cd` の Base ETH から、極小）**: Franklin `0x3EcC` に 0.00001 ETH（tx `0x48d49e…`）、facilitator `0x55EC500` に 0.00002 ETH（tx `0x1478758…`）、on-chain 検証済み。"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "367-372", "note": "REQ-204 edge case attributes these hashes to 'SPEC.md §9.9', which is actually §9.6"}
+  ],
+  "routeToPhase": "1c"
+}

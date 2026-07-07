@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "REQ-103's cross-instance mutual exclusion reuses `~/anicca/skills/economy/gig/lib/lock.mjs`, whose entire atomicity guarantee (both the fast path `fs.open(file, \"wx\")` and the stale-reclaim `fs.rename`) is a POSIX-local-filesystem primitive: it only serializes callers that share the SAME mounted filesystem. Likewise REQ-305's spawn ledger (`~/anicca/skills/self/spawn/lib/ledger.js`, `fs.appendFileSync`/`fs.readFileSync`) is a local file. REQ-103's own edge cases explicitly contemplate the lock being raced by 'both automaton's and Franklin's own loops independently evaluat[ing] the colony-wide gate,' and REQ-301 mandates every child's runtime/state live exclusively on a cloud lease -- never on the initiating host. Once a first child is spawned and itself becomes a colony instance capable of evaluating REQ-102's gate (the explicit compounding premise of this whole feature), that instance runs on a genuinely separate physical host from whichever machine holds the 'colony-spawn' lock file / children.jsonl. No requirement in REQ-101/103/305, and no line in verification-architecture.md's Purity Boundary Map or Proof Obligations table, specifies the shared/networked storage mechanism (a common NFS/mounted volume, a single designated evaluator host, a git-synced ledger, or similar) that would let a local POSIX file lock and a local append-only JSONL file actually deliver the cross-host mutual-exclusion and colony-wide-aggregation guarantees PROP-103a and PROP-101a-c claim to prove. As specified, the reused tool (lock.mjs + ledger.js, both local-fs-only) cannot deliver the property the requirement demands once more than one physical host is involved, which this feature's own design (REQ-301's cloud-only children) guarantees will happen.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+    "lineRange": "108-117",
+    "snippet": "async function tryCreateLockFile(file) {\n  try {\n    const handle = await fs.open(file, \"wx\");\n    ...\n  } catch (e) {\n    if (e.code === \"EEXIST\") return false;\n    throw e;\n  }\n}"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "lineRange": "1-26", "note": "children.jsonl is a plain local file (fs.appendFileSync/fs.readFileSync), no cross-host sync mechanism"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "183-214, 421-441", "note": "REQ-103 (cross-instance race) and REQ-301 (children exclusively on separate cloud hosts) jointly imply a multi-host scenario the lock/ledger mechanism never addresses"}
+  ],
+  "routeToPhase": "1c"
+}

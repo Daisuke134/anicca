@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-101's acceptance criteria specify a pure function `computeColonySurplusUsd({ citizens, perCitizenReserveUsd })` that sums surplus over 'every self-funded citizen' by calling `isSelfFunded(agent)` (~/anicca/skills/_shared/lib/is-self-funded.mjs) per citizen. `isSelfFunded()`'s actual, real signature requires an object shaped `{ wallet: {evm, solana}, fuel: {provider}, humanDependencies: [] }` (confirmed via the module source and its own test suite) -- entirely different fields from the `balance_usd`/`balance_native` telemetry data REQ-101's own prose says feeds the aggregation. No requirement anywhere in this spec (REQ-101 through REQ-403) specifies: (a) where the list of 'citizens' to iterate over comes from, (b) how each citizen's wallet/fuel/humanDependencies fields (needed for isSelfFunded) are populated, or (c) how this registry is kept current as REQ-201-305 create new citizens over time -- which is the explicit purpose of this entire feature (a colony that compounds). The two existing artifacts the spec cites as precedent do NOT supply this: `~/anicca/skills/economy/ubi/run.sh` hardcodes a literal 3-entry bash dict of telemetry paths (`anicca-a3cdd4`/`Franklin`/`claude-p`) with zero isSelfFunded() call anywhere in that script, and `~/anicca/skills/economy/ubi/colony-wallets.json` is a flat array of 3 bare wallet-address strings with no wallet/fuel/humanDependencies/telemetry-path information at all. Neither can serve, unmodified, as the dynamic, extensible citizen registry REQ-101/REQ-402c/REQ-403 all presuppose exists (REQ-402c requires the aggregator to exclude a newly-flagged 'bootstrap_failed' CHILD from the sum; REQ-403's audit requires enumerating 'the current set of running instances' own HOME values' -- both presuppose a registry that grows with each successful spawn, which no REQ defines).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs",
+    "lineRange": "62-71",
+    "snippet": "export function isSelfFunded(agent) {\n  if (!agent || typeof agent !== \"object\") return false;\n  return hasOwnWallet(agent) && fuelIsOwnFunded(agent) && hasNoHumanDependency(agent);\n}"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca/skills/economy/ubi/run.sh", "lineRange": "62-97", "note": "the ONLY existing precedent iterating multiple citizens' telemetry.json files; hardcodes exactly 3 names, never calls isSelfFunded()"},
+    {"filePath": "/Users/anicca/anicca/skills/economy/ubi/colony-wallets.json", "lineRange": "1-5", "note": "flat 3-address array; no wallet/fuel/humanDependencies/telemetry-path shape"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "88-123", "note": "REQ-101 never specifies the citizen-enumeration/registry mechanism"}
+  ],
+  "routeToPhase": "1c"
+}

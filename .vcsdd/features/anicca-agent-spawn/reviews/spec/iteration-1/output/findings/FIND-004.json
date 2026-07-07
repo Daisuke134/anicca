@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-204's edge case #3 ('the SAME child wallet somehow already holds an agentId ... checked defensively via verifyIdentity/ownerOf before calling register() a second time: skip re-registration, reuse the existing agentId, log the anomaly for audit') re-specifies, from scratch, logic that already exists, is already implemented, and is already covered by its own test suite in `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` -- a cache-then-verify-then-register-once wrapper around exactly `identity.mjs`'s `registerIdentity`/`verifyIdentity`, already gated on `ANICCA_HOME` (per that file's own header: 'Cache path mirrors resolve-identity.mjs's own ANICCA_HOME gating exactly, so a foreign spawn ... can never read/reuse another instance's cached agentId'). Neither behavioral-spec.md's REQ-204 nor verification-architecture.md's Purity Boundary Map (which lists only `identity.mjs::registerIdentity/verifyIdentity` as the reused module) names or reuses `ensure-agent-id.mjs` at all. This both risks duplicating already-hardened logic (contradicting this project's own 'never reinvent the wheel' rule) and leaves REQ-204's own 'already-registered' edge case under-specified relative to a ready-made, already-tested existing primitive that solves precisely this problem.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/lib/ensure-agent-id.mjs",
+    "lineRange": "47-79",
+    "snippet": "export async function ensureAgentId({ privateKey, env = process.env, cacheFile, registerFn = registerIdentity, verifyFn = verifyIdentity } = {}) {\n  ...\n  if (cached && cached.address && cached.agentId && cached.address.toLowerCase() === address.toLowerCase()) {\n    const check = await verifyFn({ agentId: cached.agentId, expectedAddress: address });\n    if (check.ok && check.valid) return { ok: true, agentId: cached.agentId, address, cached: true };\n  }\n  ..."
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md", "lineRange": "21", "note": "Purity Boundary Map cites only identity.mjs::registerIdentity/verifyIdentity, omitting the existing higher-level ensure-agent-id.mjs wrapper"}
+  ],
+  "routeToPhase": "1c"
+}
