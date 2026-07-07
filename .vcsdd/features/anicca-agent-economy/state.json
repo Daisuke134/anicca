@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-economy",
   "mode": "strict",
-  "currentPhase": "3",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -103,6 +103,13 @@
       "timestamp": "2026-07-07T06:08:50.000Z",
       "sprint": 1,
       "reason": "Sprint-1 contract approved (gates.sprint-1-contract PASS, negotiation round 1/iteration 2, 0 findings). Advancing to Phase 3 (implementation adversary review), to be dispatched with an execution-capable (Bash/chain) agent per the contract's Execution-Tooling Note."
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-07T06:29:53.000Z",
+      "sprint": 1,
+      "reason": "Phase 3 PASS (gates.3), all 8 CRIT confirmed via live execution + on-chain re-attack, 1 non-blocking info finding (FIND-501, no real data lost). Advancing to Phase 5 (formal hardening)."
     }
   ],
   "iterations": {
@@ -111,7 +118,8 @@
     "1c": 7,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "3": 1
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -210,9 +218,21 @@
       "adversaryVerdict": "PASS",
       "adversaryReviewedAt": "2026-07-07T06:08:50.000Z",
       "humanApproval": "status: approved set per Dais's blanket 'no human in loop, don't stop, full verify, no half-ass' directive (2026-07-07)."
+    },
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-07T06:29:53.000Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "note": "Execution-capable (Bash + live Base Sepolia) fresh-context adversary, per the contract's Execution-Tooling Note. All 8 CRIT PASS. Independently re-ran all test suites (gig 48/48 x3 no flakiness, runtime/loop unit 84/88 with the 4 failures confirmed pre-existing/unrelated via git blame, catalog-gate+registry-classification 20/20, research-record 3/3). Wrote and ran 2 NEW adversary-authored concurrency stress tests beyond builder coverage (10-way stale-lock reclaim, 6-way cross-gigId race) -- both clean. Live Tier-3 re-attack on Base Sepolia with the adversary's OWN fresh identities/tx hashes (not round-3 self-report): FINDING-1 self-verify REJECTED + legit payout succeeded (tx 0xad859b1b...), FINDING-2 concurrent double-pay -- one call REJECTED, other paid exactly once (tx 0x0bea7add...), all 4 tx hashes independently confirmed via getTransactionReceipt. Code control-flow reads confirmed isLockStale extraction, atomic rename reclaim, board-lock-scoped retry, filterCatalog's zero ranking logic, 17/17 registry tags spot-verified against source. CRIT-007 research claims spot-checked live (gh pr view 83, DNS NXDOMAIN, firecrawl scrape) -- all matched.",
+        "findings": ["FIND-501"],
+        "findingsNote": "FIND-501 (info, non-blocking): the adversary's live re-attack overwrote the shared ~/.anicca-signing/gig-board/state/gigs.json (used by scripts/e2e-testnet.mjs per its own README) with its own 2 fresh gigs, replacing 2 pre-existing 2026-07-06 entries. Investigated post-hoc: those overwritten entries were themselves from an EARLIER e2e-testnet.mjs security re-proof run (P2.2 verification), not real witness-track data -- WITNESS-RUNBOOK.md confirms neither ~/.anicca nor ~/.blockrun's gig skill exists yet, so no real automaton/Franklin witness data existed to lose. On-chain tx history for both rounds is permanently preserved on Base Sepolia regardless of the local JSON snapshot. Recommendation (non-blocking): future test/adversary runs should use a dedicated GIG_STATE_PATH, not the shared witness-track path."
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-07T06:29:53.000Z"
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T06:08:50.000Z"
+  "updatedAt": "2026-07-07T06:29:53.000Z"
 }
