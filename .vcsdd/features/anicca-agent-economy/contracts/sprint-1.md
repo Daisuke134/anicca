@@ -3,7 +3,7 @@ status: draft
 feature: anicca-agent-economy
 sprint: 1
 date: 2026-07-07
-negotiationRound: 0
+negotiationRound: 1
 scope: "Gig-board concurrency hardening (REQ-101..103: lock-staleness liveness + atomic stale-reclaim, cross-gigId shared-board-file protection, zero-regression of round-1/2/3 fund-safety invariants); bootstrap-reserve catalog eligibility gate (REQ-201..203: BOOTSTRAP_RESERVE_USDC threshold, registry.json risk/alwaysAvailable classification of all 17 live slots, open-position carve-out for hl_trade/yield, bookkeeping-only design constraint); business.blockrun.ai seller-channel research spike (REQ-301..302: feasibility record + non-blocking guarantee on the gig-board witness track). Files touched: skills/economy/gig/lib/lock.mjs, skills/economy/gig/gig.mjs (both in ~/anicca), runtime/loop/catalog-gate.mjs (new), runtime/loop/index.mjs, runtime/loop/package.json, skills/registry.json, .vcsdd/features/anicca-agent-economy/evidence/business-blockrun-ai-research.md."
 criteria:
   - id: CRIT-001
@@ -12,7 +12,8 @@ criteria:
       isLockStale(nowMs, mtimeMs, staleMs) is extracted as an independently exported pure function
       from skills/economy/gig/lib/lock.mjs, and acquire() calls it rather than re-implementing the
       Date.now() - stat.mtimeMs > staleMs comparison inline (REQ-101 binding acceptance criterion,
-      PROP-101a/b/d).
+      PROP-101a/b/d); AND REQ-101's headline liveness guarantee -- a live holder's lock is never
+      stolen by elapsed wall-clock time alone -- is protected by name.
     weight: 0.15
     passThreshold: >
       A control-flow read of ~/anicca/skills/economy/gig/lib/lock.mjs shows (1) `isLockStale` present
@@ -22,8 +23,14 @@ criteria:
       (not only indirectly through `acquire()`). Evidence on file: sprint-1-green-phase.log lines
       17, 96-98, 288 (8/8 lock.test.mjs PASS) and lines 309-317 (Phase 2c: extraction refactored
       into `tryCreateLockFile`/`reclaimStaleLock` helpers with identical control flow, re-verified
-      48/48). FAIL if the comparison is still inlined anywhere in `acquire()`, or if `isLockStale`
-      is not importable from outside the module.
+      48/48). (4) Additionally, lock.test.mjs's integration-level test named exactly
+      `★GAP 1★ a live holder's lock is NEVER stolen while it's still working past staleMs (heartbeat
+      keeps it alive)` (lock.test.mjs:24-61) is present BY NAME and passes when independently re-run
+      by the adversary, mirroring CRIT-002's by-name treatment of the atomicity test. FAIL if the
+      comparison is still inlined anywhere in `acquire()`, if `isLockStale` is not importable from
+      outside the module, or if the `★GAP 1★` test is missing, renamed away, weakened (e.g. reduced
+      from its full multi-heartbeat/3x-staleMs long-running scenario to a single-tick check), or
+      fails on the adversary's own independent re-run.
   - id: CRIT-002
     dimension: spec_fidelity
     description: >
@@ -58,7 +65,7 @@ criteria:
       independent re-run, or if the retry logic is found to also apply to per-gigId lock acquisition
       (which would reintroduce a fund-safety fail-open risk).
   - id: CRIT-004
-    dimension: regression_safety
+    dimension: verification_readiness
     description: >
       The full pre-existing skills/economy/gig test suite (store/decide/lock/gig/ensure-agent-id) is
       genuinely green with zero regressions, and the round-1 fail-open exploits (self-verify,
@@ -72,18 +79,30 @@ criteria:
       double-verify pays exactly once), and `★FINDING 3★` (invalid ERC-8004 identity rejected at
       post/take/payout) all present and passing by name. Tier-3 live/testnet re-attack of the round-1
       exploits MUST be executed by the adversary with its own new transaction hashes/timestamps — a
-      reference to `evidence/p2.2-security-fixes-round3.md` alone does NOT satisfy this criterion
-      (explicitly out of scope for THIS sprint's binary pass: Tier-3 live re-execution is the Phase 3
-      adversary's own obligation to perform, not something Phase 2 evidence can pre-satisfy). FAIL if
-      the count is not exactly 48/48, if any of the three named FINDING tests is missing/renamed away,
-      or if the adversary substitutes the round-3 self-report for its own independent Tier-3 run.
+      reference to `evidence/p2.2-security-fixes-round3.md` alone does NOT satisfy this criterion.
+      "Out of scope for THIS sprint's binary pass" refers ONLY to reliance on the stale round-3
+      self-report as a substitute for execution — it does NOT place Tier-3 live re-execution itself
+      out of scope. That live re-execution is the Phase 3 adversary's own MANDATORY obligation to
+      perform, per REQ-103's binding acceptance criterion (behavioral-spec.md:170-175: "this
+      re-attack MUST be independently executed by the Phase 3 adversary itself... a builder's own
+      prior self-report is evidence of history, not a substitute for the fresh, independent
+      re-verification this requirement demands") and verification-architecture.md's Gate item (3)
+      (verification-architecture.md:144-148: "the round-1 exploit scripts are re-attempted by the
+      adversary itself, live, producing its own new transaction hashes"). FAIL if the count is not
+      exactly 48/48, if any of the three named FINDING tests is missing/renamed away, if the
+      adversary substitutes the round-3 self-report for its own independent Tier-3 run, OR if the
+      adversary performs NO Tier-3 live/testnet re-attack at all (an outright skip is itself a FAIL,
+      identical in effect to substitution — the absence of any independent Tier-3 attempt fails this
+      criterion exactly as substituting the old report would).
   - id: CRIT-005
     dimension: spec_fidelity
     description: >
       filterCatalog is a pure, deterministic function whose exclusion decisions are based solely on
       the explicit risk/alwaysAvailable classification of all 17 currently-live skills/registry.json
       slots (matching behavioral-spec.md's REQ-201 classification table verbatim), and contains no
-      ranking/scoring/preference logic (REQ-201/203, PROP-201a-i, PROP-201g, PROP-203a/b).
+      ranking/scoring/preference logic (REQ-201/203, PROP-201a-h — PROP-201i is explicitly EXCLUDED
+      from this criterion's scope, since CRIT-006 exclusively and concretely grades PROP-201i's
+      lazy/fail-open hl_trade query behavior — PROP-201g, PROP-203a/b).
     weight: 0.2
     passThreshold: >
       Adversary (1) parses ~/anicca/skills/registry.json itself and confirms all 17 `status: "live"`
@@ -140,7 +159,7 @@ criteria:
       FAIL if any of (a)-(e) is missing, is a bare assertion with no cited evidence, or if a
       spot-checked source contradicts the record's claim without the record being updated.
   - id: CRIT-008
-    dimension: regression_safety
+    dimension: verification_readiness
     description: >
       This increment introduces no new dependency from the gig-board witness track onto REQ-301's
       research record's existence or completion (REQ-302, PROP-302a).
@@ -168,6 +187,20 @@ knownResidualFindings:
     after refactor. The Phase 3 adversary MUST independently re-run the Tier-2 atomicity test itself
     as part of CRIT-002, not accept the builder's report of it passing."
 ---
+
+## Execution-Tooling Note (Phase 3 Prerequisite)
+
+Several criteria below (CRIT-002, CRIT-003, CRIT-004, CRIT-006, CRIT-007) require an adversary to
+independently EXECUTE code (`node --test ...`) or, for CRIT-004's Tier-3 half, perform a live/testnet
+chain re-attack. These execution-bound acceptance criteria are satisfied during **Phase 3's
+implementation review**, by a review agent explicitly provisioned with a code-execution tool
+(Bash/shell) and, for CRIT-004's Tier-3 half, live/testnet chain access. This contract-negotiation
+phase itself is a disk-only (Read/Grep/Glob) review and does not itself execute code or chains — its
+job is to verify that the contract's text correctly and unambiguously specifies these obligations, not
+to discharge them. A disk-only contract-review pass being unable to run `node --test` or touch a live
+chain is not itself a violation of these criteria; it becomes a violation only if a Phase 3 review
+claims PASS on CRIT-002/003/004/006/007 without actually being equipped with, and using, an
+execution-capable (and, where required, chain-capable) tool.
 
 ## Scope
 

@@ -1,0 +1,375 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+# Sprint 1 — Phase 2b (GREEN) evidence — anicca-agent-economy
+# 日付: 2026-07-07
+# Scope: REQ-101..103 (gig-board concurrency), REQ-201..203 (bootstrap-reserve catalog gate),
+#        REQ-301..302 (business.blockrun.ai research spike) — 8 requirements, 25 proof obligations.
+# This log records the GREEN state after implementation, directly against the RED baseline captured in
+# evidence/sprint-1-red-phase.log. All new-feature tests introduced in Phase 2a now PASS; the documented
+# pre-existing regression baseline (skills/economy/gig 40/40, runtime/loop's 4 pre-existing unrelated
+# tier/config-model-default failures, runtime/loop's integration 12/12) is unchanged in shape.
+
+## Summary table (per requirement group)
+
+| REQ | Test file(s) | Result | Notes |
+|---|---|---|---|
+| REQ-101 (PROP-101a/b/c/d) | skills/economy/gig/__tests__/lock.test.mjs | 8/8 PASS | `isLockStale` extracted + exported; `acquire()`'s stale-reclaim now uses an atomic `fs.rename` instead of unlink-then-open |
+| REQ-102 (PROP-102a/b/c) | skills/economy/gig/__tests__/gig.test.mjs | all PASS incl. the 3-way test | `applyAndSave()` now retries the shared `"_board"` lock with a short bounded backoff (per-gigId locks unchanged, still fail-closed) |
+| REQ-103 (PROP-103a) | skills/economy/gig/__tests__/*.test.mjs (full suite) | 48/48 PASS | 0 regressions — see full run below |
+| REQ-201/202/203 (PROP-201a-i, 202a/b, 203a/b) | runtime/loop/__tests__/catalog-gate.test.mjs | 17/17 PASS | new `runtime/loop/catalog-gate.mjs` module |
+| REQ-201 (PROP-201g) | runtime/loop/__tests__/registry-classification.test.mjs | 3/3 PASS | all 17 live `skills/registry.json` slots now carry `risk`/`alwaysAvailable` |
+| REQ-301/302 (PROP-301a/b, 302a) | .vcsdd/features/anicca-agent-economy/tests/research-record.test.mjs | 3/3 PASS | `evidence/business-blockrun-ai-research.md` written (real research, not fabricated) |
+
+---
+
+## 1. REQ-101/102/103 — skills/economy/gig/ full suite (dependencies already installed from Phase 2a)
+
+```
+$ cd ~/anicca/skills/economy/gig && node --test __tests__/*.test.mjs
+✔ decideGigAction: balance well above reserve -> post-eligible with the real surplus (0.735ms)
+✔ decideGigAction: post-eligibility ignores the board entirely (posting doesn't need existing gigs) (0.060833ms)
+✔ decideGigAction: balance below survival floor with open gigs -> take-eligible (0.060208ms)
+✔ decideGigAction: balance below survival floor but board is empty -> idle (nothing to take) (0.075917ms)
+✔ decideGigAction: take-eligibility counts every open gig on the board, not just the first (0.045167ms)
+✔ decideGigAction: balance between floor and reserve -> idle regardless of open gigs (0.040291ms)
+✔ decideGigAction: balance exactly at reserve -> idle (surplus must be strictly positive) (0.035583ms)
+✔ decideGigAction: balance exactly at the survival floor -> idle (must be strictly below) (0.038791ms)
+✔ decideGigAction: unknown balance (NaN) -> idle, fail closed (0.047667ms)
+✔ decideGigAction: missing balance -> idle, fail closed (0.074583ms)
+✔ decideGigAction: inverted config (lowUsdc > reserveUsdc) -> idle, fail closed (0.049084ms)
+✔ decideGigAction: custom reserve/low thresholds are honored (0.038125ms)
+✔ decideGigAction: non-array openGigs treated as zero gigs, never throws (0.035541ms)
+✔ ensureAgentId: no cache -> registers on-chain once and writes the cache (16.801833ms)
+✔ ensureAgentId: valid cache for the SAME address -> reuses it, never re-registers (1.335833ms)
+✔ ensureAgentId: cache belongs to a DIFFERENT address (foreign/stale) -> ignored, registers fresh (1.273917ms)
+✔ ensureAgentId: cache no longer verifies on-chain (revoked/wrong) -> falls through to register fresh (1.119875ms)
+✔ ensureAgentId: registration itself fails -> fail closed, never fabricates an agentId (0.526708ms)
+✔ ensureAgentId: no signing key -> fail closed, never calls register or verify (0.067458ms)
+✔ ★FINDING 1★ gig_verify_and_pay REJECTS a non-poster caller -- no payout is attempted (8.255084ms)
+✔ gig_verify_and_pay ACCEPTS the real poster and pays out exactly once (3.963208ms)
+✔ ★FINDING 2★ two CONCURRENT gig_verify_and_pay(true) calls on the SAME gig pay out EXACTLY ONCE (56.038208ms)
+✔ gig_take + gig_deliver on the same gig are also serialized by the per-gig lock (no lost updates) (2.797167ms)
+✔ ★FINDING 3★ gig_post REJECTS a poster with an invalid ERC-8004 identity -- no escrow funding attempted, no gig created (0.471542ms)
+✔ ★FINDING 3★ gig_take REJECTS a taker with an invalid ERC-8004 identity -- gig stays OPEN (1.326375ms)
+✔ ★FINDING 3★ gig_verify_and_pay RE-verifies taker identity at payout time -- no payout if it's since gone invalid (2.514667ms)
+✔ ★GAP 2★ a SLOW verify_and_pay on gig X does not clobber a concurrent take on unrelated gig Y (158.649125ms)
+✔ ★PROP-102a (3-way)★ three concurrent operations across THREE distinct gigIds all persist -- every {ok:true} result survives in the final board (136.857917ms)
+✔ ★PROP-102b★ applyAndSave's authoritative loadState read happens AFTER the slow settle resolves, not before it (call-order, not just outcome) (114.777709ms)
+✔ ★PROP-102c★ gig Y's take is NOT serialized behind gig X's slow settle -- it completes quickly, proving the shared-file lock is held only for the brief write, not the whole network step (266.135292ms)
+✔ ★GAP 1★ a live holder's lock is NEVER stolen while it's still working past staleMs (heartbeat keeps it alive) (306.360875ms)
+✔ a GENUINELY dead holder's lock (crashed, no heartbeat) IS reclaimable after staleMs (1.438542ms)
+✔ two calls with DIFFERENT lock keys never contend with each other (0.791708ms)
+✔ PROP-101b: isLockStale boundary -- exactly staleMs elapsed is NOT stale, 1ms past IS stale (0.078959ms)
+✔ PROP-101a: isLockStale never flags a heartbeat-refreshed lock as stale, however long total elapsed time grows (0.100542ms)
+✔ PROP-101c (purity half): isLockStale is deterministic and side-effect-free -- same inputs always yield the same boolean (0.044833ms)
+✔ ★PROP-101c (Tier 2, atomicity)★ two concurrent stale-lock reclaim attempts on the SAME lock key -- exactly ONE must win, never both (1.659958ms)
+✔ PROP-101d: two different lock keys, BOTH in the stale-reclaim branch, never contend with each other (0.935125ms)
+✔ applyPost creates an OPEN gig recording the real escrow-funding tx + posterAgentId, without mutating the input state (2.239375ms)
+✔ applyTake assigns the taker + takerAgentId and moves OPEN -> TAKEN (0.097208ms)
+✔ applyTake rejects taking a gig that is already taken (not 'open') (0.096291ms)
+✔ applyDeliver records the deliverable and moves TAKEN -> DELIVERED (0.071166ms)
+✔ applyDeliver rejects delivering a gig that hasn't been taken yet (0.055459ms)
+✔ applyVerifyAndPay rejects verifying before delivery (fail-closed ordering) (0.071041ms)
+✔ ★CORE★ applyVerifyAndPay(verified:true) WITHOUT a payoutTx is REFUSED -- no-verify-evidence -> no-pay, fail-closed (0.061583ms)
+✔ applyVerifyAndPay(verified:true, payoutTx) moves DELIVERED -> PAID and records the real tx (0.050333ms)
+✔ applyVerifyAndPay(verified:false) moves DELIVERED -> REJECTED, no payoutTx ever stored (0.064333ms)
+✔ listGigs filters by status; getGig returns null for an unknown id (0.110667ms)
+ℹ tests 48
+ℹ suites 0
+ℹ pass 48
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1155.372667
+```
+
+**48/48 PASS** — includes all 8 lock.test.mjs tests (3 pre-existing + 5 REQ-101 new, all now reachable
+since `isLockStale` is exported), all 11 gig.test.mjs tests (8 pre-existing + the ★GAP 2★ regression test
+— already counted within those 8 — + 3 new REQ-102 tests = 11 total, INCLUDING the previously-failing
+3-way test), and store.test.mjs/decide.test.mjs/ensure-agent-id.test.mjs unchanged. Zero regressions vs.
+the RED-phase 40/40 pre-existing baseline; the one genuine RED-phase failure (PROP-102a 3-way) is now
+green.
+
+### What changed to make REQ-101/102 green
+
+- `skills/economy/gig/lib/lock.mjs`: extracted `isLockStale(nowMs, mtimeMs, staleMs) -> boolean` as an
+  independently exported pure function (was inlined in `acquire()`); rewired `acquire()` to call it.
+  Additionally fixed a genuine reclaim race the Phase 2a RED evidence flagged as a "noteworthy" open
+  finding: the OLD stale-reclaim branch did `fs.unlink(file)` then `fs.open(file, "wx")`, and `unlink` is
+  not scoped to "the file I just observed" — a second racer's `unlink` could delete the FIRST racer's
+  freshly-recreated lock file, letting both racers' `fs.open("wx")` calls each succeed in turn. FIX:
+  reclaim now goes through `fs.rename(file, <unique trash path>)` — POSIX `rename()` requires its SOURCE
+  path to exist and is atomic w.r.t. concurrent renames of the same source, so exactly ONE of two
+  concurrent reclaimers' renames can succeed; the other's source lookup fails with `ENOENT`. Verified by
+  the Tier-2 atomicity test (`★PROP-101c (Tier 2, atomicity)★`), which now passes.
+- `skills/economy/gig/gig.mjs`: `applyAndSave()` now retries its OWN acquisition of the shared `"_board"`
+  lock with a short, bounded backoff (40 attempts × 5ms) SPECIFICALLY for board-lock contention (detected
+  by matching the exact `withGigLock` rejection-reason prefix), never for a genuine business-logic
+  rejection. This is scoped ONLY to the shared board lock in `applyAndSave` — `withGigLock`'s general
+  per-gigId/`"_post"` behavior (in `lib/lock.mjs`) is completely untouched and remains fail-closed/
+  non-queueing, which is why REQ-103's fund-safety tests (self-verify rejection, same-gig double-pay)
+  still pass unchanged: those tests exercise the PER-GIG lock, not the board lock. This closes the
+  reproducible 3-way finding from the RED-phase evidence (`evidence/sprint-1-red-phase.log` §2): two FAST,
+  unrelated gigIds' board-lock acquisitions landing in the same instant no longer cause one to be rejected
+  outright — the loser now retries and wins on a subsequent attempt once the winner's brief critical
+  section (a local read-mutate-write, not the slow network settle) releases.
+
+---
+
+## 2. REQ-201/202/203 — runtime/loop/__tests__/catalog-gate.test.mjs
+
+```
+$ cd ~/anicca/runtime/loop && node --test __tests__/catalog-gate.test.mjs
+✔ PROP-201a: below threshold, filterCatalog excludes every capital-risking slot (no always-available/open-position carve-out in play) (0.656083ms)
+✔ PROP-201b: at or above threshold, filterCatalog returns the full unfiltered slot list (boundary: equality counts as at-or-above) (0.563834ms)
+✔ PROP-201c: unset/non-finite/negative reserveThresholdUsdc falls back to the documented default 20, and the gate is never silently disabled (0.08425ms)
+✔ PROP-201c: non-finite/negative balanceUsdc is treated as below-threshold (fail-closed), mirroring tier.mjs's own NaN/Infinity/negative handling (0.064042ms)
+✔ PROP-201d: a slot with no explicit risk tag defaults to capital-risking (excluded) while below threshold (0.053833ms)
+✔ PROP-201e: alwaysAvailable:true slots (report, cook) survive filtering even in a pathological all-risky-tag input (0.045208ms)
+✔ PROP-201e: the `sleep` meta-tool is structurally unaffected by filterCatalog entirely -- getToolDefinitions always appends it, independent of the slots array (0.073458ms)
+✔ PROP-201f: a capital-risking slot with hasOpenRiskPositionOf(slot)===true remains available below threshold (open-position carve-out) (0.063792ms)
+✔ PROP-201f: the same open-position carve-out applies to `yield` (0.398042ms)
+✔ PROP-201h: hasOpenRiskPositionOfYield reads the SAME ledger-scan expression index.mjs uses for ctx.positionsSummary -- zero I/O (0.115083ms)
+✔ PROP-201i(a): hasOpenRiskPositionOfHlTrade's query is invoked lazily -- ONLY when balanceUsdc < reserveThresholdUsdc, never when at/above it (0.079292ms)
+✔ PROP-201i(b): a query failure/timeout/rejection resolves to true (fail-open), never false and never an uncaught throw (0.119833ms)
+✔ PROP-201i(c): a resolved non-empty open_positions array -> true; an empty array -> false (0.050833ms)
+✔ PROP-202a: filterCatalog is a pure function of the CURRENT call's inputs only -- no state leaks between successive calls (0.060833ms)
+✔ PROP-202b: a balance transition from below to at/above threshold between two successive calls restores the exact pre-restriction slot set (0.05ms)
+✔ PROP-203a: filterCatalog's return type is a plain array of strings, with no attached score/rank/preference field (0.06875ms)
+✔ PROP-203b (partial runtime proxy): filterCatalog's output ordering is not used to encode a preference -- the SAME input set, given in a different order, produces the SAME resulting set (0.048042ms)
+ℹ tests 17
+ℹ suites 0
+ℹ pass 17
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 68.552958
+```
+
+**17/17 PASS.** New module `runtime/loop/catalog-gate.mjs`: `filterCatalog(...)`,
+`DEFAULT_BOOTSTRAP_RESERVE_USDC` (`Number(process.env.BOOTSTRAP_RESERVE_USDC) || 20`),
+`hasOpenRiskPositionOfYield(recentLedger)`, `hasOpenRiskPositionOfHlTrade({balanceUsdc,
+reserveThresholdUsdc, queryFn})` — all matching the module contract the Phase 2a test file's own header
+comment specified.
+
+## 3. REQ-201 (PROP-201g) — runtime/loop/__tests__/registry-classification.test.mjs
+
+```
+$ cd ~/anicca/runtime/loop && node --test __tests__/registry-classification.test.mjs
+✔ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17) (2.109875ms)
+✔ ★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table (0.865667ms)
+✔ PROP-201g: every slot named in behavioral-spec.md's classification table is actually present and 'live' in registry.json (table isn't stale) (0.3875ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 62.906833
+```
+
+**3/3 PASS.** `skills/registry.json` now carries the exact classification from behavioral-spec.md's
+REQ-201 table on all 17 currently-`"status": "live"` slots: `alwaysAvailable: true` on `report`/`cook`;
+`risk: "safe"` on `self/spawn`, `self/spawn-child`, `self/issue-dev`, `self/coordinate`, `economy/gig`,
+`economy/ubi`, `x402_sell`, `earn/clip`, `earn/clip-producer`, `earn/video`; `risk: "capital"` on `yield`,
+`hl_trade`, `token_launch`, `earn/sol-trade`, `earn/polymarket-trade`. Each field carries an inline
+`riskNote` citing the reasoning from the spec's own table (matches JSON validated with `python3 -c
+"import json; json.load(open('skills/registry.json'))"` — no syntax errors introduced).
+
+## 4. index.mjs wiring (REQ-201's Effectful Shell layer — no dedicated Phase 2a test, per the RED-phase
+   evidence's own documented scope note; verified here via the full regression suites below)
+
+`runtime/loop/index.mjs` now: (a) captures each live slot's `risk`/`alwaysAvailable` fields from
+`registry.json` at bootstrap; (b) each wake, computes `hasOpenRiskPositionOf('yield')` via the real
+`hasOpenRiskPositionOfYield(recentLedger)` (the SAME already-fetched ledger scan that populates
+`ctx.positionsSummary` — zero new I/O) and `hasOpenRiskPositionOf('hl_trade')` via the real
+`hasOpenRiskPositionOfHlTrade(...)`, wired to a NEW `queryHlTradeOpenPositions()` helper that shells out to
+`skills/earn/hl-trade/hl.py account` (the SAME primitive `skills/earn/run.sh` already invokes in
+production) — lazy per `hasOpenRiskPositionOfHlTrade`'s own internal threshold check, fail-open on any
+subprocess/parse failure; (c) calls the pure `filterCatalog(...)` with these resolved inputs and passes
+its result (not the full unfiltered `activeSkillSlots`) into `assembleContext`, which is the single
+upstream source `brain.mjs` reads for both `buildSystemPrompt`'s "Available skill slots" listing and
+`getToolDefinitions`'s `run_skill.slot` enum — so a broke instance's actual tool menu is narrowed, not
+just a display list. A defensive try/catch around the `filterCatalog` call falls back to the full
+unfiltered catalog (with a stderr warning) rather than crashing the wake loop on any unexpected error.
+
+## 5. Full regression run — runtime/loop `npm run test:unit` (7 pre-existing files + 2 new files)
+
+```
+$ cd ~/anicca/runtime/loop && npm run test:unit
+ℹ tests 76
+ℹ pass 72
+ℹ fail 4
+✖ failing tests (UNCHANGED from the documented pre-existing baseline, NOT part of this increment):
+✖ PROP-011/012: defaults applied when nothing set
+✖ PROP-001: selectTier(0) returns broke tier with free model
+✖ PROP-002: selectTier(0.5) returns lean tier with lean model
+✖ PROP-003: selectTier(5.0) returns funded tier with funded model
+```
+
+These are the EXACT SAME 4 pre-existing, unrelated failures documented in
+`evidence/sprint-1-red-phase.log` §4 (a 2026-06-21 model-default policy change in `tier.mjs` —
+`DEFAULT_LEAN_MODEL`/`DEFAULT_FUNDED_MODEL` → `'auto'`, `DEFAULT_FREE_MODEL` →
+`'free/gpt-oss-120b'` — that `tier.test.mjs`/`config.test.mjs` still assert the OLD literal model-name
+defaults against). Confirmed still exactly 4, not grown, and confirmed still unrelated: this increment's
+files (`catalog-gate.mjs`, `catalog-gate.test.mjs`, `registry-classification.test.mjs`,
+`skills/registry.json`, `lock.mjs`, `gig.mjs`, `index.mjs`) touch none of `tier.mjs`, `tier.test.mjs`, or
+`config.test.mjs`. 76 = 56 (7 pre-existing files) + 17 (catalog-gate) + 3 (registry-classification); 72
+pass = 76 − 4 (the unchanged pre-existing baseline).
+
+## 6. Full regression run — runtime/loop `npm run test:integration` (spawns index.mjs as a real child
+   process, real ANICCA_HOME tmp dir — exercises the actual catalog-gate wiring path end-to-end)
+
+```
+$ cd ~/anicca/runtime/loop && npm run test:integration
+✔ PROP-014: 10 consecutive wakes yield exactly 10 ledger lines (475.539542ms)
+✔ PROP-013: SIGTERM produces shutdown kind as last ledger line (608.949459ms)
+✔ PROP-015: skill that exits non-zero does not crash the loop (309.530083ms)
+✔ PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT called (458.7525ms)
+✔ PROP-016b: consecutive loop_detect on the SAME slot escalates the cooldown (1400.615958ms)
+✔ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (210.163125ms)
+✔ PROP-021(a): profitable earn line -> loop records profitable:true (814.378458ms)
+✔ PROP-021(b): discover line (no tx) -> profitable:false (613.50425ms)
+✔ PROP-021(e): exit 0 with no matching WAKE_ID in earn-ledger -> profitable:false (562.901833ms)
+✔ PROP-022: SIGTERM while skill runs kills child within 5s, exit code 0 (7551.377958ms)
+✔ PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess (331.098ms)
+✔ PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy (320.628625ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13748.887375
+```
+
+**12/12 PASS** — matches the RED-phase baseline exactly (12/12). Confirms `index.mjs`'s new catalog-gate
+wiring (registry risk/alwaysAvailable read, `hasOpenRiskPositionOfYield`, the new
+`queryHlTradeOpenPositions` subprocess call which fails gracefully — no `hl.py` exists in these tests'
+throwaway `ANICCA_HOME` tmp dirs, exercising the fail-open path for real) does not crash or hang the real
+wake loop.
+
+## 7. REQ-301/302 — .vcsdd/features/anicca-agent-economy/tests/research-record.test.mjs
+
+```
+$ cd /Users/anicca/anicca-project/.vcsdd/features/anicca-agent-economy && node --test tests/research-record.test.mjs
+✔ ★PROP-301a★ the research record exists under evidence/ and contains all five required items (a)-(e) (2.887208ms)
+✔ PROP-301b: each of the five items in the research record cites at least one piece of concrete evidence (a URL, file path, quoted response, or an explicit 'checked X, not found' statement), not a bare assertion (1.272542ms)
+✔ PROP-302a: the gig-board witness runbook introduces no new gating condition referencing REQ-301's research record (1.015917ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 3
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 90.277333
+```
+
+**3/3 PASS.** `evidence/business-blockrun-ai-research.md` written from REAL research (not fabricated):
+`gh pr view 83 --repo BlockRunAI/Franklin` (state OPEN, not merged, stale since 2026-06-13), `gh pr
+list`/`gh search repos`/`gh search code` across BlockRunAI's public org (no seller/listing PR or repo
+found), `firecrawl scrape` of `business.blockrun.ai` (DNS failure), `blockrun.ai` (the real, live
+marketplace — its own "Add yours... Contact us → t.me/bc1max" manual onboarding copy, quoted verbatim),
+`blockrun.ai/docs` (full sidebar reviewed, no seller/publish API reference page), `blockrun.ai/marketplace/
+exa` (an example partner page, no visible take-rate), and `BlockRunAI/polymarket-agent`'s README (roadmap:
+"Agent Marketplace | ... | 2026 Q3"). Conclusion: no seller/listing API or code path exists today; only a
+manual, human-mediated Telegram onboarding path was found — recommendation is to DEPRIORITIZE this channel
+relative to the self-built P2P gig board, which remains the correct active external-inflow investment.
+
+---
+
+## Files written/modified this phase (Phase 2b — implementation only, no spec/test changes)
+
+- `skills/economy/gig/lib/lock.mjs` (MODIFIED — exported `isLockStale`; atomic `fs.rename`-based reclaim)
+- `skills/economy/gig/gig.mjs` (MODIFIED — `applyAndSave()` bounded retry on the shared `"_board"` lock)
+- `runtime/loop/catalog-gate.mjs` (NEW — `filterCatalog`, `DEFAULT_BOOTSTRAP_RESERVE_USDC`,
+  `hasOpenRiskPositionOfYield`, `hasOpenRiskPositionOfHlTrade`)
+- `runtime/loop/index.mjs` (MODIFIED — registry risk/alwaysAvailable capture, `queryHlTradeOpenPositions`,
+  per-wake `filterCatalog` call wired into `assembleContext`'s `activeSkillSlots`)
+- `runtime/loop/package.json` (MODIFIED — `test`/`test:unit` scripts now include
+  `catalog-gate.test.mjs`/`registry-classification.test.mjs`)
+- `skills/registry.json` (MODIFIED — `risk`/`alwaysAvailable` + `riskNote` fields on all 17 live slots)
+- `.vcsdd/features/anicca-agent-economy/evidence/business-blockrun-ai-research.md` (NEW — REQ-301/302
+  research deliverable)
+
+---
+
+## Phase 2c (Refactor) — 2026-07-07
+
+Scope: `~/anicca/skills/economy/gig/lib/lock.mjs`, `~/anicca/skills/economy/gig/gig.mjs`,
+`~/anicca/runtime/loop/catalog-gate.mjs`, `~/anicca/runtime/loop/index.mjs` (the four files touched by
+Phase 2b). No spec change, no new feature, no test change — behavior preserved byte-for-byte per the
+externally-observable contract (all Phase 2b test files, unmodified, re-run below).
+
+**Change made:** `skills/economy/gig/lib/lock.mjs` — `acquire()`'s stale-lock-reclaim branch duplicated
+the exact "open 'wx' -> close -> EEXIST?" primitive that also appears in `acquire()`'s fast path (same
+open/close/catch-EEXIST block, written out twice). Extracted the duplicated block into
+`tryCreateLockFile(file)` (returns `true`/`false`/rethrows non-EEXIST, identical semantics to the two
+inlined copies) and extracted the reclaim branch itself into `reclaimStaleLock(file, staleMs)`, which
+calls `tryCreateLockFile` for both its own reclaim-open attempt and (via `acquire()`) the original fast
+path. `acquire()` is now a 4-line dispatcher: `mkdir` -> `tryCreateLockFile` -> (on failure)
+`reclaimStaleLock`. No control-flow branch, error code, or return value changed — every `if (e.code !==
+"EEXIST") throw e` / `ENOENT` / stale-boundary check is preserved verbatim, just relocated.
+
+**No change made (evaluated, decided against):**
+- `gig.mjs`'s `applyAndSave()` bounded-backoff retry (`BOARD_LOCK_RETRY_ATTEMPTS`/`_DELAY_MS`) is already
+  a single, clearly named, non-duplicated block. `lib/escrow.mjs` has an unrelated retry loop (variable
+  per-attempt delay array, retries on specific transient HTTP verify-reason codes) in the same package —
+  structurally different enough (different domain: network verify-lag vs local fs-lock contention;
+  different shape: delay array vs fixed attempts+delay) that forcing a shared abstraction would be
+  speculative generalization not required by any test (anti-slop). Left both as-is.
+- `catalog-gate.mjs`'s `hasOpenRiskPositionOfYield` (sync ledger scan) and `hasOpenRiskPositionOfHlTrade`
+  (async, lazy, fail-open network query) look superficially similar (same naming prefix) but have
+  materially different contracts (sync vs async, fail-closed-by-omission vs fail-open, zero-I/O vs lazy
+  I/O) — merging them would obscure the fail-open/fail-closed asymmetry that PROP-201i's tests exist to
+  pin down. Left as two separate functions.
+- `runtime/loop/index.mjs`'s wiring (`riskTagOf`/`alwaysAvailableOf`/`hasOpenRiskPositionOf` dispatcher,
+  `queryHlTradeOpenPositions`) and `filterCatalog`'s argument-object field names (`balanceUsdc`,
+  `allSlotNames`, `riskTagOf`, `alwaysAvailableOf`, `hasOpenRiskPositionOf`, `reserveThresholdUsdc`) were
+  reviewed for naming consistency — already uniform (`*Of` suffix for per-slot predicates/lookups, `*Usdc`
+  suffix for money values) and locked in verbatim by `catalog-gate.test.mjs`'s destructured call sites, so
+  renaming would only churn tests for no clarity gain. No change.
+
+### Post-refactor full re-run (target-feature-tests: PASS / regression-baseline: PASS)
+
+```
+$ cd ~/anicca/skills/economy/gig && node --test __tests__/*.test.mjs
+[... same 48 tests as the Phase 2b run above, unchanged names/order ...]
+ℹ tests 48
+ℹ pass 48
+ℹ fail 0
+ℹ duration_ms 1197.673875
+```
+
+```
+$ cd ~/anicca/runtime/loop && npm run test:unit
+[... same 76 tests as the Phase 2b run above ...]
+ℹ tests 76
+ℹ pass 72
+ℹ fail 4   # identical 4 pre-existing, unrelated tier/config-model-default failures (PROP-011/012 defaults,
+           # PROP-001/002/003 selectTier free/lean/funded model names) -- documented pre-existing baseline,
+           # unchanged in shape/count/name from the Phase 2b run above.
+ℹ duration_ms 8192.228625
+```
+
+```
+$ cd ~/anicca/runtime/loop && npm run test:integration
+✔ PROP-014 ✔ PROP-013 ✔ PROP-015 ✔ PROP-016 ✔ PROP-016b ✔ PROP-019 ✔ PROP-021(a) ✔ PROP-021(b)
+✔ PROP-021(e) ✔ PROP-022 ✔ PROP-023(a) ✔ PROP-023(e)
+ℹ tests 12
+ℹ pass 12
+ℹ fail 0
+ℹ duration_ms 13419.637
+```
+
+**Result: identical pass/fail shape to the Phase 2b GREEN run** (gig 48/48, runtime/loop unit 72/76 with
+the same 4 pre-existing unrelated failures, integration 12/12) — the Phase 2c refactor changed zero
+externally-observable behavior.
+
+No test files were modified in this phase (Phase 2b discipline: implementation only).
