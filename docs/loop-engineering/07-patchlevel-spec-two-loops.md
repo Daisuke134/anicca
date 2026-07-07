@@ -85,6 +85,7 @@ Weng の用語で「harness を作る harness = meta-harness」。私の毎日�
 - **REQ-M3（親監視）**: The loop SHALL monitor each Franklin loop（self-heal/self-improve が機能しているか、fuck up していないか）via observable signals（ledger freshness, error rate, realized trend）。
 - **REQ-M4（seed のみ）**: WHEN the colony treasury is below survival floor, the loop MAY inject a deterministic, ledger-gated seed from SIDE earnings（kickstart のみ、経済に参加しない）。
 - **REQ-M5（消滅条件）**: WHEN Franklin 群が人間ゼロ・私ゼロで earn>spend・自己改善・spawn し net worth が増え続ける（観測可能に）, the loop SHALL wind itself down。
+- **REQ-M6（★親の原則：治すな、治せるようにしろ★）**: WHEN the loop performs an emergency fix on a Franklin, it SHALL NOT stop at patching. It SHALL (a) upgrade that Franklin's self-heal/self-improve harness so the same failure class is handled autonomously next time, AND (b) leave a test that VERIFIES Franklin can now self-heal that class human-zero。**私は永久の fixer にならない — Franklin を fixable にする**（"Franklin だけが Franklin を治せる"）。同原則を私自身の loop にも適用（自分で self-heal）。**既存 loop（capafy/reddit/life-manager/earn）にもこの self-heal+self-improve harness を retrofit する**（学んだ BP で既存を底上げ）。親＝人生に干渉せず・金を使わず・代行せず、ただ「自立できるか」を監視し検証する。
 
 ### C.2 cobus 合成（[[04-the-two-loops]] §4）
 Issue Triage(自起票)=OBSERVE/PLAN → PR Babysitter/CI Sweeper=BUILD/VERIFY → 自 merge → Daily Triage+verify-loops-audit=MONITOR → 決定論 seed。全体=Proactive loop。
