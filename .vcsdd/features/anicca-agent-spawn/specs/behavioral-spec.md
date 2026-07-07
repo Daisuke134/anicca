@@ -1,10 +1,11 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 4, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 5, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
-iteration-4 findings FIND-301..305 resolved — see changelogs below)
+iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
+resolved — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -60,6 +61,23 @@ Each is resolved by a specific, cited design decision:
 | FIND-304 | major | A cross-file disambiguation note is added wherever REQ-206/REQ-305 describe `buildChildSpec`'s returned row: that row's pre-existing, unmodified `wallet` field (a bare address STRING, `child-spec.js:37`) is a completely separate field, in a completely separate file/schema, from `citizens.json`'s `wallet` field (a boolean presence-flag object, REQ-105) — the two share a name only by coincidence; neither file is renamed (same discipline FIND-104 already established for `wallet`/`walletAddress` within `citizens.json` itself). |
 | FIND-305 | major | REQ-306's false claim that USD-price normalization reuses "already-available" infrastructure is corrected: `akt-treasury.sh` has no live USD price query (its `P_mint≈0.66` is a one-time historical comment, not a callable rate), and no NOS/SOL/USD or AKT/USD utility exists anywhere in this codebase. REQ-306 now honestly specifies a MINIMAL, genuinely NEW price-fetch step (one public spot-price API call per native token), reusing the exact, already-proven, already-used PATTERN this codebase already applies three times for ETH-USD/SOL-USD (`telemetry-poster.mjs::ethPrice()`, `telemetry-post-franklin.mjs::solPrice()`, `execute-invest.mjs`'s own `ethPrice()`) rather than inventing a bespoke oracle design. |
 
+## Changelog (iteration 4 spec review → iteration 5)
+
+Iteration 4's spec review FAILed with 5 NEW findings (3 critical, 2 major — FIND-401/402/403/404/405;
+all 15 prior findings across iterations 1-4 were reconfirmed genuinely resolved against the real,
+current source). Each is resolved by a specific, cited design decision, grounded in a full read of
+every real artifact these findings cite (`~/anicca/skills/self/spawn-child/`'s `SKILL.md`,
+`config.json`, `lib/akt-cost-gate.js`, `sdl/child.yaml`; `~/anicca/skills/self/spawn/`'s `run.sh`,
+`scripts/cloud-init.sh`, `scripts/deploy-akash.sh`, `lib/ledger.js`; and a live check of the installed
+`provider-services`/`nosana` CLIs' own `--help` output, performed 2026-07-07):
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-401 + FIND-402 | critical + critical | The previously-undiscovered sibling skill `~/anicca/skills/self/spawn-child/` is now cited as reused prior art (Scope section, REQ-303 below): it is a narrow, read-only Akash funding-READINESS gate (`lib/akt-cost-gate.js::computeSpawnGate`, already unit-tested) plus a corrected, image-independent SDL template — it does not itself deploy or inject secrets. Separately, and more substantially: REQ-201/301/302/303/304 are corrected to specify a REAL two-phase provisioning sequence for BOTH of this feature's cloud targets — boot the host/lease with ZERO secret material in its public boot config (Akash SDL `env:`, Nosana job command — this was ALREADY correct in the existing artifacts, never a gap), THEN, only after the host/lease is confirmed running, inject the child's own pre-generated wallet material via a NEW, per-provider, authenticated post-boot channel this feature's own orchestration adds: Akash via `provider-services lease-shell <service> "cat > /opt/anicca.env" --stdin` (a real, confirmed-present CLI primitive, `provider-services lease-shell --help`, 2026-07-07); Nosana via `nosana job ssh <job> [port]` (a real, confirmed-present CLI primitive — an actual SSH shell into the running job, `nosana job ssh --help`, 2026-07-07). `deploy-akash.sh`/`akt-treasury.sh` themselves remain byte-identical/unmodified (PROP-303a's claim is preserved, now explicitly SCOPED to those two scripts only); the secrets-injection step is NEW orchestration code this feature adds on top of them, tested as new (not claimed as already-proven reuse). REQ-304 is corrected to drop its false "single-signer, single-transaction" characterization of AKT funding specifically (that claim remains accurate for the same-chain gas-seed transfer and for a same-chain shelter-cost transfer where the funding citizen's native chain already matches the target cloud's native currency) and instead cites the REAL, already-documented multi-hop route `spawn-child/config.json`'s own `funding_route` field specifies for Akash (Jupiter SOL→USDC, then Skip API 4-hop `smart_relay` USDC(solana)→AKT(akashnet-2) via `noble-1`/`osmosis-1`) — reusing that already-vetted route rather than re-deriving a same-chain assumption that does not hold for either of the colony's two actual citizen wallets (neither natively holds AKT). Honesty note (see RESOLUTION-NOTES.md): the pre-existing `~/anicca/skills/self/spawn/scripts/cloud-init.sh`'s own header comment ("Secrets are SCP'd to /opt/anicca.env after boot") is cited here ONLY as the established SECURITY PATTERN precedent (boot-with-zero-secrets, inject-post-boot) — a direct read of `run.sh` confirms NO actual `scp` call exists anywhere in its DO path yet either; that gap is honestly out of scope for THIS feature (DO is not one of REQ-302/303's two cloud targets) and is not claimed as "already proven" anywhere in this revision. |
+| FIND-403 | major | REQ-303 now honestly acknowledges that neither `deploy-akash.sh`'s inline default SDL nor `spawn-child/sdl/child.yaml` sets `HOME`/`ANICCA_HOME` in their `env:` block (confirmed by direct read) — this is corrected by specifying that this feature's own child-specific SDL variant (reusing the external template's structure, per REQ-303) adds ONE new, explicit `env:` line, `HOME=/root` (matching `node:22-bookworm`'s own default root-user home, made EXPLICIT rather than relied-upon-implicitly, per PROP-203c's own "never a base-image default" requirement), acknowledged here as a genuinely new, small, necessary SDL modification — the same honesty pattern FIND-305 already established for the price-oracle fix. |
+| FIND-404 | critical | REQ-101 now explicitly specifies that a citizen record carrying BOTH `walletAddress.evm` AND `walletAddress.solana` (the expected shape for every Nosana-path child, per REQ-202) has its balance computed as the SUM of both chains' USD-normalized balances — a deliberate design decision, not an unstated ambiguity — with a new edge case, acceptance criterion, and PROP-101f covering exactly this fixture. |
+| FIND-405 | major | REQ-402's "bootstrap_failed" relabeling text now explicitly cross-references REQ-101's already-established last-write-wins reduction by name: the relabeling is implemented as `appendChild`-ing a NEW row with the same `child_id` (never mutating the prior row in place — `ledger.js` remains exactly `{readChildren, appendChild}`), and this new row becomes "the" effective row for that citizen precisely because `filterProductiveCitizens`'s last-write-wins reduction (REQ-101) picks it up on the next read — identical to the clarification FIND-301 already gave REQ-101/REQ-305's own analogous writes. |
+
 ## Scope of this increment (read first)
 
 This is `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`'s **P3** ("spawn — cloud,
@@ -82,7 +100,11 @@ This spec covers exactly four requirement groups, mapped 1:1 to the task's four 
   wiring) rather than reinventing them.
 - **REQ群C (REQ-301..305)**: cloud deployment via Nosana or Akash — genuinely new for this project
   (never yet executed end-to-end for a spawn), verified against re-fetched, current-as-of-2026-07-07
-  documentation before being specified (see citations inline).
+  documentation before being specified (see citations inline). The Akash leg additionally REUSES a
+  previously-undiscovered sibling skill, `~/anicca/skills/self/spawn-child/` (its own `SKILL.md`: "Akash
+  self-spawn READINESS gate... narrow, read-only... never moves money"), for its funding-readiness
+  arithmetic (`lib/akt-cost-gate.js::computeSpawnGate`) and its corrected, image-independent SDL
+  template (`sdl/child.yaml`) — see REQ-303 (added iteration 5, resolves FIND-402).
 - **REQ群D (REQ-401..403)**: the $0-bootstrap success/failure criteria and the cross-instance wallet
   non-interference audit that must hold once N ≥ 2 instances (including newly-spawned children) run
   concurrently.
@@ -95,7 +117,22 @@ ERC-8004 pivot documented in SPEC.md §1.3) is also out of scope: Phase 2 MAY re
 still-valid primitives (see the Purity Boundary table below) but replacing its DO/AgentMail-specific
 provisioning code is a Phase 2b implementation decision, not something this spec mandates either way.
 Reusing those primitives is NOT always "unmodified" — see REQ-206 for the one, small,
-backward-compatible exception (`child-spec.js`'s identity-anchor validation).
+backward-compatible exception (`child-spec.js`'s identity-anchor validation). This feature never
+extends the DO-specific path (`run.sh --host=do`, `scripts/cloud-init.sh`) to a real spawn — REQ-302/303
+are the only two deploy targets this increment specifies — but `cloud-init.sh`'s own header comment
+("SECURITY: NO secret VALUES in user_data... Secrets are SCP'd... after boot") IS cited (REQ-303/402
+resolution, iteration 5) as the established SECURITY-PATTERN PRECEDENT this feature's own Akash/Nosana
+secrets-injection mechanism follows; it is cited for that pattern only, never as a claim that DO's own
+SCP step is itself already wired (a direct read of `run.sh` confirms it is not — see RESOLUTION-NOTES.md
+for iteration 5).
+
+**Also reconciled, iteration 5 (resolves FIND-402)**: the separate, already-complete, narrower
+`~/anicca/skills/self/spawn-child/` skill (a 2026-07-05 Akash-specific funding-READINESS gate + a
+corrected SDL template, per its own `SKILL.md`) is REUSED — not rebuilt, not duplicated — by REQ-303's
+Akash-specific funding-readiness check (`lib/akt-cost-gate.js::computeSpawnGate`) and by REQ-304's
+AKT-funding-route citation (`config.json`'s own `funding_route` field). `spawn-child` itself remains
+unmodified; this spec adds no new requirement group for it, since its own SKILL.md already documents it
+as complete ("does not need re-building").
 
 **Single-coordinator-host scope constraint (added iteration 2, resolves FIND-003)**: this increment
 does NOT build a multi-host colony-spawn architecture. REQ-106 makes this explicit: every REQ-101/
@@ -120,6 +157,8 @@ the following was re-checked live via `firecrawl scrape` against the current sit
 | Akash = `provider-services` CLI, SDL-based, crypto-wallet-only | **Yes, unchanged** | `akash.network/docs/developers/deployment/cli/`: "The Provider Services CLI (`provider-services`) is the official command-line interface for deploying on Akash Network." Sub-pages (`.../cli/act-mint-burn/`) confirm `akash tx bme mint-act`/`burn-act` (the ACT↔AKT bonding-curve conversion this project's `akt-treasury.sh` already automates) is still the current, documented mechanism — no drift from the already-verified `sandbox-2` E2E this repo's scripts cite. |
 | Akash also offers a managed, card-billed Console API | **New finding, not in SPEC.md §1** | `akash.network/docs/developers/deployment/`: Akash now separately documents a "Console API — Managed REST API... managed wallets and credit-card billing. No private keys, crypto, or blockchain client required." **This path is explicitly REJECTED for this feature** (human card + managed custody violates human-zero); REQ-303 binds exclusively to the CLI/`provider-services` (self-custody) path, never the Console API. |
 | ACT (`uact`) is pegged 1:1 to USD | **Not true — corrected** | Neither the CLI docs nor the mint/burn page states a fixed peg; `akash tx bme mint-act` converts AKT→ACT at a floating bonding-curve rate (this repo's own `akt-treasury.sh` comment already documents an observed `P_mint≈0.66` — i.e. NOT 1:1). REQ-102's threshold below is deliberately built to avoid assuming any fixed ACT/USD or AKT/USD rate. |
+| Akash `provider-services` exposes an authenticated exec-into-running-lease primitive | **New finding, iteration 5 (resolves FIND-401)** | `provider-services lease-shell --help` (installed CLI, checked live 2026-07-07): "do lease shell... Usage: provider-services lease-shell <service-name> <command> [flags]... --stdin connect stdin" — a real, present primitive, the Akash analog of an authenticated SSH exec channel into a running container. Never previously cited anywhere in this spec. |
+| Nosana CLI exposes an authenticated exec-into-running-job primitive | **New finding, iteration 5 (resolves FIND-401)** | `nosana job ssh --help` (installed CLI, checked live 2026-07-07): "Open an SSH shell into a running job... Usage: nosana job ssh [options] <job> [port]" — a real, present primitive (an actual SSH shell, proxied through Nosana's own relay). Never previously cited anywhere in this spec; the exact non-interactive (single-command) invocation shape is not independently re-verified beyond this `--help` output in this revision (see REQ-302). |
 
 No other drift was found: both CLIs, both wallet models (Solana-keypair-auto-gen for Nosana,
 `provider-services`+SDL for Akash), and this repo's existing `deploy-akash.sh`/`akt-treasury.sh`
@@ -144,8 +183,10 @@ scripts remain aligned with current upstream documentation.
 | ERC-8004 `register()` | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/economy/gig/lib/identity.mjs::registerIdentity`/`verifyIdentity`, called THROUGH the existing, already-tested `~/anicca/skills/economy/gig/lib/ensure-agent-id.mjs::ensureAgentId` cache-then-verify-then-register-once wrapper (not re-derived from scratch — resolves FIND-004) — a real on-chain transaction (mainnet registry `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` on Base, chain 8453; testnet `0xdc527768082c489e0ee228d24d3cfa290214f387` on Base-Sepolia; both independently re-verified live 2026-07-07 per that file's own header). |
 | gig-board `mcp.json` generation | **Effectful shell (new, template reused)** | File write following the exact shape of the already-live, verified `~/.blockrun/mcp.json`. |
 | Nosana job deploy | **Effectful shell (new)** | Real `nosana job post` subprocess against a real Solana-settled market; genuinely new for this project (REQ-302). |
-| Akash job deploy | **Effectful shell (existing, reused unmodified)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` + `akt-treasury.sh` — already implemented, already tested against a real sandbox-2 chain per those scripts' own inline evidence references; reused unmodified with a new child SDL/`CHILD_ID` (REQ-303). |
-| Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). |
+| Akash job deploy | **Effectful shell (existing, reused unmodified) + new secrets-injection step (revised iteration 5, resolves FIND-401/402/403)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` + `akt-treasury.sh` — already implemented, already tested against a real sandbox-2 chain per those scripts' own inline evidence references; reused unmodified with a new CHILD-SPECIFIC SDL (NOT byte-identical to `spawn-child/sdl/child.yaml` — that template lacks an explicit `HOME`/`ANICCA_HOME` `env:` line, confirmed by direct read; this feature's own variant adds ONE new line, `HOME=/root`, resolves FIND-403) and `CHILD_ID` (REQ-303). PROP-303a's "zero source modification" claim is scoped to `deploy-akash.sh`/`akt-treasury.sh`'s own script files only, never to this new SDL variant. A genuinely NEW post-lease-active secrets-injection step (this feature's own orchestration code, never a `deploy-akash.sh` modification) delivers the child's pre-generated wallet material (REQ-201/202) via `provider-services lease-shell <service> "cat > /opt/anicca.env" --stdin` (confirmed-present CLI primitive, `lease-shell --help`, 2026-07-07) — resolves FIND-401's core gap: neither the SDL nor `install.sh` ever provided ANY channel for this. |
+| Akash-specific AKT funding-readiness gate (reused, new to this feature — resolves FIND-402) | **Pure core (existing, reused unmodified) + effectful config read** | `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt}) → {ready, reason, thresholdAkt, shortfallAkt}` — already implemented, already unit-tested (`lib/__tests__/akt-cost-gate.test.js`); REQ-303 calls it with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values (`spawn_cost_akt: 25`, `buffer_akt: 1`) BEFORE invoking `akt-treasury.sh`/`deploy-akash.sh` — a DIFFERENT, narrower concern than REQ-102's colony-wide `MIN_SHELTER_USD`/`SPAWN_THRESHOLD_USD` (cross-cloud aggregate USD surplus), never a competing reimplementation of it. |
+| Nosana job deploy — post-boot secrets-injection (new, resolves FIND-401's Nosana-side analog) | **Effectful shell (new)** | A NEW orchestration step delivering the child's pre-generated Solana/EVM wallet material onto a `RUNNING` Nosana job via `nosana job ssh <job> [port]` (confirmed-present CLI primitive, `job ssh --help`, 2026-07-07) — genuinely new, never previously specified; the exact non-interactive invocation shape is confirmed against the actually-installed CLI at Phase 2, not asserted here as already-proven (REQ-302). |
+| Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer (Jupiter SOL→USDC, then Skip API 4-hop `smart_relay` USDC(solana)→AKT(akashnet-2) via `noble-1`/`osmosis-1`) reusing `spawn-child/config.json`'s own already-documented `funding_route` — NOT a single-signer single-transaction transfer for this specific target, since neither current citizen's wallet natively holds AKT (revised iteration 5, resolves FIND-402(c)). |
 | Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, never from `citizens.json` (resolves FIND-201). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`, which this feature never touches) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
@@ -221,6 +262,22 @@ public dashboard (not read by this feature). `perCitizenReserveUsd` defaults to 
 consistency, the exact `RESERVE = 5.0` constant `economy/ubi/run.sh` already uses for the same "don't
 count money a citizen needs for its own survival" purpose — not a new number invented for this feature).
 
+**Dual-chain balance handling (resolves FIND-404):** A citizen record legitimately carries BOTH
+`walletAddress.evm` AND `walletAddress.solana` simultaneously — this is the EXPECTED shape for every
+Nosana-path child this feature ever produces (REQ-201 unconditionally generates an EVM wallet for every
+child; REQ-202 additionally generates a Solana wallet whenever the child is Nosana-deployed; REQ-305's
+own append template records both address strings when both exist). THE SYSTEM SHALL, for such a citizen,
+SUM both chains' USD-normalized balances into that citizen's single `balance_i` for this aggregation —
+never pick one chain and ignore the other, and never treat the dual-wallet shape itself as a malformed
+record. This is a deliberate design decision (the citizen's TOTAL liquid surplus, not one chain's share
+of it, is what REQ-102's colony-wide threshold gate needs to reason about), not an unstated ambiguity:
+`readCitizenBalances` queries EACH populated `walletAddress` field independently (EVM via the existing
+`erc20()`-style public-RPC pattern, Solana via the existing `sol()`/`solusdc()`-style pattern, both
+already established by `telemetry-collect.sh`), normalizes each to USD via the same already-proven
+spot-price mechanism (`ethPrice()`/`solPrice()`), and returns their SUM as that citizen's one balance
+figure — a citizen with only ONE populated `walletAddress` field degenerates to that single chain's own
+balance, with no special-casing required.
+
 **Edge Cases**:
 - A citizen's public-RPC balance query fails, times out, or returns a non-finite/negative value:
   that citizen contributes **0** to the sum (fail-closed — never treated as infinite/unknown-but-fine),
@@ -247,10 +304,21 @@ count money a citizen needs for its own survival" purpose — not a new number i
   Coinbase SOL-USD spot-price call) rather than inventing a second conversion path — the identical
   discipline `economy/ubi/run.sh`'s own `bal()` helper already applies for its own, differently-scoped
   purpose.
+- A citizen's registry record carries BOTH `walletAddress.evm` AND `walletAddress.solana` populated
+  simultaneously (the expected Nosana-path shape, REQ-202): `readCitizenBalances` queries and
+  USD-normalizes BOTH chains independently and returns their SUM as that citizen's single balance figure
+  — never one chain alone, and never treated as a malformed/ambiguous record (resolves FIND-404). A
+  citizen with a nonzero balance on one chain and zero on the other still correctly contributes the sum
+  (i.e., the nonzero chain's own normalized value) — no special case is needed for the "one chain is
+  empty" sub-case.
 
 **Acceptance Criteria**:
 - Pure function, e.g. `computeColonySurplusUsd({ citizens, perCitizenReserveUsd }) → number`, takes
   already-fetched balance data as input and performs zero I/O itself.
+- Given a fixture citizen with a nonzero, independently-verifiable balance on BOTH its `walletAddress.evm`
+  AND `walletAddress.solana` fields, `readCitizenBalances` returns a total equal to the SUM of both
+  chains' own USD-normalized values (each normalized via the existing `ethPrice()`/`solPrice()`
+  mechanism) — never either chain's value alone (resolves FIND-404).
 - Given two self-funded citizens with balances `$8` and `$3` and `perCitizenReserveUsd=5`, returns
   `max(0,8-5) + max(0,3-5) = 3 + 0 = 3`.
 - Given a citizen whose `isSelfFunded()` check returns `false`, its balance (however large) contributes
@@ -617,6 +685,13 @@ keypair; it does not call `buildChildSpec`.
   logs, or process list — the caller MUST redirect `gen-wallet.sh`'s stdout directly to a 600-perm file
   (the script's own header comment already states this constraint; REQ-201 makes the CALLER's
   compliance with it a binding acceptance criterion, not merely documentation).
+- The generated private key material must be delivered to the child's own remote lease/job via REQ-303's
+  (`provider-services lease-shell`) or REQ-302's (`nosana job ssh`) post-boot injection channel ONLY —
+  THE SYSTEM SHALL NEVER write this key material into any boot-time artifact (an SDL `env:` line, a
+  Nosana job command string, a cloud-init `user_data` field, or any other artifact
+  `provider-services sdl-to-manifest`/a job-definition dump would expose publicly) at any point between
+  generation and injection (resolves FIND-401: this is the structural property that makes the two-phase
+  "boot secretless, inject after" sequence in REQ-302/303 actually correct, rather than merely asserted).
 
 **Acceptance Criteria**:
 - `gen-wallet.sh`'s output JSON (`{address, private_key, public_key}`) is captured directly into a
@@ -902,17 +977,28 @@ FIND-204 — REQ-206 is extended to cover these four, not merely the identity-an
 ### REQ-301: Local spawn is structurally forbidden
 **EARS**: THE SYSTEM SHALL NOT provision any child instance's runtime, wallet material (beyond the
 ephemeral REQ-201/202 generation step, which MAY run on whichever host initiates the spawn attempt,
-provided the generated key is immediately relocated into the child's own isolated `$HOME` and never
-persisted under the initiating host's own home), or persistent state on the same physical/virtual host
-as any existing colony citizen's own runtime. Every child SHALL be deployed exclusively via REQ-302
-(Nosana) or REQ-303 (Akash) — reusing SPEC.md §3 P3's own stated rationale ("spawn は local
-禁止（disk を埋めて崩壊）") — never onto the machine currently running the spawning process itself.
+provided the generated key is held ONLY in a transient, 600-perm file on the initiating host and is
+relocated into the child's own isolated remote `$HOME` EXCLUSIVELY via REQ-302's/REQ-303's post-boot
+secrets-injection channel — resolves FIND-401's timing gap: "relocated" means relocated the moment the
+child's own lease/job is confirmed running and reachable via that injection channel, never synchronously
+at generation time, since no authenticated channel to an as-yet-unbooted lease/job can exist — and is
+never itself persisted under the initiating host's own home beyond that transient file, which the
+trap/cleanup discipline REQ-201 already specifies removes), or persistent state on the same
+physical/virtual host as any existing colony citizen's own runtime. Every child SHALL be deployed
+exclusively via REQ-302 (Nosana) or REQ-303 (Akash) — reusing SPEC.md §3 P3's own stated rationale
+("spawn は local 禁止（disk を埋めて崩壊）") — never onto the machine currently running the spawning
+process itself.
 
 **Edge Cases**:
 - A spawn attempt is initiated from a laptop/Mac Mini host that ALSO happens to run an existing
   citizen (the current colony's actual topology): the child's own long-running process/state MUST
   still end up exclusively on the cloud lease, never left running on that initiating host after the
   spawn attempt completes (success or failure).
+- The generated wallet material's transient temp file on the initiating host is never cleaned up
+  (e.g. the process crashes before REQ-302/303's post-boot injection step and its own trap/cleanup
+  runs): THE SYSTEM treats this as a REQ-305 failed-attempt condition requiring the SAME shred/rm
+  cleanup discipline REQ-201 already specifies, checked at the NEXT wake if it was missed — never left
+  indefinitely as a stray secret on the initiating host.
 
 **Acceptance Criteria**:
 - Structural/Tier-0 check: reading the deploy code path confirms the only two artifacts the initiating
@@ -936,7 +1022,28 @@ would violate REQ-203's isolation guarantee by creating key material outside the
 verifying a `RUNNING`/`COMPLETED` job status and a real, resolvable job ID/URL (per the documented
 output format: `Job: https://explore.nosana.com/jobs/<id>`) before considering this leg successful.
 
+**Post-boot secrets-injection channel (new, resolves FIND-401's Nosana-side analog):** Exactly like
+REQ-303's Akash path, a Nosana job posted via `nosana job post` boots the child's compute with no
+channel, by itself, for delivering the child's own already-generated EVM (REQ-201) private key material
+onto the running job (the `-w/--wallet` flag documented above supplies the JOB-POSTING wallet — the
+transaction signer for the Nosana market itself — not a channel for injecting a DIFFERENT, separate
+secret payload into the job's own running container). THE SYSTEM SHALL therefore deliver that payload,
+after the job reaches `RUNNING` status (this leg's own existing success check, above), via
+`nosana job ssh <job> [port]` — a real, confirmed-present CLI primitive (`nosana job ssh --help`, checked
+live 2026-07-07: "Open an SSH shell into a running job"), the direct Nosana analog of Akash's
+`lease-shell` and the authenticated-post-boot-channel security pattern `cloud-init.sh`'s own header
+comment already establishes as this codebase's precedent (see the Scope section's honesty note on that
+precedent). The EXACT non-interactive invocation shape for a single `cat > /opt/anicca.env`-style
+payload delivery (as opposed to an interactive shell) is NOT independently re-verified beyond this CLI's
+own `--help` output in this revision — THE SYSTEM SHALL confirm the exact working invocation against the
+actually-installed `@nosana/cli` version at Phase 2 implementation time before relying on it, rather than
+this spec asserting an unverified exact command line as already-proven.
+
 **Edge Cases**:
+- The `nosana job ssh` secrets-delivery step fails after the job itself is already `RUNNING` (billing):
+  treated as a deploy failure under REQ-305, mirroring REQ-303's identical Akash-side edge case — the
+  already-paid job cost is logged for colony accounting, and the child is never marked `"active"` on a
+  booted-but-secretless job alone.
 - The child's Solana wallet lacks sufficient NOS/SOL to cover the selected market's posted price at
   submission time: job post fails immediately (documented CLI behavior) — treated identically to
   REQ-305's deploy-failure path, no partial success recorded.
@@ -955,6 +1062,10 @@ output format: `Job: https://explore.nosana.com/jobs/<id>`) before considering t
 - A successful deploy yields a real job ID that independently resolves via
   `https://explore.nosana.com/jobs/<id>` (or the equivalent current CLI "get job" query) to a
   `RUNNING`/`COMPLETED` status, not merely a locally-logged claim.
+- After a Nosana job reaches `RUNNING`, a `nosana job ssh`-based delivery step lands the child's own
+  pre-generated wallet material inside the running job's container — an integration/E2E check confirms
+  this (never inferred from the job posting's own stdout alone), mirroring REQ-303's Akash-side check
+  (resolves FIND-401's Nosana-side analog).
 
 ---
 
@@ -972,18 +1083,99 @@ reused as-is unless a child-specific variant is explicitly required). THE SYSTEM
 actual `AKASH_DEPOSIT` escrowed and, once observable, the real settled lease cost, into a persistent
 shelter-cost ledger that REQ-102's `measured_last_shelter_cost_usd` mechanism reads.
 
+**Funding-readiness gate reuse (resolves FIND-402):** BEFORE invoking `akt-treasury.sh`/
+`deploy-akash.sh`, THE SYSTEM SHALL determine whether the signing wallet's current AKT balance is
+sufficient by calling the existing, already-unit-tested
+`~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt,
+bufferAkt})` — reusing `spawn-child/config.json`'s own real, already-documented `spawn_cost_akt`
+(default `25`) and `buffer_akt` (default `1`) values as `costAkt`/`bufferAkt` — rather than defining a
+competing, Akash-specific numeric threshold from scratch. This is a DIFFERENT, narrower concern than
+REQ-102's `MIN_SHELTER_USD`/`SPAWN_THRESHOLD_USD` (which answers "does the colony have enough aggregate
+USD-equivalent surplus to attempt a spawn at all, across either cloud target"): `computeSpawnGate`
+answers the Akash-specific mechanical question "given Akash is the already-SELECTED target (REQ-306)
+and REQ-102 already certified sufficient aggregate surplus, does the signing wallet's OWN AKT balance
+right now cover this deploy's real cost" — REQ-303 reuses it exactly as
+`~/anicca/skills/self/spawn-child/SKILL.md` itself already documents (its own "READY" branch: steps 1-4,
+ending in `deploy-akash.sh`), never re-deriving `spawn-child`'s already-tested arithmetic. If
+`computeSpawnGate` returns `ready:false`, THE SYSTEM SHALL treat this identically to the "ACT mint
+cancels" edge case below (a deploy failure, REQ-305, never a fabricated `dseq`) — funding the AKT
+shortfall itself (the Jupiter→Skip-API bridge, REQ-304) is what THIS feature adds; the gate merely
+decides whether that bridge needs to run at all.
+
+**Child-specific SDL variant — explicit `HOME` (resolves FIND-403):** Direct reads confirm neither
+`deploy-akash.sh`'s inline default SDL nor the reused external template
+(`~/anicca/skills/self/spawn-child/sdl/child.yaml`) sets `HOME`/`ANICCA_HOME` anywhere in its `env:`
+block — both currently rely on `node:22-bookworm`'s own default root-user home (`/root`), which is
+exactly the "base-image default" REQ-203's own PROP-203c prohibits relying on implicitly. THE SYSTEM
+SHALL therefore use a child-specific SDL variant (structurally identical to
+`spawn-child/sdl/child.yaml` in every other respect — same image, same `command`/`args` boot shape, same
+`expose`/`profiles`/`placement` blocks) that adds exactly ONE new `env:` line, `HOME=/root` (the same
+value the base image already resolves to implicitly today — made EXPLICIT, not a behavior change),
+acknowledged here as a genuinely new, small, necessary SDL modification — NOT a claim that the existing
+template is reused byte-for-byte for THIS feature's actual deploys (PROP-303a's "zero source
+modification" claim is correspondingly scoped to `deploy-akash.sh`/`akt-treasury.sh`'s own script files
+only, never to this new, small SDL variant).
+
+**Post-lease secrets-injection step (resolves FIND-401, new — not a modification to `deploy-akash.sh`):**
+`deploy-akash.sh` (unmodified) already boots the lease with ZERO secret material in the SDL/manifest —
+this was ALREADY correct, existing behavior, not a gap needing a fix. What the existing artifacts never
+provided is a channel for delivering the child's own already-generated EVM (and, if applicable, Solana)
+private key material (REQ-201/202) onto that booted lease so the running process can actually sign as
+the identity REQ-204 registers and REQ-305 ledgers. THE SYSTEM SHALL therefore add a NEW orchestration
+step, run by THIS feature's own code (never by `deploy-akash.sh`'s own source, which stays byte-identical
+per PROP-303a) immediately after `deploy-akash.sh`'s existing manifest-send succeeds (i.e., after the
+lease is confirmed `active` and the manifest is confirmed sent — reusing `deploy-akash.sh`'s own existing
+`ACTIVE`/`SENT` polling result as the trigger, never a new polling mechanism): render the child's wallet
+material (the REQ-201/202 private key(s), `ANICCA_CHILD_ID`, and any other `.env` value the child's own
+`install.sh`/`runtime/loop/index.mjs` require at first wake) into a `.env`-shaped payload, then deliver
+it via `provider-services lease-shell <service-name> "cat > /opt/anicca.env" --dseq <dseq> --gseq <gseq>
+--oseq <oseq> --provider <provider> --from "$AKASH_KEY_NAME" --stdin` — a real, confirmed-present
+`provider-services` CLI primitive (`provider-services lease-shell --help`, checked live 2026-07-07: "do
+lease shell... connect stdin"), the direct Akash analog of an authenticated SSH exec-into-running-
+container channel. `<service-name>` is `automaton` (the SDL's own service name, `sdl/child.yaml` line 7);
+`<dseq>`/`<provider>` are already known from `deploy-akash.sh`'s own successful run (its own
+stdout/internal variables); `<gseq>`/`<oseq>` default to `1` per `provider-services`' own documented
+defaults (unchanged from `deploy-akash.sh`'s own lease-create call, which never overrides them). Once
+delivered, the file lands at `/opt/anicca.env` — the path the child's own booted process is configured to
+read its runtime configuration from (a Phase 2 implementation detail this feature's diff, not
+`install.sh` itself, is responsible for wiring). THE SYSTEM SHALL NEVER place this secret payload in the
+SDL's own `env:` block, in any `user_data`-equivalent boot config, or in any location
+`provider-services query`/`sdl-to-manifest` exposes publicly — this mirrors the EXACT security discipline
+`~/anicca/skills/self/spawn/scripts/cloud-init.sh`'s own header comment already documents for the
+(separate, DO-specific, out-of-scope) `run.sh` path ("SECURITY: NO secret VALUES in user_data...
+Secrets are SCP'd... after boot") — cited here ONLY as the established SECURITY PATTERN precedent this
+feature's Akash-specific mechanism follows, NOT as a claim that DO's own SCP step is itself already
+implemented (a direct read of `run.sh` confirms no `scp` invocation exists anywhere in its current DO
+path either — an honest, out-of-scope gap in a DIFFERENT, non-REQ-302/303 cloud target this feature does
+not touch; see RESOLUTION-NOTES.md).
+
 **Edge Cases**:
 - The signing wallet's `uact` (ACT) balance is below `AKASH_DEPOSIT` at spawn time: `akt-treasury.sh`
   MUST be run and its EXECUTED (not CANCELED — the script's own documented balance-delta check)
   outcome confirmed BEFORE `deploy-akash.sh` is invoked; if the mint cancels (output below
   `bme.params.min_mint`), THE SYSTEM SHALL treat this as a deploy failure (REQ-305) and never fabricate
   a `dseq`.
+- The `computeSpawnGate` readiness check reports `ready:false` (insufficient AKT even after accounting
+  for `buffer_akt`): THE SYSTEM SHALL treat this identically to the "mint cancels" edge case above — a
+  deploy failure under REQ-305, `akt-treasury.sh`/`deploy-akash.sh` are never invoked, and no `dseq` is
+  fabricated.
 - No open bid appears within `deploy-akash.sh`'s existing poll window (30 attempts, existing default
   sleep): the script's own existing fail-closed behavior (non-zero exit, no dseq printed) is reused
   as-is; REQ-303 adds no new retry logic beyond what already exists.
 - `send-manifest` fails after its existing retry budget (5 attempts): treated as a deploy failure even
   though the lease itself is technically active — a leased-but-unmanifested deployment is not a running
   child and MUST NOT be marked `"active"`.
+- The post-lease secrets-injection step (`lease-shell`) fails (network error, expired lease-shell
+  authorization, or a non-zero exit) AFTER `deploy-akash.sh` already reports an active lease + sent
+  manifest: THE SYSTEM SHALL treat this as a deploy failure under REQ-305 (the lease itself is real and
+  billing, but the child cannot yet sign as its own registered identity) — the already-paid,
+  non-refundable lease deposit is logged for colony accounting (mirroring REQ-305's own "already-spent,
+  non-refundable resource" handling), and the child is NEVER marked `"active"` on the strength of a
+  booted-but-secretless lease alone.
+- The child-specific SDL variant's new `HOME=/root` line is accidentally omitted at implementation time
+  (a regression): THE SYSTEM treats this as a spec violation to be caught at Phase 3 review — PROP-203c's
+  "explicit env line" acceptance criterion is re-checked against the ACTUAL rendered SDL used for a real
+  deploy, not merely asserted from this spec's own text.
 
 **Acceptance Criteria**:
 - `deploy-akash.sh CHILD_ID` and `akt-treasury.sh` are invoked with no source modification; their
@@ -993,6 +1185,20 @@ shelter-cost ledger that REQ-102's `measured_last_shelter_cost_usd` mechanism re
   shelter-cost ledger file that REQ-102 reads on its NEXT evaluation — the very first spawn therefore
   uses the provisional `$5.00`/`$10.00` defaults, and every subsequent evaluation uses real measured
   data once at least one successful deploy exists.
+- `computeSpawnGate({balanceAkt, costAkt: config.spawn_cost_akt, bufferAkt: config.buffer_akt})` (from
+  `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js`, reused unmodified) is called before every
+  Akash deploy attempt, with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values
+  — never a competing, independently-invented Akash-specific threshold.
+- The rendered SDL actually submitted on-chain for a real deploy contains an explicit `HOME=/root` line
+  in its `env:` block — a structural check of the ACTUAL post-`envsubst` artifact (not the template
+  file alone), resolving FIND-403 and satisfying PROP-203c's "never a base-image default" requirement.
+- After `deploy-akash.sh`'s manifest-send succeeds, a `provider-services lease-shell ... --stdin` call
+  delivers the child's own pre-generated wallet material to `/opt/anicca.env` on the leased container —
+  an integration/E2E check confirms the file exists post-delivery with the expected content (never
+  checked via the SDL/manifest artifact, which never carries it) — and that `deploy-akash.sh`/
+  `akt-treasury.sh`'s own source remains byte-identical throughout (PROP-303a's scope, corrected to
+  exclude the new secrets-injection step and the new child-specific SDL variant, both of which are
+  tested as NEW code, never claimed as pre-proven reuse).
 
 ---
 
@@ -1003,13 +1209,31 @@ it is that citizen's own survival reserve) or from any human-funded wallet (clau
 funding SHALL draw only from the aggregate surplus REQ-102 already certified as available for THAT
 spawn attempt, and by an amount not exceeding what REQ-102 approved.
 
+**AKT funding route correction (resolves FIND-402):** The "single-signer, single-transaction transfer"
+characterization in the first Edge Case below is accurate for REQ-204's gas-seed transfer and for any
+shelter-cost transfer where the funding citizen's OWN native chain already matches the deploy target's
+native currency (e.g., Franklin's Solana SOL/USDC directly funding a Nosana deploy — REQ-302 — both
+Solana-native, genuinely one signer, one transaction). It is NOT accurate for funding an AKASH deploy's
+`uact`-denominated escrow specifically: NEITHER of the colony's two currently-verified self-funded
+citizens (`anicca-a3cdd4`'s Base USDC, `Franklin`'s Solana SOL/USDC, per REQ-105's seed data) natively
+holds AKT. THE SYSTEM SHALL fund an Akash deploy's AKT requirement via the REAL, already-documented,
+already-vetted route `~/anicca/skills/self/spawn-child/config.json`'s own `funding_route` field
+specifies (confirmed by direct read, 2026-07-07): Jupiter SOL→USDC (Solana, same-chain swap), THEN Skip
+API 4-hop `smart_relay` USDC(solana)→AKT(akashnet-2) routed through `noble-1`/`osmosis-1`, THEN
+`akt-treasury.sh`'s own existing `mint-act` step (unmodified) to convert the received AKT into the
+`uact` `deploy-akash.sh` actually escrows. THE SYSTEM SHALL reuse this documented route rather than
+re-deriving a same-chain assumption that does not hold for either citizen's actual wallet composition —
+this is a genuinely multi-hop, multi-transaction funding path for the Akash target specifically, never a
+single-signer single-transaction transfer.
+
 **Edge Cases**:
 - The approved aggregate surplus is spread across multiple citizens' wallets and no single citizen
   individually holds the full deploy cost: THE SYSTEM SHALL fund from whichever citizen(s)
   INDIVIDUALLY hold sufficient surplus-above-reserve to cover the cost alone (a single-signer,
-  single-transaction transfer, matching the existing gojo/rescue transfer pattern already used in
-  `economy/ubi/run.sh`), rather than attempting a new multi-wallet pooled transaction mechanism — this
-  feature deliberately does not build multi-signer pooling.
+  single-transaction transfer for a SAME-CHAIN funding path, matching the existing gojo/rescue transfer
+  pattern already used in `economy/ubi/run.sh` — see the AKT funding route correction above for the
+  Akash-specific, genuinely multi-hop exception), rather than attempting a new multi-wallet pooled
+  transaction mechanism — this feature deliberately does not build multi-signer pooling.
 - No single citizen individually holds enough, even though the AGGREGATE clears REQ-102's threshold:
   THE SYSTEM SHALL NOT proceed with the spawn this wake; it is logged as a funding-shortfall no-op
   (distinct from REQ-305's provisioning-failure state — no child record is even created), and
@@ -1237,10 +1461,18 @@ internal consistency rather than inventing an unrelated window), THE SYSTEM SHAL
 SOLE canonical owner of this lifecycle fact (REQ-105's `citizens.json` is deliberately minimal per its
 own exact-field-list design and carries neither `status` nor `active_since` — this feature never stores
 a second, competing copy of either fact there, resolving FIND-201's location contradiction) — never
-silently delete or destroy the child, its wallet, or its cloud lease. `active_since` is itself a
-ledger.js row field, set once by REQ-305 at the exact moment a child is first marked `"active"`
-(REQ-204+REQ-205 complete); REQ-402's window check is `now − active_since >= BOOTSTRAP_WINDOW_DAYS *
-86400000`, read directly from that same row.
+silently delete or destroy the child, its wallet, or its cloud lease. This relabeling is implemented as
+`ledger.js::appendChild`-ing a NEW row carrying the SAME `child_id` and `status:"bootstrap_failed"` —
+`ledger.js` itself gains NO update/upsert primitive and remains exactly `{readChildren, appendChild}`
+(the identical discipline REQ-101/REQ-305 already establish for every other lifecycle transition); this
+new row becomes "the" effective row for that citizen precisely because REQ-101's own
+`filterProductiveCitizens` join already reduces multiple rows sharing one `child_id` to the
+LAST-appended row before applying its exclusion rule (last-write-wins, REQ-101's own naming) — REQ-402
+does not introduce a second, competing reduction rule; it relies on that SAME one, by cross-reference,
+resolving FIND-405's recurrence of FIND-301's class of ambiguity. `active_since` is itself a ledger.js
+row field, set once by REQ-305 at the exact moment a child is first marked `"active"` (REQ-204+REQ-205
+complete); REQ-402's window check is `now − active_since >= BOOTSTRAP_WINDOW_DAYS * 86400000`, read
+directly from that same (last-appended, "active") row.
 
 THE SYSTEM SHALL EXCLUDE a `"bootstrap_failed"` child from REQ-101's colony-surplus aggregation until it
 produces its own first realized settlement (it does not count as a "productive" self-funded citizen
@@ -1277,11 +1509,16 @@ or blocks a replacement spawn (that remains gated purely by REQ-102's own arithm
 - A scheduled/wake-triggered check reads `active_since` and `status` directly from
   `~/anicca/skills/self/spawn/lib/ledger.js`'s own rows (never from REQ-105's registry, which carries
   neither field) for every `"active"` child lacking a recorded REQ-401 success, compares
-  `now - active_since` against `BOOTSTRAP_WINDOW_DAYS`, and flips exactly those past the window to
-  `"bootstrap_failed"` in that SAME ledger row — no others. Every child this check considers is one
-  already present in BOTH REQ-105's colony citizen registry (as a citizen record, appended by REQ-305 on
-  activation) AND ledger.js (as a row, appended at spawn time and updated at activation) — REQ-402 does
-  not maintain a third, separate list of children.
+  `now - active_since` against `BOOTSTRAP_WINDOW_DAYS`, and, for exactly those past the window,
+  `appendChild`s a NEW row for the SAME `child_id` with `status:"bootstrap_failed"` — never a mutation
+  of the prior row, and never applied to any child not past the window (resolves FIND-405: this new row
+  becomes "the" effective row for REQ-101's `filterProductiveCitizens` join precisely because that join's
+  own last-write-wins reduction, REQ-101, picks up the LAST-appended row for each `child_id`). Every
+  child this check considers is one already present in BOTH REQ-105's colony citizen registry (as a
+  citizen record, appended by REQ-305 on activation) AND ledger.js (as one or more rows, appended at
+  spawn time and again at activation) — REQ-402 does not maintain a third, separate list of children,
+  nor does it add any update/upsert primitive to `ledger.js`, which stays exactly `{readChildren,
+  appendChild}`.
 - `filterProductiveCitizens({citizens, ledgerRows, nowMs, bootstrapWindowDays})` (REQ-101's new join
   function), given a citizen whose matching ledger.js row is flagged `"bootstrap_failed"`, excludes it
   from the productive-surplus sum even if its own registry-recorded balance is nonzero (e.g. residual

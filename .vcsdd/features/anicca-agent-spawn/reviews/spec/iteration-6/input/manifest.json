@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 6,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 5,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-5/output/findings/",
+    "note": "5 findings, 3 critical: FIND-401+402 (critical, resolved together) -- spawn-child/ now properly cited as prior art (its lib/akt-cost-gate.js reused for REQ-303's funding-readiness gate instead of a competing invented threshold); REQ-201/301/302/303/304 rewritten to specify a real two-phase provisioning sequence (boot secretless -> inject secrets post-boot via an authenticated exec channel) for BOTH host paths -- Akash via `provider-services lease-shell <service> \"cat > /opt/anicca.env\" --stdin` (verified live via --help) and Nosana via `nosana job ssh <job> [port]` (verified live via --help, a genuine SSH-into-running-job primitive the builder discovered beyond the original brief). REQ-304 corrected to cite the real multi-hop Jupiter->Skip-API->AKT funding route from spawn-child/config.json instead of a false single-transaction claim. Honesty note baked into the spec: grep-confirmed that run.sh's existing DO path does NOT actually implement the SCP step its own cloud-init.sh comment claims -- reported as an out-of-scope known gap, not silently assumed solved. FIND-403 (major) -- new child-specific SDL variant adds an explicit HOME=/root env line (flagged as unverified against a live container, Docker wasn't available to test). FIND-404 (critical) -- REQ-101 now explicitly SUMS a citizen's evm+solana balances when both are present. FIND-405 (major) -- REQ-402 now cross-references REQ-101's last-write-wins appendChild reduction by name."
+  },
+  "note": "Verify each of the 5 fixes actually holds by re-reading the real source files fresh (spawn-child/lib/akt-cost-gate.js + config.json, run.sh's real DO path for the SCP-absence claim, deploy-akash.sh, and actually run `provider-services lease-shell --help` / `nosana job ssh --help` yourself to independently confirm these primitives are real, not just trust the prior iteration's claim). In particular: (1) confirm the two-phase boot-then-inject sequence is FULLY specified for both Akash and Nosana with no remaining ambiguity about WHEN post-boot injection fires (how does the orchestrator know the lease/job is 'ready' to accept a lease-shell/ssh command -- is a real readiness-polling mechanism specified, or just assumed?); (2) confirm the HOME=/root SDL addition doesn't conflict with anything else in the spec that assumes a different ANICCA_HOME value; (3) confirm the honesty note about the DO path's missing SCP step doesn't leave REQ-301 (which presumably still describes DO as a viable host option) internally contradictory -- if DO's secrets-injection is a known gap, does the spec correctly scope DO out of what's claimed to work THIS increment, or does it still claim DO is fully supported despite this? (4) confirm REQ-101's new SUM rule for dual evm+solana balances doesn't introduce any double-counting risk with FIND-201's registry design. Also do a full fresh pass over the REST of the spec (not just the 5 fixed areas) -- this feature is now on iteration 6 with 26+ total findings across 5 prior iterations; do not assume convergence, and look hardest at whatever has been most recently and repeatedly rewritten (REQ-201/301/302/303/304), since that is exactly where new inconsistencies keep appearing."
+}

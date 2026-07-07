@@ -618,6 +618,62 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-403d",
       "beadId": "BEAD-095"
+    },
+    {
+      "id": "PROP-075",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-101f",
+      "beadId": "BEAD-096"
+    },
+    {
+      "id": "PROP-076",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-201d",
+      "beadId": "BEAD-097"
+    },
+    {
+      "id": "PROP-077",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-302c",
+      "beadId": "BEAD-098"
+    },
+    {
+      "id": "PROP-078",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-303d",
+      "beadId": "BEAD-099"
+    },
+    {
+      "id": "PROP-079",
+      "tier": 3,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-303e",
+      "beadId": "BEAD-100"
+    },
+    {
+      "id": "PROP-080",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-303f",
+      "beadId": "BEAD-101"
+    },
+    {
+      "id": "PROP-081",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-304d",
+      "beadId": "BEAD-102"
     }
   ],
   "traceability": {
@@ -633,7 +689,8 @@
           "BEAD-023",
           "BEAD-024",
           "BEAD-086",
-          "BEAD-092"
+          "BEAD-092",
+          "BEAD-096"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -720,7 +777,8 @@
         "linkedBeads": [
           "BEAD-039",
           "BEAD-040",
-          "BEAD-041"
+          "BEAD-041",
+          "BEAD-097"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -819,7 +877,8 @@
         "status": "active",
         "linkedBeads": [
           "BEAD-058",
-          "BEAD-059"
+          "BEAD-059",
+          "BEAD-098"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -833,7 +892,10 @@
         "linkedBeads": [
           "BEAD-060",
           "BEAD-061",
-          "BEAD-062"
+          "BEAD-062",
+          "BEAD-099",
+          "BEAD-100",
+          "BEAD-101"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -847,7 +909,8 @@
         "linkedBeads": [
           "BEAD-063",
           "BEAD-064",
-          "BEAD-065"
+          "BEAD-065",
+          "BEAD-102"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -1815,6 +1878,90 @@
         "createdAt": "2026-07-07T10:17:11.316Z",
         "createdInPhase": "1b",
         "externalId": "PROP-403d"
+      },
+      {
+        "beadId": "BEAD-096",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-101f",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-101f"
+      },
+      {
+        "beadId": "BEAD-097",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-201d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-007"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-201d"
+      },
+      {
+        "beadId": "BEAD-098",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-302c",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-014"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-302c"
+      },
+      {
+        "beadId": "BEAD-099",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-303d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-015"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-303d"
+      },
+      {
+        "beadId": "BEAD-100",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-303e",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-015"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-303e"
+      },
+      {
+        "beadId": "BEAD-101",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-303f",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-015"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-303f"
+      },
+      {
+        "beadId": "BEAD-102",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-304d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-016"
+        ],
+        "createdAt": "2026-07-07T10:47:42.201Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-304d"
       }
     ]
   },
@@ -1841,5 +1988,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T10:28:18.453Z"
+  "updatedAt": "2026-07-07T10:47:42.202Z"
 }
