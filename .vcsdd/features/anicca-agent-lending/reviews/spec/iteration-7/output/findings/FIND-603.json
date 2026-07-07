@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-603",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "REQ-114 was added this SAME revision (resolving iteration-6's FIND-502), but the pre-existing REQ-102(d) self-loan-exclusion cross-references written for FIND-402 (iteration 5->6) were never updated to name the new, sibling kill-switch alongside the old one. The Edge Case at behavioral-spec.md:1274-1278 states a self-loan candidate is 'rejected by REQ-102(d) BEFORE ANY other step of this critical section runs -- before REQ-101's surplus computation, before `evaluateColdStartKillSwitch`, and before EITHER the ... lock is ever acquired' -- naming `evaluateColdStartKillSwitch` explicitly but never `evaluateOverallDefaultKillSwitch`, even though REQ-114's own new kill-switch is, by this same document's own account, also evaluated 'BEFORE acquiring the `loan_${lenderId}` lock' (:850-853) and therefore logically falls within the 'BEFORE ANY other step' claim. The matching Acceptance Criterion at :1342-1343 has the identical omission. This is very likely harmless in substance (the enumeration is illustrative, not exhaustive, and 'BEFORE ANY other step' is already a total claim covering both switches) -- but it is a genuine, checkable incompleteness in how this revision's own new REQ-114 was integrated into the rest of the document's existing cross-references, and a fresh implementer or Phase-3 reviewer reading only that specific bullet could reasonably ask whether the self-loan check is ALSO guaranteed to run before `evaluateOverallDefaultKillSwitch`, or whether that ordering was left unspecified when REQ-114 was added.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "1274-1278, 1342-1343",
+    "snippet": "A candidate loan where `lenderId === borrowerId` (a self-loan attempt): rejected by REQ-102(d) BEFORE ANY other step of this critical section runs -- before REQ-101's surplus computation, before `evaluateColdStartKillSwitch`, and before EITHER the `loan_${lenderId}` or the `loan_borrower_${borrowerId}` lock is ever acquired (resolves FIND-402)"
+  },
+  "routeToPhase": "1a"
+}

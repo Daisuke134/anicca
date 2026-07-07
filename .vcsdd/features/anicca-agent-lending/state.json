@@ -1422,23 +1422,23 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T13:36:32.960Z",
+      "timestamp": "2026-07-07T14:02:23.479Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 6,
+        "iteration": 7,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-501",
-          "FIND-502",
-          "FIND-503"
+          "FIND-601",
+          "FIND-602",
+          "FIND-603"
         ],
-        "note": "All 3 iteration-5 findings reconfirmed genuinely resolved. 3 new findings on a full fresh pass (major/major/minor) -- explicitly challenges the decreasing-finding-count convergence assumption (7-8-6-5-3-3 is a false signal, new defect classes keep emerging, not just re-discoveries): FIND-501 (major) -- the total-lock-ordering deadlock-avoidance rationale is analytically FALSE, since withGigLock is non-blocking/fail-fast with no retry loop, so classical hold-and-wait deadlock cannot occur regardless of key order -- the mechanism is harmless but the stated justification is wrong and untestable as claimed. FIND-502 (major) -- the cold-start kill-switch only samples successfulOnTimeRepayments===0 loans, leaving zero risk-monitoring coverage for larger established-reputation loans (up to 250x cold-start size) -- a bust-out/reputation-laundering blind spot never addressed across 5 iterations. FIND-503 (minor) -- stale changelog header still says iteration 3 despite the body reflecting iterations 3-5."
+        "note": "All 3 iteration-6 findings reconfirmed genuinely resolved. 3 new findings (0 critical, 2 major, 1 minor): FIND-601 (major) -- both kill-switches are evaluated only once on a pre-lock snapshot; REQ-106s fresh lock-protected re-check (from FIND-401) re-verifies REQ-101/102/105 sizing but never re-verifies either kill-switchs pause decision, leaving a TOCTOU race where non-lock-contending concurrent issuance can slip past a just-tripped colony-wide kill-switch. FIND-602 (major) -- REQ-114s dollar-weighted metric defends against dilution-by-loan-COUNT but not dilution-by-loan-VOLUME -- a single large bust-out default can fall below the 0.20 threshold once enough OTHER unrelated healthy large loans also complete, undermining the exact scenario REQ-114 claims to close. FIND-603 (minor) -- self-loan-exclusion cross-references not updated to also name evaluateOverallDefaultKillSwitch."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T13:36:32.960Z"
+      "adversaryReviewedAt": "2026-07-07T14:02:23.479Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T13:54:08.683Z"
+  "updatedAt": "2026-07-07T14:02:23.480Z"
 }

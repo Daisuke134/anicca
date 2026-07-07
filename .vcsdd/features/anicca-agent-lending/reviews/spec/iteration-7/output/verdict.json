@@ -1,0 +1,63 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "iteration": 7,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T15:40:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-501", "FIND-502", "FIND-503"
+    ],
+    "crossCheckedSourceFiles": [
+      "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-501",
+      "status": "genuinely resolved",
+      "note": "Re-read lock.mjs fresh in full this session (lines 1-209). Confirmed acquire() (lines 153-158) is a single tryCreateLockFile attempt, and, only if that fails, a single reclaimStaleLock attempt (lines 128-151) -- itself a one-shot stat+isLockStale-check+atomic-rename, never a retry-with-wait loop -- returning true/false immediately either way. withGigLock (lines 187-209) returns {ok:false} immediately on failure to acquire, with 'no queueing, no waiting' (its own docstring, line 178). This confirms the corrected justification's central claim: classical hold-and-wait deadlock is structurally impossible against this primitive regardless of acquisition order, because no caller ever blocks while holding one lock and waiting for a second. Grepped both spec files for every 'deadlock' occurrence (behavioral-spec.md:89,990,999,1005,1012,1017,1020,1022,1029,1040,1358; verification-architecture.md:25,36,146) -- every remaining mention is the CORRECTED framing ('resolves FIND-501', 'NOT a deadlock-avoidance mechanism', 'this is NOT required for correctness today') with zero surviving claims that the fixed lock-acquisition order is needed to prevent deadlock. No false deadlock-avoidance claim remains anywhere in either spec file."
+    },
+    {
+      "findingId": "FIND-502",
+      "status": "genuinely resolved (the original 'exists but never proven called' gap is closed; two DIFFERENT, NEW gaps in the same area are reported below as FIND-601/FIND-602)",
+      "note": "New REQ-114 (behavioral-spec.md:796-933) adds computeOverallDefaultRateUsd/evaluateOverallDefaultKillSwitch as a second, dollar-weighted, all-tier monitor. Critically, this is NOT merely an unconnected pure function the way FIND-303 originally caught for the cold-start switch: REQ-106's own Acceptance Criteria (behavioral-spec.md:1431-1435) states a NEW, explicit Tier-0 proof obligation (PROP-114c, verification-architecture.md:133) requiring 'a structural/Tier-0 check (mirroring PROP-105h's own real-source-read discipline) confirms this requirement's OWN, REAL, production issuance code ALSO imports and calls evaluateOverallDefaultKillSwitch for EVERY loan request ... IN ADDITION TO evaluateColdStartKillSwitch' -- and Gate item (2) (verification-architecture.md:272-285) explicitly instructs the Phase-3 adversary that 'the adversary MUST NOT accept a mocked-caller fixture as sufficient evidence here either, the same discipline PROP-105h already establishes'. This genuinely mirrors PROP-105h's real-source-read rigor rather than merely asserting a pure function exists -- REQ-114 IS wired into REQ-106's issuance flow at the spec level, with a real Tier-0 structural proof obligation, not a bare pure-function addition. This fresh pass DID surface two separate, NEW defects in this same newly-added area (a kill-switch staleness/concurrency gap, and a dollar-weighted dilution-by-large-volume gap) -- see FIND-601 and FIND-602 -- but neither is a recurrence of FIND-502's own original 'nobody proves it's called' complaint, which is closed."
+    },
+    {
+      "findingId": "FIND-503",
+      "status": "genuinely resolved",
+      "note": "The document header (behavioral-spec.md:1-9) now reads 'revision: iteration 6, revised (spec review iterations 1 through 5 ... FIND-401..403 -- ALL resolved; this revision additionally resolves iteration-6's own FIND-501..503)', and the Changelog now tabulates every iteration transition through 'iteration 6 -> current, this revision' (lines 11-91), including the iteration-5->6 table (FIND-401/402/403) and the iteration-6->current table (FIND-501/502/503). No stale 'iteration 3' header or gap in the changelog chain remains."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-602", "FIND-603"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:325-2013", "description": "Full fresh read of every requirement (REQ-101 through REQ-114) performed this session; REQ-101/102/103/104/106/107/108/109/110/111/112/113 arithmetic, fail-closed behavior, lock discipline, and cross-references were traced end-to-end against their own Acceptance Criteria with no NEW defect found in those requirements beyond FIND-603's minor cross-reference gap"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md:796-933", "description": "REQ-114 (the brand-new section this iteration) traced in full: its dollar-weighted arithmetic, worked fixtures, and threshold-honesty framing were verified correct as far as they go, but its own count-dilution defense (lines 887-895) has no counterpart defense against dilution by co-existing large HEALTHY loan volume once sampleSize>=10 -- FIND-602"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-601"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs:37-209", "description": "Full file re-read fresh this session confirming withGigLock's single-attempt, non-blocking, fail-closed semantics (supports FIND-501's genuine resolution)"},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md:104-167", "description": "Full 149-row Proof Obligations table read; PROP-105h/PROP-114c (rows 130,133) each require only a pre-lock call-site check, and no PROP in the table exercises a concurrent, non-lock-contending kill-switch race -- FIND-601"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
