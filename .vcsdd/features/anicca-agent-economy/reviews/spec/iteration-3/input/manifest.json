@@ -1,0 +1,17 @@
+{
+  "reviewType": "spec",
+  "iteration": 3,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIterations": {
+    "iteration1": { "verdict": "FAIL", "findingsPath": "reviews/spec/iteration-1/output/findings/" },
+    "iteration2": { "verdict": "FAIL", "findingsPath": "reviews/spec/iteration-2/output/findings/" }
+  },
+  "note": "This is iteration 3, the stated iteration cap for this gate. Confirm FIND-101/FIND-102 are genuinely resolved. If this iteration also FAILs, escalate rather than attempting a 4th spec-only revision loop."
+}

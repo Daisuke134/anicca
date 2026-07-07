@@ -1,0 +1,86 @@
+{
+  "phase": "1c",
+  "reviewType": "spec",
+  "feature": "anicca-agent-economy",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 3,
+  "iterationCapNote": "This is the stated iteration cap for the Phase 1c spec-review gate (manifest note: 'if this iteration also FAILs, escalate rather than attempting a 4th spec-only revision loop'). FIND-101 and FIND-102, the two blocking findings from iteration 2, are BOTH independently re-verified as genuinely resolved below. This verdict is FAIL solely because a NEW, previously-undetected issue (FIND-201) was found on a fresh, full re-read of the spec and its cited source files, per this review's explicit mandate to check for newly-overlooked contradictions. Recommend escalating FIND-201 as a narrow, targeted patch to REQ-204's acceptance criteria rather than a full 4th iteration of this gate.",
+  "priorIterationResolution": {
+    "FIND-001": {
+      "status": "RESOLVED (reconfirmed, no regression)",
+      "note": "REQ-201 still states the literal default 'BOOTSTRAP_RESERVE_USDC defaults to 20 (Number(process.env.BOOTSTRAP_RESERVE_USDC) || 20)'; PROP-201c still asserts the exact fallback and the 20>=5 standing invariant. Unchanged from iteration 2's resolution."
+    },
+    "FIND-002": {
+      "status": "RESOLVED (reconfirmed, no regression)",
+      "note": "alwaysAvailableOf(slotName) remains a distinct, unconditionally-precedent input on filterCatalog, covering exactly report/cook; PROP-201e unchanged. Re-verified runtime/loop/prompt.mjs's getToolDefinitions still appends SLEEP_TOOL unconditionally (line 171), independent of the slots argument."
+    },
+    "FIND-003": {
+      "status": "RESOLVED (superseded by the FIND-102 fix, no regression)",
+      "note": "The open-position carve-out and the BOOTSTRAP_RESERVE_USDC/COMPUTE_RESERVE_USDC ordering invariant remain intact and are now grounded in two concretely-specified mechanisms (see FIND-102 resolution below). Re-read runtime/loop/liquidity.mjs in full: liquidityDirective is still triggered by COMPUTE_RESERVE_USDC (not BOOTSTRAP_RESERVE_USDC) and still names exactly 'CLOSE a profitable HL position' / 'withdraw idle yield' -- matching the two slots (hl_trade, yield) the classification table gives a carve-out to, and no others (token_launch/earn/sol-trade/earn/polymarket-trade are correctly excluded from the carve-out since liquidityDirective never references them)."
+    },
+    "FIND-004": {
+      "status": "RESOLVED (reconfirmed, no regression)",
+      "note": "REQ-101's binding isLockStale(nowMs, mtimeMs, staleMs) extraction requirement is unchanged and still explicit in behavioral-spec.md and reflected in verification-architecture.md's Purity Boundary Map and Tier-1 definition."
+    },
+    "FIND-005": {
+      "status": "RESOLVED (reconfirmed, no regression)",
+      "note": "Re-read the actual current runtime/loop/prompt.mjs (lines 89-96) again: the spec's quoted baseline text for the ★COLONY BOOTSTRAP PRIORITY★ block is still accurate to the real file at the cited range. REQ-204 remains a binding requirement to retire this exact block. (See FIND-201 below for a newly-found, narrower gap in REQ-204's own removal scope relative to REQ-203's full principle -- this is a NEW finding, not a reopening of FIND-005; FIND-005's specific baseline-mischaracterization defect remains fixed.)"
+    },
+    "FIND-006": {
+      "status": "RESOLVED (reconfirmed, no regression)",
+      "note": "REQ-103's acceptance criteria, PROP-103b, and the Gate section still explicitly forbid treating evidence/p2.2-security-fixes-round3.md's same-day self-report as satisfying the Tier 3 obligation, and still require the Phase 3 adversary's own independent invocation/transaction hashes/timestamps. Unchanged."
+    },
+    "FIND-101": {
+      "status": "RESOLVED",
+      "note": "Re-read /Users/anicca/anicca/skills/registry.json fresh: confirmed exactly 17 slots carry status:\"live\" today (report, self/spawn, self/spawn-child, self/issue-dev, self/coordinate, economy/gig, economy/ubi, cook, yield, hl_trade, x402_sell, token_launch, earn/clip, earn/clip-producer, earn/video, earn/sol-trade, earn/polymarket-trade), and that behavioral-spec.md REQ-201's classification table enumerates all 17 by exact name with no live slot omitted and no extra/ghost slot invented -- matching the real registry.json 1:1. Spot-checked the table's grounding against the actual referenced source: self/spawn's lib/spawn-decision.js confirms decideSpawn() gates real provisioning on balanceUsdc >= minBalanceUsdc (default 20) BEFORE any capital/provider spend occurs (self/spawn/run.sh: DRY_RUN/dormant exits before any wallet/droplet/seed step) -- grounding the 'risk: safe' classification. economy/gig/run.sh confirms decide.mjs's decideGigAction() is the real gate ('surplus above reserve -> post-eligible') invoked before the 'post' action fires, grounding the 'run.sh gates eligibility' claim verbatim used in the table. economy/ubi/ubi.js's contribute()/distributeAI() are confirmed to be exactly the fail-closed no-ops (non-positive/below-threshold/would-breach-reserve -> amount_usd:0) the table describes. The classification is now a BINDING Phase 2 acceptance criterion ('Phase 2 MUST write these exact risk/alwaysAvailable fields into skills/registry.json for all 17 currently-live slots ... before the eligibility gate goes live' + 'A Phase 3 adversary that finds any currently-live slot still untagged after this increment ships MUST treat REQ-201 as NOT satisfied'), and verification-architecture.md's PROP-201g (Tier 0) and Gate item (4a) both require the Phase 3 adversary to independently re-derive a sample of the table's classifications rather than accept it at face value -- closing the original 'literal, criteria-satisfying implementation would break the headline scenario' defect."
+    },
+    "FIND-102": {
+      "status": "RESOLVED",
+      "note": "Re-read /Users/anicca/anicca/runtime/loop/index.mjs lines 243-247 fresh: confirmed the exact expression the spec now cites for hasOpenRiskPositionOf('yield') (`recentLedger.slice().reverse().find(l => String(l && l.source || '').startsWith('yield') && l.tx)`) is verbatim the real, already-computed positionsSummary expression -- genuinely no new I/O, computed unconditionally every wake today. Re-read /Users/anicca/anicca/skills/earn/run.sh: confirmed hl-trade ledger lines are written with source:'hl-trade' (lines 194/206/214/238), which still does not match startsWith('yield') -- so the spec's claim that ctx.positionsSummary structurally excludes hl_trade, and that hasOpenRiskPositionOf('hl_trade') therefore requires a genuinely NEW query, is accurate. Re-read /Users/anicca/anicca/skills/earn/hl-trade/hl.py (cmd_account, lines 64-73): confirmed the open_positions array construction the spec cites is real and matches. Confirmed skills/earn/run.sh (lines 171-172) already invokes exactly 'hl.py account' as a subprocess in production, supporting the spec's claim that the new query reuses 'the SAME Hyperliquid clearinghouseState-backed primitive skills/earn/hl-trade/hl.py account already uses'. The lazy-invocation gating (fires only when balanceUsdc < BOOTSTRAP_RESERVE_USDC) and the fail-open-on-failure default (returns true, not false, on query failure/timeout/unreachability) are now both explicitly specified with a reasoned, internally-consistent justification for why this one flag's fail-direction correctly reverses the requirement's otherwise-uniform fail-closed posture. PROP-201h (Tier 1, zero-I/O fixture test against the real yield implementation) and PROP-201i (Tier 2, spy/mock call-count + injected-failure test against the real hl_trade implementation) now give this a concrete, independently-checkable test plan. The original defect (a single generic 'already-fetched data' claim that was only true for one of two carved-out slots, with the fund-safety-critical failure mode of the new query left completely unspecified) is closed."
+    }
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json", "description": "Re-read all 17 live slot entries fresh; confirmed the REQ-201 classification table enumerates exactly this set with no omission/invention, and spot-checked three of the table's 'safe' classifications (self/spawn, economy/gig, economy/ubi) against their own real source files -- all three hold up (FIND-101 genuinely resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/prompt.mjs", "description": "Re-read buildSystemPrompt end-to-end (lines 45-132), not just the lines FIND-005/REQ-204 already cite. Confirmed the ★COLONY BOOTSTRAP PRIORITY★ block and the two named ranking phrases are accurately described (no FIND-005 regression), but found a THIRD, equally-real ranking phrase ('the highest-leverage move is to POST', line 71) in the same paragraph as one of the two already-named phrases, which REQ-204's own explicitly-scoped Acceptance Criteria ('targets only the imperative/ranking language named above') does not cover -- FIND-201, a new defect."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/run.sh", "description": "Confirmed decide.mjs's decideGigAction() pure eligibility gate is invoked before the 'post' action executes (lines 115-121, 132), grounding REQ-201's classification-table claim about economy/gig's own internal gating."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs", "description": "Re-read lines 243-247 fresh; confirmed the exact ledger-scan expression verification-architecture.md now cites for hasOpenRiskPositionOf('yield') is the real, already-computed positionsSummary expression, verbatim (FIND-102 genuinely resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/run.sh", "description": "Confirmed hl-trade ledger entries are still written with source:'hl-trade' (lines 194/206/214/238), never matching startsWith('yield'), and confirmed run.sh already invokes 'hl.py account' as a subprocess (lines 171-172) -- both facts ground the two-mechanism hasOpenRiskPositionOf specification as accurate to the real code (FIND-102 genuinely resolved)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/hl-trade/hl.py", "description": "Confirmed cmd_account's open_positions construction (lines 64-73) matches the spec's citation exactly."},
+        {"type": "file", "location": ".vcsdd/features/anicca-agent-economy/specs/verification-architecture.md", "description": "PROP-204a's Tool/Method ('grep/read ... for the specific quoted phrases above') and PROP-203b's Tool/Method ('no pre-existing steering block of equivalent strength remains') describe the SAME file state but, given REQ-204's narrower named-phrase scope, could report contradictory PASS/FAIL outcomes for the identical shipped code -- a verification_tool_mismatch newly identified this iteration (FIND-201)."}
+      ]
+    }
+  },
+  "blockingFindings": [
+    {
+      "findingId": "FIND-201",
+      "dimension": "spec_fidelity",
+      "severity": "high",
+      "file": "/Users/anicca/anicca/runtime/loop/prompt.mjs",
+      "line": "69-76",
+      "summary": "REQ-204's Acceptance Criteria explicitly scope removal to only the ★COLONY BOOTSTRAP PRIORITY★ block plus two named phrases ('REQ-204 targets only the imperative/ranking language named above'), but the CURRENT file contains a third, equally-real ranking phrase in the same paragraph as one of the named phrases ('the highest-leverage move is to POST', line 71) that REQ-204 never names and therefore never requires Phase 3 to remove.",
+      "whyBlocking": "REQ-204 exists specifically to make REQ-203's 'no steering/ranking text' principle true of the codebase; a Phase 3 implementation that satisfies REQ-204's own stated acceptance criteria to the letter would still leave a real, evidenced violation of REQ-203 in the shipped file, and PROP-204a's narrow grep-target method could report PASS on the same file state that PROP-203b's broader claim would have to report FAIL against -- a non-binary, self-contradictory verification outcome for the identical code."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006", "FIND-101", "FIND-102"],
+    "priorIterationFindingsPartiallyResolved": [],
+    "iterationCapReached": true,
+    "recommendation": "Escalate: FIND-101/FIND-102 (the iteration-2 blockers) are both confirmed resolved by fresh, independent re-verification against the real source files. The sole remaining blocker (FIND-201) is narrow and localized -- it requires adding ONE more quoted phrase ('the highest-leverage move is to POST') to REQ-204's existing Acceptance Criteria and PROP-204a's grep target list (and, ideally, a general instruction to remove/neutralize ANY comparable ranking phrase discovered anywhere in the file's binding sections, not only the ones enumerable today), rather than a full re-run of this gate."
+  }
+}

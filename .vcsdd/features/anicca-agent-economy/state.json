@@ -28,11 +28,19 @@
       "timestamp": "2026-07-07T03:07:19.000Z",
       "reason": "iteration 3 revision addressing Phase 1c iteration-2 FAIL (FIND-101, FIND-102): all 17 live registry.json slots given explicit risk/alwaysAvailable classification (REQ-201/PROP-201g), hasOpenRiskPositionOf split into yield (real no-new-I/O reuse, PROP-201h) and hl_trade (new lazy Hyperliquid query, fail-open on failure, PROP-201i) branches",
       "iteration": 3
+    },
+    {
+      "from": "1c",
+      "to": "1c",
+      "timestamp": "2026-07-07T03:20:00.000Z",
+      "reason": "Architect escalation approved: Phase 1c hit its 3-iteration cap still FAIL, but FIND-101/102 (the iteration-2 blockers) are confirmed resolved and the sole remaining blocker (FIND-201, a narrow REQ-204 scoping gap) was recommended by the adversary itself as a targeted patch rather than a 4th full spec pass. Approved by Dais 2026-07-07 via AskUserQuestion. See escalations/1c-iteration-limit-2026-07-07.md.",
+      "escalationApproved": true
     }
   ],
   "iterations": {
     "1a": 3,
-    "1b": 3
+    "1b": 3,
+    "1c": 2
   },
   "proofObligations": [
     { "id": "PROP-101a", "tier": 1, "required": true, "status": "pending", "artifact": "specs/verification-architecture.md", "beadId": "BEAD-009" },
@@ -105,23 +113,23 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T02:57:51.000Z",
+      "timestamp": "2026-07-07T03:17:43.000Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 2,
-        "findings": ["FIND-101", "FIND-102"],
-        "note": "5 of iteration-1's 6 findings genuinely resolved (BOOTSTRAP_RESERVE_USDC default=20, alwaysAvailable signal, binding isLockStale extraction, corrected prompt.mjs baseline description, independent Tier-3 requirement). 2 NEW critical findings on the fixes themselves: FIND-101 -- REQ-201's untagged-defaults-to-risky rule, as literally specified, would exclude economy/gig/economy/ubi/self/* (zero of which have a registry.json risk tag today) from every broke instance, defeating the feature's own headline bootstrap scenario. FIND-102 -- hasOpenRiskPositionOf (the FIND-003 fix) claims to read 'already-fetched' position data, but ctx.positionsSummary structurally excludes hl_trade (filters to source.startsWith('yield') only); no real data source, query cadence, or fail-open/fail-closed behavior on query failure is actually specified.",
+        "iteration": 3,
+        "findings": ["FIND-201"],
+        "note": "All 6 iteration-1 findings AND both iteration-2 findings (FIND-101, FIND-102) reconfirmed genuinely resolved via fresh independent re-verification against real source (registry.json, index.mjs, run.sh, hl.py) -- no regressions. ONE new, narrow finding: FIND-201 -- prompt.mjs contains a fourth ranking phrase ('the highest-leverage move is to POST') in the same paragraph as an already-named REQ-204 removal target, which REQ-204's own scoped acceptance criteria don't cover, creating a possible PROP-204a (narrow grep) vs PROP-203b (broad check) contradiction on identical code. Adversary recommended a targeted patch over a 4th full spec pass. Iteration cap (3) reached with FAIL -- escalated.",
         "priorIteration": {
-          "iteration": 1,
-          "findings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
-          "resolvedCount": 5
+          "iteration": 2,
+          "findings": ["FIND-101", "FIND-102"],
+          "resolvedCount": 2
         }
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T02:57:51.000Z"
+      "adversaryReviewedAt": "2026-07-07T03:17:43.000Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-06T11:33:03.345Z",
-  "updatedAt": "2026-07-07T03:07:19.000Z"
+  "updatedAt": "2026-07-07T03:20:00.000Z"
 }
