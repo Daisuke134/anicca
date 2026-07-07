@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C01",
+  "dimension": "structural_integrity",
+  "category": "citation_drift",
+  "severity": "informational",
+  "blocking": false,
+  "description": "The sprint-1 contract's passThreshold prose cites specific line numbers/line-counts for lending-gate.mjs and lending-verify.mjs that are each consistently 3-4 lines earlier than (or, for the total-line-count claim, smaller than) the actual current file content on the reviewed commit (4d786f2). Specifically: CRIT-001 states lending-gate.mjs is '287 lines' -- the actual file (as read this session) is 292 lines. CRIT-003 cites isBorrowerEligible at 'lines 88-106' -- the function body actually spans lines 92-110 (the comment block above it starts at line 88). CRIT-004 cites evaluateOverallDefaultKillSwitch's source at 'lines 271-287' -- it actually spans lines 275-291. CRIT-005 cites verifyRepayment's source at 'lines 68-101' -- it actually spans lines 71-104. CRIT-006 cites reconcileProvisionalDisbursement's source at 'lines 108-117' -- it actually spans lines 111-120. In every case the drift is a small, consistent forward shift, which is consistent with the Phase 2c refactor commit (4d786f2, 'anicca-agent-lending Phase 2c clarity tightening') having added a handful of clarifying-comment lines to both files after this contract's own line citations were originally drafted (the refactor commit's own stated changes -- isBorrowerEligible's six-value reason enum comment, extractTxHash's malformed-RPC-response fallback rationale comment -- are exactly the kind of addition that would shift downstream line numbers by a few lines without changing any function's actual behavior).",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/lending-gate.mjs",
+    "lineRange": "1-292 (whole file)",
+    "snippet": "File is 292 lines total (contract's CRIT-001 states 287); isBorrowerEligible spans lines 92-110 (contract's CRIT-003 cites 88-106); evaluateOverallDefaultKillSwitch spans lines 275-291 (contract's CRIT-004 cites 271-287)."
+  },
+  "crossCheck": {
+    "filePath": "skills/economy/lending/lib/lending-verify.mjs",
+    "lineRange": "1-121 (whole file)",
+    "note": "verifyRepayment spans lines 71-104 (contract's CRIT-005 cites 68-101); reconcileProvisionalDisbursement spans lines 111-120 (contract's CRIT-006 cites 108-117). Every one of these criteria was independently re-verified against the file's ACTUAL current content in this review (not the cited line numbers), and every substantive claim (purity, check ordering, comparison operators, exact-equality checks, read-only-ness) holds regardless of the citation drift. This finding is purely about the contract prose's own line-number precision, not about any defect in the code, spec, or test coverage. Does not block the PASS verdict."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "No code or spec change required. If/when this contract is next revised (e.g. for a future sprint's negotiation round), refresh these line citations against the current file content -- optional housekeeping, not a gating requirement."
+}
