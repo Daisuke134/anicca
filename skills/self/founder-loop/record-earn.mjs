@@ -33,7 +33,10 @@ if (realAnc !== realFounder && !(realAnc + path.sep).startsWith(realFounder + pa
 
 // INV-1: the wallet is the pinned canonical founder wallet — never a shared/other-instance wallet.
 const FOUNDER_WALLET_EXPECTED = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
-const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83"];
+// 0xa3cdd4... = automaton's wallet BEFORE the 2026-07-07 rotation (key leaked, kept here so a
+// self-transfer from the now-retired address still never counts as earned); 0xb9dd3b67... = its
+// current (post-rotation) address. 0x9b1ee988... = a separate known-internal wallet (unrelated).
+const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0xb9dd3b67921b354c656523d6851537988f31dd56", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83"];
 let wallet;
 if (TEST && process.env.FOUNDER_WALLET) wallet = process.env.FOUNDER_WALLET;
 else { try { wallet = JSON.parse(fs.readFileSync(WALLET_JSON, "utf8")).address; } catch { die("no founder wallet.json (gen-wallet first)"); } }

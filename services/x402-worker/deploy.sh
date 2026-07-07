@@ -87,7 +87,7 @@ print(json.dumps({
   "health_route": sys.argv[1] + "/health",
   "kv_namespace": "NONCE_KV",
   "kv_id": sys.argv[2],
-  "pay_to": "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21",
+  "pay_to": "0xB9dd3B67921B354c656523d6851537988F31DD56",
   "asset": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
   "network": "base",
   "chain_id": 8453,

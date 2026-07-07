@@ -60,7 +60,7 @@ Once anicca-x402 is live and earns its first 0.01 USDC, the wallet has fuel for 
 ## § 3. Dependencies
 
 - AgentKit (= 既 install at `~/.anicca-genesis/agentkit/`)
-- Anicca wallet `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` (= 既 in `~/.automaton/wallet.json`)
+- Anicca wallet `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` (= 既 in `~/.automaton/wallet.json`; rotated 2026-07-07 to `0xB9dd3B67921B354c656523d6851537988F31DD56` after a key leak — see WITNESS-RUNBOOK.md's SECURITY UPDATE)
 - Base RPC `https://mainnet.base.org` (= no API key needed)
 - Netlify account (= 既 `NETLIFY_AUTH_TOKEN` in `~/.openclaw/.env`)
 

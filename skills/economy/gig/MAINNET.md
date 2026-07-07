@@ -4,7 +4,7 @@ Written as a witness-prep artifact (P2 recon). This original recon's "open quest
 since been RESOLVED and the chain-selectable config it called for has been IMPLEMENTED — see
 `WITNESS-RUNBOOK.md` for the current, applied state (code changes, gas math, per-body deploy plan,
 go-live sequence). This file is kept for the original recon trail; treat `WITNESS-RUNBOOK.md` as the
-canonical, up-to-date reference from here on.
+canonical, up-to-date reference from here on. (2026-07-07: the `automaton` address in the recon table below is the OLD, since-rotated wallet -- see WITNESS-RUNBOOK.md's SECURITY UPDATE note.)
 
 ## What's testnet-only today (verified by reading the actual files, not assumed)
 

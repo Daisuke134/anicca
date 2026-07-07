@@ -17,7 +17,7 @@ const MORPHO = "0xbeef0e0834849aCC03f0089F01f4F1Eeb06873C9";      // Morpho vaul
 // Agents to track. Cloud is added once Akash deploy lands (D).
 const AGENTS = [
   { id: "local", name: "Anicca / Local", host: "Mac mini + ClawRouter",
-    wallet: "0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21",
+    wallet: "0xB9dd3B67921B354c656523d6851537988F31DD56",
     home: (process.env.HOME || "") + "/.anicca" },
 ];
 

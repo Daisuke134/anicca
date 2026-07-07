@@ -8,7 +8,7 @@ and protects against nonce replay with Cloudflare KV.
 
 | | |
 |---|---|
-| pay_to (us) | `0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` |
+| pay_to (us) | `0xB9dd3B67921B354c656523d6851537988F31DD56` |
 | asset | USDC on Base `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` |
 | network | Base (`eip155:8453`) |
 | price | 1000 atomic = 0.001 USDC |

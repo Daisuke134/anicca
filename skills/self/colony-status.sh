@@ -20,7 +20,7 @@ echo "════════════ ANICCA COLONY — LIVE SSOT ($(date -
 echo ""
 echo "[1] anicca-a3cdd4   SELF-funded  (automaton + ClawRouter)"
 # a3cdd4 の実 loop = com.anicca.daemon (body ~/.anicca)。founder-loop は claude-p の proxy body (~/.anicca-founder, 0x810f)
-echo "    wallet 0xa3CDd4…C21  Base USDC=\$$(erc20 $BASE $BUSDC 0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21)(+HL口座は別途)   loop(com.anicca.daemon)=$(loop anicca.daemon)"
+echo "    wallet 0xB9dd3B…D56  Base USDC=\$$(erc20 $BASE $BUSDC 0xB9dd3B67921B354c656523d6851537988F31DD56)(+HL口座は別途)   loop(com.anicca.daemon)=$(loop anicca.daemon)"
 echo ""
 echo "[2] Franklin        SELF-funded  (Franklin-Trading, Solana)"
 echo "    wallet 8Fpqd…PCV9   SOL=$(sol 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)  USDC=\$$(solusdc 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)   loop(franklin-loop)=$(loop franklin-loop)"

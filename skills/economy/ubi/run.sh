@@ -26,7 +26,7 @@ bash "$HERE/../../self/telemetry-collect.sh" >/dev/null 2>&1 || true
 now_iso() { date -u +%Y-%m-%dT%H:%M:%SZ; }
 
 # ---- 1. contribute(): this instance's realized profit -> human UBI pool -----------------------
-A3CDD4_ADDR=0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21
+A3CDD4_ADDR=0xB9dd3B67921B354c656523d6851537988F31DD56
 DASH_JSON=$(curl -s -m10 "https://aniccaai.com/.netlify/functions/dashboard-sync" 2>/dev/null)
 LIQUID_JSON="$HOME/.automaton/state/telemetry.json"
 LIQUID=$(python3 -c "import json;print(json.load(open('$LIQUID_JSON')).get('balance_usd', 0))" 2>/dev/null || echo 0)
