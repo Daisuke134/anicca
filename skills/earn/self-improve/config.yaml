@@ -1,0 +1,38 @@
+# config.yaml — openevolve run configuration for the self-improve harness (REQ-OE4/OE5).
+#
+# Field names follow the real algorithmicsuperintelligence/openevolve `openevolve/config.py`
+# (verified this iteration against a freshly cloned copy — see behavioral-spec.md UNVERIFIED
+# section): `EvaluatorConfig.cascade_thresholds` (default [0.5, 0.75, 0.9]) and
+# `DatabaseConfig.num_islands` (default 5). This file has NOT yet been validated by actually
+# running `openevolve-run.py` against it (openevolve is not vendored/pip-installed in this
+# deterministic-core stage — disk-tight constraint, and not needed for the pytest suite under
+# tests/). Re-confirm every field name against whichever exact commit/tag gets vendored under
+# `~/anicca/` before the real evolve run (next stage).
+
+max_iterations: 20  # small — this is a cheap/local proving run, not a production sweep
+
+llm:
+  primary_model: "TODO-set-a-ClawRouter-free-tier-model-id"
+  # TODO(next stage): api_base MUST point at a no-human-credential OpenAI-compatible endpoint —
+  # ClawRouter free tier or an equivalent per-instance-funded endpoint (REQ-OE4). NEVER a human's
+  # personal API key or subscription (project invariant, memory
+  # feedback_earn_accounts_use_ai_own_email_not_dais_google / colony no-human-loop mandate).
+  # Placeholder below is intentionally NOT a real endpoint — do not point this at any
+  # human-named key/subscription pattern (PROP-SI-OE4's allowlist check).
+  api_base: "https://TODO-clawrouter-free-endpoint.invalid/v1"
+  temperature: 0.7
+
+database:
+  population_size: 20
+  num_islands: 3  # >= 2, REQ-OE5 — MAP-Elites diversity/anti-premature-convergence (openevolve's
+                  # own README/configs rationale), NOT a non-stationarity fix (that is REQ-EV3/
+                  # RH5's rotated walk-forward windows, per Sutton & Barto's own §2.4 caveat)
+
+evaluator:
+  timeout: 60
+  # Local convention (this feature): a single-element cascade — the stage1 quick-window net USD
+  # (see evaluator.py::STAGE1_MIN_NET_USD) must clear this bar before stage2's walk-forward run is
+  # attempted. openevolve's own generic cascade_thresholds are fractions of a normalized reward;
+  # our combined_score is USD-scaled, so this list is a local simplification, not upstream's
+  # literal default — documented here rather than silently reusing [0.5, 0.75, 0.9].
+  cascade_thresholds: [1.0]
