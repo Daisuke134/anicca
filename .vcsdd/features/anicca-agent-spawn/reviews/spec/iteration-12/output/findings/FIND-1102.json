@@ -1,0 +1,29 @@
+{
+  "findingId": "FIND-1102",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["edge_case_coverage"],
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "REQ-304's own edge case explicitly specifies, as real, supported behavior, that a spawn CAN proceed even when no single citizen individually holds enough surplus, via multiple citizens co-funding through separate sequential single-signer transfers to the same child wallet: 're-evaluated on a future wake once some citizen's individual surplus alone suffices, OR once the colony has more than one surplus-holding citizen able to co-fund via two SEPARATE single-signer transfers to the SAME child wallet (still no pooling — sequential individual transfers are allowed; a single joint transaction is not required and is explicitly out of scope)' (behavioral-spec.md:1743-1749). This is a genuinely distinct, load-bearing success path (multi-citizen sequential co-funding actually landing the full deploy cost on the child wallet) that is never exercised by any proof obligation anywhere in verification-architecture.md.\n\nThe only two proof obligations tied to this edge case are PROP-304b ('A funding transfer's amount never exceeds the amount REQ-102 certified as available' — verification-architecture.md:288) and PROP-304c ('When no single citizen individually holds enough... the spawn does not proceed this wake and no child ledger row is created' — verification-architecture.md:289, whose own test fixture is explicitly 'each individual citizen's own surplus below the deploy cost -> assert no child record created'). PROP-304c ONLY tests the negative/blocked case. Neither PROP-304b, PROP-304c, nor any other REQ-304 proof obligation (PROP-304a/PROP-304d/PROP-304e, which are about human-funded-wallet exclusion and the Akash AKT bridge route respectively, an unrelated concern) ever exercises the scenario where ≥2 citizens EACH individually hold insufficient surplus but their surplus TOGETHER (via two sequential single-signer transfers) covers the deploy cost, and the spawn is expected to actually succeed. There is no fixture anywhere asserting: (a) that this feature's implementation ever attempts a second, sequential transfer from a second citizen when the first citizen's transfer alone was insufficient; (b) that the child wallet ends up with the full required amount after both transfers; (c) how the per-transfer REQ-304 ceiling check (PROP-304b) is meant to interact with a SUM of two transfers against ONE certified aggregate amount (is the ceiling checked per-transfer against the whole certified amount, or against some per-citizen-apportioned sub-amount that is never specified anywhere?); or (d) what happens if the SECOND citizen's transfer fails after the FIRST citizen's transfer already succeeded (a partial-co-funding state that REQ-305's failure-handling section never explicitly addresses either).\n\nA test suite that satisfies every currently-specified PROP-304 obligation would PASS even if the multi-citizen sequential co-funding mechanism this same requirement's own prose promises were entirely unimplemented, or silently broken (e.g. if only ONE transfer is ever attempted and the spawn simply fails whenever no single citizen suffices, contradicting the edge case's own explicit 'OR once the colony has more than one surplus-holding citizen able to co-fund' framing) — because no proof obligation ever exercises the multi-citizen success path at all.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1743-1749",
+      "snippet": "No single citizen individually holds enough... THE SYSTEM SHALL NOT proceed with the spawn this wake... re-evaluated on a future wake once... the colony has more than one surplus-holding citizen able to co-fund via two SEPARATE single-signer transfers to the SAME child wallet (still no pooling — sequential individual transfers are allowed...)"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "288-289",
+      "snippet": "PROP-304b | ... A funding transfer's amount never exceeds the amount REQ-102 certified as available... | PROP-304c | ... When no single citizen individually holds enough... the spawn does not proceed this wake and no child ledger row is created | unit test: fixture with aggregate surplus above threshold but each individual citizen's own surplus below the deploy cost -> assert no child record created, a funding-shortfall no-op is logged"
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1751-1763",
+      "snippet": "Acceptance Criteria for REQ-304 (memo/log entry, no-human-funded-source structural check, AKT funding-route citation split) -- no acceptance criterion anywhere asserts a successful multi-citizen sequential co-funding lands the full amount on the child wallet."
+    }
+  ],
+  "routeToPhase": "1a"
+}

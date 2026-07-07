@@ -2241,22 +2241,22 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T13:34:52.732Z",
+      "timestamp": "2026-07-07T13:59:50.154Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 11,
+        "iteration": 12,
         "reviewerModel": "opus-4.8",
         "findings": [
-          "FIND-1001",
-          "FIND-1002"
+          "FIND-1101",
+          "FIND-1102"
         ],
-        "note": "FIND-901 reconfirmed genuinely resolved (state-path.js/run.sh mechanism verified fresh, every citation correctly points at the durable path). 2 new findings: FIND-1001 (critical) -- the one-time bootstrap copy of citizens.seed.json into the durable file is an unprotected check-then-act race, structurally outside REQ-103s lock (which only wraps REQ-201-205, not the REQ-101 registry read that triggers bootstrap) -- two concurrent first-time readers could both attempt the copy, and worse, a slow racers non-atomic write could silently overwrite a just-appended real citizen record, the exact failure class FIND-901 was created to prevent, reached via a different vector. lock.mjs itself documents a real, analogous prior double-pay bug from an unprotected check-then-act gap. FIND-1002 (major) -- registry-path.mjs mislabeled Pure Core while built from resolveStateDir (labeled Effectful Shell two rows away) and os.homedir() (real OS/env state) -- risks under-scrutinized Phase 3 verification."
+        "note": "FIND-1001/1002 reconfirmed genuinely resolved. 2 new findings: FIND-1101 (critical) -- REQ-102 and REQ-305 directly contradict on whether a FAILED spawn attempt consumes SPAWN_COOLDOWN_DAYS (REQ-102: hard gate regardless of success/failure; REQ-305: failures exempt up to 3 per window) -- baked into two approved, binding but mutually unsatisfiable PROPs (PROP-102b vs PROP-305c), since REQ-102s pinned decideColonySpawn signature has only a single scalar lastSpawnAttemptMs, unable to count recent failures, unlike this same features own cited prior art (spawn-decision.js::decideSpawn, a richer array-scan). FIND-1102 (major) -- REQ-304s multi-citizen sequential co-funding edge case (two separate single-signer transfers to the same child wallet) has ZERO proof-obligation coverage of the actual SUCCESS path -- an implementation that never attempts a second sequential transfer would pass every specified REQ-304 obligation while silently contradicting the specs own prose."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T13:34:52.732Z"
+      "adversaryReviewedAt": "2026-07-07T13:59:50.154Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T13:48:03.608Z"
+  "updatedAt": "2026-07-07T13:59:50.155Z"
 }

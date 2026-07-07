@@ -1,0 +1,38 @@
+{
+  "reviewType": "spec",
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "iteration": 12,
+  "priorIterationFindingReconfirmation": {
+    "FIND-1001": "GENUINELY RESOLVED. Fresh read of ~/anicca/skills/economy/gig/lib/lock.mjs::tryCreateLockFile (lines 108-117) confirms its real shape: `const handle = await fs.open(file, \"wx\"); await handle.close(); return true;` on success, `catch (e) { if (e.code === \"EEXIST\") return false; throw e; }` otherwise -- no exists-check of any kind precedes the open() call anywhere in that function, in acquire(), or in reclaimStaleLock(). REQ-105's corrected bootstrap step (behavioral-spec.md:714-752) genuinely mirrors this exact shape one-for-one: a single `fs.open(CITIZENS_REGISTRY_PATH, 'wx')`-equivalent call, EEXIST -> write nothing and read-only, any other failure -> fail closed exactly as tryCreateLockFile's own contract does. PROP-105l's structural half (verification-architecture.md:250) explicitly requires confirming 'NO separate fs.existsSync/fs.stat check precedes a separate write call anywhere in this code path, mirroring lib/lock.mjs::tryCreateLockFile's own exact shape' -- this is the correct, sufficient structural test. Both Tier-2 fixtures (concurrent-race; late-bootstrap-after-real-append) are logically sound given the atomicity guarantee POSIX O_CREAT|O_EXCL actually provides.",
+    "FIND-1002": "GENUINELY RESOLVED. verification-architecture.md's Purity Boundary Map row for registry-path.mjs (line 90) is now correctly labeled 'Effectful Shell (new — corrected, resolves FIND-1002, major)', consistent with CITIZENS_REGISTRY_PATH being built from resolveStateDir (already, correctly, Effectful two rows above) and COORDINATOR_HOME being built from a real os.homedir() read. PROP-105m's Tier-2 test design (verification-architecture.md:251) -- launching a real CHILD PROCESS with a DIFFERENT real HOME environment value and asserting that process's own COORDINATOR_HOME equals ITS OWN os.homedir() output, never the original coordinator's cached value -- would genuinely catch both a hardcoded-literal implementation (the child's resolved value would not match its own distinct HOME) and an implementation that reads process.env.HOME instead of calling os.homedir() (caught by PROP-105m's separate Tier-0 structural check, which explicitly requires 'a direct os.homedir() call... never a hardcoded literal or process.env.HOME substitute', verification-architecture.md:336-337/416). Because each spawned child process has its own independent module registry and no shared JS heap with the parent, any process-level memoization cannot survive across the fresh child process this test spawns, so the test design is sound for the property it claims to prove."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1101", "FIND-1102"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs", "description": "tryCreateLockFile (lines 108-117) confirmed to have exactly the shape REQ-105's atomic bootstrap claims to mirror -- no exists-check precedes the exclusive-create call anywhere"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "description": "confirmed OWN_FUNDED_FUEL_PROVIDERS = {clawrouter-own-wallet, x402, free-model} and the boolean wallet/array humanDependencies contract exactly match every REQ-101/105/305 citation"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "confirmed buildChildSpec's 7 required fields, the childWallet===parentWallet distinct-wallet throw, and the returned wallet:childWallet string field exactly match REQ-206/REQ-304's citations"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/ledger.js", "description": "confirmed the module exports exactly {readChildren, appendChild} with no update/upsert primitive, matching REQ-101/305/402's repeated 'no upsert added' claims"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js", "description": "confirmed the existing, cited prior-art decideSpawn uses an ARRAY-scan over children[].spawned_ms for its rate-limit check, not a single scalar 'last attempt' timestamp -- this is the source-of-truth pattern REQ-102 diverges from in a way that produces FIND-1101"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs", "description": "re-confirmed the legacy-fallback gate logic (effectiveHome===path.join(legacyHome,'.anicca'/'.blockrun')) still matches REQ-105/REQ-403's FIND-501/FIND-603 resolution exactly on a fresh read"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1101"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

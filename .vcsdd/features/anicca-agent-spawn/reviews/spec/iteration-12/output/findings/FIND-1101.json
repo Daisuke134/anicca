@@ -1,0 +1,59 @@
+{
+  "findingId": "FIND-1101",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness", "edge_case_coverage"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-102 and REQ-305 give DIRECTLY CONTRADICTORY definitions of whether a FAILED spawn attempt consumes/resets `SPAWN_COOLDOWN_DAYS`, and this contradiction is baked into two approved, binding proof obligations (PROP-102b vs PROP-305c) that cannot both be satisfied by a single consistent implementation of `decideColonySpawn`.\n\nREQ-102's own EARS clause (behavioral-spec.md:494-500) states the cooldown is measured 'since the colony's last spawn attempt (success OR failure — see REQ-305)' -- i.e. a FAILED attempt DOES update the 'last attempt' timestamp and therefore restarts the full cooldown window exactly like a success. REQ-102's own edge case (behavioral-spec.md:530-533) reinforces this as an absolute rule: 'SPAWN_COOLDOWN_DAYS has NOT elapsed since the last attempt... still not eligible... cooldown is a hard gate regardless of how much surplus exists.' REQ-102's own pinned Acceptance-Criteria function signature (behavioral-spec.md:541-543) is `decideColonySpawn({colonySurplusUsd, spawnThresholdUsd, lastSpawnAttemptMs, nowMs, cooldownDays, childrenProvisioning, maxConcurrentSpawns})` -- a single scalar `lastSpawnAttemptMs`, with NO parameter anywhere that could represent 'how many recent attempts were failures' or 'a list/count of recent failed attempts within the current window.'\n\nREQ-305, by contrast, states (behavioral-spec.md:1777) 'REQ-102's SPAWN_COOLDOWN_DAYS timer SHALL NOT be considered \"consumed\" by a failed attempt' and its own edge case (behavioral-spec.md:1838-1841) explicitly frames this as 'a failed attempt's cooldown-exemption,' going on to require a CAP mechanism: 'THE SYSTEM SHALL cap the number of failed attempts counted within any single SPAWN_COOLDOWN_DAYS window (default cap 3) -- beyond that cap, further attempts within the window ARE rate-limited exactly as a successful spawn would be.'\n\nThese two framings are mutually exclusive, not merely differently worded. If `lastSpawnAttemptMs` is genuinely updated on EVERY attempt including failures (REQ-102's own literal reading), then the FIRST failed attempt within a cooldown window already sets `lastSpawnAttemptMs = now`, and PROP-102b's own binding rule ('lastSpawnAttemptMs inside the cooldown window -> eligible:false, reason:\"rate_limited\"') means the SECOND attempt -- which by PROP-305c's own test design must occur 'within the SAME window' as the first failure -- is immediately blocked. There is no way for '3 injected failures within one window' (PROP-305c's own literal fixture) to ever occur under REQ-102's own cooldown semantics, because attempt #2 would already be rate-limited by attempt #1's own (failed) timestamp. Conversely, if failures are genuinely exempt from updating `lastSpawnAttemptMs` (REQ-305's own literal reading), REQ-102's own EARS clause (the parenthetical '(success OR failure — see REQ-305)') is simply false, and implementing the cap-of-3 rule requires a NEW input (e.g. a count or array of recent failed-attempt timestamps) that does not exist anywhere in REQ-102's own pinned function signature -- meaning PROP-305c (verification-architecture.md:294, 'unit test: 3 injected failures within one window, a 4th attempt within the same window -> eligible:false... even though no successful spawn has occurred') is structurally UNIMPLEMENTABLE against the exact signature REQ-102's own Acceptance Criteria pins down, since that signature has no way to distinguish 'this is the 4th failed attempt' from 'this is the very first attempt ever.'\n\nThis is not a hypothetical ambiguity resolvable by 'obviously the intended reading' -- both PROP-102b and PROP-305c are independently approved, binding Tier-1 proof obligations in the SAME table (verification-architecture.md lines 229-233 and 292-298), and the Gate section (verification-architecture.md line 469-471, 624-625) cites BOTH as required checks a Phase 3 adversary must confirm. A Phase 3 implementer cannot pass both PROP-102b and PROP-305c with one `decideColonySpawn` implementation as currently specified: they would either have to violate REQ-102's literal EARS clause (to satisfy PROP-305c) or violate REQ-305's literal EARS clause / fail PROP-305c's own test (to satisfy PROP-102b). Notably, this feature's own cited prior-art function, `~/anicca/skills/self/spawn/lib/spawn-decision.js::decideSpawn` (confirmed by direct read, 2026-07-07), does NOT use a single 'last attempt' scalar at all -- it scans an ARRAY of prior children's `spawned_ms` values (`children.some(c => c.spawned_ms >= windowStart)`), a strictly richer input shape that could naturally support 'only count entries flagged as real spawns' or 'cap how many recent failed entries count.' REQ-102's decision to collapse this into a bare scalar `lastSpawnAttemptMs` is precisely what makes REQ-305's cap-of-3 exemption mechanism impossible to implement against REQ-102's own pinned contract -- this is a genuine architectural regression from the very prior-art pattern this feature claims to be extending, not merely a wording nit.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "494-500",
+      "snippet": "THE SYSTEM SHALL permit at most one new spawn attempt when... at least SPAWN_COOLDOWN_DAYS... have elapsed since the colony's last spawn attempt (success OR failure — see REQ-305)..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "530-533",
+      "snippet": "SPAWN_COOLDOWN_DAYS has NOT elapsed since the last attempt, but colonySurplusUsd has grown far past the threshold in the meantime: still not eligible, reason:\"rate_limited\"... cooldown is a hard gate regardless of how much surplus exists."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "541-543",
+      "snippet": "Pure function, e.g. decideColonySpawn({ colonySurplusUsd, spawnThresholdUsd, lastSpawnAttemptMs, nowMs, cooldownDays, childrenProvisioning, maxConcurrentSpawns }) -> { eligible: boolean, reason: ... } -- no parameter representing a count/array of recent failed attempts anywhere."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1777",
+      "snippet": "...and REQ-102's SPAWN_COOLDOWN_DAYS timer SHALL NOT be considered \"consumed\" by a failed attempt..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+      "lineRange": "1838-1841",
+      "snippet": "A failed attempt's cooldown-exemption (above) could in principle be exploited to attempt unlimited spawns by engineering repeated \"failures\": THE SYSTEM SHALL cap the number of failed attempts counted within any single SPAWN_COOLDOWN_DAYS window (default cap 3) -- beyond that cap, further attempts within the window ARE rate-limited exactly as a successful spawn would be."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "230",
+      "snippet": "PROP-102b | REQ-102 | Cooldown gate overrides surplus size... | unit test: huge surplus, lastSpawnAttemptMs inside the cooldown window -> eligible:false, reason:\"rate_limited\""
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md",
+      "lineRange": "294",
+      "snippet": "PROP-305c | REQ-305 | Failed attempts within a single cooldown window are capped (default 3)... | unit test: 3 injected failures within one window, a 4th attempt within the same window -> eligible:false, reason:\"rate_limited\" even though no successful spawn has occurred"
+    },
+    {
+      "type": "file",
+      "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js",
+      "lineRange": "6-32",
+      "snippet": "function decideSpawn({ balanceUsdc, children = [], nowMs = Date.now(), minBalanceUsdc = 20, rateLimitDays = 14, maxChildren = 1 } = {}) { ... const spawnedRecently = children.some((c) => typeof c.spawned_ms === \"number\" && ... c.spawned_ms >= windowStart); ... }"
+    }
+  ],
+  "routeToPhase": "1a"
+}
