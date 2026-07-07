@@ -6,7 +6,7 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { bootstrapCitizensRegistry } from "../citizens-registry.mjs";
+import { bootstrapCitizensRegistry, ensureCitizensRegistry, CITIZENS_SEED_PATH } from "../citizens-registry.mjs";
 
 function tmpRegistryPath() {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), "anicca-citizens-registry-test-"));
@@ -49,4 +49,27 @@ test("PROP-105l structural: the bootstrap implementation performs no separate fs
   const src = fs.readFileSync(new URL("../citizens-registry.mjs", import.meta.url), "utf8");
   assert.ok(!/existsSync|fs\.stat\(/.test(src), "bootstrap must use a single exclusive-create, not check-then-act");
   assert.ok(/wx/.test(src), "bootstrap must use POSIX O_CREAT|O_EXCL ('wx') exclusive-create");
+});
+
+// REQ-105's real one-time-bootstrap caller: ensureCitizensRegistry reads the REAL, git-tracked
+// citizens.seed.json (CITIZENS_SEED_PATH, no override) -- not a synthetic fixture -- and writes its
+// verbatim content into the durable registryPath via bootstrapCitizensRegistry.
+test("ensureCitizensRegistry: bootstraps the durable registry from the REAL citizens.seed.json, byte-identical", async () => {
+  const registryPath = tmpRegistryPath();
+  const realSeedContent = fs.readFileSync(CITIZENS_SEED_PATH, "utf8");
+  const result = await ensureCitizensRegistry({ registryPath });
+  assert.equal(result.created, true);
+  assert.equal(fs.readFileSync(registryPath, "utf8"), realSeedContent);
+  const parsed = JSON.parse(fs.readFileSync(registryPath, "utf8"));
+  assert.equal(parsed.length, 2);
+});
+
+// PROP-105j: ensureCitizensRegistry only ever READS citizens.seed.json (fs.readFile) -- it never
+// opens the seed path itself for writing.
+test("PROP-105j: ensureCitizensRegistry never opens CITIZENS_SEED_PATH for writing", async () => {
+  const registryPath = tmpRegistryPath();
+  const before = fs.readFileSync(CITIZENS_SEED_PATH, "utf8");
+  await ensureCitizensRegistry({ registryPath });
+  const after = fs.readFileSync(CITIZENS_SEED_PATH, "utf8");
+  assert.equal(before, after, "citizens.seed.json must be byte-identical before/after bootstrap (read-only)");
 });
