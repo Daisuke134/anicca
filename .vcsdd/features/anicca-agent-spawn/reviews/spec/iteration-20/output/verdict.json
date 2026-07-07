@@ -1,0 +1,82 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "iteration": 20,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "priorIterationFindingsReVerified": [
+      "FIND-1801", "FIND-1802", "FIND-1803"
+    ]
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-1801",
+      "status": "genuinely resolved",
+      "note": "Confirmed REQ-101's Acceptance Criteria (behavioral-spec.md:881-886) states `bootstrapWindowDays` defaults to `14`, identical to REQ-402's own `BOOTSTRAP_WINDOW_DAYS` constant (itself confirmed to default to `14` at REQ-402's own EARS clause, behavioral-spec.md:2703-2706, reusing REQ-102's `SPAWN_COOLDOWN_DAYS`) -- never independently configurable. Confirmed the new proof obligation PROP-101k exists in verification-architecture.md's Proof Obligations table (line 422) with the exact by-construction Tier-0 (structural read confirming the real value is derived FROM/aliased to BOOTSTRAP_WINDOW_DAYS, never a second independently-declared literal) + Tier-1 (runtime identity assertion plus a mutation fixture: change BOOTSTRAP_WINDOW_DAYS's configured value and assert the fed-in value changes identically alongside it) discipline, explicitly mirroring PROP-402e's own established pattern for the sibling BOOTSTRAP_WINDOW_DAYS/SPAWN_COOLDOWN_DAYS pair. Confirmed the Purity Boundary Map's filterProductiveCitizens row (verification-architecture.md:242) and Gate item (1b) (verification-architecture.md:780-786) both cite PROP-101k by name with matching language. This is a genuine identity-by-construction binding, not a restatement of today's coincidental numeric match."
+    },
+    {
+      "findingId": "FIND-1802",
+      "status": "genuinely resolved -- independently re-verified against the real, current source, not merely trusted from RESOLUTION-NOTES.md",
+      "note": "Read `~/anicca/skills/self/spawn-child/run.sh` (107 lines, in full) myself before accepting this citation. The resolution's claimed mechanism matches the actual on-disk script exactly: line 44 resolves the signing key name from config.json's `akash_key_name` (`anicca-akash`); line 60 resolves the address via `provider-services keys show \"$AKASH_KEY\" -a`; line 64 queries `provider-services query bank balances \"$ADDR\" -o json` and parses it with the EXACT cited jq filter `.balances[]? | select(.denom==\"uakt\") | .amount`; line 66 converts uakt->AKT via `Number(...)/1e6`, the exact cited conversion. Also read `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js` and `~/anicca/skills/self/spawn-child/config.json` directly: `computeSpawnGate({balanceAkt, costAkt, bufferAkt})`'s real signature matches the spec's citation exactly, and config.json's real values (`spawn_cost_akt: 25`, `buffer_akt: 1`, `akash_key_name: \"anicca-akash\"`, `funding_route: \"solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)\"`) match every literal value cited in both behavioral-spec.md (REQ-303, REQ-304) and verification-architecture.md (PROP-303g, PROP-304d/e) verbatim. The citation is accurate, not invented or misattributed. Confirmed PROP-303g (verification-architecture.md:490) requires both the Tier-1 control-flow read of this exact binding and a Tier-2 integration test with a real-balance-change-between-evaluations mutation fixture, and that the Purity Boundary Map's computeSpawnGate row (verification-architecture.md:262) and Gate item (6a) (verification-architecture.md:908-929) both cite PROP-303g correctly."
+    },
+    {
+      "findingId": "FIND-1803",
+      "status": "genuinely resolved -- design decision scrutinized hard, no residual ambiguity found",
+      "note": "Re-read REQ-303's rewritten 'computeSpawnGate's exact two-pass sequencing' paragraph (behavioral-spec.md:2200-2222) together with its Edge Cases (2280-2287) and Acceptance Criteria (2317-2326) as one unit. The rule is stated exactly once, unambiguously, and every other mention of `ready:false`/`ready:true`/`computeSpawnGate` in the document (checked via a full-file grep of all 31 occurrences) is consistent with it -- the specific OLD contradictory phrase this finding names ('the gate merely decides whether that bridge needs to run at all') no longer appears anywhere in the current spec text (confirmed via grep, zero matches). Traced the full state machine by hand: first pass ready:true -> mint step directly, bridge and second pass never run; first pass ready:false -> bridge attempt (never itself a REQ-305 failure) -> second pass with freshly re-queried balanceAkt (per PROP-303g) -> second pass ready:true -> mint step; second pass ready:false -> THE REQ-305 failure, identical treatment to the pre-existing 'mint cancels' edge case. No implementer-facing ambiguity remains about which evaluation's ready:false is the real failure. Verified PROP-304d/PROP-304e (verification-architecture.md:495-496) are consistent with this sequencing (they describe the bridge's own hop mechanics assuming it is invoked, and do not themselves assert a trigger condition that would conflict with the two-pass design). Confirmed PROP-303h (verification-architecture.md:491) requires a Tier-1 control-flow read confirming exactly two call sites (unconditional first, second reachable only along the first's ready:false branch) plus a three-fixture Tier-2 test (ready-skips-bridge; not-ready+bridge-succeeds; not-ready+bridge-still-insufficient=failure). Confirmed PROP-303d (verification-architecture.md:487) is correctly narrowed to arithmetic/config-binding correctness only, explicitly deferring the sequencing question to PROP-303h -- no double-counted or conflated obligation. Confirmed Gate items (6a) and (7) (verification-architecture.md:908-929, 931-957) cross-reference each other correctly (item 6a covers the gate-side sequencing, item 7 covers the funding-side reachability of the bridge) with no gap between them."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:1-2967 (full fresh read across REQ-101 through REQ-403, every EARS clause, Edge Case, and Acceptance Criteria)",
+          "description": "Read the entire behavioral spec this session across sequential Read passes (header/changelog, REQ-101, REQ-102, REQ-103, REQ-104, REQ-105, REQ-106, REQ-201 through REQ-206, REQ-303, REQ-304, REQ-305, REQ-306, REQ-401, REQ-402, REQ-403), per the manifest's own instruction to weight extra scrutiny on the previously-under-scrutinized REQ-304/305/306/401/402/403 (Akash/Nosana/spawn-child) cluster. No new instance of the 8-times-recurring pinned-input-derivation failure class was found in that cluster or elsewhere: selectCloudTarget's four inputs (REQ-306) are legitimately raw I/O-leaf values from a named, effectful price/availability query mechanism (mirrors the already-accepted nowMs/selectCloudTarget precedent from iterations 17-18, not a fresh gap); computeSpawnGate's costAkt/bufferAkt are literal config.json scalar reads (the same class of treatment already given to MIN_SHELTER_USD/SAFETY_MARGIN_MULTIPLIER/SPAWN_COOLDOWN_DAYS elsewhere, not the aggregate/array-shaped derivation pattern this failure class targets); balanceAkt is now fully bound (PROP-303g, above). No entirely new defect class was found either: no money-safety issue, no boundary/off-by-one bug, no internally-inconsistent multi-statement requirement, and no cross-feature staleness beyond what iterations 1-19 already resolved."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn-child/run.sh, lib/akt-cost-gate.js, config.json (read in full, live filesystem, not cached from prior iterations' citations)",
+          "description": "Independently re-verified FIND-1802's central claim against the actual, current source rather than trusting RESOLUTION-NOTES.md's own citation -- every cited line number, CLI invocation, jq filter, and numeric config value matches the real files exactly (see priorFindingsVerification above for the line-by-line confirmation)."
+        },
+        {
+          "type": "grep",
+          "location": "specs/behavioral-spec.md (all 31 occurrences of ready:false/ready:true/computeSpawnGate)",
+          "description": "Confirmed zero occurrences of the old contradictory phrasing FIND-1803 named ('the gate merely decides whether that bridge needs to run at all') remain anywhere in the current spec text, and every remaining occurrence of the two-pass vocabulary is mutually consistent with the single, unambiguous sequencing statement."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md (Proof Obligations table PROP-101a through PROP-403f, Purity Boundary Map, full Gate section)",
+          "description": "Read the full Proof Obligations table (lines 408-524), the full Purity Boundary Map (lines 232-274), and the full Gate section (items 1 through 8-plus, lines 702-960+). Confirmed PROP-101k, PROP-303g, and PROP-303h each carry a correctly-scoped Tier assignment, a concrete Tool/Method that would genuinely fail an implementation violating the bound property (not a restatement of the prose), and are correctly cross-referenced from both the Purity Boundary Map rows (filterProductiveCitizens cites PROP-101k; computeSpawnGate cites PROP-303g and PROP-303h) and the corresponding Gate items (1b cites PROP-101k; 6a cites PROP-303g/PROP-303h; 7 cross-references 6a for the funding-side half of the same sequencing requirement). PROP-303d is correctly narrowed in scope (arithmetic/config-binding only) with an explicit hand-off to PROP-303h for the sequencing question, avoiding any double-counted or ambiguous obligation. No orphaned required:true obligation was found missing from the Gate."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "REQ-101", "REQ-102", "REQ-103", "REQ-104", "REQ-105", "REQ-106",
+      "REQ-201", "REQ-202", "REQ-203", "REQ-204", "REQ-205", "REQ-206",
+      "REQ-301", "REQ-302", "REQ-303", "REQ-304", "REQ-305", "REQ-306",
+      "REQ-401", "REQ-402", "REQ-403"
+    ],
+    "duplicateFindings": [],
+    "note": "This is the 20th consecutive spec-review iteration for this feature and the first to reach PASS on both dimensions. All three iteration-19 findings (FIND-1801 major, FIND-1802 critical, FIND-1803 critical) are independently re-verified as genuinely and completely resolved -- FIND-1802 in particular was checked against the real, current ~/anicca/skills/self/spawn-child/run.sh/lib/akt-cost-gate.js/config.json source on disk this session (not merely trusted from RESOLUTION-NOTES.md's own citation), and every cited mechanism matches exactly. FIND-1803's bridge-first, two-pass design decision was traced by hand through every reachable state and cross-checked against all 31 occurrences of the relevant vocabulary in the spec; the old contradictory phrasing is confirmed gone (zero grep matches) and no implementer-facing ambiguity about which evaluation's ready:false is the real REQ-305 failure remains. A full fresh, skeptical re-read of the ENTIRE document (every REQ-101 through REQ-403) was performed this session, with extra weight on the REQ-304/305/306/401/402/403 (Akash/Nosana/spawn-child) cluster per the manifest's own instruction, since that cluster is where FIND-1802/1803 -- the 7th and 8th instances of a class that had previously concentrated in REQ-101/102/202 -- were just found. No 9th instance of the recurring pinned-input-derivation failure class was found: selectCloudTarget's four raw I/O-leaf inputs and computeSpawnGate's costAkt/bufferAkt scalar config-reads were specifically re-examined and are legitimately exempt from this failure class's binding-sentence treatment (they are raw leaves or literal scalar reads, not hand-assembled aggregates/arrays of the kind this class targets), consistent with this document's own established precedent for nowMs/MIN_SHELTER_USD/SAFETY_MARGIN_MULTIPLIER. One candidate near-miss was specifically investigated and rejected as a non-finding: REQ-303 has no dedicated Edge Case for 'the provider-services query bank balances call itself errors (network/CLI failure) rather than merely reporting insufficient funds' the way it does for the bid-poll-timeout and manifest-send-failure cases -- but this is adequately covered by the explicit 'reusing run.sh's own existing, already-fail-closed query+conversion logic verbatim' citation (which inherits run.sh's own non-zero-exit-on-query-failure behavior) plus REQ-305's own blanket rule that any REQ-201-303 step failure is a deploy failure; both outcomes (explicit abort, or balanceAkt=0 propagating through two failed gate evaluations) converge on the identical REQ-305 failure result, so this is not a genuine implementer-facing ambiguity and was not raised as a finding. No entirely different defect class (money-safety, boundary/off-by-one, internally-inconsistent multi-statement requirement, cross-feature staleness) was found anywhere in the document on this fresh pass. Genuine convergence has been reached: Phase 2 (TDD) may proceed."
+    }
+}

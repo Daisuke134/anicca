@@ -1,0 +1,35 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 1,
+  "contractPath": "contracts/sprint-1.md",
+  "contractDigest": "a0c40d4a5c7581e5429a1a6f2d4dc5770222ffb07ade92bf3c05156b914bc7ce",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+      "skills/self/spawn/lib/__tests__/colony-balances.test.mjs",
+      "skills/self/spawn/lib/__tests__/registry-path.test.mjs",
+      "skills/self/spawn/lib/__tests__/citizens-registry.test.mjs",
+      "skills/self/spawn/lib/__tests__/shelter-cost-ledger.test.js",
+      "skills/self/spawn/lib/__tests__/cloud-target.test.mjs",
+      "skills/self/spawn/lib/__tests__/needs-solana-wallet.test.mjs",
+      "skills/self/spawn/lib/__tests__/child-spec-erc8004.test.js",
+      "skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs",
+      "skills/self/spawn/lib/__tests__/akash-funding-gate.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/lib/treasury-gate.mjs",
+      "skills/self/spawn/lib/colony-balances.mjs",
+      "skills/self/spawn/lib/registry-path.mjs",
+      "skills/self/spawn/lib/citizens-registry.mjs",
+      "skills/self/spawn/lib/shelter-cost-ledger.js",
+      "skills/self/spawn/lib/cloud-target.mjs",
+      "skills/self/spawn/lib/needs-solana-wallet.mjs",
+      "skills/self/spawn/lib/akash-funding-gate.mjs",
+      "skills/self/spawn/lib/child-spec.js"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Cross-repo: spec/contract files are at /Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/, but ALL test/source files live in a DIFFERENT repo at /Users/anicca/anicca (paths relative to that repo's root). Commits d81ea65(N/A)/417ce37(2b GREEN)/42d4650(2c refactor, safe/unrelated concurrent commit, verified no conflict)/412a516(2c flaky-fix+dedup) on ~/anicca's main. This sprint explicitly scopes OUT the effectful spawn orchestrator (wallet-gen/ERC-8004-registration/mcp.json/cloud-deploy call sites, REQ-304 co-funding, PROP-102k's own orchestration-binding claim) -- see the contract's own Known residual scope boundary section, do not penalize its absence. CRIT-011 specifically requires 20+ consecutive reruns of colony-spawn-lock.test.mjs with zero failures -- actually run this yourself, do not accept the resolution notes' own 40/40 claim at face value, since this test was genuinely flaky before being fixed this same sprint. Verify each CRIT-001 through CRIT-011 criterion by actually re-running the cited tests/reading the cited source yourself."
+}
