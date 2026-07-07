@@ -20,3 +20,5 @@
 [FAIL] PROP-SAFE-3: cozempic hooks / enabledPlugins / includeGitInstructions unchanged (backup vs live), context7.md md5 matches 2026-07-07 baseline
 ---
 TOTAL: 1 PASS / 16 FAIL (3 SKIP, tier-2, not counted)
+new-feature-tests: FAILING (16 impl PROPs fail pre-implementation, 1 invariant PASS expected, 3 tier-2 SKIP)
+regression-baseline: PASS (invariant PROP-SAFE-2 JSON-validity passing pre-implementation; no existing test suite impacted)
