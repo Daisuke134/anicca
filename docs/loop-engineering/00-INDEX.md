@@ -20,6 +20,8 @@
 | 06 | `06-harness-engineering-weng.md` | Lilian Weng「Harness Engineering for Self-Improvement」digest。harness⊃loop eng。Self-Harness 3段ループ、4警告(STOP弱モデル劣化/evaluator外/reward-hacking→on-chain/editable surface)、6失敗モード | ✅ 完了 |
 | 07 | `07-patchlevel-spec-two-loops.md` | ★patch-level 実装 spec★ LOOP2(Franklin self-improve harness: EARS H1-H8/ファイル計画/TDD/L1-L3/denylist) + LOOP1(meta) + VCSDD実行順。eval-driven-earning蘇生 | ✅ 完了・実装可 |
 
+| 08 | `08-evidence-eval-driven-earning-verdict.md` | ★証拠ベース評価（意見でなく引用）★ eval-driven-earning は hybrid=4/6 grounded・bandit(DA)とcalibration-drift(EV5)は misattributed invention。BP 3逸脱(非定常bandit/reward-hacking防御/検証と配分の分離)。reinvent回避=openevolve fork推奨 | ✅ 完了 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）

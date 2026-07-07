@@ -5,6 +5,12 @@
 
 ---
 
+## ★訂正 2026-07-07（外部検証、詳細 [[08-evidence-eval-driven-earning-verdict]]）★
+- 私が自作予定だった `weakness-mine/propose/validate` は**書かない**。self-improve の機構は **`algorithmicsuperintelligence/openevolve`（6,653★ Apache-2.0）を fork**（`EVOLVE-BLOCK` で編集境界、`combined_score` に realized USDC を差す、cascade eval に L0/L1、artifacts に adversary verdict）。
+- `eval-driven-earning` を as-is で建てない: Group DA(bandit)/EV5(calibration-drift) は **misattributed invention**、BP から3逸脱。
+- BP の **5層**を採る: L0 戦略検証(backtest→walk-forward→paper→少額live) / L1 bandit配分(vetted のみ・recency-weight) / L2 outcome=実現$ / L3 judge較正 / L4 reward-hacking防御(capping/sandbox/trip-wire)。
+- 下の B（自作 lib 前提）は openevolve fork 前提に書き換える。良し悪しは私でなく fresh Opus adversary + 外部引用が判定。
+
 ## A. 安全境界（最初に固定・全 REQ の前提）
 
 ```
