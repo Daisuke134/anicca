@@ -35,6 +35,19 @@ from lib import gate_math, scope_guard  # noqa: E402  (path insert must happen f
 # every candidate against, and whose own stage2 walk-forward score is the `beats_baseline` floor.
 BASELINE_PATH = os.path.join(_SELF_IMPROVE_DIR, "strategies", "pm_backtest_strategy.py")
 
+# Real openevolve (verified 2026-07-07 against pip-installed openevolve==0.3.0) copies each
+# candidate's file TEXT into a throwaway `tempfile.NamedTemporaryFile` under the OS temp dir before
+# calling evaluate_stage1/evaluate_stage2 with that temp path — never the original
+# strategies/pm_backtest_strategy.py path. `pm_backtest_strategy.py::load_fixture`'s own default
+# argument (`os.path.dirname(__file__)`-relative) therefore resolves to the WRONG directory for
+# every real candidate (`/tmp/.../fixtures/pm_history.csv`, which does not exist) — confirmed live:
+# a real trial run failed every single candidate, including generation-0's unmodified copy of the
+# baseline, with `FileNotFoundError` before this fix. This module (evaluator.py) is always loaded
+# by openevolve from its REAL on-disk path (never tempfile-copied — only the strategy/initial
+# program is), so an absolute path computed from evaluator.py's own location is stable across every
+# candidate regardless of where openevolve happens to have written that candidate's temp file.
+FIXTURE_PATH = os.path.join(_SELF_IMPROVE_DIR, "strategies", "fixtures", "pm_history.csv")
+
 # Historical fixture has 6 non-overlapping windows (0..5). Stage1 uses window 0 alone as a cheap
 # filter (REQ-EV2); its window is a SUBSET of the union of windows stage2 draws its walk-forward
 # pairs from (PROP-SI-EV2). Stage2 draws 3 fully-disjoint (train, test) window pairs (REQ-EV3 —
@@ -93,7 +106,7 @@ def evaluate_stage1(program_path: str, config: Optional[dict] = None) -> dict:
         }
 
     module = _load_candidate_module(program_path)
-    rows = module.load_fixture()
+    rows = module.load_fixture(FIXTURE_PATH)
     window_rows = [r for r in rows if r["window"] == STAGE1_WINDOW]
     cfg = config or {}
     backtest = module.run_backtest(window_rows, cfg)
@@ -112,7 +125,7 @@ def evaluate_stage2(program_path: str, config: Optional[dict] = None) -> dict:
     invoke this after evaluate_stage1 has passed for the same program_path (this function does
     NOT re-run scope_guard — that gate is stage1's job, wired as evaluate()'s first operation)."""
     module = _load_candidate_module(program_path)
-    rows = module.load_fixture()
+    rows = module.load_fixture(FIXTURE_PATH)
     cfg = config or {}
 
     oos_scores = []

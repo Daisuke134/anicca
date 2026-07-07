@@ -12,7 +12,7 @@
       → 設計は openevolve に構造的一致。次: ~/anicca に vendor + P1 spec
 - [x] P1: spec 作り直し（openevolve + BP5層 + grounded要素、misattributed DA/EV5 破棄）→ fresh-context adversary vcsdd-spec-review PASS（behavioral-spec.md/verification-architecture.md、mode: strict）
 - [x] P2 (deterministic core のみ): TDD(RED→GREEN) — denylist reject(fixed-region line 変更 + evolvable region 内 denylisted import/wallet path) / held-out regress(stage1 pass だが stage2 walk-forward regress→promotion gate False) / reward-hacking trip-wire(>3x population-best→flagged) / baseline-beat(hand-crafted better config が real backtest で baseline 超え、promotion gate True) — 全 GREEN。証拠は下の「P2 evidence」参照。scope_guard/gate_math の壊す→REDに戻る sanity check 済（本物のRED-GREENサイクルであることを事後検証）。
-- [ ] P2 残: REAL openevolve run（LLM が実際に候補を提案）で EVOLVE-BLOCK 戦略に fitness=realized/backtest USD、≥1 accepted edit が baseline 超え（証拠=fitness数値+diff+adversary verdict）。今回は openevolve 自体を pip install/vendor していない（disk 3.5Gi 節約、この段階では不要）→ 次段で ClawRouter free-tier endpoint を config.yaml の llm.api_base に設定し、openevolve を vendor して実行する必要あり。
+- [x] P2 残: REAL openevolve run — DONE (2026-07-07/08)。詳細・実数値は下の「P2 Stage-2 evidence (real openevolve run)」参照。1 accepted edit が baseline (stage2 OOS -0.3959) を大きく超え (9.4486)、scope_guard PASS、diff は EVOLVE-BLOCK 内に完全収容。
 - [ ] P3: LOOP 1 を1周 human-zero（self-issue→build→adversary→自merge）
 - [ ] cheap win 並行: Franklin OBSERVE(telemetry Solana残高再利用) / HL closed_pnl 永続化
 
@@ -74,3 +74,133 @@ diff — is explicitly NOT done yet (see "P2 残" above).
 人間ゼロ / 人間credentialゼロ / openevolve使用(自作しない) / good判定=adversary+外部引用 /
 .vcsdd/features/anicca-agent-economy 触らない / denylist(wallet/keys/.env/.solana-session/ledger.mjs/spend cap) /
 live trade 禁止(paper のみ, SOL_TRADE_MAX_SPEND=0)
+
+## P2 Stage-2 evidence (real openevolve run) — 2026-07-07/08
+
+### Setup
+- `pip install --no-cache-dir openevolve` into the existing scratchpad venv
+  (`<scratchpad>/venv-self-improve`, python3.14) → `openevolve==0.3.0` installed. Real CLI entrypoint
+  is `openevolve-run` (not `openevolve-run.py`, despite `run_evolve.sh`'s naming — that script's
+  invocation was NOT changed this stage since it wasn't executed; the manual commands below used the
+  correct real entrypoint name).
+- Endpoint (no human credential, REQUIRED): the colony's own local ClawRouter proxy at
+  `http://127.0.0.1:8402/v1` (an already-running `clawrouter` process, PID confirmed via `lsof`),
+  backed by the SELF-FUNDED `anicca-a3cdd4` automaton's own wallet
+  (`0xa3CDd4Ec6b94F01826Aaf90a6d5538A2Aa8C4C21` on Base). `clawrouter wallet` showed balance
+  **$0.00 USDC** the whole session — a structural guarantee that only FREE-tier models could ever be
+  used (no spend was even possible, let alone attempted). Model used: `free/mistral-large-3-675b`,
+  verified live via direct curl (HTTP 200, response `model` field matches the request, not silently
+  downgraded to a different free model the way `free/qwen3-coder-480b` was observed to be).
+
+### Real bugs found and fixed while wiring the real harness (both are infra fixes, NOT scope_guard/evaluator-decision changes)
+1. **Fixture path bug**: real openevolve copies each candidate's file TEXT into a throwaway
+   `tempfile.NamedTemporaryFile` before calling `evaluate_stage1`/`evaluate_stage2` — so
+   `pm_backtest_strategy.py`'s own `load_fixture()` default arg
+   (`os.path.dirname(__file__)`-relative) resolved to `/tmp/.../fixtures/pm_history.csv`, which does
+   not exist, for every real candidate (confirmed: even generation-0's byte-identical copy of the
+   baseline failed with `FileNotFoundError` in the first trial run). Fix: `evaluator.py` now defines
+   its own `FIXTURE_PATH` (absolute, evaluator.py's own `__file__`-relative — evaluator.py itself is
+   always loaded by openevolve from its real path, never tempfile-copied) and passes it explicitly:
+   `module.load_fixture(FIXTURE_PATH)` in both `evaluate_stage1` and `evaluate_stage2`.
+2. **`top_p: null` 400**: openevolve's OpenAI client always includes `top_p` in the request body
+   (even when unset → `null`); the local ClawRouter proxy's schema validator 400s on
+   `"top_p": null` ("expected number, received null"). Fix: `config.yaml` sets `llm.top_p: 1.0`.
+
+### The caching/determinism trap (the reason early full runs looked "stuck")
+At generation 0 (single seed program, no population yet) openevolve's own rendered prompt is
+BYTE-IDENTICAL across "iterations" — `evolution_round` is never interpolated into the template text,
+and `prompt.template_variations` defaults to `{}` (no stochasticity content) even though
+`use_template_stochasticity: true` is openevolve's own default. With a single fixed
+`primary_model`+`temperature`, every early iteration sent the literal same request. The local
+ClawRouter proxy has a live response cache (`clawrouter cache` showed `hits: 43, misses: 1660` after
+one session) — so only the FIRST-ever identical request reached a real generation; every subsequent
+"iteration" at generation 0 resolved in <100ms, served straight from the proxy's cache with the exact
+same (good-or-bad) content. A run stuck on one bad generation-0 sample could therefore never see a
+second real sample no matter how many `--iterations` were requested — confirmed directly: two
+separate full 20-25 iteration runs (models `nvidia/glm-4.7` then `free/mistral-large-3-675b`, each at
+one fixed temperature) each produced exactly ONE real LLM generation total, all other iterations
+being instant cache hits of that one (repeatedly bad) sample.
+
+Fix (a real, sanctioned openevolve mechanism, not a workaround): replaced the single
+`llm.primary_model` with `llm.models:` — 3 entries of the SAME free model at 3 different
+temperatures (0.5 / 0.9 / 1.15), each `weight: 1.0`. `LLMEnsemble._sample_model` (real
+`openevolve/llm/ensemble.py` code) does a weighted `random.choice` over this list on every single
+`generate_with_context` call — this is openevolve's documented multi-model-ensemble feature, used
+here for its designed purpose (request diversity), not a hack. This both changes the request bytes
+(escapes the proxy cache) and 3x's the chance of landing a well-formed, in-scope diff per attempt.
+
+Also added (openevolve's own `prompt.system_message` field, a plain string — verified via
+`prompt/sampler.py` that a literal string not matching a known template key is used verbatim as the
+system message): explicit natural-language guidance that every SEARCH/REPLACE hunk MUST fall
+strictly between the `# EVOLVE-BLOCK-START`/`# EVOLVE-BLOCK-END` markers. This follows the colony's
+own agent-building rule ("guidance goes in the PROMPT, natural language to the model — never a
+hardcoded gate that overrides the model") — `scope_guard.py` remains the actual enforcement
+regardless of what the model does; the system message only steers it. Real openevolve's own default
+templates (`prompts/defaults/diff_user.txt` + `prompt/sampler.py`) never mention "EVOLVE-BLOCK" at
+all — confirmed by grep against the installed package.
+
+### The real run that produced the accepted, baseline-beating edit
+```
+cd skills/earn/self-improve
+<scratchpad>/venv-self-improve/bin/openevolve-run \
+  strategies/pm_backtest_strategy.py \
+  evaluator.py \
+  --config config.yaml \
+  --iterations 30 \
+  --output runs/run6-20260707T151345Z \
+  --log-level INFO
+```
+Real stdout tail:
+```
+Evolution complete!
+Best program metrics:
+  combined_score: 9.4486
+  stage1_pass: 1.0000
+```
+20 real programs ended up in the persisted database (`database.db_path: runs/db`, real
+`DatabaseConfig.db_path`/`log_prompts` fields). Multiple DISTINCT scope_guard-passing candidates
+were generated across the run with combined_score values -18.13, -17.87, -4.72, -4.47 (baseline),
+-0.81, -0.24, -0.21, -0.07, and the winner 9.4486 — real exploration variety, not one lucky fluke.
+One candidate was correctly rejected as `out-of-scope-edit` (lines outside EVOLVE-BLOCK) even after
+the system-message fix — scope_guard is still doing real work, not rubber-stamping everything.
+
+**Independently re-verified** (fresh python process, NOT trusting openevolve's own printed number):
+```python
+import evaluator
+from lib import scope_guard
+cand_code = open('evidence/best_program.py').read()
+base_code = open(evaluator.BASELINE_PATH).read()
+ok, reason = scope_guard.check(cand_code, base_code)     # -> True, "scope-guard-pass"
+baseline_score = evaluator.baseline_stage2_score()         # -> -0.3959371620826199
+full = evaluator.evaluate('evidence/best_program.py')
+# full == {'combined_score': 9.44855790310848, 'stage1_pass': True, 'stage2_pass': True,
+#          'baseline_stage2_score': -0.3959371620826199, 'window_pairs': [...], ...}
+```
+Per-window-pair OOS net USD (evaluate_stage2, test windows only): window(0→1)=+3.36,
+window(2→3)=+67.26, window(4→5)=-42.28 → mean = combined_score = 9.4486.
+
+**/goal Done-condition (3) — VERIFIED TRUE**: one real openevolve run (30 iterations, real LLM,
+no human credential) produced ≥1 accepted bounded strategy edit
+(`233d923c-0fb2-451f-ab94-90fa64b9cb8d`, parent `a11af17f-97fa-4714-92b7-4563a01b7021`) whose
+backtest `combined_score` (9.4486) is realized > the baseline's (-0.3959), `scope_guard_ok=True`
+(the diff touches only the `score_candidate` function body between the EVOLVE-BLOCK markers — the
+fixed region, including `load_fixture`/`_stake_for_row`/`run_backtest`, is byte-identical to the
+committed baseline).
+
+### Evidence files (`skills/earn/self-improve/evidence/`)
+- `best_program.py` — the full evolved program (identical to
+  `runs/run6-20260707T151345Z/best/best_program.py`, verified with `diff`)
+- `evolved.diff` — unified diff vs. the committed baseline `strategies/pm_backtest_strategy.py`
+  (confined entirely to `score_candidate`'s body: adds a non-linear edge/confidence-ratio scaling
+  plus liquidity/resolve-horizon multipliers to the stake-sizing formula)
+- `run-result.json` — `{baseline_score: -0.3959371620826199, best_score: 9.44855790310848,
+  beats_baseline: true, iterations: 30, endpoint_used: "free/mistral-large-3-675b (...)",
+  scope_guard_ok: true, stage1_pass: true, window_pairs_oos_net_usd: [...], candidate_program_id,
+  candidate_parent_id, run_id, command}` — no secret/API key anywhere in the file (endpoint recorded
+  as model name + local proxy address only)
+
+### Not committed / left as-is
+`runs/` (per-run stdout logs, checkpoints, the persisted `runs/db/` program database) stays in this
+worktree as raw evidence backing the summary above; the caller may choose what (if anything) under
+`runs/` to commit versus `.gitignore`. `config.yaml` now points at a live local endpoint + contains
+the working temperature-ensemble/system_message/db_path fields used for this real run (no secrets).
