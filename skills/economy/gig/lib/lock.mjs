@@ -63,52 +63,63 @@ export function isLockStale(nowMs, mtimeMs, staleMs) {
   return (nowMs - mtimeMs) > staleMs;
 }
 
-async function acquire(statePath, lockKey, staleMs) {
-  const { dir, file } = lockPaths(statePath, lockKey);
-  await fs.mkdir(dir, { recursive: true });
+/**
+ * tryCreateLockFile — the one atomic primitive both the fast path and the stale-reclaim path build on:
+ * POSIX exclusive create (`wx` = O_CREAT|O_EXCL). `true` = we now hold the lock; `false` = someone else
+ * already does (EEXIST); anything else rethrows (caller decides what a non-EEXIST failure means).
+ * Extracted (Phase 2c refactor) to remove the duplicate open/close/EEXIST-check block that used to appear
+ * once in `acquire()`'s fast path and again, identically, at the end of its stale-reclaim branch.
+ */
+async function tryCreateLockFile(file) {
   try {
     const handle = await fs.open(file, "wx");
     await handle.close();
     return true;
   } catch (e) {
-    if (e.code !== "EEXIST") throw e;
-    // Stale-lock recovery: a lock left behind by a CRASHED process must not wedge the board forever.
-    // A live holder's heartbeat keeps mtime fresh, so this branch only ever fires for a genuinely dead
-    // holder (no heartbeat for staleMs, which is set far past any realistic live-holder gap).
-    let stat;
-    try {
-      stat = await fs.stat(file);
-    } catch {
-      // the file vanished between our failed open() and this stat -- another caller already reclaimed
-      // (or released) it; fall through to "locked" (fail-closed -- never proceed on a guess).
-      return false;
-    }
-    if (!isLockStale(Date.now(), stat.mtimeMs, staleMs)) {
-      return false; // genuinely still live (or not yet past the staleness window) -- do not touch it
-    }
-    // Atomic reclaim (resolves the RED-phase reclaim race, see file-header comment): fs.rename()
-    // requires its SOURCE path to exist, and POSIX rename is atomic w.r.t. concurrent renames of the
-    // same source -- so when two racers both reach here, exactly ONE rename can succeed; the other's
-    // source lookup fails with ENOENT because the winner already moved `file` away.
-    const trashFile = `${file}.stale-${process.pid}-${randomUUID()}`;
-    try {
-      await fs.rename(file, trashFile);
-    } catch (err) {
-      if (err && err.code === "ENOENT") return false; // lost the reclaim race to another caller
-      throw err;
-    }
-    await fs.unlink(trashFile).catch(() => {}); // best-effort cleanup, not part of the atomicity guarantee
-    try {
-      const handle = await fs.open(file, "wx");
-      await handle.close();
-      return true;
-    } catch (err) {
-      // Extremely narrow window: an unrelated FIRST-TIME acquire() call recreated `file` between our
-      // rename and this open. Treat as a lost race rather than crashing the caller.
-      if (err && err.code === "EEXIST") return false;
-      throw err;
-    }
+    if (e.code === "EEXIST") return false;
+    throw e;
   }
+}
+
+/**
+ * reclaimStaleLock — the stale-lock recovery path: a lock left behind by a CRASHED process must not
+ * wedge the board forever. A live holder's heartbeat keeps mtime fresh, so this only ever fires for a
+ * genuinely dead holder (no heartbeat for staleMs, which is set far past any realistic live-holder gap).
+ * Atomicity (resolves the RED-phase reclaim race, see file-header comment): `fs.rename()` requires its
+ * SOURCE path to exist, and POSIX rename is atomic w.r.t. concurrent renames of the same source -- so
+ * when two racers both reach here, exactly ONE rename can succeed; the other's source lookup fails with
+ * ENOENT because the winner already moved `file` away.
+ */
+async function reclaimStaleLock(file, staleMs) {
+  let stat;
+  try {
+    stat = await fs.stat(file);
+  } catch {
+    // the file vanished between our failed open() and this stat -- another caller already reclaimed
+    // (or released) it; fall through to "locked" (fail-closed -- never proceed on a guess).
+    return false;
+  }
+  if (!isLockStale(Date.now(), stat.mtimeMs, staleMs)) {
+    return false; // genuinely still live (or not yet past the staleness window) -- do not touch it
+  }
+  const trashFile = `${file}.stale-${process.pid}-${randomUUID()}`;
+  try {
+    await fs.rename(file, trashFile);
+  } catch (err) {
+    if (err && err.code === "ENOENT") return false; // lost the reclaim race to another caller
+    throw err;
+  }
+  await fs.unlink(trashFile).catch(() => {}); // best-effort cleanup, not part of the atomicity guarantee
+  // Extremely narrow window: an unrelated FIRST-TIME acquire() call recreated `file` between our rename
+  // and this open. tryCreateLockFile's own EEXIST->false handles that as a lost race, not a crash.
+  return tryCreateLockFile(file);
+}
+
+async function acquire(statePath, lockKey, staleMs) {
+  const { dir, file } = lockPaths(statePath, lockKey);
+  await fs.mkdir(dir, { recursive: true });
+  if (await tryCreateLockFile(file)) return true;
+  return reclaimStaleLock(file, staleMs);
 }
 
 async function release(statePath, lockKey) {
