@@ -97,19 +97,36 @@ report PROP-P3a "$P3A_STATUS" "move-ref-check.log exists with >=27 recorded grep
 report PROP-SAFE-4 "$P3A_STATUS" "alias of PROP-P3a (MOVE REF-CHECK gate), same evidence, not re-implemented"
 
 # ---------------------------------------------------------------------------
-# PROP-P3b — REQ-P3b: 3 rule files moved to references/, CLAUDE.md updated, context7.md untouched
+# PROP-P3b — REQ-P3b: rule files that PASSED the MOVE REF-CHECK gate (PROP-P3a, zero hits
+#   outside CLAUDE.md) moved rules/->references/; any file the gate found a real reference for
+#   correctly stays in rules/ (this is REQ-P3a's own documented conditional branch: "参照が1件
+#   でも見つかった場合...その特定ファイルの移動を中止し...REQ-P3b の当該ファイル分の目標状態は
+#   適用されない" — a hardcoded "all 3 must move" assertion would be WRONG per that same spec
+#   text, so this check reads move-ref-check.log to determine, per file, whether the gate passed).
 # ---------------------------------------------------------------------------
 p3b_check() {
-  local name
+  local name gate_passed
   for name in building-voice-agents building-effective-ai-agents loop-command; do
-    [ -f "${HOME}/.claude/references/${name}.md" ] || return 1
-    [ -f "${HOME}/.claude/rules/${name}.md" ] && return 1
+    if [ -f "$MOVE_REF_LOG" ] && grep -q "^file=${name}\.md .*hits=[1-9]" "$MOVE_REF_LOG"; then
+      gate_passed=0
+    else
+      gate_passed=1
+    fi
+    if [ "$gate_passed" -eq 1 ]; then
+      # gate passed (zero hits) -> must have moved
+      [ -f "${HOME}/.claude/references/${name}.md" ] || return 1
+      [ -f "${HOME}/.claude/rules/${name}.md" ] && return 1
+    else
+      # gate found a real reference -> must NOT have moved
+      [ -f "${HOME}/.claude/rules/${name}.md" ] || return 1
+      [ -f "${HOME}/.claude/references/${name}.md" ] && return 1
+    fi
   done
   grep -q "references/loop-command.md" "${HOME}/.claude/CLAUDE.md" \
     && ! grep -q "rules/loop-command.md" "${HOME}/.claude/CLAUDE.md" \
     && [ -f "${HOME}/.claude/rules/context7.md" ]
 }
-p3b_check; report PROP-P3b "$(as_status $?)" "3 files moved rules/->references/, CLAUDE.md references updated, context7.md untouched"
+p3b_check; report PROP-P3b "$(as_status $?)" "rule files that passed MOVE REF-CHECK moved rules/->references/; files with a real reference correctly left in place; CLAUDE.md references updated; context7.md untouched"
 
 # ---------------------------------------------------------------------------
 # PROP-P4 — REQ-P4: SSOT guard snapshot-diff (iteration-2 FIND-005 / iteration-3 FIND-008)
@@ -192,44 +209,58 @@ p6c_check; report PROP-P6c "$(as_status $?)" "CLAUDE.md model-division main row 
 # For each file: (a) assign-span byte-identical to git HEAD (per-operation backup convention,
 # these 8 files live in the git-tracked ~/anicca repo, so HEAD is the "before this op" reference —
 # see REQ-SAFE-1's edge case + iteration-3 FIND-007's per-operation clarification), (b) the window
-# between assign-span end and launch line contains a self-referencing concatenation line
-# (VAR="${VAR} ...PushNotification...") for that file's actual variable, (c) launch line
-# byte-identical to git HEAD.
+# between assign-span end and the CURRENT (post-insertion) launch line contains a self-referencing
+# concatenation line (VAR="${VAR} ...PushNotification...") for that file's actual variable, (c) the
+# CURRENT launch line's exact content still matches the known-good pre-P7a text (captured by hand
+# at implementation time, since inserting the append line shifts the launch line to a NEW line
+# number that no longer aligns with git HEAD's line numbering — a plain by-line-number diff against
+# HEAD would silently miscompare once a line has been inserted before it; for `adversary-daily.sh`
+# the expected text intentionally already includes P5a's `--model opus`, per FIND-007's
+# per-operation convention: P5a lands before P7a on that file).
 # ---------------------------------------------------------------------------
 ANICCA_REPO="${HOME}/anicca"
 
 p7a_one() {
-  # args: relpath varname start end launch
-  local relpath="$1" varname="$2" start="$3" end="$4" launch="$5"
+  # args: relpath varname start end curr_launch expected_launch_text
+  local relpath="$1" varname="$2" start="$3" end="$4" curr_launch="$5" expected_launch="$6"
   local abs="${ANICCA_REPO}/skills/${relpath}"
   [ -f "$abs" ] || return 1
 
-  # (a) assign-span byte-identical to HEAD
+  # (a) assign-span byte-identical to HEAD (unaffected by an insertion strictly after ${end})
   diff <(git -C "$ANICCA_REPO" show "HEAD:skills/${relpath}" 2>/dev/null | sed -n "${start},${end}p") \
        <(sed -n "${start},${end}p" "$abs") >/dev/null 2>&1 || return 1
 
-  # (c) launch line byte-identical to HEAD
-  diff <(git -C "$ANICCA_REPO" show "HEAD:skills/${relpath}" 2>/dev/null | sed -n "${launch}p") \
-       <(sed -n "${launch}p" "$abs") >/dev/null 2>&1 || return 1
+  # (c) current launch line's content matches the known-good pre-P7a text exactly
+  local actual_launch
+  actual_launch=$(sed -n "${curr_launch}p" "$abs")
+  [ "$actual_launch" = "$expected_launch" ] || return 1
 
-  # (b) window between assign-span end and launch line has the self-referencing append line
+  # (b) window between assign-span end and the current launch line has the self-referencing append line
   local window_start=$((end + 1))
-  local window_end=$((launch - 1))
+  local window_end=$((curr_launch - 1))
   [ "$window_start" -le "$window_end" ] || return 1
   sed -n "${window_start},${window_end}p" "$abs" \
     | grep -E "^${varname}=.*\\\$\\{?${varname}\\}?.*PushNotification" -q
 }
 
 P7A_ALL=0
-p7a_one "self/self-fix.sh" "TASK" 67 74 75 || P7A_ALL=1
-p7a_one "self/capafy-loop/capafy-loop-cli.sh" "STARTUP" 8 8 12 || P7A_ALL=1
-p7a_one "self/reddit-loop/reddit-loop-cli.sh" "STARTUP" 9 9 13 || P7A_ALL=1
-p7a_one "self/life-manager-loop/life-manager-loop-cli.sh" "STARTUP" 8 8 12 || P7A_ALL=1
-p7a_one "earn/clip-promote/clip-promote-cli.sh" "STARTUP" 24 24 39 || P7A_ALL=1
-p7a_one "earn/video/video-cli.sh" "STARTUP" 17 17 32 || P7A_ALL=1
-p7a_one "earn/clip/clip-cli.sh" "STARTUP" 18 18 33 || P7A_ALL=1
-p7a_one "_shared/adversary-daily.sh" "PROMPT" 20 21 23 || P7A_ALL=1
-report PROP-P7a "$(as_status $P7A_ALL)" "8 loop-CLI files: PushNotification append line structurally inside runtime prompt value (assign-span/launch-line untouched, per-file line table)"
+p7a_one "self/self-fix.sh" "TASK" 67 74 76 \
+  'tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model opus --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"' || P7A_ALL=1
+p7a_one "self/capafy-loop/capafy-loop-cli.sh" "STARTUP" 8 8 13 \
+  'tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "self/reddit-loop/reddit-loop-cli.sh" "STARTUP" 9 9 14 \
+  'tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "self/life-manager-loop/life-manager-loop-cli.sh" "STARTUP" 8 8 13 \
+  'tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "earn/clip-promote/clip-promote-cli.sh" "STARTUP" 24 24 41 \
+  '  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "earn/video/video-cli.sh" "STARTUP" 17 17 34 \
+  '  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "earn/clip/clip-cli.sh" "STARTUP" 18 18 35 \
+  '  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"' || P7A_ALL=1
+p7a_one "_shared/adversary-daily.sh" "PROMPT" 20 21 24 \
+  'claude -p "$PROMPT" --model opus --output-format text 2>&1 | tee -a "$LOG"' || P7A_ALL=1
+report PROP-P7a "$(as_status $P7A_ALL)" "8 loop-CLI files: PushNotification append line structurally inside runtime prompt value (assign-span byte-identical to HEAD, launch-line content matches known-good pre-P7a text, line numbers re-derived at implementation time per FIND-006/FIND-007)"
 
 # ---------------------------------------------------------------------------
 # PROP-P7b — REQ-P7b: wording fidelity of the 8 append lines — Tier 2, adversary-only
