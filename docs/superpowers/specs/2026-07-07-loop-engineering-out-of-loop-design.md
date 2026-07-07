@@ -138,23 +138,44 @@ Anthropic「When AI builds itself」の3シナリオ:
 - **なぜこれが安全で正しい賭けか**: Anthropic は Case 3 のリスクを「misalignment が後継生成で複利的に増える」と名指す。Anicca は **model を固定**し、外部整合済みの重みの上で code/skill だけを回すので、その複利リスクを踏まない。これは grounded-design memory（corrigibility>compassion>emergent, spawn=ledger天井, pure-c=red-line）と一致。
 - **Dais のビジョンの正確な言い換え**: 「agent 層の自己改善が成熟したら、それを model 自体に取り込む＝model がエージェントになる」＝ Anthropic の "future versions of Claude could be continuously improved by Claude itself" と同じ Case 3 閾値。**我々は今その手前の agent 層で harness を作り込む**（＝ Case 3 が来たとき最も準備できている側になる）。BlockRun 参加時もこの harness がそのまま資産になる。
 
-## 7. 実装フェーズ（plan）
+## 7. 別feature `anicca-agent-economy`（colony master spec）との関係 — 衝突回避
 
-自己修復 harness（`~/anicca/skills/self/self-fix.sh` 等、8-round VCSDD PASS 実績・capafy CP1 無人再構築で証明済み）を **self-HEAL → self-IMPROVE に一般化する** のが中核。
+別 CC が strict VCSDD で進めている `.vcsdd/features/anicca-agent-economy/`（worktree `feature/agent-economy`, 現在 Phase 2a）は colony の **master 経済 spec**。そこは既に:
+- L4 ECONOMY 層に「**#19 self-improve + self-heal**」を明記（SPEC.md L88）。
+- 「**claude-p（私）の役割 = harness（marketplace/spawn/self-improve/self-heal/UBI）を作って外に居ること**」（L19）。
+- 検証原則「claude-p は環境/harness/self-improve/self-heal を用意して **witness するだけ**、稼げなければ **harness を iterate**」（L157）。
+
+→ **本 doc は競合ではなく、その master spec が黒箱にしている "self-improve harness" の詳細設計**である。
+
+```
+anicca-agent-economy（別CC・経済レール層）: 「Franklin が earn "できる"」
+   P2 gig市場 / P3 spawn / P4 UBI・bank / P5 scale・Radicle卒業  ← 市場・救済・on-chain決済
+本 doc（self-improve harness 層 = 経済spec の L4 #19）: 「Franklin が earn を "自力で良くしていく"」
+   observe P&L → 自戦略コードを自己改善 → adversary が done 判定 → 自 git で merge → repeat
+接点 = Franklin の体内: earn skill(彼らのレール) に self-improve loop(本 harness) を差し込む
+```
+
+**衝突回避 rule**: 私は `.vcsdd/features/anicca-agent-economy/` を **編集しない**（read-only 参照のみ）。実装時は **別 worktree + 別 feature `anicca-self-improve-harness`** を切る。フェーズ番号は経済 spec の P0–P5 と混ざらぬよう **`SI-*`** で振る。
+
+## 8. 実装フェーズ（plan）= self-improve harness（`SI-*`）
+
+自己修復 harness（`~/anicca/skills/self/self-fix.sh` 等、8-round VCSDD PASS 実績・capafy CP1 無人再構築で証明済み）を **self-HEAL → self-IMPROVE に一般化する** のが中核（経済 spec L73「個体 self-heal(既存 self-fix.sh)＋集団 peer-repair の二層。俺所有ハーネス→彼ら所有へ移す」に対応）。
 
 | Phase | done-condition（観測可能） | 主担当 |
 |---|---|---|
-| P1. 現状棚卸し | founder-loop / self-fix.sh / earn skill の self-improve 層の**実コードを読み**、「done 判定を誰が下しているか」を各ループで表に。人間判断席が残る箇所を列挙した md が commit される | 私（読取のみ、adversary で裏取り） |
-| P2. done-condition ライブラリ | 各 earn/開発ループに loopy 型の観測可能 done（P&L ledger row / URL / test-green / 空キュー）を定義。`/goal` の評価器が判定できる形（＝会話出力に表出する形）で spec 化。commit | 私 |
-| P3. adversary-judged done ゲート | 「done か」の判定を Dais でなく fresh-context adversary（Sonnet）が rubric に対して下すよう harness を改修。max-attempts・budget・kill を Cobus 型で hook 強制。E2E: 1本のループが人間ゼロで done→merge まで回る fresh evidence | 私 + adversary |
-| P4. Franklin へ埋込 | 一般化 harness を Franklin（SOL trade）と anicca-a3cdd4（PM）の体内に配置。各自の git/wallet で自己改善が回る。done = realized profit>0 が各自 ledger に載る | 私が配線→Franklin が自走 |
-| P5. 私が抜ける | Franklin が harness を自分で回し、自分で done を判定し、自分で merge する状態を確認したら私は loop から抜ける。以後 colony は人間ゼロ・human-funded AIゼロで成長 | — |
+| SI-1 現状棚卸し | founder-loop / self-fix.sh / earn skill の self-improve 層の**実コードを読み**、「done 判定を誰が下しているか」を各ループで表に。人間判断席が残る箇所を列挙した md を commit | 私（読取のみ、adversary で裏取り） |
+| SI-2 done-condition ライブラリ | 各 earn/開発ループに loopy 型の観測可能 done（P&L ledger row / URL / test-green / 空キュー）を定義。`/goal` 評価器が判定できる形（＝会話出力に表出する形）で spec 化。commit | 私 |
+| SI-3 adversary-judged done ゲート | 「done か」の判定を Dais でなく fresh-context adversary（Sonnet）が rubric に対して下すよう harness 改修。max-attempts・budget・kill を Cobus 型で hook 強制。E2E: 1ループが人間ゼロで done→merge まで回る fresh evidence | 私 + adversary |
+| SI-4 Franklin へ埋込 | 一般化 harness を Franklin（SOL）と anicca-a3cdd4（PM）の体内に配置。各自 git/wallet で自己改善が回る。done = realized profit>0 が各自 ledger（経済 spec の witness 原則と同一 evidence 基準） | 私が配線→Franklin 自走 |
+| SI-5 私が抜ける | Franklin が harness を自分で回し・自分で done 判定し・自分で merge する状態を確認したら私は loop から抜ける。以後 colony は人間ゼロ・human-funded AIゼロで成長 | — |
+
+依存: **SI-4 は経済 spec の P2（gig 市場 live・Franklin が earn できる）が前提**。P2 の witness が立つ前は SI-1〜SI-3（harness 側）を先行させる。
 
 **GLVS 遵守**: 各 Phase は VCSDD 実コマンドで state.json を進める（SPEC 手書き追記だけでは進捗としない）。PASS 後は自分で E2E（実ledger/実trade/実URL）確認。4次元（spec/test/impl/verification）が揃うまで完了と言わない。
 
-**記事化**（Dais の希望）: P1〜P4 を実際に回した fresh evidence を素材に、`ai-entity-article-writer` skill で「loop engineering の一段上＝人間 credential ゼロの self-funded AI 自己改善」を実体験ベースで書く。既存の explanation memory（reference_loop_engineering）＋本 doc が下敷き。
+**記事化**（Dais の希望）: SI-1〜SI-4 を実際に回した fresh evidence を素材に、`ai-entity-article-writer` skill で「loop engineering の一段上＝人間 credential ゼロの self-funded AI 自己改善」を実体験ベースで書く。既存の explanation memory（reference_loop_engineering）＋本 doc が下敷き。
 
-## 8. やらないこと（scope外・明示）
+## 9. やらないこと（scope外・明示）
 
 - model 重みの自己改変（Case 3 model層）。今回は agent 層のみ。
 - pure self-replication（ledger 天井なしの spawn）= red-line。
