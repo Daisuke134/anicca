@@ -1,0 +1,68 @@
+{
+  "overallVerdict": "PASS",
+  "dimensions": [
+    {
+      "name": "BLOCKING FIX IS REAL (run_evolve.sh + launchd wiring)",
+      "verdict": "PASS",
+      "findings": [
+        "Read skills/earn/self-improve/run_evolve.sh (post-fix): line 31 sets OPENEVOLVE_BIN=\"${OPENEVOLVE_BIN:-$HOME/.anicca-venvs/self-improve/bin/openevolve-run}\" (absolute path, no `.py` suffix, no `command -v`/PATH lookup at all). Confirmed the old `command -v openevolve-run.py` / `openevolve-run.py \\` invocation strings are GONE (grep for both returns nothing).",
+        "Confirmed the venv only contains the real binary: `ls ~/.anicca-venvs/self-improve/bin | grep -i openevolve` -> only `openevolve-run` (no `.py` variant exists anywhere).",
+        "LOUD-FAIL test (mine): `cd skills/earn/self-improve && OPENEVOLVE_BIN=/nonexistent/x bash run_evolve.sh` -> stderr `FATAL: openevolve-run not found or not executable at /nonexistent/x` + install hint, exit code 1 (confirmed via `echo $?`). No silent exit 0.",
+        "MINIMAL-PATH real-invocation test (mine): `timeout 90 env -i HOME=\"$HOME\" PATH=/usr/bin:/bin SELF_IMPROVE_ITERATIONS=2 bash run_evolve.sh` (PATH stripped to just /usr/bin:/bin, no venv/homebrew/project dirs — simulates launchd's minimal env) -> exit 0. Log shows REAL openevolve startup, not a skip: 'Initialized OpenAI LLM with model: free/mistral-large-3-675b', 'Initialized LLM ensemble with models: free/mistral-large-3-675b (weight: 0.33) x3', 'Loaded database with 23 programs from runs/db', real per-iteration timings (32.08s, 18.13s — consistent with real LLM round-trips), 'New MAP-Elites cell occupied', and a real completion: 'Evolution complete! Best program metrics: combined_score: 9.4486, stage1_pass: 1.0000' with a best_program.py/best_program_info.json actually written to the new run dir. This is unambiguous proof the script reaches and runs the real binary under a minimal, launchd-like PATH — not a 'not installed -> skip' branch.",
+        "launchd/ai.anicca.self-improve-evolve.plist: confirmed WorkingDirectory=/Users/operator/anicca/skills/earn/self-improve and EnvironmentVariables.PATH=/Users/operator/.anicca-venvs/self-improve/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin (+HOME). `plutil -lint` on the plist returns OK.",
+        "Cleaned up the two run directories my own tests created (runs/run-20260707T163544Z empty dir from the loud-fail test, runs/run-20260707T163549Z from the minimal-PATH proof) after verifying — both were gitignored/untracked so this did not touch git state, done purely for workdir hygiene."
+      ]
+    },
+    {
+      "name": "NO REGRESSION",
+      "verdict": "PASS",
+      "findings": [
+        "Re-ran full suite myself: `~/.anicca-venvs/self-improve/bin/python3 -m pytest skills/earn/self-improve/tests/ -v` -> 18 passed in 0.04s (identical count/names to iteration-1's 18/18).",
+        "Constructed 3 of MY OWN adversarial inputs (not reusing the builder's test fixtures) against lib/scope_guard.check on the real strategies/pm_backtest_strategy.py baseline: (a) a fixed-region docstring tamper on load_fixture (outside EVOLVE-BLOCK) -> (False, 'out-of-scope-edit: lines [24] differ outside EVOLVE-BLOCK'); (b) an EVOLVE-BLOCK edit adding `import socket` -> (False, \"denylisted-reference-in-evolve-block: ['socket']\"); (c) a legitimate in-scope edit (base_stake default 5.0 -> 8.25) -> (True, 'scope-guard-pass'). scope_guard remains real, fail-closed, and sole."
+      ]
+    },
+    {
+      "name": "NO NEW HOLES FROM THE FIX",
+      "verdict": "PASS",
+      "findings": [
+        "No secrets in the plist or run_evolve.sh/config.yaml: grepped for sk-*, Bearer *, ghp_*, AIzaSy, xox[a-z]- patterns across run_evolve.sh, the plist, and config.yaml -> nothing found. config.yaml's llm.api_key is still the literal placeholder 'unused-local-proxy-no-auth' against the local ClawRouter proxy (127.0.0.1:8402) — unchanged by this fix.",
+        "db_path safety: the fix's CWD guard (`cd \"$SKILL_DIR\" || exit 1` before any relative-path use) is a correctness improvement, not a new hole — config.yaml's database.db_path (runs/db, relative) now always resolves under $SKILL_DIR/runs/db regardless of invoking CWD, confirmed by the minimal-PATH test actually writing to skills/earn/self-improve/runs/<run-id>/ as expected, nowhere else.",
+        "venv-not-committed: git ls-files does not include ~/.anicca-venvs/self-improve/ or any 'venv' directory — confirmed the durable venv lives entirely outside the repo and was never added.",
+        "OBSERVATION (not introduced by this fix, pre-existing from the prior commit cf935f0 — the impl-review-iter1 evidence commit, one commit BEFORE this fix's de225bf): `git ls-files skills/earn/self-improve | grep -E 'runs/|\\.venv|anicca-venvs'` is NOT empty — 99 files under skills/earn/self-improve/runs/ (run6's checkpoints/best/db programs + logs, ~2.6MB total) are already tracked in git from before this fix. The fix commit DID add a new .gitignore (runs/, state/, __pycache__/, *.pyc) which correctly makes NEW run output (confirmed via `git check-ignore -v` on my own test run dir) invisible going forward, but it did not `git rm --cached` the 99 already-tracked files from cf935f0, so they remain committed. I grepped the tracked run6 stdout log for secret patterns myself and found NOTHING (no API keys/tokens) — so this is a repo-hygiene/bloat issue, not a credential leak, and it predates (was not introduced by) the fix under review. Recommended follow-up: `git rm --cached -r skills/earn/self-improve/runs/` in a later commit. Non-blocking for this iteration since it is not a regression caused by the fix, but flagging it so it isn't missed."
+      ]
+    },
+    {
+      "name": "HONESTY MAINTAINED",
+      "verdict": "PASS",
+      "findings": [
+        "execution-notes-self-improve.md's new section (added by the fix commit, git show de225bf confirms 89 lines appended, nothing deleted/altered from the earlier honest text) explicitly reiterates: 'the accepted candidate 233d923c is variance-amplification (stake-sizing/leverage on the SAME trade selection as baseline), not evidence of a better strategy' — identical n_trades per window, near-zero edge/outcome correlation in the worst window, std-dev ~5x the mean improvement. No overclaim crept in; if anything the caveat is restated more strongly than iteration-1's own notes.",
+        "Confirmed 'What is NOT proven' section explicitly states the REQ-RH4 step-3 fresh per-candidate promotion adversary 'has correctly NOT been invoked for this candidate, and must not be until...' — re-grepped git log for any promote-related commit scoped to self-improve: none exist (the promote-pattern hits in git log --all belong to the unrelated clip-promote skill).",
+        "The new 'Fix for adversary-verdict BLOCKING finding' section accurately and non-defensively restates the prior FAIL's root cause (wrong binary name + no durable venv) and documents the fix + its own re-verification command/output, matching what I independently re-ran."
+      ]
+    },
+    {
+      "name": "INVARIANTS",
+      "verdict": "PASS",
+      "findings": [
+        "No human credential: config.yaml endpoint is the local ClawRouter proxy (127.0.0.1:8402) backed by the self-funded anicca-a3cdd4 automaton's own wallet; api_key is a non-credential placeholder string. Unchanged by this fix.",
+        "Paper/backtest only: evaluator.py's imports remain only os/sys/importlib.util/typing + lib.gate_math/lib.scope_guard — no subprocess/network/order-execution import. lib/promote.py (the only file with subprocess) is never imported by evaluator.py and was never invoked (confirmed no self-improve promote commits).",
+        "`.vcsdd/features/anicca-agent-economy/**` untouched: `git diff --stat main -- .vcsdd/features/anicca-agent-economy/` and `git log --oneline main..HEAD -- .vcsdd/features/anicca-agent-economy/` both return empty."
+      ]
+    },
+    {
+      "name": "ITERATION-1 PASSES STILL HOLD (re-confirmed, not re-litigated)",
+      "verdict": "PASS",
+      "findings": [
+        "Re-ran evaluator.evaluate()/baseline_stage2_score() myself in a fresh python process: baseline_stage2_score()=-0.3959371620826199, evaluate('evidence/best_program.py')['combined_score']=9.44855790310848, stage1_pass=True, stage2_pass=True — bit-for-bit identical to iteration-1's recomputed numbers. scope_guard.check(evidence/best_program.py, baseline) -> (True, 'scope-guard-pass'), also identical.",
+        "No live money path newly introduced (see INVARIANTS above); scope_guard remains sole enforcement (see NO REGRESSION above)."
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "summary": "Iteration-1's single blocking finding (run_evolve.sh invoking a non-existent `openevolve-run.py`, silently no-oping the REQ-OE7 zero-human recurring trigger) is genuinely and completely resolved. Verified myself, not by trusting claims: (1) the script now references the real binary `openevolve-run` (no `.py`) by an absolute, durable, non-scratchpad venv path (`$HOME/.anicca-venvs/self-improve/bin/openevolve-run`), with no PATH/`command -v` dependency; (2) a deliberately-broken `OPENEVOLVE_BIN=/nonexistent/x` run now fails LOUD (`FATAL: openevolve-run not found...`, exit 1) instead of silently exiting 0; (3) an `env -i HOME=\"$HOME\" PATH=/usr/bin:/bin` run (simulating launchd's minimal environment) actually reached and ran REAL openevolve — real LLM-ensemble init, real per-iteration timings, a real completed evolution run with a written best_program.py — proving this is not decorative; (4) the launchd plist now carries WorkingDirectory + an explicit PATH (venv bin first) and passes `plutil -lint`. No regression: the 18/18 test suite is still green, and 3 of my own freshly-constructed adversarial probes (fixed-region tamper, denylisted-import tamper, legit edit) confirm scope_guard.py remains real, fail-closed, and the sole enforcement mechanism. No new holes: no secrets in the plist/script/config, the durable venv is outside the repo (not committed), and the CWD fix correctly pins db_path writes under the skill dir regardless of invoking CWD. One pre-existing (not introduced by this fix) hygiene issue was found and disclosed: 99 raw run-evidence files (~2.6MB, from the prior commit cf935f0, before this fix) remain tracked in git even though a new .gitignore now correctly excludes future run output — no secrets found in them, non-blocking, flagged for a follow-up `git rm --cached`. Honesty is maintained: execution-notes still explicitly frames the +9.4486 candidate as variance-amplification/leverage on identical trade selection, not a validated strategy, and confirms the REQ-RH4 per-candidate promotion adversary has correctly not been invoked. All iteration-1 PASSes (beats-baseline reproducibility, scope_guard reality, no-live-money) were independently re-confirmed with identical numbers. Overall verdict: PASS.",
+  "recomputed_numbers": {
+    "baseline": -0.3959371620826199,
+    "best": 9.44855790310848,
+    "beats": true
+  }
+}
