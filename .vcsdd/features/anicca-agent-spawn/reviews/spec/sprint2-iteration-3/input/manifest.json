@@ -1,0 +1,19 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "sprint": 2,
+  "iteration": 3,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md",
+    "contracts/sprint-2.md"
+  ],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "priorIteration": {
+    "iteration": 2,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/sprint2-iteration-2/output/findings/",
+    "note": "1 finding, FIND-S2-101 (critical): contracts/sprint-2.md's CRIT-203 still stated the disproven iteration-1 boundary ('steps 1-5 ... steps 6-9 ...') verbatim, contradicting the already-corrected REQ-307/PROP-307c in the other two artifacts. Both spec files (behavioral-spec.md, verification-architecture.md) were independently confirmed CLEAN at iteration 2 -- only the contract's own CRIT-203 text was stale."
+  },
+  "note": "Verify FIND-S2-101 is now fixed: contracts/sprint-2.md's CRIT-203 description/passThreshold must state the CORRECTED 1-6/7-9 boundary (step 6/REQ-204 produces the agentId half of the identity anchor, so a step-6 failure -- including its own sub-cases: registration tx reverts, registration succeeds but the Registered event can't be decoded -- routes to the minimal-direct-append ledger.js::appendChild path, never buildChildSpec; steps 7-9 only fire after step 6 has genuinely succeeded), matching specs/behavioral-spec.md's REQ-307 Edge Cases/Acceptance Criteria and specs/verification-architecture.md's PROP-307c row. Additionally: this fix pass also reformatted ALL 8 of contracts/sprint-2.md's CRIT criteria (not just CRIT-203) from multi-line YAML-wrapped description/passThreshold fields to single physical lines, because the project's custom frontmatter parser (parseStructuredFrontmatter in vcsdd-state.js) silently truncates any wrapped value to only its first physical line -- this was independently verified via a live node invocation of the real parser (confirmed truncation before the fix: all 8 criteria measured 69-88 parsed characters vs. their full multi-hundred-character intended text; confirmed fixed after: 145-668 parsed characters, matching the full text, and validateApprovedSprintContract('anicca-agent-spawn', 2) now passes schema validation for the frontmatter, failing only on the expected 'status must be approved' check since this contract is still in draft/negotiation). As part of this review, please ALSO independently re-derive this truncation claim yourself by reading contracts/sprint-2.md's raw current file content directly (via the Read tool) and confirming every criterion's description and passThreshold field genuinely occupies exactly one physical line each with the full intended semantic content present -- do not simply trust this manifest's claim. If you find any criterion still wrapped across multiple physical lines, or any content lost/altered during the reformat (compare against reviews/spec/sprint2-iteration-2/output/verdict.json's own quoted excerpts of the pre-fix text where available), raise it as a new finding."
+}

@@ -1,0 +1,42 @@
+{
+  "findingId": "FIND-S2-101",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "three_statements_diverge",
+  "severity": "critical",
+  "description": "FIND-S2-001's fix (iteration 1 -> iteration 2) correctly moved the failure-recording boundary from 1-5/6-9 to 1-6/7-9 in BOTH specs/behavioral-spec.md's REQ-307 Edge Cases/Acceptance Criteria AND specs/verification-architecture.md's PROP-307c row and new Gate entry (8b). However, contracts/sprint-2.md's CRIT-203 -- the THIRD artifact this manifest explicitly lists for review, and the actual weighted (0.15) pass/fail criterion that gates Phase-3 implementation scoring -- was never touched. It still reads verbatim: 'A failure injected at each of REQ-307's 9 canonical steps in turn is recorded correctly -- steps 1-5 (before an identity anchor exists) append a minimal {child_id, status:\"failed\", attempted_ms, error} row directly via ledger.js::appendChild, never via buildChildSpec; steps 6-9 use the existing buildChildSpec-based REQ-305 path' (contracts/sprint-2.md:47-50) -- the EXACT stale iteration-1 boundary FIND-S2-001 disproved (a step-6/REQ-204 failure means no agentId was recorded, so the anchor is still incomplete, meaning buildChildSpec would throw 'missing identity anchor' if invoked for that case, per REQ-206's own Edge Case; routing a step-6 failure through the 'steps 6-9' bucket this passThreshold describes would produce either an uncaught exception or no ledger row at all). This is not a new defect this iteration introduced -- it is FIND-S2-001's OWN recommendation left half-done: that finding's recommendation text explicitly said 'Re-verify the CRIT-203/PROP-307c integration test plan explicitly covers a step-6-failure fixture whose expected recording path is the minimal direct append, not buildChildSpec' -- PROP-307c was corrected, CRIT-203 was not. RESOLUTION-NOTES.md's own change log (sections for FIND-S2-001/002/003) lists edits ONLY to specs/behavioral-spec.md and specs/verification-architecture.md; contracts/sprint-2.md appears nowhere in it. The result: this sprint's own governing contract now directly contradicts its own governing spec on the single most safety-critical edge-case boundary in this sprint's scope (CRIT-203's passThreshold: 'FAIL if any step's failure produces no row, a wrongly-shaped row, or a row misread' -- a literal implementation of CRIT-203 as currently worded would itself cause that exact FAIL condition for a step-6 fixture, since it directs the implementer/Phase-3 adversary to route a step-6 failure through the now-proven-wrong buildChildSpec path).",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": "contracts/sprint-2.md",
+      "lineRange": "45-58 (CRIT-203)",
+      "snippet": "description: A failure injected at each of REQ-307's 9 canonical steps in turn is recorded correctly -- steps 1-5 (before an identity anchor exists) append a minimal `{child_id, status:\"failed\", attempted_ms, error}` row directly via `ledger.js::appendChild`, never via `buildChildSpec`; steps 6-9 use the existing `buildChildSpec`-based REQ-305 path; no row anywhere ever claims `status:\"active\"` for a failed attempt (PROP-307c, resolves FIND-2002)."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "2717-2727 (REQ-307 Edge Cases, corrected)",
+      "snippet": "A failure occurs at step 1, 2, 3, 4, 5, or 6 (REQ-201/202/203/306/302/303/204) -- i.e., BEFORE step 6 (REQ-204) has SUCCESSFULLY produced a usable `agentId`, INCLUDING a failure AT step 6 itself (corrected, sprint-2 iteration 2, resolves FIND-S2-001, critical)..."
+    },
+    {
+      "type": "spec",
+      "filePath": "specs/verification-architecture.md",
+      "lineRange": "516 (PROP-307c, corrected)",
+      "snippet": "steps 1-6 (before a COMPLETE identity anchor exists -- corrected, sprint-2 iteration 2, resolves FIND-S2-001: this now includes a failure AT step 6/REQ-204 itself...); steps 7-9 (after step 6/REQ-204 has genuinely SUCCEEDED...) use the existing `buildChildSpec`-based REQ-305 failure path"
+    },
+    {
+      "type": "spec",
+      "filePath": "reviews/spec/sprint2-iteration-1/output/findings/FIND-S2-001.json",
+      "lineRange": "recommendation field",
+      "snippet": "Re-verify the CRIT-203/PROP-307c integration test plan explicitly covers a step-6-failure fixture whose expected recording path is the minimal direct append, not buildChildSpec."
+    },
+    {
+      "type": "spec",
+      "filePath": "reviews/spec/sprint2-iteration-1/RESOLUTION-NOTES.md",
+      "lineRange": "FIND-S2-001 Changes list (items 1-4)",
+      "snippet": "1. specs/behavioral-spec.md:2714-2739 (REQ-307 Edge Cases)... 2. specs/behavioral-spec.md:2765-2769 (REQ-307 Acceptance Criteria)... 3. specs/behavioral-spec.md REQ-305's own FIND-2002 Edge Case... 4. specs/verification-architecture.md PROP-307c row... -- contracts/sprint-2.md is not listed anywhere in this resolution's change log."
+    }
+  ],
+  "recommendation": "Update contracts/sprint-2.md's CRIT-203 description and passThreshold to the corrected 1-6/7-9 boundary, matching REQ-307's Edge Cases and PROP-307c verbatim: 'steps 1-6 (before a COMPLETE identity anchor exists, including a failure AT step 6/REQ-204 itself) append a minimal row directly via ledger.js::appendChild, never via buildChildSpec; steps 7-9 (only once step 6/REQ-204 has genuinely succeeded) use the existing buildChildSpec-based REQ-305 path.' Grep the rest of contracts/sprint-2.md (and any other sprint-2 contract-family file) for '1-5'/'6-9' once more after this edit to confirm no other stale copy of the old boundary remains.",
+  "routeToPhase": "1a"
+}

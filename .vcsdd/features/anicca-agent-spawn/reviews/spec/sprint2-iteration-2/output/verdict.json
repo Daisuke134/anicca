@@ -1,0 +1,72 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "sprint": 2,
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "contracts/sprint-2.md"
+    ],
+    "scope": "Small-delta re-review verifying iteration-1's 3 findings (FIND-S2-001 critical, FIND-S2-002 moderate, FIND-S2-003 moderate) against the actual current spec text, plus one fresh skeptical pass over REQ-307 and its immediate neighbors (REQ-204, REQ-206, REQ-305, REQ-306)."
+  },
+  "priorFindingsVerification": [
+    {
+      "findingId": "FIND-S2-001",
+      "status": "genuinely_fixed",
+      "evidence": "Re-derived the 9-step boundary from scratch against REQ-201 through REQ-306 (steps 1-6) and REQ-205/206/305 (steps 7-9). specs/behavioral-spec.md:2717-2727's REQ-307 Edge Cases now correctly place step 6 (REQ-204) into the minimal-direct-append bucket ('A failure occurs at step 1, 2, 3, 4, 5, or 6 ... INCLUDING a failure AT step 6 itself'), explicitly reasoning through why: step 6 is the step that produces the SECOND half of the identity anchor (agentId), so any step-6 failure -- including a checked failure mode in REQ-204's own pre-existing Edge Case (behavioral-spec.md:1860-1861, 'Registered event cannot be decoded ... no agentId recorded') and the insufficient-gas-revert-then-refund case (behavioral-spec.md:1854-1859) -- leaves the anchor incomplete, correctly routing to ledger.js::appendChild directly, never buildChildSpec. Confirmed steps 7-9 (behavioral-spec.md:2743-2747) fire only 'AFTER step 6 ... has GENUINELY SUCCEEDED and a real agentId exists.' Cross-checked REQ-206's own Edge Case (behavioral-spec.md:1992-1995, throws on a half-complete anchor) -- no longer reachable via the step-6 path. REQ-305's own sprint-2 Edge Case (behavioral-spec.md:2562-2571) was also corrected to include REQ-204/step-6 in its 'before a complete identity anchor exists' set. verification-architecture.md's PROP-307c (line 516) carries the matching corrected 1-6/7-9 language. The fix is genuine and complete IN THOSE TWO FILES -- see FIND-S2-101 for the same boundary surviving, uncorrected, in a third file this manifest also lists for review."
+    },
+    {
+      "findingId": "FIND-S2-002",
+      "status": "genuinely_fixed",
+      "evidence": "specs/behavioral-spec.md:2680-2686 now contains a new sentence, tagged '(new, sprint-2, resolves FIND-S2-002)', immediately after the entry-point function's module path: it states the requirement list is a SCOPE catalog only, is NOT an ordering statement, and names the Canonical call order section as the SOLE authoritative statement of execution sequence, citing the exact step-3-before-step-4/PROP-202d example the original finding raised. This is unambiguous on a fresh read and does not introduce a new self-reference problem: the Canonical call order section it defers to (behavioral-spec.md:2697-2716) is a distinctly-named, immediately-following section with its own heading, not a forward reference to something absent or ambiguously named."
+    },
+    {
+      "findingId": "FIND-S2-003",
+      "status": "genuinely_fixed",
+      "evidence": "verification-architecture.md's Gate section now has entry (8b) (lines 1001-1013), tagged '(new, sprint-2 iteration 2, resolves FIND-S2-003)', correctly placed immediately after (8a) (REQ-306) and before (9) (REQ-401). It cites PROP-307a/b/c/d by name, describes what the Phase-3 adversary must confirm for each, and explicitly states it uses 'the CORRECTED 1-6/7-9 boundary FIND-S2-001 establishes, never the iteration-1 1-5/6-9 boundary' -- correctly citing the corrected boundary, not the stale one."
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-101"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:45-58 (CRIT-203), cross-referenced against specs/behavioral-spec.md:2717-2727 and specs/verification-architecture.md:516",
+          "description": "contracts/sprint-2.md is one of the 3 artifacts this manifest names for review, and its CRIT-203 criterion still states the stale iteration-1 boundary verbatim ('steps 1-5 ... steps 6-9 ...') even though the two spec files it is supposed to be consistent with were both corrected to 1-6/7-9 for FIND-S2-001. This is the identical defect class FIND-S2-001 and FIND-S2-002 already found (a statement that diverges from the corrected canonical text), just discovered in a third location the iteration-1 fix's own RESOLUTION-NOTES never touched -- see FIND-S2-101."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-204 (1834-1881), REQ-206 (1915-2035), REQ-305 (2443-2611), REQ-306 (2614-2669), REQ-307 (2672-2777) -- full re-read",
+          "description": "Beyond FIND-S2-101, no other new internal inconsistency was found in REQ-307 or its immediate neighbors on this fresh pass. REQ-206's identity-anchor throw condition, REQ-204's three edge cases (gas-seed funding, undecodable event, pre-existing cache hit), and REQ-305/REQ-306's own text are all mutually consistent with the corrected 1-6/7-9 boundary."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-S2-101"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:52-58 (CRIT-203 passThreshold, weight 0.15)",
+          "description": "CRIT-203 is a weighted, scored pass/fail criterion that actually gates Phase-3 implementation review for this sprint -- unlike the spec files, this is the document whose passThreshold text an implementer/adversary would literally test against. As currently worded it would direct a step-6 failure fixture through the buildChildSpec-based path (which REQ-206's own Edge Case says throws for a half-complete anchor), producing exactly the 'no row' failure mode CRIT-203's own passThreshold says should FAIL. verification-architecture.md's Gate entry (8b) and PROP-307c are correctly aligned with the fix; only the sprint-2 contract itself was missed."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["FIND-S2-001", "FIND-S2-002", "FIND-S2-003", "REQ-307", "REQ-204", "REQ-206", "REQ-305", "REQ-306", "PROP-307a", "PROP-307b", "PROP-307c", "PROP-307d", "CRIT-203"],
+    "duplicateFindings": [],
+    "note": "This iteration is a genuine, large step forward from iteration 1: all 3 prior findings are correctly and completely fixed WITHIN specs/behavioral-spec.md and specs/verification-architecture.md, and a fresh skeptical re-derivation of the 9-step boundary from first principles (checking every sub-case of a step-6 failure, and confirming steps 7-9 are unreachable without a genuine step-6 success) found no remaining defect in those two files. However, this review's own instruction to treat contracts/sprint-2.md as an artifact under review (it is explicitly named in the manifest) surfaced one new, critical finding: CRIT-203 in that contract was never updated to match FIND-S2-001's fix, so it still encodes the disproven 1-5/6-9 boundary as its own scored pass/fail criterion. This is a narrow, single-location fix (mirror the same correction already applied twice elsewhere) rather than a new round of deep design rework, so a further iteration-3 re-review focused on just contracts/sprint-2.md's CRIT-203 text should converge quickly. Route to Phase 1a: sync contracts/sprint-2.md's CRIT-203 to the corrected 1-6/7-9 boundary, then re-review."
+  }
+}
