@@ -6,16 +6,15 @@
 
 BP（best practice）= 答え。オリジナルは書かない。判断には最低1つの引用（英/日で検索、ソース名+URL+核心の引用）を付ける。引用のない判断は削除する。
 
-## 開発の道具立て（GLVS の Build/Verify 段で使う superpowers skill 群）
+## 開発の道具立て（GLVS の Build/Verify 段 = VCSDD、他段は superpowers skill）
 
-開発方式そのものは `~/.claude/CLAUDE.md` の GLVS（Goal→Loop→Verify→State）が唯一の外枠。このプロジェクトでは GLVS の各段で以下の superpowers skill を道具として呼ぶ（並列の独立必須プロセスにしない）。
+開発方式そのものは `~/.claude/CLAUDE.md` の GLVS（Goal→Loop→Verify→State）が唯一の外枠。このプロジェクトでは Build/Verify を **VCSDD の実コマンド**で回し、Goal/分離/完了は superpowers skill を道具として呼ぶ（並列の独立必須プロセスにしない）。
 
-| GLVS の段 | 呼ぶ skill | 内容 |
+| GLVS の段 | 呼ぶ skill/コマンド | 内容 |
 |---|---|---|
-| Goal 具体化 | brainstorming → writing-plans | spec を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`、plan を `docs/superpowers/plans/YYYY-MM-DD-<topic>.md` に書く |
+| Goal 具体化 | brainstorming → writing-plans | 設計spec を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`、plan を `docs/superpowers/plans/YYYY-MM-DD-<topic>.md` に書く（アーキテクチャ/方針レベル） |
 | 分離 | using-git-worktrees | `.worktrees/<feature>/`（例外: `~/.openclaw` runtime store は直接編集） |
-| Build | test-driven-development / systematic-debugging / dispatching-parallel-agents | RED→GREEN→REFACTOR、根本原因分析、2+独立失敗の並列処理 |
-| Verify | verification-before-completion / requesting-code-review / receiving-code-review | IDENTIFY→RUN→READ→VERIFY→CLAIM、spec準拠→品質の順でレビュー |
+| Build/Verify | `vcsdd:vcsdd-init` → `vcsdd:vcsdd-spec` → `vcsdd:vcsdd-spec-review` → `vcsdd:vcsdd-tdd` → `vcsdd:vcsdd-impl` → `vcsdd:vcsdd-adversary` → `vcsdd:vcsdd-harden` → `vcsdd:vcsdd-converge` | EARS要件→fresh-context adversary が spec review PASS→RED→GREEN/refactor→実装レビュー→formal hardening→4次元収束確認。**実コマンドを呼んで `.vcsdd/features/<name>/state.json` の phase を進める**（SPEC本文への手書き追記だけでは進捗とみなさない）。小規模タスクは `mode: lean` でよいがフェーズは飛ばさない。codex-review をどこに挟むかは `.claude/rules/dev-workflow.md` 参照 |
 | 完了 | finishing-a-development-branch | テスト確認 → push → worktree cleanup |
 
 仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う（後回しにしない）。spec に「任意」「optional」「推奨」は書かない — 全て MUST として書く。タスクリストは source of truth。終わっていない作業を completed と書かない。
@@ -199,7 +198,7 @@ openclaw models status | head -5     # → openai-codex
 
 ## 技術 gotcha
 
-iOS/SwiftUI/RevenueCat/Xcode/App Store Connect 固有の既知の問題と回避策 → `.claude/rules/platform-gotchas.md`。FK 制約安全パターン（Prisma upsert 前の存在チェック）→ `.claude/rules/coding-style.md`。3ゲート開発ワークフロー（Spec→TDD→codex-review）→ `.claude/rules/dev-workflow.md`。git commit/PR 詳細 → `.claude/rules/git-workflow.md`。
+iOS/SwiftUI/RevenueCat/Xcode/App Store Connect 固有の既知の問題と回避策 → `.claude/rules/platform-gotchas.md`。FK 制約安全パターン（Prisma upsert 前の存在チェック）→ `.claude/rules/coding-style.md`。codex-review を VCSDD フェーズのどこに挟むか → `.claude/rules/dev-workflow.md`。git commit/PR 詳細 → `.claude/rules/git-workflow.md`。
 
 ## 参照先（必要時に Read）
 
