@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-201's edge case states: 'BOOTSTRAP_RESERVE_USDC is unset or fails to parse as a finite non-negative number: falls back to a documented safe default value; the gate is never silently disabled by misconfiguration.' No such default value is documented anywhere in behavioral-spec.md or verification-architecture.md -- no dollar figure, no env-var default, nothing. This is not a cosmetic omission: the codebase already has an established, directly analogous pattern (COMPUTE_RESERVE_USDC, defaulted to 5 in runtime/loop/context.mjs:39, 'Number(process.env.COMPUTE_RESERVE_USDC) || 5') that REQ-201 could have mirrored or explicitly related to, but does not. A Phase-3 builder has zero spec authority for the actual number to hardcode as BOOTSTRAP_RESERVE_USDC's fallback -- they must invent it themselves, which fails the 'concrete enough to be implemented unambiguously' bar for spec_fidelity and makes PROP-201c ('unset/non-finite/negative threshold... falls back to a safe, fail-closed default') untestable as an exact-value assertion (a unit test can only assert 'some slots got excluded', not 'the correct default was used', since no correct default is specified).",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+    "lineRange": "156-157",
+    "snippet": "`BOOTSTRAP_RESERVE_USDC` is unset or fails to parse as a finite non-negative number: falls back to a documented safe default value; the gate is never silently disabled by misconfiguration."
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca/runtime/loop/context.mjs",
+    "lineRange": "37-39",
+    "snippet": "// the instance's OWN compute buffer (deploy floor) ... reserveUsdc: typeof reserveUsdc === 'number' ? reserveUsdc : (Number(process.env.COMPUTE_RESERVE_USDC) || 5),"
+  },
+  "routeToPhase": "1a"
+}

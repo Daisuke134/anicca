@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "verification-architecture.md's Purity Boundary Map classifies the lock-staleness predicate as 'PURE': 'Must be directly unit-testable without touching the filesystem or real wall-clock sleeps (fake nowMs/mtimeMs injected).' The Verification Strategy section further labels PROP-101a/b/d as Tier 1 ('pure-function unit tests: deterministic fixtures, no filesystem/network/real wall-clock sleep, fast (milliseconds)'). I read the actual current code: /Users/anicca/anicca/skills/economy/gig/lib/lock.mjs's acquire() (lines 34-58) inlines the staleness check directly as `Date.now() - stat.mtimeMs > staleMs` inside a function that itself performs real `fs.stat`/`fs.open('wx')`/`fs.unlink` -- there is no isolated, exported `(nowMs, mtimeMs, staleMs) -> boolean` pure function anywhere in the module. I then read the actual test file, /Users/anicca/anicca/skills/economy/gig/__tests__/lock.test.mjs (all 3 tests, lines 14-75): every test calls the real, effectful `withGigLock()` and waits on REAL `setTimeout` wall-clock delays (e.g. `staleMs * 3`, `staleMs + 30`) against a REAL lock file created with `fs.mkdtemp`/`fs.writeFile`/`fs.utimes`. This is squarely a Tier-2 integration test by the document's OWN Tier-1/Tier-2 definitions (Tier 2 explicitly = 'real module wiring (real fs, injected small timing constants...)'), not a Tier-1 pure-function test with an injected fake clock. The document's purity/tier claims for PROP-101a/b/d directly contradict the real code structure they are meant to describe. Nothing in behavioral-spec.md's REQ-101 acceptance criteria actually MANDATES extracting an isolated pure predicate as a binding, testable acceptance criterion -- the only language addressing it is a non-binding parenthetical in the Purity Boundary Analysis overview table ('extracted or exercised in isolation'), so this purity/tier classification is both inaccurate today and unenforceable by any concrete acceptance criterion.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs",
+    "lineRange": "34-58",
+    "snippet": "async function acquire(statePath, lockKey, staleMs) { ... const stat = await fs.stat(file); if (Date.now() - stat.mtimeMs > staleMs) { await fs.unlink(file).catch(() => {}); const handle = await fs.open(file, \"wx\"); ... } }"
+  },
+  "crossReference": {
+    "filePath": "/Users/anicca/anicca/skills/economy/gig/__tests__/lock.test.mjs",
+    "lineRange": "14-51",
+    "snippet": "test(\"★GAP 1★ a live holder's lock is NEVER stolen while it's still working past staleMs (heartbeat keeps it alive)\", async () => { ... await new Promise((r) => setTimeout(r, staleMs * 3)); ... await new Promise((r) => setTimeout(r, staleMs + 30)); ... })"
+  },
+  "specCitation": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/verification-architecture.md",
+    "lineRange": "11, 42-45, 68-69"
+  },
+  "routeToPhase": "1b"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "state.json (this feature's own state file) shows currentPhase = '1b' with all 21 proof obligations (PROP-101a..PROP-302a) recorded as status:'pending' -- i.e. the formal VCSDD state machine believes REQ-101/102/103's Phase 2/3 verification has not happened yet. But .vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes-round3.md, dated the SAME DAY (2026-07-07), already documents a complete RED-then-GREEN cycle (21/21 tests, with each gap's fix scripted-reverted to show the specific test fail, then restored) AND an independent-looking live testnet re-proof with real tx hashes and on-chain reconciliation for exactly REQ-101/102/103's target behavior. behavioral-spec.md's own intro is transparent that this spec formalizes already-written code ('codifying the TARGET behavior regardless of whatever the current on-disk code already attempts'), but verification-architecture.md's Gate section and PROP-103b's Tool/Method column still describe Tier-3 live re-execution in future/conditional terms ('a fresh Sonnet adversary re-runs ... and, where feasible, against a live/testnet deployment') without ever acknowledging that this exact live proof was already produced by the SAME builder (not an independent party) earlier the same day, and without an explicit instruction that the Phase-3 adversary must independently re-run ITS OWN fresh concurrent/live transactions rather than accept the round-3 evidence file's already-completed proof as sufficient. This creates a real risk that the 'fresh Phase 2/3 verification cycle' claimed in the increment's framing is, for REQ-101-103, actually just a re-read of the builder's own prior self-report.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/state.json",
+    "lineRange": "4, 24-44",
+    "snippet": "\"currentPhase\": \"1b\" ... { \"id\": \"PROP-103b\", \"tier\": 3, \"required\": true, \"status\": \"pending\", ... }"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/evidence/p2.2-security-fixes-round3.md",
+    "lineRange": "33-114",
+    "snippet": "## RED → GREEN (genuine, same technique as rounds 1-2) ... ## Real testnet re-proof (`scripts/e2e-testnet.mjs`, unchanged script, re-run against round-3 code) ... ## On-chain reconciliation (still nets out across ALL rounds + the adversary's own testing)"
+  },
+  "routeToPhase": "1b"
+}

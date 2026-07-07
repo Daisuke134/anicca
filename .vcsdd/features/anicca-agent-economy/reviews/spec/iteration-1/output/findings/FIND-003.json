@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-201's own worked example names `hl_trade` as a slot to hide below the bootstrap reserve. But the codebase already has a live, wired steering mechanism (`runtime/loop/liquidity.mjs::liquidityDirective`, driven by the EXISTING `COMPUTE_RESERVE_USDC` config threshold, default $5) that fires exactly when liquid balance is low and explicitly instructs the model: 'CLOSE a profitable HL position to realise PnL into liquid ({action:\"close\",coin}), or withdraw idle yield -- whichever you hold.' If an instance is below BOTH COMPUTE_RESERVE_USDC and BOOTSTRAP_RESERVE_USDC (a very plausible state -- both are low-balance floors on the SAME liquid balance) and is holding an open HL position, the prompt built by buildUserMessage/buildSystemPrompt will simultaneously (a) instruct it to close that position via the hl_trade slot, and (b) have REMOVED hl_trade from activeSkillSlots/skillCatalog per REQ-201, making the close action structurally impossible to execute -- a real functional deadlock that can trap an open, possibly losing, leveraged position with no way to close it. Neither REQ-201/REQ-202's edge cases, nor any PROP in verification-architecture.md, mention or reconcile this interaction. The spec also never states the relationship between the NEW BOOTSTRAP_RESERVE_USDC and the EXISTING COMPUTE_RESERVE_USDC (same env-var? independent? which is larger?) even though both are dollar-floor gates on the identical balance read in the identical wake loop.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/runtime/loop/liquidity.mjs",
+    "lineRange": "20-22",
+    "snippet": "return `⚠️ LIQUID BELOW COMPUTE BUFFER: $${liquid.toFixed(4)} < $${reserve} needed to fund inference + new earns. ` + `REPLENISH FIRST this wake -- do NOT deploy more into positions. ` + `CLOSE a profitable HL position to realise PnL into liquid ({action:\"close\",coin}), or withdraw idle yield -- whichever you hold.`"
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+    "lineRange": "133-138",
+    "snippet": "THE SYSTEM SHALL exclude capital-risking earn slots (e.g. `hl_trade`, `token_launch`, and any other slot tagged as capital-risking) from the catalog and active-slot list surfaced to the model for that wake..."
+  },
+  "routeToPhase": "1a"
+}

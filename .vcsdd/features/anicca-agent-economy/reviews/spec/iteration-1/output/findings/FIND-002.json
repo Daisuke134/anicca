@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-201's own acceptance criteria constrain filterCatalog to exactly 4 inputs: 'The filtering function takes already-fetched inputs (balance, slot names, risk tags, threshold) and returns a plain list.' verification-architecture.md's purity-boundary row gives the concrete signature: filterCatalog(balanceUsdc, allSlotNames, riskTagOf, reserveThresholdUsdc) -> string[] -- a single per-slot classification signal (the risk tag). Yet REQ-201's last edge case requires: 'Every currently-live slot happens to be tagged risky (e.g. a misconfiguration): the sleep meta-tool and any always-available non-earn slot (e.g. report, cook) remain available; the gate must never produce an empty actionable toolset for the model,' and PROP-201e's test plan says to 'assert the designated always-available slot(s) remain in the output' even when every slot including those is tagged risky. This is not implementable with the stated 4-input pure function: if 'report'/'cook' are ALSO tagged risky in this pathological scenario (as the edge case explicitly posits), the only way for them to survive filtering is a 5th signal -- a hardcoded allowlist of 'always available' slot names -- that is never introduced, named, or authorized anywhere in either spec document, and would itself sit awkwardly next to REQ-203's 'bookkeeping only, no code inferring / no hardcoded classification' design principle. Neither REQ nor any PROP defines which slot names constitute 'always-available' nor the mechanism that distinguishes them from an ordinary risk:\"safe\"-tagged slot. As written, this requirement cannot be implemented unambiguously; Phase 3 will have to invent an unspecified mechanism to satisfy it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/behavioral-spec.md",
+    "lineRange": "165-167",
+    "snippet": "Every currently-live slot happens to be tagged risky (e.g. a misconfiguration): the `sleep` meta-tool and any always-available non-earn slot (e.g. `report`, `cook`) remain available; the gate must never produce an empty actionable toolset for the model."
+  },
+  "crossReference": {
+    "filePath": ".vcsdd/features/anicca-agent-economy/specs/verification-architecture.md",
+    "lineRange": "55",
+    "snippet": "PROP-201e | REQ-201 | The filter never returns an empty actionable set -- meta/always-available slots survive filtering even in a pathological all-risky-tag input | 1 | true | unit test: every live slot tagged risky, balance below threshold, assert the designated always-available slot(s) remain in the output"
+  },
+  "routeToPhase": "1a"
+}
