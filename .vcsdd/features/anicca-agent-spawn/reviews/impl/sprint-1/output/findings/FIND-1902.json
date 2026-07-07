@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-1902",
+  "dimension": "edge_case_coverage",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "filterProductiveCitizens (treasury-gate.mjs) and readCitizenBalances (colony-balances.mjs) -- both new this sprint, both consuming the SAME citizens array per PROP-101j's own real-derivation binding rule -- throw an uncaught TypeError ('Cannot read properties of null (reading id)') when the citizens array contains a single null/undefined entry, crashing the ENTIRE colony-spawn evaluation rather than skipping or failing closed for just that one malformed record. This is inconsistent with computeColonySurplusUsd/computePerCitizenSurplusUsd (same file, same citizens input shape), which handle an identical null-entry fixture gracefully -- isSelfFunded(null) is falsy so citizens.filter(isSelfFunded) silently excludes it without throwing -- and inconsistent with this sprint's own pervasive fail-closed philosophy applied to every other malformed-input class this sprint delivers (per-chain balance-fetch failures in readCitizenBalances's OWN safeChainBalance helper, non-finite spot prices in cloud-target.mjs, non-finite colonySurplusUsd in decideColonySpawn). Because CITIZENS_REGISTRY_PATH is a hand-editable seed file bootstrapped once and then runtime-appended (REQ-105/305), a single corrupted, truncated, or partially-written row is a realistic failure mode, and today it would halt every future colony-spawn evaluation with an unhandled exception rather than degrading gracefully for the one bad record. None of the 95 delivered tests exercise a malformed/null entry WITHIN the citizens array (PROP-101d/PROP-101g/PROP-101h all use well-formed citizen objects throughout), so this gap is invisible to the current green suite.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/treasury-gate.mjs",
+    "lineRange": "48-62",
+    "snippet": "export function filterProductiveCitizens({ citizens = [], ledgerRows = [], nowMs, bootstrapWindowDays = BOOTSTRAP_WINDOW_DAYS } = {}) {\n  const groups = groupLedgerRowsByChildId(ledgerRows);\n  return citizens.filter((citizen) => {\n    const group = groups.get(citizen.id); // throws if citizen is null/undefined\n    ...",
+    "testName": "reproduced standalone (node --input-type=module), not present in the delivered test suite: filterProductiveCitizens({citizens:[null,{id:'a'}], ledgerRows:[], nowMs:Date.now()}) throws TypeError; readCitizenBalances({citizens:[null,{id:'ok',walletAddress:{evm:'0xA'}}], fetchEvmBalanceUsd, fetchSolanaBalanceUsd}) throws TypeError (colony-balances.mjs:29, citizen.id); computeColonySurplusUsd({citizens:[null,{id:'a', wallet:{evm:true}, fuel:{provider:'clawrouter-own-wallet'}, humanDependencies:[], balanceUsd:10}], perCitizenReserveUsd:0}) does NOT throw and returns 10 -- proving the identical malformed shape is handled inconsistently across this sprint's own sibling functions"
+  },
+  "routeToPhase": "2b"
+}

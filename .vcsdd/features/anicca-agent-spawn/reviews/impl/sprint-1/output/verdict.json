@@ -1,0 +1,135 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-agent-spawn",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:117-137",
+          "description": "CRIT-003: control-flow read of decideColonySpawn confirms the surplus check (`if (surplus < spawnThresholdUsd) return {eligible:false, reason:'insufficient_surplus'}`) is the first return, the cooldown check (`if (hasRecentSuccess || failureCount >= failureCooldownCap) return {..., reason:'rate_limited'}`) is the second, and the concurrency check (`if (childrenProvisioning >= maxConcurrentSpawns) return {..., reason:'max_concurrent_spawns'}`) is the third."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-003: independently re-run 'PROP-102e: check order is surplus -> cooldown -> concurrency cap (a fixture failing all three reports the SURPLUS failure)' -- PASS."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs:19-28,49,70,88",
+          "description": "CRIT-005: groupLedgerRowsByChildId (lines 19-28) is the SINGLE shared grouping helper; confirmed by direct read that filterProductiveCitizens (line 49), deriveRecentSpawnAttempts (line 70), and countChildrenProvisioning (line 88) all call this SAME function -- no independently-reimplemented grouping loop exists anywhere in the file."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-005: independently re-run 'PROP-102f: deriveRecentSpawnAttempts maps ledger rows, grouped by child_id, to one {ts,outcome} entry across all 4 cases' and 'PROP-102h: countChildrenProvisioning counts only child_id groups whose LAST row is exactly provisioning' -- both PASS."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/child-spec-erc8004.test.js + child-spec.test.js",
+          "description": "CRIT-008: independently re-run -- all 7 named PROP-206a/b/c(x2)/d/e/f cases in child-spec-erc8004.test.js PASS, and the pre-existing child-spec.test.js regression suite (nextChildId x4, buildChildSpec x3) also PASS unchanged. Source read of child-spec.js confirms the required-non-anchor-field loop (line 27) no longer includes childInbox, a separate hasInbox/hasErc8004 check (lines 35-47) throws 'missing identity anchor' only when BOTH are false (never an XOR), and nextChildId (lines 5-14) plus the childWallet.toLowerCase()===parentWallet.toLowerCase() distinct-wallet check (line 49) are unchanged from the pre-sprint shape."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/akash-funding-gate.test.mjs",
+          "description": "CRIT-009: independently re-run -- all 5 named tests (PROP-303h(a)/(b)/(c), PROP-303g, PROP-303d) PASS, including the query-call-count assertions (exactly 1 call when first pass is ready, exactly 2 when not) and attemptBridge's throws-if-invoked fixture in PROP-303d never firing. Source read of akash-funding-gate.mjs confirms queryBalanceAkt is called once for firstBalanceAkt, attemptBridge is only called inside the `if (firstPass.ready)` false-branch, and a fresh secondBalanceAkt query follows it -- matching the two-pass sequencing exactly."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-1902"],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/treasury-gate.test.mjs",
+          "description": "CRIT-004: independently re-run 'PROP-101d: excludes bootstrap_failed / window-overdue-active, passes through no-row citizens, last-write-wins on duplicate child_id rows' and 'PROP-101d edge case: malformed active row (missing/non-finite active_since) is excluded, fail-closed' -- both PASS."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/colony-balances.test.mjs",
+          "description": "CRIT-006: independently re-run 'PROP-101g: exactly one chain fails ... -> total is ONLY the successful chain's value, never 0' and 'PROP-101h: both chains fail simultaneously -> exactly 0 for that citizen, never throws, never NaN' -- both PASS."
+        },
+        {
+          "type": "proof-result",
+          "location": "reviews/impl/sprint-1/output/findings/FIND-1902.json",
+          "description": "Adversary-executed standalone probe (node --input-type=module, not in the delivered test suite): filterProductiveCitizens({citizens:[null,{id:'a'}], ledgerRows:[], nowMs:Date.now()}) throws TypeError; readCitizenBalances({citizens:[null,{id:'ok',walletAddress:{evm:'0xA'}}], ...}) throws TypeError -- both crash the entire colony-spawn evaluation on a single malformed/null citizen record, whereas computeColonySurplusUsd/computePerCitizenSurplusUsd (same file, same citizens input shape) handle the identical malformed shape gracefully (no throw). None of the 95 delivered tests exercise a null/malformed entry WITHIN the citizens array -- a genuine, money-relevant edge case beyond the 11 sprint-1 CRIT criteria."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1901"],
+      "evidence": [
+        {
+          "type": "proof-result",
+          "location": "reviews/impl/sprint-1/output/findings/FIND-1901.json",
+          "description": "Adversary-executed standalone probe (node --input-type=module, not in the delivered test suite): decideColonySpawn({colonySurplusUsd:0, spawnThresholdUsd:undefined, recentSpawnAttempts:[], nowMs:Date.now(), childrenProvisioning:0, maxConcurrentSpawns:1}) returns {eligible:true, reason:'ok'} -- a fail-OPEN result at zero surplus, caused by decideColonySpawn defensively coercing ONLY colonySurplusUsd and never spawnThresholdUsd/childrenProvisioning/maxConcurrentSpawns before comparison. Identical fail-open reproduces for spawnThresholdUsd:NaN, spawnThresholdUsd:null, and childrenProvisioning:NaN (the concurrency cap silently never blocks). This is the single most consequential real-money gate in this sprint's deliverable and it has zero defense against a malformed threshold, unlike its own colonySurplusUsd sibling parameter in the exact same function."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs",
+          "description": "CRIT-001: independent grep confirms the only import is `isSelfFunded` from ../../../_shared/lib/is-self-funded.mjs; a follow-up grep for fs./fetch(/require(.http/readFileSync/network globals across the whole file returns zero hits; the only Date.now() reference is decideColonySpawn's own `nowMs = Date.now()` default parameter (line 111), never an internal call inside a function body."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/citizens-registry.mjs",
+          "description": "CRIT-007: independent grep for `existsSync` and `fs.stat(` in the file returns zero matches; `fs.open(registryPath, \"wx\")` (line 13) is the sole file-creation call -- confirmed a single atomic exclusive-create, never a check-then-act pair."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/citizens-registry.test.mjs",
+          "description": "CRIT-007: independently re-run 'PROP-105l: two concurrent first-access callers -> exactly ONE succeeds...', 'PROP-105l: a late bootstrap attempt racing a real, already-completed REQ-305 append fails EEXIST...', and the structural existsSync/fs.stat/wx regex test -- all PASS."
+        },
+        {
+          "type": "file",
+          "location": "git log --stat 2236802^..412a516 -- skills/economy/gig/lib/lock.mjs skills/self/spawn-child/lib/akt-cost-gate.js skills/self/spawn/lib/state-path.js skills/_shared/lib/is-self-funded.mjs",
+          "description": "CRIT-010: independently run across the sprint's full commit range (2236802 Phase 2a RED through 412a516, the final Phase 2c commit) -- zero commits touch any of the four reused files. `git status --porcelain` on those four paths is empty (the only unrelated dirty file in the working tree is skills/self/capafy-loop/state/STATE.md, a different skill's runtime state, not part of this sprint)."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/*.test.mjs, *.test.js",
+          "description": "CRIT-002: independently executed `cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js` fresh (not accepted from evidence/sprint-1-green-phase.log) -- tests 95, pass 95, fail 0, cancelled 0, skipped 0, todo 0, process exited cleanly. Matches the recorded evidence log's own count exactly."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/colony-spawn-lock.test.mjs",
+          "description": "CRIT-011: independently re-ran this file standalone 20 consecutive times in a fresh shell loop -- 20/20 runs exited 0, each with exactly 2/2 tests passing (verified pass/fail counts in 3 sampled run logs), zero failures. Source read of the test (lines 43-56) confirms firstCaller's fn() calls `signalLockHeld()` as its first statement and the test `await`s `lockHeld` BEFORE entering its five-attempt loop -- the deterministic hand-off fix is genuinely present, not merely described."
+        }
+      ]
+    }
+  ],
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T12:00:00.000Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-1.md"
+  },
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011"]
+  }
+}

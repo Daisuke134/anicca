@@ -956,6 +956,22 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-303h",
       "beadId": "BEAD-133"
+    },
+    {
+      "id": "PROP-113",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-102l",
+      "beadId": "BEAD-134"
+    },
+    {
+      "id": "PROP-114",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-101l",
+      "beadId": "BEAD-135"
     }
   ],
   "traceability": {
@@ -977,7 +993,8 @@
           "BEAD-105",
           "BEAD-119",
           "BEAD-129",
-          "BEAD-131"
+          "BEAD-131",
+          "BEAD-135"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -999,7 +1016,8 @@
           "BEAD-124",
           "BEAD-125",
           "BEAD-126",
-          "BEAD-130"
+          "BEAD-130",
+          "BEAD-134"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -2647,6 +2665,46 @@
         "createdAt": "2026-07-07T17:18:11.305Z",
         "createdInPhase": "1b",
         "externalId": "PROP-303h"
+      },
+      {
+        "beadId": "BEAD-134",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-102l",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-002"
+        ],
+        "createdAt": "2026-07-07T18:36:26.107Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-102l"
+      },
+      {
+        "beadId": "BEAD-135",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-101l",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-001"
+        ],
+        "createdAt": "2026-07-07T18:36:26.107Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-101l"
+      },
+      {
+        "beadId": "BEAD-136",
+        "type": "adversary-finding",
+        "externalId": "FIND-1901",
+        "status": "resolved",
+        "artifactPath": "reviews/impl/sprint-1/output/findings/FIND-1901.json",
+        "linkedBeads": []
+      },
+      {
+        "beadId": "BEAD-137",
+        "type": "adversary-finding",
+        "externalId": "FIND-1902",
+        "status": "resolved",
+        "artifactPath": "reviews/impl/sprint-1/output/findings/FIND-1902.json",
+        "linkedBeads": []
       }
     ]
   },
@@ -2668,5 +2726,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T18:18:03.056Z"
+  "updatedAt": "2026-07-07T18:36:37.857Z"
 }

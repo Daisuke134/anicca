@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-1901",
+  "dimension": "implementation_correctness",
+  "category": "invariant_violation",
+  "severity": "critical",
+  "description": "decideColonySpawn (treasury-gate.mjs) defensively coerces ONLY colonySurplusUsd to 0 when it is non-finite/negative before comparing it, but performs NO equivalent coercion on spawnThresholdUsd, childrenProvisioning, or maxConcurrentSpawns before using them in direct numeric comparisons. When spawnThresholdUsd is undefined, null, or NaN (a realistic upstream failure mode: the spec's own MIN_SHELTER_USD formula reads deriveMeasuredShelterCostUsd, which this SAME sprint documents as returning null on an empty shelter-cost ledger -- a caller that forgets the spec's own required null-to-5.00-default substitution before multiplying by SAFETY_MARGIN_MULTIPLIER produces exactly NaN), `surplus < spawnThresholdUsd` evaluates to false for ANY surplus value, because a relational comparison against NaN/undefined/null-coerced-oddly is always false in JavaScript. The function then falls through the surplus check entirely and returns {eligible:true, reason:'ok'} even when colonySurplusUsd is exactly 0 -- a fail-OPEN result from the single most consequential real-money gate delivered this sprint, directly contradicting the fail-closed discipline this SAME function already applies to colonySurplusUsd, and that readCitizenBalances/fetchAktUsdPrice/fetchNosUsdPrice apply to every other numeric input in this sprint. The identical fail-open pattern reproduces for childrenProvisioning=NaN: `childrenProvisioning >= maxConcurrentSpawns` evaluates false, so the concurrency cap silently never blocks. Reproduced live, standalone, outside the test suite (see evidence.testName) -- none of the 95 delivered tests exercise a malformed spawnThresholdUsd/childrenProvisioning value, so this gap is invisible to the current green suite.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/treasury-gate.mjs",
+    "lineRange": "107-140",
+    "snippet": "const surplus = typeof colonySurplusUsd === \"number\" && Number.isFinite(colonySurplusUsd) && colonySurplusUsd >= 0 ? colonySurplusUsd : 0;\n  if (surplus < spawnThresholdUsd) { return { eligible: false, reason: \"insufficient_surplus\" }; }\n  ...\n  if (childrenProvisioning >= maxConcurrentSpawns) { return { eligible: false, reason: \"max_concurrent_spawns\" }; }",
+    "testName": "reproduced standalone (node --input-type=module), not present in the delivered test suite: decideColonySpawn({colonySurplusUsd:0, spawnThresholdUsd:undefined, recentSpawnAttempts:[], nowMs:Date.now(), childrenProvisioning:0, maxConcurrentSpawns:1}) => {eligible:true, reason:'ok'}; identical result for spawnThresholdUsd:NaN and spawnThresholdUsd:null; decideColonySpawn({colonySurplusUsd:100, spawnThresholdUsd:10, childrenProvisioning:NaN, maxConcurrentSpawns:1, ...}) => {eligible:true, reason:'ok'} (concurrency cap silently bypassed)"
+  },
+  "routeToPhase": "2b"
+}
