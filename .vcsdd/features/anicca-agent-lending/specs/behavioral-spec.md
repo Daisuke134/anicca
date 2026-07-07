@@ -2249,3 +2249,213 @@ this feature — this feature implements NO code path resembling that genesis in
   per `docs/WALLETS.md`) — must find none, mirroring `anicca-agent-spawn` PROP-304a exactly.
 - `isSelfFunded()`'s own source is byte-identical to its pre-existing version (this feature makes zero
   modifications to it).
+
+---
+
+## REQ群F: Sprint-2 — Effectful orchestrators (new)
+
+### REQ-115: The loan-issuance orchestrator's single entry-point function (new, sprint-2)
+**EARS**: WHEN a lending-eligible pair (`lenderId`, `borrowerId`) is identified for a specific
+loan-issuance attempt — by whatever caller has already read REQ-101/102's own pure eligibility functions
+against a recent snapshot and decided to attempt issuance — THE SYSTEM SHALL execute the ENTIRE remainder
+of that issuance attempt — REQ-102(d)'s self-loan exclusion, REQ-112's co-location check, REQ-105/REQ-114's
+pre-lock kill-switch checks, REQ-106's dual-lock acquisition and ledger-state-triggered reconciliation, the
+lock-protected fresh re-check of REQ-101/102/105/114, REQ-104/105's sizing computation, REQ-106's
+per-lender sequence-number assignment, and REQ-106's two-phase provisional/follow-up disbursement — via
+exactly ONE new, named entry-point function, `executeLoanIssuanceAttempt({ lenderId, borrowerId, nowMs =
+Date.now() }) → Promise<{ status: "active"|"disbursement_failed"|"disbursement_uncertain"|"refused",
+loanId?, reason?, error? }>`, exported from a NEW module,
+`~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs`. **This closes the one gap a full sweep of
+this spec found (2026-07-08): every individual step (REQ-101/102/104/105/106/112/114) already has its own
+pinned signature and its own fully-specified edge cases, but no function anywhere before this correction
+was named as the thing that calls them all, in order, across both of REQ-106's own locks.** This function
+SHALL contain NO decision/judgment logic of its own (mirrors REQ-103's own bookkeeping-only discipline,
+extended here exactly as `anicca-agent-spawn` REQ-307 extends REQ-104's identical discipline to ITS OWN
+orchestrator) — it is PURE SEQUENCING AND ERROR PROPAGATION over the already-specified pure/narrow modules
+and the two already-hardened effectful modules (`lock.mjs`, `escrow.mjs`/`payViaFacilitator`), calling
+each in the canonical order below and never re-deriving, re-computing, or hardcoding any value those
+modules already own.
+
+**Canonical call order** (never varied, never partially reordered — each step's own REQ number retains
+full ownership of that step's internal behavior; this paragraph states ONLY the sequencing):
+1. REQ-102(d)'s self-loan check (`lenderId !== borrowerId`) — before any lock, before either kill-switch,
+   before REQ-112's own check.
+2. REQ-112's co-location check (`citizen.coLocatedWithCoordinator === true` for BOTH parties) — still
+   before any lock.
+3. REQ-105's `evaluateColdStartKillSwitch` (for a cold-start request, `successfulOnTimeRepayments===0`)
+   and REQ-114's `evaluateOverallDefaultKillSwitch` (for every request) — the pre-lock evaluation, over
+   the freshest `loanRows`/`gojoLogRows` read available to this call, BEFORE either lock is acquired.
+4. Acquire BOTH `` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` `` locks via nested
+   `withGigLock` calls, in the order `resolveLoanLockAcquisitionOrder(lenderId, borrowerId)` returns.
+5. REQ-106's ledger-state-triggered reconciliation check: if this lender's own highest-`n` row is
+   unterminated (`"provisioning"`/`"disbursement_uncertain"`), invoke `reconcileProvisionalDisbursement`
+   and resolve it (to `"active"` or `"disbursement_failed"`) BEFORE this attempt computes or uses any new
+   sequence number.
+6. The lock-protected FRESH re-check: a fresh read of `loans.jsonl`, REQ-102(a)-(c)'s
+   borrower-eligibility recheck, REQ-101's lender-availability recheck, AND both kill-switches (step 3's
+   SAME two functions) re-evaluated against this SAME fresh read.
+7. REQ-104/105's sizing computation (`computeLoanCapUsd`, `decideLoan`) against step 6's own
+   fresh-read output.
+8. `n = nextLoanSequenceForLender(...)` and the PROVISIONAL `` status: "provisioning" `` append (REQ-106's
+   own step 1).
+9. The disbursement attempt (`payViaFacilitator`, wrapped in its own try/catch per REQ-106's own
+   in-process-exception discipline) and the FOLLOW-UP append (`"active"`, `"disbursement_failed"`, or
+   `"disbursement_uncertain"` — REQ-106's own step 3).
+
+**Edge Cases** (this function invents no new failure-recording rule anywhere below — each step's own REQ
+number already specifies exactly what happens on failure; this paragraph only confirms the SAME rule
+applies when exercised through this REAL, single orchestrator, never a mocked stand-in):
+- A refusal at step 1, 2, 3, or 6 (self-loan, non-co-located party, a tripped kill-switch, or a
+  fresh-recheck ineligibility) returns `{status:"refused", reason}` — ZERO lock is acquired for a
+  step-1/2/3 refusal (REQ-106's own Acceptance Criteria already state this for step 1/3; REQ-112's own
+  fail-closed convention extends it to step 2), and a step-6 refusal releases both already-acquired locks
+  normally with ZERO `loans.jsonl` row appended (REQ-106's own PROP-106n/PROP-106p precedent) — this
+  function adds no second, competing refusal-recording path.
+- A failure at step 4 itself (`lock_held`, either lock already held by a different in-flight attempt)
+  returns `{status:"refused", reason:"lock_held"}` with ZERO row appended — REQ-106's own already-specified
+  fail-fast refusal shape.
+- A failure at step 5 (the reconciliation lookup itself throws) returns `{status:"refused",
+  reason:"reconciliation_failed"}` (or propagates the underlying error) with ZERO row appended and ZERO
+  sequence number consumed — REQ-106's own PROP-106l precedent, both locks released normally.
+- A failure at step 8 itself (the PROVISIONAL `appendChild` call throws, e.g. `ENOSPC`, before it ever
+  durably commits) leaves ZERO row for this attempt's own `n` — a later attempt for this SAME lender
+  recomputes a fresh `n` from the ledger's own real, unaffected state (no reservation was ever durably
+  made).
+- A failure inside step 9 — `payViaFacilitator` returns `{ok:false}` (clean failure), throws mid-call
+  (in-process exception, `"disbursement_uncertain"`), or the FOLLOW-UP append itself throws (leaving the
+  provisional row unterminated, REQ-106's own FIND-301 case) — is recorded EXACTLY per REQ-106's own
+  already-specified two-phase/reconciliation mechanism; this function neither adds nor removes any
+  recording behavior at this step, it only calls the already-hardened primitives in the stated order.
+- The `` `loan_${lenderId}` `` and `` `loan_borrower_${borrowerId}` `` locks are held from before step 5
+  begins (immediately after step 4's own acquisition) until after step 9 completes OR a refusal/failure at
+  step 5, 6, 8, or 9 has been resolved — released only in a `finally` block, mirroring `withGigLock`'s own
+  existing release discipline (REQ-106 introduces no new release logic; this function passes a new `fn`
+  body into the EXISTING nested `withGigLock` wrapper REQ-106 already specifies).
+- `lenderId`/`borrowerId` are supplied by THIS function's OWN caller (whichever wake-cycle/agent process
+  already evaluated REQ-101/102's own pure eligibility functions against a recent snapshot and decided an
+  issuance attempt is worth making) — `executeLoanIssuanceAttempt` does not itself decide WHETHER to
+  attempt a loan, only HOW to safely execute an already-decided attempt; the agent's own in-envelope
+  timing choice (REQ-103's own carve-out: "when, within an eligible wake, to actually originate... a
+  specific loan") happens entirely in this caller, never inside this function.
+
+**Acceptance Criteria**:
+- A structural/Tier-0 check confirms exactly ONE function, `executeLoanIssuanceAttempt`, in exactly ONE
+  new module (`lending-orchestrator.mjs`), calls REQ-101/102/104/105/106/112/114's own already-exported
+  functions in the canonical order above — no second, competing issuance-orchestration entry point exists
+  anywhere in the diff.
+- A structural/Tier-0 check confirms `executeLoanIssuanceAttempt`'s own function body contains no
+  arithmetic/boolean eligibility/sizing comparison of its own (that logic belongs exclusively to
+  `isBorrowerEligible`/`computeLenderAvailableUsd`/`decideLoan`/the kill-switch functions, all called BY
+  this function, never re-implemented inside it) and no LLM/prompt reference — mirrors REQ-103's own
+  structural check, extended to this new function exactly as `anicca-agent-spawn` REQ-307/PROP-307b
+  extends REQ-104's identical check to ITS OWN orchestrator.
+- An integration test triggering a failure/refusal at each of the 9 canonical steps in turn, against the
+  REAL `executeLoanIssuanceAttempt` (never a mocked stand-in), confirms the ledger effect (or non-effect)
+  at each step exactly matches the already-specified REQ-101/102/105/106/112/114 edge case for that step —
+  steps 1/2/3/4/5/6 append ZERO rows; step 8's own append-throw leaves ZERO rows; step 9's three
+  sub-cases append the FOLLOW-UP row exactly as REQ-106 already specifies (`"active"`/
+  `"disbursement_failed"`/`"disbursement_uncertain"`) — and no step anywhere produces a row claiming
+  `"active"` for a loan whose disbursement did not genuinely, verifiably succeed.
+- An integration test reusing PROP-106a's/PROP-106n's own staggered-race method against the REAL
+  `executeLoanIssuanceAttempt` confirms both locks' real scope over this actual function matches REQ-106's
+  own already-specified critical section (held from step 4 through step 9, never released early) — this
+  closes PROP-106a/PROP-106e's Tier-2 half/PROP-106n's own "wired into a live issuance attempt"
+  requirement (contracts/sprint-1.md's own residual-scope boundary).
+
+---
+
+### REQ-116: The loan-servicing orchestrator — repayment-claim and default-detection entry points (new,
+sprint-2)
+**EARS**: WHEN an ALREADY-ISSUED loan (`status:"active"`) is either (a) claimed repaid by its borrower (a
+specific `txHash` is presented) or (b) evaluated by a scheduled default-detection sweep, THE SYSTEM SHALL
+execute REQ-108's own independent repayment-verification check and REQ-109's own default-detection-and-
+adjustment check via exactly TWO new, named entry-point functions — never a single, conflated function,
+since the two are triggered by two genuinely different events (an external claim vs. a time-based sweep)
+even though both contend on the SAME per-loan critical section — both exported from a NEW module,
+`~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs` (the SAME module REQ-115's issuance
+orchestrator lives in, since both are this feature's own effectful wiring layer):
+
+- `executeRepaymentClaim({ loanId, txHash, nowMs = Date.now() }) → Promise<{ credited: number, status:
+  "active"|"repaid"|"rejected", rejected?: boolean }>` — wraps REQ-108's `verifyRepayment` call and its own
+  repayment-status-transition append.
+- `executeDefaultDetectionSweep({ nowMs = Date.now() }) → Promise<{ defaulted: string[] }>` — wraps
+  REQ-109's `detectDefaultedLoans` call (over the full, freshly-read `loans.jsonl`) and, for EACH flagged
+  `loan_id`, its own `"defaulted"`-row append (with `defaulted_ms` set, per PROP-109g).
+
+Both functions contain NO decision/judgment logic of their own — mirrors REQ-103's own bookkeeping-only
+discipline, applied here exactly as REQ-115 applies it to issuance. Both wrap their own read-verify-append
+critical section in the SAME per-loan lock, key `` `loan_${loan_id}` ``, via
+`withGigLock(LOANS_LEDGER_PATH, `loan_${loan_id}`, fn)` — REQ-108's own already-specified lock (never
+REQ-106's per-lender/per-borrower locks, which this module's REQ-115 entry point owns exclusively and
+which this REQ-116 entry point never acquires, references, or nests inside — resolves REQ-106's own
+PROP-106i distinction, now extended to this new module).
+
+**Canonical call order — `executeRepaymentClaim`**:
+1. Acquire the `` `loan_${loanId}` `` lock.
+2. A fresh read of `loans.jsonl`; `verifyRepayment({txHash, expectedFrom, expectedTo, rpcUrl, loanRows})`
+   (REQ-108) — including its own txHash-replay-rejection check (same-loan AND cross-loan, BEFORE any
+   value is credited).
+3. IF `verifyRepayment` rejects (invalid/un-finalized/mismatched/already-credited `txHash`): return
+   `{credited:0, status:"rejected", rejected:true}` — append NOTHING to `loans.jsonl` (REQ-108's own
+   out-of-band-logging-only rule); release the lock normally.
+4. IF `verifyRepayment` credits a value: append the status-transition row (`repaid_usd` updated;
+   `status:"repaid"` if the cumulative total now reaches `total_due_usd`, `on_time` set per REQ-105's own
+   definition; otherwise `status` remains `"active"` with the updated `repaid_usd`) — release the lock
+   normally.
+
+**Canonical call order — `executeDefaultDetectionSweep`**:
+1. A fresh read of `loans.jsonl`; `detectDefaultedLoans({loanRows, nowMs})` (REQ-109) — pure, zero I/O,
+   returns the full candidate `loan_id[]` list.
+2. FOR EACH candidate `loan_id` (sequentially, one at a time — never in parallel against the SAME shared
+   ledger file, avoiding this sweep racing against itself): acquire the `` `loan_${loan_id}` `` lock;
+   re-read `loans.jsonl` fresh (a candidate flagged at step 1 may already have been repaid or already
+   defaulted by a concurrent `executeRepaymentClaim`/an earlier iteration of this SAME loop by the time
+   this specific lock is acquired); IF the loan's own last-appended row is STILL `"active"`, past
+   `due_ms`, with `repaid_usd < total_due_usd`, append the `"defaulted"` row (`defaulted_ms: Date.now()`,
+   per PROP-109g); IF the lock is already held (a concurrent `executeRepaymentClaim` for this SAME
+   `loan_id`), skip this candidate for this sweep pass (it will be re-evaluated on the next scheduled
+   sweep, or was resolved by the winning repayment claim) — never block waiting for the lock.
+3. Return `{defaulted: [...loan_ids actually marked defaulted this sweep]}`.
+
+**Edge Cases**:
+- A repayment claim and a default-detection sweep race for the SAME `loan_id` (REQ-108's own PROP-108d):
+  exactly one of `executeRepaymentClaim`/`executeDefaultDetectionSweep`'s own per-loan-lock acquisition for
+  that `loan_id` succeeds and appends; the other observes the lock held, appends nothing, and — for
+  `executeRepaymentClaim`, the caller is expected to retry on its own next attempt; for
+  `executeDefaultDetectionSweep`, this SAME `loan_id` is simply skipped this pass and re-evaluated on the
+  next scheduled sweep — this function adds no new race-recording behavior beyond REQ-108/109's own
+  already-specified lock discipline.
+- A rejected repayment claim (invalid/replayed `txHash`) never appends a row — REQ-108's own
+  out-of-band-audit-only rule (resolves FIND-302) applies identically whether `verifyRepayment` is called
+  directly (as sprint-1's own tests already exercise) or through this REAL orchestrator entry point.
+- `executeDefaultDetectionSweep`'s own step-1 candidate list can go stale between step 1's read and a
+  given candidate's own step-2 lock acquisition (a candidate may have been repaid in the interim, by a
+  concurrent `executeRepaymentClaim`) — the step-2 fresh re-read before appending is what prevents a
+  stale-candidate false default (mirrors REQ-106's own "never rely on a pre-lock snapshot alone"
+  discipline, applied here to the sweep's own per-candidate loop).
+- `executeRepaymentClaim`'s `loanId` names a loan whose last-appended row is NOT `"active"` (already
+  `"repaid"`, already `"defaulted"`, or still `"provisioning"`/`"disbursement_failed"`/
+  `"disbursement_uncertain"` — never actually issued): treated as an ineligible target and refused
+  (`{credited:0, status:"rejected", rejected:true}`) BEFORE `verifyRepayment` is ever invoked — this
+  function never attempts repayment-verification against a loan that was never actually disbursed.
+
+**Acceptance Criteria**:
+- A structural/Tier-0 check confirms `executeRepaymentClaim` is the ONLY call site invoking
+  `verifyRepayment` followed by a repayment-status-transition append, and `executeDefaultDetectionSweep` is
+  the ONLY call site invoking `detectDefaultedLoans`/`adjustBalancesForOutstandingDebt`-adjacent
+  default-append logic — no second, competing entry point for either exists anywhere in the diff.
+- A structural/Tier-0 check confirms neither function contains arithmetic/boolean eligibility logic of
+  its own (that belongs exclusively to `verifyRepayment`/`detectDefaultedLoans`, both called BY these
+  functions) and neither references any LLM/prompt client.
+- An integration test (REQ-108's own PROP-108d, now against the REAL `executeRepaymentClaim`/
+  `executeDefaultDetectionSweep` functions rather than a mocked pair) launches both concurrently against
+  the SAME `loan_id` and confirms exactly one append occurs, the other returns/skips cleanly with zero
+  append.
+- An integration test confirms `executeDefaultDetectionSweep`'s own real, production append genuinely sets
+  `defaulted_ms: Date.now()` on every row it appends (closing PROP-109g's own "real code, not a fixture"
+  requirement) and that a candidate found already-repaid at its own step-2 fresh re-read is correctly
+  skipped, never defaulted.
+- An integration test confirms `executeRepaymentClaim`'s own real call site correctly transitions a
+  partial-then-full repayment sequence (REQ-104/108's own PROP-108c) and correctly rejects both a
+  same-loan and a cross-loan `txHash` replay (PROP-108e) with zero `loans.jsonl` rows appended for the
+  rejected attempt.
