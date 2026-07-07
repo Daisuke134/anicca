@@ -7,10 +7,9 @@ profit (paid <$1 for a guaranteed $1). We spread quotes across several markets t
 raise the odds both legs of at least one bundle fill. cancel-and-replace each pass.
 Fee-aware; only quotes bundles with a positive margin. Fail-closed.
 """
-import os, json, base64, datetime, sys
+import os, json, sys
 import requests
 from eth_account import Account
-from eth_account.messages import encode_defunct
 from dotenv import load_dotenv
 load_dotenv("/Users/anicca/.anicca-founder/agents/polymarket-agent/.env")
 
@@ -23,16 +22,13 @@ MAX_MARKETS=3        # spread across up to 3 markets
 MARGIN=0.995         # require yes_bid+no_bid <= 0.995 (locked >=0.5% if both fill)
 MAX_PASS_SPEND=float(os.getenv("MAX_PASS_SPEND","2.0"))  # fixed USD ceiling per pass (money-safety, #25 adversary fix)
 
-def mint():
-    s=requests.Session(); s.headers.update({"User-Agent":"Mozilla/5.0","Origin":"https://polymarket.com"})
-    n=s.get("https://gamma-api.polymarket.com/nonce",timeout=20).json()["nonce"]
-    iss=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.")+f"{datetime.datetime.now(datetime.timezone.utc).microsecond//1000:03d}Z"
-    f={"domain":"polymarket.com","address":ADDR,"statement":"Welcome to Polymarket! Sign to connect.","uri":"https://polymarket.com","version":"1","chainId":137,"nonce":n,"issuedAt":iss}
-    pt=f"polymarket.com wants you to sign in with your Ethereum account:\n{ADDR}\n\n{f['statement']}\n\nURI: https://polymarket.com\nVersion: 1\nChain ID: 137\nNonce: {n}\nIssued At: {iss}"
-    sig="0x"+acct.sign_message(encode_defunct(text=pt)).signature.hex()
-    b=base64.b64encode((json.dumps(f,separators=(",",":"))+":::"+sig).encode()).decode()
-    s.get("https://gamma-api.polymarket.com/login",headers={"Authorization":"Bearer "+b},timeout=20)
-    return s.post("https://relayer-v2.polymarket.com/relayer/api/auth",json={},timeout=20).json()["apiKey"]
+# ROOT CAUSE FIX (2026-07-07): this used to carry its own mint() that POSTed a brand-new
+# relayer key every pass -> hit Polymarket's 100-keys-per-address cap on 2026-07-04 ->
+# every pass since crashed with KeyError:'apiKey' (error body has no apiKey field). Now
+# reuses the SAME list-before-mint + cached implementation redeem.py already proved live
+# (see relayer_auth.py docstring) instead of a second, drifting copy.
+from relayer_auth import mint_relayer_api_key
+def mint(): return mint_relayer_api_key(acct)
 
 from polymarket.clients.secure import SecureClient
 from polymarket.auth import RelayerApiKey
