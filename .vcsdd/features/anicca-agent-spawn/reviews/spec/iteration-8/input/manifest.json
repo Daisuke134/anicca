@@ -1,0 +1,20 @@
+{
+  "reviewType": "spec",
+  "featureName": "anicca-agent-spawn",
+  "iteration": 8,
+  "artifactsToReview": [
+    "specs/behavioral-spec.md",
+    "specs/verification-architecture.md"
+  ],
+  "reviewDimensions": [
+    "spec_fidelity",
+    "verification_readiness"
+  ],
+  "priorIteration": {
+    "iteration": 7,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/spec/iteration-7/output/findings/",
+    "note": "4 findings, 2 critical: FIND-601 (critical, wallet address citation) -- REQ-105's seed address (0xB9dd3B67...) was already correct; the citation claiming CLAUDE.md cross-verification was the bug (CLAUDE.md/WALLETS.md were themselves stale post-rotation, already fixed by the architect via commit 18e6ae96a). REQ-105's citation now cites cryptographic re-derivation from the real signing key as the actual verification method, new PROP-105g requires this method for all future seed/append operations (never solely a markdown doc). FIND-602 (major) -- stale purity-boundary tables + one incidental stale phrase all corrected to reflect either-citizen Akash funding entry. FIND-603 (critical) -- resolve-identity.mjs's second, unmodeled env.HOME input closed by making the audit invocation ALWAYS pass an explicit {home, env:{HOME,ANICCA_HOME}} shape (never bare ambient process.env), new PROP-403e tests this under a stripped/launchd-style environment. FIND-604 (major) -- new PROP-101h covers a dual-wallet citizen with both chains failing simultaneously, asserts result is exactly 0."
+  },
+  "note": "Verify each of the 4 fixes actually holds by re-reading resolve-identity.mjs + its test suite fresh, confirming the explicit {home, env} invocation shape genuinely closes FIND-603's gap (walk through what happens if env.HOME is stripped/different -- does the explicit env object make the resolution deterministic regardless of ambient process.env?). Also independently confirm PROP-105g's new forward-looking rule (verify against real signing key material or live balance query, never solely a markdown doc) is itself well-specified and testable, not just aspirational prose. Do a full fresh pass over the REST of the spec -- this feature is now on iteration 8 with 42+ cumulative findings across 7 prior iterations. This project's own experience shows the REQ-101/105/403 wallet-identity area keeps producing new defects even as old ones get fixed (FIND-501->FIND-601->FIND-603, three consecutive iterations touching the same area) -- look hardest there for any FOURTH variant of this same failure class before concluding it is finally closed."
+}

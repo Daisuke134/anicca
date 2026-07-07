@@ -1,11 +1,12 @@
 # Behavioral Spec — anicca-agent-spawn (Phase 1a)
 
 **feature**: anicca-agent-spawn · **mode**: strict · **increment**: P3 spawn (colony-treasury-gated,
-cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 6, revised
+cloud-only) + $0-bootstrap verification · **日付**: 2026-07-07 · **revision**: iteration 7, revised
 (spec review iteration-1 findings FIND-001..006 resolved AND spec review iteration-2 findings
 FIND-101..104 resolved AND spec review iteration-3 findings FIND-201..206 resolved AND spec review
 iteration-4 findings FIND-301..305 resolved AND spec review iteration-5 findings FIND-401..405
-resolved AND spec review iteration-6 findings FIND-501..504 resolved — see changelogs below)
+resolved AND spec review iteration-6 findings FIND-501..504 resolved AND spec review iteration-7
+findings FIND-601..604 resolved — see changelogs below)
 
 ## Changelog (iteration 1 → iteration 2)
 
@@ -95,6 +96,23 @@ both cloud-provider CLIs:
 | FIND-502 | major | REQ-304/PROP-304d's citation is split into two, correctly attributed sources: `~/anicca/skills/self/spawn-child/config.json`'s own `funding_route` field literally specifies only the 4-hop bridge, `"solana/8453 -> noble-1 -> osmosis-1 -> akashnet-2 (Skip API smart_relay, 4-hop)"`; the Jupiter SOL→USDC pre-step is `SKILL.md`'s own documented step 1 (lines 61-67), a SEPARATE artifact, never itself part of `config.json`'s field value. The `"solana/8453"` ambiguity is investigated for real via a live query against Skip API's own public route-planning endpoint (`api.skip.build/v2/fungible/route`, 2026-07-07): `8453` is confirmed to be Skip API's own real, valid Base-mainnet `chain_id` (matching this codebase's own `escrow.mjs::CHAIN_ID_BASE_MAINNET`), and a real, computable 4-hop route (`8453 → noble-1 → osmosis-1 → akashnet-2`, via a CCTP transfer as the first hop, no Jupiter step) is confirmed to exist directly from `anicca-a3cdd4`'s own Base-native USDC (the exact contract address `0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913` already used by `escrow.mjs`) to `uakt` on `akashnet-2` — meaning EITHER citizen's wallet can independently enter this SAME documented route family (Franklin via Solana+Jupiter, automaton via Base+CCTP, skipping Jupiter entirely), not only Franklin's. A new proof obligation, PROP-304e, records this confirmed capability and requires Phase 2/3 to support whichever entry chain matches the actually-funding citizen's wallet. |
 | FIND-503 | major | REQ-101's dual-chain balance-summing rule is extended to state explicitly that each populated chain (`walletAddress.evm`/`walletAddress.solana`) fails closed INDEPENDENTLY: if one chain's query fails/times out/returns non-finite while the other succeeds with a real value, the citizen's contribution is `0 (failed chain) + <the other chain's real, successfully-fetched value>` — never the whole citizen collapsing to `0` despite one chain's real, successfully-fetched balance, mirroring how `ethPrice()`/`solPrice()` already fail close at the level of one price fetch, not a whole citizen record. A new proof obligation, PROP-101g, adds a fixture exercising exactly this mixed success/failure case. |
 | FIND-504 | minor | A raw, dated `--help` transcript for both `provider-services lease-shell` and `nosana job ssh` is now captured on disk at `reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt` (both CLIs independently confirmed installed and invoked live, 2026-07-07); REQ-302/303's citations of these CLI primitives now point at this captured file instead of an inline prose quote, so a future Read-only reviewer (no shell access) can verify the claim directly from disk. |
+
+## Changelog (iteration 6 spec review → iteration 7)
+
+Iteration 6's spec review FAILed with 4 NEW findings (2 critical, 2 major — FIND-601/602/603/604; all
+findings across iterations 1-6 were reconfirmed genuinely resolved against the real, current source).
+Each is resolved by a specific, cited design decision, grounded in a fresh re-read of
+`~/anicca/skills/earn/lib/resolve-identity.mjs` and its own test suite
+(`runtime/loop/__tests__/resolve-identity.test.mjs`), and a fact question the architect (not this spec
+author acting alone) settled by cryptographically re-deriving a real wallet address from its own signing
+key material:
+
+| Finding | Severity | Resolution |
+|---|---|---|
+| FIND-601 | critical | REQ-105's seed data required ZERO change — `anicca-a3cdd4`'s seeded `walletAddress.evm`, `0xB9dd3B67921B354c656523d6851537988F31DD56`, was already correct. Only this section's own PROSE CITATION of its verification method was wrong: it claimed verification "per... this project's own `CLAUDE.md` colony table," but `CLAUDE.md`/`docs/WALLETS.md` had themselves drifted stale after a real 2026-07-07 key rotation (`~/.automaton/wallet.json`'s own `rotatedAt`/`rotationReason` fields confirm this — exposure in `~/.anicca-founder/agents/polymarket-agent/.env` and `~/.openclaw/.env`) and were independently corrected as a SEPARATE documentation fix (commit `18e6ae96a`), not a consequence of this spec. The citation is corrected to the method that was ALWAYS actually used and remains authoritative: a direct CRYPTOGRAPHIC RE-DERIVATION of the address from `~/.automaton/wallet.json`'s real `privateKey` (`viem`'s `privateKeyToAccount`), cross-checked against `colony-status.sh`'s own live on-chain balance query — never a markdown doc alone, precisely because a markdown doc is exactly what just silently went stale. A new proof obligation, PROP-105g, makes this the permanent, binding verification method for every future seed/append. |
+| FIND-602 | major | Two purity-boundary SUMMARY tables (behavioral-spec.md's own overview table, verification-architecture.md's Purity Boundary Map) — never touched again after iteration 5's REQ-304 correction — are corrected to match REQ-304/PROP-304e's already-accurate body text: the Akash `uact` funding route is a multi-hop Skip API bridge enterable from EITHER current citizen's own native chain (Franklin via Solana/Jupiter, automaton via Base/CCTP), never Solana-only. A third, incidental stale phrase in REQ-303's own prose ("the Jupiter→Skip-API bridge") is corrected for the same reason. |
+| FIND-603 | critical | REQ-403's live-audit worked examples and PROP-403b are corrected from a bare `{home: citizen.homeDir}` invocation shape (which silently depends on the audit script's own ambient `process.env.HOME`) to an EXPLICIT, fully-constructed `env` object (`{home, env: {HOME, ANICCA_HOME}}`) — the exact shape `resolve-identity.mjs`'s own reused test suite actually exercises in all 20 of its cases. A new proof obligation, PROP-403e, requires this explicit-env shape and tests it under a stripped/launchd-style minimal environment. |
+| FIND-604 | major | A new proof obligation, PROP-101h, adds the missing dual-wallet-both-chains-fail-simultaneously fixture: a citizen with BOTH `walletAddress.evm` AND `walletAddress.solana` populated, both chains' queries failing at once, asserting `readCitizenBalances` returns exactly `0` — never throws, never `NaN`, never double-subtracts `perCitizenReserveUsd`. |
 
 ## Scope of this increment (read first)
 
@@ -204,7 +222,7 @@ scripts remain aligned with current upstream documentation.
 | Akash job deploy | **Effectful shell (existing, reused unmodified) + new secrets-injection step (revised iteration 5, resolves FIND-401/402/403)** | `~/anicca/skills/self/spawn/scripts/deploy-akash.sh` + `akt-treasury.sh` — already implemented, already tested against a real sandbox-2 chain per those scripts' own inline evidence references; reused unmodified with a new CHILD-SPECIFIC SDL (NOT byte-identical to `spawn-child/sdl/child.yaml` — that template lacks an explicit `HOME`/`ANICCA_HOME` `env:` line, confirmed by direct read; this feature's own variant adds ONE new line, `HOME=/root`, resolves FIND-403) and `CHILD_ID` (REQ-303). PROP-303a's "zero source modification" claim is scoped to `deploy-akash.sh`/`akt-treasury.sh`'s own script files only, never to this new SDL variant. A genuinely NEW post-lease-active secrets-injection step (this feature's own orchestration code, never a `deploy-akash.sh` modification) delivers the child's pre-generated wallet material (REQ-201/202) via `provider-services lease-shell <service> "cat > /opt/anicca.env" --stdin` (confirmed-present CLI primitive, `lease-shell --help`, invoked live 2026-07-07, raw transcript captured at `reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt` — resolves FIND-504) — resolves FIND-401's core gap: neither the SDL nor `install.sh` ever provided ANY channel for this. |
 | Akash-specific AKT funding-readiness gate (reused, new to this feature — resolves FIND-402) | **Pure core (existing, reused unmodified) + effectful config read** | `~/anicca/skills/self/spawn-child/lib/akt-cost-gate.js::computeSpawnGate({balanceAkt, costAkt, bufferAkt}) → {ready, reason, thresholdAkt, shortfallAkt}` — already implemented, already unit-tested (`lib/__tests__/akt-cost-gate.test.js`); REQ-303 calls it with `costAkt`/`bufferAkt` read from `spawn-child/config.json`'s own real values (`spawn_cost_akt: 25`, `buffer_akt: 1`) BEFORE invoking `akt-treasury.sh`/`deploy-akash.sh` — a DIFFERENT, narrower concern than REQ-102's colony-wide `MIN_SHELTER_USD`/`SPAWN_THRESHOLD_USD` (cross-cloud aggregate USD surplus), never a competing reimplementation of it. |
 | Nosana job deploy — post-boot secrets-injection (new, resolves FIND-401's Nosana-side analog) | **Effectful shell (new)** | A NEW orchestration step delivering the child's pre-generated Solana/EVM wallet material onto a `RUNNING` Nosana job via `nosana job ssh <job> [port]` (confirmed-present CLI primitive, `job ssh --help`, invoked live 2026-07-07, raw transcript captured at `reviews/spec/iteration-6/evidence/cli-help-2026-07-07.txt` — resolves FIND-504) — genuinely new, never previously specified; the exact non-interactive invocation shape is confirmed against the actually-installed CLI at Phase 2, not asserted here as already-proven (REQ-302). |
-| Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer (Jupiter SOL→USDC, then Skip API 4-hop `smart_relay` USDC(solana)→AKT(akashnet-2) via `noble-1`/`osmosis-1`) reusing `spawn-child/config.json`'s own already-documented `funding_route` — NOT a single-signer single-transaction transfer for this specific target, since neither current citizen's wallet natively holds AKT (revised iteration 5, resolves FIND-402(c)). |
+| Shelter-cost funding transfer | **Effectful shell (new)** | A real on-chain transfer from a citizen's own wallet to cover a deploy's escrow/deposit, gated on REQ-102's already-certified amount (REQ-304). For Akash's `uact` requirement specifically, this is a MULTI-HOP transfer via Skip API's `smart_relay` 4-hop bridge into `akashnet-2`, reusing `spawn-child/config.json`'s own already-documented `funding_route` — the SAME bridge is enterable from EITHER of the colony's two current citizens' own native chains: Franklin via Solana (Jupiter SOL→USDC, then a CCTP-first-hop transfer) or automaton via Base (a CCTP-first-hop transfer directly from Base-native USDC, no Jupiter step needed, per PROP-304e's live-confirmed alternative entry) — NOT a single-signer single-transaction transfer for this specific target, since neither citizen's wallet natively holds AKT (revised iteration 5, resolves FIND-402(c); revised iteration 7, resolves FIND-602 — corrected from a stale Solana/Jupiter-only summary that was never updated for iteration 6's PROP-304e correction, to match REQ-304/PROP-304e's own already-accurate body text). |
 | Spawn ledger append | **Effectful shell (existing, reused unmodified) + a new registry-append side effect (REQ-105/305)** | `~/anicca/skills/self/spawn/lib/ledger.js::appendChild`/`readChildren` — append-only JSONL, already implemented, unmodified. This feature's own rows are the SOLE canonical owner of each child's lifecycle state (`status`, and a new `active_since` field REQ-305 sets the moment a child is first marked `"active"`) — REQ-402's window check and REQ-101's `filterProductiveCitizens` join both read `active_since`/`status` from THESE rows, never from `citizens.json` (resolves FIND-201). On a successful spawn (child marked `"active"`), REQ-305 ALSO appends a new record to REQ-105's colony citizen registry (`~/anicca/skills/self/spawn/registry/citizens.json` — NOT `economy/ubi/colony-wallets.json`, which this feature never touches) — a new, explicit write path this spec did not previously specify (resolves FIND-002's "how does the registry grow" gap), GATED on an `isSelfFunded()` pre-append check that REFUSES the append if the new record would itself fail that gate (resolves FIND-101's permanent-hazard-closure requirement). |
 | $0-bootstrap independent on-chain re-verification | **Effectful shell (new)** | A fresh RPC `eth_call`/balance read performed independently of either trading party's self-report, mirroring the exact method SPEC.md §9.9 already used to confirm Franklin#1's final USDC balance (REQ-401). |
 | Wallet mutual non-interference audit | **Effectful shell + static analysis (new)** | A grep-based static source audit (Tier 0) PLUS a live runtime comparison of resolved signing keys across N ≥ 2 concurrently-running instances (Tier 2/3) — reusing the exact "grep all path forms across skill scripts and cron config" method this project's own wallet-rotation work already established (REQ-403). |
@@ -349,6 +367,16 @@ indivisible unit.
   for the whole citizen. This is a DIFFERENT sub-case from "one chain is empty" (zero balance, both
   queries succeed) directly above — here one query genuinely FAILS while the other genuinely SUCCEEDS,
   and only the failing one collapses to `0`.
+- **(resolves FIND-604)** A citizen's registry record carries BOTH `walletAddress.evm` AND
+  `walletAddress.solana` populated, and BOTH chains' queries FAIL (time out, error, or return a
+  non-finite/negative value) SIMULTANEOUSLY: THE SYSTEM SHALL contribute exactly `0` for that citizen —
+  `0 (failed EVM chain) + 0 (failed Solana chain) = 0` — composing the SAME per-chain-independent
+  fail-closed rule above to its natural both-fail limit. THE SYSTEM SHALL NEVER throw, NEVER return
+  `NaN`/non-finite, and NEVER subtract `perCitizenReserveUsd` more than ONCE for this citizen (the
+  reserve is subtracted once from the citizen's single combined `balance_i`, per REQ-101's
+  `max(0, balance_i - reserve)` formula — never once per populated chain). This is distinct from
+  PROP-101f's both-succeed fixture and PROP-101g's exactly-one-fails fixture; no fixture anywhere in
+  this spec previously instantiated the both-fail-simultaneously case for a dual-wallet citizen.
 
 **Acceptance Criteria**:
 - Pure function, e.g. `computeColonySurplusUsd({ citizens, perCitizenReserveUsd }) → number`, takes
@@ -362,6 +390,11 @@ indivisible unit.
   value (or the symmetric case, Solana fails and EVM succeeds), `readCitizenBalances` returns a total
   equal to ONLY the successful chain's own normalized value — NEVER `0` for the whole citizen despite the
   other chain's real, successfully-fetched balance.
+- **(resolves FIND-604)** Given a fixture dual-wallet citizen whose EVM AND Solana queries are BOTH
+  engineered to fail/time out/return a non-finite value SIMULTANEOUSLY, `readCitizenBalances` returns
+  exactly `0` for that citizen, `computeColonySurplusUsd` never throws and never returns `NaN`, and
+  `perCitizenReserveUsd` is confirmed subtracted exactly ONCE (not once per populated chain) from that
+  citizen's zero balance.
 - Given two self-funded citizens with balances `$8` and `$3` and `perCitizenReserveUsd=5`, returns
   `max(0,8-5) + max(0,3-5) = 3 + 0 = 3`.
 - Given a citizen whose `isSelfFunded()` check returns `false`, its balance (however large) contributes
@@ -601,9 +634,26 @@ REQ-301, exclusively cloud-hosted):
 THE SYSTEM SHALL seed `citizens.json`, at implementation time, with the following FIXED, LITERAL JSON
 array — NOT a migration of `colony-wallets.json`'s entries, and NOT derived from any out-of-band
 classification step, because there is no migration to begin with — containing ONLY the entities this
-spec's author has verified, as of 2026-07-07, are genuinely self-funded colony citizens (per
-`~/anicca/skills/self/colony-status.sh`'s own live output and this project's own `CLAUDE.md` colony
-table: "SELF-funded on Earth = 2"):
+spec's author has verified, as of 2026-07-07, are genuinely self-funded colony citizens.
+
+**Corrected, resolves FIND-601 (critical):** an earlier revision of this section cited "this project's
+own `CLAUDE.md` colony table" as ITS OWN verification source for `anicca-a3cdd4`'s seeded
+`walletAddress.evm` — but a markdown doc is exactly the WRONG kind of evidence to anchor a live signing
+address to, precisely because markdown docs silently go stale: `CLAUDE.md`/`docs/WALLETS.md` themselves
+had drifted to a STALE, already-REVOKED address after a real 2026-07-07 key rotation
+(`~/.automaton/wallet.json`'s own `rotatedAt`/`rotationReason` fields confirm this — "key exposed in
+`~/.anicca-founder/agents/polymarket-agent/.env` and `~/.openclaw/.env`, 2026-07-07 incident") and were
+independently fixed as a SEPARATE, out-of-band documentation correction (commit `18e6ae96a`), not a
+consequence of anything in this spec. The correct verification method — and the one this seed data was
+ALWAYS actually derived from — is a CRYPTOGRAPHIC RE-DERIVATION of each citizen's real, currently-in-use
+address directly from its own signing key material: `~/.automaton/wallet.json`'s actual `privateKey`,
+independently re-derived to an address via `viem`'s `privateKeyToAccount` (performed live, 2026-07-07),
+cross-checked against `~/anicca/skills/self/colony-status.sh`'s own live on-chain balance query against
+that SAME address — both methods independently confirm `0xB9dd3B67921B354c656523d6851537988F31DD56`
+below is automaton's real, current wallet, never a markdown snapshot. See PROP-105g for the resulting
+binding rule this correction establishes: any FUTURE seed/append of a citizen's `walletAddress` MUST be
+verified the same way (against real signing key material or a live balance query), never solely against
+a markdown doc — precisely the class of source that just failed here:
 
 ```json
 [
@@ -638,11 +688,14 @@ about `homeDir`, and does not make the two citizens' `ANICCA_HOME` roots identic
 distinct root even while sharing a machine. A live filesystem check of this coordinator host (2026-07-07,
 file EXISTENCE only — content never read/printed, per this project's own secrets-handling discipline)
 confirms both corrected values resolve to real, distinct, non-null key material via
-`resolve-identity.mjs`'s own existing legacy-fallback path: `resolveEvmPrivateKey({home:
-'/Users/anicca/.anicca'})` reads `/Users/anicca/.automaton/wallet.json` (confirmed present), and
-`resolveSolanaSecret({home: '/Users/anicca/.blockrun'})` reads `/Users/anicca/.blockrun/.solana-session`
-(confirmed present) — see REQ-403's Acceptance Criteria for the full derivation. Neither entry carries a
-`telemetryPath` field (removed, resolves FIND-302 — see above).
+`resolve-identity.mjs`'s own existing legacy-fallback path, invoked with an EXPLICIT `env` object (never
+the bare `{home: X}` shape — resolves FIND-603, see REQ-403's Explicit-env correction):
+`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME:
+'/Users/anicca/.anicca'}})` reads `/Users/anicca/.automaton/wallet.json` (confirmed present), and
+`resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
+'/Users/anicca/.blockrun'}})` reads `/Users/anicca/.blockrun/.solana-session` (confirmed present) — see
+REQ-403's Acceptance Criteria for the full derivation. Neither entry carries a `telemetryPath` field
+(removed, resolves FIND-302 — see above).
 
 claude-p (real funds at `0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74`, human-funded, per
 `docs/WALLETS.md` lines 49-62) and every other human-funded wallet SHALL NEVER be seeded into this
@@ -681,6 +734,12 @@ seed set above is a fixed literal this spec's author already verified against li
 - `citizens.json`'s seed content contains ZERO entries whose `isSelfFunded()` verdict is `false` — and
   REQ-305's append-on-spawn path (below) enforces the SAME property on every future append, closing
   this hazard PERMANENTLY rather than only at t=0.
+- **(resolves FIND-601)** Every seeded (and later appended, REQ-305) entry's `walletAddress` value is
+  verified, at the time it is written, against that citizen's ACTUAL signing key material (a direct
+  cryptographic re-derivation, e.g. `viem`'s `privateKeyToAccount` against the real private-key file) OR
+  a live on-chain balance query — NEVER solely against a markdown documentation snapshot
+  (`CLAUDE.md`/`docs/WALLETS.md`), which this iteration's own review proved can silently go stale after a
+  real key rotation without this spec's own seed data (already correct) being affected. See PROP-105g.
 - REQ-403 (the wallet non-interference audit's "current set of co-located running instances," this
   increment — resolves FIND-303) reads its citizen list AND each instance's `homeDir` directly from
   THIS SAME registry — no second, parallel instance-enumeration mechanism exists anywhere in this spec.
@@ -1177,8 +1236,10 @@ right now cover this deploy's real cost" — REQ-303 reuses it exactly as
 ending in `deploy-akash.sh`), never re-deriving `spawn-child`'s already-tested arithmetic. If
 `computeSpawnGate` returns `ready:false`, THE SYSTEM SHALL treat this identically to the "ACT mint
 cancels" edge case below (a deploy failure, REQ-305, never a fabricated `dseq`) — funding the AKT
-shortfall itself (the Jupiter→Skip-API bridge, REQ-304) is what THIS feature adds; the gate merely
-decides whether that bridge needs to run at all.
+shortfall itself (the multi-hop Skip API bridge, REQ-304 — Jupiter-first-hop if Solana-funded,
+CCTP-first-hop if Base-funded, per PROP-304e; corrected iteration 7, resolves FIND-602's stale
+Jupiter-only phrasing) is what THIS feature adds; the gate merely decides whether that bridge needs to
+run at all.
 
 **Child-specific SDL variant — explicit `HOME` (resolves FIND-403):** Direct reads confirm neither
 `deploy-akash.sh`'s inline default SDL nor the reused external template
@@ -1665,8 +1726,9 @@ produces, INCLUDING a cloud-hosted child, because REQ-303's SDL boots that child
 SAME OSS repo this static grep already runs against (no separate remote-source-audit mechanism is
 needed for this half); with (b) a live runtime comparison — reusing `resolve-identity.mjs`'s existing
 exported resolvers, invoked once per CO-LOCATED running instance with that instance's OWN `HOME`/
-`ANICCA_HOME` (read from REQ-105's registry's `homeDir` field, an already-resolved absolute path — see
-Acceptance Criteria) — that PROVES no two CO-LOCATED instances' resolved EVM or Solana signing keys are
+`ANICCA_HOME` (read from REQ-105's registry's `homeDir` field, an already-resolved absolute path, PLUS an
+EXPLICITLY-CONSTRUCTED `env` object — never ambient `process.env` — see Acceptance Criteria and the
+Explicit-env correction below, resolves FIND-603) — that PROVES no two CO-LOCATED instances' resolved EVM or Solana signing keys are
 ever equal, and no CO-LOCATED instance's resolved key-file PATH ever points inside another CO-LOCATED
 instance's own home directory, before any newly-spawned CO-LOCATED child is permitted to participate in
 REQ-401's bootstrap.
@@ -1697,15 +1759,20 @@ for EVERY chain for BOTH citizens (see REQ-105's corrected seed-data section for
 making this audit either vacuously "pass" on two `null` results or never actually exercise either
 citizen's real key material at all. With REQ-105's now-corrected seed values (`/Users/anicca/.anicca`
 for automaton, `/Users/anicca/.blockrun` for Franklin), a real invocation of
-`resolveEvmPrivateKey({home: citizen.homeDir})`/`resolveSolanaSecret({home: citizen.homeDir})` against
-each citizen's own corrected `homeDir` actually resolves that citizen's REAL key material (never `null`)
-via `resolve-identity.mjs`'s own existing legacy-fallback branch — confirmed by a live filesystem check
+`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: '/Users/anicca', ANICCA_HOME: citizen.homeDir}})`/
+`resolveSolanaSecret({home: citizen.homeDir, env: {HOME: '/Users/anicca', ANICCA_HOME: citizen.homeDir}})`
+— an EXPLICIT `env` object, never the bare `{home: citizen.homeDir}` shape an earlier revision of this
+section used (see the Explicit-env correction below, resolves FIND-603) — against each citizen's own
+corrected `homeDir` actually resolves that citizen's REAL key material (never `null`) via
+`resolve-identity.mjs`'s own existing legacy-fallback branch — confirmed by a live filesystem check
 of this coordinator host (2026-07-07, file EXISTENCE only, key CONTENT never read or printed):
-`resolveEvmPrivateKey({home: '/Users/anicca/.anicca'})` resolves via the legacy `$HOME/.automaton/
-wallet.json` path (`effectiveHome === path.join(HOME,'.anicca')` holds for the real process `HOME` on
-this host, `/Users/anicca`) to `/Users/anicca/.automaton/wallet.json` — CONFIRMED PRESENT on disk; and
-`resolveSolanaSecret({home: '/Users/anicca/.blockrun'})` resolves via the legacy `$HOME/.blockrun/
-.solana-session` path (`effectiveHome === path.join(HOME,'.blockrun')` holds symmetrically) to
+`resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca', ANICCA_HOME:
+'/Users/anicca/.anicca'}})` resolves via the legacy `$HOME/.automaton/wallet.json` path
+(`effectiveHome === path.join(legacyHome,'.anicca')` holds because the EXPLICITLY-PASSED `env.HOME` is
+`/Users/anicca`) to `/Users/anicca/.automaton/wallet.json` — CONFIRMED PRESENT on disk; and
+`resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
+'/Users/anicca/.blockrun'}})` resolves via the legacy `$HOME/.blockrun/.solana-session` path
+(`effectiveHome === path.join(legacyHome,'.blockrun')` holds symmetrically) to
 `/Users/anicca/.blockrun/.solana-session` — CONFIRMED PRESENT on disk. THIS is what proves genuine
 pairwise key inequality: each citizen resolves ONLY its own real, non-null key material through its own
 `homeDir`, and (per the module's own fail-closed gate, exercised identically) resolves `null` — never the
@@ -1714,6 +1781,30 @@ OTHER chain/citizen. **This correction does NOT affect REQ-101/REQ-402's balance
 mechanism (`readCitizenBalances`, REQ-101) reads exclusively `walletAddress` via public-chain RPC and
 never reads or references `homeDir` at all (REQ-105's own Acceptance Criteria/PROP-105f already pin
 `homeDir` as consumed ONLY by this REQ-403 audit) — confirmed explicitly, no residual doubt.
+
+**Explicit-env correction (resolves FIND-603 — critical):** `resolve-identity.mjs`'s real legacy-fallback
+gate depends on a SECOND, separate input this section's own prior worked examples never modeled. Reading
+its actual source: `resolveEvmPrivateKey`/`resolveSolanaSecret` both open with `const e = env ||
+process.env;`, then compute `const legacyHome = e.HOME;` — the legacy-fallback branch that actually
+resolves both citizens' real keys (see the correction directly above) only fires when `legacyHome` (i.e.
+`env.HOME` if an `env` object is passed, or bare AMBIENT `process.env.HOME` if it is not) equals the
+literal string `/Users/anicca`. The prior worked examples in this section invoked the BARE shape
+`resolveEvmPrivateKey({home: citizen.homeDir})` — passing no `env` key at all — which silently depended
+on the CALLING PROCESS's own ambient `process.env.HOME` happening to already equal `/Users/anicca`. This
+is exactly the class of hazard `resolve-identity.mjs` was built to eliminate (fail-closed,
+never-ambient, per-instance money-key resolution — see that module's own header comment), and its OWN
+reused test suite (`runtime/loop/__tests__/resolve-identity.test.mjs`) never exercises the bare
+`{home: X}`-only shape: every one of its 20 test cases passes an explicit `env` object containing BOTH
+`HOME` and (where applicable) `ANICCA_HOME` together. THE SYSTEM SHALL therefore specify that REQ-403's
+live-audit script ALWAYS invokes both resolvers with an EXPLICIT, fully-constructed `env` object —
+`resolveEvmPrivateKey({home: citizen.homeDir, env: {HOME: <the coordinator host's own real $HOME,
+sourced from a registry/coordinator constant>, ANICCA_HOME: citizen.homeDir}})` (and symmetrically for
+`resolveSolanaSecret`) — NEVER the bare `{home: X}` shape this section's own prior worked examples used,
+which depends on that same ambient value being correct by accident (a launchd-style cron invocation is
+not guaranteed to set `process.env.HOME` identically to an interactive shell's). See PROP-403e for the
+corresponding proof obligation, including a stripped/launchd-style minimal-`process.env` fixture proving
+the explicit-`env` invocation makes the audit's result independent of its own launcher's ambient
+environment.
 
 **Edge Cases**:
 - The static grep audit finds a hardcoded/templated path in a cloud-init script or SDL that could
@@ -1743,16 +1834,22 @@ never reads or references `homeDir` at all (REQ-105's own Acceptance Criteria/PR
   (1) runs the static grep sweep across the WHOLE fleet (co-located AND cloud-hosted, since the
   latter's deployed source is the same repo, per the EARS clause above) and reports zero cross-instance
   path references, and (2) invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per CO-LOCATED
-  instance's own `homeDir` and asserts pairwise inequality across all resolved keys — this increment's
-  live-comparison scope is co-located instances only (resolves FIND-303); a cloud-hosted child is
-  exempted from step (2) and is covered only by step (1) this increment.
+  instance's own `homeDir`, ALWAYS passing an EXPLICIT `env` object (`{HOME: <the coordinator host's own
+  real $HOME>, ANICCA_HOME: citizen.homeDir}` — never a bare `{home: X}` call relying on ambient
+  `process.env`, resolves FIND-603, see PROP-403e), and asserts pairwise inequality across all resolved
+  keys — this increment's live-comparison scope is co-located instances only (resolves FIND-303); a
+  cloud-hosted child is exempted from step (2) and is covered only by step (1) this increment.
 - Given a deliberately-injected test fixture where two fake CO-LOCATED instances share a `HOME`
   (negative test), the audit correctly reports a collision — proving the check is not vacuously passing.
-- **(resolves FIND-501)** Given today's two real, corrected registry entries, invoking
-  `resolveEvmPrivateKey({home: '/Users/anicca/.anicca'})` returns a REAL, non-null EVM key resolved from
+- **(resolves FIND-501, corrected resolves FIND-603)** Given today's two real, corrected registry
+  entries, invoking `resolveEvmPrivateKey({home: '/Users/anicca/.anicca', env: {HOME: '/Users/anicca',
+  ANICCA_HOME: '/Users/anicca/.anicca'}})` — the EXPLICIT-`env` shape, never the bare `{home: X}` shape
+  this section's own examples used before FIND-603 — returns a REAL, non-null EVM key resolved from
   `/Users/anicca/.automaton/wallet.json` (confirmed present on disk, 2026-07-07), and invoking
-  `resolveSolanaSecret({home: '/Users/anicca/.blockrun'})` returns a REAL, non-null Solana secret resolved
-  from `/Users/anicca/.blockrun/.solana-session` (confirmed present on disk, 2026-07-07) — NEITHER
-  resolution is `null`, proving the live-comparison half actually reads real key material under the
-  corrected seed data, not two vacuous `null` results as the prior bare-`$HOME` seed value would have
-  produced.
+  `resolveSolanaSecret({home: '/Users/anicca/.blockrun', env: {HOME: '/Users/anicca', ANICCA_HOME:
+  '/Users/anicca/.blockrun'}})` returns a REAL, non-null Solana secret resolved from
+  `/Users/anicca/.blockrun/.solana-session` (confirmed present on disk, 2026-07-07) — NEITHER resolution
+  is `null`, proving the live-comparison half actually reads real key material under BOTH the corrected
+  seed data AND the explicit-env invocation shape, not two vacuous `null` results as either the prior
+  bare-`$HOME` seed value (FIND-501) or an ambient-`process.env.HOME`-dependent bare `{home: X}` call
+  (FIND-603) could each independently have produced.
