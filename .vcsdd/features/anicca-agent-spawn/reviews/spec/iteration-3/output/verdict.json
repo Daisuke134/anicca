@@ -1,0 +1,43 @@
+{
+  "feature": "anicca-agent-spawn",
+  "reviewType": "spec",
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-07T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "note": "Fresh-context adversary review, zero prior conversational context. Per the manifest's explicit instruction, iteration 2's 4 claimed fixes (FIND-101..104) were NOT accepted at face value -- every real cited source file was re-read fresh: /Users/anicca/anicca/skills/economy/ubi/colony-wallets.json, /Users/anicca/anicca-project/docs/WALLETS.md, /Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs, /Users/anicca/anicca/skills/economy/gig/lib/lock.mjs, /Users/anicca/anicca/skills/self/spawn/lib/child-spec.js (+ its existing test suite), /Users/anicca/anicca/skills/self/spawn/scripts/gen-wallet.sh, /Users/anicca/anicca/skills/economy/gig/lib/ensure-agent-id.mjs, /Users/anicca/anicca/skills/self/spawn/lib/spawn-decision.js, /Users/anicca/anicca/skills/self/spawn/lib/ledger.js, and /Users/anicca/anicca/skills/economy/ubi/run.sh, plus colony-status.sh for the live wallet-address cross-check. All 4 of iteration 2's findings (FIND-101, FIND-102, FIND-103, FIND-104) are CONFIRMED GENUINELY RESOLVED against the real, current on-disk source, not merely against the spec's own restated claims: (a) colony-wallets.json is confirmed untouched (still its original 3-entry bare-address array, 2nd entry still claude-p's real human-funded wallet 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74 per docs/WALLETS.md's still-accurate lines 53-54/61-62) and citizens.json is a genuinely new, separate path sharing zero state with it anywhere in either spec file; (b) REQ-206's 'at least one, not XOR' EARS rewrite is internally consistent with its own edge cases and PROP-206e; (c) lock.mjs's real lockPaths(statePath, lockKey) implementation (path.join(path.dirname(statePath),'locks',lockKey+'.lock')) exactly matches REQ-103's canonical-statePath claim, and REQ-103's own text explicitly extends the CITIZENS_REGISTRY_PATH requirement to cover REQ-101/105/305's reads/writes too, so no drift was introduced; (d) is-self-funded.mjs's real hasOwnWallet() (Boolean(wallet.evm)||Boolean(wallet.solana)) exactly matches REQ-105's boolean wallet/string walletAddress split, and both seeded citizens.json entries (automaton, Franklin) independently verified to pass isSelfFunded() when run mentally against the real source's three gates (own wallet, own-funded fuel via OWN_FUNDED_FUEL_PROVIDERS, zero human deps). HOWEVER, the mandated full fresh pass over the REST of the spec (not just the 4 fixed areas) found 6 NEW defects, two of them critical: REQ-105's now-exact citizen registry schema (tightened specifically to resolve FIND-101/104) newly exposes a hard, previously-unnoticed incompatibility with REQ-402 (which needs an active_since timestamp and a bootstrap_failed/productivity flag 'read from REQ-105's registry' that the registry's own exact schema does not contain, and which REQ-402's own EARS clause contradicts by placing the same fact 'in the ledger' instead) and with REQ-403 (which needs each instance's resolved HOME value 'read from REQ-105's registry', a field the registry schema also does not contain). Separately, REQ-206/REQ-305's real, unmodified call into child-spec.js::buildChildSpec is verified (via the real file and its existing test suite) to still require FOUR mandatory fields -- parentWallet, generation, seedUsdc, constitutionHash -- that this feature's entire REQ-201-306 chain never assigns a value or derivation rule for, directly contradicting REQ-206/PROP-206d's own claim that the change is 'limited to' identity-anchor validation. A further finding shows REQ-402's promised children_bootstrap_failed feed into REQ-102 has no receiving parameter/effect in REQ-102's own pinned signature. Two lower-severity findings (a $HOME-template-string resolution gap in telemetryPath, and a vestigial/misleading REQ-101 edge case describing a directory-scan path the registry-only design makes unreachable) round out the pass."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-201", "FIND-202", "FIND-203", "FIND-204", "FIND-206"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/ubi/colony-wallets.json", "description": "Re-read fresh: still the original 3-entry bare-address array (0xB9dd3B67..., 0x904B50d2... [claude-p], 8FpqdcCH...); confirms FIND-101's fix genuinely leaves this file untouched and unshared with the new citizens.json"},
+        {"type": "file", "location": "/Users/anicca/anicca-project/docs/WALLETS.md", "description": "Lines 53-54/61-62 re-confirmed accurate: 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74 is still claude-p's real, human-funded funding wallet -- REQ-105's exclusion claim about this address holds"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/_shared/lib/is-self-funded.mjs", "description": "hasOwnWallet()/fuelIsOwnFunded()/hasNoHumanDependency() re-read; REQ-105's both seeded citizens.json entries (automaton: wallet.evm=true, fuel.provider='clawrouter-own-wallet', humanDependencies=[]; Franklin: wallet.solana=true, fuel.provider='x402', humanDependencies=[]) independently verified to pass isSelfFunded() against this real source -- FIND-104's fix holds"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/child-spec.js", "description": "Lines 16-34 re-read fresh: buildChildSpec's required object still unconditionally requires parentWallet/generation/seedUsdc/constitutionHash alongside childInbox; confirmed via the file's own existing test __tests__/child-spec.test.js:62-67 ('requires every field'). REQ-206 only ever addresses the childInbox/agentEvmAddress/agentId anchor -- FIND-204"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/gig/lib/lock.mjs", "description": "lockPaths()/withGigLock() re-read fresh (lines 78-82, 187): signature and statePath+lockKey-derived lock-file path exactly match REQ-103's canonical-statePath claim -- FIND-103's fix holds"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-201", "FIND-202", "FIND-203", "FIND-205"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsResolved": ["FIND-101", "FIND-102", "FIND-103", "FIND-104"],
+    "newFindingsThisIteration": ["FIND-201", "FIND-202", "FIND-203", "FIND-204", "FIND-205", "FIND-206"]
+  }
+}

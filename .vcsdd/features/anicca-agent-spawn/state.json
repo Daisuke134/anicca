@@ -1611,23 +1611,25 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-07T08:49:03.576Z",
+      "timestamp": "2026-07-07T09:22:34.878Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 2,
+        "iteration": 3,
         "findings": [
-          "FIND-101",
-          "FIND-102",
-          "FIND-103",
-          "FIND-104"
+          "FIND-201",
+          "FIND-202",
+          "FIND-203",
+          "FIND-204",
+          "FIND-205",
+          "FIND-206"
         ],
-        "note": "All 6 iteration-1 findings reconfirmed genuinely resolved via fresh source re-read. 4 NEW findings: FIND-101 (critical) -- colony-wallets.json entry 2 (0x904B50d2...) is claude-p own human-funded wallet per docs/WALLETS.md; REQ-105/305 repurpose this exact file for self-funded surplus aggregation without addressing this hazard -- directly threatens the human-funded-never-injects invariant. FIND-102 (major): REQ-206 EARS clause self-contradicts its own edge case (never-both vs accept-both). FIND-103 (major): REQ-103 reuses withGigLock(statePath,lockKey,fn) but never fixes a shared statePath across call sites -- lock identity depends on both args, so two callers could silently use different lock files. FIND-104 (medium): REQ-105 wallet.evm/solana typed as strings but is-self-funded.mjs treats them as booleans."
+        "note": "All 4 iteration-2 findings reconfirmed genuinely resolved via fresh source re-read. 6 NEW findings on full fresh pass (not just delta): FIND-201 (critical) -- REQ-105 registry has no active_since/bootstrap_failed field, but REQ-402/PROP-402c claim to read exactly that from the registry while REQ-402 EARS itself says it lives in the ledger instead -- no join step specified anywhere. FIND-202 (major) -- REQ-403 needs each instance real HOME from the registry but registry has no such field, only an unresolved telemetryPath template. FIND-203 (major) -- REQ-402 promises feeding children_bootstrap_failed into REQ-102 but REQ-102 pinned signature has no such parameter. FIND-204 (critical) -- fresh re-read of real child-spec.js:16-34 confirms buildChildSpec still unconditionally requires parentWallet/generation/seedUsdc/constitutionHash, none specified anywhere in REQ-201-306, contradicting REQ-206/PROP-206d claim that the diff is limited to identity-anchor fields. FIND-205 (medium) -- telemetryPath /Users/anicca template string has no resolution mechanism specified. FIND-206 (low) -- REQ-101 retains a vestigial directory-scan edge case unreachable under the registry-only design."
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-07T08:49:03.576Z"
+      "adversaryReviewedAt": "2026-07-07T09:22:34.878Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-07T09:07:49.675Z"
+  "updatedAt": "2026-07-07T09:22:34.879Z"
 }

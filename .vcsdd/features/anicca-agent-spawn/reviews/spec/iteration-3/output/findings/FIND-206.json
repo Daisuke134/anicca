@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-206",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-101's Edge Cases retain a scenario carried over from before the FIND-101 registry redesign: 'claude-p, or any other agent whose `is_self_funded` gate returns `false`, appears in the same telemetry-file directory listing (e.g. `$HOME/.anicca-founder/state/telemetry.json`, which `economy/ubi/run.sh` already reads for an unrelated purpose): THE SYSTEM SHALL exclude it from this sum unconditionally' (behavioral-spec.md:150-154). Under REQ-105's now-finalized design, REQ-101's citizen list is read EXCLUSIVELY from `citizens.json` -- never by directory-scanning or otherwise iterating telemetry files independently (REQ-101's own EARS: the candidate list is 'READ from that registry, never hardcoded inline in this aggregation', behavioral-spec.md:135-136) -- and REQ-105's seed/append gate already guarantees claude-p is never a registry entry in the first place (behavioral-spec.md:388-391). This edge case therefore describes a code path (directory-listing iteration encountering claude-p's telemetry file) that cannot occur if REQ-101 is implemented as its own EARS clause specifies, making the edge case vestigial/confusing rather than load-bearing: a Phase 3 implementer reading it could reasonably (and wrongly) infer that REQ-101's aggregation is expected to also scan a telemetry directory, not just the registry, reopening exactly the kind of stray-enumeration path FIND-101 was meant to close.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "150-154",
+    "snippet": "claude-p, or any other agent whose `is_self_funded` gate returns `false`, appears in the same telemetry-file directory listing (e.g. `$HOME/.anicca-founder/state/telemetry.json`, which `economy/ubi/run.sh` already reads for an unrelated purpose): THE SYSTEM SHALL exclude it from this sum unconditionally"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "131-142", "note": "REQ-101's own EARS: citizen list is read exclusively from REQ-105's registry, never hardcoded/directory-scanned"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "388-391", "note": "REQ-105's own guarantee that claude-p is never seeded/appended into citizens.json, making the directory-listing scenario unreachable via the registry-only path"}
+  ],
+  "routeToPhase": "1c"
+}

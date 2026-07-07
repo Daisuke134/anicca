@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-203",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-402's EARS clause promises: 'THE SYSTEM SHALL feed this outcome to REQ-102's NEXT gate evaluation only as a bookkeeping count (`children_bootstrap_failed`) -- never as an automatic trigger to spawn a replacement' (behavioral-spec.md:1010-1012). But REQ-102's own, fully and separately specified pure-function contract -- EARS clause, Edge Cases, and Acceptance Criteria alike -- never accepts, mentions, or defines ANY effect for such a value. REQ-102's Acceptance Criteria pins the exact signature as `decideColonySpawn({ colonySurplusUsd, spawnThresholdUsd, lastSpawnAttemptMs, nowMs, cooldownDays, childrenProvisioning, maxConcurrentSpawns }) -> { eligible: boolean, reason: \"ok\"|\"insufficient_surplus\"|\"rate_limited\"|\"max_concurrent_spawns\" }` (behavioral-spec.md:217-220) -- there is no `childrenBootstrapFailed`/`children_bootstrap_failed` parameter, and none of REQ-102's edge cases (behavioral-spec.md:198-216) describe any behavior conditioned on it. PROP-102a-e (verification-architecture.md:95-99) likewise test only the seven named parameters above. REQ-402 explicitly says this count is fed in 'only as a bookkeeping count' (i.e. it purports to have SOME defined effect, however minor), yet no requirement anywhere defines what that effect is, and REQ-102's own return-type reason enum has no slot for it either. This is a promised cross-requirement data flow with no receiving contract on the other end -- either REQ-102's signature/behavior needs to be extended to actually consume this count, or REQ-402's promise that it is 'fed' anywhere should be removed as vestigial.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "1002-1012",
+    "snippet": "SHALL feed this outcome to REQ-102's NEXT gate evaluation only as a bookkeeping count (`children_bootstrap_failed`) -- never as an automatic trigger to spawn a replacement (that remains gated purely by REQ-102's own arithmetic, unaffected by how many prior attempts failed)."
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "217-226", "note": "REQ-102's complete, pinned pure-function signature/acceptance criteria -- no children_bootstrap_failed parameter or reason value exists anywhere in it"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md", "lineRange": "95-99", "note": "PROP-102a-e -- all fixtures/tests operate only over the seven named parameters, none reference a bootstrap-failed count"}
+  ],
+  "routeToPhase": "1c"
+}

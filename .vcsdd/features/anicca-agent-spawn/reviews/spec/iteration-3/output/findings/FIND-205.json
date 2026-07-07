@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-205",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-105's seeded `citizens.json` stores each citizen's `telemetryPath` as a template string containing a literal, unresolved `$HOME` placeholder, e.g. `\"telemetryPath\": \"$HOME/.automaton/state/telemetry.json\"` (behavioral-spec.md:375). REQ-101's Edge Cases rely on this exact field to locate 'its own most-recently-read liquid balance (read from its own `state/telemetry.json`, located via REQ-105's registry `telemetryPath` field...)' (behavioral-spec.md:137-138, 145-146). Unlike the bash scripts this pattern is modeled on (`economy/ubi/run.sh`, where `$HOME` is a real shell variable automatically expanded by the shell before the string ever reaches the script), a JSON file's string value is inert data -- no runtime environment automatically substitutes `$HOME` inside a JSON string field read by, e.g., a Node.js `readCitizenBalances()` module (verification-architecture.md:25). Nowhere does REQ-101, REQ-105, or the Purity Boundary Map specify WHOSE `$HOME` this placeholder should resolve against (the reading/coordinator process's own `$HOME`? a per-citizen `$HOME` value not otherwise present in the registry, see FIND-202?) nor what resolution function performs the substitution. This is a smaller, adjacent instance of the same class of gap as FIND-202: a field's usability depends on an unspecified resolution step.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "367-386",
+    "snippet": "\"telemetryPath\": \"$HOME/.automaton/state/telemetry.json\""
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "137-138", "note": "REQ-101's own reliance on telemetryPath to locate the balance file, with no resolution mechanism specified"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/verification-architecture.md", "lineRange": "25", "note": "readCitizenBalances() effectful-shell row -- reads telemetryPath directly with no mention of a $HOME-substitution step"}
+  ],
+  "routeToPhase": "1c"
+}

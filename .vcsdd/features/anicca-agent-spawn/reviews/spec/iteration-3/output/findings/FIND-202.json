@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-202",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-403's Acceptance Criteria states the wallet mutual non-interference audit obtains 'the current set of running instances' own `HOME` values -- read from REQ-105's colony citizen registry (the same registry REQ-101 aggregates over; no second, parallel instance-enumeration mechanism is introduced for this audit)' (behavioral-spec.md:1069-1071), then 'invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per instance's own `HOME`' (behavioral-spec.md:1072-1074). But REQ-105's exact, literal record shape (behavioral-spec.md:354-358) has NO `HOME`/`ANICCA_HOME` field -- only `telemetryPath`, and even that field is not an actual resolved HOME directory: REQ-105's own seed example stores it as a TEMPLATE STRING containing a literal, unresolved `$HOME` placeholder (`\"telemetryPath\": \"$HOME/.automaton/state/telemetry.json\"`, behavioral-spec.md:375/383) -- a plain string that a generic external audit script has no way to resolve to a real absolute path, since which process's `$HOME` env var to substitute is exactly the fact under audit (a foreign/shared-HOME collision is precisely what REQ-403 must be able to detect, so the audit cannot simply trust each instance's own environment to tell it its own HOME). REQ-403's claim that this value can be 'read from REQ-105's registry' with 'no second, parallel instance-enumeration mechanism' is therefore not actually implementable against REQ-105's registry as specified -- either REQ-105's schema needs an explicit resolved-HOME field (contradicting its own 'EXACTLY the fields' framing, behavioral-spec.md:341), or REQ-403 needs a second, currently-unspecified mechanism for learning each instance's real HOME path.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md",
+    "lineRange": "1068-1074",
+    "snippet": "A repeatable audit script exists that, given the current set of running instances' own `HOME` values -- read from REQ-105's colony citizen registry (the same registry REQ-101 aggregates over; no second, parallel instance-enumeration mechanism is introduced for this audit), (1) runs the static grep sweep ... (2) invokes `resolveEvmPrivateKey`/`resolveSolanaSecret` once per instance's own `HOME`"
+  },
+  "additionalEvidence": [
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "354-358", "note": "REQ-105's exact record shape -- no HOME/ANICCA_HOME field, only telemetryPath"},
+    {"filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/specs/behavioral-spec.md", "lineRange": "367-386", "note": "the literal JSON seed showing telemetryPath stored as an unresolved '$HOME/...' template string, not an actual absolute HOME path"}
+  ],
+  "routeToPhase": "1c"
+}
