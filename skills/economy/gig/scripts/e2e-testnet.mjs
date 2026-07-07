@@ -5,9 +5,16 @@
 // Requires: services/facilitator running at 127.0.0.1:8405 (services/facilitator/start.sh) and the
 // env vars below sourced from ~/.anicca-signing/{x402-facilitator,gig-board}/.env.
 //
+// ★gig-board/.env now points GIG_STATE_PATH at the SHARED production witness board (automaton+Franklin
+// both read/write it, by design — see WITNESS-RUNBOOK.md) and defaults GIG_CHAIN=base/:8407 (mainnet).
+// Running this test script against those defaults clobbers real witness-track state (found live during
+// Phase 5 hardening, sprint-1 FIND-501) and fails on testnet wallets with "gas required exceeds
+// allowance". ALWAYS override both before running this script:
+//
 // Usage:
 //   set -a; source ~/.anicca-signing/x402-facilitator/.env; source ~/.anicca-signing/gig-board/.env; set +a
 //   export GIG_ESCROW_ADDRESS GIG_ESCROW_PRIVATE_KEY
+//   export GIG_STATE_PATH=/tmp/gig-e2e-test-$(date +%s).json GIG_CHAIN=base-sepolia GIG_FACILITATOR_URL=http://127.0.0.1:8405
 //   node scripts/e2e-testnet.mjs
 import { gigPost, gigList, gigTake, gigDeliver, gigVerifyAndPay, registerIdentity, verifyIdentity } from "../gig.mjs";
 
