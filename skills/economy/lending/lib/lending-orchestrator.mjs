@@ -67,6 +67,17 @@ function findLastRowForLoanId(loanRows, loanId) {
   return last;
 }
 
+// The "active" row shape (REQ-106's own step-3 definition) landed via either step 9's own fresh
+// disbursement or step 5's reconciliation of a stale prior attempt — identical fields either way.
+function activeStatusFields(txHash, nowMs) {
+  return {
+    status: "active",
+    tx_hash: txHash,
+    issued_ms: nowMs,
+    due_ms: nowMs + LOAN_REPAYMENT_WINDOW_DAYS * 86400000,
+  };
+}
+
 // Finds this lender's own highest-sequence-number row (last-write-wins for that loan_id) — the SAME
 // "highest matching-prefix numeric suffix" scan nextLoanSequenceForLender itself already performs, but
 // returning the row itself (never just the number) so REQ-106's own ledger-state-triggered
@@ -101,13 +112,7 @@ async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, r
     return { ok: false, reason: "reconciliation_failed", error: errorMessage(e) };
   }
   if (reconcileResult && reconcileResult.found) {
-    appendLoanRow(ledgerFile, {
-      ...staleRow,
-      status: "active",
-      tx_hash: reconcileResult.txHash,
-      issued_ms: nowMs,
-      due_ms: nowMs + LOAN_REPAYMENT_WINDOW_DAYS * 86400000,
-    });
+    appendLoanRow(ledgerFile, { ...staleRow, ...activeStatusFields(reconcileResult.txHash, nowMs) });
   } else {
     appendLoanRow(ledgerFile, { ...staleRow, status: "disbursement_failed" });
   }
@@ -115,15 +120,15 @@ async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, r
 }
 
 // REQ-115 step 3 / step 6 (re-evaluated identically at both points, over whichever loanRows read is
-// freshest at the call site): evaluateOverallDefaultKillSwitch's own THIRD, absolute-dollar-loss
-// condition is DELIBERATELY sample-size-independent (REQ-114: "a systemic risk-mitigation trigger, not
-// a tier-specific one" — "EITHER the ratio-based signal OR the NEW absolute-loss signal alone is
-// sufficient grounds to pause"), so it is checked here FIRST, in isolation (neutral sampleSize/
-// totalDefaultedUsd/defaultRateUsd inputs suppress the function's OTHER two, lower-priority internal
-// branches) — never a second, independently-computed threshold comparison of this module's own; the
-// REAL totalRecentDefaultLossUsd is still what decides the outcome, entirely inside the
-// already-exported, already-hardened function. REQ-105's cold-start switch is checked next (only for a
-// genuine cold-start request), then the full, unrestricted overall switch last, so an established-tier
+// freshest at the call site): REQ-114 states the tie-break between its own switch and REQ-105's
+// cold-start switch is implementation-defined when both would independently pause ("either reason alone
+// is already sufficient grounds for refusal") — this function's own choice is to check
+// evaluateOverallDefaultKillSwitch's THIRD, absolute-dollar-loss condition FIRST, in isolation (neutral
+// sampleSize/totalDefaultedUsd/defaultRateUsd inputs suppress the function's OTHER two branches, which
+// are checked for real below) — never a second, independently-computed threshold comparison of this
+// module's own; the REAL totalRecentDefaultLossUsd is still what decides the outcome, entirely inside
+// the already-exported, already-hardened function. REQ-105's cold-start switch is checked next (only for
+// a genuine cold-start request), then the full, unrestricted overall switch last, so an established-tier
 // request that only trips the ratio/small-sample branches is still caught.
 function evaluateKillSwitches({ loanRows, borrowerId, nowMs }) {
   const recentLoss = computeRecentDefaultLossUsd({ loanRows, nowMs });
@@ -249,13 +254,7 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
     });
     return { status: "disbursement_failed", loanId };
   }
-  appendLoanRow(ledgerFile, {
-    ...provisionalRow,
-    status: "active",
-    tx_hash: disburseResult.tx,
-    issued_ms: nowMs,
-    due_ms: nowMs + LOAN_REPAYMENT_WINDOW_DAYS * 86400000,
-  });
+  appendLoanRow(ledgerFile, { ...provisionalRow, ...activeStatusFields(disburseResult.tx, nowMs) });
   return { status: "active", loanId };
 }
 
