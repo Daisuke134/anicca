@@ -62,6 +62,18 @@ DENYLIST_MODULES = (
     "urllib",
     "requests",
     "os.system",
+    # self-improve-real-ledger's own new harness files/symbols (REQ-RL19, finding F-5): the SAME
+    # "the harness/runner itself is never EVOLVE-BLOCK-editable" protection REQ-DL1 already gives
+    # openevolve-run.py/config.yaml, applied to this feature's own new files. Never shrunk/
+    # reordered to drop an existing entry (INV-RL3) — these are ADDITIONS only.
+    "ledger_reader",  # no ".py" suffix — matches `import lib.ledger_reader`/`from lib import ledger_reader`
+    "is_profitable",  # Python snake_case symbol, distinct (substring scan) from "isProfitable" above
+    "resolve_ledger_path",
+    "is_confirmed",
+    "realized_summary",
+    "promotion_history",  # no ".py" suffix, same reasoning as "ledger_reader"
+    "last_promotion_ts",
+    "realized_gate",
 )
 
 
