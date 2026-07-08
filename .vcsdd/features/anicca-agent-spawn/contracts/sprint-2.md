@@ -269,6 +269,47 @@ section is physically ABOVE this paragraph, lines 108-126, not below it) already
 `spawn-orchestrator.mjs`/its test files, which cover both the code and the tests this correction
 documents — no additional file was touched.
 
+**Correction (2026-07-08, Phase 3 sprint-2 round-2 implementation review, resolves FIND-003/FIND-004):
+FIND-003's REQ-305 edge case ("registry-append fails for a transient reason -> retry on the next wake,
+before any further spawn evaluation runs") is now genuinely implemented, and FIND-004's CRIT-207
+cross-check is now genuinely a SECOND, independent derivation.** FIND-003: `spawn-orchestrator.mjs`'s
+step-9 `appendCitizenRecord(citizensRegistryFile, citizenRecord)` call (previously unguarded — a
+transient filesystem error propagated as an uncaught rejection even though the SAME step's ledger
+`"active"` row had already landed) is now wrapped in try/catch; on failure it queues a durable,
+retryable marker via a genuinely NEW module, `skills/self/spawn/lib/pending-registry-append.js` (reuses
+`ledger.js`'s own generic `(file,row)` read/append primitives, mirrors `shelter-cost-ledger.js`'s own
+"reuse, never reimplement" convention), and `executeSpawnAttempt` still resolves `{status:"active",
+childId}` — never rejects — for this failure mode. A new exported function, `spawn-orchestrator.mjs`'s
+own `retryPendingRegistryAppends`, completes a queued entry against the SAME `citizens_registry_file` the
+original attempt recorded, without re-running the spawn attempt; `scripts/wake-gate.mjs`'s `runWakeGate`
+now calls it (via a new `deps.retryPendingRegistryAppends`/`deps.pendingRegistryAppendsFile` seam,
+mirroring every other effectful call site's own test-wiring convention) immediately after reading the
+ledger and BEFORE `filterProductiveCitizens`/`decideColonySpawn`'s own evaluation, and ONLY for a real
+(non-`--dry-run`) wake — a registry append is a real side effect, excluded from `--dry-run`'s own
+already-documented zero-side-effect contract. FIND-004: `gen-solana-wallet.test.mjs`'s own "CRIT-207"
+cross-check test previously called `solana-keygen pubkey` a SECOND time — the exact same CLI
+`gen-solana-wallet.sh` itself shells out to for generation, so it could never catch a systematic bug in
+that tool's own derivation logic (unlike REQ-201's real `viem`-based cross-check, a genuinely separate
+library from `gen-wallet.sh`'s own openssl+python pipeline). The test now cross-checks via
+`@solana/web3.js`'s `Keypair.fromSecretKey(...).publicKey.toBase58()` — already a real dependency of this
+repo (`package.json`) and the SAME library `runtime/wallet-address-solana.mjs` already uses for this
+identical derivation — a genuinely separate implementation from `solana-keygen`. `gen-solana-wallet.sh`'s
+own generation logic is untouched (per FIND-004's own scope: only the test's claimed independence was
+wrong). CRIT-207's own passThreshold text ("independently re-derives under a second keypair-derivation
+path") already described the REQUIRED end state generically and needed no wording change; the test now
+genuinely meets it. `Files touched` (the section above, lines 108-145) is updated: `spawn-orchestrator.mjs`
+(modified, step 9 + new `retryPendingRegistryAppends` export), `scripts/wake-gate.mjs` (modified, new
+retry call site — already listed above as a new-this-sprint file, this is an in-place edit to it, not a
+newly-touched file), `skills/self/spawn/lib/pending-registry-append.js` (genuinely new this fix cycle),
+and test files `spawn-orchestrator.test.mjs` (modified, 2 new FIND-003 tests), `gen-solana-wallet.test.mjs`
+(modified, FIND-004 cross-check fix), `wake-gate.test.mjs` (modified, 2 new FIND-003 wiring tests), and
+`skills/self/spawn/lib/__tests__/pending-registry-append.test.js` (genuinely new this fix cycle, unit
+tests for the new module's pure `deriveOutstandingRegistryAppends` last-row-wins logic). Full suite:
+`node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'`
+— 204/204 pass (195 pre-fix + 9 new: 2 in `spawn-orchestrator.test.mjs`, 2 in `wake-gate.test.mjs`, 5 in
+`pending-registry-append.test.js`); evidence:
+`evidence/sprint-2-find003-004-fix.log`.
+
 ## Known residual scope boundary
 
 **Corrected (2026-07-08, contract-review round-9, resolves FIND-016): this section's own obligation
