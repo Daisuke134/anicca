@@ -7,27 +7,62 @@
     {
       "name": "spec_fidelity",
       "verdict": "PASS",
-      "findings": []
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-1.md",
+          "description": "passThresholds checked verbatim against specs/behavioral-spec.md (inclusive boundary, byte-exact payload, checkpoint-advance-to-last)"
+        }
+      ]
     },
     {
       "name": "edge_case_coverage",
       "verdict": "PASS",
-      "findings": []
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md",
+          "description": "all 27 Tier-0 + Tier-2 PROP-021 obligations each cited in >=1 criterion passThreshold; CRIT-002 STOP/tied-timestamp recovery"
+        }
+      ]
     },
     {
       "name": "implementation_correctness",
       "verdict": "PASS",
-      "findings": []
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-1.md",
+          "description": "CRIT-003 (PROP-012/007/015/016/017/023) + CRIT-005 (ledger.mjs additive-only, new test file)"
+        }
+      ]
     },
     {
       "name": "structural_integrity",
       "verdict": "PASS",
-      "findings": []
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-1.md",
+          "description": "CRIT-004 static greps for REQ-A1 (closed_pnl_usd removal) and REQ-E3 (reconcile-before-branching line order)"
+        }
+      ]
     },
     {
       "name": "verification_readiness",
       "verdict": "PASS",
-      "findings": []
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-1.md",
+          "description": "CRIT-006 requires PROP-021 live E2E (count cross-check, 1e-6 sum match, idempotent rerun, anti-fake language gate) as this-sprint pass condition"
+        }
+      ]
     }
   ],
   "overallVerdict": "PASS",
