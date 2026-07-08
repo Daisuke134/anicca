@@ -185,7 +185,9 @@ profitable-claude が「Dais の Anthropic 課金で動く」状態から「自�
 
 - **卒業の gate（決定論）**: 直近 N 週の realized crypto profit が、ClawRouter 経由の推論 burn を安定して上回る（net-positive が持続）ことを machine-checkable に確認 → その時 fuel を切替。CEO loop の自己検証がこの判定に使える。
 - **正直な現状**: 今どの loop も卒業閾値に達していない（gig=$0、pm=僅少）。だから harness+gig+CEO を作って「稼ぐ→検証→改善」を回すのが卒業への前提。卒業は north star であって現状ではない。盛らない。
-- **配布ビジョン（OSS）**: profitable-claude は OSS → 誰でも自分の Mac Mini / MacinCloud で clone して自分のキーで動かす → その人の Claude が初めて AI で稼ぐ → 稼いだ crypto で ClawRouter に卒業 → owner は $0 課金でも回る。「provably profitable」を1体で証明できれば、多数が自分のマシンで動かす道が開ける。
+- **卒業経済性（2026-07-08 BP、実データ）**: ClawRouter は 3/4 tier（SIMPLE/MEDIUM/COMPLEX = GPT-OSS 120B / DeepSeek V3.2 / Nemotron Ultra 253B 等）を **$0/1M tokens で無料ルーティング**、有料は REASONING tier のみ（~$0.005/call）。→ **self-funded の推論コストは実質 $0〜数ドル/月**（REASONING 呼び出し頻度次第）。**Anthropic/DeepSeek 直販は crypto 非対応**、crypto で推論を買える実用経路は ClawRouter/x402/OpenRouter のみ（= 卒業は ClawRouter 経由が必須、既にそれを使っている）。閾値: realized profit が月 REASONING burn（数ドル〜数十ドル）を継続的に上回れば卒業成立。**モデル選定（無料 tier 優先）が閾値を1桁動かす最大レバー**。break-even の目安 = 粗利率 60-70%（gravity.fast）。
+- **配布ビジョン（OSS）**: profitable-claude は OSS → 誰でも自分の Mac Mini / MacinCloud で clone して自分のキーで動かす → その人の Claude が初めて AI で稼ぐ → 稼いだ crypto で ClawRouter に卒業 → owner は $0 課金でも回る。
+- **★配布 BP（実データ、差別化の機会）**: GitHub の「clone して稼ぐ OSS」は**ほぼ全部 vaporware/testnet/test-mode、★1桁台、第三者の実収益報告ゼロ**（検索結果自体が AI 生成 SEO スパム repo で汚染）。唯一の大規模採用は ClawRouter（=推論 rail のインフラ層）。→ **誰も「実際に動く稼ぐエージェント」を配布できていない = profitable-claude が本当に稼いで透明な30日実数字を公開すれば genuine に first になれる**（実績プレイヤーと競合でなく vaporware と競合）。配布物は「稼ぐロジック」でなく「無料/激安推論 rail（ClawRouter 設定）+ verify harness + seed/spending-limit/milestone-split config」に絞る（ClawRouter がこのポジションで採用されている実例に倣う）。
 - **注意（memory 実証済み）**: ClawRouter free path のみ真に $0（raw x402 proxy は free model でも ~$0.02/call 課金）。「free model 設定」は request body が実際にその model id を運ばないと効かない（router のログで受信 model id と USDC 流出を確認する）。1 wallet/instance（共有 wallet は drain する）。
 
 ### BP 裏付け（2026-07-08 リサーチ、一次ソース）
