@@ -1,0 +1,141 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00.000Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "44b04ba13f6ae6b967ef0437e3528559f7203395607440e9ca1de264639b4fbb"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:230-257,453-465",
+          "description": "REQ-307's canonical 9-step call order (contracts/sprint-2.md CRIT-201) has no step for shelter-cost-ledger.js::appendShelterCostEntry; defaultDeploy hardcodes shelterCostUsd:null and deployStep.value (leaseId+shelterCostUsd) is discarded immediately after the deploy step succeeds -- see FIND-002."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md (Deferred-obligation disposition section)",
+          "description": "PROP-303c (Tier 1/2, required:true, sprint-1-marked-proved) does not appear in any of the 3 enumerated buckets (30 targeted for closure / 3 Tier-3 / 5 additionally re-deferred) that this contract claims exhaustively reconciles sprint-1's 38 deferred obligations -- confirmed absent by grep of contracts/sprint-2.md."
+        },
+        {
+          "type": "test-output",
+          "location": "verification/fuzz-results/full-suite-116-run.log, full-suite-121-run.log",
+          "description": "PROP-303c's sprint-1 'proved' status comes exclusively from spawn-gap-coverage.test.mjs's direct library-level round-trip test (appendShelterCostEntry called directly on a fixture file) -- it never exercised spawn-orchestrator.mjs's real call graph, confirmed by independent re-read of that test."
+        },
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js",
+          "description": "Independently re-executed fresh: 175/175 tests pass, 0 failures -- matches manifest's stated 175/175 claim exactly. All other spec-level checks (REQ-201-206/301-306 pre-existing hardened text, REQ-307's own step 1-9/CRIT-201-208 text) read consistent with the delivered code for every requirement OTHER than the shelter-cost-ledger gap above."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/child-spec.js:5-14 (nextChildId), skills/self/spawn/lib/spawn-orchestrator.mjs:381",
+          "description": "nextChildId is monotonic max+1 -- every spawn attempt (including a retry after a prior failure) always mints a brand-new child_id and, at step 2, a brand-new EVM wallet; a prior failed attempt's already-seeded child wallet/address is never revisited -- see FIND-001 for the resulting stranded-gas-seed consequence."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/treasury-gate.mjs (decideColonySpawn, failureCooldownCap=3, SPAWN_COOLDOWN_DAYS=14)",
+          "description": "Confirmed the cooldown/failure-cap mechanism genuinely bounds (but does not eliminate) FIND-001's exposure: at most 3 failed attempts (each capable of stranding one gas-seed transfer) are permitted within a 14-day window before decideColonySpawn returns eligible:false, reason:'rate_limited'."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs, spawn-orchestrator-gas-seed-and-key-persistence.test.mjs",
+          "description": "Independently re-read both files: every PROP-307c/seedChild/persistChildWallet test verifies a SINGLE attempt's ledger-row shape in isolation; none asserts anything about cross-attempt fund disposition after a post-seed failure, confirming this edge case is genuinely untested, not merely untested-but-covered-elsewhere."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:375-578 (executeSpawnAttempt)",
+          "description": "Direct read confirms the real 9-step canonical order (as REQ-307 currently states it, independent of the FIND-002 gap in that stated order itself) is implemented faithfully: runStep's shared try/catch/requireOk shape, appendMinimalFailure for steps 1-6, appendSpecFailure (buildChildSpec-based) for steps 7-9, and the withGigLock wrapper around the entire runAttempt closure all match the spec's own text exactly."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/spawn-orchestrator-funding-and-wallet.test.mjs",
+          "description": "Independently re-verified defaultDeploy's REQ-304 funding-gate sequencing (evaluateAkashFundingGate called before any deploy-akash.sh invocation, exactly one bridge attempt on an insufficient first pass, deploy-akash.sh never invoked when the gate stays not-ready) and assertRealEvmAddress's independent keccak re-derivation (viem privateKeyToAccount) reject a sha256-fallback-shaped address -- all PASS, matching source."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:113-129 (defaultCheckHomeDistinct), :168-179 (defaultPersistChildWallet)",
+          "description": "Confirmed the single-citizen-colony case (citizens.seed.json is now Franklin-only, automaton excluded per commit 2f1462b) introduces no dangling assumption anywhere in spawn-orchestrator.mjs, treasury-gate.mjs, colony-balances.mjs, or wake-gate.mjs: grep for citizens.length/citizens[<index>]/hardcoded 'automaton' string comparisons in these 4 files returns zero matches (the '.automaton' hits are all the unrelated ~/.automaton state-directory convention shared by every citizen, not a special-cased identity check), and treasury-gate.test.mjs's own 'REQ-101 edge case: exactly one self-funded citizen (N=1) needs no special case' test independently passes."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (whole file), skills/self/spawn/run.sh",
+          "description": "CRIT-201: confirmed exactly one executeSpawnAttempt export exists, spawn-orchestrator.mjs never references run.sh, and run.sh's current production body (lines 1-50) execs scripts/wake-gate.mjs (no OLD lib/spawn-decision.js/DigitalOcean/AgentMail path anywhere in its reachable code -- confirmed by direct read, corroborating the PROP-307e structural test)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/scripts/wake-gate.mjs:108-176 (runWakeGate)",
+          "description": "CRIT-201 (run.sh->wake-gate.mjs->spawn-orchestrator.mjs chain): direct read confirms a real, non-dry-run, eligible:true invocation genuinely calls decideColonySpawnPure then executeSpawnAttemptReal with real inputs (resolveDrivingCitizen's own resolveEvmPrivateKey/resolveSolanaSecret resolution, real fetchEvmBalanceUsd/fetchSolanaBalanceUsd) unless a test explicitly overrides via `deps` -- confirmed genuine, not a stub, matching the manifest's own item (1) instruction."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (grep for decideColonySpawn|surplus[<>]|llm|prompt)",
+          "description": "CRIT-202: independent grep confirms zero eligibility/threshold comparisons and zero LLM/prompt references anywhere in spawn-orchestrator.mjs -- executeSpawnAttempt is pure sequencing/error-propagation, matching PROP-307b's own structural test."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:572-577 (withGigLock wrapping runAttempt)",
+          "description": "CRIT-204: confirmed the \"colony-spawn\" lock (withGigLock) wraps the ENTIRE runAttempt closure (steps 1-9), released only after the lock's own try/finally completes; PROP-307d's staggered-race integration test independently re-run and PASSES."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js",
+          "description": "Independently executed fresh (not accepted from any prior evidence log): tests 175, pass 175, fail 0, cancelled 0, skipped 0, todo 0 -- exact match to the manifest's stated claim."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-spawn/state.json (phaseHistory), reviews/spec/sprint2-iteration-3/output",
+          "description": "CRIT-208: confirmed state.json shows a genuine 1b->1c->2a transition for sprint 2 (\"Sprint 2 Phase 1c PASSED at iteration 3 (fresh adversary, zero findings)\") recorded BEFORE the 2a->2b (TDD RED confirmed) transition -- Phase 1c gate for this sprint's own REQ-307/PROP-307a-d genuinely preceded Phase 2."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md (30 targeted PROP IDs), contracts/sprint-2.md (CRIT-206)",
+          "description": "CRIT-205/206: sampled a representative cross-section of the 30 targeted PROP IDs (PROP-202d's deployTarget-fed Solana keygen call site, PROP-307c's per-step failure branches, PROP-105i's citizen-registry append, PROP-307e's run.sh wiring) against current source -- all genuinely exist and are reachable, corroborated by passing tests for each. No artifact anywhere claims PROP-302b/PROP-303b/PROP-401a (the 3 Tier-3 real-money obligations) proved via a fixture/simulated/borrowed artifact -- confirmed absent from state.json and all verification/ output."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

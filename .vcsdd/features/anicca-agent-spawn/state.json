@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "3",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -116,17 +116,32 @@
       "to": "3",
       "timestamp": "2026-07-08T06:00:00.000Z",
       "reason": "Contract review genuinely PASSED (round 5, fresh adversary, zero findings, all 5 dimensions) after 5 rounds of real adversarial convergence (negotiationRound 0->1->2 at the JSON-schema hard ceiling; iterations 3/4/5 verified real code fixes -- FIND-006/007/008/009 -- without further negotiationRound bumps since the schema forbids >2). The tooling own strict contractReviewLimit=2 check on verdict.iteration triggered escalation escalations/escalation-2026-07-08T05-59-48-188Z.md -- approved per active /goal (zero-pause-to-ask, continue until genuinely converged) and this session own established precedent for analogous tooling limit mismatches. Finding character diminished from real implementation bugs (round 3) to pure documentation staleness (round 4) to zero (round 5) -- the actual convergence signal, not a rubber-stamp."
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-08T06:23:25.368Z",
+      "reason": "Phase 3 FAIL: FIND-001 (money_safety_gap, gas-seed stranding, medium) + FIND-002 (unwired_requirement, PROP-303c shelter-cost wiring, medium). Routing to fix.",
+      "sprint": 2
+    },
+    {
+      "from": "4",
+      "to": "2b",
+      "timestamp": "2026-07-08T06:23:25.378Z",
+      "reason": "Routing both findings to Phase 2b per their own routeToPhase field.",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 1,
+    "4": 1,
     "5": 1,
     "6": 1,
     "1a": 3,
     "1b": 3,
     "1c": 2,
     "2a": 2,
-    "2b": 2,
+    "2b": 3,
     "2c": 2,
     "complete": 1
   },
@@ -2993,13 +3008,16 @@
   },
   "gates": {
     "3": {
-      "verdict": "PASS",
-      "timestamp": "2026-07-08T06:01:27.448Z",
-      "reviewedBy": "human",
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T06:22:22.843Z",
+      "reviewedBy": "adversary",
       "details": {
-        "reviewType": "contract",
-        "sprint": 2,
-        "note": "Sprint-2 contract review genuinely converged across 5 rounds of fresh-context adversarial review (round1/2 negotiationRound bumps 0->1->2 at the JSON-schema hard ceiling; iterations 3/4/5 continued verifying real code fixes -- FIND-006/007/008/009 -- without further negotiationRound increments since the schema forbids >2). Round 5 (spawn-contract-review-s2-r5): PASS across all 5 dimensions, zero findings, 175/175 tests independently re-run, 10/30 targeted PROPs independently spot-checked, full fresh pass over all 8 CRIT criteria. The tooling own strict contractReviewLimit=2 check on the verdict.iteration field triggered an escalation (escalations/escalation-2026-07-08T05-59-48-188Z.md) since satisfying iteration===negotiationRound+1=3 exceeds that limit -- approved per Dais active /goal (zero-pause-to-ask, continued iteration until genuinely converged, spawn subagents to research/decide) and this session own established precedent for analogous tooling path/limit mismatches (anicca-agent-economy own gates, anicca-agent-lending/anicca-agent-spawn own prior Phase 6 gate recordings)."
+        "findingCount": 2,
+        "findings": [
+          "FIND-001 (money_safety_gap: gas-seed funds stranded on post-seed failure, no reclaim)",
+          "FIND-002 (unwired_requirement: PROP-303c shelter-cost-ledger wiring never landed, leaseId discarded)"
+        ],
+        "reviewPath": "reviews/impl/sprint-2/output/verdict.json"
       }
     },
     "6": {
@@ -3038,5 +3056,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-08T06:01:38.618Z"
+  "updatedAt": "2026-07-08T06:23:25.378Z"
 }

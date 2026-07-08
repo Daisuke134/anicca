@@ -1,0 +1,28 @@
+{
+  "reviewType": "implementation",
+  "phase": "3",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractStatus": "approved",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "contract": ["contracts/sprint-2.md"],
+    "source": [
+      "~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs",
+      "~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh",
+      "~/anicca/skills/self/spawn/run.sh",
+      "~/anicca/skills/self/spawn/scripts/wake-gate.mjs",
+      "~/anicca/skills/self/spawn/registry/citizens.seed.json"
+    ],
+    "tests": [
+      "~/anicca/skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/spawn-orchestrator-funding-and-wallet.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/spawn-orchestrator-gas-seed-and-key-persistence.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs",
+      "~/anicca/skills/self/spawn/lib/__tests__/wake-gate.test.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "This gate requires EXECUTION. Independently re-run: 'cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js' -- confirm 175/175. This sprint's own 5-round contract review already found and fixed 6 real defects (FIND-001..009, resolved across rounds) -- read contracts/sprint-2.md's own disposition sections for full history, do not re-litigate already-resolved findings, but DO independently verify they hold (do not accept prior claims at face value). Focus especially on: (1) the run.sh -> wake-gate.mjs -> spawn-orchestrator.mjs autonomous trigger chain -- this is THE mechanism that makes a real, autonomous spawn possible at all; confirm end-to-end that a real (non-dry-run) wake-gate.mjs invocation would genuinely call executeSpawnAttempt with real inputs if eligible. (2) The gas-seed transfer (scripts/seed-child.py wiring) and private-key persistence (childHomeDir/.automaton/wallet.json) -- these are money-safety and identity-continuity critical; probe for edge cases beyond what existing tests cover (e.g. what happens if the gas-seed transfer succeeds but the subsequent registerIdentity step fails -- is the seeded gas ever double-spent on a retry?). (3) citizens.seed.json is now Franklin-only (automaton excluded per Dais's 2026-07-08 directive, commit 2f1462b) -- confirm this doesn't leave any dangling automaton-specific assumption elsewhere in spawn-orchestrator.mjs/wake-gate.mjs that would silently misbehave with a single-citizen colony (e.g. is there any code path that assumes at least 2 citizens exist?). Also independently probe for further edge cases beyond the 8 sprint-2 CRIT criteria and existing PROP obligations already cover -- this session has repeatedly found that a sufficiently skeptical, execution-based Phase-3 read surfaces real defects prior gates miss."
+}
