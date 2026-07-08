@@ -3,13 +3,33 @@
   "feature": "hl-realized-pnl",
   "iteration": 2,
   "timestamp": "2026-07-08T20:35:26Z",
-  "dimensions": {
-    "spec_fidelity": {"verdict": "PASS", "score": 0.97},
-    "edge_case_coverage": {"verdict": "PASS", "score": 0.95},
-    "implementation_correctness": {"verdict": "PASS", "score": 0.95},
-    "structural_integrity": {"verdict": "PASS", "score": 0.9},
-    "verification_readiness": {"verdict": "PASS", "score": 0.93}
-  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": []
+    }
+  ],
   "overallVerdict": "PASS",
   "reviewContext": {
     "reviewType": "contract",
