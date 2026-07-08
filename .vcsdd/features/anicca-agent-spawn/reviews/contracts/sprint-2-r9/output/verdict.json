@@ -1,0 +1,91 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T15:00:00Z",
+  "iteration": 9,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "6919747279462d797db567e130c8748d6aa3d50f39c9c0bd5e39e3b59eea11b0"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-015", "FIND-016"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/__tests__/ (real `ls -la` this session, 24 files) cross-checked file-by-file against contracts/sprint-2.md's Files-touched test list",
+          "description": "FIND-013/FIND-014 are CONFIRMED GENUINELY FIXED this round -- not just 'better', exhaustively verified. Built an independent yes/no table for all 24 *.test.mjs/*.test.js files: read every file's own header comment AND grepped every file for an import of '../spawn-orchestrator.mjs'. Exactly 4 files directly import from spawn-orchestrator.mjs (spawn-orchestrator.test.mjs, spawn-orchestrator-funding-and-wallet.test.mjs, spawn-orchestrator-gas-seed-and-key-persistence.test.mjs, spawn-orchestrator-reclaim-and-shelter-cost.test.mjs) -- all 4 are named in the contract's Files-touched section (lines 114-120). gen-solana-wallet.test.mjs does not import spawn-orchestrator.mjs (it tests the sibling new script gen-solana-wallet.sh instead) but is correctly named since that script is independently listed as new. spawn-gap-coverage.test.mjs was independently re-confirmed OUT of scope (imports treasury-gate.mjs/colony-balances.mjs/child-spec.js/resolve-identity.mjs, never spawn-orchestrator.mjs; git-log first-commit 2026-07-08 04:09:47, BEFORE spawn-orchestrator.mjs existed at 05:51:51). All remaining 18 files test sprint-1's own pure/narrow modules (akash-funding-gate, child-spec, citizens-registry, citizens-seed, cloud-target, colony-balances, colony-spawn-lock, ledger, needs-solana-wallet, registry-path, shelter-cost-ledger, spawn-decision, state-path, treasury-gate, wake-gate) and are correctly excluded. Zero yes/no mismatches found across all 24 files -- the specific test-file gap FIND-013 named is genuinely, exhaustively closed. FIND-014's directional wording is also confirmed fixed: the corrected sentence at line 253-257 now reads '...the Files-touched section is physically ABOVE this paragraph, lines 108-126, not below it', which is accurate (Files-touched section starts at line 108, this paragraph is at line 253, 108<253 confirms ABOVE is correct)."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:108-131 (Files touched section) vs. :140-145 (Round 2 additions section, SAME document)",
+          "description": "NEW FAIL (FIND-015), found by widening the sweep from 'the spawn-orchestrator.mjs test-file sub-list' (now clean, see above) to 'is the Files-touched section, as a whole, accurate' per its own stated scope ('final list as delivered through Phase 2c'). The section claims run.sh is 'reused UNMODIFIED' (line 127) while the SAME document's own Round 2 additions section (line 140) says run.sh 'MUST be rewritten (no longer reused-unmodified)' -- a direct self-contradiction. Independently confirmed via git log this session that run.sh's most recent commit (f3419d3, 2026-07-08 14:04:14) genuinely rewrote it this sprint. The section also never names `scripts/wake-gate.mjs` (a brand-new 10.1K production file, confirmed first-committed in the SAME commit f3419d3, with zero prior history) or its own dedicated test file `lib/__tests__/wake-gate.test.mjs` (206 lines, contains the passing PROP-307e structural tests) anywhere in the Files-touched enumeration. See FIND-015 for full evidence."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:259-270 ('Known residual scope boundary' section, the last section of the document)",
+          "description": "NEW FAIL (FIND-016): this section still states 'included in the 35 targeted for closure' (line 262) and 'see the 35-item list above' (line 268) -- stale references to a count the rest of the document (CRIT-205 at lines 43/45, the Deferred-obligation disposition heading at lines 159/163) has correctly revised to '30' across two prior rounds (round 2's FIND-003/005, round 4's FIND-009). This section was apparently never swept during either revision. See FIND-016 for full evidence."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Fresh, independently re-executed this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0, duration_ms 3481.7 -- matches the count every prior round since round 6 has reported, confirming no regression. CRIT-203's 9-step failure-injection coverage (spawn-orchestrator.test.mjs / spawn-orchestrator-reclaim-and-shelter-cost.test.mjs) remains intact; no new edge-case gap found in this round's sweep."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test (see edge_case_coverage evidence above) -- 195/195 fresh pass",
+          "description": "This round's manifest confirms a documentation-only fix cycle (no source touched since round 8); 195/195 fresh pass confirms no implementation regression. CRIT-207's gen-solana-wallet.sh discipline was not re-touched this round and was not re-flagged by this sweep."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs, skills/self/spawn/run.sh, skills/self/spawn/scripts/wake-gate.mjs (all re-read this session)",
+          "description": "CRIT-201/202/204's own underlying code-level requirements (single call-graph root, no second orchestration path, run.sh hands off to wake-gate.mjs which calls decideColonySpawn then executeSpawnAttempt, colony-spawn lock scope) remain structurally sound -- this round's new findings (FIND-015/016/017) are documentation/bookkeeping-accuracy defects in contracts/sprint-2.md and state.json, not defects in the actual call-graph or lock discipline, which rounds 3/4/5 already independently verified at the code level and which this session's fresh 195/195 test pass corroborates."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-017"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json (proofObligations array, 120 entries) cross-referenced against contracts/sprint-2.md:25,43-45,163-171 and specs/verification-architecture.md:520",
+          "description": "NEW FAIL: PROP-307e -- a real tier-1/required:true proof obligation the contract itself repeatedly cites as a required this-sprint deliverable (CRIT-201, CRIT-205, Deferred-obligation disposition) -- has NO corresponding state.json proofObligations entry. Its siblings PROP-307a/b/c/d (state.json PROP-115-118) and PROP-204d/PROP-307f (state.json PROP-119/120) all have real entries; PROP-307e does not, despite being added to the spec in the SAME round-2 fix cycle as PROP-307f. This also resolves the ambiguity between the Deferred-obligation disposition section's literal '25+5, PLUS the new PROP-307e' enumeration (implying 31 total) and CRIT-205's own '30 targeted PROP IDs (including PROP-307e)' wording (implying 30, PROP-307e counted within) -- an inconsistency round 8's own verdict noticed but declined to file, citing narrow same-round-only scope; this round's manifest explicitly calls for an exhaustive, non-incremental sweep, so it is filed now. Consequence: Phase 5/vcsdd-harden's 'all required obligations proved' gate has no trackable item to ever promote to proved for this specific, contract-mandated obligation. See FIND-017 for full evidence."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

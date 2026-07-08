@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "6919747279462d797db567e130c8748d6aa3d50f39c9c0bd5e39e3b59eea11b0",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 9: fixes round-8's FIND-013 (Files-touched list was missing 2 of 3 genuinely-delivered test files; now cross-checked against a real 'ls skills/self/spawn/lib/__tests__/' listing and lists all 3: spawn-orchestrator.test.mjs, spawn-orchestrator-funding-and-wallet.test.mjs, spawn-orchestrator-gas-seed-and-key-persistence.test.mjs, spawn-orchestrator-reclaim-and-shelter-cost.test.mjs, plus gen-solana-wallet.test.mjs) and FIND-014 (directional wording 'below'->corrected to note it's above). This is a documentation-only fix cycle -- no source touched. Given this is now the 3rd consecutive round finding an incomplete Files-touched list (round 6 found the gap, round 7's fix was itself incomplete per round 8, round 8's own fix is what's being reviewed now), do an EXHAUSTIVE, exact cross-check this time: run 'ls ~/anicca/skills/self/spawn/lib/__tests__/' yourself, read every single file's own header comment to determine which sprint/round it belongs to, and verify the contract's Files-touched list is now genuinely complete and accurate -- not just 'better than before'. Also verify 195/195 tests still pass fresh."
+}

@@ -124,11 +124,24 @@ child.yaml`-equivalent child-specific SDL variant and the lease-shell/job-ssh se
 (REQ-303's own FIND-403/FIND-401 corrections) were NOT created this sprint — both belong exclusively to
 PROP-303b's real Akash deploy path, which the "Deferred-obligation disposition" section below explicitly
 re-defers as Tier-3 (not silently dropped; `defaultDeploy` continues to call the existing, unmodified
-`deploy-akash.sh` exactly as sprint-1 left it). `run.sh`, `child-spec.js`, `ledger.js`, `treasury-gate.mjs`,
+`deploy-akash.sh` exactly as sprint-1 left it). **Corrected (2026-07-08, contract-review round-9,
+resolves FIND-015, critical: this sentence previously listed `run.sh` among the reused-UNMODIFIED files,
+directly contradicting the "Round 2 additions" section 5 lines below, which correctly states `run.sh`
+WAS rewritten this sprint (resolves FIND-004/PROP-307e) — `run.sh` is REMOVED from the list below and is
+instead a genuinely new-this-sprint file, listed explicitly in its own right at the end of this
+paragraph.** `child-spec.js`, `ledger.js`, `treasury-gate.mjs`,
 `colony-balances.mjs`, `registry-path.mjs`, `citizens-registry.mjs`, `akash-funding-gate.mjs`,
 `cloud-target.mjs`, `needs-solana-wallet.mjs`, `shelter-cost-ledger.js` are all reused UNMODIFIED
 (sprint-1 delivered and hardened them; this sprint calls them, never edits them, matching CRIT-201's own
 "no second orchestration path" requirement extended to "no incidental edits to sprint-1's own files").
+`skills/self/spawn/run.sh` (rewritten this sprint, round 2, resolves FIND-004 — see the "Round 2
+additions" paragraph immediately below for its exact new contract) and
+`skills/self/spawn/scripts/wake-gate.mjs` (new this sprint, round 2, the file `run.sh` now execs into,
+implementing the real `decideColonySpawn()`/`executeSpawnAttempt()` call chain) are BOTH genuinely new/
+modified files this sprint, along with their own test file `skills/self/spawn/lib/__tests__/wake-gate.test.mjs`
+(new this sprint, round 2) — none of the three were omitted from this "Files touched" enumeration by the
+prior sentence's own now-corrected error; they simply belong in this new/modified sub-list, never the
+reused-unmodified one.
 
 **Round 2 additions (contract-review round 2, resolves FIND-001/002/003a/004)**:
 `spawn-orchestrator.mjs`'s `defaultDeploy` MUST be updated to call `akash-funding-gate.mjs`'s
@@ -258,13 +271,19 @@ documents — no additional file was touched.
 
 ## Known residual scope boundary
 
+**Corrected (2026-07-08, contract-review round-9, resolves FIND-016): this section's own obligation
+count was never swept when the actual target count was revised downward in round 2 (resolves
+FIND-003/FIND-005) and again in round 4 (resolves FIND-009, which moved PROP-303e out of the targeted
+set) — every other section correctly says "30" (see CRIT-205 and the "Deferred-obligation disposition"
+section above); this section alone still said "35" in two places, now corrected below.**
+
 REQ-304's full multi-citizen sequential co-funding orchestration (two citizens' sequential transfers to
-the same child wallet, PROP-304b/c/d/f above) is included in the 35 targeted for closure, but ONLY as
+the same child wallet, PROP-304b/c/d/f above) is included in the 30 targeted for closure, but ONLY as
 much as sprint-1's own REQ-304 spec already scopes it: sequential, single-signer transfers, never a
 pooled/joint transaction. If, at Phase 2a (RED), the two-citizen case is found to need no dedicated
 integration test beyond a single-citizen-sufficient fixture (i.e., no real spawn attempt this sprint
 ever actually needs BOTH citizens to co-fund it), that narrower scope is recorded as a Phase 2c note,
 not silently dropped. REQ-401/402/403's own remaining Tier-0/Tier-1 obligations not already proved by
-sprint-1 (see the 35-item list above) are targeted for real closure this sprint via REQ-307's own
+sprint-1 (see the 30-item list above) are targeted for real closure this sprint via REQ-307's own
 orchestrator existing to call into; none of REQ-401/402/403's own EARS/edge-case/acceptance-criteria text
 requires further revision.
