@@ -24,8 +24,8 @@
 
 | # | 項目 | 検証事実 |
 |---|---|---|
-| C1 | harness ↔ Franklin の【実 sol-trade 戦略】 | **未接続**。harness は合成 fixture `pm_history.csv` の Polymarket backtest のみ進化する隔離 sandbox。`pm_backtest_strategy.py` は pick.py を import せず、`skills/earn/sol-trade/` に self-improve 参照ゼロ |
-| C2 | 地球上の稼ぎ loop が実際に稼ぐ | ⚠**訂正(2026-07-08 fresh調査)**: pm-earner は kill-switch でなく**稼働中**（10分毎、実現益 **+$8.47** on-chain 6件 status0x1）。真のボトルネック = ①`MAX_PASS_SPEND=$2` 固定cap で $19.26 が発注されず眠る（3市場割で$0.67<最小bundle$4.95）②PM proxy からの **withdraw 経路が未実装**で Franklin へ資金を出せない ③浮遊 crypto は **$1.12 のみ**（$19.26 は PM に展開済）。Franklin=$0 で WAIT。franklin-loop は稼働中(franklin-sol.plist は二重実行回避で無効のまま正) |
+| C1 | harness ↔ Franklin の【自走 earn loop（全 rail）】 | **訂正(2026-07-08、旧「sol only」は視野狭窄で撤回)**: Franklin は全 rail を回す(sol×366/hl×103/PM×82/clip×104+109/x402×148/video×96/token×56/gig×48)。だが earn-ledger 実現 net≈**$0.02**(回るが fill/記録が乗らない)。3つの真の gap: ①各 rail の realized P&L 記録に穴(sol-trade は366回走って ledger 記録ゼロ→今日 record-swap で修正=最初の1例、他 rail 監査中) ②self-improve harness は今も合成 fixture(`pm_history.csv`)のみ進化し **live loop に非接続** ③franklin-trading CLI に戦略コード hook 無し(prompt/model/spend のみ, run --mode backtest は未実装スタブ)→「戦略コード接続」でなく「rail選択 + heuristic/prompt を進化」に再定義 |
+| C2 | 地球上の稼ぎ loop が実際に稼ぐ | **訂正(2026-07-08 launchd実測)**: Franklin loop=**健康**(PID 15578, 最終 wake ~3.5分前, $13.33)。だが **claude-p 側が壊れ**: `pm-earner` の launchd ログ mtime=**Jul 4**(loaded だが4日 fire せず) / `claude-p-mainloop` last exit=**1**(今日作成, 未完成) / `founder-loop`(PID 798)のみ生存。→ 俺の main earn loop 修復が要る(TODO#0)。過去の pm-earner 実現益(+$8.47)は Jul 4 まで、以降停止 |
 | C3 | Franklin 資金（$0→earn） | 経済P2(gig市場 witness, 別CC lane)依存 |
 | C4 | claude-p exit | C1-C3 が埋まってから |
 
@@ -37,7 +37,8 @@
 
 ```
 ★順序(Dais 2026-07-08 再確定)= earn → spawn → identity → main loop → article → refactor → (OpenClaw) → claude-p exit。exit が loop の goal(数日〜数週間先)。OpenClaw 退役は急がない(今 working + 別CC 作業中)ので下段。★
-1 [★本丸 #11 Franklin を稼がせる] ✅土台修正 deploy済+実チェーンE2E(wallet leak解消 43b7375 / identity-match guard 3d97c59 / sol-trade→earn-ledger P&L配線 86bd88c=record-swap 実sig E2E で net 記録✓ / 損失guard / automaton HALT検証)。残: harness を実戦略に接続→Franklin 初 realized profit。★今ここ = strategy 接続(C1)★
+0 [verify-outputs → 俺(claude-p)の loop 修復] `pm-earner`(Jul4 停止) + `claude-p-mainloop`(exit1) を fix+検証。Franklin loop は健康(wake 3.5分前)ゆえ対象外。俺自身が稼ぐ loop を先に生かす(「お前も稼げ」)
+1 [★本丸 #11 Franklin 全 rail を自走で net-positive に] ✅sol-trade 土台(wallet leak 43b7375/identity guard 3d97c59/P&L記録 86bd88c=実チェーンE2E✓)。残:(a)全 rail の realized P&L 記録の穴を塞ぐ(監査中=sol型の穴を全 rail で) (b)self-improve harness を live loop に接続し rail選択+heuristic/prompt を自走進化。手書き戦略禁止(harness, not cook)。sol-only 旧枠は撤回
 2 [Franklin spawn] profitable → surplus≥$10(今$7.77=78%)→ 新 Franklin 誕生(この時 citizens.json が初生成)。spawn機構=CC#2、私は fund+grow
 3 [#8 identity] wallet-identity 恒久 fix(#11 の identity 修正に統合見込み)
 4 [MAIN loop 本番 proactive] 観測→判断→act→verify を launchd で1周実証(L4→L5)
@@ -63,4 +64,5 @@
 - **2026-07-08 ★#10 完了 (full VCSDD + live E2E)★**: Franklin loop 蘇生。VCSDD `franklin-loop-revival`: spec(**4反復で PASS**、5→3→2→0 findings)→RED→GREEN(33/33新+42/42regression)→impl adversary=**PASS/SAFE_TO_DEPLOY**(共有daemon の automaton/founder-loop 非影響を確認)→harden→**converge(phase6)**。deploy(franklin-loop reload)後 **live E2E**: `ANICCA_WALLET_ADDRESS=8Fpqd`(was unknown)/`OPENAI_BASE_URL=:8402`(was dead :8403)/model=`free/glm-4.7`(was 429枯渇)/`usdcBalance(8Fpqd)=$11.39`(tier broke 解消)/ledger が glm-4.7 wake で `earn/sol-trade` 等を実判断(no 429)。commit `a2185d5`。★Franklin は funded かつ loop が seed を使える状態に完全復帰。C2 の gap 解消★。
 
 - **2026-07-08 ★#11 土台 DONE (earn-foundation deploy + 実チェーンE2E)★**: (1)earn/run.sh wallet leak 解消 `43b7375`(~/.openclaw の automaton 鍵 fallback を廃止→resolve-identity で per-instance 解決, 鍵無ければ fail-closed HALT)(2)sol-trade identity-match guard `3d97c59`(franklin-trading CLI が ~/.blockrun を hardcode するため非owner instance を HALT。automaton=HALT / Franklin=PROCEED を実測)(3)sol-trade P&L 配線 `86bd88c`(record-swap.mjs: sigStatus→usdcDeltaForSig→record、損益両方記録=record-payout の delta>0 gate と違い**損失も可視化**、sig-keyed idempotency、identity-guard に sol-trade own-source 追加=test **12/12 green**)。**実チェーンE2E**: 8Fpqd の実 sig `2aZuere…` で record-swap 完走→net_usdc `-0.008664` を confirmed 記録(scratch ledger, 本 ledger 非汚染)。★real-chain 診断★: 8Fpqd USDC=**$13.36**、直近5tx すべて ~**-0.0086 USDC の x402 推論マイクロ課金**(=loop 稼働の証拠)、**実 Jupiter swap=0件** → Franklin は損トレードで溶かしてるのでなく**そもそも trade せず WAIT**(naive-TA がノイズ回避で正しく待機、だが毎パス推論費だけ払い収入ゼロ=緩やかな出血)。残る難所=**C1(harness↔実戦略を接続して edge を出させる)**。土台(配管)は完成、あとは戦略。
-出典: verify-subagent 独立検証(2026-07-08) / 各 verdict.json / launchctl / colony-status / 直接 Solana RPC(getSignaturesForAddress + usdcDeltaForSig, 8Fpqd)。
+- **2026-07-08 ★訂正: Franklin=multi-rail earner + verify-outputs★**: 旧「sol only/構造的に稼げない」は視野狭窄で**撤回**(Dais 指摘)。Franklin の loop は全 rail を実行(state slot 集計: sol-trade×366/x402_sell×148/cook×132/clip×104+producer109/hl_trade×103/video×96/polymarket-trade×82/token_launch×56/gig×48/yield×24)。だが earn-ledger 実現 net≈**$0.02**(gig+$0.02 / hl−$0.001 / 他 rail $0)= 回るが実現/記録が乗らない。launchd 実測: **franklin-loop 健康**(PID15578, wake~3.5分前, $13.33) / **claude-p-mainloop exit1** + **pm-earner Jul4 停止**(俺の loop 壊れ→TODO#0)。self-improve harness は live loop に非接続(C1 再定義: 戦略コード hook 無し=rail選択+heuristic/prompt を進化)。分業再確認: Franklin=自分の loop で全 rail を自走 earn / claude-p(俺)=自分の loop で稼ぐ + Franklin の harness を作り自走させる + 必要時 fund。終着=俺が out of the loop、1体の Franklin が経済を自分で築くのを witness。
+出典: verify-subagent 独立検証(2026-07-08) / 各 verdict.json / launchctl / colony-status / 直接 Solana RPC(getSignaturesForAddress + usdcDeltaForSig, 8Fpqd) / launchd ログ mtime + exit code。
