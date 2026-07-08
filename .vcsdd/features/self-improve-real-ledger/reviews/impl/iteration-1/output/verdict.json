@@ -1,0 +1,17 @@
+{
+  "reviewType": "impl",
+  "iteration": 1,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "edge_case_coverage": "PASS",
+    "implementation_correctness": "FAIL",
+    "structural_integrity": "PASS",
+    "verification_readiness": "FAIL"
+  },
+  "blockingFindings": 1,
+  "majorFindings": 0,
+  "minorFindings": 3,
+  "overall": "FAIL",
+  "deploymentRecommendation": "DO_NOT_DEPLOY",
+  "summary": "Per-instance ledger path resolution (REQ-RL1-4/INV-RL1), the pure gate_math functions, the RL13a schema, wiring existence (all 3 decide_promotion call sites genuinely bound to a real compute_realized_gate(...) call, never stubbed), and the money-safety static scans (denylist/no-write/no-key-reference) are all correctly implemented and independently re-verified (80/81 self-improve tests with the documented single EDGE-RL5b worktree-artifact exception, 41+1skip hl-trade, 12 ledger.test.mjs, 9 ledger.test.js all re-run green by me). One BLOCKING defect: promote_gate_run.py:240 binds compute_realized_gate's mean_backtest_net_usd parameter to assessment['combined_score'] (a unitless risk-adjusted Sharpe-like score, 0-500 range) instead of assessment['mean_oos_net_usd'] (the genuine dollar-denominated mean REQ-RL11 requires), making data_realism_gap's real-world verdict effectively arbitrary and capable of both permanently blocking normal candidates and failing to catch genuine fixture-vs-reality gaps -- exactly the failure mode this feature exists to prevent. No test in this sprint exercises this integration seam, so the bug evades the entire suite. DO_NOT_DEPLOY until fixed and re-reviewed."
+}
