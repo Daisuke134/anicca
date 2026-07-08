@@ -1,7 +1,7 @@
 {
   "featureName": "claude-p-ceo-loop",
   "mode": "lean",
-  "currentPhase": "2a",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -27,11 +27,43 @@
       "timestamp": "2026-07-08T12:15:32.420Z",
       "reason": "CEO spec review PASS at iteration 7; entering TDD red",
       "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-08T13:46:34.433Z",
+      "reason": "red complete: 14 files 168 assertions all failing (ModuleNotFoundError), baseline green (INV-H1..H6 intact)",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-08T14:04:30.873Z",
+      "reason": "green: 168/168 pass, baseline green (INV-H1..H6 intact), refactor done",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-08T14:04:30.878Z",
+      "reason": "entering implementation review (fresh Opus 4.8 adversary)",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-08T14:31:53.865Z",
+      "reason": "impl review PASS at iteration 2; entering formal hardening (lean)",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
     "1c": 1,
-    "2a": 1
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -39,6 +71,12 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T14:31:53.862Z",
+      "reviewedBy": "adversary",
+      "details": "iteration-2 PASS (0 blocking). B-1 sub-gates wired into run_pass.py step8 (capital 100x reject/clamp reproduced by adversary running run_pass.py directly, fail-closed on unknown streak), B-2 record_cost_event 6/6, 168 tests + baseline green, PROP-CEO-022 maintained. verdicts: reviews/impl/iteration-{1,2}"
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-08T12:15:32.390Z",
@@ -50,5 +88,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T08:51:49.742Z",
-  "updatedAt": "2026-07-08T12:15:32.420Z"
+  "updatedAt": "2026-07-08T14:31:53.865Z"
 }
