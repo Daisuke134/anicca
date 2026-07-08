@@ -88,7 +88,7 @@ for g in json.load(sys.stdin):
     TX=$(printf '%s' "$GIGJSON" | python3 -c "import json,sys;print(json.load(sys.stdin).get('payoutTx') or '')")
     BOUNTY_BASE=$(printf '%s' "$GIGJSON" | python3 -c "import json,sys;print(json.load(sys.stdin).get('bountyUsdcBase') or 0)")
     AMT=$(python3 -c "print(float('$BOUNTY_BASE')/1e6)")
-    STATUS=$(node -e "import('$HERE/../../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus('$TX',{rpc:'https://sepolia.base.org'})).then(s=>console.log(s||'null')).catch(()=>console.log('null'))" 2>/dev/null)
+    STATUS=$(node -e "import('$HERE/../../_shared/lib/verify-tx.mjs').then(m=>m.receiptStatus('$TX')).then(s=>console.log(s||'null')).catch(()=>console.log('null'))" 2>/dev/null)
     JSON=$(python3 -c "import json;print(json.dumps({'wallet':'$WLOW','source':'gig','task':'gig #$GID paid','earn_usdc':$AMT,'cost_usdc':0,'tx':'$TX','status':'$STATUS','external':True,'wake':'$WAKE'}))")
     OUT=$(record_line "$JSON")
     echo "[gig] collected payout for gig #$GID (tx=$TX amt=\$$AMT) -> $OUT"
