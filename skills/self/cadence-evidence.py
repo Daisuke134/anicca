@@ -38,6 +38,35 @@ def _epoch_to_jst_date(ts_seconds: float) -> str:
     return datetime.datetime.fromtimestamp(ts_seconds, tz=JST).date().isoformat()
 
 
+def _gig_ts_to_jst_date(ts):
+    """REQ-GFV-021 (PROP-029) — pure, gig-specific timestamp parser: converts a
+    ~/gig/applied.jsonl / ~/gig/listings.jsonl row's `ts` field to a JST calendar-date string,
+    tolerating BOTH a numeric UNIX epoch (int/float, same convention as _epoch_to_jst_date above)
+    AND an ISO-8601 string (with a `Z` suffix or an explicit +HH:MM/-HH:MM offset). Genuine parsing
+    of a fixed, machine-generated timestamp format — not judgment. Never crashes: null/missing/
+    unparseable input returns None (skipped, same tolerant-parse convention as every other ledger
+    reader in this codebase). Does NOT modify the EXISTING _epoch_to_jst_date (clip/affiliate/video,
+    numeric-epoch-only) — this is a new, separate function scoped to gig's evidence-gathering only.
+    """
+    if isinstance(ts, (int, float)) and not isinstance(ts, bool):
+        try:
+            return _epoch_to_jst_date(ts)
+        except (OSError, OverflowError, ValueError):
+            return None
+    if isinstance(ts, str) and ts.strip():
+        s = ts.strip()
+        if s.endswith("Z"):
+            s = s[:-1] + "+00:00"
+        try:
+            dt = datetime.datetime.fromisoformat(s)
+        except ValueError:
+            return None
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.astimezone(JST).date().isoformat()
+    return None
+
+
 def _mtime_epoch(path: str):
     try:
         return os.stat(path).st_mtime
@@ -91,7 +120,67 @@ def _affiliate_metrics_path():
 
 
 def _gig_funnel_path():
+    # NOTE (REQ-GFV-023, iteration-2 rewrite): no longer used by the `gig` cadence-evidence path
+    # below (moved to _gig_activity_event_dates / applied.jsonl+listings.jsonl instead) — kept in
+    # place, unused by cadence, since gig-funnel.jsonl remains a valid file consumed elsewhere (the
+    # WEEKLY EDD evaluator, an entirely separate concern from the DAILY cadence bar this fixes).
     return os.environ.get("GIG_FUNNEL_PATH") or os.path.expanduser("~/gig/gig-funnel.jsonl")
+
+
+def _gig_applied_path():
+    return os.environ.get("GIG_APPLIED_PATH") or os.path.expanduser("~/gig/applied.jsonl")
+
+
+def _gig_listings_path():
+    return os.environ.get("GIG_LISTINGS_PATH") or os.path.expanduser("~/gig/listings.jsonl")
+
+
+# Local literal copy of funnel.py's won/paid status vocabulary (REQ-GFV-022) — copied, not
+# cross-repo-imported, since funnel.py lives in ~/profitable-claude/ while this module lives in
+# ~/anicca/; documented as intentionally mirroring funnel.py's vocabulary so the two stay in
+# lockstep if either changes.
+_GIG_WON_STATUSES = {"受注", "成約"}
+_GIG_PAID_STATUSES = {"検収完了", "支払"}
+_GIG_REAL_ACTION_STATUSES = {"applied", "replied"} | _GIG_WON_STATUSES | _GIG_PAID_STATUSES
+
+
+def _gig_activity_event_dates(applied_rows, listings_rows):
+    """REQ-GFV-022 (PROP-030, PROP-036) — pure: given already-read applied_rows/listings_rows (the
+    file reads are the effectful shell, see _gig_applied_path/_gig_listings_path below), returns the
+    union of (a) JST dates (via _gig_ts_to_jst_date) of every applied_rows entry whose `status` is
+    EXACTLY a member of _GIG_REAL_ACTION_STATUSES (an EXACT-MATCH filter — deliberately not a
+    prefix/substring match, since a real "applied_0" status string — a zero-viable-candidates scan
+    summary, NOT a real application — would otherwise be wrongly counted), and (b) the JST date of
+    each listings_rows entry's FIRST-EVER appearance for its `listing_id` (a later price-update/
+    delist row for an already-seen listing_id does not contribute an additional date). Never
+    crashes: rows with unparseable/missing ts, or missing listing_id, are skipped."""
+    dates = set()
+    for row in applied_rows or []:
+        row = row or {}
+        if row.get("status") not in _GIG_REAL_ACTION_STATUSES:
+            continue
+        d = _gig_ts_to_jst_date(row.get("ts"))
+        if d:
+            dates.add(d)
+
+    first_seen_by_listing_id = {}
+    for row in listings_rows or []:
+        row = row or {}
+        listing_id = row.get("listing_id")
+        if listing_id is None:
+            continue
+        d = _gig_ts_to_jst_date(row.get("ts"))
+        if d and listing_id not in first_seen_by_listing_id:
+            first_seen_by_listing_id[listing_id] = d
+    dates.update(first_seen_by_listing_id.values())
+
+    return dates
+
+
+def _gig_row_exists_event_dates():
+    applied_rows = _read_jsonl_rows(_gig_applied_path())
+    listings_rows = _read_jsonl_rows(_gig_listings_path())
+    return _gig_activity_event_dates(applied_rows, listings_rows)
 
 
 # Test-only override seams (mirrors this codebase's own EARN_LEDGER/FOUNDER_DIR/FOUNDER_TEST
@@ -102,7 +191,6 @@ LEDGER_PATH_FOR_LOOP = {
     "clip": _clip_ledger_path,
     "affiliate": _affiliate_metrics_path,
     "video": _video_metrics_path,
-    "gig": _gig_funnel_path,
 }
 
 
@@ -178,8 +266,11 @@ def _pm_earner_redeem_event_dates():
 
 
 def gather_evidence(loop: str, today_jst_date: str, now_epoch_seconds: float) -> dict:
-    if loop in ("clip", "affiliate", "video", "gig"):
+    if loop in ("clip", "affiliate", "video"):
         return {"event_dates": sorted(_row_exists_event_dates(loop))}
+
+    if loop == "gig":
+        return {"event_dates": sorted(_gig_row_exists_event_dates())}
 
     if loop == "bounty":
         today_value, previous_value, _ = _bounty_today_and_previous_checked(today_jst_date)
@@ -210,8 +301,15 @@ def evidence_by_date_for_streak(loop: str, today_jst_date: str, window_days: int
     real sources — never fabricated, just re-sliced per day."""
     today = datetime.date.fromisoformat(today_jst_date)
     out = {}
-    if loop in ("clip", "affiliate", "video", "gig"):
+    if loop in ("clip", "affiliate", "video"):
         dates = _row_exists_event_dates(loop)
+        for i in range(window_days):
+            d = (today - datetime.timedelta(days=i)).isoformat()
+            out[d] = {"event_dates": [d] if d in dates else []}
+        return out
+
+    if loop == "gig":
+        dates = _gig_row_exists_event_dates()
         for i in range(window_days):
             d = (today - datetime.timedelta(days=i)).isoformat()
             out[d] = {"event_dates": [d] if d in dates else []}
