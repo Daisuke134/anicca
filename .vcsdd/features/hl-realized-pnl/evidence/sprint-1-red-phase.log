@@ -1,0 +1,175 @@
+new-feature-tests: FAILING
+regression-baseline: PASS
+
+=== Environment note ===
+This session's default `pytest` binary invocation is intercepted by the rtk token-saver hook
+(`~/.claude/hooks/rtk-hook-wrapper.sh` -> `rtk hook claude`) and errors with
+"rtk: Failed to run pytest: Failed to spawn process: No such file or directory (os error 2)"
+when `python3 -m pytest` is typed with the literal token "pytest" as the first rewritten
+target. Invoking the interpreter by its full path (`/Users/operator/.local/bin/python3 -m pytest
+...`) bypasses this and runs pytest normally — used for every pytest invocation below.
+
+=== 1. NEW hl-realized-pnl tests: MUST be failing (RED) ===
+
+--- command ---
+cd /Users/operator/anicca/.worktrees/hl-realized-pnl/skills/earn/hl-trade
+/Users/operator/.local/bin/python3 -m pytest tests -q
+
+--- raw output ---
+Running teardown with pytest sessionfinish...
+
+==================================== ERRORS ====================================
+_____________________ ERROR collecting tests/test_fills.py _____________________
+ImportError while importing test module '/Users/operator/anicca/.worktrees/hl-realized-pnl/skills/earn/hl-trade/tests/test_fills.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_fills.py:21: in <module>
+    from fills import compute_realized_pnl, select_close_fills, is_unprocessable  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   ModuleNotFoundError: No module named 'fills'
+___________________ ERROR collecting tests/test_reconcile.py ___________________
+ImportError while importing test module '/Users/operator/anicca/.worktrees/hl-realized-pnl/skills/earn/hl-trade/tests/test_reconcile.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versions/3.14/lib/python3.14/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_reconcile.py:68: in <module>
+    from reconcile import (
+E   ModuleNotFoundError: No module named 'reconcile'
+=========================== short test summary info ============================
+ERROR tests/test_fills.py
+ERROR tests/test_reconcile.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+2 errors in 0.28s
+
+RESULT: FAILING as expected — lib/fills.py and lib/reconcile.py do not exist yet (Phase 2b
+implements them). Every one of test_fills.py's 12 tests and test_reconcile.py's 26 tests is
+gated behind these two imports, so all 38 new tests are correctly RED via collection failure.
+
+--- command ---
+cd /Users/operator/anicca/.worktrees/hl-realized-pnl/skills/_shared/lib/__tests__
+node --test ledger.test.mjs
+
+--- raw output ---
+✖ deriveLine passes fill_tid through unchanged when present (1.2355ms)
+✔ deriveLine omits fill_tid entirely (not just undefined) when absent from input (0.078125ms)
+✖ isProfitable: well-formed Hyperliquid win (chain+fill_tid+confirmed+external+net>0) (0.097167ms)
+✔ isProfitable: Hyperliquid loss (net_usdc<=0) is rejected even though it's a real settled fill (0.047417ms)
+✔ isProfitable: Hyperliquid line missing external is rejected (external omitted) (0.041875ms)
+✔ isProfitable: Hyperliquid line with external:false is rejected (0.039208ms)
+✔ isProfitable: chain=hyperliquid but fill_tid missing is rejected (0.040458ms)
+✔ isProfitable: chain=hyperliquid, fill_tid present, but confirmed:false is rejected (0.034708ms)
+✔ isProfitable: non-regression — real EVM row (tx+status 0x1) still true (0.045209ms)
+✔ isProfitable: non-regression — real Solana row (sig+confirmed) still true (0.077958ms)
+✔ isProfitable: non-regression — narrate-only row (no tx/sig/hl fields) still false (0.047666ms)
+✔ isProfitable: non-regression — swap row (asset rotation) still false even with net>0 (0.039458ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 10
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 109.223166
+
+✖ failing tests:
+
+test at ledger.test.mjs:16:1
+✖ deriveLine passes fill_tid through unchanged when present (1.2355ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  undefined !== 999
+      at TestContext.<anonymous> (file:///Users/operator/anicca/.worktrees/hl-realized-pnl/skills/_shared/lib/__tests__/ledger.test.mjs:21:10)
+
+test at ledger.test.mjs:33:1
+✖ isProfitable: well-formed Hyperliquid win (chain+fill_tid+confirmed+external+net>0) (0.097167ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  false !== true
+      at TestContext.<anonymous> (file:///Users/operator/anicca/.worktrees/hl-realized-pnl/skills/_shared/lib/__tests__/ledger.test.mjs:34:10)
+
+RESULT: FAILING as expected on the 2 tests that require NEW logic ledger.mjs does not have yet
+(fill_tid passthrough — REQ-C2; the hyperliquid isProfitable disjunct — REQ-C3). The other 10
+tests in this same new file pass already, correctly — they assert non-regression behavior
+(missing-external rejection, loss rejection, malformed-shape rejection, and the pre-existing
+EVM/Solana/narrate/swap fixtures) that ledger.mjs's CURRENT code already satisfies without any
+hyperliquid-specific code, so a 10/12 split (not 0/12) is the correct RED-phase signature here.
+
+=== 2. Regression baseline: MUST stay green (unmodified by this feature) ===
+
+--- command (a): self-improve pure-core suite ---
+cd /Users/operator/anicca/skills/earn/self-improve
+/Users/operator/.local/bin/python3 -m pytest tests/ -q
+
+--- raw output ---
+............................................                             [100%]Running teardown with pytest sessionfinish...
+
+44 passed in 0.09s
+
+RESULT: PASS — 44/44, matches the expected baseline exactly.
+
+--- command (b): sol-trade lib unit tests ---
+cd /Users/operator/anicca/skills/earn/sol-trade
+node --test lib/__tests__/*.test.mjs
+
+--- raw output ---
+✔ extractLastSignature: no 'Signature:' line -> null (agent judged WAIT) (0.835041ms)
+✔ extractLastSignature: exactly one 'Signature:' line -> that signature (0.086959ms)
+✔ extractLastSignature: multiple 'Signature:' lines -> the LAST one only (multi-step swap chain) (0.051541ms)
+✔ extractLastSignature: malformed/truncated/empty input never throws, returns null (0.053083ms)
+✔ extractLastSignature: is total/deterministic across repeated calls on the same input (0.047084ms)
+✔ recordSwap: bad-args (missing sig/wallet/ledger) never crashes, never records (4.826417ms)
+✔ PROP-005: confirmed + POSITIVE delta -> recorded, earn_usdc=delta, cost_usdc=0, persisted line isProfitable-eligible shape (3.32825ms)
+✔ PROP-007: confirmed + NEGATIVE delta -> STILL recorded (earn_usdc=0, cost_usdc=|delta|, net_usdc<0) -- losses are visible too (1.952209ms)
+✔ recordSwap: confirmed + ZERO delta -> still recorded (net_usdc=0), never rejected as 'zero-delta' (deliberate difference from record-payout.mjs) (1.429583ms)
+✔ recordSwap: unconfirmed signature -> NOT recorded (dropped tx must never masquerade as a completed pass) (0.715083ms)
+✔ PROP-016: sigStatus RPC failure -> verify-error status, never a thrown exception, never recorded (0.631791ms)
+✔ PROP-016: usdcDeltaForSig RPC failure (getTransaction throws after getSignatureStatuses succeeds) -> verify-error, never NaN/Infinity in a recorded line (1.534ms)
+✔ recordSwap never sets external:true (P&L VISIBILITY only -- this is not a GATE-0 classification) (1.513958ms)
+ℹ tests 13
+ℹ suites 0
+ℹ pass 13
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 134.218
+
+RESULT: PASS — 13/13 (this run covers both parse-pass.test.mjs and record-swap.test.mjs via the
+glob; task brief estimated "12 green" — actual observed count is 13/13, reported as run, not
+adjusted to match the estimate).
+
+--- command (c): pre-existing ledger.test.js (untouched by this feature) ---
+cd /Users/operator/anicca/skills/_shared/lib/__tests__
+node --test ledger.test.js
+
+--- raw output ---
+(node:47570) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/operator/anicca/skills/_shared/lib/__tests__/ledger.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/operator/anicca/package.json.
+✔ deriveLine computes net_usdc = earn - cost and stamps ts (0.782792ms)
+✔ isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap (0.093709ms)
+✔ deriveLine carries the Solana fields sig/confirmed/chain (else the persisted line loses the proof) (0.064167ms)
+✔ isProfitable accepts a Solana line: net>0 AND sig AND confirmed AND external AND not-swap (0.057292ms)
+✔ isProfitable still rejects the OLD EVM negatives unchanged (no regression) (0.057875ms)
+✔ alreadyRecordedSig: true only when a line with that sig already exists in the ledger (5.913459ms)
+✔ appendLedger is append-only: prior line is byte-identical after a second append (1.511833ms)
+✔ readLedger parses every JSONL line into objects (1.417084ms)
+✔ readLedger returns [] for a missing file (no throw) (1.33925ms)
+ℹ tests 9
+ℹ suites 0
+ℹ pass 9
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 120.149667
+
+RESULT: PASS — 9/9, unmodified (this feature adds ledger.test.mjs as a NEW file and never
+edits ledger.test.js itself).
+
+=== Summary ===
+New-feature tests (38 pytest + 12 node, of which 2 correctly fail): FAILING as required for RED.
+Regression baseline (44 + 13 + 9 = 66 pre-existing tests): 66/66 PASS, zero regressions.
