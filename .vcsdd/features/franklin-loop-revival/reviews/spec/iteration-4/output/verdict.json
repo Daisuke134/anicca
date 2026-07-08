@@ -1,0 +1,65 @@
+{
+  "reviewType": "spec",
+  "feature": "franklin-loop-revival",
+  "iteration": 4,
+  "reviewer": "adversary",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T09:15:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:258-380 (REQ-004(b))", "description": "Re-verified against the live runtime/anicca-daemon.sh (lines 53-75): the franklin ensure_brain replacement is now a fully specified no-op/readiness-probe-only branch (curl -sf against $PORT/v1/models, no spawn, no key-file read) instead of an unspecified 'stop spawning' instruction. Closes FIND-009's ambiguity."},
+        {"type": "file", "location": "specs/behavioral-spec.md:381-429 (REQ-005) + specs/verification-architecture.md:36-67", "description": "REQ-005's EARS clause and edge cases now explicitly name anicca-daemon.sh's ensure_brain wiring (not just resolve-identity.mjs) as in-scope, and add a dedicated edge case forbidding collapse/merge of the franklin/non-franklin if/else branches. Re-verified live: the non-franklin ensure_brain (anicca-daemon.sh:82-95) does read $HOME/.openclaw/.env for BLOCKRUN_WALLET_KEY via `grep -E '^BLOCKRUN_WALLET_KEY=' \"$HOME/.openclaw/.env\"` (line 88) and falls back to `node resolve-identity.mjs evm` (line 92) -- confirming the spec's citation of the exact leakage class REQ-005 now forbids is accurate, and the franklin branch (lines 67-71, pre-fix) contains no such reference, matching the spec's structural-separation requirement."},
+        {"type": "file", "location": "specs/behavioral-spec.md:31-54 (Context, Root Cause B) + specs/verification-architecture.md:73-86", "description": "Re-verified against the live runtime/loop/config.mjs (DEFAULTS block, lines 13-62) and its pass-through list (lines 114-142): ANICCA_MODEL appears in neither. grep-confirmed brain.mjs:58 (`config.ANICCA_MODEL || ctx.model || 'auto'`) is config.mjs's only reference to ANICCA_MODEL in the runtime/ tree. Both documents now correctly state config.ANICCA_MODEL is always undefined and that the real THINK-model pin flows through ctx.model via tier.mjs::selectTier reading ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL (re-verified live in tier.mjs:28-49, exact match to citation). Closes FIND-010's factual-accuracy gap; the prescribed fix (REQ-004's plist model-key changes) is unaffected either way since it already targeted the three ANICCA_*_MODEL keys, not ANICCA_MODEL."},
+        {"type": "file", "location": "runtime/anicca-daemon.sh:26-30, 119-124 (live, pre-fix)", "description": "Re-confirmed the PORT-assignment branch and EVM-only wallet-export gate exactly match the spec's line citations, still unfixed as expected pre-implementation (Phase 1c) -- no drift from iteration-3's re-verification."},
+        {"type": "file", "location": "/Users/operator/Library/LaunchAgents/ai.anicca.franklin-loop.plist and ai.anicca.clawrouter.plist (live, deployed)", "description": "Re-read both deployed plists directly this iteration: franklin-loop.plist still has FRANKLIN_PROXY_PORT=8403 and all four model keys pinned to nvidia/llama-4-maverick, no ANICCA_BALANCE_OVERRIDE key (matches REQ-003/004 pre-fix state exactly as cited); clawrouter.plist confirmed KeepAlive+RunAtLoad, no BLOCKRUN_WALLET_KEY key (matches REQ-004(b)'s 'free-tier-only by design' claim)."},
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs:39-46, 115-138", "description": "Re-verified readRawSecretFile (lines 39-46) and resolveSolanaSecret (lines 115-138) match the spec's citations exactly, including the legacyHome gate (line 132: effectiveHome === path.join(legacyHome,'.blockrun')) that REQ-001's foreign-ANICCA_HOME fail-closed edge case and REQ-005's PROP-007 depend on."},
+        {"type": "file", "location": "skills/_shared/lib/solana-verify.mjs (full file)", "description": "Re-verified exports are exactly {sigStatus, usdcDeltaForSig, usdcBalance} (grep-confirmed via `export` occurrences), USDC_MINT (line 14) is a module-private const, B58_RE guard (lines 85-87) and zero-ATA return-0 (line 95) match REQ-002's citations exactly."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:107 (PROP-016)", "description": "New proof obligation directly targets anicca-daemon.sh's ensure_brain wiring for cross-instance wallet-key leakage (static source check + live process-env check) -- this is the exact proof-obligation gap iteration-3 identified ('no prior PROP-0xx entry reached anicca-daemon.sh's ensure_brain wiring'). Closes the verification_readiness half of FIND-009."},
+        {"type": "file", "location": "specs/verification-architecture.md:73-86 (Effectful Shell, brain.mjs)", "description": "The corrected mechanism description (ctx.model via tier.mjs, not config.ANICCA_MODEL) is now consistent between behavioral-spec.md and verification-architecture.md, and consistent with the live code re-read this iteration -- no lingering false 'confirmed by reading exact source lines' claim remains for this specific point."},
+        {"type": "file", "location": "runtime/loop/__tests__/{resolve-identity,env-filter,integration}.test.mjs, skills/_shared/lib/__tests__/solana-verify.test.js, skills/earn/clip-promote/tests/fake_solana_rpc.mjs", "description": "Confirmed all five test files cited as existing conventions for PROP-001/002/005/007/012 actually exist on disk at the cited paths (glob-verified this iteration) -- the proof-obligation table's tooling references are not hallucinated."},
+        {"type": "file", "location": "runtime/loop/env-filter.mjs:15,19", "description": "Re-verified PRIVATE_KEY_REGEX (`/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/`) and PRIVKEY_PATTERN (EVM-only 0x+64-hex) match REQ-006's citation. Noted (non-blocking, see notes): redactPrivateKeyPatterns does not match base58 Solana secrets, but REQ-006/PROP-008 correctly place the no-leak burden directly on the new derivation helper's own stdout/stderr, not on this existing EVM-only utility, so this is not a gap in this feature's own proof obligations."}
+      ]
+    }
+  ],
+  "priorFindingsResolved": {
+    "FIND-001": {"status": "resolved", "regressed": false, "justification": "REQ-002 still delegates to solana-verify.mjs::usdcBalance and forbids porting solana_rpc.py. Re-verified live this iteration against solana-verify.mjs -- unchanged from iteration-3's confirmation."},
+    "FIND-002": {"status": "resolved", "regressed": false, "justification": "REQ-004(a)+(b)+(c) three-part fix intact; re-verified live anicca-daemon.sh PORT-assignment (lines 26-30) and ensure_brain (lines 53-75) still match the spec's pre-fix citations exactly, and the fix instructions for both are unchanged in substance from iteration-3 (only REQ-004(b)'s replacement behavior gained specificity, see FIND-009)."},
+    "FIND-003": {"status": "resolved", "regressed": false, "justification": "REQ-003 + PROP-013/014 unchanged; re-read the deployed franklin-loop.plist this iteration -- confirmed no ANICCA_BALANCE_OVERRIDE key, consistent with iteration-3."},
+    "FIND-004": {"status": "resolved", "regressed": false, "justification": "USDC_MINT constant citation (solana-verify.mjs:14) re-verified live, unchanged."},
+    "FIND-005": {"status": "resolved", "regressed": false, "justification": "REQ-001 malformed-secret edge case + PROP-012 fixture table unchanged and re-verified against resolve-identity.mjs:39-46's readRawSecretFile (no shape/length validation, as the spec states)."},
+    "FIND-006": {"status": "resolved", "regressed": false, "justification": "REQ-004(a)'s requirement to change the PORT-assignment branch itself (not just the spawn) is unchanged and re-verified live against anicca-daemon.sh:26-30."},
+    "FIND-007": {"status": "resolved", "regressed": false, "justification": "REQ-002's edge case correctly states USDC_MINT is module-private/non-exported; re-confirmed via grep of solana-verify.mjs's export statements this iteration."},
+    "FIND-008": {"status": "resolved", "regressed": false, "justification": "PROP-015's two-part (port/process absence + live process-env) check is unchanged and still present verbatim in verification-architecture.md."},
+    "FIND-009": {
+      "status": "resolved",
+      "regressed": false,
+      "justification": "REQ-004(b) now fully specifies the ensure_brain replacement as a no-op/readiness-probe-only branch that MUST NOT spawn any process or read $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY under any circumstance. REQ-005's EARS clause is extended to explicitly cover anicca-daemon.sh's ensure_brain wiring (not only library-level identity functions) and adds a dedicated edge case forbidding collapse of the franklin/non-franklin branches -- naming the exact failure mode iteration-3 identified. A new proof obligation, PROP-016, targets this specific gap with both a static source check and a live process-env check. Cross-checked live: the non-franklin ensure_brain (anicca-daemon.sh:82-95) really does grep $HOME/.openclaw/.env for BLOCKRUN_WALLET_KEY and fall back to resolve-identity.mjs evm, confirming the leakage path the spec now explicitly closes is real and was not a hypothetical."
+    },
+    "FIND-010": {
+      "status": "resolved",
+      "regressed": false,
+      "justification": "Both behavioral-spec.md's Context (Root Cause B) and verification-architecture.md's Effectful Shell section now state the corrected mechanism: config.ANICCA_MODEL is always undefined (absent from both config.mjs's DEFAULTS and its explicit pass-through list), so brain.mjs:58's expression always falls through to ctx.model, which is populated by tier.mjs::selectTier reading ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL. Re-verified live against config.mjs (DEFAULTS lines 13-62, pass-through lines 114-142), brain.mjs:58, and tier.mjs:28-49 this iteration -- the corrected claim holds exactly, and the prescribed fix (REQ-004's plist model-key changes) remains valid since it already targeted the three ANICCA_*_MODEL keys."
+    }
+  },
+  "newFindingsSummary": [],
+  "notes": [
+    "Non-blocking observation (does not affect any REQ/PROP pass/fail outcome): @solana/web3.js is declared only in the root /Users/operator/anicca/package.json, not in runtime/package.json (bs58/tweetnacl/viem only); the only existing production precedent for Solana pubkey derivation in this repo, runtime/dashboard/telemetry-post-franklin.mjs:21-23, avoids @solana/web3.js entirely and derives the address via bs58.decode + slice(32) + bs58.encode, which does NOT validate secret-key byte length by itself. REQ-001's acceptance criteria and PROP-012's exhaustive fixture table (including the wrong-byte-length case) are written as testable behavioral requirements independent of which derivation approach is chosen, so an implementation using the bs58-slice approach without added length validation would fail PROP-012's own test and get caught in Phase 3/TDD regardless -- this is why it is a note, not a finding.",
+    "Convergence confirmed: iteration-3's two findings (FIND-009 critical, FIND-010 medium) are both genuinely closed against live code, not merely reworded; no new blocking issue was found across a full re-read of every effectful-shell file this feature touches (anicca-daemon.sh, config.mjs, brain.mjs, tier.mjs, balance.mjs, wallet-address.mjs, resolve-identity.mjs, solana-verify.mjs, env-filter.mjs, index.mjs) plus both deployed plists and all cited test files."
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

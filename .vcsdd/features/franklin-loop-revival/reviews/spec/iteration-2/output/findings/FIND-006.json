@@ -1,0 +1,36 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "requirement": "REQ-004",
+  "description": "REQ-004's own edge case explicitly permits leaving `FRANKLIN_PROXY_PORT` untouched in daemon.sh/plist ('become dead configuration ... this requirement does not mandate deleting them from the plist/script in this sprint'), but this is factually wrong given the real code: `runtime/anicca-daemon.sh` lines 26-30 compute a SINGLE shared `PORT` variable for franklin (`PORT=\"${FRANKLIN_PROXY_PORT:-8403}\"`), and that SAME `$PORT` is what line 117 uses to export `OPENAI_BASE_URL=\"http://127.0.0.1:$PORT/v1\"` for the loop's THINK step. The deployed plist (`/Users/operator/Library/LaunchAgents/ai.anicca.franklin-loop.plist:17-18`) currently pins `FRANKLIN_PROXY_PORT=8403`. If an implementer follows REQ-004's edge case literally -- removes only the `franklin proxy --port 8403 ...` spawn inside `ensure_brain` (REQ-004(b)) and leaves FRANKLIN_PROXY_PORT/daemon.sh lines 26-30 untouched (which the edge case explicitly says is fine) -- `$PORT` for franklin still resolves to 8403, so `OPENAI_BASE_URL` still points at :8403 where NOTHING listens anymore. THINK would then fail on EVERY wake (connection refused) instead of intermittently (429), which is a REGRESSION vs the current bug, and directly violates REQ-004(a)'s mandate to route THINK to ClawRouter's 8402. This directly contradicts verification-architecture.md's own claim (lines 42-44): 'PORT for franklin must resolve to 8402 (ClawRouter) so the downstream OPENAI_BASE_URL export at line 117 is correct without further change' -- that claim is false; it DOES require further change (either daemon.sh's PORT-assignment branch at lines 26-30 must stop deriving franklin's PORT from FRANKLIN_PROXY_PORT, or the deployed plist's FRANKLIN_PROXY_PORT value itself must change/be removed AND the bash default of 8403 at line 27 must also change) -- and neither REQ-004's EARS text nor its Acceptance Criteria assigns that change as a MUST anywhere. The spec is not concrete enough to be implemented unambiguously: a literal-minded implementer can satisfy every explicitly-stated REQ-004 criterion (no franklin-proxy process on 8403, ensure_brain no longer spawns it) while leaving THINK permanently broken.",
+  "evidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-loop-revival/specs/behavioral-spec.md",
+      "lineRange": "270-274",
+      "snippet": "`FRANKLIN_FREE_MODEL`/`FRANKLIN_PROXY_PORT` env values ... become dead configuration once the 8403 branch is retired; this requirement does not mandate deleting them from the plist/script in this sprint, only that they are never invoked to start a process"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-loop-revival/specs/verification-architecture.md",
+      "lineRange": "36-44",
+      "snippet": "`PORT` for franklin must resolve to `8402` (ClawRouter) so the downstream `OPENAI_BASE_URL` export at line 117 is correct without further change."
+    },
+    {
+      "filePath": "runtime/anicca-daemon.sh",
+      "lineRange": "25-30",
+      "snippet": "INSTANCE=\"${ANICCA_INSTANCE:-clawrouter}\"\nif [ \"$INSTANCE\" = \"franklin\" ]; then\n  PORT=\"${FRANKLIN_PROXY_PORT:-8403}\"\nelse\n  PORT=\"${COMPUTE_PROXY_PORT:-8402}\"\nfi"
+    },
+    {
+      "filePath": "runtime/anicca-daemon.sh",
+      "lineRange": "117",
+      "snippet": "export OPENAI_BASE_URL=\"http://127.0.0.1:$PORT/v1\""
+    },
+    {
+      "filePath": "/Users/operator/Library/LaunchAgents/ai.anicca.franklin-loop.plist",
+      "lineRange": "17-18",
+      "snippet": "<key>FRANKLIN_PROXY_PORT</key>\n<string>8403</string>"
+    }
+  ],
+  "routeToPhase": "1c"
+}

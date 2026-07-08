@@ -5,15 +5,18 @@
 # supervisor restarts this script whenever it exits, so Anicca stands on its own — no human runs it
 # by hand. On every (re)start it:
 #   1. SELF-UPDATES: git pull the mother repo so this body always runs the latest motherboard.
-#   2. ensures its own brain is up (ClawRouter self-pay EVM, or Franklin's own Solana proxy — §ENGINE-PARITY).
+#   2. ensures its own brain is up — the shared free-tier LLM router (Base/EVM self-pay, or a
+#      readiness-probe-only wait for Franklin — see franklin-loop-revival REQ-004/§ENGINE-PARITY).
 #   3. ensures its telemetry poster is up (reports to the dashboard).
 #   4. exec's the ReAct loop in the FOREGROUND — when the loop exits, this script exits, and the
 #      supervisor brings the whole body back (freshly updated).
 #
-# ANICCA_INSTANCE selects the brain+telemetry backend (§ENGINE-PARITY-FRANKLIN 2026-07-05): default
-# (unset or 'clawrouter') = the original EVM/Base ClawRouter + telemetry-poster.mjs path, UNCHANGED.
-# 'franklin' = Franklin's OWN BlockRun Solana wallet (~/.blockrun/.solana-session, never touched here)
-# via `franklin proxy` (OpenAI-compatible /v1/chat/completions, verified live 2026-07-05) + the ed25519
+# ANICCA_INSTANCE selects the brain+telemetry backend (§ENGINE-PARITY-FRANKLIN 2026-07-05, THINK
+# routing fixed by franklin-loop-revival REQ-004 2026-07-08): default (unset or 'clawrouter') = the
+# original EVM/Base ClawRouter + telemetry-poster.mjs path, UNCHANGED. 'franklin' = Franklin's OWN
+# Solana wallet (~/.blockrun/.solana-session, resolved via resolve-identity.mjs, never touched
+# here) for balance/tier purposes, but THINK now reaches the SAME shared :8402 LLM router as every
+# other instance (Franklin no longer runs its own dedicated proxy binary) + the ed25519
 # telemetry-post-franklin.mjs poster (one-shot script, looped here since it has no built-in interval).
 #
 # The loop itself is already crash-resilient (while-true + per-wake try/catch); this wrapper adds
@@ -23,11 +26,10 @@ set -uo pipefail
 REPO="${ANICCA_REPO:-$HOME/anicca}"
 export ANICCA_HOME="${ANICCA_HOME:-$HOME/.anicca}"
 INSTANCE="${ANICCA_INSTANCE:-clawrouter}"
-if [ "$INSTANCE" = "franklin" ]; then
-  PORT="${FRANKLIN_PROXY_PORT:-8403}"
-else
-  PORT="${COMPUTE_PROXY_PORT:-8402}"
-fi
+# franklin-loop-revival REQ-004(a)/(c): PORT resolves to ClawRouter's 8402 for EVERY instance,
+# including franklin — franklin no longer runs its own dedicated `franklin proxy` on 8403 (see step
+# 2 below), so its PORT must no longer derive from FRANKLIN_PROXY_PORT at all.
+PORT="${COMPUTE_PROXY_PORT:-8402}"
 LOGDIR="$ANICCA_HOME/logs"; mkdir -p "$LOGDIR"
 
 log() { echo "[$(date -u +%FT%TZ)] anicca-daemon: $*" >&2; }
@@ -52,26 +54,25 @@ if [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
 fi
 # 2. brain: start this instance's own OpenAI-compatible proxy on $PORT if not already answering.
 if [ "$INSTANCE" = "franklin" ]; then
-  # Franklin brain = `franklin proxy` (@blockrun/franklin CLI), NOT ClawRouter. ClawRouter derives
-  # EVM+Solana keys from ONE mnemonic (~/.clawrouter/mnemonic) — Franklin's actual funded Solana
-  # wallet is an INDEPENDENT keypair at ~/.blockrun/.solana-session (never derived from a mnemonic),
-  # so ClawRouter cannot reuse it (would spin up a fresh, empty wallet). `franklin proxy` reads that
-  # exact file via @blockrun/llm's getOrCreateSolanaWallet() and exposes an OpenAI-compatible
-  # /v1/chat/completions on $PORT — verified live 2026-07-05: Wallet: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9
-  # (Franklin's real address), and a free-model call (nvidia/llama-4-maverick) settled at $0 in
-  # cost_log.jsonl. --model pins a FREE model + --no-fallback refuses to silently escalate to a paid
-  # one, so routine THINK compute = $0 (same cost-free thesis as the ClawRouter path below).
-  # export: the telemetry poster subshell (step 3 below) reads this to label model_live/model_tier
-  # honestly instead of a stale hardcode (#31 FREE-MODE fix, 2026-07-05).
+  # franklin-loop-revival REQ-004(b)/REQ-005/PROP-016 (2026-07-08): Franklin's brain is the
+  # ALREADY-RUNNING, SEPARATELY-launchd shared free-tier LLM-router job on :8402 (its own
+  # RunAtLoad+KeepAlive plist, confirmed live — free-tier-only, no shared-wallet credential
+  # configured at all). Franklin's daemon reaches it ONLY as a same-machine loopback HTTP client
+  # (the PORT/OPENAI_BASE_URL fix above) — it NEVER spawns the old dedicated @blockrun/franklin
+  # CLI's own "proxy" subcommand, the shared router's own binary, or any other process for this
+  # instance, and NEVER reads any other instance's own env/wallet/key material to do so (that
+  # would be exactly the cross-instance leakage REQ-005 forbids —
+  # the non-franklin branch's own, separately-designed use of those stays untouched below and
+  # never executes for INSTANCE=franklin). Retired: the port-8403 spawn of that CLI's proxy
+  # subcommand with --model/--no-fallback flags (verified live 2026-07-05, now dead per
+  # FIND-006/FIND-009) — this branch is AT MOST a readiness probe, a pure no-op otherwise, since
+  # bringing the shared router up is exclusively ITS OWN separate launchd job's responsibility,
+  # never Franklin's. export kept ONLY for runtime/dashboard/telemetry-post-franklin.mjs's own
+  # labeling (unchanged, out of scope for this requirement — the poster is independent of THINK
+  # routing).
   export FRANKLIN_FREE_MODEL="${FRANKLIN_FREE_MODEL:-nvidia/llama-4-maverick}"
-  ensure_brain() {
-    command -v franklin >/dev/null 2>&1 || npm install -g @blockrun/franklin >/dev/null 2>&1 || true
-    franklin proxy --port "$PORT" --model "$FRANKLIN_FREE_MODEL" --no-fallback >>"$LOGDIR/franklin-proxy.log" 2>&1 &
-    for _ in $(seq 1 30); do curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1 && break; sleep 0.5; done
-  }
   if ! curl -sf "http://127.0.0.1:$PORT/v1/models" >/dev/null 2>&1; then
-    log "starting franklin proxy on :$PORT (model=$FRANKLIN_FREE_MODEL, free, Franklin's own Solana wallet)"
-    ensure_brain
+    log "waiting for the shared LLM router on :$PORT (its own launchd job brings it up — Franklin's daemon never spawns its own brain)"
   fi
 else
   # ClawRouter (the real BlockRun router) on :8402. Why ClawRouter, not the old compute-proxy:
@@ -116,10 +117,15 @@ fi
 # 4. brain endpoint + model the loop should use -------------------------------------------------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local}"
-if [ "$INSTANCE" != "franklin" ]; then
+if [ "$INSTANCE" = "franklin" ]; then
+  # franklin-loop-revival REQ-001: derive Franklin's OWN Solana wallet address (base58 pubkey) via
+  # the gated per-instance resolve-identity.mjs::resolveSolanaSecret path (never bare-grepped, never
+  # falls back to scanning another instance's dot-directory — REQ-005/REQ-006). A missing or
+  # cryptographically malformed secret prints nothing (the helper warns to stderr and exits 0),
+  # leaving ANICCA_WALLET_ADDRESS unset — non-fatal, balance.mjs/tier.mjs simply keep tier=broke.
+  export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(node "$REPO/runtime/wallet-address-solana.mjs" 2>/dev/null)}"
+else
   # derive the wallet address (viem, from the privateKey) via the helper, run where viem resolves.
-  # EVM-only helper — Franklin's wallet is Solana (balance.mjs only accepts 0x addresses; leaving
-  # ANICCA_WALLET_ADDRESS unset for Franklin is correct — the loop just keeps tier=broke, non-fatal).
   export ANICCA_WALLET_ADDRESS="${ANICCA_WALLET_ADDRESS:-$(cd "$REPO/runtime/compute-proxy" && node "$REPO/runtime/wallet-address.mjs" 2>/dev/null)}"
 fi
 

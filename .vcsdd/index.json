@@ -177,7 +177,14 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-07-03T11:43:50.323Z"
+    },
+    "franklin-loop-revival": {
+      "status": "active",
+      "createdAt": "2026-07-08T06:48:23.302Z",
+      "mode": "lean",
+      "currentPhase": "2c",
+      "updatedAt": "2026-07-08T08:36:03.761Z"
     }
   },
-  "activeFeature": "anicca-colony-architecture"
+  "activeFeature": "franklin-loop-revival"
 }

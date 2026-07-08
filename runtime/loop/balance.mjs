@@ -1,17 +1,26 @@
 /**
- * balance.mjs — Effectful: fetch USDC balance from Base RPC with TTL cache.
+ * balance.mjs — Effectful: fetch USDC balance from Base RPC (EVM) or Solana RPC, with TTL cache.
  *
  * REQ-002: Balance read fails (RPC timeout) → caller keeps prior tier, no crash.
  * REQ-008: No macOS-only code.
  *
+ * franklin-loop-revival REQ-002: dispatches by the address's chain shape
+ * (address-classify.mjs::classifyAddress) — `0x`+40-hex → the existing Base ERC-20 path below,
+ * UNCHANGED; base58 Solana-shaped → delegates to the already-tested
+ * skills/_shared/lib/solana-verify.mjs::usdcBalance(wallet, opts), reused NOT ported/reimplemented.
+ * An address matching neither shape throws (preserves the existing "invalid wallet address"
+ * invariant — caller keeps the prior tier, no crash of the loop).
+ *
  * Special env var (tests only): ANICCA_BALANCE_OVERRIDE
  *   'fail' → throw (simulates RPC timeout)
  *   'NaN'  → return NaN (simulates malformed RPC response)
- *   any number string → return that number (bypasses RPC)
+ *   any number string → return that number (bypasses RPC, either chain)
  */
 
 import https from 'node:https';
 import http from 'node:http';
+import { classifyAddress } from './address-classify.mjs';
+import { usdcBalance } from '../../skills/_shared/lib/solana-verify.mjs';
 
 // Base USDC contract address on Base mainnet
 const USDC_CONTRACT = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913';
@@ -21,12 +30,18 @@ const BASE_RPC_DEFAULT = 'https://mainnet.base.org';
 const _cache = new Map();
 
 /**
- * Fetch USDC balance (in human-readable USDC, 6 decimal places) for a wallet address.
+ * Fetch USDC balance (in human-readable USDC, 6 decimal places) for a wallet address. Dispatches
+ * by chain shape (address-classify.mjs::classifyAddress, REQ-002): `0x`+40-hex → Base ERC-20 below
+ * (unchanged); base58 Solana-shaped → delegates to solana-verify.mjs::usdcBalance (see
+ * fetchSolanaUsdcBalance below); anything else → throws (unchanged invariant).
  *
- * @param {string} address - wallet address (0x…)
- * @param {object} config - must include BALANCE_CACHE_TTL_S, optional BASE_RPC_URL
+ * @param {string} address - wallet address (0x… EVM or base58 Solana)
+ * @param {object} config - must include BALANCE_CACHE_TTL_S, optional BASE_RPC_URL /
+ *   SOLANA_FETCH_IMPL (test-only injectable transport for the Solana branch, mirrors
+ *   solana-verify.test.js's fakeFetch convention — see balance-solana.test.mjs)
  * @returns {Promise<number>}
- * @throws {Error} on RPC failure (caller must handle and keep prior tier)
+ * @throws {Error} on RPC failure or an address matching neither chain shape (caller must handle
+ *   and keep prior tier)
  */
 export async function fetchUsdcBalance(address, config) {
   // Test override
@@ -39,10 +54,15 @@ export async function fetchUsdcBalance(address, config) {
     return Number.isFinite(parsed) ? parsed : NaN;
   }
 
-  // Validate the address before building any RPC call (no wallet → caller keeps prior tier).
-  if (typeof address !== 'string' || !/^0x[0-9a-fA-F]{40}$/.test(address)) {
+  const chain = classifyAddress(address);
+  if (chain === 'invalid') {
     throw new Error(`invalid wallet address: ${String(address)}`);
   }
+  if (chain === 'solana') {
+    return fetchSolanaUsdcBalance(address, config);
+  }
+
+  // ---- EVM (Base) path below: UNCHANGED behavior (REQ-002 regression / PROP-004) ----
 
   // TTL cache check
   const ttlS = Number(config.BALANCE_CACHE_TTL_S ?? 300);
@@ -96,6 +116,23 @@ export async function fetchUsdcBalance(address, config) {
 
   _cache.set(address, { value: balance, expireAt: now + ttlS * 1000 });
   return balance;
+}
+
+/**
+ * Solana branch of fetchUsdcBalance (REQ-002): delegates to the existing, already unit-tested
+ * skills/_shared/lib/solana-verify.mjs::usdcBalance(wallet, opts) — no RPC request-building or
+ * response-parsing code is written here, and NO `opts.mint` override is passed (that constant is
+ * module-private to solana-verify.mjs by design — see behavioral-spec.md REQ-002). Passes through
+ * `usdcBalance`'s return value unchanged, including its `0`-for-zero-ATAs case, and its throw on
+ * RPC failure or a malformed wallet shape (both inherited for free, not re-implemented here).
+ *
+ * `config.SOLANA_FETCH_IMPL` is a test-only injectable transport (mirrors the existing
+ * `ANICCA_BALANCE_OVERRIDE` test-hook convention on the EVM side, and solana-verify.test.js's own
+ * `fakeFetch` convention) — forwarded as `opts.fetchImpl`; when unset, `usdcBalance` falls back to
+ * `globalThis.fetch` against the real `SOLANA_RPC_URL` (production path).
+ */
+async function fetchSolanaUsdcBalance(address, config) {
+  return usdcBalance(address, { fetchImpl: config.SOLANA_FETCH_IMPL });
 }
 
 /**

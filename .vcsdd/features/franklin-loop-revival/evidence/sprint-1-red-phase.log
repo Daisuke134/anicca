@@ -1,0 +1,589 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+================================================================================
+RED PHASE EVIDENCE — franklin-loop-revival, sprint 1
+Feature: franklin-loop-revival | Phase: 2a (RED) | Mode: lean
+Spec: specs/behavioral-spec.md (REQ-001..006), specs/verification-architecture.md (PROP-001..016)
+Command run from repo root (/Users/operator/anicca): `node --test <files>`
+Date: 2026-07-08
+================================================================================
+
+SCOPE OF THIS EVIDENCE
+-----------------------
+"new-feature-tests: FAIL" covers the 6 NEW test files below, written for REQ-001..006 /
+PROP-001,002,005,006,007,008,012,016 (+ two acceptance-criteria checks folded into
+franklin-plist-config.test.mjs / daemon-script-franklin-routing.test.mjs). None of the
+corresponding implementation exists yet (Phase 2b), so every "new capability" assertion
+fails — either at import time (ERR_MODULE_NOT_FOUND / MODULE_NOT_FOUND for the two brand-new
+modules `runtime/loop/address-classify.mjs` and `runtime/wallet-address-solana.mjs`) or by
+reproducing the EXACT bug described in behavioral-spec.md's "Root cause A/B" (e.g.
+`invalid wallet address: 8FpqdcCH...` thrown for Franklin's real Solana address; PORT
+resolving to 8403 instead of 8402; the deployed plist still pinning nvidia/llama-4-maverick).
+
+Three assertions in this same run are DELIBERATELY labeled "regression"/"guardrail" in their
+test names and are EXPECTED to already pass today (they assert already-correct, unchanged
+behavior that Phase 2b must not break — the non-franklin daemon.sh branch, and the
+already-true absence of ANICCA_BALANCE_OVERRIDE in the deployed plist). These 3 passes are
+intentional, not a Red-phase violation — no NEW capability is asserted by them.
+
+"regression-baseline: PASS" covers the EXISTING test suites for every file this feature
+touches or reuses (resolve-identity.test.mjs — REQ-005 AC; env-filter.test.mjs — REQ-006 AC;
+solana-verify.test.js — the reused `usdcBalance`/PROP-002 dependency): 42/42 pass, 0
+failures, run unmodified.
+
+HONESTY NOTE (pre-existing, OUT OF SCOPE, not introduced by this feature):
+`runtime/loop/__tests__/tier.test.mjs` (3 cases) and `runtime/loop/__tests__/config.test.mjs`
+(1 case) were ALREADY failing before this feature touched anything — their hardcoded expected
+model-name literals (e.g. 'nvidia/deepseek-v4-flash', 'openai/gpt-4o-mini') do not match the
+current `tier.mjs`/`config.mjs` DEFAULTS (e.g. 'free/gpt-oss-120b', 'auto'). This feature does
+NOT modify `tier.mjs` or `config.mjs` (per verification-architecture.md, `tier.mjs::selectTier`
+is explicitly UNCHANGED) and does not touch those two test files. Verified via
+`node --test runtime/loop/__tests__/*.mjs` BEFORE writing any new file in this sprint — see
+"docs/superpowers" is not used for this; the exact repro command is:
+  cd /Users/operator/anicca && node --test runtime/loop/__tests__/tier.test.mjs runtime/loop/__tests__/config.test.mjs
+This is disclosed for honesty (VCSDD/CLAUDE.md honesty rule), not silently omitted, and does
+not block this feature's Red-phase gate (it is unrelated to REQ-001..006).
+
+NEW TEST FILES (6)
+------------------
+- runtime/loop/__tests__/address-classify.test.mjs         (REQ-002, PROP-001)
+- runtime/loop/__tests__/balance-solana.test.mjs            (REQ-002, PROP-002)
+- runtime/loop/__tests__/wallet-address-solana.test.mjs     (REQ-001, REQ-005, REQ-006, PROP-005, PROP-007, PROP-008, PROP-012)
+- runtime/loop/__tests__/integration-solana-tier.test.mjs   (REQ-003, PROP-006)
+- runtime/loop/__tests__/franklin-plist-config.test.mjs     (REQ-003, REQ-004 AC#2, PROP-013)
+- runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs (REQ-004(a)(b)(c), REQ-005, PROP-016 static half)
+
+================================================================================
+RAW OUTPUT — new test files
+Command: node --test runtime/loop/__tests__/address-classify.test.mjs runtime/loop/__tests__/balance-solana.test.mjs runtime/loop/__tests__/wallet-address-solana.test.mjs runtime/loop/__tests__/integration-solana-tier.test.mjs runtime/loop/__tests__/franklin-plist-config.test.mjs runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs
+Result: tests 22, pass 3 (intentional regression/guardrail, see above), fail 19, exit code 1
+================================================================================
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/operator/anicca/runtime/loop/address-classify.mjs' imported from /Users/operator/anicca/runtime/loop/__tests__/address-classify.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/operator/anicca/runtime/loop/address-classify.mjs'
+}
+
+Node.js v25.6.1
+✖ runtime/loop/__tests__/address-classify.test.mjs (131.480792ms)
+✖ PROP-002/REQ-002 AC1: fetchUsdcBalance(Franklin real Solana address) resolves a real numeric balance instead of throwing "invalid wallet address" (0.858708ms)
+✖ PROP-002: zero-ATA Solana wallet -> fetchUsdcBalance resolves 0 (does NOT throw), matching usdcBalance's own "no ATA" behavior (0.131375ms)
+✖ PROP-002: Solana RPC failure propagates as a throw (caller keeps prior tier) — NOT the generic "invalid wallet address" message (0.644125ms)
+✖ PROP-002: dispatch does NOT reimplement Solana RPC parsing — balance.mjs must import usdcBalance from solana-verify.mjs, not define its own getTokenAccountsByOwner call (0.191875ms)
+✖ REQ-004(a): INSTANCE=franklin resolves PORT to ClawRouter's 8402 (matching the non-franklin branch), not 8403 (12.014334ms)
+✖ REQ-004(c): even with FRANKLIN_PROXY_PORT=8403 set (mirroring the deployed plist's current value), PORT still resolves 8402 for franklin (10.404334ms)
+✔ regression: non-franklin (INSTANCE unset / clawrouter) still resolves PORT=8402 via COMPUTE_PROXY_PORT (unchanged) (12.277208ms)
+✖ REQ-004(a): OPENAI_BASE_URL (the SAME $PORT variable line 117 already uses) resolves to http://127.0.0.1:8402/v1 for franklin (6.410333ms)
+✖ REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns `franklin proxy` or `clawrouter`, never reads $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY, but keeps AT MOST a curl readiness probe (0.423958ms)
+✔ regression/REQ-005: the non-franklin ensure_brain branch (its own, separately-designed $HOME/.openclaw/.env use) is untouched and structurally distinct from the franklin branch (0.088916ms)
+✖ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (21.895875ms)
+✔ REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids) (7.531042ms)
+✖ PROP-006/REQ-003: a wake with a real (mocked) Solana balance > $1.00 selects the FUNDED tier — never stays "broke" — WITHOUT ANICCA_BALANCE_OVERRIDE (176.265166ms)
+✖ PROP-005 (live): ANICCA_HOME=/Users/operator/.blockrun ANICCA_INSTANCE=franklin prints EXACTLY Franklin's real address and nothing else on stdout (82.055667ms)
+✖ REQ-001 edge case: missing .solana-session -> empty stdout, WARNING on stderr, exit 0 (no crash) (48.925ms)
+✖ REQ-001 edge case: empty .solana-session file -> empty stdout, WARNING, exit 0 (no crash) (52.894917ms)
+✖ PROP-012: malformed base58 (invalid chars) -> catch, empty stdout, WARNING (never the raw secret), exit 0 (no crash) (50.181708ms)
+✖ PROP-012: valid base58 but WRONG BYTE LENGTH -> catch (Keypair derivation throws), empty stdout, WARNING (never the raw secret), exit 0 (59.926458ms)
+✖ PROP-012: valid, well-formed secret (fresh self-consistent fixture, NOT Franklin's real key) -> derives the matching address, nothing else on stdout, secret never leaked (158.927417ms)
+✖ PROP-007: foreign ANICCA_HOME (different from $HOME/.blockrun) resolves NOTHING even though a real .solana-session exists at $HOME/.blockrun (48.452792ms)
+✖ PROP-007: default ANICCA_HOME (unset, falls back to $HOME/.anicca) resolves nothing for Franklin's Solana identity (61.617375ms)
+ℹ tests 22
+ℹ suites 0
+ℹ pass 3
+ℹ fail 19
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 689.8635
+
+✖ failing tests:
+
+test at runtime/loop/__tests__/address-classify.test.mjs:1:1
+✖ runtime/loop/__tests__/address-classify.test.mjs (131.480792ms)
+  'test failed'
+
+test at runtime/loop/__tests__/balance-solana.test.mjs:45:1
+✖ PROP-002/REQ-002 AC1: fetchUsdcBalance(Franklin real Solana address) resolves a real numeric balance instead of throwing "invalid wallet address" (0.858708ms)
+  Error: invalid wallet address: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9
+      at fetchUsdcBalance (file:///Users/operator/anicca/runtime/loop/balance.mjs:44:11)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/balance-solana.test.mjs:50:25)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17)
+
+test at runtime/loop/__tests__/balance-solana.test.mjs:56:1
+✖ PROP-002: zero-ATA Solana wallet -> fetchUsdcBalance resolves 0 (does NOT throw), matching usdcBalance's own "no ATA" behavior (0.131375ms)
+  Error: invalid wallet address: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9
+      at fetchUsdcBalance (file:///Users/operator/anicca/runtime/loop/balance.mjs:44:11)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/balance-solana.test.mjs:58:25)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3)
+
+test at runtime/loop/__tests__/balance-solana.test.mjs:62:1
+✖ PROP-002: Solana RPC failure propagates as a throw (caller keeps prior tier) — NOT the generic "invalid wallet address" message (0.644125ms)
+  AssertionError [ERR_ASSERTION]: must not still be the address-shape error: invalid wallet address: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9
+      at Object.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/balance-solana.test.mjs:69:14)
+      at expectedException (node:assert:553:17)
+      at expectsError (node:assert:678:21)
+      at strict.rejects (node:assert:744:3)
+      at async TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/balance-solana.test.mjs:64:3)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/balance-solana.test.mjs:75:1
+✖ PROP-002: dispatch does NOT reimplement Solana RPC parsing — balance.mjs must import usdcBalance from solana-verify.mjs, not define its own getTokenAccountsByOwner call (0.191875ms)
+  AssertionError [ERR_ASSERTION]: balance.mjs must import from skills/_shared/lib/solana-verify.mjs (REQ-002: reuse, do not port)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/balance-solana.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:62:1
+✖ REQ-004(a): INSTANCE=franklin resolves PORT to ClawRouter's 8402 (matching the non-franklin branch), not 8403 (12.014334ms)
+  AssertionError [ERR_ASSERTION]: today this resolves PORT=8403 via FRANKLIN_PROXY_PORT (behavioral-spec.md Root cause B) — REQ-004(a) requires 8402
+  + actual - expected
+  
+  + 'PORT=8403'
+  - 'PORT=8402'
+             ^
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:65:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'PORT=8403',
+    expected: 'PORT=8402',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:72:1
+✖ REQ-004(c): even with FRANKLIN_PROXY_PORT=8403 set (mirroring the deployed plist's current value), PORT still resolves 8402 for franklin (10.404334ms)
+  AssertionError [ERR_ASSERTION]: daemon.sh must no longer derive franklin's PORT from FRANKLIN_PROXY_PORT at all (REQ-004(c))
+  + actual - expected
+  
+  + 'PORT=8403'
+  - 'PORT=8402'
+             ^
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:75:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'PORT=8403',
+    expected: 'PORT=8402',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:89:1
+✖ REQ-004(a): OPENAI_BASE_URL (the SAME $PORT variable line 117 already uses) resolves to http://127.0.0.1:8402/v1 for franklin (6.410333ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'URL=http://127.0.0.1:8403/v1'
+  - 'URL=http://127.0.0.1:8402/v1'
+                             ^
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:97:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'URL=http://127.0.0.1:8403/v1',
+    expected: 'URL=http://127.0.0.1:8402/v1',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:100:1
+✖ REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns `franklin proxy` or `clawrouter`, never reads $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY, but keeps AT MOST a curl readiness probe (0.423958ms)
+  AssertionError [ERR_ASSERTION]: must NEVER spawn `franklin proxy` (REQ-004(b)) — today it does (line ~69)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/daemon-script-franklin-routing.test.mjs:106:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: false,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/franklin-plist-config.test.mjs:32:1
+✖ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (21.895875ms)
+  AssertionError [ERR_ASSERTION]: ANICCA_FREE_MODEL must no longer be pinned to the exhausted 'nvidia/llama-4-maverick' (behavioral-spec.md Root cause B)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/franklin-plist-config.test.mjs:35:12)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'nvidia/llama-4-maverick',
+    expected: 'nvidia/llama-4-maverick',
+    operator: 'notStrictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/integration-solana-tier.test.mjs:122:1
+✖ PROP-006/REQ-003: a wake with a real (mocked) Solana balance > $1.00 selects the FUNDED tier — never stays "broke" — WITHOUT ANICCA_BALANCE_OVERRIDE (176.265166ms)
+  AssertionError [ERR_ASSERTION]: currentTier must be 'funded' (real balance $11.63 > $1.00 threshold) — got model=TEST-MARKER/broke-tier-model (stderr: [loop] live skills: report, self/spawn, self/spawn-child, self/issue-dev, self/coordinate, economy/gig, economy/ubi, cook, yield, hl_trade, x402_sell, token_launch, earn/clip, earn/clip-producer, earn/video, earn/sol-trade, earn/polymarket-trade
+  [loop] Starting Anicca loop. ANICCA_HOME=/tmp/anicca-sol-tier-Dbnom2
+  [loop] Balance fetch failed: invalid wallet address: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 — keeping tier=broke
+  [loop] Balance fetch failed: invalid wallet address: 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 — keeping tier=broke
+  )
+  + actual - expected
+  
+  + 'TEST-MARKER/broke-tier-model'
+  - 'TEST-MARKER/funded-tier-model'
+                 ^
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/integration-solana-tier.test.mjs:160:12)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'TEST-MARKER/broke-tier-model',
+    expected: 'TEST-MARKER/funded-tier-model',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:55:1
+✖ PROP-005 (live): ANICCA_HOME=/Users/operator/.blockrun ANICCA_INSTANCE=franklin prints EXACTLY Franklin's real address and nothing else on stdout (82.055667ms)
+  AssertionError [ERR_ASSERTION]: must exit 0 (stderr: node:internal/modules/cjs/loader:1458
+    throw err;
+    ^
+  
+  Error: Cannot find module '/Users/operator/anicca/runtime/wallet-address-solana.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1455:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1065:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1070:22)
+      at Module._load (node:internal/modules/cjs/loader:1241:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v25.6.1
+  )
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:62:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.start (node:internal/test_runner/test:1015:17)
+      at startSubtestAfterBootstrap (node:internal/test_runner/harness:358:17) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:69:1
+✖ REQ-001 edge case: missing .solana-session -> empty stdout, WARNING on stderr, exit 0 (no crash) (48.925ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:77:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:82:1
+✖ REQ-001 edge case: empty .solana-session file -> empty stdout, WARNING, exit 0 (no crash) (52.894917ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:90:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:98:1
+✖ PROP-012: malformed base58 (invalid chars) -> catch, empty stdout, WARNING (never the raw secret), exit 0 (no crash) (50.181708ms)
+  AssertionError [ERR_ASSERTION]: must NOT crash the process (stderr: node:internal/modules/cjs/loader:1458
+    throw err;
+    ^
+  
+  Error: Cannot find module '/Users/operator/anicca/runtime/wallet-address-solana.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1455:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1065:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1070:22)
+      at Module._load (node:internal/modules/cjs/loader:1241:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v25.6.1
+  )
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:107:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:113:1
+✖ PROP-012: valid base58 but WRONG BYTE LENGTH -> catch (Keypair derivation throws), empty stdout, WARNING (never the raw secret), exit 0 (59.926458ms)
+  AssertionError [ERR_ASSERTION]: must NOT crash the process (stderr: node:internal/modules/cjs/loader:1458
+    throw err;
+    ^
+  
+  Error: Cannot find module '/Users/operator/anicca/runtime/wallet-address-solana.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1455:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1065:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1070:22)
+      at Module._load (node:internal/modules/cjs/loader:1241:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v25.6.1
+  )
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:125:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:131:1
+✖ PROP-012: valid, well-formed secret (fresh self-consistent fixture, NOT Franklin's real key) -> derives the matching address, nothing else on stdout, secret never leaked (158.927417ms)
+  AssertionError [ERR_ASSERTION]: must exit 0 (stderr: node:internal/modules/cjs/loader:1458
+    throw err;
+    ^
+  
+  Error: Cannot find module '/Users/operator/anicca/runtime/wallet-address-solana.mjs'
+      at Module._resolveFilename (node:internal/modules/cjs/loader:1455:15)
+      at defaultResolveImpl (node:internal/modules/cjs/loader:1065:19)
+      at resolveForCJSWithHooks (node:internal/modules/cjs/loader:1070:22)
+      at Module._load (node:internal/modules/cjs/loader:1241:25)
+      at wrapModuleLoad (node:internal/modules/cjs/loader:255:19)
+      at Module.executeUserEntryPoint [as runMain] (node:internal/modules/run_main:154:5)
+      at node:internal/main/run_main_module:33:47 {
+    code: 'MODULE_NOT_FOUND',
+    requireStack: []
+  }
+  
+  Node.js v25.6.1
+  )
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:144:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:155:1
+✖ PROP-007: foreign ANICCA_HOME (different from $HOME/.blockrun) resolves NOTHING even though a real .solana-session exists at $HOME/.blockrun (48.452792ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:164:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at runtime/loop/__tests__/wallet-address-solana.test.mjs:168:1
+✖ PROP-007: default ANICCA_HOME (unset, falls back to $HOME/.anicca) resolves nothing for Franklin's Solana identity (61.617375ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  
+  1 !== 0
+  
+      at TestContext.<anonymous> (file:///Users/operator/anicca/runtime/loop/__tests__/wallet-address-solana.test.mjs:176:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 1,
+    expected: 0,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+================================================================================
+RAW OUTPUT — regression suites for every file this feature touches/reuses
+Command: node --test runtime/loop/__tests__/resolve-identity.test.mjs runtime/loop/__tests__/env-filter.test.mjs skills/_shared/lib/__tests__/solana-verify.test.js
+Result: tests 42, pass 42, fail 0, exit code 0
+================================================================================
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (0.733458ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.055583ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.04575ms)
+✔ PROP-005: removes all matching keys from mixed env (0.053667ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (0.677084ms)
+✔ PROP-006: does not mutate original env (0.0415ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.244791ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.184792ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.478375ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.519583ms)
+✔ EVM ①: env.ANICCA_EVM_PRIVATE_KEY wins even when wallet files also exist (1.812875ms)
+✔ EVM ①: env override without 0x prefix is normalized (0.060667ms)
+✔ EVM ②: resolves from $ANICCA_HOME/.automaton/wallet.json when no env override (0.713666ms)
+✔ EVM ③: default-home owner (ANICCA_HOME === $HOME/.anicca) falls back to legacy $HOME/.automaton/wallet.json (0.441542ms)
+✔ EVM ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.anicca, no own wallet yet) does NOT inherit legacy -> null (0.426791ms)
+✔ EVM ③: falls back to $HOME/.automaton/wallet.json when ANICCA_HOME is unset (1.154125ms)
+✔ EVM ④ fail-closed: no override, no files anywhere -> null (never throws) (0.364458ms)
+✔ EVM fail-closed: missing HOME/ANICCA_HOME entirely -> null (never throws) (0.047875ms)
+✔ EVM fail-closed: malformed wallet.json -> null (never throws) (0.234917ms)
+✔ Solana ①: env.ANICCA_SOLANA_PRIVATE_KEY wins even when files also exist (0.617416ms)
+✔ Solana ②: resolves from $ANICCA_HOME/.automaton/solana.json when no env override (0.643583ms)
+✔ Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session (0.210833ms)
+✔ Solana ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.blockrun) does NOT inherit .solana-session -> null (0.458042ms)
+✔ Solana ④ fail-closed: no override, no files anywhere -> null (never throws) (0.270291ms)
+✔ Solana fail-closed: malformed solana.json -> null (never throws) (0.333875ms)
+✔ fresh ANICCA_HOME: EVM + Solana keys generated under it resolve back via resolve-identity (0.345041ms)
+✔ loadEvmKey ①: PKVAR-named env key wins (0.046125ms)
+✔ loadEvmKey ②: BLOCKRUN_WALLET_KEY used when no PKVAR (normalized) (0.034292ms)
+✔ loadEvmKey ③: no env key -> gated resolveEvmPrivateKey (default-home owner gets legacy) (0.452083ms)
+✔ loadEvmKey gated (#28): foreign spawn, no env key, legacy present -> null (no inheritance) (1.026541ms)
+(node:80408) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/operator/anicca/skills/_shared/lib/__tests__/solana-verify.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/operator/anicca/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ sigStatus: finalized + err:null → confirmed:true (1.360584ms)
+✔ sigStatus: confirmed + err:null → confirmed:true (0.164708ms)
+✔ sigStatus: processed (not yet confirmed) → confirmed:false (0.123833ms)
+✔ sigStatus: tx errored (err set) → confirmed:false even if finalized (0.098333ms)
+✔ sigStatus: unknown signature (value[0]=null) → confirmed:false (0.075584ms)
+✔ sigStatus: rejects a non-base58 / EVM-style hash (0.38175ms)
+✔ usdcDeltaForSig: normal inbound (pre 10 → post 60 = +50) to OUR ATA only (0.176458ms)
+✔ usdcDeltaForSig: FIRST-INBOUND (ATA created in this tx → NO pre entry) → full post amount (0.069541ms)
+✔ usdcDeltaForSig: ignores other owners and other mints in a batch tx (0.299042ms)
+✔ usdcDeltaForSig: uiAmount null → falls back to amount/10**decimals (0.126416ms)
+✔ usdcBalance: existing ATA returns uiAmount (0.676541ms)
+✔ usdcBalance: NO ATA (empty value) → 0, does not throw (0.110792ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 92.875291

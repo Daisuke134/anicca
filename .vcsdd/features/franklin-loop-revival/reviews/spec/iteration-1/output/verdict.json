@@ -1,0 +1,54 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "reviewer": "adversary",
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "convergenceSignals": { "findingCount": 5 },
+  "factualClaimsVerified": "The spec's two root-cause claims are accurate vs real code + live logs (daemon.sh:26-30/54-75/117-124, wallet-address.mjs EVM-only, balance.mjs 0x-only+Base-only, brain.mjs:58 model precedence, live 429s in daemon.err).",
+  "findings": [
+    {
+      "id": "FIND-001",
+      "dimension": "spec_fidelity",
+      "severity": "critical",
+      "category": "spec_gap",
+      "requirement": "REQ-002",
+      "issue": "verification-architecture cites porting skills/earn/funding/lib/solana_rpc.py::spl_token_balance_units (raw units, no mint constant, no decimals) to JS. Wrong citation: skills/_shared/lib/solana-verify.mjs::usdcBalance(wallet,opts) already exists, is unit-tested, uses the verified USDC mint constant, and returns 0 (not throw) on zero ATAs — exactly REQ-002's edge case. REQ-002 MUST reuse solana-verify.mjs, not port the Python."
+    },
+    {
+      "id": "FIND-002",
+      "dimension": "spec_fidelity",
+      "severity": "critical",
+      "category": "verification_tool_mismatch",
+      "requirement": "REQ-004",
+      "issue": "Neither doc addresses anicca-daemon.sh:53-75 ensure_brain unconditionally starting `franklin proxy --port 8403 --model nvidia/llama-4-maverick --no-fallback` for INSTANCE=franklin. REQ-004 never requires disabling it. Left running it's a dead/rate-limited orphan AND keeps the external franklin-proxy wallet-resolution code (source of the historical Efpap5 wrong-wallet bug) alive — which REQ-005's this-repo-only tests cannot verify. REQ-004 MUST require routing THINK to the shared ClawRouter (8402) AND disabling the 8403 franklin proxy."
+    },
+    {
+      "id": "FIND-003",
+      "dimension": "verification_readiness",
+      "severity": "critical",
+      "category": "security_surface",
+      "requirement": "REQ-003",
+      "issue": "balance.mjs:32-40 ANICCA_BALANCE_OVERRIDE env backdoor bypasses all address/RPC validation. Nothing in the spec forbids it in the production plist, so REQ-003's Done ('tier lean/funded from ledger') could be gamed by ANICCA_BALANCE_OVERRIDE=15 without implementing REQ-001/002 — the exact 'tier!=broke without real balance' loophole. Spec MUST forbid ANICCA_BALANCE_OVERRIDE in the deployed franklin plist and a PROP MUST verify the DEPLOYED daemon's real env (not the verifier's own shell)."
+    },
+    {
+      "id": "FIND-004",
+      "dimension": "spec_fidelity",
+      "severity": "medium",
+      "category": "spec_gap",
+      "requirement": "REQ-002",
+      "issue": "REQ-002 says the Solana USDC mint constant MUST be verified against a trusted source 'not guessed' but never names it, despite the exact value EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v already at solana-verify.mjs:14. Name it and cite that source."
+    },
+    {
+      "id": "FIND-005",
+      "dimension": "verification_readiness",
+      "severity": "medium",
+      "category": "test_coverage",
+      "requirement": "REQ-001",
+      "issue": "REQ-001 edge cases cover missing/empty .solana-session but not 'present but cryptographically malformed' content, which readRawSecretFile (resolve-identity.mjs:39-46) passes straight to Keypair derivation with no defined crash-vs-warn behavior. Specify the behavior + cover it."
+    }
+  ]
+}
