@@ -1,16 +1,17 @@
-# codex-review — VCSDDフェーズ内の位置づけ
+# 実装レビュー — vcsdd-adversary のみ（codex-review は廃止）
 
-開発方式の正本 = プロジェクト `CLAUDE.md`「開発の道具立て」の VCSDD フェーズ表（`vcsdd-init`→`vcsdd-spec`→`vcsdd-spec-review`→`vcsdd-tdd`→`vcsdd-impl`→`vcsdd-adversary`→`vcsdd-harden`→`vcsdd-converge`）。本ファイルは **codex-review（OpenAI Codex CLI、`vcsdd-adversary`とは別モデルによる独立視点）** がその中のどこに挟まるかだけを定義する。codex-review は `vcsdd-adversary` を置き換えない——追加の視点として重ねる。
+レビューゲートは VCSDD の fresh-context adversary（モデルは `~/.claude/CLAUDE.md` モデル分業表: Opus 4.8）に一本化する。OpenAI Codex CLI による codex-review は使わない（Dais 2026-07-08）。
 
-| VCSDDフェーズ | codex-review を挟むタイミング | 通過条件 |
+| フェーズ | レビュー | 通過条件 |
 |---|---|---|
-| `vcsdd-spec-review` | spec更新直後 | codex-review → ok: true（fresh-context adversary に加えて） |
-| `vcsdd-adversary`（実装レビュー） | 5ファイル以上の実装後、commit/PR/release前 | codex-review → ok: true + agent 自己完結 E2E green（maestro E2E or simulator/実機スクリーンショット検証、fresh evidence） |
+| `vcsdd-spec-review` | fresh adversary | blocking 0 件 |
+| `vcsdd-adversary`（実装レビュー） | fresh adversary + agent 自己完結 E2E green（maestro E2E or 実ブラウザ/実行検証、fresh evidence） | blocking 0 件 + E2E green |
 
 | ルール | 値 |
 |--------|-----|
 | blocking 1件でも | 次フェーズ進行禁止 |
 | 最大反復 | 5回 |
+| adversary は毎 iteration | fresh spawn（文脈を持ち越さない） |
 
 ## `vcsdd-adversary`/`vcsdd-converge` での Maestro判定
 
