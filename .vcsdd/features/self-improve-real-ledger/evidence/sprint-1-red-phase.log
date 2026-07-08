@@ -1,0 +1,133 @@
+new-feature-tests: FAILING
+regression-baseline: PASS
+
+=== Environment note ===
+Same rtk-hook interception as hl-realized-pnl's own RED-phase log: `python3 -m pytest` typed
+literally is intercepted by `~/.claude/hooks/rtk-hook-wrapper.sh`. Every pytest invocation below
+uses the full interpreter path (`/Users/anicca/.local/bin/python3 -m pytest ...`) to bypass it.
+Every self-improve run below executes with `ANICCA_HOME` unset (verification-architecture.md's
+documented regression execution environment, finding F-6) — confirmed via `unset ANICCA_HOME`
+before each invocation.
+
+=== 1. NEW self-improve-real-ledger tests: MUST be failing (RED) ===
+
+--- command ---
+cd /Users/anicca/anicca/.worktrees/self-improve-real-ledger/skills/earn/self-improve
+unset ANICCA_HOME
+/Users/anicca/.local/bin/python3 -m pytest tests/test_ledger_resolution.py tests/test_realized_gate.py tests/test_wiring.py tests/test_denylist_rl.py -v
+
+--- result ---
+30 failed, 7 passed in 0.27-0.34s (four separate new files, 37 new tests total)
+
+--- the 30 FAILING tests (the literal REQ-RL1-21 gap Phase 2b closes) ---
+test_ledger_resolution.py::test_resolve_ledger_path_honors_explicit_anicca_home_env
+test_ledger_resolution.py::test_resolve_ledger_path_file_relative_default_when_no_anicca_home
+test_ledger_resolution.py::test_two_distinct_anicca_home_values_never_cross_read_each_others_ledger
+test_ledger_resolution.py::test_realized_summary_resolves_fresh_per_call_no_import_time_caching
+test_ledger_resolution.py::test_realized_summary_carries_resolved_and_resolution_source_keys
+test_ledger_resolution.py::test_is_profitable_true_for_well_formed_hyperliquid_win
+test_ledger_resolution.py::test_is_confirmed_true_for_hyperliquid_confirmed_loss_but_is_profitable_false
+test_ledger_resolution.py::test_is_confirmed_true_for_evm_confirmed_loss_but_is_profitable_false
+test_ledger_resolution.py::test_is_confirmed_true_for_solana_confirmed_loss_but_is_profitable_false
+test_realized_gate.py::test_realized_window_split_even_row_count_splits_at_midpoint
+test_realized_gate.py::test_realized_window_split_odd_row_count_splits_at_midpoint
+test_realized_gate.py::test_realized_window_split_excludes_rows_outside_the_window
+test_realized_gate.py::test_is_worsening_trend_is_strictly_less_than
+test_realized_gate.py::test_realized_trend_blocks_8_combination_truth_table
+test_realized_gate.py::test_data_realism_gap_case_a_fixture_claims_edge_reality_shows_none
+test_realized_gate.py::test_data_realism_gap_case_a_does_not_fire_when_backtest_itself_non_positive
+test_realized_gate.py::test_data_realism_gap_case_b_implausible_jump_over_real_per_trade_edge
+test_realized_gate.py::test_data_realism_gap_case_b_boundary_is_strict_greater_than
+test_realized_gate.py::test_data_realism_gap_never_fires_when_insufficient_regardless_of_other_inputs
+test_realized_gate.py::test_resolved_false_blocks_promotion_unconditionally_even_with_adversary_pass
+test_realized_gate.py::test_gate_none_vacuous_pass_vs_unconditional_block_side_by_side
+test_realized_gate.py::test_last_promotion_ts_returns_the_latest_matching_commits_timestamp
+test_realized_gate.py::test_last_promotion_ts_returns_none_when_no_promotion_commit_exists
+test_realized_gate.py::test_realized_gate_escalation_json_written_with_documented_keys
+test_realized_gate.py::test_evaluate_data_source_flips_but_combined_score_stays_identical
+test_wiring.py::test_compute_realized_gate_returns_exactly_the_req_rl13a_schema
+test_wiring.py::test_promote_gate_run_wires_realized_gate_at_every_decide_promotion_call_site
+test_denylist_rl.py::test_denylist_modules_contains_every_req_rl19_new_entry
+test_denylist_rl.py::test_scan_denylisted_imports_catches_f5_bypass_direct_from_import
+test_denylist_rl.py::test_scan_denylisted_imports_catches_f5_bypass_aliased_module_usage
+
+Failure modes, by category: AttributeError (resolve_ledger_path/is_confirmed/compute_realized_gate
+don't exist on their modules yet), ModuleNotFoundError (lib.promotion_history doesn't exist as a
+file yet), TypeError (decide_promotion's current signature has no realized_gate parameter),
+AttributeError from mock.patch (lib.ledger_reader.confirmed_net_series doesn't exist, create=False
+default), and plain wrong-value assertions (is_profitable currently has no Hyperliquid disjunct at
+all so it returns False for a well-formed HL row; DENYLIST_MODULES doesn't yet contain REQ-RL19's
+new entries so the F-5 bypass strings aren't caught).
+
+--- the 7 tests that PASS already (disclosed, mirrors hl-realized-pnl CRIT-005's own precedent for
+    non-regression/invariant tests that legitimately hold before implementation exists — NOT
+    counted as violating "every new test must fail," per sprint-1.md CRIT-002/004/005's own
+    disclosure) ---
+test_ledger_resolution.py::test_is_profitable_false_when_hyperliquid_fill_tid_missing
+  (negative case: is_profitable's pre-feature code has NO Hyperliquid branch at all, so it
+  already returns False for every Hyperliquid row regardless of shape — this specific "should be
+  False" assertion is trivially satisfied both before and after Phase 2b; only the sibling
+  "should be True for a WELL-FORMED HL row" test above is the actual gap-proving assertion, and it
+  correctly fails.)
+test_ledger_resolution.py::test_is_profitable_false_when_hyperliquid_confirmed_missing
+  (same reasoning as above)
+test_ledger_resolution.py::test_is_profitable_false_when_chain_is_not_hyperliquid
+  (same reasoning as above)
+test_realized_gate.py::test_no_bare_data_source_equals_real_literal_anywhere_in_self_improve
+  (PROP-RL-EVAL2: permanent CI-style honesty safety net; nothing in the repo asserts the
+  forbidden `data_source == "real"` literal yet, since REQ-RL14 isn't implemented — disclosed
+  in sprint-1.md CRIT-005.)
+test_denylist_rl.py::test_denylist_modules_is_strict_superset_of_pre_feature_snapshot
+  (trivially true today: the current tuple IS the snapshot, zero entries dropped; stays true
+  after REQ-RL19 adds new entries — this is the "never shrink" half of PROP-RL-SAFE1, the
+  "contains every new entry" half is the sibling test above, which correctly fails.)
+test_denylist_rl.py::test_no_new_module_writes_to_earn_ledger_jsonl
+  (PROP-RL-SAFE2: static write-scan of ledger_reader.py/promotion_history.py/gate_math.py finds
+  zero earn-ledger writes today, because none of REQ-RL7-13's new functions exist yet to
+  possibly violate it — disclosed in sprint-1.md CRIT-004/CRIT-005 in the same category as
+  PROP-RL-EVAL2.)
+test_denylist_rl.py::test_no_wallet_key_reference_in_any_touched_file
+  (PROP-RL-SAFE3: same category. Note: scope_guard.py is deliberately EXCLUDED from this scan's
+  target list — its DENYLIST_MODULES tuple is SUPPOSED to contain these exact wallet-key
+  strings as denylist entries; that is a declarative block-list, never an actual "read/resolve/
+  reference" of key material. Including it produced a false-positive on the first RED run
+  against scope_guard.py's own pre-existing, unmodified denylist literals — fixed by scoping the
+  target file list to the feature's actual new/modified functional modules.)
+
+=== 2. Regression: 44 pre-existing self-improve tests MUST stay green ===
+
+--- command ---
+cd /Users/anicca/anicca/.worktrees/self-improve-real-ledger/skills/earn/self-improve
+unset ANICCA_HOME
+/Users/anicca/.local/bin/python3 -m pytest tests/test_adversary_disapprove.py tests/test_baseline_beat.py tests/test_denylist_reject.py tests/test_heldout_regress.py tests/test_ledger_reader.py tests/test_reward_hacking_tripwire.py tests/test_risk_adjusted_fitness.py -q
+
+--- result ---
+44 passed in 0.05s
+
+(Cross-check: `pytest tests -q` over the WHOLE tests/ directory, new files included, reports
+"30 failed, 51 passed" — 51 = 44 pre-existing + 7 new-but-already-passing invariant tests
+disclosed above, confirming no pre-existing test regressed.)
+
+=== 3. Regression: 42 hl-trade tests (unrelated feature, blast-radius sanity check) ===
+
+--- command ---
+cd /Users/anicca/anicca/skills/earn/hl-trade
+/Users/anicca/.local/bin/python3 -m pytest tests -q
+
+--- result ---
+41 passed, 1 skipped in 0.02s
+(the 1 skip is test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_key, documented reason:
+hyperliquid-python-sdk is only installed in hl-trade's own dedicated .venv, not this session's
+system Python — same skip hl-realized-pnl's own sprint-1 RED-phase run already documented; the
+static-grep sibling test for the same REQ-A1 assertion is not skipped and passes.)
+
+=== 4. Regression: ledger.test.mjs (12) + ledger.test.js (9) ===
+
+--- command ---
+cd /Users/anicca/anicca/skills/_shared/lib/__tests__
+node --test ledger.test.mjs ledger.test.js
+
+--- result ---
+tests 21
+pass 21
+fail 0
