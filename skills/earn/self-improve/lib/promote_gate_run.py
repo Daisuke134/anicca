@@ -236,8 +236,12 @@ def main(argv: list) -> int:
 
     # REQ-RL17: compute realized_gate ONCE, pass it to EVERY decide_promotion call site below —
     # never a hardcoded literal/stub, always sourced from this instance's own resolved ledger.
+    # mean_backtest_net_usd MUST be the DOLLAR-scale mean_oos_net_usd (REQ-RL11), never the
+    # unitless combined_score risk-adjusted ratio (F-1, Phase-3 impl review iteration 1) — it is
+    # None for a scope-guard-rejected/stage1-failed candidate, which compute_realized_gate handles
+    # None-safely (realism_gap_blocks stays False; every other key still computes normally).
     realized_gate = promote_gate.compute_realized_gate(
-        mean_backtest_net_usd=assessment["combined_score"], repo_cwd=repo_root
+        mean_backtest_net_usd=assessment["mean_oos_net_usd"], repo_cwd=repo_root
     )
     with open(os.path.join(run_dir, "realized_gate.json"), "w", encoding="utf-8") as f:
         json.dump(realized_gate, f, indent=2, default=str)
