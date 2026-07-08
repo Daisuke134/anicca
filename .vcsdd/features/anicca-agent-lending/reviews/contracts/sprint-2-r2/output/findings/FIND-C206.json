@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C206",
+  "dimension": "verification_readiness",
+  "category": "citation_drift",
+  "severity": "minor",
+  "blocking": false,
+  "description": "The manifest's own contractDigest ('6ecb3532cbfc4c4b8f242807b6c9ed4d403d8b3d5c4f8892ee7a5471888c6c27') does not match the actual sha256 of contracts/sprint-2.md as currently found on disk (independently computed this round via `shasum -a 256 contracts/sprint-2.md`: 'c26d8907d637f4deb6aa0e234013f1078ead641cb449e27e07438a2fa3ae2090'). This is the SECOND consecutive round this has happened -- round 1's own FIND-C205 flagged the identical class of defect (that round's manifest digest also didn't match) and the round-1 note characterized this round's manifest digest as 'freshly computed ... should be accurate now'. It is not. Independently confirmed via `git status`/`git diff HEAD` that the working tree has zero uncommitted changes to contracts/sprint-2.md (it is exactly the version committed at a10af733f, 'contract review round 1 FAIL -- resolve FIND-C201/C202', 2026-07-08 14:18:22 +0900) -- so this is not a case of the file changing after the digest was computed; the digest-computation step itself is simply not being wired correctly into whatever process generates these manifests. Non-content, process-only defect -- the actual artifact reviewed this round (the current, complete contracts/sprint-2.md, including all round-1 fixes) is unambiguous regardless of the stale digest field.",
+  "evidence": {
+    "filePath": "reviews/contracts/sprint-2-r2/input/manifest.json",
+    "lineRange": "7",
+    "snippet": "\"contractDigest\": \"6ecb3532cbfc4c4b8f242807b6c9ed4d403d8b3d5c4f8892ee7a5471888c6c27\""
+  },
+  "crossCheck": {
+    "filePath": "contracts/sprint-2.md",
+    "lineRange": "1-215 (whole file, actual sha256 c26d8907d637f4deb6aa0e234013f1078ead641cb449e27e07438a2fa3ae2090)",
+    "note": "Computed via `shasum -a 256 contracts/sprint-2.md` against the file as currently committed (commit a10af733f) on ~/anicca-project's working tree this session, confirmed clean via `git status`/`git diff HEAD` (zero pending changes) -- does not match the manifest's recorded digest. Also checked an alternate hypothesis (digest computed over only the YAML frontmatter block, lines 1-43) -- that also does not match ('bc8e3c0f...')."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "Fix the digest-generation step in whatever tooling produces these contract-review manifests so it actually recomputes sha256 against the current file at manifest-write time, rather than carrying forward a stale/mis-scoped value across rounds. This is now a repeated pattern (FIND-C205 round 1, FIND-C206 round 2) worth root-causing once rather than re-flagging every round. Does not block this round's verdict -- the content actually reviewed this round is the current, complete, correct contracts/sprint-2.md."
+}

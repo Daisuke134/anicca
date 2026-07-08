@@ -1,0 +1,30 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 2,
+  "negotiationRound": 1,
+  "iteration": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "6ecb3532cbfc4c4b8f242807b6c9ed4d403d8b3d5c4f8892ee7a5471888c6c27",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs"],
+    "source": ["skills/economy/lending/lib/lending-orchestrator.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRound": {
+    "round": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/contracts/sprint-2/output/findings/",
+    "findings": [
+      "FIND-C201 (CRIT-205): the 19 deferred PROP IDs' passThreshold literally required post-Phase-3/5 promotion, mis-scoped for this gate -- fixed by re-scoping to a readiness check (call site exists and is reachable), same fix already applied to anicca-agent-spawn sprint-2's own CRIT-205.",
+      "FIND-C202 (CRIT-206, critical): state.json's PROP-108a entry (PROP-025) was status:proved/required:true despite the contract's own disposition section already correctly deferring it -- a stale citation of sprint-1's own pre-orchestrator harness (direct verifyRepayment call, loanRows:[], zero orchestrator involvement) -- a borrowed-artifact violation. Fixed: state.json corrected to status:skipped/required:false, and the contract's disposition section got a correction note documenting this.",
+      "FIND-C203 (CRIT-203, major): step 7 (decideLoan sizing refusal) had no failure-injection test among the 9-step matrix -- fixed by adding one new test (commit 9421ebd), 120/120 tests now pass."
+    ],
+    "nonBlockingNotes": [
+      "FIND-C204: a raw successfulOnTimeRepayments===0 comparison in evaluateKillSwitches technically reads outside CRIT-202's literal passThreshold text, though it verbatim mirrors REQ-105's own already-hardened spec text -- not new judgment logic. Left as-is; re-check if you believe it's actually a problem.",
+      "FIND-C205: prior manifest's contractDigest was stale (predated the Phase 2c refactor note commit) -- this manifest's own digest is freshly computed against the current file, should be accurate now."
+    ]
+  },
+  "note": "Verify all 3 blocking-round fixes independently: (1) re-read CRIT-205's revised description/passThreshold and confirm it's now genuinely evaluable at this gate (readiness, not promotion) without weakening the eventual promotion requirement (which vcsdd-harden's own standard gate independently enforces before Phase 6). (2) Independently confirm state.json's PROP-025 (PROP-108a) is now status:skipped/required:false, and read the contract's own disposition section correction note for accuracy. (3) Confirm the new step-7 test (added in commit 9421ebd) genuinely exercises a sizing refusal and asserts zero rows appended, consistent with the other pre-lock/in-lock refusal step tests' own shape. Independently re-run 'cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs' yourself and confirm 120/120 pass (89 pre-existing + 30 sprint-2 + 1 new step-7 test). Also do one more fresh skeptical pass over all 7 CRIT criteria and the two implementation notes (kill-switch tie-break, sweep yield) since this is a genuinely new full re-read, not just a diff review."
+}
