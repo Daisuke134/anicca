@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 feature: anicca-agent-lending
 sprintNumber: 3
 negotiationRound: 0

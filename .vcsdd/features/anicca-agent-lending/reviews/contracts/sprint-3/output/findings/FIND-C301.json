@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C301",
+  "dimension": "verification_readiness",
+  "category": "citation_drift",
+  "severity": "minor",
+  "blocking": false,
+  "description": "The manifest's own contractDigest ('5c797527cee6ddeb4c7828e397376760fa3539081ae92245e32df42d41b111fb', reviews/contracts/sprint-3/input/manifest.json) does not match the actual sha256 of contracts/sprint-3.md as currently found on disk (independently computed this round via `shasum -a 256 contracts/sprint-3.md`: '4da71b7da42f8301e73e0b8e2ac5b94856a3cb231377dc0d3c8c2979c14f320b'). This is the THIRD occurrence of this exact defect class across this feature's own contract-review history: sprint-1's manifest digest ('e99e7ed4c1265a63df1e5955e8b62f6894adc21872770461c5660101d2f75ddb') also did not match sprint-1.md's real sha256 ('e995dd7df90034e8569c9979d786c5198a358a030ac8cc75e3790ea6e5e5db66'), and sprint-2-r2's own FIND-C206 flagged the identical class for sprint-2.md. Independently confirmed via `git status --porcelain -- contracts/sprint-3.md` (clean, zero pending changes) and `git log -1` (last committed 2026-07-08 18:22:56 +0900, commit 30dd29fb3e54fc3f08243be9d0f8173ad9dc0758) that this is not a case of the file changing after the digest was computed -- the digest-generation step itself is simply not being wired correctly into whatever process writes these manifests. Also checked and ruled out the frontmatter-only-digest hypothesis (sha256 of just the YAML block between the two leading '---' lines): that produces a THIRD, still-different value ('ae4a83a060a35cf1de6b0aaa3e9c4cd662b98e2248b9fe861a8c63d9492394fa'), so the mismatch is not merely a scope difference either. Non-content, process-only defect -- the actual artifact reviewed this round (the current, complete, committed contracts/sprint-3.md) is unambiguous regardless of the stale/incorrect digest field, and every CRIT-301..305 passThreshold was independently verified against the real current source, not against the contract's own prose.",
+  "evidence": {
+    "filePath": "reviews/contracts/sprint-3/input/manifest.json",
+    "lineRange": "5",
+    "snippet": "\"contractDigest\": \"5c797527cee6ddeb4c7828e397376760fa3539081ae92245e32df42d41b111fb\""
+  },
+  "crossCheck": {
+    "filePath": "contracts/sprint-3.md",
+    "lineRange": "1-193 (whole file, actual sha256 4da71b7da42f8301e73e0b8e2ac5b94856a3cb231377dc0d3c8c2979c14f320b)",
+    "note": "Computed via `shasum -a 256 contracts/sprint-3.md` against the file as currently committed (commit 30dd29fb3e54fc3f08243be9d0f8173ad9dc0758) on ~/anicca-project's working tree this session, confirmed clean via `git status --porcelain` (zero pending changes) -- does not match the manifest's recorded digest, and does not match a frontmatter-only recomputation either. Third consecutive occurrence of this exact defect class (sprint-1, sprint-2-r2/FIND-C206, now sprint-3-round-1)."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "Root-cause the digest-generation step in whatever tooling produces these contract-review manifests -- it has now produced a wrong contractDigest in every one of the three rounds where this was independently checked (sprint-1, sprint-2-r2, sprint-3-r1). Worth fixing once at the source rather than re-flagging every round. Does not block this round's verdict -- the content actually reviewed this round is the current, complete, correctly-committed contracts/sprint-3.md, read and verified directly."
+}

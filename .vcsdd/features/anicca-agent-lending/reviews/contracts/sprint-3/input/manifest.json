@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 3,
+  "contractPath": "contracts/sprint-3.md",
+  "contractDigest": "5c797527cee6ddeb4c7828e397376760fa3539081ae92245e32df42d41b111fb",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/economy/lending/lib/__tests__/wake-gate.test.mjs", "~/anicca/skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs"],
+    "source": ["~/anicca/skills/economy/lending/run.sh", "~/anicca/skills/economy/lending/scripts/wake-gate.mjs", "~/anicca/skills/registry.json"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Sprint-3 contract review, round 1. This sprint's ONLY scope is REQ-117 (the autonomous daemon-wake entry point for economy/lending -- run.sh + scripts/wake-gate.mjs + registry.json slot), closing a gap where sprint-1/2's fully-tested orchestrator (executeLoanIssuanceAttempt/executeDefaultDetectionSweep) had no live caller. This went through 6 rounds of spec review (FIND-1001..1007) before implementation, and the delivered code (commit ccef6ee480add1f7e3d670fab53a12fbfb07339e) claims to close all of them. Fresh-context review: verify every CRIT criterion's passThreshold against the REAL current source (do not trust the contract's own prose), independently run the tests yourself, and specifically re-verify the FIND-1004/1006 getCitizen full-record-spread discipline (CRIT-302) and the FIND-1001 exit-code divergence (CRIT-303) since these were the hardest-won, most-corrected pieces of this scope."
+}

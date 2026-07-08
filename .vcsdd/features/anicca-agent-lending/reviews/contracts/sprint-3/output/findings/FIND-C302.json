@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C302",
+  "dimension": "spec_fidelity",
+  "category": "residual_data_invariant",
+  "severity": "minor",
+  "blocking": false,
+  "description": "buildDefaultGetCitizen's closure (scripts/wake-gate.mjs:56-64) computes `await usdcBalance(citizen.walletAddress.evm, { fetchImpl })` for every candidate citizen (those passing isCandidateCitizen's `citizen.wallet.evm === true` filter). This access pattern is EXACTLY what REQ-117 step 4's own hardened spec text specifies verbatim (behavioral-spec.md line 2565: 'fetches that citizen's REAL Base-mainnet USDC balance via ... usdcBalance(citizen.walletAddress.evm)'), so the code faithfully implements the spec -- this is NOT a CRIT-302 violation (the full-record-spread discipline itself is genuinely correct, verified separately). However, independently grepping self/spawn/lib/citizens-registry.mjs for any schema/validation step found no enforcement that a registry record with `wallet.evm === true` always also carries a populated `walletAddress.evm` field. If a malformed/partial registry record ever had `wallet.evm: true` without `walletAddress.evm`, `citizen.walletAddress.evm` would be `undefined`, and usdcBalance's own `ADDR_RE.test(wallet)` check (skills/_shared/lib/usdc.mjs:11-13) would throw `usdc: not an address: undefined` -- an uncaught exception surfacing as this wake's own top-level `.catch` (exit 1), rather than a clean per-citizen skip. This is a pre-existing data-shape assumption inherited from REQ-107 (sprint-1/2, already converged and out of this sprint's own stated scope -- sprint-3 'adds NO new eligibility/sizing/servicing behavior of its own'), not a defect introduced by this sprint's wake-gate.mjs, and REQ-117's own spec text went through 6 rounds of adversarial spec review without this being raised. Recorded here as a non-blocking, out-of-scope observation per the review brief's own request to sweep for anything the hardened spec might still miss -- not litigating REQ-117's own already-converged correctness.",
+  "evidence": {
+    "filePath": "skills/economy/lending/scripts/wake-gate.mjs",
+    "lineRange": "56-64",
+    "snippet": "function buildDefaultGetCitizen({ citizensRegistryFile, fetchImpl }) {\n  return async (id) => {\n    const citizens = readCitizensRegistry(citizensRegistryFile);\n    const citizen = citizens.find((c) => c && c.id === id);\n    if (!citizen) return null;\n    const balanceUsd = await usdcBalance(citizen.walletAddress.evm, { fetchImpl });\n    return { ...citizen, balanceUsd };\n  };\n}"
+  },
+  "crossCheck": {
+    "filePath": "skills/self/spawn/lib/citizens-registry.mjs",
+    "lineRange": "whole file",
+    "note": "grep for 'walletAddress|wallet.evm|schema|validate' returns zero hits -- no schema-level enforcement anywhere in the registry bootstrap that wallet.evm===true implies a populated walletAddress.evm. Today's real registry (single Solana-only citizen, per contract's own 'Known residual scope boundary' section) never reaches this code path, so it is not currently live-triggerable."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "No action required for this sprint's own contract. If a future sprint (e.g. anicca-agent-spawn REQ-301's own child-spawn flow) can produce a citizen record with wallet.evm===true but no walletAddress.evm, consider adding a defensive registry-shape check either at spawn-time (citizens-registry.mjs) or as an explicit, documented fail-closed guard in isCandidateCitizen -- worth a note in a future sprint's own Dependencies section, not a fix to this sprint's delivered files."
+}

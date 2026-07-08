@@ -1,0 +1,55 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 6,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-6, 6th round on this exact REQ-117/PROP-117 scope. Independently re-verified iteration-5's FIND-1007 fix (verification-architecture.md's PROP-117c row, line 192, previously lagging one iteration behind behavioral-spec.md's REQ-117 step-6 getCitizen correction) via three checks: (1) full read of PROP-117c's own current row text confirmed it now states the SAME `{...registryCitizen, balanceUsd}` full-record-spread discipline as REQ-117 step 6, verbatim in substance, including an explicit self-documenting note that this row's own text previously lagged and FIND-1007 closed that gap -- no remaining discrepancy in wording or substance found. (2) A fresh, throwaway Node script (not reused from any prior iteration) built a getCitizen closure exactly per PROP-117c's OWN new wording -- `{...registryCitizen, balanceUsd}` over a realistic, fully-populated citizen record matching the real registry schema (id/wallet.evm/walletAddress.evm/fuel.provider/humanDependencies/coLocatedWithCoordinator, mirroring citizens.seed.json's real shape) -- and called the REAL, unmodified `executeLoanIssuanceAttempt` from `~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs` against a fixture-3-style broke-borrower/surplus-lender pair. Result: `{\"status\":\"active\",\"loanId\":\"loan_lenderA_1\"}` -- zero missing-field refusal, confirming PROP-117c's own current text is not merely updated cosmetically but genuinely produces the correct, passing behavior when followed literally. (3) A full-document sweep of BOTH specs/behavioral-spec.md's entire REQ-117 section (lines 2502-2822, EARS clause through Acceptance Criteria) and specs/verification-architecture.md's PROP-117a/b/c/d rows plus every other REQ-117/PROP-117 mention in the Purity Boundary Map (`wake-gate.mjs`'s own row, line ~542) and the Gate section (item 13, lines 542-563) found no remaining stale paraphrase, cross-reference mismatch, or internal contradiction -- every other getCitizen mention in behavioral-spec.md (11 occurrences, lines 2533-2784) is internally consistent with the REQ-117 step-6 contract, and no contracts/ file (sprint-1.md, sprint-2.md; no sprint-3.md yet, as expected pre-Phase-2c) contains any independent paraphrase of the getCitizen shape. Genuinely clean this round -- the FIND-1001->1002->1003->1004/1005->1006->1007 chain is now closed at both its root-cause level (behavioral-spec.md) and its documentation-sync level (verification-architecture.md), with no third location found to lag."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/verification-architecture.md line 192 (PROP-117c) vs specs/behavioral-spec.md lines 2611-2626 (REQ-117 step 6)",
+          "description": "Both documents now state the identical getCitizen contract in substance: the full real citizen registry record spread, plus a fresh balanceUsd field merged on top (`{...registryCitizen, balanceUsd}`), never a hand-enumerated literal shape. PROP-117c's own text additionally documents its own prior lag and the FIND-1007 correction inline, making the sync explicit and self-auditing rather than merely silently fixed."
+        },
+        {
+          "type": "test-output",
+          "location": "fresh throwaway script this review, /private/tmp/claude-501/.../scratchpad/verify-prop117c.mjs, executed against the real unmodified lending-orchestrator.mjs",
+          "description": "getCitizen built literally per PROP-117c's own current wording (`{...registryCitizen, balanceUsd}` over a realistic full citizen record) -> `{\"status\":\"active\",\"loanId\":\"loan_lenderA_1\"}`. Zero missing-field refusal -- confirms PROP-117c's current text, followed faithfully, produces the correct outcome (unlike iteration-5's reproduction of the pre-fix text, which produced `{\"status\":\"refused\",\"reason\":\"not_self_funded\"}`)."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/verification-architecture.md PROP-117a/b/c/d (lines 190-193), Purity Boundary Map wake-gate.mjs row, Gate item 13 (lines 542-563)",
+          "description": "PROP-117c is now genuinely ready to drive Phase 2a's fixture-3 test construction: a test-author following its current literal text will build a getCitizen stub that reaches status:active, not the prior silent-refusal trap. PROP-117a/b/d were independently re-read in full and remain sound, unaffected by this round's change, with no new inconsistency introduced. The Purity Boundary Map's own wake-gate.mjs row and the Gate section's item 13 both reference PROP-117c generically without independently restating the getCitizen shape, so neither is a second location that could lag out of sync in the future the way PROP-117c itself once did."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "Iteration-5's FIND-1007 (documentation-sync gap: PROP-117c lagged one iteration behind REQ-117 step 6) is genuinely closed. This is the 6th review round on this exact getCitizen-contract scope, spanning FIND-1001/1002 (test-injection seam) -> FIND-1003 (missing deps.getCitizen wiring) -> FIND-1004/1005 (partial field-list fix, enumeration incomplete) -> FIND-1006 (root-cause fix: full-record-spread, not enumeration) -> FIND-1007 (sibling-document sync gap) -> this iteration (independently re-verified via live execution + full sweep, genuinely clean). No new finding this round. Recommend proceeding to Phase 2a (TDD) for this scope; the getCitizen contract is now stated once, consistently, correctly, and self-documented in both of its textual homes."
+  }
+}

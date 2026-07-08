@@ -1,0 +1,147 @@
+{
+  "sprintNumber": 3,
+  "feature": "anicca-agent-lending",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T18:40:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-3.md",
+    "contractDigest": "5c797527cee6ddeb4c7828e397376760fa3539081ae92245e32df42d41b111fb"
+  },
+  "dimensions": [
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/run.sh:32",
+          "description": "Independently read the full 32-line file. Its final line is exactly `exec \"$NODE\" \"$SKILL_DIR/scripts/wake-gate.mjs\" \"$@\"` with no relational/threshold comparison anywhere in the file -- confirms CRIT-301's run.sh claim verbatim. Also executable (`ls -la` shows `-rwxr-xr-x`)."
+        },
+        {
+          "type": "file",
+          "location": "repo-wide grep (excluding node_modules) for executeLoanIssuanceAttempt/executeDefaultDetectionSweep/executeRepaymentClaim",
+          "description": "executeLoanIssuanceAttempt: defined once in lending-orchestrator.mjs, imported+called from exactly one production file (scripts/wake-gate.mjs:24,133), all other hits are test files. executeDefaultDetectionSweep: identical pattern (wake-gate.mjs:24,149). executeRepaymentClaim: defined once in lending-orchestrator.mjs, ZERO production call sites anywhere -- only its own definition and test-file references. Confirms CRIT-301's single-call-site and zero-call-site claims exactly, independently re-derived by direct repo-wide grep, not merely re-running the test."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/registry.json slots['economy/lending']",
+          "description": "Direct read of the live registry.json confirms status:'live', dir:'skills/economy/lending', entrypoint:'run.sh' exactly as claimed. `git show ccef6ee480add1f7e3d670fab53a12fbfb07339e -- skills/registry.json` confirms the diff is exactly +11 lines, the new economy/lending block only -- no other slot touched (verified byte-for-byte via git show, not merely trusting the contract's own prose)."
+        },
+        {
+          "type": "file",
+          "location": "runtime/loop/prompt.mjs::liveSlotNames, runtime/loop/earn-slot.mjs::earnSkillRelPath, runtime/loop/index.mjs::runSkillWithKillRef",
+          "description": "Independently read all three real resolution-chain files (not merely re-running PROP-117b's own test). liveSlotNames requires status==='live' to include a slot (prompt.mjs:32-36). earnSkillRelPath('economy/lending') is not in EARN_ACTION and does not start with 'earn/', so returns 'economy/lending/run.sh' unchanged (earn-slot.mjs:6,30-33). index.mjs's real runSkillWithKillRef (line 494) computes `path.join(ANICCA_HOME, 'skills', ...rel.split('/'))`, which resolves to the SAME real run.sh file this sprint delivered. Confirms CRIT-301's registry-resolution claim against real production code, not a self-referential test."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/scripts/wake-gate.mjs (exitCode sites)",
+          "description": "Grepped the full file for 'exitCode': exactly one hit, line 170, inside the top-level `.catch((e) => {...})` handler. The `.then((result) => {...})` success handler (lines 165-167) contains no status-based check of any kind. Cross-checked self/spawn/scripts/wake-gate.mjs's own convention: that sibling file has TWO exitCode=1 sites (lines 188 `if (result.status !== \"active\") process.exitCode = 1` and 193 in its own catch) -- confirming this feature's file genuinely, deliberately diverges as CRIT-303 claims, not merely asserts. Confirms CRIT-303 exactly."
+        }
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/scripts/wake-gate.mjs:56-64 (buildDefaultGetCitizen)",
+          "description": "Read the full closure. Its final line is exactly `return { ...citizen, balanceUsd };` -- a full object-spread of `citizen = citizens.find((c) => c && c.id === id)`, never a hand-enumerated literal shape. `citizens` itself is produced by `readCitizensRegistry(citizensRegistryFile)` called FRESH INSIDE the returned async closure on every single invocation (not hoisted/cached outside it, not memoized) -- confirmed by direct read that no caching variable exists anywhere in the enclosing scope. This satisfies the 'never a stale snapshot' requirement even across multiple getCitizen(id) calls within the same wake (step 4's population loop AND step 6's internal re-check inside executeLoanIssuanceAttempt each independently re-read the registry and re-fetch the balance)."
+        },
+        {
+          "type": "test-output",
+          "location": "node --test skills/economy/lending/lib/__tests__/wake-gate.test.mjs (run independently this round)",
+          "description": "Independently re-ran the named test \"PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wake selects the correct pair and executeLoanIssuanceAttempt genuinely returns {status:\\\"active\\\"}, never \\\"refused\\\"\" -- PASSED. This fixture exercises wake-gate.mjs's own INTERNAL getCitizen closure (built from citizensRegistryFile + fetchImpl, not a test override), so a pass here is direct proof the production closure genuinely returns a complete record, not merely that a hand-crafted test double does."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/scripts/wake-gate.mjs (ANICCA_ARGS + comparison operators)",
+          "description": "Grepped the full file for ANICCA_ARGS: zero hits. Enumerated every relational/equality operator in the file: outside findSelectedPair, all are structural/type/identity checks (isCandidateCitizen's typeof/wallet.evm!==true/coLocatedWithCoordinator===true, lenderId===borrowerId pair-identity exclusion, the CLI entrypoint's own path.resolve===fileURLToPath self-invocation check) -- none is a re-derived balance/rate/count arithmetic comparison. Inside findSelectedPair, the ONLY two are `lenderAvailableUsd > 0` (computeLenderAvailableUsd's own unmodified return value) and `borrowerEligibility.eligible === true` (isBorrowerEligible's own unmodified return value), combined via a single `&&`. Confirms CRIT-304 exactly."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:2565 vs scripts/wake-gate.mjs:61",
+          "description": "Non-blocking observation recorded as FIND-C302: getCitizen's `usdcBalance(citizen.walletAddress.evm, ...)` access assumes wallet.evm===true implies a populated walletAddress.evm; this is exactly what REQ-117 step 4's own hardened spec text specifies verbatim, and self/spawn/lib/citizens-registry.mjs has no schema enforcing that invariant. Judged out-of-scope for this sprint (pre-existing REQ-107 assumption, already converged; sprint-3 adds no new eligibility/sizing behavior of its own) and not currently live-triggerable (today's real registry has zero EVM-walleted citizens) -- does not block this dimension."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "lib/__tests__/wake-gate.test.mjs:119-148 (fixture 1) and :157-169 (fixture 2)",
+          "description": "Independently read both fixtures. Fixture 1 seeds TWO Solana-only citizens (both otherwise self-funded/co-located) -- isolates the wallet.evm-exclusion path from the single-citizen impossibility, asserting selectedPair:null, issuance:null, candidatesConsidered:0, sweep still ran. Fixture 2 seeds exactly ONE fully-qualifying EVM citizen -- isolates the lenderId!==borrowerId impossibility from the wallet.evm-exclusion path, asserting the SAME zero-candidate outcome via the distinct code path. Confirms verification-architecture.md's own Phase-3 gate text (lines 552-559) requiring BOTH independently-sufficient reasons to be exercised as separate fixtures, not conflated -- matches REQ-117's own Edge Cases text (behavioral-spec.md:2728-2746) honestly stating both reasons."
+        },
+        {
+          "type": "test-output",
+          "location": "node --test (this session)",
+          "description": "All 5 wake-gate.test.mjs tests and all 6 wake-gate-structural.test.mjs tests independently re-run and PASSED, including fixture 3 (correct-pair-selection to a genuine 'active' outcome) and the deps.getCitizen-override wiring test (a SEPARATE concern from fixture 3, proving wiring correctness independent of closure construction)."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:2755-2762 (usdcBalance RPC-failure edge case)",
+          "description": "Confirmed by direct code read that step 4's balance-fetch loop (wake-gate.mjs:118-124) performs no try/catch around `getCitizen(id)` -- a thrown RPC error propagates up through runWakeGate to the CLI entrypoint's own top-level .catch, setting exit 1 -- matching the spec's own 'propagates as a genuine in-process error... THE SYSTEM SHALL NOT silently treat a failed balance fetch as $0' requirement, and never a partial/durable write before step 6."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/scripts/wake-gate.mjs (full 172-line read)",
+          "description": "Read the entire file end-to-end. runWakeGate's 9-step body genuinely matches REQ-117's own canonical order: step1 ensureCitizensRegistry+read, step2 readChildren(ledgerFile), step3 readGojoLogRows, step4 candidate filter + getCitizen population, step5 findSelectedPair, step6 at-most-one executeLoanIssuanceAttempt call with the real 2-argument (params, deps) shape (deps includes getCitizen/gojoLogRows/reconcile/disburse, resolving the FIND-1003 TypeError this sprint's spec text documents), step7 unconditional executeDefaultDetectionSweep, step8 executeRepaymentClaim genuinely never invoked, step9 return shape {candidatesConsidered, selectedPair, issuance, sweep} matches spec exactly."
+        },
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs (run independently this round, full raw output inspected)",
+          "description": "Independently executed the exact command myself. Result: tests 131, suites 0, pass 131, fail 0, cancelled 0, skipped 0, todo 0, duration_ms 773.78. Matches CRIT-305's claimed 131/131 exactly -- 120 pre-existing (sprint-1/sprint-2) + 11 new this sprint (5 wake-gate.test.mjs + 6 wake-gate-structural.test.mjs), independently verified by counting the new test titles in both files against the raw pass output, not accepted from the contract's own log."
+        },
+        {
+          "type": "file",
+          "location": "commit ccef6ee480add1f7e3d670fab53a12fbfb07339e (git show --stat)",
+          "description": "Confirmed the delivered commit touches exactly 5 files (wake-gate-structural.test.mjs, wake-gate.test.mjs, run.sh, scripts/wake-gate.mjs, registry.json), 665 insertions, 0 deletions -- no self/spawn file is touched, confirming this REQ makes zero modification to anicca-agent-spawn's own files as PROP-117d's own Phase-3 gate text (verification-architecture.md:562-566) requires. Also confirmed self/spawn/scripts/wake-gate.mjs's own defaultFetchEvmBalanceUsd (line 79) remains a plain, non-exported `async function` -- genuinely private, matching the spec's own stated reason for using `_shared/lib/usdc.mjs::usdcBalance` instead."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs",
+          "description": "Adversary (this review) independently ran the full target-feature test suite itself this round, exit code 0, 131/131 passing, 0 fail/cancelled/skipped/todo -- satisfies CRIT-305's explicit 'not accepted from the builder's own log' requirement."
+        },
+        {
+          "type": "file",
+          "location": "reviews/contracts/sprint-3/input/manifest.json vs contracts/sprint-3.md",
+          "description": "Non-blocking process note, recorded as FIND-C301 (third consecutive occurrence of this defect class across this feature's contract-review history, after sprint-1 and sprint-2-r2/FIND-C206): the manifest's own contractDigest does not match the actual sha256 of contracts/sprint-3.md as currently committed (clean working tree, confirmed via git status/git log). Does not affect the substantive review -- the current, complete, correctly-committed contract text was read directly and is unambiguous, and every CRIT criterion was independently re-verified against the real current source rather than the contract's own prose."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-301",
+      "CRIT-302",
+      "CRIT-303",
+      "CRIT-304",
+      "CRIT-305"
+    ],
+    "duplicateFindings": []
+  }
+}
