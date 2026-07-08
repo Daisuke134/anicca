@@ -107,6 +107,22 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 - **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限・資本上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録 / 資本増額は on-chain 検証済み realized profit の範囲内。
 - 「1アカウントの clipping」→「数百アカウントの clipping factory」も、「PM の勝ち戦略に資本を寄せる」も、同一の allocator+registry+gate が担う。
 
+## Article loop（Dais 2026-07-08: 一度切ったが検証込みで再建）
+
+過去の記事投稿は「検証が皆無で効果が分からなかった」ため停止した。再建の条件 = **投稿の存在確認 + metrics 追跡 + EDD を最初から装着**。作成・公開の skill は既に全揃い（ai-entity-article-writer = note/Zenn/Substack/X Articles/dev.to を日英でカバー、+ x-article-publisher / substack-article / auto-article-poster）。足りないのは loop 化（cadence + verify + evaluator + mail）だけ。
+
+| 項目 | 仕様（MUST） |
+|---|---|
+| artifact | 各プラットフォームの公開 URL（note / Zenn / Substack / X Articles / dev.to、日英両方） |
+| cadence | 1記事/N日（N は agent が市場を見て決める、下限は週1）。当日 cadence は「今日 publish したか」 |
+| 存在確認（self-heal の bar） | 公開直後に URL を実際に開いて記事本文が表示されるか確認（HTTP 200 だけでは不可、本文トークン照合）。note/Substack=browser 実読、dev.to=公開 API、X Articles=browser |
+| metrics（self-improve の bar） | プラットフォーム別に views / likes / 有料購読者増 / スキ・フォロワー増を実測（note=browser、Substack=dashboard、dev.to=Forem API の reactions/page_views、X=browser or X API）→ `article-metrics.jsonl` |
+| evaluator | 週次 score = Σ(views×重み + follower増 + 有料化収益)。「今週>先週」を機械判定 |
+| mail evidence | 全プラットフォームの公開 URL + 実測 views + 収益。空なら `none: 理由` |
+| lessons | どのトピック/形式/プラットフォームが伸びたかを lessons.jsonl に記録し次記事の選定に反映 |
+
+判断（次に何を書くか、どのプラットフォームを厚くするか）は agent、公開・存在確認・metrics 取得・記帳は決定論ツール。
+
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 
 現状の founder-loop は「自分の ledger に earn を記録し目標達成を確認するだけ」の狭い記録ループ（record-earn.mjs を叩くだけ）で、CEO ではない。これを **会社（company）** に再構成する。各 earn loop = 自分の事業だけを改善する business manager。その上に CEO と explorer を置く。
