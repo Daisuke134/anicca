@@ -2,7 +2,7 @@
   "featureName": "anicca-agent-lending",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "3",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -176,11 +176,18 @@
       "timestamp": "2026-07-08T09:31:05.050Z",
       "reason": "Sprint-3 contract review round-1 PASS (all 5 dimensions, 2 non-blocking minor findings FIND-C301/C302 explicitly marked blocking:false, recorded separately in reviews/contracts/sprint-3/output/findings/). contracts/sprint-3.md approved.",
       "sprint": 3
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-08T09:39:23.935Z",
+      "reason": "Phase 3 PASS -> Phase 5 formal hardening (promote PROP-117a/b/c/d to proved).",
+      "sprint": 3
     }
   ],
   "iterations": {
     "3": 3,
-    "5": 2,
+    "5": 3,
     "6": 1,
     "1a": 3,
     "1b": 3,
@@ -2124,12 +2131,11 @@
   "gates": {
     "3": {
       "verdict": "PASS",
-      "timestamp": "2026-07-07T16:31:55.096Z",
+      "timestamp": "2026-07-08T09:39:23.930Z",
       "reviewedBy": "adversary",
       "details": {
-        "sprint": 1,
-        "round": 2,
-        "note": "Round 1 FAILed with 2 findings (FIND-901 high, FIND-902 critical), both fixed (commit 46eb1e1, new PROP-101g/PROP-108f). Round 2 independently re-executed the full 79/79 test suite, reproduced both fixes empirically via standalone repro scripts, re-verified all 9 sprint-1 CRIT criteria, probed further money-safety/robustness edge cases, and re-confirmed the Known residual scope boundary (no issuance orchestrator exists yet) remains honestly true. All 5 grading dimensions PASS, zero findings."
+        "sprint": 3,
+        "note": "Phase 3 impl review, round 1, PASS, 0 findings, 131/131 tests independently re-verified twice."
       }
     },
     "6": {
@@ -2166,5 +2172,5 @@
   },
   "sprintCount": 3,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-08T09:31:05.051Z"
+  "updatedAt": "2026-07-08T09:39:23.935Z"
 }

@@ -1,0 +1,13 @@
+{
+  "reviewType": "implementation",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 3,
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md#REQ-117", "specs/verification-architecture.md#PROP-117a-d"],
+    "contract": ["contracts/sprint-3.md"],
+    "tests": ["~/anicca/skills/economy/lending/lib/__tests__/wake-gate.test.mjs", "~/anicca/skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs"],
+    "source": ["~/anicca/skills/economy/lending/run.sh", "~/anicca/skills/economy/lending/scripts/wake-gate.mjs", "~/anicca/skills/registry.json"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Phase 3 implementation review, sprint 3, first (and hopefully final) round. This is a full-context fresh adversary review of the ACTUAL DELIVERED CODE, independent of the contract-review that already passed. REQ-117 (the autonomous daemon-wake entry point for economy/lending) went through 6 rounds of spec hardening (FIND-1001..1007) before any code was written; the delivered implementation (commit ccef6ee480add1f7e3d670fab53a12fbfb07339e) then passed contract review round 1 with only 2 non-blocking minor findings. This Phase 3 review should independently re-verify the entire implementation against the fully-hardened spec from scratch -- run the real tests yourself, read every file in full, and specifically stress-test the two hardest-won correctness properties: (1) the getCitizen full-record-spread discipline (FIND-1004/1006's own resolution) and (2) the FIND-1001 exit-code divergence. Also check for anything a contract-review pass (which only checks against 5 pre-written CRIT criteria) might structurally miss that a full fresh-context review would catch."
+}
