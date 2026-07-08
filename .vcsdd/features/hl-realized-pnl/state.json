@@ -66,6 +66,18 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T21:03:26.902Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "blockingFindings": 1,
+        "majorFindings": 0,
+        "minorFindings": 2,
+        "deploymentRecommendation": "DO_NOT_DEPLOY"
+      }
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-08T20:12:43.374Z",
@@ -83,5 +95,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T19:32:44.393Z",
-  "updatedAt": "2026-07-08T20:53:12.585Z"
+  "updatedAt": "2026-07-08T21:03:26.903Z"
 }

@@ -1,0 +1,17 @@
+{
+  "reviewType": "impl",
+  "iteration": 1,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "edge_case_coverage": "FAIL",
+    "implementation_correctness": "PASS",
+    "structural_integrity": "PASS",
+    "verification_readiness": "PASS"
+  },
+  "blockingFindings": 1,
+  "majorFindings": 0,
+  "minorFindings": 2,
+  "overall": "FAIL",
+  "deploymentRecommendation": "DO_NOT_DEPLOY",
+  "summary": "The fill-based reconcile pipeline itself (fills.py/reconcile.py, ledger.mjs's additive disjunct, all Tier-0 tests, and the PROP-021 live E2E) is correctly implemented and independently re-verified against raw evidence. However, run.sh's pre-existing explicit ACTION=close branch (untouched by this diff, byte-identical to main) still reads the closed_pnl_usd field that hl.py's REQ-A1 fix deletes, so every real explicit close now silently records a fabricated $0.00 ledger line before the correct reconcile-derived line lands a wake later. No REQ, PROP, or test in this feature's verification architecture covers run.sh's own consumption of the deleted field. This is exactly the 'fix doesn't actually remove the bug it targets' failure mode the tiering rationale warns about, at a real-mainnet-money call site. DO NOT DEPLOY until this is fixed and covered by a proof obligation."
+}
