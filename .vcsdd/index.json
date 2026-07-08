@@ -182,9 +182,16 @@
       "status": "active",
       "createdAt": "2026-07-08T06:48:23.302Z",
       "mode": "lean",
-      "currentPhase": "2c",
-      "updatedAt": "2026-07-08T08:36:03.761Z"
+      "currentPhase": "6",
+      "updatedAt": "2026-07-08T09:03:44.556Z"
+    },
+    "franklin-funding-loop": {
+      "status": "active",
+      "createdAt": "2026-07-08T10:41:51.415Z",
+      "mode": "lean",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-08T10:53:46.673Z"
     }
   },
-  "activeFeature": "franklin-loop-revival"
+  "activeFeature": "franklin-funding-loop"
 }
