@@ -2,7 +2,7 @@
   "featureName": "hl-realized-pnl",
   "mode": "strict",
   "language": "python",
-  "currentPhase": "6",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -63,6 +63,13 @@
       "timestamp": "2026-07-08T21:32:10.207Z",
       "reason": "sprint verdict PASS 6/6 criteria, hardening artifacts complete",
       "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-08T21:32:31.718Z",
+      "reason": "converged: 30/30 proved, sprint PASS 6/6, live E2E verified",
+      "sprint": 1
     }
   ],
   "iterations": {
@@ -74,7 +81,8 @@
     "1c": 1,
     "2a": 1,
     "2b": 1,
-    "2c": 1
+    "2c": 1,
+    "complete": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -111,5 +119,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T19:32:44.393Z",
-  "updatedAt": "2026-07-08T21:32:10.208Z"
+  "updatedAt": "2026-07-08T21:32:31.719Z"
 }
