@@ -3,7 +3,7 @@
   "feature": "anicca-agent-spawn",
   "overallVerdict": "PASS",
   "timestamp": "2026-07-08T08:00:00Z",
-  "iteration": 3,
+  "iteration": 5,
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-2.md",

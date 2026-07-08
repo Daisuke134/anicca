@@ -1,0 +1,34 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "negotiationRound": 2,
+  "iteration": 5,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "2bc66a20b5d4a5ccaface9dd4fb07aed847545f2a92a4106be6ee0a55c86d544",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs",
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator-funding-and-wallet.test.mjs",
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator-gas-seed-and-key-persistence.test.mjs",
+      "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs",
+      "skills/self/spawn/lib/__tests__/wake-gate.test.mjs",
+      "skills/self/spawn/lib/__tests__/citizens-seed.test.mjs",
+      "skills/self/spawn/lib/__tests__/citizens-registry.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/lib/spawn-orchestrator.mjs",
+      "skills/self/spawn/scripts/gen-solana-wallet.sh",
+      "skills/self/spawn/run.sh",
+      "skills/self/spawn/scripts/wake-gate.mjs",
+      "skills/self/spawn/registry/citizens.seed.json",
+      "skills/registry.json"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRounds": {
+    "round4": {"verdict": "FAIL", "findingsPath": "reviews/contracts/sprint-2-r4/output/findings/", "note": "4/5 dimensions PASS. Only verification_readiness (CRIT-205) failed, on 2 narrow documentation-scoped gaps: FIND-008 (PROP-201c's verification-architecture.md row described a never-implemented mechanism instead of the real, tested defaultPersistChildWallet mechanism -- fixed by correcting the row text) and FIND-009 (PROP-303e sat in the '31 targeted' list despite its own artifact never being built this sprint, the same pattern round-2's FIND-005 already fixed for its siblings PROP-203c/PROP-303f -- fixed by moving it into the re-deferred bucket, now '5 additionally re-deferred', target count corrected 31->30)."}
+  },
+  "note": "This is iteration 5. Round 4 found ZERO implementation bugs -- both findings were pure spec/contract-text staleness, a strong convergence signal (finding character shifted from 'missing code' in round 3 to 'stale documentation' in round 4). Verify: (1) PROP-201c's row now accurately describes defaultPersistChildWallet's real mechanism (childHomeDir/.automaton/wallet.json at 0600) rather than the old gen-wallet.sh-stdout description. (2) PROP-303e no longer appears in the '30 targeted for closure' list and instead appears in the re-deferred bucket alongside PROP-203c/PROP-303f/PROP-302a/PROP-302c, with the count consistently updated everywhere (CRIT-205's description, CRIT-205's passThreshold, the 'Now that REQ-307...' intro sentence, the itemized PROP list). (3) Independently re-run the full test suite (should still be 175/175, no code changed this round) and spot-check at least 8 of the 30 remaining targeted PROP IDs per CRIT-205's own passThreshold. (4) Do one more full, fresh, skeptical pass over ALL 8 CRIT criteria (not just verification_readiness) since a genuinely fresh read sometimes surfaces something a narrower re-check misses -- this session has found this repeatedly. If you find zero new defects, this sprint's contract review is ready to PASS and this contract can move to status:approved, unlocking Phase 3."
+}

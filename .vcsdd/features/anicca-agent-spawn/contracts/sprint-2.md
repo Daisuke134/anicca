@@ -1,5 +1,5 @@
 ---
-status: draft
+status: approved
 feature: anicca-agent-spawn
 sprintNumber: 2
 negotiationRound: 2
