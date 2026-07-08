@@ -28,6 +28,16 @@ def _parse_ts(ts: str) -> datetime:
     return dt
 
 
+def _safe_float(value, default: float = 0.0) -> float:
+    """Coerce a cost-event field to float; a wrong-type value (non-numeric string, nested dict/list,
+    etc.) inside an otherwise-valid dict row returns `default` instead of raising (Phase 5 hardening
+    Finding F5, same fix as allocator._safe_float)."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 # ---------- REQ-CEO-020: cost event (agent-os record_cost_events, single-event copy+tweak) ----------
 def build_cost_event(ts: str, loop: str, usd_estimate: float) -> dict:
     """{ts, month_key(UTC), loop, usd_estimate} -- month_key derived from ts, never from wall-clock
@@ -79,7 +89,7 @@ def monthly_spend_by_loop(rows: list, month_key: str) -> dict:
         if row.get("month_key") != month_key:
             continue
         loop = row.get("loop")
-        usd = float(row.get("usd_estimate") or 0.0)
+        usd = _safe_float(row.get("usd_estimate") or 0.0)
         totals[loop] = round(totals.get(loop, 0.0) + usd, 6)
     return totals
 
@@ -100,7 +110,7 @@ def weekly_spend_by_loop(rows: list, week_start_jst_date: str) -> dict:
         dt_jst = _parse_ts(row.get("ts")).astimezone(JST)
         if week_start <= dt_jst < week_end:
             loop = row.get("loop")
-            usd = float(row.get("usd_estimate") or 0.0)
+            usd = _safe_float(row.get("usd_estimate") or 0.0)
             totals[loop] = round(totals.get(loop, 0.0) + usd, 6)
     return totals
 

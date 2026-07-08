@@ -44,16 +44,29 @@ def derive_roster(cadence_contract: dict) -> list:
 # ============================================================================
 # B. currency conversion (REQ-CEO-002(c)/050, INV-CEO-1's single shared conversion path)
 # ============================================================================
+def _safe_float(value, default: float = 0.0) -> float:
+    """Coerce a ledger/cost-event field to float; a wrong-type value (non-numeric string, nested
+    dict/list, etc.) inside an otherwise-valid dict row returns `default` instead of raising (Phase 5
+    hardening Finding F5 -- F1's real-ledger wiring made this a LIVE, externally-written-data
+    corruption surface that a fabricated always-empty ledger path could never actually reach)."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def sum_earn_by_currency(rows: list) -> list:
     """Always exactly 2 entries (usd, jpy) -- never a fallback-field-winner branch. usd entry =
     sum(earn_usdc); jpy entry = sum(earn_jpy) + sum(commission_jpy). A row that parsed as valid JSON
     but is not itself a dict (e.g. a bare string/number/array/null line in a hand-edited or
     corrupted ledger) is skipped, not crashed on (Phase 5 hardening Finding F2 -- same defect class
-    as the gig loop's GAP-1)."""
+    as the gig loop's GAP-1). A dict row whose numeric field holds a wrong-type value (e.g.
+    `{"earn_usdc": "not-a-number"}`) contributes 0 for that field instead of crashing (Finding F5)."""
     dict_rows = [r for r in rows if isinstance(r, dict)]
-    usd_total = sum(float(r.get("earn_usdc", 0) or 0) for r in dict_rows)
+    usd_total = sum(_safe_float(r.get("earn_usdc", 0) or 0) for r in dict_rows)
     jpy_total = sum(
-        float(r.get("earn_jpy", 0) or 0) + float(r.get("commission_jpy", 0) or 0) for r in dict_rows
+        _safe_float(r.get("earn_jpy", 0) or 0) + _safe_float(r.get("commission_jpy", 0) or 0)
+        for r in dict_rows
     )
     return [{"amount": usd_total, "currency": "usd"}, {"amount": jpy_total, "currency": "jpy"}]
 
