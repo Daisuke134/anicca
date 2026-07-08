@@ -70,9 +70,12 @@ def load_cost_events(path: str) -> list:
 # ---------- REQ-CEO-021: monthly (UTC calendar month, hard-stop gate) + weekly (JST Mon-Sun, bandit) ----------
 def monthly_spend_by_loop(rows: list, month_key: str) -> dict:
     """agent-os monthly_spend_by_agent copy+tweak (agent -> loop). No key is zero-filled for a loop
-    that has no rows this month (B12 fallback: pm-earner never appears)."""
+    that has no rows this month (B12 fallback: pm-earner never appears). A row that parsed as valid
+    JSON but is not itself a dict is skipped, not crashed on (Phase 5 hardening Finding F2)."""
     totals: dict = {}
     for row in rows:
+        if not isinstance(row, dict):
+            continue
         if row.get("month_key") != month_key:
             continue
         loop = row.get("loop")
@@ -85,12 +88,15 @@ def weekly_spend_by_loop(rows: list, week_start_jst_date: str) -> dict:
     """New: weekly_report.py::_rows_in_week-style JST Monday-Sunday week bucketing, for REQ-CEO-010's
     per-loop reward denominator and REQ-CEO-014's company-wide BudgetPacer input. `week_start_jst_date`
     is the JST-local Monday date (YYYY-MM-DD) that opens the bucket [week_start 00:00 JST,
-    week_start+7d 00:00 JST)."""
+    week_start+7d 00:00 JST). A row that parsed as valid JSON but is not itself a dict is skipped,
+    not crashed on (Phase 5 hardening Finding F2)."""
     year, month, day = (int(x) for x in week_start_jst_date.split("-"))
     week_start = datetime(year, month, day, tzinfo=JST)
     week_end = week_start + timedelta(days=7)
     totals: dict = {}
     for row in rows:
+        if not isinstance(row, dict):
+            continue
         dt_jst = _parse_ts(row.get("ts")).astimezone(JST)
         if week_start <= dt_jst < week_end:
             loop = row.get("loop")
@@ -177,6 +183,8 @@ def record_alert_fired(path: str, key: str) -> None:
 def load_fired_alert_keys(path: str) -> set:
     keys = set()
     for row in load_cost_events(path):
+        if not isinstance(row, dict):
+            continue
         key = row.get("key")
         if key:
             keys.add(str(key))
