@@ -106,13 +106,15 @@ verification（二値、self-heal の bar）と evaluation（スカラー、self
 
 enabled 103 job の実データ分類（jobs.json + skill 実体確認済み、生データ: scratchpad/enabled_jobs_with_paths.json）:
 
-| カテゴリ | 件数 | 移行方針 |
+| カテゴリ | 件数 | 移行方針（Dais 2026-07-08 スコープ縮小指示反映） |
 |---|---|---|
-| (a-1) SNS投稿系（Larry/reelclaw/monk-factory×2/music/slideshow/comedy投稿 等） | 30 | **claude-p へ移行**（cadence contract + EDD 対象に組み込む） |
-| (a-2) growth/marketing（cold-email/SEO/backlink/reviews 等） | 23 | **claude-p へ移行** |
-| (a-3) comedy live 応募系 | 7 | **claude-p へ移行** |
-| (b) Life Manager（naist/meetup/歯科/gcal/mail-triage 等 Dais 個人） | 24 | claude-p loop 化（別 phase、earn と分離した life-manager core として） |
+| (a-1) SNS投稿系（Larry/reelclaw/monk-factory×2/music/slideshow 等） | 30 | **Wave 1: claude-p へ移行**。ただし無条件 copy 禁止 — 各チャネルに検証ツール（metrics 実測手段）が存在するものだけを、cadence contract + evaluator + lessons.jsonl を最初から装着して移設する。検証ツールが無いチャネルは移行しない |
+| (a-2) growth/marketing（cold-email/SEO/backlink/reviews 等） | 23 | **Wave 2: copy せず再設計**。旧実装には検証/評価 loop が皆無で効果が一度も実証されていない（Dais 確認済み）。metric が機械計測可能なチャネル（SEO=GSC API、cold-email=返信率、backlink=live URL+票数、reviews=ASC API）のみ、EDD evaluator 込みで新規に組み直す |
+| (a-3) comedy live 応募系 | 7 | **移行しない**（OpenClaw と共に停止。必要になれば anicca-dais repo の git history から復元可能） |
+| (b) Life Manager（naist/meetup/歯科/gcal/mail-triage 等） | 24 | **移行しない**（Dais 指示「全部持ち込む必要はない」）。ただし lateness-heartbeat / pipecat-phone は OpenClaw cron ではなく launchd 直で動いており OpenClaw 削除後も生存する — この2系統は現状維持 |
 | (c) OpenClaw 自己保守（cron-doctor/watch-sweep/exec-guard 等） | 19 | **移行しない — OpenClaw 廃止と同時に不要化**。死活監視は healthcheck-runtime-loop 系が代替 |
+
+移行 gate（MUST）: **「そのチャネルの output を機械検証できるツールがある」ことが移行の前提条件**。post の存在確認 + metrics 実測（views/replies/clicks）ができないチャネルは claude-p に持ち込まない。移行された各 loop は初日から cadence contract（self-heal の bar）+ evaluator（self-improve の bar）+ loop-report mail（evidence 付き）を持つ。
 
 移行の前提条件（MUST、順に解消する）:
 1. **スケジューラ代替**: cron 実行は `ai.openclaw.gateway` デーモンが担っている → claude-p 側は launchd plist + tmux core パターン（既存 clip 型）で代替。
