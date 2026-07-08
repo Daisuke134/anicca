@@ -33,3 +33,34 @@ def evaluate_stage1(ledger_path, config=None):
     if has_funnel_shape:
         return {"combined_score": _funnel_score(rows), "rows_evaluated": len(rows)}
     return evaluate_stage1_generic(ledger_path, view_weight=1.0, earn_weight=1.0)
+
+
+def evaluate_by_category(gig_funnel_rows):
+    """REQ-GFV-013 (PROP-018) — read-only, deterministic: given `gig-funnel.jsonl` row dicts
+    (already parsed, in-memory — no file I/O here), aggregates each row's `by_category` block
+    (REQ-GFV-012) across the input rows, returning `{category: {reply_rate, win_rate, paid_jpy}}`.
+    Rows lacking `by_category` (older, pre-this-feature rows) contribute zero to every category's
+    tally without raising — never crashes on a mixed-schema ledger. Additive only: does not modify
+    or replace `evaluate_stage1`'s existing whole-pass scoring. Sandbox boundary: imports nothing
+    that posts, applies, dispatches, or drives a live web session."""
+    totals = {}
+    for row in gig_funnel_rows or []:
+        by_category = (row or {}).get("by_category") or {}
+        for category, bucket in by_category.items():
+            bucket = bucket or {}
+            t = totals.setdefault(category, {"applied": 0, "replied": 0, "won": 0, "paid_jpy": 0.0})
+            t["applied"] += int(bucket.get("applied") or 0)
+            t["replied"] += int(bucket.get("replied") or 0)
+            t["won"] += int(bucket.get("won") or 0)
+            t["paid_jpy"] += float(bucket.get("paid_jpy") or bucket.get("earn_jpy") or 0)
+
+    result = {}
+    for category, t in totals.items():
+        reply_rate = (t["replied"] / t["applied"]) if t["applied"] else 0.0
+        win_rate = (t["won"] / t["replied"]) if t["replied"] else 0.0
+        result[category] = {
+            "reply_rate": reply_rate,
+            "win_rate": win_rate,
+            "paid_jpy": t["paid_jpy"],
+        }
+    return dict(sorted(result.items(), key=lambda kv: kv[1]["paid_jpy"], reverse=True))

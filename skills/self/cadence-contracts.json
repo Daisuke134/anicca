@@ -26,7 +26,7 @@
     "cadence": "1/day",
     "unit": "reel",
     "boundary_tz": "Asia/Tokyo",
-    "source": "~/gig/gig-funnel.jsonl (REQ-LV-015)"
+    "source": "~/gig/applied.jsonl + ~/gig/listings.jsonl (REQ-GFV-022, real-action-status event_dates)"
   },
   "bounty": {
     "kind": "increment",
