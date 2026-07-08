@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "2b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -157,6 +157,13 @@
       "timestamp": "2026-07-08T12:41:39.839Z",
       "reason": "Routing both findings to Phase 2b per their own routeToPhase field.",
       "sprint": 2
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-08T12:55:01.371Z",
+      "reason": "Phase 2b GREEN complete: FIND-003 (retryable transient registry-append via pending-registry-append.js + wake-gate.mjs production wiring) and FIND-004 (genuine @solana/web3.js independent cross-check replacing duplicate solana-keygen call) both independently re-verified: commit a8c3dc4 exists in ~/anicca main, 204/204 tests pass on a fresh independent run (195 prior + 9 new). contracts/sprint-2.md already updated with Files-touched correction paragraph.",
+      "sprint": 2
     }
   ],
   "iterations": {
@@ -169,7 +176,7 @@
     "1c": 2,
     "2a": 2,
     "2b": 4,
-    "2c": 3,
+    "2c": 4,
     "complete": 1
   },
   "proofObligations": [
@@ -3145,5 +3152,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-08T12:41:39.839Z"
+  "updatedAt": "2026-07-08T12:55:01.382Z"
 }
