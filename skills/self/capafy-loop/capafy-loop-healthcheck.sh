@@ -7,6 +7,6 @@ HC_LOOP="capafy-loop" \
 HC_SOCK="/tmp/anicca-capafy-loop-tmux.sock" HC_SESSION="anicca-capafy-loop" \
 HC_HB="$HOME/.openclaw/state/.capafy-loop-last-pass" HC_START="$HOME/.openclaw/state/.capafy-loop-last-start" \
 HC_STALE_MIN=1560 HC_CLI="$HOME/anicca/skills/self/capafy-loop/capafy-loop-cli.sh" \
-HC_OUTPUT="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl" HC_OUTPUT_STALE_HRS=30 \
-HC_SELFFIX_HINT="capafy publish pipeline produces no new skill (published.jsonl not growing). Likely drive_cp1.py CP1 broken." \
+HC_OUTPUT="$HOME/.openclaw/skills/capafy-autopublish/state/.capafy-healthy-pass" HC_OUTPUT_STALE_HRS=30 \
+HC_SELFFIX_HINT="capafy publish loop reached NO healthy terminal state in >30h. daily_loop.sh touches .capafy-healthy-pass on every healthy pass — a real publish OR a correctly-drained/cap-full idle run (this is a DRAIN-ONLY loop over finite inventory; 'no new skill' is NOT itself a bug). A stale marker means the loop is genuinely stuck: daily_loop.sh not running, Capafy auth/network down (SERVER_UNREADABLE), or a PUBLISHABLE item whose publish keeps failing (CP1 cp1_agent.py -> CP2 -> CP3). Read state/daily_loop.log for the last verdict; do NOT assume drive_cp1.py is broken." \
 hc_run
