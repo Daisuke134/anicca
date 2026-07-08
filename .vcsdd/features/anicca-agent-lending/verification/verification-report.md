@@ -233,3 +233,44 @@ cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs
 node verification/proof-harnesses/sprint2-orchestrator-residual-props.mjs   (run 3x consecutively)
 # {"total": 13, "passed": 13, "failed": 0, "failedNames": []}   -- identical result all 3 runs
 ```
+
+## Sprint-3 Addendum (Phase 5, `run.sh` + `scripts/wake-gate.mjs` + `registry.json` `economy/lending` slot — REQ-117, the autonomous daemon-wake entry point)
+
+**date**: 2026-07-08 · **verifier**: fresh-context Phase 5 session (sprint-3)
+
+### Summary
+
+| Metric | Count |
+|---|---|
+| Obligations targeted this sprint (`state.json`'s own sprint-3 additions) | 4 (PROP-067/068/069/070 = PROP-117a/b/c/d) |
+| **Promoted to `status:"proved"` this session** | **4 / 4** |
+| Pre-existing target-feature test suite | **131/131 passing** (120 sprint-1/sprint-2 + 11 sprint-3, unchanged, re-run this session) |
+| New proof harness added | 0 — the existing 11 sprint-3 tests (`wake-gate.test.mjs`/`wake-gate-structural.test.mjs`, already Phase-2b-GREEN and Phase-3-adversary-PASSed) already constitute genuine Tier-0/Tier-2 proof directly against each obligation's own `passThreshold` text (Gate item 13, `specs/verification-architecture.md` lines 542-566) — no evidentiary gap found |
+| Security static analysis | Semgrep, 2 configs, 264 rules, 0 findings on `run.sh`/`scripts/wake-gate.mjs`; shellcheck 0 warnings/errors — see `security-report.md`'s Sprint-3 Addendum |
+| Purity boundary audit | Confirmed intact (Effectful Shell classification accurate, zero re-implemented judgment logic), zero drift — see `purity-audit.md`'s Sprint-3 Addendum |
+
+Unlike sprint-2 (19 obligations, 12 requiring a new proof harness), this sprint's own 4 obligations were
+each independently checked against their own literal Gate-item-13 wording and found already, genuinely
+covered by the Phase 2b test suite — this session's job was to independently re-run that suite fresh
+(never accept a prior log) and to cross-read `behavioral-spec.md`'s own REQ-117 prose for the
+documentation-only halves of PROP-117a/PROP-117c that no test can assert (an EARS/Edge-Cases wording
+claim, not a runtime behavior).
+
+### Proof Obligations
+
+| state.json ID | PROP anchor | Tier | Disposition | Evidence |
+|---|---|---|---|---|
+| PROP-067 | PROP-117a | 0 | **Proved** | `wake-gate-structural.test.mjs`'s own "PROP-117a structural" test: a repo-wide walk (`~/anicca`, excluding `node_modules`/`.git`/`__tests__`/`__pycache__`) over every `.mjs`/`.js` file confirms `executeLoanIssuanceAttempt`/`executeDefaultDetectionSweep` each have EXACTLY one production import+call site (`skills/economy/lending/scripts/wake-gate.mjs`), and `executeRepaymentClaim` has ZERO — independently re-run this session (PASS, 788ms). Cross-confirmed by Phase 3's own independent fresh-context adversary review (`reviews/impl/sprint-3/output/verdict.json`, `structural_integrity` dimension, PASS, zero findings, its own separately-performed repo-wide grep). The documentation half — REQ-117's own text stating the `executeRepaymentClaim` exclusion is "AN EXPLICIT, DELIBERATE, DOCUMENTED LIMITATION" never a silent omission — read directly this session at `behavioral-spec.md` step 8 (line 2663) and confirmed present in the REQ's own prose, not merely asserted by a test. |
+| PROP-068 | PROP-117b | 0 | **Proved** | `wake-gate-structural.test.mjs`'s own "PROP-117b" test: imports the REAL `liveSlotNames` (`runtime/loop/prompt.mjs`) and `earnSkillRelPath` (`runtime/loop/earn-slot.mjs`) — never re-implemented stand-ins — asserts `registry.json`'s `slots["economy/lending"]` entry has `status:"live"`/`dir:"skills/economy/lending"`, asserts `liveSlotNames(registry).includes("economy/lending")`, and replicates `runtime/loop/index.mjs:498`'s own real `path.join(ANICCA_HOME, "skills", ...rel.split("/"))` join expression to resolve to the real `run.sh` file. This session independently re-read `index.mjs:481-499` (`runSkillWithKillRef`, module-private/non-exported, so it cannot be imported directly — mirrors the sibling `self/spawn` precedent) and confirmed the test's own join logic is byte-for-byte identical to the real production expression, never a divergent reimplementation. Independently re-run this session (PASS). Cross-confirmed by Phase 3's own independent 3-file chain trace (`earn-slot.mjs:30-33`, `prompt.mjs:32-36`, `index.mjs:124,494,498`) in `structural_integrity`, PASS. |
+| PROP-069 | PROP-117c | 2 | **Proved** | `wake-gate.test.mjs`'s three dedicated fixtures: fixture 1 (two Solana-only citizens — the `wallet.evm===true` exclusion, isolated from scarcity) and fixture 2 (exactly one fully-qualifying EVM citizen — the `lenderId!==borrowerId` impossibility, isolated from the wallet-exclusion path) each independently produce `selectedPair===null`/`issuance===null`/`sweep` deep-equal `{defaulted:[]}` (still runs exactly once)/zero ledger rows — a clean, honest no-op for BOTH of today's independently-sufficient reasons, each its own fixture, never conflated. Fixture 3 drives a real two-citizen wake against the REAL, unmodified `executeLoanIssuanceAttempt` (only `disburse` stubbed, mirroring sprint-2's own already-approved `happyDeps()` convention) to a genuine `{status:"active"}` outcome — not merely "reached", the literal FIND-1004/1006 silent-refusal regression this fixture exists to catch. All 3 independently re-run this session (PASS). The Edge-Cases documentation half (REQ-117's own text stating BOTH reasons "SHALL NOT" be conflated into one vague explanation) read directly this session at `behavioral-spec.md` lines 2728-2746 and confirmed to state both reasons separately, by name. |
+| PROP-070 | PROP-117d | 0 | **Proved** | `wake-gate-structural.test.mjs`'s own "PROP-117d structural" test: confirms no `balanceUsd`/`surplusUsd`/`defaultRateUsd`/`repaymentRate` relational (`<`/`>`/`=`) comparison exists anywhere in `scripts/wake-gate.mjs`'s own source (all such comparisons live exclusively inside the already-exported `lending-gate.mjs` functions it calls), and confirms zero `ANICCA_ARGS` reads anywhere. Companion test confirms `scripts/wake-gate.mjs` imports nothing from `self/spawn/scripts/wake-gate.mjs` itself. Both independently re-run this session (PASS). The "no modification whatsoever to `anicca-agent-spawn`'s own files" structural diff-scope clause independently confirmed this session via `git show ccef6ee480add1f7e3d670fab53a12fbfb07339e --stat`: the sole sprint-3 commit touches exactly 5 files (`run.sh`, `scripts/wake-gate.mjs`, 2 new test files, `skills/registry.json`), zero files under `skills/self/spawn/` — and via `git log --oneline -- skills/self/spawn/` (this session), confirming no sprint-3 commit appears in that path's own history at all. |
+
+### Test evidence (sprint-3)
+
+```
+cd ~/anicca && node --test skills/economy/lending/lib/__tests__/wake-gate.test.mjs skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs
+# tests 11, pass 11, fail 0, cancelled 0, skipped 0, todo 0
+
+cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs
+# tests 131, pass 131, fail 0, cancelled 0, skipped 0, todo 0
+```

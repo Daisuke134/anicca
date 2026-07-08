@@ -123,3 +123,60 @@ carry-forward of sprint-1's own already-documented `rpcUrl` design note, not a n
 defect, and remains non-blocking (no untrusted caller reaches either parameter in this sprint's own
 delivered scope). Combined with sprint-1's own already-clean 4 files, all 5 files this feature has
 delivered across both sprints are Semgrep-clean and manually reviewed clean.
+
+## Sprint-3 Addendum (Phase 5, `run.sh` + `scripts/wake-gate.mjs` + `registry.json` `economy/lending` slot)
+
+### Tooling
+
+- **Semgrep 1.168.0** (same install as sprint-1/sprint-2):
+  - `semgrep --config=auto skills/economy/lending/run.sh skills/economy/lending/scripts/wake-gate.mjs`
+    → **203 rules run, 0 findings**. Raw output: `verification/security-results/semgrep-auto-sprint3.json`.
+  - `semgrep --config=p/security-audit --config=p/secrets` (same 2 files) → **61 rules run, 0 findings**.
+    Raw output: `verification/security-results/semgrep-security-audit-secrets-sprint3.json`.
+  - 264 rules total this sprint, 0 findings — same rule sets sprint-1/sprint-2 already ran.
+- **shellcheck** (`run.sh`, this session — not run in sprint-1/sprint-2 since no `.sh` file existed yet):
+  2 INFO-level `SC1091` notices only (`Not following: ./.hermes/.env was not specified as input` /
+  same for `.openclaw/.env`) — expected and benign: both are best-effort-sourced per-instance env files
+  that genuinely may not exist at lint time, exactly mirroring `self/spawn/run.sh`'s own identical
+  sourcing convention. **Zero warnings, zero errors.**
+- **Manual grep sweep** of both new files:
+  ```
+  fs.*                         -> 1 hit  (wake-gate.mjs:40, fs.readFileSync only, read-only registry parse)
+  fetch(                        -> 0 hits (wake-gate.mjs never calls fetch directly -- routed through the
+                                   already-hardened, reused usdcBalance primitive, not this file's own
+                                   surface)
+  eval(/exec(/child_process     -> 0 hits (no command-injection surface; run.sh's own `exec "$NODE" ...`
+                                   is a fixed, hardcoded argv, never string-interpolated from external input)
+  process.env                   -> 2 hits, both `runWakeGate`'s own `env = process.env` default parameter
+                                   and the CLI entrypoint's real invocation -- `env` itself is never read
+                                   inside runWakeGate's own body (confirmed: `env` is accepted for the
+                                   test-injection seam's own symmetry with self/spawn's convention, unused
+                                   internally)
+  ANICCA_ARGS                   -> 0 hits (confirms PROP-117d's own no-decision-lever discipline)
+  Date.now()                    -> 1 hit, the `nowMs` default parameter only (line 97), never re-read
+                                   elsewhere in the file
+  writeFile/appendFile/unlink    -> 0 hits (wake-gate.mjs performs no direct file mutation of its own --
+                                   every ledger append happens inside the reused, already-hardened
+                                   executeLoanIssuanceAttempt/executeDefaultDetectionSweep)
+  ```
+
+### `registry.json` diff
+
+Reviewed via `git show ccef6ee480add1f7e3d670fab53a12fbfb07339e -- skills/registry.json`: the entire diff
+is one new slot object (`economy/lending`), inserted immediately before the pre-existing `cook` entry,
+zero other slot touched, zero secrets/credentials/private keys in any field (`track`/`dir`/`entrypoint`/
+`status`/`spec`/`summary`/`owner`/`risk`/`riskNote` only — all plain descriptive strings).
+
+### Findings
+
+**No HIGH/CRITICAL/MEDIUM findings.** No new LOW-severity observations this sprint — the two carry-forward
+design notes above (`gojo-read.mjs`'s per-line `JSON.parse`, `lending-verify.mjs`'s unpinned `rpcUrl`) are
+unaffected by this sprint's own 2 files, since neither `run.sh` nor `scripts/wake-gate.mjs` touches either
+surface.
+
+### Summary
+
+Zero exploitable vulnerabilities found in `run.sh`, `scripts/wake-gate.mjs`, and the `registry.json` diff,
+across Semgrep (264 rules, 0 findings), shellcheck (0 warnings/errors), and manual review. Combined with
+sprint-1's/sprint-2's own already-clean files, all 7 files this feature has delivered across 3 sprints are
+Semgrep-clean and manually reviewed clean.

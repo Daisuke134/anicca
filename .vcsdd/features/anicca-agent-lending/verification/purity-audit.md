@@ -127,3 +127,73 @@ effectful shell wiring sprint-1's untouched pure core (`lending-gate.mjs`) and n
 session via `git log`) plus the two pre-existing hardened effectful modules (`lock.mjs`/`escrow.mjs`),
 with zero decision/judgment logic invented in the new file itself. No purity-boundary drift found across
 either sprint.
+
+## Sprint-3 Addendum (Phase 5, `run.sh` + `scripts/wake-gate.mjs`)
+
+### Declared Boundaries
+
+Per `specs/verification-architecture.md`'s Purity Boundary Map row 43 (sprint-3 addition):
+`run.sh` + `scripts/wake-gate.mjs` are declared **Effectful Shell (new, sprint-3)** — the autonomous
+daemon-wake entry point making REQ-115's `executeLoanIssuanceAttempt`/REQ-116's
+`executeDefaultDetectionSweep` genuinely reachable, containing "no eligibility/sizing/servicing decision
+logic of its own anywhere" (`run.sh`) and delegating "every decision" to `lending-gate.mjs`'s/
+`lending-orchestrator.mjs`'s own already-hardened functions via "a single, already-computed
+boolean/number combined via a single `&&`/`>`" (`scripts/wake-gate.mjs`'s own header comment,
+independently confirmed this session).
+
+### Observed Boundaries (this session's own independent re-verification)
+
+```
+cd ~/anicca/skills/economy/lending
+grep -n "fs\."                          scripts/wake-gate.mjs  -> 1 hit:  line 40 (fs.readFileSync only)
+grep -n "fetch("                        scripts/wake-gate.mjs run.sh  -> 0 hits
+grep -n "eval(\|child_process\|exec("   scripts/wake-gate.mjs  -> 0 hits
+grep -n "ANICCA_ARGS"                   scripts/wake-gate.mjs run.sh  -> 0 hits
+git show ccef6ee480add1f7e3d670fab53a12fbfb07339e --stat        -> 5 files changed (2 new test files,
+                                                                     run.sh, scripts/wake-gate.mjs,
+                                                                     skills/registry.json); zero files
+                                                                     under skills/self/spawn/
+```
+
+- **`run.sh`**: confirmed a thin `set -euo pipefail` bash wrapper — `SKILL_DIR` resolution, a `--help`
+  short-circuit, a `node` presence check, best-effort env sourcing under `set -a`/`set +a`, and a single
+  final `exec "$NODE" "$SKILL_DIR/scripts/wake-gate.mjs" "$@"` line. Zero eligibility/sizing/servicing
+  logic of its own (independently re-confirmed via the SAME grep the structural test itself runs:
+  `balanceUsd|surplusUsd|isBorrowerEligible|computeLenderAvailableUsd|decideLoan` → 0 hits in `run.sh`).
+  **Matches the declared boundary exactly — a pure hand-off shell, no logic of its own.**
+- **`scripts/wake-gate.mjs`**: its own I/O surface is exactly `fs.readFileSync` (`readCitizensRegistry`,
+  line 40, read-only) plus the reused effectful primitives it imports and calls
+  (`readChildren`/`readGojoLogRows`/`usdcBalance`/`ensureCitizensRegistry`) plus its two calls into
+  `executeLoanIssuanceAttempt`/`executeDefaultDetectionSweep` (both already-classified Effectful Shells,
+  sprint-2, unmodified). Zero `fs` write/append/unlink calls of its own; zero direct `fetch`/network calls
+  of its own (`usdcBalance`'s own network call is that already-hardened, reused module's own concern, not
+  this file's surface).
+- **The ONE comparison this file performs** (`findSelectedPair`, line 88:
+  `lenderAvailableUsd > 0 && borrowerEligibility.eligible === true`) is exactly the single, plain `&&`
+  sequencing combinator `specs/verification-architecture.md` (lines 560-561) explicitly sanctions over
+  TWO already-computed, independent pure-function outputs (`computeLenderAvailableUsd`/
+  `isBorrowerEligible`, both `lending-gate.mjs`, unmodified) — confirmed by direct read this session that
+  neither function's own internal arithmetic/boolean logic is re-derived or duplicated anywhere in
+  `wake-gate.mjs`. This is the identical "pure sequencing, never re-deriving" discipline sprint-2's own
+  purity audit already established for `lending-orchestrator.mjs`, extended here one level up, to
+  candidate DISCOVERY (which pair to try) rather than candidate EXECUTION (whether that pair's loan
+  proceeds).
+- **`ANICCA_ARGS`**: confirmed zero reads anywhere in either file — this entry point genuinely has no
+  model-driven decision lever, matching REQ-103's bookkeeping-only discipline extended to this new slot.
+- **No modification to `anicca-agent-spawn`'s own files**: independently confirmed via
+  `git show ccef6ee --stat` and `git log --oneline -- skills/self/spawn/` (this session) — the sole
+  sprint-3 commit touches none of that sibling feature's files; `scripts/wake-gate.mjs` imports
+  `_shared/lib/usdc.mjs::usdcBalance` (colony-wide-shared, not spawn-owned) rather than
+  `self/spawn/scripts/wake-gate.mjs`'s own private `defaultFetchEvmBalanceUsd` helper, confirmed by this
+  session's own read of both files' import lists.
+- **Matches the declared boundary exactly** — a genuine Effectful Shell that reads real state and
+  sequences already-hardened modules via a single plain `&&`, inventing no new judgment logic of its own,
+  and touching no sibling feature's own files.
+
+### Summary
+
+The sprint-3 purity boundary holds exactly as declared: `run.sh` is a pure hand-off shell with zero logic
+of its own, and `scripts/wake-gate.mjs` is a genuine effectful shell composing already-hardened pure/
+effectful modules via one plain sequencing combinator, never re-deriving their internal logic and never
+reaching into `anicca-agent-spawn`'s own files. No purity-boundary drift found across any of the three
+sprints.
