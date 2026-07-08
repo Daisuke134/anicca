@@ -26,10 +26,15 @@ def is_real_usdc_inflow(e):
     )
 
 def verify_onchain(entry):
-    """Real on-chain confirmation hook (FIND-503). NOT wired yet → returns False, so a self-declared
-    verified:true line ALONE can never be paid. A future Base detector replaces this with an RPC check
-    (tx exists, token==USDC, to==our wallet, value==amount). Inject a stub in tests to simulate a confirmed tx."""
-    return False  # UNVERIFIED: no chain RPC wired yet — fail-closed so nothing fabricated reaches the ledger
+    """Real on-chain confirmation hook (FIND-503 / REQ-LV-080, P0-4). Wired to onchain.py's
+    confirm_usdc_inflow — a real Base RPC log-filter check (correct USDC contract + Transfer topic0
+    + `to`-topic + matching amount, fail-closed on any RPC error/mismatch). Inject a stub in tests
+    to simulate a confirmed tx without hitting the network."""
+    try:
+        from onchain import confirm_usdc_inflow  # same directory (skills/earn/video/)
+        return confirm_usdc_inflow(entry)
+    except Exception:
+        return False  # fail-closed: any import/RPC error never fabricates a confirmed inflow
 
 
 def _key(e):
