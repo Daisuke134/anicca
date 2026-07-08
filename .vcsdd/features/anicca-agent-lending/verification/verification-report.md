@@ -164,3 +164,72 @@ Full log: `verification/fuzz-results/full-suite-89-run.log`.
 New file this session: `skills/economy/lending/lib/__tests__/lending-gate.property.test.mjs` (10
 `fast-check` property tests, ~4,500 total generated-input runs across all 10 properties). `fast-check`
 added as a devDependency: `~/anicca/package.json` → `"devDependencies": {"fast-check": "^4.8.0"}`.
+
+## Sprint-2 Addendum (Phase 5, `lending-orchestrator.mjs` — closing sprint-1's 19 deferred obligations)
+
+**date**: 2026-07-08 · **verifier**: fresh-context Phase 5 session (sprint-2)
+
+### Summary
+
+| Metric | Count |
+|---|---|
+| Obligations targeted this sprint (`contracts/sprint-2.md`'s own "Deferred-obligation disposition") | 19 |
+| **Promoted to `required:true`/`status:"proved"` this session** | **19 / 19** |
+| Intentionally left `status:"skipped"`/`required:false` (PROP-108a, Tier-3, genuinely requires a real on-chain spend, mirrors `anicca-agent-spawn` sprint-2's own CRIT-206 treatment) | 1 |
+| Pre-existing target-feature test suite | **120/120 passing** (89 sprint-1 + 30 sprint-2, unchanged, re-run this session) |
+| New proof harness added | `verification/proof-harnesses/sprint2-orchestrator-residual-props.mjs` (13 scenarios, 3 consecutive runs, 0 flakiness) |
+| Security static analysis | Semgrep, 2 configs, 261 rules, 0 findings on `lending-orchestrator.mjs` — see `security-report.md`'s Sprint-2 Addendum |
+| Purity boundary audit | Confirmed intact, zero drift — see `purity-audit.md`'s Sprint-2 Addendum |
+
+Of the 19 targeted obligations, 7 were found to already be genuinely, directly proved by
+`lending-orchestrator.test.mjs`'s own pre-existing 30 tests (no new evidence needed beyond reading the
+already-GREEN test file and, for the 5 Tier-0 structural ones, this session's own direct source read).
+The remaining 12 had a genuine, real evidentiary gap — the existing test suite covered an adjacent but
+not identical scenario (e.g. only the "found:true" half of a reconciliation branch, or a naive-Promise.all
+race that does not reliably exercise the specific sequential-handoff path the obligation's own text
+requires) — and are closed by 13 new scenarios in the new proof harness, each driving the REAL,
+unmodified orchestrator functions via their own already-designed `deps` injection seam, never a
+re-implementation or mock of the orchestrator itself.
+
+### Proof Obligations
+
+| state.json ID | PROP anchor | Tier | Disposition | Evidence |
+|---|---|---|---|---|
+| PROP-019 | PROP-106a | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-115c step 4 (lock_held...)" (real lock exclusivity, zero rows) + "PROP-115d" (staggered concurrent real issuance, exactly one active, others `lock_held` while in flight, succeeds only after release) |
+| PROP-020 | PROP-106b | 1/2 | **Proved** | New harness: "a real backdated (stale) `loan_${lenderId}.lock` file is reclaimed..." (+ a FRESH, non-stale control lock correctly rejected) and "two concurrent callers racing to reclaim the SAME stale lock -- exactly one reclaims and succeeds" |
+| PROP-027 | PROP-108c | 2 | **Proved** | `lending-orchestrator.test.mjs`: partial-credit test (line 539) + full-credit test (line 552), chained values; PLUS new harness scenario driving the SAME loan through two REAL sequential `executeRepaymentClaim` calls, asserting status sequence `active → active → repaid` |
+| PROP-037 | PROP-106e | 1/2 | **Proved** (Tier-2 half; Tier-1 half already proved sprint-1) | New harness: "two different lenders concurrently disbursing to two different borrowers succeed with distinct, non-colliding loan_ids" (`loan_LenderA_1`/`loan_LenderB_1`) |
+| PROP-038 | PROP-106f | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-115c step 9 sub-case 1" (disbursement_failed follow-up) + new harness scenario: the SAME lender's very next attempt computes n+1 and succeeds immediately (lock genuinely reacquirable, no wedge) |
+| PROP-039 | PROP-112a | 0 | **Proved** | Structural source read (this session): zero `homeDir` references anywhere in `lending-orchestrator.mjs` (`grep -n homeDir` → 0 hits), zero remote/networked path construction (all `fs.*` calls resolve from `deps.ledgerFile \|\| LOANS_LEDGER_PATH`), co-location decided exclusively via `citizen.coLocatedWithCoordinator !== true` (lines 281/284); PLUS `lending-orchestrator.test.mjs`'s own happy-path test (two distinct citizens, both `coLocatedWithCoordinator: true`, succeeds) and "PROP-115c step 2" (non-co-located refusal) |
+| PROP-040 | PROP-106g | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-115c step 5 happy" (found:true half — no double-disbursement) + new harness scenario: found:false half — stale row closed out as `disbursement_failed`, never re-disbursed, attempt still proceeds at n+1 (disburse invoked exactly once, only for the genuine new n=2) |
+| PROP-041 | PROP-108d | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-116c" (repayment claim vs default-detection sweep race on the SAME `loan_id`, real `withGigLock`, exactly one wins) |
+| PROP-042 | PROP-109e | 0 | **Proved** | Structural source read (this session): both `appendLoanRow` call sites for a REQ-108/109 status-transition row (`executeRepaymentClaim` line ~347, `executeDefaultDetectionSweep` line ~391) are lexically INSIDE their own `withGigLock(lockStatePath, \`loan_${loanId}\`, ...)` callback — confirmed by direct read, no call site appends outside this lock |
+| PROP-045 | PROP-106h | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-115c step 9 sub-case 2" (uncertain follow-up on in-process exception) + new harness scenario: a stale row seeded as `disbursement_uncertain` (not `provisioning`) is reconciled by the next attempt via the IDENTICAL mechanism, proving the unification (FIND-201) is genuine |
+| PROP-046 | PROP-106i | 0 | **Proved** | `lending-orchestrator.test.mjs`: "CRIT-204 structural" (issuance function body never references `` `loan_${loanId}` ``; servicing functions never reference the issuance lock keys) — direct match to this obligation's own requirement |
+| PROP-049 | PROP-105h | 0 | **Proved** | Structural source read (this session): `evaluateColdStartKillSwitch` imported (line 21); called at step 3 pre-lock (via `evaluateKillSwitches`, line 290, before lock acquisition at line 297-302) AND again at step 6 inside the lock (line 205, after both locks held, against the fresh read) — both call sites confirmed by direct read; PLUS "PROP-115c step 3 (REQ-105 cold-start...)" test proving the pre-lock call site functions on real inputs |
+| PROP-050 | PROP-106k | 2 | **Proved** | New harness scenario: a genuine double-fault (settle-side exception caught, but the catch block's OWN `disbursement_uncertain` follow-up append also throws) leaves the ledger exactly as found (only the original `provisioning` row, zero mutation), releases the lock normally, and the next attempt for the SAME lender still invokes reconciliation for this SAME unterminated row before computing a new sequence number |
+| PROP-051 | PROP-106l | 2 | **Proved** | `lending-orchestrator.test.mjs`: "PROP-115c step 5 (reconciliation lookup itself throws)" (clean failure, zero mutation) + new harness scenario: a later attempt with a working lookup resolves the SAME row exactly once, and a THIRD attempt never re-invokes reconcile once the row is terminal |
+| PROP-054 | PROP-106n | 2 | **Proved** | New harness scenario (staggered, mirrors `lending-orchestrator.test.mjs`'s own PROP-115d technique since a naive `Promise.all` is timing-dependent and does not reliably exercise the sequential-handoff path): LenderD is locked out (`lock_held`) while LenderC's own critical section is mid-flight, then — after LenderC completes and releases — LenderD's OWN fresh recheck correctly observes the shared borrower now has an outstanding loan and refuses with `outstanding_loan`; zero rows for the refused attempt, the borrower never carries two simultaneous active/provisioning loans (deduplicated last-write-wins by `loan_id`) |
+| PROP-055 | PROP-106o | 1/2 | **Proved** | New harness scenario: a stale row's own `provisioned_ms` (T1, backdated 3 days) is distinguished from the reclaiming call's own LATER `nowMs` (T2) — the reconciled follow-up row's `issued_ms === T2` (never T1) and `due_ms === T2 + 14 days` |
+| PROP-058 | PROP-114c | 0 | **Proved** | Structural source read (this session): `evaluateKillSwitches` (lines 133-158) computes `computeRecentDefaultLossUsd` and calls `evaluateOverallDefaultKillSwitch` at BOTH step 3 (pre-lock, line 290) and step 6 (lock-protected fresh-check, line 205), always passing the freshly-computed `totalRecentDefaultLossUsd`; PLUS "PROP-115c step 3 (REQ-114 overall default...)" test proving the pre-lock call site functions on real inputs |
+| PROP-060 | PROP-106p | 2 | **Proved** | New harness scenarios (both variants): the ledger is deterministically poisoned (10 cold-start defaults / one $5.00 recent default) via the `reconcile` deps-seam hook, which fires between step 3's pre-lock read and step 6's lock-protected fresh read — proving the SECOND, lock-protected re-check genuinely catches a kill-switch trip the pre-lock check could not have seen, reproduced separately for `evaluateColdStartKillSwitch` and `evaluateOverallDefaultKillSwitch` |
+| PROP-063 | PROP-109g | 0 | **Proved** | Structural source read (this session): exactly one `defaulted_ms` occurrence in the file (line 391, `executeDefaultDetectionSweep`'s own append payload), set from the function's own `nowMs` parameter (defaults to `Date.now()` at the true entry point); no other append call site includes this field; PLUS `lending-orchestrator.test.mjs`'s own "defaulted_ms genuinely set at append time" test |
+
+**PROP-025 (PROP-108a, Tier 3) — intentionally NOT promoted.** Confirmed this session:
+`state.json`'s PROP-025 entry remains `status:"skipped"`/`required:false` (verified programmatically
+before and after this session's own `state.json` write). Per `contracts/sprint-2.md`'s own
+"Deferred-obligation disposition" section, this obligation genuinely requires a real, live on-chain
+disbursement-then-repayment pair through the real orchestrator — this sprint's own CRIT-206 explicitly
+permits an honest re-deferral rather than a fabricated/borrowed-artifact proof, mirroring
+`anicca-agent-spawn` sprint-2's own identical treatment of its 3 Tier-3 obligations. This session did
+**not** attempt a real-money spend and did **not** promote this obligation.
+
+### Test evidence (sprint-2)
+
+```
+cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs
+# tests 120, pass 120, fail 0, cancelled 0, skipped 0, todo 0
+
+node verification/proof-harnesses/sprint2-orchestrator-residual-props.mjs   (run 3x consecutively)
+# {"total": 13, "passed": 13, "failed": 0, "failedNames": []}   -- identical result all 3 runs
+```

@@ -272,16 +272,16 @@
     {
       "id": "PROP-019",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106a",
       "beadId": "BEAD-030"
     },
     {
       "id": "PROP-020",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106b",
       "beadId": "BEAD-031"
     },
@@ -336,8 +336,8 @@
     {
       "id": "PROP-027",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108c",
       "beadId": "BEAD-038"
     },
@@ -416,48 +416,48 @@
     {
       "id": "PROP-037",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106e",
       "beadId": "BEAD-049"
     },
     {
       "id": "PROP-038",
       "tier": 1,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106f",
       "beadId": "BEAD-050"
     },
     {
       "id": "PROP-039",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-112a",
       "beadId": "BEAD-051"
     },
     {
       "id": "PROP-040",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106g",
       "beadId": "BEAD-053"
     },
     {
       "id": "PROP-041",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-108d",
       "beadId": "BEAD-054"
     },
     {
       "id": "PROP-042",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109e",
       "beadId": "BEAD-055"
     },
@@ -480,16 +480,16 @@
     {
       "id": "PROP-045",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106h",
       "beadId": "BEAD-058"
     },
     {
       "id": "PROP-046",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106i",
       "beadId": "BEAD-059"
     },
@@ -512,24 +512,24 @@
     {
       "id": "PROP-049",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-105h",
       "beadId": "BEAD-062"
     },
     {
       "id": "PROP-050",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106k",
       "beadId": "BEAD-063"
     },
     {
       "id": "PROP-051",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106l",
       "beadId": "BEAD-064"
     },
@@ -552,16 +552,16 @@
     {
       "id": "PROP-054",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106n",
       "beadId": "BEAD-067"
     },
     {
       "id": "PROP-055",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106o",
       "beadId": "BEAD-068"
     },
@@ -584,8 +584,8 @@
     {
       "id": "PROP-058",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-114c",
       "beadId": "BEAD-072"
     },
@@ -600,8 +600,8 @@
     {
       "id": "PROP-060",
       "tier": 2,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-106p",
       "beadId": "BEAD-074"
     },
@@ -624,8 +624,8 @@
     {
       "id": "PROP-063",
       "tier": 0,
-      "required": false,
-      "status": "skipped",
+      "required": true,
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-109g",
       "beadId": "BEAD-077"
     },
@@ -2040,5 +2040,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-08T05:41:05.028Z"
+  "updatedAt": "2026-07-08T05:54:48.693Z"
 }

@@ -202,14 +202,18 @@ human-funded/{gig,affiliate,bounty}/`。gig/affiliate/bounty の tmux STARTUP pr
   `~/profitable-claude/skills/human-funded/bounty/state/bounty-funnel.jsonl`（REQ-LV-016）、
   pm-earner=`~/anicca/skills/earn/state/earn-ledger.jsonl`、founder-loop=
   `~/.anicca-founder/state/earn-ledger.jsonl`。
-- **REQ-LV-041**: WHEN REQ-LV-040 で追加した8 loop のいずれかの artifact が stale と判定された場合
-  （既存 `verify-loops-audit.sh` の stale 判定パターン、`stale_hrs()` 相当のしきい値をその loop の実際の
-  pass 頻度 — clip/video/gig=時間単位、affiliate/bounty=日次、pm-earner/founder-loop=分単位 — に合わせて
-  設定）、THE SYSTEM SHALL 既存の `self-fix.sh <loop-name> "<blocker>"` 呼び出しパターンを再利用して
-  escalate する（`self-fix.sh` 自体は既に汎用インターフェースであり変更不要 — Ground truth 参照）。
-- **REQ-LV-042**: WHEN `verify-loops-audit.sh` が6hごとの scorecard を送る場合、THE SYSTEM SHALL
-  REQ-LV-040 で追加した8 loop 分の状態も既存の `loop-report.sh audit ...` 呼び出しの本文に含める
-  （既存の capafy/reddit/lm 部分の出力形式は変更しない、追記のみ）。
+- **REQ-LV-041（SUPERSEDED by REQ-LV-100〜104 — v2改訂、Dais 2026-07-08指示）**: ~~WHEN REQ-LV-040 で
+  追加した8 loop のいずれかの artifact が stale と判定された場合（`stale_hrs()` 相当の時間ベースしきい値
+  で判定）、escalate する~~。「artifact が古い（stale）か」という時間経過ベースの health 判定は、
+  「今日、契約した頻度で成果が出たか」という **Cadence Contract**（§H、REQ-LV-100〜104）に完全に置き換
+  わる。この行は削除せず、なぜ旧要件が無効化されたかの記録としてのみ残す。escalation の呼び出し先
+  （`self-fix.sh <loop-name> "<blocker>"`）自体は変更しない — REQ-LV-102 が新しい判定条件で同じ
+  escalation 経路を呼ぶ。
+- **REQ-LV-042（v2改訂: cadence 状態を含める形に更新）**: WHEN `verify-loops-audit.sh` が6hごとの
+  scorecard を送る場合、THE SYSTEM SHALL REQ-LV-040 で追加した8 loop 分の状態を、旧来の stale/fresh 表記
+  ではなく REQ-LV-103 の日次 scorecard 形式（`✅posted-today` / `❌missed` + streak）で
+  `loop-report.sh audit ...` 呼び出しの本文に含める（既存の capafy/reddit/lm 部分の出力形式は変更しない、
+  8 loop 分の追記のみを cadence 形式にする）。
 
 ### F. healthcheck-runtime-loop.sh の launchd 配線（P0-5）
 
@@ -238,6 +242,163 @@ human-funded/{gig,affiliate,bounty}/`。gig/affiliate/bounty の tmux STARTUP pr
   一致することを確認する）を Python で実装したものに置き換える。`record_earn(entry, ledger_path,
   onchain_check=None)` の既存シーム（`onchain_check` 注入可能）は変更しない — デフォルト値を新しい実装に
   差し替えるだけで、テストは引き続きスタブ注入で行える。
+
+## v2 追加要件（Dais 5点指示、2026-07-08 改訂。design spec正本 commit `ae2b8eecd` 反映）
+
+新規に確認したground truth: `~/anicca/skills/self/healthcheck-lib.sh:40`（`HC_OUTPUT_STALE_HRS`、
+デフォルト30h、capafy/reddit/life-manager系tmux loopの既存artifact-staleness判定）、
+`~/anicca/skills/earn/self-improve/evaluator.py`（`evaluate_stage1()`/`evaluate_stage2()`が
+`combined_score`を返す。`scope_guard.check()`をstage1の前に必ず実行、`gate_math.risk_adjusted_score()`
+でリスク調整、`FAIL_SENTINEL=0.0`、LLM judgeを一切使わない=Verifier's Law準拠、ledgerへの書き込み・
+発注モジュールのimportを一切行わないsandbox境界）、`~/anicca/skills/earn/self-improve/promote_gate.sh`
+（`lib/promote_gate_run.py`へのthin wrapper。決定論的pre-check（`lib/promote_gate.py`: scope_guard/
+stage1/stage2/trip-wire）を通過した候補にのみ、`self-fix.sh`と同型の実`claude --model opus
+--dangerously-skip-permissions --print`同期呼び出しで最終adversary判定を行う。使い方:
+`promote_gate.sh <candidate_program_path> <run_dir> [--dry-run]`）、
+`~/anicca/skills/self/telemetry-collect.sh`（instance毎=a3cdd4/franklin/claude-pに1つずつ、
+自分のbody配下にのみ`state/telemetry.json`を書く。read-onlyなpublic RPC/API読み取りのみ。launchd未配線
+=別途レビューされたステップという既存の断り書きあり）、`~/anicca/skills/earn/clip/_instance_paths.sh`
+（`ANICCA_INSTANCE`環境変数と`_SFX`サフィックスパターン。CLIP_QUEUE/CLIP_POSTED/CLIP_ACCTS/CLIP_LEDGER/
+CLIP_PENDING_VERIFYの5パスがこのパターンに従う）、`/Users/anicca/anicca-project/apps/landing/public/
+dashboard.json`（既存トップレベルキー: `updated_at, mrr, followers, views, spend, profit_usd, goals,
+basic_income, socials, meta, lifeline_status, cfo_source, lineage, leaderboard,
+total_net_worth_usd, alive, self_funded_pct, frontier_pct` — `loops`キーはまだ存在しない）、
+`~/.openclaw/cron/jobs.json`（実件数確認: 全221件、うち`enabled:true`は103件 — design spec記載の
+「enabled 103 jobs」と一致確認済み）。
+
+### H. Cadence Contract（health の bar を artifact 存在 → 日次 cadence へ置換）
+
+- **REQ-LV-100**: THE SYSTEM SHALL 8 loop（clip/affiliate/video/gig/bounty/pm-earner/founder-loop、
+  clip-promoteは投稿頻度がcampaign依存のため対象外・現行の維持対象のまま）それぞれについて、design spec
+  §Cadence Contract表のcadence contract文字列（例: clip=`1 reel/日/アカウント`、pm-earner=
+  `1 pass/時 + redeem確認/日`）を各loopの healthcheck 設定（新設または既存スクリプトへの追記、loop毎に
+  1箇所）に機械可読な形（例: `{"cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo"}`）で
+  宣言する。
+- **REQ-LV-101（純判定関数、JST日境界）**: THE SYSTEM SHALL 各 loop の当日達成判定を行う純関数
+  `cadence_met(ledger_rows, today_jst_date, contract) -> bool`（新設、入力は既にディスク上にある
+  ledger/artifact の行のみ、I/Oなし）を実装する。判定基準は「`today_jst_date`（JST日付文字列
+  `YYYY-MM-DD`）に該当する行が `ledger_rows` に1件以上存在するか」であり、「直近のいずれかの行が
+  26時間以内か」（旧`fresh()`方式）ではない。時刻境界は `Asia/Tokyo` タイムゾーンの暦日とする。
+- **REQ-LV-102（21:00 JST 締切 + escalation、REQ-LV-041 を置換）**: WHEN JST 21:00 の時点で
+  `cadence_met()` が当日分について `false` を返す loop が存在する場合、THE SYSTEM SHALL 既存の
+  `self-fix.sh <loop-name> "<blocker>"` 呼び出し（変更しない、Ground truth参照）を、
+  「7日前に投稿があった」等の過去実績を理由に抑制することなく毎日 escalate する。
+- **REQ-LV-103（streak KPI + 日次 scorecard）**: THE SYSTEM SHALL 各 loop の連続達成日数
+  （`streak(ledger_rows, today_jst_date, contract) -> int`、新設・純粋: 当日から遡って
+  `cadence_met`が真である連続日数を数える）を計算し、`verify-loops-audit.sh`の6hごとscorecard
+  （REQ-LV-042、置換後）に loop ごと `✅posted-today (streak=N)` / `❌missed (streak=0)` の形式で含める。
+- **REQ-LV-104**: THE SYSTEM SHALL `verify-loops.sh`/`verify-loops-audit.sh`（REQ-LV-040〜042）の
+  8 loop 分の判定ロジックを、旧来の `fresh()`（26h/30h等の固定しきい値によるartifact年齢判定）呼び出し
+  から REQ-LV-101/102/103 の cadence 判定に完全に置き換える。旧 `fresh()` 呼び出しは capafy/reddit/
+  life-manager の既存3ブロック（この feature の対象外）でのみ残す — 8 loop 分のブロックからは削除する。
+
+### I. EDD（Evaluation-Driven Development）
+
+- **REQ-LV-110（evaluator、loop毎、決定論・LLM judge禁止）**: THE SYSTEM SHALL clip/affiliate/video/
+  gig/bounty の各 loop について、`~/anicca/skills/earn/self-improve/evaluator.py`の
+  `evaluate_stage1/evaluate_stage2`パターン（fixture/ledgerを読み取り専用で読み、`combined_score`
+  という1つのスカラーを返す。LLM judgeを一切使わない = Verifier's Law準拠。ledgerへの書き込み・
+  実行系モジュールのimportを一切行わない sandbox 境界を維持する）を copy+tweak した loop 固有の
+  evaluator（新設、`~/anicca/skills/self/self-improve/<loop>/evaluator.py`）を実装する。design spec
+  §EDD表の evaluation metric を各 loop の `combined_score` の定義とする（例: clip=`views/reel(48h窓)
+  + follower増分 + payout USDC`、gig=`funnel: 応募→返信率→受注率→入金JPY/週`）。
+- **REQ-LV-111（週次比較、machine-checkable）**: THE SYSTEM SHALL 各 loop の evaluator を週次で実行し、
+  今週の`combined_score`が先週の`combined_score`を上回るかどうかを純関数
+  `beats_previous_week(this_week_score, last_week_score) -> bool`（新設・純粋）で判定する。この判定結果
+  を loop の metrics ledger（REQ-LV-013/014/015/016/017で新設・維持したもの）に
+  `{ts, week_start, combined_score, beats_previous_week}` として追記する。
+- **REQ-LV-112（promote gate、pm-tradeパターンをcopy+tweak）**: WHEN loopの改善候補（prompt/戦略
+  ファイルの変更案）が生成された場合、THE SYSTEM SHALL `~/anicca/skills/earn/self-improve/
+  promote_gate.sh`と同型の2段ゲート（① `lib/promote_gate.py`相当の決定論pre-check、② pre-checkを
+  通過した候補にのみ実行する同期`claude --model opus --dangerously-skip-permissions --print`による
+  fresh adversary判定）を経てのみ、その改善候補を昇格（実際のprompt/戦略ファイルへ反映）する。
+  pre-checkを通過しない、またはadversaryがPASSを出さない候補は昇格しない（`~/.claude/CLAUDE.md`の
+  adversaryモデル分業表: Opus 4.8 準拠）。
+- **REQ-LV-113（lessons ledger との接続）**: THE SYSTEM SHALL 各 loop の起動プロンプトに、pass 冒頭で
+  自身の metrics ledger と lessons ledger（REQ-LV-020/021/030/031 で既に規定済み）に加え、直近の
+  evaluator 実行結果（`combined_score`とREQ-LV-111の`beats_previous_week`）も読んでから今回 pass の
+  改善判断を行う、という一文を追加する。改善候補そのものの内容判断は agent が行う — evaluator/gateは
+  決定論ツールとしてのみコード化する。
+
+### J. Dashboard（aniccaai.com 連携、既存 write 制限を維持）
+
+- **REQ-LV-120（loop-registry.json、新設、claude-p自身のbody配下にのみ書く）**: THE SYSTEM SHALL
+  `~/anicca/skills/self/telemetry-collect.sh`を拡張し（既存のper-instance telemetry.json書き込み
+  ロジックには手を入れない、新しい出力を追加するのみ）、claude-pのbody配下
+  （`~/.anicca-founder/state/loop-registry.json`）に、8 loop 分の
+  `{loop, type, account, status, streak, artifact_url_today, weekly_metric, cumulative_earn_usdc,
+  model}`配列を書き出す。`status`はREQ-LV-101の`cadence_met()`結果（`"posted-today"`/`"missed"`）、
+  `streak`はREQ-LV-103の値、`weekly_metric`はREQ-LV-110の`combined_score`をそのまま使う（新規の計算
+  ロジックを重複実装しない）。
+- **REQ-LV-121（landingへの直接write禁止、既存制約の維持）**: THE SYSTEM SHALL
+  `loop-registry.json`を`~/anicca-project/apps/landing/**`または`apps/landing/public/dashboard.json`
+  へ一切直接書き込まない（プロジェクトCLAUDE.md「aniccaai.comへの書き込み制限」表: claude-pは自分の
+  body file を書くのみ、dashboard-syncがpull・renderする既存契約を維持）。`apps/landing/public/
+  dashboard.json`への`loops`セクションのmerge作業はdashboard-sync（Dais owned）の責務であり、この
+  feature の実装スコープ外とする。
+- **REQ-LV-122（frontend実装順序、規約遵守）**: WHERE dashboard-sync側で`aniccaai.com/dashboard`に
+  `loops`セクションのUIを新規追加する作業が発生する場合（この feature 自体の実装スコープ外だが、
+  依存関係として明記する）、THE SYSTEM SHALL `gpt-tasteskill` → `frontend-design` skill → 実ブラウザ
+  検証、の順序を変えない（プロジェクトCLAUDE.md「フロントエンド作成順序」準拠）。
+
+### K. Loop Scaling（fleet 増殖ガードレール）
+
+- **REQ-LV-130（scale-eligible gate、純関数）**: THE SYSTEM SHALL 各 loop type について
+  `scale_eligible(streak, weekly_score, weekly_score_threshold, disk_free_gb) -> bool`（新設・純粋）
+  を実装する。真になる条件は design spec §Loop Scaling 準拠: `streak >= 7` AND
+  `weekly_score > weekly_score_threshold` AND `disk_free_gb >= 5`。しきい値はloop type毎に
+  config（新設、既存`~/anicca/skills/earn/self-improve/config.yaml`と同じYAML形式）で明示する。
+- **REQ-LV-131（spawner、判断はagent・実行はツール）**: WHEN ある loop type が REQ-LV-130 で
+  `scale_eligible=true`と判定され、かつ agent がfleet拡張を選んだ場合、THE SYSTEM SHALL 既存
+  `ig-account-create` skill（実証済み: email-only signup、既存@aiclipsvaultで実績あり）で新アカウント
+  を作成し、`~/anicca/skills/earn/clip/_instance_paths.sh`の`ANICCA_INSTANCE`環境変数パターン
+  （`_SFX`サフィックス）を踏襲した新しい loop instance 用パス一式を導出し、既存の`*-cli.sh`を
+  account引数でパラメータ化したtmux core起動 + healthcheck plist生成を行い、その結果を新設
+  `loop-registry.jsonl`（追記専用のspawnイベントログ、REQ-LV-120の`loop-registry.json`＝現在の
+  状態スナップショットとは別ファイル）に`{ts, loop_type, account, instance_suffix, spawned_by}`
+  として1行追記する。
+- **REQ-LV-132（guardrail: warmup必須）**: WHERE 新規作成されたアカウントが投稿を開始する場合、
+  THE SYSTEM SHALL そのplatform既存のwarmupスケジュール（clip/videoの既存warmup機構、design spec
+  P0-3のwarmupバグ修正後の挙動）を必ず経由させる — warmupをスキップした即時投稿は禁止する。
+- **REQ-LV-133（guardrail: 同一platform新規作成のcooldown）**: THE SYSTEM SHALL 同一platform
+  （IG/TikTok等）への新規アカウント作成頻度を、config（REQ-LV-130と同じconfig）で明示された
+  最小間隔（N日に1つ）以下にする。`loop-registry.jsonl`の直近spawnイベントのtimestampをこの判定の
+  入力とする。
+- **REQ-LV-134（guardrail: fleet上限）**: THE SYSTEM SHALL 各loop typeのfleet上限（同時稼働instance
+  数の最大値）をconfigで明示し、`loop-registry.jsonl`から算出した現在稼働instance数がこの上限に
+  達している場合はREQ-LV-131のspawnerを実行しない（fail-closed）。
+- **REQ-LV-135（guardrail: ban検知→pause）**: WHEN あるinstanceの投稿が連続N回失敗した場合
+  （Nはconfigで明示、design specは具体値を指定していないため実装時にconfigデフォルト値を明記する）、
+  THE SYSTEM SHALL 該当instanceを`loop-registry.json`上で`status:"paused"`に更新し、そのloop固有の
+  lessons ledger（REQ-LV-030/031）に`{ts, instance, reason:"ban-suspected", consecutive_failures}`
+  を追記する。pause中のinstanceはREQ-LV-131のspawner判断（同一platformのfleet数カウント）に
+  引き続き算入する（pauseは削除ではない）。
+
+### L. OpenClaw 統合（Dais指示: OpenClaw廃止 → claude-p統合）
+
+- **REQ-LV-140（棚卸し、実数確認済み）**: THE SYSTEM SHALL `~/.openclaw/cron/jobs.json`の全221件
+  （うち`enabled:true`は103件、確認済み — design spec記載の「enabled 103 jobs」と一致）を
+  「earn投稿系」「Life Manager系」「インフラ系」の3分類に分類したリストを本 spec（または本 spec が
+  参照する別ファイル）に追記して確定する。分類そのもの（どのjobがどのカテゴリか）はagentの判断とし、
+  この feature はその判断結果を記録するフォーマットのみを規定する。
+- **REQ-LV-141（移植順序、段階的・不可逆操作なし）**: THE SYSTEM SHALL 移行を以下の順序で実施する:
+  ①REQ-LV-140の棚卸し確定 → ②「earn投稿系」jobをclaude-pのtmux core / launchdへ移植（skill本体を
+  `~/.openclaw`から`~/anicca/skills`へ移設し、fuelを`openai-codex`からAnthropic Sonnetへ切替）→
+  ③「Life Manager系」もclaude-p loop化 → ④「インフラ系」を`healthcheck-runtime-loop.sh`
+  + dashboard collector（REQ-LV-120）で置換 → ⑤OpenClaw gatewayをdisableして7日間並走観察 →
+  ⑥問題なければ削除。各ステップは前段が完了して初めて着手する（並行スキップ禁止）。
+- **REQ-LV-142（削除前MUST: state保全確認）**: WHEN ステップ⑥（OpenClaw削除）に進む前に、THE SYSTEM
+  SHALL `~/.openclaw`のstate/ledgerが`anicca-dais` repo（private）にpush済みであることを
+  `git -C ~/.openclaw log --oneline -1`相当のコマンドで実際に確認する（プロジェクトCLAUDE.md
+  「不可侵store」= `~/.openclaw`の保全要件と一致）。未pushの変更が残っている場合は削除を実行しない。
+- **REQ-LV-143（削除前MUST: Dais明示go、不可逆broadcast）**: THE SYSTEM SHALL ステップ⑥
+  （OpenClaw gateway/state/cronの最終削除）を、REQ-LV-142の確認に加えて **Dais の明示的な go 指示**
+  を precondition として実行する（`~/.claude/CLAUDE.md`「No-human-loop」の3例外の1つ:
+  「設計外の不可逆 broadcast」に該当するため）。Dais の明示 go がない限り、ステップ⑤（7日間並走観察）
+  で止まり、⑥へは進まない。
+- **REQ-LV-144**: THE SYSTEM SHALL ステップ②〜④で移植された各jobについて、この spec の他の要件
+  （evidence mail: REQ-LV-001〜018、metrics/lessons ledger: REQ-LV-020〜031、cadence contract:
+  REQ-LV-100〜104）を新しいclaude-p loopとしても満たすことを確認する（移植先で検証水準が後退しない）。
 
 ## Non-functional constraints
 

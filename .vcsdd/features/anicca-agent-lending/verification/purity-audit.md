@@ -68,3 +68,62 @@ re-verified by direct source grep this session (not merely re-trusting Phase 3's
 (read-only fs vs. RPC-only network), matching `contracts/sprint-1.md`'s own CRIT-001/CRIT-009 criteria.
 No residual risk found in the purity boundary itself; the only residual risks are the two LOW-severity,
 non-purity-related observations already recorded in `security-report.md`.
+
+## Sprint-2 Addendum (Phase 5, `lending-orchestrator.mjs`)
+
+### Declared Boundaries
+
+Per `specs/verification-architecture.md`'s Purity Boundary Map rows 41-42 (sprint-2 additions):
+`lending-orchestrator.mjs` is the **Effectful Shell (new, sprint-2)** wiring REQ-101/102/104/105/106/
+112/114's own pure/narrow `lending-gate.mjs` functions plus the two already-hardened effectful modules
+(`lock.mjs::withGigLock`, `escrow.mjs::payViaFacilitator`) into one real issuance/servicing flow —
+declared to contain "no decision/judgment logic of its own" (PROP-115b/PROP-116b).
+
+### Observed Boundaries (this session's own independent re-verification)
+
+```
+cd ~/anicca/skills/economy/lending/lib
+git status --short .                                          -> clean (zero uncommitted changes)
+git log --oneline -- lending-gate.mjs lending-verify.mjs \
+  lending-path.mjs gojo-read.mjs                                -> newest commit 46eb1e1 (sprint-1 FIND-901/902
+                                                                     fix) -- no sprint-2 commit touches any of
+                                                                     these four files; confirmed byte-identical
+                                                                     to sprint-1's own delivered state
+git log --oneline -- lending-orchestrator.mjs                  -> 1b1fae2 (Phase 2b GREEN), 3151f13 (Phase 2c
+                                                                     refactor) -- entirely new file, isolated
+                                                                     from the four pure/narrow modules' own
+                                                                     history
+```
+
+- **Imports confirmed** (source read, `lending-orchestrator.mjs` lines 10-35): `node:fs`/`node:path`
+  (its own local ledger I/O), 17 named pure functions + `LOAN_REPAYMENT_WINDOW_DAYS` from
+  `./lending-gate.mjs`, `verifyRepayment`/`reconcileProvisionalDisbursement` from
+  `./lending-verify.mjs`, `LOANS_LEDGER_PATH` from `./lending-path.mjs`, `withGigLock` from
+  `../../gig/lib/lock.mjs`, `payViaFacilitator` from `../../gig/lib/escrow.mjs`. Zero other imports —
+  confirms it wires EXACTLY the modules the Purity Boundary Map declares, nothing else.
+- **No decision logic of its own**: `lending-orchestrator.test.mjs`'s own `PROP-115b/PROP-116b
+  structural` test (already GREEN, re-read this session) asserts no relational/threshold comparison
+  against a `balanceUsd`/`surplusUsd`/`defaultRateUsd`/`repaymentRate` value exists anywhere in the
+  file's own source outside a call into an already-exported `lending-gate.mjs` function, and no
+  LLM/prompt reference. This session's own manual read confirms every branch point in
+  `lending-orchestrator.mjs` (kill-switch checks, eligibility checks, sizing decisions) is a direct
+  `if (!result.eligible)`/`if (killSwitch.paused)`-style consumption of an already-computed pure
+  function's own return value — never a new arithmetic/boolean judgment invented in this file.
+- **Effectful surface is exactly**: local `loans.jsonl` read/append (via `fs.readFileSync`/
+  `fs.mkdirSync`/`fs.appendFileSync`, paths always derived from `deps.ledgerFile || LOANS_LEDGER_PATH`,
+  confirmed zero hardcoded/externally-derived path segments — see `security-report.md`'s own Sprint-2
+  Addendum grep sweep), `withGigLock` acquisition/release (three distinct key families:
+  `` `loan_${lenderId}` ``/`` `loan_borrower_${borrowerId}` `` for issuance,
+  `` `loan_${loanId}` `` for servicing — confirmed structurally disjoint per the already-GREEN
+  `CRIT-204 structural` test), and `payViaFacilitator`/`reconcileProvisionalDisbursement`/
+  `verifyRepayment` invocations (always via the module's own `deps` seam, defaulting to the REAL
+  functions in production). **Matches the declared boundary exactly.**
+
+### Summary
+
+The sprint-2 purity boundary holds exactly as declared: `lending-orchestrator.mjs` is a genuine
+effectful shell wiring sprint-1's untouched pure core (`lending-gate.mjs`) and narrow effectful modules
+(`lending-verify.mjs`/`gojo-read.mjs`/`lending-path.mjs`, all confirmed byte-identical/unmodified this
+session via `git log`) plus the two pre-existing hardened effectful modules (`lock.mjs`/`escrow.mjs`),
+with zero decision/judgment logic invented in the new file itself. No purity-boundary drift found across
+either sprint.
