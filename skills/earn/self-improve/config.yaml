@@ -20,32 +20,26 @@ llm:
   # (verified via `clawrouter wallet` 2026-07-08 again), so only a FREE-tier model can be used —
   # this is a structural guarantee against any spend, not just a policy.
   #
-  # MODEL CHOICE (re-verified LIVE 2026-07-08, close-loop-2 revision): built a standalone harness
-  # (`/private/tmp/.../scratchpad/test_model_diff.py`, same system_message + the real diff_user.txt
-  # shape openevolve sends) and fired the REAL current program at both candidate free models via
-  # direct curl to the local proxy — not a guess, an actual side-by-side sample:
-  #  - free/mistral-large-3-675b (the sole model the prior 10-iteration run used): 3/3 real samples
-  #    (temperature 0.5, 0.9, 1.15) each produced a SEARCH/REPLACE block whose closing fence was the
-  #    literal text `>>>>>>>` with NO trailing ` REPLACE` — openevolve's own parser
-  #    (utils/code_utils.py::extract_diffs, regex `r"<<<<<<< SEARCH\n(.*?)=======\n(.*?)>>>>>>> REPLACE"`)
-  #    requires that exact literal, so every one of these 3 samples silently fails to parse as ANY
-  #    diff at all ("No valid diffs found in response") — a chronic per-model formatting habit on
-  #    this task, reproduced at 3 different temperatures, not a truncation artifact (all 3 completed
-  #    with finish_reason=stop well under the 8192-token cap tested) and not solely the rate-limit
-  #    problem this file previously blamed alone.
-  #  - free/qwen3.5-122b-a10b: 1/1 live sample (temperature 0.7, before its own free-tier bucket
-  #    also 429'd on a second call) produced a byte-correct `<<<<<<< SEARCH` / `=======` /
-  #    `>>>>>>> REPLACE` block, reproducing the ENTIRE score_candidate function body (including the
-  #    EVOLVE-BLOCK-START/END marker lines, unmodified, at the same relative position) — verified by
-  #    hand against `lib/gate_math.py::diff_in_scope` that this specific shape (whole-block replace,
-  #    markers preserved verbatim) computes identical fixed-region prefix/suffix to baseline and
-  #    therefore PASSES scope_guard, not just "looks like a diff".
-  # Conclusion: qwen3.5-122b-a10b is the model with demonstrated correct diff-format compliance on
-  # THIS task; mistral-large-3-675b is kept as a second ensemble entry purely for request-volume
-  # redundancy across a SEPARATE free-tier rate-limit bucket (confirmed independently 200/429 from
-  # each other live) — its low format-compliance means most of its samples are wasted iterations,
-  # never a harmful one (a failed parse just leaves the tracked best unchanged), so keeping it costs
-  # nothing but adds a second bucket to draw from when qwen's own bucket is exhausted.
+  # MODEL CHOICE (re-verified LIVE 2026-07-08, capable-improver revision): qwen3.5-122b-a10b and
+  # mistral-large-3-675b were both retired from this config after the prior close-loop-2 run (40
+  # real iterations, both models in the ensemble) still never produced a candidate that beat
+  # baseline under the risk-adjusted metric — every accepted-format sample either failed to parse
+  # ("No valid diffs found") or landed on a tie/regression, per execution-notes-self-improve.md's
+  # close-loop section. Switched to `free/gpt-oss-120b` (OpenAI's open-weight 120B, served free via
+  # the local ClawRouter proxy, same $0/no-human-credential endpoint) and re-verified LIVE with a
+  # standalone probe (`/private/tmp/.../scratchpad/probe_gptoss.py`, the exact rendered
+  # system_message below + the real `diff_user.txt` shape openevolve sends, fired at the real
+  # current `pm_backtest_strategy.py`): 2/2 live samples (temperature 0.5, 0.9) each returned
+  # finish_reason=stop and a byte-correct `<<<<<<< SEARCH` / `=======` / `>>>>>>> REPLACE` block
+  # whose SEARCH text exactly matched the current `score_candidate` function body (including the
+  # EVOLVE-BLOCK-START/END marker lines at the same relative position) — parses cleanly with
+  # openevolve's own `extract_diffs` regex and would PASS `scope_guard` (SEARCH/REPLACE both
+  # confined strictly inside the block). The proposed edits were substantive selection-logic
+  # changes (added price/liquidity/resolve-horizon quality filters on top of the existing
+  # min_edge/min_confidence gate, i.e. exactly the "tighten trade SELECTION" lever this file's
+  # system_message steers toward), not a stake-multiplier-only change. Two ensemble entries at
+  # different temperatures for the same request-diversity/cache-defeat reason documented in this
+  # file's prior revisions (see execution-notes-self-improve.md for the caching-trap background).
   api_base: "http://127.0.0.1:8402/v1"
   api_key: "unused-local-proxy-no-auth"  # the local ClawRouter proxy does not check this value
   # openevolve's OpenAI client ALWAYS includes `top_p` in the request body (even when None), and
@@ -64,24 +58,22 @@ llm:
   # call ride out a short window instead of failing the whole iteration outright.
   retries: 8
   retry_delay: 25
-  # Ensemble of TWO different free models (was: one model x 3 temperatures) via openevolve's own
-  # LLMEnsemble (llm/ensemble.py::_sample_model — a weighted random.choice over `llm.models` on
-  # every generate_with_context call; not a custom addition). Weight biased 2:2:1 toward
-  # qwen3.5-122b-a10b (demonstrated correct SEARCH/REPLACE format above) while still drawing from
-  # mistral-large-3-675b's separate rate-limit bucket for extra request volume when qwen's own
-  # bucket is exhausted. Different temperatures per qwen entry keep the same cache-defeat property
-  # documented in this file's prior revision (fixed single-temperature requests are byte-identical
-  # at generation 0 and get served from the local proxy's own response cache instead of a fresh
-  # sample).
+  # Same free/gpt-oss-120b model at THREE different temperatures via openevolve's own LLMEnsemble
+  # (llm/ensemble.py::_sample_model — a weighted random.choice over `llm.models` on every
+  # generate_with_context call; not a custom addition). Multiple temperature entries (not multiple
+  # models) both escapes the local proxy's response cache (fixed single-temperature requests are
+  # byte-identical at generation 0 and get served from cache instead of a fresh sample — see
+  # execution-notes-self-improve.md's caching-trap section) and gives more sampling diversity per
+  # attempt from the one model already demonstrated (above) to produce valid, in-scope diffs.
   models:
-    - name: "free/qwen3.5-122b-a10b"
-      temperature: 0.5
-      weight: 2.0
-    - name: "free/qwen3.5-122b-a10b"
-      temperature: 0.9
-      weight: 2.0
-    - name: "free/mistral-large-3-675b"
-      temperature: 0.7
+    - name: "free/gpt-oss-120b"
+      temperature: 0.4
+      weight: 1.0
+    - name: "free/gpt-oss-120b"
+      temperature: 0.8
+      weight: 1.0
+    - name: "free/gpt-oss-120b"
+      temperature: 1.1
       weight: 1.0
 
 prompt:
