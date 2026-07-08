@@ -81,6 +81,20 @@ health の判定基準は「artifact が存在する」ではなく「**今日�
 - これは task #20（各 manager loop の外部自習）を **self-improve の第一原理に格上げ**したもの。explorer が新 loop を見つけた時も、その loop はまず BP 検索から始める。
 - **これは全 loop 共通**（gig/clip/video/affiliate/article/pm/hl）。各 loop の self-improve は「①web で BP 検索（cold-start 主体）→ ②メトリクス比較（traction 後に比重増）→ ③ lessons に記録 → ④次 pass に反映」の4段で回す。
 
+## Self-improve の2相（Dais 2026-07-08: cold-start は検索駆動、warm は metric 駆動）★全 loop 共通の最重要原則★
+
+**なぜ loop が稼げないか = best practice を検索せず、自己流で失敗を繰り返しているから**（人間 Claude が検索せず失敗するのと同じ）。self-improve を2相に分ける:
+
+| 相 | いつ | 学習源 | 理由 |
+|---|---|---|---|
+| **Phase 1: SEARCH 駆動（cold-start）** | 売上/成功が **0 の間** | **web 検索で外部 best practice**（何が売れるか・勝ちパターン・trending）→ 自分の現状と best practice の差分を出す → 差分を次 pass に適用 | 失敗しかない状態では metrics の信号が低い（失敗の原因は数百通りで特定不能）。**失敗からは self-heal は学べても self-improve はほぼ学べない**。だから外部の成功事例を検索して型を借りる |
+| **Phase 2: METRIC 駆動（warm）** | 最初の売上/成功が出た後 | 自分の funnel metrics（何が入金したか）+ **継続する外部検索** | 成功が出たら「何が効いたか」を metrics で特定し倍賭け。ただし検索は止めない（trending/新手法を拾い続ける） |
+
+- **検索:metrics の比率**: cold-start = 10:0（ほぼ全部検索）→ 売上が出るにつれ 5:5 へ（検索は 0 にしない）。
+- **MUST: この検索は loop の中に埋め込む**（agent-reach を pass 内で呼ぶ）。人間も私(orchestrator)も loop の外にいる。loop 自身が「自分のドメインの最新 best practice」を検索 → 自分の現状と比較 → gap を lessons.jsonl に記録 → 次 pass で適用。判断（何を取り込むか）= agent、検索実行・記帳 = 決定論。
+- **self-heal は逆**: failure/dysfunction から学ぶ（何が壊れたかは特定可能）。self-heal は失敗駆動のまま。
+- これは gig だけでなく **全 loop 共通**。explorer が新 loop を建てる時も「まず best practice を検索してから始める」を初期動作にする。タスク #20 をこの2相原則に昇格。
+
 ## EDD（Evaluation-Driven Development、self-improve の bar）
 
 verification（二値、self-heal の bar）と evaluation（スカラー、self-improve の目的関数）を分離する。**pm-trade の openevolve パターン（evaluator→score→adversary gate→昇格）を全 loop に一般化する。**
