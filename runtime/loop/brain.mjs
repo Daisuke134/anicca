@@ -9,6 +9,8 @@
  * REQ-004: claude -p child env is scrubbed (no private keys).
  */
 
+import fs from 'node:fs';
+import path from 'node:path';
 import https from 'node:https';
 import http from 'node:http';
 import os from 'node:os';
@@ -16,6 +18,30 @@ import { spawn } from 'node:child_process';
 import { buildSystemPrompt, buildUserMessage, getToolDefinitions } from './prompt.mjs';
 // spec 25 O1: expose each live skill as a pickable tool (enum on run_skill.slot).
 import { scrubPrivateKeys } from './env-filter.mjs';
+
+// ── One-time forced-slot test hook (human-authorized capability test, 2026-07-08) ──────────
+// Dais 2026-07-08 (2nd authorized use): explicit, one-time authorized override to prove the full
+// spawn pipeline actually executes, now that the real spawnThresholdUsd (post safety-margin fix)
+// is genuinely cleared -- NOT a standing mechanism, NOT autonomous evidence. If
+// `$ANICCA_HOME/state/force-next-slot.json` exists (`{"slot":"<name>"}`), the NEXT think() call
+// constrains run_skill's slot enum to exactly that one value and forces tool_choice so the model
+// cannot pick sleep or a different slot -- the model still supplies its own `args`. The flag file
+// is deleted the moment it's read, so it fires exactly once. This block is removed again once the
+// test is captured.
+function consumeForcedSlot() {
+  const home = process.env.ANICCA_HOME;
+  if (!home) return null;
+  const flagPath = path.join(home, 'state', 'force-next-slot.json');
+  try {
+    const raw = fs.readFileSync(flagPath, 'utf8');
+    fs.unlinkSync(flagPath);
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.slot === 'string' && parsed.slot) return parsed.slot;
+  } catch {
+    // no flag file, or unreadable/invalid -- normal path, no force
+  }
+  return null;
+}
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY_MS = 2000;
@@ -54,14 +80,17 @@ async function thinkProxy(ctx, config) {
   // is OK because net-positive (earn − burn) is the real goal, not zero compute. BROKE tier
   // (balance=0) stays on `free/gpt-oss-120b` as a safety floor since an empty wallet can't pay.
   // Operator override via ANICCA_MODEL.
+  const forcedSlot = consumeForcedSlot();
   const body = JSON.stringify({
     model: config.ANICCA_MODEL || ctx.model || 'auto',
     messages: [
       { role: 'system', content: buildSystemPrompt(ctx) },
-      { role: 'user',   content: buildUserMessage(ctx) },
+      { role: 'user',   content: forcedSlot
+          ? `⚠️ ONE-TIME AUTHORIZED TEST DIRECTIVE (human, 2026-07-08): call run_skill({slot:"${forcedSlot}"}) this wake — this is the only slot available this call, for a deliberate capability test. Choose your own args.`
+          : buildUserMessage(ctx) },
     ],
-    tools: getToolDefinitions(ctx.activeSkillSlots),
-    tool_choice: 'auto',
+    tools: getToolDefinitions(forcedSlot ? [forcedSlot] : ctx.activeSkillSlots),
+    tool_choice: forcedSlot ? { type: 'function', function: { name: 'run_skill' } } : 'auto',
     max_tokens: 512,
   });
 
