@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "regression_safety",
+  "category": "deployment_verification",
+  "severity": "low",
+  "blocking": false,
+  "description": "The Tier-0 'live running daemon PROCESS' checks required by verification-architecture.md (PROP-014 in full; PROP-015's part (2); PROP-016's part (2)) cannot yet be TRUE against the actual supervised process, because that process has not been restarted since these files were edited. Live evidence read this review: /Users/anicca/.blockrun/logs/daemon.err's last self-update/restart banner (lines ~5019-5023) is timestamped 2026-07-08T05:43:26Z-05:43:28Z and still logs 'starting franklin proxy on :8403 (model=nvidia/llama-4-maverick...)' and 'exec loop (model tiers from config; funded=nvidia/llama-4-maverick)' -- i.e. the CURRENTLY RUNNING franklin-loop process was launched from the OLD anicca-daemon.sh/plist, before this feature's edits landed on disk. /Users/anicca/.blockrun/state/ledger.jsonl independently confirms 315 wake_error/proxy_down-family lines consistent with the still-live Root-Cause-B bug. This is expected and inherent to a pre-restart review (not a code defect in the reviewed diff), but it means PROP-013 (static plist-file check) is the ONLY Tier-0 plist/process check that is actually verifiable right now; PROP-014/015(ii)/016(ii) are unverified until the operational restart happens, and verification-architecture.md itself requires them to be checked immediately after (via `launchctl print gui/$(id -u)/ai.anicca.franklin-loop` and/or `ps eww <pid>`, NOT the verifier's own shell env).",
+  "evidence": {
+    "filePath": "/Users/anicca/.blockrun/logs/daemon.err",
+    "lineRange": "~5019-5023 (most recent restart banner as of this review)",
+    "snippet": "[2026-07-08T05:43:27Z] anicca-daemon: starting franklin proxy on :8403 (model=nvidia/llama-4-maverick, free, Franklin's own Solana wallet)\n[2026-07-08T05:43:28Z] anicca-daemon: exec loop (model tiers from config; funded=nvidia/llama-4-maverick)"
+  },
+  "recommendedAction": "Non-blocking, procedural. Immediately after restarting ai.anicca.franklin-loop, re-run PROP-014/015(ii)/016(ii)'s live process-env checks (launchctl print / ps eww) before declaring Phase 3 fully Done -- this is already mandated by verification-architecture.md, just not yet executable pre-restart.",
+  "routeToPhase": "advisory-only"
+}

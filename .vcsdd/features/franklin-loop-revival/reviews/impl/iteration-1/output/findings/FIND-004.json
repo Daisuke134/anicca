@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "regression_safety",
+  "category": "dead_config",
+  "severity": "low",
+  "blocking": false,
+  "description": "The deployed ai.anicca.franklin-loop.plist retains two keys that now have zero functional effect on the running system, which risks a future maintainer assuming they still matter. FRANKLIN_PROXY_PORT (plist lines 27-28, value changed 8403->8402 by this sprint) is no longer read anywhere -- runtime/anicca-daemon.sh:32 now unconditionally does `PORT=\"${COMPUTE_PROXY_PORT:-8402}\"` for every instance, with no reference to FRANKLIN_PROXY_PORT left in the file (confirmed by direct read of the full script and by the new daemon-script-franklin-routing.test.mjs's own REQ-004(c) test). ANICCA_MODEL (plist lines 21-22, value free/glm-4.7) is likewise never consumed -- runtime/loop/config.mjs's loadConfig() builds `config` only from its DEFAULTS map (lines 13-62) plus a short explicit pass-through list (lines 124-142), and ANICCA_MODEL is in neither, so config.ANICCA_MODEL is always undefined and brain.mjs:58's `config.ANICCA_MODEL || ctx.model || 'auto'` always falls through to ctx.model (this exact fact is already independently documented and re-verified in this feature's own spec iteration-4 verdict, FIND-010). Both are spec-permitted to remain (behavioral-spec.md REQ-004 edge case explicitly allows 'leaving unreachable/inert code and an unused model-id value'), so this is not a functional bug -- purely a maintainability/clarity note.",
+  "evidence": {
+    "filePath": "/Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist",
+    "lineRange": "9-28",
+    "snippet": "<key>ANICCA_MODEL</key><string>free/glm-4.7</string> ... <key>FRANKLIN_PROXY_PORT</key><string>8402</string>"
+  },
+  "recommendedAction": "Non-blocking. Consider removing ANICCA_MODEL and FRANKLIN_PROXY_PORT from the plist in a future cleanup sprint (or add an inline comment noting they are dead) so the deployed config accurately reflects what the code actually reads.",
+  "routeToPhase": "advisory-only"
+}

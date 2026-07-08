@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "correctness",
+  "category": "test_coverage",
+  "severity": "low",
+  "blocking": false,
+  "description": "REQ-001's regression edge case ('Non-franklin instance: existing EVM (viem) address resolution behavior is unchanged byte-for-byte') is asserted in prose but has no dedicated automated test directly invoking runtime/wallet-address.mjs's CLI output before vs. after this sprint's daemon.sh restructuring. runtime/anicca-daemon.sh:120-130 replaced a guarded single-branch skip ('if INSTANCE != franklin') with an explicit if/else that now runs `cd \"$REPO/runtime/compute-proxy\" && node \"$REPO/runtime/wallet-address.mjs\"` inside the else arm -- textually identical to the prior invocation, and runtime/wallet-address.mjs itself is untouched, so the practical regression risk is very low. Coverage relies on (a) this code being byte-identical to what shipped before, and (b) the underlying resolve-identity.test.mjs suite (which tests loadEvmKey/resolveEvmPrivateKey directly, not the CLI wrapper) staying green -- neither is a direct end-to-end assertion that `node runtime/wallet-address.mjs` still prints the same address for a non-franklin instance after this restructuring.",
+  "evidence": {
+    "filePath": "runtime/anicca-daemon.sh",
+    "lineRange": "120-130",
+    "snippet": "if [ \"$INSTANCE\" = \"franklin\" ]; then ... export ANICCA_WALLET_ADDRESS=\"${ANICCA_WALLET_ADDRESS:-$(node \"$REPO/runtime/wallet-address-solana.mjs\" 2>/dev/null)}\" else export ANICCA_WALLET_ADDRESS=\"${ANICCA_WALLET_ADDRESS:-$(cd \"$REPO/runtime/compute-proxy\" && node \"$REPO/runtime/wallet-address.mjs\" 2>/dev/null)}\" fi"
+  },
+  "recommendedAction": "Non-blocking. Consider adding one daemon-script-franklin-routing.test.mjs-style test that extracts and runs the non-franklin wallet-export line snippet (mirroring the PORT-snippet execution pattern already used in that file) against a fixture $HOME/.automaton/wallet.json to close this gap explicitly.",
+  "routeToPhase": "advisory-only"
+}

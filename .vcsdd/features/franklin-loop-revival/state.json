@@ -1,7 +1,7 @@
 {
   "featureName": "franklin-loop-revival",
   "mode": "lean",
-  "currentPhase": "2c",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -36,9 +36,30 @@
       "timestamp": "2026-07-08T08:36:03.760Z",
       "reason": "Phase 2b GREEN complete: 33/33 new tests pass, 42/42 regression baseline pass (identical count to red-phase evidence). Proceeding to 2c refactor.",
       "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-08T08:39:10.896Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-08T09:00:24.005Z",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-08T09:03:44.555Z",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -52,6 +73,11 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T08:51:48.276Z",
+      "reviewedBy": "adversary"
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-08T07:57:06.207Z",
@@ -62,5 +88,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T06:48:23.302Z",
-  "updatedAt": "2026-07-08T08:36:03.761Z"
+  "updatedAt": "2026-07-08T09:03:44.556Z"
 }

@@ -1,0 +1,7 @@
+{
+  "reviewType": "implementation",
+  "iteration": 1,
+  "commit": "a2185d5",
+  "artifactsToReview": ["runtime/loop/address-classify.mjs","runtime/wallet-address-solana.mjs","runtime/loop/balance.mjs","runtime/anicca-daemon.sh","ai.anicca.franklin-loop.plist"],
+  "reviewDimensions": ["correctness","security_identity","spec_fidelity","regression_safety"]
+}
