@@ -58,6 +58,16 @@ spend — your fuel is the same wallet."
 OUT=$(timeout 600 franklin-trading start --trust -m "$FT_MODEL" --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
 echo "$OUT" | tail -30
 
+# P&L RECORD (REQ-002): if this pass did a REAL Jupiter swap, extract its signature and record the
+# on-chain USDC delta (win OR loss) so isProfitable / self-eval finally see Franklin's OWN realized
+# results (until now sol-trade never wrote to earn-ledger, so profitable was permanently false).
+# Fail-soft: never brick the pass. ANSI codes stripped before parsing (defensive).
+SIG=$(printf '%s' "$OUT" | sed "s/$(printf '\033')\[[0-9;]*m//g" | grep -oiE 'signature:[[:space:]]*[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1 | grep -oE '[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1)
+if [ -n "$SIG" ]; then
+  REC=$(env -i PATH="$PATH" HOME="$HOME" SOLANA_RPC_URL="${SOLANA_RPC_URL:-}" SIG="$SIG" WALLET="$OWN_WALLET" EARN_LEDGER="$LEDGER" WAKE_ID="${WAKE_ID:-$(date -u +%s)}" node "$SKILL_DIR/lib/record-swap.mjs" 2>/dev/null || true)
+  echo "[sol-trade] record-swap -> ${REC:-noop}"
+fi
+
 TRACE_FILE="$TRACE" RC="$RC" OUTTAIL="$(echo "$OUT" | tail -5 | tr '\n' ' ')" python3 - <<'PY'
 import json, os, datetime
 rec = {
