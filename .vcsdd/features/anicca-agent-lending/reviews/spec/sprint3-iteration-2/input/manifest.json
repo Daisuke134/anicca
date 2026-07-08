@@ -1,0 +1,6 @@
+{
+  "reviewType": "spec",
+  "artifactsToReview": ["specs/behavioral-spec.md#REQ-117", "specs/verification-architecture.md#PROP-117a-d"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "note": "Sprint-3 Phase 1c, iteration 2. Round 1 FAILed with FIND-1001 (exit-code parenthetical mischaracterized self/spawn/wake-gate.mjs's real behavior -- fixed by explicitly documenting lending's own deliberate divergence: refused issuance stays exit 0, unlike self/spawn's own status!=='active' exit-1 check) and FIND-1002 (no runWakeGate({argv,env,deps}) test-injection seam specified, making PROP-117c's fixture (2) unimplementable without a live RPC call -- fixed by adding an explicit deps clause covering citizensRegistryFile/ledgerFile/gojoLogFile/fetchImpl, mirroring self/spawn's own established convention). Independently re-verify BOTH fixes are accurate and complete: (1) re-read self/spawn/scripts/wake-gate.mjs's real exit-code logic yourself and confirm REQ-117's corrected text now accurately describes it; (2) confirm the new deps-injection clause genuinely closes PROP-117c's fixture-2 implementability gap (does it cover every state/network read step 1-4 actually needs?); (3) sweep once more for anything ELSE inaccurate or unimplementable in REQ-117/PROP-117a-d that round 1 might have missed."
+}

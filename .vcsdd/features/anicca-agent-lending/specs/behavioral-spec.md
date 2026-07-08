@@ -2587,12 +2587,34 @@ live network calls or Base-mainnet RPC reads — consistent with this document's
    it does NOT re-derive, re-implement, or duplicate either function's own internal arithmetic/boolean
    logic (mirrors REQ-115's own "PURE SEQUENCING... never re-deriving... any value those modules already
    own" discipline, applied here to candidate DISCOVERY rather than candidate EXECUTION).
-6. IF a pair was selected at step 5: invokes `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs})`
-   (REQ-115) EXACTLY ONCE this wake — never more than one NEW issuance attempt per wake (mirrors REQ-102's
-   own "at most one outstanding loan" single-in-flight discipline, and `anicca-agent-spawn` REQ-102's own
-   `MAX_CONCURRENT_SPAWNS=1` precedent), deferring any further pair to a LATER wake's own fresh
-   candidate-pair enumeration (a fresh read, never a stale in-memory retry within the same process
-   invocation).
+6. IF a pair was selected at step 5: invokes `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs},
+   { getCitizen, gojoLogRows })` (REQ-115) EXACTLY ONCE this wake — never more than one NEW issuance
+   attempt per wake (mirrors REQ-102's own "at most one outstanding loan" single-in-flight discipline, and
+   `anicca-agent-spawn` REQ-102's own `MAX_CONCURRENT_SPAWNS=1` precedent), deferring any further pair to
+   a LATER wake's own fresh candidate-pair enumeration (a fresh read, never a stale in-memory retry within
+   the same process invocation). **Corrected (2026-07-08, Phase 1c iteration-2 review FIND-1003,
+   critical): `executeLoanIssuanceAttempt`'s REAL, already-converged (sprint-2) signature is
+   `(params, deps = {})` — a SECOND argument — and `deps.getCitizen` has NO production default anywhere
+   in the codebase (`const getCitizen = deps.getCitizen;`, confirmed by direct read of
+   `lending-orchestrator.mjs`, plus a live execution against the real function that reproduces
+   `TypeError: getCitizen is not a function` when called with only the first argument). A naive
+   single-argument call, as an earlier draft of this REQ specified, crashes on EVERY real wake where
+   step 5 finds a pair — directly contradicting this REQ's own EARS clause ("genuinely INVOKED"). THE
+   SYSTEM SHALL supply `deps.getCitizen` as a real, production `async (id) => {...}` closure that performs
+   a FRESH read of the citizens registry (step 1's own `ensureCitizensRegistry`-backed read, re-invoked
+   per call, never a snapshot captured once at wake start and reused — mirrors REQ-106's own "never rely
+   on a pre-lock snapshot alone" discipline, extended here to citizen-record freshness) and returns that
+   SAME citizen record shape steps 1-5 already consume (`{id, wallet, walletAddress, coLocatedWithCoordinator,
+   ...}`), or `null` for an unknown id. THE SYSTEM SHALL supply `deps.gojoLogRows` as step 3's own
+   already-read `gojoLogRows` array (that argument DOES have a safe `[]` default inside
+   `executeLoanIssuanceAttempt` itself, so omitting it would not crash, but omitting it would silently
+   feed REQ-101's own `sumRecentGojoGiftsUsd` an always-empty gojo history instead of this wake's own real
+   one — a silent correctness gap, not a crash, but still a REAL deviation from "genuinely INVOKED" with
+   real data). The Test-injection seam clause above already covers `executeLoanIssuanceAttempt`'s own
+   `getCitizen`/`gojoLogRows` as forwarding-through concerns: a test supplying `wake-gate.mjs`'s own
+   `deps.citizensRegistryFile`/`deps.getCitizen` override does not need a SEPARATE, second injection point
+   for `executeLoanIssuanceAttempt`'s own `deps` — `wake-gate.mjs` constructs ITS OWN `getCitizen` closure
+   internally from its own already-injected registry-read seam and passes that closure straight through.**
 7. UNCONDITIONALLY — regardless of whether step 5 found a pair, and regardless of step 6's own outcome —
    invokes `executeDefaultDetectionSweep({nowMs})` (REQ-116) EXACTLY ONCE this wake. This is a SEPARATE,
    independent concern from steps 5/6 (mirrors `economy/ubi/run.sh`'s own already-proven precedent of
@@ -2721,6 +2743,14 @@ to introduce the SAME disclosed mismatch `economy/ubi` carries only for historic
   env under `set -a`/`set +a`, and its own final line execs `node "$SKILL_DIR/scripts/wake-gate.mjs" "$@"`
   — mirroring `self/spawn/run.sh`'s own exact structure — and contains no eligibility/sizing/servicing
   decision logic of its own.
+- A live integration test (resolves FIND-1003, critical) drives the REAL, unmodified
+  `executeLoanIssuanceAttempt` through `wake-gate.mjs`'s own two-citizen fixture path and asserts a
+  genuine `{status: "active"|"disbursement_failed"|"disbursement_uncertain"|"refused"}` return value — NOT
+  merely that the call occurred before an exception — confirming step 6's own `getCitizen`/`gojoLogRows`
+  wiring genuinely prevents the `TypeError: getCitizen is not a function` crash this REQ's own step-6
+  correction documents; the SAME fixture also confirms `wake-gate.mjs`'s own top-level `deps` overrides
+  (`citizensRegistryFile`/`fetchImpl`) propagate into the `getCitizen` closure passed to
+  `executeLoanIssuanceAttempt`, so this assertion runs with zero live network/RPC calls.
 - A structural/Tier-0 check confirms `~/anicca/skills/registry.json`'s `slots["economy/lending"]` entry has
   `status: "live"`, `dir: "skills/economy/lending"`, and — via a direct read of `run-skill.mjs`'s/
   `index.mjs`'s own real `earnSkillRelPath`/path-join logic (`path.join(ANICCA_HOME, "skills", "economy",

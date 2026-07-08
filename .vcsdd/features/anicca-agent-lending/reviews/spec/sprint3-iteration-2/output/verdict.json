@@ -1,0 +1,60 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-2. Independently re-verified round-1's two fixes (FIND-1001's step-9 exit-code correction, FIND-1002's test-injection-seam clause), then swept REQ-117/PROP-117a-d broadly for anything else inaccurate, unimplementable, vague, or missing. REQ-101-116 remain correctly out of scope (already converged sprint-1/sprint-2)."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/scripts/wake-gate.mjs (full file, read directly, lines 179-195)",
+          "description": "FIND-1001's fix independently re-verified ACCURATE and COMPLETE. REQ-117's corrected step-9 text (behavioral-spec.md lines 2618-2633, 'Corrected (2026-07-08, Phase 1c iteration-1 review FIND-1001)') now states self/spawn's real CLI entrypoint sets `process.exitCode = 1` at TWO sites -- its top-level `.catch` AND its `.then()` success handler's own `if (result.status !== \"active\") process.exitCode = 1` -- and this was re-confirmed byte-for-byte against the real file's lines 183-194 (`.then(({decision, result}) => { console.log(...); if (result) { console.log(...); if (result.status !== \"active\") process.exitCode = 1; } }).catch((e) => { ...; process.exitCode = 1; })`). REQ-117's corrected text also now explicitly and correctly frames lending's own exit-0-for-refused behavior as a DELIBERATE DIVERGENCE from this real precedent, not a mirror of it, with a clear, defensible stated reason (a routine per-pair refusal should not look like a daemon failure to an exit-code-watching monitor) -- this closes FIND-1001 cleanly, with no remaining mischaracterization and no remaining risk of an implementer copying the wrong site's check verbatim (REQ-117's own text now explicitly warns against exactly that)."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs (lines 268, 274-280, 179, 189-191) plus fresh execution against the real, unmodified file this review",
+          "description": "NEW critical finding (FIND-1003), found during the broader sweep this iteration's manifest requested. REQ-117's own step 6 literally shows `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs})` as a single-argument call. But the REAL `executeLoanIssuanceAttempt(..., deps = {})` requires `deps.getCitizen` with NO fallback default (`const getCitizen = deps.getCitizen;`, unlike `ledgerFile`/`lockStatePath`/`gojoLogRows`, all of which DO default). Empirically confirmed this review by fresh execution against the real, unmodified function: calling it exactly as REQ-117's own step-6 text shows (one argument, no deps) throws `TypeError: getCitizen is not a function` immediately -- before any eligibility/sizing/disbursement logic runs. REQ-117's own text never mentions `getCitizen` anywhere (confirmed by a full-text grep of both spec files -- zero matches). This means REQ-117, as currently specified, describes an entry point that would throw on EVERY real wake where step 5 actually finds a candidate pair -- the exact scenario this REQ exists to make possible -- directly contradicting its own EARS clause ('genuinely INVOKED')."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1003"],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/behavioral-spec.md lines 2533-2545 (REQ-117's new Test-injection seam clause) and specs/verification-architecture.md PROP-117c row (line 192) plus Verification Strategy Tier-2 listing (lines 279-281)",
+          "description": "FIND-1002's fix independently re-verified ACCURATE and COMPLETE for the specific gap it targeted. The new `deps` clause genuinely closes PROP-117c's own originally-flagged fixture-2 implementability gap: `citizensRegistryFile`/`ensureCitizensRegistry` (verified against the real `ensureCitizensRegistry({registryPath, seedPath})` signature in self/spawn/lib/citizens-registry.mjs), `ledgerFile`/`readChildren` (verified against the real `readChildren(file)` in self/spawn/lib/ledger.js, which takes a path argument), `gojoLogFile`/`readGojoLogRows` (verified against the real `readGojoLogRows(gojoLogPath)` in economy/lending/lib/gojo-read.mjs, which also takes a path argument), and `fetchImpl` (verified against the real `usdcBalance(wallet, {fetchImpl})` in _shared/lib/usdc.mjs, `const fetchImpl = opts.fetchImpl || globalThis.fetch`). A real test author, working from this spec text alone, CAN write PROP-117c's fixtures 1 and 2 (which never reach step 6) with zero live network calls, using exactly this deps shape. This part of PROP-117c's original gap is genuinely closed."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs lines 268-280 (executeLoanIssuanceAttempt) plus PROP-117c fixture (3) at verification-architecture.md line 192",
+          "description": "However, PROP-117c's own THIRD fixture (two qualifying citizens -> assert `executeLoanIssuanceAttempt` invoked with the correct pair) is NOT closed by FIND-1002's fix and remains unimplementable against the REAL, unmodified function -- the SAME newly-discovered FIND-1003 root cause (no `deps.getCitizen` wiring specified for step 6's own call) means a test author, working only from REQ-117's own text, would hit the SAME `TypeError: getCitizen is not a function` this review's fresh execution reproduced, before `executeLoanIssuanceAttempt` ever reaches a `{status:...}` outcome PROP-117c's own fixture 3 needs to assert against. The Test-injection seam clause's own `deps` list (citizensRegistryFile/ledgerFile/gojoLogFile/fetchImpl) covers ONLY wake-gate.mjs's own candidate-discovery deps (steps 1-4) and does not extend into `executeLoanIssuanceAttempt`'s own separate, required `deps.getCitizen` parameter consumed at steps 6/7 of REQ-117's own canonical order."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "Both of round-1's fixes (FIND-1001's exit-code correction, FIND-1002's test-injection-seam clause) were independently re-verified this iteration and found genuinely accurate and complete for what they each targeted -- neither needs further rework. The broader sweep this iteration's manifest requested (beyond re-checking only the 2 prior findings) surfaced ONE new, critical, previously-undetected defect: REQ-117's own step 6 shows a single-argument call to `executeLoanIssuanceAttempt`, but the REAL function (already converged, sprint-2) requires a second `deps` argument whose `getCitizen` key has NO fallback default -- confirmed by fresh execution against the real, unmodified source this review, which threw `TypeError: getCitizen is not a function` exactly as REQ-117's own literal step-6 text would invoke it. This is more severe than either round-1 finding: it means REQ-117, as currently specified, would crash on every real successful wake, not merely fail a test fixture. Finding count dropped 2 -> 1 (a genuine convergence signal, not a regression), but is not yet zero -- FAIL, next iteration required to add the missing `getCitizen`/`gojoLogRows` wiring specification to REQ-117 (and a matching update to PROP-117c's own fixture-3 verification text)."
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "findingId": "FIND-1003",
+  "dimension": "spec_fidelity",
+  "category": "unimplementable_requirement",
+  "severity": "critical",
+  "description": "REQ-117's own step 6 text reads: 'invokes `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs})` (REQ-115) EXACTLY ONCE this wake' -- a call with exactly ONE argument. But the REAL, current, already-converged (sprint-2) `executeLoanIssuanceAttempt` in `~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs:268` has signature `({ lenderId, borrowerId, nowMs = Date.now() } = {}, deps = {})` -- a SECOND, separate `deps` parameter -- and its own body reads `const getCitizen = deps.getCitizen;` (line 276) with NO fallback default (unlike `ledgerFile`/`lockStatePath`/`gojoLogRows`, which all use `deps.x || <real default>`). `getCitizen` is then called unconditionally at line 280 (`getCitizen(lenderId)`) and again inside `runLockedIssuance` at line 191 (the REQ-106 'fresh recheck... never the pre-lock snapshot' step). Empirically verified this review (fresh execution, not merely static reading): calling the REAL, unmodified `executeLoanIssuanceAttempt({lenderId:'a', borrowerId:'b', nowMs: Date.now()})` with no second argument -- EXACTLY as REQ-117's own step-6 text literally shows it being invoked -- throws `TypeError: getCitizen is not a function` immediately, before any eligibility/sizing/disbursement logic ever runs. REQ-117's own text never once mentions `getCitizen`, `deps`, or any second argument to this call anywhere in its step 6, its Dependencies discussion, its Edge Cases, or its Acceptance Criteria -- confirmed by a full-text grep of both `specs/behavioral-spec.md` and `specs/verification-architecture.md` for `getCitizen`, which returns zero matches in either file. This is not a stylistic omission: it means REQ-117, exactly as currently specified, describes an entry point that would throw an uncaught exception on EVERY real wake where step 5 actually selects a candidate pair -- the single scenario this REQ's own EARS clause exists to make possible ('THE SYSTEM SHALL make REQ-115's `executeLoanIssuanceAttempt`... genuinely INVOKED'). The exception would propagate out of `runWakeGate` to the CLI entrypoint's own top-level `.catch()` (per REQ-117's own, now-corrected, step-9 exit-code text), meaning the ONE real, deliberate, successful loan-issuance path this whole feature exists to reach would ALWAYS present to any exit-code-watching monitor as a genuine daemon failure, indistinguishable from a real bug -- the exact failure mode REQ-117's own step-9 correction (FIND-1001's fix) just finished explaining must be avoided for a routine REFUSAL, yet here it would happen for the SUCCESS path instead. This also makes PROP-117c's own THIRD fixture (two qualifying citizens -> `executeLoanIssuanceAttempt` invoked with the correct pair) unimplementable against the REAL, unmodified function as REQ-117 currently specifies the call: the call would throw before producing any of the `{status: 'active'|'disbursement_failed'|...}` outcomes PROP-117c's own fixture needs to observe. Secondarily (same root cause, lower severity): `runLockedIssuance` also reads `deps.gojoLogRows` (line 179/216, DOES have a safe fallback default of `[]` at line 277, so this half does not crash) to compute `sumRecentGojoGiftsUsd` inside the SAME fresh-recheck sizing step -- if REQ-117's step 6 call also fails to thread step 3's already-read `gojoLogRows` through, the disbursement recheck would silently and incorrectly treat ANY recently-received gojo gift as $0 every real wake, a silent correctness bug distinct from (but touching the same unspecified-deps gap as) the `getCitizen` crash.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2590-2591 (REQ-117, step 6)",
+      "snippet": "6. IF a pair was selected at step 5: invokes `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs})` (REQ-115) EXACTLY ONCE this wake -- never more than one NEW issuance attempt per wake..."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2533-2545 (REQ-117, Test-injection seam clause, this iteration's FIND-1002 fix)",
+      "snippet": "`deps` SHALL cover, at minimum: `citizensRegistryFile`/`ensureCitizensRegistry` (step 1), `ledgerFile`/`readChildren` (step 2), `gojoLogFile`/`readGojoLogRows` (step 3), and `fetchImpl` threaded into EVERY `usdcBalance(...)` call site in step 4 -- no mention anywhere of `getCitizen` or of threading anything into steps 6/7's own `executeLoanIssuanceAttempt`/`executeDefaultDetectionSweep` calls."
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+      "lineRange": "268, 274-280",
+      "snippet": "export async function executeLoanIssuanceAttempt({ lenderId, borrowerId, nowMs = Date.now() } = {}, deps = {}) {\n  if (lenderId === borrowerId) { return { status: \"refused\", reason: \"self_loan\" }; }\n  const ledgerFile = deps.ledgerFile || LOANS_LEDGER_PATH;\n  const lockStatePath = deps.lockStatePath || LOANS_LEDGER_PATH;\n  const getCitizen = deps.getCitizen;\n  const gojoLogRows = deps.gojoLogRows || [];\n  const [lenderCitizen, borrowerCitizen] = await Promise.all([getCitizen(lenderId), getCitizen(borrowerId)]);"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+      "lineRange": "179, 189-191 (runLockedIssuance, REQ-115's own step 6 'fresh recheck')",
+      "snippet": "async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getCitizen, gojoLogRows, deps }) {\n  ...\n  // Step 6: fresh recheck, over a fresh read + fresh citizen records (never the pre-lock snapshot).\n  loanRows = readLoanRows(ledgerFile);\n  const [freshLender, freshBorrower] = await Promise.all([getCitizen(lenderId), getCitizen(borrowerId)]);"
+    },
+    {
+      "type": "test-output",
+      "location": "fresh execution this review, `node -e` against the real, unmodified ~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+      "description": "`await executeLoanIssuanceAttempt({ lenderId: 'a', borrowerId: 'b', nowMs: Date.now() })` (single-argument call, exactly matching REQ-117's own step-6 literal text) threw `TypeError: getCitizen is not a function` -- confirmed empirically, not merely by static reading."
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs",
+      "lineRange": "15, 102",
+      "snippet": "//     deps.getCitizen(id)  -- async citizen-record reader (co-location/wallet/fuel/balance) --\n...\n    getCitizen: async (id) => citizens[id] || null,",
+      "description": "Confirms sprint-2's own test suite already treats `deps.getCitizen` as a REQUIRED wiring every caller must supply -- REQ-115 (sprint-2, already converged, correctly out of this iteration's re-review scope) deliberately left this as 'the orchestration sprint that wires this module in's own job, exactly the same pattern PROP-115c's own evidence already documents for `colony-balances.mjs::readCitizenBalances`'s `fetchEvmBalanceUsd`. REQ-117 (sprint-3) IS that orchestration sprint, but its own text never actually performs this wiring."
+    }
+  ],
+  "recommendation": "Add an explicit REQ-117 clause, alongside the existing Test-injection seam clause, specifying: (1) that step 6's real invocation is `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs}, { getCitizen, gojoLogRows, ledgerFile })` -- a TWO-argument call, never the single-argument form currently shown; (2) what the real, production `getCitizen` function does -- a fresh, per-call citizen-record + fresh-balance lookup (mirroring REQ-106's own 'never a pre-lock snapshot' discipline `runLockedIssuance`'s own step-6 comment already states), presumably re-reading the same citizens registry read at step 1 and re-fetching that citizen's balance via the SAME `_shared/lib/usdc.mjs::usdcBalance` primitive step 4 already uses; (3) that `gojoLogRows` passed into this same `deps` object is step 3's own already-read rows (never re-read a second time, never silently defaulted to `[]`); and (4) extend the Test-injection seam's own `deps` object so that `wake-gate.mjs`'s OWN `deps.getCitizen`/`deps.fetchImpl` overrides propagate into this SAME `getCitizen` wiring passed to `executeLoanIssuanceAttempt`, so PROP-117c's fixture 3 can exercise the REAL end-to-end call chain with zero live network/RPC calls. Update PROP-117c's own verification-method text and Acceptance Criteria to state explicitly that fixture 3 asserts a genuine `{status:\"active\"|...}` (not merely a call having occurred before a throw).",
+  "routeToPhase": "1a"
+}
