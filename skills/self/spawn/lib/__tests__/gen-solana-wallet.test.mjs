@@ -6,12 +6,13 @@
 // Mirrors gen-wallet.sh's OWN generation discipline exactly (fresh entropy, {address, private_key,
 // public_key}-shaped JSON to stdout, 600-perm caller-redirected file, never logged) and REQ-201's own
 // cross-check acceptance criterion ("the address independently re-derives... under a second,
-// independent implementation"), applied here to REQ-202's new script via the `solana-keygen` CLI (a
-// genuinely SEPARATE implementation from whatever this script itself uses to generate the keypair).
+// independent implementation"), applied here to REQ-202's new script via @solana/web3.js's own
+// Keypair.fromSecretKey (a genuinely SEPARATE library from the `solana-keygen` CLI this script itself
+// shells out to for generation -- corrected, FIND-004: an earlier version of this cross-check called
+// `solana-keygen` a SECOND time, which is not independent).
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
@@ -48,27 +49,31 @@ test("CRIT-207: two live invocations produce two DISTINCT keypairs (fresh entrop
   assert.notEqual(first.private_key, second.private_key);
 });
 
-test("CRIT-207: the generated Solana address independently re-derives to the same value under solana-keygen (a SECOND, independent derivation path), mirroring REQ-201's ethers-v6 cross-check discipline", () => {
+test("CRIT-207 (FIND-004 fix): the generated Solana address independently re-derives to the same value under @solana/web3.js's Keypair.fromSecretKey (a SECOND, GENUINELY independent derivation path -- a real, separate library, never the SAME solana-keygen CLI this script's own generation shells out to), mirroring REQ-201's viem privateKeyToAccount cross-check discipline", () => {
   const { address, private_key: privateKeyBase58 } = JSON.parse(runScript());
 
-  // Independent re-derivation: decode the script's own base58 secret key into the 64-byte raw secret
-  // solana-keygen's JSON keypair-file format expects, write it to a temp file, and ask solana-keygen
-  // (a completely separate CLI, never this script's own code) to derive the public key from it.
+  // Independent re-derivation via @solana/web3.js -- already a real dependency of this repo
+  // (package.json, node_modules/@solana/web3.js), and the SAME library runtime/wallet-address-solana.mjs
+  // already uses for this identical Keypair.fromSecretKey(...).publicKey.toBase58() derivation. Prior to
+  // this fix, this test instead shelled out to `solana-keygen pubkey` a SECOND time -- the exact same
+  // tool gen-solana-wallet.sh itself uses to generate the address, so it could never catch a systematic
+  // bug in solana-keygen's own derivation logic (FIND-004).
   const bs58 = loadBs58();
-  const secretKeyBytes = Array.from(bs58.decode(privateKeyBase58));
+  const secretKeyBytes = bs58.decode(privateKeyBase58);
   assert.equal(secretKeyBytes.length, 64, "a Solana secret key is the 64-byte {seed(32) + pubkey(32)} keypair, matching @solana/web3.js's own Keypair.secretKey shape");
 
-  const tmpKeypairFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "anicca-solana-keygen-crosscheck-")), "keypair.json");
-  fs.writeFileSync(tmpKeypairFile, JSON.stringify(secretKeyBytes));
-  try {
-    const rederivedAddress = execFileSync("solana-keygen", ["pubkey", tmpKeypairFile], { encoding: "utf8" }).trim();
-    assert.equal(rederivedAddress, address, "solana-keygen's own independent derivation must match this script's own reported address");
-  } finally {
-    fs.rmSync(path.dirname(tmpKeypairFile), { recursive: true, force: true });
-  }
+  const { Keypair } = loadSolanaWeb3();
+  const rederivedAddress = Keypair.fromSecretKey(secretKeyBytes).publicKey.toBase58();
+  assert.equal(rederivedAddress, address, "@solana/web3.js's own independent derivation must match this script's own reported address");
 });
 
 function loadBs58() {
   // bs58 is already a real dependency of this repo (node_modules/bs58) -- reused, never re-implemented.
   return require("bs58");
+}
+
+function loadSolanaWeb3() {
+  // @solana/web3.js is already a real dependency of this repo (package.json, node_modules/@solana/web3.js)
+  // -- reused, never re-implemented.
+  return require("@solana/web3.js");
 }

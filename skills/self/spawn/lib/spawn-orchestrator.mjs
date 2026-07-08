@@ -19,6 +19,12 @@ import { CITIZENS_REGISTRY_PATH } from "./registry-path.mjs";
 import { resolveStateDir } from "./state-path.js";
 import { readChildren, appendChild } from "./ledger.js";
 import { appendShelterCostEntry } from "./shelter-cost-ledger.js";
+import {
+  readPendingRegistryAppends,
+  queuePendingRegistryAppend,
+  resolvePendingRegistryAppend,
+  deriveOutstandingRegistryAppends,
+} from "./pending-registry-append.js";
 import { nextChildId, buildChildSpec } from "./child-spec.js";
 import { needsSolanaWallet } from "./needs-solana-wallet.mjs";
 import { selectCloudTarget as selectCloudTargetPure } from "./cloud-target.mjs";
@@ -59,6 +65,13 @@ function seedUsdcAmount() {
 
 function defaultLedgerFile() {
   return path.join(resolveStateDir({}), "children.jsonl");
+}
+
+// REQ-305 edge case (FIND-003): the durable queue a transient registry-append failure is recorded to,
+// and retryPendingRegistryAppends (below) reads from -- SAME state dir as children.jsonl/citizens.json,
+// never a second, differently-rooted location.
+function defaultPendingRegistryAppendsFile() {
+  return path.join(resolveStateDir({}), "pending-registry-appends.jsonl");
 }
 
 function errorMessage(e) {
@@ -694,7 +707,28 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
       coLocatedWithCoordinator: false,
     };
     if (isSelfFunded(citizenRecord)) {
-      await appendCitizenRecord(citizensRegistryFile, citizenRecord);
+      try {
+        await appendCitizenRecord(citizensRegistryFile, citizenRecord);
+      } catch (e) {
+        // FIND-003 (REQ-305 edge case): the ledger's "active" row above already landed genuinely --
+        // a TRANSIENT registry-append failure (e.g. ENOTDIR/EACCES/ENOSPC) must never propagate as an
+        // uncaught rejection out of this function (its own JSDoc contract only ever resolves
+        // {status,childId,error?}). Queue a durable, retryable marker instead of the append itself;
+        // retryPendingRegistryAppends (below) is the SOLE place that ever completes it, called by
+        // wake-gate.mjs before the NEXT wake's own spawn evaluation runs (REQ-305's own "before any
+        // further spawn evaluation runs" mandate) -- never a silent, permanent gap.
+        const pendingFile = deps.pendingRegistryAppendsFile || defaultPendingRegistryAppendsFile();
+        queuePendingRegistryAppend(pendingFile, {
+          childId,
+          citizenRecord,
+          citizensRegistryFile,
+          queuedMs: nowMs,
+          error: errorMessage(e),
+        });
+        console.error(
+          `self/spawn: citizens.json append failed transiently for ${childId}, queued for retry on next wake: ${errorMessage(e)}`
+        );
+      }
     } else {
       console.error(
         `self/spawn: refusing citizens.json append for ${childId} -- fails isSelfFunded(): ${selfFundedReasons(citizenRecord).join(",")}`
@@ -710,4 +744,32 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
   }
   // withGigLock's own lock-rejection shape ({ok:false, reason}) -- never itself a status:"active" claim.
   return { status: "failed", childId: null, error: (lockResult && lockResult.reason) || "lock not acquired" };
+}
+
+/**
+ * retryPendingRegistryAppends -- REQ-305 edge case (FIND-003): completes any citizens.json append
+ * queued by a PRIOR executeSpawnAttempt call whose own step 9 registry-append failed for a transient
+ * reason (above). Never re-runs the spawn attempt itself -- the child is already genuinely "active" in
+ * the ledger; only the registry append is retried, against the SAME citizens_registry_file the original
+ * failed attempt recorded. Intended call site: wake-gate.mjs, before the NEXT wake's own spawn
+ * evaluation runs (REQ-305's own "before any further spawn evaluation runs" mandate) -- an entry that
+ * fails again here simply remains "pending" for the wake after that, never thrown/escalated.
+ *
+ * @returns {Promise<Array<{childId: string, retried: boolean, error?: string}>>}
+ */
+export async function retryPendingRegistryAppends({ pendingRegistryAppendsFile, deps = {} } = {}) {
+  const file = pendingRegistryAppendsFile || defaultPendingRegistryAppendsFile();
+  const outstanding = deriveOutstandingRegistryAppends(readPendingRegistryAppends(file));
+  const append = deps.appendCitizenRecord || appendCitizenRecord;
+  const results = [];
+  for (const entry of outstanding) {
+    try {
+      await append(entry.citizens_registry_file, entry.citizen_record);
+      resolvePendingRegistryAppend(file, entry.child_id);
+      results.push({ childId: entry.child_id, retried: true });
+    } catch (e) {
+      results.push({ childId: entry.child_id, retried: false, error: errorMessage(e) });
+    }
+  }
+  return results;
 }

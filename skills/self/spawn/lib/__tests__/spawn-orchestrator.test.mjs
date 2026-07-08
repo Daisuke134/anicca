@@ -26,7 +26,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { executeSpawnAttempt } from "../spawn-orchestrator.mjs";
+import { executeSpawnAttempt, retryPendingRegistryAppends } from "../spawn-orchestrator.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORCH_PATH = path.resolve(__dirname, "../spawn-orchestrator.mjs");
@@ -303,6 +303,82 @@ test("PROP-307c step 9 (REQ-305 ledger append itself fails) -> no row anywhere e
       if (result) assert.notEqual(result.status, "active");
     }
   });
+});
+
+// ---------------------------------------------------------------------------
+// FIND-003 (REQ-305 edge case): a TRANSIENT registry-append failure -- distinct from the step-9
+// ledger-append failure PROP-307c above already covers -- must never propagate as an uncaught
+// rejection out of executeSpawnAttempt, since the ledger's own "active" row already landed genuinely
+// by this point in the SAME step. A durable, retryable marker is queued instead; retryPendingRegistryAppends
+// is the mechanism a later wake uses to complete it without re-running the whole spawn attempt.
+// ---------------------------------------------------------------------------
+
+test("FIND-003: a transient citizens.json append failure (ENOTDIR) resolves status:\"active\" (never rejects), the ledger's active row is still honestly present, and a durable pending-registry-append marker is queued", async () => {
+  const dir = tmpDir();
+  // citizensRegistryFile's own parent segment is a plain FILE, not a directory -- appendCitizenRecord's
+  // own fsp.mkdir(dirname, {recursive:true}) throws ENOTDIR (the exact scenario FIND-003 reproduced).
+  const blockerFile = path.join(dir, "not-a-directory");
+  fs.writeFileSync(blockerFile, "x");
+  const pendingFile = path.join(dir, "pending-registry-appends.jsonl");
+  const deps = happyDeps(dir, {
+    citizensRegistryFile: path.join(blockerFile, "citizens.json"),
+    pendingRegistryAppendsFile: pendingFile,
+  });
+
+  const result = await executeSpawnAttempt(baseParams(), deps);
+  assert.equal(
+    result.status,
+    "active",
+    "a transient registry-append failure must never itself turn a genuinely-active spawn into a rejected/failed result"
+  );
+
+  const ledgerRows = readLedgerRows(deps.ledgerFile).filter((r) => r.child_id === result.childId);
+  assert.equal(ledgerRows.length, 1);
+  assert.equal(ledgerRows[0].status, "active", "the ledger's active row, written before the registry append, must still be honestly present");
+
+  assert.equal(readRegistryRecords(deps.citizensRegistryFile).length, 0, "the actual citizens.json append never landed (that IS the transient failure)");
+
+  const pendingRows = readLedgerRows(pendingFile);
+  assert.equal(pendingRows.length, 1, "a durable, checkable record of the pending registry-append must exist for retry");
+  assert.equal(pendingRows[0].child_id, result.childId);
+  assert.equal(pendingRows[0].status, "pending");
+  assert.equal(pendingRows[0].citizen_record.id, result.childId);
+  assert.equal(pendingRows[0].citizens_registry_file, deps.citizensRegistryFile);
+  assert.match(pendingRows[0].error, /ENOTDIR/);
+});
+
+test("FIND-003 retry mechanism: retryPendingRegistryAppends detects a queued pending append on a subsequent call/wake and completes it once the underlying transient condition has cleared", async () => {
+  const dir = tmpDir();
+  const blockerFile = path.join(dir, "not-a-directory");
+  fs.writeFileSync(blockerFile, "x");
+  const pendingFile = path.join(dir, "pending-registry-appends.jsonl");
+  const citizensRegistryFile = path.join(blockerFile, "citizens.json");
+  const deps = happyDeps(dir, { citizensRegistryFile, pendingRegistryAppendsFile: pendingFile });
+
+  const result = await executeSpawnAttempt(baseParams(), deps);
+  assert.equal(result.status, "active");
+  assert.equal(readRegistryRecords(citizensRegistryFile).length, 0, "nothing was ever written to citizens.json yet -- the append is still queued, not silently lost");
+
+  // The underlying transient filesystem condition clears before the NEXT wake (blockerFile is removed,
+  // so the SAME citizens_registry_file path the pending entry itself recorded can now genuinely be
+  // created as a real directory) -- this is what "transient" means, and exactly what a future wake's
+  // retry must reconcile per REQ-305's own "never a silent, permanent gap" edge case.
+  fs.unlinkSync(blockerFile);
+
+  const retryResults = await retryPendingRegistryAppends({ pendingRegistryAppendsFile: pendingFile });
+  assert.equal(retryResults.length, 1);
+  assert.equal(retryResults[0].childId, result.childId);
+  assert.equal(retryResults[0].retried, true);
+
+  const records = readRegistryRecords(citizensRegistryFile);
+  assert.equal(records.length, 1, "the retry mechanism completed the SAME citizens.json append the original attempt queued, without re-running the spawn attempt");
+  assert.equal(records[0].id, result.childId);
+
+  // The pending entry is now resolved -- a SECOND retry call must be a genuine no-op, never a
+  // duplicate append.
+  const secondRetryResults = await retryPendingRegistryAppends({ pendingRegistryAppendsFile: pendingFile });
+  assert.equal(secondRetryResults.length, 0, "an already-resolved entry must never be retried again");
+  assert.equal(readRegistryRecords(citizensRegistryFile).length, 1, "no duplicate append occurred");
 });
 
 // ---------------------------------------------------------------------------
