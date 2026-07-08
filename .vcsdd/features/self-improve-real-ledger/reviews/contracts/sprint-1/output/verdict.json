@@ -1,7 +1,7 @@
 {
   "sprintNumber": 1,
   "feature": "self-improve-real-ledger",
-  "iteration": 3,
+  "iteration": 2,
   "timestamp": "2026-07-09T00:00:00Z",
   "dimensions": [
     {
@@ -9,7 +9,7 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "passThreshold cites PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 and PROP-RL-ID6 explicitly, matching the full ID1-ID7 row set in verification-architecture.md:71-77; unchanged and re-confirmed at iteration 3, not implicated by FIND-003"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "passThreshold cites PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 plus PROP-RL-ID6 (regression), matching the complete ID1-ID7 row set in specs/verification-architecture.md:71-77 with no gaps; the REQ-RL2 explicit-path-override property (PROP-RL-ID4) and the byte-identical regression requirement (PROP-RL-ID6) are both named, not merely implied"}
       ]
     },
     {
@@ -17,8 +17,8 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "passThreshold cites PROP-RL-GATE2/GATE3/GATE4 and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly; unchanged since iteration 1, not implicated by FIND-003"},
-        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:32-51", "description": "Corresponding new tests in test_realized_gate.py and test_ledger_resolution.py present and failing for the right reason at RED"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "passThreshold cites PROP-RL-GATE2/GATE3/GATE4 (window-split even/odd/out-of-window, 8-combo worsening-trend truth table, both data_realism_gap cases plus the sufficient=False vacuous-pass case) and PROP-RL-MIR1/MIR2, matching specs/verification-architecture.md:81-84,78-79 exactly, including the EDGE-RL1/RL4 'insufficient data never fires' guarantee named in the description"},
+        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:20-32", "description": "test_realized_gate.py's window-split/worsening-trend/data-realism-gap tests and test_ledger_resolution.py's is_profitable/is_confirmed tests are all present in the RED run and fail for the documented reason (AttributeError: functions do not exist yet)"}
       ]
     },
     {
@@ -26,18 +26,19 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "passThreshold cites PROP-RL-GATE1, PROP-RL-GATE-NONE, PROP-RL-GATE5, PROP-RL-GATE6, plus the REQ-RL13a 13-key schema test (test_wiring.py); REQ-RL13a has no dedicated PROP-RL-* row in verification-architecture.md's Proof Obligations table (lines 71-96), so the schema test is correctly described by REQ ID rather than a nonexistent PROP ID -- not a citation gap since there is nothing to cite"},
-        {"type": "file", "location": "specs/behavioral-spec.md:218-239", "description": "REQ-RL13a's 13-key table matches the contract's schema-test description key-for-key"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "passThreshold cites PROP-RL-GATE1 (REQ-RL7 unconditional resolved=False block), PROP-RL-GATE-NONE (REQ-RL18 vacuous-pass vs REQ-RL7 block disambiguation, spec-review F-4), PROP-RL-GATE5 (last_promotion_ts latest-match + None-when-empty), PROP-RL-GATE6 (escalation write before verdict), and the REQ-RL13a 13-key schema test; verification-architecture.md's Proof Obligations table has no dedicated PROP-RL-* row for REQ-RL13a's schema itself, so describing it by REQ ID rather than a nonexistent PROP ID is correct, not a citation gap"},
+        {"type": "file", "location": "specs/behavioral-spec.md:218-239 (REQ-RL13a 13-key list) vs contracts/sprint-1.md:127-133", "description": "the contract's schema-test description enumerates the same 13 keys (resolved, resolution_source, ledger_path, row_count, sufficient, window_net_usd, first_half_net_usd, second_half_net_usd, worsening, trend_blocks, realism_gap_blocks, window_start_ts, window_end_ts) key-for-key"}
       ]
     },
     {
       "name": "structural_integrity",
-      "verdict": "PASS",
-      "findings": [],
+      "verdict": "FAIL",
+      "findings": [
+        "CRIT-004's passThreshold (structural_integrity, weight 0.2) encodes REQ-RL17's wiring requirement using ONLY PROP-RL-WIRE1's ast keyword-presence scan ('every Call to decide_promotion carries a realized_gate keyword argument'). It completely omits REQ-RL17's own second sentence (specs/behavioral-spec.md:286-290): 'the Phase-3 implementation review SHALL verify that the value bound to realized_gate= at each call site is genuinely sourced from the REQ-RL7-13 computation helper over the resolved ledger — never a hardcoded literal, stub dict, or constant that would satisfy the repo-scan's keyword-presence check while bypassing real data.' PROP-RL-WIRE1 as written in this contract is EXACTLY the keyword-presence check REQ-RL17 itself warns is satisfiable by a stub: an implementation that writes decide_promotion(..., realized_gate={'resolved': True, 'trend_blocks': False, 'realism_gap_blocks': False, ...}) as a hardcoded literal at all three promote_gate_run.py call sites (never calling compute_realized_gate at all) would pass PROP-RL-WIRE1's ast scan and satisfy CRIT-004 in full, while defeating the entire point of the feature (a candidate would always sail through the realized-ledger gate regardless of real ledger content). Neither CRIT-004's description nor its passThreshold names this anti-stub/genuine-sourcing check as a required pass condition anywhere in the contract, and there is no PROP-RL-* ID for it in verification-architecture.md's Proof Obligations table (it is inherently a judgment call, not an automatable pytest assertion) — meaning it can ONLY be carried into the contract as explicit prose, the same technique this contract already correctly uses elsewhere (CRIT-006's 'not merely claimed'/'evidence... not a prose claim' language for its own judgment-based live-tier checks). Because it is silently absent, the fresh-context Phase-3 adversary reading only this contract has no instruction to verify realized_gate's genuine provenance at each of the three call sites, so a stubbed/hardcoded implementation could pass Phase-3 review purely on WIRE1's automated scan. This is a real weakening of REQ-RL17 relative to the spec, not a missing test citation."
+      ],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "FIND-003 resolved: passThreshold now explicitly names 'AND PROP-RL-WIRE2 (the FULL pre-existing 44-test suite ... re-runs green with assertions unmodified, proving realized_gate=None behaves as no constraint per REQ-RL18; named here as its own sprint pass condition, not merely bundled into CRIT-006's post-merge regression run)' alongside PROP-RL-WIRE1/SAFE1/SAFE2/SAFE3, closing the exact uncited-row gap FIND-003 identified"},
-        {"type": "file", "location": "specs/verification-architecture.md:71-96", "description": "Full-table sweep of all 26 required PROP-RL-* rows (ID1-ID7, MIR1-MIR2, GATE1-GATE6, GATE-NONE, EVAL1-EVAL2, WIRE1-WIRE2, SAFE1-SAFE3, LIVE1-LIVE3) against every passThreshold field in contracts/sprint-1.md confirms each ID is cited in at least one criterion's passThreshold: CRIT-001 covers ID1/ID2/ID3/ID4/ID5/ID6/ID7; CRIT-002 covers GATE2/GATE3/GATE4/MIR1/MIR2; CRIT-003 covers GATE1/GATE-NONE/GATE5/GATE6; CRIT-004 covers WIRE1/WIRE2/SAFE1/SAFE2/SAFE3; CRIT-005 covers EVAL1/EVAL2; CRIT-006 covers LIVE1/LIVE2/LIVE3 -- zero uncited required rows remain"},
-        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:97-108", "description": "RED-phase regression run shows 44 pre-existing self-improve tests passing standalone (line 105: '44 passed in 0.05s') and the combined new-suite run showing '51 passed' = 44 pre-existing + 7 new-but-already-passing invariant tests (line 108), internally consistent with WIRE2's non-regression pre-pass disclosure now named in CRIT-004's passThreshold"}
+        {"type": "file", "location": "specs/behavioral-spec.md:278-290 (REQ-RL17)", "description": "REQ-RL17's own text explicitly splits into two halves: (1) ast-scan keyword-presence (delegated to PROP-RL-WIRE1), and (2) Phase-3 review verifying the bound value is genuinely computed, not a stub/hardcoded literal — the contract only encodes half (1)"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004 (lines 23-27)", "description": "description and passThreshold text for CRIT-004 contain zero mention of 'stub', 'hardcoded', 'genuinely sourced', or any equivalent phrase; confirmed via full-text grep of contracts/sprint-1.md returning zero matches for those terms"}
       ]
     },
     {
@@ -45,15 +46,15 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent; unchanged since iteration 1"},
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run; unchanged since iteration 1"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score's numeric value stays identical) and PROP-RL-EVAL2 (repo-wide honesty grep for the forbidden data_source==\"real\" literal), with EVAL2's RED-phase pre-pass explicitly disclosed as a permanent CI-style invariant per hl-realized-pnl's own precedent, matching specs/verification-architecture.md:86-87"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca MAIN checkout post-merge, NEVER from .worktrees/self-improve-real-ledger/, matching specs/verification-architecture.md:98-107's F-1 execution-locus fix verbatim, plus the full 44+42+ledger.test.mjs/js regression re-run in that same post-merge session, with raw artifacts required over prose claims"}
       ]
     }
   ],
-  "overallVerdict": "PASS",
+  "overallVerdict": "FAIL",
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-1.md",
-    "contractDigest": "d259b094d5fd9f4df2752f067625aba2a68940efaca77c83c7eaa491e95fe9f6"
+    "contractDigest": "4431747457af893ffef0659e29a6302378ddc488da3e04214b74e507bb64008d"
   }
 }
