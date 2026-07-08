@@ -1,0 +1,106 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T11:18:33Z",
+  "iteration": 7,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "2fbd4c62e952b187bcc792250091e8cf7cf6890e7dd4342ae3de7f1fc7cd50ff"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-011", "FIND-012"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:1860-1868 (REQ-204 new Edge Cases bullet), specs/behavioral-spec.md:2780-2790 (REQ-307 new Edge Cases bullet)",
+          "description": "Independently cross-checked every factual claim in both new bullets against the real source (spawn-orchestrator.mjs: defaultReclaimSeed lines 377-406, attemptSeedReclaim lines 413-423, and the 3 call sites at identityStep onFailure 613-616, buildChildSpec catch 643-661, mcpStep onFailure 673-678). Every sentence matches: sender/recipient genuinely reversed (child's own in-memory {privateKey,address} as signer via a temp wallet-json, parent as destination -- confirmed against defaultSeedChild's own opposite-direction shape at lines 331-345); scripts/seed-child.py reused unmodified via the same defaultRunSeedChild helper; amountUsdc is the SAME seedUsdc value (not independently recomputed); reclaim outcome (reclaimed/reclaimTxHash/reclaimError) recorded ALONGSIDE, never masking, the original error field (no key collision between the two object shapes); PENDING/exit-2 broadcast-but-unconfirmed case correctly described; swallowed-never-thrown-never-retried correctly described; the 3 named failure sites (REQ-204 registration itself, REQ-205 mcp.json write, REQ-206 buildChildSpec's own distinct-wallet-assertion throw) exactly match the 3 real onFailure/catch call sites, using this spec's own pre-existing canonical step-numbering convention (registration=step 6, mcp.json=step 7, buildChildSpec=step 8) which the spec's own pre-existing 'Step 7/8 construction-order clarification' paragraph already explains is a construction-order, not effectful-order, distinction. No overclaim or inaccuracy found in either new bullet."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md:474 (new PROP-204d), :521 (new PROP-307f)",
+          "description": "Both new rows are concrete and binary-evaluable, with Tier method descriptions matching their own Tier-column values (PROP-204d '1/2' <-> Tier 1 unit test + Tier 2 integration test both described; PROP-307f '0/1' <-> Tier 0 structural read + Tier 1 regression fixture both described). Neither duplicates an existing PROP: PROP-204b (line 472) governs only the ORIGINAL seed's sizing formula, PROP-301a (line 485) governs only the initiating host's generic post-attempt artifact cleanliness, PROP-204a/c (lines 471,473) govern only the forward registration call and the already-has-agentId defensive case -- none overlaps PROP-204d's reclaim-specific claims. However, neither this round's new rows nor any pre-existing PROP anywhere in this 120-row table names the reclaim's own transient temp-wallet-file (.tmp-reclaimwallet-*, spawn-orchestrator.mjs:382-388,403-404) shred-in-finally discipline as an explicit verification target -- noted but NOT filed as a new finding this round: the ORIGINAL forward-direction seed transfer's own, structurally-identical temp file (.tmp-parentwallet-*, same shredTempFile helper) has never had a dedicated PROP either, across every prior round including round 6's own clean edge_case_coverage PASS for this exact reclaim code -- so this is a pre-existing, symmetric granularity convention in this spec, not a new gap this round's correction introduced or was asked to fix."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-spawn/state.json (traceability.beads: BEAD-152, BEAD-153, BEAD-010, BEAD-138)",
+          "description": "NEW GAP (FIND-011): this round's own state.json additions for FIND-010's closure are wired incorrectly. BEAD-152 (PROP-204d) links to BEAD-062, which is PROP-303c -- an unrelated REQ-303/shelter-cost obligation -- instead of BEAD-010 (REQ-204's own bead, which every OTHER REQ-204 PROP bead correctly links to). BEAD-153 (PROP-307f) links to BEAD-141 (sibling PROP-307c) instead of BEAD-138 (REQ-307's own bead, which every other REQ-307 PROP bead correctly links to, alongside its own test-case bead). BEAD-010 and BEAD-138 were not updated to list BEAD-152/BEAD-153 back in their own linkedBeads arrays either. This reintroduces, one layer below the markdown this round fixed, the exact same class of defect FIND-010 was filed to close: a proof obligation that exists but is unreachable from its own requirement via the established graph-traversal convention. See FIND-011 for full detail."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:246-247 (round-7 correction's closing sentence), :108-124 (Files touched list), :224 (unrelated prior-round citation)",
+          "description": "NEW GAP (FIND-012): the round-7 correction's own claim -- \"'Files touched' (below) already lists spawn-orchestrator.mjs/its test file, which cover both the code and the tests this correction documents\" -- does not hold up. The Files-touched list (lines 108-124) names only spawn-orchestrator.test.mjs as this module's test file; the actual dedicated FIND-001 reclaim test suite (7 named tests, the same ones round 6 itself reviewed) lives in a separate, unlisted file, skills/self/spawn/lib/__tests__/spawn-orchestrator-reclaim-and-shelter-cost.test.mjs (confirmed present on disk), which is cited elsewhere in this contract (line 224, for a different round's FIND-002 correction) but never appears in the Files-touched enumeration itself. See FIND-012 for full detail."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/'*.test.mjs 'skills/self/spawn/lib/__tests__/'*.test.js",
+          "description": "Independently executed fresh this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0 -- exact match to round 6's own fresh count, confirming no code regression since no source was touched this round (only specs/contract/state.json)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:377-423,613-678 (unchanged since round 6)",
+          "description": "Reclaim code itself is unchanged since round 6's own PASS verdict on this dimension, which independently confirmed defaultReclaimSeed's sender/recipient reversal, all 3 call sites firing correctly, non-masking error preservation, and the 7 FIND-001 tests all passing -- re-confirmed this round via the fresh 195/195 run above and a direct re-read of the same code (no drift detected)."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test (see edge_case_coverage evidence above)",
+          "description": "195/195 fresh pass confirms no implementation regression; this round touched zero source files (specs/behavioral-spec.md, specs/verification-architecture.md, contracts/sprint-2.md, and state.json only), consistent with the manifest's own note that no code was touched this round."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (whole file, byte-for-byte unchanged since round 6)",
+          "description": "No source edits this round; round 6's own structural_integrity PASS (CRIT-201/202/204 all re-confirmed) stands unmodified."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/'*.test.mjs 'skills/self/spawn/lib/__tests__/'*.test.js",
+          "description": "Fresh, independent run this session: tests 195, pass 195, fail 0, duration 3428ms -- matches state.json's and round 6's own claim of an unchanged 195/195 pass, confirmed not merely accepted from a prior log."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md#PROP-204d, #PROP-307f",
+          "description": "Both new proof-obligation ROW TEXTS (the markdown artifacts themselves) are complete, concrete, and correctly cross-referenced to state.json's PROP-119/PROP-120 (status:pending, required:true, matching artifact anchors verified byte-for-byte against the real headings in verification-architecture.md). The traceability GRAPH wiring defect (BEAD-152/153 linked to the wrong sibling beads, and BEAD-010/138 not updated) is filed under spec_fidelity as FIND-011 rather than duplicated here, mirroring round 6's own precedent of filing this exact class of documentation/traceability gap once, under spec_fidelity, even though its practical consequence also touches verification readiness."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

@@ -111,7 +111,10 @@ delivered through Phase 2c (refactor): `skills/self/spawn/lib/spawn-orchestrator
 7 deps-or-default effectful call sites' identical try/catch/requireOk shape into one place — no exported
 surface change, no second orchestration path, CRIT-201 unaffected), `skills/self/spawn/scripts/
 gen-solana-wallet.sh` (new), plus test files under `skills/self/spawn/lib/__tests__/`
-(`spawn-orchestrator.test.mjs`, `gen-solana-wallet.test.mjs`). The `skills/self/spawn/scripts/sdl/
+(`spawn-orchestrator.test.mjs`, `gen-solana-wallet.test.mjs`, and — resolves contract-review round-7
+FIND-012, this list previously omitted it — `spawn-orchestrator-reclaim-and-shelter-cost.test.mjs`, the
+dedicated FIND-001/FIND-002 test suite for `defaultReclaimSeed`/`attemptSeedReclaim` and the
+shelter-cost-ledger wiring). The `skills/self/spawn/scripts/sdl/
 child.yaml`-equivalent child-specific SDL variant and the lease-shell/job-ssh secrets-injection helper
 (REQ-303's own FIND-403/FIND-401 corrections) were NOT created this sprint — both belong exclusively to
 PROP-303b's real Akash deploy path, which the "Deferred-obligation disposition" section below explicitly

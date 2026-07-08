@@ -1283,7 +1283,8 @@
           "BEAD-049",
           "BEAD-050",
           "BEAD-147",
-          "BEAD-151"
+          "BEAD-151",
+          "BEAD-152"
         ],
         "createdAt": "2026-07-07T08:38:48.155Z",
         "createdInPhase": "1a",
@@ -2866,7 +2867,8 @@
           "BEAD-143",
           "BEAD-144",
           "BEAD-145",
-          "BEAD-146"
+          "BEAD-146",
+          "BEAD-153"
         ],
         "createdAt": "2026-07-07T19:48:20.457Z",
         "createdInPhase": "1a"
@@ -3033,7 +3035,7 @@
         "artifactPath": "specs/verification-architecture.md#PROP-204d",
         "status": "active",
         "linkedBeads": [
-          "BEAD-062"
+          "BEAD-010"
         ],
         "createdAt": "2026-07-08T15:50:00.000Z",
         "createdInPhase": "2c",
@@ -3045,7 +3047,7 @@
         "artifactPath": "specs/verification-architecture.md#PROP-307f",
         "status": "active",
         "linkedBeads": [
-          "BEAD-141"
+          "BEAD-138"
         ],
         "createdAt": "2026-07-08T15:50:00.000Z",
         "createdInPhase": "2c",
