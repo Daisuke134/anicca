@@ -71,6 +71,16 @@ health の判定基準は「artifact が存在する」ではなく「**今日�
 - 日次 scorecard mail: loop ごとに ✅posted-today / ❌missed + **streak（連続達成日数）**を表示。streak が health の KPI。
 - 既存 `OUT_STALE_HRS`（30h）方式はこの cadence contract 判定に置き換える。
 
+## Search-Driven Self-Improvement（Dais 2026-07-08: 全 loop 共通の中核原則）
+
+**なぜ全 loop が金を稼げないか = ベストプラクティスを web で検索していないから。** 失敗からは self-heal は学べる（壊れ方は特定できる）が、self-improve はほとんど学べない（売上ゼロの失敗は原因が数百通りで特定不能）。学べるのは成功から。だから**成功が無いうちは、自分のメトリクスでなく web の BP・成功例・トレンドを検索して真似る**のが self-improve の起点。この検索行為を loop の中に埋め込み、人間も orchestrator も loop の外に出る（我々は verify するだけ）。
+
+- **cold-start（売上ゼロ）**: search:metrics ≈ **10:0**。pass の中で agent-reach で「このドメインで今売れている BP・成功事例・トレンド」を検索 → 自分のやり方と BP の差分を出す → BP に寄せて次 pass を変える → lessons.jsonl に「BP から得た仮説」を記録。最初の1件の成約/売上が出るまでこれを回す。
+- **traction 後（成功が出た）**: search:metrics ≈ **5:5**。web 検索は続けつつ（トレンドは速く動く）、自分の funnel メトリクスからも「何が効いたか」を学び double-down。
+- **判断は agent、検索の実行と記帳は決定論**（何を検索し何を取り込むかは agent、agent-reach 呼び出しと lessons 追記はツール）。regex で BP をハードコードしない。
+- これは task #20（各 manager loop の外部自習）を **self-improve の第一原理に格上げ**したもの。explorer が新 loop を見つけた時も、その loop はまず BP 検索から始める。
+- **これは全 loop 共通**（gig/clip/video/affiliate/article/pm/hl）。各 loop の self-improve は「①web で BP 検索（cold-start 主体）→ ②メトリクス比較（traction 後に比重増）→ ③ lessons に記録 → ④次 pass に反映」の4段で回す。
+
 ## EDD（Evaluation-Driven Development、self-improve の bar）
 
 verification（二値、self-heal の bar）と evaluation（スカラー、self-improve の目的関数）を分離する。**pm-trade の openevolve パターン（evaluator→score→adversary gate→昇格）を全 loop に一般化する。**
