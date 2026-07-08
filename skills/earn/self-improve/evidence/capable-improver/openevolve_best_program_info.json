@@ -1,0 +1,16 @@
+{
+  "id": "2d916c98-a9dc-4e1c-a7f9-6dda3576d368",
+  "generation": 5,
+  "iteration": 32,
+  "timestamp": 1783484923.738241,
+  "parent_id": "0a666dca-6f9c-4c8e-8991-22ec28b1d773",
+  "metrics": {
+    "combined_score": 3.207609302240773,
+    "stage1_pass": 1.0,
+    "mean_oos_net_usd": 4.217785894155999,
+    "std_oos_net_usd": 1.3149313076282503,
+    "worst_window_oos_net_usd": 2.375458266580397
+  },
+  "language": "python",
+  "saved_at": 1783485026.602439
+}
