@@ -1,0 +1,33 @@
+{
+  "featureName": "hl-realized-pnl",
+  "mode": "strict",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-08T19:48:32.106Z",
+      "reason": "behavioral spec written"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-08T19:48:32.111Z",
+      "reason": "verification architecture written"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-hl-realized-pnl-1783539164394",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-08T19:32:44.393Z",
+  "updatedAt": "2026-07-08T19:48:32.111Z"
+}
