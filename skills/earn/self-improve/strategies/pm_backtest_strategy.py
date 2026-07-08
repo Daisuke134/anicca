@@ -57,10 +57,12 @@ def score_candidate(candidate, market_features, config) -> float:
     combination formulas, or sizing logic, not only threshold nudges."""
     edge = candidate.get("edge", 0.0)
     confidence = candidate.get("confidence", 0.0)
-    min_edge = config.get("min_edge", 0.15)
-    min_confidence = config.get("min_confidence", 6.0)
+    min_edge = config.get("min_edge", 0.20)
+    min_confidence = config.get("min_confidence", 7.0)
     base_stake = config.get("base_stake", 5.0)
-    if edge < min_edge or confidence < min_confidence:
+    # Tighten selection: requires both thresholds AND combined score
+    combined = edge * confidence
+    if edge < min_edge or confidence < min_confidence or combined < 1.5:
         return 0.0
     return base_stake
 # EVOLVE-BLOCK-END
