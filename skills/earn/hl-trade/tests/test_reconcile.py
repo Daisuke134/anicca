@@ -613,3 +613,56 @@ def test_reconcile_py_never_hardcodes_another_instances_home_or_absolute_user_pa
             "touches must derive from its own file location (Path(__file__)-relative), never "
             "another instance's home or an absolute user path (REQ-D4)"
         )
+
+
+# ---------------------------------------------------------------------------------------------
+# PROP-024 (REQ-A3, F-1 fix) — run.sh's own ACTION=close branch never reads closed_pnl_usd and
+# never records its own earn_usdc/cost_usdc ledger line for a close: the reconciler (hl.py
+# reconcile, invoked earlier this same wake per REQ-E3) is the SOLE recorder of HL realized P&L.
+# Added at impl-review iteration 1 (finding F-1): the pre-existing close branch silently
+# degraded every real close to a fabricated $0.00 ledger line once REQ-A1 removed
+# `closed_pnl_usd` from hl.py's JSON output (`.get('closed_pnl_usd', 0)` unconditionally
+# returned 0, no exception). The fix removes this branch's own PNL-recording logic entirely —
+# it may still execute the close and echo the result, but it must never call record_line to
+# append an earn_usdc/cost_usdc line of its own.
+# ---------------------------------------------------------------------------------------------
+
+def test_run_sh_never_references_closed_pnl_usd_anywhere():
+    run_sh = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "run.sh"
+    )
+    src = open(run_sh, encoding="utf-8").read()
+    assert "closed_pnl_usd" not in src, (
+        "REQ-A3: run.sh must never reference closed_pnl_usd anywhere — the reconciler "
+        "(hl.py reconcile) is the sole recorder of HL realized P&L, not run.sh's own "
+        "ACTION=close branch"
+    )
+
+
+def test_run_sh_close_branch_never_calls_record_line_for_its_own_pnl_line():
+    run_sh = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "run.sh"
+    )
+    lines = open(run_sh, encoding="utf-8").read().splitlines()
+    # NOTE: 'ACTION" = "close"' also appears in the earlier anti-churn cooldown guard's compound
+    # condition (`{ [ "$ACTION" = "close" ] || ... }`) — that is NOT this branch. The actual close
+    # EXECUTION branch is the one that also gates on `-n "$POS"` (an open position to close).
+    close_branch_start = next(
+        (i for i, l in enumerate(lines)
+         if ('ACTION" = "close"' in l or "ACTION='close'" in l) and '-n "$POS"' in l),
+        None,
+    )
+    assert close_branch_start is not None, "ACTION=close execution branch not found in run.sh"
+    # the branch ends at the next top-level "no new trade" narrate block that follows it.
+    close_branch_end = next(
+        (i for i, l in enumerate(lines)
+         if i > close_branch_start and '-z "$SIDE"' in l),
+        len(lines),
+    )
+    branch_src = "\n".join(lines[close_branch_start:close_branch_end])
+    assert "record_line" not in branch_src, (
+        "REQ-A3: run.sh's ACTION=close branch must not append any earn_usdc/cost_usdc ledger "
+        "line of its own — reconcile() (hl.py reconcile, invoked earlier this wake per REQ-E3) "
+        "is the SOLE recorder of HL realized P&L; this branch's job is only to execute the "
+        "close and echo the result"
+    )
