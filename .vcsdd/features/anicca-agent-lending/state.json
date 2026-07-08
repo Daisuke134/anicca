@@ -1683,7 +1683,12 @@
           "BEAD-086",
           "BEAD-087",
           "BEAD-088",
-          "BEAD-089"
+          "BEAD-089",
+          "BEAD-096",
+          "BEAD-097",
+          "BEAD-098",
+          "BEAD-099",
+          "BEAD-100"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1a"
@@ -1695,7 +1700,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-115a",
         "status": "active",
         "linkedBeads": [
-          "BEAD-085"
+          "BEAD-085",
+          "BEAD-096"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1707,7 +1713,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-115b",
         "status": "active",
         "linkedBeads": [
-          "BEAD-085"
+          "BEAD-085",
+          "BEAD-097"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1719,7 +1726,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-115c",
         "status": "active",
         "linkedBeads": [
-          "BEAD-085"
+          "BEAD-085",
+          "BEAD-098"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1731,7 +1739,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-115d",
         "status": "active",
         "linkedBeads": [
-          "BEAD-085"
+          "BEAD-085",
+          "BEAD-099"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1747,7 +1756,13 @@
           "BEAD-092",
           "BEAD-093",
           "BEAD-094",
-          "BEAD-095"
+          "BEAD-095",
+          "BEAD-100",
+          "BEAD-101",
+          "BEAD-102",
+          "BEAD-103",
+          "BEAD-104",
+          "BEAD-105"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1a"
@@ -1759,7 +1774,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-116a",
         "status": "active",
         "linkedBeads": [
-          "BEAD-090"
+          "BEAD-090",
+          "BEAD-101"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1771,7 +1787,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-116b",
         "status": "active",
         "linkedBeads": [
-          "BEAD-090"
+          "BEAD-090",
+          "BEAD-102"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1783,7 +1800,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-116c",
         "status": "active",
         "linkedBeads": [
-          "BEAD-090"
+          "BEAD-090",
+          "BEAD-103"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1795,7 +1813,8 @@
         "artifactPath": "specs/verification-architecture.md#PROP-116d",
         "status": "active",
         "linkedBeads": [
-          "BEAD-090"
+          "BEAD-090",
+          "BEAD-104"
         ],
         "createdAt": "2026-07-08T05:32:43.000Z",
         "createdInPhase": "1b"
@@ -1807,10 +1826,141 @@
         "artifactPath": "specs/verification-architecture.md#PROP-116e",
         "status": "active",
         "linkedBeads": [
-          "BEAD-090"
+          "BEAD-090",
+          "BEAD-105"
         ],
         "createdAt": "2026-07-08T05:50:00.000Z",
         "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-096",
+        "type": "test-case",
+        "externalId": "PROP-115a-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-115a structural: lending-orchestrator.mjs exports exactly one executeLoanIssuanceAttempt entry point",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-085",
+          "BEAD-086"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-097",
+        "type": "test-case",
+        "externalId": "PROP-115b-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-115b/PROP-116b structural: no relational/threshold comparison of its own, no LLM/prompt reference",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-085",
+          "BEAD-087"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-098",
+        "type": "test-case",
+        "externalId": "PROP-115c-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#REQ-115 happy path (9 steps) + PROP-115c per-step failure/refusal-injection matrix (steps 1,2,3x2,4,5x2,6,8,9x3)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-085",
+          "BEAD-088"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-099",
+        "type": "test-case",
+        "externalId": "PROP-115d-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-115d: dual per-lender/per-borrower lock scope staggered-race proof",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-085",
+          "BEAD-089"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-100",
+        "type": "test-case",
+        "externalId": "CRIT-204-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#CRIT-204 structural: issuance lock keys never referenced by servicing functions and vice versa",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-085",
+          "BEAD-090"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-101",
+        "type": "test-case",
+        "externalId": "PROP-116a-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-116a structural: exactly one executeRepaymentClaim and one executeDefaultDetectionSweep entry point",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-090",
+          "BEAD-091"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-102",
+        "type": "test-case",
+        "externalId": "PROP-116b-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#REQ-116 executeRepaymentClaim/executeDefaultDetectionSweep behavior (partial/full repayment, rejected replay, not-active refusal, overdue detection)",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-090",
+          "BEAD-092"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-103",
+        "type": "test-case",
+        "externalId": "PROP-116c-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-116c: repayment claim vs default-detection sweep concurrent race on the SAME loan_id, exactly one wins",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-090",
+          "BEAD-093"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-104",
+        "type": "test-case",
+        "externalId": "PROP-116d-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#REQ-116/PROP-116d: defaulted_ms real-append-time check + stale-candidate (already-repaid) skip check",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-090",
+          "BEAD-094"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-105",
+        "type": "test-case",
+        "externalId": "PROP-116e-test",
+        "artifactPath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs#PROP-116e: loanId/txHash caller-supplied-provenance structural + integration check against the real verifyRepayment wiring",
+        "status": "red",
+        "linkedBeads": [
+          "BEAD-090",
+          "BEAD-095"
+        ],
+        "createdAt": "2026-07-08T04:29:26.487Z",
+        "createdInPhase": "2a"
       }
     ]
   },
@@ -1862,5 +2012,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-07T20:59:25.627Z"
+  "updatedAt": "2026-07-08T04:29:26.488Z"
 }
