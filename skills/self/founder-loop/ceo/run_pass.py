@@ -38,6 +38,19 @@ import bandit  # noqa: E402
 import budget  # noqa: E402
 from budget_pacer import BudgetPacer  # noqa: E402
 
+# Phase 5 hardening Finding F1: each roster loop's REAL earn ledger is read via the SAME existing
+# modules weekly_report.py itself uses (LEDGER_PATH_FOR_LOOP's real production paths, env-overridable
+# for tests -- EARN_LEDGER/AFFILIATE_METRICS_PATH/EARN_VIDEO_METRICS_PATH/GIG_FUNNEL_PATH/
+# BOUNTY_FUNNEL_PATH) + ledger_metrics.load_ledger_rows -- never a fabricated per-loop convention
+# inside this feature's own state dir (車輪の再発明禁止, `~/.claude/rules/
+# building-effective-ai-agents.md`: import and call, do not re-derive).
+SELF_IMPROVE_DIR = os.path.join(os.path.dirname(os.path.dirname(HERE)), "self-improve")
+for _p in (SELF_IMPROVE_DIR, os.path.join(SELF_IMPROVE_DIR, "lib")):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+import weekly_report  # noqa: E402
+from ledger_metrics import load_ledger_rows  # noqa: E402
+
 JST = zoneinfo.ZoneInfo("Asia/Tokyo")
 
 
@@ -91,6 +104,8 @@ def _latest_per_loop_scores(rows: list) -> dict:
     input. Simple last-row-wins scan (file is small, one WEEKLY pass at a time)."""
     latest: dict = {}
     for row in rows:
+        if not isinstance(row, dict):
+            continue
         loop = row.get("loop")
         if loop:
             latest[loop] = row.get("realized_profit_usd", 0.0)
@@ -155,11 +170,22 @@ def main() -> int:
     pacer.update(sum(weekly_spend.values()))
     pacer.save(pacer_path)
 
+    # (2, REQ-CEO-002(c)) each roster loop's REAL earn ledger, read via the SAME production paths
+    # weekly_report.py itself resolves (LEDGER_PATH_FOR_LOOP: clip/affiliate/video/gig/bounty) --
+    # Phase 5 hardening Finding F1 fix, replaces the previous fabricated
+    # `{state_dir}/{loop}-earn-ledger.jsonl` convention that no loop CLI has ever written to.
     per_loop_entries = {}
     for loop in roster:
-        # Best-effort per-loop earn ledger; each loop owns its own ledger file, this pass only reads.
-        ledger_path = os.path.join(state_dir, f"{loop}-earn-ledger.jsonl")
-        rows = budget.load_cost_events(ledger_path)
+        ledger_resolver = weekly_report.LEDGER_PATH_FOR_LOOP.get(loop)
+        if ledger_resolver is not None:
+            rows = load_ledger_rows(ledger_resolver())
+        else:
+            # pm-earner / clip-promote (and any future roster loop not yet in
+            # weekly_report.LEDGER_PATH_FOR_LOOP): no real earn-ledger source has been declared for
+            # this loop yet. Honestly empty (mirrors REQ-CEO-021's B12 pm-earner spend-side fallback
+            # -- absent data is never zero-filled with a fabricated non-zero) rather than inventing a
+            # new per-loop file convention this feature would be the only reader AND writer of.
+            rows = []
         per_loop_entries[loop] = allocator.sum_earn_by_currency(rows)
 
     for loop in roster:
@@ -199,7 +225,7 @@ def main() -> int:
     # (4): company_score
     this_week_score = allocator.company_score(per_loop_entries, fx_config)
     verification_path = os.path.join(state_dir, "ceo-verification.jsonl")
-    prior_rows = budget.load_cost_events(verification_path)
+    prior_rows = [r for r in budget.load_cost_events(verification_path) if isinstance(r, dict)]
     prev_week_score = prior_rows[-1]["this_week_company_score"] if prior_rows else 0.0
     beats = this_week_score > prev_week_score
 
@@ -238,7 +264,14 @@ def main() -> int:
     gate_open = (cooldown_in == 0) and (not rollback_fired)
 
     if gate_open:
-        ranges_cfg = _read_json(os.path.join(state_dir, "ceo-allocation-ranges.json"), {})
+        # Phase 5 hardening Finding F4: a MISSING ceo-allocation-ranges.json must fail CLOSED (this
+        # feature's own shipped default ranges apply), never fail-open. A file that DOES exist on
+        # disk still overrides these defaults (operator intent wins).
+        ranges_cfg = _read_json(
+            os.path.join(state_dir, "ceo-allocation-ranges.json"), None
+        )
+        if ranges_cfg is None:
+            ranges_cfg = allocator.DEFAULT_ALLOCATION_RANGES
         fleet_cfg = _read_json(os.path.join(state_dir, "ceo-fleet-config.json"), {})
         lessons_path = os.path.join(state_dir, "ceo-lessons.jsonl")
         escalations_path = os.path.join(state_dir, "ceo-escalations.jsonl")
@@ -256,10 +289,22 @@ def main() -> int:
         ucb_scores = bandit.select_scores([1.0, 0.0, 0.0], arms, alpha=1.0)
         print(json.dumps({"step": "8-b_ucb_scores_for_agent", "scores": ucb_scores}))
 
+        # Phase 5 hardening Finding F3: CEO_AGENT_DECISIONS_JSON is an EXTERNAL, agent-controlled
+        # input -- a syntactically-valid-but-wrong-shape file (array/bare string/null/a per-loop
+        # value that isn't itself a dict) must never crash the WEEKLY pass. Any shape violation is
+        # treated as "no decision for that loop" and logged, not raised.
         candidate_decisions = {}
         decisions_path = os.environ.get("CEO_AGENT_DECISIONS_JSON")
         if decisions_path and os.path.exists(decisions_path):
-            candidate_decisions = _read_json(decisions_path, {})
+            raw_decisions = _read_json(decisions_path, {})
+            if isinstance(raw_decisions, dict):
+                candidate_decisions = raw_decisions
+            else:
+                print(json.dumps({
+                    "step": "8_agent_decisions_rejected",
+                    "reason": "CEO_AGENT_DECISIONS_JSON top-level is not a dict",
+                    "type": type(raw_decisions).__name__,
+                }))
 
         for loop in roster:
             loop_realized_profit = allocator.realized_profit_usd(per_loop_entries.get(loop, []), fx_config)
@@ -268,7 +313,15 @@ def main() -> int:
             is_over_budget = loop not in budget_passed
 
             decision = candidate_decisions.get(loop)
-            allocation = dict(decision.get("allocation", {})) if decision else {}
+            if not isinstance(decision, dict):
+                if decision is not None:
+                    print(json.dumps({
+                        "step": "8_agent_decision_rejected", "loop": loop,
+                        "reason": "per-loop decision value is not a dict", "type": type(decision).__name__,
+                    }))
+                decision = None
+            proposed_allocation = decision.get("allocation", {}) if decision else {}
+            allocation = dict(proposed_allocation) if isinstance(proposed_allocation, dict) else {}
 
             # REQ-CEO-042: reject the whole proposal if any field is out of its configured range.
             if decision and not allocator.validate_allocation_ranges(allocation, ranges_cfg):

@@ -46,10 +46,14 @@ def derive_roster(cadence_contract: dict) -> list:
 # ============================================================================
 def sum_earn_by_currency(rows: list) -> list:
     """Always exactly 2 entries (usd, jpy) -- never a fallback-field-winner branch. usd entry =
-    sum(earn_usdc); jpy entry = sum(earn_jpy) + sum(commission_jpy)."""
-    usd_total = sum(float(r.get("earn_usdc", 0) or 0) for r in rows)
+    sum(earn_usdc); jpy entry = sum(earn_jpy) + sum(commission_jpy). A row that parsed as valid JSON
+    but is not itself a dict (e.g. a bare string/number/array/null line in a hand-edited or
+    corrupted ledger) is skipped, not crashed on (Phase 5 hardening Finding F2 -- same defect class
+    as the gig loop's GAP-1)."""
+    dict_rows = [r for r in rows if isinstance(r, dict)]
+    usd_total = sum(float(r.get("earn_usdc", 0) or 0) for r in dict_rows)
     jpy_total = sum(
-        float(r.get("earn_jpy", 0) or 0) + float(r.get("commission_jpy", 0) or 0) for r in rows
+        float(r.get("earn_jpy", 0) or 0) + float(r.get("commission_jpy", 0) or 0) for r in dict_rows
     )
     return [{"amount": usd_total, "currency": "usd"}, {"amount": jpy_total, "currency": "jpy"}]
 
@@ -147,6 +151,20 @@ def bootstrap_registry_if_missing(path: str) -> dict:
         return {}
     with open(path, encoding="utf-8") as f:
         return json.load(f)
+
+
+# REQ-CEO-042 (Phase 5 hardening Finding F4): shipped fail-CLOSED defaults for this feature's own
+# 3 allocation fields, used by the caller (run_pass.py) whenever ceo-allocation-ranges.json does not
+# exist on disk yet. Without this, validate_allocation_ranges()'s own documented "fields absent from
+# ranges_cfg are not gated" contract makes a MISSING config file equivalent to no range gate at all
+# (fail-open) -- directly contradicting behavioral-spec.md's own non-functional constraint that
+# allocation anomalies must be fail-closed. A config file that DOES exist on disk still overrides
+# these (operator intent wins); this constant only fills the gap when there is no file at all.
+DEFAULT_ALLOCATION_RANGES = {
+    "pass_frequency_multiplier": {"min": 0.1, "max": 10},
+    "capital_cap_usd": {"min": 0, "max": 1_000_000},
+    "fleet_size_target": {"min": 0, "max": 50},
+}
 
 
 def validate_allocation_ranges(allocation: dict, ranges_cfg: dict) -> bool:
