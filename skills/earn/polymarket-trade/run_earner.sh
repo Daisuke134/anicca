@@ -18,6 +18,14 @@ echo "[$(ts)] === earner pass ===" >> "$LOG"
 # redeemable), so the loop — not a human — collects every future win. This replaces the one-time
 # manual redeem (EARN-1) with the agent doing it itself each pass.
 run "$VENV" "$DIR/redeem.py"       >> "$LOG" 2>&1 || echo "[$(ts)] redeem exit $?" >> "$LOG"
+# money-safety guard (fix: broken fail-closed): redeem.py::check_cumulative_halt() writes KILL when
+# cumulative net_usdc < reserve. run.sh honored KILL but this launchd entrypoint did NOT, so the
+# valve was dead in production. redeem above still runs (collects wins, reduces exposure); if halted,
+# skip the new-risk trading passes below.
+if [ -f "$DIR/KILL" ]; then
+  echo "[$(ts)] KILL present — cumulative-loss guard: skipping bundle_arb/market_maker" >> "$LOG"
+  exit 0
+fi
 run "$VENV" "$DIR/bundle_arb.py"   >> "$LOG" 2>&1 || echo "[$(ts)] bundle_arb exit $?" >> "$LOG"
 run "$VENV" "$DIR/market_maker.py" >> "$LOG" 2>&1 || echo "[$(ts)] market_maker exit $?" >> "$LOG"
 echo "[$(ts)] === pass done ===" >> "$LOG"
