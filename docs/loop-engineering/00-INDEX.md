@@ -28,6 +28,8 @@
 
 | 11 | `11-parent-funding-loop.md` | ★親としての funding loop★ claude-p が経済を観測し餓死/未成長の Franklin を自分の稼ぎから feed、自立+spawn まで支える定期ループ。OBSERVE→DECIDE(agent判断)→FUND(PM withdraw→relay.link bridge→Franklin送金)→LOG。money-safety rails(identity検証/cap/reserve保護/on-chain確認/kill)。VCSDD feature=franklin-funding-loop | ⏳ 設計→build |
 
+| 12 | `12-the-ladder-and-proactive.md` | ★記事/本の背骨★ AI-driven development の**梯子** L1(vibe)→L2(xDD)→L3(/goal)→L4(loop=cron)→**L5(proactive+self-improving=loop+goal)**→**L6(agent が end-goal 自己決定)**。各段が人間を1つ剥がす。第2軸=経済的自立(own wallet で compute 実払い)。proactive=loop+goal(cron と違う)。今=L4→L5 移行中。決定: 両 proactive化 / refactor は最後。prior art 検索中 | ✅ 背骨 |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
