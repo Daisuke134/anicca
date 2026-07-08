@@ -2537,9 +2537,14 @@ entry point mirroring `self/spawn/scripts/wake-gate.mjs`'s own real
 `deps` key wires the real production implementation, exactly as `self/spawn`'s own precedent already does.
 `deps` SHALL cover, at minimum: `citizensRegistryFile`/`ensureCitizensRegistry` (the citizens-registry
 path/read, steps 1), `ledgerFile`/`readChildren` (the loans-ledger path/read, step 2), `gojoLogFile`/
-`readGojoLogRows` (the gojo-log path/read, step 3), and `fetchImpl` threaded into EVERY `usdcBalance(...)`
+`readGojoLogRows` (the gojo-log path/read, step 3), `fetchImpl` threaded into EVERY `usdcBalance(...)`
 call site in step 4 (never a bare, unparametrized `usdcBalance(citizen.walletAddress.evm)` call with no
-override seam). This is what makes PROP-117c's fixtures genuinely Tier-1/Tier-2 implementable with ZERO
+override seam), **and `getCitizen` (added, 2026-07-08, Phase 1c iteration-3 review FIND-1005 — this key
+was already required by step 6's own correction below but missing from this enumeration; a test
+supplying `deps.getCitizen` directly overrides the closure `wake-gate.mjs` would otherwise build
+internally from its own `citizensRegistryFile`/`fetchImpl` seams, letting a test construct citizen
+records — including `balanceUsd` — without needing BOTH lower-level seams populated for every fixture)**.
+This is what makes PROP-117c's fixtures genuinely Tier-1/Tier-2 implementable with ZERO
 live network calls or Base-mainnet RPC reads — consistent with this document's own established Tier-2
 "no live chain spend required" policy and its own `deps={}`-injection convention already used uniformly by
 `executeLoanIssuanceAttempt`, `executeDefaultDetectionSweep`, and `self/spawn`'s own `runWakeGate`.**
@@ -2604,8 +2609,24 @@ live network calls or Base-mainnet RPC reads — consistent with this document's
    a FRESH read of the citizens registry (step 1's own `ensureCitizensRegistry`-backed read, re-invoked
    per call, never a snapshot captured once at wake start and reused — mirrors REQ-106's own "never rely
    on a pre-lock snapshot alone" discipline, extended here to citizen-record freshness) and returns that
-   SAME citizen record shape steps 1-5 already consume (`{id, wallet, walletAddress, coLocatedWithCoordinator,
-   ...}`), or `null` for an unknown id. THE SYSTEM SHALL supply `deps.gojoLogRows` as step 3's own
+   SAME citizen record shape steps 1-5 already consume, **PLUS a fresh `balanceUsd` field (corrected,
+   2026-07-08, Phase 1c iteration-3 review FIND-1004, critical): `{id, wallet, walletAddress,
+   coLocatedWithCoordinator, balanceUsd, ...}` — `balanceUsd` fetched via the SAME
+   `_shared/lib/usdc.mjs::usdcBalance(citizen.walletAddress.evm, {fetchImpl})` primitive step 4 already
+   uses, re-fetched fresh on THIS SAME call (never step 4's own earlier-in-the-wake reading reused, since
+   step 6 is REQ-106's own documented "fresh recheck" point). Omitting `balanceUsd` is NOT merely
+   incomplete — the real, unmodified `runLockedIssuance` (step 6's own internals) reads
+   `freshBorrower.balanceUsd`/`freshLender.balanceUsd` directly off whatever `getCitizen` returns, and
+   BOTH consumers fail CLOSED on a missing value via `lending-gate.mjs::finiteOr`
+   (`isBorrowerEligible` treats `undefined` as `Infinity`, ALWAYS failing the "broke enough" check —
+   `reason:"not_broke_enough"`; `computeLenderAvailableUsd` treats `undefined` as `0`, always refusing at
+   `decideLoan`) — empirically confirmed this sprint: a `getCitizen` closure returning the shape WITHOUT
+   `balanceUsd`, against PROP-117c's own fixture-3 scenario (one broke, one surplus, both otherwise fully
+   qualifying), produces a silent, permanent `{status:"refused", reason:"not_broke_enough"}` — never a
+   crash, but defeating this REQ's entire reachability purpose exactly as thoroughly as FIND-1003's
+   original crash did, and more dangerously, since PROP-117c's own PRE-fix acceptance text permitted
+   `"refused"` as a passing outcome for that fixture (a test built exactly to that spec would report PASS
+   while production silently never lends).** THE SYSTEM SHALL supply `deps.gojoLogRows` as step 3's own
    already-read `gojoLogRows` array (that argument DOES have a safe `[]` default inside
    `executeLoanIssuanceAttempt` itself, so omitting it would not crash, but omitting it would silently
    feed REQ-101's own `sumRecentGojoGiftsUsd` an always-empty gojo history instead of this wake's own real

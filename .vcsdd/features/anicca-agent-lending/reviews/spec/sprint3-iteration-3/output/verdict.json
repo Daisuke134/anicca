@@ -1,0 +1,65 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-3. Independently re-verified iteration-2's single fix (FIND-1003's 2-argument executeLoanIssuanceAttempt call + getCitizen/gojoLogRows wiring) via REAL, fresh live execution against the real, unmodified lending-orchestrator.mjs -- not merely static reading. Then swept broadly, per this iteration's own manifest instructions, for whether the corrected getCitizen closure's own specified contract is genuinely SUFFICIENT for a real Phase-2b implementer working from REQ-117's text alone, and for cumulative internal consistency across all 3 rounds of fixes. REQ-101-116 remain correctly out of scope (already converged sprint-1/sprint-2)."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1004"],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "fresh execution this review: `node` against the real, unmodified ~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs, single-argument call `executeLoanIssuanceAttempt({lenderId:'a', borrowerId:'b', nowMs: Date.now()})`",
+          "description": "Confirmed the BASELINE crash FIND-1003 identified is genuinely still reproducible against the real, unmodified function when called the OLD, pre-fix way (sanity check before testing the fix itself): threw `TypeError: getCitizen is not a function`, exactly as FIND-1003 documented."
+        },
+        {
+          "type": "test-output",
+          "location": "fresh execution this review: `node` against the real, unmodified lending-orchestrator.mjs, 2-argument call `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs}, {getCitizen, gojoLogRows, ledgerFile, lockStatePath, disburse: stub})` with a getCitizen closure returning full citizen records (id, wallet.evm, walletAddress.evm, coLocatedWithCoordinator, fuel, humanDependencies, AND balanceUsd)",
+          "description": "FIND-1003's OWN fix independently re-verified ACCURATE and GENUINE for what it specifically targeted: the corrected 2-argument call shape, exactly as REQ-117's step-6 correction now specifies, completes with zero exception and reaches a genuine `{status:\"active\", loanId:\"loan_lenderA_1\"}` outcome (full success path, disburse stubbed). `getCitizenCallCount` was 4 (step 2's pre-lock co-location check + step 6's fresh recheck, for both lender and borrower), confirming the 'fresh per-call, never a stale snapshot' discipline the spec's own correction text claims is genuinely exercised. This closes FIND-1003's own narrowly-targeted crash cleanly -- the crash itself is genuinely gone when a complete citizen record (including balance) is supplied."
+        },
+        {
+          "type": "test-output",
+          "location": "fresh execution this review: SAME 2-argument call and SAME fixture roles, but with `getCitizen` returning EXACTLY the literal shape REQ-117's own text specifies (`{id, wallet, walletAddress, coLocatedWithCoordinator, fuel, humanDependencies}` -- no `balanceUsd`, since REQ-117's text never instructs merging one in)",
+          "description": "NEW critical finding (FIND-1004), found during this iteration's own broader sweep of whether REQ-117's text is genuinely SUFFICIENT for an implementer, not merely whether FIND-1003's own recommendation was followed. Result: `{status:\"refused\", reason:\"not_broke_enough\"}` for a fixture deliberately constructed with one broke and one surplus, otherwise fully-qualifying citizen -- i.e. PROP-117c's own fixture-3 scenario. The REAL `runLockedIssuance` (sprint-2, unmodified) reads `freshBorrower.balanceUsd`/`freshLender.balanceUsd` directly off `getCitizen`'s returned records at its own step-6 fresh recheck, and both consumers (`isBorrowerEligible`, `computeLenderAvailableUsd`) fail CLOSED on a missing balance via `finiteOr` (`Infinity` for the borrower, `0` for the lender) -- a silent, permanent, systematically-wrong refusal, not a crash, defeating REQ-117's own EARS clause ('genuinely INVOKED... when a real eligible candidate exists') just as thoroughly as the original crash did, for the exact scenario PROP-117c's fixture 3 is named to test."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1004", "FIND-1005"],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/verification-architecture.md line 192 (PROP-117c fixture-3 verification-method, FIND-1003 correction)",
+          "description": "PROP-117c's own fixture-3 assertion -- 'a `{status:\"active\"|\"disbursement_failed\"|\"disbursement_uncertain\"|\"refused\"}` value rather than throwing' -- is confirmed, by this review's own live execution, to be TOO PERMISSIVE to catch FIND-1004: since `\"refused\"` is one of the four accepted outcomes, a test built exactly to this literal spec text, run against the naive-but-textually-faithful getCitizen closure REQ-117's own shape enumeration invites (no balanceUsd), would report a PASS while the underlying wiring is genuinely, completely broken for its own named scenario. This is a verification-readiness defect distinct from FIND-1003's own (now-closed) crash concern: even a faithfully-implemented PROP-117c fixture 3, run exactly as currently specified, would NOT expose FIND-1004."
+        },
+        {
+          "type": "spec",
+          "location": "specs/behavioral-spec.md lines 2533-2545 (canonical Test-injection seam `deps` enumeration) vs lines 2613-2617 (step-6 correction's own closing sentence)",
+          "description": "NEW finding (FIND-1005, major): the step-6 correction's closing sentence references a `deps.getCitizen` OVERRIDE key on `wake-gate.mjs`'s own top-level `runWakeGate` seam as if already established, but the canonical Test-injection seam clause it refers back to enumerates `deps` as covering only `citizensRegistryFile`/`ledgerFile`/`gojoLogFile`/`fetchImpl` -- FOUR keys, none of which is `getCitizen`. This leaves genuinely ambiguous, for a PROP-117c fixture-3 test author, whether `deps.getCitizen` is a real, independent, directly-injectable seam (in which case the canonical enumeration is incomplete) or merely imprecise shorthand (in which case the sentence should not name it as a separate override at all)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "FIND-1003's own fix (round 2) was independently re-verified this iteration via FRESH, real live execution (not merely static reading) and found genuinely accurate and complete for the SPECIFIC crash it targeted -- the 2-argument call shape genuinely prevents `TypeError: getCitizen is not a function` when a complete citizen record (including balance) is supplied. However, this iteration's own manifest explicitly asked for a broader sweep of whether REQ-117's text is genuinely SUFFICIENT for a real implementer working from the text alone, not merely whether FIND-1003's own narrow recommendation was followed -- and that broader sweep surfaced a NEW, critical, previously-undetected defect (FIND-1004): the getCitizen closure's own specified return shape omits `balanceUsd`, which the REAL, unmodified `runLockedIssuance` genuinely requires at its own fresh recheck, and whose absence causes a SILENT, PERMANENT, fail-closed refusal (not a crash) for every real wake -- confirmed by live execution reproducing exactly this outcome against PROP-117c's own fixture-3 scenario. This is the SAME severity class of defect as FIND-1003 (defeats REQ-117's entire reachability purpose) but is HARDER to detect (no crash, no error, exit code 0, indistinguishable from an ordinary no-op wake) and is NOT caught by PROP-117c's own current verification-method text, which permissively accepts `\"refused\"` as a passing outcome for fixture 3. A related, lower-severity internal inconsistency (FIND-1005) was also found: the step-6 correction's own reference to a `deps.getCitizen` override key is not declared anywhere in the canonical Test-injection seam's own `deps` enumeration. Finding count did not converge to zero and, unlike the prior two iterations, did not even monotonically decrease (1 -> 2) -- this reflects genuinely new discoveries from a broader, more adversarial sweep this round, not regressions in previously-reviewed material (FIND-1001/FIND-1002/FIND-1003's own specific fixes all independently re-confirmed accurate for what they targeted). FAIL -- next iteration required to add the missing `balanceUsd` merge to REQ-117's getCitizen contract, tighten PROP-117c's fixture-3 assertion to reject a `\"refused\"` outcome for that specific fixture, and resolve the `deps.getCitizen` key ambiguity."
+  }
+}

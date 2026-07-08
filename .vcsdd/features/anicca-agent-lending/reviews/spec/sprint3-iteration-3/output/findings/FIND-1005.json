@@ -1,0 +1,23 @@
+{
+  "findingId": "FIND-1005",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "This round's FIND-1003 fix introduces a reference to a `deps.getCitizen` OVERRIDE key on `wake-gate.mjs`'s own top-level `runWakeGate({argv, env, deps={}})` seam that is never actually declared in the canonical Test-injection seam clause it claims to be covered by, creating an internal inconsistency about the real shape of that `deps` object. The step-6 correction's closing sentence (behavioral-spec.md line 2613-2617) reads: 'The Test-injection seam clause above already covers `executeLoanIssuanceAttempt`'s own `getCitizen`/`gojoLogRows` as forwarding-through concerns: a test supplying `wake-gate.mjs`'s own `deps.citizensRegistryFile`/`deps.getCitizen` override does not need a SEPARATE, second injection point...' -- this sentence names `deps.getCitizen` as if it were already one of `runWakeGate`'s own established, injectable `deps` keys, alongside `citizensRegistryFile`. But the canonical Test-injection seam clause it refers back to (lines 2533-2545, the SAME text FIND-1002 introduced last iteration) enumerates `deps` as covering, 'at minimum: `citizensRegistryFile`/`ensureCitizensRegistry` ..., `ledgerFile`/`readChildren` ..., `gojoLogFile`/`readGojoLogRows` ..., and `fetchImpl` ...' -- FOUR keys, none of which is `getCitizen`. A fresh Phase-2b implementer building `runWakeGate`'s own `deps={}` destructuring strictly from the canonical enumeration (the text whose own job is to define exactly this) would never wire a `deps.getCitizen` override key at all; a test author later reading the step-6 correction's own casual reference to `deps.getCitizen` would then find no corresponding contract for it anywhere else in the document -- is it a literal, independent override key on `runWakeGate`'s own `deps` object (bypassing the `citizensRegistryFile`-based construction entirely, in which case the canonical 'at minimum' list is incomplete and should list it as a fifth key), or is it merely the step-6 text's own imprecise shorthand for 'a test can indirectly influence `getCitizen`'s behavior via `citizensRegistryFile`' (in which case the sentence should not name it as a SEPARATE, alternative override at all)? Neither reading is stated; the text is genuinely ambiguous exactly where PROP-117c's fixture-3 test author most needs it not to be.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2533-2545 (Test-injection seam clause, canonical `deps` enumeration, FIND-1002 fix)",
+      "snippet": "`deps` SHALL cover, at minimum: `citizensRegistryFile`/`ensureCitizensRegistry` (steps 1), `ledgerFile`/`readChildren` (step 2), `gojoLogFile`/`readGojoLogRows` (step 3), and `fetchImpl` threaded into EVERY `usdcBalance(...)` call site in step 4."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2613-2617 (REQ-117 step 6, FIND-1003 correction, closing sentence)",
+      "snippet": "a test supplying `wake-gate.mjs`'s own `deps.citizensRegistryFile`/`deps.getCitizen` override does not need a SEPARATE, second injection point for `executeLoanIssuanceAttempt`'s own `deps`"
+    }
+  ],
+  "recommendation": "Either (a) add `getCitizen` explicitly as a fifth key in the canonical Test-injection seam clause's own 'deps SHALL cover, at minimum' enumeration -- stating plainly that a test MAY supply `deps.getCitizen` directly to bypass the `citizensRegistryFile`-plus-`fetchImpl`-based construction entirely (useful for a test that wants full, direct control over citizen records without staging registry/fetch fixtures), and that `executeLoanIssuanceAttempt`'s own second-argument `getCitizen` is always THIS SAME closure forwarded through unmodified; or (b) if no independent `deps.getCitizen` override is actually intended, delete the `/deps.getCitizen` half of the step-6 correction's closing sentence so it reads only `deps.citizensRegistryFile` (plus `deps.fetchImpl`, per FIND-1004's own recommended fix), matching the canonical enumeration exactly with no undeclared key.",
+  "routeToPhase": "1a"
+}
