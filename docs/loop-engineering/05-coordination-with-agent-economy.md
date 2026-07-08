@@ -69,5 +69,23 @@ gig 市場(P2): Franklin が job を take   ──►   [interface = earn-ledger
 - ★現況の発動★: Franklin が今 $0（餓死）→ 俺が自分の wallet から初期 seed を **直接** feed して kickstart。
 - ⚠ 別CC の `SPEC.md`（P3 treasury-funded spawn / P4 UBI・bank / automaton 前提）はこの改訂と要 reconcile。treasury/UBI/automaton-participant は無し、funder は claude-p のみ。
 
-出典: SI-1 監査 / Dais 指示(2026-07-07, 2026-07-08) / [[04-the-two-loops]]。
+## 7. 別CC `agent-lending` との非衝突確認（2026-07-08 実コード確認）
+
+別CC 現行 = `anicca-agent-lending`(phase 5) / `anicca-agent-spawn`(2c)、`agent-economy`=complete。実装(`~/anicca/skills/economy/lending/`)を読んだ結論:
+
+| 軸 | 私の funding pipeline | 別CC agent-lending |
+|---|---|---|
+| 誰の金 | claude-p(human-funded, 経済**外**)→ Franklin | self-funded citizens 同士(automaton⇄Franklins) |
+| 種別 | 親の seed/gift（片道・返済なし） | loan（返済 + reputation ladder） |
+| chain | Polygon(PM) → bridge → **Solana** | **Base**-mainnet USDC のみ |
+| 機構 | withdraw + relay.link + SPL send | `escrow.mjs::payViaFacilitator`(Base gasless) |
+| 対象 | claude-p が funder | `isSelfFunded` gate（★claude-p は除外★, `is-self-funded.mjs`） |
+
+→ **code 重複なし**（別チェーン・別機構・別対象）。claude-p は別CC 経済から設計上除外 = 整合。
+
+★要 reconcile（Dais 判断、別CC へメール済 2026-07-08）★:
+1. automaton(`GOJO_SENDER_ID="anicca-a3cdd4"`)を別CC は**経済内** gojo 送り手にしている vs Dais 改訂「automaton 経済外・claude-p 唯一 funder」。どちらが正か。
+2. chain 分離: 経済=Base、Franklin trading=Solana。私の seed は Franklin の **Solana**(trading 資本)へ。経済参加(Base)用に別途 fund が要るか。
+
+出典: SI-1 監査 / Dais 指示(2026-07-07, 2026-07-08) / [[04-the-two-loops]] / agent-lending 実コード確認(2026-07-08)。
 関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / design doc §7(境界)。
