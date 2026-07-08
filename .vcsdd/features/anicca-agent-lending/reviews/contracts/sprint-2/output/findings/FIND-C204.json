@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C204",
+  "dimension": "structural_integrity",
+  "category": "passthreshold_literal_gap",
+  "severity": "minor",
+  "blocking": false,
+  "description": "CRIT-202's passThreshold reads: 'Structural grep of lending-orchestrator.mjs finds no relational/threshold comparison against a balance/surplus/rate/count value anywhere outside a call into an already-exported REQ-101/102/104/105/106/108/109/112/114 function ... FAIL if either is found.' lending-orchestrator.mjs's evaluateKillSwitches (line 144) contains `if (successfulOnTimeRepayments === 0) { ... }` -- a raw relational comparison against successfulOnTimeRepayments (a count value) performed directly in the orchestrator, not wrapped inside a call to an already-exported lending-gate.mjs function. Taken completely literally, this is exactly the pattern class CRIT-202's own passThreshold text says should FAIL the criterion. However, this specific comparison is not an independent judgment invented by the orchestrator: REQ-105's own already-hardened spec text (behavioral-spec.md line 746-749) states verbatim 'Loan issuance (REQ-106) SHALL call this function [evaluateColdStartKillSwitch], BEFORE acquiring the loan_${lenderId} lock ... for ANY loan request where the borrower's OWN successfulOnTimeRepayments === 0 at issuance (i.e. a genuine cold-start loan, per this requirement's own definition above)' -- i.e. REQ-105 itself, already adversary-hardened across sprint-1's own 9 Phase-1c iterations, pins this exact trigger condition as the orchestrator's own required dispatch logic, not a new invention. The PROP-115b/PROP-116b structural test's own regex (`/balanceUsd\\s*[<>]|surplusUsd\\s*[<>=]|defaultRateUsd\\s*[<>=]|repaymentRate\\s*[<>=]/`) does not cover this pattern either, so the automated suite is silent on it. This is flagged as a literal-wording gap between CRIT-202's own passThreshold and REQ-105's own pre-existing spec text (which the contract cannot override, per this sprint's own Pre-existing spec confirmation section), not a genuine judgment-logic defect -- no NEW threshold/eligibility decision is made here beyond the trigger condition REQ-105 already specifies verbatim.",
+  "evidence": {
+    "filePath": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+    "lineRange": "143-148",
+    "snippet": "const successfulOnTimeRepayments = countSuccessfulOnTimeRepayments(loanRows, borrowerId); if (successfulOnTimeRepayments === 0) { const coldStart = computeColdStartRepaymentRate({ loanRows }); const coldSwitch = evaluateColdStartKillSwitch(coldStart); if (coldSwitch.paused) return { paused: true, reason: 'cold_start_paused' }; }"
+  },
+  "crossCheck": {
+    "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+    "lineRange": "746-749",
+    "note": "REQ-105's own already-hardened text pins successfulOnTimeRepayments === 0 as the exact, required trigger condition for calling evaluateColdStartKillSwitch at issuance -- this sprint's orchestrator implements that verbatim, it does not invent a new comparison."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "Optional housekeeping for a future contract revision: either (a) extract the successfulOnTimeRepayments === 0 gate into a small pure predicate in lending-gate.mjs (e.g. isColdStartRequest(successfulOnTimeRepayments)) so the orchestrator only ever calls exported functions, fully satisfying CRIT-202's literal wording, or (b) narrow CRIT-202's own passThreshold text to explicitly exempt spec-mandated dispatch conditions already pinned by REQ-101/102/104/105/106/108/109/112/114's own text. Does not block this round's verdict on its own."
+}

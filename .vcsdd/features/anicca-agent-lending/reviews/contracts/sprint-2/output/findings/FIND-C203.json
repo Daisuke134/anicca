@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C203",
+  "dimension": "edge_case_coverage",
+  "category": "missing_test_case",
+  "severity": "major",
+  "blocking": true,
+  "description": "CRIT-203's own description and passThreshold both claim coverage of 'REQ-115's 9 canonical issuance steps' via failure/refusal injection at 'each of the 9 canonical steps in turn.' Reading the actual 9-step call order in lending-orchestrator.mjs (step 1 self-loan, step 2 co-location, step 3 pre-lock kill-switch, step 4 lock acquisition, step 5 reconciliation, step 6 lock-protected fresh recheck, step 7 sizing/decideLoan, step 8 provisional append, step 9 disbursement+follow-up) against the actual test file, only 8 of the 9 steps have a dedicated failure-injection test: PROP-115c tests exist for steps 1, 2, 3 (both cold-start and overall-default sub-branches), 4, 5 (both the throw case and the happy reconciliation case), 6, 8, and 9 (all three sub-cases) -- but step 7 (decideLoan returning eligible:false, e.g. because lenderAvailableUsd < loanAmountUsd) has NO test anywhere in lending-orchestrator.test.mjs verifying its own 'zero rows, zero lock released abnormally' refusal behavior against the REAL executeLoanIssuanceAttempt. Grepping the test file for 'step 7', 'decideLoan', 'insufficient_lender' or similar finds nothing. Reading the source, the step-7 refusal path (`if (!decision.eligible) return { status: 'refused', reason: decision.reason }`, before step 8's provisional append) LOOKS structurally correct by inspection (early return before any append, same pattern as the tested step-6 path) -- but this is an inference from code-reading, not the integration-test-confirmed guarantee CRIT-203's own passThreshold demands for every one of the 9 steps ('An integration test triggering a failure/refusal at each of the 9 canonical steps in turn against the REAL executeLoanIssuanceAttempt ... FAIL if ... any step's own zero-row guarantee is violated' -- which cannot be confirmed for step 7 because no such test exists to violate or pass).",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs",
+    "lineRange": "218-446 (the full PROP-115c step-by-step block)",
+    "snippet": "Tests present: 'step 1', 'step 2', 'step 3 (REQ-105 cold-start...)', 'step 3 (REQ-114 overall default...)', 'step 4 (lock_held...)', 'step 5 (...throws)', 'step 5 happy', 'step 6 (...recheck...)', 'step 8 (...ENOSPC/EACCES)', 'step 9 sub-case 1/2/3' -- no 'step 7' test anywhere in the file."
+  },
+  "crossCheck": {
+    "filePath": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+    "lineRange": "210-221 (step 7, sizing)",
+    "note": "const decision = decideLoan({ lenderAvailableUsd, loanAmountUsd: loanCapUsd }); if (!decision.eligible) { return { status: 'refused', reason: decision.reason }; } -- structurally follows the same early-return-before-append pattern as the tested step-6 path, but this specific path is never exercised by an integration test against the REAL executeLoanIssuanceAttempt, so CRIT-203's own 'zero-row guarantee' cannot be said to be integration-test-confirmed for this step as its own passThreshold requires."
+  },
+  "routeToPhase": "2a",
+  "resolutionRecommendation": "Add one PROP-115c test for step 7, mirroring the existing step-6 test's shape: construct a happyDeps fixture where the lender's own computed lenderAvailableUsd is deliberately below loanCapUsd (e.g. a near-zero lender balanceUsd with existing outstanding principal), assert result.status === 'refused' with decideLoan's own reason, assert zero rows appended, and assert both locks released normally -- exactly the same three assertions already used for the other 8 steps."
+}

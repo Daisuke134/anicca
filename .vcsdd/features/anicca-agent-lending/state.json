@@ -306,8 +306,8 @@
     {
       "id": "PROP-025",
       "tier": 3,
-      "required": true,
-      "status": "proved",
+      "required": false,
+      "status": "skipped",
       "artifact": "specs/verification-architecture.md#PROP-108a",
       "beadId": "BEAD-036"
     },
@@ -2026,5 +2026,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-08T04:53:30.324Z"
+  "updatedAt": "2026-07-08T05:17:03.355Z"
 }

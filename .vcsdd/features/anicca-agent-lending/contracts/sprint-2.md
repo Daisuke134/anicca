@@ -2,7 +2,7 @@
 status: draft
 feature: anicca-agent-lending
 sprintNumber: 2
-negotiationRound: 0
+negotiationRound: 1
 scope: The effectful lending ORCHESTRATOR layer — the code that actually wires sprint-1's pure/narrow modules (lending-gate.mjs, lending-verify.mjs, gojo-read.mjs, lending-path.mjs) plus the two already-hardened, reused effectful modules (lock.mjs, escrow.mjs::payViaFacilitator) into two real, runnable flows. This sprint delivers REQ-115 (new, the loan-issuance orchestrator, executeLoanIssuanceAttempt) and REQ-116 (new, the loan-servicing orchestrator pair, executeRepaymentClaim + executeDefaultDetectionSweep) in a NEW module skills/economy/lending/lib/lending-orchestrator.mjs. REQ-101 through REQ-114 do NOT get new behavioral content this sprint beyond REQ-115/REQ-116 — they were already fully specified, EARS-clause-through-acceptance-criteria, across sprint-1's own 9 Phase-1c spec-review iterations (see the Pre-existing spec confirmation section below for the citation-by-citation proof of this claim). This sprint's own Phase 1a/1b work is this contract plus REQ-115/PROP-115a-d and REQ-116/PROP-116a-e — not a rewrite of any REQ-101 through REQ-114.
 criteria:
   - id: CRIT-201
@@ -27,9 +27,9 @@ criteria:
     passThreshold: An integration test reusing PROP-106a's/PROP-106n's own staggered-race proof method, invoking the REAL executeLoanIssuanceAttempt (with steps unrelated to the lock itself stubbed to fast, real-shaped fixture I/O) rather than a bare fixture fn stand-in, confirms the dual-lock's real combined scope matches REQ-106's own already-specified critical section. A structural/Tier-0 read of lending-orchestrator.mjs confirms executeRepaymentClaim/executeDefaultDetectionSweep reference only loan_loanId as their lock key, never loan_lenderId or loan_borrower_borrowerId, and executeLoanIssuanceAttempt references only the two per-lender/per-borrower keys, never loan_loanId. FAIL if either lock's real scope diverges from its own already-specified critical section, or if either orchestrator function references the other's lock key.
   - id: CRIT-205
     dimension: verification_readiness
-    description: Every one of the 19 obligations contracts/sprint-1.md's own Known residual scope boundary section deferred (PROP-106a, PROP-106b, PROP-106n, PROP-106e's Tier-2 half, PROP-106f, PROP-106g, PROP-106h, PROP-106k, PROP-106l, PROP-106o, PROP-106p, PROP-108c, PROP-108d, PROP-112a, PROP-109e, PROP-106i, PROP-105h, PROP-114c, PROP-109g) is either proved, structural, unit, or integration, this sprint via the REAL executeLoanIssuanceAttempt/executeRepaymentClaim/executeDefaultDetectionSweep functions, or explicitly re-deferred with a stated reason — none is silently left pending.
+    description: (Revised, contract-review round 1, resolves FIND-C201 — re-scoped to be genuinely evaluable AT THIS gate, before Phase 3/5 run; final promotion of the 19 obligations remains independently enforced by vcsdd-harden's own standard "all required obligations proved" gate before Phase 6, this criterion does not weaken that — mirrors the identical fix anicca-agent-spawn sprint-2's own CRIT-205 already applied for the same reason.) Every one of the 19 obligations contracts/sprint-1.md's own Known residual scope boundary section deferred (PROP-106a, PROP-106b, PROP-106n, PROP-106e's Tier-2 half, PROP-106f, PROP-106g, PROP-106h, PROP-106k, PROP-106l, PROP-106o, PROP-106p, PROP-108c, PROP-108d, PROP-112a, PROP-109e, PROP-106i, PROP-105h, PROP-114c, PROP-109g) has a genuinely exercisable proof path in the CURRENT implementation — the real function/call site each obligation's own verification method names actually exists in lending-orchestrator.mjs as written, so nothing in the current code makes any of the 19 structurally unprovable.
     weight: 0.2
-    passThreshold: state.json's proofObligations array, after this sprint's Phase 3/5, shows every one of the 19 listed PROP IDs as status:proved (with a citation to the REAL orchestrator function's own source, never a mocked-caller fixture alone) or, for any exception, a Phase-5 contract note stating the specific reason it could not be closed this sprint, mirroring sprint-1's own disposition style. FAIL if any of the 19 is left pending with no stated reason.
+    passThreshold: For each of the 19 listed PROP IDs, a read of its own verification method (in verification-architecture.md) against the current lending-orchestrator.mjs source confirms the named call site/function genuinely exists and is reachable. FAIL if any of the 19 names a call site that does not exist in the current implementation, is unreachable, or is a stub/placeholder — NOT if a PROP is simply not yet promoted to status:proved in state.json (that promotion is Phase 3/5's own job, independently gated by vcsdd-harden before Phase 6).
   - id: CRIT-206
     dimension: implementation_correctness
     description: PROP-108a (REQ-108's own pre-existing Tier-3 live-E2E obligation — a real disbursement transfer plus a real repayment transfer, independently re-verified via a separate RPC call, on at least one real Base-mainnet-class result) is NOT claimed proved via a fixture, a simulated transfer, or a borrowed/historical artifact from a different feature or a different chain — it requires either a genuinely NEW real USDC disbursement-then-repayment pair executed through this sprint's own REAL executeLoanIssuanceAttempt/executeRepaymentClaim functions, or an explicit, honest re-deferral to a dedicated future checkpoint, exactly mirroring anicca-agent-spawn sprint-2's own CRIT-206 treatment of its own Tier-3 obligations.
@@ -145,6 +145,16 @@ to whoever executes this sprint's own Phase 5, made against the colony's actual 
 that time, mirroring `anicca-agent-spawn` sprint-2's own CRIT-206 treatment of its own Tier-3 obligations
 (PROP-302b/PROP-303b/PROP-401a) — this contract only commits to NOT silently claiming PROP-108a proved via
 a fixture, a simulated transfer, or a borrowed artifact from a different feature or chain (CRIT-206).
+
+**Correction (contract-review round 1, resolves FIND-C202)**: despite this section's own already-correct
+disposition text above, state.json's own PROP-108a entry (id PROP-025) was found marked
+`status:"proved"`/`required:true` — a stale leftover citing sprint-1's own `prop-108a-live-mainnet-e2e.mjs`
+harness, which calls `verifyRepayment` directly against one pre-existing historical txHash with
+`loanRows:[]` and zero orchestrator involvement (the orchestrator did not exist when that harness ran) —
+exactly the "borrowed artifact" CRIT-206 forbids. Corrected to `status:"skipped"`/`required:false`,
+matching this section's own already-stated intent. PROP-108a remains genuinely open for a future
+checkpoint (this project's own task #28, "P3実deploy検証チェックポイント(Phase5)", or a dedicated
+lending-specific equivalent).
 
 ## Known residual scope boundary
 

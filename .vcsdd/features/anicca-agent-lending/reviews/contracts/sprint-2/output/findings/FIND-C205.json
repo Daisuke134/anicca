@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-C205",
+  "dimension": "verification_readiness",
+  "category": "citation_drift",
+  "severity": "minor",
+  "blocking": false,
+  "description": "The manifest's own contractDigest ('ccf13ebd7393b923409f2b1395388b649303d5aa85e80039531b265e849b2906') does not match the actual sha256 of contracts/sprint-2.md as currently found on disk (independently computed this round: '03c072c4dbbe9462f1c7bbf3bf8b6b21c29c6e11340e094b2fcbc3e085436adb'). The contract file itself contains a 'Phase 2c refactor note (this revision)' section at its own tail (lines 162-204) describing the activeStatusFields extraction and the two independently-re-verified GREEN-phase implementation notes -- content that was evidently appended AFTER whatever earlier version of the file the manifest's digest was computed against (most likely the Phase 1c-approved pre-refactor version). This is most likely a process/tooling gap (the digest was never recomputed when the contract was revised to add the Phase 2c note) rather than a sign of unauthorized tampering, but it does mean the digest recorded in the manifest cannot currently be used as a tamper-evidence check against the artifact actually reviewed this round.",
+  "evidence": {
+    "filePath": "reviews/contracts/sprint-2/input/manifest.json",
+    "lineRange": "7",
+    "snippet": "\"contractDigest\": \"ccf13ebd7393b923409f2b1395388b649303d5aa85e80039531b265e849b2906\""
+  },
+  "crossCheck": {
+    "filePath": "contracts/sprint-2.md",
+    "lineRange": "1-204 (whole file, actual sha256 03c072c4dbbe9462f1c7bbf3bf8b6b21c29c6e11340e094b2fcbc3e085436adb)",
+    "note": "Computed via `shasum -a 256 contracts/sprint-2.md` against the file as currently committed on ~/anicca-project's working tree this session; does not match the manifest's recorded digest."
+  },
+  "routeToPhase": null,
+  "resolutionRecommendation": "Recompute and update the contractDigest recorded wherever this sprint's contract review round is tracked (manifest and/or state.json) to match the current, Phase-2c-revised contracts/sprint-2.md content, so future rounds' tamper-evidence checks are meaningful. Does not block this round's verdict on its own -- the actual content reviewed this round is the current, complete file (including the Phase 2c note), which is the correct artifact to review regardless of the stale digest."
+}

@@ -1,0 +1,19 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-lending",
+  "sprintNumber": 2,
+  "negotiationRound": 0,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "ccf13ebd7393b923409f2b1395388b649303d5aa85e80039531b265e849b2906",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs"
+    ],
+    "source": [
+      "skills/economy/lending/lib/lending-orchestrator.mjs"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Cross-repo: spec/contract files are at /Users/anicca/anicca-project/.vcsdd/features/anicca-agent-lending/, but ALL test/source files live in a DIFFERENT repo at /Users/anicca/anicca (paths relative to that repo's root). Commits 71cc1c9 (2a RED), 1b1fae2 (2b GREEN), 3151f13 (2c refactor) on ~/anicca's main. This sprint delivers REQ-115 (executeLoanIssuanceAttempt, the loan-issuance orchestrator) and REQ-116 (executeRepaymentClaim + executeDefaultDetectionSweep, the loan-servicing orchestrator pair) in a NEW module lending-orchestrator.mjs, wiring sprint-1's already-hardened pure/narrow modules (lending-gate.mjs, lending-verify.mjs, gojo-read.mjs, lending-path.mjs, all confirmed byte-identical/unmodified via git diff) plus the two already-hardened effectful modules (lock.mjs, escrow.mjs::payViaFacilitator) into two real, runnable flows. Verify each CRIT-201 through CRIT-207 criterion (read contracts/sprint-2.md in full) against the real source/tests -- re-run the actual test suite yourself ('cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs') and confirm exactly 119 tests pass (89 pre-existing + 30 new), 0 fail. Pay special attention to: CRIT-203 (the 9-step failure/refusal-injection matrix for executeLoanIssuanceAttempt -- confirm the actual code, not just the spec, correctly records zero rows for steps 1-6/8 and the correct follow-up row for step 9's three sub-cases), CRIT-204 (the dual-lock/per-loan-lock scope separation -- confirm executeRepaymentClaim/executeDefaultDetectionSweep reference ONLY the loan_${loan_id} lock key, never REQ-106's per-lender/per-borrower keys, and vice versa for executeLoanIssuanceAttempt), and CRIT-206 (PROP-108a, the one pre-existing Tier-3 real-money obligation -- must NOT be claimed proved via fixture/simulated evidence; confirm it remains honestly deferred). Two implementation notes from the GREEN/refactor phases worth independently re-verifying rather than trusting: (1) REQ-115's step-3 kill-switch check order (evaluateOverallDefaultKillSwitch's absolute-loss branch checked first in isolation, then cold-start, then the full check) is claimed 'implementation-defined per spec text' -- confirm REQ-114/REQ-105's own spec text genuinely supports this framing and that no NEW threshold/judgment logic was introduced beyond calling the existing pure functions with different argument shapes. (2) executeDefaultDetectionSweep has an 'await Promise.resolve()' yield before its per-loan lock attempt, claimed empirically necessary to prevent the sweep from structurally winning every lock race against a concurrent executeRepaymentClaim (the refactor commit's own message claims removing it caused 10/10 test failures) -- confirm this doesn't weaken CRIT-204/PROP-116c's own mutual-exclusion guarantee (which only requires exactly one side wins, never which one)."
+}
