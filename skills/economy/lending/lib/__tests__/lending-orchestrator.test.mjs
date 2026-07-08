@@ -385,6 +385,27 @@ test("PROP-115c step 6 (lock-protected fresh recheck finds the borrower newly in
   assert.equal(fs.existsSync(path.join(dir, "locks", `loan_borrower_${BORROWER}.lock`)), false);
 });
 
+test("PROP-115c step 7 (sizing computation refuses — decideLoan finds lenderAvailableUsd < loanCapUsd) -> refused, ZERO rows, both locks released normally", async () => {
+  const dir = tmpDir();
+  const deps = happyDeps(dir, {
+    // Lender's own balance ($1) sits below the fixed per-citizen reserve ($5), so
+    // computeLenderAvailableUsd floors to $0 -- strictly less than the cold-start loanCapUsd
+    // ($0.02, successfulOnTimeRepayments===0) -- so decideLoan genuinely refuses on real inputs,
+    // never a fabricated/injected decision.
+    getCitizen: async (id) => {
+      if (id === LENDER) return baseCitizen(LENDER, { balanceUsd: 1 });
+      return baseCitizen(BORROWER, { balanceUsd: 0.1 });
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "insufficient_lender_surplus");
+  assert.deepEqual(readLoanRows(deps.ledgerFile), []);
+  // both locks released normally -- no stale lock file remains after release()
+  assert.equal(fs.existsSync(path.join(dir, "locks", `loan_${LENDER}.lock`)), false);
+  assert.equal(fs.existsSync(path.join(dir, "locks", `loan_borrower_${BORROWER}.lock`)), false);
+});
+
 test("PROP-115c step 8 (the provisional appendChild call itself throws, e.g. ENOSPC/EACCES) -> ZERO rows for this attempt's own n", async () => {
   const dir = tmpDir();
   fs.mkdirSync(dir, { recursive: true });
