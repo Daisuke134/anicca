@@ -16,7 +16,14 @@ const seed = JSON.parse(fs.readFileSync(SEED_PATH, "utf8"));
 // sub-object -- never walletAddress, never coLocatedWithCoordinator -- without throwing.
 test("PROP-105a: citizens.seed.json parses as an array of the documented shape, no telemetryPath field, isSelfFunded() never throws on any entry", () => {
   assert.ok(Array.isArray(seed));
-  assert.equal(seed.length, 2, "today's known-good seed is exactly automaton + Franklin");
+  assert.equal(
+    seed.length,
+    1,
+    "today's known-good seed is Franklin only -- automaton was removed per Dais's 2026-07-08 directive " +
+      "(docs/loop-engineering/05-coordination-with-agent-economy.md §6): the economy consists of Franklins " +
+      "only, and automaton is a self-made reproduction of the not-yet-GA github.com/Conway-Research/automaton, " +
+      "not a genuine economic participant"
+  );
   for (const entry of seed) {
     assert.equal(typeof entry.id, "string");
     assert.equal(typeof entry.wallet, "object");
@@ -71,11 +78,11 @@ test("PROP-105f: homeDir is present and non-empty on every seeded entry, and is 
 });
 
 // PROP-105h: every seeded entry's coLocatedWithCoordinator field is present, boolean-typed, and
-// true for BOTH of today's seeded entries (automaton, Franklin -- both genuinely co-located on the
-// same Mac Mini today, REQ-106); no seed entry ever has this field false or missing.
-test("PROP-105h: coLocatedWithCoordinator is present, boolean, and true for both seeded entries", () => {
+// true for today's sole seeded entry (Franklin -- genuinely co-located on the same Mac Mini today,
+// REQ-106); no seed entry ever has this field false or missing.
+test("PROP-105h: coLocatedWithCoordinator is present, boolean, and true for the seeded entry", () => {
   assert.deepEqual(
     seed.map((e) => e.coLocatedWithCoordinator),
-    [true, true]
+    [true]
   );
 });

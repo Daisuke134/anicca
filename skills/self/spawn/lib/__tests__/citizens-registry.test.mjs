@@ -61,7 +61,7 @@ test("ensureCitizensRegistry: bootstraps the durable registry from the REAL citi
   assert.equal(result.created, true);
   assert.equal(fs.readFileSync(registryPath, "utf8"), realSeedContent);
   const parsed = JSON.parse(fs.readFileSync(registryPath, "utf8"));
-  assert.equal(parsed.length, 2);
+  assert.equal(parsed.length, 1); // Franklin only -- automaton removed per Dais's 2026-07-08 directive, see citizens-seed.test.mjs
 });
 
 // PROP-105j: ensureCitizensRegistry only ever READS citizens.seed.json (fs.readFile) -- it never
