@@ -1,0 +1,9 @@
+# security probe re-run 2026-07-08T08:33:46Z — loop-report.sh shell-injection attempt (real execution)
+$ AGENTMAIL_API_KEY= bash ~/anicca/skills/report/loop-report.sh probe 'did $(touch /tmp/claude-sec-probe-pwned); `id`' success 0 'none: security probe $(touch /tmp/claude-sec-probe-pwned2)'
+exit=0
+--- side-effect check (files must NOT exist):
+ls: /tmp/claude-sec-probe-pwned: No such file or directory
+ls: /tmp/claude-sec-probe-pwned2: No such file or directory
+--- API key not echoed in last log lines:
+0
+0 occurrences of key in log tail

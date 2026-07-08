@@ -1,7 +1,7 @@
 {
   "featureName": "claude-p-loop-verification",
   "mode": "lean",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -53,11 +53,19 @@
       "timestamp": "2026-07-08T07:29:43.211Z",
       "reason": "impl review PASS at iteration 2; entering formal hardening (lean)",
       "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-08T08:34:09.489Z",
+      "reason": "merged to main, plists loaded and verified, 5 cores restarted, injection probe re-run (no side-effect, no key leak); convergence remaining = E2E evidence-mail cycles (task 9)",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -75,6 +83,12 @@
       "reviewedBy": "adversary",
       "details": "iteration-2 PASS (0 blocking). F1 (REQ-LV-004 STARTUP prompts) resolved across 5 cli.sh files; 15/15 loop-report tests green; no regressions. verdicts: reviews/impl/iteration-{1,2}/verdict.md"
     },
+    "5": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T08:32:16.741Z",
+      "reviewedBy": "verifier",
+      "details": "hardening: F-VERIF-1/2/3 fixed and verified; sprint2 impl reviewed over iterations 3-4, final PASS 0 blocking."
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-08T06:40:39.249Z",
@@ -86,5 +100,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T05:36:05.417Z",
-  "updatedAt": "2026-07-08T07:29:43.211Z"
+  "updatedAt": "2026-07-08T08:34:09.491Z"
 }
