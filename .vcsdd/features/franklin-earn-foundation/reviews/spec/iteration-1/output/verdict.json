@@ -1,0 +1,43 @@
+{
+  "feature": "franklin-earn-foundation",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "identity_safety",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.automaton/wallet.json", "description": "Real automaton wallet.json has no 'address' field (only privateKey/createdAt/rotatedAt/rotationReason), contradicting PROP-004's/REQ-001's literal verification methodology"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs:63-67", "description": "ANICCA_EVM_PRIVATE_KEY override checked with higher priority than ANICCA_HOME file resolution; untested contamination vector"},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/wallet-address-solana.mjs", "description": "Existing correct per-instance Solana address derivation pattern that REQ-002 never mandates for sol-trade"}
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip-promote/tests/test_run.sh", "description": "Full read shows no 'fake CLI first in $PATH' pattern, contradicting the spec's repeated citation of this file as precedent"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/SKILL.md:80-82", "description": "Spec's own quoted root-cause evidence mandates adding the P1 earn-guard check once sol-trade calls record.mjs; REQ-002 does not carry this instruction into its own requirements"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:40", "description": "PROP-004 methodology (read real wallet.json's 'address' field) is unimplementable against the real file"},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:56-59", "description": "Tier 1 test strategy for PROP-005..008 cites a nonexistent 'fake CLI in $PATH' precedent"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

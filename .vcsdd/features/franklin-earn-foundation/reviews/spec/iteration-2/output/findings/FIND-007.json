@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "identity_safety",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "Iteration-1's FIND-004 correctly flagged that `resolveEvmPrivateKey`'s highest-priority override (`env.ANICCA_EVM_PRIVATE_KEY`, resolve-identity.mjs:66-67) was untested/unaddressed, and this iteration's revised spec fixes it symmetrically for the EVM path (REQ-001's new edge case, PROP-013, plus a defensive `unset ANICCA_EVM_PRIVATE_KEY` in `earn/run.sh`). But `resolve-identity.mjs`'s SISTER function for Solana, `resolveSolanaSecret()`, has the structurally IDENTICAL highest-priority override: `env.ANICCA_SOLANA_PRIVATE_KEY` (resolve-identity.mjs:118-120), read BEFORE the ANICCA_HOME-gated `.automaton/solana.json` file resolution REQ-002 is built around -- exactly the same class of contamination vector FIND-004 identified for the EVM side. REQ-002's text, its Edge Cases list, and verification-architecture.md's PROP-011/PROP-012 never mention `ANICCA_SOLANA_PRIVATE_KEY` at all: there is no proposed defensive `unset ANICCA_SOLANA_PRIVATE_KEY` in `sol-trade/run.sh` before invoking `wallet-address-solana.mjs`, and no regression test (mirroring PROP-013's bash fixture) proving an ambient/leaked `ANICCA_SOLANA_PRIVATE_KEY` can never override the per-instance file-based Solana wallet derivation. Since `wallet-address-solana.mjs` calls `resolveSolanaSecret({})` with no options (runtime/wallet-address-solana.mjs:19), it inherits this exact same override path unmodified. Left as-is, a stray `ANICCA_SOLANA_PRIVATE_KEY` in any shared/sourced env (the same class of leak vector root-cause-1 already demonstrated is real for BLOCKRUN_WALLET_KEY) would let `sol-trade/run.sh`'s wallet derivation -- and therefore its earn-guard scope AND the ledger `wallet` field REQ-002 is meant to make trustworthy -- silently resolve to a foreign instance's Solana identity, the identical failure mode this whole feature exists to eliminate, just left open on the one chain this iteration's new code (REQ-002) actually introduces.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs",
+    "lineRange": "115-120",
+    "snippet": "export function resolveSolanaSecret({ home, env } = {}) {\n  const e = env || process.env;\n  if (typeof e.ANICCA_SOLANA_PRIVATE_KEY === 'string' && e.ANICCA_SOLANA_PRIVATE_KEY.length > 0) {\n    return e.ANICCA_SOLANA_PRIVATE_KEY;\n  }"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/runtime/wallet-address-solana.mjs",
+      "lineRange": "19",
+      "snippet": "const secret = resolveSolanaSecret({}); // no env override, no defensive unset applied by any caller in this spec"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+      "lineRange": "111-119",
+      "snippet": "REQ-001's ANICCA_EVM_PRIVATE_KEY edge case + defensive unset exists; no equivalent edge case or unset is written for ANICCA_SOLANA_PRIVATE_KEY anywhere in REQ-002."
+    }
+  ],
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,112 @@
+{
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "feature": "franklin-earn-foundation",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "reviews/impl/iteration-1",
+    "note": "No manifest.json was present at reviews/impl/iteration-1/input/ -- this review was scoped directly from the launching agent's instructions against specs/behavioral-spec.md + specs/verification-architecture.md."
+  },
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 1,
+  "toolConstraintNote": "No shell/execute tool was available in this review session (Read/Write/Edit/Grep/Glob only) -- claims below are established by direct static tracing of deterministic, non-I/O-dependent logic (string matching, boolean/ternary field propagation, file existence via Glob), not by executing `node --test` or `curl`. Every finding is falsifiable by re-reading the cited file:line.",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-004", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-005", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/run.sh:44-58", "description": "REQ-001's EVM identity resolution (unset ANICCA_EVM_PRIVATE_KEY, resolve-identity.mjs evm CLI call, export under $PKVAR) is implemented correctly and verified by static trace -- this is the one clean part of the feature."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-005"],
+      "evidence": []
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "FIND-001",
+      "severity": "critical",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/run.sh",
+      "line": "22-31",
+      "issue": "Identity-match guard (root-cause-3 fix) is trivially bypassed by an ambient ANICCA_SOLANA_PRIVATE_KEY env var, because run.sh never unsets it before either wallet-address-solana.mjs call (unlike earn/run.sh, which correctly unsets ANICCA_EVM_PRIVATE_KEY). resolveSolanaSecret's env override (resolve-identity.mjs:118-120) ignores ANICCA_HOME entirely, so OWN_WALLET and CLI_WALLET become identical for ANY instance whenever that var is set -- defeating the guard for every non-Franklin instance, not just Franklin."
+    },
+    {
+      "findingId": "FIND-002",
+      "severity": "critical",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/lib/parse-pass.mjs",
+      "line": "n/a (file does not exist)",
+      "issue": "The spec-mandated new pure module parse-pass.mjs is missing from disk entirely. Its own test file (__tests__/parse-pass.test.mjs) imports it and will crash with ERR_MODULE_NOT_FOUND on any `node --test` run. PROP-010 cannot be passing as shipped."
+    },
+    {
+      "findingId": "FIND-003",
+      "severity": "high",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/run.sh",
+      "line": "65",
+      "issue": "Inline sed/grep signature extraction (never calls the promised parse-pass.mjs, which doesn't exist) takes the FIRST 'Signature:' occurrence via `head -1`, contradicting REQ-002's explicit edge case and PROP-010 which both require the LAST occurrence on a multi-step swap chain -- corrupting recorded P&L on multi-leg passes."
+    },
+    {
+      "findingId": "FIND-004",
+      "severity": "critical",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/lib/record-swap.mjs",
+      "line": "27-30",
+      "issue": "Hardcodes external:true on every recorded line, directly contradicting REQ-002's explicit edge case ('external is never set by this wiring') and the feature's OWN test (record-swap.test.mjs:116-122 asserts external must NOT be true and isProfitable must be false) -- ledger.mjs's isProfitable() will actually return true for a winning sol-trade line since 'sol-trade' is not in SWAP_SOURCES, incorrectly granting GATE-0 to an internal same-wallet swap."
+    },
+    {
+      "findingId": "FIND-005",
+      "severity": "high",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/",
+      "line": "n/a (missing files)",
+      "issue": "No bash integration test exists for sol-trade/run.sh's full pass boundary (PROP-011 through PROP-016 required:true full-integration ACs) -- no fixture ANICCA_HOME shapes, no franklin-trading PATH-stub, no fake_solana_rpc.mjs-style RPC stub anywhere in the repo. The identity-match guard, cumulative earn-guard wiring, and RPC-failure degrade are unverified at the level that actually matters."
+    },
+    {
+      "findingId": "FIND-006",
+      "severity": "medium",
+      "blocking": false,
+      "file": "skills/earn/run.sh",
+      "line": "26",
+      "issue": "EARN_ALLOW allowlist still sources BLOCKRUN_WALLET_KEY (automaton's key) into the process env; currently harmless only due to export-ordering at line 54, with no test enforcing that ordering invariant."
+    },
+    {
+      "findingId": "FIND-007",
+      "severity": "high",
+      "blocking": true,
+      "file": "skills/earn/sol-trade/run.sh",
+      "line": "66-69",
+      "issue": "record-swap.mjs's returned status is never parsed/branched on -- no narrate-only 'sol-verify-failed:<reason>' degrade line is ever appended per REQ-002/PROP-016 when the RPC verify step errors. A real swap whose verify call flakes leaves zero ledger trace, reproducing the P&L-invisibility bug (root cause 2) this feature exists to fix."
+    }
+  ],
+  "blocking_count": 6,
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": false,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

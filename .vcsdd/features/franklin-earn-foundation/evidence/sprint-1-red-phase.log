@@ -1,0 +1,42 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+================================================================================
+RED PHASE EVIDENCE — franklin-earn-foundation, sprint 1
+Feature: franklin-earn-foundation | Phase: 2a (RED) | Mode: lean
+Spec: specs/behavioral-spec.md (REQ-001/002), specs/verification-architecture.md (PROP-011..016)
+Reconstructed honestly from: (a) git history (parse-pass.mjs + tests/ added only in fix
+commit 3fe382b, so absent before it) and (b) the fresh Opus adversary iteration-1 verdict
+(reviews/impl/iteration-1/output/verdict.json), which independently established these
+new-feature tests FAIL against the pre-fix implementation.
+================================================================================
+
+SCOPE OF THIS EVIDENCE
+-----------------------
+"new-feature-tests: FAIL" — the following spec-mandated tests did NOT pass against the
+implementation as it stood before fix commit 3fe382b:
+
+1. skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs
+   → FAIL: imports { extractLastSignature } from "../parse-pass.mjs", but parse-pass.mjs
+     did not exist (added in 3fe382b) → ERR_MODULE_NOT_FOUND, suite cannot even load.
+     (Adversary iteration-1 FIND-002.)
+
+2. skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs
+   → FAIL: test "recordSwap never sets external:true (P&L VISIBILITY only)" asserts
+     rows[0].external !== true and isProfitable(rows[0]) === false, but record-swap.mjs
+     hardcoded external:true → assertion fails. Also PROP-005/007 assertions expected
+     earn_usdc/cost_usdc on the "recorded" return, which the pre-fix code omitted.
+     (Adversary iteration-1 FIND-004.)
+
+3. skills/earn/sol-trade/tests/test_run.sh (PROP-011..016 integration)
+   → FAIL: did not exist (added in 3fe382b). No integration coverage of the identity-match
+     guard, the ambient-key bypass (FIND-001), multi-signature LAST-sig selection (FIND-003),
+     or the verify-error degrade path (FIND-007). (Adversary iteration-1 FIND-005.)
+
+"regression-baseline: PASS" — the pre-existing suite the fix must not break stayed green
+throughout:
+  - skills/_shared/lib/__tests__/identity-guard.test.js (12/12), which already had the
+    "sol-trade" own-source allowlist entry from a prior round.
+
+These failures are what the Phase 2b GREEN implementation (commit 3fe382b) then made pass;
+see evidence/sprint-1-green-phase.log for the real, live GREEN output.

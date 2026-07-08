@@ -1,0 +1,4 @@
+# real-chain E2E — captured 2026-07-08T15:29:20Z
+real sig from 8Fpqd: 4i81AT7eKPunbtojh2dw7CfcFMq74mtb7YkP6vDA3JZVGJsusr6VWP8ppiaEdLj4wfGkZnrwRiCn6nvfi31sKj6N
+{"status":"recorded","sig":"4i81AT7eKPunbtojh2dw7CfcFMq74mtb7YkP6vDA3JZVGJsusr6VWP8ppiaEdLj4wfGkZnrwRiCn6nvfi31sKj6N","net_usdc":-0.008664,"earn_usdc":0,"cost_usdc":0.008664,"profitable":false}
+(scratch ledger, real ledger untouched)

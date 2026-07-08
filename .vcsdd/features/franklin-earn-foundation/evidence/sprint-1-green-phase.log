@@ -1,0 +1,31 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+================================================================================
+GREEN PHASE EVIDENCE — franklin-earn-foundation, sprint 1
+Feature: franklin-earn-foundation | Phase: 2b (GREEN) | Mode: lean
+Spec: specs/behavioral-spec.md (REQ-001/002), specs/verification-architecture.md (PROP-011..016)
+Commands run from repo root (/Users/anicca/anicca). Real output captured below.
+Fix commit: 3fe382b (closes 6 adversary blocking findings). Adversary iter-2 verdict: PASS (0 blocking).
+================================================================================
+
+TARGET-FEATURE-TESTS (the files that were RED in sprint-1-red-phase.log, now GREEN):
+--- node --test skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs ---
+ℹ tests 5
+ℹ pass 5
+ℹ fail 0
+--- node --test skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs ---
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+--- bash skills/earn/sol-trade/tests/test_run.sh (integration PROP-011..016) ---
+
+9/9 passed
+
+REGRESSION-BASELINE (pre-existing suites, must stay green):
+--- node --test skills/_shared/lib/__tests__/identity-guard.test.js ---
+ℹ tests 12
+ℹ pass 12
+ℹ fail 0
+--- bash -n skills/earn/sol-trade/run.sh ---
+syntax OK

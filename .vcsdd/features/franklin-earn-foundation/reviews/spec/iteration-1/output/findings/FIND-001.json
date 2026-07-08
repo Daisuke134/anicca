@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "identity_safety",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "PROP-004 (verification-architecture.md:40) and REQ-001's Acceptance Criteria (behavioral-spec.md:106-107) both specify that automaton's non-regression (the single most safety-critical guarantee in this whole feature — 'automaton MUST be non-regressed') will be verified by 'reading the REAL ~/.automaton/wallet.json's address field (never its key)'. I read the actual, live file at /Users/anicca/.automaton/wallet.json (the exact path resolve-identity.mjs's legacy fallback reads for automaton, confirmed via the daemon plist: HOME=/Users/anicca, ANICCA_HOME=/Users/anicca/.anicca). Its ONLY keys are privateKey, createdAt, rotatedAt, rotationReason — there is NO 'address' field. The literal verification methodology described in PROP-004 and REQ-001's AC is therefore unimplementable as written: reading walletJson.address on the real file yields undefined. A phase-2 test author following the spec verbatim will either (a) get a hard test failure comparing a real address string to undefined (best case — forces a spec fix), or (b) if written loosely, produce a vacuous/false-passing assertion, which is the worst possible outcome for the ONE proof obligation whose entire job is guaranteeing automaton isn't broken by this fix. Note the spec is internally inconsistent: its own root-cause section (line 17: 'verified by deriving the address from the file — never printing the key') and PROP-002's own Tool description ('derive address via node -e... assert on the derived address only') already describe the CORRECT methodology (derive the address from the private key via eth_account/viem) — but PROP-004 and REQ-001's AC contradict this by insisting on a literal 'address field' that does not exist in production data. This must be corrected before phase 2 (tests) can be written correctly.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+    "lineRange": "40",
+    "snippet": "PROP-004 | ... | fixture test reading the REAL `~/.automaton/wallet.json`'s address field (never its key) and asserting it matches the resolved address for that ANICCA_HOME"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+      "lineRange": "106-107",
+      "snippet": "Automaton's real resolution path ... still derives 0xB9dd3B67921B354c656523d6851537988F31DD56 from ~/.automaton/wallet.json (non-regression, verified against the real file's address field, never its key)."
+    },
+    {
+      "filePath": "/Users/anicca/.automaton/wallet.json",
+      "lineRange": "1-5",
+      "snippet": "Real file's only top-level keys, confirmed by direct read: privateKey, createdAt, rotatedAt, rotationReason. No 'address' key exists in this file."
+    }
+  ],
+  "routeToPhase": "1c"
+}

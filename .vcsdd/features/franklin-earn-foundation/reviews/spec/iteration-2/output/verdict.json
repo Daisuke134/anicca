@@ -1,0 +1,69 @@
+{
+  "feature": "franklin-earn-foundation",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "identity_safety",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.automaton/wallet.json", "description": "Confirmed: only privateKey/createdAt/rotatedAt/rotationReason keys, no 'address' field -- PROP-004/REQ-001's revised methodology (derive via eth_account, never read a nonexistent address field) is now correct and implementable (FIND-001 resolved)."},
+        {"type": "file", "location": "/Users/anicca/Library/LaunchAgents/com.anicca.daemon.plist", "description": "Confirmed ANICCA_HOME=/Users/anicca/.anicca, HOME=/Users/anicca for automaton -- legacy-fallback branch condition (effectiveHome === HOME/.anicca) is true, matching PROP-004's non-regression claim."},
+        {"type": "file", "location": "/Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist", "description": "Confirmed ANICCA_HOME=/Users/anicca/.blockrun for Franklin; /Users/anicca/.blockrun/.automaton/wallet.json read directly confirms privateKey+address matching 0x3EcCAD24... (REQ-001's Franklin AC is implementable)."},
+        {"type": "file", "location": "/Users/anicca/.anicca/skills/earn/state/sol-trade.trace.jsonl", "description": "NEW CRITICAL finding (FIND-006): automaton's own loop has already executed 70 real franklin-trading passes since 2026-07-04 against a wallet hardcoded to ~/.blockrun/ (Franklin's), not automaton's own -- the spec's root-cause section never grounds this, and PROP-012 never tests the missing-wallet HALT branch that must fire to stop it."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs:118-120", "description": "NEW finding (FIND-007): ANICCA_SOLANA_PRIVATE_KEY is the Solana-side twin of FIND-004's ANICCA_EVM_PRIVATE_KEY override, left completely unaddressed by REQ-002/PROP-011/012 despite REQ-001 fixing the EVM twin this same iteration."}
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/clip-promote/tests/test_run.sh", "description": "FIND-003 resolved: full re-read confirms no 'fake CLI in $PATH' pattern exists here; verification-architecture.md now correctly cites the ACTUAL env-i PII pattern (lines 30-37) and fake_solana_rpc.mjs pattern (lines 49-67), and honestly labels the PATH-stub as a new technique rather than false precedent."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/SKILL.md:80-82", "description": "FIND-005 resolved: REQ-002 now explicitly carries the earn-guard.mjs pass-boundary HALT obligation this line documents, rather than merely citing it."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json:204-214", "description": "FIND-006: registry.json's own summary/riskNote asserts sol-trade 'trades the instance's own Solana bankroll' -- contradicted by SKILL.md's hardcoded ~/.blockrun/ wallet path and by the live trace evidence; the spec's grounded-root-causes section does not reconcile this."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/run.sh:308-319", "description": "FIND-008: existing abort/error-degrade convention (swap/yield branches) is not carried into REQ-002's edge cases for a failed franklin-trading balance read."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:51", "description": "FIND-001 resolved: PROP-004 methodology now derives the address from the real privateKey field via eth_account, verified implementable against the real file."},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:56-60", "description": "PROP-011 (wallet derivation in isolation) and PROP-013 (ANICCA_EVM_PRIVATE_KEY regression, EVM only) are each individually sound and implementable, but PROP-012's test methodology (negative-net-for-a-KNOWN-wallet only) leaves the missing-wallet/empty-address integration path (FIND-006) and the Solana override path (FIND-007, no PROP-013 twin) unverified."}
+      ]
+    }
+  ],
+  "priorFindingsResolved": {
+    "FIND-001": {
+      "resolved": true,
+      "note": "PROP-004 and REQ-001's AC now require deriving the address from the real privateKey field via eth_account/viem, explicitly forbidding reading a nonexistent 'address' field. Verified against the real file: /Users/anicca/.automaton/wallet.json's only keys are privateKey/createdAt/rotatedAt/rotationReason -- the revised methodology is implementable, the old one was not."
+    },
+    "FIND-002": {
+      "resolved": true,
+      "note": "REQ-002/PROP-011 now mandate deriving sol-trade's ledger-recorded wallet address via runtime/wallet-address-solana.mjs (ANICCA_HOME-gated), never hardcoded. Confirmed unmodified/correct at runtime/wallet-address-solana.mjs and resolve-identity.mjs::resolveSolanaSecret. NOTE: this only fixes the LEDGER-BOOKKEEPING wallet field -- see FIND-006 for the separate, unaddressed issue of the underlying franklin-trading CLI's own execution wallet."
+    },
+    "FIND-003": {
+      "resolved": true,
+      "note": "verification-architecture.md now explicitly states the old 'fake CLI in $PATH' precedent does not exist in skills/earn/clip-promote/tests/test_run.sh (confirmed by direct re-read) and replaces it with the ACTUAL proven env-i PII-isolation pattern (test_run.sh:30-37) and fake_solana_rpc.mjs local-HTTP-RPC-stub pattern (test_run.sh:49-67, fake_solana_rpc.mjs confirmed to exist and match the described shape), honestly labeling the new PATH-stub technique as new rather than precedented."
+    },
+    "FIND-004": {
+      "resolved": true,
+      "note": "REQ-001 now has an explicit edge case for ANICCA_EVM_PRIVATE_KEY (resolve-identity.mjs:63-67, confirmed as the actual highest-priority override), a defensive `unset` requirement in earn/run.sh, and PROP-013 with a concrete bash-fixture test methodology. Resolved for the EVM path. NOTE: the identical contamination class is left open on the Solana path this same iteration introduces -- see FIND-007 (new)."
+    },
+    "FIND-005": {
+      "resolved": true,
+      "note": "REQ-002 now explicitly requires sol-trade/run.sh to call earn-guard.mjs's cumulative fail-closed HALT check at its own pass boundary (PROP-012), mirroring earn/run.sh:78 and economy/gig/run.sh:62-65, directly satisfying skills/earn/SKILL.md:80-82's documented convention rather than merely citing it."
+    }
+  },
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

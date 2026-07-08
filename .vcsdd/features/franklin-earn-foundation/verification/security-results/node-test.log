@@ -1,0 +1,16 @@
+# Captured 2026-07-08T15:29:11Z after entering phase 5
+## parse-pass.test.mjs
+ℹ tests 5
+ℹ pass 5
+ℹ fail 0
+## record-swap.test.mjs
+ℹ tests 8
+ℹ pass 8
+ℹ fail 0
+## identity-guard.test.js (regression)
+ℹ tests 12
+ℹ pass 12
+ℹ fail 0
+## integration test_run.sh (PROP-011..016)
+
+9/9 passed

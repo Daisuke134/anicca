@@ -1,0 +1,26 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "blocking": true,
+  "description": "record-swap.mjs hardcodes `external: true` on EVERY recorded sol-trade line, directly contradicting REQ-002's explicit Edge Case: 'This feature makes NO claim about GATE-0 (isProfitable()/external:true) for sol-trade lines... external is never set by this wiring; scope is P&L VISIBILITY only, not a new GATE-0 classification.' It also directly contradicts the feature's OWN unit test in the same directory (record-swap.test.mjs:116-122, 'recordSwap never sets external:true (P&L VISIBILITY only -- this is not a GATE-0 classification)', which asserts `assert.notEqual(rows[0].external, true)` and `assert.equal(isProfitable(rows[0]), false, ...)`). Tracing deriveLine (skills/_shared/lib/ledger.mjs:32: `if (o.external === true) line.external = true;`) shows the persisted line's `external` field will in fact be `true`, so that specific assertion in the feature's own test file must fail when the suite is run. Consequence: isProfitable() (ledger.mjs:48-57) requires net_usdc>0 AND source not in SWAP_SOURCES AND external===true AND (sig&&confirmed); 'sol-trade' is NOT in SWAP_SOURCES (only 'swap-eth-usdc'/'swap'/'swap-usdc-eth' are), and sig+confirmed:true are always set by record-swap.mjs -- so ANY winning same-wallet Jupiter swap on Franklin's wallet will be classified `isProfitable()===true`, incorrectly granting GATE-0 ('the launch gate', per earn/run.sh's own header comment) to an internal asset-rotation event the project's own convention (ledger.mjs:36-42) says must never qualify as external revenue.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/record-swap.mjs",
+    "lineRange": "27-30",
+    "snippet": "const json = JSON.stringify({\n    wallet, source: \"sol-trade\", task, earn_usdc, cost_usdc,\n    sig, confirmed: true, chain: \"solana\", external: true, wake,\n  });"
+  },
+  "supportingEvidence": [
+    {
+      "filePath": "skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs",
+      "lineRange": "116-122",
+      "note": "The feature's own test explicitly asserts external must NOT be true and isProfitable must be false -- contradicted by the shipped implementation it is testing."
+    },
+    {
+      "filePath": "skills/_shared/lib/ledger.mjs",
+      "lineRange": "32,48-57",
+      "note": "deriveLine passes external through verbatim; isProfitable's classifier does not exclude source:\"sol-trade\" from GATE-0 eligibility."
+    }
+  ],
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,5 @@
+# FIND-001 money-safety regression — captured 2026-07-08T15:29:16Z
+run.sh unsets ambient ANICCA_SOLANA_PRIVATE_KEY before guard:
+13:unset ANICCA_SOLANA_PRIVATE_KEY 2>/dev/null || true
+integration scenario (c) [ambient key does NOT bypass] result:
+  ok  (c) FIND-001 regression: ambient ANICCA_SOLANA_PRIVATE_KEY does NOT bypass the identity-match guard

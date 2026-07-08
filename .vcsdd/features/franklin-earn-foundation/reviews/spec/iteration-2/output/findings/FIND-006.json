@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "identity_safety",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "The revised spec's REQ-002/PROP-012 fix (derive wallet via wallet-address-solana.mjs, HALT via earn-guard.mjs before invoking `franklin-trading start`) is the correct *shape* of fix, but the spec's own 'Grounded root causes' section never cites or grounds the single worst, ALREADY-LIVE manifestation of exactly this vulnerability class, and PROP-012's test methodology never exercises the specific code path that must fire to close it. Live evidence, read directly from disk: (1) `skills/registry.json:204-214` marks `earn/sol-trade` `status:\"live\"` with no per-instance ('owner'/ANICCA_INSTANCE) gate distinguishing which loop may select it; `runtime/anicca-daemon.sh:28` defaults `ANICCA_INSTANCE` generically and contains no sol-trade-specific instance filter. (2) `/Users/anicca/.anicca/skills/earn/state/sol-trade.trace.jsonl` (automaton's OWN body, ANICCA_HOME=/Users/anicca/.anicca per `com.anicca.daemon.plist`) contains 70 `earn/sol-trade` 'live-pass' entries spanning 2026-07-04T02:23Z through 2026-07-07T07:02Z (TODAY), including passes that called live 'Wallet'/'TradingPortfolio' tools and reasoned about real balances ($0.36, $1.69, $1.46, $1.13, $0.78, $0.53 USDC) via `franklin-trading start` -- i.e. automaton's own loop has already, and repeatedly, invoked the external `franklin-trading` CLI. (3) `skills/earn/sol-trade/SKILL.md:6-8` confirms the CLI's wallet is NOT ANICCA_HOME-gated at all: 'pays for its OWN model calls via x402 USDC from its OWN Solana wallet 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 (~/.blockrun/)' -- a path hardcoded to Franklin's home regardless of which instance's ANICCA_HOME invoked the CLI. So automaton has, in production, today, been executing real `franklin-trading start` passes (spending automaton's own model budget) against FRANKLIN's real, already-funded Solana wallet -- the exact cross-instance identity leak this whole feature exists to fix, now confirmed for the Solana/CLI-execution layer, not just the ledger-bookkeeping layer REQ-002 targets. The fix design WOULD close this (automaton's `resolveSolanaSecret()` returns null -- confirmed: neither `/Users/anicca/.anicca/.automaton/solana.json` nor a `.blockrun/.solana-session` exists under automaton's home -- so `wallet-address-solana.mjs` derives an empty address, and `evaluateHalt`'s `missing-wallet` branch in `earn-guard.mjs:115-118` fail-closed HALTs BEFORE `franklin-trading start` would run), PROVIDED the pass-boundary ordering in the actual implementation matches REQ-002's prose exactly. But nothing in verification-architecture.md proves that ordering will be tested: PROP-012's stated test methodology is 'fixture earn-ledger.jsonl pre-seeded with a NEGATIVE cumulative net for the fixture Solana wallet' -- i.e. it only exercises evaluateHalt's `cumulative-net-below-reserve` branch for a KNOWN, resolved wallet. It never exercises the `missing-wallet` branch (empty derived address because the calling instance -- e.g. automaton -- has no resolvable Solana secret at all), which is the EXACT branch that must fire to stop the already-happening leak this finding documents. PROP-011 only tests that `wallet-address-solana.mjs` itself returns empty in isolation; it does not test that this empty value, fed through the FULL `sol-trade/run.sh` pass boundary, actually prevents the fixture `franklin-trading` PATH-stub from ever being invoked. Without that explicit integration-level AC/PROP, Phase 3 could ship an implementation that still calls `franklin-trading start` when the wallet is merely empty (vs. merely negative) and no test in this spec would catch it.",
+  "evidence": {
+    "filePath": "/Users/anicca/.anicca/skills/earn/state/sol-trade.trace.jsonl",
+    "lineRange": "1-70",
+    "snippet": "{\"ts\": \"2026-07-04T02:23:08Z\", \"slot\": \"earn/sol-trade\", \"action\": \"live-pass\", \"exit\": 0, \"note\": \"Next check: If wallet reaches $5–10...\"} ... (70 live-pass entries under automaton's OWN ANICCA_HOME=/Users/anicca/.anicca, through 2026-07-07T07:02:32Z)"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/sol-trade/SKILL.md",
+      "lineRange": "6-8",
+      "snippet": "pays for its OWN model calls via x402 USDC from its OWN Solana wallet 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 (~/.blockrun/). APIキー不要 -- the wallet IS the fuel"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/registry.json",
+      "lineRange": "204-214",
+      "snippet": "\"earn/sol-trade\": { \"status\": \"live\", \"owner\": \"sol-trade\", \"summary\": \"LIVE (W2): runs BlockRunAI/Franklin-Trading AS-IS ... its own Solana wallet 8Fpqd\", \"riskNote\": \"the Franklin-Trading CLI trades the instance's own Solana bankroll end-to-end\" }"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+      "lineRange": "59",
+      "snippet": "PROP-012 ... 'bash integration test: fixture earn-ledger.jsonl pre-seeded with a negative cumulative net for the fixture Solana wallet' -- never a fixture with NO resolvable Solana secret (empty derived wallet) at the same integration level."
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/_shared/lib/earn-guard.mjs",
+      "lineRange": "115-118",
+      "snippet": "if (!isValidWallet(wallet)) { return { halt: true, reason: \"missing-wallet\", bySkill: null, byAgent: null }; }"
+    }
+  ],
+  "routeToPhase": "1c"
+}

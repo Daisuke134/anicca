@@ -1,0 +1,7 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["identity_safety", "spec_fidelity", "verification_readiness"],
+  "priorFindings": "iter1 FIND-001..005 (must confirm resolved)"
+}

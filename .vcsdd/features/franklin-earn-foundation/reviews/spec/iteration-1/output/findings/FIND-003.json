@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "Both behavioral-spec.md (REQ-002 Acceptance Criteria) and verification-architecture.md (Tier 1 strategy) justify the ENTIRE test methodology for sol-trade's real-money ledger wiring (PROP-005 through PROP-008, i.e. all of REQ-002's verification) by citing a precedent: 'mirroring/following the exact \"fake CLI first in $PATH\" pattern already proven working in skills/earn/clip-promote/tests/test_run.sh (a stub franklin-trading script that prints canned balance/start output ...)'. I read the complete, real content of /Users/anicca/anicca/skills/earn/clip-promote/tests/test_run.sh: it contains NO such pattern. Its actual techniques are (1) a direct 'bash run.sh' discover-mode smoke test, (2) a timeout/gtimeout watchdog-primitive check, (3) a direct record.mjs call plus 'env -i' PII-scrub test (GOOGLE_LOGIN THROWS vs. env -i strips it and records), and (4) a LOCAL HTTP RPC stub server (tests/fake_solana_rpc.mjs, bound to a random port, wired in via the SOLANA_RPC_URL env override) for the record-e2e test. There is no stub binary ever placed first on $PATH anywhere in this file or anywhere else I could find under skills/ (searched for PATH-prepend / mkdir bin / chmod +x bin patterns repo-wide). The cited precedent is fabricated/hallucinated. Since PROP-005 through PROP-008 anchor their entire feasibility on 'mirroring' a pattern that does not exist, phase-2 test authors have no real, previously-vetted technique to copy for stubbing the external franklin-trading CLI's stdout. The real, ACTUALLY-proven precedent in this same file -- a local HTTP stub for the RPC layer -- is arguably the better fit here too, since sigStatus/usdcDeltaForSig already accept an injectable fetchImpl/rpc url (solana-verify.mjs) exactly like fake_solana_rpc.mjs already exploits for clip-promote; only extractLastSignature's own stdout-parsing (PROP-010) and the run.sh glue (PROP-005/006) need any CLI-output stand-in, and the spec should describe precisely how that stand-in works instead of pointing at a pattern that isn't there.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+    "lineRange": "56-59",
+    "snippet": "\"following the exact 'fake CLI first in $PATH' pattern already proven working in skills/earn/clip-promote/tests/test_run.sh (a stub franklin-trading script that prints canned balance/start output, so no mainnet call or real money is ever touched by a test)\""
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+      "lineRange": "146-147",
+      "snippet": "\"Given a fixture franklin-trading stub (placed first in $PATH, mirroring skills/earn/clip-promote/tests/test_run.sh's existing 'fake CLI' pattern) ...\""
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/clip-promote/tests/test_run.sh",
+      "lineRange": "1-71",
+      "snippet": "Full file read: uses timeout/gtimeout, direct record.mjs + env -i PII tests, and tests/fake_solana_rpc.mjs (an HTTP RPC stub server) -- no PATH-prepended fake CLI binary anywhere."
+    }
+  ],
+  "routeToPhase": "1c"
+}

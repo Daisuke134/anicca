@@ -1,0 +1,84 @@
+{
+  "featureName": "franklin-earn-foundation",
+  "mode": "lean",
+  "currentPhase": "5",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-08T11:53:27.748Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-08T11:53:31.003Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-08T13:06:22.916Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-08T13:06:22.926Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-08T15:28:07.049Z",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-08T15:28:16.348Z",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-08T15:28:16.354Z",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-08T15:28:36.253Z",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "3": 1,
+    "5": 1,
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-franklin-earn-foundation-1783510968203",
+    "beads": []
+  },
+  "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T15:28:16.355Z",
+      "reviewedBy": "adversary"
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T13:06:22.909Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-08T13:06:22.909Z"
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-08T11:42:48.185Z",
+  "updatedAt": "2026-07-08T15:28:36.254Z"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "low",
+  "blocking": false,
+  "description": "The behavioral-spec's Acceptance Criteria for PROP-014(c) (the Franklin-shaped fixture) specifies the fixture's Solana secret should be \"readable via the SAME legacy .solana-session path the real CLI's own wallet setup reads.\" The actual test_run.sh fixture instead writes `.automaton/solana.json` under the `.blockrun`-shaped fixture home for BOTH the own-ANICCA_HOME derivation and the forced-`$HOME/.blockrun` derivation, so both resolve via resolveSolanaSecret's 2nd-priority (ANICCA_HOME-file) branch rather than its 3rd-priority (legacy .solana-session) branch that the AC's wording calls for.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/tests/test_run.sh",
+    "lineRange": "71-74,141",
+    "snippet": "mkdir -p \"$FAKE_HOME/.blockrun/.automaton\" ...\n\"$PY\" -c \"import json,sys;json.dump({...},open(sys.argv[3]+'/.blockrun/.automaton/solana.json','w'))\" \"$FRANKLIN_SECRET\" \"$FRANKLIN_ADDR\" \"$FAKE_HOME\""
+  },
+  "impact": "The identity-match guard's core equality-check logic is still genuinely proven (same effectiveHome resolves to the same file in two separate node invocations -> same address -> guard passes), so this is not a gamed test that would pass while the real guard logic is broken. The SPECIFIC legacy-`.solana-session`-path branch of resolveSolanaSecret is separately covered at the unit level by the pre-existing, unmodified runtime/loop/__tests__/resolve-identity.test.mjs (lines 158-165, 'Solana (3): Franklin home ... falls back to legacy .solana-session'), so the underlying resolution logic is not actually unproven overall -- only this feature's own full-integration fixture does not literally match the AC's prescribed fixture shape. Non-blocking.",
+  "routeToPhase": null
+}
