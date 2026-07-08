@@ -6,20 +6,26 @@ good.
 Traces to behavioral-spec.md REQ-EV2/EV3/EV4/RH4, EDGE-5 (a single lucky window must never
 produce a false promotion); verification-architecture.md PROP-SI-EV3/RH4.
 
-The "regressing" candidate hardcodes LOOSE thresholds (min_edge=0.10, min_confidence=0.0 — bets
-on almost every historical row) directly in its EVOLVE-BLOCK defaults.
+The "regressing" candidate hardcodes LOOSE thresholds directly in its EVOLVE-BLOCK defaults
+(min_edge~0.01, min_confidence=0.0, min_combined=0.0, max_price=1.0, min_liquidity=0.0 — bets on
+almost every historical row, all five of the committed baseline's own selection filters loosened
+to near-nothing).
 
 Close-loop revision (2026-07-08, Gap 2): `combined_score` for stage2 is now a Sharpe-like
 risk-adjusted metric (`gate_math.risk_adjusted_score`), not raw mean OOS net USD (see evaluator.py's
-module docstring) — over the regenerated fixture (`strategies/fixtures/pm_history.csv`, see
-`generate_fixture.py`) this loose-threshold candidate's RAW mean OOS net USD is actually *higher*
-than baseline's (it bets on far more rows, including a real edge some of the time), which is
-exactly the trap a raw-magnitude metric falls into: it looks like an improvement in aggregate.
-Its risk profile gives it away — one window (test_window=5) loses badly (-11.93), so its
-inter-window standard deviation (~13.76) swamps its mean, and its risk-adjusted score (~0.47) is
-clearly BELOW baseline's own (~1.26). This is precisely the reward-hacking-by-variance failure
-mode the risk-adjusted metric exists to catch (see gate_math.risk_adjusted_score's docstring) —
-demonstrated here with a real, current, non-hypothetical candidate, not a strawman.
+module docstring).
+
+REAL PROMOTION update (2026-07-08, commit a6f608c): the committed baseline itself changed (the
+capable-improver openevolve run's discovered candidate — tighter selection filters + an adaptive
+stake multiplier — was promoted into `strategies/pm_backtest_strategy.py`). Re-measured directly
+off the REAL evaluator/fixture against this NEW baseline (not carried over from the pre-promotion
+revision): this loose-all-filters candidate's stage1 (cheap-window) score still clears
+STAGE1_MIN_NET_USD comfortably (~14.0), but its stage2 walk-forward risk-adjusted score collapses to
+~0.18 (mean ~1.95, one window losing badly at ~-12.32, std ~10.67) — clearly BELOW the new,
+already-much-better baseline's own risk-adjusted score (~3.21). This is precisely the
+reward-hacking-by-variance failure mode the risk-adjusted metric exists to catch (see
+gate_math.risk_adjusted_score's docstring) — demonstrated here with a real, current, non-hypothetical
+candidate, not a strawman.
 """
 import evaluator
 from conftest import patched_baseline_code, read_baseline_code, write_candidate_with_fixtures
@@ -28,8 +34,11 @@ from lib import gate_math, scope_guard
 
 def _regressing_candidate_code() -> str:
     return patched_baseline_code(
-        ('config.get("min_edge", 0.15)', 'config.get("min_edge", 0.10)'),
-        ('config.get("min_confidence", 6.0)', 'config.get("min_confidence", 0.0)'),
+        ('config.get("min_edge", 0.18)', 'config.get("min_edge", 0.01)'),
+        ('config.get("min_confidence", 7.0)', 'config.get("min_confidence", 0.0)'),
+        ('config.get("min_combined", 1.5)', 'config.get("min_combined", 0.0)'),
+        ('config.get("max_price", 0.85)', 'config.get("max_price", 1.0)'),
+        ('config.get("min_liquidity", 0.4)', 'config.get("min_liquidity", 0.0)'),
     )
 
 
