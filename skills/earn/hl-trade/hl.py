@@ -127,25 +127,39 @@ def cmd_open(args):
 
 def cmd_close(args):
     w, info, ex = _clients()
-    # capture the position's unrealised PnL BEFORE closing — that becomes the realised PnL.
-    pnl = 0.0
-    try:
-        pre = info.user_state(w.address)
-        for ap in pre.get("assetPositions", []):
-            p = ap.get("position", {})
-            if p.get("coin") == args.coin:
-                pnl = round(float(p.get("unrealizedPnl", 0) or 0), 4)
-    except Exception:
-        pass
     # No open position on this coin → market_close returns None/empty. Report cleanly instead of
     # crashing on r.get(...) (the AI often re-picks "close ETH" after it is already flat).
+    # REQ-A1: the realised P&L for this close is NEVER reported here — a pre-close
+    # unrealizedPnl snapshot is not the fill's actual settled result (see hl-realized-pnl spec
+    # §2). The real number comes exclusively from `reconcile` reading Hyperliquid's own
+    # userFills (closedPnl/fee) on a later wake.
     r = ex.market_close(args.coin)
     time.sleep(2)
     st = info.user_state(w.address)
     status = r.get("status") if isinstance(r, dict) else "no_position"
     print(json.dumps({"closed": args.coin, "result": status,
-                      "closed_pnl_usd": pnl,
                       "account_value_usd": round(float(st["marginSummary"]["accountValue"]), 4)}, indent=2))
+
+
+def cmd_reconcile(args):
+    """Wires the fill-based realized-P&L reconciler (lib/reconcile.py) through the SAME
+    _clients() every other subcommand uses — no second key-loading path (REQ-D2). Read-only
+    against the exchange (REQ-D3); its only write is one ledger append per settled fill, routed
+    exclusively through record.mjs (REQ-D1)."""
+    sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "lib"))
+    import reconcile as reconcile_mod  # noqa: E402
+
+    w, info, _ = _clients()
+    here = os.path.dirname(os.path.abspath(__file__))
+    ledger_path = args.ledger or os.path.join(here, "..", "state", "earn-ledger.jsonl")
+    checkpoint_path = os.path.join(here, ".last-fill-ts")
+    lock_path = checkpoint_path + ".lock"
+    now_ms = int(time.time() * 1000)
+    result = reconcile_mod.reconcile(
+        info, w.address, ledger_path, checkpoint_path, lock_path,
+        w.address, args.wake or "", now_ms,
+    )
+    print(json.dumps(result))
 
 
 if __name__ == "__main__":
@@ -156,5 +170,8 @@ if __name__ == "__main__":
     o = sub.add_parser("open"); o.add_argument("coin"); o.add_argument("side"); o.add_argument("notional", type=float)
     o.add_argument("--lev", type=int, default=2); o.add_argument("--sl", type=float, default=4); o.add_argument("--tp", type=float, default=8); o.set_defaults(fn=cmd_open)
     c = sub.add_parser("close"); c.add_argument("coin"); c.set_defaults(fn=cmd_close)
+    rc = sub.add_parser("reconcile")
+    rc.add_argument("--wake", default=""); rc.add_argument("--ledger", default=None)
+    rc.set_defaults(fn=cmd_reconcile)
     a = p.parse_args()
     a.fn(a)

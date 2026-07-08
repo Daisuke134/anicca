@@ -169,6 +169,14 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
       && "$HLDIR/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
   fi
   HLPY="$HLDIR/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
+
+  # REQ-E3: reconcile fill-based realized P&L on EVERY wake that reaches this branch, BEFORE the
+  # anti-churn cooldown gate and BEFORE branching on ACTION=close/new-position open — this is
+  # what makes an exchange-side auto-close (take-profit/stop-loss/liquidation) get recorded even
+  # when the model issues no explicit close this wake (behavioral-spec.md REQ-A2/REQ-B*).
+  RECON=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" reconcile --wake "$WAKE" 2>&1)
+  echo "[earn] hl reconcile -> $RECON"
+
   COIN=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
   SIDE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
   SIZE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
