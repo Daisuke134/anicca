@@ -291,3 +291,4 @@
 {"timestamp":"2026-07-08T21:14:56.804Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-07-08T21:14:56.806Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"3","to":"5","iteration":1,"phase":"5"}
 {"timestamp":"2026-07-08T21:32:10.210Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-07-08T21:32:31.720Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"6","to":"complete","iteration":1,"phase":"complete"}
