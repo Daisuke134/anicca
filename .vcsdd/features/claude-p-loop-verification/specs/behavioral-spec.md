@@ -59,8 +59,10 @@ claude-p（human-funded Claude Code loops）の全 earn loop が、pass ごと�
   founder wallet `0x810f6d61f7606deee2657d3083e150a222bc29c5` への外部 USDC Transfer ログを確認、INV-1..7
   の anti-fake ゲート済み）を呼び、`~/.anicca-founder/state/STATE.md` を更新する。**`loop-report.sh` 呼び
   出しは一切ない** — P0-6 の対象。ledger: `~/.anicca-founder/state/earn-ledger.jsonl`（存在確認済み）。
-- `~/anicca/skills/human-funded/gig/gig-cli.sh`・`~/profitable-claude/skills/human-funded/{affiliate,
-  bounty}/*-cli.sh` — tmux 常駐 headless claude の STARTUP prompt が、cron 経由で日次/時次 pass を回し、
+- `~/profitable-claude/skills/human-funded/gig/gig-cli.sh`・`~/profitable-claude/skills/human-funded/
+  {affiliate,bounty}/*-cli.sh`（F4修正: `~/anicca/skills/human-funded/gig/`は実在しない——実在するのは
+  `~/profitable-claude/skills/human-funded/gig/`のみ、`ls`で確認済み。In scope節・REQ-LV-004は元々
+  正しいパスで記載していた）— tmux 常駐 headless claude の STARTUP prompt が、cron 経由で日次/時次 pass を回し、
   各 pass の末尾で `loop-report.sh <loop> "<summary>" <result> <usdc> "<evidence or none>"` を **既に**
   呼んでいる（agent 自身が evidence 文字列を組み立てる = judgment は agent、送信のみが決定論ツール）。
   `~/gig/applied.jsonl`・`~/gig/earnings.jsonl`・`~/gig/lessons.jsonl`・`~/gig/shared-lessons.jsonl` は存在
@@ -163,6 +165,15 @@ human-funded/{gig,affiliate,bounty}/`。gig/affiliate/bounty の tmux STARTUP pr
   0x810f6d61f7606deee2657d3083e150a222bc29c5、そうでなければ 'none: <STATUS の内容>'>"` を呼び出す。
   この呼び出しは `record-earn.mjs`（ledger 唯一の書き手、INV-H2）を一切変更しない — mail 送信は
   `founder-loop.sh` 内の追加ステップとしてのみ配線する。
+- **REQ-LV-019（Goal 6: E2E完了判定 + fresh-context adversary PASS、F5修正: 独立REQとして採番。
+  「任意」ではなくMUST）**: THE SYSTEM SHALL REQ-LV-100が対象とする7 loop（clip/affiliate/video/gig/
+  bounty/pm-earner/founder-loop）+ clip-promote の計8 loopそれぞれについて、「実行→投稿/応募→検証→
+  mail（evidence入り）」の1サイクルをfresh evidence（実行中に新規発生したURL/tx/数値、過去の実行結果の
+  再利用は不可）付きで完了させる。THE SYSTEM SHALL その完了の証跡（evidence mail のログ行
+  `~/.openclaw/logs/loop-report.log`の`SENT`行、対応するledger/metrics ledgerの新規行）をfresh-context
+  adversary（`~/.claude/CLAUDE.md`モデル分業表: Opus 4.8）に提示し、PASS判定を得る。8 loopのうち
+  1つでもこのサイクルが未確認、またはadversaryがPASSを出していない場合、このfeatureはGoal 6未達成
+  として扱う（MUST、optionalな検証手段ではない）。
 
 ### C. metrics ledger → self-improve 展開（Goal 3、pm-trade パターンの copy+tweak）
 
@@ -268,29 +279,64 @@ total_net_worth_usd, alive, self_funded_pct, frontier_pct` — `loops`キーは�
 
 ### H. Cadence Contract（health の bar を artifact 存在 → 日次 cadence へ置換）
 
-- **REQ-LV-100**: THE SYSTEM SHALL 8 loop（clip/affiliate/video/gig/bounty/pm-earner/founder-loop、
-  clip-promoteは投稿頻度がcampaign依存のため対象外・現行の維持対象のまま）それぞれについて、design spec
-  §Cadence Contract表のcadence contract文字列（例: clip=`1 reel/日/アカウント`、pm-earner=
-  `1 pass/時 + redeem確認/日`）を各loopの healthcheck 設定（新設または既存スクリプトへの追記、loop毎に
-  1箇所）に機械可読な形（例: `{"cadence": "1/day", "unit": "reel", "boundary_tz": "Asia/Tokyo"}`）で
-  宣言する。
-- **REQ-LV-101（純判定関数、JST日境界）**: THE SYSTEM SHALL 各 loop の当日達成判定を行う純関数
-  `cadence_met(ledger_rows, today_jst_date, contract) -> bool`（新設、入力は既にディスク上にある
-  ledger/artifact の行のみ、I/Oなし）を実装する。判定基準は「`today_jst_date`（JST日付文字列
-  `YYYY-MM-DD`）に該当する行が `ledger_rows` に1件以上存在するか」であり、「直近のいずれかの行が
-  26時間以内か」（旧`fresh()`方式）ではない。時刻境界は `Asia/Tokyo` タイムゾーンの暦日とする。
+design spec §Cadence Contract表（`docs/superpowers/specs/2026-07-08-...-design.md:56-72`）は、7 loop
+（clip/affiliate/video/gig/bounty/pm-earner/founder-loop — clip-promoteは投稿頻度がcampaign依存のため
+Cadence Contract対象外・REQ-LV-120で別途status定義する）の判定基準が単一ではないことを明示している:
+clip/affiliate/video/gig=「当日 ledger 行の存在」、bounty=「`gated.json`の`checked`**増分**（行の存在では
+なく前日比の差分）」、founder-loop=「**STATE.mdのmtime**（`~/.anicca-founder/state/earn-ledger.jsonl`
+への追記は`record-earn.mjs`のINV-1〜7ゲートを通過した実際の外部入金があった時のみ発生し、稼ぎゼロの日
+でもpassは正常実行される — Ground truth §founder-loop.sh参照。ゆえに **ledgerが空 = cadence未達では
+ない**、passが動いたことをSTATE.mdのmtimeで別途判定する）」、pm-earner=「**複合契約**（1 pass/時 AND
+redeem確認/日 の2条件AND）」。以下の REQ-LV-100/101 はこの4種の判定基準を1つの汎用スキーマ/関数で
+機械的に区別できるよう設計する（F1修正: v2で単一の「行の存在」判定に固定していたのを是正）。
+
+- **REQ-LV-100（cadence contract宣言、`kind`判別子で4種を区別）**: THE SYSTEM SHALL 7 loop
+  （clip/affiliate/video/gig/bounty/pm-earner/founder-loop）それぞれについて、design spec
+  §Cadence Contract表の契約を、`kind`フィールドで判定方式を明示した機械可読スキーマとして各loopの
+  healthcheck設定（新設または既存スクリプトへの追記、loop毎に1箇所）に宣言する:
+  - `kind:"row-exists"`（clip/affiliate/video/gig）: `{"kind":"row-exists","cadence":"1/day","unit":"reel","boundary_tz":"Asia/Tokyo"}`
+  - `kind:"increment"`（bounty）: `{"kind":"increment","field":"checked","source":"gated.json（bounty-funnel.jsonlのpass毎の値から前日比を算出）","boundary_tz":"Asia/Tokyo"}`
+  - `kind:"pass-marker"`（founder-loop）: `{"kind":"pass-marker","source":"~/.anicca-founder/state/STATE.md mtime","boundary_tz":"Asia/Tokyo"}`（`earn-ledger.jsonl`は参照しない — ledgerは収益metric専用でcadence判定から分離する）
+  - `kind:"compound"`（pm-earner）: `{"kind":"compound","conditions":[{"id":"hourly-pass","kind":"pass-marker","cadence":"1/hour","source":"earner.log mtime","boundary_tz":"Asia/Tokyo"},{"id":"daily-redeem","kind":"row-exists","cadence":"1/day","unit":"redeem","boundary_tz":"Asia/Tokyo"}]}`
+- **REQ-LV-101（純判定関数、4種のkindを分岐する単一dispatcher、JST日境界）**: THE SYSTEM SHALL
+  `cadence_met(today_jst_date, contract, evidence) -> bool`（新設・純粋、I/Oなし。`evidence`の実データ
+  収集は呼び出し元の責務——このシグネチャはF1修正の核心: 単一の「ledger行の存在」判定から、
+  `contract["kind"]`で分岐する4方式へ一般化する）を実装する。分岐仕様:
+  - `kind=="row-exists"`: `evidence={"event_dates":[...]}`（呼び出し元がledgerの行タイムスタンプから
+    抽出したJST暦日文字列のリスト）。`today_jst_date in evidence["event_dates"]`を返す。
+  - `kind=="increment"`: `evidence={"today_value":int,"previous_value":int}`（呼び出し元が
+    `contract["source"]`から当日の最新値と直近の前暦日の値を読む——bountyは`bounty-funnel.jsonl`の
+    pass毎`checked`値のうち当日分の最新行とその前暦日の最終行を使う）。
+    `evidence["today_value"] > evidence["previous_value"]`を返す（単なる行の存在ではなく**差分>0**の
+    明示チェック——旧`fresh()`が持っていた「artifact存在だけで健全と誤判定する」欠陥をここで再導入
+    しないための直接的な修正）。
+  - `kind=="pass-marker"`: `evidence={"marker_jst_date":str}`（呼び出し元が`contract["source"]`ファイル
+    のmtimeをJST暦日文字列に変換した値——founder-loopなら`STATE.md`のmtime。ledgerのtsは使わない）。
+    `today_jst_date == evidence["marker_jst_date"]`を返す。
+  - `kind=="compound"`: `evidence={"by_condition":{<condition id>: <そのconditionのkindに応じたevidence>}}`。
+    `contract["conditions"]`内の**全ての**sub-contractについて`cadence_met(today_jst_date, condition,
+    evidence["by_condition"][condition["id"]])`を再帰的に呼び、**全てtrueの場合のみ**true（論理AND、
+    ORでも多数決でもない）を返す——pm-earnerの「1 pass/時 AND redeem確認/日」を機械的に表現する。
 - **REQ-LV-102（21:00 JST 締切 + escalation、REQ-LV-041 を置換）**: WHEN JST 21:00 の時点で
-  `cadence_met()` が当日分について `false` を返す loop が存在する場合、THE SYSTEM SHALL 既存の
-  `self-fix.sh <loop-name> "<blocker>"` 呼び出し（変更しない、Ground truth参照）を、
-  「7日前に投稿があった」等の過去実績を理由に抑制することなく毎日 escalate する。
-- **REQ-LV-103（streak KPI + 日次 scorecard）**: THE SYSTEM SHALL 各 loop の連続達成日数
-  （`streak(ledger_rows, today_jst_date, contract) -> int`、新設・純粋: 当日から遡って
-  `cadence_met`が真である連続日数を数える）を計算し、`verify-loops-audit.sh`の6hごとscorecard
-  （REQ-LV-042、置換後）に loop ごと `✅posted-today (streak=N)` / `❌missed (streak=0)` の形式で含める。
+  `cadence_met()`（REQ-LV-101、loopのcontract kindに応じた分岐で判定）が当日分について `false` を返す
+  loop が存在する場合、THE SYSTEM SHALL 既存の `self-fix.sh <loop-name> "<blocker>"` 呼び出し
+  （変更しない、Ground truth参照）を、「7日前に投稿があった」等の過去実績を理由に抑制することなく
+  毎日 escalate する。
+- **REQ-LV-103（streak KPI + 日次 scorecard、4種のkindに対応）**: THE SYSTEM SHALL 各 loop の連続達成
+  日数を計算する純関数 `streak(evidence_by_date, today_jst_date, contract) -> int`（新設・純粋:
+  `evidence_by_date`は日付文字列→その日の`cadence_met`用evidenceのdict。当日から遡って各日の
+  `cadence_met(date, contract, evidence_by_date[date])`が真である連続日数を数える。kindに関わらず
+  同じ再帰ロジックで動作する——`cadence_met`自体がkindを分岐するため`streak`側の分岐は不要）を実装し、
+  `verify-loops-audit.sh`の6hごとscorecard（REQ-LV-042、置換後）に loop ごと `✅posted-today (streak=N)`
+  / `❌missed (streak=0)` の形式で含める。
 - **REQ-LV-104**: THE SYSTEM SHALL `verify-loops.sh`/`verify-loops-audit.sh`（REQ-LV-040〜042）の
-  8 loop 分の判定ロジックを、旧来の `fresh()`（26h/30h等の固定しきい値によるartifact年齢判定）呼び出し
-  から REQ-LV-101/102/103 の cadence 判定に完全に置き換える。旧 `fresh()` 呼び出しは capafy/reddit/
-  life-manager の既存3ブロック（この feature の対象外）でのみ残す — 8 loop 分のブロックからは削除する。
+  判定ロジックを、旧来の `fresh()`（26h/30h等の固定しきい値によるartifact年齢判定）呼び出しから、
+  Cadence Contract対象7 loop分は REQ-LV-101/102/103 の cadence 判定（loopのcontract kindに応じて
+  `event_dates`/`today_value・previous_value`/`marker_jst_date`/`by_condition`のいずれかのevidenceを
+  実際に収集して`cadence_met`へ渡す）へ、clip-promote分はREQ-LV-120の`clip_promote_status()`（payout
+  ledgerの当日行有無）へ、それぞれ完全に置き換える。旧 `fresh()` 呼び出しは capafy/reddit/life-manager
+  の既存3ブロック（この feature の対象外）でのみ残す — REQ-LV-040が追加した8 loop分のブロックからは
+  `fresh()`を完全に除去する（clip-promoteも例外にしない）。
 
 ### I. EDD（Evaluation-Driven Development）
 
@@ -322,14 +368,25 @@ total_net_worth_usd, alive, self_funded_pct, frontier_pct` — `loops`キーは�
 
 ### J. Dashboard（aniccaai.com 連携、既存 write 制限を維持）
 
-- **REQ-LV-120（loop-registry.json、新設、claude-p自身のbody配下にのみ書く）**: THE SYSTEM SHALL
-  `~/anicca/skills/self/telemetry-collect.sh`を拡張し（既存のper-instance telemetry.json書き込み
-  ロジックには手を入れない、新しい出力を追加するのみ）、claude-pのbody配下
-  （`~/.anicca-founder/state/loop-registry.json`）に、8 loop 分の
+- **REQ-LV-120（loop-registry.json、新設、claude-p自身のbody配下にのみ書く。F2修正: clip-promoteの
+  status定義を明示）**: THE SYSTEM SHALL `~/anicca/skills/self/telemetry-collect.sh`を拡張し
+  （既存のper-instance telemetry.json書き込みロジックには手を入れない、新しい出力を追加するのみ）、
+  claude-pのbody配下（`~/.anicca-founder/state/loop-registry.json`）に、8 loop 分
+  （REQ-LV-100のCadence Contract対象7loop + clip-promote）の
   `{loop, type, account, status, streak, artifact_url_today, weekly_metric, cumulative_earn_usdc,
-  model}`配列を書き出す。`status`はREQ-LV-101の`cadence_met()`結果（`"posted-today"`/`"missed"`）、
-  `streak`はREQ-LV-103の値、`weekly_metric`はREQ-LV-110の`combined_score`をそのまま使う（新規の計算
-  ロジックを重複実装しない）。
+  model}`配列を書き出す。`status`の算出方法は2系統に分かれる:
+  - Cadence Contract対象7loop（clip/affiliate/video/gig/bounty/pm-earner/founder-loop）:
+    `status`はREQ-LV-101の`cadence_met()`結果（`"posted-today"`/`"missed"`）、`streak`はREQ-LV-103の値。
+  - **clip-promote（Cadence Contract対象外、REQ-LV-100参照）**: `status`は独立の判定基準を使う——
+    `record-payout.mjs`の`recordPayout()`が`status:"recorded"`を返した行（Ground truth §REQ-LV-011
+    参照、`task`が`"promote.fun clip payout"`のペイアウトledger行）が当日JST日付に存在すれば
+    `"payout-today"`、無ければ`"no-payout-today"`とする（`cadence_met()`は呼ばない——campaign依存の
+    投稿頻度にはcadence契約が定義されていないため）。`streak`は同じ判定基準（payout-today）を日毎に
+    遡って連続日数を数える（REQ-LV-103の`streak()`と同じ再帰ロジックだが、evidenceの元がpayout ledger
+    である点のみ異なる）。
+  `weekly_metric`はREQ-LV-110の`combined_score`をそのまま使う（新規の計算ロジックを重複実装しない、
+  clip-promoteはこのfeatureのEDD対象外——REQ-LV-110参照——のため`weekly_metric`は既存ledgerの週次
+  payout合計とする）。
 - **REQ-LV-121（landingへの直接write禁止、既存制約の維持）**: THE SYSTEM SHALL
   `loop-registry.json`を`~/anicca-project/apps/landing/**`または`apps/landing/public/dashboard.json`
   へ一切直接書き込まない（プロジェクトCLAUDE.md「aniccaai.comへの書き込み制限」表: claude-pは自分の
@@ -442,7 +499,7 @@ Ground truth追加確認: `enabled:true`の103件（全221件中、確認済み�
 ## Non-functional constraints
 
 - No dry run（`~/.claude/CLAUDE.md`）: Phase 3 以降の E2E evidence は実際の mail 送信・実際の投稿/応募・
-  実際のオンチェーン確認でなければならない。
+  実際のオンチェーン確認でなければならない（REQ-LV-019がこの制約をGoal 6の独立MUST要件として規定する）。
 - 判断のハードコード禁止: どの案件に応募するか、どの改善を採用するか、mistake が何かの判定は全て agent
   自身が行う。この spec がコード化するのは「検証」「記帳」「mail 送信」の3つの決定論ツールのみ
   （`~/.claude/rules/building-effective-ai-agents.md` 準拠）。

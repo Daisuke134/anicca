@@ -1,7 +1,7 @@
 {
   "featureName": "claude-p-loop-verification",
   "mode": "lean",
-  "currentPhase": "1b",
+  "currentPhase": "1c",
   "phaseHistory": [
     {
       "from": "init",
@@ -12,9 +12,17 @@
       "from": "1a",
       "to": "1b",
       "timestamp": "2026-07-08T00:00:00.000Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-08T06:05:02.894Z",
+      "reason": "spec v2.1 complete (49 REQs, 28 PROPs); entering spec review gate with fresh Opus 4.8 adversary"
     }
   ],
-  "iterations": {},
+  "iterations": {
+    "1c": 1
+  },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-claude-p-loop-verification-1783488965419",
@@ -23,7 +31,5 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-08T05:36:05.417Z",
-  "updatedAt": "2026-07-08T06:15:00.000Z",
-  "specRevision": "v2.1",
-  "specRevisionNote": "Dais 5点指示(cadence contract/EDD/dashboard/loop scaling/OpenClaw統合)をdesign spec commit ae2b8eecd経由で反映。REQ-LV-041はREQ-LV-100-104によりSUPERSEDED（併記でなく置換）。OpenClaw棚卸し確定版(a-1:30/a-2:23/a-3:7/b:24/c:19=103件一致)反映によりREQ-LV-140-145を全面書き換え。REQ数49、PROP数28。"
+  "updatedAt": "2026-07-08T06:05:02.895Z"
 }

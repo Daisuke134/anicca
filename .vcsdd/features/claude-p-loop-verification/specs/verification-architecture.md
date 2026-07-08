@@ -20,6 +20,7 @@
 | REQ-LV-016 | `summarize_bounty_funnel(gated, attempts_rows) -> {checked,survivors,claimed,submitted,stalled}`（新設・純粋） | `state/gated.json` + `state/attempts.jsonl` の実ファイルを読み、`state/bounty-funnel.jsonl` への実追記を確認する統合テスト |
 | REQ-LV-017 | `parse_positions_response(json_text) -> list[dict]`（新設・純粋） | `https://data-api.polymarket.com/positions?user=<実wallet>` への実 GET を伴う統合テスト（無認証、既存 `redeem.py:196` の呼び出しパターンを踏襲） |
 | REQ-LV-018 | `founder_report_args(prev_earn, total_earn, status) -> {result, earned_usdc, evidence}`（新設・純粋: STATE.md の数値2つと STATUS 文字列から `loop-report.sh` への4引数を決定論的に組み立てる） | `founder-loop.sh` を実行し、実際に `loop-report.sh` が正しい引数で呼ばれたことをログ（`~/.openclaw/logs/loop-report.log`）で確認する統合テスト |
+| REQ-LV-019（F5新設: Goal 6独立REQ） | なし（E2Eサイクル自体とadversary判定は副作用そのもの、純粋関数化できない） | 8loop（7 loop + clip-promote）それぞれについて実pass実行→実evidence発生→`loop-report.sh`実送信のフルサイクルをmain agentが実行し、`~/.openclaw/logs/loop-report.log`の`SENT`行+対応ledgerの新規行をfresh-context adversary（Opus 4.8）に提示しPASS判定を得る（Tier 3、PROP-LV-013と同一の検証対象を独立REQとして明示） |
 | REQ-LV-020/021 | なし（プロンプト文言の追加） | `grep` で該当文言が `STARTUP`/cron prompt に含まれることを確認。ledger の `ts` フィールド存在は既存 jq/python チェックで確認 |
 | REQ-LV-030 | 対象外（変更なし） | 対象外 |
 | REQ-LV-031 | なし（プロンプト文言の追加） | `grep` で文言確認 + 実際に1行でも `{ts,pass_id,mistake,lesson}` 形式が書かれた実ファイルの存在確認（該当 loop の次の実 pass 後） |
@@ -35,16 +36,16 @@
 
 | REQ | 純関数（Tier 1: unit test 可） | 副作用境界（Tier 2/3: integration / 実行環境検証） |
 |---|---|---|
-| REQ-LV-100 | なし（config宣言） | 各loopのhealthcheck設定ファイルにcadence contractのJSONが実際に書かれていることを確認 |
-| REQ-LV-101 | `cadence_met(ledger_rows, today_jst_date, contract) -> bool`（新設・純粋、`~/anicca/skills/self/verify-loops.sh`の既存`fresh()`とは独立した新関数） | 実ledgerファイルを読んで`cadence_met`に通す統合テスト |
-| REQ-LV-102 | 判定自体は`cadence_met`（REQ-LV-101）を再利用、新規純関数なし | JST 21:00到達をシミュレートし（時刻を注入可能にする）、`cadence_met=false`のloopに対し`self-fix.sh`が実際に起動されることをログで確認する統合テスト |
-| REQ-LV-103 | `streak(ledger_rows, today_jst_date, contract) -> int`（新設・純粋: `cadence_met`を日ごとに遡って呼ぶだけの合成関数） | `verify-loops-audit.sh`実行後の`loop-report.sh audit ...`本文に`streak=N`形式の文字列が含まれることを確認 |
-| REQ-LV-104 | なし（既存`fresh()`呼び出し箇所の削除・置換という差分） | `verify-loops.sh`の8loopブロックのdiffを読み、`fresh()`呼び出しが残っていないことを`grep`で確認（capafy/reddit/lmの3ブロックには残ることを確認） |
+| REQ-LV-100 | なし（config宣言、`kind`判別子で4種のスキーマを区別） | 各loopのhealthcheck設定ファイルに、loopごとに正しい`kind`（row-exists/increment/pass-marker/compound）のcadence contract JSONが実際に書かれていることを確認 |
+| REQ-LV-101（F1修正: 単一シグネチャで4 kindを分岐するdispatcher） | `cadence_met(today_jst_date, contract, evidence) -> bool`（新設・純粋、`contract["kind"]`で4分岐: row-exists=`evidence["event_dates"]`にtoday含むか／increment=`evidence["today_value"]>evidence["previous_value"]`／pass-marker=`evidence["marker_jst_date"]==today`／compound=`contract["conditions"]`全件のAND再帰。`~/anicca/skills/self/verify-loops.sh`の既存`fresh()`とは独立した新関数） | 4 kindそれぞれについて実データ（clip/affiliate/video/gigのledger行、bountyの`bounty-funnel.jsonl`前日比、founder-loopの`STATE.md`mtime、pm-earnerの`earner.log`mtime+redeem行）を読んで`cadence_met`に通す統合テスト |
+| REQ-LV-102 | 判定自体は`cadence_met`（REQ-LV-101、loopのkindに応じた分岐）を再利用、新規純関数なし | JST 21:00到達をシミュレートし（時刻を注入可能にする）、いずれかのkindで`cadence_met=false`のloopに対し`self-fix.sh`が実際に起動されることをログで確認する統合テスト |
+| REQ-LV-103 | `streak(evidence_by_date, today_jst_date, contract) -> int`（新設・純粋: `evidence_by_date`は日付→その日のevidence。`cadence_met`を日ごとに遡って呼ぶだけの合成関数——kind分岐は`cadence_met`側が担うため`streak`自体はkindに非依存） | `verify-loops-audit.sh`実行後の`loop-report.sh audit ...`本文に`streak=N`形式の文字列が含まれることを確認（4 kind全てで） |
+| REQ-LV-104 | なし（既存`fresh()`呼び出し箇所の削除・置換という差分） | `verify-loops.sh`の8loopブロック（REQ-LV-040参照、clip-promote含む）のdiffを読み、`fresh()`呼び出しが残っていないこと、7 loop分は各loopのkindに応じた正しいevidence収集（event_dates/today_value・previous_value/marker_jst_date/by_condition）、clip-promote分は`clip_promote_status()`（REQ-LV-120）が呼ばれていることを`grep`+実行確認（capafy/reddit/lmの3ブロックには`fresh()`が残ることを確認） |
 | REQ-LV-110 | 各loop固有`evaluator.py`の`evaluate_stage1/evaluate_stage2` — 既存`~/anicca/skills/earn/self-improve/evaluator.py`と同型で、fixture/ledger読み取り→`combined_score`返却のみ、I/O副作用なし（新設・純粋、loopごとに1本） | 実ledgerデータをfixtureとして与え、`combined_score`が実際に計算されることを確認する統合テスト |
 | REQ-LV-111 | `beats_previous_week(this_week_score, last_week_score) -> bool`（新設・純粋） | metrics ledgerへの実追記（週次行）を確認する統合テスト |
 | REQ-LV-112 | `lib/promote_gate.py`相当の決定論pre-check関数（新設・loopごと、または既存`lib/promote_gate.py`を汎用化して共用） | 実`claude --model opus --dangerously-skip-permissions --print`呼び出しを伴うE2E（Tier 3、pre-checkを通過したcandidateに対してのみ発火することを確認） |
 | REQ-LV-113 | なし（プロンプト文言追加） | `grep`で該当文言が各loopのSTARTUP promptに含まれることを確認 |
-| REQ-LV-120 | なし（`telemetry-collect.sh`拡張は既存ロジックへの追加分岐） | `telemetry-collect.sh`実行後、`~/.anicca-founder/state/loop-registry.json`が実際に書かれ、8loop分のオブジェクトを含むことを確認する統合テスト |
+| REQ-LV-120（F2修正: clip-promote用の独立status判定を追加） | `clip_promote_status(payout_rows, today_jst_date) -> {"status":"payout-today"\|"no-payout-today"}`（新設・純粋: `record-payout.mjs`の`status:"recorded"`行のtsが当日JST日付に存在するかのみを見る、`cadence_met`は呼ばない）。他7loop分は`cadence_met`/`streak`（REQ-LV-101/103）をそのまま再利用、新規純関数なし | `telemetry-collect.sh`実行後、`~/.anicca-founder/state/loop-registry.json`が実際に書かれ、8loop分（7 loop分の`cadence_met`ベースstatus + clip-promoteの`clip_promote_status`ベースstatus）のオブジェクトを含むことを確認する統合テスト |
 | REQ-LV-121 | `git diff`相当で`apps/landing/**`への差分がゼロであることを機械的に確認可能（新規の純関数は不要、既存の書き込み制限チェックの再利用） | この feature の実装コミットが`apps/landing/**`を一切変更していないことを`git diff --stat`で確認 |
 | REQ-LV-122 | 対象外（この feature の実装スコープ外、依存関係の明記のみ） | 対象外 |
 | REQ-LV-130 | `scale_eligible(streak, weekly_score, weekly_score_threshold, disk_free_gb) -> bool`（新設・純粋） | config YAMLを読み実際のstreak/scoreと突き合わせる統合テスト |
@@ -88,18 +89,22 @@
 | PROP-LV-011 | **SUPERSEDED**（旧REQ-LV-041のstale escalation） — PROP-LV-020/021に置換 | — | — | 対象外（旧`fresh()`ベースの検証は行わない） |
 | PROP-LV-012 | REQ-LV-050/051 (launchd配線) | 3 | true | `launchctl list \| grep <label>`が新設jobを返すこと。main agentが実環境で確認（adversaryはlaunchdを操作できない） |
 | PROP-LV-013 | Goal 1/6 E2E（1 loopにつき1本、evidence付きmail 1サイクル） | 3 | true | 各loopについて: 実 pass実行 → 実evidence（URL/tx/数値）発生 → `loop-report.sh`が実際にHTTP 200/201でmail送信 → `~/.openclaw/logs/loop-report.log`に`SENT`行が残る、をmain agentが実行し記録する。fresh-context adversary（Opus 4.8）がこのログ+ledger行を読みPASS/FAILを判定する |
+| PROP-LV-038（F5新設: REQ-LV-019、Goal 6独立REQとしての完了判定） | REQ-LV-019 (8loop全てでE2E+adversary PASSが揃うまでGoal 6は未達) | 3 | true | PROP-LV-013の8loop分の実行結果（各loopのSENT行+ledger新規行+adversary個別PASS）を集計し、1つでも欠けている状態では「Goal 6未達成」と判定されること（8loop中7loop分がPASSでも全体PASSにならないことを明示的に確認する集計チェック） |
 
 ### v2追加分の Proof obligations（Cadence / EDD / Dashboard / Loop Scaling / OpenClaw統合）
 
 | ID | Requirement | Tier | Required (lean) | Verification method |
 |---|---|---|---|---|
-| PROP-LV-020 | REQ-LV-101 (`cadence_met`の日境界判定) | 1 | true | `today="2026-07-08"`、ledger行のtsが同日JST→true；前日のみ→false；空配列→false。JST日境界をまたぐUTC深夜のtsケース（例: UTC 2026-07-08T16:00Z = JST 2026-07-09T01:00）も1ケース追加し、UTC日付ではなくJST暦日で判定されることを明示的に確認 |
-| PROP-LV-021 | REQ-LV-102 (21:00 JST escalation、過去実績で抑制されない) | 2 | true | ある loop の直近ledger行が7日前（＝旧`fresh()`方式なら閾値内でPASSしていたはずのケース）で当日行が無い状態を作り、JST 21:00到達をシミュレートした`verify-loops-audit.sh`実行で`self-fix.sh`が実際に起動されることを確認（「7日前に投稿があるからOK」にならないことの直接証明） |
-| PROP-LV-022 | REQ-LV-103 (`streak`の連続日数計算) | 1 | true | 直近3日連続で`cadence_met=true`→`streak=3`；2日連続の後1日欠落→`streak`はその欠落日以降0にリセット（欠落日を跨いだ加算をしない） |
+| PROP-LV-020 | REQ-LV-101 の `kind=="row-exists"`分岐（clip/affiliate/video/gig、日境界判定） | 1 | true | `today="2026-07-08"`、`evidence["event_dates"]`に同日JST文字列が含まれる→true；前日のみ→false；空配列→false。JST日境界をまたぐUTC深夜のtsケース（例: UTC 2026-07-08T16:00Z = JST 2026-07-09T01:00）を呼び出し元のevidence構築時に正しくJST暦日へ変換していることを確認するケースを1件追加 |
+| PROP-LV-021 | REQ-LV-102 (21:00 JST escalation、過去実績で抑制されない) | 2 | true | ある loop（row-exists kind）の直近ledger行が7日前（＝旧`fresh()`方式なら閾値内でPASSしていたはずのケース）で当日行が無い状態を作り、JST 21:00到達をシミュレートした`verify-loops-audit.sh`実行で`self-fix.sh`が実際に起動されることを確認（「7日前に投稿があるからOK」にならないことの直接証明） |
+| PROP-LV-022 | REQ-LV-103 (`streak`の連続日数計算、kindに非依存) | 1 | true | 直近3日連続で`cadence_met=true`→`streak=3`；2日連続の後1日欠落→`streak`はその欠落日以降0にリセット（欠落日を跨いだ加算をしない）。row-exists kindのfixtureで検証（他kindでも同じ`streak`関数を再利用することはPROP-LV-035〜037内で追加確認） |
+| PROP-LV-035（F1修正: bounty固有の`increment` kindケース） | REQ-LV-101 の `kind=="increment"`分岐 | 1 | true | `today_value=5,previous_value=3`（増分+2）→true；`today_value=5,previous_value=5`（増分0）→**false**（旧`fresh()`が誤判定していたのと同じ「行の存在だけでOKにする」欠陥がここで再現しないことの直接証明——checkedが増えていないpassでも当日`bounty-funnel.jsonl`行自体は存在するが、増分ゼロなら`cadence_met`はfalseを返す）；`today_value=3,previous_value=5`（減少、あり得ない前提だが防御的に）→false |
+| PROP-LV-036（F1修正: founder-loop固有の`pass-marker` kindケース） | REQ-LV-101 の `kind=="pass-marker"`分岐 | 1 | true | `marker_jst_date`が当日と一致→true（`earn-ledger.jsonl`が空でもtrueになりうることを明示的に確認——ledger空≠cadence未達の直接証明）；前日のマーカー→false。統合テストでは実際に`~/.anicca-founder/state/STATE.md`のmtimeのみを読み、`earn-ledger.jsonl`を一切参照しないことをコード上で確認（grep相当） |
+| PROP-LV-037（F1修正: pm-earner固有の`compound` kindケース、AND） | REQ-LV-101 の `kind=="compound"`分岐 | 1 | true | `hourly-pass=true, daily-redeem=true`→true；`hourly-pass=true, daily-redeem=false`→**false**（片方だけでは満たされない、ANDであることの直接証明）；`hourly-pass=false, daily-redeem=true`→false；両方false→false |
 | PROP-LV-023 | REQ-LV-110 (loop固有evaluatorの`combined_score`、LLM judge不使用) | 1 | true | 固定fixtureデータに対し`combined_score`が決定論的に同じ値を返すこと（同一入力→同一出力、2回実行して比較）；既存`evaluator.py`同様、評価対象コードが発注/投稿系モジュールを一切importしていないことをコードレビュー相当のgrepで確認（sandbox境界） |
 | PROP-LV-024 | REQ-LV-111 (`beats_previous_week`) | 1 | true | `this=10,last=5`→true；`this=5,last=10`→false；`this=5,last=5`（同点）→false（tieはbeatにならない、既存`evaluatePromotion`のbaseline-floor思想と整合） |
 | PROP-LV-025 | REQ-LV-112 (promote gate 2段ゲート) | 3 | true | pre-checkを意図的に失敗させたcandidateではadversary呼び出しが一切発生しないこと（呼び出しログで確認）、pre-check通過candidateではadversary呼び出しが発生しPASS/FAILいずれの場合も昇格判断がその結果と一致すること |
-| PROP-LV-026 | REQ-LV-120 (`loop-registry.json`書き出し) | 2 | true | `telemetry-collect.sh`実行後、`~/.anicca-founder/state/loop-registry.json`に8loop分のオブジェクトが存在し、各`status`がREQ-LV-101の`cadence_met`結果と一致することを確認 |
+| PROP-LV-026（F2修正: clip-promoteの独立status判定を追加検証） | REQ-LV-120 (`loop-registry.json`書き出し) | 2 | true | `telemetry-collect.sh`実行後、`~/.anicca-founder/state/loop-registry.json`に8loop分のオブジェクトが存在し、7loop分の`status`がREQ-LV-101の`cadence_met`結果と一致すること、かつclip-promoteの`status`が`clip_promote_status`（payout ledgerの当日行有無、`cadence_met`は呼ばれていないこと）と一致することを確認 |
 | PROP-LV-027 | REQ-LV-121 (landing直接write禁止) | 2 | true | この feature の全実装コミットに対し `git diff --stat` で `apps/landing/` 配下のファイルが1件も変更されていないことを確認 |
 | PROP-LV-028 | REQ-LV-130 (`scale_eligible`3条件AND) | 1 | true | `streak=7,score>threshold,disk=5`→true；`streak=6`（1不足）→false；`disk=4.9`→false；3条件全て満たすが`score==threshold`（超過でなく同値）→false（`>`であって`>=`でない） |
 | PROP-LV-029 | REQ-LV-132/133/134 (guardrail純関数群) | 1 | true | `cooldown_ok`: 直近spawnから設定日数未満→false；`fleet_at_capacity`: 現在数==上限→true、現在数<上限→false |
@@ -127,8 +132,10 @@ fresh-context adversary が確認し PASS/FAIL を出す。
 REQ-LV-070（video warmup バグ）のみ、実装対象コードパスが Phase 1 時点で未特定であることを spec review
 で明示し、Phase 2 着手時に spec を1行追記してから着手することを条件付き PASS の対象とする。
 REQ-LV-041 は REQ-LV-100〜104 により SUPERSEDED（併記ではなく置換）— spec review はこの置換が
-矛盾なく行われていること（旧 stale 判定ロジックが8 loop 分から完全に除去され、cadence判定に
-一本化されていること）も確認する。REQ-LV-140（cron棚卸し確定分類、30+23+7+24+19=103で件数一致
+矛盾なく行われていること（旧 stale 判定ロジックが REQ-LV-040 の8 loop 分から完全に除去され、
+7 loop分は REQ-LV-101 の4 kind分岐dispatcherへ、clip-promote分は REQ-LV-120 の`clip_promote_status()`
+へ一本化されていること。F1修正: `cadence_met`が単一の「行の存在」判定から`kind`別4分岐へ一般化された
+ことも確認する）も確認する。REQ-LV-140（cron棚卸し確定分類、30+23+7+24+19=103で件数一致
 確認済み）はPhase 1時点で既に確定しておりPASSの対象。REQ-LV-141の前提条件6（`anicca-event-bot-trigger`
 のgog CLI依存）とREQ-LV-144（Dais明示go）は、Phase 1時点ではそれぞれ依存確認・go指示そのものが
 未確定であるため、REQ-LV-070と同様に条件付きPASSの対象とし、Phase 2着手時（前提条件6）または
