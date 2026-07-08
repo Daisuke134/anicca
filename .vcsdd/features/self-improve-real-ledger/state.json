@@ -26,8 +26,22 @@
     "epicId": "VCSDD-self-improve-real-ledger-1783546447649",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T21:55:16.626Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "blockingFindings": 1,
+        "majorFindings": 0,
+        "minorFindings": 2
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-08T21:55:16.626Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-08T21:34:07.648Z",
-  "updatedAt": "2026-07-08T21:48:41.405Z"
+  "updatedAt": "2026-07-08T21:55:16.627Z"
 }
