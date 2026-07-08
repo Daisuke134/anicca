@@ -1,7 +1,7 @@
 {
   "featureName": "claude-p-loop-verification",
   "mode": "lean",
-  "currentPhase": "3",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -46,10 +46,18 @@
       "timestamp": "2026-07-08T07:18:22.425Z",
       "reason": "entering implementation review (fresh Opus 4.8 adversary + codex-review per dev-workflow)",
       "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-08T07:29:43.211Z",
+      "reason": "impl review PASS at iteration 2; entering formal hardening (lean)",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
+    "5": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -61,6 +69,12 @@
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T07:29:43.202Z",
+      "reviewedBy": "adversary",
+      "details": "iteration-2 PASS (0 blocking). F1 (REQ-LV-004 STARTUP prompts) resolved across 5 cli.sh files; 15/15 loop-report tests green; no regressions. verdicts: reviews/impl/iteration-{1,2}/verdict.md"
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-08T06:40:39.249Z",
@@ -72,5 +86,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T05:36:05.417Z",
-  "updatedAt": "2026-07-08T07:18:22.426Z"
+  "updatedAt": "2026-07-08T07:29:43.211Z"
 }
