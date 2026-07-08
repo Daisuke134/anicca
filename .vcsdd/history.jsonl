@@ -278,3 +278,11 @@
 {"timestamp":"2026-07-08T19:32:44.396Z","event":"feature_created","featureName":"hl-realized-pnl","mode":"strict","language":"python"}
 {"timestamp":"2026-07-08T19:48:32.109Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-08T19:48:32.111Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-08T20:00:36.616Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T20:12:43.374Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T20:12:43.375Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"1c","verdict":"PASS","reviewedBy":"human"}
+{"timestamp":"2026-07-08T20:12:52.297Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-08T20:12:52.306Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-08T20:12:52.306Z","event":"sprint_started","featureName":"hl-realized-pnl","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-08T20:48:06.666Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-07-08T20:48:18.591Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"2b","to":"2c","iteration":1,"phase":"2c"}
