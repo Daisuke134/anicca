@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "941f811e4eae1369de9eec95952ff9e77fe9fce9395a8bf58cc7277fc4527f3b",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs", "~/anicca/skills/self/spawn/run.sh", "~/anicca/skills/self/spawn/scripts/wake-gate.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 11: fixes round-10's single finding, FIND-018 (CRIT-205's own count phrasing said '30 targeted PROP IDs (including PROP-307e)', ambiguously implying PROP-307e was one of the 30, contradicting the Deferred-obligation disposition section's correct 'PLUS the new PROP-307e' = 31 total framing). CRIT-205's description and passThreshold now both consistently say 31 = 30 sprint-1-deferred + the new PROP-307e. This is the 5th consecutive contract-review round (6-10 all found real, if progressively narrower, defects: FIND-010 documentation gap -> FIND-011/012 bead+file-list gaps -> FIND-013/014 incomplete file-list fix + directional wording -> FIND-015/016/017 self-contradiction+stale count+missing state.json entry -> FIND-018 count-framing ambiguity). Do a final, genuinely exhaustive read of the WHOLE contract (all CRIT criteria, Deferred-obligation disposition, Known residual scope boundary, all correction sections) checking specifically for count consistency (30 vs 31 vs 38 vs 35, used correctly and consistently in every location) plus anything else. Confirm 195/195 tests pass fresh. If genuinely clean, PASS -- this sprint has earned convergence if the document is now truly self-consistent."
+}
