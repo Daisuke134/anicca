@@ -598,7 +598,7 @@ Base mainnet で達成）まで来た」と書く。「繁栄する経済が既�
 **spec 正本（記事執筆時に精読）**:
 - `~/anicca-project/docs/loop-engineering/07-patchlevel-spec-two-loops.md`（実装spec）
 - `~/anicca-project/docs/loop-engineering/00-INDEX.md`（目次）
-- `~/anicca-project/docs/superpowers/specs/2026-07-07-loop-engineering-out-of-loop-design.md`（SSOT）
+- `~/anicca-project/docs/loop-engineering/2026-07-07-loop-engineering-out-of-loop-design.md`（SSOT）
 - feature 名は既に `eval-driven-earning`
 
 ---

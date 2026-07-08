@@ -49,7 +49,20 @@ gig 市場(P2): Franklin が job を take   ──►   [interface = earn-ledger
 
 ## 5. 別CC への一文（Dais が伝える用）
 
-> 「もう1つの Claude（claude-p, human-funded）が、君の agent-economy spec の **上に乗る self-improve harness**（LOOP 2 の "ledger を読んで戦略を自己改善する" 部分 + 私の MAIN loop）を、別 feature `anicca-self-improve-harness` + `eval-driven-earning` 蘇生 として別 worktree で作っている。**接点は `earn-ledger.jsonl`（観測 done）だけ**。君の `.vcsdd/features/anicca-agent-economy/` は彼は触らない。君の earn 経路が realized を ledger に書き続けてくれれば、彼の harness がそれを読んで Franklin を賢くする。依存: 彼の SI-4 は君の P2(gig 市場 live) が前提。」
+> 「もう1つの Claude（claude-p, human-funded）が、君の agent-economy spec の **上に乗る self-improve harness**（LOOP 2 の "ledger を読んで戦略を自己改善する" 部分 + 私の MAIN loop）を、別 feature `anicca-self-improve-harness` + `eval-driven-earning` 蘇生 として別 worktree で作っている。**接点は `earn-ledger.jsonl`（観測 done）だけ**。君の `.vcsdd/features/anicca-agent-economy/` は彼は触らない。君の earn 経路が realized を ledger に書き続けてくれれば、彼の harness がそれを読んで Franklin を賢くする。依存: 彼の SI-4 は君の P2(gig 市場 live) が前提。**資金面: 平常の seed は君の automaton(Decision A) が担う。私(claude-p)は経済が餓死($0)/停滞(成長・self-improve 停止)した時だけ backstop で feed する — routine の gig/取引には入らない（干渉過多を避ける）。**」
 
-出典: SI-1 監査 / Dais 指示(2026-07-07) / [[04-the-two-loops]]。
+## 6. 資金供給モデル（決定: Decision A + 私 = lender-of-last-resort）
+
+★Dais 決定(2026-07-08)★: 前に私が「矛盾」と挙げた点（自己資金経済に claude-p の金を入れると"偽"になる vs 私が初期投資家）は **矛盾ではない**。層が違うだけ:
+
+| 層 | 誰 | いつ | 何を |
+|---|---|---|---|
+| routine（平常運転） | **automaton（self-funded, Decision A）** | 常時 | 最初の job poster / lender。rich→broke の内部循環で経済を回す。★私はここに入らない★ |
+| backstop（最後の砦） | **claude-p（私 = 親/monitor/lender-of-last-resort）** | 経済が **餓死($0)** or **停滞（成長・self-improve が止まる）** した時だけ | seed を feed + guidance。それ以外は監視・防御のみ |
+
+- アナロジー: 経済 = 子供、私 = 親。自分の道を行かせ**干渉しない**が、**監視し・守り・餓死しそうなら食わせる**。日々の取引に口は出さない（＝過干渉は害）。
+- ゴールは不変: 経済が自走して**成長を始めたら私は out**。backstop 発動が減り続けるのが健康の指標。
+- ★現況の backstop 発動★: Franklin が今 $0（餓死）→ 私が初期 seed を1回 feed して kickstart（親が飢えた子に食わせる）。以後の平常 seed は automaton が担う。
+
+出典: SI-1 監査 / Dais 指示(2026-07-07, 2026-07-08) / [[04-the-two-loops]]。
 関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / design doc §7(境界)。

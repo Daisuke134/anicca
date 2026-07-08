@@ -8,8 +8,8 @@
 
 | # | ファイル | 内容 | 状態 |
 |---|---|---|---|
-| 序 | `../superpowers/specs/2026-07-07-loop-engineering-goldmine.md` | 全ソース精読の金脈（loop eng定義/RSI/Replit continual learning/cobus実装）+ 全ASCII | ✅ 記事本体の下敷き |
-| 設計 | `../superpowers/specs/2026-07-07-loop-engineering-out-of-loop-design.md` | 実装設計（out-of-loop 3段・SI-*フェーズ・SI-1棚卸し結果・cheap wins） | ✅ 実行計画の正本 |
+| 序 | `2026-07-07-loop-engineering-goldmine.md` | 全ソース精読の金脈（loop eng定義/RSI/Replit continual learning/cobus実装）+ 全ASCII | ✅ 記事本体の下敷き |
+| 設計 | `2026-07-07-loop-engineering-out-of-loop-design.md` | 実装設計（out-of-loop 3段・SI-*フェーズ・SI-1棚卸し結果・cheap wins） | ✅ 実行計画の正本 |
 | 01 | `01-loop-vs-goal-resolved.md` | ★「loop は goal を含むのか?」の決定的解決（概念=YES / ツール=逆に/goalがloopを含む / 真の軸=done を誰が判定するか）★ | ✅ 完了（外部一次情報つき） |
 
 | 03 | `03-franklin-as-nested-loops.md` | ループの実装: 私(human-funded=人間へ) vs Franklin(self-funded=agent economyへ)、5レイヤー実装、done 3値、分担/順番、着手STEP A-D | ✅ 完了 |

@@ -18,7 +18,7 @@
 | # | 項目 | 何が足りないか（evidence） |
 |---|---|---|
 | B1 | claude-p MAIN loop（Sonnet）の本番フル run | plist loaded だが pause 無し状態での完全1周（observe→build→adversary→self-merge）ログ証拠が無い。kill-switch(`PAUSED exit 0`)のみ実証 |
-| B2 | capable-improver promotion を main へ | origin に branch は有る(`f548ed3`)が **main 未 merge**。main の VCSDD `state.json` は phase 1b のまま（コード進捗と desync） |
+| B2 | ~~capable-improver promotion を main へ~~ ✅**解消(2026-07-08)** | PR#795 merge=`e3b5ddb`、merge-verify adversary(fresh Opus)=**PASS 5/5**（ce37117 非gaming=数値独立再現 / 44 green / config安全 / promotion再現 1.26→3.21 worst+2.38 / 巻込ゼロ）。E欄参照 |
 
 ## C. ❌ NOT-DONE / 正直な gap（tragedy 源）
 
@@ -45,5 +45,9 @@
 ## E. 各 /vcsdd 増分の記録欄（追記式・空でよい、進めたら evidence を足す）
 
 - （増分ごとに: feature名 / phase / adversary verdict / commit / 観測証拠 を1行で追記）
+- **2026-07-08 TODO#1 DONE**: self-improve-harness capable-improver → main。merge-verify adversary(fresh Opus)=PASS 5/5。PR#795 merge=`e3b5ddb`。B2 解消。
+- **2026-07-08 決定(Decision A + backstop)**: 資金供給モデル確定 → [[05-coordination-with-agent-economy]] §6。automaton=routine seeder / claude-p=lender-of-last-resort(餓死/停滞時のみ feed)。矛盾でなく層。
+- **2026-07-08 folder統合**: loop-engineering の全 spec を `docs/loop-engineering/` に集約（superpowers/specs から goldmine + out-of-loop-design を移動）。
+- **2026-07-08 進行中 TODO#2**: 稼ぎloop蘇生 + Franklin funding の read-only 事実調査 agent 起動（kill-switch理由/残高/bridge経路/seed額）。
 
 出典: verify-subagent 独立検証(2026-07-08) / 各 verdict.json / launchctl / colony-status。
