@@ -83,8 +83,9 @@ reinforcement. Tier 2 = live/E2E proof against the real audited Hyperliquid wall
 | PROP-019 | REQ-E3 (reconcile runs before branching, every wake) | 0 | yes | Static: in `skills/earn/run.sh`'s `STRATEGY=hl` block, the line invoking `hl.py reconcile` has a LOWER line number than both the anti-churn cooldown check (`_hl_since`) and the `ACTION = "close"` branch (`grep -n` both patterns, compare line numbers). |
 | PROP-020 | REQ-E1/E2 (non-regression, other hl-trade lines + append-only) | 1 | no | Diff review: the existing `open`/`hl-cooldown`/`hl-observe`/`hl-fund-skipped` JSON-construction snippets in `run.sh` are present verbatim in the post-diff file (unchanged); none of them gains an `external` key (`grep -n "'external'" skills/earn/run.sh` shows 0 occurrences outside the new reconcile-related code, since `run.sh` itself never sets `external` — that's exclusively `reconcile.py`'s job now for HL). |
 | PROP-021 | Live E2E — the money-correctness capstone (REQ-A2, REQ-B*, REQ-C1) | 2 | yes (Done-gating) | See §Done below. |
+| PROP-023 | REQ-D4 (per-instance path isolation) | 0 | yes | Static: `skills/earn/hl-trade/lib/reconcile.py` derives its checkpoint path and ledger-write target exclusively from its own file location / its own checkout's `record.mjs` (e.g. `Path(__file__)`-relative), with `grep -n "\.blockrun\|\.anicca\|\.openclaw\|/Users/" skills/earn/hl-trade/lib/reconcile.py` = 0 matches (no literal reference to any other instance's home or an absolute user path). Added at contract-review negotiation round 1 (finding F-2); test lands as a coverage-retrofit addition in `test_reconcile.py` before Phase 3. |
 
-28 proof obligations; 26 Tier-0 required; 1 Tier-1 quality check; 1 Tier-2 live capstone
+29 proof obligations; 27 Tier-0 required; 1 Tier-1 quality check; 1 Tier-2 live capstone
 required for Done (strict mode does not waive the Tier-2 obligation).
 
 ## Tiering rationale

@@ -2,7 +2,7 @@
 sprintNumber: 1
 feature: hl-realized-pnl
 scope: Fill-based Hyperliquid realized-P&L reconcile engine (lib/fills.py + lib/reconcile.py + hl.py reconcile subcommand + run.sh wiring) and ledger.mjs's hyperliquid GATE-0 disjunct.
-negotiationRound: 0
+negotiationRound: 1
 status: draft
 criteria:
   - id: CRIT-001
@@ -13,23 +13,28 @@ criteria:
   - id: CRIT-002
     dimension: edge_case_coverage
     description: The reconciler never drops a fill across a STOP boundary — dedup (REQ-B4.1), unprocessable-stop (REQ-B4.2), and record-call-failure-stop (REQ-B4.3) all leave the checkpoint short of the failed fill, and the F-1 tied-timestamp two-pass recovery (EDGE-11/PROP-010b) actually recovers the sibling fill on the next pass.
-    weight: 0.25
+    weight: 0.2
     passThreshold: test_reconcile.py's PROP-004/005/006/007/008/009/010/010b/011/022 all pass, including the two-call PROP-010b integration test asserting since_time_ms=500 on the re-query and fill_tid=[2,3] recorded on pass 2.
   - id: CRIT-003
     dimension: implementation_correctness
     description: reconcile()'s composition root wires the pure layer (fills.py, plan_batch) and the impure layer (fetch/record/checkpoint/lock) in exactly the REQ-B4-through-B6 order, and record.mjs's own payload shape (REQ-C1 keys) is byte-exact.
-    weight: 0.2
-    passThreshold: test_reconcile.py's PROP-012 (exact payload key set) and PROP-007 (checkpoint == last recorded fill's time, not first) both pass; PROP-015/016/017 static greps confirm no reimplemented appendLedger/assertOwnIdentityOnly/checkHalt, no second key-loading path, and no market_close/.order(/update_leverage call anywhere in reconcile.py.
+    weight: 0.15
+    passThreshold: test_reconcile.py's PROP-012 (exact payload key set) and PROP-007 (checkpoint == last recorded fill's time, not first) both pass; PROP-015/016/017 static greps confirm no reimplemented appendLedger/assertOwnIdentityOnly/checkHalt, no second key-loading path, and no market_close/.order(/update_leverage call anywhere in reconcile.py; PROP-023 static check confirms REQ-D4 path isolation (checkpoint and ledger paths derived exclusively from the reconciler's own checkout location, with no literal reference to another instance's home directory).
   - id: CRIT-004
     dimension: structural_integrity
     description: hl.py's REQ-A1 fix (closed_pnl_usd field fully removed, not relabeled) and run.sh's REQ-E3 wiring (hl.py reconcile invoked before the anti-churn cooldown check and the close-action branch, on every STRATEGY=hl wake) are both structurally present, not merely described.
     weight: 0.15
     passThreshold: test_reconcile.py's PROP-018 (closed_pnl_usd absent from hl.py, and — where the hyperliquid-python-sdk venv is available — cmd_close's JSON output has no such key) and PROP-019 (hl.py reconcile line number < both _hl_since and the close-action branch line numbers in run.sh) both pass.
   - id: CRIT-005
-    dimension: verification_readiness
+    dimension: implementation_correctness
     description: ledger.mjs's new hyperliquid disjunct (REQ-C2/C3) is additive-only — no pre-existing EVM/Solana/narrate/swap classification result changes — and is covered by a NEW test file (ledger.test.mjs) rather than edits to the pre-existing ledger.test.js, per verification-architecture.md's file table.
-    weight: 0.2
+    weight: 0.15
     passThreshold: ledger.test.mjs's 12 tests all pass (PROP-013, PROP-014a-e including the non-regression re-run of the EVM/Solana/narrate/swap fixtures), AND the pre-existing skills/_shared/lib/__tests__/ledger.test.js's 9 tests remain green unmodified.
+  - id: CRIT-006
+    dimension: verification_readiness
+    description: PROP-021's Tier-2 live E2E money-correctness capstone runs against the real Hyperliquid Info API for the audited historical wallet (0xa3cdd4...) through the REAL reconcile code path into a scratch ledger (production ledger untouched), proving the pipeline derives the CORRECT real-world realized numbers from live settled fills — not fixtures.
+    weight: 0.15
+    passThreshold: The live E2E run per verification-architecture.md's Done section records every closedPnl!=0 fill exactly once (zero silent drops, zero fabricated extras, count cross-checked against the raw live response), the summed net_usdc equals the raw sum(closedPnl - fee) within 1e-6, an immediately repeated run appends zero additional lines (idempotency), and no recorded ledger line or E2E log line describes its own numbers as dry/fake/mock/simulated. Raw live response and run transcript saved under evidence/.
 ---
 
 # Sprint 1 Contract — hl-realized-pnl
@@ -124,3 +129,26 @@ split: `ledger.test.js` (pre-existing, untouched) is 9/9 green already; `ledger.
 is 10/12 green and 2/12 red — the 2 failures (`fill_tid` passthrough absent, hyperliquid
 disjunct absent) are the literal REQ-C2/REQ-C3 gap Phase 2b closes; the 10 passes are
 non-regression fixtures that were never expected to need new logic.
+
+## CRIT-006 — verification_readiness (live E2E capstone, PROP-021)
+
+Fixture suites alone cannot prove the pipeline computes the CORRECT real-world number — the old
+code was ~200x wrong while being internally consistent with its own (wrong) data source. This
+criterion makes the Tier-2 live E2E a sprint pass condition, exactly as verification-
+architecture.md's Done section requires for strict mode: run the REAL `reconcile()` code path
+(no stubs in the pipeline under test) against the live Hyperliquid Info API for the audited
+wallet `0xa3cdd4...` (146 real fills at audit time), recording into a SCRATCH ledger + scratch
+checkpoint (production ledger and production checkpoint untouched; the scratch paths are the
+injectable seams the tests already define). Pass = (a) every `closedPnl != 0` fill recorded
+exactly once, cross-checked by count against the raw live response captured in the same run;
+(b) `sum(net_usdc)` over recorded lines equals raw `sum(closedPnl - fee)` within 1e-6;
+(c) an immediately repeated run appends zero lines (live idempotency); (d) no recorded line or
+log line describes its own numbers as dry/fake/mock/simulated. Raw response + transcript are
+saved under `evidence/` as the fresh E2E artifact the Phase 3 adversary gate requires.
+
+## Cross-criterion note (contract-review F-4)
+
+PROP-007 is intentionally cited under both CRIT-002 and CRIT-003: checkpoint-advance
+correctness is simultaneously an edge-case concern (E2/E4 recovery semantics) and a
+composition-root ordering concern. The shared citation is deliberate, not an oversight; each
+criterion still has non-overlapping pass conditions beyond it.

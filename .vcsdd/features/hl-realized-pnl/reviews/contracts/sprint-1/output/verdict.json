@@ -1,0 +1,19 @@
+{
+  "sprintNumber": 1,
+  "feature": "hl-realized-pnl",
+  "iteration": 1,
+  "timestamp": "2026-07-08T20:28:37Z",
+  "dimensions": {
+    "spec_fidelity": {"verdict": "FAIL", "score": 0.6},
+    "edge_case_coverage": {"verdict": "PASS", "score": 0.9},
+    "implementation_correctness": {"verdict": "PASS", "score": 0.85},
+    "structural_integrity": {"verdict": "PASS", "score": 0.8},
+    "verification_readiness": {"verdict": "FAIL", "score": 0.45}
+  },
+  "overallVerdict": "FAIL",
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-1.md",
+    "contractDigest": "12f00c5a84b71fb0a8eec6128578c8bbf64ff836b0288231eb63593797b1cd7b"
+  }
+}
