@@ -30,7 +30,7 @@
       "entrypoint": "run.sh",
       "status": "live",
       "spec": "26 A4 / 27 A-self-spawn",
-      "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
+      "summary": "Self-replication: birth a child instance on Akash with its own EVM+Solana wallet and ERC-8004 identity; no parent instruction needed for the child's first earn wake.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
       "riskNote": "anicca-agent-spawn REQ-102/REQ-307: its own decision core (lib/treasury-gate.mjs::decideColonySpawn) already gates any real spawn attempt (lib/spawn-orchestrator.mjs::executeSpawnAttempt) on the COLONY-WIDE aggregate surplus clearing SPAWN_THRESHOLD_USD -- reading/considering this slot while the colony is broke cannot itself put a broke colony's treasury at risk."
