@@ -158,3 +158,47 @@ it in the same sweep pass. REQ-101 through REQ-114's own remaining Tier-0/Tier-1
 proved by sprint-1 (there are none outside the 19 listed above — sprint-1's own contract already closed
 every other originally-deferred obligation, per its own two completeness corrections) are not touched by
 this sprint's own scope.
+
+## Phase 2c refactor note (this revision)
+
+`lending-orchestrator.mjs` (399 lines, was 401) had one genuine duplication: the `status: "active"`
+row shape (`tx_hash`/`issued_ms`/`due_ms`) was constructed identically at two call sites —
+`resolveStaleProvisioning`'s reconciliation-success branch (REQ-106 step 5) and
+`runLockedIssuance`'s own disbursement-success branch (REQ-106 step 9). Extracted into one helper,
+`activeStatusFields(txHash, nowMs)`, called from both sites via object-spread — no behavior change (same
+keys, same values, same relative key order in the appended row). No other duplication met the bar for
+extraction (`spawn-orchestrator.mjs`'s own `runStep` helper collapses ~6 repeated try/catch/requireOk
+call sites; this module has only one such try/catch, at step 9's disbursement call, which is not
+repeated elsewhere, so collapsing it into a helper would not reduce duplication).
+
+The two GREEN-phase implementation notes flagged for critical review were independently re-verified this
+phase, against fresh reads of REQ-114/REQ-105 (behavioral-spec.md) and CRIT-204/PROP-116c
+(this contract / verification-architecture.md line ~524):
+- **Kill-switch tie-break** (`evaluateKillSwitches`'s isolated first call to
+  `evaluateOverallDefaultKillSwitch` with neutral `sampleSize`/`totalDefaultedUsd`/`defaultRateUsd`):
+  REQ-114's own text states the tie-break between its own switch and REQ-105's cold-start switch is
+  explicitly **implementation-defined** ("report whichever reason it evaluates first... since either
+  reason alone is already sufficient grounds for refusal") — the isolated-call technique is one valid
+  implementation-defined choice among several, reuses only the existing exported function (never a
+  second threshold comparison), and is not under test for its specific priority (no test constructs a
+  simultaneous cold-start + absolute-loss trip), so it carries zero regression risk either way. Comment
+  wording tightened this phase to say "implementation-defined" rather than imply REQ-114 mandates this
+  exact order.
+- **`await Promise.resolve()` yield before each sweep candidate's lock attempt**: empirically confirmed
+  necessary. Removed the yield and ran
+  `node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs` 10 times: the "a
+  candidate flagged by step 1's read but found already-repaid at step 2's own fresh re-read is correctly
+  skipped, never defaulted" test (line 589) failed 10/10 runs (the sweep, having more synchronous
+  pre-lock work, structurally dispatched its lock-acquisition I/O before a concurrently-invoked
+  `executeRepaymentClaim` could reach its own first await, deterministically winning the race and
+  wrongly defaulting an already-repaid loan). Restored the yield: 3/3 full-suite runs pass 119/119 with
+  zero flakiness. The yield only affects WHICH side's lock-acquisition I/O is dispatched first when both
+  race for the SAME `loan_id`; it does not touch `withGigLock`'s own atomicity, so it does not weaken
+  CRIT-204/PROP-116c's actual guarantee ("exactly one of the two [lock acquisitions] succeeds and
+  appends" — REQ-116's own Edge Cases text — never a guarantee about which specific side wins).
+
+No criteria (CRIT-201 through CRIT-207) required changes — their descriptions/passThresholds describe
+requirements that remain true unchanged by this refactor (single call-graph root, dual-lock scope,
+9-step edge-case coverage, the 19 deferred obligations, PROP-108a's Tier-3 discipline, the Phase 1c
+gate). Final: 119/119 tests pass (89 pre-existing + 30 new, matching Phase 2b's own count — refactor
+added zero new tests, per the "no behavior change" discipline this phase is held to).
