@@ -1,0 +1,86 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T22:00:00Z",
+  "iteration": 11,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "941f811e4eae1369de9eec95952ff9e77fe9fce9395a8bf58cc7277fc4527f3b"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:43,45 (CRIT-205 description + passThreshold)",
+          "description": "FIND-018 CONFIRMED GENUINELY FIXED: CRIT-205's description (line 43) now reads '...the count here is now stated as 31 = 30 sprint-1-deferred + PROP-307e, matching that section exactly' followed by 'Every one of the 30 non-Tier-3 sprint-1-deferred obligations this sprint targets, PLUS the new PROP-307e ... so nothing in the current code makes any of the 31 structurally unprovable.' passThreshold (line 45) now reads 'For each of the 31 targeted PROP IDs (the 30 sprint-1-deferred obligations PLUS the new PROP-307e)... FAIL if any of the 31 names a call site...'. Both fields now consistently use '31' for the total and '30 + PROP-307e' as its composition -- the 30-vs-31 self-contradiction FIND-018 flagged is gone; the 'including' framing that implied PROP-307e was one of the 30 has been fully replaced by the 'PLUS'/'31 total' framing, matching the Deferred-obligation disposition section's own longstanding phrasing exactly."
+        },
+        {
+          "type": "file",
+          "location": "full-document grep for every occurrence of 30/31/35/38/42/25/5/3, cross-checked against state.json's proofObligations",
+          "description": "Independently built a complete occurrence table (all 289 lines read front-to-back). '35' appears only 3x, all explicitly past-tense historical citations (lines 172, 211, 278) -- zero present-tense current-state claims. '30' appears 8x (CRIT-205 lines 43/45 as the '30' component of '31', disposition heading/body lines 172/176/179, Known residual scope boundary lines 277/281/287) -- every occurrence is the SAME set (sprint-1-deferred, targeted-this-sprint, excluding PROP-307e) and is self-consistent; none of these needed to become '31' since they specifically describe reconciliation against sprint-1's own 38, which never included PROP-307e (a sprint-2-only addition) -- promoting them to '31' would instead BREAK the 30+8=38 reconciliation math this section performs. The 'Deferred-obligation disposition' section's own heading ('30 targeted for closure this sprint', line 176) correctly stays 30 for the same reason: it is the sprint-1-reconciliation figure, and the section's own 'PLUS the new PROP-307e' phrasing (line 184) already layers PROP-307e on top exactly as CRIT-205 now also does -- no other CRIT criterion or section needs a '31' it does not already have. '31' also appears once more, unrelatedly, at line 164 ('31 Tier>0 + 7 Tier-0' = 38) -- a different quantity (the Tier>0 subcount of sprint-1's original 38-item deferred ledger, unrelated to PROP-307e); this is a coincidental reuse of the same numeral for a different fact, not an inconsistency, and was independently cross-verified against the real ledger (see structural_integrity evidence below): 31 tier>0 + 7 tier0 = 38 skipped entries in state.json, exact match. The disputed sentence at lines 162-164 ('25 Tier-0 obligations surfaced by the Phase 5-6 gate check') was also independently re-derived against state.json rather than assumed: of state.json's 28 total tier-0 obligations, exactly 3 (PROP-307a/b/f, i.e. PROP-115/116/120) are sprint-2-new and did not exist when this sentence was first written (Phase 1a/1b, before round 6 added PROP-307f) -- 28-3=25, and of those 25 sprint-1-original tier-0 obligations, 18 are proved + 7 skipped = 25, with the 4 named promoted-to-proved IDs (PROP-106a/403a/105g/202e) all independently confirmed status:proved in state.json. No inconsistency found anywhere."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Freshly re-executed this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0. No regression from round 10's documentation-only fix. CRIT-203's 9-step failure-injection coverage and both PROP-307e structural tests ('run.sh no longer CALLS the OLD lib/spawn-decision.js gate...', 'wake-gate.mjs ... genuinely calls decideColonySpawn then, if eligible, executeSpawnAttempt') observed passing directly in this session's own output."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/run.sh, ~/anicca/skills/self/spawn/scripts/wake-gate.mjs (both re-read in full this session)",
+          "description": "Independently re-verified (not trusting round 10's own claim): run.sh's active body is a thin wrapper that loads env then `exec`s into scripts/wake-gate.mjs -- 'spawn-decision'/'AgentMail'/'DigitalOcean' appear only inside a retirement-note comment block (lines documenting the OLD, now-removed path), never as an active require/import/call. wake-gate.mjs's runWakeGate() genuinely calls decideColonySpawn (imported as decideColonySpawnPure from ../lib/treasury-gate.mjs) and, only if decisionCore.eligible is true and not --dry-run, calls executeSpawnAttempt (imported as executeSpawnAttemptReal from ../lib/spawn-orchestrator.mjs). No regression from round 10. All files named in the contract's 'Files touched' section (spawn-orchestrator.mjs, gen-solana-wallet.sh, run.sh, wake-gate.mjs, and all 6 named test files under lib/__tests__/) independently confirmed present on disk via a real `ls`."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json proofObligations array (121 entries), independently queried this session",
+          "description": "Cross-validated the ENTIRE 38-item deferred-obligation enumeration in contracts/sprint-2.md (the 30 targeted [25 Tier>0 + 5 Tier-0] + 3 Tier-3 + 5 additionally-re-deferred) against state.json's own 38 status:'skipped' entries: the two 38-item ID sets are IDENTICAL (zero diff either direction). Also confirmed the 31 Tier>0 / 7 Tier-0 skipped-count split (line 164) matches state.json exactly (31 tier>0-skipped, 7 tier0-skipped), and that PROP-302b/PROP-303b/PROP-401a (the 'Tier-3' bucket) are genuinely tier:3 in state.json while PROP-302a/PROP-302c/PROP-303e/PROP-303f/PROP-203c (the 're-deferred' bucket) carry tiers 2/2/3/0/0 respectively -- confirming the contract's Tier-3-vs-re-deferred distinction is by REASON (real-money-spend vs missing-infrastructure), not raw tier field, exactly as the prose states, with zero contradiction."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json proofObligations, entry {id:'PROP-121', artifact:'...#PROP-307e'}",
+          "description": "FIND-017's state.json fix independently re-confirmed still present and unregressed: PROP-121 (tier:1, required:true, status:'pending', artifact:'specs/verification-architecture.md#PROP-307e', beadId:'BEAD-154') exists in the current 121-entry proofObligations array. CRIT-205's own passThreshold (now consistently '31') correctly gates on this entry's underlying call site existing, not on its promotion to 'proved', matching this criterion's own stated Phase-3/5 deferral of that promotion."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

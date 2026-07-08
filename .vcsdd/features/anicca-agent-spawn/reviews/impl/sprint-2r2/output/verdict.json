@@ -7,7 +7,8 @@
   "reviewContext": {
     "reviewType": "implementation",
     "contractPath": "contracts/sprint-2.md",
-    "contractDigest": "d4cdbe67c69a84ab7325d66ca7937d2773736c4f3cad33c6b79cf6a5393d08f9"
+    "contractDigest": "d4cdbe67c69a84ab7325d66ca7937d2773736c4f3cad33c6b79cf6a5393d08f9",
+    "note": "Phase 3 round 2 (fresh-context, zero prior-round trust). Round 1's FIND-001 (gas-seed reclaim gap) and FIND-002 (PROP-303c shelter-cost wiring gap) were re-verified from scratch against the current spawn-orchestrator.mjs and both hold as genuinely, correctly fixed -- see implementation_correctness/edge_case_coverage evidence below. Two NEW findings (FIND-003, FIND-004) were found by this round's own independent sweep."
   },
   "dimensions": [
     {
@@ -30,9 +31,7 @@
     {
       "name": "edge_case_coverage",
       "verdict": "FAIL",
-      "findings": [
-        "FIND-003"
-      ],
+      "findings": ["FIND-003"],
       "evidence": [
         {
           "type": "file",
@@ -54,9 +53,7 @@
     {
       "name": "implementation_correctness",
       "verdict": "FAIL",
-      "findings": [
-        "FIND-004"
-      ],
+      "findings": ["FIND-004"],
       "evidence": [
         {
           "type": "file",
@@ -125,15 +122,6 @@
     "previousFindingCount": 2,
     "allCriteriaEvaluated": true,
     "duplicateFindings": [],
-    "evaluatedCriteria": [
-      "CRIT-201",
-      "CRIT-202",
-      "CRIT-203",
-      "CRIT-204",
-      "CRIT-205",
-      "CRIT-206",
-      "CRIT-207",
-      "CRIT-208"
-    ]
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
   }
 }

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "blocking",
+  "description": "REQ-002/REQ-003/REQ-004 (behavioral-spec.md:74-146) all describe instance `id` as if it were a safe, opaque bookkeeping token, and REQ-002's own contract states wallets are 'persisted at <VINEYARD_HOME>/instances/<id>/{wallet.json,solana.json}' -- but nowhere in behavioral-spec.md (Non-functional Requirements 'Security constraints', REQ-002 Edge Cases, REQ-004 Edge Cases) is there any requirement that `id` be validated against a safe character set (e.g. `^[a-zA-Z0-9_-]+$`) before being used as a filesystem path segment. The ground-truth plan confirms this is not merely a spec-wording gap but a real, unmitigated code path: `core/wallet.mjs`'s `instanceDir(id, env)` (plan line 298-300) is `path.join(vineyardHome(env), 'instances', id)` with zero sanitization of `id`, and `id` is fully attacker/caller-controlled -- `api/server.mjs`'s `POST /spawn` handler (plan line 949) does `const id = req.body?.id || crypto.randomBytes(4).toString('hex')`, i.e. any HTTP caller can supply an arbitrary string as `id`. A caller supplying `id: \"../../outside-instances\"` (or with enough `../` segments, any absolute path reachable from VINEYARD_HOME) causes `generateWallet` to `fs.mkdirSync`/`fs.writeFileSync` a real EVM+Solana keypair OUTSIDE the `<VINEYARD_HOME>/instances/` directory entirely -- a directory-traversal / arbitrary-file-write vulnerability that breaks REQ-002's own stated persistence-path contract and the isolation boundary the whole Purity Boundary Map / Effectful-shell table (verification-architecture.md:22-25) assumes holds for every `instanceDir`-scoped function (`generateWallet`, `resolveEvmPrivateKey`, `resolveSolanaSecret`, `registerSpawn`'s downstream consumers). `core/registry.mjs`'s `registerSpawn` (plan line 656-664) has the identical gap -- it only checks for an exact-string duplicate `id`, never a format constraint. This is a genuinely new gap, not a re-surfacing of FIND-001/002/003/004 -- it exists independently of whether the ambient-env-var override is present, and is not covered by any of the 13 `core/wallet.test.mjs` tests (all of which use safe, alphanumeric-only ids like 'alpha'/'instance-a'/'zeta').",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/behavioral-spec.md",
+    "lineRange": "74-91",
+    "snippet": "REQ-002: ...persisted at `<VINEYARD_HOME>/instances/<id>/{wallet.json,solana.json}`... REQ-003: ...resolve ONLY the key material stored under `<VINEYARD_HOME>/instances/X/`... [no id-format/sanitization requirement stated anywhere for either REQ]"
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "298-300, 656-664, 949",
+    "snippet": "export function instanceDir(id, env = process.env) { return path.join(vineyardHome(env), 'instances', id); }  ... export function registerSpawn({ id, evm, solana, ... }, env = process.env) { const rows = readRegistry(env); if (rows.some((r) => r.id === id)) { throw ... } ... }  ... app.post('/spawn', (req, res) => { const id = req.body?.id || crypto.randomBytes(4).toString('hex'); ... })"
+  },
+  "routeToPhase": "1c"
+}

@@ -129,7 +129,7 @@
       "createdAt": "2026-07-07T07:54:18.175Z",
       "mode": "strict",
       "currentPhase": "2b",
-      "updatedAt": "2026-07-08T06:23:25.378Z"
+      "updatedAt": "2026-07-08T12:41:39.839Z"
     },
     "anicca-agent-lending": {
       "status": "active",
@@ -137,15 +137,36 @@
       "mode": "strict",
       "language": "typescript",
       "currentPhase": "complete",
-      "updatedAt": "2026-07-08T06:05:40.464Z"
+      "updatedAt": "2026-07-08T10:52:10.874Z"
     },
     "claude-p-loop-verification": {
       "status": "active",
       "createdAt": "2026-07-08T05:36:05.417Z",
       "mode": "lean",
+      "currentPhase": "6",
+      "updatedAt": "2026-07-08T08:34:09.491Z"
+    },
+    "claude-p-ceo-loop": {
+      "status": "active",
+      "createdAt": "2026-07-08T08:51:49.742Z",
+      "mode": "lean",
       "currentPhase": "2a",
-      "updatedAt": "2026-07-08T06:40:39.260Z"
+      "updatedAt": "2026-07-08T12:15:32.420Z"
+    },
+    "gig-feasibility-volume": {
+      "status": "active",
+      "createdAt": "2026-07-08T11:53:58.474Z",
+      "mode": "lean",
+      "currentPhase": "1c",
+      "updatedAt": "2026-07-08T12:38:38.562Z"
+    },
+    "anicca-harness-tooluse-health": {
+      "status": "active",
+      "createdAt": "2026-07-08T12:47:30.205Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-08T12:47:30.205Z"
     }
   },
-  "activeFeature": "claude-p-loop-verification"
+  "activeFeature": "anicca-harness-tooluse-health"
 }

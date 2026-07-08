@@ -1,0 +1,43 @@
+{
+  "featureName": "gig-feasibility-volume",
+  "mode": "lean",
+  "currentPhase": "1c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-08T00:00:00.000Z",
+      "reason": "behavioral-spec.md written: 16 EARS requirements (REQ-GFV-001..016) covering feasibility gate, listing model, proposal-volume maximization, 占い reclassification, category-level funnel/EDD, never-refuse clause"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-08T00:00:00.000Z",
+      "reason": "verification-architecture.md written: purity boundary map + 21 proof obligations (PROP-001..021, 18 required:true / 3 evidence-only) traced 1:1 to every REQ-GFV item"
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-08T00:00:02.000Z",
+      "reason": "Revision (team-lead directive, confirmed final design doc re-read): behavioral-spec.md grew to REQ-GFV-001..020 (listing model, feasibility gate, volume-max proposals, 占い reclassification, category funnel/EDD, dual search+metrics self-improve, initial BP playbook seed) and verification-architecture.md to PROP-001..030 in an earlier pass; this revision REMOVES the prior REQ-GFV-020's AI-use-disclosure / independent human-style-pass / Coconala-ToS-auto-responder content and its PROP-029/PROP-030 (fabricated — cited a design-doc section, '⚠️ Coconala ToS 制約', that does not exist in the confirmed design doc; explicitly prohibited by Dais 2026-07-08), narrowing REQ-GFV-020 to ONLY the design doc's real §品質・自然さ individualization requirement (no unmodified template sends). required:true PROP count corrected 27→25; total PROPs 30→28. No other REQ/PROP changed."
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-08T12:38:38.561Z",
+      "reason": "gig spec finalized (both channels, search+metrics self-improve, BP playbook, AI-disclosure removed); entering fresh adversary review"
+    }
+  ],
+  "iterations": {
+    "1c": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-gig-feasibility-volume-1783511638475",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-08T11:53:58.474Z",
+  "updatedAt": "2026-07-08T12:38:38.562Z"
+}

@@ -1,0 +1,38 @@
+{
+  "feature": "vineyard-mvp",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-05T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:86-133", "description": "FIND-001 CLOSED: REQ-003 now states THE SYSTEM SHALL NOT expose any ambient env-var override, and gives the exact rationale (persistent multi-instance api/server.mjs) FIND-001 required. Cross-checked against ground-truth plan lines 283-451: `resolveEvmPrivateKey`/`resolveSolanaSecret` (lines 436-441) read ONLY `readJsonField(instanceDir(id, env), ...)` -- grepped the entire plan file for `VINEYARD_EVM_PRIVATE_KEY`/`VINEYARD_SOLANA_PRIVATE_KEY`: the only hits are in `.env.example`'s comment explaining the override does NOT exist (line 143) and in the two REGRESSION tests (lines 514-538) that assert zero effect -- zero hits in any executable resolver/route code. `generateWallet`'s return value (line 425: `{id, evm:{address}, solana:{address}}`) and the CLI/API spawn handlers (lines 889, 960) never surface `overrideKeys`/`privateKey` back to the caller or to any log -- the new id-scoped bring-your-own-key path does not introduce a new leak of its own."},
+        {"type": "file", "location": "specs/behavioral-spec.md:454-463", "description": "FIND-004 CLOSED: the 'Scope boundary note' now has a third paragraph explicitly naming discrepancy D2 (BlockRunAI/polymarket-agent is a separate external repo Vineyard deliberately does not vendor) with the same 'flagged here, not silently invented' framing already used for D8/REQ-013 -- matches plan line 20 verbatim in substance."},
+        {"type": "file", "location": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md:390-426", "description": "Re-verified overrideKeys is silently ignored on re-spawn (lines 396-423: both wallet.json/solana.json branches check fs.existsSync FIRST before ever consulting overrideKeys) -- matches REQ-002/REQ-003's stated idempotent-ignore behavior."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:46", "description": "FIND-002 CLOSED: PROP-003 no longer claims fast-check fuzzes the env-override scenario; it now correctly states the ambient-override code path was deleted entirely ('there is no longer a footgun to fuzz') and that the REGRESSION tests instead prove the deleted branch cannot silently reappear -- consistent with the actual code (resolveEvmPrivateKey/resolveSolanaSecret never branch on env.VINEYARD_EVM_PRIVATE_KEY at all, confirmed by direct read of plan lines 436-441)."},
+        {"type": "file", "location": "specs/verification-architecture.md:19-20,27-28", "description": "FIND-003 CLOSED: re-read the ground-truth plan directly -- `sumRealized(lines)` (plan lines 796-809) and `applyDelta(costBasisObj, venue, delta)` (plan lines 1115-1124) both exist as real, separately-exported, zero-I/O pure kernel functions with exactly the signatures the doc claims; `realizedPnl(id, dataDir)` (plan lines 811-814) is genuinely the 1-line composition `sumRealized(readLedger(...))` the doc describes, and `adjust(venue, delta, filePath)` (plan lines 1126-1132) is genuinely the thin `read -> applyDelta -> write` wrapper the doc describes. The doc's claim that `seedIfEmpty` was NOT split (still inline I/O) also matches the code (plan lines 1134+). The purity claims now accurately describe the code."},
+        {"type": "file", "location": "specs/verification-architecture.md:514-538 (test evidence)", "description": "Confirmed the REGRESSION tests are non-tautological: they exercise the real resolveEvmPrivateKey/resolveSolanaSecret implementation (which structurally cannot read env.VINEYARD_EVM_PRIVATE_KEY at all per its actual body) against both a clean env and an env with the ambient var forcibly set, and additionally assert an unspawned id still resolves null even with the ambient var present -- this is a genuine regression guard against the override branch being silently reintroduced, not a test that would pass trivially regardless of implementation."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

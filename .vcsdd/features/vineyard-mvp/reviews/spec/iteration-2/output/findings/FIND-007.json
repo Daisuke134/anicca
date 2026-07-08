@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "verification-architecture.md's Proof Obligations table (lines 42-61) and Phase 5 hand-off notes (lines 95-104) enumerate exactly what Phase 5 must re-verify as the 'money-safety core' (PROP-003 key isolation, PROP-004 no key leak in registry, PROP-010 no hardcoded founder-wallet fallback, PROP-018 no fake/mock code path) -- but there is no proof obligation anywhere in the table for (a) `id`-parameter format/sanitization before it is used as a filesystem path segment (the FIND-005 gap), or (b) any access-control/authentication requirement on the money-moving REST routes (`/fund`,`/trade`,`/redeem` -- the FIND-006 gap). PROP-003's own stated Tier-2 hardening plan (verification-architecture.md:46) says Phase 5 will fuzz 'many adversarial instance-id pairs (including ids sharing prefixes/substrings)' via fast-check -- this is the closest existing proof obligation to an id-safety property, yet it explicitly only varies id CONTENT for cross-id derivation/collision, never id STRINGS containing path-traversal sequences (`../`, absolute paths, null bytes) or the effect of such an id on the resolved FILE PATH escaping `<VINEYARD_HOME>/instances/` -- so even a diligent Phase 5 execution of PROP-003 exactly as specified would not catch FIND-005's vulnerability class. Because REQ-002/003/004 in behavioral-spec.md never state an id-format constraint or an API-authn requirement (FIND-005/006), verification-architecture.md has no REQ to trace a PROP back to for either property -- this is a verification_readiness gap that is a direct downstream consequence of the spec_fidelity gaps, not merely a duplicate of them: the document's own Purity/Proof-Obligation apparatus, exactly as designed, would let both regressions ship to Phase 6 undetected.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/verification-architecture.md",
+    "lineRange": "42-61, 95-104",
+    "snippet": "Proof Obligations table PROP-001..018 -- no row addresses id-parameter filesystem-path safety or REST-route authentication/authorization. Phase 5 hand-off notes list PROP-003/004/010/018 as the 'money-safety core' to re-verify, with no mention of API access control or id sanitization."
+  },
+  "corroboratingEvidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/verification-architecture.md",
+    "lineRange": "46",
+    "snippet": "PROP-003 ... hardened in Phase 5 ... via `fast-check` property-based generation of id pairs, confirming resolveEvmPrivateKey/resolveSolanaSecret for id B never equals, derives from, or falls back to id A's material for any generated pair [no mention of path-traversal-shaped ids or filesystem-escape assertions]"
+  },
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "security_surface",
+  "severity": "blocking",
+  "description": "REQ-015 (behavioral-spec.md:357-373) mandates that every CLI verb, including the real money-moving verbs `fund`/`trade`/`redeem`, is exposed identically via REST (`POST /fund`, `POST /trade`, `POST /redeem`), and REQ-016 (behavioral-spec.md:375-388) explicitly wants this API reachable by 'another AI agent... entirely programmatically without a human click' -- i.e. the spec deliberately designs for network-reachable, agent-driven invocation of real fund transfers, real market orders, and real redemptions. Yet the Non-functional Requirements 'Security constraints' section (behavioral-spec.md:44-47) and every REQ-006/009/010 Acceptance Criteria address ONLY which on-chain path funds/orders/redemptions must route through -- none of them, nor verification-architecture.md's Proof Obligations table (PROP-006/009/010), require ANY authentication, API key, or authorization check on who is allowed to call these HTTP routes. The ground-truth plan confirms this is a real, unmitigated gap, not merely spec wording: `api/server.mjs`'s route handlers for `/fund` (plan line ~2403-2406), `/trade`, and `/redeem` (plan lines ~2418-2441) perform zero authentication -- they take `id` directly from the request body/URL param, resolve that id's real private key via `resolveEvmPrivateKey(id)`, and immediately invoke the real fund/trade/redeem subprocess with no API-key/bearer-token/allowlist check anywhere in the file, and `app.listen(PORT, ...)` (plan line 973-975) binds with no host restriction (defaults to all interfaces, not `127.0.0.1`-only). Combined with REQ-002/003's `overrideKeys` bring-your-own-key spawn path (which the spec is otherwise careful to scope id-only, per FIND-001/002's now-closed fix), the net effect is: any network caller who can reach the API port can spawn instances, fund/trade/redeem against ANY already-known instance id (ids are visible in plain `GET /list` per REQ-004/PROP-004, which is itself unauthenticated) with zero credential of any kind -- a complete absence of access control on a real-money-moving, agent-facing surface in a `strict`-mode feature whose entire REQ-003 rationale is 'a bug in one instance's code path [could] drain a different instance's real funds' (behavioral-spec.md:120-121). This is an entirely new gap, independent of FIND-001-004, and equally within REQ-003's own stated P0 threat model.",
+  "evidence": {
+    "filePath": ".vcsdd/features/vineyard-mvp/specs/behavioral-spec.md",
+    "lineRange": "44-47, 357-388",
+    "snippet": "Security constraints: `wallet.json`/`solana.json` are written `chmod 600`. Private key material ... is NEVER returned by `resolveAddresses()`, `GET /list`, `GET /status/:id`, or logged... [no requirement anywhere that POST /fund, /trade, /redeem require any caller authentication/authorization]"
+  },
+  "corroboratingEvidence": {
+    "filePath": "docs/superpowers/plans/2026-07-05-vineyard-mvp.md",
+    "lineRange": "2403-2441, 973-975",
+    "snippet": "app.post('/fund', ...) { const { id, amount, sourceKey } = req.body || {}; const pk = resolveEvmPrivateKey(id); ... const result = await polymarketEngine.fund({ evmPrivateKey: pk, sourceKey, fundUsd: Number(amount || 2) }); ... }  ... const PORT = process.env.PORT || 3000; ... app.listen(PORT, ...)  [no auth middleware, no API key check, no host-binding restriction anywhere in api/server.mjs]"
+  },
+  "routeToPhase": "1c"
+}

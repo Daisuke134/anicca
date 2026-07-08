@@ -1,0 +1,13 @@
+{
+  "reviewType": "implementation",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "contract": ["contracts/sprint-2.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs", "~/anicca/skills/self/spawn/run.sh", "~/anicca/skills/self/spawn/scripts/wake-gate.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Phase 3 implementation review, sprint 2, round 2 of this Phase (round 1 originally FAILed with FIND-001/FIND-002 -- money-safety gap in the gas-seed reclaim mechanism and PROP-303c shelter-cost wiring -- both were fixed and the fix went through 11 rounds of subsequent contract-review hardening, now approved with 0 findings). This is a full-context fresh adversary review of the ACTUAL DELIVERED CODE. Read the full REQ-204/REQ-307 sections of behavioral-spec.md (including all correction paragraphs from FIND-001 through FIND-018) and contracts/sprint-2.md in full before judging anything. Independently run the real tests yourself and verify the money-safety-critical reclaim mechanism and the PROP-303c shelter-cost wiring genuinely work as specified -- this feature closes a real gap where a spawn attempt failing after the gas-seed transfer would previously strand real funds permanently."
+}

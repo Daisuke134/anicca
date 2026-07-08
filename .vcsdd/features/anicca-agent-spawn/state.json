@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "3",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -143,18 +143,32 @@
       "to": "3",
       "timestamp": "2026-07-08T12:20:11.773Z",
       "reason": "Escalation approved per active /goal zero-pause-to-ask authorization + established session precedent. Contract review round-11 PASS (0 findings, all 8 CRIT). See escalation-2026-07-08T12-19-40-047Z.md Resolution section."
+    },
+    {
+      "from": "3",
+      "to": "4",
+      "timestamp": "2026-07-08T12:41:39.828Z",
+      "reason": "Phase 3 round 2 FAIL: FIND-003 (edge_case_coverage, medium, registry-append transient-retry unimplemented) + FIND-004 (implementation_correctness, low, Solana independent-derivation not genuinely independent). Routing to fix.",
+      "sprint": 2
+    },
+    {
+      "from": "4",
+      "to": "2b",
+      "timestamp": "2026-07-08T12:41:39.839Z",
+      "reason": "Routing both findings to Phase 2b per their own routeToPhase field.",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 1,
-    "4": 1,
+    "4": 2,
     "5": 1,
     "6": 1,
     "1a": 3,
     "1b": 3,
     "1c": 2,
     "2a": 2,
-    "2b": 3,
+    "2b": 4,
     "2c": 3,
     "complete": 1
   },
@@ -3084,11 +3098,15 @@
   },
   "gates": {
     "3": {
-      "verdict": "PASS",
-      "timestamp": "2026-07-08T12:20:11.688Z",
-      "reviewedBy": "human",
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T12:38:22.729Z",
+      "reviewedBy": "adversary",
       "details": {
-        "note": "Escalation approved (escalation-2026-07-08T12-19-40-047Z.md): contract-review negotiationRound<=2 schema ceiling vs a genuinely 11-round-long review (rounds 7-11 this cycle, on top of the earlier-approved rounds 1-6). Finding severity diminished monotonically to 0 at round 11."
+        "findings": [
+          "FIND-003",
+          "FIND-004"
+        ],
+        "note": "Phase 3 round 2: FIND-003 (edge_case_coverage, medium, REQ-305 registry-append transient-retry unimplemented) + FIND-004 (implementation_correctness, low, CRIT-207 Solana independent-derivation not genuinely independent). Round 1 findings (FIND-001/002) re-verified from scratch and hold as correctly fixed."
       }
     },
     "6": {
@@ -3127,5 +3145,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-08T12:20:11.774Z"
+  "updatedAt": "2026-07-08T12:41:39.839Z"
 }
