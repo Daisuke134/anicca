@@ -53,6 +53,61 @@
 
 全 tmux core = `--model sonnet`（現状維持・確認済み）。self-fix / adversary = Opus 4.8（モデル分業表準拠）。
 
+## Cadence Contract（health の bar、Dais 2026-07-08 指示）
+
+health の判定基準は「artifact が存在する」ではなく「**今日、契約した頻度で成果が出たか**」とする。各 loop は cadence contract を宣言し、healthcheck はそれで判定する:
+
+| loop | cadence contract（MUST） | 判定（JST 日境界） |
+|---|---|---|
+| clip | 1 reel/日/アカウント 投稿 | 当日 ledger 行 + live 検証（IG 実ページ） |
+| affiliate | 1 slideshow/日 投稿 | 当日 ledger 行 + yt-dlp JSON 取得成功 |
+| video | warmup 中: warmup_day が毎日 +1 進行。卒業後: 1 投稿/日 | 当日 audit ledger 行の内容で判定 |
+| gig | N 件/日 応募（N は agent が市場を見て設定、下限1）+ funnel 更新 | applied.jsonl 当日行 |
+| bounty | 1 巡回/日（checked が増加） | gated.json の checked 増分 |
+| pm-earner | 1 pass/時 + redeem 確認/日 | earner.log + ledger |
+| founder-loop | 1 pass/日 + ledger 更新 | STATE.md mtime + ledger |
+
+- 当日 21:00 JST までに contract 未達 → healthcheck が self-fix.sh へ escalate（「7日前に投稿があるからOK」は不合格）。
+- 日次 scorecard mail: loop ごとに ✅posted-today / ❌missed + **streak（連続達成日数）**を表示。streak が health の KPI。
+- 既存 `OUT_STALE_HRS`（30h）方式はこの cadence contract 判定に置き換える。
+
+## EDD（Evaluation-Driven Development、self-improve の bar）
+
+verification（二値、self-heal の bar）と evaluation（スカラー、self-improve の目的関数）を分離する。**pm-trade の openevolve パターン（evaluator→score→adversary gate→昇格）を全 loop に一般化する。**
+
+| loop | evaluation metric（週次 score） | 改善対象（genome） |
+|---|---|---|
+| clip | views/reel（48h窓）+ follower 増分 + payout USDC | クリップ選定基準・caption・投稿時刻 |
+| affiliate | views/slideshow + commission JPY/週 | 商品選定・slideshow 構成 |
+| video | views/投稿 + 収益化進捗 | ニッチ・台本・頻度 |
+| gig | funnel: 応募→返信率→受注率→入金 JPY/週 | 提案文・案件選定基準・価格 |
+| bounty | survivors 発見数/週 + payout | board 選定・gate 条件 |
+| pm | realized PnL/週（既存 combined_score、実装済み） | 戦略コード（既存） |
+
+- 各 loop に `evaluator`（metrics ledger → score 算出、決定論）を置き、**「今週 > 先週」を machine-checkable にする**（昨日より今日、今日より明日多く稼ぐの実装形）。
+- 改善候補（prompt/戦略ファイルの変更）は fresh adversary（Opus 4.8）gate PASS でのみ昇格（pm-trade の promote_gate.sh を copy+tweak）。
+- mistakes は loop ごとの `state/lessons.jsonl` に記録し、pass 冒頭で必読。
+
+## Dashboard（aniccaai.com、Dais 指示）
+
+- 各 loop の状態を `~/anicca/skills/self/telemetry-collect.sh`（既存）を拡張して `loop-registry.json` に集約: {loop名, type, account, status(✅/❌ posted-today), streak, 当日 artifact URL, 週次 metric, 累計収益, model}。
+- dashboard-sync（Dais owned）が loop-registry.json を fetch → `apps/landing/public/dashboard.json` に "loops" セクションとして merge → aniccaai.com/dashboard に描画。
+- frontend 実装順序は規約通り: gpt-tasteskill → frontend-design → 実ブラウザ検証。
+- claude-p loop 自身は landing に直接 write しない（既存の write 制限を維持）。
+
+## Loop Scaling（fleet 増殖、self-improve の一部）
+
+- **scale-eligible 条件（決定論 gate）**: cadence streak ≥7日 AND 週次 evaluation score が閾値超 AND disk 空き ≥5GB。条件を満たした loop type は fleet 拡張可。
+- **spawner（ツール、判断は agent）**: `ig-account-create` skill（実証済み: email-only、@aiclipsvault）で新アカウント作成 → loop instance を `loop-registry.jsonl` に登録 → 既存 cli.sh を account 引数でパラメータ化した tmux core + healthcheck plist を自動生成（clip-producer の ANICCA_INSTANCE env パターンを copy）。
+- **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録。
+- 「1アカウントに投稿する clipping」→「数百アカウントに投稿する clipping factory」への道はこの registry+spawner が担う。
+
+## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合）
+
+- 手順: ①cron 棚卸し（enabled 103 jobs を earn投稿系/Life Manager系/インフラ系に分類、実施中）→ ②earn/投稿系 job を claude-p の tmux core / launchd に移植（skill 本体を ~/anicca/skills へ移設、fuel を openai-codex → Anthropic Sonnet に切替）→ ③Life Manager 系も claude-p loop 化 → ④インフラ系は healthcheck-runtime-loop + dashboard collector で置換 → ⑤OpenClaw gateway を disable して7日間並走観察 → ⑥問題なければ削除。
+- **削除前の MUST**: ~/.openclaw の state/ledger は anicca-dais repo に push 済みであることを確認（不可侵 store の保全）。最終削除は不可逆 broadcast に当たるため Dais の明示 go で実行。
+- 移行対象の確定リストは棚卸し結果を本 spec に追記して確定する。
+
 ## 除外（この spec のスコープ外）
 
-autohedge（DeepSeek・別プロジェクト）、daily-nl-report（automaton 帰属）、tier1/tier2（OpenClaw 共通基盤）、Franklin/automaton の body。
+autohedge（DeepSeek・別プロジェクト）、daily-nl-report（automaton 帰属）、Franklin/automaton の body。tier1/tier2 は OpenClaw 廃止と同時に healthcheck-runtime-loop 系へ吸収（上記⑥まで現状維持）。
