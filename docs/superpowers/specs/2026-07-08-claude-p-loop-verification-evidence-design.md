@@ -95,12 +95,17 @@ verification（二値、self-heal の bar）と evaluation（スカラー、self
 - frontend 実装順序は規約通り: gpt-tasteskill → frontend-design → 実ブラウザ検証。
 - claude-p loop 自身は landing に直接 write しない（既存の write 制限を維持）。
 
-## Loop Scaling（fleet 増殖、self-improve の一部）
+## Loop Scaling = 全 loop 共通の double-down 機構（Dais 2026-07-08: clipping 専用にしない）
 
-- **scale-eligible 条件（決定論 gate）**: cadence streak ≥7日 AND 週次 evaluation score が閾値超 AND disk 空き ≥5GB。条件を満たした loop type は fleet 拡張可。
-- **spawner（ツール、判断は agent）**: `ig-account-create` skill（実証済み: email-only、@aiclipsvault）で新アカウント作成 → loop instance を `loop-registry.jsonl` に登録 → 既存 cli.sh を account 引数でパラメータ化した tmux core + healthcheck plist を自動生成（clip-producer の ANICCA_INSTANCE env パターンを copy）。
-- **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録。
-- 「1アカウントに投稿する clipping」→「数百アカウントに投稿する clipping factory」への道はこの registry+spawner が担う。
+scaling は clip 固有機能ではなく、**self-improve の第3の出力**として全 loop 共通のハーネスに置く。金を最大化する entity の基本動作 = 「計測 → 稼いでいるものに資源を倍賭け、稼げないものを縮退 → 再計測」。
+
+- **portfolio allocator（週次、evaluator の直後）**: 全 loop の {週次 score, 実収益, streak} を読み、資源配分を判断する。判断は agent（Sonnet）、実行手段と gate は決定論ツール。
+  - **double-down（稼いでいる loop）**: (a) アカウント増殖（SNS系: spawner で新アカウント + core 複製） (b) pass 頻度 up（トレード系: interval 短縮） (c) 資本増額（pm/hl: ポジション上限 up、上限は config） (d) 変種展開（同じ型を隣接ニッチ/プラットフォームへ copy）
+  - **縮退（稼げない loop）**: pass 頻度 down → それでも0が続けば pause（削除はしない、registry に縮退理由を記録）
+- **scale-eligible 条件（決定論 gate、増殖の前提）**: cadence streak ≥7日 AND 週次 evaluation score が閾値超 AND **実収益 > 0 が ledger で検証済み** AND disk 空き ≥5GB。
+- **spawner（ツール、判断は agent）**: `ig-account-create` skill（実証済み: email-only、@aiclipsvault）等で新アカウント作成 → loop instance を `loop-registry.jsonl` に登録 → 既存 cli.sh を account 引数でパラメータ化した tmux core + healthcheck plist を自動生成（clip-producer の ANICCA_INSTANCE env パターンを copy）。SNS 以外の loop の double-down（頻度/資本）も同じ registry 経由で記録し dashboard に反映。
+- **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限・資本上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録 / 資本増額は on-chain 検証済み realized profit の範囲内。
+- 「1アカウントの clipping」→「数百アカウントの clipping factory」も、「PM の勝ち戦略に資本を寄せる」も、同一の allocator+registry+gate が担う。
 
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 
