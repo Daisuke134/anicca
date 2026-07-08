@@ -52,6 +52,10 @@ export const ALLOWED_EARN_SOURCES = new Set([
   // gig board using its OWN wallet + OWN ERC-8004 on-chain identity (posterAgentId/takerAgentId are
   // always derived from THIS instance's own key, never a user's) -- own identity, added 2026-07-07.
   "gig",
+  // earn/sol-trade: Franklin's OWN Solana wallet (8Fpqd, resolved per-instance via
+  // wallet-address-solana.mjs; the identity-match guard in sol-trade/run.sh HALTs any non-owner
+  // instance) doing REAL Jupiter DEX swaps -- own identity, added 2026-07-08 (franklin-earn-foundation).
+  "sol-trade",
 ]);
 
 // Sources that smell of using a USER's identity to earn. Explicit denylist so a typo'd or
