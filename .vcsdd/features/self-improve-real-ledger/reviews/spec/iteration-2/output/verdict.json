@@ -1,0 +1,8 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "dimensions": {"spec_fidelity": "FAIL", "verification_readiness": "PASS"},
+  "blockingFindings": 1, "majorFindings": 0, "minorFindings": 2,
+  "overall": "FAIL",
+  "summary": "Iteration 1's F-1 (execution locus), F-2 (3 call sites), F-3 (wiring-value verification), and F-4 (None-vs-resolved:False property) are all genuinely resolved, verified against real code. One new BLOCKING gap found: REQ-RL19's DENYLIST_MODULES extension omits the Python symbol is_profitable and its ledger_reader.py entry (with .py suffix) does not match real Python import syntax, so an EVOLVE-BLOCK candidate can import and call lib.ledger_reader.is_profitable completely undetected by scope_guard.check -- a concrete, demonstrated bypass of the gate-un-gameability property. Two minor findings: an ANICCA_HOME-environment-dependent flakiness risk in the unmodified DEFAULT_LEDGER_PATH regression test, and an unenumerated realized_gate dict schema shared across decide_promotion/compute_realized_gate/main's escalation check."
+}

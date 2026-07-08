@@ -29,19 +29,19 @@
   "gates": {
     "1c": {
       "verdict": "FAIL",
-      "timestamp": "2026-07-08T21:55:16.626Z",
+      "timestamp": "2026-07-08T22:04:59.394Z",
       "reviewedBy": "adversary",
       "details": {
-        "iteration": 1,
+        "iteration": 2,
         "blockingFindings": 1,
         "majorFindings": 0,
         "minorFindings": 2
       },
       "adversaryVerdict": "FAIL",
-      "adversaryReviewedAt": "2026-07-08T21:55:16.626Z"
+      "adversaryReviewedAt": "2026-07-08T22:04:59.394Z"
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-08T21:34:07.648Z",
-  "updatedAt": "2026-07-08T21:55:16.627Z"
+  "updatedAt": "2026-07-08T22:04:59.394Z"
 }

@@ -296,3 +296,4 @@
 {"timestamp":"2026-07-08T21:48:41.405Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-08T21:48:41.406Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"1a","to":"1b","iteration":1,"phase":"1b"}
 {"timestamp":"2026-07-08T21:55:16.628Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T22:04:59.395Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}

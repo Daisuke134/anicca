@@ -118,7 +118,13 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
   present (computed once at import time via the SAME REQ-RL1 logic, for any external caller that
   references it directly, and to keep the pre-existing test asserting its shape passing unmodified
   — see verification-architecture.md's regression table) but is NEVER the value `realized_summary`
-  actually uses internally when called with no explicit path.
+  actually uses internally when called with no explicit path. Because `DEFAULT_LEDGER_PATH` now
+  honors `ANICCA_HOME` at import time, the pre-existing
+  `test_realized_summary_default_path_points_at_the_real_earn_ledger_location` assertion
+  (`endswith("anicca/skills/earn/state/earn-ledger.jsonl")`) is environment-sensitive: the
+  regression suite's documented execution environment (verification-architecture.md Regression
+  Table) SHALL run with `ANICCA_HOME` unset, which is also the OSS checkout's own production
+  condition (added at spec-review iteration 2, finding F-6).
 
 - **REQ-RL4** `realized_summary(...)`'s returned dict SHALL gain two new keys: `resolved: bool` and
   `resolution_source: str`, alongside its existing `ledger_path`/`total_rows`/
@@ -209,6 +215,29 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
   human/adversary reviewing the run later sees WHY real data overrode an otherwise-fixture-passing
   candidate, not just a bare `promote: false`.
 
+- **REQ-RL13a** (added at spec-review iteration 2, finding F-7 — the canonical `realized_gate`
+  dict schema; `compute_realized_gate` SHALL return EXACTLY these keys, and `decide_promotion` and
+  `promote_gate_run.py::main`'s escalation check SHALL consume them by these EXACT names):
+
+  | key | type | meaning |
+  |---|---|---|
+  | `resolved` | bool | REQ-RL1's path resolution succeeded for THIS instance (False → REQ-RL7 unconditional block) |
+  | `resolution_source` | str | which REQ-RL1 branch fired (mirrors REQ-RL4) |
+  | `ledger_path` | str | the resolved path actually read |
+  | `row_count` | int | confirmed rows inside the operating window (REQ-RL8) |
+  | `sufficient` | bool | `row_count >= MIN_REALIZED_ROWS_FOR_TREND` (REQ-RL10/RL11's shared switch) |
+  | `window_net_usd` | float | REQ-RL8's whole-window realized net |
+  | `first_half_net_usd` | float | REQ-RL8 |
+  | `second_half_net_usd` | float | REQ-RL8 |
+  | `worsening` | bool | REQ-RL9's output |
+  | `trend_blocks` | bool | REQ-RL10's output (True → block + escalation) |
+  | `realism_gap_blocks` | bool | REQ-RL11's output (True → block + escalation) |
+  | `window_start_ts` | float | REQ-RL12's generation start (0.0 when no promotion commit exists) |
+  | `window_end_ts` | float | the gate-run moment |
+
+  No other keys are permitted; adding one later requires a spec revision (this table is the ONE
+  written contract both consumers verify against, per finding F-7).
+
 ### Group RL-EVAL — honest `data_source` tagging (no overclaim of a real-data replay that does not exist)
 
 - **REQ-RL14** `evaluator.py::evaluate()` and `evaluate_stage2()`'s returned dict SHALL gain a
@@ -271,12 +300,26 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
 
 ### Group RL-SAFE — money-safety restated and extended (no weakening of any prior invariant)
 
-- **REQ-RL19** `lib/scope_guard.py::DENYLIST_MODULES` (REQ-DL1) SHALL be EXTENDED (never shrunk,
-  never reordered in a way that drops an existing entry) to also include this feature's own new
-  harness-file/symbol names: `"ledger_reader.py"`, `"resolve_ledger_path"`, `"is_confirmed"`,
-  `"realized_summary"`, `"promotion_history.py"`, `"last_promotion_ts"`, `"realized_gate"` — the
-  SAME "the harness/runner itself is never EVOLVE-BLOCK-editable" protection REQ-DL1 already gives
-  `openevolve-run.py`/`config.yaml`, applied to this feature's own new files.
+- **REQ-RL19** (revised at spec-review iteration 2, finding F-5) `lib/scope_guard.py::
+  DENYLIST_MODULES` (REQ-DL1) SHALL be EXTENDED (never shrunk, never reordered in a way that
+  drops an existing entry) to also include this feature's own new harness-file/symbol names, in
+  forms that ACTUALLY MATCH realistic Python import/usage text under `scan_denylisted_imports`'s
+  plain-substring scan: `"ledger_reader"` (NO `.py` suffix — the suffixed form never appears in
+  an import statement, so it can never match; the unsuffixed form matches `import
+  lib.ledger_reader`, `from lib import ledger_reader`, and any attribute usage of the module
+  name), `"is_profitable"` (the Python snake_case symbol this feature's ledger_reader.py exports
+  — distinct, under a substring scan, from the pre-existing JS camelCase `"isProfitable"`
+  entry), `"resolve_ledger_path"`, `"is_confirmed"`, `"realized_summary"`,
+  `"promotion_history"` (NO `.py` suffix, same reasoning), `"last_promotion_ts"`,
+  `"realized_gate"` — the SAME "the harness/runner itself is never EVOLVE-BLOCK-editable"
+  protection REQ-DL1 already gives `openevolve-run.py`/`config.yaml`, applied to this feature's
+  own new files. A false-positive block from these substrings (a candidate that innocently names
+  a local variable `is_confirmed`) is ACCEPTED by design — this gate is conservative
+  (false-block tolerable, false-promote not), and the pre-existing denylist already carries the
+  same property. PROP-RL-SAFE1 SHALL additionally assert, as executable evidence against
+  F-5's exact bypass, that `scan_denylisted_imports("from lib.ledger_reader import
+  is_profitable", DENYLIST_MODULES)` and `scan_denylisted_imports("import lib.ledger_reader as
+  lr\nlr.is_profitable(row)", DENYLIST_MODULES)` both return a non-empty match list.
 
 - **REQ-RL20** No function added by this feature, anywhere, SHALL write to `earn-ledger.jsonl` or
   any other live-system state file — verified by the SAME static source-text-scan technique

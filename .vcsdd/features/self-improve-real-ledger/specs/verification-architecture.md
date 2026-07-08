@@ -110,6 +110,14 @@ class of defect this feature exists to close; see behavioral-spec.md EDGE-RL5a).
 
 ## Regression Table (INV-RL5 — the 44 pre-existing tests, plus adjacent suites, MUST stay green)
 
+**Execution environment (added at spec-review iteration 2, finding F-6):** every regression and
+live-tier run below MUST execute with `ANICCA_HOME` unset in the process environment (the OSS
+checkout's own production condition). `DEFAULT_LEDGER_PATH` honors `ANICCA_HOME` at import time
+(REQ-RL3), so the pre-existing `endswith("anicca/skills/earn/state/earn-ledger.jsonl")` assertion
+is environment-sensitive by design; ANICCA_HOME-set behavior is covered separately by the new
+PROP-RL-ID* tests via monkeypatched env + fresh resolution calls, never by mutating the ambient
+shell environment of the regression run.
+
 | suite | count | why it could break | how this feature avoids it |
 |---|---|---|---|
 | `skills/earn/self-improve/tests/*.py` (existing) | 44 | `DEFAULT_LEDGER_PATH` attribute removal/rename; `decide_promotion`'s signature change; `evaluate()`'s dict shape change | `DEFAULT_LEDGER_PATH` kept (REQ-RL3); `decide_promotion`'s new param is keyword-only with a safe default (REQ-RL18); `evaluate()` only ADDS a `data_source` key, no existing key removed/renamed (REQ-RL14) — verified by re-running this exact suite, asserting the SAME 44 test IDs collect and pass, not just "some tests pass" |
