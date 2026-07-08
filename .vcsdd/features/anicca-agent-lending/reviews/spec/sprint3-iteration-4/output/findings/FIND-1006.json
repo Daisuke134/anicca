@@ -1,0 +1,40 @@
+{
+  "findingId": "FIND-1006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "This round's FIND-1004 fix correctly adds `balanceUsd` to REQ-117 step 6's getCitizen return-shape enumeration, but does NOT act on FIND-1004's own explicit recommendation to 'remove the vague trailing `...`' -- the enumeration (behavioral-spec.md line 2614) still reads `{id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd, ...}`. This review empirically confirmed, via REAL execution against the unmodified `lending-orchestrator.mjs`/`lending-gate.mjs`, that this residual trailing-`...` ambiguity is NOT cosmetic: it is the ONLY textual signal that could cover two OTHER fields the SAME re-check code path also requires -- `fuel` and `humanDependencies` -- and a getCitizen closure built from a literal, narrow reading of the explicitly-named field list (exactly the reading that produced FIND-1004's own balanceUsd omission) reproduces the IDENTICAL silent-refusal defect class, just via a different missing field and a different refusal reason. `runLockedIssuance`'s step-6 fresh recheck calls `isBorrowerEligible({borrowerAgent: freshBorrower, ...})` (lending-orchestrator.mjs:194-200), which calls `isSelfFunded(borrowerAgent)` (lending-gate.mjs:108) directly on whatever `getCitizen` returned for the borrower -- and `isSelfFunded` (`_shared/lib/is-self-funded.mjs:68-70`) fail-closed-denies (`hasOwnWallet(agent) && fuelIsOwnFunded(agent) && hasNoHumanDependency(agent)`) unless the object carries a recognized `agent.fuel.provider` AND an `agent.humanDependencies` array with `.length===0` -- neither of which appears anywhere in step 6's own enumerated field list. This is the SAME mechanism, SAME severity class, and SAME silent (non-crashing, exit-0, indistinguishable-from-a-healthy-no-op) failure mode FIND-1004 just fixed for `balanceUsd` -- discovered because the fix pattern this feature has followed for 2 consecutive rounds (FIND-1004 this round, the crash fix FIND-1003 the round before) is REACTIVE: patch the ONE field the LAST finding named, without addressing why a hand-curated field-enumeration approach keeps omitting load-bearing fields one at a time. Two readings of the text exist: (a) 'returns that SAME citizen record shape steps 1-5 already consume' (the prose immediately preceding the bracketed shape) could mean the closure passes through the REAL registry record object wholesale (which would already include `fuel`/`humanDependencies`, since step 4's own `isSelfFunded(citizen)` filter already requires them on the SAME registry read) -- under this reading there is no bug; (b) the bracketed `{id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd, ...}` is read as the authoritative field list to hand-construct -- under this reading (the SAME reading that produced FIND-1004), the object is missing `fuel`/`humanDependencies` and the borrower is silently, permanently refused as `not_self_funded` regardless of its real qualification. Because reading (b) is not merely hypothetical -- it is the EXACT reading responsible for FIND-1004 one round ago -- and because the trailing `...` FIND-1004 asked to have removed is still present, this ambiguity remains live and, per this review's own empirical test, still exploitable.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2605-2617 (REQ-117 step 6, FIND-1004 correction)",
+      "snippet": "returns that SAME citizen record shape steps 1-5 already consume, PLUS a fresh `balanceUsd` field ... `{id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd, ...}` -- `balanceUsd` fetched via the SAME `_shared/lib/usdc.mjs::usdcBalance(...)` primitive step 4 already uses"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs",
+      "lineRange": "194-200 (runLockedIssuance, step-6 fresh recheck)",
+      "snippet": "const eligibility = isBorrowerEligible({ borrowerAgent: freshBorrower, loanRows, borrowerId, borrowerBalanceUsd: freshBorrower.balanceUsd, lenderId });"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/economy/lending/lib/lending-gate.mjs",
+      "lineRange": "100-108 (isBorrowerEligible)",
+      "snippet": "if (!isSelfFunded(borrowerAgent)) return { eligible: false, reason: \"not_self_funded\" };"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/_shared/lib/is-self-funded.mjs",
+      "lineRange": "30-70",
+      "snippet": "function hasOwnWallet(agent) {...Boolean(wallet.evm) || Boolean(wallet.solana)} ... function fuelIsOwnFunded(agent) {...OWN_FUNDED_FUEL_PROVIDERS.has(provider)} ... function hasNoHumanDependency(agent) {...deps.length === 0} ... export function isSelfFunded(agent) { return hasOwnWallet(agent) && fuelIsOwnFunded(agent) && hasNoHumanDependency(agent); }"
+    },
+    {
+      "type": "test-output",
+      "location": "fresh execution this review, `node` against the real, unmodified lending-orchestrator.mjs/lending-gate.mjs/is-self-funded.mjs, deps.getCitizen returning EXACTLY the literal enumerated shape `{id, wallet:{evm:true}, walletAddress:{evm}, coLocatedWithCoordinator:true, balanceUsd}` -- no `fuel`, no `humanDependencies` -- for a fixture representing PROP-117c's own fixture-3 scenario (one broke, one surplus, both otherwise fully qualifying, self-funded per the ORIGINAL registry record used at step 4's own filter)",
+      "description": "`await executeLoanIssuanceAttempt({lenderId:'lenderA', borrowerId:'borrowerB', nowMs}, {getCitizen, gojoLogRows:[], ledgerFile, lockStatePath, disburse: stub})` (correct 2-argument call, `balanceUsd` present per this round's own fix) returned `{\"status\":\"refused\",\"reason\":\"not_self_funded\"}` -- a silent, permanent, exit-0 refusal, for the exact fixture-3 scenario PROP-117c is named to prove reaches `active`. A control run with the SAME shape PLUS `fuel:{provider:\"x402\"}, humanDependencies:[]` reached `{\"status\":\"active\",\"loanId\":\"loan_lenderA_1\"}`, confirming `fuel`/`humanDependencies` (not `balanceUsd` this time) are the missing ingredient under this literal reading."
+    }
+  ],
+  "recommendation": "Replace the field-enumeration approach entirely rather than patching another named field: state that `deps.getCitizen`'s closure SHALL return the REAL registry record object for that id (the SAME object step 1's `ensureCitizensRegistry` read already produces and step 4 already runs `isSelfFunded`/`coLocatedWithCoordinator`/`wallet.evm` checks against), with a fresh `balanceUsd` field MERGED on via object spread (`{...registryCitizen, balanceUsd}`) -- NEVER a hand-typed object literal naming a subset of fields. Delete the bracketed `{id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd, ...}` illustrative shape entirely (per FIND-1004's own already-stated, not-yet-acted-on instruction to remove the trailing `...`) since ANY enumerated-subset shape is structurally prone to omitting whatever field the NEXT downstream consumer happens to need (this round: `fuel`/`humanDependencies` for `isSelfFunded`; a future round could just as easily be some other field some other consumer needs) -- this is the same defect class recurring for a third time (FIND-1003: missing 2nd arg entirely; FIND-1004: missing `balanceUsd`; this finding: missing `fuel`/`humanDependencies`), and only a 'full record, never a subset' instruction closes the whole class at once rather than one field at a time.",
+  "routeToPhase": "1a"
+}

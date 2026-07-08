@@ -2608,14 +2608,25 @@ live network calls or Base-mainnet RPC reads — consistent with this document's
    SYSTEM SHALL supply `deps.getCitizen` as a real, production `async (id) => {...}` closure that performs
    a FRESH read of the citizens registry (step 1's own `ensureCitizensRegistry`-backed read, re-invoked
    per call, never a snapshot captured once at wake start and reused — mirrors REQ-106's own "never rely
-   on a pre-lock snapshot alone" discipline, extended here to citizen-record freshness) and returns that
-   SAME citizen record shape steps 1-5 already consume, **PLUS a fresh `balanceUsd` field (corrected,
-   2026-07-08, Phase 1c iteration-3 review FIND-1004, critical): `{id, wallet, walletAddress,
-   coLocatedWithCoordinator, balanceUsd, ...}` — `balanceUsd` fetched via the SAME
-   `_shared/lib/usdc.mjs::usdcBalance(citizen.walletAddress.evm, {fetchImpl})` primitive step 4 already
-   uses, re-fetched fresh on THIS SAME call (never step 4's own earlier-in-the-wake reading reused, since
-   step 6 is REQ-106's own documented "fresh recheck" point). Omitting `balanceUsd` is NOT merely
-   incomplete — the real, unmodified `runLockedIssuance` (step 6's own internals) reads
+   on a pre-lock snapshot alone" discipline, extended here to citizen-record freshness). **Corrected
+   (2026-07-08, Phase 1c iteration-4 review FIND-1006, critical — supersedes iteration-3's own
+   hand-enumerated-field fix, which merely added `balanceUsd` to a partial field list and left a trailing
+   `...}`, still omitting `fuel`/`humanDependencies` and reproducing the IDENTICAL silent-refusal failure
+   mode via `isSelfFunded`'s own fail-closed check): `getCitizen(id)` SHALL return the REAL citizen
+   registry record for `id` (the SAME object the fresh step-1 registry read already produces for that
+   `id` — every field the registry genuinely carries, never a hand-typed subset) with a fresh `balanceUsd`
+   field MERGED on top — `{ ...registryCitizen, balanceUsd }` — NEVER a hand-enumerated literal shape.
+   This closes the entire defect CLASS at once (not merely the two fields FIND-1004/FIND-1006 happened to
+   name): ANY current or future downstream consumer of `getCitizen`'s return value (`isSelfFunded`'s own
+   `fuel`/`humanDependencies` read, `isBorrowerEligible`'s own `wallet.evm` check, or any field a later
+   sprint's own REQ-101/102 revision might add) is satisfied by construction, because the full real record
+   is always present — there is no enumerated list for a future field to fall outside of. `balanceUsd`
+   itself is fetched via the SAME `_shared/lib/usdc.mjs::usdcBalance(citizen.walletAddress.evm,
+   {fetchImpl})` primitive step 4 already uses, re-fetched fresh on THIS SAME call (never step 4's own
+   earlier-in-the-wake reading reused, since step 6 is REQ-106's own documented "fresh recheck" point).
+   Omitting `balanceUsd` (or, as iteration-4 review's own live reproduction confirmed, omitting
+   `fuel`/`humanDependencies` via a hand-typed partial shape) is NOT merely incomplete — the real,
+   unmodified `runLockedIssuance` (step 6's own internals) reads
    `freshBorrower.balanceUsd`/`freshLender.balanceUsd` directly off whatever `getCitizen` returns, and
    BOTH consumers fail CLOSED on a missing value via `lending-gate.mjs::finiteOr`
    (`isBorrowerEligible` treats `undefined` as `Infinity`, ALWAYS failing the "broke enough" check —

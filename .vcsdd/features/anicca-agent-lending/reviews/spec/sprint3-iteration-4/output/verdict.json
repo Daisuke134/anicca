@@ -1,0 +1,55 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 4,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-4. Independently re-verified, via REAL live execution against the real, unmodified ~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs (never static reading alone), both of iteration-3's findings: FIND-1004 (getCitizen return shape omitted balanceUsd, causing a silent fail-closed refusal) and FIND-1005 (deps.getCitizen undeclared in the canonical Test-injection seam enumeration). Both are genuinely, correctly resolved this round. However, this iteration's own broader sweep (per the manifest's item 3 instruction) surfaced a NEW critical-class defect (FIND-1006): the SAME root cause that produced FIND-1004 (a hand-enumerated getCitizen return-shape field list, with a trailing '...' FIND-1004 explicitly asked to have removed but which was NOT removed) still silently omits two OTHER load-bearing fields (`fuel`, `humanDependencies`) that the SAME step-6 fresh-recheck code path (`isBorrowerEligible` -> `isSelfFunded`) also requires -- reproducing the identical silent-refusal failure mode this round's own fix was supposed to have closed, just against a different field."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1006"],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "fresh execution this review: 2-argument `executeLoanIssuanceAttempt` call, getCitizen returning `{id, wallet:{evm:true}, walletAddress:{evm}, coLocatedWithCoordinator:true, balanceUsd, fuel:{provider:\"x402\"}, humanDependencies:[]}` (fixture: borrower balance $0.10 < BORROWER_LOW_USD $0.50, lender balance $100 with $5 reserve, both otherwise fully qualifying, no prior loan history)",
+          "description": "FIND-1004's own fix independently re-verified genuine and correct for what it specifically targeted: with a complete citizen record (balanceUsd present, plus fuel/humanDependencies present), the call reaches `{\"status\":\"active\",\"loanId\":\"loan_lenderA_1\"}` -- PROP-117c's fixture-3 scenario now genuinely succeeds. A control run reproducing FIND-1004's exact original repro (balanceUsd omitted) still correctly returns `{\"status\":\"refused\",\"reason\":\"not_broke_enough\"}`, confirming the control/regression baseline still behaves as iteration-3 documented (nothing broke)."
+        },
+        {
+          "type": "test-output",
+          "location": "fresh execution this review: SAME 2-argument call and SAME fixture roles, but getCitizen returning EXACTLY REQ-117 step 6's own literally-enumerated field list -- `{id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd}` -- no `fuel`, no `humanDependencies`, since neither is named in the enumeration and the trailing `...` was not removed despite FIND-1004's own recommendation to remove it",
+          "description": "NEW critical-class finding (FIND-1006): result was `{\"status\":\"refused\",\"reason\":\"not_self_funded\"}` -- a SILENT, PERMANENT, exit-0 refusal for PROP-117c's own fixture-3 scenario, reproducing the identical failure mechanism FIND-1004 just fixed, via a different missing field. Root cause: `runLockedIssuance`'s step-6 recheck calls `isBorrowerEligible({borrowerAgent: freshBorrower, ...})` (lending-orchestrator.mjs:194), which calls `isSelfFunded(borrowerAgent)` (lending-gate.mjs:108) directly on getCitizen's return value, and `isSelfFunded` (_shared/lib/is-self-funded.mjs:68-70) fail-closed-denies without a recognized `fuel.provider` and an empty `humanDependencies` array -- neither field appears in step 6's own enumerated shape."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/verification-architecture.md line 192 (PROP-117c fixture-3, FIND-1003/FIND-1004 correction)",
+          "description": "FIND-1005 is genuinely resolved: `getCitizen` is now explicitly listed as a 5th key in the canonical Test-injection seam's own `deps` enumeration (behavioral-spec.md line ~2542), consistent with step 6's own closing-sentence reference to `deps.citizensRegistryFile`/`deps.getCitizen` -- no remaining internal inconsistency between the two clauses. Independently re-verified this review's task item 2: PROP-117c's fixture-3 assertion, as now worded ('asserts the call genuinely RETURNS a `{status:\"active\"}` value SPECIFICALLY -- `\"refused\"` is NOT an acceptable outcome for this SPECIFIC fixture'), WOULD catch a future regression back to FIND-1004's exact balanceUsd-omission bug -- confirmed empirically: this review's own control run (balanceUsd omitted) produced `\"refused\"`, which fails that assertion. Furthermore, this same generic assertion mechanism (any `\"refused\"` outcome for this fixture fails, regardless of WHICH field caused it) is ALSO already sufficient, by construction, to catch FIND-1006 (the fuel/humanDependencies omission this review newly found) if a Phase-2a test is written faithfully to this fixture's own current wording -- PROP-117c's own verification-method text does not itself need further tightening; the residual defect (FIND-1006) lives in REQ-117's own behavioral-spec text, not in this PROP's verification method."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "Raw finding count (2 -> 1) LOOKS like continued convergence, but this review's own explicit judgment (per the manifest's item-3 request) is that the finding TREND is NOT genuinely converging at the root-cause level, even though each individual finding's own blast radius has narrowed: FIND-1003 (round 2) was a call-signature crash affecting the ENTIRE closure; FIND-1004 (round 3) was one specific missing field (balanceUsd) causing a silent refusal; FIND-1006 (this round) is a DIFFERENT pair of missing fields (fuel/humanDependencies) causing the SAME silent-refusal failure mode via the SAME structural cause -- a hand-enumerated getCitizen return-shape field list that keeps omitting whatever field the immediately-preceding finding didn't already name. FIND-1004's own recommendation explicitly asked to remove the shape's trailing `...` for exactly this reason; this round's fix added balanceUsd to the list but left the `...` in place, and this review's own live execution shows that residual ambiguity is still exploitable for a different field one code-path-line below the one FIND-1004 fixed. This is a genuine 'reactive one-field-at-a-time patching' pattern, not random unrelated defects -- each round fixes exactly the ONE field the prior finding named and no more, so the underlying enumeration approach has never actually been retired despite two consecutive findings recommending exactly that. RECOMMENDATION for Phase 1a: do not patch FIND-1006 as a fourth named-field addition (`+fuel, +humanDependencies`) -- that would only reset the counter for whichever field is needed next; instead adopt the structural fix FIND-1006 recommends (getCitizen returns the REAL registry record object, spread, plus balanceUsd merged on -- never any hand-typed field subset) so this defect class cannot recur a fourth time. This is a narrow, one-clause rewrite (not a broader architectural rethink of wake-gate.mjs/REQ-117 as a whole -- REQ-117's overall shape, sequencing, exit-code discipline, and PROP-117a/b/d remain sound and unaffected), but it IS the kind of 'fix the pattern, not the instance' correction the manifest asked this review to explicitly judge on. FAIL -- next iteration required to replace the field-enumeration text with a full-record-merge instruction and re-verify no further downstream consumer of getCitizen's return value depends on any other field not covered by 'the real registry record, plus balanceUsd.'"
+  }
+}
