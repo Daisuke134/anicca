@@ -269,8 +269,16 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T11:03:54.531Z",
+      "reviewedBy": "adversary",
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-08T11:03:54.531Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-08T10:41:51.415Z",
-  "updatedAt": "2026-07-08T10:53:57.145Z"
+  "updatedAt": "2026-07-08T11:03:54.723Z"
 }

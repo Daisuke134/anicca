@@ -274,3 +274,4 @@
 {"timestamp":"2026-07-08T15:28:16.355Z","event":"phase_transition","featureName":"franklin-earn-foundation","from":"2c","to":"3","iteration":1,"phase":"3"}
 {"timestamp":"2026-07-08T15:28:16.355Z","event":"gate_recorded","featureName":"franklin-earn-foundation","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-07-08T15:28:36.255Z","event":"phase_transition","featureName":"franklin-earn-foundation","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-07-08T15:31:58.560Z","event":"phase_transition","featureName":"franklin-earn-foundation","from":"5","to":"6","iteration":1,"phase":"6"}

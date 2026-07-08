@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "The behavioral-spec's own cited coordination document (`05-coordination-with-agent-economy.md`), which it relies on for its funding model ('claude-p is the ONLY funder'), states in its own §8 Q3 (dated the same day this spec was authored, 2026-07-08) that the funding pipeline this feature calls (`~/anicca/skills/earn/funding/`) is judged, per the repo's own ownership convention ('誰の credential/wallet で署名するか'), to belong in `~/profitable-claude/skills/human-funded/` instead -- and that this relocation is expected/pending ('移動作業自体は君の領域...想定'). The behavioral-spec does not acknowledge this pending relocation anywhere, treats `~/anicca/skills/earn/funding/run.py` as a stable, frozen dependency path, and places its OWN new artifacts (the `skills/self/franklin-funding-loop/run.sh` entry script, the launchd plist referencing it) inside `~/anicca` as well. If the cited relocation happens after this feature ships, the launchd job's hardcoded path to `run.py` would silently break (or, worse, a duplicate/stale copy could persist in `~/anicca` alongside a moved copy in `~/profitable-claude`, creating two divergent mechanisms with the same money-moving responsibility) with no migration note or path-indirection anywhere in this spec to catch it.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca-project/docs/loop-engineering/05-coordination-with-agent-economy.md",
+    "lineRange": "102-103",
+    "snippet": "'君の funding pipeline (`~/anicca/skills/earn/funding/`) は claude-p自身のwalletで署名し claude-p自身の credential を使う loop なので ... `profitable-claude` 側が正しい置き場所と判断する ... 移動作業自体は君の領域'"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-funding-loop/specs/behavioral-spec.md",
+      "lineRange": "11-24, 67-70",
+      "snippet": "'What already exists and MUST be reused ... skills/earn/funding/ ... This feature calls run.py with a decided amount' -- treated as a frozen, stable path with no mention of the pending relocation documented in the very file this spec cites as its funding-model source of record."
+    }
+  ],
+  "failureScenario": "The funding pipeline is relocated to `~/profitable-claude/skills/human-funded/` per the coordination doc's own stated plan. The franklin-funding-loop's launchd job, still pointed at `~/anicca/skills/earn/funding/run.py`, either fails outright (safe but silent operational break, no funding occurs and nobody notices for a while since 'no fund' looks identical to a healthy step-back) or a stale, unmaintained copy is left behind at the old path and continues to be invoked with none of whatever fixes/changes land at the new location.",
+  "routeToPhase": "1c"
+}

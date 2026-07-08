@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "None of PROP-001 through PROP-011 constitutes a proof obligation for the single most safety-critical property this feature claims: that DECIDE's own subprocess cannot itself take a money-moving action. PROP-007 ('End-to-end gate composition ... money-safety invariant') is explicitly scoped, by its own Tool/method column, to 'an exhaustive state-table test over the REAL entry script's control flow' and 'the entry script's actual source' -- i.e. it verifies that the WRAPPER SCRIPT's own branches never skip a gate. By construction this method cannot observe, model, or constrain what the `claude --model claude-sonnet-5 --dangerously-skip-permissions` child process does with its own tool-calling turn during DECIDE, because that child process's actions are not part of 'the entry script's control flow' at all -- they happen inside a separate, live agentic session with its own Bash/tool access (see FIND-001). PROP-008 ('no source file ... contains a numeric threshold, regex, or keyword-based classifier') is scoped even more narrowly: a manual/adversary review for hardcoded classifiers substituting for DECIDE's judgment, not a review of what DECIDE's own execution environment is privileged to do. No PROP-00x obligation, at any tier (0/1/2/3), asks 'is the DECIDE subprocess sandboxed/restricted from independently executing FUND-equivalent commands, writing ledger rows, or touching the kill-switch file'. This is a verification_tool_mismatch: the chosen verification strategy (pure-predicate unit tests + one control-flow state table over the wrapper script + a code-review checklist for hardcoded classifiers) is structurally incapable of proving the property the spec repeatedly asserts in prose ('agent judgment cannot override' -- REQ-004/005/006/007), because that property's actual truth value depends entirely on an execution-environment/privilege detail (whether `--dangerously-skip-permissions` grants the DECIDE session unrestricted tool access) that sits outside every proof obligation's stated scope.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-funding-loop/specs/verification-architecture.md",
+    "lineRange": "49",
+    "snippet": "PROP-007 ... Tool: 'exhaustive state-table test over the REAL entry script's source ... not merely inferred from the pure unit tests of the individual predicates in isolation' -- scope is the entry script only, never the DECIDE child process's own tool-call surface"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-funding-loop/specs/verification-architecture.md",
+      "lineRange": "50",
+      "snippet": "PROP-008 ... 'checking for any conditional that inspects OBSERVE snapshot fields ... to directly set fund_recommended without going through the DECIDE subprocess' -- a hardcoded-classifier check, not a DECIDE-subprocess-privilege check"
+    }
+  ],
+  "failureScenario": "Phase 3 implementation ships exactly per this verification architecture: all PROP-001..008 pass (pure predicates correct, wrapper control-flow state table exhaustive, no hardcoded classifier found). Every stated proof obligation is green. The feature is nonetheless exploitable exactly as described in FIND-001, because the property that would have caught it was never expressed as a proof obligation in the first place -- a fully 'verified' (per this architecture) implementation still ships the hole.",
+  "routeToPhase": "1c"
+}

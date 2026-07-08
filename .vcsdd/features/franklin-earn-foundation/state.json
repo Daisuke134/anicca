@@ -1,7 +1,7 @@
 {
   "featureName": "franklin-earn-foundation",
   "mode": "lean",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -47,11 +47,18 @@
       "to": "5",
       "timestamp": "2026-07-08T15:28:36.253Z",
       "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-08T15:31:58.558Z",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -80,5 +87,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T11:42:48.185Z",
-  "updatedAt": "2026-07-08T15:28:36.254Z"
+  "updatedAt": "2026-07-08T15:31:58.558Z"
 }

@@ -1,0 +1,6 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["money_safety", "spec_fidelity", "verification_readiness"]
+}
