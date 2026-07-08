@@ -1,0 +1,147 @@
+{
+  "sprintNumber": 1,
+  "feature": "hl-realized-pnl",
+  "iteration": 1,
+  "timestamp": "2026-07-09T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/earn/hl-trade/tests/test_fills.py (fresh pytest run in scratch venv, this review)",
+          "description": "11/11 tests pass: compute_realized_pnl win/loss/breakeven (PROP-001), select_close_fills ordinary filter + inclusive tied-timestamp boundary (PROP-002/002b) + ascending sort, is_unprocessable 5-case classification (PROP-003). The PROP-002b boundary test (tid=1@t100,tid=2@t100,tid=3@t150, since_time_ms=100 -> all 3 returned) is present and green."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/hl-trade/lib/fills.py:37-45",
+          "description": "select_close_fills uses f.get(\"time\",-1) >= since_time_ms (>=, not since_time_ms+1) confirming inclusive-boundary implementation at the code level, not just the test."
+        },
+        {
+          "type": "proof-result",
+          "location": "verification/fuzz-results/hypothesis-run.log (cited in verification-report.md PROP-001/002/002b)",
+          "description": "Hypothesis property tests (500/300/200 examples) for the same three functions, 0 failures \u2014 Phase 5 evidence, consistent with this review's fixture-level result."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/earn/hl-trade/tests/test_reconcile.py (fresh pytest run in scratch venv, this review)",
+          "description": "test_reconcile_never_calls_record_line_fn_for_an_already_recorded_tid, test_plan_batch_stops_at_first_unprocessable_fill_and_never_plans_past_it, test_reconcile_checkpoint_stops_before_unprocessable_fill_t3_never_attempted, test_reconcile_stops_batch_when_record_line_fn_raises_on_second_fill, test_tied_timestamp_partial_stop_recovers_the_sibling_fill_on_the_next_pass (PROP-010b), test_reconcile_api_error_returns_status_and_leaves_checkpoint_untouched, test_acquire_lock_second_caller_gets_none_while_first_holds_it, test_reconcile_returns_locked_status_and_touches_nothing_when_lock_held \u2014 all PASS."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/hl-trade/tests/test_reconcile.py:337-364",
+          "description": "Read the PROP-010b test body directly: pass 1 stops at tid=2 with checkpoint=500; pass 2 asserts info.calls[1]['since_time_ms']==500 (inclusive re-query) and pass2_stub.calls fill_tid order == [2,3], result2['recorded']==2, checkpoint advances to 600 \u2014 matches the two-pass recovery description in the contract exactly, not just by test name."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "test_reconcile.py::test_reconcile_builds_payload_with_exactly_the_req_c1_keys and ::test_reconcile_full_successful_batch_checkpoint_is_last_fills_time_not_first (fresh pytest run)",
+          "description": "Both PASS (PROP-012 payload key set, PROP-007 checkpoint-is-last-not-first)."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/hl-trade/lib/reconcile.py:143-153 (_build_payload) and :175-215 (reconcile composition root)",
+          "description": "Read directly: _build_payload returns exactly {source, chain, fill_tid, confirmed, external, earn_usdc, cost_usdc, wallet, task, wake} (10 keys, matches REQ-C1 set exactly). reconcile() orders lock->checkpoint-read->fetch->plan->record-loop->checkpoint-write, matching REQ-B4-through-B6 ordering; last_handled_time is updated on both skip_duplicate and record actions, so checkpoint always lands on the LAST handled fill, not the first attempted one."
+        },
+        {
+          "type": "test-output",
+          "location": "grep -nE 'appendLedger|assertOwnIdentityOnly|checkHalt' lib/reconcile.py; grep -nF '_key(' lib/reconcile.py; grep -nF 'resolve-identity' lib/reconcile.py; grep -nE 'market_close|\\.order\\(|update_leverage' lib/reconcile.py (all independently re-run this review)",
+          "description": "All 4 greps return 0 matches (exit 1); grep -nF 'record.mjs' lib/reconcile.py returns 3 matches confirming delegation. Matches PROP-015/016/017's static-check claims exactly."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/_shared/lib/__tests__/ledger.test.mjs (fresh node --test run, this review)",
+          "description": "12/12 pass, covering PROP-013 (fill_tid passthrough) and PROP-014a-e (well-formed win/loss-rejected/missing-external-rejected/malformed-rejected/non-regression fixtures)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/_shared/lib/__tests__/ledger.test.js (fresh node --test run, this review)",
+          "description": "9/9 pass, unmodified pre-existing suite \u2014 confirms no regression leaked from the new hyperliquid disjunct."
+        },
+        {
+          "type": "file",
+          "location": "git diff f89f37c..486bef6 -- skills/_shared/lib/ledger.mjs (re-run this review)",
+          "description": "+9/-2 diff: deriveLine gains an `if (o.fill_tid != null)` passthrough line; isProfitable's pre-existing evmOk/solOk lines are UNCHANGED, a new hlOk line is added and OR'd in (`return evmOk || solOk || hlOk`). Confirms additive-only construction, matching CRIT-005's requirement."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "grep -nF 'closed_pnl_usd' skills/earn/hl-trade/hl.py (independently re-run this review)",
+          "description": "0 matches \u2014 the field is fully removed, not relabeled, confirming REQ-A1."
+        },
+        {
+          "type": "test-output",
+          "location": "test_reconcile.py::test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_key, re-run this review after installing hyperliquid-python-sdk into a scratch venv",
+          "description": "Was SKIPPED in the ambient interpreter (no SDK) but PASSES once the SDK is installed \u2014 independently reproduces the Phase 5 verification-report.md's claim that this test executes and passes in an SDK-equipped environment."
+        },
+        {
+          "type": "file",
+          "location": "grep -n 'hl.py\" reconcile' skills/earn/run.sh (line 177) vs grep -n '_hl_since=' (line 205) vs grep -n 'ACTION.*=.*\"close\"' (lines 206, 220), re-run this review",
+          "description": "177 < 205 and 177 < 206/220 confirmed directly \u2014 hl.py reconcile is wired in before both the cooldown check and the close-action branch on every wake, matching REQ-E3 and PROP-019's static-check claim."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "evidence/prop-021-userfills-live-raw.json, independently parsed this review",
+          "description": "146 raw fills total; 71 fills with closedPnl != 0; sum(closedPnl - fee) over those 71 = 0.081756 \u2014 computed fresh from the raw JSON, not copied from any log."
+        },
+        {
+          "type": "test-output",
+          "location": "verification/prop-021-phase5-rerun-pass1.log and prop-021-phase5-rerun-pass2.log",
+          "description": "Pass 1: 146 raw fills, 71 nonzero candidates, SUM=0.081756, reconcile result {status:ok, recorded:71}. Pass 2 (checkpoint=1783370643509): 1 raw fill re-fetched at the inclusive boundary, reconcile result {status:ok, recorded:0} \u2014 zero additional lines, proving idempotency against live data."
+        },
+        {
+          "type": "coverage",
+          "location": "verification/prop-021-phase5-scratch-ledger.jsonl, independently parsed this review (python3 sum over earn_usdc-cost_usdc, unique fill_tid count)",
+          "description": "71 lines, 71 unique fill_tid values (no dupes, no drops), sum(net_usdc) = 0.081756 \u2014 exact match to the raw-file-derived sum above, within the required 1e-6 tolerance (exact match here)."
+        },
+        {
+          "type": "test-output",
+          "location": "grep -iE 'dry|fake|mock|simulated' across prop-021-phase5-scratch-ledger.jsonl + both phase5 rerun logs (re-run this review)",
+          "description": "0 matches \u2014 no recorded line or log line describes its own numbers as dry/fake/mock/simulated."
+        }
+      ]
+    }
+  ],
+  "overallVerdict": "PASS",
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-001",
+      "CRIT-002",
+      "CRIT-003",
+      "CRIT-004",
+      "CRIT-005",
+      "CRIT-006"
+    ]
+  }
+}

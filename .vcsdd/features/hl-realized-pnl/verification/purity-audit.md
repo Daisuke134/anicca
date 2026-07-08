@@ -1,4 +1,4 @@
-# Purity Audit — hl-realized-pnl (Phase 5)
+# Purity Boundary Audit — hl-realized-pnl (Phase 5)
 
 Cross-checks `specs/verification-architecture.md`'s "Purity boundary map" against the actual
 worktree implementation (`/Users/anicca/anicca/.worktrees/hl-realized-pnl`, branch
