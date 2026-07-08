@@ -81,19 +81,32 @@ health の判定基準は「artifact が存在する」ではなく「**今日�
 - これは task #20（各 manager loop の外部自習）を **self-improve の第一原理に格上げ**したもの。explorer が新 loop を見つけた時も、その loop はまず BP 検索から始める。
 - **これは全 loop 共通**（gig/clip/video/affiliate/article/pm/hl）。各 loop の self-improve は「①web で BP 検索（cold-start 主体）→ ②メトリクス比較（traction 後に比重増）→ ③ lessons に記録 → ④次 pass に反映」の4段で回す。
 
-## Self-improve の2相（Dais 2026-07-08: cold-start は検索駆動、warm は metric 駆動）★全 loop 共通の最重要原則★
+## Self-improve = 検索 + メトリクスを常に両方（Dais 2026-07-08 訂正: 二元的にしない）★全 loop 共通の最重要原則★
 
-**なぜ loop が稼げないか = best practice を検索せず、自己流で失敗を繰り返しているから**（人間 Claude が検索せず失敗するのと同じ）。self-improve を2相に分ける:
+**なぜ loop が稼げないか = best practice を検索せず、自己流で失敗を繰り返しているから**（人間 Claude が検索せず失敗するのと同じ）。ただし二元的にはしない — **最初から検索とメトリクスの両方を毎 pass 見る**。比重が状態で変わるだけ:
 
-| 相 | いつ | 学習源 | 理由 |
+| 入力 | 何をする | いつ比重が上がるか |
+|---|---|---|
+| **① 外部検索（agent-reach で best practice）** | 「今このドメインで売れている型・勝ちパターン・trending」を検索 → 自分の現状との差分 → 次 pass に適用 | **常に**。特に cold-start（売上ゼロ）では比重最大（失敗の metrics は信号が低く、成功例を借りるしかない） |
+| **② 自分のメトリクス（funnel/results）** | 実測値を見て「良い兆候（返信が来た/受注した/views 伸びた）」があれば**即その施策に倍賭け**、悪いものを縮小 | **最初から常に見る**。売上/成功が出るほど比重が上がる |
+
+- **比重**: cold-start でも両方見る（検索が重め、メトリクスも必ず見て兆候を拾う）→ 成功が出るにつれメトリクス比重が上がる（≈5:5 へ）。検索もメトリクスも **0 にしない**。「失敗から学べない」= self-improve の信号が弱いという意味で、**メトリクスを見ないという意味ではない**（良い兆候の検出は cold-start でも重要）。
+- **self-heal は失敗駆動のまま**（何が壊れたかは特定可能）。self-improve が「検索 + メトリクス両方」。
+- **MUST: 両方 loop の中に埋め込む**（agent-reach 検索も funnel 集計も pass 内）。人間も orchestrator も loop の外。判断（何を取り込む/倍賭けする）= agent、検索実行・funnel 集計・記帳 = 決定論。
+- 全 loop 共通。explorer が新 loop を建てる時も「best practice 検索 + 初期メトリクス観測」の両方から始める。タスク #20 = この原則。
+
+### メトリクス側: 各 loop が「何を・どう・いつ」検証して改善するか
+
+| loop | 何を測る（metric） | どう測る（決定論ツール） | どう改善（agent 判断） |
 |---|---|---|---|
-| **Phase 1: SEARCH 駆動（cold-start）** | 売上/成功が **0 の間** | **web 検索で外部 best practice**（何が売れるか・勝ちパターン・trending）→ 自分の現状と best practice の差分を出す → 差分を次 pass に適用 | 失敗しかない状態では metrics の信号が低い（失敗の原因は数百通りで特定不能）。**失敗からは self-heal は学べても self-improve はほぼ学べない**。だから外部の成功事例を検索して型を借りる |
-| **Phase 2: METRIC 駆動（warm）** | 最初の売上/成功が出た後 | 自分の funnel metrics（何が入金したか）+ **継続する外部検索** | 成功が出たら「何が効いたか」を metrics で特定し倍賭け。ただし検索は止めない（trending/新手法を拾い続ける） |
+| gig | カテゴリ別 funnel: 出品数/閲覧/提案数/返信率/受注/入金¥ + 出品ページの閲覧→問合せ率 | applied.jsonl + listings.jsonl + gig-funnel.jsonl 集計、出品 URL の閲覧数 browser 実読 | 返信/受注が出たカテゴリ・価格・提案文に倍賭け、0 のカテゴリを縮小。BP 検索で得た型を未実証カテゴリに適用 |
+| clip/video | reel/動画毎 views/likes/comments（48h窓）+ follower 増 | yt-dlp JSON / IG browser 実測 → clip-metrics.jsonl | 伸びたフォーマット/題材/投稿時刻に倍賭け。BP 検索で伸びてる型を試す |
+| affiliate | slideshow views + commission¥ | yt-dlp JSON + commission-watermark | 効いた商品/構成に倍賭け |
+| article | 記事毎 views + follower + 有料購読 | dev.to Forem API / note・Substack browser | 読まれた題材/媒体に倍賭け |
+| pm/hl | realized PnL/週（既存 evaluator） | on-chain + 取引 ledger | 勝ち戦略に倍賭け（openevolve） |
 
-- **検索:metrics の比率**: cold-start = 10:0（ほぼ全部検索）→ 売上が出るにつれ 5:5 へ（検索は 0 にしない）。
-- **MUST: この検索は loop の中に埋め込む**（agent-reach を pass 内で呼ぶ）。人間も私(orchestrator)も loop の外にいる。loop 自身が「自分のドメインの最新 best practice」を検索 → 自分の現状と比較 → gap を lessons.jsonl に記録 → 次 pass で適用。判断（何を取り込むか）= agent、検索実行・記帳 = 決定論。
-- **self-heal は逆**: failure/dysfunction から学ぶ（何が壊れたかは特定可能）。self-heal は失敗駆動のまま。
-- これは gig だけでなく **全 loop 共通**。explorer が新 loop を建てる時も「まず best practice を検索してから始める」を初期動作にする。タスク #20 をこの2相原則に昇格。
+- **いつ**: 存在確認=行動直後（即時）、funnel 集計=毎 pass、週次 evaluator=週1（「今週>先週」判定 + 検索差分の反映確認）。
+- **良い兆候の閾値**（cold-start でも倍賭けの引き金）: 1件でも返信/受注/明確な views 跳ね が出たら、その施策を lessons に「効いた仮説」として記録し次 pass で厚くする。
 
 ## EDD（Evaluation-Driven Development、self-improve の bar）
 
