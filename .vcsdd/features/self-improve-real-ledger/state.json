@@ -2,7 +2,7 @@
   "featureName": "self-improve-real-ledger",
   "mode": "strict",
   "language": "python",
-  "currentPhase": "2a",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -28,13 +28,29 @@
       "timestamp": "2026-07-08T22:09:53.580Z",
       "reason": "spec review PASS iter3, 0 blocking",
       "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-08T22:37:02.594Z",
+      "reason": "GREEN: 80/81 worktree (1 = EDGE-RL5b, post-merge verified), regression green",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-08T22:37:02.644Z",
+      "reason": "refactor pass: none needed",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 1,
     "1b": 1,
     "1c": 1,
-    "2a": 1
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
   },
   "proofObligations": [],
   "traceability": {
@@ -59,5 +75,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T21:34:07.648Z",
-  "updatedAt": "2026-07-08T22:09:53.580Z"
+  "updatedAt": "2026-07-08T22:37:02.644Z"
 }
