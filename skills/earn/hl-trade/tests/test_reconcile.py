@@ -590,3 +590,26 @@ def test_already_recorded_tids_reads_fill_tid_values_from_the_ledger(tmp_path):
 
 def test_already_recorded_tids_missing_ledger_is_empty_set(tmp_path):
     assert already_recorded_tids(str(tmp_path / "does-not-exist.jsonl")) == set()
+
+
+# ---------------------------------------------------------------------------------------------
+# PROP-023 (REQ-D4, per-instance path isolation) — coverage-retrofit, added at contract-review
+# negotiation round 1 (finding F-2). reconcile.py must derive every path it touches (the
+# record.mjs it shells out to; any checkpoint/ledger default it computes itself) exclusively
+# from its OWN file location (e.g. Path(__file__)-relative) — never a literal reference to
+# another instance's home directory or an absolute user path, which would let this feature leak
+# across per-instance checkouts (REQ-D4's "never influenced by / never writes to another
+# instance's earn-ledger.jsonl or checkpoint file").
+# ---------------------------------------------------------------------------------------------
+
+def test_reconcile_py_never_hardcodes_another_instances_home_or_absolute_user_path_static_grep():
+    reconcile_py = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                                 "lib", "reconcile.py")
+    assert os.path.exists(reconcile_py), "lib/reconcile.py does not exist yet (RED phase)"
+    src = open(reconcile_py, encoding="utf-8").read()
+    for needle in (".blockrun", ".anicca", ".openclaw", "/Users/"):
+        assert needle not in src, (
+            f"reconcile.py must never hardcode a literal reference to {needle!r} — every path it "
+            "touches must derive from its own file location (Path(__file__)-relative), never "
+            "another instance's home or an absolute user path (REQ-D4)"
+        )
