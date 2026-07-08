@@ -21,12 +21,20 @@ verified EVM or Solana settlement.
 ## 2. Audit findings this spec fixes (evidence, non-normative — context only)
 
 1. `hl.py:61` uses `constants.MAINNET_API_URL` — Hyperliquid trading on this wallet is REAL
-   mainnet, not paper/testnet. The old wallet `0xa3cdd4...` carries 146 real fills with real
-   `closedPnl`/`fee`/`hash` — usable as live E2E evidence (§Done, verification-architecture.md).
+   mainnet, not paper/testnet. The old wallet `0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21` carries
+   146 real fills with real `closedPnl`/`fee`/`tid`/`hash` — usable as live E2E evidence
+   (§Done, verification-architecture.md). Verified by a live, read-only query against this exact
+   address in this session: `evidence/audit-userfills-0xa3cdd4-raw.json` (raw response, 146
+   fills) and `evidence/audit-userfills-summary.md` (computed sums + raw field-presence check).
 2. `hl.py:130-139` (`cmd_close`) captures `unrealizedPnl` BEFORE calling `market_close` and
    reports that number as `closed_pnl_usd` — this is not the fill's actual realized result and
-   is almost always wrong (audited real example: actual realized net ≈ −$0.1237 from real
-   `closedPnl`/`fee`, versus ≈ −$0.0006 recorded — ~200x under-magnitude).
+   is almost always wrong. Per `evidence/audit-userfills-summary.md` (live query, this session):
+   summing all 146 fills' real `closedPnl` (`0.27274`) minus real `fee` (`0.396474`) gives an
+   actual realized net of `−0.123734` — versus the ≈ `−$0.0006` `unrealizedPnl`-derived number
+   the OLD code would have reported for a single close of that magnitude, roughly two orders of
+   magnitude off. The evidence file also confirms `fee` and `tid` ARE present on every one of
+   the 146 real fill objects returned by the live API (resolves F-5's SDK-docstring concern —
+   the installed SDK's docstring is stale/incomplete, not the live API).
 3. `run.sh:213` hard-codes `cost_usdc:0` (fees are dropped) and never sets `external`, so a
    Hyperliquid close can never satisfy `isProfitable`'s GATE-0 regardless of its true P&L.
 4. Exchange-side auto-close (take-profit / stop-loss / liquidation) is never reconciled today —
@@ -73,14 +81,24 @@ verified EVM or Solana settlement.
     changes which bucket absorbs it).
 - **REQ-B2**: THE SYSTEM SHALL provide a PURE function that, given a list of raw Hyperliquid
   fill objects and a `since_time_ms` cursor, returns ONLY the fills that (a) have
-  `time > since_time_ms`, AND (b) have a numeric, non-zero `closedPnl` — sorted ascending by
-  `time`. A fill with `closedPnl == 0` (an opening/increasing fill, or an exact-breakeven
-  close) is excluded by construction: it is a non-event for realized-P&L bookkeeping (it can
-  never satisfy GATE-0's `net_usdc > 0` gate either way, and recording endless `$0.00` lines
-  is deliberately avoided, not an oversight).
+  `time >= since_time_ms` (INCLUSIVE — matches REQ-B8's inclusive query boundary; a
+  strictly-greater-than filter here would silently re-exclude a tied-timestamp sibling fill
+  that REQ-B8 correctly re-fetched, defeating REQ-B8's entire purpose), AND (b) have a
+  numeric, non-zero `closedPnl` — sorted ascending by `time`. A fill with `closedPnl == 0`
+  (an opening/increasing fill, or an exact-breakeven close) is excluded by construction: it is
+  a non-event for realized-P&L bookkeeping (it can never satisfy GATE-0's `net_usdc > 0` gate
+  either way, and recording endless `$0.00` lines is deliberately avoided, not an oversight).
+  A candidate at exactly `time == since_time_ms` that was already recorded in a prior pass is
+  NOT filtered out here — it reaches REQ-B4.1's tid-dedup step, which is the ONLY mechanism
+  that skips already-recorded fills (never the time boundary).
 - **REQ-B3**: WHEN a candidate fill (from REQ-B2) has a non-numeric or missing `closedPnl` or
-  `fee` field, THE SYSTEM SHALL classify it as UNPROCESSABLE and MUST NOT invent a value
-  (never default to `0`, never silently coerce via a lossy cast).
+  `fee` field, OR a missing or non-integer `tid` field, THE SYSTEM SHALL classify it as
+  UNPROCESSABLE and MUST NOT invent a value (never default to `0`, never fabricate a `tid`,
+  never silently coerce via a lossy cast). `tid` is included here because REQ-B4.1's
+  idempotency dedup and REQ-C1's ledger schema both require a real, stable integer `tid` —
+  live evidence (`evidence/audit-userfills-summary.md`) confirms `tid` is present as a Python
+  `int` on all 146 fills of the audited wallet, so this branch is expected to be rare/never-hit
+  in practice, but the reconciler MUST NOT silently treat a missing `tid` as recordable.
 - **REQ-B4**: THE reconciler SHALL process the fills selected by REQ-B2 in ascending time
   order. For each fill, in order:
   1. IF a prior ledger line already carries this fill's `tid` in its `fill_tid` field, THE
@@ -98,7 +116,13 @@ verified EVM or Solana settlement.
   already-recorded (duplicate) in that batch, in strict time order. The checkpoint SHALL
   NEVER advance past a fill that triggered a STOP (REQ-B4.2 or REQ-B4.3), and SHALL NOT
   advance at all if the very first eligible fill triggered a STOP. IF zero eligible fills
-  existed this pass, THE checkpoint SHALL remain UNCHANGED.
+  existed this pass, THE checkpoint SHALL remain UNCHANGED. Because REQ-B8's re-query
+  boundary is INCLUSIVE, a subsequent pass WILL re-fetch the fill that set the checkpoint
+  (and any sibling fill sharing its exact `time`) — this is EXPECTED, not a bug: REQ-B4.1's
+  tid-dedup recognizes the already-recorded one as a duplicate (no re-record, checkpoint may
+  re-advance to the same value) while any genuinely unrecorded sibling at that same `time` is
+  recorded normally. The checkpoint's role is a monotonic lower bound for query efficiency,
+  never the sole correctness mechanism for avoiding duplicates.
 - **REQ-B6**: THE checkpoint SHALL be persisted at a fixed path colocated with `hl.py`
   (`skills/earn/hl-trade/.last-fill-ts`), written LAST — after every ledger-append attempt in
   the batch has resolved — and written atomically (temp file + rename/replace), so a crash
@@ -107,15 +131,37 @@ verified EVM or Solana settlement.
   treat `since_time_ms` as `0` (fetch this address's entire fill history on the first pass)
   rather than crashing or skipping reconciliation.
 - **REQ-B8**: THE reconciler SHALL query fills via
-  `Info.user_fills_by_time(address, since_time_ms + 1, now_ms, aggregate_by_time=False)` —
-  the `+1` excludes the exact fill that set the checkpoint (REQ-B5's boundary), and
-  `aggregate_by_time=False` (the SDK default) is REQUIRED so partial fills are never merged,
-  preserving the per-fill `tid` granularity Group C / EDGE-9 depend on. `Info.user_fills`
+  `Info.user_fills_by_time(address, since_time_ms, now_ms, aggregate_by_time=False)` — the
+  boundary is INCLUSIVE of `since_time_ms` (NOT `since_time_ms + 1`), because a single
+  Hyperliquid close can produce MULTIPLE fills sharing the exact same millisecond `time`
+  (EDGE-9), and any of those tied fills could be the one that set the checkpoint while a
+  SIBLING fill at that identical `time` was never recorded (REQ-B4.2/B4.3 STOP). Re-fetching
+  the checkpoint's own timestamp is safe and REQUIRED: REQ-B4.1's tid-based idempotency check
+  — never the query boundary — is what prevents an already-recorded fill from being recorded
+  twice. `aggregate_by_time=False` (the SDK default) is REQUIRED so partial fills are never
+  merged, preserving the per-fill `tid` granularity Group C / EDGE-9 depend on. `Info.user_fills`
   (the unbounded, all-time variant) SHALL NEVER be used by the reconciler.
+  **Invariant (money-safety, non-negotiable)**: for any fill `F` with `F.time == checkpoint`
+  that was NOT recorded in the pass that set the checkpoint to that value, the very next pass
+  MUST include `F` among its query results. A design that can permanently exclude such an `F`
+  from every future query (e.g. a strictly-greater-than boundary) is a silent-drop defect,
+  not an optimization — reject it outright regardless of how it is phrased.
 - **REQ-B9**: A live Hyperliquid API error or timeout during REQ-B8's fetch SHALL cause the
   reconciler to skip this pass entirely (record nothing, checkpoint unchanged) and return
   control to its caller without raising an uncaught exception. The next wake's reconcile
   retries the same window.
+- **REQ-B10**: BEFORE reading the checkpoint (REQ-B7) or the ledger's `already_recorded_tids`
+  (REQ-B4.1), THE reconciler SHALL acquire an exclusive, non-blocking file lock
+  (`fcntl.flock(fd, LOCK_EX | LOCK_NB)`) on a lock file colocated with the checkpoint
+  (`skills/earn/hl-trade/.last-fill-ts.lock`). IF the lock cannot be acquired immediately
+  (another `reconcile` invocation for this same instance is already in flight), THE reconciler
+  SHALL record nothing, leave the checkpoint file completely untouched, and return a
+  `{"status": "locked", "recorded": 0}`-shaped result without raising — exactly as if it were
+  never invoked this wake. THE lock SHALL be held for the ENTIRE read-check-record-write
+  sequence (REQ-B4 through REQ-B6) and released only after the checkpoint write (REQ-B6)
+  completes or the pass STOPs/errors. This closes the check-then-act race that would otherwise
+  let two concurrent invocations both read the same `already_recorded_tids` set and both
+  attempt to record the same fill.
 
 ### Group C — External / GATE-0 classification and ledger schema
 
@@ -137,6 +183,27 @@ verified EVM or Solana settlement.
   real, externally-realized outcome, not internal bookkeeping noise, and is recorded exactly
   the same way (REQ-B1's win/loss split only changes the `earn_usdc`/`cost_usdc` bucketing,
   never whether the line is recorded or whether `external` is set).
+
+  **Policy sign-off (this IS a GATE-0 policy decision, not an implicit side effect of a
+  recording-bug fix)**: this classification is approved by the policy owner (Dais)'s explicit
+  directive of 2026-07-09 — goal: "fix HL realized-P&L recording — set `external: true` only
+  if the close is real cash-settled." §2's independent audit, cross-checked by the fresh-context
+  spec-review adversary (F-6, iteration 1: confirmed `hl.py:61` uses `constants.MAINNET_API_URL`
+  — real mainnet, not paper/testnet) and by this feature's own live evidence
+  (`evidence/audit-userfills-summary.md` — 146 real fills, real `closedPnl`/`fee`/`tid`/`hash`
+  fields on the live API response), establishes that an HL perp close is a real, cash-settled
+  clearinghouse transaction, satisfying the same "someone/something outside our own
+  bookkeeping settled this" bar GATE-0 already applies to EVM tx confirmation and Solana
+  signature confirmation. **Wash-trading / self-dealing defense**: GATE-0's pre-existing
+  `net_usdc > 0` gate (REQ-C3, unchanged) still independently requires a net profit — a line
+  is transcribed here exactly as the exchange settled it, win or loss, with no judgment about
+  WHY the trade happened. This feature places no order, modifies no order, and cancels no
+  order (REQ-D3) — it can only ever transcribe fills that Hyperliquid's own matching engine
+  already settled against whatever counterparty was on the opposite side of the order book.
+  Any colony-internal self-dealing concern (one instance's HL wallet trading against another
+  instance's HL wallet) is a property of Hyperliquid's PUBLIC order book, identical to any two
+  unrelated third-party traders crossing there, and is out of scope for a feature that adds no
+  trading logic and reads settled history only.
 
 - **REQ-C2**: `skills/_shared/lib/ledger.mjs`'s `deriveLine` SHALL pass through a new optional
   field `fill_tid` unchanged when present on the input object — mirroring the existing
@@ -193,10 +260,16 @@ verified EVM or Solana settlement.
   `earn-ledger.jsonl` — every write is an append via `record.mjs` (REQ-D1), which itself
   only ever appends.
 - **REQ-E3**: `run.sh`'s `STRATEGY=hl` branch SHALL invoke the reconciler (via a new
-  `hl.py reconcile` subcommand) UNCONDITIONALLY, before evaluating the anti-churn cooldown
-  gate and before branching on `ACTION=close` / new-position `open`, on EVERY wake — this
-  is what makes exchange-side auto-close (take-profit / stop-loss / liquidation) fills get
-  recorded even though the model issued no explicit `close` that wake.
+  `hl.py reconcile` subcommand) on EVERY wake that reaches the `STRATEGY=hl` branch at all,
+  before evaluating the anti-churn cooldown gate and before branching on `ACTION=close` /
+  new-position `open` — this is what makes exchange-side auto-close (take-profit / stop-loss
+  / liquidation) fills get recorded even though the model issued no explicit `close` that
+  wake. This does NOT override `run.sh`'s pre-existing P1 HALT guard (`earn-guard.mjs`,
+  `run.sh:85`): if that guard already exits the wake before the `STRATEGY=hl` branch is ever
+  reached, the reconciler is correctly never invoked that wake — the guard takes precedence
+  for money-safety, and skipping a reconcile pass this way causes no data loss (REQ-B9's
+  "next wake retries the same window" guarantee covers this exactly the same as an API
+  timeout would).
 - **REQ-E4**: `hl.py`'s `close` subcommand keeps performing `Exchange.market_close`
   unchanged (REQ-A1 only removes the false `closed_pnl_usd` field from its JSON output) —
   the close action itself, its risk parameters, and the anti-churn cooldown in `run.sh` are
@@ -221,6 +294,7 @@ verified EVM or Solana settlement.
 | E8 | Hyperliquid API call raises or times out | whole pass skipped; nothing recorded; checkpoint unchanged (REQ-B9) |
 | E9 | A single close produces MULTIPLE partial fills (crossing several resting orders) | EACH fill with `closedPnl != 0` is its OWN ledger line, keyed by its own `tid` (REQ-B4/C1) — never merged into one line |
 | E10 | Account has zero USDC / zero fills ever (e.g. the current wallet `0xb9dd3b...`, unfunded) | reconcile reports `{recorded: 0}` every pass; no error — this is the normal empty-history case, not a defect |
+| E11 | Tied-timestamp partial STOP (money-safety, confirmed live-data-real — evidence/audit-userfills-summary.md found 1 such tie in the audited wallet's own history): candidates sorted ascending `[X(t=500,tid=1), Y(t=500,tid=2), Z(t=600,tid=3)]`; `X` records successfully; `Y`'s `record_line` call fails (REQ-B4.3) → batch STOPS; checkpoint advances to `X`'s time = 500 (REQ-B5) | The NEXT pass queries `user_fills_by_time(address, 500, now, ...)` (REQ-B8, inclusive) — `X` (tid=1) is re-fetched but skipped as a duplicate (REQ-B4.1), and `Y` (tid=2) IS re-fetched and recorded normally this time. `Y`'s realized P&L/fee is NEVER permanently lost — this is the exact scenario REQ-B8's inclusive boundary exists to make safe (see F-1, spec review iteration 1) |
 
 ## 6. Non-functional
 
@@ -233,6 +307,11 @@ verified EVM or Solana settlement.
   `hyperliquid-python-sdk` / `eth_account` already imported by `hl.py`.
 - **NFR-3**: The reconcile pass adds no persistent process (no server, no daemon) — it runs
   to completion and exits, invoked once per `earn/run.sh` wake.
+- **NFR-4**: `already_recorded_tids` (REQ-B4.1's dedup set) is built by a full linear scan of
+  `earn-ledger.jsonl` on every reconcile pass. This is ACCEPTABLE at the current ledger scale
+  (append-only, never pruned per REQ-E2) and is explicitly NOT optimized by this feature —
+  indexing or incremental-scan optimization is deferred as a future improvement if ledger size
+  ever makes the full scan a measurable cost; this spec does not guess at that threshold.
 
 ## 7. Follow-up (explicitly out of scope for this feature)
 
