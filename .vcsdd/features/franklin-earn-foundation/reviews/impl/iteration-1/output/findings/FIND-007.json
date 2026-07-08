@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "blocking": true,
+  "description": "REQ-002's EARS clause and PROP-016 mandate: 'If the sigStatus/usdcDeltaForSig RPC call itself errors, times out, or returns malformed data... record-swap.mjs SHALL report a verify-error status and sol-trade/run.sh SHALL degrade to a narrate-only line rather than crashing... (task prefixed sol-verify-failed:<reason>, earn_usdc:0, cost_usdc:0), mirroring earn/run.sh:308-319/372-381's existing abort convention.' The shipped sol-trade/run.sh never branches on record-swap.mjs's returned status at all -- it captures the raw stdout JSON into $REC and only echoes it for a human/log to read (`echo \"[sol-trade] record-swap -> ${REC:-noop}\"`); there is no grep/python parse of the `status` field, and no call to record.mjs/record_line building a 'sol-verify-failed:<reason>' narrate line anywhere in the file (confirmed: no 'verify-error', 'abort', or 'sol-verify-failed' string anywhere in run.sh). record-swap.mjs itself only calls record() (i.e. only appends a ledger line) on the 'recorded' status path; every other status (verify-error, unconfirmed, bad-args, duplicate) returns early without appending anything. The net effect: whenever the RPC verify step flakes on a pass that DID execute a real swap, NOTHING is ever recorded to earn-ledger.jsonl for that pass -- not a narrate line, not anything -- silently reproducing exactly the P&L-invisibility problem (root cause 2) this feature exists to fix, for every RPC-failure pass.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/run.sh",
+    "lineRange": "66-69",
+    "snippet": "if [ -n \"$SIG\" ]; then\n  REC=$(env -i PATH=\"$PATH\" HOME=\"$HOME\" SOLANA_RPC_URL=\"${SOLANA_RPC_URL:-}\" SIG=\"$SIG\" WALLET=\"$OWN_WALLET\" EARN_LEDGER=\"$LEDGER\" WAKE_ID=\"${WAKE_ID:-$(date -u +%s)}\" node \"$SKILL_DIR/lib/record-swap.mjs\" 2>/dev/null || true)\n  echo \"[sol-trade] record-swap -> ${REC:-noop}\"\nfi"
+  },
+  "routeToPhase": "2b"
+}

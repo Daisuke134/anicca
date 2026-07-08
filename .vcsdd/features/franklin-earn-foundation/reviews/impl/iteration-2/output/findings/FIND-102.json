@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-102",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "low",
+  "blocking": false,
+  "description": "record-swap.mjs's CLI-entrypoint self-invocation guard uses `import.meta.url.endsWith(process.argv[1].split(\"/\").pop())` -- a basename-suffix match -- whereas every other new/touched module in this feature (parse-pass.mjs, resolve-identity.mjs, record.mjs) uses the stronger, standard `path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)` idiom already established in this codebase.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/record-swap.mjs",
+    "lineRange": "60",
+    "snippet": "if (process.argv[1] && import.meta.url.endsWith(process.argv[1].split(\"/\").pop())) {"
+  },
+  "impact": "In every actual call site in this feature (run.sh always invokes it via an absolute path computed from `$(cd ... && pwd)`) the weaker check is functionally correct, and it does not misfire during `node --test` imports of record-swap.test.mjs (verified statically: process.argv[1] during a test run is the test file's own path, whose basename can never equal 'record-swap.mjs'). This is a cosmetic inconsistency with the codebase's own established idiom, not a demonstrated functional defect. Non-blocking.",
+  "routeToPhase": null
+}

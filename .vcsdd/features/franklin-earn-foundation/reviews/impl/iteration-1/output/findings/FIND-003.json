@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "blocking": true,
+  "description": "sol-trade/run.sh never calls lib/parse-pass.mjs::extractLastSignature at all (impossible regardless, since that file does not exist -- FIND-002). Instead it reimplements signature extraction inline via a bash sed/grep pipeline that, contrary to REQ-002's explicit Edge Case ('Multiple \"Signature:\" lines appear in one pass's stdout... only the LAST signature is recorded') and PROP-010 ('given stdout with... N \"Signature: <sig>\" occurrences, it returns... the LAST one'), extracts the FIRST occurrence, not the last: `grep -oiE ... | head -1` selects the first match in top-to-bottom order, then a second `grep -oE ... | head -1` again takes the first of that already-singular result. On a multi-step swap chain (the exact scenario the spec calls out), this pass would record an EARLIER (possibly intermediate, not-yet-realized) signature's on-chain delta as the pass's P&L instead of the final settlement signature -- corrupting the recorded net_usdc that REQ-002's own cumulative earn-guard.mjs stop-loss (run.sh:35) depends on for its HALT decision. This is also duplicated, untested logic living in bash instead of the promised pure, unit-tested module.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/run.sh",
+    "lineRange": "65",
+    "snippet": "SIG=$(printf '%s' \"$OUT\" | sed \"s/$(printf '\\033')\\[[0-9;]*m//g\" | grep -oiE 'signature:[[:space:]]*[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1 | grep -oE '[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1)"
+  },
+  "routeToPhase": "2b"
+}

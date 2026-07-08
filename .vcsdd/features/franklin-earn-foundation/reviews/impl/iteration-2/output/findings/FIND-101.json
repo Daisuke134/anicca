@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-101",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "blocking": false,
+  "description": "REQ-002's edge cases prescribe two different degrade behaviors: a `verify-error` (RPC infrastructure failure) gets a narrate-only trace.jsonl line, while an `unconfirmed` signature (a definitive on-chain fact, per the spec text) is specified to have its reason \"logged to stderr only\". The FIND-007 fix in sol-trade/run.sh collapses BOTH cases (plus bad-args/no-delta) into the same trace.jsonl `sol-verify-failed` line via one uniform branch (`[ \"$RSTATUS\" != \"recorded\" ] && [ \"$RSTATUS\" != \"duplicate\" ]`), so an `unconfirmed` status now also gets a durable trace.jsonl entry beyond the spec's literal wording for that specific sub-case.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/run.sh",
+    "lineRange": "82-91",
+    "snippet": "if [ -n \"$RSTATUS\" ] && [ \"$RSTATUS\" != \"recorded\" ] && [ \"$RSTATUS\" != \"duplicate\" ]; then\n  echo \"{\\\"ts\\\":\\\"$(now)\\\",\\\"slot\\\":\\\"earn/sol-trade\\\",\\\"action\\\":\\\"sol-verify-failed\\\",\\\"status\\\":\\\"$RSTATUS\\\",\\\"sig\\\":\\\"$SIG\\\"}\" >> \"$TRACE\"\nfi"
+  },
+  "impact": "No money-safety invariant is violated (earn-ledger.jsonl -- the GATE-0 profitability ledger -- is untouched either way, and no PROP-XXX proof obligation tests trace.jsonl-absence specifically for the unconfirmed sub-case). This is a STRICTER/more-auditable behavior than the spec's literal text requires for that one sub-case, not a functional regression or a money-safety gap. Non-blocking.",
+  "routeToPhase": null
+}

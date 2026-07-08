@@ -1,0 +1,157 @@
+{
+  "verdict": "PASS",
+  "overallVerdict": "PASS",
+  "feature": "franklin-earn-foundation",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "scope": "reviews/impl/iteration-2",
+    "note": "Fresh-context adversarial RE-REVIEW confirming closure of iteration-1's 6 blocking findings (commit 3fe382b). No manifest.json was present at reviews/impl/iteration-2/input/ -- scoped directly from the launching agent's instructions against specs/behavioral-spec.md (REQ-001/REQ-002) + specs/verification-architecture.md (PROP-001..016) + reviews/impl/iteration-1/output/."
+  },
+  "timestamp": "2026-07-09T00:00:00Z",
+  "iteration": 2,
+  "toolConstraintNote": "No shell/execute tool available in this review session (Read/Grep/Glob/Write only). The parent agent independently re-ran the full test suite and reported: parse-pass 5/5, record-swap 8/8, identity-guard 12/12, sol-trade/tests/test_run.sh 9/9, run.sh syntax OK. This review is a STATIC, falsifiable re-derivation of those results from source: every test-count claim below was independently counted by reading the cited test file in full, and every closure claim is tied to file:line evidence, not to the parent's report.",
+  "priorFindingsClosureStatus": [
+    {
+      "findingId": "FIND-001",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/run.sh", "lines": "13", "note": "`unset ANICCA_SOLANA_PRIVATE_KEY 2>/dev/null || true` executes at the very top of the script, before OWN_WALLET (line 33) and CLI_WALLET (line 34) are derived."},
+        {"file": "skills/earn/lib/resolve-identity.mjs", "lines": "115-138", "note": "resolveSolanaSecret only ever reads env.ANICCA_SOLANA_PRIVATE_KEY, $ANICCA_HOME/.automaton/solana.json (secretKey), or the legacy $HOME/.blockrun/.solana-session (gated to effectiveHome === $HOME/.blockrun) -- no other ambient var (e.g. a SOLANA_KEYPAIR_PATH-style var) is read anywhere in this module or in runtime/wallet-address-solana.mjs."},
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "173-186", "note": "scenario (c) sets ANICCA_SOLANA_PRIVATE_KEY to a THIRD-PARTY's real fixture secret in the ambient env and asserts the identity-match guard still HALTs (no marker file = franklin-trading never invoked, no ledger line, exit 0) -- a direct regression test for the exact FIND-001 bypass."}
+      ]
+    },
+    {
+      "findingId": "FIND-002",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/lib/parse-pass.mjs", "lines": "1-37", "note": "File exists, exports extractLastSignature(stdout), ANSI-strips (line 8/15), never throws on non-string/empty input (line 14), ES module CLI entrypoint reads stdin (lines 29-37)."},
+        {"file": "skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs", "lines": "1-41", "note": "5 test() blocks, all importing from the real ../parse-pass.mjs -- no ERR_MODULE_NOT_FOUND risk."}
+      ]
+    },
+    {
+      "findingId": "FIND-003",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/lib/parse-pass.mjs", "lines": "11,17-20", "note": "SIG_RE with /g flag + `for (const m of clean.matchAll(SIG_RE)) { last = m[1]; }` -- returns the LAST match, not the first."},
+        {"file": "skills/earn/sol-trade/run.sh", "lines": "73", "note": "`SIG=$(printf '%s' \"$OUT\" | node \"$SKILL_DIR/lib/parse-pass.mjs\")` -- the old inline sed/grep `head -1` extraction is gone; run.sh now calls parse-pass.mjs exclusively."},
+        {"file": "skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs", "lines": "23-26", "note": "explicit multi-signature test asserts the LAST of two signatures is returned."},
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "224-243", "note": "scenario (f) full-integration test: FT_STUB_SIGS=\"$SIG_FIRST,$SIG_LAST\" against the real run.sh, asserts exactly one ledger line with sig===SIG_LAST."}
+      ]
+    },
+    {
+      "findingId": "FIND-004",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/lib/record-swap.mjs", "lines": "46-53", "note": "The JSON payload built for record() carries wallet/source/task/earn_usdc/cost_usdc/sig/confirmed/chain/wake -- NO `external` key at all (comment at line 49-51 explicitly documents why)."},
+        {"file": "skills/_shared/lib/ledger.mjs", "lines": "32,48-56", "note": "deriveLine only sets line.external when o.external===true (never true here, so the field is simply absent); isProfitable() requires line.external===true to return true -- a sol-trade line with no external key fails this check unconditionally."},
+        {"file": "skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs", "lines": "116-122", "note": "dedicated test asserts rows[0].external !== true AND isProfitable(rows[0])===false for a WINNING (delta=0.5) swap -- exercises the exact winning-case regression iteration-1 flagged."},
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "143-154", "note": "full-integration scenario (a) additionally asserts external !== true on the REAL record() write path (not just the unit-level fetchImpl stub)."}
+      ]
+    },
+    {
+      "findingId": "FIND-005",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "1-277", "note": "Full bash integration suite exists: 8 lettered scenarios (a)-(h), 9 `ok(...)` assertions total, covering PROP-011 (implicitly, via the wallet-derivation calls inside the guard), PROP-012 (scenario e), PROP-014 (scenarios a/b/d), PROP-015 (scenario c), PROP-016 (scenario g), PROP-005/006/007-class outcomes (scenarios a/f/h)."},
+        {"file": "skills/earn/sol-trade/tests/fake_solana_rpc.mjs", "lines": "1-47", "note": "local HTTP RPC stub, real-shaped getSignatureStatuses/getTransaction responses (preTokenBalances/postTokenBalances with accountIndex/owner/mint/uiTokenAmount), parametrized ok/unconfirmed/malformed modes -- mirrors solana-verify.mjs's own documented real-mainnet-verified shapes (solana-verify.mjs:7-11)."},
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "77-102", "note": "fixture franklin-trading PATH-stub: writes an FT_STUB_MARKER file ONLY when actually invoked, emits fixed-format Signature: lines only for its `start` subcommand when FT_STUB_SIGS is set -- the marker-file-absence assertions in scenarios (b)/(c)/(d)/(e) are a REAL invoked-or-not proof, not a tautology, because the stub can only write the marker if run.sh's own guard logic actually let control reach `franklin-trading start`."},
+        {"note": "ADVERSARIAL check for gamed tests: scenario (a) exercises the REAL run.sh -> REAL identity-match guard -> REAL earn-guard.mjs -> REAL franklin-trading fixture -> REAL parse-pass.mjs -> REAL record-swap.mjs -> REAL solana-verify.mjs (via genuine HTTP RPC calls to the local fake server, not an injected fetchImpl) -> REAL record.mjs/ledger.mjs/identity-guard.mjs, and asserts on the resulting on-disk ledger line's exact fields. This is a true end-to-end path; a broken identity-match guard, a broken parse-pass regex, or a reintroduced external:true would all cause this scenario to fail. Not gamed."}
+      ]
+    },
+    {
+      "findingId": "FIND-007",
+      "status": "CLOSED",
+      "evidence": [
+        {"file": "skills/earn/sol-trade/run.sh", "lines": "75-91", "note": "record-swap.mjs's stdout JSON is captured into $REC, its `status` field is parsed via python3 (RSTATUS), and for any status other than recorded/duplicate a trace.jsonl line `{\"action\":\"sol-verify-failed\",\"status\":...,\"sig\":...}` is appended -- fail-soft (2>/dev/null || true on the record-swap call itself), never a double-record (record-swap.mjs itself already refused to append for these statuses)."},
+        {"file": "skills/earn/sol-trade/tests/test_run.sh", "lines": "245-261", "note": "scenario (g): RPC MODE=malformed against a real Signature: line -> asserts zero earn-ledger.jsonl lines, exactly one new trace.jsonl line matching action:sol-verify-failed + status:verify-error, exit 0."}
+      ]
+    }
+  ],
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/run.sh:29-38", "description": "Identity-match guard order (kill-switch -> CLI-presence check -> identity-match -> cumulative earn-guard -> franklin-trading start) matches REQ-002's EARS clause ordering exactly."},
+        {"type": "file", "location": "skills/_shared/lib/identity-guard.mjs:55-58", "description": "\"sol-trade\" added to ALLOWED_EARN_SOURCES as a one-line additive entry, matching the Files-in-scope table."},
+        {"type": "file", "location": "skills/earn/__tests__/run-identity.test.mjs:48-106", "description": "REQ-001's own PROP-002/004/009/013 bash-integration coverage for earn/run.sh (not one of the 6 findings, but load-bearing context confirming the same identity-resolution discipline this feature depends on is genuinely tested end-to-end, not just unit-level)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs:68-77,79-86", "description": "Negative-delta (PROP-007) and zero-delta edge cases both recorded, never rejected as zero-delta (the one deliberate divergence from record-payout.mjs)."},
+        {"type": "file", "location": "skills/earn/sol-trade/tests/test_run.sh:157-201", "description": "Both PROP-014 sub-cases (no-resolvable-secret automaton-shape, and resolvable-but-foreign third-party-shape) HALT before the CLI is invoked -- proving identity MATCH, not mere non-emptiness."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/lib/record-swap.mjs:18-56", "description": "recordSwap() never throws (bad-args/verify-error paths return status objects), sig-keyed idempotency via alreadyRecordedSig, sign-mapping (earn_usdc/cost_usdc from delta sign) matches spec exactly."},
+        {"type": "file", "location": "skills/_shared/lib/solana-verify.mjs:49-81", "description": "sigStatus/usdcDeltaForSig (unmodified, out of scope) re-read and confirmed to match the exact call sequence record-swap.mjs relies on."},
+        {"type": "file", "location": "skills/earn/sol-trade/run.sh:65-66", "description": "franklin-trading invoked once per pass with a timeout, output captured; no double-invocation path found."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": ["FIND-102"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/run.sh", "description": "No dead sed/grep extraction code remains from the pre-fix version; single responsibility per new lib file (parse-pass.mjs pure, record-swap.mjs effectful, mirroring clip-promote's existing split)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/lib/parse-pass.mjs:13-21", "description": "extractLastSignature is genuinely pure (no I/O, deterministic, total) -- confirms verification-architecture.md's purity-boundary claim for this new module."},
+        {"type": "file", "location": "skills/earn/sol-trade/lib/record-swap.mjs:1-13", "description": "record-swap.mjs is correctly classified as Effectful Shell (network RPC + filesystem append), not claimed pure -- no purity_boundary violation."},
+        {"type": "test-output", "location": "parent-agent-reported (independently re-run)", "description": "parse-pass 5/5, record-swap 8/8, identity-guard 12/12, sol-trade/tests/test_run.sh 9/9 -- all counts independently re-derived by this review by reading each test file in full and counting test()/ok() calls, matching exactly."}
+      ]
+    }
+  ],
+  "findings": [
+    {
+      "findingId": "FIND-101",
+      "severity": "low",
+      "blocking": false,
+      "category": "spec_gap",
+      "file": "skills/earn/sol-trade/run.sh",
+      "line": "82-91",
+      "issue": "REQ-002's edge cases prescribe TWO DIFFERENT degrade behaviors: a `verify-error` (RPC infra failure) gets a narrate-only trace.jsonl line, while an `unconfirmed` signature (a definitive on-chain fact) is spec'd to have its reason \"logged to stderr only\" (not necessarily to trace.jsonl). The FIND-007 fix collapses BOTH (plus bad-args/no-delta) into the SAME trace.jsonl `sol-verify-failed` line, so an `unconfirmed` status now also gets a durable trace.jsonl entry beyond the spec's literal wording for that sub-case. This does not violate any money-safety invariant (earn-ledger.jsonl is untouched either way, and no proof obligation tests trace.jsonl-absence for the unconfirmed case) -- it is a stricter/more-auditable behavior than literally specified, not a functional regression. Non-blocking."
+    },
+    {
+      "findingId": "FIND-102",
+      "severity": "low",
+      "blocking": false,
+      "category": "structural_integrity",
+      "file": "skills/earn/sol-trade/lib/record-swap.mjs",
+      "line": "60",
+      "issue": "The CLI-entrypoint self-invocation guard uses `import.meta.url.endsWith(process.argv[1].split(\"/\").pop())` (a basename-suffix match), whereas every other new/touched module in this feature (parse-pass.mjs:29, resolve-identity.mjs:143, record.mjs:34) uses the stronger, standard `path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)` idiom. In every ACTUAL call site in this feature (run.sh invokes it via an absolute path) the weaker check is functionally correct and does not misfire during `node --test` imports (verified: process.argv[1] during test runs is the test file's own path, whose basename never equals 'record-swap.mjs'). This is a cosmetic inconsistency, not a demonstrated functional defect. Non-blocking."
+    },
+    {
+      "findingId": "FIND-103",
+      "severity": "low",
+      "blocking": false,
+      "category": "test_quality",
+      "file": "skills/earn/sol-trade/tests/test_run.sh",
+      "line": "73,141",
+      "issue": "The behavioral-spec's Acceptance Criteria for PROP-014(c) (Franklin-shaped fixture) says the fixture's Solana secret should be \"readable via the SAME legacy .solana-session path the real CLI's own wallet setup reads.\" The actual test fixture instead writes `.automaton/solana.json` under the `.blockrun`-shaped fixture home, so BOTH the own-ANICCA_HOME derivation and the forced-.blockrun derivation resolve via resolveSolanaSecret's 2nd-priority (ANICCA_HOME-file) branch rather than its 3rd-priority (legacy .solana-session) branch -- the identity-match guard's core equality-check logic is still genuinely proven (same effectiveHome -> same file -> same address, for two separately-invoked node processes), but the SPECIFIC legacy-path branch is not exercised at this full-integration level. That branch IS separately covered at the unit level (runtime/loop/__tests__/resolve-identity.test.mjs:158-165, unmodified/pre-existing), so the underlying resolution logic is not actually unproven -- only the AC's literal fixture-shape wording is not matched. Non-blocking."
+    }
+  ],
+  "blocking_count": 0,
+  "convergenceSignals": {
+    "findingCount": 3,
+    "priorFindingsClosed": 6,
+    "priorFindingsStillOpen": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

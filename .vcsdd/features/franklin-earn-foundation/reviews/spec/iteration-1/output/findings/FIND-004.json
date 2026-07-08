@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "identity_safety",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "REQ-001's threat model (Edge Cases + Acceptance Criteria) and PROP-002 test ONLY one contamination vector: a stale BLOCKRUN_WALLET_KEY present in a shared sourced .env fixture. But the chosen resolution mechanism ('resolve-identity.mjs evm' as a CLI, per REQ-001's own text: 'mirrors economy/gig/run.sh:50') calls resolveEvmPrivateKey({}), whose FIRST check (resolve-identity.mjs:66-67) is env.ANICCA_EVM_PRIVATE_KEY -- with HIGHER priority than the ANICCA_HOME-gated file resolution this whole feature is built around. Two consequences: (1) PROP-002's touted 'contaminating BLOCKRUN_WALLET_KEY' scenario does not actually threaten the CLI-form call at all, since resolveEvmPrivateKey never reads BLOCKRUN_WALLET_KEY -- so this proof obligation tests a vector the chosen implementation was already structurally immune to, creating a false sense of thorough coverage. (2) The vector that DOES structurally override the fix -- ANICCA_EVM_PRIVATE_KEY being present in the process env before resolve-identity.mjs runs -- is never mentioned in any edge case, acceptance criterion, or PROP in either spec file. Today this is not yet exploitable only because run.sh's EARN_ALLOW allowlist (run.sh:26) happens not to include ANICCA_EVM_PRIVATE_KEY -- but nothing in this spec asserts that invariant or tests a regression against it, even though it is the single highest-priority override on the exact resolution path this entire feature relies on for correctness.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/earn/lib/resolve-identity.mjs",
+    "lineRange": "63-67",
+    "snippet": "export function resolveEvmPrivateKey({ home, env } = {}) {\n  const e = env || process.env;\n  const override = normalizeEvmKey(e.ANICCA_EVM_PRIVATE_KEY);\n  if (override) return override;"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+      "lineRange": "38",
+      "snippet": "PROP-002 ... 'even when a contaminating BLOCKRUN_WALLET_KEY is present' -- never mentions ANICCA_EVM_PRIVATE_KEY, the actually-higher-priority override for this call path."
+    },
+    {
+      "filePath": "/Users/operator/anicca/skills/earn/run.sh",
+      "lineRange": "26",
+      "snippet": "EARN_ALLOW=\"BLOCKRUN_WALLET_KEY PKVAR OXWORK_PKVAR BASE_RPC_URL ...\" -- ANICCA_EVM_PRIVATE_KEY is absent today (good), but no requirement in this spec pins that as a must-never-regress invariant."
+    }
+  ],
+  "routeToPhase": "1c"
+}

@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-002's Edge Cases enumerate: no-signature (WAIT), unconfirmed signature, multiple signatures, and negative delta -- but never the case where the `franklin-trading balance` before/after read itself fails or returns unparseable output (CLI crash, network timeout, malformed stdout). Every OTHER strategy branch already wired into `earn/run.sh` that reads a sub-process result (execute-swap.py, execute-yield.mjs) has an explicit 'abort/error -> degrade to a discover narrate line, never brick' pattern (see `earn/run.sh:308-319`'s `ERR=$(... d.get('error') or d.get('abort') ...)` handling and `earn/run.sh:372-381`'s identical pattern for yield). REQ-002 carries no analogous requirement for sol-trade's own balance-read failure, and `ledger.mjs:deriveLine` (`Number(o.earn_usdc ?? 0)`) will silently coerce a malformed/undefined delta to `NaN` or `0` rather than refusing to record -- meaning a failed balance read could either crash the pass-boundary shell glue (unspecified behavior) or silently record a wrong-shaped ledger line, and no PROP/AC in verification-architecture.md exercises this path.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+    "lineRange": "167-202",
+    "snippet": "REQ-002 Edge Cases list covers HALT/missing-signal/unconfirmed-sig/multi-sig/negative-delta -- no case for franklin-trading balance itself failing/erroring."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/skills/earn/run.sh",
+      "lineRange": "308-319",
+      "snippet": "ERR=$(printf '%s' \"$RES\" | python3 -c \"...d.get('error') or d.get('abort')...\"); if [ -n \"$ERR\" ]; then ... degrade to discover narrate ... fi  -- the existing convention REQ-002 does not carry over for sol-trade's balance read."
+    },
+    {
+      "filePath": "/Users/operator/anicca/skills/_shared/lib/ledger.mjs",
+      "lineRange": "11-13",
+      "snippet": "const earn = Number(o.earn_usdc ?? 0); const cost = Number(o.cost_usdc ?? 0); -- silently coerces malformed input rather than refusing to record."
+    }
+  ],
+  "routeToPhase": "1c"
+}

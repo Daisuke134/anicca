@@ -191,7 +191,14 @@
       "mode": "lean",
       "currentPhase": "1b",
       "updatedAt": "2026-07-08T10:53:46.673Z"
+    },
+    "franklin-earn-foundation": {
+      "status": "active",
+      "createdAt": "2026-07-08T11:42:48.185Z",
+      "mode": "lean",
+      "currentPhase": "5",
+      "updatedAt": "2026-07-08T15:28:36.254Z"
     }
   },
-  "activeFeature": "franklin-funding-loop"
+  "activeFeature": "franklin-earn-foundation"
 }

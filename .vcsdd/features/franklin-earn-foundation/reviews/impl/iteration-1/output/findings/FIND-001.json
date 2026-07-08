@@ -1,0 +1,26 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "blocking": true,
+  "description": "sol-trade/run.sh's identity-match guard (the ONE mechanism this whole feature exists to add, closing the already-live cross-instance leak / root cause 3) is trivially defeatable by an ambient ANICCA_SOLANA_PRIVATE_KEY env var, because run.sh never unsets it before either wallet-address-solana.mjs invocation -- unlike earn/run.sh, which DOES correctly `unset ANICCA_EVM_PRIVATE_KEY` at line 48 before its own resolve-identity.mjs call (REQ-001 is done right; REQ-002's Solana twin, explicitly required by the spec's Edge Cases/PROP-015/Files-in-scope table, is simply missing). resolveSolanaSecret()'s FIRST check (skills/earn/lib/resolve-identity.mjs:118-120) returns env.ANICCA_SOLANA_PRIVATE_KEY UNCONDITIONALLY, ignoring ANICCA_HOME entirely, whenever that var is a non-empty string. sol-trade/run.sh:26-27 spawns wallet-address-solana.mjs TWICE -- once inheriting run.sh's full ambient env (OWN_WALLET) and once with ONLY ANICCA_HOME overridden via a shell prefix (CLI_WALLET) -- so if ANICCA_SOLANA_PRIVATE_KEY happens to be set in the process env (leaked, inherited from a parent shell, a stray export, a debug session, etc.), BOTH invocations return the IDENTICAL derived address for ANY value of that var, making OWN_WALLET==CLI_WALLET unconditionally true and the identity-match guard (run.sh:28) PASS for every instance, not just Franklin's. This is exactly the contamination class the spec's own text warns about ('a leaked ANICCA_SOLANA_PRIVATE_KEY set to Franklin's real secret would otherwise let ANY instance's own-derivation spuriously MATCH Franklin's wallet and defeat the identity-match check entirely') -- but the required defensive `unset ANICCA_SOLANA_PRIVATE_KEY` is absent from the shipped run.sh. No test anywhere in the repo (grepped skills/earn/sol-trade/** and runtime/loop/__tests__/wallet-address-solana.test.mjs) exercises ANICCA_SOLANA_PRIVATE_KEY at all, so this hole is also completely unverified (see FIND-005).",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/run.sh",
+    "lineRange": "22-31",
+    "snippet": "WADDR=\"$SKILL_DIR/../../../runtime/wallet-address-solana.mjs\"\nOWN_WALLET=$(node \"$WADDR\" 2>/dev/null)\nCLI_WALLET=$(ANICCA_HOME=\"$HOME/.blockrun\" node \"$WADDR\" 2>/dev/null)\nif [ -z \"$OWN_WALLET\" ] || [ -z \"$CLI_WALLET\" ] || [ \"$OWN_WALLET\" != \"$CLI_WALLET\" ]; then"
+  },
+  "supportingEvidence": [
+    {
+      "filePath": "skills/earn/lib/resolve-identity.mjs",
+      "lineRange": "118-120",
+      "note": "resolveSolanaSecret's FIRST check returns env.ANICCA_SOLANA_PRIVATE_KEY unconditionally, ignoring home/ANICCA_HOME."
+    },
+    {
+      "filePath": "skills/earn/run.sh",
+      "lineRange": "48",
+      "note": "The EVM sibling DOES include the required defensive unset (`unset ANICCA_EVM_PRIVATE_KEY`) -- proving the correct pattern was known and applied on one side but not the other."
+    }
+  ],
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "blocking": true,
+  "description": "None of the full pass-boundary bash integration tests verification-architecture.md marks required:true for PROP-011 through PROP-016 exist anywhere in the repo for sol-trade/run.sh. The spec's own Files-in-scope table and Verification Strategy section explicitly demand: three fixture ANICCA_HOME shapes (automaton-shaped / foreign-resolvable / Franklin-shaped) asserting a fixture `franklin-trading` PATH-stub executable is invoked ONLY for the Franklin-shaped case (PROP-014, the specific proof obligation the spec calls out as necessary to close the already-live leak -- 'PROP-011/PROP-012 alone... do NOT exercise this branch'), a local-HTTP Solana RPC stub mirroring skills/earn/clip-promote/tests/fake_solana_rpc.mjs wired via SOLANA_RPC_URL (PROP-005/016), and a cumulative-guard fixture ledger test (PROP-012). Grepping the whole repo for 'franklin-trading' inside any *test* file returns only the two sol-trade/lib/__tests__ unit-test files (which merely mention the CLI in a comment, no PATH-stub); grepping skills/earn/sol-trade for 'fake_solana_rpc' or 'SOLANA_RPC_URL' returns nothing outside record-swap.mjs's own env-var read and run.sh's own invocation -- no test file wires it. Only isolated unit coverage of record-swap.mjs (itself internally inconsistent -- see FIND-004) exists; the identity-match guard, the cumulative earn-guard call, the sig-extraction wiring, and the RPC-failure degrade path are entirely unverified at the level that actually matters (the real run.sh pass boundary).",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade",
+    "lineRange": "n/a (absence)",
+    "snippet": "Glob('/Users/operator/anicca/skills/earn/sol-trade/**') = SKILL.md, lib/__tests__/parse-pass.test.mjs, lib/__tests__/record-swap.test.mjs, lib/record-swap.mjs, run.sh -- no bash integration test file, no fixture ANICCA_HOME directories, no franklin-trading PATH-stub."
+  },
+  "routeToPhase": "2b"
+}

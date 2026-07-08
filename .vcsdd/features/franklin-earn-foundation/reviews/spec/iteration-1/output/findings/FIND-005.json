@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-002's own root-cause section (behavioral-spec.md:28) quotes skills/earn/SKILL.md:80-82 verbatim: 'Not yet wired: hl-trade, sol-trade, x402-sell ... Once any of them starts calling record.mjs/record_ledger_line-style writes, add the one-liner above at its own pass boundary' -- referring to the P1 fail-closed cumulative earn-guard check (the exact one-line idiom already present in earn/run.sh:78 and economy/gig/run.sh:62-65: `if ! node .../earn-guard.mjs check \"$WALLET\" \"$SOURCE\" \"$LEDGER\"; then ... exit 0; fi`). REQ-002 is precisely the change that makes sol-trade start calling record.mjs for the first time -- by the project's OWN documented convention (which this very spec cites as evidence for the root cause), that trigger condition is now met and the P1 guard should be added to sol-trade/run.sh's own pass boundary. But neither REQ-002's EARS/Edge-Cases/Acceptance-Criteria nor the 'Files in scope' table (behavioral-spec.md:55-61) mentions adding this check, and verification-architecture.md's Proof Obligations table (PROP-001..010) has no proof obligation for a cumulative sol-trade HALT. Since REQ-002's own stated goal is 'so a losing pass is exactly as visible in the ledger as a winning one' -- i.e. to surface real losses -- shipping that visibility WITHOUT the accompanying fail-closed stop-loss the project's own convention mandates means Franklin's sol-trade loop could keep executing real on-chain swaps indefinitely while its cumulative net goes deeply negative, with nothing in this feature's scope to halt it. This is an internal inconsistency between the spec and the very convention document it quotes as its own justification.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+    "lineRange": "55-61",
+    "snippet": "'Files in scope' table -- sol-trade/run.sh change description: 'Capture franklin-trading balance before/after the pass, extract the pass's own last swap signature ..., verify + record via lib/record.mjs' -- no mention of earn-guard.mjs / P1 cumulative check."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/skills/earn/SKILL.md",
+      "lineRange": "80-82",
+      "snippet": "\"Not yet wired ... hl-trade, sol-trade, x402-sell. Once any of them starts calling record.mjs/record_ledger_line-style writes, add the one-liner above at its own pass boundary.\" -- this exact text is quoted by behavioral-spec.md:28 as the root-cause evidence, but its own instruction is not carried into REQ-002's requirements."
+    },
+    {
+      "filePath": "/Users/operator/anicca/skills/_shared/lib/earn-guard.mjs",
+      "lineRange": "170-212",
+      "snippet": "The existing CLI entrypoint (`earn-guard.mjs check <wallet> <source> <ledgerPath>`) that earn/run.sh:78 and economy/gig/run.sh:62-65 already call at their own pass boundary -- the pattern REQ-002 should extend to sol-trade/run.sh but does not."
+    }
+  ],
+  "routeToPhase": "1c"
+}

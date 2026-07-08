@@ -1,0 +1,56 @@
+{
+  "feature": "franklin-earn-foundation",
+  "reviewType": "spec",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 3,
+  "dimensions": [
+    {
+      "name": "identity_safety",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md:189-227 (REQ-002 EARS + Edge Cases)", "description": "FIND-006 (critical, iter2) genuinely closed at the spec level: REQ-002 now requires sol-trade/run.sh to derive its OWN ANICCA_HOME-scoped Solana address AND, separately, the address forced-ANICCA_HOME=$HOME/.blockrun would derive via the SAME unmodified runtime/wallet-address-solana.mjs script, and HALT (exit 0, zero new ledger lines, reason identity-mismatch) BEFORE franklin-trading start is ever invoked unless both are non-empty and equal. I traced this logic against the real resolve-identity.mjs (resolveSolanaSecret, lines 115-138): for automaton's real ANICCA_HOME=/Users/operator/.anicca, own-derivation is empty (no .automaton/solana.json, and effectiveHome != $HOME/.blockrun so the legacy branch never fires) while forced-.blockrun-derivation resolves Franklin's real address via the legacy .solana-session branch -- the guard correctly HALTs. For Franklin's own ANICCA_HOME=/Users/operator/.blockrun, both derivations invoke the identical script with the identical effectiveHome and trivially agree -- the guard correctly does NOT halt. For a hypothetical third instance with its own resolvable-but-non-.blockrun Solana secret, the two derivations differ -- the guard correctly HALTs (proving identity MATCH, not mere non-emptiness). PROP-014 (verification-architecture.md:68) exercises exactly these three fixture shapes at the FULL sol-trade/run.sh integration level via a fixture franklin-trading PATH-stub asserted invoked/not-invoked -- not merely wallet-address-solana.mjs in isolation -- directly satisfying iter2's explicit demand that the fix be proven at the pass-boundary level, not the low-level-derivation level alone."},
+        {"type": "file", "location": "/opt/homebrew/lib/node_modules/@blockrun/franklin-trading/dist/config.js:15 + node_modules/@blockrun/llm/dist/index.js:4793-4794", "description": "Re-confirmed directly against the real installed @blockrun/franklin-trading@0.2.4 package (version matches the spec's citation exactly, package.json:3) that BLOCKRUN_DIR / SOLANA_WALLET_FILE are unconditionally os.homedir()-based with no ANICCA_HOME or other env override anywhere in the package (grepped the full installed tree for BLOCKRUN_DIR/homedir/ANICCA_HOME -- zero override paths found) -- grounding root cause 3's claim that the identity-match guard is the ONLY possible fix given the external CLI's own custody logic can't be made per-instance from the caller's side."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/lib/resolve-identity.mjs:115-138", "description": "FIND-007 (iter2) closed: confirmed lines 118-120 are the ACTUAL highest-priority ANICCA_SOLANA_PRIVATE_KEY override on resolveSolanaSecret's resolution path, exactly as REQ-002's new Edge Case and PROP-015 (verification-architecture.md:69) describe; REQ-002 now requires a defensive unset before BOTH wallet-address-solana.mjs invocations, mirroring REQ-001's already-accepted ANICCA_EVM_PRIVATE_KEY fix."},
+        {"type": "file", "location": "/Users/operator/.automaton/wallet.json, /Users/operator/Library/LaunchAgents/com.anicca.daemon.plist, /Users/operator/Library/LaunchAgents/ai.anicca.franklin-loop.plist", "description": "Re-read all three real files this iteration: automaton's wallet.json has only privateKey/createdAt/rotatedAt/rotationReason (no address field, consistent with FIND-001's already-accepted derive-don't-read-a-field fix); the daemon plist confirms ANICCA_HOME=/Users/operator/.anicca + HOME=/Users/operator for automaton, the franklin-loop plist confirms ANICCA_HOME=/Users/operator/.blockrun + the SAME HOME=/Users/operator for Franklin -- grounding the whole identity-match-guard rationale (same OS $HOME, only ANICCA_HOME differs)."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/_shared/lib/identity-guard.mjs:30-55", "description": "Confirmed 'sol-trade' is NOT currently in ALLOWED_EARN_SOURCES (as expected -- this is a spec-review of not-yet-implemented Files-in-scope work); the one-line addition REQ-002 specifies is the correct, minimal, additive-only change PROP-008/regression guardrails require."}
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-009"],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md:329-332 + skills/earn/run.sh:308-319,372-381", "description": "FIND-008 (iter2) closed for its narrow ask: the balance-read-failure Edge Case + PROP-016 mirror the EXISTING, verified abort/error-degrade convention -- I re-read run.sh:308-319 (swap-abort) and run.sh:372-381 (yield-abort) in full and both match the cited pattern exactly (detect d.get('error')/d.get('abort'), degrade to a NARRATE line, exit 0, never crash)."},
+        {"type": "file", "location": "see FIND-009", "description": "NEW critical finding this iteration: REQ-002's own delta-computation mechanism is internally contradictory (CLI-text-parse of 'franklin-trading balance' per the EARS text/edge cases vs. RPC-based sigStatus/usdcDeltaForSig per PROP-005's Tool column and one AC's fixture design), and the Effectful Shell enumeration for sol-trade/run.sh never mentions solana-verify.mjs at all despite PROP-005 requiring it to be mocked -- this is the money-correctness heart of root cause 2 (the P&L feedback gap this feature exists to close) and is not concrete enough to implement unambiguously."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-009", "FIND-010"],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:68", "description": "PROP-014 (FIND-006's fix) is a well-formed, full-integration proof obligation: three named fixture ANICCA_HOME shapes, asserted against fixture franklin-trading PATH-stub invocation/non-invocation, exactly closing iter2's demand that this be proven above the isolated-wallet-derivation level."},
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:69-70", "description": "PROP-015/PROP-016 (FIND-007/FIND-008's fixes) are each internally coherent, concretely toolable proof obligations reusing real, confirmed existing patterns (fixture env vars; fixture franklin-trading balance subcommand emitting unparseable output)."},
+        {"type": "file", "location": "see FIND-009 and FIND-010", "description": "PROP-005 (the primary proof obligation for REQ-002's ledger-wiring, i.e. root cause 2's actual fix) cannot be satisfied as described: its own Tool column requires sigStatus/usdcDeltaForSig to be mocked, but skills/earn/lib/record.mjs (the only write path REQ-002 names) never imports solana-verify.mjs, and the Effectful Shell's own enumeration of every sol-trade/run.sh call never mentions it either. Additionally, PROP-016's balance-parsing is only ever fixture-tested, never against the real chalk-colorized 'USDC Balance: $X.XX' line confirmed at the installed package's dist/commands/balance.js:13 (FIND-010)."}
+      ]
+    }
+  ],
+  "priorFindingsResolved": {
+    "FIND-001": {"resolved": true, "note": "Unchanged from iter2 -- re-confirmed this iteration against the real ~/.automaton/wallet.json (privateKey/createdAt/rotatedAt/rotationReason only, no address field). No regression."},
+    "FIND-002": {"resolved": true, "note": "Unchanged from iter2 -- REQ-002's first clause still mandates deriving sol-trade's ledger wallet via runtime/wallet-address-solana.mjs, never hardcoded. No regression."},
+    "FIND-003": {"resolved": true, "note": "Unchanged from iter2 -- re-confirmed this iteration that skills/earn/clip-promote/tests/fake_solana_rpc.mjs, test_run.sh's env -i PII-isolation pattern (lines 30-37), and skills/earn/lib/__tests__/record-solana.test.mjs / runtime/loop/__tests__/resolve-identity.test.mjs all exist exactly where verification-architecture.md cites them (initial Glob search used an overly narrow path filter and returned false negatives; a corrected search confirmed every file). No fabricated precedent."},
+    "FIND-004": {"resolved": true, "note": "Unchanged from iter2 -- REQ-001's ANICCA_EVM_PRIVATE_KEY defensive unset + PROP-013 still present and correctly scoped (resolve-identity.mjs:63-67 re-confirmed as the actual override check). No regression."},
+    "FIND-005": {"resolved": true, "note": "Unchanged from iter2 -- REQ-002 still requires sol-trade/run.sh to call earn-guard.mjs's cumulative HALT check at its own pass boundary (PROP-012), satisfying SKILL.md:80-82's documented convention. Re-read skills/_shared/lib/earn-guard.mjs in full this iteration: evaluateHalt's dual bySkill/byAgent scope-union logic matches REQ-002's 'HALT if EITHER scope fails' description exactly."},
+    "FIND-006": {"resolved": true, "note": "CRITICAL, genuinely closed. REQ-002's identity-match guard + PROP-014's three-fixture full-integration test (automaton-shaped/no-secret, third-party-shaped/foreign-secret, Franklin-shaped/.blockrun) traced step-by-step against the real resolve-identity.mjs and confirmed to correctly HALT for every non-Franklin shape and correctly pass only for the Franklin shape. This closes the already-live production leak (70 real franklin-trading passes recorded under automaton's own ANICCA_HOME, per iter2's trace.jsonl evidence) at the design level. See identity_safety dimension evidence for the full derivation trace."},
+    "FIND-007": {"resolved": true, "note": "Closed. ANICCA_SOLANA_PRIVATE_KEY (resolve-identity.mjs:118-120, re-confirmed the exact line numbers this iteration) now has a symmetric defensive-unset requirement (REQ-002 Edge Case) and regression proof obligation (PROP-015), mirroring REQ-001/PROP-013's already-accepted EVM-side fix."},
+    "FIND-008": {"resolved": true, "note": "Closed for its stated narrow scope (a documented edge case + proof obligation for franklin-trading balance read failure, degrading to a narrate-only line, mirroring run.sh:308-319/372-381's real existing convention -- both line ranges re-verified against the actual file this iteration). NOTE: this resolution does not fully insulate REQ-002 from ambiguity -- see the NEW FIND-009, which shows the SUCCESS-path delta computation this same balance-read sits alongside is itself internally contradictory in the spec (CLI-text-parse vs. RPC-based usdcDeltaForSig)."}
+  },
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

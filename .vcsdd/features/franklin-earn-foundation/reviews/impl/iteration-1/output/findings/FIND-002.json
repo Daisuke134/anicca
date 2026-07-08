@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "critical",
+  "blocking": true,
+  "description": "skills/earn/sol-trade/lib/parse-pass.mjs -- the file the spec's Files-in-scope table mandates as new ('Pure signature-extraction helper (unit-testable in isolation)') and the sole subject of PROP-010 -- DOES NOT EXIST on disk. Confirmed via repeated Glob against the exact path and against skills/earn/sol-trade/lib/* (only record-swap.mjs and __tests__/{record-swap.test.mjs,parse-pass.test.mjs} exist there; no parse-pass.mjs). The test file skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs imports `from \"../parse-pass.mjs\"` at its top -- running `node --test` against this file will crash at import time (ERR_MODULE_NOT_FOUND / Cannot find module), before a single assertion executes. This makes any claim that this feature's test suite is fully green false as shipped: PROP-010 (required:true per verification-architecture.md) cannot pass because its subject module was never created, and the whole sol-trade/lib/__tests__ directory cannot be run cleanly.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs",
+    "lineRange": "6",
+    "snippet": "import { extractLastSignature } from \"../parse-pass.mjs\";"
+  },
+  "supportingEvidence": [
+    {
+      "note": "Glob('/Users/operator/anicca/skills/earn/sol-trade/lib/*') returns only __tests__/parse-pass.test.mjs, __tests__/record-swap.test.mjs, record-swap.mjs -- parse-pass.mjs is absent."
+    }
+  ],
+  "routeToPhase": "2b"
+}

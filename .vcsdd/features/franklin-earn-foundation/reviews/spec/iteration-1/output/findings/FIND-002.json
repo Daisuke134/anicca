@@ -1,0 +1,25 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "identity_safety",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-002 (sol-trade ledger wiring) never specifies HOW the Solana wallet ADDRESS is obtained in the real (non-fixture) implementation, even though this is a real functional requirement: solana-verify.mjs's usdcDeltaForSig(signature, wallet, opts) needs a 'wallet' string to know whose token-balance delta to sum, and the recorded ledger line itself carries a 'wallet' field. The codebase ALREADY has the correct, per-instance-safe pattern for exactly this derivation: runtime/wallet-address-solana.mjs derives the base58 public key in-process from resolveSolanaSecret()'s ANICCA_HOME-gated secret via Keypair.fromSecretKey (fail-closed, never leaks the secret). Neither the behavioral-spec.md REQ-002 text, its 'Files in scope' table, nor verification-architecture.md's Purity Boundary Map / Proof Obligations table (PROP-001..010) requires sol-trade/run.sh to use this mechanism, or any per-instance-gated mechanism at all, for obtaining the wallet address it will pass to usdcDeltaForSig and write into the ledger line. Given the feature's own stated purpose is eliminating hardcoded/foreign wallet identities, this silence is a live risk: an implementer could trivially hardcode Franklin's known address (the literal string '8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9' already appears as a plain comment in behavioral-spec.md:3-4 and sol-trade/SKILL.md) directly into sol-trade/run.sh. That would 'work' today (only Franklin runs sol-trade) but reintroduces the exact hardcoded-identity anti-pattern this feature exists to eliminate, and would silently misattribute funds/verification if this script or pattern is ever copied for another instance (mirrors the ORIGINAL run.sh bug's own class of mistake). None of PROP-005 through PROP-010 test this derivation step at all -- every one of them injects/mocks sigStatus/usdcDeltaForSig directly and never exercises how the real 'wallet' argument reaches them in production.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/behavioral-spec.md",
+    "lineRange": "113-158",
+    "snippet": "REQ-002 EARS + Edge Cases + Acceptance Criteria -- no mention anywhere of how sol-trade/run.sh obtains ITS OWN wallet address for usdcDeltaForSig(sig, wallet) or the ledger line's wallet field."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/runtime/wallet-address-solana.mjs",
+      "lineRange": "1-32",
+      "snippet": "Existing, already-correct pattern: derives THIS instance's base58 Solana address in-process from resolveSolanaSecret(), fail-closed, never echoes the secret. Not referenced anywhere by REQ-002."
+    },
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+      "lineRange": "35-46",
+      "snippet": "Proof Obligations table PROP-001..010 -- none of them cover deriving/verifying the wallet address used by sol-trade's record/verify calls."
+    }
+  ],
+  "routeToPhase": "1c"
+}

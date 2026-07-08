@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "medium",
+  "blocking": false,
+  "description": "earn/run.sh's EARN_ALLOW allowlist (line 26) still lists BLOCKRUN_WALLET_KEY, so the sourcing loop at lines 27-33 continues to import automaton's real key (from $HOME/.openclaw/.env) into the process env of every earn/run.sh invocation, INCLUDING Franklin's. This is currently rendered harmless only by ordering: the correct per-instance SIGNKEY is exported under $PKVAR at line 54, AFTER the sourcing loop, overwriting the contaminated value before any child process reads it. However, no test or comment asserts this ordering as an invariant, so this is a fragile, silent precondition rather than a structurally enforced guarantee -- any future edit that moves a child invocation (or adds a new one) between the sourcing loop (line 27-33) and the export at line 54 would silently reintroduce the exact wallet-identity leak this feature exists to close, with no test to catch it. The root-cause analysis in the spec itself names BLOCKRUN_WALLET_KEY as 'automaton's own key... using it made Franklin's earn slots sign with automaton's wallet' (run.sh:46 comment) yet the allowlist that lets it into the process at all was never tightened.",
+  "evidence": {
+    "filePath": "skills/earn/run.sh",
+    "lineRange": "26",
+    "snippet": "EARN_ALLOW=\"BLOCKRUN_WALLET_KEY PKVAR OXWORK_PKVAR BASE_RPC_URL USDC_ADDRESS EARN_MODE EARN_STRATEGY EARN_TX EARN_SOURCE EARN_AMOUNT EARN_COST EARN_TASK EARN_LEDGER WAKE_ID ...\""
+  },
+  "routeToPhase": "2b"
+}

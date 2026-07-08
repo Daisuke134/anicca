@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "PROP-016's (and the implied success-path) parsing of 'franklin-trading balance' stdout is only ever exercised against a hand-written fixture franklin-trading PATH-stub (verification-architecture.md's own Tier-1 methodology calls this 'a new, self-contained technique for this feature -- no existing repo file stubs an external CLI's stdout this way'), which the test author fully controls and will naturally emit clean, uncolored text. The REAL CLI's balance command wraps its dollar figure in chalk color codes -- confirmed by reading the actual installed package: /opt/homebrew/lib/node_modules/@blockrun/franklin-trading/dist/commands/balance.js:13, `console.log(\\`USDC Balance: ${chalk.green(\\`$${balance.toFixed(2)}\\`)}\\`)`. Whether this renders as plain text or literal ANSI escape sequences when captured via bash command substitution depends entirely on chalk's TTY auto-detection of the child process's stdout, which nothing in REQ-002, its Edge Cases, or PROP-016 asserts, documents as an assumption, or tests against. No proof obligation in the table exercises the parser against ANSI-coded/colorized input. A fixture-only PATH-stub test suite can report 100% green while the real integration silently mis-parses (false balance-read-failed degrade on every real pass, or a corrupted numeral) under a CLI/runtime change that alters color behavior.",
+  "evidence": {
+    "filePath": "/opt/homebrew/lib/node_modules/@blockrun/franklin-trading/dist/commands/balance.js",
+    "lineRange": "13",
+    "snippet": "console.log(`USDC Balance: ${chalk.green(`$${balance.toFixed(2)}`)}`);"
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+    "lineRange": "94-97, 117-120",
+    "snippet": "'The external franklin-trading CLI's stdout ... is stood in for by a fixture executable placed first in $PATH ... an honestly-new technique for this feature' -- the fixture, not the real chalk-wrapped CLI, is what PROP-016 actually exercises."
+  },
+  "routeToPhase": "1c"
+}
