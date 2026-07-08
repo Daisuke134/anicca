@@ -157,6 +157,15 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 ### 報告経路（全層 MUST）
 - 全 loop（manager/explorer/CEO）は成果を evidence 付きで keiodaisuke@gmail.com（および contact@aniccaai.com → keiodaisuke 転送）に mail。CEO は加えて「会社全体の週次 P&L + 資源配分の変更」を報告。
 
+### 採用する BP（2026-07-08 リサーチ確定、車輪の再発明せず copy+tweak。出典必須）
+- **CEO の orchestration 骨格** = Anthropic Orchestrator-workers + Claude Cookbook FlexibleOrchestrator（orchestrator=高性能/worker=安価モデル。既存モデル分業表と一致）。https://platform.claude.com/cookbook/patterns-agents-orchestrator-workers
+- **CEO の資源配分エンジン** = **Mahoraga**（LinUCB/Thompson bandit + Lagrange 乗数の budget pacer + per-task hard reject）を task #13/#18 の実装土台に。各 loop を arm、実現 ROI を reward とする。https://github.com/pockanoodles/Mahoraga
+- **token 予算 gate** = **kai-linux/agent-os** の月次 spend hard-stop（jsonl 記録 → dispatch 直前フィルタ、(月,loop,閾値)ごと1回 alert、未設定 fail-open）を最小 copy。https://github.com/kai-linux/agent-os
+- **CEO の検収→差し戻し** = CrewAI hierarchical（manager 出力が不十分なら re-delegate、manager は tool を持たない）。無限ループ停止 = LangGraph `recursion_limit` パターン。
+- **effort scaling** = Anthropic multi-agent research（タスク複雑度で explorer の spawn 数を 1〜10+ に動的調整、判定は LLM-as-judge、固定ロジック/regex 禁止）。
+- **explorer の標準形** = **GapFinder の Discover→Scan→Gap→需要検証→Reality-Check（競合/大手対応/出荷速度/比較記事/OSS飽和の5チェックで潰す）→PROCEED/DIFFERENTIATE/PIVOT/ABANDON→生存案のみ2週MVP brief**。https://github.com/mthamil107/Research_Agent + dev-trend（GitHub star 成長を validation signal）+ pain-discovery（地味産業×高単価の倍率スコア、Ollama で $0）。
+- **guardrail（Anthropic 警告）**: multi-agent は token を単一 agent の数倍消費する。単純作業を高コスト multi-agent に流さない gate を CEO に併記（business value がコストを正当化するタスクのみ多段化）。
+
 ### 目的（north star）
 - Dais の 10k MRR + claude-p wallet の 10k MRR（agent economy = Franklin 群への出資 + $200 subscription 卒業して ClawRouter 自弁）。全 loop の置き場 = github.com/Daisuke134/profitable-claude（世界中の Claude が human と自分のために稼ぎ、subscription を卒業し、最終的に agent economy に参加できるテンプレート）。
 
