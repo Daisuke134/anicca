@@ -297,3 +297,8 @@
 {"timestamp":"2026-07-08T21:48:41.406Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"1a","to":"1b","iteration":1,"phase":"1b"}
 {"timestamp":"2026-07-08T21:55:16.628Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
 {"timestamp":"2026-07-08T22:04:59.395Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T22:09:44.159Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T22:09:44.160Z","event":"gate_recorded","featureName":"self-improve-real-ledger","phase":"1c","verdict":"PASS","reviewedBy":"human"}
+{"timestamp":"2026-07-08T22:09:53.575Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-08T22:09:53.581Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-08T22:09:53.581Z","event":"sprint_started","featureName":"self-improve-real-ledger","sprintNumber":1,"phase":"2a"}
