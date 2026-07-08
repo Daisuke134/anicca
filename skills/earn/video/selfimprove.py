@@ -12,9 +12,51 @@ CLI: selfimprove.py summary --handle H            → prints performance_summary
      selfimprove.py measure --handle H --tid T --port P --date D
      selfimprove.py record  --handle H --url U --script-file F --date D
 """
-import argparse, json, os
+import argparse, json, os, subprocess, sys
 
 CLOAK = os.path.expanduser("~/.cloak")
+
+_SKILLS_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+sys.path.insert(0, os.path.join(_SKILLS_DIR, "_shared", "lib"))
+from ytdlp_parse import parse_ytdlp_json  # noqa: E402 (REQ-LV-012/014 shared, frozen function)
+
+
+def _is_tiktok_url(url):
+    return "tiktok.com" in (url or "")
+
+
+def _run_ytdlp(args, **kw):
+    return subprocess.run(args, **kw)
+
+
+def measure_tiktok(url, date, yt_dlp_bin="yt-dlp", runner=None):
+    """REQ-LV-012 (video's TikTok engagement extension): existence is the yt-dlp SUBPROCESS's exit
+    code (HTTP 200 alone does not prove a real post — design spec verified this), values come from
+    the shared, frozen parse_ytdlp_json (REQ-LV-014 reuses this exact function, no duplicate
+    implementation). Fail-soft: a failed/errored yt-dlp call never fabricates a number. Returns the
+    SAME {url, views, likes, comments, og_desc, ok, measured_date} row shape the existing IG path
+    already writes (REQ-LV-013: keep the append format unchanged) — `comments` stays None here
+    because parse_ytdlp_json's frozen contract only extracts view_count/like_count. `runner` is an
+    injectable subprocess.run-alike (mirrors record_earn.py's onchain_check / record-payout.mjs's
+    sigStatus injection-seam convention) so tests never spawn a real yt-dlp process."""
+    run = runner or _run_ytdlp
+    try:
+        proc = run([yt_dlp_bin, "--dump-json", "--skip-download", url],
+                   capture_output=True, text=True, timeout=60)
+        ok_exit = proc.returncode == 0
+    except Exception:
+        ok_exit = False
+        proc = None
+    parsed = parse_ytdlp_json(proc.stdout) if (ok_exit and proc is not None) else {"view_count": None, "like_count": None}
+    return {
+        "url": url,
+        "views": parsed["view_count"],
+        "likes": parsed["like_count"],
+        "comments": None,
+        "og_desc": None,
+        "ok": bool(ok_exit and parsed["view_count"] is not None),
+        "measured_date": date,
+    }
 
 
 def _content(handle): return os.path.join(CLOAK, f"earn-video-content-{handle}.jsonl")
@@ -46,8 +88,12 @@ def measure_due(handle, tid, port, date, max_posts=2):
     todo = [p for p in reversed(posts) if p.get("post_url") and p["post_url"] not in measured_today][:max_posts]
     done = []
     for p in todo:
-        m = M.read_reel_metrics(p["post_url"], tid, port)
-        m["measured_date"] = date
+        url = p["post_url"]
+        if _is_tiktok_url(url):
+            m = measure_tiktok(url, date)   # REQ-LV-012: yt-dlp path, IG's read_reel_metrics untouched
+        else:
+            m = M.read_reel_metrics(url, tid, port)
+            m["measured_date"] = date
         with open(_metrics(handle), "a") as f:
             f.write(json.dumps(m, ensure_ascii=False) + "\n")
         done.append(m)

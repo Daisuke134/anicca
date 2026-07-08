@@ -1,0 +1,61 @@
+{
+  "_comment": "REQ-LV-100 — Cadence Contract declarations, one entry per loop, machine-readable schema consumed by cadence.py via verify-loops.sh/verify-loops-audit.sh. kind semantics documented in cadence.py's own module docstring. clip-promote is intentionally absent (REQ-LV-100: campaign-dependent posting frequency has no Cadence Contract — see clip-promote-status.mjs instead).",
+  "clip": {
+    "kind": "row-exists",
+    "cadence": "1/day",
+    "unit": "reel",
+    "boundary_tz": "Asia/Tokyo",
+    "source": "CLIP_LEDGER ($EARN_LEDGER or ~/.openclaw/state/clip-earn-ledger.jsonl)"
+  },
+  "affiliate": {
+    "kind": "row-exists",
+    "cadence": "1/day",
+    "unit": "reel",
+    "boundary_tz": "Asia/Tokyo",
+    "source": "~/.cloak/affiliate-metrics.jsonl (REQ-LV-014)"
+  },
+  "video": {
+    "kind": "row-exists",
+    "cadence": "1/day",
+    "unit": "reel",
+    "boundary_tz": "Asia/Tokyo",
+    "source": "~/.cloak/earn-video-metrics-<handle>.jsonl"
+  },
+  "gig": {
+    "kind": "row-exists",
+    "cadence": "1/day",
+    "unit": "reel",
+    "boundary_tz": "Asia/Tokyo",
+    "source": "~/gig/gig-funnel.jsonl (REQ-LV-015)"
+  },
+  "bounty": {
+    "kind": "increment",
+    "field": "checked",
+    "source": "gated.json（bounty-funnel.jsonlのpass毎の値から前日比を算出）",
+    "boundary_tz": "Asia/Tokyo"
+  },
+  "founder-loop": {
+    "kind": "pass-marker",
+    "source": "~/.anicca-founder/state/STATE.md mtime",
+    "boundary_tz": "Asia/Tokyo"
+  },
+  "pm-earner": {
+    "kind": "compound",
+    "conditions": [
+      {
+        "id": "hourly-pass",
+        "kind": "recency",
+        "cadence": "1/hour",
+        "source": "earner.log mtime",
+        "max_age_min": 40
+      },
+      {
+        "id": "daily-redeem",
+        "kind": "row-exists",
+        "cadence": "1/day",
+        "unit": "redeem",
+        "boundary_tz": "Asia/Tokyo"
+      }
+    ]
+  }
+}
