@@ -3,7 +3,7 @@ sprintNumber: 1
 feature: hl-realized-pnl
 scope: Fill-based Hyperliquid realized-P&L reconcile engine (lib/fills.py + lib/reconcile.py + hl.py reconcile subcommand + run.sh wiring) and ledger.mjs's hyperliquid GATE-0 disjunct.
 negotiationRound: 1
-status: draft
+status: approved
 criteria:
   - id: CRIT-001
     dimension: spec_fidelity
