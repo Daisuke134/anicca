@@ -25,6 +25,25 @@
 # -> evidence_url exists so the report is verifiable, not a self-reported vibe.
 set -u
 
+# lr_valid_evidence — REQ-LV-003 evidence gate predicate, pure (no I/O). Mirrors this codebase's
+# `--<flag>` direct-call convention (self-fix.sh::sf_should_continue --should-continue,
+# healthcheck-runtime-loop.sh::hrl_classify --classify). Rejects (rc=1) an empty string or a bare
+# "none" (case-insensitive, whitespace trimmed); "none: <reason>" or any other non-empty string
+# is accepted (rc=0).
+lr_valid_evidence(){
+  local v="${1:-}"
+  v="$(printf '%s' "$v" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')"
+  [ -z "$v" ] && return 1
+  local lower; lower="$(printf '%s' "$v" | tr '[:upper:]' '[:lower:]')"
+  [ "$lower" = "none" ] && return 1
+  return 0
+}
+
+if [ "${1:-}" = "--valid-evidence" ]; then
+  lr_valid_evidence "${2:-}"
+  exit $?
+fi
+
 LOOP_NAME="${1:-unknown}"
 DID="${2:-(no summary provided)}"
 RESULT="${3:-unknown}"
@@ -34,7 +53,21 @@ EVIDENCE_URL="${5:-none}"
 LOG="$HOME/.openclaw/logs/loop-report.log"
 mkdir -p "$(dirname "$LOG")" 2>/dev/null
 
-# Credential not given -> silently no-op (Dais: do not report if not given the credential).
+# REQ-LV-003: evidence gate — an empty or bare-"none" evidence_url is rejected before anything is
+# sent or resolved, regardless of AGENTMAIL_API_KEY state (a caller must always supply a reason).
+if ! lr_valid_evidence "$EVIDENCE_URL"; then
+  echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) loop=$LOOP_NAME REJECTED (empty-or-bare-none evidence)" >> "$LOG" 2>/dev/null
+  exit 1
+fi
+
+# REQ-LV-001: self-resolve AGENTMAIL_API_KEY from ~/.openclaw/.env before deciding NO-OP (the
+# caller is no longer required to have pre-sourced it).
+if [ -z "${AGENTMAIL_API_KEY:-}" ] && [ -f "$HOME/.openclaw/.env" ]; then
+  set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+fi
+
+# Credential not given, even after self-resolve -> silently no-op (Dais: do not report if not
+# given the credential).
 if [ -z "${AGENTMAIL_API_KEY:-}" ]; then
   echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) loop=$LOOP_NAME NO-OP (AGENTMAIL_API_KEY unset)" >> "$LOG" 2>/dev/null
   exit 0
