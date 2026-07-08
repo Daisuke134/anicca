@@ -2,7 +2,7 @@
 sprintNumber: 1
 feature: self-improve-real-ledger
 scope: Per-instance ledger path resolution (lib/ledger_reader.py), Hyperliquid mirror-sync (is_confirmed/is_profitable split), realized-ledger promotion gate (lib/gate_math.py new pure functions, lib/promotion_history.py, lib/promote_gate.py's realized_gate param), end-to-end wiring (promote_gate_run.py, scope_guard.py DENYLIST_MODULES), and honest data_source tagging (evaluator.py).
-negotiationRound: 2
+negotiationRound: 1
 status: approved
 criteria:
   - id: CRIT-001
