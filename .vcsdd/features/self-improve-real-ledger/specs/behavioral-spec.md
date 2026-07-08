@@ -400,6 +400,13 @@ Strict-mode gate: no phase advances with any BLOCKING adversary finding open.
 
 ## UNVERIFIED
 
+- (spec-review iteration 3, finding F-8) `scan_denylisted_imports`'s plain-substring scan is
+  structurally bypassable via obfuscated dynamic identifier construction (`importlib`, `getattr`,
+  string-building) — an inherited property of the pre-existing scope_guard architecture, not a
+  regression introduced here; REQ-RL19 closes the realistic direct-import surface only. The
+  per-candidate fresh Opus adversary gate (REQ-RH4, unchanged) remains the backstop for
+  obfuscated reach-around attempts.
+
 - Row-level real-history walk-forward replay through `score_candidate` (the literal meaning of
   "evaluate on real data instead of fixture") is explicitly NOT built this phase — see REQ-RL15's
   grounding. A follow-up feature would need to: (1) add market-feature decision-logging to
