@@ -33,7 +33,7 @@
       "summary": "Self-replication: birth a child instance on DO/Akash with its own wallet + AgentMail inbox; no parent instruction needed for the child's first earn wake.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
-      "riskNote": "anicca-agent-economy REQ-201: its own decision core (lib/spawn-decision.js) already gates real provisioning on the PARENT being profitable -- reading/considering this slot while broke cannot itself put a broke instance's treasury at risk."
+      "riskNote": "anicca-agent-spawn REQ-102/REQ-307: its own decision core (lib/treasury-gate.mjs::decideColonySpawn) already gates any real spawn attempt (lib/spawn-orchestrator.mjs::executeSpawnAttempt) on the COLONY-WIDE aggregate surplus clearing SPAWN_THRESHOLD_USD -- reading/considering this slot while the colony is broke cannot itself put a broke colony's treasury at risk."
     },
     "self/spawn-child": {
       "track": "A",

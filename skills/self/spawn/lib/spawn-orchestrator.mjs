@@ -9,6 +9,7 @@ import os from "node:os";
 import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { privateKeyToAccount } from "viem/accounts";
 
 import { withGigLock } from "../../../economy/gig/lib/lock.mjs";
 import { ensureAgentId } from "../../../economy/gig/lib/ensure-agent-id.mjs";
@@ -19,12 +20,15 @@ import { readChildren, appendChild } from "./ledger.js";
 import { nextChildId, buildChildSpec } from "./child-spec.js";
 import { needsSolanaWallet } from "./needs-solana-wallet.mjs";
 import { selectCloudTarget as selectCloudTargetPure } from "./cloud-target.mjs";
+import { evaluateAkashFundingGate } from "./akash-funding-gate.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const GENESIS_PATH = path.join(__dirname, "..", "..", "..", "..", "identity", "genesis.md");
 const GEN_WALLET_SCRIPT = path.join(__dirname, "..", "scripts", "gen-wallet.sh");
 const GEN_SOLANA_WALLET_SCRIPT = path.join(__dirname, "..", "scripts", "gen-solana-wallet.sh");
 const DEPLOY_AKASH_SCRIPT = path.join(__dirname, "..", "scripts", "deploy-akash.sh");
+const AKT_TREASURY_SCRIPT = path.join(__dirname, "..", "scripts", "akt-treasury.sh");
+const SPAWN_CHILD_CONFIG_PATH = path.join(__dirname, "..", "..", "spawn-child", "config.json");
 
 // REQ-206: fixed at 1 for every child this feature produces -- colony-treasury-funded spawns are,
 // by design, top-level, non-lineage children (spawn chaining is out of scope this increment).
@@ -34,6 +38,13 @@ const FUEL_PROVIDER = "free-model";
 
 function constitutionHash() {
   return crypto.createHash("sha256").update(fs.readFileSync(GENESIS_PATH)).digest("hex");
+}
+
+// REQ-304: spawn-child/config.json's own real, already-tuned costAkt/bufferAkt values -- never
+// hardcoded here a second time (mirrors akt-treasury.sh's own TREASURY_MINT_UAKT/ACT_BUFFER_UACT
+// citing this SAME file's _notes field as their source of truth).
+function spawnChildConfig() {
+  return JSON.parse(fs.readFileSync(SPAWN_CHILD_CONFIG_PATH, "utf8"));
 }
 
 // REQ-206: identical to REQ-204's actual gas-seed transfer amount, never a second, independently
@@ -115,9 +126,26 @@ async function defaultCheckHomeDistinct({ childId, citizensRegistryFile }) {
   return { ok: true, homeDir };
 }
 
+// REQ-201's own hard SHALL: verify the generated address is a real keccak256-derived Ethereum
+// address, not gen-wallet.sh's own documented sha256 fallback (fired when the host lacks a real
+// keccak implementation -- its own comment: "not a real eth addr; smoke-test will warn"). Detected by
+// independently re-deriving the address from the SAME private key via viem's privateKeyToAccount -- a
+// SECOND, INDEPENDENT keccak implementation from gen-wallet.sh's own openssl+python path (matches
+// REQ-201's Acceptance Criteria: "the address independently re-derives ... under a second, independent
+// keccak implementation"). A sha256-fallback address structurally cannot match this re-derivation.
+export function assertRealEvmAddress({ address, privateKey }) {
+  const rederived = privateKeyToAccount(privateKey).address;
+  if (rederived.toLowerCase() !== String(address).toLowerCase()) {
+    throw new Error(
+      `gen-wallet.sh address fails independent keccak re-derivation (got ${address}, expected ${rederived}) -- this is the documented sha256 fallback, not a real Ethereum address (REQ-201)`
+    );
+  }
+}
+
 function defaultGenerateEvmWallet() {
   const out = execFileSync("bash", [GEN_WALLET_SCRIPT], { encoding: "utf8" });
   const { address, private_key: privateKey } = JSON.parse(out);
+  assertRealEvmAddress({ address, privateKey });
   return { address, privateKey };
 }
 
@@ -136,13 +164,68 @@ async function defaultSelectCloudTarget() {
   return selectCloudTargetPure({ nosanaAvailable: false, akashAvailable: true, akashPriceUsd: 0 });
 }
 
-function defaultDeploy({ target, childId }) {
+// REQ-304: real AKT balance query for the configured Akash signing wallet -- mirrors akt-treasury.sh's
+// own existing balance() helper verbatim (same `akash query bank balances` shape, uakt -> AKT via
+// /1e6), never a second, independently-invented query mechanism. Fails closed to 0 (never throws),
+// exactly like evaluateAkashFundingGate's own established fail-closed discipline for its inputs.
+function defaultQueryAktBalance() {
+  const akashCli = process.env.AKASH_CLI || "akash";
+  const keyName = process.env.AKASH_KEY_NAME;
+  if (!keyName) return 0;
+  try {
+    const addr = execFileSync(akashCli, ["keys", "show", keyName, "-a"], { encoding: "utf8" }).trim();
+    const out = execFileSync(akashCli, ["query", "bank", "balances", addr, "-o", "json"], { encoding: "utf8" });
+    const balances = JSON.parse(out).balances || [];
+    const uakt = balances.find((b) => b.denom === "uakt");
+    return uakt ? Number(uakt.amount) / 1e6 : 0;
+  } catch {
+    return 0;
+  }
+}
+
+// REQ-304's own funding bridge: the ALREADY-BUILT akt-treasury.sh (AKT -> ACT mint, optionally
+// preceded by a USDC->AKT swap when TREASURY_SWAP_CMD is configured) -- reused as-is, never
+// re-implemented. Fail-soft: evaluateAkashFundingGate's own second pass re-queries the balance
+// regardless of whether this attempt actually landed funds.
+function defaultAttemptAktBridge() {
+  try {
+    execFileSync("bash", [AKT_TREASURY_SCRIPT], { encoding: "utf8" });
+  } catch {
+    // fail-soft -- the second computeSpawnGate pass (evaluateAkashFundingGate's own sequencing)
+    // is what actually determines deploy readiness, not this attempt's own outcome.
+  }
+}
+
+// REQ-304 (Round 2 additions, resolves contract-review round-2 FIND-001/002): before ANY Akash deploy
+// attempt, evaluate akash-funding-gate.mjs's own two-pass evaluateAkashFundingGate against
+// spawn-child/config.json's real spawn_cost_akt/buffer_akt -- never invoking deploy-akash.sh at all
+// when the gate is not ready after both passes. `fundingDeps` is a test/production wiring seam
+// (mirrors executeSpawnAttempt's own `deps` convention) for the funding gate's own queryBalanceAkt/
+// attemptBridge and for the deploy-akash.sh invocation itself; omitting any key wires the real
+// production implementation directly. Exported (unlike the other `default*` steps) so this funding-gate
+// wiring is directly unit-testable, mirroring evaluateAkashFundingGate's own test discipline.
+export async function defaultDeploy({ target, childId }, fundingDeps = {}) {
   if (target !== "akash") {
     return { ok: false, error: `no deploy path implemented for cloud target "${target}"` };
   }
+  const { spawn_cost_akt: costAkt, buffer_akt: bufferAkt } = spawnChildConfig();
+  const gate = await evaluateAkashFundingGate({
+    queryBalanceAkt: fundingDeps.queryBalanceAkt || (async () => defaultQueryAktBalance()),
+    costAkt,
+    bufferAkt,
+    attemptBridge: fundingDeps.attemptBridge || (async () => defaultAttemptAktBridge()),
+  });
+  if (!gate.ready) {
+    return {
+      ok: false,
+      error: `REQ-304 funding gate not ready: ${gate.reason} (shortfall ${gate.shortfallAkt} AKT of ${gate.thresholdAkt} AKT threshold)`,
+    };
+  }
   let leaseId;
   try {
-    leaseId = execFileSync("bash", [DEPLOY_AKASH_SCRIPT, childId], { encoding: "utf8" }).trim();
+    leaseId = fundingDeps.runDeployAkash
+      ? await fundingDeps.runDeployAkash(childId)
+      : execFileSync("bash", [DEPLOY_AKASH_SCRIPT, childId], { encoding: "utf8" }).trim();
   } catch (e) {
     return { ok: false, error: `deploy-akash.sh failed: ${errorMessage(e)}` };
   }
@@ -255,7 +338,7 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
       run: () =>
         deps.deploy
           ? deps.deploy({ target: cloudTarget, childId, childWallet: evmWallet.address })
-          : defaultDeploy({ target: cloudTarget, childId }),
+          : defaultDeploy({ target: cloudTarget, childId }, deps),
       requireOk: true,
       defaultErrorMessage: "deploy failed",
     });
