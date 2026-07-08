@@ -102,11 +102,27 @@ verification（二値、self-heal の bar）と evaluation（スカラー、self
 - **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録。
 - 「1アカウントに投稿する clipping」→「数百アカウントに投稿する clipping factory」への道はこの registry+spawner が担う。
 
-## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合）
+## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 
-- 手順: ①cron 棚卸し（enabled 103 jobs を earn投稿系/Life Manager系/インフラ系に分類、実施中）→ ②earn/投稿系 job を claude-p の tmux core / launchd に移植（skill 本体を ~/anicca/skills へ移設、fuel を openai-codex → Anthropic Sonnet に切替）→ ③Life Manager 系も claude-p loop 化 → ④インフラ系は healthcheck-runtime-loop + dashboard collector で置換 → ⑤OpenClaw gateway を disable して7日間並走観察 → ⑥問題なければ削除。
-- **削除前の MUST**: ~/.openclaw の state/ledger は anicca-dais repo に push 済みであることを確認（不可侵 store の保全）。最終削除は不可逆 broadcast に当たるため Dais の明示 go で実行。
-- 移行対象の確定リストは棚卸し結果を本 spec に追記して確定する。
+enabled 103 job の実データ分類（jobs.json + skill 実体確認済み、生データ: scratchpad/enabled_jobs_with_paths.json）:
+
+| カテゴリ | 件数 | 移行方針 |
+|---|---|---|
+| (a-1) SNS投稿系（Larry/reelclaw/monk-factory×2/music/slideshow/comedy投稿 等） | 30 | **claude-p へ移行**（cadence contract + EDD 対象に組み込む） |
+| (a-2) growth/marketing（cold-email/SEO/backlink/reviews 等） | 23 | **claude-p へ移行** |
+| (a-3) comedy live 応募系 | 7 | **claude-p へ移行** |
+| (b) Life Manager（naist/meetup/歯科/gcal/mail-triage 等 Dais 個人） | 24 | claude-p loop 化（別 phase、earn と分離した life-manager core として） |
+| (c) OpenClaw 自己保守（cron-doctor/watch-sweep/exec-guard 等） | 19 | **移行しない — OpenClaw 廃止と同時に不要化**。死活監視は healthcheck-runtime-loop 系が代替 |
+
+移行の前提条件（MUST、順に解消する）:
+1. **スケジューラ代替**: cron 実行は `ai.openclaw.gateway` デーモンが担っている → claude-p 側は launchd plist + tmux core パターン（既存 clip 型）で代替。
+2. **dispatcher パス**: `_dispatcher/cron-bash.sh` が `~/.openclaw/skills/` をハードコード → skill 移設時に呼び出しを直接 launchd/core prompt に置換（dispatcher ごと移植しない）。
+3. **Telegram announce 代替**: 103件中90件の結果通知が OpenClaw の Telegram bot 依存 → `loop-report.sh`（AgentMail→Gmail）+ 日次 scorecard に統一。
+4. **dashboard-sync**: `aniccaai-dashboard-refresh` が products repo へ直接 git push している実装（CLAUDE.md の「dashboard-sync は Dais owned、Anicca は write 禁止」と食い違い）→ 移行時にこの push 経路を本 spec の Dashboard 節の loop-registry 経路に統合し、書き込み主体を明確化する。
+5. ロジック自体は portable（`openclaw` CLI 直呼びは 0 件）。skill 実体は ~/.openclaw/skills/ 固有（例外: capafy-autopublish は移設済み、life/ask・life/notify は ~/anicca/skills に実体あり）。
+6. `anicca-event-bot-trigger` の gog CLI 依存は OpenClaw 外で動くか要確認（UNVERIFIED）。
+
+手順: ① (a-1)→(a-2)→(a-3) の順に skill を ~/anicca/skills（earn系）へ移設し claude-p core 化 → ② (b) を life-manager core 化 → ③ 7日間並走観察（OpenClaw 側 job は並走中 disable しない、二重投稿だけ即 disable）→ ④ gateway disable → ⑤ **最終削除は state/ledger の anicca-dais repo push 確認 + Dais の明示 go で実行**（不可逆 broadcast）。
 
 ## 除外（この spec のスコープ外）
 
