@@ -158,6 +158,13 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 - **将来 merge の余地**: profitable-claude が self-funded に卒業して安定したら統合を再検討してよい。それまでは2プロジェクトとして別々に運用。
 - **改善の相互流用**: 一方で確立した型（例: gig の量×質×検索+metrics、cadence 判定）を、もう一方が copy して取り込むのは推奨（学び合う）。ただしコード共有でなく copy+adapt。
 
+### BP 裏付け（2026-07-08 リサーチ、一次ソース）
+- **「将来独立配布/独立稼働する予定のコンポーネントは polyrepo（分離）」が定石**。profitable-claude の「卒業して self-funded 自走」はこの典型ケース（llmbestpractices.com/comparisons/monorepo-vs-polyrepo: "Independent release cycles… Vendored codebases that … have not yet been merged"）。
+- **diverge 前提なら shared library/submodule は悪手、vendor/copy で self-contained が推奨**。判定基準は「今 似ているか」でなく「今後も同じ理由で変化し続けるか」（umurinan.com: premature-abstraction-is-worse-than-duplication / Sandi Metz "duplication is far cheaper than the wrong abstraction" / Rule of Three codinghorror.com）。
+- **依存方向は B→A の片方向のみ、A→B を作らない**。共通機能は submodule でなく必要分だけ物理 copy（vendor）する（Fowler break-monolith: "dependencies in the reverse direction, from the monolith to the services, is a desired dependency direction" / Mutagen PR#562 の third_party vendor 実例）。
+- **submodule は worktree と相性最悪**（この repo 群は worktree を多用）→ copy 方式が安全（blog.timhutt.co.uk/against-submodules、git 公式 "NOT recommended to make multiple checkouts of a superproject"）。
+→ 結論: profitable-claude = polyrepo + vendor(self-contained)、依存 B→A 片方向、submodule 不使用。BP と Dais の判断が一致。
+
 ## Article loop（Dais 2026-07-08: 一度切ったが検証込みで再建）
 
 過去の記事投稿は「検証が皆無で効果が分からなかった」ため停止した。再建の条件 = **投稿の存在確認 + metrics 追跡 + EDD を最初から装着**。作成・公開の skill は既に全揃い（ai-entity-article-writer = note/Zenn/Substack/X Articles/dev.to を日英でカバー、+ x-article-publisher / substack-article / auto-article-poster）。足りないのは loop 化（cadence + verify + evaluator + mail）だけ。
