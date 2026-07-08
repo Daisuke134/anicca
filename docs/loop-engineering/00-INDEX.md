@@ -24,6 +24,8 @@
 
 | 09 | `09-cobus-adoption-no-human-and-my-exit.md` | ★cobus構造は採るが人間ゲートは全部autonomousに置換(day one人間ゼロ・reportもしない)★ + ★私(claude-p)のexit設計(monitor→peer-repair/seed→treasury/build→meta-harnessにhand off→verify→消える)★ + 3ループASCII + full TODO + 記事タイトル案 | ✅ 完了 |
 
+| 10 | `10-STATUS-verified.md` | ★living SSOT★ 検証済み現在地(evidence付): DONE(機構/3adversary/capable-improver自律promote/3daemon) / IN-PROGRESS(claude-p本番run,merge) / NOT-DONE(harness↔Franklin実戦略未接続,稼ぎloop休眠,Franklin$0) / TODO(/vcsdd 1個ずつ)。tragedy防止則=adversary verdict or 観測証拠が有る時だけdone | ✅ living |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
