@@ -42,10 +42,17 @@ LEDGER="${EARN_LEDGER:-$HERE/state/earn-ledger.jsonl}"
 WAKE="${WAKE_ID:-$(date -u +%s)}"
 MODE="${EARN_MODE:-discover}"
 
-# Derive the wallet address from the signing key (same wallet everywhere — no mismatch).
-SIGNKEY="${!PKVAR:-}"
+# THIS instance's own EVM signing key -- file-gated on ANICCA_HOME (resolve-identity.mjs), NEVER the
+# shared ~/.openclaw/.env BLOCKRUN_WALLET_KEY (that key is anicca-a3cdd4's; using it made Franklin's
+# earn slots sign with automaton's wallet). Mirrors economy/gig/run.sh:49-56 (per-instance, fail-closed).
+unset ANICCA_EVM_PRIVATE_KEY 2>/dev/null || true   # an env override must not beat the ANICCA_HOME file
+SIGNKEY=$(node "$HERE/lib/resolve-identity.mjs" evm 2>/dev/null)
+if [ -z "$SIGNKEY" ]; then
+  echo "[earn] no signing key resolved for this instance (ANICCA_HOME=${ANICCA_HOME:-unset}) -- HALT (fail-closed); never fall back to another instance's key."
+  exit 0
+fi
+export "$PKVAR=$SIGNKEY"   # children (execute-swap.py/hl.py/execute-yield.mjs...) read the key via $PKVAR -- give them THIS instance's
 wallet_addr() {
-  [ -n "$SIGNKEY" ] || { echo ""; return; }
   SIGNKEY="$SIGNKEY" python3 -c "import os; from eth_account import Account; print(Account.from_key(os.environ['SIGNKEY']).address)" 2>/dev/null || echo ""
 }
 W="$(wallet_addr)"
