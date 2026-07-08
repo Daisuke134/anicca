@@ -26,6 +26,8 @@
 
 | 10 | `10-STATUS-verified.md` | ★living SSOT★ 検証済み現在地(evidence付): DONE(機構/3adversary/capable-improver自律promote/3daemon) / IN-PROGRESS(claude-p本番run,merge) / NOT-DONE(harness↔Franklin実戦略未接続,稼ぎloop休眠,Franklin$0) / TODO(/vcsdd 1個ずつ)。tragedy防止則=adversary verdict or 観測証拠が有る時だけdone | ✅ living |
 
+| 11 | `11-parent-funding-loop.md` | ★親としての funding loop★ claude-p が経済を観測し餓死/未成長の Franklin を自分の稼ぎから feed、自立+spawn まで支える定期ループ。OBSERVE→DECIDE(agent判断)→FUND(PM withdraw→relay.link bridge→Franklin送金)→LOG。money-safety rails(identity検証/cap/reserve保護/on-chain確認/kill)。VCSDD feature=franklin-funding-loop | ⏳ 設計→build |
+
 ## 積み上げ予定（stacking backlog）
 - `02-danger-of-unsupervised-loops.md` … Ralph Wiggum loop / verifier theater / cognitive surrender / security tax の詳細と対策
 - `04-observable-done-conditions.md` … 各 earn ループの観測可能 done カタログ（on-chain realized / order id / URL / test-green）
