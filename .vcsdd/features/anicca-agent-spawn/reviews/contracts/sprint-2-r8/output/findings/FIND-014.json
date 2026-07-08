@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-014",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "FIND-012 (round 7) named TWO distinct problems with the round-6 correction paragraph's closing sentence at contracts/sprint-2.md: '(1) directional -- the actual Files touched section is ABOVE this correction paragraph (contract lines 108-124), not below it... (2) substantively -- the enumerated Files touched list... does NOT name spawn-orchestrator-reclaim-and-shelter-cost.test.mjs'. Round 7's fix addressed problem (2) only (the list now names the file, per FIND-013's own remaining-gap notwithstanding). Problem (1) -- the directional wording -- was left completely unfixed: the sentence at contracts/sprint-2.md:248-250 still reads \"Files touched (below) already lists `spawn-orchestrator.mjs`/its test file...\" even though the Files touched section is at lines 108-126, i.e. physically ABOVE line 248, not below it. This is a minor, cosmetic prose defect (it does not change what is or is not listed, and does not mislead about content, only about physical position in the document) but it was explicitly identified as part of the very finding this round claims to resolve, and remains, verbatim, uncorrected.",
+  "evidence": {
+    "filePath": "contracts/sprint-2.md",
+    "lineRange": "248-250 (still reads 'Files touched (below)'), 108 (actual Files touched section header, physically above line 248)",
+    "snippet": "Line 248-250 verbatim: 'Files touched (below) already lists `spawn-orchestrator.mjs`/its test file, which cover both the code and the tests this correction documents -- no additional file was touched.' The Files touched section itself begins at line 108, which is BEFORE (above) line 248 in the same document -- so 'below' is factually backwards, exactly as FIND-012 problem (1) already stated, and this text is byte-for-byte unchanged from round 7's own version per the manifest's own note that only the Files-touched list content (not this correction paragraph) was edited this round.",
+    "testName": "direct re-read of contracts/sprint-2.md lines 234-250 against FIND-012's own full original text (round 7 findings/FIND-012.json), confirming problem (1) of that finding was never actioned"
+  },
+  "routeToPhase": "1a"
+}

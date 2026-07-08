@@ -111,10 +111,15 @@ delivered through Phase 2c (refactor): `skills/self/spawn/lib/spawn-orchestrator
 7 deps-or-default effectful call sites' identical try/catch/requireOk shape into one place — no exported
 surface change, no second orchestration path, CRIT-201 unaffected), `skills/self/spawn/scripts/
 gen-solana-wallet.sh` (new), plus test files under `skills/self/spawn/lib/__tests__/`
-(`spawn-orchestrator.test.mjs`, `gen-solana-wallet.test.mjs`, and — resolves contract-review round-7
-FIND-012, this list previously omitted it — `spawn-orchestrator-reclaim-and-shelter-cost.test.mjs`, the
-dedicated FIND-001/FIND-002 test suite for `defaultReclaimSeed`/`attemptSeedReclaim` and the
-shelter-cost-ledger wiring). The `skills/self/spawn/scripts/sdl/
+(`spawn-orchestrator.test.mjs`, `gen-solana-wallet.test.mjs`, and — corrected 2026-07-08, contract-review
+round-8, resolves FIND-013: round-7's own fix named only one of three genuinely-missing test files —
+`spawn-orchestrator-funding-and-wallet.test.mjs` (round-2 fix, resolves FIND-001/002/003a, confirmed on
+disk, first committed as `f3419d3`), `spawn-orchestrator-gas-seed-and-key-persistence.test.mjs`
+(round-3 fix, resolves FIND-006/FIND-007a/FIND-007b, confirmed on disk, first committed as `31e36c9`),
+and `spawn-orchestrator-reclaim-and-shelter-cost.test.mjs` (round-7's own already-named fix, resolves
+FIND-001/FIND-002 of the Phase-3 round-2 review) — all three are now listed here, cross-checked directly
+against a real `ls skills/self/spawn/lib/__tests__/` listing, not merely against the one example a prior
+finding happened to cite). The `skills/self/spawn/scripts/sdl/
 child.yaml`-equivalent child-specific SDL variant and the lease-shell/job-ssh secrets-injection helper
 (REQ-303's own FIND-403/FIND-401 corrections) were NOT created this sprint — both belong exclusively to
 PROP-303b's real Akash deploy path, which the "Deferred-obligation disposition" section below explicitly
@@ -245,9 +250,11 @@ sender/recipient, fires only at the 3 post-seed failure sites, never masks the o
 attempt to genuinely complete before the ledger row is written — and a regression proof that this
 introduces zero behavioral drift for every pre-existing synchronous `onFailure` caller). Both are
 `state.json` entries `PROP-119`/`PROP-120` (Tier 1/Tier 0 respectively, `required:true`, `status:pending`
-— promotion to `proved` is Phase 5's own job, not this contract-fix cycle's). `Files touched` (below)
-already lists `spawn-orchestrator.mjs`/its test file, which cover both the code and the tests this
-correction documents — no additional file was touched.
+— promotion to `proved` is Phase 5's own job, not this contract-fix cycle's). `Files touched` (corrected
+2026-07-08, contract-review round-8, resolves FIND-014's directional-wording defect: the Files-touched
+section is physically ABOVE this paragraph, lines 108-126, not below it) already lists
+`spawn-orchestrator.mjs`/its test files, which cover both the code and the tests this correction
+documents — no additional file was touched.
 
 ## Known residual scope boundary
 

@@ -1,0 +1,101 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T12:00:00Z",
+  "iteration": 8,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "6c01e809ae0565ed8393f29904d9f9bd971b1326e0966fb687a5a5b22dd185e3"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-013", "FIND-014"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-spawn/state.json (traceability.beads: BEAD-152, BEAD-153, BEAD-010, BEAD-138)",
+          "description": "FIND-011 (round 7) is CONFIRMED FIXED. Direct JSON read this session: BEAD-152 (PROP-204d) linkedBeads=['BEAD-010']; BEAD-153 (PROP-307f) linkedBeads=['BEAD-138']; BEAD-010 (REQ-204) linkedBeads=['BEAD-048','BEAD-049','BEAD-050','BEAD-147','BEAD-151','BEAD-152']; BEAD-138 (REQ-307) linkedBeads=['BEAD-139','BEAD-140','BEAD-141','BEAD-142','BEAD-143','BEAD-144','BEAD-145','BEAD-146','BEAD-153']. Both new obligations now link to their own REQ's bead, and both REQ beads list the new obligations back, matching the exact bidirectional pattern every sibling PROP-204a/b/c and PROP-307a-e bead already follows (BEAD-048/049/050<->BEAD-010, BEAD-139/140/141/142<->BEAD-138). Also confirmed the two WRONG links from round 7 are gone: BEAD-062 (PROP-303c) linkedBeads=['BEAD-015'], no longer lists BEAD-152; BEAD-141 (PROP-307c) linkedBeads=['BEAD-138','BEAD-145'], no longer lists BEAD-153. The REQ<->PROP bead graph is now genuinely bidirectionally complete for both new obligations."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:108-126 (Files touched list)",
+          "description": "FIND-012's own concrete example is fixed: spawn-orchestrator-reclaim-and-shelter-cost.test.mjs now appears in the Files-touched enumeration (line 114-115), with an explicit 'resolves contract-review round-7 FIND-012' annotation. However, this fix is INCOMPLETE -- see FIND-013 below. Independently cross-checked the full Files-touched list against a real `ls skills/self/spawn/lib/__tests__/` listing (23 files) as the manifest instructed: two more sprint-2, spawn-orchestrator.mjs-testing files -- `spawn-orchestrator-funding-and-wallet.test.mjs` (round-2 contract-review fix deliverable) and `spawn-orchestrator-gas-seed-and-key-persistence.test.mjs` (round-3 contract-review fix deliverable) -- are STILL absent from the enumeration, confirmed by `grep -n` returning zero matches for either filename anywhere in contracts/sprint-2.md. Both are confirmed real sprint-2 deliverables (header comments citing 'sprint-2, contract-review round 2/3', direct '../spawn-orchestrator.mjs' imports, git-log first-commit timestamps after spawn-orchestrator.mjs's own creation). A third file, spawn-gap-coverage.test.mjs, was also checked and correctly confirmed OUT of scope (sprint-1 Phase-5 deliverable, predates spawn-orchestrator.mjs, imports unrelated modules) -- its absence from the list is correct, not a gap. See FIND-013 for full detail."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:248-250 (round-7/round-6 correction's closing sentence)",
+          "description": "FIND-012 named two distinct problems: (1) a directional wording slip ('Files touched (below)' when the section is actually above), (2) the substantive omission. Round 7 fixed only (2); the sentence still reads 'Files touched (below)' verbatim, which remains factually backwards since the Files touched section is at line 108, physically above line 248. Minor/cosmetic (does not change what is listed), but explicitly part of the finding this round claims to resolve and left unactioned. See FIND-014 for full detail."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:142-263 (Deferred-obligation disposition + all Correction sections, full re-read)",
+          "description": "Swept the full 'Deferred-obligation disposition' section and both remaining Correction sections (FIND-002/PROP-303c re-closure at lines 204-232, FIND-010/PROP-204d+307f traceability at lines 234-250) once more for internal consistency, as requested. The 38-obligation reconciliation math checks out (3 Tier-3 + 5 additionally-re-deferred = 8; 38-8=30 targeted, matching the stated '30 targeted for closure' enumeration of exactly 25+5 PROP IDs). PROP-204d/PROP-307f (state.json PROP-119/PROP-120) are correctly described as NEW additions outside the original 38-obligation sprint-1 reconciliation, not double-counted against it. No new internal contradiction found in these sections beyond the two filed above; CRIT-205's own passThreshold wording ('30 targeted PROP IDs (including PROP-307e)') versus the disposition section's 'PLUS the new PROP-307e' phrasing is a pre-existing labeling artifact predating this round (CRIT-205 already carries revision annotations from rounds 1/2/4) and was not touched this round -- not filed as a new finding, consistent with this review's scope of verifying only what changed since round 7."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Independently executed fresh this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0, duration_ms 4297.7 -- exact match to round 7's own fresh count, confirming no regression since no source was touched this round (manifest confirms only state.json bead links and contracts/sprint-2.md Files-touched text were edited)."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test (see edge_case_coverage evidence above)",
+          "description": "195/195 fresh pass confirms no implementation regression; this round touched zero source files -- only state.json (bead links) and contracts/sprint-2.md (Files-touched prose), consistent with the manifest's own note."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (whole file, byte-for-byte unchanged since round 6/7)",
+          "description": "No source edits this round; round 7's own structural_integrity PASS (CRIT-201/202/204 all previously re-confirmed) stands unmodified."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Fresh, independent run this session: tests 195, pass 195, fail 0 -- matches state.json's and round 7's own claim of an unchanged 195/195 pass, confirmed not merely accepted from a prior log."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-spawn/state.json (traceability.beads, BEAD-152/153/010/138)",
+          "description": "The traceability graph wiring defect FIND-011 flagged is now genuinely fixed (see spec_fidelity evidence above); this dimension remains PASS as the underlying verification-readiness content (PROP-119/PROP-120 row text, Tier assignments) was already correct in round 7 and is unchanged. The residual Files-touched gaps (FIND-013/014) are filed under spec_fidelity only, mirroring this feature's own established precedent (round 6/7) of filing this exact class of documentation gap once, under spec_fidelity, even though its practical consequence also touches verification readiness."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "6c01e809ae0565ed8393f29904d9f9bd971b1326e0966fb687a5a5b22dd185e3",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 8: fixes round-7's 2 findings (FIND-011: BEAD-152/153 linked to wrong sibling beads instead of parent REQ beads BEAD-010/BEAD-138, both directions now fixed; FIND-012: contract's Files-touched list omitted spawn-orchestrator-reclaim-and-shelter-cost.test.mjs, now added). Verify both fixes are accurate: (1) read state.json's BEAD-010/BEAD-138/BEAD-152/BEAD-153 and confirm the REQ<->PROP bead graph is now bidirectionally correct and complete; (2) confirm the Files-touched list now genuinely lists every test file actually delivered this sprint (cross-check against a real directory listing of skills/self/spawn/lib/__tests__/); (3) sweep once more for anything else. No source code was touched this round -- only state.json (bead links) and contracts/sprint-2.md (Files-touched text)."
+}
