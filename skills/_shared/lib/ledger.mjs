@@ -30,6 +30,9 @@ export function deriveLine(o) {
   if (o.confirmed === true) line.confirmed = true;
   if (o.chain) line.chain = o.chain;
   if (o.external === true) line.external = true; // set only after external-payout assertion
+  // fill_tid is the Hyperliquid equivalent of tx/sig: the settled fill's own stable integer id
+  // (hl-realized-pnl REQ-C2). Passed through unchanged when present; absent as a key otherwise.
+  if (o.fill_tid != null) line.fill_tid = o.fill_tid;
   return line;
 }
 
@@ -50,10 +53,14 @@ export function isProfitable(line) {
   if (!(Number(line.net_usdc) > 0)) return false;
   if (SWAP_SOURCES.has(String(line.source))) return false; // asset rotation is never GATE-0
   if (line.external !== true) return false; // require proven external inbound
-  // chain-correct confirmation: EVM (Base) receipt 0x1 OR Solana confirmed signature.
+  // chain-correct confirmation: EVM (Base) receipt 0x1 OR Solana confirmed signature OR a
+  // Hyperliquid fill (hl-realized-pnl REQ-C3) — the live userFills response for this instance's
+  // own address IS the receipt (no separate broadcast/confirmation step the way an EVM tx can
+  // still revert or a Solana signature can still land unconfirmed).
   const evmOk = Boolean(line.tx) && line.status === "0x1";
   const solOk = Boolean(line.sig) && line.confirmed === true;
-  return evmOk || solOk;
+  const hlOk = line.chain === "hyperliquid" && line.fill_tid != null && line.confirmed === true;
+  return evmOk || solOk || hlOk;
 }
 
 // sig-keyed idempotency for Solana payouts: true iff a ledger line already carries this signature.

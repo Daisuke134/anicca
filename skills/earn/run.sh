@@ -169,6 +169,14 @@ if [ "$STRATEGY" = "hl" ] && [ -z "${EARN_TX:-}" ]; then
       && "$HLDIR/.venv/bin/pip" install -q hyperliquid-python-sdk eth_account >/dev/null 2>&1 || true
   fi
   HLPY="$HLDIR/.venv/bin/python"; [ -x "$HLPY" ] || HLPY="python3"
+
+  # REQ-E3: reconcile fill-based realized P&L on EVERY wake that reaches this branch, BEFORE the
+  # anti-churn cooldown gate and BEFORE branching on ACTION=close/new-position open — this is
+  # what makes an exchange-side auto-close (take-profit/stop-loss/liquidation) get recorded even
+  # when the model issues no explicit close this wake (behavioral-spec.md REQ-A2/REQ-B*).
+  RECON=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" reconcile --wake "$WAKE" 2>&1)
+  echo "[earn] hl reconcile -> $RECON"
+
   COIN=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('coin','ETH'))" 2>/dev/null || echo ETH)
   SIDE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;print((json.load(sys.stdin) or {}).get('side','') or '')" 2>/dev/null)
   SIZE=$(printf '%s' "$AARGS" | python3 -c "import json,sys;d=json.load(sys.stdin) or {};print(d.get('size_usd','') or '')" 2>/dev/null)
@@ -203,15 +211,17 @@ except Exception: print('')" 2>/dev/null)
   fi
 
   # MANAGE: the model decided to close (action=close), OR a stop/take got hit — realise the position.
+  # REQ-A3 (F-1 fix): this branch NEVER records its own earn_usdc/cost_usdc ledger line for the
+  # close. reconcile() (hl.py reconcile, invoked above per REQ-E3) is the SOLE recorder of HL
+  # realized P&L — it will pick up this close's own settled fill(s) on this or a later wake, once
+  # userFills reflects them. `hl.py close`'s JSON no longer carries a pre-close pnl field (REQ-A1)
+  # to read here, and recording a value of our own would either be a fabricated zero or a
+  # duplicate of what the reconciler already records.
   if [ "$ACTION" = "close" ] && [ -n "$POS" ]; then
     RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" close "$COIN" 2>&1)
     date +%s > "$HL_LAST" 2>/dev/null || true   # #16: stamp the trade time for the anti-churn cooldown
     echo "[earn] hl close $COIN -> $RES"
-    PNL=$(printf '%s' "$RES" | python3 -c "import json,sys
-try: print(json.load(sys.stdin).get('closed_pnl_usd',0) or 0)
-except Exception: print(0)" 2>/dev/null || echo 0)
-    JSON=$(python3 -c "import json; print(json.dumps({'wallet':'${WLOW:-unknown}','source':'hl-trade','task':'hl-close $COIN','earn_usdc':float('$PNL' or 0),'cost_usdc':0,'wake':'$WAKE'}))" 2>/dev/null)
-    OUT=$(record_line "$JSON"); echo "[earn] hl close recorded -> $OUT"; exit 0
+    exit 0
   fi
 
   if [ -z "$SIDE" ] || [ -z "$SIZE" ]; then
