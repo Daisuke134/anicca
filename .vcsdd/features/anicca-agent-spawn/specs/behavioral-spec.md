@@ -2714,6 +2714,22 @@ restatement of any step's own logic):
 9. REQ-305's ledger append (the `"active"` row, `active_since` set) and citizen-registry append
    (gated on `isSelfFunded()`).
 
+**Step 7/8 construction-order clarification (new, sprint-2 contract-review round 1, resolves
+contract-review FIND-001)**: unlike every other step in this list, REQ-206's `buildChildSpec` (step 8)
+is a PURE, in-memory object construction with NO external side effect of its own (no network call, no
+filesystem write, no ledger append — it only builds and validates a plain object, optionally throwing on
+a malformed identity anchor). It therefore has no effectful ordering relative to step 7's own effectful
+`mcp.json` write to violate. The real implementation constructs step 8's `spec` object immediately upon
+step 6's own successful completion — i.e., BEFORE step 7's own effectful call runs — specifically because
+the Edge Cases below require a step-7 failure to be recorded via the ALREADY-specified
+`buildChildSpec`-based path, which is only possible if that object already exists at the moment step 7
+fails. This is not a reordering of any EFFECTFUL step: `mcp.json`'s own write call still happens exactly
+once, at its own designated position relative to deploy/registration/ledger-append, and step 9's own
+`{...spec, status:"active", ...}` append still reads the SAME `spec` object step 8 produces. "Canonical
+order" (CRIT-201's own passThreshold) refers to the ordering of steps 1-7's and 9's own EFFECTFUL calls
+(REQ-201/202/203/204/205/302/303/306/305) and to step 8 never being SKIPPED or DUPLICATED — not to
+step 8's own zero-side-effect construction being forbidden from happening ahead of step 7's own call.
+
 **Edge Cases**:
 - A failure occurs at step 1, 2, 3, 4, 5, or 6 (REQ-201/202/203/306/302/303/204) — i.e., BEFORE step 6
   (REQ-204) has SUCCESSFULLY produced a usable `agentId`, INCLUDING a failure AT step 6 itself

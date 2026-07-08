@@ -1,0 +1,20 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "6537ea6e534237fd595ce0b49e5338d27c581492440052f09879046767a8e9f7",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs",
+      "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/lib/spawn-orchestrator.mjs",
+      "skills/self/spawn/scripts/gen-solana-wallet.sh"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Cross-repo: spec/contract files are at /Users/anicca/anicca-project/.vcsdd/features/anicca-agent-spawn/, but ALL test/source files live in a DIFFERENT repo at /Users/anicca/anicca (paths relative to that repo's root). Commits f46d2d2 (2a RED), 75a43e8 (2b GREEN), e247023 (2c refactor) on ~/anicca's main. This is sprint-2, delivering REQ-307's executeSpawnAttempt orchestrator + gen-solana-wallet.sh, wiring sprint-1's already-hardened pure/narrow modules (treasury-gate.mjs, colony-balances.mjs, registry-path.mjs, citizens-registry.mjs, child-spec.js, ledger.js, akash-funding-gate.mjs, cloud-target.mjs, needs-solana-wallet.mjs -- all reused UNMODIFIED, confirm this yourself via diff against their sprint-1-delivered content) into a real, runnable spawn flow. Verify each CRIT-201 through CRIT-208 criterion (read contracts/sprint-2.md in full) by actually re-running the cited tests/reading the cited source yourself -- do not accept the Builder's own claims at face value. Independently re-run 'cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js' yourself and confirm exactly 146 tests pass (123 pre-existing sprint-1 + 23 new sprint-2), 0 fail. Pay special attention to CRIT-203 (the 9-step failure-recording matrix, corrected boundary steps 1-6/7-9 per FIND-S2-001/FIND-S2-101 -- confirm the ACTUAL implementation, not just the spec, correctly routes a step-6 failure to the minimal-append path) and CRIT-206 (the 3 explicitly-deferred Tier-3 real-money obligations PROP-302b/303b/401a must NOT be claimed proved by this sprint's own artifacts -- confirm no fixture/simulated evidence is mislabeled as real)."
+}

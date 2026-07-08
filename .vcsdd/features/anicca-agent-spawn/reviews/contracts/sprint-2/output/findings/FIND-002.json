@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "incomplete_verification",
+  "severity": "high",
+  "description": "CRIT-205 requires state.json's proofObligations array to show every one of the 35 targeted PROP IDs (PROP-201a/b/c/d, PROP-202b/c/d, PROP-203a/c, PROP-204b, PROP-205a/b, PROP-302a/c, PROP-303e/f, PROP-304b/c/d/f, PROP-305a/b/d/e/f/h, PROP-402a/b, PROP-102g/i/k, PROP-101j, PROP-105i, PROP-301a, PROP-401b) as status:'proved', or an explicit Phase-5 contract note re-deferring any exception. An independent read of state.json's proofObligations array (this session, cross-referenced by artifact field against each targeted PROP ID) found all 35 still at status:'skipped', required:false -- none has been promoted to 'proved', and contracts/sprint-2.md contains no Phase-5 note re-deferring any of them (Phase 5 for sprint-2 has not run yet; state.json's currentPhase is still '2c'). This is a real, currently-unmet gap against CRIT-205's own literal passThreshold text as of this review, though it is consistent with sprint-1's own precedent (its contract review also ran at the '3' phase point, before its own Phase 5 promoted 72 obligations to 'proved') -- the same promotion step is simply still pending for sprint-2's Phase 5, which has not yet been invoked. Flagging this so the promotion is not silently skipped: Phase 5 (formal hardening) must actually run and update state.json's proofObligations for these 35 IDs (via structural/unit/integration proof against the already-existing test suite, per the contract's own 'none of these 35 require a real, live token spend to prove' claim) before CRIT-205 can be re-verified PASS.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-spawn/state.json",
+    "lineRange": "proofObligations[] (all 35 targeted PROP-* entries)",
+    "snippet": "e.g. {\"id\": \"PROP-...\", \"tier\": N, \"required\": false, \"status\": \"skipped\", \"artifact\": \"specs/verification-architecture.md#PROP-201a\", ...} -- repeated identically (status:'skipped', required:false) for all 35 targeted IDs, zero exceptions",
+    "testName": "python3 script cross-referencing state.json's proofObligations[].artifact field against the 35-item list in contracts/sprint-2.md's 'Deferred-obligation disposition' section (this session's own independent script, not accepted from any prior claim)"
+  },
+  "routeToPhase": "5"
+}

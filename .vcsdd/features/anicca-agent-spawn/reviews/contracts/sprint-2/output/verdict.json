@@ -1,0 +1,68 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "6537ea6e534237fd595ce0b49e5338d27c581492440052f09879046767a8e9f7"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "state.json proofObligations (PROP-302b/303b/401a, this session's own independent script cross-referencing state.json against contracts/sprint-2.md's Tier-3 list)", "description": "CRIT-206 independently re-verified: PROP-302b (id PROP-038), PROP-303b (id PROP-040), PROP-401a (id PROP-053) all remain status:'skipped', required:false in state.json -- none is claimed 'proved'. contracts/sprint-2.md's own 'Deferred-obligation disposition' section explicitly, honestly re-defers all 3 as Tier-3 requiring a real live spend, citing task #28 ('P3実deploy検証チェックポイント(Phase5)'). No fixture/simulated/borrowed-artifact evidence was found claiming these proved." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js (this session's own independent run)", "description": "CRIT-203 independently re-verified: all 9 canonical-step failure-injection tests (PROP-307c step 1 through step 9) pass in this session's own fresh run. Read of spawn-orchestrator.mjs confirms steps 1-6 use appendMinimalFailure (direct ledger.js::appendChild, minimal {child_id,status,attempted_ms,error} shape, never buildChildSpec) and steps 7-9 use the buildChildSpec-based path (appendSpecFailure / the buildChildSpec try/catch itself / the final active-row appendChild) -- matching the corrected 1-6/7-9 boundary from FIND-S2-001/FIND-S2-101, not the disproven 1-5/6-9 split. filterProductiveCitizens/deriveRecentSpawnAttempts (treasury-gate.mjs, sprint-1, confirmed unmodified via git diff) correctly treat every resulting row as non-productive regardless of which recording path produced it (both row shapes always carry status:'failed', never 'active')." }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js (this session's own independent run)", "description": "146/146 tests pass, 0 fail (123 pre-existing sprint-1 + 23 new sprint-2), exit clean -- matches the manifest's own expected count exactly, not accepted from any prior claim." },
+        { "type": "file", "location": "skills/self/spawn/scripts/gen-solana-wallet.sh (live invocation, this session)", "description": "CRIT-207 independently re-verified: a live `bash gen-solana-wallet.sh` invocation in this session produced a genuinely fresh {address, private_key, public_key} JSON triple (address GXpi5ujHet5Py5EzVUkQXcLszbECw517pBp8pvPTyvYU). Structural read confirms the script documents the same 600-perm/never-logged discipline as gen-wallet.sh's own header, and CRIT-207's own test independently re-derives the generated address via a second, separate CLI path (`solana-keygen pubkey` against the base58-decoded raw secret key) -- this test passed in the full-suite run above. Script was confirmed genuinely new: absent from ~/anicca before this sprint's commits (git log -- shows it created only in commit 75a43e8)." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test ... (this session)", "description": "CRIT-202 independently re-verified: grep of spawn-orchestrator.mjs for decideColonySpawn/surplus/colonySurplusUsd/spawnThresholdUsd relational patterns and LLM/prompt keywords finds none; the file's only comparison operators are string-equality/error-code routing (target!=='akash', cloudTarget==='none', e.code!=='ENOENT', homeDir string matches), not eligibility/threshold judgment -- consistent with REQ-104's bookkeeping-only discipline and the PROP-307b structural test, which passed." },
+        { "type": "test-output", "location": "PROP-307d test, this session's own re-run", "description": "CRIT-204 independently re-verified: the 'colony-spawn' lock test (staggered concurrent attempts during an in-flight deploy step all fail, only the post-release retry succeeds) passed in this session's own re-run. Source read confirms withGigLock(lockStatePath, 'colony-spawn', runAttempt) wraps the ENTIRE runAttempt closure (all 9 steps), released only via withGigLock's own existing try/finally, matching PROP-103e's proof method reused against the real function." },
+        { "type": "file", "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:264-322 (see FIND-001)", "description": "CRIT-201 FAILS: run.sh is confirmed untouched (empty git diff across the sprint's 3 commits) and there is exactly one executeSpawnAttempt export (both true, both PASS), but a control-flow read confirms REQ-206's buildChildSpec assembly (the sprint's own test suite's 'step 8') executes BEFORE REQ-205's mcp.json write (the sprint's own test suite's 'step 7'), contradicting REQ-307's own 'Canonical call order' ('never varied, never partially reordered'). See FIND-001 for full detail; CRIT-201's own passThreshold explicitly names 'the canonical order is violated' as a FAIL condition." }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        { "type": "file", "location": "state.json phaseHistory + reviews/spec/sprint2-iteration-3/output/verdict.json", "description": "CRIT-208 independently re-verified: state.json's phaseHistory records a genuine '1c'->'2a' transition (2026-07-07T20:23:33.449Z, reason: 'Sprint 2 Phase 1c PASSED at iteration 3 (fresh adversary, zero findings)'), and reviews/spec/sprint2-iteration-3/output/verdict.json independently confirms overallVerdict:'PASS' for that fresh-adversary spec review, dated BEFORE the '1c'->'2a'/'2a'->'2b' (RED->GREEN) transitions that follow it. Phase 1c genuinely gated Phase 2 for this sprint, exactly as required." },
+        { "type": "file", "location": ".vcsdd/features/anicca-agent-spawn/state.json proofObligations[] (see FIND-002)", "description": "CRIT-205 FAILS: an independent script cross-referencing all 35 PROP IDs contracts/sprint-2.md targets for closure against state.json's proofObligations array found every single one still at status:'skipped', required:false -- none promoted to 'proved', and no Phase-5 contract note re-defers any of them (because Phase 5 for this sprint has not run; state.json's currentPhase is still '2c'). See FIND-002 for full detail." }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205",
+      "CRIT-206", "CRIT-207", "CRIT-208"
+    ],
+    "duplicateFindings": []
+  }
+}
