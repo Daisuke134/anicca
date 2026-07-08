@@ -1,0 +1,66 @@
+{
+  "overallVerdict": "PASS",
+  "dimensions": [
+    {
+      "name": "ce37117_test_change_not_gaming",
+      "verdict": "PASS",
+      "findings": [
+        "Independently re-derived every changed literal by running the real evaluator.evaluate_stage2() against the actual committed baseline (strategies/pm_backtest_strategy.py) and both modified candidate variants.",
+        "Baseline (post-promotion): combined_score=3.207609302240773, mean=4.217785894155999, std=1.3149313076282503, worst_oos=2.375458266580397 -- exact match to docstring claims (~3.208/4.218/1.315/2.375).",
+        "'Good candidate' (edge_weight 0.25->0.4, conf_weight 0.45->0.1): combined_score=3.595082676560379, mean=4.328426416646617 (up), std=1.2039852226118677 (down), worst_oos=2.6505229056588604 (still positive) -- exact match to docstring claims, a genuine Pareto improvement, not tightened.",
+        "'Regressing candidate' (all 5 filters loosened near-zero): stage1 combined_score=14.008396768050844 (passes cheap gate as claimed), stage2 combined_score=0.18245573184913505, mean=1.947673886766836, worst_oos=-12.315709802269247, std=10.6747750099585 -- exact match to docstring claims, correctly rejected by beats_baseline.",
+        "Config defaults in the committed strategy file (min_edge=0.18, min_confidence=7.0, min_liquidity=0.4, max_price=0.85, min_combined=1.5, edge_weight=0.25, conf_weight=0.45) match every 'old' literal referenced in the updated test patches -- the new literals are genuinely derived against the NEW baseline, not fabricated.",
+        "test_denylist_reject.py change (min_confidence 6.0->8.0 patch updated to 7.0->9.0) only needs an in-scope edit for scope_guard.check(), not a beats-baseline property -- confirmed by reading scope_guard usage in that test; no assertion was weakened.",
+        "test_baseline_beat.py::test_better_candidate_has_non_negative_worst_window_oos flipped its baseline assertion from '< 0.0' to '>= 0.0' because the committed baseline's own worst-OOS window is now genuinely positive (verified above) -- this is a premise update tracking reality, not a loosened candidate assertion (candidate-side assertion '>= 0.0' plus mean-up/std-down Pareto checks are unchanged in strictness).",
+        "No assertion was deleted, skipped, xfailed, or had its comparison operator loosened in a way not independently reproducible; every changed numeric literal matches a real, independently-computed evaluator output."
+      ]
+    },
+    {
+      "name": "tests_genuinely_green",
+      "verdict": "PASS",
+      "findings": [
+        "`pytest skills/earn/self-improve/tests/ -v` -> 44 passed (matches expected 44).",
+        "Spot-break test_baseline_beat.py::test_better_candidate_beats_baseline_on_stage2_walk_forward (flipped 'is True' to 'is False' on the beats_baseline assertion) -> that test went RED (assert True is False) while others stayed green.",
+        "Spot-break test_risk_adjusted_fitness.py::test_genuine_selection_change_beats_baseline_where_leverage_could_not (same flip) -> that test went RED (assert True is False) in a different module, proving non-vacuous coverage across modules.",
+        "Reverted both files via `git checkout --`, re-ran full suite -> 44 passed again, worktree left clean (verified `git status --short` empty)."
+      ]
+    },
+    {
+      "name": "config_safe",
+      "verdict": "PASS",
+      "findings": [
+        "config.yaml uses `free/gpt-oss-120b` (3 temperature entries, 0.4/0.8/1.1) via local ClawRouter proxy at 127.0.0.1:8402/v1, api_key literal is the placeholder string 'unused-local-proxy-no-auth' (proxy does not check it) -- not a real credential.",
+        "Grep for wallet/private_key/secret/api_key/BLOCKRUN_WALLET_KEY across config.yaml found only a comment referencing the PUBLIC self-funded automaton wallet address (0xa3CDd4Ec..., truncated, Base chain) explaining why only a free-tier model can be used -- no private key or secret literal present.",
+        "No human/paid credential introduced; model switch commit message documents live verification of the free model's diff-format compliance."
+      ]
+    },
+    {
+      "name": "promotion_still_valid",
+      "verdict": "PASS",
+      "findings": [
+        "scope_guard.check(committed_strategy, pre_promotion_baseline_from_4fa6b47) = (True, 'scope-guard-pass') -- the promoted EVOLVE-BLOCK diff (a6f608c) is confined to score_candidate()'s body between the EVOLVE-BLOCK-START/END markers.",
+        "git diff a6f608c..HEAD -- strategies/pm_backtest_strategy.py is EMPTY -- confirms ce37117 (tests) and f548ed3 (docs) did not further touch the promoted strategy file after promotion.",
+        "Recomputed pre-promotion baseline (4fa6b47 revision) stage2: combined_score=1.262807048935334, worst_oos=-0.47324790421113505 (negative, the real problem the promotion fixed).",
+        "Recomputed post-promotion (committed HEAD) stage2: combined_score=3.207609302240773, worst_oos=2.375458266580397 (positive).",
+        "gate_math.beats_baseline(post, pre) = True. Numbers match promotion_verdict.json's real fresh-Opus-adversary-approved assessment (adversary_verdict='PASS', same combined_score/mean/std/worst_window figures) exactly."
+      ]
+    },
+    {
+      "name": "no_collateral",
+      "verdict": "PASS",
+      "findings": [
+        "git diff --stat origin/main...HEAD touches 14 files: 13 under skills/earn/self-improve/** (config.yaml, strategies/, tests/, evidence/capable-improver/) plus execution-notes-self-improve.md at repo root.",
+        "execution-notes-self-improve.md already exists on origin/main (verified via `git show origin/main:execution-notes-self-improve.md`) and this branch only APPENDS to it (85 insertions, 0 deletions) -- pre-existing convention for this feature's run notes, not new unrelated collateral.",
+        "Grep for `.vcsdd/features/anicca-agent-economy`, wallet paths, and `.env` across the full changed-file list: zero hits.",
+        "No file outside skills/earn/self-improve/** and the pre-existing execution-notes doc was touched."
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "recomputed": {
+    "baseline": 1.262807048935334,
+    "promoted": 3.207609302240773,
+    "worst_oos": 2.375458266580397
+  },
+  "summary": "All 5 dimensions PASS. ce37117's test-literal changes are a genuine, independently-reproducible re-derivation against the new committed baseline (every claimed number in the commit message/docstrings was reproduced exactly by re-running the real evaluator) -- no assertion was weakened or masked. 44/44 tests green, non-vacuously confirmed by spot-breaking 2 tests in different modules (both went red, then green again after revert). config.yaml switch to free/gpt-oss-120b via local ClawRouter introduces no paid/human credential. The a6f608c promotion remains scope_guard-valid against the pre-promotion baseline and its combined_score (3.2076) genuinely beats the pre-promotion baseline (1.2628) with a positive worst-OOS window (2.375), matching the promotion_verdict.json evidence exactly. The only file outside skills/earn/self-improve/** is a pre-existing, append-only execution-notes doc. MERGE is safe."
+}
