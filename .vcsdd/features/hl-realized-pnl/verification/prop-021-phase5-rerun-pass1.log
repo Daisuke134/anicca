@@ -1,0 +1,7 @@
+[live] checkpoint before this pass = 0
+[live] calling info.user_fills_by_time(address=0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21, start_time=0, end_time=1783545696630, aggregate_by_time=False)
+[live] raw_fills count (since checkpoint) = 146
+[live] fills with closedPnl != 0 (this pass's candidate set) = 71
+[live] SUM(closedPnl - fee) over this pass's nonzero-candidate fills = 0.081756
+[reconcile:pass1] result = {"status": "ok", "recorded": 71}
+{"pass": "pass1", "result": {"status": "ok", "recorded": 71}}
