@@ -1,0 +1,124 @@
+=== claude-p-ceo-loop Phase 2a (TDD RED) evidence log ===
+generated: 2026-07-08T13:43:58Z
+worktree: /Users/anicca/anicca/.worktrees/ceo-loop (branch feature/claude-p-ceo-loop)
+
+--- new-feature-tests: RED phase run ---
+14 test files, targeting Tier1 required PROP-CEO obligations (per verification-architecture.md)
++ team-lead-requested extras (LinUCB/Thompson select-scores, BudgetPacer dual-ascent,
+guardrail-reuse grep check, REQ-CEO-058 step-order pure-function composition).
+
+----- test_alert_dedup.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_alert_dedup.py", line 11, in <module>
+    from budget import alert_key, should_fire_alert  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'budget'
+result: FAIL (rc=1)
+
+----- test_bandit.py -----
+    from bandit import (  # noqa: E402  RED: does not exist yet
+    ...<4 lines>...
+    )
+ModuleNotFoundError: No module named 'bandit'
+result: FAIL (rc=1)
+
+----- test_budget_gate.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_budget_gate.py", line 11, in <module>
+    from budget import budget_for_loop, filter_budget_compliant_loops  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'budget'
+result: FAIL (rc=1)
+
+----- test_budget_pacer.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_budget_pacer.py", line 14, in <module>
+    from budget_pacer import BudgetPacer  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'budget_pacer'
+result: FAIL (rc=1)
+
+----- test_build_next_registry.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_build_next_registry.py", line 14, in <module>
+    from allocator import build_next_registry  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_capital_gate_and_scale_down.py -----
+    from allocator import (  # noqa: E402  RED: does not exist yet
+    ...<4 lines>...
+    )
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_cooldown_rollback_state_machine.py -----
+    from allocator import (  # noqa: E402  RED: does not exist yet
+    ...<5 lines>...
+    )
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_cost_events_and_spend.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_cost_events_and_spend.py", line 15, in <module>
+    from budget import build_cost_event, monthly_spend_by_loop, weekly_spend_by_loop  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'budget'
+result: FAIL (rc=1)
+
+----- test_currency_conversion.py -----
+    from allocator import (  # noqa: E402  RED: does not exist yet
+    ...<5 lines>...
+    )
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_derive_roster.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_derive_roster.py", line 13, in <module>
+    from allocator import derive_roster  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_escalation_and_reporting.py -----
+    from allocator import (  # noqa: E402  RED: does not exist yet
+    ...<5 lines>...
+    )
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_guardrail_reuse.py -----
+  FAIL ceo/allocator.py does not exist yet at /Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/allocator.py -- guardrail reuse cannot be verified
+=== test_guardrail_reuse: 0 passed 1 failed ===
+result: FAIL (rc=1)
+
+----- test_registry_bootstrap_and_ranges.py -----
+  File "/Users/anicca/anicca/.worktrees/ceo-loop/skills/self/founder-loop/ceo/tests/test_registry_bootstrap_and_ranges.py", line 13, in <module>
+    from allocator import bootstrap_registry_if_missing, validate_allocation_ranges  # noqa: E402  RED: does not exist yet
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+----- test_rollback_pass_composition.py -----
+    from allocator import (  # noqa: E402  RED: does not exist yet
+    ...<6 lines>...
+    )
+ModuleNotFoundError: No module named 'allocator'
+result: FAIL (rc=1)
+
+new-feature-tests: FAILING (14 of 14 test files fail as expected -- ceo/bandit.py, ceo/budget.py, ceo/budget_pacer.py, ceo/allocator.py do not exist yet, ModuleNotFoundError in every case, i.e. RED for the correct reason -- confirmed by first implementing throwaway scratch stubs satisfying all 168 assertions across the 14 files, then deleting the stubs before this run to keep Phase 2a tests-only)
+
+--- regression-baseline: existing founder-loop tests (unmodified by this feature) ---
+test-founder-loop.sh:
+PASS — founder-loop harness invariants hold (INV-H1 read-state-first · H2 ledger-via-record-earn-only · H3 atomic STATE · H4 no-human · H5 goal-on-real-ledger · H6 fail-safe · FOUNDER_LEDGER TEST-gated · corrupt-ledger fail-safe)
+  exit_code=0
+test-record-earn.sh:
+PASS — founder record-earn (external-inflow + finalized + raw-parse): external-only (self=0, INV-7) + real-log parse (from-slice/BigInt/to/address re-verify) + finalized-head (no reorg) + seam-gating + wallet-pin + realpath + env-independent root + fail-closed + atomic cursor
+  exit_code=0
+test-report-args.mjs:
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6.1505
+  exit_code=0
+
+regression-baseline: PASS (all 3 existing founder-loop.sh/record-earn.mjs/report-args.mjs suites green, untouched by this RED phase)
