@@ -1,0 +1,101 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T23:59:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "537ad682052866ec48156ed66aec62cf0a4f42966542f8e3bc99d96a3faae48f"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-020", "FIND-021"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md:518 (PROP-307c row) and :1013-1023 ((8b) restatement), contracts/sprint-2.md:311-323 (correction paragraph)",
+          "description": "FIND-019's own fix independently re-verified from scratch, trusting nothing. The corrected PROP-307c row now accurately scopes the 'no row ever claims active' guarantee to steps 1-8 only, and explicitly carves out step 9's two real sub-failure modes: (i) a raw ledger-append failure, which propagates uncaught with no row produced, and (ii) a transient citizen-registry-append failure, which correctly leaves the ledger row 'active' and is queued via a THIRD mechanism (pending-registry-append.js), never buildChildSpec. The corrected (8b) restatement matches this exactly and drops all 'steps 7-9' language for the active-row guarantee. Cross-checked against the real code (spawn-orchestrator.mjs:695-736): line 698's direct appendChild (no try/catch around it, confirming uncaught-propagation for sub-case i), lines 700-736's appendCitizenRecord wrapped in try/catch (line 711) with queuePendingRegistryAppend on failure (line 721) and the outer function still resolving {status:'active',childId} (line 738, confirming sub-case ii). Both sub-cases match the corrected spec text exactly, with no new inaccuracy introduced by the fix itself. Cross-checked CRIT-203's own narrow 'no row ever claims active for a FAILED ATTEMPT' clause: still accurate (the FIND-003 transient case resolves status:'active', not 'failed', so it is genuinely not covered by that specific clause) -- this part of round 12's own FIND-019 reasoning holds."
+        },
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js' (freshly re-executed this session)",
+          "description": "204/204 pass, 0 fail, 0 cancelled, 0 skipped -- exact match to the correction paragraph's claim of no code changes this round (pure regression check, since FIND-019's own fix was spec-text-only). Independently confirmed via `git show b0f120fa1 --stat` that the fix commit touched ONLY contracts/sprint-2.md (+13 lines, one new correction paragraph) and specs/verification-architecture.md (+12/-4 lines, the PROP-307c row and (8b) restatement) -- no source or test file in the diff."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:2848-2852 (REQ-307 Acceptance Criteria, item b/c)",
+          "description": "NEW FINDING (FIND-020). The fix commit (b0f120fa1) did not touch specs/behavioral-spec.md at all. Its REQ-307 Acceptance Criteria still states, verbatim, the exact disproven claim FIND-019 removed from verification-architecture.md: 'for steps 7-9, the existing buildChildSpec-based failure path (REQ-305) is used ... in every case, no row anywhere claims status:\"active\"'. This is the Phase-1a source PROP-307c is meant to formalize, and it now disagrees with its own (corrected) downstream formalization. See FIND-020 for full evidence against the real, passing code."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:31-35 (CRIT-203 id/description/weight/passThreshold)",
+          "description": "NEW FINDING (FIND-021). Round 12's own FIND-019 text stated CRIT-203 was 'unaffected' by the falsified PROP-307c claim, but that reasoning only evaluated CRIT-203's narrower 'no row ever claims active for a FAILED ATTEMPT' clause. A SEPARATE clause in the same CRIT-203 sentence -- 'steps 7-9 use the existing buildChildSpec-based REQ-305 path' -- was not examined by that reasoning and is independently false for step 9, per the corrected PROP-307c and the real code. CRIT-203's own passThreshold ('FAIL if any step's failure produces no row') would, applied literally, incorrectly FAIL the passing, intended, step-9 raw-ledger-append-failure test (which legitimately produces no row). See FIND-021 for full evidence."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "~/anicca/skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs:287-390 (freshly re-read and re-run this session)",
+          "description": "All 9 canonical-step failure-injection cases, including both step-9 sub-modes (raw ledger-append failure at line 287, transient registry-append failure at line 316, retry-mechanism completion at line 350), pass fresh in this session's own `node --test` run. The actual test coverage for step 9's two real sub-failure modes is genuinely complete and correct -- the ONLY defect found this round is in the descriptive/narrative text of two OTHER documents (behavioral-spec.md, contracts/sprint-2.md CRIT-203), not in the tests or the code they describe. No code changed this round, so this is a pure regression check against round 12's own PASS verdict for this dimension -- reconfirmed."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs:695-736, lib/pending-registry-append.js (44 lines, fully re-read this session)",
+          "description": "Step 9's implementation independently re-confirmed to exactly match the corrected PROP-307c description: line 698 appendChild (ledger 'active' row, no surrounding try/catch -- a failure here propagates uncaught, matching the corrected spec's 'raw ledger-append failure ... propagates uncaught' claim); lines 700-736 appendCitizenRecord wrapped in try/catch (line 711), queuePendingRegistryAppend on failure (line 721) writing {child_id, citizen_record, citizens_registry_file, queued_ms, status:'pending', error} to the pending file, function still resolves {status:'active',childId} (line 738). pending-registry-append.js's deriveOutstandingRegistryAppends (pure, last-row-wins) and retryPendingRegistryAppends (spawn-orchestrator.mjs:760-775) independently re-read and confirmed to match their own documented contracts. No code changed this round (git status clean for ~/anicca/skills/self/spawn/), so this reconfirms round 12's own PASS verdict."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh, lib/__tests__/gen-solana-wallet.test.mjs:52-68",
+          "description": "CRIT-207 re-verified: unaffected by this round's spec-text-only fix -- no code touched. gen-solana-wallet.sh's own generation script still follows gen-wallet.sh's documented discipline (fresh entropy, {address,private_key,public_key}-shaped stdout JSON, 600-perm caller-redirected file, never logged), and its cross-check test still independently re-derives via @solana/web3.js's Keypair.fromSecretKey(...).publicKey.toBase58() -- a genuinely separate library from the script's own solana-keygen-based generation, confirmed already installed (package.json/node_modules present). Reconfirms round 12's own PASS verdict for this criterion."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs:478 (executeSpawnAttempt), :741 (withGigLock)",
+          "description": "CRIT-201 re-verified: exactly one `export async function executeSpawnAttempt` in the module (grep confirms single definition), no second orchestration entry point. CRIT-202 re-verified: structural grep for relational/arithmetic/LLM-reference patterns finds only one hit (`shelterCostUsd > 0` at line 579, a bookkeeping guard on whether to append a cost-ledger entry, not an eligibility/threshold decision on whether to spawn) -- matches round 12's own characterization. CRIT-204 re-verified: exactly one `withGigLock(lockStatePath, \"colony-spawn\", runAttempt)` call site (line 741), wrapping the entire runAttempt closure (steps 1 through 9) -- lock scope unchanged since round 12, no code touched this round."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md CRIT-205/206/208 (frontmatter, unchanged by this round's fix commit)",
+          "description": "CRIT-205 (31 targeted PROP obligations genuinely reachable), CRIT-206 (3 Tier-3 real-money obligations honestly not claimed proved via fixture/simulated/borrowed artifact), and CRIT-208 (Phase 1c gate before Phase 2, a historical state.json fact) are all unaffected by this round's spec-text-only fix -- none of their own governing text was touched by commit b0f120fa1, and no code changed. The FIND-020/FIND-021 findings this round concern PROP-307c/CRIT-203's own TEXTUAL accuracy (a spec_fidelity concern), not the reachability/exercisability of any proof obligation or Tier-3 honesty claim -- CRIT-205's own passThreshold is inapplicable here (PROP-307c's/CRIT-203's own call sites genuinely exist and are reachable; only their prose descriptions are stale), so this dimension remains PASS, matching round 12's own reasoning for the identical structural point about FIND-019."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

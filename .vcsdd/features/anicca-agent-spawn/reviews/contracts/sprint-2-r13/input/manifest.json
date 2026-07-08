@@ -1,0 +1,13 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "c2f193e5e4aae3fb3afc2eee3f60464254cbc3925d4ddd48e954f1b1ebcb5591",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs", "~/anicca/skills/self/spawn/lib/pending-registry-append.js", "~/anicca/skills/self/spawn/scripts/gen-solana-wallet.sh", "~/anicca/skills/self/spawn/scripts/wake-gate.mjs", "~/anicca/skills/self/spawn/run.sh"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"]
+}

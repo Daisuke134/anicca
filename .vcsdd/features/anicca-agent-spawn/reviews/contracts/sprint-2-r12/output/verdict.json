@@ -1,0 +1,91 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T23:30:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "4e17238d985d4ada1a9f4df34d2e8a281c207a3b412dca3fbc9565a2d5b4ec87"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-019"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:272-311 (the FIND-003/FIND-004 correction paragraph under review this round)",
+          "description": "Independently re-verified from scratch (zero trust in the paragraph's own claims). FIND-003 claim: ~/anicca/skills/self/spawn/lib/pending-registry-append.js genuinely exists (44 lines) and exports exactly queuePendingRegistryAppend/resolvePendingRegistryAppend/readPendingRegistryAppends/deriveOutstandingRegistryAppends, reusing ledger.js's own generic (file,row) appendChild/readChildren primitives -- confirmed by direct read. spawn-orchestrator.mjs's step 9 (lines 698-736) genuinely wraps appendCitizenRecord in try/catch (line 710), queues via queuePendingRegistryAppend on failure (line 721), and the outer function still resolves {status:'active',childId} (line 738) -- never rejects for this failure mode, confirmed by direct read. A new exported retryPendingRegistryAppends (lines 760-775) genuinely exists and completes queued entries against the recorded citizens_registry_file without re-running the spawn attempt. scripts/wake-gate.mjs's runWakeGate (lines 143-146) genuinely calls it via a deps.retryPendingRegistryAppends/deps.pendingRegistryAppendsFile seam, BEFORE filterProductiveCitizens/decideColonySpawn (line 151/169-170), and ONLY when !dryRun -- confirmed by direct read, matching the paragraph's claim exactly. FIND-004 claim: gen-solana-wallet.test.mjs's CRIT-207 cross-check test (lines 52-68) genuinely uses @solana/web3.js's Keypair.fromSecretKey(...).publicKey.toBase58() -- confirmed a real, separate dependency (package.json + node_modules/@solana/web3.js present) and the SAME library runtime/wallet-address-solana.mjs already uses for an identical derivation (confirmed by direct read of runtime/wallet-address-solana.mjs:11,25,26). No remaining call to `solana-keygen` a second time anywhere in the test file (grep confirms `solana-keygen` appears only in comments referencing the OLD, now-fixed approach). gen-solana-wallet.sh's own generation logic (which still shells out to solana-keygen once, for generation) is untouched, exactly as the paragraph claims."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:108-145 (Files touched section)",
+          "description": "Cross-checked the full enumeration against a real `ls` of ~/anicca/skills/self/spawn/{lib,lib/__tests__,scripts}: all newly-touched files (spawn-orchestrator.mjs, pending-registry-append.js, gen-solana-wallet.sh, run.sh, wake-gate.mjs, and all 7 test files -- spawn-orchestrator.test.mjs, gen-solana-wallet.test.mjs, spawn-orchestrator-funding-and-wallet.test.mjs, spawn-orchestrator-gas-seed-and-key-persistence.test.mjs, spawn-orchestrator-reclaim-and-shelter-cost.test.mjs, wake-gate.test.mjs, pending-registry-append.test.js) exist on disk exactly as named. All reused-unmodified files (child-spec.js, ledger.js, treasury-gate.mjs, colony-balances.mjs, registry-path.mjs, citizens-registry.mjs, akash-funding-gate.mjs, cloud-target.mjs, needs-solana-wallet.mjs, shelter-cost-ledger.js) also confirmed present. No omission found."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md:518 (PROP-307c) and :1013-1017 (identical restatement), cross-referenced against specs/behavioral-spec.md:2559-2563 and spawn-orchestrator.mjs:695-736",
+          "description": "NEW FINDING (FIND-019), never previously flagged in rounds 1-11 (all of which concerned numeric/enumeration self-consistency, never this specific step-9-behavior-vs-PROP-text question -- a fresh angle this round's own FIND-003 fix newly makes concretely testable). PROP-307c is a required (tier:1, state.json PROP-117), in-scope review artifact whose own text makes an absolute claim -- 'in every case, no row anywhere claims status:\"active\"' for ANY step-9 failure -- that the CURRENT, deliberately-implemented and passing FIND-003 code and tests directly falsify for one genuine step-9 sub-case (a transient citizens.json registry-append failure, which correctly leaves the ledger row 'active' per REQ-305's own pre-existing Edge Case text). This does not make the CONTRACT's own CRIT-203 wording wrong (CRIT-203 is narrower and correctly scoped to 'a FAILED attempt', which this case is not), so CRIT-203 itself is unaffected -- but PROP-307c's own text, a required proof obligation Phase 5 must eventually evaluate, is now demonstrably inaccurate against the code it purports to describe. See FIND-019 for full evidence."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js' (freshly re-executed this session)",
+          "description": "204/204 pass, 0 fail, 0 cancelled, 0 skipped -- exact match to the correction paragraph's claim (195 pre-fix + 9 new). Independently confirmed the 9 new tests' exact distribution by direct source read: 2 FIND-003-titled tests in spawn-orchestrator.test.mjs (line 316: transient failure resolves active + queues pending marker; line 350: retryPendingRegistryAppends completes a queued entry once the transient condition clears), 2 FIND-003-titled tests in wake-gate.test.mjs (real wake calls retry before decideColonySpawn; --dry-run never calls it), and 5 tests in the genuinely-new pending-registry-append.test.js (read/queue/derive-outstanding/last-row-wins/multi-child independence) -- matching '2+2+5=9' exactly. CRIT-203's own 9-step failure-injection integration coverage and CRIT-204's lock-scope coverage observed passing directly in this session's own output, no regression."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs (775 lines, fully re-read this session), lib/pending-registry-append.js (44 lines), scripts/wake-gate.mjs (207 lines)",
+          "description": "Independently confirmed (not trusting the contract's own claims) that all named production code genuinely exists, is genuinely wired as described, and introduces no second orchestration path: retryPendingRegistryAppends is a bookkeeping-only completion of an already-active child's registry entry, never re-running executeSpawnAttempt itself. CRIT-202 re-checked structurally: no relational/arithmetic eligibility comparison and no LLM/prompt reference found anywhere in spawn-orchestrator.mjs (grep of if/comparison sites shows only .failed/.ok/existence/type checks, all bookkeeping). CRIT-207 re-checked: gen-solana-wallet.sh's own generation script still documents 600-perm/never-logged discipline and emits {address,private_key,public_key}-shaped JSON (verified via the passing structural+live-invocation tests), and its own cross-check test now genuinely uses a second, independent library (@solana/web3.js, confirmed a real installed dependency) rather than re-invoking solana-keygen -- CRIT-207's own passThreshold wording needed no edit since it was already generic ('a second keypair-derivation path'), confirmed correct by direct re-read of contracts/sprint-2.md:51-55."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs:741 (withGigLock call site), :760-775 (retryPendingRegistryAppends)",
+          "description": "CRIT-201 re-verified: exactly one withGigLock('colony-spawn', runAttempt) call site in the entire module; retryPendingRegistryAppends is a SEPARATE, non-competing exported function that never acquires the colony-spawn lock and never re-runs a spawn attempt -- it only completes a bookkeeping append for an attempt already recorded active, so it does not constitute a second orchestration entry point (CRIT-201's own 'no second, competing orchestration entry point' requirement is unaffected by this round's fix). CRIT-204 re-verified: the lock's scope (withGigLock wrapping the entire runAttempt closure, steps 1-9) is unchanged by this round's fix -- retryPendingRegistryAppends runs OUTSIDE and AFTER any given executeSpawnAttempt's own lock hold (it is called from wake-gate.mjs before the NEXT wake's own decideColonySpawn evaluation, never from inside executeSpawnAttempt itself), so it introduces no new lock-scope question this criterion governs. state.json's 38-item deferred-obligation enumeration (31 tier>0-skipped + 7 tier0-skipped) still matches contracts/sprint-2.md's own enumeration exactly, no drift introduced by this round's fix."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json proofObligations (121 entries) -- PROP-115..PROP-121 (PROP-307a/b/c/d/204d/307f/307e)",
+          "description": "CRIT-205 re-verified: unaffected by this round's fix -- the 31 targeted PROP IDs (30 sprint-1-deferred + PROP-307e) are a fixed, separate set from PROP-307a-d/f/204d (sprint-2-native new PROPs, tracked as PROP-115..PROP-120 in state.json, none of which are among the 31 CRIT-205 governs), and none of the 31's own named call sites were touched by this round's FIND-003/FIND-004 fix -- still genuinely exist and are reachable, confirmed unchanged. CRIT-206 re-verified: PROP-302b/PROP-303b/PROP-401a (state.json PROP-038/040/053) remain status:'skipped', tier:3, required:false -- still honestly NOT claimed proved via any fixture/simulated/borrowed artifact, unaffected by this round's fix. CRIT-208 (Phase 1c gate before Phase 2) is a historical fact unaffected by any code change this round -- state.json's phaseHistory already shows the 1b->1c transition with a recorded PASS. The FIND-019 finding (spec_fidelity dimension) concerns PROP-307c's own TEXTUAL accuracy, not its exercisability/reachability, so it does not itself constitute a verification_readiness violation under this criterion's own passThreshold ('FAIL if any of the 31 names a call site that does not exist... or is a stub' -- inapplicable here, PROP-307c is not one of the 31, and its call site genuinely exists and is reachable; only its own prose description is now stale)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}
