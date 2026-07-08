@@ -75,19 +75,26 @@ function happyDeps(dir, overrides = {}) {
 }
 
 // ---------------------------------------------------------------------------
-// PROP-307a: exactly ONE call-graph root, no second orchestration path, run.sh untouched.
+// PROP-307a: exactly ONE call-graph root, no second orchestration path.
 // ---------------------------------------------------------------------------
 
 test("PROP-307a structural: spawn-orchestrator.mjs exports exactly one executeSpawnAttempt entry point and never references run.sh", () => {
   const src = fs.readFileSync(ORCH_PATH, "utf8");
   const exportMatches = src.match(/export\s+(async\s+function|function|const)\s+executeSpawnAttempt/g) || [];
   assert.equal(exportMatches.length, 1, "exactly one executeSpawnAttempt export, no second competing entry point");
-  assert.ok(!/run\.sh/.test(src), "spawn-orchestrator.mjs must never reference the superseded run.sh");
+  assert.ok(!/run\.sh/.test(src), "spawn-orchestrator.mjs must never reference run.sh");
 });
 
-test("PROP-307a structural: run.sh (pre-existing AgentMail+DigitalOcean/Akash design) is untouched by this sprint's diff", () => {
+// (corrected, sprint-2 contract-review round 2, resolves FIND-004/PROP-307e): run.sh was NOT actually
+// untouched prior art as an earlier iteration of this spec wrongly assumed -- it is the LIVE
+// self/spawn wake-cycle entry point (skills/registry.json), and its OLD lib/spawn-decision.js gate +
+// DigitalOcean/AgentMail provisioning path were genuinely retired this sprint, replaced by
+// decideColonySpawn()/executeSpawnAttempt() via scripts/wake-gate.mjs. See
+// wake-gate.test.mjs's own PROP-307e structural tests for the full call-order/absence proof.
+test("PROP-307a/PROP-307e: run.sh still exists and still supports --dry-run (its own documented CLI contract survives the rewrite)", () => {
   const src = fs.readFileSync(RUN_SH_PATH, "utf8");
-  assert.ok(src.length > 0, "run.sh must still exist, unmodified prior art -- never deleted or rewritten by REQ-307");
+  assert.ok(src.length > 0);
+  assert.ok(/--dry-run/.test(src));
 });
 
 test("PROP-307a: a real invocation calls every one of steps 1-9 exactly once, in the canonical order, for a happy-path attempt", async () => {
