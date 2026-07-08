@@ -198,7 +198,15 @@
       "mode": "lean",
       "currentPhase": "6",
       "updatedAt": "2026-07-08T15:31:58.558Z"
+    },
+    "hl-realized-pnl": {
+      "status": "active",
+      "createdAt": "2026-07-08T19:32:44.393Z",
+      "mode": "strict",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-08T19:48:32.111Z"
     }
   },
-  "activeFeature": "franklin-earn-foundation"
+  "activeFeature": "hl-realized-pnl"
 }

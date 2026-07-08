@@ -275,3 +275,6 @@
 {"timestamp":"2026-07-08T15:28:16.355Z","event":"gate_recorded","featureName":"franklin-earn-foundation","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
 {"timestamp":"2026-07-08T15:28:36.255Z","event":"phase_transition","featureName":"franklin-earn-foundation","from":"3","to":"5","iteration":1,"phase":"5"}
 {"timestamp":"2026-07-08T15:31:58.560Z","event":"phase_transition","featureName":"franklin-earn-foundation","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-07-08T19:32:44.396Z","event":"feature_created","featureName":"hl-realized-pnl","mode":"strict","language":"python"}
+{"timestamp":"2026-07-08T19:48:32.109Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-08T19:48:32.111Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"1a","to":"1b","iteration":1,"phase":"1b"}
