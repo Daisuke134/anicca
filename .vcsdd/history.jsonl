@@ -292,3 +292,6 @@
 {"timestamp":"2026-07-08T21:14:56.806Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"3","to":"5","iteration":1,"phase":"5"}
 {"timestamp":"2026-07-08T21:32:10.210Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"5","to":"6","iteration":1,"phase":"6"}
 {"timestamp":"2026-07-08T21:32:31.720Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"6","to":"complete","iteration":1,"phase":"complete"}
+{"timestamp":"2026-07-08T21:34:07.651Z","event":"feature_created","featureName":"self-improve-real-ledger","mode":"strict","language":"python"}
+{"timestamp":"2026-07-08T21:48:41.405Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-08T21:48:41.406Z","event":"phase_transition","featureName":"self-improve-real-ledger","from":"1a","to":"1b","iteration":1,"phase":"1b"}

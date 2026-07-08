@@ -206,7 +206,15 @@
       "language": "python",
       "currentPhase": "complete",
       "updatedAt": "2026-07-08T21:32:31.719Z"
+    },
+    "self-improve-real-ledger": {
+      "status": "active",
+      "createdAt": "2026-07-08T21:34:07.648Z",
+      "mode": "strict",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-08T21:48:41.405Z"
     }
   },
-  "activeFeature": "hl-realized-pnl"
+  "activeFeature": "self-improve-real-ledger"
 }
