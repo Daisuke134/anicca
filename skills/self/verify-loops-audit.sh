@@ -54,6 +54,6 @@ done
 
 # send the honest scorecard to the report channel (visibility = no-op auto-detection for every loop incl LM)
 if [ -x "$SELF/../report/loop-report.sh" ]; then
-  bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-900)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 none >> "$LOG" 2>&1 || true
+  bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-900)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
 fi
 echo "[verify-loops-audit] done $(date '+%F %T')"

@@ -133,6 +133,26 @@ chk("compound: both false -> false",
     }}), False)
 
 # ---------------------------------------------------------------------------
+# F-VERIF-2 (Phase 5 hardening, non-blocking finding turned into a regression guard): compound
+# with an EMPTY conditions list must NOT be vacuously true. Pure "AND over zero sub-contracts"
+# logic returns True, but operationally that means "nothing was actually verified" — the same
+# "artifact/contract exists but proves nothing" blind spot G1 already fixed once (pass-marker vs
+# recency). A misconfigured empty conditions list must read as NOT met.
+# ---------------------------------------------------------------------------
+chk("compound: empty conditions list -> FALSE (not vacuous-true; nothing was actually verified)",
+    cadence_met("2026-07-08", {"kind": "compound", "conditions": []}, {"by_condition": {}}), False)
+
+# ---------------------------------------------------------------------------
+# F-VERIF-3 (Phase 5 hardening, non-blocking finding turned into a regression guard): recency with
+# a marker in the FUTURE (now < marker — clock skew or a tampered mtime) must be treated as NOT
+# met, never as healthy. Fail-closed, consistent with record_earn.py/positions.py/ytdlp_parse.py's
+# "never fabricate" design across this codebase.
+# ---------------------------------------------------------------------------
+chk("recency: marker in the future (now < marker, clock skew) -> FALSE (fail-closed, not fail-open)",
+    cadence_met("2026-07-08", {"kind": "recency", "max_age_min": 40},
+                {"marker_epoch_seconds": 2000000, "now_epoch_seconds": 1000000}), False)
+
+# ---------------------------------------------------------------------------
 # PROP-LV-022: streak() — kind-agnostic, works off whatever cadence_met returns per day
 # ---------------------------------------------------------------------------
 def evidence_for(dates_true):

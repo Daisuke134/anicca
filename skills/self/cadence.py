@@ -46,12 +46,24 @@ def cadence_met(today_jst_date: str, contract: dict, evidence: dict) -> bool:
         now = evidence.get("now_epoch_seconds")
         if marker is None or now is None:
             return False
+        if now < marker:
+            # F-VERIF-3: a marker in the future (clock skew / tampered mtime) is an anomalous
+            # input, never a healthy one — fail-closed like every other absolute-truth check in
+            # this codebase (record_earn.py/positions.py/ytdlp_parse.py never fabricate either).
+            return False
         max_age_seconds = contract["max_age_min"] * 60
         return (now - marker) <= max_age_seconds
 
     if kind == "compound":
+        conditions = contract["conditions"]
+        if not conditions:
+            # F-VERIF-2: AND over zero sub-contracts is vacuously true in pure logic, but
+            # operationally means "nothing was actually verified" — the exact "artifact/contract
+            # exists but proves nothing" blind spot G1 already fixed once for pass-marker vs
+            # recency. A misconfigured empty conditions list must read as NOT met, never healthy.
+            return False
         by_condition = evidence.get("by_condition", {})
-        for sub_contract in contract["conditions"]:
+        for sub_contract in conditions:
             sub_evidence = by_condition.get(sub_contract["id"], {})
             if not cadence_met(today_jst_date, sub_contract, sub_evidence):
                 return False
