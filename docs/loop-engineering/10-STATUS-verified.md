@@ -48,6 +48,8 @@
 - **2026-07-08 TODO#1 DONE**: self-improve-harness capable-improver → main。merge-verify adversary(fresh Opus)=PASS 5/5。PR#795 merge=`e3b5ddb`。B2 解消。
 - **2026-07-08 決定→改訂(funding)**: treasury 廃止・automaton 経済外。存在 wallet=claude-p + Franklin の2つだけ、claude-p=唯一 funder が Franklin を**直接** fund、経済=Franklins のみ(spawn で hundreds〜billions)。→ [[05-coordination-with-agent-economy]] §6。★別CC SPEC.md(treasury/UBI/automaton) は要 reconcile★。
 - **2026-07-08 folder統合**: loop-engineering の全 spec を `docs/loop-engineering/` に集約（superpowers/specs から goldmine + out-of-loop-design を移動）。
-- **2026-07-08 TODO#2 調査DONE(fresh evidence)**: pm-earner 稼働中・実現益+$8.47。ボトルネック=MAX_PASS_SPEND=$2 cap で $19.26 眠る + PM withdraw 経路未実装。浮遊 crypto $1.12 のみ。bridge=relay.link 実証済($10 Polygon→Solana=$9.95着,0.46%)。BF9v(Solana $0.47)は Franklin と同chain。⚠franklin proxy 直近再起動で wallet を `8Fpqd`でなく`Efpap5`表示=identity 要確認(funding 前の blocker)。→ 次: ①identity確認 ②MAX_PASS_SPEND安全値へ ③PM withdraw+bridge 経路 build → Franklin へ直接 fund。
+- **2026-07-08 TODO#2 調査DONE(fresh evidence)**: pm-earner 稼働中・実現益+$8.47。ボトルネック=MAX_PASS_SPEND=$2 cap で $19.26 眠る + PM withdraw 経路未実装。浮遊 crypto $1.12 のみ。bridge=relay.link 実証済($10 Polygon→Solana=$9.95着,0.46%)。BF9v(Solana $0.47)は Franklin と同chain。
+- **2026-07-08 pm-earner 安全修正 + identity 確定(DONE)**: (1)🔴 **guard fail-closed 復活** — `run_earner.sh` に KILL チェック追加（cron 実体が KILL を読まず check_cumulative_halt が本番で死んでいた、commit `e3269ac`）(2)**MAX_PASS_SPEND $2→$5**（眠る $19.26 を展開、market_maker の directional 露出を資本~26%に抑制、verification 推奨値、reload 済）(3)**wallet identity**: 8Fpqd が stable+正（franklin-stats **625:1** vs Efpap5）、clean 再起動後 proxy=8Fpqd 確認、送金 **address-safe**。Efpap5=過去1回のみ transient（key制御未確認）→ root-cause は別 task、funding は blockしない。
+- **2026-07-08 build 進行中**: withdraw→bridge→send コードを agent が実装中。⚠保存先が `~/.blockrun/skills/earn/funding/`（想定=`~/anicca/skills/earn/funding/`）→ agent 完了後に場所確認・必要なら移設。
 
 出典: verify-subagent 独立検証(2026-07-08) / 各 verdict.json / launchctl / colony-status。
