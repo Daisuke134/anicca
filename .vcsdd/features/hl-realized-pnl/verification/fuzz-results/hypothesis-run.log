@@ -1,0 +1,51 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- /private/tmp/claude-501/-Users-anicca-anicca-project/d8edf4f5-f0c2-4c1c-8299-f831efe2d5a4/scratchpad/hl-verify/.venv/bin/python3
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /Users/anicca
+plugins: hypothesis-6.156.3
+collecting ... collected 4 items
+
+../anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop001_net_usdc_always_equals_closed_pnl_minus_fee PASSED [ 25%]
+../anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop002_select_close_fills_output_is_exactly_time_ge_since_and_nonzero_pnl PASSED [ 50%]
+../anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop002b_boundary_is_inclusive_for_any_tied_timestamp PASSED [ 75%]
+../anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop004_005_plan_batch_stop_index_and_no_gap_invariants PASSED [100%]
+============================ Hypothesis Statistics =============================
+
+anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop001_net_usdc_always_equals_closed_pnl_minus_fee:
+
+  - during generate phase (0.14 seconds):
+    - Typical runtimes: < 1ms, of which < 1ms in data generation
+    - 500 passing examples, 0 failing examples, 0 invalid examples
+
+  - Stopped because settings.max_examples=500
+
+
+anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop002_select_close_fills_output_is_exactly_time_ge_since_and_nonzero_pnl:
+
+  - during generate phase (0.31 seconds):
+    - Typical runtimes: ~ 0-1 ms, of which ~ 0-1 ms in data generation
+    - 300 passing examples, 0 failing examples, 31 invalid examples
+
+  - Stopped because settings.max_examples=300
+
+
+anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop002b_boundary_is_inclusive_for_any_tied_timestamp:
+
+  - during generate phase (0.07 seconds):
+    - Typical runtimes: < 1ms, of which < 1ms in data generation
+    - 200 passing examples, 0 failing examples, 0 invalid examples
+
+  - Stopped because settings.max_examples=200
+
+
+anicca/.vcsdd/features/hl-realized-pnl/verification/proof-harnesses/test_properties.py::test_prop004_005_plan_batch_stop_index_and_no_gap_invariants:
+
+  - during generate phase (0.36 seconds):
+    - Typical runtimes: ~ 0-1 ms, of which ~ 0-1 ms in data generation
+    - 300 passing examples, 0 failing examples, 20 invalid examples
+
+  - Stopped because settings.max_examples=300
+
+
+============================== 4 passed in 1.01s ===============================
