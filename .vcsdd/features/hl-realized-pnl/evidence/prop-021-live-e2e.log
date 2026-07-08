@@ -1,0 +1,136 @@
+PROP-021 — Live E2E (Tier 2 capstone), executed 2026-07-09
+
+## Environment
+- worktree (code under test, UNMODIFIED, execution only): /Users/anicca/anicca/.worktrees/hl-realized-pnl
+  branch: feature/hl-realized-pnl ; git status: clean, nothing to commit (verified before and after run)
+- Python interpreter used: /Users/anicca/.anicca/skills/earn/hl-trade/.venv/bin/python3
+  (Python 3.14, hyperliquid-python-sdk 0.24.0 — a pre-existing per-instance venv found via
+  `find / -iname ".venv" -path "*hl-trade*"`; NOT pip-installed for this task, NOT --user
+  installed, no PYTHONPATH env var was set)
+- Import mechanism: a standalone driver script
+  /private/tmp/claude-501/-Users-anicca-anicca-project/d8edf4f5-f0c2-4c1c-8299-f831efe2d5a4/scratchpad/hl-e2e/run_e2e.py
+  does `sys.path.insert(0, "<worktree>/skills/earn/hl-trade/lib")` inside the script itself
+  (mirrors tests/conftest.py:15-19's own sys.path-insert technique — not an env-var
+  PYTHONPATH extension), then does plain `import reconcile` / `from fills import
+  select_close_fills`, i.e. the REAL, unmodified worktree modules.
+- node binary used by reconcile.py's real record_line() -> record.mjs subprocess call:
+  /opt/homebrew/bin/node v25.6.1
+- record_line_fn passed to reconcile.reconcile(...): None -> reconcile.py's own default,
+  i.e. the REAL (non-injected) `record_line` function, which shells out to the REAL,
+  unmodified skills/earn/lib/record.mjs. No fake/mock record function was used anywhere in
+  this run.
+- Ledger/checkpoint/lock paths (ALL under session scratchpad, never the real ledger):
+  LEDGER_PATH     = .../scratchpad/hl-e2e/scratch-earn-ledger.jsonl
+  CHECKPOINT_PATH = .../scratchpad/hl-e2e/scratch-checkpoint.txt
+  LOCK_PATH       = .../scratchpad/hl-e2e/scratch-reconcile.lock
+  Verified before run: no such files existed yet (fresh scratch dir). Verified throughout:
+  the real ledger /Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl was NOT opened,
+  read, or written by this run (record.mjs's DEFAULT_LEDGER fallback is only used when no
+  ledgerPath argv is given; reconcile.py's record_line always passes ledger_path explicitly,
+  confirmed by reading lib/reconcile.py:127-137).
+- Audited wallet under test (per behavioral-spec.md §2 / the pre-existing audit evidence):
+  0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21 (OLD instance wallet, rotated out per memory
+  reference_anicca_wallets_canonical — read-only public Info-API query only, no signing key
+  used or required anywhere in this run: `Info(constants.MAINNET_API_URL, skip_ws=True)`,
+  no Exchange object constructed).
+
+## Command 1 — pass1 (fresh checkpoint = 0)
+cd .../scratchpad/hl-e2e
+/Users/anicca/.anicca/skills/earn/hl-trade/.venv/bin/python3 run_e2e.py pass1
+
+### Raw stderr/stdout (verbatim)
+[live] calling info.user_fills_by_time(address=0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21, start_time=0, end_time=1783543854892, aggregate_by_time=False)
+[live] raw_fills count = 146
+[live] fills with closedPnl != 0 = 71
+[live] SUM(closedPnl - fee) over nonzero fills = 0.081756
+[reconcile:pass1] result = {"status": "ok", "recorded": 71}
+{"pass": "pass1", "result": {"status": "ok", "recorded": 71}}
+
+## Command 2 — pass2 (checkpoint now advanced from pass1)
+/Users/anicca/.anicca/skills/earn/hl-trade/.venv/bin/python3 run_e2e.py pass2
+
+### Raw stdout/stderr (verbatim)
+[reconcile:pass2] result = {"status": "ok", "recorded": 0}
+{"pass": "pass2", "result": {"status": "ok", "recorded": 0}}
+
+After pass2: `wc -l scratch-earn-ledger.jsonl` = 71 (unchanged from pass1). Checkpoint file
+content unchanged (1783370643509 both before and after pass2).
+
+## Assertions (§Done, verification-architecture.md lines 134-149)
+
+(a) scratch ledger lines == live fills with closedPnl != 0
+    live raw_fills total = 146 (matches the audited 146-fill count exactly, see (e) below)
+    live fills with closedPnl != 0 = 71 (computed directly off the raw JSON dump,
+      independent of reconcile()'s own internal filtering)
+    scratch-earn-ledger.jsonl line count after pass1 = 71
+    71 == 71 -> PASS. Zero silent drops, zero fabricated extras.
+
+(b) SUM(net_usdc) in ledger == SUM(closedPnl - fee) over the raw live response
+    SUM(closedPnl - fee) computed directly from raw JSON (Python float sum, 71 nonzero
+      fills) = 0.081756
+    SUM(net_usdc) read back out of the 71 scratch-ledger lines (ledger.mjs's own 6-decimal
+      rounding applied per-line via deriveLine's `round(n) = Math.round(n*1e6)/1e6`) =
+      0.081756
+    0.081756 == 0.081756 (exact match at 6-decimal tolerance) -> PASS.
+
+(c) second reconcile() run (checkpoint now advanced) appends ZERO additional lines
+    pass2 result: {"status": "ok", "recorded": 0}
+    scratch-earn-ledger.jsonl line count: 71 before pass2, 71 after pass2 (unchanged)
+    checkpoint file bytes unchanged (1783370643509 -> 1783370643509)
+    -> PASS. Idempotency proven against LIVE data (the tid-dedup in
+    already_recorded_tids() correctly recognized all 71 fill_tids already on disk, even
+    though the inclusive `since_time_ms` boundary re-fetched the fill sharing the
+    checkpoint's own timestamp).
+
+(d) no "dry"/"fake"/"mock"/"simulated" in any appended line or log line
+    `grep -iE "dry|fake|mock|simulated" scratch-earn-ledger.jsonl pass1.log` -> grep exit
+    code 1 (no matches found in either file) -> PASS.
+
+(e) truncation check against the audited 146-fill count
+    live `info.user_fills_by_time(ADDRESS, start_time=0, end_time=now_ms,
+    aggregate_by_time=False)` returned exactly 146 fills this run, matching the audit's
+    146-fill count in behavioral-spec.md §2 / evidence/audit-userfills-summary.md exactly.
+    -> NO TRUNCATION observed. NFR-1 (chunked re-querying) is NOT triggered by this run;
+    per the spec, hardening does not need to add windowed pagination on the strength of
+    this evidence. (Caveat: this is a point-in-time observation against a dormant/rotated
+    wallet with a fixed historical fill count — it does not prove the API has no page-size
+    limit above 146, only that no truncation occurred for THIS wallet's THIS history size.)
+
+## Identity guard (assertOwnIdentityOnly) behavior — as observed, not edited
+Read skills/_shared/lib/identity-guard.mjs before running: `assertOwnIdentityOnly(line,
+opts)` checks TWO things only — (1) no user-PII env var pattern present in the process env
+(USER_*, GOOGLE_LOGIN, COMPOSIO, GCAL, GMAIL, TELEGRAM, USER_PHONE/CONTACT), and (2) the
+ledger line's `source` field is on ALLOWED_EARN_SOURCES (which includes "hl-trade",
+"hl"). It does NOT compare the `wallet` field against any "own wallet" allowlist or
+per-instance identity file anywhere in this module or in record.mjs.
+
+Consequence, observed directly: across all 71 real record.mjs subprocess invocations in
+pass1 (payload wallet = 0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21, the OLD/rotated,
+non-current-instance wallet), every single one returned exit code 0 with stdout
+"PROFITABLE" and NO "P1-GUARD HALT" message on stderr. A standalone probe run directly
+against record.mjs (same wallet, throwaway ledger path, fill_tid=999999, cleaned up
+immediately after) reproduced this: exit=0, stdout "PROFITABLE", stderr "recorded
+net=0.009 tx=- status=-", no HALT line.
+
+This means: for THIS feature (hl-realized-pnl), no wallet-address-based identity HALT
+exists in the current code — assertOwnIdentityOnly gates only on env-PII and the
+`source` string, both of which this run legitimately satisfies (source="hl-trade" is
+correctly allowlisted; no user-PII env vars were present in this shell). The runbook's
+contingency ("if the identity guard HALTs for the non-own wallet, that IS the evidence;
+otherwise use the record_line_fn injectable seam") did not need to be invoked because no
+HALT occurred at all — the real record_line path ran to completion cleanly. This is
+reported as observed behavior only; no code was changed and no judgment is offered here
+about whether a wallet-level check SHOULD exist (out of scope for this execution task).
+
+## PROP-021 verdict
+(a) PASS  (b) PASS  (c) PASS  (d) PASS  (e) PASS (no truncation, NFR-1 not triggered)
+Overall: PROP-021 PASSES against live mainnet data.
+
+## Cleanup / non-interference confirmation
+- Real ledger /Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl: untouched (not
+  referenced by any command above; size/mtime unchanged from before this run).
+- worktree /Users/anicca/anicca/.worktrees/hl-realized-pnl: `git status` clean before and
+  after this run — zero code changes made.
+- .vcsdd/features/hl-realized-pnl/state.json: not touched by this execution.
+- No Exchange/order/leverage-update call was made anywhere in this run (only
+  `Info(...).user_fills_by_time(...)`, a public read).

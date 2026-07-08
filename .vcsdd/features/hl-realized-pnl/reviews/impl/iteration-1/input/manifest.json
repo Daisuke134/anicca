@@ -1,0 +1,5 @@
+{
+  "reviewType": "impl",
+  "artifactsToReview": ["worktree .worktrees/hl-realized-pnl (branch feature/hl-realized-pnl, commits b770f06+630fc93)", "specs/behavioral-spec.md", "specs/verification-architecture.md", "contracts/sprint-1.md", "evidence/sprint-1-red-phase.log", "evidence/sprint-1-green-phase.log", "evidence/prop-021-live-e2e.log"],
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"]
+}
