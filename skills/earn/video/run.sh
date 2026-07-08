@@ -33,6 +33,21 @@ DID=""; EARNED=0; COST=0
 set_state(){ $PY -c "import json,sys;sys.path.insert(0,'$SK');from state_io import update;update('$STATE',json.loads(sys.argv[1]))" "$1"; }
 wday(){ $PY -c "import json;print(int(json.load(open('$STATE')).get('warmup_day',0)))"; }
 
+# ★ #7 AUDIT LEDGER (P0-3 fix, REQ-LV-070): append every wake's transition + evidence — including
+#   EARLY-EXIT branches (warmup deferred, verify-only abort), not just the normal end-of-script
+#   path. Root cause of the real 07-02..07-07 warmup stall (day 3 for 6 days straight): the old
+#   S1_warmup "deferred" branch (ensure_warmup_browser.py failing) exited BEFORE the audit append
+#   at the bottom of this script ever ran, so 6 days of "browser/login not ready" failures were
+#   completely invisible in the ledger — every wake after the first just saw
+#   last_warmup_date==today and silently no-opped, with zero trace of WHY warmup never advanced.
+#   Calling this same function from every exit path makes any future stall diagnosable same-day. ★
+AUDIT="$HOME/.cloak/earn-video-audit-${HANDLE}.jsonl"
+write_audit(){
+  R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" R_EARNED="$EARNED" R_DATE="$TODAY" R_AUDIT="$AUDIT" $PY -c "import json,os
+rec={'date':os.environ['R_DATE'],'handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':float(os.environ['R_EARNED'])}
+open(os.environ['R_AUDIT'],'a').write(json.dumps(rec,ensure_ascii=False)+'\n')" 2>/dev/null || true
+}
+
 case "$TRANS" in
   S1_warmup)
     # REAL warmup in a DEDICATED anti-throttle CloakBrowser (NOT the daily-driver): an occluded reels tab in the
@@ -47,6 +62,7 @@ case "$TRANS" in
       WTID=$(timeout "$EBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/ensure_warmup_browser.py" --handle "$HANDLE" --port "$WPORT" --profile "$WPROF" --creds "$CREDS" 2>/tmp/ev_ensure.log | tail -1)
       if [ -z "$WTID" ] || printf '%s' "$WTID" | grep -q ERROR; then
         set_state "{\"last_warmup_date\": \"$TODAY\"}"; DID="warmup deferred: dedicated browser/login not ready ($(tail -1 /tmp/ev_ensure.log 2>/dev/null|cut -c1-60))"
+        write_audit   # ★ P0-3 fix: this failure MUST be visible in the audit ledger, never silently eaten ★
         R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"; exit 0
       fi
       # ★ NICHE warmup: watch the content the TARGET audience watches (money/finance) so the account becomes the
@@ -127,7 +143,9 @@ print(ok, r)" 2>/dev/null)
       if [ "${VOK:-0}" != 1 ]; then
         # ★ FIND-601: verify-only NOT authoritative → ABORT this wake. NEVER treat a failed read as '0 reels' (that
         #   would miss reconcile AND overwrite pre_reels=[] → double-post). Leave state untouched; retry next wake. ★
-        R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="verify-only failed/unauthoritative — aborting wake to avoid double-post (retry next wake)" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"
+        DID="verify-only failed/unauthoritative — aborting wake to avoid double-post (retry next wake)"
+        write_audit   # ★ P0-3 fix: same observability fix — an abort must not be silently invisible either ★
+        R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"
         exit 0
       fi
       NEWURL=$(STATE="$STATE" TODAY="$TODAY" CUR="$CUR" $PY -c "import json,os
@@ -226,11 +244,8 @@ except: print('')" 2>/dev/null)
 esac
 
 # ★ #7 AUDIT LEDGER: append every wake's transition + evidence (append-only) so warmup/posts are PROVABLY recorded,
-#   not faked — a per-day trail anyone can inspect. ★
-AUDIT="$HOME/.cloak/earn-video-audit-${HANDLE}.jsonl"
-R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" R_EARNED="$EARNED" R_DATE="$TODAY" R_AUDIT="$AUDIT" $PY -c "import json,os
-rec={'date':os.environ['R_DATE'],'handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':float(os.environ['R_EARNED'])}
-open(os.environ['R_AUDIT'],'a').write(json.dumps(rec,ensure_ascii=False)+'\n')" 2>/dev/null || true
+#   not faked — a per-day trail anyone can inspect. (Early-exit branches above call the same write_audit — P0-3.) ★
+write_audit
 
 # ★ Dim5 fix: emit valid one-line JSON via json.dumps (escapes any "/\ in DID from logs) ★
 R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" R_EARNED="$EARNED" R_COST="$COST" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':float(os.environ['R_EARNED']),'cost_usdc':float(os.environ['R_COST'])},ensure_ascii=False))"
