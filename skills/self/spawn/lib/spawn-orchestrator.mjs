@@ -14,6 +14,7 @@ import { privateKeyToAccount } from "viem/accounts";
 import { withGigLock } from "../../../economy/gig/lib/lock.mjs";
 import { ensureAgentId } from "../../../economy/gig/lib/ensure-agent-id.mjs";
 import { isSelfFunded, selfFundedReasons } from "../../../_shared/lib/is-self-funded.mjs";
+import { resolveEvmPrivateKey } from "../../../earn/lib/resolve-identity.mjs";
 import { CITIZENS_REGISTRY_PATH } from "./registry-path.mjs";
 import { resolveStateDir } from "./state-path.js";
 import { readChildren, appendChild } from "./ledger.js";
@@ -28,6 +29,7 @@ const GEN_WALLET_SCRIPT = path.join(__dirname, "..", "scripts", "gen-wallet.sh")
 const GEN_SOLANA_WALLET_SCRIPT = path.join(__dirname, "..", "scripts", "gen-solana-wallet.sh");
 const DEPLOY_AKASH_SCRIPT = path.join(__dirname, "..", "scripts", "deploy-akash.sh");
 const AKT_TREASURY_SCRIPT = path.join(__dirname, "..", "scripts", "akt-treasury.sh");
+const SEED_CHILD_SCRIPT = path.join(__dirname, "..", "scripts", "seed-child.py");
 const SPAWN_CHILD_CONFIG_PATH = path.join(__dirname, "..", "..", "spawn-child", "config.json");
 
 // REQ-206: fixed at 1 for every child this feature produces -- colony-treasury-funded spawns are,
@@ -155,6 +157,27 @@ function defaultGenerateSolanaWallet() {
   return { address, privateKey };
 }
 
+// PROP-201c (resolves round-3 contract-review FIND-007b): persist the child's own freshly-generated
+// EVM wallet to its OWN isolated home, in the EXACT {address, privateKey} shape
+// resolve-identity.mjs::resolveEvmPrivateKey already reads (`${effectiveHome}/.automaton/wallet.json`,
+// field `privateKey`) -- verified to be the SAME real shape this host's own existing citizens' wallet
+// files already use (`~/.blockrun/.automaton/wallet.json`'s own real keys are exactly
+// ["address","privateKey"]). Without this write the child has no way to resolve its own signing key on
+// any of ITS OWN future wake cycles -- defaultGenerateEvmWallet above only ever returns the pair
+// in-memory, it is never otherwise touched to disk.
+export function defaultPersistChildWallet({ childHomeDir, evmWallet }) {
+  try {
+    const automatonDir = path.join(childHomeDir, ".automaton");
+    fs.mkdirSync(automatonDir, { recursive: true });
+    const walletPath = path.join(automatonDir, "wallet.json");
+    fs.writeFileSync(walletPath, JSON.stringify({ address: evmWallet.address, privateKey: evmWallet.privateKey }), { mode: 0o600 });
+    fs.chmodSync(walletPath, 0o600); // belt-and-suspenders against a wider process umask
+    return { ok: true, walletPath };
+  } catch (e) {
+    return { ok: false, error: `child wallet.json persistence failed: ${errorMessage(e)}` };
+  }
+}
+
 // Honest limitation (mirrors this spec's own established honesty precedent for genuinely-missing
 // infra): no live NOS/AKT spot-price feed and no Nosana deploy path exist anywhere in this codebase
 // yet -- deploy-akash.sh is the only proven cloud-deploy path today, so it is the only target this
@@ -233,6 +256,82 @@ export async function defaultDeploy({ target, childId }, fundingDeps = {}) {
   return { ok: true, leaseId, shelterCostUsd: null };
 }
 
+function defaultRunSeedChild(childAddr, amount, walletJsonPath) {
+  return execFileSync("python3", [SEED_CHILD_SCRIPT, childAddr, String(amount), walletJsonPath], { encoding: "utf8" });
+}
+
+// Mirrors this skill's own retired shell provisioning wrapper's proven `trap 'shred -u "$WALLET_TMP"
+// ... || rm -f "$WALLET_TMP"' EXIT` discipline for a transient private-key file: best-effort
+// secure-delete, unconditional plain unlink fallback. Never throws (a cleanup failure must never mask
+// the real result of the seed attempt).
+function shredTempFile(filePath) {
+  try {
+    execFileSync("shred", ["-u", filePath], { stdio: "ignore" });
+  } catch {
+    try {
+      fs.unlinkSync(filePath);
+    } catch {
+      // best-effort -- the file is 600-perm under this host's own state dir, not a public path
+    }
+  }
+}
+
+// REQ-204's own Edge Cases text (behavioral-spec.md): "register() reverts for insufficient gas (the
+// child's fresh wallet starts at exactly 0 ETH): THE SYSTEM SHALL fund it with a ONE-TIME, minimal gas
+// seed transferred from a self-funded citizen's own wallet ... the SAME class of transfer SPEC.md
+// Section9.6 already performed and evidenced on-chain". Since REQ-201's freshly-generated child wallet
+// ALWAYS starts at 0 ETH, this is the wallet's baseline state on every real spawn attempt -- not a rare
+// edge case -- so it must land before step 6 (REQ-204 registration) on every real invocation. Reuses the
+// ALREADY-BUILT, already-tested scripts/seed-child.py (a real Base USDC transfer, fail-closed,
+// PENDING-on-receipt-timeout honest-ledger discipline) UNMODIFIED, rather than re-implementing the
+// transfer in JS (resolves contract-review round-3 FIND-006). `seedDeps` mirrors defaultDeploy's own
+// `fundingDeps` seam (resolveParentPrivateKey/runSeedChild); omitting a key wires the real
+// resolveEvmPrivateKey()/seed-child.py invocation directly. Exported (like defaultDeploy) so this is
+// directly unit-testable in isolation. The parent's private key is resolved via the SAME
+// resolve-identity.mjs::resolveEvmPrivateKey() wake-gate.mjs already uses to derive `drivingCitizenWallet`
+// itself -- never a second, independently-derived identity mechanism -- and is written ONLY to a
+// transient, 600-perm temp file under this host's own resolveStateDir() (never bare /tmp, mirroring
+// this skill's own retired shell provisioning wrapper), shredded in a `finally` immediately after the
+// transfer attempt completes (mirrors REQ-301's own transient-key-file discipline).
+export function defaultSeedChild({ childAddress, amountUsdc, parentWalletAddress }, seedDeps = {}) {
+  const resolveParentPrivateKey = seedDeps.resolveParentPrivateKey || (() => resolveEvmPrivateKey({}));
+  const runSeedChild = seedDeps.runSeedChild || defaultRunSeedChild;
+
+  const parentPrivateKey = resolveParentPrivateKey();
+  if (!parentPrivateKey) {
+    return { ok: false, error: "REQ-204 gas-seed: parent private key unresolvable (resolveEvmPrivateKey returned null)" };
+  }
+
+  const stateDir = resolveStateDir({});
+  fs.mkdirSync(stateDir, { recursive: true });
+  const tmpWalletPath = path.join(stateDir, `.tmp-parentwallet-${crypto.randomBytes(6).toString("hex")}.json`);
+  // seed-child.py's own documented shape: {"private_key": "0x...", "address": "0x..."} (snake_case) --
+  // a DIFFERENT, python-only convention from resolve-identity.mjs's camelCase {address,privateKey};
+  // never conflate the two.
+  fs.writeFileSync(tmpWalletPath, JSON.stringify({ private_key: parentPrivateKey, address: parentWalletAddress }), { mode: 0o600 });
+  fs.chmodSync(tmpWalletPath, 0o600);
+  try {
+    const out = runSeedChild(childAddress, amountUsdc, tmpWalletPath);
+    const txHash = String(out || "").trim();
+    if (!txHash) return { ok: false, error: "REQ-204 gas-seed: seed-child.py produced no tx hash" };
+    return { ok: true, txHash };
+  } catch (e) {
+    // seed-child.py's own documented exit 2: broadcast but the receipt timed out -- record the PENDING
+    // hash in the failure reason (never silently re-attempt a fresh transfer, per its own
+    // no-double-spend discipline) rather than fabricate a success.
+    if (e && e.status === 2) {
+      const pending = /PENDING\s+(0x[0-9a-fA-F]+)/.exec(String(e.stderr || ""));
+      return {
+        ok: false,
+        error: `REQ-204 gas-seed: tx broadcast but receipt timed out -- ${pending ? pending[0] : "PENDING (hash unavailable)"}`,
+      };
+    }
+    return { ok: false, error: `REQ-204 gas-seed: seed-child.py failed: ${errorMessage(e)}` };
+  } finally {
+    shredTempFile(tmpWalletPath);
+  }
+}
+
 async function defaultRegisterIdentity({ childPrivateKey, childHomeDir }) {
   const cacheFile = path.join(childHomeDir, ".automaton", "gig-agent-id.json");
   const result = await ensureAgentId({ privateKey: childPrivateKey, cacheFile });
@@ -264,8 +363,12 @@ function defaultWriteMcpConfig({ childHomeDir }) {
 
 /**
  * executeSpawnAttempt -- the single call-graph root for a spawn attempt, run under the "colony-spawn"
- * lock for its entire duration. `deps` is a test/production wiring seam for the 7 genuinely effectful
- * steps this sprint newly wires; omitting it wires the real scripts/modules above directly.
+ * lock for its entire duration. `deps` is a test/production wiring seam for the 9 genuinely effectful
+ * steps this sprint wires (the original 7 -- REQ-203's home check, REQ-201's EVM keygen, REQ-306's
+ * cloud-target selection, REQ-202's Solana keygen, REQ-302/303's deploy, REQ-204's ERC-8004
+ * registration, REQ-205's mcp.json write -- plus round-3 contract-review's own persistChildWallet
+ * (PROP-201c/FIND-007b) and seedChild (REQ-204 edge case/FIND-006)); omitting it wires the real
+ * scripts/modules above directly.
  *
  * @returns {Promise<{status: "active"|"failed", childId: string|null, error?: string}>}
  */
@@ -301,6 +404,23 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     });
     if (evmStep.failed) return { status: "failed", childId, error: evmStep.error };
     const evmWallet = evmStep.value;
+
+    // New step (PROP-201c, resolves round-3 contract-review FIND-007b): persist the child's own EVM
+    // wallet to its own isolated home NOW, immediately after generation -- this is the child's own
+    // future-wake-cycle identity file (resolve-identity.mjs's own read path), never a second signing
+    // path for the REST of THIS attempt (evmWallet.privateKey below stays purely in-memory, unchanged).
+    const persistStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () =>
+        deps.persistChildWallet
+          ? deps.persistChildWallet({ childHomeDir: homeDir, evmWallet })
+          : defaultPersistChildWallet({ childHomeDir: homeDir, evmWallet }),
+      requireOk: true,
+      defaultErrorMessage: "child wallet.json persistence failed",
+    });
+    if (persistStep.failed) return { status: "failed", childId, error: persistStep.error };
 
     // Step 3 (REQ-306): a fresh cloud-target selection for THIS attempt.
     const cloudStep = await runStep({
@@ -344,6 +464,26 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     });
     if (deployStep.failed) return { status: "failed", childId, error: deployStep.error };
 
+    // New step (REQ-204 Edge Cases, resolves round-3 contract-review FIND-006/FIND-007a): a ONE-TIME
+    // minimal gas seed from the driving (self-funded) citizen's OWN wallet. REQ-201's freshly-generated
+    // child wallet always starts at 0 ETH, so the register() call in the very next step would revert on
+    // every real invocation without this landing first. `seedUsdc` is computed exactly ONCE and reused
+    // verbatim for buildChildSpec's own `seedUsdc` field below (REQ-206: the two MUST be identical "by
+    // construction, never merely close" -- never two independently-computed reads of seedUsdcAmount()).
+    const seedUsdc = seedUsdcAmount();
+    const seedStep = await runStep({
+      ledgerFile,
+      childId,
+      nowMs,
+      run: () =>
+        deps.seedChild
+          ? deps.seedChild({ childAddress: evmWallet.address, amountUsdc: seedUsdc, parentWalletAddress: drivingCitizenWallet })
+          : defaultSeedChild({ childAddress: evmWallet.address, amountUsdc: seedUsdc, parentWalletAddress: drivingCitizenWallet }, deps),
+      requireOk: true,
+      defaultErrorMessage: "REQ-204 gas-seed transfer failed",
+    });
+    if (seedStep.failed) return { status: "failed", childId, error: seedStep.error };
+
     // Step 6 (REQ-204): ERC-8004 registration -- the second half of the identity anchor.
     const identityStep = await runStep({
       ledgerFile,
@@ -368,7 +508,7 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
         parentWallet: drivingCitizenWallet,
         childWallet: evmWallet.address,
         generation: GENERATION,
-        seedUsdc: seedUsdcAmount(),
+        seedUsdc,
         constitutionHash: constitutionHash(),
         agentEvmAddress: evmWallet.address,
         agentId: identityResult.agentId,
