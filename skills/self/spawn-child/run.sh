@@ -34,10 +34,10 @@ NODE="$(command -v node || true)"
 [ -n "$NODE" ] || { echo "spawn-child: node missing" >&2; exit 64; }
 [ -f "$CONFIG" ] || { echo "spawn-child: config not found: $CONFIG" >&2; exit 64; }
 
-set -a
-[ -f "$HOME/.hermes/.env" ]   && . "$HOME/.hermes/.env"
-[ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
-set +a
+# NOTE (2026-07-09, closes anicca-spawn-identity-resolution-fix FIND-001 duplicate-pattern gap):
+# this script does not currently read ANICCA_HOME itself, but shares ../spawn/run.sh's preamble
+# shape — delegates to the SAME shared helper so it can never independently rot into that landmine.
+. "$SKILL_DIR/../../_shared/lib/load-instance-env.sh"
 
 COST_AKT="$("$JQ" -r '.spawn_cost_akt' "$CONFIG")"
 BUFFER_AKT="$("$JQ" -r '.buffer_akt' "$CONFIG")"

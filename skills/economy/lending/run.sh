@@ -23,10 +23,9 @@ done
 [ -n "$NODE" ] || { echo "economy/lending: node missing" >&2; exit 64; }
 
 # --- load env (per-instance identity, RPC overrides, etc.). Best-effort; absence is reported, never
-# faked — scripts/wake-gate.mjs's own resolvers fail closed on genuinely missing config.
-set -a
-[ -f "$HOME/.hermes/.env" ]   && . "$HOME/.hermes/.env"
-[ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
-set +a
+# faked — scripts/wake-gate.mjs's own resolvers fail closed on genuinely missing config. Delegates to
+# the shared helper (anicca-spawn-identity-resolution-fix FIND-001) so this file's own header claim
+# of mirroring self/spawn/run.sh's shape stays true by construction, never by manual re-sync.
+. "$SKILL_DIR/../../_shared/lib/load-instance-env.sh"
 
 exec "$NODE" "$SKILL_DIR/scripts/wake-gate.mjs" "$@"

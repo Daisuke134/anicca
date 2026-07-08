@@ -6,7 +6,11 @@
 # EVERY step incl. the affiliate link is a transition here — never a manual後工程.
 set -uo pipefail
 SK="$HOME/anicca/skills/earn/video"; PY=/opt/homebrew/bin/python3
-export PATH="$HOME/.local/bin:$PATH"; set -a; . "$HOME/.openclaw/.env" 2>/dev/null || true; set +a
+export PATH="$HOME/.local/bin:$PATH"
+# Delegates to the shared helper (anicca-spawn-identity-resolution-fix REQ-003/FIND-001) instead of
+# sourcing $HOME/.openclaw/.env directly under `set -a`, which would otherwise clobber this caller's
+# per-instance ANICCA_HOME with the automaton's own.
+. "$HOME/anicca/skills/_shared/lib/load-instance-env.sh"
 TIMEOUT="${SKILL_TIMEOUT_S:-900}"
 DRY="${EARN_VIDEO_DRY:-0}"
 HANDLE="${EARN_VIDEO_HANDLE:-money_blueprintdaily}"

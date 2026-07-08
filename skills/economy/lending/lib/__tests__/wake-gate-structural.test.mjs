@@ -41,15 +41,20 @@ function stripLineComments(src, marker) {
 // run.sh's own contract: byte-for-byte structural mirror of self/spawn/run.sh's own shape.
 // ---------------------------------------------------------------------------
 
-test("run.sh exists, is executable, and structurally mirrors self/spawn/run.sh's own shape (env-load under set -a/set +a, execs scripts/wake-gate.mjs, no eligibility/sizing/servicing logic of its own)", () => {
+test("run.sh exists, is executable, and structurally mirrors self/spawn/run.sh's own shape (env-load via the shared _shared/lib/load-instance-env.sh helper, execs scripts/wake-gate.mjs, no eligibility/sizing/servicing logic of its own)", () => {
   const stat = fs.statSync(RUN_SH_PATH);
   assert.ok(stat.mode & 0o111, "run.sh must be executable");
   const code = stripLineComments(fs.readFileSync(RUN_SH_PATH, "utf8"), "#");
   assert.match(code, /SKILL_DIR="\$\(cd "\$\(dirname "\$0"\)" && pwd\)"/, "run.sh must resolve its own SKILL_DIR exactly like self/spawn/run.sh");
-  assert.match(code, /set -a/, "run.sh must load env under set -a");
-  assert.match(code, /set \+a/, "run.sh must close the env-load block with set +a");
-  assert.match(code, /\.hermes\/\.env/, "run.sh must best-effort source ~/.hermes/.env");
-  assert.match(code, /\.openclaw\/\.env/, "run.sh must best-effort source ~/.openclaw/.env");
+  // anicca-spawn-identity-resolution-fix REQ-003/FIND-004: env-loading now delegates to the ONE
+  // shared helper (never a hand-copied `set -a`/`.openclaw/.env` inline block per script) so this
+  // parity claim is enforced by construction instead of needing independent re-verification per file.
+  assert.match(code, /_shared\/lib\/load-instance-env\.sh/, "run.sh must delegate env-loading to the shared _shared/lib/load-instance-env.sh helper, exactly like self/spawn/run.sh");
+  const sharedHelperCode = fs.readFileSync(path.resolve(REPO_ROOT, "skills/_shared/lib/load-instance-env.sh"), "utf8");
+  assert.match(sharedHelperCode, /set -a/, "the shared helper must load env under set -a");
+  assert.match(sharedHelperCode, /set \+a/, "the shared helper must close the env-load block with set +a");
+  assert.match(sharedHelperCode, /\.hermes\/\.env/, "the shared helper must best-effort source ~/.hermes/.env");
+  assert.match(sharedHelperCode, /\.openclaw\/\.env/, "the shared helper must best-effort source ~/.openclaw/.env");
   assert.match(code, /exec\s+"\$NODE"\s+"\$SKILL_DIR\/scripts\/wake-gate\.mjs"\s+"\$@"/, "run.sh's own final line must exec scripts/wake-gate.mjs, handing off ALL real work");
   assert.ok(
     !/balanceUsd|surplusUsd|isBorrowerEligible|computeLenderAvailableUsd|decideLoan/.test(code),
