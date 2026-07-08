@@ -1,0 +1,35 @@
+{
+  "findingId": "FIND-1002",
+  "dimension": "verification_readiness",
+  "category": "unimplementable_proof_obligation",
+  "severity": "critical",
+  "description": "PROP-117c requires THREE unit/integration fixtures against 'the REAL `scripts/wake-gate.mjs`' at Tier `1/2` (per the '## Verification Strategy' section's own listing: 'REQ-117's own zero-candidate-wake and correct-pair-selection fixtures against the REAL `scripts/wake-gate.mjs`... new sprint-3'), including a Tier-1 (pure/unit, no network) half. But REQ-117's own text never specifies a test-injection seam for `scripts/wake-gate.mjs` -- no exported function analogous to self/spawn's own `export async function runWakeGate({ argv, env, deps = {} })`, and no mention of threading an injectable balance-fetch callback through to `_shared/lib/usdc.mjs::usdcBalance`. This is a REAL gap, not a deliberately-left implementation freedom: REQ-117 explicitly flags the ONE place it intentionally leaves an implementation-time choice (the `jq` presence check in `run.sh`, 'an implementation-time decision for Phase 2b, not a behavioral fork this REQ needs to pin either way') -- it does not similarly flag the test-seam question, and this spec's own established style elsewhere is to pin every parameter/signature explicitly. Concretely, PROP-117c's own fixture (2) -- 'a registry with exactly ONE self-funded, EVM-walleted, co-located citizen (today's real single-citizen shape)', constructed specifically to isolate the `lenderId !== borrowerId` impossibility reason from the `wallet.evm` exclusion reason -- describes a citizen that PASSES ALL THREE of step 4's filters (`isSelfFunded`, `wallet.evm===true`, `coLocatedWithCoordinator===true`). Per REQ-117's own step 4 text, THIS citizen's balance is fetched via a literal, unparametrized call `usdcBalance(citizen.walletAddress.evm)` -- no `opts.fetchImpl` override is ever mentioned as being threaded through from wake-gate.mjs. `_shared/lib/usdc.mjs::usdcBalance` IS internally fetch-injectable (`opts.fetchImpl || globalThis.fetch`), confirmed by direct reading, but nothing in REQ-117 requires `scripts/wake-gate.mjs` to actually pass a test-supplied `fetchImpl` through to it. Without such a seam, this specific fixture -- required precisely to keep the two zero-candidate reasons independently exercised, per PROP-117c's own text -- can only be implemented by either (a) making a REAL Base-mainnet RPC read call inside what the doc classifies as a Tier-1/Tier-2 test (contradicting this SAME document's own Tier-2 policy elsewhere: 'integration, real module wiring + fresh-context adversary disk review, NO LIVE CHAIN SPEND REQUIRED'), or (b) reaching for a module-mocking mechanism (e.g. `node:test`'s `mock.module`) that this document's OWN established convention (explicit `deps={}` parameter injection, used uniformly by `executeLoanIssuanceAttempt`, `executeDefaultDetectionSweep`, and self/spawn's own `runWakeGate`) deliberately avoids everywhere else. Fixtures (1) and (3) have the same underlying gap for the citizens-registry/ledger reads (no stated override for `CITIZENS_REGISTRY_PATH`/`LOANS_LEDGER_PATH`/`gojo-log.jsonl` path resolution), though those are less acute since fixture (1)'s zero-qualifying-citizen set never reaches the balance-fetch call at all.",
+  "evidence": [
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md",
+      "lineRange": "2543-2560 (REQ-117, step 4)",
+      "snippet": "fetches that citizen's REAL Base-mainnet USDC balance via `_shared/lib/usdc.mjs::usdcBalance(citizen.walletAddress.evm)` ... THE SYSTEM SHALL reuse THIS primitive ... `usdcBalance` is usable directly, with zero additional wiring."
+    },
+    {
+      "type": "spec",
+      "filePath": ".vcsdd/features/anicca-agent-lending/specs/verification-architecture.md",
+      "lineRange": "192 (PROP-117c row) and 279-281 (Verification Strategy, Tier-2 listing)",
+      "snippet": "| PROP-117c | ... | 1/2 | true | unit/integration test, THREE fixtures: (1) ... (2) a registry with exactly ONE self-funded, EVM-walleted, co-located citizen ... (3) ... | ... REQ-117's own zero-candidate-wake and correct-pair-selection fixtures against the REAL `scripts/wake-gate.mjs` (PROP-117c, new sprint-3 ...)"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/self/spawn/scripts/wake-gate.mjs",
+      "lineRange": "export signature",
+      "snippet": "export async function runWakeGate({ argv = [], env = process.env, deps = {} } = {}) { ... const fetchEvmBalanceUsd = deps.fetchEvmBalanceUsd || defaultFetchEvmBalanceUsd; ... }"
+    },
+    {
+      "type": "file",
+      "filePath": "~/anicca/skills/_shared/lib/usdc.mjs",
+      "lineRange": "10",
+      "snippet": "export async function usdcBalance(wallet, opts = {}) { ... const fetchImpl = opts.fetchImpl || globalThis.fetch; ... }"
+    }
+  ],
+  "recommendation": "Add an explicit REQ-117 clause requiring `scripts/wake-gate.mjs` to export a testable entry point mirroring self/spawn's own `runWakeGate({argv, env, deps})` convention, with `deps` covering at minimum: the citizens-registry path/read, the loans-ledger path/read, the gojo-log path/read, and a `fetchImpl` (or equivalent) threaded into every `usdcBalance(...)` call site -- omitting any key wires the real production implementation, exactly as self/spawn's own precedent already does. This makes PROP-117c's three fixtures genuinely Tier-1/Tier-2 implementable with zero live network calls, consistent with this document's own established Tier-2 'no live chain spend required' policy and its own `deps={}`-injection convention used everywhere else in this feature.",
+  "routeToPhase": "1a"
+}

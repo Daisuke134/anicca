@@ -2530,6 +2530,20 @@ env-load, with no eligibility/sizing/servicing logic of its own anywhere in the 
 own classification exactly, per this sprint's dispatching brief): on every invocation, in this canonical
 order:
 
+**Test-injection seam (new, 2026-07-08, Phase 1c iteration-1 review FIND-1002): THE SYSTEM SHALL export an
+entry point mirroring `self/spawn/scripts/wake-gate.mjs`'s own real
+`export async function runWakeGate({ argv = [], env = process.env, deps = {} } = {})` convention —
+`export async function runWakeGate({ argv = [], env = process.env, deps = {} } = {})` — where omitting any
+`deps` key wires the real production implementation, exactly as `self/spawn`'s own precedent already does.
+`deps` SHALL cover, at minimum: `citizensRegistryFile`/`ensureCitizensRegistry` (the citizens-registry
+path/read, steps 1), `ledgerFile`/`readChildren` (the loans-ledger path/read, step 2), `gojoLogFile`/
+`readGojoLogRows` (the gojo-log path/read, step 3), and `fetchImpl` threaded into EVERY `usdcBalance(...)`
+call site in step 4 (never a bare, unparametrized `usdcBalance(citizen.walletAddress.evm)` call with no
+override seam). This is what makes PROP-117c's fixtures genuinely Tier-1/Tier-2 implementable with ZERO
+live network calls or Base-mainnet RPC reads — consistent with this document's own established Tier-2
+"no live chain spend required" policy and its own `deps={}`-injection convention already used uniformly by
+`executeLoanIssuanceAttempt`, `executeDefaultDetectionSweep`, and `self/spawn`'s own `runWakeGate`.**
+
 1. Reads the REAL citizens registry via `self/spawn/lib/registry-path.mjs::CITIZENS_REGISTRY_PATH` +
    `self/spawn/lib/citizens-registry.mjs::ensureCitizensRegistry`/`CITIZENS_SEED_PATH` — the SAME,
    UNMODIFIED registry-bootstrap mechanism `self/spawn/scripts/wake-gate.mjs` already uses for its own
@@ -2603,9 +2617,20 @@ order:
    own `console.log(JSON.stringify(decision))`/`console.log(JSON.stringify(result))` convention exactly.
    Exit code `0` for a clean no-op (zero candidates) or for a completed/refused issuance attempt plus a
    completed sweep; exit code `1` only for a genuine, unexpected in-process error (an uncaught exception
-   escaping this script's own top-level `.catch`) — mirroring `self/spawn/scripts/wake-gate.mjs`'s own
-   exit-code convention (`process.exitCode = 1` only inside its own top-level `.catch`, never for an
-   ordinary "not eligible this wake" outcome).
+   escaping this script's own top-level `.catch`). **Corrected (2026-07-08, Phase 1c iteration-1 review
+   FIND-1001): this is a DELIBERATE DIVERGENCE from `self/spawn/scripts/wake-gate.mjs`'s own real
+   convention, not a mirror of it** — that file's real CLI entrypoint sets `process.exitCode = 1` at TWO
+   sites, not one: its top-level `.catch` (a genuine uncaught exception, which THIS REQ does mirror), AND
+   its `.then()` success handler's own `if (result.status !== "active") process.exitCode = 1` (an
+   attempted-but-not-`"active"` spawn, e.g. a genuine failure). THIS REQ deliberately does NOT mirror that
+   second site: a `{status:"refused", reason}` outcome from `executeLoanIssuanceAttempt` (REQ-115's own
+   ordinary, expected gate refusal — e.g. insufficient lender surplus for this particular pair) stays exit
+   `0` here, because treating a routine per-pair refusal as exit `1` would make an ordinary "no eligible
+   pair this wake" outcome look identical to a daemon failure to any exit-code-watching monitor — the SAME
+   reasoning REQ-117's own Edge Cases text already applies to the zero-candidate case. Implementers MUST
+   NOT copy `self/spawn/scripts/wake-gate.mjs`'s own `result.status !== "active"` check verbatim into this
+   feature's `scripts/wake-gate.mjs` — doing so would directly contradict this exit-0-for-refused
+   requirement.
 
 **`$ANICCA_ARGS` — deliberately NOT read for any decision-relevant purpose:** `runtime/loop/index.mjs`'s
 own `buildSkillEnv` (confirmed this sprint by direct reading, lines 549-573) forwards `$ANICCA_ARGS` — the

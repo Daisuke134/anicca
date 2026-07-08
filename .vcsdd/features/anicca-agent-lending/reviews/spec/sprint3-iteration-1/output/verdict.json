@@ -1,0 +1,90 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-1. New scope ONLY: REQ-117 (the autonomous daemon-wake entry point -- run.sh + scripts/wake-gate.mjs + registry.json economy/lending slot, closing the gap where economy/lending/lib/ has real, tested orchestrator code but was never reachable from the live daemon) and its 4 proof obligations PROP-117a/b/c/d. REQ-101-116 (already converged sprint-1/sprint-2) were not re-reviewed. Every factual/mirroring claim in REQ-117's own text was independently checked against the real cited source files, not trusted from the spec's own prose."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/run.sh (full file, read directly)",
+          "description": "REQ-117's claimed run.sh mirror is accurate on every checked point: SKILL_DIR=\"$(cd \"$(dirname \"$0\")\" && pwd)\", best-effort `. \"$HOME/.hermes/.env\"` / `. \"$HOME/.openclaw/.env\"` sourcing under `set -a`/`set +a`, a `--help` short-circuit, a jq/node presence check with `exit 64` on either being missing, and `exec \"$NODE\" \"$SKILL_DIR/scripts/wake-gate.mjs\" \"$@\"` as the final line. All confirmed byte-for-byte against the real file."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/scripts/wake-gate.mjs (full file, read directly)",
+          "description": "Confirmed accurate: (1) citizens-registry bootstrap via `ensureCitizensRegistry`/`CITIZENS_SEED_PATH` (../lib/citizens-registry.mjs) + `CITIZENS_REGISTRY_PATH` (../lib/registry-path.mjs), with the exact --dry-run-vs-real split REQ-117 describes; (2) `readChildren` imported from ../lib/ledger.js, `module.exports = { readChildren, appendChild }` confirms this is a real, reusable export. HOWEVER: the exit-code mirroring claim in REQ-117's step 9 is factually inaccurate against this same file -- see FIND-1001. `process.exitCode = 1` is set in the top-level `.catch()` (as REQ-117 states) AND separately inside the `.then()` handler whenever `result.status !== \"active\"` for a genuinely-attempted-but-not-active spawn -- REQ-117's parenthetical ('process.exitCode = 1 only inside its own top-level .catch') misdescribes this second, real, non-catch call site."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/_shared/lib/usdc.mjs:10 and ~/anicca/skills/self/spawn/scripts/wake-gate.mjs:79",
+          "description": "Both preference claims confirmed true by direct reading: `usdcBalance` in _shared/lib/usdc.mjs IS exported (`export async function usdcBalance(wallet, opts = {}) {...}`); `defaultFetchEvmBalanceUsd` in self/spawn/scripts/wake-gate.mjs is a bare `async function defaultFetchEvmBalanceUsd(address) {...}` with NO export keyword -- genuinely private/module-local, confirming REQ-117's stated reason for preferring the _shared primitive."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/lib/colony-balances.mjs:1-8 and self/spawn/lib/state-path.js",
+          "description": "REQ-117's claim that `colony-balances.mjs::readCitizenBalances` requires an injected `fetchEvmBalanceUsd` with 'no built-in default of its own... left to the orchestration sprint that wires this module in' is confirmed verbatim against the real file's lines 4-7 comment (the exact line range REQ-117 cites)."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/runtime/loop/index.mjs:481-498, ~/anicca/runtime/loop/prompt.mjs:27-34, ~/anicca/runtime/loop/earn-slot.mjs:30-32",
+          "description": "Confirmed the real slot-dispatch mechanism REQ-117/PROP-117b describe: `liveSlotNames(registry)` (prompt.mjs) filters `registry.slots` to `status === 'live'` entries; `runSkillWithKillRef` (index.mjs:481) resolves `rel = earnSkillRelPath(slot)`, and for a non-legacy-earn slot like `economy/lending`, `earnSkillRelPath` (earn-slot.mjs:30) returns `${slot}/run.sh`, then `skillPath = path.join(ANICCA_HOME, 'skills', ...rel.split('/'))` -- exactly the resolution chain claimed, exactly reaching `<ANICCA_HOME>/skills/economy/lending/run.sh`."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/registry.json (full file, parsed)",
+          "description": "Confirmed: `slots` object has no `economy/lending` key (only `economy/gig` and `economy/ubi` under the `economy/` namespace). Both real sibling entries (`economy/gig`, `economy/ubi`) were read in full and match the shape/field-naming (`track`, `dir`, `entrypoint`, `status`, `spec`, `summary`, `owner`, `risk`, `riskNote`) REQ-117's own proposed registry entry uses, including `economy/ubi`'s own `entrypoint: \"ubi.js\"`-vs-`run.sh` disclosed-mismatch precedent REQ-117 correctly contrasts itself against (REQ-117 sets `entrypoint: \"run.sh\"` directly, since it has no pre-existing contract pinning otherwise)."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/registry/citizens.seed.json (full file) and no durable ~/.hermes/state/citizens.json exists yet",
+          "description": "Confirmed: the real citizens seed contains exactly ONE citizen, `Franklin`, with `wallet: {solana: true}` (no `wallet.evm` key at all) and `coLocatedWithCoordinator: true`. No durable bootstrapped citizens.json exists on this host yet, so any real wake would read this same seed shape via ensureCitizensRegistry's own bootstrap. This independently confirms BOTH of REQ-117's Edge-Case reasons: (a) only one self-funded citizen exists, so `lenderId !== borrowerId` can never be satisfied; (b) that one citizen's own wallet is Solana-only, independently failing the `wallet.evm===true` filter. REQ-112's own text (grepped separately) corroborates automaton's 2026-07-08 removal from the self-funded set as the reason only Franklin remains."
+        },
+        {
+          "type": "file",
+          "location": "grep across ~/anicca/skills and ~/anicca/runtime for executeRepaymentClaim / repayment-claim channel",
+          "description": "Confirmed: `executeRepaymentClaim` is defined in economy/lending/lib/lending-orchestrator.mjs and referenced ONLY there and in its own test file -- zero other call sites anywhere in the colony, confirming no external repayment-claim-receiving channel (UI/API/skill) exists yet, exactly as REQ-117's Edge Cases state as the reason this entry point deliberately never invokes it."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md, Proof Obligations table rows 190-193 (PROP-117a/b/c/d)",
+          "description": "PROP-117a, PROP-117b, and PROP-117d are concrete, binary-evaluable, Tier-0 structural/grep checks with clear pass conditions (single call site; registry resolution chain; no re-derived arithmetic/no ANICCA_ARGS read) -- all independently re-confirmed against the real, current source (registry.json has no economy/lending entry yet; executeLoanIssuanceAttempt/executeDefaultDetectionSweep currently have ZERO production call sites anywhere, confirmed by a repo-wide grep excluding __tests__ -- consistent with this REQ not yet being built). PROP-117c's own zero-candidate Edge Case is correctly split into TWO separate, independently-exercised fixtures (one isolating the single-citizen reason, one isolating the wallet.evm-exclusion reason), which is exactly the non-collapsed coverage the manifest asked to check for -- and a third fixture for the genuinely-eligible two-citizen case. This part of the coverage question has no gap."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md REQ-117 full text (lines 2502-2735) -- searched for any exported-function/deps-injection specification",
+          "description": "PROP-117c is assigned Tier `1/2` (partly a pure/unit test with no network, per this document's own established Tier-1 definition and its own use of the same '1/2' tag elsewhere, e.g. PROP-115c/PROP-116d/PROP-116e), and the Verification Strategy section explicitly requires these fixtures run 'against the REAL scripts/wake-gate.mjs'. But REQ-117's own text -- unlike self/spawn's own precedent it claims to fully mirror -- never specifies an exported, deps-injectable entry point for scripts/wake-gate.mjs (no analog of self/spawn's real `export async function runWakeGate({argv, env, deps={}})`), and its own step-4 text literally writes the balance-fetch call as the single-argument `usdcBalance(citizen.walletAddress.evm)` with no mention of threading through a test-supplied `fetchImpl`. Concretely verified against the real `_shared/lib/usdc.mjs`: `usdcBalance` IS internally fetch-injectable (`opts.fetchImpl || globalThis.fetch`), but nothing in REQ-117 requires wake-gate.mjs to actually pass one through. PROP-117c's own fixture (2) (a single EVM-walleted, self-funded, co-located citizen -- constructed specifically to isolate the lenderId!==borrowerId reason) would, per REQ-117's literal step-4 text, reach this exact unparametrized `usdcBalance` call, meaning that fixture cannot be implemented as a hermetic Tier-1/Tier-2 test without either a live Base-mainnet RPC read (contradicting this SAME document's own Tier-2 'no live chain spend required' policy) or an ad hoc module-mocking mechanism this document deliberately avoids everywhere else in favor of explicit deps injection. See FIND-1002."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "First fresh-context review of this sprint's new REQ-117/PROP-117a-d scope (sprint-1/sprint-2's REQ-101-116 were correctly out of scope and not re-reviewed). Every factual mirroring/citation claim in REQ-117's own text was independently checked against the real files it cites (self/spawn/run.sh, self/spawn/scripts/wake-gate.mjs, _shared/lib/usdc.mjs, self/spawn/lib/colony-balances.mjs, runtime/loop/index.mjs+prompt.mjs+earn-slot.mjs, registry.json, self/spawn/registry/citizens.seed.json, and a repo-wide grep for executeRepaymentClaim/executeLoanIssuanceAttempt/executeDefaultDetectionSweep call sites) rather than trusted from the spec's own prose. The large majority of claims held up exactly as stated. Two genuine, independently-verified defects found: (1) REQ-117's own exit-code mirroring claim misdescribes self/spawn/scripts/wake-gate.mjs's real behavior (a second, non-catch exitCode=1 site exists) and thereby mischaracterizes a real, otherwise-defensible design divergence as a faithful mirror (FIND-1001); (2) REQ-117 never specifies the test-injection seam (deps-injectable exported function / fetchImpl passthrough) that PROP-117c's own Tier-1/Tier-2 fixtures structurally require to avoid a live Base-mainnet RPC call inside fixture (2) specifically, contradicting this document's own no-live-chain-spend Tier-2 policy and its own deps={} injection convention used everywhere else (FIND-1002). Both findings route to Phase 1a for a spec fix; neither requires reopening REQ-101-116. Not converged -- FAIL, next iteration required."
+  }
+}
