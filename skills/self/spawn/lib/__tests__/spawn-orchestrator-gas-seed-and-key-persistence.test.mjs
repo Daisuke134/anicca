@@ -50,6 +50,10 @@ function happyDeps(dir, overrides = {}) {
     lockStatePath: path.join(dir, "citizens.json"),
     ledgerFile: path.join(dir, "children.jsonl"),
     citizensRegistryFile: path.join(dir, "citizens.json"),
+    // FIND-002: scoped into the tmp dir, exactly like ledgerFile/citizensRegistryFile above -- without
+    // this override, a successful `deploy` fixture's shelterCostUsd would make executeSpawnAttempt
+    // write a REAL shelter-cost.jsonl row under the actual production resolveStateDir().
+    shelterCostFile: path.join(dir, "shelter-cost.jsonl"),
     checkHomeDistinct: async () => ({ ok: true, homeDir: path.join(dir, "child-home") }),
     generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
@@ -59,6 +63,9 @@ function happyDeps(dir, overrides = {}) {
     seedChild: async () => ({ ok: true, txHash: "0xseedtxfixture" }),
     registerIdentity: async () => ({ ok: true, agentId: "9001", txHash: "0xregtxfixture" }),
     writeMcpConfig: async () => ({ ok: true }),
+    // FIND-001: fixture default so a post-seed failure injected by an override below never falls
+    // through to the REAL defaultReclaimSeed (which would spawn a genuine python3 subprocess).
+    reclaimSeed: async () => ({ ok: true, txHash: "0xreclaimtxfixture" }),
     ...overrides,
   };
 }

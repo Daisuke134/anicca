@@ -18,6 +18,7 @@ import { resolveEvmPrivateKey } from "../../../earn/lib/resolve-identity.mjs";
 import { CITIZENS_REGISTRY_PATH } from "./registry-path.mjs";
 import { resolveStateDir } from "./state-path.js";
 import { readChildren, appendChild } from "./ledger.js";
+import { appendShelterCostEntry } from "./shelter-cost-ledger.js";
 import { nextChildId, buildChildSpec } from "./child-spec.js";
 import { needsSolanaWallet } from "./needs-solana-wallet.mjs";
 import { selectCloudTarget as selectCloudTargetPure } from "./cloud-target.mjs";
@@ -64,12 +65,15 @@ function errorMessage(e) {
   return (e && e.message) || String(e);
 }
 
-function appendMinimalFailure(ledgerFile, { childId, attemptedMs, error }) {
-  appendChild(ledgerFile, { child_id: childId, status: "failed", attempted_ms: attemptedMs, error: errorMessage(error) });
+// `extra` (FIND-001) carries the gas-seed reclaim outcome (`reclaimed`/`reclaimTxHash`/`reclaimError`)
+// and `lease_id` onto a failure row, when-and-only-when the caller actually attempted a reclaim for
+// THIS failure -- omitted entirely (never `undefined`-valued keys) when no reclaim ever applied.
+function appendMinimalFailure(ledgerFile, { childId, attemptedMs, error, extra = {} }) {
+  appendChild(ledgerFile, { child_id: childId, status: "failed", attempted_ms: attemptedMs, error: errorMessage(error), ...extra });
 }
 
-function appendSpecFailure(ledgerFile, spec, { attemptedMs, error }) {
-  appendChild(ledgerFile, { ...spec, status: "failed", attempted_ms: attemptedMs, error: errorMessage(error) });
+function appendSpecFailure(ledgerFile, spec, { attemptedMs, error, extra = {} }) {
+  appendChild(ledgerFile, { ...spec, status: "failed", attempted_ms: attemptedMs, error: errorMessage(error), ...extra });
 }
 
 // Every REQ-201/202/203/204/205/306/302/303 call site below shares the exact same shape: run a
@@ -78,6 +82,10 @@ function appendSpecFailure(ledgerFile, spec, { attemptedMs, error }) {
 // the single place that shape lives; `onFailure` lets step 7 (REQ-205) redirect the failure row to
 // appendSpecFailure's buildChildSpec-based shape instead of the default minimal one, without
 // duplicating the try/catch/requireOk logic itself.
+// `onFailure` may itself be async (FIND-001's reclaim attempt needs to run and complete BEFORE the
+// failure row is written) -- always awaited here so the ledger write is guaranteed to land before this
+// step (and therefore executeSpawnAttempt itself) returns; awaiting a synchronous `onFailure`'s plain
+// return value is a no-op, so every pre-existing synchronous `onFailure` caller is unaffected.
 async function runStep({ ledgerFile, childId, nowMs, run, requireOk = false, defaultErrorMessage, onFailure }) {
   const recordFailure = onFailure || ((error) => appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error }));
   let result;
@@ -85,12 +93,12 @@ async function runStep({ ledgerFile, childId, nowMs, run, requireOk = false, def
     result = await run();
   } catch (e) {
     const error = errorMessage(e);
-    recordFailure(error);
+    await recordFailure(error);
     return { failed: true, error };
   }
   if (requireOk && (!result || !result.ok)) {
     const error = (result && result.error) || defaultErrorMessage;
-    recordFailure(error);
+    await recordFailure(error);
     return { failed: true, error };
   }
   return { failed: false, value: result };
@@ -227,6 +235,22 @@ function defaultAttemptAktBridge() {
 // attemptBridge and for the deploy-akash.sh invocation itself; omitting any key wires the real
 // production implementation directly. Exported (unlike the other `default*` steps) so this funding-gate
 // wiring is directly unit-testable, mirroring evaluateAkashFundingGate's own test discipline.
+// FIND-002/PROP-303c: converts the winning bid's own settled price (deploy-akash.sh's new JSON output,
+// `{dseq,priceAmount,priceDenom}`) into USD. AEP-76's own protocol design pegs the escrow denom
+// EXACTLY: "uact = 1e-6 USD" (AEP-76 DESIGN.md, cited verbatim at
+// docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md:21, and reused by this
+// SAME script's own SDL pricing/`--deposit` denom, deploy-akash.sh line 44) -- so a `uact`-priced bid
+// converts to USD by a FIXED division, never a fetched spot price. AKT (`uakt`) is a DIFFERENT,
+// non-pegged token (the bme mint rate AKT->ACT is ~0.66, spawn-child/config.json's own `_notes` field) --
+// pricing a `uact` amount against an AKT/USD quote would price the WRONG asset entirely, so this fails
+// closed to `null` (never a fabricated number) for any denom other than the one the protocol actually
+// pegs to USD. Exported so this pure conversion is directly unit-testable.
+export function shelterCostUsdFromSettledPrice({ priceAmount, priceDenom } = {}) {
+  if (priceDenom !== "uact") return null;
+  const amount = Number(priceAmount);
+  return Number.isFinite(amount) && amount >= 0 ? amount / 1e6 : null;
+}
+
 export async function defaultDeploy({ target, childId }, fundingDeps = {}) {
   if (target !== "akash") {
     return { ok: false, error: `no deploy path implemented for cloud target "${target}"` };
@@ -244,16 +268,23 @@ export async function defaultDeploy({ target, childId }, fundingDeps = {}) {
       error: `REQ-304 funding gate not ready: ${gate.reason} (shortfall ${gate.shortfallAkt} AKT of ${gate.thresholdAkt} AKT threshold)`,
     };
   }
-  let leaseId;
+  let stdout;
   try {
-    leaseId = fundingDeps.runDeployAkash
+    stdout = fundingDeps.runDeployAkash
       ? await fundingDeps.runDeployAkash(childId)
       : execFileSync("bash", [DEPLOY_AKASH_SCRIPT, childId], { encoding: "utf8" }).trim();
   } catch (e) {
     return { ok: false, error: `deploy-akash.sh failed: ${errorMessage(e)}` };
   }
+  let parsed;
+  try {
+    parsed = JSON.parse(stdout);
+  } catch {
+    return { ok: false, error: "deploy-akash.sh produced invalid output" };
+  }
+  const { dseq: leaseId, priceAmount, priceDenom } = parsed || {};
   if (!leaseId) return { ok: false, error: "deploy-akash.sh produced no lease id" };
-  return { ok: true, leaseId, shelterCostUsd: null };
+  return { ok: true, leaseId, shelterCostUsd: shelterCostUsdFromSettledPrice({ priceAmount, priceDenom }) };
 }
 
 function defaultRunSeedChild(childAddr, amount, walletJsonPath) {
@@ -329,6 +360,65 @@ export function defaultSeedChild({ childAddress, amountUsdc, parentWalletAddress
     return { ok: false, error: `REQ-204 gas-seed: seed-child.py failed: ${errorMessage(e)}` };
   } finally {
     shredTempFile(tmpWalletPath);
+  }
+}
+
+// FIND-001 (money-safety gap): a best-effort reclaim of the REQ-204 gas seed, fired ONLY when the
+// SAME attempt's own seedStep already landed the transfer and a LATER step then fails -- without this,
+// the seeded USDC is permanently stranded in the abandoned child wallet, since the NEXT spawn attempt
+// always mints a brand-new child_id/wallet (child-spec.js::nextChildId is monotonic, never revisits an
+// old attempt). Reuses scripts/seed-child.py UNMODIFIED, exactly as defaultSeedChild already does, with
+// sender and recipient reversed: seed-child.py's own {"private_key","address"} wallet-json argument is
+// the SIGNER (the child's own in-memory evmWallet, never re-read from disk), and its destination
+// argument is the driving citizen's wallet -- the SAME script working in either direction because it
+// only ever reads a sender wallet-json and sends to an arbitrary destination address. `seedDeps` mirrors
+// defaultSeedChild's own `runSeedChild` override seam. Exported (like defaultSeedChild) so this is
+// directly unit-testable in isolation.
+export function defaultReclaimSeed({ childEvmWallet, parentWalletAddress, amountUsdc }, seedDeps = {}) {
+  const runSeedChild = seedDeps.runSeedChild || defaultRunSeedChild;
+
+  const stateDir = resolveStateDir({});
+  fs.mkdirSync(stateDir, { recursive: true });
+  const tmpWalletPath = path.join(stateDir, `.tmp-reclaimwallet-${crypto.randomBytes(6).toString("hex")}.json`);
+  fs.writeFileSync(
+    tmpWalletPath,
+    JSON.stringify({ private_key: childEvmWallet.privateKey, address: childEvmWallet.address }),
+    { mode: 0o600 }
+  );
+  fs.chmodSync(tmpWalletPath, 0o600);
+  try {
+    const out = runSeedChild(parentWalletAddress, amountUsdc, tmpWalletPath);
+    const txHash = String(out || "").trim();
+    if (!txHash) return { ok: false, error: "reclaim: seed-child.py produced no tx hash" };
+    return { ok: true, txHash };
+  } catch (e) {
+    if (e && e.status === 2) {
+      const pending = /PENDING\s+(0x[0-9a-fA-F]+)/.exec(String(e.stderr || ""));
+      return {
+        ok: false,
+        error: `reclaim: tx broadcast but receipt timed out -- ${pending ? pending[0] : "PENDING (hash unavailable)"}`,
+      };
+    }
+    return { ok: false, error: `reclaim: seed-child.py failed: ${errorMessage(e)}` };
+  } finally {
+    shredTempFile(tmpWalletPath);
+  }
+}
+
+// Runs a reclaim attempt and translates its outcome into the extra ledger-row fields FIND-001 requires
+// (`reclaimed`/`reclaimTxHash`/`reclaimError`) -- NEVER throws (any error, including a thrown one, is
+// swallowed into `reclaimed:false`) and NEVER masks the original failure this attempt is already
+// recording, since this is only ever merged alongside that failure's own `error` field, never in place
+// of it. `deps.reclaimSeed` mirrors `deps.seedChild`'s own override-seam convention.
+async function attemptSeedReclaim({ deps, childEvmWallet, parentWalletAddress, amountUsdc }) {
+  try {
+    const result = deps.reclaimSeed
+      ? await deps.reclaimSeed({ childEvmWallet, parentWalletAddress, amountUsdc })
+      : defaultReclaimSeed({ childEvmWallet, parentWalletAddress, amountUsdc }, deps);
+    if (result && result.ok) return { reclaimed: true, reclaimTxHash: result.txHash };
+    return { reclaimed: false, reclaimError: (result && result.error) || "reclaim: unknown failure" };
+  } catch (e) {
+    return { reclaimed: false, reclaimError: errorMessage(e) };
   }
 }
 
@@ -463,6 +553,27 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
       defaultErrorMessage: "deploy failed",
     });
     if (deployStep.failed) return { status: "failed", childId, error: deployStep.error };
+    const { leaseId, shelterCostUsd } = deployStep.value;
+
+    // FIND-002/PROP-303c: append the settled lease cost to the shelter-cost ledger REQ-102's
+    // deriveMeasuredShelterCostUsd reads on its NEXT wake evaluation, immediately once it is genuinely
+    // observable (right after a successful deploy) -- ONLY when it is a real, finite, positive USD
+    // figure. A null/zero reading (the price fetch/denom-mismatch fail-closed path in
+    // shelterCostUsdFromSettledPrice) is never appended: deriveMeasuredShelterCostUsd reduces to the
+    // LAST-appended entry, so a fabricated `0` row would poison every subsequent wake's
+    // spawnThresholdUsd to $0, defeating REQ-102's own safety margin -- skip with a logged warning
+    // instead, leaving the provisional MIN_SHELTER_USD default in effect for one more wake.
+    if (typeof shelterCostUsd === "number" && Number.isFinite(shelterCostUsd) && shelterCostUsd > 0) {
+      try {
+        const appendEntry = deps.appendShelterCostEntry || appendShelterCostEntry;
+        const shelterCostFile = deps.shelterCostFile || path.join(resolveStateDir({}), "shelter-cost.jsonl");
+        appendEntry(shelterCostFile, { ts: nowMs, settledLeaseCostUsd: shelterCostUsd, leaseId });
+      } catch (e) {
+        console.error(`self/spawn: shelter-cost ledger append failed for ${childId}: ${errorMessage(e)}`);
+      }
+    } else {
+      console.error(`self/spawn: skipping shelter-cost ledger append for ${childId} -- no real settled price available`);
+    }
 
     // New step (REQ-204 Edge Cases, resolves round-3 contract-review FIND-006/FIND-007a): a ONE-TIME
     // minimal gas seed from the driving (self-funded) citizen's OWN wallet. REQ-201's freshly-generated
@@ -484,7 +595,11 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     });
     if (seedStep.failed) return { status: "failed", childId, error: seedStep.error };
 
-    // Step 6 (REQ-204): ERC-8004 registration -- the second half of the identity anchor.
+    // Step 6 (REQ-204): ERC-8004 registration -- the second half of the identity anchor. The gas seed
+    // (seedStep, above) already landed by this point -- a failure here is exactly FIND-001's
+    // reclaim-trigger case, so `onFailure` attempts the reclaim BEFORE writing the failure row, and
+    // records the outcome (`reclaimed`/`reclaimTxHash`/`reclaimError`) plus `leaseId` alongside it,
+    // never in place of the real registerIdentity error.
     const identityStep = await runStep({
       ledgerFile,
       childId,
@@ -495,6 +610,10 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
           : defaultRegisterIdentity({ childPrivateKey: evmWallet.privateKey, childHomeDir: homeDir }),
       requireOk: true,
       defaultErrorMessage: "identity registration failed",
+      onFailure: async (error) => {
+        const reclaim = await attemptSeedReclaim({ deps, childEvmWallet: evmWallet, parentWalletAddress: drivingCitizenWallet, amountUsdc: seedUsdc });
+        appendMinimalFailure(ledgerFile, { childId, attemptedMs: nowMs, error, extra: { lease_id: leaseId, ...reclaim } });
+      },
     });
     if (identityStep.failed) return { status: "failed", childId, error: identityStep.error };
     const identityResult = identityStep.value;
@@ -503,20 +622,29 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
     // recording path (REQ-305), never the minimal direct-append row above.
     let spec;
     try {
-      spec = buildChildSpec({
-        childId,
-        parentWallet: drivingCitizenWallet,
-        childWallet: evmWallet.address,
-        generation: GENERATION,
-        seedUsdc,
-        constitutionHash: constitutionHash(),
-        agentEvmAddress: evmWallet.address,
-        agentId: identityResult.agentId,
-      });
+      spec = {
+        ...buildChildSpec({
+          childId,
+          parentWallet: drivingCitizenWallet,
+          childWallet: evmWallet.address,
+          generation: GENERATION,
+          seedUsdc,
+          constitutionHash: constitutionHash(),
+          agentEvmAddress: evmWallet.address,
+          agentId: identityResult.agentId,
+        }),
+        // FIND-002/PROP-303c: buildChildSpec's own schema has no leaseId field (a fixed, validated
+        // shape) -- attached here, the minimal-change way, so REQ-402's own documented "operator looks
+        // up dseq from this feature's own state" reconciliation mitigation actually has a lease_id to
+        // read, on both the final active row (below) and every failure row from here on (which all
+        // spread this SAME `spec`).
+        lease_id: leaseId,
+      };
     } catch (e) {
       // buildChildSpec's own real, untouched assertion fired -- the identity anchor is complete, so
       // this is recorded via a buildChildSpec-shaped row even though buildChildSpec itself never
-      // returned one.
+      // returned one. The gas seed already landed by this point -- FIND-001's reclaim-trigger case.
+      const reclaim = await attemptSeedReclaim({ deps, childEvmWallet: evmWallet, parentWalletAddress: drivingCitizenWallet, amountUsdc: seedUsdc });
       appendChild(ledgerFile, {
         child_id: childId,
         wallet: evmWallet.address,
@@ -524,9 +652,11 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
         generation: GENERATION,
         agent_evm_address: evmWallet.address,
         agent_id: identityResult.agentId,
+        lease_id: leaseId,
         status: "failed",
         attempted_ms: nowMs,
         error: errorMessage(e),
+        ...reclaim,
       });
       return { status: "failed", childId, error: errorMessage(e) };
     }
@@ -540,7 +670,12 @@ export async function executeSpawnAttempt({ initialSkills = [], drivingCitizenWa
       run: () => (deps.writeMcpConfig ? deps.writeMcpConfig() : defaultWriteMcpConfig({ childHomeDir: homeDir, childId })),
       requireOk: true,
       defaultErrorMessage: "mcp.json write failed",
-      onFailure: (error) => appendSpecFailure(ledgerFile, spec, { attemptedMs: nowMs, error }),
+      // The gas seed already landed by this point -- FIND-001's reclaim-trigger case. `spec` already
+      // carries `lease_id` (attached above), so appendSpecFailure's `...spec` spread includes it.
+      onFailure: async (error) => {
+        const reclaim = await attemptSeedReclaim({ deps, childEvmWallet: evmWallet, parentWalletAddress: drivingCitizenWallet, amountUsdc: seedUsdc });
+        appendSpecFailure(ledgerFile, spec, { attemptedMs: nowMs, error, extra: reclaim });
+      },
     });
     if (mcpStep.failed) return { status: "failed", childId, error: mcpStep.error };
 

@@ -67,10 +67,15 @@ runfake(){ # $1 = fail mode -> sets OUT, rc, recd
   recd="$(cat "$REC")"; errd="$(tail -1 "$T/err" 2>/dev/null)"; rm -rf "$T"
 }
 
-# happy path: real shapes -> dseq parsed, full ordered flow called
+# happy path: real shapes -> dseq+settled price parsed, full ordered flow called
 runfake ""
 ok "$([ $rc -eq 0 ] && echo 1 || echo 0)"   "behavioral happy: exit $rc — $errd"
-ok "$([ "$OUT" = 777 ] && echo 1 || echo 0)" "behavioral happy: dseq parsed from event attr = '$OUT' (want 777)"
+DSEQ_OUT="$(jq -r '.dseq' <<<"$OUT" 2>/dev/null)"
+PRICE_AMOUNT_OUT="$(jq -r '.priceAmount' <<<"$OUT" 2>/dev/null)"
+PRICE_DENOM_OUT="$(jq -r '.priceDenom' <<<"$OUT" 2>/dev/null)"
+ok "$([ "$DSEQ_OUT" = 777 ] && echo 1 || echo 0)" "behavioral happy: dseq parsed from event attr (JSON output) = '$DSEQ_OUT' (want 777)"
+ok "$([ -n "$PRICE_AMOUNT_OUT" ] && [ "$PRICE_AMOUNT_OUT" != "null" ] && echo 1 || echo 0)" "behavioral happy: FIND-002/PROP-303c priceAmount present in JSON output = '$PRICE_AMOUNT_OUT'"
+ok "$([ "$PRICE_DENOM_OUT" = "uact" ] && echo 1 || echo 0)" "behavioral happy: FIND-002/PROP-303c priceDenom present and is uact = '$PRICE_DENOM_OUT'"
 for c in "deployment create" "bid list" "lease create" "send-manifest"; do
   grep -q "$c" <<<"$recd" || { echo "  - FAIL behavioral: '$c' never called"; fails=$((fails+1)); }
 done
