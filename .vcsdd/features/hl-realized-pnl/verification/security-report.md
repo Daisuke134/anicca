@@ -1,4 +1,4 @@
-# Security Report — hl-realized-pnl (Phase 5)
+# Security Hardening Report — hl-realized-pnl (Phase 5)
 
 Scope: `skills/earn/hl-trade/lib/fills.py`, `skills/earn/hl-trade/lib/reconcile.py`,
 `skills/earn/hl-trade/hl.py`, `skills/earn/run.sh`, `skills/_shared/lib/ledger.mjs` — the

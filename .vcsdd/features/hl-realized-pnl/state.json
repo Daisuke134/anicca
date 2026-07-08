@@ -2,7 +2,7 @@
   "featureName": "hl-realized-pnl",
   "mode": "strict",
   "language": "python",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -56,11 +56,19 @@
       "timestamp": "2026-07-08T21:14:56.804Z",
       "reason": "impl review PASS iter2, 0 blocking, SAFE_TO_DEPLOY",
       "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-08T21:32:10.207Z",
+      "reason": "sprint verdict PASS 6/6 criteria, hardening artifacts complete",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,
@@ -103,5 +111,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T19:32:44.393Z",
-  "updatedAt": "2026-07-08T21:14:56.804Z"
+  "updatedAt": "2026-07-08T21:32:10.208Z"
 }
