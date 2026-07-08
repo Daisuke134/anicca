@@ -1,0 +1,11 @@
+=== franklin-loop live process env (deploy verified) ===
+OPENAI_BASE_URL=http://127.0.0.1:8402/v1
+ANICCA_INSTANCE=franklin
+ANICCA_WALLET_ADDRESS=8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9
+=== usdcBalance(8Fpqd) via the loop's balance path ===
+8Fpqd USDC = 11.389179
+=== ledger wakes: model=glm-4.7, exit_code 0, no HTTP 429, slots incl earn/sol-trade ===
+{"ts":1783500963,"wake_id":"00MRBUFAKPFB50643C2B694D04","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"hl_trade","args":{"coin":"ETH","side":"long","size_usd":5,"sl_pct":3,"tp_pct":6},"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0} [earn] hl balance $0.0 < trade $5 → attempting self-fund (relay Base→HL, economic-guarded) [earn] fund-hl: {"}
+{"ts":1783501091,"wake_id":"00MRBUI1I03377F6EB28014331","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"cook","args":{"query":"latest Solana autonomous agent earn slots new opportunities"},"profitable":false,"exit_code":0,"result":"[cook] exploring: latest Solana autonomous agent earn slots new opportunities [cook] candidates: - (no fresh candidates this wake; try a different query) NARRATE [cook] recorded ex"}
+{"ts":1783501217,"wake_id":"00MRBUKQUDE7A0EF79D0A148C7","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"earn/clip-producer","profitable":false,"exit_code":0,"result":"{\"producer\":\"clip\",\"did\":\"queued I_w81rptxkc_EN.mp4 (verified, from https://www.youtube.com/watch?v=I_w81rptxkc)\"} "}
+{"ts":1783501417,"wake_id":"00MRBUP10R5457D4E3632442A5","kind":"narrate","sleep_s":120,"model":"free/glm-4.7"}

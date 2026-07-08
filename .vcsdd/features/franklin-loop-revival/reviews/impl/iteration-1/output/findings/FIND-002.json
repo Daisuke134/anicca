@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "blocking": false,
+  "description": "After this fix, Franklin's public dashboard telemetry will report a stale/incorrect 'model_live' label. runtime/anicca-daemon.sh:73 still executes `export FRANKLIN_FREE_MODEL=\"${FRANKLIN_FREE_MODEL:-nvidia/llama-4-maverick}\"` for INSTANCE=franklin even though THINK no longer uses that model at all (it now reaches ClawRouter :8402 with free/glm-4.7 via ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL). runtime/dashboard/telemetry-post-franklin.mjs:80 reads `process.env.FRANKLIN_FREE_MODEL || 'nvidia/llama-4-maverick'` into FRANKLIN_MODEL, and line 89 posts it verbatim as `model_live: FRANKLIN_MODEL` to the telemetry endpoint every 120s. Anyone reading Franklin's dashboard entry post-fix will see 'nvidia/llama-4-maverick' (the exhausted model this feature just retired) as the reported live model, when the real model is free/glm-4.7. The spec explicitly anticipates and accepts this exact gap (behavioral-spec.md REQ-004 edge cases: 'FRANKLIN_FREE_MODEL ... become dead configuration once the 8403 branch is retired; this requirement does not mandate deleting FRANKLIN_FREE_MODEL ... leaving unreachable/inert code and an unused model-id value is harmless'), so this is not a requirement violation -- flagged for visibility only, since it means the dashboard-sync pipeline (Dais-owned, per project CLAUDE.md) will render inaccurate model telemetry for Franklin until a separate fix.",
+  "evidence": {
+    "filePath": "runtime/dashboard/telemetry-post-franklin.mjs",
+    "lineRange": "73-80, 89",
+    "snippet": "const FRANKLIN_MODEL = process.env.FRANKLIN_FREE_MODEL || \"nvidia/llama-4-maverick\"; ... model_live: FRANKLIN_MODEL, model_tier: \"free\","
+  },
+  "recommendedAction": "Non-blocking, spec-accepted. Consider a future sprint to source telemetry-post-franklin.mjs's model_live from the same ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL values THINK actually uses, so the dashboard is truthful.",
+  "routeToPhase": "advisory-only"
+}

@@ -1,0 +1,15 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "correctness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "blocking": false,
+  "description": "The new Solana balance-fetch branch has zero RPC-endpoint fallback, unlike the EVM branch in the SAME file which the author explicitly hardened against exactly this failure mode. runtime/loop/balance.mjs:79-86 builds a 4-URL fallback list for the EVM path with the comment 'Robustness (loop must survive a single-endpoint DNS/RPC blip, else it falsely goes broke and skips earning for the whole wake)'. The new fetchSolanaUsdcBalance (balance.mjs:134-136) calls usdcBalance(address, { fetchImpl: config.SOLANA_FETCH_IMPL }) with no rpc/fallback option, so it is pinned to skills/_shared/lib/solana-verify.mjs's single SOL_RPC (solana-verify.mjs:12, defaults to the public https://api.mainnet-beta.solana.com, well known to rate-limit high-frequency automated callers). Franklin's daemon will poll this endpoint on every wake (SLEEP_BASE_S=120s, i.e. ~720x/day) indefinitely. REQ-002's own edge case text explicitly declines new retry/fallback logic for the Solana branch ('no new retry/fallback logic is added ... beyond what usdcBalance already does'), so this is spec-compliant, not a spec violation -- but the spec itself never reconciles why the EVM path earns 4-endpoint robustness while the Solana path (introduced specifically to fix 'tier permanently stuck broke') gets none, even though a rate-limited single RPC could reproduce a similar-looking 'tier stuck broke right after restart' symptom via a different root cause. Mitigating factor found during review: skills/earn/clip-promote/run.sh:24 already defaults SOLANA_RPC_URL to the identical public endpoint in existing production code, so this is consistent with established repo convention, not a novel risk -- hence medium, not high/critical.",
+  "evidence": {
+    "filePath": "runtime/loop/balance.mjs",
+    "lineRange": "79-86 (EVM fallback list) vs 134-136 (Solana branch, no fallback)",
+    "snippet": "const rpcUrls = [config.BASE_RPC_URL || ..., 'https://base-rpc.publicnode.com', 'https://base.llamarpc.com', 'https://mainnet.base.org'] ... vs ... async function fetchSolanaUsdcBalance(address, config) { return usdcBalance(address, { fetchImpl: config.SOLANA_FETCH_IMPL }); }"
+  },
+  "recommendedAction": "Non-blocking. Consider setting SOLANA_RPC_URL in ai.anicca.franklin-loop.plist to a paid/private RPC (or adding an opts.rpc fallback list mirroring the EVM path) in a follow-up sprint if post-deploy ledger.jsonl shows repeated 'Balance fetch failed' lines correlating with tier stuck at broke.",
+  "routeToPhase": "advisory-only"
+}

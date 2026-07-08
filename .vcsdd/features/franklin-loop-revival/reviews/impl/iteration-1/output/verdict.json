@@ -1,0 +1,72 @@
+{
+  "sprintNumber": 1,
+  "feature": "franklin-loop-revival",
+  "reviewType": "implementation",
+  "commit": "a2185d5",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T10:00:00Z",
+  "iteration": 1,
+  "reviewerNote": "Fresh-context review, no builder history. Reviewed entirely from disk: specs/behavioral-spec.md, specs/verification-architecture.md, runtime/loop/address-classify.mjs, runtime/wallet-address-solana.mjs, runtime/loop/balance.mjs, runtime/anicca-daemon.sh, ai.anicca.franklin-loop.plist (deployed, read directly at /Users/operator/Library/LaunchAgents/), all 6 new/changed test files, evidence/sprint-1-{red,green}-phase.log, state.json, plus cross-referenced supporting files not in the manifest (resolve-identity.mjs, solana-verify.mjs, config.mjs, tier.mjs, brain.mjs, env-filter.mjs, index.mjs, wallet-address.mjs, com.anicca.daemon.plist, ai.anicca.founder-loop.plist, ai.anicca.clawrouter.plist, live ~/.blockrun/logs/daemon.err and ~/.blockrun/state/ledger.jsonl) to independently verify claims rather than trust the evidence logs alone. LIMITATION DISCLOSED: this review environment has no Bash/shell tool, so `node --test` was NOT re-executed by me; the 33/33 and 42/42 pass claims in evidence/sprint-1-green-phase.log were validated by (a) reading the raw logged stdout/stack-traces, which contain specific file:line citations and error messages that match the actual source I independently read, and (b) cross-checking the RED-phase log's failure signatures (e.g. 'PORT=8403', 'invalid wallet address: 8FpqdcCH...') against the CURRENTLY LIVE (not-yet-restarted) daemon's own logs, which still exhibit exactly that pre-fix behavior as of its last restart today (2026-07-08T05:43:28Z) -- i.e. the described bug is independently confirmed real and live, not fabricated, and the fix's logic was independently traced by hand through every function call path (index.mjs -> balance.mjs -> address-classify.mjs -> solana-verify.mjs; daemon.sh -> wallet-address-solana.mjs -> resolve-identity.mjs) rather than accepted on faith.",
+  "dimensions": [
+    {
+      "name": "correctness",
+      "verdict": "PASS",
+      "findings": ["FIND-001", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "runtime/wallet-address-solana.mjs:19-32", "description": "Traced by hand: resolveSolanaSecret({}) (never throws per its own contract, resolve-identity.mjs:115-138) -> if falsy, warns and leaves stdout empty; if present, bs58.decode+Keypair.fromSecretKey wrapped in try/catch that never interpolates the secret into the warning. Matches REQ-001/REQ-006 exactly."},
+        {"type": "file", "location": "runtime/loop/balance.mjs:46-63,134-136", "description": "classifyAddress dispatch confirmed correct: 'solana' branch calls usdcBalance(address, {fetchImpl}) with NO opts.mint override (verified no second USDC_MINT constant exists in balance.mjs), passing through solana-verify.mjs's own 0-for-zero-ATA and throw-on-failure behavior unchanged. EVM branch (lines 65-119) is untouched, byte-identical to the pre-feature code I compared against config.mjs/tier.mjs's callers."},
+        {"type": "file", "location": "runtime/anicca-daemon.sh:26-32 vs 55-76", "description": "PORT assignment is now unconditional `PORT=\"${COMPUTE_PROXY_PORT:-8402}\"` (no franklin/else branch at all) -- confirmed this makes OPENAI_BASE_URL resolve to :8402 for franklin by tracing line 118's unconditional export. Franklin's step-2 branch (lines 56-76) contains no `ensure_brain` function definition, no process spawn, only an FRANKLIN_FREE_MODEL export (dead, see FIND-002/FIND-004) and a curl readiness probe -- matches REQ-004(a)/(b) exactly."},
+        {"type": "test-output", "location": ".vcsdd/features/franklin-loop-revival/evidence/sprint-1-green-phase.log:65-108", "description": "33/33 new-capability tests pass, including a live subprocess run of wallet-address-solana.mjs against Franklin's REAL .solana-session producing the exact expected address, and a real end-to-end loop-process integration test (mocked HTTP boundaries only) proving currentTier reaches 'funded' from a real (mocked-RPC) $11.63 balance without ANICCA_BALANCE_OVERRIDE."},
+        {"type": "file", "location": "package.json:3-4; node_modules/@solana/web3.js/package.json", "description": "Confirmed @solana/web3.js (^1.98.4) and bs58 (5.0.0) are pre-existing root dependencies (no new dep added), and confirmed Node's directory-walk module resolution correctly finds @solana/web3.js at the repo root even though runtime/node_modules lacks it locally -- matches the PROP-005 live test's actual pass."}
+      ]
+    },
+    {
+      "name": "security_identity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/anicca-daemon.sh:56-76 (franklin branch, full text)", "description": "Read the ENTIRE franklin branch verbatim: no reference to $HOME/.openclaw/.env, no BLOCKRUN_WALLET_KEY, no clawrouter/franklin-proxy spawn, no ensure_brain function defined for franklin. Structurally separate `if/else` (exactly one franklin conditional in step 2, confirmed by direct read, matching the daemon-script-franklin-routing.test.mjs regression assertion) -- the non-franklin branch's own, unrelated $HOME/.openclaw/.env grep (lines 82-95, pre-existing, unchanged, used ONLY for automaton/founder-loop's own ClawRouter-payment key resolution) never executes when INSTANCE=franklin."},
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs:115-138", "description": "resolveSolanaSecret's legacyHome gate (line 132: `effectiveHome === path.join(legacyHome, '.blockrun')`) confirmed to fail-closed (return null) for any ANICCA_HOME other than exactly $HOME/.blockrun -- traced this personally against the wallet-address-solana.test.mjs PROP-007 fixtures (foreign ANICCA_HOME, default-unset ANICCA_HOME) and confirmed the logic matches without needing to trust the test alone."},
+        {"type": "file", "location": "runtime/wallet-address-solana.mjs (full file, 33 lines)", "description": "Confirmed exactly ONE process.stdout.write call in the entire file (line 26, the derived address only); every other output path uses the warn() helper to stderr, and warn() never receives the raw secret or the caught exception's message as an argument anywhere in the file -- REQ-006/PROP-008 satisfied by construction, independently verified, not just by the test's pass/fail."},
+        {"type": "file", "location": "runtime/loop/env-filter.mjs:15; runtime/loop/index.mjs:550", "description": "Confirmed ANICCA_WALLET_ADDRESS does not match PRIVATE_KEY_REGEX (/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/), so it correctly survives scrubPrivateKeys() and is passed to skill subprocesses unscrubbed, as the address is public data -- confirms REQ-006's edge case is honored."},
+        {"type": "file", "location": "/Users/operator/Library/LaunchAgents/com.anicca.daemon.plist, ai.anicca.founder-loop.plist, ai.anicca.clawrouter.plist (all read directly)", "description": "Confirmed automaton (ANICCA_INSTANCE=clawrouter) and founder-loop (ANICCA_INSTANCE unset -> defaults clawrouter) never enter the franklin branch, so none of this feature's franklin-specific code paths are reachable by any other instance. Confirmed ai.anicca.clawrouter.plist carries no BLOCKRUN_WALLET_KEY (free-tier-only by design), matching the spec's citation exactly."},
+        {"type": "file", "location": "money-risk boundary check (no single file, cross-referenced)", "description": "Confirmed this entire feature only touches balance READ and address DERIVATION paths -- no code in the reviewed diff signs a transaction or transfers funds. The worst-case blast radius of any latent bug here is a wrong tier/context shown to the LLM (which still only feeds skills/earn/sol-trade's own, unmodified, independently-capped $0.25-max-spend x402 flow), not an unauthorized fund movement."}
+      ]
+    },
+    {
+      "name": "regression_safety",
+      "verdict": "PASS",
+      "findings": ["FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/Library/LaunchAgents/com.anicca.daemon.plist (automaton, live)", "description": "Confirmed automaton's plist sets ANICCA_INSTANCE=clawrouter with no COMPUTE_PROXY_PORT/FRANKLIN_PROXY_PORT override -- both before and after this feature's PORT-assignment change, automaton's PORT resolves to the same 8402 default (it always took the else-branch, which is textually unchanged); confirmed automaton is unaffected by direct comparison of the old described branch vs. the new unconditional line."},
+        {"type": "file", "location": "/Users/operator/Library/LaunchAgents/ai.anicca.founder-loop.plist (live)", "description": "Confirmed founder-loop (a THIRD consumer of the same shared anicca-daemon.sh, not mentioned in the manifest -- discovered via grep across ~/Library/LaunchAgents) also defaults to ANICCA_INSTANCE=clawrouter and hardcodes its own ANICCA_WALLET_ADDRESS in the plist, so daemon.sh's `${ANICCA_WALLET_ADDRESS:-...}` never even evaluates the viem-derivation command substitution for it -- unaffected by this feature's changes either way."},
+        {"type": "test-output", "location": ".vcsdd/features/franklin-loop-revival/evidence/sprint-1-green-phase.log:110-172", "description": "regression-baseline 42/42 (resolve-identity.test.mjs, env-filter.test.mjs, solana-verify.test.js) identical count to red-phase baseline; full runtime/loop/__tests__/*.mjs cross-check 176/180 with the 4 failures pre-existing and disclosed (tier.test.mjs/config.test.mjs hardcoded stale model-name literals, unrelated to tier.mjs/config.mjs which this feature does not touch)."},
+        {"type": "file", "location": "/Users/operator/.blockrun/logs/daemon.err (live, real-time state)", "description": "Confirmed the CURRENTLY RUNNING franklin-loop daemon process (last restarted 2026-07-08T05:43:28Z, i.e. TODAY, before this review) is still executing the OLD pre-fix code/config (franklin proxy on :8403, model nvidia/llama-4-maverick) -- this is the basis for FIND-003: the restart that will pick up this sprint's changes has not happened yet, so Tier-0 live-process-env checks (PROP-014/015-ii/016-ii) are necessarily unverified pre-restart, not a defect in the reviewed diff."}
+      ]
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md REQ-001..REQ-006 cross-referenced against runtime/loop/__tests__/{address-classify,balance-solana,wallet-address-solana,integration-solana-tier,franklin-plist-config,daemon-script-franklin-routing}.test.mjs", "description": "Every REQ-001..006 acceptance criterion and every enumerated edge case has at least one corresponding test assertion; no REQ was left partially covered. No feature/behavior found in the implementation that exceeds the spec's stated scope (checked balance.mjs, address-classify.mjs, wallet-address-solana.mjs, and daemon.sh's diffs line-by-line against the Purity Boundary Analysis and Effectful Shell sections)."},
+        {"type": "file", "location": "specs/verification-architecture.md PROP-001..016", "description": "Confirmed every PROP has a corresponding test or documented live-check method; Tier assignments (0/1/2/3) match the actual verification method used in each test file (e.g. franklin-plist-config.test.mjs genuinely reads the deployed plist file directly for PROP-013, not a fixture copy)."},
+        {"type": "file", "location": "runtime/dashboard/telemetry-post-franklin.mjs:80,89 vs behavioral-spec.md REQ-004 edge cases", "description": "The one behavior gap found (stale model_live telemetry label, FIND-002) is explicitly named and accepted as harmless/out-of-scope in the spec's own text, not an undisclosed spec violation."}
+      ]
+    }
+  ],
+  "deploySafety": {
+    "verdict": "SAFE_TO_DEPLOY",
+    "summary": "The reviewed diff is safe to restart ai.anicca.franklin-loop into production, CONDITIONAL on the two required post-restart steps below. Rationale: (1) the money/identity-critical paths (Solana secret derivation, per-instance identity gating, private-key non-leakage) were independently traced by hand, not just trusted from test output, and are structurally sound; (2) the shared anicca-daemon.sh's changes are provably no-ops for automaton (com.anicca.daemon) and founder-loop (ai.anicca.founder-loop) -- both consumers were discovered and checked directly, not just the one the manifest named; (3) this feature's blast radius is bounded to balance-read/tier-selection, never fund transfer; (4) worst-case failure mode on THINK routing is unchanged from today (wake_error, retry next wake, no crash) and is very likely IMPROVED since ClawRouter+free/glm-4.7 is the SAME already-proven-in-production path automaton already uses successfully, replacing a model that is empirically ~50% rate-limited today (315 wake_error lines observed live in the current ledger).",
+    "requiredPostRestartSteps": [
+      "Immediately after restart, verify PROP-014 (no ANICCA_BALANCE_OVERRIDE in the live process env) and PROP-015(ii)/016(ii) (OPENAI_BASE_URL resolves to :8402 and no BLOCKRUN_WALLET_KEY present) via `launchctl print gui/$(id -u)/ai.anicca.franklin-loop` and/or `ps eww <pid>` -- these Tier-0 checks were not yet verifiable pre-restart (FIND-003) and are the actual production-truth gate, not the plist file alone.",
+      "Observe at least 3 consecutive wakes in ~/.blockrun/state/ledger.jsonl post-restart with no new wake_error/proxy_down lines and currentTier reaching lean/funded (PROP-006/009/010/011) before treating this feature as fully Done."
+    ]
+  },
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedRequirements": ["REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006"],
+    "duplicateFindings": []
+  }
+}
