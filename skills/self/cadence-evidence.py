@@ -156,7 +156,8 @@ def _gig_activity_event_dates(applied_rows, listings_rows):
     crashes: rows with unparseable/missing ts, or missing listing_id, are skipped."""
     dates = set()
     for row in applied_rows or []:
-        row = row or {}
+        if not isinstance(row, dict):  # GAP-1: a bare non-dict JSON line (agent-written, append-only ledger) must be skipped, not crash
+            continue
         if row.get("status") not in _GIG_REAL_ACTION_STATUSES:
             continue
         d = _gig_ts_to_jst_date(row.get("ts"))
@@ -165,7 +166,8 @@ def _gig_activity_event_dates(applied_rows, listings_rows):
 
     first_seen_by_listing_id = {}
     for row in listings_rows or []:
-        row = row or {}
+        if not isinstance(row, dict):  # GAP-1: skip non-dict listings rows defensively
+            continue
         listing_id = row.get("listing_id")
         if listing_id is None:
             continue
