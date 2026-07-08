@@ -201,8 +201,41 @@ def main() -> None:
             signed = w3.eth.account.sign_transaction(built, key)
             tx_hash = w3.eth.send_raw_transaction(signed.raw_transaction).hex()
             tx_hash = tx_hash if tx_hash.startswith("0x") else "0x" + tx_hash
-            w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
-            if not eth_tx_confirmed_success(POLYGON_RPC, tx_hash):
+
+            # Finding A fix (money-safety adversary review, 2026-07-08): the tx is ALREADY
+            # broadcast at this point (send_raw_transaction returned its hash) -- record a
+            # 'pending' row with that hash BEFORE waiting for the receipt. This was previously
+            # the WEAKEST instance of Finding A (no try/except at all around this entire
+            # broadcast loop): if wait_for_transaction_receipt/eth_tx_confirmed_success below
+            # raised (timeout, rate limit, transient RPC failure), the script crashed with no
+            # ledger row written at all for a real, already-broadcast transfer.
+            append_ledger(LEDGER_PATH, build_row(
+                step="bridge",
+                amount_usd=amount_usd,
+                status="pending",
+                reason="tx broadcast, awaiting on-chain confirmation",
+                tx_hash=tx_hash,
+                from_addr=acct.address,
+                to_addr=FOUNDER_SOLANA,
+                extra={"plan": plan, "hashes": hashes},
+            ))
+            try:
+                w3.eth.wait_for_transaction_receipt(tx_hash, timeout=180)
+                tx_confirmed = eth_tx_confirmed_success(POLYGON_RPC, tx_hash)
+            except Exception as exc:
+                # Confirmation RPC itself failed -- the pending row above already preserved
+                # the audit trail; do not append a second, possibly-wrong-status row for the
+                # same tx_hash (a human/agent can look it up on-chain later for reconciliation).
+                print(json.dumps({
+                    "ok": False,
+                    "step": "bridge",
+                    "error": f"tx {tx_hash} broadcast but confirmation check raised: {exc} -- "
+                    "needs manual reconciliation (see pending ledger row)",
+                    "hashes": hashes,
+                    "tx_hash": tx_hash,
+                }))
+                sys.exit(1)
+            if not tx_confirmed:
                 row = build_row(
                     step="bridge",
                     amount_usd=amount_usd,
