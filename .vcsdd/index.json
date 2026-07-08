@@ -128,17 +128,24 @@
       "status": "active",
       "createdAt": "2026-07-07T07:54:18.175Z",
       "mode": "strict",
-      "currentPhase": "2a",
-      "updatedAt": "2026-07-07T20:23:33.449Z"
+      "currentPhase": "2b",
+      "updatedAt": "2026-07-08T06:23:25.378Z"
     },
     "anicca-agent-lending": {
       "status": "active",
       "createdAt": "2026-07-07T10:06:12.029Z",
       "mode": "strict",
       "language": "typescript",
-      "currentPhase": "1b",
-      "updatedAt": "2026-07-07T20:34:48.532Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-08T06:05:40.464Z"
+    },
+    "claude-p-loop-verification": {
+      "status": "active",
+      "createdAt": "2026-07-08T05:36:05.417Z",
+      "mode": "lean",
+      "currentPhase": "2a",
+      "updatedAt": "2026-07-08T06:40:39.260Z"
     }
   },
-  "activeFeature": "anicca-agent-spawn"
+  "activeFeature": "claude-p-loop-verification"
 }

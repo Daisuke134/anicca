@@ -1,1 +1,1 @@
-anicca-agent-spawn
+claude-p-loop-verification
