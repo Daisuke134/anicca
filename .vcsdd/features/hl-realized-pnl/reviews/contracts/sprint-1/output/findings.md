@@ -1,3 +1,117 @@
+# Iteration 2
+
+Reviewer: fresh-context vcsdd-adversary (strict-mode sprint contract review, negotiation iteration 2)
+Contract: `contracts/sprint-1.md` (content revised since iteration 1; frontmatter `negotiationRound` field itself still reads `1` — see F-5 below)
+Compared against: `specs/behavioral-spec.md`, `specs/verification-architecture.md` (now 29 proof obligations, PROP-023 added), `evidence/sprint-1-red-phase.log`, and iteration 1's `findings.md`/`verdict.json` in this same directory (read before being overwritten).
+
+## Verification of iteration 1's findings
+
+**F-1 (BLOCKING, PROP-021/live-E2E entirely absent from all criteria) — RESOLVED.**
+A new `CRIT-006` (dimension: `verification_readiness`, weight 0.15) now exists. Its
+`passThreshold` requires the PROP-021 live E2E plan from `verification-architecture.md`'s Done
+section to actually run against the audited wallet `0xa3cdd4...` and pass all four conditions
+verbatim: zero silent drops / zero fabricated extras with a count cross-check against the raw
+live response; `sum(net_usdc)` equal to raw `sum(closedPnl - fee)` within `1e-6`; an immediately
+repeated run appending zero additional lines (idempotency against live data); and no
+dry/fake/mock/simulated language in the recorded output. This is stated as a THIS-sprint pass
+condition (sprint 1's own `scope` line still covers the entire feature; there is no later sprint
+this is deferred to), not a waiver or a promise to check later. Evidence: `contracts/sprint-1.md`
+lines 33-37 (CRIT-006 in full).
+
+**F-2 (major, REQ-D4 has no proof obligation anywhere) — RESOLVED.**
+`verification-architecture.md` now has 29 rows (was 28) — `PROP-023` (Tier 0, required: yes,
+"Added at contract-review negotiation round 1 (finding F-2)") covers REQ-D4 via a static grep
+that the checkpoint/ledger paths are derived exclusively from the reconciler's own file location,
+with zero matches for `.blockrun|.anicca|.openclaw|/Users/` anywhere in `reconcile.py`.
+`CRIT-003`'s `passThreshold` now cites PROP-023 explicitly: "PROP-023 static check confirms
+REQ-D4 path isolation (checkpoint and ledger paths derived exclusively from the reconciler's own
+checkout location, with no literal reference to another instance's home directory)." Evidence:
+`specs/verification-architecture.md` line 86 (PROP-023 row); `contracts/sprint-1.md` line 22
+(CRIT-003 passThreshold).
+
+**F-3 (minor, CRIT-005 dimension bundling under verification_readiness) — RESOLVED.**
+`CRIT-005`'s `dimension` field now reads `implementation_correctness` (was
+`verification_readiness` in iteration 1). `verification_readiness` is now exclusively represented
+by the new `CRIT-006`. This is a cleaner separation than iteration 1 suggested as an optional fix:
+`verification_readiness` now means specifically "is the live-E2E verification apparatus itself
+trustworthy," while `implementation_correctness` carries ledger.mjs's functional correctness
+(PROP-013/014a-e) alongside `reconcile.py`'s composition-root correctness (PROP-012/007/015-017/023).
+Evidence: `contracts/sprint-1.md` line 29 (CRIT-005 `dimension:` field).
+
+**F-4 (note, PROP-007 cited under both CRIT-002 and CRIT-003) — UNCHANGED, still non-blocking.**
+Both criteria still cite PROP-007 (`contracts/sprint-1.md` lines 17 and 22). Iteration 1 explicitly
+marked this "not required to fix before Phase 2b/3." No regression: the contract's own
+"Cross-criterion note (contract-review F-4)" section (lines 149-154) now documents this
+explicitly as deliberate, which is a strict improvement over iteration 1 (silent double-citation)
+— this note itself resolves the residual ambiguity F-4 flagged. Downgrading to fully closed.
+
+## Independent completeness check (fresh, not just re-verifying prior findings)
+
+Cross-referencing every `passThreshold` string in `contracts/sprint-1.md` against
+`verification-architecture.md`'s Required column: all 27 Tier-0-required PROP-IDs
+(001, 002, 002b, 003, 004, 005, 006, 007, 008, 009, 010, 010b, 011, 012, 013, 014a-e, 015, 016,
+017, 018, 019, 022, 023) plus the Tier-2-required PROP-021 — 28 of 28 required obligations — are
+each cited in at least one criterion's `passThreshold`. PROP-020 (Tier-1, `required: no`) is
+correctly absent from any `passThreshold`, matching its own "no" flag. No required proof
+obligation is left uncovered by any criterion.
+
+Weight sum: `0.2 + 0.2 + 0.15 + 0.15 + 0.15 + 0.15 = 1.0` — exact, no rounding slack.
+
+Dimension coverage: `spec_fidelity` (CRIT-001), `edge_case_coverage` (CRIT-002),
+`implementation_correctness` (CRIT-003, CRIT-005), `structural_integrity` (CRIT-004),
+`verification_readiness` (CRIT-006) — all 5 grading-schema dimensions represented by at least one
+criterion.
+
+No criterion's `passThreshold` is weaker than its corresponding spec requirement(s): CRIT-001's
+tied-timestamp inclusive-boundary language matches REQ-B2/B8's `>=` (not `>`) requirement
+verbatim; CRIT-002 explicitly requires the PROP-010b two-call integration test's
+`since_time_ms=500` re-query assertion (not a weaker "eventually recovers" claim); CRIT-003's
+"byte-exact" REQ-C1 payload-key language and "not the first" checkpoint-advance language both
+match spec wording exactly; CRIT-004's `reconcile` line-number-ordering language matches REQ-E3
+exactly; CRIT-005 requires the pre-existing `ledger.test.js`'s 9 tests to "remain green
+unmodified" (matches REQ-E2/non-regression exactly, not merely "still exist"); CRIT-006's four
+sub-conditions are verbatim from verification-architecture.md's Done section.
+
+## F-5 — minor — target: process/structural hygiene (not a criteria-content defect) — contract frontmatter `negotiationRound` still reads `1` despite the content having visibly been revised to address iteration 1's F-1/F-2/F-3
+
+**What**: `contracts/sprint-1.md`'s frontmatter (line 5) still declares `negotiationRound: 1`, and
+`status: draft` (line 6) is unchanged, even though the body content demonstrably reflects a
+revision made in response to a prior review round (CRIT-006 is new; PROP-023 is dated "Added at
+contract-review negotiation round 1 (finding F-2)" inside `verification-architecture.md` itself,
+implying this contract edit happened AFTER that negotiation round concluded). This is not a
+criteria-quality defect — every substantive finding from iteration 1 is genuinely resolved on
+disk — but the artifact's own round-tracking metadata does not reflect that a revision cycle
+occurred, which could cause the state library or a future auditor to misread how many negotiation
+rounds this contract has actually been through.
+
+**Evidence**: `contracts/sprint-1.md` lines 5-6 (`negotiationRound: 1`, `status: draft`);
+`specs/verification-architecture.md` line 86 ("Added at contract-review negotiation round 1
+(finding F-2)" — internal evidence that at least one revision cycle post-dates the original
+draft).
+
+**Required fix**: None required before Phase 2b — this is metadata hygiene, not a verifiability
+gap. Recommend bumping `negotiationRound` to `2` and `status` to `negotiated` (or equivalent) the
+next time this file is touched, so the round-tracking metadata matches the actual revision
+history.
+
+---
+
+## Summary (iteration 2)
+
+| ID | Severity | Status |
+|---|---|---|
+| F-1 | was BLOCKING | RESOLVED — CRIT-006 added, live E2E is a this-sprint pass condition |
+| F-2 | was major | RESOLVED — PROP-023 added to verification-architecture.md, cited in CRIT-003 |
+| F-3 | was minor | RESOLVED — CRIT-005 relabeled implementation_correctness |
+| F-4 | was note | RESOLVED — contract now documents the dual-citation as deliberate |
+| F-5 | minor (new) | OPEN, non-blocking — negotiationRound/status metadata not bumped |
+
+BLOCKING count: 0 -> overallVerdict: PASS.
+
+---
+
+# Iteration 1 (prior record, preserved verbatim below)
+
 # Sprint-1 Contract Review — hl-realized-pnl
 
 Reviewer: fresh-context vcsdd-adversary (strict-mode sprint contract review)
