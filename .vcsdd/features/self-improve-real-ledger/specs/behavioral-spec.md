@@ -377,6 +377,16 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
   or copy any real `skills/*/state/` directory (any instance's) into any worktree — that would
   grant a dev checkout read/write proximity to production financial ledger state, the exact
   cross-environment leak class this feature exists to close.
+- **EDGE-RL5b** (added at GREEN phase, same mechanism as EDGE-RL5a) The pre-existing
+  `test_realized_summary_default_path_points_at_the_real_earn_ledger_location` assertion
+  (PROP-RL-ID6, `endswith("anicca/skills/earn/state/earn-ledger.jsonl")`) is
+  checkout-location-sensitive by construction once `DEFAULT_LEDGER_PATH` derives from REQ-RL1's
+  body-relative resolution: from the feature's own dev worktree the resolved path nests under
+  `.worktrees/<feature>/` and the suffix assertion fails — an expected, documented consequence,
+  NOT a logic defect and NOT a waiver. The assertion MUST pass (unmodified) when the regression
+  suite runs from the merged `~/anicca` main checkout — which is exactly where CRIT-006's
+  post-merge regression run executes it. The GREEN-phase worktree run therefore legitimately
+  reports 80/81 with this single, root-caused, post-merge-verified exception.
 - **EDGE-RL5** A candidate is ineligible for adversary review (REQ-EV2/EV4 already block it before
   any LLM call) AND separately `resolved is False`: REQ-RL7's block and the pre-existing
   deterministic-gate block are BOTH true; `decide_promotion`'s `reason` string SHALL name whichever

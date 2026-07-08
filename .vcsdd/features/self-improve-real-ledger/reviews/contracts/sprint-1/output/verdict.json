@@ -1,7 +1,7 @@
 {
   "sprintNumber": 1,
   "feature": "self-improve-real-ledger",
-  "iteration": 2,
+  "iteration": 3,
   "timestamp": "2026-07-09T00:00:00Z",
   "dimensions": [
     {
@@ -9,7 +9,7 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "FIND-002 resolved: passThreshold now cites PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 explicitly, including PROP-RL-ID4 (REQ-RL2 explicit path= override), plus PROP-RL-ID6 regression byte-identical requirement, matching the full ID1-ID7 row set in verification-architecture.md:71-77"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "passThreshold cites PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 and PROP-RL-ID6 explicitly, matching the full ID1-ID7 row set in verification-architecture.md:71-77; unchanged and re-confirmed at iteration 3, not implicated by FIND-003"}
       ]
     },
     {
@@ -17,7 +17,7 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "Cites PROP-RL-GATE2/GATE3/GATE4 (window split, 8-combo worsening truth table, both data_realism_gap contradiction cases plus sufficient=False vacuous-pass) and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly; unchanged from iteration 1, not implicated by FIND-001/FIND-002"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "passThreshold cites PROP-RL-GATE2/GATE3/GATE4 and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly; unchanged since iteration 1, not implicated by FIND-003"},
         {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:32-51", "description": "Corresponding new tests in test_realized_gate.py and test_ledger_resolution.py present and failing for the right reason at RED"}
       ]
     },
@@ -26,18 +26,18 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "Cites PROP-RL-GATE1, PROP-RL-GATE-NONE, PROP-RL-GATE5, PROP-RL-GATE6, and the REQ-RL13a 13-key schema test; REQ-RL17's Phase-3-review-only stub-source-check obligation ('the value bound to realized_gate= ... genuinely sourced ... never a hardcoded literal') is explicitly assigned by the spec itself to Phase-3 implementation review, a separate gate outside this contract's automated-PROP scope, so its absence from CRIT-004's passThreshold is correct, not a contract gap"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "passThreshold cites PROP-RL-GATE1, PROP-RL-GATE-NONE, PROP-RL-GATE5, PROP-RL-GATE6, plus the REQ-RL13a 13-key schema test (test_wiring.py); REQ-RL13a has no dedicated PROP-RL-* row in verification-architecture.md's Proof Obligations table (lines 71-96), so the schema test is correctly described by REQ ID rather than a nonexistent PROP ID -- not a citation gap since there is nothing to cite"},
         {"type": "file", "location": "specs/behavioral-spec.md:218-239", "description": "REQ-RL13a's 13-key table matches the contract's schema-test description key-for-key"}
       ]
     },
     {
       "name": "structural_integrity",
-      "verdict": "FAIL",
-      "findings": ["FIND-003"],
+      "verdict": "PASS",
+      "findings": [],
       "evidence": [
-        {"type": "file", "location": "specs/verification-architecture.md:89", "description": "PROP-RL-WIRE2 ('The 44 pre-existing tests calling decide_promotion WITHOUT realized_gate ... still pass, realized_gate=None behaving as no constraint, REQ-RL18') is a REQUIRED proof obligation in the Proof Obligations table, distinct from PROP-RL-GATE-NONE (a single new synthetic side-by-side test) and distinct from PROP-RL-WIRE1 (AST keyword-presence scan)"},
-        {"type": "file", "location": "contracts/sprint-1.md", "description": "Grep for the literal string 'WIRE2' across the entire contract returns zero matches; CRIT-003's passThreshold cites GATE1/GATE-NONE/GATE5/GATE6 only, CRIT-004's passThreshold cites WIRE1/SAFE1/SAFE2/SAFE3 only, CRIT-006's regression-table requirement is a bundled post-merge live-tier condition and never names PROP-RL-WIRE2 by ID — this is the same class of omission FIND-001/FIND-002 already caught and fixed for SAFE2/SAFE3/ID4, but the round-1 fix did not sweep the rest of the Proof Obligations table for other uncited REQUIRED PROP-RL-* rows, leaving WIRE2 uncited anywhere in the document"},
-        {"type": "file", "location": "/Users/anicca/anicca/.worktrees/self-improve-real-ledger/skills/earn/self-improve/tests/test_wiring.py:70-99", "description": "Confirmed by direct read: test_wiring.py contains only the PROP-RL-WIRE1 ast-scan test; no test or contract clause requires re-running/asserting the 44 pre-existing decide_promotion-without-realized_gate call conventions as its own named pass condition for this sprint"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "FIND-003 resolved: passThreshold now explicitly names 'AND PROP-RL-WIRE2 (the FULL pre-existing 44-test suite ... re-runs green with assertions unmodified, proving realized_gate=None behaves as no constraint per REQ-RL18; named here as its own sprint pass condition, not merely bundled into CRIT-006's post-merge regression run)' alongside PROP-RL-WIRE1/SAFE1/SAFE2/SAFE3, closing the exact uncited-row gap FIND-003 identified"},
+        {"type": "file", "location": "specs/verification-architecture.md:71-96", "description": "Full-table sweep of all 26 required PROP-RL-* rows (ID1-ID7, MIR1-MIR2, GATE1-GATE6, GATE-NONE, EVAL1-EVAL2, WIRE1-WIRE2, SAFE1-SAFE3, LIVE1-LIVE3) against every passThreshold field in contracts/sprint-1.md confirms each ID is cited in at least one criterion's passThreshold: CRIT-001 covers ID1/ID2/ID3/ID4/ID5/ID6/ID7; CRIT-002 covers GATE2/GATE3/GATE4/MIR1/MIR2; CRIT-003 covers GATE1/GATE-NONE/GATE5/GATE6; CRIT-004 covers WIRE1/WIRE2/SAFE1/SAFE2/SAFE3; CRIT-005 covers EVAL1/EVAL2; CRIT-006 covers LIVE1/LIVE2/LIVE3 -- zero uncited required rows remain"},
+        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:97-108", "description": "RED-phase regression run shows 44 pre-existing self-improve tests passing standalone (line 105: '44 passed in 0.05s') and the combined new-suite run showing '51 passed' = 44 pre-existing + 7 new-but-already-passing invariant tests (line 108), internally consistent with WIRE2's non-regression pre-pass disclosure now named in CRIT-004's passThreshold"}
       ]
     },
     {
@@ -45,15 +45,15 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent; unchanged from iteration 1"},
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run; unchanged from iteration 1"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent; unchanged since iteration 1"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run; unchanged since iteration 1"}
       ]
     }
   ],
-  "overallVerdict": "FAIL",
+  "overallVerdict": "PASS",
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-1.md",
-    "contractDigest": "aee008a0996a46dc411c781b55e5f4f8f5240d66971f869706bdd16cea3fbeec"
+    "contractDigest": "d259b094d5fd9f4df2752f067625aba2a68940efaca77c83c7eaa491e95fe9f6"
   }
 }
