@@ -32,25 +32,21 @@ if [ "$LMH" -ge 26 ] 2>/dev/null; then LM_NOTE=" | ⚠ LM last-pass STALE ${LMH}
 # keep stale_hrs()/self-fix unchanged (REQ-LV-104, out of this feature's scope).
 STATE_DIR="$HOME/.openclaw/state"; mkdir -p "$STATE_DIR"
 TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
-NOW_HOUR_JST="$(TZ=Asia/Tokyo date +%H)"
 CADENCE_LOOPS="clip affiliate video gig bounty pm-earner founder-loop"
 CADENCE_SCORECARD=""
 for L in $CADENCE_LOOPS; do
   STATUS_JSON="$(python3 "$SELF/cadence-evidence.py" status "$L" 2>>"$LOG")"
-  MET="$(printf '%s' "$STATUS_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['met'])" 2>/dev/null || echo False)"
   SCORECARD_LINE="$(printf '%s' "$STATUS_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['scorecard'])" 2>/dev/null || echo "❌missed (streak=0)")"
   CADENCE_SCORECARD="$CADENCE_SCORECARD [$L] $SCORECARD_LINE;"
-  # REQ-LV-102: at/after JST 21:00, escalate any loop whose TODAY's cadence is unmet — never
-  # suppressed by a past-days success (the exact bug class REQ-LV-101's row-exists/increment/
-  # recency dispatch fixes). Escalate at most once per loop per JST calendar day (marker file).
-  if [ "$NOW_HOUR_JST" -ge 21 ] 2>/dev/null && [ "$MET" = "False" ]; then
-    MK="$STATE_DIR/.cadence-escalated-$L-$TODAY_JST"
-    if [ ! -f "$MK" ]; then
-      touch "$MK"
-      bash "$SELF/self-fix.sh" "$L" "cadence audit: $L's Cadence Contract was NOT met by 21:00 JST today ($TODAY_JST) — diagnose why today's contracted cadence (see $SELF/cadence-contracts.json) did not happen and fix it. This is a DAILY judgment (not artifact staleness): a real pass days ago does NOT satisfy today's contract." >> "$LOG" 2>&1 || true
-    fi
-  fi
 done
+
+# REQ-LV-102 (F-ITER3-1 fix): the 21:00 JST escalation itself now lives in its own script, run by
+# a dedicated StartCalendarInterval(Hour=21,Minute=5,JST) launchd job (skills/self/launchd/
+# ai.anicca.cadence-deadline-check.plist) so it is GUARANTEED to fire once/day at a fixed wall-clock
+# time — this 6h script's own rolling StartInterval could, depending on launchd-load-time offset,
+# never once land inside [21:00,24:00) on a given day (the bug iteration-3 review caught). Still
+# called here too as a redundant, marker-gated (harmless) safety net.
+bash "$SELF/cadence-deadline-check.sh" >> "$LOG" 2>&1 || true
 
 # --- REQ-LV-111: weekly EDD evaluator run (once per ISO week per loop, marker-gated — this
 # every-6h script would otherwise re-run it up to 28x/week for no reason). Scores this-week vs

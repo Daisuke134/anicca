@@ -84,8 +84,20 @@ def _score_for_rows(evaluator_mod, rows):
         os.unlink(path)
 
 
-def run(loop, ledger_path=None, today=None):
+def _weekly_output_path(ledger_path):
+    """REQ-LV-111 (F-ITER3-2 fix): the weekly comparison record MUST NOT land in the same file
+    cadence-evidence.py's row-exists kind reads (it only checks "does a row with today's ts
+    exist", so a weekly-report row landing there on a day with zero real activity would read as a
+    false "cadence met today" — reproduced live by iteration-3 adversary review). Derives a
+    sibling file (e.g. clip-earn-ledger.jsonl -> clip-earn-ledger-weekly.jsonl) next to the real
+    metrics ledger, never the ledger itself."""
+    base, ext = os.path.splitext(ledger_path)
+    return f"{base}-weekly{ext or '.jsonl'}"
+
+
+def run(loop, ledger_path=None, today=None, output_path=None):
     ledger_path = ledger_path or LEDGER_PATH_FOR_LOOP[loop]()
+    output_path = output_path or _weekly_output_path(ledger_path)
     today_date = datetime.date.fromisoformat(today) if today else datetime.datetime.now(tz=JST).date()
     this_week_start = _week_start(today_date)
     last_week_start = this_week_start - datetime.timedelta(days=7)
@@ -102,8 +114,8 @@ def run(loop, ledger_path=None, today=None):
         "combined_score": this_score,
         "beats_previous_week": beats,
     }
-    os.makedirs(os.path.dirname(ledger_path) or ".", exist_ok=True)
-    with open(ledger_path, "a") as f:
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    with open(output_path, "a") as f:
         f.write(json.dumps(record, ensure_ascii=False) + "\n")
     return record
 
@@ -112,6 +124,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("loop", choices=list(LEDGER_PATH_FOR_LOOP.keys()))
     ap.add_argument("--ledger-path", default=None)
+    ap.add_argument("--output-path", default=None)
     ap.add_argument("--today", default=None)
     a = ap.parse_args()
-    print(json.dumps(run(a.loop, a.ledger_path, a.today), ensure_ascii=False))
+    print(json.dumps(run(a.loop, a.ledger_path, a.today, a.output_path), ensure_ascii=False))
