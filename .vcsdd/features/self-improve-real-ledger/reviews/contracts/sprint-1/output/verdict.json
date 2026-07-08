@@ -1,0 +1,60 @@
+{
+  "sprintNumber": 1,
+  "feature": "self-improve-real-ledger",
+  "iteration": 1,
+  "timestamp": "2026-07-09T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "Cites PROP-RL-ID1/ID2/ID3/ID5/ID6/ID7 but never PROP-RL-ID4 (REQ-RL2, explicit path= override) anywhere in the contract"},
+        {"type": "file", "location": "specs/verification-architecture.md:74", "description": "PROP-RL-ID4 proof obligation row exists in the spec's Proof Obligations table but has no citing passThreshold"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "Faithfully cites PROP-RL-GATE2/GATE3/GATE4 (window split, 8-combo worsening truth table, both data_realism_gap contradiction cases plus sufficient=False vacuous-pass) and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly"},
+        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:32-51", "description": "All corresponding new tests in test_realized_gate.py and test_ledger_resolution.py are present and fail for the right reason (AttributeError/wrong-value) at RED"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "Correctly cites PROP-RL-GATE1 (unconditional resolved=False block), PROP-RL-GATE-NONE (F-4 disambiguation of None-vacuous-pass vs False-block), PROP-RL-GATE5 (last_promotion_ts latest-commit + None cases), PROP-RL-GATE6 (escalation written before verdict), and the exact 13-key REQ-RL13a schema test"},
+        {"type": "file", "location": "specs/behavioral-spec.md:218-239", "description": "REQ-RL13a's 13-key table matches the contract's schema test description key-for-key, no more no fewer"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "passThreshold cites only PROP-RL-WIRE1 and PROP-RL-SAFE1; never cites PROP-RL-SAFE2 (REQ-RL20, no earn-ledger writes) or PROP-RL-SAFE3 (REQ-RL21, no wallet-key reference) anywhere in the document"},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_denylist_rl.py:97,123", "description": "Confirmed via direct grep that test_no_new_module_writes_to_earn_ledger_jsonl (SAFE2) and test_no_wallet_key_reference_in_any_touched_file (SAFE3) exist as real tests, yet the contract never requires them to stay green"},
+        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:84-95", "description": "Both tests disclosed as legitimately pre-passing at RED, but the disclosure only argues RED-phase legitimacy — it does not substitute for a sprint-1 pass-condition citation"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Correctly cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Correctly requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run"}
+      ]
+    }
+  ],
+  "overallVerdict": "FAIL",
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-1.md",
+    "contractDigest": "eb16a0ddd8a2eb6d2b6e1adac2fde507eedc91724949fb3f02509eec44a38d67"
+  }
+}

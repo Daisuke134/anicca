@@ -2,14 +2,14 @@
 sprintNumber: 1
 feature: self-improve-real-ledger
 scope: Per-instance ledger path resolution (lib/ledger_reader.py), Hyperliquid mirror-sync (is_confirmed/is_profitable split), realized-ledger promotion gate (lib/gate_math.py new pure functions, lib/promotion_history.py, lib/promote_gate.py's realized_gate param), end-to-end wiring (promote_gate_run.py, scope_guard.py DENYLIST_MODULES), and honest data_source tagging (evaluator.py).
-negotiationRound: 0
+negotiationRound: 1
 status: draft
 criteria:
   - id: CRIT-001
     dimension: spec_fidelity
     description: Group RL-ID's per-instance path resolution (resolve_ledger_path's ANICCA_HOME/file-relative/unresolved priority, REQ-RL1-4) matches behavioral-spec.md exactly, and the cross-instance-leak-is-impossible property (INV-RL1) is proven by construction against two distinct temp instance bodies.
     weight: 0.2
-    passThreshold: test_ledger_resolution.py's PROP-RL-ID1/ID2/ID3/ID5/ID7 all pass (ANICCA_HOME-priority resolution, file-relative default shape, zero cross-contamination between two distinct ANICCA_HOME-scoped ledgers, no import-time path caching across two env-mutated calls, resolved/resolution_source present and correct in both the ANICCA_HOME-set and unset cases), AND the pre-existing test_realized_summary_default_path_points_at_the_real_earn_ledger_location (PROP-RL-ID6) remains byte-identical and green when re-run with ANICCA_HOME unset.
+    passThreshold: test_ledger_resolution.py's PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 all pass (ANICCA_HOME-priority resolution, file-relative default shape, zero cross-contamination between two distinct ANICCA_HOME-scoped ledgers, explicit path= argument ALWAYS overriding resolve_ledger_path's own computation per REQ-RL2 — PROP-RL-ID4, no import-time path caching across two env-mutated calls, resolved/resolution_source present and correct in both the ANICCA_HOME-set and unset cases), AND the pre-existing test_realized_summary_default_path_points_at_the_real_earn_ledger_location (PROP-RL-ID6) remains byte-identical and green when re-run with ANICCA_HOME unset.
   - id: CRIT-002
     dimension: edge_case_coverage
     description: Every REQ-RL8-11 pure gate_math function (realized_window_split's midpoint arithmetic, is_worsening_trend's strict inequality, realized_trend_blocks' and data_realism_gap's full truth tables including the EDGE-RL1/RL4 "insufficient data never fires" case) and REQ-RL5/RL6's is_confirmed/is_profitable Hyperliquid-losing-row split are covered end to end.
@@ -24,7 +24,7 @@ criteria:
     dimension: structural_integrity
     description: promote_gate_run.py's three decide_promotion call sites (REQ-RL17) are ALL wired with an explicit realized_gate= keyword argument (no orphan 2-arg/3-arg bare form survives), and scope_guard.py's DENYLIST_MODULES (REQ-RL19) is extended to close the exact F-5 bypass this feature's own new module names create, without dropping any pre-existing entry.
     weight: 0.2
-    passThreshold: test_wiring.py's PROP-RL-WIRE1 (ast-scan of promote_gate_run.py's own source: every Call to decide_promotion carries a realized_gate keyword) and test_denylist_rl.py's PROP-RL-SAFE1 (DENYLIST_MODULES is a strict superset of the pre-feature snapshot AND now contains ledger_reader/is_profitable/resolve_ledger_path/is_confirmed/realized_summary/promotion_history/last_promotion_ts/realized_gate, plus the F-5 executable-bypass-reproduction asserting scan_denylisted_imports returns non-empty for both `from lib.ledger_reader import is_profitable` and the `import lib.ledger_reader as lr; lr.is_profitable(row)` alias form) both pass.
+    passThreshold: test_wiring.py's PROP-RL-WIRE1 (ast-scan of promote_gate_run.py's own source: every Call to decide_promotion carries a realized_gate keyword) and test_denylist_rl.py's PROP-RL-SAFE1 (DENYLIST_MODULES is a strict superset of the pre-feature snapshot AND now contains ledger_reader/is_profitable/resolve_ledger_path/is_confirmed/realized_summary/promotion_history/last_promotion_ts/realized_gate, plus the F-5 executable-bypass-reproduction asserting scan_denylisted_imports returns non-empty for both `from lib.ledger_reader import is_profitable` and the `import lib.ledger_reader as lr; lr.is_profitable(row)` alias form), test_denylist_rl.py's PROP-RL-SAFE2 (static scan: no function added by this feature opens earn-ledger for "w"/"a" — REQ-RL20), and PROP-RL-SAFE3 (static scan: zero wallet-key/env-secret references in any touched file — REQ-RL21) ALL pass and remain pass conditions for this sprint (SAFE2/SAFE3 legitimately pre-pass at RED as non-regression invariants, disclosed in the RED log; they gate the sprint regardless).
   - id: CRIT-005
     dimension: verification_readiness
     description: evaluator.py's data_source tagging (REQ-RL14) never overclaims a real-data replay that does not exist (REQ-RL15's honesty requirement) — combined_score's own numeric computation is byte-identical regardless of which data_source value is reported, and no file under skills/earn/self-improve/** ever asserts data_source == "real".
