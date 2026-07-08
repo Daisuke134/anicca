@@ -25,7 +25,7 @@
 | # | 項目 | 検証事実 |
 |---|---|---|
 | C1 | harness ↔ Franklin の【実 sol-trade 戦略】 | **未接続**。harness は合成 fixture `pm_history.csv` の Polymarket backtest のみ進化する隔離 sandbox。`pm_backtest_strategy.py` は pick.py を import せず、`skills/earn/sol-trade/` に self-improve 参照ゼロ |
-| C2 | 地球上の稼ぎ loop が実際に稼ぐ | **軒並み休眠**。pm-earner=kill-switch で 3日ノーオペ(trace 最終 2026-07-05 `skip/kill-switch`)。franklin-sol(実トレ本体)=launchd 未ロード。Franklin=broke($0)で WAIT。daemon 群=git-sync heartbeat のみ |
+| C2 | 地球上の稼ぎ loop が実際に稼ぐ | ⚠**訂正(2026-07-08 fresh調査)**: pm-earner は kill-switch でなく**稼働中**（10分毎、実現益 **+$8.47** on-chain 6件 status0x1）。真のボトルネック = ①`MAX_PASS_SPEND=$2` 固定cap で $19.26 が発注されず眠る（3市場割で$0.67<最小bundle$4.95）②PM proxy からの **withdraw 経路が未実装**で Franklin へ資金を出せない ③浮遊 crypto は **$1.12 のみ**（$19.26 は PM に展開済）。Franklin=$0 で WAIT。franklin-loop は稼働中(franklin-sol.plist は二重実行回避で無効のまま正) |
 | C3 | Franklin 資金（$0→earn） | 経済P2(gig市場 witness, 別CC lane)依存 |
 | C4 | claude-p exit | C1-C3 が埋まってから |
 
@@ -46,8 +46,8 @@
 
 - （増分ごとに: feature名 / phase / adversary verdict / commit / 観測証拠 を1行で追記）
 - **2026-07-08 TODO#1 DONE**: self-improve-harness capable-improver → main。merge-verify adversary(fresh Opus)=PASS 5/5。PR#795 merge=`e3b5ddb`。B2 解消。
-- **2026-07-08 決定(Decision A + backstop)**: 資金供給モデル確定 → [[05-coordination-with-agent-economy]] §6。automaton=routine seeder / claude-p=lender-of-last-resort(餓死/停滞時のみ feed)。矛盾でなく層。
+- **2026-07-08 決定→改訂(funding)**: treasury 廃止・automaton 経済外。存在 wallet=claude-p + Franklin の2つだけ、claude-p=唯一 funder が Franklin を**直接** fund、経済=Franklins のみ(spawn で hundreds〜billions)。→ [[05-coordination-with-agent-economy]] §6。★別CC SPEC.md(treasury/UBI/automaton) は要 reconcile★。
 - **2026-07-08 folder統合**: loop-engineering の全 spec を `docs/loop-engineering/` に集約（superpowers/specs から goldmine + out-of-loop-design を移動）。
-- **2026-07-08 進行中 TODO#2**: 稼ぎloop蘇生 + Franklin funding の read-only 事実調査 agent 起動（kill-switch理由/残高/bridge経路/seed額）。
+- **2026-07-08 TODO#2 調査DONE(fresh evidence)**: pm-earner 稼働中・実現益+$8.47。ボトルネック=MAX_PASS_SPEND=$2 cap で $19.26 眠る + PM withdraw 経路未実装。浮遊 crypto $1.12 のみ。bridge=relay.link 実証済($10 Polygon→Solana=$9.95着,0.46%)。BF9v(Solana $0.47)は Franklin と同chain。⚠franklin proxy 直近再起動で wallet を `8Fpqd`でなく`Efpap5`表示=identity 要確認(funding 前の blocker)。→ 次: ①identity確認 ②MAX_PASS_SPEND安全値へ ③PM withdraw+bridge 経路 build → Franklin へ直接 fund。
 
 出典: verify-subagent 独立検証(2026-07-08) / 各 verdict.json / launchctl / colony-status。
