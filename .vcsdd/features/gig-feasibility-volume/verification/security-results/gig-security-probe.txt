@@ -1,0 +1,15 @@
+# gig security probe 2026-07-08T14:09:46Z
+## bash -n (STARTUP single-quote apostrophe safety)
+PASS: syntax ok
+## injection surface: STARTUP is a static prompt string (no eval of external input)
+sed: 1: "s/^/eval/backtick-with- ...": bad flag in substitute command: 'b'
+## path handling: strategy/listings read via env seam, no user-controlled path concat
+31:    with open(CONTRACTS_PATH) as f:
+81:    with open(path) as f:
+131:    return os.environ.get("GIG_APPLIED_PATH") or os.path.expanduser("~/gig/applied.jsonl")
+135:    return os.environ.get("GIG_LISTINGS_PATH") or os.path.expanduser("~/gig/listings.jsonl")
+## broken-path fix verification (should point to profitable-claude, not anicca/skills/human-funded)
+old-broken-path occurrences: 0
+correct-path occurrences: 1
+## AI-disclosure grep (must be 0)
+ai-disclosure count: 0

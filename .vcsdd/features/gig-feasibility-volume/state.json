@@ -1,7 +1,7 @@
 {
   "featureName": "gig-feasibility-volume",
   "mode": "lean",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -61,11 +61,19 @@
       "timestamp": "2026-07-08T14:05:36.674Z",
       "reason": "impl review PASS; entering formal hardening (lean)",
       "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-08T14:10:20.982Z",
+      "reason": "hardening complete (lean): boundary tests pass, no injection/traversal/secret leak, AI-disclosure grep=0, purity confirmed; entering convergence",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1c": 1,
     "2a": 1,
     "2b": 1,
@@ -94,5 +102,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T11:53:58.474Z",
-  "updatedAt": "2026-07-08T14:05:36.674Z"
+  "updatedAt": "2026-07-08T14:10:20.983Z"
 }
