@@ -29,17 +29,21 @@
 | C3 | Franklin 資金（$0→earn） | 経済P2(gig市場 witness, 別CC lane)依存 |
 | C4 | claude-p exit | C1-C3 が埋まってから |
 
-## D. TODO（/vcsdd で1個ずつ、各々 evidence を本表に追記してから次へ）
+## D. TODO（私 = agent economy を fund+改善する MAIN loop の残り。/vcsdd で1個ずつ、evidence 追記後に次へ）
+
+★分業確定（Dais 2026-07-08）: 私=agent economy(Franklin)を fund+改善する MAIN loop / CC#1=Dais に金を作る CEO loop(orchestrate 全稼ぎ loop) / CC#2=経済内側(spawn/lending/gig)。目的が違い衝突なし。★
+
+済(今日): funding pipeline money-safe(adversary PASS) / D1$1.75 / D2 Franklin$11.63(実on-chain) / #10 Franklin loop 蘇生(live E2E, `f4ec24e`) / pm-earner 安全修正(`e3269ac`) / 梯子理論(章12+prior art)
 
 ```
-0 [security] Firecrawl key rotate（prefix 露出、要許可）
-1 [merge] capable-improver(A3) を main へ + VCSDD state.json 同期（B2 解消）
-2 [colony 蘇生] pm-earner kill-switch 調査→解除/妥当性 / franklin-sol load / (C2)
-3 [★本丸★ Franklin 実統合] harness を demo sandbox→ Franklin 実 sol-trade 戦略進化（実市場データ源が要る）(C1)
-4 [claude-p MAIN loop 本番] pause 外して1周 kickstart→ログ検証(B1)
-5 [Franklin 稼働] 経済P2 witness で $0→earn(C3)
-6 [claude-p exit] hand off→検証→out(C4)
-7 [cheap win] Franklin OBSERVE(Solana残高) / 8 retrofit 既存loop / 9 compute卒業 / 10 記事
+1 [#7 恒久 funding loop] spec money-safe修正済(1b) → 再review→tdd→impl→adversary→converge→deploy(launchd)。私 MAIN loop の funding 部
+2 [★本丸 C1] self-improve harness を Franklin の実 sol-trade 戦略に接続 → Franklin を profitable に(今 funded だが realized=0)。経済が"始まる"唯一の道
+3 [Franklin spawn] surplus $7.77/$10(78%) → profitable で閾値超え → 新 Franklin(spawn機構=CC#2、私は fund+grow)
+4 [#8 Efpap5] wallet-identity scan-hijack 恒久 fix(latent, 8Fpqd 現状 stable)
+5 [MAIN loop 本番] 観測→判断→act→verify を launchd で1周 proactive 実証(L4→L5)(B1)
+6 [記事/本] 梯子 L1-L6 × 2軸 × prior art(章12 骨格) ── ongoing
+7 [refactor] claw loops → profitable-claude ★very end★
+8 [exit] 経済自走後 hand off→検証→out(C4, terminal)
 ```
 
 ## E. 各 /vcsdd 増分の記録欄（追記式・空でよい、進めたら evidence を足す）
