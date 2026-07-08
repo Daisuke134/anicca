@@ -1,0 +1,28 @@
+{
+  "_comment": "Money-safety config for the claude-p -> Franklin funding pipeline. See docs/loop-engineering/11-parent-funding-loop.md §2-3 in anicca-project. Values are ops knobs, not code -- change here, never by editing script logic.",
+  "reserve_usd": 5.0,
+  "per_transfer_usd_cap": 5.0,
+  "daily_usd_cap": 10.0,
+  "cumulative_usd_cap": 50.0,
+  "bridge_max_fee_pct": 15,
+  "known_addresses": {
+    "pm_deposit_wallet": "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74",
+    "owner_eoa_polygon": "0x810F6D61F7606dEEE2657d3083E150a222Bc29C5",
+    "founder_solana": "BF9vzj7YdA6nowwZdW65fQSM1vhRN4sntkKTPnnsfRCX",
+    "franklin_solana": "8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9"
+  },
+  "tokens": {
+    "pusd_polygon": "0xC011a7E12a19f7B1f670d46F03B03f3342E82DFB",
+    "usdce_polygon": "0x2791Bca1f2de4661ED88A30C99A7a9449Aa84174",
+    "usdc_solana_mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    "collateral_offramp_polygon": "0x2957922Eb93258b93368531d39fAcCA3B4dC5854"
+  },
+  "chain_ids": {
+    "polygon": 137,
+    "solana": 792703809
+  },
+  "rpc": {
+    "polygon": "https://polygon-bor-rpc.publicnode.com",
+    "solana": "https://api.mainnet-beta.solana.com"
+  }
+}
