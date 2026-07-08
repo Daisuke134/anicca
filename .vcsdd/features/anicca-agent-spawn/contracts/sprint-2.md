@@ -310,6 +310,19 @@ tests for the new module's pure `deriveOutstandingRegistryAppends` last-row-wins
 `pending-registry-append.test.js`); evidence:
 `evidence/sprint-2-find003-004-fix.log`.
 
+**Correction (2026-07-08, contract-review round 12, resolves FIND-019):** the FIND-003 fix above
+correctly implements REQ-305's own pre-existing transient-registry-append-failure edge case, but this
+round's fresh adversary found that `specs/verification-architecture.md`'s PROP-307c row (and its
+restated summary at the (8b) traceability-matrix entry) still made a blanket claim that steps 7-9
+"use the existing buildChildSpec-based REQ-305 failure path" and that "in every case, no row anywhere
+claims status:active" — both now falsified by the FIND-003 code/tests for step 9's own citizen-registry-
+append sub-case (which correctly leaves the ledger row active, per REQ-305's own edge case, and uses a
+THIRD mechanism, `pending-registry-append.js`, not `buildChildSpec`). `verification-architecture.md` has
+been corrected: PROP-307c's own row now scopes the "no row ever claims active" guarantee to steps 1-8
+only, and explicitly carves out step 9's two real sub-failure modes (a raw ledger-append failure, which
+propagates uncaught, and a transient registry-append failure, which correctly stays active and is queued
+for retry) — no code changed, this was a spec-text-only correction.
+
 ## Known residual scope boundary
 
 **Corrected (2026-07-08, contract-review round-9, resolves FIND-016): this section's own obligation
