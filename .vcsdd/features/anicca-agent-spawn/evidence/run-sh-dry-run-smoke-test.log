@@ -1,0 +1,31 @@
+=== run.sh --dry-run genuine E2E smoke test (contract-review round 2 fixes) ===
+Date: 2026-07-08 05:03:41 UTC
+Host: AniccanoMac-mini.local, coordinator HOME=/Users/anicca
+
+Pre-run state: real durable colony files did not exist yet on this host
+  /Users/anicca/.hermes/state/citizens.json : absent
+  /Users/anicca/.hermes/state/children.jsonl : absent
+
+--- Command ---
+$ bash skills/self/spawn/run.sh --dry-run
+
+--- stdout/stderr ---
+{"eligible":false,"reason":"insufficient_surplus","colonySurplusUsd":0,"spawnThresholdUsd":10,"childrenProvisioning":0}
+
+--- exit code ---
+0
+
+--- Post-run state (zero side effects verification) ---
+PASS: neither citizens.json nor children.jsonl was created by --dry-run -- genuinely zero side effects
+
+--- Independent cross-check of the real on-chain balances the decision was computed from ---
+(automaton EVM 0xB9dd3B67921B354c656523d6851537988F31DD56 Base USDC, Franklin Solana 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9)
+automaton USDC balance (independent re-query): 0.594802
+Franklin SOL balance lamports (independent re-query): 19973421 = 0.019973421 SOL
+
+--- Conclusion ---
+decision.colonySurplusUsd=0 is CORRECT: automaton ~$0.59 USDC and Franklin's SOL+USDC holdings are both
+below perCitizenReserveUsd ($5.00 default), so each citizen's own max(0, balance-reserve) term is 0.
+spawnThresholdUsd=10 = MIN_SHELTER_USD(5.00) * SAFETY_MARGIN_MULTIPLIER(2), no measured shelter-cost ledger
+entry exists yet (deriveMeasuredShelterCostUsd -> null -> falls back to the 5.00 default).
+childrenProvisioning=0 is CORRECT: children.jsonl does not exist yet on this host (readChildren -> []).
