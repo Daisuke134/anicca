@@ -52,6 +52,22 @@ for L in $CADENCE_LOOPS; do
   fi
 done
 
+# --- REQ-LV-111: weekly EDD evaluator run (once per ISO week per loop, marker-gated — this
+# every-6h script would otherwise re-run it up to 28x/week for no reason). Scores this-week vs
+# last-week via each loop's own evaluator.py (REQ-LV-110), records beats_previous_week to the
+# loop's OWN metrics ledger. This SCRIPT only measures/records the weekly comparison — deciding
+# WHAT to change based on a losing week stays with the agent (REQ-LV-113's STARTUP prompt text).
+EDD_LOOPS="clip affiliate video gig bounty"
+DOW_JST="$(TZ=Asia/Tokyo date +%u)"   # 1=Mon..7=Sun
+THIS_MONDAY_JST="$(TZ=Asia/Tokyo date -v-$((DOW_JST-1))d +%F 2>/dev/null || echo "$TODAY_JST")"
+for L in $EDD_LOOPS; do
+  MK="$STATE_DIR/.weekly-eval-$L-$THIS_MONDAY_JST"
+  if [ ! -f "$MK" ]; then
+    touch "$MK"
+    python3 "$SELF/self-improve/weekly_report.py" "$L" >> "$LOG" 2>&1 || true
+  fi
+done
+
 # send the honest scorecard to the report channel (visibility = no-op auto-detection for every loop incl LM)
 if [ -x "$SELF/../report/loop-report.sh" ]; then
   bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-900)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
