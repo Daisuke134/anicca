@@ -1,0 +1,13 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "blockingFindings": 1,
+  "majorFindings": 2,
+  "minorFindings": 2,
+  "overall": "FAIL",
+  "summary": "1 BLOCKING finding: REQ-B5/REQ-B8's checkpoint boundary (since_time_ms + 1) can permanently and silently drop a fill's realized P&L when two or more candidate fills share an identical `time` value and a STOP (REQ-B4.2/B4.3) occurs on a non-first member of that tie group -- a scenario the spec's own EDGE-9 explicitly acknowledges as a real, expected case (multiple partial fills from one close). No PROP exercises this, so it also fails verification_readiness. 2 MAJOR findings: no stated invariant against concurrent reconcile invocation (check-then-act dedup race), and REQ-C1's external:true classification for HL perp P&L is a substantive GATE-0 policy change (not just a recording-bug fix) bundled into this spec without explicit sign-off framing. 2 MINOR findings on evidence/field-presence grounding. All audited factual claims about current hl.py/run.sh behavior were independently verified against the actual code and are accurate."
+}
