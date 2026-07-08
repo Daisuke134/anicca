@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "incomplete_verification",
+  "severity": "medium",
+  "description": "PROP-203c and PROP-303f (both Tier-0, both among the 7 Tier-0 items explicitly listed in the 35-item 'targeted for closure this sprint' list) both name the child-specific Akash SDL variant's explicit 'HOME=/root' env line as their verification artifact ('for Akash, this means the child-specific SDL variant's new HOME=/root line (PROP-303f)'). A direct read of deploy-akash.sh (the only Akash deploy code path, confirmed unmodified this sprint) shows its SDL is sourced from EITHER an external, uncommitted `$AKASH_SDL_TEMPLATE` env-var path (only used if that env var happens to be set) OR a generic inline heredoc SDL whose only env lines are `AUTOMATON_GOAL`/`ANICCA_CHILD_ID` -- no HOME=/root line exists in either path. This is not merely my own reading: contracts/sprint-2.md's OWN 'Files touched' section explicitly admits 'The skills/self/spawn/scripts/sdl/child.yaml-equivalent child-specific SDL variant... and the lease-shell/job-ssh secrets-injection helper (REQ-303's own FIND-403/FIND-401 corrections) were NOT created this sprint -- both belong exclusively to PROP-303b's real Akash deploy path, which the \"Deferred-obligation disposition\" section below explicitly re-defers as Tier-3.' Yet that SAME contract's 'Deferred-obligation disposition' section lists PROP-303f among the 35 items 'targeted for closure this sprint' (the 7 Tier-0 sub-list), NOT among the 3 explicitly-Tier-3-excluded items (PROP-302b/303b/401a). This is a direct internal contradiction within contracts/sprint-2.md itself, and independently confirms PROP-203c/PROP-303f's own named artifact genuinely does not exist in the current implementation.",
+  "evidence": {
+    "filePath": "skills/self/spawn/scripts/deploy-akash.sh",
+    "lineRange": "45-79 (SDL construction: external-template branch and inline-heredoc branch)",
+    "snippet": "if [ -n \"${AKASH_SDL_TEMPLATE:-}\" ]; then\n  ... envsubst ... < \"$AKASH_SDL_TEMPLATE\" > \"$SDL_FILE\"\nelse\ncat > \"$SDL_FILE\" <<SDL\n...\n    env:\n      - AUTOMATON_GOAL=earn\n      - ANICCA_CHILD_ID=${CHILD_ID}\n...\nSDL\nfi",
+    "testName": "cross-referenced against contracts/sprint-2.md's own 'Files touched' paragraph (\"were NOT created this sprint\") vs. its own 'Deferred-obligation disposition' section's 35-item list (which includes PROP-303f, not excluding it as Tier-3) -- an internal contradiction within the reviewed contract"
+  },
+  "routeToPhase": "2c"
+}

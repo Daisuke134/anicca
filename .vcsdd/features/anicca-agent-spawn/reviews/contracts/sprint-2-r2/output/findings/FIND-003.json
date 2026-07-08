@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "incomplete_verification",
+  "severity": "high",
+  "description": "Two more of the 35 targeted PROP IDs name call sites that do not exist in the current implementation, independently of FIND-001/002's funding-gate root cause. (1) PROP-201a: 'A gen-wallet.sh output whose address derives from the documented sha256-fallback path... is detected and rejected, never used', verification method 'assert the caller aborts rather than proceeding with the fallback address.' REQ-201's own EARS clause (behavioral-spec.md line ~1697) makes this a hard SHALL: 'SHALL verify the resulting address is a real keccak256-derived Ethereum address... and abort the spawn attempt' -- not merely documentation. spawn-orchestrator.mjs's actual defaultGenerateEvmWallet() (lines 118-122) does `JSON.parse(out)` and returns `{address, privateKey}` with zero validation of any kind -- no keccak/sha256-fallback detection, no abort logic, no cross-check re-derivation. This 'caller aborts' mechanism PROP-201a names simply does not exist. (2) PROP-302c: a post-RUNNING 'nosana job ssh <job> [port]' secrets-injection call site. grep of spawn-orchestrator.mjs for 'nosana'/'Nosana' (case-insensitive) finds only a code comment admitting 'no Nosana deploy path exist[s] anywhere in this codebase yet' (line 131-134), a hardcoded `nosanaAvailable: false` in defaultSelectCloudTarget (line 136), and an error string listing 'nosana' as an option that never resolves true. defaultDeploy() (lines 139-151) rejects any target other than the literal string \"akash\". No 'nosana job ssh' invocation, nor any Nosana deploy invocation of any kind, exists anywhere in the current implementation.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/spawn-orchestrator.mjs",
+    "lineRange": "118-122 (PROP-201a); 130-151 (PROP-302c)",
+    "snippet": "function defaultGenerateEvmWallet() {\n  const out = execFileSync(\"bash\", [GEN_WALLET_SCRIPT], { encoding: \"utf8\" });\n  const { address, private_key: privateKey } = JSON.parse(out);\n  return { address, privateKey };  // no fallback-address validation of any kind\n}\n...\n// infra): no live NOS/AKT spot-price feed and no Nosana deploy path exist anywhere in this codebase\n// yet -- deploy-akash.sh is the only proven cloud-deploy path today ...\nasync function defaultSelectCloudTarget() {\n  return selectCloudTargetPure({ nosanaAvailable: false, akashAvailable: true, akashPriceUsd: 0 });\n}",
+    "testName": "grep -inE \"keccak|fallback|validate|crossCheck\" skills/self/spawn/lib/spawn-orchestrator.mjs -> no matches; grep -in \"nosana\" skills/self/spawn/lib/spawn-orchestrator.mjs -> only the 3 lines quoted above, no invocation"
+  },
+  "routeToPhase": "2c"
+}

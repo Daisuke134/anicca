@@ -2772,6 +2772,42 @@ step 8's own zero-side-effect construction being forbidden from happening ahead 
   REQ-202's own PROP-202e already govern, and `drivingCitizenWallet` is REQ-206's own "the citizen that
   evaluated REQ-101/102/103 and is driving this spawn attempt" value, unchanged.
 
+**The wake-cycle scheduler's real identity (new, sprint-2 contract-review round 2, resolves FIND-004)**:
+this spec has, since its first draft, referred to "the wake-cycle scheduler that already evaluated
+REQ-102/103" as `executeSpawnAttempt`'s own caller without ever naming which concrete file that is.
+It is `~/anicca/skills/self/spawn/run.sh` — the SAME file `skills/registry.json`'s `self/spawn` slot
+(`status:"live"`, `risk:"safe"`) already names as its `entrypoint`, and the SAME file every citizen's
+own always-running wake-cycle (`runtime/loop/index.mjs`'s `runOneWake()`, invoked by
+`com.anicca.daemon`/`ai.anicca.franklin-loop`'s launchd `KeepAlive`, no external cron) already selects
+and executes on any wake where the LLM judges it worth checking. `run.sh`'s CURRENT production body,
+however, still calls the pre-sprint-1 `lib/spawn-decision.js::decideSpawn` gate and a DigitalOcean +
+AgentMail provisioning path — NEITHER of which this feature's own sprint-1/sprint-2 work touches or
+supersedes in practice, despite `verification-architecture.md`'s Purity Boundary Map row for this
+directory calling it "reused-but-superseded prior art." That classification was ASPIRATIONAL, not yet
+real: nothing before this correction actually replaced `run.sh`'s own gate-then-provision body with a
+call into `decideColonySpawn()` (REQ-102, `treasury-gate.mjs`) followed, if eligible, by
+`executeSpawnAttempt()` (this REQ). Consequently PROP-102g/PROP-102i/PROP-101j/PROP-102k's own
+"REQ-102's real orchestration" verification target — the thing a Tier-1 control-flow read is supposed
+to find calling `filterProductiveCitizens`/`deriveRecentSpawnAttempts`/`countChildrenProvisioning`'s own
+return values directly into `decideColonySpawn` — did not exist anywhere in the production codebase.
+THE SYSTEM SHALL have `run.sh`'s own production body call `decideColonySpawn()` (fed real, freshly-read
+`filterProductiveCitizens`/`deriveRecentSpawnAttempts`/`countChildrenProvisioning`/`colonySurplusUsd`
+inputs, never hand-assembled) and, if `eligible:true`, call `executeSpawnAttempt()` — replacing, not
+wrapping, the old `spawn-decision.js`-based gate and DO/AgentMail provisioning path for THIS entry
+point. `skills/registry.json`'s own `riskNote` for `self/spawn` (which currently cites the OLD
+`lib/spawn-decision.js` by name) SHALL be updated to cite `decideColonySpawn` instead, so the registry's
+own metadata stops describing dead code.
+- **Timeout edge case**: `run.sh` is invoked by `runtime/loop/run-skill.mjs`/`index.mjs` under a
+  `SKILL_TIMEOUT_S` bound (default 120s). A real Akash deploy (step 5) may exceed this. If the wake-cycle
+  kills `run.sh` mid-attempt, THE SYSTEM relies on the SAME graceful-degradation mechanism REQ-305/REQ-306
+  already specify for an in-process crash: whatever row `executeSpawnAttempt`'s own `runStep` helper has
+  already ledgered (a `"provisioning"`-shaped row, or the minimal-append failure row for a pre-step-7
+  failure) stands as that attempt's true, honest state; the NEXT wake's `decideColonySpawn` call correctly
+  observes it via `countChildrenProvisioning` and neither double-spawns nor loses track of the attempt.
+  This is not a new mechanism this correction introduces — it is the SAME mechanism REQ-307's own Edge
+  Cases above already require for every other mid-attempt failure mode, now confirmed to also cover an
+  external SIGTERM/SIGKILL from the wake-cycle's own timeout, not only an in-process exception.
+
 **Acceptance Criteria**:
 - A structural/Tier-0 check confirms exactly ONE function, `executeSpawnAttempt`, in exactly ONE new
   module (`spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own already-exported
@@ -2789,6 +2825,13 @@ step 8's own zero-side-effect construction being forbidden from happening ahead 
 - An integration test confirms the `"colony-spawn"` lock (REQ-103) is held from before step 1 begins
   until after step 9 completes (or a failure is ledgered), reusing PROP-103e's own staggered-race proof
   method against this REAL function rather than a fixture stand-in for it.
+- A structural/Tier-1 control-flow read of `~/anicca/skills/self/spawn/run.sh`'s CURRENT production body
+  (resolves FIND-004) confirms it calls `decideColonySpawn()` — fed the real, freshly-read return values
+  of `filterProductiveCitizens`/`deriveRecentSpawnAttempts`/`countChildrenProvisioning`, never
+  hand-assembled — and, only if `eligible:true`, calls `executeSpawnAttempt()`; confirms the OLD
+  `lib/spawn-decision.js::decideSpawn`-based gate and DO/AgentMail provisioning path no longer appear
+  anywhere in `run.sh`'s own reachable code; and confirms `skills/registry.json`'s `self/spawn` entry's
+  own `riskNote` field cites `decideColonySpawn`, not `lib/spawn-decision.js`.
 
 ---
 

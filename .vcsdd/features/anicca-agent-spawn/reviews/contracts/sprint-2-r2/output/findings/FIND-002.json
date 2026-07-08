@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "incomplete_verification",
+  "severity": "high",
+  "description": "CRIT-205's revised passThreshold requires, for each of the 35 targeted PROP IDs, that 'the named call site/function genuinely exists and is reachable' in the current implementation, FAILING 'if any of the 35 names a call site that does not exist... is unreachable, or is a stub/placeholder.' PROP-304b ('a funding transfer's amount never exceeds the amount REQ-102 certified as available'), PROP-304c, PROP-304d, and PROP-304f (the multi-citizen sequential co-funding success path) all name a real funding-transfer/funding-gate call site as their verification target. As established in FIND-001, no such call site exists anywhere in spawn-orchestrator.mjs's real execution path -- defaultDeploy() never calls akash-funding-gate.mjs's computeSpawnGate wrapper, never evaluates a per-citizen ceiling, and never performs any funding transfer to a child wallet at all (the coordinator's own Akash escrow, not a citizen-funded child wallet, pays for the deploy via deploy-akash.sh/akt-treasury.sh). This is the identical root cause across all four PROP IDs -- they are not four independent gaps but one: REQ-304's own funding mechanism, though it exists as a tested pure/narrow module from sprint-1 (akash-funding-gate.mjs, treasury-gate.mjs's computePerCitizenSurplusUsd), was never wired into this sprint's new orchestrator at all, despite the contract's own Scope section (item 5) claiming 'The REQ-302/303 deploy call sites -- reusing deploy-akash.sh/akt-treasury.sh/gen-wallet.sh unmodified... plus the two genuinely NEW pieces' were delivered, with no mention that REQ-304's funding-ceiling gate itself was excluded.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "PROP-304b/c/d/f table rows (verification-architecture.md lines ~496-500 and surrounding)",
+    "snippet": "PROP-304b: \"unit/integration test: attempt to fund an amount greater than the certified surplus -> assert rejection, not a silent overdraw\" -- no such assertion point exists anywhere in spawn-orchestrator.mjs or its call graph, since no funding-transfer/ceiling-check call is ever made.",
+    "testName": "cross-referenced against skills/self/spawn/lib/spawn-orchestrator.mjs's defaultDeploy (see FIND-001's evidence) and skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs, which contains no test exercising a funding-ceiling rejection or a multi-citizen co-funding transfer of any kind"
+  },
+  "routeToPhase": "2c"
+}

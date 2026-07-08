@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "incomplete_verification",
+  "severity": "high",
+  "description": "PROP-102g ('REQ-102's real orchestration derives recentSpawnAttempts by calling deriveRecentSpawnAttempts({ledgerRows: readChildren(...)}) directly'), PROP-102i (the sibling for countChildrenProvisioning), PROP-101j (the sibling for filterProductiveCitizens's ledgerRows/citizens arguments), and PROP-102k (the sibling for colonySurplusUsd) all name 'REQ-102's real orchestration' / 'decideColonySpawn's caller' as their Tier-1 verification target ('source-grep/control-flow read confirming decideColonySpawn's caller passes X's return value directly'). REQ-307's own Edge Cases text (behavioral-spec.md) states initialSkills/drivingCitizenWallet are 'supplied by THIS function's OWN caller (the wake-cycle scheduler that already evaluated REQ-102/103)' -- i.e. decideColonySpawn's real caller is explicitly a DIFFERENT function from executeSpawnAttempt, one that evaluates REQ-101/102/103 and then invokes executeSpawnAttempt. An independent repo-wide search (grep -rl \"decideColonySpawn\\|executeSpawnAttempt\" excluding test/worktree dirs) found decideColonySpawn referenced ONLY in its own defining file (treasury-gate.mjs) and executeSpawnAttempt referenced ONLY in its own defining file (spawn-orchestrator.mjs) -- no third file anywhere in the production codebase calls decideColonySpawn and then executeSpawnAttempt together. This 'wake-cycle scheduler' -- the real orchestration these four PROPs' own verification method requires reading -- does not exist anywhere in the current implementation, so no control-flow read of it is possible at all, let alone one confirming the required real-derivation binding.",
+  "evidence": {
+    "filePath": "(repo-wide search, no single file)",
+    "lineRange": "n/a",
+    "snippet": "grep -rln \"decideColonySpawn|executeSpawnAttempt\" --include=\"*.mjs\" --include=\"*.js\" . | grep -v __tests__ | grep -v node_modules\n=> ./skills/self/spawn/lib/treasury-gate.mjs (decideColonySpawn's own definition)\n=> ./skills/self/spawn/lib/spawn-orchestrator.mjs (executeSpawnAttempt's own definition)\n(plus an identical, stale .worktrees/capable-improver/ copy) -- zero results for any THIRD file wiring the two together",
+    "testName": "this session's own repo-wide grep, cross-referenced against behavioral-spec.md's REQ-307 Edge Cases text naming 'the wake-cycle scheduler' as decideColonySpawn's real caller"
+  },
+  "routeToPhase": "2c"
+}

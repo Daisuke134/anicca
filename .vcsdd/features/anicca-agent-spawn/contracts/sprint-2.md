@@ -20,9 +20,9 @@ scope: The effectful spawn ORCHESTRATOR — the code that actually wires sprint-
 criteria:
   - id: CRIT-201
     dimension: structural_integrity
-    description: Exactly one function, `executeSpawnAttempt`, in exactly one new module (`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own already-exported functions/scripts in the canonical order REQ-307 states — no second, competing orchestration entry point exists anywhere in the diff, and `~/anicca/skills/self/spawn/run.sh` (the pre-existing AgentMail+DigitalOcean/Akash design, already classified "reused-but-superseded prior art" in verification-architecture.md's own Purity Boundary Map) is neither modified nor called by this sprint's new code. Per REQ-307's own step 7/8 construction-order clarification (resolves contract-review FIND-001), step 8's `buildChildSpec` call — a PURE, zero-side-effect construction — MAY run ahead of step 7's own effectful `mcp.json` write, since only step 7's own effectful call, never step 8's in-memory construction, is subject to "canonical order" for this criterion's purposes.
+    description: Exactly one function, `executeSpawnAttempt`, in exactly one new module (`~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs`), calls REQ-201 through REQ-305's own already-exported functions/scripts in the canonical order REQ-307 states — no second, competing orchestration entry point exists anywhere in the diff. Per REQ-307's own step 7/8 construction-order clarification (resolves contract-review round-1 FIND-001), step 8's `buildChildSpec` call — a PURE, zero-side-effect construction — MAY run ahead of step 7's own effectful `mcp.json` write, since only step 7's own effectful call, never step 8's in-memory construction, is subject to "canonical order" for this criterion's purposes. Per REQ-307's own "wake-cycle scheduler's real identity" correction (resolves contract-review round-2 FIND-004), `~/anicca/skills/self/spawn/run.sh` — the LIVE `self/spawn` slot entry point, previously wrongly assumed superseded/untouched — MUST be rewritten this sprint to call `decideColonySpawn()` then, if eligible, `executeSpawnAttempt()`, retiring the OLD `lib/spawn-decision.js`-based gate and DO/AgentMail path.
     weight: 0.15
-    passThreshold: A control-flow read of `spawn-orchestrator.mjs` confirms a single call-graph root reaching every one of REQ-201/202/203/204/205/206/301/302/303/304/305/306's own exported functions/scripts, and that every EFFECTFUL call (REQ-201/202/203/204/205/302/303/306/305) fires in the order REQ-307's own "Canonical call order" states, and that `~/anicca/skills/self/spawn/run.sh` appears in neither this sprint's commits nor its diff. FAIL if a second orchestration path exists, if any EFFECTFUL step fires out of order or is skipped/duplicated, or if `run.sh` is touched — NOT if step 8's own zero-side-effect `buildChildSpec` construction happens ahead of step 7's effectful call (this is required by REQ-307's own Edge Cases, see the step 7/8 clarification).
+    passThreshold: A control-flow read of `spawn-orchestrator.mjs` confirms a single call-graph root reaching every one of REQ-201/202/203/204/205/206/301/302/303/304/305/306's own exported functions/scripts, and that every EFFECTFUL call (REQ-201/202/203/204/205/302/303/306/305) fires in the order REQ-307's own "Canonical call order" states. A SEPARATE control-flow read of `run.sh`'s current production body confirms it calls `decideColonySpawn()` then, if eligible, `executeSpawnAttempt()`, and that the OLD `lib/spawn-decision.js`/DO/AgentMail path no longer appears anywhere in its reachable code (PROP-307e). FAIL if a second orchestration path exists, if any EFFECTFUL step fires out of order or is skipped/duplicated, or if `run.sh` still calls the OLD gate — NOT if step 8's own zero-side-effect `buildChildSpec` construction happens ahead of step 7's effectful call (this is required by REQ-307's own Edge Cases, see the step 7/8 clarification).
   - id: CRIT-202
     dimension: structural_integrity
     description: `executeSpawnAttempt` itself contains no decision/judgment logic — no arithmetic/boolean eligibility comparison and no LLM/prompt reference — mirroring REQ-104's bookkeeping-only discipline, extended by REQ-307 to this new function (PROP-307b).
@@ -40,9 +40,9 @@ criteria:
     passThreshold: Integration test reusing PROP-103e's own staggered-race method against the REAL `executeSpawnAttempt` (steps 2-9 stubbed to fast, real-shaped fixture I/O) confirms the lock's real scope over this actual function matches REQ-103's already-specified critical section. FAIL if any staggered attempt during the delay window succeeds.
   - id: CRIT-205
     dimension: verification_readiness
-    description: (Revised, contract-review round 1, resolves FIND-002 — re-scoped to be genuinely evaluable AT THIS gate, before Phase 3/5 run; final closure of the 35 obligations remains independently enforced by vcsdd-harden's own standard "all required obligations proved" gate before Phase 6, this criterion does not weaken that.) Every one of the 35 non-Tier-3 obligations this sprint targets (see "Deferred-obligation disposition" below) has a genuinely exercisable proof path in the CURRENT implementation — the real function/call site each obligation's own verification method names (a control-flow read location, an integration-test injection point) actually exists in `spawn-orchestrator.mjs`/`gen-solana-wallet.sh` as written, so nothing in the current code makes any of the 35 structurally unprovable.
+    description: (Revised, contract-review round 1, resolves FIND-002; count revised again round 2, resolves FIND-003/FIND-005 — re-scoped to be genuinely evaluable AT THIS gate, before Phase 3/5 run; final closure of the 31 obligations remains independently enforced by vcsdd-harden's own standard "all required obligations proved" gate before Phase 6, this criterion does not weaken that.) Every one of the 31 non-Tier-3 obligations this sprint targets (see "Deferred-obligation disposition" below) has a genuinely exercisable proof path in the CURRENT implementation — the real function/call site each obligation's own verification method names (a control-flow read location, an integration-test injection point) actually exists in `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` as written, so nothing in the current code makes any of the 31 structurally unprovable.
     weight: 0.2
-    passThreshold: For each of the 35 targeted PROP IDs, a read of its own verification method (in verification-architecture.md) against the current `spawn-orchestrator.mjs`/`gen-solana-wallet.sh` source confirms the named call site/function genuinely exists and is reachable — e.g. PROP-202d's `deployTarget`-fed Solana keygen call site, PROP-307c's per-step failure-recording branches, PROP-105i's real citizen-registry append. FAIL if any of the 35 names a call site that does not exist in the current implementation, is unreachable, or is a stub/placeholder — NOT if a PROP is simply not yet promoted to `status:"proved"` in state.json (that promotion is Phase 3/5's own job, independently gated by vcsdd-harden before Phase 6).
+    passThreshold: For each of the 31 targeted PROP IDs (including PROP-307e), a read of its own verification method (in verification-architecture.md) against the current `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` source confirms the named call site/function genuinely exists and is reachable — e.g. PROP-202d's `deployTarget`-fed Solana keygen call site, PROP-307c's per-step failure-recording branches, PROP-105i's real citizen-registry append, PROP-307e's `run.sh` wiring. FAIL if any of the 31 names a call site that does not exist in the current implementation, is unreachable, or is a stub/placeholder — NOT if a PROP is simply not yet promoted to `status:"proved"` in state.json (that promotion is Phase 3/5's own job, independently gated by vcsdd-harden before Phase 6).
   - id: CRIT-206
     dimension: spec_fidelity
     description: The 3 Tier-3 real-money obligations (PROP-302b, PROP-303b, PROP-401a) are NOT claimed proved via a fixture/simulated deploy or a borrowed/historical artifact from a DIFFERENT feature (e.g. `anicca-agent-lending`'s own prior Akash lease) — each requires either a genuinely NEW real spend this sprint, or an explicit, honest re-deferral to a dedicated future checkpoint (this project's own task #28, "P3実deploy検証チェックポイント(Phase5)").
@@ -122,6 +122,20 @@ re-defers as Tier-3 (not silently dropped; `defaultDeploy` continues to call the
 (sprint-1 delivered and hardened them; this sprint calls them, never edits them, matching CRIT-201's own
 "no second orchestration path" requirement extended to "no incidental edits to sprint-1's own files").
 
+**Round 2 additions (contract-review round 2, resolves FIND-001/002/003a/004)**:
+`spawn-orchestrator.mjs`'s `defaultDeploy` MUST be updated to call `akash-funding-gate.mjs`'s
+`evaluateAkashFundingGate` (REQ-304's own already-tested pure/narrow module) before invoking
+`deploy-akash.sh`, enforcing the per-citizen funding ceiling `computePerCitizenSurplusUsd` already
+computes — closing FIND-001/002 (PROP-304b/c/d/f). `spawn-orchestrator.mjs`'s
+`defaultGenerateEvmWallet` MUST validate the generated address is not the documented sha256-fallback
+shape and abort if it is, per REQ-201's own hard SHALL — closing FIND-003a (PROP-201a).
+`~/anicca/skills/self/spawn/run.sh` MUST be rewritten (no longer reused-unmodified — see REQ-307's own
+"wake-cycle scheduler's real identity" correction) to call `decideColonySpawn()` then, if eligible,
+`executeSpawnAttempt()`, retiring the OLD `lib/spawn-decision.js`-based gate and DO/AgentMail
+provisioning path entirely from its reachable code — closing FIND-004 (PROP-307e, PROP-102g/102i/101j/
+102k). `skills/registry.json`'s `self/spawn` entry's `riskNote` field MUST be updated to cite
+`decideColonySpawn` instead of `lib/spawn-decision.js`.
+
 ## Deferred-obligation disposition (contracts/sprint-1.md's 38, reconciled against this sprint's own scope)
 
 **Correction (2026-07-08, post-Phase-6 reconciliation)**: `contracts/sprint-1.md`'s FINAL tally (after
@@ -134,17 +148,18 @@ Solana address from their real, resolved key material — see
 `verification/proof-harnesses/prop-105g-live-address-rederivation.mjs`) and were restored to
 `required:true`/`status:"proved"` — they are NOT part of this sprint's scope, they are ALREADY closed.
 Now that REQ-307 names the orchestrator, this sprint's own implementation phase (Phase 2a-2c/3/5) is
-expected to promote 35 of the remaining 38 back to `status:"proved"`:
+expected to promote 31 of the remaining 38 back to `status:"proved"` (revised from 35, contract-review
+round 2, resolves FIND-003/FIND-005 — see the new "4 additionally re-deferred" bucket below):
 
-**35 targeted for closure this sprint** (28 orchestrator-blocked Tier>0 + 7 Tier-0, all closeable via
+**31 targeted for closure this sprint** (26 orchestrator-blocked Tier>0 + 5 Tier-0, all closeable via
 structural/unit/integration-test proof against sprint-1's own already-injectable I/O boundaries —
 `fetchEvmBalanceUsd`/`fetchSolanaBalanceUsd`/`fetchImpl`/`queryBalanceAkt`/`attemptBridge` — none of
-these 35 require a real, live token spend to prove):
+these 31 require a real, live token spend to prove):
 PROP-201a, PROP-201b, PROP-201c, PROP-201d, PROP-202b, PROP-202c, PROP-203a, PROP-204b, PROP-205b,
-PROP-302a, PROP-302c, PROP-303e, PROP-304b, PROP-304c, PROP-304d, PROP-304f, PROP-305b, PROP-305d,
+PROP-303e, PROP-304b, PROP-304c, PROP-304d, PROP-304f, PROP-305b, PROP-305d,
 PROP-305e, PROP-305f, PROP-402a, PROP-402b, PROP-102g, PROP-102i, PROP-202d, PROP-101j, PROP-105i,
-PROP-102k (28 Tier>0) + PROP-203c, PROP-205a, PROP-301a, PROP-305a, PROP-401b, PROP-303f, PROP-305h
-(7 Tier-0).
+PROP-102k (26 Tier>0) + PROP-205a, PROP-301a, PROP-305a, PROP-401b, PROP-305h
+(5 Tier-0), PLUS the new PROP-307e (run.sh's real wake-cycle wiring, resolves FIND-004).
 
 **3 explicitly NOT targeted this sprint (Tier-3, genuinely require a real, live token spend on a
 throwaway artifact)**: PROP-302b (a real `nosana job post`), PROP-303b (a real Akash deploy — sprint-1's
@@ -159,6 +174,23 @@ a dedicated later checkpoint is a decision for whoever executes Phase 5, made ag
 real-money readiness at that time (this project's own task #28, "P3実deploy検証チェックポイント(Phase5)",
 already tracks this decision point) — this contract only commits to NOT silently claiming them proved via
 a fixture, a simulated deploy, or a borrowed artifact from a different feature (CRIT-206).
+
+**4 additionally re-deferred this round (contract-review round 2, resolves FIND-003/FIND-005 — genuinely
+require infrastructure this sprint does not build, distinct from the Tier-3 real-money-spend reason
+above)**: PROP-302a and PROP-302c both name REQ-302's own Nosana deploy path as their verification
+target — confirmed absent in full this round (`defaultSelectCloudTarget` hardcodes
+`nosanaAvailable: false`; no Nosana deploy/secrets-injection call exists anywhere in
+`spawn-orchestrator.mjs`; per the module's own code comment, "no live NOS/AKT spot-price feed and no
+Nosana deploy path exist anywhere in this codebase yet"). Building Nosana support solely to satisfy these
+2 PROPs, when the ACTUAL Nosana deploy (PROP-302b) is ALREADY Tier-3-deferred above, would be wasted,
+premature work — they join PROP-302b's own deferral. PROP-203c and PROP-303f both name the
+child-specific Akash SDL variant's `HOME=/root` line as their verification artifact — this sprint's own
+"Files touched" section already admits this artifact was NOT created this sprint (it belongs exclusively
+to PROP-303b's own real Akash deploy path). The original 35-item list wrongly included PROP-203c/PROP-303f
+among the "targeted for closure" set despite this same admission — a genuine internal contradiction
+(FIND-005) — corrected here: both join PROP-303b's own Tier-3 deferral, since building a custom SDL
+variant for a deploy that itself will not run this sprint is equally premature. None of these 4 are
+claimed proved by this sprint; each carries this same stated reason.
 
 ## Known residual scope boundary
 
