@@ -206,3 +206,75 @@ $ git -C /Users/anicca/anicca/.worktrees/hl-realized-pnl log --oneline -1
 target/regression tests green" for the exact diff)
 
 coverage-retrofit: PROP-023 static test added at contract negotiation round 1
+
+======================================================================
+5. F-1 FIX ADDENDUM (impl-review iteration 1, BLOCKING finding F-1)
+======================================================================
+Finding: run.sh's pre-existing ACTION=close branch (skills/earn/run.sh:214-222) still read the
+`closed_pnl_usd` field REQ-A1 removes from hl.py's JSON output. Since `.get('closed_pnl_usd', 0)`
+silently defaults to 0 with no exception, every explicit HL close was recording a fabricated
+$0.00 ledger line — the exact bug class this feature exists to kill, moved from hl.py into
+run.sh, unguarded by any REQ/PROP/test in the original verification architecture.
+
+Spec fix (fresh option (a) from the finding): REQ-A3 added to behavioral-spec.md Group A — the
+reconciler (hl.py reconcile) is the SOLE recorder of HL realized P&L; run.sh's ACTION=close
+branch must not read the removed field and must not append any earn_usdc/cost_usdc ledger line
+of its own for the close. EDGE-12 added documenting the one-wake-later recording path (reconcile
+sees nothing new the wake of the close itself; the next wake's reconcile picks up the now-settled
+fill). PROP-024 added to verification-architecture.md (Tier 0, required) — static: 0 matches for
+`closed_pnl_usd` anywhere in run.sh (code or comments); structural: no `record_line` call inside
+the ACTION=close execution branch specifically (disambiguated from the earlier anti-churn
+cooldown guard's compound condition, which also contains the substring `ACTION" = "close"`).
+Obligation count updated 29->30 total, 27->28 Tier-0.
+
+--- RED (before the run.sh fix; PROP-024 tests added to test_reconcile.py first) ---
+$ cd skills/earn/hl-trade && python3 -m pytest tests/test_reconcile.py -k "closed_pnl_usd or close_branch_never" -vv
+tests/test_reconcile.py::test_hl_py_has_no_closed_pnl_usd_field_static_grep PASSED
+tests/test_reconcile.py::test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_key SKIPPED (no hyperliquid SDK in this env)
+tests/test_reconcile.py::test_run_sh_never_references_closed_pnl_usd_anywhere FAILED
+tests/test_reconcile.py::test_run_sh_close_branch_never_calls_record_line_for_its_own_pnl_line FAILED
+  AssertionError: 'record_line' is contained here:
+    if [ "$ACTION" = "close" ] && [ -n "$POS" ]; then
+      RES=$(PKVAR="$PKVAR" "$HLPY" "$HLDIR/hl.py" close "$COIN" 2>&1)
+      ...
+      PNL=$(printf '%s' "$RES" | python3 -c "import json,sys
+      try: print(json.load(sys.stdin).get('closed_pnl_usd',0) or 0)
+      ...
+      OUT=$(record_line "$JSON"); echo "[earn] hl close recorded -> $OUT"; exit 0
+2 failed, 1 passed, 1 skipped, 27 deselected in 0.31s
+Confirms: both PROP-024 tests genuinely fail against the pre-fix run.sh (falsifiable, not a
+tautology) before the fix is applied.
+
+Fix applied: run.sh's ACTION=close branch (skills/earn/run.sh:213-222 post-fix) — deleted the
+PNL-extraction (`PNL=$(... .get('closed_pnl_usd',0) ...)`) and the `record_line`/JSON-building
+call entirely. The branch now only calls `hl.py close`, stamps the anti-churn timestamp, echoes
+the raw result, and exits 0. The open/hl-cooldown/hl-observe/hl-fund-skipped branches (REQ-E1)
+were not touched.
+
+--- GREEN (after the run.sh fix) ---
+$ cd skills/earn/hl-trade && python3 -m pytest tests/test_reconcile.py -k "closed_pnl_usd or close_branch_never" -vv
+tests/test_reconcile.py::test_hl_py_has_no_closed_pnl_usd_field_static_grep PASSED
+tests/test_reconcile.py::test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_key SKIPPED
+tests/test_reconcile.py::test_run_sh_never_references_closed_pnl_usd_anywhere PASSED
+tests/test_reconcile.py::test_run_sh_close_branch_never_calls_record_line_for_its_own_pnl_line PASSED
+3 passed, 1 skipped, 27 deselected in 0.01s
+
+--- FULL SUITE RE-RUN (after the fix) ---
+$ cd skills/earn/hl-trade && python3 -m pytest tests/ -v
+41 passed, 1 skipped in 0.03s   (was 39 passed + 1 skipped before; +2 new PROP-024 tests)
+
+$ cd skills/_shared/lib/__tests__ && node ledger.test.mjs
+tests 12, pass 12, fail 0   (unchanged, non-regression)
+
+$ cd skills/_shared/lib/__tests__ && node ledger.test.js
+tests 9, pass 9, fail 0   (unchanged, non-regression, pre-existing file untouched)
+
+$ cd skills/earn/self-improve && python3 -m pytest tests/ -v
+44 passed in 0.06s   (unchanged, non-regression)
+
+All green. Committed in this worktree (not pushed): run.sh fix + test_reconcile.py PROP-024
+additions in one commit; spec/verification-architecture edits live in the main checkout's
+.vcsdd/ (not this worktree, not committed by this fix — per task instructions, committed
+separately by the orchestrating session).
+
+coverage-retrofit: PROP-024 static test added at impl-review iteration 1 (finding F-1)

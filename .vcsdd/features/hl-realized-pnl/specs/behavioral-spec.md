@@ -68,6 +68,15 @@ verified EVM or Solana settlement.
   (`closedPnl`, `fee`) for this instance's own address, obtained via a live call to the
   Hyperliquid Info API. It SHALL NEVER be derived from a pre-close or post-close
   `unrealizedPnl`/`accountValue` snapshot.
+- **REQ-A3** (added at impl-review iteration 1, finding F-1): THE reconciler (`hl.py reconcile`)
+  SHALL be the ONLY recorder of Hyperliquid realized P&L. `run.sh`'s `ACTION=close` branch
+  (the code path that fires on an explicit model-issued close) SHALL NOT read the field REQ-A1
+  removes, and SHALL NOT append any ledger line of its own carrying an `earn_usdc`/`cost_usdc`
+  value for the close — not even a relabeled or zeroed one. Its only remaining job is to invoke
+  the close and echo the raw result to the wake log; the realized P&L of that close's own
+  settled fill(s) is recorded exclusively by `reconcile()` on this or a later wake, once
+  `userFills` reflects them (REQ-B2/B4). `run.sh` SHALL NOT reference the field REQ-A1 removes
+  anywhere in the file, in code or in comments.
 
 ### Group B — Reconcile engine (fill-based, idempotent, crash-safe)
 
@@ -295,6 +304,7 @@ verified EVM or Solana settlement.
 | E9 | A single close produces MULTIPLE partial fills (crossing several resting orders) | EACH fill with `closedPnl != 0` is its OWN ledger line, keyed by its own `tid` (REQ-B4/C1) — never merged into one line |
 | E10 | Account has zero USDC / zero fills ever (e.g. the current wallet `0xb9dd3b...`, unfunded) | reconcile reports `{recorded: 0}` every pass; no error — this is the normal empty-history case, not a defect |
 | E11 | Tied-timestamp partial STOP (money-safety, confirmed live-data-real — evidence/audit-userfills-summary.md found 1 such tie in the audited wallet's own history): candidates sorted ascending `[X(t=500,tid=1), Y(t=500,tid=2), Z(t=600,tid=3)]`; `X` records successfully; `Y`'s `record_line` call fails (REQ-B4.3) → batch STOPS; checkpoint advances to `X`'s time = 500 (REQ-B5) | The NEXT pass queries `user_fills_by_time(address, 500, now, ...)` (REQ-B8, inclusive) — `X` (tid=1) is re-fetched but skipped as a duplicate (REQ-B4.1), and `Y` (tid=2) IS re-fetched and recorded normally this time. `Y`'s realized P&L/fee is NEVER permanently lost — this is the exact scenario REQ-B8's inclusive boundary exists to make safe (see F-1, spec review iteration 1) |
+| E12 | Model issues an explicit `action:"close"` for an open position (`run.sh`'s `ACTION=close` branch, REQ-A3), and the close's own settled fill has not yet reached `userFills` by the time `reconcile()` ran earlier THIS SAME wake (REQ-E3 — reconcile runs BEFORE the close executes) | This wake's `reconcile()` call sees nothing new for this fill (normal E2, `{recorded: 0}`). `run.sh`'s close branch executes the close and exits WITHOUT recording any ledger line of its own (REQ-A3). The NEXT wake's `reconcile()` call picks up the now-settled fill via `userFills` and records it normally, keyed by its own `tid` — this is the expected, one-wake-later recording path, not a defect (see F-1, impl-review iteration 1) |
 
 ## 6. Non-functional
 
