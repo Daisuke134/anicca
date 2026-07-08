@@ -26,8 +26,22 @@
     "epicId": "VCSDD-hl-realized-pnl-1783539164394",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-08T20:00:36.613Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 1,
+        "blockingFindings": 1,
+        "majorFindings": 2,
+        "minorFindings": 2
+      },
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-08T20:00:36.613Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-08T19:32:44.393Z",
-  "updatedAt": "2026-07-08T19:48:32.111Z"
+  "updatedAt": "2026-07-08T20:00:36.615Z"
 }
