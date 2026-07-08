@@ -1857,6 +1857,22 @@ sufficient — no new per-child cache-scoping logic is needed. THE SYSTEM SHALL 
   the SAME class of transfer SPEC.md §9.6 already performed and evidenced on-chain (tx `0x48d49e…`
   /`0x1478758…`), never an open-ended top-up, and never sourced from a human-funded wallet (REQ-304
   governs the funding SOURCE constraint).
+- The gas seed above lands successfully, but THIS registration call (or a later step in the SAME
+  spawn attempt — REQ-307's own step 7/8 mcp.json write or `buildChildSpec`'s own distinct-wallet
+  assertion) then fails (new, sprint-2 Phase-3-round-2 review FIND-001, resolves contract-review
+  round-6 FIND-010's documentation gap): THE SYSTEM SHALL attempt a ONE-TIME, best-effort RECLAIM of
+  the already-transferred gas seed — the child's own freshly-generated wallet signs a transfer of the
+  SAME `seedUsdc` amount back to the driving citizen's own wallet, reusing `scripts/seed-child.py`
+  UNMODIFIED with sender/recipient reversed (the child is the signer, the driving citizen is the
+  destination — the SAME script works in either direction since it only ever reads a sender wallet-json
+  and sends to an arbitrary destination address). The reclaim attempt is NEVER allowed to mask or
+  replace the original failure being recorded — its outcome (`reclaimed: true` with a `reclaimTxHash`,
+  or `reclaimed: false` with a `reclaimError`) is recorded ALONGSIDE the original failure's own `error`
+  field in the same spawn-ledger row (REQ-305), never in place of it. A reclaim attempt that itself
+  fails (including seed-child.py's own PENDING/exit-2 broadcast-but-unconfirmed case) is swallowed and
+  logged, never thrown, never retried — this bounds (but does not eliminate) real-money exposure from
+  an abandoned child wallet whose address is never reused by any future spawn attempt
+  (`child-spec.js::nextChildId` is monotonic).
 - The registration transaction succeeds but its `Registered` event cannot be decoded (a malformed/odd
   log): treated as a REQ-305 failure (no `agentId` recorded), never a fabricated/guessed agentId.
 - The SAME child wallet somehow already holds an agentId (should be impossible for a genuinely fresh
@@ -2761,6 +2777,18 @@ step 8's own zero-side-effect construction being forbidden from happening ahead 
   genuinely exists at the moment of failure: THE SYSTEM SHALL record the failure via the
   ALREADY-specified `buildChildSpec`-based path REQ-305 describes, exactly as today — this function
   adds no second, competing failure-recording path for this later window.
+- A failure occurs at step 6, 7, or 8 (REQ-204/205/206) AFTER REQ-204's own gas-seed transfer (the new
+  step this function inserts between step 5/deploy and step 6/registration) has already SUCCEEDED (new,
+  sprint-2 Phase-3-round-2 review FIND-001, resolves contract-review round-6 FIND-010's documentation
+  gap): THE SYSTEM SHALL attempt REQ-204's own Edge-Cases-specified best-effort gas-seed RECLAIM at
+  EACH of the three failure sites where this can occur (step 6's own registration failure, step 7's own
+  mcp.json write failure, step 8's own `buildChildSpec` distinct-wallet-assertion throw), recording the
+  reclaim outcome alongside — never in place of — that step's own failure row, via whichever of the two
+  failure-recording paths this Edge Cases section already specifies for that step (the minimal
+  direct-append path for step 6, since the identity anchor is not yet complete at that failure point;
+  the `buildChildSpec`-based path for steps 7/8, since the anchor is already complete by then). No
+  reclaim is attempted for a failure at steps 1-5 (nothing has been transferred yet) or for a failure
+  IN the gas-seed transfer itself (there is nothing to reclaim from a transfer that never landed).
 - The `"colony-spawn"` lock (REQ-103) is held for this function's ENTIRE execution, steps 1-9
   inclusive, released only in a `finally` block after step 9 completes OR after any step's failure has
   been ledgered (mirrors `withGigLock`'s own existing `try/finally` release discipline — REQ-307

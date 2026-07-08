@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "2b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -130,6 +130,13 @@
       "timestamp": "2026-07-08T06:23:25.378Z",
       "reason": "Routing both findings to Phase 2b per their own routeToPhase field.",
       "sprint": 2
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-08T06:45:05.188Z",
+      "reason": "Phase 2b GREEN complete: FIND-001 (defaultReclaimSeed) + FIND-002 (shelter-cost wiring) both independently re-verified: commit badd044b3d0c48a6ff0c56ada1128991ee041d60 exists, 195/195 tests pass on a fresh independent run, contracts/sprint-2.md PROP-303c correction section read and confirmed accurate.",
+      "sprint": 2
     }
   ],
   "iterations": {
@@ -142,7 +149,7 @@
     "1c": 2,
     "2a": 2,
     "2b": 3,
-    "2c": 2,
+    "2c": 3,
     "complete": 1
   },
   "proofObligations": [
@@ -1089,6 +1096,22 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md#PROP-307d",
       "beadId": "BEAD-142"
+    },
+    {
+      "id": "PROP-119",
+      "tier": 1,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-204d",
+      "beadId": "BEAD-152"
+    },
+    {
+      "id": "PROP-120",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md#PROP-307f",
+      "beadId": "BEAD-153"
     }
   ],
   "traceability": {
@@ -3003,6 +3026,30 @@
         ],
         "createdAt": "2026-07-07T20:35:35.142Z",
         "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-152",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-204d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-062"
+        ],
+        "createdAt": "2026-07-08T15:50:00.000Z",
+        "createdInPhase": "2c",
+        "externalId": "PROP-204d"
+      },
+      {
+        "beadId": "BEAD-153",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-307f",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-141"
+        ],
+        "createdAt": "2026-07-08T15:50:00.000Z",
+        "createdInPhase": "2c",
+        "externalId": "PROP-307f"
       }
     ]
   },
@@ -3056,5 +3103,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-08T06:23:25.378Z"
+  "updatedAt": "2026-07-08T06:45:05.191Z"
 }

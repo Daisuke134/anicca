@@ -228,6 +228,24 @@ nothing, and `lease_id` genuinely survives onto the active row — never a libra
 This sprint does not itself edit `state.json`'s `proofObligations`; the orchestrator updates `PROP-041`
 once this fix is merged.
 
+**Correction (2026-07-08, contract-review round-6 FIND-010): FIND-001's gas-seed reclaim mechanism now
+has full contract/spec traceability.** FIND-001's fix (`defaultReclaimSeed`/`attemptSeedReclaim`,
+`spawn-orchestrator.mjs`) shipped as pure code in round 5's own fix cycle with zero corresponding PROP
+or Edge Cases update — an asymmetry with its sibling FIND-002 fix (which received full treatment above)
+that round-6 review correctly flagged as a CRIT-205 verification-readiness gap: nothing anywhere named
+the reclaim mechanism as a verification target. This is now closed: REQ-204's own Edge Cases text gained
+a new bullet describing the reclaim trigger/mechanism/never-masks-original-failure discipline; REQ-307's
+own Edge Cases text gained a matching bullet naming the three concrete failure sites (steps 6/7/8) where
+it fires; two new proof obligations were added — `PROP-204d` (the reclaim mechanism itself: reversed
+sender/recipient, fires only at the 3 post-seed failure sites, never masks the original error) and
+`PROP-307f` (the `runStep`'s `onFailure` now being `await`ed — required for `PROP-204d`'s own reclaim
+attempt to genuinely complete before the ledger row is written — and a regression proof that this
+introduces zero behavioral drift for every pre-existing synchronous `onFailure` caller). Both are
+`state.json` entries `PROP-119`/`PROP-120` (Tier 1/Tier 0 respectively, `required:true`, `status:pending`
+— promotion to `proved` is Phase 5's own job, not this contract-fix cycle's). `Files touched` (below)
+already lists `spawn-orchestrator.mjs`/its test file, which cover both the code and the tests this
+correction documents — no additional file was touched.
+
 ## Known residual scope boundary
 
 REQ-304's full multi-citizen sequential co-funding orchestration (two citizens' sequential transfers to

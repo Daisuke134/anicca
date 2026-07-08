@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "2fbd4c62e952b187bcc792250091e8cf7cf6890e7dd4342ae3de7f1fc7cd50ff",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 7: fixes round-6's sole finding, FIND-010 (undocumented_production_behavior -- the FIND-001 gas-seed reclaim mechanism had zero contract/spec traceability). This round added: a new Edge Cases bullet to REQ-204 (behavioral-spec.md) describing the reclaim mechanism; a new Edge Cases bullet to REQ-307 (behavioral-spec.md) naming the 3 concrete failure sites; two new proof obligations PROP-204d and PROP-307f in verification-architecture.md (state.json ids PROP-119/PROP-120, beads BEAD-152/BEAD-153); and a new 'Correction (2026-07-08, contract-review round-6 FIND-010)' section in contracts/sprint-2.md documenting the closure. This round must verify ONLY that FIND-010 is genuinely closed (the new spec/PROP text accurately describes the real, already-verified-correct reclaim code -- round 6 already independently confirmed the reclaim CODE itself is correct in every other dimension, so do not re-litigate that; focus specifically on whether the new documentation is accurate, complete, and consistent) and that nothing else regressed. 195/195 tests still pass (unchanged since round 6, no code was touched this round -- only specs/contract)."
+}

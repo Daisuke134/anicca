@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "11b9839e8df56f299961ec2b1a53f98e9cd8ddd30674f4891275df8cea0e7005",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js", "~/anicca/skills/self/spawn/scripts/test-deploy-akash.sh"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs", "~/anicca/skills/self/spawn/scripts/deploy-akash.sh", "~/anicca/skills/self/spawn/scripts/wake-gate.mjs", "~/anicca/skills/self/spawn/run.sh"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 6: fresh adversary review after Phase 3 (round-2 impl review) FAIL -> Phase 2b fix cycle for FIND-001 (gas-seed reclaim) and FIND-002 (PROP-303c shelter-cost wiring). Contract's own text was updated (PROP-303c correction section added) -- digest changed from round-5's approved 2bc66a20b5d4a5ccaface9dd4fb07aed847545f2a92a4106be6ee0a55c86d544 to this round's 11b9839e8df56f299961ec2b1a53f98e9cd8ddd30674f4891275df8cea0e7005. This review must independently re-verify: (1) FIND-001's reclaim mechanism (defaultReclaimSeed) is genuinely wired at all 3 post-seedStep failure sites and never masks the original failure; (2) FIND-002's shelter-cost wiring is genuinely reachable in production, the uact-vs-uakt fixed-conversion design decision (shelterCostUsdFromSettledPrice) is technically sound and matches AEP-76's real protocol design (not merely asserted); (3) the contract's new PROP-303c correction section accurately describes the real, current implementation; (4) 195/195 tests genuinely pass on a fresh run; (5) no new gap was introduced by the runStep onFailure now being awaited (async)."
+}

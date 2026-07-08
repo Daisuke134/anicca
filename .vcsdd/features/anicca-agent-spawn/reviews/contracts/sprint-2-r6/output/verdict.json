@@ -1,0 +1,151 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T14:00:00Z",
+  "iteration": 6,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "11b9839e8df56f299961ec2b1a53f98e9cd8ddd30674f4891275df8cea0e7005"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-010"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:201-229 (PROP-303c correction section)",
+          "description": "Independently read the new 'Correction (2026-07-08, Phase 3 round-2 review FIND-002)' section in full and cross-checked every claim against source: deploy-akash.sh's stdout contract change, spawn-orchestrator.mjs's defaultDeploy parsing + shelterCostUsdFromSettledPrice, executeSpawnAttempt capturing deployStep.value and calling appendShelterCostEntry on the gated real/finite/positive condition, and lease_id surviving onto the active row and every post-deploy failure row -- every sentence matches the real, current implementation exactly (see implementation_correctness evidence below for line-by-line confirmation). No overclaim, no residual inaccuracy found in this section."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:1853-1868 (REQ-204 Edge Cases), specs/behavioral-spec.md:2733-2763 (REQ-307 Edge Cases), specs/verification-architecture.md:472 (PROP-204b), :484 (PROP-301a), contracts/sprint-2.md:108-124 (Files touched)",
+          "description": "FIND-010 (new this round): FIND-001's fix (defaultReclaimSeed/attemptSeedReclaim, spawn-orchestrator.mjs:377-423, wired at 3 real call sites) is genuine new money-moving production code but has ZERO corresponding update anywhere in the contract or either spec file -- confirmed by direct read of REQ-204's and REQ-307's Edge Cases text (unchanged, no reclaim mention) and by a repo-wide grep for 'reclaim' across specs/behavioral-spec.md, specs/verification-architecture.md, and contracts/sprint-2.md (zero hits outside the unrelated REQ-101/103 lock-reclaim mechanism and this round's own PROP-303c section). This is an asymmetric, silent gap relative to FIND-002's sibling fix (which received full contract+spec treatment) and relative to this project's own established precedent (sprint-1's FIND-1901/FIND-1902 each received a new PROP -- PROP-102l, PROP-101l -- when fixed, confirmed present in verification-architecture.md:437,802). See FIND-010 for full detail; the underlying reclaim CODE itself is independently confirmed correct (edge_case_coverage below) -- this is a documentation/traceability gap only."
+        },
+        {
+          "type": "test-output",
+          "location": "python3 one-liner scanning state.json's 118-entry proofObligations array for 'reclaim' in artifact/description",
+          "description": "0 of 118 obligations reference the reclaim mechanism in any form -- corroborates FIND-010's claim that no PROP exists for it."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:377-406 (defaultReclaimSeed), :413-423 (attemptSeedReclaim)",
+          "description": "Confirmed defaultReclaimSeed genuinely reuses SEED_CHILD_SCRIPT (the same module-level constant defaultSeedChild uses, line 33) UNMODIFIED via the same defaultRunSeedChild helper (line 290-292) as defaultSeedChild -- no second script, no forked logic. Sender/recipient are genuinely reversed: the temp wallet-json file (line 383-388) carries the CHILD's own in-memory {privateKey,address} as the SIGNER, and runSeedChild's first argument (destination) is parentWalletAddress -- the exact opposite of defaultSeedChild's own {private_key: parentPrivateKey, address: parentWalletAddress} signer / childAddress destination (lines 331-345). Same 600-perm transient temp-file + shredTempFile discipline (lines 382-388,403-404) as defaultSeedChild's own established pattern."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:613-616 (identityStep onFailure), :643-661 (buildChildSpec catch), :673-678 (mcpStep onFailure)",
+          "description": "Confirmed attemptSeedReclaim (via deps.reclaimSeed override seam) is genuinely invoked at all 3 failure sites reachable ONLY after a successful seedStep: (a) identityStep's onFailure -- registerIdentity fails after gas already landed; (b) the buildChildSpec try/catch block -- REQ-206's own distinct-wallet assertion throws after gas already landed; (c) mcpStep's onFailure -- mcp.json write fails after gas already landed. Confirmed NOT invoked when seedStep itself fails (no onFailure override on the seedStep runStep call, lines 585-596 -- falls through to the plain default appendMinimalFailure with no reclaim fields) and NOT invoked for any of steps 1-5 (home/evm/persist/cloud/solana/deploy), which all precede the gas-seed transfer and therefore have nothing to reclaim."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:71-77 (appendMinimalFailure/appendSpecFailure), :413-423 (attemptSeedReclaim)",
+          "description": "Confirmed the reclaim outcome is recorded ALONGSIDE, never in place of, the original failure's error: appendMinimalFailure/appendSpecFailure's signature keeps `error` as a dedicated parameter separate from `extra` (the spread-in reclaim object), and attemptSeedReclaim's own return shape ({reclaimed, reclaimTxHash} or {reclaimed, reclaimError}) never produces a key named `error` that could collide with/overwrite the original failure's `error` field -- verified no key collision by direct read of both object shapes."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:89-105 (runStep)",
+          "description": "Confirmed `await recordFailure(error)` (lines 96,101) does not break runStep's pre-existing callers: the only 2 custom `onFailure` handlers in the file (identityStep, mcpStep) are both newly-written `async` functions for this fix; every OTHER runStep call site omits `onFailure` and falls back to the default `(error) => appendMinimalFailure(...)`, a plain synchronous function -- `await`ing its return value (undefined, unused by any caller) is a semantic no-op (Promise.resolve(undefined) resolves on the next microtask, no behavioral change to when/whether the ledger row is written, since nothing depends on recordFailure's own return value anywhere in the file)."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/self/spawn/lib/__tests__/spawn-orchestrator-reclaim-and-shelter-cost.test.mjs (FIND-001(a)/(b)/(c)/(c)-variant + the buildChildSpec-throw and mcp-write-failure cases, 7 tests total)",
+          "description": "Independently re-read all 7 FIND-001 tests: each exercises the REAL executeSpawnAttempt call graph (never the reclaim logic in isolation for the wiring tests), asserts deps.reclaimSeed is invoked with the child's own credentials and the parent as destination, asserts the original error is preserved verbatim in the ledger row alongside reclaimed/reclaimTxHash/reclaimError, asserts reclaim is correctly SKIPPED (zero calls, zero extra fields) when seedStep itself fails, and asserts a reclaim that itself throws is swallowed without crashing the attempt or masking the original error. All 7 pass as part of this round's fresh 195/195 run (see verification_readiness)."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/scripts/deploy-akash.sh:103-121,148",
+          "description": "Confirmed the bid-selection block captures the WHOLE selected bid object (SELECTED, line 106-114) before deriving BID/GSEQ/OSEQ/PROVIDER (line 115-117) AND the settled price fields SETTLED_PRICE_AMOUNT/SETTLED_PRICE_DENOM (line 118-119) from that SAME SELECTED object -- never a second, independent bid-list query. Final stdout (line 148) emits `{\"dseq\":\"%s\",\"priceAmount\":\"%s\",\"priceDenom\":\"%s\"}` as claimed."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:248-252 (shelterCostUsdFromSettledPrice), :254-288 (defaultDeploy)",
+          "description": "Confirmed defaultDeploy parses deploy-akash.sh's JSON stdout (line 279-287), extracts {dseq,priceAmount,priceDenom}, and calls the new exported shelterCostUsdFromSettledPrice, which divides by 1e6 ONLY when priceDenom===\"uact\" (else returns null) -- matching AEP-76's own protocol design. Cross-checked the cited source: docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md line 20-21 verbatim states 'Escrow denom = uact (ACT, USD-pegged) -- REQUIRED... uact = 1e-6 USD' (AEP-76 DESIGN.md quote) -- the citation is accurate, both in content and in the ~line-21 location. Independently confirmed AKT and ACT are non-1:1 tokens via skills/self/spawn-child/config.json's own _notes field: 'spawn_cost_akt mirrors ...TREASURY_MINT_UAKT default (25,000,000 uakt burn to clear bme min_mint 10,000,000 uact, ~0.66 mint price...)' -- a fetched AKT/USD spot price against a uact-denominated bid would indeed price the wrong asset, confirming the FIXED-conversion design decision is technically sound, not merely asserted."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:556-576 (deployStep.value capture + shelter-cost append), :636-641 (lease_id attached to spec), :685 (active row spread)",
+          "description": "Confirmed executeSpawnAttempt now captures {leaseId, shelterCostUsd} from deployStep.value (line 556, previously discarded per FIND-002's own finding text) and calls appendShelterCostEntry (via shelter-cost-ledger.js, confirmed a thin wrapper over ledger.js's generic readChildren/appendChild) on shelterCostFile = path.join(resolveStateDir({}), \"shelter-cost.jsonl\") (line 569) -- BYTE-IDENTICAL path construction to wake-gate.mjs's own read side (scripts/wake-gate.mjs:149: same resolveStateDir({})/\"shelter-cost.jsonl\" join). The append is gated on `typeof shelterCostUsd === \"number\" && Number.isFinite(shelterCostUsd) && shelterCostUsd > 0` (line 566) -- a null/0 reading is skipped with a console.error warning (line 575), never appended, matching the contract's own explicit requirement. lease_id survives onto: identityStep's failure row (line 615, explicit extra:{lease_id:leaseId,...}), the buildChildSpec-catch failure row (line 655, explicit field), every failure row from mcpStep onward via the `spec` object's own lease_id field (line 641, spread via appendSpecFailure), and the final active row (line 685, `...spec` spread) -- all 4 reachable post-deploy record points confirmed present."
+        },
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && bash skills/self/spawn/scripts/test-deploy-akash.sh",
+          "description": "Independently executed fresh this session: output 'PASS -- all B1 deploy invariants hold (static + faithful-fake behavioral + fail-closed + AKASH_SDL_TEMPLATE)' -- exit clean."
+        },
+        {
+          "type": "file",
+          "location": "repo-wide grep for 'deploy-akash.sh' and 'DEPLOY_AKASH_SCRIPT' across ~/anicca (excluding .worktrees/ and node_modules)",
+          "description": "Confirmed spawn-orchestrator.mjs's defaultDeploy is the ONLY production caller that programmatically invokes and parses deploy-akash.sh's stdout. skills/self/spawn-child/run.sh's own reference (line 106) is a plain `echo` of a SUGGESTED next command for a human/agent operator to run manually -- it never captures or parses the script's stdout, so the old-vs-new stdout shape change cannot break it. skills/self/spawn/scripts/akt-treasury.sh's own reference is a comment only ('deploy-akash.sh NEVER mints per-spawn'), not a call. No other caller of the old bare-dseq stdout contract exists anywhere in production code."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (whole file)",
+          "description": "CRIT-201 re-confirmed: exactly one executeSpawnAttempt export; the shelter-cost append and reclaim additions are both internal to the SAME single call-graph root, introduce no second orchestration path, and do not reorder any of REQ-307's 9 canonical effectful steps (the shelter-cost append happens as an ancillary bookkeeping action immediately after step 5/deploy succeeds, never itself one of the 9 numbered steps; the reclaim calls only fire from within existing onFailure/catch handlers of steps 6/7/8, never as a new numbered step)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:566 (shelterCostUsd > 0 gate)",
+          "description": "CRIT-202 assessed against the new `Number.isFinite(shelterCostUsd) && shelterCostUsd > 0` conditional: this is a data-VALIDITY gate governing only whether a side bookkeeping row is appended to shelter-cost.jsonl -- it does not influence executeSpawnAttempt's own control flow, success/failure status, or the sequencing/skipping of any of the 9 canonical steps (the function proceeds identically to the seed-child step regardless of this branch's outcome). The contract's own FIND-002 correction section (contracts/sprint-2.md:219-220) explicitly MANDATES this exact gating ('gated on the settled cost being a real, finite, positive number'), so CRIT-202's 'no relational/threshold comparison' text must be read as targeting ELIGIBILITY-affecting business logic (mirroring decideColonySpawn's own domain), not this kind of already-contract-mandated data-validity check -- consistent with prior rounds' own established reading, which already passed CRIT-202 with pre-existing equality checks like `cloudTarget === \"none\"` present in the same file."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:707 (withGigLock wrapping runAttempt)",
+          "description": "CRIT-204 re-confirmed unaffected: the \"colony-spawn\" lock still wraps the entire runAttempt closure end-to-end; the reclaim/shelter-cost additions are internal to runAttempt's own body and add no new lock-adjacent code path."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/'*.test.mjs 'skills/self/spawn/lib/__tests__/'*.test.js",
+          "description": "Independently executed fresh this session (not accepted from any prior log): tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0, duration 1377ms -- exact match to state.json's own Phase 2b GREEN-complete claim ('195/195 tests pass on a fresh independent run')."
+        },
+        {
+          "type": "file",
+          "location": "state.json:138 (Phase 2b transition reason)",
+          "description": "Confirmed state.json records commit badd044b3d0c48a6ff0c56ada1128991ee041d60 (~/anicca) as the fix commit; independently confirmed this commit exists via `git log` reachability is consistent with the currently-checked-out main branch content matching every line cited above."
+        },
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && bash skills/self/spawn/scripts/test-deploy-akash.sh",
+          "description": "PASS, exit 0, fresh run this session (duplicated here from implementation_correctness for verification_readiness's own record)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}
