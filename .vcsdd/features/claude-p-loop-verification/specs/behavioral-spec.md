@@ -287,21 +287,38 @@ clip/affiliate/video/gig=「当日 ledger 行の存在」、bounty=「`gated.jso
 への追記は`record-earn.mjs`のINV-1〜7ゲートを通過した実際の外部入金があった時のみ発生し、稼ぎゼロの日
 でもpassは正常実行される — Ground truth §founder-loop.sh参照。ゆえに **ledgerが空 = cadence未達では
 ない**、passが動いたことをSTATE.mdのmtimeで別途判定する）」、pm-earner=「**複合契約**（1 pass/時 AND
-redeem確認/日 の2条件AND）」。以下の REQ-LV-100/101 はこの4種の判定基準を1つの汎用スキーマ/関数で
-機械的に区別できるよう設計する（F1修正: v2で単一の「行の存在」判定に固定していたのを是正）。
+redeem確認/日 の2条件AND）」。以下の REQ-LV-100/101 はこの判定基準を1つの汎用スキーマ/関数で機械的に
+区別できるよう設計する（F1修正: v2で単一の「行の存在」判定に固定していたのを是正）。
 
-- **REQ-LV-100（cadence contract宣言、`kind`判別子で4種を区別）**: THE SYSTEM SHALL 7 loop
-  （clip/affiliate/video/gig/bounty/pm-earner/founder-loop）それぞれについて、design spec
-  §Cadence Contract表の契約を、`kind`フィールドで判定方式を明示した機械可読スキーマとして各loopの
-  healthcheck設定（新設または既存スクリプトへの追記、loop毎に1箇所）に宣言する:
+★ G1修正（iteration-2 spec review blocking）: pm-earnerのcompound内`hourly-pass`サブ条件を当初
+`kind:"pass-marker"`（JST暦日イコール判定）で表現していたが、これは「その日のうち一度でも動いたか」
+という**日単位**の粒度しか判定できず、「00:01に1回だけ`earner.log`が更新され、その後23時間59分
+pm-earner loopが完全停止していた」ケースでも`true`を返してしまう——design spec が要求する
+`cadence:"1/hour"`（**1時間ごとに動いているか**という時間単位の粒度）を実際には一切検証できない。
+これはF1が指摘した「artifactが存在するだけで健全と誤判定する」欠陥クラスを、修正後の`compound`/
+`pass-marker`の組み合わせを通じて再導入するものだった。修正: `~/anicca/skills/self/
+healthcheck-runtime-loop.sh:97`（`check "claude-p-pm" "ai.anicca.pm-earner" interval
+"$HERE/../earn/polymarket-trade/earner.log" 40`——pm-earnerの**同じ`earner.log`**に対し、既に
+40分のrecency閾値でstaleness判定している実装が存在する）をcopy+tweakした新kind`"recency"`を追加し、
+`hourly-pass`条件のみこちらを使う設計に変更した（下記REQ-LV-100/101参照）。**判定基準は5種**になる。
+
+- **REQ-LV-100（cadence contract宣言、`kind`判別子で5種を区別。G1修正: hourly-pass専用に`recency`を追加）**:
+  THE SYSTEM SHALL 7 loop（clip/affiliate/video/gig/bounty/pm-earner/founder-loop）それぞれについて、
+  design spec §Cadence Contract表の契約を、`kind`フィールドで判定方式を明示した機械可読スキーマとして
+  各loopのhealthcheck設定（新設または既存スクリプトへの追記、loop毎に1箇所）に宣言する:
   - `kind:"row-exists"`（clip/affiliate/video/gig）: `{"kind":"row-exists","cadence":"1/day","unit":"reel","boundary_tz":"Asia/Tokyo"}`
   - `kind:"increment"`（bounty）: `{"kind":"increment","field":"checked","source":"gated.json（bounty-funnel.jsonlのpass毎の値から前日比を算出）","boundary_tz":"Asia/Tokyo"}`
   - `kind:"pass-marker"`（founder-loop）: `{"kind":"pass-marker","source":"~/.anicca-founder/state/STATE.md mtime","boundary_tz":"Asia/Tokyo"}`（`earn-ledger.jsonl`は参照しない — ledgerは収益metric専用でcadence判定から分離する）
-  - `kind:"compound"`（pm-earner）: `{"kind":"compound","conditions":[{"id":"hourly-pass","kind":"pass-marker","cadence":"1/hour","source":"earner.log mtime","boundary_tz":"Asia/Tokyo"},{"id":"daily-redeem","kind":"row-exists","cadence":"1/day","unit":"redeem","boundary_tz":"Asia/Tokyo"}]}`
-- **REQ-LV-101（純判定関数、4種のkindを分岐する単一dispatcher、JST日境界）**: THE SYSTEM SHALL
-  `cadence_met(today_jst_date, contract, evidence) -> bool`（新設・純粋、I/Oなし。`evidence`の実データ
-  収集は呼び出し元の責務——このシグネチャはF1修正の核心: 単一の「ledger行の存在」判定から、
-  `contract["kind"]`で分岐する4方式へ一般化する）を実装する。分岐仕様:
+  - `kind:"recency"`（**G1新設**、時間単位の経過チェック。JST暦日境界に依存しない——`boundary_tz`フィールドを持たない）:
+    `{"kind":"recency","source":"<path or description>","max_age_min":<int>}`。
+  - `kind:"compound"`（pm-earner、**G1修正**: `hourly-pass`サブ条件は`pass-marker`ではなく`recency`を使う）:
+    `{"kind":"compound","conditions":[{"id":"hourly-pass","kind":"recency","cadence":"1/hour","source":"earner.log mtime","max_age_min":40},{"id":"daily-redeem","kind":"row-exists","cadence":"1/day","unit":"redeem","boundary_tz":"Asia/Tokyo"}]}`
+    （`max_age_min:40`は`healthcheck-runtime-loop.sh:97`が同じ`earner.log`に対して既に使っている
+    staleness閾値をそのまま流用——新規の値を発明しない、copy+tweak）。
+- **REQ-LV-101（純判定関数、5種のkindを分岐する単一dispatcher、JST日境界。G1修正: `recency`分岐を追加）**:
+  THE SYSTEM SHALL `cadence_met(today_jst_date, contract, evidence) -> bool`（新設・純粋、I/Oなし。
+  `evidence`の実データ収集は呼び出し元の責務——このシグネチャはF1修正の核心: 単一の「ledger行の存在」
+  判定から、`contract["kind"]`で分岐する5方式へ一般化する）を実装する。分岐仕様:
   - `kind=="row-exists"`: `evidence={"event_dates":[...]}`（呼び出し元がledgerの行タイムスタンプから
     抽出したJST暦日文字列のリスト）。`today_jst_date in evidence["event_dates"]`を返す。
   - `kind=="increment"`: `evidence={"today_value":int,"previous_value":int}`（呼び出し元が
@@ -312,31 +329,48 @@ redeem確認/日 の2条件AND）」。以下の REQ-LV-100/101 はこの4種の
     しないための直接的な修正）。
   - `kind=="pass-marker"`: `evidence={"marker_jst_date":str}`（呼び出し元が`contract["source"]`ファイル
     のmtimeをJST暦日文字列に変換した値——founder-loopなら`STATE.md`のmtime。ledgerのtsは使わない）。
-    `today_jst_date == evidence["marker_jst_date"]`を返す。
+    `today_jst_date == evidence["marker_jst_date"]`を返す。**日単位の粒度のみ判定可能**——時間単位の
+    cadenceには`recency`（下記）を使う。
+  - `kind=="recency"`（**G1新設**）: `evidence={"marker_epoch_seconds":int,"now_epoch_seconds":int}`
+    （呼び出し元が`contract["source"]`ファイルのmtimeと現在時刻を、それぞれUNIXエポック秒として渡す
+    ——`~/anicca/skills/self/healthcheck-runtime-loop.sh`の`artifact_age_min()`（`(now - mtime)/60`）
+    と同じ計算をエポック秒レベルで行う）。`(evidence["now_epoch_seconds"] - evidence["marker_epoch_seconds"])
+    <= contract["max_age_min"] * 60`を返す——JST暦日境界を一切参照しない、純粋な経過時間チェック。
+    「00:01に1回だけ動いてその後23時間59分停止」のケースは、21:00 JST時点で経過時間が`max_age_min`
+    （40分）を大幅に超えるため確実に`false`になる。
   - `kind=="compound"`: `evidence={"by_condition":{<condition id>: <そのconditionのkindに応じたevidence>}}`。
     `contract["conditions"]`内の**全ての**sub-contractについて`cadence_met(today_jst_date, condition,
     evidence["by_condition"][condition["id"]])`を再帰的に呼び、**全てtrueの場合のみ**true（論理AND、
-    ORでも多数決でもない）を返す——pm-earnerの「1 pass/時 AND redeem確認/日」を機械的に表現する。
+    ORでも多数決でもない）を返す——pm-earnerの「1 pass/時（`recency`） AND redeem確認/日（`row-exists`）」
+    を機械的に表現する。
 - **REQ-LV-102（21:00 JST 締切 + escalation、REQ-LV-041 を置換）**: WHEN JST 21:00 の時点で
   `cadence_met()`（REQ-LV-101、loopのcontract kindに応じた分岐で判定）が当日分について `false` を返す
   loop が存在する場合、THE SYSTEM SHALL 既存の `self-fix.sh <loop-name> "<blocker>"` 呼び出し
   （変更しない、Ground truth参照）を、「7日前に投稿があった」等の過去実績を理由に抑制することなく
   毎日 escalate する。
-- **REQ-LV-103（streak KPI + 日次 scorecard、4種のkindに対応）**: THE SYSTEM SHALL 各 loop の連続達成
+- **REQ-LV-103（streak KPI + 日次 scorecard、5種のkindに対応）**: THE SYSTEM SHALL 各 loop の連続達成
   日数を計算する純関数 `streak(evidence_by_date, today_jst_date, contract) -> int`（新設・純粋:
   `evidence_by_date`は日付文字列→その日の`cadence_met`用evidenceのdict。当日から遡って各日の
   `cadence_met(date, contract, evidence_by_date[date])`が真である連続日数を数える。kindに関わらず
   同じ再帰ロジックで動作する——`cadence_met`自体がkindを分岐するため`streak`側の分岐は不要）を実装し、
   `verify-loops-audit.sh`の6hごとscorecard（REQ-LV-042、置換後）に loop ごと `✅posted-today (streak=N)`
   / `❌missed (streak=0)` の形式で含める。
-- **REQ-LV-104**: THE SYSTEM SHALL `verify-loops.sh`/`verify-loops-audit.sh`（REQ-LV-040〜042）の
-  判定ロジックを、旧来の `fresh()`（26h/30h等の固定しきい値によるartifact年齢判定）呼び出しから、
-  Cadence Contract対象7 loop分は REQ-LV-101/102/103 の cadence 判定（loopのcontract kindに応じて
-  `event_dates`/`today_value・previous_value`/`marker_jst_date`/`by_condition`のいずれかのevidenceを
-  実際に収集して`cadence_met`へ渡す）へ、clip-promote分はREQ-LV-120の`clip_promote_status()`（payout
-  ledgerの当日行有無）へ、それぞれ完全に置き換える。旧 `fresh()` 呼び出しは capafy/reddit/life-manager
-  の既存3ブロック（この feature の対象外）でのみ残す — REQ-LV-040が追加した8 loop分のブロックからは
-  `fresh()`を完全に除去する（clip-promoteも例外にしない）。
+- **REQ-LV-104（G1修正: pm-earnerのhourly-pass分のevidence収集方法を明示）**: THE SYSTEM SHALL
+  `verify-loops.sh`/`verify-loops-audit.sh`（REQ-LV-040〜042）の判定ロジックを、旧来の `fresh()`
+  （26h/30h等の固定しきい値によるartifact年齢判定）呼び出しから、Cadence Contract対象7 loop分は
+  REQ-LV-101/102/103 の cadence 判定（loopのcontract kindに応じて `event_dates`/
+  `today_value・previous_value`/`marker_jst_date`/`marker_epoch_seconds・now_epoch_seconds`/
+  `by_condition`のいずれかのevidenceを実際に収集して`cadence_met`へ渡す）へ、clip-promote分は
+  REQ-LV-120の`clip_promote_status()`（payout ledgerの当日行有無）へ、それぞれ完全に置き換える。
+  **pm-earnerのcompound契約は2種類のevidence収集を組み合わせる**——`hourly-pass`サブ条件
+  （`kind:"recency"`）は`~/anicca/skills/earn/polymarket-trade/earner.log`のmtimeと現在時刻を
+  それぞれエポック秒として収集し（`healthcheck-runtime-loop.sh`の`artifact_age_min()`と同じ
+  ファイルを参照する）、`daily-redeem`サブ条件（`kind:"row-exists"`）は既存 pm-earner ledger
+  （`~/anicca/skills/earn/state/earn-ledger.jsonl`）のredeem行タイムスタンプからJST暦日文字列を
+  収集する——2つの異なる収集方法の結果を`{"by_condition":{"hourly-pass":{...}, "daily-redeem":{...}}}`
+  にまとめて`cadence_met`へ渡す。旧 `fresh()` 呼び出しは capafy/reddit/life-manager の既存3ブロック
+  （この feature の対象外）でのみ残す — REQ-LV-040が追加した8 loop分のブロックからは`fresh()`を
+  完全に除去する（clip-promoteも例外にしない）。
 
 ### I. EDD（Evaluation-Driven Development）
 
