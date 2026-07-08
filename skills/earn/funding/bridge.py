@@ -119,7 +119,9 @@ def main() -> None:
         return
 
     history = read_ledger(LEDGER_PATH)
-    decision = check_caps(amount_usd=amount_usd, history=history, config=CONFIG, now_ts=time.time())
+    # bridge moves already-withdrawn (already-cap-counted) money across chains — not a new
+    # outflow of claude-p capital, so it must not re-consume the daily/cumulative cap.
+    decision = check_caps(amount_usd=amount_usd, history=history, config=CONFIG, now_ts=time.time(), counts_as_outflow=False)
     if not decision.allowed:
         fail(decision.reason, {"balance_usd": balance_usd, "amount_usd": amount_usd})
         return

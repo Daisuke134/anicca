@@ -113,7 +113,9 @@ def main() -> None:
         return
 
     history = read_ledger(LEDGER_PATH)
-    decision = check_caps(amount_usd=amount_usd, history=history, config=CONFIG, now_ts=time.time())
+    # send delivers already-withdrawn (already-cap-counted) money to Franklin — not a new
+    # outflow of claude-p capital, so it must not re-consume the daily/cumulative cap.
+    decision = check_caps(amount_usd=amount_usd, history=history, config=CONFIG, now_ts=time.time(), counts_as_outflow=False)
 
     plan = {
         "sender": FOUNDER_SOLANA,
