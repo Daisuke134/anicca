@@ -101,3 +101,67 @@ Command: node --test ledger.test.js (cwd: skills/_shared/lib/__tests__/)
 All three regression counts match verification-architecture.md's Regression Table exactly
 (44-1-known-artifact / 42 hl-trade(41+1skip) / 12 mjs / 9 js). Zero edits made to hl-trade/**,
 ledger.mjs, or any live order-execution file.
+
+=== F-1 FIX ADDENDUM (Phase 3 impl review, iteration 1 — BLOCKING finding) ===
+Executed 2026-07-09, same worktree.
+
+Finding: promote_gate_run.py:239-241 passed assessment["combined_score"] (unitless Sharpe-like
+ratio) as compute_realized_gate's mean_backtest_net_usd (REQ-RL11's DOLLAR-scale per-trade mean),
+so data_realism_gap compared a ratio against real dollar figures — wrong-unit, blocking/deadlocking
+promotion decorative-ly. Fix: pass assessment["mean_oos_net_usd"] instead, and make
+compute_realized_gate None-safe (mean_oos_net_usd is None for scope-guard-rejected/stage1-failed
+candidates, computed unconditionally before the eligibility check).
+
+Files changed:
+  lib/promote_gate.py — compute_realized_gate(mean_backtest_net_usd: Optional[float], ...):
+    docstring extended with the None semantics; realism_gap_blocks now short-circuits to False
+    when mean_backtest_net_usd is None (skips gate_math.data_realism_gap entirely — the
+    fixture-vs-reality contradiction is undefined without a fixture claim, not trivially true or
+    false) instead of calling float(None). REQ-RL13a's 13-key schema is unchanged.
+  lib/promote_gate_run.py:239-244 — compute_realized_gate's mean_backtest_net_usd= now reads
+    assessment["mean_oos_net_usd"] (was assessment["combined_score"]).
+  tests/test_wiring.py — 3 new regression tests (below).
+
+RED (before fix — env -u ANICCA_HOME python3 -m pytest tests/test_wiring.py -v), raw tail:
+
+tests/test_wiring.py::test_compute_realized_gate_returns_exactly_the_req_rl13a_schema PASSED
+tests/test_wiring.py::test_promote_gate_run_wires_realized_gate_at_every_decide_promotion_call_site PASSED
+tests/test_wiring.py::test_promote_gate_run_computes_realized_gate_from_mean_oos_net_usd_not_combined_score FAILED
+tests/test_wiring.py::test_realized_gate_field_sensitivity_correct_vs_wrong_scale PASSED
+tests/test_wiring.py::test_realized_gate_none_mean_backtest_net_usd_is_safe_and_skips_realism_check_only FAILED
+
+FAILED test_promote_gate_run_computes_realized_gate_from_mean_oos_net_usd_not_combined_score:
+  AssertionError: compute_realized_gate call site(s) at line(s) [(239, 'combined_score')] pass a
+  field other than assessment['mean_oos_net_usd'] as mean_backtest_net_usd= (F-1: REQ-RL11
+  requires the DOLLAR-scale mean_oos_net_usd, never the unitless combined_score ratio)
+
+FAILED test_realized_gate_none_mean_backtest_net_usd_is_safe_and_skips_realism_check_only:
+  lib/gate_math.py:258: in data_realism_gap
+    mean_backtest_net_usd = float(mean_backtest_net_usd)
+  TypeError: float() argument must be a string or a real number, not 'NoneType'
+
+2 failed, 3 passed in 0.33s
+
+GREEN (after fix — same command), raw tail:
+
+tests/test_wiring.py::test_compute_realized_gate_returns_exactly_the_req_rl13a_schema PASSED [ 20%]
+tests/test_wiring.py::test_promote_gate_run_wires_realized_gate_at_every_decide_promotion_call_site PASSED [ 40%]
+tests/test_wiring.py::test_promote_gate_run_computes_realized_gate_from_mean_oos_net_usd_not_combined_score PASSED [ 60%]
+tests/test_wiring.py::test_realized_gate_field_sensitivity_correct_vs_wrong_scale PASSED [ 80%]
+tests/test_wiring.py::test_realized_gate_none_mean_backtest_net_usd_is_safe_and_skips_realism_check_only PASSED [100%]
+5 passed in 0.24s
+
+Full-suite re-run after fix (env -u ANICCA_HOME python3 -m pytest -q, cwd skills/earn/self-improve):
+  84 collected (81 prior + 3 new F-1 regression tests): 83 passed, 1 failed
+  — the 1 failure is the SAME pre-existing EDGE-RL5b worktree-nesting artifact documented above
+  (test_realized_summary_default_path_points_at_the_real_earn_ledger_location), unrelated to F-1,
+  unchanged by this fix, and expected to pass post-merge from ~/anicca main per that same section.
+
+regression-baseline re-run after fix (unaffected by this fix, re-confirmed for completeness):
+  hl-trade (env -u ANICCA_HOME python3 -m pytest -q, cwd hl-trade/): 41 passed, 1 skipped
+  node --test ledger.test.mjs (cwd skills/_shared/lib/__tests__/): tests 12 / pass 12 / fail 0
+  node --test ledger.test.js (cwd skills/_shared/lib/__tests__/): tests 9 / pass 9 / fail 0
+
+F-1 status: FIXED, regression-tested (RED->GREEN), full suite re-confirmed green modulo the one
+pre-documented EDGE-RL5b worktree artifact. Committed to worktree (not pushed), state.json
+untouched, no writes to any real ledger/state file.
