@@ -57,7 +57,9 @@ function baseParams(overrides = {}) {
   return { initialSkills: [], drivingCitizenWallet: DRIVING_CITIZEN_WALLET, nowMs: 1_800_000_000_000, ...overrides };
 }
 
-// All 9 canonical steps succeed fast. Individual tests override exactly one step to fail.
+// All 9 canonical steps succeed fast, plus round-3 contract-review's own persistChildWallet
+// (PROP-201c/FIND-007b) and seedChild (REQ-204 edge case/FIND-006) steps. Individual tests override
+// exactly one step to fail.
 function happyDeps(dir, overrides = {}) {
   return {
     lockStatePath: path.join(dir, "citizens.json"), // withGigLock's statePath (mirrors CITIZENS_REGISTRY_PATH)
@@ -65,9 +67,11 @@ function happyDeps(dir, overrides = {}) {
     citizensRegistryFile: path.join(dir, "citizens.json"),
     checkHomeDistinct: async () => ({ ok: true, homeDir: path.join(dir, "child-home") }),
     generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" }),
+    persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => "akash",
     generateSolanaWallet: async () => ({ address: "ChildSolanaFixture1111111111111111111111111", privateKey: "childsolanafixturekey" }),
     deploy: async () => ({ ok: true, leaseId: "dseq-fixture-001", shelterCostUsd: 0.5 }),
+    seedChild: async () => ({ ok: true, txHash: "0xseedtxfixture" }),
     registerIdentity: async () => ({ ok: true, agentId: "9001", txHash: "0xregtxfixture" }),
     writeMcpConfig: async () => ({ ok: true }),
     ...overrides,
@@ -97,22 +101,33 @@ test("PROP-307a/PROP-307e: run.sh still exists and still supports --dry-run (its
   assert.ok(/--dry-run/.test(src));
 });
 
-test("PROP-307a: a real invocation calls every one of steps 1-9 exactly once, in the canonical order, for a happy-path attempt", async () => {
+test("PROP-307a: a real invocation calls every one of steps 1-9 (plus round-3's own persistChildWallet/seedChild) exactly once, in the canonical order, for a happy-path attempt", async () => {
   const dir = tmpDir();
   const calls = [];
   const deps = happyDeps(dir, {
     checkHomeDistinct: async () => (calls.push("checkHomeDistinct"), { ok: true, homeDir: path.join(dir, "child-home") }),
     generateEvmWallet: async () => (calls.push("generateEvmWallet"), { address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xk" }),
+    persistChildWallet: async () => (calls.push("persistChildWallet"), { ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
     selectCloudTarget: async () => (calls.push("selectCloudTarget"), "akash"),
     generateSolanaWallet: async () => (calls.push("generateSolanaWallet"), { address: "ChildSol1", privateKey: "sk" }),
     deploy: async () => (calls.push("deploy"), { ok: true, leaseId: "dseq-1", shelterCostUsd: 0.5 }),
+    seedChild: async () => (calls.push("seedChild"), { ok: true, txHash: "0xseedtx" }),
     registerIdentity: async () => (calls.push("registerIdentity"), { ok: true, agentId: "9001", txHash: "0xtx" }),
     writeMcpConfig: async () => (calls.push("writeMcpConfig"), { ok: true }),
   });
   const result = await executeSpawnAttempt(baseParams(), deps);
   assert.equal(result.status, "active");
   // step 4 (Solana keygen) is conditional -- this fixture's initialSkills/deployTarget never trigger it
-  assert.deepEqual(calls, ["checkHomeDistinct", "generateEvmWallet", "selectCloudTarget", "deploy", "registerIdentity", "writeMcpConfig"]);
+  assert.deepEqual(calls, [
+    "checkHomeDistinct",
+    "generateEvmWallet",
+    "persistChildWallet",
+    "selectCloudTarget",
+    "deploy",
+    "seedChild",
+    "registerIdentity",
+    "writeMcpConfig",
+  ]);
 });
 
 // ---------------------------------------------------------------------------
