@@ -63,10 +63,12 @@ def test_rejects_evolve_block_that_references_a_wallet_key_path():
 def test_evolve_block_only_edit_with_no_denylisted_reference_is_accepted():
     # Control case: an EVOLVE-BLOCK-only edit with clean content must PASS, proving the three
     # rejections above fire for the RIGHT reason (scope/denylist), not because ANY edit at all is
-    # rejected.
+    # rejected. Literal updated 2026-07-08 (commit a6f608c promoted a new baseline whose
+    # min_confidence default is 7.0, not the pre-promotion 6.0) — this test only needs SOME clean
+    # in-scope edit, not any particular beats-baseline property.
     baseline_code = read_baseline_code()
     candidate_code = patched_baseline_code(
-        ('config.get("min_confidence", 6.0)', 'config.get("min_confidence", 8.0)')
+        ('config.get("min_confidence", 7.0)', 'config.get("min_confidence", 9.0)')
     )
 
     ok, reason = scope_guard.check(candidate_code, baseline_code)

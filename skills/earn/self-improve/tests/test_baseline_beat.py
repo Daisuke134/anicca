@@ -13,17 +13,26 @@ evaluated against, per behavioral-spec.md's phase framing).
 Close-loop revision (2026-07-08, Gap 2): `combined_score` for stage2/promotion is now a
 Sharpe-like risk-adjusted metric (`gate_math.risk_adjusted_score`), not raw mean OOS net USD — see
 evaluator.py's module docstring. The "better candidate" here changed from the prior revision's
-`min_confidence: 6.0 -> 8.0` (which does not hold up on the regenerated fixture) to
-`min_edge: 0.15 -> 0.24` — a GENUINE selection change (concentrating on the strongest-signal rows
-of `strategies/fixtures/pm_history.csv`'s documented true edge, see
-`strategies/fixtures/generate_fixture.py`), not a leverage/stake-size change. Numbers recomputed
-directly off the real evaluator/fixture (not invented): baseline's stage2 risk-adjusted score is
-~1.26 with a NEGATIVE worst OOS window (~-0.47); the `min_edge=0.24` candidate's risk-adjusted
-score is ~2.44 with a POSITIVE worst OOS window (~+4.53) — both a higher mean (5.69 -> 7.98) AND a
-lower OOS standard deviation (4.51 -> 3.27), a genuine Pareto improvement, not a variance trick. A
-pure-leverage variant of baseline (same thresholds, base_stake scaled 5.0 -> 20.0) is verified
-elsewhere (test_risk_adjusted_fitness.py) to score IDENTICALLY to baseline under this metric,
-proving leverage alone cannot pass this test.
+`min_edge: 0.15 -> 0.24` (which is now the FROZEN BASELINE ITSELF — see next paragraph) to
+`edge_weight: 0.25 -> 0.4` + `conf_weight: 0.45 -> 0.1`, a genuine adaptive-sizing-emphasis change
+(shifts the stake-scaling multiplier to weight the edge signal over the confidence signal), not a
+leverage/stake-size-only change.
+
+REAL PROMOTION (2026-07-08, commit a6f608c, capable-improver run): the openevolve-discovered
+candidate that raised `min_edge`/`min_confidence`/added liquidity+price+horizon+combined-signal
+filters and an adaptive stake multiplier (free/gpt-oss-120b, real fresh-Opus-adversary PASS) is now
+the COMMITTED baseline `strategies/pm_backtest_strategy.py` itself — this file's own "baseline"
+therefore already has a POSITIVE worst OOS window (~+2.38, not negative) and a materially higher
+risk-adjusted score (~3.21, not ~1.26) than the earlier revision's simple threshold-only baseline.
+Every literal/number below was re-derived directly off the REAL evaluator/fixture against this NEW
+committed baseline (not invented, not carried over from the pre-promotion revision): baseline's
+stage2 risk-adjusted score is ~3.208 (mean ~4.218, std ~1.315, worst OOS ~+2.375); the
+`edge_weight=0.4, conf_weight=0.1` candidate's risk-adjusted score is ~3.595 (mean ~4.328 UP, std
+~1.204 DOWN, worst OOS ~+2.651, still positive) — a genuine, if now more marginal, Pareto
+improvement over an already-good baseline, not a variance trick. A pure-leverage variant of
+baseline (same thresholds, base_stake scaled 5.0 -> 20.0) is verified elsewhere
+(test_risk_adjusted_fitness.py) to score IDENTICALLY to baseline under this metric, proving
+leverage alone cannot pass this test.
 """
 import evaluator
 from conftest import patched_baseline_code, read_baseline_code, write_candidate_with_fixtures
@@ -31,7 +40,10 @@ from lib import gate_math, scope_guard
 
 
 def _better_candidate_code() -> str:
-    return patched_baseline_code(('config.get("min_edge", 0.15)', 'config.get("min_edge", 0.24)'))
+    return patched_baseline_code(
+        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
+        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+    )
 
 
 def test_better_candidate_scope_guard_passes():
@@ -57,17 +69,21 @@ def test_better_candidate_beats_baseline_on_stage2_walk_forward(tmp_path):
 
 def test_better_candidate_has_non_negative_worst_window_oos(tmp_path):
     """Strengthens the beats-baseline claim above: the improvement must not be an aggregate-only
-    artifact (EDGE-5) — the WORST individual OOS window must itself be non-negative, unlike
-    baseline's own worst window (which is negative on the real fixture)."""
+    artifact (EDGE-5) — the WORST individual OOS window must itself be non-negative. Post-promotion
+    (commit a6f608c) the committed baseline ALREADY has a non-negative worst OOS window (the real
+    promoted candidate fixed that exact problem for the pre-promotion baseline) — this test now
+    asserts the candidate PRESERVES that non-negative-worst-window property while still improving
+    mean/std further, not that it fixes a still-losing baseline (there is no longer one)."""
     candidate_code = _better_candidate_code()
     candidate_path = write_candidate_with_fixtures(tmp_path, candidate_code)
 
     baseline_stage2 = evaluator.evaluate_stage2(evaluator.BASELINE_PATH)
     candidate_stage2 = evaluator.evaluate_stage2(candidate_path)
 
-    assert baseline_stage2["worst_window_oos_net_usd"] < 0.0, (
-        "expected the real fixture's baseline to have a genuinely losing worst OOS window "
-        "(that is the real problem this candidate must fix, not a strawman)"
+    assert baseline_stage2["worst_window_oos_net_usd"] >= 0.0, (
+        "the committed baseline (post-promotion) is expected to already have a non-negative worst "
+        "OOS window — if this regresses, the committed strategies/pm_backtest_strategy.py itself "
+        "changed underneath this test"
     )
     assert candidate_stage2["worst_window_oos_net_usd"] >= 0.0
     # Genuine Pareto improvement, not just a variance trick: mean up AND spread down.
