@@ -30,7 +30,7 @@
       "entrypoint": "run.sh",
       "status": "live",
       "spec": "26 A4 / 27 A-self-spawn",
-      "summary": "Self-replication: birth a child instance on Akash with its own EVM+Solana wallet and ERC-8004 identity; no parent instruction needed for the child's first earn wake.",
+      "summary": "Self-replication check: birth a child instance on Akash with its own EVM+Solana wallet and ERC-8004 identity -- no parent instruction needed for the child's first earn wake. THE UNDERLYING GATE (decideColonySpawn) IS ALREADY FAIL-CLOSED AND FREE TO CHECK: picking this slot when the colony is not yet spawn-eligible costs nothing and safely no-ops (reports eligible:false, appends zero rows, spends zero money) -- it never wastes funds or risks the treasury to check. WHEN the colony's own aggregate surplus has been growing (e.g. after a real trading profit or a parent seed), picking this slot is worth trying periodically to see if the real, live threshold has now been cleared -- you do not need to guess the exact number yourself, the gate computes and reports it honestly every time.",
       "owner": "wf-a:self-spawn",
       "risk": "safe",
       "riskNote": "anicca-agent-spawn REQ-102/REQ-307: its own decision core (lib/treasury-gate.mjs::decideColonySpawn) already gates any real spawn attempt (lib/spawn-orchestrator.mjs::executeSpawnAttempt) on the COLONY-WIDE aggregate surplus clearing SPAWN_THRESHOLD_USD -- reading/considering this slot while the colony is broke cannot itself put a broke colony's treasury at risk."
