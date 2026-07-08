@@ -69,5 +69,12 @@ if [ -n "$REPORT_JSON" ]; then
 fi
 
 echo "founder-loop wake: realised_earn_usdc=$TOTAL record_rc=$RC state=$STATE_MD"
+
+# REQ-CEO-070: CEO pass runs on EVERY wake, regardless of $RC (record-earn.mjs may have failed this
+# wake) — a persistent RPC outage must not also starve the CEO's portfolio-allocation loop of its
+# weekly pass. This call NEVER touches $RECORD/$LEDGER (INV-H2 unaffected) and its own exit status is
+# always discarded (`|| true`) so it can never change founder-loop.sh's own exit code (INV-H6).
+bash "$HERE/ceo/ceo-pass.sh" || true
+
 # INV-H6: surface the recorder's rc to the cadence (a persistent RPC-fail / corrupt-cursor should alert), AFTER STATE is durably written.
 exit "$RC"
