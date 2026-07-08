@@ -158,6 +158,36 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 - **将来 merge の余地**: profitable-claude が self-funded に卒業して安定したら統合を再検討してよい。それまでは2プロジェクトとして別々に運用。
 - **改善の相互流用**: 一方で確立した型（例: gig の量×質×検索+metrics、cadence 判定）を、もう一方が copy して取り込むのは推奨（学び合う）。ただしコード共有でなく copy+adapt。
 
+### 卒業経路（human-funded → self-funded → agent economy 参加）★north star の実装★
+
+profitable-claude が「Dais の Anthropic 課金で動く」状態から「自分で稼いだ crypto で自分の推論費を払う」状態に転換する具体機構。**これは既に anicca-a3cdd4（genesis 自己資金インスタンス）で実証済み**の経路を profitable-claude に適用する。
+
+```
+[段階0] human-funded（今）: Dais の Anthropic 課金で loop が動く
+        earn loop が crypto を wallet に貯める（realized profit）
+              │
+              ▼  wallet が「推論費を賄える」閾値を超えたら
+[段階1] fuel を切替: loop の brain を Anthropic 課金 → ClawRouter(:8402) に向ける
+        燃料 tier（survival-tier、runtime に既存）:
+          BROKE (wallet 空)  → free/gpt-oss-120b（$0、安全床）
+          FUNDED (crypto あり) → auto（paid smart model ~$0.004/call, x402/USDC 決済）
+        判定 = NET-POSITIVE（earn − burn > 0）。burn>earn が続けば free に落ちる
+              │
+              ▼
+[段階2] self-funded: human は $0 課金でも loop が回り続ける
+        （crypto で推論費を自弁。安価モデル DeepSeek 等も選択肢）
+              │
+              ▼
+[段階3] agent economy 参加: self-funded になった時点で、身元が
+        「human-funded の永久非構成員」から「self-funded 構成員」に転換
+        → Franklin ら経済に参加できる（human のためにも稼ぎ続ける）
+```
+
+- **卒業の gate（決定論）**: 直近 N 週の realized crypto profit が、ClawRouter 経由の推論 burn を安定して上回る（net-positive が持続）ことを machine-checkable に確認 → その時 fuel を切替。CEO loop の自己検証がこの判定に使える。
+- **正直な現状**: 今どの loop も卒業閾値に達していない（gig=$0、pm=僅少）。だから harness+gig+CEO を作って「稼ぐ→検証→改善」を回すのが卒業への前提。卒業は north star であって現状ではない。盛らない。
+- **配布ビジョン（OSS）**: profitable-claude は OSS → 誰でも自分の Mac Mini / MacinCloud で clone して自分のキーで動かす → その人の Claude が初めて AI で稼ぐ → 稼いだ crypto で ClawRouter に卒業 → owner は $0 課金でも回る。「provably profitable」を1体で証明できれば、多数が自分のマシンで動かす道が開ける。
+- **注意（memory 実証済み）**: ClawRouter free path のみ真に $0（raw x402 proxy は free model でも ~$0.02/call 課金）。「free model 設定」は request body が実際にその model id を運ばないと効かない（router のログで受信 model id と USDC 流出を確認する）。1 wallet/instance（共有 wallet は drain する）。
+
 ### BP 裏付け（2026-07-08 リサーチ、一次ソース）
 - **「将来独立配布/独立稼働する予定のコンポーネントは polyrepo（分離）」が定石**。profitable-claude の「卒業して self-funded 自走」はこの典型ケース（llmbestpractices.com/comparisons/monorepo-vs-polyrepo: "Independent release cycles… Vendored codebases that … have not yet been merged"）。
 - **diverge 前提なら shared library/submodule は悪手、vendor/copy で self-contained が推奨**。判定基準は「今 似ているか」でなく「今後も同じ理由で変化し続けるか」（umurinan.com: premature-abstraction-is-worse-than-duplication / Sandi Metz "duplication is far cheaper than the wrong abstraction" / Rule of Three codinghorror.com）。
