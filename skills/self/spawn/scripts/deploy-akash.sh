@@ -5,7 +5,8 @@
 # child ACTUALLY boots. Funding (USDC->AKT swap + ACT mint) lives OFF this path in akt-treasury.sh — this script
 # never swaps/mints, so per-spawn latency is just the tx flow (~20-30s, was ~3min).
 # Fail-closed (HARD 0.24): missing CLI/key/dseq/bid/lease/manifest -> exit !=0, NO fake dseq.
-#   deploy-akash.sh CHILD_ID  -> prints the lease id (dseq) to stdout on success, exit 1 otherwise.
+#   deploy-akash.sh CHILD_ID  -> prints {"dseq","priceAmount","priceDenom"} (the winning bid's own settled
+#   price, FIND-002/PROP-303c) as one JSON line to stdout on success, exit 1 otherwise.
 set -euo pipefail
 CHILD_ID="${1:?deploy-akash.sh: CHILD_ID required}"
 
@@ -99,18 +100,25 @@ DSEQ="$(jq -r 'first(.events[]? | select(.type=="akash.deployment.v1.EventDeploy
 [ -n "$DSEQ" ] && [[ "$DSEQ" =~ ^[0-9]+$ ]] \
   || { echo "deploy-akash: no numeric dseq in tx response — lease not created" >&2; exit 1; }
 
-# 2. POLL bids (no fixed 30s sleep). Pick the CHEAPEST OPEN bid (FIND-002).
-BID=""
+# 2. POLL bids (no fixed 30s sleep). Pick the CHEAPEST OPEN bid (FIND-002). Capture the WHOLE selected
+# bid object (not just .bid.id) so the settled price (FIND-002/PROP-303c) is derived from the SAME
+# selection that wins the lease, never a second, independent bid-list query.
+SELECTED=""
 for _ in $(seq 1 30); do
-  BID="$("$PS" query market bid list --owner "$ADDR" --dseq "$DSEQ" --state open -o json 2>/dev/null \
+  SELECTED="$("$PS" query market bid list --owner "$ADDR" --dseq "$DSEQ" --state open -o json 2>/dev/null \
          | jq -c '[.bids[]? | select((.bid.state // "open")=="open")]
-                  | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0].bid.id // empty')"   # bid_id path = .bid.id (verified)
-  [ -n "$BID" ] && [ "$BID" != "null" ] && break
-  BID=""; sleep "${AKASH_POLL_SLEEP:-2}"
+                  | sort_by(.bid.price.amount | tonumber? // 1e18) | .[0] // empty')"
+  [ -n "$SELECTED" ] && [ "$SELECTED" != "null" ] && break
+  SELECTED=""; sleep "${AKASH_POLL_SLEEP:-2}"
 done
-[ -n "$BID" ] || { echo "deploy-akash: no open bids for dseq $DSEQ" >&2; exit 1; }
+[ -n "$SELECTED" ] || { echo "deploy-akash: no open bids for dseq $DSEQ" >&2; exit 1; }
+BID="$(jq -c '.bid.id' <<<"$SELECTED")"   # bid_id path = .bid.id (verified)
 GSEQ="$(jq -r '.gseq' <<<"$BID")"; OSEQ="$(jq -r '.oseq' <<<"$BID")"; PROVIDER="$(jq -r '.provider' <<<"$BID")"
 [ -n "$PROVIDER" ] && [ "$PROVIDER" != "null" ] || { echo "deploy-akash: bid has no provider" >&2; exit 1; }
+SETTLED_PRICE_AMOUNT="$(jq -r '.bid.price.amount' <<<"$SELECTED")"
+SETTLED_PRICE_DENOM="$(jq -r '.bid.price.denom' <<<"$SELECTED")"
+[ -n "$SETTLED_PRICE_AMOUNT" ] && [ "$SETTLED_PRICE_AMOUNT" != "null" ] && [ -n "$SETTLED_PRICE_DENOM" ] && [ "$SETTLED_PRICE_DENOM" != "null" ] \
+  || { echo "deploy-akash: selected bid missing price fields" >&2; exit 1; }
 
 # 3. accept the bid (create the lease) — verify the tx landed (code==0).
 LEASE="$("$PS" tx market lease create --dseq "$DSEQ" --gseq "$GSEQ" --oseq "$OSEQ" --provider "$PROVIDER" \
@@ -137,4 +145,4 @@ for _ in $(seq 1 5); do
 done
 [ -n "$SENT" ] || { echo "deploy-akash: send-manifest failed after retries" >&2; exit 1; }
 
-printf '%s' "$DSEQ"
+printf '{"dseq":"%s","priceAmount":"%s","priceDenom":"%s"}' "$DSEQ" "$SETTLED_PRICE_AMOUNT" "$SETTLED_PRICE_DENOM"

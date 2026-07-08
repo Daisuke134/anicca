@@ -65,6 +65,10 @@ function happyDeps(dir, overrides = {}) {
     lockStatePath: path.join(dir, "citizens.json"), // withGigLock's statePath (mirrors CITIZENS_REGISTRY_PATH)
     ledgerFile: path.join(dir, "children.jsonl"),
     citizensRegistryFile: path.join(dir, "citizens.json"),
+    // FIND-002: scoped into the tmp dir, exactly like ledgerFile/citizensRegistryFile above -- without
+    // this override, a successful `deploy` fixture's shelterCostUsd would make executeSpawnAttempt
+    // write a REAL shelter-cost.jsonl row under the actual production resolveStateDir().
+    shelterCostFile: path.join(dir, "shelter-cost.jsonl"),
     checkHomeDistinct: async () => ({ ok: true, homeDir: path.join(dir, "child-home") }),
     generateEvmWallet: async () => ({ address: "0xChildEvmFixture0000000000000000000000001", privateKey: "0xchildevmfixturekey" }),
     persistChildWallet: async () => ({ ok: true, walletPath: path.join(dir, "child-home", ".automaton", "wallet.json") }),
@@ -74,6 +78,9 @@ function happyDeps(dir, overrides = {}) {
     seedChild: async () => ({ ok: true, txHash: "0xseedtxfixture" }),
     registerIdentity: async () => ({ ok: true, agentId: "9001", txHash: "0xregtxfixture" }),
     writeMcpConfig: async () => ({ ok: true }),
+    // FIND-001: fixture default so a post-seed failure injected by an override below never falls
+    // through to the REAL defaultReclaimSeed (which would spawn a genuine python3 subprocess).
+    reclaimSeed: async () => ({ ok: true, txHash: "0xreclaimtxfixture" }),
     ...overrides,
   };
 }
@@ -152,7 +159,10 @@ test("PROP-307b structural: executeSpawnAttempt contains no arithmetic/boolean e
 // Steps 7-9 (after REQ-204 has genuinely succeeded) -> buildChildSpec-based failure row.
 // ---------------------------------------------------------------------------
 
-function assertMinimalFailedRow(row, expectStep) {
+// `extraKeys` (FIND-001): steps 1-5 fail before the gas seed ever lands, so their row stays the
+// strictly minimal 4-key shape; step 6 (registerIdentity) fails AFTER a successful seedStep, so its
+// row also carries the reclaim-attempt outcome + lease_id -- callers pass the exact keys they expect.
+function assertMinimalFailedRow(row, expectStep, extraKeys = []) {
   assert.equal(row.status, "failed", `step ${expectStep}: row must be status:"failed"`);
   assert.equal(typeof row.child_id, "string");
   assert.equal(typeof row.attempted_ms, "number");
@@ -161,8 +171,8 @@ function assertMinimalFailedRow(row, expectStep) {
   const keys = Object.keys(row).sort();
   assert.deepEqual(
     keys,
-    ["attempted_ms", "child_id", "error", "status"],
-    `step ${expectStep}: a pre-identity-anchor failure row must be the MINIMAL shape only -- never buildChildSpec's fields (wallet/parent_wallet/etc.), never via buildChildSpec`
+    ["attempted_ms", "child_id", "error", "status", ...extraKeys].sort(),
+    `step ${expectStep}: a pre-identity-anchor failure row must be the MINIMAL shape (+ any explicitly expected extra keys) only -- never buildChildSpec's fields (wallet/parent_wallet/etc.), never via buildChildSpec`
   );
 }
 
@@ -242,7 +252,12 @@ test("PROP-307c step 6 (REQ-204 ERC-8004 registration failure) -> minimal direct
   assert.equal(result.status, "failed");
   const rows = readLedgerRows(deps.ledgerFile).filter((r) => r.child_id === result.childId);
   assert.equal(rows.length, 1);
-  assertMinimalFailedRow(rows[0], 6);
+  // FIND-001: the gas seed already landed (seedStep succeeded) before registerIdentity failed -- this
+  // is a genuine reclaim-trigger case, so the row also carries lease_id + the reclaim outcome.
+  assertMinimalFailedRow(rows[0], 6, ["lease_id", "reclaimed", "reclaimTxHash"]);
+  assert.equal(rows[0].lease_id, "dseq-fixture-001");
+  assert.equal(rows[0].reclaimed, true);
+  assert.equal(rows[0].reclaimTxHash, "0xreclaimtxfixture");
 });
 
 test("PROP-307c step 7 (REQ-205 mcp.json write failure) -> buildChildSpec-based failure row (identity anchor already complete)", async () => {

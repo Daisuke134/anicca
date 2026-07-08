@@ -7,7 +7,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { defaultDeploy, assertRealEvmAddress } from "../spawn-orchestrator.mjs";
+import { defaultDeploy, assertRealEvmAddress, shelterCostUsdFromSettledPrice } from "../spawn-orchestrator.mjs";
 
 // ---------------------------------------------------------------------------
 // PROP-304b/c/d/f (Round 2 additions, resolves FIND-001/002): defaultDeploy calls
@@ -31,13 +31,17 @@ test("defaultDeploy: funding gate ready on the FIRST pass -> deploy-akash.sh is 
     {
       queryBalanceAkt: async () => 30, // >= spawn_cost_akt(25) + buffer_akt(1), per spawn-child/config.json
       attemptBridge: async () => { bridgeCalls += 1; },
-      runDeployAkash: async (childId) => { deployCalls += 1; return `dseq-${childId}`; },
+      runDeployAkash: async (childId) => {
+        deployCalls += 1;
+        return JSON.stringify({ dseq: `dseq-${childId}`, priceAmount: "5", priceDenom: "uact" });
+      },
     }
   );
   assert.equal(bridgeCalls, 0, "a ready first pass must never attempt the bridge");
   assert.equal(deployCalls, 1);
   assert.equal(result.ok, true);
   assert.equal(result.leaseId, "dseq-anicca-cTEST");
+  assert.equal(result.shelterCostUsd, 0.000005, "FIND-002/PROP-303c: uact settled price converts to USD via the fixed 1e-6 peg (AEP-76)");
 });
 
 test("defaultDeploy: funding gate not ready after BOTH passes -> deploy-akash.sh is NEVER invoked, fails cleanly", async () => {
@@ -48,7 +52,7 @@ test("defaultDeploy: funding gate not ready after BOTH passes -> deploy-akash.sh
     {
       queryBalanceAkt: async () => 2, // stays insufficient even after the bridge attempt
       attemptBridge: async () => { bridgeCalls += 1; },
-      runDeployAkash: async () => { deployCalls += 1; return "dseq-should-never-happen"; },
+      runDeployAkash: async () => { deployCalls += 1; return JSON.stringify({ dseq: "dseq-should-never-happen", priceAmount: "5", priceDenom: "uact" }); },
     }
   );
   assert.equal(bridgeCalls, 1, "an insufficient first pass must trigger exactly one bridge attempt");
@@ -65,13 +69,17 @@ test("defaultDeploy: funding gate not ready on first pass, ready after the bridg
     {
       queryBalanceAkt: async () => { queryCount += 1; return queryCount === 1 ? 2 : 30; },
       attemptBridge: async () => {},
-      runDeployAkash: async () => { deployCalls += 1; return "dseq-after-bridge"; },
+      runDeployAkash: async () => {
+        deployCalls += 1;
+        return JSON.stringify({ dseq: "dseq-after-bridge", priceAmount: "10000", priceDenom: "uact" });
+      },
     }
   );
   assert.equal(queryCount, 2, "balanceAkt must be freshly re-queried for each of the (at most two) passes");
   assert.equal(deployCalls, 1);
   assert.equal(result.ok, true);
   assert.equal(result.leaseId, "dseq-after-bridge");
+  assert.equal(result.shelterCostUsd, 0.01);
 });
 
 test("defaultDeploy: a deploy-akash.sh failure (post-funding-gate) is still reported as before", async () => {
@@ -85,6 +93,38 @@ test("defaultDeploy: a deploy-akash.sh failure (post-funding-gate) is still repo
   );
   assert.equal(result.ok, false);
   assert.match(result.error, /deploy-akash.sh failed/);
+});
+
+test("defaultDeploy: deploy-akash.sh's stdout is not valid JSON -> fails cleanly, never crashes/fabricates a leaseId (fail-closed on a malformed output shape)", async () => {
+  const result = await defaultDeploy(
+    { target: "akash", childId: "anicca-cTEST" },
+    {
+      queryBalanceAkt: async () => 30,
+      attemptBridge: async () => {},
+      runDeployAkash: async () => "not-json-777",
+    }
+  );
+  assert.equal(result.ok, false);
+  assert.match(result.error, /deploy-akash\.sh produced invalid output/);
+});
+
+// ---------------------------------------------------------------------------
+// FIND-002/PROP-303c: shelterCostUsdFromSettledPrice's pure uact->USD conversion.
+// ---------------------------------------------------------------------------
+
+test("shelterCostUsdFromSettledPrice: a real uact settled price converts via the fixed AEP-76 1e-6 USD peg, never a fetched spot price", () => {
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "10000", priceDenom: "uact" }), 0.01);
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "5", priceDenom: "uact" }), 0.000005);
+});
+
+test("shelterCostUsdFromSettledPrice: any denom other than uact fails closed to null (never prices the wrong asset)", () => {
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "10000", priceDenom: "uakt" }), null);
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "10000", priceDenom: undefined }), null);
+});
+
+test("shelterCostUsdFromSettledPrice: a non-numeric/negative amount fails closed to null, never NaN/negative", () => {
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "not-a-number", priceDenom: "uact" }), null);
+  assert.equal(shelterCostUsdFromSettledPrice({ priceAmount: "-5", priceDenom: "uact" }), null);
 });
 
 // ---------------------------------------------------------------------------
