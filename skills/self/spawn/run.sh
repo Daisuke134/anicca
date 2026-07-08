@@ -40,11 +40,10 @@ done
 [ -n "$JQ" ]   || { echo "self/spawn: jq missing" >&2; exit 64; }
 [ -n "$NODE" ] || { echo "self/spawn: node missing" >&2; exit 64; }
 
-# --- load env (per-instance identity, Akash signing key, etc.). Best-effort; absence is reported,
-# never faked — wake-gate.mjs's own resolvers fail closed on a genuinely missing identity.
-set -a
-[ -f "$HOME/.hermes/.env" ]   && . "$HOME/.hermes/.env"
-[ -f "$HOME/.openclaw/.env" ] && . "$HOME/.openclaw/.env"
-set +a
+# --- load env (Akash signing key, etc.) from the shared per-user secrets files. Best-effort;
+# absence is reported, never faked — wake-gate.mjs's own resolvers fail closed on a genuinely
+# missing identity. Delegates to the shared helper (see that file's header for the full incident
+# writeup) so every skill with this same need shares ONE implementation, never a hand-copy.
+. "$SKILL_DIR/../../_shared/lib/load-instance-env.sh"
 
 exec "$NODE" "$SKILL_DIR/scripts/wake-gate.mjs" "$@"
