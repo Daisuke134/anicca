@@ -23,7 +23,7 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-08T05:36:05.417Z",
-  "updatedAt": "2026-07-08T06:00:00.000Z",
-  "specRevision": "v2",
-  "specRevisionNote": "Dais 5点指示(cadence contract/EDD/dashboard/loop scaling/OpenClaw統合)をdesign spec commit ae2b8eecd経由で反映。REQ-LV-041はREQ-LV-100-104によりSUPERSEDED（併記でなく置換）。"
+  "updatedAt": "2026-07-08T06:15:00.000Z",
+  "specRevision": "v2.1",
+  "specRevisionNote": "Dais 5点指示(cadence contract/EDD/dashboard/loop scaling/OpenClaw統合)をdesign spec commit ae2b8eecd経由で反映。REQ-LV-041はREQ-LV-100-104によりSUPERSEDED（併記でなく置換）。OpenClaw棚卸し確定版(a-1:30/a-2:23/a-3:7/b:24/c:19=103件一致)反映によりREQ-LV-140-145を全面書き換え。REQ数49、PROP数28。"
 }
