@@ -80,6 +80,10 @@ def is_profitable(line: Optional[dict]) -> bool:
         return False
     evm_ok = bool(line.get("tx")) and line.get("status") == "0x1"
     sol_ok = bool(line.get("sig")) and line.get("confirmed") is True
+    # REQ-C4 (feature hl-realized-pnl, documented follow-up, NOT implemented here): ledger.mjs's
+    # isProfitable gained a third disjunct for a well-formed Hyperliquid fill (chain=="hyperliquid"
+    # AND fill_tid present AND confirmed is True). Porting that check to this Python mirror is
+    # deferred to a separate feature; this function does not yet recognize Hyperliquid lines.
     return evm_ok or sol_ok
 
 
