@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-008",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "requirement": "PROP-015 / REQ-004(b)",
+  "description": "PROP-015's Description column claims to verify that 'ai.anicca.franklin-loop.plist's effective PORT/OPENAI_BASE_URL resolve to ClawRouter's 8402', but its Tool column only specifies two checks: `curl -sf http://127.0.0.1:8403/v1/models` failing, and `ps aux | grep \"franklin proxy\"` showing no process. Neither check inspects the actual deployed daemon's `OPENAI_BASE_URL`/`PORT` env value (e.g. via `launchctl print gui/$(id -u)/ai.anicca.franklin-loop` or `ps eww <pid>`, the same live-process-inspection method PROP-014 correctly uses for ANICCA_BALANCE_OVERRIDE). As written, PROP-015 would report PASS in exactly the broken scenario described in FIND-006: the 8403 spawn is removed (so nothing listens there and no franklin-proxy process exists -- both PROP-015 checks pass), yet `PORT`/`OPENAI_BASE_URL` for franklin's daemon is STILL silently resolved to :8403 (dead) rather than :8402, because `FRANKLIN_PROXY_PORT`/daemon.sh's PORT-assignment branch was never required to change. A verification tool that cannot distinguish 'THINK routes to 8402' from 'THINK is permanently broken pointing at a dead 8403' does not actually verify the property its own description names.",
+  "evidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-loop-revival/specs/verification-architecture.md",
+      "lineRange": "72",
+      "snippet": "PROP-015 | ... `ai.anicca.franklin-loop.plist`'s effective `PORT`/`OPENAI_BASE_URL` resolve to ClawRouter's `8402` ... | live process/port check: `curl -sf http://127.0.0.1:8403/v1/models` fails (connection refused) AND `ps aux | grep \"franklin proxy\"` shows no process owned by the franklin-loop daemon"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-loop-revival/specs/verification-architecture.md",
+      "lineRange": "71",
+      "snippet": "PROP-014 | ... checked against the process's actual inherited env ... `launchctl print gui/$(id -u)/ai.anicca.franklin-loop` ... cross-checked with `ps eww <pid>` ... -- deliberately NOT `env | grep` in the verifier's own shell"
+    }
+  ],
+  "routeToPhase": "1c"
+}

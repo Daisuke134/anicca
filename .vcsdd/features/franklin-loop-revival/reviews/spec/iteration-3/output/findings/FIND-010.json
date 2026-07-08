@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-010",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "requirement": "REQ-004 / Context (Root Cause B)",
+  "description": "Both authoritative documents assert, as their explanation of WHY THINK is pinned to the exhausted model, that `runtime/loop/brain.mjs::thinkProxy`'s `config.ANICCA_MODEL || ctx.model || 'auto'` precedence means 'since ANICCA_MODEL is set, the tier-selected model (ctx.model) is never consulted' (behavioral-spec.md:37-40) and that thinkProxy is 'already config-driven via config.ANICCA_MODEL/config.OPENAI_BASE_URL' (verification-architecture.md:58-60). This is factually wrong when checked against the real, live `config.mjs`: `loadConfig` (runtime/loop/config.mjs:104-145) only ever populates `config.ANICCA_MODEL` if `ANICCA_MODEL` is one of the `DEFAULTS` keys (lines 13-62: OPENAI_BASE_URL, ANICCA_FREE_MODEL, ANICCA_LEAN_MODEL, ANICCA_FUNDED_MODEL, SLEEP_*, SKILL_TIMEOUT_S, LOOP_DETECT_WINDOW, BALANCE_CACHE_TTL_S, LEAN_TIER_THRESHOLD, ANICCA_BRAIN, ANICCA_BRAIN_MODEL) or one of the explicit pass-through assignments (lines 114-142: ANICCA_HOME, ANICCA_WALLET_ADDRESS, ANICCA_BALANCE_OVERRIDE, ANICCA_EARN_SKILL, EARN_LEDGER, CLAUDE_BIN). `ANICCA_MODEL` is in NEITHER list -- grepping the entire runtime/ tree confirms `config.ANICCA_MODEL` is referenced ONLY at brain.mjs:58, and `ANICCA_MODEL` as an env var is never read anywhere in runtime/loop/*.mjs. Therefore `config.ANICCA_MODEL` is provably `undefined` on every wake regardless of what the plist exports, thinkProxy's expression ALWAYS falls through to `ctx.model`, and `ctx.model` is what actually carries the pin -- via tier.mjs's `selectTier(balance, config)` reading `config.ANICCA_FREE_MODEL`/`ANICCA_LEAN_MODEL`/`ANICCA_FUNDED_MODEL` (which ARE in DEFAULTS and DO correctly reflect the plist's env overrides), NOT via `config.ANICCA_MODEL`. This does not defeat the PRESCRIBED remediation (REQ-004's acceptance criteria still require changing all four plist model keys, which incidentally still works because ANICCA_FREE_MODEL/LEAN/FUNDED are the three that actually matter), but it means both documents' central causal claim -- offered as evidence of having 'confirmed by reading the exact source lines ... not assumed' (behavioral-spec.md:9-10) -- is itself unverified/wrong about which mechanism is responsible, in the one document whose entire premise is that every claim was checked against real code.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "37-40",
+    "snippet": "`runtime/loop/brain.mjs::thinkProxy` builds its request body as `config.ANICCA_MODEL || ctx.model || 'auto'` -- since `ANICCA_MODEL` is set, the tier-selected model (`ctx.model`) is **never** consulted"
+  },
+  "crossCheckedAgainst": [
+    {"filePath": "/Users/anicca/anicca/runtime/loop/config.mjs", "lineRange": "13-62, 104-145", "note": "DEFAULTS and pass-through list; ANICCA_MODEL is in neither -- config.ANICCA_MODEL is always undefined"},
+    {"filePath": "/Users/anicca/anicca/runtime/loop/brain.mjs", "lineRange": "58", "note": "the only reference to config.ANICCA_MODEL in the entire runtime/ tree (verified via grep)"},
+    {"filePath": "/Users/anicca/anicca/runtime/loop/tier.mjs", "lineRange": "28-49", "note": "selectTier reads env.ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL -- the actual mechanism that pins ctx.model"},
+    {"filePath": "specs/verification-architecture.md", "lineRange": "58-60", "note": "repeats the same incorrect claim in the Effectful Shell description"}
+  ],
+  "routeToPhase": "1b"
+}

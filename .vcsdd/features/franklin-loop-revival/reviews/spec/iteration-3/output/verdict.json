@@ -1,0 +1,81 @@
+{
+  "reviewType": "spec",
+  "feature": "franklin-loop-revival",
+  "iteration": 3,
+  "reviewer": "adversary",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T08:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-009", "FIND-010"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:145-196 (REQ-002)", "description": "Re-confirmed against the live skills/_shared/lib/solana-verify.mjs: usdcBalance/sigStatus/usdcDeltaForSig are its only three exports (lines 49,61,84); USDC_MINT (line 14) is a module-private const, never exported -- REQ-002's edge case correctly forbids importing a non-existent named export. FIND-007 (iteration-2) genuinely resolved."},
+        {"type": "file", "location": "specs/behavioral-spec.md:241-330 (REQ-004)", "description": "Re-confirmed against the live runtime/anicca-daemon.sh: the PORT-assignment branch (lines 26-30) and ensure_brain's franklin spawn (lines 67-75) are exactly the lines cited, and REQ-004(a) now explicitly requires changing the PORT-assignment branch itself, not just removing the spawn -- FIND-006 (iteration-2) genuinely resolved for the PORT-derivation half. NEW gap found in the SAME requirement: see FIND-009 (ensure_brain's franklin-branch replacement behavior is unspecified and can be implemented in a way that reintroduces the exact cross-instance wallet-key read REQ-005 forbids)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:79-81 (PROP-015)", "description": "Re-confirmed PROP-015 now requires BOTH the port/process absence check AND a separate, non-substitutable live process-env check (launchctl print / ps eww) for OPENAI_BASE_URL specifically, closing the exact gap FIND-008 (iteration-2) identified. Re-confirmed PROP-013/014 (ANICCA_BALANCE_OVERRIDE) and PROP-012 (malformed-secret fixture table) remain intact from iteration-2 -- FIND-003/FIND-005 (iteration-1) still hold. No new verification_readiness-only finding was opened this iteration (FIND-009/FIND-010 are filed under spec_fidelity since they are defects in requirement/context completeness and accuracy, not in the proof-obligation table itself), but overallVerdict is FAIL because ANY dimension FAIL makes the review FAIL, and FIND-009's underlying ambiguity means PROP-015's live checks would not, by themselves, catch a wrong-but-'passing' implementation of ensure_brain's replacement behavior (no PROP-0xx entry targets anicca-daemon.sh's ensure_brain wiring for cross-instance wallet-key leakage)."}
+      ]
+    }
+  ],
+  "priorFindingsResolved": {
+    "FIND-001": {
+      "status": "resolved",
+      "justification": "REQ-002 (behavioral-spec.md:145-151, 176-188) delegates to skills/_shared/lib/solana-verify.mjs::usdcBalance and explicitly forbids porting skills/earn/funding/lib/solana_rpc.py::spl_token_balance_units. Re-verified against the live solana-verify.mjs (read in full this iteration): usdcBalance (line 84) does exactly what the spec claims -- base58-shape guard (line 85-87), delegates to rpc()'s getTokenAccountsByOwner, returns 0 for zero ATAs (line 95). No regression."
+    },
+    "FIND-002": {
+      "status": "resolved",
+      "justification": "REQ-004 requires both ClawRouter routing (a) and 8403 franklin-proxy spawn removal (b), now further hardened by (c) (plist FRANKLIN_PROXY_PORT no longer load-bearing) and by PROP-015's two-part live check. Re-verified against the live, deployed /Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist (FRANKLIN_PROXY_PORT=8403, all four model keys still pinned to nvidia/llama-4-maverick, confirming the bug is still live and unfixed pre-implementation, as expected at Phase 1c). No regression. NOTE: this same requirement (REQ-004) has a new, different gap this iteration -- see FIND-009."
+    },
+    "FIND-003": {
+      "status": "resolved",
+      "justification": "REQ-003 forbids ANICCA_BALANCE_OVERRIDE in the deployed plist and PROP-013/014 require checking the REAL deployed plist file and the REAL running daemon process env, not the verifier's own shell. Re-verified live: the deployed plist (read this iteration) has no ANICCA_BALANCE_OVERRIDE key. No regression."
+    },
+    "FIND-004": {
+      "status": "resolved",
+      "justification": "The mint constant EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v is named explicitly (behavioral-spec.md:172-175) and cited to solana-verify.mjs:14 -- re-verified this iteration against the live file, matches exactly. No regression."
+    },
+    "FIND-005": {
+      "status": "resolved",
+      "justification": "REQ-001's malformed-.solana-session edge case (behavioral-spec.md:114-125) and PROP-012 (verification-architecture.md:77) define catch+warn+no-crash+no-secret-leak behavior with an exhaustive fixture table. Re-verified resolve-identity.mjs:39-46's readRawSecretFile matches the spec's citation exactly (trims + non-empty check only, no shape/length validation) -- confirming the malformed case is real and must be handled by this feature's NEW derivation helper, exactly as REQ-001 states. No regression."
+    },
+    "FIND-006": {
+      "status": "resolved",
+      "justification": "REQ-004(a) (behavioral-spec.md:246-256) now explicitly requires changing anicca-daemon.sh's PORT-assignment branch itself (lines 26-30, re-verified live this iteration to match the spec's citation exactly) so franklin's PORT resolves via ${COMPUTE_PROXY_PORT:-8402} instead of ${FRANKLIN_PROXY_PORT:-8403} -- not merely removing the 8403 spawn. verification-architecture.md:38-52 states the same requirement with an explicit regression warning citing FIND-006 by name. No regression."
+    },
+    "FIND-007": {
+      "status": "resolved",
+      "justification": "REQ-002's mint-constant edge case (behavioral-spec.md:171-183) now correctly states USDC_MINT is a module-private, non-exported const in solana-verify.mjs and that importing it is not a real option -- re-verified against the live file (only sigStatus/usdcDeltaForSig/usdcBalance are exported). No regression."
+    },
+    "FIND-008": {
+      "status": "resolved",
+      "justification": "PROP-015 (verification-architecture.md:80) now requires TWO independent, non-substitutable checks: (1) port/process absence, AND (2) the real running daemon process's actual OPENAI_BASE_URL via launchctl print/ps eww -- explicitly stating check (1) alone is 'consistent with BOTH the fixed state and the FIND-006-broken state' and therefore insufficient alone. REQ-004's acceptance criteria (behavioral-spec.md:320-329) state the identical two-part requirement. No regression."
+    }
+  },
+  "newFindingsSummary": [
+    {
+      "id": "FIND-009",
+      "severity": "critical",
+      "requirement": "REQ-004(b) / REQ-005",
+      "oneLiner": "REQ-004(b) says to stop ensure_brain's franklin branch from spawning `franklin proxy` on 8403 but never specifies what replaces it; anicca-daemon.sh's non-franklin ensure_brain (the only other implementation pattern in this file) resolves its ClawRouter-spawn wallet key by unconditionally grepping the SHARED, cross-instance $HOME/.openclaw/.env FIRST -- a spec-compliant-but-wrong implementation that collapses/merges the two branches would have Franklin's own daemon read another instance's wallet-key file, exactly the class of leakage REQ-005 forbids, and no PROP-0xx entry tests anicca-daemon.sh's ensure_brain wiring at all."
+    },
+    {
+      "id": "FIND-010",
+      "severity": "medium",
+      "requirement": "REQ-004 / Context (Root Cause B)",
+      "oneLiner": "Both documents' explanation of why THINK is pinned to the exhausted model claims config.ANICCA_MODEL (set by the plist) overrides ctx.model in brain.mjs::thinkProxy -- verified false against the live config.mjs: ANICCA_MODEL is never read into config at all (not in DEFAULTS, not in the pass-through list), so config.ANICCA_MODEL is always undefined and the real pinning mechanism is ANICCA_FREE_MODEL/LEAN/FUNDED via tier.mjs. The prescribed fix still works by coincidence, but the 'confirmed by reading the exact source lines... not assumed' claim this spec makes about itself is false for this specific claim."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "factualClaimsVerified": "Cross-checked this iteration against the real, live artifacts on disk: runtime/anicca-daemon.sh (full file, lines 1-129: PORT-assignment lines 26-30, franklin ensure_brain lines 53-75/67-75, non-franklin ensure_brain + cross-instance $HOME/.openclaw/.env grep lines 76-100/82-95, wallet-export gate lines 119-124, OPENAI_BASE_URL export line 117), skills/_shared/lib/solana-verify.mjs (full file: exports sigStatus/usdcDeltaForSig/usdcBalance only, USDC_MINT non-exported const line 14, B58_RE guard lines 85-87, rpc() lines 19-31, zero-ATA return-0 lines 83/95), runtime/loop/balance.mjs (full file: 0x-only regex line 43, ANICCA_BALANCE_OVERRIDE lines 32-40), skills/earn/lib/resolve-identity.mjs (full file: readRawSecretFile lines 39-46, resolveSolanaSecret lines 115-138, resolveEvmPrivateKey lines 63-87), runtime/wallet-address.mjs (confirmed EVM/viem-only, no Solana branch), runtime/loop/index.mjs (lines 1-260: config = loadConfig(process.env, dotenvText) line 67, walletAddress/liquidUsdc/currentTier wiring lines 230-244), runtime/loop/config.mjs (full file: DEFAULTS lines 13-62 and pass-through lines 114-142 do NOT include ANICCA_MODEL), runtime/loop/brain.mjs (full file: thinkProxy model precedence line 58, confirmed the ONLY reference to config.ANICCA_MODEL in the runtime/ tree via grep), runtime/loop/tier.mjs (selectTier boundaries lines 28-49), runtime/loop/context.mjs (assembleContext: ctx.model comes solely from the `model` param, no direct env read), runtime/loop/env-filter.mjs, runtime/loop/catalog-gate.mjs, runtime/loop/parse-tool-call.mjs (all unchanged, out-of-scope areas re-confirmed consistent with the spec's non-goals), the DEPLOYED /Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist (read directly this iteration: FRANKLIN_PROXY_PORT=8403, all four model keys still nvidia/llama-4-maverick, no ANICCA_BALANCE_OVERRIDE -- confirms the bug is still live pre-fix, as expected), package.json / runtime/package.json (confirmed @solana/web3.js is declared ONLY in the root /Users/anicca/anicca/package.json, not in runtime/package.json, and that runtime/dashboard/telemetry-post-franklin.mjs already derives Franklin's Solana public address in production via a pure bs58.decode/slice(32)/bs58.encode sequence with no Keypair call at all -- noted but not filed as a blocking finding since PROP-012's own acceptance criteria, if honestly implemented, independently force correct malformed-secret handling regardless of which derivation approach is chosen), and confirmed all cited test files exist (runtime/loop/__tests__/resolve-identity.test.mjs, env-filter.test.mjs, integration.test.mjs; skills/_shared/lib/__tests__/solana-verify.test.js; skills/earn/clip-promote/tests/fake_solana_rpc.mjs)."
+}

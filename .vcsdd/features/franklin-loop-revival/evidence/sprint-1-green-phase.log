@@ -1,0 +1,173 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+================================================================================
+GREEN PHASE EVIDENCE — franklin-loop-revival, sprint 1
+Feature: franklin-loop-revival | Phase: 2b (GREEN) | Mode: lean
+Spec: specs/behavioral-spec.md (REQ-001..006), specs/verification-architecture.md (PROP-001..016)
+Commands run from repo root (/Users/anicca/anicca): `node --test <files>`
+Date: 2026-07-08
+================================================================================
+
+SCOPE OF THIS EVIDENCE
+-----------------------
+"target-feature-tests: PASS" covers the SAME 6 test files that were RED in
+evidence/sprint-1-red-phase.log (address-classify, balance-solana, wallet-address-solana,
+integration-solana-tier, franklin-plist-config, daemon-script-franklin-routing) — now all 33
+sub-tests pass (12+4+8+1+2+6) against the Phase 2b implementation below.
+
+"regression-baseline: PASS" covers the SAME existing suites the red-phase evidence named
+(resolve-identity.test.mjs — REQ-005 AC; env-filter.test.mjs — REQ-006 AC; solana-verify.test.js —
+the reused usdcBalance/PROP-002 dependency): 42/42 pass, 0 failures, run unmodified — IDENTICAL
+42/42 count to the red-phase baseline, confirming no regression was introduced.
+
+Also re-ran the FULL runtime/loop/__tests__/*.mjs suite (180 tests) for an independent
+cross-check: 176 pass / 4 fail. The 4 failures are the SAME pre-existing, out-of-scope
+tier.test.mjs (3) + config.test.mjs (1) failures disclosed in the red-phase evidence's HONESTY
+NOTE (hardcoded expected model-name literals not matching current tier.mjs/config.mjs DEFAULTS;
+this feature does not modify tier.mjs or config.mjs, per verification-architecture.md
+`selectTier` explicitly UNCHANGED) — unrelated to REQ-001..006, untouched by this sprint's
+changes. Occasionally the full-suite run shows a 5th, DIFFERENT flaky failure (varies between
+`self-eval.test.mjs`'s PROP-021(e) and `integration.test.mjs`'s PROP-023(e) across repeated runs
+of the identical, unmodified suite) — confirmed via 4 repeated runs to be pre-existing timing
+flakiness unrelated to this feature (neither file is touched by this sprint's `git status`, and
+the flaky test's identity changes between runs while tier.test.mjs/config.test.mjs's 4 failures
+are 100% reproducible every run).
+
+FILES CHANGED/ADDED THIS PHASE
+-------------------------------
+NEW:
+- runtime/loop/address-classify.mjs        (REQ-002, PROP-001 — pure chain-shape classifier)
+- runtime/wallet-address-solana.mjs        (REQ-001/005/006, PROP-005/007/008/012 — Solana address CLI)
+
+MODIFIED:
+- runtime/loop/balance.mjs                 (REQ-002, PROP-002/004 — Solana dispatch branch added,
+                                             EVM path byte-for-byte unchanged)
+- runtime/anicca-daemon.sh                 (REQ-004(a)(b)(c), REQ-005, PROP-016 — PORT resolves
+                                             8402 for every instance; franklin's ensure_brain
+                                             replaced with a no-op/readiness-probe; wallet-export
+                                             gate resolves Solana for franklin, EVM unchanged for
+                                             non-franklin)
+- ~/Library/LaunchAgents/ai.anicca.franklin-loop.plist
+                                             (REQ-003/004 — ANICCA_MODEL/ANICCA_FREE_MODEL/
+                                             ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL moved from the
+                                             rate-limited nvidia/llama-4-maverick to free/glm-4.7,
+                                             verified live via a real zero-payment completion call
+                                             against ClawRouter :8402 this session
+                                             (chatcmpl-863d7b1ea5f40218, content:"ok"); this is the
+                                             SAME model config.mjs's own DEFAULTS already use for
+                                             the clawrouter instance (documented evidence trail in
+                                             config.mjs, reused not reinvented). FRANKLIN_PROXY_PORT
+                                             updated 8403->8402. No ANICCA_BALANCE_OVERRIDE key
+                                             added (guardrail stays green). plutil -lint: OK.)
+
+================================================================================
+RAW OUTPUT — 6 new/target test files (33 sub-tests)
+Command: node --test runtime/loop/__tests__/{address-classify,balance-solana,wallet-address-solana,integration-solana-tier,franklin-plist-config,daemon-script-franklin-routing}.test.mjs
+================================================================================
+✔ PROP-001: classifyAddress(evm 0x+40hex) === "evm" (0.821125ms)
+✔ PROP-001: classifyAddress accepts mixed-case hex (checksummed) as evm (0.084458ms)
+✔ PROP-001: classifyAddress(Franklin real Solana address) === "solana" (0.055209ms)
+✔ PROP-001: a valid 0x+40hex string is NEVER classified "solana" (0.064625ms)
+✔ PROP-001: a valid base58 32-byte-decodable string is NEVER classified "evm" (0.041916ms)
+✔ PROP-001: empty string -> invalid (0.057459ms)
+✔ PROP-001: "unknown" (index.mjs's own placeholder) -> invalid (0.033208ms)
+✔ PROP-001: too-short 0x string -> invalid (not evm, not solana) (0.032833ms)
+✔ PROP-001: too-long 0x string (41 hex chars) -> invalid (0.049333ms)
+✔ PROP-001: 0x string with non-hex chars -> invalid (0.075959ms)
+✔ PROP-001: non-string inputs (null/undefined/number) -> invalid, never throw (0.0865ms)
+✔ PROP-001: classifyAddress returns EXACTLY one of evm/solana/invalid for any input (never both true) (0.094958ms)
+✔ PROP-002/REQ-002 AC1: fetchUsdcBalance(Franklin real Solana address) resolves a real numeric balance instead of throwing "invalid wallet address" (1.564625ms)
+✔ PROP-002: zero-ATA Solana wallet -> fetchUsdcBalance resolves 0 (does NOT throw), matching usdcBalance's own "no ATA" behavior (0.12925ms)
+✔ PROP-002: Solana RPC failure propagates as a throw (caller keeps prior tier) — NOT the generic "invalid wallet address" message (0.238875ms)
+✔ PROP-002: dispatch does NOT reimplement Solana RPC parsing — balance.mjs must import usdcBalance from solana-verify.mjs, not define its own getTokenAccountsByOwner call (0.150667ms)
+✔ PROP-005 (live): ANICCA_HOME=/Users/anicca/.blockrun ANICCA_INSTANCE=franklin prints EXACTLY Franklin's real address and nothing else on stdout (244.604584ms)
+✔ REQ-001 edge case: missing .solana-session -> empty stdout, WARNING on stderr, exit 0 (no crash) (120.753583ms)
+✔ REQ-001 edge case: empty .solana-session file -> empty stdout, WARNING, exit 0 (no crash) (104.764083ms)
+✔ PROP-012: malformed base58 (invalid chars) -> catch, empty stdout, WARNING (never the raw secret), exit 0 (no crash) (140.456208ms)
+✔ PROP-012: valid base58 but WRONG BYTE LENGTH -> catch (Keypair derivation throws), empty stdout, WARNING (never the raw secret), exit 0 (121.697583ms)
+✔ PROP-012: valid, well-formed secret (fresh self-consistent fixture, NOT Franklin's real key) -> derives the matching address, nothing else on stdout, secret never leaked (203.100791ms)
+✔ PROP-007: foreign ANICCA_HOME (different from $HOME/.blockrun) resolves NOTHING even though a real .solana-session exists at $HOME/.blockrun (118.022708ms)
+✔ PROP-007: default ANICCA_HOME (unset, falls back to $HOME/.anicca) resolves nothing for Franklin's Solana identity (123.02175ms)
+✔ PROP-006/REQ-003: a wake with a real (mocked) Solana balance > $1.00 selects the FUNDED tier — never stays "broke" — WITHOUT ANICCA_BALANCE_OVERRIDE (218.879ms)
+✔ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (21.760333ms)
+✔ REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids) (12.943ms)
+✔ REQ-004(a): INSTANCE=franklin resolves PORT to ClawRouter's 8402 (matching the non-franklin branch), not 8403 (18.040375ms)
+✔ REQ-004(c): even with FRANKLIN_PROXY_PORT=8403 set (mirroring the deployed plist's current value), PORT still resolves 8402 for franklin (7.688292ms)
+✔ regression: non-franklin (INSTANCE unset / clawrouter) still resolves PORT=8402 via COMPUTE_PROXY_PORT (unchanged) (14.007083ms)
+✔ REQ-004(a): OPENAI_BASE_URL (the SAME $PORT variable line 117 already uses) resolves to http://127.0.0.1:8402/v1 for franklin (6.068375ms)
+✔ REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns `franklin proxy` or `clawrouter`, never reads $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY, but keeps AT MOST a curl readiness probe (0.428ms)
+✔ regression/REQ-005: the non-franklin ensure_brain branch (its own, separately-designed $HOME/.openclaw/.env use) is untouched and structurally distinct from the franklin branch (0.658209ms)
+ℹ tests 33
+ℹ suites 0
+ℹ pass 33
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 1331.362333
+
+================================================================================
+RAW OUTPUT — regression baseline (existing suites this feature reuses/touches)
+Command: node --test runtime/loop/__tests__/resolve-identity.test.mjs runtime/loop/__tests__/env-filter.test.mjs skills/_shared/lib/__tests__/solana-verify.test.js
+================================================================================
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (0.790459ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.059542ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.043458ms)
+✔ PROP-005: removes all matching keys from mixed env (0.053041ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (0.64175ms)
+✔ PROP-006: does not mutate original env (0.044167ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.069709ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.040583ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.187542ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.110834ms)
+✔ EVM ①: env.ANICCA_EVM_PRIVATE_KEY wins even when wallet files also exist (1.798792ms)
+✔ EVM ①: env override without 0x prefix is normalized (0.06575ms)
+✔ EVM ②: resolves from $ANICCA_HOME/.automaton/wallet.json when no env override (0.597667ms)
+✔ EVM ③: default-home owner (ANICCA_HOME === $HOME/.anicca) falls back to legacy $HOME/.automaton/wallet.json (0.357875ms)
+✔ EVM ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.anicca, no own wallet yet) does NOT inherit legacy -> null (0.226875ms)
+✔ EVM ③: falls back to $HOME/.automaton/wallet.json when ANICCA_HOME is unset (0.306958ms)
+✔ EVM ④ fail-closed: no override, no files anywhere -> null (never throws) (0.483416ms)
+✔ EVM fail-closed: missing HOME/ANICCA_HOME entirely -> null (never throws) (0.481708ms)
+✔ EVM fail-closed: malformed wallet.json -> null (never throws) (0.953333ms)
+✔ Solana ①: env.ANICCA_SOLANA_PRIVATE_KEY wins even when files also exist (0.482708ms)
+✔ Solana ②: resolves from $ANICCA_HOME/.automaton/solana.json when no env override (0.8265ms)
+✔ Solana ③: Franklin home (ANICCA_HOME === $HOME/.blockrun) falls back to legacy .solana-session (0.853208ms)
+✔ Solana ③ gated: foreign spawn (ANICCA_HOME !== $HOME/.blockrun) does NOT inherit .solana-session -> null (0.2945ms)
+✔ Solana ④ fail-closed: no override, no files anywhere -> null (never throws) (0.291417ms)
+✔ Solana fail-closed: malformed solana.json -> null (never throws) (0.958167ms)
+✔ fresh ANICCA_HOME: EVM + Solana keys generated under it resolve back via resolve-identity (0.378625ms)
+✔ loadEvmKey ①: PKVAR-named env key wins (0.051542ms)
+✔ loadEvmKey ②: BLOCKRUN_WALLET_KEY used when no PKVAR (normalized) (0.03325ms)
+✔ loadEvmKey ③: no env key -> gated resolveEvmPrivateKey (default-home owner gets legacy) (0.209917ms)
+✔ loadEvmKey gated (#28): foreign spawn, no env key, legacy present -> null (no inheritance) (0.388167ms)
+✔ sigStatus: finalized + err:null → confirmed:true (1.965375ms)
+✔ sigStatus: confirmed + err:null → confirmed:true (0.282584ms)
+✔ sigStatus: processed (not yet confirmed) → confirmed:false (0.06725ms)
+✔ sigStatus: tx errored (err set) → confirmed:false even if finalized (0.063041ms)
+✔ sigStatus: unknown signature (value[0]=null) → confirmed:false (0.060084ms)
+✔ sigStatus: rejects a non-base58 / EVM-style hash (0.291792ms)
+✔ usdcDeltaForSig: normal inbound (pre 10 → post 60 = +50) to OUR ATA only (0.158875ms)
+✔ usdcDeltaForSig: FIRST-INBOUND (ATA created in this tx → NO pre entry) → full post amount (0.064834ms)
+✔ usdcDeltaForSig: ignores other owners and other mints in a batch tx (0.071708ms)
+✔ usdcDeltaForSig: uiAmount null → falls back to amount/10**decimals (0.119833ms)
+✔ usdcBalance: existing ATA returns uiAmount (0.139875ms)
+✔ usdcBalance: NO ATA (empty value) → 0, does not throw (0.058875ms)
+ℹ tests 42
+ℹ suites 0
+ℹ pass 42
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 101.799542
+
+================================================================================
+CROSS-CHECK — full runtime/loop/__tests__/*.mjs suite (180 tests, independent of the above)
+Command: node --test runtime/loop/__tests__/*.mjs
+Result: tests 180, pass 176, fail 4 — the 4 failures are tier.test.mjs's PROP-001/002/003 and
+config.test.mjs's PROP-011/012, ALL pre-existing (disclosed in sprint-1-red-phase.log's HONESTY
+NOTE), untouched by this sprint (tier.mjs/config.mjs are not in this feature's changed-file list;
+`git status` confirms only balance.mjs and anicca-daemon.sh were modified, plus the 6 new test
+files + 2 new source files were added).
+================================================================================

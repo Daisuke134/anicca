@@ -1,0 +1,7 @@
+{
+  "reviewType": "spec",
+  "iteration": 4,
+  "artifactsToReview": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+  "reviewDimensions": ["spec_fidelity", "verification_readiness"],
+  "priorFindings": "iter1 FIND-001..005 (resolved), iter2 FIND-006..008 (resolved), iter3 FIND-009/010 (must confirm resolved). Converging 5->3->2."
+}

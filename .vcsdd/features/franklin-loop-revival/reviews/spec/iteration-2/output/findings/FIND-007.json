@@ -1,0 +1,26 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "requirement": "REQ-002",
+  "description": "REQ-002's mint-constant edge case offers implementers two alternative compliant paths: (1) call `usdcBalance` with no `opts.mint` override, or (2) 'pass through the same named constant imported from that module' (`skills/_shared/lib/solana-verify.mjs`). Path (2) is not actually possible with the real module: `USDC_MINT` at `solana-verify.mjs:14` is a module-private `const`, never exported -- the file's only exported symbols are `sigStatus`, `usdcDeltaForSig`, and `usdcBalance`. An implementer who tries `import { USDC_MINT } from '.../solana-verify.mjs'` per the spec's own words gets `undefined`; passing that as `opts.mint` would silently fall back inside `usdcBalance` to its OWN internal default (`opts.mint || USDC_MINT`) so no live-balance bug results today, but the spec text itself cites a non-existent export as a valid implementation path, which is exactly the class of unverified/hallucinated-citation risk this project's own review process exists to catch, and could send an implementer down a dead end while wiring REQ-002's dispatch layer.",
+  "evidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-loop-revival/specs/behavioral-spec.md",
+      "lineRange": "168-175",
+      "snippet": "it either calls `usdcBalance` with no `opts.mint` override (letting `solana-verify.mjs` supply its own default) or passes through the same named constant imported from that module."
+    },
+    {
+      "filePath": "skills/_shared/lib/solana-verify.mjs",
+      "lineRange": "14",
+      "snippet": "const USDC_MINT = process.env.USDC_MINT || \"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\";"
+    },
+    {
+      "filePath": "skills/_shared/lib/solana-verify.mjs",
+      "lineRange": "49,61,84",
+      "snippet": "export async function sigStatus(...) / export async function usdcDeltaForSig(...) / export async function usdcBalance(...) -- USDC_MINT is never among the exports"
+    }
+  ],
+  "routeToPhase": "1c"
+}

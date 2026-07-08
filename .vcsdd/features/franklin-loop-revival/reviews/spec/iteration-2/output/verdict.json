@@ -1,0 +1,76 @@
+{
+  "reviewType": "spec",
+  "iteration": 2,
+  "reviewer": "adversary",
+  "feature": "franklin-loop-revival",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:142-188 (REQ-002)", "description": "Confirmed reuse of skills/_shared/lib/solana-verify.mjs::usdcBalance, correct mint constant EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v cited at solana-verify.mjs:14, explicit ban on porting solana_rpc.py -- FIND-001/004 genuinely resolved"},
+        {"type": "file", "location": "specs/behavioral-spec.md:233-287 (REQ-004)", "description": "Confirmed both halves (ClawRouter routing + 8403 franklin-proxy disable) are now required with PROP-015 live-check -- FIND-002 genuinely resolved in intent, but see FIND-006 for a new internal contradiction in how the fix is wired"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:70-71 (PROP-013/PROP-014)", "description": "Confirmed PROP-013/014 require checking the DEPLOYED plist file and the REAL running daemon process env (launchctl print / ps eww), not the verifier's own shell -- FIND-003 genuinely resolved"},
+        {"type": "file", "location": "specs/behavioral-spec.md:106-140 (REQ-001 edge cases) / verification-architecture.md:69 (PROP-012)", "description": "Confirmed malformed .solana-session crash-vs-warn behavior is now defined (catch + warn + no raw secret in stderr) with an exhaustive fixture table -- FIND-005 genuinely resolved"}
+      ]
+    }
+  ],
+  "priorFindingsResolved": {
+    "FIND-001": {
+      "status": "resolved",
+      "justification": "REQ-002 now delegates to skills/_shared/lib/solana-verify.mjs::usdcBalance (behavioral-spec.md:146-151, 176-188) and verification-architecture.md:26-35/59-60/118-121 explicitly forbids porting skills/earn/funding/lib/solana_rpc.py. Verified against the real file: solana-verify.mjs exports usdcBalance (line 84) which already handles the zero-ATA and base58-shape cases the spec cites."
+    },
+    "FIND-002": {
+      "status": "resolved",
+      "justification": "REQ-004 (behavioral-spec.md:233-287) now requires BOTH routing THINK to ClawRouter :8402 (a) AND disabling the ensure_brain franklin-proxy spawn on :8403 (b), with PROP-015 (verification-architecture.md:72) as a live process/port check. Verified against runtime/anicca-daemon.sh:53-75/119-124 that these are indeed the exact lines needing change. NOTE: while the requirement's INTENT is resolved, a new mechanical contradiction in how (a) is actually wired is raised as FIND-006 (critical) -- the fix is not yet implementable unambiguously."
+    },
+    "FIND-003": {
+      "status": "resolved",
+      "justification": "REQ-003 (behavioral-spec.md:206-231) now forbids ANICCA_BALANCE_OVERRIDE in the deployed plist AND requires checking the REAL daemon process env (PROP-013/014, verification-architecture.md:70-71) via launchctl print / ps eww, not the verifier's own shell. Verified live: the deployed /Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist currently has no ANICCA_BALANCE_OVERRIDE key, consistent with the spec's baseline."
+    },
+    "FIND-004": {
+      "status": "resolved",
+      "justification": "The mint constant is now named explicitly (behavioral-spec.md:168-175, verification-architecture.md:33-35) as EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v, cited to solana-verify.mjs:14 -- verified this matches the real file exactly. NOTE: the same edge-case bullet introduces a new, separate defect (FIND-007) by offering a second implementation path that references a non-existent export."
+    },
+    "FIND-005": {
+      "status": "resolved",
+      "justification": "REQ-001 (behavioral-spec.md:110-122) now defines the malformed-.solana-session case explicitly: catch the Keypair-derivation exception, treat identically to missing/empty (warn, leave ANICCA_WALLET_ADDRESS unset, no crash), citing resolve-identity.mjs:39-46's readRawSecretFile (verified accurate against the real file: it only trims and checks non-empty length). PROP-012 (verification-architecture.md:69) adds an exhaustive fixture table covering this case."
+    }
+  },
+  "newFindingsSummary": [
+    {
+      "id": "FIND-006",
+      "severity": "critical",
+      "requirement": "REQ-004",
+      "oneLiner": "REQ-004's edge case permits leaving FRANKLIN_PROXY_PORT/daemon.sh PORT-assignment untouched, but that SAME $PORT variable (anicca-daemon.sh:26-30, 117) is what determines OPENAI_BASE_URL -- following the spec literally leaves THINK permanently pointed at the now-dead :8403 instead of :8402, contradicting REQ-004(a) and verification-architecture.md's own 'without further change' claim."
+    },
+    {
+      "id": "FIND-007",
+      "severity": "medium",
+      "requirement": "REQ-002",
+      "oneLiner": "REQ-002's mint-constant edge case names an implementation option (import USDC_MINT from solana-verify.mjs) that does not exist -- solana-verify.mjs never exports USDC_MINT."
+    },
+    {
+      "id": "FIND-008",
+      "severity": "critical",
+      "requirement": "PROP-015",
+      "oneLiner": "PROP-015's verification Tool (curl 8403 + ps aux grep) does not actually check what its Description claims (OPENAI_BASE_URL resolves to 8402) -- it would PASS in the exact broken scenario described in FIND-006."
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "factualClaimsVerified": "Cross-checked against real, live artifacts: runtime/anicca-daemon.sh (lines 25-30, 53-75, 67-75, 88-94, 116-124), runtime/loop/balance.mjs, runtime/wallet-address.mjs, runtime/loop/brain.mjs (thinkProxy model precedence, line 58), runtime/loop/tier.mjs (selectTier boundaries), runtime/loop/index.mjs (liquidUsdc init line 237, tier assignment line 241), runtime/loop/env-filter.mjs (PRIVATE_KEY_REGEX line 15), runtime/loop/catalog-gate.mjs (DEFAULT_BOOTSTRAP_RESERVE_USDC=20, line 16), runtime/loop/parse-tool-call.mjs (confirmed no enum enforcement against a catalog), skills/_shared/lib/solana-verify.mjs (full file, USDC_MINT line 14, B58_RE line 16, usdcBalance line 84), skills/earn/lib/resolve-identity.mjs (full file, readRawSecretFile lines 39-46, resolveSolanaSecret lines 115-138), the DEPLOYED /Users/anicca/Library/LaunchAgents/ai.anicca.franklin-loop.plist (confirmed FRANKLIN_PROXY_PORT=8403, all THINK models pinned to nvidia/llama-4-maverick, no ANICCA_BALANCE_OVERRIDE key), and live logs /Users/anicca/.blockrun/logs/daemon.err + /Users/anicca/.blockrun/state/ledger.jsonl (confirmed real wake_error/proxy_down and invalid-wallet-address lines matching the spec's cited evidence verbatim). Also confirmed package.json declares @solana/web3.js and bs58 as existing dependencies, and confirmed skills/_shared/lib/__tests__/solana-verify.test.js, skills/earn/clip-promote/tests/fake_solana_rpc.mjs, and runtime/loop/__tests__/resolve-identity.test.mjs all exist as cited."
+}
