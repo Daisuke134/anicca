@@ -19,6 +19,24 @@ fi
 
 command -v franklin-trading >/dev/null || { echo "franklin-trading CLI missing" >&2; exit 1; }
 
+# IDENTITY-MATCH GUARD (money-safety): the franklin-trading CLI hardcodes its wallet to ~/.blockrun,
+# so ANY instance running this slot would trade Franklin's wallet. Only the instance that OWNS
+# ~/.blockrun (Franklin) may proceed; every other instance (automaton) HALTs before touching the CLI.
+WADDR="$SKILL_DIR/../../../runtime/wallet-address-solana.mjs"
+OWN_WALLET=$(node "$WADDR" 2>/dev/null)
+CLI_WALLET=$(ANICCA_HOME="$HOME/.blockrun" node "$WADDR" 2>/dev/null)
+if [ -z "$OWN_WALLET" ] || [ -z "$CLI_WALLET" ] || [ "$OWN_WALLET" != "$CLI_WALLET" ]; then
+  echo "{\"ts\":\"$(now)\",\"slot\":\"earn/sol-trade\",\"action\":\"skip\",\"reason\":\"identity-mismatch (own=${OWN_WALLET:-none} cli=${CLI_WALLET:-none}); only Franklin(.blockrun) may run this slot\"}" >> "$TRACE"
+  exit 0
+fi
+
+# cumulative-loss guard (fail-closed) — same one-line idiom as economy/gig/run.sh:62 / earn/run.sh
+LEDGER="${EARN_LEDGER:-$STATE_DIR/earn-ledger.jsonl}"
+if ! node "$SKILL_DIR/../../_shared/lib/earn-guard.mjs" check "$OWN_WALLET" "sol-trade" "$LEDGER" 2>/dev/null; then
+  echo "{\"ts\":\"$(now)\",\"slot\":\"earn/sol-trade\",\"action\":\"skip\",\"reason\":\"earn-guard: cumulative net breach -- HALT (fail-closed)\"}" >> "$TRACE"
+  exit 0
+fi
+
 # BASELINE STRATEGY (battle-tested seed — the AI starts here, then self-improves; #34/H8).
 # Franklin's perp tools are PAPER, but JupiterSwap is a REAL on-chain Solana DEX swap — so REAL earning =
 # disciplined spot round-trips: buy a token you have a clear TradingSignal edge on, take profit, swap back
