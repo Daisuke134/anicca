@@ -1,7 +1,7 @@
 {
   "featureName": "gig-feasibility-volume",
   "mode": "lean",
-  "currentPhase": "1c",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -26,18 +26,35 @@
       "to": "1c",
       "timestamp": "2026-07-08T12:38:38.561Z",
       "reason": "gig spec finalized (both channels, search+metrics self-improve, BP playbook, AI-disclosure removed); entering fresh adversary review"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-08T13:30:21.764Z",
+      "reason": "gig spec review PASS at iteration 4; entering TDD red",
+      "sprint": 1
     }
   ],
   "iterations": {
-    "1c": 1
+    "1c": 1,
+    "2a": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-gig-feasibility-volume-1783511638475",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-08T13:30:21.735Z",
+      "reviewedBy": "adversary",
+      "details": "iteration-4 PASS (0 blocking/major/minor). 4 iterations: cadence source moved from rarely-run funnel_report to applied.jsonl+listings.jsonl (real 270-row validated), broken gig-cli.sh paths fixed, category PROP gap closed, AI-disclosure removed per Dais. verdicts: reviews/spec/iteration-{1..4}",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-08T13:30:21.735Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-08T11:53:58.474Z",
-  "updatedAt": "2026-07-08T12:38:38.562Z"
+  "updatedAt": "2026-07-08T13:30:21.764Z"
 }
