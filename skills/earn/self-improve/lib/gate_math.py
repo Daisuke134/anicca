@@ -28,6 +28,13 @@ from typing import Iterable, Optional, Tuple
 EVOLVE_START_RE = re.compile(r"^\s*#\s*EVOLVE-BLOCK-START\s*$")
 EVOLVE_END_RE = re.compile(r"^\s*#\s*EVOLVE-BLOCK-END\s*$")
 
+# REQ-RL10/RL11 (self-improve-real-ledger): minimum confirmed rows inside the current operating
+# window before the realized-ledger trend/realism checks fire at all (below this, a brand-new or
+# quiet instance is judged on fixture performance alone — EDGE-RL1/EDGE-RL4). A documented,
+# defensible-but-not-empirically-tuned minimum (>=3 rows per half-window split); see
+# behavioral-spec.md's UNVERIFIED section for the tunable-constant disclosure.
+MIN_REALIZED_ROWS_FOR_TREND = 6
+
 
 def net_usd(gross_usd: float, cost_usd: float) -> float:
     """gross - cost. Mirrors skills/_shared/lib/ledger.mjs::deriveLine's earn_usdc - cost_usdc
@@ -192,3 +199,68 @@ def beats_baseline(candidate_score: float, baseline_score: float) -> bool:
     baseline that is itself losing money, never counts as "beaten" by another non-positive
     score)."""
     return float(candidate_score) > max(float(baseline_score), 0.0)
+
+
+def realized_window_split(
+    rows: Iterable[Tuple[float, float]], window_start_ts: float, window_end_ts: float
+) -> dict:
+    """REQ-RL8: pure aggregation over already-filtered (ts, net_usdc) pairs (the caller's job, via
+    ledger_reader.is_confirmed, is impure). Splits `[window_start_ts, window_end_ts)` at its
+    temporal MIDPOINT into two halves. `row_count` = rows falling inside the window at all."""
+    midpoint = (float(window_start_ts) + float(window_end_ts)) / 2.0
+    first_half_net_usd = 0.0
+    second_half_net_usd = 0.0
+    row_count = 0
+    for ts, net_usdc in rows:
+        ts = float(ts)
+        if ts < window_start_ts or ts >= window_end_ts:
+            continue
+        row_count += 1
+        if ts < midpoint:
+            first_half_net_usd += float(net_usdc)
+        else:
+            second_half_net_usd += float(net_usdc)
+    return {
+        "window_net_usd": first_half_net_usd + second_half_net_usd,
+        "first_half_net_usd": first_half_net_usd,
+        "second_half_net_usd": second_half_net_usd,
+        "row_count": row_count,
+    }
+
+
+def is_worsening_trend(first_half_net_usd: float, second_half_net_usd: float) -> bool:
+    """REQ-RL9: strictly `second_half_net_usd < first_half_net_usd`."""
+    return float(second_half_net_usd) < float(first_half_net_usd)
+
+
+def realized_trend_blocks(window_net_usd: float, worsening: bool, sufficient: bool) -> bool:
+    """REQ-RL10: `sufficient AND window_net_usd < 0.0 AND worsening`. When `sufficient` is False
+    (too few confirmed rows in the current operating window) this specific check never fires —
+    independent of REQ-RL7's `resolved` gate, which is about identity/path resolution, not data
+    volume."""
+    return bool(sufficient) and float(window_net_usd) < 0.0 and bool(worsening)
+
+
+def data_realism_gap(
+    mean_backtest_net_usd: float,
+    mean_realized_net_per_row: float,
+    sufficient: bool,
+    multiple: float = 3.0,
+) -> bool:
+    """REQ-RL11: True (contradiction — BLOCK) when `sufficient` is True AND either (a) the
+    fixture backtest claims a real edge while the real, sufficiently-sampled track record shows
+    none (`mean_realized_net_per_row <= 0.0 AND mean_backtest_net_usd > 0.0`), OR (b) the real
+    per-trade edge is implausibly smaller than the fixture's claimed one (REUSE of
+    `is_implausible_jump`, REQ-RH2, repurposed here as fixture-vs-reality rather than
+    candidate-vs-population)."""
+    if not sufficient:
+        return False
+    mean_backtest_net_usd = float(mean_backtest_net_usd)
+    mean_realized_net_per_row = float(mean_realized_net_per_row)
+    if mean_realized_net_per_row <= 0.0 and mean_backtest_net_usd > 0.0:
+        return True
+    if mean_realized_net_per_row > 0.0 and is_implausible_jump(
+        mean_backtest_net_usd, mean_realized_net_per_row, multiple
+    ):
+        return True
+    return False

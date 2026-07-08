@@ -58,6 +58,33 @@ def _repo_root() -> str:
     return result.stdout.strip()
 
 
+def write_realized_gate_escalation(run_dir: str, realized_gate: dict, candidate_path: str) -> None:
+    """REQ-RL13: escalation record for a human/adversary reviewing a REQ-RL10/RL11 block later —
+    written BEFORE `decide_promotion` is even called for that run (see `main()`'s call ordering).
+    This write itself never influences the decision, which `decide_promotion` computes
+    independently and identically from the SAME `realized_gate` dict (purity boundary — this
+    function is the impure I/O half; `decide_promotion` stays pure)."""
+    if realized_gate.get("trend_blocks"):
+        reason = (
+            "realized ledger trend blocks promotion: "
+            f"window_net_usd={realized_gate.get('window_net_usd')}, "
+            f"first_half_net_usd={realized_gate.get('first_half_net_usd')}, "
+            f"second_half_net_usd={realized_gate.get('second_half_net_usd')}"
+        )
+    elif realized_gate.get("realism_gap_blocks"):
+        reason = (
+            "realized ledger data shows an implausible fixture-vs-reality gap "
+            "(data_realism_gap): promotion blocked"
+        )
+    else:
+        reason = "realized_gate escalation written without an active REQ-RL10/RL11 block"
+
+    escalation = {**realized_gate, "candidate_path": candidate_path, "reason": reason}
+    escalation_path = os.path.join(run_dir, "realized_gate_escalation.json")
+    with open(escalation_path, "w", encoding="utf-8") as f:
+        json.dump(escalation, f, indent=2, default=str)
+
+
 def _read_text(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
@@ -201,19 +228,35 @@ def main(argv: list) -> int:
         _log(f"FATAL candidate not found: {candidate_path}")
         return 1
 
+    repo_root = _repo_root()
+
     assessment = promote_gate.assess_candidate(candidate_path)
     with open(os.path.join(run_dir, "assessment.json"), "w", encoding="utf-8") as f:
         json.dump(assessment, f, indent=2, default=str)
 
+    # REQ-RL17: compute realized_gate ONCE, pass it to EVERY decide_promotion call site below —
+    # never a hardcoded literal/stub, always sourced from this instance's own resolved ledger.
+    # mean_backtest_net_usd MUST be the DOLLAR-scale mean_oos_net_usd (REQ-RL11), never the
+    # unitless combined_score risk-adjusted ratio (F-1, Phase-3 impl review iteration 1) — it is
+    # None for a scope-guard-rejected/stage1-failed candidate, which compute_realized_gate handles
+    # None-safely (realism_gap_blocks stays False; every other key still computes normally).
+    realized_gate = promote_gate.compute_realized_gate(
+        mean_backtest_net_usd=assessment["mean_oos_net_usd"], repo_cwd=repo_root
+    )
+    with open(os.path.join(run_dir, "realized_gate.json"), "w", encoding="utf-8") as f:
+        json.dump(realized_gate, f, indent=2, default=str)
+
+    if realized_gate.get("trend_blocks") or realized_gate.get("realism_gap_blocks"):
+        write_realized_gate_escalation(run_dir=run_dir, realized_gate=realized_gate, candidate_path=candidate_path)
+
     if not assessment["eligible_for_adversary_review"]:
-        decision = promote_gate.decide_promotion(assessment, adversary_verdict=None)
+        decision = promote_gate.decide_promotion(assessment, adversary_verdict=None, realized_gate=realized_gate)
         out = {**decision, "adversary_invoked": False, "assessment": assessment}
         with open(verdict_path, "w", encoding="utf-8") as f:
             json.dump(out, f, indent=2, default=str)
         _log(f"NOT ELIGIBLE for adversary review (no LLM call made): {decision['reason']}")
         return 0
 
-    repo_root = _repo_root()
     candidate_code = _read_text(candidate_path)
     baseline_code = _read_text(evaluator.BASELINE_PATH)
     prompt = _build_prompt(assessment, candidate_code, baseline_code)
@@ -223,7 +266,10 @@ def main(argv: list) -> int:
 
     if not adversary_result["ok"]:
         decision = promote_gate.decide_promotion(
-            assessment, adversary_verdict=None, adversary_reason=f"adversary unavailable/erroring: {adversary_result['error']}"
+            assessment,
+            adversary_verdict=None,
+            adversary_reason=f"adversary unavailable/erroring: {adversary_result['error']}",
+            realized_gate=realized_gate,
         )
         out = {**decision, "adversary_invoked": True, "adversary_error": adversary_result["error"], "assessment": assessment}
         with open(verdict_path, "w", encoding="utf-8") as f:
@@ -232,7 +278,10 @@ def main(argv: list) -> int:
         return 0
 
     decision = promote_gate.decide_promotion(
-        assessment, adversary_verdict=adversary_result["verdict"], adversary_reason=adversary_result["reason"]
+        assessment,
+        adversary_verdict=adversary_result["verdict"],
+        adversary_reason=adversary_result["reason"],
+        realized_gate=realized_gate,
     )
     _log(
         f"ADVERSARY VERDICT: {adversary_result['verdict']} — {adversary_result['reason']} "

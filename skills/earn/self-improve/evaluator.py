@@ -32,13 +32,14 @@ from __future__ import annotations
 import importlib.util
 import os
 import sys
+import time
 from typing import Optional
 
 _SELF_IMPROVE_DIR = os.path.dirname(os.path.abspath(__file__))
 if _SELF_IMPROVE_DIR not in sys.path:
     sys.path.insert(0, _SELF_IMPROVE_DIR)
 
-from lib import gate_math, scope_guard  # noqa: E402  (path insert must happen first)
+from lib import gate_math, ledger_reader, promotion_history, scope_guard  # noqa: E402  (path insert must happen first)
 
 # The frozen, committed baseline strategy program — the reference `diff_in_scope`/denylist checks
 # every candidate against, and whose own stage2 walk-forward score is the `beats_baseline` floor.
@@ -93,6 +94,22 @@ TRIPWIRE_MULTIPLE = 3.0
 def _read_text(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:
         return f.read()
+
+
+def _data_source_tag() -> str:
+    """REQ-RL14 (self-improve-real-ledger): honest data_source tag — NEVER implies
+    `combined_score` itself was computed from real rows (REQ-RL15's grounding). Uses the SAME
+    operating window (REQ-RL12) and threshold (`gate_math.MIN_REALIZED_ROWS_FOR_TREND`) the
+    realized gate (REQ-RL10/RL11) uses, so `"fixture+realized-crosscheck"` means exactly "enough
+    real data exists to cross-check this generation's fixture score" — never "the score itself is
+    real"."""
+    window_end_ts = time.time()
+    last_ts = promotion_history.last_promotion_ts(BASELINE_PATH, cwd=_SELF_IMPROVE_DIR)
+    window_start_ts = float(last_ts) if last_ts is not None else 0.0
+    rows = ledger_reader.confirmed_net_series(window_start_ts=window_start_ts, window_end_ts=window_end_ts)
+    if len(rows) >= gate_math.MIN_REALIZED_ROWS_FOR_TREND:
+        return "fixture+realized-crosscheck"
+    return "fixture"
 
 
 def _load_candidate_module(program_path: str):
@@ -178,6 +195,7 @@ def evaluate_stage2(program_path: str, config: Optional[dict] = None) -> dict:
         "worst_window_oos_net_usd": worst_oos,
         "window_pairs": window_pairs_log,
         "artifacts": {},
+        "data_source": _data_source_tag(),
     }
 
 
@@ -199,6 +217,7 @@ def evaluate(program_path: str, config: Optional[dict] = None) -> dict:
             "stage1_pass": False,
             "stage2_pass": False,
             "artifacts": stage1_result["artifacts"],
+            "data_source": _data_source_tag(),
         }
 
     stage2_result = evaluate_stage2(program_path, config)
@@ -216,6 +235,7 @@ def evaluate(program_path: str, config: Optional[dict] = None) -> dict:
         "worst_window_oos_net_usd": stage2_result["worst_window_oos_net_usd"],
         "window_pairs": stage2_result["window_pairs"],
         "artifacts": stage1_result["artifacts"],
+        "data_source": stage2_result["data_source"],
     }
 
 
