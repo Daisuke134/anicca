@@ -9,17 +9,22 @@ allocator/budget/bandit's own atomic-write helpers (tmp-write + os.replace) -- t
 record-earn.mjs's writeCursorAtomic uses. loop-registry.json is written exactly once per WEEKLY pass,
 at step (9) -- INV-CEO-2.
 
-Step (8) (agent allocation decision) is intentionally NOT auto-computed here from the bandit's own
-scores: REQ-CEO-012 forbids writing the bandit's argmax straight to the registry. A real agent
-session supplies its decisions via CEO_AGENT_DECISIONS_JSON (a small JSON file the agent writes
-before invoking this pass in "apply" mode); a headless-only pass (no agent, most cron wakes) leaves
-allocation_decisions empty, so build_next_registry() carries the existing allocation forward
-unchanged -- observation/budget/rollback bookkeeping keeps running either way (steps 1-7, 9-12)."""
+Step (8) (agent allocation decision) never lets an agent-proposed decision reach loop-registry.json
+unchecked (Phase 3 iteration-1 adversary B-1): REQ-CEO-012 only forbids the *bandit* from picking the
+winner and being auto-written -- it does NOT exempt the independent deterministic gates (budget
+compliance REQ-CEO-022, capital-increase-within-realized-profit REQ-CEO-030(b), the fleet guardrail
+triad REQ-CEO-031, the scale-down state machine REQ-CEO-032/034, and the escalation schema gate
+REQ-CEO-060) from being applied to whatever the agent proposes. Every candidate decision (from
+CEO_AGENT_DECISIONS_JSON, or none at all) is passed through all five gates below before it can appear
+in `allocation_decisions`; the scale-down check itself runs for the whole roster every open pass
+regardless of whether the agent supplied a decision file, since it is a protective/defensive action,
+not a resource-increase request."""
 from __future__ import annotations
 
 import datetime
 import json
 import os
+import shutil
 import subprocess
 import sys
 import zoneinfo
@@ -80,12 +85,37 @@ def _today_jst() -> str:
     return datetime.datetime.now(JST).date().isoformat()
 
 
+def _latest_per_loop_scores(rows: list) -> dict:
+    """Last realized_profit_usd seen per loop in ceo-loop-score-history.jsonl (append-only, one row
+    per loop per WEEKLY pass) -- used as "last week's score" for REQ-CEO-032's beats_previous_week
+    input. Simple last-row-wins scan (file is small, one WEEKLY pass at a time)."""
+    latest: dict = {}
+    for row in rows:
+        loop = row.get("loop")
+        if loop:
+            latest[loop] = row.get("realized_profit_usd", 0.0)
+    return latest
+
+
+def _send_mail_best_effort(report_script: str, loop_or_ceo: str, summary: str, result: str, earned: str, evidence: str) -> None:
+    """Best-effort mail send via the existing loop-report.sh interface -- failure here must never
+    fail the WEEKLY pass (mirrors step (12)'s own try/except)."""
+    try:
+        subprocess.run(
+            ["bash", report_script, loop_or_ceo, summary, result, earned, evidence],
+            check=False, timeout=30,
+        )
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def main() -> int:
     state_dir = _state_dir()
     os.makedirs(state_dir, exist_ok=True)
     marker_log = os.path.join(state_dir, "ceo-pass.log")
     today = _today_jst()
     ts_now = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    report_script = os.path.join(HERE, "..", "..", "..", "report", "loop-report.sh")
 
     # PROP-CEO-022: this marker MUST be written unconditionally, first, before anything below can
     # fail -- it is the direct evidence that ceo-pass.sh ran even on a RC!=0 founder-loop wake.
@@ -139,14 +169,32 @@ def main() -> int:
         arms = bandit.update_arm(arms, loop, context, reward, d=len(context), prior=0.5)
     bandit.save_state(bandit_state_path, arms)
 
-    # (3-c): budget fail-open log + snapshot -- unconditional, every WEEKLY pass.
+    # (3-c): budget fail-open log + snapshot + soft-warn/hard-stop alert dedup (REQ-CEO-023/024/025)
+    # -- unconditional, every WEEKLY pass, regardless of cooldown/rollback (PROP-CEO-023).
+    alerts_path = os.path.join(state_dir, "ceo-budget-alerts.jsonl")
+    fired_alert_keys = budget.load_fired_alert_keys(alerts_path)
     budget_snapshot_by_loop = {}
     for loop in roster:
-        if budget.budget_for_loop(budget_cfg, loop) is None:
+        loop_budget = budget.budget_for_loop(budget_cfg, loop)
+        if loop_budget is None:
             budget.warn_if_budgets_missing(marker_log, loop)
-        budget_snapshot_by_loop[loop] = budget.budget_snapshot_for_registry(
-            budget_cfg, loop, monthly_spend.get(loop, 0.0)
-        )
+        spend = monthly_spend.get(loop, 0.0)
+        budget_snapshot_by_loop[loop] = budget.budget_snapshot_for_registry(budget_cfg, loop, spend)
+        if loop_budget is None:
+            continue
+        for threshold_name in ("soft_warn", "hard_stop"):
+            threshold_val = loop_budget.get(f"{threshold_name}_usd")
+            if threshold_val is None or spend < threshold_val:
+                continue
+            key = budget.alert_key(month_key, loop, threshold_name)
+            if not budget.should_fire_alert(key, fired_alert_keys):
+                continue
+            budget.record_alert_fired(alerts_path, key)
+            fired_alert_keys.add(key)
+            _send_mail_best_effort(
+                report_script, loop, f"budget {threshold_name} reached",
+                "success", "0", f"none: spend_usd={spend} threshold={threshold_val}",
+            )
 
     # (4): company_score
     this_week_score = allocator.company_score(per_loop_entries, fx_config)
@@ -154,6 +202,9 @@ def main() -> int:
     prior_rows = budget.load_cost_events(verification_path)
     prev_week_score = prior_rows[-1]["this_week_company_score"] if prior_rows else 0.0
     beats = this_week_score > prev_week_score
+
+    score_history_path = os.path.join(state_dir, "ceo-loop-score-history.jsonl")
+    prev_loop_scores = _latest_per_loop_scores(budget.load_cost_events(score_history_path))
 
     # (6): rollback state machine
     miss_streak_path = os.path.join(state_dir, "ceo-miss-streak.json")
@@ -181,19 +232,136 @@ def main() -> int:
         else None
     )
 
-    # (8): allocation-decision gate -- agent judgment only, REQ-CEO-012. Skipped entirely
-    # (allocation_decisions stays {}) when cooldown is active or a rollback just fired this pass.
+    # (8): allocation-decision gate. Skipped entirely (allocation_decisions stays {}) when cooldown
+    # is active or a rollback just fired this pass (the formal `gate_open` condition, REQ-CEO-058 B6).
     allocation_decisions = {}
     gate_open = (cooldown_in == 0) and (not rollback_fired)
-    decisions_path = os.environ.get("CEO_AGENT_DECISIONS_JSON")
-    if gate_open and decisions_path and os.path.exists(decisions_path):
-        candidate_decisions = _read_json(decisions_path, {})
+
+    if gate_open:
         ranges_cfg = _read_json(os.path.join(state_dir, "ceo-allocation-ranges.json"), {})
-        allocation_decisions = {
-            loop: decision
-            for loop, decision in candidate_decisions.items()
-            if allocator.validate_allocation_ranges(decision.get("allocation", {}), ranges_cfg)
-        }
+        fleet_cfg = _read_json(os.path.join(state_dir, "ceo-fleet-config.json"), {})
+        lessons_path = os.path.join(state_dir, "ceo-lessons.jsonl")
+        escalations_path = os.path.join(state_dir, "ceo-escalations.jsonl")
+        disk_free_gb = shutil.disk_usage(state_dir).free / (1024 ** 3)
+        now_ts = datetime.datetime.now(datetime.timezone.utc).timestamp()
+
+        # (8-a) REQ-CEO-022: hard-stop-exceeded loops excluded from new resource increases (existing
+        # allocation is left untouched for them -- hard-stop never stops the loop from running).
+        budget_passed, _budget_skipped = budget.filter_budget_compliant_loops(
+            list(roster), budget_cfg, monthly_spend
+        )
+
+        # (8-b) REQ-CEO-011: UCB scores surfaced for the agent -- display only, never auto-written
+        # (REQ-CEO-012's judgment/tool boundary).
+        ucb_scores = bandit.select_scores([1.0, 0.0, 0.0], arms, alpha=1.0)
+        print(json.dumps({"step": "8-b_ucb_scores_for_agent", "scores": ucb_scores}))
+
+        candidate_decisions = {}
+        decisions_path = os.environ.get("CEO_AGENT_DECISIONS_JSON")
+        if decisions_path and os.path.exists(decisions_path):
+            candidate_decisions = _read_json(decisions_path, {})
+
+        for loop in roster:
+            loop_realized_profit = allocator.realized_profit_usd(per_loop_entries.get(loop, []), fx_config)
+            existing_loop_entry = existing_registry.get(loop, {})
+            existing_allocation = dict(existing_loop_entry.get("allocation") or {})
+            is_over_budget = loop not in budget_passed
+
+            decision = candidate_decisions.get(loop)
+            allocation = dict(decision.get("allocation", {})) if decision else {}
+
+            # REQ-CEO-042: reject the whole proposal if any field is out of its configured range.
+            if decision and not allocator.validate_allocation_ranges(allocation, ranges_cfg):
+                allocation = {}
+
+            # (8-c/REQ-CEO-030(b)): capital_cap_usd increase clamped to the loop's own realized
+            # profit -- INV-CEO-1, `loop_realized_profit` is already realized_profit_usd()-converted.
+            # (8-a applied): budget hard-stop blocks ANY increase outright, regardless of profit.
+            if "capital_cap_usd" in allocation:
+                old_cap = existing_allocation.get("capital_cap_usd", 0)
+                new_cap = allocation["capital_cap_usd"]
+                if new_cap > old_cap:
+                    if is_over_budget:
+                        allocation["capital_cap_usd"] = old_cap
+                    elif not allocator.capital_increase_within_realized_profit(
+                        new_cap, old_cap, loop_realized_profit
+                    ):
+                        allocation["capital_cap_usd"] = min(
+                            new_cap, old_cap + max(0.0, loop_realized_profit)
+                        )
+
+            # (8-c/REQ-CEO-031): fleet_size_target increase gated by the existing guardrail triad
+            # (reused as-is, no re-derivation) AND budget compliance. `streak` intentionally
+            # fail-closed-defaults to 0 (blocks the increase) when no independent streak source has
+            # been wired for this loop yet -- never fail-open on an unknown streak.
+            if "fleet_size_target" in allocation:
+                old_fleet = existing_allocation.get("fleet_size_target", 1)
+                new_fleet = allocation["fleet_size_target"]
+                if new_fleet > old_fleet:
+                    streak = existing_loop_entry.get("streak", 0)
+                    allowed = (not is_over_budget) and allocator.fleet_increase_allowed(
+                        streak=streak,
+                        weekly_score=loop_realized_profit,
+                        weekly_score_threshold=fleet_cfg.get("weekly_score_threshold", 0.0),
+                        disk_free_gb=disk_free_gb,
+                        last_spawn_ts=existing_loop_entry.get("fleet_last_spawn_ts"),
+                        now_ts=now_ts,
+                        min_interval_days=fleet_cfg.get("min_interval_days", 7),
+                        current_count=old_fleet,
+                        max_count=fleet_cfg.get("max_count", 5),
+                    )
+                    if not allowed:
+                        allocation["fleet_size_target"] = old_fleet
+                    else:
+                        # (8-e/REQ-CEO-060): fleet-increase escalation, schema-gated (presence only,
+                        # never content judgment), weekly_realized_profit_usd is the SAME
+                        # already-converted value (INV-CEO-1) -- never the raw native-currency amount.
+                        escalation = {
+                            "ts": ts_now,
+                            "loop": loop,
+                            "escalation_type": "fleet_increase",
+                            "justification": decision.get("justification", "") if decision else "",
+                            "weekly_realized_profit_usd": loop_realized_profit,
+                        }
+                        if allocator.validate_escalation_schema(escalation):
+                            _append_jsonl_atomic(escalations_path, escalation)
+
+            # (8-c/REQ-CEO-032, 8-d/REQ-CEO-034): scale-down evaluation runs for EVERY roster loop
+            # this open pass, independent of whether the agent proposed anything for it -- this is a
+            # protective/defensive backstop, not a resource-increase request.
+            prev_bad_weeks = existing_loop_entry.get("consecutive_bad_weeks", 0) or 0
+            loop_beats = loop_realized_profit > prev_loop_scores.get(loop, 0.0)
+            scale_action = allocator.should_scale_down(loop_realized_profit, loop_beats, prev_bad_weeks)
+            new_bad_weeks = prev_bad_weeks + 1 if scale_action != "none" else 0
+            if scale_action == "reduce_frequency":
+                allocation["pass_frequency_multiplier"] = min(
+                    allocation.get(
+                        "pass_frequency_multiplier",
+                        existing_allocation.get("pass_frequency_multiplier", 1.0),
+                    ),
+                    0.5,
+                )
+            elif scale_action == "pause":
+                allocation["status"] = "paused"
+                _append_jsonl_atomic(
+                    lessons_path,
+                    allocator.build_lesson_row(
+                        ts=ts_now, loop=loop, action="paused",
+                        reason=f"consecutive_bad_weeks={new_bad_weeks}",
+                        evidence=f"realized_profit_usd={loop_realized_profit}, beats_previous_week={loop_beats}",
+                    ),
+                )
+
+            if allocation:
+                allocation_decisions[loop] = {
+                    "allocation": allocation,
+                    "consecutive_bad_weeks": new_bad_weeks,
+                }
+
+            _append_jsonl_atomic(
+                score_history_path,
+                {"ts": ts_now, "loop": loop, "realized_profit_usd": loop_realized_profit},
+            )
 
     # (9): THE single loop-registry.json write for this pass -- INV-CEO-2.
     next_registry = allocator.build_next_registry(
@@ -238,17 +406,10 @@ def main() -> int:
     evidence = allocator.build_evidence_pointer(
         verification_path if roster else None, today if roster else None
     )
-    report_script = os.path.join(HERE, "..", "..", "..", "report", "loop-report.sh")
-    try:
-        subprocess.run(
-            [
-                "bash", report_script, "ceo", "weekly pass",
-                report_args["result"], str(report_args["earned_usdc"]), evidence,
-            ],
-            check=False, timeout=30,
-        )
-    except Exception:  # noqa: BLE001 -- mail failure must never fail the pass
-        pass
+    _send_mail_best_effort(
+        report_script, "ceo", "weekly pass",
+        report_args["result"], str(report_args["earned_usdc"]), evidence,
+    )
 
     _write_json_atomic(weekly_meta_path, {"last_ceo_run_jst_date": today})
     print(
@@ -258,6 +419,7 @@ def main() -> int:
                 "today": today,
                 "company_score": this_week_score,
                 "rollback_fired": rollback_fired,
+                "allocation_decisions": allocation_decisions,
             }
         )
     )
