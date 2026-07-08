@@ -40,9 +40,9 @@ criteria:
     passThreshold: Integration test reusing PROP-103e's own staggered-race method against the REAL `executeSpawnAttempt` (steps 2-9 stubbed to fast, real-shaped fixture I/O) confirms the lock's real scope over this actual function matches REQ-103's already-specified critical section. FAIL if any staggered attempt during the delay window succeeds.
   - id: CRIT-205
     dimension: verification_readiness
-    description: (Revised, contract-review round 1, resolves FIND-002; count revised again round 2, resolves FIND-003/FIND-005 — re-scoped to be genuinely evaluable AT THIS gate, before Phase 3/5 run; final closure of the 31 obligations remains independently enforced by vcsdd-harden's own standard "all required obligations proved" gate before Phase 6, this criterion does not weaken that.) Every one of the 31 non-Tier-3 obligations this sprint targets (see "Deferred-obligation disposition" below) has a genuinely exercisable proof path in the CURRENT implementation — the real function/call site each obligation's own verification method names (a control-flow read location, an integration-test injection point) actually exists in `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` as written, so nothing in the current code makes any of the 31 structurally unprovable.
+    description: (Revised, contract-review round 1, resolves FIND-002; count revised round 2, resolves FIND-003/FIND-005; count revised again round 4, resolves FIND-009 — re-scoped to be genuinely evaluable AT THIS gate, before Phase 3/5 run; final closure of the 30 obligations remains independently enforced by vcsdd-harden's own standard "all required obligations proved" gate before Phase 6, this criterion does not weaken that.) Every one of the 30 non-Tier-3 obligations this sprint targets (see "Deferred-obligation disposition" below) has a genuinely exercisable proof path in the CURRENT implementation — the real function/call site each obligation's own verification method names (a control-flow read location, an integration-test injection point) actually exists in `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` as written, so nothing in the current code makes any of the 30 structurally unprovable.
     weight: 0.2
-    passThreshold: For each of the 31 targeted PROP IDs (including PROP-307e), a read of its own verification method (in verification-architecture.md) against the current `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` source confirms the named call site/function genuinely exists and is reachable — e.g. PROP-202d's `deployTarget`-fed Solana keygen call site, PROP-307c's per-step failure-recording branches, PROP-105i's real citizen-registry append, PROP-307e's `run.sh` wiring. FAIL if any of the 31 names a call site that does not exist in the current implementation, is unreachable, or is a stub/placeholder — NOT if a PROP is simply not yet promoted to `status:"proved"` in state.json (that promotion is Phase 3/5's own job, independently gated by vcsdd-harden before Phase 6).
+    passThreshold: For each of the 30 targeted PROP IDs (including PROP-307e), a read of its own verification method (in verification-architecture.md) against the current `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh` source confirms the named call site/function genuinely exists and is reachable — e.g. PROP-202d's `deployTarget`-fed Solana keygen call site, PROP-307c's per-step failure-recording branches, PROP-105i's real citizen-registry append, PROP-307e's `run.sh` wiring. FAIL if any of the 30 names a call site that does not exist in the current implementation, is unreachable, or is a stub/placeholder — NOT if a PROP is simply not yet promoted to `status:"proved"` in state.json (that promotion is Phase 3/5's own job, independently gated by vcsdd-harden before Phase 6).
   - id: CRIT-206
     dimension: spec_fidelity
     description: The 3 Tier-3 real-money obligations (PROP-302b, PROP-303b, PROP-401a) are NOT claimed proved via a fixture/simulated deploy or a borrowed/historical artifact from a DIFFERENT feature (e.g. `anicca-agent-lending`'s own prior Akash lease) — each requires either a genuinely NEW real spend this sprint, or an explicit, honest re-deferral to a dedicated future checkpoint (this project's own task #28, "P3実deploy検証チェックポイント(Phase5)").
@@ -148,17 +148,18 @@ Solana address from their real, resolved key material — see
 `verification/proof-harnesses/prop-105g-live-address-rederivation.mjs`) and were restored to
 `required:true`/`status:"proved"` — they are NOT part of this sprint's scope, they are ALREADY closed.
 Now that REQ-307 names the orchestrator, this sprint's own implementation phase (Phase 2a-2c/3/5) is
-expected to promote 31 of the remaining 38 back to `status:"proved"` (revised from 35, contract-review
-round 2, resolves FIND-003/FIND-005 — see the new "4 additionally re-deferred" bucket below):
+expected to promote 30 of the remaining 38 back to `status:"proved"` (revised from 35, contract-review
+round 2, resolves FIND-003/FIND-005; revised again round 4, resolves FIND-009 — see the "5 additionally
+re-deferred" bucket below):
 
-**31 targeted for closure this sprint** (26 orchestrator-blocked Tier>0 + 5 Tier-0, all closeable via
+**30 targeted for closure this sprint** (25 orchestrator-blocked Tier>0 + 5 Tier-0, all closeable via
 structural/unit/integration-test proof against sprint-1's own already-injectable I/O boundaries —
 `fetchEvmBalanceUsd`/`fetchSolanaBalanceUsd`/`fetchImpl`/`queryBalanceAkt`/`attemptBridge` — none of
-these 31 require a real, live token spend to prove):
+these 30 require a real, live token spend to prove):
 PROP-201a, PROP-201b, PROP-201c, PROP-201d, PROP-202b, PROP-202c, PROP-203a, PROP-204b, PROP-205b,
-PROP-303e, PROP-304b, PROP-304c, PROP-304d, PROP-304f, PROP-305b, PROP-305d,
+PROP-304b, PROP-304c, PROP-304d, PROP-304f, PROP-305b, PROP-305d,
 PROP-305e, PROP-305f, PROP-402a, PROP-402b, PROP-102g, PROP-102i, PROP-202d, PROP-101j, PROP-105i,
-PROP-102k (26 Tier>0) + PROP-205a, PROP-301a, PROP-305a, PROP-401b, PROP-305h
+PROP-102k (25 Tier>0) + PROP-205a, PROP-301a, PROP-305a, PROP-401b, PROP-305h
 (5 Tier-0), PLUS the new PROP-307e (run.sh's real wake-cycle wiring, resolves FIND-004).
 
 **3 explicitly NOT targeted this sprint (Tier-3, genuinely require a real, live token spend on a
@@ -175,11 +176,11 @@ real-money readiness at that time (this project's own task #28, "P3実deploy検�
 already tracks this decision point) — this contract only commits to NOT silently claiming them proved via
 a fixture, a simulated deploy, or a borrowed artifact from a different feature (CRIT-206).
 
-**4 additionally re-deferred this round (contract-review round 2, resolves FIND-003/FIND-005 — genuinely
-require infrastructure this sprint does not build, distinct from the Tier-3 real-money-spend reason
-above)**: PROP-302a and PROP-302c both name REQ-302's own Nosana deploy path as their verification
-target — confirmed absent in full this round (`defaultSelectCloudTarget` hardcodes
-`nosanaAvailable: false`; no Nosana deploy/secrets-injection call exists anywhere in
+**5 additionally re-deferred this round (contract-review round 2, resolves FIND-003/FIND-005; round 4
+adds a 5th, resolves FIND-009 — genuinely require infrastructure this sprint does not build, distinct
+from the Tier-3 real-money-spend reason above)**: PROP-302a and PROP-302c both name REQ-302's own Nosana
+deploy path as their verification target — confirmed absent in full this round (`defaultSelectCloudTarget`
+hardcodes `nosanaAvailable: false`; no Nosana deploy/secrets-injection call exists anywhere in
 `spawn-orchestrator.mjs`; per the module's own code comment, "no live NOS/AKT spot-price feed and no
 Nosana deploy path exist anywhere in this codebase yet"). Building Nosana support solely to satisfy these
 2 PROPs, when the ACTUAL Nosana deploy (PROP-302b) is ALREADY Tier-3-deferred above, would be wasted,
@@ -189,7 +190,12 @@ child-specific Akash SDL variant's `HOME=/root` line as their verification artif
 to PROP-303b's own real Akash deploy path). The original 35-item list wrongly included PROP-203c/PROP-303f
 among the "targeted for closure" set despite this same admission — a genuine internal contradiction
 (FIND-005) — corrected here: both join PROP-303b's own Tier-3 deferral, since building a custom SDL
-variant for a deploy that itself will not run this sprint is equally premature. None of these 4 are
+variant for a deploy that itself will not run this sprint is equally premature. PROP-303e names a NEW
+`provider-services lease-shell ... --stdin` secrets-injection step delivering the child's wallet material
+onto a leased Akash container — this is the IDENTICAL "belongs exclusively to PROP-303b's own real Akash
+deploy path, not built this sprint" pattern, missed in round 2's own sweep (`grep -rn "lease-shell"
+~/anicca/skills/self/spawn/` confirms zero matches anywhere in source or tests) — corrected here: it joins
+PROP-303b's own Tier-3 deferral for the identical reason as PROP-203c/PROP-303f. None of these 5 are
 claimed proved by this sprint; each carries this same stated reason.
 
 ## Known residual scope boundary

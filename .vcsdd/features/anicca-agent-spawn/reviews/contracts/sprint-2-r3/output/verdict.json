@@ -1,0 +1,73 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T05:30:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "f338c4f9f0aa388550c71603b3f767456b6eddc2d9f6fe47bad18e8589fa2b47",
+    "iteration": 3
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "state.json proofObligations (this session's own independent cross-reference, BEAD-059/BEAD-061/PROP-401a's own row)", "description": "CRIT-206 re-verified with no regression: PROP-302b, PROP-303b, PROP-401a all remain status:'skipped', required:false, tier:3. No fixture/simulated/borrowed-artifact evidence claims any of the 3 Tier-3 obligations proved this round either." },
+        { "type": "file", "location": "contracts/sprint-2.md's own '4 additionally re-deferred this round' section (this session's own full read)", "description": "The 4 additionally re-deferred PROP IDs (PROP-302a/c, PROP-203c/303f) are deferred for a genuinely distinct reason (missing infrastructure) from the 3 Tier-3 real-money obligations CRIT-206 governs -- no internal contradiction with CRIT-206 found." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js (this session's own fresh run)", "description": "CRIT-203 re-verified with no regression: 162/162 tests pass (this session's own independent run, matching the manifest's expected count). All 9 PROP-307c step-failure tests (steps 1-9) pass; steps 1-6 use the minimal 4-key row, steps 7-9 use the buildChildSpec-shaped row." }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "test-output", "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs (this session's own fresh run)", "description": "CRIT-207 re-verified with no regression: 4/4 tests pass live, including a genuine live invocation and an independent solana-keygen cross-derivation. gen-solana-wallet.sh's header documents the same 600-perm/never-logged discipline gen-wallet.sh's own header establishes." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-006"],
+      "evidence": [
+        { "type": "file", "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:207-234 (defaultDeploy)", "description": "Round-2 FIND-001 fix independently CONFIRMED CORRECT: defaultDeploy now calls evaluateAkashFundingGate (real AKT balance query via defaultQueryAktBalance + akt-treasury.sh bridge attempt via defaultAttemptAktBridge) against spawn-child/config.json's real spawn_cost_akt(25)/buffer_akt(1) BEFORE invoking deploy-akash.sh, and cleanly returns ok:false without ever invoking deploy-akash.sh when the gate is not ready after both passes. Confirmed via direct unit-test run: skills/self/spawn/lib/__tests__/spawn-orchestrator-funding-and-wallet.test.mjs's 5 defaultDeploy tests all pass live, exercising the real function (not a mock)." },
+        { "type": "file", "location": "run.sh:1-51, scripts/wake-gate.mjs:1-196", "description": "Round-2 FIND-004 fix independently CONFIRMED CORRECT via both a source read AND a live re-execution: run.sh is now a 50-line thin wrapper that execs scripts/wake-gate.mjs, which genuinely imports and calls decideColonySpawn (REQ-102, treasury-gate.mjs) then, only if eligible:true, executeSpawnAttempt (REQ-307, spawn-orchestrator.mjs) with real, freshly-computed inputs -- readCitizenBalances against live RPC (defaultFetchEvmBalanceUsd/defaultFetchSolanaBalanceUsd), readChildren against the real ledger, readShelterCostEntries against the real shelter-cost ledger. `bash skills/self/spawn/run.sh --dry-run`, independently re-executed this session on the live coordinator host, reproduced the EXACT same decision JSON as evidence/run-sh-dry-run-smoke-test.log ({\"eligible\":false,\"reason\":\"insufficient_surplus\",\"colonySurplusUsd\":0,\"spawnThresholdUsd\":10,\"childrenProvisioning\":0}, exit 0), and a fresh independent RPC query of automaton's real Base USDC balance (0.594802) and Franklin's real Solana SOL balance (0.019973421) both EXACTLY matched the log's own claimed figures -- the evidence is genuine, not fabricated. No spawn-decision.js/DigitalOcean/AgentMail reference remains in run.sh's or wake-gate.mjs's reachable code (grep-confirmed after stripping comments, matching the wake-gate.test.mjs's own structural assertions, which pass)." },
+        { "type": "file", "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:145-150 (defaultGenerateEvmWallet), 136-143 (assertRealEvmAddress)", "description": "Round-2 FIND-003a fix independently CONFIRMED CORRECT: defaultGenerateEvmWallet now calls assertRealEvmAddress, which independently re-derives the address from the private key via viem's privateKeyToAccount (a second, independent keccak implementation from gen-wallet.sh's own openssl+python path) and throws on mismatch -- catching gen-wallet.sh's own documented sha256-fallback shape. Confirmed via direct unit-test run: 3/3 assertRealEvmAddress tests pass live, including the explicit sha256-fallback-shape-is-rejected case." },
+        { "type": "file", "location": "skills/registry.json:36", "description": "Round-2 fix independently CONFIRMED CORRECT: self/spawn's riskNote now cites 'lib/treasury-gate.mjs::decideColonySpawn' and 'lib/spawn-orchestrator.mjs::executeSpawnAttempt' -- no remaining reference to the retired lib/spawn-decision.js." },
+        { "type": "file", "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:50-55, 236-241; skills/economy/gig/lib/identity.mjs:24-27 (corroborating read); skills/self/spawn/scripts/seed-child.py (confirmed present, confirmed never invoked)", "description": "NEW FAIL, unrelated to any of round 2's five findings: REQ-204's own hard SHALL for the child wallet's one-time gas seed (behavioral-spec.md's Edge Cases text -- register() ALWAYS reverts for insufficient gas since REQ-201's freshly-generated wallet ALWAYS starts at 0 ETH) is entirely unimplemented in spawn-orchestrator.mjs's real call graph. seedUsdcAmount() is read only into the ledger's bookkeeping seed_usdc field; defaultRegisterIdentity performs no funding step before calling ensureAgentId; the pre-existing real transfer mechanism (scripts/seed-child.py, used by the OLD retired run.sh) is never referenced anywhere in the new orchestrator or wake-gate.mjs. This means a genuine (non-mocked) run.sh invocation would reach step 6 and have its real register() call revert on EVERY spawn attempt -- see FIND-006 for full detail. This is CRIT-201's own explicit FAIL condition ('FAIL if any EFFECTFUL step... is skipped'), on a REQ-204 sub-requirement round 2's fixes did not touch." },
+        { "type": "test-output", "location": "grep -nE \"[<>]=?[^=]|LLM|prompt\" skills/self/spawn/lib/spawn-orchestrator.mjs (this session, re-run against the current file)", "description": "CRIT-202 re-verified with no regression: the only matches are arrow-function syntax (=>) and an unrelated akash balances.find() lambda -- no relational/threshold comparison, no LLM/prompt reference." },
+        { "type": "test-output", "location": "PROP-307d test, this session's own fresh run (part of the 162/162 pass)", "description": "CRIT-204 re-verified with no regression: the colony-spawn lock staggered-race test still passes against the current executeSpawnAttempt." }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-007"],
+      "evidence": [
+        { "type": "file", "location": "state.json phaseHistory ('1c'->'2a' transition, timestamp 2026-07-07T20:23:33.449Z, reason cites 'Sprint 2 Phase 1c PASSED at iteration 3 (fresh adversary, zero findings)')", "description": "CRIT-208 re-verified with no regression: the 1c->2a transition genuinely predates the 2a->2b (RED->GREEN) transition; Phase 1c genuinely gated Phase 2 for this sprint." },
+        { "type": "file", "location": "spot-checked 18 of the 31 targeted PROP IDs (exceeds the required minimum of 8): PASS = PROP-201a, PROP-202d, PROP-304b, PROP-304c, PROP-304d, PROP-304f, PROP-307e, PROP-102g, PROP-102i, PROP-101j, PROP-102k, PROP-305a, PROP-305b, PROP-305d, PROP-305e, PROP-305f (16, all fixed correctly since round 2); FAIL = PROP-201c, PROP-204b (2, see FIND-007)", "description": "CRIT-205's revised passThreshold ('the named call site/function genuinely exists and is reachable... NOT if a PROP is simply not yet promoted to proved') applied per-PROP. All 5 of round 2's own fixes (FIND-001/002/003a/004/005) independently re-verified CORRECT and hold up under fresh re-derivation (live RPC cross-check, live run.sh re-execution, live unit-test re-run) -- no regression on any of them. However, this iteration's own deeper pass over the remaining targeted PROP IDs surfaces 2 NEW gaps round 2's fixes did not address and prior rounds did not catch: PROP-204b (REQ-204's gas-seed transfer, see FIND-006/FIND-007) names a call site that does not exist at all -- there is no transfer of any kind to check against the sizing formula. PROP-201c (the 600-perm-file private-key-handling discipline) names a file-redirect mechanism that the current in-memory-only implementation (execFileSync's own captured stdout, held in a JS variable for the attempt's full duration, never written to any file) does not follow -- no code path exists for either half of PROP-201c's own Tier-0/Tier-2 checks to be performed against." }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205",
+      "CRIT-206", "CRIT-207", "CRIT-208"
+    ],
+    "duplicateFindings": []
+  }
+}

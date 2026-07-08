@@ -1,0 +1,128 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T06:15:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "f338c4f9f0aa388550c71603b3f767456b6eddc2d9f6fe47bad18e8589fa2b47"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json proofObligations (this session's own independent cross-reference against BEAD-059/BEAD-061/BEAD-074, PROP-302b/PROP-303b/PROP-401a's own rows)",
+          "description": "CRIT-206 re-verified: PROP-302b, PROP-303b, PROP-401a all remain status:'skipped', required:false, tier:3. No evidence anywhere claims any of the 3 Tier-3 real-money obligations proved this round via a fixture, simulated deploy, or borrowed artifact."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js (this session's own fresh run, post automaton-exclusion + FIND-006/007 fix)",
+          "description": "CRIT-203 re-verified: 175/175 tests pass (162 pre-existing + 13 new from commit 31e36c9, matching the manifest's expected count exactly -- no unexpected shift despite the citizens.seed.json length change, since citizens-seed/citizens-registry tests were updated in the same commit window). All 9 PROP-307c step-failure-injection tests (steps 1-9, against a real ledger.js file) pass: steps 1-6 (now including the two new gas-seed/wallet-persistence steps) use the minimal 4-key row via appendMinimalFailure, steps 7-9 use the buildChildSpec-shaped row via appendSpecFailure."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs (this session's own fresh run)",
+          "description": "CRIT-207 re-verified: 4/4 tests pass live, including a genuine live gen-solana-wallet.sh invocation and an independent solana-keygen cross-derivation of the resulting address. Script header documents the same 600-perm/never-logged discipline gen-wallet.sh's own header establishes; two live invocations produce two distinct keypairs (fresh entropy)."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:296-333 (defaultSeedChild), 467-485 (seedStep wiring)",
+          "description": "FIND-006/FIND-007a independently re-verified CORRECT: the round-3 fix wires REQ-204's own gas-seed transfer via scripts/seed-child.py, confirmed unmodified this sprint (git log --follow shows no commit in this window touches it; only pre-existing commits b6bcea0/2199f81 predate sprint-2). defaultSeedChild resolves the driving citizen's private key via resolveEvmPrivateKey({}) -- the SAME resolve-identity.mjs function scripts/wake-gate.mjs's own defaultResolveDrivingCitizen already uses -- writes it only to a transient 600-perm temp file under resolveStateDir() (never bare /tmp), and shreds it in a finally block (shredTempFile, lines 267-277) regardless of outcome. seed-child.py's own documented exit-2/PENDING case is treated as a clean failure (error string preserves the pending hash), never a fabricated success. seedUsdc is computed exactly once (line 473) and reused verbatim for both the real transfer amount and buildChildSpec's own seedUsd field (REQ-206's 'identical by construction' requirement)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:168-179 (defaultPersistChildWallet), 412-423 (persistStep wiring)",
+          "description": "FIND-007b independently re-verified CORRECT: defaultPersistChildWallet now writes {address, privateKey} (camelCase) to childHomeDir/.automaton/wallet.json at mode 0600 immediately after step 2 (EVM wallet generation). Cross-checked this session against the real, live ~/.blockrun/.automaton/wallet.json on this host: its actual on-disk keys are exactly ['address','privateKey'] (read via python3, key content never printed) -- an EXACT shape match. This is the exact path/field resolve-identity.mjs::resolveEvmPrivateKey's own effectiveHome branch already reads."
+        },
+        {
+          "type": "test-output",
+          "location": "spawn-orchestrator-gas-seed-and-key-persistence.test.mjs (14 tests, this session's own fresh run, part of the 175/175 pass)",
+          "description": "Both new steps (persistChildWallet, seedChild) are independently confirmed to use the minimal direct-append failure path (appendMinimalFailure via runStep's own default onFailure), never buildChildSpec's shape -- consistent with both running before step 6/REQ-204 completes the identity anchor. Ordering confirmed: seedChild fires AFTER deploy and BEFORE registerIdentity."
+        },
+        {
+          "type": "file",
+          "location": "run.sh:1-51, scripts/wake-gate.mjs:1-196, skills/self/spawn/lib/treasury-gate.mjs:107",
+          "description": "CRIT-201's run.sh/PROP-307e requirement re-verified with no regression: only comment-level retirement notes reference the OLD lib/spawn-decision.js anywhere in the reachable tree (grep-confirmed); run.sh execs wake-gate.mjs, which genuinely calls decideColonySpawn then executeSpawnAttempt only if eligible."
+        },
+        {
+          "type": "file",
+          "location": "grep -nE '[<>]=?|===|!==' skills/self/spawn/lib/spawn-orchestrator.mjs (this session, re-run against the current file)",
+          "description": "CRIT-202 re-verified: zero relational/threshold (<,>,<=,>=) comparisons anywhere in the file; all matches are string/error-code/status equality checks (===/!==) or arrow-function syntax. No LLM/prompt reference found."
+        },
+        {
+          "type": "test-output",
+          "location": "PROP-307d colony-spawn-lock staggered-race test, this session's own fresh run (part of the 175/175 pass)",
+          "description": "CRIT-204 re-verified with no regression against the current executeSpawnAttempt, including its two new steps inside the lock's critical section."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": [
+        "FIND-008",
+        "FIND-009"
+      ],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json phaseHistory ('1b'->'1c' transition for sprint 2, timestamp 2026-07-07T19:48:55.335Z, followed by '1c'->'2a' at 2026-07-07T20:23:33.449Z citing 'Sprint 2 Phase 1c PASSED at iteration 3, fresh adversary, zero findings')",
+          "description": "CRIT-208 re-verified: sprint-2's own contract + REQ-307/PROP-307a-d were genuinely reviewed by a fresh vcsdd-adversary instance and gated Phase 2 -- this sprint was not exempted from Phase 1c."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md:461 (PROP-201c row, unchanged since round 3), cross-referenced against spawn-orchestrator.mjs:147-152/168-179",
+          "description": "FIND-008 (new this round): PROP-201c's own verification-method text still names a mechanism ('gen-wallet.sh output file' with stdout redirected directly to it) that does not exist in the current implementation -- the actual, now-correctly-functioning mechanism (defaultPersistChildWallet writing childHomeDir/.automaton/wallet.json) is a differently-shaped call site the spec text never names. The underlying security property IS met and tested; the documented verification method to prove it is stale and unexecutable as written. Round-3's own FIND-007 already flagged this exact mismatch and called for a verification-architecture.md text correction; that correction was never made."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md 'Deferred-obligation disposition' + 'Files touched' sections; specs/verification-architecture.md:697 (PROP-303e row)",
+          "description": "FIND-009 (new this round): PROP-303e remains listed among the '31 targeted for closure this sprint', but its own named call site (a NEW provider-services lease-shell secrets-injection step) is, by the SAME contract's own 'Files touched' section, explicitly admitted to not have been built this sprint -- confirmed by an independent grep across the entire skills/self/spawn/ tree finding zero references to lease-shell/PROP-303e anywhere, in source or tests. This is the identical root-cause pattern round-2's own FIND-005 already established for PROP-203c/PROP-303f (artifacts that exist only inside PROP-303b's own Tier-3-deferred real-Akash-deploy path) -- PROP-303e should have joined that same re-deferred bucket but was not, an apparent editorial gap in the contract's own reconciliation."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "CRIT-201",
+      "CRIT-202",
+      "CRIT-203",
+      "CRIT-204",
+      "CRIT-205",
+      "CRIT-206",
+      "CRIT-207",
+      "CRIT-208"
+    ],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,35 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "negotiationRound": 2,
+  "iteration": 3,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "f338c4f9f0aa388550c71603b3f767456b6eddc2d9f6fe47bad18e8589fa2b47",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs",
+      "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs",
+      "skills/self/spawn/lib/__tests__/wake-gate.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/lib/spawn-orchestrator.mjs",
+      "skills/self/spawn/scripts/gen-solana-wallet.sh",
+      "skills/self/spawn/run.sh",
+      "skills/self/spawn/scripts/wake-gate.mjs",
+      "skills/registry.json"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRounds": {
+    "round1": {"verdict": "FAIL", "findings": ["FIND-001 (step 7/8 ordering, resolved: not a code bug, spec clarified)", "FIND-002 (CRIT-205 mis-scoped for this gate's timing, resolved: re-scoped to a readiness check)"]},
+    "round2": {"verdict": "FAIL", "findingsPath": "reviews/contracts/sprint-2-r2/output/findings/", "findings": [
+      "FIND-001/002 (REQ-304 funding gate never wired into defaultDeploy) -- fixed: defaultDeploy now calls evaluateAkashFundingGate before deploy-akash.sh",
+      "FIND-003 (PROP-201a wallet fallback-address validation absent; REQ-302 Nosana path entirely absent) -- FIND-003a fixed: defaultGenerateEvmWallet now calls assertRealEvmAddress and aborts on the sha256-fallback shape. FIND-003b (Nosana) explicitly re-deferred, not fixed -- see contract's own '4 additionally re-deferred' section, PROP-302a/c moved out of the 31-item targeted list.",
+      "FIND-004 (MOST CRITICAL: nothing in the production codebase called decideColonySpawn() then executeSpawnAttempt() together -- no autonomous trigger existed) -- fixed: run.sh rewritten from 229 lines to a 50-line thin wrapper delegating to a new scripts/wake-gate.mjs, which genuinely wires decideColonySpawn() -> executeSpawnAttempt() with REAL, freshly-computed inputs (citizen balances via live RPC, ledger reads, shelter-cost reads). skills/registry.json's self/spawn riskNote and summary both updated to no longer reference the old lib/spawn-decision.js/DO/AgentMail design.",
+      "FIND-005 (PROP-203c/PROP-303f internal contradiction: named as 'targeted for closure' while the contract's own Files-touched section admitted the artifact was never created) -- fixed: both moved to the '4 additionally re-deferred' section alongside PROP-303b's own Tier-3 deferral, target count corrected 35 -> 31."
+    ]}
+  },
+  "note": "This is contract-review iteration 3 (same negotiationRound=2 -- the JSON schema caps negotiationRound at 2, so this round's fixes are tracked via this independently-climbing 'iteration' field instead, mirroring how spec-review iterations already climb without a schema ceiling in this session). Verify ALL of round 2's fixes independently, with special scrutiny on FIND-004 since it is the most consequential: (1) read wake-gate.mjs in full and confirm it genuinely computes colonySurplusUsd/spawnThresholdUsd/recentSpawnAttempts/childrenProvisioning from REAL, freshly-read sources (readCitizenBalances against live RPC, readChildren against the real ledger file, readShelterCostEntries) -- never hand-assembled or hardcoded -- before calling decideColonySpawn(), and that it only calls executeSpawnAttempt() when eligible:true. (2) Confirm run.sh no longer references lib/spawn-decision.js or any DO/AgentMail logic anywhere in its reachable code (it should now just load env and exec wake-gate.mjs). (3) Confirm skills/registry.json's self/spawn entry no longer references lib/spawn-decision.js. (4) Independently re-run 'cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js' yourself and confirm 162/162 pass. (5) For the funding-gate fix (FIND-001/002), confirm defaultDeploy genuinely calls evaluateAkashFundingGate with real costAkt/bufferAkt values BEFORE invoking deploy-akash.sh, and that a not-ready gate result cleanly fails the deploy without proceeding. (6) For FIND-003a, confirm defaultGenerateEvmWallet's assertRealEvmAddress genuinely detects and aborts on the documented sha256-fallback address shape (read gen-wallet.sh's own fallback branch to confirm the detection logic actually matches it). (7) Spot-check at least 8 of the 31 currently-targeted PROP IDs (contract's own 'Deferred-obligation disposition' section) for CRIT-205's own revised passThreshold (does each named call site genuinely exist and is reachable). (8) Confirm the '4 additionally re-deferred' section's own reasoning is sound and doesn't contradict CRIT-206 (Tier-3 real-money non-fabrication) or any other criterion. Also independently verify the real, live dry-run smoke test evidence at .vcsdd/features/anicca-agent-spawn/evidence/run-sh-dry-run-smoke-test.log is genuine (cross-check its claimed real on-chain balance figures against a fresh RPC query of your own, if practical, or at minimum confirm the log's own internal arithmetic is self-consistent)."
+}
