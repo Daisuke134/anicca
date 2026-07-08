@@ -144,6 +144,20 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 - **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限・資本上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録 / 資本増額は on-chain 検証済み realized profit の範囲内。
 - 「1アカウントの clipping」→「数百アカウントの clipping factory」も、「PM の勝ち戦略に資本を寄せる」も、同一の allocator+registry+gate が担う。
 
+## Repo アーキテクチャ（Dais 2026-07-08: 完全分離、将来 merge の余地）
+
+**anicca と profitable-claude は完全に分離した2つの独立プロジェクト**。共有ハーネス・submodule・shared library を持たない。それぞれ self-contained（各自が自分の earn skill + harness を vendor する）。
+
+| repo | 誰の | 燃料 | 役割 | 中身 |
+|---|---|---|---|---|
+| **anicca**（github.com/Daisuke134/anicca、OSS public） | Franklin ら self-funded AI | self-funded（自分で稼いだ crypto） | agent economy の中身。OSS 稼ぐ能力の正本 | earn skills(clip/video/pm/hl/capafy/ebook…) + harness + Franklin/citizen/agent-economy |
+| **profitable-claude**（github.com/Daisuke134/profitable-claude） | human-funded claude-p | human-funded（Dais の Anthropic 課金） | agent economy の FOUNDER（作るが参加しない）。human-funded Claude が human と自分のために稼ぐテンプレ | claude-p が回す earn loop（自分で vendor した skill + harness + human-funded 固有 gig/affiliate/bounty + launchd/cron/config） |
+
+- **なぜ完全分離か**: profitable-claude は将来「卒業」する予定（稼いだ crypto で human subscription を抜け、ClawRouter で self-funded 自走 → その時 self-funded AI として anicca 経済に転換しうる）。**self-contained にしておけば、卒業時にクリーンに切り出せる**。共有依存があると切り離しが難しくなる。
+- **今は完全分離**: 両者は earn skill 等 似た機能を持つが、互いから「学ぶ（良い改善を copy する）」ことはあっても、runtime 依存（submodule/shared harness）は持たない。同じ抽象を無理に共有せず、それぞれが自分の repo 内で完結する（"prefer duplication over the wrong abstraction"、将来 diverge する前提）。
+- **将来 merge の余地**: profitable-claude が self-funded に卒業して安定したら統合を再検討してよい。それまでは2プロジェクトとして別々に運用。
+- **改善の相互流用**: 一方で確立した型（例: gig の量×質×検索+metrics、cadence 判定）を、もう一方が copy して取り込むのは推奨（学び合う）。ただしコード共有でなく copy+adapt。
+
 ## Article loop（Dais 2026-07-08: 一度切ったが検証込みで再建）
 
 過去の記事投稿は「検証が皆無で効果が分からなかった」ため停止した。再建の条件 = **投稿の存在確認 + metrics 追跡 + EDD を最初から装着**。作成・公開の skill は既に全揃い（ai-entity-article-writer = note/Zenn/Substack/X Articles/dev.to を日英でカバー、+ x-article-publisher / substack-article / auto-article-poster）。足りないのは loop 化（cadence + verify + evaluator + mail）だけ。
