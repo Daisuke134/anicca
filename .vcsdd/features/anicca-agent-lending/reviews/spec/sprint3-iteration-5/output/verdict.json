@@ -1,0 +1,55 @@
+{
+  "feature": "anicca-agent-lending",
+  "reviewType": "spec",
+  "sprint": 3,
+  "iteration": 5,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md#REQ-117",
+      "specs/verification-architecture.md#PROP-117a-d"
+    ],
+    "scope": "Fresh-context Phase 1c spec review, sprint-3 iteration-5. Independently re-verified, via REAL live execution against the real, unmodified ~/anicca/skills/economy/lending/lib/lending-orchestrator.mjs/lending-gate.mjs/_shared/lib/is-self-funded.mjs (never static reading alone), whether iteration-4's FIND-1006 root-cause fix ('getCitizen returns {...registryCitizen, balanceUsd}, never a hand-enumerated shape') genuinely closes the recurring silent-refusal defect class. Confirmed the behavioral-spec.md fix itself IS structurally sound: an exhaustive grep of executeLoanIssuanceAttempt's entire call graph shows the ONLY citizen-object fields ever read are wallet/wallet.evm, walletAddress.evm, fuel.provider, humanDependencies, coLocatedWithCoordinator, and balanceUsd -- every one of those except balanceUsd is genuinely present on the REAL citizen registry record (confirmed by direct read of ~/anicca/skills/self/spawn/registry/citizens.seed.json), and a live execution with a getCitizen closure built via {...registryCitizen, balanceUsd} reaches status:active with zero missing-field refusal. HOWEVER, this review's own required sweep of the SIBLING artifact (verification-architecture.md's PROP-117c, also named in this manifest) found the fix was NOT applied there: PROP-117c's own literal text (line 192) still describes and requires the OLD FIND-1004-era bare-enumerated-shape-plus-balanceUsd pattern, not FIND-1006's full-record-spread fix. A live execution built exactly to PROP-117c's own current wording reproduces the IDENTICAL silent 'not_self_funded' refusal FIND-1006 was supposed to have closed (new finding: FIND-1007, critical). See findings/FIND-1007.json for full evidence."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-1007"],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/behavioral-spec.md lines 2611-2649 (REQ-117 step 6) vs specs/verification-architecture.md line 192 (PROP-117c)",
+          "description": "The two spec documents this manifest requires reviewing together now describe TWO DIFFERENT, EMPIRICALLY NON-EQUIVALENT getCitizen contracts for the SAME fixture-3 scenario -- behavioral-spec.md's REQ-117 step 6 (as corrected by FIND-1006) requires the full real-registry-record spread; verification-architecture.md's PROP-117c still requires the disproven bare five-field enumeration. This is a genuine spec_fidelity defect: the specification no longer speaks with one voice about a single, load-bearing contract, and this review empirically confirmed the two descriptions are not merely differently-worded but behaviorally different (one reaches active, the other silently refuses)."
+        },
+        {
+          "type": "test-output",
+          "location": "this review's own live execution, both variants, against the real unmodified orchestrator",
+          "description": "getCitizen built per behavioral-spec.md's FIND-1006 text ({...registryCitizen, balanceUsd}) -> {\"status\":\"active\",\"loanId\":\"loan_lenderA_1\"}. getCitizen built per verification-architecture.md's PROP-117c own literal text ({id, wallet, walletAddress, coLocatedWithCoordinator, balanceUsd}) -> {\"status\":\"refused\",\"reason\":\"not_self_funded\"}. Full scripts and results in FIND-1007.json."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-1007"],
+      "evidence": [
+        {
+          "type": "spec",
+          "location": "specs/verification-architecture.md line 192 (PROP-117c)",
+          "description": "PROP-117c is the artifact whose own acceptance-criteria wording will literally drive Phase 2a's construction of fixture-3's getCitizen stub. As currently worded, a test-author following this text faithfully would build exactly the fixture this review proved reproduces FIND-1006's silent refusal -- the verification architecture is therefore NOT genuinely ready to validate REQ-117's corrected behavior until PROP-117c's own text is rewritten to match behavioral-spec.md's {...registryCitizen, balanceUsd} discipline. PROP-117a/b/d were independently re-checked against the current behavioral-spec.md text and remain sound and unaffected by this round's change -- the defect is isolated to PROP-117c's own getCitizen-shape parenthetical."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["REQ-117", "PROP-117a", "PROP-117b", "PROP-117c", "PROP-117d"],
+    "note": "Explicit judgment on the manifest's own question (has the 4-round pattern FIND-1001/1002 -> FIND-1003 -> FIND-1004/1005 -> FIND-1006 now reached a genuinely structural fix?): AT THE ROOT-CAUSE LEVEL, YES -- this review independently verified, via exhaustive call-graph field audit PLUS live execution, that behavioral-spec.md's own FIND-1006 correction ('spread the real registry record, merge balanceUsd, never a hand-enumerated subset') has zero remaining gap for anything executeLoanIssuanceAttempt's call graph reads; this is not asserted on faith, it is checked field-by-field against the real citizens.seed.json schema and confirmed by direct execution. HOWEVER, a specific, nameable 5th-round risk DOES exist, and this review found it live and reproducible: the fix was applied to only ONE of the two documents this manifest requires reviewing. verification-architecture.md's PROP-117c -- the document that actually drives Phase 2a's test-fixture construction -- still contains the pre-FIND-1006 bare-enumeration text, and following it literally reproduces the identical bug. This is not a new, unrelated defect class; it is the SAME root cause (a stale enumerated-shape description) recurring in the sibling artifact, because this round's own fix-and-sweep was scoped to behavioral-spec.md only. This mirrors -- and validates -- iteration-4's own warning against 'reactive, one-thing-at-a-time' patching: the underlying getCitizen contract has now been corrected in exactly one of its two textual homes. FAIL -- next iteration required to bring PROP-117c's own text into agreement with REQ-117's corrected text (FIND-1007's recommendation), and to sweep verification-architecture.md/any other artifact for further independent paraphrases of the SAME getCitizen contract before declaring this pattern closed. If iteration-6 confirms PROP-117c (and any sibling references) now state the SAME {...registryCitizen, balanceUsd} discipline verbatim/equivalently, and no further paraphrase is found elsewhere, this reviewer's assessment is that the pattern would then be genuinely, structurally closed -- the remaining risk is narrow and precisely located, not open-ended."
+  }
+}
