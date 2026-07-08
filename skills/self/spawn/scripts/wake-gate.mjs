@@ -30,7 +30,10 @@ import { CITIZENS_REGISTRY_PATH } from "../lib/registry-path.mjs";
 import { resolveStateDir } from "../lib/state-path.js";
 import { readChildren } from "../lib/ledger.js";
 import { readShelterCostEntries } from "../lib/shelter-cost-ledger.js";
-import { executeSpawnAttempt as executeSpawnAttemptReal } from "../lib/spawn-orchestrator.mjs";
+import {
+  executeSpawnAttempt as executeSpawnAttemptReal,
+  retryPendingRegistryAppends as retryPendingRegistryAppendsReal,
+} from "../lib/spawn-orchestrator.mjs";
 
 // REQ-102's own stated defaults (behavioral-spec.md REQ-102): perCitizenReserveUsd=5.00,
 // MIN_SHELTER_USD=5.00, SAFETY_MARGIN_MULTIPLIER=2 -- never independently re-invented here.
@@ -132,6 +135,15 @@ export async function runWakeGate({ argv = [], env = process.env, deps = {} } = 
   const ledgerFile = deps.ledgerFile || path.join(resolveStateDir({}), "children.jsonl");
   const readLedgerRows = deps.readChildren || readChildren;
   const ledgerRows = readLedgerRows(ledgerFile);
+
+  // REQ-305 edge case (FIND-003): retry any citizens.json append a PRIOR wake's executeSpawnAttempt
+  // queued after a transient failure -- BEFORE any further spawn evaluation runs this wake. Skipped
+  // under --dry-run, mirroring this same function's own "--dry-run is genuinely zero-side-effect" rule
+  // above (a registry append is a real filesystem write, never performed during a dry-run preview).
+  if (!dryRun) {
+    const retryPendingRegistryAppends = deps.retryPendingRegistryAppends || retryPendingRegistryAppendsReal;
+    await retryPendingRegistryAppends({ pendingRegistryAppendsFile: deps.pendingRegistryAppendsFile });
+  }
 
   const perCitizenReserveUsd = Number(env.ANICCA_SPAWN_RESERVE_USD || PER_CITIZEN_RESERVE_USD_DEFAULT);
   const safetyMarginMultiplier = Number(env.ANICCA_SPAWN_SAFETY_MARGIN || SAFETY_MARGIN_MULTIPLIER_DEFAULT);

@@ -44,6 +44,10 @@ function baseDeps(dir, overrides = {}) {
     registryPath: path.join(dir, "citizens.json"),
     ledgerFile: path.join(dir, "children.jsonl"),
     shelterCostFile: path.join(dir, "shelter-cost.jsonl"),
+    // FIND-003: scoped into the tmp dir, exactly like ledgerFile/shelterCostFile above -- without this
+    // override, a real (non-dry-run) invocation would call the REAL retryPendingRegistryAppends against
+    // the actual production state dir.
+    pendingRegistryAppendsFile: path.join(dir, "pending-registry-appends.jsonl"),
     ensureCitizensRegistry: async () => ({ created: false }), // citizens.json already seeded by the test
     readChildren: () => [],
     readShelterCostEntries: () => [],
@@ -202,4 +206,35 @@ test("eligible:true but no resolvable driving-citizen identity: a genuine failed
   assert.equal(result.result.status, "failed");
   assert.equal(result.result.childId, null);
   assert.match(result.result.error, /no resolvable per-instance identity/);
+});
+
+// ---------------------------------------------------------------------------
+// FIND-003 (REQ-305 edge case): a real wake retries any PRIOR wake's queued citizens.json append BEFORE
+// any further spawn evaluation runs -- never during --dry-run (a registry append is a real side effect).
+// ---------------------------------------------------------------------------
+
+test("FIND-003: a real (non-dry-run) wake calls retryPendingRegistryAppends BEFORE decideColonySpawn's own evaluation runs", async () => {
+  const dir = tmpDir();
+  seedCitizens(dir, ONE_CITIZEN);
+  const calls = [];
+  const deps = baseDeps(dir, {
+    fetchEvmBalanceUsd: async () => { calls.push("evaluate"); return 0.5; }, // insufficient surplus -> not eligible
+    retryPendingRegistryAppends: async () => { calls.push("retry"); return []; },
+  });
+
+  const result = await runWakeGate({ argv: [], env: {}, deps });
+  assert.equal(result.decision.eligible, false);
+  assert.deepEqual(calls, ["retry", "evaluate"], "the pending-registry-append retry must run before the colony-surplus evaluation it precedes, every wake, regardless of the resulting eligibility");
+});
+
+test("FIND-003: --dry-run never calls retryPendingRegistryAppends (a registry append is a real side effect, excluded from dry-run's own zero-side-effect contract)", async () => {
+  const dir = tmpDir();
+  seedCitizens(dir, ONE_CITIZEN);
+  let retryCalls = 0;
+  const deps = baseDeps(dir, {
+    retryPendingRegistryAppends: async () => { retryCalls += 1; return []; },
+  });
+
+  await runWakeGate({ argv: ["--dry-run"], env: {}, deps });
+  assert.equal(retryCalls, 0);
 });
