@@ -1,0 +1,140 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-lending",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-orchestrator.mjs:268-309",
+          "description": "REQ-115's canonical 9-step order is directly traceable in executeLoanIssuanceAttempt/runLockedIssuance: step 1 self-loan check (line 270), step 2 co-location (line 281-286), step 3 pre-lock kill-switch (line 288-293), step 4 nested dual-lock acquisition via resolveLoanLockAcquisitionOrder (line 297-302), step 5 resolveStaleProvisioning/reconciliation (line 182-187), step 6 fresh recheck of isBorrowerEligible+kill-switches (line 189-208), step 7 sizing via computeLoanCapUsd/computeLenderAvailableUsd/decideLoan (line 210-221), step 8 nextLoanSequenceForLender + provisional append (line 223-237), step 9 disburse try/catch + follow-up append (line 239-258). No step reordered, no step skipped."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-orchestrator.mjs:318-399",
+          "description": "REQ-116's two entry points match spec exactly: executeRepaymentClaim acquires loan_${loanId} lock, rejects a non-active last row BEFORE calling verify (line 325-327), calls verifyRepayment with expectedFrom=borrower_wallet/expectedTo=lender_wallet (correct repay direction), appends the status-transition row only on a genuine credit. executeDefaultDetectionSweep reads candidates from detectDefaultedLoans directly (line 369), loops sequentially (never Promise.all) with a fresh per-candidate re-read before appending (line 379-393), skips a lock-held candidate without blocking (line 394)."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-orchestrator.mjs:13-35",
+          "description": "Every imported function's call-site signature was independently checked against lending-gate.mjs/lending-verify.mjs's own exported signatures (isBorrowerEligible, computeLenderAvailableUsd, sumRecentGojoGiftsUsd's positional (gojoLogRows,nowMs,lookbackHours,lenderId) order, verifyRepayment, reconcileProvisionalDisbursement, resolveLoanLockAcquisitionOrder, nextLoanSequenceForLender) -- all match exactly, no argument-order or field-name mismatch found. payViaFacilitator's real return shape ({ok,tx,payer,...}, escrow.mjs:139) matches activeStatusFields(disburseResult.tx, nowMs)'s own usage."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs",
+          "description": "Independently re-run (not accepted from any prior log): `cd ~/anicca && node --test skills/economy/lending/lib/__tests__/*.test.mjs` -> 120/120 pass, 0 fail. Re-ran lending-orchestrator.test.mjs alone 3 additional times (31/31 each run) to check for the flakiness the contract's own Phase 2c note described around the sweep-vs-claim yield fix -- zero flakiness observed across all runs."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:388-407",
+          "description": "FIND-C203 fix independently confirmed present: 'PROP-115c step 7 (sizing computation refuses...)' test exists, asserts reason 'insufficient_lender_surplus', zero rows, both locks released -- closes the previously-missing step-7 sizing-refusal coverage the contract's own round-1 review found missing."
+        },
+        {
+          "type": "proof-result",
+          "location": "/private/tmp/claude-501/-Users-anicca-anicca-project/549d0801-6e0b-4c52-97d1-2d7a32e94b81/scratchpad/sweep-self-race.mjs",
+          "description": "Adversary-written standalone probe beyond the existing test suite, per the manifest's explicit ask ('could executeDefaultDetectionSweep's own per-candidate loop ever race against ITSELF'): two concurrent executeDefaultDetectionSweep({nowMs}) calls fired via Promise.all against ONE shared ledger with 8 simultaneously-overdue candidates for the SAME lender. Executed 5 times. Every run: all 8 candidates end up defaulted exactly once (union of both sweeps' own defaulted[] return arrays = 8, intersection = 0 -- the two sweeps never both claim the same loan_id), zero loan_id ever received more than one 'defaulted' row append. Confirms the per-loan-id lock (loan.mjs's real, atomic fs.open(wx)-based withGigLock, fail-closed/never-queued) plus each candidate's own fresh re-read (line 380-381) genuinely prevents a sweep from racing against itself, not merely against executeRepaymentClaim, under REAL concurrent execution (never a mocked lock)."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-orchestrator.mjs:243-258",
+          "description": "Independent code read confirms the two-phase provisional/follow-up discipline cannot double-record or lose a loan within one call: step 9 is a single try/catch with three mutually-exclusive branches (catch->disbursement_uncertain, ok!==true->disbursement_failed, success->active), each returning immediately after exactly one follow-up append -- no code path appends twice or falls through without appending. A provisioning/disbursement_uncertain row left by a prior failed attempt is picked up by the NEXT issuance attempt for the same lender via resolveStaleProvisioning's ledger-state-triggered reconciliation (step 5, line 103-120), which reads the highest-n row's status before any new sequence number is computed -- confirmed both by source read and by the passing 'PROP-115c step 5 happy' test (line 337-364), which asserts the new attempt's own n=2 is computed strictly after n=1's reconciliation resolves."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/economy/gig/lib/escrow.mjs:124-140",
+          "description": "Independently read settleBody (payViaFacilitator's own implementation) to confirm its real return shape on success is {ok:true, tx, payer} -- matches lending-orchestrator.mjs:257's own activeStatusFields(disburseResult.tx, nowMs) usage exactly; on any of the three failure stages (verify/settle/confirm) it returns {ok:false, stage, reason, raw} -- matches the orchestrator's own `disburseResult.ok !== true` failure-path check (line 249)."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/gig/lib/lock.mjs:173-209",
+          "description": "Independently read withGigLock's real implementation: POSIX-atomic fs.open(file,'wx') primary acquisition, atomic fs.rename-based stale reclaim, fail-closed (never queues -- a caller that cannot acquire immediately returns {ok:false} without ever calling fn()). This confirms the orchestrator's own lock_held handling (executeLoanIssuanceAttempt line 305-307, checking lockResult.ok===false from either the outer or inner nested withGigLock call) correctly covers both the outer-acquisition-fails and inner-acquisition-fails cases -- in both, runLockedIssuance (which performs all appends) is never invoked, so zero partial-lock/partial-append leak is structurally possible."
+        },
+        {
+          "type": "file",
+          "location": "state.json (proofObligations, PROP-025)",
+          "description": "CRIT-206/FIND-C202 correction independently re-verified: PROP-025 (artifact specs/verification-architecture.md#PROP-108a) is status:'skipped', required:false in the CURRENT state.json -- matches the contract's own stated correction (the stale 'proved via a borrowed sprint-1 fixture-only harness with zero orchestrator involvement' entry was fixed, never re-introduced). No artifact anywhere in this sprint's diff claims PROP-108a proved via a fixture/simulated transfer/borrowed artifact."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs, lending-gate.test.mjs, gojo-read.test.mjs, lending-path.test.mjs",
+          "description": "Confirmed via `git diff <pre-sprint-2 commit>..HEAD -- lending-gate.mjs lending-verify.mjs gojo-read.mjs lending-path.mjs` that all 4 sprint-1-delivered files are byte-identical (zero diff lines) to their sprint-1 content -- CRIT-201's 'no incidental edits' clause holds. Their own pre-existing 89 tests all still pass unmodified as part of the 120/120 full-suite run."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs (PROP-115a, PROP-116a, CRIT-204 structural tests)",
+          "description": "Re-ran and independently read these structural tests: exactly one executeLoanIssuanceAttempt export, exactly one executeRepaymentClaim/executeDefaultDetectionSweep export each, lending-orchestrator.mjs is the ONLY call site for verifyRepayment/detectDefaultedLoans/reconcileProvisionalDisbursement (grep across skills/economy/lending confirms this independently), and CRIT-204's lock-namespace-crossing regex checks pass. `grep -rln 'reconcileProvisionalDisbursement\\|payViaFacilitator\\|verifyRepayment\\|detectDefaultedLoans' skills/economy/lending/lib/*.mjs` (excluding tests) confirms lending-orchestrator.mjs is the sole production call site for all four."
+        },
+        {
+          "type": "test-output",
+          "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:474-511 (PROP-115d) + scratchpad sweep-self-race.mjs",
+          "description": "CRIT-204's dual-lock-vs-single-lock scope separation independently re-verified under REAL concurrent execution (not just the structural grep): PROP-115d's own staggered-race test confirms a concurrent issuance attempt for the SAME lender fails throughout step 9's in-flight window and only succeeds after the first attempt's own lock releases; the adversary's own additional sweep-self-race probe (edge_case_coverage evidence above) independently confirms the per-loan lock never crosses into or interferes with concurrent per-lender/per-borrower-locked issuance activity, since the two lock key namespaces (`loan_${lenderId}`/`loan_borrower_${borrowerId}` vs `loan_${loanId}` where loanId itself always has the form `loan_${lenderId}_${n}`, making the per-loan key literally `loan_loan_${lenderId}_${n}`) are structurally non-overlapping by construction, confirmed by direct string-shape inspection."
+        },
+        {
+          "type": "file",
+          "location": "skills/economy/lending/lib/lending-orchestrator.mjs (full file)",
+          "description": "CRIT-202 structural read: grepped the full file body for relational/threshold comparisons against a balance/surplus/rate/count value -- the only comparisons present are `lockResult.ok===false`/`disburseResult.ok!==true`/`verifyResult.credited>0`-style outcome checks on already-computed results from called functions, `repaidUsd>=lastRow.total_due_usd`/`nowMs<=lastRow.due_ms` (these mirror REQ-108's own already-specified repayment-completion/on-time comparisons, not a new eligibility/sizing decision), and default-detection candidate-freshness re-checks inside executeDefaultDetectionSweep (status/due_ms/repaid_usd comparisons that are the SAME re-check REQ-109's own detectDefaultedLoans logic already performs, applied here only to confirm a step-1 candidate is still valid at step 2, never a new independent threshold). No LLM/prompt reference found anywhere in the file."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md (PROP-106a/b/n/e/f/g/h/k/l/o/p/i, PROP-105h, PROP-114c, PROP-112a, PROP-108c/d, PROP-109e/g)",
+          "description": "CRIT-205: for each of the 19 deferred obligations, read its own verification-method text and confirmed the named call site now genuinely exists and is reachable in lending-orchestrator.mjs -- e.g. PROP-106f/g/l's 'wired into a live issuance attempt' now resolves to runLockedIssuance's step-9 try/catch and step-5 resolveStaleProvisioning; PROP-108d/PROP-109e's concurrent-race obligation resolves to the passing PROP-116c test; PROP-109g's 'real code, not a fixture' obligation resolves to executeDefaultDetectionSweep's own Date.now()-stamped defaulted_ms append (line 391), confirmed via the passing 'defaulted_ms genuinely set at append time' test. None of the 19 names a stub or unreachable call site."
+        },
+        {
+          "type": "file",
+          "location": "state.json (proofObligations, all 19 PROP-106a/b/n/e/f/g/h/k/l/o/p/i/105h/114c/112a/108c/108d/109e/109g)",
+          "description": "Observation (not a FIND, per CRIT-205's own explicit passThreshold text: 'NOT if a PROP is simply not yet promoted to status:proved in state.json -- that promotion is Phase 3/5's own job'): all 19 obligations remain status:'skipped'/required:false in the CURRENT state.json, even though this sprint's own new tests now genuinely exercise 15 of them (issuance-side, e.g. PROP-115c's 9-step failure-injection suite) and 4 of them (servicing-side, e.g. PROP-116c's real concurrent-race test) against the REAL, non-mocked orchestrator functions and PASS. Recorded here so the promotion (flip to required:true/status:proved, or an explicit per-PROP note if any is judged not fully closed) is not lost before vcsdd-harden's Phase 5 gate runs -- if left required:false, Phase 5's own standard 'all required obligations proved' check will silently pass without ever examining these 19, which would defeat this sprint's own explicitly stated purpose (contracts/sprint-2.md's own 'Deferred-obligation disposition' section: 'All 19 ... are targeted for closure this sprint')."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/anicca-agent-lending/reviews/spec/sprint2-iteration-1,2,3/output/verdict.json",
+          "description": "CRIT-207: state.json's currentPhase progressed from 1b to 1c to 2 only after 3 fresh-context Phase 1c iterations (sprint2-iteration-1/2/3) recorded PASS verdicts for this sprint's own contract + REQ-115/REQ-116 + PROP-115a-d/PROP-116a-e, each iteration produced by a fresh vcsdd-adversary instance -- confirmed via the task list (#75/#77/#79, all completed) and the contract's own approved status."
+        }
+      ]
+    }
+  ],
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-08T00:00:00.000Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-2.md"
+  },
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207"]
+  }
+}
