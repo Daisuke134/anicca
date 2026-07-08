@@ -36,14 +36,16 @@
 済(今日): funding pipeline money-safe(adversary PASS) / D1$1.75 / D2 Franklin$11.63(実on-chain) / #10 Franklin loop 蘇生(live E2E, `f4ec24e`) / pm-earner 安全修正(`e3269ac`) / 梯子理論(章12+prior art)
 
 ```
-1 [#7 恒久 funding loop] spec money-safe修正済(1b) → 再review→tdd→impl→adversary→converge→deploy(launchd)。私 MAIN loop の funding 部
-2 [★本丸 C1] self-improve harness を Franklin の実 sol-trade 戦略に接続 → Franklin を profitable に(今 funded だが realized=0)。経済が"始まる"唯一の道
-3 [Franklin spawn] surplus $7.77/$10(78%) → profitable で閾値超え → 新 Franklin(spawn機構=CC#2、私は fund+grow)
-4 [#8 Efpap5] wallet-identity scan-hijack 恒久 fix(latent, 8Fpqd 現状 stable)
-5 [MAIN loop 本番] 観測→判断→act→verify を launchd で1周 proactive 実証(L4→L5)(B1)
-6 [記事/本] 梯子 L1-L6 × 2軸 × prior art(章12 骨格) ── ongoing
-7 [refactor] claw loops → profitable-claude ★very end★
-8 [exit] 経済自走後 hand off→検証→out(C4, terminal)
+★順序(Dais 2026-07-08 再確定)= earn → spawn → identity → main loop → article → refactor → (OpenClaw) → claude-p exit。exit が loop の goal(数日〜数週間先)。OpenClaw 退役は急がない(今 working + 別CC 作業中)ので下段。★
+1 [★本丸 #11 Franklin を稼がせる] 土台修正(franklin-earn-foundation: wallet leak解消 / sol-trade を earn-ledger配線 / 損失guard / automaton の cross-instance gate)→deploy→harness を実戦略に接続→Franklin 初の realized profit。★今ここ★
+2 [Franklin spawn] profitable → surplus≥$10(今$7.77=78%)→ 新 Franklin 誕生(この時 citizens.json が初生成)。spawn機構=CC#2、私は fund+grow
+3 [#8 identity] wallet-identity 恒久 fix(#11 の identity 修正に統合見込み)
+4 [MAIN loop 本番 proactive] 観測→判断→act→verify を launchd で1周実証(L4→L5)
+5 [記事/本] 梯子 L1-L6 × 2軸 × prior art(章12 骨格)
+6 [refactor] claude-p loops → profitable-claude
+7 [#12 OpenClaw 退役] ★way after(急がない)★ 今 working 中 + 別CC 作業中。~/.openclaw 削除 + cron/key 移設(依存剥がしは #11 が第1号)
+8 [★claude-p exit★] = loop の goal(terminal, 数日〜数週間)。経済自走→monitor/seed/harness を hand off→検証→out
+※ bounded 安全弁(主系列の外): #7 恒久 funding loop = Franklin が本当に餓死した時のみ発火(甘やかさない)
 ```
 
 ## E. 各 /vcsdd 増分の記録欄（追記式・空でよい、進めたら evidence を足す）
