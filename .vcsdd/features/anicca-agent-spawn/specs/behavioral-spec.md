@@ -2848,8 +2848,14 @@ own metadata stops describing dead code.
 - An integration test triggers a failure at each of steps 1 through 9 in turn and confirms: (a) for
   steps 1-6 (**corrected, sprint-2 iteration 2, resolves FIND-S2-001**), a minimal `{child_id,
   status:"failed", attempted_ms, error}` row is appended directly (never via `buildChildSpec`); (b) for
-  steps 7-9, the existing `buildChildSpec`-based failure path (REQ-305) is used; (c) in every case, no
-  row anywhere claims `status:"active"` for that `child_id`.
+  steps 7-8, the existing `buildChildSpec`-based failure path (REQ-305) is used, and no row anywhere
+  claims `status:"active"` for that `child_id`. **Corrected, contract-review round 13, resolves
+  FIND-020:** step 9 (the REQ-305 append itself) is carved OUT of the steps-7-8 description above — it
+  is two sub-operations, neither of which uses the `buildChildSpec`-based path: a raw ledger-append
+  failure propagates uncaught and produces no row at all, while a TRANSIENT citizen-registry-append
+  failure correctly leaves the ledger row `status:"active"` (per this REQ's own pre-existing Edge Case
+  text below) and is queued for retry via a third mechanism, `pending-registry-append.js` — never
+  `buildChildSpec`, and NOT a case where "no row ever claims active" holds.
 - An integration test confirms the `"colony-spawn"` lock (REQ-103) is held from before step 1 begins
   until after step 9 completes (or a failure is ledgered), reusing PROP-103e's own staggered-race proof
   method against this REAL function rather than a fixture stand-in for it.
