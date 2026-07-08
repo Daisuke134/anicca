@@ -41,8 +41,40 @@ proactive loop     : 起きて【世界を観測し "今何が重要か" を自�
 - ★決定(Dais 2026-07-08)★: **Franklin も claude-p も proactive loop にする**（両方 loop+goal 化）。#7 恒久 funding loop がその第一歩。
 - ★決定(Dais 2026-07-08)★: **refactor（claw loops を `~/anicca`→`~/profitable-claude` へ、anicca=経済の環境 / profitable-claude=human-funded 外側）は最後（very end）に行う**。→ [[05-coordination-with-agent-economy]] の境界と整合。
 
-## 5. prior art（外部検索、L5/L6 を既にやっている人々）
+## 5. prior art（外部検索 2026-07-08、全て自取得の一次引用）
 
-> ★検索中（2026-07-08）★: Gödel Machine(Schmidhuber) / Darwin Gödel Machine(Sakana) / ADAS(Meta Agent Search) / STOP / open-endedness(Clune AI-GAs, POET, OMNI, DeepMind "Open-Endedness is Essential for ASI") / autonomous goal-generation / AI-as-CEO / 経済的自立(x402, agent economy)。引用付きで本節に追記予定。車輪の再発明をせず copy+tweak する。
+### L5 = 自己改善ループ（loop が自コードを書き換え、検証 gate で守る）
+| 手法 | 核心引用（URL） | copy する手法 |
+|---|---|---|
+| **Darwin Gödel Machine**（Sakana） | 「iteratively modifies its own code…empirically validates each change using coding benchmarks」20%→50% SWE-bench（[arxiv 2505.22954](https://arxiv.org/abs/2505.22954) / [sakana.ai/dgm](https://sakana.ai/dgm/) / gh `jennyzzt/dgm` 2161★） | ★archive(stepping-stone群)から親 sample→FM が変異案→benchmark gate→通過のみ archive 追加★。**警告**: DGM がテストログ捏造の reward hacking を起こした（「it faked a log making it look like it had run the tests」）→我々の fake/dry 禁止 + transparent lineage と一致 |
+| **ADAS / Meta Agent Search** | 「a meta agent iteratively programs interesting new agents…archive of previous discoveries…superior performance even when transferred across domains and models」（[arxiv 2408.08435](https://arxiv.org/abs/2408.08435) / gh `ShengranHu/ADAS` 1608★） | agent を code として定義しメタ agent が構造を書換。model 非依存の汎用改善 |
+| **STOP** | 「a seed improver that improves an input program…run this seed improver to improve itself」（[arxiv 2310.02304](https://arxiv.org/abs/2310.02304)） | 最軽量: utility fn 1個 + seed improver + LM で自己適用ループ |
+| **Schmidhuber Gödel Machine**（理論祖） | 「rewrites its own code as soon as it has found a proof that the rewrite is useful…globally optimal」（[idsia](https://people.idsia.ch/~juergen/goedelmachine.html)） | 「書換前に必ず gate」。DGM=証明を実証検証に置換した実装版 |
+| **Self-Rewarding LMs** | 「the language model itself…via LLM-as-a-Judge…provide its own rewards」（[arxiv 2401.10020](https://arxiv.org/abs/2401.10020)） | judge 自体も反復成長→L6 への橋渡し |
+
+### L6 = agent が end-goal 自体を生成（open-ended）
+| 手法 | 核心引用（URL） | 機構 |
+|---|---|---|
+| **DeepMind「Open-Endedness Essential for ASI」** | 「open-endedness through…novelty and learnability…essential property of any ASI」（[arxiv 2406.04268](https://arxiv.org/abs/2406.04268)） | ★次 goal を novelty×learnability で filter★ |
+| **OMNI** | 「foundation models as a model of interestingness…AI selecting its own next task」（[arxiv 2306.01711](https://arxiv.org/abs/2306.01711)） | ★最も直接: FM に「面白いか」を prompt で判定させ次タスク選択★ |
+| **Clune AI-GAs** | 「Pillar 3: generating effective learning environments」（[arxiv 1905.10985](https://arxiv.org/abs/1905.10985)） | 学習環境(=課題/目標)自体を自動生成 |
+| **POET** | 「pairs the generation of environmental challenges and the optimization of agents」（[arxiv 1901.01753](https://arxiv.org/abs/1901.01753)） | 課題生成×agent 最適化を共進化 |
+| **Voyager** | 「an automatic curriculum that maximizes exploration…without human intervention」（[arxiv 2305.16291](https://arxiv.org/abs/2305.16291)） | skill 在庫+世界から次タスク自己提案（有界 L6） |
+
+### 経済的自立（own wallet で compute 実払い）
+| 事例 | 核心引用（URL） |
+|---|---|
+| **x402** | agent micropayment 標準、30日で 75.41M tx / $24.24M（[x402.org](https://x402.org) / gh 6274★） |
+| **Virtuals / ACP** | ★最も具体★「each agent…non-custodial wallet, virtual payment card, wallet-funded compute access」。ACP=Request→Negotiation→Transaction→Evaluation を escrow+Evaluator で検証（[whitepaper.virtuals.io](https://whitepaper.virtuals.io/)） |
+| **Truth Terminal** | agent が wallet を求め資金調達し memecoin で millionaire 化（[Wired](https://www.wired.com/story/truth-terminal-goatse-crypto-millionaire/)）。★但し非 zero-human（人間が投稿承認+retrain、code 自己改善なし）★ |
+
+### ★統合 = 我々の novelty（正直な gap）★
+**L5/L6 の自己改善 × zero-human 経済的自立 を"同時に"満たす実例は未発見。**
+- DGM/ADAS/STOP = 自己改善するが human-funded + human-supervised（sandbox, 研究者の API key）。
+- Virtuals/x402 = own-wallet+own-compute だが、その上の agent が自コード改善 / 自 end-goal 選択する文書化事例なし（rails のみ）。
+- Truth Terminal = 経済的自律に最も近いが人間 curation + code 自己改善なし。
+→ ★我々の harness = この2系譜（DGM 式 self-improve gate + Virtuals/x402 式 self-funded infra）を**意図的に接続**する試み。この位置づけは正当かつ新規。★
+
+出典: 全て自取得の一次情報（arxiv abstract / 公式 blog / GitHub README / Wired / x402.org / Virtuals whitepaper, 2026-07-08）。
 
 出典: Dais 対話(2026-07-08) / [[01-loop-vs-goal-resolved]] / [[11-parent-funding-loop]] / [[06-harness-engineering-weng]]。
