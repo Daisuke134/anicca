@@ -1688,8 +1688,9 @@ lending participants may run on (a separate axis from this requirement's own cha
 **EARS**: THE SYSTEM SHALL perform every REQ-101/102/104/105/106/108/109 evaluation, lock acquisition, and
 `loans.jsonl` read/write EXCLUSIVELY among lending participants — BOTH the lender AND the borrower, not
 merely a single evaluator as in `anicca-agent-spawn`'s own analogous case — that are co-located with the
-coordinator: currently the Mac Mini (`anicca-mac-mini-1`) that today's real colony (automaton + Franklin)
-already runs on, for the full duration of THIS increment. This is the precondition that makes REQ-106's
+coordinator: currently the Mac Mini (`anicca-mac-mini-1`) that today's real colony (Franklin — automaton
+was removed from the self-funded citizen set per Dais's 2026-07-08 directive, see
+`anicca-agent-spawn`'s own `citizens.seed.json`) already runs on, for the full duration of THIS increment. This is the precondition that makes REQ-106's
 `lock.mjs` (a local-POSIX-filesystem primitive) and the reused `ledger.js`'s local append-only
 `loans.jsonl` file CORRECT as specified — restating, almost verbatim, `anicca-agent-spawn` REQ-106's own
 words for its own, analogous reuse of the SAME two primitives ("This constraint is what makes REQ-103's
@@ -1706,16 +1707,19 @@ BOTH parties' own runtimes, not just a single evaluator's.
 mechanism, not merely a stale citation):** THE SYSTEM SHALL determine co-location eligibility EXCLUSIVELY
 via `citizen.coLocatedWithCoordinator === true` — a purpose-built boolean field `anicca-agent-spawn`
 (re-read fresh this revision) has ALREADY added to its own `citizens.json` registry schema specifically to
-answer this exact "is this citizen co-located" question (seeded `true` for both of today's real citizens,
+answer this exact "is this citizen co-located" question (seeded `true` for every currently-seeded citizen,
 `false` for every future spawned child, since `anicca-agent-spawn` REQ-301 mandates every spawned child is
 cloud-hosted). THE SYSTEM SHALL NOT derive co-location from `homeDir` equality — a PRIOR revision of this
 requirement did exactly that, and was WRONG on two counts, both confirmed this revision: (a) factually,
-today's real seed data does NOT give automaton and Franklin the identical `homeDir` this requirement
-previously assumed — `anicca-agent-spawn`'s own current registry seeds automaton at
+AT THE TIME this fix was made, the real seed data did NOT give automaton and Franklin the identical
+`homeDir` this requirement previously assumed — `anicca-agent-spawn`'s registry seeded automaton at
 `homeDir: "/Users/anicca/.anicca"` and Franklin at `homeDir: "/Users/anicca/.blockrun"`, two DISTINCT
-values, so a literal `homeDir`-equality check would have incorrectly concluded today's two real,
-genuinely-co-located citizens are NOT co-located with each other, potentially blocking the exact
-automaton↔Franklin lending scenario this feature exists to serve; (b) structurally, `anicca-agent-spawn`'s
+values, so a literal `homeDir`-equality check would have incorrectly concluded those two real,
+genuinely-co-located citizens were NOT co-located with each other, potentially blocking the exact
+automaton↔Franklin lending scenario this fix was made to unblock (automaton was subsequently removed from
+the self-funded citizen set entirely per Dais's 2026-07-08 directive — this historical illustration of the
+`homeDir`-equality bug remains valid regardless, since the mechanism itself, `coLocatedWithCoordinator`,
+is generic over whichever citizens are actually seeded); (b) structurally, `anicca-agent-spawn`'s
 own adversary-hardened design (its own FIND-501/FIND-703 resolutions) has ALREADY explicitly established
 and documented, in its own spec, that "co-located (same physical host) does NOT mean 'same `homeDir`'" —
 each citizen retains its own distinct `ANICCA_HOME` root even on a shared machine — and added
@@ -1779,9 +1783,11 @@ fail-closed, exactly as any other REQ-101/102 pre-lock eligibility refusal.
   records' `homeDir` fields for equality, or otherwise derives co-location from `homeDir`, as a
   co-location check (resolves FIND-305; corrects the prior `homeDir`-equality mechanism this requirement
   specified before this revision).
-- A fixture pair of citizens each with `coLocatedWithCoordinator: true` (mirroring today's real
-  automaton/Franklin seed data, which have DISTINCT `homeDir` values but IDENTICAL
-  `coLocatedWithCoordinator: true`) is correctly treated as co-location-eligible for both lender and
+- A fixture pair of citizens each with `coLocatedWithCoordinator: true` (mirroring the historical
+  automaton/Franklin seed data this fix was validated against, which had DISTINCT `homeDir` values but
+  IDENTICAL `coLocatedWithCoordinator: true` — today's real seed data has only ONE entry, Franklin, since
+  automaton's 2026-07-08 removal, so this remains a synthetic two-citizen fixture for exercising the
+  two-party mechanism, not literally today's live seed) is correctly treated as co-location-eligible for both lender and
   borrower roles — proving this requirement's own mechanism does NOT incorrectly exclude today's real,
   genuinely-co-located citizens the way a `homeDir`-equality check would have (resolves FIND-305).
 - This spec's own Scope section states lending TO/FROM a remote-cloud-hosted citizen is out of scope this
