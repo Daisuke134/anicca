@@ -107,6 +107,59 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 - **guardrail（MUST）**: 新アカウントは platform 毎の warmup schedule に従う / 同一 platform の新規作成は N 日に1つ / fleet 上限・資本上限は config で明示 / ban 検知（投稿失敗連続）で該当 instance を pause し lessons.jsonl に記録 / 資本増額は on-chain 検証済み realized profit の範囲内。
 - 「1アカウントの clipping」→「数百アカウントの clipping factory」も、「PM の勝ち戦略に資本を寄せる」も、同一の allocator+registry+gate が担う。
 
+## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
+
+現状の founder-loop は「自分の ledger に earn を記録し目標達成を確認するだけ」の狭い記録ループ（record-earn.mjs を叩くだけ）で、CEO ではない。これを **会社（company）** に再構成する。各 earn loop = 自分の事業だけを改善する business manager。その上に CEO と explorer を置く。
+
+```
+        ┌──────────── CEO LOOP（= founder-loop を昇格）─────────────┐
+        │ 全 loop の {cadence streak, 週次 evaluation score, 実収益,  │
+        │ token コスト} を読む → 会社全体の資源配分を決める:          │
+        │  ・稼ぐ loop に token/資本/アカウントを倍賭け（double-down） │
+        │  ・稼げない loop の頻度を落とす/pause（token 節約）          │
+        │  ・explorer が検証した新事業を loop 化して起動              │
+        │ 判断=agent(Sonnet)、配分の実行と gate=決定論ツール         │
+        └───────┬───────────────────────┬────────────────┬──────────┘
+                │                       │                │
+    ┌───────────▼──────┐    ┌───────────▼───────┐   ┌────▼──────────────┐
+    │ MANAGER LOOPS     │    │ MANAGER LOOPS     │   │ EXPLORER LOOP      │
+    │ (稼ぐ既存事業)     │    │ (稼ぐ既存事業)     │   │ (新規事業の起業家) │
+    │ pm/clip/video/gig │    │ affiliate/bounty/  │   │ X・Reddit の       │
+    │ …                 │    │ hl/article…        │   │ pain-point を掘る  │
+    │ 各々:             │    │ 各々:             │   │ → 事業案生成       │
+    │ ・inner self-heal │    │ ・inner self-heal │   │ → 小さく検証(その  │
+    │ ・inner improve   │    │ ・inner improve   │   │   日のうちに動く証拠)│
+    │ ・外部検索で最新   │    │ ・外部検索で最新   │   │ → CEO に上申       │
+    │   戦略を取り込む   │    │   戦略を取り込む   │   │                   │
+    └──────────────────┘    └───────────────────┘   └───────────────────┘
+                │                       │                │
+                └───────────────────────┴────────────────┘
+                    全 loop が自分の成果を evidence 付きで
+                    keiodaisuke@gmail.com / contact@aniccaai.com に mail 報告
+```
+
+### CEO LOOP（founder-loop の昇格、REQ 群で定義）
+- 週次（+ 日次の軽い点検）で loop-registry と全 loop の evaluator score/実収益/token コストを読み、**portfolio allocation** を決める。BP は探索して copy（multi-armed bandit / supervisor pattern 等、車輪の再発明禁止）。
+- 出力 = 各 loop の {token 予算, pass 頻度, 資本上限, fleet サイズ} を loop-registry に書く決定論的な配分表。判断は agent、書き込みと gate は決定論。
+- **CEO 自身の verification loop（MUST）**: 「配分を変えた → 翌週の会社全体 score/実収益が上がったか」を machine-checkable に追跡。CEO も自分の判断を数字で検証する（config 変更が悪化させたら巻き戻す）。
+- 既存の record-earn.mjs / ledger 不変条件（INV-H1..H5）は壊さない。CEO 化は founder-loop に「配分判断ステップ」を追加する形で、ledger 書き込みの唯一性は維持。
+
+### EXPLORER LOOP（新規、起業家）
+- **agent-reach 経由で X・Reddit を継続監視**（X は Grok/X MCP も使う — Dais の X 有料プラン活用）。人間の pain-point・「誰か作って」・Claude で稼ぐ実例ツイートを収集。
+- 収集 → 事業案生成 → **その日のうちに動く最小検証**（no dry run: 実際に1本作る/1件応募する/1 API 叩く）→ 動いた証拠付きで CEO に上申。
+- 動いた案のみ CEO が loop 化を承認 → spawner が manager loop として起動。動かない案は lessons に記録して捨てる。
+- explorer 自身にも cadence（毎日 N 件の機会を検証）と evaluation（上申→採用→黒字化の funnel）を持たせる。
+
+### 各 manager loop の「外部検索で自己改善」（既存 EDD の拡張、REQ 追加）
+- 各 loop は pass の中で **agent-reach で自分の事業ドメインの最新の稼ぎ方を検索**（pm=最新の Polymarket 戦略、clip=伸びてる clip フォーマット等）→ lessons.jsonl に取り込み → 次 pass の判断に反映。これが「business manager が自分で勉強する」層。
+- 判断（何を取り込むか）は agent、検索の実行と記帳は決定論ツール。
+
+### 報告経路（全層 MUST）
+- 全 loop（manager/explorer/CEO）は成果を evidence 付きで keiodaisuke@gmail.com（および contact@aniccaai.com → keiodaisuke 転送）に mail。CEO は加えて「会社全体の週次 P&L + 資源配分の変更」を報告。
+
+### 目的（north star）
+- Dais の 10k MRR + claude-p wallet の 10k MRR（agent economy = Franklin 群への出資 + $200 subscription 卒業して ClawRouter 自弁）。全 loop の置き場 = github.com/Daisuke134/profitable-claude（世界中の Claude が human と自分のために稼ぎ、subscription を卒業し、最終的に agent economy に参加できるテンプレート）。
+
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 
 enabled 103 job の実データ分類（jobs.json + skill 実体確認済み、生データ: scratchpad/enabled_jobs_with_paths.json）:
