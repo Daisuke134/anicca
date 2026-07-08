@@ -2,12 +2,12 @@
   "sprintNumber": 2,
   "feature": "anicca-agent-spawn",
   "overallVerdict": "PASS",
-  "timestamp": "2026-07-08T08:00:00Z",
+  "timestamp": "2026-07-08T22:00:00Z",
   "iteration": 3,
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-2.md",
-    "contractDigest": "2bc66a20b5d4a5ccaface9dd4fb07aed847545f2a92a4106be6ee0a55c86d544"
+    "contractDigest": "941f811e4eae1369de9eec95952ff9e77fe9fce9395a8bf58cc7277fc4527f3b"
   },
   "dimensions": [
     {
@@ -17,8 +17,13 @@
       "evidence": [
         {
           "type": "file",
-          "location": "state.json proofObligations, cross-referenced against PROP-302b/PROP-303b/PROP-401a/PROP-303e rows (BEAD-059/BEAD-061/BEAD-074/BEAD-100)",
-          "description": "CRIT-206 fresh re-verification: all 4 Tier-3/Tier-3-adjacent obligations (PROP-302b, PROP-303b, PROP-401a, and PROP-303e which joined the same deferral this round) remain status:'skipped', required:false. Nothing anywhere claims any of them proved via a fixture, simulated deploy, or borrowed artifact from anicca-agent-lending. The contract's own 'Deferred-obligation disposition' and 'Known residual scope boundary' sections match this state.json reality exactly."
+          "location": "contracts/sprint-2.md:43,45 (CRIT-205 description + passThreshold)",
+          "description": "FIND-018 CONFIRMED GENUINELY FIXED: CRIT-205's description (line 43) now reads '...the count here is now stated as 31 = 30 sprint-1-deferred + PROP-307e, matching that section exactly' followed by 'Every one of the 30 non-Tier-3 sprint-1-deferred obligations this sprint targets, PLUS the new PROP-307e ... so nothing in the current code makes any of the 31 structurally unprovable.' passThreshold (line 45) now reads 'For each of the 31 targeted PROP IDs (the 30 sprint-1-deferred obligations PLUS the new PROP-307e)... FAIL if any of the 31 names a call site...'. Both fields now consistently use '31' for the total and '30 + PROP-307e' as its composition -- the 30-vs-31 self-contradiction FIND-018 flagged is gone; the 'including' framing that implied PROP-307e was one of the 30 has been fully replaced by the 'PLUS'/'31 total' framing, matching the Deferred-obligation disposition section's own longstanding phrasing exactly."
+        },
+        {
+          "type": "file",
+          "location": "full-document grep for every occurrence of 30/31/35/38/42/25/5/3, cross-checked against state.json's proofObligations",
+          "description": "Independently built a complete occurrence table (all 289 lines read front-to-back). '35' appears only 3x, all explicitly past-tense historical citations (lines 172, 211, 278) -- zero present-tense current-state claims. '30' appears 8x (CRIT-205 lines 43/45 as the '30' component of '31', disposition heading/body lines 172/176/179, Known residual scope boundary lines 277/281/287) -- every occurrence is the SAME set (sprint-1-deferred, targeted-this-sprint, excluding PROP-307e) and is self-consistent; none of these needed to become '31' since they specifically describe reconciliation against sprint-1's own 38, which never included PROP-307e (a sprint-2-only addition) -- promoting them to '31' would instead BREAK the 30+8=38 reconciliation math this section performs. The 'Deferred-obligation disposition' section's own heading ('30 targeted for closure this sprint', line 176) correctly stays 30 for the same reason: it is the sprint-1-reconciliation figure, and the section's own 'PLUS the new PROP-307e' phrasing (line 184) already layers PROP-307e on top exactly as CRIT-205 now also does -- no other CRIT criterion or section needs a '31' it does not already have. '31' also appears once more, unrelatedly, at line 164 ('31 Tier>0 + 7 Tier-0' = 38) -- a different quantity (the Tier>0 subcount of sprint-1's original 38-item deferred ledger, unrelated to PROP-307e); this is a coincidental reuse of the same numeral for a different fact, not an inconsistency, and was independently cross-verified against the real ledger (see structural_integrity evidence below): 31 tier>0 + 7 tier0 = 38 skipped entries in state.json, exact match. The disputed sentence at lines 162-164 ('25 Tier-0 obligations surfaced by the Phase 5-6 gate check') was also independently re-derived against state.json rather than assumed: of state.json's 28 total tier-0 obligations, exactly 3 (PROP-307a/b/f, i.e. PROP-115/116/120) are sprint-2-new and did not exist when this sentence was first written (Phase 1a/1b, before round 6 added PROP-307f) -- 28-3=25, and of those 25 sprint-1-original tier-0 obligations, 18 are proved + 7 skipped = 25, with the 4 named promoted-to-proved IDs (PROP-106a/403a/105g/202e) all independently confirmed status:proved in state.json. No inconsistency found anywhere."
         }
       ]
     },
@@ -29,8 +34,8 @@
       "evidence": [
         {
           "type": "test-output",
-          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js' (this session's own fresh run)",
-          "description": "CRIT-203 fresh re-verification: 175/175 tests pass, 0 fail (matches the manifest's expected count exactly, no code changed this round). All 9 PROP-307c step-failure-injection tests (steps 1-9, against a real ledger.js file) independently re-read and confirmed present and passing: steps 1-6 append the minimal 4-key row via appendMinimalFailure (never buildChildSpec), steps 7-9 use the buildChildSpec-based row via appendSpecFailure, and no row anywhere claims status:active for a failed attempt."
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Freshly re-executed this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0. No regression from round 10's documentation-only fix. CRIT-203's 9-step failure-injection coverage and both PROP-307e structural tests ('run.sh no longer CALLS the OLD lib/spawn-decision.js gate...', 'wake-gate.mjs ... genuinely calls decideColonySpawn then, if eligible, executeSpawnAttempt') observed passing directly in this session's own output."
         }
       ]
     },
@@ -40,9 +45,9 @@
       "findings": [],
       "evidence": [
         {
-          "type": "test-output",
-          "location": "cd ~/anicca && node --test skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs (part of the same 175/175 fresh run)",
-          "description": "CRIT-207 fresh re-verification: gen-solana-wallet.sh (skills/self/spawn/scripts/gen-solana-wallet.sh) read in full and diffed structurally against gen-wallet.sh -- same discipline (fresh entropy via solana-keygen, {address,private_key,public_key} JSON to stdout, 600-perm caller-redirected file, never logged, documented in its own header comment). 4/4 tests pass live including a genuine live invocation and an independent solana-keygen-CLI cross-derivation of the resulting address from the decoded base58 secret key -- a second, independent derivation path per REQ-201's own cross-check discipline extended to REQ-202."
+          "type": "file",
+          "location": "~/anicca/skills/self/spawn/run.sh, ~/anicca/skills/self/spawn/scripts/wake-gate.mjs (both re-read in full this session)",
+          "description": "Independently re-verified (not trusting round 10's own claim): run.sh's active body is a thin wrapper that loads env then `exec`s into scripts/wake-gate.mjs -- 'spawn-decision'/'AgentMail'/'DigitalOcean' appear only inside a retirement-note comment block (lines documenting the OLD, now-removed path), never as an active require/import/call. wake-gate.mjs's runWakeGate() genuinely calls decideColonySpawn (imported as decideColonySpawnPure from ../lib/treasury-gate.mjs) and, only if decisionCore.eligible is true and not --dry-run, calls executeSpawnAttempt (imported as executeSpawnAttemptReal from ../lib/spawn-orchestrator.mjs). No regression from round 10. All files named in the contract's 'Files touched' section (spawn-orchestrator.mjs, gen-solana-wallet.sh, run.sh, wake-gate.mjs, and all 6 named test files under lib/__tests__/) independently confirmed present on disk via a real `ls`."
         }
       ]
     },
@@ -53,23 +58,8 @@
       "evidence": [
         {
           "type": "file",
-          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:375-578 (executeSpawnAttempt, full re-read this session)",
-          "description": "CRIT-201 fresh re-verification: exactly one call-graph root (executeSpawnAttempt) reaches every one of REQ-201-306's own exported functions/scripts in canonical order; step 8's buildChildSpec (pure) runs ahead of step 7's effectful mcp.json write is not applicable here since actual step order in code is home-check(1)->evmWallet(2)->persistWallet->cloudTarget(3)->solanaWallet(4)->deploy(5)->seedChild->registerIdentity(6)->buildChildSpec->mcp.json(7)->ledger-append(9), matching the contract's own step 7/8 clarification. grep -rln executeSpawnAttempt across skills/self/spawn/ (excluding tests) returns exactly 3 files: spawn-orchestrator.mjs (definition), wake-gate.mjs (the one real call site), run.sh (comment-only reference in its header doc) -- no second orchestration path exists."
-        },
-        {
-          "type": "file",
-          "location": "run.sh:1-51 (full re-read), scripts/wake-gate.mjs:1-196, grep -rn spawn-decision skills/self/spawn/",
-          "description": "PROP-307e fresh re-verification: run.sh execs wake-gate.mjs, which imports decideColonySpawn from treasury-gate.mjs and executeSpawnAttempt from spawn-orchestrator.mjs, calling decideColonySpawn then, if eligible, executeSpawnAttempt. Every 'spawn-decision' match in the reachable tree is a comment-level retirement note (run.sh:24, wake-gate.mjs:6, SKILL.md:22) or the old lib/spawn-decision.js file itself sitting unreferenced on disk -- none are live call sites. Confirmed by the passing PROP-307e structural tests in wake-gate.test.mjs."
-        },
-        {
-          "type": "file",
-          "location": "grep -nE '[<>]=?|===|!==' skills/self/spawn/lib/spawn-orchestrator.mjs; grep -inE 'llm|prompt|gpt|claude|anthropic|openai' skills/self/spawn/lib/spawn-orchestrator.mjs (both re-run fresh this session)",
-          "description": "CRIT-202 fresh re-verification: zero relational/threshold (<,>,<=,>=) comparisons anywhere in the file -- every match is a string/error-code/status equality check (===/!==) or arrow-function syntax; zero LLM/prompt-client references."
-        },
-        {
-          "type": "test-output",
-          "location": "PROP-307d colony-spawn-lock staggered-race test (part of the 175/175 fresh run)",
-          "description": "CRIT-204 fresh re-verification: the colony-spawn lock's scope over the real executeSpawnAttempt (steps 2-9 stubbed to fast fixture I/O) matches REQ-103's critical section; no staggered attempt during the delay window succeeds."
+          "location": "state.json proofObligations array (121 entries), independently queried this session",
+          "description": "Cross-validated the ENTIRE 38-item deferred-obligation enumeration in contracts/sprint-2.md (the 30 targeted [25 Tier>0 + 5 Tier-0] + 3 Tier-3 + 5 additionally-re-deferred) against state.json's own 38 status:'skipped' entries: the two 38-item ID sets are IDENTICAL (zero diff either direction). Also confirmed the 31 Tier>0 / 7 Tier-0 skipped-count split (line 164) matches state.json exactly (31 tier>0-skipped, 7 tier0-skipped), and that PROP-302b/PROP-303b/PROP-401a (the 'Tier-3' bucket) are genuinely tier:3 in state.json while PROP-302a/PROP-302c/PROP-303e/PROP-303f/PROP-203c (the 're-deferred' bucket) carry tiers 2/2/3/0/0 respectively -- confirming the contract's Tier-3-vs-re-deferred distinction is by REASON (real-money-spend vs missing-infrastructure), not raw tier field, exactly as the prose states, with zero contradiction."
         }
       ]
     },
@@ -80,31 +70,17 @@
       "evidence": [
         {
           "type": "file",
-          "location": "specs/verification-architecture.md:461 (PROP-201c row, re-read fresh this session)",
-          "description": "FIND-008 fix independently re-verified CORRECT: the row now reads 'Tier 0: structural read of defaultPersistChildWallet (spawn-orchestrator.mjs) confirms it writes {address, privateKey} ... to childHomeDir/.automaton/wallet.json at mode 0600 ... Tier 2: a real invocation's resulting wallet.json file has mode 0600 and lives under the child's own home' -- this matches defaultPersistChildWallet's real, current implementation (spawn-orchestrator.mjs:168-179) exactly, no longer the disproven gen-wallet.sh-stdout-redirect description. The two Purity Boundary Map cross-references (lines 560, 666) are consistent phrase-level pointers to the same corrected row, not independent stale claims."
-        },
-        {
-          "type": "file",
-          "location": "contracts/sprint-2.md 'Deferred-obligation disposition' section (re-read fresh, both the '30 targeted for closure' itemized list and the '5 additionally re-deferred' bucket); specs/verification-architecture.md:697/936 (PROP-303e rows)",
-          "description": "FIND-009 fix independently re-verified CORRECT: PROP-303e no longer appears in the '30 targeted for closure this sprint' itemized PROP list (independently re-extracted programmatically: exactly 30 IDs -- 25 Tier>0 + 5 Tier-0 -- plus the separately-called-out new PROP-307e, zero occurrence of PROP-303e). PROP-303e now appears in the '5 additionally re-deferred this round' bucket alongside PROP-302a/PROP-302c/PROP-203c/PROP-303f, with the identical reasoning already established for its siblings. The count is consistently '30' in all 4 locations checked: CRIT-205's description ('30 non-Tier-3 obligations'), CRIT-205's passThreshold ('30 targeted PROP IDs'), the 'Now that REQ-307...' intro sentence ('promote 30 of the remaining 38'), and the itemized list's own header ('30 targeted for closure this sprint'). verification-architecture.md independently confirms PROP-303e is classified Tier-3 (line 697, grouped with PROP-303b's real Akash lease deploy and its real post-lease secrets-injection delivery) -- consistent with the contract's own re-deferral."
-        },
-        {
-          "type": "file",
-          "location": "state.json phaseHistory ('1b'->'1c' transition for sprint 2 at 2026-07-07T19:48:55.335Z, '1c'->'2a' at 2026-07-07T20:23:33.449Z citing 'Sprint 2 Phase 1c PASSED at iteration 3, fresh adversary, zero findings')",
-          "description": "CRIT-208 fresh re-verification: sprint-2's own contract + REQ-307/PROP-307a-d were reviewed by a fresh vcsdd-adversary and gated Phase 2 before TDD began -- no regression."
-        },
-        {
-          "type": "file",
-          "location": "10 of the 30 targeted PROP IDs independently spot-checked this session (exceeds the >=8 minimum): PROP-201a, PROP-304b/c/d/f, PROP-305e, PROP-402a, PROP-102g, PROP-105i, PROP-205a, PROP-301a, PROP-101j, PROP-102k -- each cross-read against verification-architecture.md's own named verification method AND the real current spawn-orchestrator.mjs/wake-gate.mjs/treasury-gate.mjs source",
-          "description": "CRIT-205 fresh re-verification across a broad, independently-chosen sample: PROP-201a's assertRealEvmAddress (spawn-orchestrator.mjs:138-145) and its keccak re-derivation tests exist and pass. PROP-304b/c/d/f's evaluateAkashFundingGate wiring inside defaultDeploy (lines 230-257) exists with dedicated passing tests confirming deploy-akash.sh is never invoked when the funding gate is not ready. PROP-305e's isSelfFunded gate before citizens.json append (lines 561-566) exists. PROP-402a's bootstrap_failed relabeling (treasury-gate.mjs, sprint-1, unmodified) exists with a passing test. PROP-102g/PROP-101j/PROP-102k's real-derivation call sites (deriveRecentSpawnAttempts/filterProductiveCitizens/computeColonySurplusUsd, all called directly from wake-gate.mjs with no hand-rolled re-derivation) exist. PROP-105i's live cross-chain re-derivation proof harness exists at anicca-project's own verification/proof-harnesses/prop-105g-live-address-rederivation.mjs (51 lines, genuine, not a stub -- initially searched for under ~/anicca and not found there, then correctly located under the VCSDD feature's own verification/ directory, confirming this is not a documentation gap). PROP-205a's defaultWriteMcpConfig (lines 342-362) matches the live ~/.blockrun/mcp.json shape the contract's own Scope section documents. PROP-301a's transient-file cleanup (shredTempFile, lines 267-277, called in a finally block) exists. No named call site was found missing, unreachable, or stub/placeholder."
+          "location": "state.json proofObligations, entry {id:'PROP-121', artifact:'...#PROP-307e'}",
+          "description": "FIND-017's state.json fix independently re-confirmed still present and unregressed: PROP-121 (tier:1, required:true, status:'pending', artifact:'specs/verification-architecture.md#PROP-307e', beadId:'BEAD-154') exists in the current 121-entry proofObligations array. CRIT-205's own passThreshold (now consistently '31') correctly gates on this entry's underlying call site existing, not on its promotion to 'proved', matching this criterion's own stated Phase-3/5 deferral of that promotion."
         }
       ]
     }
   ],
   "convergenceSignals": {
     "findingCount": 0,
-    "previousFindingCount": 2,
+    "previousFindingCount": 1,
     "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
     "evaluatedCriteria": [
       "CRIT-201",
       "CRIT-202",
@@ -114,7 +90,6 @@
       "CRIT-206",
       "CRIT-207",
       "CRIT-208"
-    ],
-    "duplicateFindings": []
+    ]
   }
 }
