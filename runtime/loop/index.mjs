@@ -444,7 +444,7 @@ async function runOneWake() {
   const sleepS = cfgNum(config.SLEEP_BASE_S, 120);
 
   // Redact any private key patterns from observation (PROP-020)
-  const safeObservation = redactPrivateKeyPatterns(skillResult.output || '').slice(0, 500);
+  const safeObservation = redactPrivateKeyPatterns(skillResult.output || '').slice(0, 1200);
 
   const recordFields = {
     ts,
@@ -462,7 +462,7 @@ async function runOneWake() {
     // DEEP FEEDBACK FIX (Dais 2026-06-22): record a short summary of what the skill ACTUALLY returned
     // (cook's findings, x402's sales=0, yield's action) so the NEXT wake's prompt shows OUTCOMES, not
     // just "I ran cook" — the model was re-cooking the same query because it never saw the result.
-    ...(safeObservation ? { result: safeObservation.replace(/\s+/g, ' ').slice(0, 180) } : {}),
+    ...(safeObservation ? { result: safeObservation.replace(/\s+/g, ' ').slice(0, 900) } : {}),
   };
 
   // Verify ledger line has no private key pattern (PROP-020)
