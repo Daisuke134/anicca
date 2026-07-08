@@ -90,6 +90,17 @@
       "risk": "safe",
       "riskNote": "anicca-agent-economy REQ-201: contribute()/distributeAI() are fail-closed no-ops (no profit/below threshold/would breach reserve) by the skill's own code -- cannot deplete a broke instance's treasury."
     },
+    "economy/lending": {
+      "track": "A",
+      "dir": "skills/economy/lending",
+      "entrypoint": "run.sh",
+      "status": "live",
+      "spec": "anicca-agent-lending REQ-117, sprint-3",
+      "summary": "PEER-TO-PEER micro-lending among self-funded citizens: bookkeeping-only (REQ-103, zero model judgment over eligibility/sizing/servicing). Reads the real citizen registry + loans.jsonl + gojo-log.jsonl, filters to self-funded (REQ-111) + EVM-walleted (REQ-107) + co-located (REQ-112) citizens, deterministically selects the FIRST eligible (surplus lender, genuinely-broke borrower) pair this wake and attempts issuance at most once via the already-hardened executeLoanIssuanceAttempt (REQ-115), then unconditionally runs executeDefaultDetectionSweep (REQ-116). Today's real registry has zero eligible pairs (single Solana-only citizen) -- a clean, honest no-op until a second EVM-walleted, co-located citizen exists.",
+      "owner": "wf-a:agent-economy",
+      "risk": "safe",
+      "riskNote": "anicca-agent-lending REQ-111: a human-funded entity can never appear in either role -- isSelfFunded() gates both at REQ-101/102 with zero bypass; anicca-agent-lending REQ-117: `runtime/loop/prompt.mjs::liveSlotNames` requires status:'live' for this entry to ever be reachable from a real wake -- confirmed via direct reading this sprint, mirrors economy/ubi's own riskNote's identical resolveSkillPath-always-uses-run.sh disclosure."
+    },
     "cook": {
       "track": "A",
       "dir": "skills/cook",
