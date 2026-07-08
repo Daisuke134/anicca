@@ -208,8 +208,46 @@ def main() -> None:
                 _unwrap_call(USDCE, deposit_wallet, used_pusd_units),
                 metadata=f"unwrap {used_pusd_units} pUSD -> USDC.e",
             )
-            unwrap_outcome = unwrap_handle.wait()
-            if not eth_tx_confirmed_success(POLYGON_RPC, unwrap_outcome.transaction_hash):
+            # Finding A fix (money-safety adversary review, 2026-07-08): the unwrap tx is
+            # already submitted to the relayer the instant _dispatch_single_call() returns
+            # (prepare_gasless_transaction_sync submits before constructing the handle --
+            # .wait() only polls for the terminal outcome), so record a 'pending' row with
+            # whatever identifier is available BEFORE waiting. If the wait/confirm call below
+            # raises, this pending row is the only evidence the unwrap tx exists at all.
+            unwrap_hash = unwrap_handle.transaction_hash
+            unwrap_tx_id = unwrap_handle.transaction_id
+            append_ledger(LEDGER_PATH, build_row(
+                step="withdraw",
+                amount_usd=amount_usd,
+                status="pending",
+                reason="unwrap tx submitted, awaiting on-chain confirmation",
+                tx_hash=unwrap_hash,
+                from_addr=deposit_wallet,
+                to_addr=OFFRAMP,
+                extra={"plan": plan, "phase": "unwrap", "relayer_transaction_id": unwrap_tx_id},
+            ))
+            try:
+                unwrap_outcome = unwrap_handle.wait()
+                unwrap_confirmed = eth_tx_confirmed_success(POLYGON_RPC, unwrap_outcome.transaction_hash)
+            except Exception as exc:
+                # Confirmation RPC itself failed -- the pending row above already preserved
+                # the audit trail; do not append a second, possibly-wrong-status row for the
+                # same tx (a human/agent can look it up on-chain later for reconciliation).
+                fail(
+                    f"unwrap tx {unwrap_hash or unwrap_tx_id} submitted but confirmation check "
+                    f"raised: {exc} -- needs manual reconciliation (see pending ledger row)"
+                )
+            if not unwrap_confirmed:
+                append_ledger(LEDGER_PATH, build_row(
+                    step="withdraw",
+                    amount_usd=amount_usd,
+                    status="failed",
+                    reason=f"unwrap tx {unwrap_outcome.transaction_hash} did not confirm status=0x1",
+                    tx_hash=unwrap_outcome.transaction_hash,
+                    from_addr=deposit_wallet,
+                    to_addr=OFFRAMP,
+                    extra={"plan": plan, "phase": "unwrap"},
+                ))
                 fail(f"unwrap tx {unwrap_outcome.transaction_hash} did not confirm status=0x1")
 
         transfer_units = min(amount_units, usdce_units + used_pusd_units)
@@ -218,10 +256,31 @@ def main() -> None:
             recipient_address=OWNER_EOA,
             amount=transfer_units,
         )
-        outcome = handle.wait()
-        tx_hash = outcome.transaction_hash
+        # Finding A fix: same reasoning as the unwrap dispatch above -- the transfer is
+        # already submitted by the time `handle` is returned, so record a 'pending' row with
+        # whatever identifier is available BEFORE waiting for the terminal outcome.
+        transfer_hash = handle.transaction_hash
+        transfer_tx_id = handle.transaction_id
+        append_ledger(LEDGER_PATH, build_row(
+            step="withdraw",
+            amount_usd=amount_usd,
+            status="pending",
+            reason="transfer tx submitted, awaiting on-chain confirmation",
+            tx_hash=transfer_hash,
+            from_addr=deposit_wallet,
+            to_addr=OWNER_EOA,
+            extra={"plan": plan, "relayer_transaction_id": transfer_tx_id},
+        ))
+        try:
+            outcome = handle.wait()
+            tx_hash = outcome.transaction_hash
+            confirmed = eth_tx_confirmed_success(POLYGON_RPC, tx_hash)
+        except Exception as exc:
+            fail(
+                f"transfer tx {transfer_hash or transfer_tx_id} submitted but confirmation "
+                f"check raised: {exc} -- needs manual reconciliation (see pending ledger row)"
+            )
 
-    confirmed = eth_tx_confirmed_success(POLYGON_RPC, tx_hash)
     if not confirmed:
         row = build_row(
             step="withdraw",

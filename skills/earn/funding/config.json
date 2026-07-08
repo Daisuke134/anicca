@@ -1,8 +1,8 @@
 {
   "_comment": "Money-safety config for the claude-p -> Franklin funding pipeline. See docs/loop-engineering/11-parent-funding-loop.md §2-3 in anicca-project. Values are ops knobs, not code -- change here, never by editing script logic.",
   "reserve_usd": 5.0,
-  "per_transfer_usd_cap": 5.0,
-  "daily_usd_cap": 10.0,
+  "per_transfer_usd_cap": 12.0,
+  "daily_usd_cap": 15.0,
   "cumulative_usd_cap": 50.0,
   "bridge_max_fee_pct": 15,
   "known_addresses": {

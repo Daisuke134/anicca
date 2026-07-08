@@ -175,7 +175,38 @@ def main() -> None:
         sys.exit(1)
 
     signature = result["signature"]
-    if not confirmed_success(SOLANA_RPC, signature):
+
+    # Finding A fix (money-safety adversary review, 2026-07-08): by the time spl_transfer()
+    # returns ok+signature, the `spl-token transfer` CLI subprocess has ALREADY completed
+    # (this is a blocking subprocess.run, not an async handle) -- record a 'pending' row with
+    # that signature BEFORE the independent confirmed_success() RPC check below. If that check
+    # raises, this pending row is the only evidence this real transfer was broadcast.
+    append_ledger(LEDGER_PATH, build_row(
+        step="send_to_franklin",
+        amount_usd=amount_usd,
+        status="pending",
+        reason="spl-token transfer completed, awaiting independent on-chain confirmation",
+        tx_hash=signature,
+        from_addr=FOUNDER_SOLANA,
+        to_addr=FRANKLIN_SOLANA,
+        extra={"plan": plan},
+    ))
+    try:
+        sig_confirmed = confirmed_success(SOLANA_RPC, signature)
+    except Exception as exc:
+        # Confirmation RPC itself failed -- the pending row above already preserved the audit
+        # trail; do not append a second, possibly-wrong-status row for the same signature (a
+        # human/agent can look it up on-chain later for reconciliation).
+        print(json.dumps({
+            "ok": False,
+            "step": "send_to_franklin",
+            "error": f"signature {signature} broadcast but confirmation check raised: {exc} -- "
+            "needs manual reconciliation (see pending ledger row)",
+            "signature": signature,
+        }))
+        sys.exit(1)
+
+    if not sig_confirmed:
         row = build_row(
             step="send_to_franklin",
             amount_usd=amount_usd,

@@ -119,20 +119,20 @@ simulate money that a prior dry step didn't actually send.
 | Rail | Where | How |
 |---|---|---|
 | Recipient identity verification (the "Efpap5 incident" fix) | `lib/identity.py` | Derives the recipient's PUBLIC key from its OWN key/session file (never trusts a displayed/labeled address) and requires it to equal the known-good address from `config.json`. `send_to_franklin.py` refuses to send if Franklin's `~/.blockrun/.solana-session` does not derive `8Fpqd...` -- exactly the failure mode from `docs/loop-engineering/10-STATUS-verified.md`'s "franklin proxy displayed `Efpap5` instead of `8Fpqd`" note. No flag bypasses this check. |
-| Per-transfer / daily / cumulative caps | `lib/caps.py` (`check_caps`), `config.json` | Pure function over the ledger history; only `status:"sent"` (real, confirmed) rows count toward spend -- a failed/skipped/dry attempt never eats cap headroom. |
+| Per-transfer / daily / cumulative caps | `lib/caps.py` (`check_caps`), `config.json` | Pure function over the ledger history. Only the `withdraw` step's `"sent"`/`"pending"` rows count toward spend (the withdraw hop is the ONE point money actually leaves claude-p's capital base -- bridge/send_to_franklin move that SAME money onward, not a second/third outflow; see `lib/caps.py::_outflow_rows` docstring, money-safety review Finding C, 2026-07-08). A `failed`/`skipped`/`dry` attempt never eats cap headroom. A `pending` row (broadcast recorded before confirmation resolves, see below) DOES count, since the money may already have moved; if a later `sent`/`failed` row for the same `tx_hash` is appended, only the most-terminal row is counted once (no double-count). |
 | Reserve protection (never starve pm-earner) | `lib/caps.py` (`reserve_protected_amount`), `config.json: reserve_usd` | `withdraw.py` never proposes withdrawing below the configured reserve. |
-| On-chain confirmation before recording success | `lib/erc20.py` (`eth_tx_confirmed_success`), `lib/solana_rpc.py` (`confirmed_success`) | Independently queries the chain (`eth_getTransactionReceipt` / `getSignatureStatuses`) for a real terminal status -- never trusts an SDK/CLI "success" return alone. |
+| On-chain confirmation before recording success, crash-safe | `lib/erc20.py` (`eth_tx_confirmed_success`), `lib/solana_rpc.py` (`confirmed_success`) | Independently queries the chain (`eth_getTransactionReceipt` / `getSignatureStatuses`) for a real terminal status -- never trusts an SDK/CLI "success" return alone. Every real broadcast (unwrap, transfer, bridge tx, spl-token transfer) is recorded as a `"pending"` ledger row IMMEDIATELY after broadcast, BEFORE the confirmation wait/poll call -- the confirmation call itself is wrapped in try/except, so a transient RPC failure between broadcast and confirmation can never leave a real transfer completely unlogged (money-safety review Finding A, 2026-07-08). On confirmed success the row is followed by a `"sent"` row (or `"failed"` if the receipt shows a revert); if the confirmation RPC call itself raises, the `pending` row is left as-is for manual reconciliation. |
 | Kill-switch | `lib/kill_switch.py` | `touch KILL` in this directory pauses all three scripts (same convention as `polymarket-trade`'s own `KILL`). `rm KILL` resumes. |
-| Ledger (audit trail) | `lib/ledger.py` | Every decision (sent/failed/skipped/dry) appended to `~/anicca/skills/earn/state/funding-ledger.jsonl`. |
+| Ledger (audit trail) | `lib/ledger.py` | Every decision (`sent`/`pending`/`failed`/`skipped`/`dry`) appended to `~/anicca/skills/earn/state/funding-ledger.jsonl`. |
 | No touching reserves/other wallets | `config.json: known_addresses` | Every address this skill ever reads from or writes to is a named constant checked against the config, never derived from an untrusted display string. |
 
 ## Config (`config.json`)
 
 All caps/reserve/known-addresses are DATA, not code -- change the number here, never the
-script logic. Current defaults: `reserve_usd: 5.0`, `per_transfer_usd_cap: 5.0`,
-`daily_usd_cap: 10.0`, `cumulative_usd_cap: 50.0`, `bridge_max_fee_pct: 15`. Tune these as
-claude-p's real balance and Franklin's real needs become clearer -- they are intentionally
-conservative for the first real runs.
+script logic. Current defaults (raised for the D2 seed, 2026-07-08, after D1's $2 on-chain
+success): `reserve_usd: 5.0`, `per_transfer_usd_cap: 12.0`, `daily_usd_cap: 15.0`,
+`cumulative_usd_cap: 50.0`, `bridge_max_fee_pct: 15`. Tune these as claude-p's real balance
+and Franklin's real needs become clearer -- they are intentionally conservative.
 
 ## Tests
 
@@ -140,7 +140,7 @@ Pure logic only (no network, no real keys) -- `lib/caps.py`, `lib/identity.py`,
 `lib/ledger.py`:
 ```
 cd ~/anicca/skills/earn/funding
-python3 -m pytest tests -v      # 28 tests, all pure/offline
+python3 -m pytest tests -v      # 33 tests, all pure/offline
 ```
 
 ## What this skill deliberately does NOT do

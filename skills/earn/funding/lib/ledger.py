@@ -52,8 +52,15 @@ def build_row(
     extra: Optional[dict] = None,
 ) -> dict:
     """Pure row builder -- no I/O, no mutation of `extra`. `step` in
-    {"withdraw","bridge","send_to_franklin"}. `status` in {"sent","failed","skipped","dry"}.
-    Only `status == "sent"` rows represent a REAL on-chain-confirmed transfer."""
+    {"withdraw","bridge","send_to_franklin"}. `status` in
+    {"sent","pending","failed","skipped","dry"}. Only `status == "sent"` rows represent a REAL
+    on-chain-confirmed transfer. `"pending"` means a tx/signature was broadcast (money may
+    already be moving) but its confirmation could not yet be recorded -- written immediately
+    after broadcast, before waiting for the terminal outcome, so a crash in the
+    confirmation-RPC call never leaves a real transfer completely unlogged (money-safety
+    adversary review Finding A, 2026-07-08). See lib/caps.py's `_outflow_rows` for how
+    'pending' rows are counted toward caps without double-counting once a terminal 'sent'/
+    'failed' row for the same tx_hash is later appended."""
     row = {
         "ts": ts if ts is not None else time.time(),
         "step": step,
