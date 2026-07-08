@@ -288,3 +288,5 @@
 {"timestamp":"2026-07-08T20:48:18.591Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"2b","to":"2c","iteration":1,"phase":"2c"}
 {"timestamp":"2026-07-08T20:53:12.588Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"2c","to":"3","iteration":1,"phase":"3"}
 {"timestamp":"2026-07-08T21:03:26.904Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"3","verdict":"FAIL","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T21:14:56.804Z","event":"gate_recorded","featureName":"hl-realized-pnl","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-08T21:14:56.806Z","event":"phase_transition","featureName":"hl-realized-pnl","from":"3","to":"5","iteration":1,"phase":"5"}
