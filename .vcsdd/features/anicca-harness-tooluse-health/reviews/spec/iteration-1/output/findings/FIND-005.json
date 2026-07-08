@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "The ground-truth section describes skills/self/healthcheck-runtime-loop.sh as 'the EXISTING self-heal escalation path for runtime/loop/index.mjs instances (anicca-a3cdd4/Franklin/claude-p-pm/claude-p-proxy)', grouping all four launchd jobs together as if each is a runtime/loop/index.mjs instance. Reading the actual cited file fresh (healthcheck-runtime-loop.sh:1-12, 96-99) shows this is not accurate for claude-p-pm: its own header comment states 'claude-p PM -- ai.anicca.pm-earner (StartInterval 600s, body ~/.anicca-founder/agents/polymarket-agent)', and its check() invocation (line 98) uses kind='interval' with artifact=\"$HERE/../earn/polymarket-trade/earner.log\" -- a plain log file from the polymarket-trade earn skill, not a ledger.jsonl produced by a KeepAlive runtime/loop/index.mjs wake-loop. This is structurally different from anicca-a3cdd4 (com.anicca.daemon, KeepAlive, ~/.anicca/state/ledger.jsonl) and Franklin (ai.anicca.franklin-loop, KeepAlive, ~/.blockrun/state/ledger.jsonl), both of which genuinely are runtime/loop/index.mjs instances producing kind-tagged ledger.jsonl records that R1-R8's classifyLayer/computeHarnessHealth operate over. This does not currently break anything the feature builds -- the Scope section correctly narrows its 'R1-R8 apply unchanged to either instance's ledger path' claim to only anicca-a3cdd4 and Franklin -- but the ground-truth section's own instance list misrepresents the very file it cites, and a future reader/implementer could reasonably (and incorrectly) assume claude-p-pm's log is also a valid harness-health-snapshot.mjs target given how it's grouped here.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md",
+    "lineRange": "47-48",
+    "snippet": "`skills/self/healthcheck-runtime-loop.sh` -- the EXISTING self-heal escalation path for `runtime/loop/index.mjs` instances (`anicca-a3cdd4`/`Franklin`/`claude-p-pm`/`claude-p-proxy`). Contradicted by healthcheck-runtime-loop.sh:9,98 (claude-p-pm is an interval job over earn/polymarket-trade/earner.log, not a runtime/loop/index.mjs KeepAlive instance with a ledger.jsonl)."
+  },
+  "routeToPhase": "1a"
+}

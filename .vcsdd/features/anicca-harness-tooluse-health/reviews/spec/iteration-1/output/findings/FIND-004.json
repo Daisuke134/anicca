@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "The R6 proof-table row's brain_transport case only asserts 'no slot key, layer:brain_transport, detail up to 4000 chars' -- it never asserts that `detail` is redacted of private-key patterns for that branch. Given FIND-003 establishes that err.message is NOT already redacted anywhere upstream (contrary to the spec's premise), this test-table gap means an implementation that writes raw, unredacted err.message into harness-failures.jsonl would pass every listed R6 assertion (line-count of 1, no slot key, layer label correct, length <=4000) while still leaking an unredacted secret if one ever appears in a proxy/subprocess error message. The proof table needs an explicit assertion such as 'simulate a wake_error whose err.message contains a 64-hex pattern (0x[0-9a-fA-F]{64}) -> the corresponding harness-failures.jsonl detail field must show [REDACTED], not the raw hex' to actually verify the redaction R6's prose claims already exists.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md",
+    "lineRange": "37-37",
+    "snippet": "| R6 | integration (temp $ANICCA_HOME) | simulate one wake_error wake (THINK throws)->exactly one harness-failures.jsonl line, no slot key, layer:'brain_transport', detail up to 4000 chars; ... | -- no assertion anywhere in this row checks that detail is actually redacted for the brain_transport case."
+  },
+  "routeToPhase": "1b"
+}

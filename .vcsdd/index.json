@@ -150,23 +150,30 @@
       "status": "active",
       "createdAt": "2026-07-08T08:51:49.742Z",
       "mode": "lean",
-      "currentPhase": "2a",
-      "updatedAt": "2026-07-08T12:15:32.420Z"
+      "currentPhase": "5",
+      "updatedAt": "2026-07-08T14:31:53.865Z"
     },
     "gig-feasibility-volume": {
       "status": "active",
       "createdAt": "2026-07-08T11:53:58.474Z",
       "mode": "lean",
-      "currentPhase": "1c",
-      "updatedAt": "2026-07-08T12:38:38.562Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-08T14:14:31.323Z"
     },
     "anicca-harness-tooluse-health": {
       "status": "active",
       "createdAt": "2026-07-08T12:47:30.205Z",
       "mode": "lean",
+      "currentPhase": "1c",
+      "updatedAt": "2026-07-08T13:28:59.372Z"
+    },
+    "anicca-spawn-identity-resolution-fix": {
+      "status": "active",
+      "createdAt": "2026-07-08T14:34:51.268Z",
+      "mode": "lean",
       "currentPhase": "init",
-      "updatedAt": "2026-07-08T12:47:30.205Z"
+      "updatedAt": "2026-07-08T14:34:51.268Z"
     }
   },
-  "activeFeature": "anicca-harness-tooluse-health"
+  "activeFeature": "anicca-spawn-identity-resolution-fix"
 }

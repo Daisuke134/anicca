@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "missing_edge_case",
+  "severity": "high",
+  "description": "The R2 proof-table row does not include a fixture that would catch FIND-001's hazard (loop_detect records carrying a matching slot value). It lists: '[wake,wake,skill_error,skill_error]->wakes:4,failures:2,failureRate:0.5,consecutiveFailureStreak:2; a trailing wake after failures->streak resets to 0; slot never present->null; records with a DIFFERENT slot are excluded from x's count.' None of these four cases mixes a loop_detect record carrying the SAME slot value into the fixture. Given real ledger data (see FIND-001) proves loop_detect records commonly carry a matching slot, an implementation that naively filters by `record.slot === slot` alone (satisfying every listed test case, since none of them contains a loop_detect entry) would still silently violate INV-LOOPDETECT-SEPARATE in production while passing 100% of the specified RED/GREEN tests. The proof table therefore is not yet verification-ready for R2/INV-LOOPDETECT-SEPARATE: it needs an explicit added case such as '[wake, {kind:loop_detect, slot:x}, skill_error]' for slot x -> the loop_detect entry must be excluded from wakes/failures/streak entirely (wakes:2, failures:1, not wakes:3).",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md",
+    "lineRange": "33-33",
+    "snippet": "| R2 | unit | fixture array with slot `x` records `[wake,wake,skill_error,skill_error]`->wakes:4,failures:2,failureRate:0.5,consecutiveFailureStreak:2; a trailing `wake` after failures->streak resets to 0; slot never present->`null`; records with a DIFFERENT slot are excluded from `x`'s count |"
+  },
+  "routeToPhase": "1b"
+}

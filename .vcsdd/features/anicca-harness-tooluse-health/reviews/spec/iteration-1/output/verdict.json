@@ -1,0 +1,70 @@
+{
+  "sprintNumber": 1,
+  "feature": "anicca-harness-tooluse-health",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T13:15:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:429-441", "description": "Confirmed: kind assignment (skill_missing/skill_timeout/skill_error/wake) is deterministic if-else over skillResult.notFound/timedOut/exitCode, exactly as R1's ground-truth claims -- genuine fixed-enum bookkeeping, no model judgment involved."},
+        {"type": "file", "location": "runtime/loop/index.mjs:351-361", "description": "Confirmed: THINK-catch wake_error record never carries a slot field, matching R1/R3's claim exactly."},
+        {"type": "file", "location": "runtime/loop/index.mjs:180-284", "description": "Confirmed: loop_detect's own consecutive-streak (loopDetectStreak/loopDetectSlot) + exponential-backoff-capped-at-maxSleepS mechanism is real and matches the ground-truth citation precisely (kind:'loop_detect' assigned at line 281 exactly as cited)."},
+        {"type": "file", "location": "runtime/loop/index.mjs:281", "description": "loop_detect record DOES carry `slot: avoidSlot` -- contradicts R2's 'i.e.' equivalence claim. See FIND-001."},
+        {"type": "file", "location": "/Users/anicca/.anicca/state/ledger.jsonl", "description": "Sampled real production ledger (10720 lines): kind distribution wake=6634, narrate=1550, wake_error=1239, loop_detect=1063 (238 of which carry a slot field with real values like x402_sell/cook), skill_missing=97, shutdown=78, skill_error=50, skill_timeout=7. Confirms both the spec's ~23% non-clean-wake-rate claim (≈1239+97+78+50+7 non-wake/narrate over 10720 ≈ 13% clean-narrate-excluded... close order of magnitude, not independently falsified) AND the loop_detect/slot collision underlying FIND-001."},
+        {"type": "file", "location": "skills/earn/self-improve/evaluator.py:14-28", "description": "Confirmed verbatim: combined_score is 100% backtest-fixture-derived (gate_math.risk_adjusted_score over walk-forward OOS windows), module docstring literally states 'never an LLM judge's subjective score' -- matches R9's non-interference claim."},
+        {"type": "file", "location": "skills/self/self-improve/lib/ledger_metrics.py:27-41", "description": "Confirmed: score_from_rows is views+earn_usdc/jpy/commission_jpy only, zero grep hits for skill_error/wake_error/exit_code/EACCES anywhere in either self-improve tree -- matches the spec's 'structurally blind' claim exactly."},
+        {"type": "file", "location": "runtime/loop/prompt.mjs:130", "description": "Confirmed exact line and content: JSON.stringify(ctx.recentLedgerLines, null, 2) embeds up to 20 whole ledger records verbatim into every wake's prompt -- matches R6's token-budget rationale for the harness-failures.jsonl side-channel design exactly."},
+        {"type": "file", "location": "runtime/loop/brain.mjs:78,130,179", "description": "err.message's true origin: raw HTTP response body / raw subprocess stderr, never passed through redactPrivateKeyPatterns anywhere on this path. Falsifies R6's 'already-redacted' premise for the brain_transport branch. See FIND-003."},
+        {"type": "file", "location": "skills/self/healthcheck-runtime-loop.sh:1-12,96-99", "description": "claude-p-pm is an interval job over a polymarket-trade earner.log, not a runtime/loop/index.mjs KeepAlive ledger.jsonl instance -- contradicts the ground-truth section's 4-instance grouping. See FIND-005. Scope section's own narrower 2-instance claim (anicca-a3cdd4/Franklin) is independently confirmed accurate."},
+        {"type": "file", "location": "runtime/loop/catalog-gate.mjs:16", "description": "Confirmed DEFAULT_BOOTSTRAP_RESERVE_USDC = Number(process.env.X) || N idiom is real, matches R5's cited precedent exactly."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md:74-84", "description": "R1 correctly fail-safes unrecognized future kind values to 'unknown', but neither R1 nor R2's requirement text addresses the concrete, currently-occurring case of a KNOWN kind (loop_detect) that carries a slot field yet must not be counted as that slot's tool-call outcome."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:281", "description": "A literal implementation of R2's stated contract (slot-match implies one of the four dispatch kinds) would double-count real, currently-occurring loop_detect events against slot health -- an implementation bug baked into the requirement itself, not something Phase 2 code review could catch by reading the spec alone."},
+        {"type": "file", "location": "runtime/loop/brain.mjs:78,130,179", "description": "A literal implementation of R6 (skip redaction because 'already redacted') would persist raw HTTP/subprocess error text unredacted -- a security-relevant implementation defect directly caused by the spec's false premise."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md", "description": "EARS SHALL-format requirements R1-R10 are sequential, each independently testable, invariants are explicitly tagged and cross-referenced (INV-NO-JUDGMENT, INV-NO-PROMPT-REGRESSION, INV-LOOPDETECT-SEPARATE, INV-NO-AUTOACTION), Scope IN/OUT and E2E-necessity sections are both present and complete per this project's dev-workflow.md requirement. No structural/format defects found."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:28-41", "description": "Proof table is otherwise thorough (R1 boundary cases incl. unrecognized-kind fail-safe; R4 empty-ledger shape; R5 threshold boundary at/above/below; R7 missing-ledger + re-run-overwrite; R8 cross-language shared-fixture parity; R9 explicit existing-suite regression list; R10 static grep check) -- but has two concrete gaps (FIND-002: R2 row never tests a loop_detect-with-matching-slot fixture; FIND-004: R6 row never asserts redaction of the brain_transport detail field) that would let an implementation pass every listed test while still violating INV-LOOPDETECT-SEPARATE or leaking an unredacted secret."},
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md:179-185", "description": "E2E-necessity judgment section is present, correctly reasoned (backend-only, no UI/iOS/web surface touched, Maestro not applicable), and specifies concrete self-verification evidence (manual harness-health-snapshot.mjs run cross-checked against jq/grep counts) -- satisfies this project's dev-workflow.md Maestro-judgment requirement."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

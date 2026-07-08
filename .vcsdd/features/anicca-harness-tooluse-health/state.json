@@ -1,9 +1,32 @@
 {
   "featureName": "anicca-harness-tooluse-health",
   "mode": "lean",
-  "currentPhase": "init",
-  "phaseHistory": [],
-  "iterations": {},
+  "currentPhase": "1c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-08T12:59:00.422Z",
+      "reason": "Phase 1a behavioral-spec.md authored (R1-R10, EARS format) grounded in runtime/loop/index.mjs, evaluator.py, ledger_metrics.py, self-fix.sh, healthcheck-runtime-loop.sh"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-08T13:00:06.537Z",
+      "reason": "Phase 1b verification-architecture.md authored: purity boundary (JS/Python pure aggregators vs impure snapshot/report CLIs) + proof table for R1-R10 + shared cross-language parity fixture plan"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-08T13:28:59.361Z",
+      "reason": "Spec revised: FIND-001/003/005 fixed in behavioral-spec.md (R2 loop_detect exclusion, R6 redaction of err.message, claude-p-pm ground-truth correction), FIND-002/004 fixed in verification-architecture.md (added test cases). Ready for iteration-2 spec review."
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 1
+  },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-anicca-harness-tooluse-health-1783514850207",
@@ -12,5 +35,5 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-08T12:47:30.205Z",
-  "updatedAt": "2026-07-08T12:47:30.205Z"
+  "updatedAt": "2026-07-08T13:28:59.372Z"
 }

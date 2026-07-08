@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "invariant_violation",
+  "severity": "critical",
+  "description": "R2's parenthetical equivalence ('the subset of records carrying that exact slot value (i.e. kind ∈ {wake, skill_missing, skill_timeout, skill_error})') is factually false against the real, live ledger data this spec claims to be grounded in. Read runtime/loop/index.mjs line 281 fresh: the loop_detect record is constructed as `formatRecord({ ts, wake_id: wakeId, kind: 'loop_detect', slot: avoidSlot, sleep_s: sleepS, streak: loopDetectStreak })` -- it DOES carry a `slot` field (the just-avoided real skill slot name), contradicting the spec's implicit claim that only the four listed kinds ever carry `slot`. This is not a hypothetical edge case: I sampled both real production ledgers cited in the spec's own 'Problem' section. In ~/.anicca/state/ledger.jsonl, 238 of 1063 loop_detect records (22%) carry a real `slot` value (sampled values: 'x402_sell', 'cook'); in ~/.blockrun/state/ledger.jsonl, all 12 loop_detect records carry a slot. Given R2's requirement text equates 'has a matching slot field' with 'kind is one of the four dispatch kinds', a builder implementing computeSlotHealth via the literal 'i.e.' framing (e.g. `records.filter(r => r.slot === slot)` without an additional kind-membership check) will silently sweep loop_detect events into that slot's `wakes`/`failures`/`failureRate`/`consecutiveFailureStreak` counters -- double-counting a loop_detect event as a tool-call outcome for that slot. This is exactly what the spec's own named invariant INV-LOOPDETECT-SEPARATE prohibits ('never double-counts a loop_detect event'), and it is not a remote failure mode: it already occurs in >20% of loop_detect events in the anicca-a3cdd4 production ledger today. R3 (brain_transport) is unaffected since it only concerns wake_error, which genuinely never carries slot (confirmed at index.mjs:354-361) -- the gap is specific to R2/R4's slot-keyed aggregation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md",
+    "lineRange": "77-84",
+    "snippet": "R2 (per-slot tool-call health -- pure) computeSlotHealth(records, slot) SHALL, over only the subset of records carrying that exact slot value (i.e. kind ∈ {wake, skill_missing, skill_timeout, skill_error} -- wake_error never carries a slot, R3 covers it separately), return {...}. Contradicted by runtime/loop/index.mjs:281 (`kind: 'loop_detect', slot: avoidSlot, ...`) and by real ledger sampling: 238/1063 loop_detect records in ~/.anicca/state/ledger.jsonl carry a slot field (e.g. slot:'x402_sell', slot:'cook')."
+  },
+  "routeToPhase": "1a"
+}
