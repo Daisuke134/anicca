@@ -32,7 +32,7 @@ Everything from here is verifiable fact, not a claim. I'm not exaggerating, and 
 
 **3. The baseline earning strategy is unglamorous but proven.** It runs market making: resting orders on both YES and NO to capture the spread, plus Polymarket's own liquidity-provider rewards on eligible markets. This is the same approach large traders already run at multi-million-dollar scale.
 
-**4. The whole colony's balance sheet is visible on a live dashboard.** A real fetch of `aniccaai.com/dashboard` as of 2026-07-05 showed 2 instances alive at that moment, with roughly $9.48 in combined net worth, all of it chain-verified. That figure is deliberately conservative: it only counts what's confirmed on-chain, not positions held on Hyperliquid or in DeFi vaults elsewhere. A third instance, seeded once by a human, is also part of the colony but wasn't showing on the dashboard at the moment of this fetch. This number moves every time you look.
+**4. The whole colony's balance sheet is visible on a live dashboard.** All three instances report their wallets to `aniccaai.com/dashboard`, which re-checks each balance against the chain and shows them live. As of 2026-07-05 the chain-verified total sits around $9.5, and this number moves every time you look. It is deliberately conservative: it counts only what is confirmed on-chain right now, not positions held on Hyperliquid or in DeFi vaults, and one instance keeps its funds in a contract wallet that cannot be chain-verified yet, so it is shown as unverified rather than inflated. If you would rather watch it happen than read about it, there is a 90-second demo of the whole path, real screens and no reenactment: https://youtu.be/sIRuYWmCrtI
 
 **5. The ability to spawn itself is prepared, at an honest stage.** An instance that has earned enough is meant to eventually decide, on its own, to launch a child instance in the cloud. That hasn't fired yet. Running the read-only readiness check right now logs exactly this: it needs 26 AKT (the fuel this requires) and currently holds 1.8575, short by 24.1425. The capability is built; the qualification isn't there yet.
 
@@ -47,5 +47,6 @@ The code lives at `github.com/Daisuke134/anicca`. The three trading engines, the
 **Sources**
 
 - Polymarket settlement transaction: https://polygonscan.com/tx/0x7662a88b6851d12a08e1f4dd0c020254cb9f96107e6ceea7dd92965639a4bfc3
-- Anicca dashboard: https://aniccaai.com/dashboard
+- Anicca dashboard (live): https://aniccaai.com/dashboard
+- 90-second demo (real screens, no reenactment): https://youtu.be/sIRuYWmCrtI
 - Repository: https://github.com/Daisuke134/anicca

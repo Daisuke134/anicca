@@ -6,6 +6,12 @@
       "sourceType": "github",
       "computedHash": "ba045a5195bb6b2a084b0daa10fa364f942f6121ffc568e4ab5ca01da6a09c30"
     },
+    "agent-reach": {
+      "source": "Panniantong/Agent-Reach",
+      "sourceType": "github",
+      "skillPath": "agent_reach/skill/SKILL.md",
+      "computedHash": "6226439c1c27041abd25b6b2de54271d86febb506102e8e8315dddab8129523c"
+    },
     "ai-image-generation": {
       "source": "inference-sh-6/skills",
       "sourceType": "github",
@@ -198,6 +204,12 @@
       "sourceType": "github",
       "skillPath": "skills/general-video/SKILL.md",
       "computedHash": "a30225e30ec7b06c0e2d4e2e448860a97211b0dc55d5b2ddb9c3255d54b0e918"
+    },
+    "goal-setter": {
+      "source": "gotalab/goal-setter-skill",
+      "sourceType": "github",
+      "skillPath": "skills/goal-setter/SKILL.md",
+      "computedHash": "a022e4ca222fe8fda959a8bcb9ad661007af2d37adef634c28bff86e6437f94e"
     },
     "greenlight": {
       "source": "revylai/greenlight",

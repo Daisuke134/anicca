@@ -150,8 +150,8 @@
       "status": "active",
       "createdAt": "2026-07-08T08:51:49.742Z",
       "mode": "lean",
-      "currentPhase": "5",
-      "updatedAt": "2026-07-08T14:31:53.865Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-08T15:10:55.969Z"
     },
     "gig-feasibility-volume": {
       "status": "active",
@@ -173,7 +173,14 @@
       "mode": "lean",
       "currentPhase": "init",
       "updatedAt": "2026-07-08T14:34:51.268Z"
+    },
+    "capafy-harness": {
+      "status": "active",
+      "createdAt": "2026-07-08T15:14:21.519Z",
+      "mode": "lean",
+      "currentPhase": "2a",
+      "updatedAt": "2026-07-08T18:44:22.870Z"
     }
   },
-  "activeFeature": "anicca-spawn-identity-resolution-fix"
+  "activeFeature": "capafy-harness"
 }
