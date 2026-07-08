@@ -4,7 +4,8 @@
 # is the missing sibling for the three canonical Anicca-colony instances (spec §19/§25), which run
 # `runtime/loop/index.mjs` directly under launchd (no tmux session to inspect):
 #   anicca-a3cdd4 — com.anicca.daemon      (KeepAlive, body ~/.anicca)
-#   Franklin      — ai.anicca.franklin-sol (StartInterval 1800s, body ~/.blockrun)
+#   Franklin      — ai.anicca.franklin-loop (KeepAlive, body ~/.blockrun) — migrated 2026-07-08 from
+#                   the retired ai.anicca.franklin-sol StartInterval sol-trade job (franklin-loop-revival)
 #   claude-p PM   — ai.anicca.pm-earner    (StartInterval 600s, body ~/.anicca-founder/agents/polymarket-agent)
 # + ai.anicca.founder-loop (claude-p's separate low-priority "proxy body", wallet 0x810f, §25) —
 #   checked too since it is still a live body sharing this infra, but is not one of the 3 canonical
@@ -93,6 +94,6 @@ check() {
 TARGET="${1:-all}"
 echo "=== healthcheck-runtime-loop $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
 [ "$TARGET" = all -o "$TARGET" = a3cdd4 ]       && check "anicca-a3cdd4"  "com.anicca.daemon"      keepalive "$HOME/.anicca/state/ledger.jsonl" 20
-[ "$TARGET" = all -o "$TARGET" = franklin ]     && check "Franklin"       "ai.anicca.franklin-sol" interval  "$HERE/../earn/state/sol-trade.trace.jsonl" 90
+[ "$TARGET" = all -o "$TARGET" = franklin ]     && check "Franklin"       "ai.anicca.franklin-loop" keepalive "$HOME/.blockrun/state/ledger.jsonl" 20
 [ "$TARGET" = all -o "$TARGET" = pm-earner ]    && check "claude-p-pm"    "ai.anicca.pm-earner"    interval  "$HERE/../earn/polymarket-trade/earner.log" 40
 [ "$TARGET" = all -o "$TARGET" = founder-proxy ] && check "claude-p-proxy" "ai.anicca.founder-loop" keepalive "$HOME/.anicca-founder/state/ledger.jsonl" 120

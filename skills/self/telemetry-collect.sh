@@ -86,7 +86,7 @@ echo "wrote $A3_OUT"
 # ---- 2. Franklin (Franklin-Trading, Solana) ----------------------------------------------------
 FR_SOL=$(sol "$FRANKLIN_ADDR")
 FR_USDC=$(solusdc "$FRANKLIN_ADDR")
-FR_LOOP=$(loop_status franklin-sol)
+FR_LOOP=$(loop_status franklin-loop)
 FR_OUT=/Users/anicca/.blockrun/state/telemetry.json
 mkdir -p "$(dirname "$FR_OUT")"
 python3 -c "
@@ -98,7 +98,7 @@ doc = {
     'balance_usd': None,
     'balance_native': {'sol': float('$FR_SOL' or 0), 'usdc': float('$FR_USDC' or 0)},
     'pnl': None,
-    'loop': {'name': 'franklin-sol', 'launchd_label': 'ai.anicca.franklin-sol', 'status': '$FR_LOOP'},
+    'loop': {'name': 'franklin-loop', 'launchd_label': 'ai.anicca.franklin-loop', 'status': '$FR_LOOP'},
     'generated_at': '$(now_iso)',
     'generated_at_epoch': $(now_epoch),
     'source': 'public RPC read (api.mainnet-beta.solana.com), no private key accessed'
