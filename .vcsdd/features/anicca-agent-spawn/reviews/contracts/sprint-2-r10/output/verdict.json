@@ -1,0 +1,91 @@
+{
+  "sprintNumber": 2,
+  "feature": "anicca-agent-spawn",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T21:15:00Z",
+  "iteration": 10,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-2.md",
+    "contractDigest": "4e1e7ea7504454556afe41e3d9820c90666aee4822e8ae362cc00011bccff2de"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-018"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:108-144 (Files touched section) vs. run.sh/wake-gate.mjs/wake-gate.test.mjs on disk, cross-checked with `cd ~/anicca && git log --follow --format='%H %ai %s'`",
+          "description": "FIND-015 CONFIRMED GENUINELY FIXED: the 'reused UNMODIFIED' list (lines 132-136) no longer names run.sh; run.sh is now listed in its own new-file paragraph (lines 137-144) alongside scripts/wake-gate.mjs and lib/__tests__/wake-gate.test.mjs, exactly as required. Independently re-verified via git log this session: all three files' most recent history traces to commit f3419d363e59b0e2ef99a6d2652163b979825200 (2026-07-08 14:04:14, 'fix(self/spawn): contract-review round 2 -- ... rewrite run.sh (resolves FIND-001/002/003a/004)'), confirmed by `git show --stat f3419d3` to genuinely touch all three files in that same commit -- this is sprint-2's own round-2 commit, not a sprint-1 artifact. run.sh's current body was independently re-read: it `exec`s into scripts/wake-gate.mjs (line 50), and grep confirms 'spawn-decision'/'AgentMail'/'DigitalOcean' appear only inside historical/retirement-note comments (line 24), never as an active require/import/call."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md (full grep for the literal string '35')",
+          "description": "FIND-016 CONFIRMED GENUINELY FIXED: `grep -n '35' contracts/sprint-2.md` returns exactly 3 matches, all legitimate historical citations in past tense ('revised from 35, contract-review round 2...' at line 172; 'The original 35-item list wrongly included...' at line 211; 'this section alone still said \"35\" in two places, now corrected below' at line 278, itself describing the correction that was just made) -- zero present-tense current-state claims remain. Cross-checked `grep -n '\\b30\\b'` -- 8 matches, all consistent current-state citations (CRIT-205 lines 43/45, disposition heading lines 172/176/179, Known residual scope boundary lines 277/281/287, the latter now reading '30 targeted for closure'/'30-item list above' where it previously said 35)."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md:43,45,176-184 vs. reviews/contracts/sprint-2-r9/output/verdict.json's own FIND-017 evidence text",
+          "description": "NEW FAIL (FIND-018): round 9's verdict explicitly asserted its state.json fix for FIND-017 'also resolves' the ambiguity between the Deferred-obligation disposition section's 'PLUS the new PROP-307e' phrasing (implying 31 total obligations targeted) and CRIT-205's 'the 30 targeted PROP IDs (including PROP-307e)' phrasing (implying 30, PROP-307e counted within). Re-reading contracts/sprint-2.md this round confirms this claim is false: neither sentence was edited -- both contradictory phrasings remain byte-identical to round 9's own quotation of them. Independently counted the explicit PROP-ID enumeration at lines 180-184: exactly 25 Tier>0 + 5 Tier-0 = 30 named IDs, with ZERO overlap with PROP-307e, before the text separately appends 'PLUS the new PROP-307e' -- confirming the enumeration itself treats PROP-307e as additional (a 31st item), directly contradicting CRIT-205's 'including' framing that treats it as one of the 30. This is a textual/prose self-contradiction, not a state.json bookkeeping gap, and required its own contract-text edit that round 9 did not perform despite claiming otherwise. See FIND-018 for full evidence and a recommended fix direction."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js'",
+          "description": "Fresh, independently re-executed this session: tests 195, pass 195, fail 0, cancelled 0, skipped 0, todo 0 -- matches every prior round since round 6, confirming no regression from the documentation-only fix cycle. CRIT-203's 9-step failure-injection coverage and PROP-307e's own structural tests ('run.sh no longer CALLS the OLD lib/spawn-decision.js gate...', 'wake-gate.mjs genuinely calls decideColonySpawn then... executeSpawnAttempt') both observed passing directly in this session's own test output."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "test-output",
+          "location": "cd ~/anicca && node --test (same run as edge_case_coverage) -- 195/195 fresh pass; scripts/gen-solana-wallet.sh, scripts/deploy-akash.sh re-read directly",
+          "description": "No source touched this round (documentation-only fix cycle per manifest). 195/195 fresh pass confirms no implementation regression. Independently re-verified the FIND-002/PROP-303c shelter-cost wiring this round's manifest did not ask for but this sweep re-checked anyway: deploy-akash.sh's bid-selection block genuinely emits {dseq,priceAmount,priceDenom} JSON on stdout (grep-confirmed), spawn-orchestrator.mjs genuinely imports appendShelterCostEntry and defines/uses shelterCostUsdFromSettledPrice (a fixed uact->USD /1e6 conversion), and the cited 'uact = 1e-6 USD' AEP-76 quotation was independently re-confirmed verbatim at ~/anicca/docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md:21 (note: this doc lives under the ~/anicca repo, not ~/anicca-project, since that is where this feature's code lives)."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs, skills/self/spawn/run.sh, skills/self/spawn/scripts/wake-gate.mjs (all re-read this session)",
+          "description": "CRIT-201/202/204's own underlying code-level requirements remain structurally sound: run.sh is a thin wrapper exec-ing into wake-gate.mjs, which genuinely calls decideColonySpawn() then, if eligible, executeSpawnAttempt(); the OLD spawn-decision.js/DO/AgentMail path is retired from all reachable (non-comment) code. This round's one finding (FIND-018) is a contract-prose arithmetic inconsistency, not a defect in the actual call-graph, lock discipline, or file layout, all independently re-confirmed this session via direct reads and a fresh 195/195 test pass."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "state.json proofObligations + traceability.beads, cross-referenced against specs/verification-architecture.md:520 and contracts/sprint-2.md",
+          "description": "FIND-017 CONFIRMED GENUINELY FIXED: state.json now contains proofObligations entry {id:'PROP-121', tier:1, required:true, status:'pending', artifact:'specs/verification-architecture.md#PROP-307e', beadId:'BEAD-154'} (total obligation count now 121, up from round-9's 120). traceability.beads contains BEAD-154 {type:'verification-property', artifactPath:'...#PROP-307e', linkedBeads:['BEAD-138'], externalId:'PROP-307e'}, and BEAD-138 (REQ-307's own spec-requirement bead) independently confirmed to list 'BEAD-154' inside its own linkedBeads array -- a genuine bidirectional link, not a one-way reference. PROP-307e's tier (1) matches its own row in verification-architecture.md's PROP table (tier column '1') and its own CRIT-201 passThreshold citation. This closes the tracking gap FIND-017 identified; the SEPARATE prose-consistency issue this same fix's own round-9 verdict claimed (incorrectly) to also resolve is filed independently as FIND-018 under spec_fidelity, since it is a contract-text defect, not a verification-tracking defect."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 3,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  }
+}

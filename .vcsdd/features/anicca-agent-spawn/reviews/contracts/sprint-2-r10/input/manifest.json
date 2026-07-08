@@ -1,0 +1,14 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "4e1e7ea7504454556afe41e3d9820c90666aee4822e8ae362cc00011bccff2de",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": ["~/anicca/skills/self/spawn/lib/__tests__/*.test.mjs", "~/anicca/skills/self/spawn/lib/__tests__/*.test.js"],
+    "source": ["~/anicca/skills/self/spawn/lib/spawn-orchestrator.mjs", "~/anicca/skills/self/spawn/run.sh", "~/anicca/skills/self/spawn/scripts/wake-gate.mjs"]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "note": "Round 10: fixes round-9's 3 findings. FIND-015 (critical, self-contradiction about run.sh being modified this sprint): confirmed via git log that run.sh/scripts/wake-gate.mjs/lib/__tests__/wake-gate.test.mjs were genuinely first delivered in sprint-2's own round-2 commit f3419d3 -- removed run.sh from the 'reused unmodified' list, added it plus wake-gate.mjs/wake-gate.test.mjs to their own explicit new-file paragraph. FIND-016 (stale '35' count in Known residual scope boundary section, never swept when revised to 30): fixed, and confirmed no other stale current-state '35' reference remains anywhere in the document (only 2 legitimate historical citations left, e.g. 'revised from 35'). FIND-017 (critical, PROP-307e had zero state.json entry despite being required:true and cited by CRIT-201/205): added as PROP-121 + BEAD-154 linked to REQ-307's own BEAD-138. This is now the 4th consecutive contract-review round on this same contract (rounds 6-9 each found real issues) -- do an EXHAUSTIVE final sweep: re-verify all 3 fixes are accurate, and read the ENTIRE contract front-to-back one more time hunting for any remaining self-contradiction, stale count, or missing state.json cross-reference. If genuinely clean, PASS so this sprint can finally proceed to Phase 3 (impl review)."
+}
