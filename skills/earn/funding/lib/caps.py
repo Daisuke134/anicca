@@ -58,7 +58,14 @@ def _outflow_rows(history: Iterable[Mapping]) -> list[Mapping]:
     candidates = [
         r
         for r in history
-        if r.get("step") == "withdraw" and r.get("status") in _SPEND_STATUS_PRIORITY
+        if r.get("step") == "withdraw"
+        and r.get("status") in _SPEND_STATUS_PRIORITY
+        # `--include-pusd` broadcasts TWO txs for one logical withdraw: an internal
+        # pUSD->USDC.e unwrap (phase="unwrap", stays inside the deposit wallet, NOT an
+        # outflow of claude-p capital) then the real transfer to the owner EOA
+        # (phase="transfer"/absent). Only the transfer moves money out, so exclude the
+        # unwrap phase — otherwise one $X seed is counted as $2X (money-safety cap bug).
+        and r.get("phase") != "unwrap"
     ]
     best_by_hash: dict = {}
     untracked: list[Mapping] = []
@@ -79,12 +86,19 @@ def check_caps(
     history: Sequence[Mapping],
     config: Mapping,
     now_ts: float,
+    counts_as_outflow: bool = True,
 ) -> CapDecision:
     """Evaluate `amount_usd` against per-transfer / daily / cumulative caps in `config`.
 
     `history` is the parsed funding-ledger.jsonl (list of row dicts with at least
     `ts` (epoch seconds), `amount_usd`, `status`). `config` has `per_transfer_usd_cap`,
     `daily_usd_cap`, `cumulative_usd_cap` (any of these may be None/absent to mean "no cap").
+
+    `counts_as_outflow`: True only for the WITHDRAW step, the single point where money
+    leaves claude-p's capital. Bridge/send move that ALREADY-withdrawn (already-counted)
+    money downstream, so they pass `False`: their amount is NOT re-added to the daily/
+    cumulative running total (otherwise one $X seed would burn 2-3x the cap). The
+    per-transfer ceiling is still enforced for every step as a defense-in-depth bound.
     """
     if not isinstance(amount_usd, (int, float)) or isinstance(amount_usd, bool) or amount_usd <= 0:
         return CapDecision(False, "amount_usd must be a positive number", amount_usd)
@@ -102,7 +116,7 @@ def check_caps(
         float(r.get("amount_usd", 0)) for r in outflow if float(r.get("ts", 0)) >= day_ago
     )
     daily_cap = config.get("daily_usd_cap")
-    if daily_cap is not None and daily_spent + amount_usd > daily_cap:
+    if daily_cap is not None and daily_spent + (amount_usd if counts_as_outflow else 0.0) > daily_cap:
         return CapDecision(
             False,
             f"amount ${amount_usd} would exceed daily cap ${daily_cap} "
@@ -112,7 +126,7 @@ def check_caps(
 
     cumulative_spent = sum(float(r.get("amount_usd", 0)) for r in outflow)
     cumulative_cap = config.get("cumulative_usd_cap")
-    if cumulative_cap is not None and cumulative_spent + amount_usd > cumulative_cap:
+    if cumulative_cap is not None and cumulative_spent + (amount_usd if counts_as_outflow else 0.0) > cumulative_cap:
         return CapDecision(
             False,
             f"amount ${amount_usd} would exceed cumulative cap ${cumulative_cap} "
