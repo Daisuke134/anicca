@@ -1,0 +1,43 @@
+{
+  "reviewType": "combined-spec-and-implementation",
+  "featureName": "anicca-spawn-identity-resolution-fix",
+  "iteration": 5,
+  "note": "This is the FINAL allowed iteration per this project's max-5-iteration adversary review cap (.claude/rules/dev-workflow.md). Please be thorough.",
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs",
+      "skills/_shared/lib/__tests__/load-instance-env.test.js",
+      "skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs"
+    ],
+    "source": [
+      "skills/_shared/lib/load-instance-env.sh",
+      "skills/self/spawn/run.sh",
+      "skills/self/spawn-child/run.sh",
+      "skills/economy/lending/run.sh",
+      "skills/earn/video/run.sh"
+    ],
+    "evidence": [
+      "evidence/red-phase.log",
+      "evidence/green-phase.log",
+      "evidence/full-suite-regression.log",
+      "evidence/prop-005-real-subprocess-chain-confirmation.log",
+      "evidence/find-001-duplicate-fix-regression.log"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorFindings": {
+    "iteration1": ["FIND-001 (non-blocking) - fixed", "FIND-002 (blocking) - fixed"],
+    "iteration2": ["FIND-003 (blocking) - fixed"],
+    "iteration3": ["FIND-001 (blocking, duplicate pattern) - fixed", "FIND-002 (non-blocking, assertion completeness) - fixed"],
+    "iteration4": [
+      "FIND-001 (blocking) - a 4th unfixed duplicate was found: skills/earn/video/run.sh. Fixed: now sources the shared helper. A complete repo-wide audit table was also added to behavioral-spec.md REQ-004 documenting every remaining .openclaw/.env match and why each is or isn't in scope (earn/run.sh + economy/gig/run.sh confirmed NOT vulnerable via different-but-safe mechanisms; life-manager/faceless-money-factory/sol-funding-daemon/ubi-watcher-daemon/_shared-send-telegram confirmed out of scope as non-registry-dispatched or no-ANICCA_HOME-dependency).",
+      "FIND-002 (major) - the 'no ANICCA_HOME set' edge case (documented in REQ-001) was untested. Fixed: new skills/_shared/lib/__tests__/load-instance-env.test.js includes this exact case as its 3rd test.",
+      "FIND-003 (critical) - economy/lending's PROP-006 evidence relied on a tautological static-regex structural test that would pass against the ORIGINAL vulnerable code too. Fixed: the whole approach changed -- REQ-004 extracted ONE shared helper file (skills/_shared/lib/load-instance-env.sh) that self/spawn, self/spawn-child, economy/lending, and earn/video ALL now source (instead of each hand-copying inline logic), and the shared helper has its OWN direct 4-case behavioral test (load-instance-env.test.js) that WOULD fail against a broken helper. economy/lending's own pre-existing wake-gate-structural.test.mjs was also updated (its literal 'set -a' assertion was checking for text that no longer exists inline -- now asserts delegation to the shared helper by path, plus asserts the shared helper file itself contains the real logic).",
+      "FIND-004 (major, structural) - hand-copying the fix into N files was itself flagged as the root structural cause of iteration-3 AND iteration-4's propagation gaps. Fixed: REQ-004 -- created skills/_shared/lib/load-instance-env.sh as the SOLE implementation; self/spawn/run.sh, self/spawn-child/run.sh, economy/lending/run.sh, and earn/video/run.sh were all refactored to source it (one line each) instead of containing the inline save/restore logic."
+    ]
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "blocking",
+  "description": "behavioral-spec.md's non-functional constraints (line 96-98) state as a MUST: 'Existing spawn test suite (204 tests, `node --test skills/self/spawn/lib/__tests__/**/*.test.mjs skills/self/spawn/lib/__tests__/**/*.test.js`) MUST still pass unmodified.' verification-architecture.md's PROP-004 (Required: true) restates this with an explicit expected count (205/205, now 206/206 given the second test added to address FIND-001). I globbed the full evidence/ directory and found exactly 3 log files (green-phase.log, red-phase.log, prop-005-real-subprocess-chain-confirmation.log) -- all three cover only the 2 tests in run-sh-anicca-home-preservation.test.mjs run in isolation, never the full glob across all 19 test files in skills/self/spawn/lib/__tests__/. No evidence exists that the pre-existing 204 tests (registry-path, cloud-target, treasury-gate, spawn-orchestrator, wake-gate, etc.) were actually re-run and confirmed green after this change. I have no Bash/execution tool available in this review to run that command myself. This specific MUST is unmet by any artifact on disk.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence",
+    "lineRange": "n/a (directory listing)",
+    "snippet": "green-phase.log, red-phase.log, prop-005-real-subprocess-chain-confirmation.log -- all three scoped to run-sh-anicca-home-preservation.test.mjs only (2 tests), no full-suite (19-file glob) log present"
+  },
+  "routeToPhase": "2"
+}

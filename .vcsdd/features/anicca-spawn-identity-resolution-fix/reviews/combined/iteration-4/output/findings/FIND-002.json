@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "REQ-001 (behavioral-spec.md lines 67-71) explicitly documents an edge case: 'caller invoked with no ANICCA_HOME set at all... if the CALLER did not set ANICCA_HOME, this requirement does not apply -- whatever $HOME/.openclaw/.env/$HOME/.hermes/.env set (or leave unset) passes through unchanged, matching pre-fix behavior for that case.' The fix's own bash logic (`[ -n \"$_ANICCA_HOME_CALLER\" ] && ANICCA_HOME=\"$_ANICCA_HOME_CALLER\"`) is written to special-case exactly this branch (when the caller's ANICCA_HOME was empty, the restore-assignment is skipped). Yet skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs contains only 2 test cases, and BOTH set `ANICCA_HOME: callerAniccaHome` in the spawned env -- neither test omits ANICCA_HOME from the caller's env. This is a documented, spec-mandated edge case with zero test coverage; a regression that broke this specific conditional branch (e.g. reversing the `-n` to `-z`, or always overwriting) would not be caught by either existing test.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs",
+    "lineRange": "57-139",
+    "snippet": "test(\"run.sh preserves the CALLER's ANICCA_HOME across $HOME/.openclaw/.env sourcing...\", () => {...env: { HOME: home, ANICCA_HOME: callerAniccaHome, PATH: ... }...}); // and the second test case (line 101-139) also always sets ANICCA_HOME -- no case ever omits it"
+  },
+  "routeToPhase": "2a"
+}

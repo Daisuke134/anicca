@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "The identical 6-line ANICCA_HOME-preservation preamble (`_ANICCA_HOME_CALLER=...`/save/source/restore/unset) is copy-pasted verbatim into 3 separate files (skills/self/spawn/run.sh:53-59, skills/self/spawn-child/run.sh:42-48, skills/economy/lending/run.sh:35-41) rather than extracted into one shared sourced snippet (e.g. skills/_shared/lib/load-env-preserve-anicca-home.sh, following the project's own skills/_shared/lib/ convention already used elsewhere in this repo, e.g. gcal-policy.sh, earn-guard.mjs, verify-tx.mjs). This is not a hypothetical DRY concern: this exact duplication-without-extraction is the direct structural cause of both (a) iteration-3's finding (the fix initially existed in only 1 of 3 copies and had to be manually re-propagated) and (b) this iteration's FIND-001 (a 4th, still-undiscovered copy of the vulnerable pre-fix idiom in wake_event_ensure.sh). Continuing to hand-copy a security-relevant bookkeeping block across N files, with no shared source of truth, guarantees this class of defect will recur again the next time any new run.sh sources these shared env files.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/self/spawn/run.sh",
+    "lineRange": "53-59",
+    "snippet": "set -a\n_ANICCA_HOME_CALLER=\"${ANICCA_HOME:-}\"\n[ -f \"$HOME/.hermes/.env\" ]   && . \"$HOME/.hermes/.env\"\n[ -f \"$HOME/.openclaw/.env\" ] && . \"$HOME/.openclaw/.env\"\n[ -n \"$_ANICCA_HOME_CALLER\" ] && ANICCA_HOME=\"$_ANICCA_HOME_CALLER\"\nunset _ANICCA_HOME_CALLER\nset +a"
+  },
+  "routeToPhase": "1a"
+}

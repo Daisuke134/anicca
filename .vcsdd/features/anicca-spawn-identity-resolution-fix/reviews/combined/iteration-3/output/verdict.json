@@ -1,0 +1,59 @@
+{
+  "sprintNumber": null,
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 3,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:1-99", "description": "REQ-001/REQ-002 accurately map to the run.sh fix and the new regression test; root-cause narrative independently cross-verified against runtime/loop/index.mjs:505,511-514,549-573 (buildSkillEnv/spawn call shape confirmed byte-accurate) and /Users/anicca/.blockrun/.automaton/wallet.json + /Users/anicca/.openclaw/.env:354 (real files on disk confirm the exact root-cause claims)."},
+        {"type": "file", "location": "skills/economy/lending/run.sh, skills/self/spawn-child/run.sh", "description": "Both contain the identical unpatched vulnerable preamble; not disclosed or scoped out anywhere in the spec -- see FIND-001."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs", "description": "Two test cases cover the .openclaw/.env AND .hermes/.env conflict paths (satisfying REQ-001's ANICCA_HOME-preservation requirement for both files), but the 'other secrets still flow through' half of REQ-001 is only asserted for the .openclaw/.env case -- see FIND-002."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn/run.sh:53-59", "description": "Fix verified line-by-line: _ANICCA_HOME_CALLER captures the caller's ANICCA_HOME (or empty string) BEFORE sourcing either file; restore only fires when the captured value is non-empty, correctly matching both documented edge cases (caller-unset-ANICCA_HOME passes through unchanged; automaton self-invoke is a no-op since its own ANICCA_HOME already equals what .openclaw/.env would set); AKASH_KEY_NAME and other vars remain untouched since only ANICCA_HOME is saved/restored/unset."},
+        {"type": "file", "location": "skills/earn/lib/resolve-identity.mjs:63-87,115-138", "description": "Confirmed effectiveHome/legacy-fallback logic matches the spec's causal narrative exactly: a polluted ANICCA_HOME (/Users/anicca/.openclaw) matches neither the primary .automaton/wallet.json path nor the legacy $HOME/.anicca or $HOME/.blockrun gate, so both resolvers correctly fail-closed to null pre-fix."},
+        {"type": "test-output", "location": "evidence/red-phase.log, evidence/green-phase.log", "description": "Both new test cases genuinely FAIL pre-fix (exact assertion diffs showing ANICCA_HOME clobbered to /tmp/.../.openclaw or /tmp/.../.hermes) and genuinely PASS post-fix; stack trace line numbers (83, 127) match the actual assert.match call sites in the test file."},
+        {"type": "test-output", "location": "evidence/prop-005-real-subprocess-chain-confirmation.log", "description": "Cross-checked against /Users/anicca/.blockrun/.automaton/wallet.json on this machine: the log's claimed resolved address 0x3EcCAD24794ca298D25378E9902A251322ea8749 byte-for-byte matches the real wallet file's address field, and /Users/anicca/.openclaw/.env:354 genuinely contains ANICCA_HOME=/Users/anicca/.openclaw as claimed."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "evidence/full-suite-regression.log", "description": "Genuine node --test default-reporter output (realistic per-test timings, ℹ summary lines, an interleaved 'Preparing worktree' side-effect line from an unrelated pre-existing test) reporting tests 206 / pass 206 / fail 0; lines 82-83 contain both new PROP-001/002 test names character-for-character matching the test file's test() titles at lines 56 and 100."},
+        {"type": "file", "location": "specs/verification-architecture.md Proof Obligations table", "description": "PROP-001 through PROP-005 each map to a real, located test/log; PROP-005's non-repeatable Tier-2 scratchpad harness is confirmed deleted/never committed (no identity-probe.mjs/buggy-run.sh/fixed-run.sh/drive.mjs found anywhere under ~/anicca)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "summary": "FAIL. The run.sh fix itself (skills/self/spawn/run.sh:53-59) is correct -- the _ANICCA_HOME_CALLER save/restore genuinely preserves the caller's per-instance ANICCA_HOME across both $HOME/.hermes/.env and $HOME/.openclaw/.env sourcing while leaving every other variable (e.g. AKASH_KEY_NAME) untouched, and the four evidence logs are genuine, cross-checked against real on-disk files (wallet.json, .openclaw/.env), not fabricated. However: (1) skills/economy/lending/run.sh and skills/self/spawn-child/run.sh contain the byte-identical, still-unpatched vulnerable preamble -- economy/lending/run.sh's own header explicitly says it 'mirrors self/spawn/run.sh's own already-proven shape exactly' and execs its own wake-gate.mjs identity-resolution entrypoint, yet neither behavioral-spec.md nor verification-architecture.md discloses these as known-affected-but-out-of-scope, despite the spec's own root-cause language framing the defect as machine-wide/systemic (FIND-001, blocking); (2) the new regression test's second case (.hermes/.env conflict) never asserts that its own fixture shared-secret (SOME_HERMES_SECRET) survives, so REQ-001's 'other variables still flow through' guarantee is untested for that path (FIND-002, non-blocking)."
+}

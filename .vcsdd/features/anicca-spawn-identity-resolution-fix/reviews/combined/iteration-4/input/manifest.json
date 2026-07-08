@@ -1,0 +1,32 @@
+{
+  "reviewType": "combined-spec-and-implementation",
+  "featureName": "anicca-spawn-identity-resolution-fix",
+  "iteration": 4,
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/run.sh",
+      "skills/self/spawn-child/run.sh",
+      "skills/economy/lending/run.sh"
+    ],
+    "evidence": [
+      "evidence/red-phase.log",
+      "evidence/green-phase.log",
+      "evidence/full-suite-regression.log",
+      "evidence/prop-005-real-subprocess-chain-confirmation.log",
+      "evidence/find-001-duplicate-fix-regression.log"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorFindings": {
+    "iteration1": ["FIND-001 (edge_case_coverage, non-blocking) - fixed: added .hermes/.env test case", "FIND-002 (verification_readiness, blocking) - fixed: persisted evidence logs"],
+    "iteration2": ["FIND-003 (verification_readiness, blocking) - fixed: full 206-test suite regression log persisted"],
+    "iteration3": ["FIND-001 (spec_fidelity+structural_integrity, blocking) - fixed: applied identical ANICCA_HOME-preservation fix to skills/economy/lending/run.sh and skills/self/spawn-child/run.sh, ran and persisted both scripts' own test suites (economy/lending 130/131 with one documented pre-existing unrelated worktree-hygiene failure; self/spawn-child 13/13), documented REQ-003 in behavioral-spec.md and PROP-006 in verification-architecture.md", "FIND-002 (edge_case_coverage, non-blocking) - fixed: added SOME_HERMES_SECRET flow-through assertion to the .hermes/.env test case"]
+  }
+}

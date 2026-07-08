@@ -1,0 +1,56 @@
+{
+  "overallVerdict": "FAIL",
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "iteration": 5,
+  "timestamp": "2026-07-09T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "combined-spec-and-implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test", "location": "skills/_shared/lib/__tests__/load-instance-env.test.js:62-79", "description": "REQ-001's 'no caller ANICCA_HOME set' edge case is directly, behaviorally tested (deletes ANICCA_HOME from the child env, asserts pass-through)."},
+        {"type": "test", "location": "skills/_shared/lib/__tests__/load-instance-env.test.js:81-91", "description": "'neither .hermes/.env nor .openclaw/.env exists' no-op edge case is directly tested."},
+        {"type": "test", "location": "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs:57-139", "description": "Both independent conflict sources (.openclaw/.env and .hermes/.env) are exercised separately against the real run.sh, each also asserting the OTHER file's own shared secret still flows through."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/_shared/lib/load-instance-env.sh:18-24", "description": "Single shared implementation is correct and minimal: saves caller's ANICCA_HOME before sourcing, restores it after, inside the same set -a/set +a block so the restored value stays exported; unsets its own bookkeeping var."},
+        {"type": "file", "location": "skills/self/spawn/run.sh:47, skills/self/spawn-child/run.sh:40, skills/economy/lending/run.sh:29", "description": "All three verified to use the correct relative path '$SKILL_DIR/../../_shared/lib/load-instance-env.sh' for their own (2-level) directory depth under skills/, sourced after SKILL_DIR is defined and before any downstream use."},
+        {"type": "file", "location": "skills/earn/video/run.sh:13", "description": "Uses an absolute $HOME-anchored path to the shared helper (consistent with this file's existing convention of hardcoding $HOME/anicca/skills/... elsewhere), sourced before any use."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "summary": "FAIL. Independently re-running behavioral-spec.md REQ-004's own stated audit method (grep for the vulnerable set -a; . <path>/.openclaw/.env; set +a preamble) plus one trivial variant (hardcoded /Users/anicca/ path instead of $HOME) found THREE more live instances of the exact same unfixed vulnerable pattern that REQ-004's 'complete repo-wide audit' table does not list and that were never routed through _shared/lib/load-instance-env.sh: skills/earn/clip-promote/run.sh:19, skills/earn/x402-sell/serve-mainnet-boot.sh:10, and skills/earn/clip/launchd/ai.anicca.clip-producer.plist:6. A fourth accuracy problem: the table's own row for skills/earn/clip/producer.sh incorrectly marks it as having no vulnerable pattern of its own, when producer.sh's line 22 independently re-sources the same file under set -a and is invoked as a subprocess by earn/clip-promote/run.sh's CLIP transition. None of the three newly found files are post-audit additions (internal comments in two of them are dated 2026-07-04, predating this feature's own 2026-07-08 incident and its iteration-4 audit), so the spec's own carve-out ('a genuinely NEW file being added to the repo after this audit') does not apply. This directly falsifies REQ-004's and verification-architecture.md's Phase 5 closure claims ('every file matching .openclaw/.env in skills/ ... individually traced', 'No further \"found a 5th instance\" iteration should be possible') on this, the final allowed iteration -- exactly the failure mode REQ-004 was created to stop. Everything independently checked outside this gap was verified correct with direct evidence: _shared/lib/load-instance-env.sh's save/restore logic is sound; all 4 already-fixed call sites source it with correct relative/absolute paths at the correct point in each script; load-instance-env.test.js's 4 cases are genuinely behavioral (real bash subprocess against the real file, not tautological); the updated wake-gate-structural.test.mjs assertion checks the real delegation line plus independently re-reads the real shared-helper file's contents; the REQ-004 audit table's claims about skills/earn/run.sh (EARN_ALLOW allowlist, no ANICCA_HOME) and skills/economy/gig/run.sh (sources a distinct file, ~/.anicca-signing/gig-board/.env, confirmed to contain no ANICCA_HOME line) both checked out; registry.json confirms report's entrypoint is anicca-report.sh and that self/spawn, self/spawn-child, economy/lending, and earn/video are all status:live."
+}

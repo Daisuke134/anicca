@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["structural_integrity"],
+  "category": "spec_gap",
+  "severity": "blocking",
+  "description": "The behavioral-spec.md root-cause section frames the defect as generic/systemic ('deterministic, 100%-reproducible... on any machine where $HOME/.openclaw/.env exists and sets ANICCA_HOME, true for every instance colocated with the OpenClaw automaton on this Mac Mini') and the feature claims to fix 'the identity-resolution defect that caused the fail-closed path to trigger'. However, the fix touches ONLY skills/self/spawn/run.sh. Two other production skill wrappers contain the byte-identical, still-unfixed vulnerable preamble (set -a / source $HOME/.hermes/.env / source $HOME/.openclaw/.env / set +a with no ANICCA_HOME save-restore):\n\n1. skills/economy/lending/run.sh:27-30 -- its own header comment (lines 2-5) explicitly states it is 'mirroring self/spawn/run.sh's own already-proven shape exactly', and it execs its own scripts/wake-gate.mjs identity-resolution entry point (line 32), the same pattern class that produced the original incident.\n2. skills/self/spawn-child/run.sh:37-40 -- identical unpatched preamble.\n\nNeither behavioral-spec.md's REQ-001 (scoped by name to only skills/self/spawn/run.sh) nor its 'Non-functional / safety constraints' section (lines 85-99) discloses, scopes out, or tracks these two sibling files as known-affected-but-out-of-scope. A reader of this spec would reasonably believe the identity-resolution defect class has been eliminated from the codebase; instead only one of at least three copies of the vulnerable preamble was patched, leaving a duplicated, unaddressed fragile/security-relevant code pattern in two other skills, one of which (economy/lending) is an active money-movement skill.",
+  "evidence": {
+    "filePath": "skills/economy/lending/run.sh",
+    "lineRange": "2-5, 27-32",
+    "snippet": "# economy/lending/run.sh -- thin entrypoint ... mirroring self/spawn/run.sh's own already-proven shape exactly.\nset -a\n[ -f \"$HOME/.hermes/.env\" ]   && . \"$HOME/.hermes/.env\"\n[ -f \"$HOME/.openclaw/.env\" ] && . \"$HOME/.openclaw/.env\"\nset +a\n\nexec \"$NODE\" \"$SKILL_DIR/scripts/wake-gate.mjs\" \"$@\""
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "skills/self/spawn-child/run.sh",
+      "lineRange": "37-40",
+      "snippet": "set -a\n[ -f \"$HOME/.hermes/.env\" ]   && . \"$HOME/.hermes/.env\"\n[ -f \"$HOME/.openclaw/.env\" ] && . \"$HOME/.openclaw/.env\"\nset +a"
+    },
+    {
+      "filePath": ".vcsdd/features/anicca-spawn-identity-resolution-fix/specs/behavioral-spec.md",
+      "lineRange": "50-56, 85-99",
+      "snippet": "This is a deterministic, 100%-reproducible bug, not a transient/race condition: it fires on every real (non-dry-run) invocation of self/spawn on any machine where $HOME/.openclaw/.env exists and sets ANICCA_HOME (true for every instance colocated with the OpenClaw automaton on this Mac Mini)."
+    }
+  ],
+  "routeToPhase": "1a",
+  "note": "Confirmed economy/lending/scripts/wake-gate.mjs's current runWakeGate() does not itself read env.ANICCA_HOME for identity resolution (it resolves citizens via a shared registry lookup, and defaultDisburse expects deps.lenderPrivateKey to be injected rather than resolved via resolve-identity.mjs) -- so this specific sibling does not appear to CURRENTLY manifest the identical functional failure, but the vulnerable preamble is present verbatim and undocumented as a known residual risk, and self/spawn-child/run.sh has the same unpatched preamble as well. This is a live, uncontrolled duplication of a just-diagnosed defect pattern, not a hypothetical."
+}

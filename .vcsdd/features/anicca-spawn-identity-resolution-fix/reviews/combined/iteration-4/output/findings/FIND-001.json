@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-003 (behavioral-spec.md lines 89-111) claims the vulnerable ANICCA_HOME-clobbering preamble ('the same vulnerable preamble pattern MUST be fixed everywhere it is duplicated') has been located and fixed in every duplicate, and its own out-of-scope carve-out paragraph names exactly two excluded files (capafy-loop/loop.sh, life-manager-loop/loop.sh) as the complete remainder. An independent repo-wide search (`grep -rl 'set -a' **/*.sh` combined with a check for `.hermes/.env`/`.openclaw/.env` sourcing) finds a FOURTH file with the byte-identical vulnerable idiom that is never mentioned, audited, or excluded anywhere in behavioral-spec.md or verification-architecture.md: skills/anicca-life-manager/scripts/wake_event_ensure.sh line 14 does `[ -f \"$HOME/.openclaw/.env\" ] && set -a && . \"$HOME/.openclaw/.env\" && set +a`. This file is plausibly safe for the same underlying reason as the two documented exclusions (it is not a registry.json 'live' slot dispatched via index.mjs's per-instance buildSkillEnv -- confirmed by grepping skills/registry.json, which has no 'anicca-life-manager' entry -- and it hardcodes ~/.openclaw/ paths elsewhere, meaning it always runs in the automaton's own context), but the spec's own completeness claim is unsubstantiated: no evidence anywhere shows this instance was ever found or reasoned about. REQ-003's own iteration-3 origin was exactly this failure mode (a duplicate found only by the fresh adversary, not the builder's own search) -- and it has recurred a second time.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/anicca-life-manager/scripts/wake_event_ensure.sh",
+    "lineRange": "14",
+    "snippet": "[ -f \"$HOME/.openclaw/.env\" ] && set -a && . \"$HOME/.openclaw/.env\" && set +a"
+  },
+  "routeToPhase": "1a"
+}

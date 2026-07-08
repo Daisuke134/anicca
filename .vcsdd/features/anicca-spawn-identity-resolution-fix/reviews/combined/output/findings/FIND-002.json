@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-002",
+  "status": "resolved",
+  "resolvedAt": "2026-07-08T00:00:00Z",
+  "resolutionEvidence": "Re-read /Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/red-phase.log and green-phase.log: PROP-003 is now substantiated -- authenticity confirmed via exact stack-trace line-number correspondence with the current test file (not just a plausible-looking transcript). Re-read /Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/prop-005-real-subprocess-chain-confirmation.log: shows buggy scenario producing ANICCA_HOME_seen=/Users/anicca/.openclaw and the exact production error string, and fixed scenario resolving 0x3EcCAD24794ca298D25378E9902A251322ea8749. Independently (not trusting the log's own cross-check line) I read /Users/anicca/.blockrun/.automaton/wallet.json directly and confirmed its address field is byte-for-byte 0x3EcCAD24794ca298D25378E9902A251322ea8749, matching. PROP-003 and PROP-005 are now genuinely evidenced. NOTE: this finding's scope is split -- see new FIND-003 for the still-open PROP-004 (full existing-suite regression) gap, which this resolution does not cover.",
+  "dimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "blocking",
+  "description": "verification-architecture.md's Proof Obligations table asserts PROP-003 ('RED→GREEN discipline ... performed once during this feature's implementation; evidence recorded in the feature's final report') and PROP-005 ('confirmed the resolved address ... matches the wallet file's own address field exactly') as satisfied ('Required: true'). I searched the entire feature directory tree for any such evidence artifact ('final report', log, or scratchpad reproduction output) and found none -- only specs/behavioral-spec.md, specs/verification-architecture.md, and state.json exist under .vcsdd/features/anicca-spawn-identity-resolution-fix/ (confirmed via Glob of the full feature tree and of an evidence/ subdirectory, both empty of any such report). state.json itself shows currentPhase:\"init\" and phaseHistory:[] -- i.e. no VCSDD phase command has actually been run and recorded for this feature, despite the specs describing completed Phase 2/3 activity (RED/GREEN toggles, live-wallet reproduction) in the past tense. I have no Bash/execution tool in this review and could not independently run `node --test` to confirm PROP-004's claimed 205/205 pass count either -- that claim is likewise asserted with no accompanying test-output log anywhere in the feature tree for me to inspect. Per this review's own evidence-required standard, PROP-003, PROP-004, and PROP-005 must be treated as unverified, not merely 'proportionately skipped' the way Phase 5's formal-hardening sweep is explicitly and separately justified as lean-mode-exempt.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/state.json",
+    "lineRange": "1-16",
+    "snippet": "{\"currentPhase\": \"init\", \"phaseHistory\": [], \"gates\": {}, \"sprintCount\": 0, ...}"
+  },
+  "routeToPhase": "2"
+}

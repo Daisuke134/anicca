@@ -1,0 +1,67 @@
+{
+  "sprintNumber": null,
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "combined-spec-and-implementation",
+    "mode": "lean",
+    "note": "No reviews/<scope>/input/manifest.json existed for this feature at review time; state.json still shows currentPhase=\"init\" with empty phaseHistory. Iteration 2: re-verified from fresh disk reads after peer session 'spawn-identity-bug-investigate' reported fixes for iteration-1 FIND-001 and FIND-002."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/.openclaw/.env:354", "description": "Confirmed the exact claim in behavioral-spec.md lines 33-36: this file unconditionally sets ANICCA_HOME=/Users/anicca/.openclaw."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs:63-138", "description": "Confirmed resolveEvmPrivateKey/resolveSolanaSecret's effectiveHome computation and legacy-fallback gating match the spec's description exactly; both fail closed (return null) when effectiveHome matches neither path."},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs:549-550", "description": "Confirmed buildSkillEnv's base = scrub(process.env) spread supports the spec's claim that childEnv correctly carries the caller's ANICCA_HOME before run.sh's preamble runs."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh:53-59", "description": "REQ-001's save/restore pattern (_ANICCA_HOME_CALLER) is present, placed after BOTH sourcing lines, and correctly gated by [ -n \"$_ANICCA_HOME_CALLER\" ] to no-op when the caller never set ANICCA_HOME."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs:100-134", "description": "FIND-001 (iteration 1) RESOLVED: fresh re-read confirms a second test now exists that creates a $HOME/.hermes/.env fixture (with .openclaw/.env absent) setting a conflicting ANICCA_HOME, isolating the previously-untested .hermes/.env-only code path."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/red-phase.log", "description": "Confirmed the new second test genuinely FAILS pre-fix (ANICCA_HOME leaks the .hermes-derived value instead of the caller's .blockrun value). Authenticity cross-checked: the stack-trace line numbers (83:10, 127:10) match the exact assert.match() call sites in the current test file, ruling out a fabricated/hand-edited transcript."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/green-phase.log", "description": "Confirmed both tests (2/2) pass post-fix with 0 failures."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh:53-59", "description": "Traced execution order under set -a/set +a: no leakage of the bookkeeping var, correct no-op for caller-unset-ANICCA_HOME, other vars (AKASH_KEY_NAME) unaffected, automaton-self-invoke case is a correct no-op."},
+        {"type": "test-output", "location": "/Users/anicca/anicca/skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs", "description": "Both tests are genuine black-box subprocess tests (spawn real run.sh, assert on child-process-observed env, not on internal variable names)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh:43-59", "description": "The fix remains a minimal, well-named, well-commented bookkeeping change with no new abstraction, duplication, or dead code."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/prop-005-real-subprocess-chain-confirmation.log", "description": "FIND-002 (iteration 1, PROP-003/PROP-005 portions) RESOLVED: log shows buggy scenario producing ANICCA_HOME_seen=/Users/anicca/.openclaw and the exact production error string, fixed scenario resolving 0x3EcCAD24794ca298D25378E9902A251322ea8749. Independently cross-checked (not trusting the log's own claim) by reading /Users/anicca/.blockrun/.automaton/wallet.json directly: its address field is byte-for-byte 0x3EcCAD24794ca298D25378E9902A251322ea8749, confirming the match is real."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "summary": "Iteration 2, fresh re-verification from disk (not trusting the peer session's summary). FIND-001 (edge_case_coverage) is RESOLVED: the new .hermes/.env-conflict test is genuine and its red/green evidence logs are authenticated by exact stack-trace line-number correspondence with the current test file. FIND-002's PROP-003/PROP-005 portions are RESOLVED: the red-phase/green-phase toggle and the live-wallet resolution are both genuinely evidenced, and I independently re-derived the wallet.json address match myself rather than trusting the log's internal claim -- it is byte-for-byte correct. overallVerdict remains FAIL because a new, narrower gap (FIND-003) was found: behavioral-spec.md's own MUST constraint ('existing spawn test suite (204/205/now-206 tests) MUST still pass unmodified') and verification-architecture.md's PROP-004 (Required: true) have zero evidence anywhere in the feature's evidence/ directory -- all three log files present are scoped only to the 2 tests in run-sh-anicca-home-preservation.test.mjs run in isolation, never the full 19-file test glob. This reviewer has no execution tool to run that suite itself; the MUST remains unverified from any artifact on disk."
+}

@@ -1,0 +1,34 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "behavioral-spec.md's REQ-004 'Complete repo-wide audit' table claims exhaustiveness ('A repo-wide grep -rl \"HOME/.openclaw/.env\" skills/ was run to close FIND-001 (iteration 4) for good... No further \"found a 5th instance\" iteration should be possible without a genuinely NEW file being added to the repo after this audit'). This claim is false as of the current repo state. Independently re-running the exact same grep pattern plus a trivial variant (hardcoded absolute path instead of $HOME) surfaced THREE more real instances of the identical vulnerable 'set -a; . <path-to-openclaw-env>; set +a' preamble that are absent from the table and NOT fixed via _shared/lib/load-instance-env.sh: (1) skills/earn/clip-promote/run.sh:19 -- `set -a; . \"$HOME/.openclaw/.env\" 2>/dev/null || true; set +a`; (2) skills/earn/x402-sell/serve-mainnet-boot.sh:10 -- `set -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a` (this one also proves the audit's own grep methodology is not robust: the hardcoded /Users/anicca/ path contains no literal 'HOME' substring, so the exact grep the spec says it ran would not have found it either); (3) skills/earn/clip/launchd/ai.anicca.clip-producer.plist:6 -- a launchd ProgramArguments string that inlines `set -a; . /Users/anicca/.openclaw/.env; set +a; exec .../producer.sh` directly, ahead of producer.sh's own (also-vulnerable) sourcing. None of these three files are 'genuinely new' post-audit additions: clip-promote/run.sh and x402-sell/serve-mainnet-boot.sh both contain internal comments dated 2026-07-04, i.e. they existed before this feature's 2026-07-08 incident and before iteration-4's audit was written. earn/clip-promote is directly analogous to earn/video (which REQ-004 itself judged in-scope and fixed): it is a live earn-money loop with an overridable per-instance wallet var (CLIP_WALLET_SOLANA), so it is at least as plausibly ANICCA_HOME-relevant as earn/video was judged to be, yet it was never even entered into the audit table, fixed, or given a disposition.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "skills/earn/clip-promote/run.sh",
+      "lineRange": "18-19",
+      "snippet": "# env (own-identity only; PII is NOT scrubbed by the harness -- we keep it out of the RECORD subprocess).\nset -a; . \"$HOME/.openclaw/.env\" 2>/dev/null || true; set +a"
+    },
+    {
+      "type": "file",
+      "filePath": "skills/earn/x402-sell/serve-mainnet-boot.sh",
+      "lineRange": "7-10",
+      "snippet": "set -u\nDIR=/Users/anicca/anicca/skills/earn/x402-sell\n# load CDP facilitator creds (existing account) -- never echoed\nset -a; . /Users/anicca/.openclaw/.env 2>/dev/null || true; set +a"
+    },
+    {
+      "type": "file",
+      "filePath": "skills/earn/clip/launchd/ai.anicca.clip-producer.plist",
+      "lineRange": "6",
+      "snippet": "<array><string>/bin/bash</string><string>-c</string><string>set -a; . /Users/anicca/.openclaw/.env; set +a; exec /Users/anicca/anicca/skills/earn/clip/producer.sh</string></array>"
+    },
+    {
+      "type": "file",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "128-160",
+      "description": "REQ-004's audit table and its closure claim ('This table is the closure of REQ-003/FIND-001... No further \"found a 5th instance\" iteration should be possible'), which the three files above directly contradict."
+    }
+  ],
+  "routeToPhase": "2b"
+}

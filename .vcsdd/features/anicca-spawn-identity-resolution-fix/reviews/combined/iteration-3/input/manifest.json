@@ -1,0 +1,28 @@
+{
+  "reviewType": "combined-spec-and-implementation",
+  "featureName": "anicca-spawn-identity-resolution-fix",
+  "iteration": 3,
+  "artifactsToReview": {
+    "spec": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md"
+    ],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/run.sh"
+    ],
+    "evidence": [
+      "evidence/red-phase.log",
+      "evidence/green-phase.log",
+      "evidence/full-suite-regression.log",
+      "evidence/prop-005-real-subprocess-chain-confirmation.log"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorFindings": {
+    "iteration1": ["FIND-001 (edge_case_coverage, non-blocking) - fixed: added .hermes/.env test case", "FIND-002 (verification_readiness, blocking) - fixed: persisted red-phase.log/green-phase.log/prop-005 log to evidence/"],
+    "iteration2": ["FIND-003 (verification_readiness, blocking) - fixed: ran and persisted full 206-test suite regression log to evidence/full-suite-regression.log, linked from verification-architecture.md PROP-004"]
+  }
+}

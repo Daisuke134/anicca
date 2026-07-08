@@ -1,0 +1,28 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "REQ-004's audit table row for `earn/clip/producer.sh` marks column (a) 'vulnerable pattern?' as 'n/a' and dismisses it with: 'run.sh (the real entrypoint) has no vulnerable pattern, so nothing downstream is at risk via this path.' This is factually inaccurate: producer.sh itself, independent of how it is invoked, contains the literal vulnerable preamble at its own line 22 (`set -a; . \"$HOME/.openclaw/.env\" 2>/dev/null; set +a`). The table's reasoning only checks whether producer.sh's usual caller (earn/clip/run.sh) is vulnerable, but does not check whether producer.sh itself re-sources the file and re-triggers the same clobber independent of the caller's own preamble. This matters concretely: skills/earn/clip-promote/run.sh's CLIP transition invokes `ANICCA_INSTANCE=clip-promote run_step ... bash \"$HOME/anicca/skills/earn/clip/producer.sh\" --url \"$SRC_URL\"` as a subprocess (skills/earn/clip-promote/run.sh:151) -- so any ANICCA_HOME correctly inherited by the caller up to that point is clobbered again by producer.sh's own independent sourcing before producer.sh's own script continues. The audit table's per-file disposition method (checking only the registry-entrypoint file, not every file in a call chain) is the same blind spot that let FIND-001's three files slip through the 'exhaustive' audit.",
+  "evidence": [
+    {
+      "type": "file",
+      "filePath": "skills/earn/clip/producer.sh",
+      "lineRange": "14-22",
+      "snippet": "set -uo pipefail\nSKILLS=\"$HOME/.claude/skills/earn-clip-rewards/scripts\"\n...\nsource \"$(cd \"$(dirname \"${BASH_SOURCE[0]}\")\" && pwd)/_instance_paths.sh\"\n...\nset -a; . \"$HOME/.openclaw/.env\" 2>/dev/null; set +a"
+    },
+    {
+      "type": "file",
+      "filePath": "skills/earn/clip-promote/run.sh",
+      "lineRange": "150-152",
+      "snippet": "PRODUCER_RC=0\nANICCA_INSTANCE=clip-promote run_step \"$STEP_DEADLINE_S\" bash \"$HOME/anicca/skills/earn/clip/producer.sh\" --url \"$SRC_URL\" >/tmp/clip-promote-producer.log 2>&1 || PRODUCER_RC=$?"
+    },
+    {
+      "type": "file",
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "146",
+      "snippet": "| `earn/clip/producer.sh` | n/a (referenced by run.sh's comments, not itself the registry entrypoint) | run.sh (the real entrypoint) has no vulnerable pattern, so nothing downstream is at risk via this path | Not applicable. |"
+    }
+  ],
+  "routeToPhase": "2b"
+}

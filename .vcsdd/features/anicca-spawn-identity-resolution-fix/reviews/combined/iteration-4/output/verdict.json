@@ -1,0 +1,52 @@
+{
+  "overallVerdict": "FAIL",
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "iteration": 4,
+  "timestamp": "2026-07-09T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn/run.sh:53-59", "description": "Save-before-source/restore-after-source/unset bookkeeping logic independently traced statement-by-statement: correctly no-ops when caller ANICCA_HOME is unset, correctly restores caller value after both .hermes/.env and .openclaw/.env sourcing regardless of which sets a conflicting ANICCA_HOME, correctly unsets the bookkeeping var before set +a/exec so it never leaks to the child."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-child/run.sh:42-48", "description": "Byte-identical logic to spawn/run.sh, correctly placed inside the same set -a/set +a block."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/economy/lending/run.sh:35-41", "description": "Byte-identical logic to spawn/run.sh, correctly placed inside the same set -a/set +a block."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/red-phase.log", "description": "Both test cases genuinely fail pre-fix with the exact clobbered-ANICCA_HOME value shown."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/green-phase.log", "description": "Both test cases pass post-fix."},
+        {"type": "test-output", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/prop-005-real-subprocess-chain-confirmation.log", "description": "Real subprocess chain reproduces the exact production error string pre-fix and resolves the correct wallet address post-fix, cross-checked against wallet.json."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "summary": "Independently re-verified all 3 run.sh files, the test file, and all evidence logs from scratch. The save/restore/unset bash logic in skills/self/spawn/run.sh, skills/self/spawn-child/run.sh, and skills/economy/lending/run.sh is byte-identical and correctly implemented (implementation_correctness PASSES on positive evidence). However: (1) REQ-003's claim to have found every duplicate of the vulnerable preamble is false -- an independent repo-wide grep finds a 4th, never-mentioned instance in skills/anicca-life-manager/scripts/wake_event_ensure.sh:14 (FIND-001, spec_fidelity FAIL); (2) REQ-001's own documented 'no ANICCA_HOME set' edge case has zero test coverage -- both test cases in run-sh-anicca-home-preservation.test.mjs always set ANICCA_HOME (FIND-002, edge_case_coverage FAIL); (3) PROP-006's claimed proof for economy/lending/run.sh and self/spawn-child/run.sh rests on a purely static-text regex test (wake-gate-structural.test.mjs:44) that would pass identically against the ORIGINAL vulnerable code, and self/spawn-child has no run.sh test at all -- only self/spawn/run.sh has genuine subprocess-executing regression protection (FIND-003, verification_readiness FAIL); (4) the fix is hand-copied into 3 separate files with no shared source of truth, which is the direct structural cause of both iteration-3's original propagation gap and this iteration's newly-found 4th instance (FIND-004, structural_integrity FAIL). The economy/lending 130/131 test result's single failure (PROP-117a, a stray .worktrees/ceo-loop copy of wake-gate.mjs) was independently confirmed real and plausibly unrelated to this feature's changes (the failing assertion concerns lending-orchestrator.mjs call-site counting, not run.sh's env preamble), and the .worktrees/ceo-loop directory was confirmed to exist on disk."
+}

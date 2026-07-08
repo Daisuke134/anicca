@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "PROP-006 (verification-architecture.md lines 36-44) claims economy/lending/run.sh and self/spawn-child/run.sh are 'fixed identically to self/spawn/run.sh' and cites each script's OWN pre-existing test suite passing as proof. For economy/lending, the only test that even looks at run.sh's env-loading preamble is skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs:44, a purely static-text regex check: it asserts the file merely CONTAINS the substrings `set -a`, `set +a`, `.hermes/.env`, `.openclaw/.env`, and the final exec line. This regex passes identically whether or not the actual fix (the `_ANICCA_HOME_CALLER` save/restore/unset lines) is present -- it would have passed against the ORIGINAL, VULNERABLE pre-fix run.sh too, since that version also had `set -a`/`set +a`/both env-file references/the exec line. self/spawn-child's 13 pre-existing tests (all in akt-cost-gate.test.mjs, per full-suite-regression.log lines 176-196) never touch run.sh at all. Consequently, unlike self/spawn/run.sh -- which has a genuine subprocess-executing regression test (PROP-001/002, run-sh-anicca-home-preservation.test.mjs) that would fail if the fix were removed -- economy/lending/run.sh and self/spawn-child/run.sh have ZERO permanent automated protection against a future accidental regression of this exact fix. The current correctness of those two files rests entirely on manual code review (independently confirmed correct in this review), not on any test that would catch drift.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs",
+    "lineRange": "44-58",
+    "snippet": "assert.match(code, /set -a/, ...); assert.match(code, /set \\+a/, ...); assert.match(code, /\\.hermes\\/\\.env/, ...); assert.match(code, /\\.openclaw\\/\\.env/, ...); // no assertion anywhere on the actual save/restore bookkeeping lines"
+  },
+  "routeToPhase": "2a"
+}

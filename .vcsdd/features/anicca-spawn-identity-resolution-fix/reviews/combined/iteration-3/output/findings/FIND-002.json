@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "non-blocking",
+  "description": "REQ-001 requires that 'every other variable those files define ... MUST still be exported to the child process exactly as before' for BOTH $HOME/.hermes/.env and $HOME/.openclaw/.env (REQ-001 is framed as applying identically to both files). PROP-002 in verification-architecture.md explicitly narrows this guarantee's test coverage to only the .openclaw/.env case ('Same test file's first case -- asserts both ANICCA_HOME (preserved) and AKASH_KEY_NAME (still flows through) in one run'). The second test case (added in iteration-1 for FIND-001, .hermes/.env conflict path) defines a fixture shared secret, SOME_HERMES_SECRET, but never asserts it survives into the child process's env -- only ANICCA_HOME is checked. So the 'other variables still flow through' half of REQ-001 is untested for the .hermes/.env sourcing path, even though the underlying save/restore mechanism (which only touches ANICCA_HOME/_ANICCA_HOME_CALLER) is identical in both cases and thus not actually at risk -- but the test suite does not independently prove this for the .hermes path the way it does for .openclaw.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs",
+    "lineRange": "109-134",
+    "snippet": "fs.writeFileSync(\n  path.join(hermesDir, \".env\"),\n  `ANICCA_HOME=${path.join(home, \".hermes\")}\\nSOME_HERMES_SECRET=test-hermes-secret\\n`\n);\n...\nassert.match(\n  out,\n  new RegExp(`^ANICCA_HOME=${callerAniccaHome...}$`, \"m\"),\n  ...\n);\n// no assertion anywhere in this test on SOME_HERMES_SECRET"
+  },
+  "routeToPhase": "2a"
+}
