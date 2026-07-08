@@ -93,6 +93,18 @@ data. **adversary** = fresh-context `vcsdd-adversary` review (unchanged meaning)
 | PROP-RL-LIVE1 | Against claude-p's OWN real ledger (`~/anicca/skills/earn/state/earn-ledger.jsonl`, 30 rows, confirmed live 2026-07-09), `ANICCA_HOME` unset, `resolve_ledger_path()` resolves to that EXACT file, and `realized_summary()`'s `realized_net_usd` matches an independently hand-computed sum over its `polymarket-redeem`/`0xwork`/`x402`/`cook` rows (REQ-RL1, RL4) | live | integration test, real file, read-only (never writes) |
 | PROP-RL-LIVE2 | A hand-crafted candidate run through `promote_gate_run.py`'s REAL (non-mocked) `main()` against claude-p's real ledger + a temporarily checked-out git history (a disposable `tmp_path` clone, never the live repo) produces the gate outcome REQ-RL7-13 predict by hand-computation, and (when `resolved=False` is forced via an isolated empty `HOME`) blocks unconditionally end-to-end (REQ-RL7, RL17) | live | integration test, disposable git clone, no writes to the real repo |
 | PROP-RL-LIVE3 | `run_evolve.sh` executed once for real (small `--iterations`, same as the prior phase's own acceptance run) with `ANICCA_HOME` unset logs a `resolved: true` / `resolution_source: "file_relative_default"` OBSERVE line pointing at claude-p's real ledger path (REQ-RL16) | live | one real, human-zero shell execution; evidence = the run's own log file |
+| PROP-RL-GATE-NONE | Side-by-side property (added at spec-review iteration 1, finding F-4): the SAME assessment+adversary-PASS inputs produce `promote: True` with `realized_gate=None` (vacuous pass, REQ-RL18) and `promote: False` with `realized_gate={"resolved": False, ...}` (unconditional block, REQ-RL7) — one test, two assertions, removing any ambiguity between the two None-ish states | deterministic | pytest: single test calling `decide_promotion` twice with identical other args |
+
+**Execution locus for the live tier (added at spec-review iteration 1, finding F-1 — BLOCKING fix):**
+PROP-RL-LIVE1/2/3 and the Done table's `verification` row MUST be executed from the merged
+`~/anicca` MAIN checkout after this feature merges — NEVER from the feature's own dev worktree.
+`skills/*/state/` is gitignored, so any worktree checkout has NO `skills/earn/state/` directory:
+`__file__`-relative resolution there computes a nonexistent path and silently degrades to
+`resolved: true, row_count: 0`, which can never satisfy PROP-RL-LIVE1/3's nonzero real-data
+assertions. Worktree-run tests requiring a "real-shaped" instance body MUST build it as a
+`tmp_path`/temp-`HOME` fixture (PROP-RL-ID3's pattern). It is FORBIDDEN to symlink or copy any
+real `skills/*/state/` directory into any worktree (cross-checkout financial-state leak — the
+class of defect this feature exists to close; see behavioral-spec.md EDGE-RL5a).
 
 ---
 

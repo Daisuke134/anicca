@@ -247,13 +247,18 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
   the fix lives in the resolution function itself, not sprinkled at every call site.
 
 - **REQ-RL17** `promote_gate_run.py::main()` SHALL compute the `realized_gate` dict (REQ-RL7-13)
-  and pass it to `decide_promotion` for BOTH branches of its existing eligibility fork: (a) the
-  `not eligible_for_adversary_review` short-circuit (today calls `decide_promotion(assessment,
-  adversary_verdict=None)` with no realized_gate at all — this becomes `decide_promotion(assessment,
-  adversary_verdict=None, realized_gate=<computed>)`), and (b) the real-adversary-invoked branch.
-  Neither branch SHALL ever call `decide_promotion` without an explicit `realized_gate=` argument
-  (verified by a repo-scan test over `promote_gate_run.py`'s own source text — this is the concrete
-  "no orphan wiring" proof the delegating task required).
+  ONCE and pass it to `decide_promotion` at EVERY ONE of `promote_gate_run.py`'s three current
+  `decide_promotion` call sites (the `not eligible_for_adversary_review` short-circuit at ~line
+  209, the adversary-unavailable/errored branch at ~line 225, and the adversary-succeeded branch
+  at ~line 234 — today all three omit realized_gate entirely; each becomes
+  `decide_promotion(..., realized_gate=<the computed dict>)`). No call site in
+  `promote_gate_run.py` SHALL ever call `decide_promotion` without an explicit `realized_gate=`
+  argument (verified by a repo-scan test over `promote_gate_run.py`'s own source text — this is
+  the concrete "no orphan wiring" proof the delegating task required). Additionally, the
+  Phase-3 implementation review SHALL verify that the value bound to `realized_gate=` at each
+  call site is genuinely sourced from the REQ-RL7-13 computation helper over the resolved
+  ledger — never a hardcoded literal, stub dict, or constant that would satisfy the repo-scan's
+  keyword-presence check while bypassing real data.
 
 - **REQ-RL18** `lib/promote_gate.py::decide_promotion`'s NEW `realized_gate` parameter SHALL default
   to `None`, and `None` SHALL be treated as "no realized-gate constraint" (REQ-RL7/RL10/RL11's
@@ -318,6 +323,17 @@ cases where an instance's ledger is deliberately NOT collocated with its rsynced
   window_end_ts)` (e.g. the instance was dormant since the last promotion): `row_count = 0` inside
   the window → `sufficient = False` → REQ-RL10/RL11 do not fire, same treatment as EDGE-RL1 (a
   quiet instance is not evidence of a losing strategy).
+- **EDGE-RL5a** (added at spec-review iteration 1, finding F-1) The feature's OWN dev worktree
+  (`.worktrees/self-improve-real-ledger/`) has NO `skills/earn/state/` directory at all —
+  `skills/*/state/` is gitignored, so `__file__`-relative resolution from the worktree computes a
+  nonexistent path and degrades to `resolved: True, row_count: 0` (EDGE-RL2's shape). Therefore:
+  (i) the Tier-2 live proof obligations (PROP-RL-LIVE1/2/3) and the Done table's verification row
+  MUST be executed from the merged `~/anicca` main checkout AFTER merge — NEVER from the feature's
+  own worktree; (ii) any worktree-run test that needs a "real-shaped" instance body MUST construct
+  it as a `tmp_path`/temp-`HOME` fixture (as PROP-RL-ID3 does); (iii) it is FORBIDDEN to symlink
+  or copy any real `skills/*/state/` directory (any instance's) into any worktree — that would
+  grant a dev checkout read/write proximity to production financial ledger state, the exact
+  cross-environment leak class this feature exists to close.
 - **EDGE-RL5** A candidate is ineligible for adversary review (REQ-EV2/EV4 already block it before
   any LLM call) AND separately `resolved is False`: REQ-RL7's block and the pre-existing
   deterministic-gate block are BOTH true; `decide_promotion`'s `reason` string SHALL name whichever

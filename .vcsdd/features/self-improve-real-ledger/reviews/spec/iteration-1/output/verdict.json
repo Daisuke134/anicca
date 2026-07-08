@@ -1,0 +1,10 @@
+{
+  "reviewType": "spec",
+  "iteration": 1,
+  "dimensions": {"spec_fidelity": "PASS", "verification_readiness": "FAIL"},
+  "blockingFindings": 1,
+  "majorFindings": 0,
+  "minorFindings": 2,
+  "overall": "FAIL",
+  "summary": "Requirements (RL-ID/RL-MIR/RL-GATE/RL-EVAL/RL-WIRE/RL-SAFE) are internally consistent, factually grounded against the real code and live ledgers, and do not weaken any prior invariant. One BLOCKING gap: the verification architecture's 'live' proof tier (PROP-RL-LIVE1/2/3), the sole named acceptance evidence for the Done table's verification row, implicitly assumes execution against claude-p's real ~/anicca/skills/earn/state/earn-ledger.jsonl, but this project's own mandated workflow requires this feature to be built in a worktree (.worktrees/self-improve-real-ledger, already checked out) where skills/*/state/ is gitignored and physically absent -- so the file-relative default resolution cannot reach the real ledger there, and the spec does not say where the live tier must run. Left unaddressed, this either produces a silently-wrong (all-zero) live proof or tempts a workaround (symlinking real ledger state into a worktree) that reopens a cross-environment version of the exact leak this feature closes. Two minor findings (imprecise call-site count in REQ-RL17's prose; PROP-RL-WIRE1 verifies call shape but not that realized_gate= is genuinely sourced from compute_realized_gate rather than a stub) do not block but should be addressed alongside the blocking fix."
+}
