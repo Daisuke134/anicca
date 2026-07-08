@@ -1,0 +1,77 @@
+# gig-feasibility-volume Phase 5 verifier session — deeper probe run, 2026-07-08T14:18:13Z
+# Executed by vcsdd-verifier against MAIN branch (worktrees .worktrees/gig-fv were merged+removed mid-session by another process; content confirmed byte-identical via md5/line-count/git-log before continuing)
+
+## 1. shellcheck -S warning (gig-cli.sh + run.sh/monitor.sh/gig-healthcheck.sh/auditor.sh/cadence-deadline-check.sh)
+shellcheck exit code: 0
+
+## 2. bash -n syntax check
+gig-cli.sh: SYNTAX OK
+
+## 3. STARTUP single-quoted-string argv-integrity probe (proves no premature quote-termination / no word-splitting from the 14324-char prompt body, i.e. no shell-injection surface at the tmux/claude invocation boundary)
+ARGC=10
+ARG1 length=4
+ARG2 length=6
+ARG3 length=4
+ARG4 length=7
+ARG5 length=6
+ARG6 length=30
+ARG7 length=9
+ARG8 length=13
+ARG9 length=2
+ARG10 length=14324
+
+## 4. secrets grep across scope-locked files
+  /Users/anicca/profitable-claude/skills/human-funded/gig/gig-cli.sh:21:STARTUP='You are the Anicca COCONALA gig earn-core (claude-p, self-improving multi-apply loop). Human-funded: ¥ settles to Dais 
+
+## 5. path-traversal / injection probe on funnel_report.py CLI args (local-trusted-caller tool, no untrusted network input surface -- documented as such)
+--- out-path with no directory component (bare filename) ---
+Traceback (most recent call last):
+  File "/Users/anicca/profitable-claude/skills/human-funded/gig/funnel_report.py", line 78, in <module>
+    run(a.applied_path, a.listings_path, a.out_path, a.pass_id), ensure_ascii=False
+    ~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/anicca/profitable-claude/skills/human-funded/gig/funnel_report.py", line 64, in run
+    os.makedirs(os.path.dirname(out_path), exist_ok=True)
+    ~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<frozen os>", line 236, in makedirs
+FileNotFoundError: [Errno 2] No such file or directory: ''
+exit=1
+--- category field containing shell-metachar/path-traversal-looking DATA (proves it is treated as inert data, never executed/never used as a real path) ---
+{"ts": 1783520293, "pass_id": null, "applied": 2, "replied": 0, "won": 0, "paid": 0, "by_category": {"コード": {"applied": 1, "replied": 0, "won": 0, "paid": 0}, "../../etc/passwd; rm -rf ~": {"applied": 1, "replied": 0, "won": 0, "paid": 0}}, "listings_live": 0}
+{"ts": 1783520293, "pass_id": null, "applied": 2, "replied": 0, "won": 0, "paid": 0, "by_category": {"コード": {"applied": 1, "replied": 0, "won": 0, "paid": 0}, "../../etc/passwd; rm -rf ~": {"applied": 1, "replied": 0, "won": 0, "paid": 0}}, "listings_live": 0}
+
+## 6. cadence-evidence.py gig branch — adversarial malformed-row probe (FINDING: see verification-report.md GAP-1)
+--- direct invocation (expect uncaught AttributeError, exit != 0) ---
+Traceback (most recent call last):
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 379, in <module>
+    _main()
+    ~~~~~^^
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 375, in _main
+    print(json.dumps(status_for_loop(loop), ensure_ascii=False))
+                     ~~~~~~~~~~~~~~~^^^^^^
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 361, in status_for_loop
+    evidence = gather_evidence(loop, today_jst_date, now_epoch)
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 273, in gather_evidence
+    return {"event_dates": sorted(_gig_row_exists_event_dates())}
+                                  ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 183, in _gig_row_exists_event_dates
+    return _gig_activity_event_dates(applied_rows, listings_rows)
+  File "/Users/anicca/anicca/skills/self/cadence-evidence.py", line 160, in _gig_activity_event_dates
+    if row.get("status") not in _GIG_REAL_ACTION_STATUSES:
+       ^^^^^^^
+AttributeError: 'str' object has no attribute 'get'
+exit=1
+--- reproduced through cadence-deadline-check.sh's exact fallback pattern (STATUS_JSON=... ; MET=... || echo False) ---
+STATUS_JSON=[]
+MET=False  <-- SILENT FALSE NEGATIVE despite a genuine real 'applied' row for TODAY existing in the same file; caused solely by ONE unrelated malformed row elsewhere in the ledger
+
+## 7. passprep.py crash-safety re-verification against the SAME malformed-row class (control: proves passprep.py's outer try/except DOES contain this, unlike cadence-evidence.py's _main())
+passprep.py ERROR: 'str' object has no attribute 'get'
+{"pass_count": 0, "do_improve": false, "listings_due": true, "cold_start": true, "max_apply_per_pass": 5, "priority_categories": ["PPT/スライド", "資料作成", "記事/blog", "データ入力/Excel", "文字起こし", "コード", "LP/ランディングページ"], "skip_categories": [], "_error": "'str' object has no attribute 'get'"}
+exit=0  <-- exit 0 preserved (crash-safety contract intact end-to-end for passprep.py)
+
+## 8. listing_weekly_target=0 falsy-zero coalescing probe (FINDING: see verification-report.md GAP-2)
+target=0, rows=[{ts:now}] -> True (EXPECTED false if 0 truly meant zero-slots; ACTUAL true because int(0 or 2)==2 -- Python falsy-zero coalescing)
+
+## 9. real production ledger sanity re-check (~/gig/applied.jsonl, ~/gig/strategy.json) -- read-only, no mutation
+     270 /Users/anicca/gig/applied.jsonl
+live strategy.json key count: 22 | pass_count: 219 | has feasibility_rules (pre-fill-forward, expected False until next real pass runs passprep.py): False
