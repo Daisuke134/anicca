@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 from typing import Optional
 
 _SELF_IMPROVE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -24,7 +25,7 @@ if _SELF_IMPROVE_DIR not in sys.path:
     sys.path.insert(0, _SELF_IMPROVE_DIR)
 
 import evaluator  # noqa: E402
-from lib import gate_math, promote, scope_guard  # noqa: E402
+from lib import gate_math, ledger_reader, promote, promotion_history, scope_guard  # noqa: E402
 
 
 def _read_text(path: str) -> str:
@@ -90,13 +91,40 @@ def assess_candidate(candidate_path: str, config: Optional[dict] = None, populat
     }
 
 
-def decide_promotion(assessment: dict, adversary_verdict: Optional[str], adversary_reason: str = "") -> dict:
+def decide_promotion(
+    assessment: dict,
+    adversary_verdict: Optional[str],
+    adversary_reason: str = "",
+    realized_gate: Optional[dict] = None,
+) -> dict:
     """The REQ-RH4 gate itself, wrapping `gate_math.stage_gate`. `adversary_verdict` MUST be the
     exact string `"PASS"` to ever promote — anything else (including `None`, an empty string, or a
     non-PASS verdict text) fails closed (EDGE-3: adversary unavailable/erroring blocks promotion,
     never silently skips it). When `assessment["eligible_for_adversary_review"]` is already False,
     the adversary's opinion (if any) is irrelevant — promotion was already blocked by a
-    deterministic gate, and that is reported as the reason instead."""
+    deterministic gate, and that is reported as the reason instead.
+
+    `realized_gate` (self-improve-real-ledger, REQ-RL7/RL10/RL11/RL18): an already-computed dict
+    from `compute_realized_gate` (or an equivalent hand-built dict in tests), or `None`. `None`
+    means "no realized-gate constraint" — every check below is skipped vacuously (REQ-RL18) — this
+    default exists SOLELY so the pre-existing tests, which never pass this parameter, keep their
+    exact prior behavior; production code (`promote_gate_run.py`) SHALL NEVER rely on this default.
+    `realized_gate["resolved"] is False` blocks promotion UNCONDITIONALLY, checked BEFORE the
+    `eligible_for_adversary_review` gate (EDGE-RL5: an unresolved identity is strictly cheaper to
+    check and strictly more fundamental than a fixture-performance verdict).
+    `realized_gate["trend_blocks"]`/`["realism_gap_blocks"]` (REQ-RL10/RL11) each independently
+    block an otherwise-eligible, adversary-approved candidate."""
+    if realized_gate is not None and realized_gate.get("resolved") is False:
+        return {
+            "promote": False,
+            "reason": (
+                "realized ledger identity unresolved "
+                f"(resolution_source={realized_gate.get('resolution_source')!r}): promotion "
+                "blocked pending instance identity resolution"
+            ),
+            "adversary_verdict": None,
+        }
+
     if not assessment["eligible_for_adversary_review"]:
         return {
             "promote": False,
@@ -107,6 +135,27 @@ def decide_promotion(assessment: dict, adversary_verdict: Optional[str], adversa
                 f"tripwire_clear={assessment['tripwire_clear']}"
             ),
             "adversary_verdict": None,
+        }
+
+    if realized_gate is not None and realized_gate.get("trend_blocks"):
+        return {
+            "promote": False,
+            "reason": (
+                "realized ledger shows a worsening negative trend "
+                f"(window_net_usd={realized_gate.get('window_net_usd')}): blocking despite an "
+                "otherwise fixture-passing candidate"
+            ),
+            "adversary_verdict": adversary_verdict or "MISSING",
+        }
+
+    if realized_gate is not None and realized_gate.get("realism_gap_blocks"):
+        return {
+            "promote": False,
+            "reason": (
+                "realized ledger data shows an implausible fixture-vs-reality gap: blocking "
+                "despite an otherwise fixture-passing candidate"
+            ),
+            "adversary_verdict": adversary_verdict or "MISSING",
         }
 
     verdict = adversary_verdict or "MISSING"
@@ -120,6 +169,81 @@ def decide_promotion(assessment: dict, adversary_verdict: Optional[str], adversa
         "fresh adversary PASS" if promotable else f"fresh adversary verdict was {verdict!r}, not PASS"
     )
     return {"promote": promotable, "reason": reason, "adversary_verdict": verdict}
+
+
+def compute_realized_gate(
+    mean_backtest_net_usd: Optional[float],
+    env: Optional[dict] = None,
+    repo_cwd: Optional[str] = None,
+) -> dict:
+    """REQ-RL7-13/RL13a: the ONE effectful assembly point for the `realized_gate` dict — resolves
+    THIS instance's own ledger (REQ-RL1), reads its confirmed rows over the current promoted
+    generation's operating window (REQ-RL12), and hands the pure `gate_math` functions their
+    already-extracted plain-data inputs. Never re-implements `gate_math`'s own logic inline
+    (purity boundary — see verification-architecture.md). Returns EXACTLY the REQ-RL13a 13-key
+    schema in both the resolved and unresolved branches.
+
+    `mean_backtest_net_usd` MUST be the caller's DOLLAR-scale backtest claim (REQ-RL11's
+    `assessment["mean_oos_net_usd"]`, never the unitless `combined_score` ratio — F-1). It is
+    `None` for a scope-guard-rejected/stage1-failed candidate (no backtest claim exists at all in
+    that case, `promote_gate.py`'s own `assess_candidate` sets it so): `realism_gap_blocks` is then
+    unconditionally `False` (the fixture-vs-reality contradiction REQ-RL11 checks is undefined
+    without a fixture claim to compare against — not trivially true or false), while REQ-RL10's
+    trend gate and every other key still compute normally from the real ledger."""
+    path, resolved, resolution_source = ledger_reader.resolve_ledger_path(env)
+    window_end_ts = time.time()
+
+    if not resolved:
+        return {
+            "resolved": False,
+            "resolution_source": resolution_source,
+            "ledger_path": path,
+            "row_count": 0,
+            "sufficient": False,
+            "window_net_usd": 0.0,
+            "first_half_net_usd": 0.0,
+            "second_half_net_usd": 0.0,
+            "worsening": False,
+            "trend_blocks": False,
+            "realism_gap_blocks": False,
+            "window_start_ts": 0.0,
+            "window_end_ts": window_end_ts,
+        }
+
+    last_ts = promotion_history.last_promotion_ts(evaluator.BASELINE_PATH, cwd=repo_cwd)
+    window_start_ts = float(last_ts) if last_ts is not None else 0.0
+
+    rows = ledger_reader.confirmed_net_series(
+        path=path, window_start_ts=window_start_ts, window_end_ts=window_end_ts
+    )
+    split = gate_math.realized_window_split(rows, window_start_ts, window_end_ts)
+    sufficient = split["row_count"] >= gate_math.MIN_REALIZED_ROWS_FOR_TREND
+    worsening = gate_math.is_worsening_trend(split["first_half_net_usd"], split["second_half_net_usd"])
+    trend_blocks = gate_math.realized_trend_blocks(split["window_net_usd"], worsening, sufficient)
+    mean_realized_net_per_row = (
+        split["window_net_usd"] / split["row_count"] if split["row_count"] else 0.0
+    )
+    realism_gap_blocks = (
+        False
+        if mean_backtest_net_usd is None
+        else gate_math.data_realism_gap(mean_backtest_net_usd, mean_realized_net_per_row, sufficient)
+    )
+
+    return {
+        "resolved": True,
+        "resolution_source": resolution_source,
+        "ledger_path": path,
+        "row_count": split["row_count"],
+        "sufficient": sufficient,
+        "window_net_usd": split["window_net_usd"],
+        "first_half_net_usd": split["first_half_net_usd"],
+        "second_half_net_usd": split["second_half_net_usd"],
+        "worsening": worsening,
+        "trend_blocks": trend_blocks,
+        "realism_gap_blocks": realism_gap_blocks,
+        "window_start_ts": window_start_ts,
+        "window_end_ts": window_end_ts,
+    }
 
 
 def promote_if_approved(

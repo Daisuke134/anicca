@@ -25,26 +25,71 @@ module-docstring examples: a real EVM row, a real Solana row, a narrate-only row
 needs (1) `net_usdc > 0`, (2) NOT a swap source (`swap-eth-usdc`/`swap`/`swap-usdc-eth` — asset
 rotation is never earning), (3) `external is True` (proven external inbound revenue), AND (4) a
 chain-correct confirmation: EVM (`tx` present AND `status == "0x1"`) OR Solana (`sig` present AND
-`confirmed is True`).
+`confirmed is True`) OR Hyperliquid (`chain == "hyperliquid"` AND `fill_tid` present AND
+`confirmed is True` — REQ-RL5, self-improve-real-ledger, mirrored from ledger.mjs's own
+`hl-realized-pnl` feature, closing the drift this module's own docstring used to disclose).
+
+Per-instance path resolution (REQ-RL1, self-improve-real-ledger, closes Gap 1's cross-instance
+leak): `resolve_ledger_path()` prefers an explicit `ANICCA_HOME` (mirrors
+`skills/earn/lib/resolve-identity.mjs`'s own test-injectable `{env}` convention), falling back to a
+path computed relative to THIS running module's own `__file__` (the rsync-tree-relative model
+`genome.mjs` already documents for `baseline-genome.json`, applied here to `earn-ledger.jsonl`) —
+never a single hardcoded path. See behavioral-spec.md's "Grounded Interface" section.
 """
 from __future__ import annotations
 
 import json
 import os
-from typing import Optional
+from typing import Optional, Tuple
 
-DEFAULT_LEDGER_PATH = os.path.join(
-    os.path.expanduser("~"), "anicca", "skills", "earn", "state", "earn-ledger.jsonl"
-)
+
+def resolve_ledger_path(env: Optional[dict] = None) -> Tuple[str, bool, str]:
+    """REQ-RL1: per-instance ledger path resolution, fail-closed. Priority:
+    1. `env["ANICCA_HOME"]` (or `os.environ["ANICCA_HOME"]` when `env` is None), if set and
+       non-empty -> `<ANICCA_HOME>/skills/earn/state/earn-ledger.jsonl`,
+       resolution_source="anicca_home_env".
+    2. Else -> THIS module's own `__file__`-relative path (climb from `self-improve/lib/` to
+       `earn/state/` in the same tree), resolution_source="file_relative_default".
+    3. `resolved=False` (path="", resolution_source="unresolved_no_file_context") ONLY when this
+       process cannot determine its own module `__file__` at all (an exotic packaging context) —
+       NEVER used as an excuse to fall back to another instance's hardcoded path (mirrors
+       resolve-identity.mjs's R5: fail-closed, never guess another instance's identity)."""
+    effective_env = env if env is not None else os.environ
+    anicca_home = effective_env.get("ANICCA_HOME")
+    if anicca_home:
+        path = os.path.join(anicca_home, "skills", "earn", "state", "earn-ledger.jsonl")
+        return path, True, "anicca_home_env"
+
+    try:
+        this_file = os.path.abspath(__file__)
+    except NameError:
+        return "", False, "unresolved_no_file_context"
+
+    # this_file = <...>/skills/earn/self-improve/lib/ledger_reader.py
+    # climb: lib -> self-improve -> earn
+    earn_dir = os.path.dirname(os.path.dirname(os.path.dirname(this_file)))
+    path = os.path.join(earn_dir, "state", "earn-ledger.jsonl")
+    return path, True, "file_relative_default"
+
+
+# Computed once at import time via the SAME REQ-RL1 logic (REQ-RL3) — kept for any external caller
+# that references this attribute directly, and to keep the pre-existing test asserting its shape
+# passing. NEVER the value `read_ledger`/`realized_summary` actually use internally when called
+# with no explicit path (those resolve fresh, per call, via resolve_ledger_path() — REQ-RL3).
+DEFAULT_LEDGER_PATH = resolve_ledger_path()[0]
 
 # Mirrors skills/_shared/lib/ledger.mjs::SWAP_SOURCES verbatim.
 SWAP_SOURCES = frozenset({"swap-eth-usdc", "swap", "swap-usdc-eth"})
 
 
-def read_ledger(path: str = DEFAULT_LEDGER_PATH) -> list:
-    """Read every JSONL line into a dict. Missing file -> [] (never raises). Blank or malformed
-    (non-JSON, or JSON that isn't an object) lines are skipped — mirrors
-    `ledger.mjs::readLedger`'s own `.filter(Boolean)` / try-catch-null behavior exactly."""
+def read_ledger(path: Optional[str] = None) -> list:
+    """Read every JSONL line into a dict. `path=None` resolves fresh via `resolve_ledger_path()`
+    (REQ-RL2/RL3: an explicit `path` always overrides; the default is NEVER a frozen constant).
+    Missing file -> [] (never raises). Blank or malformed (non-JSON, or JSON that isn't an object)
+    lines are skipped — mirrors `ledger.mjs::readLedger`'s own `.filter(Boolean)` / try-catch-null
+    behavior exactly."""
+    if path is None:
+        path, _, _ = resolve_ledger_path()
     try:
         with open(path, "r", encoding="utf-8") as f:
             raw = f.read()
@@ -64,8 +109,30 @@ def read_ledger(path: str = DEFAULT_LEDGER_PATH) -> list:
     return rows
 
 
+def is_confirmed(line: Optional[dict]) -> bool:
+    """REQ-RL6: IDENTICAL to `is_profitable`'s chain-correctness + non-swap + `external is True`
+    checks, WITHOUT the `net_usdc > 0` requirement — so a confirmed LOSS (a redeemed losing
+    Polymarket position, a closed-at-a-loss Hyperliquid fill) is still reported here, which
+    `is_profitable` alone structurally cannot (it can never be True for a negative net_usdc)."""
+    if not line:
+        return False
+    if str(line.get("source")) in SWAP_SOURCES:
+        return False
+    if line.get("external") is not True:
+        return False
+    evm_ok = bool(line.get("tx")) and line.get("status") == "0x1"
+    sol_ok = bool(line.get("sig")) and line.get("confirmed") is True
+    hl_ok = (
+        line.get("chain") == "hyperliquid"
+        and line.get("fill_tid") is not None
+        and line.get("confirmed") is True
+    )
+    return bool(evm_ok or sol_ok or hl_ok)
+
+
 def is_profitable(line: Optional[dict]) -> bool:
-    """Mirrors `ledger.mjs::isProfitable` exactly (see module docstring for the 4-part rule)."""
+    """Mirrors `ledger.mjs::isProfitable` exactly: `is_confirmed(line) and net_usdc > 0`
+    (REQ-RL6, DRY single source of truth for "real on-chain settlement")."""
     if not line:
         return False
     try:
@@ -74,21 +141,44 @@ def is_profitable(line: Optional[dict]) -> bool:
         return False
     if not (net_usdc > 0):
         return False
-    if str(line.get("source")) in SWAP_SOURCES:
-        return False
-    if line.get("external") is not True:
-        return False
-    evm_ok = bool(line.get("tx")) and line.get("status") == "0x1"
-    sol_ok = bool(line.get("sig")) and line.get("confirmed") is True
-    # REQ-C4 (feature hl-realized-pnl, documented follow-up, NOT implemented here): ledger.mjs's
-    # isProfitable gained a third disjunct for a well-formed Hyperliquid fill (chain=="hyperliquid"
-    # AND fill_tid present AND confirmed is True). Porting that check to this Python mirror is
-    # deferred to a separate feature; this function does not yet recognize Hyperliquid lines.
-    return evm_ok or sol_ok
+    return is_confirmed(line)
+
+
+def confirmed_net_series(
+    path: Optional[str] = None,
+    window_start_ts: Optional[float] = None,
+    window_end_ts: Optional[float] = None,
+) -> list:
+    """(ts, net_usdc) pairs for every `is_confirmed` row (REQ-RL6), optionally restricted to
+    `[window_start_ts, window_end_ts)`. Powers REQ-RL8's `gate_math.realized_window_split` input
+    and REQ-RL14's data_source row-count check. `path=None` resolves fresh (REQ-RL2/RL3, same
+    convention as `read_ledger`/`realized_summary`)."""
+    rows = read_ledger(path)
+    series = []
+    for row in rows:
+        ts = row.get("ts")
+        if ts is None:
+            continue
+        try:
+            ts = float(ts)
+        except (TypeError, ValueError):
+            continue
+        if window_start_ts is not None and ts < window_start_ts:
+            continue
+        if window_end_ts is not None and ts >= window_end_ts:
+            continue
+        if not is_confirmed(row):
+            continue
+        try:
+            net_usdc = float(row.get("net_usdc", 0))
+        except (TypeError, ValueError):
+            continue
+        series.append((ts, net_usdc))
+    return series
 
 
 def realized_summary(
-    path: str = DEFAULT_LEDGER_PATH,
+    path: Optional[str] = None,
     window_start_ts: Optional[float] = None,
     window_end_ts: Optional[float] = None,
 ) -> dict:
@@ -97,7 +187,16 @@ def realized_summary(
     `[window_start_ts, window_end_ts)` (unix seconds, `ledger.mjs`'s own `ts` convention — omit
     both for the ledger's full all-time history). A sparse or entirely-missing ledger degrades
     gracefully to an all-zero summary — this function never raises for a missing/empty/malformed
-    ledger file (REQ-EV6-style fail-sentinel convention, applied here to a read, not a backtest)."""
+    ledger file (REQ-EV6-style fail-sentinel convention, applied here to a read, not a backtest).
+
+    `path=None` (REQ-RL3) resolves FRESH via `resolve_ledger_path()` on every call — never a
+    module-level constant frozen at import time — and the returned dict carries `resolved`/
+    `resolution_source` (REQ-RL4) so a caller/log line can see WHICH resolution branch fired."""
+    resolved = True
+    resolution_source = "explicit_path"
+    if path is None:
+        path, resolved, resolution_source = resolve_ledger_path()
+
     rows = read_ledger(path)
     total_rows = len(rows)
     profitable_rows = []
@@ -115,6 +214,8 @@ def realized_summary(
         "total_rows": total_rows,
         "profitable_row_count": len(profitable_rows),
         "realized_net_usd": round(realized_net_usd, 6),
+        "resolved": resolved,
+        "resolution_source": resolution_source,
     }
 
 
