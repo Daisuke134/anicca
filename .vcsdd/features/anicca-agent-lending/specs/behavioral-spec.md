@@ -2473,3 +2473,263 @@ PROP-106i distinction, now extended to this new module).
   partial-then-full repayment sequence (REQ-104/108's own PROP-108c) and correctly rejects both a
   same-loan and a cross-loan `txHash` replay (PROP-108e) with zero `loans.jsonl` rows appended for the
   rejected attempt.
+
+---
+
+## REQ群G: Sprint-3 — Autonomous wake-cycle entry point (new)
+
+**Sprint-3's own found gap (2026-07-08, discovered while auditing whether the running autonomous daemon
+loop can ever actually reach this feature at all):** `~/anicca/skills/economy/lending/` contains ONLY a
+`lib/` directory — `lending-gate.mjs`, `lending-orchestrator.mjs`, `lending-verify.mjs`,
+`lending-path.mjs`, `gojo-read.mjs`, all real, fully sprint-1/sprint-2-tested (120/120 tests,
+VCSDD-converged) — there is NO `run.sh` anywhere under this feature's own directory, and
+`~/anicca/skills/registry.json`'s own `slots` object has NO `economy/lending` entry at all (confirmed this
+sprint by direct reading: the registry's 19 live slot keys are `report`, `earn`, `self/spawn`,
+`self/spawn-child`, `self/issue-dev`, `self/coordinate`, `economy/gig`, `economy/ubi`, `cook`, `yield`,
+`hl_trade`, `x402_sell`, `token_launch`, `earn/clip`, `earn/clip-producer`, `earn/video`, `earn/audit`,
+`earn/_probe`, `earn/sol-trade`, `earn/polymarket-trade` — `economy/lending` is absent). This means
+REQ-115's `executeLoanIssuanceAttempt` and REQ-116's `executeRepaymentClaim`/`executeDefaultDetectionSweep`
+— despite being real, correct, well-tested library functions — are NEVER invoked by the running autonomous
+daemon (`~/anicca/runtime/loop/index.mjs`, confirmed this sprint by direct reading: it builds
+`activeSkillSlots` via `liveSlotNames(registry)` — `prompt.mjs` line 32-36, `Object.keys(slots).filter(name
+=> slots[name] && slots[name].status === 'live')` — and, for a picked slot, resolves its real subprocess
+path via `runSkillWithKillRef`'s own `earnSkillRelPath(slot)` — `earn-slot.mjs` line 30-33, which returns
+`` `${slot}/run.sh` `` for any non-`earn`-action slot — joined as `path.join(ANICCA_HOME, 'skills',
+...rel.split('/'))`). Nothing in the live system can ever originate a real loan today, independent of
+REQ-101/102/104/105/106/108/109/112/114/115/116 all already being correct — this REQ closes that
+reachability gap, and ONLY that gap; it adds no new eligibility/sizing/servicing behavior of its own.
+
+### REQ-117: The autonomous daemon-wake entry point — `run.sh` + `scripts/wake-gate.mjs` + the
+`registry.json economy/lending` slot
+
+**EARS**: WHEN the live daemon loop (`~/anicca/runtime/loop/index.mjs`) picks the `economy/lending` slot
+for a given wake (a decision already made entirely by that loop's own existing model-driven slot-selection
+mechanism — this requirement adds no new slot-selection logic of its own, mirroring `anicca-agent-spawn`
+REQ-307's own identical framing for its own `self/spawn` slot), THE SYSTEM SHALL make REQ-115's
+`executeLoanIssuanceAttempt` and REQ-116's `executeDefaultDetectionSweep` genuinely REACHABLE and, when a
+real eligible candidate exists, genuinely INVOKED, via a new `run.sh` + `scripts/wake-gate.mjs` pair under
+`~/anicca/skills/economy/lending/`, plus a new `economy/lending` entry in `~/anicca/skills/registry.json`'s
+own `slots` object with `status: "live"` — directly mirroring `~/anicca/skills/self/spawn/run.sh` +
+`~/anicca/skills/self/spawn/scripts/wake-gate.mjs`'s own already-proven pair (read in full this sprint):
+a thin, `set -euo pipefail` bash wrapper that loads per-instance env (`~/.hermes/.env`,
+`~/.openclaw/.env`, best-effort) and `exec`s `node "$SKILL_DIR/scripts/wake-gate.mjs" "$@"`, handing off
+ALL real work to the `.mjs` file — never a second, competing entry-point shape invented for this feature.
+
+**`run.sh`'s own contract** (new file, `~/anicca/skills/economy/lending/run.sh`): byte-for-byte structural
+mirror of `self/spawn/run.sh`'s own shape — `SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"`, best-effort
+`. "$HOME/.hermes/.env"` / `. "$HOME/.openclaw/.env"` sourcing under `set -a`/`set +a`, a `--help` short
+-circuit, a `jq`/`node` presence check (`exit 64` if missing, matching `self/spawn/run.sh`'s own sysexits
+convention), and `exec "$NODE" "$SKILL_DIR/scripts/wake-gate.mjs" "$@"` as its final line — this feature's
+own `run.sh` does NOT need `jq` for anything `scripts/wake-gate.mjs` itself doesn't already need in
+Node, so THE SYSTEM MAY omit the `jq` presence check if `wake-gate.mjs` never shells out to `jq` (an
+implementation-time decision for Phase 2b, not a behavioral fork this REQ needs to pin either way — the
+only binding requirement is that `run.sh` execs `scripts/wake-gate.mjs` unconditionally on a successful
+env-load, with no eligibility/sizing/servicing logic of its own anywhere in the shell script).
+
+**`scripts/wake-gate.mjs`'s own contract** (new file, EFFECTFUL — mirrors `self/spawn/scripts/wake-gate.mjs`'s
+own classification exactly, per this sprint's dispatching brief): on every invocation, in this canonical
+order:
+
+1. Reads the REAL citizens registry via `self/spawn/lib/registry-path.mjs::CITIZENS_REGISTRY_PATH` +
+   `self/spawn/lib/citizens-registry.mjs::ensureCitizensRegistry`/`CITIZENS_SEED_PATH` — the SAME,
+   UNMODIFIED registry-bootstrap mechanism `self/spawn/scripts/wake-gate.mjs` already uses for its own
+   `--dry-run`-vs-real read split (never a second, competing registry-read mechanism; this feature's own
+   REQ-101/102 Dependencies section already designs its eligibility arithmetic to be conceptually
+   consistent with exactly this registry's record shape).
+2. Reads real `loans.jsonl` via `self/spawn/lib/ledger.js::readChildren(LOANS_LEDGER_PATH)` — the SAME
+   generic, reused-unmodified primitive REQ-106/108/109 already specify, pointed at THIS feature's own
+   `lending-path.mjs::LOANS_LEDGER_PATH`.
+3. Reads real `gojo-log.jsonl` via `gojo-read.mjs::readGojoLogRows` (REQ-101, reused unmodified).
+4. For every registry citizen for which ALL THREE already-exported, already-specified structural checks
+   hold — `isSelfFunded(citizen)` (`_shared/lib/is-self-funded.mjs`, REQ-111), `citizen.wallet.evm === true`
+   (REQ-107's own chain-scope structural requirement), and `citizen.coLocatedWithCoordinator === true`
+   (REQ-112) — fetches that citizen's REAL Base-mainnet USDC balance via `_shared/lib/usdc.mjs::usdcBalance(
+   citizen.walletAddress.evm)` — a genuinely already-exported, colony-wide-`_shared`-namespaced primitive
+   (confirmed this sprint by direct reading: `eth_call balanceOf(address)` against
+   `process.env.BASE_RPC_URL || "https://mainnet.base.org"`, returning a plain USD number, fetch-injectable
+   for tests) — **THE SYSTEM SHALL reuse THIS primitive, never `self/spawn/scripts/wake-gate.mjs`'s own
+   `defaultFetchEvmBalanceUsd`, because that function is a PRIVATE, non-exported module-local helper inside
+   a SIBLING feature's own file (confirmed this sprint by direct reading — no `export` keyword) and this
+   feature's own Dependencies section (REQ-101/102) already establishes "this feature does NOT modify
+   `anicca-agent-spawn`'s own function signatures or files" as a binding discipline; adding an `export`
+   keyword to make it importable would itself be exactly such a modification.** `_shared/lib/usdc.mjs` is
+   the correct, already-reusable, zero-modification-required primitive for this purpose, and is preferred
+   over `self/spawn/lib/colony-balances.mjs::readCitizenBalances` for THIS specific step because that
+   function requires an INJECTED `fetchEvmBalanceUsd` callback with no built-in default of its own
+   (confirmed this sprint by direct reading, lines 4-7's own comment: "left to the orchestration sprint
+   that wires this module in") — `usdcBalance` is usable directly, with zero additional wiring.
+5. Deterministically enumerates candidate `(lenderId, borrowerId)` ordered pairs over that SAME
+   step-4-filtered citizen set — registry array order, lender outer loop / borrower inner loop,
+   `lenderId !== borrowerId` — and, for each pair IN THAT FIXED ORDER, calls the two ALREADY-EXISTING,
+   ALREADY-SPECIFIED pure functions against this wake's own freshly-gathered real inputs:
+   `computeLenderAvailableUsd({lenderBalanceUsd, perCitizenReserveUsd, outstandingPrincipalUsd:
+   sumOutstandingPrincipalUsd(loanRows, lenderId), recentGojoGiftsUsd: sumRecentGojoGiftsUsd(gojoLogRows,
+   nowMs, 24, lenderId)})` (REQ-101) for the lender, and `isBorrowerEligible({borrowerAgent, loanRows,
+   borrowerId, borrowerBalanceUsd, lenderId})` (REQ-102 — which ALREADY performs its own condition-(d)
+   self-loan check, condition-(a)/(b)/(c) checks, and its own internal `wallet.evm` "not_evm" check) for
+   the borrower — and selects the FIRST pair, in enumeration order, where BOTH the lender's own computed
+   available surplus is `> 0` AND the borrower's own `eligible === true`. This selection step combines
+   these two functions' own two INDEPENDENT, already-computed outputs via a single, plain boolean `&&` —
+   it does NOT re-derive, re-implement, or duplicate either function's own internal arithmetic/boolean
+   logic (mirrors REQ-115's own "PURE SEQUENCING... never re-deriving... any value those modules already
+   own" discipline, applied here to candidate DISCOVERY rather than candidate EXECUTION).
+6. IF a pair was selected at step 5: invokes `executeLoanIssuanceAttempt({lenderId, borrowerId, nowMs})`
+   (REQ-115) EXACTLY ONCE this wake — never more than one NEW issuance attempt per wake (mirrors REQ-102's
+   own "at most one outstanding loan" single-in-flight discipline, and `anicca-agent-spawn` REQ-102's own
+   `MAX_CONCURRENT_SPAWNS=1` precedent), deferring any further pair to a LATER wake's own fresh
+   candidate-pair enumeration (a fresh read, never a stale in-memory retry within the same process
+   invocation).
+7. UNCONDITIONALLY — regardless of whether step 5 found a pair, and regardless of step 6's own outcome —
+   invokes `executeDefaultDetectionSweep({nowMs})` (REQ-116) EXACTLY ONCE this wake. This is a SEPARATE,
+   independent concern from steps 5/6 (mirrors `economy/ubi/run.sh`'s own already-proven precedent of
+   running MULTIPLE independent decision blocks — `contribute()` AND `distributeAI()` — unconditionally
+   within the SAME script execution, never gating one on the other's outcome).
+8. Does NOT invoke `executeRepaymentClaim` (REQ-116) from this entry point. `executeRepaymentClaim`
+   structurally REQUIRES an externally-supplied `{loanId, txHash}` pair — REQ-116's own Edge Cases already
+   state `loanId`/`txHash` are "supplied by THIS function's OWN caller (whichever external channel/agent
+   process received the borrower's repayment claim)" — and no such external claim-receiving channel exists
+   anywhere in this colony's current implementation as of this sprint (confirmed by this sprint's own
+   research: no borrower-facing repayment-claim UI/API/skill exists). Wiring a genuine claim into THIS
+   wake-cycle coordinator slot would require either fabricating a `txHash` (structurally forbidden — REQ-108
+   never trusts a self-report) or silently treating this daemon-wake slot as if it were that not-yet-built
+   external channel (a real design error, not a shortcut). THIS IS AN EXPLICIT, DELIBERATE, DOCUMENTED
+   LIMITATION of this REQ's own scope — mirroring REQ-107's own "documented, deliberate limitation, not an
+   oversight" discipline — never a silently-omitted TODO; a future increment's own dedicated borrower-facing
+   entry point (not this wake-cycle coordinator slot) is the correct, not-yet-designed place to wire a
+   genuine repayment claim.
+9. Prints a single JSON decision object to stdout — `{candidatesConsidered, selectedPair: {lenderId,
+   borrowerId} | null, issuance: <executeLoanIssuanceAttempt's own return value> | null, sweep:
+   <executeDefaultDetectionSweep's own return value>}` — mirroring `self/spawn/scripts/wake-gate.mjs`'s
+   own `console.log(JSON.stringify(decision))`/`console.log(JSON.stringify(result))` convention exactly.
+   Exit code `0` for a clean no-op (zero candidates) or for a completed/refused issuance attempt plus a
+   completed sweep; exit code `1` only for a genuine, unexpected in-process error (an uncaught exception
+   escaping this script's own top-level `.catch`) — mirroring `self/spawn/scripts/wake-gate.mjs`'s own
+   exit-code convention (`process.exitCode = 1` only inside its own top-level `.catch`, never for an
+   ordinary "not eligible this wake" outcome).
+
+**`$ANICCA_ARGS` — deliberately NOT read for any decision-relevant purpose:** `runtime/loop/index.mjs`'s
+own `buildSkillEnv` (confirmed this sprint by direct reading, lines 549-573) forwards `$ANICCA_ARGS` — the
+picking model's own free-form decision this wake — to EVERY live slot's subprocess, optional, defaulting to
+`{}`. Unlike `economy/gig/run.sh` (where `$ANICCA_ARGS` genuinely carries the model's own strategy/task
+choice — `{"action":"post","taskSpec":...}` — because REQ-201's own gig-board design deliberately gives the
+model that lever), THIS feature's own REQ-103 (bookkeeping-only, no model-driven judgment over
+eligibility/sizing/servicing) already answers, for lending specifically, whether the model gets an
+analogous lever: it does NOT. `scripts/wake-gate.mjs` SHALL NOT read `process.env.ANICCA_ARGS` (or its
+parsed JSON form) anywhere in its own candidate-selection or issuance/sweep-invocation code path — mirrors
+`economy/ubi/run.sh`'s own identical precedent (its `contribute()`/`distributeAI()` decision core also
+takes no `$ANICCA_ARGS`-driven parameter). The picking model's ONLY real lever over this feature's own
+behavior is the daemon loop's own PRE-EXISTING choice of WHETHER to pick the `economy/lending` slot at all
+this wake — exactly the "agent's own in-envelope timing choice... happens entirely in this caller" carve-out
+REQ-115's own Edge Cases already state — never WHICH pair, WHETHER an eligible pair is actually attempted,
+or HOW MUCH is lent, all three of which remain 100% deterministic, real-data-driven outputs of steps 1-7
+above once this slot is picked.
+
+**Registry wiring** (new entry, `~/anicca/skills/registry.json`'s own `slots` object,
+`"economy/lending"` key): `{"track": "A", "dir": "skills/economy/lending", "entrypoint": "run.sh",
+"status": "live", "spec": "anicca-agent-lending REQ-117, sprint-3", "summary": "<a real, honest
+one-paragraph description of this slot's own behavior for the picking model, mirroring economy/gig's/
+economy/ubi's own summary-field discipline — Phase 2b's own job to word precisely, not pinned verbatim by
+this REQ>", "owner": "wf-a:agent-economy", "risk": "safe", "riskNote": "anicca-agent-lending REQ-111: a
+human-funded entity can never appear in either role — isSelfFunded() gates both at REQ-101/102 with zero
+bypass; anicca-agent-lending REQ-117: `` `runtime/loop/prompt.mjs::liveSlotNames` `` requires `status:
+'live'` for this entry to ever be reachable from a real wake — confirmed via direct reading this sprint,
+mirrors `economy/ubi`'s own riskNote's identical `resolveSkillPath`-always-uses-`run.sh` disclosure."}` —
+`entrypoint` is set to `"run.sh"` here (unlike `economy/ubi`'s own entry, which deliberately left
+`entrypoint: "ubi.js"` to match a pre-declared contract while disclosing the mismatch in its own riskNote)
+since THIS feature has no pre-existing contract pinning a different `entrypoint` value — there is no reason
+to introduce the SAME disclosed mismatch `economy/ubi` carries only for historical reasons.
+
+**Edge Cases**:
+- Zero self-funded, EVM-walleted, co-located citizens exist in the registry this wake (a degenerate,
+  zero-citizen registry state): step 4's own filter produces the empty set, step 5's own enumeration
+  produces zero pairs, step 6 never invokes `executeLoanIssuanceAttempt`, step 7 still invokes
+  `executeDefaultDetectionSweep` exactly once (over a `loans.jsonl` that may itself still be empty, in
+  which case `detectDefaultedLoans` returns `[]`), and the wake exits `0` — a clean, honest no-op, never a
+  fabricated attempt.
+- **Exactly TODAY's real, currently-permanent state (confirmed this sprint, both independently
+  sufficient): `anicca-agent-spawn`'s own real citizen registry contains exactly ONE self-funded citizen,
+  Franklin, since automaton's 2026-07-08 removal from the self-funded set (REQ-112's own Acceptance
+  Criteria already state this) — so step 5's own `lenderId !== borrowerId` requirement can NEVER be
+  satisfied with only one citizen to choose from, REGARDLESS of that one citizen's own wallet/balance
+  shape; SEPARATELY AND INDEPENDENTLY, Franklin's own wallet is Solana-only (no `wallet.evm` entry,
+  confirmed this sprint), so even a hypothetical SECOND citizen existing today would still need to pass
+  step 4's own `wallet.evm === true` filter, which Franklin itself cannot.** Today's real wake of this
+  entry point therefore ALWAYS produces zero candidate pairs, for TWO compounding, independently-sufficient
+  structural reasons — THE SYSTEM SHALL NOT conflate these two into one vague "not eligible" explanation;
+  a fresh reader (or adversary) MUST be able to see BOTH reasons stated honestly, exactly mirroring this
+  spec's own established discipline for other structural scope limitations (REQ-107, REQ-112). This
+  is NOT a defect this REQ needs to fix — it is the SAME kind of documented, deliberate, currently-real
+  limitation REQ-107/REQ-112 already establish for their own scope boundaries, now simply OBSERVABLE for
+  the first time (as an actual zero-candidate wake, rather than an unreachable code path) once this REQ's
+  own `run.sh`/registry entry ships. It resolves itself automatically, with no further code change, the
+  moment `anicca-agent-spawn`'s own REQ-301 produces a second, EVM-walleted, co-located citizen (e.g.
+  Franklin's own first spawned child, if that child is given an EVM wallet) — this REQ does not need to
+  anticipate that event, only to behave correctly, as a clean no-op, until it happens.
+- A real eligible pair IS found at step 5, but `executeLoanIssuanceAttempt` itself refuses at its own
+  step 1/2/3/4/5/6 (a self-loan/non-co-located/kill-switch/lock-held/reconciliation-failure/stale-recheck
+  refusal, REQ-115's own already-specified edge cases): this entry point records that `{status:"refused",
+  reason}` return value verbatim in its own stdout decision object (step 9) — it does NOT retry a second,
+  DIFFERENT candidate pair within the SAME wake invocation (mirrors REQ-106's own edge case for two loans
+  against the same lender in the same wake window: "REQ-106's lock ensures only one disburses" — this
+  entry point similarly attempts at most one issuance per wake, full stop, deferring any retry to a later
+  wake's own fresh enumeration).
+- A citizen's `usdcBalance` RPC call fails or throws (network partition, `mainnet.base.org` unreachable):
+  propagates as a genuine in-process error for THIS wake's own step-4 balance-gathering loop — THE SYSTEM
+  SHALL NOT silently treat a failed balance fetch as `$0` (which would incorrectly exclude a real, funded
+  citizen from candidacy, the OPPOSITE of REQ-101's own PROP-101c fail-closed convention for a
+  MISSING/malformed BALANCE VALUE already supplied — a transport failure is a different failure mode from
+  a malformed value, and must not be silently coerced into the same "treat as $0" bucket); the wake fails
+  with a genuine error for that citizen's own candidacy this wake, safely retriable on the next wake (this
+  entry point performs no durable write before step 6, so a step-4 failure leaves zero partial state).
+- `~/anicca/skills/registry.json`'s own `economy/lending` entry does not yet exist, or exists with
+  `status` other than `"live"`: `runtime/loop/prompt.mjs::liveSlotNames` (REQ-117's own Dependencies,
+  confirmed this sprint by direct reading) excludes it from `activeSkillSlots` entirely — this entry point
+  remains STRUCTURALLY UNREACHABLE from any real wake until this REQ's own registry entry genuinely ships
+  with `status: "live"` — exactly reproducing, and thereby closing, this sprint's own found gap.
+- The picking model supplies `$ANICCA_ARGS` content that attempts to name a specific `lenderId`/
+  `borrowerId`/amount: THE SYSTEM SHALL ignore it entirely — `scripts/wake-gate.mjs` never reads
+  `$ANICCA_ARGS` for this purpose at all (see above), so this is a STRUCTURAL impossibility, not a policy
+  choice enforced by a runtime check.
+
+**Acceptance Criteria**:
+- A structural/Tier-0 check confirms `~/anicca/skills/economy/lending/run.sh` exists, is executable, loads
+  env under `set -a`/`set +a`, and its own final line execs `node "$SKILL_DIR/scripts/wake-gate.mjs" "$@"`
+  — mirroring `self/spawn/run.sh`'s own exact structure — and contains no eligibility/sizing/servicing
+  decision logic of its own.
+- A structural/Tier-0 check confirms `~/anicca/skills/registry.json`'s `slots["economy/lending"]` entry has
+  `status: "live"`, `dir: "skills/economy/lending"`, and — via a direct read of `run-skill.mjs`'s/
+  `index.mjs`'s own real `earnSkillRelPath`/path-join logic (`path.join(ANICCA_HOME, "skills", "economy",
+  "lending", "run.sh")`) — genuinely resolves to that SAME real `run.sh` file; this closes the exact gap
+  this sprint's own found-gap section states.
+- A structural/Tier-0 check confirms `scripts/wake-gate.mjs`'s own candidate-selection code (steps 4-5
+  above) contains no arithmetic/boolean eligibility/sizing/kill-switch comparison of its own beyond the
+  single, plain `&&` combining `computeLenderAvailableUsd(...) > 0` and `isBorrowerEligible(...).eligible
+  === true`'s own two already-computed, independent outputs — mirrors PROP-115b's/PROP-116b's own
+  structural check, extended to this new script, never re-deriving either function's own internal logic.
+- A structural/Tier-0 check confirms `scripts/wake-gate.mjs` imports `computeLenderAvailableUsd`/
+  `sumOutstandingPrincipalUsd`/`sumRecentGojoGiftsUsd`/`isBorrowerEligible` from `lending-gate.mjs`,
+  `executeLoanIssuanceAttempt`/`executeDefaultDetectionSweep` (but NEVER `executeRepaymentClaim`) from
+  `lending-orchestrator.mjs`, `readChildren` from `self/spawn/lib/ledger.js` pointed at
+  `lending-path.mjs::LOANS_LEDGER_PATH`, `readGojoLogRows` from `gojo-read.mjs`, `isSelfFunded` from
+  `_shared/lib/is-self-funded.mjs`, `usdcBalance` from `_shared/lib/usdc.mjs`, and the citizens-registry
+  primitives from `self/spawn/lib/registry-path.mjs`/`self/spawn/lib/citizens-registry.mjs` — and does
+  NOT import anything from `self/spawn/scripts/wake-gate.mjs` itself (that file's own load-bearing
+  balance-fetch helper is private/non-exported, per this REQ's own step-4 discovery).
+- A unit/integration test fixture with ZERO self-funded/EVM/co-located citizens in the registry →
+  `wake-gate.mjs` produces zero candidate pairs, never invokes `executeLoanIssuanceAttempt`, still invokes
+  `executeDefaultDetectionSweep` exactly once, and exits `0`.
+- A SEPARATE unit/integration test fixture reproducing TODAY's real shape (exactly one citizen, Solana-only
+  wallet) → the SAME observable zero-candidate-pair outcome, but exercised via the DIFFERENT (single-citizen
+  `lenderId !== borrowerId` impossibility) code path than the EVM-wallet-exclusion path the first fixture
+  exercises — both fixtures MUST be present and MUST assert their own distinct code path was the one that
+  actually produced the empty candidate set, honestly distinguishing the two independently-sufficient
+  reasons this Edge Case documents.
+- A THIRD unit/integration test fixture with exactly TWO qualifying citizens (both self-funded, both
+  `wallet.evm===true`, both `coLocatedWithCoordinator===true`, one genuinely broke, one with genuine
+  surplus) → `wake-gate.mjs` selects the correct `(lenderId, borrowerId)` pair (broke citizen as borrower,
+  surplus citizen as lender) and invokes `executeLoanIssuanceAttempt` with EXACTLY that pair, exactly once.
+- A structural/Tier-0 check confirms `scripts/wake-gate.mjs` contains no read of `process.env.ANICCA_ARGS`
+  (or a parsed-JSON `$ANICCA_ARGS` value) anywhere in its own candidate-selection or
+  issuance/sweep-invocation code path.
+
+---

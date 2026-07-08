@@ -2,7 +2,7 @@
   "featureName": "anicca-agent-lending",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "complete",
+  "currentPhase": "1b",
   "phaseHistory": [
     {
       "from": "init",
@@ -126,14 +126,29 @@
       "timestamp": "2026-07-08T06:05:40.463Z",
       "reason": "Phase 6 convergence confirmed: findingCount=0 (Phase 3 review, PASS, zero findings), allCriteriaEvaluated=true across all 7 CRIT-201..207, duplicateFindings=[], zero open adversary-finding beads, all 4 formal hardening artifacts present (verification-report.md/security-report.md/purity-audit.md/security-results with 4 captured semgrep outputs), all 65 required proof obligations proved. Sprint 2 (REQ-115 executeLoanIssuanceAttempt + REQ-116 executeRepaymentClaim/executeDefaultDetectionSweep) genuinely complete.",
       "sprint": 2
+    },
+    {
+      "from": "complete",
+      "to": "1a",
+      "timestamp": "2026-07-08T07:54:10.098Z",
+      "reason": "Sprint 3: build the autonomous daemon-wake entry point (run.sh + scripts/wake-gate.mjs + registry.json economy/lending slot) that makes REQ-115 executeLoanIssuanceAttempt / REQ-116 executeRepaymentClaim+executeDefaultDetectionSweep genuinely reachable from a live wake for the first time -- closing the gap that lending/ currently has only a lib/ directory with no run.sh and no registry.json slot entry, so nothing in the running daemon can ever originate a real loan.",
+      "sprint": 2,
+      "nextSprintHint": 3
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-08T07:56:12.981Z",
+      "reason": "Sprint 3 Phase 1a complete: REQ-117 (the autonomous daemon-wake entry point -- run.sh + scripts/wake-gate.mjs + registry.json economy/lending slot) added to behavioral-spec.md, closing the reachability gap where REQ-115/REQ-116 orchestrator functions were never invoked by the live daemon loop. Opening Phase 1b (verification architecture) for PROP-117a-d.",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 2,
     "5": 2,
     "6": 1,
-    "1a": 2,
-    "1b": 2,
+    "1a": 3,
+    "1b": 3,
     "1c": 2,
     "2a": 2,
     "2b": 2,
@@ -2005,6 +2020,69 @@
         ],
         "createdAt": "2026-07-08T04:29:26.487Z",
         "createdInPhase": "2a"
+      },
+      {
+        "beadId": "BEAD-106",
+        "type": "spec-requirement",
+        "externalId": "REQ-117",
+        "artifactPath": "specs/behavioral-spec.md#REQ-117",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-107",
+          "BEAD-108",
+          "BEAD-109",
+          "BEAD-110"
+        ],
+        "createdAt": "2026-07-08T07:58:25.482Z",
+        "createdInPhase": "1a"
+      },
+      {
+        "beadId": "BEAD-107",
+        "type": "verification-property",
+        "externalId": "PROP-117a",
+        "artifactPath": "specs/verification-architecture.md#PROP-117a",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-106"
+        ],
+        "createdAt": "2026-07-08T07:58:25.482Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-108",
+        "type": "verification-property",
+        "externalId": "PROP-117b",
+        "artifactPath": "specs/verification-architecture.md#PROP-117b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-106"
+        ],
+        "createdAt": "2026-07-08T07:58:25.482Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-109",
+        "type": "verification-property",
+        "externalId": "PROP-117c",
+        "artifactPath": "specs/verification-architecture.md#PROP-117c",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-106"
+        ],
+        "createdAt": "2026-07-08T07:58:25.482Z",
+        "createdInPhase": "1b"
+      },
+      {
+        "beadId": "BEAD-110",
+        "type": "verification-property",
+        "externalId": "PROP-117d",
+        "artifactPath": "specs/verification-architecture.md#PROP-117d",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-106"
+        ],
+        "createdAt": "2026-07-08T07:58:25.482Z",
+        "createdInPhase": "1b"
       }
     ]
   },
@@ -2056,5 +2134,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T10:06:12.029Z",
-  "updatedAt": "2026-07-08T06:05:40.464Z"
+  "updatedAt": "2026-07-08T07:58:25.483Z"
 }
