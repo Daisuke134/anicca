@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.clawrouter</string>
+  <key>ProgramArguments</key>
+  <array><string>/opt/homebrew/bin/clawrouter</string></array>
+  <!-- Free path only: NO BLOCKRUN_WALLET_KEY here on purpose. Wallet balance is $0.00 (verified
+       via `clawrouter status`), so the proxy auto-falls-back to free-tier models — this is the
+       self-improve harness's $0 LLM endpoint, not a paid/credentialed one. -->
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key><string>/Users/anicca</string>
+  </dict>
+  <key>KeepAlive</key><true/>
+  <key>RunAtLoad</key><true/>
+  <key>ThrottleInterval</key><integer>10</integer>
+  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/clawrouter.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/clawrouter.err.log</string>
+</dict></plist>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+  <key>Label</key><string>ai.anicca.claude-p-mainloop</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/bash</string><string>/Users/anicca/anicca/skills/self/claude-p-mainloop.sh</string></array>
+  <key>WorkingDirectory</key><string>/Users/anicca/anicca-project</string>
+  <key>EnvironmentVariables</key><dict>
+    <key>PATH</key><string>/opt/homebrew/bin:/Users/anicca/.local/bin:/Users/anicca/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    <key>HOME</key><string>/Users/anicca</string>
+  </dict>
+  <key>StartInterval</key><integer>21600</integer>
+  <key>ThrottleInterval</key><integer>300</integer>
+  <!-- Never auto-fire on load — verified manually (test-fire) then left to its own schedule /
+       explicit `launchctl kickstart`, never on bootstrap. -->
+  <key>RunAtLoad</key><false/>
+  <key>StandardOutPath</key><string>/Users/anicca/.openclaw/logs/claude-p-mainloop-launchd.out.log</string>
+  <key>StandardErrorPath</key><string>/Users/anicca/.openclaw/logs/claude-p-mainloop-launchd.err.log</string>
+</dict></plist>
