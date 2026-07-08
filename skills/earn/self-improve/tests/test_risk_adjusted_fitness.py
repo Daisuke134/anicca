@@ -75,12 +75,16 @@ def test_leverage_only_candidate_does_not_beat_baseline_on_real_fixture(tmp_path
 
 
 def test_genuine_selection_change_beats_baseline_where_leverage_could_not(tmp_path):
-    """Contrast case, same fixture: raising `min_edge` (a real selection change exploiting the
-    fixture's documented true edge, see generate_fixture.py) DOES beat baseline, unlike the
+    """Contrast case, same fixture: a genuine selection/sizing-emphasis change (real openevolve
+    promotion, commit a6f608c, 2026-07-08 — see test_baseline_beat.py's module docstring for the
+    full re-derivation against the NEW committed baseline) DOES beat baseline, unlike the
     leverage-only candidate above — proving `risk_adjusted_score` rewards genuine edge-finding,
     not just any code change."""
     baseline_code = read_baseline_code()
-    selection_code = patched_baseline_code(('config.get("min_edge", 0.15)', 'config.get("min_edge", 0.24)'))
+    selection_code = patched_baseline_code(
+        ('config.get("edge_weight", 0.25)', 'config.get("edge_weight", 0.4)'),
+        ('config.get("conf_weight", 0.45)', 'config.get("conf_weight", 0.1)'),
+    )
     assert selection_code != baseline_code
     selection_path = write_candidate_with_fixtures(tmp_path, selection_code)
 

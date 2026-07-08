@@ -13,6 +13,10 @@
 - [x] P1: spec 作り直し（openevolve + BP5層 + grounded要素、misattributed DA/EV5 破棄）→ fresh-context adversary vcsdd-spec-review PASS（behavioral-spec.md/verification-architecture.md、mode: strict）
 - [x] P2 (deterministic core のみ): TDD(RED→GREEN) — denylist reject(fixed-region line 変更 + evolvable region 内 denylisted import/wallet path) / held-out regress(stage1 pass だが stage2 walk-forward regress→promotion gate False) / reward-hacking trip-wire(>3x population-best→flagged) / baseline-beat(hand-crafted better config が real backtest で baseline 超え、promotion gate True) — 全 GREEN。証拠は下の「P2 evidence」参照。scope_guard/gate_math の壊す→REDに戻る sanity check 済（本物のRED-GREENサイクルであることを事後検証）。
 - [x] P2 残: REAL openevolve run — DONE (2026-07-07/08)。詳細・実数値は下の「P2 Stage-2 evidence (real openevolve run)」参照。1 accepted edit が baseline (stage2 OOS -0.3959) を大きく超え (9.4486)、scope_guard PASS、diff は EVOLVE-BLOCK 内に完全収容。
+- [x] capable-improver: REAL openevolve-discovered promotion — DONE (2026-07-08, branch
+      feature/self-improve-capable-improver). free/gpt-oss-120b (not qwen/mistral) found a
+      genuine risk-adjusted-beating selection edit at iteration 32/40, fresh Opus adversary PASS,
+      real commit `a6f608c`. Full detail in "capable-improver run" section below.
 - [ ] P3: LOOP 1 を1周 human-zero（self-issue→build→adversary→自merge）
 - [ ] cheap win 並行: Franklin OBSERVE(telemetry Solana残高再利用) / HL closed_pnl 永続化
 
@@ -417,3 +421,84 @@ this file's very first sections.
 would need). `ledger_reader.py` (Gap 1) reads the REAL ledger for the OBSERVE/realized-P&L signal.
 A real-market-data backtest replay stays deferred, same as the original spec's own
 `out_of_scope_this_phase` framing.
+
+## capable-improver run: REAL openevolve-discovered + adversary-approved promotion (2026-07-08)
+
+Worktree `/Users/operator/anicca/.worktrees/capable-improver`, branch
+`feature/self-improve-capable-improver`. Prior close-loop-2 run's free models
+(`free/qwen3.5-122b-a10b`, `free/mistral-large-3-675b`) never produced a candidate beating baseline
+under the risk-adjusted metric across 40 real iterations — every accepted-format sample either
+failed to parse ("No valid diffs found") or tied/regressed. This run's ONLY change: swapped the
+`config.yaml` LLM ensemble to `free/gpt-oss-120b` (OpenAI open-weight 120B, same $0 ClawRouter free
+endpoint, no human credential) — 3 temperature entries (0.4/0.8/1.1) of the same model. Live-probed
+first (`/private/tmp/.../scratchpad/probe_gptoss.py`, 2/2 samples both produced byte-correct,
+in-scope SEARCH/REPLACE diffs proposing substantive selection-logic changes) before committing the
+config change (commit `4fa6b47`).
+
+**The run**: `env -i HOME="$HOME" PATH=/usr/bin:/bin SELF_IMPROVE_ITERATIONS=40 bash
+skills/earn/self-improve/run_evolve.sh` (minimal PATH, no venv/homebrew on PATH — the actual
+launchd-equivalent invocation, NOT a manual `openevolve-run` call). Note: `run_evolve.sh`'s own
+`ITERATIONS="${SELF_IMPROVE_ITERATIONS:-20}"` default is 20, NOT `config.yaml`'s `max_iterations:
+40` — the env var override is required to actually get 40 CLI-level iterations; `config.yaml`'s
+own `max_iterations` field is not otherwise consulted by the `--iterations` CLI flag path this
+script uses. Full 40-iteration run completed in ~4.5 minutes wall-clock (many free-tier requests,
+some 429/retry-delayed).
+
+**openevolve's own tracked best** (iteration 32/40, generation 5, program
+`2d916c98-a9dc-4e1c-a7f9-6dda3576d368`, parent `0a666dca-...`): `combined_score=3.2076` (risk-adjusted)
+vs baseline's `1.2628` — `mean_oos_net_usd=4.2178`, `std_oos_net_usd=1.3149`,
+`worst_window_oos_net_usd=+2.3755` (baseline's own worst window was `-0.4732`, i.e. genuinely
+losing — this candidate flips it positive). Trip-wire clear (`3.2076 < 3.0 x 1.2628 = 3.7884`).
+scope_guard PASS (diff confined entirely inside `score_candidate`'s EVOLVE-BLOCK). The diff (see
+`evidence/capable-improver/openevolve_discovered.diff`) raises `min_edge` 0.15->0.18 and
+`min_confidence` 6.0->7.0 (the exact trivial lever this task named), PLUS adds
+min_liquidity/max_price/min_combined(edge*confidence)/max_horizon_days filters (each independently
+tightening selection further) and an adaptive edge/confidence/price/horizon-weighted stake
+multiplier layered on top. This is a real LLM-discovered edit, not the hand-seeded `min_edge=0.24`
+reference candidate from the earlier close-loop smoke test — openevolve found its own, more
+elaborate variant of the same selection-tightening lever this run's `prompt.system_message`
+pointed it toward.
+
+**Per-candidate promotion adversary** (real, fresh, headless `claude --model opus`, cost $0.9333,
+session `f108645b-...`): verdict `PASS`. Verbatim reason (full text in
+`evidence/capable-improver/promotion_verdict.json`): *"This is a genuine selection change, not
+leverage or variance amplification. My independent re-run of the diffed score_candidate against
+fixtures/pm_history.csv confirms the candidate's selection is a STRICT SUBSET of baseline's (23
+picks vs 31) ... window 5 flips from baseline's LOSING −0.473 to +2.375 purely because the
+stricter filters eliminate the bad rows ... the sizing multiplier is capped at ≤~1.1× (below
+baseline's flat 5.0), so the risk-adjusted gain cannot be a leverage trick ... I am willing to
+promote."*
+
+**PROMOTED — real commit**: `a6f608cea7a2915f0748707d41b77c1714a18609` (author `Anicca Self-Improve
+<self-improve@anicca.local>`, `git commit -- strategies/pm_backtest_strategy.py`, path-scoped, 83
+insertions/3 deletions, EVOLVE-BLOCK only). This is the harness's `lib/promote.py::promote()`
+running for real (`commit=True`) for the first time via the full autonomous
+OBSERVE->EVOLVE->promote_gate->log cycle in `run_evolve.sh` — every prior evidence in this file was
+either a `--dry-run` smoke test or a run whose candidate never cleared the deterministic gate.
+
+**Test-suite fallout (found and fixed, not hidden)**: promoting a new baseline changed
+`strategies/pm_backtest_strategy.py`'s own committed text, which broke 14/44 pytest tests across 5
+files — every one of them a `patched_baseline_code(...)` literal string patch
+(`tests/conftest.py`) hardcoded against the PRE-promotion baseline's exact source text (e.g.
+`'config.get("min_edge", 0.15)'`, which no longer appears verbatim in the new, much larger
+EVOLVE-BLOCK). This is test-fixture drift, not a regression in `gate_math`/`scope_guard`/
+`evaluator`/`promote_gate` themselves (all unaffected, still pure/deterministic). Fixed by
+empirically re-deriving (actually running the real evaluator against the real new baseline, not
+guessing) new literal patches that preserve each test's original intent — see the fix commit's own
+message for the exact numbers. `44/44 pytest green` after the fix (evidence:
+`evidence/capable-improver/pytest_output_post_promotion.txt`).
+
+**Disk note**: this Mac Mini's `/` showed severe, FAST, EXTERNAL oscillation during this run — not
+caused by this harness (`runs/` for this run was <2MB the whole time) — dropping from 2.6Gi to
+350Mi avail within ~2 minutes at one point (unrelated concurrent processes/other cron jobs on this
+shared box), then recovering to ~1-2.5Gi on its own within another minute. Reclaimed
+`~/.npm/_npx` (598M) + pip cache once when avail dropped below the 450M safety threshold; did not
+touch any protected store. Never actually ran out during this run, but the volatility is a real,
+open systemic issue on this box (see prior memory entries re: `~/.openclaw/.git` growth) — worth a
+future dedicated look, out of scope for this task.
+
+**No-human-loop**: LLM endpoint = ClawRouter free path (no wallet key, no spend possible). Adversary
+= local `claude --model opus --dangerously-skip-permissions --print` (headless, cost-capped
+$1.00/call). Promotion commit author = `self-improve@anicca.local` (not a human identity). No live
+trade anywhere in this path (`SOL_TRADE_MAX_SPEND=0`, `promote.py` only ever writes/commits a
+backtest strategy FILE). `.vcsdd/features/anicca-agent-economy/**` never touched.
