@@ -431,27 +431,40 @@ redeem確認/日 の2条件AND）」。以下の REQ-LV-100/101 はこの4種の
   を追記する。pause中のinstanceはREQ-LV-131のspawner判断（同一platformのfleet数カウント）に
   引き続き算入する（pauseは削除ではない）。
 
-### L. OpenClaw 統合（Dais指示: OpenClaw廃止 → claude-p統合。棚卸し2026-07-08確定版）
+### L. OpenClaw 統合（Dais指示: OpenClaw廃止 → claude-p統合。棚卸し2026-07-08確定版 v2.2、
+スコープ縮小指示反映）
 
-Ground truth追加確認: `enabled:true`の103件（全221件中、確認済み）の内訳は design spec 確定版
+Ground truth追加確認: `enabled:true`の103件（全221件中、確認済み）の内訳は design spec v2.2
 （生データ: 別セッションのscratchpad `enabled_jobs_with_paths.json` — このfeatureのリポジトリには
 存在しないため中身は直接確認していない。分類件数の合計 30+23+7+24+19=103 が jobs.json の実
-`enabled:true`件数と一致することのみ確認済み）どおり以下5分類・確定件数とする:
+`enabled:true`件数と一致することのみ確認済み）どおり以下5分類・確定件数とする。件数は前回確定版
+（30/23/7/24/19）から変わらないが、**移行方針がDaisのスコープ縮小指示で大きく変わった**——旧版は
+5分類中4分類（(a-1)(a-2)(a-3)(b)）が「claude-pへ移行」だったが、v2.2では**無条件migrateはゼロ**に
+なり、実際に移行するのは(a-1)の中でも「機械検証ツールが存在するチャネルのみ」に絞られる:
 
-| カテゴリ | 件数 | 移行方針 |
+| カテゴリ | 件数 | 移行方針（v2.2、Dais スコープ縮小指示反映） |
 |---|---|---|
-| (a-1) SNS投稿系（Larry/reelclaw/monk-factory×2/music/slideshow/comedy投稿 等） | 30 | claude-pへ移行 |
-| (a-2) growth/marketing（cold-email/SEO/backlink/reviews 等） | 23 | claude-pへ移行 |
-| (a-3) comedy live 応募系 | 7 | claude-pへ移行 |
-| (b) Life Manager（naist/meetup/歯科/gcal/mail-triage 等 Dais個人） | 24 | claude-p loop化（別phase、earnと分離したlife-manager coreとして。`~/anicca/skills/anicca-life-manager/`・`~/anicca/skills/self/life-manager-loop/`に既存実体あり — ゼロから作らない） |
-| (c) OpenClaw自己保守（cron-doctor/watch-sweep/exec-guard 等） | 19 | 移行しない — OpenClaw廃止と同時に不要化。死活監視はhealthcheck-runtime-loop系が代替 |
+| (a-1) SNS投稿系（Larry/reelclaw/monk-factory×2/music/slideshow 等） | 30 | **Wave 1: claude-pへ移行——ただし無条件copy禁止**。各チャネルに検証ツール（metrics実測手段）が存在するものだけを、cadence contract + evaluator + lessons.jsonlを最初から装着して移設する。検証ツールが無いチャネルは移行しない |
+| (a-2) growth/marketing（cold-email/SEO/backlink/reviews 等） | 23 | **Wave 2: copyせず再設計**（このfeatureの直接実装スコープ外、別途スケジュール）。旧実装には検証/評価loopが皆無で効果が一度も実証されていない（Dais確認済み）。metricが機械計測可能なチャネル（SEO=GSC API、cold-email=返信率、backlink=live URL+票数、reviews=ASC API）のみ、EDD evaluator込みで新規に組み直す。既存OpenClaw実装のcopyは一切行わない |
+| (a-3) comedy live 応募系 | 7 | **移行しない**（OpenClawと共に停止。必要になればanicca-dais repoのgit historyから復元可能） |
+| (b) Life Manager（naist/meetup/歯科/gcal/mail-triage 等） | 24 | **移行しない**（Dais指示「全部持ち込む必要はない」）。ただしlateness-heartbeat/pipecat-phoneはOpenClaw cronではなくlaunchd直で動いておりOpenClaw削除後も生存する——この2系統は現状維持（`~/anicca/skills/anicca-life-manager/`・`~/anicca/skills/self/life-manager-loop/`の既存実体はこのfeatureのスコープでは触らない） |
+| (c) OpenClaw自己保守（cron-doctor/watch-sweep/exec-guard 等） | 19 | **移行しない — OpenClaw廃止と同時に不要化**。死活監視はhealthcheck-runtime-loop系が代替 |
 
-- **REQ-LV-140（棚卸し確定リストの記録）**: THE SYSTEM SHALL 上記5分類・確定件数（30/23/7/24/19、
-  合計103）をこの spec に記録済みの事実として扱う（agentによる再分類は不要 — design spec正本が既に
-  確定している）。個々のjob（103件）とカテゴリの対応表そのものは design spec の生データ参照先
-  （scratchpad `enabled_jobs_with_paths.json`）を正とし、この feature 側では複製しない。
-- **REQ-LV-141（移行前提条件、6項目、順に解消。design spec §OpenClaw統合 準拠）**: THE SYSTEM SHALL
-  移行着手前に以下6項目を順に解消する:
+- **REQ-LV-140（棚卸し確定リストの記録、v2.2反映）**: THE SYSTEM SHALL 上記5分類・確定件数
+  （30/23/7/24/19、合計103）と、v2.2の移行方針（Wave 1限定migrate/Wave 2再設計/その他は移行しない）を
+  この spec に記録済みの事実として扱う（agentによる再分類は不要 — design spec正本が既に確定している）。
+  個々のjob（103件）とカテゴリの対応表そのものは design spec の生データ参照先（scratchpad
+  `enabled_jobs_with_paths.json`）を正とし、この feature 側では複製しない。
+- **REQ-LV-141（移行gate、新規MUST——v2.2の核心制約）**: THE SYSTEM SHALL 「そのチャネルのoutputを
+  機械検証できるツールがある」ことを移行の絶対的前提条件とする。post/送信の存在確認 + metrics実測
+  （views/replies/clicks等）ができないチャネルはclaude-pに持ち込まない。(a-1)の30件それぞれについて
+  検証ツールの有無をagentが確認し（判断はagent、記録は決定論——`{channel, has_verification_tool:bool,
+  verification_method}`の形で記録）、`true`のチャネルのみがREQ-LV-143のWave 1移行対象になる。
+  移行された各loopは初日からcadence contract（REQ-LV-100〜104、self-healのbar）+ evaluator
+  （REQ-LV-110〜113、self-improveのbar）+ loop-report mail（REQ-LV-001〜004、evidence付き）を持つ
+  ——後から追加するのではなく初日から装着する。
+- **REQ-LV-142（移行前提条件、6項目、順に解消。design spec §OpenClaw統合 準拠、変更なし）**:
+  THE SYSTEM SHALL 移行着手前に以下6項目を順に解消する:
   1. スケジューラ代替: cron実行を担う`ai.openclaw.gateway`launchdデーモン（実在確認済み:
      `~/Library/LaunchAgents/ai.openclaw.gateway.plist`）を、claude-p側のlaunchd plist + tmux core
      パターン（既存clip型、REQ-LV-050/051と同じ構成）で代替する。
@@ -470,31 +483,41 @@ Ground truth追加確認: `enabled:true`の103件（全221件中、確認済み�
   5. ロジックのportability確認: `openclaw`CLIの直接呼び出しは0件（design spec確認済み）である一方、
      skill実体は`~/.openclaw/skills/`固有のものが大半（例外: `capafy-autopublish`は既に
      `~/anicca/skills`へ移設済み、life/ask・life/notify相当の実体は`~/anicca/skills/anicca-life-manager/`
-     と`~/anicca/skills/self/life-manager-loop/`に既存 — Ground truth確認済み、ゼロから作らない）。
+     と`~/anicca/skills/self/life-manager-loop/`に既存——ただし(b)は移行しないため、この実体は
+     REQ-LV-141のWave 1移行対象には含まれない）。
   6. `anicca-event-bot-trigger`ジョブのgog CLI依存がOpenClaw外で動作するかは **UNVERIFIED** —
      Phase 2着手時に実際に`gog`コマンドの依存関係を確認し、spec に確定情報を追記してから
-     このjobの移行に着手する（存在しない前提で進めない）。
-- **REQ-LV-142（移行手順、5ステップ・段階的・不可逆操作なし）**: THE SYSTEM SHALL REQ-LV-141の6前提
-  条件を解消した上で、移行を以下の順序で実施する: ① (a-1)→(a-2)→(a-3)の順に対象skillを
-  `~/anicca/skills`（earn系）へ移設しclaude-p core化（fuelを`openai-codex`からAnthropic Sonnetへ
-  切替） → ② (b) Life Managerを既存の`anicca-life-manager`/`life-manager-loop`実体を土台に
-  life-manager core化 → ③ 7日間並走観察（OpenClaw側job103件は並走中disableしない。二重投稿を検知
-  した場合のみ該当jobを即座にdisable） → ④ OpenClaw gatewayをdisable → ⑤ 最終削除
-  （REQ-LV-143/144のprecondition充足後にのみ実行）。各ステップは前段が完了して初めて着手する
-  （並行スキップ禁止）。(c)19件は①〜⑤のいずれの移行対象にも含めない（廃止と同時に不要化）。
-- **REQ-LV-143（削除前MUST: state保全確認）**: WHEN ステップ⑤（最終削除）に進む前に、THE SYSTEM
-  SHALL `~/.openclaw`のstate/ledgerが`anicca-dais` repo（private）にpush済みであることを
+     このjobの移行に着手する（存在しない前提で進めない。なお`anicca-event-bot-trigger`が(a-1)に
+     属するかは棚卸し生データ参照——このfeature側では複製しない）。
+- **REQ-LV-143（移行手順、v2.2スコープ反映——実際に移行するのはWave 1の一部のみ）**: THE SYSTEM
+  SHALL REQ-LV-142の6前提条件を解消し、REQ-LV-141の移行gateを適用した上で、以下の順序で実施する:
+  ① **Wave 1**: (a-1)の30件それぞれにREQ-LV-141の移行gateを適用し、検証ツールが存在すると判定された
+  チャネルのみを`~/anicca/skills`（earn系）へ移設しclaude-p core化（fuelを`openai-codex`から
+  Anthropic Sonnetへ切替、cadence+evaluator+lessons.jsonlを初日から装着）。検証ツールが無いチャネルは
+  スキップする（移行しない） → ② **Wave 2（このfeatureの直接実装スコープ外、別taskとして後日着手）**:
+  (a-2)のうちmetric機械計測可能な4種（SEO/cold-email/backlink/reviews）を、既存OpenClaw実装を
+  copyせずゼロから再設計し、EDD evaluator込みで新規構築する。この feature はWave 2の**存在と方針**
+  のみを記録し、実装はスコープに含めない → ③ 7日間並走観察（Wave 1で実際に移行したチャネルのみが
+  並走対象。OpenClaw側の対応jobは並走中disableしない。二重投稿を検知した場合のみ該当jobを即座に
+  disable。(a-3)/(b)/(c)、及び(a-1)中の検証ツール無しチャネル、(a-2)全件は最初から移行していないため
+  並走対象にならない——単にOpenClaw側でそのまま稼働し続け、次のgateway disableで停止する） →
+  ④ OpenClaw gatewayをdisable → ⑤ 最終削除（REQ-LV-144/145のprecondition充足後にのみ実行）。
+  各ステップは前段が完了して初めて着手する（並行スキップ禁止）。
+- **REQ-LV-144（削除前MUST: state保全確認、変更なし）**: WHEN ステップ⑤（最終削除）に進む前に、
+  THE SYSTEM SHALL `~/.openclaw`のstate/ledgerが`anicca-dais` repo（private）にpush済みであることを
   `git -C ~/.openclaw log --oneline -1`相当のコマンドで実際に確認する（プロジェクトCLAUDE.md
   「不可侵store」= `~/.openclaw`の保全要件と一致）。未pushの変更が残っている場合は削除を実行しない。
-- **REQ-LV-144（削除前MUST: Dais明示go、不可逆broadcast）**: THE SYSTEM SHALL ステップ⑤
-  （OpenClaw gateway/state/cronの最終削除）を、REQ-LV-143の確認に加えて **Dais の明示的な go 指示**
+- **REQ-LV-145（削除前MUST: Dais明示go、不可逆broadcast、変更なし）**: THE SYSTEM SHALL ステップ⑤
+  （OpenClaw gateway/state/cronの最終削除）を、REQ-LV-144の確認に加えて **Dais の明示的な go 指示**
   を precondition として実行する（`~/.claude/CLAUDE.md`「No-human-loop」の3例外の1つ:
   「設計外の不可逆 broadcast」に該当するため）。Dais の明示 go がない限り、ステップ④
   （gateway disable後の観察状態）で止まり、⑤へは進まない。
-- **REQ-LV-145**: THE SYSTEM SHALL ステップ①〜②で移植された各job（(a-1)/(a-2)/(a-3)/(b)、合計84件）
-  について、この spec の他の要件（evidence mail: REQ-LV-001〜018、metrics/lessons ledger:
-  REQ-LV-020〜031、cadence contract: REQ-LV-100〜104）を新しいclaude-p loopとしても満たすことを
-  確認する（移植先で検証水準が後退しない）。
+- **REQ-LV-146（v2.2反映: 検証水準維持の対象をWave 1移行分のみに限定）**: THE SYSTEM SHALL ステップ①
+  （Wave 1）で実際に移行された各job（(a-1)の30件中、REQ-LV-141の移行gateを通過したチャネルのみ——
+  30件全件ではない）について、この spec の他の要件（evidence mail: REQ-LV-001〜004/019、metrics/
+  lessons ledger: REQ-LV-020〜031、cadence contract: REQ-LV-100〜104）を新しいclaude-p loopとしても
+  満たすことを確認する（移植先で検証水準が後退しない）。(a-2)のWave 2再設計分・(a-3)/(b)/(c)の
+  非移行分はこの feature の直接検証対象に含めない。
 
 ## Non-functional constraints
 

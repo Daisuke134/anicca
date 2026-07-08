@@ -52,12 +52,13 @@
 | REQ-LV-131 | spawnイベント行の組み立て`build_spawn_event(loop_type, account, instance_suffix, spawned_by, ts) -> dict`（新設・純粋） | 実際に`ig-account-create`skillを呼び新アカウントを作成するE2E（Tier 3、実SNSアカウント作成を伴う）+ `loop-registry.jsonl`への実追記確認 |
 | REQ-LV-132/133/134 | `cooldown_ok(last_spawn_ts, now_ts, min_interval_days) -> bool`、`fleet_at_capacity(current_count, max_count) -> bool`（いずれも新設・純粋） | `loop-registry.jsonl`の実データに対してこれらの関数を通す統合テスト |
 | REQ-LV-135 | `is_ban_suspected(consecutive_failures, threshold) -> bool`（新設・純粋） | 実際に`loop-registry.json`の`status`が`"paused"`に更新され、lessons ledgerに実際に1行追記されることを確認する統合テスト |
-| REQ-LV-140 | なし（確定済み分類の記録、agentによる再分類作業は不要） | 5分類の件数合計（30+23+7+24+19=103）が`~/.openclaw/cron/jobs.json`の実`enabled:true`件数（103、確認済み）と一致することを確認 |
-| REQ-LV-141 | なし（6前提条件の解消はオペレーション） | 前提条件1〜5は各対象ファイル（`ai.openclaw.gateway.plist`存在、`_dispatcher/scripts/cron-bash.sh`呼び出し箇所の置換、`loop-report.sh`通知経路への統一、`aniccaai-dashboard-refresh`の書き込み先変更）の実環境確認。前提条件6（`anicca-event-bot-trigger`のgog CLI依存）はPhase 2着手時に実際に`gog`コマンドの依存関係を調査し確定させてから着手する（Phase 1時点ではUNVERIFIEDのまま） |
-| REQ-LV-142 | なし（5ステップの移行はオペレーション） | 各ステップ完了後に前段の成果物（例: ステップ①後は(a-1)/(a-2)/(a-3)対象84件中の該当分がclaude-p側のtmux core/launchdに実際に存在すること、ステップ③の7日間並走中に二重投稿が発生していないこと）を実環境で確認する統合テスト、ステップごとに1本 |
-| REQ-LV-143 | なし | `git -C ~/.openclaw log --oneline -1`相当のコマンドを実行し、未pushの変更（`git status --short`）がゼロであることを確認 |
-| REQ-LV-144 | なし（Dais明示goの有無はコードで判定できない人間判断） | 削除コマンドの実行ログに、Dais本人からの明示go指示への参照（メッセージID/タイムスタンプ等）が記録されていることを確認 |
-| REQ-LV-145 | 対象外（他REQの再検証） | REQ-LV-001〜018/020〜031/100〜104の既存テストスイートを移植先loop（(a-1)/(a-2)/(a-3)/(b)、合計84件相当のloop群）に対しても実行しgreenを確認 |
+| REQ-LV-140 | なし（確定済み分類+v2.2移行方針の記録、agentによる再分類作業は不要） | 5分類の件数合計（30+23+7+24+19=103）が`~/.openclaw/cron/jobs.json`の実`enabled:true`件数（103、確認済み）と一致することを確認 |
+| REQ-LV-141（v2.2新設: 移行gate） | `channel_migration_eligible(has_verification_tool) -> bool`（新設・純粋、恒等関数に近いが判定を明示的にコード化——判断＝どのチャネルに検証ツールがあるかはagent、結果の記録＝決定論） | (a-1)の30件それぞれについて`{channel, has_verification_tool, verification_method}`の記録が実際に作られていること、`has_verification_tool=false`のチャネルがWave 1移行対象（REQ-LV-143①）に含まれていないことを確認する統合テスト |
+| REQ-LV-142 | なし（6前提条件の解消はオペレーション） | 前提条件1〜5は各対象ファイル（`ai.openclaw.gateway.plist`存在、`_dispatcher/scripts/cron-bash.sh`呼び出し箇所の置換、`loop-report.sh`通知経路への統一、`aniccaai-dashboard-refresh`の書き込み先変更）の実環境確認。前提条件6（`anicca-event-bot-trigger`のgog CLI依存）はPhase 2着手時に実際に`gog`コマンドの依存関係を調査し確定させてから着手する（Phase 1時点ではUNVERIFIEDのまま） |
+| REQ-LV-143（v2.2反映: Wave 1限定migrate、Wave 2は実装スコープ外） | なし（5ステップの移行はオペレーション） | ステップ①完了後、実際に`~/anicca/skills`へ移設されたチャネルが全て`has_verification_tool=true`（REQ-LV-141）であること、`has_verification_tool=false`のチャネルが1件も移設されていないことを確認。ステップ②（Wave 2）はこのfeatureの実装コミットに含まれていないこと（`git diff --stat`でWave 2対象の新規実装ファイルがゼロであることを確認）。ステップ③の7日間並走中に二重投稿が発生していないことを実環境で確認する統合テスト、ステップごとに1本 |
+| REQ-LV-144 | なし | `git -C ~/.openclaw log --oneline -1`相当のコマンドを実行し、未pushの変更（`git status --short`）がゼロであることを確認 |
+| REQ-LV-145 | なし（Dais明示goの有無はコードで判定できない人間判断） | 削除コマンドの実行ログに、Dais本人からの明示go指示への参照（メッセージID/タイムスタンプ等）が記録されていることを確認 |
+| REQ-LV-146（v2.2反映: 検証対象をWave 1移行分のみに縮小） | 対象外（他REQの再検証） | REQ-LV-001〜004/019/020〜031/100〜104の既存テストスイートを、Wave 1で実際に移行されたloop群（(a-1)のうち`has_verification_tool=true`のチャネルのみ、30件全件ではない）に対してのみ実行しgreenを確認。(a-2)/(a-3)/(b)/(c)はこのfeatureの検証対象に含まれないことも確認（含まれていたら誤り） |
 
 ## 検証手段の対応（設計spec §検証アーキテクチャ表 との対応）
 
@@ -110,9 +111,10 @@
 | PROP-LV-029 | REQ-LV-132/133/134 (guardrail純関数群) | 1 | true | `cooldown_ok`: 直近spawnから設定日数未満→false；`fleet_at_capacity`: 現在数==上限→true、現在数<上限→false |
 | PROP-LV-030 | REQ-LV-135 (`is_ban_suspected`) | 1 | true | `consecutive_failures < threshold`→false；`==threshold`→true；閾値到達で`loop-registry.json`のstatusが実際に`"paused"`へ更新されることを統合テストで確認 |
 | PROP-LV-031 | REQ-LV-140 (cron棚卸し確定分類の件数一致) | 1 | true | 5分類の確定件数 30+23+7+24+19 を合計すると103になること（純粋な算術検算）；`~/.openclaw/cron/jobs.json`の実`enabled:true`件数（103、確認済み）と一致することを確認 |
-| PROP-LV-032 | REQ-LV-144 (Dais明示go precondition) | 3 | true | OpenClaw削除コマンドを実行するpassのログに、Dais本人からの明示go指示（メッセージ本文またはタイムスタンプ参照）が記録されていること。この記録が無い状態でステップ⑤のコマンドが実行された形跡がないことを事後的にログで確認する（fail-closed: 記録が無ければ削除は実行されていないはず） |
-| PROP-LV-033 | REQ-LV-141 (6前提条件の解消確認) | 2 | true | 前提条件1〜5それぞれについて対応する実ファイル/実装（`ai.openclaw.gateway.plist`の代替launchd plist存在、`cron-bash.sh`呼び出し箇所が置換済み、`loop-report.sh`への通知経路統一、`aniccaai-dashboard-refresh`のpush先変更）を実環境で確認。前提条件6は「UNVERIFIED」のまま残っていないこと（Phase 2着手時に確定情報がspecに追記されていること）を確認 |
-| PROP-LV-034 | REQ-LV-142 (5ステップの順序遵守、並行スキップ禁止) | 2 | true | ステップ②着手時にステップ①の成果物（(a-1)/(a-2)/(a-3)対象のskillが実際に`~/anicca/skills`へ移設済み）が存在することを確認してから着手した記録が残っていること；ステップ③の7日間並走中、二重投稿の検知ログがあった場合は該当jobが実際にdisableされていることを確認 |
+| PROP-LV-032 | REQ-LV-145 (Dais明示go precondition) | 3 | true | OpenClaw削除コマンドを実行するpassのログに、Dais本人からの明示go指示（メッセージ本文またはタイムスタンプ参照）が記録されていること。この記録が無い状態でステップ⑤のコマンドが実行された形跡がないことを事後的にログで確認する（fail-closed: 記録が無ければ削除は実行されていないはず） |
+| PROP-LV-033 | REQ-LV-142 (6前提条件の解消確認) | 2 | true | 前提条件1〜5それぞれについて対応する実ファイル/実装（`ai.openclaw.gateway.plist`の代替launchd plist存在、`cron-bash.sh`呼び出し箇所が置換済み、`loop-report.sh`への通知経路統一、`aniccaai-dashboard-refresh`のpush先変更）を実環境で確認。前提条件6は「UNVERIFIED」のまま残っていないこと（Phase 2着手時に確定情報がspecに追記されていること）を確認 |
+| PROP-LV-034 | REQ-LV-143 (5ステップの順序遵守、並行スキップ禁止、Wave 1限定migrate) | 2 | true | ステップ②（Wave 2）着手前にステップ①（Wave 1）の成果物（(a-1)対象のうち検証ツールありチャネルのskillが実際に`~/anicca/skills`へ移設済み、検証ツール無しチャネルは移設されていないこと）が存在することを確認してから着手した記録が残っていること；ステップ③の7日間並走中、二重投稿の検知ログがあった場合は該当jobが実際にdisableされていることを確認 |
+| PROP-LV-039（v2.2新設: REQ-LV-141移行gate） | REQ-LV-141 (`channel_migration_eligible`、検証ツール無しチャネルを除外) | 1 | true | `has_verification_tool=true`→移行対象に含まれる；`has_verification_tool=false`→移行対象から除外される。(a-1)の30件の記録のうち`has_verification_tool=false`の件数分だけWave 1実移行件数が30より少ないことを確認（30件全件が無条件移行されていないことの直接証明） |
 
 ## Verification tiers legend
 
@@ -124,7 +126,7 @@
 
 ## Gate
 
-Phase 1c（spec review）は上記 REQ-LV-001〜145（v2改訂分含む）が (a) 存在しない symbol/path を
+Phase 1c（spec review）は上記 REQ-LV-001〜146（v2.2改訂分含む）が (a) 存在しない symbol/path を
 参照していないこと（Ground truth節の実ファイル確認と一致していること）、(b) 判断（何に応募するか・
 何を改善するか・何がmistakeか・どのアカウントをscaleするか）がコード側でハードコードされていない
 こと、(c) 各 REQ に Tier 1 or Tier 2 の具体的な verification method が付いていることの3点を
@@ -136,7 +138,10 @@ REQ-LV-041 は REQ-LV-100〜104 により SUPERSEDED（併記ではなく置換�
 7 loop分は REQ-LV-101 の4 kind分岐dispatcherへ、clip-promote分は REQ-LV-120 の`clip_promote_status()`
 へ一本化されていること。F1修正: `cadence_met`が単一の「行の存在」判定から`kind`別4分岐へ一般化された
 ことも確認する）も確認する。REQ-LV-140（cron棚卸し確定分類、30+23+7+24+19=103で件数一致
-確認済み）はPhase 1時点で既に確定しておりPASSの対象。REQ-LV-141の前提条件6（`anicca-event-bot-trigger`
-のgog CLI依存）とREQ-LV-144（Dais明示go）は、Phase 1時点ではそれぞれ依存確認・go指示そのものが
-未確定であるため、REQ-LV-070と同様に条件付きPASSの対象とし、Phase 2着手時（前提条件6）または
-ステップ⑤着手時（REQ-LV-144）に確定情報をspecへ追記する。
+確認済み）はPhase 1時点で既に確定しておりPASSの対象。REQ-LV-141（v2.2新設の移行gate）は
+Wave 1の30件それぞれの検証ツール有無判定がPhase 2実装時点で確定する性質のものであり、Phase 1時点では
+判定結果そのものが存在しないため条件付きPASSの対象とする。REQ-LV-142の前提条件6
+（`anicca-event-bot-trigger`のgog CLI依存）とREQ-LV-145（Dais明示go）も同様に、Phase 1時点では
+それぞれ依存確認・go指示そのものが未確定であるため、REQ-LV-070と同様に条件付きPASSの対象とし、
+Phase 2着手時（REQ-LV-141の30件判定・前提条件6）またはステップ⑤着手時（REQ-LV-145）に確定情報を
+specへ追記する。
