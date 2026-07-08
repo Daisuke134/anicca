@@ -198,6 +198,36 @@ deploy path, not built this sprint" pattern, missed in round 2's own sweep (`gre
 PROP-303b's own Tier-3 deferral for the identical reason as PROP-203c/PROP-303f. None of these 5 are
 claimed proved by this sprint; each carries this same stated reason.
 
+**Correction (2026-07-08, Phase 3 round-2 review FIND-002): PROP-303c re-closed with genuine production
+wiring — it was never one of sprint-1's 38 deferred obligations, and never belonged in any of the 3
+buckets above.** `state.json`'s `PROP-041` (artifact `verification-architecture.md#PROP-303c`) was marked
+`status:"proved"` back in sprint-1's own Phase 5, but that proof came exclusively from
+`spawn-gap-coverage.test.mjs`'s direct library-level round-trip test (`appendShelterCostEntry` composed
+with `deriveMeasuredShelterCostUsd` on a throwaway fixture file) — it never exercised
+`spawn-orchestrator.mjs`'s real call graph, and confirmed by direct read, `defaultDeploy` hardcoded
+`shelterCostUsd: null` and `appendShelterCostEntry` was never imported or called anywhere in production
+(`executeSpawnAttempt` discarded `deployStep.value` entirely). This was a silent gap in this sprint's own
+reconciliation, not an honest deferral — exactly the CRIT-206 violation FIND-002 flagged. This sprint's
+own Phase 2b fix now wires it for real: `deploy-akash.sh`'s bid-selection block captures the winning bid's
+own settled `{amount,denom}` price and emits it (alongside `dseq`) as JSON on stdout;
+`spawn-orchestrator.mjs`'s `defaultDeploy` parses that JSON and converts the settled price to USD via
+`shelterCostUsdFromSettledPrice` — a FIXED, deterministic `uact`->USD conversion (AEP-76's own protocol
+design pegs `uact = 1e-6 USD` exactly, cited
+`docs/superpowers/specs/2026-06-26-B1-akash-provider-services-acceleration.md:21` — never a fetched
+AKT/USD spot price, since AKT and ACT are different, non-1:1 tokens); `executeSpawnAttempt` now captures
+`deployStep.value` and calls `shelter-cost-ledger.js::appendShelterCostEntry` on the SAME file
+`wake-gate.mjs` reads (`shelter-cost.jsonl`), gated on the settled cost being a real, finite, positive
+number (a `null`/`0` reading is skipped with a logged warning, never appended, so it can never poison
+`deriveMeasuredShelterCostUsd`'s next reading toward a fabricated `$0` threshold); `leaseId` now also
+survives onto both the final active ledger row and every failure row recorded after a successful deploy
+(`lease_id` field), closing REQ-402's own documented operator-reconciliation gap FIND-002 also flagged.
+Proof: `skills/self/spawn/lib/__tests__/spawn-orchestrator-reclaim-and-shelter-cost.test.mjs`'s FIND-002
+integration tests exercise the REAL `executeSpawnAttempt` call graph — a real fixture deploy's settled
+price genuinely lands in `readShelterCostEntries(shelterCostFile)`, a `null`/`0` price genuinely appends
+nothing, and `lease_id` genuinely survives onto the active row — never a library-level round-trip alone.
+This sprint does not itself edit `state.json`'s `proofObligations`; the orchestrator updates `PROP-041`
+once this fix is merged.
+
 ## Known residual scope boundary
 
 REQ-304's full multi-citizen sequential co-funding orchestration (two citizens' sequential transfers to
