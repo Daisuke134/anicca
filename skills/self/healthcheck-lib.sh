@@ -7,6 +7,15 @@
 # live by verify-loops.sh) — NOT any self-graded marker (FIND-015): a fixer that lies "SUCCESS" but leaves the
 # output stale is re-escalated here anyway, because (d) reads the artifact, never the marker.
 # Caller sets: HC_LOOP HC_SOCK HC_SESSION HC_HB HC_START HC_STALE_MIN HC_CLI HC_OUTPUT HC_OUTPUT_STALE_HRS HC_SELFFIX_HINT
+#
+# ★ REQ-LV-104 scope note ★ — this shared hc_run() (incl. its OUT_STALE_HRS artifact-age check in
+# step (d)) is sourced ONLY by capafy-loop-healthcheck.sh / reddit-loop-healthcheck.sh /
+# life-manager-loop-healthcheck.sh (verified via grep, 2026-07-08). The 7 Cadence Contract loops
+# (clip/affiliate/video/gig/bounty/pm-earner/founder-loop) each run their OWN standalone
+# *-healthcheck.sh (e.g. video-healthcheck.sh) that does NOT call this file — their "is today's
+# contract met" judgment lives in cadence.py/cadence-evidence.py via verify-loops(-audit).sh
+# instead. This is intentional, not an integration gap: REQ-LV-104 explicitly keeps the old
+# fresh()/stale_hrs()-style artifact-age judgment for capafy/reddit/life-manager only.
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 set -uo pipefail
 
