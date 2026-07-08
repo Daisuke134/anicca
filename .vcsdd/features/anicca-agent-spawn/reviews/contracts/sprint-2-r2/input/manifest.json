@@ -1,0 +1,27 @@
+{
+  "reviewType": "contract",
+  "featureName": "anicca-agent-spawn",
+  "sprintNumber": 2,
+  "negotiationRound": 2,
+  "contractPath": "contracts/sprint-2.md",
+  "contractDigest": "a72453ae09a08741281b37e5c89f953bddfd2ddbf55b5dcb92fce1e7360a0cf2",
+  "artifactsToReview": {
+    "spec": ["specs/behavioral-spec.md", "specs/verification-architecture.md"],
+    "tests": [
+      "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs",
+      "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs"
+    ],
+    "source": [
+      "skills/self/spawn/lib/spawn-orchestrator.mjs",
+      "skills/self/spawn/scripts/gen-solana-wallet.sh"
+    ]
+  },
+  "reviewDimensions": ["spec_fidelity", "edge_case_coverage", "implementation_correctness", "structural_integrity", "verification_readiness"],
+  "priorRound": {
+    "round": 1,
+    "verdict": "FAIL",
+    "findingsPath": "reviews/contracts/sprint-2/output/findings/",
+    "note": "2 findings. FIND-001 (CRIT-201, blocking): the code builds buildChildSpec's spec object (step 8) before the mcp.json write (step 7), apparently violating REQ-307's canonical order. Fix: NOT a code change -- added a step 7/8 construction-order clarification to REQ-307 in behavioral-spec.md, grounded in the pre-existing Edge Cases text (a step-7 failure must be recorded via the buildChildSpec-based path, which requires spec to already exist; buildChildSpec itself has zero external side effects, so it has no effectful ordering to violate). Updated CRIT-201 to scope 'canonical order' to EFFECTFUL calls only (REQ-201/202/203/204/205/302/303/306/305), explicitly excluding step 8's own pure construction from the ordering constraint. FIND-002 (CRIT-205, blocking): the 35 targeted PROPs are still status:skipped since Phase 3/5 haven't run yet -- CRIT-205's own OLD passThreshold literally said 'after this sprint's Phase 3/5', meaning it was mis-scoped for a Phase-2c gate (redundant with vcsdd-harden's own standard gate before Phase 6). Revised CRIT-205 to a readiness/structural check evaluable NOW: does each of the 35 PROPs' own verification method name a call site that genuinely exists and is reachable in the current implementation, not whether it's already promoted to proved."
+  },
+  "note": "This is contract-review round 2 (negotiationRound 2). Verify BOTH fixes independently: (1) Re-read REQ-307's new step 7/8 clarification paragraph in behavioral-spec.md and judge for yourself whether the reasoning holds (buildChildSpec has zero external side effects, so building it ahead of step 7's effectful call is not an 'order violation' in the sense CRIT-201 cares about) -- do not just accept the resolution notes' own framing, independently verify buildChildSpec's source (child-spec.js) has no fs/network call anywhere in its body. Re-read spawn-orchestrator.mjs's actual step 7/8 code and confirm it now matches the CLARIFIED contract (CRIT-201's own updated description/passThreshold). (2) For CRIT-205's revision: for EACH of the 35 targeted PROP IDs listed in the 'Deferred-obligation disposition' section, spot-check at least 10 of them (chosen by you, not a fixed list) by reading their own verification method in verification-architecture.md and confirming the named call site/function genuinely exists and is reachable in spawn-orchestrator.mjs/gen-solana-wallet.sh as currently written -- report which 10 you checked and what you found for each. Independently re-run the full test suite yourself ('cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js') and confirm 146/146 pass. Also do a fresh pass over CRIT-202/203/204/206/207/208 (which passed round 1) to confirm the round-1 fixes introduced no new regression in them."
+}
