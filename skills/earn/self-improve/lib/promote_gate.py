@@ -172,7 +172,7 @@ def decide_promotion(
 
 
 def compute_realized_gate(
-    mean_backtest_net_usd: float,
+    mean_backtest_net_usd: Optional[float],
     env: Optional[dict] = None,
     repo_cwd: Optional[str] = None,
 ) -> dict:
@@ -181,7 +181,15 @@ def compute_realized_gate(
     generation's operating window (REQ-RL12), and hands the pure `gate_math` functions their
     already-extracted plain-data inputs. Never re-implements `gate_math`'s own logic inline
     (purity boundary — see verification-architecture.md). Returns EXACTLY the REQ-RL13a 13-key
-    schema in both the resolved and unresolved branches."""
+    schema in both the resolved and unresolved branches.
+
+    `mean_backtest_net_usd` MUST be the caller's DOLLAR-scale backtest claim (REQ-RL11's
+    `assessment["mean_oos_net_usd"]`, never the unitless `combined_score` ratio — F-1). It is
+    `None` for a scope-guard-rejected/stage1-failed candidate (no backtest claim exists at all in
+    that case, `promote_gate.py`'s own `assess_candidate` sets it so): `realism_gap_blocks` is then
+    unconditionally `False` (the fixture-vs-reality contradiction REQ-RL11 checks is undefined
+    without a fixture claim to compare against — not trivially true or false), while REQ-RL10's
+    trend gate and every other key still compute normally from the real ledger."""
     path, resolved, resolution_source = ledger_reader.resolve_ledger_path(env)
     window_end_ts = time.time()
 
@@ -215,7 +223,11 @@ def compute_realized_gate(
     mean_realized_net_per_row = (
         split["window_net_usd"] / split["row_count"] if split["row_count"] else 0.0
     )
-    realism_gap_blocks = gate_math.data_realism_gap(mean_backtest_net_usd, mean_realized_net_per_row, sufficient)
+    realism_gap_blocks = (
+        False
+        if mean_backtest_net_usd is None
+        else gate_math.data_realism_gap(mean_backtest_net_usd, mean_realized_net_per_row, sufficient)
+    )
 
     return {
         "resolved": True,
