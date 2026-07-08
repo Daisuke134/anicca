@@ -38,7 +38,7 @@
 ```
 ★順序(Dais 2026-07-08 再確定)= earn → spawn → identity → main loop → article → refactor → (OpenClaw) → claude-p exit。exit が loop の goal(数日〜数週間先)。OpenClaw 退役は急がない(今 working + 別CC 作業中)ので下段。★
 0 [~~俺の loop 修復~~ ✅誤診訂正済、コード修正不要] 俺の loop は健康(pm-earner=running/10分毎、mainloop=Anthropic quota で Jul10 自然回復)。「壊れ」は空 plist ログの誤読だった。真の課題は #1 と同根 = **edge + 資本**(pm-earner は available $1.50 < 最小 bundle $4.95 で発注不可)。全 loop 共通で「回るが realize せず」
-1 [★本丸 #11 Franklin 全 rail を自走で net-positive に] ✅sol-trade 土台(wallet leak 43b7375/identity guard 3d97c59/P&L記録 86bd88c=実チェーンE2E✓)。残:(a)全 rail の realized P&L 記録の穴を塞ぐ(監査中=sol型の穴を全 rail で) (b)self-improve harness を live loop に接続し rail選択+heuristic/prompt を自走進化。手書き戦略禁止(harness, not cook)。sol-only 旧枠は撤回
+1 [★本丸 #11 Franklin 全 rail を自走で net-positive に] ✅SOL 記録(record-swap, identity-safe)/PM 記録は run_earner に正配線済(pm-earner 稼働、edge/資本待ち)/HL は external:true 未設定(real-paper 確認後修正)。★VCSDD one-by-one(Dais 2026-07-08)★: (i)active `franklin-earn-foundation`(phase2a, sol-trade実装) を **adversary(Opus)+verifier で正式検証→converge** (ii)次 feature = self-improve の evaluate/promotion を静的fixtureでなく**実 per-instance ledger に接続**(ledger_reader の repo-root 空file bug + realized summary を promotion gate が consume)。手書き戦略禁止(harness, not cook)。self-heal 稼働確認済(anicca-selffix-* プロセス複数 live)
 2 [Franklin spawn] profitable → surplus≥$10(今$7.77=78%)→ 新 Franklin 誕生(この時 citizens.json が初生成)。spawn機構=CC#2、私は fund+grow
 3 [#8 identity] wallet-identity 恒久 fix(#11 の identity 修正に統合見込み)
 4 [MAIN loop 本番 proactive] 観測→判断→act→verify を launchd で1周実証(L4→L5)
