@@ -4,6 +4,13 @@
 # research / sizing / execution and pays for its OWN model calls via x402 from its
 # OWN Solana wallet (8Fpqd…). Wrapper = kill-switch → one real pass → trace line.
 set -u
+# FIND-001 (money-safety): an ambient ANICCA_SOLANA_PRIVATE_KEY would otherwise beat the
+# ANICCA_HOME-gated file resolution on BOTH derivations below (resolveSolanaSecret's FIRST
+# check, resolve-identity.mjs:118-120), making OWN_WALLET==CLI_WALLET for ANY instance and
+# bypassing the identity-match guard entirely. Unset it before deriving any Solana address --
+# mirrors earn/run.sh's `unset ANICCA_EVM_PRIVATE_KEY` (REQ-001). franklin-trading itself reads
+# ~/.blockrun directly and never needs this var, so unsetting it here is safe.
+unset ANICCA_SOLANA_PRIVATE_KEY 2>/dev/null || true
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SKILL_DIR/../state"; mkdir -p "$STATE_DIR"
 TRACE="$STATE_DIR/sol-trade.trace.jsonl"
@@ -58,14 +65,30 @@ spend — your fuel is the same wallet."
 OUT=$(timeout 600 franklin-trading start --trust -m "$FT_MODEL" --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
 echo "$OUT" | tail -30
 
-# P&L RECORD (REQ-002): if this pass did a REAL Jupiter swap, extract its signature and record the
-# on-chain USDC delta (win OR loss) so isProfitable / self-eval finally see Franklin's OWN realized
-# results (until now sol-trade never wrote to earn-ledger, so profitable was permanently false).
-# Fail-soft: never brick the pass. ANSI codes stripped before parsing (defensive).
-SIG=$(printf '%s' "$OUT" | sed "s/$(printf '\033')\[[0-9;]*m//g" | grep -oiE 'signature:[[:space:]]*[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1 | grep -oE '[1-9A-HJ-NP-Za-km-z]{60,100}' | head -1)
+# P&L RECORD (REQ-002): if this pass did a REAL Jupiter swap, extract its signature (the LAST one,
+# for a multi-step swap chain -- FIND-002/003) and record the on-chain USDC delta (win OR loss) so
+# isProfitable / self-eval finally see Franklin's OWN realized results (until now sol-trade never
+# wrote to earn-ledger, so profitable was permanently false). Fail-soft: never brick the pass.
+# parse-pass.mjs strips ANSI codes and returns the LAST "Signature: <sig>" occurrence (or nothing).
+SIG=$(printf '%s' "$OUT" | node "$SKILL_DIR/lib/parse-pass.mjs")
 if [ -n "$SIG" ]; then
   REC=$(env -i PATH="$PATH" HOME="$HOME" SOLANA_RPC_URL="${SOLANA_RPC_URL:-}" SIG="$SIG" WALLET="$OWN_WALLET" EARN_LEDGER="$LEDGER" WAKE_ID="${WAKE_ID:-$(date -u +%s)}" node "$SKILL_DIR/lib/record-swap.mjs" 2>/dev/null || true)
   echo "[sol-trade] record-swap -> ${REC:-noop}"
+  # FIND-007: parse record-swap's own status and degrade to a narrate-only trace line for
+  # anything that isn't an actual ledger append (recorded/duplicate) -- never brick the pass,
+  # never silently lose the signal that verification itself failed (verify-error/unconfirmed/
+  # no-delta/bad-args). record-swap.mjs itself already refused to append to earn-ledger.jsonl
+  # for every one of these statuses, so this is trace-only visibility, not a double-record.
+  RSTATUS=$(printf '%s' "${REC:-}" | python3 -c "
+import json, sys
+try:
+    print(json.load(sys.stdin).get('status', ''))
+except Exception:
+    print('')
+" 2>/dev/null)
+  if [ -n "$RSTATUS" ] && [ "$RSTATUS" != "recorded" ] && [ "$RSTATUS" != "duplicate" ]; then
+    echo "{\"ts\":\"$(now)\",\"slot\":\"earn/sol-trade\",\"action\":\"sol-verify-failed\",\"status\":\"$RSTATUS\",\"sig\":\"$SIG\"}" >> "$TRACE"
+  fi
 fi
 
 TRACE_FILE="$TRACE" RC="$RC" OUTTAIL="$(echo "$OUT" | tail -5 | tr '\n' ' ')" python3 - <<'PY'
