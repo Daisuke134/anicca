@@ -1,16 +1,15 @@
 {
   "sprintNumber": 1,
   "feature": "self-improve-real-ledger",
-  "iteration": 1,
+  "iteration": 2,
   "timestamp": "2026-07-09T00:00:00Z",
   "dimensions": [
     {
       "name": "spec_fidelity",
-      "verdict": "FAIL",
-      "findings": ["FIND-002"],
+      "verdict": "PASS",
+      "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "Cites PROP-RL-ID1/ID2/ID3/ID5/ID6/ID7 but never PROP-RL-ID4 (REQ-RL2, explicit path= override) anywhere in the contract"},
-        {"type": "file", "location": "specs/verification-architecture.md:74", "description": "PROP-RL-ID4 proof obligation row exists in the spec's Proof Obligations table but has no citing passThreshold"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "FIND-002 resolved: passThreshold now cites PROP-RL-ID1/ID2/ID3/ID4/ID5/ID7 explicitly, including PROP-RL-ID4 (REQ-RL2 explicit path= override), plus PROP-RL-ID6 regression byte-identical requirement, matching the full ID1-ID7 row set in verification-architecture.md:71-77"}
       ]
     },
     {
@@ -18,8 +17,8 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "Faithfully cites PROP-RL-GATE2/GATE3/GATE4 (window split, 8-combo worsening truth table, both data_realism_gap contradiction cases plus sufficient=False vacuous-pass) and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly"},
-        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:32-51", "description": "All corresponding new tests in test_realized_gate.py and test_ledger_resolution.py are present and fail for the right reason (AttributeError/wrong-value) at RED"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "Cites PROP-RL-GATE2/GATE3/GATE4 (window split, 8-combo worsening truth table, both data_realism_gap contradiction cases plus sufficient=False vacuous-pass) and PROP-RL-MIR1/MIR2, matching REQ-RL8-11/RL5-6 and EDGE-RL1/RL4 exactly; unchanged from iteration 1, not implicated by FIND-001/FIND-002"},
+        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:32-51", "description": "Corresponding new tests in test_realized_gate.py and test_ledger_resolution.py present and failing for the right reason at RED"}
       ]
     },
     {
@@ -27,18 +26,18 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "Correctly cites PROP-RL-GATE1 (unconditional resolved=False block), PROP-RL-GATE-NONE (F-4 disambiguation of None-vacuous-pass vs False-block), PROP-RL-GATE5 (last_promotion_ts latest-commit + None cases), PROP-RL-GATE6 (escalation written before verdict), and the exact 13-key REQ-RL13a schema test"},
-        {"type": "file", "location": "specs/behavioral-spec.md:218-239", "description": "REQ-RL13a's 13-key table matches the contract's schema test description key-for-key, no more no fewer"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "Cites PROP-RL-GATE1, PROP-RL-GATE-NONE, PROP-RL-GATE5, PROP-RL-GATE6, and the REQ-RL13a 13-key schema test; REQ-RL17's Phase-3-review-only stub-source-check obligation ('the value bound to realized_gate= ... genuinely sourced ... never a hardcoded literal') is explicitly assigned by the spec itself to Phase-3 implementation review, a separate gate outside this contract's automated-PROP scope, so its absence from CRIT-004's passThreshold is correct, not a contract gap"},
+        {"type": "file", "location": "specs/behavioral-spec.md:218-239", "description": "REQ-RL13a's 13-key table matches the contract's schema-test description key-for-key"}
       ]
     },
     {
       "name": "structural_integrity",
       "verdict": "FAIL",
-      "findings": ["FIND-001"],
+      "findings": ["FIND-003"],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "passThreshold cites only PROP-RL-WIRE1 and PROP-RL-SAFE1; never cites PROP-RL-SAFE2 (REQ-RL20, no earn-ledger writes) or PROP-RL-SAFE3 (REQ-RL21, no wallet-key reference) anywhere in the document"},
-        {"type": "file", "location": "skills/earn/self-improve/tests/test_denylist_rl.py:97,123", "description": "Confirmed via direct grep that test_no_new_module_writes_to_earn_ledger_jsonl (SAFE2) and test_no_wallet_key_reference_in_any_touched_file (SAFE3) exist as real tests, yet the contract never requires them to stay green"},
-        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log:84-95", "description": "Both tests disclosed as legitimately pre-passing at RED, but the disclosure only argues RED-phase legitimacy — it does not substitute for a sprint-1 pass-condition citation"}
+        {"type": "file", "location": "specs/verification-architecture.md:89", "description": "PROP-RL-WIRE2 ('The 44 pre-existing tests calling decide_promotion WITHOUT realized_gate ... still pass, realized_gate=None behaving as no constraint, REQ-RL18') is a REQUIRED proof obligation in the Proof Obligations table, distinct from PROP-RL-GATE-NONE (a single new synthetic side-by-side test) and distinct from PROP-RL-WIRE1 (AST keyword-presence scan)"},
+        {"type": "file", "location": "contracts/sprint-1.md", "description": "Grep for the literal string 'WIRE2' across the entire contract returns zero matches; CRIT-003's passThreshold cites GATE1/GATE-NONE/GATE5/GATE6 only, CRIT-004's passThreshold cites WIRE1/SAFE1/SAFE2/SAFE3 only, CRIT-006's regression-table requirement is a bundled post-merge live-tier condition and never names PROP-RL-WIRE2 by ID — this is the same class of omission FIND-001/FIND-002 already caught and fixed for SAFE2/SAFE3/ID4, but the round-1 fix did not sweep the rest of the Proof Obligations table for other uncited REQUIRED PROP-RL-* rows, leaving WIRE2 uncited anywhere in the document"},
+        {"type": "file", "location": "/Users/operator/anicca/.worktrees/self-improve-real-ledger/skills/earn/self-improve/tests/test_wiring.py:70-99", "description": "Confirmed by direct read: test_wiring.py contains only the PROP-RL-WIRE1 ast-scan test; no test or contract clause requires re-running/asserting the 44 pre-existing decide_promotion-without-realized_gate call conventions as its own named pass condition for this sprint"}
       ]
     },
     {
@@ -46,8 +45,8 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Correctly cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent"},
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Correctly requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "Cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score numeric value stays identical) and PROP-RL-EVAL2 (honesty grep), with the RED-phase disclosure for EVAL2 legitimately mirroring hl-realized-pnl's own precedent; unchanged from iteration 1"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "Requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca main checkout post-merge (never the worktree), matching EDGE-RL5a's structural constraint exactly, plus the full 44+42+ledger.test.mjs/js regression re-run; unchanged from iteration 1"}
       ]
     }
   ],
@@ -55,6 +54,6 @@
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-1.md",
-    "contractDigest": "eb16a0ddd8a2eb6d2b6e1adac2fde507eedc91724949fb3f02509eec44a38d67"
+    "contractDigest": "aee008a0996a46dc411c781b55e5f4f8f5240d66971f869706bdd16cea3fbeec"
   }
 }
