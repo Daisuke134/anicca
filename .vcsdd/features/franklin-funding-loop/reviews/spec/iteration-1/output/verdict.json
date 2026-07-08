@@ -1,0 +1,64 @@
+{
+  "feature": "franklin-funding-loop",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-08T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "artifactsReviewed": [
+      "specs/behavioral-spec.md",
+      "specs/verification-architecture.md",
+      "skills/earn/funding/run.py",
+      "skills/earn/funding/lib/caps.py",
+      "skills/earn/funding/lib/identity.py",
+      "skills/earn/funding/lib/kill_switch.py",
+      "skills/earn/funding/withdraw.py",
+      "skills/earn/funding/bridge.py",
+      "skills/earn/funding/send_to_franklin.py",
+      "skills/earn/funding/config.json",
+      "skills/earn/funding/MONEY-SAFETY-VERDICT.md",
+      "skills/earn/state/funding-ledger.jsonl",
+      "skills/self/claude-p-mainloop.sh",
+      "skills/self/claude-p-mainloop-prompt.txt",
+      "runtime/loop/brain.mjs",
+      "skills/_shared/lib/solana-verify.mjs",
+      "skills/_shared/lib/ledger.mjs",
+      "runtime/loop/catalog-gate.mjs",
+      "../anicca-project/docs/loop-engineering/11-parent-funding-loop.md",
+      "../anicca-project/docs/loop-engineering/05-coordination-with-agent-economy.md"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "money_safety",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-003"],
+      "evidence": []
+    },
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004", "FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "positiveEvidenceReviewed": [
+    {"type": "file", "location": "skills/earn/funding/lib/identity.py:70-95", "description": "verify_solana_secret_file derives Franklin's recipient pubkey from Franklin's own on-disk key material, fails closed on any read/decode/mismatch -- confirmed this loop's use of run.py cannot itself cause a wrong-recipient send; the underlying mechanism enforces this regardless of caller."},
+    {"type": "file", "location": "skills/earn/funding/lib/caps.py:28-80", "description": "_outflow_rows filters strictly to step==\"withdraw\", confirmed a synthetic step==\"loop-decide\" row (REQ-008) cannot be counted as outflow -- REQ-008/PROP-005's structural-isolation claim verified true against the real, current caps.py source."},
+    {"type": "file", "location": "skills/earn/funding/withdraw.py:211-239, bridge.py:207-239, send_to_franklin.py:181-209", "description": "Confirmed Finding A (try/except around post-broadcast confirm calls, pending-row-before-wait pattern) is genuinely present in the current code, matching the spec's commit-message citation (095a23d) -- the underlying code claim is accurate even though the cited verdict artifact itself is stale (FIND-004)."},
+    {"type": "file", "location": "skills/_shared/lib/solana-verify.mjs:19-31, 84-102", "description": "Confirmed usdcBalance()'s underlying rpc() throws on HTTP-not-ok or RPC-error responses and only returns a clean 0 for the genuine no-ATA-exists case -- REQ-002's fail-closed-on-read-failure requirement is technically implementable as literally specified against this real function (a real RPC failure is distinguishable from a real zero balance)."},
+    {"type": "file", "location": "skills/earn/funding/config.json:2-27, MONEY-SAFETY-VERDICT.md:155-161", "description": "known_addresses/tokens config independently cross-checked in the existing adversary verdict against live Polymarket/relay.link docs -- no address-swap risk in the frozen config this feature only reads."}
+  ]
+}

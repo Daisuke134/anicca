@@ -1,0 +1,31 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "money_safety",
+  "category": "purity_boundary",
+  "severity": "critical",
+  "description": "REQ-003's chosen DECIDE mechanism gives the LLM invocation itself live, unrestricted tool-execution capability for the duration of its turn, which directly falsifies REQ-004/005/006/007's repeated claim that the hard gates are ones 'the agent's judgment cannot override'. The spec mandates reusing claude-p-mainloop.sh's exact invocation pattern verbatim: `claude --model claude-sonnet-5 --dangerously-skip-permissions -p \"$(cat prompt.txt)\"`, with the entry script `cd`'d into a project working directory (verification-architecture.md's own Effectful Shell description). `--dangerously-skip-permissions` disables ALL tool-confirmation gating for that subprocess -- it does not merely make the LLM 'answer a question', it spawns a fully agentic Claude Code session with live Bash/Write/Edit/git access for as long as that single invocation runs. Nothing in REQ-003 (or anywhere else in the spec) restricts which tools that session may call (no --allowedTools/--disallowedTools, no read-only mode, no sandboxed/neutral cwd). Consequently, the DECIDE-step agent -- whose ONLY documented job is to 'produce a recommendation' consumed afterward by the wrapper script's pure should_fund/viability_gate/cooldown_gate functions -- is architecturally free to, within its own single turn, directly execute `python3 skills/earn/funding/run.py --amount-usd <X>` (or touch the kill-switch file, or hand-write a fabricated row to funding-ledger.jsonl, or read/exfiltrate key material) via its own Bash tool call, completely bypassing REQ-004 (viability), REQ-005 (cooldown), and REQ-007's AND-composition, because those gates are evaluated by the WRAPPER SCRIPT after DECIDE returns -- they are not, and structurally cannot be, a constraint on what a live agentic subprocess does with its own tool-calling turn. This is exactly the failure mode the reviewer brief asked to hunt for ('DECIDE(REQ-003 LLM判断)が gate を迂回できる抜け穴は?') and the answer is yes, by construction. The same repository already contains a demonstrably safer, purpose-built pattern for exactly this 'produce one structured decision, no side effects' use case: `runtime/loop/brain.mjs::thinkClaudeP` (lines 83-134) invokes `claude -p ... --output-format json --model ...` WITHOUT --dangerously-skip-permissions, with a scrubbed/minimal env, from a neutral `os.tmpdir()` cwd specifically so the project's own hooks/tools are never loaded and the call cannot take side-effecting actions -- the spec neither adopts nor even discusses this existing safer alternative before copying the general-purpose builder-loop pattern wholesale into a money-moving-judgment context where it is inappropriate.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/behavioral-spec.md",
+    "lineRange": "172-208, 209-216, 235-241, 258-266, 289-296",
+    "snippet": "REQ-003: 'THE SYSTEM SHALL invoke a real LLM agent session (the `claude --model claude-sonnet-5 --dangerously-skip-permissions` invocation pattern reused from `claude-p-mainloop.sh` ...) to judge ... and to produce a recommendation'  //  REQ-004/005/006/007 each state the gate applies 'REGARDLESS of DECIDE's fund_recommended value' / '(agent judgment cannot override)'"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/verification-architecture.md",
+      "lineRange": "21-31",
+      "snippet": "Loop entry script ... `cd` to a working directory, and the DECIDE subprocess invocation. ... DECIDE (REQ-003): a real `claude --model claude-sonnet-5 --dangerously-skip-permissions -p \"$(cat prompt.txt)\"` subprocess"
+    },
+    {
+      "filePath": "/Users/anicca/anicca/skills/self/claude-p-mainloop.sh",
+      "lineRange": "66-70",
+      "snippet": "cd \"$WORKDIR\" ... timeout 3600 claude --model claude-sonnet-5 --dangerously-skip-permissions -p \"$(cat \"$PROMPT_FILE\")\""
+    },
+    {
+      "filePath": "/Users/anicca/anicca/runtime/loop/brain.mjs",
+      "lineRange": "83-134",
+      "snippet": "spawn(claudeBin, ['-p', prompt, '--output-format', 'json', '--model', model], { env: childEnv, cwd: os.tmpdir(), ... }) -- no --dangerously-skip-permissions, scrubbed env, neutral cwd -- the safer in-repo precedent this spec does not use"
+    }
+  ],
+  "failureScenario": "A scheduled wake fires, OBSERVE succeeds, DECIDE spawns the `claude --dangerously-skip-permissions` session cd'd into the project directory. Within that single turn, instead of (or in addition to) emitting the documented `fund_recommended`/`amount_usd`/`reasoning` JSON, the agent -- reasoning autonomously about the same OBSERVE data it was given -- issues a Bash tool call that runs `python3 skills/earn/funding/run.py --amount-usd 12` directly. This happens entirely inside the DECIDE subprocess's own turn, before the wrapper script's viability_gate/cooldown_gate/should_fund functions are ever evaluated for this wake. Real money moves via the unmodified, still-safe-in-isolation `run.py` (its own caps/identity/reserve checks still apply), but REQ-004's viability ceiling and REQ-005's cooldown are never consulted at all for this transfer -- an over-frequent or already-past-viability-ceiling fund could occur on every single wake, silently, with the wrapper's own ledger-based audit trail (REQ-008's `loop-decide` row) potentially not even reflecting that a `run.py` invocation happened outside its own control flow.",
+  "routeToPhase": "1c"
+}

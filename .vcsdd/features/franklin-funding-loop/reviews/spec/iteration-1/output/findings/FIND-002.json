@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "money_safety",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-005's cooldown gate is, by its own EARS main clause and by its own PROP-002 test enumeration, scoped ONLY to the most recent row where `step == \"send_to_franklin\" AND status == \"sent\"`. But REQ-005's own edge-case list explicitly requires a different, broader behavior: a `pending` (broadcast-but-not-yet-confirmed) `send_to_franklin` row must ALSO start the cooldown clock ('the cooldown clock still starts from the pending row's timestamp -- never treated as no cooldown just because confirmation hasn't resolved yet'). These two statements are in direct tension: the EARS clause and the acceptance criteria say 'status == sent' exactly; the edge case says a mere 'pending' row (no terminal row yet) must count too. PROP-002, the ONLY property test spec'd for `cooldown_gate`, enumerates exactly four cases -- 'no-prior-row, just-under-window, exactly-at-window, well-past-window' -- and contains no case exercising 'pending-row-only, no terminal row'. This means the specific edge-case behavior REQ-005 itself mandates has zero corresponding verification obligation and could ship unimplemented (an implementation that satisfies the literal EARS clause and passes every PROP-002 test case as enumerated would still violate REQ-005's own edge case). Compounding this, the cooldown gate as specified is entirely blind to a wake where `withdraw` and/or `bridge` already succeeded (real money already left the source wallet) but `send_to_franklin` itself failed outright or crashed before any row was written -- in that scenario no `send_to_franklin` row of ANY status exists, so REQ-005 reports 'no cooldown active' and the very next scheduled wake can initiate an entirely new withdraw->bridge->send sequence while the prior wake's withdrawn/bridged funds are still stranded mid-pipeline (at 0x810f or BF9v, not yet at Franklin) -- the loop has no requirement to detect or account for in-flight/stranded prior transfers before firing again.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/behavioral-spec.md",
+    "lineRange": "236-256",
+    "snippet": "EARS: 'WHEN the most recent funding-ledger.jsonl row with step == \"send_to_franklin\" AND status == \"sent\" has a timestamp less than ... cooldown_hours ...'  Edge case: 'A pending (broadcast-but-not-yet-confirmed) send_to_franklin row with no later terminal sent/failed row ... treated conservatively as if a send may complete -- the cooldown clock still starts from the pending row's timestamp'"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/verification-architecture.md",
+      "lineRange": "44",
+      "snippet": "PROP-002 ... pytest boundary table (no-prior-row, just-under-window, exactly-at-window, well-past-window) -- no pending-row case listed"
+    }
+  ],
+  "failureScenario": "Wake N: withdraw succeeds ($10 leaves the PM deposit wallet, on-chain confirmed), bridge succeeds (Solana-side USDC lands at BF9v), send_to_franklin's spl-token subprocess itself hangs/crashes before writing even a 'pending' row (or, per the pending-row gap, writes only a 'pending' row that a narrowly-literal implementation of the EARS main clause ignores for cooldown purposes). No `send_to_franklin`/`sent` row exists. Wake N+1 (next scheduled interval) re-evaluates REQ-005's cooldown gate, finds no qualifying row, reports allowed:true, and -- if DECIDE again recommends funding and the viability gate still passes -- triggers a second full withdraw->bridge->send sequence, compounding real capital movement across two wakes while the first wake's funds may still be unaccounted-for at an intermediate hop.",
+  "routeToPhase": "1c"
+}

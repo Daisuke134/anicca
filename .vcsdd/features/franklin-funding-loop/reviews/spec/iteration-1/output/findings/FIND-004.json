@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "The behavioral-spec's Context section asserts, as an already-settled precondition for building an unattended scheduled caller on top of `skills/earn/funding/`, that 'the one open money-safety finding from the adversary verdict (Finding A ...) was already closed before this feature starts', citing `MONEY-SAFETY-VERDICT.md` as the supporting adversary-reviewed artifact. Reading the actual, current `MONEY-SAFETY-VERDICT.md` on disk shows the opposite conclusion in its own OVERALL VERDICT section: 'Safe to run the $1-2 D1 test now, as a single, manually-watched, manually-invoked run -- NOT YET safe to leave unattended or on a schedule', and its section 4 ('lib/caps.py -- PASS, with one informational note (C)') and section 7 ('Finding A ... applies to all 3 scripts') both still describe Findings A and C as open, unresolved items to fix 'before D2 ... or any scheduled/unattended wiring'. Direct inspection of the current `withdraw.py`/`bridge.py`/`send_to_franklin.py`/`lib/caps.py` source confirms the Finding A (try/except + pending-row) and Finding C (`_outflow_rows` withdraw-only filter) code fixes described in the spec's commit-message citation (`095a23d`) ARE genuinely present in the code today -- so the underlying claim about the CODE is likely true. But the artifact this spec explicitly cites and relies on as its safety precedent (`MONEY-SAFETY-VERDICT.md`) was never re-issued/updated after that fix commit, so on its face it still says the mechanism is not yet safe for exactly the kind of scheduled/unattended use this feature is building. This feature's entire premise rests on a self-asserted (commit-message-level) claim rather than a fresh adversary artifact confirming the fixed code is safe for scheduled operation, and the one adversary artifact that does exist literally contradicts the feature's premise on its face.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/behavioral-spec.md",
+    "lineRange": "24-31",
+    "snippet": "'Commit history confirms the one open money-safety finding from the adversary verdict (Finding A ...) was already closed before this feature starts (`git log --oneline` ... `095a23d fix(funding): close money-safety adversary findings A/C ...`)'"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/funding/MONEY-SAFETY-VERDICT.md",
+      "lineRange": "185-213",
+      "snippet": "'Safe to run the $1-2 D1 test now ... not yet safe to leave unattended or on a schedule.' ... 'Before D2 ($10-20 seed) or any scheduled/unattended wiring (... do not bring it forward without this fix): Fix Finding A ...'"
+    }
+  ],
+  "failureScenario": "An operator or downstream reviewer trusts the spec's Context section at face value ('already closed, adversary-PASS'd'), skips re-verifying the funding mechanism's current safety posture for scheduled operation, and deploys the launchd job on the strength of a stale document that -- read plainly -- says this exact usage pattern (scheduled/unattended) is not yet blessed.",
+  "routeToPhase": "1c"
+}

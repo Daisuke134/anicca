@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "money_safety",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "REQ-004's viability gate only ever checks whether Franklin's balance is ALREADY at/above `viability_floor_usd` BEFORE a fund decision; it places no requirement on how far a single funding event is allowed to push the resulting balance PAST that ceiling. The only per-event ceiling that bounds the funded amount is the flat, balance-independent `per_transfer_usd_cap` (REQ-003's clip_amount edge case, defaulting to $12 per skills/earn/funding/config.json), which is entirely unaware of how close the pre-fund balance already is to the $20 floor. A wake firing when Franklin's live balance is, e.g., $19.99 (just under the floor, so REQ-004 reports allowed:true) combined with DECIDE recommending the maximum clippable amount results in a post-fund balance of roughly $31.99 -- about 60% over the stated viability ceiling -- with no gate, predicate, or proof obligation in the spec noticing or preventing this. PROP-001 and PROP-004 each test their respective predicates (`viability_gate`, `clip_amount`) only in isolation against their own inputs; no proof obligation composes them to bound the POST-fund balance against the floor. This directly undercuts the spec's own stated design principle ('自立してたら step back -- over-supply is forbidden', REQ-004 prose) which is enforced only at the binary allow/block level, not at the sizing level.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-funding-loop/specs/behavioral-spec.md",
+    "lineRange": "209-216, 190-194",
+    "snippet": "REQ-004: 'WHEN Franklin's live Solana USDC balance ... is greater than or equal to ... viability_floor_usd (default 20) ... THE SYSTEM SHALL NOT proceed to FUND' -- no requirement bounds the funded amount to (floor - current balance) when balance is below floor. REQ-003 edge case: 'THE SYSTEM SHALL clip the requested amount to, at most, the configured per-transfer cap' -- a flat cap, not a floor-aware one."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/skills/earn/funding/config.json",
+      "lineRange": "4",
+      "snippet": "\"per_transfer_usd_cap\": 12.0"
+    }
+  ],
+  "failureScenario": "Franklin's balance sits at $19.99 (just below the $20 viability floor) after a prior partial seed. DECIDE judges 'still undergrown, needs more' and recommends amount_usd:12 (at the per-transfer cap). REQ-004 evaluates allowed:true (balance < floor). REQ-007's AND-gate is satisfied. FUND executes, moving the full $12 through the mechanism. Franklin's balance becomes ~$31.99, well past the design's own stated 'already viable, stop feeding' ceiling, and the spec provides no mechanism that would have instead sized the transfer down to roughly $0.01-1 to land Franklin just at the floor.",
+  "routeToPhase": "1c"
+}
