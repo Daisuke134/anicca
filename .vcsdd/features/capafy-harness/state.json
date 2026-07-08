@@ -324,14 +324,14 @@
   "gates": {
     "1c": {
       "verdict": "PASS",
-      "timestamp": "2026-07-08T18:44:22.863Z",
+      "timestamp": "2026-07-08T19:01:00.255Z",
       "reviewedBy": "adversary",
-      "details": "iteration-3 PASS (0 blocking). C-1/C-2/C-3 all resolved (both cadence-evidence if-chains, CADENCE_LOOPS in verify-loops-audit + cadence-deadline-check, legacy stale_hrs removed).",
+      "details": "iteration-3 PASS (0 blocking). C-1/C-2/C-3 resolved: both cadence-evidence if-chains wired, CADENCE_LOOPS in verify-loops-audit + cadence-deadline-check, legacy stale_hrs removed.",
       "adversaryVerdict": "PASS",
-      "adversaryReviewedAt": "2026-07-08T18:44:22.863Z"
+      "adversaryReviewedAt": "2026-07-08T19:01:00.255Z"
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T15:14:21.519Z",
-  "updatedAt": "2026-07-08T18:44:22.870Z"
+  "updatedAt": "2026-07-08T19:01:00.258Z"
 }
