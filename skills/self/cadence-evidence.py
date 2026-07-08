@@ -79,15 +79,30 @@ def _clip_ledger_path():
 
 
 def _video_metrics_path():
+    override = os.environ.get("EARN_VIDEO_METRICS_PATH")
+    if override:
+        return override
     handle = os.environ.get("EARN_VIDEO_HANDLE", "money_blueprintdaily")
     return os.path.expanduser(f"~/.cloak/earn-video-metrics-{handle}.jsonl")
 
 
+def _affiliate_metrics_path():
+    return os.environ.get("AFFILIATE_METRICS_PATH") or os.path.expanduser("~/.cloak/affiliate-metrics.jsonl")
+
+
+def _gig_funnel_path():
+    return os.environ.get("GIG_FUNNEL_PATH") or os.path.expanduser("~/gig/gig-funnel.jsonl")
+
+
+# Test-only override seams (mirrors this codebase's own EARN_LEDGER/FOUNDER_DIR/FOUNDER_TEST
+# convention, e.g. record_earn.py/founder-loop.sh) so a Tier2 test can exercise this module's REAL
+# evidence-gathering logic against real temp fixture files instead of production paths — never
+# reaches for a mock of cadence_met/streak themselves (those stay pure and untouched).
 LEDGER_PATH_FOR_LOOP = {
     "clip": _clip_ledger_path,
-    "affiliate": lambda: os.path.expanduser("~/.cloak/affiliate-metrics.jsonl"),
+    "affiliate": _affiliate_metrics_path,
     "video": _video_metrics_path,
-    "gig": lambda: os.path.expanduser("~/gig/gig-funnel.jsonl"),
+    "gig": _gig_funnel_path,
 }
 
 
@@ -110,9 +125,13 @@ def _row_exists_event_dates(loop):
     return dates
 
 
+def _bounty_funnel_path():
+    return os.environ.get("BOUNTY_FUNNEL_PATH") or os.path.expanduser(
+        "~/profitable-claude/skills/human-funded/bounty/state/bounty-funnel.jsonl")
+
+
 def _bounty_funnel_rows():
-    return _read_jsonl_rows(os.path.expanduser(
-        "~/profitable-claude/skills/human-funded/bounty/state/bounty-funnel.jsonl"))
+    return _read_jsonl_rows(_bounty_funnel_path())
 
 
 def _bounty_today_and_previous_checked(today_jst_date):
@@ -131,17 +150,29 @@ def _bounty_today_and_previous_checked(today_jst_date):
     return today_value, previous_value, by_date
 
 
+def _founder_state_md_path():
+    return os.environ.get("FOUNDER_STATE_MD_PATH") or os.path.expanduser("~/.anicca-founder/state/STATE.md")
+
+
 def _founder_loop_marker_jst_date():
-    m = _mtime_epoch(os.path.expanduser("~/.anicca-founder/state/STATE.md"))
+    m = _mtime_epoch(_founder_state_md_path())
     return _epoch_to_jst_date(m) if m is not None else None
 
 
+def _pm_earner_log_path():
+    return os.environ.get("PM_EARNER_LOG_PATH") or os.path.expanduser("~/anicca/skills/earn/polymarket-trade/earner.log")
+
+
+def _pm_earner_ledger_path():
+    return os.environ.get("PM_EARNER_LEDGER_PATH") or os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl")
+
+
 def _pm_earner_earner_log_epoch():
-    return _mtime_epoch(os.path.expanduser("~/anicca/skills/earn/polymarket-trade/earner.log"))
+    return _mtime_epoch(_pm_earner_log_path())
 
 
 def _pm_earner_redeem_event_dates():
-    rows = _read_jsonl_rows(os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl"))
+    rows = _read_jsonl_rows(_pm_earner_ledger_path())
     redeem_rows = [r for r in rows if r.get("source") == "polymarket-redeem" or "redeem" in str(r.get("task", "")).lower()]
     return _event_dates_from_ts_rows(redeem_rows)
 
