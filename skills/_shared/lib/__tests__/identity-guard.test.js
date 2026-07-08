@@ -58,3 +58,23 @@ test("assertOwnIdentityOnly: a promote.fun record with PII env present STILL THR
   const env = { SOLANA_RPC_URL: "https://x", GOOGLE_LOGIN: "leaked" };
   assert.throws(() => assertOwnIdentityOnly({ source: "promote.fun" }, { env }), /MALICE-GUARD/);
 });
+
+// PROP-008 (franklin-earn-foundation REQ-002): "sol-trade" is Anicca's OWN Solana wallet + OWN
+// franklin-trading CLI identity (own funds, no external transfer) -- added to ALLOWED_EARN_SOURCES.
+// Regression: every PRE-EXISTING allowed source (a sample, not exhaustive) must still pass unchanged.
+test("assertOwnIdentityOnly: 'sol-trade' is now an own-identity source (clean env) PASSES", () => {
+  const env = { PATH: "/usr/bin", SOLANA_RPC_URL: "https://api.mainnet-beta.solana.com" };
+  assert.equal(assertOwnIdentityOnly({ source: "sol-trade" }, { env }), true);
+});
+
+test("assertOwnIdentityOnly: a sol-trade record with PII env present STILL THROWS (guard intact for the new source too)", () => {
+  const env = { SOLANA_RPC_URL: "https://x", TELEGRAM_BOT_TOKEN: "leaked" };
+  assert.throws(() => assertOwnIdentityOnly({ source: "sol-trade" }, { env }), /MALICE-GUARD/);
+});
+
+test("PROP-008 regression: every pre-existing allowed source still passes after the additive 'sol-trade' entry", () => {
+  const env = { PATH: "/usr/bin" };
+  for (const source of ["x402", "0xwork", "hl-trade", "promote.fun", "clip-promote", "gig", "discover"]) {
+    assert.equal(assertOwnIdentityOnly({ source }, { env }), true, `${source} must still pass`);
+  }
+});
