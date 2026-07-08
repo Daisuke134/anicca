@@ -49,6 +49,25 @@ TMP="$STATE_MD.tmp.$$"
   echo "next: G1.2 — host serve.mjs (X402_PAYTO=0x810f) + LIST on x402scan/Bazaar → a REAL external buyer pays → record-earn writes the first real row"
 } > "$TMP" && mv "$TMP" "$STATE_MD"
 
+# REQ-LV-018 (P0-6): report this wake by mail, using report-args.mjs's pure arg-builder to turn
+# PREV_EARN/TOTAL/STATUS (already computed above, no new judgment here) into loop-report.sh's
+# result/earned_usdc/evidence args. Runs AFTER STATE.md is durably written (INV-H3 unaffected).
+# Does NOT touch $RECORD/$LEDGER — record-earn.mjs remains the sole ledger writer (INV-H2).
+REPORT_ARGS_MJS="$HERE/report-args.mjs"
+REPORT_JSON="$(node --input-type=module -e "
+import { founderReportArgs } from '$REPORT_ARGS_MJS';
+const [prev, total, status] = process.argv.slice(1);
+console.log(JSON.stringify(founderReportArgs(Number(prev), Number(total), status)));
+" -- "$PREV_EARN" "$TOTAL" "$STATUS" 2>/dev/null)"
+if [ -n "$REPORT_JSON" ]; then
+  R_RESULT="$(printf '%s' "$REPORT_JSON" | python3 -c "import json,sys;print(json.load(sys.stdin)['result'])" 2>/dev/null)"
+  R_EARNED="$(printf '%s' "$REPORT_JSON" | python3 -c "import json,sys;print(json.load(sys.stdin)['earned_usdc'])" 2>/dev/null)"
+  R_EVIDENCE="$(printf '%s' "$REPORT_JSON" | python3 -c "import json,sys;print(json.load(sys.stdin)['evidence'])" 2>/dev/null)"
+  if [ -n "$R_RESULT" ]; then
+    bash "$HERE/../../report/loop-report.sh" founder "$STATUS" "$R_RESULT" "$R_EARNED" "$R_EVIDENCE" >>"$DIR/state/wake.log" 2>&1 || true
+  fi
+fi
+
 echo "founder-loop wake: realised_earn_usdc=$TOTAL record_rc=$RC state=$STATE_MD"
 # INV-H6: surface the recorder's rc to the cadence (a persistent RPC-fail / corrupt-cursor should alert), AFTER STATE is durably written.
 exit "$RC"
