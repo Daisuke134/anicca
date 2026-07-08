@@ -2,18 +2,16 @@
   "sprintNumber": 1,
   "feature": "self-improve-real-ledger",
   "iteration": 2,
-  "timestamp": "2026-07-09T00:00:00Z",
+  "timestamp": "2026-07-08T22:56:07Z",
   "dimensions": [
     {
       "name": "spec_fidelity",
-      "verdict": "FAIL",
-      "findings": [
-        "FIND-001"
-      ],
+      "verdict": "PASS",
+      "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "passThreshold: '...AND the pre-existing test_realized_summary_default_path_points_at_the_real_earn_ledger_location (PROP-RL-ID6) remains byte-identical and green when re-run with ANICCA_HOME unset.' No locus qualification (worktree vs. post-merge main checkout) is stated."},
-        {"type": "file", "location": "specs/behavioral-spec.md:380-389 (EDGE-RL5b)", "description": "EDGE-RL5b states this EXACT test (PROP-RL-ID6) is checkout-location-sensitive once DEFAULT_LEDGER_PATH derives from REQ-RL1's body-relative resolution: from the feature's own dev worktree the resolved path nests under .worktrees/<feature>/ and the endswith(\"anicca/skills/earn/state/earn-ledger.jsonl\") suffix assertion FAILS — 'an expected, documented consequence, NOT a logic defect and NOT a waiver.' It states the assertion 'MUST pass (unmodified) when the regression suite runs from the merged ~/anicca main checkout — which is exactly where CRIT-006's post-merge regression run executes it,' and that 'the GREEN-phase worktree run therefore legitimately reports 80/81 with this single, root-caused, post-merge-verified exception.'"},
-        {"type": "file", "location": "specs/verification-architecture.md (Regression Table 'Execution environment' note, finding F-6)", "description": "confirms the regression run's environment-sensitivity is a documented, deliberate spec property, not an oversight — reinforcing that CRIT-001 needed an explicit locus carve-out and did not get one"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-001", "description": "passThreshold cites PROP-RL-ID1/ID2/ID3/ID5/ID7 plus PROP-RL-ID6, and explicitly carries EDGE-RL5b's locus carve-out verbatim: 'its worktree-phase failure is the documented, expected consequence of body-relative resolution and does NOT fail this criterion — the criterion is judged on the post-merge run that CRIT-006 already mandates.' This resolves the prior verdict's FIND-001 (CRIT-001 previously omitted this locus qualification) — confirmed genuinely present in the current contract text on disk, not merely claimed in escalations/escalation-2026-07-08T22-37-30-938Z.md's Amendment 3."},
+        {"type": "file", "location": "specs/behavioral-spec.md:369-389 (EDGE-RL5a/EDGE-RL5b)", "description": "CRIT-001's carve-out matches EDGE-RL5b's own words exactly ('MUST pass (unmodified) when the regression suite runs from the merged ~/anicca main checkout... the GREEN-phase worktree run therefore legitimately reports 80/81 with this single, root-caused, post-merge-verified exception') — no weakening, no waiver, just correct phase-sequencing"},
+        {"type": "test-output", "location": "evidence/sprint-1-green-phase.log", "description": "GREEN run reports exactly 80/81 with the single named failure being test_realized_summary_default_path_points_at_the_real_earn_ledger_location (PROP-RL-ID6), root-caused to worktree directory nesting with a proof the same code path resolves correctly outside the worktree — matches CRIT-001's carve-out precisely, and all 9 gap-closing tests plus 3 disclosed-pre-passing tests in test_ledger_resolution.py (12 total) are GREEN, satisfying ID1/ID2/ID3/ID5/ID7 and the MIR predicates"}
       ]
     },
     {
@@ -21,8 +19,8 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "passThreshold cites PROP-RL-GATE2/GATE3/GATE4 (window-split even/odd/out-of-window rows, 8-combination worsening-trend truth table, both data_realism_gap contradiction cases plus the sufficient=False vacuous-pass case) and PROP-RL-MIR1/MIR2, matching specs/verification-architecture.md's Proof Obligations rows for those IDs exactly, including the EDGE-RL1/RL4 'insufficient data never fires' guarantee named directly in the criterion description"},
-        {"type": "test-output", "location": "evidence/sprint-1-red-phase.log (section 1)", "description": "test_realized_gate.py's window-split/worsening-trend/data-realism-gap tests and test_ledger_resolution.py's is_profitable/is_confirmed tests are all present in the RED run and fail for the documented reason (functions do not exist yet), confirming the cited PROP-RL-* tests are real, on-disk, and correctly RED"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-002", "description": "passThreshold cites PROP-RL-GATE2/GATE3/GATE4 (window-split even/odd/out-of-window, 8-combination worsening-trend truth table, both data_realism_gap contradiction cases plus the sufficient=False vacuous-pass case) and PROP-RL-MIR1/MIR2, matching verification-architecture.md's Proof Obligations rows for those IDs exactly, including the EDGE-RL1/RL4 'insufficient data never fires' guarantee named directly in the criterion description"},
+        {"type": "test-output", "location": "evidence/sprint-1-green-phase.log", "description": "test_realized_gate.py reports 17 passed (16 gap-closing + 1 disclosed pre-passing EVAL2), covering all GATE2/GATE3/GATE4 sub-cases (even/odd/out-of-window split, strict-less-than, 8-combo truth table, case-a/case-b/boundary/vacuous-pass); test_ledger_resolution.py's MIR1/MIR2 fixtures (one row per EVM/Solana/Hyperliquid chain) are all green"}
       ]
     },
     {
@@ -30,20 +28,18 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "passThreshold cites PROP-RL-GATE1 (REQ-RL7 unconditional resolved=False block), PROP-RL-GATE-NONE (REQ-RL18 vacuous-pass vs. REQ-RL7 block disambiguation, spec-review finding F-4), PROP-RL-GATE5 (last_promotion_ts latest-match-or-None), PROP-RL-GATE6 (escalation write before verdict), and the REQ-RL13a 13-key schema test by name"},
-        {"type": "file", "location": "specs/behavioral-spec.md:218-239 (REQ-RL13a's 13-key table) vs. contracts/sprint-1.md's CRIT-003 body ('Schema test' bullet)", "description": "the contract's schema-test description enumerates the identical 13 keys (resolved, resolution_source, ledger_path, row_count, sufficient, window_net_usd, first_half_net_usd, second_half_net_usd, worsening, trend_blocks, realism_gap_blocks, window_start_ts, window_end_ts); verification-architecture.md's Proof Obligations table has no dedicated PROP-RL-* row number for this schema check, so referencing it by REQ ID + test-file name rather than a nonexistent PROP ID is a faithful restatement, not a citation gap"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-003", "description": "passThreshold cites PROP-RL-GATE1 (REQ-RL7 unconditional resolved=False block), PROP-RL-GATE-NONE (REQ-RL18 vacuous-pass vs. REQ-RL7 block disambiguation, spec-review F-4), PROP-RL-GATE5 (last_promotion_ts latest-match-or-None over a REAL, non-mocked tmp_path git repo, EDGE-RL3), PROP-RL-GATE6 (escalation write before verdict), and the REQ-RL13a exact-13-key schema test by name — the schema test's own name (test_compute_realized_gate_returns_exactly_the_req_rl13a_schema) and verification-architecture.md's own PROP-RL row confirm 'no more, no fewer' set-equality, not a superset check"},
+        {"type": "test-output", "location": "evidence/sprint-1-green-phase.log", "description": "test_realized_gate.py and test_wiring.py both fully green (17 and 2 passed respectively) in the GREEN run, covering every PROP-RL-GATE1/GATE5/GATE6/GATE-NONE test named in the RED-phase gap list plus the schema test"}
       ]
     },
     {
       "name": "structural_integrity",
-      "verdict": "FAIL",
-      "findings": [
-        "FIND-002"
-      ],
+      "verdict": "PASS",
+      "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "passThreshold: 'AND PROP-RL-WIRE2 (the FULL pre-existing 44-test suite — whose tests call decide_promotion WITHOUT realized_gate — re-runs green with assertions unmodified, proving realized_gate=None behaves as \"no constraint\" per REQ-RL18; named here as its own sprint pass condition, not merely bundled into CRIT-006's post-merge regression run)'. This explicitly asserts the full 44-suite-green check is a PRE-merge (worktree-phase) pass condition, distinct from and prior to CRIT-006's post-merge run."},
-        {"type": "file", "location": "specs/behavioral-spec.md:380-389 (EDGE-RL5b)", "description": "the 44-test suite (per the Regression Table in specs/verification-architecture.md) includes test_ledger_reader.py's test_realized_summary_default_path_points_at_the_real_earn_ledger_location — the same PROP-RL-ID6 test EDGE-RL5b documents as legitimately FAILING in a worktree-phase GREEN run ('80/81'). CRIT-004's WIRE2 restatement, by demanding the FULL 44-suite be green as its own pre-merge/worktree-scoped pass condition, inherits the identical contradiction as FIND-001: it requires 81/81 at exactly the phase (worktree) where the spec's own EDGE-RL5b predicts 80/81 is the correct, expected outcome. A fresh Phase-3 adversary applying CRIT-004 literally would either spuriously fail a fully spec-compliant implementation on this basis, or silently apply an unwritten exception not present anywhere in the contract text."},
-        {"type": "file", "location": "specs/verification-architecture.md (Proof Obligations table, PROP-RL-WIRE2 row)", "description": "verification-architecture.md's own PROP-RL-WIRE2 definition is narrower ('The 44 pre-existing tests calling decide_promotion WITHOUT realized_gate ... still pass') than the contract's CRIT-004 restatement, which broadens it via an inaccurate appositive ('the FULL pre-existing 44-test suite — whose tests call decide_promotion WITHOUT realized_gate') that literally mischaracterizes test_ledger_reader.py's and test_reward_hacking_tripwire.py's tests (which do not call decide_promotion at all) as being of that kind — compounding the same locus problem under a factually imprecise restatement of the cited proof obligation"}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004", "description": "passThreshold now scopes the 44-suite-green requirement correctly: 'the rest of the 44-test suite must also stay green with the SINGLE documented exception of PROP-RL-ID6's checkout-location-sensitive assertion, which is governed by CRIT-001's EDGE-RL5b locus rule — worktree-phase 80/81 with that one root-caused failure satisfies this clause, and 81/81 is verified post-merge under CRIT-006.' This resolves the prior verdict's FIND-002 (CRIT-004 previously demanded the full unscoped 44/44 as a pre-merge condition, contradicting EDGE-RL5b) — confirmed genuinely present on disk, matching escalations/escalation-2026-07-08T22-37-30-938Z.md's Amendment 3 claim"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004 (REQ-RL17 anti-stub clause)", "description": "anti-stub judgment prose is present and intact: 'the Phase-3 implementation review verifies... the value bound to realized_gate= at EACH of the three call sites is genuinely sourced from the compute_realized_gate(...) helper over the resolved ledger — NEVER a hardcoded literal, stub dict, or constant that would satisfy PROP-RL-WIRE1's keyword-presence scan while bypassing real data; a stubbed binding at ANY call site is a BLOCKING Phase-3 finding and fails this criterion' — resolves the prior iteration's separately-recorded anti-stub omission (escalation Amendment 2), and correctly makes this a mandatory Phase-3 judgment check rather than something the deterministic PROP-RL-WIRE1 ast-scan alone could ever catch"},
+        {"type": "test-output", "location": "evidence/sprint-1-green-phase.log", "description": "test_wiring.py's PROP-RL-WIRE1 (ast-scan of all 3 decide_promotion call sites) and test_denylist_rl.py's PROP-RL-SAFE1/SAFE2/SAFE3 (6 tests: superset-preservation, new-entry coverage, F-5 direct-import bypass, F-5 aliased-usage bypass, no earn-ledger writes, no wallet-key references) are all green; 80/81 overall with the single EDGE-RL5b-governed exception matches CRIT-004's now-correctly-scoped passThreshold exactly"}
       ]
     },
     {
@@ -51,16 +47,16 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score's numeric value stays identical) and PROP-RL-EVAL2 (repo-wide honesty grep for the forbidden data_source==\"real\" literal), with EVAL2's RED-phase pre-pass explicitly disclosed as a permanent CI-style invariant mirroring hl-realized-pnl's own precedent, matching specs/verification-architecture.md's Proof Obligations rows for those IDs"},
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "requires PROP-RL-LIVE1/2/3 to execute from the merged ~/anicca MAIN checkout AFTER merge, NEVER from .worktrees/self-improve-real-ledger/, matching specs/verification-architecture.md's F-1 execution-locus fix verbatim — this is the ONE criterion in the contract that correctly and explicitly carries forward the worktree/post-merge locus distinction EDGE-RL5a/EDGE-RL5b require, in sharp contrast to CRIT-001/CRIT-004's silent omission of the same distinction (FIND-001/FIND-002)"},
-        {"type": "file", "location": "contracts/sprint-1.md#CRIT-004 (REQ-RL17 anti-stub prose)", "description": "confirmed present and intact on disk: 'the Phase-3 implementation review verifies by reading promote_gate_run.py that the value bound to realized_gate= at EACH of the three call sites is genuinely sourced from the compute_realized_gate(...) helper over the resolved ledger — NEVER a hardcoded literal, stub dict, or constant...; a stubbed binding at ANY call site is a BLOCKING Phase-3 finding and fails this criterion.' This resolves the prior-iteration FAIL finding recorded in the earlier verdict.json version at this same path (CRIT-004 previously omitted this anti-stub check); the amendment is verified genuinely applied on disk, not merely claimed in the escalation note."}
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-005", "description": "cites PROP-RL-EVAL1 (data_source flips fixture/fixture+realized-crosscheck while combined_score's numeric value stays identical) and PROP-RL-EVAL2 (repo-wide honesty grep for the forbidden data_source==\"real\" literal), with EVAL2's RED-phase pre-pass explicitly disclosed as a permanent CI-style invariant mirroring hl-realized-pnl's own precedent — matches evidence/sprint-1-red-phase.log's own disclosure section verbatim"},
+        {"type": "file", "location": "contracts/sprint-1.md#CRIT-006", "description": "requires PROP-RL-LIVE1/2/3 plus the full regression table (44 self-improve + 42 hl-trade + ledger.test.mjs + ledger.test.js) to execute from the merged ~/anicca MAIN checkout AFTER merge, NEVER from .worktrees/self-improve-real-ledger/, matching verification-architecture.md's F-1 execution-locus fix and behavioral-spec.md's EDGE-RL5a verbatim; this criterion is intentionally not yet satisfied at contract-review time (feature is unmerged) and the contract does not claim otherwise"},
+        {"type": "file", "location": "specs/behavioral-spec.md:399-409 ('Done' / 4-D Convergence table)", "description": "CRIT-005+CRIT-006 jointly discharge the spec's 'verification' Done-row (real run against claude-p's 30-row ledger, run_evolve.sh OBSERVE line, full regression re-run) without overclaiming anything not yet executed"}
       ]
     }
   ],
-  "overallVerdict": "FAIL",
+  "overallVerdict": "PASS",
   "reviewContext": {
     "reviewType": "contract",
     "contractPath": "contracts/sprint-1.md",
-    "contractDigest": "6216c91c765c169590575b6bb9d87eb38548afecdde8ca818e1363e8e267adec"
+    "contractDigest": "91c130b9bbab723e04b93457e73cd93b5d85819851a8f739b72046743e407093"
   }
 }
