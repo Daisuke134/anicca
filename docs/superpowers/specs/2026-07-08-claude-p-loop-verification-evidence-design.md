@@ -304,7 +304,7 @@ Life Manager loop の done:
                                   v
         -----------------------------------------------------
         | PERSONAL CEO                                      |
-        | - watches user subscription, cost, token runway    |
+        | - watches API token spend and outcome ROI          |
         | - allocates user-benefit loops                     |
         | - pauses waste                                     |
         | - doubles down on proven helpful/revenue loops     |
@@ -344,6 +344,10 @@ Boundary rule:
 
 - A loop that earns money for **one user/person** belongs to Life Manager / Personal CEO.
 - A loop that earns money to **fund the agent economy itself** belongs to MAIN / Agent Economy.
+- Paid users pay the Life Manager product, but the runtime is optimized by API token/cost ledgers:
+  Claude API, phone API, Google/Gmail API, search/scrape, cloud infra.
+- Personal CEO allocation target is not "keep using tokens"; it is "spend the minimum API cost that
+  moves this user toward the ideal self."
 - Same algorithm may exist on both sides, but wallets, ledgers, budgets, and success metrics are
   separate.
 - Long-term UI may merge into one Life Manager experience, but governance stays separated until the
@@ -411,7 +415,7 @@ Boundary rule:
 ### 目的（north star）
 - **Life Manager / Personal CEO side**: Dais と各 paid user の人生を autopilot で良くする。初期収益目標は Life Manager subscription 10k MRR、次に media/podcast/article/earn loops を含む user-benefit revenue 100k MRR。これは1人/1tenantを直接利する。
 - **MAIN / Agent Economy side**: Anicca/Blockrun/agent economy を作る。human-funded claude-p が稼いだ crypto で ClawRouter/self-funded に卒業し、agent economy を外部 human subscription なしで維持・拡大する。これは特定個人の便益ではなく、agent economy と living beings 全体のための mission loop。
-- **共有制約**: どちらも同じ subscription/token runway を食う間は、global budget ledger に全 cost を記帳する。1つの physical subscription を共有していても、purpose/wallet/ledger は分ける。CEO は Personal side の portfolio を管理し、MAIN は Agent Economy side を管理する。さらに上位に `global-budget-guardian` を置き、subscription limit / weekly limit / disk / wallet drain を横断的に止める。
+- **共有制約**: ローカル claude-p で動く間は同じ Claude subscription/token runway を食うので、global budget ledger に全 cost を記帳する。cloud to-be では Claude API / phone API / Google API / cloud infra の per-tenant cost を記帳する。どちらの場合も purpose/wallet/ledger は分ける。CEO は Personal side の portfolio を管理し、MAIN は Agent Economy side を管理する。さらに上位に `global-budget-guardian` を置き、weekly limit / API spend / disk / wallet drain を横断的に止める。
 
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 

@@ -310,7 +310,7 @@ The system has two top-level purposes and they must stay separated for now.
                               v
         -------------------------------------------------
         | CEO LOOP FOR THIS HUMAN / TENANT              |
-        | - watches subscription/token/cost/runway      |
+        | - watches API token spend and outcome ROI     |
         | - allocates calendar/calls/events/money/media |
         | - pauses waste                                |
         | - doubles down on proven useful loops         |
@@ -349,6 +349,10 @@ Decision:
 
 - Life Manager / CEO side serves a person or tenant.
 - MAIN / Agent Economy side serves the broader agent economy mission.
+- Paid users pay Life Manager through product billing, but the internal runtime is metered by API
+  cost: Claude API, phone API, Google API, email/API send cost, search/scrape cost, and cloud cost.
+- The CEO loop optimizes token/API spend toward user outcome ROI, not merely whether a user has an
+  active subscription.
 - Trading/crypto loops that earn money for the **user's financial health** belong under Life Manager
   CEO for that tenant.
 - Trading/crypto loops that earn money to **fund the agent economy itself** belong under MAIN /
@@ -586,7 +590,8 @@ ASCII:
 
 ## CEO Requirements Added By Life Manager
 
-CEO must not only read revenue; it must read runway and enforce allocation.
+CEO must not only read revenue; it must read API/token runway and enforce allocation. In the cloud
+to-be, the meaningful unit is per-tenant API cost versus outcome impact.
 
 MUST:
 
@@ -606,6 +611,26 @@ MUST:
    - defer marketing generation if no conversion evidence,
    - keep self-heal/verification minimal,
    - report "company alive but conserving compute."
+6. Cloud Life Manager appends per-tenant cost/outcome rows:
+   ```json
+   {
+     "ts": "...",
+     "tenant_id": "...",
+     "loop": "calendar|phone|events|media|money",
+     "provider": "claude_api|twilio|google|gmail|search|cloud",
+     "cost_usd": 0.0,
+     "input_tokens": 0,
+     "output_tokens": 0,
+     "outcome": "travel_time_added|call_completed|event_registered|intro_sent|revenue_created",
+     "evidence": "url-or-ledger-id"
+   }
+   ```
+7. CEO allocation score is outcome-adjusted:
+   ```text
+   user_outcome_roi = verified_outcome_score / api_cost_usd
+   ```
+   A high-cost loop that does not move the user toward the ideal self is reduced even if it is
+   technically working.
 
 ## VCSDD Implementation Plan
 

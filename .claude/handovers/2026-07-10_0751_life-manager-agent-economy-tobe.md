@@ -53,7 +53,7 @@ There are two top-level purposes:
                                   v
         -----------------------------------------------------
         | PERSONAL CEO                                      |
-        | - watches user subscription, cost, token runway    |
+        | - watches API token spend and outcome ROI          |
         | - allocates user-benefit loops                     |
         | - pauses waste                                     |
         | - doubles down on proven helpful/revenue loops     |
@@ -95,8 +95,18 @@ Boundary rule:
 - A loop that earns money to fund the agent economy itself belongs to MAIN / Agent Economy.
 - The same algorithm may exist on both sides, but wallets, ledgers, budgets, and success metrics are
   separate.
-- While both consume the same physical subscription/token runway, every cost must be written to a
-  global budget ledger and protected by a `global-budget-guardian`.
+- While local claude-p loops consume the same physical Claude subscription/token runway, every cost
+  must be written to a global budget ledger and protected by a `global-budget-guardian`.
+- Cloud to-be uses API spend ledgers instead:
+  - Claude API tokens,
+  - phone API,
+  - Google/Gmail API,
+  - search/scrape,
+  - cloud infra.
+- Personal CEO allocation target is:
+  ```text
+  minimum API spend that moves the user toward the ideal self
+  ```
 
 ## Life Manager Product Principle
 
@@ -178,6 +188,8 @@ Done:
    - deploy -> metric verification
    - lessons.jsonl
 8. CEO / Personal Life Manager side can pause/reduce/double-down user-benefit loops by registry.
+   Allocation is based on per-tenant API cost and verified outcome ROI, not merely whether the user
+   is subscribed.
 9. MAIN / Agent Economy side is separated from Personal CEO:
    - separate wallet/ledger/purpose/success metrics
    - crypto/trading loops that fund agent economy live under MAIN
@@ -223,4 +235,3 @@ Spec source of truth:
 
 - `docs/superpowers/specs/2026-07-10-life-manager-autopilot-product-loop-design.md`
 - `docs/superpowers/specs/2026-07-08-claude-p-loop-verification-evidence-design.md`
-
