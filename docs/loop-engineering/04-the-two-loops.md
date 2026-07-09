@@ -112,3 +112,49 @@ Franklin の独立:
 
 出典: Dais 指示(2026-07-07) / cobus patterns / [[feedback_human_funded_ai_permanently_outside_agent_economy]] / SI-1 監査。
 関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / [[01-loop-vs-goal-resolved]] / design doc §5。
+
+## 7. loop 全台帳（2026-07-10 実測、launchctl + plist 由来）＝事実の正本
+
+★これまで「MAIN loop / earn loop」と粗く言ってきたが、claude-p 圏だけで 30+ loop が稼働している。以下が実測の全台帳（body=HOME で owner を判定）。★
+
+**claude-p SPHERE（human-funded、全て `~/anicca` or `profitable-claude`）を L0-L4 の5層で整理:**
+
+| 層 | loop | 実スクリプト | 役割 |
+|---|---|---|---|
+| **L0 建築/監視** | `claude-p-mainloop`(6h, sonnet) / `self-improve-evolve` | `skills/self/claude-p-mainloop.sh` / `skills/earn/self-improve/run_evolve.sh` | harness を建て改善、Franklin を bootstrap fund、VCSDD 開発、dumb個体を監視 |
+| **L1 CEO** | `founder-loop`(HOME=`~/.anicca-founder`) | `runtime/anicca-daemon.sh` + `skills/self/founder-loop/{ceo,host,reviews}/` | earn 事業群に資本/token 配分・halt/double-down・explorer spawn（骨格 ceo/ 着手済） |
+| **L2 earn managers** | `pm-earner` `clip-producer` `clip-promote` `video` `gig-proactive` `affiliate-proactive` `bounty-proactive` `x402-endpoint/monitor/tunnel` `x402-research-serve` `autohedge` `capafy-loop` `reddit-loop` | 各 `skills/earn/*` / `profitable-claude/skills/human-funded/*`(affiliate,bounty は移設済) | 各 rail = 1事業。revenue/token を CEO に報告 |
+| **L3 self-heal** | `verify-loops-audit` `runtime-loop-healthcheck` + `*-core-healthcheck`×~10 | `skills/self/{verify-loops-audit,healthcheck-lib,self-fix}.sh` | blocker検知→`self-fix.sh` spawn(sonnet)→自コード修復+commit |
+| **L4 資金/インフラ** | `sol-funding` `clawrouter` `ubi-watcher` `netmonitor` `disk-cleaner` `sync-memory` `watchdog` `tier1-remediate` `tier2-agent-diagnose` | 各所 | 送金/推論router/UBI/監視/掃除 |
+
+**他 body（claude-p ではない）:** Franklin=`franklin-loop`(HOME=`~/.blockrun`, self-funded) / automaton=`com.anicca.daemon`(HOME=`~/.anicca`, self-funded) / OpenClaw=`cfo/phone/slack/stripe/telegram/life-manager/realtime-guide`(HOME=`~/.openclaw`=Dais 個人アシスタント、earn でない、#7 で退役)。
+
+★モデル: claude-p の LLM loop（mainloop / self-fix spawn）は**全て sonnet**、Opus はゼロ。earn manager の多くは決定論スクリプト or 無料モデル。★
+
+## 8. CEO loop と MAIN loop の関係（★推奨、Dais レビュー中 2026-07-10★）
+
+**問い**: MAIN loop(claude-p-mainloop) は CEO loop(founder-loop) の中の「1事業」にすべきか、CEO とは別・上位にすべきか。CEO loop の仕事 = 全 loop の revenue/token/cost/improvement を追跡し double-down/halt/pause を決める（会社の CEO そのもの）。
+
+**推奨 = 入れない。MAIN は CEO の外・上位（建築者）。ただし CEO は MAIN の token も「観測」はする（配分・halt 権限は持たない）。** 根拠3点:
+
+1. **目的関数が違う。** CEO=ポートフォリオ経済(revenue÷token cost)を最適化。MAIN=capability(harness が動くか/Franklin が自立したか)を最適化。MAIN を CEO の事業にすると CEO は自分の指標で MAIN を測り、MAIN は直接収益ゼロゆえ **CEO が正しく「低ROI」判定で建築者を halt** = 最悪。
+2. **terminal vs 永続。** MAIN=抜けるのが目的(claude-p exit=ゴール)。CEO=回り続けるのが目的(最終的に Franklin が継承)。永続マネージャの中に自己終了する子を事業として入れるのは構造矛盾。
+3. **CEO は MAIN が「建てる対象」の一つ。** MAIN が CEO+managers+explorer を建てて Franklin に手渡す。だから MAIN は外側/上位。
+
+**正しい階層（BP 準拠 = Anthropic orchestrator-workers[orchestrator≠worker] / CrewAI hierarchical / memory `reference_ceo_manager_explorer_multiagent_bp`[founder-loop=CEO / earn loop=manager / GapFinder=explorer, Mahoraga bandit配分, kai-linux token gate]）:**
+
+```
+ MAIN loop (建築者・terminal) ── 建てる/直す ─▶ CEO+managers+explorer を Franklin へ手渡し→exit
+      │ reads ▲ 何を次に建てるか(CEO の事業判断を読む)
+      ▼       │ MAIN の token cost も観測(可視化のみ、halt権限なし)
+ CEO loop (founder-loop) ── 資本/token 配分・halt・double-down・explorer spawn
+      ├ manager: pm-earner / clip / video / gig / affiliate / bounty / x402 ...
+      └ explorer: GapFinder(新規事業)
+      ▼ 各 manager が事業を回し revenue/token を報告
+ Franklin (self-funded) が CEO+managers 丸ごと継承
+```
+
+★重要な gap: 今このセッションで claude-p(俺)が手でやっている「どの loop が動く/token いくら/改善したか」の追跡は**本来 L1 CEO loop の仕事**。手動＝smell。CEO loop を「全 loop 台帳 + revenue/token/cost/improve → double-down/halt」まで作り込むのが C1 の後の主要増分（Mahoraga copy）。MAIN はその CEO の出力を読んで「次に何を建てる」を決める。★
+
+出典: 実測 launchctl+plist(2026-07-10) / [[reference_ceo_manager_explorer_multiagent_bp_2026_07_08]] / Anthropic orchestrator-workers / CrewAI hierarchical。
+関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / [[01-loop-vs-goal-resolved]] / design doc §5 / [[10-STATUS-verified]] §E。
