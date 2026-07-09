@@ -2,7 +2,7 @@
   "featureName": "self-improve-real-ledger",
   "mode": "strict",
   "language": "python",
-  "currentPhase": "6",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -63,12 +63,19 @@
       "timestamp": "2026-07-09T23:34:40.000Z",
       "reason": "hardening complete: 28/28 PROP-RL-* proved (25 deterministic + 3 live), 17/17 property/fuzz, security sweep 0 High/Medium (35 Low all triaged), purity audit zero deviations, verification-report.md + security-report.md + purity-audit.md all present",
       "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-09T23:55:52.000Z",
+      "reason": "converged: fresh Opus adversary, 3 iterations (iter1: 0 blocking/0 major/3 minor doc-precision findings -> fixed; iter2: 0/1 major(uncommitted work)/1 minor -> fixed+committed 75743d6; iter3: findingCount=0, all 6 CRIT-001..006 PASS, commit verified via git object + reflog), sprint verdict PASS",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
-    "6": 1,
+    "6": 3,
     "1a": 1,
     "1b": 1,
     "1c": 1,
