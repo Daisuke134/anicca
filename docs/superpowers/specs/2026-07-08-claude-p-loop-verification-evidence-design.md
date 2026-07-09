@@ -151,7 +151,7 @@ scaling は clip 固有機能ではなく、**self-improve の第3の出力**と
 | repo | 誰の | 燃料 | 役割 | 中身 |
 |---|---|---|---|---|
 | **anicca**（github.com/Daisuke134/anicca、OSS public） | Franklin ら self-funded AI | self-funded（自分で稼いだ crypto） | agent economy の中身。OSS 稼ぐ能力の正本 | earn skills(clip/video/pm/hl/capafy/ebook…) + harness + Franklin/citizen/agent-economy |
-| **profitable-claude**（github.com/Daisuke134/profitable-claude） | human-funded claude-p | human-funded（Dais の Anthropic 課金） | agent economy の FOUNDER（作るが参加しない）。human-funded Claude が human と自分のために稼ぐテンプレ | claude-p が回す earn loop（自分で vendor した skill + harness + human-funded 固有 gig/affiliate/bounty + launchd/cron/config） |
+| **profitable-claude**（github.com/Daisuke134/profitable-claude） | human-funded claude-p | human-funded（Dais の Anthropic 課金） | 2系統の founder runtime: (1) user-serving Life Manager/CEO 側、(2) Agent Economy MAIN 側 | claude-p が回す earn loop（自分で vendor した skill + harness + human-funded 固有 gig/affiliate/bounty + launchd/cron/config） |
 
 - **なぜ完全分離か**: profitable-claude は将来「卒業」する予定（稼いだ crypto で human subscription を抜け、ClawRouter で self-funded 自走 → その時 self-funded AI として anicca 経済に転換しうる）。**self-contained にしておけば、卒業時にクリーンに切り出せる**。共有依存があると切り離しが難しくなる。
 - **今は完全分離**: 両者は earn skill 等 似た機能を持つが、互いから「学ぶ（良い改善を copy する）」ことはあっても、runtime 依存（submodule/shared harness）は持たない。同じ抽象を無理に共有せず、それぞれが自分の repo 内で完結する（"prefer duplication over the wrong abstraction"、将来 diverge する前提）。
@@ -213,11 +213,13 @@ profitable-claude が「Dais の Anthropic 課金で動く」状態から「自�
 
 判断（次に何を書くか、どのプラットフォームを厚くするか）は agent、公開・存在確認・metrics 取得・記帳は決定論ツール。
 
-## Life Manager business loop（Dais 2026-07-10: product + marketing + user-life ops）
+## Life Manager / CEO loop（Dais 2026-07-10: personal user-serving autopilot）
 
 詳細正本: `docs/superpowers/specs/2026-07-10-life-manager-autopilot-product-loop-design.md`
 
-Life Manager は `profitable-claude` の中の1 business manager loop として扱う。gig/bounty/affiliate/video と同列の「Dais と人間のために稼ぐ product business」であり、CEO loop の portfolio allocation 対象に入る。ただし global `claude-p-mainloop` は CEO の下に入れない。MAIN は loop system を建てる terminal architect、CEO は business portfolio manager。
+Life Manager は cloud product を正本にする。`profitable-claude` 側には、その cloud product を改善・マーケ・収益化する business-manager loop を置く。短期的には gig/bounty/affiliate/video と同列の1 business loop だが、to-be では **CEO loop + user-benefit loops = Life Manager operating system** になる。
+
+global `claude-p-mainloop` は CEO の下に入れない。MAIN は **Agent Economy loop** として分離する。MAIN の目的は Dais 個人や1ユーザーの便益ではなく、Anicca/Blockrun/agent economy を作り、self-funded agent economy が人間課金なしで持続する状態まで育てること。
 
 採用する構成は **hybrid**:
 
@@ -228,7 +230,39 @@ ONE canonical cloud Life Manager product
   +-- paid user tenants（同じ code path・subscription・multi-tenant guardrails）
 ```
 
-ローカル claude-p は Dais 専用の実験/深い dogfood/credential-heavy action の incubator として使うが、Dais-only fork は作らない。dogfood だけでは盲点が残るため、Dais feedback + paid-user feedback + production metrics を全て issue 化し、GitHub issue → VCSDD → deploy → metric verification で閉じる。
+ローカル claude-p は Dais 専用の実験/深い dogfood/credential-heavy action の incubator として使うが、Dais-only fork は作らない。ユーザーが使う正本は cloud Life Manager。dogfood だけでは盲点が残るため、Dais feedback + paid-user feedback + production metrics を全て issue 化し、GitHub issue → VCSDD → deploy → metric verification で閉じる。
+
+最小質問 policy:
+
+```text
+Ask less.
+Infer more.
+Act first when safe.
+Report after action.
+Let the user cancel/correct.
+```
+
+MUST:
+
+1. Onboarding で聞く必須質問は「人生で何が欲しいか」と connector/permission/billing に絞る。
+2. 理想が曖昧なら、physical health / mental health / financial health / trust / useful environment を default goal として仮定する。
+3. 足りない情報は Calendar/Gmail/公開検索/行動ログ/feedback から取りに行く。
+4. 行動は after-action report を基本にし、毎回 permission request にしない。ただし第三者への送信・支払い・法的/高リスク行為は明示 consent/config を要求する。
+
+Repo routing:
+
+```text
+github.com/Daisuke134/life-manager
+  - product code
+  - user-facing product issues
+  - product PRs
+
+github.com/Daisuke134/profitable-claude
+  - loop runtime
+  - CEO allocator
+  - evidence/cadence/verifier
+  - feedback-to-issue automation
+```
 
 初期 wedge:
 
@@ -255,6 +289,65 @@ Life Manager loop の done:
 5. Luma/connpass/event apply は `event-applications.jsonl` + Google Calendar event + Telegram after-action report で検証される。
 6. product dev と marketing の両方が loop 内で回る。marketing は URL/views/clicks/signups を `marketing-actions.jsonl` に記帳する。
 7. CEO は Life Manager の MRR/cost/health を読み、pause/reduce/double-down を registry 経由で enforcement できる。
+
+### To-Be split: Life Manager CEO side vs Agent Economy MAIN side
+
+```text
+                         USER / DAIS / PAID TENANT
+                                  |
+                                  v
+        =====================================================
+        |         LIFE MANAGER / PERSONAL CEO SIDE          |
+        | purpose: serve this one human / paid tenant       |
+        =====================================================
+                                  |
+                                  v
+        -----------------------------------------------------
+        | PERSONAL CEO                                      |
+        | - watches user subscription, cost, token runway    |
+        | - allocates user-benefit loops                     |
+        | - pauses waste                                     |
+        | - doubles down on proven helpful/revenue loops     |
+        -----------------------------------------------------
+          |            |            |            |          |
+          v            v            v            v          v
+      calendar       phone       events       media      money
+      travel         calls       Luma/        podcast   user financial
+      autofill       lateness    connpass     articles  health loops
+                                  |
+                                  v
+                 "Your life starts moving on autopilot."
+
+
+        =====================================================
+        |          MAIN / AGENT ECONOMY LOOP SIDE           |
+        | purpose: create and fund the agent economy        |
+        =====================================================
+                                  |
+                                  v
+        -----------------------------------------------------
+        | AGENT ECONOMY MAIN                                |
+        | - builds Anicca / Blockrun / agent economy infra   |
+        | - runs self-funded earn/crypto/trading loops       |
+        | - funds agent economy from earned capital          |
+        | - graduates from human-funded Anthropic to crypto  |
+        |   funded ClawRouter/self-funded runtime            |
+        | - becomes unnecessary when agent economy sustains  |
+        |   itself without outside vendor/human funding      |
+        -----------------------------------------------------
+                                  |
+                                  v
+                    self-sustaining agent economy
+```
+
+Boundary rule:
+
+- A loop that earns money for **one user/person** belongs to Life Manager / Personal CEO.
+- A loop that earns money to **fund the agent economy itself** belongs to MAIN / Agent Economy.
+- Same algorithm may exist on both sides, but wallets, ledgers, budgets, and success metrics are
+  separate.
+- Long-term UI may merge into one Life Manager experience, but governance stays separated until the
+  system can machine-check purpose, wallet, budget, and consent boundaries.
 
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 
@@ -316,7 +409,9 @@ Life Manager loop の done:
 - **guardrail（Anthropic 警告）**: multi-agent は token を単一 agent の数倍消費する。単純作業を高コスト multi-agent に流さない gate を CEO に併記（business value がコストを正当化するタスクのみ多段化）。
 
 ### 目的（north star）
-- Dais の 10k MRR + claude-p wallet の 10k MRR（agent economy = Franklin 群への出資 + $200 subscription 卒業して ClawRouter 自弁）。全 loop の置き場 = github.com/Daisuke134/profitable-claude（世界中の Claude が human と自分のために稼ぎ、subscription を卒業し、最終的に agent economy に参加できるテンプレート）。
+- **Life Manager / Personal CEO side**: Dais と各 paid user の人生を autopilot で良くする。初期収益目標は Life Manager subscription 10k MRR、次に media/podcast/article/earn loops を含む user-benefit revenue 100k MRR。これは1人/1tenantを直接利する。
+- **MAIN / Agent Economy side**: Anicca/Blockrun/agent economy を作る。human-funded claude-p が稼いだ crypto で ClawRouter/self-funded に卒業し、agent economy を外部 human subscription なしで維持・拡大する。これは特定個人の便益ではなく、agent economy と living beings 全体のための mission loop。
+- **共有制約**: どちらも同じ subscription/token runway を食う間は、global budget ledger に全 cost を記帳する。1つの physical subscription を共有していても、purpose/wallet/ledger は分ける。CEO は Personal side の portfolio を管理し、MAIN は Agent Economy side を管理する。さらに上位に `global-budget-guardian` を置き、subscription limit / weekly limit / disk / wallet drain を横断的に止める。
 
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 

@@ -12,13 +12,18 @@
   - `~/.openclaw/skills/anicca-meetup-talk-applier/`
   - `~/.openclaw/skills/anicca-life-manager/`
 - Design relation:
-  - This is a **business manager loop** under the CEO portfolio, like gig/bounty/affiliate/video.
-  - It is not the global claude-p MAIN loop. MAIN remains outside/above CEO as builder/architect.
+  - This is the **personal user-serving CEO portfolio** that gradually becomes Life Manager.
+  - It is not the global claude-p MAIN / Agent Economy loop. MAIN remains a separate mission loop
+    for building the self-funded agent economy.
+  - Short term: Life Manager is one business manager loop under CEO.
+  - To-be: CEO + all user-benefit loops become the Life Manager operating system for one paying
+    human/user.
 
 ## Product Thesis
 
 Life Manager is the proactive AI that moves a person's life toward their ideal self without the user
-being in the loop.
+being in the loop. It asks the minimum number of questions needed, then infers and acts from connected
+context, telemetry, public search, calendar/Gmail signals, and user feedback.
 
 Initial wedge:
 
@@ -41,7 +46,7 @@ The first paid product must stay narrow enough to sell:
 3. Lateness guard: if the user will not make it, notify stakeholders and update calendar.
 4. Telegram-first onboarding and reporting.
 
-The long-term product is broader:
+The to-be product is broader:
 
 1. Understand user ideals from Telegram onboarding plus Gmail/Calendar/Slack/X context.
 2. Find environments that make the user become that ideal self.
@@ -51,9 +56,42 @@ The long-term product is broader:
 6. Learn from feedback and metrics, turn them into GitHub issues, implement/merge/deploy fixes.
 7. Market itself with social/content loops until Life Manager reaches real MRR.
 
+Onboarding principle:
+
+```text
+Ask less.
+Infer more.
+Act first when safe.
+Report after action.
+Let the user cancel or correct.
+```
+
+MUST:
+
+1. Telegram onboarding asks only the irreducible questions:
+   - "What do you want out of life?"
+   - permission/connectors needed for action: Calendar, Gmail, phone, billing.
+2. If the user gives a long answer, parse it into goals/ideals without asking follow-up questions
+   unless execution is blocked.
+3. If the user gives a short answer or no clear ideal, assume the default human goals:
+   - physically healthy,
+   - mentally healthy,
+   - financially healthy,
+   - trusted by other people,
+   - connected to useful environments.
+4. Missing information is acquired by:
+   - reading connected Calendar/Gmail/context,
+   - searching public sources,
+   - observing behavior and feedback,
+   - trying reversible low-risk actions.
+5. The product reports completed actions and keeps an undo/cancel path. It does not turn every action
+   into a permission request.
+
 ## Decision: Hybrid, Not Two Forked Products
 
 Do **not** build a private local-only Life Manager and a separate cloud Life Manager that diverge.
+The product runtime is cloud-first. Local claude-p/profitable-claude may still orchestrate, verify,
+and improve it until the cloud self-improvement runtime is mature, but users use the cloud product.
 
 Use a hybrid:
 
@@ -81,6 +119,36 @@ Reasoning:
 - A cloud-only branch loses the speed and depth of Dais's daily use. That slows product discovery.
 - Therefore: Dais is the first and deepest tenant of the same cloud product, while local claude-p loops
   may incubate unsafe/credential-heavy actions until they are hardened into multi-tenant cloud flows.
+
+Repo ownership:
+
+```text
+github.com/Daisuke134/life-manager
+  - product code
+  - product issues
+  - product PRs
+  - Telegram/Calendar/Gmail/phone/Stripe cloud runtime
+
+github.com/Daisuke134/profitable-claude
+  - loop harness
+  - CEO allocator
+  - cadence/evidence/verifier
+  - life-manager business-manager runner
+  - feedback-to-issue automation
+
+github.com/Daisuke134/anicca-project
+  - specs and handover docs
+```
+
+Routing rule:
+
+```text
+User-facing product bug/feature/growth/retention issue
+  -> life-manager repo
+
+Loop/runtime/cadence/evidence/CEO allocation bug
+  -> profitable-claude repo
+```
 
 ## External BP Used
 
@@ -224,6 +292,78 @@ Life Manager Business Manager Loop
         - close/update issue
         - append lessons.jsonl
         - report to CEO cost/revenue ledger
+```
+
+## Full To-Be: Personal Life Manager vs Agent Economy Loop
+
+The system has two top-level purposes and they must stay separated for now.
+
+```text
+                         HUMAN / USER
+                              |
+                              v
+        =================================================
+        |              LIFE MANAGER / CEO SIDE          |
+        |        purpose: serve one paying human        |
+        =================================================
+                              |
+                              v
+        -------------------------------------------------
+        | CEO LOOP FOR THIS HUMAN / TENANT              |
+        | - watches subscription/token/cost/runway      |
+        | - allocates calendar/calls/events/money/media |
+        | - pauses waste                                |
+        | - doubles down on proven useful loops         |
+        -------------------------------------------------
+          |          |          |          |          |
+          v          v          v          v          v
+      calendar     phone     events     money      media
+      travel       guard     pull       earn       podcast/articles
+          |          |          |          |          |
+          +----------+----------+----------+----------+
+                              |
+                              v
+        "Your life starts moving on autopilot."
+
+
+        =================================================
+        |        MAIN / AGENT ECONOMY LOOP SIDE         |
+        | purpose: create and fund the agent economy    |
+        =================================================
+                              |
+                              v
+        -------------------------------------------------
+        | AGENT ECONOMY MAIN LOOP                       |
+        | - builds self-funded AI infrastructure        |
+        | - grows Anicca / Blockrun mission             |
+        | - runs crypto/trading/earn loops for runway   |
+        | - graduates from human-funded to self-funded  |
+        | - funds agent economy until it sustains itself|
+        -------------------------------------------------
+                              |
+                              v
+        "Agent economy sustains itself without human funding."
+```
+
+Decision:
+
+- Life Manager / CEO side serves a person or tenant.
+- MAIN / Agent Economy side serves the broader agent economy mission.
+- Trading/crypto loops that earn money for the **user's financial health** belong under Life Manager
+  CEO for that tenant.
+- Trading/crypto loops that earn money to **fund the agent economy itself** belong under MAIN /
+  Agent Economy.
+- The same implementation pattern may be copied, but the ledger, wallet, purpose, and allocator are
+  separate.
+
+End-state possibility:
+
+```text
+Consumer surface: one Life Manager
+Internal governance:
+  - Personal CEO for user-benefit loops
+  - Agent Economy MAIN for civilization/agent-economy loops
+  - Shared cloud substrate only after wallets, ledgers, and purpose boundaries are machine-checkable
 ```
 
 ## Product Subloops
@@ -554,4 +694,3 @@ MUST:
 - Do not fabricate event applications, calendar actions, views, or MRR.
 - Do not rely on notifications alone as behavior change. The product changes environment: calendar,
   phone, events, meetings, intros.
-
