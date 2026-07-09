@@ -213,11 +213,13 @@ profitable-claude が「Dais の Anthropic 課金で動く」状態から「自�
 
 判断（次に何を書くか、どのプラットフォームを厚くするか）は agent、公開・存在確認・metrics 取得・記帳は決定論ツール。
 
-## Life Manager / CEO loop（Dais 2026-07-10: personal user-serving autopilot）
+## Life Manager business loop（Dais 2026-07-10: product business under CEO）
 
 詳細正本: `docs/superpowers/specs/2026-07-10-life-manager-autopilot-product-loop-design.md`
 
-Life Manager は cloud product を正本にする。`profitable-claude` 側には、その cloud product を改善・マーケ・収益化する business-manager loop を置く。短期的には gig/bounty/affiliate/video と同列の1 business loop だが、to-be では **CEO loop + user-benefit loops = Life Manager operating system** になる。
+Life Manager は cloud product を正本にする。`profitable-claude` 側には、その cloud product を改善・マーケ・収益化する business-manager loop を置く。Life Manager は gig/bounty/affiliate/video と同列の1 business loop であり、CEO loop の portfolio allocation 対象である。
+
+CEO loop の仕事は変えない。CEO は会社全体の portfolio manager として、各 loop の Claude local token runway / cost / revenue / cadence / evidence / evaluation を読み、double-down / reduce / pause / spawn を決める。Life Manager product 内の phone cost / Google cost / cloud cost / user outcome evidence は Life Manager loop が管理し、CEO には business summary として上申する。
 
 global `claude-p-mainloop` は CEO の下に入れない。MAIN は **Agent Economy loop** として分離する。MAIN の目的は Dais 個人や1ユーザーの便益ではなく、Anicca/Blockrun/agent economy を作り、self-funded agent economy が人間課金なしで持続する状態まで育てること。
 
@@ -290,33 +292,38 @@ Life Manager loop の done:
 6. product dev と marketing の両方が loop 内で回る。marketing は URL/views/clicks/signups を `marketing-actions.jsonl` に記帳する。
 7. CEO は Life Manager の MRR/cost/health を読み、pause/reduce/double-down を registry 経由で enforcement できる。
 
-### To-Be split: Life Manager CEO side vs Agent Economy MAIN side
+### To-Be split: CEO portfolio vs Life Manager product loop vs Agent Economy MAIN
 
 ```text
-                         USER / DAIS / PAID TENANT
+                         DAIS / CLAUDE-P LOCAL RUNTIME
                                   |
                                   v
         =====================================================
-        |         LIFE MANAGER / PERSONAL CEO SIDE          |
-        | purpose: serve this one human / paid tenant       |
+        |                    CEO LOOP                       |
+        | company portfolio manager                         |
+        | - reads each loop's cost/revenue/cadence/evidence |
+        | - reads Claude local token/subscription runway     |
+        | - double-down / reduce / pause / spawn             |
         =====================================================
-                                  |
-                                  v
-        -----------------------------------------------------
-        | PERSONAL CEO                                      |
-        | - watches API token spend and outcome ROI          |
-        | - allocates user-benefit loops                     |
-        | - pauses waste                                     |
-        | - doubles down on proven helpful/revenue loops     |
-        -----------------------------------------------------
           |            |            |            |          |
           v            v            v            v          v
-      calendar       phone       events       media      money
-      travel         calls       Luma/        podcast   user financial
-      autofill       lateness    connpass     articles  health loops
-                                  |
-                                  v
-                 "Your life starts moving on autopilot."
+        gig        bounty      affiliate      video   life-manager
+                                                        |
+                                                        v
+        =====================================================
+        |              LIFE MANAGER LOOP                   |
+        | product business manager                         |
+        | - improves Life Manager cloud product             |
+        | - self-heals product                             |
+        | - turns feedback into life-manager issues         |
+        | - markets Life Manager                           |
+        | - tracks product API cost / user outcome evidence |
+        | - reports MRR/cost/health/evidence to CEO         |
+        =====================================================
+                                                        |
+                                                        v
+                    github.com/Daisuke134/life-manager
+                    cloud product + product issues
 
 
         =====================================================
@@ -342,16 +349,18 @@ Life Manager loop の done:
 
 Boundary rule:
 
-- A loop that earns money for **one user/person** belongs to Life Manager / Personal CEO.
+- Life Manager is one business loop under CEO now.
+- Life Manager loop owns product-internal phone/Google/cloud/API cost and user outcome evidence.
+- CEO receives Life Manager's summarized MRR/cost/health/evidence and allocates company-level Claude
+  tokens/frequency/capital like any other business.
+- A loop that is still an independent business, such as gig/bounty/affiliate/video, remains under CEO.
+- A user-benefit loop can move into Life Manager only after it becomes a product module with cloud
+  tenant boundaries, product ledgers, and user-facing value.
 - A loop that earns money to **fund the agent economy itself** belongs to MAIN / Agent Economy.
-- Paid users pay the Life Manager product, but the runtime is optimized by API token/cost ledgers:
-  Claude API, phone API, Google/Gmail API, search/scrape, cloud infra.
-- Personal CEO allocation target is not "keep using tokens"; it is "spend the minimum API cost that
-  moves this user toward the ideal self."
 - Same algorithm may exist on both sides, but wallets, ledgers, budgets, and success metrics are
   separate.
-- Long-term UI may merge into one Life Manager experience, but governance stays separated until the
-  system can machine-check purpose, wallet, budget, and consent boundaries.
+- Long-term, Life Manager may absorb all user-benefit loops and become the single cloud product. That
+  is a migration path, not the current architecture.
 
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 
@@ -413,9 +422,10 @@ Boundary rule:
 - **guardrail（Anthropic 警告）**: multi-agent は token を単一 agent の数倍消費する。単純作業を高コスト multi-agent に流さない gate を CEO に併記（business value がコストを正当化するタスクのみ多段化）。
 
 ### 目的（north star）
-- **Life Manager / Personal CEO side**: Dais と各 paid user の人生を autopilot で良くする。初期収益目標は Life Manager subscription 10k MRR、次に media/podcast/article/earn loops を含む user-benefit revenue 100k MRR。これは1人/1tenantを直接利する。
+- **Life Manager product business**: Dais と各 paid user の人生を autopilot で良くする cloud product を作る。初期収益目標は Life Manager subscription 10k MRR。Life Manager loop は product dev / self-heal / marketing / feedback-to-issue / product API cost / user outcome evidence を管理し、CEO に business summary を上げる。
 - **MAIN / Agent Economy side**: Anicca/Blockrun/agent economy を作る。human-funded claude-p が稼いだ crypto で ClawRouter/self-funded に卒業し、agent economy を外部 human subscription なしで維持・拡大する。これは特定個人の便益ではなく、agent economy と living beings 全体のための mission loop。
-- **共有制約**: ローカル claude-p で動く間は同じ Claude subscription/token runway を食うので、global budget ledger に全 cost を記帳する。cloud to-be では Claude API / phone API / Google API / cloud infra の per-tenant cost を記帳する。どちらの場合も purpose/wallet/ledger は分ける。CEO は Personal side の portfolio を管理し、MAIN は Agent Economy side を管理する。さらに上位に `global-budget-guardian` を置き、weekly limit / API spend / disk / wallet drain を横断的に止める。
+- **CEO portfolio side**: CEO は gig/bounty/affiliate/video/life-manager など全 business loop の local Claude token/cost/revenue/cadence/evidence を読み、資源配分を決める。CEO の仕事は変えない。
+- **共有制約**: ローカル claude-p で動く間は同じ Claude subscription/token runway を食うので、global budget ledger に全 cost を記帳する。cloud Life Manager では Claude API / phone API / Google API / cloud infra の per-tenant cost を Life Manager loop が記帳する。purpose/wallet/ledger は分ける。さらに上位に `global-budget-guardian` を置き、weekly limit / API spend / disk / wallet drain を横断的に止める。
 
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
 

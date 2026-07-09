@@ -1,3 +1,16 @@
+# SUPERSEDED
+
+Use `.claude/handovers/2026-07-10_0836_life-manager-ceo-loop-corrected.md` instead.
+
+This file mixed CEO and Life Manager too much. Corrected architecture:
+
+```text
+CEO loop = portfolio manager for all profitable-claude businesses.
+Life Manager loop = one product business loop under CEO.
+Life Manager loop owns product dev / self-heal / marketing / product API cost / user outcome.
+CEO receives Life Manager summary and allocates company-level resources.
+```
+
 # Dais handover: Life Manager / Agent Economy To-Be split（2026-07-10 07:51 JST）
 
 ## Context

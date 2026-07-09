@@ -12,12 +12,16 @@
   - `~/.openclaw/skills/anicca-meetup-talk-applier/`
   - `~/.openclaw/skills/anicca-life-manager/`
 - Design relation:
-  - This is the **personal user-serving CEO portfolio** that gradually becomes Life Manager.
-  - It is not the global claude-p MAIN / Agent Economy loop. MAIN remains a separate mission loop
-    for building the self-funded agent economy.
-  - Short term: Life Manager is one business manager loop under CEO.
-  - To-be: CEO + all user-benefit loops become the Life Manager operating system for one paying
-    human/user.
+  - Life Manager is one **product business loop** under the profitable-claude CEO portfolio.
+  - CEO loop keeps its existing job: portfolio allocation across businesses such as gig, bounty,
+    affiliate, video, and life-manager.
+  - Life Manager loop owns the Life Manager product itself: product dev, self-heal, feedback triage,
+    product marketing, product revenue, and product-internal API cost/outcome ledgers.
+  - MAIN / Agent Economy loop remains a separate mission loop for building the self-funded agent
+    economy.
+  - Long-term direction: Life Manager may absorb user-benefit loops from profitable-claude, and the
+    user-facing product may become one cloud repo/product named `life-manager`. That is a migration
+    path, not the current architecture.
 
 ## Product Thesis
 
@@ -294,80 +298,109 @@ Life Manager Business Manager Loop
         - report to CEO cost/revenue ledger
 ```
 
-## Full To-Be: Personal Life Manager vs Agent Economy Loop
+## Full To-Be: CEO Portfolio vs Life Manager Product Loop
 
-The system has two top-level purposes and they must stay separated for now.
+The current system keeps CEO and Life Manager separate. CEO is the portfolio allocator. Life Manager
+is one product business inside that portfolio.
 
 ```text
-                         HUMAN / USER
-                              |
-                              v
-        =================================================
-        |              LIFE MANAGER / CEO SIDE          |
-        |        purpose: serve one paying human        |
-        =================================================
-                              |
-                              v
-        -------------------------------------------------
-        | CEO LOOP FOR THIS HUMAN / TENANT              |
-        | - watches API token spend and outcome ROI     |
-        | - allocates calendar/calls/events/money/media |
-        | - pauses waste                                |
-        | - doubles down on proven useful loops         |
-        -------------------------------------------------
-          |          |          |          |          |
-          v          v          v          v          v
-      calendar     phone     events     money      media
-      travel       guard     pull       earn       podcast/articles
-          |          |          |          |          |
-          +----------+----------+----------+----------+
-                              |
-                              v
+                         DAIS / CLAUDE-P LOCAL RUNTIME
+                                      |
+                                      v
+        =========================================================
+        |                    CEO LOOP                           |
+        |       company / portfolio allocator for businesses     |
+        =========================================================
+        | reads per-business:                                   |
+        |   - Claude local token / subscription runway           |
+        |   - cost from record-cost-event.sh                     |
+        |   - revenue / MRR / realized profit                    |
+        |   - cadence health                                     |
+        |   - evidence quality                                   |
+        |   - weekly evaluation score                            |
+        |                                                       |
+        | decides:                                               |
+        |   - double down                                        |
+        |   - reduce frequency                                   |
+        |   - pause                                              |
+        |   - spawn                                              |
+        |   - keep alive / conserve compute                      |
+        =========================================================
+          |             |              |             |          |
+          v             v              v             v          v
+      gig loop     bounty loop    affiliate loop   video   life-manager
+                                                     loop       loop
+                                                                |
+                                                                v
+        =========================================================
+        |                 LIFE MANAGER LOOP                     |
+        |        product business manager for Life Manager       |
+        =========================================================
+        | owns:                                                  |
+        |   - Life Manager cloud product improvement             |
+        |   - product self-heal                                  |
+        |   - user feedback -> GitHub issues                     |
+        |   - product marketing                                  |
+        |   - product revenue / MRR                              |
+        |   - product-internal API cost/outcome ledgers          |
+        |   - product evidence reports to CEO                    |
+        =========================================================
+                         |                         |
+                         v                         v
+        +--------------------------------+  +------------------------------+
+        | github.com/Daisuke134/         |  | github.com/Daisuke134/       |
+        | life-manager                   |  | profitable-claude            |
+        |                                |  |                              |
+        | product code                   |  | CEO + harness + runner       |
+        | product issues                 |  | cadence/evidence/verifier    |
+        | cloud app                      |  | life-manager loop wrapper    |
+        +--------------------------------+  +------------------------------+
+                         |
+                         v
+        =========================================================
+        |              LIFE MANAGER CLOUD PRODUCT               |
+        |      Telegram + Calendar + Gmail + Phone + Stripe      |
+        =========================================================
+                         |
+                         v
         "Your life starts moving on autopilot."
-
-
-        =================================================
-        |        MAIN / AGENT ECONOMY LOOP SIDE         |
-        | purpose: create and fund the agent economy    |
-        =================================================
-                              |
-                              v
-        -------------------------------------------------
-        | AGENT ECONOMY MAIN LOOP                       |
-        | - builds self-funded AI infrastructure        |
-        | - grows Anicca / Blockrun mission             |
-        | - runs crypto/trading/earn loops for runway   |
-        | - graduates from human-funded to self-funded  |
-        | - funds agent economy until it sustains itself|
-        -------------------------------------------------
-                              |
-                              v
-        "Agent economy sustains itself without human funding."
 ```
 
 Decision:
 
-- Life Manager / CEO side serves a person or tenant.
-- MAIN / Agent Economy side serves the broader agent economy mission.
-- Paid users pay Life Manager through product billing, but the internal runtime is metered by API
-  cost: Claude API, phone API, Google API, email/API send cost, search/scrape cost, and cloud cost.
-- The CEO loop optimizes token/API spend toward user outcome ROI, not merely whether a user has an
-  active subscription.
-- Trading/crypto loops that earn money for the **user's financial health** belong under Life Manager
-  CEO for that tenant.
-- Trading/crypto loops that earn money to **fund the agent economy itself** belong under MAIN /
-  Agent Economy.
-- The same implementation pattern may be copied, but the ledger, wallet, purpose, and allocator are
-  separate.
+- CEO loop does not become Life Manager now.
+- CEO loop treats Life Manager as one business/product among other businesses.
+- Life Manager loop tracks product-internal API costs and user outcome evidence because that is part
+  of operating the Life Manager product.
+- CEO receives Life Manager's summarized product health: MRR, product cost, cadence, evidence, and
+  evaluation score.
+- Long-term, Life Manager can absorb other user-benefit loops when those loops become product
+  features. Until absorption, those loops remain separate CEO-managed businesses.
+- MAIN / Agent Economy remains separate from both CEO portfolio and Life Manager product.
 
-End-state possibility:
+Long-term merge path:
 
 ```text
-Consumer surface: one Life Manager
-Internal governance:
-  - Personal CEO for user-benefit loops
-  - Agent Economy MAIN for civilization/agent-economy loops
-  - Shared cloud substrate only after wallets, ledgers, and purpose boundaries are machine-checkable
+phase 0 current:
+  profitable-claude CEO manages many loops
+  life-manager is one loop/business
+  life-manager repo is product code
+
+phase 1:
+  life-manager loop proves product dev + self-heal + marketing + MRR
+  product-internal ledgers become reliable
+
+phase 2:
+  user-benefit loops are converted into Life Manager product modules
+  examples: calendar, phone, environment pull, connector, media, money/career
+
+phase 3:
+  stable user-benefit modules move from profitable-claude into life-manager repo
+  CEO still exists as allocator during migration
+
+phase 4:
+  Life Manager repo becomes the single cloud product for the user-facing side
+  profitable-claude remains only for non-product / agent-economy / founder-runtime needs
 ```
 
 ## Product Subloops
@@ -590,8 +623,9 @@ ASCII:
 
 ## CEO Requirements Added By Life Manager
 
-CEO must not only read revenue; it must read API/token runway and enforce allocation. In the cloud
-to-be, the meaningful unit is per-tenant API cost versus outcome impact.
+CEO keeps the existing portfolio-manager job. Life Manager adds one more business arm that CEO can
+score, pause, reduce, or double down. Product-internal API cost/outcome accounting is owned by the
+Life Manager loop, then summarized upward to CEO.
 
 MUST:
 
@@ -611,7 +645,12 @@ MUST:
    - defer marketing generation if no conversion evidence,
    - keep self-heal/verification minimal,
    - report "company alive but conserving compute."
-6. Cloud Life Manager appends per-tenant cost/outcome rows:
+
+## Life Manager Loop Requirements
+
+MUST:
+
+1. Cloud Life Manager appends per-tenant cost/outcome rows:
    ```json
    {
      "ts": "...",
@@ -625,12 +664,26 @@ MUST:
      "evidence": "url-or-ledger-id"
    }
    ```
-7. CEO allocation score is outcome-adjusted:
+2. Life Manager loop computes product-internal outcome ROI:
    ```text
-   user_outcome_roi = verified_outcome_score / api_cost_usd
+   life_manager_outcome_roi = verified_user_outcome_score / product_api_cost_usd
    ```
-   A high-cost loop that does not move the user toward the ideal self is reduced even if it is
-   technically working.
+3. Life Manager loop uses this ROI to improve product behavior, reduce wasteful product actions, and
+   decide what product feature/marketing issue to pick next.
+4. Life Manager loop reports summarized business health to CEO:
+   ```json
+   {
+     "loop": "life-manager",
+     "mrr_usd": 0.0,
+     "product_api_cost_usd": 0.0,
+     "product_marketing_cost_usd": 0.0,
+     "verified_user_outcomes": 0,
+     "cadence_ok": true,
+     "evidence_url_or_path": "..."
+   }
+   ```
+5. CEO uses the summary like any other business loop. CEO does not inspect every phone/Gmail/Google
+   row unless Life Manager reports a blocker or evidence audit requires it.
 
 ## VCSDD Implementation Plan
 
