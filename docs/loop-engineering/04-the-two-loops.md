@@ -157,4 +157,35 @@ Franklin の独立:
 ★重要な gap: 今このセッションで claude-p(俺)が手でやっている「どの loop が動く/token いくら/改善したか」の追跡は**本来 L1 CEO loop の仕事**。手動＝smell。CEO loop を「全 loop 台帳 + revenue/token/cost/improve → double-down/halt」まで作り込むのが C1 の後の主要増分（Mahoraga copy）。MAIN はその CEO の出力を読んで「次に何を建てる」を決める。★
 
 出典: 実測 launchctl+plist(2026-07-10) / [[reference_ceo_manager_explorer_multiagent_bp_2026_07_08]] / Anthropic orchestrator-workers / CrewAI hierarchical。
-関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / [[01-loop-vs-goal-resolved]] / design doc §5 / [[10-STATUS-verified]] §E。
+
+## 9. 呼称確定 + 2-Claude 分業 + 3-repo 分離（★Dais 確定 2026-07-10★）
+
+**呼称**: MAIN loop = **AGENT ECONOMY LOOP** と正式に呼ぶ。理由=それは「稼ぐ」loop でなく「Franklin の agent economy を建てる開発者」だから。金を稼がない、稼ぐ機械を建てる。
+
+**AGENT ECONOMY LOOP の自己終了ゲート**（毎パス末尾 ⑥）: 「Franklin が N日連続 net-positive で自走 AND harness/monitor/seed を Franklin へ手渡し済 AND CEO loop が Franklin 配下で回る」が真になったら → `launchctl unload ai.anicca.claude-p-mainloop` + plist 削除 + pause file → 最後の commit「builder exits」→ out of the loop。= claude-p exit（§D item8）= このループ自身のゴール。ループが自分の終了条件を内在する。
+
+**2-Claude 分業（衝突なし）:**
+| Claude | 働く loop | 目的 | repo |
+|---|---|---|---|
+| **別 CC** | CEO loop(founder-loop) + 全 earn 事業 | Dais を rich にする(human-funded profit) | **profitable-claude** |
+| **この CC(私)** | AGENT ECONOMY LOOP(claude-p-mainloop) | Franklin の経済を建てる純開発者 | **anicca** |
+
+polymarket 等の earner は「claude 自身のため」だが **CEO loop 配下=profitable-claude**。AGENT ECONOMY LOOP は純開発者に徹し earner を抱えない(建てて CEO に渡す)。
+
+**3-repo 分離（BP=memory `feedback_never_reinvent…` / REPO分離確定 polyrepo+vendor, submodule禁止）:**
+```
+ anicca (OSS,public) = 全AIを財政自立させる環境=agent economy を"創る"場所
+   ├ AGENT ECONOMY LOOP (claude-p-mainloop) ★私が働く★
+   ├ Franklin harness (self-improve/self-heal)
+   ├ earn rail の OSS コード(sol/hl/pm/clip… Franklin も vendor して使う共有)
+   └ agent-economy spec (loop-engineering + .vcsdd features ← .vcsdd は既にここ)
+ profitable-claude (human-funded,private) ★別CC が働く★
+   ├ CEO loop(founder-loop) + 各事業の human-funded ランナー(anicca rail を vendor)
+   └ (affiliate/bounty は移設済、pm-earner等は未移設)
+ anicca-products (public) = 出荷製品(iOS/web/api aniccaai.com) + (今)loop-engineering spec
+```
+
+**spec 物理配置の判断**: agent-economy 設計 spec(loop-engineering/ + .vcsdd/features/)は **anicca へ寄せるのが正**(コードと同居原則。.vcsdd は既に anicca、loop-engineering だけ anicca-products に残存)。製品 spec は anicca-products、CEO spec は profitable-claude。★ただし物理移動は #6 refactor で handover パス更新とセット実行(今 loop-engineering を動かすと handover mail のパス参照が壊れるため保留)。それまで loop-engineering は anicca-products/docs/ が正本。★
+
+出典: 実測 launchctl+plist(2026-07-10) / Dais 分業指示(2026-07-10) / [[reference_ceo_manager_explorer_multiagent_bp_2026_07_08]] / REPO分離確定(polyrepo+vendor)。
+関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / [[01-loop-vs-goal-resolved]] / design doc §5 / [[10-STATUS-verified]] §E / [[05-coordination-with-agent-economy]]。
