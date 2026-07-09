@@ -2,7 +2,7 @@
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 # self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
 # code/automation blocker it cannot fix in-pass, it (or a healthcheck) calls this to spawn a detached, full-power
-# OPUS claude that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
+# Sonnet claude that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
 # → writes a result marker. That is how the loops self-improve their own code without babysitting.
 # Usage: self-fix.sh <loop-name> "<blocker + concrete fix hint>"
 set -uo pipefail
@@ -64,7 +64,7 @@ fi
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
 printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
-TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a full-power Opus dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
+TASK="AUTONOMOUS SELF-FIX for the ${LOOP} loop. You are a full-power Sonnet dev with browser (CloakBrowser daily-driver CDP :9222), Bash, Edit. NEVER ask a human and NEVER present a menu — a blocker is not stop. BLOCKER + HINT: ${BLOCKER}.
 DO, in order:
 (1) Reproduce the failure yourself and find the ROOT cause (read the actual code + run it + watch where it breaks).
 (2) Fix the code. If the root cause is a brittle DOM-coordinate/selector script that broke on a UI change, do NOT just re-tune coordinates: rebuild the failing step as two-layer agentic (a thin script opens the page, then YOU look at real screenshots and decide each click/type, looping until the real success signal appears).
@@ -73,7 +73,7 @@ DO, in order:
 (5) Write the outcome to ${RESULT} as a single line: 'SUCCESS <utc> <one-line real evidence, e.g. published URL>' or 'FAIL <utc> <why + what is still blocked>'. If the fix resolved a selfheal-request json, rm it.
 If after honest effort the fix is genuinely impossible (e.g. an external service is down), write FAIL with a precise diagnosis to ${RESULT} and invoke self/issue-dev — still never ask a human. Report what you fixed + the real evidence at the end."
 TASK="${TASK} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
-tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model opus --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"
+tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$TASK"
 date +%s > "$STARTMARK"
-echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (opus): ${BLOCKER:0:90}" >> "$LOG"
-echo "self-fix[$LOOP] spawned (opus, detached). result→$RESULT log→$LOG"
+echo "$(date '+%F %T') self-fix[$LOOP] SPAWNED (sonnet): ${BLOCKER:0:90}" >> "$LOG"
+echo "self-fix[$LOOP] spawned (sonnet, detached). result→$RESULT log→$LOG"
