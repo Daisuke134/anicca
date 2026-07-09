@@ -203,9 +203,92 @@ phase 4:
   Life Manager repo becomes the single cloud product for the user-facing side
 ```
 
+## Future Full To-Be ASCII
+
+This is future and out of current implementation scope. It is correct as a destination, but do not
+implement it now.
+
+```text
+                         HUMAN / PAID USER
+                                |
+                                v
+        =========================================================
+        |                    LIFE MANAGER                       |
+        |  "A Claude that takes care of you financially,         |
+        |   physically, and mentally."                           |
+        =========================================================
+                                |
+                                v
+        ---------------------------------------------------------
+        | MINIMUM-QUESTION ONBOARDING                           |
+        | - What do you want out of life?                        |
+        | - Connect Telegram / Calendar / Gmail / phone / Stripe |
+        | - Infer missing context instead of asking repeatedly   |
+        ---------------------------------------------------------
+                                |
+                                v
+        =========================================================
+        |              PERSONAL CEO INSIDE LIFE MANAGER          |
+        |     CEO of this user's life, running in the cloud       |
+        =========================================================
+        | receives direct reports from cloud product modules      |
+        | allocates API tokens / calls / outreach / work          |
+        | optimizes for the user's ideal self                     |
+        =========================================================
+          |             |             |             |           |
+          v             v             v             v           v
+      calendar       phone       environment    connector     money
+      module         module      pull module    module        module
+      travel/prep    calls       events         intros        career
+      lateness       wake/sleep  retreats       podcast      trading*
+          |             |             |             |           |
+          v             v             v             v           v
+      media        personal       product       meta-        self-heal
+      module       marketing      dev loop      marketing    loop
+      podcast      user's brand   improves      markets      repairs
+      articles     audience       product       product      product
+          |             |             |             |           |
+          +-------------+-------------+-------------+-----------+
+                                |
+                                v
+        "Your life starts moving on autopilot."
+```
+
+Future merge rule:
+
+```text
+Only move a loop into Life Manager when:
+  - it has a cloud product module boundary,
+  - per-tenant permissions exist,
+  - per-tenant API/capital cost is ledgered,
+  - user outcome evidence is machine-checkable,
+  - cancellation/undo path exists where applicable.
+```
+
 ## Implementation Goal For Next Claude
 
 /goal Build the Life Manager business loop under profitable-claude CEO, without changing CEO's role.
+
+Seed product issues already created in `github.com/Daisuke134/life-manager`:
+
+1. https://github.com/Daisuke134/life-manager/issues/1
+   - `[life-manager] Minimum-question onboarding with inferred context`
+2. https://github.com/Daisuke134/life-manager/issues/2
+   - `[life-manager] Travel-time calendar wedge for physical events`
+3. https://github.com/Daisuke134/life-manager/issues/3
+   - `[life-manager] Phone wake, leave, sleep, and lateness guard`
+4. https://github.com/Daisuke134/life-manager/issues/4
+   - `[life-manager] Environment pull via Luma and connpass events`
+5. https://github.com/Daisuke134/life-manager/issues/5
+   - `[life-manager] Connector and podcast guest outreach loop`
+6. https://github.com/Daisuke134/life-manager/issues/6
+   - `[life-manager] Feedback-to-GitHub issue self-improvement loop`
+7. https://github.com/Daisuke134/life-manager/issues/7
+   - `[life-manager] Product marketing loop for Life Manager itself`
+8. https://github.com/Daisuke134/life-manager/issues/8
+   - `[life-manager] Product API cost and user-outcome ledgers`
+9. https://github.com/Daisuke134/life-manager/issues/9
+   - `[life-manager] Future design: cloud personal CEO inside Life Manager`
 
 Done:
 
@@ -222,7 +305,17 @@ Done:
    - README
    - cadence/evidence/report wiring
 4. Life Manager loop creates/updates product issues in `github.com/Daisuke134/life-manager`.
-5. Life Manager loop has product ledgers:
+5. Seed product issues in `github.com/Daisuke134/life-manager` for Dais-requested capabilities:
+   - minimum-question onboarding and inferred context,
+   - travel-time calendar wedge,
+   - phone/lateness guard,
+   - Luma/connpass environment pull,
+   - connector/podcast guest outreach,
+   - feedback-to-issue self-improvement,
+   - product marketing loop,
+   - product API cost/outcome ledgers,
+   - future cloud personal CEO architecture as out-of-scope design issue.
+6. Life Manager loop has product ledgers:
    - feedback
    - issues
    - calendar actions
@@ -232,29 +325,29 @@ Done:
    - product API costs
    - Stripe MRR
    - lessons
-6. Life Manager cloud wedge works:
+7. Life Manager cloud wedge works:
    - Telegram onboarding
    - Google Calendar physical event detection
    - travel/prep/leave-time block
    - Telegram after-action report
    - evidence ledger
-7. Life Manager loop self-improves:
+8. Life Manager loop self-improves:
    - feedback/metrics/cost/failures -> issue
    - issue -> VCSDD implementation
    - deploy -> real evidence verification
    - lessons.jsonl
-8. Life Manager loop markets itself:
+9. Life Manager loop markets itself:
    - marketing action URL
    - views/clicks/signups if available
    - no fake metrics
-9. CEO sees Life Manager as one business:
+10. CEO sees Life Manager as one business:
    - MRR
    - product cost summary
    - cadence
    - evidence
    - evaluation score
    - can pause/reduce/double-down via registry
-10. Do not implement MAIN / Agent Economy loop in this session.
+11. Do not implement MAIN / Agent Economy loop in this session.
 
 Constraints:
 
@@ -267,4 +360,3 @@ Constraints:
 - If revenue is zero, report zero.
 - Submodule禁止。polyrepo + vendor/copy.
 - Machine verification before claiming LIVE.
-

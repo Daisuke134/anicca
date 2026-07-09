@@ -285,12 +285,13 @@ Google Calendar を接続すると、物理予定ごとに移動時間・出発�
 Life Manager loop の done:
 
 1. `profitable-claude/skills/human-funded/life-manager/` が存在し、`life-manager-cli.sh` / healthcheck / README / ledgers を持つ。
-2. Telegram feedback / Dais dogfood / paid-user feedback / metric drop が GitHub issue に正規化される。
-3. issue は `product:life-manager`, `lm:type:*`, `lm:source:*`, evidence, success_metric を持つ。
-4. travel-time action は Google Calendar 実イベントで検証され、`calendar-actions.jsonl` に記帳される。
-5. Luma/connpass/event apply は `event-applications.jsonl` + Google Calendar event + Telegram after-action report で検証される。
-6. product dev と marketing の両方が loop 内で回る。marketing は URL/views/clicks/signups を `marketing-actions.jsonl` に記帳する。
-7. CEO は Life Manager の MRR/cost/health を読み、pause/reduce/double-down を registry 経由で enforcement できる。
+2. Dais が要求した Life Manager capability が `github.com/Daisuke134/life-manager` の product issue として seed 済み。
+3. Telegram feedback / Dais dogfood / paid-user feedback / metric drop が GitHub issue に正規化される。
+4. issue は `product:life-manager`, `lm:type:*`, `lm:source:*`, evidence, success_metric を持つ。
+5. travel-time action は Google Calendar 実イベントで検証され、`calendar-actions.jsonl` に記帳される。
+6. Luma/connpass/event apply は `event-applications.jsonl` + Google Calendar event + Telegram after-action report で検証される。
+7. product dev と marketing の両方が loop 内で回る。marketing は URL/views/clicks/signups を `marketing-actions.jsonl` に記帳する。
+8. CEO は Life Manager の MRR/cost/health を読み、pause/reduce/double-down を registry 経由で enforcement できる。
 
 ### To-Be split: CEO portfolio vs Life Manager product loop vs Agent Economy MAIN
 
@@ -361,6 +362,10 @@ Boundary rule:
   separate.
 - Long-term, Life Manager may absorb all user-benefit loops and become the single cloud product. That
   is a migration path, not the current architecture.
+- Future full To-Be is documented in
+  `docs/superpowers/specs/2026-07-10-life-manager-autopilot-product-loop-design.md` under
+  "Future Full To-Be: Cloud Personal CEO Inside Life Manager". It is a destination architecture, not
+  current implementation scope.
 
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 

@@ -403,6 +403,95 @@ phase 4:
   profitable-claude remains only for non-product / agent-economy / founder-runtime needs
 ```
 
+## Future Full To-Be: Cloud Personal CEO Inside Life Manager
+
+This section is explicitly **future / out of current implementation scope**. The previous section is
+the current architecture. Do not implement this until Life Manager has proven product dev, self-heal,
+marketing, MRR, tenant isolation, API cost ledgers, and real user outcome evidence.
+
+Future target:
+
+```text
+                         HUMAN / PAID USER
+                                |
+                                v
+        =========================================================
+        |                    LIFE MANAGER                       |
+        |  "A Claude that takes care of you financially,         |
+        |   physically, and mentally."                           |
+        =========================================================
+                                |
+                                v
+        ---------------------------------------------------------
+        | MINIMUM-QUESTION ONBOARDING                           |
+        | - What do you want out of life?                        |
+        | - Connect Telegram / Calendar / Gmail / phone / Stripe |
+        | - Infer missing context instead of asking repeatedly   |
+        ---------------------------------------------------------
+                                |
+                                v
+        =========================================================
+        |              PERSONAL CEO INSIDE LIFE MANAGER          |
+        |     CEO of this user's life, running in the cloud       |
+        =========================================================
+        | reads direct reports from product modules:              |
+        |   - user goals / ideals                                |
+        |   - module outcome evidence                            |
+        |   - per-tenant API/token spend                         |
+        |   - subscription margin                                |
+        |   - safety/consent boundaries                          |
+        |                                                        |
+        | allocates:                                              |
+        |   - Claude API tokens                                  |
+        |   - phone calls                                        |
+        |   - outreach effort                                    |
+        |   - marketing/media work for the user                  |
+        |   - money/career work                                  |
+        =========================================================
+          |             |             |             |           |
+          v             v             v             v           v
+      calendar       phone       environment    connector     money
+      module         module      pull module    module        module
+      travel/prep    calls       events         intros        career
+      lateness       wake/sleep  retreats       podcast      trading*
+          |             |             |             |           |
+          v             v             v             v           v
+      media        personal       product       meta-        self-heal
+      module       marketing      dev loop      marketing    loop
+      podcast      user's brand   improves      markets      repairs
+      articles     audience       product       product      product
+          |             |             |             |           |
+          +-------------+-------------+-------------+-----------+
+                                |
+                                v
+        ---------------------------------------------------------
+        | AFTER-ACTION REPORTING                                |
+        | - "I registered you for this event."                   |
+        | - "I added travel time."                              |
+        | - "I emailed this guest."                             |
+        | - "I shipped this product improvement."                |
+        | User can cancel/correct after the fact.                |
+        ---------------------------------------------------------
+                                |
+                                v
+        "Your life starts moving on autopilot."
+```
+
+`trading*` remains future and requires strict permission, wallet isolation, legal/risk boundaries,
+and real loss limits. Do not include trading in the initial Life Manager SaaS promise.
+
+Future merge rule:
+
+```text
+Only move a loop into Life Manager when:
+  - it has a cloud product module boundary,
+  - per-tenant permissions exist,
+  - per-tenant API/capital cost is ledgered,
+  - user outcome evidence is machine-checkable,
+  - cancellation/undo path exists where applicable,
+  - CEO can still receive a summarized business report during migration.
+```
+
 ## Product Subloops
 
 ### 1. Travel-Time Autopilot Loop
@@ -583,6 +672,23 @@ Rules:
 - If multiple users ask similar things, merge into one opportunity and raise priority.
 - If a metric drops without explicit feedback, create `lm:source:metric` issue.
 
+## Seed Product Issues Created
+
+The following product issues were created in `github.com/Daisuke134/life-manager` on 2026-07-10 from
+Dais dogfood/strategy feedback. The Life Manager loop must treat these as the initial product backlog.
+
+| # | URL | Capability |
+|---|---|---|
+| 1 | https://github.com/Daisuke134/life-manager/issues/1 | Minimum-question onboarding with inferred context |
+| 2 | https://github.com/Daisuke134/life-manager/issues/2 | Travel-time calendar wedge for physical events |
+| 3 | https://github.com/Daisuke134/life-manager/issues/3 | Phone wake, leave, sleep, and lateness guard |
+| 4 | https://github.com/Daisuke134/life-manager/issues/4 | Environment pull via Luma and connpass events |
+| 5 | https://github.com/Daisuke134/life-manager/issues/5 | Connector and podcast guest outreach loop |
+| 6 | https://github.com/Daisuke134/life-manager/issues/6 | Feedback-to-GitHub issue self-improvement loop |
+| 7 | https://github.com/Daisuke134/life-manager/issues/7 | Product marketing loop for Life Manager itself |
+| 8 | https://github.com/Daisuke134/life-manager/issues/8 | Product API cost and user-outcome ledgers |
+| 9 | https://github.com/Daisuke134/life-manager/issues/9 | Future design: cloud personal CEO inside Life Manager |
+
 ## CEO / MAIN Relationship
 
 ```text
@@ -692,6 +798,16 @@ MUST:
 - Create `profitable-claude/skills/human-funded/life-manager/`.
 - Vendor `calendar-with-travel-time`, `opportunity-calendar`, `anicca-meetup-talk-applier` as local copies.
 - Add `life-manager-cli.sh`, `life-manager-healthcheck.sh`, `README.md`.
+- Seed `github.com/Daisuke134/life-manager` product issues for the capabilities Dais requested:
+  - minimum-question onboarding and inferred context,
+  - travel-time calendar wedge,
+  - phone/lateness guard,
+  - Luma/connpass environment pull,
+  - connector/podcast guest outreach,
+  - feedback-to-issue self-improvement,
+  - product marketing loop,
+  - product API cost/outcome ledgers,
+  - future cloud personal CEO architecture as out-of-scope design issue.
 - Add ledgers:
   - `state/feedback.jsonl`
   - `state/issues.jsonl`
@@ -751,13 +867,15 @@ MUST:
 ## Done Conditions
 
 1. Life Manager exists as a `profitable-claude` business loop.
-2. Telegram feedback can create a GitHub issue with source/evidence/success metric.
-3. Calendar travel-time action writes a ledger row and is verified against Google Calendar.
-4. Luma/connpass event application writes a ledger row and creates Google Calendar event.
-5. Marketing action writes URL/views/clicks/signups if available.
-6. `loop-report.sh life-manager` sends evidence mail with non-empty evidence or `none: <reason>`.
-7. CEO reads Life Manager cost/revenue/health and can pause/reduce frequency.
-8. Fresh adversary review passes with:
+2. Initial requested capabilities are present as product issues in `github.com/Daisuke134/life-manager`
+   with source/evidence/success metric.
+3. Telegram feedback can create a GitHub issue with source/evidence/success metric.
+4. Calendar travel-time action writes a ledger row and is verified against Google Calendar.
+5. Luma/connpass event application writes a ledger row and creates Google Calendar event.
+6. Marketing action writes URL/views/clicks/signups if available.
+7. `loop-report.sh life-manager` sends evidence mail with non-empty evidence or `none: <reason>`.
+8. CEO reads Life Manager cost/revenue/health and can pause/reduce frequency.
+9. Fresh adversary review passes with:
    - no orphan wiring,
    - no fake metric,
    - non-dict JSONL rows do not crash,
