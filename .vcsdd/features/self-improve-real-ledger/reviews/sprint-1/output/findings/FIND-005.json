@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "verification-report.md's 'deterministic tier' section (and its FIND-003-remediation note added at the top of the file) both quote the raw pytest transcript as ending '101 passed in 1.86s', and the contract's Post-Phase-5 addendum (contracts/sprint-1.md line 217) repeats the identical '101 passed in 1.86s' figure, explicitly framed as the SAME fresh, in-session, immediately-pre-report capture a reviewer without Bash access should treat as authoritative. However, the actual raw artifact file this quote is supposed to come from -- verification/proof-harnesses/deterministic-run.txt -- ends with '101 passed in 1.91s' (line 113), not 1.86s. The test COUNT matches exactly (101 passed, 0 failed in both), so this does not cast doubt on the underlying test suite's correctness -- but the specific wall-clock-time digits quoted in two separate prose documents (verification-report.md and the contract addendum) do not match the one raw artifact file a reviewer is pointed to as 'the' authoritative fresh transcript, which weakens FIND-003's own remediation claim that this exact number can be treated as directly, verbatim sourced from that file.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-real-ledger/verification/proof-harnesses/deterministic-run.txt",
+    "lineRange": "113",
+    "snippet": "============================= 101 passed in 1.91s =============================="
+  },
+  "routeToPhase": null,
+  "notes": "Non-blocking: most plausible explanation is that pytest was run more than once during the hardening/convergence session (wall-clock duration naturally varies run-to-run) and the prose in verification-report.md/contracts/sprint-1.md quotes a DIFFERENT run's console output than the one saved to proof-harnesses/deterministic-run.txt, rather than either number being fabricated. Recommend either updating the two prose citations to read 1.91s (matching the actual saved artifact), or saving the actual 1.86s transcript as the artifact file, so the quoted transcript and the saved raw evidence file agree verbatim -- the same standard FIND-002's own fix already applied to the hl-trade regression row."
+}

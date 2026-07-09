@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "minor",
+  "description": "This adversary review session was not provided a Bash/shell-execution tool (only Read/Write/Edit/Grep/Glob were available), so the task's Step 4 instruction to 'independently RE-RUN the test suite yourself' (env -u ANICCA_HOME python3 -m pytest -q, plus hl-trade and ledger.test.mjs/.js blast-radius checks) could not be executed literally as a fresh command invocation by this reviewer. This is a constraint of the review harness/environment for this session, not a defect in the feature itself.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-real-ledger/reviews/sprint-1/output/verdict.json",
+    "lineRange": "reviewContext.methodologyNote",
+    "snippet": "No Bash/execution tool was available to this reviewer in this session..."
+  },
+  "routeToPhase": null,
+  "notes": "Mitigated, not waived: this reviewer instead read every touched source file in full (lib/ledger_reader.py, lib/gate_math.py, lib/promote_gate.py, lib/promote_gate_run.py, lib/promotion_history.py, lib/scope_guard.py) and every RL-group test file, cross-checking each of the 101 test names in the already-captured raw pytest transcript against a real, matching test function; independently grep-counted ledger.test.mjs (12) and ledger.test.js (9) test declarations against the raw node-test transcript's 21-total count; independently grepped the entire feature surface for wallet-key references and earn-ledger write-mode opens (zero found); and independently confirmed the merge commit 9804f75 exists in .git/logs/HEAD and that refs/heads/main and this harden branch point at the identical commit (no undisclosed code drift). No hallucinated citation or inconsistency was found across any artifact by this alternative method. Recommend the orchestrating harness provision adversary reviewers with an execution tool for future sprints where the contract explicitly asks for a fresh command re-run, so this substitution is not required."
+}

@@ -1,0 +1,33 @@
+(node:53322) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/anicca/anicca/skills/_shared/lib/__tests__/ledger.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/anicca/anicca/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ deriveLine computes net_usdc = earn - cost and stamps ts (0.660875ms)
+✔ isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap (0.0865ms)
+✔ deriveLine carries the Solana fields sig/confirmed/chain (else the persisted line loses the proof) (0.057292ms)
+✔ isProfitable accepts a Solana line: net>0 AND sig AND confirmed AND external AND not-swap (0.051417ms)
+✔ isProfitable still rejects the OLD EVM negatives unchanged (no regression) (0.055583ms)
+✔ alreadyRecordedSig: true only when a line with that sig already exists in the ledger (3.856291ms)
+✔ appendLedger is append-only: prior line is byte-identical after a second append (0.780833ms)
+✔ readLedger parses every JSONL line into objects (0.584625ms)
+✔ readLedger returns [] for a missing file (no throw) (0.676583ms)
+✔ deriveLine passes fill_tid through unchanged when present (0.66975ms)
+✔ deriveLine omits fill_tid entirely (not just undefined) when absent from input (0.054542ms)
+✔ isProfitable: well-formed Hyperliquid win (chain+fill_tid+confirmed+external+net>0) (0.062667ms)
+✔ isProfitable: Hyperliquid loss (net_usdc<=0) is rejected even though it's a real settled fill (0.035292ms)
+✔ isProfitable: Hyperliquid line missing external is rejected (external omitted) (0.056042ms)
+✔ isProfitable: Hyperliquid line with external:false is rejected (0.068834ms)
+✔ isProfitable: chain=hyperliquid but fill_tid missing is rejected (0.056542ms)
+✔ isProfitable: chain=hyperliquid, fill_tid present, but confirmed:false is rejected (0.04375ms)
+✔ isProfitable: non-regression — real EVM row (tx+status 0x1) still true (0.052084ms)
+✔ isProfitable: non-regression — real Solana row (sig+confirmed) still true (0.075792ms)
+✔ isProfitable: non-regression — narrate-only row (no tx/sig/hl fields) still false (0.044833ms)
+✔ isProfitable: non-regression — swap row (asset rotation) still false even with net>0 (0.03375ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 69.035458

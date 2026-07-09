@@ -2,7 +2,7 @@
   "featureName": "self-improve-real-ledger",
   "mode": "strict",
   "language": "python",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -56,11 +56,19 @@
       "timestamp": "2026-07-08T23:16:57.082Z",
       "reason": "impl review PASS iter2",
       "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-09T23:34:40.000Z",
+      "reason": "hardening complete: 28/28 PROP-RL-* proved (25 deterministic + 3 live), 17/17 property/fuzz, security sweep 0 High/Medium (35 Low all triaged), purity audit zero deviations, verification-report.md + security-report.md + purity-audit.md all present",
+      "sprint": 1
     }
   ],
   "iterations": {
     "3": 1,
     "5": 1,
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1,

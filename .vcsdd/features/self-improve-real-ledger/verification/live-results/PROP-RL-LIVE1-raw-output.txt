@@ -1,0 +1,27 @@
+resolve_ledger_path() -> path='/Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl' resolved=True source='file_relative_default'
+expected_path='/Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl'
+PASS: resolve_ledger_path() resolves to the exact real claude-p ledger file
+
+realized_summary() = {
+  "ledger_path": "/Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl",
+  "total_rows": 30,
+  "profitable_row_count": 6,
+  "realized_net_usd": 8.4731,
+  "resolved": true,
+  "resolution_source": "file_relative_default"
+}
+
+hand-parsed total_rows=30
+hand-parsed profitable_row_count=6
+hand-parsed realized_net_usd=8.4731
+hand-parsed profitable rows (task, net_usdc):
+  'Wimbledon ATP: Karen Khachanov vs Flavio Cobolli' net_usdc=3.9001
+  'Will Morocco win on 2026-07-04?' net_usdc=2.9858
+  'Canada vs. Morocco: Team to Advance' net_usdc=1.35
+  'Wimbledon ATP: Frances Tiafoe vs Alexander Bublik' net_usdc=0.1172
+  'Spread: France (-1.5)' net_usdc=0.06
+  'Paraguay vs. France: O/U 2.5' net_usdc=0.06
+
+PASS: realized_summary()['realized_net_usd']=8.4731 == hand-computed 8.4731
+
+=== PROP-RL-LIVE1: ALL ASSERTIONS PASSED ===

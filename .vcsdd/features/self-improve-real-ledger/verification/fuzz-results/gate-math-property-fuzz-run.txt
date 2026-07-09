@@ -1,0 +1,29 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0 -- /opt/homebrew/opt/python@3.14/bin/python3.14
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /Users/anicca/anicca/skills/earn/self-improve
+plugins: deepeval-4.0.5, repeat-0.9.4, xdist-3.8.0, asyncio-1.4.0, hypothesis-6.156.4, rerunfailures-16.3, anyio-4.13.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 17 items
+
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_invariant_first_plus_second_equals_window_net PASSED [  5%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_empty_list_is_all_zero PASSED [ 11%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_single_row_before_midpoint PASSED [ 17%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_single_row_after_midpoint PASSED [ 23%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_all_rows_before_window PASSED [ 29%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_all_rows_after_window PASSED [ 35%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_row_exactly_at_midpoint_goes_to_second_half PASSED [ 41%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_row_exactly_at_window_start_is_included PASSED [ 47%]
+tests/test_gate_math_property_fuzz.py::test_realized_window_split_row_exactly_at_window_end_is_excluded PASSED [ 52%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_multiple_boundary_is_exactly_strict_greater_than[2.999-1.0-False] PASSED [ 58%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_multiple_boundary_is_exactly_strict_greater_than[3.0-1.0-False] PASSED [ 64%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_multiple_boundary_is_exactly_strict_greater_than[3.0001-1.0-True] PASSED [ 70%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_multiple_boundary_is_exactly_strict_greater_than[2.9999999-1.0-False] PASSED [ 76%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_multiple_boundary_is_exactly_strict_greater_than[3.0000001-1.0-True] PASSED [ 82%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_case_b_matches_is_implausible_jump_exactly PASSED [ 88%]
+tests/test_gate_math_property_fuzz.py::test_data_realism_gap_never_fires_when_insufficient_total_domain PASSED [ 94%]
+tests/test_gate_math_property_fuzz.py::test_is_worsening_trend_matches_python_strict_less_than PASSED [100%]Running teardown with pytest sessionfinish...
+
+
+============================== 17 passed in 0.57s ==============================
