@@ -1,0 +1,39 @@
+{
+  "promote": false,
+  "reason": "deterministic gate not cleared before adversary review: scope_guard_ok=True (scope-guard-pass), stage1_pass=True, stage2_pass=False, tripwire_clear=True",
+  "adversary_verdict": null,
+  "adversary_invoked": false,
+  "assessment": {
+    "candidate_path": "/Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232737Z/best/best_program.py",
+    "scope_guard_ok": true,
+    "scope_guard_reason": "scope-guard-pass",
+    "stage1_pass": true,
+    "stage2_pass": false,
+    "combined_score": 3.034340963988835,
+    "baseline_stage2_score": 3.207609302240773,
+    "population_best_used": 3.207609302240773,
+    "tripwire_flagged": false,
+    "tripwire_clear": true,
+    "mean_oos_net_usd": 8.297475749253369,
+    "std_oos_net_usd": 2.7345231955560485,
+    "worst_window_oos_net_usd": 4.43610196604515,
+    "window_pairs": [
+      {
+        "train_window": 0,
+        "test_window": 1,
+        "oos_net_usd": 10.04439637541335
+      },
+      {
+        "train_window": 2,
+        "test_window": 3,
+        "oos_net_usd": 10.411928906301608
+      },
+      {
+        "train_window": 4,
+        "test_window": 5,
+        "oos_net_usd": 4.43610196604515
+      }
+    ],
+    "eligible_for_adversary_review": false
+  }
+}

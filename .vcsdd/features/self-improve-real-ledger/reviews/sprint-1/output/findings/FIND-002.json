@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "verification-report.md's Regression Table row for hl-trade reads '42 | PASS', but the actual raw pytest transcript it cites (verification/proof-harnesses/regression-hltrade.txt) shows '41 passed, 1 skipped in 0.12s' (42 collected). The skip is legitimately documented in the same raw file (hyperliquid-python-sdk not installed in this interpreter; covered by an equivalent static-grep test and by Phase-5 live E2E per the skip's own inline reason string) and this is an unrelated-feature blast-radius check this feature never edits -- but the report table's own 'PASS' label at count '42' slightly overstates what the raw evidence actually shows (41 pass + 1 skip, not 42 pass).",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-real-ledger/verification/verification-report.md",
+    "lineRange": "69",
+    "snippet": "| `skills/earn/hl-trade/tests/*.py` (unrelated feature, blast-radius check) | 42 | PASS, captured 2026-07-08 ..."
+  },
+  "routeToPhase": null,
+  "notes": "Non-blocking: the skip is pre-existing, disclosed, and orthogonal to this feature's own scope (self-improve-real-ledger never touches hl-trade/**). Raw evidence (regression-hltrade.txt) itself is accurate and internally consistent; only the summary table's rounding of '41 passed + 1 documented skip' to a bare '42 | PASS' is imprecise."
+}

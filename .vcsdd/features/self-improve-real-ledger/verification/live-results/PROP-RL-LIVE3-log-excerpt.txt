@@ -1,0 +1,92 @@
+2026-07-08T23:25:11Z OBSERVE realized_ledger={"ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl", "total_rows": 30, "profitable_row_count": 6, "realized_net_usd": 8.4731, "resolved": true, "resolution_source": "file_relative_default"}
+2026-07-09 08:25:12,123 - INFO - Logging to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232511Z/logs/openevolve_20260709_082512.log
+2026-07-09 08:25:12,170 - INFO - Set random seed to 42 for reproducibility
+2026-07-09 08:25:12,196 - INFO - Initialized OpenAI LLM with model: free/gpt-oss-120b
+2026-07-09 08:25:12,201 - INFO - Initialized LLM ensemble with models: free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33)
+2026-07-09 08:25:12,209 - INFO - Initialized LLM ensemble with models: free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33)
+2026-07-09 08:25:12,211 - INFO - Initialized prompt sampler
+2026-07-09 08:25:12,212 - INFO - Set custom templates: system=evaluator_system_message, user=None
+2026-07-09 08:25:12,229 - INFO - Reconstructed islands: restored 0 programs to islands
+2026-07-09 08:25:12,229 - INFO - No island assignments found, distributing programs across islands
+2026-07-09 08:25:12,230 - INFO - Distributed 81 programs across 3 islands
+2026-07-09 08:25:12,230 - INFO - Loaded database with 81 programs from runs/db
+2026-07-09 08:25:12,231 - INFO - Island Status:
+2026-07-09 08:25:12,231 - INFO -  * Island 0: 27 programs, best=3.0176, avg=2.1192, diversity=222.43, gen=0
+2026-07-09 08:25:12,231 - INFO -    Island 1: 27 programs, best=3.8899, avg=1.8468, diversity=130.02, gen=0
+2026-07-09 08:25:12,231 - INFO -    Island 2: 27 programs, best=3.1833, avg=1.9623, diversity=256.67, gen=0
+2026-07-09 08:25:12,231 - INFO - Initialized program database with 81 programs
+2026-07-09 08:25:12,235 - INFO - Successfully loaded evaluation function from /Users/operator/anicca/skills/earn/self-improve/evaluator.py
+2026-07-09 08:25:12,235 - INFO - Initialized evaluator with /Users/operator/anicca/skills/earn/self-improve/evaluator.py
+2026-07-09 08:25:12,235 - INFO - Initialized OpenEvolve with /Users/operator/anicca/skills/earn/self-improve/strategies/pm_backtest_strategy.py
+2026-07-09 08:25:12,235 - INFO - Skipping initial program addition (resuming from iteration 0 with 81 existing programs)
+2026-07-09 08:25:12,243 - INFO - Initialized process parallel controller with 1 workers
+2026-07-09 08:25:12,243 - INFO - Set max None tasks per child
+2026-07-09 08:25:12,243 - INFO - Started process pool with 1 processes
+2026-07-09 08:25:12,243 - INFO - Using island-based evolution with 3 islands
+2026-07-09 08:25:12,245 - INFO - Island Status:
+2026-07-09 08:25:12,245 - INFO -  * Island 0: 27 programs, best=3.0176, avg=2.1192, diversity=222.43, gen=0
+2026-07-09 08:25:12,245 - INFO -    Island 1: 27 programs, best=3.8899, avg=1.8468, diversity=130.02, gen=0
+2026-07-09 08:25:12,245 - INFO -    Island 2: 27 programs, best=3.1833, avg=1.9623, diversity=256.67, gen=0
+2026-07-09 08:25:12,245 - INFO - Starting process-based evolution from iteration 0 for 1 iterations (total: 1)
+2026-07-09 08:25:12,248 - INFO - Early stopping disabled
+2026-07-09 08:25:28,127 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 5, 'diversity': 5}
+2026-07-09 08:25:28,128 - INFO - Population size (82) exceeds limit (20), removing 62 programs
+2026-07-09 08:25:28,128 - INFO - Population size after cleanup: 20
+2026-07-09 08:25:28,129 - INFO - Iteration 0: Program a02f4d98-9d6f-494c-9055-779aca1605e4 (parent: b92a54fe-3c07-4a2f-b4f2-83eb13d3a702) completed in 14.51s
+2026-07-09 08:25:28,129 - INFO - Metrics: combined_score=2.7798, stage1_pass=1.0000, mean_oos_net_usd=8.0205, std_oos_net_usd=2.8853, worst_window_oos_net_usd=4.7833
+2026-07-09 08:25:28,129 - INFO - 🌟 New best solution found at iteration 0: a02f4d98-9d6f-494c-9055-779aca1605e4
+2026-07-09 08:25:28,129 - INFO - ✅ Evolution completed - Maximum iterations reached
+2026-07-09 08:25:28,225 - INFO - Stopped process pool
+2026-07-09 08:25:28,225 - INFO - Using tracked best program: a02f4d98-9d6f-494c-9055-779aca1605e4
+2026-07-09 08:25:28,225 - INFO - Evolution complete. Best program has metrics: combined_score=2.7798, stage1_pass=1.0000, mean_oos_net_usd=8.0205, std_oos_net_usd=2.8853, worst_window_oos_net_usd=4.7833
+2026-07-09 08:25:28,226 - INFO - Saved best program to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232511Z/best/best_program.py with program info to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232511Z/best/best_program_info.json
+
+Evolution complete!
+Best program metrics:
+  combined_score: 2.7798
+  stage1_pass: 1.0000
+  mean_oos_net_usd: 8.0205
+  std_oos_net_usd: 2.8853
+  worst_window_oos_net_usd: 4.7833
+2026-07-08T23:25:28Z run_id=run-20260708T232511Z status=0
+2026-07-08T23:25:28Z promote_gate: assessing /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232511Z/best/best_program.py
+2026-07-08T23:25:28Z NOT ELIGIBLE for adversary review (no LLM call made): deterministic gate not cleared before adversary review: scope_guard_ok=True (scope-guard-pass), stage1_pass=True, stage2_pass=False, tripwire_clear=True
+2026-07-08T23:25:28Z promote_gate: exit=0 verdict={
+  "promote": false,
+  "reason": "deterministic gate not cleared before adversary review: scope_guard_ok=True (scope-guard-pass), stage1_pass=True, stage2_pass=False, tripwire_clear=True",
+  "adversary_verdict": null,
+  "adversary_invoked": false,
+  "assessment": {
+    "candidate_path": "/Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232511Z/best/best_program.py",
+    "scope_guard_ok": true,
+    "scope_guard_reason": "scope-guard-pass",
+    "stage1_pass": true,
+    "stage2_pass": false,
+    "combined_score": 2.779775014216645,
+    "baseline_stage2_score": 3.207609302240773,
+    "population_best_used": 3.207609302240773,
+    "tripwire_flagged": false,
+    "tripwire_clear": true,
+    "mean_oos_net_usd": 8.020549772864852,
+    "std_oos_net_usd": 2.885323355971341,
+    "worst_window_oos_net_usd": 4.783319310254125,
+    "window_pairs": [
+      {
+        "train_window": 0,
+        "test_window": 1,
+        "oos_net_usd": 11.790418243965437
+      },
+      {
+        "train_window": 2,
+        "test_window": 3,
+        "oos_net_usd": 7.487911764374996
+      },
+      {
+        "train_window": 4,
+        "test_window": 5,
+        "oos_net_usd": 4.783319310254125
+      }
+    ],
+    "eligible_for_adversary_review": false
+  }
+}

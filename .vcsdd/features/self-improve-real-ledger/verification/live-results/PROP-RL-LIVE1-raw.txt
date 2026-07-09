@@ -1,0 +1,31 @@
+resolve_ledger_path() -> ('/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl', True, 'file_relative_default')
+realized_summary() keys: ['ledger_path', 'profitable_row_count', 'realized_net_usd', 'resolution_source', 'resolved', 'total_rows']
+realized_summary() -> {
+  "ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl",
+  "total_rows": 30,
+  "profitable_row_count": 6,
+  "realized_net_usd": 8.4731,
+  "resolved": true,
+  "resolution_source": "file_relative_default"
+}
+
+total raw rows in file: 30
+manually-confirmed rows: 6
+manually-profitable rows: 6
+manual sum of net_usdc over CONFIRMED rows: 8.4731
+
+COMPARISON: realized_summary realized_net_usd = 8.4731
+COMPARISON: manual confirmed-sum             = 8.4731
+MATCH: True
+
+Path match expected: True
+resolved raw: ('/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl', True, 'file_relative_default')
+
+
+=== RE-VERIFICATION: exact-definition replay (verbatim is_confirmed/is_profitable copied logic) ===
+exact-definition profitable_row_count = 6
+exact-definition realized_net_usd (independent reimplementation, NOT calling ledger_reader) = 8.4731
+ledger_reader.realized_summary() realized_net_usd = 8.4731
+ledger_reader.realized_summary() profitable_row_count = 6
+EXACT MATCH count: True
+EXACT MATCH sum:   True
