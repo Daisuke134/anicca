@@ -203,3 +203,18 @@ CRIT-003's PROP-RL-GATE1/GATE-NONE and CRIT-004's PROP-RL-WIRE1 are both grounde
 ALWAYS SUPPLIED at the one real production call site" — the same deliberate non-overlap the
 `hl-realized-pnl` sprint contract already established for its own PROP-007 citation (checkpoint
 correctness vs. composition-root ordering).
+
+## Post-Phase-5 addendum (added during Phase 6 convergence, does not alter the pass thresholds above)
+
+This contract's "44 self-improve" regression-count figure (used above and at line ~115) refers to
+the PRE-EXISTING baseline suite from the prior `anicca-self-improve-harness` phase, which this
+feature is contractually required to keep green (INV-RL5) — that invariant holds: all 44 original
+test IDs are unmodified and still pass. It is NOT the total post-feature suite size. After this
+feature's own ~40 RL-group tests (`test_ledger_resolution.py`/`test_realized_gate.py`/
+`test_denylist_rl.py`/`test_wiring.py`) plus 17 Phase-5 property/fuzz tests
+(`test_gate_math_property_fuzz.py`) are added, `skills/earn/self-improve/tests/*.py` collects
+**101 tests total** (verified fresh, `env -u ANICCA_HOME python3 -m pytest -q` from the merged main
+checkout: `101 passed in 1.86s`) — see `verification/verification-report.md`'s Proof Obligations
+section for the disaggregated count. Flagged as FIND-001 (minor, non-blocking) during Phase 6
+convergence review; recorded here rather than silently edited into the original pass-threshold
+prose, to preserve the contract's historical text as originally approved at Phase 1c.

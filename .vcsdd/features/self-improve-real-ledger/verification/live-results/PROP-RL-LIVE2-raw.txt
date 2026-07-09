@@ -1,0 +1,173 @@
+====================================================================================================
+STEP 1 — build a REAL, genuinely eligible candidate (same construction as
+tests/test_adversary_disapprove.py::_good_candidate, using real production helpers)
+====================================================================================================
+candidate written to: /tmp/prop-rl-live2-6jhjabrz/candidate.py
+
+====================================================================================================
+STEP 2 — real assess_candidate() (fixture-based backtest, UNCHANGED code path per REQ-RL14/15)
+====================================================================================================
+{
+  "candidate_path": "/tmp/prop-rl-live2-6jhjabrz/candidate.py",
+  "scope_guard_ok": true,
+  "scope_guard_reason": "scope-guard-pass",
+  "stage1_pass": true,
+  "stage2_pass": true,
+  "combined_score": 3.595082676560379,
+  "baseline_stage2_score": 3.207609302240773,
+  "population_best_used": 3.207609302240773,
+  "tripwire_flagged": false,
+  "tripwire_clear": true,
+  "mean_oos_net_usd": 4.328426416646617,
+  "std_oos_net_usd": 1.2039852226118677,
+  "worst_window_oos_net_usd": 2.6505229056588604,
+  "window_pairs": [
+    {
+      "train_window": 0,
+      "test_window": 1,
+      "oos_net_usd": 4.916678191560437
+    },
+    {
+      "train_window": 2,
+      "test_window": 3,
+      "oos_net_usd": 5.418078152720554
+    },
+    {
+      "train_window": 4,
+      "test_window": 5,
+      "oos_net_usd": 2.6505229056588604
+    }
+  ],
+  "eligible_for_adversary_review": true
+}
+
+eligible_for_adversary_review == True  CONFIRMED
+
+====================================================================================================
+STEP 3 — real compute_realized_gate() against the REAL ledger + REAL repo git history
+(repo_cwd resolved via the real _repo_root(), i.e. `git rev-parse --show-toplevel` from
+ this checkout -> /Users/anicca/anicca; last_promotion_ts uses `git log -1 --grep` — READ-ONLY)
+====================================================================================================
+repo_root resolved to: /Users/anicca/anicca
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 1783485137.0,
+  "window_end_ts": 1783553037.888536
+}
+
+====================================================================================================
+STEP 4 — independent hand-computation of the SAME realized_gate, to cross-check STEP 3's
+output against a manual re-derivation using the real ledger file + real git log directly
+====================================================================================================
+last_promotion_ts (manual)   = 1783485137
+row_count (manual)           = 0   vs STEP3 = 0
+sufficient (manual)          = False           vs STEP3 = False
+window_net_usd (manual)      = 0.0   vs STEP3 = 0.0
+worsening (manual)           = False           vs STEP3 = False
+trend_blocks (manual)        = False        vs STEP3 = False
+realism_gap_blocks (manual)  = False         vs STEP3 = False
+
+HAND-COMPUTATION MATCHES REAL compute_realized_gate() OUTPUT: True
+
+====================================================================================================
+STEP 5 — decide_promotion() with the REAL assessment + REAL realized_gate, adversary_verdict=None
+(this is the 'eligible candidate, no adversary verdict supplied' branch of decide_promotion —
+ the exact same production function promote_gate_run.main() calls at its own adversary-unavailable
+ call site, exercised here directly with live-computed inputs)
+====================================================================================================
+{
+  "promote": false,
+  "reason": "fresh adversary verdict was 'MISSING', not PASS",
+  "adversary_verdict": "MISSING"
+}
+
+EXPECTED promote=False because adversary_verdict=None is never 'PASS' (REQ-RH4/EDGE-3): observed promote=False
+
+====================================================================================================
+STEP 6 — end-to-end main() with a REAL, eligible candidate, REAL ledger, REAL repo git history,
+--dry-run (zero file/git side effects per promote_gate_run.py's own documented dry-run contract),
+and the adversary CLI made deliberately unreachable (monkeypatched to a nonexistent binary path —
+NOT the real `claude` CLI, to avoid real LLM spend per the delegating instructions) — proving the
+'eligible but adversary unavailable' fail-closed branch fires through the REAL main() wiring.
+====================================================================================================
+2026-07-08T23:23:57Z candidate is eligible — invoking fresh Opus adversary (real call, real $ per --max-budget-usd cap)
+2026-07-08T23:23:57Z ADVERSARY UNAVAILABLE/ERRORED (fail-closed, not promoted): claude binary not found (tried /tmp/definitely-does-not-exist-claude-binary-xyz)
+main() return code: 0
+{
+  "promote": false,
+  "reason": "adversary unavailable/erroring: claude binary not found (tried /tmp/definitely-does-not-exist-claude-binary-xyz)",
+  "adversary_verdict": "MISSING",
+  "adversary_invoked": true,
+  "adversary_error": "claude binary not found (tried /tmp/definitely-does-not-exist-claude-binary-xyz)"
+}
+
+realized_gate.json written by the real end-to-end run:
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/anicca/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 1783485137.0,
+  "window_end_ts": 1783553037.966903
+}
+
+CONFIRMED: adversary_invoked=True, promote=False, fail-closed on adversary-unavailable, end-to-end through the REAL main() with REAL ledger + REAL repo git history + zero repo writes (--dry-run).
+
+====================================================================================================
+STEP 7 — resolved=False forces UNCONDITIONAL block, end-to-end, using the REAL live-computed
+assessment from STEP 2 (already proven eligible) + a REAL compute_realized_gate() call whose
+internal ledger_reader.resolve_ledger_path() is monkeypatched to return the exact unresolved-branch
+tuple the code itself defines for 'this process cannot determine its own module __file__ at all'
+(ledger_reader.py lines 63-66) — the only way this branch is ever reached in production. This is a
+targeted, disclosed monkeypatch of ONE resolution function, not a fabricated realized_gate literal:
+compute_realized_gate's OWN real branching logic (lines 196-211) builds the resulting dict.
+adversary_verdict is set to the maximally-favorable 'PASS' for this one call specifically to prove
+the resolved=False block overrides even a hypothetically-approving adversary (REQ-RL7 > adversary).
+====================================================================================================
+{
+  "resolved": false,
+  "resolution_source": "unresolved_no_file_context",
+  "ledger_path": "",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 0.0,
+  "window_end_ts": 1783553037.982334
+}
+
+decide_promotion() with the REAL eligible assessment + resolved=False + adversary_verdict='PASS':
+{
+  "promote": false,
+  "reason": "realized ledger identity unresolved (resolution_source='unresolved_no_file_context'): promotion blocked pending instance identity resolution",
+  "adversary_verdict": null
+}
+
+CONFIRMED: promote=False UNCONDITIONALLY even though assessment was genuinely eligible AND adversary_verdict was the most favorable possible value ('PASS'). REQ-RL7 holds end-to-end.
+
+====================================================================================================
+ALL PROP-RL-LIVE2 SUB-PROOFS PASSED
+====================================================================================================
+tmp candidate dir (never touched real repo): /tmp/prop-rl-live2-6jhjabrz
+tmp run dir (never touched real repo):        /tmp/prop-rl-live2-rundir-seon2k14

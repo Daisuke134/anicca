@@ -1,0 +1,478 @@
+[main]	INFO	profile include tests: None
+[main]	INFO	profile exclude tests: None
+[main]	INFO	cli include tests: None
+[main]	INFO	cli exclude tests: None
+[main]	INFO	running on Python 3.14.6
+Run started:2026-07-08 23:28:01.924211+00:00
+
+Test results:
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'False'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./evaluator.py:138:12
+137	            "combined_score": FAIL_SENTINEL,
+138	            "stage1_pass": False,
+139	            "artifacts": artifacts,
+140	        }
+141	
+142	    module = _load_candidate_module(program_path)
+143	    rows = module.load_fixture(FIXTURE_PATH)
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'False'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./evaluator.py:217:12
+216	            "combined_score": gate_math.apply_score_cap(stage1_result["combined_score"], COMBINED_SCORE_CEILING),
+217	            "stage1_pass": False,
+218	            "stage2_pass": False,
+219	            "artifacts": stage1_result["artifacts"],
+220	            "data_source": _data_source_tag(),
+221	        }
+222	
+223	    stage2_result = evaluate_stage2(program_path, config)
+224	    baseline_score = baseline_stage2_score(config)
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'False'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./evaluator.py:218:12
+217	            "stage1_pass": False,
+218	            "stage2_pass": False,
+219	            "artifacts": stage1_result["artifacts"],
+220	            "data_source": _data_source_tag(),
+221	        }
+222	
+223	    stage2_result = evaluate_stage2(program_path, config)
+224	    baseline_score = baseline_stage2_score(config)
+225	    beats = gate_math.beats_baseline(stage2_result["combined_score"], baseline_score)
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'True'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./evaluator.py:230:8
+229	        "combined_score": capped,
+230	        "stage1_pass": True,
+231	        "stage2_pass": beats,
+232	        "baseline_stage2_score": baseline_score,
+233	        "mean_oos_net_usd": stage2_result["mean_oos_net_usd"],
+234	        "std_oos_net_usd": stage2_result["std_oos_net_usd"],
+235	        "worst_window_oos_net_usd": stage2_result["worst_window_oos_net_usd"],
+236	        "window_pairs": stage2_result["window_pairs"],
+237	        "artifacts": stage1_result["artifacts"],
+238	        "data_source": stage2_result["data_source"],
+239	    }
+240	
+241	
+242	def tripwire_check(candidate_score: float, population_best: float, multiple: float = TRIPWIRE_MULTIPLE) -> dict:
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'False'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./lib/promote_gate.py:53:12
+52	            "combined_score": evaluator.FAIL_SENTINEL,
+53	            "stage1_pass": False,
+54	            "stage2_pass": False,
+55	            "baseline_stage2_score": evaluator.baseline_stage2_score(config),
+56	            "mean_oos_net_usd": None,
+57	            "std_oos_net_usd": None,
+58	            "worst_window_oos_net_usd": None,
+59	            "window_pairs": [],
+60	        }
+61	    else:
+62	        result = evaluator.evaluate(candidate_path, config)
+63	        result.setdefault("baseline_stage2_score", evaluator.baseline_stage2_score(config))
+
+--------------------------------------------------
+>> Issue: [B105:hardcoded_password_string] Possible hardcoded password: 'False'
+   Severity: Low   Confidence: Medium
+   CWE: CWE-259 (https://cwe.mitre.org/data/definitions/259.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b105_hardcoded_password_string.html
+   Location: ./lib/promote_gate.py:54:12
+53	            "stage1_pass": False,
+54	            "stage2_pass": False,
+55	            "baseline_stage2_score": evaluator.baseline_stage2_score(config),
+56	            "mean_oos_net_usd": None,
+57	            "std_oos_net_usd": None,
+58	            "worst_window_oos_net_usd": None,
+59	            "window_pairs": [],
+60	        }
+61	    else:
+62	        result = evaluator.evaluate(candidate_path, config)
+63	        result.setdefault("baseline_stage2_score", evaluator.baseline_stage2_score(config))
+64	        result.setdefault("mean_oos_net_usd", None)
+
+--------------------------------------------------
+>> Issue: [B404:blacklist] Consider possible security implications associated with the subprocess module.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess
+   Location: ./lib/promote_gate_run.py:25:0
+24	import shutil
+25	import subprocess
+26	import sys
+
+--------------------------------------------------
+>> Issue: [B607:start_process_with_partial_path] Starting a process with a partial executable path
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html
+   Location: ./lib/promote_gate_run.py:55:13
+54	def _repo_root() -> str:
+55	    result = subprocess.run(
+56	        ["git", "rev-parse", "--show-toplevel"], cwd=_SELF_IMPROVE_DIR, check=True, capture_output=True, text=True
+57	    )
+58	    return result.stdout.strip()
+
+--------------------------------------------------
+>> Issue: [B603:subprocess_without_shell_equals_true] subprocess call - check for execution of untrusted input.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html
+   Location: ./lib/promote_gate_run.py:55:13
+54	def _repo_root() -> str:
+55	    result = subprocess.run(
+56	        ["git", "rev-parse", "--show-toplevel"], cwd=_SELF_IMPROVE_DIR, check=True, capture_output=True, text=True
+57	    )
+58	    return result.stdout.strip()
+
+--------------------------------------------------
+>> Issue: [B603:subprocess_without_shell_equals_true] subprocess call - check for execution of untrusted input.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html
+   Location: ./lib/promote_gate_run.py:177:17
+176	    try:
+177	        result = subprocess.run(
+178	            cmd, cwd=repo_root, input=prompt, capture_output=True, text=True, timeout=ADVERSARY_TIMEOUT_S
+179	        )
+180	    except subprocess.TimeoutExpired:
+
+--------------------------------------------------
+>> Issue: [B404:blacklist] Consider possible security implications associated with the subprocess module.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/blacklists/blacklist_imports.html#b404-import-subprocess
+   Location: ./lib/promotion_history.py:11:0
+10	
+11	import subprocess
+12	from typing import Optional
+
+--------------------------------------------------
+>> Issue: [B607:start_process_with_partial_path] Starting a process with a partial executable path
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b607_start_process_with_partial_path.html
+   Location: ./lib/promotion_history.py:26:17
+25	    try:
+26	        result = subprocess.run(
+27	            [
+28	                "git",
+29	                "log",
+30	                "-1",
+31	                "--format=%ct",
+32	                "--fixed-strings",
+33	                f"--grep={PROMOTION_COMMIT_MESSAGE_PREFIX}",
+34	                "--",
+35	                path,
+36	            ],
+37	            cwd=cwd,
+38	            capture_output=True,
+39	            text=True,
+40	            timeout=30,
+41	        )
+42	    except (OSError, subprocess.TimeoutExpired):
+
+--------------------------------------------------
+>> Issue: [B603:subprocess_without_shell_equals_true] subprocess call - check for execution of untrusted input.
+   Severity: Low   Confidence: High
+   CWE: CWE-78 (https://cwe.mitre.org/data/definitions/78.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b603_subprocess_without_shell_equals_true.html
+   Location: ./lib/promotion_history.py:26:17
+25	    try:
+26	        result = subprocess.run(
+27	            [
+28	                "git",
+29	                "log",
+30	                "-1",
+31	                "--format=%ct",
+32	                "--fixed-strings",
+33	                f"--grep={PROMOTION_COMMIT_MESSAGE_PREFIX}",
+34	                "--",
+35	                path,
+36	            ],
+37	            cwd=cwd,
+38	            capture_output=True,
+39	            text=True,
+40	            timeout=30,
+41	        )
+42	    except (OSError, subprocess.TimeoutExpired):
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:51:4
+50	    total = result["first_half_net_usd"] + result["second_half_net_usd"]
+51	    assert math.isclose(total, result["window_net_usd"], rel_tol=1e-9, abs_tol=1e-9)
+52	    assert result["row_count"] >= 0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:52:4
+51	    assert math.isclose(total, result["window_net_usd"], rel_tol=1e-9, abs_tol=1e-9)
+52	    assert result["row_count"] >= 0
+53	    assert result["row_count"] <= len(rows)
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:53:4
+52	    assert result["row_count"] >= 0
+53	    assert result["row_count"] <= len(rows)
+54	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:58:4
+57	    result = gate_math.realized_window_split([], window_start_ts=0.0, window_end_ts=100.0)
+58	    assert result == {
+59	        "window_net_usd": 0.0,
+60	        "first_half_net_usd": 0.0,
+61	        "second_half_net_usd": 0.0,
+62	        "row_count": 0,
+63	    }
+64	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:68:4
+67	    result = gate_math.realized_window_split([(10.0, 5.0)], window_start_ts=0.0, window_end_ts=100.0)
+68	    assert result["row_count"] == 1
+69	    assert result["first_half_net_usd"] == 5.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:69:4
+68	    assert result["row_count"] == 1
+69	    assert result["first_half_net_usd"] == 5.0
+70	    assert result["second_half_net_usd"] == 0.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:70:4
+69	    assert result["first_half_net_usd"] == 5.0
+70	    assert result["second_half_net_usd"] == 0.0
+71	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:75:4
+74	    result = gate_math.realized_window_split([(90.0, 5.0)], window_start_ts=0.0, window_end_ts=100.0)
+75	    assert result["row_count"] == 1
+76	    assert result["first_half_net_usd"] == 0.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:76:4
+75	    assert result["row_count"] == 1
+76	    assert result["first_half_net_usd"] == 0.0
+77	    assert result["second_half_net_usd"] == 5.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:77:4
+76	    assert result["first_half_net_usd"] == 0.0
+77	    assert result["second_half_net_usd"] == 5.0
+78	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:83:4
+82	    result = gate_math.realized_window_split(rows, window_start_ts=0.0, window_end_ts=100.0)
+83	    assert result["row_count"] == 0
+84	    assert result["window_net_usd"] == 0.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:84:4
+83	    assert result["row_count"] == 0
+84	    assert result["window_net_usd"] == 0.0
+85	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:90:4
+89	    result = gate_math.realized_window_split(rows, window_start_ts=0.0, window_end_ts=100.0)
+90	    assert result["row_count"] == 0
+91	    assert result["window_net_usd"] == 0.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:91:4
+90	    assert result["row_count"] == 0
+91	    assert result["window_net_usd"] == 0.0
+92	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:99:4
+98	    result = gate_math.realized_window_split([(50.0, 7.0)], window_start_ts=0.0, window_end_ts=100.0)
+99	    assert result["first_half_net_usd"] == 0.0
+100	    assert result["second_half_net_usd"] == 7.0
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:100:4
+99	    assert result["first_half_net_usd"] == 0.0
+100	    assert result["second_half_net_usd"] == 7.0
+101	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:105:4
+104	    result = gate_math.realized_window_split([(0.0, 3.0)], window_start_ts=0.0, window_end_ts=100.0)
+105	    assert result["row_count"] == 1
+106	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:111:4
+110	    result = gate_math.realized_window_split([(100.0, 3.0)], window_start_ts=0.0, window_end_ts=100.0)
+111	    assert result["row_count"] == 0
+112	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:132:4
+131	):
+132	    assert (
+133	        gate_math.data_realism_gap(
+134	            mean_backtest_net_usd=mean_backtest_net_usd,
+135	            mean_realized_net_per_row=mean_realized_net_per_row,
+136	            sufficient=True,
+137	            multiple=3.0,
+138	        )
+139	        is expected
+140	    )
+141	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:163:4
+162	    )
+163	    assert actual == expected
+164	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:175:4
+174	    test_realized_gate.py)."""
+175	    assert (
+176	        gate_math.data_realism_gap(
+177	            mean_backtest_net_usd=mean_backtest_net_usd,
+178	            mean_realized_net_per_row=mean_realized_net_per_row,
+179	            sufficient=False,
+180	        )
+181	        is False
+182	    )
+183	
+
+--------------------------------------------------
+>> Issue: [B101:assert_used] Use of assert detected. The enclosed code will be removed when compiling to optimised byte code.
+   Severity: Low   Confidence: High
+   CWE: CWE-703 (https://cwe.mitre.org/data/definitions/703.html)
+   More Info: https://bandit.readthedocs.io/en/1.9.4/plugins/b101_assert_used.html
+   Location: ./tests/test_gate_math_property_fuzz.py:197:4
+196	def test_is_worsening_trend_matches_python_strict_less_than(first_half_net_usd, second_half_net_usd):
+197	    assert gate_math.is_worsening_trend(first_half_net_usd, second_half_net_usd) == (
+198	        second_half_net_usd < first_half_net_usd
+199	    )
+
+--------------------------------------------------
+
+Code scanned:
+	Total lines of code: 1364
+	Total lines skipped (#nosec): 0
+	Total potential issues skipped due to specifically being disabled (e.g., #nosec BXXX): 0
+
+Run metrics:
+	Total issues (by severity):
+		Undefined: 0
+		Low: 35
+		Medium: 0
+		High: 0
+	Total issues (by confidence):
+		Undefined: 0
+		Low: 0
+		Medium: 6
+		High: 29
+Files skipped (0):
