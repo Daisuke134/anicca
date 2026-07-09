@@ -1,0 +1,64 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.14.6, pytest-9.0.3, pluggy-1.6.0 -- /opt/homebrew/opt/python@3.14/bin/python3.14
+cachedir: .pytest_cache
+hypothesis profile 'default'
+rootdir: /Users/operator/anicca/skills/earn/hl-trade
+plugins: deepeval-4.0.5, repeat-0.9.4, xdist-3.8.0, asyncio-1.4.0, hypothesis-6.156.4, rerunfailures-16.3, anyio-4.13.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 42 items
+
+tests/test_fills.py::test_compute_realized_pnl_win_charges_fee_against_earn_only PASSED [  2%]
+tests/test_fills.py::test_compute_realized_pnl_loss_folds_fee_into_cost PASSED [  4%]
+tests/test_fills.py::test_compute_realized_pnl_exact_breakeven_still_charges_fee PASSED [  7%]
+tests/test_fills.py::test_select_close_fills_excludes_zero_pnl_and_time_strictly_before_since PASSED [  9%]
+tests/test_fills.py::test_select_close_fills_boundary_is_inclusive_not_exclusive PASSED [ 11%]
+tests/test_fills.py::test_select_close_fills_sorts_ascending_by_time_even_if_input_is_unsorted PASSED [ 14%]
+tests/test_fills.py::test_is_unprocessable_true_for_non_numeric_closed_pnl PASSED [ 16%]
+tests/test_fills.py::test_is_unprocessable_true_for_missing_fee PASSED   [ 19%]
+tests/test_fills.py::test_is_unprocessable_true_for_missing_tid PASSED   [ 21%]
+tests/test_fills.py::test_is_unprocessable_true_for_non_integer_tid PASSED [ 23%]
+tests/test_fills.py::test_is_unprocessable_false_for_well_formed_live_hl_api_shape PASSED [ 26%]
+tests/test_reconcile.py::test_plan_batch_marks_already_recorded_tid_as_skip_duplicate_and_never_stops PASSED [ 28%]
+tests/test_reconcile.py::test_reconcile_never_calls_record_line_fn_for_an_already_recorded_tid PASSED [ 30%]
+tests/test_reconcile.py::test_plan_batch_stops_at_first_unprocessable_fill_and_never_plans_past_it PASSED [ 33%]
+tests/test_reconcile.py::test_reconcile_checkpoint_stops_before_unprocessable_fill_t3_never_attempted PASSED [ 35%]
+tests/test_reconcile.py::test_reconcile_stops_batch_when_record_line_fn_raises_on_second_fill PASSED [ 38%]
+tests/test_reconcile.py::test_reconcile_full_successful_batch_checkpoint_is_last_fills_time_not_first PASSED [ 40%]
+tests/test_reconcile.py::test_reconcile_py_writes_checkpoint_atomically_static_grep PASSED [ 42%]
+tests/test_reconcile.py::test_reconcile_zero_eligible_fills_leaves_checkpoint_byte_identical PASSED [ 45%]
+tests/test_reconcile.py::test_read_checkpoint_missing_file_returns_zero PASSED [ 47%]
+tests/test_reconcile.py::test_read_checkpoint_corrupt_file_returns_zero PASSED [ 50%]
+tests/test_reconcile.py::test_read_checkpoint_empty_file_returns_zero PASSED [ 52%]
+tests/test_reconcile.py::test_reconcile_queries_user_fills_by_time_inclusive_not_plus_one PASSED [ 54%]
+tests/test_reconcile.py::test_reconcile_py_never_calls_unbounded_user_fills_static_grep PASSED [ 57%]
+tests/test_reconcile.py::test_tied_timestamp_partial_stop_recovers_the_sibling_fill_on_the_next_pass PASSED [ 59%]
+tests/test_reconcile.py::test_reconcile_api_error_returns_status_and_leaves_checkpoint_untouched PASSED [ 61%]
+tests/test_reconcile.py::test_reconcile_builds_payload_with_exactly_the_req_c1_keys PASSED [ 64%]
+tests/test_reconcile.py::test_reconcile_py_never_reimplements_ledger_guards_static_grep PASSED [ 66%]
+tests/test_reconcile.py::test_reconcile_py_never_loads_a_second_signing_key_static_grep PASSED [ 69%]
+tests/test_reconcile.py::test_hl_py_cmd_reconcile_reuses_clients_static_grep PASSED [ 71%]
+tests/test_reconcile.py::test_reconcile_py_never_places_modifies_or_cancels_orders_static_grep PASSED [ 73%]
+tests/test_reconcile.py::test_hl_py_has_no_closed_pnl_usd_field_static_grep PASSED [ 76%]
+tests/test_reconcile.py::test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_key SKIPPED [ 78%]
+tests/test_reconcile.py::test_run_sh_calls_hl_reconcile_before_cooldown_and_close_branch_static_grep PASSED [ 80%]
+tests/test_reconcile.py::test_acquire_lock_second_caller_gets_none_while_first_holds_it PASSED [ 83%]
+tests/test_reconcile.py::test_reconcile_returns_locked_status_and_touches_nothing_when_lock_held PASSED [ 85%]
+tests/test_reconcile.py::test_reconcile_py_uses_real_flock_static_grep PASSED [ 88%]
+tests/test_reconcile.py::test_already_recorded_tids_reads_fill_tid_values_from_the_ledger PASSED [ 90%]
+tests/test_reconcile.py::test_already_recorded_tids_missing_ledger_is_empty_set PASSED [ 92%]
+tests/test_reconcile.py::test_reconcile_py_never_hardcodes_another_instances_home_or_absolute_user_path_static_grep PASSED [ 95%]
+tests/test_reconcile.py::test_run_sh_never_references_closed_pnl_usd_anywhere PASSED [ 97%]
+tests/test_reconcile.py::test_run_sh_close_branch_never_calls_record_line_for_its_own_pnl_line PASSED [100%]Running teardown with pytest sessionfinish...
+
+Test 
+tests/test_reconcile.py::test_hl_py_cmd_close_json_output_has_no_closed_pnl_usd_
+key was skipped. Reason: 
+('/Users/operator/anicca/skills/earn/hl-trade/tests/test_reconcile.py', 481, 
+"Skipped: hyperliquid-python-sdk is not installed in this environment (hl.py 
+imports it at module scope and calls sys.exit(1) on failure); hl-trade runs this
+in its own .venv in production (skills/earn/run.sh:171). This unit test needs 
+that venv to import hl.py at all — the static grep test above covers the same 
+REQ-A1 assertion without needing the SDK, and PROP-021's live E2E (Phase 5) 
+exercises the real dependency.")
+
+======================== 41 passed, 1 skipped in 0.12s =========================

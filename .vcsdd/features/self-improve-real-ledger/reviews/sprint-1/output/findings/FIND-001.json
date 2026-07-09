@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "INV-RL5 and sprint-1.md's CRIT-006 both describe the regression baseline as '44 pre-existing self-improve tests', but the actual current skills/earn/self-improve/tests/*.py suite has grown to 101 tests post-feature (the original 44 from the prior anicca-self-improve-harness phase, plus this feature's own ~40 RL-group tests across test_ledger_resolution.py/test_realized_gate.py/test_denylist_rl.py/test_wiring.py, plus 17 Phase-5 property/fuzz tests in test_gate_math_property_fuzz.py). verification-report.md correctly interprets this as '84 (pre-existing 44 + this feature's own new tests) + 17 fuzz = 101', but the contract's literal '44' wording is now stale/ambiguous for anyone reading only sprint-1.md without also reading verification-report.md's disambiguation.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-real-ledger/contracts/sprint-1.md",
+    "lineRange": "37, 194-195",
+    "snippet": "AND the full regression table (44 self-improve + 42 hl-trade + ledger.test.mjs + ledger.test.js) is re-run green in that same post-merge run."
+  },
+  "routeToPhase": null,
+  "notes": "Non-blocking: the underlying invariant (the 44 tests that existed BEFORE this feature remain green, unmodified) is independently confirmed true by this review (all 44 original test names appear, unmodified, inside the 101-line pass listing in verification/proof-harnesses/deterministic-run.txt). This is a documentation-precision nit against the contract text, not a functional defect in the shipped feature."
+}

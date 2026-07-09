@@ -1,0 +1,15 @@
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 1783485137.0,
+  "window_end_ts": 1783553280.47316
+}

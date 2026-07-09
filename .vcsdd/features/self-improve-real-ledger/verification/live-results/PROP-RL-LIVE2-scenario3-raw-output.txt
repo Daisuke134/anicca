@@ -1,0 +1,97 @@
+
+================================================================================
+STEP 0: disposable git clone (real git history)
+================================================================================
+
+================================================================================
+STEP 1: build a real eligible candidate from the clone's own baseline text
+================================================================================
+
+================================================================================
+STEP 2: REAL promote_gate_run.main() invocation, adversary CLI call mocked to 'unavailable'
+================================================================================
+2026-07-08T23:26:49Z candidate is eligible — invoking fresh Opus adversary (real call, real $ per --max-budget-usd cap)
+2026-07-08T23:26:49Z ADVERSARY UNAVAILABLE/ERRORED (fail-closed, not promoted): PROP-RL-LIVE2 test: adversary CLI intentionally not invoked (real Opus call skipped)
+main() returned rc=0
+
+verdict.json:
+{
+  "promote": false,
+  "reason": "realized ledger data shows an implausible fixture-vs-reality gap: blocking despite an otherwise fixture-passing candidate",
+  "adversary_verdict": "MISSING",
+  "adversary_invoked": true,
+  "adversary_error": "PROP-RL-LIVE2 test: adversary CLI intentionally not invoked (real Opus call skipped)",
+  "assessment": {
+    "candidate_path": "/tmp/prop-rl-live2-s3-candidate-xj9oxbsl/candidate.py",
+    "scope_guard_ok": true,
+    "scope_guard_reason": "scope-guard-pass",
+    "stage1_pass": true,
+    "stage2_pass": true,
+    "combined_score": 3.595082676560379,
+    "baseline_stage2_score": 3.207609302240773,
+    "population_best_used": 3.207609302240773,
+    "tripwire_flagged": false,
+    "tripwire_clear": true,
+    "mean_oos_net_usd": 4.328426416646617,
+    "std_oos_net_usd": 1.2039852226118677,
+    "worst_window_oos_net_usd": 2.6505229056588604,
+    "window_pairs": [
+      {
+        "train_window": 0,
+        "test_window": 1,
+        "oos_net_usd": 4.916678191560437
+      },
+      {
+        "train_window": 2,
+        "test_window": 3,
+        "oos_net_usd": 5.418078152720554
+      },
+      {
+        "train_window": 4,
+        "test_window": 5,
+        "oos_net_usd": 2.6505229056588604
+      }
+    ],
+    "eligible_for_adversary_review": true
+  }
+}
+
+realized_gate.json:
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 6,
+  "sufficient": true,
+  "window_net_usd": 8.4731,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 8.4731,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": true,
+  "window_start_ts": 0.0,
+  "window_end_ts": 1783553209.982165
+}
+
+realized_gate_escalation.json:
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 6,
+  "sufficient": true,
+  "window_net_usd": 8.4731,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 8.4731,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": true,
+  "window_start_ts": 0.0,
+  "window_end_ts": 1783553209.982165,
+  "candidate_path": "/tmp/prop-rl-live2-s3-candidate-xj9oxbsl/candidate.py",
+  "reason": "realized ledger data shows an implausible fixture-vs-reality gap (data_realism_gap): promotion blocked"
+}
+
+CONFIRMED: main()'s REAL call chain (assess_candidate -> compute_realized_gate -> decide_promotion, all unmocked) produced a GENUINE realism-gap block against the REAL live 30-row production ledger (row_count=6 confirmed rows, realized_net_usd=8.4731) -- this candidate's claimed mean_oos_net_usd (4.328) really is an implausible >3x jump over the real per-row average (1.4122) -- REQ-RL11/RL13 proven end-to-end against real data, the escalation JSON was written with the documented keys BEFORE decide_promotion's False verdict, and realized_gate= was genuinely sourced from compute_realized_gate at this real call site (never a stub/hardcoded literal), matching PROP-RL-WIRE1's static-scan proof with a live runtime instance.
+
+=== PROP-RL-LIVE2 SCENARIO 3: ALL ASSERTIONS PASSED ===

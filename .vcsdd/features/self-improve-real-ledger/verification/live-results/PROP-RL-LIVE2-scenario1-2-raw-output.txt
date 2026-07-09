@@ -1,0 +1,83 @@
+
+================================================================================
+STEP 0: disposable git clone (real git history, read-only, never the live repo)
+================================================================================
+git clone exit=0 stderr=
+ground-truth (raw git log in the clone) last promotion ts = 1783485137
+
+================================================================================
+STEP 1: build a hand-crafted ELIGIBLE candidate from the clone's own baseline text
+================================================================================
+candidate written to: /tmp/prop-rl-live2-candidate-sch2vmse/candidate.py
+assessment.eligible_for_adversary_review = True
+assessment.stage1_pass=True stage2_pass=True tripwire_clear=True
+assessment.mean_oos_net_usd=4.328426416646617
+
+================================================================================
+STEP 2 (SCENARIO 1): REAL compute_realized_gate against the clone's git history + REAL ledger
+================================================================================
+{
+  "resolved": true,
+  "resolution_source": "file_relative_default",
+  "ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 1783485137.0,
+  "window_end_ts": 1783553122.526015
+}
+CONFIRMED: window_start_ts matches ground-truth git-log result (1783485137)
+max real ledger row ts = 1783207348, ground_truth_ts (window_start) = 1783485137
+HAND-PREDICTION: all real rows predate the last promotion -> row_count == 0 expected
+
+================================================================================
+STEP 3: REAL decide_promotion, adversary PASS, real (non-blocking) realized_gate
+================================================================================
+{
+  "promote": true,
+  "reason": "fresh adversary PASS",
+  "adversary_verdict": "PASS"
+}
+
+================================================================================
+STEP 4: REAL decide_promotion, adversary MISSING (None), SAME real realized_gate
+================================================================================
+{
+  "promote": false,
+  "reason": "fresh adversary verdict was 'MISSING', not PASS",
+  "adversary_verdict": "MISSING"
+}
+CONFIRMED: realized_gate itself did not block (Step 3 promoted); the adversary's own verdict is what independently gates Step 4 -- proving realized_gate= flows through end-to-end without masking the pre-existing adversary-verdict gate.
+
+================================================================================
+STEP 5 (SCENARIO 2): genuinely trigger resolved=False (real __file__ NameError branch, not a hand-built dict)
+================================================================================
+{
+  "resolved": false,
+  "resolution_source": "unresolved_no_file_context",
+  "ledger_path": "",
+  "row_count": 0,
+  "sufficient": false,
+  "window_net_usd": 0.0,
+  "first_half_net_usd": 0.0,
+  "second_half_net_usd": 0.0,
+  "worsening": false,
+  "trend_blocks": false,
+  "realism_gap_blocks": false,
+  "window_start_ts": 0.0,
+  "window_end_ts": 1783553122.543797
+}
+CONFIRMED: compute_realized_gate's REAL (non-mocked) code path produced resolved=False genuinely, by removing __file__ from ledger_reader's own module namespace for one call (simulating the exotic packaging context REQ-RL1.3 documents) -- not a hand-built dict.
+{
+  "promote": false,
+  "reason": "realized ledger identity unresolved (resolution_source='unresolved_no_file_context'): promotion blocked pending instance identity resolution",
+  "adversary_verdict": null
+}
+CONFIRMED: the SAME otherwise-eligible, adversary-PASS candidate (Step 3 promoted it) is UNCONDITIONALLY blocked once realized_gate.resolved is genuinely False -- REQ-RL7 proven end-to-end against a real candidate + real code path, not just a synthetic fixture.
+
+=== PROP-RL-LIVE2 SCENARIOS 1+2: ALL ASSERTIONS PASSED ===

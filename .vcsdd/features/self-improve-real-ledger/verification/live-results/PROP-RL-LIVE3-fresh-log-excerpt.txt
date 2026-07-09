@@ -1,0 +1,52 @@
+2026-07-08T23:27:37Z OBSERVE realized_ledger={"ledger_path": "/Users/operator/anicca/skills/earn/state/earn-ledger.jsonl", "total_rows": 30, "profitable_row_count": 6, "realized_net_usd": 8.4731, "resolved": true, "resolution_source": "file_relative_default"}
+2026-07-09 08:27:38,082 - INFO - Logging to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232737Z/logs/openevolve_20260709_082738.log
+2026-07-09 08:27:38,131 - INFO - Set random seed to 42 for reproducibility
+2026-07-09 08:27:38,153 - INFO - Initialized OpenAI LLM with model: free/gpt-oss-120b
+2026-07-09 08:27:38,158 - INFO - Initialized LLM ensemble with models: free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33)
+2026-07-09 08:27:38,165 - INFO - Initialized LLM ensemble with models: free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33), free/gpt-oss-120b (weight: 0.33)
+2026-07-09 08:27:38,168 - INFO - Initialized prompt sampler
+2026-07-09 08:27:38,169 - INFO - Set custom templates: system=evaluator_system_message, user=None
+2026-07-09 08:27:38,186 - INFO - Reconstructed islands: restored 0 programs to islands
+2026-07-09 08:27:38,186 - INFO - No island assignments found, distributing programs across islands
+2026-07-09 08:27:38,186 - INFO - Distributed 82 programs across 3 islands
+2026-07-09 08:27:38,186 - INFO - Loaded database with 82 programs from runs/db
+2026-07-09 08:27:38,187 - INFO - Island Status:
+2026-07-09 08:27:38,187 - INFO -  * Island 0: 28 programs, best=3.1833, avg=2.1414, diversity=185.50, gen=0
+2026-07-09 08:27:38,187 - INFO -    Island 1: 27 programs, best=3.0176, avg=1.8915, diversity=229.37, gen=0
+2026-07-09 08:27:38,187 - INFO -    Island 2: 27 programs, best=3.8899, avg=1.9191, diversity=80.88, gen=0
+2026-07-09 08:27:38,187 - INFO - Initialized program database with 82 programs
+2026-07-09 08:27:38,191 - INFO - Successfully loaded evaluation function from /Users/operator/anicca/skills/earn/self-improve/evaluator.py
+2026-07-09 08:27:38,191 - INFO - Initialized evaluator with /Users/operator/anicca/skills/earn/self-improve/evaluator.py
+2026-07-09 08:27:38,191 - INFO - Initialized OpenEvolve with /Users/operator/anicca/skills/earn/self-improve/strategies/pm_backtest_strategy.py
+2026-07-09 08:27:38,191 - INFO - Skipping initial program addition (resuming from iteration 0 with 82 existing programs)
+2026-07-09 08:27:38,195 - INFO - Initialized process parallel controller with 1 workers
+2026-07-09 08:27:38,196 - INFO - Set max None tasks per child
+2026-07-09 08:27:38,196 - INFO - Started process pool with 1 processes
+2026-07-09 08:27:38,196 - INFO - Using island-based evolution with 3 islands
+2026-07-09 08:27:38,198 - INFO - Island Status:
+2026-07-09 08:27:38,198 - INFO -  * Island 0: 28 programs, best=3.1833, avg=2.1414, diversity=185.50, gen=0
+2026-07-09 08:27:38,198 - INFO -    Island 1: 27 programs, best=3.0176, avg=1.8915, diversity=229.37, gen=0
+2026-07-09 08:27:38,198 - INFO -    Island 2: 27 programs, best=3.8899, avg=1.9191, diversity=80.88, gen=0
+2026-07-09 08:27:38,198 - INFO - Starting process-based evolution from iteration 0 for 1 iterations (total: 1)
+2026-07-09 08:27:38,200 - INFO - Early stopping disabled
+2026-07-09 08:28:00,229 - INFO - New MAP-Elites cell occupied in island 0: {'complexity': 5, 'diversity': 5}
+2026-07-09 08:28:00,230 - INFO - Population size (83) exceeds limit (20), removing 63 programs
+2026-07-09 08:28:00,230 - INFO - Population size after cleanup: 20
+2026-07-09 08:28:00,230 - INFO - Iteration 0: Program affd0f03-9656-4c7d-8945-7b9532749be4 (parent: 88d5e19e-0dc6-4abc-bc43-8c124ecb9e12) completed in 20.75s
+2026-07-09 08:28:00,231 - INFO - Metrics: combined_score=3.0343, stage1_pass=1.0000, mean_oos_net_usd=8.2975, std_oos_net_usd=2.7345, worst_window_oos_net_usd=4.4361
+2026-07-09 08:28:00,231 - INFO - 🌟 New best solution found at iteration 0: affd0f03-9656-4c7d-8945-7b9532749be4
+2026-07-09 08:28:00,231 - INFO - ✅ Evolution completed - Maximum iterations reached
+2026-07-09 08:28:00,324 - INFO - Stopped process pool
+2026-07-09 08:28:00,324 - INFO - Using tracked best program: affd0f03-9656-4c7d-8945-7b9532749be4
+2026-07-09 08:28:00,324 - INFO - Evolution complete. Best program has metrics: combined_score=3.0343, stage1_pass=1.0000, mean_oos_net_usd=8.2975, std_oos_net_usd=2.7345, worst_window_oos_net_usd=4.4361
+2026-07-09 08:28:00,324 - INFO - Saved best program to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232737Z/best/best_program.py with program info to /Users/operator/anicca/skills/earn/self-improve/runs/run-20260708T232737Z/best/best_program_info.json
+
+Evolution complete!
+Best program metrics:
+  combined_score: 3.0343
+  stage1_pass: 1.0000
+  mean_oos_net_usd: 8.2975
+  std_oos_net_usd: 2.7345
+  worst_window_oos_net_usd: 4.4361
+2026-07-08T23:28:00Z run_id=run-20260708T232737Z status=0
+2026-07-08T23:28:00Z run_id=run-20260708T232737Z status=0
