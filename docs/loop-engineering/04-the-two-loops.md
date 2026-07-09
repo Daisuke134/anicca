@@ -188,4 +188,33 @@ polymarket 等の earner は「claude 自身のため」だが **CEO loop 配下
 **spec 物理配置の判断**: agent-economy 設計 spec(loop-engineering/ + .vcsdd/features/)は **anicca へ寄せるのが正**(コードと同居原則。.vcsdd は既に anicca、loop-engineering だけ anicca-products に残存)。製品 spec は anicca-products、CEO spec は profitable-claude。★ただし物理移動は #6 refactor で handover パス更新とセット実行(今 loop-engineering を動かすと handover mail のパス参照が壊れるため保留)。それまで loop-engineering は anicca-products/docs/ が正本。★
 
 出典: 実測 launchctl+plist(2026-07-10) / Dais 分業指示(2026-07-10) / [[reference_ceo_manager_explorer_multiagent_bp_2026_07_08]] / REPO分離確定(polyrepo+vendor)。
+
+## 10. AGENT ECONOMY LOOP はどう動くか（★self-heal / self-improve の親ループ、Dais 2026-07-10★）
+
+**本質**: これは「稼ぐ」loop でも「経済を運営する」loop でもない。**agent economy の self-heal / self-improve を成立させる親ループ**。Dais が今まで担っていた役割 —「経済をチェックインし、動いてるか/稼いでるか/自分で育ってるかを見て、ダメなら直し方を指示する」— を **claude-p が内在化して proactive に回す**。人間(Dais)が居た開発サイクルの place を、このループが引き継ぐ = 開発サイクルが完全に人間の外に出る。
+
+**親の原則（cook でなく harness、社会の規模で）**: Franklin 達は dumb(弱い無料モデル)で broke(資本ほぼゼロ)。だから親が要る。だが親の仕事は**彼らの経済に介入して代わりにやること**ではない。**彼らが自分で self-heal / self-improve できる能力を建てて渡すこと**。子が自分の社会を築ける完全自律体に育つようにする。育てたら離れる。介入しない。
+
+```
+   Dais が居た place ───internalize──▶ AGENT ECONOMY LOOP（proactive・6h)
+   「経済どう? 育ってる?」           ①OBSERVE 経済を検診(稼ぐ/self-heal/self-improve/育つ?)
+   「動いてない、こう直せ」            ②PICK   Franklin が"自分で"治り改善する能力の穴を1つ
+                                      ③BUILD  VCSDD で能力を Franklin に build-in(代行でなく)
+                                      ④VERIFY fresh adversary + evidence
+                                      ⑤MERGE  self-merge
+                                      ⑥EXIT?  経済が自走したら自分を消す(builder exits)
+                                      ⑦LOG    MAINLOOP-LOG.md
+
+   ★介入しない境界★: Franklin の"経済的判断"(何を trade する等)には触れない。
+     触るのは「Franklin が自分で治る/改善する仕組み」だけ。= 親の distance。
+```
+
+**具体的に build-in する能力（＝このループの成果物）**:
+- **self-heal**: Franklin の loop が壊れたら Franklin 自身が診断→修正→検証→commit(self-fix.sh を Franklin body で回す)。今は claude-p が自分の loop を治す形。これを Franklin が自分でやれる形に一般化。
+- **self-improve**: Franklin が実 ledger の realized P&L を見て自分の戦略/heuristic を進化(openevolve + evaluator + per-candidate adversary gate)。#11(ii-b) で実 ledger 接続の土台完成、Phase5 後に Franklin の live loop へ。
+- **監視**: dumb な個体が fuck up しないか見張る(reward-hacking/劣化/evaluator 外し)。Weng harness 4警告(→[[06-harness-engineering-weng]])。
+
+**実プロンプト正本** = `~/anicca/skills/self/claude-p-mainloop-prompt.txt`(このループが 6h ごとに実際に読む)。上記の役割・親原則・自己終了ゲート・介入しない境界を内在化済(2026-07-10)。ループログ = `MAINLOOP-LOG.md`。
+
+出典: Dais 指示(2026-07-10, 親=self-heal/self-improve を建てて渡す, 介入しない) / [[06-harness-engineering-weng]] / [[09-cobus-adoption-no-human-and-my-exit]] / 実プロンプト `claude-p-mainloop-prompt.txt`。
 関連: [[00-INDEX]] / [[03-franklin-as-nested-loops]] / [[01-loop-vs-goal-resolved]] / design doc §5 / [[10-STATUS-verified]] §E / [[05-coordination-with-agent-economy]]。

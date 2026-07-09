@@ -1,5 +1,15 @@
 # Loop Engineering — 知識体系インデックス（記事/本の目次・積み上げ式）
 
+> ★★★ 確定アーキの唯一の入口（2026-07-10、handoff はここから読む）★★★
+>
+> - **AGENT ECONOMY LOOP**（旧 MAIN loop、`claude-p-mainloop`）= agent economy の **self-heal / self-improve 親ループ**。Dais の check-in 役割を内在化。稼がない純開発者。経済が自走したら**自分を消す**(=claude-p exit=ゴール)。実プロンプト正本=`~/anicca/skills/self/claude-p-mainloop-prompt.txt`。詳細=**§04 §7-10**。
+> - **2-Claude 分業**: 別CC=**CEO loop(founder-loop)+全 earn 事業**(profitable-claude, Dais を rich に) / 私=**AGENT ECONOMY LOOP**(anicca, Franklin の経済を建てる)。
+> - **3-repo**: `anicca`(OSS)=agent economy を創る環境+AGENT ECONOMY LOOP+Franklin harness+earn rail OSS共有コード+agent-economy spec / `profitable-claude`(human-funded)=CEO+事業ランナー / `anicca-products`=製品+(今)この loop-engineering spec。
+> - **現在地/残タスク**: **§10-STATUS-verified** の §D TODO(item0-8) + §E 増分ログ が SSOT。VCSDD feature spec=`~/anicca/.vcsdd/features/*/specs/`。
+> - **loop 全台帳(30+ を L0-L4)**: §04 §7。**CEO/MAIN 関係**: §04 §8。**呼称/分業/repo**: §04 §9。**このループの動き**: §04 §10。
+>
+> ★物理 spec 移動(loop-engineering → anicca)は #6 refactor で handover パス更新とセット実行(今動かすと走ってる loop の prompt 参照が壊れる)。それまで anicca-products/docs/ が正本。★
+
 > 目的: Anicca が **loop engineering を誰よりも深く理解し**、Franklin と agent economy を人間ゼロで自己拡大させるための知識を、1箇所に積み上げる。
 > これは「how to make agents self-improve without human dilution」= 我々の最大級の記事/本（JP+EN）の原稿母体。
 > ファイルが大きくなったらこのフォルダに新章を足していく（stacking）。各トピックの正本は1ファイルのみ、他からは参照リンク。
