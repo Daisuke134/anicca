@@ -213,6 +213,49 @@ profitable-claude が「Dais の Anthropic 課金で動く」状態から「自�
 
 判断（次に何を書くか、どのプラットフォームを厚くするか）は agent、公開・存在確認・metrics 取得・記帳は決定論ツール。
 
+## Life Manager business loop（Dais 2026-07-10: product + marketing + user-life ops）
+
+詳細正本: `docs/superpowers/specs/2026-07-10-life-manager-autopilot-product-loop-design.md`
+
+Life Manager は `profitable-claude` の中の1 business manager loop として扱う。gig/bounty/affiliate/video と同列の「Dais と人間のために稼ぐ product business」であり、CEO loop の portfolio allocation 対象に入る。ただし global `claude-p-mainloop` は CEO の下に入れない。MAIN は loop system を建てる terminal architect、CEO は business portfolio manager。
+
+採用する構成は **hybrid**:
+
+```text
+ONE canonical cloud Life Manager product
+  |
+  +-- Dais dogfood tenant（最深コンテキスト・最速 feedback）
+  +-- paid user tenants（同じ code path・subscription・multi-tenant guardrails）
+```
+
+ローカル claude-p は Dais 専用の実験/深い dogfood/credential-heavy action の incubator として使うが、Dais-only fork は作らない。dogfood だけでは盲点が残るため、Dais feedback + paid-user feedback + production metrics を全て issue 化し、GitHub issue → VCSDD → deploy → metric verification で閉じる。
+
+初期 wedge:
+
+```text
+Google Calendar を接続すると、物理予定ごとに移動時間・出発時刻・準備時間を自動で埋める。
+電話で出発前に起こし、遅刻しそうなら関係者連絡まで処理する。
+```
+
+既存 skill の昇格対象:
+
+| 既存 skill | Life Manager 内での役割 |
+|---|---|
+| `calendar-with-travel-time` | travel-time autofill の中核 |
+| `opportunity-calendar` | 東京の空き夜を AI/LT/コメディ/もくもく会で埋める environment-pull engine |
+| `anicca-meetup-talk-applier` | Luma/connpass/meetup talk/event apply + Google Calendar 登録 |
+| `anicca-life-manager` | Telegram/phone/calendar の既存 Life Manager 実装素材 |
+
+Life Manager loop の done:
+
+1. `profitable-claude/skills/human-funded/life-manager/` が存在し、`life-manager-cli.sh` / healthcheck / README / ledgers を持つ。
+2. Telegram feedback / Dais dogfood / paid-user feedback / metric drop が GitHub issue に正規化される。
+3. issue は `product:life-manager`, `lm:type:*`, `lm:source:*`, evidence, success_metric を持つ。
+4. travel-time action は Google Calendar 実イベントで検証され、`calendar-actions.jsonl` に記帳される。
+5. Luma/connpass/event apply は `event-applications.jsonl` + Google Calendar event + Telegram after-action report で検証される。
+6. product dev と marketing の両方が loop 内で回る。marketing は URL/views/clicks/signups を `marketing-actions.jsonl` に記帳する。
+7. CEO は Life Manager の MRR/cost/health を読み、pause/reduce/double-down を registry 経由で enforcement できる。
+
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 
 現状の founder-loop は「自分の ledger に earn を記録し目標達成を確認するだけ」の狭い記録ループ（record-earn.mjs を叩くだけ）で、CEO ではない。これを **会社（company）** に再構成する。各 earn loop = 自分の事業だけを改善する business manager。その上に CEO と explorer を置く。
