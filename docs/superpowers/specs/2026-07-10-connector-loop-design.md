@@ -104,6 +104,10 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 
 ## 8. MASTER TODO（順序が正。ここ以外に TODO の正本を置かない。更新 2026-07-11）
 
+> **スコープ境界（Dais 2026-07-11）**: この spec / ceo-profitable-claude は **Dais の銀行口座 + Dais 自身のための稼ぎ**（LM subscription / article / capafy / gig / affiliate / bounty / connector）に集中する。**crypto（PM/SOL/HL）と Franklin agent-economy は別 CC が anicca repo の claude-p main loop で担当**するため、本 TODO では触らない（registry の pm/hl/sol=external はこの分業を表す正しい状態）。
+
+
+
 | # | 状態 | 作業 | 完了条件（§10 の done 条件に従う） |
 |---|---|---|---|
 | 0 | ✅ | CEO 会社基盤 + LM Phase A + explorer LIVE + ccteams | main `190b077`、54/54、5 loop ALIVE |
@@ -112,9 +116,9 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 3 | ✅ | rails vendor（#2 に統合実施済み: Telos verbatim seed / OwnPilot pulse・directives・autonomy / Clira pre-filter+draft 概念 / I-confirm+3-tier / 評価8機構+PROP-167。lean-intros scorer は STEP2 解禁時に接続） — 残: : ①Telos schema ②OwnPilot pulse/directives/autonomy ③Clira pre-filter ④gtm-mcp I-confirm+返信3-tier ⑤lean-intros scorer ⑥Boardy flow ⑦Duckbill UX ⑧booking/meetup scripts ⑨評価8機構 — 全て skills.lock 記帳 | 各 rail TMPDIR test green |
 | 4 | ✅ | pass 実装完了 + **本番稼働開始**（2026-07-11 00:4x JST 初回実 pass 起動、launchd healthcheck load 済み、budget 設定済み） | tmux ALIVE + status.sh/ceo-status.sh 表示 + budget 行実測 |
 | **5** | 🔄 | **実 E2E dogfood 7日（いまここ）**: day-1 検証中: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 connector 行 + 7日 streak + adversary PASS |
-| 6 | ⬜ | CEO 仕上げ: bounty/affiliate/gig cost 自動記録（core 再起動）+ LM cron launchd 化 + CEO 初 decision + hl/article registry 正誤 + external budget | cost-events 3 loop 行 + ceo-decisions ≥1 |
+| 6 | ⬜ | CEO 仕上げ: ①**週次 CEO agent-judgment pass の起動元を新設**（現状 `ceo-run.sh` no-args を叩く cron/launchd が皆無 = decisions 0行 の真因）→ CEO 初 decision + enforcement 実挙動 ②bounty/affiliate/gig cost 自動記録 + **自己申告 vs 実 ledger 照合**（affiliate が「記録した」と偽申告した実例、REQ-CEO-020）③registry 正誤: **pm/hl/sol = crypto = 別 CC(anicca repo main loop)担当 = external のままが正**（この CEO は触らない）、capafy/article は bank-earning だが未 live=状態を実体一致に + last_observed_at ④横断 cron `codex` harness drift（既に plugin 導入+gateway 再起動で修理済、4件は stale 表示→次回定時 run で自動復帰） | ceo-decisions ≥1 + enforcement 観測 + cost 照合機構 + cron runs=ok |
 | 7 | ⬜ | article loop 有効化: profitable-article-writer VCSDD 完走 → Zenn 抜き v1 → Mode A 品質1本 → 新 cron + metrics + V4 別 gate | 実 publish URL + registry live |
-| 8 | ⬜ | LM Phase B: 実 action 解禁（connector rail 流用）+ **セルフマーケ稼働**（Dais 2026-07-10: MoneyPrinterTurbo で wedge 動画を無料量産→IG/TikTok/YT Shorts/Reddit へ。一次 copy =「Tired of searching travel time for every event? Life Manager fills it in automatically」。views/clicks/signups を marketing-actions.jsonl に実測記録、§11 バーで「伸びない creative の反復」を検出）+ **issue-driven 開発**（詳細 issue を書く→loop が triage→実装→deploy→metric 検証。Dais 側の仕事 = 良い issue を書くこと） | LM spec Phase B done + 実投稿 URL + issue→deploy 1周 |
+| 8 | ⬜ | LM Phase B（スコープ縮小 Dais 2026-07-11）: **セルフマーケのみ**に集中 = MoneyPrinterTurbo で LM ペルソナの wedge 動画を無料量産→**Reddit + Instagram** へ配信（video loop を模倣、LM 向けに転用）。一次 copy =「Tired of searching travel time for every event? Life Manager fills it in automatically」。views/clicks/signups を marketing-actions.jsonl に実測記録、§11 バーで「伸びない creative の反復」を検出。**issue-driven 開発は今は OFF**（削除せず無効化のみ。Dais が別 CC で issue-driven dev の process を再設計するまで停止） | LM spec Phase B done + Reddit/IG 実投稿 URL≥1 + marketing-actions.jsonl 実測行 |
 | 9.5 | ⬜ | SNS factory 移行: larry/reelclaw/lm-video/watercolor を claude-p manager loop 化（§11 バー装着で self-improve 開始）→ OpenClaw 退役（state push + **Dais 明示 go** 後に削除） | live cron 0 + launchd 依存 0 + go 記録 |
 | 別 | ✅ | clip blur self-heal（2026-07-11）: 根因=360p fallback+解像度床なし+gate がアスペクト比のみ → 上流根治(≥720p 必須+1080x1920 正規化+4Mbps床) + gate 増強(両方向実証) + metrics/lessons/evaluator penalty 配線 | ~/anicca `f435998`、同一動画で 202×360→1080×1920 実測 |
 | 9 | ⬜ | 製品化: connector module → cloud Life Manager（課金 thesis 確定後、別 spec） | — |
@@ -132,7 +136,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 5 | connector 実 E2E | ①実イベント応募≥1（実 URL + 登録証跡）②gcal 書込を event id の get で読返し ③Telegram 日報が実着信（delivered:true + Dais が見られる）④outreach 1往復（draft→承認→送信 message id→返信分類）⑤debrief 1件が次 pass の入力ログに実出現 ⑥**7日連続 streak** ⑦fresh adversary PASS | 初回1 pass 成功で「dogfood 完了」 |
 | 6 | CEO 仕上げ | cost-events.jsonl に bounty/affiliate/gig の行が**自動**追記される（core 再起動後の実 pass 由来）+ ceo-decisions ≥1行 + その decision が registry に反映され enforcement 実挙動で観測 | 手で cost 行を書く / decision 0行のまま「CEO 稼働」 |
 | 7 | article 有効化 | ①実 publish URL（logged-out fetch で本文 token 一致）②article-metrics.jsonl に実測 views 行 ③cadence: 週1以上×2週連続 ④V4=実売上は**別 gate**（¥0 なら「publish まで done、売上 not yet」と分けて報告） | 「公開できる状態」で「有効化済み」/ 売上未確認で「稼げてる」 |
-| 8 | LM Phase B | 実 action（calendar/phone/marketing/Telegram intake）が per-action で本表と同型の独立読返し evidence を持つ | Phase A の planning 出力で「動いてる」 |
+| 8 | LM Phase B（セルフマーケのみ） | MoneyPrinterTurbo 由来の LM ペルソナ動画が **Reddit + Instagram** に実投稿された URL≥1（logged-out 実読）+ marketing-actions.jsonl に views/clicks/signups の実測行。issue-driven 開発は OFF のため評価対象外 | 動画生成だけ/ draft だけで「マーケ稼働」 |
 | 稼働中 loop 共通 | gig/bounty/pm/capafy/LM/explorer | 07-08 spec の cadence contract 表 + evidence gate（`none:<reason>` 形式）に準拠。「earned」宣言は realized 実収益が ledger + on-chain/入金記録で照合できた時のみ | funnel 途中経過で「稼いだ」 |
 
 ## 11. 各 loop の評価バー（BROKEN / STANDARD / IMPROVE — 全て結果ベース、Dais 2026-07-10）
