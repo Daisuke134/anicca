@@ -5,9 +5,9 @@
   "type": "module",
   "main": "index.mjs",
   "scripts": {
-    "test": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs __tests__/integration.test.mjs",
-    "test:unit": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs",
-    "test:integration": "node --test __tests__/integration.test.mjs"
+    "test": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs __tests__/harness-health.test.mjs __tests__/harness-health-snapshot.test.mjs __tests__/harness-health-no-autoaction.test.mjs __tests__/integration.test.mjs __tests__/harness-health-failure-detail.test.mjs",
+    "test:unit": "node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs __tests__/harness-health.test.mjs __tests__/harness-health-snapshot.test.mjs __tests__/harness-health-no-autoaction.test.mjs",
+    "test:integration": "node --test __tests__/integration.test.mjs __tests__/harness-health-failure-detail.test.mjs"
   },
   "engines": {
     "node": ">=20"

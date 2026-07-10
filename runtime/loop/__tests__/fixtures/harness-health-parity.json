@@ -1,0 +1,48 @@
+{
+  "_comment": "Shared cross-language fixture for R8 (behavioral-spec.md R1-R5 mirrored in harness_health.py). Read verbatim by BOTH runtime/loop/__tests__/harness-health.test.mjs's parity test and skills/self/self-improve/tests/test_harness_health.py -- both languages compute against `records`+`streakThreshold` and must field-for-field match `expected` (generatedAt excluded: it is a wall-clock field, not part of the deterministic R1-R5 contract this fixture proves).",
+  "records": [
+    { "ts": 1, "wake_id": "w1", "kind": "wake", "slot": "yield" },
+    { "ts": 2, "wake_id": "w2", "kind": "skill_error", "slot": "yield" },
+    { "ts": 3, "wake_id": "w3", "kind": "wake_error" },
+    { "ts": 4, "wake_id": "w4", "kind": "skill_error", "slot": "yield" },
+    { "ts": 5, "wake_id": "w5", "kind": "loop_detect", "slot": "yield" },
+    { "ts": 6, "wake_id": "w6", "kind": "wake", "slot": "x402_sell" },
+    { "ts": 7, "wake_id": "w7", "kind": "skill_timeout", "slot": "x402_sell" },
+    { "ts": 8, "wake_id": "w8", "kind": "skill_missing", "slot": "x402_sell" },
+    { "ts": 9, "wake_id": "w9", "kind": "narrate" }
+  ],
+  "streakThreshold": 5,
+  "expected": {
+    "perSlot": {
+      "yield": {
+        "slot": "yield",
+        "wakes": 3,
+        "failures": 2,
+        "failureRate": 0.6666666666666666,
+        "consecutiveFailureStreak": 2,
+        "lastFailureLayer": "tool_logic",
+        "lastFailureTs": 4,
+        "lastFailureWakeId": "w4",
+        "escalate": false
+      },
+      "x402_sell": {
+        "slot": "x402_sell",
+        "wakes": 3,
+        "failures": 2,
+        "failureRate": 0.6666666666666666,
+        "consecutiveFailureStreak": 2,
+        "lastFailureLayer": "tool_missing",
+        "lastFailureTs": 8,
+        "lastFailureWakeId": "w8",
+        "escalate": false
+      }
+    },
+    "brainTransport": {
+      "failures": 1,
+      "consecutiveFailureStreak": 0,
+      "lastFailureTs": 3,
+      "lastFailureWakeId": "w3",
+      "escalate": false
+    }
+  }
+}
