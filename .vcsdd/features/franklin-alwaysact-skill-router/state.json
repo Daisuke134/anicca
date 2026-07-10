@@ -1,0 +1,17 @@
+{
+  "featureName": "franklin-alwaysact-skill-router",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-franklin-alwaysact-skill-router-1783695429002",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-10T14:57:09.001Z",
+  "updatedAt": "2026-07-10T14:57:09.001Z"
+}
