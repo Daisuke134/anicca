@@ -1,0 +1,35 @@
+{
+  "iteration": 4,
+  "phase": "spec-review",
+  "verdict": "FAIL",
+  "dimensions": {
+    "testability": "PASS",
+    "ground_truth": "PASS",
+    "money_safety": "FAIL",
+    "completeness": "FAIL"
+  },
+  "findings": {
+    "money_safety": ["FIND-301"],
+    "completeness": ["FIND-301"]
+  },
+  "blocking_count": 1,
+  "iteration3FindingsVerifiedResolved": [
+    "FIND-201 (verified resolved, independently re-derived, not merely re-read: REQ-504 gains point 5 (behavioral-spec.md:229-237) introducing `currentOfferedSlots` as a per-attempt local variable in index.mjs's retry loop, distinct from the static `ctx.alwaysActMenu`; REQ-506 (behavioral-spec.md:307-312) sets `currentOfferedSlots` to its own reroute-filtered array at the exact point the reroute schema is built; REQ-513's EARS/edge-cases/acceptance-criteria (behavioral-spec.md:497-571) now validate a parsed slot against `currentOfferedSlots` for the CURRENT attempt, never the static `ctx.alwaysActMenu`, and explicitly test both scenario a (re-emitted just-excluded slot `s`) and scenario b (a different risk:'capital' slot) rejecting into REQ-508's direct escalation with no third think() call, plus scenario c (baseline-attempt no-regression); verification-architecture.md's Purity Boundary Map (lines 66-75, 103-118), Proof Obligations (PROP-513b/c/d, lines 165-168), Verification Strategy (lines 193-201), Phase 5 harness plan (lines 236-244), and Changelog (lines 257-268) are all updated consistently -- no remaining text anywhere in either file states the guard checks the static full-wake menu during a reroute attempt.)"
+  ],
+  "newFindingsThisIteration": ["FIND-301"],
+  "groundTruthSpotChecks": [
+    "runtime/loop/index.mjs (full read, 653 lines, main HEAD): index.mjs:382-416 (both idle paths: parse-falsy narrate + sleep branch) MATCHES exactly; index.mjs:402-416 (sleep branch cited by REQ-504/REQ-513) MATCHES exactly; index.mjs:440-456 (classifyEarnResult call) MATCHES exactly; index.mjs:450 (`} else if (isEarnSlot(slot)) {`, the REQ-506/FIND-002 widening target) MATCHES exactly; index.mjs:458-475 (appendHarnessFailure block cited by REQ-508) MATCHES exactly. index.mjs:175-184/183 (avoidSlot mechanism + its 'never blocked, only the enforced pause grows' quote) is OFF by ~3-4 lines against the current main HEAD (actual: avoidSlot declared at line 177, the quoted comment sits at line 187, not 183) -- non-blocking, recorded in notes.md (content/quote is verbatim correct, only the line number drifted because unrelated escalating-cooldown-streak code was added earlier in the same block; every OTHER citation in this file, including ones further downstream, is pixel-exact against this same commit).",
+    "runtime/loop/brain.mjs (full read): brain.mjs:63 (thinkProxy's `tools: getToolDefinitions(ctx.activeSkillSlots)` line) MATCHES exactly; brain.mjs:92 (thinkClaudeP's 'Respond with a JSON tool_calls block using run_skill or sleep.' line) MATCHES exactly.",
+    "runtime/loop/prompt.mjs (full read): SLEEP_TOOL at lines 10-24 MATCHES exactly; getToolDefinitions at lines 139-173 MATCHES exactly; line 171 (`SLEEP_TOOL,` unconditional append) MATCHES exactly; confirmed getToolDefinitions has NO opts/omitSleep parameter yet (correctly described by the spec as a needed Phase 2b addition).",
+    "runtime/loop/context.mjs (full read): assembleContext at lines 26-53 MATCHES exactly; confirmed WakeContext is assembled once per wake from pre-loaded arguments with no per-attempt mutation API (the ground-truth basis for REQ-504 point 5's currentOfferedSlots design).",
+    "runtime/loop/earn-slot.mjs (full read): isEarnSlot/EARN_ACTION = {earn, yield, hl_trade, x402_sell, token_launch} union earn/* MATCHES the spec's claimed set exactly.",
+    "runtime/loop/earn-detect.mjs (full read): classifyEarnResult's wake-id-keyed lookup (never last-line position) and null-on-no-match contract MATCHES the spec's claim exactly.",
+    "runtime/loop/catalog-gate.mjs (full read): filterCatalog's alwaysAvailableOf-before-riskTagOf ordering, the untagged-slot-treated-as-capital-risking fail-closed default, and the open-position carve-out all MATCH REQ-503's claims exactly.",
+    "runtime/loop/parse-tool-call.mjs (full read): the scavenge/repair parser (scavengeRoleplayedToolCall, parseMaybeTruncated, jsonObjectCandidates) confirms zero cross-check against an offered-tools list, matching FIND-103's evidence that a weak model's fabricated slot name reaches index.mjs unfiltered.",
+    "skills/registry.json (full read, all 21 slot entries): risk field values match byte-for-byte -- risk:'safe' for economy/gig, economy/lending, x402_sell, earn/clip, earn/clip-producer, earn/video (6 slots); risk:'capital' for yield, hl_trade, token_launch, earn/sol-trade, earn/polymarket-trade (5 slots); status:'declared' confirmed for earn, earn/audit, earn/_probe (correctly excluded); the 11-slot always-act menu (REQ-502's literal-set-equality claim) is independently re-derivable from this file exactly as specified.",
+    "skills/earn/sol-trade/run.sh (full read): lines 21-24 (kill-switch skip), 28-41 (identity-match guard), 45-48 (cumulative-loss guard), 54-66 (baseline WAIT-on-neutral-signal strategy prompt), 68-76 (SOL_GATE_LIVE_ENABLE 'PURE SHADOW OBSERVATION ... it NEVER alters what franklin-trading does below' quote), 105-158 (unconditional live-pass trace line + signature-gated record-swap.mjs call) all MATCH the spec's citations.",
+    "skills/self/earning-health.py (full read): is_fresh_but_barren's pure/no-I/O/pre-gathered-tail contract and the 'a run of live-pass WAITs ... must NEVER be flagged' doctrine framing MATCH the spec's claims (docstring text is at lines 18-20, spec cites 18-22 -- trivial, non-blocking overshoot of 2 lines into surrounding prose)."
+  ],
+  "reviewed_commit": "cd81fb4f",
+  "ts": "2026-07-11T00:00:00Z"
+}
