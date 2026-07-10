@@ -1,0 +1,24 @@
+{
+  "iteration": 3,
+  "phase": "spec-review",
+  "verdict": "FAIL",
+  "dimensions": {
+    "testability": "PASS",
+    "ground_truth": "PASS",
+    "money_safety": "FAIL",
+    "completeness": "FAIL"
+  },
+  "findings": {
+    "money_safety": ["FIND-201"],
+    "completeness": ["FIND-201"]
+  },
+  "blocking_count": 1,
+  "iteration2FindingsVerifiedResolved": [
+    "FIND-101 (verified: skills/registry.json read directly this iteration, risk field values byte-for-byte match the claim — 6 risk:safe / 5 risk:capital slots across the 11-slot always-act menu; REQ-506's isMarketRiskFree reroute filter is present)",
+    "FIND-102 (verified: swept every think()-call-count mention across both spec files; all now consistently state 1 shared extra call / 2 total / never 3, no remaining ambiguity)",
+    "FIND-103 (verified: REQ-513 exists, index.mjs:402-416's sleep branch is made conditional on !ctx.alwaysActEngaged, off-menu/sleep fabrication routes into REQ-505's reprompt path, Purity Boundary Map + PROP-513a updated — but see FIND-201, a NEW gap in this same fix's reference-set choice)"
+  ],
+  "newFindingsThisIteration": ["FIND-201"],
+  "reviewed_commit": "3cfe4ffa0e96c8bf8226ebe51dcfda1cb03d2fdc",
+  "ts": "2026-07-11T00:00:00Z"
+}
