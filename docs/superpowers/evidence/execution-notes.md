@@ -56,3 +56,10 @@ scope 境界(Dais 2026-07-11): profitable-claude = 銀行口座+Dais 自身の�
 
 ## 進行中
 - #6: builder(Sonnet, worktree) が ceo-revive を VCSDD-lean 実装中。完了後 fresh Opus adversary → merge → live E2E。
+
+
+## 更新 2026-07-11 08:0x JST
+- ✅ **runtime 土台 完成・push済**: 全 loop core spawn に env-u ANTHROPIC_API_KEY(bed88e2) + con/* test isolation 修復(bb65656) → profitable-claude 108/108 green + origin push。life-manager core が prompt 無しで STEP 進行を実証。**全 loop が autonomous に動ける**。
+- ✅ connector 初 booking(GENIAC 07-13)は commit 8bc30cf の gog contract 修正(event 単数)が可能にした。
+- 🔄 **収益ループ(article)**: builder が視聴→¥ 導線実装(CTA link + 実 views ledger: nfb2ace9f0ed8=views9/likes2 実測、¥0 正直) → fresh Opus adversary **FAIL**: CTA が Mode A のみで **Mode B(自律 rail)に届かない**(FIND-001) + Mode B テスト無し(FIND-002) + views 未配線(FIND-006)。→ builder 再開で Mode B CTA 配線を修正中。**未 merge・未 done**。
+- 残: 収益ループ Mode B 修正→adversary→merge / connector 7日 streak(Day1済)+Telegram delivered / #8 LM / #9.5。
