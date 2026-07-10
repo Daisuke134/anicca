@@ -11,15 +11,33 @@ LOG="$HOME/.openclaw/logs/verify-loops-audit.log"; mkdir -p "$(dirname "$LOG")"
 printf '=== %s ===\n%s\n' "$(date '+%F %T')" "$OUT" >> "$LOG"
 
 stale_hrs(){ [ -f "$1" ] || { echo 99999; return; }; echo $(( (now-$(stat -f %m "$1" 2>/dev/null||echo 0))/3600 )); }
+# liveurl (self-heal.md root cause #3 — liveness未配線): duplicated from verify-loops.sh's own
+# liveurl() (same convention this file already uses for stale_hrs() vs verify-loops.sh's fresh() —
+# these two closely-related scripts each keep their own small helper copy rather than sourcing one
+# another). Extracts the URL from the NEWEST record and curls it: LIVE(code)/DEAD(code)/NO-URL.
+liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
+  local u; u="$(tail -1 "$f" 2>/dev/null | grep -oE 'https?://[^"[:space:]]+' | head -1)"
+  [ -z "$u" ] && { echo "NO-URL-IN-NEWEST-RECORD"; return; }
+  # VERIFY_LOOPS_AUDIT_CURL_BIN test-only override seam (mirrors this codebase's own
+  # VERIFY_LOOPS_SELF_DIR/EARN_VIDEO_STATE_PATH/CADENCE_DEADLINE_NOW_HOUR_JST convention) so a test
+  # can stub the HTTP outcome without touching the real network or fighting this script's own
+  # hardcoded PATH= line (which always puts the real system curl ahead of any PATH-based stub).
+  local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o /dev/null -w '%{http_code}' --max-time 12 -L "$u" 2>/dev/null||echo 000)"
+  case "$code" in 200|201|202|301|302|308) echo "LIVE($code) $u";; *) echo "DEAD($code) $u";; esac; }
 CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
 POSTS="$SELF/reddit-loop/state/posts.jsonl"
 LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 
 # escalate stale real outputs (only via self-fix.sh, which self-guards against duplicate/hung fixers)
 [ "$(stale_hrs "$CAP")" -ge 30 ] && bash "$SELF/self-fix.sh" capafy "audit: no new capafy skill published in >30h (published.jsonl stale). Fix the publish pipeline so a real skill lands." >> "$LOG" 2>&1 || true
-# reddit: only escalate if an account exists (else it is legitimately pre-provision)
+# reddit: only escalate if an account exists (else it is legitimately pre-provision). self-heal.md
+# root cause #3: a DEAD newest-post URL (e.g. the real 07-xx reddit 403) used to sit unrepaired
+# forever because ONLY stale_hrs was checked here — a stale-but-alive OR a fresh-but-dead post both
+# need repair, so this is now an OR, not stale_hrs alone.
 NACC=0; [ -f "$HOME/.cloak/reddit-accounts.json" ] && NACC="$(python3 -c "import json;d=json.load(open('$HOME/.cloak/reddit-accounts.json'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
-{ [ "$NACC" -ge 1 ] 2>/dev/null && [ "$(stale_hrs "$POSTS")" -ge 30 ]; } && bash "$SELF/self-fix.sh" reddit "audit: reddit has an account but no real post in >30h (posts.jsonl stale). Make it post one honest disclosed contribution and log the URL." >> "$LOG" 2>&1 || true
+REDDIT_STALE=0; [ "$(stale_hrs "$POSTS")" -ge 30 ] 2>/dev/null && REDDIT_STALE=1
+REDDIT_DEAD=0; case "$(liveurl "$POSTS")" in DEAD*) REDDIT_DEAD=1;; esac
+{ [ "$NACC" -ge 1 ] 2>/dev/null && { [ "$REDDIT_STALE" = 1 ] || [ "$REDDIT_DEAD" = 1 ]; }; } && bash "$SELF/self-fix.sh" reddit "audit: reddit has an account but no real post in >30h (posts.jsonl stale=$REDDIT_STALE) or the newest post URL is DEAD (dead=$REDDIT_DEAD). Make it post one honest disclosed contribution and log the URL." >> "$LOG" 2>&1 || true
 # LM has no daily artifact; if its liveness heartbeat is stale the healthcheck restarts it — the audit surfaces both
 # the staleness (in HOURS, FIND-022 bug fix: was interpolating the file PATH) and the live Stripe MRR so a no-op LM
 # loop is visible in every 6h report.
@@ -64,8 +82,14 @@ for L in $EDD_LOOPS; do
   fi
 done
 
-# send the honest scorecard to the report channel (visibility = no-op auto-detection for every loop incl LM)
+# send the honest scorecard to the report channel (visibility = no-op auto-detection for every loop incl LM).
+# self-heal.md root cause #2: 900 chars truncated $OUT before the self-fix marker section (added
+# above, "--- self-fix result markers ---") ever printed, so an honest FAIL diagnosis (e.g.
+# affiliate's reCAPTCHA wall #994, bounty's sourcing exhaustion #995) never reached the mail body.
+# 3000 chars comfortably covers verify-loops.sh's full output incl. all 10 loops' self-fix markers;
+# AgentMail's text body has no practical length limit that would make this unsafe (loop-report.sh
+# just JSON-encodes it into a plain 'text' field).
 if [ -x "$SELF/../report/loop-report.sh" ]; then
-  bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-900)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
+  bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-3000)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
 fi
 echo "[verify-loops-audit] done $(date '+%F %T')"

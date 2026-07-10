@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# anicca-oss pre-push hook — eval-loop gate.
+# anicca-oss pre-push hook — eval-loop gate + Cadence Contract guard.
 #
 # Behavior:
 #   For every commit being pushed, find files matching `skills/**/eval-output/*.txt`
@@ -14,6 +14,20 @@
 #
 # Wave 1 scope: only files under `skills/**/eval-output/*.txt`. Other paths
 # are not gated by this hook (yet).
+#
+# ★ CADENCE CONTRACT GUARD (self-heal.md FIND-001, 2026-07-11, blocking adversary finding on
+# commit 69b48dae) ★ — mechanical, not prose. `cadence-evidence.py`/`cadence.py` implement the
+# exit-criteria that decides whether a loop's cadence is genuinely met (root cause #1: a prior
+# self-fix pass silently lowered this bar by widening "attempted" to count as "achieved" — a
+# Goodhart bug that made a real 4-day stall read as healthy for days). A code comment alone cannot
+# stop a FUTURE self-fix commit from rewriting BOTH the guarded code AND its own regression-lock
+# test in the same commit — that is the exact failure class already proven once. This repo has no
+# PR/CI infra and CLAUDE.md prohibits adding GitHub Actions, so pre-push (this file, the only
+# already-wired local enforcement point, core.hooksPath=.githooks) is where the gate has to live:
+# if the pushed range touches either guarded file, `test_cadence_evidence.py` and `test_cadence.py`
+# (whichever exist) MUST both exit 0 on this machine's own python3, or the push is rejected
+# outright — fail-closed, no partial credit, no bypass other than the existing --no-verify escape
+# hatch (which is itself logged/auditable via git, not a silent path).
 set -uo pipefail
 
 REPO_ROOT="$(git rev-parse --show-toplevel)"
@@ -38,6 +52,7 @@ export EVAL_MODE=production
 
 FAILS=0
 TOTAL=0
+CADENCE_GUARD_RAN=0   # run the cadence test gate at most once even if multiple refs are pushed together
 
 # stdin: <local-ref> <local-sha> <remote-ref> <remote-sha>
 while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
@@ -50,9 +65,34 @@ while read -r LOCAL_REF LOCAL_SHA REMOTE_REF REMOTE_SHA; do
   if [ "$REMOTE_SHA" = "0000000000000000000000000000000000000000" ]; then
     RANGE="$LOCAL_SHA"
     FILES=$(git diff-tree --no-commit-id --name-only --diff-filter=AM -r "$RANGE" -- 'skills/**/eval-output/*.txt' 2>/dev/null || true)
+    CADENCE_TOUCHED=$(git diff-tree --no-commit-id --name-only -r "$RANGE" -- 'skills/self/cadence-evidence.py' 'skills/self/cadence.py' 2>/dev/null || true)
   else
     RANGE="$REMOTE_SHA..$LOCAL_SHA"
     FILES=$(git diff --name-only --diff-filter=AM "$RANGE" -- 'skills/**/eval-output/*.txt' 2>/dev/null || true)
+    CADENCE_TOUCHED=$(git diff --name-only "$RANGE" -- 'skills/self/cadence-evidence.py' 'skills/self/cadence.py' 2>/dev/null || true)
+  fi
+
+  # ★ CADENCE CONTRACT GUARD ★ (see header comment) — runs the REAL test files with THIS machine's
+  # own python3, not a re-derived judgment of what "should" pass. Any non-zero exit aborts the push.
+  if [ -n "$CADENCE_TOUCHED" ] && [ "$CADENCE_GUARD_RAN" -eq 0 ]; then
+    CADENCE_GUARD_RAN=1
+    echo "pre-push: cadence-evidence.py/cadence.py touched in this push — running their regression-lock tests..." >&2
+    for CT in "$REPO_ROOT/skills/self/tests/test_cadence_evidence.py" "$REPO_ROOT/skills/self/tests/test_cadence.py"; do
+      [ -f "$CT" ] || continue
+      CT_OUT="$(mktemp -t prepush_cadence.XXXXXX)"
+      if ! python3 "$CT" > "$CT_OUT" 2>&1; then
+        echo "" >&2
+        echo "pre-push: FAIL — $CT did not exit 0. Aborting push (self-heal.md FIND-001 Cadence Contract guard)." >&2
+        cat "$CT_OUT" >&2
+        rm -f "$CT_OUT"
+        echo "pre-push: this gate exists because a bar-lowering change to the cadence exit-criteria must never" >&2
+        echo "          ship silently (see docs/superpowers/evidence/self-heal.md). Fix the test/code, or in a" >&2
+        echo "          genuine emergency push with --no-verify and file an issue per CLAUDE.md HARD RULE #14." >&2
+        exit 1
+      fi
+      echo "pre-push: OK   — $(basename "$CT")" >&2
+      rm -f "$CT_OUT"
+    done
   fi
 
   for f in $FILES; do
