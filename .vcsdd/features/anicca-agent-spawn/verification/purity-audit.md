@@ -1,6 +1,10 @@
 # Purity Boundary Audit
 
-**Feature**: anicca-agent-spawn · **Sprint**: 1 · **Phase**: 5 · **Date**: 2026-07-08
+**SPRINT-2 ADDENDUM (2026-07-10)**: this file is **sprint-1-scoped only**. Sprint-2's own purity
+re-audit of `spawn-orchestrator.mjs`/`gen-solana-wallet.sh`/`run.sh`+`wake-gate.mjs` (and a documentation
+gap re: `pending-registry-append.js` lacking its own Purity Boundary Map row) lives at
+**`verification/sprint-2/purity-audit.md`**. Read that addendum for sprint-2's own findings (no drift
+detected); everything below this notice is preserved, unmodified, as the as-run sprint-1 record.
 
 ## Declared Boundaries
 

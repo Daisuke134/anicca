@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-CONV-001",
+  "dimension": "formal_hardening",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "The only formal-hardening artifacts on disk (verification/verification-report.md, verification/security-report.md, verification/purity-audit.md, all under .vcsdd/features/anicca-agent-spawn/) are Sprint-1, Phase-5 outputs dated 2026-07-08, written BEFORE Sprint-2 existed. verification-report.md's own text explicitly and repeatedly states the orchestrator does not exist ('the effectful spawn ORCHESTRATOR ... does not exist anywhere in this sprint's diff', line 63-68; 'Orchestrator-blocked (30 obligations)', line 62). That statement is now false: Sprint 2 built exactly this orchestrator (skills/self/spawn/lib/spawn-orchestrator.mjs, 776 lines; skills/self/spawn/scripts/wake-gate.mjs; skills/self/spawn/lib/pending-registry-append.js; skills/self/spawn/scripts/gen-solana-wallet.sh; skills/self/spawn/lib/colony-spawn-lock usage). None of these files, nor the isSelfFunded/treasury-gate wiring inside spawn-orchestrator.mjs, nor the money-moving seed/reclaim logic (defaultSeedChild/defaultReclaimSeed, spawn-orchestrator.mjs:340-419), nor the Akash funding-gate call site (defaultDeploy, spawn-orchestrator.mjs:267-301) has ever been through a Semgrep security pass, a purity-boundary classification, or a proof-obligation discharge session. A Phase-5 harden pass has never been run for Sprint 2's actual deliverable. Presenting the Sprint-1 artifacts as if they satisfy Sprint-2's hardening obligation is the same class of defect the sibling feature franklin-earn-foundation was caught on (proof-discharge ledger not genuinely covering the code it claims to cover) -- here it is more severe because the artifacts were never even attempted for the current code, not merely mislabeled.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-spawn/verification/verification-report.md",
+    "lineRange": "1-4, 62-68",
+    "snippet": "**Feature**: anicca-agent-spawn · **Sprint**: 1 · **Phase**: 5 (Formal Hardening) · **Date**: 2026-07-08 ... 1. Orchestrator-blocked (30 obligations): the effectful spawn ORCHESTRATOR -- the code that would actually call gen-wallet.sh/ensureAgentId/write mcp.json/invoke nosana job post/deploy-akash.sh/append a real REQ-305 ledger row/transfer real funding -- does not exist anywhere in this sprint's diff."
+  },
+  "routeToPhase": "5"
+}

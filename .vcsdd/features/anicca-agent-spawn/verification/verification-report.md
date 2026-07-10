@@ -1,5 +1,14 @@
 # Verification Report
 
+**SPRINT-2 ADDENDUM (2026-07-10)**: this file's own content below is **sprint-1-scoped only** (dated
+2026-07-08) and explicitly asserts "the effectful spawn ORCHESTRATOR does not exist in this sprint's
+diff" — that is now FALSE. Sprint-2 delivered the money-moving orchestrator
+(`spawn-orchestrator.mjs`/`wake-gate.mjs`/`pending-registry-append.js`/`gen-solana-wallet.sh`) and its own
+dedicated Phase 5 hardening pass, covering the 7 required proof obligations (PROP-115..121) this sprint's
+own contract targeted, lives at **`verification/sprint-2/verification-report.md`** (+ sibling
+`sprint-2/security-report.md`, `sprint-2/purity-audit.md`). Read that addendum for sprint-2's own
+disposition; everything below this notice is preserved, unmodified, as the as-run sprint-1 record.
+
 **Feature**: anicca-agent-spawn · **Sprint**: 1 · **Phase**: 5 (Formal Hardening) · **Date**: 2026-07-08
 **Verifier**: fresh-context Phase 5 session (not the same context as Phase 2/3's Builder/adversary passes)
 

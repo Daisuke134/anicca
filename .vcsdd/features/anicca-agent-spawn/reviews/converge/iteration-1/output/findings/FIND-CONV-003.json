@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-CONV-003",
+  "dimension": "formal_hardening",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "state.json's own currentPhase is still \"3\" (impl-review), and phaseHistory has no \"3\"->\"5\" (or \"5\"->\"6\") transition anywhere for sprint 2 -- the only \"to\":\"5\" and \"to\":\"6\" entries in the entire phaseHistory array belong to sprint 1 (timestamps 2026-07-07T18:44 and 2026-07-07T19:25, both before sprint 2 was opened at 2026-07-07T19:30). This independently confirms FIND-CONV-001/002 from the tooling's own state-machine bookkeeping, not just from the artifact dates: Phase 5 (harden) has never been entered for sprint 2, and gates.\"6\" (the sprint-1 convergence PASS record, timestamp 2026-07-07T19:26:15) predates sprint 2 entirely and cannot be read as covering it. Advancing state directly 3->complete, as instructed, would skip Phase 5 and Phase 6 for sprint 2's own delivered code -- a process shortcut this same feature did NOT take for sprint 1, where Phase 5 was run rigorously (16 obligations independently re-verified, live proof harnesses, Semgrep sweep) before Phase 6 was granted.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-spawn/state.json",
+    "lineRange": "4, 53-70",
+    "snippet": "\"currentPhase\": \"3\" ... last \"to\": \"5\" / \"to\": \"6\" phaseHistory entries are both dated 2026-07-07, sprint-1 (\"sprint\": 1), before sprint 2 opened."
+  },
+  "routeToPhase": "5"
+}

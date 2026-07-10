@@ -1,5 +1,12 @@
 # Security Hardening Report
 
+**SPRINT-2 ADDENDUM (2026-07-10)**: this file is **sprint-1-scoped only**. Sprint-2's own security sweep
+of the money-moving orchestrator files (`spawn-orchestrator.mjs`/`wake-gate.mjs`/
+`pending-registry-append.js`/`gen-solana-wallet.sh` + the `colony-spawn` lock call site) lives at
+**`verification/sprint-2/security-report.md`**. Read that addendum for sprint-2's own findings (Semgrep
+0/206 rules, plus one genuinely new non-Semgrep-detectable money-safety finding); everything below this
+notice is preserved, unmodified, as the as-run sprint-1 record.
+
 **Feature**: anicca-agent-spawn · **Sprint**: 1 · **Phase**: 5 · **Date**: 2026-07-08
 
 ## Tooling

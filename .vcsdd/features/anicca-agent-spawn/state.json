@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-agent-spawn",
   "mode": "strict",
-  "currentPhase": "3",
+  "currentPhase": "5",
   "phaseHistory": [
     {
       "from": "init",
@@ -170,12 +170,19 @@
       "to": "3",
       "timestamp": "2026-07-08T13:48:00.000Z",
       "reason": "Escalation approved per active /goal zero-pause-to-ask authorization. Contract review round-14 PASS (0 findings, iteration 3, negotiationRound ceiling 2 already exceeded twice before for this sprint and approved both times). See escalation-2026-07-08T13-47-40-004Z.md Resolution section."
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-10T01:40:22.281Z",
+      "reason": "Sprint 2 Phase 5 (Formal Hardening), invoked directly per VCSDD Verifier task: reviews/converge/iteration-1/output/verdict.json FAILED because sprint-2 delivered the money-moving spawn orchestrator (spawn-orchestrator.mjs/wake-gate.mjs/pending-registry-append.js/gen-solana-wallet.sh) without a dedicated Phase 5 pass -- the only prior hardening artifacts were sprint-1-only (2026-07-08) and explicitly asserted the orchestrator did not yet exist. This pass discharged all 7 required proof obligations state.json still listed status:pending (PROP-115..121, anchored at verification-architecture.md#PROP-307a/b/c/d/e/f + #PROP-204d): full 206/206 sprint-2 test suite re-run fresh (verification/fuzz-results/sprint-2-full-suite-206-run.log), Semgrep 0/206 rules across the 4 sprint-2 files + the colony-spawn lock call site (verification/security-results/semgrep-sprint2-raw.json), purity re-audit confirms no drift (verification/sprint-2/purity-audit.md), and a live proof harness confirmed money-safety gates intact (spend caps, no cross-instance key fallback, reclaim never masks original error) while also honestly surfacing one new, non-blocking, non-PROP-scoped finding (registry-append-retry non-atomicity, verification/proof-harnesses/finding-money-safety-registry-retry-crash-window.mjs). Full detail: verification/sprint-2/verification-report.md, verification/sprint-2/security-report.md, verification/sprint-2/purity-audit.md. Does NOT advance to Phase 6/complete -- that remains the converge reviewer's call after re-review.",
+      "sprint": 2
     }
   ],
   "iterations": {
     "3": 1,
     "4": 2,
-    "5": 1,
+    "5": 2,
     "6": 1,
     "1a": 3,
     "1b": 3,
@@ -1102,7 +1109,7 @@
       "id": "PROP-115",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307a",
       "beadId": "BEAD-139"
     },
@@ -1110,7 +1117,7 @@
       "id": "PROP-116",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307b",
       "beadId": "BEAD-140"
     },
@@ -1118,7 +1125,7 @@
       "id": "PROP-117",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307c",
       "beadId": "BEAD-141"
     },
@@ -1126,7 +1133,7 @@
       "id": "PROP-118",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307d",
       "beadId": "BEAD-142"
     },
@@ -1134,7 +1141,7 @@
       "id": "PROP-119",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-204d",
       "beadId": "BEAD-152"
     },
@@ -1142,7 +1149,7 @@
       "id": "PROP-120",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307f",
       "beadId": "BEAD-153"
     },
@@ -1150,7 +1157,7 @@
       "id": "PROP-121",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "proved",
       "artifact": "specs/verification-architecture.md#PROP-307e",
       "beadId": "BEAD-154"
     }
@@ -3151,5 +3158,5 @@
   },
   "sprintCount": 2,
   "createdAt": "2026-07-07T07:54:18.175Z",
-  "updatedAt": "2026-07-08T12:55:01.382Z"
+  "updatedAt": "2026-07-10T01:40:22.282Z"
 }

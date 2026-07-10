@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-CONV-002",
+  "dimension": "formal_hardening",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "state.json's proofObligations array contains 7 required:true entries whose status is still 'pending' (never proved, never even attempted): PROP-115 (anchor PROP-307a, tier 0), PROP-116 (PROP-307b, tier 0), PROP-117 (PROP-307c, tier 1), PROP-118 (PROP-307d, tier 2), PROP-119 (PROP-204d, tier 1), PROP-120 (PROP-307f, tier 0), PROP-121 (PROP-307e, tier 1). These are exactly the verification-architecture.md properties governing REQ-307's executeSpawnAttempt (the money-moving/identity-anchoring orchestrator entry point Sprint 2 built): PROP-307a (no arithmetic/eligibility-decision logic inside executeSpawnAttempt), PROP-307b (no LLM/prompt reference), PROP-307c (correct failure-recording path at each of the 9 steps, including the corrected 1-6/7-9 boundary), PROP-307d (the colony-spawn lock is held across the entire execution, never released early), PROP-307e (run.sh/wake-gate.mjs genuinely retire the old spawn-decision.js gate and call the new path), PROP-307f, and PROP-204d. None of these 7 has a 'proved' status or an evidence artifact anywhere in the verification/ directory. verification-report.md itself states the applicable tooling rule verbatim: 'vcsdd-state.js's own Phase-6 gate prerequisite requires literally every required:true obligation to reach status:proved before Phase 6 (convergence) can be entered' (verification-report.md:86-88). Phase 6 convergence therefore cannot be legitimately granted while these 7 remain pending.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-agent-spawn/state.json",
+    "lineRange": "1102-1156",
+    "snippet": "{ \"id\": \"PROP-115\", \"tier\": 0, \"required\": true, \"status\": \"pending\", \"artifact\": \"specs/verification-architecture.md#PROP-307a\" } ... PROP-116/117/118/119/120/121 all status:\"pending\", required:true"
+  },
+  "routeToPhase": "5"
+}

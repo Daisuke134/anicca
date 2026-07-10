@@ -1,0 +1,134 @@
+{
+  "feature": "anicca-agent-spawn",
+  "phase": "impl",
+  "sprintNumber": 2,
+  "iteration": 3,
+  "reviewer": "fresh-opus-adversary",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-2.md",
+    "note": "Phase 3 round 3 (fresh-context, zero prior-round trust, zero Builder context). Re-verifies FIND-003 (edge_case_coverage, medium) and FIND-004 (implementation_correctness, low) from round 2, claimed fixed in ~/anicca commit a8c3dc4. Methodology note (disclosed for honesty): this review environment provided Read/Write/Edit/Grep/Glob only, with NO command-execution tool -- I could not personally invoke `node --test`. I therefore did NOT independently execute the test suite. Instead I performed maximal-rigor STATIC verification: read the full current production source for every affected file end-to-end, read the ACTUAL delivered test files' verbatim assertions (not descriptions of them), and cross-referenced literal runtime strings (e.g. the exact console.error template in spawn-orchestrator.mjs:729 against the exact printed line in evidence/sprint-2-find003-004-fix.log:192) to corroborate that the evidence log reflects a genuine run of THIS code, not a fabricated/stale one. This is a lower-confidence verification method than fresh execution and is flagged honestly rather than claimed as 'independently executed'."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md lines 2559-2571 (REQ-305 Edge Case text) and lines 2848-2858 (REQ-307 Edge Case text, corrected contract-review round 13/FIND-020)",
+          "description": "Re-read REQ-305's own transient-vs-permanent registry-append-failure edge case text and REQ-307's step-9 carve-out text in full. Confirmed the CURRENT spec text (not a prior, superseded version) explicitly names 'pending-registry-append.js' as the retry mechanism and explicitly distinguishes the transient-filesystem-error case (retry on next wake, ledger stays 'active') from the isSelfFunded-refusal case (permanently excluded, requires explicit remediation, never blindly retried) -- and the delivered code in spawn-orchestrator.mjs genuinely implements exactly this distinction: the isSelfFunded() check (line 709) gates BEFORE the try/catch even runs (a refused record is never queued to pending-registry-append.js at all, it only logs and moves on), while the try/catch (lines 710-731) is scoped ONLY to the appendCitizenRecord call itself, so only a genuine filesystem-layer throw (ENOTDIR/EACCES/ENOSPC-class) is caught and queued. No conflation of the two failure modes exists in the delivered code."
+        },
+        {
+          "type": "file",
+          "location": "contracts/sprint-2.md lines 272-311 (the FIND-003/FIND-004 correction paragraph) vs. actual delivered files",
+          "description": "Cross-checked every specific file-touch claim in the contract's own correction paragraph against the actual filesystem: pending-registry-append.js genuinely exists and genuinely exports {readPendingRegistryAppends, queuePendingRegistryAppend, resolvePendingRegistryAppend, deriveOutstandingRegistryAppends} exactly as claimed; wake-gate.mjs genuinely gained a retryPendingRegistryAppends call site (lines 143-146) gated on !dryRun, positioned before filterProductiveCitizens/decideColonySpawn (lines 151+/169+), exactly as claimed; gen-solana-wallet.test.mjs genuinely now imports @solana/web3.js's Keypair.fromSecretKey via require('@solana/web3.js') (line 78) rather than a second solana-keygen shell-out. All claims verified true against the actual current source, not merely accepted from the contract's own prose."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:695-736 (step 9)",
+          "description": "FIND-003 CONFIRMED-FIXED by direct read. The appendCitizenRecord(citizensRegistryFile, citizenRecord) call (line 711) IS now wrapped in try/catch (lines 710-731). On a caught error: (a) executeSpawnAttempt does NOT rethrow/reject -- control falls through to `return { status: 'active', childId }` at line 738, so the function's own documented return-type contract (JSDoc line 476, Promise<{status:'active'|'failed', childId, error?}>) is honored, never a rejection; (b) the ledger 'active' row (line 698) was already written moments earlier and is untouched by the later registry-append failure -- confirmed the ledger write and the registry-append are two textually and temporally separate statements, the first never conditioned on the second's success; (c) queuePendingRegistryAppend(pendingFile, {...}) (lines 721-727) durably records childId, the full citizenRecord, the target citizensRegistryFile, queuedMs, and the real error message -- this record lives in pending-registry-append.js (a genuinely new module, read in full: reuses ledger.js's generic (file,row) JSONL primitives, last-row-wins-per-child_id semantics for deriveOutstandingRegistryAppends, matching children.jsonl's own established convention)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/scripts/wake-gate.mjs:139-146",
+          "description": "Confirmed the 'retry on next wake, before any further spawn evaluation runs' requirement is genuinely satisfied by call-site ordering, not merely by the retry function's own existence: runWakeGate's non-dry-run branch calls `await retryPendingRegistryAppends({ pendingRegistryAppendsFile: deps.pendingRegistryAppendsFile })` at line 145, BEFORE `filterProductiveCitizens` (line 151), BEFORE `computeColonySurplusUsd` (line 159), and BEFORE `decideColonySpawn` (line 170) -- i.e. before any of REQ-102's own spawn-evaluation machinery runs on this wake. Correctly skipped when --dry-run is set (line 143 `if (!dryRun)`), matching dry-run's own pre-established zero-side-effect contract (a registry append is a real filesystem write). wake-gate.test.mjs's own real test ('FIND-003: a real (non-dry-run) wake calls retryPendingRegistryAppends BEFORE decideColonySpawn's own evaluation runs', lines 216-228) asserts call ORDER via a shared `calls` array (['retry','evaluate']), not merely that both were called -- this is a genuine ordering proof, read verbatim, not a description of one."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/__tests__/spawn-orchestrator.test.mjs:316-382",
+          "description": "Read the two actual delivered FIND-003 tests verbatim (not a summary). Both genuinely reproduce the documented ENOTDIR scenario (citizensRegistryFile's parent segment is a plain file via `fs.writeFileSync(blockerFile, 'x')`, then `citizensRegistryFile: path.join(blockerFile, 'citizens.json')`) and assert: result.status==='active' (never a rejection -- if it rejected, the `await executeSpawnAttempt(...)` at line 328 would itself throw and fail the test with an uncaught exception, not merely a wrong assertion value), the ledger row is honestly 'active', citizens.json is genuinely empty (the transient failure genuinely did not silently succeed), and a durable pending row with status:'pending' and the real ENOTDIR error message exists. The second test then clears the blocker and calls the real (non-mocked) `retryPendingRegistryAppends`, confirming the SAME child_id is retried exactly once, the citizens.json append then genuinely lands, and a second retry call is correctly a no-op (no duplicate append) -- directly exercising deriveOutstandingRegistryAppends' last-row-wins/resolved-entry-exclusion logic on a real execution path, not a fixture in isolation."
+        },
+        {
+          "type": "file",
+          "location": "I independently authored a fresh, standalone repro script (not derived from or trusting the builder's own test file structure beyond the documented ENOTDIR technique) at the session scratchpad path, driving executeSpawnAttempt/retryPendingRegistryAppends directly with my own fixture wallet/deploy/identity deps and my own blocker-file setup. NOTE: this review's tool environment provided no command-execution capability, so this script could not actually be RUN by me this round -- it is included as a documented, ready-to-execute artifact reflecting exactly what I verified by static trace, not as an executed-and-passing claim.",
+          "description": "See the methodology disclosure in reviewContext above. The static trace (source read line-by-line against the documented failure/retry contract) independently confirms the same control-flow the builder's own tests exercise: transient throw -> caught -> resolved active + queued -> later retry -> reconciled. I am NOT claiming to have executed this and observed a pass; I am reporting a rigorous read-based confirmation, and disclosing the execution-capability gap rather than fabricating a run."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/__tests__/gen-solana-wallet.test.mjs:52-79, skills/self/spawn/scripts/gen-solana-wallet.sh:1-38",
+          "description": "FIND-004 CONFIRMED-FIXED by direct read. gen-solana-wallet.sh's own generation path (line 19, `ADDRESS=\"$(solana-keygen pubkey \"$KEYPAIR_FILE\")\"`) is unchanged -- correctly, since FIND-004's own scope was the TEST's independence, never the script's generation logic. The test's 'independent re-derivation' check (lines 52-68) NOW calls `loadSolanaWeb3()` -> `require('@solana/web3.js')` -> `Keypair.fromSecretKey(secretKeyBytes).publicKey.toBase58()` -- a genuinely separate library from solana-keygen, mirroring assertRealEvmAddress's viem-vs-openssl+python independence pattern exactly. No solana-keygen invocation appears anywhere in this test file (grep-equivalent confirmed by full read: the ONLY solana-keygen reference left is inside gen-solana-wallet.sh itself, the generation side, never the check side)."
+        },
+        {
+          "type": "file",
+          "location": "/Users/anicca/anicca/package.json:2-4",
+          "description": "Confirmed @solana/web3.js (^1.98.4) is a genuine, real top-level dependency declared in the repo's own package.json alongside bs58 and viem -- not merely referenced in a comment or a test-only devDependency, and not a phantom/aspirational import. This is the same library runtime/wallet-address-solana.mjs already uses (per the test's own comment, independently plausible given viem's already-confirmed real EVM equivalent usage elsewhere in this codebase)."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (full re-read, all 776 lines)",
+          "description": "Re-confirmed no money-safety regression alongside the FIND-003 fix: defaultReclaimSeed/attemptSeedReclaim (lines 390-436, FIND-001's fix) are byte-for-byte the same reclaim logic verified in round 2 -- the FIND-003 diff touches ONLY step 9 (lines 695-736) and adds the new retryPendingRegistryAppends export (lines 760-775); it does not touch seedUsdcAmount, defaultDeploy's funding-gate wiring, or any spend-cap/reclaim code path. defaultDeploy (lines 267-301) still gates every Akash deploy behind evaluateAkashFundingGate's two-pass check before any spend, unchanged from round 2. No cross-instance key fallback: resolveEvmPrivateKey/resolveSolanaSecret calls (wake-gate.mjs lines 60-67) resolve strictly from the CURRENT process's own env/HOME, no second-instance credential path introduced. No `external:true` flag appears anywhere in this diff's scope."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs (single executeSpawnAttempt export, plus retryPendingRegistryAppends), skills/self/spawn/lib/pending-registry-append.js",
+          "description": "CRIT-201/CRIT-202 re-confirmed unaffected: still exactly one executeSpawnAttempt entry point; the new retryPendingRegistryAppends is a genuinely separate, clearly-named function (not a second orchestration path competing with executeSpawnAttempt -- it never re-runs steps 1-9, only completes the one queued sub-operation). pending-registry-append.js is a small (45-line), single-purpose module reusing ledger.js's existing generic primitives -- no duplication of read/append logic, matching this codebase's own established 'reuse, never reimplement' convention (already used identically by shelter-cost-ledger.js). Zero arithmetic/eligibility comparison or LLM/prompt reference introduced anywhere in the diff."
+        },
+        {
+          "type": "file",
+          "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:709 (isSelfFunded gate placement relative to the new try/catch)",
+          "description": "Confirmed the fix did not introduce a new coupling/ordering bug: the isSelfFunded(citizenRecord) check still runs BEFORE any attempt to append or queue anything (line 709), so a record that fails isSelfFunded is never queued to the transient-retry mechanism -- it correctly falls into the separate, pre-existing 'refuse and log' else-branch (lines 733-736), preserving the spec's own required distinction between the two failure modes (see spec_fidelity evidence above). This is a genuine, deliberate structural choice, not an accident of code ordering."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md lines 1007-1027 (traceability entry (8b)) and lines 503-518 (PROP-307c row)",
+          "description": "Confirmed, by direct read of the CURRENT text, that PROP-307c's own row and the (8b) traceability summary were corrected (contract-review round 12/13, resolving FIND-019/FIND-020/FIND-021) to explicitly carve step 9 into its two real sub-cases -- a raw ledger-append failure (propagates uncaught, produces no row) and a transient citizen-registry-append failure (leaves the ledger row 'active', queued for retry 'via a third mechanism, pending-registry-append.js') -- and explicitly states this is correct behavior, not a violation of the 'no row ever claims active' guarantee (which is now correctly scoped to steps 1-8 only). This closes round 2's own observation that no PROP anywhere tracked this edge case -- it now genuinely does, in the current spec text, not merely in a promised future edit."
+        },
+        {
+          "type": "test-output",
+          "location": ".vcsdd/features/anicca-agent-spawn/evidence/sprint-2-find003-004-fix.log (read in full, 256 lines)",
+          "description": "Read the full evidence log. It reports 204 tests, 204 pass, 0 fail, 0 cancelled, 0 skipped -- including both FIND-003 tests (lines 193, 195) and the FIND-004 test (line 61) by exact matching test names against the actual current test-file source I independently read. Strong corroboration that this log reflects a genuine run against the CURRENT code (not fabricated or stale): the log's line 192/174/177 console output strings (e.g. 'self/spawn: citizens.json append failed transiently for anicca-c001, queued for retry on next wake: ENOTDIR: not a directory, open ...') match, character-for-character in template, the literal `console.error(...)` template string I independently read at spawn-orchestrator.mjs:728-730 -- a coincidental match of this specificity across a fabricated log would be implausible. Per this review's own disclosed methodology limitation (no command-execution tool available to me this round), this is offered as corroborating evidence for a claimed-and-plausible 204/204, not as a personally fresh-executed count -- flagged as a residual, non-blocking confidence caveat rather than silently upgraded to 'independently executed'."
+        },
+        {
+          "type": "file",
+          "location": "specs/verification-architecture.md (grep-equivalent full read for 'transient'/'pending-registry-append')",
+          "description": "Re-confirmed round 2's own observation ('no PROP anywhere tracks this edge case') is now false for the current text -- pending-registry-append.js is explicitly named in the (8b) entry as the tracked mechanism. This directly closes the specific verification_readiness gap round 2 implicitly raised (bundled into FIND-003's own edge_case_coverage severity rationale rather than double-counted as its own separate finding, consistent with round 2's own stated approach)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": [],
+    "evaluatedCriteria": ["CRIT-201", "CRIT-202", "CRIT-203", "CRIT-204", "CRIT-205", "CRIT-206", "CRIT-207", "CRIT-208"]
+  },
+  "testResults": {
+    "method": "static-verification-only (no command-execution tool available in this review environment) -- NOT independently executed this round",
+    "claimedCounts": { "tests": 204, "pass": 204, "fail": 0, "cancelled": 0, "skipped": 0 },
+    "sourceOfClaimedCounts": "evidence/sprint-2-find003-004-fix.log, corroborated by literal-string cross-reference against current source (see verification_readiness evidence)",
+    "caveat": "This round could not personally invoke node --test. All FIND-003/FIND-004 conclusions rest on direct, line-level reads of the actual current production source and the actual current test files' verbatim assertions, not on trusting the log's summary numbers alone."
+  },
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T00:00:00.000Z"
+}
