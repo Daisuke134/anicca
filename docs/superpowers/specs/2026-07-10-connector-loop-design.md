@@ -125,6 +125,28 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 8 | LM Phase B | 実 action（calendar/phone/marketing/Telegram intake）が per-action で本表と同型の独立読返し evidence を持つ | Phase A の planning 出力で「動いてる」 |
 | 稼働中 loop 共通 | gig/bounty/pm/capafy/LM/explorer | 07-08 spec の cadence contract 表 + evidence gate（`none:<reason>` 形式）に準拠。「earned」宣言は realized 実収益が ledger + on-chain/入金記録で照合できた時のみ | funnel 途中経過で「稼いだ」 |
 
+## 11. 各 loop の評価バー（BROKEN / STANDARD / IMPROVE — 全て結果ベース、Dais 2026-07-10）
+
+3層で判定する。**BROKEN と STANDARD は決定的**（healthcheck/cadence contract/evidence gate が機械判定）、**IMPROVE は agent の週次 evaluator**（「先週より今週」を ledger 比較で機械確認、何を改善するかの判断は agent）:
+
+| 層 | 意味 | 誰が判定 | 発火するもの |
+|---|---|---|---|
+| BROKEN | 当日 cadence 未達 or 実在検証失敗 or ledger 破損 | healthcheck（決定的、21:00 JST 締め） | self-fix.sh 自動 escalate |
+| STANDARD（bare minimum） | 実世界の結果が独立読返しで存在する | evidence gate（決定的） | 未達 = 「修理が必要」。これ未満で「動いてる」と言うの禁止 |
+| IMPROVE（上限なし） | north-star metric が前週比で伸びる | 週次 evaluator + search-driven self-improve（agent） | 伸びない = 戦略変更（BP 検索→次 pass 反映）。CEO は3層全部を読んで配分 |
+
+| loop | BROKEN | STANDARD（これが bare minimum） | IMPROVE（north star、前週比） |
+|---|---|---|---|
+| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **FREE イベントに実登録済み**（サイト証跡）**+ gcal CONFIRMED（get 読返し）+ Telegram 日報着信** が週次 cadence どおり | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
+| gig | 当日応募 0 / ledger 無更新 | N 応募/日 + funnel 更新（実ページ検証） | 返信率 → 受注数 → 入金¥（現状 270応募/17返信/受注0 = ここが改善対象） |
+| bounty | 巡回なし | checked 増/日 | survivors → 提出 → 賞金$ |
+| affiliate | queue 滞留 + 投稿 0 | 1 投稿/日（実 URL browser 検証） | views → commission¥ |
+| life-manager | pass なし / ledger 破損 | feedback→issue が実 URL で回る + CEO 報告（mrr 正直） | 解決 issue → verified user outcome → MRR$ |
+| explorer | pass なし | 1 検証/日（実 evidence。ABANDON も正当な結果） | proposal → CEO 採用 → loop 化 → その loop の実収益 |
+| article | — | 週1 実 publish（logged-out 本文検証） | views → 有料販売¥（V4） |
+| pm / hl | pass 停止 | pass 稼働 + ledger | realized PnL 週次↑ |
+| CEO | decision 不能 / registry 破壊 | 週次 decision ≥1 + enforcement 実反映 + cost/評価の読取 | **会社全体の実収益**と loop portfolio の質が自分の配分変更後に改善（CEO 自己検証、悪化は rollback） |
+
 ## 9. Non-Goals（本 run で明示的にやらない）
 
 Dais の Gmail 名義での対外送信 / 承認なしの高 risk 送信 / 静的な空き時間 config / MyCortex コード転写（license 無し）/ MAIN·Agent Economy への接触 / 製品課金の実装（#9 まで）。
