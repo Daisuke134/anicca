@@ -1,16 +1,40 @@
 {
   "featureName": "anicca-spawn-identity-resolution-fix",
   "mode": "lean",
-  "currentPhase": "init",
-  "phaseHistory": [],
+  "currentPhase": "complete",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "complete",
+      "timestamp": "2026-07-10T04:00:00.000Z",
+      "note": "Ledger reconciled to reality after 8 fresh-Opus adversary iterations. Fix (f89f37c + producer.sh 2d2b924 + faceless 5bde3e5) genuinely adversary-verified at iter8 PASS. 6/6 identity tests green. init was a ledger/reality mismatch (real work done outside the ledger); this records the genuine convergence."
+    }
+  ],
   "iterations": {},
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-anicca-spawn-identity-resolution-fix-1783521291269",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T04:00:00.000Z",
+      "reviewedBy": "adversary",
+      "iteration": 8,
+      "note": "Fresh Opus iter8 combined review PASS (spec_fidelity + impl_correctness). Reconciles the ledger to reality: fix f89f37c (shared load-instance-env.sh helper + 4 run.sh call sites) was shipped but never had a persisted PASS (iter2-5 FAIL, closed by self-narrowing). iter6 FAIL found producer.sh exec-chain vuln (fixed 2d2b924), iter7 FAIL found faceless run-daily.sh vuln (fixed 5bde3e5 both copies), iter8 PASS: independent 18-live-slot reachability sweep found no other ANICCA_HOME-consuming unfixed file."
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T04:00:00.000Z",
+      "reviewedBy": "adversary",
+      "iteration": 8,
+      "verdictPath": "reviews/combined/iteration-8/output/verdict.json",
+      "selfExecutedTests": "6/6 identity green (run-sh-anicca-home-preservation 2 + load-instance-env 4)",
+      "note": "Money-safety: env-preamble + spec-doc only, no spend cap/scope_guard touched. Enumeration genuinely closed."
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-08T14:34:51.268Z",
-  "updatedAt": "2026-07-08T14:34:51.268Z"
+  "updatedAt": "2026-07-10T04:00:00.000Z"
 }
