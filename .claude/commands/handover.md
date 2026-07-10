@@ -38,6 +38,10 @@ description: セッション引き継ぎノートを生成する（区切り/終
 ### 関連ファイル
 - 今回触った主要ファイルのパス一覧
 
+### 次セッションの /goal コマンド（必須）
+- **必ず** `~/.claude/skills/goal-prompt-builder/` の golden template（Objective / Scope / Constraints / Done when / Stop if の5節、この順）で、残作業全体を E2E で完遂させる paste-ready な `/goal` を1つ生成して載せる
+- Done when は machine-checkable な検証コマンド+evidence 条件で書く（自己申告 done 禁止、§10 done-conditions 流儀）
+
 ### 新セッション開始プロンプト
 - 次の agent がそのまま貼って開始できる「正確なプロンプト」を1つ用意する
 
