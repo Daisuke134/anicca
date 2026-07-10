@@ -150,6 +150,23 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | pm / hl | pass 停止 | pass 稼働 + ledger | realized PnL 週次↑ |
 | CEO | decision 不能 / registry 破壊 | 週次 decision ≥1 + enforcement 実反映 + cost/評価の読取 | **会社全体の実収益**と loop portfolio の質が自分の配分変更後に改善（CEO 自己検証、悪化は rollback） |
 
+### §11.1 評価バーに追加する機構（BP 調査 2026-07-10、出典付き。全 loop に適用）
+
+調査結論: BROKEN/STANDARD/IMPROVE の3層をそのまま実装した OSS は存在しない（我々が先行）。盗む機構は以下 — 実装は connector から始めて全 loop に展開:
+
+| # | 機構 | 出典 | 実装 |
+|---|---|---|---|
+| 1 | BROKEN 判定は guardrail 型（同期・決定的・数ms・blocking）に限定、LLM judge を同期路に入れない | Hamel Husain (hamel.dev/blog/posts/evals-faq)「Guardrails are inline safety checks... Evaluators run after」 | healthcheck は現行のまま決定的を維持 |
+| 2 | **cascade 評価**: stage1(出力ある?タイムアウト?)→stage2(schema 妥当?)→stage3(LLM judge north-star) 段階 gate、timeout は例外でなく metric 行 | OpenEvolve `evaluator.py` `_cascade_evaluate()`（pm で既運用） | 各 loop の self-check を3段化 |
+| 3 | **God-Evaluator 禁止**: 週次 evaluator は次元別 boolean（cadence_ok / schema_ok / evidence_ok / north_star_delta_ok）を別々に ledger へ | Eugene Yan (eugeneyan.com/writing/product-evals)「anti-pattern is a single God Evaluator」 | loop-evaluations.jsonl の行 schema に4 boolean 追加 |
+| 4 | **burn-rate 警報**: 閾値だけでなく直近 k 週の傾き（3点 delta）を見て「N 週後に BROKEN に到達する速度」で早期発火 | Google SRE error budget（rickpollick.com/blog/error-budgets-over-deadlines）「The balance tells you where you are. The burn rate tells you where you are going」 | 週次 evaluator に slope 欄追加 |
+| 5 | lessons.jsonl を**構造化 verdict**に統一 `{issue_type, severity, fix_suggestion, confidence, pattern_detected}` — 次 pass が `pattern_detected:"persistent_regression"` を grep してから動く | BetterForAll L2 + Reflexion（use_memory が効くのは構造化 feedback の持越し） | lessons writer/reader の schema 統一 |
+| 6 | **suite-promotion gate**: self-fix が閉じた failure は per-loop の恒久 regression テストに昇格し、週次 evaluator が毎回再実行（「一度捕まえた failure は永遠に捕まえる」） | auto-harness 3-step gate + Braintrust online→offline loop | `tests/regression/<loop>/` に failing case 蓄積 |
+| 7 | **fix の採点は fixer 以外**: BROKEN/STANDARD/IMPROVE の判定は fresh-context spawn が ledger+lessons のみを読んで下す。loop の自己申告「直りました」は入力にしない | DGM（held-out benchmark を超えた rewrite だけ採用）+ 我々の adversary 原則の運用適用 | 週次 evaluator を fresh spawn 化（要確認: 現状 同一 context なら修正） |
+| 8 | **遷移故障行列**: 3 step 以上の loop は「最後に成功した state × 最初に失敗した state」の行列を週次で ledger から機械生成 → どの遷移を直すか一目 | Hamel Husain transition failure matrix | 週次 evaluator に行列出力追加 |
+
+anti-gaming の核 = #6 + #7（自己採点 benchmark は腐る — BetterForAll 実測: 固定 benchmark で 90-100% の agent が adversarial suite で 62-66%）。
+
 ## 9. Non-Goals（本 run で明示的にやらない）
 
 Dais の Gmail 名義での対外送信 / 承認なしの高 risk 送信 / 静的な空き時間 config / MyCortex コード転写（license 無し）/ MAIN·Agent Economy への接触 / 製品課金の実装（#9 まで）。
