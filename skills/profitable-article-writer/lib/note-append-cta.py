@@ -81,7 +81,12 @@ async def _append_cta(note_key: str, cta_url: str, cta_text: str, cookies_file: 
         return {"ok": False, "reason": f"authenticated GET /v3/notes/{note_key} failed unexpectedly: {e}", "already_present": False}
 
     body = article.body or ""
-    if cta_url in body:
+    # Idempotency check must compare against what _build_cta_html actually WRITES into the body: the
+    # HTML-escaped url (html.escape(cta_url, quote=True)). Comparing the raw cta_url would miss any url
+    # containing &/</>/" (e.g. tracking params ?utm_source=note&utm_campaign=x), silently appending a
+    # DUPLICATE CTA block on every re-run. Check the escaped form (raw kept too for pre-escape legacy bodies).
+    safe_url = html_escape_mod.escape(cta_url, quote=True)
+    if safe_url in body or cta_url in body:
         # Idempotent no-op: the link is ALREADY carried by the remote draft body (e.g. a re-run after an
         # UNCONFIRMED Mode-B wake) -- this counts as success (the invariant this tool exists to guarantee,
         # "the remote body carries the link", already holds), never a duplicate second append.
