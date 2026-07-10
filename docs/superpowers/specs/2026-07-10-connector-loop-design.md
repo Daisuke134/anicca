@@ -96,6 +96,22 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 8 | ⬜ | **LM Phase B**: 実 action 解禁（calendar/phone/marketing/Telegram intake）— connector の実証済み rail を流用 | spec Phase B の Done 条件 |
 | 9 | ⬜ | **製品化**: connector module を cloud Life Manager へ（tenant 分離 + per-tenant cost + 課金 thesis 確定後）。Dot/Yohana の死因分析を pricing 設計に反映 | 別 spec を起こす |
 
+## 10. DONE CONDITIONS（自己欺瞞防止、Dais 2026-07-10 指示。宣言には「実行コマンド+出力」の記録必須）
+
+**共通原則**: done = ①実世界の結果を**独立経路で読み返せる**（gcal は `gog calendar events get <id>`、応募はサイト実ページ/確認メール、送信は message id、売上は on-chain/Stripe 実記録）②1回きりでなく **cadence streak** で判定 ③fresh adversary（Opus）が evidence を読み返して PASS ④「PROPOSED を書いた」「draft を作った」「enqueue した」は done ではない。evidence の無い done 宣言 = 罪。
+
+| TODO# | loop/作業 | DONE の機械検証条件 | NOT done の例（禁止される言い方） |
+|---|---|---|---|
+| 1a-b | anicca-booking 復旧 | ①scan buffer 修正 commit 済（`120e863` ✅）②**通常 cron（agent 経由・定時 6:00/18:00）が2連続 run で approved>0 かつ実サイト登録 evidence**（connpass「参加者への情報」snapshot or 確認メール）③gcal PROPOSED→CONFIRMED 遷移を `gog events get` で読返し ④Telegram delivered:true | 手動発火1回で「復旧」/ PROPOSED 書込だけで「応募した」 |
+| 1c | meetup-applier apply 側 | 新規実応募1件が data/applications/ に記録され、応募先実ページ or 確認メールで独立検証 | discover が動いてるだけで「動いてる」 |
+| 1d | affiliate 投稿再開 | @aishigoto.labo への実投稿 URL を browser 実読で確認 + queue 減少 + commission-watermark 更新継続 | deck 生成だけで「稼働」 |
+| 2-4 | connector-loop 構築 | VCSDD 全 gate PASS（state.json）+ tests/run-all green + registry live + ceo-status 表示 | コードが書けただけ（E2E 前）で「完成」 |
+| 5 | connector 実 E2E | ①実イベント応募≥1（実 URL + 登録証跡）②gcal 書込を event id の get で読返し ③Telegram 日報が実着信（delivered:true + Dais が見られる）④outreach 1往復（draft→承認→送信 message id→返信分類）⑤debrief 1件が次 pass の入力ログに実出現 ⑥**7日連続 streak** ⑦fresh adversary PASS | 初回1 pass 成功で「dogfood 完了」 |
+| 6 | CEO 仕上げ | cost-events.jsonl に bounty/affiliate/gig の行が**自動**追記される（core 再起動後の実 pass 由来）+ ceo-decisions ≥1行 + その decision が registry に反映され enforcement 実挙動で観測 | 手で cost 行を書く / decision 0行のまま「CEO 稼働」 |
+| 7 | article 有効化 | ①実 publish URL（logged-out fetch で本文 token 一致）②article-metrics.jsonl に実測 views 行 ③cadence: 週1以上×2週連続 ④V4=実売上は**別 gate**（¥0 なら「publish まで done、売上 not yet」と分けて報告） | 「公開できる状態」で「有効化済み」/ 売上未確認で「稼げてる」 |
+| 8 | LM Phase B | 実 action（calendar/phone/marketing/Telegram intake）が per-action で本表と同型の独立読返し evidence を持つ | Phase A の planning 出力で「動いてる」 |
+| 稼働中 loop 共通 | gig/bounty/pm/capafy/LM/explorer | 07-08 spec の cadence contract 表 + evidence gate（`none:<reason>` 形式）に準拠。「earned」宣言は realized 実収益が ledger + on-chain/入金記録で照合できた時のみ | funnel 途中経過で「稼いだ」 |
+
 ## 9. Non-Goals（本 run で明示的にやらない）
 
 Dais の Gmail 名義での対外送信 / 承認なしの高 risk 送信 / 静的な空き時間 config / MyCortex コード転写（license 無し）/ MAIN·Agent Economy への接触 / 製品課金の実装（#9 まで）。
