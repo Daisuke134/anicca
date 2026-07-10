@@ -1,0 +1,37 @@
+GREEN phase evidence — promote-gate-claude-bin-fix, sprint 2 (2026-07-10)
+
+target-feature-tests: PASS
+
+Command: cd skills/earn/self-improve && rtk proxy python3 -m pytest tests/test_resolve_claude_bin.py -q
+(rtk proxy used to bypass the `rtk` shell hook that intercepts bare pytest invocations.)
+
+Actual captured output (against the fixed `_resolve_claude_bin()`, which now probes
+`shutil.which("claude")` then an ordered known-good-path fallback list
+(`~/.local/bin/claude`, `/opt/homebrew/bin/claude`, `/usr/local/bin/claude`) checking
+`os.path.isfile(candidate) and os.access(candidate, os.X_OK)` for each, before returning the
+original hardcoded `/opt/homebrew/bin/claude` default as a last resort):
+
+  .....                                                                    [100%]
+  5 passed in 0.09s
+
+All 5 new tests (PROP-CB1, PROP-CB2, PROP-CB2b, PROP-CB2c, PROP-CB3) pass.
+
+UPDATE (post Phase-3 iteration-1 FIND-001, mutation-testing gap fix): the `os.access` fakes in
+tests 2, 4, and 5 now assert `mode == os.X_OK` on every call via a shared `_access_checking_x_ok()`
+helper (previously the fakes accepted-and-discarded the `mode` argument, so a mutation swapping
+`os.X_OK` for `os.F_OK`/`os.R_OK` in the implementation would have passed all 5 tests unchanged —
+silently reintroducing the exact stale-non-executable-file defect PROP-CB2c exists to prevent).
+Re-ran `rtk proxy python3 -m pytest tests/test_resolve_claude_bin.py -v` after the strengthening:
+all 5 still PASSED. Full suite: `1 failed, 105 passed in 1.83s` (same pre-existing unrelated
+`test_ledger_reader.py` worktree-name artifact, no new regression).
+
+regression-baseline: PASS
+
+Command: cd skills/earn/self-improve && rtk proxy python3 -m pytest tests/ -q
+
+  1 failed, 105 passed in 1.80s
+
+105 passed = the 100 pre-existing tests (unchanged) + the 5 new tests in this sprint. The 1
+failure is the SAME pre-existing, unrelated `test_ledger_reader.py` worktree-directory-name
+artifact documented in `sprint-2-red-phase.log` (confirmed to pass on `main`) — present before
+this sprint's work began and untouched by this change. No regression introduced by this fix.

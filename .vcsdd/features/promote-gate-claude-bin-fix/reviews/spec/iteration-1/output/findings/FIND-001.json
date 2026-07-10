@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "REQ-CB2 explicitly defines 'exists' for a fallback candidate as the conjunction of two checks: 'os.path.isfile + executable bit, via os.access(path, os.X_OK)'. Neither the verification-architecture.md proof-obligation table (PROP-CB1/2/3) nor the already-written RED-phase test file at skills/earn/self-improve/tests/test_resolve_claude_bin.py contains any test where a candidate path IS a file (os.path.isfile -> True) but is NOT executable (os.access(path, os.X_OK) -> False), while a LATER candidate in the ordered list both exists and is executable. Concretely: test_which_miss_falls_back_to_first_existing_known_good_path (lines 32-48 of the test file) mocks os.access with a blanket return_value=True for every call, so it cannot distinguish 'skip non-executable candidate 1, use candidate 2' from a buggy implementation that ignores os.access entirely and returns the first path for which os.path.isfile is True regardless of executability. test_which_miss_and_no_fallback_exists_returns_original_default_string only exercises the all-False case (nothing exists at all), which is a different scenario. This is not a theoretical gap: the real-world trigger for this fix is an npm/homebrew install producing a stale or permission-stripped file at one of the three known-good paths (e.g. a half-completed brew install leaving a non-executable /opt/homebrew/bin/claude placeholder) while a working binary sits at a later path in the list -- exactly the kind of environment drift this fix is meant to survive. An implementation that satisfies every documented PROP-CB row (and every currently-written test) could still return a non-executable path in this scenario, causing _invoke_adversary's subprocess.run to raise PermissionError (uncaught -- only FileNotFoundError and TimeoutExpired are caught at promote_gate_run.py:180-183), which is a WORSE regression than the bug this feature is fixing (an unhandled exception crashing main() instead of the intended fail-closed {\"ok\": false} JSON verdict).",
+  "evidence": {
+    "filePath": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md",
+    "lineRange": "7-9",
+    "snippet": "PROP-CB2 | REQ-CB2 (fallback list, first existing wins) | 1 | unit test: `shutil.which` monkeypatched to `None`; `os.path.isfile`/`os.access` monkeypatched so only the 2nd candidate in the list \"exists\" -> function returns that 2nd candidate, not the 1st or the final default"
+  },
+  "routeToPhase": "1b"
+}

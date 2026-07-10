@@ -1,0 +1,39 @@
+semgrep security sweep — promote-gate-claude-bin-fix
+======================================================
+
+Command:
+  semgrep --config auto \
+    skills/earn/self-improve/lib/promote_gate_run.py \
+    skills/earn/self-improve/tests/test_resolve_claude_bin.py \
+    --json --output security-results/semgrep-promote_gate_run.json
+
+Tool version: semgrep 1.168.0 (community registry rules, no login/token used)
+
+Scan Status:
+  Scanning 2 files tracked by git with 1074 Code rules
+  Language   Rules  Files  Origin      Rules
+  python     243    2      Community   1074
+  <multilang> 47    2
+
+Scan Summary:
+  Findings: 0 (0 blocking)
+  Rules run: 290
+  Targets scanned: 2
+  Parsed lines: ~100.0%
+
+Raw JSON output (results=[] confirmed): security-results/semgrep-promote_gate_run.json
+
+Interpretation:
+  _resolve_claude_bin() only reads a fixed, hardcoded tuple of candidate path strings plus
+  shutil.which("claude") and os.access/os.path.isfile stat calls. There is no subprocess
+  invocation, no string formatting into a shell command, no network call, no deserialization,
+  and no untrusted-input handling inside this function or the new test file. The 0-finding
+  result from a 290-rule community Python ruleset is consistent with that shape (a pure
+  path-selection helper), not merely an absence-of-coverage artifact — semgrep's Python
+  ruleset does include subprocess/shell-injection, path-traversal, and unsafe-deserialization
+  rules that would fire on the surrounding _invoke_adversary() subprocess.run call sites had
+  those been touched by this change (they were not — see purity-audit.md and
+  verification-report.md REQ-CB4 scope check).
+
+Wycheproof / cryptographic test vectors: NOT APPLICABLE. This change contains no cryptographic
+  code (no hashing, signing, key handling, or crypto library usage) — see security-report.md.
