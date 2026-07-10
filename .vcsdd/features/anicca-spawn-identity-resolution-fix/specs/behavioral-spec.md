@@ -125,7 +125,7 @@ save/source/restore logic inline. This makes REQ-001/003's "identical fix in eve
 true **by construction** (one implementation, N call sites) rather than by manual re-synchronization
 that a future editor could silently forget.
 
-### Precise scope criterion (finalized after iteration 5 — read this before the audit table)
+### Precise scope criterion (finalized after iteration 7 — read this before the audit table)
 
 Iterations 4 and 5 both found "one more file" with the vulnerable STRING PATTERN via open-ended
 repo-wide grep (`grep -rl "HOME/.openclaw/.env"` and variants) — this process does not converge,
@@ -134,15 +134,25 @@ CLIs, single-purpose launchd daemons, product-specific tooling) that were never 
 multi-instance colony dispatch model this bug actually lives in. Open-ended pattern-grepping the
 whole repo is the WRONG closure criterion. The RIGHT, closed, falsifiable criterion is:
 
-> A file is in scope for this bug if and only if it is the literal `entrypoint` of a
-> `registry.json` slot with `"status": "live"` — i.e., a script `index.mjs`'s `runSkillWithKillRef`/
-> `buildSkillEnv` can actually `spawn()` with a DIFFERENT caller's `ANICCA_HOME` depending on which
-> colony citizen's wake loop is running. Only THIS dispatch path can ever hand a script the "wrong"
-> instance's identity. A standalone launchd daemon, a marketing-automation cron script, or a
-> product-specific CLI always runs in exactly ONE fixed context (its own dedicated `.plist`, or a
-> human/cron invocation with one unchanging `ANICCA_HOME`/no `ANICCA_HOME` at all) — there is no
-> "caller" whose identity could ever be clobbered, so the vulnerable string pattern existing there is
-> not an instance of THIS bug, however desirable it might be to clean up as separate repo hygiene.
+> A file is in scope for this bug if and only if it is reachable from a `registry.json` slot with
+> `"status": "live"` via that slot's real dispatch chain — either (a) it IS the slot's literal
+> `entrypoint`, itself started by `index.mjs`'s `runSkillWithKillRef`/`buildSkillEnv` with the real
+> caller's `ANICCA_HOME`, or (b) it is reached FROM that entrypoint through any `source`/`.`, `exec`,
+> or plain `bash <script>` subprocess fork the entrypoint (or any script it in turn reaches,
+> transitively) performs — because environment variables, including `ANICCA_HOME`, are inherited by a
+> child process across a plain fork+exec exactly as they are across `exec` (process-image
+> replacement); the OS distinction between the two does not create a trust boundary. In both (a) and
+> (b), the same live, per-instance-dispatched process is the one whose `ANICCA_HOME` a reached
+> script's own unguarded env-load could clobber. A standalone launchd daemon, a marketing-automation
+> cron script, or a product-specific CLI is in scope ONLY if it is itself reached via (a) or (b) from
+> some live slot; if it is never reached that way, it always runs in exactly ONE fixed context (its
+> own dedicated `.plist`, or a human/cron invocation with one unchanging `ANICCA_HOME`/no
+> `ANICCA_HOME` at all) — there is no "caller" whose identity could ever be clobbered, so the
+> vulnerable string pattern existing there is not an instance of THIS bug, however desirable it might
+> be to clean up as separate repo hygiene. "Not itself a `registry.json` slot" is NOT, by itself, a
+> valid reason to call a file out of scope — only non-reachability via (a)/(b) is (iteration-7
+> correction, FIND-002: `faceless-money-factory/scripts/run-daily.sh` was wrongly dismissed on
+> registry-slot-membership alone despite being reachable via (b) from `earn/video`).
 
 This criterion is closed and exhaustively checkable: `registry.json`'s `slots` object is a finite,
 enumerable list (20 entries at the time of this audit). Every one of them was checked directly
@@ -159,7 +169,7 @@ slots that share a `live` slot's same `dir` inherit that slot's disposition — 
 | `self/spawn` | `skills/self/spawn` | yes (was) | yes — actively exploited (this incident) | **FIXED** (REQ-001) — sources the shared helper |
 | `self/spawn-child` | `skills/self/spawn-child` | yes (was) | dormant today | **FIXED** (REQ-003) — sources the shared helper |
 | `economy/lending` | `skills/economy/lending` | yes (was) | dormant today | **FIXED** (REQ-003) — sources the shared helper |
-| `earn/video` | `skills/earn/video` | yes (was) | dormant today | **FIXED** (iteration 4, FIND-001) — sources the shared helper |
+| `earn/video` | `skills/earn/video` | yes (was) | dormant today | **FIXED** (iteration 4, FIND-001) — `run.sh` itself now sources the shared helper. CORRECTED iteration 7 (FIND-002): `run.sh`'s own S3_post transition (`run.sh:128,176`) also forks a `bash` subprocess into `$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh` (byte-identical OSS mirror at `~/anicca/skills/faceless-money-factory/scripts/run-daily.sh`) — reachable per criterion (b) above (plain `bash <script>` subprocess fork, not `exec`, but the child still inherits `run.sh`'s environment including `ANICCA_HOME`). That file's own preamble was unguarded (`set -a; . "$HOME/.openclaw/.env" 2>/dev/null \|\| true; set +a`, no save/restore). **Both copies now FIXED** (inline `_AH="${ANICCA_HOME:-}"` save/restore, functionally identical to the shared helper since `~/.claude/skills` has no `_shared/lib/` to source from) |
 | `report` | `skills/report`, entrypoint `anicca-report.sh` (registry's own explicit `entrypoint` field — NOT the default `run.sh` convention) | no | live slot, no vulnerable pattern in the real entrypoint | Not applicable — clean |
 | `earn` / `yield` / `hl_trade` / `x402_sell` / `token_launch` (legacy fat slot, all 5 share `dir: skills/earn`, entrypoint `run.sh`) | `skills/earn` | **no** — uses a named `EARN_ALLOW` allowlist (`case " $EARN_ALLOW " in *" $k "*) export ...`), never blanket `set -a` | yes, and genuinely reads `ANICCA_HOME` downstream (`node lib/resolve-identity.mjs evm`) | Not vulnerable — already uses a strictly safer named-allowlist pattern (its own header documents a PRIOR, unrelated identity-leak incident it already fixed this way). `ANICCA_HOME` is not in `EARN_ALLOW`, so it can never be overwritten from `.openclaw/.env` in the first place |
 | `self/issue-dev` | `skills/self/issue-dev` | no | — | Not applicable — clean |
@@ -175,39 +185,51 @@ slots that share a `live` slot's same `dir` inherit that slot's disposition — 
 | `earn/polymarket-trade` | `skills/earn/polymarket-trade` | no — reads `ANICCA_HOME` only if ALREADY set in its own inherited environment (extensive header comments show this was a deliberate, considered design against exactly this risk class); never sources `.openclaw/.env` | n/a | Not vulnerable — different, already-safe, deliberately-designed mechanism |
 
 This is a closed enumeration (20/20 registry slots checked) — not an open-ended repo grep. Every
-`live` slot's real entrypoint is either fixed or independently confirmed to use a different,
-already-safe mechanism.
+`live` slot's real entrypoint, AND every script transitively reached from it via `source`/`exec`/
+`bash` subprocess fork (criterion (b) above), is either fixed or independently confirmed to use a
+different, already-safe mechanism. Iteration 7 (FIND-002) re-traced every live slot's full
+transitive dispatch chain (not just its literal entrypoint file) and found exactly one additional
+reachable, unfixed file — `faceless-money-factory/scripts/run-daily.sh`, reached via `earn/video`'s
+`bash` subprocess fork — now fixed (see the `earn/video` row above) and moved out of the out-of-scope
+table below, where it had been incorrectly parked on "not a registry.json slot" reasoning that
+criterion (b) explicitly rejects. No further reachable-and-unfixed file was found in that re-trace
+(see the out-of-scope table's per-row reachability reasoning below, and the negative-existence checks
+recorded in this feature's iteration-7 evidence).
 
-### Explicitly out of scope (found by fresh-adversary iterations 4 and 5's repo-wide greps, NOT registry.json live slots)
+### Explicitly out of scope (verified NOT reachable from any live slot's dispatch chain, criterion (a)/(b) above)
 
-These files contain the same string pattern but fail criterion (b) above — none of them is ever
-dispatched via `index.mjs`'s per-instance `buildSkillEnv`/`spawn()`, so none of them can ever receive
-a "wrong" caller's `ANICCA_HOME` in the first place (each always runs in exactly one fixed context: its
-own dedicated launchd job, a marketing-automation cron invocation, or a manual/product-specific CLI):
+These files contain the same string pattern but fail criterion (a)/(b) above: for each, iteration 7
+directly checked (by tracing every live slot's real entrypoint for `source`/`.`/`exec`/`bash <file>`
+references) that no live slot's dispatch chain ever reaches it — so, regardless of whether it is or
+isn't itself a `registry.json` slot, it can never be handed a caller's `ANICCA_HOME` via THIS bug's
+dispatch path. "Not itself a registry.json slot" is cited below only as descriptive context, never as
+the reason for the disposition — the reason is always the reachability check itself (each row also
+records whether the file even reads `ANICCA_HOME`, as a second, independent confirmation):
 
-| File | Why it is out of scope |
+| File | Why it is out of scope (reachability check + ANICCA_HOME consumption) |
 |---|---|
-| `earn/clip-promote/run.sh`, `earn/clip-promote/clip-promote-cli.sh` | Not a `registry.json` slot at all — a standalone marketing-automation script for one fixed IG/TikTok account (uses its own `ANICCA_INSTANCE=clip-promote` tag, unrelated to the colony's `ANICCA_HOME` identity system) |
-| `earn/clip/producer.sh` (invoked as a subprocess BY `clip-promote/run.sh`, not by the `earn/clip` slot's own `run.sh`), `earn/clip/clip-cli.sh`, `earn/clip/launchd/ai.anicca.clip-producer.plist` | Same reasoning — reachable only through the non-slot `clip-promote` automation path, or a dedicated standalone launchd job |
-| `earn/x402-sell/serve-mainnet-boot.sh` | A dedicated `KeepAlive` launchd daemon for ONE fixed x402 research-seller process (`payTo` hardcoded to the founder wallet) — never registry-dispatched |
-| `earn/sol-funding-daemon.sh` | Has its own dedicated launchd job (`com.anicca.sol-funding.plist`) — standalone, fixed-purpose daemon |
-| `ubi/ubi-watcher-daemon.sh` (at `skills/ubi/`, distinct from the live `economy/ubi` slot at `skills/economy/ubi/run.sh`) | Has its own dedicated launchd job (`com.anicca.ubi-watcher.plist`) — standalone daemon, not the registry slot |
-| `report/loop-report.sh`, `report/daily-nl-report.mjs`, `report/test-loop-report.sh` | NOT the live `report` slot's real entrypoint (`anicca-report.sh` is, per `registry.json`'s explicit `entrypoint` field) — separate, non-registry-dispatched scripts |
-| `_shared/send-telegram.sh`, `_shared/credential-restore.sh` | Shared utility scripts with no `ANICCA_HOME` dependency of their own |
-| `earn/video/video-cli.sh` | A CLI wrapper, not the registry-dispatched `run.sh` entrypoint (which IS fixed, above) |
-| `self/capafy-loop/{loop.sh,capafy-loop-cli.sh}`, `self/life-manager-loop/{loop.sh,life-manager-loop-cli.sh}` | The OpenClaw automaton's OWN top-level daemon loops (not per-instance skill invocations) — `.openclaw/.env`'s own `ANICCA_HOME` is genuinely correct for them |
-| `anicca-life-manager/scripts/*` | NOT a `registry.json` slot — Life Manager is OpenClaw's own single-instance personal-assistant feature, always run as the automaton itself |
-| `faceless-money-factory/scripts/run-daily.sh` | NOT a `registry.json` slot — an unrelated factory-apps product |
-| `runtime/anicca-daemon.sh`, `scripts/fuel-usdc.sh`, `services/x402-worker/deploy.sh`, `uninstall.sh` | Top-level repo/infra scripts, not skill entrypoints dispatched per-instance |
+| `earn/clip-promote/run.sh`, `earn/clip-promote/clip-promote-cli.sh` | Checked: no live slot (`earn/clip`, `earn/clip-producer`, `earn/video`, or any other) `source`s/`exec`s/`bash`-forks into `clip-promote/`; it is triggered only by its own separate cron/CLI. Also, independently: `clip-promote/run.sh` has zero `ANICCA_HOME` references — even if reached, there is nothing to clobber. Standalone marketing-automation script for one fixed IG/TikTok account (`ANICCA_INSTANCE=clip-promote` tag), unrelated to the colony's `ANICCA_HOME` identity system |
+| `earn/clip/clip-cli.sh`, `earn/clip/launchd/ai.anicca.clip-producer.plist` | Checked: neither is `source`d/`exec`d/`bash`-forked FROM any live slot's entrypoint — each is itself a separate trigger (CLI wrapper / dedicated launchd job) that in turn invokes a live slot's `run.sh`, not the reverse. (`earn/clip/producer.sh` itself is NOT in this table — it IS reachable via `earn/clip-producer`'s `exec` chain and is listed as **FIXED** in the audit table above; do not re-classify it here) |
+| `earn/x402-sell/serve-mainnet-boot.sh` | Checked: `earn/run.sh` (the `x402_sell` live slot's real entrypoint) contains zero references to `serve-mainnet-boot.sh`. Dedicated `KeepAlive` launchd daemon for ONE fixed x402 research-seller process (`payTo` hardcoded to the founder wallet) — triggered by its own `.plist`, never registry-dispatched |
+| `earn/sol-funding-daemon.sh` | Checked: `earn/sol-trade/run.sh` (the `earn/sol-trade` live slot's real entrypoint) contains zero references to `sol-funding-daemon.sh`. Has its own dedicated launchd job (`com.anicca.sol-funding.plist`) — standalone, fixed-purpose daemon |
+| `ubi/ubi-watcher-daemon.sh` (at `skills/ubi/`, distinct from the live `economy/ubi` slot at `skills/economy/ubi/run.sh`) | Has its own dedicated launchd job (`com.anicca.ubi-watcher.plist`) — standalone daemon, not reached from `economy/ubi/run.sh`'s dispatch chain |
+| `report/loop-report.sh`, `report/daily-nl-report.mjs`, `report/test-loop-report.sh` | Checked: `report/anicca-report.sh` (the `report` live slot's real, registry-declared `entrypoint`) contains zero references to `loop-report.sh`. `loop-report.sh` is instead called BY the non-live-slot CLI wrappers (`earn/video/video-cli.sh`, `earn/clip/clip-cli.sh`, `earn/clip-promote/clip-promote-cli.sh`) — the reverse direction, so it is never reached FROM a live slot. Also has zero `ANICCA_HOME` references of its own |
+| `_shared/send-telegram.sh`, `_shared/credential-restore.sh` | Checked: zero references from any live slot's directory tree. Also has zero `ANICCA_HOME` references of its own — a shared utility with no identity dependency to clobber |
+| `earn/video/video-cli.sh`, `earn/clip-promote/clip-promote-cli.sh` (STARTUP cron-prompt text) | A CLI wrapper that CREATES a cron job whose natural-language prompt text later instructs an agent to run `set -a; . ~/.openclaw/.env; set +a` before invoking the live slot's `run.sh` — but this is prompt text for a separate LLM-driven agent turn, not a `source`/`exec`/`bash <file>` edge in `run.sh`'s own dispatch chain (`run.sh` itself is fixed, above, and criterion (b) is about file-level subprocess forks, not natural-language instructions read by an agent across separate tool-call turns) |
+| `self/capafy-loop/{loop.sh,capafy-loop-cli.sh}`, `self/life-manager-loop/{loop.sh,life-manager-loop-cli.sh}` | Checked: zero references from any live slot's directory tree. The OpenClaw automaton's OWN top-level daemon loops (not per-instance skill invocations) — `.openclaw/.env`'s own `ANICCA_HOME` is genuinely correct for them |
+| `anicca-life-manager/scripts/run.sh`, `anicca-life-manager/scripts/morning_report.sh` | Checked: zero references from any live slot's directory tree — invoked directly by its own dedicated OpenClaw cron job (`b2bf06ee`), a fixed context. Independently: `run.sh` never reads `ANICCA_HOME` at all (its `SKILL` path is hardcoded to `$HOME/.openclaw/skills/anicca-life-manager`); `morning_report.sh` uses the ALREADY-SAFE pattern this feature's own fix generalizes — it resolves `ANICCA_HOME` FIRST (`"${ANICCA_HOME:-$HOME/.openclaw}"`) and only then sources `"$ANICCA_HOME/.env"` (the identity's OWN env file at the already-resolved path), never `$HOME/.openclaw/.env` unconditionally, so there is no shared file to clobber it FROM |
+| `runtime/anicca-daemon.sh`, `scripts/fuel-usdc.sh`, `services/x402-worker/deploy.sh`, `uninstall.sh` | Top-level repo/infra scripts, not skill entrypoints and not reached from any live slot's dispatch chain |
 
-**Scope decision (final, after 5 fresh-adversary iterations — this project's iteration cap):** the
-criterion above is deliberately narrower than "every file containing this string anywhere in the
-repo," because that criterion has no natural stopping point in a 500+ file monorepo and does not
-correspond to an actual reachable bug (a script that always runs in one fixed context cannot receive
-a "wrong" identity). If broader repo-wide hygiene (eliminating the pattern from standalone daemons/CLIs
-too, purely for consistency rather than because they are exploitable) is wanted, it should be a
-SEPARATE, dedicated follow-up feature — continuing to fold new greps into this one does not converge
-and is disproportionate to a lean-mode single-incident fix.
+**Scope decision (final, after 7 fresh-adversary iterations):** the criterion above is deliberately
+narrower than "every file containing this string anywhere in the repo," because that criterion has no
+natural stopping point in a 500+ file monorepo and does not correspond to an actual reachable bug (a
+script that is never reached from any live slot's dispatch chain cannot receive a "wrong" identity via
+THIS bug). It is, however, exactly as WIDE as genuine reachability — including transitive `bash`
+subprocess forks, not just literal entrypoints or `exec` chains, per the iteration-7 correction above.
+If broader repo-wide hygiene (eliminating the pattern from standalone daemons/CLIs too, purely for
+consistency rather than because they are exploitable) is wanted, it should be a SEPARATE, dedicated
+follow-up feature — continuing to fold new greps into this one does not converge and is disproportionate
+to a lean-mode single-incident fix.
 
 ## Non-functional / safety constraints
 
