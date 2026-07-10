@@ -5,17 +5,22 @@
 ### Pure Core — NEW (deterministic, no I/O, no wall-clock, no randomness except injectable `rng`)
 - `replayGenomeAgainstCorpus(genome, corpusEntries)` — REQ-002/REQ-003. Calls `decideEngagement`
   (imported UNCHANGED) per corpus entry with `ageSec: 0`; accumulates `wouldEngageCount`,
-  `totalCount`, `simulatedNetUsdc` (fee-adjusted momentum-sign proxy formula, REQ-003).
-- `evaluateBacktestRubric({wouldEngageCount, totalCount, simulatedNetUsdc})` — REQ-004. Pure
-  threshold gate returning `{passes, reason}`.
+  `totalCount`, `distinctWouldEngageSignatures` (a `Set`-cardinality diversity tally over
+  `{momentumPct, liquidityUsd}` pairs among would-engage entries, REQ-003 — NO P&L formula; the
+  prior `simulatedNetUsdc` formula was DELETED entirely per spec-review FIND-001, not weakened).
+- `evaluateBacktestRubric({wouldEngageCount, totalCount, distinctWouldEngageSignatures})` — REQ-004.
+  Pure threshold gate returning `{passes, reason}`; count-and-diversity ONLY, no P&L term.
 - `countConsecutiveSkips(gateTraceLines)` — REQ-007. Pure scan of an in-memory trace-line array,
   no persisted counter file (deliberately trace-derived, cannot drift from the trace itself).
 - `shouldForceExploration(streakCount, threshold)` — REQ-007. Pure comparison.
 - `selectBottleneckKnob(recentSkipTraceLines)` — REQ-009. Pure tally over already-recorded
-  `momentumPct`/`liquidityUsd`/`conviction`/`genome` fields on in-memory trace lines.
-- `mutate(genome, { rng, count, forcedDirection })` — REQ-008. Extension of
-  `franklin-sol-evolvable-edge`'s existing pure `mutate()`; the new `forcedDirection` parameter is
-  additive and optional; base-clamp/step/post-clamp/rounding logic is UNCHANGED.
+  `momentumPct`/`liquidityUsd`/`conviction`/`genome` fields on in-memory trace lines; FIRST filters
+  out `reason === "no-signal"`/null-momentum lines (spec-review FIND-004 fix) before tallying.
+- `mutate(genome, { rng, count, forceKnob, forcedDirection })` — REQ-008. Extension of
+  `franklin-sol-evolvable-edge`'s existing pure `mutate()`; the new `forceKnob` (spec-review
+  FIND-002 fix — restricts knob-count/pool-index selection to EXACTLY the caller-identified
+  bottleneck knob) and `forcedDirection` parameters are additive and optional; base-clamp/step/
+  post-clamp/rounding logic is UNCHANGED.
 
 ### Pure Core — REUSED, UNCHANGED (imported, never reimplemented)
 - `decideEngagement` (`sol-gate.mjs`) — REQ-002.
@@ -26,9 +31,14 @@
 - `attributeGenomeIdSol`, `summarizeByGenomeSol` (`sol-evolve.mjs`) — REQ-012, untouched.
 
 ### Effectful Shell — NEW
-- Reading `state/sol-gate.trace.jsonl` as (a) the backtest replay corpus (REQ-001) and (b) the
+- Reading the trace-corpus file as (a) the backtest replay corpus (REQ-001) and (b) the
   starvation-signal source (REQ-007/009) — a read-only consumer of an ALREADY-WRITTEN file; this
-  feature adds no new trace-append call.
+  feature adds no new trace-append call. THIS FEATURE CHANGES `sol-gate-cli.mjs`'s EXISTING
+  `GATE_TRACE_PATH` resolution (REQ-013, spec-review FIND-003 fix) from a `__dirname`-derived shared
+  path to the SAME `ANICCA_HOME`-gated resolution `instanceOverridePath()` already uses (explicit
+  `SOL_GATE_TRACE_PATH` env, if set, still wins — unchanged escape hatch). OUT OF SCOPE: `STATE_DIR`,
+  `CACHE_DIR`, and `SOL_TRADE_TRACE_PATH` (`sol-gate-cli.mjs:37,39-40`) are NOT touched by this
+  feature — they belong to `franklin-sol-evolvable-edge`.
 - Writing the per-instance `sol-gate-genome-override.json` — REQ-005 (seeding), using the SAME
   `instanceOverridePath()` helper `franklin-sol-evolvable-edge` already exports (no new path
   -resolution logic written).
@@ -50,22 +60,24 @@
 |----|--------------|-----|------|----------|------|
 | PROP-001 | Corpus parse from trace lines is defensive: malformed/missing-field lines excluded, never thrown; empty/undersized corpus (< SOL_BACKTEST_MIN_SAMPLES) causes bootstrap to skip the cycle cleanly | REQ-001 | 1 | true | node:test |
 | PROP-002 | replayGenomeAgainstCorpus's per-entry wouldEngage/conviction calls are fixture-identical to calling decideEngagement directly with the same arguments (import-identity + fixture-parity, proves no reimplementation drift) | REQ-002 | 0 | true | node:test |
-| PROP-003 | simulatedNetUsdc matches the fee-adjusted momentum-sign formula EXACTLY for a corpus with known would-engage entries and known momentumPct values (numeric assertion) | REQ-003 | 2 | true | node:test + fast-check |
-| PROP-004 | evaluateBacktestRubric.passes is true iff totalCount>0 AND wouldEngageCount>=MIN_ENGAGE AND ratio<=MAX_ENGAGE_RATIO AND simulatedNetUsdc>0, for randomized input triples | REQ-004 | 2 | true | node:test + fast-check |
+| PROP-003 | distinctWouldEngageSignatures (REQ-003's diversity tally) matches the EXACT count of unique {momentumPct,liquidityUsd} signature pairs among would-engage corpus entries, for a corpus with known-duplicate and known-distinct entries — Set-cardinality assertion, NO P&L formula (spec-review FIND-001: the prior simulated-P&L PROP-003 was DELETED, not weakened) | REQ-003 | 2 | true | node:test + fast-check |
+| PROP-004 | evaluateBacktestRubric.passes is true iff totalCount>0 AND wouldEngageCount>=MIN_ENGAGE AND ratio<=MAX_ENGAGE_RATIO AND distinctWouldEngageSignatures>=MIN_DISTINCT_SIGNATURES, for randomized input triples (no P&L term) | REQ-004 | 2 | true | node:test + fast-check |
 | PROP-005 | Across an exhaustive fixture set of rubric-passing scenarios, the ONLY file path ever opened for writing by the backtest-bootstrap code path is sol-gate-genome-override.json — baseline-genome.json is NEVER opened for writing by this code path, under any fixture | REQ-005 | 2 | true | node:test (temp fs, fs.writeFileSync spy asserting call args across every fixture) |
 | PROP-006 | evaluatePromotion/promote (spied imported bindings) are never invoked by the backtest-bootstrap code path, for any fixture, including rubric-passing ones | REQ-005/REQ-012 | 0 | true | node:test (spy/mock on imported bindings, call-count assertion) |
 | PROP-007 | FORBIDDEN_CAP_KEYS absent from every backtest candidate object, before replay AND before write, for adversarially crafted candidate inputs | REQ-006/REQ-011 | 2 | true | node:test + fast-check |
 | PROP-008 | countConsecutiveSkips equals exactly the number of trailing "skip" entries before the first "engage" (or array start), for randomized decision sequences | REQ-007 | 2 | true | node:test + fast-check |
 | PROP-009 | shouldForceExploration triggers iff streakCount >= threshold; never below, always at/above | REQ-007 | 1 | true | node:test |
-| PROP-010 | WHILE starved with a forcedDirection table supplied, every mutated knob's direction matches the fixed loosen-direction table (momentum/liquidity/conviction: -1; staleness: +1) for EVERY injected rng value covering both branches of the old coin-flip — proves the forced table actually overrides randomness, not merely correlates | REQ-008 | 2 | true | node:test + fast-check (rng injection spanning [0,1)) |
+| PROP-010 | WHILE starved with forceKnob+forcedDirection supplied, mutate() mutates EXACTLY forceKnob (never any other pool knob, spec-review FIND-002) and that knob's direction matches the fixed loosen-direction table (momentum/liquidity/conviction: -1; staleness: +1), for EVERY injected rng value spanning the FULL domain the OLD unconstrained pool-index draw would have used — proves forceKnob+forcedDirection actually CONSTRAIN selection and direction, not merely correlate with them | REQ-008 | 2 | true | node:test + fast-check (rng injection spanning [0,1)) |
 | PROP-011 | WITHOUT forcedDirection (the default, every existing call site), mutate()'s output is BYTE-IDENTICAL to franklin-sol-evolvable-edge's existing, already-hardened behavior — its own existing PROP-002/003 fixtures re-run unchanged against the extended mutate() and MUST still pass verbatim (zero regression) | REQ-008 | 0 | true | node:test (re-executes the sibling feature's own existing test fixtures) |
-| PROP-012 | selectBottleneckKnob returns the knob with the highest fail-tally on a fixture with a known-dominant failing condition; deterministic fixed-key-order tie-break verified on an exactly-tied fixture; returns null on an empty or all-zero-tally input | REQ-009 | 1 | true | node:test |
+| PROP-012 | selectBottleneckKnob returns the knob with the highest fail-tally on a fixture with a known-dominant failing condition; deterministic fixed-key-order tie-break verified on an exactly-tied fixture; returns null on an empty or all-zero-tally input; a fixture INTERLEAVING reason==="no-signal"/momentumPct:null lines among the same genuine near-miss lines returns the IDENTICAL bottleneck knob as the no-no-signal-lines fixture, proving the no-signal filter neutralizes their contribution rather than diluting it (spec-review FIND-004) | REQ-009 | 1 | true | node:test |
 | PROP-013 | countConsecutiveSkips returns 0 immediately following any trace ending in an "engage" line, regardless of the length of the prior skip streak | REQ-010 | 1 | true | node:test |
 | PROP-014 | A synthetic fixture engineered to satisfy BOTH a starvation trigger AND a rubric-passing backtest candidate in the same pass results in the STARVED mutation (not the backtest candidate) being the one written to the override file (precedence proof) | REQ-015 | 1 | true | node:test |
 | PROP-015 | An exhaustive property sweep across mutate()'s symmetric output, mutate()'s forced-direction output, and every backtest candidate object asserts FORBIDDEN_CAP_KEYS is absent in 100% of generated cases, including adversarially crafted base genomes | REQ-011 | 2 | true | node:test + fast-check (highest-priority money-safety PROP in this feature) |
 | PROP-016 | Static source-contract test: no eval(/new Function(/genome-value-derived dynamic import()/require() anywhere in this feature's new module(s) | REQ-014 | 0 | true | node:test (source-text contract test, mirrors execute-yield.mjs's existing pattern) |
 | PROP-017 | For two distinct ANICCA_HOME values, this feature's write target (override path) resolves to two distinct paths; a write under one is never visible under the other, for randomized home strings | REQ-013 | 2 | true | node:test + fast-check |
 | PROP-018 | Calling evaluatePromotion/promote (via sol-evolve.mjs's runEvolveSol) on the SAME chain-verified fixtures used by franklin-sol-evolvable-edge's own existing tests produces IDENTICAL promote/no-promote verdicts before and after this feature is implemented (regression parity on the money-gate itself) | REQ-012 | 0 | true | node:test (fixture-parity, re-executes sibling feature's own fixtures) |
+| PROP-019 | Adversarial negative-assertion (spec-review FIND-002): for an rng sequence deliberately chosen so mutate()'s OLD unconstrained random-index draw would select a DIFFERENT knob than forceKnob, mutate(genome, {forceKnob, forcedDirection}) still mutates ONLY forceKnob — never a non-bottleneck knob; test constructed to FAIL against a naive implementation that accepts forceKnob but still falls through to the old random pool-index selection | REQ-008/REQ-009 | 2 | true | node:test + fast-check (adversarial rng targeting non-bottleneck pool indices) |
+| PROP-020 | For two distinct ANICCA_HOME values (SOL_GATE_TRACE_PATH unset), the trace-corpus READ path (REQ-013 fix) resolves to two distinct file paths; a trace line appended under one ANICCA_HOME is never read/visible under the other — read-path counterpart to PROP-017's write-path proof (spec-review FIND-003) | REQ-013 | 2 | true | node:test + fast-check (randomized home strings, temp-dir isolation) |
 
 ## Verification Strategy
 
@@ -81,21 +93,29 @@
 - **Tier 2** (lightweight formal methods — property-based testing with `fast-check` over
   randomized/adversarial inputs, REQUIRED because these are the money-safety-critical or
   correctness-critical surfaces where an untested corner case is either a real-dollar risk or would
-  silently defeat this feature's entire purpose): PROP-003 (the simulated-P&L formula — a wrong
-  constant or sign here would seed a genome based on a fabricated positive signal), PROP-004 (the
-  rubric gate — the single boundary between "seed this candidate" and "don't"), PROP-005 (the
-  hard money-safety boundary: this feature must NEVER be able to write `baseline-genome.json`, no
-  matter how many rubric-passing fixtures are thrown at it), PROP-007 (forbidden-cap stripping on
-  the NEW backtest-candidate write path — the exact bug class that was `franklin-sol-evolvable-edge`'s
-  own precedent-setting money-safety proof obligation), PROP-008 (the starvation counter's core
-  correctness — if this silently undercounts, the escape valve never fires and the feature does
-  nothing; if it silently overcounts, forced exploration fires too eagerly and degrades exploration
-  quality), PROP-010 (THE core falsifiable claim of mechanism (b) from the task: "a starvation
-  counter at threshold biases the next mutation's direction toward looser thresholds, proven by a
-  fixture" — this is the single most important behavioral proof in this entire feature), PROP-015
-  (THE core falsifiable claim of the money-safety constraint: "a cap key never appears in any
-  genome," swept across every code path this feature adds), PROP-017 (cross-instance isolation —
-  money-identity safety, mirrors the sibling feature's own PROP-016 treatment).
+  silently defeat this feature's entire purpose): PROP-003 (the diversity-tally `Set`-cardinality
+  computation — a wrong dedup key would let a corpus dominated by repeated near-identical snapshots
+  pass the rubric as if diverse, defeating the entire non-degeneracy guarantee this redesign relies
+  on; NO P&L formula involved, per spec-review FIND-001), PROP-004 (the rubric gate — the single
+  boundary between "seed this candidate" and "don't"), PROP-005 (the hard money-safety boundary:
+  this feature must NEVER be able to write `baseline-genome.json`, no matter how many rubric-passing
+  fixtures are thrown at it), PROP-007 (forbidden-cap stripping on the NEW backtest-candidate write
+  path — the exact bug class that was `franklin-sol-evolvable-edge`'s own precedent-setting
+  money-safety proof obligation), PROP-008 (the starvation counter's core correctness — if this
+  silently undercounts, the escape valve never fires and the feature does nothing; if it silently
+  overcounts, forced exploration fires too eagerly and degrades exploration quality), PROP-010 (THE
+  core falsifiable claim of mechanism (b) from the task: "a starvation counter at threshold biases
+  the next mutation's direction AND its identified bottleneck knob toward looser thresholds, proven
+  by a fixture" — this is the single most important behavioral proof in this entire feature, spec-
+  review FIND-002-strengthened to also prove WHICH knob is mutated, not merely its direction),
+  PROP-015 (THE core falsifiable claim of the money-safety constraint: "a cap key never appears in
+  any genome," swept across every code path this feature adds), PROP-017 (write-path cross-instance
+  isolation — money-identity safety, mirrors the sibling feature's own PROP-016 treatment),
+  PROP-019 (the explicit negative assertion spec-review FIND-002 required: a non-bottleneck knob is
+  NEVER the one mutated under starvation, proven against an adversarial rng that would have exposed
+  the iteration-1 gap), PROP-020 (read-path cross-instance isolation — spec-review FIND-003: the
+  trace corpus this feature's rubric and starvation signal are built on must be per-instance, not a
+  shared-checkout path).
 - **Tier 3** (strong formal proof — Kani/TLA+-class): NOT REQUIRED for this feature, for the same
   reasons `franklin-sol-evolvable-edge`'s verification architecture already gives: all pure-core
   functions here are small, finite-domain, and fully covered by Tier 1/2 property tests; there is
@@ -118,9 +138,19 @@
   by code review — this is the single highest-consequence claim in the feature and MUST have
   execution-based, not just structural, evidence.
 - REQ-008's `mutate()` extension MUST be implemented as a strict superset of the existing signature
-  (`mutate(genome, { rng = Math.random, count, forcedDirection } = {})`) so that every EXISTING call
-  site in `sol-gate-cli.mjs` (which calls `mutate(genome)` with no second argument) continues to
-  compile and behave identically — PROP-011 is the regression gate for this.
+  (`mutate(genome, { rng = Math.random, count, forceKnob, forcedDirection } = {})`) so that every
+  EXISTING call site in `sol-gate-cli.mjs` (which calls `mutate(genome)` with no second argument)
+  continues to compile and behave identically — PROP-011 is the regression gate for this. WHEN
+  `forceKnob` is a valid pool key, it MUST short-circuit the existing `count`/random-index selection
+  entirely (`chosen = [forceKnob]`) — a naive implementation that merely ADDS `forceKnob` to the
+  existing random pool (rather than REPLACING the selection) will fail PROP-010/PROP-019; this is
+  the exact regression spec-review FIND-002 was written to prevent.
+- REQ-013's fix requires an actual CODE CHANGE to `sol-gate-cli.mjs`'s existing `GATE_TRACE_PATH`
+  constant (today: `path.join(__dirname, "..", "..", "state", "sol-gate.trace.jsonl")`) — Phase 2a
+  MUST write a RED test asserting the resolved trace path differs across two `ANICCA_HOME` values
+  BEFORE this fix is implemented (proving the iteration-1 gap is real), then Phase 2b's fix MUST
+  make it pass (PROP-020). `STATE_DIR`, `CACHE_DIR`, `SOL_TRADE_TRACE_PATH` are explicitly OUT OF
+  SCOPE — do not widen this fix beyond `GATE_TRACE_PATH`.
 - The exact file locations for the new modules (e.g. `skills/earn/sol-trade/lib/sol-backtest.mjs`,
   `skills/earn/sol-trade/lib/sol-starvation.mjs`) are an implementation-phase decision, not fixed by
   this spec — they MUST follow the existing per-instance/ANICCA_HOME conventions and MUST NOT touch

@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-009's `selectBottleneckKnob` has no edge case handling for 'no-signal' skip lines, which will contaminate its fail-tally with spurious counts unrelated to any genome-threshold near-miss. Ground truth: when no watchlist mint returns a valid signal, sol-gate-cli.mjs sets `best = null` (sol-gate-cli.mjs:92-109), and the resulting trace line is appended with `momentumPct: null`, `liquidityUsd: null`, `conviction: 0`, `reason: 'no-signal'` (sol-gate-cli.mjs:112-131) -- a skip caused by a Jupiter API/data outage, not by any of decideEngagement's three threshold sub-conditions actually being evaluated against real market data.\n\nREQ-009's EARS text (behavioral-spec.md:294-306) computes each sub-condition as `abs(momentumPct) >= genome.SOL_GATE_MIN_MOMENTUM_PCT`, `liquidityUsd >= genome.SOL_GATE_MIN_LIQUIDITY_USD`, `conviction >= genome.SOL_GATE_MIN_CONVICTION` directly off the trace line's recorded fields, with no exclusion for `reason === 'no-signal'` or null-valued lines. In JS, `Math.abs(null)` coerces to 0 and `null >= x` coerces null to 0, so a no-signal line will register as failing ALL THREE sub-conditions (momentum, liquidity, AND conviction) simultaneously, every time -- injecting three spurious fail-tally increments per data-outage skip that have nothing to do with genome quality. During any Jupiter API outage, this will systematically bias `selectBottleneckKnob`'s tally toward whichever knob's fail count accrues fastest under total-signal-loss, not the genuine near-miss bottleneck REQ-009 claims to identify, undermining PROP-012's correctness claim ('selectBottleneckKnob returns the knob with the highest fail-tally on a fixture with a known-dominant failing condition') whenever real outage data is mixed into `recentSkipTraceLines`. REQ-001's own corpus-building edge case ('A trace line missing momentumPct/liquidityUsd... excluded from the corpus') establishes the correct precedent for exclusion but is never cross-referenced or applied to REQ-009's tally scan. REQ-009 must add an explicit edge case excluding `reason === 'no-signal'` / null-valued lines from the tally (treating them like an empty-tally case, same fallback as an empty `recentSkipTraceLines`).",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-coldstart-evolution/specs/behavioral-spec.md",
+    "lineRange": "294-317",
+    "snippet": "determines, using ONLY that line's own recorded momentumPct/liquidityUsd/conviction/genome fields... which of the three wouldEngage sub-conditions... evaluated false, increments a per-knob fail-tally for EACH such false sub-condition"
+  },
+  "groundTruthEvidence": [
+    {"filePath": "/Users/anicca/anicca/skills/earn/sol-trade/lib/sol-gate-cli.mjs", "lineRange": "112-131", "snippet": "const wouldEngage = best ? best.outcome.wouldEngage : false; ... const reason = best ? undefined : \"no-signal\"; appendGateTrace(GATE_TRACE_PATH, { ... wouldEngage, conviction, momentumPct, liquidityUsd, mint });"}
+  ],
+  "routeToPhase": "1b"
+}

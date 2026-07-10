@@ -1,0 +1,60 @@
+{
+  "feature": "franklin-earn-coldstart-evolution",
+  "phase": "spec",
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec",
+    "specPath": "specs/behavioral-spec.md",
+    "verificationArchitecturePath": "specs/verification-architecture.md"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/lib/evolve.mjs:132-152", "description": "evaluatePromotion verified chain-verified-only (row.tx analog: row.sig+confirmed via sol-evolve.mjs), unmodified by this spec's requirements"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/sol-trade/lib/sol-genome.mjs:29-58", "description": "KNOB_KEYS/FORBIDDEN_CAP_KEYS/MUTATION_SPEC verified: SOL_TRADE_MAX_SPEND is genuinely outside the genome and stripForbidden strips it from every genome object"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/sol-trade/lib/sol-evolve.mjs:34-51", "description": "confirmed sol-evolve.mjs re-exports evaluatePromotion/promote UNCHANGED from evolve.mjs and points canonicalPath at SOL's own baseline-genome.json (SOL_CANONICAL_BASELINE_PATH), not PM's -- REQ-005/REQ-012's 'never touches baseline-genome.json' boundary and rail-isolation claim are verified true"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:1-46", "description": "Purity Boundary Map cleanly separates new pure functions (replayGenomeAgainstCorpus, evaluateBacktestRubric, countConsecutiveSkips, shouldForceExploration, selectBottleneckKnob, mutate's forcedDirection extension) from new/reused effectful shell (trace read, override write, sol-gate-cli.mjs main() orchestration); no hidden coupling found between the pure core and the reused evolve.mjs/sol-gate.mjs functions"},
+        {"type": "file", "location": "specs/behavioral-spec.md:509-533", "description": "Embedded VCSDD Task List correctly sequences spec-review before TDD/impl and names the two safety-critical claims (REQ-003, REQ-005/REQ-012) for particular scrutiny, matching this review's own findings"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:47-68", "description": "PROP-005/PROP-006/PROP-015/PROP-018 correctly target the highest-priority money-safety claims (never-write-baseline, never-call-evaluatePromotion/promote from backtest data, forbidden-cap-key absence, promotion regression parity) with Tier 0/2 rigor appropriate to their consequence"}
+      ]
+    }
+  ],
+  "blockingFindings": ["FIND-001", "FIND-002", "FIND-003"],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
