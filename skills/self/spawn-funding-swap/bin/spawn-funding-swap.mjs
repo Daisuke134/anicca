@@ -11,12 +11,28 @@
 // INSTEAD OF wiring real clients. Production NEVER sets this env var. This module is NOT itself a test
 // file (PROP-021's static scan only covers files under this feature's test directories) so it MAY
 // import real client implementations for its production code path.
+//
+// REQ-009 / FIND-002 fix (contract-review, money-path identity isolation): expectedBaseSignerAddress,
+// sourceBaseAddress, and akashKeyName are IDENTITY-determining values on a shared multi-instance Mac --
+// they are now resolved EXCLUSIVELY via resolve-swap-identity.mjs's ANICCA_HOME-gated mechanism
+// (which itself reuses skills/earn/lib/resolve-identity.mjs's own canonical resolver). There is no
+// longer any code path that reads SPAWN_FUNDING_SWAP_EXPECTED_BASE_SIGNER_ADDRESS or
+// SPAWN_FUNDING_SWAP_SOURCE_BASE_ADDRESS from a generic shared env var -- see resolve-swap-identity.mjs
+// for the full leak-mode rationale and lib/__tests__/resolve-swap-identity.test.mjs for the proof.
 import { runSwap } from "../lib/driver.mjs";
+import { resolveOwnBaseIdentity } from "../lib/resolve-swap-identity.mjs";
 
-const AKASH_KEY_NAME = process.env.AKASH_KEY_NAME;
-const EXPECTED_BASE_SIGNER_ADDRESS = process.env.SPAWN_FUNDING_SWAP_EXPECTED_BASE_SIGNER_ADDRESS;
-const SOURCE_BASE_ADDRESS = process.env.SPAWN_FUNDING_SWAP_SOURCE_BASE_ADDRESS;
-const DESTINATION_AKASH_ADDRESS = process.env.SPAWN_FUNDING_SWAP_DESTINATION_AKASH_ADDRESS || "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523";
+// DESTINATION_AKASH_ADDRESS -- REQ-009/FIND-002 decision: this is the single colony-wide "anicca-akash"
+// keyring's OWN address (verified against the identical `akash keys show anicca-akash -a` fixture
+// literal in skills/self/spawn/scripts/test-akt-treasury.sh and test-deploy-akash.sh). It is a
+// receive-side destination, not a per-instance signer identity, but it is still money-critical (a
+// redirect target) -- mirroring driver.mjs's own documented design for SWAP_MAX_USD/MIN_GAS_WEI/
+// TOLERANCE_BPS ("fixed literals ... never read from process.env/CLI/genome/config"), it is now a
+// single sourced constant, never overridable via env. No test (production or fixture) ever set the
+// removed SPAWN_FUNDING_SWAP_DESTINATION_AKASH_ADDRESS override, so this closes a fund-redirect vector
+// with zero behavior change for any existing caller.
+const DESTINATION_AKASH_ADDRESS = "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523";
+
 const THRESHOLD_AKT = Number(process.env.SPAWN_FUNDING_SWAP_THRESHOLD_AKT || "26");
 const LEG_TIMEOUT_MS = Number(process.env.SPAWN_FUNDING_SWAP_LEG_TIMEOUT_MS || "600000"); // NFR-4: <=10min default
 const STATE_DIR = process.env.SPAWN_FUNDING_SWAP_STATE_DIR;
@@ -26,6 +42,13 @@ async function buildDeps() {
   if (fakeDepsModule) {
     const mod = await import(fakeDepsModule);
     return mod.createDeps();
+  }
+
+  // REQ-009: identity/key safety -- fail closed BEFORE any lock/price/route/sign activity, and before
+  // any real client module is even imported (never a partial/late-catching failure).
+  const identity = resolveOwnBaseIdentity({ env: process.env });
+  if (!identity.ok) {
+    throw new Error(`spawn-funding-swap: identity resolution failed -- ${identity.reason}`);
   }
 
   // Production wiring -- real clients, only ever instantiated here (never in a test file, PROP-021).
@@ -43,9 +66,9 @@ async function buildDeps() {
     baseSigner: createRealBaseSigner(),
     relayPoller: createRealRelayPoller(),
     ledgerStore: createLedgerStore({ stateDir: STATE_DIR }),
-    akashKeyName: AKASH_KEY_NAME,
-    expectedBaseSignerAddress: EXPECTED_BASE_SIGNER_ADDRESS,
-    sourceBaseAddress: SOURCE_BASE_ADDRESS,
+    akashKeyName: identity.akashKeyName,
+    expectedBaseSignerAddress: identity.baseAddress,
+    sourceBaseAddress: identity.baseAddress,
     destinationAkashAddress: DESTINATION_AKASH_ADDRESS,
     thresholdAkt: THRESHOLD_AKT,
     legTimeoutMs: LEG_TIMEOUT_MS,

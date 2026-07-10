@@ -49,3 +49,40 @@ test("REQ-008 edge case: the command must not depend on shell state beyond akt-t
   assert.notEqual(result.signal, "SIGTERM", "must not hang/timeout even with a minimal environment");
   assert.equal(result.status, 0);
 });
+
+// REQ-009 / FIND-002 (contract-review, money-path identity isolation): the REAL production wiring path
+// (no SPAWN_FUNDING_SWAP_FAKE_DEPS_MODULE) must fail closed on identity resolution BEFORE it ever
+// reaches (missing-in-this-repo) lib/real-clients/*.mjs, proving no lock/price/route/sign activity is
+// even reachable. A MODULE_NOT_FOUND for a real-clients/*.mjs import here would mean the identity gate
+// was bypassed -- this asserts the actual failure is the identity-gate error, not that later error.
+test("(a) REQ-009/FIND-002: production wiring (no FAKE_DEPS_MODULE) with ANICCA_HOME unset fails closed on identity resolution, never reaching real-client wiring or any sign call", () => {
+  const cmd = `node ${JSON.stringify(BIN)}`;
+  const result = spawnSync("bash", ["-c", cmd], {
+    env: { PATH: process.env.PATH, AKASH_KEY_NAME: "anicca-akash", AKASH_KEYRING_BACKEND: "test" },
+    encoding: "utf8",
+    timeout: 15_000,
+  });
+  assert.notEqual(result.status, 0, "must exit non-zero when identity cannot be resolved");
+  assert.match(result.stderr, /identity resolution failed/, `expected the identity-gate error, got stderr=${result.stderr}`);
+  assert.match(result.stderr, /ANICCA_HOME/, `expected an ANICCA_HOME-specific reason, got stderr=${result.stderr}`);
+  assert.doesNotMatch(result.stderr, /real-clients/, "must fail BEFORE the real-clients import is ever attempted");
+});
+
+// (c) proves the CLI's production path never falls back to a shared agent .env key when ANICCA_HOME is
+// unset, even though ANICCA_EVM_PRIVATE_KEY is present in the ambient environment (the exact shared-Mac
+// leak precondition from feedback_earn_identity_resolve_per_instance_gate_on_anicca_home.md).
+test("(c) REQ-009/FIND-002: an ambient ANICCA_EVM_PRIVATE_KEY (simulating a shared agent .env leak) is NEVER used by the CLI's production path when ANICCA_HOME is unset", () => {
+  const cmd = `node ${JSON.stringify(BIN)}`;
+  const result = spawnSync("bash", ["-c", cmd], {
+    env: {
+      PATH: process.env.PATH,
+      AKASH_KEY_NAME: "anicca-akash",
+      AKASH_KEYRING_BACKEND: "test",
+      ANICCA_EVM_PRIVATE_KEY: "0x" + "8".repeat(64),
+    },
+    encoding: "utf8",
+    timeout: 15_000,
+  });
+  assert.notEqual(result.status, 0, "must exit non-zero even with a shared-env key present");
+  assert.match(result.stderr, /ANICCA_HOME/, `expected the ANICCA_HOME gate to fire, got stderr=${result.stderr}`);
+});
