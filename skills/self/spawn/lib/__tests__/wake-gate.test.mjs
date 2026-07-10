@@ -238,3 +238,50 @@ test("FIND-003: --dry-run never calls retryPendingRegistryAppends (a registry ap
   await runWakeGate({ argv: ["--dry-run"], env: {}, deps });
   assert.equal(retryCalls, 0);
 });
+
+// ---------------------------------------------------------------------------
+// Money-safety regression, defense-in-depth backstop (Phase-5 finding,
+// verification/proof-harnesses/finding-money-safety-registry-retry-crash-window.mjs): a duplicate-id
+// citizen record in citizens.json -- exactly what a crash-window pending-registry-append re-drive would
+// have produced BEFORE appendCitizenRecord's own idempotency-by-id fix -- must never double-count that
+// citizen's surplus into colonySurplusUsd, the real-money spawn-eligibility input decideColonySpawn
+// consumes. Tests dedupCitizensById's wiring into runWakeGate directly (independent of the
+// spawn-orchestrator-level fix, which spawn-orchestrator.test.mjs's own money-safety regression covers).
+// ---------------------------------------------------------------------------
+
+const DUPLICATED_CITIZEN = [
+  {
+    id: "automaton",
+    wallet: { evm: true },
+    walletAddress: { evm: "0xB9dd3B67921B354c656523d6851537988F31DD56" },
+    fuel: { provider: "clawrouter-own-wallet" },
+    humanDependencies: [],
+    homeDir: "/Users/operator/.anicca",
+    coLocatedWithCoordinator: true,
+  },
+  // The SAME citizen, id-duplicated -- the exact on-disk shape a crash-window re-drive produces.
+  {
+    id: "automaton",
+    wallet: { evm: true },
+    walletAddress: { evm: "0xB9dd3B67921B354c656523d6851537988F31DD56" },
+    fuel: { provider: "clawrouter-own-wallet" },
+    humanDependencies: [],
+    homeDir: "/Users/operator/.anicca",
+    coLocatedWithCoordinator: true,
+  },
+];
+
+test("money-safety: a duplicate-id citizens.json entry never doubles colonySurplusUsd (dedupCitizensById backstop)", async () => {
+  const dir = tmpDir();
+  seedCitizens(dir, DUPLICATED_CITIZEN);
+  const deps = baseDeps(dir, {
+    fetchEvmBalanceUsd: async () => 40, // surplus per citizen = 40 - 5 (PER_CITIZEN_RESERVE_USD_DEFAULT) = 35
+  });
+
+  const result = await runWakeGate({ argv: ["--dry-run"], env: {}, deps });
+  assert.equal(
+    result.decision.colonySurplusUsd,
+    35,
+    "FIX VERIFIED: a duplicate-id citizen entry must contribute its surplus exactly ONCE, never doubled to 70"
+  );
+});

@@ -27,6 +27,8 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { executeSpawnAttempt, retryPendingRegistryAppends } from "../spawn-orchestrator.mjs";
+import { queuePendingRegistryAppend } from "../pending-registry-append.js";
+import { computeColonySurplusUsd } from "../treasury-gate.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORCH_PATH = path.resolve(__dirname, "../spawn-orchestrator.mjs");
@@ -379,6 +381,75 @@ test("FIND-003 retry mechanism: retryPendingRegistryAppends detects a queued pen
   const secondRetryResults = await retryPendingRegistryAppends({ pendingRegistryAppendsFile: pendingFile });
   assert.equal(secondRetryResults.length, 0, "an already-resolved entry must never be retried again");
   assert.equal(readRegistryRecords(citizensRegistryFile).length, 1, "no duplicate append occurred");
+});
+
+// ---------------------------------------------------------------------------
+// Money-safety regression (Phase-5 finding, verification/proof-harnesses/
+// finding-money-safety-registry-retry-crash-window.mjs): retryPendingRegistryAppends' own two-step
+// sequence -- (1) append the citizen record, (2) resolvePendingRegistryAppend -- is NOT atomic. A crash
+// between (1) succeeding and (2) ever running leaves the pending-registry-appends queue entry still
+// "pending" on the NEXT wake (modeled below by re-queuing a fresh "pending" row for the SAME child_id
+// AFTER a first retry has already appended+resolved it -- pending-registry-append.js's own documented
+// "the LAST row per child_id wins" rule makes this entry outstanding again, exactly the observable state
+// a lost resolve-write leaves behind). The re-driven retry must be a no-op, never a second citizens.json
+// row -- and the money-safety consequence (computeColonySurplusUsd double-counting that citizen's
+// balance) must also not occur.
+// ---------------------------------------------------------------------------
+
+test("money-safety: a crash-window re-drive of an already-completed pending registry-append is a no-op -- never a duplicate citizens.json row, never a doubled colonySurplusUsd", async () => {
+  const dir = tmpDir();
+  const pendingFile = path.join(dir, "pending-registry-appends.jsonl");
+  const citizensRegistryFile = path.join(dir, "citizens.json");
+  const citizenRecord = {
+    id: "anicca-c-crash-window",
+    wallet: { evm: true },
+    walletAddress: { evm: "0xChildFixtureCrashWindow00000000000001" },
+    fuel: { provider: "free-model" },
+    humanDependencies: [],
+    homeDir: path.join(dir, "child-home"),
+    coLocatedWithCoordinator: false,
+    balanceUsd: 40, // fixture balance for the surplus-doubling trace below
+  };
+
+  // Wake N: step 9's registry append transiently failed and queued this entry (queuePendingRegistryAppend
+  // is the SAME production call site executeSpawnAttempt's own FIND-003 path uses).
+  queuePendingRegistryAppend(pendingFile, {
+    childId: citizenRecord.id,
+    citizenRecord,
+    citizensRegistryFile,
+    queuedMs: 1_800_000_000_000,
+    error: "ENOTDIR (fixture)",
+  });
+
+  // Wake N+1: retryPendingRegistryAppends completes it -- append lands, entry resolves.
+  const firstRetry = await retryPendingRegistryAppends({ pendingRegistryAppendsFile: pendingFile });
+  assert.equal(firstRetry.length, 1);
+  assert.equal(firstRetry[0].retried, true);
+  assert.equal(readRegistryRecords(citizensRegistryFile).length, 1, "exactly one citizen record after the genuine first completion");
+
+  // Simulate the crash: the resolve write for wake N+1 is LOST (host reboot/SIGKILL between the append
+  // landing and resolvePendingRegistryAppend running) -- the SAME entry is still "pending" on wake N+2.
+  queuePendingRegistryAppend(pendingFile, {
+    childId: citizenRecord.id,
+    citizenRecord,
+    citizensRegistryFile,
+    queuedMs: 1_800_000_001_000,
+    error: "simulated crash before resolve",
+  });
+
+  // Wake N+2: retryPendingRegistryAppends re-drives the SAME still-"pending" entry -- with the fix, the
+  // append itself is a no-op (idempotent by id).
+  const secondRetry = await retryPendingRegistryAppends({ pendingRegistryAppendsFile: pendingFile });
+  assert.equal(secondRetry.length, 1);
+  assert.equal(secondRetry[0].retried, true, "retryPendingRegistryAppends itself still reports success (the append call did not throw) -- it is the underlying append that is now a no-op");
+
+  const records = readRegistryRecords(citizensRegistryFile);
+  assert.equal(records.length, 1, "FIX VERIFIED: the crash-window re-drive must never produce a second citizens.json row for the same id");
+  assert.equal(records[0].id, citizenRecord.id);
+
+  // Trace the fix into the actual money-safety-relevant aggregate (mirrors the Phase-5 finding harness).
+  const colonySurplusUsd = computeColonySurplusUsd({ citizens: records, perCitizenReserveUsd: 5 });
+  assert.equal(colonySurplusUsd, 35, "FIX VERIFIED: colonySurplusUsd reflects exactly ONE citizen's surplus (40 - 5), never doubled to 70");
 });
 
 // ---------------------------------------------------------------------------
