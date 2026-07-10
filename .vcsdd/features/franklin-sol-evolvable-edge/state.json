@@ -14,11 +14,17 @@
       "to": "1b",
       "timestamp": "2026-07-10T02:59:05.000Z",
       "reason": "Phase 1b: verification-architecture.md written (PROP-001..PROP-018, purity boundary map, tiers). Tier 2 (fast-check property tests) required on the 7 money-safety-critical surfaces: mutation clamp, forbidden-cap strip, engage-decision scoring, dev-safety paper-mode override, earnings-gate row-counting, cross-instance isolation, cap hard-override choke point."
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-10T03:30:00.000Z",
+      "reason": "Phase 1b revision (spec-review iteration-1 findings FIND-001/002/003, all severity critical/major, routeToPhase 1c-revision): FIND-001 added REQ-012b (attributeGenomeIdSol timestamp-nearest-preceding join, explicitly NOT a market/task-field match — record-swap.mjs's task field is a fixed constant) + PROP-012b (multi-pass end-to-end attribution property test). FIND-002 bound REQ-013's EARS explicitly to summing row.net_usdc (win-or-loss) never row.earn_usdc (win-only) + extended PROP-013's fixture to a win+loss numeric-value assertion. FIND-003 extended REQ-015 to mandate literal reuse of evolve.mjs's exported promote() (MUST NOT hand-write SOL git-commit logic) + added PROP-015b (import-identity test mirroring PROP-014). All 15 previously-passing REQs/PROPs (money-safety caps, dev-safety, identity, no-evolved-code) left unchanged. Ready for spec-review iteration-2."
     }
   ],
   "iterations": {
     "1a": 1,
-    "1b": 1
+    "1b": 2
   },
   "proofObligations": [
     {
@@ -164,6 +170,22 @@
       "status": "pending",
       "artifact": "specs/verification-architecture.md",
       "beadId": "BEAD-036"
+    },
+    {
+      "id": "PROP-012b",
+      "tier": 2,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md",
+      "beadId": "BEAD-038"
+    },
+    {
+      "id": "PROP-015b",
+      "tier": 0,
+      "required": true,
+      "status": "pending",
+      "artifact": "specs/verification-architecture.md",
+      "beadId": "BEAD-039"
     }
   ],
   "traceability": {
@@ -343,7 +365,8 @@
         "artifactPath": "specs/behavioral-spec.md#REQ-015",
         "status": "active",
         "linkedBeads": [
-          "BEAD-033"
+          "BEAD-033",
+          "BEAD-039"
         ],
         "createdAt": "2026-07-10T02:59:05.000Z",
         "createdInPhase": "1a",
@@ -600,11 +623,50 @@
         "createdAt": "2026-07-10T02:59:05.000Z",
         "createdInPhase": "1b",
         "externalId": "PROP-018"
+      },
+      {
+        "beadId": "BEAD-037",
+        "type": "spec-requirement",
+        "artifactPath": "specs/behavioral-spec.md#REQ-012b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-038"
+        ],
+        "createdAt": "2026-07-10T03:30:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "REQ-012b",
+        "note": "spec-review iteration-1 FIND-001 fix: explicit attributeGenomeIdSol timestamp-nearest-preceding join algorithm (no market/task-field match)."
+      },
+      {
+        "beadId": "BEAD-038",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-012b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-037"
+        ],
+        "createdAt": "2026-07-10T03:30:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-012b",
+        "note": "spec-review iteration-1 FIND-001 fix: multi-pass end-to-end attribution property test (Tier 2, fast-check)."
+      },
+      {
+        "beadId": "BEAD-039",
+        "type": "verification-property",
+        "artifactPath": "specs/verification-architecture.md#PROP-015b",
+        "status": "active",
+        "linkedBeads": [
+          "BEAD-015"
+        ],
+        "createdAt": "2026-07-10T03:30:00.000Z",
+        "createdInPhase": "1b",
+        "externalId": "PROP-015b",
+        "note": "spec-review iteration-1 FIND-003 fix: import-identity test for promote() reuse, mirrors PROP-014."
       }
     ]
   },
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-10T02:59:05.000Z",
-  "updatedAt": "2026-07-10T02:59:05.000Z"
+  "updatedAt": "2026-07-10T03:30:00.000Z"
 }

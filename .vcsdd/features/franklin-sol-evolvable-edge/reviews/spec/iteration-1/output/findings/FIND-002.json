@@ -1,0 +1,22 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "secondaryDimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "title": "REQ-013 specifies WHICH rows are counted but never states WHICH field is summed into a genome's realized P&L; PROP-013 tests filtering only, never the summed numeric result -- this is exactly the class of test that would pass even if the money-safety-critical accumulation logic is wrong",
+  "description": "REQ-013 (behavioral-spec.md:266-288) is precise about the filter predicate (row.source==='sol-trade', row.sig is a non-empty string, row.confirmed===true) and correctly corrects PM's tx/status field names to sig/confirmed (independently verified against sol-trade/lib/record-swap.mjs:46-53 and _shared/lib/ledger.mjs:11-37, which DOES always compute and store a `net_usdc` field on every ledger line regardless of source). But REQ-013's EARS text never states that realized P&L is `Σ row.net_usdc` for included rows -- unlike evolve.mjs's own summarizeByGenome (evolve.mjs:107-120), which explicitly does `entry.realized_usdc = ... + Number(row.net_usdc || 0)`. Nothing in REQ-013 or the verification-architecture.md description of summarizeByGenomeSol (verification-architecture.md:15-16: 'HARD gate: source===\"sol-trade\" && sig present && confirmed===true, pure given arrays') mentions net_usdc at all.\n\nThis is not academic: REQ-014's entire promotion gate (evaluatePromotion, reused from evolve.mjs) depends on `mutant.realized_usdc > 0` and `mutant.realized_usdc > baselineFloor` (evolve.mjs:141,145). If summarizeByGenomeSol is implemented to sum `earn_usdc` instead of `net_usdc` (an easy mistake since earn_usdc is a field name that reads naturally as 'money earned'), EVERY genome would look artificially profitable regardless of losses (record-swap.mjs:44 sets earn_usdc=delta if delta>0 ELSE 0 -- it is a WIN-ONLY component, never negative), which would let a net-losing mutant genome sail through REQ-014's net-positive floor and get auto-promoted to `baseline-genome.json` with real money behind it going forward -- precisely the HARD 0.24 failure mode this feature's entire provenance chain (PM #19) was built to prevent.\n\nPROP-013 (verification-architecture.md:50) as written ('counts ONLY rows with source===\"sol-trade\" && sig present && confirmed===true; excludes all others (mixed synthetic ledger)') only asserts MEMBERSHIP of the summary map, not the VALUE of realized_usdc for any included genome_id. A summarizeByGenomeSol implementation that filters correctly but sums the wrong field would pass PROP-013 as specified while silently corrupting REQ-014's promotion decision -- the exact 'test that would pass even if a critical edge case were unhandled' pattern this review is required to hunt for.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md",
+    "lineRange": "266-288",
+    "snippet": "THE SYSTEM SHALL count a ledger row toward a genome's realized P&L IF AND ONLY IF ALL OF: row.source === \"sol-trade\", typeof row.sig === \"string\" && row.sig.length > 0, AND row.confirmed === true. [... no statement of which field's value is accumulated]"
+  },
+  "crossReferences": [
+    {"filePath": "~/anicca/skills/earn/lib/evolve.mjs", "lineRange": "107-120"},
+    {"filePath": "~/anicca/skills/earn/sol-trade/lib/record-swap.mjs", "lineRange": "43-53"},
+    {"filePath": "~/anicca/skills/_shared/lib/ledger.mjs", "lineRange": "11-37"},
+    {"filePath": ".vcsdd/features/franklin-sol-evolvable-edge/specs/verification-architecture.md", "lineRange": "15-16, 50"}
+  ],
+  "fix": "Add an explicit clause to REQ-013's EARS: 'For each counted row, THE SYSTEM SHALL accumulate `row.net_usdc` (win OR loss, never `earn_usdc` alone) into that genome_id's realized_usdc, mirroring evolve.mjs's summarizeByGenome exactly.' Extend PROP-013's synthetic fixture to include at least one WIN row and one LOSS row for the same genome_id and assert the SUMMED realized_usdc equals the correct net value (not just that the row was included), and assert a genome whose only counted rows are net-negative does NOT clear REQ-014's net-positive floor.",
+  "routeToPhase": "1c-revision"
+}

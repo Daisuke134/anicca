@@ -39,11 +39,14 @@ how staleness is therefore defined (locally, not from the API payload).
 
 - **Pure core**: genome knob table + defaults + mutation ranges + forbidden-cap stripping;
   `genomeId()`; the engage-decision scoring function (`decideEngagement`); the SOL-specific
-  earnings-attribution join (`attributeGenomeId`-SOL, `summarizeByGenome`-SOL); the promotion gate
-  (`evaluatePromotion`, REUSED verbatim from `evolve.mjs`, never reimplemented).
+  earnings-attribution join (`attributeGenomeIdSol`, REQ-012b, TIMESTAMP-ONLY nearest-preceding
+  match — NOT a market/task-field match, `summarizeByGenomeSol`, REQ-013, summing `row.net_usdc`
+  win-OR-loss); the promotion gate (`evaluatePromotion`, REUSED verbatim from `evolve.mjs`, never
+  reimplemented).
 - **Effectful shell**: reading/writing the per-instance genome override file; the Jupiter Price v3
-  HTTP fetch; trace-line appends; the canonical baseline-genome git commit; invoking
-  `franklin-trading start`; the identity-match guard's wallet derivation.
+  HTTP fetch; trace-line appends; the canonical baseline-genome git commit (`promote()`, REUSED
+  verbatim from `evolve.mjs`, never reimplemented — REQ-015); invoking `franklin-trading start`;
+  the identity-match guard's wallet derivation.
 
 ## Requirements
 
@@ -263,6 +266,48 @@ realized swap's P&L to the genome that was active when the pass that produced it
 - For every pass where `engage === true`, a `"genome"`-shaped trace line with that pass's
   `genome_id` exists in `sol-trade.trace.jsonl` with a timestamp ≤ the pass's own live-pass line.
 
+### REQ-012b: `attributeGenomeIdSol` join algorithm — timestamp-nearest-preceding match, NO market/task key
+**Mirrors, with CORRECTED join key**: `evolve.mjs`'s `attributeGenomeId()` (evolve.mjs:86-97), which
+joins a PM redeem ledger row to a preceding `"trade"` trace line by `t.market === ledgerRow.task`.
+THIS KEY DOES NOT APPLY TO SOL: `record-swap.mjs:19` hardcodes `task = "jupiter swap round-trip"` as
+a FIXED CONSTANT for every swap this instance ever records — it carries no per-mint/per-pass
+discriminator, so a market/task-field match would either match EVERY genome-linked trace line or
+NONE, never the correct one.
+**EARS**: THE SYSTEM SHALL implement `attributeGenomeIdSol(ledgerRow, traceLines)` as a PURE
+function that, GIVEN a confirmed sol-trade ledger row and the full `sol-trade.trace.jsonl` array,
+returns the `genome_id` of the MOST RECENT genome-linked trace line (REQ-012's linkage line,
+`action === "genome"`, `genome_id` present) whose timestamp is LESS THAN OR EQUAL TO the ledger
+row's timestamp — TIMESTAMP ORDERING ALONE, with NO market/task/mint-field comparison of any kind.
+IF no such preceding line exists, THE SYSTEM SHALL return `null` (unattributed; mirrors REQ-013's
+"counts toward NO genome").
+**Rationale (why timestamp-only is sufficient, not merely convenient)**: `sol-trade/run.sh` runs
+single-slot, non-overlapping passes (Edge Case Catalog, "Concurrent passes") — each pass writes AT
+MOST ONE genome-linked trace line before it can produce AT MOST ONE confirmed swap. Therefore at
+most one pass's genome-linked line can ever be the nearest preceding line to a given swap's
+timestamp without a LATER pass's OWN genome-linked line being even closer — "most recent preceding"
+is unambiguously the pass that produced this swap, with no cross-pass ambiguity possible under this
+rail's single-slot execution model.
+**Edge Cases**:
+- Two or more genome-linked trace lines precede the same swap's timestamp (e.g. several WAIT/
+  no-fill passes ran between mutations before this pass's swap confirmed): THE SYSTEM SHALL select
+  the one with the LARGEST timestamp (nearest preceding), never the earliest, never an average/
+  blend across genomes.
+- A genome-linked trace line's timestamp EXACTLY equals the ledger row's timestamp: treated as "at
+  or before" (`<=`), matching REQ-012's own "timestamped at or before" contract.
+- No genome-linked trace line precedes the swap at all (e.g. trace file truncated/lost, or a swap
+  somehow confirmed with no prior pass — should not occur but MUST be defended): returns `null`,
+  counted toward no genome (REQ-013).
+- Multiple DIFFERENT genome_ids appear across the trace (a mutation/promotion boundary crossed one
+  or more times): each swap independently resolves to whichever genome_id's linkage line was
+  nearest-preceding AT THAT SWAP's OWN timestamp — a later swap under a NEW genome_id MUST NOT be
+  misattributed to an OLDER genome_id merely because both lines exist in the same trace array.
+**Acceptance Criteria**:
+- Given a trace containing >= 2 genome-linked lines with DIFFERENT genome_ids at different
+  timestamps, and >= 2 confirmed swap rows interleaved between them (with at least one intervening
+  no-fill pass), `attributeGenomeIdSol` returns, for EACH swap, the genome_id of the linkage line
+  most recently preceding THAT swap's OWN timestamp (not the first, not the last, not a fixed one)
+  — verified by an explicit multi-pass property test (PROP-012b), not merely an existence check.
+
 ### REQ-013: Earnings-gate summarization — real confirmed SOL swaps only
 **Mirrors, with CORRECTED field names**: `evolve.mjs`'s `summarizeByGenome` HARD 0.24 gate ("only
 on-chain-confirmed redeem rows count"). PM's implementation checks `row.tx` (present) and
@@ -275,17 +320,33 @@ only after `sigStatus()` RPC-confirms the transaction).
 `row.confirmed === true`. Rows failing any of these conditions (including any future paper/
 simulated SOL row, or a row from a different source) MUST NEVER be counted, and MUST NEVER
 contribute to any genome's promotion eligibility.
+**EARS (accumulation field — MUST)**: For each row satisfying the filter above, THE SYSTEM SHALL
+accumulate `Number(row.net_usdc || 0)` — the WIN-OR-LOSS net field that `_shared/lib/ledger.mjs`'s
+`deriveLine()` computes and stores on EVERY ledger row as `round(earn_usdc - cost_usdc)`, verified
+present on sol-trade rows regardless of source — into that row's attributed genome's
+`realized_usdc`, mirroring `evolve.mjs`'s `summarizeByGenome` line-for-line
+(`entry.realized_usdc = ... + Number(row.net_usdc || 0)`, evolve.mjs:115). THE SYSTEM SHALL NEVER
+sum `row.earn_usdc` alone — `earn_usdc` is a WIN-ONLY component (`record-swap.mjs:44`: `delta > 0 ?
+delta : 0`, always `0` for a losing swap) — summing it would let a net-losing genome appear
+artificially profitable and clear REQ-014's net-positive promotion floor with real losses hidden.
 **Edge Cases**:
 - A row with `confirmed: false` or missing `confirmed` (should not occur per `record-swap.mjs`'s
   own contract, but MUST be defensively excluded if it ever does) — excluded.
 - A row with `source !== "sol-trade"` (e.g. a future new SOL-adjacent source) — excluded unless a
   future spec explicitly adds it here.
 - A confirmed row whose swap cannot be attributed to any genome (no preceding
-  `"genome"`-linked trace line at or before its timestamp, REQ-012) — counts toward NO genome
-  (never silently folded into baseline), mirroring `attributeGenomeId`'s `null` behavior.
+  `"genome"`-linked trace line at or before its timestamp, `attributeGenomeIdSol`, REQ-012b) —
+  counts toward NO genome (never silently folded into baseline), mirroring `attributeGenomeId`'s
+  `null` behavior.
+- A genome whose ONLY counted rows are net-negative (`net_usdc < 0` on every row): its summed
+  `realized_usdc` MUST be negative, and MUST NOT clear REQ-014's net-positive floor.
 **Acceptance Criteria**:
 - A synthetic ledger containing a mix of `sig`+`confirmed:true` rows, `confirmed:false` rows, and
   rows from other sources yields a summary that includes ONLY the first category.
+- A synthetic ledger containing (for the SAME genome_id) one WIN row (`net_usdc: +0.5`) and one LOSS
+  row (`net_usdc: -0.3`) yields `realized_usdc === 0.2` for that genome_id — the SUMMED NUMERIC
+  VALUE, not merely row membership; an implementation that sums `earn_usdc` instead would yield
+  `0.5` and MUST fail this criterion.
 
 ### REQ-014: Promotion gate — reused verbatim from evolve.mjs, never reimplemented
 **Mirrors**: `evolve.mjs`'s `evaluatePromotion()` — this function is already rail-agnostic (it
@@ -310,21 +371,41 @@ for SOL.
   produces IDENTICAL promote/no-promote verdicts to calling `evolve.mjs`'s function directly
   (proves no drift/reimplementation).
 
-### REQ-015: Promotion writes the canonical SOL baseline + path-scoped commit
-**Mirrors**: `evolve.mjs`'s `promote()` (writes `baseline-genome.json`, `git add`+`git commit`
-scoped to that single path only, so a promotion can never sweep unrelated changes into its commit
-— this exact hardening was itself an adversary MUST-FIX in the PM feature, spec §"検証ログ").
+### REQ-015: Promotion writes the canonical SOL baseline + path-scoped commit — reused verbatim from evolve.mjs, never reimplemented
+**Mirrors**: `evolve.mjs`'s `promote()` (evolve.mjs:169-195; writes `baseline-genome.json`,
+`git add`+`git commit` scoped to that single path only, so a promotion can never sweep unrelated
+changes into its commit — this exact hardening was itself an adversary MUST-FIX in the PM feature,
+spec §"検証ログ"). `promote()` is ALREADY parameterized by `canonicalPath`/`cwd` — it is rail-agnostic
+in exactly the same sense `evaluatePromotion` is (REQ-014).
 **EARS**: WHEN REQ-014's gate returns `promote: true` THE SYSTEM SHALL write the winning genome's
 knob values to the SOL rail's canonical baseline file
 (`~/anicca/skills/earn/sol-trade/baseline-genome.json`) and `git commit` ONLY that path, with a
 message identifying the new genome id and the chain-verified basis for promotion.
+**EARS (reuse mandate — MUST, same rationale as REQ-014)**: THE SYSTEM SHALL perform this
+write-and-commit by calling `evolve.mjs`'s exported `promote(genome, { canonicalPath, cwd })`
+UNCHANGED, passing the SOL rail's own `canonicalPath`
+(`~/anicca/skills/earn/sol-trade/baseline-genome.json`) — a NEW, hand-written copy of this
+git-commit-scoping logic MUST NOT be authored for SOL, mirroring REQ-014's identical
+no-reimplementation mandate for `evaluatePromotion`. This is not a stylistic preference: a
+hand-rolled SOL-specific git-commit implementation diverging from the proven one (e.g. a stray
+`git add -A`, or a missing `-c user.name=`/`user.email=` breaking in a cron/CI environment lacking
+git identity config) is EXACTLY the bug class that was itself a prior PM-feature adversary MUST-FIX
+— reintroducing a fresh, untested reimplementation of already-hardened git-commit logic is
+disallowed for the same reason it was disallowed for PM.
 **Edge Cases**:
 - The commit MUST use `git commit -- <canonical-baseline-path>` (pathspec-scoped), never a bare
   `git commit -a` or `git add -A`, so concurrent unrelated changes elsewhere in the shared `~/anicca`
-  checkout are never swept into a promotion commit.
+  checkout are never swept into a promotion commit — GUARANTEED by construction because this is
+  `evolve.mjs::promote()`'s own existing, already-hardened, already-tested behavior, not a
+  freshly-written pathspec that a SOL-specific implementation could get wrong.
 **Acceptance Criteria**:
 - After a promotion, `git show --stat HEAD` for the promotion commit touches exactly one file: the
   SOL canonical baseline-genome.json.
+- The SOL promotion wiring's `promote` reference is the SAME function object imported from
+  `evolve.mjs` (`import { promote } from ".../evolve.mjs"`), NOT a local reimplementation — verified
+  by PROP-015b, an import-identity test mirroring PROP-014's pattern (`fn.toString() ===` the
+  imported function's own source, or a reference-equality/mock-call-count check on the imported
+  binding).
 
 ### REQ-016: Identity safety — per-instance, ANICCA_HOME-gated, never cross-instance
 **Mirrors**: `resolve-identity.mjs`'s fail-closed pattern (see
