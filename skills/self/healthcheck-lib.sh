@@ -53,6 +53,61 @@ hc_reclaim_disk_if_low() {
   return 0
 }
 
+# FIND-033: reap orphaned `cozempic guard --daemon` processes. Root cause discovered 2026-07-10: every Claude
+# Code session (incl. every short-lived self-fix spawn) starts its OWN guard daemon via the global SessionStart
+# hook, keyed by a per-session PID file (/tmp/cozempic_guard_<slug>.pid) — but the daemon does not reliably notice
+# its parent session died, so these accumulate forever (observed: 291 live daemons, some >20h stale, vs ~9 real
+# claude sessions). Left unchecked this exhausts kern.maxprocperuid, so ANY new fork() — incl. this loop's own
+# `tmux new-session` — starts failing with "fork: Resource temporarily unavailable", which LOOKS like a capafy/
+# reddit/life-manager-loop bug (session never comes up → DEAD) but is actually a whole-machine resource leak.
+# Safe to kill: a guard is orphaned if its target session's transcript (~/.claude/projects/*/<slug-prefix>*.jsonl)
+# has not been touched in HC_COZEMPIC_STALE_SEC — an idle session has nothing left to checkpoint anyway. Rate-
+# limited to once per 4min system-wide (shared marker) since 3 loops source this file and would otherwise redo it.
+hc_reap_stale_cozempic_guards() {
+  local MARK="/tmp/.cozempic-reaper-last-run" now; now=$(date +%s)
+  if [ -f "$MARK" ] && [ $(( now - $(stat -f %m "$MARK" 2>/dev/null||echo 0) )) -lt 240 ]; then return 0; fi
+  touch "$MARK"
+  local n; n=$(ls /tmp/cozempic_guard_*.pid 2>/dev/null | wc -l | tr -d ' ')
+  [ "${n:-0}" -lt 50 ] && return 0   # small counts are normal (one per real active session) — nothing to reap
+  python3 - "${HC_COZEMPIC_STALE_SEC:-1800}" <<'PYEOF' 2>/dev/null
+import glob, os, re, sys, time, signal
+stale_sec = float(sys.argv[1])
+now = time.time()
+slug_mtime = {}
+for t in glob.glob(os.path.expanduser("~/.claude/projects/*/*.jsonl")):
+    base = os.path.basename(t)[:-6]
+    slug = re.sub(r'[^a-z0-9_-]', '_', base.lower())[:12]
+    try:
+        m = os.path.getmtime(t)
+    except OSError:
+        continue
+    if slug not in slug_mtime or m > slug_mtime[slug]:
+        slug_mtime[slug] = m
+killed = 0
+for pf in glob.glob("/tmp/cozempic_guard_*.pid"):
+    slug = os.path.basename(pf)[len("cozempic_guard_"):-4]
+    try:
+        pid = int(open(pf).read().strip().split()[0])
+    except Exception:
+        continue
+    mt = slug_mtime.get(slug)
+    if mt is not None and (now - mt) <= stale_sec:
+        continue
+    try:
+        os.kill(pid, signal.SIGTERM)
+        killed += 1
+    except OSError:
+        pass
+    for f in (glob.glob(f"/tmp/cozempic_guard_{slug}*") + glob.glob(f"/tmp/cozempic_hook_{slug}*")
+              + glob.glob(f"/tmp/cozempic_reload_{slug}*")):
+        try:
+            os.remove(f)
+        except OSError:
+            pass
+print(f"reaped {killed} stale cozempic guard daemon(s)")
+PYEOF
+}
+
 # FIND-020/026/031: acquire a per-loop lock. mkdir is atomic (one winner). A FRESH lock (<10min) = a live run → refuse
 # (return 1). A STALE lock (>=10min, = a hard-killed prior run) is stolen with rm -rf (works even though the lock dir
 # is NON-EMPTY due to the owner file — plain rmdir would fail and permanently disable self-heal). After (re)creating,
@@ -77,6 +132,11 @@ hc_run() {
   local LOG="$HOME/.openclaw/logs/$LOOP-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
   local RESTART_LOG="$STATE/.$LOOP-restart-log"
   local now; now=$(date +%s)
+
+  # FIND-033: clear fork-table pressure from orphaned cozempic guard daemons BEFORE any tmux/fork attempt below —
+  # see hc_reap_stale_cozempic_guards for why this is load-bearing, not cosmetic.
+  local reap_out; reap_out="$(hc_reap_stale_cozempic_guards)"
+  [ -n "$reap_out" ] && echo "$(date '+%F %T') $reap_out" >> "$LOG"
 
   # FIND-013: lock with a staleness escape hatch. A healthcheck killed abnormally must not disable self-heal forever
   # — if the lock is older than 10min it is stale (each run finishes in seconds), so steal it.
