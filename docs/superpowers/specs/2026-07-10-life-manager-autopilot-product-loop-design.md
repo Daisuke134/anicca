@@ -817,6 +817,12 @@ MUST:
 5. CEO uses the summary like any other business loop. CEO does not inspect every phone/Gmail/Google
    row unless Life Manager reports a blocker or evidence audit requires it.
 
+## Connector Loop → 正本ポインタ（2026-07-10）
+
+super-connector（イベント応募・intro・cold mail・人脈 curation）は独立 loop として設計確定。
+**正本 = `2026-07-10-connector-loop-design.md`**（OSS vendor 決定・Master TODO 込み）。本 spec の
+Connector/Intro Loop 節・環境 pull 節は将来その loop の実証済み rail を Phase B で流用する。
+
 ## VCSDD Implementation Plan
 
 **Status quo（2026-07-10 実装完了分）**: Phase A は profitable-claude main で実装済み（VCSDD `ceo-company-core` phase=complete、merge `74be159`）— `skills/human-funded/life-manager/`（cli/healthcheck/launchd/README）、3 skill vendored（calendar-with-travel-time / opportunity-calendar / anicca-meetup-talk-applier、skills.lock 管理）、state ledger 9本、feedback→issue 決定的 gate（comment mode 含む、実コメント issues/6#issuecomment-4931665286）、seed issues #1-#9 実 gh 検証、CEO 報告（mrr_usd=0.0 正直）。core は ALIVE 稼働中。**Phase B 以降（実 action: calendar write / phone / marketing 実投稿、Telegram intake、Luma/connpass 応募の実行）は未実装** — Phase A は harness+ledger+validation gate のみ（interpretation C）。

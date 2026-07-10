@@ -415,6 +415,11 @@ Boundary rule:
 - **CEO 自身の verification loop（MUST）**: 「配分を変えた → 翌週の会社全体 score/実収益が上がったか」を machine-checkable に追跡。CEO も自分の判断を数字で検証する（config 変更が悪化させたら巻き戻す）。
 - 既存の record-earn.mjs / ledger 不変条件（INV-H1..H5）は壊さない。CEO 化は founder-loop に「配分判断ステップ」を追加する形で、ledger 書き込みの唯一性は維持。
 
+### connector loop（2026-07-10 追加）
+
+新 manager loop「connector」（super-connector: Dais を理想の人脈・環境へ proactive に接続）を CEO 配下
+フラット並列に追加する。**正本 = `2026-07-10-connector-loop-design.md`**（Master TODO はそちら §8 が唯一）。
+
 ### profitable-claude repo gap — ✅ CLOSED（2026-07-10 実装完了、VCSDD ceo-company-core phase=complete）
 
 **Status quo（2026-07-10）**: 下記 MUST-build backlog は全て main に実装・検証済み（feature/ceo-company → main merge `74be159`、最終 `5521d0c`）。
