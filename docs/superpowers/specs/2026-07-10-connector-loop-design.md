@@ -107,16 +107,71 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | # | 状態 | 作業 | 完了条件（§10 の done 条件に従う） |
 |---|---|---|---|
 | 0 | ✅ | CEO 会社基盤 + LM Phase A + explorer LIVE + ccteams | main `190b077`、54/54、5 loop ALIVE |
-| 1 | ✅ | 土台修理: booking scan buffer 修正（25/25→5/5）+ OpenClaw cron live-store 事故解明 + イベント cron を connector に一本化（9本 disable、二重 loop 禁止）+ 未登録 PROPOSED 2件削除（うち1件有料）| commit `120e863` + memory 固定 + gcal 実測 0 PROPOSED |
+| 1 | ✅ | 土台修理: booking scan buffer 修正（25/25→5/5）+ OpenClaw cron live-store 事故解明 + イベント cron を connector に一本化（9本 disable、二重 loop 禁止）+ 未登録 PROPOSED 2件削除（うち1件有料） | commit `120e863` + memory 固定 + gcal 実測 0 PROPOSED |
 | **2** | 🔄 | **connector-loop VCSDD 立ち上げ**: init → spec EARS 化（§4 毎日全STEP・horizon 先埋め・STEP2 DISABLED・FREE only・登録先行 / §11.1 8機構の PROP 化 / 9 source vendor 表）→ fresh adversary spec-review PASS | state.json phase 進行 + verdict PASS |
 | 3 | ⬜ | rails vendor: ①Telos schema ②OwnPilot pulse/directives/autonomy ③Clira pre-filter ④gtm-mcp I-confirm+返信3-tier ⑤lean-intros scorer ⑥Boardy flow ⑦Duckbill UX ⑧booking/meetup scripts ⑨評価8機構 — 全て skills.lock 記帳 | 各 rail TMPDIR test green |
 | 4 | ⬜ | pass 実装（TDD RED→GREEN）: cli/healthcheck/launchd/ledger 8本/signals pre-pass/STARTUP prompt/scout 同梱/registry live | run-all green + ceo-status 表示 |
-| 5 | ⬜ | 実 E2E dogfood 7日: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 の connector 行 + 7日 streak + adversary PASS |
+| 5 | ⬜ | 実 E2E dogfood 7日: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 connector 行 + 7日 streak + adversary PASS |
 | 6 | ⬜ | CEO 仕上げ: bounty/affiliate/gig cost 自動記録（core 再起動）+ LM cron launchd 化 + CEO 初 decision + hl/article registry 正誤 + external budget | cost-events 3 loop 行 + ceo-decisions ≥1 |
 | 7 | ⬜ | article loop 有効化: profitable-article-writer VCSDD 完走 → Zenn 抜き v1 → Mode A 品質1本 → 新 cron + metrics + V4 別 gate | 実 publish URL + registry live |
 | 8 | ⬜ | LM Phase B: 実 action 解禁（connector rail 流用） | LM spec Phase B done |
 | 9.5 | ⬜ | SNS factory 移行: larry/reelclaw/lm-video/watercolor を claude-p manager loop 化（§11 バー装着で self-improve 開始）→ OpenClaw 退役（state push + **Dais 明示 go** 後に削除） | live cron 0 + launchd 依存 0 + go 記録 |
 | 9 | ⬜ | 製品化: connector module → cloud Life Manager（課金 thesis 確定後、別 spec） | — |
+
+## 10. DONE CONDITIONS（自己欺瞞防止、Dais 2026-07-10 指示。宣言には「実行コマンド+出力」の記録必須）
+
+**共通原則**: done = ①実世界の結果を**独立経路で読み返せる**（gcal は `gog calendar events get <id>`、応募はサイト実ページ/確認メール、送信は message id、売上は on-chain/Stripe 実記録）②1回きりでなく **cadence streak** で判定 ③fresh adversary（Opus）が evidence を読み返して PASS ④「PROPOSED を書いた」「draft を作った」「enqueue した」は done ではない。evidence の無い done 宣言 = 罪。
+
+| TODO# | loop/作業 | DONE の機械検証条件 | NOT done の例（禁止される言い方） |
+|---|---|---|---|
+| 1a-b | anicca-booking 復旧 | ①scan buffer 修正 commit 済（`120e863` ✅）+ cron live store 復旧済（8本 ✅）②**定時 cron 2連続 run で FREE イベントに実サイト登録**（connpass「参加者への情報」/ Luma 参加確定 / 確認メール）③登録済イベントのみ gcal CONFIRMED（`gog events get` 読返し）④Telegram delivered:true ⑤有料イベント予約ゼロ・未登録 calendar 記載ゼロ | 手動発火1回で「復旧」/ PROPOSED 書込だけで「応募した」 |
+| 1c | meetup-applier apply 側 | 新規実応募1件が data/applications/ に記録され、応募先実ページ or 確認メールで独立検証 | discover が動いてるだけで「動いてる」 |
+| 1d | affiliate 投稿再開 | @aishigoto.labo への実投稿 URL を browser 実読で確認 + queue 減少 + commission-watermark 更新継続 | deck 生成だけで「稼働」 |
+| 2-4 | connector-loop 構築 | VCSDD 全 gate PASS（state.json）+ tests/run-all green + registry live + ceo-status 表示 | コードが書けただけ（E2E 前）で「完成」 |
+| 5 | connector 実 E2E | ①実イベント応募≥1（実 URL + 登録証跡）②gcal 書込を event id の get で読返し ③Telegram 日報が実着信（delivered:true + Dais が見られる）④outreach 1往復（draft→承認→送信 message id→返信分類）⑤debrief 1件が次 pass の入力ログに実出現 ⑥**7日連続 streak** ⑦fresh adversary PASS | 初回1 pass 成功で「dogfood 完了」 |
+| 6 | CEO 仕上げ | cost-events.jsonl に bounty/affiliate/gig の行が**自動**追記される（core 再起動後の実 pass 由来）+ ceo-decisions ≥1行 + その decision が registry に反映され enforcement 実挙動で観測 | 手で cost 行を書く / decision 0行のまま「CEO 稼働」 |
+| 7 | article 有効化 | ①実 publish URL（logged-out fetch で本文 token 一致）②article-metrics.jsonl に実測 views 行 ③cadence: 週1以上×2週連続 ④V4=実売上は**別 gate**（¥0 なら「publish まで done、売上 not yet」と分けて報告） | 「公開できる状態」で「有効化済み」/ 売上未確認で「稼げてる」 |
+| 8 | LM Phase B | 実 action（calendar/phone/marketing/Telegram intake）が per-action で本表と同型の独立読返し evidence を持つ | Phase A の planning 出力で「動いてる」 |
+| 稼働中 loop 共通 | gig/bounty/pm/capafy/LM/explorer | 07-08 spec の cadence contract 表 + evidence gate（`none:<reason>` 形式）に準拠。「earned」宣言は realized 実収益が ledger + on-chain/入金記録で照合できた時のみ | funnel 途中経過で「稼いだ」 |
+
+## 11. 各 loop の評価バー（BROKEN / STANDARD / IMPROVE — 全て結果ベース、Dais 2026-07-10）
+
+3層で判定する。**BROKEN と STANDARD は決定的**（healthcheck/cadence contract/evidence gate が機械判定）、**IMPROVE は agent の週次 evaluator**（「先週より今週」を ledger 比較で機械確認、何を改善するかの判断は agent）:
+
+| 層 | 意味 | 誰が判定 | 発火するもの |
+|---|---|---|---|
+| BROKEN | 当日 cadence 未達 or 実在検証失敗 or ledger 破損 | healthcheck（決定的、21:00 JST 締め） | self-fix.sh 自動 escalate |
+| STANDARD（bare minimum） | 実世界の結果が独立読返しで存在する | evidence gate（決定的） | 未達 = 「修理が必要」。これ未満で「動いてる」と言うの禁止 |
+| IMPROVE（上限なし） | north-star metric が前週比で伸びる | 週次 evaluator + search-driven self-improve（agent） | 伸びない = 戦略変更（BP 検索→次 pass 反映）。CEO は3層全部を読んで配分 |
+
+| loop | BROKEN | STANDARD（これが bare minimum） | IMPROVE（north star、前週比） |
+|---|---|---|---|
+| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **毎日**: gcal 直読→**horizon（今日〜14日+）の空き枠**に FREE イベント実登録（サイト証跡、早期応募優先）+ gcal CONFIRMED + Telegram 日報。**horizon に空きがあるのに新規登録 0 の日 = STANDARD 未達**（horizon 全体が埋まっている時のみ免除、証跡つき） | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
+| gig | 当日応募 0 / ledger 無更新 | N 応募/日 + funnel 更新（実ページ検証） | 返信率 → 受注数 → 入金¥（現状 270応募/17返信/受注0 = ここが改善対象） |
+| bounty | 巡回なし | checked 増/日 | survivors → 提出 → 賞金$ |
+| affiliate | queue 滞留 + 投稿 0 | 1 投稿/日（実 URL browser 検証） | views → commission¥ |
+| life-manager | pass なし / ledger 破損 | feedback→issue が実 URL で回る + CEO 報告（mrr 正直） | 解決 issue → verified user outcome → MRR$ |
+| explorer | pass なし | 1 検証/日（実 evidence。ABANDON も正当な結果） | proposal → CEO 採用 → loop 化 → その loop の実収益 |
+| article | — | 週1 実 publish（logged-out 本文検証） | views → 有料販売¥（V4） |
+| pm / hl | pass 停止 | pass 稼働 + ledger | realized PnL 週次↑ |
+| CEO | decision 不能 / registry 破壊 | 週次 decision ≥1 + enforcement 実反映 + cost/評価の読取 | **会社全体の実収益**と loop portfolio の質が自分の配分変更後に改善（CEO 自己検証、悪化は rollback） |
+
+### §11.1 評価バーに追加する機構（BP 調査 2026-07-10、出典付き。全 loop に適用）
+
+調査結論: 同型3層の既製 OSS は今回の調査では見つからなかった — **これは「我々が先行」を意味しない。我々は常に後発であり、alpha を探し続けるのが仕事**（Dais 2026-07-10）。盗む機構は以下 — 実装は connector から始めて全 loop に展開:
+
+| # | 機構 | 出典 | 実装 |
+|---|---|---|---|
+| 1 | BROKEN 判定は guardrail 型（同期・決定的・数ms・blocking）に限定、LLM judge を同期路に入れない | Hamel Husain (hamel.dev/blog/posts/evals-faq)「Guardrails are inline safety checks... Evaluators run after」 | healthcheck は現行のまま決定的を維持 |
+| 2 | **cascade 評価**: stage1(出力ある?タイムアウト?)→stage2(schema 妥当?)→stage3(LLM judge north-star) 段階 gate、timeout は例外でなく metric 行 | OpenEvolve `evaluator.py` `_cascade_evaluate()`（pm で既運用） | 各 loop の self-check を3段化 |
+| 3 | **God-Evaluator 禁止**: 週次 evaluator は次元別 boolean（cadence_ok / schema_ok / evidence_ok / north_star_delta_ok）を別々に ledger へ | Eugene Yan (eugeneyan.com/writing/product-evals)「anti-pattern is a single God Evaluator」 | loop-evaluations.jsonl の行 schema に4 boolean 追加 |
+| 4 | **burn-rate 警報**: 閾値だけでなく直近 k 週の傾き（3点 delta）を見て「N 週後に BROKEN に到達する速度」で早期発火 | Google SRE error budget（rickpollick.com/blog/error-budgets-over-deadlines）「The balance tells you where you are. The burn rate tells you where you are going」 | 週次 evaluator に slope 欄追加 |
+| 5 | lessons.jsonl を**構造化 verdict**に統一 `{issue_type, severity, fix_suggestion, confidence, pattern_detected}` — 次 pass が `pattern_detected:"persistent_regression"` を grep してから動く | BetterForAll L2 + Reflexion（use_memory が効くのは構造化 feedback の持越し） | lessons writer/reader の schema 統一 |
+| 6 | **suite-promotion gate**: self-fix が閉じた failure は per-loop の恒久 regression テストに昇格し、週次 evaluator が毎回再実行（「一度捕まえた failure は永遠に捕まえる」） | auto-harness 3-step gate + Braintrust online→offline loop | `tests/regression/<loop>/` に failing case 蓄積 |
+| 7 | **fix の採点は fixer 以外**: BROKEN/STANDARD/IMPROVE の判定は fresh-context spawn が ledger+lessons のみを読んで下す。loop の自己申告「直りました」は入力にしない | DGM（held-out benchmark を超えた rewrite だけ採用）+ 我々の adversary 原則の運用適用 | 週次 evaluator を fresh spawn 化（要確認: 現状 同一 context なら修正） |
+| 8 | **遷移故障行列**: 3 step 以上の loop は「最後に成功した state × 最初に失敗した state」の行列を週次で ledger から機械生成 → どの遷移を直すか一目 | Hamel Husain transition failure matrix | 週次 evaluator に行列出力追加 |
+
+anti-gaming の核 = #6 + #7（自己採点 benchmark は腐る — BetterForAll 実測: 固定 benchmark で 90-100% の agent が adversarial suite で 62-66%）。
 
 ## 9. Non-Goals（本 run で明示的にやらない）
 
