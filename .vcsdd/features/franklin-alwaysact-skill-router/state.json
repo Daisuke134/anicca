@@ -57,6 +57,12 @@
       "to": "2a",
       "timestamp": "2026-07-11T00:05:00.000Z",
       "reason": "RECONCILIATION NOTE: iteration-2..5 spec-review artifacts (reviews/spec/iteration-{2,3,4,5}/) were produced during prior sessions but left uncommitted/untracked in the main checkout (/Users/anicca/anicca, outside this worktree) instead of this feature's worktree; this state.json itself was never advanced past the stale iteration-2-FAIL snapshot recorded at 2026-07-10T20:21:12Z despite 3 further review iterations having actually completed. This entry reconciles state.json + copies the missing review artifacts into this worktree so the recorded history matches the real, verified iteration-5 PASS at commit 4c55439f before Phase 2a test authoring begins."
+    },
+    {
+      "from": "2a",
+      "to": "2a",
+      "timestamp": "2026-07-11T02:00:00.000Z",
+      "reason": "Phase 2a precision fix + RED phase complete. (1) Applied iteration-5 notes.md's 2 non-blocking observations to behavioral-spec.md (sec2.5 matrix rows 10-12, REQ-510 attemptsUsed-vs-think()-call-count domain pin). (2) Authored 53 test() blocks across 4 new files (always-act-router.test.mjs 26, always-act-wire-seam.test.mjs 3, always-act-reroute.test.mjs 23, always-act-nojudgment.test.mjs 1) + 1 shared non-test harness helper (__tests__/helpers/always-act-harness.mjs), covering every REQ-501..513 and every PROP-ID in verification-architecture.md's Proof Obligations table. Confirmed RED: 48/53 authored blocks fail for the correct reason (missing always-act-router.mjs module / real index.mjs-brain.mjs behavior unchanged), 5 pass as intentional non-regression/baseline-holds confirmations. Confirmed regression baseline: 212/212 pre-existing test cases pass unmodified (120 official package.json test-script set + 92 additional sweep of every other pre-existing test file). Evidence: evidence/red-phase.md. No source module under runtime/loop/ touched this commit -- test/evidence/spec files only."
     }
   ],
   "iterations": {
