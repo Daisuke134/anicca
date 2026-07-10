@@ -211,3 +211,5 @@ iOS/SwiftUI/RevenueCat/Xcode/App Store Connect 固有の既知の問題と回避
 ## 言語
 
 回答は常に日本語。
+
+@.claude/active-team.md

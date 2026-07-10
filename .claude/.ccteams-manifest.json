@@ -1,0 +1,16 @@
+{
+  "version": "2",
+  "appliedTeam": "generalist",
+  "appliedAt": "2026-07-10T09:56:37.364Z",
+  "placedFiles": [
+    ".claude/agents/architect.md",
+    ".claude/agents/builder.md",
+    ".claude/agents/qa-reviewer.md",
+    ".claude/agents/scope-planner.md",
+    ".claude/agents/shipper.md",
+    ".claude/skills/working-method/SKILL.md",
+    ".claude/skills/generalist-playbook/SKILL.md",
+    ".claude/active-team.md"
+  ],
+  "agentTeamsFlagSet": false
+}
