@@ -55,3 +55,13 @@ verify-loops(-audit).sh(6h毎)                cadence-deadline-check.sh(launchd 
 
 ## 触ったファイル(全 read-only)
 ~/anicca/skills/self/{healthcheck-lib.sh,self-fix.sh,verify-loops.sh,verify-loops-audit.sh,cadence.py,cadence-evidence.py,cadence-contracts.json,cadence-deadline-check.sh}, ~/anicca/skills/earn/video/video-healthcheck.sh, ~/Library/LaunchAgents/ai.anicca.cadence-deadline-check.plist, ~/.openclaw/logs/{cadence-deadline-check,verify-loops-audit,loop-report,self-fix-affiliate-loop}.log, ~/.openclaw/state/.self-fix-*.result, ~/.cloak/earn-video-*(money_blueprintdaily)
+
+
+## ✅ 完了（2026-07-11、~/anicca main 526add1e merged+pushed）
+builder 実装 → fresh Opus adversary FAIL(FIND-001: 機械 gate 欠落) → 修正 → 独立検証 → merge。
+- **Goodhart fix**: `cadence-evidence.py::_video_warmup_advanced_event_dates()` が run.sh の `"day→"` 成功トークン(warmup_day 前進時のみ書かれる)必須化。実 ~/.cloak データで met が true→false に反転を実証(4日停滞を正しく暴露)。
+- **機械 pre-push gate(FIND-001 修正)**: `.githooks/pre-push` を拡張、cadence*.py を触る push で cadence テスト強制実行→fail で push 拒否。**実 git push で実証**: Goodhart バグ再注入→push exit1 拒否、revert→成功。push 時に gate 自身が走り PASS。=self-fix が二度と自分のバーを下げられない。
+- **可視化**: verify-loops marker 3→10 loop(affiliate reCAPTCHA #994/bounty sourcing #995 の正直診断が Dais に見える)+ audit cut 900→3000。
+- **liveness**: reddit escalation を `stale>=30 OR liveurl==DEAD` に。
+- 全12テスト green(pre-existing gig 失敗も修正)。
+→ Dais の「self-heal が効いてない/loop が順調と嘘」への構造的回答: self-fix は動いてたが video のバーを下げていた(Goodhart)。今は修正+機械 gate で再発防止、正直診断も可視化。
