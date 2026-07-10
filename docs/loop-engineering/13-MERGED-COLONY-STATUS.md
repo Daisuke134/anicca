@@ -55,10 +55,10 @@
 |---|---|---|---|
 | **Agent economy = Franklin の自走コロニー**（earn rails + self-improve + spawn + lending の OSS kit、子も vendor 継承） | self-funded | **anicca (OSS)** | Franklin(`~/.blockrun`) が vendor 済 |
 | **CEO loop + 配下の earn 事業**（pm-earner/clip/gig/affiliate/bounty… = Dais を rich に） | human-funded | **profitable-claude** | `~/profitable-claude/skills/human-funded/`(affiliate/bounty 移設済、他は #6) |
-| **AGENT ECONOMY LOOP**(親/開発者) | human-funded | runner=**profitable-claude** / 成果物は **anicca に commit** | 移設待ち(今 ~/anicca) |
+| **AGENT ECONOMY LOOP**(親/開発者=CEO の**外・上位**) | human-funded | **anicca（今の場所のまま。移動しない）** | `~/anicca/skills/self/claude-p-mainloop.sh` + `-prompt.txt`(既にここ) |
 | 製品(iOS/web/api aniccaai.com) | — | **anicca-products** | 済 |
 
-★核心: **agent economy 本体 = anicca(OSS)**。**CEO+配下の全 loop = profitable-claude**(human-funded profit、agent economy とは別物)。AGENT ECONOMY LOOP は profitable-claude に住みつつ anicca を建てる橋渡し。earn rail は anicca-OSS 共有で Franklin も claude-p も vendor(polyrepo+vendor, submodule禁止)。物理移動は #6 で handover パス更新とセット。★
+★核心(Dais 確定 2026-07-10): **agent economy 本体 = anicca(OSS)**。**CEO + 配下の全 loop = profitable-claude**(human-funded profit、agent economy とは別物)。**AGENT ECONOMY LOOP は CEO の外・上位(建築者)なので profitable-claude に入れない — 今 居る anicca のまま(移動しない)**。profitable-claude の定義 = 「CEO + その配下の事業」であって「全 human-funded」ではない。AGENT ECONOMY LOOP は human-funded だが CEO 配下ではない(= 建築者)ので anicca。earn rail は anicca-OSS 共有で Franklin も claude-p も vendor(polyrepo+vendor, submodule禁止)。★ #6 の repo 移動対象 = CEO+事業を profitable-claude へ / **AGENT ECONOMY LOOP は移動対象外(anicca 固定)**。
 
 ## 能力レイヤー別 マージ済みステータス（DONE / IN-FLIGHT / TODO）
 
