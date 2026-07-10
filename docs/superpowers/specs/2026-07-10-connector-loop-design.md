@@ -76,7 +76,8 @@
 
 - **正式**: connector loop は profitable-claude の CEO 配下（self-heal/self-improve/lessons/evidence gate/VCSDD tests/CEO 評価の harness が全部ここにあり、core は Sonnet）
 - **理由**: OpenClaw 側は ①live store 乖離で 6/7-6/22 に silent outage（実証済み）②cron agent が弱モデル（deepseek-v4-flash が37秒で浅い discovery をした実例）③テスト/adversary gate なし — 自己修復・自己改善の器として不適
-- **interim**: 修復済み OpenClaw cron 8本（booking/meetup/connpass/night-fill 等）は connector loop の E2E done まで動かし続ける（discover 結果は connector の signal 源として流用）。connector done 後に OpenClaw 側イベント cron を disable（07-08 spec の OpenClaw 退役方針と整合）
+- **interim 廃止（Dais 2026-07-10）**: 同じ仕事に2 loop は禁止 → OpenClaw イベント cron 9本は**disable 済み**（booking/meetup×3/connpass/night-fill/event-bot/life-notify/comedy-en、live enabled 63→55 実測）。イベント接続は connector loop が最初から唯一のオーナー。skill 実体（booking/meetup-applier の scripts）は connector が rail として vendor する
+- **OpenClaw 完全退役は別 workstream**（Master TODO #10）: live で今も動くのは SNS factory 系 55本（larry×17 / reelclaw×18 / lm-video×3 / watercolor×3 / monkeys 他）+ launchd 依存 + .env secrets + gcal-policy/camofox rail。「全部移した」は未達 — 削除は 07-08 spec の gate（state/ledger push 確認 + Dais 明示 go）を満たしてから
 
 ## 5b. 既存資産の再利用（車輪の再発明禁止）
 
@@ -105,6 +106,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 6 | ⬜ | **CEO 仕上げ**: bounty/affiliate/gig の cost 記録接続（core 再起動で新 prompt 反映）/ LM cron の launchd 恒久化 / CEO 初 decision 観測 / hl の honest 化・article runtime 表記修正・external budget 設定 | cost-events に 3 loop の行 / ceo-decisions ≥1行 |
 | 7 | ⬜ | **article loop 有効化**: profitable-article-writer の VCSDD 完走（2c→3→5→6）→ Zenn 抜き v1（Note+Substack-ja / dev.to+X-Articles+Substack-en）→ Mode A 品質確認 1本 → 新 cron 配線 + article-metrics.jsonl + V4（実売上）gate | 実 publish URL + metrics ledger + registry live 化 |
 | 8 | ⬜ | **LM Phase B**: 実 action 解禁（calendar/phone/marketing/Telegram intake）— connector の実証済み rail を流用 | spec Phase B の Done 条件 |
+| 9.5 | ⬜ | **OpenClaw 完全退役 migration**: larry/reelclaw/lm-video/watercolor の SNS factory 55 cron を claude-p loop 化 or 正式 retire 判定 → monkeys/watchdog 系を healthcheck-runtime へ吸収 → .env/state/ledger を移設 → gateway 停止 → state push 確認 + **Dais 明示 go** の後に ~/.openclaw 削除（07-08 spec ⑤ 準拠） | live cron 0本 + launchd 依存 0 + 削除 go 記録 |
 | 9 | ⬜ | **製品化**: connector module を cloud Life Manager へ（tenant 分離 + per-tenant cost + 課金 thesis 確定後）。Dot/Yohana の死因分析を pricing 設計に反映 | 別 spec を起こす |
 
 ## 10. DONE CONDITIONS（自己欺瞞防止、Dais 2026-07-10 指示。宣言には「実行コマンド+出力」の記録必須）
