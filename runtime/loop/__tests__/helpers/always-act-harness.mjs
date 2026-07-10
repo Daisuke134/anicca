@@ -93,6 +93,23 @@ export function writeMockGuardBlockedSkill(home, slot, reason = 'kill-switch') {
   return writeMockSkill(home, slot, `echo '{"action":"skip","reason":"${reason}"}'\nexit 0`);
 }
 
+/**
+ * Writes a well-formed, zero-live-slot `registry.json` fixture (`{"slots":{}}`) under `home` and
+ * returns its absolute path — pair with `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` (index.mjs's test-only
+ * env seam, same idiom as `ANICCA_BALANCE_OVERRIDE`) to drive REQ-502's empty-menu terminal case
+ * through a REAL spawned wake (PROP-502d), rather than only the pure `assembleAlwaysActMenu` unit
+ * test. `liveSlotNames`/`assembleAlwaysActMenu` both resolve `{"slots":{}}` to `[]` cleanly (no
+ * parse-error fallback path involved) — a genuine, coherent "zero live earn-action slots" registry,
+ * not a malformed-JSON crash.
+ */
+export function writeEmptyRegistry(home) {
+  const dir = path.join(home, 'fixtures');
+  fs.mkdirSync(dir, { recursive: true });
+  const registryPath = path.join(dir, 'empty-registry.json');
+  fs.writeFileSync(registryPath, JSON.stringify({ slots: {} }, null, 2));
+  return registryPath;
+}
+
 // ── Solana identity fixtures (REQ-501) ──────────────────────────────────────
 // Fresh, randomly generated, UNFUNDED keypairs only — never Franklin's real production secret.
 

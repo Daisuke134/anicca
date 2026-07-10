@@ -1,0 +1,32 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["implementation_correctness", "verification_readiness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-502's empty-menu edge case (behavioral-spec.md lines 183-185) explicitly requires: 'the wake MUST fail loudly (`kind:'router_menu_empty'` ledger line + escalation, REQ-508), never silently fall back to sleep/narrate.' verification-architecture.md's Proof Obligations table pins this as PROP-502d (Tier 2, required:true): 'Empty resolved menu -> `kind:'router_menu_empty'` + escalation (REQ-508)'. The actual implementation never writes this kind value anywhere. index.mjs's runAlwaysActWake() handles the empty-menu case at lines 665-670 by calling writeAlwaysActEscalation({wakeId, ts, sleepS, attemptsUsed: 0}), and writeAlwaysActEscalation (index.mjs:847-866) hardcodes `kind: 'router_no_realized_action'` at line 852 (and again at line 863 for the harness-failure detail) unconditionally for EVERY escalation path -- the empty-menu terminal case, the empty-reroute-target terminal case, and the ordinary bounds-exhausted case are all collapsed into the identical, indistinguishable `router_no_realized_action` kind. A repo-wide grep for the literal string `router_menu_empty` finds it ONLY in specs/behavioral-spec.md and specs/verification-architecture.md -- zero occurrences in any .mjs source or test file. This defeats REQ-502's stated purpose: an operator/self-heal detector reading the ledger cannot distinguish 'the registry/config resolved to zero live earn-action slots' (a REQ-502-declared spec violation requiring registry/config remediation) from 'the model exhausted its ordinary 2-call retry budget' (a ordinary, expected REQ-508 outcome) -- exactly the distinction REQ-502's edge case says matters ('this is a spec violation, not a valid nothing-to-do state').",
+  "evidence": {
+    "filePath": "runtime/loop/index.mjs",
+    "lineRange": "662-670,847-866",
+    "snippet": "if (!Array.isArray(alwaysActMenu) || alwaysActMenu.length === 0) {\n  await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed: 0 });\n  ...\n}\n...\nasync function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed }) {\n  ...\n  const recordFields = {\n    ...\n    kind: 'router_no_realized_action',\n    ..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "183-185",
+      "snippet": "Zero live earn-action slots resolve (menu is empty): this is a spec violation, not a valid \"nothing to do\" state — the wake MUST fail loudly (`kind:'router_menu_empty'` ledger line + escalation, REQ-508), never silently fall back to `sleep`/narrate."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+      "lineRange": "188",
+      "snippet": "PROP-502d | Empty resolved menu → `kind:'router_menu_empty'` + escalation (REQ-508), never a silent `sleep`/`narrate` fallback | 2 | true | vitest/jest exhaustive-case"
+    },
+    {
+      "filePath": "runtime/loop/__tests__/always-act-router.test.mjs",
+      "lineRange": "154-166",
+      "snippet": "test('PROP-502d: an empty resolved menu is representable (assembleAlwaysActMenu returns []), never throws, never silently substitutes a default', ... assert.deepEqual(menu, [], ...)"
+    }
+  ],
+  "testCoverageNote": "The only test claiming to cover PROP-502d (always-act-router.test.mjs:154) asserts solely that the PURE `assembleAlwaysActMenu({...})` helper returns `[]` for a fixture registry with no earn-action slots. No test anywhere (pure or the 23 spawn-based integration tests in always-act-reroute.test.mjs) drives a REAL empty-menu wake through runAlwaysActWake() and asserts the resulting ledger line's `kind`. This is a tautological-coverage gap: this test would still pass even if the real wake-loop escalation path wrote the wrong kind (as it does) or no kind at all -- it never observes the actual ledger output PROP-502d is about.",
+  "routeToPhase": "2b"
+}

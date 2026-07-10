@@ -201,6 +201,37 @@ export function buildAlwaysActLedgerFields({ wakeId, slot, args, attemptsUsed, r
  * @param {{minRun: number}} opts
  * @returns {boolean}
  */
+/**
+ * buildGoLiveRecord — REQ-512 (Phase 3 iter1 FIND-002 fix): pure record-shaping for the go-live
+ * operational action's ledger line — `kind:'always_act_go_live'`, `ts`, and `config_source` (the
+ * config source REQ-501(b)'s flag was set from, e.g. `'env'`/`'.env'`/a deploy manifest path) —
+ * REQ-512's own EARS text names exactly these two payload fields alongside `kind`. This is the
+ * "recordGoLive()-style" pure-planning half spec-review iteration-2 notes.md observation #2
+ * recommended; see go-live.mjs::recordGoLive for the effectful shell append half.
+ *
+ * @param {{ts: string, configSource: string}} opts
+ * @returns {object}
+ */
+export function buildGoLiveRecord({ ts, configSource }) {
+  return { ts, kind: 'always_act_go_live', config_source: configSource };
+}
+
+/**
+ * shouldRecordGoLive — REQ-512's "exactly once at the flip" guard: true iff the given
+ * (pre-gathered, chronologically-ordered) ledger tail contains NO existing `always_act_go_live`
+ * line. Lets the effectful go-live action be invoked more than once (e.g. an operator re-running
+ * their one-time command by mistake) as a safe no-op rather than writing a duplicate anchor line —
+ * isPostGoLiveRegression's own contract above depends on there being at most one such anchor per
+ * genuine flip.
+ *
+ * @param {object[]} ledgerTail - pre-gathered, chronologically-ordered ledger lines
+ * @returns {boolean}
+ */
+export function shouldRecordGoLive(ledgerTail) {
+  const tail = Array.isArray(ledgerTail) ? ledgerTail : [];
+  return !tail.some((line) => line && line.kind === 'always_act_go_live');
+}
+
 export function isPostGoLiveRegression(ledgerTail, { minRun } = {}) {
   const tail = Array.isArray(ledgerTail) ? ledgerTail : [];
   const threshold = typeof minRun === 'number' ? minRun : 20;

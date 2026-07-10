@@ -1,0 +1,102 @@
+---
+status: under-review
+feature: franklin-alwaysact-skill-router
+sprintNumber: 1
+negotiationRound: 0
+scope: The full franklin-alwaysact-skill-router feature (REQ-501..REQ-513 of specs/behavioral-spec.md) as it stands after Phase 2c refactor (commit 939f3da) plus the Phase 3 implementation-review iteration-1 fix commit that follows it: the Pure Core module runtime/loop/always-act-router.mjs (isEarnActionSlot, assembleAlwaysActMenu, buildAlwaysActToolDefinitions, isMarketRiskFree, noRealizedAction, isRejectableSleepOrOffMenu, nextRerouteState, buildMustActReinforcement, buildAlwaysActLedgerFields, isPostGoLiveRegression, buildGoLiveRecord, shouldRecordGoLive), the new effectful shell module runtime/loop/go-live.mjs (recordGoLive, the REQ-512 go-live operational action), and the additive wiring into runtime/loop/index.mjs (REQ-501 identity+flag gate, REQ-502/503 always-act menu assembly with a distinct kind:'router_menu_empty' empty-menu escalation, REQ-504's sleep-withholding wire seam via context.mjs/brain.mjs/prompt.mjs, REQ-505/506/508/511/513's runAlwaysActWake() bounded attemptsUsed retry/reroute/escalation state machine, REQ-509's money-safety non-regression, REQ-510's per-wake ledger record, REQ-512's always_act_not_engaged diagnostic line). This sprint's own commit range is 826c7f6 (pre-feature base) through the current HEAD in worktree /Users/anicca/anicca/.worktrees/alwaysact-impl, branch feature/franklin-alwaysact-skill-router. Every test in this sprint's suite runs against the REAL, unmodified skills/registry.json (never a fixture registry, except the new PROP-502d test's own test-only ALWAYS_ACT_REGISTRY_PATH_OVERRIDE env seam pointed at a well-formed, zero-live-slot {"slots":{}} fixture) and REAL, unmodified skills/earn/*/run.sh money-safety guard files — no guard file is touched by this feature's diff (CRIT-006).
+criteria:
+  - id: CRIT-001
+    dimension: spec_fidelity
+    description: REQ-501's identity+flag gate is fail-closed on every dimension — a Solana-address derivation mismatch, an unset flag, and a flag value other than the literal string "1" all resolve to always-act NOT engaged (sleep still offered on the real outbound wire) — and the identity derivation strips ANICCA_SOLANA_PRIVATE_KEY from the env before EITHER side's derivation (mirroring skills/earn/sol-trade/run.sh:28-41's own ambient-override-immune idiom), never trusting an env-supplied address string as-is.
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself (from the worktree) and confirms these tests, by exact name, pass — "PROP-501a: identity MISMATCH -> always-act NOT engaged (sleep tool still on the real outbound wire), regardless of the flag"; "PROP-501b: identity MATCH + flag unset -> always-act NOT engaged; ledgers kind:always_act_not_engaged reason:flag_unset (REQ-512)"; "PROP-501b: identity MATCH + flag malformed (\"yes\") -> always-act NOT engaged; ledgers reason:flag_malformed"; "PROP-501c: identity MATCH + flag \"1\" -> always-act ENGAGED (sleep withheld on the real outbound wire, run_skill enum = the always-act menu)". Adversary reads index.mjs's envWithoutSolanaKey (function body) and confirms `delete env.ANICCA_SOLANA_PRIVATE_KEY` runs before either deriveSolanaAddress call in checkAlwaysActIdentity. FAIL if any named test fails, or if envWithoutSolanaKey's delete call is absent/reordered after a derivation call.
+  - id: CRIT-002
+    dimension: spec_fidelity
+    description: REQ-502's always-act menu is the union of isEarnSlot and the fixed doctrine-named set {economy/gig, economy/lending} — a purely additive predicate that never modifies or forks isEarnSlot itself — and resolves, against the CURRENT skills/registry.json, to exactly the 11 documented slots (yield, hl_trade, x402_sell, token_launch, economy/gig, economy/lending, earn/clip, earn/clip-producer, earn/video, earn/sol-trade, earn/polymarket-trade), excluding report/cook/self/*/economy/ubi.
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-router.test.mjs` itself and confirms "PROP-502a: isEarnActionSlot is the union of isEarnSlot and {economy/gig, economy/lending}" and "PROP-502c: given the CURRENT skills/registry.json, isEarnActionSlot-menu membership resolves to exactly the 11 documented always-act slots" both pass. Adversary greps runtime/loop/always-act-router.mjs for the string "isEarnSlot" and confirms it is only ever CALLED (via the injected isEarnSlotFn), never reassigned/redefined/monkey-patched, within this file. FAIL if either named test fails or isEarnSlot's own definition is found modified anywhere in the diff.
+  - id: CRIT-003
+    dimension: edge_case_coverage
+    description: "(Phase 3 impl-review iteration-1 FIND-001 fix) REQ-502's empty-menu edge case (zero live earn-action slots resolve) ledgers the DISTINCT kind:'router_menu_empty' on a REAL spawned wake, never conflated with the ordinary bounds-exhausted kind:'router_no_realized_action' REQ-508 uses for every other escalation trigger (empty risk-free reroute-target set, ordinary retry/reroute budget exhausted) — this is a REAL ledger-kind assertion against an actual runAlwaysActWake() execution, not merely a pure assembleAlwaysActMenu([]) return-value check."
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself and confirms the test named "PROP-502d (REAL wake): an empty-yielding registry escalates a REAL spawned wake with the DISTINCT kind:'router_menu_empty', zero think() calls, never the ordinary router_no_realized_action kind" passes, asserting `requests.length === 0` and `lines[0].kind === 'router_menu_empty'`. Adversary reads index.mjs's writeAlwaysActEscalation and confirms the `kind` param defaults to `'router_no_realized_action'` and that ONLY the REQ-502 empty-menu call site (`runAlwaysActWake`'s top guard) passes `kind: 'router_menu_empty'` explicitly — every other call site (bounds-exhausted after no-tool-call/rejected-slot/reroute, empty-reroute-target-set) is unchanged from the default. FAIL if the named test fails, if any non-empty-menu call site is found also passing `kind: 'router_menu_empty'`, or if `router_menu_empty` does not appear as a real string literal anywhere in runtime/loop/index.mjs outside a comment.
+  - id: CRIT-004
+    dimension: implementation_correctness
+    description: An always-act-engaged wake's REAL outbound HTTP request body (thinkProxy's literal `tools` field) never contains a tool named "sleep", while a non-engaged wake's outbound tools array is unaffected (proving conditional wiring, not a hardcoded omission).
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-wire-seam.test.mjs` itself and confirms "PROP-504b (money-doctrine-critical): thinkProxy's REAL outbound request body has NO tool named \"sleep\" when ctx.alwaysActEngaged===true and ctx.alwaysActMenu is set", "PROP-504b (non-regression): thinkProxy's outbound tools array STILL includes sleep when ctx.alwaysActEngaged is falsy/absent", and "PROP-504b (non-regression): ctx.alwaysActEngaged === false (explicit) behaves identically to absent" all pass. FAIL if any named test fails.
+  - id: CRIT-005
+    dimension: implementation_correctness
+    description: REQ-506's bounded same-wake reroute hard-excludes BOTH the just-picked slot AND every risk:"capital" slot from the reroute's REAL constructed tool schema (never merely discouraged in prompt text), and when the risk-free-filtered reroute-target set is empty (whether because the only member was the just-picked slot or because every OTHER live slot besides it is risk:"capital"), the system escalates directly (zero additional think() calls) rather than ever offering a risk:"capital" slot as a reroute target.
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself and confirms "Row 5 / PROP-506a (hard tool-enum exclusion): capital slot picked, earnLine===null -> reroute EXCLUDES the just-picked slot from the REAL schema -> valid safe reroute pick, earnLine!==null -> EXECUTE, 2 think() calls" and "Row 7 / REQ-506 edge case (\"rerouted second pick ALSO no-ops\"): reroute's own pick ALSO produces earnLine===null -> ESCALATE, never a 3rd think() call" pass. Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-router.test.mjs` itself and confirms "PROP-506e (literal, current registry): earn/sol-trade, hl_trade, token_launch, earn/polymarket-trade, yield are never risk-free reroute targets" passes. Adversary reads index.mjs's runAlwaysActWake and confirms `rerouteTargets = alwaysActMenu.filter((s) => s !== slot && isMarketRiskFree(s, riskTagOf))` textually precedes the `rerouteTargets.length === 0` escalation branch, which calls writeAlwaysActEscalation (never a fallback slot substitution). FAIL if any named test fails or if a risk:"capital" slot is found reachable as a reroute target anywhere in this control flow.
+  - id: CRIT-006
+    dimension: structural_integrity
+    description: This feature's entire diff (base commit 826c7f6 through HEAD) never modifies, widens, or bypasses any money-safety guard file — skills/earn/*/run.sh, skills/earn/*/lib/resolve-max-spend.sh, skills/_shared/lib/earn-guard.mjs, or catalog-gate.mjs's BOOTSTRAP_RESERVE_USDC threshold constant — and a REAL guard-block (kill-switch-style skip) on a first-picked slot triggers REQ-506's reroute to a DIFFERENT slot, with the guard's own skip record preserved verbatim in the ledger, never overwritten or silenced.
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself and confirms "PROP-509a (money-safety-critical, Tier 0 static guard): this feature's current diff touches none of the money-safety guard files" and "PROP-509b (money-safety-critical): a REAL guard-block ... triggers a reroute to a DIFFERENT slot, and the guard's own skip record is preserved VERBATIM in the ledger" both pass. Adversary independently runs `git diff --name-only 826c7f6 HEAD -- skills/earn skills/_shared/lib/earn-guard.mjs runtime/loop/catalog-gate.mjs` itself from the worktree root and confirms zero output. FAIL if either named test fails or the independent git diff surfaces any file under those paths.
+  - id: CRIT-007
+    dimension: implementation_correctness
+    description: attemptsUsed (nextRerouteState's own {0,1} output) is the SOLE arbiter of every retry/reroute/escalation branch decision across REQ-505/506/511/513 — never currentOfferedSlots/menu array identity — so a fabricated slot:"sleep" or any off-menu pick is REJECTED against the PER-ATTEMPT offered set for validity but branched by attemptsUsed alone, and no reachable sequence of outcomes ever produces a 3rd think() call for one wake (bounded to exactly 2).
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself and confirms every one of "Row 1" through "Row 12" (the full sec2.5 transition-matrix coverage) plus "Row 3 / PROP-513e (money-safety-critical, FIND-301 direct regression): no-tool-call -> reprompt -> fabricated slot:\"sleep\" -> ESCALATE, exactly 2 think() calls, never 3, no skill execution" and "Row 6 / PROP-513b/c (money-safety-critical, FIND-201): reroute in flight, model re-emits the just-excluded capital slot -> REJECTED, no execution, no 3rd think() call, direct ESCALATE" pass — 0 fail among the Row 1-12 set. Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-router.test.mjs` itself and confirms "PROP-511a (property, bounded exhaustive): for EVERY reachable sequence of up to 2 invalid outcomes, attemptsUsed transitions 0->1 exactly once and never exceeds maxAttempts=1" passes. FAIL if any named test fails.
+  - id: CRIT-008
+    dimension: edge_case_coverage
+    description: "(Phase 3 impl-review iteration-1 FIND-002 fix) REQ-512's observability is COMPLETE on both halves: (a) a Franklin-identity wake with the flag unset/malformed appends kind:'always_act_not_engaged' with an explicit reason field on EVERY such wake; (b) the SEPARATE, one-time go-live operational action (go-live.mjs::recordGoLive, never invoked automatically by any wake) appends kind:'always_act_go_live' exactly once at the flip -- a second invocation is a safe no-op, never a duplicate anchor line -- so isPostGoLiveRegression's consumer-side detector can genuinely observe a real go-live anchor line in production."
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-reroute.test.mjs` itself and confirms "PROP-501b: identity MATCH + flag unset -> always-act NOT engaged; ledgers kind:always_act_not_engaged reason:flag_unset (REQ-512)" and "PROP-501b: identity MATCH + flag malformed (\"yes\") -> always-act NOT engaged; ledgers reason:flag_malformed" pass. Adversary re-runs `cd runtime/loop && node --test __tests__/go-live.test.mjs` itself and confirms all 4 named tests pass, including "REQ-512 AC: a SECOND invocation of the go-live action never duplicates the anchor line -- exactly once, never on any other invocation" and "REQ-512 AC (\"never on any other wake\"): index.mjs -- the wake-loop entry point -- never imports or invokes go-live.mjs/recordGoLive". Adversary independently greps `grep -n "go-live.mjs\|recordGoLive" runtime/loop/index.mjs` from the worktree and confirms zero matches. FAIL if any named test fails or the independent grep surfaces a reference.
+  - id: CRIT-009
+    dimension: structural_integrity
+    description: always-act-router.mjs (the Pure Core) contains zero I/O imports (fs/http/child_process) and zero judgment logic keyed on a model's chosen slot/args CONTENT (no RegExp/.match(/.test(/if(args./switch(slot)-style branching over model output) — every branch reads only registry bookkeeping fields, risk tags, or the harness's own attempt-state counter, per REQ-507's "skill choice remains 100% model judgment" contract.
+    weight: 0.10
+    passThreshold: Adversary re-runs `cd runtime/loop && node --test __tests__/always-act-nojudgment.test.mjs` itself and confirms "PROP-507b (static, Tier 0): always-act-router.mjs contains no RegExp/.match(/.test( call, and no if(args./switch(slot)-style branching keyed on model-chosen slot/args CONTENT" passes. Adversary reads always-act-router.mjs's import block and confirms it imports only `./earn-slot.mjs` and `./prompt.mjs` (both pure, per the existing Purity Boundary Map) — no `node:fs`/`node:http`/`node:child_process` import anywhere in the file. FAIL if the named test fails or a disallowed import is found.
+  - id: CRIT-010
+    dimension: verification_readiness
+    description: The full target-feature test suite is genuinely green when independently re-run by the Phase 3 adversary itself, AND the pre-existing regression baseline (every other test file in runtime/loop/__tests__/, both the official package.json test-script set and the additional sweep) remains fully green, proving this sprint (including the iter1 FIND-001/FIND-002 fix commit) introduced zero regression.
+    weight: 0.10
+    passThreshold: Adversary runs `cd runtime/loop && npm test` itself and confirms 182/182 passing (0 fail, 0 cancelled, 0 skipped, 0 todo) -- OR, if the pre-existing, previously-disclosed integration.test.mjs ENOTEMPTY teardown-race flake (documented in evidence/green-phase.md's original body and this sprint's addendum) fires on a given run, the adversary re-runs the SAME command up to 2 more times and confirms at least one clean 182/182 run, and independently confirms the single failure (if any) is ONLY ever at integration.test.mjs's PROP-021(b)/PROP-021(e) tests with error code ENOTEMPTY -- never any always-act-*.test.mjs or go-live.test.mjs failure. Adversary separately runs `cd runtime/loop && node --test __tests__/address-classify.test.mjs __tests__/balance-solana.test.mjs __tests__/brain.test.mjs __tests__/daemon-script-franklin-routing.test.mjs __tests__/earn-slot.test.mjs __tests__/franklin-plist-config.test.mjs __tests__/integration-solana-tier.test.mjs __tests__/liquidity.test.mjs __tests__/prompt.test.mjs __tests__/resolve-identity.test.mjs __tests__/self-eval.test.mjs __tests__/wallet-address-solana.test.mjs` itself and confirms 92/92 passing (0 fail). FAIL if any always-act-*.test.mjs/go-live.test.mjs test fails on any run, if the sweep-2 command reports any fail, or if the adversary does not itself execute both commands.
+---
+
+## Scope
+
+This sprint delivers the full `franklin-alwaysact-skill-router` feature (REQ-501 through REQ-513 of
+`specs/behavioral-spec.md`) — Franklin's "never waits, always picks exactly one positive-EV earning
+action" always-act router — plus the Phase 3 implementation-review iteration-1 fix commit that resolves
+FIND-001 (REQ-502's empty-menu edge case was not ledgering the spec-required distinct
+`kind:'router_menu_empty'`) and FIND-002 (REQ-512's go-live operational action was entirely
+unimplemented and untested).
+
+Files touched (all in `~/anicca` repo `github.com/Daisuke134/anicca`, worktree
+`/Users/anicca/anicca/.worktrees/alwaysact-impl`, branch `feature/franklin-alwaysact-skill-router`):
+- `runtime/loop/always-act-router.mjs` (Pure Core — see `criteria` above for the full export list)
+- `runtime/loop/go-live.mjs` (NEW this iter1-fix commit — `recordGoLive`, REQ-512's go-live
+  operational action, plus its CLI entry point)
+- `runtime/loop/index.mjs` (REQ-501/502/503/504/505/506/508/509/510/511/512/513 wiring; this iter1-fix
+  commit additionally: `writeAlwaysActEscalation`'s `kind` param + the empty-menu call site passing
+  `kind:'router_menu_empty'`, and the test-only `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` registry-path seam)
+- `runtime/loop/context.mjs`, `runtime/loop/prompt.mjs`, `runtime/loop/brain.mjs` (REQ-504/505 additive
+  wiring, unmodified from Phase 2c)
+- `runtime/loop/__tests__/{always-act-router,always-act-wire-seam,always-act-nojudgment,
+  always-act-reroute,go-live}.test.mjs` + `__tests__/helpers/always-act-harness.mjs`
+- `runtime/loop/package.json` (registers `go-live.test.mjs` in `test`/`test:unit`)
+
+Evidence: `.vcsdd/features/franklin-alwaysact-skill-router/evidence/red-phase.md` (Phase 2a RED, 53
+new tests confirmed failing, 212 pre-existing tests confirmed passing) and
+`.vcsdd/features/franklin-alwaysact-skill-router/evidence/green-phase.md` (Phase 2b GREEN + Phase 2c
+refactor, 265/265 passing; iter1-fix addendum appended this session, 62/62 target-feature tests + 274/274
+combined suite passing, 0 regressions).
+
+## Known residual scope boundary
+
+Per `specs/behavioral-spec.md`'s own Embedded VCSDD Task List item 10, flipping Franklin's live
+`ALWAYS_ACT_ENABLED` config flag in production (and therefore actually invoking `go-live.mjs`'s CLI entry
+point for real) is a "separate, explicit, logged operational action, out of this feature's own test
+scope but gated by this feature's own default-OFF flag" — performed only AFTER `vcsdd-converge`. This
+sprint delivers and unit-tests `recordGoLive`/`buildGoLiveRecord`/`shouldRecordGoLive` fully, but no live
+production go-live invocation has occurred yet; engagement remains OFF by default throughout this sprint.
+
+`skills/self/earning-health.py`'s own companion function for `isPostGoLiveRegression` (REQ-512's EARS
+text names `earning-health.py` as this detector's "natural consumer/sibling ... extended additively") is
+NOT part of this sprint's diff — `isPostGoLiveRegression` exists and is fully unit-tested as a pure JS
+sibling in `always-act-router.mjs` (see verification-architecture.md's own Phase 2a design-decision
+note), and wiring a Python companion is tracked as future work, not flagged as a Phase 3 blocking finding.
