@@ -2,7 +2,7 @@
   "featureName": "spawn-funding-swap",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "1b",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -27,19 +27,54 @@
       "to": "1b",
       "timestamp": "2026-07-10T09:22:38.164Z",
       "reason": "Spec revision (iter3->iter4 prep): fixed spec-review iter3 FIND-001/FIND-002 (REQ-003 checkSourceFunded comparand named two contradictory ways/units) by unifying to a single explicit bigint base-unit name (requiredBaseUnits) routed through REQ-012 toBaseUnits choke point, consistent across behavioral-spec.md EARS/Acceptance-Criteria/pure-fn-signature and verification-architecture.md pure-fn signature; added a nonzero-balance discriminating fixture to PROP-005/PROP-006 (baseUsdcBalance=5000000n vs requiredBaseUnits=15320000n) that fails a wrong-unit float comparison; made PROP-019 illustrative fixtures use a consistent SWAP_MAX_USD=20 value (non-blocking cleanup)."
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-10T10:35:48.658Z",
+      "reason": "spec-review iter6 PASS reached"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-10T10:36:09.986Z",
+      "reason": "spec-review PASS+approved, entering TDD RED",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-10T10:54:10.309Z",
+      "reason": "RED evidence recorded (sprint-1), entering GREEN",
+      "sprint": 1
     }
   ],
   "iterations": {
     "1a": 2,
-    "1b": 3
+    "1b": 3,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1
   },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-spawn-funding-swap-1783672828304",
     "beads": []
   },
-  "gates": {},
-  "sprintCount": 0,
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T10:36:09.979Z",
+      "reviewedBy": "human",
+      "details": "operator sign-off: fresh-Opus adversary iter6 PASS 0-blocking; spec-review closed",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-10T10:35:48.661Z",
+      "humanVerdict": "PASS",
+      "humanApproved": true,
+      "humanApprovedAt": "2026-07-10T10:36:09.979Z"
+    }
+  },
+  "sprintCount": 1,
   "createdAt": "2026-07-10T08:40:28.303Z",
-  "updatedAt": "2026-07-10T09:22:38.165Z"
+  "updatedAt": "2026-07-10T10:54:10.310Z"
 }
