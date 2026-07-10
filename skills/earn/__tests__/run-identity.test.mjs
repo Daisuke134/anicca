@@ -9,12 +9,35 @@ import assert from "node:assert/strict";
 import { promises as fs } from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { execFile } from "node:child_process";
+import { execFile, execFileSync } from "node:child_process";
 import { promisify } from "node:util";
 import { privateKeyToAccount } from "viem/accounts";
 
 const run = promisify(execFile);
 const RUN_SH = new URL("../run.sh", import.meta.url).pathname;
+
+// Portability fix (converge follow-up, closes the PROP-002/PROP-013 test-fixture bug): every test
+// below overrides HOME to a throwaway fixture dir for hermeticity (execFile's `env` option replaces
+// the child's ENTIRE environment). run.sh's own wallet_addr() shells out to `python3 -c "...from
+// eth_account import Account..."`; on machines where eth_account is installed via `pip install
+// --user`, python3 resolves it through a HOME-keyed path (`site.getusersitepackages()`), so
+// overriding HOME breaks that import with a swallowed (2>/dev/null) ModuleNotFoundError -- a test-
+// fixture portability bug, NOT a production regression (production never overrides HOME). Fix: look
+// up the REAL user site-packages dir once, under the REAL (unoverridden) HOME, and pass it through
+// via PYTHONPATH to every fixture invocation below. This changes NOTHING about what is asserted --
+// ANICCA_HOME/HOME/wallet fixtures stay exactly as isolated as before -- it only restores module
+// resolution for the interpreter run.sh already spawns.
+const PYTHON_USER_SITE = (() => {
+  try {
+    return execFileSync(
+      "python3",
+      ["-c", "import site; print(site.getusersitepackages())"],
+      { encoding: "utf8" },
+    ).trim();
+  } catch {
+    return "";
+  }
+})();
 
 async function tmpDir(prefix) {
   return fs.mkdtemp(path.join(os.tmpdir(), prefix));
@@ -38,7 +61,14 @@ async function runDiscover(env) {
   const ledgerDir = await tmpDir("run-identity-ledger-");
   const ledger = path.join(ledgerDir, "earn-ledger.jsonl");
   const { stdout } = await run("bash", [RUN_SH], {
-    env: { PATH: process.env.PATH, EARN_MODE: "discover", EARN_LEDGER: ledger, WAKE_ID: "test-wake", ...env },
+    env: {
+      PATH: process.env.PATH,
+      PYTHONPATH: PYTHON_USER_SITE,
+      EARN_MODE: "discover",
+      EARN_LEDGER: ledger,
+      WAKE_ID: "test-wake",
+      ...env,
+    },
   });
   const raw = (await fs.readFile(ledger, "utf8")).trim().split("\n").filter(Boolean);
   const last = JSON.parse(raw[raw.length - 1]);
@@ -82,15 +112,29 @@ test("PROP-004: automaton's REAL resolution (ANICCA_HOME unset, default $HOME/.a
 });
 
 test("PROP-009: unresolvable identity (no wallet.json anywhere) -> earn-guard HALTs, wake exits 0, zero ledger lines", async () => {
+  // NOTE (converge follow-up): earn/run.sh now HALTs earlier than the old "P1 GUARD" cumulative-net
+  // line for this exact case -- resolve-identity.mjs returns empty, so run.sh's own SIGNKEY check
+  // (run.sh:47-50) fires first, before the P1 GUARD check is ever reached. Confirmed by reading
+  // run.sh directly. The assertion below is updated to match the ACTUAL current HALT log line --
+  // it still proves the same thing PROP-009 requires (fail-closed HALT, exit 0, zero strategy
+  // branches run, zero ledger lines), just at its real (earlier, more specific) HALT point.
   const home = await tmpDir("run-identity-nowallet-");
   const aniccaHome = path.join(home, "no-wallet-instance");
   await fs.mkdir(aniccaHome, { recursive: true }); // exists, but no .automaton/wallet.json inside
   const ledgerDir = await tmpDir("run-identity-nowallet-ledger-");
   const ledger = path.join(ledgerDir, "earn-ledger.jsonl");
   const { stdout } = await run("bash", [RUN_SH], {
-    env: { PATH: process.env.PATH, HOME: home, ANICCA_HOME: aniccaHome, EARN_MODE: "discover", EARN_LEDGER: ledger, WAKE_ID: "test-wake" },
+    env: {
+      PATH: process.env.PATH,
+      PYTHONPATH: PYTHON_USER_SITE,
+      HOME: home,
+      ANICCA_HOME: aniccaHome,
+      EARN_MODE: "discover",
+      EARN_LEDGER: ledger,
+      WAKE_ID: "test-wake",
+    },
   });
-  assert.match(stdout, /P1 GUARD/);
+  assert.match(stdout, /no signing key resolved for this instance.*HALT \(fail-closed\)/);
   await assert.rejects(fs.readFile(ledger, "utf8")); // never created -- zero lines recorded
 });
 
@@ -103,4 +147,59 @@ test("PROP-013: ANICCA_EVM_PRIVATE_KEY set in the ambient parent env (NOT source
   const { wallet } = await runDiscover({ HOME: home, ANICCA_HOME: aniccaHome, ANICCA_EVM_PRIVATE_KEY: pkLeaked });
   assert.equal(wallet, addr(pkA));
   assert.notEqual(wallet, addr(pkLeaked));
+});
+
+test("PROP-003: earn/run.sh never writes a raw private-key-shaped string (0x + 64 hex) to stdout or stderr during a full run", async () => {
+  // Format check, not judgment (verification-architecture.md:75): a fixture wallet whose private
+  // key is KNOWN drives a real discover-mode pass (identity resolution -> P1 earn-guard check ->
+  // narrate-line record, the same full path PROP-002 exercises), and the test asserts the raw key
+  // never appears verbatim in either stream. run.sh only ever exports the key into $PKVAR for a
+  // child process's OWN environment (never echoed) and only prints the DERIVED ADDRESS (via
+  // wallet_addr()) into the ledger JSON / narrate line -- this test proves that discipline holds
+  // for the full captured process output, not just the one field PROP-002 reads back.
+  const home = await tmpDir("run-identity-prop3-");
+  const pk = "0x" + "7".repeat(64);
+  const aniccaHome = path.join(home, "prop3-instance");
+  await writeWalletJson(aniccaHome, pk);
+  const ledgerDir = await tmpDir("run-identity-prop3-ledger-");
+  const ledger = path.join(ledgerDir, "earn-ledger.jsonl");
+  const KEY_SHAPE = /0x[0-9a-fA-F]{64}/;
+
+  // Sanity check FIRST: the fixture key itself must match the pattern we assert against, proving
+  // the regex is a real detector and not vacuously non-matching.
+  assert.match(pk, KEY_SHAPE);
+
+  let stdout = "";
+  let stderr = "";
+  try {
+    const res = await run("bash", [RUN_SH], {
+      env: {
+        PATH: process.env.PATH,
+        PYTHONPATH: PYTHON_USER_SITE,
+        HOME: home,
+        ANICCA_HOME: aniccaHome,
+        EARN_MODE: "discover",
+        EARN_LEDGER: ledger,
+        WAKE_ID: "test-wake",
+      },
+    });
+    stdout = res.stdout;
+    stderr = res.stderr;
+  } catch (err) {
+    // Even on a non-zero exit, still assert on whatever the process did print -- a crash must not
+    // become a loophole for a leaked key to escape this check.
+    stdout = err.stdout || "";
+    stderr = err.stderr || "";
+  }
+
+  assert.doesNotMatch(stdout, KEY_SHAPE, `raw key-shaped string found in stdout: ${stdout}`);
+  assert.doesNotMatch(stderr, KEY_SHAPE, `raw key-shaped string found in stderr: ${stderr}`);
+
+  // Confirm the run actually reached a real resolution (not a trivial early HALT that would make
+  // the above pass vacuously) -- the narrate line must carry the DERIVED address, proving the key
+  // was resolved and used, not just absent because nothing happened.
+  const raw = (await fs.readFile(ledger, "utf8")).trim().split("\n").filter(Boolean);
+  assert.equal(raw.length, 1);
+  const last = JSON.parse(raw[raw.length - 1]);
+  assert.equal(last.wallet, addr(pk));
 });
