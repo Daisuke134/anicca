@@ -5,7 +5,8 @@
 > - **AGENT ECONOMY LOOP**（旧 MAIN loop、`claude-p-mainloop`）= agent economy の **self-heal / self-improve 親ループ**。Dais の check-in 役割を内在化。稼がない純開発者。経済が自走したら**自分を消す**(=claude-p exit=ゴール)。実プロンプト正本=`~/anicca/skills/self/claude-p-mainloop-prompt.txt`。詳細=**§04 §7-10**。
 > - **2-Claude 分業**: 別CC=**CEO loop(founder-loop)+全 earn 事業**(profitable-claude, Dais を rich に) / 私=**AGENT ECONOMY LOOP**(anicca, Franklin の経済を建てる)。
 > - **3-repo**: `anicca`(OSS)=agent economy を創る環境+AGENT ECONOMY LOOP+Franklin harness+earn rail OSS共有コード+agent-economy spec / `profitable-claude`(human-funded)=CEO+事業ランナー / `anicca-products`=製品+(今)この loop-engineering spec。
-> - **現在地/残タスク**: **§10-STATUS-verified** の §D TODO(item0-8) + §E 増分ログ が SSOT。VCSDD feature spec=`~/anicca/.vcsdd/features/*/specs/`。
+> - **★両台帳マージ済みマップ（他CC引き継ぎ正本）= §13-MERGED-COLONY-STATUS★**: 台帳A(`~/anicca/.vcsdd`=earn+self-improve) と 台帳B(`~/anicca-project/.vcsdd`=spawn+CEO+lending) を能力レイヤー別に DONE/IN-FLIGHT/TODO で1枚に。CEO loop・agent-economy・lending は既に complete(別CC)、self-improve-real-ledger は AGENT ECONOMY LOOP が自律 converge 済(PR#937)。
+> - **現在地/残タスク**: **§10-STATUS-verified** の §D TODO + §E 増分ログ が evidence 正本。VCSDD feature spec=**両** `.vcsdd/features/*/specs/`。
 > - **loop 全台帳(30+ を L0-L4)**: §04 §7。**CEO/MAIN 関係**: §04 §8。**呼称/分業/repo**: §04 §9。**このループの動き**: §04 §10。
 >
 > ★物理 spec 移動(loop-engineering → anicca)は #6 refactor で handover パス更新とセット実行(今動かすと走ってる loop の prompt 参照が壊れる)。それまで anicca-products/docs/ が正本。★
