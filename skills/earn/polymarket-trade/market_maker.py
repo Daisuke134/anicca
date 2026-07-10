@@ -74,9 +74,34 @@ def main():
     if not picks:
         print("no profitable maker-bundle market found this pass."); c.close(); return 0
     # MAX_PASS_SPEND: fixed USD ceiling for the TOTAL quoted across all markets this pass (in
-    # addition to the avail*0.9 gate above, take the MIN) — bounds worst-case pass spend to a
+    # addition to the avail*0.98 gate above, take the MIN) — bounds worst-case pass spend to a
     # fixed number regardless of wallet balance (#25 adversary fix).
-    total_budget = min(avail*0.9, MAX_PASS_SPEND)
+    # BUG FIX (2026-07-10): the buffer was 0.9 (10% haircut). Orders rest post_only (price is
+    # locked at placement, no fill-time slippage), so a 10% haircut had no risk-reduction purpose
+    # but silently contradicted the entry gate at line 50 (`avail < MIN_SIZE*1.0`, i.e. "$5.00 is
+    # enough to try"): at exactly the wallet's real balance ($5.00) and typical near-$1 bundle
+    # prices (~$0.98/share, needing ~$4.90 for MIN_SIZE=5), 0.9*5.00=$4.50 could never clear
+    # $4.90 — the wallet was permanently unfundable regardless of the dilution fix above. 0.98
+    # still reserves a real cash buffer while no longer defeating the wallet's own entry gate.
+    total_budget = min(avail*0.98, MAX_PASS_SPEND)
+    # BUG FIX (2026-07-10): dividing total_budget evenly across len(picks) (up to MAX_MARKETS=3)
+    # left per_market_budget below MIN_SIZE*price for weeks whenever total_budget was near the
+    # MAX_PASS_SPEND cap (avail flatlined at $5.00 for 534/15216 earner.log lines; real orders
+    # placed only twice since 2026-07-04) -- the cap made every market unfundable instead of
+    # funding fewer markets fully. Fund as many picks as the budget can actually clear at
+    # MIN_SIZE, cheapest bundle first, instead of pre-dividing among all picks regardless of
+    # viability.
+    picks.sort(key=lambda p: p[0])
+    funded=[]; remaining=total_budget
+    for pick in picks:
+        min_cost = pick[0]*MIN_SIZE
+        if remaining >= min_cost:
+            funded.append(pick); remaining -= min_cost
+    if not funded:
+        print(f"  HOLD: budget ${total_budget:.2f} can't fund even the cheapest bundle "
+              f"(needs ${picks[0][0]*MIN_SIZE:.2f}). No order placed.")
+        c.close(); return 0
+    picks = funded
     per_market_budget = total_budget/len(picks)
     placed=0
     for s,q,yes,no,by,bn in picks:
