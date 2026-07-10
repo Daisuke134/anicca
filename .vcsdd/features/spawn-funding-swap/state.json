@@ -1,0 +1,17 @@
+{
+  "featureName": "spawn-funding-swap",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-spawn-funding-swap-1783672828304",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-10T08:40:28.303Z",
+  "updatedAt": "2026-07-10T08:40:28.303Z"
+}

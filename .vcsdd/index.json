@@ -180,7 +180,15 @@
       "mode": "lean",
       "currentPhase": "2a",
       "updatedAt": "2026-07-08T18:44:22.870Z"
+    },
+    "spawn-funding-swap": {
+      "status": "active",
+      "createdAt": "2026-07-10T08:40:28.303Z",
+      "mode": "strict",
+      "language": "typescript",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-10T08:40:28.303Z"
     }
   },
-  "activeFeature": "capafy-harness"
+  "activeFeature": "spawn-funding-swap"
 }
