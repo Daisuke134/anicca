@@ -33,6 +33,13 @@ def cadence_met(today_jst_date: str, contract: dict, evidence: dict) -> bool:
     kind = contract["kind"]
 
     if kind == "row-exists":
+        # ★ GUARDED (self-heal.md root cause #1, 2026-07-11): this dispatch trusts event_dates
+        # completely — never loosen it (e.g. to "within N days" or "any attempt logged") without a
+        # fresh-context adversary review. cadence-evidence.py is the layer responsible for making
+        # sure a date only ever lands in event_dates when the day's contracted work genuinely
+        # happened (see its GUARDED EXIT-CRITERIA comment above _video_warmup_attempted_event_dates)
+        # — a bug there (accepting "attempted" as "advanced") already once made this line silently
+        # report a real 4-day stall as healthy. This line itself stays a strict membership check. ★
         return today_jst_date in evidence.get("event_dates", [])
 
     if kind == "increment":

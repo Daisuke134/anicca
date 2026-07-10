@@ -78,24 +78,51 @@ chk("video: empty ledger, not warming -> met=false (honest, never fabricated)", 
 del os.environ["EARN_VIDEO_METRICS_PATH"]
 del os.environ["EARN_VIDEO_STATE_PATH"]
 
-# video during onboarding warmup (state.status=='warming'): a real S1_warmup audit line today
-# satisfies cadence even though the post-metrics ledger is empty (REQ-LV-1xx warmup-aware fix —
-# posting is gated on warmup_day>=7 by design, so requiring a POST during warmup misfires daily).
-video_metrics2 = os.path.join(TMP, "video-metrics2.jsonl")
-write_jsonl(video_metrics2, [])
+# video during onboarding warmup (state.status=='warming'): self-heal.md root cause #1 — commit
+# ab4a39a4 (a self-fix pass) made ANY S1_warmup audit line satisfy cadence, including "INCOMPLETE
+# ... day NOT advanced". Real production data (~/.cloak/earn-video-audit-money_blueprintdaily.jsonl)
+# proved this a Goodhart bug: state.warmup_day sat at 4 for 4 straight days (07-08..07-11) while this
+# read ✅posted-today (streak=2) the whole time. The GUARDED EXIT-CRITERIA fix (cadence-evidence.py)
+# requires the day to have ACTUALLY ADVANCED (a real 'day→N' line), never merely "attempted".
 video_state_warming = os.path.join(TMP, "video-state-warming.json")
 with open(video_state_warming, "w") as f:
     json.dump({"status": "warming", "warmup_day": 4}, f)
-video_audit = os.path.join(TMP, "video-audit.jsonl")
-write_jsonl(video_audit, [
+
+# --- regression-lock: the EXACT real production `did` strings quoted in self-heal.md (2026-07-11
+# incident) must classify correctly — this is the fixture a future self-fix pass must not be able
+# to quietly flip back to met=true without breaking this test. ---
+video_metrics_incomplete = os.path.join(TMP, "video-metrics-incomplete.jsonl")
+write_jsonl(video_metrics_incomplete, [])
+video_audit_incomplete = os.path.join(TMP, "video-audit-incomplete.jsonl")
+write_jsonl(video_audit_incomplete, [
     {"date": TODAY, "handle": "money_blueprintdaily", "transition": "S1_warmup",
-     "did": "warmup INCOMPLETE: only 2 real views (<3) — day NOT advanced", "earned_usdc": 0.0},
+     "did": "warmup INCOMPLETE: only 0 real views (<3) — day NOT advanced", "earned_usdc": 0.0},
 ])
-os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics2
+os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics_incomplete
 os.environ["EARN_VIDEO_STATE_PATH"] = video_state_warming
-os.environ["EARN_VIDEO_AUDIT_PATH"] = video_audit
+os.environ["EARN_VIDEO_AUDIT_PATH"] = video_audit_incomplete
 status = CE.status_for_loop("video")
-chk("video: warming + real S1_warmup attempt today -> met=true (no false daily miss during bootstrap)",
+chk("video: warming + REAL 'day NOT advanced' line (2026-07-11 prod incident) -> met=false "
+    "(Goodhart fix — attempt alone no longer satisfies cadence)", status["met"], False)
+del os.environ["EARN_VIDEO_METRICS_PATH"]
+del os.environ["EARN_VIDEO_STATE_PATH"]
+del os.environ["EARN_VIDEO_AUDIT_PATH"]
+
+# video during warmup with a REAL advance (the exact success-path template run.sh writes,
+# skills/earn/video/run.sh: DID="warmup day→$(wday) (real reels watched=$WATCHED)") must satisfy
+# cadence — the exit-criteria check is "did the day advance", not "was there zero activity".
+video_metrics_advanced = os.path.join(TMP, "video-metrics-advanced.jsonl")
+write_jsonl(video_metrics_advanced, [])
+video_audit_advanced = os.path.join(TMP, "video-audit-advanced.jsonl")
+write_jsonl(video_audit_advanced, [
+    {"date": TODAY, "handle": "money_blueprintdaily", "transition": "S1_warmup",
+     "did": "warmup day→4 (real reels watched=4)", "earned_usdc": 0.0},
+])
+os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics_advanced
+os.environ["EARN_VIDEO_STATE_PATH"] = video_state_warming
+os.environ["EARN_VIDEO_AUDIT_PATH"] = video_audit_advanced
+status = CE.status_for_loop("video")
+chk("video: warming + real 'day→N' advance line -> met=true (genuine progress still passes)",
     status["met"], True)
 del os.environ["EARN_VIDEO_METRICS_PATH"]
 del os.environ["EARN_VIDEO_STATE_PATH"]
