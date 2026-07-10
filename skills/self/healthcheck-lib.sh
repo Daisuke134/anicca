@@ -28,6 +28,31 @@ hc_is_stuck_pane() {
     && ! printf '%s' "$pane" | grep -qE 'esc to interrupt'
 }
 
+# FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full data volume stops macOS growing its
+# swapfile, which surfaces as intermittent fork() failures ("Resource temporarily unavailable") for EVERY
+# new process on the box — including this script's own tmux/pkill calls (seen directly in launchd's error
+# log) and every fresh `claude` spawn. A loop that is already DEAD needs a FRESH spawn every cycle, so it
+# eats this failure on every single restart while already-idle sessions (needing no new fork) sail through
+# — the loop can starve indefinitely even though its own code is fine. Reclaim only caches that are 100%
+# regenerable package-manager/updater caches (never model weights like whisper/ollama/HF, never
+# claudevm/colima — those need Dais approval per disk-hygiene policy) so a respawn actually has room to
+# start. Cheap (~1s) when disk is fine; only doing real work under the low-disk condition.
+hc_reclaim_disk_if_low() {
+  local free_gb; free_gb="$(df -g /System/Volumes/Data 2>/dev/null | awk 'NR==2{print $4}')"
+  [ -z "${free_gb:-}" ] && free_gb="$(df -g / 2>/dev/null | awk 'NR==2{print $4}')"
+  [ -z "${free_gb:-}" ] && return 0
+  [ "$free_gb" -ge 3 ] 2>/dev/null && return 0
+  echo "$(date '+%F %T') disk low (${free_gb}GB free) → reclaiming safe regenerable caches before respawn" >> "${LOG:-/dev/null}"
+  command -v npm >/dev/null 2>&1 && npm cache clean --force >/dev/null 2>&1
+  rm -rf "$HOME/.cache/uv" 2>/dev/null
+  rm -rf "$HOME/Library/Caches/com.anthropic.claudefordesktop.ShipIt"/* 2>/dev/null
+  rm -rf "$HOME/Library/Caches/camoufox"/* 2>/dev/null
+  rm -rf "$HOME/Library/Caches/node-gyp"/* 2>/dev/null
+  rm -rf "$HOME/Library/Caches/pip"/* 2>/dev/null
+  command -v brew >/dev/null 2>&1 && brew cleanup -s >/dev/null 2>&1
+  return 0
+}
+
 # FIND-020/026/031: acquire a per-loop lock. mkdir is atomic (one winner). A FRESH lock (<10min) = a live run → refuse
 # (return 1). A STALE lock (>=10min, = a hard-killed prior run) is stolen with rm -rf (works even though the lock dir
 # is NON-EMPTY due to the owner file — plain rmdir would fail and permanently disable self-heal). After (re)creating,
@@ -68,6 +93,7 @@ hc_run() {
     if [ -f "$RESTART_LOG" ]; then while IFS= read -r ts; do [ -n "$ts" ] && [ $(( now - ts )) -le 3600 ] && count=$(( count+1 )); done < "$RESTART_LOG"; fi
     if [ "$count" -ge 5 ]; then _selffix "the $LOOP loop keeps dying/stalling ($count restarts/60min; last reason: $reason). Diagnose why its cli.sh/STARTUP won't run a healthy pass and fix it."; return; fi
     echo "$now" >> "$RESTART_LOG"; pkill -f "claude --name $SESSION" 2>/dev/null||true; pkill -f "tmux -S $SOCK new-session" 2>/dev/null||true; sleep 1
+    hc_reclaim_disk_if_low
     echo "$(date '+%F %T') $reason → restart" >> "$LOG"; bash "$CLI" --restart >> "$LOG" 2>&1||true
   }
 
