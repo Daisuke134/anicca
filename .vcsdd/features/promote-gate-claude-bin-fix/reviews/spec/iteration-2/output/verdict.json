@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 0,
+  "feature": "promote-gate-claude-bin-fix",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T08:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "spec",
+    "priorIteration": 1,
+    "priorFindingsResolved": ["FIND-001", "FIND-002"]
+  },
+  "toolConstraintNote": "This adversary instance had no Bash/execution tool available (tool set limited to Read/Write/Edit/Grep/Glob). Task step 3 asked for a live `pytest` run; that could not be literally executed. In its place, all 5 tests in skills/earn/self-improve/tests/test_resolve_claude_bin.py were manually, deterministically traced line-by-line against the exact current source of lib/promote_gate_run.py's `_resolve_claude_bin()` (lines 93-111) -- every test fully monkeypatches shutil.which/os.path.isfile/os.access (no real filesystem, no timing/concurrency dependency), so this trace is a sound substitute for execution w.r.t. logical correctness, though it cannot rule out a Python syntax/import/collection error. Static read confirms: lib/__init__.py exists (from lib import promote_gate_run is a normal package import, not a namespace-package risk), tests/conftest.py puts skills/earn/self-improve/ on sys.path, and the test file itself is syntactically well-formed (read in full).",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111", "description": "Current implementation: `_CLAUDE_BIN_DEFAULT = \"/opt/homebrew/bin/claude\"`; `_CLAUDE_BIN_KNOWN_GOOD_PATHS = (expanduser(~/.local/bin/claude), _CLAUDE_BIN_DEFAULT, /usr/local/bin/claude)`; `_resolve_claude_bin()` returns `shutil.which('claude')` if truthy, else the first candidate in the tuple where `os.path.isfile(candidate) and os.access(candidate, os.X_OK)`, else `_CLAUDE_BIN_DEFAULT`. This is a byte-for-byte match to REQ-CB1 (PATH-hit unchanged), REQ-CB2 (ordered known-good list, first EXISTING+EXECUTABLE wins, exact path order ~/.local/bin -> /opt/homebrew/bin -> /usr/local/bin), and REQ-CB3 (final fallback literal preserved)."},
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md:6-12", "description": "5 PROP-CB rows (CB1, CB2, CB2b, CB2c, CB3) at Tier 1 plus PROP-CB4 at Tier 0 map 1:1 onto REQ-CB1..CB4; verified each row's stated test method matches an actual test in the test file (see edge_case_coverage evidence)."},
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:170-200", "description": "`_invoke_adversary` still calls `_resolve_claude_bin()` exactly once (line 171) and still only catches `subprocess.TimeoutExpired`/`FileNotFoundError` (lines 197-200) -- confirms REQ-CB4 (no collateral behavior change to prompt construction, subprocess invocation, JSON parsing, or promotion decision logic); everything outside lines 93-111 that was present at iteration 1 is unchanged."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:85-110", "description": "FIND-001 RESOLVED. `test_which_miss_skips_candidate_that_exists_but_is_not_executable` sets `fake_isfile` True for BOTH candidates but `fake_access` True only for the SECOND (`/opt/homebrew/bin/claude`). Manual trace against the current implementation: candidate 1 (~/.local/bin/claude) -> isfile True, access False -> condition False -> loop continues (not returned); candidate 2 -> isfile True, access True -> returned. Result == '/opt/homebrew/bin/claude', `mocked_access.call_count >= 2` (both candidates' executable bit actually probed). This exactly closes the FIND-001 gap: a stale/non-executable file at an earlier candidate path is now provably skipped in favor of the next executable candidate, and PROP-CB2c's description ('exists but not executable ... skips it and returns the next candidate that IS executable') matches the test verbatim."},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:65-82", "description": "`test_which_miss_prefers_local_bin_over_homebrew_when_both_exist` (PROP-CB2b) sets BOTH candidates existing+executable via `fake_exists`; traced against the implementation's `for candidate in _CLAUDE_BIN_KNOWN_GOOD_PATHS` loop, candidate 1 (~/.local/bin/claude) is checked and returned first, proving list-order precedence rather than 'any matching candidate' -- this closes the ordering gap FIND-002 flagged as untested."},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:20-63", "description": "Remaining 3 tests (PATH-hit short-circuit / single-fallback-exists / nothing-exists-returns-default) traced and confirmed to match the implementation exactly, including the deliberate `os.path.isfile.assert_not_called()` and `call_count >=` non-tautology assertions designed to fail against the OLD, pre-fix implementation."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:104-111", "description": "The 8-line `_resolve_claude_bin()` body is unambiguous, has a single well-defined impure boundary (env + 2 filesystem stat/access calls per candidate), and every branch (PATH hit / ordered-candidate hit / total miss) traces to exactly one REQ-CB requirement with no undefined behavior. Not modified since iteration 1's PASS verdict on this dimension (confirmed unchanged: same 3-branch shape, same constants); only the spec/test artifacts describing it were revised in this round."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:31,93-94", "description": "New module-level private constants `_CLAUDE_BIN_DEFAULT`/`_CLAUDE_BIN_KNOWN_GOOD_PATHS` follow the file's own pre-existing `_SELF_IMPROVE_DIR` (line 31) underscore-prefix convention for module-internal constants -- no new naming inconsistency introduced."},
+        {"type": "file", "location": "skills/earn/self-improve/lib/__init__.py", "description": "Confirmed to exist (glob), making `from lib import promote_gate_run` in the new test file a normal package import consistent with the other 12 pre-existing test files in this package, not a namespace-package risk."},
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md:22-30", "description": "FIND-002 RESOLVED. Test Plan section now states the correct path `skills/earn/self-improve/tests/test_resolve_claude_bin.py` (verified this exact path exists via Glob and Read) and correct count '5 tests total, one per PROP-CB1 / PROP-CB2 / PROP-CB2b / PROP-CB2c / PROP-CB3' -- counted exactly 5 `def test_` functions in the actual file, with a verified 1:1 mapping (test_path_hit_...->CB1, test_which_miss_falls_back_...->CB2, test_which_miss_prefers_local_bin_...->CB2b, test_which_miss_skips_candidate_...->CB2c, test_which_miss_and_no_fallback_...->CB3). No stray `lib/tests/` reference remains anywhere in the document."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md:14-20", "description": "Purity Boundary Map correctly states `_resolve_claude_bin()` is impure (env + filesystem) and that tests isolate it via monkeypatching all 3 I/O boundary calls -- verified true against the actual test file (every one of the 5 tests patches `shutil.which`, and either `os.path.isfile`/`os.access` explicitly, or documents why not, e.g. test 1's `isfile.assert_not_called()`)."},
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md:32-39", "description": "Tier rationale (Tier 1 unit test sufficient, no Tier 2/3 needed) is appropriately scoped for an 8-line, no-concurrency, no-untrusted-input path-selection function -- not an over- or under-claim of rigor."},
+        {"type": "manual-trace", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py (all 5 tests)", "description": "Full deterministic manual trace (documented above, per-test, in edge_case_coverage evidence) confirms every assertion in every test currently holds against the actual, unmodified `_resolve_claude_bin()` source. Could not literally invoke `pytest` in this session (no Bash tool available to this adversary instance) -- see toolConstraintNote at top level of this verdict."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 2,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}
