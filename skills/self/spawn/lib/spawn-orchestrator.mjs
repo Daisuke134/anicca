@@ -117,6 +117,18 @@ async function runStep({ ledgerFile, childId, nowMs, run, requireOk = false, def
   return { failed: false, value: result };
 }
 
+// Money-safety fix (Phase-5 finding: crash-window double-append -- see
+// verification/proof-harnesses/finding-money-safety-registry-retry-crash-window.mjs in the
+// anicca-agent-spawn feature ledger): retryPendingRegistryAppends' own two-step sequence --
+// (1) await append(citizens_registry_file, citizen_record) then (2) resolvePendingRegistryAppend --
+// is NOT atomic. A process crash/SIGKILL/OOM-kill between (1) landing and (2) marking the queue entry
+// resolved leaves that entry still "pending", so the NEXT wake's retry re-drives the SAME entry and
+// calls THIS function a second time for the SAME record. Making the append idempotent by id closes the
+// gap at its source: a re-drive becomes a genuine no-op instead of a duplicate row, so
+// computeColonySurplusUsd/computePerCitizenSurplusUsd (treasury-gate.mjs) can never double-count that
+// citizen's balance into a real-money spawn-eligibility decision. Applies identically to BOTH call
+// sites (the first-attempt append at step 9, below, and every retryPendingRegistryAppends re-drive) --
+// there is only ever one appendCitizenRecord implementation, never a second, independently-written one.
 async function appendCitizenRecord(citizensRegistryFile, record) {
   let records = [];
   try {
@@ -124,6 +136,7 @@ async function appendCitizenRecord(citizensRegistryFile, record) {
   } catch (e) {
     if (e.code !== "ENOENT") throw e;
   }
+  if (records.some((r) => r && r.id === record.id)) return; // already present -- re-drive is a no-op
   records.push(record);
   await fsp.mkdir(path.dirname(citizensRegistryFile), { recursive: true });
   await fsp.writeFile(citizensRegistryFile, JSON.stringify(records, null, 2));

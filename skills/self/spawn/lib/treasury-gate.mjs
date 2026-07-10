@@ -40,6 +40,34 @@ export function computeColonySurplusUsd({ citizens = [], perCitizenReserveUsd = 
   return computePerCitizenSurplusUsd({ citizens, perCitizenReserveUsd }).reduce((sum, p) => sum + p.surplusUsd, 0);
 }
 
+// Money-safety defense-in-depth (Phase-5 finding: crash-window double-append -- see
+// verification/proof-harnesses/finding-money-safety-registry-retry-crash-window.mjs in the
+// anicca-agent-spawn feature ledger). citizens.json is the untrusted, durable file
+// spawn-orchestrator.mjs's appendCitizenRecord writes to; appendCitizenRecord is itself now made
+// idempotent by id (the primary fix, at the write layer), but a caller reading citizens.json (real
+// production caller: wake-gate.mjs, BEFORE computeColonySurplusUsd is ever called) applies THIS pure
+// dedup as a backstop -- a duplicate-id entry, from any cause, can never double-count that citizen's
+// own surplus contribution into a real-money spawn-eligibility decision. Deliberately NOT called from
+// inside computePerCitizenSurplusUsd/computeColonySurplusUsd themselves: those two functions' own
+// tested contract (PROP-101i, treasury-gate.property.test.mjs) is exactly one output record per INPUT
+// citizen entry, over an already-trusted-shape array -- callers apply this dedup at the point they load
+// the untrusted file, not inside the pure aggregation math. Last occurrence's data wins per id (mirrors
+// groupLedgerRowsByChildId's own last-write-wins convention above), at that id's FIRST position (stable
+// order). An entry with a missing/non-string id passes through unfiltered, never silently dropped
+// (consistent with PROP-101l's own null-entry-passthrough contract).
+export function dedupCitizensById(citizens = []) {
+  const lastById = new Map();
+  const withoutId = [];
+  for (const citizen of citizens) {
+    if (citizen && typeof citizen.id === "string") {
+      lastById.set(citizen.id, citizen);
+    } else {
+      withoutId.push(citizen);
+    }
+  }
+  return [...lastById.values(), ...withoutId];
+}
+
 // REQ-101: cross-references the registry (citizens) against ledger.js's own rows (ledgerRows,
 // matched by id===child_id), reduced last-write-wins per child_id BEFORE applying the exclusion
 // rule: excluded if the effective row is "bootstrap_failed", or "active" with a missing/non-finite

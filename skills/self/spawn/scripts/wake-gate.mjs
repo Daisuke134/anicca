@@ -23,6 +23,7 @@ import {
   countChildrenProvisioning,
   deriveMeasuredShelterCostUsd,
   decideColonySpawn as decideColonySpawnPure,
+  dedupCitizensById,
 } from "../lib/treasury-gate.mjs";
 import { readCitizenBalances } from "../lib/colony-balances.mjs";
 import { ensureCitizensRegistry as ensureCitizensRegistryReal, CITIZENS_SEED_PATH } from "../lib/citizens-registry.mjs";
@@ -131,6 +132,11 @@ export async function runWakeGate({ argv = [], env = process.env, deps = {} } = 
     await ensureCitizensRegistry({ registryPath });
     citizens = JSON.parse(fs.readFileSync(registryPath, "utf8"));
   }
+  // Money-safety backstop (Phase-5 finding): citizens.json is the untrusted, durable file a crash-window
+  // retry re-drive could have double-appended into (see appendCitizenRecord's own idempotency-by-id fix,
+  // spawn-orchestrator.mjs) -- dedup by id here, BEFORE any surplus computation, so a duplicate entry (from
+  // any cause) can never double-count into colonySurplusUsd, a real-money spawn-eligibility input.
+  citizens = dedupCitizensById(citizens);
 
   const ledgerFile = deps.ledgerFile || path.join(resolveStateDir({}), "children.jsonl");
   const readLedgerRows = deps.readChildren || readChildren;
