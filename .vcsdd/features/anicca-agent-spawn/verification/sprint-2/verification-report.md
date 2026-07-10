@@ -23,7 +23,7 @@ of the sprint-2 files. It does **not** re-litigate sprint-1's own 76 already-pro
 | Full sprint-2 target-feature test suite | **206/206 passing** (fresh run this session — `verification/fuzz-results/sprint-2-full-suite-206-run.log`) |
 | Security static analysis (sprint-2 files) | Semgrep `--config=auto --config=p/security-audit --config=p/secrets`: **0 findings**, 206 rules, 5 files — `verification/security-results/semgrep-sprint2-raw.json` |
 | Purity boundary audit (sprint-2 files) | No drift against `specs/verification-architecture.md`'s declared classifications — see `sprint-2/purity-audit.md` |
-| **New finding this pass (not one of the 7 targeted PROPs, not blocking)** | Money-safety-adjacent crash-window gap in `retryPendingRegistryAppends` — see "New finding" section below |
+| **New finding this pass (not one of the 7 targeted PROPs, not blocking)** | Money-safety-adjacent crash-window gap in `retryPendingRegistryAppends` — **RESOLVED same-day, see "Money-safety finding — RESOLVED" section below** (idempotent `appendCitizenRecord` + `dedupCitizensById` backstop, 2 new regression tests, 208/208 full suite green) |
 
 ## PROP → verification-architecture.md anchor mapping (exact, per this feature's own naming convention)
 
@@ -238,7 +238,88 @@ sprint's `run.sh` rewrite. This does not affect PROP-307e's own pass condition (
 `run.sh`'s code and `skills/registry.json`'s `riskNote`, both correct), but is a genuine documentation gap
 worth a follow-up edit; not required to block this obligation or Phase 6.
 
-## New finding this pass (NOT one of the 7 targeted PROPs — reported for honesty, not blocking)
+## Money-safety finding — RESOLVED (post-Phase-5 fix, same sprint-2 addendum)
+
+**Status update (2026-07-10, later same day): RESOLVED.** The finding reported in the section directly
+below ("New finding this pass") was fixed via a fresh, dedicated VCSDD builder pass over
+`~/anicca/skills/self/spawn/`. Both of the finding's own two "Recommendation" options were implemented
+(defense-in-depth, not either/or):
+
+1. **Primary fix, at the write layer** — `spawn-orchestrator.mjs::appendCitizenRecord` is now idempotent
+   by `id`: before pushing a new record, it checks whether a record with that `id` already exists in the
+   parsed `citizens.json` array, and returns (no-op) if so, instead of appending. This is the SOLE
+   `appendCitizenRecord` implementation (there is no second, independently-written one) — the fix applies
+   identically to BOTH call sites: the first-attempt append at `executeSpawnAttempt`'s own step 9, and
+   every `retryPendingRegistryAppends` re-drive. A crash between a re-drive's append landing and
+   `resolvePendingRegistryAppend` marking the entry resolved therefore can no longer produce a duplicate
+   `citizens.json` row — the next wake's retry of the still-`"pending"` entry is a genuine no-op.
+2. **Backstop, at the aggregation-call layer** — a new exported pure function, `treasury-gate.mjs::
+   dedupCitizensById({citizens}) → citizens[]` (dedups by `id`, last-occurrence-wins values at
+   first-occurrence position, a null/non-string-`id` entry passed through unfiltered), is called by
+   `wake-gate.mjs::runWakeGate` immediately after reading `citizens.json`, BEFORE `filterProductiveCitizens`/
+   `readCitizenBalances`/`computeColonySurplusUsd` ever run. **Deliberately NOT called from inside
+   `computePerCitizenSurplusUsd`/`computeColonySurplusUsd` themselves** — those two functions' own tested
+   contract (PROP-101i, `treasury-gate.property.test.mjs`) is exactly one output record per INPUT citizen
+   entry over an already-trusted-shape array; folding a dedup into them would have silently changed that
+   already-`proved` contract and broken the existing `fast-check` property test (which intentionally
+   generates citizen fixtures with possibly-colliding random `id` values and asserts `perCitizen.length ===
+   citizens.filter(...).length` over the RAW input). The dedup instead lives at the one real production
+   point where the untrusted file is loaded, exactly where a genuine duplicate would appear.
+
+**Purity Boundary Map**: `specs/verification-architecture.md`'s "Purity Boundary Map (file/function level)"
+now has dedicated rows for `pending-registry-append.js` and `wake-gate.mjs` (added directly after the
+`run.sh` row, closing `sprint-2/purity-audit.md`'s own flagged Map-table completeness gap), each noting
+this fix.
+
+**New/updated regression tests** (both money-safety-labeled, both PASS in the full suite re-run below):
+- `spawn-orchestrator.test.mjs` — `"money-safety: a crash-window re-drive of an already-completed pending
+  registry-append is a no-op -- never a duplicate citizens.json row, never a doubled colonySurplusUsd"`:
+  queues a pending entry, retries it (genuine first completion), then re-queues a FRESH `"pending"` row for
+  the SAME `child_id` (modeling the observable state a lost `resolvePendingRegistryAppend` write leaves
+  behind — `pending-registry-append.js`'s own documented last-row-wins rule makes the entry outstanding
+  again), retries a second time against the REAL, unmocked `retryPendingRegistryAppends`/
+  `appendCitizenRecord`, and asserts exactly ONE `citizens.json` record survives and
+  `computeColonySurplusUsd` reports the correct, non-doubled `$35` (not `$70`) for the fixture — mirrors the
+  Phase-5 finding harness's own fixture/assertions.
+- `wake-gate.test.mjs` — `"money-safety: a duplicate-id citizens.json entry never doubles colonySurplusUsd
+  (dedupCitizensById backstop)"`: seeds `citizens.json` with two id-duplicated entries directly (the
+  on-disk shape a crash-window re-drive would have produced pre-fix) and asserts a real `runWakeGate` call
+  reports `colonySurplusUsd: 35`, not `70` — proves the backstop independently of the write-layer fix.
+
+**Fresh full-suite re-run this same session** (target-feature + regression baseline, exact command per this
+task's own instructions):
+```
+cd ~/anicca && node --test skills/self/spawn/lib/__tests__/*.test.mjs skills/self/spawn/lib/__tests__/*.test.js
+# tests 208, pass 208, fail 0, cancelled 0, skipped 0, todo 0
+```
+208 = the pre-existing 206 (unchanged, all still green — no regression) + the 2 new money-safety tests
+above.
+
+**Honesty note on re-running the ORIGINAL harness file**: `verification/proof-harnesses/finding-money-
+safety-registry-retry-crash-window.mjs` is NOT re-run as a live regression check against the fix — by its
+own header comment, it deliberately REIMPLEMENTS `appendCitizenRecord`'s pre-fix logic locally ("this
+harness must not modify production source to add a test-only export"), so re-invoking it verbatim will
+always reproduce the ORIGINAL (pre-fix) finding, as a frozen point-in-time proof that the bug genuinely
+existed — it is left unmodified and unexecuted-as-a-check here, exactly as designed. The two new tests
+above import and exercise the REAL, current, now-fixed `appendCitizenRecord`/`retryPendingRegistryAppends`/
+`dedupCitizensById` production code directly, and are the actual live proof the fix holds.
+
+**No spend cap, `isSelfFunded` gate, treasury-gate check, or `scope_guard` was weakened.**
+`decideColonySpawn`'s own surplus/cooldown/concurrency-cap checks (`treasury-gate.mjs`) are byte-identical;
+`isSelfFunded`/`selfFundedReasons` (`_shared/lib/is-self-funded.mjs`) is untouched; the `"colony-spawn"`
+lock (`REQ-103`) is untouched. The fix is strictly additive (an idempotency guard + a dedup helper);
+`decideColonySpawn`'s existing 25+ tests (`PROP-102*`) all re-ran green, unmodified, in the 208/208 run
+above.
+
+**Commits** (`~/anicca` repo): `fix(spawn): idempotent citizen-append prevents crash-window double-count of
+colony surplus (money-safety)`. **Commits** (`~/anicca-project` repo, this ledger + spec update): this same
+`verification-report.md` edit + `specs/verification-architecture.md`'s two new Purity Map rows.
+
+`state.json`'s `phase` is intentionally NOT advanced by this pass — per this task's own explicit
+instruction, this is a targeted money-safety fix + regression-evidence pass, not a Phase 6 convergence
+claim.
+
+## New finding this pass (NOT one of the 7 targeted PROPs — reported for honesty, not blocking) — historical record, see "RESOLVED" section above for the fix
 
 While re-confirming the task's explicit money-safety hard gate "durable registry-append retry does not
 double-append", this session found a genuine narrow-window gap: `retryPendingRegistryAppends`
