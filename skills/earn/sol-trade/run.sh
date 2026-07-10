@@ -28,7 +28,11 @@ command -v franklin-trading >/dev/null || { echo "franklin-trading CLI missing" 
 # IDENTITY-MATCH GUARD (money-safety): the franklin-trading CLI hardcodes its wallet to ~/.blockrun,
 # so ANY instance running this slot would trade Franklin's wallet. Only the instance that OWNS
 # ~/.blockrun (Franklin) may proceed; every other instance (automaton) HALTs before touching the CLI.
-WADDR="$SKILL_DIR/../../../runtime/wallet-address-solana.mjs"
+# NOTE(2026-07-10 regression fix): the daemon rsyncs only skills/ into $ANICCA_HOME, NOT runtime/,
+# so a $SKILL_DIR-relative path resolves to a non-existent ~/.blockrun/runtime/ in the deployed copy
+# and made this guard skip EVERY wake since commit 3d97c59. Resolve via $ANICCA_REPO (daemon-exported,
+# rsync-independent) instead; fall back to the repo-relative path for in-repo test runs.
+WADDR="${ANICCA_REPO:-$SKILL_DIR/../../..}/runtime/wallet-address-solana.mjs"
 OWN_WALLET=$(node "$WADDR" 2>/dev/null)
 CLI_WALLET=$(ANICCA_HOME="$HOME/.blockrun" node "$WADDR" 2>/dev/null)
 if [ -z "$OWN_WALLET" ] || [ -z "$CLI_WALLET" ] || [ "$OWN_WALLET" != "$CLI_WALLET" ]; then
