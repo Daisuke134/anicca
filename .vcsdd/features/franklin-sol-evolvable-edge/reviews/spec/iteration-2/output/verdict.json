@@ -1,0 +1,81 @@
+{
+  "feature": "franklin-sol-evolvable-edge",
+  "phase": "spec",
+  "iteration": 2,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T04:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md:269-309 (REQ-012b)",
+          "description": "FIND-001 CONFIRMED CLOSED. REQ-012b defines attributeGenomeIdSol(ledgerRow, traceLines) as a PURE, TIMESTAMP-ONLY nearest-preceding-match join (tLine.ts <= ledgerRow.ts, take MAX such ts), explicitly stating NO market/task/mint field comparison. Rationale is independently grounded: sol-trade/run.sh:65-105 (read directly) runs franklin-trading start SYNCHRONOUSLY (blocking `timeout 600 ...`) and appends the live-pass trace line as the LAST step, and record-swap.mjs:44 only ever extracts/records the LAST swap signature per pass -- so 'at most one genome-linked line precedes at most one confirmed swap per pass' is a real, verified invariant, not an assumption. Edge cases explicitly cover: multiple preceding lines -> nearest/largest ts wins (not earliest, not blended); tie (ts equal) -> treated as <=, matching REQ-012's own contract; none preceding -> null (unattributed, REQ-013's 'no genome' path); multi-genome sequences -> each swap independently resolves to ITS OWN nearest-preceding genome_id, explicit no-misattribution-across-a-mutation-boundary clause. record-swap.mjs:19 (task = fixed constant 'jupiter swap round-trip') independently re-verified as the reason PM's market===task key cannot apply to SOL."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md:311-349 (REQ-013)",
+          "description": "FIND-002 CONFIRMED CLOSED. REQ-013 now has an explicit 'EARS (accumulation field -- MUST)' clause binding realized_usdc to Number(row.net_usdc || 0), win-or-loss, and explicitly forbids summing row.earn_usdc alone. Independently re-verified against ground truth: skills/_shared/lib/ledger.mjs:11-37 deriveLine() computes net_usdc = round(earn_usdc - cost_usdc) and stores it on EVERY ledger row (including sol-trade rows, since record.mjs:18-24 routes ALL sources through the same deriveLine()); record-swap.mjs:43-45 confirms earn_usdc is WIN-ONLY (delta>0?delta:0, always 0 on a loss) -- so the spec's claim that summing earn_usdc alone would hide losses and let a net-losing genome falsely clear REQ-014's net-positive floor is factually correct, not speculative. Edge case + acceptance criteria now require a genome whose only counted rows are net-negative to yield a negative summed realized_usdc (not merely excluded rows)."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md:374-408 (REQ-015)",
+          "description": "FIND-003 CONFIRMED CLOSED. REQ-015 now carries an explicit 'EARS (reuse mandate -- MUST, same rationale as REQ-014)' clause requiring literal import-and-call of evolve.mjs's exported promote(genome, {canonicalPath, cwd}) UNCHANGED, with an explicit 'MUST NOT be authored' clause for a hand-written SOL-specific git-commit implementation, mirroring REQ-014's no-reimplementation mandate word-for-word in structure. Independently re-verified against evolve.mjs:169-195: promote() is exported (export function promote) and IS already parameterized by canonicalPath/cwd exactly as REQ-015 now states, and evaluatePromotion is likewise exported (evolve.mjs:132, export function evaluatePromotion) -- so REQ-014/015's reuse mandates are technically real and importable, not aspirational."
+        },
+        {
+          "type": "file",
+          "location": "~/anicca/skills/earn/lib/genome.mjs (full file, independently re-read), ~/anicca/skills/earn/sol-trade/run.sh (full file, independently re-read)",
+          "description": "Regression check: REQ-001/004/005/006/017 (caps outside genome, hard-override choke point, deterministic id, fail-closed load) are UNCHANGED from iteration-1 and independently re-verified line-for-line against genome.mjs's actual FORBIDDEN_CAP_KEYS/stripForbidden/genomeId/loadGenome/instanceOverridePath implementations and sol-trade/run.sh's actual identity-match guard (lines 29-38) and MAX_SPEND soft-default (line 17) that REQ-017 correctly targets for hardening. No drift found."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-evolvable-edge/specs/verification-architecture.md:13-24,57,61",
+          "description": "Purity Boundary Map correctly places attributeGenomeIdSol and summarizeByGenomeSol in the Pure Core with the corrected timestamp-only/net_usdc semantics, and correctly notes evaluatePromotion/promote are REUSED (no new implementation) rather than re-listing them as new pure functions to be independently proven."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-evolvable-edge/specs/verification-architecture.md:57 (PROP-012b), 58 (PROP-013), 61 (PROP-015b)",
+          "description": "PROP-012b (Tier 2, fast-check randomized multi-pass timestamp sequences) explicitly asserts CORRECT per-swap genome_id attribution across >=2 differently-genomed interleaved passes, not merely existence -- closes the exact 'test that would pass even if the join were wrong' gap FIND-001 identified in iteration-1's PROP-012. PROP-013 now asserts the SUMMED NUMERIC VALUE (win +0.5 / loss -0.3 -> realized_usdc===0.2 exactly) and explicitly states a sum-of-earn_usdc-instead implementation yields 0.5 and MUST fail -- closes FIND-002's gap. PROP-015b (Tier 0, import-identity, mirrors PROP-014's pattern) closes FIND-003's gap by proving the promote reference is the actual imported evolve.mjs binding, not a fresh reimplementation."
+        },
+        {
+          "type": "file",
+          "location": "state.json:174-190 (proofObligations), 627-665 (traceability beads BEAD-037/038/039)",
+          "description": "PROP-012b (tier 2, BEAD-038) and PROP-015b (tier 0, BEAD-039) are correctly registered in state.json's proofObligations and traceability bead graph, linked bidirectionally to REQ-012b/REQ-015, consistent with the verification-architecture.md table -- no orphaned or untracked proof obligation."
+        },
+        {
+          "type": "reasoning",
+          "location": "REQ-012 (behavioral-spec.md:253-267, unchanged) vs REQ-012b's join precondition",
+          "description": "Independently stress-tested whether REQ-012's ordering guarantee ('genome-linkage line timestamped at or before the pass's OWN live-pass line') is strong enough to guarantee genome-linkage.ts <= ledgerRow.ts (what REQ-012b's join actually needs), since these are two different anchor points. Resolved as sound: this spec's own architecture (header, line 3-6: 'a NEW local pre-gate harness that runs BEFORE franklin-trading start') structurally requires the pre-gate (which performs REQ-011's trace write and REQ-012's genome-linkage write) to execute and complete before franklin-trading start is ever invoked -- and record-swap.mjs's ledger-row creation can only occur AFTER franklin-trading start produces a swap. Genome-linkage.ts therefore necessarily precedes any possible ledger-row.ts for that same pass by construction, independent of REQ-012's weaker live-pass-line anchor. No falsifiability gap found here."
+        }
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "overallVerdict": "PASS",
+  "moneySafetyRuling": {
+    "capsOutsideGenomeAndHardOverridden": "PASS -- REQ-001/004/017 unchanged from iteration-1's independently-verified PASS; re-confirmed against genome.mjs and sol-trade/run.sh in this iteration.",
+    "attributionJoinCorrect": "PASS (was the FIND-001 blocker) -- REQ-012b's timestamp-only nearest-preceding join is now explicit, correctly excludes the inapplicable market/task key, and is backed by PROP-012b's multi-pass per-swap correctness test.",
+    "promotionSummationFieldCorrect": "PASS (was the FIND-002 blocker) -- REQ-013 now explicitly binds accumulation to net_usdc (win-or-loss), independently verified present on every ledger row via ledger.mjs's deriveLine(), with PROP-013 asserting the summed numeric value.",
+    "promoteReuseMandated": "PASS (was the FIND-003 blocker) -- REQ-015 now mandates literal reuse of evolve.mjs's exported promote(), symmetric with REQ-014's evaluatePromotion mandate, backed by PROP-015b's import-identity test.",
+    "devSafetyDefaultPaperOnly": "PASS -- REQ-009 unchanged, re-verified airtight fail-closed default.",
+    "noEvolvedCodeInMoneyPath": "PASS -- REQ-018 unchanged, re-verified against the cited execute-yield.mjs source-contract test precedent (confirmed to exist)."
+  },
+  "identitySafetyRuling": "PASS -- REQ-016 unchanged; re-verified against sol-trade/run.sh's identity-match guard and genome.mjs's instanceOverridePath, and independently against resolve-identity.mjs's fail-closed, per-ANICCA_HOME, never-cross-instance key resolution pattern.",
+  "harnessNotCookRuling": "PASS -- REQ-008/010/018 unchanged; decideEngagement remains fixed/reviewed code, only numeric knob values evolve, and REQ-010's directive-token prohibition on franklin-trading's invocation context is unchanged.",
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "evidence": "Re-read specs/behavioral-spec.md and specs/verification-architecture.md in full (current, post-revision state), plus iteration-1's three findings (FIND-001/002/003) and its verdict.json, plus state.json's phaseHistory/proofObligations/traceability to confirm the claimed revision was actually applied and tracked. Independently re-read ground-truth source: ~/anicca/skills/earn/lib/evolve.mjs (confirmed evaluatePromotion and promote are both exported, promote is canonicalPath/cwd-parameterized), ~/anicca/skills/earn/lib/genome.mjs (confirmed FORBIDDEN_CAP_KEYS/stripForbidden/genomeId/loadGenome/instanceOverridePath match spec claims), ~/anicca/skills/earn/sol-trade/lib/record-swap.mjs (confirmed task is a fixed constant, earn_usdc is win-only), ~/anicca/skills/_shared/lib/ledger.mjs (confirmed deriveLine() computes and stores net_usdc = earn-cost on every ledger row regardless of source), ~/anicca/skills/earn/lib/record.mjs (confirmed all sources route through deriveLine()), ~/anicca/skills/earn/sol-trade/run.sh (confirmed synchronous single-swap-per-pass execution order: pre-gate/genome-eval before franklin-trading start, record-swap.mjs before the final live-pass trace append), ~/anicca/skills/earn/lib/resolve-identity.mjs (confirmed fail-closed per-instance identity pattern REQ-016 relies on), and ~/anicca/skills/earn/execute-yield.mjs (confirmed to exist as REQ-018's cited source-contract-test precedent). All three iteration-1 blocking findings are genuinely closed with grounded, falsifiable requirement text and matching property tests (not merely restated aspirationally). One candidate new gap was investigated and independently resolved as a non-issue: REQ-012's literal anchor point ('at or before the live-pass line') is weaker than what REQ-012b's join needs ('at or before the ledger row'), but the spec's own stated architecture (pre-gate runs BEFORE franklin-trading start is invoked) structurally guarantees the stronger property holds regardless, so no finding was filed for it. No other new money-safety, purity-boundary, or verification-tool-mismatch gap was found in the revision."
+}

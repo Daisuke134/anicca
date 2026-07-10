@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "test_adequacy",
+  "category": "test_quality",
+  "severity": "minor",
+  "description": "REQ-012's acceptance criterion ('a genome-linked line's ts <= the pass's OWN live-pass line's ts') is tested by PROP-012 in sol-trace.test.mjs, but that test fabricates the 'later live-pass line' using JS `new Date().toISOString()` (millisecond precision, matching sol-trace.mjs's own now()). The REAL live-pass line in production is written by sol-trade/run.sh's own bash `now()` helper (`date -u +%Y-%m-%dT%H:%M:%SZ`, whole-SECOND precision, no milliseconds) or, for the final live-pass trace line, by run.sh's inline Python `datetime.now(...).strftime('%Y-%m-%dT%H:%M:%SZ')` (also second precision). Because sol-trace.mjs's genome-link line carries millisecond precision (e.g. '...:56.789Z') while the real live-pass line is floored to the second ('...:56Z' == '...:56.000Z' in epoch-ms terms), a pass whose franklin-trading invocation completes within the SAME wall-clock second as the genome-link write would produce a live-pass epoch-ms timestamp LOWER than the genome-link line's, violating REQ-012's literal 'ts <= ts' acceptance criterion. This is NOT money-critical: the actual attribution join (attributeGenomeIdSol, REQ-012b) compares the genome-link line's ts against the LEDGER ROW's ts (recorded by record-swap.mjs, itself created well after RPC-confirmation of a real on-chain swap -- routinely tens of seconds to minutes after the genome-link write), so this precision mismatch cannot realistically cause a misattributed swap or a wrong P&L join. It is a genuine, low-severity test-fidelity gap in the sense that PROP-012 does not actually exercise the real production timestamp format mismatch between sol-trace.mjs (ms precision) and run.sh's own bash/python timestamp helpers (second precision), so a regression in the audit-trail ordering guarantee specifically (not the money-critical join) would not be caught by the current test suite.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/__tests__/sol-trace.test.mjs",
+    "lineRange": "136-151",
+    "snippet": "appendGenomeLinkTrace(tracePath, { genome_id: id, genome });\nconst linkTs = readJsonl(tracePath)[0].ts;\nfs.appendFileSync(tracePath, JSON.stringify({ ts: new Date().toISOString(), ... }) + \"\\n\");\n// both timestamps are JS Date.toISOString() (ms precision) -- never exercises run.sh's actual bash/python second-precision `now()`"
+  },
+  "comparisonEvidence": {
+    "filePath": "skills/earn/sol-trade/run.sh",
+    "lineRange": "19, 128-139",
+    "snippet": "now() { date -u +%Y-%m-%dT%H:%M:%SZ; }\n...\nrec = { \"ts\": datetime.datetime.now(datetime.timezone.utc).strftime(\"%Y-%m-%dT%H:%M:%SZ\"), \"action\": \"live-pass\", ... }"
+  },
+  "routeToPhase": "2b"
+}
