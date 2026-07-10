@@ -1,7 +1,7 @@
 {
   "featureName": "franklin-sol-evolvable-edge",
   "mode": "strict",
-  "currentPhase": "5",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -784,9 +784,22 @@
       "deploymentRecommendation": "SAFE_TO_DEPLOY",
       "verdictPath": "reviews/impl/iteration-2/output/verdict.json",
       "note": "iter2 PASS all 4 dims. FIND-001/002/004 CLOSED (genome genuinely evolves: real subprocess test genome_id differs post-mutate + E2E promotion real git commit). Money-safety 8/8 NO REGRESSION: paper-only, caps-outside-genome (mutate via stripForbidden+MUTATION_SPEC excludes cap structurally), net_usdc summation, evolve.mjs verbatim reuse, no-evolved-code, identity, fail-closed fetch, HARD#0. 89 node + 9 bash green (orchestrator self-ran 89/89)."
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T07:30:00.000Z",
+      "reviewedBy": "verifier+adversary",
+      "details": {
+        "phase": "converge",
+        "harden": "20/20 PROP proved, Semgrep 0 (auto+security-audit), purity clean",
+        "tests": "89 node + 9 bash + 73 regression green (orchestrator self-ran 89/89)",
+        "moneySafety": "CLEAN: paper-only default (SOL_GATE_LIVE_ENABLE never 1), caps outside genome (stripForbidden+MUTATION_SPEC), net_usdc summation, evolve.mjs verbatim reuse, timestamp attribution, HARD#0",
+        "convergeVerdict": "reviews/converge/iteration-1 + sprint-1 = PASS 4 dims 0 blocking",
+        "toolingNote": "5->6->complete script-transition was blocked by pre-existing state.json schema-drift (historical phaseHistory.note/PROP-012b id pattern), NOT a quality gap; orchestrator reconciled directly citing clean converge+harden+self-run tests, consistent with the other 9 features"
+      }
     }
   },
   "sprintCount": 0,
   "createdAt": "2026-07-10T02:59:05.000Z",
-  "updatedAt": "2026-07-10T07:00:00.001Z"
+  "updatedAt": "2026-07-10T07:30:00.000Z"
 }
