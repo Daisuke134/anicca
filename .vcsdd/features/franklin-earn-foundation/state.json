@@ -1,7 +1,7 @@
 {
   "featureName": "franklin-earn-foundation",
   "mode": "lean",
-  "currentPhase": "6",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -53,6 +53,12 @@
       "to": "6",
       "timestamp": "2026-07-08T15:31:58.558Z",
       "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-10T03:30:00.000Z",
+      "note": "Converge iter2 PASS all 4 dims, 0 blocking. FIND-CONV-001 (spec) + FIND-CONV-002 (report/PROP discharge) closed. Orchestrator self-executed 58/58 node + 9/9 bash green (log captured). Money-safety invariants re-confirmed: no cross-instance key fallback, spend cap wired, wins+losses recorded, external:true only cash-settled."
     }
   ],
   "iterations": {
@@ -85,9 +91,31 @@
       "iteration": 4,
       "verdictPath": "reviews/spec/iteration-4/output/verdict.json",
       "note": "Fresh Opus iter4 spec-review PASS both dimensions; FIND-009 (single authoritative delta source usdcDeltaForSig) + FIND-010 (never call franklin-trading balance, ANSI risk eliminated) CONFIRMED-RESOLVED against real shipped code. Closes converge FIND-CONV-001 (now a real supporting PASS artifact exists). Non-blocking FIND-011 (ANSI-strip test hygiene) routed to phase 2a."
+    },
+    "6": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T03:30:00.000Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "phase": "converge",
+        "iteration": 2,
+        "dimensions": "spec/test/impl/harden all PASS",
+        "blockingFindings": 0,
+        "verdictPath": "reviews/converge/iteration-2/output/verdict.json",
+        "closedFindings": [
+          "FIND-CONV-001 (spec cert via iter4 PASS)",
+          "FIND-CONV-002 (verification-report 16 PROP correctly discharged)"
+        ],
+        "selfExecutedTests": "58/58 node + 9/9 bash green, log node-test-58-2026-07-10.log",
+        "nonBlocking": [
+          "state iteration counters cosmetic",
+          "FIND-011 ANSI-strip untested"
+        ],
+        "reviewer": "fresh-opus-adversary claude-opus-4-8"
+      }
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T11:42:48.185Z",
-  "updatedAt": "2026-07-10T02:30:00.000Z"
+  "updatedAt": "2026-07-10T03:30:00.000Z"
 }
