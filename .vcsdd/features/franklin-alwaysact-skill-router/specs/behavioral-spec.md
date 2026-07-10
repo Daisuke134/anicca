@@ -76,8 +76,10 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   REQ-506's reroute does **NOT** reuse `avoidSlot` or claim enum-level exclusion through it. Instead, because
   REQ-504 already constructs the always-act tool schema from an explicit, harness-controlled array
   (`buildAlwaysActToolDefinitions(menuSlots)`), REQ-506's reroute performs a genuine, purpose-built hard
-  array filter — `buildAlwaysActToolDefinitions(menuSlots.filter(s => s !== pickedSlot))` — before the
-  re-invocation, so the just-picked slot is truly absent from the schema the model receives. `avoidSlot` /
+  array filter — `buildAlwaysActToolDefinitions(menuSlots.filter(s => s !== pickedSlot && isMarketRiskFree(s)))`
+  (spec-review iteration-2 FIND-101 correction: the filter also excludes every `risk:"capital"` slot, not
+  merely the just-picked one — see REQ-506) — before the re-invocation, so the just-picked slot AND every
+  capital-risking slot are truly absent from the schema the model receives. `avoidSlot` /
   `index.mjs:179-421`'s loop-detect diversification remains completely unmodified and continues to operate
   independently for its own (unrelated, cross-wake) purpose.
 - `skills/registry.json` — single source of truth for live/declared status and per-slot `risk`/`summary`.
@@ -86,7 +88,12 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   `earn/polymarket-trade`. Utility/exploration slots explicitly **excluded** from the router's mandatory
   menu: `report`, `cook`, `self/spawn`, `self/spawn-child`, `self/issue-dev`, `self/coordinate`,
   `economy/ubi`, `earn/audit` (status `"declared"`, not live), `earn/_probe` (status `"declared"`), `earn`
-  (retired placeholder, status `"declared"`).
+  (retired placeholder, status `"declared"`). **Spec-review iteration-2 FIND-101 ground-truth addition**: of
+  these 11 always-act-menu slots, `skills/registry.json`'s existing per-slot `risk` field (read directly this
+  iteration) is `"safe"` for `economy/gig`, `economy/lending`, `x402_sell`, `earn/clip`, `earn/clip-producer`,
+  `earn/video`, and `"capital"` for `yield`, `hl_trade`, `token_launch`, `earn/sol-trade`,
+  `earn/polymarket-trade` — this pre-existing field is REQ-506's `isMarketRiskFree` reroute filter's source
+  of truth; no new/duplicate classification data is introduced.
 - `skills/earn/sol-trade/run.sh:28-41` — the **identity-match guard idiom** this feature's Franklin-gate
   reuses verbatim (REQ-501): derive `OWN_WALLET` via `runtime/wallet-address-solana.mjs` under the current
   `ANICCA_HOME`, derive `CLI_WALLET` under `ANICCA_HOME="$HOME/.blockrun"`, and only proceed when they are
@@ -220,13 +227,15 @@ The only callable tool in always-act mode is therefore `run_skill`, with its `sl
 REQ-503's filtered earn-action menu.
 **Edge Cases**:
 - A model response that nonetheless attempts `slot: "sleep"` or any slot outside the enum (a
-  spec/tool-contract violation by the model, not the harness — the schema truly does not offer it) is
-  rejected the same way an invalid enum value is already rejected today, and is treated as a no-tool-call
-  outcome for REQ-505's purposes.
+  spec/tool-contract violation by the model, not the harness — the schema truly does not offer it) is NOT
+  auto-rejected by any pre-existing enum-validation step (spec-review FIND-103 correction: no such step
+  exists in `index.mjs`'s real wake loop today — `parseToolCall` performs no cross-check against the offered
+  `tools` array, and the existing `if (slot === 'sleep')` branch at `index.mjs:402-416` is a bare string
+  check that would otherwise honor it). REQ-513 defines the concrete, real mechanism that makes this case
+  actually safe.
 - `thinkClaudeP`'s text-prompt path has no formal JSON-schema enum enforcement; if the model emits a
-  sleep-shaped `tool_calls` block despite the reworded instruction (step 4), it is treated identically to
-  this REQ's first edge case (rejected, folded into REQ-505's no-tool-call handling) — never silently
-  accepted as a valid sleep.
+  sleep-shaped `tool_calls` block despite the reworded instruction (step 4), REQ-513 governs its handling
+  identically to the schema-level case above — never silently accepted as a valid sleep.
 **Acceptance Criteria**:
 - (Pure-function level, necessary but NOT sufficient alone) `getToolDefinitions(menuSlots, { omitSleep:
   true })` / `buildAlwaysActToolDefinitions(menuSlots)` returns a tool array of length 1 (`run_skill` only),
@@ -258,7 +267,7 @@ line), bounded to `MAX_REPROMPTS = 1` for this failure mode.
 - A unit test with a mocked `think()` that never returns a tool call asserts exactly 2 `think()`
   invocations total (not more) and the wake ends in REQ-508's escalation path.
 
-### REQ-506: A picked earn slot with no realized economic result triggers a bounded same-wake reroute, via a genuine hard tool-enum exclusion
+### REQ-506: A picked earn slot with no realized economic result triggers a bounded same-wake reroute, via a genuine hard tool-enum exclusion, to a market-risk-free slot only
 **EARS**: WHEN always-act mode is engaged AND the model picks a slot `s` from the earn-action menu AND `s`'s
 execution completes (any exit code) THE SYSTEM SHALL first determine whether `s` is classify-eligible using
 the SAME always-act-gated predicate REQ-502 defines for menu membership — `isEarnActionSlot(s)` (the wider,
@@ -270,12 +279,20 @@ isEarnActionSlot(slot) : isEarnSlot(slot))`, so `classifyEarnResult` IS invoked 
 THE SYSTEM SHALL then, IF `classifyEarnResult(wakeId, earnLedgerPath, isProfitableFn).earnLine === null`
 (`runtime/loop/earn-detect.mjs`, unmodified — true for both a guard-triggered `action:"skip"` and a
 sub-agent's own neutral-signal WAIT with no ledger line, per §1), treat this as "no realized action this
-wake" and re-invoke the brain exactly once more with a genuine, HARD tool-enum exclusion of the just-picked
-slot: `buildAlwaysActToolDefinitions(menuSlots.filter(x => x !== s))` (spec-review FIND-003 fix — REQ-504's
-own purpose-built, explicit-array tool-definition constructor; this is NOT the soft, prompt-text-only
-`avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated — see §1). The just-picked
-slot is therefore structurally ABSENT from the reroute's tool schema, not merely discouraged in prose, so
-the model cannot re-select it — bounded to `MAX_REROUTES = 1`.
+wake" and re-invoke the brain exactly once more with a genuine, HARD tool-enum exclusion of BOTH the
+just-picked slot AND every capital-risking slot (spec-review iteration-2 FIND-101 fix — the doctrine's own
+promise, §0: "routes to a market-risk-free skill ... instead"): `buildAlwaysActToolDefinitions(menuSlots.
+filter(x => x !== s && isMarketRiskFree(x)))`, where `isMarketRiskFree(x)` is `riskTagOf(x) === 'safe'`
+using the SAME injected `riskTagOf` classifier REQ-502/503's `assembleAlwaysActMenu` already threads from
+`skills/registry.json`'s per-slot `risk` field (§1) — not a new, separate classification source. Given the
+current registry (§1), the reroute target set NEVER includes `earn/sol-trade`, `earn/polymarket-trade`,
+`hl_trade`, `token_launch`, or `yield` (all `risk:"capital"`) — a capital-risking slot is never a valid
+reroute target after a no-edge WAIT, regardless of which slot was just picked (spec-review FIND-003 fix —
+REQ-504's own purpose-built, explicit-array tool-definition constructor; this is NOT the soft, prompt-text-
+only `avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated — see §1). The
+just-picked slot AND every capital-risking slot are therefore structurally ABSENT from the reroute's tool
+schema, not merely discouraged in prose, so the model cannot re-select either — bounded to `MAX_REROUTES = 1`
+(shared with REQ-505's budget per REQ-511).
 **Edge Cases**:
 - A slot execution that DOES write an earn-ledger line for this wake (`earnLine !== null`) — whether
   `profitable` is `true` or `false` (a real, recorded loss still counts as a realized economic action, not
@@ -283,12 +300,21 @@ the model cannot re-select it — bounded to `MAX_REROUTES = 1`.
 - The rerouted second pick ALSO produces `earnLine === null`: the bound is exhausted — proceed to REQ-508
   (truthful record + escalate), never a third same-wake attempt.
 - REQ-502/503's filtered always-act menu has exactly ONE member overall, and it IS the just-picked slot: the
-  hard filter (`menuSlots.filter(x => x !== s)`) leaves ZERO slots — a `run_skill` tool schema with an empty
-  `slot.enum` is not a valid/offerable tool definition. THE SYSTEM SHALL, in this specific case, skip the
-  re-invocation entirely (spend zero additional `think()` calls) and proceed directly to REQ-508's truthful
-  escalation, since no alternative earn-action exists this wake. This is expected to be RARE (REQ-502/503
-  frame the common case as ≥1 always-eligible safe slot) but is a real, coherent, spec-defined terminal case
-  — never a crash, never a forced same-slot repick.
+  hard filter (`menuSlots.filter(x => x !== s && isMarketRiskFree(x))`) leaves ZERO slots — a `run_skill`
+  tool schema with an empty `slot.enum` is not a valid/offerable tool definition. THE SYSTEM SHALL, in this
+  specific case, skip the re-invocation entirely (spend zero additional `think()` calls) and proceed directly
+  to REQ-508's truthful escalation, since no alternative earn-action exists this wake. This is expected to be
+  RARE (REQ-502/503 frame the common case as ≥1 always-eligible safe slot) but is a real, coherent,
+  spec-defined terminal case — never a crash, never a forced same-slot repick.
+- **The risk-free-filtered reroute set is empty even though OTHER (non-self) slots remain in the raw menu**
+  (spec-review iteration-2 FIND-101 fix) — e.g. every remaining live always-act slot besides `s` happens to
+  be `risk:"capital"`: THE SYSTEM SHALL treat this identically to the previous bullet — skip the
+  re-invocation entirely (zero additional `think()` calls) and proceed directly to REQ-508's truthful
+  escalation. THE SYSTEM SHALL NEVER fall back to offering a `risk:"capital"` slot as the reroute target
+  merely to avoid an escalation — money-safety (never forcing a second capital-risking attempt past a
+  legitimate no-edge WAIT) always wins over "always act" busyness. Given REQ-502/503's current registry
+  composition (6 of 11 always-act slots are `risk:"safe"`), this is expected to be RARE in practice but is a
+  real, coherent, spec-defined terminal case.
 - This reroute is NEVER triggered by a slot execution that itself errors/times out (`skillResult.timedOut`
   / `skillResult.notFound` / non-zero exit for a NON-earn-guard reason) in a way that bypasses REQ-508's
   existing `appendHarnessFailure` mechanism (`index.mjs:458-475`) — that mechanism is unmodified and fires
@@ -307,6 +333,18 @@ the model cannot re-select it — bounded to `MAX_REROUTES = 1`.
 - A unit test with an always-act menu whose single member equals the just-picked slot and `earnLine ===
   null` asserts zero additional `think()` calls and immediate REQ-508 escalation (the empty-enum terminal
   case, spec-review FIND-003's edge-case resolution).
+- **(spec-review iteration-2 FIND-101 regression test, PROP-506e "reroute-target-is-risk-free")** A unit
+  test with a fixture registry where the first-picked slot is `earn/sol-trade` (`risk:"capital"`,
+  `earnLine === null`) and the always-act menu also contains `hl_trade`, `token_launch`,
+  `earn/polymarket-trade`, `yield` (all `risk:"capital"`) PLUS `economy/gig` and `earn/clip` (both
+  `risk:"safe"`) asserts the reroute's ACTUAL constructed tool schema's `slot.enum` equals exactly
+  `{economy/gig, earn/clip}` — every `risk:"capital"` slot, not only the just-picked one, is absent from the
+  reroute enum.
+- **(spec-review iteration-2 FIND-101 regression test, PROP-506f "empty-safe-set-escalates")** A unit test
+  with a fixture always-act menu whose only members besides the just-picked (capital-risking) slot are ALSO
+  `risk:"capital"` (i.e. the risk-free-filtered set is empty though the raw excluded-self set is not) asserts
+  zero additional `think()` calls and immediate REQ-508 escalation — never a reroute into a `risk:"capital"`
+  slot.
 
 ### REQ-507: Skill choice remains 100% model judgment — the harness never ranks, scores, or filters by strategy content
 **EARS**: THE SYSTEM SHALL, at every point in REQ-502 through REQ-506, treat the model's chosen `slot`
@@ -375,17 +413,24 @@ line was found — reusing the existing `formatRecord`/`safeAppend`/`LEDGER_PATH
   after reroute/reprompt" paths, and that `redactPrivateKeyPatterns` is applied before append.
 
 ### REQ-511: Non-functional — bounded cost and latency
-**EARS**: THE SYSTEM SHALL bound the total extra model calls added by always-act enforcement to at most 2
-per wake beyond the baseline single `think()` call (REQ-505's 1 reprompt + REQ-506's 1 reroute — these are
-mutually exclusive triggers within a single wake pass in the common case, so the practical worst case is 1
-extra call, not 2, but the hard ceiling asserted by tests is 2), so a pathological model response pattern
-can never turn one wake into an unbounded retry loop or unbounded spend.
+**EARS**: THE SYSTEM SHALL bound the total extra model calls added by always-act enforcement to at most 1
+per wake beyond the baseline single `think()` call — a single shared budget covering EITHER REQ-505's
+reprompt OR REQ-506's reroute, never both in the same wake — so total `think()` calls per wake NEVER exceed
+2 (1 baseline + at most 1 extra), and a pathological model response pattern can never turn one wake into an
+unbounded retry loop or unbounded spend. (spec-review iteration-2 FIND-102 fix: this is the single,
+unambiguous ceiling — 2 total, never 3 — that REQ-505's own acceptance criteria, REQ-506's own acceptance
+criteria, `nextRerouteState`'s `maxAttempts = 1`, and PROP-511a all already assumed; the prior "at most 2 ...
+beyond the baseline" framing is removed.)
 **Edge Cases**:
 - Both a no-tool-call AND a subsequent no-realized-action could theoretically compound; the bound is
-  enforced as a single shared counter across both mechanisms within one wake, not two independent budgets.
+  enforced as a single shared counter (`nextRerouteState`'s `maxAttempts = 1`) across both mechanisms within
+  one wake, not two independent budgets — so the 2-total ceiling is never exceeded regardless of which
+  failure mode(s) occur, and once the shared budget's one extra call is spent (by either a reprompt or a
+  reroute), no further reprompt/reroute is attempted this wake — REQ-508 escalates instead.
 **Acceptance Criteria**:
 - A property test with an adversarial mocked brain that ALWAYS returns no-tool-call or ALWAYS returns a
-  slot with no realized ledger line asserts total `think()` calls for that wake never exceed 2.
+  slot with no realized ledger line asserts total `think()` calls for that wake never exceed 2 (1 baseline +
+  1 shared-budget extra call), never 3.
 
 ### REQ-512: A silently-OFF flag on a Franklin-identity wake is observable and distinguishable from "not yet enabled" (spec-review FIND-004 fix)
 **EARS**: WHEN the identity check in REQ-501(a) resolves to Franklin AND REQ-501(b)'s flag is
@@ -427,6 +472,42 @@ function alongside `is_fresh_but_barren`, not a modification of that function's 
   `min_run` consecutive `always_act_not_engaged` lines DOES trigger regression-detected; (c) a single
   `always_act_not_engaged` line surrounded by successfully-engaged wakes after go-live does NOT trigger it.
 
+### REQ-513: A fabricated `slot:"sleep"` (or any off-menu slot) is rejected by the REAL wake-loop dispatch, not just absent from the schema (spec-review FIND-103 fix)
+**EARS**: WHEN always-act mode is engaged (`ctx.alwaysActEngaged === true`) AND `parseToolCall(rawResponse)`
+resolves a non-null `{ slot, args }` THE SYSTEM SHALL, before `index.mjs`'s existing `if (slot === 'sleep')`
+branch (`index.mjs:402-416`, unconditional string check) can fire, check whether `slot === 'sleep'` OR
+`slot` is not a member of `ctx.alwaysActMenu` (the offered enum for this wake); IF EITHER IS TRUE THE SYSTEM
+SHALL NOT execute the existing `sleep`/narrate branch and SHALL NOT execute the resolved `slot` as a skill —
+instead it SHALL treat this exactly as a no-tool-call outcome for REQ-505's bounded-reprompt path (a stray
+off-menu/`"sleep"` slot consumes the SAME shared retry budget REQ-511 defines, it does not grant an extra
+attempt). Concretely: `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`) becomes
+conditional — `if (slot === 'sleep' && !ctx.alwaysActEngaged)` — and a new guard immediately ahead of skill
+execution (covering both the fabricated-`"sleep"` case and any other off-menu slot) reroutes into REQ-505's
+reprompt handling when `ctx.alwaysActEngaged && (slot === 'sleep' || !ctx.alwaysActMenu.includes(slot))`.
+**Edge Cases**:
+- A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected — `index.mjs:402-416`'s
+  `sleep` branch fires exactly as it does today, byte-for-byte, since the new guard only activates when
+  `ctx.alwaysActEngaged === true`.
+- The fabricated slot arrives on the LAST allowed attempt (REQ-511's shared budget already exhausted): this
+  is not a fresh no-tool-call needing its own new retry — it is folded into whichever bound (REQ-505's
+  reprompt or REQ-506's reroute) is currently in flight, and if that bound is already exhausted, REQ-508's
+  truthful escalation fires immediately, never a silent idle/narrate/sleep outcome.
+- A weak/free model repeatedly fabricating `slot:"sleep"` across the bounded retry: this consumes the SAME
+  ≤1-extra-call shared budget as any other no-tool-call/no-realized-action failure mode (REQ-511) — it
+  cannot be used to multiply the number of `think()` calls beyond REQ-511's ceiling.
+**Acceptance Criteria**:
+- A unit test that feeds a mocked `think()` response which `parseToolCall` resolves to exactly
+  `{ slot: 'sleep', args: {} }` while `ctx.alwaysActEngaged === true` asserts: (a) the existing
+  `sleep`/narrate ledger line (`kind:'narrate', note:'agent chose to sleep'`) is NEVER written, (b) no skill
+  execution is attempted for `slot:'sleep'`, and (c) the wake proceeds into REQ-505's reprompt path (a
+  second `think()` call occurs, bounded by REQ-511). This is the direct regression test for spec-review
+  FIND-103.
+- The SAME test structure with a fabricated slot that is a syntactically valid string but absent from
+  `ctx.alwaysActMenu` (e.g. `slot: 'report'`, a real registry slot excluded from the always-act menu by
+  REQ-502) asserts identical rejection-and-reprompt behavior.
+- A unit test with `ctx.alwaysActEngaged` falsy/absent and `slot: 'sleep'` asserts today's existing behavior
+  is preserved byte-for-byte: the `kind:'narrate'` sleep ledger line IS written, no reprompt is triggered.
+
 ## 3. Edge Case Catalog (cross-cutting)
 
 - **Empty inputs**: empty registry, empty `activeSkillSlots`, empty earn-ledger file → REQ-502's
@@ -444,6 +525,17 @@ function alongside `is_fresh_but_barren`, not a modification of that function's 
   fired is the doctrine-`'malware'` condition (§0) — this is NOT the same as the benign pre-rollout "not yet
   enabled" state, and both MUST be distinguishable from the ledger alone (REQ-512), not merely inferable
   from operator memory of when the flag was flipped.
+- **Fabricated off-menu/`"sleep"` tool call** (spec-review iteration-2 FIND-103): a model emits
+  `slot:"sleep"` or any slot absent from `ctx.alwaysActMenu` despite the schema truly not offering it (a
+  realistic risk for weak/free models, per §1's `parse-tool-call.mjs` scavenge-parser evidence) — REQ-513
+  rejects it at the REAL `index.mjs:402-416` dispatch point and routes it into REQ-505/511's bounded
+  reprompt path; it is NEVER silently honored as an idle/sleep outcome, closing the structural bypass that
+  would otherwise defeat REQ-504/505/506's entire purpose.
+- **Reroute pressures a second capital-risking attempt** (spec-review iteration-2 FIND-101): a legitimate,
+  doctrine-sanctioned no-edge WAIT (e.g. `earn/sol-trade`'s baseline strategy) triggers REQ-506's reroute —
+  the reroute target set is hard-filtered to `risk:"safe"` slots only (`isMarketRiskFree`); it NEVER offers
+  `earn/sol-trade`, `earn/polymarket-trade`, `hl_trade`, `token_launch`, or `yield` as a reroute target, and
+  an empty risk-free set escalates (REQ-508) rather than falling back to a capital-risking slot.
 
 ## 4. Non-Functional Requirements
 
@@ -467,20 +559,22 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 1. Phase 1a (this file) — behavioral spec.
 2. Phase 1b — verification-architecture.md (this feature's companion file).
 3. Phase 1b review — fresh-context adversary spec review, blocking 0.
-4. Phase 2a (RED) — write tests for REQ-501..REQ-512 against not-yet-existing pure functions
-   (`isEarnActionSlot`, `assembleAlwaysActMenu`, `buildAlwaysActToolDefinitions`,
+4. Phase 2a (RED) — write tests for REQ-501..REQ-513 against not-yet-existing pure functions
+   (`isEarnActionSlot`, `assembleAlwaysActMenu`, `buildAlwaysActToolDefinitions`, `isMarketRiskFree`,
    `noRealizedAction`/reroute-bound helpers, the FIND-004 companion regression detector) + an
    index.mjs/brain.mjs-level integration test harness with mocked `think()`/`httpPost`/registry/earn-ledger
    (the REQ-504 wiring-seam test asserts the REAL outbound tool schema, not just the pure helper; the
-   REQ-506 test asserts the REAL `index.mjs:450` call-site widening for `economy/gig`/`economy/lending`) —
-   confirm all new tests FAIL, confirm regression baseline (existing `earn-slot.mjs`, `catalog-gate.mjs`,
-   `context.mjs`, `prompt.mjs`, `brain.mjs`, `earn-detect.mjs`, `earning-health.py` test suites) still PASS.
+   REQ-506 test asserts the REAL `index.mjs:450` call-site widening for `economy/gig`/`economy/lending` AND
+   that the reroute enum excludes every `risk:"capital"` slot; the REQ-513 test asserts the REAL
+   `index.mjs:402-416` dispatch rejects a fabricated `slot:'sleep'`/off-menu pick) — confirm all new tests
+   FAIL, confirm regression baseline (existing `earn-slot.mjs`, `catalog-gate.mjs`, `context.mjs`,
+   `prompt.mjs`, `brain.mjs`, `earn-detect.mjs`, `earning-health.py` test suites) still PASS.
 5. Phase 2b (GREEN) — implement the pure core module(s) + wire the effectful shell changes into
    `index.mjs`/`brain.mjs`/`prompt.mjs` (additive, gated by REQ-501's identity+flag check so non-Franklin
    wakes and non-always-act wakes are byte-for-byte unaffected) — minimum code to pass, no premature
    optimization.
 6. Phase 2c — refactor for clarity/duplication only; tests stay green; no new features.
-7. Sprint contract (strict mode) — write `contracts/sprint-1.md` mapping CRIT-* to REQ-501..REQ-511
+7. Sprint contract (strict mode) — write `contracts/sprint-1.md` mapping CRIT-* to REQ-501..REQ-513
    before Phase 3 adversarial review.
 8. Phase 3 — fresh-context adversary implementation review (Opus 4.8 per model-division table), blocking 0.
 9. Phase 5 — verification harnesses in `verification/` executing the Tier 1/2 property obligations from
@@ -488,3 +582,18 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 10. `vcsdd-converge` — confirm all 4 dimensions (spec/test/impl/verification) agree; only then flip
     Franklin's live config flag (REQ-501(b)) — a separate, explicit, logged operational action, out of
     this feature's own test scope but gated by this feature's own default-OFF flag.
+
+## Changelog
+
+- **iteration-2 fixes: FIND-101/102/103** (spec-review iteration-2, this revision):
+  - FIND-101 (money-safety): REQ-506's reroute target set is now hard-filtered to `risk:"safe"` slots only
+    (`isMarketRiskFree`, sourced from `skills/registry.json`'s existing `risk` field) — a capital-risking
+    slot is never offered as a reroute target; an empty risk-free set escalates (REQ-508) instead of
+    falling back to a capital-risking slot. New edge cases + acceptance criteria added to REQ-506.
+  - FIND-102 (completeness): REQ-511's EARS clause is rewritten to the single, unambiguous ceiling every
+    other artifact already assumed — at most 1 extra `think()` call beyond baseline, 2 total per wake, never
+    3 — removing the self-contradictory "at most 2 ... beyond the baseline" framing.
+  - FIND-103 (ground-truth): REQ-504's false "already rejected today" claim about `index.mjs`'s `sleep`
+    branch is removed; new REQ-513 makes the real `index.mjs:402-416` dispatch reject a fabricated
+    `slot:'sleep'` or any off-menu slot while always-act is engaged, routing it into REQ-505's bounded
+    reprompt path instead of silently honoring it as idle.
