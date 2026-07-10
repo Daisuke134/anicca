@@ -2,16 +2,60 @@
   "featureName": "franklin-alwaysact-skill-router",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "init",
-  "phaseHistory": [],
-  "iterations": {},
+  "currentPhase": "1c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-10T15:05:22.000Z",
+      "reason": "Phase 1a behavioral spec authored (commit 7f1ba38801a320f85b3bcbca33c68d77374788b1)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-10T15:05:22.500Z",
+      "reason": "Phase 1b verification architecture authored (commit 7f1ba38801a320f85b3bcbca33c68d77374788b1)"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-10T15:05:23.000Z",
+      "reason": "Phase 1a/1b spec complete; entering Phase 1c (spec-review) with specs/behavioral-spec.md + specs/verification-architecture.md ready for adversary review"
+    },
+    {
+      "from": "1c",
+      "to": "1c",
+      "timestamp": "2026-07-10T15:10:47.000Z",
+      "reason": "spec-review iteration 1 verdict: FAIL — 5 blocking findings (FIND-001..FIND-005) across all 5 review dimensions (spec_fidelity, edge_case_coverage, implementation_correctness, structural_integrity, verification_readiness); reviews/spec/iteration-1/output/verdict.json"
+    },
+    {
+      "from": "1c",
+      "to": "1c",
+      "timestamp": "2026-07-10T20:15:26.000Z",
+      "reason": "Iteration-1 findings fixed (commit 687ede72896f88239f76ce229eef39096119fe8b, verified resolved per iteration-2 verdict); spec-review iteration 2 verdict: FAIL — 3 blocking findings (FIND-101, FIND-102, FIND-103) across ground_truth/money_safety/completeness dimensions; reviews/spec/iteration-2/output/verdict.json; gate 1c NOT yet passed; builder fix for iteration 3 in progress"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 2
+  },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-franklin-alwaysact-skill-router-1783695429002",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "FAIL",
+      "timestamp": "2026-07-10T20:21:12.386Z",
+      "reviewedBy": "adversary",
+      "details": "spec-review iteration 2 FAIL (reviews/spec/iteration-2/output/verdict.json): 3 blocking findings FIND-101, FIND-102, FIND-103 (dimensions: ground_truth, money_safety, completeness); iteration-1's 5 findings (FIND-001..005) verified resolved per iteration-2 verdict.iteration1FindingsVerifiedResolved; gate 1c has NOT passed; Phase 2a remains blocked pending a passing spec-review iteration (max 3 iterations allowed, 2 used)",
+      "adversaryVerdict": "FAIL",
+      "adversaryReviewedAt": "2026-07-10T20:21:12.386Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-10T14:57:09.001Z",
-  "updatedAt": "2026-07-10T14:57:09.001Z"
+  "updatedAt": "2026-07-10T20:21:12.386Z"
 }
