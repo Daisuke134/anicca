@@ -25,5 +25,12 @@ scope 境界(Dais 2026-07-11): profitable-claude = 銀行口座+Dais 自身の�
 2. [VCSDD lean] scheduler plist 新設(週次 no-args) + cost 自己申告照合(REQ-CEO-020) + registry last_observed_at
 3. [ops] cron 4件 stale の自然復帰を 07:00 後に確認
 
+## #5 connector — 前提確認(2026-07-11 04:54 JST)
+- cron `ad89027d` armed: `35 7 * * * @ Asia/Tokyo`、次回 07:35 JST、idle/runs 0。7日 streak は今朝の自動発火から開始。
+- ⚠️ **要確認**: cron announce に「Delivering to Telegram requires target…」警告。streak の Telegram delivered:true 条件に影響しうる。#5 着手時に target 設定を検証すること。
+
 ## 決定事項
 - crypto は別CC。LM は Reddit+IG セルフマーケのみ(issue-driven OFF、削除せず)。
+
+## 進行中
+- #6: builder(Sonnet, worktree) が ceo-revive を VCSDD-lean 実装中。完了後 fresh Opus adversary → merge → live E2E。
