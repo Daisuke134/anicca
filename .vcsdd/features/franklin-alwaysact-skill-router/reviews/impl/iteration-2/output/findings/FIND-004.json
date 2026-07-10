@@ -1,0 +1,31 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "additionalDimensions": ["edge_case_coverage"],
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "REQ-509's own Acceptance Criteria (behavioral-spec.md) requires: 'An integration-style test using real (unmodified) guard modules with a fixture forcing a guard-block on the first-picked slot asserts the reroute picks a different slot AND the guard-blocked slot's own skip record is preserved verbatim in the ledger (not overwritten/silenced).' The implementing test, PROP-509b (always-act-reroute.test.mjs:550-576), asserts the first half (different slot picked) unconditionally, but wraps the SECOND half -- the actual 'verbatim ledger preservation' claim REQ-509's edge case exists to guarantee -- inside `if (skillErrorOrWakeForFirstPick) { assert.ok(...) }`, where `skillErrorOrWakeForFirstPick = allLines.find((l) => l.slot === 'earn/sol-trade')`. Tracing runAlwaysActWake's REQ-506 reroute branch (index.mjs:774-800) shows it NEVER writes any ledger.jsonl line for the just-picked, rerouted-away-from slot -- the branch only mutates `attemptsUsed`/`currentOfferedSlots` and `continue`s to the next attempt; the ONLY ledger writes in this function happen at a terminal escalation or the final successful pick. Separately, `classifyLayer({kind:'wake'})` (harness-health.mjs) returns 'clean' for this guard-blocked-but-exit-0 outcome, so `appendHarnessFailure` is also never invoked (index.mjs:765-772's `if (failureLayer !== 'clean')` guard is false). Consequently `skillErrorOrWakeForFirstPick` is PROVABLY undefined on every run of this test -- the `if` block is dead code, the assertion it guards NEVER executes, and the test passes regardless of whether the guard's skip record is actually preserved anywhere. Ground truth: it is NOT preserved anywhere -- no file (ledger.jsonl or harness-failures.jsonl) records the guard-blocked slot's own skip reason for this wake. This is both a test_quality defect (a money-safety-critical AC's only verification is unreachable) and a requirement_mismatch (REQ-509's own stated AC is not actually satisfied by the implementation): an operator inspecting the ledger after a real guard-block-then-reroute event has no record of which slot was blocked or why, only the final rerouted pick.",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/always-act-reroute.test.mjs",
+    "lineRange": "568-575",
+    "snippet": "const skillErrorOrWakeForFirstPick = allLines.find((l) => l.slot === 'earn/sol-trade');\n  if (skillErrorOrWakeForFirstPick) {\n    assert.ok(\n      (skillErrorOrWakeForFirstPick.result || '').includes('kill-switch'),\n      'the guard-blocked slot\\'s own skip reason must be preserved verbatim in whatever ledger line records its attempt',\n    );\n  }"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "774-800",
+      "snippet": "if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) { ... attemptsUsed = state.attemptsUsedNext; currentOfferedSlots = rerouteTargets; reinforcement = null; continue; } -- no ledger write for the just-rerouted-away-from slot anywhere in this branch."
+    },
+    {
+      "filePath": "runtime/loop/harness-health.mjs",
+      "lineRange": "40-48",
+      "snippet": "export function classifyLayer(record) { const kind = record && record.kind; if (CLEAN_KINDS.has(kind)) return 'clean'; ... } -- kind:'wake' (the guard-blocked-but-exit-0 outcome) classifies as 'clean', so appendHarnessFailure (index.mjs:765-772) is also never invoked for this attempt."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "493-495",
+      "snippet": "An integration-style test using real (unmodified) guard modules with a fixture forcing a guard-block on the first-picked slot asserts the reroute picks a different slot and the guard-blocked slot's own skip record is preserved verbatim in the ledger (not overwritten/silenced)."
+    }
+  ],
+  "routeToPhase": "2b"
+}
