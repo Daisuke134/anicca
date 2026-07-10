@@ -45,6 +45,16 @@ import {
   hasOpenRiskPositionOfYield,
   hasOpenRiskPositionOfHlTrade,
 } from './catalog-gate.mjs';
+import {
+  isEarnActionSlot,
+  assembleAlwaysActMenu,
+  isMarketRiskFree,
+  noRealizedAction,
+  isRejectableSleepOrOffMenu,
+  nextRerouteState,
+  buildMustActReinforcement,
+  buildAlwaysActLedgerFields,
+} from './always-act-router.mjs';
 
 const execFileAsync = promisify(execFile);
 
@@ -120,11 +130,15 @@ let activeSkillSlots = [];
 let skillCatalog = {};
 let riskTagBySlot = {};
 let alwaysAvailableBySlot = {};
+// franklin-alwaysact-skill-router REQ-502: the FULL parsed registry object (not just the derived
+// activeSkillSlots/riskTagBySlot maps above), needed as-is by assembleAlwaysActMenu each wake.
+let registryForAlwaysAct = null;
 {
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
   const registryPath = path.join(repoRoot, 'skills', 'registry.json');
   try {
     const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
+    registryForAlwaysAct = registry;
     activeSkillSlots = liveSlotNames(registry);
     for (const name of activeSkillSlots) {
       const slotDef = registry.slots[name] || {};
@@ -166,6 +180,107 @@ async function queryHlTradeOpenPositions() {
   try { await fs.access(venvPython); pythonBin = venvPython; } catch { /* fall back to system python3 */ }
   const { stdout } = await execFileAsync(pythonBin, [hlScript, 'account'], { timeout: 15000 });
   return JSON.parse(stdout);
+}
+
+// ── franklin-alwaysact-skill-router REQ-501: identity + flag gate ─────────────────────────────
+//
+// Mirrors skills/earn/sol-trade/run.sh:28-41's own-vs-CLI-wallet derivation-and-comparison idiom
+// EXACTLY, including its FIND-001 fix (unset ANICCA_SOLANA_PRIVATE_KEY before deriving either side —
+// an ambient override would otherwise make OWN_WALLET===CLI_WALLET for ANY instance and bypass the
+// identity-match guard entirely). Read-only address derivation only — never signs, never spends,
+// never logs the underlying secret (runtime/wallet-address-solana.mjs's own REQ-006 contract).
+
+const WALLET_ADDRESS_SOLANA_PATH = path.join(
+  path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..'),
+  'runtime', 'wallet-address-solana.mjs',
+);
+
+function envWithoutSolanaKey(overrides = {}) {
+  const env = { ...process.env, ...overrides };
+  delete env.ANICCA_SOLANA_PRIVATE_KEY;
+  return env;
+}
+
+async function deriveSolanaAddress(env) {
+  try {
+    const { stdout } = await execFileAsync(process.execPath, [WALLET_ADDRESS_SOLANA_PATH], { env, timeout: 15000 });
+    const addr = (stdout || '').trim();
+    return addr.length ? addr : null;
+  } catch {
+    return null; // fail-closed: derivation error/timeout -> treat as NOT Franklin (REQ-501 edge case)
+  }
+}
+
+// Franklin's own body always runs with ANICCA_HOME literally === $HOME/.blockrun (the same real
+// deployment topology wallet-address-solana.test.mjs's own live test verifies against
+// /Users/operator/.blockrun). This is a CHEAP, structural fast-path — not a substitute for the real
+// crypto derivation below (which still always runs whenever this holds) — that lets every OTHER
+// instance in the fleet (automaton, any future instance) whose ANICCA_HOME is structurally NOT
+// $HOME/.blockrun skip the (real, subprocess-spawning) identity derivation entirely on every wake,
+// forever: spawning 2+ node subprocesses per wake, 24/7, for a check that can only ever resolve
+// "not Franklin" for those instances would be pure wasted compute for a cost-conscious self-funded
+// fleet. A wake whose ANICCA_HOME genuinely IS $HOME/.blockrun always falls through to the real check.
+function looksLikeFranklinHome(home) {
+  return typeof process.env.ANICCA_HOME === 'string' && process.env.ANICCA_HOME === path.join(home, '.blockrun');
+}
+
+// Minimum wall-clock floor for a genuine (plausibly-Franklin) identity-gate resolution. This is a
+// deliberate, deterministic pacing floor — not incidental subprocess-spawn timing — for a
+// money-safety-critical decision that removes the sleep safety valve for the rest of the wake:
+// it bounds how fast this gate can be re-evaluated back-to-back (avoiding a subprocess-spawn
+// thrash if wakes were ever misconfigured to cycle without the normal SLEEP_BASE_S interval) and is
+// negligible relative to a real wake's normal cadence (SLEEP_BASE_S defaults to 120s) or a real
+// think() call's own network latency.
+const ALWAYS_ACT_IDENTITY_SETTLE_FLOOR_MS = 500;
+
+/** REQ-501(a): does THIS instance's own resolved Solana wallet match $HOME/.blockrun's (Franklin's
+ * own home)? Fail-closed on any derivation error/empty/mismatch — never throws. Sequential (not
+ * Promise.all), mirroring sol-trade/run.sh:35-36's own two SEQUENTIAL `$(...)` command substitutions.
+ * A money-safety-critical identity gate (this decision governs whether the sleep safety valve is
+ * removed for the rest of the wake) re-confirms OWN_WALLET after deriving CLI_WALLET — an A-B-A
+ * pattern that guards against a TOCTOU race on the underlying identity file between the two reads,
+ * not merely a single point-in-time snapshot. */
+async function checkAlwaysActIdentity() {
+  const home = process.env.HOME;
+  if (!home || !looksLikeFranklinHome(home)) return false;
+
+  const started = Date.now();
+  const ownEnv = envWithoutSolanaKey();
+  const cliEnv = envWithoutSolanaKey({ ANICCA_HOME: path.join(home, '.blockrun') });
+
+  const match = await (async () => {
+    const ownWallet = await deriveSolanaAddress(ownEnv);
+    if (!ownWallet) return false;
+    const cliWallet = await deriveSolanaAddress(cliEnv);
+    if (!cliWallet || cliWallet !== ownWallet) return false;
+    const ownWalletReconfirm = await deriveSolanaAddress(ownEnv);
+    return ownWalletReconfirm === ownWallet;
+  })();
+
+  const elapsedMs = Date.now() - started;
+  if (elapsedMs < ALWAYS_ACT_IDENTITY_SETTLE_FLOOR_MS) {
+    await new Promise((r) => setTimeout(r, ALWAYS_ACT_IDENTITY_SETTLE_FLOOR_MS - elapsedMs));
+  }
+  return match;
+}
+
+/**
+ * REQ-501(b): default-OFF config flag, mirroring SOL_GATE_LIVE_ENABLE's own fail-closed contract
+ * (franklin-sol-evolvable-edge REQ-009) — unset/malformed (anything other than the literal string
+ * "1") is treated as disabled. Resolved freshly on EVERY wake (never cached across wakes) — mirrors
+ * sol-trade/run.sh's own per-invocation identity derivation, so a mid-session identity/flag change
+ * takes effect on the very next wake, exactly matching REQ-501's "WHEN a wake begins..." EARS clause.
+ *
+ * @returns {Promise<{engaged: boolean, identityMatch: boolean, flagReason: string|null}>}
+ */
+async function resolveAlwaysActGate() {
+  const identityMatch = await checkAlwaysActIdentity();
+  const flagRaw = process.env.ALWAYS_ACT_ENABLED;
+  const flagReason = flagRaw === '1'
+    ? null
+    : (flagRaw == null || flagRaw === '' ? 'flag_unset' : 'flag_malformed');
+  const engaged = identityMatch && flagRaw === '1';
+  return { engaged, identityMatch, flagReason };
 }
 
 // ── State ─────────────────────────────────────────────────────────────────────
@@ -230,6 +345,23 @@ async function runOneWake() {
 
   const wakeId = ulid();
   const ts = Math.floor(Date.now() / 1000);
+
+  // 0. franklin-alwaysact-skill-router REQ-501: identity+flag gate, freshly re-evaluated EVERY wake.
+  const { engaged: alwaysActEngagedThisWake, identityMatch: alwaysActIdentityMatch, flagReason: alwaysActFlagReason } = await resolveAlwaysActGate();
+
+  async function writeAlwaysActNotEngagedIfNeeded() {
+    // REQ-512: a Franklin-identity wake whose flag is unset/malformed ledgers this diagnostic line
+    // on EVERY such wake (unconditionally, not only after an intended go-live) — the anchor that
+    // later lets a companion detector distinguish "not yet enabled" from "silently regressed back to
+    // idle-permitted". Written once THINK has been attempted (never before) so it is never mistaken
+    // by an observer for this wake's own terminal outcome being ready before the brain call happened.
+    if (alwaysActIdentityMatch && !alwaysActEngagedThisWake) {
+      const notEngagedRecord = formatRecord({
+        ts, wake_id: wakeId, kind: 'always_act_not_engaged', reason: alwaysActFlagReason,
+      });
+      await safeAppend(LEDGER_PATH, notEngagedRecord);
+    }
+  }
 
   // 1. Load wallet address (no key derivation — REQ-004, REQ-008)
   const walletAddress = config.ANICCA_WALLET_ADDRESS || process.env.ANICCA_WALLET_ADDRESS || 'unknown';
@@ -331,6 +463,28 @@ async function runOneWake() {
     eligibleSkillSlots = activeSkillSlots;
   }
 
+  // 5c. franklin-alwaysact-skill-router REQ-502/503: the earn-action-only menu, only assembled when
+  // this wake is actually always-act-engaged (REQ-501). Reuses the SAME riskTagOf/alwaysAvailableOf/
+  // hasOpenRiskPositionOf/filterCatalog inputs the ordinary catalog gate above already resolved this
+  // wake — no new I/O, no duplicate classification source.
+  let alwaysActMenu = [];
+  if (alwaysActEngagedThisWake) {
+    try {
+      alwaysActMenu = assembleAlwaysActMenu({
+        registry: registryForAlwaysAct,
+        catalogFilterFn: filterCatalog,
+        balanceUsdc: liquidUsdc,
+        reserveThresholdUsdc: DEFAULT_BOOTSTRAP_RESERVE_USDC,
+        riskTagOf,
+        alwaysAvailableOf,
+        hasOpenRiskPositionOf,
+      });
+    } catch (err) {
+      process.stderr.write(`[loop] assembleAlwaysActMenu failed (${err.message}) — treating as empty menu (REQ-508 escalation)\n`);
+      alwaysActMenu = [];
+    }
+  }
+
   const ctx = assembleContext({
     walletAddress,
     balanceUsdc: liquidUsdc, // REAL liquid (was broke?0:undefined → always 0, so the buffer steer saw $0 for everyone)
@@ -346,13 +500,24 @@ async function runOneWake() {
     earnSteer,
     avoidSlot,
     recentSlots: recentActions.map((a) => a.slot),
+    alwaysActEngaged: alwaysActEngagedThisWake,
+    alwaysActMenu,
   });
 
-  // 6. THINK (brain call)
+  // 6. THINK (brain call). REQ-505/506/511/513: an always-act-engaged wake runs through the bounded
+  // attemptsUsed retry/reroute/escalation state machine (at most 2 think() calls total) instead of
+  // today's single-think()-call path — see runAlwaysActWake. A non-engaged ctx (the overwhelming
+  // majority of all wakes, every non-Franklin instance) is completely unaffected: it never reaches
+  // this branch and falls straight through to the unchanged code below, byte-for-byte.
+  if (ctx.alwaysActEngaged) {
+    return runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu });
+  }
+
   let rawResponse;
   try {
     rawResponse = await think(ctx, config);
   } catch (err) {
+    await writeAlwaysActNotEngagedIfNeeded();
     process.stderr.write(`[loop] THINK failed: ${err.message}\n`);
     const sleepS = cfgNum(config.SLEEP_ERROR_S, 60);
     const record = formatRecord({
@@ -378,6 +543,7 @@ async function runOneWake() {
     await sleepSecs(sleepS);
     return;
   }
+  await writeAlwaysActNotEngagedIfNeeded();
 
   // 7. Parse tool call
   const toolCall = parseToolCall(rawResponse);
@@ -505,6 +671,206 @@ async function runOneWake() {
   await safeAppend(LEDGER_PATH, safeRecord);
 
   await sleepSecs(sleepS);
+}
+
+// ── franklin-alwaysact-skill-router: the always-act-engaged wake (REQ-505/506/508/511/513) ────────
+//
+// Runs the bounded attemptsUsed retry/reroute/escalation state machine (behavioral-spec.md sec2.5's
+// exhaustive 12-row transition matrix) in place of runOneWake's steps 6-10 above. `attemptsUsed`
+// (nextRerouteState's own {0,1} output) is the SOLE arbiter of every branch decision — never
+// `currentOfferedSlots` array identity (spec-review iteration-4 FIND-301). At most 2 think() calls
+// total per wake (REQ-511).
+
+async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
+  const sleepS = cfgNum(config.SLEEP_BASE_S, 120);
+
+  // REQ-502 empty-menu terminal case: zero think() calls, immediate truthful escalation.
+  if (!Array.isArray(alwaysActMenu) || alwaysActMenu.length === 0) {
+    await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed: 0 });
+    await sleepSecs(sleepS);
+    return;
+  }
+
+  let attemptsUsed = 0;
+  let currentOfferedSlots = alwaysActMenu; // baseline attempt: the FULL always-act menu
+  let reinforcement = null; // set only ahead of a REQ-505 reprompt attempt
+
+  for (;;) {
+    const attemptCtx = reinforcement
+      ? { ...ctx, alwaysActMenu: currentOfferedSlots, mustActReinforcement: reinforcement }
+      : { ...ctx, alwaysActMenu: currentOfferedSlots };
+
+    let rawResponse;
+    try {
+      rawResponse = await think(attemptCtx, config);
+    } catch (err) {
+      // Brain-transport failure mid-attempt: identical handling to the non-always-act wake_error
+      // path above (REQ-509: never a money-safety guard interaction; no fabricated success).
+      process.stderr.write(`[loop] THINK failed (always-act): ${err.message}\n`);
+      const record = formatRecord({
+        ts, wake_id: wakeId, kind: 'wake_error', sleep_s: sleepS, error: 'proxy_down', model: currentTier.model,
+      });
+      await safeAppend(LEDGER_PATH, record);
+      await appendHarnessFailure({
+        ts, wakeId, kind: 'wake_error', layer: 'brain_transport', exitCode: null,
+        rawDetail: redactPrivateKeyPatterns(err.message || ''),
+      });
+      await sleepSecs(sleepS);
+      return;
+    }
+
+    const toolCall = parseToolCall(rawResponse);
+
+    // Case A (REQ-505): no tool call at all this attempt.
+    if (!toolCall) {
+      const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });
+      if (state.exhausted) {
+        await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });
+        await sleepSecs(sleepS);
+        return;
+      }
+      attemptsUsed = state.attemptsUsedNext;
+      currentOfferedSlots = alwaysActMenu; // a reprompt NEVER narrows the schema (only a reroute does)
+      reinforcement = buildMustActReinforcement(ctx, { outcome: 'no-tool-call' });
+      continue;
+    }
+
+    const { slot, args } = toolCall;
+
+    // Case B (REQ-513): a fabricated "sleep" or any slot absent from THIS attempt's offered set.
+    if (isRejectableSleepOrOffMenu(slot, currentOfferedSlots)) {
+      const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });
+      if (state.exhausted) {
+        await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });
+        await sleepSecs(sleepS);
+        return;
+      }
+      attemptsUsed = state.attemptsUsedNext;
+      currentOfferedSlots = alwaysActMenu; // a rejected-slot retry is ALWAYS a REQ-505 reprompt
+      reinforcement = buildMustActReinforcement(ctx, { outcome: 'rejected-slot' });
+      continue;
+    }
+
+    // Case C (REQ-507): a valid slot was picked — execute it verbatim (opaque args pass-through, no
+    // ranking/filtering by content). Mirrors runOneWake's own step 8 loop-detect bookkeeping.
+    reinforcement = null;
+    if (slot !== avoidSlot) { avoidSlot = null; loopDetectStreak = 0; loopDetectSlot = null; }
+    recentActions.push({ slot, args: args || {} });
+    const windowBuf = Math.max(cfgNum(config.LOOP_DETECT_WINDOW, 3) * 2, 10);
+    if (recentActions.length > windowBuf) recentActions = recentActions.slice(-windowBuf);
+
+    let childKillRef = { kill: null };
+    currentChildKiller = () => { if (childKillRef.kill) childKillRef.kill(); };
+    let skillResult;
+    try {
+      skillResult = await runSkillWithKillRef(slot, args, wakeId, config, childKillRef);
+    } finally {
+      currentChildKiller = null;
+    }
+    if (shuttingDown) return;
+
+    let kind = 'wake';
+    let profitable = false;
+    let earnLine = null;
+    if (skillResult.notFound) kind = 'skill_missing';
+    else if (skillResult.timedOut) kind = 'skill_timeout';
+    else if (skillResult.exitCode !== 0) kind = 'skill_error';
+    else if (isEarnActionSlot(slot)) {
+      // REQ-506/FIND-002: the always-act-widened classify gate — isEarnActionSlot, not isEarnSlot —
+      // so economy/gig and economy/lending picks are classify-eligible on an engaged wake exactly
+      // like any isEarnSlot member.
+      const earnLedgerPath = defaultEarnLedgerPath(config);
+      const result = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);
+      profitable = result.profitable;
+      earnLine = result.earnLine;
+    }
+
+    // Harness-failure detail (mirrors runOneWake's own step 9b, unmodified mechanism).
+    const failureLayer = classifyLayer({ kind });
+    if (failureLayer !== 'clean') {
+      await appendHarnessFailure({
+        ts, wakeId, slot, kind, layer: failureLayer,
+        exitCode: skillResult.exitCode != null ? skillResult.exitCode : null,
+        rawDetail: skillResult.output || '',
+      });
+    }
+
+    // REQ-506: an isEarnActionSlot pick that produced NO realized earn-ledger line for this wake
+    // triggers the bounded reroute. A skill_error/skill_timeout/skill_missing outcome (already routed
+    // through appendHarnessFailure above) or a non-earn-action slot is accepted as this wake's
+    // terminal result exactly like today's ordinary wake — this reroute is never triggered by an
+    // execution error (REQ-506 edge case).
+    if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) {
+      const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });
+      if (state.exhausted) {
+        await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });
+        await sleepSecs(sleepS);
+        return;
+      }
+      // FIND-101: the reroute target set hard-excludes the just-picked slot AND every risk:"capital"
+      // slot — a capital-risking slot is NEVER a valid reroute target after a no-edge WAIT.
+      const rerouteTargets = alwaysActMenu.filter((s) => s !== slot && isMarketRiskFree(s, riskTagOf));
+      if (rerouteTargets.length === 0) {
+        // REQ-506 edge case: the risk-free-filtered reroute set is empty -> zero additional think()
+        // calls, immediate escalation — NEVER a fallback into a risk:"capital" reroute target.
+        await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });
+        await sleepSecs(sleepS);
+        return;
+      }
+      attemptsUsed = state.attemptsUsedNext;
+      currentOfferedSlots = rerouteTargets; // FIND-201: THIS attempt's real offered/validity set
+      reinforcement = null; // the reroute narrows the SCHEMA itself; no extra directive text needed
+      continue;
+    }
+
+    // Terminal: this attempt's pick is this wake's realized (or clean-non-earn-action) result.
+    const safeObservation = redactPrivateKeyPatterns(skillResult.output || '').slice(0, 1200);
+    const ledgerFields = buildAlwaysActLedgerFields({ wakeId, slot, args, attemptsUsed, realized: kind === 'wake' && !noRealizedAction(earnLine) });
+    const recordFields = {
+      ts,
+      wake_id: ledgerFields.wake_id,
+      kind,
+      sleep_s: sleepS,
+      model: currentTier.model,
+      slot: ledgerFields.slot,
+      attemptsUsed: ledgerFields.attemptsUsed,
+      ...(args && Object.keys(args).length ? { args } : {}),
+      ...(kind === 'wake' ? { profitable } : {}),
+      ...(skillResult.exitCode != null ? { exit_code: skillResult.exitCode } : {}),
+      ...(safeObservation ? { result: safeObservation.replace(/\s+/g, ' ').slice(0, 900) } : {}),
+    };
+    const recordStr = formatRecord(recordFields);
+    const safeRecord = redactPrivateKeyPatterns(recordStr);
+    await safeAppend(LEDGER_PATH, safeRecord);
+    await sleepSecs(sleepS);
+    return;
+  }
+}
+
+/**
+ * REQ-508: the exhausted-bound terminal case — truthfully recorded (never a fabricated `profitable`
+ * or success value, `slot: null`) and escalated via the existing appendHarnessFailure mechanism
+ * (unmodified) so the existing self-heal escalation path can pick it up.
+ */
+async function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed }) {
+  const ledgerFields = buildAlwaysActLedgerFields({ wakeId, slot: null, args: {}, attemptsUsed, realized: false });
+  const recordFields = {
+    ts,
+    wake_id: ledgerFields.wake_id,
+    kind: 'router_no_realized_action',
+    sleep_s: sleepS,
+    model: currentTier.model,
+    slot: ledgerFields.slot,
+    attemptsUsed: ledgerFields.attemptsUsed,
+    profitable: false,
+  };
+  const recordStr = formatRecord(recordFields);
+  const safeRecord = redactPrivateKeyPatterns(recordStr);
+  await safeAppend(LEDGER_PATH, safeRecord);
+  await appendHarnessFailure({
+    ts, wakeId, kind: 'router_no_realized_action', layer: 'router', exitCode: null,
+    rawDetail: 'always-act router: REQ-505/506/511/513 retry/reroute budget exhausted with no realized earn-ledger line this wake',
+  });
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────

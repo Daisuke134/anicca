@@ -2,7 +2,7 @@
   "featureName": "franklin-alwaysact-skill-router",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "2a",
+  "currentPhase": "2b",
   "phaseHistory": [
     {
       "from": "init",
@@ -63,6 +63,12 @@
       "to": "2a",
       "timestamp": "2026-07-11T02:00:00.000Z",
       "reason": "Phase 2a precision fix + RED phase complete. (1) Applied iteration-5 notes.md's 2 non-blocking observations to behavioral-spec.md (sec2.5 matrix rows 10-12, REQ-510 attemptsUsed-vs-think()-call-count domain pin). (2) Authored 53 test() blocks across 4 new files (always-act-router.test.mjs 26, always-act-wire-seam.test.mjs 3, always-act-reroute.test.mjs 23, always-act-nojudgment.test.mjs 1) + 1 shared non-test harness helper (__tests__/helpers/always-act-harness.mjs), covering every REQ-501..513 and every PROP-ID in verification-architecture.md's Proof Obligations table. Confirmed RED: 48/53 authored blocks fail for the correct reason (missing always-act-router.mjs module / real index.mjs-brain.mjs behavior unchanged), 5 pass as intentional non-regression/baseline-holds confirmations. Confirmed regression baseline: 212/212 pre-existing test cases pass unmodified (120 official package.json test-script set + 92 additional sweep of every other pre-existing test file). Evidence: evidence/red-phase.md. No source module under runtime/loop/ touched this commit -- test/evidence/spec files only."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-11T04:00:00.000Z",
+      "reason": "Phase 2b GREEN complete. Implemented runtime/loop/always-act-router.mjs (Pure Core: isEarnActionSlot, assembleAlwaysActMenu, buildAlwaysActToolDefinitions, isMarketRiskFree, noRealizedAction, isRejectableSleepOrOffMenu, nextRerouteState, buildMustActReinforcement, buildAlwaysActLedgerFields, isPostGoLiveRegression) and additively wired prompt.mjs::getToolDefinitions(slots,{omitSleep}) + buildUserMessage's optional mustActReinforcement line, context.mjs's ctx.alwaysActEngaged/ctx.alwaysActMenu, brain.mjs's conditional tools/prompt-text lines, and index.mjs's REQ-501 identity+flag gate (resolveAlwaysActGate/checkAlwaysActIdentity, mirrors sol-trade/run.sh:28-41, re-evaluated every wake with a structural fast-path for non-Franklin ANICCA_HOME + a 500ms settle floor for a genuine identity resolution), REQ-512 always_act_not_engaged diagnostic line, and the new runAlwaysActWake() function implementing REQ-505/506/508/511/513's bounded attemptsUsed retry/reroute/escalation state machine (behavioral-spec.md sec2.5's 12-row transition matrix). Fixed a pre-existing fixture defect in __tests__/helpers/always-act-harness.mjs::writeMockEarnSkill (its profitable:true fixture line did not satisfy skills/_shared/lib/ledger.mjs::isProfitable's real, unmodified contract). Resolved red-phase.md's caveat (a) (deterministic 2-total think() bounding) via the attemptsUsed state machine + a structural non-Franklin fast-path + a documented settle floor; caveat (b) was not needed (the real, unmodified skills/registry.json path worked end-to-end with zero override). All 53 new tests PASS; all 212 pre-existing tests PASS (173 official package.json set + 92 additional sweep = 265/265 combined); confirmed stable across 6+ repeated full runs of always-act-reroute.test.mjs (0 failures). REQ-509 money-safety diff-path allowlist (PROP-509a) and guard-block reroute (PROP-509b) both green. Evidence: evidence/green-phase.md."
     }
   ],
   "iterations": {
@@ -87,5 +93,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-10T14:57:09.001Z",
-  "updatedAt": "2026-07-11T00:05:00.000Z"
+  "updatedAt": "2026-07-11T04:00:00.000Z"
 }

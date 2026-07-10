@@ -64,13 +64,23 @@ export function writeMockSkill(home, slot, scriptBody) {
  * (a "realized economic result" per REQ-506/earn-detect.mjs's classifyEarnResult contract: a line
  * with `wake === WAKE_ID`). When it does NOT match (or `realizeForWakeId` is null), it exits 0 with
  * no ledger write — REQ-506's "no realized action" / neutral-signal-WAIT case.
+ *
+ * The written line's shape matches skills/_shared/lib/ledger.mjs::isProfitable's REAL, unmodified
+ * contract (net_usdc>0 AND a real confirmation receipt AND external===true AND source not a swap) —
+ * not merely a decorative `profitable` field — so `profitable:true` fixtures actually classify as
+ * profitable through the SAME classifyEarnResult/isProfitable this feature reuses unmodified
+ * (REQ-506), exactly as a real Solana-settled earn action would (sig + confirmed:true; a fake but
+ * well-formed signature string, never a real on-chain signature).
  */
 export function writeMockEarnSkill(home, slot, { realizeForWakeId = null, profitable = true } = {}) {
   const ledgerPath = path.join(home, 'skills', 'earn', 'state', 'earn-ledger.jsonl');
   fs.mkdirSync(path.dirname(ledgerPath), { recursive: true });
+  const realismFields = profitable
+    ? ',"net_usdc":0.01,"external":true,"sig":"mockAlwaysActFixtureSig1111111111111111111111111111111111111111","confirmed":true'
+    : ',"net_usdc":0';
   const body = realizeForWakeId
     ? `if [ "$WAKE_ID" = "${realizeForWakeId}" ]; then\n` +
-      `  printf '%s\\n' '{"wake":"'"$WAKE_ID"'","slot":"${slot}","profitable":${profitable ? 'true' : 'false'},"earn_usdc":${profitable ? '0.01' : '0'}}' >> "${ledgerPath}"\n` +
+      `  printf '%s\\n' '{"wake":"'"$WAKE_ID"'","slot":"${slot}","profitable":${profitable ? 'true' : 'false'},"earn_usdc":${profitable ? '0.01' : '0'}${realismFields}}' >> "${ledgerPath}"\n` +
       `fi\n` +
       `echo "[${slot}] mock earn skill ran wake=$WAKE_ID"\nexit 0`
     : `echo "[${slot}] mock earn skill ran wake=$WAKE_ID (no-op, no ledger line)"\nexit 0`;
