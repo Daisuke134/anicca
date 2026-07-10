@@ -1,0 +1,17 @@
+{
+  "featureName": "franklin-earn-coldstart-evolution",
+  "mode": "strict",
+  "language": "typescript",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-franklin-earn-coldstart-evolution-1783689462270",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-10T13:17:42.269Z",
+  "updatedAt": "2026-07-10T13:17:42.269Z"
+}
