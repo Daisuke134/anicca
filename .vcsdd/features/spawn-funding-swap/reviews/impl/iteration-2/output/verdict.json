@@ -1,0 +1,67 @@
+{
+  "feature": "spawn-funding-swap",
+  "sprintNumber": 1,
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-1.md"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/settlement.test.mjs + driver-choke-point.test.mjs", "description": "Live-executed: 16/16 pass. Confirmed named tests 'PROP-013(a): observed delta EXACTLY at the 0.5% boundary (995_000n of a 1_000_000n quote) MUST pass' and 'PROP-013(b): observed delta ONE base unit below the boundary (994_999n) MUST fail closed' both pass, plus 'PROP-013 (driver-level, iteration-5): verifySettlement's toleranceBps argument is bit-identical to TOLERANCE_BPS' passes."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/pure/settlement.mjs:14-19", "description": "Read-verified: minAcceptable = (quotedAmountOutUakt * (10_000n - toleranceBpsBig)) / 10_000n is all-bigint arithmetic, no float intermediate. TOLERANCE_BPS defined exactly once in lib/pure/constants.mjs:27 (grep confirms zero second definition in lib/ or bin/)."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/driver.mjs:60-108,239-245", "description": "Read-verified CRIT-004: ensureLeg0Submitted's call order is nonce-resolve -> writeState({status:'submitting',nonce}) (line 89, textually precedes) -> signAndBroadcast (line 91). On resume with existing.status==='submitting', chainReader.getBaseTxStatusByNonce is called (line 75) before any signAndBroadcast. Read-verified CRIT-010: runSwap()'s akashKeyName!==REQUIRED_AKASH_KEY_NAME check (lines 239-241) and actualBaseSignerAddress!==expectedBaseSignerAddress check (lines 242-245) both textually precede the lock acquisition (line 281) and all price/route/broadcast calls."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/resolve-swap-identity.test.mjs + cli.test.mjs", "description": "Live-executed: 13/13 pass, all 10 named CRIT-006 tests present and passing verbatim by name, including the (a)/(b)/(c) fail-closed identity isolation cases and the two production-wiring subprocess tests."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/driver-preconditions.test.mjs", "description": "Live-executed: 9/9 pass. Confirmed named PROP-015/PROP-016 tests (CRIT-010) all pass by exact name."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/resolve-swap-identity.mjs:38-49", "description": "Read-verified: ANICCA_HOME gate (typeof/empty-string check, line 38) textually precedes resolveEvmPrivateKey call (line 42); baseAddress is privateKeyToAccount(privateKey).address (viem-derived, line 47), never a raw env literal; no SPAWN_FUNDING_SWAP_EXPECTED_BASE_SIGNER_ADDRESS/SOURCE_BASE_ADDRESS read exists in the file or in bin/spawn-funding-swap.mjs (grep confirms)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/*.test.mjs (full suite)", "description": "Live-executed: `cd ~/anicca && node --test skills/self/spawn-funding-swap/lib/__tests__/*.test.mjs` => 104 tests, 104 pass, 0 fail, 0 cancelled, 0 skipped, 0 todo (exit 0). The 98/98 figure in contracts/sprint-1.md is stale — 6 new tests (state-dir.test.mjs) were added post-contract by the FIND-002 (STATE_DIR) fix commit b253315; all 6 pass."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/resolve-swap-state-dir.mjs + bin/spawn-funding-swap.mjs:43", "description": "FIND-002 from iteration-1 (bin/spawn-funding-swap.mjs's undefaulted STATE_DIR causing path.join(undefined,...) TypeError) is genuinely closed: STATE_DIR is now resolveSwapStateDir({env: process.env}), which either returns a concrete non-empty string (reusing skills/self/spawn/lib/state-path.js's resolveStateDir(), defaulting to a 'spawn-funding-swap' subdirectory, never /tmp-rooted) or throws explicitly -- never undefined. Verified via 6 live-passing tests in lib/__tests__/state-dir.test.mjs, including one that constructs the REAL createLedgerStore with the resolved default and confirms it never throws (the exact production crash site)."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/base-units.test.mjs", "description": "Live-executed standalone: 12/12 pass. Confirmed fixed fixture toBaseUnits(15.0,6)===15000000n, floor-rounding fixture 15.0000009->15000000n, and wrong-decimals fixtures toBaseUnits(15.0,0)/toBaseUnits(15.0,18) both fail exact equality against 15000000n."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/pure/base-units.mjs:1-73", "description": "Read-verified: toBaseUnits/fromBaseUnits are the sole exported conversion functions; grep for `toBaseUnits(` across lib/ and bin/ (excluding tests) shows exactly one call site: driver.mjs:163 `pureFns.toBaseUnits(cappedUsd, USDC_DECIMALS_BASE)`, with capUsd applied to the dollar float BEFORE conversion (driver.mjs:162). No second dollar-to-base-unit conversion exists anywhere."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/pure/funding-check.mjs:15-17", "description": "Read-verified: checkSourceFunded's body is exactly `baseUsdcBalance >= requiredBaseUnits && baseGasBalance >= minGasWei`, no Number()/float coercion. grep confirms MIN_GAS_WEI defined exactly once (lib/pure/constants.mjs:22, literal 1_000_000_000_000_000n)."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/funding-check.test.mjs + driver-choke-point.test.mjs", "description": "Live-executed: 16/16 pass, including 'PROP-005 (driver-level, FIND-003): checkSourceFunded's requiredBaseUnits, Skip getRoute's amount_in, and BaseSigner.signAndBroadcast's tx amount are ALL THREE bit-identical bigints in one run' and the MIN_GAS_WEI/nonzero-balance discriminating fixtures."},
+        {"type": "command", "location": "git -C ~/anicca log --oneline -- skills/economy/gig/lib/lock.mjs", "description": "Live-executed: last commit touching lock.mjs is e773c23 ('fix(gig): SEC-1 path traversal via unsanitized gigId lock key'), which predates and is unrelated to this feature's commits (9210188..b253315). `git status --short skills/economy/gig/lib/lock.mjs` is empty (no uncommitted modification). Confirms CRIT-005: lock.mjs is genuinely unmodified within this sprint's commit range."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/ledger-store.mjs:9,52-61", "description": "Read-verified: sole lock import is `withGigLock` from ../../../economy/gig/lib/lock.mjs; lock key passed at line 55 is `destinationAddress`, never a route/quote id; no independent lock primitive exists outside the fs.mkdir(stateDir) directory-creation call."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/driver-lock-and-concurrency.test.mjs", "description": "Live-executed: 2/2 pass, including 'REQ-010 falsifiability: dedup is keyed by DESTINATION ADDRESS, not by route/quote id'."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/*.test.mjs (full suite, live-executed)", "description": "104/104 pass, 0 fail, 0 cancelled, 0 skipped, 0 todo, process exit 0. (Contract's stated 98/98 is a stale pre-FIND-002-fix figure; the 6 new tests added by the fix all pass.)"},
+        {"type": "test-output", "location": "skills/self/spawn/lib/__tests__/*.test.mjs + *.test.js + skills/earn/sol-trade/lib/__tests__/*.test.mjs (live-executed)", "description": "310/310 pass, 0 fail -- zero regression from this sprint's changes."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/test-money-safety-scan.test.mjs + purity-boundary.test.mjs", "description": "Live-executed: 5/5 pass (PROP-021 + PROP-017). Independent grep `grep -rln 'api.skip.build|chain-reader.mjs|base-signer.mjs|skip-api-client.mjs|price-oracle.mjs' skills/self/spawn-funding-swap/lib/__tests__/` returns only test-money-safety-scan.test.mjs itself (the pattern-definition file) -- zero concrete-client imports/endpoint literals in any fixture/test file outside fakes/."},
+        {"type": "test-output", "location": "skills/self/spawn-funding-swap/lib/__tests__/driver-choke-point.test.mjs (standalone, live-executed)", "description": "9/9 pass. Confirmed by exact name (CRIT-009): PROP-019 (capped), PROP-019 (uncapped companion), PROP-019 falsifiability, PROP-023 (driver-level) -- all pass, asserting bit-identical bigint equality (never a <=-range check), with the falsifiability test genuinely using assert.notEqual against a wrong-decimals override."}
+      ]
+    }
+  ]
+}

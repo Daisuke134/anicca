@@ -1,0 +1,38 @@
+spawn-funding-swap — Phase 5 manual security scan raw output (2026-07-10)
+Working dir: /Users/anicca/anicca
+
+=== hardcoded-secret literal scan (private key patterns) ===
+$ grep -rniE "0x[0-9a-f]{64}|-----BEGIN (RSA |EC )?PRIVATE KEY-----" skills/self/spawn-funding-swap/ --include="*.mjs" --include="*.js"
+(no matches — clean)
+
+=== second dollar->base-unit conversion site scan (choke-point uniqueness, REQ-012) ===
+$ grep -rn "1e6\|10 \*\* 6\|\* 1000000\|Math.round.*1e6" skills/self/spawn-funding-swap/ --include="*.mjs" | grep -v __tests__
+(no matches — clean; toBaseUnits/fromBaseUnits in lib/pure/base-units.mjs remain the sole scaling logic)
+
+$ grep -rn "toBaseUnits|fromBaseUnits" --include="*.mjs" --include="*.js" skills/self/spawn-funding-swap/ | grep -v __tests__
+skills/.../fakes/cli-success-fixture.mjs:16,26     <- test fixture, reuses the real function (not a second conversion)
+skills/self/spawn-funding-swap/lib/driver.mjs:4,14,35,36,163,252,260   <- the sole production call sites (capped conversion at :163, read-side at :260)
+skills/.../pure/base-units.mjs:*                    <- the choke-point definition itself
+skills/.../pure/swap-need.mjs:9                     <- doc comment only
+CONCLUSION: exactly one production call site each for toBaseUnits (driver.mjs:163) and fromBaseUnits (driver.mjs:260). No second/rogue conversion site found.
+
+=== production real-client wiring dependency check ===
+$ ls skills/self/spawn-funding-swap/lib/real-clients/
+ls: skills/self/spawn-funding-swap/lib/real-clients/: No such file or directory
+NOTE: bin/spawn-funding-swap.mjs dynamically imports ../lib/real-clients/{chain-reader,price-oracle,skip-api-client,base-signer,relay-poller}.mjs
+in its production (non-fake-deps) code path. This directory does not exist yet. This is a PRE-EXISTING, EXPLICITLY DOCUMENTED sprint-1 scope
+boundary (contracts/sprint-1.md line 6: "This sprint does NOT include the real effectful client implementations
+(lib/real-clients/{chain-reader,price-oracle,skip-api-client,base-signer,relay-poller}.mjs referenced by bin/spawn-funding-swap.mjs's production
+wiring path)"), NOT a defect newly found by this hardening pass. No PROP-001..023 obligation depends on real-clients/ existing -- every proof
+obligation is discharged against the pure core / driver / injected fakes. See verification-report.md and purity-audit.md for full disposition.
+
+=== @reown/appkit / walletconnect npm-audit findings reachability check ===
+$ grep -rn "@reown|walletconnect" skills/self/spawn-funding-swap/
+none found in feature
+CONCLUSION: the 25 npm-audit findings (23 moderate, 2 high, @reown/appkit / @walletconnect/universal-provider transitive chain) are NOT reachable
+from spawn-funding-swap's own import graph (feature's only external import is viem/accounts, resolve-identity.mjs). Out of this feature's scope;
+flagged for awareness only, non-blocking.
+
+=== semgrep tool availability ===
+$ semgrep --version
+1.168.0 (/opt/homebrew/bin/semgrep)

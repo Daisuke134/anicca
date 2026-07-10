@@ -1,0 +1,62 @@
+{
+  "sprintNumber": 1,
+  "feature": "spawn-funding-swap",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "contract",
+    "contractPath": "contracts/sprint-1.md",
+    "contractDigest": "7eeab47e50f2f79fa9ae981e54f129abb8094960fb1b2dc4dd625e942a13b34e"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "lib/__tests__/driver-choke-point.test.mjs:90,122,152,174", "description": "CRIT-009's four named PROP-019/PROP-023 tests independently re-read verbatim at the exact lines cited: capped/uncapped fixtures assert exact bigint equality of amount_in AND signAndBroadcast tx amount against toBaseUnits(SWAP_MAX_USD or usdEquivalentOf(...), USDC_DECIMALS_BASE), plus a separate typeof===\"bigint\" check (lines 112-113,117-118); the falsifiability fixture (line 152-171) genuinely wires a wrong-decimals toBaseUnits override and asserts assert.notEqual; the PROP-023 fixture (line 174-195) asserts currentArg===fromBaseUnits(...) and separately assert.notEqual against both the raw bigint and Number(balanceUakt). No hallucinated citation." },
+        { "type": "file", "location": "lib/pure/swap-need.mjs:41-46, lib/pure/base-units.mjs:9,21-50, lib/driver.mjs:161-163", "description": "CRIT-001's exact-choke-point claims re-verified: capUsd's Math.min(requestedUsd, SWAP_MAX_USD) is applied to the dollar float (swap-need.mjs:45) strictly BEFORE driver.mjs:163's single pureFns.toBaseUnits(cappedUsd, USDC_DECIMALS_BASE) call; base-units.mjs re-exports capUsd/usdEquivalentOf (not float->bigint conversions) alongside the sole toBaseUnits/fromBaseUnits pair; grepped lib/**/*.mjs and bin/**/*.mjs for '10 ** '/'Math.floor'/'BigInt(' and found no second dollar-to-base-unit scaling site (settlement.mjs's bigint bps math and ledger-store.mjs's bigint JSON marker round-trip are unrelated)." },
+        { "type": "file", "location": "lib/pure/funding-check.mjs:15-17, lib/pure/settlement.mjs:14-19, lib/driver.mjs:166-170,220-221", "description": "CRIT-002/CRIT-003's exact-body and driver-argument claims re-verified: checkSourceFunded's body is exactly the two-clause bigint >= comparison with zero float coercion; verifySettlement's minAcceptable is all-bigint arithmetic; driver.mjs passes the imported MIN_GAS_WEI/TOLERANCE_BPS literals directly at their respective call sites, matching both CRITs' passThresholds verbatim." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "lib/driver.mjs:235-246", "description": "Round-2's blocking gap (FIND-001: no CRIT named driver.mjs's own runSwap()-level REQ-009 defense-in-depth pin check, PROP-015/PROP-016) is now closed by new CRIT-010. Independently re-read runSwap(): lines 239-241 `if (deps.akashKeyName !== REQUIRED_AKASH_KEY_NAME) return {ok:false, status:\"invalid_akash_key_name\"}` and lines 242-245 `actualBaseSignerAddress = await deps.baseSigner.getAddress(); if (actualBaseSignerAddress !== deps.expectedBaseSignerAddress) return {ok:false, status:\"unexpected_base_signer_address\"}` both textually precede EVERY lock-acquisition (line 281), price-oracle, route-fetch, and signAndBroadcast call in the function body -- exactly matching CRIT-010's control-flow claim, line numbers, and exact strict-inequality comparisons." },
+        { "type": "file", "location": "lib/__tests__/driver-preconditions.test.mjs:81,89,96", "description": "CRIT-010's three named test strings independently re-read verbatim at the exact cited lines: 'PROP-015: Base signer resolving to an unexpected/unpinned address -> non-zero exit, zero broadcast calls' (81), 'PROP-016: AKASH_KEY_NAME unset -> non-zero exit, zero broadcast calls (mirrors akt-treasury.sh's existing bash guard)' (89), 'PROP-016: AKASH_KEY_NAME set to a non-\\'anicca-akash\\' value -> non-zero exit, zero broadcast calls' (96) -- each asserts result.ok===false and deps.baseSigner.signAndBroadcast.calls.length===0, matching CRIT-010's passThreshold exactly. No hallucinated test-name citation." },
+        { "type": "file", "location": "bin/spawn-funding-swap.mjs:22-76, lib/resolve-swap-identity.mjs:31-50", "description": "CRIT-006's resolve-gate mechanism (the OTHER of the two required identity mechanisms) independently re-verified end-to-end this round, not merely trusted from round 2: ANICCA_HOME-empty/unset gate (resolve-swap-identity.mjs:38-40) textually precedes resolveEvmPrivateKey (line 42); baseAddress is viem-derived (privateKeyToAccount(privateKey).address, line 47); buildDeps() checks identity.ok (bin/spawn-funding-swap.mjs:49-52) before any of the five real-client dynamic imports (lines 55-60); DESTINATION_AKASH_ADDRESS is a bare const literal (line 34) with zero env-override path. Both CRIT-006 (resolve-gate) and CRIT-010 (driver-pin) are present and independently re-executable this round, closing the full REQ-009 coverage requirement." }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "lib/pure/base-units.mjs:21-50", "description": "toBaseUnits/fromBaseUnits bodies re-read in full: explicit decimals validation, NaN/negative/non-finite fail-closed throw, Number.MAX_SAFE_INTEGER overflow guard, floor-not-round semantics (with a documented, narrowly-scoped 1e-6 FLOAT_EPSILON correction for double-precision representation error that does not affect any of PROP-022's boundary fixtures, verified by re-computing the fixture values by hand). Matches CRIT-001's fixed/floor/wrong-decimals fixture claims (base-units.test.mjs:11-31 re-read verbatim)." },
+        { "type": "file", "location": "lib/driver.mjs:141-229", "description": "runInsideLock's full call sequence re-verified line-by-line this round: reconcileLedgerOnResume -> price lookup with explicit fail-closed guards (149-159) -> cappedUsd/requiredBaseUnits choke point (162-163) -> checkSourceFunded with the MIN_GAS_WEI literal (166-170) -> Skip getRoute with requiredBaseUnits as amount_in (173-181) -> validateRoute gate (185-188) -> leg loop calling ensureLeg0Submitted/ensureRelayOnlyLegSubmitted (192-207) -> verifySettlement with the TOLERANCE_BPS literal (220-221) -- matches CRIT-001/002/003/004's exact-call-order claims with no discrepancy found." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "lib/ledger-store.mjs:9,52-61, lib/__tests__/driver-lock-and-concurrency.test.mjs:66-119", "description": "Re-confirmed the only lock-related import is withGigLock from economy/gig/lib/lock.mjs, invoked as withGigLock(statePath, destinationAddress, ...) -- lock key is destinationAddress, not any route/quote id. Additionally, unlike prior rounds' static-only check, this round read the actual PROP-010 test body and confirmed it genuinely exercises the REAL lock primitive (createLedgerStore, not a fake) with two invocations carrying DISTINCT quote ids (quote-A/quote-B), asserting the loser calls priceOracle.getAktUsdPrice zero times -- proving CRIT-005's claim is not merely a code-shape match but a behaviorally exercised property." },
+        { "type": "coverage", "location": "lib/__tests__/*.test.mjs (grep ^test\\()", "description": "Independently re-counted `^test(` occurrences across all 15 files this round: exactly 98 across exactly 15 files, matching CRIT-008's '98/98' and the contract's 'Files touched' claim." },
+        { "type": "file", "location": "contracts/sprint-1.md frontmatter, lines 8-57", "description": "Weight sum independently recomputed this round: 0.11+0.11+0.07+0.07+0.07+0.11+0.07+0.15+0.14+0.10 = 1.00 exactly across 10 criteria. status: approved (line 2). negotiationRound: 1 (line 5) -> iteration = negotiationRound+1 = 2, matching this verdict's iteration field per the stated mechanical rule." }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "contracts/sprint-1.md CRIT-008, lines 43-47", "description": "CRIT-008's passThreshold requires the Phase-3 adversary to independently execute (not accept from a log) both the target-feature suite (98/98) and the regression baseline (310/310), with an explicit FAIL condition if the adversary does not itself execute both -- concrete and independently re-executable. Note: despite the task description stating a Bash tool would be available, no Bash/execution tool was in fact available in this contract-review session, so PASS/FAIL of the underlying tests was verified by exhaustive static source read (every named test's exact string, line number, and assertion-strength body confirmed to exist verbatim, including a fresh manual re-grep count of 98 test( occurrences across 15 files) rather than by live execution. This confirms the CONTRACT's claims are non-hallucinated and sound; CRIT-008 still correctly obligates the Phase-3 adversary, who will have execution tooling, to actually run both commands." },
+        { "type": "file", "location": "specs/verification-architecture.md Verification Strategy Tier 0-3", "description": "Confirmed the spec's own Tier-3 section explicitly disclaims formal proof as required for this feature; the contract does not demand anything beyond what the spec's own verification strategy calls for, and CRIT-010 now gives PROP-015/PROP-016 (Tier 1, Required:true per the proof-obligations table) the same named, independently-re-runnable coverage every other Tier-1/2 money-safety property already had." }
+      ]
+    }
+  ]
+}

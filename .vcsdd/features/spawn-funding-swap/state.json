@@ -2,7 +2,7 @@
   "featureName": "spawn-funding-swap",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "2b",
+  "currentPhase": "complete",
   "phaseHistory": [
     {
       "from": "init",
@@ -47,21 +47,229 @@
       "timestamp": "2026-07-10T10:54:10.309Z",
       "reason": "RED evidence recorded (sprint-1), entering GREEN",
       "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-10T11:30:48.528Z",
+      "reason": "GREEN 88/88 + regression 310/310 (orchestrator-verified), entering refactor",
+      "sprint": 1
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-10T12:17:26.357Z",
+      "reason": "contract-review PASS validated, entering Phase-3 impl review",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-10T12:33:48.595Z",
+      "reason": "Phase-3 impl review PASS (live), entering formal hardening",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-10T12:44:02.133Z",
+      "reason": "Phase-3 review PASS + convergenceSignals, hardening done",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-10T12:44:10.341Z",
+      "reason": "4-dimension converge: spec+contract+impl(live 104/104+310/310)+hardening(23 PROP proved, semgrep 0) all PASS, 0 open blocking",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
     "1a": 2,
     "1b": 3,
     "1c": 1,
     "2a": 1,
-    "2b": 1
+    "2b": 1,
+    "2c": 1,
+    "complete": 1
   },
-  "proofObligations": [],
+  "proofObligations": [
+    {
+      "id": "PROP-001",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/swap-need.test.mjs"
+    },
+    {
+      "id": "PROP-002",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-preconditions.test.mjs"
+    },
+    {
+      "id": "PROP-003",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/route-validation.test.mjs"
+    },
+    {
+      "id": "PROP-004",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-preconditions.test.mjs"
+    },
+    {
+      "id": "PROP-005",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/funding-check.test.mjs + driver-choke-point.test.mjs"
+    },
+    {
+      "id": "PROP-006",
+      "tier": 0,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/funding-check.test.mjs"
+    },
+    {
+      "id": "PROP-007",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/ledger-plan.test.mjs"
+    },
+    {
+      "id": "PROP-008",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-multileg.test.mjs"
+    },
+    {
+      "id": "PROP-009",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-crash-recovery.test.mjs"
+    },
+    {
+      "id": "PROP-010",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-lock-and-concurrency.test.mjs"
+    },
+    {
+      "id": "PROP-011",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/swap-need.test.mjs"
+    },
+    {
+      "id": "PROP-012",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/swap-need.test.mjs"
+    },
+    {
+      "id": "PROP-013",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/settlement.test.mjs + driver-choke-point.test.mjs"
+    },
+    {
+      "id": "PROP-014",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/cli.test.mjs"
+    },
+    {
+      "id": "PROP-015",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-preconditions.test.mjs"
+    },
+    {
+      "id": "PROP-016",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-preconditions.test.mjs"
+    },
+    {
+      "id": "PROP-017",
+      "tier": 0,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/purity-boundary.test.mjs"
+    },
+    {
+      "id": "PROP-018",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/swap-need.test.mjs"
+    },
+    {
+      "id": "PROP-019",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-choke-point.test.mjs"
+    },
+    {
+      "id": "PROP-020",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/driver-crash-recovery.test.mjs"
+    },
+    {
+      "id": "PROP-021",
+      "tier": 0,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/test-money-safety-scan.test.mjs"
+    },
+    {
+      "id": "PROP-022",
+      "tier": 2,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/base-units.test.mjs"
+    },
+    {
+      "id": "PROP-023",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/spawn-funding-swap/lib/__tests__/base-units.test.mjs + driver-choke-point.test.mjs"
+    }
+  ],
   "traceability": {
     "epicId": "VCSDD-spawn-funding-swap-1783672828304",
     "beads": []
   },
   "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T12:33:48.591Z",
+      "reviewedBy": "adversary",
+      "details": "Phase-3 impl review iter2 PASS 0-blocking, live 104/104+310/310 (reviews/impl/iteration-2)"
+    },
     "1c": {
       "verdict": "PASS",
       "timestamp": "2026-07-10T10:36:09.979Z",
@@ -76,5 +284,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-10T08:40:28.303Z",
-  "updatedAt": "2026-07-10T10:54:10.310Z"
+  "updatedAt": "2026-07-10T12:44:10.342Z"
 }

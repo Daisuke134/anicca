@@ -1,0 +1,60 @@
+{
+  "feature": "spawn-funding-swap",
+  "sprintNumber": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-10T13:00:00.000Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "contractPath": "contracts/sprint-1.md"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/driver.mjs:161-170", "description": "Read-verified: the single choke point cappedUsd=capUsd(usdEquivalentOf(need,price)) -> requiredBaseUnits=toBaseUnits(cappedUsd, USDC_DECIMALS_BASE) feeds checkSourceFunded, Skip getRoute amount_in, and BaseSigner tx amount identically (REQ-002/003/006/011/012 traced correct on static read), but CRIT-003/CRIT-009 (spec_fidelity) explicitly require the adversary to itself execute settlement.test.mjs/driver-choke-point.test.mjs, which this session's tool environment (no Bash) could not do — see FIND-001."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/bin/spawn-funding-swap.mjs:36-38,68", "description": "REQ-008's self-contained-config edge case is violated by the undefaulted STATE_DIR — see FIND-002."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/resolve-swap-identity.mjs:38-49", "description": "Read-verified: ANICCA_HOME gate (typeof check + empty-string check) textually precedes resolveEvmPrivateKey call; baseAddress derived via privateKeyToAccount, never a raw literal — matches CRIT-006's control-flow-read requirement, but CRIT-006 (edge_case_coverage) also requires the adversary to itself execute resolve-swap-identity.test.mjs/cli.test.mjs, which could not be done — see FIND-001."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/driver.mjs:239-245", "description": "Read-verified: akashKeyName strict-inequality check and actualBaseSignerAddress strict-inequality check both textually precede every lock/price/route/broadcast call in runSwap() — matches CRIT-010's control-flow-read requirement, but CRIT-010 also requires live execution of driver-preconditions.test.mjs, which could not be done — see FIND-001."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/pure/base-units.mjs:21-50", "description": "Read-verified: toBaseUnits floors via Math.floor(scaled+FLOAT_EPSILON), throws on NaN/negative/non-finite/overflow, decimals always explicit — traced against every PROP-022 fixture in base-units.test.mjs by hand (15.0->15000000n; 15.0000009->15000000n; 15.0 with decimals=0/18 both fail exact equality) and found consistent."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/bin/spawn-funding-swap.mjs:38,68", "description": "Undefaulted STATE_DIR causes an uncaught TypeError in the real production wiring path the moment identity resolves and createLedgerStore is constructed — see FIND-002 for full trace; this is a genuine, statically-provable code defect independent of live execution."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/pure/base-units.mjs:1-73", "description": "Read-verified: toBaseUnits/fromBaseUnits are the only two exported conversion functions in the file (plus a re-export of capUsd/usdEquivalentOf from swap-need.mjs, which are not conversion functions); no second dollar-to-base-unit conversion found anywhere else in lib/ or bin/ on full-file read of every implementation file in the feature."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/ledger-store.mjs:9,52-61", "description": "Read-verified: sole lock import is withGigLock from ../../../economy/gig/lib/lock.mjs; lock key passed is destinationAddress (not a route/quote id); no independent mkdir/open-based lock primitive exists outside the fs.mkdir(stateDir) directory-creation calls. Could NOT verify via git log/git status that economy/gig/lib/lock.mjs is unmodified in the sprint's commit range, as CRIT-005 requires — see FIND-001."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/bin/spawn-funding-swap.mjs:36-38,68", "description": "STATE_DIR has no default unlike THRESHOLD_AKT/LEG_TIMEOUT_MS, causing an uncaught-exception crash in production wiring with zero test coverage of that code path — see FIND-002."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/__tests__/purity-boundary.test.mjs:1-44", "description": "Read-verified structural scan logic is sound (forbidden-pattern regex list matches node:fs/child_process/http(s)/fetch); Read-confirmed via manual review of every lib/pure/*.mjs file that none import node:fs/child_process/http(s) or reference fetch."},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/self/spawn-funding-swap/lib/__tests__/test-money-safety-scan.test.mjs:1-76", "description": "Independently re-ran the CRIT-007-mandated grep using the Grep tool (ripgrep, not a shell) for pattern 'api\\.skip\\.build|chain-reader\\.mjs|base-signer\\.mjs|skip-api-client\\.mjs|price-oracle\\.mjs' across lib/__tests__/ — the only match is test-money-safety-scan.test.mjs itself (the pattern-definition file, correctly self-excluded), confirming zero concrete-client references in any other test file."},
+        {"type": "test-output", "location": ".vcsdd/features/spawn-funding-swap/evidence/sprint-1-green-phase.log", "description": "CRIT-008 requires the adversary to itself execute `node --test skills/self/spawn-funding-swap/lib/__tests__/*.test.mjs` (expect 98/98) and the regression baseline (expect 310/310). This adversary's tool environment has no Bash/shell execution tool available, so neither command could be run. The only existing evidence is Builder-self-reported and, on its own text, internally stale (claims 98/98 in prose but the quoted re-run output still shows 88/88) — see FIND-001 for full detail. Per CRIT-008's own explicit text ('FAIL if... the adversary does not actually execute both commands itself'), this criterion cannot be marked PASS."}
+      ]
+    }
+  ]
+}
