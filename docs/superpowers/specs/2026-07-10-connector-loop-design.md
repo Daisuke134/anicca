@@ -48,16 +48,19 @@
    │    → signals.json（0件なら core を起こさず終了 = token 節約、OwnPilot 式）
    ├ [judgment] tmux Sonnet core 1 pass — 毎日全 rail 実行（選択制ではない、Dais 2026-07-10）:
    │    STEP0 = gcal 直読が常に最初（double-booking 絶対禁止、仕事/養成所回避）
-   │    毎日必須: ①空き夕方/週末枠を FREE イベント実登録で埋める
+   │    毎日必須: ①horizon 全体（今日〜14日+）の空き枠を FREE イベント実登録で先埋め
+   │    （早期応募ほど当選率が高い。当日応募は原則機能しない — 明日・来週・来月の gap を埋め続ける）
    │    （AI/AGI/crypto infra 重点 — Dais は crypto を学びたい。LT/hackathon/meetup）
    │    ②intro/cold mail の前進 ③未 debrief 回収 ④competitor-scout 1件
-   │    「何もしない」は gcal が満杯の日のみ（その判定も gcal 証跡つき）
+   │    「新規登録なし」が許されるのは horizon 全体が既に埋まっている時のみ（gcal 証跡つき）
    ├ [action rails 決定的]
    │    a. event-apply: anicca-booking + meetup-talk-applier（camofox 実応募）
-   │    b. outreach: gog gmail（Anicca 自身の inbox）
-   │       draft 常時作成 → risk 評価 → 低 risk: I-confirm gate 経由で send /
-   │       高 risk: Telegram inline 承認 → draft send（Clira queue 方式）
-   │       double-opt-in: 相手の合意受信（3-tier 分類）→ 本 intro → gcal 配置
+   │    b. outreach: **Dais の送信 identity**（gog gmail = keiodaisuke@、Dais の声/文体）
+   │       — AI 名義は不採用（Dais 2026-07-10:「誰が AI に返信する」）
+   │       **承認 UX ゼロ**: draft 承認なし・Telegram approve なし・Dais は何もしない
+   │       （Duckbill 式「approve nothing, just get told it's done」— 事後報告のみ）
+   │       I-confirm gate はツール内の決定的誤爆防止として維持（agent が渡す、human 無関与）
+   │       double-opt-in = 相手の返信が opt-in（3-tier 分類）→ 会う日程を gcal 確定配置
    │    c. gcal: gcal-policy.sh（location 必須+conflict 再検証+PROPOSED 経由）
    │    d. report: Telegram 日報（応募/会うべき人/intro 文面/scout 1件+試すリンク）+ mail
    ├ [flywheel] イベント/intro 後に Telegram debrief 質問 → debriefs.jsonl → 次 pass 必読
@@ -67,7 +70,7 @@
    将来: cloud Life Manager の connector module（tenant 分離+課金 thesis 確定後）
 ```
 
-安全設計: 送信は全て Anicca 自身の名義（Dais の Gmail から他人へ送らない）。intro は double-opt-in（Boardy 式）。risk≥95 絶対承認天井。fake 禁止・evidence 必須は会社共通規約に従う。
+安全設計: 送信は Dais の identity・Dais の声（Dais 2026-07-10 明示指示で旧「Anicca 名義」を上書き。事前承認なし・事後報告のみ = no human dilute）。intro は double-opt-in（相手の返信が gate、Dais 無関与）。ツールレベルの決定的 gate（I-confirm・FREE 判定・entity-diff・gcal conflict）は維持 — これらは human-loop ではなく誤爆防止。fake 禁止・evidence 必須は会社共通規約。
 
 **イベント応募の鉄則（Dais 2026-07-10 追加、interim の OpenClaw cron にも適用）:**
 1. **FREE イベントのみ**。価格表記のあるイベント（Eventbrite の有料 ticket 等）は応募も calendar 記載も禁止。有料で価値が高いものは Telegram で提案のみ（予約しない）。無料判定は実ページの価格表示で確認（推測禁止）
@@ -140,7 +143,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 
 | loop | BROKEN | STANDARD（これが bare minimum） | IMPROVE（north star、前週比） |
 |---|---|---|---|
-| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **毎日**: gcal 直読→空き夕方/週末枠に FREE イベント実登録（サイト証跡）+ gcal CONFIRMED + Telegram 日報。**空き枠があるのに登録 0 の日 = STANDARD 未達**（gcal 満杯の日のみ免除、証跡つき） | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
+| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **毎日**: gcal 直読→**horizon（今日〜14日+）の空き枠**に FREE イベント実登録（サイト証跡、早期応募優先）+ gcal CONFIRMED + Telegram 日報。**horizon に空きがあるのに新規登録 0 の日 = STANDARD 未達**（horizon 全体が埋まっている時のみ免除、証跡つき） | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
 | gig | 当日応募 0 / ledger 無更新 | N 応募/日 + funnel 更新（実ページ検証） | 返信率 → 受注数 → 入金¥（現状 270応募/17返信/受注0 = ここが改善対象） |
 | bounty | 巡回なし | checked 増/日 | survivors → 提出 → 賞金$ |
 | affiliate | queue 滞留 + 投稿 0 | 1 投稿/日（実 URL browser 検証） | views → commission¥ |
@@ -152,7 +155,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 
 ### §11.1 評価バーに追加する機構（BP 調査 2026-07-10、出典付き。全 loop に適用）
 
-調査結論: BROKEN/STANDARD/IMPROVE の3層をそのまま実装した OSS は存在しない（我々が先行）。盗む機構は以下 — 実装は connector から始めて全 loop に展開:
+調査結論: 同型3層の既製 OSS は今回の調査では見つからなかった — **これは「我々が先行」を意味しない。我々は常に後発であり、alpha を探し続けるのが仕事**（Dais 2026-07-10）。盗む機構は以下 — 実装は connector から始めて全 loop に展開:
 
 | # | 機構 | 出典 | 実装 |
 |---|---|---|---|
