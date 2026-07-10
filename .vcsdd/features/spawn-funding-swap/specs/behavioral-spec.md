@@ -67,8 +67,13 @@ Confirmed this session (cite, do not re-trust blindly — verify balances/route 
 - `planNextLeg(routeResponse, submittedTxLedger)` — pure state machine: given the ordered list of legs
   from the route and a ledger of which leg-indices already have a confirmed tx id, returns the next leg
   to submit, or `DONE`, or `ALREADY_COMPLETE` (REQ-004, REQ-005 idempotency/resumability core).
-- `checkSourceFunded(baseUsdcBalance, baseGasBalance, neededUsd, minGasWei)` — pure precondition check
-  (REQ-003).
+- `checkSourceFunded(baseUsdcBalance: bigint, baseGasBalance: bigint, requiredBaseUnits: bigint, minGasWei: bigint)`
+  — pure precondition check (REQ-003); `requiredBaseUnits` is the SAME
+  `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` `bigint` value REQ-012's single
+  choke point produces (identical to the `amount_in` REQ-002 sends and the tx amount REQ-006 sends) — never an
+  independently-derived or independently-named dollar float. `checkSourceFunded` performs an exact
+  bigint-vs-bigint comparison of `baseUsdcBalance >= requiredBaseUnits`; the gas check
+  (`baseGasBalance >= minGasWei`) remains a separate, independently-typed comparison.
 
 **Effectful shell** (I/O, must be mocked/injected in tests, never exercised for real in Phase 2a/2b tests):
 - AKT/USD price lookup (`PriceOracle.getAktUsdPrice()`) — an external price source queried once per
@@ -177,25 +182,40 @@ SYSTEM SHALL NOT pass the pre-conversion dollar float returned by `capUsd(...)` 
 
 ### REQ-003: Source-funding precondition (fail closed — the live current blocker)
 **EARS**: BEFORE any transaction is signed THE SYSTEM SHALL verify the Base-chain USDC balance of the
-configured source wallet is `>= amountInRequiredByRoute` AND the Base-chain native-gas balance is
-`>= minGasWei` for leg 1, and SHALL fail closed with an explicit "insufficient funded source" error WHEN
-either check fails — THE SYSTEM SHALL NOT infer, borrow from, or auto-bridge from any other chain/wallet
+configured source wallet (`baseUsdcBalance: bigint`, base units) is `>= requiredBaseUnits: bigint` — where
+`requiredBaseUnits` is defined, exactly and only, as REQ-012's single choke-point value
+`toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` (the identical `bigint` REQ-002
+sends as Skip's `amount_in` and REQ-006 signs as the Base tx amount — never a re-derived or
+independently-named raw dollar float) — AND the Base-chain native-gas balance (`baseGasBalance: bigint`) is
+`>= minGasWei: bigint` for leg 1, and SHALL fail closed with an explicit "insufficient funded source" error
+WHEN either check fails — THE SYSTEM SHALL NOT infer, borrow from, or auto-bridge from any other chain/wallet
 (e.g. Franklin's Solana USDC) as an implicit fallback.
 **Edge Cases**:
 - Base USDC balance is 0 (the current real-world state, confirmed this session): fail closed, exit
-  non-zero, log the specific shortfall (`have X, need Y`).
-- Base USDC balance is nonzero but below `amountInRequiredByRoute`: fail closed with the exact deficit.
+  non-zero, log the specific shortfall (`have X, need Y`, both expressed in the same `bigint` base units).
+- Base USDC balance is nonzero but below `requiredBaseUnits`: fail closed with the exact deficit — this MUST
+  be caught by an exact `bigint`-vs-`bigint` comparison, never a comparison against an independently-named or
+  independently-scaled dollar float (see the PROP-005 nonzero discriminating fixture below).
 - Base USDC is sufficient but native ETH/gas for the Base-side approve+swap tx is insufficient: fail
   closed (a partially-fundable swap that dies mid-signature is worse than not starting).
 - Source wallet address/key is misconfigured (points at the wrong instance's wallet): this is an
   identity-safety failure, not a funding failure — REQ-009 governs; REQ-003's balance check still applies
   on top of whatever wallet is configured.
 **Acceptance Criteria**:
-- `checkSourceFunded` returns `false` for every fixture where `baseUsdcBalance < neededUsd` or
-  `baseGasBalance < minGasWei`, and the swap driver never proceeds past this check when it returns
-  `false` (asserted via mock-transport call-count of zero for the sign/broadcast functions).
+- `checkSourceFunded` returns `false` for every fixture where `baseUsdcBalance < requiredBaseUnits` (exact
+  `bigint`-vs-`bigint` comparison) or `baseGasBalance < minGasWei`, and the swap driver never proceeds past
+  this check when it returns `false` (asserted via mock-transport call-count of zero for the sign/broadcast
+  functions).
 - The current real balances (Base USDC ≈ 0, Base gas ≈ 0) MUST be one of the fixtures exercised in
-  Phase 2a tests, asserting the command fails closed exactly as it would today in production.
+  Phase 2a tests, asserting the command fails closed exactly as it would today in production (PROP-006).
+- A nonzero-balance discriminating fixture MUST also be exercised (PROP-005): `baseUsdcBalance = 5000000n`
+  ($5.00 in base units) against `requiredBaseUnits = toBaseUnits(15.32, 6) = 15320000n` ($15.32 in base
+  units) MUST return `false` (insufficient — `5000000n < 15320000n`). A wrong-unit implementation that
+  instead compares `baseUsdcBalance` against the raw dollar float `15.32` (e.g. `baseUsdcBalance >=
+  neededUsdFloat` → `5000000n >= 15.32` → `true`) would wrongly report `true` (funded) on this exact
+  fixture and MUST fail this assertion — proving the test suite is falsifiable against the FIND-001/
+  FIND-002 class of wrong-unit false-funded defect, which PROP-006's zero-balance-only fixture cannot catch
+  (`0n` is `< ` any positive comparand regardless of its unit).
 
 ### REQ-004: Multi-tx route execution with per-leg on-chain verification
 **EARS**: WHEN a valid route with `txs_required` legs is being executed THE SYSTEM SHALL submit each leg
@@ -425,11 +445,14 @@ parameter (REQ-002) and the value signed and broadcast by `BaseSigner.signAndBro
 each be exactly `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` where
 `USDC_DECIMALS_BASE = 6` (Base USDC's decimal precision), and this integer value SHALL additionally satisfy
 the runtime invariant `<= toBaseUnits(SWAP_MAX_USD, USDC_DECIMALS_BASE)`, and THE SYSTEM SHALL fail closed
-if it does not (defense in depth, independent of `capUsd()`'s own correctness); and (b) the `current` AKT
+if it does not (defense in depth, independent of `capUsd()`'s own correctness); (b) the `current` AKT
 balance fed into `computeSwapNeed` (REQ-001) SHALL be exactly `fromBaseUnits(balanceUakt, AKT_DECIMALS)`
-where `balanceUakt` is `ChainReader.getAkashBalance()`'s raw `bigint` and `AKT_DECIMALS = 6`. THE SYSTEM
-SHALL NOT define, inline, or tolerate any second/alternate conversion between these unit spaces anywhere
-else in the codebase.
+where `balanceUakt` is `ChainReader.getAkashBalance()`'s raw `bigint` and `AKT_DECIMALS = 6`; and (c) the
+`requiredBaseUnits` comparand `checkSourceFunded` (REQ-003) compares against `baseUsdcBalance` SHALL be
+exactly the SAME `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` `bigint`
+value as (a) — never a second, independently-named, or independently-derived value (e.g. a raw dollar
+float). THE SYSTEM SHALL NOT define, inline, or tolerate any second/alternate conversion between these unit
+spaces anywhere else in the codebase.
 **Edge Cases**:
 - `toBaseUnits` receives a `cappedUsd` value with more precision than `decimals` allows (e.g. sub-base-unit
   fractional cents): rounds DOWN (floor) to the nearest base unit — NEVER rounds up, since rounding up a
@@ -463,6 +486,10 @@ else in the codebase.
 - `fromBaseUnits(1850000n, 6) === 1.85` (round-trip fixture feeding REQ-001's `computeSwapNeed`, PROP-023).
 - `toBaseUnits`/`fromBaseUnits` round-trip: for a representative set of fixture floats with no more than
   `decimals` fractional digits, `fromBaseUnits(toBaseUnits(x, decimals), decimals) === x` (PROP-022/023).
+- `checkSourceFunded`'s (REQ-003) `requiredBaseUnits` parameter is bit-identical to
+  `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` for the fixture's `need`/
+  `aktUsdPrice` — the same integer routed to Skip's `amount_in` and the Base tx amount — never a second,
+  independently-named, or independently-scaled value (PROP-005).
 
 ## Edge Case Catalog (cross-cutting, applies across REQ-002 through REQ-012)
 

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "PROP-005 and PROP-006 (verification-architecture.md:62-63) are the only proof obligations covering REQ-003's checkSourceFunded fail-closed precondition, and both inherit the same 'neededUsd' naming ambiguity described in the companion spec_fidelity finding (FIND-001). PROP-005 asserts 'checkSourceFunded returns false for all baseUsdcBalance < neededUsd' with no fixture or property clause pinning down whether neededUsd is a base-unit bigint or a dollar float, and no assertion (unlike the rewritten PROP-019/PROP-022) that a wrong-unit implementation of this comparison fails. PROP-006's 'today's real balances (Base USDC ~= 0, Base gas ~= 0)' regression fixture happens to pass either way at the zero-balance boundary (0n < any positive number is true regardless of unit), so it provides no discriminating power between a correct base-unit comparison and an incorrect dollar-float comparison -- it cannot catch the false-'funded' failure mode described in FIND-001 (baseUsdcBalance=20000000n vs neededUsd=15.32 wrongly evaluating as funded), because that failure mode only manifests at nonzero balances, which PROP-006 never exercises. This is precisely the same 'tests that would pass even if a critical edge case were unhandled' pattern iteration-2's FIND-002 identified for the pre-rewrite PROP-019: the property test as specified cannot distinguish a correct implementation from a 10^6x-off implementation at this call site, because the spec never pins down the comparand's unit.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "13, 62-63",
+    "snippet": "checkSourceFunded(baseUsdcBalance, baseGasBalance, neededUsd, minGasWei): boolean ... PROP-005 | `checkSourceFunded` returns false for all `baseUsdcBalance < neededUsd` or `baseGasBalance < minGasWei`... | REQ-003 | 2 | true | fast-check ... PROP-006 | Regression fixture: today's real balances (Base USDC~=0, Base gas~=0) fail closed... | REQ-003 | 0 | true | node:test fixture"
+  },
+  "fix": "Once FIND-001's naming/unit fix lands (comparand renamed to an explicit bigint amountInRequiredByRoute), rewrite PROP-005 to assert exact bigint-vs-bigint comparisons only, and add a nonzero-balance discriminating fixture to PROP-006 or a new PROP (e.g. baseUsdcBalance=20000000n, amountInRequiredByRoute=15320000n as the base-unit-converted $15.32 figure) that a dollar-float-comparand implementation would wrongly pass as 'funded' -- proving the test suite is falsifiable against this specific 10^6x-class false-positive-funded defect, mirroring PROP-022(e)'s wrong-decimals fixture pattern."
+}

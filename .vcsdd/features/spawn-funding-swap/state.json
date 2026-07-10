@@ -21,11 +21,17 @@
       "to": "1b",
       "timestamp": "2026-07-10T09:10:43.750Z",
       "reason": "Spec revision (iter2->iter3 prep): fixed FIND-001/FIND-002 base-units gap by adding toBaseUnits/fromBaseUnits pure conversion functions (REQ-012), rewiring REQ-001/002/006/011 through the choke point, rewriting PROP-019 to exact-integer bit-identical assertions, and adding PROP-022/023 for conversion exactness/round-trip."
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-10T09:22:38.164Z",
+      "reason": "Spec revision (iter3->iter4 prep): fixed spec-review iter3 FIND-001/FIND-002 (REQ-003 checkSourceFunded comparand named two contradictory ways/units) by unifying to a single explicit bigint base-unit name (requiredBaseUnits) routed through REQ-012 toBaseUnits choke point, consistent across behavioral-spec.md EARS/Acceptance-Criteria/pure-fn-signature and verification-architecture.md pure-fn signature; added a nonzero-balance discriminating fixture to PROP-005/PROP-006 (baseUsdcBalance=5000000n vs requiredBaseUnits=15320000n) that fails a wrong-unit float comparison; made PROP-019 illustrative fixtures use a consistent SWAP_MAX_USD=20 value (non-blocking cleanup)."
     }
   ],
   "iterations": {
     "1a": 2,
-    "1b": 2
+    "1b": 3
   },
   "proofObligations": [],
   "traceability": {
@@ -35,5 +41,5 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-10T08:40:28.303Z",
-  "updatedAt": "2026-07-10T09:10:43.751Z"
+  "updatedAt": "2026-07-10T09:22:38.165Z"
 }
