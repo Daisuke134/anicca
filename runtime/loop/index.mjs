@@ -518,29 +518,7 @@ async function runOneWake() {
     rawResponse = await think(ctx, config);
   } catch (err) {
     await writeAlwaysActNotEngagedIfNeeded();
-    process.stderr.write(`[loop] THINK failed: ${err.message}\n`);
-    const sleepS = cfgNum(config.SLEEP_ERROR_S, 60);
-    const record = formatRecord({
-      ts,
-      wake_id: wakeId,
-      kind: 'wake_error',
-      sleep_s: sleepS,
-      error: 'proxy_down',
-      model: currentTier.model,
-    });
-    await safeAppend(LEDGER_PATH, record);
-    // R6: err.message is NOT already redacted anywhere upstream (raw HTTP-response body/subprocess-
-    // stderr text from brain.mjs's thinkProxy/thinkClaudeP/httpPost) — this is the ONE new
-    // redactPrivateKeyPatterns call site this feature introduces, before any further processing.
-    await appendHarnessFailure({
-      ts,
-      wakeId,
-      kind: 'wake_error',
-      layer: 'brain_transport',
-      exitCode: null,
-      rawDetail: redactPrivateKeyPatterns(err.message || ''),
-    });
-    await sleepSecs(sleepS);
+    await writeWakeErrorAndSleep({ wakeId, ts, err });
     return;
   }
   await writeAlwaysActNotEngagedIfNeeded();
@@ -705,17 +683,8 @@ async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
       rawResponse = await think(attemptCtx, config);
     } catch (err) {
       // Brain-transport failure mid-attempt: identical handling to the non-always-act wake_error
-      // path above (REQ-509: never a money-safety guard interaction; no fabricated success).
-      process.stderr.write(`[loop] THINK failed (always-act): ${err.message}\n`);
-      const record = formatRecord({
-        ts, wake_id: wakeId, kind: 'wake_error', sleep_s: sleepS, error: 'proxy_down', model: currentTier.model,
-      });
-      await safeAppend(LEDGER_PATH, record);
-      await appendHarnessFailure({
-        ts, wakeId, kind: 'wake_error', layer: 'brain_transport', exitCode: null,
-        rawDetail: redactPrivateKeyPatterns(err.message || ''),
-      });
-      await sleepSecs(sleepS);
+      // path (REQ-509: never a money-safety guard interaction; no fabricated success).
+      await writeWakeErrorAndSleep({ wakeId, ts, err });
       return;
     }
 
@@ -845,6 +814,29 @@ async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
     await sleepSecs(sleepS);
     return;
   }
+}
+
+/**
+ * Shared THINK-transport-failure handler: writes the SAME `kind:'wake_error'` ledger line +
+ * harness-failure detail (SLEEP_ERROR_S backoff, not SLEEP_BASE_S) that runOneWake's own non-always-
+ * act path writes, and sleeps — used by both the always-act and non-always-act code paths so a brain-
+ * transport failure is recorded/backed-off identically regardless of which path hit it.
+ */
+async function writeWakeErrorAndSleep({ wakeId, ts, err }) {
+  process.stderr.write(`[loop] THINK failed: ${err.message}\n`);
+  const sleepS = cfgNum(config.SLEEP_ERROR_S, 60);
+  const record = formatRecord({
+    ts, wake_id: wakeId, kind: 'wake_error', sleep_s: sleepS, error: 'proxy_down', model: currentTier.model,
+  });
+  await safeAppend(LEDGER_PATH, record);
+  // R6: err.message is NOT already redacted anywhere upstream (raw HTTP-response body/subprocess-
+  // stderr text from brain.mjs's thinkProxy/thinkClaudeP/httpPost) — this is the ONE new
+  // redactPrivateKeyPatterns call site this feature introduces, before any further processing.
+  await appendHarnessFailure({
+    ts, wakeId, kind: 'wake_error', layer: 'brain_transport', exitCode: null,
+    rawDetail: redactPrivateKeyPatterns(err.message || ''),
+  });
+  await sleepSecs(sleepS);
 }
 
 /**
