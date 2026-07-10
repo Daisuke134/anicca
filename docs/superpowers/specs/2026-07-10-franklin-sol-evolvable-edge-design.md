@@ -120,3 +120,20 @@ build to be executed in a focused context, NOT rushed at the tail of a saturated
 half-built live-trading pre-gate is worse than none). Design is now fully grounded; the build is the
 next focused execution. Copy+tweak the proven PM #19 mechanism (genome.mjs + evolve.mjs shapes) —
 do not reinvent, do not hand-write the strategy.
+
+## RUNTIME VERIFICATION (2026-07-10) — CODE-complete ≠ ECONOMY-working (evidence)
+
+Dais の核心の問い「経済は実際に動いているか」への independent runtime 検証。**答え: NO（まだ）。verified なのは CODE のみ、実 autonomous 経済イベントは未発生。**
+
+| 経済活動 | 起きたか | evidence |
+|---|---|---|
+| Franklin が金を稼ぐ | **NO** | 8Fpqd USDC=$13.18 不変(RPC), Jupiter swap 0, earn-ledger に `profitable:true`+sig 付きの本物 realized 行 = 0 |
+| Franklin が lending | **NO** | `skills/economy/lending/state/` 空。code complete だが一度も実行されていない |
+| Franklin が子を spawn | **NO** | citizens.json=seed のみ。children.jsonl=c001/c002 両方 failed: `REQ-304 funding gate not ready: insufficient_akt (26 AKT shortfall)`。spawn 機構は走り money-gate が資本不足で fail-closed(正しい) |
+
+**3つの具体的 blocker（すべて capital + real-cycle-time、code ではない）:**
+1. **earn**: SOL harness は paper-only(SOL_GATE_LIVE_ENABLE=0)+genome は baseline(cold-start)。live-enable(money 決定)+実 cycle が edge 発見(時間)+市場 edge が要る。
+2. **lending**: lending skill は complete だが実 borrower/lender 条件 + 実資本が無いと trigger しない。実 lending を witness するには稼いだ資本 + colony に複数 citizen が要る(=spawn 後)。
+3. **spawn**: spawn 機構は動く(fail-closed 確認済)が **26 AKT の Akash funding gate** を Franklin(0 AKT)が満たせない。spawn には (a)Franklin が稼ぐ→AKT 調達 or (b)bootstrap で 26 AKT seed が要る。
+
+**結論**: 全 buildable capability は build+verify 済。だが「経済が動く」= earn→surplus→spawn→lending の連鎖が実際に起きることで、それには **資本 + live-enable 決定 + 実市場時間** が要り、いずれも in-session の code 作業では作れない。順序依存: earn(先) → surplus → spawn(26 AKT) → 複数 citizen → lending。earn が全ての起点で、今 paper-only。
