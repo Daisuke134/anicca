@@ -4,30 +4,20 @@
 > ★tragedy の防止則★: 「done」と書くのは fresh adversary の verdict か観測可能な証拠が有る時だけ。independent verify-subagent が定期に裏を取る（記憶や楽観で書かない）。最後の独立検証: 2026-07-08 by verify-subagent。
 > 正本の設計 = [[09-cobus-adoption-no-human-and-my-exit]] / [[08-evidence-eval-driven-earning-verdict]] / [[04-the-two-loops]]。実装コード = `~/anicca`（`skills/earn/self-improve/`）。
 
-## A. ✅ 検証済み DONE（evidence 付き）
+## A. ✅ 検証済み DONE（evidence 付き、2026-07-10 fresh）
+- 台帳 **10/10 complete**（両 .vcsdd、fresh Opus VCSDD 全 phase + 自己実行テスト green）: [anicca] self-improve-real-ledger/franklin-loop-revival/franklin-earn-foundation/**franklin-sol-evolvable-edge(C1)** ／ [project] ceo-loop/agent-economy/lending/agent-spawn/spawn-identity/tooluse-health。
+- **no-human-loop 虫を除去**（CLAUDE.md #1 + memory）: citizen 経済の go-live/seed/swap は聞かず自分でやる core job と確立。
+- **earn end-to-end LIVE 化**（SOL_GATE_LIVE_ENABLE=1、Franklin runtime C1 配線 synced、pid 76744 で env 反映を検証）。
+- citizens-diff-monitor 恒久稼働（baseline [Franklin]）。
 
-| # | 達成 | evidence |
-|---|---|---|
-| A1 | self-improve harness 機構（openevolve=改善 / evaluator=realized$評価 / scope_guard=denylist / per-candidate Opus adversary=gate / ledger_reader=OBSERVE / risk-adjusted fitness） | `~/anicca` main、`skills/earn/self-improve/`（39 files）。3 adversary PASS: spec-review iter2 / impl-review iter2 / close-loop iter1（verdict.json on main）。44/44 pytest green |
-| A2 | LOOP1 一周（spec→impl→3 adversary→自 self-merge） | main merge: PR #793(`6104387`), #794(`ede2349`) |
-| A3 | ★capable improver で openevolve が自律 promote★（Weng STOP 突破） | branch `feature/self-improve-capable-improver`（origin: `f548ed3`）。promotion `a6f608c`（min_edge 0.15→0.18 等、EVOLVE-BLOCK のみ）。fitness: combined_score **3.2076 vs baseline 1.2628**、worst-OOS **-0.47→+2.38**（負け窓を勝ちに）。per-candidate Opus adversary=PASS（"genuine selection, STRICT SUBSET 23/31, not leverage", $0.93, session f108645b）。post-promote 44/44 green(`ce37117`) |
-| A4 | 3 autonomous daemon 配線 | `ai.anicca.clawrouter`(pid 60031, KeepAlive, :8402 free) / `ai.anicca.self-improve-evolve`(6h, 実行中 pid 60930, 実 OBSERVE $8.47+openevolve) / `ai.anicca.claude-p-mainloop`(Sonnet, loaded, RunAtLoad=false, kill-switch 実証) |
+## B. ⏳ 有効化済・実イベント待ち（本番未実証）
+- **witness① profit**: earn LIVE だが Franklin の autonomous cycle が実市場で高 conviction trade を出すまで未発生。Franklin 8Fpqd=$13.18 不変、swap 0（fresh RPC）。
+- **witness② spawn**: earn surplus の下流。26 AKT-routable 資本が earn 前は無い。T12(swap build) 待ち。
 
-## B. ⏳ IN-PROGRESS / 配線のみ（本番未実証）
-
-| # | 項目 | 何が足りないか（evidence） |
-|---|---|---|
-| B1 | claude-p MAIN loop（Sonnet）の本番フル run | plist loaded だが pause 無し状態での完全1周（observe→build→adversary→self-merge）ログ証拠が無い。kill-switch(`PAUSED exit 0`)のみ実証 |
-| B2 | ~~capable-improver promotion を main へ~~ ✅**解消(2026-07-08)** | PR#795 merge=`e3b5ddb`、merge-verify adversary(fresh Opus)=**PASS 5/5**（ce37117 非gaming=数値独立再現 / 44 green / config安全 / promotion再現 1.26→3.21 worst+2.38 / 巻込ゼロ）。E欄参照 |
-
-## C. ❌ NOT-DONE / 正直な gap（tragedy 源）
-
-| # | 項目 | 検証事実 |
-|---|---|---|
-| C1 | harness ↔ Franklin の【自走 earn loop（全 rail）】 | **訂正(2026-07-08、旧「sol only」は視野狭窄で撤回)**: Franklin は全 rail を回す(sol×366/hl×103/PM×82/clip×104+109/x402×148/video×96/token×56/gig×48)。だが earn-ledger 実現 net≈**$0.02**(回るが fill/記録が乗らない)。3つの真の gap: ①各 rail の realized P&L 記録に穴(sol-trade は366回走って ledger 記録ゼロ→今日 record-swap で修正=最初の1例、他 rail 監査中) ②~~self-improve harness は今も合成 fixture(`pm_history.csv`)のみ進化し live loop に非接続~~ ✅**解消(2026-07-09、`self-improve-real-ledger` Phase5 harden+Phase6 converge 完了、main merge**`8365199`**)**: evaluate/promotion gate は各 instance の実 `earn-ledger.jsonl` に接続済み(ANICCA_HOME-gated 解決 fail-closed、realized_gate 13-key schema、resolved:False 無条件block)。fresh Opus adversary 3iteration で CONVERGED(0 blocking)、28/28 PROP-RL-* proved(25 deterministic+3 live)、101/101 pytest green。詳細=E欄 ③franklin-trading CLI に戦略コード hook 無し(prompt/model/spend のみ, run --mode backtest は未実装スタブ)→「戦略コード接続」でなく「rail選択 + heuristic/prompt を進化」に再定義。**残る真の gap = ①(記録の穴、他rail監査中)と③(戦略コードhook)のみ、②は解消**|
-| C2 | 地球上の稼ぎ loop が実際に稼ぐ | **訂正2(2026-07-08、独立診断が俺の誤診を修正)**: 全 loop 健康。前回「claude-p 壊れ」は俺が**空の plist-stdout ログを読んだ誤診**(スクリプトは自前ログに redirect、plist stdout は常に空)。実測: `pm-earner`=running(47 runs, 10分毎, exit0, 実log `earner.log` 779K 成長中)だが**資本枯渇**(available $1.50 < 最小 bundle $4.95)+ arb edge 無しで発注ゼロ。`claude-p-mainloop`=コード健全だが **Anthropic 週次 quota**(resets Jul10 20:00 JST)で exit1、自然回復。Franklin loop も健康(wake 3.5分前, $13.33)。**Franklin も pm-earner も「回るが realize せず」= 共通の真因は edge + 資本、plumbing ではない** |
-| C3 | Franklin 資金（$0→earn） | 経済P2(gig市場 witness, 別CC lane)依存 |
-| C4 | claude-p exit | C1-C3 が埋まってから |
+## C. ❌ NOT-DONE / 正直な gap
+- 本物の realized profit（citizen 自身の wallet・on-chain）= **ゼロ**（earn-ledger に profitable:true+sig 行なし）。
+- 本物の spawn（citizens.json 新 entry）= **ゼロ**（children.jsonl c001/c002 は insufficient_akt で fail）。
+- T12 spawn-funding-swap = 未実装（Skip route Base→AKT は確認済、$ 源が earn 待ち）。
 
 ## D. TODO（私 = agent economy を fund+改善する MAIN loop の残り。/vcsdd で1個ずつ、evidence 追記後に次へ）
 
