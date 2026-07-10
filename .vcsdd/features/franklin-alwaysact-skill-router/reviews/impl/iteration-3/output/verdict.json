@@ -1,0 +1,61 @@
+{
+  "phase": "impl-review",
+  "iteration": 3,
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:666-842", "description": "runAlwaysActWake re-traced in full against behavioral-spec.md sec2.5's 12-row transition matrix; REQ-501/502/504/505/506/508/511/512/513 wiring matches the spec's concrete mechanism byte-for-byte (attemptsUsed-only branch selection, currentOfferedSlots-only validity check, no array-identity branch selection anywhere)."},
+        {"type": "file", "location": ".vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md:58-67", "description": "iteration-2 FIND-002 genuinely resolved: CRIT-011 (REQ-503) and CRIT-012 (REQ-510) added, weights rebalanced 0.09x10 + 0.05x2 = 1.00; every REQ-501..513 now traceably named by at least one CRIT criterion's description/passThreshold."},
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs:463-486", "description": "iteration-2 FIND-003 genuinely resolved: PROP-506f now exists as a real spawn-based test asserting requests.length===1 (zero additional think() calls), escalated.attemptsUsed===0, and kind:'router_no_realized_action' -- the named, previously-missing spec-mandated test."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs (Rows 1-12)", "description": "All 12 rows of behavioral-spec.md sec2.5's exhaustive attempt-1xattempt-2 transition matrix have a named, distinct test() block; PROP-506f (row-adjacent empty-reroute-target case) and PROP-506c (economy/gig AND economy/lending, separately) both present."},
+        {"type": "file", "location": "runtime/loop/__tests__/franklin-plist-config.test.mjs:62-76", "description": "iteration-2 FIND-001 genuinely resolved: two new real, deployed-plist-reading guardrail tests (franklin-loop + franklin2-loop) assert ALWAYS_ACT_REGISTRY_PATH_OVERRIDE is absent from both live plists, matching the established ANICCA_BALANCE_OVERRIDE mitigation pattern exactly."}
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:779-818", "description": "REQ-506 reroute branch re-traced: hard array-filter exclusion of just-picked + every risk:\"capital\" slot confirmed unchanged and correct; the ONLY remaining defect is FIND-001's ledger-vs-harness-failures.jsonl target mismatch, not the reroute mechanism itself."},
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-wire-seam.test.mjs:54-133", "description": "PROP-504b re-verified: real thinkProxy call, httpPost mocked only at the network boundary, asserts no 'sleep' tool in the outbound body when engaged and its presence when not -- unchanged, still correct."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs:1-257", "description": "Pure Core re-read in full: imports only ./earn-slot.mjs and ./prompt.mjs, zero fs/http/child_process imports, zero RegExp/.match(/.test(/switch(slot)-style judgment over model-chosen content -- REQ-507's contract holds structurally, unchanged from iteration-2."},
+        {"type": "file", "location": "runtime/loop/harness-health.mjs:1-204", "description": "classifyLayer/computeSlotHealth/computeHarnessHealth read in full: unmodified by this sprint's diff, correctly scoped to ledger.jsonl-shaped kind values only; no structural regression introduced by the new router_reroute_skip/router_menu_empty/router_no_realized_action kinds (none of which are members of any of harness-health.mjs's kind sets, by design)."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/package.json:8-10", "description": "test/test:unit/test:integration scripts register always-act-router.test.mjs, always-act-wire-seam.test.mjs, always-act-nojudgment.test.mjs, always-act-reroute.test.mjs, and go-live.test.mjs -- matching contracts/sprint-1.md CRIT-010's exact named-file re-run instructions and the externally-verified 183/183 count."},
+        {"type": "external", "location": "thinker-executed 2026-07-11", "description": "183/183 pass at HEAD 2096ee06 (183 = iteration-1's 182 baseline + PROP-506f, the FIND-003 fix's single new target-feature test; the two new plist guardrail tests from FIND-001's fix are additionally covered by this same 183 total per contracts/sprint-1.md CRIT-010's own count reconciliation). One intermittent, pre-existing integration.test.mjs ENOTEMPTY teardown-race flake, independently proven pre-existing on the pristine baseline via git stash -- unrelated to this sprint's diff."}
+      ]
+    }
+  },
+  "blocking_count": 1,
+  "reviewed_commits": ["2096ee06"],
+  "external_test_evidence": "183/183 pass (thinker-executed)",
+  "priorIterationFindingsVerifiedResolved": ["FIND-001", "FIND-002", "FIND-003"],
+  "priorIterationFindingsPartiallyResolved": [
+    {
+      "findingId": "FIND-004",
+      "note": "The dead-code/unreachable-assertion defect is genuinely fixed (PROP-509b's guard-skip-preservation assertion now runs unconditionally). The underlying requirement_mismatch is NOT fixed -- ground truth still confirms no file record REQ-509's own literal AC target ('the ledger') carries the guard-blocked slot's skip record; it was rerouted to harness-failures.jsonl instead, without a corresponding behavioral-spec.md AC revision. Re-opened this iteration as FIND-001."
+    }
+  ],
+  "notes": "PostToolUse:Write hook fired the same 'fablize gate observed a tool failure' notice on this session's Write calls that iteration-2's review also encountered and disclosed. Every Write in this session returned success with no error surfaced to this adversary, and this adversary has no Bash tool to independently investigate the underlying fablize gate. Disclosed per iteration-2's own precedent; unrelated to any finding above, all of which are grounded in direct Read/Grep evidence of the reviewed commit's actual content.",
+  "ts": "2026-07-11T06:30:00.000Z"
+}

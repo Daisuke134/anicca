@@ -250,27 +250,43 @@ test('Row 4 / PROP-505a: no-tool-call -> reprompt -> no-tool-call again -> ESCAL
 
 test('Row 5 / PROP-506a (hard tool-enum exclusion): capital slot picked, earnLine===null -> reroute EXCLUDES the just-picked slot from the REAL schema -> valid safe reroute pick, earnLine!==null -> EXECUTE, 2 think() calls', { timeout: 20000 }, async () => {
   const { home, legacyHome } = setupEngaged();
-  let wakeIds = [];
+  // Every attempt within one wake shares the SAME wake_id (only the offered-slot schema narrows on a
+  // reroute) -- capture it from the FIRST request/attempt and write the reroute target's mock skill
+  // immediately, rather than racing the write against the 2nd think() call's own response reaching the
+  // child process (writing after `requests.length >= 2` resolves is too late: the mock server records
+  // the request synchronously before responding, so the child may already be resolving the skill path
+  // before this test-side write lands).
+  let wakeId = null;
   const { server, url, requests } = await startMockBrainServer((count, body) => {
-    const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
-    wakeIds.push(m ? m[1] : null);
-    if (count === 0) return makeToolCallResponse('earn/sol-trade', { strategy: 'wait' });
+    if (count === 0) {
+      const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
+      wakeId = m ? m[1] : null;
+      return makeToolCallResponse('earn/sol-trade', { strategy: 'wait' });
+    }
     return makeToolCallResponse('economy/gig', {});
   });
   writeMockSkill(home, 'earn/sol-trade', 'echo "wait, no edge"\nexit 0'); // exits 0, writes NO earn-ledger line
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
+  await waitForCondition(() => wakeId !== null, 10000);
+  writeMockEarnSkill(home, 'economy/gig', { realizeForWakeId: wakeId });
+
   await waitForCondition(() => requests.length >= 2, 15000);
   const secondEnum = new Set(requests[1].tools.find((t) => t.function?.name === 'run_skill').function.parameters.properties.slot.enum);
   assert.ok(!secondEnum.has('earn/sol-trade'), 'the just-picked slot must be structurally absent from the reroute schema');
-  writeMockEarnSkill(home, 'economy/gig', { realizeForWakeId: wakeIds[1] });
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the guard-blocked FIRST pick's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl (kind-distinct from the wake's own
+  // terminal line) -- wait for BOTH lines and locate the terminal one by kind/slot, never by index.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'exactly 2 think() calls: baseline no-op pick + 1 reroute');
-  assert.equal(lines[0].slot, 'economy/gig');
-  assert.equal(lines[0].attemptsUsed, 1);
+  const skipRecord = lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/sol-trade');
+  assert.ok(skipRecord, 'the excluded first pick\'s own skip record must be preserved in ledger.jsonl');
+  const terminal = lines.find((l) => l.kind === 'wake' && l.slot === 'economy/gig');
+  assert.ok(terminal, 'the reroute pick must be ledgered as this wake\'s own terminal wake line');
+  assert.equal(terminal.attemptsUsed, 1);
 });
 
 test('Row 6 / PROP-513b/c (money-safety-critical, FIND-201): reroute in flight, model re-emits the just-excluded capital slot -> REJECTED, no execution, no 3rd think() call, direct ESCALATE', { timeout: 20000 }, async () => {
@@ -284,10 +300,14 @@ test('Row 6 / PROP-513b/c (money-safety-critical, FIND-201): reroute in flight, 
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the excluded first pick's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl -- wait for BOTH lines (skip +
+  // escalation) so the escalation `.find()` below never races ahead of the 2nd write.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'never a 3rd think() call');
+  assert.ok(lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/sol-trade'), 'the excluded first pick\'s own skip record must be preserved in ledger.jsonl');
   assert.ok(lines.find((l) => l.kind === 'router_no_realized_action'), 'must escalate, not silently execute the re-emitted excluded slot');
 });
 
@@ -303,12 +323,16 @@ test('Row 6b / PROP-513c: reroute in flight, model emits a DIFFERENT capital slo
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the excluded first pick's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl -- wait for BOTH lines before the
+  // fresh `finalLines` re-read below.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2);
   const finalLines = readLedger(path.join(home, 'state', 'ledger.jsonl'));
   assert.ok(!finalLines.some((l) => l.slot === 'hl_trade'), 'hl_trade must never have been executed');
+  assert.ok(finalLines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/sol-trade'), 'the excluded first pick\'s own skip record must be preserved in ledger.jsonl');
   assert.ok(finalLines.find((l) => l.kind === 'router_no_realized_action'));
 });
 
@@ -324,10 +348,15 @@ test('Row 7 / REQ-506 edge case ("rerouted second pick ALSO no-ops"): reroute\'s
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): BOTH the first pick's AND the rerouted
+  // (also no-op) second pick's own router_reroute_skip records now land in ledger.jsonl, plus the
+  // final escalation line -- 3 lines total for this wake; wait for all 3.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 3, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'never a 3rd think() call, even though the reroute pick also no-opped');
+  assert.ok(lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/sol-trade'), 'the first pick\'s own skip record must be preserved in ledger.jsonl');
+  assert.ok(lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'economy/gig'), 'the rerouted second pick\'s own skip record must ALSO be preserved in ledger.jsonl');
   assert.ok(lines.find((l) => l.kind === 'router_no_realized_action'));
 });
 
@@ -364,10 +393,13 @@ test('Row 9 / PROP-506g (money-safety-critical, FIND-301 REQ-506 symmetric exten
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the reprompt-attempt no-op pick's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl, ahead of the escalation line -- 2 lines.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'a no-op on the REPROMPT attempt must never trigger a reroute (that would be a 3rd think() call)');
+  assert.ok(lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'economy/gig'), 'the reprompt-attempt no-op pick\'s own skip record must be preserved in ledger.jsonl');
   assert.ok(lines.find((l) => l.kind === 'router_no_realized_action'));
 });
 
@@ -416,10 +448,13 @@ test('Row 12 (spec-review iteration-5 notes.md fix): fabricated slot on attempt 
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the reprompt-attempt no-op pick's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl, ahead of the escalation line -- 2 lines.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'never a 3rd think() call (a reroute) after a reprompt-attempt no-op');
+  assert.ok(lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/clip'), 'the reprompt-attempt no-op pick\'s own skip record must be preserved in ledger.jsonl');
   assert.ok(lines.find((l) => l.kind === 'router_no_realized_action'));
 });
 
@@ -474,10 +509,14 @@ test('PROP-506f (empty-safe-set-escalates): reroute-eligible risk-free set is em
   const proc = engagedSpawn({ home, legacyHome, url, extraEnv: { ALWAYS_ACT_REGISTRY_PATH_OVERRIDE: registryOverridePath } });
   track(proc, server, home, legacyHome);
 
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the just-picked slot's own
+  // router_reroute_skip record now ALSO lands in ledger.jsonl, ahead of the escalation line -- 2 lines.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   await new Promise((r) => setTimeout(r, 300));
   proc.kill('SIGTERM');
   assert.equal(requests.length, 1, 'the empty risk-free reroute set must spend ZERO additional think() calls -- never a 2nd call');
+  const skipRecord = lines.find((l) => l.kind === 'router_reroute_skip' && l.slot === 'earn/sol-trade');
+  assert.ok(skipRecord, 'the just-picked slot\'s own skip record must be preserved in ledger.jsonl');
   const escalated = lines.find((l) => l.kind === 'router_no_realized_action');
   assert.ok(escalated, 'must escalate truthfully via REQ-508, never a fallback into a risk:"capital" reroute target');
   assert.equal(escalated.slot, null);
@@ -492,23 +531,33 @@ test('PROP-506f (empty-safe-set-escalates): reroute-eligible risk-free set is em
 
 test('PROP-506c: economy/gig pick with earnLine===null triggers the SAME reroute path as any isEarnSlot member (classify call-site widening, index.mjs:450)', { timeout: 20000 }, async () => {
   const { home, legacyHome } = setupEngaged();
-  let wakeIds = [];
+  // Every attempt within one wake shares the SAME wake_id -- capture it from the FIRST request and
+  // write the reroute target's mock skill immediately (see Row 5's identical comment): writing after
+  // `requests.length >= 2` resolves races the child's own skill-path resolution and is too late.
+  let wakeId = null;
   const { server, url, requests } = await startMockBrainServer((count, body) => {
-    const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
-    wakeIds.push(m ? m[1] : null);
-    if (count === 0) return makeToolCallResponse('economy/gig', { action: 'list' });
+    if (count === 0) {
+      const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
+      wakeId = m ? m[1] : null;
+      return makeToolCallResponse('economy/gig', { action: 'list' });
+    }
     return makeToolCallResponse('earn/clip', {});
   });
   writeMockSkill(home, 'economy/gig', 'exit 0'); // no earn-ledger line -> earnLine===null
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
-  await waitForCondition(() => requests.length >= 2, 15000);
-  writeMockEarnSkill(home, 'earn/clip', { realizeForWakeId: wakeIds[1] });
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  await waitForCondition(() => wakeId !== null, 10000);
+  writeMockEarnSkill(home, 'earn/clip', { realizeForWakeId: wakeId });
+
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): economy/gig's own no-op pick now ALSO
+  // ledgers a router_reroute_skip line ahead of the reroute's terminal `wake` line -- wait for both,
+  // and locate the terminal line by kind/slot, never by index.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'economy/gig no-op must trigger classifyEarnResult + a reroute, never silently resolve as an ordinary wake');
-  assert.notEqual(lines[0].kind, 'wake_error');
+  assert.ok(!lines.some((l) => l.kind === 'wake_error'), 'must never fail as a brain-transport error');
+  assert.ok(lines.some((l) => l.kind === 'wake' && l.slot === 'earn/clip'), 'must terminate with the reroute pick executed as an ordinary wake');
 });
 
 test('PROP-506c: economy/lending pick with earnLine===null ALSO triggers the reroute path (same widening)', { timeout: 20000 }, async () => {
@@ -526,7 +575,10 @@ test('PROP-506c: economy/lending pick with earnLine===null ALSO triggers the rer
 
   await waitForCondition(() => requests.length >= 2, 15000);
   writeMockEarnSkill(home, 'earn/clip', { realizeForWakeId: wakeIds[1] });
-  await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): economy/lending's own no-op pick now
+  // ALSO ledgers a router_reroute_skip line ahead of the reroute's terminal `wake` line -- wait for
+  // both before killing, so this test's process teardown never races ahead of the terminal write.
+  await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2);
 });
@@ -582,38 +634,56 @@ test('PROP-509a (money-safety-critical, Tier 0 static guard): this feature\'s cu
   assert.ok(!catalogGateDiff.includes('DEFAULT_BOOTSTRAP_RESERVE_USDC ='), 'this feature must never alter catalog-gate.mjs\'s threshold constant');
 });
 
-test('PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style skip, exits 0, writes no earn-ledger line) on the first pick triggers a reroute to a DIFFERENT slot, and the guard\'s own skip record is preserved VERBATIM in harness-failures.jsonl (never overwritten/silenced)', { timeout: 20000 }, async () => {
+test('PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style skip, exits 0, writes no earn-ledger line) on the first pick triggers a reroute to a DIFFERENT slot, and the guard\'s own skip record is preserved VERBATIM in the ledger (never overwritten/silenced)', { timeout: 20000 }, async () => {
   const { home, legacyHome } = setupEngaged();
-  let wakeIds = [];
+  // Every attempt within one wake shares the SAME wake_id -- capture it from the FIRST request and
+  // write the reroute target's mock skill immediately (see Row 5's identical comment): writing after
+  // `requests.length >= 2` resolves races the child's own skill-path resolution and is too late.
+  let wakeId = null;
   const { server, url, requests } = await startMockBrainServer((count, body) => {
-    const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
-    wakeIds.push(m ? m[1] : null);
-    if (count === 0) return makeToolCallResponse('earn/sol-trade', {});
+    if (count === 0) {
+      const m = /Wake ([A-Z0-9]+):/.exec(body.messages?.[1]?.content || '');
+      wakeId = m ? m[1] : null;
+      return makeToolCallResponse('earn/sol-trade', {});
+    }
     return makeToolCallResponse('economy/gig', {});
   });
   writeMockGuardBlockedSkill(home, 'earn/sol-trade', 'kill-switch');
   const proc = engagedSpawn({ home, legacyHome, url });
   track(proc, server, home, legacyHome);
 
+  await waitForCondition(() => wakeId !== null, 10000);
+  writeMockEarnSkill(home, 'economy/gig', { realizeForWakeId: wakeId });
+
   await waitForCondition(() => requests.length >= 2, 15000);
-  writeMockEarnSkill(home, 'economy/gig', { realizeForWakeId: wakeIds[1] });
-  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): behavioral-spec.md:493-495's own literal
+  // AC text is "preserved verbatim in the ledger" -- "the ledger" is a proper noun this spec uses
+  // consistently for ledger.jsonl (REQ-510/512/777), never for harness-failures.jsonl (which REQ-508
+  // always names explicitly by its literal filename). This wake now writes TWO ledger.jsonl lines: the
+  // guard-blocked first pick's own `router_reroute_skip` record, then the reroute's terminal `wake`
+  // line -- wait for both, then find each by kind, never by index.
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 2, 15000);
   proc.kill('SIGTERM');
-  assert.equal(lines[0].slot, 'economy/gig', 'the reroute must pick a DIFFERENT slot, never retry earn/sol-trade with a relaxed guard');
-  // REQ-509 (Phase 3 impl-review iteration-2 FIND-004 fix): the guard-blocked FIRST pick's own skip
-  // record is NEVER written to ledger.jsonl (runAlwaysActWake's reroute branch never ledgers the
-  // rerouted-away-from attempt as its own terminal wake line -- ledger.jsonl's single line is always
-  // the wake's FINAL outcome) -- it is instead preserved verbatim, unconditionally, in
-  // harness-failures.jsonl (the SAME appendHarnessFailure/formatRecord audit-append mechanism REQ-508
-  // already uses for this router's own escalation detail), under the DISTINCT kind
-  // 'router_reroute_skip'. This assertion is UNCONDITIONAL (no dead-code `if` guard) -- it genuinely
-  // fails if the record is ever missing or its reason text is lost/altered.
-  const failureLines = readLedger(path.join(home, 'state', 'harness-failures.jsonl'));
-  const guardSkipRecord = failureLines.find((l) => l.slot === 'earn/sol-trade' && l.kind === 'router_reroute_skip');
-  assert.ok(guardSkipRecord, 'the guard-blocked slot\'s own skip record must be preserved (not silenced) in harness-failures.jsonl');
+  const terminal = lines.find((l) => l.kind === 'wake' && l.slot === 'economy/gig');
+  assert.ok(terminal, 'the reroute must pick a DIFFERENT slot, never retry earn/sol-trade with a relaxed guard');
+  // This assertion is UNCONDITIONAL (no dead-code `if` guard) -- it genuinely fails if the record is
+  // ever missing from ledger.jsonl or its reason text is lost/altered. `skip_reason` carries
+  // `skillResult.output` untampered (only the SAME redactPrivateKeyPatterns pass every other ledger
+  // line already gets -- never truncated/whitespace-collapsed), satisfying "preserved verbatim".
+  const guardSkipRecord = lines.find((l) => l.slot === 'earn/sol-trade' && l.kind === 'router_reroute_skip');
+  assert.ok(guardSkipRecord, 'the guard-blocked slot\'s own skip record must be preserved (not silenced) in ledger.jsonl -- "the ledger" per REQ-509\'s own literal AC text');
   assert.ok(
-    (guardSkipRecord.detail || '').includes('kill-switch'),
+    (guardSkipRecord.skip_reason || '').includes('kill-switch'),
     'the guard-blocked slot\'s own skip reason must be preserved verbatim',
+  );
+
+  // Regression guard (REQ-508 scope discipline): a routine guard-skip is NEVER a harness failure --
+  // harness-failures.jsonl must carry NO router_reroute_skip record; that file is reserved for
+  // REQ-508's own TERMINAL exhausted-bound escalation case, a semantically different event.
+  const failureLines = readLedger(path.join(home, 'state', 'harness-failures.jsonl'));
+  assert.ok(
+    !failureLines.some((l) => l.kind === 'router_reroute_skip'),
+    'a routine guard-skip must never be written to harness-failures.jsonl (REQ-508 is for the terminal exhausted-bound case only)',
   );
 });
 

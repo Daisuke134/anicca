@@ -406,3 +406,126 @@ ADDENDUM TOTALS (iter2)
 ================================================================================
 Target-feature test() blocks (this feature's own 5 files): 63/63 PASS (+1 vs iter1's 62: PROP-506f).
 Full combined suite (183 official package.json + 94 sweep-2) = 277/277 PASS, 0 regressions.
+
+================================================================================
+ADDENDUM — impl-review iter3 fix (Phase 3 iteration-3 FIND-001, REQ-509 ledger target corrected)
+================================================================================
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+Fixes Phase 3 implementation review iteration-3's 1 blocking finding
+(`.vcsdd/features/franklin-alwaysact-skill-router/reviews/impl/iteration-3/output/findings/FIND-001.json`):
+
+FIND-001 (REQ-509's own literal AC text — "preserved verbatim in the ledger" — names ledger.jsonl
+specifically, not harness-failures.jsonl; iteration-2's FIND-004 fix was a genuine, undisclosed
+requirement reinterpretation): "the ledger" is a proper noun this spec uses consistently for
+ledger.jsonl (REQ-510's own EARS clause, REQ-512's "append ... a ledger line", line 777's
+"distinguishable from the ledger alone") — never for harness-failures.jsonl, which REQ-508 always names
+explicitly by its literal filename whenever meant. THINKER RULING: the spec is authoritative; the CODE
+was changed, not the spec.
+
+`runAlwaysActWake`'s reroute branch (index.mjs) now writes the guard-blocked/no-realized-action pick's
+own skip record directly to `ledger.jsonl` via the SAME `formatRecord`/`safeAppend`/`LEDGER_PATH`
+machinery every other ledger line in this file already uses (never a new writer), under a distinct
+`kind:'router_reroute_skip'`, carrying `wake_id`/`ts`/`slot`/`args`/`attemptsUsed`/`exit_code` fields
+consistent with every other always-act ledger line plus a `skip_reason` field holding the guard's own
+raw skill output UNTAMPERED (only the same `redactPrivateKeyPatterns` pass every other ledger line
+already gets — never truncated or whitespace-collapsed), satisfying "preserved verbatim". This write is
+unconditional and happens BEFORE the branch decides whether to reroute successfully or escalate, so the
+record survives either outcome. The prior `appendHarnessFailure` call (writing to harness-failures.jsonl)
+was REMOVED entirely — the spec never asked for it, and harness-failures.jsonl is semantically reserved
+for REQ-508's own TERMINAL exhausted-bound failure case, not a routine, in-flight guard-skip.
+
+Confirmed no health-tracking collision: `harness-health.mjs`'s `CLEAN_KINDS`/`SLOT_HEALTH_KINDS`/
+`BRAIN_TRANSPORT_RESET_KINDS` sets (re-read in full) do not include `router_reroute_skip` — it classifies
+as `'unknown'` via `classifyLayer` and is excluded from `computeSlotHealth`'s subset filter entirely, so
+no false-positive/negative health classification is introduced by this kind now appearing in
+ledger.jsonl.
+
+Rewrote `PROP-509b` to assert UNCONDITIONALLY against ledger.jsonl (finding the guard-blocked record by
+`slot === 'earn/sol-trade' && kind === 'router_reroute_skip'`, asserting `skip_reason` includes
+`'kill-switch'` verbatim) plus a regression guard confirming harness-failures.jsonl carries NO
+`router_reroute_skip` record for that wake. Fixed the ~8 other reroute-path tests whose ledger.jsonl now
+carries an ADDITIONAL `router_reroute_skip` line ahead of (or alongside) their existing terminal/
+escalation line — every one of these now waits for the CORRECT total ledger-line count and locates each
+record by `kind`/`slot`, never by `lines[0]` index (Row 5, Row 6, Row 6b, Row 7, Row 9, Row 12,
+PROP-506f, PROP-506c/economy-gig, PROP-506c/economy-lending). While retargeting these assertions, 3 of
+them (Row 5, PROP-506c/economy-gig, PROP-509b) surfaced a genuine PRE-EXISTING test-authoring race
+(writing the reroute target's mock earn-skill file only AFTER `waitForCondition(requests.length >= 2)`,
+which is racy since the mock brain server increments `requests.length` synchronously immediately before
+responding — the child process can already be resolving the skill path before the test-side file write
+lands) that the OLD, weaker `lines[0].slot`/`notEqual(lines[0].kind,'wake_error')` assertions had been
+silently masking (the `slot` field is populated on every outcome kind, including `skill_missing`, so the
+old assertions passed even when the reroute target's mock skill was never found in time). Fixed properly
+by capturing the wake's own `wake_id` from the FIRST think() request (every attempt within one wake
+shares the SAME wake_id) and writing the reroute target's mock skill immediately — before the 2nd think()
+call's response can possibly reach the child — mirroring the pattern Row 1 already established. Verified
+this pre-existing race by reproducing `skill_missing` deterministically (3/3 repeated runs) against the
+UNMODIFIED base code via a throwaway debug harness before applying the fix; NOT a regression introduced
+by this addendum's own diff.
+
+NEGATIVE-CONTROL VERIFIED this session: with the index.mjs fix reverted (`git stash push --
+runtime/loop/index.mjs`, leaving the rewritten test file in place), PROP-509b genuinely FAILS —
+`AssertionError: the guard-blocked slot's own skip record must be preserved (not silenced) in
+ledger.jsonl -- "the ledger" per REQ-509's own literal AC text` — confirming the new assertion is real,
+not dead code. Restored via `git stash pop`; PROP-509b passes again, and the full 183/183 official suite
+was re-confirmed clean after restore.
+
+FILES CHANGED THIS ADDENDUM:
+  - runtime/loop/index.mjs (the noRealizedAction/reroute branch now writes `kind:'router_reroute_skip'`
+    directly to ledger.jsonl via safeAppend/formatRecord/LEDGER_PATH; the prior appendHarnessFailure call
+    for this branch was removed)
+  - runtime/loop/__tests__/always-act-reroute.test.mjs (PROP-509b rewritten to assert unconditionally
+    against ledger.jsonl + a harness-failures.jsonl regression guard; Row 5/6/6b/7/9/12, PROP-506f,
+    PROP-506c/economy-gig, PROP-506c/economy-lending updated to wait for the correct ledger-line count
+    and locate records by kind/slot instead of `lines[0]`; Row 5/PROP-506c-gig/PROP-509b additionally
+    fixed to capture wake_id from the first think() request, closing a pre-existing mock-skill-write race)
+  - .vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md (CRIT-006 description/
+    passThreshold corrected to name ledger.jsonl, not harness-failures.jsonl, as REQ-509's preservation
+    target)
+
+================================================================================
+RAW OUTPUT — target-feature suite (63 tests, 5 files: same 5 files as iter2, no count change)
+Command (from runtime/loop/): node --test __tests__/always-act-reroute.test.mjs
+================================================================================
+✔ 25/25 tests in always-act-reroute.test.mjs pass, 4 consecutive full-file runs (0 failures on any run).
+
+================================================================================
+RAW OUTPUT — full official package.json `test` script (183 cases, same count as iter2)
+Command (from runtime/loop/): npm test
+================================================================================
+ℹ tests 183
+ℹ pass 183
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20370.408458
+
+(Re-run twice this session: both 183/183 clean, 0 failures, 0 flakes.)
+
+================================================================================
+RAW OUTPUT — regression baseline (sweep 2): 94 tests (unchanged from iter2)
+Command (from runtime/loop/): node --test __tests__/address-classify.test.mjs
+  __tests__/balance-solana.test.mjs __tests__/brain.test.mjs
+  __tests__/daemon-script-franklin-routing.test.mjs __tests__/earn-slot.test.mjs
+  __tests__/franklin-plist-config.test.mjs __tests__/integration-solana-tier.test.mjs
+  __tests__/liquidity.test.mjs __tests__/prompt.test.mjs __tests__/resolve-identity.test.mjs
+  __tests__/self-eval.test.mjs __tests__/wallet-address-solana.test.mjs
+================================================================================
+ℹ tests 94
+ℹ pass 94
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12183.406083
+
+================================================================================
+ADDENDUM TOTALS (iter3)
+================================================================================
+Target-feature test() blocks (this feature's own 5 files): 63/63 PASS (unchanged count vs iter2 — no
+  tests added, 9 existing tests corrected: PROP-509b rewritten + 8 reroute-path tests retargeted).
+Full combined suite (183 official package.json + 94 sweep-2) = 277/277 PASS, 0 regressions.
+Negative control: PROP-509b genuinely fails when the index.mjs fix is reverted (verified this session).
