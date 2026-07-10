@@ -45,43 +45,54 @@ def load_fixture(path: str = FIXTURE_PATH):
 
 # EVOLVE-BLOCK-START
 def score_candidate(candidate, market_features, config) -> float:
-    """Return a USD stake size for this candidate (0.0 = skip the bet). This is the ONLY thing
-    openevolve may rewrite. Pure function: no I/O, no network, no wallet, no LLM call — it reads
-    only its three plain-data arguments and returns a number.
+    """
+    Return a USD stake size for this candidate (0.0 = skip the bet).
 
-    `candidate` carries {edge, confidence, resolve_horizon_days} for one historical market
-    opportunity. `market_features` carries {liquidity, price} (price = cost per YES share, 0..1).
-    `config` carries fixed run parameters (min_edge, min_confidence, base_stake), analogous in
-    SHAPE to skills/earn/lib/genome.mjs::KNOB_KEYS (MIN_EDGE/MIN_CONF), but expressed as evolvable
-    CODE rather than a numeric knob list — openevolve may propose new features, different
-    combination formulas, or sizing logic, not only threshold nudges."""
-    # Extract core candidate metrics
+    The goal is to keep only high‑conviction, liquid trades while pruning noisy
+    edges that hurt the risk‑adjusted Sharpe‑like score.  We therefore apply three
+    independent gates:
+
+    1. **Edge / confidence** – basic quality thresholds (seeded from the original
+       MIN_EDGE / MIN_CONF knobs).
+    2. **Combined quality** – product of edge and confidence; a simple way to
+       capture jointly strong signals.
+    3. **Market health** – minimum liquidity and a floor on price to avoid
+       ultra‑cheap shares that explode variance.
+
+    All thresholds are configurable via `config` so the evolution engine can tune
+    them, but we provide sensible defaults that already improve the worst‑case
+    window observed in earlier attempts.
+    """
+    # Core candidate metrics
     edge = candidate.get("edge", 0.0)
     confidence = candidate.get("confidence", 0.0)
     resolve_horizon_days = candidate.get("resolve_horizon_days", 0)
 
     # Market‑level features
-    price = market_features.get("price", 0.0)
     liquidity = market_features.get("liquidity", 0.0)
+    price = market_features.get("price", 0.0)
 
-    # Configurable parameters (provide sensible defaults)
+    # Configurable thresholds (with sensible defaults)
+    # Tighter defaults – these are the primary levers for risk‑adjusted performance
+    min_edge = config.get("min_edge", 0.25)                     # higher edge requirement
+    min_confidence = config.get("min_confidence", 7.5)         # higher confidence requirement
+    min_combined = config.get("min_combined", 2.0)             # edge × confidence product floor
+    min_liquidity = config.get("min_liquidity", 800.0)         # deeper market floor
+    min_price = config.get("min_price", 0.12)                  # avoid ultra‑cheap shares
+    max_price = config.get("max_price", 0.88)                  # avoid ultra‑expensive shares
+    max_horizon = config.get("max_horizon_days", 25)          # prefer shorter contracts
+
+    # Base stake parameters
     base_stake = config.get("base_stake", 5.0)
     max_stake = config.get("max_stake", 12.0)
 
-    # Selection thresholds – balanced defaults plus horizon filter
-    strict_edge = config.get("strict_edge", 0.22)          # required edge
-    strict_confidence = config.get("strict_confidence", 7.5)  # required confidence
-    min_combined = config.get("min_combined", 2.0)       # edge × confidence product
-    min_liquidity = config.get("min_liquidity", 800.0)   # liquidity floor
-    min_price = config.get("min_price", 0.10)            # avoid ultra‑cheap shares
-    max_price = config.get("max_price", 0.90)            # avoid ultra‑expensive shares
-    max_horizon = config.get("max_horizon_days", 30)     # maximum resolve horizon
-
-    # Primary gate – enforce thresholds, combined quality, and horizon limit
+    # Combined quality check
     combined_score = edge * confidence
+
+    # Apply all gates – any failure skips the trade
     if (
-        edge < strict_edge
-        or confidence < strict_confidence
+        edge < min_edge
+        or confidence < min_confidence
         or combined_score < min_combined
         or liquidity < min_liquidity
         or price < min_price
@@ -90,24 +101,25 @@ def score_candidate(candidate, market_features, config) -> float:
     ):
         return 0.0
 
-    # Price‑stability factor – higher when price near 0.5 (lower variance)
+    # Price‑stability factor: higher when price is near 0.5 (lower variance)
     price_factor = 1.0 - abs(price - 0.5) * 2.0
     price_factor = max(0.0, price_factor)
+    # Discard very unstable price points – they create high payout variance
     if price_factor < 0.20:
         return 0.0
 
-    # Liquidity factor (capped at 2×)
+    # Liquidity factor (capped at 2×) rewards deeper markets
     liquidity_factor = min(liquidity / min_liquidity, 2.0)
 
     # Horizon bonus – up to 10 % extra for contracts that resolve sooner
     horizon_bonus = 1.0 + max(0.0, (max_horizon - resolve_horizon_days) / max_horizon) * 0.10
 
-    # Composite stake calculation using quality‑weighted factors
+    # Composite stake combines price stability, liquidity health and timing incentive
     stake = base_stake * price_factor * liquidity_factor * horizon_bonus
 
-    # Clamp to sensible bounds
-    stake = max(base_stake * 0.5, stake)   # modest minimum
-    stake = min(stake, max_stake)          # upper bound
+    # Clamp to sensible bounds (minimum 0.5× base, maximum config‑cap)
+    stake = max(base_stake * 0.5, stake)
+    stake = min(stake, max_stake)
 
     return max(0.0, stake)
 # EVOLVE-BLOCK-END
