@@ -404,6 +404,44 @@ Boundary rule:
 - **CEO 自身の verification loop（MUST）**: 「配分を変えた → 翌週の会社全体 score/実収益が上がったか」を machine-checkable に追跡。CEO も自分の判断を数字で検証する（config 変更が悪化させたら巻き戻す）。
 - 既存の record-earn.mjs / ledger 不変条件（INV-H1..H5）は壊さない。CEO 化は founder-loop に「配分判断ステップ」を追加する形で、ledger 書き込みの唯一性は維持。
 
+### profitable-claude repo gap（2026-07-10 実確認）
+
+`github.com/Daisuke134/profitable-claude` は現在まだ startable skeleton に近い。存在確認済み:
+
+```text
+README.md
+bin/start-all.sh
+bin/status.sh
+skills/human-funded/README.md
+```
+
+README 上の documented loops:
+
+```text
+bounty
+affiliate
+gig
+```
+
+MUST build before claiming the full claude-p CEO To-Be:
+
+```text
+config/loop-registry.json
+config/ceo-budget-config.json
+ledgers/cost-events.jsonl
+ledgers/loop-evaluations.jsonl
+ledgers/ceo-decisions.jsonl
+ledgers/lessons.jsonl
+bin/ceo-status.sh
+CEO loop runner
+registry enforcement for pause/reduce/double-down
+manager-loop wiring for capafy/article/pm/hl/explorer/life-manager
+start-all/status coverage for every managed loop
+```
+
+This repo gap is not a blocker to the design; it is the implementation backlog. Do not say the full
+loop is deployed in `profitable-claude` until these files and evidence paths exist.
+
 ### EXPLORER LOOP（新規、起業家）
 - **agent-reach 経由で X・Reddit を継続監視**（X は Grok/X MCP も使う — Dais の X 有料プラン活用）。人間の pain-point・「誰か作って」・Claude で稼ぐ実例ツイートを収集。
 - 収集 → 事業案生成 → **その日のうちに動く最小検証**（no dry run: 実際に1本作る/1件応募する/1 API 叩く）→ 動いた証拠付きで CEO に上申。

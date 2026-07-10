@@ -112,6 +112,160 @@ Life Manager loop reports a summary upward to CEO. CEO does not directly manage 
         "Your life starts moving on autopilot."
 ```
 
+## Full Profitable-Claude To-Be
+
+This is the immediate architecture to build in `github.com/Daisuke134/profitable-claude`.
+Life Manager is only one managed business. The important work is to build the loops that keep
+creating, improving, verifying, and allocating all businesses.
+
+```text
+github.com/Daisuke134/profitable-claude
+        |
+        v
+===============================================================
+|                    STARTABLE LOOP REPO                      |
+|  clone -> configure env -> start-all -> status -> evidence   |
+===============================================================
+        |
+        +-- bin/start-all.sh
+        +-- bin/status.sh
+        +-- config/loop-registry.json
+        +-- config/ceo-budget-config.json
+        +-- ledgers/cost-events.jsonl
+        +-- ledgers/loop-evaluations.jsonl
+        +-- ledgers/ceo-decisions.jsonl
+        +-- ledgers/lessons.jsonl
+        |
+        v
+===============================================================
+|                         CEO LOOP                            |
+| company portfolio manager                                   |
+===============================================================
+| input:                                                       |
+|   - each loop cadence/evidence                              |
+|   - each loop real revenue / MRR / realized profit           |
+|   - each loop token/cost ledger                              |
+|   - Claude weekly/subscription runway                        |
+|   - disk and process health                                  |
+|                                                              |
+| output:                                                      |
+|   - pause / reduce / normal / double_down / spawn            |
+|   - pass_frequency_multiplier                                |
+|   - capital_cap_usd                                          |
+|   - fleet/account count                                      |
+|   - loop-specific next objective                             |
+===============================================================
+        |
+        +------------------------------------------------------+
+        |                                                      |
+        v                                                      v
+============================                       ============================
+| MANAGER BUSINESS LOOPS   |                       | EXPLORER LOOP           |
+============================                       ============================
+| gig                       |                       | X/Reddit/pain points    |
+| bounty                    |                       | same-day validation     |
+| affiliate                 |                       | evidence URL/artifact   |
+| video                     |                       | proposes new business   |
+| article                   |                       | to CEO                  |
+| pm/hl trade               |                       ============================
+| capafy                    |
+| life-manager              |
+============================
+        |
+        v
+Each manager loop owns:
+  - domain-specific action
+  - search + metrics self-improve
+  - self-heal
+  - deterministic ledgers
+  - evidence mail
+  - lessons.jsonl
+  - business summary to CEO
+```
+
+Current `profitable-claude` reality checked on 2026-07-10:
+
+```text
+present:
+  README.md
+  bin/start-all.sh
+  bin/status.sh
+  skills/human-funded/README.md
+
+documented loops:
+  bounty
+  affiliate
+  gig
+
+gap:
+  CEO loop is not fully present in this repo yet.
+  Life Manager business loop is not present yet.
+  capafy/article/pm/hl/explorer are not fully present here yet.
+  start-all/status only cover bounty/affiliate/gig.
+```
+
+Therefore the next Claude must not treat the repo as complete. It must build the missing
+profitable-claude harness and manager-loop structure.
+
+## Agent Economy Context Read
+
+This handover is for the profitable-claude CEO/Life Manager work, but the broader agent-economy
+goal matters because MAIN / Agent Economy is separate work handled elsewhere.
+
+Read status from 2026-07-10:
+
+```text
+anicca-agent-spawn:
+  state: currentPhase=3
+  status: contract approved, round 14 PASS; FIND-003/004 fixed in ~/anicca commit a8c3dc4
+  open: Phase 3 round 3 implementation re-review still needs dispatch
+
+anicca-spawn-identity-resolution-fix:
+  state: currentPhase=init
+  reality: bug was fixed and adversary-verified in ~/anicca commit f89f37c
+  open: reconcile VCSDD ledger/state with shipped reality
+
+anicca-harness-tooluse-health:
+  state: currentPhase=1c
+  open: requested iteration-4 verdict path was not found:
+    .vcsdd/features/anicca-harness-tooluse-health/reviews/spec/iteration-4/output/verdict.json
+
+anicca-agent-lending:
+  state: complete
+```
+
+Runtime checks from 2026-07-10:
+
+```text
+Franklin LaunchAgent:
+  running
+  ANICCA_SPAWN_SAFETY_MARGIN=1.5
+  FRANKLIN_ANALYZER_MODEL=free/glm-4.7
+  FRANKLIN_ROUTER_MODEL=free/glm-4.7
+  FRANKLIN_EVALUATOR_MODEL=free/glm-4.7
+  FRANKLIN_MEDIA_ROUTER_MODEL=free/glm-4.7
+
+citizens.json:
+  ~/.hermes/state/citizens.json currently equals seed Franklin only
+  no new cloud child observed yet
+
+ledger:
+  wake rows exist
+  sampled rows do not show verified profitable:true Done evidence
+
+citizens.json diff monitor:
+  initially not found running in process list
+  restarted 2026-07-10 as PID recorded in ~/.hermes/state/citizens-diff-monitor.pid
+  log: ~/.hermes/logs/citizens-diff-monitor.log
+  note: this is a lightweight observer, not Done evidence by itself
+```
+
+Do not claim the agent economy goal Done until both are independently verified:
+
+1. `~/.hermes/state/citizens.json` gains a genuinely new cloud child distinct from seed.
+2. `~/.blockrun/state/ledger.jsonl` or `~/.anicca/state/ledger.jsonl` has `profitable:true` backed by
+   real on-chain/exchange-settled transaction evidence.
+
 ## Life Manager Product Internals
 
 ```text
@@ -267,7 +421,7 @@ Only move a loop into Life Manager when:
 
 ## Implementation Goal For Next Claude
 
-/goal Build the Life Manager business loop under profitable-claude CEO, without changing CEO's role.
+/goal Build the profitable-claude CEO/manager-loop harness, then add Life Manager as one business loop under that CEO, without changing CEO's role.
 
 Seed product issues already created in `github.com/Daisuke134/life-manager`:
 
@@ -298,14 +452,25 @@ Done:
 2. Inspect:
    - `/Users/anicca/Projects/life-manager`
    - `/Users/anicca/profitable-claude`
-3. In profitable-claude, add or fix Life Manager business-loop runner:
+3. In `profitable-claude`, add the missing CEO/portfolio harness:
+   - `config/loop-registry.json`
+   - `config/ceo-budget-config.json`
+   - `ledgers/cost-events.jsonl`
+   - `ledgers/loop-evaluations.jsonl`
+   - `ledgers/ceo-decisions.jsonl`
+   - `bin/ceo-status.sh`
+   - CEO loop runner
+   - deterministic pause/reduce/double-down registry enforcement
+4. Update `bin/start-all.sh` and `bin/status.sh` so all current managed loops are visible, not just
+   bounty/affiliate/gig.
+5. In profitable-claude, add or fix Life Manager business-loop runner:
    - `skills/human-funded/life-manager/`
    - `life-manager-cli.sh`
    - healthcheck
    - README
    - cadence/evidence/report wiring
-4. Life Manager loop creates/updates product issues in `github.com/Daisuke134/life-manager`.
-5. Seed product issues in `github.com/Daisuke134/life-manager` for Dais-requested capabilities:
+6. Life Manager loop creates/updates product issues in `github.com/Daisuke134/life-manager`.
+7. Seed product issues in `github.com/Daisuke134/life-manager` for Dais-requested capabilities:
    - minimum-question onboarding and inferred context,
    - travel-time calendar wedge,
    - phone/lateness guard,
@@ -315,7 +480,7 @@ Done:
    - product marketing loop,
    - product API cost/outcome ledgers,
    - future cloud personal CEO architecture as out-of-scope design issue.
-6. Life Manager loop has product ledgers:
+8. Life Manager loop has product ledgers:
    - feedback
    - issues
    - calendar actions
@@ -325,29 +490,34 @@ Done:
    - product API costs
    - Stripe MRR
    - lessons
-7. Life Manager cloud wedge works:
+9. Life Manager cloud wedge works:
    - Telegram onboarding
    - Google Calendar physical event detection
    - travel/prep/leave-time block
    - Telegram after-action report
    - evidence ledger
-8. Life Manager loop self-improves:
+10. Life Manager loop self-improves:
    - feedback/metrics/cost/failures -> issue
    - issue -> VCSDD implementation
    - deploy -> real evidence verification
    - lessons.jsonl
-9. Life Manager loop markets itself:
+11. Life Manager loop markets itself:
    - marketing action URL
    - views/clicks/signups if available
    - no fake metrics
-10. CEO sees Life Manager as one business:
+12. CEO sees Life Manager as one business:
    - MRR
    - product cost summary
    - cadence
    - evidence
    - evaluation score
    - can pause/reduce/double-down via registry
-11. Do not implement MAIN / Agent Economy loop in this session.
+13. Explorer loop exists or is explicitly stubbed with a VCSDD feature:
+    - pain-point intake
+    - same-day validation
+    - CEO proposal artifact
+    - no fake opportunities
+14. Do not implement MAIN / Agent Economy loop in this session.
 
 Constraints:
 
