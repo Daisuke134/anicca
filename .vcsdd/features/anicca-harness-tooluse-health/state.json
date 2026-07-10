@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-harness-tooluse-health",
   "mode": "lean",
-  "currentPhase": "2c",
+  "currentPhase": "3",
   "phaseHistory": [
     {
       "from": "init",
@@ -47,6 +47,12 @@
       "timestamp": "2026-07-10T05:50:00.000Z",
       "sprint": 1,
       "reason": "Refactor pass assessed: both new index.mjs call sites already share the single appendHarnessFailure() helper and harness-health.mjs's single capFailureDetail() helper (no duplicated detail-formatting logic between the brain_transport and tool_missing/tool_timeout/tool_logic branches); harness-health.mjs's five R1-R5 functions are already small, single-purpose, and documented per-REQ (no generic/utility naming). One candidate DRY opportunity was deliberately declined: reusing capFailureDetail for the EXISTING ledger.jsonl `result` field's own .replace(/\\s+/g,' ').slice(0,900) formatting (runtime/loop/index.mjs line ~465) would touch pre-existing, R9-protected behavior for a cosmetic-only gain -- left untouched per R9/INV-NO-PROMPT-REGRESSION. No refactor commits were needed; tests re-confirmed green post-assessment (same counts as the GREEN-phase log)."
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-10T04:45:00.000Z",
+      "note": "Phase 2b GREEN complete: 34/34 new JS + 22/22 Python (orchestrator self-executed), 20/20 integration, R9/R10 regressions hold, redaction verified. Advancing to impl review."
     }
   ],
   "iterations": {
@@ -71,5 +77,5 @@
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T12:47:30.205Z",
-  "updatedAt": "2026-07-10T05:50:00.000Z"
+  "updatedAt": "2026-07-10T04:45:00.000Z"
 }
