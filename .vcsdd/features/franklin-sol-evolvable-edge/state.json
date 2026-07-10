@@ -44,6 +44,12 @@
       "to": "2c",
       "timestamp": "2026-07-10T03:34:39.627Z",
       "note": "Phase 2c reached: implementation written cleanly on first pass mirroring genome.mjs/evolve.mjs proven shapes (no duplication, no premature abstraction, small focused files per coding-style.md) — no further refactor changes required before Phase 3 adversary review. State advanced to 2c only, per task instruction (not advanced past 2c)."
+    },
+    {
+      "from": "2c",
+      "to": "2c",
+      "timestamp": "2026-07-10T07:00:00.000Z",
+      "note": "Phase 3 impl-review iteration-1 FAIL (reviews/impl/iteration-1/output/verdict.json, blockingFindings FIND-001/FIND-002; FIND-004 major non-blocking): mutate()/evaluatePromotion+promote were correct, well-tested PURE/effectful units but never WIRED into production — sol-gate-cli.mjs never called mutate()/shouldMutateThisPass (genome frozen at baseline id forever), and sol-evolve.mjs had no runEvolveSol()/CLI orchestration so the attribution+promotion pipeline never ran against real ledger/trace data. FIND-004: loadGenome() never clamped numeric knobs into MUTATION_SPEC range (only mutate() did), a latent robustness gap. Fix (2b re-entry, mirroring genome.mjs/evolve.mjs/polymarket-trade/run.sh:69-138 exactly): (1) added shouldMutateThisPass(counterFile, cadence) to sol-genome.mjs (byte-for-byte mirror of genome.mjs's own) + wired maybe-mutate INLINE into sol-gate-cli.mjs's main() (the SOL pre-gate is one node process, unlike PM's two-process pick.py/genome.mjs shape, so folding cadence+mutate+persist-to-instance-override into the single existing per-pass entrypoint is the correct copy+TWEAK, not a blind copy); (2) added runEvolveSol() + a CLI entrypoint to sol-evolve.mjs mirroring evolve.mjs's runEvolve()/CLI block line-for-line, REUSING evolve.mjs's own readTrace/buildGenomeIndex verbatim (on top of the already-reused evaluatePromotion/promote), wired into sol-trade/run.sh every pass right after the swap-record block; (3) added clampNumericKnobs() (shared clampKnobValue() helper with mutate()'s own base-clamp) applied inside loadGenome(). Phase 2a RED re-confirmed via git-stash isolation (implementation-only files stashed, new/extended tests run against ORIGINAL pre-fix code: sol-genome.test.mjs/sol-evolve.test.mjs failed at import (ERR_MODULE_NOT_FOUND for clampNumericKnobs/runEvolveSol), sol-gate-cli.test.mjs's 2 wiring-proof assertions failed exactly as FIND-001 predicted (genome_id identical to baseline, no override file written); regression baseline for untouched files (sol-gate/sol-trace/sol-max-spend/sol-source-contract) stayed 37/41 green during the stash window). Phase 2b GREEN after stash pop: 89/89 node:test (70 original + 19 new: 10 sol-genome FIND-001/004 tests, 5 sol-evolve FIND-002 E2E tests, 4 new sol-gate-cli.test.mjs FIND-001 subprocess wiring-proof tests) + 9/9 test_run.sh bash-integration checks, all green. Money-safety re-verified unchanged: SOL_GATE_LIVE_ENABLE never set to \"1\" anywhere; resolve-max-spend.sh still unconditionally returns 0.25 untouched; summarizeByGenomeSol still sums row.net_usdc (win-or-loss) via sig+confirmed gating; evaluatePromotion/promote/readTrace/buildGenomeIndex all still literally imported from evolve.mjs (PROP-014/015b import-identity tests still pass); no eval(/new Function( introduced (PROP-018 still passes); real canonical baseline-genome.json and git history confirmed untouched by any test run. Commit 42b35c6 in ~/anicca worktree .worktrees/franklin-sol-edge, branch feature/franklin-sol-edge (pushed). State stays at 2c per task instruction, ready for Phase 3 impl-review iteration-2."
     }
   ],
   "iterations": {
@@ -761,5 +767,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-10T02:59:05.000Z",
-  "updatedAt": "2026-07-10T06:30:00.001Z"
+  "updatedAt": "2026-07-10T07:00:00.000Z"
 }
