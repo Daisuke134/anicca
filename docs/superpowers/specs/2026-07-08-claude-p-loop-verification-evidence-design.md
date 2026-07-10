@@ -415,7 +415,26 @@ Boundary rule:
 - **CEO 自身の verification loop（MUST）**: 「配分を変えた → 翌週の会社全体 score/実収益が上がったか」を machine-checkable に追跡。CEO も自分の判断を数字で検証する（config 変更が悪化させたら巻き戻す）。
 - 既存の record-earn.mjs / ledger 不変条件（INV-H1..H5）は壊さない。CEO 化は founder-loop に「配分判断ステップ」を追加する形で、ledger 書き込みの唯一性は維持。
 
-### profitable-claude repo gap（2026-07-10 実確認）
+### profitable-claude repo gap — ✅ CLOSED（2026-07-10 実装完了、VCSDD ceo-company-core phase=complete）
+
+**Status quo（2026-07-10）**: 下記 MUST-build backlog は全て main に実装・検証済み（feature/ceo-company → main merge `74be159`、最終 `5521d0c`）。
+
+| 実装済み | evidence |
+|---|---|
+| config/loop-registry.json（9 loop: bounty/affiliate/gig/life-manager/explorer=live、capafy/article/pm/hl=external）+ ceo-budget-config.json + 4 ledgers + bin/ceo-status.sh + CEO runner（bin/ceo-run.sh）| `bash bin/status.sh` で 5 live loop ALIVE（2026-07-10 実行） |
+| 決定的 registry enforcement（paused=起動拒否 / reduce / double_down、cadence = base_interval × multiplier[0.1,10] → state/effective-cron/<loop>.txt file 間接参照、prompt へ shell 補間禁止）| paused 実挙動 exit=1 + normal GATE_PASS を実証（e2e-enforcement.txt） |
+| 予算消費（bin/budget-check.sh: soft=警告+lessons、hard=決定的 pause、dispatch 時 gate 接続）| tests + ceo-status budget 行 |
+| skill 配布 = vendor+manifest（skills.lock + bin/sync-skills.sh + bin/check-skill-drift.sh、~/anicca 参照は vendor か existence-guard + allowlist）| PROP-015 scoped grep + allowlist |
+| Life Manager loop（cli/healthcheck/launchd/ledger 9本/feedback→issue 決定的 gate/CEO 報告 mrr=0 正直）| 実コメント https://github.com/Daisuke134/life-manager/issues/6#issuecomment-4931665286 + seed #1-#9 実 gh 検証 |
+| Explorer loop（LIVE、stub 不採用 = Dais 2026-07-10 指示。intake→当日実検証→Reality-Check→proposals.jsonl→CEO、auto-promote 禁止）| registry live + core ALIVE |
+| テスト | tests/run-all.sh = 54/54 ×2連続（main） |
+| launchd | ai.anicca.{ceo-runner, life-manager-core-healthcheck, explorer-core-healthcheck} install+load 済み |
+
+Open（非ブロック）: /tmp payload の mktemp 化（LOW）/ external 4 loop の budget 未設定 / compute_runway ledger 書き手未実装（unknown 正直表示）/ 収益は 2026-07-10 時点 **0**。
+
+---
+
+以下は実装前の記録（履歴として保持）:
 
 `github.com/Daisuke134/profitable-claude` は現在まだ startable skeleton に近い。存在確認済み:
 

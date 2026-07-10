@@ -819,7 +819,9 @@ MUST:
 
 ## VCSDD Implementation Plan
 
-### Phase A: Spec + intake
+**Status quo（2026-07-10 実装完了分）**: Phase A は profitable-claude main で実装済み（VCSDD `ceo-company-core` phase=complete、merge `74be159`）— `skills/human-funded/life-manager/`（cli/healthcheck/launchd/README）、3 skill vendored（calendar-with-travel-time / opportunity-calendar / anicca-meetup-talk-applier、skills.lock 管理）、state ledger 9本、feedback→issue 決定的 gate（comment mode 含む、実コメント issues/6#issuecomment-4931665286）、seed issues #1-#9 実 gh 検証、CEO 報告（mrr_usd=0.0 正直）。core は ALIVE 稼働中。**Phase B 以降（実 action: calendar write / phone / marketing 実投稿、Telegram intake、Luma/connpass 応募の実行）は未実装** — Phase A は harness+ledger+validation gate のみ（interpretation C）。
+
+### Phase A: Spec + intake（✅ 実装済み 2026-07-10、上記 status quo 参照）
 
 - Create `profitable-claude/skills/human-funded/life-manager/`.
 - Vendor `calendar-with-travel-time`, `opportunity-calendar`, `anicca-meetup-talk-applier` as local copies.
