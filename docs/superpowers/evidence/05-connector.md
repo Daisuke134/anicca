@@ -32,3 +32,17 @@ connector 本体 = `~/profitable-claude/skills/human-funded/connector/`（cron a
 3. **C 修正**: STARTUP に実送信(`openclaw message send --channel telegram --target 8547730585 …` or telegram-notify.sh)を明記 + cron target 設定。
 4. **TZ**: gcal 表示が Pacific offset の件は別途 Dais カレンダー設定確認(副次)。
 5. 私はループを直す→core 再起動→実 pass を監視→翌日 iterate（手動予約しない）。reliable な autonomous RSVP は iterate 対象（OTP/login/サイト差）。
+
+
+## 実装→検証→push→live 起動で判明した3層目の blocker（2026-07-11）
+- コード修正(horizon/FREE/evidence/TZ)は **builder GREEN→fresh Opus adversary PASS→push(profitable-claude main 6ac4c64)** 完了。
+- 決定的確認: 新 horizon で `horizon_full=False, gaps=11`（瞑想で全日満杯だったのが空き11日）、CloakBrowser :9222 ALIVE。
+- **live 起動で3層目の blocker 判明**: connector core(tmux claude) は **手動 `connector-cli.sh` だと生きて動く**が、**launchd healthcheck 環境では spawn 直後に即 DEAD**（`connector-core-healthcheck.log` に "started (DEAD)" 連発、60分5回で backoff 停止）。launchd out/err log は空。→ **autonomous に pass が完走しない=コードを直しても毎日予約されない真の理由**。
+- self-heal request(`~/.openclaw/state/.connector-core-selfheal-request.json`) が「connector-core DEAD、自分で診断して直せ」と残っている。
+- ⚠️ **systemic**: 同じ「healthcheck が claude core を spawn」方式の explorer/life-manager core にも波及しうる。これは self-heal 苦情(loop が死んで backoff で諦める)の核心と直結。
+- → crash-loop 根因(launchd env vs interactive)修正＋実 booking 完走を fresh agent に委譲中。結果を gcal `events get` で独立検証する。
+
+## 現状の正直なまとめ
+- ✅ コード3詰まりは修正・検証・push 済（fabrication/有料登録を防ぐ形で）。
+- ✅ FREE 構造強制・evidence 本物検証で「捏造/有料を gcal に書く」事故を未然に防止（adversary が捕捉）。
+- 🔄 残: core が launchd で生き残れない crash-loop を直す→初の実 booking を gcal CONFIRMED で観測→7日 streak。
