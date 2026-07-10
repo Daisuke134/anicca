@@ -68,6 +68,15 @@ Goal（Dais 2026-07-11 口述）: **agent economy を開く**。①claude-p と 
 - [ ] 6.4 ClawRouter free 429 対策（THINK fallback tier）
 - [ ] ~~記事2本~~（別 CC 担当につき除外）
 
+## 構成決定（2026-07-11 Dais 口述 + 実配置の照合）
+
+実配置の事実: pm-earner/founder-loop/mainloop/Franklin 群は全て **~/anicca tree** に実在し、profitable-claude 側の `pm`/`hl` は ledger_paths 空のスタブ行（実監視ゼロ）。Dais の役割宣言により2ツリー構成を正式化する:
+
+- **CEO tree（profitable-claude、別 CC 担当）** = Dais 向け product/収益 loop（bounty/affiliate/gig/life-manager/explorer + capafy/article）。CEO light-pass はこのツリーの実 ledger のみ監視。
+- **Crypto/Colony tree（anicca、本セッション担当）** = mainloop（agent-economy loop）+ claude-p の pm/sol/hl trading + Franklin 群 + lending + spawn。pm/hl のスタブ行は CEO registry から**撤去または実配線のどちらかに倒す**（宙ぶらりん禁止）— 撤去して crypto tree 側に earn-registry+healthcheck を持つのが正（1トピック正本1箇所の原則）。
+
+marketplace は自作しない（17-agent-economy-deep-research-2026-07-10.md §2、実測済み）: 決済= x402（済・live）、A2A 商取引= Virtuals ACP（Base、state-machine escrow、LIVE）、A2A マイクロタスク= Olas Mech Marketplace（LIVE、ただし生涯 turnover $8.9万と極小）、発見/登録= Circle Agent Marketplace（2026-05-11 launch）。教訓: これらは**レール（配管）であって需要源ではない**（件数は演出できるが settle 額は演出できない）。我々の薄い層 = colony identity/ledger/健康監視のみ。
+
 ## Witness 定義(再掲)
 
 | witness | 条件 | 現状 |
