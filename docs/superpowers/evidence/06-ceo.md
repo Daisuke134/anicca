@@ -24,8 +24,16 @@
 - REQ-CEO-023: registry last_observed_at + external 状態一致
 → 実装後: fresh Opus adversary 検証 → merge → live で CEO pass 再実行し ceo-decisions≥1 行 + enforcement gate test green を evidence 化。
 
-## 残（pending verification）
-- [ ] builder GREEN(tests 実green) + fresh Opus adversary PASS
+## builder GREEN → adversary(Opus) FAIL（fix-loop 必要, 2026-07-11）
+builder: 4 REQ 実装, tests 94→99 green(regression 0), commit 2b722ed/56a2740 local main 未push。
+fresh Opus adversary verdict = **FAIL**, blocking 3件（`.vcsdd/features/ceo-revive/reviews/sprint-1/output/`）:
+- **FIND-001(critical)**: REQ-CEO-023 `last_observed_at` を書く箇所がゼロ=永遠 null。investigation gap 未解決の空実装。→ CEO light-pass/status で各 loop の last-pass marker mtime から registry.last_observed_at を stamp する write site を追加。
+- **FIND-002(high)**: `lib/ceo_budget.py:122-125`(budget-breach writer) が type 無しで ceo-decisions 追記。→ type 付与し3 writer 統一。
+- **FIND-003(critical)**: `bin/ceo-run.sh` に catch-all `*)` 無し→typo で live 無制限 agent 起動(RED phase で実発火した footgun)。→ `*)` で usage+exit 2、回帰テスト追加。
+adversary が verify した positive: LAST_PASS_MARKERS が実 healthcheck パスと一致 / ceo-runner.plist byte 不変 / schema subset check で既存 reader 非破壊 / registry atomic write 正当。
+
+## 残（connector 処理後に serialize）
+- [ ] #6 fix-loop: FIND-001/002/003 修正 → 再 adversary PASS
 - [ ] merge 後 live で CEO no-args pass → ceo-decisions.jsonl に判断行≥1（独立読返し）
 - [ ] enforcement: paused-gate が loop 起動を拒否する挙動を test/実行で観測
 - [ ] cron 4件 stale の 07:00 JST 後の自然復帰を `openclaw cron runs` で確認
