@@ -114,7 +114,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 | 5 | ⬜ | 実 E2E dogfood 7日: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 connector 行 + 7日 streak + adversary PASS |
 | 6 | ⬜ | CEO 仕上げ: bounty/affiliate/gig cost 自動記録（core 再起動）+ LM cron launchd 化 + CEO 初 decision + hl/article registry 正誤 + external budget | cost-events 3 loop 行 + ceo-decisions ≥1 |
 | 7 | ⬜ | article loop 有効化: profitable-article-writer VCSDD 完走 → Zenn 抜き v1 → Mode A 品質1本 → 新 cron + metrics + V4 別 gate | 実 publish URL + registry live |
-| 8 | ⬜ | LM Phase B: 実 action 解禁（connector rail 流用） | LM spec Phase B done |
+| 8 | ⬜ | LM Phase B: 実 action 解禁（connector rail 流用）+ **セルフマーケ稼働**（Dais 2026-07-10: MoneyPrinterTurbo で wedge 動画を無料量産→IG/TikTok/YT Shorts/Reddit へ。一次 copy =「Tired of searching travel time for every event? Life Manager fills it in automatically」。views/clicks/signups を marketing-actions.jsonl に実測記録、§11 バーで「伸びない creative の反復」を検出）+ **issue-driven 開発**（詳細 issue を書く→loop が triage→実装→deploy→metric 検証。Dais 側の仕事 = 良い issue を書くこと） | LM spec Phase B done + 実投稿 URL + issue→deploy 1周 |
 | 9.5 | ⬜ | SNS factory 移行: larry/reelclaw/lm-video/watercolor を claude-p manager loop 化（§11 バー装着で self-improve 開始）→ OpenClaw 退役（state push + **Dais 明示 go** 後に削除） | live cron 0 + launchd 依存 0 + go 記録 |
 | 9 | ⬜ | 製品化: connector module → cloud Life Manager（課金 thesis 確定後、別 spec） | — |
 
