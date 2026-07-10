@@ -1,3 +1,5 @@
+★★★ MONEY EVIDENCE PROTOCOL: 稼ぎの完了報告 = on-chain tx + mail to Dais + aniccaai.com/dashboard 実数値反映、の3点セットのみ（→ 20-implementation-certainty 冒頭が正本）。★★★
+
 # 19 — Agent Economy 完全ロードマップ（2026-07-11、全項目 evidence-verified）
 
 Goal（Dais 2026-07-11 口述）: **agent economy を開く**。①claude-p と Franklin が 24/7 loop で crypto を稼ぎ続け（毎時間残高が増える）、各 repo（profitable-claude / anicca）に push し続ける ②Franklin が broke Franklin に貸して両方稼ぐ（≥4 Franklin が恒常黒字）③Franklin が self-heal/self-improve を自力で回す（claude-p は double-checker + harness 改善者のみ。main claude loop はいずれ消える前提）④Akash / blockrun GPU runtime で cloud spawn し、人間と物理に制約されず 1M Franklin へ。記事2本は別 CC 担当につき除外。

@@ -1,3 +1,5 @@
+★★★ MONEY EVIDENCE PROTOCOL（Dais 2026-07-11、絶対・最上位）: 「稼いだ」と言ってよいのは ①on-chain tx hash + ledger 行 ②その証拠を **mail で Dais（keiodaisuke@gmail.com）へ送信済み** ③**aniccaai.com/dashboard に実数値が反映済み**（人間が見る唯一の窓。fake/blockrun 内部完結の数字は経済ではない）の3点が揃った時のみ。どれか欠けた「earning 報告」は裏切りとみなす。実装は confidence 100% 到達後のみ。★★★
+
 # 20 — Implementation Certainty Audit（2026-07-11、4並列 deep-dive の正本）
 
 目的: 「12時間を fiction に燃やす」再発をゼロにする。P1〜P5 の全実装前提を実コード（file:line）と突き合わせた。4 subagent（spec照合 / money path / identity・lending・push / spawn contracts）の検証結果。**この MD に無い前提で実装しない。**
