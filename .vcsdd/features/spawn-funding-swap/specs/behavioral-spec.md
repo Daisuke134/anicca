@@ -73,7 +73,18 @@ Confirmed this session (cite, do not re-trust blindly — verify balances/route 
   choke point produces (identical to the `amount_in` REQ-002 sends and the tx amount REQ-006 sends) — never an
   independently-derived or independently-named dollar float. `checkSourceFunded` performs an exact
   bigint-vs-bigint comparison of `baseUsdcBalance >= requiredBaseUnits`; the gas check
-  (`baseGasBalance >= minGasWei`) remains a separate, independently-typed comparison.
+  (`baseGasBalance >= minGasWei`) remains a separate, independently-typed comparison, where `minGasWei` is
+  ALWAYS the literal constant `MIN_GAS_WEI = 1_000_000_000_000_000n` (0.001 ETH, i.e. 10^15 wei) — given the
+  exact same treatment REQ-006 gives `SWAP_MAX_USD`: a `const` literal defined once, in the same pure module,
+  NEVER read from `process.env`, a CLI flag, or any genome/config file, with no second definition anywhere
+  else in the codebase (FIND-001 fix). Reasoning for the value: a single Base L2 call's total fee (execution
+  gas + L1 data fee) typically runs a few cents to low tens of cents at prevailing Base gas prices/ETH
+  prices; `MIN_GAS_WEI` at 0.001 ETH (≈$2.50–$3.50 at ETH≈$2,500–$3,500) is a 25–100x margin over that
+  typical per-tx cost, sized to cover BOTH an ERC-20 approve tx and the swap-broadcast tx that leg 1 may
+  require, plus a spike in the Base L1 base-fee component, while staying small enough that it does not itself
+  become an unfunded-gas blocker. `minGasWei` MUST NEVER be `0n` or any other value than `MIN_GAS_WEI`; an
+  implementation defaulting it to `0n` makes REQ-003's gas check vacuous and MUST fail PROP-005's
+  `MIN_GAS_WEI`-literal fixture (below).
 
 **Effectful shell** (I/O, must be mocked/injected in tests, never exercised for real in Phase 2a/2b tests):
 - AKT/USD price lookup (`PriceOracle.getAktUsdPrice()`) — an external price source queried once per
@@ -187,7 +198,9 @@ configured source wallet (`baseUsdcBalance: bigint`, base units) is `>= required
 `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` (the identical `bigint` REQ-002
 sends as Skip's `amount_in` and REQ-006 signs as the Base tx amount — never a re-derived or
 independently-named raw dollar float) — AND the Base-chain native-gas balance (`baseGasBalance: bigint`) is
-`>= minGasWei: bigint` for leg 1, and SHALL fail closed with an explicit "insufficient funded source" error
+`>= minGasWei: bigint` for leg 1, where `minGasWei` is ALWAYS the literal constant
+`MIN_GAS_WEI = 1_000_000_000_000_000n` defined in the Purity Boundary Analysis above (never `0n`, never
+sourced from env/config), and SHALL fail closed with an explicit "insufficient funded source" error
 WHEN either check fails — THE SYSTEM SHALL NOT infer, borrow from, or auto-bridge from any other chain/wallet
 (e.g. Franklin's Solana USDC) as an implicit fallback.
 **Edge Cases**:
@@ -216,6 +229,19 @@ WHEN either check fails — THE SYSTEM SHALL NOT infer, borrow from, or auto-bri
   fixture and MUST fail this assertion — proving the test suite is falsifiable against the FIND-001/
   FIND-002 class of wrong-unit false-funded defect, which PROP-006's zero-balance-only fixture cannot catch
   (`0n` is `< ` any positive comparand regardless of its unit).
+- A `MIN_GAS_WEI`-literal fixture (PROP-005, closing FIND-001) asserts `checkSourceFunded` is exercised with
+  `minGasWei = MIN_GAS_WEI = 1_000_000_000_000_000n` and, for `baseGasBalance = 500_000_000_000_000n` (half
+  of `MIN_GAS_WEI`, nonzero), returns `false`. A `minGasWei = 0n` stand-in for a defaulted-to-zero
+  implementation MUST fail this fixture (it would wrongly return `true` for the same
+  `baseGasBalance = 500_000_000_000_000n`), proving the test suite is falsifiable against a vacuous
+  0n-default `minGasWei` implementation.
+- A test asserts the driver's ACTUAL runtime argument to `checkSourceFunded`'s `requiredBaseUnits` parameter
+  is bit-identical (`===`, `bigint`) to the SAME value simultaneously passed as `SkipApiClient.getRoute()`'s
+  `amount_in` argument AND `BaseSigner.signAndBroadcast()`'s tx-amount argument, inspecting all three spies'
+  actual call arguments together in one test run (not `checkSourceFunded`'s pure return value or
+  `requiredBaseUnits` in isolation) — a driver implementation using a stale or independently re-derived
+  `requiredBaseUnits` (e.g. a cached prior price/need) while correctly computing the same value fresh for the
+  other two call sites MUST fail this assertion (PROP-005, extended per FIND-003).
 
 ### REQ-004: Multi-tx route execution with per-leg on-chain verification
 **EARS**: WHEN a valid route with `txs_required` legs is being executed THE SYSTEM SHALL submit each leg
@@ -233,7 +259,8 @@ WHEN any leg fails to confirm within its timeout.
   than corrupting the ledger into a false `failed` or false `done` state.
 - A leg's confirmed amount differs from the route's quoted `amount_out` for that leg (slippage/partial
   fill beyond tolerance): fail closed rather than silently accepting a worse-than-quoted fill; the
-  acceptable slippage tolerance is an explicit, tested constant.
+  acceptable slippage tolerance is the explicit, tested literal constant `TOLERANCE_BPS = 50` (0.5%) — see
+  REQ-007 for its exact definition, reasoning, and boundary-value proof obligations (PROP-013).
 **Acceptance Criteria**:
 - `planNextLeg` never returns a leg index that already has a `confirmed` entry in the ledger.
 - A simulated Leg-2 stall (mock transport returns `pending` repeatedly past the timeout) results in
@@ -333,7 +360,18 @@ already used for the Skip request, and SHALL NEVER be signed for the pre-convers
 `akash query bank balances akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523` (or equivalent REST query) and
 SHALL only report success WHEN the observed `uakt` balance increased by an amount consistent with the
 route's quoted `amount_out` (within slippage tolerance); THE SYSTEM SHALL NOT declare success merely
-because all leg transactions returned a zero exit code.
+because all leg transactions returned a zero exit code. The slippage tolerance is ALWAYS the literal
+constant `TOLERANCE_BPS = 50` (0.5%, i.e. `verifySettlement` accepts any `postBalanceUakt - preBalanceUakt`
+`>= quotedAmountOutUakt * (10000n - 50n) / 10000n`), given the exact same treatment REQ-006 gives
+`SWAP_MAX_USD` and REQ-003 gives `MIN_GAS_WEI`: a `const` literal defined once, in the same module,
+NEVER read from `process.env`, a CLI flag, or any genome/config file, with no second definition anywhere
+else in the codebase (FIND-002 fix). Reasoning for the value: this route is a 3-hop IBC path
+(Base→noble-1→osmosis-1→akashnet-2) whose only sources of fill variance are AMM/DEX-hop rounding and
+in-flight IBC relay timing, not open-market price discovery on an illiquid asset — 50 bps is tight enough to
+reject a materially worse-than-quoted fill (the exact failure mode this REQ exists to prevent) while still
+tolerating ordinary multi-hop rounding/fee dust, and is consistent with common DEX-aggregator "tight"
+slippage defaults (0.5%–1%); given `SWAP_MAX_USD`'s already-small per-swap dollar cap, the absolute
+worst-case dollar loss at 50 bps stays proportionally small.
 **Edge Cases**:
 - All legs report "confirmed" per their own chain's tx status, but the final Akash balance query shows
   no increase (funds stuck somewhere in the IBC path, or landed in a different denom): fail closed,
@@ -343,6 +381,12 @@ because all leg transactions returned a zero exit code.
 **Acceptance Criteria**:
 - The success path is unreachable in tests unless the mocked final-balance query shows the expected
   delta; a mock returning an unchanged balance after all legs "succeed" results in non-zero exit.
+- Boundary-value fixtures (PROP-013, closing FIND-002) for `quotedAmountOutUakt = 1_000_000n` (1 AKT) and
+  `TOLERANCE_BPS = 50`: (a) an observed delta of exactly `995_000n` uakt (`quotedAmountOutUakt * 9950n /
+  10000n`, i.e. precisely at the 0.5% boundary) MUST pass (`verifySettlement` returns `true`); (b) an
+  observed delta of `994_999n` uakt (one base unit below the boundary) MUST fail closed
+  (`verifySettlement` returns `false`) — together proving the test suite discriminates a correctly-tight
+  50-bps tolerance from an arbitrarily looser one, which the zero-delta-only fixture above cannot do.
 
 ### REQ-008: Wiring as TREASURY_SWAP_CMD
 **EARS**: THE SYSTEM SHALL be invocable as a single shell command assignable to the `TREASURY_SWAP_CMD`

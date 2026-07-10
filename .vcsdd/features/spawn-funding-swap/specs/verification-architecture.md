@@ -14,9 +14,12 @@
     — REQ-003; `requiredBaseUnits` is the SAME `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)),
     USDC_DECIMALS_BASE)` `bigint` value REQ-012 routes to `SkipApiClient.getRoute()`'s `amount_in` (REQ-002)
     and `BaseSigner.signAndBroadcast()`'s tx amount (REQ-006) — never an independently-named or
-    independently-derived dollar float; the comparison against `baseUsdcBalance` is exact bigint-vs-bigint
+    independently-derived dollar float; the comparison against `baseUsdcBalance` is exact bigint-vs-bigint.
+    `minGasWei` is ALWAYS the literal constant `MIN_GAS_WEI = 1_000_000_000_000_000n` (0.001 ETH), given the
+    exact same treatment as `SWAP_MAX_USD` — never `0n`, never env/config-sourced (REQ-003, FIND-001 fix).
   - `verifySettlement(preBalanceUakt, postBalanceUakt, quotedAmountOutUakt, toleranceBps): boolean` —
-    REQ-007
+    REQ-007; `toleranceBps` is ALWAYS the literal constant `TOLERANCE_BPS = 50` (0.5%), given the exact same
+    treatment as `SWAP_MAX_USD`/`MIN_GAS_WEI` — never env/config-sourced (REQ-007, FIND-002 fix)
   - `reconcileLedgerOnResume(ledgerFile: unknown): ReconciledLedger | 'CORRUPT'` — REQ-005 (pure parse +
     validation; the actual file read is effectful, but interpreting its contents is pure)
   - `toBaseUnits(amountFloat: number, decimals: number): bigint` — REQ-012; THE single named choke point
@@ -63,7 +66,7 @@ and no real endpoint literal strings outside a documented fixture-comment.
 | PROP-002 | When `need == 0`, driver calls zero Skip/sign/broadcast functions | REQ-001 | 1 | true | node:test + spy mocks |
 | PROP-003 | `validateRoute` rejects every malformed/wrong-denom/wrong-chain/zero-amount fixture; accepts only the confirmed-live shape | REQ-002 | 1 | true | node:test fixtures |
 | PROP-004 | No signing code path reachable unless `validateRoute` returned true for the in-hand route object | REQ-002 | 1 | true | node:test + spy mocks |
-| PROP-005 | `checkSourceFunded` returns false for all `baseUsdcBalance < requiredBaseUnits` (exact `bigint`-vs-`bigint` comparison, `requiredBaseUnits` per REQ-012) or `baseGasBalance < minGasWei`; driver never proceeds past a `false` result. Includes a nonzero-balance DISCRIMINATING fixture (`baseUsdcBalance = 5000000n`, `requiredBaseUnits = toBaseUnits(15.32, 6) = 15320000n`) which MUST return `false`; a wrong-unit implementation comparing `baseUsdcBalance` against the raw dollar float `15.32` instead (`5000000n >= 15.32` evaluates `true`) would wrongly return `true` (funded) and MUST fail this assertion — proving the test is falsifiable against the FIND-001/FIND-002 10^6x-class wrong-unit false-funded defect, which the zero-balance-only PROP-006 fixture cannot catch | REQ-003 | 2 | true | fast-check (property) + node:test spy |
+| PROP-005 | `checkSourceFunded` returns false for all `baseUsdcBalance < requiredBaseUnits` (exact `bigint`-vs-`bigint` comparison, `requiredBaseUnits` per REQ-012) or `baseGasBalance < minGasWei`; driver never proceeds past a `false` result. Includes a nonzero-balance DISCRIMINATING fixture (`baseUsdcBalance = 5000000n`, `requiredBaseUnits = toBaseUnits(15.32, 6) = 15320000n`) which MUST return `false`; a wrong-unit implementation comparing `baseUsdcBalance` against the raw dollar float `15.32` instead (`5000000n >= 15.32` evaluates `true`) would wrongly return `true` (funded) and MUST fail this assertion — proving the test is falsifiable against the FIND-001/FIND-002 10^6x-class wrong-unit false-funded defect, which the zero-balance-only PROP-006 fixture cannot catch. Also includes a `MIN_GAS_WEI`-literal fixture (`minGasWei = MIN_GAS_WEI = 1_000_000_000_000_000n`, `baseGasBalance = 500_000_000_000_000n`) which MUST return `false`; a `minGasWei = 0n` stand-in for a defaulted-to-zero implementation MUST fail this fixture, proving `minGasWei` cannot vacuously default to `0n` (FIND-001 fix). EXTENDED per FIND-003 with a driver-level cross-call-site identity assertion mirroring PROP-019's discipline: for a fixture's `need`/`aktUsdPrice`, the ACTUAL argument the driver passes into `checkSourceFunded`'s `requiredBaseUnits` parameter, `SkipApiClient.getRoute()`'s `amount_in` argument, and `BaseSigner.signAndBroadcast()`'s tx-amount argument MUST all three be bit-identical `bigint`s, asserted by inspecting all three spies' actual call arguments together in one test run — never `checkSourceFunded`'s pure return value or `requiredBaseUnits` in isolation from the other two call sites. A driver implementation using a stale or independently re-derived `requiredBaseUnits` (e.g. a cached prior price/need) while correctly computing the same value fresh for the other two call sites MUST fail this assertion | REQ-003 | 2 | true | fast-check (property) + node:test spy |
 | PROP-006 | Regression fixture: today's real balances (Base USDC≈0, Base gas≈0) fail closed with an explicit deficit message. This zero-balance fixture alone is non-discriminating (`0n` is `<` any positive comparand regardless of unit) — PROP-005's nonzero fixture is the mechanism that catches a wrong-unit comparison | REQ-003 | 0 | true | node:test fixture (fixed values, not generated) |
 | PROP-007 | `planNextLeg` never returns a leg index already `confirmed` in the ledger | REQ-004, REQ-005 | 2 | true | fast-check (property over ledger states) |
 | PROP-008 | Simulated Leg-2 stall past timeout → ledger shows Leg-1 `confirmed`, Leg-2 `pending` (not `failed`/absent); exit non-zero | REQ-004 | 1 | true | node:test + fake timers + mock poller |
@@ -71,7 +74,7 @@ and no real endpoint literal strings outside a documented fixture-comment.
 | PROP-010 | Two concurrent driver invocations, each given a *distinct*, freshly-mocked Skip route/quote id but contending for ONE shared canonical lock/ledger keyed by the destination Akash address `akash1ms7...` (REQ-010 — not by route/quote id), produce exactly one successful submission per leg across both; the loser MUST be observed resuming/no-oping at the lock-acquisition step, BEFORE it calls `PriceOracle.getAktUsdPrice()` or `SkipApiClient.getRoute()` at all | REQ-005, REQ-010 | 2 | true | fast-check (property, interleaving schedules with distinct mocked quote ids per invocation) or node:test with simulated lock contention |
 | PROP-011 | `capUsd(x) === Math.min(x, SWAP_MAX_USD)` for all finite non-negative `x`; `NaN`/negative/`Infinity` inputs resolve to a fail-closed value (0 or throw), never to an unbounded pass-through | REQ-006 | 2 | true | fast-check (property, adversarial inputs incl. NaN/Infinity/negative) |
 | PROP-012 | `capUsd` output is bit-identical regardless of `process.env.SWAP_MAX_USD` / any hostile env or genome-provided override value being set | REQ-006 | 1 | true | node:test (hostile-env fixture) |
-| PROP-013 | Success path unreachable unless `verifySettlement` returns true for the specific pre/post balance pair observed; a mock showing unchanged post-balance after all legs "succeed" yields non-zero exit | REQ-007 | 1 | true | node:test + spy mocks |
+| PROP-013 | Success path unreachable unless `verifySettlement` returns true for the specific pre/post balance pair observed; a mock showing unchanged post-balance after all legs "succeed" yields non-zero exit. EXTENDED per FIND-002 with `TOLERANCE_BPS = 50`-literal boundary fixtures using `quotedAmountOutUakt = 1_000_000n`: (a) observed delta `= 995_000n` (exactly at the 0.5% boundary, `quotedAmountOutUakt * 9950n / 10000n`) MUST return `true`; (b) observed delta `= 994_999n` (one base unit below the boundary) MUST return `false` — proving the test discriminates a correctly-tight 50-bps tolerance from an arbitrarily looser one, which the zero-delta-only fixture cannot | REQ-007 | 1 | true | node:test + spy mocks (fixed boundary fixtures) |
 | PROP-014 | CLI entrypoint invoked as `bash -c "<cmd>"` (matching `akt-treasury.sh` call site) exits 0 only on a full success fixture, non-zero on every failure fixture (no-route, no-source, leg-timeout, cap-exceeded, settlement-unverified, bad-signer) | REQ-008 | 1 | true | node:test (subprocess invocation, injected mock transport via config) |
 | PROP-015 | Base signer resolving to an unexpected/unpinned address → non-zero exit, zero broadcast calls | REQ-009 | 1 | true | node:test + spy mocks |
 | PROP-016 | `AKASH_KEY_NAME` unset or not equal to `anicca-akash` → non-zero exit, zero broadcast calls | REQ-009 | 1 | true | node:test (env fixture) |
@@ -93,7 +96,9 @@ and no real endpoint literal strings outside a documented fixture-comment.
   PROP-008, PROP-012, PROP-013, PROP-014, PROP-015, PROP-016, PROP-019, PROP-023 — every effectful client
   is injected as a mock/spy; assertions cover exit codes, call counts, call arguments, and ledger contents.
   PROP-019 (rewritten per FIND-001/FIND-002) and PROP-023 assert exact integer/`bigint` call-argument
-  values, never a range or an "-equivalent" float comparison. None of these tests perform real network
+  values, never a range or an "-equivalent" float comparison. PROP-013 additionally pins the
+  `TOLERANCE_BPS = 50` literal against two boundary fixtures (exactly-at-boundary passes, one-base-unit-below
+  fails), closing FIND-002. None of these tests perform real network
   calls or real signing (enforced by PROP-017/PROP-021's boundaries + Phase 2a test-harness convention of
   never importing the real `SkipApiClient`/`ChainReader`/`Signer`/`PriceOracle` implementations, only
   fakes).
@@ -102,7 +107,10 @@ and no real endpoint literal strings outside a documented fixture-comment.
   PROP-020, PROP-022. These nine cover exactly the money-safety MUSTs called out in the task, now
   including the spec-review iteration-1 and iteration-2 findings: (a) threshold no-over-buy = PROP-001,
   (b) fail-closed on no funded source = PROP-005 (paired with PROP-006's fixed regression case and
-  PROP-003/PROP-004 for the no-route sibling), (c) idempotency/no-double-spend across all three crash
+  PROP-003/PROP-004 for the no-route sibling; PROP-005 additionally pins the `MIN_GAS_WEI = 1_000_000_000_000_000n`
+  literal against a `0n`-default defect and, per FIND-003, asserts driver-level bit-identity of
+  `requiredBaseUnits` across all three call sites — `checkSourceFunded`, Skip `amount_in`, and
+  `BaseSigner.signAndBroadcast()` — mirroring PROP-019's discipline), (c) idempotency/no-double-spend across all three crash
   windows = PROP-007 + PROP-009 + PROP-020, (d) canonical destination-scoped lock precondition = PROP-010,
   (e) cap hard-override immunity at both the pure-function level AND the driver call-argument level =
   PROP-011 + PROP-012 + PROP-019, (f) AKT→USD conversion correctness/fail-closedness = PROP-018, (g)
