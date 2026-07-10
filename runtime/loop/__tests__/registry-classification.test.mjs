@@ -26,6 +26,7 @@ const EXPECTED_CLASSIFICATION = {
   "self/coordinate": { risk: "safe" },
   "economy/gig": { risk: "safe" },
   "economy/ubi": { risk: "safe" },
+  "economy/lending": { risk: "safe" },
   "x402_sell": { risk: "safe" },
   "earn/clip": { risk: "safe" },
   "earn/clip-producer": { risk: "safe" },
@@ -48,10 +49,10 @@ function liveSlotNamesOf(registry) {
   return Object.keys(slots).filter((name) => slots[name] && slots[name].status === "live");
 }
 
-test("PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17)", async () => {
+test("PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (18)", async () => {
   const registry = await loadRegistry();
   const live = liveSlotNamesOf(registry);
-  assert.equal(live.length, 17, `expected exactly 17 live slots per behavioral-spec.md's classification table, found ${live.length}: ${JSON.stringify(live)}`);
+  assert.equal(live.length, 18, `expected exactly 18 live slots per behavioral-spec.md's classification table, found ${live.length}: ${JSON.stringify(live)}`);
 });
 
 test("★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table", async () => {
