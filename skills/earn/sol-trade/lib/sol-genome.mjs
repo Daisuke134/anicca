@@ -94,11 +94,48 @@ export function instanceOverridePath(home) {
 }
 
 /**
+ * clampKnobValue(key, rawValue) — re-anchor a single numeric knob's value into its MUTATION_SPEC
+ * [min,max] range (non-finite/NaN input falls closed to SAFE_DEFAULT_GENOME's value for that key
+ * first, THEN clamps). Keys with no MUTATION_SPEC entry (categorical, e.g. SOL_GATE_WATCHLIST) are
+ * returned unchanged. Shared by loadGenome() (FIND-004: a malformed/out-of-range on-disk value must
+ * never reach decideEngagement unclamped) and mutate()'s own Defense-in-depth #1 base-clamp, so both
+ * call sites can never drift out of sync.
+ */
+function clampKnobValue(key, rawValue) {
+  const spec = MUTATION_SPEC[key];
+  if (!spec) return rawValue;
+  const numeric = Number(rawValue);
+  const base = Number.isFinite(numeric) ? numeric : Number(SAFE_DEFAULT_GENOME[key]);
+  return Math.min(spec.max, Math.max(spec.min, base));
+}
+
+/**
+ * clampNumericKnobs(genome) — REQ-002's edge case ("A genome fed into mutate() that already
+ * carries an out-of-range value... MUST be re-anchored into range") applied to EVERY numeric knob
+ * of a genome object, not just the 1-2 mutate() happens to select this round (FIND-004: loadGenome()
+ * previously never clamped at all, so a hand-edited/corrupted/out-of-range canonical or override
+ * file would feed decideEngagement an unclamped value on EVERY pass indefinitely, with no
+ * self-correcting mechanism). Returns a NEW object -- never mutates its argument.
+ *
+ * @param {Record<string, number|string>} genome
+ * @returns {Record<string, number|string>}
+ */
+export function clampNumericKnobs(genome) {
+  const out = { ...genome };
+  for (const key of Object.keys(MUTATION_SPEC)) {
+    out[key] = clampKnobValue(key, out[key]);
+  }
+  return out;
+}
+
+/**
  * loadGenome(opts) — canonical SOL baseline (or SAFE_DEFAULT_GENOME if the canonical file is
  * missing/malformed) merged with THIS instance's own override (override wins per-key). Pure read,
  * never throws (fails closed to safe defaults on any read/parse error). REQ-003's edge case: a
  * malformed/empty SOL_GATE_WATCHLIST anywhere in the merge fails closed to the SAFE_DEFAULT
- * watchlist (never an empty eligible universe silently treated as "everything").
+ * watchlist (never an empty eligible universe silently treated as "everything"). FIND-004: every
+ * numeric knob is ALSO re-anchored into its MUTATION_SPEC range before returning, so a malformed/
+ * hand-edited/out-of-range file on disk can never durably weaken the pre-gate's thresholds.
  *
  * @param {{home?: string, canonicalPath?: string}} [opts]
  * @returns {Record<string, number|string>}
@@ -111,7 +148,7 @@ export function loadGenome({ home, canonicalPath = CANONICAL_BASELINE_PATH } = {
   if (!isValidWatchlist(merged.SOL_GATE_WATCHLIST)) {
     merged.SOL_GATE_WATCHLIST = SAFE_DEFAULT_GENOME.SOL_GATE_WATCHLIST;
   }
-  return merged;
+  return clampNumericKnobs(merged);
 }
 
 /**
@@ -137,12 +174,11 @@ export function mutate(genome, { rng = Math.random, count } = {}) {
   const next = stripForbidden({ ...SAFE_DEFAULT_GENOME, ...genome });
   for (const key of chosen) {
     const spec = MUTATION_SPEC[key];
-    const current = Number(next[key]);
-    const rawBase = Number.isFinite(current) ? current : Number(SAFE_DEFAULT_GENOME[key]);
     // Defense-in-depth #1: re-anchor the BASE into range BEFORE stepping -- a genome fed into
     // mutate() might already carry an out-of-range value (malformed override file, or
-    // repeated/chained mutation over many exploration passes).
-    const base = Math.min(spec.max, Math.max(spec.min, rawBase));
+    // repeated/chained mutation over many exploration passes). Shared with loadGenome()'s own
+    // FIND-004 clamp via clampKnobValue() so both call sites can never drift apart.
+    const base = clampKnobValue(key, next[key]);
     const direction = rng() < 0.5 ? -1 : 1;
     let value = base + direction * spec.step;
     // Defense-in-depth #2: clamp after stepping (the actual excursion guard for THIS mutation).
@@ -166,4 +202,35 @@ export function genomeId(genome) {
   const sortedKeys = Object.keys(sanitized).sort();
   const canonical = JSON.stringify(sortedKeys.map((k) => [k, sanitized[k]]));
   return crypto.createHash("sha256").update(canonical).digest("hex").slice(0, 12);
+}
+
+/**
+ * shouldMutateThisPass(counterFile, cadence) — FIND-001 fix: the deterministic exploration-cadence
+ * trigger this feature's Provenance section (behavioral-spec.md) explicitly named as an artifact to
+ * copy+tweak from `genome.mjs`, but which was never actually implemented -- mutate once every
+ * `cadence` passes (arithmetic/bookkeeping, not judgment -- HARD constraint: deterministic code
+ * only for tools+arithmetic+bookkeeping, mirrors genome.mjs's own function of the same name
+ * byte-for-byte). Increments and persists a simple per-instance counter; on any read/parse error
+ * the counter restarts at 0 (fail-closed to "count", never crashes the pass).
+ *
+ * @param {string} counterFile
+ * @param {number} cadence
+ * @returns {boolean}
+ */
+export function shouldMutateThisPass(counterFile, cadence) {
+  const M = Math.max(1, Number(cadence) || 1);
+  let n = 0;
+  try {
+    n = Number(JSON.parse(fs.readFileSync(counterFile, "utf8")).n) || 0;
+  } catch {
+    n = 0;
+  }
+  n += 1;
+  try {
+    fs.mkdirSync(path.dirname(counterFile), { recursive: true });
+    fs.writeFileSync(counterFile, JSON.stringify({ n }));
+  } catch {
+    // best-effort persistence only -- a failed write just means cadence resets, never a crash.
+  }
+  return n % M === 0;
 }

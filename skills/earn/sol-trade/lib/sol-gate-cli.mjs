@@ -10,10 +10,24 @@
 // decision logic it calls (decideEngagement) and the data it composes (fetchSolMarketSignal,
 // appendGateTrace, appendGenomeLinkTrace) are the tested pure/effectful units (see
 // verification-architecture.md's Purity Boundary Map). No new decision logic lives in this file.
+//
+// FIND-001 fix (2026-07-10 impl-review iteration-1): this is the ONLY entrypoint sol-trade/run.sh
+// calls each pass (run.sh:75), so the exploration-cadence trigger this feature's Provenance section
+// named but never wired (genome.mjs's `shouldMutateThisPass`, mirrored in sol-genome.mjs) is invoked
+// HERE, inline, every pass -- there is no separate SOL analog of genome.mjs's own CLI (that CLI
+// exists only because PM's pick.py is a SEPARATE python process needing knobs via shell-eval'd env
+// vars; the SOL pre-gate is already one node process that computes+consumes its own genome in
+// memory, so folding maybe-mutate into this file's own per-pass main() is the correct copy+TWEAK,
+// not a blind copy of PM's two-process shape). On the cadence, mutate() draws a fresh step from the
+// CURRENTLY loaded (baseline+override) genome and this pass PERSISTS the mutant as the new
+// per-instance override (`sol-gate-genome-override.json`) so it becomes the active "current
+// mutant trial" for subsequent passes too (genome.mjs's own doc comment for instanceOverridePath) --
+// making genomeId() actually change across passes instead of being frozen at baseline forever.
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { loadGenome, genomeId } from "./sol-genome.mjs";
+import { loadGenome, mutate, genomeId, instanceOverridePath, shouldMutateThisPass } from "./sol-genome.mjs";
 import { fetchSolMarketSignal, decideEngagement, isLiveEnabled, describeSignal } from "./sol-gate.mjs";
 import { appendGateTrace, appendGenomeLinkTrace } from "./sol-trace.mjs";
 
@@ -25,12 +39,48 @@ const GATE_TRACE_PATH = process.env.SOL_GATE_TRACE_PATH || path.join(STATE_DIR, 
 const SOL_TRADE_TRACE_PATH = process.env.SOL_TRADE_TRACE_PATH || path.join(STATE_DIR, "sol-trade.trace.jsonl");
 const CACHE_DIR = process.env.SOL_GATE_CACHE_DIR || path.join(STATE_DIR, "sol-gate-cache");
 
+// FIND-001: cadence knob + per-instance counter file, same naming convention as genome.mjs's own
+// EARN_GENOME_MUTATE_EVERY/EARN_GENOME_COUNTER_FILE (SOL_GATE_ prefix for this rail's own knobs).
+const GENOME_MUTATE_EVERY = Number(process.env.SOL_GATE_GENOME_MUTATE_EVERY || 5);
+
 function skipResult() {
   return { genome_id: null, mode: "paper", decision: "skip", engage: false, contextLine: "" };
 }
 
+/**
+ * maybeMutateGenome(genome, { home }) — FIND-001: on the exploration cadence, draw a mutation from
+ * the currently-loaded genome and persist it as this instance's new current-generation override so
+ * the pre-gate's genome actually evolves across passes. Fail-soft: a persistence failure (disk
+ * full, permissions) degrades to "used the mutation for this pass only, not durably" -- it MUST
+ * NOT crash or exit-nonzero the calling pass (same convention as every other guard in this file).
+ *
+ * @param {Record<string, number|string>} genome
+ * @param {{home?: string}} opts
+ * @returns {{genome: Record<string, number|string>, mutated: boolean}}
+ */
+function maybeMutateGenome(genome, { home } = {}) {
+  const counterFile =
+    process.env.SOL_GATE_GENOME_COUNTER_FILE ||
+    path.join(home || path.join(process.env.HOME || "", ".anicca"), "skills", "earn", "state", "sol-gate-genome-pass-counter.json");
+  if (!shouldMutateThisPass(counterFile, GENOME_MUTATE_EVERY)) {
+    return { genome, mutated: false };
+  }
+  const mutant = mutate(genome);
+  try {
+    const overridePath = instanceOverridePath(home);
+    fs.mkdirSync(path.dirname(overridePath), { recursive: true });
+    fs.writeFileSync(overridePath, JSON.stringify(mutant, null, 2) + "\n");
+  } catch {
+    // fail-soft: persistence failure just means this pass's mutation isn't durable beyond THIS
+    // pass -- never crash or exit-nonzero the calling pre-gate pass.
+  }
+  return { genome: mutant, mutated: true };
+}
+
 async function main() {
-  const genome = loadGenome({ home: process.env.ANICCA_HOME });
+  const home = process.env.ANICCA_HOME;
+  const loaded = loadGenome({ home });
+  const { genome } = maybeMutateGenome(loaded, { home });
   const id = genomeId(genome);
   const mints = String(genome.SOL_GATE_WATCHLIST || "")
     .split(",")

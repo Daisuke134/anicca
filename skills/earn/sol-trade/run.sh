@@ -71,7 +71,9 @@ spend — your fuel is the same wallet."
 # which is structurally IMPOSSIBLE while SOL_GATE_LIVE_ENABLE!=="1" (decideEngagement, REQ-009).
 # Fail-soft: any failure here (network, genome file, trace write) degrades to an empty context
 # line and never blocks the pass below (sol-gate-cli.mjs's own internal fail-soft catch, plus this
-# `|| true` belt-and-suspenders).
+# `|| true` belt-and-suspenders). REQ-002/FIND-001: sol-gate-cli.mjs ALSO handles the mutation
+# cadence internally on THIS same call (shouldMutateThisPass, SOL_GATE_GENOME_MUTATE_EVERY, default
+# 5) -- no separate CLI invocation needed here, unlike PM's two-process genome.mjs/pick.py shape.
 GATE_JSON=$(node "$SKILL_DIR/lib/sol-gate-cli.mjs" 2>/dev/null || true)
 GATE_CONTEXT=$(printf '%s' "$GATE_JSON" | node -e '
 let raw = "";
@@ -123,6 +125,19 @@ except Exception:
   if [ -n "$RSTATUS" ] && [ "$RSTATUS" != "recorded" ] && [ "$RSTATUS" != "duplicate" ]; then
     echo "{\"ts\":\"$(now)\",\"slot\":\"earn/sol-trade\",\"action\":\"sol-verify-failed\",\"status\":\"$RSTATUS\",\"sig\":\"$SIG\"}" >> "$TRACE"
   fi
+fi
+
+# --- SOL_GATE promotion evaluation (franklin-sol-evolvable-edge, REQ-012b/013/014/015; FIND-002
+# impl-review fix) -- idempotent, safe-to-run-every-pass gate-check right after the swap-record
+# block above (so any swap THIS pass just confirmed is already in $LEDGER for attribution). Joins
+# any newly-confirmed swap to the genome that was active when it was placed (attributeGenomeIdSol),
+# and promotes a chain-verified net-positive mutant to the canonical SOL baseline once it clears
+# evaluatePromotion's gate (evolve.mjs, reused verbatim -- REQ-014/015). A no-promotion outcome (the
+# expected default: cold-start or below-K) is a normal silent no-op, exactly like evolve.mjs's own
+# PM analog. Fail-soft: never blocks or exits the pass on any failure here.
+EVOLVE_OUT=$(node "$SKILL_DIR/lib/sol-evolve.mjs" "$LEDGER" "$TRACE" 2>>"$TRACE" || true)
+if [ -n "$EVOLVE_OUT" ]; then
+  echo "[sol-trade] sol-evolve -> $(printf '%s' "$EVOLVE_OUT" | tr '\n' ' ' | cut -c1-200)"
 fi
 
 TRACE_FILE="$TRACE" RC="$RC" OUTTAIL="$(echo "$OUT" | tail -5 | tr '\n' ' ')" python3 - <<'PY'
