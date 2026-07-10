@@ -51,7 +51,10 @@
    │    毎日必須: ①horizon 全体（今日〜14日+）の空き枠を FREE イベント実登録で先埋め
    │    （早期応募ほど当選率が高い。当日応募は原則機能しない — 明日・来週・来月の gap を埋め続ける）
    │    （AI/AGI/crypto infra 重点 — Dais は crypto を学びたい。LT/hackathon/meetup）
-   │    ②intro/cold mail の前進 ③未 debrief 回収 ④competitor-scout 1件
+   │    ②intro/cold mail = **scope 内だが当面 DISABLED**（Dais 2026-07-10: 評判リスク、
+   │      まだ危険。directives.json の blockedActions:["outreach_send"] で機械的に封鎖。
+   │      draft 生成と people.jsonl 蓄積までは可、送信は一切しない。解禁は Dais の指示で）
+   │    ③未 debrief 回収 ④competitor-scout 1件
    │    「新規登録なし」が許されるのは horizon 全体が既に埋まっている時のみ（gcal 証跡つき）
    ├ [action rails 決定的]
    │    a. event-apply: anicca-booking + meetup-talk-applier（camofox 実応募）
