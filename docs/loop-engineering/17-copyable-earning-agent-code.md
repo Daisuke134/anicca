@@ -57,3 +57,60 @@
 
 ## 次の追検証（gh clone で行番号確定）
 `valory-xyz/open-autonomy` の FSM act 本体 / `Virtual-Protocol/acp-node` 実装 / `elizaOS` processActions の強制ロジック。関連 [[15-agent-economy-landscape]] [[16-self-improvement-loop-BP]]。
+
+## 各アプローチの ASCII（1つずつ、mechanism を図解）
+
+### x402（決済層）
+```
+ agent ──GET /api──▶ server
+      ◀─402 "pay $0.001 USDC"──
+ agent ──再送 + X-PAYMENT(EIP-3009署名)──▶ server ──▶ facilitator /verify,/settle
+                                                        └─on-chain USDC 移動─▶ agent に応答
+ 学び: 決済だけ・超シンプル・実マネー。我々=self-host facilitator で採用済(mainnet実証)
+```
+
+### ERC-8004 / ChaosChain（身元・信用層）
+```
+ register(agentURI) ─▶ IdentityRegistry(ERC-721) ─▶ agentId
+ 仕事後: giveFeedback(agentId,評価) ─▶ ReputationRegistry  (★自己feedback禁止)
+ 検証:   validationRequest/Response ─▶ ValidationRegistry  (★自己validation禁止)
+ 別agentが「この Franklin に貸すか?」→ on-chain 評判を照会して判断
+ 学び: 与信を on-chain 標準化。我々=gig board で採用、loan/spawn 判断入力に
+```
+
+### Olas / Autonolas（意思決定＝FSM、no-WAIT の型）
+```
+  ┌─Round A─┐   end_block   ┌─Round B─┐   end_block   ┌─Round C─┐
+  │ 合意形成 │ ───必ず遷移──▶│ 実行    │ ───必ず遷移──▶│ 決済    │─▶…
+  └─────────┘              └─────────┘              └─────────┘
+  ★構造的に idle できない(必ず次state)= 我々の NO-WAIT に一番近い
+  ⚠罠: 1450万tx でも turnover $87K = tx数ハイプ → 我々は実USDCで測る
+```
+
+### Virtuals ACP（取引 state machine）
+```
+ open ─▶ budget_set ─▶ funded(escrow) ─▶ submitted(deliver) ─▶ completed(escrow解放)
+                                                    └─▶ rejected(返金)
+ 学び: escrow 付き agent 間取引の型。我々 gig board が同型(post→take→deliver→verify_and_pay)
+```
+
+### elizaOS（skill=tool、ただし運用は崩壊）
+```
+ action{name,description,examples,handler} を登録
+ LLM ──action カタログから選択──▶ handler 実行(wallet plugin 経由 transfer 等)
+ 学び: action 構造=skill=tool と一致。⚠ai16z 運用は $2.6B→$650K 崩壊+詐訴
+        = 「動いてる風」を実tx検証で排除する教訓
+```
+
+### Fetch.ai uAgents（強制実行の最小型）
+```
+ @agent.on_interval(period=N):   # N秒ごとに必ず実行
+     do_something()
+ 学び: 「wake ごとに必ず何かする」最小型。我々の wake cron と同型 → always-act に流用
+```
+
+### 我々（統合）
+```
+ x402(決済) × ERC-8004(信用) × Olas-FSM+Fetch(NO-WAIT決定) × ACP(取引) × Mahoraga(配分) × FreqAI(自己改善)
+   を 1つの self-funded citizen loop に束ねる。novelty = 決済×身元×NO-WAIT×自己改善 の統合(他社は各層バラバラ)
+```
