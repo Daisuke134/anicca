@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (npm global install, not homebrew)
 # self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
 # code/automation blocker it cannot fix in-pass, it (or a healthcheck) calls this to spawn a detached, full-power
 # Sonnet claude that diagnoses → edits the correct mother-repo code → VERIFIES by a REAL side-effect → commits+pushes
@@ -27,7 +27,7 @@ if [ "${1:-}" = "--should-continue" ]; then sf_should_continue "${2:-}" "${3:-}"
 # anti-fake verifier reads. Idempotent: strip a trailing -loop then re-add it.
 LOOP="${1:?loop name}"; LOOP="${LOOP%-loop}-loop"; BLOCKER="${2:?blocker+hint}"
 SOCK="/tmp/anicca-selffix-$LOOP-tmux.sock"; SESSION="anicca-selffix-$LOOP"
-CLAUDE="$(command -v claude || echo /opt/homebrew/bin/claude)"
+CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 STATE="$HOME/.openclaw/state"; mkdir -p "$STATE"
 LOG="$HOME/.openclaw/logs/self-fix-$LOOP.log"; mkdir -p "$(dirname "$LOG")"
 RESULT="$STATE/.self-fix-$LOOP.result"       # the fixer writes SUCCESS/FAIL + evidence here (FIND-003)
