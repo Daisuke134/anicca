@@ -72,9 +72,49 @@ del os.environ["AFFILIATE_METRICS_PATH"]
 video_metrics = os.path.join(TMP, "video-metrics.jsonl")
 write_jsonl(video_metrics, [])  # empty -> no event_dates -> not met
 os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics
+os.environ["EARN_VIDEO_STATE_PATH"] = os.path.join(TMP, "video-state-absent.json")  # no file -> status!='warming'
 status = CE.status_for_loop("video")
-chk("video: empty ledger -> met=false (honest, never fabricated)", status["met"], False)
+chk("video: empty ledger, not warming -> met=false (honest, never fabricated)", status["met"], False)
 del os.environ["EARN_VIDEO_METRICS_PATH"]
+del os.environ["EARN_VIDEO_STATE_PATH"]
+
+# video during onboarding warmup (state.status=='warming'): a real S1_warmup audit line today
+# satisfies cadence even though the post-metrics ledger is empty (REQ-LV-1xx warmup-aware fix —
+# posting is gated on warmup_day>=7 by design, so requiring a POST during warmup misfires daily).
+video_metrics2 = os.path.join(TMP, "video-metrics2.jsonl")
+write_jsonl(video_metrics2, [])
+video_state_warming = os.path.join(TMP, "video-state-warming.json")
+with open(video_state_warming, "w") as f:
+    json.dump({"status": "warming", "warmup_day": 4}, f)
+video_audit = os.path.join(TMP, "video-audit.jsonl")
+write_jsonl(video_audit, [
+    {"date": TODAY, "handle": "money_blueprintdaily", "transition": "S1_warmup",
+     "did": "warmup INCOMPLETE: only 2 real views (<3) — day NOT advanced", "earned_usdc": 0.0},
+])
+os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics2
+os.environ["EARN_VIDEO_STATE_PATH"] = video_state_warming
+os.environ["EARN_VIDEO_AUDIT_PATH"] = video_audit
+status = CE.status_for_loop("video")
+chk("video: warming + real S1_warmup attempt today -> met=true (no false daily miss during bootstrap)",
+    status["met"], True)
+del os.environ["EARN_VIDEO_METRICS_PATH"]
+del os.environ["EARN_VIDEO_STATE_PATH"]
+del os.environ["EARN_VIDEO_AUDIT_PATH"]
+
+# video during warmup with a TRUE stall (no S1_warmup line at all today) must still read as unmet —
+# the fix must not paper over a genuinely dead loop (the real 07-02..07-07 / 07-09 stalls).
+video_metrics3 = os.path.join(TMP, "video-metrics3.jsonl")
+write_jsonl(video_metrics3, [])
+video_audit_empty = os.path.join(TMP, "video-audit-empty.jsonl")
+write_jsonl(video_audit_empty, [])
+os.environ["EARN_VIDEO_METRICS_PATH"] = video_metrics3
+os.environ["EARN_VIDEO_STATE_PATH"] = video_state_warming
+os.environ["EARN_VIDEO_AUDIT_PATH"] = video_audit_empty
+status = CE.status_for_loop("video")
+chk("video: warming + zero attempts today -> met=false (a real stall still gets caught)", status["met"], False)
+del os.environ["EARN_VIDEO_METRICS_PATH"]
+del os.environ["EARN_VIDEO_STATE_PATH"]
+del os.environ["EARN_VIDEO_AUDIT_PATH"]
 
 gig_funnel = os.path.join(TMP, "gig-funnel.jsonl")
 write_jsonl(gig_funnel, [{"ts": today_epoch, "applied": 3}])
