@@ -38,6 +38,7 @@ import { appendLedgerLine, readLedgerLines } from './ledger.mjs';
 import { classifyEarnResult, defaultEarnLedgerPath } from './earn-detect.mjs';
 import { redactPrivateKeyPatterns } from './env-filter.mjs';
 import { liveSlotNames } from './prompt.mjs';
+import { classifyLayer, capFailureDetail } from './harness-health.mjs';
 import {
   filterCatalog,
   DEFAULT_BOOTSTRAP_RESERVE_USDC,
@@ -67,6 +68,9 @@ const dotenvText = await readDotenvFile(ANICCA_HOME);
 const config = loadConfig(process.env, dotenvText);
 
 const LEDGER_PATH = path.join(ANICCA_HOME, 'state', 'ledger.jsonl');
+// anicca-harness-tooluse-health R6: a NEW side-channel path, never read by context.mjs/prompt.mjs
+// (INV-NO-PROMPT-REGRESSION) — reuses the EXISTING appendLedgerLine primitive, never a new writer.
+const HARNESS_FAILURES_PATH = path.join(ANICCA_HOME, 'state', 'harness-failures.jsonl');
 const GENESIS_PATH = path.join(ANICCA_HOME, 'identity', 'genesis.md');
 
 // Read genesis prompt (missing = warn + empty string)
@@ -360,6 +364,17 @@ async function runOneWake() {
       model: currentTier.model,
     });
     await safeAppend(LEDGER_PATH, record);
+    // R6: err.message is NOT already redacted anywhere upstream (raw HTTP-response body/subprocess-
+    // stderr text from brain.mjs's thinkProxy/thinkClaudeP/httpPost) — this is the ONE new
+    // redactPrivateKeyPatterns call site this feature introduces, before any further processing.
+    await appendHarnessFailure({
+      ts,
+      wakeId,
+      kind: 'wake_error',
+      layer: 'brain_transport',
+      exitCode: null,
+      rawDetail: redactPrivateKeyPatterns(err.message || ''),
+    });
     await sleepSecs(sleepS);
     return;
   }
@@ -438,6 +453,25 @@ async function runOneWake() {
     const earnLedgerPath = defaultEarnLedgerPath(config);
     const { profitable: p } = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);
     profitable = p;
+  }
+
+  // 9b. anicca-harness-tooluse-health R6: on tool_missing/tool_timeout/tool_logic (never on the
+  // clean 'wake' kind), append one detail line to harness-failures.jsonl. skillResult.output is
+  // ALREADY redacted (redactPrivateKeyPatterns applied inside runSkillWithKillRef) — reused verbatim
+  // here, no new redaction pass for these three branches (R6).
+  {
+    const failureLayer = classifyLayer({ kind });
+    if (failureLayer !== 'clean') {
+      await appendHarnessFailure({
+        ts,
+        wakeId,
+        slot,
+        kind,
+        layer: failureLayer,
+        exitCode: skillResult.exitCode != null ? skillResult.exitCode : null,
+        rawDetail: skillResult.output || '',
+      });
+    }
   }
 
   // 10. Persist ledger line (REQ-007)
@@ -570,6 +604,31 @@ function buildSkillEnv(slot, wakeId, config, scrub, args) {
     };
   }
   return { ...base, ANICCA_ARGS, WAKE_ID: wakeId };
+}
+
+/**
+ * anicca-harness-tooluse-health R6: append one JSON line to $ANICCA_HOME/state/harness-failures.jsonl
+ * via the EXISTING appendLedgerLine primitive (never a new writer). `slot` is omitted entirely for
+ * brain_transport (R1: brain-transport failures precede tool selection). `detail` is
+ * capFailureDetail(rawDetail) — whitespace-collapsed and capped at 4000 chars, distinct from and
+ * never affecting ledger.jsonl's own 900-char `result` cap (INV-NO-PROMPT-REGRESSION).
+ */
+async function appendHarnessFailure({ ts, wakeId, slot, kind, layer, exitCode, rawDetail }) {
+  const detail = capFailureDetail(rawDetail);
+  const fields = {
+    ts,
+    wake_id: wakeId,
+    ...(slot != null ? { slot } : {}),
+    kind,
+    layer,
+    exit_code: exitCode != null ? exitCode : null,
+    detail,
+  };
+  try {
+    await appendLedgerLine(HARNESS_FAILURES_PATH, formatRecord(fields));
+  } catch (err) {
+    process.stderr.write(`[loop] harness-failures append failed: ${err.message}\n`);
+  }
 }
 
 async function safeAppend(ledgerPath, line) {
