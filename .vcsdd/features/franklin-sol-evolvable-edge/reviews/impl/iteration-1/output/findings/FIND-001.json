@@ -1,0 +1,23 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-002 ('WHEN the harness explores a new generation THE SYSTEM SHALL mutate 1-2 of the four NUMERIC knobs...') is unimplemented as an actual system behavior. mutate() in sol-genome.mjs is a correct, fully-tested pure function (PROP-002/PROP-003 all pass on inspection) -- but it is NEVER invoked anywhere in the production wiring. sol-gate-cli.mjs (the ONLY entrypoint sol-trade/run.sh calls) imports only {loadGenome, genomeId} from sol-genome.mjs (sol-gate-cli.mjs:16) -- it never imports or calls mutate(). Grepping the entire worktree for `mutate(` outside test files returns zero matches. Consequently every pass loads the SAME genome (SAFE_DEFAULT_GENOME merged with an override file that nothing in this codebase ever writes), so genomeId(genome) is identical on every pass, forever. The feature's own spec Provenance section explicitly names `shouldMutateThisPass` (genome.mjs's cadence-based exploration trigger, the exact PM mechanism that decides WHEN to call mutate() each pass and is called from polymarket-trade/run.sh every pass via `node genome.mjs --maybe-mutate`) as an artifact this spec 'structurally mirrors' and must copy+tweak -- behavioral-spec.md line 13: '...loadGenome / mutate / genomeId / toExportLines / shouldMutateThisPass'. Neither shouldMutateThisPass nor any cadence/exploration-trigger equivalent exists in sol-genome.mjs or sol-gate-cli.mjs. This is not a minor omission: because no mutant genome is ever explored, no genome_id other than the single static baseline id will ever appear in sol-trade.trace.jsonl's genome-linkage lines, which means REQ-012b/013/014's entire downstream attribution+summarization+promotion pipeline (independently correct and well-tested, see FIND-002) can NEVER have a mutantId to evaluate in production. The feature is named 'franklin-sol-evolvable-edge' and REQ-002/012b/013/014/015 collectively promise an evolving, earnings-gated exploration loop; as wired, the genome is permanently frozen at baseline and nothing evolves.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/sol-gate-cli.mjs",
+    "lineRange": "13-18, 32-59",
+    "snippet": "import { loadGenome, genomeId } from \"./sol-genome.mjs\";\n... (mutate is never imported or called anywhere in this file)\nconst genome = loadGenome({ home: process.env.ANICCA_HOME });\nconst id = genomeId(genome);"
+  },
+  "comparisonEvidence": {
+    "filePath": "skills/earn/lib/genome.mjs",
+    "lineRange": "184-232",
+    "snippet": "export function shouldMutateThisPass(counterFile, cadence) { ... }\n// CLI entrypoint: `node genome.mjs --maybe-mutate` -- consults EARN_GENOME_MUTATE_EVERY + a per-instance pass counter to decide whether THIS pass explores a fresh mutation.\nif (shouldMutateThisPass(counterFile, cadence)) { genome = mutate(genome); mutated = true; }"
+  },
+  "provenanceEvidence": {
+    "filePath": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md",
+    "lineRange": "10-19",
+    "snippet": "This spec structurally mirrors the PROVEN, live, adversary-hardened PM #19 EVOLVE mechanism: ~/anicca/skills/earn/lib/genome.mjs (... loadGenome / mutate / genomeId / toExportLines / shouldMutateThisPass)."
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-012b/013/014/015's earnings-gated promotion pipeline has NO production orchestration or invocation point. sol-evolve.mjs correctly implements and re-exports attributeGenomeIdSol, summarizeByGenomeSol, evaluatePromotion (imported verbatim from evolve.mjs, verified reference-equal), and promote (imported verbatim, verified reference-equal) -- all individually correct per the tests. But unlike evolve.mjs (the PM analog), which has its own `runEvolve()` orchestration function AND a `node evolve.mjs [ledgerPath] [tracePath]` CLI entrypoint (evolve.mjs:203-284) presumably invoked periodically to actually run the attribution+gate+promote pipeline against real ledger/trace data, sol-evolve.mjs has NO equivalent runEvolveSol()/orchestration function and NO CLI entrypoint. Grepping the worktree for `evolve.mjs` invocations shows sol-evolve.mjs and its test file only -- nothing in sol-trade/run.sh, no cron/wiring reference, and no other script anywhere calls attributeGenomeIdSol/summarizeByGenomeSol/evaluatePromotion/promote against the real sol-trade.trace.jsonl / earn-ledger.jsonl outside of the unit tests' synthetic fixtures. Even if FIND-001 (mutation never invoked) were independently fixed and mutant genomes started appearing in the trace, there is currently no mechanism anywhere that would ever actually evaluate them for promotion or commit a winning genome to baseline-genome.json -- the promotion pipeline is complete, tested, correct, and entirely disconnected from any executing code path.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/sol-evolve.mjs",
+    "lineRange": "1-87",
+    "snippet": "export { evaluatePromotion, promote };\n... (no runEvolveSol()-equivalent orchestration function, no CLI entrypoint block anywhere in this file)"
+  },
+  "comparisonEvidence": {
+    "filePath": "skills/earn/lib/evolve.mjs",
+    "lineRange": "197-284",
+    "snippet": "export async function runEvolve({ ledgerPath, tracePath, canonicalPath, minRedeems, cwd } = {}) { ... }\n// --- CLI entrypoint --------------------------------------------------------------------------\nif (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) { ... runEvolve(...) ... }"
+  },
+  "routeToPhase": "2b"
+}
