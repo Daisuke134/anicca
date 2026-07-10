@@ -42,6 +42,10 @@ function makeInvocationDeps({ stateDir, quoteId, releaseGate }) {
   return {
     chainReader: createFakeChainReader({
       akashBalanceUakt: 0n,
+      // The winning invocation drives the swap to a genuine ok:true; REQ-007's settlement re-query
+      // needs the post-swap balance to reflect the route's quoted amount_out (matches
+      // validRouteFixture's amountOutUakt above). See fake-clients.mjs's akashBalanceCreditUakt doc.
+      akashBalanceCreditUakt: 24_650_000n,
       baseUsdcBalance: requiredAmount * 10n,
       baseGasBalance: MIN_GAS_WEI * 10n,
     }),

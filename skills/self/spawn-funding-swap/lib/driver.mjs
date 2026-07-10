@@ -210,21 +210,13 @@ async function runInsideLock(ctx, pureFns, need, preBalanceUakt) {
   // legs' own zero-exit-code status or from the route's quoted amount_out alone (that would make
   // REQ-007 vacuous -- exactly the "false success" failure mode this REQ exists to prevent, per
   // behavioral-spec.md: "THE SYSTEM SHALL NOT declare success merely because all leg transactions
-  // returned a zero exit code"). KNOWN Phase-2a test-fixture limitation (documented, not fixed here --
-  // out of Phase 2b's scope to edit test files): `createFakeChainReader.getAkashBalance` (fake-clients.mjs)
-  // is a STATIC closure returning the SAME constant on every call, so it cannot express "balance
-  // increased after the swap" -- a handful of driver-level "full success" fixtures across
-  // driver-crash-recovery.test.mjs, driver-lock-and-concurrency.test.mjs, driver-choke-point.test.mjs's
-  // capped/uncapped/FIND-003 cases, and cli.test.mjs's success fixture consequently observe zero delta
-  // here and correctly resolve to `settlement_unverified` under this faithful re-query, even though their
-  // OWN authors intended them to reach `ok:true`. This is preferred over trusting the quote/relay
-  // confirmation without a real re-query, which would make the two tests THIS SAME check is explicitly
-  // named to satisfy (driver-choke-point.test.mjs's "unchanged balance" PROP-013 test and
-  // driver-multileg.test.mjs's PROP-008 settlement-boundary edge case) silently pass with FALSE success --
-  // a materially worse defect in a money-path feature than a subset of RED-suite fixtures whose own
-  // static fakes cannot exercise the success path they assert. A production chainReader genuinely
-  // reflects a real balance increase, so this design is correct in production; the fix belongs in
-  // Phase-2a's shared fake (make `getAkashBalance` stateful/parameterizable per call), not here.
+  // returned a zero exit code"). `createFakeChainReader.getAkashBalance` (fake-clients.mjs) is stateful
+  // and opt-in (`akashBalanceCreditUakt`): fixtures that intend a genuine ok:true success pass the
+  // route's quoted amount_out as the post-swap credit so this re-query observes a real delta; fixtures
+  // that intend the "legs confirmed but AKT not observed at destination" fail-closed path (PROP-013,
+  // PROP-008) leave the credit at its 0n default so the balance stays unchanged. Either way this check
+  // performs a real re-query against whatever the injected chainReader reports -- never trusting the
+  // quote/relay confirmation alone -- which is what makes both outcomes correctly observable.
   const postBalanceUakt = await ctx.chainReader.getAkashBalance(ctx.destinationAkashAddress);
   const settled = pureFns.verifySettlement(preBalanceUakt, postBalanceUakt, quoteSnapshot.amountOutUakt, TOLERANCE_BPS);
   if (!settled) {

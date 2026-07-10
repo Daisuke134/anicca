@@ -52,11 +52,17 @@ test("PROP-022(d): Number.MAX_SAFE_INTEGER overflow guard throws instead of sile
 // PROP-022 (property tier)
 test("PROP-022 (property): toBaseUnits floors — never rounds up — for arbitrary non-negative amounts with excess sub-base-unit precision", () => {
   fc.assert(
-    fc.property(fc.integer({ min: 0, max: 10_000_000 }), fc.integer({ min: 0, max: 999_999 }), (wholeMicros, extraSubMicroPrecision) => {
+    fc.property(fc.integer({ min: 0, max: 10_000_000 }), fc.integer({ min: 0, max: 999 }), (wholeMicros, extraSubMicroPrecision) => {
       const decimals = 6;
-      // amount already has decimals-precision (wholeMicros / 10^6) plus EXTRA precision beyond that
-      // (extraSubMicroPrecision / 10^9), so a naive round-based implementation would sometimes bump the
-      // integer up by 1 relative to the correct floor.
+      // amount already has decimals-precision (wholeMicros / 10^6) plus EXTRA sub-micro precision beyond
+      // that (extraSubMicroPrecision / 10^9, bounded to [0, 999] so extraSubMicroPrecision/10^9 always
+      // stays STRICTLY below one whole micro-unit [1e-6] and can therefore never carry into wholeMicros'
+      // integer portion by construction — extraSubMicroPrecision up to 999_999 previously let this extra
+      // term reach ~0.001, up to 1000x a whole micro-unit, which would correctly push floor(amount*1e6)
+      // past wholeMicros for large draws; that was a test-fixture defect, not an impl defect, since no
+      // correct floor-based toBaseUnits could satisfy `result === wholeMicros` against such an input), so
+      // a naive round-based implementation would sometimes bump the integer up by 1 relative to the
+      // correct floor.
       const amount = wholeMicros / 10 ** decimals + extraSubMicroPrecision / 10 ** 9;
       const result = toBaseUnits(amount, decimals);
       assert.equal(result, BigInt(wholeMicros), "must floor to the whole-micro-unit portion only, never round up into the extra precision");

@@ -77,6 +77,13 @@ function commonDeps({ ledgerStore, baseSigner, onChainStatusAfterCrash = "not-fo
   return {
     chainReader: createFakeChainReader({
       akashBalanceUakt: 0n,
+      // Every test in this file drives the swap to a genuine ok:true completion (crash-recovery,
+      // idempotency) — a faithful REQ-007 settlement re-query needs the post-swap balance to actually
+      // reflect the route's quoted amount_out (validRouteFixture's amountOutUakt below), otherwise the
+      // driver correctly (and separately) fails closed on settlement_unverified regardless of how
+      // correctly the crash-recovery logic itself behaved. See fake-clients.mjs's
+      // akashBalanceCreditUakt doc comment.
+      akashBalanceCreditUakt: 24_650_000n,
       baseUsdcBalance: requiredAmount * 10n,
       baseGasBalance: MIN_GAS_WEI * 10n,
       baseTxStatusByNonce: { [`${SOURCE_BASE_ADDRESS}:${FIXED_NONCE}`]: onChainStatusAfterCrash },

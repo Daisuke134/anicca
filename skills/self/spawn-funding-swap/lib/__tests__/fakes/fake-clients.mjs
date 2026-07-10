@@ -20,12 +20,25 @@ export function spyFn(impl = () => {}) {
 
 export function createFakeChainReader({
   akashBalanceUakt = 0n,
+  // akashBalanceCreditUakt: models the destination Akash balance genuinely increasing once a swap's
+  // funds actually land, so a faithful REQ-007 settlement re-query (driver.mjs re-calls
+  // getAkashBalance AFTER the legs confirm) can observe a real pre/post delta. Defaults to 0n, which
+  // preserves the original static-constant behavior for every fixture that intentionally wants an
+  // UNCHANGED balance across calls (e.g. PROP-013's "legs confirmed but AKT not observed at
+  // destination" fail-closed fixture) — this is opt-in, not a behavior change for existing callers.
+  // Applied starting from the 2nd call onward (call 1 = REQ-001's pre-swap balance read; call 2+ =
+  // REQ-007's post-swap settlement re-query), never inferred from any other fake's internal state.
+  akashBalanceCreditUakt = 0n,
   baseUsdcBalance = 0n,
   baseGasBalance = 0n,
   baseTxStatusByNonce = {}, // Map-like plain object: `${address}:${nonce}` -> 'confirmed' | 'not-found'
 } = {}) {
+  let akashBalanceCallCount = 0;
   return {
-    getAkashBalance: spyFn(async () => akashBalanceUakt),
+    getAkashBalance: spyFn(async () => {
+      akashBalanceCallCount += 1;
+      return akashBalanceCallCount === 1 ? akashBalanceUakt : akashBalanceUakt + akashBalanceCreditUakt;
+    }),
     getBaseUsdc: spyFn(async () => baseUsdcBalance),
     getBaseGas: spyFn(async () => baseGasBalance),
     getBaseTxStatusByNonce: spyFn(async (address, nonce) => baseTxStatusByNonce[`${address}:${nonce}`] ?? "not-found"),
