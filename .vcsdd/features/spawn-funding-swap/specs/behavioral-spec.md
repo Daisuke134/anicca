@@ -235,6 +235,13 @@ WHEN either check fails — THE SYSTEM SHALL NOT infer, borrow from, or auto-bri
   implementation MUST fail this fixture (it would wrongly return `true` for the same
   `baseGasBalance = 500_000_000_000_000n`), proving the test suite is falsifiable against a vacuous
   0n-default `minGasWei` implementation.
+- A test asserts the driver's ACTUAL runtime argument to `checkSourceFunded`'s `minGasWei` parameter is
+  bit-identical (`===`, `bigint`) to `MIN_GAS_WEI`, inspected via the spy's actual call argument (not
+  `checkSourceFunded`'s pure return value in isolation, and not merely a test-supplied literal passed
+  directly to the pure function) — a driver implementation that hardcodes, defaults, or independently
+  derives a different `minGasWei` (e.g. `0n`) at its own call site MUST fail this assertion, even though
+  the isolated `MIN_GAS_WEI`-literal fixture above already exercises the pure comparison logic correctly
+  (PROP-005, mirroring the `requiredBaseUnits` driver-level assertion below).
 - A test asserts the driver's ACTUAL runtime argument to `checkSourceFunded`'s `requiredBaseUnits` parameter
   is bit-identical (`===`, `bigint`) to the SAME value simultaneously passed as `SkipApiClient.getRoute()`'s
   `amount_in` argument AND `BaseSigner.signAndBroadcast()`'s tx-amount argument, inspecting all three spies'
@@ -387,6 +394,13 @@ worst-case dollar loss at 50 bps stays proportionally small.
   observed delta of `994_999n` uakt (one base unit below the boundary) MUST fail closed
   (`verifySettlement` returns `false`) — together proving the test suite discriminates a correctly-tight
   50-bps tolerance from an arbitrarily looser one, which the zero-delta-only fixture above cannot do.
+- A test asserts the driver's ACTUAL runtime argument to `verifySettlement`'s `toleranceBps` parameter is
+  bit-identical (`===`, `number`) to `TOLERANCE_BPS`, inspected via the spy's actual call argument (not
+  `verifySettlement`'s pure return value in isolation, and not merely a test-supplied literal passed
+  directly to the pure function) — a driver implementation that hardcodes or independently derives a
+  different (looser) `toleranceBps` at its own call site MUST fail this assertion, even though the
+  boundary fixtures above already exercise the pure comparison logic correctly (PROP-013, mirroring the
+  `requiredBaseUnits`/`minGasWei` driver-level assertions in REQ-003).
 
 ### REQ-008: Wiring as TREASURY_SWAP_CMD
 **EARS**: THE SYSTEM SHALL be invocable as a single shell command assignable to the `TREASURY_SWAP_CMD`
