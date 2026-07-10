@@ -21,6 +21,7 @@
 // for the full leak-mode rationale and lib/__tests__/resolve-swap-identity.test.mjs for the proof.
 import { runSwap } from "../lib/driver.mjs";
 import { resolveOwnBaseIdentity } from "../lib/resolve-swap-identity.mjs";
+import { resolveSwapStateDir } from "../lib/resolve-swap-state-dir.mjs";
 
 // DESTINATION_AKASH_ADDRESS -- REQ-009/FIND-002 decision: this is the single colony-wide "anicca-akash"
 // keyring's OWN address (verified against the identical `akash keys show anicca-akash -a` fixture
@@ -35,7 +36,11 @@ const DESTINATION_AKASH_ADDRESS = "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523"
 
 const THRESHOLD_AKT = Number(process.env.SPAWN_FUNDING_SWAP_THRESHOLD_AKT || "26");
 const LEG_TIMEOUT_MS = Number(process.env.SPAWN_FUNDING_SWAP_LEG_TIMEOUT_MS || "600000"); // NFR-4: <=10min default
-const STATE_DIR = process.env.SPAWN_FUNDING_SWAP_STATE_DIR;
+// REQ-008/FIND-002 fix (Phase-3 impl review): previously undefaulted, so an unset env var meant
+// `createLedgerStore({stateDir: undefined})` threw a raw path.join(undefined,...) TypeError once identity
+// resolved (see resolve-swap-state-dir.mjs for the full defect + fix rationale). Now always a concrete
+// string (or an explicit, early thrown error from resolveStateDir()'s own /tmp-guard) -- never undefined.
+const STATE_DIR = resolveSwapStateDir({ env: process.env });
 
 async function buildDeps() {
   const fakeDepsModule = process.env.SPAWN_FUNDING_SWAP_FAKE_DEPS_MODULE;
