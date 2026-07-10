@@ -32,7 +32,11 @@ fresh Opus adversary verdict = **FAIL**, blocking 3件（`.vcsdd/features/ceo-re
 - **FIND-003(critical)**: `bin/ceo-run.sh` に catch-all `*)` 無し→typo で live 無制限 agent 起動(RED phase で実発火した footgun)。→ `*)` で usage+exit 2、回帰テスト追加。
 adversary が verify した positive: LAST_PASS_MARKERS が実 healthcheck パスと一致 / ceo-runner.plist byte 不変 / schema subset check で既存 reader 非破壊 / registry atomic write 正当。
 
-## 残（connector 処理後に serialize）
+## fix-loop → 再 adversary(Opus) = PASS（2026-07-11）
+FIND-001/002/003 全 RESOLVED（commit ebb1d93）: last_observed_at を実 stamp(cost_self_report_check.stamp_last_observed_at→ceo_status から呼出)/ ceo_budget に type 付与(3 writer 統一)/ ceo-run.sh に `*)` catch-all(未知フラグで exit2、live core 起動せず)。独立で 107/107 green 確認済。verdict=`.vcsdd/features/ceo-revive/reviews/sprint-2/`。
+→ #6 コード完成(builder GREEN + fresh Opus PASS)。残 = live E2E(connector fix 後に serialize)。
+
+## 残（connector fix 完了後に serialize）
 - [ ] #6 fix-loop: FIND-001/002/003 修正 → 再 adversary PASS
 - [ ] merge 後 live で CEO no-args pass → ceo-decisions.jsonl に判断行≥1（独立読返し）
 - [ ] enforcement: paused-gate が loop 起動を拒否する挙動を test/実行で観測
