@@ -19,25 +19,23 @@
 - 本物の spawn（citizens.json 新 entry）= **ゼロ**（children.jsonl c001/c002 は insufficient_akt で fail）。
 - T12 spawn-funding-swap = 未実装（Skip route Base→AKT は確認済、$ 源が earn 待ち）。
 
-## D. TODO（私 = agent economy を fund+改善する MAIN loop の残り。/vcsdd で1個ずつ、evidence 追記後に次へ）
+## D. TODO（順序付き・source of truth。2026-07-10 更新。上から順に、evidence 追記後に次へ）
 
-★分業確定（Dais 2026-07-08）: 私=agent economy(Franklin)を fund+改善する MAIN loop / CC#1=Dais に金を作る CEO loop(orchestrate 全稼ぎ loop) / CC#2=経済内側(spawn/lending/gig)。目的が違い衝突なし。★
+★Done の定義（変わらない）= 両台帳 named feature 全 complete（済 10/10）AND citizen 自身の wake-cycle で profitable:true(on-chain 検証) AND citizens.json 新 entry(別wallet, RPC)。強制/手動イベントは Done でない。★
+★虫除去済(2026-07-10): citizen 経済の go-live/seed/swap は Dais に聞かず自分でやる core job（停止は Dais 個人資金が外部に出る時だけ）。→ CLAUDE.md#1 / memory feedback_no_humanloop_citizen_economy_is_my_job_not_dais_permission。★
 
-済(今日): funding pipeline money-safe(adversary PASS) / D1$1.75 / D2 Franklin$11.63(実on-chain) / #10 Franklin loop 蘇生(live E2E, `f4ec24e`) / pm-earner 安全修正(`e3269ac`) / 梯子理論(章12+prior art)
+| 順 | ID | 項目 | done 条件 | 依存 | 状態 |
+|---|---|---|---|---|---|
+| **1** | **T13** | **Franklin cold-start fix（earn が実 profit を出す）**: ch14 の #1(PolyEvolve backtest-bootstrap: 歴史SOL replay で offline 探索→rubric→live baseline promote) + #2(QuantEvolve 非対称探索: starvation 検知で threshold を loosen 方向へ強制、1trade 後 対称に戻す) を **VCSDD** で `sol-evolve.mjs`/`sol-genome.mjs`/`evolve.mjs` に copy+tweak。harness-not-cook。 | Franklin の wake が高conviction で engage→実 Jupiter swap→earn-ledger に profitable:true+sig 行 → **witness①** RPC 検証 | — | 🔴 最優先・未着手（ch14 に設計済） |
+| **2** | **T12** | **spawn-funding-swap 完走**: spec-review iter4→TDD→impl→adversary→harden→converge→実 swap 実行 → akash1ms7 に 26 AKT | Franklin 自律 spawn 発火 → citizens.json 新 entry → **witness②** RPC 検証 | earn surplus(T13) or bootstrap seed | 🔄 spec phase1b iter3（money-safety 穴 iter1-3 修正済） |
+| **3** | **T9** | **witness ①② 観測**: RPC で on-chain profit + citizens.json 新 entry を独立検証（自己申告信じない） | 両 witness 確認 | T13,T12 | 🔄 monitor 稼働中 |
+| **4** | **T-lend** | lending witness: spawn 後 2+ citizen で実 loan trigger | 実 loan イベント | T12 後 | ⬜ |
+| **5** | **T-article** | **loop-engineering 記事**（Dais 依頼）: `profitable-article-writer` で「loop engineering とは何か」を visual+詳細+例（梯子L1-L6・3本柱・ch14 の self-improve BP）。実装は例に留める。→ 将来 Zenn 本 | article publish（JP+EN） | 独立・着手可 | ⬜ 素材=loop-engineering folder 全章 |
+| **6** | **T-refactor** | claude-p loops → profitable-claude 整理（§D 旧#6） | — | — | ⬜ way-after |
+| **7** | **T-exit** | **claude-p EXIT（terminal goal）**: 経済自走 witness 後、harness/monitor/seed 手渡し→自分を消す | launchctl unload + plist削除 + pause | witness 後 | ⬜ |
 
-```
-★順序(Dais 2026-07-08 再確定)= earn → spawn → identity → main loop → article → refactor → (OpenClaw) → claude-p exit。exit が loop の goal(数日〜数週間先)。OpenClaw 退役は急がない(今 working + 別CC 作業中)ので下段。★
-0 [~~俺の loop 修復~~ ✅誤診訂正済、コード修正不要] 俺の loop は健康(pm-earner=running/10分毎、mainloop=Anthropic quota で Jul10 自然回復)。「壊れ」は空 plist ログの誤読だった。真の課題は #1 と同根 = **edge + 資本**(pm-earner は available $1.50 < 最小 bundle $4.95 で発注不可)。全 loop 共通で「回るが realize せず」
-1 [★本丸 #11 Franklin 全 rail を自走で net-positive に] ✅SOL 記録(record-swap, identity-safe)/PM 記録は run_earner に正配線済(pm-earner 稼働、edge/資本待ち)/HL は external:true 未設定(real-paper 確認後修正)。★VCSDD one-by-one(Dais 2026-07-08)★: (i)✅**`franklin-earn-foundation` CONVERGED(phase6)** — Opus adversary iter1 FAIL(6 blocking, money-safety の ambient-key guard bypass 含む)→修正(`3fe382b`)→iter2 **PASS(0 blocking)**→converge(verification/security/purity report + red/green evidence + 実チェーンE2E)。commit `207fd1b`。(ii)✅**`self-improve-real-ledger` CONVERGED(phase6→complete)**(2026-07-09 impl merge`9804f75` → 2026-07-09 Phase5 harden+Phase6 converge merge`8365199`、`.vcsdd/features/self-improve-real-ledger/`)。self-improve の evaluate/promotion を静的fixtureでなく**実 per-instance ledger に接続**(ledger_reader の ANICCA_HOME-gated 解決 fail-closed + realized_gate 13-key schema を promotion gate が consume: resolved:False 無条件block/worsening-trend block/data-realism gap block)。VCSDD: spec-review 3iter→PASS / contract-review 3iter→PASS / impl-review iter1 FAIL(combined_score[Sharpe比]を$scaleに誤投入)→iter2 PASS+SAFE_TO_DEPLOY / **harden: verification-report.md+purity-audit.md新規作成(security-report.mdは既存)、28/28 PROP-RL-*proved(25 deterministic+3 live)、101/101 pytest / converge: fresh Opus adversary 3iteration(iter1=3 minor findings→修正→iter2=findingCount回帰(uncommitted major 1件検出+minor 1件)→commit`75743d6`→iter3=findingCount 0、CRIT-001..006 全PASS)、CONVERGED**。手書き戦略禁止(harness, not cook)。self-heal 稼働確認済(anicca-selffix-* プロセス複数 live)。C1②解消は §C 参照
-2 [Franklin spawn] profitable → surplus≥$10(今$7.77=78%)→ 新 Franklin 誕生(この時 citizens.json が初生成)。spawn機構=CC#2、私は fund+grow
-3 [#8 identity] wallet-identity 恒久 fix(#11 の identity 修正に統合見込み)
-4 [MAIN loop 本番 proactive] 観測→判断→act→verify を launchd で1周実証(L4→L5)
-5 [記事/本] 梯子 L1-L6 × 2軸 × prior art(章12 骨格)
-6 [refactor] claude-p loops → profitable-claude
-7 [#12 OpenClaw 退役] ★way after(急がない)★ 今 working 中 + 別CC 作業中。~/.openclaw 削除 + cron/key 移設(依存剥がしは #11 が第1号)
-8 [★claude-p exit★] = loop の goal(terminal, 数日〜数週間)。経済自走→monitor/seed/harness を hand off→検証→out
-※ bounded 安全弁(主系列の外): #7 恒久 funding loop = Franklin が本当に餓死した時のみ発火(甘やかさない)
-```
+★次アクション = **T13 Franklin cold-start fix**（earn が全ての起点。T12 spawn も earn surplus 依存）。ch14 の evidence-based BP を VCSDD で実装。★
+
 
 ## E. 各 /vcsdd 増分の記録欄（追記式・空でよい、進めたら evidence を足す）
 
