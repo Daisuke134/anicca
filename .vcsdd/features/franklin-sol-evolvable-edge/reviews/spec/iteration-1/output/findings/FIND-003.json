@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "secondaryDimension": "verification_readiness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "title": "REQ-015 does not mandate literal reuse of evolve.mjs's already-parameterized promote() (unlike REQ-014's explicit no-reimplementation mandate for evaluatePromotion), inviting a fresh hand-written git-commit-scoping implementation that could silently reintroduce a bug class PM already paid an adversary MUST-FIX to close",
+  "description": "REQ-014 (behavioral-spec.md:290-311) is explicit and testable: 'THE SYSTEM SHALL import and reuse evaluatePromotion() from evolve.mjs unchanged... A NEW copy of this pure decision logic MUST NOT be hand-written for SOL,' backed by PROP-014 (verification-architecture.md:51), an explicit 'import-identity + fixture-parity check' at Tier 0.\n\nREQ-015 (behavioral-spec.md:313-327) covers the STRUCTURALLY IDENTICAL situation for `promote()` -- writing baseline-genome.json + a path-scoped git commit -- and even calls out, in its own text, that 'this exact hardening was itself an adversary MUST-FIX in the PM feature' (line 316). Yet REQ-015 has NO equivalent 'MUST NOT be hand-written' clause and NO import-identity acceptance criterion. Its only Acceptance Criteria (behavioral-spec.md:325-327) checks the OUTCOME ('git show --stat HEAD... touches exactly one file') but not the IMPLEMENTATION PATH -- a hand-rolled SOL-specific reimplementation of promote()'s git logic could satisfy this acceptance criterion in a test fixture yet still diverge from evolve.mjs's proven implementation in production (e.g. a stray `git add -A` guarded by a different code path than the tested one, or a missing `-c user.name=/user.email=` that breaks in a CI/cron environment lacking git identity config).\n\nCritically, evolve.mjs's promote() (evolve.mjs:169-195) is ALREADY parameterized by `canonicalPath` and `cwd` -- it is rail-agnostic in exactly the same sense evaluatePromotion is (verification-architecture.md:17-19 says as much for evaluatePromotion but is silent on promote() being equally reusable). There is no technical reason SOL's promotion wiring could not call `promote(winnerGenome, { canonicalPath: SOL_CANONICAL_PATH })` directly, exactly as REQ-014 requires for evaluatePromotion. The spec's asymmetry between REQ-014 and REQ-015 -- identical situation, identical PM-adversary-precedent, but only one gets a no-reimplementation mandate and an import-identity test -- is an unexplained gap in a money-path spec that explicitly prizes copy+tweak over reinvention throughout its own Provenance section (behavioral-spec.md:8-22).",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-sol-evolvable-edge/specs/behavioral-spec.md",
+    "lineRange": "313-327",
+    "snippet": "WHEN REQ-014's gate returns promote: true THE SYSTEM SHALL write the winning genome's knob values to the SOL rail's canonical baseline file ... and git commit ONLY that path, with a message identifying the new genome id and the chain-verified basis for promotion. [... no 'MUST NOT reimplement' clause, unlike REQ-014]"
+  },
+  "crossReferences": [
+    {"filePath": "~/anicca/skills/earn/lib/evolve.mjs", "lineRange": "169-195"},
+    {"filePath": ".vcsdd/features/franklin-sol-evolvable-edge/specs/verification-architecture.md", "lineRange": "17-19, 26-27, 51-52"}
+  ],
+  "fix": "Amend REQ-015's EARS to require literal reuse: 'THE SYSTEM SHALL call evolve.mjs's exported promote(genome, { canonicalPath, cwd }) UNCHANGED, passing the SOL rail's own canonicalPath -- a NEW copy of this git-commit logic MUST NOT be hand-written for SOL.' Add a PROP-015b (Tier 0, import-identity) mirroring PROP-014's pattern: assert the SOL promotion wiring's promote reference is the SAME function object imported from evolve.mjs, not a local reimplementation.",
+  "routeToPhase": "1c-revision"
+}

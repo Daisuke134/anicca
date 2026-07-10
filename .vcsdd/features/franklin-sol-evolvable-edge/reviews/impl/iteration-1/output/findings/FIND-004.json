@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "correctness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "loadGenome() (sol-genome.mjs:106-115) merges the canonical baseline + instance override and strips forbidden cap keys + validates the watchlist string, but it NEVER clamps the four numeric knobs to their valid [min,max] ranges (MUTATION_SPEC's ranges). Only mutate() re-anchors an out-of-range value into range (REQ-002's 3-layer clamp, correctly implemented and tested). REQ-002's own edge case explicitly anticipates this exact scenario ('A genome fed into mutate() that already carries an out-of-range value (malformed override file, or repeated mutation-of-a-mutation across many passes) MUST be re-anchored into range BEFORE stepping') -- but this defense only fires INSIDE mutate(), which (per FIND-001) is never actually called in production. This means if a canonical baseline-genome.json or an instance override file is ever hand-edited, corrupted, or written by some future exploration driver with an out-of-range value (e.g. SOL_GATE_MIN_MOMENTUM_PCT: 0.0001, or a negative SOL_GATE_MIN_CONVICTION), decideEngagement (called directly on loadGenome()'s unclamped output every pass via sol-gate-cli.mjs) will use that out-of-range value on EVERY pass indefinitely -- there is no path back into range until mutate() happens to select and re-anchor that specific key, which (per FIND-001) currently never happens at all. This does not defeat the paper-only default (REQ-009) or the hard-coded max-spend cap (REQ-017) -- so it cannot itself cause an uncapped live trade -- but it can silently and durably weaken or defeat the exploration-threshold gate (e.g. an accidentally-near-zero SOL_GATE_MIN_MOMENTUM_PCT would make wouldEngage effectively always true for any nonzero momentum once SOL_GATE_LIVE_ENABLE=1 is eventually set), with no self-correcting mechanism in the current wiring.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/lib/sol-genome.mjs",
+    "lineRange": "106-115",
+    "snippet": "export function loadGenome({ home, canonicalPath = CANONICAL_BASELINE_PATH } = {}) {\n  const canonical = readJsonSafe(canonicalPath);\n  const baseline = stripForbidden({ ...SAFE_DEFAULT_GENOME, ...(canonical || {}) });\n  const override = stripForbidden(readJsonSafe(instanceOverridePath(home)) || {});\n  const merged = stripForbidden({ ...baseline, ...override });\n  if (!isValidWatchlist(merged.SOL_GATE_WATCHLIST)) { merged.SOL_GATE_WATCHLIST = SAFE_DEFAULT_GENOME.SOL_GATE_WATCHLIST; }\n  return merged;\n  // no numeric-knob range clamp anywhere in this function"
+  },
+  "routeToPhase": "2b"
+}

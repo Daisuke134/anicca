@@ -1,0 +1,11 @@
+  ok  (a) Franklin-shaped identity PROCEEDS, records exactly 1 ledger line (net_usdc=0.5, no external:true)
+  ok  (a) exit 0
+  ok  (b) automaton-shaped ANICCA_HOME HALTs before franklin-trading start (root cause 3 fix), exit 0, zero new ledger lines
+  ok  (c) FIND-001 regression: ambient ANICCA_SOLANA_PRIVATE_KEY does NOT bypass the identity-match guard
+  ok  (d) resolvable-but-foreign wallet still HALTs (identity MATCH required, not mere non-emptiness)
+  ok  (e) PROP-012: cumulative earn-guard HALTs the pass BEFORE franklin-trading start, no new ledger line
+  ok  (f) multi-signature pass records the LAST signature only (FIND-002/003)
+  ok  (g) PROP-016: RPC verify-error degrades to a trace-only sol-verify-failed line, zero ledger lines, exit 0
+  ok  (h) no Signature: line (WAIT) -> zero new ledger lines
+
+9/9 passed

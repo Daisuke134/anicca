@@ -1,0 +1,161 @@
+✔ deposit accumulates basis per venue (1.086792ms)
+✔ withdraw reduces basis (money out is principal-out, not loss) (0.229125ms)
+✔ basis floors at 0 — never negative (excess withdrawal = realised profit elsewhere) (0.13225ms)
+✔ seedIfEmpty only sets untracked venues, never overwrites (0.154834ms)
+✔ ignores garbage input (0.043125ms)
+✔ status ok + liquid dropped by full surplus → landed (0.637375ms)
+✔ status ok + liquid dropped by 99% (gas/dust tolerance) → landed (0.052375ms)
+✔ status ok BUT liquid unchanged (PHANTOM) → NOT landed (0.0405ms)
+✔ status ok but liquid dropped only a little (partial/no real deposit) → NOT landed (0.040541ms)
+✔ tx reverted (status not ok) → NOT landed (0.039167ms)
+✔ EDGE: negative delta (liquid INCREASED mid-cycle) → NOT landed (0.03525ms)
+✔ EDGE: surplus 0 (nothing to deposit) → NOT landed (no trivial moved>=0 pass) (0.043583ms)
+✔ BOUNDARY: one unit under the 99% threshold → NOT landed (0.036583ms)
+✔ BOUNDARY: exactly at the 99% threshold → landed (0.047666ms)
+✔ execute-yield imports the deposit guard (1.030542ms)
+✔ deposit cost-basis is gated on `landed` (read-after-write), not on tx status (0.155875ms)
+✔ recorded basis is the ACTUAL moved amount (liquid - liqAfter), not the blind surplus (0.1365ms)
+✔ attributeGenomeId matches the most recent preceding trade for the same market (0.744458ms)
+✔ attributeGenomeId returns null when no trace line matches the market (0.06ms)
+✔ summarizeByGenome counts ONLY on-chain-verified (tx + status 0x1) redeem rows, sums net_usdc (0.101625ms)
+✔ evaluatePromotion: below-K redeems never promotes even if P&L beats baseline (0.103333ms)
+✔ evaluatePromotion: does not beat baseline -> no promote (0.051125ms)
+✔ evaluatePromotion: beats baseline AND >=K redeems -> promote (0.040167ms)
+✔ evaluatePromotion: challenger less-negative than a losing baseline -> NO promote (net-positive floor) (0.048125ms)
+✔ evaluatePromotion: baseline has no on-chain history (defaults to 0) -> a net-positive challenger still promotes (0.037709ms)
+✔ evaluatePromotion: challenger itself net-negative with NO baseline history -> NO promote (0.044584ms)
+✔ promote() writes the canonical baseline-genome.json AND git-commits it (111.369291ms)
+✔ promote() is path-scoped: an unrelated STAGED file is never swept into the promotion commit (98.132625ms)
+SYNTHETIC E2E PROMOTE result: {
+  "promoted": true,
+  "baselineId": "c904f0f49c82",
+  "newBaselineId": "cc7cf96f536a",
+  "commit": "bfc950f153d708cca5a6983178b8d49ea76cf5f7",
+  "evaluations": {
+    "cc7cf96f536a": {
+      "promote": true,
+      "reason": "beats-baseline-chain-verified-net-positive"
+    }
+  },
+  "summary": {
+    "c904f0f49c82": {
+      "genome_id": "c904f0f49c82",
+      "realized_usdc": 1,
+      "redeem_count": 1
+    },
+    "cc7cf96f536a": {
+      "genome_id": "cc7cf96f536a",
+      "realized_usdc": 3,
+      "redeem_count": 3
+    }
+  }
+}
+✔ E2E PROMOTE: genome B (realized $3, 3 on-chain redeems) beats baseline A (realized $1) -> promoted (89.261666ms)
+SYNTHETIC E2E NO-PROMOTE (still-losing challenger, -5 vs -2) result: {
+  "promoted": false,
+  "baselineId": "c904f0f49c82",
+  "evaluations": {
+    "cc7cf96f536a": {
+      "promote": false,
+      "reason": "challenger-not-net-positive (-2<=0)"
+    }
+  },
+  "summary": {
+    "c904f0f49c82": {
+      "genome_id": "c904f0f49c82",
+      "realized_usdc": -5,
+      "redeem_count": 3
+    },
+    "cc7cf96f536a": {
+      "genome_id": "cc7cf96f536a",
+      "realized_usdc": -2,
+      "redeem_count": 3
+    }
+  }
+}
+✔ E2E NO-PROMOTE (still-losing challenger): baseline -$5, challenger -$2, both >=3 redeems -> NO promote (59.266416ms)
+SYNTHETIC E2E NO-PROMOTE (paper) result: {
+  "promoted": false,
+  "baselineId": "c904f0f49c82",
+  "evaluations": {},
+  "summary": {
+    "c904f0f49c82": {
+      "genome_id": "c904f0f49c82",
+      "realized_usdc": 1,
+      "redeem_count": 1
+    }
+  }
+}
+✔ E2E NO-PROMOTE (paper rows only): mutant B has no on-chain tx -> never promoted (59.350167ms)
+SYNTHETIC E2E NO-PROMOTE (below-K) result: {
+  "promoted": false,
+  "baselineId": "c904f0f49c82",
+  "evaluations": {
+    "cc7cf96f536a": {
+      "promote": false,
+      "reason": "below-K-redeems (2<3)"
+    }
+  },
+  "summary": {
+    "c904f0f49c82": {
+      "genome_id": "c904f0f49c82",
+      "realized_usdc": 1,
+      "redeem_count": 1
+    },
+    "cc7cf96f536a": {
+      "genome_id": "cc7cf96f536a",
+      "realized_usdc": 10,
+      "redeem_count": 2
+    }
+  }
+}
+✔ E2E NO-PROMOTE (below K): mutant B beats baseline P&L but has only 2 on-chain redeems (<K=3) (59.419916ms)
+✔ runEvolve default minRedeems is 3 (spec §2.3 default K) (0.089167ms)
+✔ readTrace on a missing file returns [] (fail-closed, never throws) (0.36275ms)
+✔ buildGenomeIndex captures genome VALUES keyed by genome_id from 'genome' trace lines (0.038ms)
+✔ loadGenome falls back to SAFE_DEFAULT_GENOME when canonical file is missing and no override exists (1.491291ms)
+✔ loadGenome merges canonical baseline + instance override (override wins per-key) (0.584042ms)
+✔ loadGenome strips forbidden cap keys even if a malformed file smuggles them in (0.216625ms)
+✔ mutate() never introduces a forbidden cap key (0.271041ms)
+✔ mutate() never touches EARN_CONSENSUS_MODELS (categorical, not a numeric knob) (0.110333ms)
+✔ mutate() stays within the safe clamp range over many draws (single-step, real Math.random) (2.97575ms)
+✔ mutate() chained across many generations NEVER breaches [min,max] for any knob (25,000 calls, real RNG) (14.725959ms)
+✔ mutate() clamps MIN_EDGE back to exactly 0.05 when already at the floor and stepping down (0.099667ms)
+✔ mutate() re-anchors an already-out-of-range SELECTED knob to the safe range before stepping (0.086958ms)
+✔ mutate() changes only 1-2 knobs per call (deterministic rng) (0.109333ms)
+✔ mutate() returns a NEW object, never mutates its argument (immutability) (0.051583ms)
+✔ genomeId is deterministic regardless of key order (0.312ms)
+✔ genomeId differs for different knob values (0.0605ms)
+✔ genomeId ignores a smuggled forbidden cap key (identity depends only on real knobs) (0.036542ms)
+✔ toExportLines only ever emits KNOB_KEYS + EARN_GENOME_ID/EARN_GENOME_MUTATED (0.134708ms)
+✔ toExportLines neutralizes shell metacharacters — no injection survives a real bash eval (3.000542ms)
+✔ shouldMutateThisPass fires exactly every Mth pass (1.041125ms)
+✔ shouldMutateThisPass fail-closed: garbage counter file restarts cleanly instead of throwing (0.270792ms)
+✔ record.mjs persists a Solana promote.fun payout that isProfitable accepts (DONE can fire) (9.367834ms)
+✔ record.mjs: same Solana line without external:true is NOT profitable (false-green guard) (2.77125ms)
+✔ both real lending positions (morpho & moonwell) net to ≈0 (value − principal), not a phantom ±$1 (1.1505ms)
+✔ beefy (0 on-chain value AND no basis key) stays hidden (0.074208ms)
+✔ PHANTOM sentinel: a basis key with NO on-chain position shows a fake loss (the thing deposit-guard prevents) (0.055ms)
+✔ HL unrealised PnL surfaces as its own revenue cell (profit green / loss red) (0.067542ms)
+✔ realised earnings surface and lift total by exactly the sale amount (0.063125ms)
+✔ extractLastSignature: no 'Signature:' line -> null (agent judged WAIT) (1.482667ms)
+✔ extractLastSignature: exactly one 'Signature:' line -> that signature (0.1175ms)
+✔ extractLastSignature: multiple 'Signature:' lines -> the LAST one only (multi-step swap chain) (0.054291ms)
+✔ extractLastSignature: malformed/truncated/empty input never throws, returns null (0.050583ms)
+✔ extractLastSignature: is total/deterministic across repeated calls on the same input (0.044917ms)
+✔ recordSwap: bad-args (missing sig/wallet/ledger) never crashes, never records (3.017334ms)
+✔ PROP-005: confirmed + POSITIVE delta -> recorded, earn_usdc=delta, cost_usdc=0, persisted line isProfitable-eligible shape (2.15725ms)
+✔ PROP-007: confirmed + NEGATIVE delta -> STILL recorded (earn_usdc=0, cost_usdc=|delta|, net_usdc<0) -- losses are visible too (0.927125ms)
+✔ recordSwap: confirmed + ZERO delta -> still recorded (net_usdc=0), never rejected as 'zero-delta' (deliberate difference from record-payout.mjs) (0.739625ms)
+✔ recordSwap: unconfirmed signature -> NOT recorded (dropped tx must never masquerade as a completed pass) (0.315917ms)
+✔ PROP-016: sigStatus RPC failure -> verify-error status, never a thrown exception, never recorded (0.864875ms)
+✔ PROP-016: usdcDeltaForSig RPC failure (getTransaction throws after getSignatureStatuses succeeds) -> verify-error, never NaN/Infinity in a recorded line (0.39475ms)
+✔ recordSwap never sets external:true (P&L VISIBILITY only -- this is not a GATE-0 classification) (0.608ms)
+ℹ tests 73
+ℹ suites 0
+ℹ pass 73
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 573.930125
