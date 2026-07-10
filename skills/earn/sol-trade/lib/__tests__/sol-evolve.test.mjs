@@ -9,12 +9,14 @@ import os from "node:os";
 import path from "node:path";
 import fc from "fast-check";
 import { execFileSync } from "node:child_process";
+import { fileURLToPath } from "node:url";
 
 import {
   attributeGenomeIdSol,
   summarizeByGenomeSol,
   evaluatePromotion,
   promote,
+  runEvolveSol,
 } from "../sol-evolve.mjs";
 import { evaluatePromotion as evaluatePromotionDirect, promote as promoteDirect } from "../../../lib/evolve.mjs";
 import { SAFE_DEFAULT_GENOME, genomeId } from "../sol-genome.mjs";
@@ -29,6 +31,10 @@ function initGitRepo(dir) {
     ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "--allow-empty", "-q", "-m", "init"],
     { cwd: dir },
   );
+}
+function writeJsonl(filePath, rows) {
+  fs.mkdirSync(path.dirname(filePath), { recursive: true });
+  fs.writeFileSync(filePath, rows.map((r) => JSON.stringify(r)).join("\n") + "\n");
 }
 
 const GENOME_A = { ...SAFE_DEFAULT_GENOME };
@@ -273,4 +279,129 @@ test("PROP-013: fast-check randomized mixed ledger only counts the valid (sol-tr
       },
     ),
   );
+});
+
+// --- FIND-002 (impl-review iteration-1): runEvolveSol orchestration + CLI entrypoint -----------
+// Mirrors evolve.test.mjs's own runEvolve E2E fixtures shape, using SOL's field names/genome
+// shapes. NEVER touches the real ~/anicca repo or real earn-ledger.jsonl -- every git op runs in a
+// fresh temp repo (initGitRepo), every ledger/trace path is a fresh temp file.
+test("FIND-002 E2E PROMOTE: mutant B beats baseline A (0), has >=K=3 chain-verified confirmed swaps -> promoted, canonical baseline written + committed", async () => {
+  const repo = tmpDir("sol-evolve-e2e-promote-");
+  initGitRepo(repo);
+  const canonicalPath = path.join(repo, "skills", "earn", "sol-trade", "baseline-genome.json");
+  fs.mkdirSync(path.dirname(canonicalPath), { recursive: true });
+  fs.writeFileSync(canonicalPath, JSON.stringify(GENOME_A, null, 2) + "\n");
+  execFileSync("git", ["add", "-A"], { cwd: repo });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "-q", "-m", "seed baseline A"], { cwd: repo });
+
+  const stateDir = path.join(repo, "state");
+  const tracePath = path.join(stateDir, "sol-trade.trace.jsonl");
+  const ledgerPath = path.join(stateDir, "earn-ledger.jsonl");
+
+  writeJsonl(tracePath, [
+    genomeLinkLine("2026-07-01T00:00:00Z", GENOME_A, ID_A),
+    genomeLinkLine("2026-07-02T00:00:00Z", GENOME_B, ID_B),
+  ]);
+  writeJsonl(ledgerPath, [
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T01:00:00Z") / 1000), netUsdc: 0.5, sig: "sig-b1" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T02:00:00Z") / 1000), netUsdc: 0.4, sig: "sig-b2" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T03:00:00Z") / 1000), netUsdc: 0.3, sig: "sig-b3" }),
+  ]);
+
+  const before = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+  const result = await runEvolveSol({ ledgerPath, tracePath, canonicalPath, minRedeems: 3, cwd: repo });
+  const after = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+
+  assert.equal(result.promoted, true, "B must be promoted: net-positive, beats baseline's 0 floor, >=3 confirmed swaps");
+  assert.equal(result.newBaselineId, ID_B);
+  assert.notEqual(before, after, "a real git commit must have been made");
+
+  const writtenBaseline = JSON.parse(fs.readFileSync(canonicalPath, "utf8"));
+  assert.deepEqual(writtenBaseline, GENOME_B, "canonical baseline-genome.json now holds B's actual knob values");
+});
+
+test("FIND-002: runEvolveSol does NOT promote a mutant below K=3 confirmed swaps (cold-start-adjacent)", async () => {
+  const repo = tmpDir("sol-evolve-e2e-belowk-");
+  initGitRepo(repo);
+  const canonicalPath = path.join(repo, "baseline-genome.json");
+  fs.writeFileSync(canonicalPath, JSON.stringify(GENOME_A, null, 2) + "\n");
+  execFileSync("git", ["add", "baseline-genome.json"], { cwd: repo });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "-q", "-m", "seed"], { cwd: repo });
+
+  const stateDir = path.join(repo, "state");
+  const tracePath = path.join(stateDir, "sol-trade.trace.jsonl");
+  const ledgerPath = path.join(stateDir, "earn-ledger.jsonl");
+  writeJsonl(tracePath, [genomeLinkLine("2026-07-02T00:00:00Z", GENOME_B, ID_B)]);
+  writeJsonl(ledgerPath, [
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T01:00:00Z") / 1000), netUsdc: 5.0, sig: "sig-1" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T02:00:00Z") / 1000), netUsdc: 5.0, sig: "sig-2" }),
+  ]);
+
+  const before = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+  const result = await runEvolveSol({ ledgerPath, tracePath, canonicalPath, minRedeems: 3, cwd: repo });
+  const after = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+
+  assert.equal(result.promoted, false);
+  assert.match(result.evaluations[ID_B].reason, /below-K-redeems/);
+  assert.equal(before, after, "no commit must have been made");
+});
+
+test("FIND-002: runEvolveSol does NOT promote a still-net-losing mutant even if less negative than a losing baseline", async () => {
+  const repo = tmpDir("sol-evolve-e2e-lessneg-");
+  initGitRepo(repo);
+  const canonicalPath = path.join(repo, "baseline-genome.json");
+  fs.writeFileSync(canonicalPath, JSON.stringify(GENOME_A, null, 2) + "\n");
+  execFileSync("git", ["add", "baseline-genome.json"], { cwd: repo });
+  execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@t.local", "commit", "-q", "-m", "seed"], { cwd: repo });
+
+  const stateDir = path.join(repo, "state");
+  const tracePath = path.join(stateDir, "sol-trade.trace.jsonl");
+  const ledgerPath = path.join(stateDir, "earn-ledger.jsonl");
+  writeJsonl(tracePath, [
+    genomeLinkLine("2026-07-01T00:00:00Z", GENOME_A, ID_A),
+    genomeLinkLine("2026-07-02T00:00:00Z", GENOME_B, ID_B),
+  ]);
+  writeJsonl(ledgerPath, [
+    // baseline A: -5 total across 3 confirmed swaps
+    swapRow({ ts: Math.floor(Date.parse("2026-07-01T01:00:00Z") / 1000), netUsdc: -2, sig: "a1" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-01T02:00:00Z") / 1000), netUsdc: -2, sig: "a2" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-01T03:00:00Z") / 1000), netUsdc: -1, sig: "a3" }),
+    // mutant B: -2 total across 3 confirmed swaps (LESS negative than A, but still a loser)
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T01:00:00Z") / 1000), netUsdc: -1, sig: "b1" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T02:00:00Z") / 1000), netUsdc: -0.5, sig: "b2" }),
+    swapRow({ ts: Math.floor(Date.parse("2026-07-02T03:00:00Z") / 1000), netUsdc: -0.5, sig: "b3" }),
+  ]);
+
+  const before = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+  const result = await runEvolveSol({ ledgerPath, tracePath, canonicalPath, minRedeems: 3, cwd: repo });
+  const after = execFileSync("git", ["rev-parse", "HEAD"], { cwd: repo }).toString().trim();
+
+  assert.equal(result.summary[ID_A].realized_usdc, -5);
+  assert.equal(result.summary[ID_B].realized_usdc, -2);
+  assert.equal(result.promoted, false, "-2 beats -5 but is still a LOSS -- must never promote (HARD 0.24)");
+  assert.match(result.evaluations[ID_B].reason, /challenger-not-net-positive/);
+  assert.equal(before, after, "no commit must have been made");
+});
+
+test("FIND-002: runEvolveSol cold-start (missing ledger/trace files) never throws, promoted:false", async () => {
+  const dir = tmpDir("sol-evolve-cold-start-");
+  const result = await runEvolveSol({
+    ledgerPath: path.join(dir, "does-not-exist-ledger.jsonl"),
+    tracePath: path.join(dir, "does-not-exist-trace.jsonl"),
+    canonicalPath: path.join(dir, "does-not-exist-baseline.json"),
+    minRedeems: 3,
+    cwd: dir,
+  });
+  assert.equal(result.promoted, false);
+  assert.equal(result.baselineId, ID_A, "missing canonical falls back to SAFE_DEFAULT_GENOME's own id");
+});
+
+test("FIND-002: sol-evolve.mjs CLI entrypoint runs standalone, prints promoted:false JSON for cold-start fixtures, never touches the real repo", () => {
+  const cliPath = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "sol-evolve.mjs");
+  const dir = tmpDir("sol-evolve-cli-smoke-");
+  const ledgerPath = path.join(dir, "no-ledger.jsonl");
+  const tracePath = path.join(dir, "no-trace.jsonl");
+  const out = execFileSync(process.execPath, [cliPath, ledgerPath, tracePath], { encoding: "utf8" });
+  const parsed = JSON.parse(out);
+  assert.equal(parsed.promoted, false);
 });

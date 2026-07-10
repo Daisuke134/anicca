@@ -14,6 +14,8 @@ import {
   genomeId,
   stripForbidden,
   instanceOverridePath,
+  shouldMutateThisPass,
+  clampNumericKnobs,
   SAFE_DEFAULT_GENOME,
   KNOB_KEYS,
   FORBIDDEN_CAP_KEYS,
@@ -273,4 +275,99 @@ test("PROP-016: writing instance A's override file never appears when loading un
 
   const genomeB = loadGenome({ home: homeB, canonicalPath: path.join(homeB, "no-such-file.json") });
   assert.equal(genomeB.SOL_GATE_MIN_CONVICTION, SAFE_DEFAULT_GENOME.SOL_GATE_MIN_CONVICTION);
+});
+
+// --- FIND-001 (impl-review iteration-1): shouldMutateThisPass exploration cadence -------------
+// mirrors genome.mjs's own shouldMutateThisPass test byte-for-byte (same M-th-pass contract).
+test("FIND-001: shouldMutateThisPass fires exactly every Mth pass", () => {
+  const counterFile = path.join(tmpDir("sol-genome-cadence-"), "counter.json");
+  const fires = [];
+  for (let i = 1; i <= 10; i++) fires.push(shouldMutateThisPass(counterFile, 5));
+  assert.deepEqual(fires, [false, false, false, false, true, false, false, false, false, true]);
+});
+
+test("FIND-001: shouldMutateThisPass fail-closed: garbage counter file restarts cleanly instead of throwing", () => {
+  const dir = tmpDir("sol-genome-cadence-garbage-");
+  const counterFile = path.join(dir, "counter.json");
+  fs.writeFileSync(counterFile, "{not json");
+  assert.doesNotThrow(() => shouldMutateThisPass(counterFile, 3));
+});
+
+test("FIND-001: shouldMutateThisPass with cadence=1 fires every single pass", () => {
+  const counterFile = path.join(tmpDir("sol-genome-cadence-every-"), "counter.json");
+  for (let i = 0; i < 5; i++) {
+    assert.equal(shouldMutateThisPass(counterFile, 1), true);
+  }
+});
+
+// --- FIND-004 (impl-review iteration-1): loadGenome() clamps numeric knobs into MUTATION range -
+test("FIND-004: clampNumericKnobs() re-anchors every numeric knob into its MUTATION_SPEC [min,max] range", () => {
+  const oob = {
+    ...SAFE_DEFAULT_GENOME,
+    SOL_GATE_MIN_MOMENTUM_PCT: 999,
+    SOL_GATE_MIN_LIQUIDITY_USD: -50,
+    SOL_GATE_MIN_CONVICTION: -5,
+    SOL_GATE_MAX_STALENESS_SEC: 99999,
+  };
+  const clamped = clampNumericKnobs(oob);
+  for (const [key, [min, max]] of Object.entries(KNOB_RANGES)) {
+    assert.ok(clamped[key] >= min && clamped[key] <= max, `${key}=${clamped[key]} out of [${min},${max}]`);
+  }
+});
+
+test("FIND-004: clampNumericKnobs() leaves in-range values (SAFE_DEFAULT_GENOME) byte-identical", () => {
+  assert.deepEqual(clampNumericKnobs(SAFE_DEFAULT_GENOME), SAFE_DEFAULT_GENOME);
+});
+
+test("FIND-004: clampNumericKnobs() never touches SOL_GATE_WATCHLIST (categorical, not in MUTATION_SPEC)", () => {
+  const genome = { ...SAFE_DEFAULT_GENOME, SOL_GATE_WATCHLIST: "So11111111111111111111111111111111111111112" };
+  assert.equal(clampNumericKnobs(genome).SOL_GATE_WATCHLIST, genome.SOL_GATE_WATCHLIST);
+});
+
+test("FIND-004: clampNumericKnobs() returns a NEW object; never mutates its input argument", () => {
+  const genome = { ...SAFE_DEFAULT_GENOME, SOL_GATE_MIN_MOMENTUM_PCT: 999 };
+  const before = JSON.stringify(genome);
+  clampNumericKnobs(genome);
+  assert.equal(JSON.stringify(genome), before);
+});
+
+test("FIND-004: loadGenome() clamps an out-of-range CANONICAL baseline numeric knob into range", () => {
+  const home = tmpDir("sol-genome-clamp-canonical-");
+  const canonicalPath = path.join(home, "baseline-genome.json");
+  fs.writeFileSync(canonicalPath, JSON.stringify({ ...SAFE_DEFAULT_GENOME, SOL_GATE_MIN_MOMENTUM_PCT: 999 }));
+  const genome = loadGenome({ home, canonicalPath });
+  assert.ok(genome.SOL_GATE_MIN_MOMENTUM_PCT <= 8.0, "an out-of-range canonical value must never reach decideEngagement unclamped");
+});
+
+test("FIND-004: loadGenome() clamps an out-of-range INSTANCE OVERRIDE numeric knob into range", () => {
+  const home = tmpDir("sol-genome-clamp-override-");
+  const canonicalPath = path.join(home, "does-not-exist.json");
+  const stateDir = path.join(home, "skills", "earn", "state");
+  fs.mkdirSync(stateDir, { recursive: true });
+  fs.writeFileSync(path.join(stateDir, "sol-gate-genome-override.json"), JSON.stringify({ SOL_GATE_MIN_CONVICTION: -5 }));
+  const genome = loadGenome({ home, canonicalPath });
+  assert.ok(genome.SOL_GATE_MIN_CONVICTION >= 3 && genome.SOL_GATE_MIN_CONVICTION <= 10, `SOL_GATE_MIN_CONVICTION=${genome.SOL_GATE_MIN_CONVICTION} must be re-anchored into [3,10]`);
+});
+
+test("FIND-004: fast-check -- loadGenome()'s output is always within MUTATION_SPEC range for every numeric knob, for arbitrary malformed override input", () => {
+  fc.assert(
+    fc.property(
+      fc.record({
+        SOL_GATE_MIN_MOMENTUM_PCT: fc.oneof(fc.double({ noNaN: false }), fc.constant(undefined)),
+        SOL_GATE_MIN_LIQUIDITY_USD: fc.oneof(fc.double({ noNaN: false }), fc.constant(undefined)),
+        SOL_GATE_MIN_CONVICTION: fc.oneof(fc.double({ noNaN: false }), fc.constant(undefined)),
+        SOL_GATE_MAX_STALENESS_SEC: fc.oneof(fc.double({ noNaN: false }), fc.constant(undefined)),
+      }),
+      (overrideKnobs) => {
+        const home = tmpDir("sol-genome-clamp-fc-");
+        const canonicalPath = path.join(home, "does-not-exist.json");
+        const stateDir = path.join(home, "skills", "earn", "state");
+        fs.mkdirSync(stateDir, { recursive: true });
+        const cleaned = Object.fromEntries(Object.entries(overrideKnobs).filter(([, v]) => v !== undefined));
+        fs.writeFileSync(path.join(stateDir, "sol-gate-genome-override.json"), JSON.stringify(cleaned));
+        const genome = loadGenome({ home, canonicalPath });
+        assertInRange(genome);
+      },
+    ),
+  );
 });

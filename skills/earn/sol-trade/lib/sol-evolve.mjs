@@ -17,11 +17,24 @@
 // tx/status fields; it has `sig` (the Solana signature string) and `confirmed: true` (set only
 // after on-chain RPC confirmation). Accumulates row.net_usdc (WIN-OR-LOSS, ledger.mjs's
 // deriveLine() field), NEVER row.earn_usdc (WIN-ONLY, always 0 for a losing swap).
+//
+// FIND-002 fix (2026-07-10 impl-review iteration-1): evaluatePromotion/promote were reused
+// correctly but NEVER ORCHESTRATED against real ledger/trace data anywhere -- no runEvolveSol()
+// equivalent of evolve.mjs's own runEvolve(), no CLI entrypoint, nothing in run.sh ever called this
+// file. `runEvolveSol` below mirrors evolve.mjs's `runEvolve` line-for-line (same read -> attribute
+// -> gate -> maybe-promote shape), REUSING evolve.mjs's OWN `readTrace`/`buildGenomeIndex` verbatim
+// (both are already rail-agnostic: readTrace just parses a JSONL file, buildGenomeIndex just reads
+// `action==="genome"` lines -- exactly SOL's own sol-trace.mjs `appendGenomeLinkTrace` shape too) so
+// this feature adds NO new implementation of either, mirroring REQ-014/015's identical
+// no-reimplementation mandate for evaluatePromotion/promote.
+import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { evaluatePromotion, promote } from "../../lib/evolve.mjs";
+import { readLedger } from "../../../_shared/lib/ledger.mjs";
+import { evaluatePromotion, promote, readTrace, buildGenomeIndex } from "../../lib/evolve.mjs";
+import { SAFE_DEFAULT_GENOME, stripForbidden, genomeId as computeGenomeId } from "./sol-genome.mjs";
 
-export { evaluatePromotion, promote };
+export { evaluatePromotion, promote, readTrace, buildGenomeIndex };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -30,6 +43,20 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const SOL_CANONICAL_BASELINE_PATH = path.join(__dirname, "..", "baseline-genome.json");
 
 export const DEFAULT_MIN_REDEEMS = 3; // K, same rationale as evolve.mjs's DEFAULT_MIN_REDEEMS
+
+// FIND-002: the SAME shared earn-ledger.jsonl / this rail's OWN sol-trade.trace.jsonl -- both live
+// under skills/earn/state (a sibling of sol-trade/, matching sol-gate-cli.mjs's own STATE_DIR
+// convention: lib -> sol-trade -> earn -> state).
+export const DEFAULT_LEDGER_PATH = path.join(__dirname, "..", "..", "state", "earn-ledger.jsonl");
+export const DEFAULT_TRACE_PATH = path.join(__dirname, "..", "..", "state", "sol-trade.trace.jsonl");
+
+function readJsonSafe(filePath) {
+  try {
+    return JSON.parse(fs.readFileSync(filePath, "utf8"));
+  } catch {
+    return null;
+  }
+}
 
 // Parse a trace line's ISO-8601 UTC timestamp to epoch seconds. NaN on anything unparseable so
 // callers can defensively skip it.
@@ -84,4 +111,91 @@ export function summarizeByGenomeSol(ledgerRows, traceLines) {
     byGenome.set(gid, entry);
   }
   return byGenome;
+}
+
+/**
+ * runEvolveSol(opts) — FIND-002 fix: full attribution + gate + (maybe) promote pipeline for the SOL
+ * rail, mirroring evolve.mjs's own `runEvolve` line-for-line (REQ-012b/013/014/015). Read-only
+ * unless a genuine chain-verified promotion happens, in which case it writes the SOL canonical
+ * baseline file + commits (via the REUSED, unchanged `promote()`). Never throws on "nothing to
+ * promote" (a normal, expected outcome -- cold-start or a losing/below-K mutant is simply
+ * discarded, same as evolve.mjs's own contract).
+ *
+ * @param {{ledgerPath?: string, tracePath?: string, canonicalPath?: string, minRedeems?: number, cwd?: string}} [opts]
+ */
+export async function runEvolveSol({
+  ledgerPath = DEFAULT_LEDGER_PATH,
+  tracePath = DEFAULT_TRACE_PATH,
+  canonicalPath = SOL_CANONICAL_BASELINE_PATH,
+  minRedeems = Number(process.env.SOL_EVOLVE_MIN_REDEEMS || DEFAULT_MIN_REDEEMS),
+  cwd,
+} = {}) {
+  const ledgerRows = await readLedger(ledgerPath);
+  const traceLines = await readTrace(tracePath);
+  const genomeIndex = buildGenomeIndex(traceLines);
+
+  const baselineGenome = stripForbidden(readJsonSafe(canonicalPath) || SAFE_DEFAULT_GENOME);
+  const baselineId = computeGenomeId(baselineGenome);
+  const summary = summarizeByGenomeSol(ledgerRows, traceLines);
+
+  const evaluations = {};
+  let winner = null;
+  for (const gid of summary.keys()) {
+    if (gid === baselineId) continue;
+    const verdict = evaluatePromotion({ summary, baselineId, mutantId: gid, minRedeems });
+    evaluations[gid] = verdict;
+    if (verdict.promote) {
+      const stats = summary.get(gid);
+      if (!winner || stats.realized_usdc > winner.stats.realized_usdc) winner = { genome_id: gid, stats };
+    }
+  }
+
+  const summaryOut = Object.fromEntries(summary);
+
+  if (!winner) {
+    return { promoted: false, baselineId, evaluations, summary: summaryOut };
+  }
+
+  const winnerGenome = genomeIndex.get(winner.genome_id);
+  if (!winnerGenome) {
+    // Never promote a genome whose actual knob VALUES we never captured -- an id with no
+    // recoverable values cannot become the new baseline-genome.json.
+    return {
+      promoted: false,
+      baselineId,
+      evaluations,
+      summary: summaryOut,
+      reason: "winner-genome-values-unavailable",
+    };
+  }
+
+  const result = promote(winnerGenome, { canonicalPath, cwd });
+  return {
+    promoted: true,
+    baselineId,
+    newBaselineId: result.genome_id,
+    commit: result.commit,
+    evaluations,
+    summary: summaryOut,
+  };
+}
+
+// --- CLI entrypoint --------------------------------------------------------------------------
+// `node sol-evolve.mjs [ledgerPath] [tracePath]` -- standalone, idempotent gate-check, mirrors
+// evolve.mjs's own CLI block exactly. Prints the JSON result. Safe to run repeatedly/periodically
+// (e.g. every sol-trade/run.sh pass, right after any swap this pass records); a no-promotion
+// outcome is a normal, silent no-op, exactly like every other idle-pass guard in this codebase.
+if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const [ledgerPath, tracePath] = process.argv.slice(2);
+  runEvolveSol({
+    ledgerPath: ledgerPath || DEFAULT_LEDGER_PATH,
+    tracePath: tracePath || DEFAULT_TRACE_PATH,
+  })
+    .then((result) => {
+      console.log(JSON.stringify(result, null, 2));
+    })
+    .catch((e) => {
+      console.error("sol-evolve.mjs error:", e.message);
+      process.exitCode = 1;
+    });
 }
