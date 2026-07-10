@@ -27,6 +27,10 @@ export function createDeps() {
   return {
     chainReader: createFakeChainReader({
       akashBalanceUakt: 0n,
+      // This fixture is engineered to reach REQ-007 success (exit 0, module doc comment above) — the
+      // settlement re-query needs the post-swap balance to reflect the route's quoted amount_out
+      // (matches validRouteFixture's amountOutUakt below). See fake-clients.mjs's akashBalanceCreditUakt.
+      akashBalanceCreditUakt: 24_650_000n,
       baseUsdcBalance: requiredAmount * 10n,
       baseGasBalance: MIN_GAS_WEI * 10n,
     }),

@@ -59,9 +59,13 @@ function realPureWithSpies(overrides = {}) {
   };
 }
 
-function fullSuccessDeps({ akashBalanceUakt, thresholdAkt, aktUsdPrice, baseUsdcBalance, baseGasBalance, amountOutUakt, pure }) {
+function fullSuccessDeps({ akashBalanceUakt, thresholdAkt, aktUsdPrice, baseUsdcBalance, baseGasBalance, amountOutUakt, akashBalanceCreditUakt = 0n, pure }) {
   const chainReader = createFakeChainReader({
     akashBalanceUakt,
+    // Opt-in: fixtures that expect a genuine ok:true success (REQ-007 settlement must observe a real
+    // delta) pass akashBalanceCreditUakt explicitly; fixtures that intentionally test the
+    // unchanged-balance fail-closed path (PROP-013) leave this at its 0n default. See fake-clients.mjs.
+    akashBalanceCreditUakt,
     baseUsdcBalance,
     baseGasBalance,
   });
@@ -97,6 +101,7 @@ test("PROP-019 (capped): Skip amount_in AND BaseSigner tx amount are BOTH bit-id
     baseUsdcBalance: expectedAmountIn * 10n,
     baseGasBalance: MIN_GAS_WEI * 10n,
     amountOutUakt: 24_650_000n,
+    akashBalanceCreditUakt: 24_650_000n,
     pure: realPureWithSpies(),
   });
 
@@ -129,6 +134,7 @@ test("PROP-019 (uncapped companion): Skip amount_in AND BaseSigner tx amount are
     baseUsdcBalance: expectedAmountIn * 10n,
     baseGasBalance: MIN_GAS_WEI * 10n,
     amountOutUakt: 24_650_000n,
+    akashBalanceCreditUakt: 24_650_000n,
     pure: realPureWithSpies(),
   });
 
@@ -202,6 +208,7 @@ test("PROP-005 (driver-level, FIND-003): checkSourceFunded's requiredBaseUnits, 
     baseUsdcBalance: expectedAmount * 10n,
     baseGasBalance: MIN_GAS_WEI * 10n,
     amountOutUakt: 24_650_000n,
+    akashBalanceCreditUakt: 24_650_000n,
     pure,
   });
 
