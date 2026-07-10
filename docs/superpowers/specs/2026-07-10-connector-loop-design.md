@@ -46,10 +46,12 @@
    │    未返信 intro / 今日の discover 結果(luma·connpass·aitinkerers) /
    │    inbox 新着（Clira pre-filter 通過分のみ）
    │    → signals.json（0件なら core を起こさず終了 = token 節約、OwnPilot 式）
-   ├ [judgment] tmux Sonnet core 1 pass:
-   │    TELOS + people.jsonl + signals を読み「今日 Dais の理想に最も効く
-   │    接続行動」を決定（イベント応募/intro/cold mail/follow-up/何もしない）
-   │    + competitor-scout 1件（agent-reach/firecrawl → scouts.jsonl）
+   ├ [judgment] tmux Sonnet core 1 pass — 毎日全 rail 実行（選択制ではない、Dais 2026-07-10）:
+   │    STEP0 = gcal 直読が常に最初（double-booking 絶対禁止、仕事/養成所回避）
+   │    毎日必須: ①空き夕方/週末枠を FREE イベント実登録で埋める
+   │    （AI/AGI/crypto infra 重点 — Dais は crypto を学びたい。LT/hackathon/meetup）
+   │    ②intro/cold mail の前進 ③未 debrief 回収 ④competitor-scout 1件
+   │    「何もしない」は gcal が満杯の日のみ（その判定も gcal 証跡つき）
    ├ [action rails 決定的]
    │    a. event-apply: anicca-booking + meetup-talk-applier（camofox 実応募）
    │    b. outreach: gog gmail（Anicca 自身の inbox）
@@ -77,7 +79,8 @@
 - **正式**: connector loop は profitable-claude の CEO 配下（self-heal/self-improve/lessons/evidence gate/VCSDD tests/CEO 評価の harness が全部ここにあり、core は Sonnet）
 - **理由**: OpenClaw 側は ①live store 乖離で 6/7-6/22 に silent outage（実証済み）②cron agent が弱モデル（deepseek-v4-flash が37秒で浅い discovery をした実例）③テスト/adversary gate なし — 自己修復・自己改善の器として不適
 - **interim 廃止（Dais 2026-07-10）**: 同じ仕事に2 loop は禁止 → OpenClaw イベント cron 9本は**disable 済み**（booking/meetup×3/connpass/night-fill/event-bot/life-notify/comedy-en、live enabled 63→55 実測）。イベント接続は connector loop が最初から唯一のオーナー。skill 実体（booking/meetup-applier の scripts）は connector が rail として vendor する
-- **OpenClaw 完全退役は別 workstream**（Master TODO #10）: live で今も動くのは SNS factory 系 55本（larry×17 / reelclaw×18 / lm-video×3 / watercolor×3 / monkeys 他）+ launchd 依存 + .env secrets + gcal-policy/camofox rail。「全部移した」は未達 — 削除は 07-08 spec の gate（state/ledger push 確認 + Dais 明示 go）を満たしてから
+- **訂正（2026-07-10）: larry / reelclaw は claude-p loop 内に存在しない**（Dais 質問への答え = **NO**）。OpenClaw cron としてのみ稼働（larry×17 + reelclaw×18 + lm-video×3 + watercolor×3、live 実測）。claude-p の clip/video/affiliate は別物。現象: **metrics を見ず同一内容を同一時刻に投稿し続けている = self-improve 不在**（OpenClaw に評価 harness が無い）。**→ #9.5 で claude-p manager loop 化必須**（目的 = mobile app スケーリング、§11 の3層バー装着で「伸びない投稿の反復」を機械検出→戦略変更）。当面 OpenClaw で稼働継続、移行は connector E2E 後
+- OpenClaw 完全削除は 07-08 spec の gate（state/ledger push 確認 + Dais 明示 go）を満たしてから
 
 ## 5b. 既存資産の再利用（車輪の再発明禁止）
 
@@ -137,7 +140,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 
 | loop | BROKEN | STANDARD（これが bare minimum） | IMPROVE（north star、前週比） |
 |---|---|---|---|
-| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **FREE イベントに実登録済み**（サイト証跡）**+ gcal CONFIRMED（get 読返し）+ Telegram 日報着信** が週次 cadence どおり | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
+| **connector** | 当日 pass なし / signals 放置 / 応募失敗の握りつぶし | **毎日**: gcal 直読→空き夕方/週末枠に FREE イベント実登録（サイト証跡）+ gcal CONFIRMED + Telegram 日報。**空き枠があるのに登録 0 の日 = STANDARD 未達**（gcal 満杯の日のみ免除、証跡つき） | **成立した接続の数と質**: 双方 opt-in intro 成立数 → 実会話/実会合になった数 → 開いた扉（podcast 出演・紹介の連鎖・共同作業）→ debrief 満足度 |
 | gig | 当日応募 0 / ledger 無更新 | N 応募/日 + funnel 更新（実ページ検証） | 返信率 → 受注数 → 入金¥（現状 270応募/17返信/受注0 = ここが改善対象） |
 | bounty | 巡回なし | checked 増/日 | survivors → 提出 → 賞金$ |
 | affiliate | queue 滞留 + 投稿 0 | 1 投稿/日（実 URL browser 検証） | views → commission¥ |
