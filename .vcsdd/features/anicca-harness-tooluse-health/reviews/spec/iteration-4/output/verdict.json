@@ -1,0 +1,40 @@
+{
+  "feature": "anicca-harness-tooluse-health",
+  "phase": "spec",
+  "iteration": 4,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:447,465", "description": "Fresh re-read of live code: `const safeObservation = redactPrivateKeyPatterns(skillResult.output || '').slice(0, 1200);` (line 447) and `result: safeObservation.replace(/\\s+/g,' ').slice(0, 900)` (line 465). behavioral-spec.md's 900-char result cap / 1200-char intermediate cap figures (Problem section lines 14-19, R6 line 143, R9 line 169, INV-NO-PROMPT-REGRESSION lines 190-192) and verification-architecture.md's matching figures (line 37) are all byte-accurate against the live code. grep for '180' across both spec files returns only the two intentional historical/cautionary uses (behavioral-spec.md:16,191, 'raised from 180 to 900' / 'must never shrink it back toward 180') plus two unrelated loop_detect line-number citations (lines 38,196, verified real against index.mjs's actual loopDetectStreak/loopDetectSlot block span) -- zero remaining stale '180 IS the current cap' claims anywhere."},
+        {"type": "file", "location": "runtime/loop/env-filter.mjs:19,46-49", "description": "`PRIVKEY_PATTERN = /0x[0-9a-fA-F]{64}/g` and `redactPrivateKeyPatterns` re-confirmed exactly as R6/INV-NO-JUDGMENT describe."},
+        {"type": "file", "location": "runtime/loop/index.mjs:481-547 (runSkillWithKillRef); brain.mjs (full file, 195 lines)", "description": "Fresh trace confirms two load-bearing R6 claims: (1) `skillResult.output` reaching `runOneWake`'s scope IS already redact()-ed at line 538 (`resolve({ output: redact(output), exitCode: code, ... })`) and is NOT length-capped inside runSkillWithKillRef -- so R6's plan to reuse this same string (pre-1200/900-slice) for `detail` is sound and does not require a new redaction pass for the tool_missing/tool_timeout/tool_logic branches, exactly as the spec claims. (2) brain.mjs has ZERO calls to redactPrivateKeyPatterns anywhere -- thinkProxy's thrown error wraps httpPost's raw `HTTP ${res.statusCode}: ${data.slice(0,300)}` (line 179 of brain.mjs) and thinkClaudeP's thrown errors wrap raw subprocess stderr/stdout -- confirming R6's claim that the brain_transport branch's `err.message` is NOT already redacted anywhere upstream and genuinely needs the ONE new `redactPrivateKeyPatterns(err.message)` call site this feature introduces."},
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:37 vs iteration-3 verdict.json's FIND-007 text", "description": "FIND-007 is CONFIRMED GENUINELY FIXED, not cosmetically relabeled. The row now reads 'mock skill exits 1 with a >2000-char stdout' -> 'detail LONGER than 900 chars', PLUS a new clause asserting that for the SAME simulated wake, `ledger.jsonl`'s `result` field is capped at 900 chars while `harness-failures.jsonl`'s `detail` field for the identical failure is NOT truncated at 900 (i.e. the two fields are asserted to diverge on this one fixture). This is a substantive, not cosmetic, change: with a >2000-char raw input, a correct 4000-cap implementation yields detail~2000+ chars (passes 'LONGER than 900'), while the exact regression FIND-007 named -- an implementation that accidentally reuses the existing 900-char cap for detail too -- yields detail===900 exactly, which FAILS 'LONGER than 900'. The new assertion is therefore now capable of failing under the specific wrong implementation FIND-007 identified, which the old '>180-char'/'LONGER than 180 chars' wording could not do (any fixture in 181-900 passed identically under both a correct and an incorrectly-900-capped implementation)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:37", "description": "FIND-007's lower-boundary fix is genuine (see spec_fidelity evidence above), but the same R6 table row still contains NO fixture or assertion anywhere that exceeds 4000 raw characters or asserts `detail.length === 4000`. Every fixture specified for R6 (the wake_error case, described only as 'detail up to 4000 chars' with no oversized fixture; the skill_error case, now '>2000-char stdout' -> 'LONGER than 900 chars') stays under the 4000-char ceiling behavioral-spec.md R6 (line 143) mandates as a hard cap. An implementation that leaves `detail` uncapped, or caps it at any wrong value >=~2001 chars, would pass every currently-specified R6 assertion while violating the requirement's own '4000 characters' cap. R5's proof-table row (line 36) shows this project's own established rigor for numeric-boundary requirements ('one below threshold->false; exactly at threshold->true; one above threshold->true') -- R6's 4000-char ceiling receives no equivalent boundary proof anywhere in the table. See FIND-008."}
+      ]
+    }
+  ],
+  "blockingFindings": ["FIND-008"],
+  "overallVerdict": "FAIL",
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "evidence": "Independently re-derived (not trusted from the spec's own 'resolves FIND-007' annotation): live-code spot-checks of runtime/loop/index.mjs (lines 340-474, 478-560), runtime/loop/env-filter.mjs (full file), and runtime/loop/brain.mjs (full file) confirm FIND-007 is genuinely and substantively fixed -- the new >2000-char skill_error fixture plus the ledger.jsonl-vs-harness-failures.jsonl divergence assertion can now fail under the specific wrong (900-capped-detail) implementation FIND-007 named, which the prior >180-char wording could not. All 900/1200/4000-char figures and the 180-284 loop_detect line-citation remain internally consistent across behavioral-spec.md and verification-architecture.md and byte-accurate against live code. However, a fresh full re-read of the R6 proof-table row surfaced a second, previously-unflagged verification_readiness gap at the OPPOSITE boundary from FIND-007: no fixture in the entire proof table exceeds 4000 raw characters or asserts detail.length===4000, so the 4000-char upper cap the requirement itself mandates is unproven and could be silently violated by a Phase 2b implementation without any R1-R10 test failing. Filed as FIND-008 (medium, verification_readiness, test_quality). overallVerdict is FAIL because verification_readiness is FAIL; spec_fidelity is independently confirmed PASS."
+}

@@ -1,0 +1,43 @@
+{
+  "feature": "anicca-harness-tooluse-health",
+  "phase": "spec",
+  "iteration": 5,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "spec"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:447,465", "description": "Independently re-read (not trusted from iteration-4's own claim): `redactPrivateKeyPatterns(skillResult.output || '').slice(0, 1200)` at line 447, `safeObservation.replace(/\\s+/g,' ').slice(0, 900)` at line 465. Byte-accurate against behavioral-spec.md's 900/1200-char figures (lines 15-19, 143, 169, 190-192) and verification-architecture.md line 37/45."},
+        {"type": "file", "location": "runtime/loop/index.mjs:426-441", "description": "Fresh re-derivation of the kind-assignment if-else chain (`skillResult.notFound`->`skill_missing`; `skillResult.timedOut`->`skill_timeout`; `skillResult.exitCode!==0`->`skill_error`; default `wake`) confirms R1's claim that classifyLayer adds no new judgment over this already-fixed enum."},
+        {"type": "file", "location": "runtime/loop/index.mjs:349-365,538", "description": "Fresh re-trace of the `catch (err)` THINK-failure branch (kind:'wake_error', no slot, line 351-357) and of `runSkillWithKillRef`'s `resolve({ output: redact(output), ... })` at line 538 confirms R6's claim that skillResult.output reaching runOneWake is already redacted (not length-capped) before this feature's slice/cap logic runs."},
+        {"type": "file", "location": "runtime/loop/env-filter.mjs:15-49", "description": "`PRIVATE_KEY_REGEX`, `PRIVKEY_PATTERN = /0x[0-9a-fA-F]{64}/g`, `scrubPrivateKeys`, `redactPrivateKeyPatterns` re-confirmed exactly as R6/INV-NO-JUDGMENT describe, full file read."},
+        {"type": "file", "location": "runtime/loop/brain.mjs (full 195-line file)", "description": "grep for 'redactPrivateKeyPatterns|PRIVKEY_PATTERN' inside brain.mjs returns zero matches -- confirms R6's claim that brain.mjs's thrown errors (thinkProxy's `proxy_down: ...` wrapping httpPost's `HTTP ${res.statusCode}: ${data.slice(0,300)}` at line 179; thinkClaudeP's `claude_exit_${code}: ${stderr.slice(0,200)}` at line 130, `claude_invalid_json: ...stdout.slice(0,200)` at line 140, `claude_not_found: ${err.message}` at line 125) are NOT already redacted anywhere upstream, so R6's one new `redactPrivateKeyPatterns(err.message)` call site for the brain_transport branch is genuinely required, not redundant."},
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:37 vs behavioral-spec.md:143", "description": "R6 row's new upper-boundary clause ('simulate one skill_error wake with a >4000-char stdout (e.g. 6000 chars) -> assert ... detail field has length EXACTLY 4000') cites 'behavioral-spec.md R6 line 143' -- confirmed byte-accurate: behavioral-spec.md line 143 literally reads 'whitespace-collapsed and capped at **4000 characters**'. The citation is real, not hallucinated."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-009"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:37", "description": "FIND-008 CONFIRMED GENUINELY FIXED for the branch it was filed against: the R6 row now contains a fixture with raw stdout of 6000 chars (>4000) asserting the appended harness-failures.jsonl `detail` field has length EXACTLY 4000 for the skill_error/tool_logic branch -- this is a real, falsifiable boundary proof (an implementation leaving detail uncapped, or capped at any value !=4000, fails this assertion) and it correctly cites behavioral-spec.md R6 line 143's '4000 characters' ceiling (independently confirmed byte-accurate, see spec_fidelity evidence above). FIND-007's lower-boundary fixture (>2000-char stdout -> detail LONGER than 900 chars, plus the ledger.jsonl-result-vs-harness-failures.jsonl-detail divergence assertion) remains present unmodified at the same row. Together the two fixtures now correctly bracket the 900-4000 range for the skill_error/tool_logic branch, exactly as instructed to verify."},
+        {"type": "file", "location": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md:37; behavioral-spec.md:143; runtime/loop/brain.mjs:78,125,130,140,179", "description": "A fresh full re-scan of the WHOLE R6 row (not just the fixture FIND-008 named) surfaced a new, previously-unflagged gap at the SAME boundary but the OTHER branch: behavioral-spec.md R6 line 143 mandates the 4000-char cap for 'Both branches' resulting string' (tool_missing/tool_timeout/tool_logic AND brain_transport), but the FIND-008 fix only added an exceeds-4000 fixture for the skill_error/tool_logic branch. The wake_error/brain_transport clause in the same row still reads only 'detail up to 4000 chars' with no fixture exceeding 4000 raw characters for that branch (the row's only wake_error-branch content-length-adjacent fixture is the 64-hex-redaction-to-'[REDACTED]' case, whose payload is far too short to exercise a 4000-char boundary). Live-code check of brain.mjs confirms this is a real, mock-testable gap and not foreclosed by upstream code shape: R6's own test strategy already mocks THINK failures ('THINK throws'), so a test author can freely construct an arbitrarily long mocked err.message regardless of brain.mjs's current real throw sites all happening to produce short (<=~320 char) messages today. A Phase 2b implementation could correctly cap the tool_logic branch's detail at 4000 (passing the one fixture that checks it) while leaving the brain_transport branch's own cap missing or wrong -- since that branch's redaction step is a distinct NEW call site from the tool branches' reused-already-redacted-string path -- and every currently-specified R1-R10 assertion would still pass, silently violating R6's own 'Both branches' wording. Filed as FIND-009 (medium, verification_readiness, test_coverage)."}
+      ]
+    }
+  ],
+  "blockingFindings": ["FIND-009"],
+  "overallVerdict": "FAIL",
+  "convergenceSignals": {
+    "findingCount": 1,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  },
+  "evidence": "FIND-008 is CONFIRMED-FIXED: the R6 proof-table row (verification-architecture.md:37) now contains a genuine, falsifiable upper-boundary fixture (6000-char stdout -> detail.length===4000 EXACTLY) for the skill_error/tool_logic branch, correctly citing and byte-matching behavioral-spec.md R6 line 143's 4000-char ceiling; independently re-derived from live code (runtime/loop/index.mjs:447,465,426-441,349-365,538; runtime/loop/env-filter.mjs full file; runtime/loop/brain.mjs full file, zero redaction call sites), not trusted from the spec's own annotation. FIND-007's lower-boundary fixture is unmodified and present, so the two together correctly bracket the 900-4000 range for that one branch. spec_fidelity holds PASS on independent re-verification of every ground-truth line citation. However, a fresh full re-read of the ENTIRE R6 row (as instructed, beyond just the FIND-008 fixture) surfaced a new verification_readiness gap: behavioral-spec.md R6 line 143 requires the SAME 4000-char cap on 'Both branches' (tool_logic AND brain_transport), but only the tool_logic branch received an exceeds-4000 proof; the brain_transport/wake_error branch's own upper bound is still unproven ('detail up to 4000 chars', no fixture), and brain.mjs's live code confirms this branch is genuinely mock-testable (not foreclosed by upstream message length), so this is a real, exploitable, previously-unflagged gap rather than an invented one. overallVerdict is FAIL because verification_readiness is FAIL (FIND-009); spec_fidelity is independently PASS."
+}

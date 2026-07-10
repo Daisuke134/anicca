@@ -293,3 +293,5 @@
 {"timestamp":"2026-07-08T18:44:22.872Z","event":"phase_transition","featureName":"capafy-harness","from":"1c","to":"2a","iteration":1,"phase":"2a"}
 {"timestamp":"2026-07-08T18:44:22.872Z","event":"sprint_started","featureName":"capafy-harness","sprintNumber":1,"phase":"2a"}
 {"timestamp":"2026-07-08T19:01:00.259Z","event":"gate_recorded","featureName":"capafy-harness","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-10T01:40:22.288Z","event":"phase_transition","featureName":"anicca-agent-spawn","from":"3","to":"5","iteration":2,"phase":"5"}
+{"timestamp":"2026-07-10T02:29:30.309Z","event":"phase_transition","featureName":"anicca-harness-tooluse-health","from":"5","to":"6","iteration":1,"phase":"6"}

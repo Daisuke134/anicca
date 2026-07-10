@@ -128,8 +128,8 @@
       "status": "active",
       "createdAt": "2026-07-07T07:54:18.175Z",
       "mode": "strict",
-      "currentPhase": "2c",
-      "updatedAt": "2026-07-08T12:55:01.382Z"
+      "currentPhase": "5",
+      "updatedAt": "2026-07-10T01:40:22.282Z"
     },
     "anicca-agent-lending": {
       "status": "active",
@@ -164,8 +164,8 @@
       "status": "active",
       "createdAt": "2026-07-08T12:47:30.205Z",
       "mode": "lean",
-      "currentPhase": "1c",
-      "updatedAt": "2026-07-08T13:28:59.372Z"
+      "currentPhase": "6",
+      "updatedAt": "2026-07-10T02:29:30.306Z"
     },
     "anicca-spawn-identity-resolution-fix": {
       "status": "active",

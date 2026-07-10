@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-harness-tooluse-health",
   "mode": "lean",
-  "currentPhase": "5",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -25,7 +25,7 @@
       "from": "1c",
       "to": "2a",
       "timestamp": "2026-07-10T03:00:00.000Z",
-      "note": "Spec converged after 6 iterations (FIND-007/008/009 boundary gaps all closed). Advancing to TDD RED."
+      "reason": "Spec converged after 6 iterations (FIND-007/008/009 boundary gaps all closed). Advancing to TDD RED."
     },
     {
       "from": "2a",
@@ -52,34 +52,105 @@
       "from": "2c",
       "to": "3",
       "timestamp": "2026-07-10T04:45:00.000Z",
-      "note": "Phase 2b GREEN complete: 34/34 new JS + 22/22 Python (orchestrator self-executed), 20/20 integration, R9/R10 regressions hold, redaction verified. Advancing to impl review."
+      "reason": "Phase 2b GREEN complete: 34/34 new JS + 22/22 Python (orchestrator self-executed), 20/20 integration, R9/R10 regressions hold, redaction verified. Advancing to impl review."
     },
     {
       "from": "3",
       "to": "5",
       "timestamp": "2026-07-10T05:00:00.000Z",
-      "note": "Phase 3 impl review PASS/SAFE_TO_DEPLOY, 0 blocking. Advancing to formal hardening."
+      "reason": "Phase 3 impl review PASS/SAFE_TO_DEPLOY, 0 blocking. Advancing to formal hardening."
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-10T02:29:30.306Z",
+      "reason": "Phase 5 formal hardening complete (lean): 10/10 required proof obligations proved (PROP-101..110, R1-R10), Semgrep 0 findings (2 scans, 442+138 rules), purity boundary confirmed matching declared map exactly, regression clean (214 JS tests/213 pass/1 pre-existing unrelated PROP-201g slot-count drift, 64/64 Python pass, zero diff on evaluator.py/ledger_metrics.py/weekly_report.py). Entering convergence.",
+      "sprint": 1
     }
   ],
   "iterations": {
+    "6": 1,
     "1a": 1,
     "1b": 1,
     "1c": 1
   },
-  "proofObligations": [],
+  "proofObligations": [
+    {
+      "id": "PROP-101",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health.mjs::classifyLayer (R1)"
+    },
+    {
+      "id": "PROP-102",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health.mjs::computeSlotHealth (R2, incl. INV-LOOPDETECT-SEPARATE)"
+    },
+    {
+      "id": "PROP-103",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health.mjs::computeBrainTransportHealth (R3)"
+    },
+    {
+      "id": "PROP-104",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health.mjs::computeHarnessHealth (R4)"
+    },
+    {
+      "id": "PROP-105",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health.mjs::shouldEscalate (R5)"
+    },
+    {
+      "id": "PROP-106",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/index.mjs::appendHarnessFailure + harness-health.mjs::capFailureDetail (R6)"
+    },
+    {
+      "id": "PROP-107",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "runtime/loop/harness-health-snapshot.mjs (R7)"
+    },
+    {
+      "id": "PROP-108",
+      "tier": 1,
+      "required": true,
+      "status": "proved",
+      "artifact": "skills/self/self-improve/lib/harness_health.py + harness_health_report.py (R8, cross-language parity)"
+    },
+    {
+      "id": "PROP-109",
+      "tier": 0,
+      "required": true,
+      "status": "proved",
+      "artifact": "regression suites: runtime/loop/__tests__/*.test.mjs + skills/self/self-improve/tests/*.py + git diff (R9)"
+    },
+    {
+      "id": "PROP-110",
+      "tier": 0,
+      "required": true,
+      "status": "proved",
+      "artifact": "static grep self-fix.sh + harness-health-no-autoaction.test.mjs (R10)"
+    }
+  ],
   "traceability": {
     "epicId": "VCSDD-anicca-harness-tooluse-health-1783514850207",
     "beads": []
   },
   "gates": {
-    "1c": {
-      "verdict": "PASS",
-      "timestamp": "2026-07-10T03:00:00.000Z",
-      "reviewedBy": "adversary",
-      "iteration": 6,
-      "verdictPath": "reviews/spec/iteration-6/output/verdict.json",
-      "note": "Fresh Opus iter6 spec-review PASS both dimensions (spec_fidelity + verification_readiness). R6 proof-table now complete+symmetric: tool_logic branch has >900 lower + >4000 upper boundary fixtures, brain_transport has redaction + >4000 upper (no >900 needed, correct-by-design: wake_error has no competing result field). Iters 4/5/6 closed FIND-007/008/009. Ready for Phase 2a TDD."
-    },
     "3": {
       "verdict": "PASS",
       "timestamp": "2026-07-10T05:00:00.000Z",
@@ -96,9 +167,19 @@
         ],
         "reviewer": "fresh-opus-adversary claude-opus-4-8"
       }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T03:00:00.000Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 6,
+        "verdictPath": "reviews/spec/iteration-6/output/verdict.json",
+        "note": "Fresh Opus iter6 spec-review PASS both dimensions (spec_fidelity + verification_readiness). R6 proof-table now complete+symmetric: tool_logic branch has >900 lower + >4000 upper boundary fixtures, brain_transport has redaction + >4000 upper (no >900 needed, correct-by-design: wake_error has no competing result field). Iters 4/5/6 closed FIND-007/008/009. Ready for Phase 2a TDD."
+      }
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T12:47:30.205Z",
-  "updatedAt": "2026-07-10T05:00:00.000Z"
+  "updatedAt": "2026-07-10T02:29:30.306Z"
 }

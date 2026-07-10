@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-009",
+  "phase": "spec",
+  "iteration": 5,
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "blocking": true,
+  "description": "FIND-008's fix (verification-architecture.md line 37) added an upper-boundary fixture ('simulate one skill_error wake with a >4000-char stdout (e.g. 6000 chars) -> assert ... detail field has length EXACTLY 4000') that proves the 4000-char ceiling ONLY for the tool_logic (skill_error) branch. behavioral-spec.md R6 (line 143) explicitly states the 4000-char cap applies to 'Both branches' resulting string' -- i.e. the tool_missing/tool_timeout/tool_logic branches AND the brain_transport (wake_error) branch are both required to enforce the SAME 4000-char ceiling on `detail`. The R6 proof-table row's wake_error clause still only says 'detail up to 4000 chars' with no fixture exceeding 4000 raw characters for THIS branch -- the row's only wake_error-branch fixture that touches content length is the 64-hex-redaction fixture, whose payload (a 66-char pattern replaced by the 10-char literal '[REDACTED]') is far too short to exercise the 4000-char boundary. This is the identical failure mode FIND-008 named (an implementation that leaves `detail` uncapped, or caps it at a wrong value >=~2001, for one specific code path), now surviving in the OTHER of R6's two explicitly-named branches. Because brain_transport's redaction step (`redactPrivateKeyPatterns(err.message)`) is a NEW call site distinct from the tool branches' reused-already-redacted-string path, a Phase 2b implementer could easily write the shared whitespace-collapse+4000-cap logic only in the tool_logic branch (guided by the one fixture that checks it) and forget/mis-copy it into the brain_transport branch's own code path -- and every currently-specified R1-R10 assertion would still pass. Live-code check of runtime/loop/brain.mjs confirms this branch is genuinely testable (not merely a theoretical case foreclosed by upstream code): brain.mjs's real throw sites happen to produce short err.message strings today (`proxy_down: ${lastErr?.message}` wrapping `HTTP ${res.statusCode}: ${data.slice(0,300)}` at brain.mjs:179; `claude_exit_${code}: ${stderr.slice(0,200)}` at brain.mjs:130; `claude_invalid_json: ${stdout.slice(0,200)}` at brain.mjs:140) -- but R6's test strategy explicitly MOCKS the THINK failure ('simulate one wake_error wake (THINK throws)'), so the test author can freely construct an err.message of any length; brain.mjs's current short-message behavior does not make the >4000-char wake_error fixture untestable, it just means nothing in the current proof table happens to require it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md",
+    "lineRange": "37",
+    "snippet": "simulate one wake_error wake (THINK throws)->exactly one harness-failures.jsonl line, no slot key, layer:'brain_transport', detail up to 4000 chars; ... [only the skill_error clause later in the same row gets] simulate one skill_error wake with a >4000-char stdout (e.g. 6000 chars)->assert ... detail field has length EXACTLY 4000 ... resolves FIND-008, iteration 4"
+  },
+  "crossReference": {
+    "specRequirement": "behavioral-spec.md R6, line 143: \"Both branches' resulting string is then whitespace-collapsed and capped at 4000 characters\"",
+    "liveCode": "runtime/loop/brain.mjs:78,125,130,140,179 (all wake_error-producing throw sites, confirming the branch is mock-testable and the gap is not foreclosed by upstream code shape)"
+  },
+  "recommendation": "Add a symmetric fixture to the R6 proof-table row: simulate one wake_error wake where the mocked THINK failure's err.message exceeds 4000 raw characters (e.g. 6000) -> assert the appended harness-failures.jsonl detail field for that line has length EXACTLY 4000, mirroring the skill_error fixture already added for FIND-008 and covering the SAME requirement's other named branch.",
+  "routeToPhase": "1c"
+}

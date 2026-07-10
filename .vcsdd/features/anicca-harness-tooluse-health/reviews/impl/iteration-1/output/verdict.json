@@ -1,0 +1,56 @@
+{
+  "feature": "anicca-harness-tooluse-health",
+  "phase": "impl",
+  "iteration": 1,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "correctness": "PASS",
+    "test_adequacy": "PASS",
+    "regression_safety": "PASS"
+  },
+  "blockingFindings": [],
+  "minorFindings": [
+    {
+      "dimension": "structural_integrity",
+      "category": "none",
+      "severity": "low",
+      "description": "computeHarnessHealth's distinct-slot collection at runtime/loop/harness-health.mjs:166-171 uses `slots.push` guarded by `!slots.includes(r.slot)` inside a for-loop over all records -- O(n*k) where k is distinct slot count, instead of an O(n) Set-then-spread. Not a correctness issue (verified correct output against the shared parity fixture and the real 11774-line production ledger per evidence/sprint-1-green-phase.log, 25 distinct slots, all counts grep-matched); at production ledger sizes (tens of thousands of lines, dozens of slots) this remains negligible. Non-blocking, does not affect any dimension verdict."
+    }
+  ],
+  "overallVerdict": "PASS",
+  "deploymentRecommendation": "SAFE_TO_DEPLOY",
+  "verifiedInvariants": {
+    "R1_classifyLayer_totality": "PASS -- runtime/loop/harness-health.mjs:40-48 and skills/self/self-improve/lib/harness_health.py:35-50 both fall through to 'unknown' for any kind not in the fixed enum, never throw (guarded by `record && record.kind` / isinstance check). Confirmed by test 'R1: unrecognized kind string -> unknown, never throws' (runtime/loop/__tests__/harness-health.test.mjs:43-47) and its Python mirror.",
+    "R2_loopdetect_exclusion": "PASS -- SLOT_HEALTH_KINDS (harness-health.mjs:27, harness_health.py:30) deliberately excludes 'loop_detect' even though loop_detect records carry a real `slot` field (index.mjs:281). Verified by direct arithmetic against the shared fixture (fixtures/harness-health-parity.json): slot 'yield' subset correctly drops the loop_detect row at ts:5 -> wakes:3/failures:2, matching `expected`. Independently reconfirmed against REAL production data in evidence/sprint-1-green-phase.log (147 real loop_detect rows on slot hl_trade correctly excluded, wakes:1865 == 1863 wake + 2 skill_timeout, grep-cross-checked).",
+    "R6_redact_collapse_slice_order": "PASS -- traced both call sites in index.mjs: brain_transport branch (line 376) calls redactPrivateKeyPatterns(err.message||'') BEFORE appendHarnessFailure/capFailureDetail is ever invoked; tool_missing/tool_timeout/tool_logic branch reuses skillResult.output, which was already redacted via `redact(output)` at process-exit time inside runSkillWithKillRef (index.mjs:572) BEFORE it reaches appendHarnessFailure (line 465-473). capFailureDetail itself (harness-health.mjs:200-203) only whitespace-collapses and slices -- it performs no redaction, so redaction is provably applied to the FULL raw string prior to any truncation in both branches; a key positioned beyond char 4000 in the raw text cannot leak. Cap is exactly 4000 (`.slice(0,4000)`), confirmed both at unit level (harness-health-failure-detail.test.mjs:117-127) and via a real spawned mock skill emitting 6000 raw chars (harness-health-failure-detail.test.mjs:263-299, passed per evidence log). The 64-hex-key redaction integration test (harness-health-failure-detail.test.mjs:174-210) is a genuine live redaction proof (spawns the real loop, real HTTP 500 body containing '0x'+'a'.repeat(64), asserts the raw key never appears and '[REDACTED]' does) -- not tautological.",
+    "R8_JS_Python_parity": "PASS -- both harness-health.mjs and harness_health.py implement field-identical logic (classify_layer/kind mapping, SLOT_HEALTH_KINDS, BRAIN_TRANSPORT_RESET_KINDS all match set-for-set) and both are asserted against the SAME shared fixture (runtime/loop/__tests__/fixtures/harness-health-parity.json) in harness-health.test.mjs:208-219 and test_harness_health.py:109-118 -- confirmed green in evidence/sprint-1-green-phase.log (34/34 JS, 22/22 Python)."
+  },
+  "moneySafety": "PASS -- harness-health.mjs and harness-health-snapshot.mjs import nothing from wallet/spend/ledger-write paths (grep confirmed: snapshot.mjs only imports readLedgerLines (read-only) + computeHarnessHealth). appendHarnessFailure (index.mjs:616-632) is append-only via the pre-existing appendLedgerLine primitive to a NEW path (state/harness-failures.jsonl), never touches the existing ledger.jsonl write path, wallet keys, or EARN_MODE/EARN_STRATEGY.",
+  "purityBoundary": "PASS -- matches the declared map in specs/verification-architecture.md exactly: harness-health.mjs / harness_health.py contain zero I/O other than the single declared process.env read for DEFAULT_STREAK_THRESHOLD (module-level constant, same idiom as catalog-gate.mjs::DEFAULT_BOOTSTRAP_RESERVE_USDC, explicitly called out as the one exception in both the spec and the code's own header comment). All fs/process calls are confined to harness-health-snapshot.mjs, harness_health_report.py, and index.mjs's appendHarnessFailure helper.",
+  "regressionEvidence": "PASS -- evidence/sprint-1-green-phase.log + evidence/sprint-1-red-phase.log show the same 2 pre-existing failures (config.test.mjs PROP-011/012 model-name drift; registry-classification.test.mjs PROP-201g slot-count drift) present BEFORE this feature's implementation (RED phase) and unchanged AFTER (GREEN phase) -- confirmed unrelated by content (model-name env default and live registry.json slot-count, neither touches kind/slot/harness-health fields) and by git diff showing zero changes to config.mjs or registry.json from this feature. INV-NO-PROMPT-REGRESSION verified: the 900-char ledger.jsonl `result` cap at index.mjs:499 (`.replace(/\\s+/g,' ').slice(0, 900)`) is byte-identical to pre-feature code (no diff in that line), and context.mjs/prompt.mjs contain zero references to harness-failures.jsonl or harness-health.json (grep confirmed).",
+  "evidence": [
+    "/Users/anicca/anicca-project/.vcsdd/features/anicca-harness-tooluse-health/specs/behavioral-spec.md",
+    "/Users/anicca/anicca-project/.vcsdd/features/anicca-harness-tooluse-health/specs/verification-architecture.md",
+    "/Users/anicca/anicca-project/.vcsdd/features/anicca-harness-tooluse-health/state.json",
+    "/Users/anicca/anicca-project/.vcsdd/features/anicca-harness-tooluse-health/evidence/sprint-1-red-phase.log",
+    "/Users/anicca/anicca-project/.vcsdd/features/anicca-harness-tooluse-health/evidence/sprint-1-green-phase.log",
+    "/Users/anicca/anicca/runtime/loop/harness-health.mjs",
+    "/Users/anicca/anicca/runtime/loop/harness-health-snapshot.mjs",
+    "/Users/anicca/anicca/runtime/loop/index.mjs",
+    "/Users/anicca/anicca/runtime/loop/env-filter.mjs",
+    "/Users/anicca/anicca/runtime/loop/ledger.mjs",
+    "/Users/anicca/anicca/runtime/loop/ledger-record.mjs",
+    "/Users/anicca/anicca/runtime/loop/__tests__/harness-health.test.mjs",
+    "/Users/anicca/anicca/runtime/loop/__tests__/harness-health-failure-detail.test.mjs",
+    "/Users/anicca/anicca/runtime/loop/__tests__/harness-health-snapshot.test.mjs",
+    "/Users/anicca/anicca/runtime/loop/__tests__/harness-health-no-autoaction.test.mjs",
+    "/Users/anicca/anicca/runtime/loop/__tests__/fixtures/harness-health-parity.json",
+    "/Users/anicca/anicca/skills/self/self-improve/lib/harness_health.py",
+    "/Users/anicca/anicca/skills/self/self-improve/harness_health_report.py",
+    "/Users/anicca/anicca/skills/self/self-improve/tests/test_harness_health.py",
+    "/Users/anicca/anicca/skills/self/self-improve/lib/ledger_metrics.py",
+    "/Users/anicca/anicca/runtime/loop/package.json"
+  ]
+}
