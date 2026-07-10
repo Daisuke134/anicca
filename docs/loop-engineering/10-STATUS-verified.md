@@ -27,16 +27,17 @@
 
 | 順 | ID | 項目 | done 条件 | 依存 | owner | 状態 |
 |---|---|---|---|---|---|---|
-| **1** | **T-revive** | **claude-p-mainloop の蘇生**: launchctl 実測で `ai.anicca.claude-p-mainloop` last exit **124(TIMEOUT)**＝AGENT ECONOMY LOOP 自体が健康に回っていない。原因診断（quota/timeout設定/hang）→ 修正 → 再稼働確認 | 次 wake が exit 0 で完走 | — | claude-p | 🔴 最優先・未着手 |
-| **2** | **T-selfheal-noop** | **earning-health self-heal を「no-output」まで拡張**: 既存 self-fix はクラッシュ検知のみ。「動くが何も生まない」状態（同一理由の連続 skip N回 / earn-ledger が窓内でゼロ成長 / loop timeout）を検知 → self-fix 起動 → 蘇生。Franklin 2日間の 67 連続 identity-mismatch skip はこの検知が無かったために見逃された | 検知ロジック実装 + self-fix.sh から呼べる形で配線 | T-revive | claude-p | 🔴 未着手（今回の regression の再発防止） |
-| **3** | **T-observe** | **Franklin が自律 wake で実 trade を再開するか観測**: `1c75b90` 修正後の trace を継続監視（手動 trigger しない） | 自律 wake ログで signal>閾値の engage を確認 | — | observe | 🔄 監視中 |
-| **4** | **T13** | **Franklin real EDGE（cold-start evolution）**: spec 作成済 + spec-review iter1 **FAIL(4 findings)** → fix commit `a386bee`（simulated-P&L 削除・bottleneck-knob 強制・trace read の ANICCA_HOME gate・no-signal 除外）。15 REQ / 20 PROP。**未再レビュー・未 build** | spec-review iter2 PASS → TDD → impl → adversary → harden → converge → live run → witness①(autonomous) RPC 検証 | T-revive, T-observe | worktree CC or claude-p | ⬜ spec-review iter2 待ち |
-| **5** | **T-spawn** | **自律 spawn（witness②）**: surplus の下流。T13 で実 profit が出るまで着手不可 | citizens.json 新 entry（自律、手動 bootstrap でない）RPC 検証 | T-revive〜T13 完了後 | claude-p | ⬜ 依存待ち |
-| **6** | **T-dash** | **dashboard-sync 修正（Dais-owned、フラグのみ）**: 実測で dashboard は stale — Franklin $3.27 表示 vs 実 on-chain $13.18(mismatch)、claude-p $0.00 stale、Franklin #2 が dashboard に未登録。dashboard-sync 自体は Anicca 権限外なので **flag** に留める | Franklin #2 登録 + Franklin #1 refresh + claude-p refresh | — | Dais-owned dashboard-sync（flag のみ） | ⬜ flag 済・実装は Dais 側 |
-| **7** | **T-ledger** | **両 .vcsdd 台帳の reconcile**: `~/anicca/.vcsdd` と `~/anicca-project/.vcsdd` の in-flight state を突き合わせ、真に done な feature を確定させる | 両台帳の状態が齟齬なく一致 | — | claude-p | ⬜ |
-| **8** | **T-article** | **2記事**（loop-engineering + agent-economy）: handoff draft 済（`docs/loop-engineering/15-agent-economy-landscape.md`, `16-self-improvement-loop-BP.md`） | article publish（JP+EN） | 独立・着手可 | 並列 CC A/B | ⬜ 素材あり・publish 待ち |
+| **1** | **T-alwaysact** | **Franklin ALWAYS-ACT earner**（NO-WAIT DOCTRINE、owner directive 2026-07-10、下記セクション参照）: skill-router + capital-allocator を build し、毎 wake が全 earn skill（SOL-trade / HL-trade / PM / gig-take / gig-post / lending / clip / ...）を CEO のように査定・資産配分し、single best positive-EV な稼ぐアクションを必ず RUN する（WAIT/skip は失敗シグナル）。SOL に edge が無い wake は市場リスクの無い別 skill（例: gig-take）で稼ぐ。caps/scope_guard は不変・non-negotiable。**旧「Franklin に edge を与える／signal 0%で正しく WAIT する」framing（旧 §D #4=T13 の前提）を SUPERSEDE** | trace が毎 wake の earning ACTION（trade or gig or lend 等、skipでない）を示す + earn-ledger が継続成長する | T-revive, T13の再定義, gig基盤（既完成） | claude-p | 🔴 最優先・未着手（本セッション owner directive、旧 T13 の cold-start-edge 単線思考から拡張） |
+| **2** | **T-revive** | **claude-p-mainloop の蘇生**: launchctl 実測で `ai.anicca.claude-p-mainloop` last exit **124(TIMEOUT)**＝AGENT ECONOMY LOOP 自体が健康に回っていない。原因診断（quota/timeout設定/hang）→ 修正 → 再稼働確認 | 次 wake が exit 0 で完走 | — | claude-p | 🔴 未着手（2026-07-10 EVENING RECONCILE 時点で launchctl 再実測しても last exit 124 のまま、未解消） |
+| **3** | **T-selfheal-noop** | **earning-health self-heal を「no-output」まで拡張**: 既存 self-fix はクラッシュ検知のみ。「動くが何も生まない」状態（同一理由の連続 skip N回 / earn-ledger が窓内でゼロ成長 / loop timeout）を検知 → self-fix 起動 → 蘇生。Franklin 2日間の 67 連続 identity-mismatch skip はこの検知が無かったために見逃された | 検知ロジック実装 + self-fix.sh から呼べる形で配線 | T-revive | claude-p | ✅ **DONE + LIVE**（本セッション実測検証）: plist `ai.anicca.sol-trade-earning-healthcheck`（`launchctl list` で loaded 確認、300秒毎起動、実体 `~/anicca/skills/earn/sol-trade/sol-trade-healthcheck.sh` + `earning-health.py is-barren`）。ロジックは同一理由連続 skip（＝67-skip window と同型: identity-mismatch reason 固定）を検知し `self-fix.sh` を escalate、二重発火防止マーカー付き。test suite `test_sol_trade_healthcheck.sh` **9 passed / 0 failed（GREEN、本セッション実行確認）**、シナリオ(A)(B)(C)(D)が 67-skip window の barren-trace / live-pass 回復 / re-escalation-throttle / no-trace-noop を再現 |
+| **4** | **T-observe** | **Franklin が自律 wake で実 trade を再開するか観測**: `1c75b90` 修正後の trace を継続監視（手動 trigger しない） | 自律 wake ログで signal>閾値の engage を確認 | — | observe | 🔄 監視中 |
+| **5** | **T13** | **Franklin real EDGE（cold-start evolution）**: spec 作成済 + spec-review iter1 **FAIL(4 findings)** → fix commit `a386bee`（simulated-P&L 削除・bottleneck-knob 強制・trace read の ANICCA_HOME gate・no-signal 除外）。15 REQ / 20 PROP。**未再レビュー・未 build**。★T-alwaysact(#1) の下で、SOL-trade は数ある earn skill の1つとして re-scope される（SOL 単独の edge 待ちではなく、router が SOL に edge 無しと判断すれば他 skill へ回す）★ | spec-review iter2 PASS → TDD → impl → adversary → harden → converge → live run → witness①(autonomous) RPC 検証 | T-revive, T-observe | worktree CC or claude-p | ⬜ spec-review iter2 待ち |
+| **6** | **T-spawn** | **自律 spawn（witness②）**: surplus の下流。T13 で実 profit が出るまで着手不可 | citizens.json 新 entry（自律、手動 bootstrap でない）RPC 検証 | T-revive〜T13 完了後 | claude-p | ⬜ 依存待ち |
+| **7** | **T-dash** | **dashboard-sync 修正（Dais-owned、フラグのみ）**: 実測で dashboard は stale — Franklin $3.27 表示 vs 実 on-chain $13.18(mismatch)、claude-p $0.00 stale、Franklin #2 が dashboard に未登録。dashboard-sync 自体は Anicca 権限外なので **flag** に留める | Franklin #2 登録 + Franklin #1 refresh + claude-p refresh | — | Dais-owned dashboard-sync（flag のみ） | ⬜ flag 済・実装は Dais 側 |
+| **8** | **T-ledger** | **両 .vcsdd 台帳の reconcile**: `~/anicca/.vcsdd` と `~/anicca-project/.vcsdd` の in-flight state を突き合わせ、真に done な feature を確定させる | 両台帳の状態が齟齬なく一致 | — | claude-p | ⬜ |
+| **9** | **T-article** | **2記事**（loop-engineering + agent-economy）: handoff draft 済（`docs/loop-engineering/15-agent-economy-landscape.md`, `16-self-improvement-loop-BP.md`） | article publish（JP+EN） | 独立・着手可 | 並列 CC A/B | ⬜ 素材あり・publish 待ち |
 
-★次アクション（2026-07-10 EVENING RECONCILE） = **(1) T-revive: claude-p-mainloop の TIMEOUT(exit 124) を直す → (2) T-selfheal-noop: 「動くが無出力」検知を self-fix へ拡張（今回の regression の再発防止） → (3) T-observe: Franklin の修正後 autonomous wake を観測 → (4) T13: spec-review iter2 から再開して実 edge を build → (5) 実 profit が出たら自律 spawn へ。** T-dash（dashboard-sync）は Dais-owned のため flag のみ、T-article は独立並列で進めてよい。★
+★次アクション（2026-07-10 NO-WAIT DOCTRINE 反映後） = **(1) T-alwaysact: skill-router + capital-allocator を build し Franklin を「毎 wake 必ず稼ぐアクションを実行」する設計へ拡張（WAIT=失敗の doctrine を実装に落とす） → (2) T-revive: claude-p-mainloop の TIMEOUT(exit 124) を直す → (3) T-observe: Franklin の自律 wake を観測（T-selfheal-noop は完了済） → (4) T13: spec-review iter2 から再開、ただし T-alwaysact の skill-router 配下の1 skill として re-scope → (5) 実 profit が出たら自律 spawn へ。** T-dash（dashboard-sync）は Dais-owned のため flag のみ、T-article は独立並列で進めてよい。★
 
 
 ## E. 各 /vcsdd 増分の記録欄（追記式・空でよい、進めたら evidence を足す）
@@ -104,3 +105,22 @@
   - **両 witness とも honest に未達（強制不可）**: witness①(real profit) = Franklin 稼働は wake するが WAIT が継続、earn-ledger に sol-trade realized profit 行なし。witness②(autonomous spawn) = citizens.json は baseline のみ、Franklin #2 は manual bootstrap で autonomous spawn ではない。
   - **本セッション追加リサーチ**: `docs/loop-engineering/15-agent-economy-landscape.md`、`docs/loop-engineering/16-self-improvement-loop-BP.md` を新規作成（記事 draft 素材）。
   - **§D を上記事実に基づき順序再訂正**: 最優先を「claude-p-mainloop 蘇生」+「self-heal を no-output 検知まで拡張（今回の regression 再発防止）」に置き、T13 は spec-review iter2 から再開、T-dash は Dais-owned flag、T-article は並列独立。
+
+## F. 2026-07-10 NO-WAIT DOCTRINE（owner design correction — MAJOR、§D #1 を置換）
+
+★これは owner（Dais）本人による MAJOR design correction。旧「Franklin に edge を与える／signal 0%で正しく WAIT する」framing（旧 T13 前提、§B/§E 各所の "WAIT — signal 0%で正しく待機" 記述）を本セクションが SUPERSEDE する。★
+
+**doctrine（owner verbatim intent）**: 「WAITING という状態はそもそも存在しない。SKIP/WAIT する citizen は何かが間違っている（bug のシグナル）。$13 しかない broke な Franklin は 24/7 稼げる全アクションを取らねばならない — 毎 wake、全 earn skill（SOL-trade / HL-trade / PM / gig-take / gig-post / lending / clip / ...）を CEO のように査定し、資産を配分し、single best positive-EV な稼ぐアクションを選び RUN する。決して idle にならない。それが $13 → $100 → $1K → loan/gig → spawn → economy growth への道筋である。」
+
+**money-safety との reconcile（doctrine は cap を無効化しない）**: 「always act」≠「cap を超えて losing trade を強行する」。ある skill（例: SOL-trade）に edge が無い wake は、**別の skill で稼ぐ**（例: gig-take = 市場リスクなし）。cap/scope_guard は不変・non-negotiable のまま。「稼ぐアクションを選ぶ」こと自体が always-act であり、「特定の1 skill を無理に engage させる」ことではない。
+
+**再定義 = CAPITAL-ALLOCATOR + SKILL-ROUTER**: 毎 wake、citizen は「どの skill に・どれだけの資産を割り当てるか」を決め、必ず1つの稼ぐアクションを実行する（この skill-router + capital-allocator の実装が §D #1=T-alwaysact）。
+
+**LOOP-ROLE split（今まで曖昧だった分業を本セクションで明記）**:
+
+| loop | role |
+|---|---|
+| **Franklin loop** | **WORKER**: 稼ぐ（always-act、WAIT/skip は失敗）・self-improve・self-heal・economy 構築（loan/gig/spawn）— 全て自律。人間や claude-p の代行を必要としない |
+| **claude-p main loop（AGENT ECONOMY LOOP）** | **DEVELOPER + SECOND-EYES AUDITOR**: Franklin の self-heal/self-improve が実際に効いたか裏取りする、Franklin の self-heal では直せない深いバグを直す（例: 本セッションで発見・修正した `3d97c59` の identity-guard path regression、67 連続 skip の根本原因）、新 skill を build する、bootstrap capital を seed する。**Franklin の代わりにトレードしない**。Franklin が完全 self-sufficient になったら exit する（既存の exit-check 3条件は不変） |
+
+**正本 memory**: `feedback_franklin_never_waits_always_acts_to_earn`（本 doctrine の canonical source）。
