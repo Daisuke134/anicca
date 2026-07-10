@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-harness-tooluse-health",
   "mode": "lean",
-  "currentPhase": "1c",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
@@ -20,6 +20,12 @@
       "to": "1c",
       "timestamp": "2026-07-08T13:28:59.361Z",
       "reason": "Spec revised: FIND-001/003/005 fixed in behavioral-spec.md (R2 loop_detect exclusion, R6 redaction of err.message, claude-p-pm ground-truth correction), FIND-002/004 fixed in verification-architecture.md (added test cases). Ready for iteration-2 spec review."
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-10T03:00:00.000Z",
+      "note": "Spec converged after 6 iterations (FIND-007/008/009 boundary gaps all closed). Advancing to TDD RED."
     }
   ],
   "iterations": {
@@ -32,8 +38,17 @@
     "epicId": "VCSDD-anicca-harness-tooluse-health-1783514850207",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T03:00:00.000Z",
+      "reviewedBy": "adversary",
+      "iteration": 6,
+      "verdictPath": "reviews/spec/iteration-6/output/verdict.json",
+      "note": "Fresh Opus iter6 spec-review PASS both dimensions (spec_fidelity + verification_readiness). R6 proof-table now complete+symmetric: tool_logic branch has >900 lower + >4000 upper boundary fixtures, brain_transport has redaction + >4000 upper (no >900 needed, correct-by-design: wake_error has no competing result field). Iters 4/5/6 closed FIND-007/008/009. Ready for Phase 2a TDD."
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-08T12:47:30.205Z",
-  "updatedAt": "2026-07-08T13:28:59.372Z"
+  "updatedAt": "2026-07-10T03:00:00.000Z"
 }
