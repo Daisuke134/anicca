@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "blocking": false,
+  "description": "run.sh's own comment (lines 213-217, restated at 407-408) claims the CTA is appended 'AFTER the V0/V0.5 gate loop succeeds ... so it never perturbs ... the gate's V05_CRIT_b scoring of it'. In the real (non-ARTICLE_TEST) Mode-B path, gates/publish-gate.sh is invoked a SECOND time at run.sh:426 AFTER insert_monetization_link() has already mutated draft_path (run.sh:409) -- and this second invocation, with no FORCE env vars, re-runs the REAL, non-forced gates/v0.sh and gates/v05.sh (publish-gate.sh:31-32) against the now-CTA-appended file. gates/v05.sh's mechanical criterion (e) re-splits the WHOLE file body on '.', '!', '?', '。', '！', '？' (gates/v05.sh:135) -- and the appended CTA line's URL, 'https://aniccaai.com/' (lib/config.sh:31, DEFAULT_CTA_URL), contains a literal '.' character that the regex treats as a sentence terminator, fragmenting the URL into extra 'sentences' not present when the original draft was first gated. In this diff's own boilerplate template the fragments are short enough to stay under the 70%-short threshold, so it happens not to flip crit_e today, but this is exactly the perturbation the design comment explicitly disclaims, reintroduced via a different re-check path the comment does not account for.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "409, 420-427",
+    "snippet": "cta_url=\"$(insert_monetization_link \"$draft_path\")\"\n...\nARTICLE_DIR=\"$ARTICLE_DIR\" bash \"$SKILL_DIR/gates/publish-gate.sh\" \"$draft_path\" >/dev/null 2>&1 || pub_rc=$?"
+  },
+  "secondaryEvidence": {
+    "filePath": "skills/profitable-article-writer/gates/v05.sh",
+    "lineRange": "135",
+    "snippet": "sentences = [s.strip() for s in re.split(r\"[.!?。！？]\", text) if s.strip()]"
+  },
+  "routeToPhase": "2b"
+}

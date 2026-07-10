@@ -60,6 +60,43 @@
 #                                       distinct from "unset" (which uses the default), same
 #                                       conditional-default convention as MODEL_TIER/DEFAULT_CTA_URL.
 #   env in:  ARTICLE_CTA_TEXT            the lead-in text before the link. Default: DEFAULT_CTA_TEXT.
+#
+#   Sprint-5 post-adversary FIND-001 fix (Mode B's REMOTE draft body never carried the local draft.md's CTA
+#   -- Mode B publishes an ALREADY-PREPARED note.com draft it never re-uploads a body for, so the local
+#   file's link never reached the real published article):
+#   env in:  ARTICLE_NOTE_APPEND_CTA_PY  TEST-INJECTION ONLY: path to a substitute for
+#                                       lib/note-append-cta.py (e.g. a fault-injection stub that counts
+#                                       calls / forces a result) -- mirrors NOTE_MCP_PY's role for
+#                                       lib/note-mode-b-publish.py. Production never sets it; the real
+#                                       tool is always invoked via plain `python3` (no cloakbrowser needed
+#                                       -- note-append-cta.py never imports the browser layer).
+#   writes (Mode B only): STATE.md's `cta_status` -- `carried` (the remote draft body was confirmed to
+#                                       carry the link, either freshly appended or already present from a
+#                                       prior wake), `append_failed:<reason>` (the append call itself
+#                                       failed -- `cta_url` is left EMPTY in this case, never a fabricated
+#                                       claim), `not_requested` (ARTICLE_CTA_URL=="" opt-out), or
+#                                       `skipped:no_draft_key` (no ARTICLE_MODEB_NOTE_KEY -- the Sprint-1
+#                                       placeholder branch, nothing real to append to).
+#
+#   Sprint-5 post-adversary FIND-006 fix (lib/note-fetch-views.py existed but was never invoked on ANY
+#   cadence -- metrics never actually collected unless someone ran it by hand):
+#   env in:  ARTICLE_METRICS_PASS      "1" opts this wake into a metrics-collection pass
+#                                       (lib/note-fetch-views.py) at the very end, via an EXIT trap so it
+#                                       fires on every wake outcome (SKIPPED/DRAFT/PUBLISHED/ABORTED/
+#                                       UNCONFIRMED alike -- metrics collection is independent of what THIS
+#                                       wake itself did). Best-effort: redirected to
+#                                       $ARTICLE_DIR/state/metrics-pass.log, NEVER affects the wake's own
+#                                       exit code either way. Default UNSET (off) -- an ad-hoc/test
+#                                       invocation of run.sh never makes an unexpected network call; the
+#                                       REAL daily executor SHOULD set this =1 every wake so
+#                                       state/article-metrics.jsonl stays current at daily cadence. (An
+#                                       operator may instead run `lib/note-fetch-views.py` as its own
+#                                       independent cron step -- see SKILL.md's "Sprint 5" section for both
+#                                       options; this flag is the "wire it into run.sh" option, not the
+#                                       only one.)
+#   env in:  ARTICLE_NOTE_FETCH_VIEWS_PY  TEST-INJECTION ONLY: path to a substitute for
+#                                       lib/note-fetch-views.py (call-count/fault-injection stub). Mirrors
+#                                       ARTICLE_NOTE_APPEND_CTA_PY's role. Production never sets it.
 #   writes:  $ARTICLE_DIR/STATE.md     last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED|UNCONFIRMED,
 #                                      rounds_used, draft_path, cta_url (empty if opted out), publish_url
 #                                      (Mode B only),
@@ -80,6 +117,25 @@ if [ -z "$ARTICLE_DIR" ]; then
   exit 1
 fi
 mkdir -p "$ARTICLE_DIR/state"
+
+# FIND-006 fix: a metrics-collection pass, opt-in (default off), fired via an EXIT trap so it runs on EVERY
+# wake outcome -- this wake's own gate/publish result never gates whether metrics get collected for
+# PREVIOUSLY published articles. Registered here (before any of this script's many `exit 0` branches) so
+# there is exactly ONE call site, not one duplicated at every exit point.
+run_metrics_pass_on_exit() {
+  if [ "${ARTICLE_METRICS_PASS:-}" != "1" ]; then
+    return 0
+  fi
+  local views_py="${ARTICLE_NOTE_FETCH_VIEWS_PY:-}"
+  if [ -n "$views_py" ]; then
+    "$views_py" >>"$ARTICLE_DIR/state/metrics-pass.log" 2>&1 || true
+  else
+    # note-fetch-views.py is pure-stdlib (urllib only, no note_mcp/fastmcp import) -- plain python3 always
+    # suffices here, unlike lib/note-append-cta.py.
+    python3 "$SKILL_DIR/lib/note-fetch-views.py" >>"$ARTICLE_DIR/state/metrics-pass.log" 2>&1 || true
+  fi
+}
+trap run_metrics_pass_on_exit EXIT
 
 AUTONOMY="${AUTONOMY:-off}"
 
@@ -404,10 +460,6 @@ EOF
   exit 0
 fi
 
-# REQ-27: gates PASSED -- append the deterministic monetization link now, before either Mode A or Mode B
-# ever hands draft_path off to a publisher, so BOTH modes' published content carries it (never just one).
-cta_url="$(insert_monetization_link "$draft_path")"
-
 # ---------------------------------------------------------------------------------------------------------
 # 4b. BOTH-PASS: Mode A (effective_mode=A, the default) stops at draft + notifies the human; Mode B
 #     (effective_mode=B, REQ-25's ratio-derived value) publishes directly then distributes (REQ-6, REQ-7).
@@ -441,12 +493,66 @@ EOF
     exit 0
   fi
 
+  # Post-adversary FIND-004 fix: REQ-27's monetization link is appended HERE -- AFTER the publish-gate
+  # re-check above, not before it. The re-check re-runs the REAL (non-forced) gates/v0.sh + gates/v05.sh
+  # against draft_path (in the non-ARTICLE_TEST real-mode path); appending the CTA before that re-check
+  # would have the re-check score a DIFFERENT (link-mutated) file than the original gate-loop pass did,
+  # risking a spurious re-check ABORT the original pass never predicted. Ordering it after means the
+  # re-check always scores the SAME content the gate loop already judged.
+  cta_url="$(insert_monetization_link "$draft_path")"
+
   # REQ-23/24 (Sprint 4): only fires a REAL publish click when the caller has handed off an
   # ALREADY-PREPARED note draft key (ARTICLE_MODEB_NOTE_KEY, mirroring ARTICLE_NOTE_TITLE's role for Mode
   # A) -- this file never creates/eyecatches/prices a draft itself, only clicks publish on one the caller
   # names explicitly (no default/wildcard key, same REQ-21 safety property). Distribution to reach
   # platforms (REQ-7/8/11) remains a later-sprint live-integration seam.
   modeb_note_key="${ARTICLE_MODEB_NOTE_KEY:-}"
+
+  # ---------------------------------------------------------------------------------------------------
+  # Sprint-5 post-adversary FIND-001 fix: Mode B publishes an ALREADY-PREPARED remote note.com draft --
+  # confirm_and_publish() never re-uploads a body, it only confirms eyecatch/visuals/price and clicks
+  # 投稿する/更新する. The local draft.md's CTA link (appended above by insert_monetization_link) is
+  # therefore INERT for this path -- it never reaches the real published article. Append the link to the
+  # REMOTE draft body, via lib/note-append-cta.py's authenticated note_mcp GET/POST cycle, BEFORE the
+  # publish click is even attempted, and record the ACTUAL outcome -- never the local file's cta_url --
+  # into modeb_cta_url/modeb_cta_status, which the write_state blocks below use INSTEAD of the generic
+  # $cta_url for every Mode-B outcome.
+  # ---------------------------------------------------------------------------------------------------
+  modeb_cta_url=""
+  modeb_cta_status="not_requested"
+  if [ -z "$modeb_note_key" ]; then
+    modeb_cta_status="skipped:no_draft_key"
+  elif [ -n "$cta_url" ]; then
+    cta_append_py="${ARTICLE_NOTE_APPEND_CTA_PY:-}"
+    if [ -n "$cta_append_py" ]; then
+      cta_append_out="$("$cta_append_py" --draft-key "$modeb_note_key" --cta-url "$cta_url" \
+        --cta-text "${ARTICLE_CTA_TEXT-$DEFAULT_CTA_TEXT}" 2>&1)"; cta_append_rc=$?
+    else
+      # note-append-cta.py imports note_mcp (for the authenticated GET/POST body round-trip), and
+      # `import note_mcp` runs note_mcp/__init__.py, which imports fastmcp -- a heavier dependency the
+      # plain system python3 does NOT have installed (confirmed: only the venv-cloak interpreter does).
+      # Same resolution convention as $modeb_publish_py below (and lib/note_publish.sh's NOTE_MCP_PY), NOT
+      # a hardcoded `python3` (which would silently ModuleNotFoundError on a stock host).
+      cta_append_interp="${NOTE_MCP_PY:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
+      if [ ! -x "$cta_append_interp" ]; then
+        cta_append_interp="python3"
+      fi
+      cta_append_out="$("$cta_append_interp" "$SKILL_DIR/lib/note-append-cta.py" --draft-key "$modeb_note_key" --cta-url "$cta_url" \
+        --cta-text "${ARTICLE_CTA_TEXT-$DEFAULT_CTA_TEXT}" 2>&1)"; cta_append_rc=$?
+    fi
+
+    if [ "$cta_append_rc" -eq 0 ]; then
+      modeb_cta_url="$cta_url"
+      modeb_cta_status="carried"
+    else
+      # Never block the real publish click over a CTA-append failure (the monetization link is an
+      # enhancement, not a safety gate) -- degrade honestly (empty cta_url, a specific cta_status) and
+      # proceed, same "degrade, never crash, never fabricate" convention as every other non-critical
+      # sub-step in this file.
+      modeb_cta_status="append_failed:$(printf '%s' "$cta_append_out" | head -1 | tr -d '\n')"
+      echo "run.sh: Mode-B CTA append to remote draft '$modeb_note_key' did not succeed (proceeding to publish anyway, recording cta_status honestly): $cta_append_out" >&2
+    fi
+  fi
 
   if [ -n "$modeb_note_key" ]; then
     modeb_publish_py="${NOTE_MCP_PY:-$HOME/.openclaw/skills/_shared/venv-cloak/bin/python3}"
@@ -476,7 +582,8 @@ EOF
 last_wake_result: PUBLISHED
 rounds_used: $rounds_used
 draft_path: $draft_path
-cta_url: $cta_url
+cta_url: $modeb_cta_url
+cta_status: $modeb_cta_status
 publish_url: $modeb_url
 publish_verify_result: SUCCESS
 publish_verified_at: $modeb_ts
@@ -491,7 +598,8 @@ EOF
 last_wake_result: UNCONFIRMED
 rounds_used: $rounds_used
 draft_path: $draft_path
-cta_url: $cta_url
+cta_url: $modeb_cta_url
+cta_status: $modeb_cta_status
 publish_url: ${modeb_url:-unknown}
 publish_verify_result: UNCONFIRMED
 publish_verified_at: $modeb_ts
@@ -508,7 +616,8 @@ EOF
 last_wake_result: PUBLISHED
 rounds_used: $rounds_used
 draft_path: $draft_path
-cta_url: $cta_url
+cta_url: $modeb_cta_url
+cta_status: $modeb_cta_status
 publish_url: pending-live-rail-integration
 EOF
   echo "WAKE_RESULT: PUBLISHED (rounds_used=$rounds_used)"
@@ -516,6 +625,13 @@ EOF
 fi
 
 # Mode A: stop at draft, notify the human (URL + screenshot) for review — never publish (REQ-6).
+#
+# REQ-27: append the monetization link now (Mode A has no separate publish-gate re-check the way Mode B
+# does, so there is no FIND-004-style "re-check scores mutated content" risk here -- this call could live
+# anywhere between the gate loop's success and note_publish.sh reading draft_path; here matches Mode B's
+# "immediately before this mode's own publish attempt" placement for symmetry). draft_path already carries
+# it by the time run_note_mode_a_publish below reads it verbatim as the real note.com body.
+cta_url="$(insert_monetization_link "$draft_path")"
 #
 # REQ-19/Sprint 2, PROP-20: if the caller asked for a real note.com DRAFT (ARTICLE_NOTE_TITLE set), attempt
 # it via the REUSED, existing note-publish pipeline (lib/note_publish.sh — never rebuilt here). Any failure

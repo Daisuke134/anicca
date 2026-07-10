@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "blocking": true,
+  "description": "This adversary review session was NOT provided a Bash/shell-execution tool (only Read, Write, Edit, Grep, Glob were available). The task explicitly required running tests/run-red.sh, re-invoking lib/note-fetch-views.py against the real note.com stats API, and comparing its raw output to the claimed views:9/likes:2 figures. None of this dynamic verification could be performed -- every conclusion in this review about runtime behavior is REASONED (from static code reading) not VERIFIED (from actual execution). This is itself a process gap that must be closed before this feature can be honestly marked 'adversary-verified': a follow-up adversary pass WITH shell-execution capability must (a) run tests/run-red.sh in full, (b) re-run lib/note-fetch-views.py live and inspect the raw stdout/state file line, and (c) confirm whether the 3 known-failing tests (prop21b/22b/24c) still fail for the claimed 'note.com fixture deleted' reason rather than a regression.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/run-red.sh",
+    "lineRange": "1-31",
+    "snippet": "(file read but never executed in this review session -- no Bash tool was available)"
+  },
+  "routeToPhase": "3"
+}

@@ -201,6 +201,17 @@ both halves.
   An explicit empty-string override SHALL opt out (no link appended) without crashing the wake; the actual
   URL used (or empty, if opted out) SHALL be recorded to `STATE.md`'s `cta_url` field for every gated
   (non-ABORTED) outcome.
+  **Post-adversary FIND-001 fix (blocking):** for Mode B specifically, appending to the local draft file
+  alone is NOT sufficient — Mode B publishes an ALREADY-PREPARED remote note.com draft
+  (`lib/note-mode-b-publish.py` -> `confirm_and_publish`) and never re-uploads a body, so the local file's
+  link never reaches the real published article. `run.sh`'s Mode-B branch SHALL therefore ALSO append the
+  link to the REMOTE draft body (via a new `lib/note-append-cta.py`: authenticated `note_mcp` GET → append
+  (idempotent) → `draft_save`) BEFORE the publish click. A failure of this remote append SHALL NOT block the
+  publish click itself (the link is an enhancement, not a safety gate) — it SHALL instead be recorded
+  honestly to a new `STATE.md` field, `cta_status`: `carried` (confirmed on the remote body — freshly
+  appended or already present from a prior wake), `append_failed:<reason>` (the append call itself failed —
+  `cta_url` SHALL be left EMPTY in this case, never a fabricated claim), `not_requested` (explicit opt-out),
+  or `skipped:no_draft_key` (the Sprint-1 placeholder branch, nothing real exists to append to).
 - **REQ-28 Real per-article view recording, honest-or-none.** A periodic tool (`lib/note-fetch-views.py`,
   callable standalone/via cron, independent of `run.sh`'s wake cycle) SHALL, for every key this skill has
   independently verified live (`state/live-publishes.jsonl`, `PASS: true`, REQ-22's ledger), fetch that
@@ -213,6 +224,14 @@ both halves.
   ALWAYS be `0` with `revenue_source: "not_verified_no_sales_api"` until a future sprint proves a real,
   independently-verifiable sales-read path — inventing or estimating a non-zero figure is explicitly
   forbidden.
+  **Post-adversary FIND-006 fix (cadence):** a tool that nothing ever invokes never collects metrics —
+  `run.sh` SHALL support an opt-in `ARTICLE_METRICS_PASS=1` that fires `lib/note-fetch-views.py` at the end
+  of EVERY wake (via an `EXIT` trap, so it runs regardless of that wake's own SKIPPED/DRAFT/PUBLISHED/
+  ABORTED/UNCONFIRMED result — metrics collection for previously-published articles is independent of what
+  the CURRENT wake did), default UNSET (off) so no existing/ad-hoc invocation gains an unexpected network
+  call. An operator MAY instead invoke `lib/note-fetch-views.py` as its own independent periodic step
+  (fully self-contained, no `run.sh` coupling required) — both paths are valid, at least one MUST be
+  actually configured for metrics to update on any real cadence.
 
 ## Purity-boundary candidates (refined in 1b)
 

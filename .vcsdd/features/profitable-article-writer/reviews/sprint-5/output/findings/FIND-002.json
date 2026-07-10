@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "blocking": true,
+  "description": "tests/test-prop27-monetization-cta-link.sh (the ONLY oracle for REQ-27) exercises exclusively AUTONOMY=off (Mode A) in all 4 of its sub-scenarios (lines 18-19, 28-29, 40-41, 50-51 all set AUTONOMY=off). There is zero assertion anywhere in the test suite that the Mode-B (AUTONOMY=on) published artifact actually contains the monetization link. This is precisely why FIND-001 (the CTA link never reaching Mode B's real published content) went undetected -- the test claims '8/8 assertions PASS' (SKILL.md:157) but structurally cannot catch the Mode-B disconnect because it never runs a Mode-B scenario. A test asserting cta_url is recorded to STATE.md for a Mode-B PUBLISHED/UNCONFIRMED outcome (which run.sh does do, e.g. run.sh:479/494) would still pass even though the underlying note.com article body never received the link -- this is a textbook 'test that would pass even if a critical edge case were unhandled'.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop27-monetization-cta-link.sh",
+    "lineRange": "16-56",
+    "snippet": "ARTICLE_TEST=1 ARTICLE_DIR=\"$T1\" AUTONOMY=off ... (repeated for all 4 sub-tests; AUTONOMY=on never appears in this file)"
+  },
+  "routeToPhase": "2a"
+}
