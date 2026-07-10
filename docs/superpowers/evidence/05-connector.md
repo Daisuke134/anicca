@@ -60,3 +60,17 @@ live 検証結果（transcript 実読）: core が STEP2(outreach draft)✔ / ST
 - ❌ **まだ実 booking ゼロ**。STEP1 のブラウザ RSVP（イベント発見→CloakBrowser→OTP/login→登録確認 evidence）が単一 pass turn で完走しないのが残る iterate 点。
 - 次: STEP1 のブラウザ登録を完走させる（turn budget/専用サブフロー or 07:35 JST cron の autonomous 実行を観測して iterate）。届いたら `gog calendar events get` で独立読返し。
 - ⚠️ 残ノイズ: core の claude session に `node:...cjs/loader:1458` PreToolUse hook error（non-blocking、commands は実行できている）。要調査だが blocker ではない。
+
+
+## 🎉 初の実 BOOKING 成功（2026-07-11 07:16 JST、独立読返し確認）
+2 runtime blocker(PATH/API-key prompt)修正後の pass が **end-to-end で実登録完走**:
+- **イベント**: 松尾研 GENIAC-PRIZE 2026 AI基盤モデル開発コンテスト 説明会（connpass event/399133）、2026-07-13 19:30-21:00 JST、**無料**、一般参加枠。
+- **独立検証**: `gog calendar events list --from 2026-07-13` で **event_id d27fulks5hb2st09u0ckpg759o が gcal に実在確認**（agent 自己申告でなく私が読返し）。application の id/時刻と一致。
+- **登録 evidence**: `connpass.com/event/399133/join/complete/`（申し込み完了ページ、登録後のみ到達する URL）+ 140KB 実スクショ(snapshot_path 実在)。
+- horizon-fill 正常: 空き夜枠に配置、day job/瞑想を回避。FREE-only 正しく強制。double-book なし。
+- healthcheck: connector-core ALIVE+fresh(健全)。
+
+### 正直な caveat / 残 iterate
+- connpass 登録自体は agent-reported（evidence gate 通過: 実 PNG≥5KB + 無料判定 + complete-URL 一致）。gcal 側は私が独立読返しで確認済。connpass 再ログイン検証まではしていない（adversary FIND-001 non-blocking の honest-limit、evidence 品質は高い）。
+- gcal event の**タイトルが raw URL**（"...join/complete/ — イベント申し込みが完了しました..."）＝醜い。イベント名にすべき（cosmetic iterate）。
+- これは1件（7日 streak の Day1）。§10 #5 Done は7日連続 + 各日 Telegram delivered。streak 継続と Telegram 実送信の確認が残る。
