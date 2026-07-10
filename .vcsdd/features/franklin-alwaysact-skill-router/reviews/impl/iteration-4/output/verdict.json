@@ -1,0 +1,59 @@
+{
+  "phase": "impl-review",
+  "iteration": 4,
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "PASS",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:493-495", "description": "REQ-509 AC literal text ('the guard-blocked slot's own skip record is preserved verbatim in the ledger') re-read verbatim, unchanged since iteration-3. Cross-referenced 'the ledger'/'a ledger line' usages at REQ-510 (line 498), REQ-512 (line 581/585), and line 777 -- all consistently refer to state/ledger.jsonl (LEDGER_PATH), never harness-failures.jsonl (which REQ-508, line 467, always names by its literal filename)."},
+        {"type": "file", "location": "runtime/loop/index.mjs:779-814", "description": "The reroute branch now writes the guard-blocked/no-realized-action pick's own record via `await safeAppend(LEDGER_PATH, redactPrivateKeyPatterns(skipRecordStr))` -- the SAME formatRecord/safeAppend/LEDGER_PATH machinery every other ledger.jsonl line uses -- under a distinct kind:'router_reroute_skip'. No appendHarnessFailure call exists in this branch (confirmed by reading index.mjs in full: the only appendHarnessFailure call sites are line 613 (runOneWake's own unrelated path), line 767 (gated on classifyLayer(kind)!=='clean', which is false for kind='wake' -- never fires for this no-realized-action case), line 878 (wake_error), and line 914 (writeAlwaysActEscalation's own REQ-508 terminal escalation)). This literally satisfies REQ-509's AC as written -- no spec reinterpretation was needed because the fix now conforms to the spec's existing literal text, unlike iteration-3's harness-failures.jsonl deviation."},
+        {"type": "file", "location": ".vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md:33-37 (CRIT-006)", "description": "CRIT-006's description and passThreshold were correctly rewritten to require the fix's ACTUAL current shape: the passThreshold now explicitly states 'FAIL if ... PROP-509b's preserved-record assertion targets harness-failures.jsonl instead of ledger.jsonl' -- the contract-level artifact is now internally consistent with the code and spec, closing the 'undisclosed reinterpretation' concern iteration-3 raised (no reinterpretation exists any more; the contract accurately documents literal spec conformance)."},
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs:637-688 (PROP-509b)", "description": "Test title/assertions retargeted to ledger.jsonl unconditionally (no dead-code `if` guard, confirmed by direct read of the full test body), plus a NEW negative-control assertion (lines 680-687) that harness-failures.jsonl carries NO router_reroute_skip record for the same wake -- proving the harness-failures write was genuinely removed for this branch, not merely duplicated."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs Rows 5/6/6b/7/9/12 + PROP-506f + PROP-506c(gig/lending)", "description": "Spot-checked every retargeted test's waitForLines() count against the number of ledger.jsonl lines the current code actually produces for that scenario: Row5=2 (skip+terminal), Row6=2 (skip+escalation), Row6b=2 (skip+escalation), Row7=3 (skip+skip+escalation, TWO no-realized-action picks in one wake), Row9=2 (skip+escalation), Row12=2 (skip+escalation), PROP-506f=2 (skip+escalation), PROP-506c(gig)=2 (skip+terminal), PROP-506c(lending) awaits 2 lines before kill. All counts match the code's actual write sequence traced line-by-line in index.mjs:779-836. Rows 8/10/11 (rejected-slot/no-tool-call reprompt paths, never the noRealizedAction reroute branch) correctly remain at waitForLines(1) -- no spurious extra line, confirming the skip record is written ONLY on the REQ-506 no-realized-action branch, never on REQ-505/513 reject/reprompt branches."},
+        {"type": "file", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs:673-678,680-687", "description": "PROP-509b's guard-blocked skip_reason assertion ('includes(kill-switch)') plus the harness-failures.jsonl negative control together exercise both the positive (record exists, content preserved) and negative (wrong file does NOT carry it) halves of the AC -- not a one-sided tautological check."}
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:812", "description": "`skip_reason: skillResult.output || ''` -- no `.slice()`, no `.replace(/\\s+/g,' ')` whitespace-collapse (unlike the wake's own terminal `result` field at line 852, which IS capped/collapsed) -- the skip record's own text is preserved untruncated, only passed through the SAME redactPrivateKeyPatterns pass (env-filter.mjs:46-49, a 64-hex private-key regex substitution, confirmed to leave 40-hex wallet addresses and all other content untouched) every other ledger line already receives. Consistent redaction of a secret pattern is not a 'verbatim' violation per the spec's own established convention (REQ-510's edge case: 'no new redaction pass, no bypass')."},
+        {"type": "file", "location": "runtime/loop/index.mjs:751-753,779", "description": "skill_missing/skill_timeout/skill_error outcomes set `kind` to a non-'wake' value BEFORE the `kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)` reroute-trigger check, so an execution error can never reach the reroute/skip-record branch -- confirmed spec-conformant against REQ-506's own edge case (behavioral-spec.md:406-409: 'This reroute is NEVER triggered by a slot execution that itself errors/times out'). The 3 test-race fixes (writing the reroute-target mock skill immediately after capturing wake_id from the FIRST think() request body, e.g. always-act-reroute.test.mjs:259-273/537-551/642-656) are test-fixture-timing fixes only -- they do not touch this product code path."},
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs:181-189 (buildAlwaysActLedgerFields)", "description": "The pure helper used to build the skip record's wake_id/slot/attemptsUsed fields is the SAME unmodified function REQ-508/510's own terminal-record call sites use -- no duplicated/drifted field-shaping logic introduced for the new record type."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/harness-health.mjs:24,27,40-48,60-62", "description": "CLEAN_KINDS = {wake,narrate,shutdown} and SLOT_HEALTH_KINDS = {wake,skill_missing,skill_timeout,skill_error} -- 'router_reroute_skip' is a member of NEITHER set, so classifyLayer() maps it to the fail-safe 'unknown' layer (never thrown) and computeSlotHealth's filter (`SLOT_HEALTH_KINDS.has(r.kind)`) silently excludes it from per-slot failure-rate/streak tracking -- the new ledger line introduces zero false health-classification collision, confirmed by reading harness-health.mjs in full."},
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs:235-256 (isPostGoLiveRegression)", "description": "REQ-512's regression detector treats any ledger kind OTHER than 'always_act_go_live'/'always_act_not_engaged' as evidence of a successfully-engaged wake, resetting its consecutive-not-engaged run counter (line 251-253). A 'router_reroute_skip' line correctly falls into this reset case (it only ever appears on a wake that DID engage and DID execute a skill), so its presence does not create a false 'not yet enabled' signal and does not suppress a genuine regression signal either -- semantically correct, no collision."},
+        {"type": "file", "location": "runtime/loop/__tests__/helpers/always-act-harness.mjs:63-92", "description": "writeMockEarnSkill/writeMockGuardBlockedSkill are pure test-fixture generators (shell-script string construction); the wake_id-capture-then-write race fix is confined entirely to this helper + the 3 affected test bodies, never touching runtime/loop/index.mjs or always-act-router.mjs."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/package.json:8-10", "description": "test/test:unit/test:integration scripts still register all 5 always-act-*/go-live test files; no test file silently dropped from the default `npm test` run."},
+        {"type": "file", "location": ".vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md CRIT-001..012", "description": "Contract weights sum to exactly 1.00 (10x0.09 + 2x0.05); CRIT-006's passThreshold now contains an explicit, falsifiable FAIL condition ('if PROP-509b's preserved-record assertion targets harness-failures.jsonl instead of ledger.jsonl') that would independently catch a regression back to iteration-3's defect on any future re-run."},
+        {"type": "external", "location": "thinker-executed 2026-07-11, HEAD 39a9c217", "description": "183/183 pass (externally verified per task instructions). Test count unchanged from iteration-3's 183 (confirmed 25 test() blocks remain in always-act-reroute.test.mjs, matching iteration-3's count) -- the fix retargeted existing assertions' file/content, it did not add or remove any test."}
+      ]
+    }
+  },
+  "blocking_count": 0,
+  "reviewed_commits": ["39a9c217"],
+  "external_test_evidence": "183/183 pass (thinker-executed, recreated worktree)",
+  "priorIterationFindingsVerifiedResolved": ["FIND-001 (iteration-3, re-verified from iteration-2's FIND-004)"],
+  "notes": "Non-blocking process observation (out of this review's scoped mandate, not written as a blocking finding): state.json's phaseHistory has no entries for Phase 3 impl-review iterations 1-4 and currentPhase is still recorded as '2c' -- the state.json bookkeeping appears to lag the real, verified review history preserved under reviews/impl/iteration-{1,2,3}/. This adversary did not modify state.json (out of write scope) and did not treat this as a code-review finding since it is a process-tracking gap, not a spec/test/impl defect in the reviewed commit. Flagged here for the launching thinker's awareness before converge.",
+  "ts": "2026-07-11T08:00:00.000Z"
+}
