@@ -2,7 +2,7 @@
   "featureName": "franklin-alwaysact-skill-router",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "2b",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -69,6 +69,12 @@
       "to": "2b",
       "timestamp": "2026-07-11T04:00:00.000Z",
       "reason": "Phase 2b GREEN complete. Implemented runtime/loop/always-act-router.mjs (Pure Core: isEarnActionSlot, assembleAlwaysActMenu, buildAlwaysActToolDefinitions, isMarketRiskFree, noRealizedAction, isRejectableSleepOrOffMenu, nextRerouteState, buildMustActReinforcement, buildAlwaysActLedgerFields, isPostGoLiveRegression) and additively wired prompt.mjs::getToolDefinitions(slots,{omitSleep}) + buildUserMessage's optional mustActReinforcement line, context.mjs's ctx.alwaysActEngaged/ctx.alwaysActMenu, brain.mjs's conditional tools/prompt-text lines, and index.mjs's REQ-501 identity+flag gate (resolveAlwaysActGate/checkAlwaysActIdentity, mirrors sol-trade/run.sh:28-41, re-evaluated every wake with a structural fast-path for non-Franklin ANICCA_HOME + a 500ms settle floor for a genuine identity resolution), REQ-512 always_act_not_engaged diagnostic line, and the new runAlwaysActWake() function implementing REQ-505/506/508/511/513's bounded attemptsUsed retry/reroute/escalation state machine (behavioral-spec.md sec2.5's 12-row transition matrix). Fixed a pre-existing fixture defect in __tests__/helpers/always-act-harness.mjs::writeMockEarnSkill (its profitable:true fixture line did not satisfy skills/_shared/lib/ledger.mjs::isProfitable's real, unmodified contract). Resolved red-phase.md's caveat (a) (deterministic 2-total think() bounding) via the attemptsUsed state machine + a structural non-Franklin fast-path + a documented settle floor; caveat (b) was not needed (the real, unmodified skills/registry.json path worked end-to-end with zero override). All 53 new tests PASS; all 212 pre-existing tests PASS (173 official package.json set + 92 additional sweep = 265/265 combined); confirmed stable across 6+ repeated full runs of always-act-reroute.test.mjs (0 failures). REQ-509 money-safety diff-path allowlist (PROP-509a) and guard-block reroute (PROP-509b) both green. Evidence: evidence/green-phase.md."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-11T04:05:00.000Z",
+      "reason": "Phase 2c light refactor complete (clarity/dedup only, no new features, no spec changes): extracted the duplicated brain-transport wake_error ledger+harness-failure+sleep handling (previously duplicated between runOneWake's non-always-act path and runAlwaysActWake) into a single shared writeWakeErrorAndSleep() helper — this also fixed a genuine bug the duplication had introduced (runAlwaysActWake was using SLEEP_BASE_S for its error backoff instead of the correct SLEEP_ERROR_S the non-always-act path already used). Re-ran the full 265-test suite (53 new + 212 pre-existing) after the refactor: 265/265 PASS, and always-act-reroute.test.mjs re-confirmed stable across repeated runs."
     }
   ],
   "iterations": {
@@ -93,5 +99,5 @@
   },
   "sprintCount": 0,
   "createdAt": "2026-07-10T14:57:09.001Z",
-  "updatedAt": "2026-07-11T04:00:00.000Z"
+  "updatedAt": "2026-07-11T04:05:00.000Z"
 }
