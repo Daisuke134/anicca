@@ -84,9 +84,30 @@ CLIP="$WORK/clip.crop.mp4"; [ -f "$CLIP" ] || CLIP="$WORK/clip.final.mp4"
 HOOK=$("$PY" -c "import json;s=json.load(open('$WORK/transcript.json'));print((s[0].get('text','') if s else '')[:60])" 2>/dev/null || echo "")
 "$PY" "$SKILLS/burn_captions.py" "$CLIP" "$WORK/EN.mp4" --hook "$HOOK" --model tiny --lang en >>"$WORK/pipe.log" 2>&1
 
-# 3) verify GATE (9:16 / audio / non-black / 8-90s)
+# 3) verify GATE (9:16 / audio / non-black / 8-90s / resolution+bitrate floor)
 if ! bash "$SKILLS/verify_clip.sh" "$WORK/EN.mp4" >>"$WORK/pipe.log" 2>&1; then
-  emit "clip FAILED verify_clip — not queued (source $URL)"; exit 0
+  emit "clip FAILED verify_clip — not queued (source $URL)"
+  # Lessons wiring (2026-07-10 quality self-heal): a gate rejection is a mechanical fact
+  # (measured WxH/bitrate), not a judgment call, so this one row is appended
+  # deterministically -- the loop's own STARTUP prompt already reads this file every pass.
+  GW=$(ffprobe -v error -select_streams v:0 -show_entries stream=width -of csv=p=0 "$WORK/EN.mp4" 2>/dev/null | head -1)
+  GH=$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of csv=p=0 "$WORK/EN.mp4" 2>/dev/null | head -1)
+  GVBR=$(ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate -of csv=p=0 "$WORK/EN.mp4" 2>/dev/null | head -1)
+  mkdir -p "$HOME/.cloak"
+  python3 - "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "${PASS_ID:-clip-producer-$(date -u +%Y-%m-%dT%H:%M:%SZ)}" \
+    "${GW:-0}" "${GH:-0}" "${GVBR:-0}" "$HOME/.cloak/clip-lessons.jsonl" <<'PY'
+import json, sys
+ts, pass_id, gw, gh, gvbr, path = sys.argv[1:7]
+row = {
+    "ts": ts, "pass_id": pass_id,
+    "mistake": f"render below quality floor {gw}x{gh},{gvbr}",
+    "lesson": "check format selector / source quality",
+    "issue_type": "quality_gate_reject", "severity": "major",
+}
+with open(path, "a") as f:
+    f.write(json.dumps(row, ensure_ascii=False) + "\n")
+PY
+  exit 0
 fi
 
 # 4) queue it (deterministic id from source) + caption sidecar
