@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The closed-enumeration claim ('20/20 registry slots checked... every live slot's real entrypoint is either fixed or independently confirmed to use a different, already-safe mechanism', behavioral-spec.md:177-179) is FALSE. The live registry slot `earn/video` (registry.json:181-191, status:'live') dispatches to `skills/earn/video/run.sh`, which itself IS correctly fixed (sources `_shared/lib/load-instance-env.sh`, confirmed at run.sh:10-13). But `run.sh`'s own S3_post transition (run.sh:128, run.sh:176) forks a subprocess into `$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh` (also present byte-identically at `~/anicca/skills/faceless-money-factory/scripts/run-daily.sh:15`), which STILL contains the exact unfixed vulnerable preamble: `set -a; . \"$HOME/.openclaw/.env\" 2>/dev/null || true; set +a` -- no ANICCA_HOME save/restore, not delegated to the shared helper. This is the SAME bug class as FIND-001 (iteration 6), reachable via the SAME kind of exec-chain from a live per-instance-dispatched process, which REQ-004 explicitly defines as in-scope 'regardless of today's dormancy' (spec:171, precedent for clip/producer.sh). behavioral-spec.md's own audit table (line 200) dismisses this exact file with the reasoning 'NOT a registry.json slot -- an unrelated factory-apps product', which is the IDENTICAL flawed reasoning the same document already discredited for clip/producer.sh one row above (line 191 vs the corrected line 171) -- 'not itself a registry.json slot' is not the criterion; reachability from a live slot's dispatched process is. Currently dormant (grep of the entire ~/.claude/skills/faceless-money-factory directory tree found zero ANICCA_HOME references, so no active wallet/identity misresolution has been demonstrated today), but the spec's own REQ-004 standard says dormancy does not exempt a reachable file from the fix, and the audit-table's completeness claim is therefore provably false as written.",
+  "evidence": {
+    "filePath": "skills/earn/video/run.sh",
+    "lineRange": "128, 176",
+    "snippet": "timeout \"$GENBUD\" bash \"$HOME/.claude/skills/faceless-money-factory/scripts/run-daily.sh\" \"${EARN_VIDEO_SCRIPT:-$OUT/today.txt}\" en ..."
+  },
+  "additionalEvidence": [
+    {"type": "file", "location": "/Users/anicca/.claude/skills/faceless-money-factory/scripts/run-daily.sh:15", "description": "Unguarded 'set -a; . \"$HOME/.openclaw/.env\" 2>/dev/null || true; set +a' -- the actual copy invoked in production per run.sh's hardcoded $HOME/.claude/skills path."},
+    {"type": "file", "location": "/Users/anicca/anicca/skills/faceless-money-factory/scripts/run-daily.sh:15", "description": "Byte-identical unguarded preamble in the OSS repo copy."},
+    {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/specs/behavioral-spec.md:200", "description": "Audit table row dismissing this exact reachable file with the discredited 'not a registry.json slot' reasoning."},
+    {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/specs/behavioral-spec.md:162", "description": "earn/video row only covers run.sh's own inline content, not what run.sh execs/forks into -- the same class of incomplete exec-chain trace that iteration 6 already found and fixed for earn/clip-producer."},
+    {"type": "grep", "location": "/Users/anicca/.claude/skills/faceless-money-factory (whole directory)", "description": "Zero matches for ANICCA_HOME -- confirms this specific instance is currently dormant, matching (not distinguishing from) the precedent set for clip/producer.sh, which was still required to be fixed on reachability grounds alone per REQ-004."},
+    {"type": "file", "location": "skills/_shared/lib/load-instance-env.sh:11-13", "description": "The shared helper's own header states it exists precisely so this class of miss (hand-copying/re-implementing the preamble in N places) 'never recurs' -- this file is proof it recurred a 5th time."}
+  ],
+  "routeToPhase": "2b"
+}

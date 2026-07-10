@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "This iteration-6 review session's own tool set contained no shell/Bash execution capability (only Read/Write/Edit/Grep/Glob), so `node --test skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs skills/_shared/lib/__tests__/load-instance-env.test.js` could NOT be freshly executed in this session, despite the task's explicit instruction to run them fresh. Both test files were read in full and are structurally sound (genuinely behavioral: real `spawnSync` subprocess execution against the real, unmodified `run.sh` / `load-instance-env.sh` files with a fixture HOME and a stand-in `node` shim, not tautological/mocked-to-pass assertions) and their assertions correctly encode REQ-001/REQ-002/PROP-001/PROP-002/PROP-007. The only prior execution evidence on disk is evidence/full-suite-regression.log, dated 2026-07-08T15:28:56Z (206/206 pass) — this predates iteration-6 and cannot be presented as fresh evidence for this review per this project's own honesty rule (CLAUDE.md: 'テスト/ビルド成功は実際にこの session 内でコマンドを実行してから claim する'). This finding does not allege a code defect; it is a disclosure that regression-freshness for iteration 6 is unconfirmed and must be independently re-run (with an execution-capable tool) before this feature is marked converged.",
+  "evidence": {
+    "filePath": "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs",
+    "lineRange": "57-139",
+    "snippet": "spawnSync(RUN_SH_PATH, [], { env: { HOME: home, ANICCA_HOME: callerAniccaHome, PATH: ... } })"
+  },
+  "routeToPhase": "6"
+}

@@ -1,0 +1,65 @@
+{
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "phase": "combined",
+  "iteration": 7,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "impl_correctness": "FAIL"
+  },
+  "find001Status": "CONFIRMED-FIXED",
+  "find001Verification": {
+    "producerShPreamble": "CONFIRMED FIXED — skills/earn/clip/producer.sh:22 now sources `.../_shared/lib/load-instance-env.sh` (relative path from skills/earn/clip/ via ../../_shared/lib/load-instance-env.sh resolves correctly to skills/_shared/lib/load-instance-env.sh, confirmed by directly reading both the relative expression and the target file). The old raw `set -a; . $HOME/.openclaw/.env; set +a` preamble is gone from this file (grep for `set -a` across skills/ no longer matches producer.sh).",
+    "sharedHelperSaveRestore": "CONFIRMED — skills/_shared/lib/load-instance-env.sh:19-22 captures `_ANICCA_HOME_CALLER=\"${ANICCA_HOME:-}\"` BEFORE sourcing $HOME/.hermes/.env and $HOME/.openclaw/.env, then restores `ANICCA_HOME=\"$_ANICCA_HOME_CALLER\"` after, all still inside the same `set -a`/`set +a` block so the restored value is itself re-exported.",
+    "execChainReTraced": "CONFIRMED — skills/earn/clip-producer/run.sh:19 does `exec bash '.../clip/producer.sh' \"$@\"` (same-process image replacement). Since producer.sh's own preamble now delegates to the save/restore helper, a caller's ANICCA_HOME (set by index.mjs's buildSkillEnv before spawn) now survives through the exec and through producer.sh's env-load block intact."
+  },
+  "newFinding": {
+    "findingId": "FIND-002",
+    "summary": "Closed-enumeration claim is false: earn/video (live registry slot) forks into faceless-money-factory/scripts/run-daily.sh, which still has the exact unfixed vulnerable preamble, mischaracterized in behavioral-spec.md:200 using the same reasoning already discredited for clip/producer.sh at spec.md:171.",
+    "blocking": true
+  },
+  "otherLiveSlotSweep": {
+    "method": "grepped `set -a` across ~/anicca/skills, cross-checked every hit against registry.json's live slots and their exec/subprocess chains",
+    "confirmedClean": [
+      "skills/earn/clip/producer.sh (FIND-001, now fixed)",
+      "skills/earn/video/run.sh (already delegates to shared helper)",
+      "skills/economy/gig/run.sh (sources a DIFFERENT file, $HOME/.anicca-signing/gig-board/.env, which does not set ANICCA_HOME -- confirmed distinct from $HOME/.openclaw/.env)",
+      "skills/report/loop-report.sh (not the live report slot's entrypoint -- that is anicca-report.sh; also never consumes ANICCA_HOME after the clobber even if invoked)",
+      "skills/earn/clip-promote/run.sh, skills/earn/x402-sell/serve-mainnet-boot.sh, skills/earn/clip/launchd/ai.anicca.clip-producer.plist, skills/earn/clip/clip-cli.sh, skills/earn/video/video-cli.sh, skills/self/life-manager-loop/loop.sh, skills/self/capafy-loop/loop.sh, skills/ubi/ubi-watcher-daemon.sh, skills/earn/sol-funding-daemon.sh, skills/anicca-life-manager/scripts/* -- none are dispatched via a live registry.json slot with a variable per-instance ANICCA_HOME; each runs in exactly one fixed context"
+    ],
+    "newlyFoundVulnerable": [
+      "skills/faceless-money-factory/scripts/run-daily.sh (both the ~/.claude/skills copy actually invoked and the ~/anicca/skills OSS copy) -- reachable via earn/video/run.sh's S3_post transition, see FIND-002"
+    ],
+    "closedEnumerationConfirmed": false
+  },
+  "specAuditTableAccuracy": {
+    "earnClipRow": "ACCURATE (spec.md:170) -- correctly notes producer.sh is reachable via clip-producer's exec-chain, corrected in iteration 6.",
+    "earnClipProducerRow": "ACCURATE (spec.md:171) -- correctly documents the fix and its reasoning.",
+    "earnVideoRow": "INCOMPLETE (spec.md:162) -- only describes run.sh's own inline content ('FIXED... sources the shared helper'), omits that run.sh forks into run-daily.sh which is NOT fixed.",
+    "facelessMoneyFactoryRow": "INACCURATE (spec.md:200) -- classifies run-daily.sh as out-of-scope using the 'not a registry.json slot' reasoning that the same document already rejected for producer.sh (spec.md:130-145's own stated criterion is reachability from a live slot's dispatch, not literal slot-entrypoint-hood)."
+  },
+  "testsReviewed": {
+    "executedFreshThisSession": false,
+    "reason": "This adversary session's tool set (Read/Write/Edit/Grep/Glob) has no Bash/shell execution capability; could not independently re-run node --test this session. Relying on static re-reading of the test files plus the orchestrator's reported 6/6 pass + bash -n OK + live smoke test, per the task's own framing -- not independently verified by fresh execution.",
+    "runShAniccaHomePreservationTest": "Read skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs:57-139 -- confirmed genuinely behavioral (real spawnSync subprocess against the real, unmodified run.sh, real fixture .env files with conflicting ANICCA_HOME, asserting the caller's value survives via regex on real stdout). Not tautological.",
+    "loadInstanceEnvTest": "Located at skills/_shared/lib/__tests__/load-instance-env.test.js (not read line-by-line this session due to time; file existence and location confirmed via Glob)."
+  },
+  "blockingFindings": ["FIND-002"],
+  "overallVerdict": "FAIL",
+  "requiredFixList": [
+    "Route skills/faceless-money-factory/scripts/run-daily.sh's env-loading preamble (line 15, both the ~/.claude/skills production copy and the ~/anicca/skills OSS copy) through skills/_shared/lib/load-instance-env.sh, identically to the 5 already-fixed call sites.",
+    "Correct behavioral-spec.md's audit-table row for faceless-money-factory/scripts/run-daily.sh (line 200) and earn/video (line 162) to reflect that earn/video's exec/subprocess chain includes run-daily.sh, and that run-daily.sh is in-scope per REQ-004's own stated reachability criterion.",
+    "Re-run the full closed-enumeration audit one more time, this time explicitly tracing every live slot's FULL subprocess/exec tree (not just its immediate entrypoint file's own inline content) -- the same class of miss has now recurred twice (clip-producer in iteration 5→6, earn/video in this iteration) against the identical stated criterion, indicating the audit methodology itself, not just individual files, needs a forcing function (e.g. an automated script that greps every file transitively invoked by bash/exec from each live entrypoint, not a manual trace)."
+  ],
+  "evidence": [
+    {"type": "file", "location": "skills/earn/clip/producer.sh:22", "description": "FIND-001 fix confirmed: delegates to _shared/lib/load-instance-env.sh instead of raw set -a preamble."},
+    {"type": "file", "location": "skills/_shared/lib/load-instance-env.sh:18-24", "description": "Shared helper correctly saves/restores ANICCA_HOME around the shared-.env sourcing."},
+    {"type": "file", "location": "skills/earn/clip-producer/run.sh:19", "description": "exec bash chain re-traced; caller ANICCA_HOME now survives given the producer.sh fix."},
+    {"type": "file", "location": "skills/earn/video/run.sh:128,176", "description": "earn/video (live slot) forks into faceless-money-factory/scripts/run-daily.sh."},
+    {"type": "file", "location": "/Users/anicca/.claude/skills/faceless-money-factory/scripts/run-daily.sh:15", "description": "Unfixed vulnerable preamble in the file actually invoked by the live earn/video slot's exec chain."},
+    {"type": "file", "location": "/Users/anicca/anicca-project/.vcsdd/features/anicca-spawn-identity-resolution-fix/specs/behavioral-spec.md:200", "description": "Spec's out-of-scope classification of this file, using reasoning already discredited elsewhere in the same document."},
+    {"type": "file", "location": "skills/economy/gig/run.sh:44-47", "description": "Confirmed sources a genuinely different file (GIG_ENV=$HOME/.anicca-signing/gig-board/.env), not the shared automaton .env -- correctly out of scope."},
+    {"type": "file", "location": "skills/report/loop-report.sh:65-67", "description": "Confirmed not the live report slot's real entrypoint (anicca-report.sh is) and never consumes ANICCA_HOME after its own conditional clobber."}
+  ]
+}

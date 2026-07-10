@@ -1,0 +1,78 @@
+{
+  "feature": "anicca-spawn-identity-resolution-fix",
+  "phase": "combined",
+  "iteration": 6,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "reviewContext": {
+    "reviewType": "combined-spec-and-implementation",
+    "openQuestion": "Is behavioral-spec.md's 'registry.json live slots only' scope-narrowing (post iteration-5 FIND-001/FIND-002) a defensible boundary, or does it leave a real wallet-misresolution vector open?"
+  },
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "impl_correctness": "FAIL"
+  },
+  "scopeDecision": "NOT_DEFENSIBLE",
+  "scopeDecisionReasoning": "The scope CRITERION itself (in-scope iff a file is the literal entrypoint of a registry.json live slot, because only that dispatch path can ever hand a script a different caller's ANICCA_HOME) is sound in principle. But its APPLICATION in the 'closed audit' table is not exhaustive: it checked only each live slot's entrypoint file's own inline content, not what that entrypoint execs into. `earn/clip-producer` is a live registry slot whose entrypoint (run.sh) execs into skills/earn/clip/producer.sh, which still contains the byte-identical unfixed vulnerable preamble, inside the SAME per-instance-dispatched process. This one file was mischaracterized as clean. For the other 3 files iteration 5 flagged (clip-promote/run.sh, x402-sell/serve-mainnet-boot.sh, clip-producer.plist), the out-of-scope classification IS independently correct and defensible: none is registry.json-dispatched, and none depends on ANICCA_HOME for wallet/key resolution in its actual current code path.",
+  "flaggedFiles": [
+    {
+      "file": "skills/earn/clip-promote/run.sh",
+      "stillVulnerable": true,
+      "canMisresolveWallet": false,
+      "reasoning": "Not a registry.json slot (absent from skills/registry.json's slot list; header comment's claim of being a 'run-skill.mjs SLOT entrypoint' is not reflected in the registry) -- never dispatched via index.mjs's per-instance buildSkillEnv/spawn(). Line 19's `set -a; . \"$HOME/.openclaw/.env\"...; set +a` does clobber this script's OWN ANICCA_HOME, but zero code in this file or its subprocesses (record-payout.mjs invoked under `env -i` with an explicit var allowlist at lines 56-59 that excludes ANICCA_HOME; WALLET defaults to a hardcoded Solana address at line 25) ever reads ANICCA_HOME. Grep confirms zero ANICCA_HOME references in the whole clip-promote directory. Out-of-scope classification is DEFENSIBLE for wallet-misresolution purposes; the vulnerable string remains as pure repo-hygiene debt."
+    },
+    {
+      "file": "skills/earn/x402-sell/serve-mainnet-boot.sh",
+      "stillVulnerable": true,
+      "canMisresolveWallet": false,
+      "reasoning": "registry.json's `x402_sell` slot's real `dir` is `skills/earn` (the EARN_ALLOW-allowlisted legacy fat slot), NOT `skills/earn/x402-sell` -- this file is a genuinely separate, non-registry-dispatched standalone KeepAlive launchd daemon. serve.mjs's payTo() (skills/earn/x402-sell/serve.mjs:31-38) only calls the ANICCA_HOME-dependent loadEvmKey() when process.env.X402_PAYTO is unset, but serve-mainnet-boot.sh hardcodes X402_PAYTO='0x810f6d61f7606deee2657d3083e150a222bc29c5' at line 11 BEFORE exec'ing serve.mjs -- the ANICCA_HOME-dependent branch is provably dead code in this script's actual invocation. Out-of-scope classification is DEFENSIBLE."
+    },
+    {
+      "file": "skills/earn/clip/producer.sh",
+      "stillVulnerable": true,
+      "canMisresolveWallet": false,
+      "reasoning": "Currently NOT wallet-misresolving (zero ANICCA_HOME references anywhere in skills/earn/clip/, confirmed by directory-wide grep) -- but this is the one file whose out-of-scope reclassification is NOT DEFENSIBLE, because it is directly reachable, via `exec` (same-process, not a subshell), from registry.json's LIVE `earn/clip-producer` slot (skills/earn/clip-producer/run.sh:19: `exec bash '.../clip/producer.sh' \"$@\"`) -- the exact per-instance-dispatched path REQ-004's own criterion defines as in-scope. behavioral-spec.md's audit table (line 171) incorrectly marks this slot as having no vulnerable pattern. Per REQ-003's own precedent (fix dormant instances in live-dispatched paths, do not leave latent), this file must receive the shared-helper fix regardless of today's dormancy -- see FIND-001."
+    },
+    {
+      "file": "skills/earn/clip/launchd/ai.anicca.clip-producer.plist",
+      "stillVulnerable": true,
+      "canMisresolveWallet": false,
+      "reasoning": "A standalone launchd job (own Label/StartCalendarInterval/log paths) that execs producer.sh directly; launchd starts it with no caller ANICCA_HOME to preserve in the first place, and it is not registry.json-dispatched. Out-of-scope classification is independently DEFENSIBLE for this .plist itself. It shares the same downstream producer.sh dependency as the finding above, so fixing producer.sh centrally (required regardless, per FIND-001) resolves this file's residual exposure for free."
+    }
+  ],
+  "blockingFindings": ["FIND-001"],
+  "nonBlockingFindings": ["FIND-002"],
+  "overallVerdict": "FAIL",
+  "requiredFixList": [
+    "skills/earn/clip/producer.sh -- route its env-loading preamble (currently line 22) through skills/_shared/lib/load-instance-env.sh, identically to the 4 already-fixed call sites. This is a mechanical extension of the existing REQ-004 fix, not new design.",
+    "Correct behavioral-spec.md's audit-table row for earn/clip-producer (currently line 171, 'no'/'Not applicable — clean') to reflect that it transitively contains (and, after the fix, delegates) the vulnerable pattern via its exec into clip/producer.sh.",
+    "Add a note to REQ-004's scope criterion that 'literal entrypoint of a live registry.json slot' must include tracing exec-chains from that entrypoint, not just the entrypoint file's own inline content -- otherwise the same class of miss can recur for any other slot with a thin exec-wrapper entrypoint."
+  ],
+  "testResults": {
+    "executedFreshThisSession": false,
+    "reason": "This adversary review session's tool set (Read/Write/Edit/Grep/Glob) contained no Bash/shell execution capability, so `node --test` could not be run fresh for iteration 6, despite the task instruction to do so. Reporting this honestly rather than fabricating a pass/fail.",
+    "testFilesStaticallyReviewed": [
+      "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs (2 test cases, lines 57-139) -- confirmed genuinely behavioral: real spawnSync subprocess against the real, unmodified run.sh, with a fixture HOME and a stand-in node shim; not tautological.",
+      "skills/_shared/lib/__tests__/load-instance-env.test.js (4 test cases, lines 28-91) -- confirmed genuinely behavioral: real spawnSync('bash', ['-c', ...]) sourcing the real, unmodified load-instance-env.sh; not tautological."
+    ],
+    "priorEvidenceOnDisk": {
+      "file": ".vcsdd/features/anicca-spawn-identity-resolution-fix/evidence/full-suite-regression.log",
+      "recorded": "2026-07-08T15:28:56Z, 206/206 pass",
+      "caveat": "Predates this iteration-6 review by 2 days; cannot be presented as fresh evidence for this session per this project's own honesty rule requiring in-session execution before claiming pass."
+    },
+    "recommendation": "An execution-capable session (or the Builder) MUST re-run node --test 'skills/self/spawn/lib/__tests__/**/*.test.mjs' 'skills/self/spawn/lib/__tests__/**/*.test.js' and 'skills/_shared/lib/__tests__/load-instance-env.test.js' fresh, and persist raw output to evidence/, before this feature is marked converged -- independent of and in addition to fixing FIND-001."
+  },
+  "evidence": [
+    {"type": "file", "location": "skills/earn/clip-producer/run.sh:18-19", "description": "Live registry slot's entrypoint execs into skills/earn/clip/producer.sh, same process, same env."},
+    {"type": "file", "location": "skills/earn/clip/producer.sh:14,22", "description": "Vulnerable set -a; . \"$HOME/.openclaw/.env\"...; set +a preamble, no ANICCA_HOME save/restore, still present."},
+    {"type": "file", "location": "skills/registry.json:170-179", "description": "earn/clip-producer slot: status live, dir skills/earn/clip-producer, entrypoint run.sh."},
+    {"type": "file", "location": "skills/earn/x402-sell/serve.mjs:31-38", "description": "payTo() short-circuits on process.env.X402_PAYTO before ever calling the ANICCA_HOME-dependent loadEvmKey()."},
+    {"type": "file", "location": "skills/earn/x402-sell/serve-mainnet-boot.sh:11", "description": "X402_PAYTO hardcoded to the founder wallet before exec'ing serve.mjs -- confirms the loadEvmKey() branch above is dead code here."},
+    {"type": "file", "location": "skills/earn/clip-promote/run.sh:19,25,56-59", "description": "Vulnerable pattern present but WALLET is a hardcoded default and the RECORD subprocess runs under env -i with an explicit allowlist excluding ANICCA_HOME."},
+    {"type": "grep", "location": "skills/earn/clip/ (whole directory)", "description": "Zero matches for ANICCA_HOME -- confirmed no wallet/identity resolution in producer.sh or its siblings depends on it."},
+    {"type": "grep", "location": "skills/earn/clip-promote/ (whole directory)", "description": "Zero matches for ANICCA_HOME."},
+    {"type": "file", "location": "skills/_shared/lib/load-instance-env.sh:18-24", "description": "The shared fix implementation itself is correct and minimal (save-before/restore-after inside the same set -a/set +a block); independently re-read and confirmed sound this session."},
+    {"type": "test-file", "location": "skills/self/spawn/lib/__tests__/run-sh-anicca-home-preservation.test.mjs", "description": "Confirmed genuinely behavioral (real subprocess against real run.sh), not re-executed this session -- see testResults."},
+    {"type": "test-file", "location": "skills/_shared/lib/__tests__/load-instance-env.test.js", "description": "Confirmed genuinely behavioral (real subprocess against real helper), not re-executed this session -- see testResults."}
+  ]
+}
