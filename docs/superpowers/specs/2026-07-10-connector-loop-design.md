@@ -102,20 +102,21 @@ connector は独立 loop として dogfood → 検証済みの機構だけが cl
 
 feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行）。E2E 完了条件: 実イベント応募≥1（実 URL）/ 実 gcal 書込+get 検証 / 実 Telegram 日報着信 / 実 outreach draft→承認→送信 1往復 / debrief 1件が次 pass の入力に実際に載る / registry enforce（paused 拒否）動作 / 収益・成果の捏造ゼロ。
 
-## 8. MASTER TODO（順序が正。ここ以外に TODO の正本を置かない。更新 2026-07-10 夜）
+## 8. MASTER TODO（順序が正。ここ以外に TODO の正本を置かない。更新 2026-07-11）
 
 | # | 状態 | 作業 | 完了条件（§10 の done 条件に従う） |
 |---|---|---|---|
 | 0 | ✅ | CEO 会社基盤 + LM Phase A + explorer LIVE + ccteams | main `190b077`、54/54、5 loop ALIVE |
 | 1 | ✅ | 土台修理: booking scan buffer 修正（25/25→5/5）+ OpenClaw cron live-store 事故解明 + イベント cron を connector に一本化（9本 disable、二重 loop 禁止）+ 未登録 PROPOSED 2件削除（うち1件有料） | commit `120e863` + memory 固定 + gcal 実測 0 PROPOSED |
-| **2** | 🔄 | **connector-loop VCSDD 立ち上げ**: init → spec EARS 化（§4 毎日全STEP・horizon 先埋め・STEP2 DISABLED・FREE only・登録先行 / §11.1 8機構の PROP 化 / 9 source vendor 表）→ fresh adversary spec-review PASS | state.json phase 進行 + verdict PASS |
-| 3 | ⬜ | rails vendor: ①Telos schema ②OwnPilot pulse/directives/autonomy ③Clira pre-filter ④gtm-mcp I-confirm+返信3-tier ⑤lean-intros scorer ⑥Boardy flow ⑦Duckbill UX ⑧booking/meetup scripts ⑨評価8機構 — 全て skills.lock 記帳 | 各 rail TMPDIR test green |
-| 4 | ⬜ | pass 実装（TDD RED→GREEN）: cli/healthcheck/launchd/ledger 8本/signals pre-pass/STARTUP prompt/scout 同梱/registry live | run-all green + ceo-status 表示 |
-| 5 | ⬜ | 実 E2E dogfood 7日: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 connector 行 + 7日 streak + adversary PASS |
+| 2 | ✅ | connector-loop VCSDD: spec 3回転 PASS（6→3→0）→ RED 36 files → GREEN 2段 → impl 3回転 PASS（6→2→0）→ harden（shellcheck/semgrep/purity）→ converge → **phase=complete** | main merge `0353648`、94/94、全 verdict.json 実在 |
+| 3 | ✅ | rails vendor（#2 に統合実施済み: Telos verbatim seed / OwnPilot pulse・directives・autonomy / Clira pre-filter+draft 概念 / I-confirm+3-tier / 評価8機構+PROP-167。lean-intros scorer は STEP2 解禁時に接続） — 残: : ①Telos schema ②OwnPilot pulse/directives/autonomy ③Clira pre-filter ④gtm-mcp I-confirm+返信3-tier ⑤lean-intros scorer ⑥Boardy flow ⑦Duckbill UX ⑧booking/meetup scripts ⑨評価8機構 — 全て skills.lock 記帳 | 各 rail TMPDIR test green |
+| 4 | ✅ | pass 実装完了 + **本番稼働開始**（2026-07-11 00:4x JST 初回実 pass 起動、launchd healthcheck load 済み、budget 設定済み） | tmux ALIVE + status.sh/ceo-status.sh 表示 + budget 行実測 |
+| **5** | 🔄 | **実 E2E dogfood 7日（いまここ）**: day-1 検証中: 毎日 FREE 実登録（horizon 先埋め）+ gcal CONFIRMED 読返し + Telegram 日報実着信 + debrief flywheel。STEP2 は封鎖のまま | §10 connector 行 + 7日 streak + adversary PASS |
 | 6 | ⬜ | CEO 仕上げ: bounty/affiliate/gig cost 自動記録（core 再起動）+ LM cron launchd 化 + CEO 初 decision + hl/article registry 正誤 + external budget | cost-events 3 loop 行 + ceo-decisions ≥1 |
 | 7 | ⬜ | article loop 有効化: profitable-article-writer VCSDD 完走 → Zenn 抜き v1 → Mode A 品質1本 → 新 cron + metrics + V4 別 gate | 実 publish URL + registry live |
 | 8 | ⬜ | LM Phase B: 実 action 解禁（connector rail 流用）+ **セルフマーケ稼働**（Dais 2026-07-10: MoneyPrinterTurbo で wedge 動画を無料量産→IG/TikTok/YT Shorts/Reddit へ。一次 copy =「Tired of searching travel time for every event? Life Manager fills it in automatically」。views/clicks/signups を marketing-actions.jsonl に実測記録、§11 バーで「伸びない creative の反復」を検出）+ **issue-driven 開発**（詳細 issue を書く→loop が triage→実装→deploy→metric 検証。Dais 側の仕事 = 良い issue を書くこと） | LM spec Phase B done + 実投稿 URL + issue→deploy 1周 |
 | 9.5 | ⬜ | SNS factory 移行: larry/reelclaw/lm-video/watercolor を claude-p manager loop 化（§11 バー装着で self-improve 開始）→ OpenClaw 退役（state push + **Dais 明示 go** 後に削除） | live cron 0 + launchd 依存 0 + go 記録 |
+| 別 | ✅ | clip blur self-heal（2026-07-11）: 根因=360p fallback+解像度床なし+gate がアスペクト比のみ → 上流根治(≥720p 必須+1080x1920 正規化+4Mbps床) + gate 増強(両方向実証) + metrics/lessons/evaluator penalty 配線 | ~/anicca `f435998`、同一動画で 202×360→1080×1920 実測 |
 | 9 | ⬜ | 製品化: connector module → cloud Life Manager（課金 thesis 確定後、別 spec） | — |
 
 ## 10. DONE CONDITIONS（自己欺瞞防止、Dais 2026-07-10 指示。宣言には「実行コマンド+出力」の記録必須）
