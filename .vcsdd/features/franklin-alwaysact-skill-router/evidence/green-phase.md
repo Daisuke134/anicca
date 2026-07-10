@@ -156,3 +156,111 @@ that always takes this feature's near-zero-cost "not Franklin" fast path) — co
 a regression introduced by this feature's diff. The regression-baseline runs quoted above are clean
 (0 failures); this flake is disclosed here rather than hidden.
 ```
+
+================================================================================
+ADDENDUM — impl-review iter1 fixes (Phase 3 iteration-1 FIND-001/FIND-002)
+================================================================================
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+Fixes Phase 3 implementation review iteration-1's 2 blocking findings
+(`.vcsdd/features/franklin-alwaysact-skill-router/reviews/impl/iteration-1/output/findings/`):
+
+FIND-001 (REQ-502/REQ-508, `kind` collapsed): `writeAlwaysActEscalation()` (index.mjs) now takes an
+optional `kind` param (default `'router_no_realized_action'`, unchanged for the 4 pre-existing
+bounds-exhausted/empty-reroute-target-set call sites); the REQ-502 empty-menu call site now passes
+`kind: 'router_menu_empty'` explicitly — the two escalation triggers are now ledger-distinguishable, per
+REQ-502's edge case ("this is a spec violation ... never silently fall back") and REQ-508's own EARS
+example kind. `appendHarnessFailure`'s detail line now also carries the correct `kind` and a
+kind-specific `rawDetail` message. The tautological PROP-502d unit test (pure `assembleAlwaysActMenu`
+return-value check only) is now explicitly relabeled as a "pure-planning prerequisite only"; the REAL
+PROP-502d evidence is a new spawn-based integration test in `always-act-reroute.test.mjs` that drives an
+ACTUAL empty-menu wake (via a new test-only `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` env seam — same idiom as
+the pre-existing `ANICCA_BALANCE_OVERRIDE`/`CLAUDE_BIN` test hooks — pointed at a well-formed
+`{"slots":{}}` fixture registry, never a malformed-JSON parse-error fallback) and asserts the actual
+ledger line's `kind === 'router_menu_empty'`, zero think() calls.
+
+FIND-002 (REQ-512, go-live writer missing): added `buildGoLiveRecord`/`shouldRecordGoLive` (pure
+planning, `always-act-router.mjs`) and a new module `runtime/loop/go-live.mjs` (effectful shell append,
+`recordGoLive()` — reuses the SAME `appendLedgerLine`/`formatRecord` machinery every other ledger write
+uses, idempotent via `shouldRecordGoLive`'s tail-read guard). Per behavioral-spec.md's own REQ-512 text
+and sec6 item 10, this is a SEPARATE, explicit, one-time OPERATOR action (invoked manually, out of the
+wake loop's own control flow) — not something any wake writes automatically. `go-live.mjs` is never
+imported by `index.mjs` (structurally confirmed by a new test), so the go-live line is written only when
+the operator's own one-time command runs, never as a side effect of any wake, engaged or otherwise.
+New unit tests: `always-act-router.test.mjs` (4: buildGoLiveRecord shape + property, shouldRecordGoLive
+true/false) + new `__tests__/go-live.test.mjs` (4: fresh-ledger first-call writes, second-call is a
+no-op/never duplicates, pre-existing-line-in-tail is respected, index.mjs never references
+go-live.mjs/recordGoLive) — registered in `package.json`'s `test`/`test:unit` scripts.
+
+FILES CHANGED THIS ADDENDUM:
+  - runtime/loop/index.mjs (writeAlwaysActEscalation kind param + empty-menu call site;
+    ALWAYS_ACT_REGISTRY_PATH_OVERRIDE test-only registry-path seam)
+  - runtime/loop/always-act-router.mjs (+buildGoLiveRecord, +shouldRecordGoLive)
+  - runtime/loop/go-live.mjs (NEW — recordGoLive + CLI entry point)
+  - runtime/loop/__tests__/always-act-router.test.mjs (+4 PROP-512a tests, PROP-502d relabeled)
+  - runtime/loop/__tests__/always-act-reroute.test.mjs (+1 REAL PROP-502d integration test)
+  - runtime/loop/__tests__/helpers/always-act-harness.mjs (+writeEmptyRegistry)
+  - runtime/loop/__tests__/go-live.test.mjs (NEW — 4 tests)
+  - runtime/loop/package.json (registers go-live.test.mjs in test/test:unit)
+
+================================================================================
+RAW OUTPUT — target-feature suite (62 tests, 5 files: the 4 Phase 2a files + new go-live.test.mjs)
+Command (from runtime/loop/): node --test __tests__/always-act-router.test.mjs
+  __tests__/always-act-wire-seam.test.mjs __tests__/always-act-nojudgment.test.mjs
+  __tests__/always-act-reroute.test.mjs __tests__/go-live.test.mjs
+================================================================================
+ℹ tests 62
+ℹ pass 62
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20744.907042
+
+================================================================================
+RAW OUTPUT — full official package.json `test` script (now 15 files, 182 cases: 120 pre-existing +
+  62 target-feature)
+Command (from runtime/loop/): npm test
+================================================================================
+ℹ tests 182
+ℹ pass 182
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20804.863833
+
+(Re-run 4x this session for stability: 2 runs hit the SAME pre-existing ENOTEMPTY teardown-race flake
+already disclosed in this file's original body above -- 181/182 pass, 1 fail, at a DIFFERENT
+integration.test.mjs test each time (PROP-021(b) at line 501 on one run, PROP-023(a) at line 680 on
+another) -- confirming this is a generic race in integration.test.mjs's own shared teardown pattern
+(`proc.kill('SIGTERM')` immediately followed by `fs.rmSync` with no wait for child exit), not tied to any
+specific test or to always-act code. 2 runs were clean: 182/182 pass, 0 fail. The failure is NEVER in any
+always-act-*.test.mjs or go-live.test.mjs file on any run — confirming zero regression from this
+addendum's diff.)
+
+================================================================================
+RAW OUTPUT — regression baseline (sweep 2): the same 92 pre-existing tests outside package.json, unaffected
+Command (from runtime/loop/): node --test __tests__/address-classify.test.mjs
+  __tests__/balance-solana.test.mjs __tests__/brain.test.mjs
+  __tests__/daemon-script-franklin-routing.test.mjs __tests__/earn-slot.test.mjs
+  __tests__/franklin-plist-config.test.mjs __tests__/integration-solana-tier.test.mjs
+  __tests__/liquidity.test.mjs __tests__/prompt.test.mjs __tests__/resolve-identity.test.mjs
+  __tests__/self-eval.test.mjs __tests__/wallet-address-solana.test.mjs
+================================================================================
+ℹ tests 92
+ℹ pass 92
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12208.216834
+
+================================================================================
+ADDENDUM TOTALS
+================================================================================
+Target-feature test() blocks (this feature's own 5 files): 62/62 PASS (+9 vs the original 53: 1 new
+  REAL PROP-502d integration test + 4 new PROP-512a pure tests + 4 new go-live.test.mjs tests).
+Full combined suite (182 official package.json + 92 sweep-2) = 274/274 PASS, 0 regressions.

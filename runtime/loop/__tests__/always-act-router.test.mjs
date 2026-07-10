@@ -56,6 +56,8 @@ import {
   nextRerouteState,
   buildMustActReinforcement,
   buildAlwaysActLedgerFields,
+  buildGoLiveRecord,
+  shouldRecordGoLive,
   isPostGoLiveRegression,
 } from '../always-act-router.mjs';
 
@@ -151,7 +153,7 @@ test('PROP-502c: given the CURRENT skills/registry.json, isEarnActionSlot-menu m
   }
 });
 
-test('PROP-502d: an empty resolved menu is representable (assembleAlwaysActMenu returns []), never throws, never silently substitutes a default', () => {
+test('PROP-502d (pure-planning prerequisite only -- see always-act-reroute.test.mjs::PROP-502d for the REAL ledger-kind assertion, Phase 3 iter1 FIND-001 fix): an empty resolved menu is representable (assembleAlwaysActMenu returns []), never throws, never silently substitutes a default', () => {
   const registry = fixtureRegistry({ report: { status: 'live' }, cook: { status: 'live', alwaysAvailable: true } });
   const menu = assembleAlwaysActMenu({
     registry,
@@ -385,6 +387,37 @@ test('PROP-510a (property): attemptsUsed is echoed unchanged for both domain val
     }),
     { numRuns: 20 },
   );
+});
+
+// ===========================================================================
+// REQ-512 / PROP-512a — buildGoLiveRecord / shouldRecordGoLive: the pure planning half of the
+// go-live operational action (Phase 3 iter1 FIND-002 fix). The effectful shell-append half
+// (recordGoLive) lives in go-live.mjs and is unit-tested there (real fs, tmp ledger).
+// ===========================================================================
+
+test('PROP-512a: buildGoLiveRecord shapes exactly kind:\'always_act_go_live\' + the passed-through ts and config_source, REQ-512\'s own named payload fields', () => {
+  const record = buildGoLiveRecord({ ts: '2026-07-11T00:00:00.000Z', configSource: '.env' });
+  assert.deepEqual(record, { ts: '2026-07-11T00:00:00.000Z', kind: 'always_act_go_live', config_source: '.env' });
+});
+
+test('PROP-512a (property): buildGoLiveRecord\'s kind is ALWAYS the literal string always_act_go_live, regardless of ts/configSource content', () => {
+  fc.assert(
+    fc.property(fc.string(), fc.string(), (ts, configSource) => {
+      const record = buildGoLiveRecord({ ts, configSource });
+      return record.kind === 'always_act_go_live' && record.ts === ts && record.config_source === configSource;
+    }),
+    { numRuns: 50 },
+  );
+});
+
+test('PROP-512a: shouldRecordGoLive is true for an empty tail and for a tail with no existing always_act_go_live line', () => {
+  assert.equal(shouldRecordGoLive([]), true);
+  assert.equal(shouldRecordGoLive([{ kind: 'always_act_not_engaged', reason: 'flag_unset' }, { kind: 'router_no_realized_action' }]), true);
+});
+
+test('PROP-512a: shouldRecordGoLive is false once a always_act_go_live line already exists anywhere in the tail -- the "exactly once at the flip" guard', () => {
+  assert.equal(shouldRecordGoLive([{ kind: 'always_act_go_live', ts: 't0', config_source: 'env' }]), false);
+  assert.equal(shouldRecordGoLive([{ kind: 'wake' }, { kind: 'always_act_go_live' }, { kind: 'always_act_not_engaged', reason: 'flag_malformed' }]), false);
 });
 
 // ===========================================================================

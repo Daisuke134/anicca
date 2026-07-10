@@ -135,7 +135,11 @@ let alwaysAvailableBySlot = {};
 let registryForAlwaysAct = null;
 {
   const repoRoot = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..', '..');
-  const registryPath = path.join(repoRoot, 'skills', 'registry.json');
+  // Test-only env var (same idiom as ANICCA_BALANCE_OVERRIDE/CLAUDE_BIN elsewhere in this codebase):
+  // lets REQ-502's empty-menu edge case be driven through a REAL spawned wake against a REAL (if
+  // fixture) registry.json, rather than only through the pure assembleAlwaysActMenu unit test.
+  // Absent in production; defaults to the real repo-relative path.
+  const registryPath = process.env.ALWAYS_ACT_REGISTRY_PATH_OVERRIDE || path.join(repoRoot, 'skills', 'registry.json');
   try {
     const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));
     registryForAlwaysAct = registry;
@@ -662,9 +666,12 @@ async function runOneWake() {
 async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
   const sleepS = cfgNum(config.SLEEP_BASE_S, 120);
 
-  // REQ-502 empty-menu terminal case: zero think() calls, immediate truthful escalation.
+  // REQ-502 empty-menu terminal case: zero think() calls, immediate truthful escalation, distinct
+  // kind:'router_menu_empty' (spec-review Phase 3 iter1 FIND-001 fix) — this is a REGISTRY/CONFIG spec
+  // violation (zero live earn-action slots resolved), never conflated with the ordinary
+  // bounds-exhausted `router_no_realized_action` outcome below.
   if (!Array.isArray(alwaysActMenu) || alwaysActMenu.length === 0) {
-    await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed: 0 });
+    await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed: 0, kind: 'router_menu_empty' });
     await sleepSecs(sleepS);
     return;
   }
@@ -843,13 +850,22 @@ async function writeWakeErrorAndSleep({ wakeId, ts, err }) {
  * REQ-508: the exhausted-bound terminal case — truthfully recorded (never a fabricated `profitable`
  * or success value, `slot: null`) and escalated via the existing appendHarnessFailure mechanism
  * (unmodified) so the existing self-heal escalation path can pick it up.
+ *
+ * `kind` (spec-review Phase 3 iter1 FIND-001 fix) distinguishes REQ-502's empty-menu terminal case
+ * (`kind:'router_menu_empty'` — a spec violation: zero live earn-action slots resolved at menu
+ * assembly, before any pick was even attempted) from EVERY other escalation trigger (an empty
+ * risk-free reroute-target set, or the ordinary REQ-505/506/511/513 retry/reroute budget exhausted
+ * with no realized earn-ledger line) — REQ-508's own EARS text names `kind:'router_no_realized_action'`
+ * as the default example for those. Defaults to `'router_no_realized_action'` so every existing call
+ * site (bounds-exhausted, empty-reroute-target-set) is unaffected; only the REQ-502 empty-menu call
+ * site passes the distinct kind explicitly.
  */
-async function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed }) {
+async function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed, kind = 'router_no_realized_action' }) {
   const ledgerFields = buildAlwaysActLedgerFields({ wakeId, slot: null, args: {}, attemptsUsed, realized: false });
   const recordFields = {
     ts,
     wake_id: ledgerFields.wake_id,
-    kind: 'router_no_realized_action',
+    kind,
     sleep_s: sleepS,
     model: currentTier.model,
     slot: ledgerFields.slot,
@@ -860,8 +876,10 @@ async function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed }) {
   const safeRecord = redactPrivateKeyPatterns(recordStr);
   await safeAppend(LEDGER_PATH, safeRecord);
   await appendHarnessFailure({
-    ts, wakeId, kind: 'router_no_realized_action', layer: 'router', exitCode: null,
-    rawDetail: 'always-act router: REQ-505/506/511/513 retry/reroute budget exhausted with no realized earn-ledger line this wake',
+    ts, wakeId, kind, layer: 'router', exitCode: null,
+    rawDetail: kind === 'router_menu_empty'
+      ? 'always-act router: REQ-502 empty-menu spec violation — zero live earn-action slots resolved this wake'
+      : 'always-act router: REQ-505/506/511/513 retry/reroute budget exhausted with no realized earn-ledger line this wake',
   });
 }
 

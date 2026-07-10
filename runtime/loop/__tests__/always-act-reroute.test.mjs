@@ -36,6 +36,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   makeTmpHome, writeGenesis, writeMockSkill, writeMockEarnSkill, writeMockGuardBlockedSkill,
+  writeEmptyRegistry,
   generateSolanaKeypair, writeBlockrunSession, writeAutomatonSolanaJson,
   startMockBrainServer, makeToolCallResponse, makeNarrateResponse,
   spawnLoop, readLedger, waitForLines, waitForCondition, baseSpawnEnv, cleanupHome,
@@ -420,6 +421,33 @@ test('Row 12 (spec-review iteration-5 notes.md fix): fabricated slot on attempt 
   proc.kill('SIGTERM');
   assert.equal(requests.length, 2, 'never a 3rd think() call (a reroute) after a reprompt-attempt no-op');
   assert.ok(lines.find((l) => l.kind === 'router_no_realized_action'));
+});
+
+// ===========================================================================
+// REQ-502 / PROP-502d (Phase 3 impl-review iteration-1 FIND-001 fix) — a REAL spawned wake against an
+// empty-yielding registry escalates with the DISTINCT kind:'router_menu_empty', never conflated with
+// the ordinary bounds-exhausted 'router_no_realized_action' kind. The pure `assembleAlwaysActMenu`
+// unit test in always-act-router.test.mjs only proves the MENU-ASSEMBLY helper can represent an empty
+// array; it never observes the real ledger `kind` a live empty-menu wake actually writes (the exact
+// tautological-coverage gap FIND-001 identified) — this test drives the REAL runAlwaysActWake() path
+// end-to-end via ALWAYS_ACT_REGISTRY_PATH_OVERRIDE (writeEmptyRegistry, a well-formed `{"slots":{}}`
+// fixture, never a malformed-JSON parse-error fallback) and asserts the ACTUAL ledger line.
+// ===========================================================================
+
+test('PROP-502d (REAL wake): an empty-yielding registry escalates a REAL spawned wake with the DISTINCT kind:\'router_menu_empty\', zero think() calls, never the ordinary router_no_realized_action kind', { timeout: 20000 }, async () => {
+  const { home, legacyHome } = setupEngaged();
+  const registryOverridePath = writeEmptyRegistry(home);
+  const { server, url, requests } = await startMockBrainServer(() => makeNarrateResponse()); // must never be reached -- zero think() calls
+  const proc = engagedSpawn({ home, legacyHome, url, extraEnv: { ALWAYS_ACT_REGISTRY_PATH_OVERRIDE: registryOverridePath } });
+  track(proc, server, home, legacyHome);
+
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  await new Promise((r) => setTimeout(r, 300));
+  proc.kill('SIGTERM');
+  assert.equal(requests.length, 0, 'REQ-502 empty-menu terminal case spends ZERO think() calls -- never even reaches the brain');
+  assert.equal(lines[0].kind, 'router_menu_empty', 'the empty-MENU escalation must ledger the DISTINCT kind, never the ordinary router_no_realized_action');
+  assert.equal(lines[0].slot, null);
+  assert.notEqual(lines[0].profitable, true);
 });
 
 // ===========================================================================
