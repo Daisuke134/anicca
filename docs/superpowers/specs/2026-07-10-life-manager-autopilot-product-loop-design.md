@@ -303,6 +303,10 @@ Life Manager Business Manager Loop
 The current system keeps CEO and Life Manager separate. CEO is the portfolio allocator. Life Manager
 is one product business inside that portfolio.
 
+Explorer is not a peer of CEO and is not a separate top-level system. Explorer is one manager
+business loop under CEO, alongside gig, bounty, affiliate, video, article, pm/hl, capafy, and
+life-manager. Explorer's business output is new validated business opportunities and CEO proposals.
+
 ```text
                          DAIS / CLAUDE-P LOCAL RUNTIME
                                       |
@@ -326,12 +330,27 @@ is one product business inside that portfolio.
         |   - spawn                                              |
         |   - keep alive / conserve compute                      |
         =========================================================
-          |             |              |             |          |
-          v             v              v             v          v
-      gig loop     bounty loop    affiliate loop   video   life-manager
-                                                     loop       loop
-                                                                |
-                                                                v
+          |
+          v
+        =========================================================
+        |              MANAGER BUSINESS LOOPS                   |
+        =========================================================
+        | gig loop                                               |
+        | bounty loop                                            |
+        | affiliate loop                                         |
+        | video loop                                             |
+        | article loop                                           |
+        | pm / hl trade loop                                     |
+        | capafy loop                                            |
+        | explorer loop                                          |
+        |   - pain-point intake                                  |
+        |   - same-day validation                                |
+        |   - evidence artifact                                  |
+        |   - CEO proposal                                       |
+        | life-manager loop                                      |
+        =========================================================
+          |
+          v
         =========================================================
         |                 LIFE MANAGER LOOP                     |
         |        product business manager for Life Manager       |
@@ -719,12 +738,19 @@ ASCII:
         |                   CEO LOOP                   |
         |  revenue/cost/runway/health/portfolio alloc  |
         ------------------------------------------------
-          |          |          |          |          |
-          v          v          v          v          v
-        gig       bounty    affiliate    video   life-manager
-                                                   |
-                                                   v
-                                  product dev + marketing + user life ops
+                              |
+                              v
+        ------------------------------------------------
+        |            MANAGER BUSINESS LOOPS            |
+        ------------------------------------------------
+        | gig / bounty / affiliate / video / article   |
+        | pm-hl trade / capafy / explorer              |
+        | life-manager                                 |
+        ------------------------------------------------
+             |                         |
+             v                         v
+   explorer validates             life-manager improves
+   new opportunities              product + marketing + user life ops
 ```
 
 ## CEO Requirements Added By Life Manager

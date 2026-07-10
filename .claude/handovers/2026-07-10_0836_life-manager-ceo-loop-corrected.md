@@ -156,21 +156,25 @@ github.com/Daisuke134/profitable-claude
 |   - loop-specific next objective                             |
 ===============================================================
         |
-        +------------------------------------------------------+
-        |                                                      |
-        v                                                      v
-============================                       ============================
-| MANAGER BUSINESS LOOPS   |                       | EXPLORER LOOP           |
-============================                       ============================
-| gig                       |                       | X/Reddit/pain points    |
-| bounty                    |                       | same-day validation     |
-| affiliate                 |                       | evidence URL/artifact   |
-| video                     |                       | proposes new business   |
-| article                   |                       | to CEO                  |
-| pm/hl trade               |                       ============================
-| capafy                    |
-| life-manager              |
-============================
+        |
+        v
+===============================================================
+|                  MANAGER BUSINESS LOOPS                     |
+===============================================================
+| gig                                                          |
+| bounty                                                       |
+| affiliate                                                    |
+| video                                                        |
+| article                                                      |
+| pm/hl trade                                                  |
+| capafy                                                       |
+| explorer                                                     |
+|   - X/Reddit/pain points                                     |
+|   - same-day validation                                      |
+|   - evidence URL/artifact                                    |
+|   - proposes new business to CEO                             |
+| life-manager                                                 |
+===============================================================
         |
         v
 Each manager loop owns:
@@ -200,7 +204,7 @@ documented loops:
 gap:
   CEO loop is not fully present in this repo yet.
   Life Manager business loop is not present yet.
-  capafy/article/pm/hl/explorer are not fully present here yet.
+  capafy/article/pm/hl/explorer manager loops are not fully present here yet.
   start-all/status only cover bounty/affiliate/gig.
 ```
 

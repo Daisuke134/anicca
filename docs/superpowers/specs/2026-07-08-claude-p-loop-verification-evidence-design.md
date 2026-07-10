@@ -369,7 +369,7 @@ Boundary rule:
 
 ## 会社型3層アーキテクチャ（Dais 2026-07-08: founder-loop = CEO 化）
 
-現状の founder-loop は「自分の ledger に earn を記録し目標達成を確認するだけ」の狭い記録ループ（record-earn.mjs を叩くだけ）で、CEO ではない。これを **会社（company）** に再構成する。各 earn loop = 自分の事業だけを改善する business manager。その上に CEO と explorer を置く。
+現状の founder-loop は「自分の ledger に earn を記録し目標達成を確認するだけ」の狭い記録ループ（record-earn.mjs を叩くだけ）で、CEO ではない。これを **会社（company）** に再構成する。各 earn loop = 自分の事業だけを改善する business manager。Explorer も CEO の横に置く独立層ではなく、新規事業を検証して CEO に上申する manager business loop の1つとして置く。
 
 ```
         ┌──────────── CEO LOOP（= founder-loop を昇格）─────────────┐
@@ -379,21 +379,32 @@ Boundary rule:
         │  ・稼げない loop の頻度を落とす/pause（token 節約）          │
         │  ・explorer が検証した新事業を loop 化して起動              │
         │ 判断=agent(Sonnet)、配分の実行と gate=決定論ツール         │
-        └───────┬───────────────────────┬────────────────┬──────────┘
-                │                       │                │
-    ┌───────────▼──────┐    ┌───────────▼───────┐   ┌────▼──────────────┐
-    │ MANAGER LOOPS     │    │ MANAGER LOOPS     │   │ EXPLORER LOOP      │
-    │ (稼ぐ既存事業)     │    │ (稼ぐ既存事業)     │   │ (新規事業の起業家) │
-    │ pm/clip/video/gig │    │ affiliate/bounty/  │   │ X・Reddit の       │
-    │ …                 │    │ hl/article…        │   │ pain-point を掘る  │
-    │ 各々:             │    │ 各々:             │   │ → 事業案生成       │
-    │ ・inner self-heal │    │ ・inner self-heal │   │ → 小さく検証(その  │
-    │ ・inner improve   │    │ ・inner improve   │   │   日のうちに動く証拠)│
-    │ ・外部検索で最新   │    │ ・外部検索で最新   │   │ → CEO に上申       │
-    │   戦略を取り込む   │    │   戦略を取り込む   │   │                   │
-    └──────────────────┘    └───────────────────┘   └───────────────────┘
-                │                       │                │
-                └───────────────────────┴────────────────┘
+        └────────────────────────┬──────────────────────────────┘
+                                 │
+                    ┌────────────▼────────────────┐
+                    │ MANAGER BUSINESS LOOPS       │
+                    │ pm / clip / video / gig      │
+                    │ affiliate / bounty / hl      │
+                    │ article / capafy             │
+                    │ explorer                     │
+                    │ life-manager                 │
+                    │                              │
+                    │ 各々:                        │
+                    │ ・domain action              │
+                    │ ・inner self-heal            │
+                    │ ・inner improve              │
+                    │ ・外部検索で最新戦略を取り込む│
+                    │ ・metrics/lessons を記帳      │
+                    │ ・evidence mail              │
+                    │                              │
+                    │ explorer はこの中の1 loop:   │
+                    │ X/Reddit pain-point          │
+                    │ → 事業案生成                 │
+                    │ → その日のうちに小さく検証    │
+                    │ → evidence 付き CEO 上申      │
+                    └──────────────────────────────┘
+                                 │
+                                 v
                     全 loop が自分の成果を evidence 付きで
                     keiodaisuke@gmail.com / contact@aniccaai.com に mail 報告
 ```
@@ -442,7 +453,9 @@ start-all/status coverage for every managed loop
 This repo gap is not a blocker to the design; it is the implementation backlog. Do not say the full
 loop is deployed in `profitable-claude` until these files and evidence paths exist.
 
-### EXPLORER LOOP（新規、起業家）
+### EXPLORER LOOP（CEO 配下の manager business loop）
+- Explorer は CEO の横にある独立システムではない。gig/bounty/affiliate/video/article/pm/hl/capafy/life-manager と同じ **manager business loop** の1つとして CEO portfolio に入る。
+- Explorer の revenue-equivalent output は「実検証済みの新規 business opportunity」と「CEO に渡せる loop 化提案」であり、採用率・黒字化率・捨てた案の lessons を evidence とする。
 - **agent-reach 経由で X・Reddit を継続監視**（X は Grok/X MCP も使う — Dais の X 有料プラン活用）。人間の pain-point・「誰か作って」・Claude で稼ぐ実例ツイートを収集。
 - 収集 → 事業案生成 → **その日のうちに動く最小検証**（no dry run: 実際に1本作る/1件応募する/1 API 叩く）→ 動いた証拠付きで CEO に上申。
 - 動いた案のみ CEO が loop 化を承認 → spawner が manager loop として起動。動かない案は lessons に記録して捨てる。
@@ -467,7 +480,7 @@ loop is deployed in `profitable-claude` until these files and evidence paths exi
 ### 目的（north star）
 - **Life Manager product business**: Dais と各 paid user の人生を autopilot で良くする cloud product を作る。初期収益目標は Life Manager subscription 10k MRR。Life Manager loop は product dev / self-heal / marketing / feedback-to-issue / product API cost / user outcome evidence を管理し、CEO に business summary を上げる。
 - **MAIN / Agent Economy side**: Anicca/Blockrun/agent economy を作る。human-funded claude-p が稼いだ crypto で ClawRouter/self-funded に卒業し、agent economy を外部 human subscription なしで維持・拡大する。これは特定個人の便益ではなく、agent economy と living beings 全体のための mission loop。
-- **CEO portfolio side**: CEO は gig/bounty/affiliate/video/life-manager など全 business loop の local Claude token/cost/revenue/cadence/evidence を読み、資源配分を決める。CEO の仕事は変えない。
+- **CEO portfolio side**: CEO は gig/bounty/affiliate/video/article/pm/hl/capafy/explorer/life-manager など全 manager business loop の local Claude token/cost/revenue/cadence/evidence を読み、資源配分を決める。CEO の仕事は変えない。Explorer もこの business loop 群の中に置き、CEO の横に分離しない。
 - **共有制約**: ローカル claude-p で動く間は同じ Claude subscription/token runway を食うので、global budget ledger に全 cost を記帳する。cloud Life Manager では Claude API / phone API / Google API / cloud infra の per-tenant cost を Life Manager loop が記帳する。purpose/wallet/ledger は分ける。さらに上位に `global-budget-guardian` を置き、weekly limit / API spend / disk / wallet drain を横断的に止める。
 
 ## OpenClaw 統合（Dais 指示: OpenClaw を廃止し claude-p に統合。棚卸し 2026-07-08 完了）
