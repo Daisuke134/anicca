@@ -69,5 +69,10 @@ console.log(r.status === 'payout-today' ? '✅payout-today' : '❌no-payout-toda
 echo "[clip-promote] $(clip_promote_line)"
 
 echo "--- self-fix result markers (autonomous fixes) ---"
-for L in capafy-loop reddit-loop life-manager-loop; do r="$HOME/.openclaw/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
+# self-heal.md root cause #2: this used to list only 3 of the 10 loops self-fix.sh actually covers,
+# so an honest FAIL diagnosis for e.g. affiliate (reCAPTCHA-blocked, #994) or bounty (sourcing
+# exhausted, #995) was silently invisible in every report. All 10 Cadence Contract + non-cadence
+# loops self-fix.sh drives are listed here now (never a subset — a marker file simply won't exist
+# for a loop that hasn't been escalated yet, which is itself honest information).
+for L in clip-loop affiliate-loop video-loop gig-loop bounty-loop pm-earner-loop founder-loop capafy-loop reddit-loop life-manager-loop; do r="$HOME/.openclaw/state/.self-fix-$L.result"; [ -f "$r" ] && echo "  [$L] $(cat "$r")"; done
 echo "--- loop-report tail (real executions) ---"; tail -4 "$HOME/.openclaw/logs/loop-report.log" 2>/dev/null

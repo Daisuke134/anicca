@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "non-blocking",
+  "description": "Root cause #2's fix (diagnostic visibility) is two plain literal-list/number edits with zero automated regression coverage: (1) skills/self/verify-loops.sh:77 changed the self-fix marker loop from 'for L in capafy-loop reddit-loop life-manager-loop' to a hardcoded 10-name list ('clip-loop affiliate-loop video-loop gig-loop bounty-loop pm-earner-loop founder-loop capafy-loop reddit-loop life-manager-loop'); (2) skills/self/verify-loops-audit.sh:93 changed 'cut -c1-900' to 'cut -c1-3000'. Neither the exact loop-name list nor the cut-length is asserted by any test — grep across skills/self/tests/* for the literal list or for '3000'/'900' finds nothing (test_verify_loops_audit_reddit_liveness.sh only covers the reddit-liveness OR-condition, a separate change in the same file). A future edit that silently drops a loop name from the list, or that shrinks the cut back down, would not be caught by the test suite; the only way to notice would be manually reading the script or waiting for the exact same invisible-diagnosis failure mode root cause #2 already produced once. I independently confirmed (by reading real self-fix result markers under ~/.openclaw/state/.self-fix-*.result) that all 10 expected '-loop'-suffixed filenames actually exist today and match this new list verbatim, so the CURRENT wiring is correct — the gap is purely the absence of a regression test locking that correctness in place.",
+  "evidence": {
+    "filePath": "skills/self/verify-loops.sh",
+    "lineRange": "77",
+    "snippet": "for L in clip-loop affiliate-loop video-loop gig-loop bounty-loop pm-earner-loop founder-loop capafy-loop reddit-loop life-manager-loop; do r=\"$HOME/.openclaw/state/.self-fix-$L.result\"; [ -f \"$r\" ] && echo \"  [$L] $(cat \"$r\")\"; done"
+  },
+  "routeToPhase": "harden"
+}
