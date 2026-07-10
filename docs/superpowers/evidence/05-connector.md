@@ -74,3 +74,8 @@ live 検証結果（transcript 実読）: core が STEP2(outreach draft)✔ / ST
 - connpass 登録自体は agent-reported（evidence gate 通過: 実 PNG≥5KB + 無料判定 + complete-URL 一致）。gcal 側は私が独立読返しで確認済。connpass 再ログイン検証まではしていない（adversary FIND-001 non-blocking の honest-limit、evidence 品質は高い）。
 - gcal event の**タイトルが raw URL**（"...join/complete/ — イベント申し込みが完了しました..."）＝醜い。イベント名にすべき（cosmetic iterate）。
 - これは1件（7日 streak の Day1）。§10 #5 Done は7日連続 + 各日 Telegram delivered。streak 継続と Telegram 実送信の確認が残る。
+
+
+## #5 streak 残検証項目（2026-07-11 記録）
+- **Telegram delivered 未確認**: connector コードは telegram-notify.sh/openclaw message send を STARTUP に配線済みだが、07:16 pass の実 delivery を lessons/log で確認できず（専用 telegram-notify log 無し、transcript はノイズ）。§10 #5 の「各日 Telegram delivered:true」は**未確認**。→ streak 検証時に Telegram 実着信を Dais 側で確認 or 送信経路を再検証する必要あり。
+- **7日 streak**: Day1(GENIAC 予約)成功。Day2-7 は connector が毎日 autonomous に走る（runtime 土台修正済）が、各日の FREE 実登録 or 正直 none + Telegram delivered + fresh adversary PASS が §10 Done。multi-day で継続。
