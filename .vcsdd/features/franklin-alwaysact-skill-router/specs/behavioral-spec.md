@@ -497,14 +497,35 @@ never satisfied by forcing a guard-blocked or capped action through.
 ### REQ-510: Every wake's routing decision is ledgered for audit
 **EARS**: WHEN always-act mode is engaged THE SYSTEM SHALL append, for every wake regardless of outcome, a
 ledger line containing at minimum: `wake_id`, the final executed `slot` (or `null` if REQ-508 fired),
-`args`, the number of reprompt/reroute attempts consumed (0, 1, or 2), and whether a realized earn-ledger
-line was found — reusing the existing `formatRecord`/`safeAppend`/`LEDGER_PATH` machinery unmodified.
+`args`, an `attemptsUsed` field, and whether a realized earn-ledger line was found — reusing the existing
+`formatRecord`/`safeAppend`/`LEDGER_PATH` machinery unmodified. **(spec-review iteration-5 notes.md
+non-blocking observation #2 fix)** The `attemptsUsed` field ledgers EXACTLY REQ-511's own `attemptsUsed`
+state variable, whose ENTIRE domain is `{0, 1}` — it is NEVER a count of total `think()` calls made this
+wake (a distinct `{0, 1, 2}`-domain quantity this field does not track). `attemptsUsed === 0` means no
+REQ-505 reprompt and no REQ-506 reroute was ever invoked this wake (whether because the baseline pick
+resolved immediately, REQ-502 hit its empty-menu terminal case, or REQ-506 hit its empty-reroute-target
+terminal case — see Acceptance Criteria below for the two cases where `attemptsUsed === 0` co-occurs with a
+non-obvious `think()`-call count); `attemptsUsed === 1` means the SINGLE shared retry budget (a reprompt or
+a reroute) was spent this wake, regardless of which of REQ-505/506/513 spent it.
 **Edge Cases**:
 - Private-key redaction (`redactPrivateKeyPatterns`, PROP-020 in the existing codebase) is applied to this
   new line exactly as it already is to every other ledger line — no new redaction pass, no bypass.
 **Acceptance Criteria**:
 - A unit test asserts the new ledger fields appear on both the "resolved on first pick" and "resolved
   after reroute/reprompt" paths, and that `redactPrivateKeyPatterns` is applied before append.
+- **(spec-review iteration-5 notes.md non-blocking observation #2 fix, literal domain pin)** A unit test
+  for REQ-502's empty-menu terminal case (zero `think()` calls made at all) asserts the ledgered
+  `attemptsUsed` value is literally `0` — proving the field ledgers `attemptsUsed`, not a `think()`-call
+  count, for the one terminal case where the two candidate readings would otherwise diverge from naive
+  assumption (a `think()`-call-count reading would expect `0` here too, by coincidence, but the NEXT case
+  disambiguates it).
+- **(spec-review iteration-5 notes.md non-blocking observation #2 fix, literal domain pin)** A unit test
+  for REQ-506's empty-reroute-target terminal case (one baseline `think()` call is made and resolves to a
+  valid pick with `earnLine === null`, then the risk-free-filtered reroute set is empty so the
+  re-invocation is skipped entirely per REQ-506's own edge case) asserts the ledgered `attemptsUsed` value
+  is literally `0` even though exactly ONE `think()` call was actually made — this is the case that
+  falsifies the `think()`-call-count reading and confirms the field ledgers `attemptsUsed ∈ {0, 1}`
+  exclusively.
 
 ### REQ-511: Non-functional — bounded cost and latency, via a SINGLE explicit attempt-state that is the sole arbiter of every retry/reroute/escalation branch (spec-review iteration-4 FIND-301 fix)
 **EARS**: THE SYSTEM SHALL track, for every always-act-engaged wake, a SINGLE explicit attempt-state
@@ -718,13 +739,25 @@ reachable attempt-1×attempt-2 combination outside this table.
 | 7 | Valid slot `s` picked, `earnLine === null` | Reroute: valid safe slot picked, execution completes, `earnLine === null` AGAIN (also no-op) | `0 → 1` (stays `1`) | **ESCALATE** (REQ-508 — accepted once rerouted, per REQ-511; never a 3rd `think()` call) | REQ-506 edge case "rerouted second pick ALSO produces earnLine===null" / PROP-506f-adjacent exhaustive coverage under PROP-511a |
 | 8 | Fabricated/off-menu slot on the very FIRST `think()` call (e.g. `slot:'sleep'`, or a syntactically valid slot absent from `ctx.alwaysActMenu`) | Reprompt (same `ctx.alwaysActMenu`, per REQ-513's baseline-attempt branch): valid slot picked, `earnLine !== null` | `0 → 1` | **EXECUTE** (via reprompt, 2 `think()` calls total) | REQ-513 PROP-513a / REQ-505 AC1 |
 | 9 | No tool call | Reprompt (same `ctx.alwaysActMenu`): VALID slot picked, execution completes, but `earnLine === null` (no-op) — **the REQ-506 symmetric extension of FIND-301** | `0 → 1` (stays `1`, no reroute attempted) | **ESCALATE** (REQ-508, no reroute — a 3rd `think()` call would be needed to reroute, which REQ-511 forbids) | REQ-506 FIND-301 generalized edge case + AC / **PROP-506g** |
+| 10 | Fabricated/off-menu slot on the very FIRST `think()` call (e.g. `slot:'sleep'`, or a syntactically valid slot absent from `ctx.alwaysActMenu`) | Reprompt (same `ctx.alwaysActMenu`, per REQ-513's baseline-attempt branch): fabricated/off-menu slot AGAIN | `0 → 1` (stays `1`, no further increment) | **ESCALATE** (REQ-508, 2 `think()` calls total, never 3) | REQ-513's generic "attemptsUsed===1 ALREADY... by a PRIOR REQ-505 reprompt, a PRIOR REQ-506 reroute, or by this being itself the reroute attempt" branch rule (REQ-513 EARS, applies identically regardless of the specific fabricated-slot value on attempt-2) / PROP-511a's bounded-exploration sweep |
+| 11 | Fabricated/off-menu slot on the very FIRST `think()` call | Reprompt (same `ctx.alwaysActMenu`): no tool call | `0 → 1` (stays `1`) | **ESCALATE** (REQ-508, 2 `think()` calls total, never 3) | REQ-505's generic "consult REQ-511's shared attempt-state... IF attemptsUsed===1 ALREADY... proceed DIRECTLY to REQ-508's truthful escalation" EARS clause (not scoped to which failure type produced `attemptsUsed=1`) / PROP-511a's bounded-exploration sweep |
+| 12 | Fabricated/off-menu slot on the very FIRST `think()` call | Reprompt (same `ctx.alwaysActMenu`): VALID slot picked, execution completes, but `earnLine === null` (no-op) | `0 → 1` (stays `1`, no reroute attempted) | **ESCALATE** (REQ-508, no reroute — a 3rd `think()` call would be needed to reroute, which REQ-511 forbids) | REQ-506's generic "the slot that just produced earnLine===null was itself picked and executed on a REQ-505 REPROMPT attempt, which already spent the shared budget... proceed DIRECTLY to REQ-508's truthful escalation" edge case (not scoped to which failure type produced `attemptsUsed=1` on attempt-1) / PROP-506g / PROP-511a's bounded-exploration sweep |
 
-Row 8's attempt-2 outcome, if instead a fabricated slot or a no-op result, is covered by rows 3/4/9's same
-`attemptsUsed===1 → escalate` pattern (the specific attempt-1 failure type that got the attempt to
-`attemptsUsed=1` is irrelevant to attempt-2's own branch decision — only `attemptsUsed`'s VALUE matters, per
-REQ-511). No other attempt-1×attempt-2 combination is reachable: `attemptsUsed` cannot exceed `1` within a
-wake (REQ-511), and once `attemptsUsed===1`, EVERY invalid outcome (of any type) terminates in row
-3/4/6/7/9's shared **ESCALATE** pattern — never a third `think()` call, never further skill execution.
+**(spec-review iteration-5 notes.md non-blocking observation #1 fix)** Rows 10-12 close the 3
+attempt-1×attempt-2 cells that iteration-5's independent re-derivation found reachable but not given a
+dedicated row (all three have attempt-1 = a fabricated/off-menu slot on the very first `think()` call, i.e.
+row 8's precursor, crossed with attempt-2 ∈ {fabricated/off-menu again, no tool call, valid-pick-no-op} —
+the fourth member of that product, a valid pick with `earnLine !== null`, is already row 8 itself). Every
+one of rows 3/4/6/7/9/10/11/12 resolves to the SAME **ESCALATE** pattern because `attemptsUsed===1` at
+attempt-2 in every one of them, regardless of which attempt-1 failure type (no-tool-call, fabricated/off-menu
+slot, or valid-pick-no-op) produced that `attemptsUsed=1` value — this was already true of the underlying
+REQ-505/506/513 requirements before rows 10-12 were added (see iteration-5 notes.md finding #1's own
+derivation), so adding these rows is a pure precision fix with no change to any requirement's behavior. The
+full attempt-1(3 non-terminal classes) × attempt-2(4 classes) = 12-cell product is now covered by exactly
+12 rows (1 terminal attempt-1-only row [1] + 11 two-attempt rows [2-12]): `attemptsUsed` cannot exceed `1`
+within a wake (REQ-511), and once `attemptsUsed===1`, EVERY invalid outcome (of any type) terminates in
+rows 3/4/6/7/9/10/11/12's shared **ESCALATE** pattern — never a third `think()` call, never further skill
+execution. No other attempt-1×attempt-2 combination is reachable.
 
 ## 3. Edge Case Catalog (cross-cutting)
 
