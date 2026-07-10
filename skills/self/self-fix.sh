@@ -61,6 +61,14 @@ if tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true; pkill -f "claude --name $SESSION" 2>/dev/null||true; sleep 1
 fi
 
+# FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full disk stops swap from growing, which
+# surfaces as fork() failures for every fresh spawn — including this fixer's own tmux/claude spawn below.
+# Without this, self-fix keeps respawning fixers that die before they can even diagnose anything (observed:
+# 40+ spawns over 24h, none completed). Reclaim only 100%-regenerable package-manager caches; see
+# hc_reclaim_disk_if_low in healthcheck-lib.sh for the full rationale and the excluded (approval-needed) paths.
+# shellcheck source=healthcheck-lib.sh
+. "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null && hc_reclaim_disk_if_low
+
 # FIND-003/004: the fixer MUST verify a real side-effect, commit in the CORRECT repo (the one the edited file lives
 # in — discovered via git rev-parse, NOT guessed), and write a result marker the caller/healthcheck can check.
 printf 'RUNNING %s\n' "$(date -u +%FT%TZ)" > "$RESULT"
