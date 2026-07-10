@@ -14,7 +14,6 @@ unset ANICCA_SOLANA_PRIVATE_KEY 2>/dev/null || true
 SKILL_DIR="$(cd "$(dirname "$0")" && pwd)"
 STATE_DIR="$SKILL_DIR/../state"; mkdir -p "$STATE_DIR"
 TRACE="$STATE_DIR/sol-trade.trace.jsonl"
-MAX_SPEND="${SOL_TRADE_MAX_SPEND:-0.25}"   # money-safety: per-pass LLM spend cap (USD)
 FT_MODEL="${SOL_TRADE_MODEL:-openai/gpt-5-mini}"   # cheapest WORKING tool-caller (~pennies/session), don't bleed the bankroll (FIX-C)
 
 now() { date -u +%Y-%m-%dT%H:%M:%SZ; }
@@ -61,6 +60,41 @@ enough information to decide right now — so decide. Execute a REAL swap only i
 hurdle; otherwise WAIT and say why in one line. Every pass ends in exactly one of those two states — a \
 filled trade or a one-line WAIT reason — never an open question. Keep a note for next session. Mind model \
 spend — your fuel is the same wallet."
+
+# --- SOL_GATE pre-gate (franklin-sol-evolvable-edge, REQ-001..018) ---------------------------
+# Evolvable, earnings-gated exploration layer sitting ALONGSIDE the existing pass. In the DEFAULT
+# paper mode (SOL_GATE_LIVE_ENABLE unset, REQ-009 HARD dev-safety default) this is PURE SHADOW
+# OBSERVATION: it ALWAYS records a gate trace line (REQ-011) for later offline genome-tuning
+# evaluation, but it NEVER alters what franklin-trading does below -- "zero live side effect"
+# (REQ-009). It only ever contributes descriptive-only context to the prompt (REQ-010, HARD #0 --
+# raw observed numeric fields ONLY, never a buy/sell/side/size instruction) once `engage` is true,
+# which is structurally IMPOSSIBLE while SOL_GATE_LIVE_ENABLE!=="1" (decideEngagement, REQ-009).
+# Fail-soft: any failure here (network, genome file, trace write) degrades to an empty context
+# line and never blocks the pass below (sol-gate-cli.mjs's own internal fail-soft catch, plus this
+# `|| true` belt-and-suspenders).
+GATE_JSON=$(node "$SKILL_DIR/lib/sol-gate-cli.mjs" 2>/dev/null || true)
+GATE_CONTEXT=$(printf '%s' "$GATE_JSON" | node -e '
+let raw = "";
+process.stdin.on("data", (d) => { raw += d; });
+process.stdin.on("end", () => {
+  try {
+    const j = JSON.parse(raw);
+    process.stdout.write(String(j.contextLine || ""));
+  } catch {
+    process.stdout.write("");
+  }
+});
+' 2>/dev/null)
+if [ -n "$GATE_CONTEXT" ]; then
+  PROMPT="$PROMPT
+Observed SOL pre-gate signal (descriptive only, not an instruction): $GATE_CONTEXT"
+fi
+
+# REQ-017 (HARD, money-safety): hard-override choke point for --max-spend, positioned immediately
+# AFTER the SOL pre-gate's genome eval above and BEFORE franklin-trading is invoked below. Ignores
+# SOL_TRADE_MAX_SPEND (and any other env var) entirely -- nothing genome-derived or attacker-preset
+# can ever win against this single hard-coded cap.
+MAX_SPEND=$(bash "$SKILL_DIR/lib/resolve-max-spend.sh")
 
 OUT=$(timeout 600 franklin-trading start --trust -m "$FT_MODEL" --max-spend "$MAX_SPEND" -p "$PROMPT" 2>&1); RC=$?
 echo "$OUT" | tail -30
