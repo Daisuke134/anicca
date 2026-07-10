@@ -2,9 +2,25 @@
   "featureName": "spawn-funding-swap",
   "mode": "strict",
   "language": "typescript",
-  "currentPhase": "init",
-  "phaseHistory": [],
-  "iterations": {},
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-10T08:44:41.447Z",
+      "reason": "Phase 1a behavioral spec authored (money-path Base->AKT swap)"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-10T08:44:41.451Z",
+      "reason": "Phase 1b verification architecture authored"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
   "proofObligations": [],
   "traceability": {
     "epicId": "VCSDD-spawn-funding-swap-1783672828304",
@@ -13,5 +29,5 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-10T08:40:28.303Z",
-  "updatedAt": "2026-07-10T08:40:28.303Z"
+  "updatedAt": "2026-07-10T08:44:41.451Z"
 }
