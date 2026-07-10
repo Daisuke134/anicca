@@ -149,6 +149,28 @@ test("PROP-013: ANICCA_EVM_PRIVATE_KEY set in the ambient parent env (NOT source
   assert.notEqual(wallet, addr(pkLeaked));
 });
 
+test("PROP-014 (gh #986): flat legacy layout -- $ANICCA_HOME/wallet.json with a snake_case private_key field (no .automaton/ dir at all) still resolves, matching pre-EQUALIZE instances like founder-loop's ~/.anicca-founder", async () => {
+  const home = await tmpDir("run-identity-flatlegacy-");
+  const pk = "0x" + "3".repeat(64);
+  const aniccaHome = path.join(home, "flat-legacy-instance");
+  await fs.mkdir(aniccaHome, { recursive: true });
+  await fs.writeFile(path.join(aniccaHome, "wallet.json"), JSON.stringify({ private_key: pk }));
+  const { wallet } = await runDiscover({ HOME: home, ANICCA_HOME: aniccaHome });
+  assert.equal(wallet, addr(pk));
+});
+
+test("PROP-014b: .automaton/wallet.json wins over a flat legacy wallet.json when both exist for the same instance", async () => {
+  const home = await tmpDir("run-identity-flatlegacy-precedence-");
+  const pkAutomaton = "0x" + "4".repeat(64);
+  const pkFlat = "0x" + "8".repeat(64);
+  const aniccaHome = path.join(home, "both-layouts-instance");
+  await writeWalletJson(aniccaHome, pkAutomaton);
+  await fs.writeFile(path.join(aniccaHome, "wallet.json"), JSON.stringify({ private_key: pkFlat }));
+  const { wallet } = await runDiscover({ HOME: home, ANICCA_HOME: aniccaHome });
+  assert.equal(wallet, addr(pkAutomaton));
+  assert.notEqual(wallet, addr(pkFlat));
+});
+
 test("PROP-003: earn/run.sh never writes a raw private-key-shaped string (0x + 64 hex) to stdout or stderr during a full run", async () => {
   // Format check, not judgment (verification-architecture.md:75): a fixture wallet whose private
   // key is KNOWN drives a real discover-mode pass (identity resolution -> P1 earn-guard check ->
