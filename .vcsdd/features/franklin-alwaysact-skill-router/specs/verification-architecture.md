@@ -9,6 +9,16 @@ as "unmodified" or not mentioned at all ARE additively modified by this feature 
 `tools:`/prompt-text lines become conditional), and `runtime/loop/index.mjs:450`'s classify call-site gate
 (stays Effectful Shell, its condition is additively widened). This is the AUTHORITATIVE, corrected map.
 
+**Spec-review iteration-2 correction (FIND-101/FIND-102/FIND-103)**: three further corrections land in this
+revision — (1) REQ-506's reroute filter gains a `risk:"safe"`-only constraint (`isMarketRiskFree`, sourced
+from the registry's existing `risk` field, not a new classification source) so a capital-risking slot is
+never offered as a reroute target (FIND-101); (2) REQ-511's ceiling is restated unambiguously as at most 1
+extra `think()` call beyond baseline (2 total), matching `nextRerouteState`'s `maxAttempts = 1` and
+PROP-511a verbatim (FIND-102); (3) a new pure guard + Effectful Shell modification (REQ-513) makes
+`index.mjs`'s real `if (slot === 'sleep')` dispatch (`index.mjs:402-416`) reject a fabricated
+`slot:'sleep'`/off-menu pick while always-act is engaged, closing a structural bypass of the entire
+always-act mechanism (FIND-103).
+
 - **Pure Core** (new module(s), e.g. `runtime/loop/always-act-router.mjs`, deterministic, no I/O,
   formally/property verifiable — mirrors the existing purity split of `context.mjs`, `prompt.mjs`,
   `tier.mjs`, `catalog-gate.mjs`, `earn-slot.mjs`):
@@ -32,12 +42,23 @@ as "unmodified" or not mentioned at all ARE additively modified by this feature 
     that `brain.mjs`'s own `tools:` line calls (see Effectful Shell below), not a parallel, disconnected
     reimplementation. This is what makes PROP-504a's pure-function assertion actually reachable from the
     real outbound wire (PROP-504b).
+  - `isMarketRiskFree(slot, riskTagOf)` — REQ-506 (spec-review iteration-2 FIND-101 fix): pure predicate,
+    `riskTagOf(slot) === 'safe'`. Reuses the SAME injected `riskTagOf` classifier `assembleAlwaysActMenu`
+    already threads from `skills/registry.json`'s per-slot `risk` field (line 21 above) — not a new,
+    separate classification data source. REQ-506's reroute filter becomes `menuSlots.filter(x => x !== s &&
+    isMarketRiskFree(x, riskTagOf))`.
   - `noRealizedAction(earnLine)` — REQ-506: `earnLine === null` (trivial pure predicate over
     `classifyEarnResult`'s already-computed return value; `classifyEarnResult` itself stays in the
     effectful shell, unmodified, `earn-detect.mjs`).
+  - `isRejectableSleepOrOffMenu(slot, alwaysActMenu)` — REQ-513 (spec-review iteration-2 FIND-103 fix): pure
+    predicate, `slot === 'sleep' || !alwaysActMenu.includes(slot)`. Consumed by `index.mjs`'s real dispatch
+    (Effectful Shell, below) immediately after `parseToolCall` resolves a non-null `{slot, args}`, gating
+    whether the existing `if (slot === 'sleep')` branch is even reachable and whether skill execution
+    proceeds at all.
   - `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })` — REQ-505/506/511: pure bounded-retry
     state machine (`{ shouldRetry: boolean, excludeSlot: string|null, exhausted: boolean }`) — the single
-    shared counter enforcing REQ-511's ≤2 ceiling.
+    shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling of 2 total `think()` calls per wake
+    (1 baseline + at most 1 shared extra-call budget, spec-review iteration-2 FIND-102 fix — not "2 extra").
   - `buildMustActReinforcement(ctx, priorAttempt)` — REQ-505: pure string builder, additive to
     `buildUserMessage`'s existing composition pattern.
   - `buildAlwaysActLedgerFields({ wakeId, slot, args, attemptsUsed, realized })` — REQ-508/510: pure
@@ -56,12 +77,19 @@ as "unmodified" or not mentioned at all ARE additively modified by this feature 
     FIND-002 correction — ADDITIVELY MODIFIED, not unmodified**: the classify call-site gate at
     `index.mjs:450` changes from `else if (isEarnSlot(slot))` to `else if (ctx.alwaysActEngaged ?
     isEarnActionSlot(slot) : isEarnSlot(slot))` — a non-always-act `ctx` evaluates `isEarnSlot(slot)`
-    exactly as today. **REQ-506/FIND-003 correction**: the reroute re-invocation builds its tool schema via
-    `buildAlwaysActToolDefinitions(menuSlots.filter(x => x !== pickedSlot))` — a genuine hard array filter
-    over the pure-core menu — NOT the soft `avoidSlot` field (`index.mjs:179-421`), which stays completely
-    unmodified and independent of this feature. **REQ-512**: appends `kind:'always_act_not_engaged'`/
-    `kind:'always_act_go_live'` ledger lines (new, additive `kind` values reusing `formatRecord`/`safeAppend`
-    unmodified).
+    exactly as today. **REQ-506/FIND-003 correction (spec-review iteration-2 FIND-101 further correction)**:
+    the reroute re-invocation builds its tool schema via `buildAlwaysActToolDefinitions(menuSlots.filter(x =>
+    x !== pickedSlot && isMarketRiskFree(x, riskTagOf)))` — a genuine hard array filter over the pure-core
+    menu that ALSO excludes every `risk:"capital"` slot, not only the just-picked one — NOT the soft
+    `avoidSlot` field (`index.mjs:179-421`), which stays completely unmodified and independent of this
+    feature. **REQ-513 (spec-review iteration-2 FIND-103 fix) — ADDITIVELY MODIFIED, previously unlisted**:
+    `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch becomes conditional (`if (slot === 'sleep'
+    && !ctx.alwaysActEngaged)`), and a new guard immediately ahead of skill execution rejects a fabricated
+    `slot:'sleep'` or any slot absent from `ctx.alwaysActMenu` when `ctx.alwaysActEngaged === true`, routing
+    it into REQ-505's reprompt path instead of silently honoring it as idle — a non-always-act `ctx` is
+    completely unaffected, the existing branch fires exactly as today. **REQ-512**: appends
+    `kind:'always_act_not_engaged'`/`kind:'always_act_go_live'` ledger lines (new, additive `kind` values
+    reusing `formatRecord`/`safeAppend` unmodified).
   - `runtime/loop/brain.mjs::think()` / `thinkProxy()` / `thinkClaudeP()` — **ADDITIVELY MODIFIED, not
     unmodified** (FIND-001/FIND-005 correction — this was the central defect in spec-review iteration-1).
     `thinkProxy`'s `tools:` line (`brain.mjs:63`) becomes `tools: getToolDefinitions(ctx.alwaysActEngaged ?
@@ -97,15 +125,18 @@ as "unmodified" or not mentioned at all ARE additively modified by this feature 
 | PROP-506b | Picked slot with `earnLine !== null` (any `profitable` value) → zero reroute calls (immediate accept) | 1 | true | fast-check |
 | PROP-506c (closes FIND-002) | `economy/gig` and `economy/lending` picks specifically, under `ctx.alwaysActEngaged===true`, trigger `classifyEarnResult` invocation via the widened `index.mjs:450` call-site condition (`isEarnActionSlot`, not `isEarnSlot`) and `earnLine===null` drives the SAME reroute path as any `isEarnSlot` member — verified against `index.mjs`'s actual branching, never falling through to a silent `kind:'wake'` accept | 2 | true | vitest/jest integration |
 | PROP-506d (closes FIND-003's empty-enum edge case) | Always-act menu of size 1 equal to the just-picked slot, with `earnLine===null` → zero additional `think()` calls, immediate REQ-508 escalation (never a forced same-slot re-invocation) | 2 | true | vitest/jest exhaustive-case |
+| PROP-506e (money-safety-critical, closes FIND-101) | Reroute target set is filtered to `risk:"safe"` slots only (`isMarketRiskFree`) — for an arbitrary always-act menu containing a mix of `risk:"safe"`/`risk:"capital"` members, the ACTUAL constructed reroute tool schema's `slot.enum` never contains a `risk:"capital"` slot, for ALL such menus (property test), plus a literal fixture asserting `earn/sol-trade`/`hl_trade`/`token_launch`/`earn/polymarket-trade`/`yield` are never valid reroute targets | 2 | true | fast-check + vitest/jest literal |
+| PROP-506f (money-safety-critical, closes FIND-101) | Risk-free-filtered reroute set is empty (though the raw excluded-self set is non-empty, e.g. every remaining slot is `risk:"capital"`) → zero additional `think()` calls, immediate REQ-508 escalation — NEVER a fallback into a `risk:"capital"` reroute target | 2 | true | vitest/jest exhaustive-case |
 | PROP-507a (money-safety-critical) | For every slot `s` in an arbitrary generated menu, given a mocked brain returning `run_skill({slot:s, args:A})` for arbitrary `A`, the harness executes exactly `(s, A)` — no substitution, no ranking, no filtering by `A`'s content | 1 | true | fast-check (menu × args generator) |
 | PROP-507b (static) | The pure-core module source contains no `RegExp`/`.match(`/`.test(` call and no `if (args.` / `switch (slot)`-style branching keyed on model-chosen `args`/`slot` CONTENT (branching on registry bookkeeping fields like `status`/`risk` is allowed and expected) | 0 | true | grep-based CI check (documented, not a formal tool) |
 | PROP-508a | Both bounds exhausted → ledger `kind` is never `'wake'`/`'narrate'` and `profitable` is never `true` | 2 | true | vitest/jest exhaustive-case |
 | PROP-509a (money-safety-critical) | This feature's implementation diff touches none of: `skills/earn/*/run.sh`, `skills/earn/*/lib/resolve-max-spend.sh`, `skills/_shared/lib/earn-guard.mjs`, `catalog-gate.mjs` threshold constants | 0 | true | `git diff --stat` CI check against an explicit path allowlist |
 | PROP-509b (money-safety-critical) | Reroute triggered by a real guard-block (fixture: guard returns `skip`) selects a DIFFERENT slot on retry and never re-invokes the SAME slot with a relaxed/bypassed guard | 2 | true | vitest/jest integration (unmodified guard modules + fixtures) |
 | PROP-510a | New ledger fields present on both first-pick-resolved and after-reroute/reprompt-resolved paths; `redactPrivateKeyPatterns` applied before append | 1 | true | vitest/jest |
-| PROP-511a (money-safety-critical) | Adversarial mock brain (always no-tool-call OR always no-realized-action) → total `think()` calls per wake ≤ 2, for ALL adversarial sequences up to a bounded exploration depth | 1 | true | fast-check (bounded exhaustive) |
+| PROP-511a (money-safety-critical) | Adversarial mock brain (always no-tool-call OR always no-realized-action) → total `think()` calls per wake ≤ 2 (1 baseline + at most 1 shared extra-call budget, spec-review iteration-2 FIND-102 restated ceiling — never 3), for ALL adversarial sequences up to a bounded exploration depth | 1 | true | fast-check (bounded exhaustive) |
 | PROP-512a (closes FIND-004) | A Franklin-identity wake with the flag unset/malformed appends `kind:'always_act_not_engaged'` with `reason` ∈ `{flag_unset, flag_malformed}` on EVERY such wake (not conditioned on go-live having happened); the one-time flag-flip operational action appends `kind:'always_act_go_live'` exactly once | 1 | true | vitest/jest |
 | PROP-512b (closes FIND-004) | `isPostGoLiveRegression`/`is_fresh_but_barren`-sibling detector: (a) `always_act_not_engaged` lines with no preceding `always_act_go_live` line never trigger regression-detected; (b) `always_act_go_live` followed by ≥`minRun` consecutive `always_act_not_engaged` lines DOES trigger it; (c) a single `always_act_not_engaged` line surrounded by successfully-engaged wakes after go-live does NOT trigger it | 1 | true | fast-check / pytest (mirrors `earning-health.py`'s own test style) |
+| PROP-513a (structural, closes FIND-103) | A parsed tool call of exactly `{slot:'sleep', args:{}}` (or any slot absent from `ctx.alwaysActMenu`) fed to the REAL `index.mjs` wake-loop dispatch while `ctx.alwaysActEngaged===true` is REJECTED — no `kind:'narrate'`/idle ledger line is written, no skill execution is attempted, and the wake proceeds into REQ-505's reprompt path (a second `think()` call occurs, bounded by REQ-511); the same input with `ctx.alwaysActEngaged` falsy/absent preserves today's existing `sleep`/narrate behavior byte-for-byte | 2 | true | vitest/jest integration |
 
 ## Verification Strategy
 
@@ -127,12 +158,14 @@ as "unmodified" or not mentioned at all ARE additively modified by this feature 
   the reserve carve-out (PROP-503b), the REAL outbound-wire wiring-seam assertion (PROP-504b — closes
   FIND-001/FIND-005; small state space: {always-act engaged, not engaged} × {menu contents}, exhaustively
   enumerable, and money-doctrine-critical enough that a sampled property test is not sufficient assurance),
-  the gig/lending classify-gate widening (PROP-506c — closes FIND-002) and the empty-enum reroute terminal
-  case (PROP-506d — closes FIND-003), the exhausted-bound truthful-record (PROP-508a), and the
-  money-safety-critical guard-block reroute (PROP-509b) — these get EXHAUSTIVE case tables, not random
-  sampling, because the state spaces are small and the cost of a missed case (a silent idle wake, a
-  silently-still-present sleep tool, an unclassified gig/lending no-op, or a guard bypass) is exactly the
-  failure this feature exists to prevent.
+  the gig/lending classify-gate widening (PROP-506c — closes FIND-002), the empty-enum reroute terminal
+  case (PROP-506d — closes FIND-003), the risk-free-only reroute filter and its empty-safe-set terminal case
+  (PROP-506e/PROP-506f — closes FIND-101), the exhausted-bound truthful-record (PROP-508a), the
+  money-safety-critical guard-block reroute (PROP-509b), and the REAL wake-loop dispatch rejection of a
+  fabricated `sleep`/off-menu pick (PROP-513a — closes FIND-103) — these get EXHAUSTIVE case tables, not
+  random sampling, because the state spaces are small and the cost of a missed case (a silent idle wake, a
+  silently-still-present sleep tool, an unclassified gig/lending no-op, a capital-risking reroute target, or
+  a guard bypass) is exactly the failure this feature exists to prevent.
 - **Tier 3** (strong formal proof): none required. No cryptographic, consensus, or concurrency-critical
   logic is introduced by this feature — the underlying money-safety proofs (`MAX_SPEND` hard-override,
   `earn-guard.mjs` cumulative-loss check, `catalog-gate.mjs`'s own already-shipped proof obligations under
@@ -166,9 +199,12 @@ Phase 2a/2b review outright, regardless of its assertions.
   `thinkProxy` outbound-request-body assertion, mocked only at `httpPost`) — this file is the concrete
   closure of spec-review FIND-001/FIND-005; a green PROP-504a with a red/missing PROP-504b is treated as
   an incomplete implementation, never a pass.
-- `verification/always-act-reroute.property.test.mjs` — runs PROP-505a, 506a/b/c/d, 511a with adversarial
-  mock-`think()` sequences, including the `economy/gig`/`economy/lending` classify-gate-widening cases
-  (PROP-506c, closes FIND-002) and the empty-enum terminal case (PROP-506d, closes FIND-003).
+- `verification/always-act-reroute.property.test.mjs` — runs PROP-505a, 506a/b/c/d/e/f, 511a, 513a with
+  adversarial mock-`think()` sequences, including the `economy/gig`/`economy/lending` classify-gate-widening
+  case (PROP-506c, closes FIND-002), the empty-enum terminal case (PROP-506d, closes FIND-003), the
+  risk-free-only reroute filter + its empty-safe-set terminal case (PROP-506e/f, closes FIND-101), and the
+  REAL `index.mjs` dispatch rejection of a fabricated `slot:'sleep'`/off-menu pick (PROP-513a, closes
+  FIND-103).
 - `verification/always-act-nojudgment.property.test.mjs` — runs PROP-507a (menu × args generator) +
   PROP-507b (grep check, invoked as a subprocess assertion from the test file so it participates in the
   same test run/report).
@@ -178,3 +214,13 @@ Phase 2a/2b review outright, regardless of its assertions.
 - `verification/always-act-observability.test.mjs` — runs PROP-512a (go-live/not-engaged ledger `kind`
   lines) and PROP-512b (the post-go-live regression detector, mirroring `earning-health.py`'s own test
   style) — closes spec-review FIND-004.
+
+## Changelog
+
+- **iteration-2 fixes: FIND-101/102/103** (spec-review iteration-2, this revision):
+  - FIND-101: added `isMarketRiskFree` to Pure Core, widened the Effectful Shell reroute-filter description,
+    and added PROP-506e/PROP-506f (money-safety-critical, Tier 2) plus their Phase 5 harness coverage.
+  - FIND-102: restated `nextRerouteState`'s ceiling as `maxAttempts = 1` / 2-total and clarified PROP-511a's
+    description to match REQ-511's rewritten EARS clause — no more "2 extra" ambiguity anywhere in this file.
+  - FIND-103: added `isRejectableSleepOrOffMenu` to Pure Core, documented `index.mjs:402-416`'s real
+    modification under REQ-513 in the Effectful Shell, and added PROP-513a (Tier 2) plus Phase 5 coverage.
