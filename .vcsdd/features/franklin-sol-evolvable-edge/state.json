@@ -1,7 +1,7 @@
 {
   "featureName": "franklin-sol-evolvable-edge",
   "mode": "strict",
-  "currentPhase": "2a",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -32,6 +32,18 @@
       "to": "2a",
       "timestamp": "2026-07-10T06:30:00.001Z",
       "note": "advance to TDD RED"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-10T03:34:39.627Z",
+      "note": "Phase 2a RED confirmed (70 new tests written across sol-genome/sol-gate/sol-trace/sol-evolve/sol-max-spend/sol-source-contract.test.mjs, all FAILED with ERR_MODULE_NOT_FOUND before implementation existed; regression baseline 73/73 pre-existing sol-trade+earn/lib tests still passing). Phase 2b GREEN: implemented skills/earn/sol-trade/lib/{sol-genome,sol-gate,sol-trace,sol-evolve,sol-gate-cli}.mjs + resolve-max-spend.sh + baseline-genome.json, wired into run.sh (pre-gate after identity-match+earn-guard, MAX_SPEND hard-overridden to 0.25 after genome eval per REQ-017). evaluatePromotion/promote reused verbatim (import-identity) from ../../lib/evolve.mjs per REQ-014/015. 70/70 new tests pass; 73/73 regression baseline pass; 9/9 test_run.sh bash-integration checks pass. SOL_GATE_LIVE_ENABLE never set to 1 anywhere — paper-only default verified (PROP-009). Commit 0bea56b in ~/anicca worktree .worktrees/franklin-sol-edge, branch feature/franklin-sol-edge."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-10T03:34:39.627Z",
+      "note": "Phase 2c reached: implementation written cleanly on first pass mirroring genome.mjs/evolve.mjs proven shapes (no duplication, no premature abstraction, small focused files per coding-style.md) — no further refactor changes required before Phase 3 adversary review. State advanced to 2c only, per task instruction (not advanced past 2c)."
     }
   ],
   "iterations": {
@@ -43,161 +55,221 @@
       "id": "PROP-001",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-019"
+      "beadId": "BEAD-019",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-002",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-020"
+      "beadId": "BEAD-020",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-003",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-021"
+      "beadId": "BEAD-021",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-004",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-022"
+      "beadId": "BEAD-022",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-005",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-023"
+      "beadId": "BEAD-023",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-006",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-024"
+      "beadId": "BEAD-024",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-007",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-025"
+      "beadId": "BEAD-025",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-gate.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-008",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-026"
+      "beadId": "BEAD-026",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-gate.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-009",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-027"
+      "beadId": "BEAD-027",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-gate.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-010",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-028"
+      "beadId": "BEAD-028",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-gate.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-011",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-029"
+      "beadId": "BEAD-029",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-trace.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-012",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-030"
+      "beadId": "BEAD-030",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-trace.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-013",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-031"
+      "beadId": "BEAD-031",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-evolve.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-014",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-032"
+      "beadId": "BEAD-032",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-evolve.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-015",
       "tier": 1,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-033"
+      "beadId": "BEAD-033",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-evolve.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-016",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-034"
+      "beadId": "BEAD-034",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-genome.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-017",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-035"
+      "beadId": "BEAD-035",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-max-spend.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-018",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-036"
+      "beadId": "BEAD-036",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-source-contract.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-012b",
       "tier": 2,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-038"
+      "beadId": "BEAD-038",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-evolve.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     },
     {
       "id": "PROP-015b",
       "tier": 0,
       "required": true,
-      "status": "pending",
+      "status": "satisfied-pending-adversary-review",
       "artifact": "specs/verification-architecture.md",
-      "beadId": "BEAD-039"
+      "beadId": "BEAD-039",
+      "testArtifact": "skills/earn/sol-trade/lib/__tests__/sol-evolve.test.mjs",
+      "satisfiedInCommit": "0bea56b",
+      "satisfiedRepo": "anicca (worktree franklin-sol-edge, branch feature/franklin-sol-edge)"
     }
   ],
   "traceability": {
