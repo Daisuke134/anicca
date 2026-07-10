@@ -41,3 +41,19 @@ FIND-001/002/003 全 RESOLVED（commit ebb1d93）: last_observed_at を実 stamp
 - [ ] merge 後 live で CEO no-args pass → ceo-decisions.jsonl に判断行≥1（独立読返し）
 - [ ] enforcement: paused-gate が loop 起動を拒否する挙動を test/実行で観測
 - [ ] cron 4件 stale の 07:00 JST 後の自然復帰を `openclaw cron runs` で確認
+
+
+## LIVE E2E 成功（2026-07-11 07:0x JST、独立読返し）— #6 実質完了
+ceo-run.sh に env -u ANTHROPIC_API_KEY fix(commit 340ea7b) を当て CEO core を live 起動:
+- **ceo-decisions.jsonl に実 decision 1行永続化**（`--record-pass`）: `{"type":"weekly-eval","reviewed":[全10loop],"changed":[],"reason":"全live loop が budget cap 大幅下回り...life-manager 2連続no-actionだが sample薄い...次pass watching、変更なし"}` = genuine judgment が永続化。
+- **last_observed_at stamp 実働**（ceo-status.sh 経由、registry 独立読返し）: bounty=2026-07-11T05:32 / connector=07-11T03:12 / gig=07-08T22:17 / affiliate/life-manager/explorer も実 ts、marker無し(capafy/article/pm/hl)=None。CEO が loop 生死を可視化。
+- **cost 自己申告照合が fabrication を live 検知**: `cost_claim_warning: affiliate cost-claim-unbacked（marker fresh age=76021s なのに cost-events 行なし）` = investigation の affiliate 偽申告を自動検出。
+- **autonomous scheduler**: `ai.anicca.ceo-weekly-eval` plist load 済（launchctl list 表示）。
+- **cron codex-harness drift**: 4件(reelclaw/larry/watercolor)が 07:00 JST で error→**running** に復帰（harness 修理 + 自然復帰を実証）。
+
+### #6 §10 達成状況（正直）
+- ✅ ceo-decisions ≥1（genuine 永続化） / ✅ last_observed_at 実 stamp / ✅ cost 照合が affiliate fabrication 検知 / ✅ autonomous scheduler / ✅ cron drift 復帰。
+- ⚠️ 「enforcement を allocation 変更で live 観測」= CEO が薄データで正しく no-change 判断したため未発生（強制=fake なのでしない）。enforcement machinery は adversary+test 検証済み。real signal 蓄積で CEO が変更を出せば観測される（affiliate 偽申告 + gig stalled が last_observed_at/照合で可視化済 = 次の判断材料）。
+- ⚠️ cost 自動行: bounty=0.95 実在、affiliate/gig は cross-check が「記録してない/停止」を検知（=honest surfacing）。
+
+→ #6 = **CEO が生きた**（判断永続化・loop生死可視化・偽申告検知・autonomous化）。builder GREEN + adversary PASS(code) + live E2E 独立読返し。
