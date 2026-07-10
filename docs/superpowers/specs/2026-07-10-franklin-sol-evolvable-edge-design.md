@@ -101,3 +101,22 @@ This is the ONLY remaining code work on the path to witness①. It is a real mon
 that should be executed in a focused context (not rushed). witness② (autonomous spawn) is downstream:
 the spawn engine (anicca-agent-spawn, complete) fires when colony surplus ≥ threshold, which requires
 witness① profit first. Both witnesses then emerge from the citizens' own running cycles — never forced.
+
+## CRITICAL grounding finding (2026-07-10, CLI param-surface investigation)
+
+`franklin-trading@0.2.4 start --help` exposes NO strategy knobs — only `-m/--model`, `--trust`,
+`--max-spend`, `-p/--prompt`, `--from`, `-r/--resume`, `-c/--continue`. The trading strategy is
+ENTIRELY the CLI's internal multi-persona debate + the `-p` prompt text. There is no MIN_EDGE-style
+numeric surface a genome could tune (unlike PM's pick.py). **Consequence: Approach A (SOL genome
+tuning CLI flags) is INFEASIBLE.** The SOL edge must be **Approach B — a NEW local pre-gate harness**:
+a thin local Solana-market decision layer that runs BEFORE `franklin-trading start`, whose thresholds
+(entry-edge / momentum-window / min-liquidity / min-conviction — a SOL analog of PM's KNOB_KEYS) the
+genome mutates and the earnings-gate promotes on real on-chain SOL P&L. franklin-trading's own model
+judgment stays untouched (HARD #0, mirrors pick.py's model judgment being genome-independent); the
+pre-gate only decides WHETHER/UNDER-WHAT-CONDITIONS to engage, never the trade itself.
+
+This makes the SOL edge a **net-new money-path component**, not a wiring change — a substantial VCSDD
+build to be executed in a focused context, NOT rushed at the tail of a saturated session (a
+half-built live-trading pre-gate is worse than none). Design is now fully grounded; the build is the
+next focused execution. Copy+tweak the proven PM #19 mechanism (genome.mjs + evolve.mjs shapes) —
+do not reinvent, do not hand-write the strategy.
