@@ -79,13 +79,15 @@
     },
     "1c": {
       "verdict": "PASS",
-      "timestamp": "2026-07-08T13:06:22.909Z",
+      "timestamp": "2026-07-10T02:30:00.000Z",
       "reviewedBy": "adversary",
       "adversaryVerdict": "PASS",
-      "adversaryReviewedAt": "2026-07-08T13:06:22.909Z"
+      "iteration": 4,
+      "verdictPath": "reviews/spec/iteration-4/output/verdict.json",
+      "note": "Fresh Opus iter4 spec-review PASS both dimensions; FIND-009 (single authoritative delta source usdcDeltaForSig) + FIND-010 (never call franklin-trading balance, ANSI risk eliminated) CONFIRMED-RESOLVED against real shipped code. Closes converge FIND-CONV-001 (now a real supporting PASS artifact exists). Non-blocking FIND-011 (ANSI-strip test hygiene) routed to phase 2a."
     }
   },
   "sprintCount": 1,
   "createdAt": "2026-07-08T11:42:48.185Z",
-  "updatedAt": "2026-07-08T15:31:58.558Z"
+  "updatedAt": "2026-07-10T02:30:00.000Z"
 }
