@@ -43,9 +43,15 @@ without a real agent call or network I/O.
 | `ARTICLE_TEST_V0_RESULTS` | comma list, one `PASS`\|`FAIL` per fix+re-gate round (REQ-14, max 3) |
 | `ARTICLE_TEST_V05_RESULTS` | comma list, one `PASS`\|`FAIL` per fix+re-gate round (REQ-14, max 3) |
 | `ARTICLE_TEST_MODE` | named deterministic scenario (e.g. `record_earn_only`) for isolated sub-path checks |
+| `ARTICLE_CTA_URL` | Sprint 5/REQ-27: monetization link appended to the gated draft before publish. Default `lib/config.sh`'s `DEFAULT_CTA_URL`. Explicit `""` opts out |
+| `ARTICLE_CTA_TEXT` | Sprint 5/REQ-27: lead-in text before the link. Default `DEFAULT_CTA_TEXT` |
+| `ARTICLE_METRICS_PASS=1` | Sprint 5/FIND-006: opt-in cadence wiring — fires `lib/note-fetch-views.py` at wake-exit (every outcome). Default off |
 
-`STATE.md` fields written by a wake: `last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED`, `rounds_used`,
-`draft_path`, `publish_url` (Mode B only), `notify_path` (Mode A only).
+`STATE.md` fields written by a wake: `last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED|UNCONFIRMED`,
+`rounds_used`, `draft_path`, `cta_url` (Sprint 5, gated outcomes only — Mode A: the local file's resolved
+link; Mode B: the REMOTE draft's confirmed link, empty if the append failed), `cta_status` (Mode B only:
+`carried`\|`append_failed:<reason>`\|`not_requested`\|`skipped:no_draft_key`), `publish_url` (Mode B only),
+`notify_path` (Mode A only).
 
 ## Layout
 
@@ -67,6 +73,12 @@ skills/profitable-article-writer/
 │                                  'url'), so this genuinely needs the browser path (Sprint-2-fix defect #2)
 ├── lib/note-set-single-price.py   selects 記事タイプ=有料 + price + a 有料エリア指定 paid-line, replacing
 │                                  the old メンバーシップ-hardcoded flow (Sprint-2-fix defect #3)
+├── lib/note-fetch-views.py        Sprint 5/REQ-28: real per-article view/like fetch (authenticated stats
+│                                  API) → state/article-metrics.jsonl, honest "none"+reason on failure
+├── lib/note-append-cta.py         Sprint 5/REQ-27 FIND-001 fix: appends the monetization link to the
+│                                  REMOTE note.com draft body (authenticated GET/append/draft_save) before
+│                                  Mode B's publish click — Mode A's local-file append alone never reaches
+│                                  Mode B's already-prepared remote draft
 └── tests/                        VSDD RED-phase oracle tests, one file per proof obligation (PROP-*)
 ```
 
@@ -139,3 +151,69 @@ sentence-length arithmetic, and `gates/v05.sh`'s `judge_v05` response-file parse
 (including its fail-closed-when-unwired default) — are covered SEPARATELY, with `ARTICLE_TEST_FORCE_V0`/
 `ARTICLE_TEST_FORCE_V05` explicitly unset, by `tests/test-v0-real.sh` and `tests/test-v05-real.sh`. Together
 the two test groups cover both the wiring and the real gate logic it wires to.
+
+**Sprint 5 (2026-07-11): the "view -> yen" funnel — REQ-27/28, PROP-27/28.** Every prior sprint proved
+PUBLISH + V1's independent verify; nothing yet made the published URL carry a monetization link, nor
+recorded how many real people saw it. Both gaps close here:
+1. **REQ-27 — deterministic monetization link.** `run.sh`'s new `insert_monetization_link` appends
+   `ARTICLE_CTA_URL` (default `https://aniccaai.com/`, `lib/config.sh`'s `DEFAULT_CTA_URL` — an
+   ALREADY-canonical Anicca product URL, reused verbatim from `ai-entity-article-writer`'s own "[8] 最後に"
+   about-us/CTA convention, never invented fresh) to the LOCAL draft AFTER the V0/V0.5 gates pass, so it
+   never perturbs the agent's own craft-judged CTA prose (REQ-5b) or the gate's scoring of it. For Mode A
+   this is sufficient: `lib/note_publish.sh` uploads that same local draft file VERBATIM as the real
+   note.com draft body.
+   **Post-adversary FIND-001 fix (blocking):** a fresh-context adversary found that Mode B does NOT work
+   this way — `lib/note-mode-b-publish.py` -> `note_browser_common.confirm_and_publish()` publishes an
+   ALREADY-PREPARED remote note.com draft and never re-uploads a body, so the local file's link never
+   reached the real published Mode-B article; recording `cta_url` in `STATE.md` for that path was recording
+   a claim the system had not made true. Fixed by a new `lib/note-append-cta.py`: an authenticated
+   `note_mcp` GET (current raw HTML body) → append (idempotent — skips if the link is already present,
+   e.g. on a re-run after an UNCONFIRMED wake) → `draft_save` (is_temp_saved=true) round trip against the
+   REMOTE draft, invoked by `run.sh`'s Mode-B branch BEFORE the publish click. A failed append never blocks
+   the real publish click (degrade, not a safety gate) — it is recorded honestly instead: `STATE.md`'s new
+   `cta_status` field is `carried` (confirmed on the remote body), `append_failed:<reason>` (append itself
+   failed — `cta_url` is left EMPTY, never fabricated), `not_requested` (explicit opt-out), or
+   `skipped:no_draft_key` (the Sprint-1 placeholder branch — nothing real to append to).
+   `tests/test-prop27-monetization-cta-link.sh` now covers BOTH modes: Mode A (8 original assertions) PLUS
+   Mode B wiring (fault-injection stubs, mirroring PROP-24's own `ARTICLE_NOTE_BROWSER_COMMON_DIR`
+   convention: success/failure/opt-out/no-key, degrade-never-block proven) PLUS a REAL live mechanism proof
+   — this test creates an ephemeral note.com draft, appends a real CTA link via `lib/note-append-cta.py`,
+   independently re-fetches the body to confirm the link is REALLY there (not just the tool's own claim),
+   proves idempotency (a second append is a no-op), then deletes the ephemeral draft. All assertions PASS.
+2. **REQ-28 — real view recording.** `lib/note-fetch-views.py` was researched, not guessed: note.com
+   exposes NO public per-article view-count field (confirmed by probing this account's own live article's
+   public page + the public `GET /api/v3/notes/<key>`), but the SAME authenticated session cookie the
+   publish pipeline already uses (`NOTE_COOKIES_FILE`) reaches `GET /api/v1/stats/pv?filter=all`, which
+   returns a `note_stats` array with real per-note `read_count`/`like_count` fields. Verified live against
+   this account's own real published article `nfb2ace9f0ed8`: `read_count=9, like_count=2` at the time of
+   this sprint. The tool appends one honest line per key to `state/article-metrics.jsonl`
+   (`{ts, key, url, views, likes, revenue_jpy, revenue_source}`); an unresolvable key or a missing/bad
+   session cookie records `"views": "none"` + a specific `views_reason`, never a fabricated number, never a
+   crash (exit 0 either way — best-effort periodic job, callable standalone or via cron independent of
+   `run.sh`'s wake cycle). `revenue_jpy` is hardcoded `0` with `revenue_source:
+   "not_verified_no_sales_api"` in every row — no note.com sales/payout API was found reachable from this
+   account's session during this sprint's research; a future sprint that proves a real sales-read path
+   should replace this constant, not the honesty contract around it.
+   `tests/test-prop28-metrics-views-ledger.sh`: 10/10 assertions PASS, including a REAL live-network call
+   against note.com's authenticated stats endpoint (no mock — same "no dry run" convention as
+   `tests/test-prop23-independent-live-verify.sh`).
+   **Post-adversary FIND-006 fix (cadence — the tool existed but nothing ever called it).** Two supported
+   ways to actually collect metrics on a schedule, pick either (both are wired/tested, not just documented):
+   1. **Wired into `run.sh` (opt-in).** Set `ARTICLE_METRICS_PASS=1` on every wake invocation. `run.sh`
+      registers an `EXIT` trap (`run_metrics_pass_on_exit`) that fires `lib/note-fetch-views.py` at the very
+      end of EVERY wake outcome (SKIPPED/DRAFT/PUBLISHED/ABORTED/UNCONFIRMED alike — metrics collection for
+      previously-published articles is independent of what THIS wake itself did), best-effort (redirected to
+      `$ARTICLE_DIR/state/metrics-pass.log`, never affects the wake's own exit code). Default UNSET (off) so
+      an ad-hoc/test invocation of `run.sh` never makes an unexpected network call — this is why NONE of the
+      other 33 tests in this suite needed any changes when this was added.
+   2. **A separate cron step (no `run.sh` coupling at all).** `lib/note-fetch-views.py` is fully
+      self-contained (reads `state/live-publishes.jsonl`, writes `state/article-metrics.jsonl`, no topic/
+      draft/gate state needed) — an operator/harness may instead invoke it directly as its own periodic step
+      (e.g. once daily, right after or independent of the wake): `python3 lib/note-fetch-views.py`.
+   `tests/test-prop28b-metrics-pass-cadence-wiring.sh`: proves option 1's wiring (default OFF -> zero
+   calls; `ARTICLE_METRICS_PASS=1` -> invoked exactly once, even on a SKIPPED or ABORTED wake; the real,
+   non-stubbed invocation runs cleanly).
+
+**Sprint-5 honesty note (revenue):** as of this sprint, `state/article-metrics.jsonl`'s `revenue_jpy` is
+`0` for every recorded article. This is the actual, current state — no note.com paid-note sale has been
+independently verified yet for any of this account's published articles.

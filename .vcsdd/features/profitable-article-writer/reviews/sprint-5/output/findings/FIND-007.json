@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "medium",
+  "blocking": false,
+  "description": "The 'real key' happy-path sub-test in tests/test-prop28-metrics-views-ledger.sh (lines 29-47) depends on the ambient session cookie at $HOME/.cloak/note-work/note-cookies.json actually being fresh. Reading that file directly: it holds a note_gql_auth_token JWT whose own claims are iat=1783153589, exp=1783155442 -- a lifetime of only ~1853 seconds (~31 minutes). Given the review environment's current date (2026-07-11) and that iat corresponds to roughly 2026-07-04 (matching SKILL.md's own 'Real Mode-A wake evidence (2026-07-04)' timestamp), this token is almost certainly already expired at the time of this review. If expired, note.com's authenticated /api/v1/stats/pv endpoint would return an HTTP error, and the tool correctly (honestly) records views:\"none\" with a stats_api_http_error:NNN reason instead of fabricating a number -- so the CODE's honesty contract holds either way -- but it means test-prop28's specific assertion 'views recorded as a REAL non-negative integer' (line 43) is only exercisable within a narrow post-login window, making SKILL.md's durability claim ('10/10 assertions PASS... a REAL live-network call', SKILL.md:172-174) something that silently stops being true shortly after each fresh login, with no refresh/re-auth mechanism documented anywhere in this diff.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop28-metrics-views-ledger.sh",
+    "lineRange": "26-47",
+    "snippet": "REAL_COOKIES=\"$HOME/.cloak/note-work/note-cookies.json\"\n...\nviews1=\"$(echo \"$line1\" | python3 -c '...')\"\nok \"$(echo \"$views1\" | grep -qE '^[0-9]+$' && echo 1 || echo 0)\" \"views recorded as a REAL non-negative integer...\""
+  },
+  "routeToPhase": "6"
+}

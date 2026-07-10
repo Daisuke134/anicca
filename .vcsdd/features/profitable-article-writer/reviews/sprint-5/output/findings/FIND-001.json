@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "blocking": true,
+  "description": "REQ-27 (behavioral-spec.md:193-197) requires run.sh to append the monetization link 'to the draft BEFORE either Mode A or Mode B hands it to a publisher' so that 'BOTH modes' published content carries it (never just one)' (run.sh:407-408, its own comment). This is FALSE for Mode B as actually implemented. run.sh:409 appends the CTA only to the LOCAL file $ARTICLE_DIR/draft.md via insert_monetization_link(). In the Mode-B branch (run.sh:420-516), the actual publish call is lib/note-mode-b-publish.py, invoked at run.sh:457-458 with ONLY '--draft-key' and '--price' arguments -- confirmed by reading lib/note-mode-b-publish.py:40-48 (argparse.add_argument only defines --draft-key and --price; there is no body/content/draft-path parameter anywhere in the file, and confirm_and_publish() at line 71-79 is called with note_key/price/cookies_file/etc, never draft content). Mode B publishes a PRE-EXISTING note.com draft identified by ARTICLE_MODEB_NOTE_KEY -- a draft created entirely out-of-band by a separate process (lib/note-create-rich-draft.py, run manually/earlier, per test-prop22b/24c's own comments) -- so the CTA text appended to this wake's throwaway draft.md NEVER reaches the real, published note.com article body for Mode B. Mode B is explicitly the 'zero human loop' autonomous rail (Mode A is documented as 'an intentional, temporary, supervised bootstrap... NOT claimed to satisfy the zero-human invariant', SKILL.md:20-22) -- i.e. this defect is in the exact rail where the monetization link matters most. STATE.md still records a 'cta_url' field for every Mode-B outcome (run.sh:479, 494, 511), which misrepresents that the link was actually applied to the published article.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/run.sh",
+    "lineRange": "407-409, 444-458",
+    "snippet": "cta_url=\"$(insert_monetization_link \"$draft_path\")\"\n...\nmodeb_out=\"$(\"$modeb_publish_py\" \"$SKILL_DIR/lib/note-mode-b-publish.py\" --draft-key \"$modeb_note_key\" --price \"${ARTICLE_NOTE_PRICE:-500}\" 2>&1)\"; modeb_rc=$?"
+  },
+  "secondaryEvidence": {
+    "filePath": "skills/profitable-article-writer/lib/note-mode-b-publish.py",
+    "lineRange": "40-48",
+    "snippet": "parser.add_argument(\"--draft-key\", required=True, ...)\nparser.add_argument(\"--price\", default=os.environ.get(\"NOTE_PRICE\", \"500\"))"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "low",
+  "blocking": false,
+  "description": "tests/test-prop21b-single-price-live-regression.sh, tests/test-prop22b-live-publish-real-click.sh, and tests/test-prop24c-modeB-real-success-via-runsh.sh all hardcode SKILL=\"/Users/anicca/anicca-human-funded/skills/profitable-article-writer\" (the MAIN tree, absolute path) rather than resolving to the tree they physically live in, unlike test-prop27's own file which explicitly documents this exact anti-pattern as the thing it avoids ('Dynamic SKILL resolution (not the sibling tests' hardcoded main-tree path): this file must test WHATEVER tree it physically lives in', test-prop27-monetization-cta-link.sh:9-11). Practical consequence for THIS review's task point 4 (confirm the 3 known-failing tests are pre-existing external drift, not a regression from this diff): when run from inside this worktree, these 3 files test the MAIN TREE's copies of lib/note-publish-live.py / lib/note-set-single-price.py, never this worktree's own code -- so their pass/fail status is structurally incapable of reflecting anything this diff changed (this diff does not touch those 3 files anyway), but it ALSO means that if a future worktree modifies those files, this suite would silently validate stale main-tree behavior instead of catching a real regression. Confirmed both trees currently hold byte-identical copies of these 3 test files (Read of both paths' opening lines matched) and the main tree lacks Sprint 5's files entirely (no note-fetch-views.py, no prop27/prop28, main-tree SKILL.md has no Sprint 5 section) -- consistent with the worktree being ahead, unmerged.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/tests/test-prop22b-live-publish-real-click.sh",
+    "lineRange": "21",
+    "snippet": "SKILL=\"/Users/anicca/anicca-human-funded/skills/profitable-article-writer\""
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "blocking": false,
+  "description": "SKILL.md's Sprint-5 section frames REQ-27/REQ-28 as 'Both gaps close here' (SKILL.md:148-151), but lib/note-fetch-views.py is never invoked by run.sh, and this diff adds no cron entry anywhere -- confirmed by grepping the whole skill directory for note-fetch-views/fetch_views/fetch-views: the only hits are the tool's own file, its own test, and SKILL.md prose. REQ-28's spec text (behavioral-spec.md:204-205) explicitly allows this ('callable standalone/via cron, independent of run.sh's wake cycle'), so this is not a violation of the written requirement, but it means the 'views -> yen funnel... metrics half' is NOT actually closed operationally: until a separate deployment step wires this script into an actual periodic invocation (this project's own convention requires such cron entries to live in ~/.openclaw/cron/jobs.json, which this diff does not touch), state/article-metrics.jsonl will never be populated by anything other than a manual, ad-hoc invocation. The SKILL.md prose overstates the operational completeness of REQ-28 relative to what is actually wired.",
+  "evidence": {
+    "filePath": "skills/profitable-article-writer/SKILL.md",
+    "lineRange": "148-151",
+    "snippet": "Sprint 5 (2026-07-11): the \"view -> yen\" funnel -- REQ-27/28, PROP-27/28. ... Both gaps close here:"
+  },
+  "routeToPhase": "6"
+}

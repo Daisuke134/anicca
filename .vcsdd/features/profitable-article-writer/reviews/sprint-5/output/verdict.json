@@ -1,0 +1,63 @@
+{
+  "sprintNumber": 5,
+  "feature": "profitable-article-writer",
+  "reviewedCommit": "e7fc8e9",
+  "reviewedBranch": "feature/article-monetization-metrics",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "note": "No manifest.json existed for a sprint-5 review scope prior to this run (state.json's phaseHistory has not yet been advanced past Sprint 4 / phase 2c). This review was conducted directly against the worktree source tree and .vcsdd/features/profitable-article-writer/specs, treating REQ-27/REQ-28 (behavioral-spec.md lines 187-215) as the authoritative scope, per the parent task's instructions.",
+    "toolConstraint": "This adversary session had NO shell-execution tool available (only Read/Write/Edit/Grep/Glob). tests/run-red.sh and lib/note-fetch-views.py could NOT be executed in this session. All findings below are REASONED from static reading of the source, tests, and .cloak cookie file, not VERIFIED by execution. See FIND-003."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-fetch-views.py:41-53,139-190", "description": "revenue_jpy hardcoded 0 with revenue_source not_verified_no_sales_api in every code path -- no fabricated non-zero figure found anywhere in the tool. REQ-28's honesty contract is satisfied on static reading."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note_publish.sh:216-280 + run.sh:520-540", "description": "Mode A's real note.com draft creation (run_note_mode_a_publish) is called with the SAME draft_path insert_monetization_link already mutated, so REQ-27 is genuinely satisfied for Mode A."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-fetch-views.py:56-127", "description": "_load_published_keys/_fetch_note_stats/_record read cleanly, fail closed to an honest none+reason on every error branch, never raise uncaught (verified by reading every except clause)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/profitable-article-writer/run.sh:203-240 (insert_monetization_link/json_escape)", "description": "New functions in this diff are small, single-purpose, clearly named, and documented; no duplication introduced relative to existing config.sh/gates conventions."},
+        {"type": "file", "location": "skills/profitable-article-writer/lib/note-fetch-views.py", "description": "Single-responsibility module, consistent with lib/note-verify-live.py's existing conventions (default state-file location, best-effort append, never raises)."},
+        {"type": "informational", "location": "FIND-005", "description": "A real but PRE-EXISTING (not introduced by this diff) test-infra defect was found in 3 unrelated sibling test files (hardcoded main-tree path); not scored against this dimension because those files are outside this diff's changed-file set, but recorded because it directly bears on this review's regression-verification task."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-007"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "blockingFindingCount": 3,
+    "allCriteriaEvaluated": false,
+    "evaluatedCriteria": ["REQ-27", "REQ-28"],
+    "duplicateFindings": [],
+    "unresolvedProcessGap": "FIND-003: dynamic verification (running tests/run-red.sh and lib/note-fetch-views.py live) could not be performed in this session for lack of a shell-execution tool. A re-run with execution capability is required before this feature can be marked converged."
+  }
+}
