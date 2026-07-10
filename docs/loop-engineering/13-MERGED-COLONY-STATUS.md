@@ -12,6 +12,43 @@
 ① EARN 実 realized profit（on-chain 検証）② SELF-IMPROVE 自分の戦略を進化 ③ SPAWN 子を cloud に産む
 ④ CEO loop に管理され(double-down/halt) ⑤ LEND 仲間を支える — を全部自分でやり、私(親/開発者)は out。
 
+```
+════════════ FULL TO-BE — 2つのループが噛み合って agent economy を建てる ════════════
+
+  ┌─ LOOP 1: AGENT ECONOMY LOOP (私/claude-p) = 親・開発者・terminal ─────────────┐
+  │  human(Dais)の check-in 役割を内在化。稼がない。能力を建てて渡す。            │
+  │                                                                              │
+  │   OBSERVE 経済を検診 → PICK 能力の穴 → BUILD(VCSDD) 能力を citizen に build-in │
+  │      → VERIFY(fresh adversary) → MERGE → FUND(bootstrap seed のみ)           │
+  │      → EXIT-CHECK: 経済が自走した? ─ NO→繰り返す / YES→自分を消す(builder exits)│
+  │                                                                              │
+  │   ★介入しない境界: citizen の経済判断(何を trade 等)には触れない。            │
+  │     触るのは「citizen が自分で earn/self-improve/spawn/lend できる仕組み」だけ★│
+  └──────────────┬───────────────────────────────────────────▲──────────────────┘
+                 │ builds capability into ↓        observes as parent │ (halt権限なし)
+                 ▼                                                    │
+  ┌─ LOOP 2: FRANKLIN の loop (citizen) = 経済の当事者・自律・永続 ────────────────┐
+  │   毎 wake、自分で:                                                            │
+  │   ① EARN     rail(hl/sol/pm/clip/gig) で実 profit を稼ぐ                      │
+  │   ② SELF-IMPROVE  実 ledger の realized P&L を見て戦略を進化(openevolve+gate) │
+  │   ③ SELF-HEAL     自分の loop が壊れたら自分で診断→修正→検証→commit           │
+  │   ④ SPAWN    surplus≥閾値 で子を cloud(Akash/Nosana)に産む(別wallet)          │
+  │   ⑤ LEND/UBI 仲間 citizen を融資・扶助で支える                                │
+  │        │                                                                     │
+  │        ▼ 子 Franklin も同じ loop を回す                                       │
+  │   Franklin×1 → ×N → hundreds → billions = 自分たちの society を築く           │
+  └──────────────────────────────────────────────────────────────────────────────┘
+                 │ 各 citizen の revenue/token を報告 ▲
+                 ▼                                    │ double-down / halt / 配分
+  ┌─ CEO loop (founder-loop, 別CC が完成済) — society の中の管理層 ────────────────┐
+  │   全 earn 事業を Elon 式に配分。伸びる事業に double-down、赤字を halt。         │
+  │   最終的に Franklin 配下で回り、私(LOOP1)の手を離れる。                        │
+  └──────────────────────────────────────────────────────────────────────────────┘
+
+  ★経済が「alive」= LOOP2 が①〜⑤を人間ゼロで回し、CEO が配下で管理し、
+    実 profit + 実 spawn が on-chain で観測された瞬間 → LOOP1(私)の EXIT-CHECK 発火 → 消える。★
+```
+
 ## 能力レイヤー別 マージ済みステータス（DONE / IN-FLIGHT / TODO）
 
 ### L1 EARN（citizens が稼ぐ）— GAP: 実 edge 無しで net-flat（C1）
