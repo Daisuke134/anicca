@@ -214,7 +214,15 @@
       "language": "python",
       "currentPhase": "5",
       "updatedAt": "2026-07-08T23:16:57.082Z"
+    },
+    "promote-gate-claude-bin-fix": {
+      "status": "active",
+      "createdAt": "2026-07-10T06:02:38.906Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-10T06:33:44.456Z"
     }
   },
-  "activeFeature": "self-improve-real-ledger"
+  "activeFeature": "promote-gate-claude-bin-fix"
 }

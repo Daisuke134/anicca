@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 2,
+  "feature": "promote-gate-claude-bin-fix",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T08:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md",
+    "priorIteration": ".vcsdd/features/promote-gate-claude-bin-fix/reviews/implementation/iteration-1/output/verdict.json (FAIL, FIND-001 edge_case_coverage mutation-testing gap)",
+    "environmentNote": "No Bash/shell tool was available to this review session (tool list: Read/Write/Edit/Grep/Glob only). Per the task's explicit instruction to 'run the test suite yourself', I attempted to comply and could not invoke `rtk proxy python3 -m pytest` or `git status`/`git diff` directly. In place of a live re-run I gathered independent, non-self-reported filesystem evidence: (1) full byte-for-byte Read-based comparison of the worktree's lib/promote_gate_run.py against /Users/anicca/anicca/skills/earn/self-improve/lib/promote_gate_run.py (main checkout) confirming the only diff is the 93-111 _resolve_claude_bin block (worktree file is 349 lines vs main's 332, a clean +17); (2) confirmed tests/test_resolve_claude_bin.py does not exist on main (pure additive new file); (3) read the worktree's own .pytest_cache/v/cache/nodeids (106 collected test IDs) and .pytest_cache/v/cache/lastfailed (exactly one entry: tests/test_ledger_reader.py::test_realized_summary_default_path_points_at_the_real_earn_ledger_location) — these are pytest-written artifacts from an actual run in this exact worktree, not something I authored, and they match the '105 passed, 1 pre-existing unrelated failure' outcome the task described; (4) a directory-scoped Glob of skills/earn/self-improve showed lib/promote_gate_run.py and tests/test_resolve_claude_bin.py (plus their __pycache__/.pytest_cache byproducts) as the most recently touched entries, consistent with a narrowly-scoped edit. This is disclosed for honesty, not as an excuse: the conclusions below rest on direct file evidence, not on trusting the harness's own log."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111 vs /Users/anicca/anicca/skills/earn/self-improve/lib/promote_gate_run.py:93-94 (main)", "description": "independently re-read both files in full this iteration (not trusting iteration-1's citation): confirmed byte-for-byte identical everywhere except the _resolve_claude_bin block, which grew from 2 lines (`return shutil.which(\"claude\") or \"/opt/homebrew/bin/claude\"`) to the 19-line ordered-fallback implementation. REQ-CB1 (line 105-107: shutil.which hit returned unchanged, no probing), REQ-CB2 (lines 94-101,108-110: ordered ~/.local/bin/claude -> /opt/homebrew/bin/claude -> /usr/local/bin/claude, first isfile+X_OK match wins), REQ-CB3 (line 111: literal fallback string unchanged) all confirmed against the EARS wording"},
+        {"type": "file", "location": "diff: main=332 lines, worktree=349 lines (delta +17, exactly the added block)", "description": "REQ-CB4 (no collateral change): re-verified via direct content comparison rather than `git diff` (no Bash tool available this session) — every other line (docstring, imports, ADVERSARY_JSON_SCHEMA, _repo_root, write_realized_gate_escalation, _read_text, _build_prompt, _invoke_adversary, main()) is identical"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/self-improve/tests/test_resolve_claude_bin.py", "description": "confirmed this path does not exist on main (Read returned 'File does not exist') — the test file is a pure addition, not a modification of an existing test"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:21-31", "description": "FIND-001 (iteration 1) resolved: the new `_access_checking_x_ok(is_executable_fn)` helper's inner `fake_access(path, mode)` asserts `mode == os.X_OK` on every call before delegating to `is_executable_fn(path)`. It is genuinely wired into `mock.patch(\"os.access\", side_effect=_access_checking_x_ok(...))` in all 3 tests that need a meaningful (non-constant) os.access fake: test_which_miss_falls_back_to_first_existing_known_good_path (line 58), test_which_miss_prefers_local_bin_over_homebrew_when_both_exist (line 91), and test_which_miss_skips_candidate_that_exists_but_is_not_executable (lines 112-116) — not defined-and-unused"},
+        {"type": "trace", "location": "lib/promote_gate_run.py:109 `os.access(candidate, os.X_OK)`", "description": "manually traced the mutation `os.X_OK -> os.F_OK` (or os.R_OK) through test_which_miss_skips_candidate_that_exists_but_is_not_executable: fake_isfile returns True for both known-good candidates; the loop reaches the first candidate (~/.local/bin/claude), calls os.access(candidate, <mutated mode>); _access_checking_x_ok's assert `mode == os.X_OK` fires immediately with an AssertionError inside the mock's side_effect, which propagates out of `_resolve_claude_bin()` and fails the test before any assertion on `result` is even reached. The same mutation is independently caught earlier in test_which_miss_prefers_local_bin_over_homebrew_when_both_exist (line 91, first os.access call on the first candidate) and in test_which_miss_falls_back_to_first_existing_known_good_path (line 58, on the one candidate that exists). Confirmed: at least one test (in fact three) now fails under this mutation — the gap FIND-001 identified is closed"},
+        {"type": "trace", "location": "lib/promote_gate_run.py:108-109 `if os.path.isfile(candidate) and os.access(candidate, os.X_OK):`", "description": "additionally traced an `and`->`or` mutation and a candidate-list traversal-order mutation (e.g. `reversed(_CLAUDE_BIN_KNOWN_GOOD_PATHS)`) through the same test file: both are caught by test_which_miss_skips_candidate_that_exists_but_is_not_executable (result value mismatch under `or`) and test_which_miss_prefers_local_bin_over_homebrew_when_both_exist (result value mismatch under reversed order) respectively — the suite is not narrowly patched to only the one specific mutation named in FIND-001"},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:65-76", "description": "test_which_miss_and_no_fallback_exists_returns_original_default_string correctly does NOT use the mode-checking helper (`mock.patch(\"os.access\", return_value=False)`) — this is not a regression of the fix, since with `os.path.isfile` mocked to always return False, `os.access` is never even called (short-circuited by `and`), so there is nothing for a mode-checking fake to catch in this specific test; the mode is legitimately proof-pinned in the other 3 tests where os.access is actually reached"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:104-111", "description": "re-read the (unchanged-since-iteration-1) implementation in full this iteration and re-traced all 5 test scenarios against it independently; no logic errors, off-by-ones, or short-circuit errors found"},
+        {"type": "file", "location": "skills/earn/self-improve/.pytest_cache/v/cache/nodeids and .../lastfailed", "description": "read these pytest-authored cache artifacts directly (not the harness's log): nodeids lists exactly 106 collected test IDs including all 5 new tests/test_resolve_claude_bin.py cases; lastfailed contains exactly one entry, tests/test_ledger_reader.py::test_realized_summary_default_path_points_at_the_real_earn_ledger_location — this is filesystem evidence of an actual, recent pytest run in this worktree producing 105 passed / 1 failed, matching the task's documented expected pre-existing-artifact outcome with no other failures present"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:21-31", "description": "the new `_access_checking_x_ok` helper is a net structural improvement over iteration 1: it replaces what would otherwise be 3 near-duplicate ad-hoc `fake_access(path, mode)` closures with a single, clearly-named, well-documented shared helper (docstring explicitly states why it exists, tying it back to PROP-CB2c) — no duplication introduced, no dead code, naming is accurate"},
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111", "description": "implementation itself unchanged since iteration 1 (already reviewed PASS): 19-line addition, immutable tuple candidate list, consistent with file's existing conventions"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:1-20", "description": "purity boundary unchanged: _resolve_claude_bin remains impure (env+filesystem), tests isolate it via mock.patch at the shutil/os module level (file confirms `import os`/`from unittest import mock`, and promote_gate_run.py does `import shutil`/`import os`, not `from x import y`, so patches correctly intercept); no real filesystem/PATH dependency introduced by the strengthened mode-checking helper"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-CB1", "REQ-CB2", "REQ-CB3", "REQ-CB4", "PROP-CB1", "PROP-CB2", "PROP-CB2b", "PROP-CB2c", "PROP-CB3"],
+    "duplicateFindings": []
+  }
+}

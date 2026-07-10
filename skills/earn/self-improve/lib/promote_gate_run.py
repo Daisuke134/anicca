@@ -90,8 +90,25 @@ def _read_text(path: str) -> str:
         return f.read()
 
 
+_CLAUDE_BIN_DEFAULT = "/opt/homebrew/bin/claude"
+_CLAUDE_BIN_KNOWN_GOOD_PATHS = (
+    # Ordered by observed real-world install location first (2026-07-10 incident: launchd's
+    # minimal PATH doesn't include ~/.local/bin, so `shutil.which("claude")` misses even though
+    # the npm-installed binary is right there — confirmed via `zsh -lc 'type claude'`).
+    os.path.expanduser("~/.local/bin/claude"),
+    _CLAUDE_BIN_DEFAULT,
+    "/usr/local/bin/claude",
+)
+
+
 def _resolve_claude_bin() -> str:
-    return shutil.which("claude") or "/opt/homebrew/bin/claude"
+    on_path = shutil.which("claude")
+    if on_path:
+        return on_path
+    for candidate in _CLAUDE_BIN_KNOWN_GOOD_PATHS:
+        if os.path.isfile(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+    return _CLAUDE_BIN_DEFAULT
 
 
 def _build_prompt(assessment: dict, candidate_code: str, baseline_code: str) -> str:

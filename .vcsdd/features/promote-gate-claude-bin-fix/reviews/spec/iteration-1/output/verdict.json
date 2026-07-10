@@ -1,0 +1,60 @@
+{
+  "sprintNumber": 0,
+  "feature": "promote-gate-claude-bin-fix",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-10T07:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-94", "description": "Confirmed current implementation is exactly `return shutil.which(\"claude\") or \"/opt/homebrew/bin/claude\"` -- matches the spec's Context section verbatim, and matches REQ-CB3's stated 'return the same final fallback string as today' target."},
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:153-183", "description": "Confirmed `_invoke_adversary` calls `_resolve_claude_bin()` once at line 154 and only catches `subprocess.TimeoutExpired` and `FileNotFoundError` around the `subprocess.run` call -- the error message format `f\"claude binary not found (tried {claude_bin})\"` at line 183 matches the spec's Context section verbatim."},
+        {"type": "file", "location": "/opt/homebrew/bin/claude", "description": "Read tool confirms this path does NOT exist on the machine -- independently corroborates the spec's central root-cause claim (the hardcoded fallback points to a binary that is not actually installed there)."},
+        {"type": "file", "location": "/Users/anicca/.local/bin/claude", "description": "Read tool confirms this path DOES exist as a large (871.9KB) Mach-O executable (Bun-compiled __BUN segment visible in raw bytes) -- corroborates the spec's claim that the real npm-installed binary lives here."},
+        {"type": "file", "location": "/Users/anicca/Library/LaunchAgents/ai.anicca.self-improve-evolve.plist:11-14", "description": "Independently confirms the exact launchd job named in the spec's Context (`ai.anicca.self-improve-evolve`) is configured with `PATH=/Users/anicca/.anicca-venvs/self-improve/bin:/usr/bin:/bin:/usr/sbin:/sbin:/opt/homebrew/bin` -- this PATH contains `/opt/homebrew/bin` (where the file does not exist) but has no `~/.local/bin` entry (where the real binary lives), precisely matching the spec's claimed `shutil.which(\"claude\")` -> `None` failure mode under this specific launchd job. This is strong, direct, independent confirmation of the diagnosed root cause -- not merely plausible, but exactly reproduced by the live plist on this machine."},
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md:44-46", "description": "REQ-CB4's scope boundary (no change to prompt construction, subprocess invocation, JSON parsing, or promotion decision logic) is consistent with the actual call graph: `_resolve_claude_bin()` is a single 2-line pure-path-selection helper with exactly one call site (`_invoke_adversary` line 154); nothing else in promote_gate_run.py or promote_gate.py depends on its internals beyond the returned string."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md:30-46", "description": "REQ-CB1 through REQ-CB4 are each independently, unambiguously testable given only stdlib `shutil.which`, `os.path.isfile`, and `os.access` as the impure boundary -- no vague qualifiers ('should', 'may'), no undefined terms; the ordered candidate-path list and final-fallback string are both given as concrete literals rather than left to implementer discretion."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md:48-53", "description": "Purity Boundary section correctly classifies `_resolve_claude_bin()` as impure (env + filesystem stat/access) with 'no change in kind, only in which paths it probes', and correctly states the pure decision logic in lib/promote_gate.py is untouched -- verified against the actual call graph: no import or call from promote_gate.py into `_resolve_claude_bin` or vice versa beyond the existing module boundary."},
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md:55-62", "description": "Out of Scope section explicitly excludes wallet/ledger/spend-cap/anicca-agent-economy changes and the adversary prompt/budget cap -- appropriately minimal and bounded for a single-function fix, no scope creep."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "previousFindingCount": 0,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

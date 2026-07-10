@@ -1,0 +1,58 @@
+{
+  "sprintNumber": 2,
+  "feature": "promote-gate-claude-bin-fix",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-10T08:00:00Z",
+  "iteration": 2,
+  "reviewContext": {
+    "reviewType": "implementation"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111", "description": "fresh adversary (iteration 2, .vcsdd/features/promote-gate-claude-bin-fix/reviews/implementation/iteration-2/output/verdict.json) independently re-read both worktree and main copies of promote_gate_run.py and confirmed the only diff is the 19-line _resolve_claude_bin block implementing REQ-CB1..CB4 exactly as specified"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:21-31", "description": "iteration 1 FIND-001 (mutation-testing gap on os.access mode arg) resolved via shared _access_checking_x_ok helper; fresh adversary (iteration 2) traced the os.X_OK->os.F_OK mutation, an and->or mutation, and a candidate-order-reversal mutation through the suite and confirmed all 3 are caught"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "test-output", "location": "skills/earn/self-improve/.pytest_cache/v/cache/nodeids, lastfailed", "description": "fresh adversary (iteration 2) read pytest-authored cache artifacts confirming 105 passed / 1 pre-existing unrelated failure (test_ledger_reader.py worktree-name artifact, documented in .vcsdd/features/promote-gate-claude-bin-fix/evidence/sprint-2-green-phase.log, confirmed passing on main), no other failures"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:21-31", "description": "shared _access_checking_x_ok helper is a net structural improvement, no duplication, no dead code"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/promote-gate-claude-bin-fix/verification/verification-report.md", "description": "Phase 5 hardening complete: zero required Tier 2/3 proof obligations (rationale in verification-architecture.md), Semgrep security sweep 0 findings, purity audit shows no drift"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 0,
+    "previousFindingCount": 1,
+    "allCriteriaEvaluated": true,
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,40 @@
+RED phase evidence — promote-gate-claude-bin-fix, sprint 2 (2026-07-10)
+
+new-feature-tests: FAILED
+
+Command: cd skills/earn/self-improve && rtk proxy python3 -m pytest tests/test_resolve_claude_bin.py -q
+(rtk proxy used because the `rtk` shell hook intercepts a bare `pytest`/`python3 -m pytest`
+invocation and fails to spawn it directly — `rtk proxy <cmd>` runs the raw command unfiltered.)
+
+Actual captured output (against the pre-fix `_resolve_claude_bin()`, i.e. before this sprint's
+implementation edit — `shutil.which("claude") or "/opt/homebrew/bin/claude"`):
+
+  ____ test_which_miss_and_no_fallback_exists_returns_original_default_string ____
+  AssertionError: assert False
+   +  where False = <MagicMock name='isfile' id='...'>.called
+  ________ test_which_miss_prefers_local_bin_over_homebrew_when_both_exist _______
+  AssertionError: assert '/opt/homebrew/bin/claude' == '/Users/anicca/.local/bin/claude'
+  FAILED tests/test_resolve_claude_bin.py::test_which_miss_falls_back_to_first_existing_known_good_path
+  FAILED tests/test_resolve_claude_bin.py::test_which_miss_and_no_fallback_exists_returns_original_default_string
+  FAILED tests/test_resolve_claude_bin.py::test_which_miss_prefers_local_bin_over_homebrew_when_both_exist
+  3 failed, 1 passed in 0.10s
+
+3 of 4 new tests failed against the pre-fix implementation, as expected (the 1 passing test,
+`test_path_hit_returns_which_result_unchanged`, correctly passes both before and after the fix —
+REQ-CB1 preserves existing `shutil.which` hit behavior unchanged, so it is not expected to be RED).
+
+regression-baseline: PASS
+
+Command: cd skills/earn/self-improve && rtk proxy python3 -m pytest tests/ -q  (run BEFORE any
+implementation/test edits in this sprint, on the untouched pre-fix code)
+
+  .....................................................F.................. [ 71%]
+  .............................                                            [100%]
+  1 failed, 100 passed in 2.24s
+
+The 1 failure (`test_ledger_reader.py::test_realized_summary_default_path_points_at_the_real_earn_ledger_location`)
+is a PRE-EXISTING, unrelated artifact of this worktree's directory name
+(`promote-gate-claude-bin-fix`) not being literally `anicca` — confirmed to PASS on `main`
+(`cd ~/anicca && rtk proxy python3 -m pytest skills/earn/self-improve/tests/test_ledger_reader.py -q`
+→ `14 passed in 0.10s`). Not caused by, or related to, this feature's change. The other 100
+pre-existing tests all passed, confirming the baseline was green before this sprint's work began.

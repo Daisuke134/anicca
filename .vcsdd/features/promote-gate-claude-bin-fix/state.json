@@ -1,0 +1,109 @@
+{
+  "featureName": "promote-gate-claude-bin-fix",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "complete",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-10T06:03:42.575Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-10T06:03:42.577Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-10T06:14:05.141Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-10T06:14:29.219Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-10T06:15:38.703Z",
+      "sprint": 2
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-10T06:16:02.571Z",
+      "sprint": 2
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "timestamp": "2026-07-10T06:27:18.055Z",
+      "sprint": 2
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-10T06:27:18.058Z",
+      "sprint": 2
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-10T06:32:05.798Z",
+      "sprint": 2
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-10T06:33:44.456Z",
+      "sprint": 2
+    }
+  ],
+  "iterations": {
+    "3": 1,
+    "5": 1,
+    "6": 1,
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1,
+    "complete": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-promote-gate-claude-bin-fix-1783663358906",
+    "beads": []
+  },
+  "gates": {
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T06:27:12.391Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 2,
+        "verdictPath": ".vcsdd/features/promote-gate-claude-bin-fix/reviews/implementation/iteration-2/output/verdict.json",
+        "note": "iteration 1 FAILED (FIND-001 mutation-testing gap: os.access mode arg not asserted) -> fixed with shared _access_checking_x_ok helper -> iteration 2 PASS zero blocking findings, mutation traced and caught"
+      }
+    },
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T06:14:29.213Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 2,
+        "verdictPath": ".vcsdd/features/promote-gate-claude-bin-fix/reviews/spec/iteration-2/output/verdict.json",
+        "note": "iteration 1 FAILED (FIND-001 missing non-executable-candidate test, FIND-002 wrong test path/count in spec) -> fixed -> iteration 2 PASS zero blocking findings"
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-10T06:14:29.213Z"
+    }
+  },
+  "sprintCount": 2,
+  "createdAt": "2026-07-10T06:02:38.906Z",
+  "updatedAt": "2026-07-10T06:33:44.456Z"
+}
