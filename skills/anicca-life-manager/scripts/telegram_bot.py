@@ -336,14 +336,12 @@ async def on_text(update: Update, _ctx: ContextTypes.DEFAULT_TYPE):
         user_state["step"] = "oauth_link"
         _save_onboarding(state)
         await msg.reply_text(
-            "Saved. Now I need Google Calendar (= your schedule) and "
-            "Gmail (= apology mails when you're late).\n\n"
-            "On your laptop, run:\n\n"
-            "    gog auth login\n\n"
-            "A browser opens, sign in, then paste the account email "
-            "back here so I can pin it.\n\n"
-            "No laptop handy right now? Reply 'skip' and I'll remind you "
-            "later — you can keep setting up everything else first."
+            "Saved. Next up is Google Calendar + Gmail (= your schedule "
+            "and apology mails when you're late) — self-serve connect for "
+            "this is coming very soon.\n\n"
+            "Reply 'skip' for now (recommended) and I'll mail you the "
+            "connect link the moment it's ready — everything else "
+            "(the calls, the subscription) works without it today."
         )
         return
 
