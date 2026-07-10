@@ -1,13 +1,13 @@
 {
   "featureName": "franklin-sol-evolvable-edge",
   "mode": "strict",
-  "currentPhase": "1b",
+  "currentPhase": "2a",
   "phaseHistory": [
     {
       "from": "init",
       "to": "1a",
       "timestamp": "2026-07-10T02:59:05.000Z",
-      "reason": "Phase 1a: behavioral-spec.md written (REQ-001..REQ-018) \u2014 SOL rail pre-gate genome harness (C1, Approach B), copy+tweak of PM #19 genome.mjs/evolve.mjs, grounded on empirical Jupiter Price v3 free-endpoint check (curl-verified 2026-07-10) and record-swap.mjs field-name correction (sig/confirmed, not tx/status)."
+      "reason": "Phase 1a: behavioral-spec.md written (REQ-001..REQ-018) — SOL rail pre-gate genome harness (C1, Approach B), copy+tweak of PM #19 genome.mjs/evolve.mjs, grounded on empirical Jupiter Price v3 free-endpoint check (curl-verified 2026-07-10) and record-swap.mjs field-name correction (sig/confirmed, not tx/status)."
     },
     {
       "from": "1a",
@@ -20,6 +20,18 @@
       "to": "1b",
       "timestamp": "2026-07-10T03:30:00.000Z",
       "reason": "Phase 1b revision (spec-review iteration-1 findings FIND-001/002/003, all severity critical/major, routeToPhase 1c-revision): FIND-001 added REQ-012b (attributeGenomeIdSol timestamp-nearest-preceding join, explicitly NOT a market/task-field match — record-swap.mjs's task field is a fixed constant) + PROP-012b (multi-pass end-to-end attribution property test). FIND-002 bound REQ-013's EARS explicitly to summing row.net_usdc (win-or-loss) never row.earn_usdc (win-only) + extended PROP-013's fixture to a win+loss numeric-value assertion. FIND-003 extended REQ-015 to mandate literal reuse of evolve.mjs's exported promote() (MUST NOT hand-write SOL git-commit logic) + added PROP-015b (import-identity test mirroring PROP-014). All 15 previously-passing REQs/PROPs (money-safety caps, dev-safety, identity, no-evolved-code) left unchanged. Ready for spec-review iteration-2."
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-10T06:30:00.000Z",
+      "note": "spec-review iter2 PASS"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-10T06:30:00.001Z",
+      "note": "advance to TDD RED"
     }
   ],
   "iterations": {
@@ -665,8 +677,17 @@
       }
     ]
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-10T06:30:00.000Z",
+      "reviewedBy": "adversary",
+      "iteration": 2,
+      "verdictPath": "reviews/spec/iteration-2/output/verdict.json",
+      "note": "Fresh Opus iter2 PASS both dims. FIND-001/002/003 (attribution join, net_usdc summation, promote reuse) CLOSED. Money-safety airtight: caps outside genome, dev-safety paper-only, no-evolved-code, per-instance identity, harness-not-cook all verified."
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-10T02:59:05.000Z",
-  "updatedAt": "2026-07-10T03:30:00.000Z"
+  "updatedAt": "2026-07-10T06:30:00.001Z"
 }
