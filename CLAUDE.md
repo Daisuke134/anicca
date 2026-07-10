@@ -6,6 +6,8 @@
 
 BP（best practice）= 答え。オリジナルは書かない。判断には最低1つの引用（英/日で検索、ソース名+URL+核心の引用）を付ける。引用のない判断は削除する。
 
+**研究したら即 MD 化（HARD）**: web/gh/コードを検索・研究したら、その turn 内で必ず `docs/` の MD ファイルに書き出して commit+push する。chat やメール下書きだけに残すのは禁止＝研究を捨てているのと同じ（token を燃やして成果物ゼロ）。研究 = MD 生成までが1タスク。handover/article prompt には必ずその研究 MD の full path を含める。→ memory `feedback_research_must_be_persisted_to_md_immediately`。
+
 ## 開発の道具立て（GLVS の Build/Verify 段 = VCSDD、他段は superpowers skill）
 
 開発方式そのものは `~/.claude/CLAUDE.md` の GLVS（Goal→Loop→Verify→State）が唯一の外枠。このプロジェクトでは Build/Verify を **VCSDD の実コマンド**で回し、Goal/分離/完了は superpowers skill を道具として呼ぶ（並列の独立必須プロセスにしない）。
