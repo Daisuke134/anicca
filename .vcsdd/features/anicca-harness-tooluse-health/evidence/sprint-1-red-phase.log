@@ -1,0 +1,313 @@
+new-feature-tests: FAIL
+regression-baseline: PASS (with 2 PRE-EXISTING unrelated baseline failures, isolated below -- config.test.mjs PROP-011/012 model-name drift, registry-classification.test.mjs PROP-201g slot-count drift; both confirmed present on a clean git status with zero tracked-file modifications, i.e. pre-date this feature's changes entirely)
+
+=== JS new-feature suites (harness-health*.test.mjs) -- 3 files import-fail, all RED as expected (harness-health.mjs does not exist yet) ===
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/anicca/anicca/runtime/loop/harness-health.mjs' imported from /Users/anicca/anicca/runtime/loop/__tests__/harness-health-failure-detail.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/anicca/anicca/runtime/loop/harness-health.mjs'
+}
+
+Node.js v25.6.1
+✖ __tests__/harness-health-failure-detail.test.mjs (74.150416ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/anicca/anicca/runtime/loop/harness-health.mjs' imported from /Users/anicca/anicca/runtime/loop/__tests__/harness-health-snapshot.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/anicca/anicca/runtime/loop/harness-health.mjs'
+}
+
+Node.js v25.6.1
+✖ __tests__/harness-health-snapshot.test.mjs (53.773417ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/anicca/anicca/runtime/loop/harness-health.mjs' imported from /Users/anicca/anicca/runtime/loop/__tests__/harness-health.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/anicca/anicca/runtime/loop/harness-health.mjs'
+}
+
+Node.js v25.6.1
+✖ __tests__/harness-health.test.mjs (53.194542ms)
+ℹ tests 3
+ℹ suites 0
+ℹ pass 0
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 78.659709
+
+✖ failing tests:
+
+test at __tests__/harness-health-failure-detail.test.mjs:1:1
+✖ __tests__/harness-health-failure-detail.test.mjs (74.150416ms)
+  'test failed'
+
+test at __tests__/harness-health-snapshot.test.mjs:1:1
+✖ __tests__/harness-health-snapshot.test.mjs (53.773417ms)
+  'test failed'
+
+test at __tests__/harness-health.test.mjs:1:1
+✖ __tests__/harness-health.test.mjs (53.194542ms)
+  'test failed'
+---R10 (static guard, expected already-PASS pre-feature)---
+✔ R10: grep -rn "self-fix.sh" runtime/loop/ skills/self/self-improve/ (excluding this feature's own test/spec prose) returns ZERO matches (5.043583ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 1
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 64.783084
+
+=== Python new-feature suite (test_harness_health.py) -- RED as expected (harness_health.py does not exist yet) ===
+IMPORT FAILED: ModuleNotFoundError: No module named 'harness_health'
+=== test_harness_health: 0 passed 1 failed ===
+
+=== Regression baseline: runtime/loop unit suites (test:unit) BEFORE this feature's implementation ===
+
+> anicca-loop@1.0.0 test:unit
+> node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs
+
+✔ PROP-201a: below threshold, filterCatalog excludes every capital-risking slot (no always-available/open-position carve-out in play) (0.823833ms)
+✔ PROP-201b: at or above threshold, filterCatalog returns the full unfiltered slot list (boundary: equality counts as at-or-above) (0.653833ms)
+✔ PROP-201c: unset/non-finite/negative reserveThresholdUsdc falls back to the documented default 20, and the gate is never silently disabled (0.088458ms)
+✔ PROP-201c: non-finite/negative balanceUsdc is treated as below-threshold (fail-closed), mirroring tier.mjs's own NaN/Infinity/negative handling (0.069584ms)
+✔ PROP-201d: a slot with no explicit risk tag defaults to capital-risking (excluded) while below threshold (0.05825ms)
+✔ PROP-201e: alwaysAvailable:true slots (report, cook) survive filtering even in a pathological all-risky-tag input (0.052875ms)
+✔ PROP-201e: the `sleep` meta-tool is structurally unaffected by filterCatalog entirely -- getToolDefinitions always appends it, independent of the slots array (0.085333ms)
+✔ PROP-201f: a capital-risking slot with hasOpenRiskPositionOf(slot)===true remains available below threshold (open-position carve-out) (0.058125ms)
+✔ PROP-201f: the same open-position carve-out applies to `yield` (0.048208ms)
+✔ PROP-201h: hasOpenRiskPositionOfYield reads the SAME ledger-scan expression index.mjs uses for ctx.positionsSummary -- zero I/O (0.364458ms)
+✔ PROP-201i(a): hasOpenRiskPositionOfHlTrade's query is invoked lazily -- ONLY when balanceUsdc < reserveThresholdUsdc, never when at/above it (0.222084ms)
+✔ PROP-201i(b): a query failure/timeout/rejection resolves to true (fail-open), never false and never an uncaught throw (0.432792ms)
+✔ PROP-201i(c): a resolved non-empty open_positions array -> true; an empty array -> false (0.142708ms)
+✔ PROP-202a: filterCatalog is a pure function of the CURRENT call's inputs only -- no state leaks between successive calls (0.151917ms)
+✔ PROP-202b: a balance transition from below to at/above threshold between two successive calls restores the exact pre-restriction slot set (0.128292ms)
+✔ PROP-203a: filterCatalog's return type is a plain array of strings, with no attached score/rank/preference field (0.122625ms)
+✔ PROP-203b (partial runtime proxy): filterCatalog's output ordering is not used to encode a preference -- the SAME input set, given in a different order, produces the SAME resulting set (0.254416ms)
+✔ PROP-011: process.env wins over .env file values (0.761167ms)
+✔ PROP-011: .env value used when env var absent (0.075791ms)
+✔ PROP-012: malformed .env line skipped, valid lines parsed (0.100959ms)
+✔ PROP-012: entirely malformed .env does not crash (0.060416ms)
+✖ PROP-011/012: defaults applied when nothing set (0.661042ms)
+✔ PROP-011: ANICCA_HOME absent yields empty/null home path (0.050709ms)
+✔ PROP-012: .env with # comments and blank lines parsed correctly (1.324375ms)
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (0.686458ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.054667ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.041541ms)
+✔ PROP-005: removes all matching keys from mixed env (0.053708ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (1.812208ms)
+✔ PROP-006: does not mutate original env (0.058ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.080125ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.044459ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.179958ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.10425ms)
+✔ PROP-007: formatRecord returns valid JSON string with newline (1.174625ms)
+✔ PROP-007: formatRecord output round-trips JSON.parse without error (0.068708ms)
+✔ PROP-007: required fields ts, wake_id, kind, sleep_s present in output (0.047292ms)
+✔ PROP-007: extra fields are preserved in JSON output (0.100792ms)
+✔ PROP-007: handles empty string fields without throwing (0.107208ms)
+✔ PROP-008: returns true when last 3 entries are identical (0.694125ms)
+✔ PROP-008: true when last 3 identical even with different earlier entries (0.060083ms)
+✔ PROP-008: window of 1 detects immediately on first repeated call (0.041917ms)
+✔ PROP-008: false when args differ between identical slots (0.057667ms)
+✔ PROP-009: returns false when fewer than window entries (0.048958ms)
+✔ PROP-009: returns false for empty array (0.030417ms)
+✔ PROP-009: single entry with window=3 returns false (0.032708ms)
+✔ PROP-009: window=0 always returns false (disabled) (0.031916ms)
+✔ PROP-009: different slots in window -> false (0.050125ms)
+✔ PROP-009: exactly window-1 identical entries returns false (0.069333ms)
+✔ PROP-010: parses well-formed run_skill tool call (1.26825ms)
+✔ PROP-010: extracts nested skill args (the model decision) (0.107125ms)
+✔ PROP-010: flattened params (slot + strategy at top level) (0.059ms)
+✔ PROP-010: text-only response returns null (0.258959ms)
+✔ PROP-010: empty tool_calls array returns null (0.058875ms)
+✔ PROP-010: malformed JSON arguments returns null (0.053416ms)
+✔ PROP-010: null response returns null (0.039417ms)
+✔ PROP-010: undefined response returns null (0.036083ms)
+✔ PROP-010: missing choices returns null (0.054333ms)
+✔ PROP-010: sleep tool call parsed correctly (0.09225ms)
+✔ PROP-010: claude -p JSON output with tool_calls in result (0.075834ms)
+✖ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17) (10.89425ms)
+✔ ★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table (2.605625ms)
+✔ PROP-201g: every slot named in behavioral-spec.md's classification table is actually present and 'live' in registry.json (table isn't stale) (0.865208ms)
+✔ PROP-001: selectTier(0) returns broke tier with free model (0.65425ms)
+✔ PROP-001: selectTier(0) uses ANICCA_FREE_MODEL env override (0.053125ms)
+✔ PROP-002: selectTier(0.5) returns lean tier with lean model (0.041083ms)
+✔ PROP-002: selectTier(1.00) is still lean (boundary) (0.036959ms)
+✔ PROP-003: selectTier(5.0) returns funded tier with funded model (0.04025ms)
+✔ PROP-003: selectTier(1.01) returns funded (0.034916ms)
+✔ PROP-004: selectTier(NaN) returns broke (0.032583ms)
+✔ PROP-004: selectTier(Infinity) returns broke (0.029833ms)
+✔ PROP-004: selectTier(-Infinity) returns broke (0.046042ms)
+✔ PROP-004: selectTier(-0.5) returns broke (0.07025ms)
+✔ PROP-002/003: LEAN_TIER_THRESHOLD env override shifts boundary (0.0475ms)
+ℹ tests 74
+ℹ suites 0
+ℹ pass 72
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 102.901
+
+✖ failing tests:
+
+test at __tests__/config.test.mjs:48:1
+✖ PROP-011/012: defaults applied when nothing set (0.661042ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'free/glm-4.7'
+  - 'nvidia/deepseek-v4-flash'
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/runtime/loop/__tests__/config.test.mjs:51:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'free/glm-4.7',
+    expected: 'nvidia/deepseek-v4-flash',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at __tests__/registry-classification.test.mjs:51:1
+✖ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17) (10.89425ms)
+  AssertionError [ERR_ASSERTION]: expected exactly 17 live slots per behavioral-spec.md's classification table, found 18: ["report","self/spawn","self/spawn-child","self/issue-dev","self/coordinate","economy/gig","economy/ubi","economy/lending","cook","yield","hl_trade","x402_sell","token_launch","earn/clip","earn/clip-producer","earn/video","earn/sol-trade","earn/polymarket-trade"]
+  
+  18 !== 17
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/runtime/loop/__tests__/registry-classification.test.mjs:54:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 18,
+    expected: 17,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+=== Regression baseline: runtime/loop integration suite (test:integration) BEFORE this feature's implementation ===
+
+> anicca-loop@1.0.0 test:integration
+> node --test __tests__/integration.test.mjs
+
+✔ PROP-014: 10 consecutive wakes yield exactly 10 ledger lines (469.59575ms)
+✔ PROP-013: SIGTERM produces shutdown kind as last ledger line (612.803458ms)
+✔ PROP-015: skill that exits non-zero does not crash the loop (310.652292ms)
+✔ PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT called (463.449708ms)
+✔ PROP-016b: consecutive loop_detect on the SAME slot escalates the cooldown (1348.280542ms)
+✔ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (156.579958ms)
+✔ PROP-021(a): profitable earn line -> loop records profitable:true (815.115417ms)
+✔ PROP-021(b): discover line (no tx) -> profitable:false (609.0975ms)
+✔ PROP-021(e): exit 0 with no matching WAKE_ID in earn-ledger -> profitable:false (558.192917ms)
+✔ PROP-022: SIGTERM while skill runs kills child within 5s, exit code 0 (7551.104083ms)
+✔ PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess (155.413458ms)
+✔ PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy (104.67025ms)
+ℹ tests 12
+ℹ suites 0
+ℹ pass 12
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13236.158834
+
+=== Regression baseline: skills/self/self-improve existing python test suites (R9 target) BEFORE this feature's implementation ===
+  ok commission_jpy=null (per-post attribution genuinely impossible) -> earn term contributes 0 (0.0)
+  ok F-ITER3-4 fix: a real commission_jpy value now DOES move combined_score (100 views + 500 commission_jpy = 600.0, not 100.0) (600.0)
+=== test_affiliate_evaluator_commission: 2 passed 0 failed ===
+  ok PROP-016: evaluate_stage1 still returns dict with combined_score + rows_evaluated (shape unchanged) (True)
+  ok PROP-016: rows_evaluated == 2 (unchanged counting behavior) (2)
+  ok PROP-016: combined_score golden value unchanged by this feature (_funnel_score formula pinned) (8000.9)
+  ok evaluate_by_category returns a dict keyed by category (True)
+  ok evaluate_by_category: PPT/スライド reply_rate/win_rate are floats (True)
+  ok evaluate_by_category: 資料作成 present with zero reply/win rates ((0.0, 0.0))
+  ok PROP-018: mixed-schema (old row without by_category) does not raise (True)
+  ok PROP-018: old-schema row contributes zero (only コード from the new-schema row appears) (['コード'])
+=== test_gig_evaluator_by_category: 8 passed 0 failed ===
+--- loop: clip ---
+  ok clip: evaluate_stage1 returns a dict with combined_score
+  ok clip: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok clip: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: affiliate ---
+  ok affiliate: evaluate_stage1 returns a dict with combined_score
+  ok affiliate: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok affiliate: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: video ---
+  ok video: evaluate_stage1 returns a dict with combined_score
+  ok video: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok video: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: gig ---
+  ok gig: evaluate_stage1 returns a dict with combined_score
+  ok gig: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok gig: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: bounty ---
+  ok bounty: evaluate_stage1 returns a dict with combined_score
+  ok bounty: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok bounty: evaluator.py source does not import an order/execution module (sandbox boundary)
+=== test_loop_evaluators: 15 passed 0 failed ===
+  ok this=10, last=5 -> true (beat) (True)
+  ok this=5, last=10 -> false (worse) (False)
+  ok this=5, last=5 -> false (tie is NOT a beat, strict >) (False)
+  ok this=0, last=0 -> false (tie at zero) (False)
+  ok this=-1, last=-5 -> true (less negative beats more negative) (True)
+=== test_weekly_compare: 5 passed 0 failed ===
+  ok weekly_report: week_start is the correct Monday (2026-07-06)
+  ok weekly_report: this-week (high views) beats last-week (low views) (True)
+  ok weekly_report: combined_score is a real number > 0 (True)
+  ok weekly_report: weekly record written to a SEPARATE sibling file, not the ledger itself (True)
+  ok weekly_report: sibling weekly file path is the expected <ledger>-weekly.jsonl (/tmp/tmpp0l9r7tj/clip-ledger-weekly.jsonl)
+  ok F-ITER3-2 fix: original metrics ledger UNCHANGED (still exactly 2 rows, not 3) (2)
+  ok weekly_report: original rows untouched (still have views field) (True)
+  ok weekly_report: the weekly record landed in the sibling file (1)
+  ok weekly_report: sibling file's record has the expected shape (True)
+  ok weekly_report: empty this-week vs a real last-week -> beats_previous_week=False (honest) (False)
+  ok F-ITER3-2 regression: BEFORE weekly_report, empty-today ledger -> met=false (False)
+  ok F-ITER3-2 regression: AFTER weekly_report runs on the SAME ledger, still met=false (no false-positive cadence contamination -- this is the exact bug iteration-3 reproduced) (False)
+=== test_weekly_report: 12 passed 0 failed ===

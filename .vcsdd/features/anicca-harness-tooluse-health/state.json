@@ -1,7 +1,7 @@
 {
   "featureName": "anicca-harness-tooluse-health",
   "mode": "lean",
-  "currentPhase": "2a",
+  "currentPhase": "2c",
   "phaseHistory": [
     {
       "from": "init",
@@ -26,6 +26,27 @@
       "to": "2a",
       "timestamp": "2026-07-10T03:00:00.000Z",
       "note": "Spec converged after 6 iterations (FIND-007/008/009 boundary gaps all closed). Advancing to TDD RED."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-10T05:00:00.000Z",
+      "sprint": 1,
+      "reason": "RED phase complete. evidence/sprint-1-red-phase.log: new-feature-tests FAIL (all 4 new JS test files import-fail against nonexistent harness-health.mjs/harness-health-snapshot.mjs; python test_harness_health.py ImportError against nonexistent lib/harness_health.py), regression-baseline PASS (runtime/loop unit 72/74, integration 12/12; skills/self/self-improve existing python suites 42/42 -- the 2 unit failures, config.test.mjs PROP-011/012 and registry-classification.test.mjs PROP-201g, confirmed PRE-EXISTING on a clean git status with zero tracked-file modifications, unrelated to this feature). New test files: runtime/loop/__tests__/{harness-health,harness-health-failure-detail,harness-health-snapshot,harness-health-no-autoaction}.test.mjs, runtime/loop/__tests__/fixtures/harness-health-parity.json (shared cross-language fixture), skills/self/self-improve/tests/test_harness_health.py. One documented testing-mechanism decision (not a spec deviation): R6's brain_transport >4000-char upper-boundary fixture cannot be exercised through a real spawned-process network failure because brain.mjs's httpPost() caps non-2xx error bodies at 300 chars (an existing, unrelated cap) -- proven instead via a direct unit test of the shared capFailureDetail() helper both index.mjs call sites use identically; the tool_logic branch's >4000 case (no such upstream cap on skill stdout) IS proven end-to-end via a real spawned mock skill."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-10T05:45:00.000Z",
+      "sprint": 1,
+      "reason": "GREEN phase complete. evidence/sprint-1-green-phase.log: target-feature-tests PASS (34/34 new JS tests across harness-health/harness-health-failure-detail/harness-health-snapshot/harness-health-no-autoaction; 22/22 new python tests in test_harness_health.py), regression-baseline PASS (runtime/loop unit 98/100 -- same 2 pre-existing failures, unchanged; integration 20/20 with the 8 new R6 tests wired in; skills/self/self-improve existing python suites 42/42 unmodified; git diff on weekly_report.py/evaluator.py/ledger_metrics.py confirmed zero). R10 confirmed: grep -rn self-fix.sh over runtime/loop/ + skills/self/self-improve/ (excluding this feature's own test-file prose) returns zero matches. Production files created: runtime/loop/harness-health.mjs (pure R1-R5 + capFailureDetail), runtime/loop/harness-health-snapshot.mjs (R7 CLI), skills/self/self-improve/lib/harness_health.py + skills/self/self-improve/harness_health_report.py (R8), two new append call-sites wired into runtime/loop/index.mjs::runOneWake (THINK-catch brain_transport branch + post-dispatch tool_missing/tool_timeout/tool_logic branch), package.json test:unit/test:integration/test scripts updated to include the new suites. Self-run of harness-health-snapshot.mjs against a READ-ONLY copy of the real ~/.anicca/state/ledger.jsonl (11774 lines, production untouched) cross-checked against manual grep/uniq -c counts over the same file: brainTransport.failures=1245 matches grep -c wake_error exactly; slot earn/gig wakes=92/failures=92/escalate:true matches grep exactly (a genuinely 100%-failing live slot this feature would have surfaced); slot hl_trade wakes=1865/failures=2 matches grep exactly AND independently confirms INV-LOOPDETECT-SEPARATE holds on real production data (147 real loop_detect rows carrying slot:hl_trade correctly excluded, the exact FIND-001 live-data hazard)."
+    },
+    {
+      "from": "2c",
+      "to": "2c",
+      "timestamp": "2026-07-10T05:50:00.000Z",
+      "sprint": 1,
+      "reason": "Refactor pass assessed: both new index.mjs call sites already share the single appendHarnessFailure() helper and harness-health.mjs's single capFailureDetail() helper (no duplicated detail-formatting logic between the brain_transport and tool_missing/tool_timeout/tool_logic branches); harness-health.mjs's five R1-R5 functions are already small, single-purpose, and documented per-REQ (no generic/utility naming). One candidate DRY opportunity was deliberately declined: reusing capFailureDetail for the EXISTING ledger.jsonl `result` field's own .replace(/\\s+/g,' ').slice(0,900) formatting (runtime/loop/index.mjs line ~465) would touch pre-existing, R9-protected behavior for a cosmetic-only gain -- left untouched per R9/INV-NO-PROMPT-REGRESSION. No refactor commits were needed; tests re-confirmed green post-assessment (same counts as the GREEN-phase log)."
     }
   ],
   "iterations": {
@@ -48,7 +69,7 @@
       "note": "Fresh Opus iter6 spec-review PASS both dimensions (spec_fidelity + verification_readiness). R6 proof-table now complete+symmetric: tool_logic branch has >900 lower + >4000 upper boundary fixtures, brain_transport has redaction + >4000 upper (no >900 needed, correct-by-design: wake_error has no competing result field). Iters 4/5/6 closed FIND-007/008/009. Ready for Phase 2a TDD."
     }
   },
-  "sprintCount": 0,
+  "sprintCount": 1,
   "createdAt": "2026-07-08T12:47:30.205Z",
-  "updatedAt": "2026-07-10T03:00:00.000Z"
+  "updatedAt": "2026-07-10T05:50:00.000Z"
 }

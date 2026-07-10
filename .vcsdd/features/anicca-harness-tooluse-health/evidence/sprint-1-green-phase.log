@@ -1,0 +1,300 @@
+target-feature-tests: PASS
+regression-baseline: PASS (same 2 PRE-EXISTING unrelated baseline failures as the RED-phase snapshot -- config.test.mjs PROP-011/012 model-name drift, registry-classification.test.mjs PROP-201g slot-count drift; both confirmed unchanged before vs after this feature's implementation, i.e. this feature introduced zero new regressions)
+
+R9 confirmation: skills/earn/self-improve, skills/self/self-improve's pre-existing python suites, and weekly_report.py are byte-identical (git diff clean on those files) and all 5 pre-existing python test files (42 tests) stay green. R10 confirmation: `grep -rn "self-fix.sh" runtime/loop/ skills/self/self-improve/` (excluding this feature's own test-file prose) returns ZERO matches -- no new auto-invocation call site was added.
+
+=== JS: runtime/loop unit suite (test:unit), NEW harness-health*.test.mjs wired in ===
+
+> anicca-loop@1.0.0 test:unit
+> node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs __tests__/harness-health.test.mjs __tests__/harness-health-snapshot.test.mjs __tests__/harness-health-no-autoaction.test.mjs
+
+✔ PROP-201a: below threshold, filterCatalog excludes every capital-risking slot (no always-available/open-position carve-out in play) (0.729416ms)
+✔ PROP-201b: at or above threshold, filterCatalog returns the full unfiltered slot list (boundary: equality counts as at-or-above) (0.624417ms)
+✔ PROP-201c: unset/non-finite/negative reserveThresholdUsdc falls back to the documented default 20, and the gate is never silently disabled (0.090666ms)
+✔ PROP-201c: non-finite/negative balanceUsdc is treated as below-threshold (fail-closed), mirroring tier.mjs's own NaN/Infinity/negative handling (0.068083ms)
+✔ PROP-201d: a slot with no explicit risk tag defaults to capital-risking (excluded) while below threshold (0.056459ms)
+✔ PROP-201e: alwaysAvailable:true slots (report, cook) survive filtering even in a pathological all-risky-tag input (0.053375ms)
+✔ PROP-201e: the `sleep` meta-tool is structurally unaffected by filterCatalog entirely -- getToolDefinitions always appends it, independent of the slots array (0.075959ms)
+✔ PROP-201f: a capital-risking slot with hasOpenRiskPositionOf(slot)===true remains available below threshold (open-position carve-out) (0.057625ms)
+✔ PROP-201f: the same open-position carve-out applies to `yield` (1.004417ms)
+✔ PROP-201h: hasOpenRiskPositionOfYield reads the SAME ledger-scan expression index.mjs uses for ctx.positionsSummary -- zero I/O (0.348166ms)
+✔ PROP-201i(a): hasOpenRiskPositionOfHlTrade's query is invoked lazily -- ONLY when balanceUsdc < reserveThresholdUsdc, never when at/above it (0.319166ms)
+✔ PROP-201i(b): a query failure/timeout/rejection resolves to true (fail-open), never false and never an uncaught throw (0.422084ms)
+✔ PROP-201i(c): a resolved non-empty open_positions array -> true; an empty array -> false (0.198625ms)
+✔ PROP-202a: filterCatalog is a pure function of the CURRENT call's inputs only -- no state leaks between successive calls (0.188334ms)
+✔ PROP-202b: a balance transition from below to at/above threshold between two successive calls restores the exact pre-restriction slot set (0.2185ms)
+✔ PROP-203a: filterCatalog's return type is a plain array of strings, with no attached score/rank/preference field (0.11ms)
+✔ PROP-203b (partial runtime proxy): filterCatalog's output ordering is not used to encode a preference -- the SAME input set, given in a different order, produces the SAME resulting set (0.142625ms)
+✔ PROP-011: process.env wins over .env file values (0.720833ms)
+✔ PROP-011: .env value used when env var absent (0.0765ms)
+✔ PROP-012: malformed .env line skipped, valid lines parsed (0.09575ms)
+✔ PROP-012: entirely malformed .env does not crash (0.063ms)
+✖ PROP-011/012: defaults applied when nothing set (0.620833ms)
+✔ PROP-011: ANICCA_HOME absent yields empty/null home path (0.054542ms)
+✔ PROP-012: .env with # comments and blank lines parsed correctly (0.05ms)
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (3.235667ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.05975ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.04375ms)
+✔ PROP-005: removes all matching keys from mixed env (0.055416ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (0.617166ms)
+✔ PROP-006: does not mutate original env (0.05125ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.070625ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.040041ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.176333ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.103ms)
+✔ R10: grep -rn "self-fix.sh" runtime/loop/ skills/self/self-improve/ (excluding this feature's own test/spec prose) returns ZERO matches (15.256083ms)
+✔ R7: fixture ledger.jsonl -> harness-health.json deep-equal to computeHarnessHealth on the same parsed fixture (60.788167ms)
+✔ R7: missing ledger.jsonl -> writes the R4 empty shape, exit code 0, no throw (47.768083ms)
+✔ R7: re-running overwrites -- output reflects only the latest run, no unbounded growth (88.788875ms)
+✔ R1: {wake,narrate,shutdown} -> clean (0.746834ms)
+✔ R1: wake_error -> brain_transport (0.0555ms)
+✔ R1: skill_missing -> tool_missing (0.042917ms)
+✔ R1: skill_timeout -> tool_timeout (0.03825ms)
+✔ R1: skill_error -> tool_logic (0.045416ms)
+✔ R1: unrecognized kind string -> unknown, never throws (0.07375ms)
+✔ R2: [wake,wake,skill_error,skill_error] for slot x -> wakes:4 failures:2 rate:0.5 streak:2 (0.0965ms)
+✔ R2: a trailing wake after failures resets streak to 0 (0.041375ms)
+✔ R2: slot never present -> null (0.043ms)
+✔ R2: records with a DIFFERENT slot are excluded from x's count (0.076541ms)
+✔ R2 (INV-LOOPDETECT-SEPARATE): a loop_detect record carrying slot:'x' is excluded entirely (1.910333ms)
+✔ R3: wake_error (no slot) interspersed among slot records is counted independently (0.188167ms)
+✔ R3: a wake_error immediately followed by a slot's own skill_error does NOT inflate that slot's streak (0.108458ms)
+✔ R3: brain-transport streak resets on wake/narrate, counts trailing wake_error only (0.089334ms)
+✔ R4: multi-slot fixture -> perSlot keys match exactly the distinct slots present (3.658125ms)
+✔ R4: empty records -> R4 empty-ledger shape, never throws (0.110375ms)
+✔ R4: every perSlot/brainTransport entry carries escalate computed via R5 with the passed streakThreshold (0.057292ms)
+✔ R5: one below threshold -> false (0.03075ms)
+✔ R5: exactly at threshold -> true (0.023583ms)
+✔ R5: one above threshold -> true (0.021333ms)
+✔ R5: DEFAULT_STREAK_THRESHOLD is 5 when HARNESS_HEALTH_STREAK_THRESHOLD is unset (Number(process.env.X) || N idiom) (0.021917ms)
+✔ R8 (JS side): computeHarnessHealth on the shared parity fixture matches its expected field-for-field (generatedAt excluded) (9.322333ms)
+✔ PROP-007: formatRecord returns valid JSON string with newline (2.180833ms)
+✔ PROP-007: formatRecord output round-trips JSON.parse without error (0.199458ms)
+✔ PROP-007: required fields ts, wake_id, kind, sleep_s present in output (0.174333ms)
+✔ PROP-007: extra fields are preserved in JSON output (0.205541ms)
+✔ PROP-007: handles empty string fields without throwing (0.229ms)
+✔ PROP-008: returns true when last 3 entries are identical (0.669833ms)
+✔ PROP-008: true when last 3 identical even with different earlier entries (0.057375ms)
+✔ PROP-008: window of 1 detects immediately on first repeated call (0.040291ms)
+✔ PROP-008: false when args differ between identical slots (0.059959ms)
+✔ PROP-009: returns false when fewer than window entries (0.039209ms)
+✔ PROP-009: returns false for empty array (0.04075ms)
+✔ PROP-009: single entry with window=3 returns false (0.032167ms)
+✔ PROP-009: window=0 always returns false (disabled) (0.03225ms)
+✔ PROP-009: different slots in window -> false (0.047917ms)
+✔ PROP-009: exactly window-1 identical entries returns false (0.068666ms)
+✔ PROP-010: parses well-formed run_skill tool call (3.263583ms)
+✔ PROP-010: extracts nested skill args (the model decision) (0.268459ms)
+✔ PROP-010: flattened params (slot + strategy at top level) (0.135875ms)
+✔ PROP-010: text-only response returns null (0.580958ms)
+✔ PROP-010: empty tool_calls array returns null (0.072916ms)
+✔ PROP-010: malformed JSON arguments returns null (0.062791ms)
+✔ PROP-010: null response returns null (0.04125ms)
+✔ PROP-010: undefined response returns null (0.035292ms)
+✔ PROP-010: missing choices returns null (0.053375ms)
+✔ PROP-010: sleep tool call parsed correctly (0.102334ms)
+✔ PROP-010: claude -p JSON output with tool_calls in result (0.068459ms)
+✖ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17) (3.315041ms)
+✔ ★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table (1.351084ms)
+✔ PROP-201g: every slot named in behavioral-spec.md's classification table is actually present and 'live' in registry.json (table isn't stale) (0.40325ms)
+✔ PROP-001: selectTier(0) returns broke tier with free model (0.649ms)
+✔ PROP-001: selectTier(0) uses ANICCA_FREE_MODEL env override (0.049959ms)
+✔ PROP-002: selectTier(0.5) returns lean tier with lean model (0.043125ms)
+✔ PROP-002: selectTier(1.00) is still lean (boundary) (0.036417ms)
+✔ PROP-003: selectTier(5.0) returns funded tier with funded model (0.039167ms)
+✔ PROP-003: selectTier(1.01) returns funded (0.035125ms)
+✔ PROP-004: selectTier(NaN) returns broke (0.033459ms)
+✔ PROP-004: selectTier(Infinity) returns broke (0.031375ms)
+✔ PROP-004: selectTier(-Infinity) returns broke (0.04375ms)
+✔ PROP-004: selectTier(-0.5) returns broke (0.071834ms)
+✔ PROP-002/003: LEAN_TIER_THRESHOLD env override shifts boundary (0.052542ms)
+ℹ tests 100
+ℹ suites 0
+ℹ pass 98
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 303.291792
+
+✖ failing tests:
+
+test at __tests__/config.test.mjs:48:1
+✖ PROP-011/012: defaults applied when nothing set (0.620833ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly equal:
+  + actual - expected
+  
+  + 'free/glm-4.7'
+  - 'nvidia/deepseek-v4-flash'
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/runtime/loop/__tests__/config.test.mjs:51:10)
+      at Test.runInAsyncScope (node:async_hooks:226:14)
+      at Test.run (node:internal/test_runner/test:1118:25)
+      at Test.processPendingSubtests (node:internal/test_runner/test:787:18)
+      at Test.postRun (node:internal/test_runner/test:1247:19)
+      at Test.run (node:internal/test_runner/test:1175:12)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: 'free/glm-4.7',
+    expected: 'nvidia/deepseek-v4-flash',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at __tests__/registry-classification.test.mjs:51:1
+✖ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (17) (3.315041ms)
+  AssertionError [ERR_ASSERTION]: expected exactly 17 live slots per behavioral-spec.md's classification table, found 18: ["report","self/spawn","self/spawn-child","self/issue-dev","self/coordinate","economy/gig","economy/ubi","economy/lending","cook","yield","hl_trade","x402_sell","token_launch","earn/clip","earn/clip-producer","earn/video","earn/sol-trade","earn/polymarket-trade"]
+  
+  18 !== 17
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/runtime/loop/__tests__/registry-classification.test.mjs:54:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 18,
+    expected: 17,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+=== JS: runtime/loop integration suite (test:integration), NEW harness-health-failure-detail.test.mjs wired in ===
+
+> anicca-loop@1.0.0 test:integration
+> node --test __tests__/integration.test.mjs __tests__/harness-health-failure-detail.test.mjs
+
+✔ R6: capFailureDetail caps at EXACTLY 4000 chars (tool_logic-branch fixture, 6000-char input) (0.619375ms)
+✔ R6: capFailureDetail caps at EXACTLY 4000 chars (brain_transport-branch fixture, 6000-char input) -- resolves FIND-009 (0.04875ms)
+✔ R6: capFailureDetail whitespace-collapses before capping (same idiom as the existing 900-char `result` cap) (0.03825ms)
+✔ R6: wake_error wake -> exactly one harness-failures.jsonl line, no slot key, layer:brain_transport (4498.536209ms)
+✔ R6: brain_transport err.message containing a 64-hex private key -> detail shows [REDACTED], not the raw hex (4426.9735ms)
+✔ R6: skill_error wake with >2000-char stdout -> detail LONGER than 900 chars, ledger result STILL capped at 900 (they genuinely diverge) (619.946792ms)
+✔ R6: skill_error wake with >4000-char stdout -> detail length EXACTLY 4000 (resolves FIND-008) (566.76025ms)
+✔ R6: clean wake -> ZERO lines appended to harness-failures.jsonl; ledger result stays <=900 (INV-NO-PROMPT-REGRESSION) (617.387792ms)
+✔ PROP-014: 10 consecutive wakes yield exactly 10 ledger lines (470.006459ms)
+✔ PROP-013: SIGTERM produces shutdown kind as last ledger line (610.532208ms)
+✔ PROP-015: skill that exits non-zero does not crash the loop (311.594708ms)
+✔ PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT called (460.281ms)
+✔ PROP-016b: consecutive loop_detect on the SAME slot escalates the cooldown (1344.207875ms)
+✔ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (155.815334ms)
+✔ PROP-021(a): profitable earn line -> loop records profitable:true (814.820334ms)
+✔ PROP-021(b): discover line (no tx) -> profitable:false (615.777875ms)
+✔ PROP-021(e): exit 0 with no matching WAKE_ID in earn-ledger -> profitable:false (560.068875ms)
+✔ PROP-022: SIGTERM while skill runs kills child within 5s, exit code 0 (7552.934542ms)
+✔ PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess (155.843417ms)
+✔ PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy (104.431042ms)
+ℹ tests 20
+ℹ suites 0
+ℹ pass 20
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 13240.68325
+
+=== Python: NEW skills/self/self-improve/tests/test_harness_health.py (R8) ===
+  ok R1: wake -> clean
+  ok R1: narrate -> clean
+  ok R1: shutdown -> clean
+  ok R1: wake_error -> brain_transport
+  ok R1: skill_missing -> tool_missing
+  ok R1: skill_timeout -> tool_timeout
+  ok R1: skill_error -> tool_logic
+  ok R1: unrecognized kind -> unknown, never throws
+  ok R2: wakes=4 failures=2 rate=0.5 streak=2
+  ok R2: slot never present -> None
+  ok R2 (INV-LOOPDETECT-SEPARATE): loop_detect excluded -> wakes=2 failures=1
+  ok R3: failures=3 streak=2 (reset by wake)
+  ok R4: perSlot keys match exactly the distinct slots present
+  ok R4: generatedAt present
+  ok R4: empty records -> empty-ledger shape, never throws
+  ok R5: one below threshold -> False
+  ok R5: exactly at threshold -> True
+  ok R5: one above threshold -> True
+  ok R5: DEFAULT_STREAK_THRESHOLD is 5 when env unset
+  ok R8: compute_harness_health(shared fixture) matches expected field-for-field (generatedAt excluded)
+  ok R8: harness_health_report.py exits 0
+  ok R8: harness_health_report.py CLI JSON matches compute_harness_health(fixture_rows, 5)
+=== test_harness_health: 22 passed 0 failed ===
+
+=== Python: skills/self/self-improve existing test suites (R9 regression target) AFTER this feature's implementation ===
+  ok commission_jpy=null (per-post attribution genuinely impossible) -> earn term contributes 0 (0.0)
+  ok F-ITER3-4 fix: a real commission_jpy value now DOES move combined_score (100 views + 500 commission_jpy = 600.0, not 100.0) (600.0)
+=== test_affiliate_evaluator_commission: 2 passed 0 failed ===
+  ok PROP-016: evaluate_stage1 still returns dict with combined_score + rows_evaluated (shape unchanged) (True)
+  ok PROP-016: rows_evaluated == 2 (unchanged counting behavior) (2)
+  ok PROP-016: combined_score golden value unchanged by this feature (_funnel_score formula pinned) (8000.9)
+  ok evaluate_by_category returns a dict keyed by category (True)
+  ok evaluate_by_category: PPT/スライド reply_rate/win_rate are floats (True)
+  ok evaluate_by_category: 資料作成 present with zero reply/win rates ((0.0, 0.0))
+  ok PROP-018: mixed-schema (old row without by_category) does not raise (True)
+  ok PROP-018: old-schema row contributes zero (only コード from the new-schema row appears) (['コード'])
+=== test_gig_evaluator_by_category: 8 passed 0 failed ===
+--- loop: clip ---
+  ok clip: evaluate_stage1 returns a dict with combined_score
+  ok clip: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok clip: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: affiliate ---
+  ok affiliate: evaluate_stage1 returns a dict with combined_score
+  ok affiliate: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok affiliate: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: video ---
+  ok video: evaluate_stage1 returns a dict with combined_score
+  ok video: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok video: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: gig ---
+  ok gig: evaluate_stage1 returns a dict with combined_score
+  ok gig: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok gig: evaluator.py source does not import an order/execution module (sandbox boundary)
+--- loop: bounty ---
+  ok bounty: evaluate_stage1 returns a dict with combined_score
+  ok bounty: evaluate_stage1 is deterministic (same fixture -> same result twice)
+  ok bounty: evaluator.py source does not import an order/execution module (sandbox boundary)
+=== test_loop_evaluators: 15 passed 0 failed ===
+  ok this=10, last=5 -> true (beat) (True)
+  ok this=5, last=10 -> false (worse) (False)
+  ok this=5, last=5 -> false (tie is NOT a beat, strict >) (False)
+  ok this=0, last=0 -> false (tie at zero) (False)
+  ok this=-1, last=-5 -> true (less negative beats more negative) (True)
+=== test_weekly_compare: 5 passed 0 failed ===
+  ok weekly_report: week_start is the correct Monday (2026-07-06)
+  ok weekly_report: this-week (high views) beats last-week (low views) (True)
+  ok weekly_report: combined_score is a real number > 0 (True)
+  ok weekly_report: weekly record written to a SEPARATE sibling file, not the ledger itself (True)
+  ok weekly_report: sibling weekly file path is the expected <ledger>-weekly.jsonl (/tmp/tmpeuigyv2x/clip-ledger-weekly.jsonl)
+  ok F-ITER3-2 fix: original metrics ledger UNCHANGED (still exactly 2 rows, not 3) (2)
+  ok weekly_report: original rows untouched (still have views field) (True)
+  ok weekly_report: the weekly record landed in the sibling file (1)
+  ok weekly_report: sibling file's record has the expected shape (True)
+  ok weekly_report: empty this-week vs a real last-week -> beats_previous_week=False (honest) (False)
+  ok F-ITER3-2 regression: BEFORE weekly_report, empty-today ledger -> met=false (False)
+  ok F-ITER3-2 regression: AFTER weekly_report runs on the SAME ledger, still met=false (no false-positive cadence contamination -- this is the exact bug iteration-3 reproduced) (False)
+=== test_weekly_report: 12 passed 0 failed ===
+
+=== R9: git diff -- weekly_report.py and skills/earn/self-improve/evaluator.py must be ZERO ===
+(empty above = zero diff, confirmed)
+
+=== Self-run of harness-health-snapshot.mjs against a REAL live ledger (~/.anicca/state/ledger.jsonl, 11774 lines), on a READ-ONLY copy in a temp $ANICCA_HOME (production ~/.anicca untouched) -- Phase-3-style fresh evidence, cross-checked against manual grep counts over the SAME file ===
+
+perSlot count: 25 distinct slots found (matches distinct `"slot":"..."` values grep found in the file).
+brainTransport.failures: 1245, matches `grep -c '"kind":"wake_error"' ledger.jsonl` = 1245 exactly.
+
+Slot "earn/gig": snapshot says wakes:92 failures:92 failureRate:1 consecutiveFailureStreak:92 escalate:true.
+  Manual: `grep '"slot":"earn/gig"' ledger.jsonl | wc -l` = 92; `grep -o '"kind":"[^"]*"' | sort | uniq -c` = 92 skill_missing, 0 of any other kind.
+  92 == 92 confirmed; this slot is genuinely 100%-failing and streak-escalating on live data (matches
+  behavioral-spec.md's own measured "individual slots as high as 61-71% skill_error" ground truth --
+  earn/gig is even worse, 100% skill_missing, i.e. this feature's escalate:true flag would have
+  surfaced this dead slot immediately had it existed before).
+
+Slot "hl_trade": snapshot says wakes:1865 failures:2 (2 skill_timeout), consecutiveFailureStreak:0, escalate:false.
+  Manual: `grep '"slot":"hl_trade"' ledger.jsonl | grep -o '"kind":"[^"]*"' | sort | uniq -c` =
+  147 loop_detect, 2 skill_timeout, 1863 wake.
+  1863 + 2 = 1865 == snapshot's wakes (the 147 loop_detect rows are correctly EXCLUDED per
+  INV-LOOPDETECT-SEPARATE -- this is the exact live-data hazard FIND-001 warned about: hl_trade's
+  loop_detect rows DO carry slot:"hl_trade", and the aggregator correctly does not count them).
+  failures: 2 == the 2 skill_timeout rows, confirmed.
+
+All numbers verified via a THIRD, independent mechanism (grep/uniq -c over the raw file) rather than
+re-deriving from the same code path -- this is the fresh evidence dev-workflow.md's E2E judgment
+section calls for on a backend-only, no-UI feature.
