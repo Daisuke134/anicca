@@ -1,0 +1,22 @@
+{
+  "iteration": 2,
+  "phase": "spec-review",
+  "verdict": "FAIL",
+  "dimensions": {
+    "testability": "PASS",
+    "ground_truth": "FAIL",
+    "money_safety": "FAIL",
+    "completeness": "FAIL"
+  },
+  "blocking_count": 3,
+  "findings": ["FIND-101", "FIND-102", "FIND-103"],
+  "iteration1FindingsVerifiedResolved": [
+    "FIND-001 (verified: brain.mjs:63 tools:/brain.mjs:92 prompt-text now correctly documented and modified per REQ-504, matches real code)",
+    "FIND-002 (verified: index.mjs:450 classify call-site widening to isEarnActionSlot for economy/gig|economy/lending correctly specified per REQ-506, matches real branching)",
+    "FIND-003 (verified: REQ-506's hard array-filter reroute mechanism is now correctly distinguished from the soft avoidSlot/index.mjs:175-184,421 nudge, matches real code semantics)",
+    "FIND-004 (verified: REQ-512 adds the go-live/not-engaged observability signal; SOL_GATE_LIVE_ENABLE asymmetry correctly explained against skills/earn/sol-trade/run.sh:68-76)",
+    "FIND-005 (verified: same underlying defect as FIND-001, resolved by the same brain.mjs wiring-seam correction)"
+  ],
+  "reviewed_commit": "687ede72896f88239f76ce229eef39096119fe8b",
+  "ts": "2026-07-11T00:00:00Z"
+}
