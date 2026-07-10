@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "PROP-019 (verification-architecture.md:68) is the sole property/test asserting the capped amount actually reaches the Skip request and the signed transaction, but it asserts the mocked call arguments are '<= SWAP_MAX_USD-equivalent'. The word 'equivalent' presupposes a USD-dollar-float <-> on-chain-integer-base-unit conversion (see companion spec_fidelity finding FIND-001) that is nowhere defined in this spec. Because no such conversion function or unit format is specified anywhere in behavioral-spec.md or verification-architecture.md, a test author implementing PROP-019 must invent their own conversion to make the assertion operational, and a different test author (or the implementer under test) can invent a different, inconsistent one. As a direct consequence, PROP-019, PROP-011, and PROP-018 as literally specified would all continue to PASS even if the real implementation sends Skip/BaseSigner an amount that is 10^6x too large or too small -- every one of these property tests operates entirely within the same self-consistent abstract float unit-space and never crosses the boundary into the integer base-unit representation that Skip's API and BaseSigner's transaction actually require. This is precisely the 'tests that would pass even if a critical edge case were unhandled' failure mode: the money-safety cap's driver-level enforcement (NFR-3's central claim) is unfalsifiable as specified, because the property test cannot be written correctly without the spec first pinning down the missing conversion.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "60, 67-68",
+    "snippet": "PROP-011 ... capUsd(x) === Math.min(x, SWAP_MAX_USD) ... | PROP-018 ... usdEquivalentOf(needAkt, aktUsdPrice) === needAkt * aktUsdPrice ... | PROP-019 ... the mocked SkipApiClient.getRoute() call's amount_in argument AND the mocked BaseSigner.signAndBroadcast() call's transaction-amount argument are BOTH <= SWAP_MAX_USD-equivalent -- 'equivalent' is undefined; no PROP or pure function anywhere converts between the dollar-float space these three properties test and the integer base-unit space Skip/BaseSigner actually consume."
+  },
+  "fix": "Once FIND-001's conversion function is added to the spec, rewrite PROP-019 to assert exact expected integer base-unit values against concrete fixtures (e.g. need=$15.32-equivalent AKT shortfall, SWAP_MAX_USD=$10 -> expected amount_in base-units = capped-and-converted integer, asserted by equality, not an '-equivalent' inequality in an undefined unit), and add a dedicated PROP for the conversion function itself (round-tripping / boundary / rounding-direction fixtures) so the driver-level choke point is falsifiable against the actual on-chain unit, not just the abstract dollar figure.",
+  "routeToPhase": "1a"
+}

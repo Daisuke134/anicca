@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "critical",
+  "description": "The 'Test-Money Safety Rule' (verification-architecture.md:81-89) forbidding any test file from holding a real private key, calling a real Skip API endpoint, calling real Base/Akash RPC, or broadcasting a real transaction is stated entirely in prose ('MUST', 'no test file may'). PROP-017 (verification-architecture.md:55) is the ONLY structural/Tier-0 guard in the entire proof-obligation table, and it only scans `lib/pure/**` for forbidden imports (`node:fs`, `node:child_process`, `node:http(s)`, `fetch`) -- it says nothing about test files. There is no proof obligation that mechanically prevents a test file under this feature from importing the REAL SkipApiClient/ChainReader/BaseSigner implementations, hardcoding a real endpoint URL, or loading a real key from env. For a feature whose entire justification is cross-chain real-money movement, a prose-only promise with no falsifiable Tier-0 guard is exactly the kind of gap this task's adversarial mandate calls out (item 8: 'tests NEVER execute a real swap/broadcast'). A test author under time pressure could accidentally wire a real client into a 'quick manual verification' test and it would not be caught by anything in this verification architecture.",
+  "evidence": {
+    "filePath": "specs/verification-architecture.md",
+    "lineRange": "81-89",
+    "snippet": "No test file in this feature may hold a real private key, call a real Skip API endpoint, call a real Base/Akash RPC, or broadcast a real transaction. Every Tier 0-2 test operates against injected fakes/mocks -- this rule has no corresponding PROP entry and no static/structural enforcement."
+  },
+  "fix": "Add a Tier-0 proof obligation, e.g. PROP-018: 'Static-source-scan asserting no file under this feature's test directories imports the concrete SkipApiClient/ChainReader/BaseSigner/AkashSigner-subprocess implementation modules (only the fake/mock modules), and no test file references the literal string api.skip.build or a real RPC endpoint URL outside of a documented fixture-comment.' This gives PROP-017's structural guarantee a symmetric counterpart on the test side, closing the one place where 'real money' could leak into an automated test run."
+}

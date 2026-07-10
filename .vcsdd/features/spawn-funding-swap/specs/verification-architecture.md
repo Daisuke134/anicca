@@ -15,6 +15,14 @@
     REQ-007
   - `reconcileLedgerOnResume(ledgerFile: unknown): ReconciledLedger | 'CORRUPT'` — REQ-005 (pure parse +
     validation; the actual file read is effectful, but interpreting its contents is pure)
+  - `toBaseUnits(amountFloat: number, decimals: number): bigint` — REQ-012; THE single named choke point
+    converting `capUsd(usdEquivalentOf(need, aktUsdPrice))`'s dollar float into the integer amount used as
+    BOTH `SkipApiClient.getRoute()`'s `amount_in` (REQ-002) and `BaseSigner.signAndBroadcast()`'s tx amount
+    (REQ-006); `decimals` always explicit (`USDC_DECIMALS_BASE = 6`), floors (never rounds up), throws on
+    `NaN`/negative/non-finite input or `Number.MAX_SAFE_INTEGER` overflow
+  - `fromBaseUnits(amount: bigint, decimals: number): number` — REQ-012; inverse conversion, used to turn
+    `ChainReader.getAkashBalance()`'s raw `uakt` `bigint` into the decimal-AKT `current` input consumed by
+    `computeSwapNeed` (REQ-001, `AKT_DECIMALS = 6`); throws on negative `bigint` input
 
 - **Effectful Shell** (I/O; MUST be injected as parameters/interfaces, never module-level singletons, so
   Phase 2a tests substitute mocks with zero real network/chain access):
@@ -65,9 +73,11 @@ and no real endpoint literal strings outside a documented fixture-comment.
 | PROP-016 | `AKASH_KEY_NAME` unset or not equal to `anicca-akash` → non-zero exit, zero broadcast calls | REQ-009 | 1 | true | node:test (env fixture) |
 | PROP-017 | Pure-module import boundary: no file under `lib/pure/**` imports `node:fs`, `node:child_process`, `node:http(s)`, or references `fetch` | (structural, all REQs) | 0 | true | node:test static-source-scan (grep-equivalent assertion, no formal tool needed) |
 | PROP-018 | `usdEquivalentOf(needAkt, aktUsdPrice) === needAkt * aktUsdPrice` for all finite non-negative `needAkt` and finite positive `aktUsdPrice`; resolves to an explicit fail-closed signal (throw) for `aktUsdPrice <= 0`, `NaN`, or `Infinity` — never an unbounded/NaN/negative pass-through | REQ-011 | 2 | true | fast-check (property, adversarial price inputs) |
-| PROP-019 | Driver-level choke-point: for any `need` whose USD-equivalent exceeds `SWAP_MAX_USD`, the mocked `SkipApiClient.getRoute()` call's `amount_in` argument AND the mocked `BaseSigner.signAndBroadcast()` call's transaction-amount argument are BOTH `<= SWAP_MAX_USD`-equivalent, asserted by inspecting the spies' actual call arguments — not `capUsd()`'s return value in isolation | REQ-002, REQ-006, REQ-011 | 1 | true | node:test + spy mocks with call-argument capture |
+| PROP-019 | Driver-level choke-point (rewritten, FIND-001/FIND-002): for any `need` whose USD-equivalent exceeds `SWAP_MAX_USD`, the mocked `SkipApiClient.getRoute()` call's `amount_in` argument AND the mocked `BaseSigner.signAndBroadcast()` call's transaction-amount argument are BOTH bit-identical to the exact INTEGER `bigint` value `toBaseUnits(SWAP_MAX_USD, USDC_DECIMALS_BASE)` — asserted by exact equality against a concrete expected integer (e.g. `SWAP_MAX_USD=10` → expected `10000000n`), NEVER by a `<=`-"equivalent" float comparison — inspecting the spies' actual call arguments, not `capUsd()`'s/`toBaseUnits()`'s return values in isolation. A companion fixture below `SWAP_MAX_USD` (e.g. `need`-USD-equivalent `= 15.00`, uncapped) asserts both call arguments equal exactly `15000000n`. A fixture built with a WRONG `decimals` constant (`0` or `18` instead of `6`) at either call site MUST fail this assertion — proving the test is falsifiable against a 10^6x-class unit-conversion defect | REQ-002, REQ-006, REQ-011, REQ-012 | 1 | true | node:test + spy mocks with exact call-argument equality |
 | PROP-020 | The pre-broadcast `submitting` record (source-account deterministic nonce + leg index) is durably written to the canonical ledger SYNCHRONOUSLY and BEFORE the `BaseSigner.signAndBroadcast()`/leg-broadcast RPC call is made — verified by call-order assertion (ledger-write call precedes broadcast-RPC call in every recorded invocation, including ones where the mocked broadcast call is made to hang/crash before returning) | REQ-005 | 2 | true | fast-check (property, crash-injection at exact pre/post-RPC-return points) + node:test call-order spy |
 | PROP-021 | Test-file static-source-scan (structural, symmetric to PROP-017): no file under this feature's test directories imports the concrete `SkipApiClient`/`ChainReader`/`BaseSigner`/`AkashSigner`-subprocess/`PriceOracle` implementation modules (only the fake/mock modules), and no test file contains the literal string `api.skip.build` or a real RPC endpoint URL outside a documented fixture-comment | (structural, all REQs) | 0 | true | node:test static-source-scan (grep-equivalent assertion) |
+| PROP-022 | `toBaseUnits(amountFloat, decimals)` conversion exactness (new, FIND-001/FIND-002): (a) fixed fixture `toBaseUnits(15.0, 6) === 15000000n`; (b) floor-rounding fixture `toBaseUnits(15.0000009, 6) === 15000000n` (a naive `Math.round` implementation yielding `15000001n` MUST fail); (c) `toBaseUnits(SWAP_MAX_USD, 6)` equals the exact upper-bound `bigint` used by PROP-019; (d) adversarial-input property: `NaN`/negative/`Infinity` `amountFloat`, or an intermediate value exceeding `Number.MAX_SAFE_INTEGER`, or a missing/non-integer/negative `decimals`, all throw (fail-closed), never coerce to `0n` or silently truncate; (e) wrong-decimals fixture: `toBaseUnits(15.0, 0)` and `toBaseUnits(15.0, 18)` both produce integers that FAIL an exact-equality assertion against the correctly-scaled `15000000n` expectation — the mechanism that makes a 10^6x-class conversion defect fail loudly | REQ-012 | 2 | true | fast-check (property, adversarial inputs) + node:test fixed fixtures |
+| PROP-023 | `fromBaseUnits(amount, decimals)` correctness and round-trip: fixed fixture `fromBaseUnits(1850000n, 6) === 1.85`; round-trip property `fromBaseUnits(toBaseUnits(x, decimals), decimals) === x` for representative fixture floats with no more than `decimals` fractional digits; negative-`bigint` input throws (fail-closed); driver-level assertion that `computeSwapNeed`'s `current` argument is bit-identical to `fromBaseUnits(mockedBalanceUakt, AKT_DECIMALS)`, never the raw `bigint` or an un-scaled `Number(balanceUakt)` | REQ-001, REQ-012 | 1 | true | node:test fixed fixtures + node:test spy on driver call argument |
 
 ## Verification Strategy
 
@@ -76,26 +86,31 @@ and no real endpoint literal strings outside a documented fixture-comment.
   static scan), PROP-021 (test-file import/endpoint-literal static scan — symmetric counterpart to
   PROP-017 on the test side, closing the prose-only Test-Money Safety Rule gap).
 - **Tier 1** (unit tests / mocked-transport tests, deterministic fixtures): PROP-002, PROP-003, PROP-004,
-  PROP-008, PROP-012, PROP-013, PROP-014, PROP-015, PROP-016, PROP-019 — every effectful client is
-  injected as a mock/spy; assertions cover exit codes, call counts, call arguments, and ledger contents.
-  None of these tests perform real network calls or real signing (enforced by PROP-017/PROP-021's
-  boundaries + Phase 2a test-harness convention of never importing the real
-  `SkipApiClient`/`ChainReader`/`Signer`/`PriceOracle` implementations, only fakes).
+  PROP-008, PROP-012, PROP-013, PROP-014, PROP-015, PROP-016, PROP-019, PROP-023 — every effectful client
+  is injected as a mock/spy; assertions cover exit codes, call counts, call arguments, and ledger contents.
+  PROP-019 (rewritten per FIND-001/FIND-002) and PROP-023 assert exact integer/`bigint` call-argument
+  values, never a range or an "-equivalent" float comparison. None of these tests perform real network
+  calls or real signing (enforced by PROP-017/PROP-021's boundaries + Phase 2a test-harness convention of
+  never importing the real `SkipApiClient`/`ChainReader`/`Signer`/`PriceOracle` implementations, only
+  fakes).
 - **Tier 2** (property-based / fuzz testing on the money-safety-critical surface — `fast-check`, since
   this feature is TypeScript): PROP-001, PROP-005, PROP-007, PROP-009, PROP-010, PROP-011, PROP-018,
-  PROP-020. These eight cover exactly the money-safety MUSTs called out in the task, now including the
-  spec-review iteration-1 findings: (a) threshold no-over-buy = PROP-001, (b) fail-closed on no funded
-  source = PROP-005 (paired with PROP-006's fixed regression case and PROP-003/PROP-004 for the no-route
-  sibling), (c) idempotency/no-double-spend across all three crash windows = PROP-007 + PROP-009 +
-  PROP-020, (d) canonical destination-scoped lock precondition = PROP-010, (e) cap hard-override immunity
-  at both the pure-function level AND the driver call-argument level = PROP-011 + PROP-012 + PROP-019,
-  (f) AKT→USD conversion correctness/fail-closedness = PROP-018. Tier 2 tests generate hundreds of
+  PROP-020, PROP-022. These nine cover exactly the money-safety MUSTs called out in the task, now
+  including the spec-review iteration-1 and iteration-2 findings: (a) threshold no-over-buy = PROP-001,
+  (b) fail-closed on no funded source = PROP-005 (paired with PROP-006's fixed regression case and
+  PROP-003/PROP-004 for the no-route sibling), (c) idempotency/no-double-spend across all three crash
+  windows = PROP-007 + PROP-009 + PROP-020, (d) canonical destination-scoped lock precondition = PROP-010,
+  (e) cap hard-override immunity at both the pure-function level AND the driver call-argument level =
+  PROP-011 + PROP-012 + PROP-019, (f) AKT→USD conversion correctness/fail-closedness = PROP-018, (g)
+  float-to-integer base-unit conversion exactness/fail-closedness (closing FIND-001/FIND-002's 10^6x gap)
+  = PROP-022, paired with PROP-023's symmetric read-side conversion. Tier 2 tests generate hundreds of
   randomized inputs/schedules per run and MUST all operate purely in-memory against the pure-core
   functions or in-memory fakes — never against real chains.
 - **Tier 3** (strong formal proof): not required for this feature. The money-safety properties are fully
   covered by exhaustive-enough property testing (Tier 2) over a small, pure, easily-modeled state
-  machine (leg ledger + cap function + price conversion); a Kani/TLA+-grade proof would be disproportionate
-  to the complexity here (a handful of pure functions with small, bounded state), and Tier 2 fast-check
+  machine (leg ledger + cap function + price conversion + base-unit conversion); a Kani/TLA+-grade proof
+  would be disproportionate to the complexity here (a handful of pure functions with small, bounded
+  state), and Tier 2 fast-check
   gives a falsifiable, fast-running, CI-friendly guarantee consistent with `sol-trade`'s existing
   `lib/__tests__/sol-max-spend.test.mjs` precedent for money-safety-critical caps in this codebase.
 

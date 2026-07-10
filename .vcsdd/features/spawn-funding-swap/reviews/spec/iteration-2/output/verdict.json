@@ -1,0 +1,21 @@
+{
+  "feature": "spawn-funding-swap",
+  "phase": "spec",
+  "iteration": 2,
+  "reviewer": "fresh-opus-adversary",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"]
+    }
+  ],
+  "blockingFindings": ["FIND-001", "FIND-002"],
+  "overallVerdict": "FAIL",
+  "evidence": "Iteration-1 findings re-verified against current specs/behavioral-spec.md and specs/verification-architecture.md, all independently read this session: FIND-001 (amount_in mode + capUsd(usdEquivalentOf(need)) missing) CONFIRMED-CLOSED -- REQ-002 (behavioral-spec.md:109-119) now explicitly mandates amount_in mode using capUsd(usdEquivalentOf(need, aktUsdPrice)), and REQ-011 (lines 346-368) defines usdEquivalentOf plus PROP-018. FIND-002 (cap not wired to real tx, most severe) CONFIRMED-CLOSED -- REQ-006's 'EARS (choke point)' clause (lines 233-238) explicitly requires the identical capped value for both the Skip amount_in and BaseSigner.signAndBroadcast(), and PROP-019 (verification-architecture.md:68) asserts the mocked call arguments themselves, not capUsd() in isolation. FIND-003 (crash-window double-spend) CONFIRMED-CLOSED -- REQ-005 Window 2 (lines 196-204) now mandates a synchronous pre-broadcast 'submitting' record (nonce+leg) written BEFORE the broadcast RPC call, PROP-009 (line 58) explicitly enumerates all three crash windows including both Window-2 sub-cases, and PROP-020 (line 69) asserts write-before-RPC call-order. FIND-004 (no structural test-money-safety guard) CONFIRMED-CLOSED -- PROP-021 (verification-architecture.md:70) is a Tier-0 static-source-scan over test files asserting no import of concrete client implementations and no real-endpoint literals. FIND-005 (route-id-scoped ledger identity) CONFIRMED-CLOSED -- REQ-010 (lines 319-344) mandates a canonical lock/ledger keyed by the destination Akash address, acquired BEFORE any route or price request, and PROP-010 (line 59) explicitly tests two concurrent invocations each given a DISTINCT freshly-mocked Skip quote id contending for the one shared lock. REQ-003 (lines 141-161) and REQ-009 (lines 298-317) were re-read in full and remain airtight fail-closed/identity-isolation requirements with matching PROP-005/006 and PROP-015/016. However, the exact rewrite that closed FIND-001/FIND-002 (wiring capUsd(usdEquivalentOf(need, aktUsdPrice)) -- a USD-dollar float -- directly into the Skip amount_in parameter and the BaseSigner-signed transaction amount) introduces a new, uncaught critical gap: no REQ, pure function, or PROP anywhere in either spec file defines the conversion from this dollar-float value (and the symmetric AKT-float value from computeSwapNeed) into the integer on-chain base-unit representation (USDC's 6 decimals on Base; uakt for Akash, per ChainReader.getBaseUsdc()/getAkashBalance() returning Promise<bigint> at verification-architecture.md:22-23) that Skip's API and BaseSigner's transaction actually require. PROP-019's own wording ('<= SWAP_MAX_USD-equivalent') tacitly admits an undefined conversion is needed. As specified, every money-safety property test (PROP-011, PROP-018, PROP-019) operates entirely within the same self-consistent abstract float unit space and would continue to PASS even if a real implementation sent Skip/BaseSigner an amount 10^6x too large or too small -- the exact 'unconditional cap' NFR-3 claims to guarantee is unfalsifiable at the unit boundary. See FIND-001 (spec_fidelity) and FIND-002 (verification_readiness) for full citations and required fix. Both dimensions FAIL until this conversion is spec'd and a corresponding exact-value (not '-equivalent') property test is added."
+}

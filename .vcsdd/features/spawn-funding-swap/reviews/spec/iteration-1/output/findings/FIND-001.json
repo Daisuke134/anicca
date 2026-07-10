@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-002's EARS sentence specifies source_asset_chain_id, source_asset_denom, dest_asset_chain_id, dest_asset_denom for the Skip API route request, but NEVER specifies an amount parameter (neither amount_in nor amount_out) nor which Skip quote mode is used. The confirmed-live example in the Context section ('amount_out≈24.65 AKT for 15 USDC in') shows an amount_in-mode quote, but computeSwapNeed (REQ-001) produces an AKT-denominated shortfall, not a USD amount -- so the spec never states how the AKT shortfall is converted into the USD/USDC amount actually sent to Skip's API. A compliant implementation could legally request the route in amount_out mode using the raw, uncapped AKT need as amount_out, receiving back whatever amount_in USDC that requires (which could exceed SWAP_MAX_USD). Nothing in REQ-002 forces the request amount to be pre-clamped.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "91-96",
+    "snippet": "WHEN `need > 0` THE SYSTEM SHALL request a route from the Skip API with `source_asset_chain_id=8453`, `source_asset_denom=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, `dest_asset_chain_id=akashnet-2`, `dest_asset_denom=uakt`, and SHALL validate the response satisfies `validateRoute` before proceeding -- no amount_in/amount_out parameter is specified anywhere in this EARS statement."
+  },
+  "fix": "Add an explicit EARS clause to REQ-002 (or a new REQ) stating: 'THE SYSTEM SHALL request the route in amount_in mode using amountInUsd = capUsd(usdEquivalentOf(need)) as the amount parameter -- the request amount SHALL be the already-capped value, never the raw uncapped shortfall.' Also define the missing pure conversion function (AKT-need -> USD-equivalent) in the Purity Boundary Analysis, since capUsd's input (`requestedUsd`) currently has no specified producer.",
+  "routeToPhase": "1a"
+}

@@ -40,8 +40,27 @@ Confirmed this session (cite, do not re-trust blindly — verify balances/route 
   where `SWAP_MAX_USD` is a literal constant in the pure module, never read from `process.env` or any
   genome/config file (REQ-006). `capUsd`'s only sanctioned input across this feature is
   `usdEquivalentOf(need, aktUsdPrice)`'s output (REQ-011), and `capUsd`'s only sanctioned output
-  consumers are the Skip route request (REQ-002) and the signed Base transaction (REQ-006's choke
-  point) — never a re-derived or independently recomputed amount.
+  consumer is `toBaseUnits` (REQ-012) — `capUsd`'s dollar-float return value is NEVER passed directly to
+  the Skip route request or to the signed Base transaction; it MUST first pass through REQ-012's
+  conversion, whose bigint output alone reaches those two call sites — never a re-derived or
+  independently recomputed amount, and never the raw dollar float.
+- `toBaseUnits(amountFloat: number, decimals: number): bigint` — pure conversion from a decimal-float
+  amount (USD or AKT) into the integer on-chain base-unit representation for the given asset's decimal
+  precision (REQ-012); THE SINGLE named choke point between `capUsd(usdEquivalentOf(need, aktUsdPrice))`
+  and both the Skip `amount_in` parameter (REQ-002) and the `BaseSigner.signAndBroadcast()` transaction
+  amount (REQ-006). `decimals` MUST always be passed explicitly by the caller (`USDC_DECIMALS_BASE = 6`
+  for Base USDC, `AKT_DECIMALS = 6` for `uakt`) — there is no default. Rounds DOWN (floor) to the nearest
+  base unit for spend amounts — NEVER rounds up, since rounding up a capped spend amount could push the
+  integer value fractionally past `toBaseUnits(SWAP_MAX_USD, decimals)`'s exact boundary. MUST throw
+  (fail-closed) for `amountFloat` that is `NaN`, negative, non-finite (`Infinity`), or whose
+  `amountFloat * 10^decimals` would exceed `Number.MAX_SAFE_INTEGER` before conversion to `BigInt`
+  (overflow guard against float-precision loss silently mis-scaling the amount); MUST throw for
+  `decimals` that is missing, non-integer, or negative.
+- `fromBaseUnits(amount: bigint, decimals: number): number` — pure inverse of `toBaseUnits`; converts an
+  integer on-chain base-unit balance (e.g. `ChainReader.getAkashBalance()`'s raw `uakt` `bigint`, REQ-001)
+  into the decimal-float `currentAkt` value consumed by `computeSwapNeed` (REQ-001, REQ-012). MUST throw
+  (fail-closed) for a negative `bigint` input (an impossible on-chain balance) rather than silently
+  returning a negative float that `computeSwapNeed` would then have to guess is meaningful.
 - `validateRoute(routeResponse)` — pure predicate over the parsed Skip API response: rejects if
   `dest_asset_denom !== 'uakt'`, `dest_asset_chain_id !== 'akashnet-2'`, `amount_out` missing/zero/NaN,
   or `txs_required` missing (REQ-002).
@@ -77,9 +96,12 @@ tests can mock it without touching real money.
   state from which a subsequent run can determine exactly what has and has not been confirmed on-chain.
 - **NFR-3 (bounded spend)**: no single invocation may move more than `SWAP_MAX_USD` of source value,
   regardless of the computed shortfall, env vars, CLI flags, or any config file — enforced at the single
-  choke point specified in REQ-002/REQ-006/REQ-011: the same `capUsd(usdEquivalentOf(need, aktUsdPrice))`
-  value is used as both the Skip request amount and the signed transaction amount, verified at the
-  driver/call-argument level, not merely inside `capUsd()` in isolation (see PROP-019).
+  choke point specified in REQ-002/REQ-006/REQ-011/REQ-012: the same
+  `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` INTEGER value is used as
+  both the Skip request amount and the signed transaction amount, verified at the driver/call-argument
+  level against an exact `bigint` expectation — not merely inside `capUsd()`/`toBaseUnits()` in isolation,
+  and never as an abstract dollar-float "-equivalent" comparison that a 10^6x-class base-unit conversion
+  defect could still pass (see PROP-019, PROP-022).
 - **NFR-4 (latency bound)**: each on-chain confirmation poll MUST have a finite, configurable timeout
   (default ≤ 10 minutes per leg) — the process MUST NOT hang indefinitely on the critical treasury path
   (this command is called synchronously from `akt-treasury.sh`, which itself is off the per-spawn deploy
@@ -94,29 +116,38 @@ tests can mock it without touching real money.
 
 ### REQ-001: Balance-gated idempotent trigger
 **EARS**: WHEN the command is invoked THE SYSTEM SHALL query the current AKT balance at
-`akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523` and compute `need = max(0, threshold - current)`, and
-SHALL exit 0 with no swap attempted WHEN `need == 0`.
+`akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523` via `ChainReader.getAkashBalance()` (returning a raw
+`uakt` `bigint`), SHALL convert it to a decimal-AKT float via `fromBaseUnits(balanceUakt, AKT_DECIMALS)`
+(REQ-012, `AKT_DECIMALS = 6`) before using it as `computeSwapNeed`'s `current` input, and SHALL compute
+`need = max(0, threshold - current)`, and SHALL exit 0 with no swap attempted WHEN `need == 0`.
 **Edge Cases**:
 - `current >= threshold` exactly at the boundary: no swap (never over-buy at the boundary either).
 - Balance query returns an error/timeout: fail closed (non-zero exit), never assume `current = 0` and
   proceed to swap on a guess.
 - `threshold` is unset or non-numeric: fail closed with a clear error, never default to swapping.
+- `ChainReader.getAkashBalance()`'s raw `bigint` is passed to `computeSwapNeed` WITHOUT first being run
+  through `fromBaseUnits`: this treats a micro-AKT integer as a whole-AKT float, an under-conversion
+  error of the same class REQ-012 exists to prevent — fail closed / test failure, never a silent pass.
 **Acceptance Criteria**:
 - `computeSwapNeed(current, threshold)` returns `0` for all `current >= threshold` (property-tested).
 - A run with `current >= threshold` never calls the Skip API or any signer (verified via a spy/mock
   transport asserting zero invocations).
+- A test asserts the driver calls `computeSwapNeed` with `current === fromBaseUnits(mockedBalanceUakt,
+  AKT_DECIMALS)`, never with the raw `bigint` or an un-scaled `Number(balanceUakt)` (PROP-023).
 
 ### REQ-002: Skip API route acquisition — capped amount_in request, fail-closed on no route
 **EARS**: WHEN `need > 0` (and after REQ-010's lock is held and REQ-011's price/cap value is computed)
 THE SYSTEM SHALL request a route from the Skip API in **amount_in mode**, using
-`amountInUsd = capUsd(usdEquivalentOf(need, aktUsdPrice))` (per REQ-011 — the already fail-closed-priced,
-already-capped value) as the `amount_in` parameter, with `source_asset_chain_id=8453`,
-`source_asset_denom=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`, `dest_asset_chain_id=akashnet-2`,
-`dest_asset_denom=uakt`, and SHALL validate the response satisfies `validateRoute` before proceeding, and
-SHALL fail closed (non-zero exit, no tx submitted) WHEN no valid route is returned. THE SYSTEM SHALL NOT,
-under any circumstance, request the route in `amount_out` mode using the raw AKT `need` as `amount_out`,
-nor request `amount_in` using any value other than the exact `capUsd(usdEquivalentOf(need, aktUsdPrice))`
-output.
+`amountInBaseUnits = toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` (per
+REQ-011 for the capped dollar figure and REQ-012 for its base-unit conversion — the already
+fail-closed-priced, already-capped, already-integer-converted value) as the `amount_in` parameter, with
+`source_asset_chain_id=8453`, `source_asset_denom=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913`,
+`dest_asset_chain_id=akashnet-2`, `dest_asset_denom=uakt`, and SHALL validate the response satisfies
+`validateRoute` before proceeding, and SHALL fail closed (non-zero exit, no tx submitted) WHEN no valid
+route is returned. THE SYSTEM SHALL NOT, under any circumstance, request the route in `amount_out` mode
+using the raw AKT `need` as `amount_out`, nor request `amount_in` using any value other than the exact
+`toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` output — in particular, THE
+SYSTEM SHALL NOT pass the pre-conversion dollar float returned by `capUsd(...)` directly as `amount_in`.
 **Edge Cases**:
 - Skip API returns HTTP error or malformed JSON: fail closed.
 - Skip API returns a route with `dest_asset_denom !== 'uakt'` or wrong `dest_asset_chain_id`: fail
@@ -126,17 +157,23 @@ output.
 - Route requires more legs/chains than the system can execute (unsupported `txs_required` shape): fail
   closed rather than attempting a partial/unknown execution path.
 - A code path attempts to request the route using the raw uncapped `need` (in AKT or USD) instead of
-  `capUsd(usdEquivalentOf(need, aktUsdPrice))`: this is exactly the class of defect PROP-019 (driver-level
-  choke-point assertion) exists to catch — fail closed / test failure, never a silent pass.
+  `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)`: this is exactly the class
+  of defect PROP-019 (driver-level choke-point assertion) exists to catch — fail closed / test failure,
+  never a silent pass.
+- A code path passes `capUsd(usdEquivalentOf(need, aktUsdPrice))`'s raw dollar float (e.g. `15.32`)
+  directly as `amount_in` instead of routing it through `toBaseUnits` first (an unconverted-unit defect,
+  the exact class FIND-001/FIND-002 identified): fail closed / test failure — PROP-022's exact-integer
+  fixture assertion exists specifically to catch this.
 **Acceptance Criteria**:
 - `validateRoute` rejects every malformed-response fixture in the test suite (empty body, wrong denom,
   wrong chain id, zero amount_out, missing txs_required) and accepts only the shape confirmed live this
   session.
 - No tx-signing code path is reachable unless `validateRoute` returned true for the specific route object
   in hand (not a cached/prior route).
-- A test asserts the mocked `SkipApiClient.getRoute()` call's `amount_in` argument is bit-identical to
-  `capUsd(usdEquivalentOf(need, aktUsdPrice))` for the fixture's `need`/`aktUsdPrice`, and never equal to
-  the raw uncapped USD-equivalent when the two differ (PROP-019).
+- A test asserts the mocked `SkipApiClient.getRoute()` call's `amount_in` argument is bit-identical to the
+  INTEGER `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` — not the dollar
+  float — for the fixture's `need`/`aktUsdPrice`, and never equal to the raw uncapped USD-equivalent
+  (converted or not) when the two differ (PROP-019, rewritten per FIND-001/FIND-002).
 
 ### REQ-003: Source-funding precondition (fail closed — the live current blocker)
 **EARS**: BEFORE any transaction is signed THE SYSTEM SHALL verify the Base-chain USDC balance of the
@@ -231,11 +268,15 @@ output, or any config file value that would raise it (mirrors `sol-trade`'s
 `lib/resolve-max-spend.sh` single-choke-point hard-override pattern — a script that prints a literal
 value and explicitly ignores `SOL_TRADE_MAX_SPEND` and every other env var).
 **EARS (choke point)**: THE SYSTEM SHALL construct both the Skip API route request's `amount_in`
-parameter (REQ-002) and the amount actually signed and broadcast by `BaseSigner.signAndBroadcast()` using
-`capUsd(usdEquivalentOf(need, aktUsdPrice))` (REQ-011) as the sole source of the swap amount — no other
-code path, value, re-query, or re-computation SHALL determine `amountIn` for the Skip request or for
-signing. A swap SHALL NEVER be signed for an amount that was recomputed independently of the exact capped
-value already used for the Skip request.
+parameter (REQ-002) and the amount actually signed and broadcast by `BaseSigner.signAndBroadcast()` from
+`toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` (REQ-011's capped dollar
+figure, converted to an integer base-unit amount by REQ-012's single named conversion function) as the
+sole source of the swap amount — no other code path, value, re-query, re-computation, or independent
+unit-scaling SHALL determine `amountIn` for the Skip request or for signing, and the two call sites
+(Skip `amount_in` and `BaseSigner.signAndBroadcast()`'s tx amount) SHALL receive the exact same `bigint`
+value, not merely two values that happen to be numerically equal after separate conversions. A swap SHALL
+NEVER be signed for an amount that was recomputed independently of the exact capped-and-converted value
+already used for the Skip request, and SHALL NEVER be signed for the pre-conversion dollar float.
 **Edge Cases**:
 - Computed `need` (in USD-equivalent) exceeds `SWAP_MAX_USD`: the system swaps at most `SWAP_MAX_USD`
   worth and MUST clearly report that the swap was capped and the treasury may remain below threshold
@@ -246,9 +287,12 @@ value already used for the Skip request.
 - `SWAP_MAX_USD` itself is defined once, in one file, with no second definition anywhere else in the
   codebase that could drift out of sync.
 - A code path signs/broadcasts using a re-derived or independently recomputed amount instead of the exact
-  `capUsd(...)` value already used for the Skip request: THE SYSTEM SHALL NOT permit this — this is
-  precisely the class of defect the driver-level choke-point test (PROP-019) exists to catch; `capUsd()`
-  passing its own isolated unit test is explicitly NOT sufficient evidence that this requirement holds.
+  `toBaseUnits(capUsd(...), USDC_DECIMALS_BASE)` value already used for the Skip request, OR uses the
+  pre-conversion dollar float, OR applies a different/wrong `decimals` value than `USDC_DECIMALS_BASE`
+  when converting: THE SYSTEM SHALL NOT permit any of these — this is precisely the class of defect the
+  driver-level choke-point test (PROP-019) and the conversion-exactness test (PROP-022) exist to catch;
+  `capUsd()` and `toBaseUnits()` each passing their own isolated unit tests is explicitly NOT sufficient
+  evidence that this requirement holds — only the driver-level call-argument assertion is.
 **Acceptance Criteria**:
 - `capUsd(x)` returns `Math.min(x, SWAP_MAX_USD)` for all `x`, verified by property test across a wide
   range of `x` including adversarial values (`Infinity`, negative, `NaN` → treated as 0/fail-closed, not
@@ -257,8 +301,12 @@ value already used for the Skip request.
   `process.env.SOL_TRADE_MAX_SPEND`-style vars, or any genome-provided override value is set.
 - PROP-019: for any `need` whose USD-equivalent exceeds `SWAP_MAX_USD`, the mocked
   `SkipApiClient.getRoute()` call's `amount_in` argument AND the mocked `BaseSigner.signAndBroadcast()`
-  call's transaction-amount argument are BOTH `<= SWAP_MAX_USD`-equivalent, asserted by inspecting the
-  spy's actual call arguments — never by inspecting `capUsd()`'s return value in isolation.
+  call's transaction-amount argument are BOTH bit-identical to the exact INTEGER
+  `toBaseUnits(SWAP_MAX_USD, USDC_DECIMALS_BASE)` `bigint` value for the capped case (never merely `<=`
+  an undefined "-equivalent" float), asserted by inspecting the spy's actual call arguments — never by
+  inspecting `capUsd()`'s or `toBaseUnits()`'s return values in isolation. A fixture using a WRONG
+  `decimals` value (e.g. an implementation defect passing `0` or `18` instead of `6`) MUST fail this
+  assertion, proving the test is falsifiable against a 10^6x-class unit error (see PROP-022).
 
 ### REQ-007: Final on-chain settlement verification before declaring success
 **EARS**: AFTER the last route leg is confirmed THE SYSTEM SHALL re-query
@@ -350,7 +398,8 @@ Skip request, no signing) WHEN the returned price is missing, zero, negative, no
 errors/times out; WHEN a valid price is obtained THE SYSTEM SHALL compute `usdEquivalentOf(need,
 aktUsdPrice)` as the pure USD-equivalent of the AKT shortfall computed in REQ-001, and SHALL pass
 `capUsd(usdEquivalentOf(need, aktUsdPrice))` — never the raw, uncapped `usdEquivalentOf(...)` value and
-never `need` itself — as the sole amount input to REQ-002's Skip route request and to REQ-006's signing
+never `need` itself — as the sole dollar-float input to REQ-012's `toBaseUnits` conversion, whose integer
+`bigint` output is in turn the sole amount input to REQ-002's Skip route request and to REQ-006's signing
 choke point.
 **Edge Cases**:
 - `aktUsdPrice` is `0`, negative, `NaN`, or `Infinity`: fail closed, no Skip request made, no price used.
@@ -367,7 +416,55 @@ choke point.
   `PriceOracle.getAktUsdPrice()` rejects or returns an invalid price (zero call count on Skip/sign/
   broadcast functions, extending PROP-002's zero-call pattern to this precondition).
 
-## Edge Case Catalog (cross-cutting, applies across REQ-002 through REQ-011)
+### REQ-012: Base-unit conversion choke point (USD/AKT float ↔ integer on-chain base units)
+**EARS**: THE SYSTEM SHALL convert every decimal-float amount that crosses the boundary into an on-chain
+integer amount, or out of one, through exactly ONE named pure function pair —
+`toBaseUnits(amountFloat, decimals): bigint` and `fromBaseUnits(amount, decimals): number` — and no other
+code path SHALL perform this conversion. Specifically: (a) the value passed as the Skip API's `amount_in`
+parameter (REQ-002) and the value signed and broadcast by `BaseSigner.signAndBroadcast()` (REQ-006) SHALL
+each be exactly `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` where
+`USDC_DECIMALS_BASE = 6` (Base USDC's decimal precision), and this integer value SHALL additionally satisfy
+the runtime invariant `<= toBaseUnits(SWAP_MAX_USD, USDC_DECIMALS_BASE)`, and THE SYSTEM SHALL fail closed
+if it does not (defense in depth, independent of `capUsd()`'s own correctness); and (b) the `current` AKT
+balance fed into `computeSwapNeed` (REQ-001) SHALL be exactly `fromBaseUnits(balanceUakt, AKT_DECIMALS)`
+where `balanceUakt` is `ChainReader.getAkashBalance()`'s raw `bigint` and `AKT_DECIMALS = 6`. THE SYSTEM
+SHALL NOT define, inline, or tolerate any second/alternate conversion between these unit spaces anywhere
+else in the codebase.
+**Edge Cases**:
+- `toBaseUnits` receives a `cappedUsd` value with more precision than `decimals` allows (e.g. sub-base-unit
+  fractional cents): rounds DOWN (floor) to the nearest base unit — NEVER rounds up, since rounding up a
+  spend amount on the boundary could push the integer value fractionally past
+  `toBaseUnits(SWAP_MAX_USD, USDC_DECIMALS_BASE)`'s exact cap.
+- `toBaseUnits` receives `NaN`, a negative number, or non-finite (`Infinity`) `amountFloat`: throws
+  (fail-closed) — this is a second independent guard even though `capUsd`/`usdEquivalentOf` are already
+  supposed to have excluded these values upstream.
+- `toBaseUnits`'s intermediate scaled value (`amountFloat * 10^decimals`) would exceed
+  `Number.MAX_SAFE_INTEGER` before conversion to `BigInt`: throws (fail-closed) rather than silently
+  producing a precision-corrupted integer; acceptable given `SWAP_MAX_USD` is a small literal constant, so
+  this can only trigger on a build-time misconfiguration of the constant itself.
+- `decimals` is omitted, non-integer, or negative (no implicit default is ever used): `toBaseUnits`/
+  `fromBaseUnits` throw — every call site MUST pass `USDC_DECIMALS_BASE` or `AKT_DECIMALS` explicitly.
+- `fromBaseUnits` receives a negative `bigint`: throws (fail-closed) rather than returning a negative float
+  that `computeSwapNeed` would silently have to interpret.
+- An implementation passes the WRONG `decimals` constant (e.g. `0` or `18` instead of `6`) at either call
+  site: THE SYSTEM SHALL NOT permit this to pass verification — PROP-022's exact-integer fixture assertion
+  (checked against a concrete `$15.00 → 15000000n` expectation, not a range) is the mechanism designed to
+  make this class of defect fail loudly rather than silently pass a `<=`-style comparison.
+**Acceptance Criteria**:
+- `toBaseUnits(15.0, 6) === 15000000n` (fixture, PROP-022).
+- `toBaseUnits(15.0000009, 6) === 15000000n` (floor-rounding fixture — a naive `Math.round`-based
+  implementation would produce `15000001n` and MUST fail this fixture, PROP-022).
+- `toBaseUnits(SWAP_MAX_USD, 6)` is the exact upper-bound `bigint` asserted by REQ-006/PROP-019's rewritten
+  choke-point test.
+- A fixture with an implementation using the wrong `decimals` (e.g. `toBaseUnits(15.0, 0)` or
+  `toBaseUnits(15.0, 18)`) produces an integer that FAILS the exact-equality assertion against the
+  correctly-scaled expectation — proving the test suite is falsifiable against a 10^6x-class unit error
+  (PROP-022, directly closing FIND-001/FIND-002).
+- `fromBaseUnits(1850000n, 6) === 1.85` (round-trip fixture feeding REQ-001's `computeSwapNeed`, PROP-023).
+- `toBaseUnits`/`fromBaseUnits` round-trip: for a representative set of fixture floats with no more than
+  `decimals` fractional digits, `fromBaseUnits(toBaseUnits(x, decimals), decimals) === x` (PROP-022/023).
+
+## Edge Case Catalog (cross-cutting, applies across REQ-002 through REQ-012)
 
 | Edge case | Required behavior |
 |---|---|
@@ -379,7 +476,8 @@ choke point.
 | Crash before broadcast RPC call, or after RPC call but before ledger write (REQ-005) | Synchronous pre-broadcast `submitting` record (nonce+leg index) makes on-chain state always re-derivable/queryable before any resubmit decision — never blind-resubmit |
 | Concurrent invocation (REQ-005, REQ-010) | Canonical destination-address-keyed lock (acquired before any route request) prevents double-submit even when each invocation would get a distinct fresh Skip quote id; loser resumes/no-ops |
 | No canonical lock acquired before route/price request (REQ-010) | Fail closed / zero Skip and price-oracle calls until lock held |
-| Cap exceeded by computed need (REQ-002, REQ-006, REQ-011) | Skip request `amount_in` and the signed tx amount are both the identical `capUsd(usdEquivalentOf(need, aktUsdPrice))` value — never independently recomputed (single choke point, PROP-019) |
+| Cap exceeded by computed need (REQ-002, REQ-006, REQ-011, REQ-012) | Skip request `amount_in` and the signed tx amount are both the identical `toBaseUnits(capUsd(usdEquivalentOf(need, aktUsdPrice)), USDC_DECIMALS_BASE)` integer value — never independently recomputed, never the pre-conversion float (single choke point, PROP-019/PROP-022) |
+| USD/AKT float passed to Skip or signer without base-unit conversion, or converted with the wrong `decimals` (REQ-012) | Fail closed / test failure — exact-integer fixtures (PROP-022/023) catch a 10^6x-class unit error that a `<=`-equivalent float comparison would miss |
 | Invalid/unavailable AKT/USD price (REQ-011) | Fail closed before any Skip request or price-derived amount is used |
 | Legs confirmed but destination balance unchanged (REQ-007) | Fail closed, distinct "settlement unverified" status |
 | Wrong/missing signer key (REQ-009) | Fail closed before any signing occurs |

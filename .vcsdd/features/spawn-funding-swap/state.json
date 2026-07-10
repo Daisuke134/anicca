@@ -15,11 +15,17 @@
       "to": "1b",
       "timestamp": "2026-07-10T08:44:41.451Z",
       "reason": "Phase 1b verification architecture authored"
+    },
+    {
+      "from": "1b",
+      "to": "1b",
+      "timestamp": "2026-07-10T09:10:43.750Z",
+      "reason": "Spec revision (iter2->iter3 prep): fixed FIND-001/FIND-002 base-units gap by adding toBaseUnits/fromBaseUnits pure conversion functions (REQ-012), rewiring REQ-001/002/006/011 through the choke point, rewriting PROP-019 to exact-integer bit-identical assertions, and adding PROP-022/023 for conversion exactness/round-trip."
     }
   ],
   "iterations": {
-    "1a": 1,
-    "1b": 1
+    "1a": 2,
+    "1b": 2
   },
   "proofObligations": [],
   "traceability": {
@@ -29,5 +35,5 @@
   "gates": {},
   "sprintCount": 0,
   "createdAt": "2026-07-10T08:40:28.303Z",
-  "updatedAt": "2026-07-10T08:44:41.451Z"
+  "updatedAt": "2026-07-10T09:10:43.751Z"
 }

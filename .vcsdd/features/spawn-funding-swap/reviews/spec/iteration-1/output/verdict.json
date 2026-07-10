@@ -1,0 +1,21 @@
+{
+  "feature": "spawn-funding-swap",
+  "phase": "spec",
+  "iteration": 1,
+  "reviewer": "fresh-opus-adversary",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-005"]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-004"]
+    }
+  ],
+  "blockingFindings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005"],
+  "overallVerdict": "FAIL",
+  "evidence": "Reviewed specs/behavioral-spec.md (REQ-001..009, NFR-1..5, Purity Boundary Analysis, Edge Case Catalog, Open Question) and specs/verification-architecture.md (Purity Boundary Map, PROP-001..017, Verification Strategy, Test-Money Safety Rule) in full. Cross-checked REQ-006's cap-mirror claim against the actual referenced file ~/anicca/skills/earn/sol-trade/lib/resolve-max-spend.sh (confirmed: literal `echo \"0.25\"`, ignores SOL_TRADE_MAX_SPEND unconditionally -- the spec's capUsd() function itself correctly mirrors this pattern in isolation, but FIND-002 shows the spec never wires that isolated function into the actual route-request/broadcast amount the way resolve-max-spend.sh is structurally wired into franklin-trading's live argument). REQ-001 (no-over-buy), REQ-003 (fail-closed on unfunded source, including PROP-006's fixed regression fixture matching today's real Base balances of ~$0 USDC / ~$0 gas), REQ-004 (per-leg on-chain verification before advancing), REQ-007 (settlement re-verification via akash query bank balances before declaring success), and REQ-009 (pinned-signer identity isolation, no cross-instance key fallback) are each concretely EARS-specified with falsifiable acceptance criteria and a matching Tier 0-2 PROP; no blocking gap was found in those four specific requirements taken in isolation. The blocking gaps are: (1) REQ-002 never specifies the Skip API amount parameter, leaving the requested swap size unconstrained by the letter of the spec (FIND-001); (2) REQ-006's capUsd() is correct as an isolated pure function but no EARS clause or PROP forces its output to be the actual value used for the Skip request or the signed transaction -- the cap is provably bypassable by a literal-compliant implementation (FIND-002, most severe); (3) REQ-005's crash-recovery text ('query by previously-recorded tx hash') is logically incompatible with PROP-009's claimed 'post-broadcast-pre-ledger-write' crash-injection coverage, since no tx hash exists yet in that exact window -- an implementer following the spec's letter would re-broadcast Leg 1 on resume, an actual double-spend (FIND-003); (4) the binding 'Test-Money Safety Rule' preventing real keys/RPC/broadcast in tests is prose-only with zero structural/Tier-0 enforcement, unlike PROP-017's static-scan guard for the pure-core import boundary (FIND-004); (5) REQ-005 ties ledger/lock identity to 'this route' (route-scoped) rather than to a single canonical invocation-scoped lock, meaning near-simultaneous invocations that each fetch a distinct fresh Skip quote would each see 'no prior ledger for this route' and could independently proceed to broadcast Leg 1 against the same source balance -- PROP-010 only proves safety for invocations that already share one ledger file, which the spec does not actually guarantee (FIND-005). RULING on the flagged Open Question (no funded routable Base USDC source today): REQ-003, combined with PROP-006's literal fixed-value regression fixture encoding today's real Base balances (~0 USDC, ~0 gas) as pure-function input constants, is SUFFICIENT and CORRECTLY SCOPED for this feature to be safe and testable today. Deferring the actual source-acquisition (Solana->Base bridge / operator seed / native-Base earn rail) to a separately-diligenced, separately-specced feature is the correct decomposition -- a money-mover's core safety property is 'refuse to move funds it does not have and refuse to borrow from another instance's wallet,' which REQ-003 and REQ-009 jointly enforce without needing to solve funding acquisition. This is NOT a blocking gap; it does not need re-scoping into this feature."
+}

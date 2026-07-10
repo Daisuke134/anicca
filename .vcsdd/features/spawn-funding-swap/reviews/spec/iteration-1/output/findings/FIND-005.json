@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-005's EARS trigger is 'WHEN the command is invoked and a prior run's ledger file FOR THIS ROUTE exists' -- implying ledger/lock identity is keyed to the route object (e.g. a Skip quote/route id), which is fetched fresh by REQ-002 on every invocation. Two invocations that are close in time (cron overlap, or a retry shortly after a prior failed attempt) will each independently compute a fresh `need` (REQ-001) and request a fresh route (REQ-002) BEFORE REQ-005's resume-check ever runs -- and if Skip returns even a slightly different route/quote id between the two near-simultaneous requests (quote ids commonly carry timestamps/expiry), each invocation would see 'no prior ledger file for THIS route' and proceed independently, both passing REQ-003's funding check against the same still-unspent balance and both broadcasting Leg 1. PROP-010 (verification-architecture.md:48) asserts safety only for the case 'two concurrent driver invocations SHARING ONE ledger file/lock' -- but the spec never establishes that concurrent invocations WILL share a ledger file, since ledger identity as written is route-scoped, not invocation/operation-scoped. This is a distinct double-spend vector from FIND-003 (it is a locking/keying-identity gap, not a crash-recovery gap) and is not covered by any edge case in REQ-005 or the Edge Case Catalog.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "157-160",
+    "snippet": "WHEN the command is invoked and a prior run's ledger file for this route exists with one or more legs already `confirmed`, THE SYSTEM SHALL resume from the first unconfirmed leg -- 'for this route' ties ledger identity to route content, not to a single canonical operation lock."
+  },
+  "fix": "Add an explicit EARS clause making the lock/ledger canonical and invocation-scope-global, independent of route content: 'THE SYSTEM SHALL check for and atomically acquire a SINGLE canonical lock/ledger file (e.g. keyed by the destination Akash address, not by route id) BEFORE requesting any route from Skip (i.e. as a precondition to REQ-002, not after it) -- if an incomplete prior operation is found, THE SYSTEM SHALL resume it and SHALL NOT request a new route at all.' Update PROP-010's description to specify the shared lock/ledger key explicitly (destination-address-scoped, not route-id-scoped) so the property test models the actual concurrency hazard rather than an already-deduplicated one."
+}
