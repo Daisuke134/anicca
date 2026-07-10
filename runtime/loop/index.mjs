@@ -777,23 +777,41 @@ async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
     // terminal result exactly like today's ordinary wake — this reroute is never triggered by an
     // execution error (REQ-506 edge case).
     if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) {
-      // REQ-509 (Phase 3 impl-review iteration-2 FIND-004 fix): this attempt's own outcome is NOT
-      // this wake's terminal ledger.jsonl line (it may be silently superseded by a successful reroute
-      // pick, or by REQ-508's own escalation record below) — without this, a guard-blocked pick's own
-      // skip reason (e.g. sol-trade's kill-switch `{"action":"skip","reason":"..."}` trace) would never
-      // be recorded ANYWHERE, violating REQ-509's "preserved verbatim... not overwritten/silenced" AC.
-      // Preserved here via the SAME harness-failures.jsonl audit-append mechanism (appendHarnessFailure,
-      // formatRecord/appendLedgerLine, unmodified) REQ-508 already uses for this router's own truthful
-      // escalation detail — a DISTINCT kind ('router_reroute_skip', never classifyLayer-routed, since
-      // this is a genuine no-edge/guard-skip signal, not a tool_missing/tool_timeout/tool_logic
-      // failure) so it is never conflated with those. This is unconditional — every no-realized-action
-      // pick's own record is preserved this way, whether the wake goes on to reroute successfully or
-      // escalate, so the guard-blocked slot's skip reason is never silently lost either way.
-      await appendHarnessFailure({
-        ts, wakeId, slot, kind: 'router_reroute_skip', layer: 'router',
-        exitCode: skillResult.exitCode != null ? skillResult.exitCode : null,
-        rawDetail: skillResult.output || '',
+      // REQ-509 (Phase 3 impl-review iteration-3 FIND-001 fix): the spec's own literal AC text reads
+      // "preserved verbatim in the ledger" (behavioral-spec.md:493-495) — "the ledger" is a consistent
+      // proper noun throughout this spec (REQ-510's own EARS clause, REQ-512's "append ... a ledger
+      // line", line 777's "distinguishable from the ledger alone") for the file LEDGER_PATH/
+      // formatRecord/safeAppend write to (state/ledger.jsonl) — never harness-failures.jsonl, which
+      // REQ-508 always names explicitly by its literal filename whenever meant. This attempt's own
+      // outcome is NOT this wake's terminal ledger.jsonl line (it may be silently superseded by a
+      // successful reroute pick, or by REQ-508's own escalation record below) — without a SEPARATE,
+      // distinctly-kinded ledger.jsonl line here, a guard-blocked pick's own skip reason (e.g.
+      // sol-trade's kill-switch `{"action":"skip","reason":"..."}` trace) would never be recorded in
+      // "the ledger" at all, violating REQ-509's AC. Written via the SAME formatRecord/safeAppend/
+      // LEDGER_PATH machinery every other ledger line in this file already uses (never a new writer),
+      // under a DISTINCT kind ('router_reroute_skip', never classifyLayer-routed — REQ-512's
+      // harness-health.mjs per-slot health/escalation tracking reads ledger.jsonl `kind` values via
+      // CLEAN_KINDS/SLOT_HEALTH_KINDS exclusively, neither of which includes this kind, so no false
+      // health-classification collision is introduced). `skip_reason` carries `skillResult.output`
+      // UNTAMPERED — only the SAME redactPrivateKeyPatterns pass every other ledger line already gets,
+      // never truncated/whitespace-collapsed — satisfying "preserved verbatim". This write is
+      // unconditional — every no-realized-action pick's own record is preserved this way, whether the
+      // wake goes on to reroute successfully or escalate, so the guard-blocked slot's skip reason is
+      // never silently lost either way. (No harness-failures.jsonl write here: a routine guard-skip is
+      // not a harness failure — REQ-508 defines that file for the wake's TERMINAL exhausted-bound
+      // failure case, a semantically different, never-in-flight event this is not.)
+      const skipFields = buildAlwaysActLedgerFields({ wakeId, slot, args, attemptsUsed, realized: false });
+      const skipRecordStr = formatRecord({
+        ts,
+        wake_id: skipFields.wake_id,
+        kind: 'router_reroute_skip',
+        slot: skipFields.slot,
+        ...(args && Object.keys(args).length ? { args } : {}),
+        attemptsUsed: skipFields.attemptsUsed,
+        ...(skillResult.exitCode != null ? { exit_code: skillResult.exitCode } : {}),
+        skip_reason: skillResult.output || '',
       });
+      await safeAppend(LEDGER_PATH, redactPrivateKeyPatterns(skipRecordStr));
 
       const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });
       if (state.exhausted) {
