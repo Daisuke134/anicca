@@ -26,11 +26,30 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   (`note: args.reason || 'agent chose to sleep'`) is written and the wake ends with no skill executed.
 - `runtime/loop/prompt.mjs:10-24,139-173` — `SLEEP_TOOL` is unconditionally appended to every tool
   definition list (`getToolDefinitions`), so the model always has a legal "do nothing" choice.
+- **The REAL wiring seam from ctx to the outbound tool schema (spec-review FIND-001/FIND-005 ground
+  truth)**: `runtime/loop/brain.mjs:63` (`thinkProxy`) hardcodes `tools: getToolDefinitions(ctx.
+  activeSkillSlots)` as the literal `tools` field of the HTTP request body sent to the model, and
+  `runtime/loop/brain.mjs:92` (`thinkClaudeP`) hardcodes the prompt-text instruction `'Respond with a JSON
+  tool_calls block using run_skill or sleep.'`. `getToolDefinitions(slots)` (`prompt.mjs:139-173`) has no
+  parameter for omitting `SLEEP_TOOL` — it is appended unconditionally at `prompt.mjs:171` for every call,
+  including any call this feature makes. There is therefore NO existing seam by which REQ-504's sleep-omission
+  can reach the model without: (a) `prompt.mjs::getToolDefinitions` gaining an additive, backward-compatible
+  optional second parameter (`opts.omitSleep`, default `false`) that all other existing call sites never
+  pass and are therefore byte-for-byte unaffected by, and (b) `brain.mjs`'s two `tools:`/prompt-text call
+  sites becoming conditional on a new `ctx.alwaysActEngaged` boolean (set by REQ-501's gate) and
+  `ctx.alwaysActMenu` (set by REQ-502/503's filtered menu). Both `prompt.mjs` and `brain.mjs` ARE modified by
+  this feature — see the corrected Purity Boundary Map in verification-architecture.md and REQ-504 below.
 - `runtime/loop/index.mjs:440-456` + `runtime/loop/earn-detect.mjs:23-50` — `classifyEarnResult(wakeId,
   earnLedgerPath, isProfitableFn)` already reads `earn-ledger.jsonl`, finds the line keyed by
   `line.wake === wakeId` (never last-line position), and returns `{ profitable, earnLine }`; `earnLine ===
   null` means **no realized economic result was recorded for this wake** — this is the existing,
-  skill-agnostic primitive this feature reuses to detect a no-op earn pick (REQ-506).
+  skill-agnostic primitive this feature reuses to detect a no-op earn pick (REQ-506). **Ground-truth
+  correction (spec-review FIND-002)**: `classifyEarnResult` is only ever CALLED from `index.mjs:450`'s
+  `else if (isEarnSlot(slot))` branch — the CALL-SITE gate, not `classifyEarnResult` itself, is what
+  decides whether a pick gets classified at all. Since `isEarnSlot('economy/gig') === false` and
+  `isEarnSlot('economy/lending') === false` (see the next bullet), that call-site gate must be widened
+  for always-act-engaged wakes (REQ-506) or a gig/lending no-op silently falls through the ordinary
+  `kind:'wake'` branch and is never detected.
 - `skills/earn/sol-trade/run.sh:105-158` — concretely: `franklin-trading start` always appends an
   `action:"live-pass"` trace line, but only calls `record-swap.mjs` (which writes to `earn-ledger.jsonl`)
   **when a swap signature was found** (line 113-116). A neutral-signal WAIT inside the sol-trade skill
@@ -42,10 +61,25 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   `{earn, yield, hl_trade, x402_sell, token_launch}` ∪ `earn/*`. The doctrine names a wider set as
   legitimate earning actions (SOL-trade, HL-trade, PM-trade, **gig take/post**, clip, video, **lending**).
   `economy/gig` and `economy/lending` are NOT covered by `isEarnSlot`. This feature introduces a
-  **separate, wider, purely-additive** predicate (`isEarnActionSlot`, REQ-502) for router-menu purposes
-  only — `isEarnSlot` itself is NOT modified (it is relied on elsewhere, `index.mjs:450`, for ledger
-  profitability attribution, and changing its contract is out of scope and would risk regressing that
-  unrelated behavior).
+  **separate, wider, purely-additive** predicate (`isEarnActionSlot`, REQ-502) for router-menu purposes.
+  `isEarnSlot`'s own DEFINITION is NOT modified (it is relied on elsewhere for non-always-act wakes'
+  ledger profitability attribution, and changing its contract is out of scope and would risk regressing
+  that unrelated behavior) — but per the correction above, its CALL SITE at `index.mjs:450` IS additively
+  widened for always-act-engaged wakes only (REQ-506): `else if (ctx.alwaysActEngaged ? isEarnActionSlot(slot)
+  : isEarnSlot(slot))`. Any non-always-act wake (`ctx.alwaysActEngaged` falsy — every non-Franklin instance,
+  and Franklin herself whenever the flag is off) evaluates `isEarnSlot(slot)` exactly as today, byte-for-byte.
+- **`avoidSlot`'s real semantics (spec-review FIND-003 ground truth)**: `index.mjs:175-184`'s `avoidSlot`
+  mechanism is, by its own inline comment (`index.mjs:183`), a SOFT, prompt-text-only nudge — `"the agent's
+  choice is never blocked, only the enforced pause after ignoring it grows"` — surfaced purely as prose in
+  `buildUserMessage` (`prompt.mjs:205-207`, `"⛔ ... it is FORBIDDEN this wake. Pick a DIFFERENT slot."`). It
+  NEVER touches `getToolDefinitions`'s `slot.enum` and therefore never structurally prevents a re-pick.
+  REQ-506's reroute does **NOT** reuse `avoidSlot` or claim enum-level exclusion through it. Instead, because
+  REQ-504 already constructs the always-act tool schema from an explicit, harness-controlled array
+  (`buildAlwaysActToolDefinitions(menuSlots)`), REQ-506's reroute performs a genuine, purpose-built hard
+  array filter — `buildAlwaysActToolDefinitions(menuSlots.filter(s => s !== pickedSlot))` — before the
+  re-invocation, so the just-picked slot is truly absent from the schema the model receives. `avoidSlot` /
+  `index.mjs:179-421`'s loop-detect diversification remains completely unmodified and continues to operate
+  independently for its own (unrelated, cross-wake) purpose.
 - `skills/registry.json` — single source of truth for live/declared status and per-slot `risk`/`summary`.
   Relevant earn-action slots today (status `"live"`): `yield`, `hl_trade`, `x402_sell`, `token_launch`,
   `economy/gig`, `economy/lending`, `earn/clip`, `earn/clip-producer`, `earn/video`, `earn/sol-trade`,
@@ -62,7 +96,17 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   (a legitimate sub-agent judgment call), and only a run of identical `action:"skip"` reasons as barren.
   This feature does not change that detector's semantics; it operates one layer up (the router's own
   MUST-pick-a-realized-action-or-reroute layer, REQ-506/REQ-507), and its own escalation (REQ-508) is
-  additive to, not a replacement for, `earning-health.py`.
+  additive to, not a replacement for, `earning-health.py`. `is_fresh_but_barren`'s pure, no-I/O,
+  pre-gathered-tail contract (the caller reads the file, the function only judges the tail array) is the
+  **template REQ-512's own companion detector copies** (spec-review FIND-004).
+- **`SOL_GATE_LIVE_ENABLE` is NOT analogous to REQ-501(b)'s flag in blast radius (spec-review FIND-004
+  ground truth)**: `skills/earn/sol-trade/run.sh:68-76`'s comment states verbatim that in default (unset)
+  mode the gate is `"PURE SHADOW OBSERVATION ... it NEVER alters what franklin-trading does below"` — i.e.
+  the underlying earn action fires every wake REGARDLESS of that flag. REQ-501(b)'s flag, by contrast, gates
+  the entire always-act anti-idle mechanism itself — OFF means Franklin's wakes are exactly as idle-capable
+  as before this feature existed, which doctrine (§0) names a failure condition ("skip は malware だ"). This
+  asymmetry is why REQ-501(b)'s flag needs its OWN explicit observability signal (REQ-512) that
+  `SOL_GATE_LIVE_ENABLE` never needed.
 
 ## 2. Purity Boundary Analysis (summary; full map in verification-architecture.md)
 
@@ -71,9 +115,18 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   already-loaded data (registry, ctx, earn-ledger line), no I/O, mirrors the existing purity split
   (`context.mjs`, `prompt.mjs`, `tier.mjs`, `catalog-gate.mjs`, `earn-slot.mjs` are pure today).
 - **Effectful shell (extended, not replaced)**: `runtime/loop/index.mjs`'s wake loop (the reroute retry
-  orchestration, ledger appends, escalation writes), the identity-derivation subprocess calls
-  (`wallet-address-solana.mjs` under two `ANICCA_HOME` values, exactly as `sol-trade/run.sh` already
+  orchestration, ledger appends, escalation writes, and — spec-review FIND-002 correction — the
+  classify-call-site gate at `index.mjs:450` additively widened from `isEarnSlot(slot)` to
+  `(ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`), the identity-derivation subprocess
+  calls (`wallet-address-solana.mjs` under two `ANICCA_HOME` values, exactly as `sol-trade/run.sh` already
   does), and the unchanged skill execution + money-safety guards inside each skill's own `run.sh`.
+  **Spec-review FIND-001/FIND-005 correction**: `runtime/loop/brain.mjs`'s `thinkProxy`/`thinkClaudeP` ARE
+  additively modified — the `tools:`/prompt-text lines become conditional on `ctx.alwaysActEngaged` (see §1
+  and REQ-504) — and `runtime/loop/prompt.mjs::getToolDefinitions` gains an additive, backward-compatible
+  `opts.omitSleep` parameter. Both stay correctly classified by their existing purity category (`brain.mjs`
+  stays effectful/shell, `prompt.mjs` stays pure/core) — only their "unmodified" status is corrected to
+  "additively modified"; see verification-architecture.md's Purity Boundary Map for the authoritative,
+  corrected split.
 
 ## Requirements
 
@@ -141,17 +194,51 @@ so capital-risking slots stay hidden below reserve (open-position carve-outs unc
   unless an open position exists for that slot, while `economy/gig`, `earn/clip`, `x402_sell` remain
   present.
 
-### REQ-504: `sleep` tool is withheld on an always-act-engaged wake
-**EARS**: WHEN always-act mode is engaged for a wake THE SYSTEM SHALL build the tool definitions for that
-wake WITHOUT the `sleep` tool (`runtime/loop/prompt.mjs::SLEEP_TOOL`) — the only callable tool is
-`run_skill`, with its `slot` enum constrained to REQ-503's filtered earn-action menu.
+### REQ-504: `sleep` tool is withheld on an always-act-engaged wake — on the REAL outbound wire, not just a standalone helper
+**EARS**: WHEN always-act mode is engaged for a wake THE SYSTEM SHALL build the ACTUAL tool definitions
+that reach the model — i.e. the literal `tools` field of the HTTP request body `runtime/loop/brain.mjs::
+thinkProxy` sends, and the equivalent instruction text `thinkClaudeP` sends — WITHOUT the `sleep` tool, via
+the following concrete, real wiring seam (spec-review FIND-001/FIND-005 fix — this is the mechanism, not an
+implementation detail left to Phase 2b):
+1. The `WakeContext` (`assembleContext`, `runtime/loop/context.mjs`) gains two additive fields set by
+   `index.mjs`'s wake loop: `ctx.alwaysActEngaged` (boolean, REQ-501's gate result) and `ctx.alwaysActMenu`
+   (`string[]`, REQ-502/503's filtered menu — only populated when `alwaysActEngaged` is true).
+2. `runtime/loop/prompt.mjs::getToolDefinitions(slots, opts)` gains an additive, optional second parameter
+   `opts = { omitSleep: false }` (default preserves every existing call site's exact current output,
+   byte-for-byte). When `opts.omitSleep === true`, the returned array omits `SLEEP_TOOL` (the pure function
+   `buildAlwaysActToolDefinitions(menuSlots)` in the pure core is a thin wrapper:
+   `getToolDefinitions(menuSlots, { omitSleep: true })` — NOT a parallel reimplementation).
+3. `brain.mjs:63` (`thinkProxy`)'s `tools:` line becomes:
+   `tools: getToolDefinitions(ctx.alwaysActEngaged ? ctx.alwaysActMenu : ctx.activeSkillSlots, { omitSleep:
+   ctx.alwaysActEngaged === true })` — a non-always-act `ctx` (the overwhelming majority of wakes, every
+   non-Franklin instance) produces the exact current call, unchanged.
+4. `brain.mjs:92` (`thinkClaudeP`)'s prompt-text instruction line conditionally drops the sleep mention when
+   `ctx.alwaysActEngaged` is true (`'Respond with a JSON tool_calls block using run_skill.'` instead of
+   `'... using run_skill or sleep.'`), so the text-mode brain path is not left silently inconsistent with the
+   tool-schema path.
+The only callable tool in always-act mode is therefore `run_skill`, with its `slot` enum constrained to
+REQ-503's filtered earn-action menu.
 **Edge Cases**:
 - A model response that nonetheless attempts `slot: "sleep"` or any slot outside the enum (a
-  spec/tool-contract violation by the model, not the harness) is rejected the same way an invalid enum
-  value is already rejected today, and is treated as a no-tool-call outcome for REQ-505's purposes.
+  spec/tool-contract violation by the model, not the harness — the schema truly does not offer it) is
+  rejected the same way an invalid enum value is already rejected today, and is treated as a no-tool-call
+  outcome for REQ-505's purposes.
+- `thinkClaudeP`'s text-prompt path has no formal JSON-schema enum enforcement; if the model emits a
+  sleep-shaped `tool_calls` block despite the reworded instruction (step 4), it is treated identically to
+  this REQ's first edge case (rejected, folded into REQ-505's no-tool-call handling) — never silently
+  accepted as a valid sleep.
 **Acceptance Criteria**:
-- `getToolDefinitions` (or its always-act variant) called with always-act engaged returns a tool array of
-  length 1 (`run_skill` only), whose `slot.enum` equals REQ-503's filtered menu.
+- (Pure-function level, necessary but NOT sufficient alone) `getToolDefinitions(menuSlots, { omitSleep:
+  true })` / `buildAlwaysActToolDefinitions(menuSlots)` returns a tool array of length 1 (`run_skill` only),
+  whose `slot.enum` equals REQ-503's filtered menu; called with `omitSleep` false/omitted, output is
+  byte-identical to today's `getToolDefinitions(slots)`.
+- (Wiring-seam level, the test that actually proves FIND-001's demand) A test that calls the REAL
+  `thinkProxy` (mocking only the network boundary — the `httpPost` call — never a real HTTP request) with
+  `ctx.alwaysActEngaged = true` and a fixture `ctx.alwaysActMenu`, and asserts the ACTUAL JSON-stringified
+  request body captured at the mocked `httpPost` boundary contains `tools` with no entry whose
+  `function.name === 'sleep'`. The same style of test with `ctx.alwaysActEngaged` falsy/absent asserts the
+  captured body's `tools` DOES include `sleep`, proving the conditional wiring — not just the standalone
+  helper — is what actually governs the outbound wire.
 
 ### REQ-505: A no-tool-call (text-only) response is not accepted as the wake's terminal outcome
 **EARS**: WHEN always-act mode is engaged AND `parseToolCall(rawResponse)` returns falsy THE SYSTEM SHALL
@@ -171,33 +258,55 @@ line), bounded to `MAX_REPROMPTS = 1` for this failure mode.
 - A unit test with a mocked `think()` that never returns a tool call asserts exactly 2 `think()`
   invocations total (not more) and the wake ends in REQ-508's escalation path.
 
-### REQ-506: A picked earn slot with no realized economic result triggers a bounded same-wake reroute
-**EARS**: WHEN always-act mode is engaged AND the model picks a slot from the earn-action menu AND that
-slot's execution completes (any exit code) AND `classifyEarnResult(wakeId, earnLedgerPath,
-isProfitableFn).earnLine === null` (`runtime/loop/earn-detect.mjs`, unmodified — this is true for both a
-guard-triggered `action:"skip"` and a sub-agent's own neutral-signal WAIT with no ledger line, per §1)
-THE SYSTEM SHALL treat this as "no realized action this wake" and re-invoke the brain exactly once more,
-with the just-picked slot temporarily excluded from the enum (reusing the existing `avoidSlot`
-diversification mechanism, `index.mjs:179-421`) so the model must choose a DIFFERENT earn-menu slot,
-bounded to `MAX_REROUTES = 1`.
+### REQ-506: A picked earn slot with no realized economic result triggers a bounded same-wake reroute, via a genuine hard tool-enum exclusion
+**EARS**: WHEN always-act mode is engaged AND the model picks a slot `s` from the earn-action menu AND `s`'s
+execution completes (any exit code) THE SYSTEM SHALL first determine whether `s` is classify-eligible using
+the SAME always-act-gated predicate REQ-502 defines for menu membership — `isEarnActionSlot(s)` (the wider,
+additive predicate covering `economy/gig` and `economy/lending` in addition to every `isEarnSlot` member) —
+not the narrower `isEarnSlot(s)` that gates classification on a non-always-act wake. Concretely (spec-review
+FIND-002 fix): `index.mjs:450`'s classify call-site condition becomes `else if (ctx.alwaysActEngaged ?
+isEarnActionSlot(slot) : isEarnSlot(slot))`, so `classifyEarnResult` IS invoked for an `economy/gig` or
+`economy/lending` pick on an always-act-engaged wake, exactly as it already is for any `isEarnSlot` member.
+THE SYSTEM SHALL then, IF `classifyEarnResult(wakeId, earnLedgerPath, isProfitableFn).earnLine === null`
+(`runtime/loop/earn-detect.mjs`, unmodified — true for both a guard-triggered `action:"skip"` and a
+sub-agent's own neutral-signal WAIT with no ledger line, per §1), treat this as "no realized action this
+wake" and re-invoke the brain exactly once more with a genuine, HARD tool-enum exclusion of the just-picked
+slot: `buildAlwaysActToolDefinitions(menuSlots.filter(x => x !== s))` (spec-review FIND-003 fix — REQ-504's
+own purpose-built, explicit-array tool-definition constructor; this is NOT the soft, prompt-text-only
+`avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated — see §1). The just-picked
+slot is therefore structurally ABSENT from the reroute's tool schema, not merely discouraged in prose, so
+the model cannot re-select it — bounded to `MAX_REROUTES = 1`.
 **Edge Cases**:
 - A slot execution that DOES write an earn-ledger line for this wake (`earnLine !== null`) — whether
   `profitable` is `true` or `false` (a real, recorded loss still counts as a realized economic action, not
   a no-op) — is accepted immediately; no reroute.
 - The rerouted second pick ALSO produces `earnLine === null`: the bound is exhausted — proceed to REQ-508
   (truthful record + escalate), never a third same-wake attempt.
-- The menu has exactly one remaining slot after excluding the first pick (e.g. reserve-filtered down to
-  one): the model is still re-prompted with that reduced (possibly single-member) enum; if it is forced to
-  repick the same slot because none other qualifies, `avoidSlot`'s existing "only clears when a DIFFERENT
-  slot is picked" semantics naturally surfaces this as still-unresolved, falling through to REQ-508.
+- REQ-502/503's filtered always-act menu has exactly ONE member overall, and it IS the just-picked slot: the
+  hard filter (`menuSlots.filter(x => x !== s)`) leaves ZERO slots — a `run_skill` tool schema with an empty
+  `slot.enum` is not a valid/offerable tool definition. THE SYSTEM SHALL, in this specific case, skip the
+  re-invocation entirely (spend zero additional `think()` calls) and proceed directly to REQ-508's truthful
+  escalation, since no alternative earn-action exists this wake. This is expected to be RARE (REQ-502/503
+  frame the common case as ≥1 always-eligible safe slot) but is a real, coherent, spec-defined terminal case
+  — never a crash, never a forced same-slot repick.
 - This reroute is NEVER triggered by a slot execution that itself errors/times out (`skillResult.timedOut`
   / `skillResult.notFound` / non-zero exit for a NON-earn-guard reason) in a way that bypasses REQ-508's
   existing `appendHarnessFailure` mechanism (`index.mjs:458-475`) — that mechanism is unmodified and fires
   independently.
 **Acceptance Criteria**:
-- A unit test with a fixture earn-ledger containing no line for `wakeId` after executing the first-picked
-  slot asserts a second `think()` call occurs with that slot excluded from the enum, and if the second
-  pick's ledger fixture DOES contain a matching line, the wake terminates there (no third call).
+- A unit test with a fixture earn-ledger containing no line for `wakeId` after executing a first-picked
+  slot that is a LEGACY `isEarnSlot` member asserts `classifyEarnResult` is invoked, a second `think()` call
+  occurs, and the actual constructed tool schema for that second call has a `slot.enum` that does NOT
+  contain the just-picked slot (a real array-content assertion on the tool-definitions object, not a
+  bookkeeping flag); if the second pick's ledger fixture DOES contain a matching line, the wake terminates
+  there (no third call).
+- The SAME test, run against a first-picked slot of `economy/gig` and, separately, `economy/lending`
+  (neither is an `isEarnSlot` member), asserts identical behavior — `classifyEarnResult` IS invoked (proving
+  the `isEarnActionSlot`-gated call-site widening fires) and the wake does NOT silently resolve as an
+  ordinary `kind:'wake'` when `earnLine === null`. This is the regression test for spec-review FIND-002.
+- A unit test with an always-act menu whose single member equals the just-picked slot and `earnLine ===
+  null` asserts zero additional `think()` calls and immediate REQ-508 escalation (the empty-enum terminal
+  case, spec-review FIND-003's edge-case resolution).
 
 ### REQ-507: Skill choice remains 100% model judgment — the harness never ranks, scores, or filters by strategy content
 **EARS**: THE SYSTEM SHALL, at every point in REQ-502 through REQ-506, treat the model's chosen `slot`
@@ -278,6 +387,46 @@ can never turn one wake into an unbounded retry loop or unbounded spend.
 - A property test with an adversarial mocked brain that ALWAYS returns no-tool-call or ALWAYS returns a
   slot with no realized ledger line asserts total `think()` calls for that wake never exceed 2.
 
+### REQ-512: A silently-OFF flag on a Franklin-identity wake is observable and distinguishable from "not yet enabled" (spec-review FIND-004 fix)
+**EARS**: WHEN the identity check in REQ-501(a) resolves to Franklin AND REQ-501(b)'s flag is
+unset/malformed/non-`"1"` (always-act therefore NOT engaged, per REQ-501's own fail-closed contract) THE
+SYSTEM SHALL append, for that wake, a ledger line with `kind:'always_act_not_engaged'` and an explicit
+`reason` field (`'flag_unset'` when the config key is absent, `'flag_malformed'` when present but not the
+literal string `"1"`) — unconditionally, on EVERY such wake, not only after an intended go-live. Separately,
+the one-time operational action that flips REQ-501(b)'s flag to `"1"` (already named in behavioral-spec.md
+§6 item 10 as "a separate, explicit, logged operational action") SHALL itself append a ledger line with
+`kind:'always_act_go_live'` (`ts`, and the config source it was set from) at the moment of that flip — this
+is the anchor that makes "not yet enabled" (all `always_act_not_engaged` lines precede any `always_act_go_live`
+line) distinguishable from "silently regressed to idle-permitted" (an `always_act_not_engaged` line appears
+AFTER a recorded `always_act_go_live` line, meaning a config/deploy/`.env` bug flipped a previously-live
+feature back off). A companion pure detector — mirroring `skills/self/earning-health.py::is_fresh_but_barren`'s
+exact contract (pure, no I/O, takes a pre-gathered ledger tail, the doctrine-`'malware'` framing this feature
+exists to catch) — returns "regression detected" iff the tail contains an `always_act_go_live` line followed
+by at least `min_run` consecutive `always_act_not_engaged` lines for Franklin's identity with no intervening
+`always_act_go_live`/engaged-wake line between them. `skills/self/earning-health.py` is this detector's
+natural consumer/sibling (spec-review FIND-004's explicit routing target) — it is extended additively (a new
+function alongside `is_fresh_but_barren`, not a modification of that function's existing contract).
+**Edge Cases**:
+- No `always_act_go_live` line exists yet in the tail (pre-rollout): any number of `always_act_not_engaged`
+  lines is the expected, benign "not yet enabled" state — the detector returns "no regression," never a
+  false escalation before the operator has ever turned the feature on.
+- An `always_act_go_live` line is immediately followed by a SUCCESSFULLY engaged always-act wake (any
+  `kind` other than `always_act_not_engaged` for a Franklin wake): the regression run resets to zero: a
+  single blip does not escalate; only a SUSTAINED run (≥ `min_run`, mirroring `is_fresh_but_barren`'s
+  `min_run=20` discipline) after go-live escalates.
+- REQ-501(a)'s identity check itself failing (derivation error/empty/mismatch) is explicitly OUT of REQ-512's
+  scope — REQ-512 only fires for a CONFIRMED Franklin identity; a non-Franklin instance never writes
+  `always_act_not_engaged` lines at all (REQ-501's own cross-instance no-op guarantee is unaffected).
+**Acceptance Criteria**:
+- A unit test asserts a Franklin-identity wake with the flag unset appends `kind:'always_act_not_engaged',
+  reason:'flag_unset'`; with the flag set to a non-`"1"` string, `reason:'flag_malformed'`.
+- A unit test asserts the go-live operational action appends `kind:'always_act_go_live'` exactly once at
+  the flip, never on any other wake.
+- A unit test for the companion detector asserts: (a) `always_act_not_engaged` lines with no preceding
+  `always_act_go_live` line never trigger regression-detected; (b) `always_act_go_live` followed by
+  `min_run` consecutive `always_act_not_engaged` lines DOES trigger regression-detected; (c) a single
+  `always_act_not_engaged` line surrounded by successfully-engaged wakes after go-live does NOT trigger it.
+
 ## 3. Edge Case Catalog (cross-cutting)
 
 - **Empty inputs**: empty registry, empty `activeSkillSlots`, empty earn-ledger file → REQ-502's
@@ -290,6 +439,11 @@ can never turn one wake into an unbounded retry loop or unbounded spend.
 - **Error conditions**: identity-derivation subprocess crash/timeout, registry.json malformed JSON,
   earn-ledger.jsonl malformed trailing line (mirrors `earn-detect.mjs`'s own existing fail-soft JSON.parse
   guard) — all fail closed to "always-act NOT engaged" or "reroute/escalate", never a silent success.
+- **Silent post-go-live reversion to idle-permitted** (spec-review FIND-004): a Franklin-identity wake with
+  REQ-501(b)'s flag unset/malformed occurring AFTER the one-time go-live operational action has already
+  fired is the doctrine-`'malware'` condition (§0) — this is NOT the same as the benign pre-rollout "not yet
+  enabled" state, and both MUST be distinguishable from the ledger alone (REQ-512), not merely inferable
+  from operator memory of when the flag was flipped.
 
 ## 4. Non-Functional Requirements
 
@@ -313,15 +467,18 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 1. Phase 1a (this file) — behavioral spec.
 2. Phase 1b — verification-architecture.md (this feature's companion file).
 3. Phase 1b review — fresh-context adversary spec review, blocking 0.
-4. Phase 2a (RED) — write tests for REQ-501..REQ-511 against not-yet-existing pure functions
+4. Phase 2a (RED) — write tests for REQ-501..REQ-512 against not-yet-existing pure functions
    (`isEarnActionSlot`, `assembleAlwaysActMenu`, `buildAlwaysActToolDefinitions`,
-   `noRealizedAction`/reroute-bound helpers) + an index.mjs-level integration test harness with mocked
-   `think()`/registry/earn-ledger — confirm all new tests FAIL, confirm regression baseline (existing
-   `earn-slot.mjs`, `catalog-gate.mjs`, `context.mjs`, `prompt.mjs`, `earn-detect.mjs` test suites) still
-   PASS.
+   `noRealizedAction`/reroute-bound helpers, the FIND-004 companion regression detector) + an
+   index.mjs/brain.mjs-level integration test harness with mocked `think()`/`httpPost`/registry/earn-ledger
+   (the REQ-504 wiring-seam test asserts the REAL outbound tool schema, not just the pure helper; the
+   REQ-506 test asserts the REAL `index.mjs:450` call-site widening for `economy/gig`/`economy/lending`) —
+   confirm all new tests FAIL, confirm regression baseline (existing `earn-slot.mjs`, `catalog-gate.mjs`,
+   `context.mjs`, `prompt.mjs`, `brain.mjs`, `earn-detect.mjs`, `earning-health.py` test suites) still PASS.
 5. Phase 2b (GREEN) — implement the pure core module(s) + wire the effectful shell changes into
    `index.mjs`/`brain.mjs`/`prompt.mjs` (additive, gated by REQ-501's identity+flag check so non-Franklin
-   wakes are byte-for-byte unaffected) — minimum code to pass, no premature optimization.
+   wakes and non-always-act wakes are byte-for-byte unaffected) — minimum code to pass, no premature
+   optimization.
 6. Phase 2c — refactor for clarity/duplication only; tests stay green; no new features.
 7. Sprint contract (strict mode) — write `contracts/sprint-1.md` mapping CRIT-* to REQ-501..REQ-511
    before Phase 3 adversarial review.

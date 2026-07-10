@@ -1,0 +1,77 @@
+{
+  "feature": "franklin-alwaysact-skill-router",
+  "phase": "spec",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "spec",
+    "specPath": "specs/behavioral-spec.md",
+    "verificationArchPath": "specs/verification-architecture.md"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/earn-slot.mjs:9-12", "description": "Confirmed isEarnSlot('economy/gig') and isEarnSlot('economy/lending') are both false"},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs:450", "description": "Confirmed classifyEarnResult is only invoked inside the isEarnSlot(slot) branch"},
+        {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json:71-102", "description": "Confirmed economy/gig and economy/lending are status:live doctrine-named slots REQ-502 adds to the menu"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/skills/earn/sol-trade/run.sh:68-76", "description": "Confirmed SOL_GATE_LIVE_ENABLE gates only an additive shadow layer atop an always-executing baseline, not the primary action"},
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md:281-292", "description": "Confirmed the Edge Case Catalog (section 3) has no entry for a post-go-live silent flag reversion"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs:175-184,421", "description": "Confirmed avoidSlot is explicitly documented as never blocking the model's choice, contradicting REQ-506's 'excluded from the enum ... must choose' EARS clause"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/brain.mjs:48-66", "description": "Confirmed think()/thinkProxy has no tool-definition input parameter, contradicting the verification-architecture's effectful-shell claim"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md:53", "description": "Confirmed PROP-504a only exercises the standalone pure function, never the actual outbound tools array"},
+        {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/prompt.mjs:139-173", "description": "Confirmed getToolDefinitions unconditionally appends SLEEP_TOOL with no conditional-omission seam"}
+      ]
+    }
+  ],
+  "blockingFindings": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005"],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "evidence": [
+    {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md", "description": "Full REQ-501..REQ-511 read"},
+    {"type": "file", "location": "/Users/anicca/anicca/.vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md", "description": "Full PROP-501..PROP-511 read"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/index.mjs", "description": "Lines 1-456 read for idle-path, classify-gate, and avoidSlot ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/earn-detect.mjs", "description": "Full file read for classifyEarnResult ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/earn-slot.mjs", "description": "Full file read for isEarnSlot ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/prompt.mjs", "description": "Full file read for SLEEP_TOOL/getToolDefinitions ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/brain.mjs", "description": "Full file read for think()/thinkProxy tool-wiring ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/runtime/loop/catalog-gate.mjs", "description": "Full file read for filterCatalog/reserve-threshold ground truth"},
+    {"type": "file", "location": "/Users/anicca/anicca/skills/registry.json", "description": "Full file read to verify the 11-slot menu and exclusion list claims"},
+    {"type": "file", "location": "/Users/anicca/anicca/skills/earn/sol-trade/run.sh", "description": "Full file read for identity guard, kill-switch, cumulative-loss guard, and SOL_GATE_LIVE_ENABLE ground truth"}
+  ]
+}

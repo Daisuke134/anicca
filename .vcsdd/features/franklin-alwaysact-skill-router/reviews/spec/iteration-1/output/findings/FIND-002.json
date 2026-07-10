@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-506's no-realized-action detection is unreachable for the two doctrine-motivated new slots economy/gig and economy/lending. Ground-truth index.mjs only calls classifyEarnResult() (the function REQ-506 depends on for earnLine===null detection) when `isEarnSlot(slot)` is true (index.mjs:450: 'else if (isEarnSlot(slot)) { ... classifyEarnResult ... }'). runtime/loop/earn-slot.mjs:9-12 defines isEarnSlot as membership in EARN_ACTION={earn,yield,hl_trade,x402_sell,token_launch} OR slot.startsWith('earn/') -- 'economy/gig' and 'economy/lending' satisfy neither test, so isEarnSlot('economy/gig')===false and isEarnSlot('economy/lending')===false. Since REQ-502's entire raison d'etre is adding exactly these two slots to the earn-action menu via a new isEarnActionSlot predicate (behavioral-spec.md:101-107), and REQ-506 is written as if classifyEarnResult is simply invoked for every always-act pick using the existing, 'unmodified' earn-detect.mjs, an implementation that reuses index.mjs's existing isEarnSlot-gated call site (as behavioral-spec.md section 1's ground-truth notes never flag as needing to change) would never even compute earnLine for an economy/gig or economy/lending pick -- the wake falls through the ordinary kind='wake' branch and is silently accepted as resolved, regardless of whether any real economic result occurred. This reintroduces the exact silent-no-op failure mode the feature exists to eliminate, specifically for the two slots the spec was written to add. The spec's ground-truth section (behavioral-spec.md lines 41-48) documents that isEarnSlot's MENU coverage is narrower than doctrine, but never documents that the CLASSIFY call-site gate (index.mjs:450) shares the same narrow isEarnSlot check and must also change for always-act mode.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/runtime/loop/index.mjs",
+    "lineRange": "440-456",
+    "snippet": "} else if (isEarnSlot(slot)) {\n    // Only classify earn from the earn-ledger line (exit code 0 alone is NOT sufficient).\n    const earnLedgerPath = defaultEarnLedgerPath(config);\n    const { profitable: p } = await classifyEarnResult(wakeId, earnLedgerPath, isProfitable);\n    profitable = p;\n  }"
+  },
+  "routeToPhase": "1a"
+}
