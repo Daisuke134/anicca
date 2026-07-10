@@ -49,6 +49,17 @@
     実 profit + 実 spawn が on-chain で観測された瞬間 → LOOP1(私)の EXIT-CHECK 発火 → 消える。★
 ```
 
+## WHERE — repo 配置（Dais 確認 2026-07-10、物理実態で裏付け）
+
+| 何 | funding | repo | 現物理状態 |
+|---|---|---|---|
+| **Agent economy = Franklin の自走コロニー**（earn rails + self-improve + spawn + lending の OSS kit、子も vendor 継承） | self-funded | **anicca (OSS)** | Franklin(`~/.blockrun`) が vendor 済 |
+| **CEO loop + 配下の earn 事業**（pm-earner/clip/gig/affiliate/bounty… = Dais を rich に） | human-funded | **profitable-claude** | `~/profitable-claude/skills/human-funded/`(affiliate/bounty 移設済、他は #6) |
+| **AGENT ECONOMY LOOP**(親/開発者) | human-funded | runner=**profitable-claude** / 成果物は **anicca に commit** | 移設待ち(今 ~/anicca) |
+| 製品(iOS/web/api aniccaai.com) | — | **anicca-products** | 済 |
+
+★核心: **agent economy 本体 = anicca(OSS)**。**CEO+配下の全 loop = profitable-claude**(human-funded profit、agent economy とは別物)。AGENT ECONOMY LOOP は profitable-claude に住みつつ anicca を建てる橋渡し。earn rail は anicca-OSS 共有で Franklin も claude-p も vendor(polyrepo+vendor, submodule禁止)。物理移動は #6 で handover パス更新とセット。★
+
 ## 能力レイヤー別 マージ済みステータス（DONE / IN-FLIGHT / TODO）
 
 ### L1 EARN（citizens が稼ぐ）— GAP: 実 edge 無しで net-flat（C1）
