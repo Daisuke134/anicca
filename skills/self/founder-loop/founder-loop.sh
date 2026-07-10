@@ -4,6 +4,11 @@
 # INV-1..7) → check THE GOAL on the REAL ledger → write STATE.md atomically → report. A cadence (/loop, cron, launchd)
 # wraps this. The harness NEVER appends an earn row itself (INV-H2) and NEVER prompts a human (INV-H4).
 set -uo pipefail
+# launchd's default env is PATH=/usr/bin:/bin:/usr/sbin:/sbin (no node/homebrew) -- without this,
+# a launchd-scheduled run silently dies at `node "$RECORD"` with "node: command not found" (rc 127),
+# STATE.md never gets rewritten, and the Cadence Contract keeps missing every day even though a
+# manual (interactive-shell) invocation works fine. Matches every sibling self/*.sh launchd script.
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RECORD="$HERE/record-earn.mjs"
 
