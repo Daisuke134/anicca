@@ -7,7 +7,7 @@ import { selectTier } from '../tier.mjs';
 test('PROP-001: selectTier(0) returns broke tier with free model', () => {
   const result = selectTier(0, {});
   assert.equal(result.tier, 'broke');
-  assert.equal(result.model, 'nvidia/deepseek-v4-flash');
+  assert.equal(result.model, 'free/gpt-oss-120b');
 });
 
 // PROP-001: ANICCA_FREE_MODEL env override
@@ -21,7 +21,7 @@ test('PROP-001: selectTier(0) uses ANICCA_FREE_MODEL env override', () => {
 test('PROP-002: selectTier(0.5) returns lean tier with lean model', () => {
   const result = selectTier(0.5, {});
   assert.equal(result.tier, 'lean');
-  assert.equal(result.model, 'deepseek/deepseek-r1-0528');
+  assert.equal(result.model, 'auto');
 });
 
 // PROP-002: boundary at exactly 1.00 -> lean
@@ -34,7 +34,7 @@ test('PROP-002: selectTier(1.00) is still lean (boundary)', () => {
 test('PROP-003: selectTier(5.0) returns funded tier with funded model', () => {
   const result = selectTier(5.0, {});
   assert.equal(result.tier, 'funded');
-  assert.equal(result.model, 'openai/gpt-4o-mini');
+  assert.equal(result.model, 'auto');
 });
 
 // PROP-003: just above threshold
