@@ -1,0 +1,63 @@
+{
+  "feature": "self-heal-fix",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "/Users/operator/anicca/.worktrees/self-heal-fix",
+    "branch": "feature/self-heal-fix",
+    "commit": "69b48dae3ab6cbae11194131085ccd5603a2a79d",
+    "designDoc": "docs/superpowers/evidence/self-heal.md (anicca-project repo)",
+    "reviewMethodologyNote": "This adversary session had no Bash/shell execution tool available — only Read/Grep/Glob/Write/Edit. Dynamic steps requested by the launching agent (running `cadence-evidence.py status video`, running the pytest/shell test files, executing `git show`/`git diff`) could NOT be literally executed. In place of execution I (a) read the full source of every changed/relevant file, (b) manually traced the pure functions against the exact fixture data in the shipped tests to confirm expected outputs, (c) cross-checked the fix against REAL, unmodified production data at ~/.cloak/earn-video-audit-money_blueprintdaily.jsonl and ~/.cloak/earn-video-money_blueprintdaily.json (read-only, untouched) and REAL self-fix result markers at ~/.openclaw/state/.self-fix-*.result (read-only, untouched). This is disclosed so findings are not mistaken for having been produced by actually running the test suite."
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/cadence-evidence.py:278-317", "description": "_video_warmup_advanced_event_dates()/_video_row_exists_event_dates() correctly implement the exit-criteria fix described in self-heal.md's design table row ① (only a real 'day advanced' event counts toward cadence, an 'attempted but incomplete' day no longer does)."},
+        {"type": "file", "location": "skills/self/verify-loops-audit.sh:33-40", "description": "reddit escalation condition now reads `{ [ \"$REDDIT_STALE\" = 1 ] || [ \"$REDDIT_DEAD\" = 1 ]; }`, matching design row ② (liveness OR staleness)."},
+        {"type": "file", "location": "docs/superpowers/evidence/self-heal.md:49", "description": "design row ① ALSO requires a git hook/CODEOWNERS enforcement mechanism, which is not present anywhere in the worktree (see FIND-001)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/tests/test_cadence_evidence.py:81-144", "description": "3 video-warmup scenarios (incomplete/advanced/zero-attempt) reproduced with the EXACT real production `did` strings quoted in self-heal.md's incident writeup; traced by hand against cadence-evidence.py's substring check and confirmed all 3 expected outcomes follow from the code as written."},
+        {"type": "file", "location": "skills/self/tests/test_verify_loops_audit_reddit_liveness.sh:70-110", "description": "4 scenarios (fresh+LIVE, fresh+DEAD, stale+LIVE, no-account+DEAD) exercise every branch of the new OR-condition and the pre-existing NACC guard; traced by hand against verify-loops-audit.sh:37-40 and confirmed each expected call count follows."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/video/run.sh:95", "description": "Confirmed by grep across the whole skills/ tree that the literal substring 'day→' is written ONLY on this one line, inside the `elif [ \"${WATCHED:-0}\" -ge 3 ]` branch that ALSO increments warmup_day — every other outcome (ban/incomplete/deferred/verify-abort) explicitly omits it. This makes cadence-evidence.py:296's `\"day→\" not in did` check a correct, byte-identical match against the one and only writer, closing the exact Goodhart gap self-heal.md documents."},
+        {"type": "file", "location": "/Users/operator/.cloak/earn-video-audit-money_blueprintdaily.jsonl (read-only, untouched)", "description": "Real production ledger: the only two 'day→' lines are dated 2026-07-01 and 2026-07-08; 2026-07-10 and 2026-07-11 both carry 'INCOMPLETE ... day NOT advanced' lines. Manually applying the shipped _video_warmup_advanced_event_dates() logic to this real file (today=2026-07-11) yields met=false — i.e. the fixed code correctly re-diagnoses the real, still-ongoing stall it was written to catch, not just a synthetic fixture."},
+        {"type": "file", "location": "/Users/operator/.openclaw/state/.self-fix-*.result (read-only, untouched)", "description": "All 10 expected '<loop>-loop' result-marker filenames exist in production (clip/affiliate/video/gig/bounty/pm-earner/founder/capafy/reddit/life-manager-loop), confirming self-fix.sh's LOOP normalization (`LOOP=\"${LOOP%-loop}-loop\"`, self-fix.sh:28) makes every one of verify-loops.sh's new 10-name list actually resolve to a real file — the visibility fix is wired correctly, not cosmetic. Read .self-fix-affiliate-loop.result and .self-fix-bounty-loop.result directly and confirmed they contain the exact honest FAIL diagnoses (issues #994, #995) self-heal.md describes as previously invisible."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

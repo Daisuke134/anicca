@@ -143,12 +143,26 @@ del os.environ["EARN_VIDEO_METRICS_PATH"]
 del os.environ["EARN_VIDEO_STATE_PATH"]
 del os.environ["EARN_VIDEO_AUDIT_PATH"]
 
-gig_funnel = os.path.join(TMP, "gig-funnel.jsonl")
-write_jsonl(gig_funnel, [{"ts": today_epoch, "applied": 3}])
-os.environ["GIG_FUNNEL_PATH"] = gig_funnel
+# FIX (pre-existing baseline failure, confirmed present on origin/main before this file's other
+# 2026-07-11 edits — see ab4a39a4's own commit message): this assertion used to set GIG_FUNNEL_PATH,
+# but cadence-evidence.py's gig evidence source moved to GIG_APPLIED_PATH/GIG_LISTINGS_PATH
+# (_gig_row_exists_event_dates, REQ-GFV-022/023 — _gig_funnel_path() itself documents "no longer
+# used by the `gig` cadence-evidence path below"). The old fixture therefore always fed an env var
+# gather_evidence("gig") never reads, so this always failed regardless of real gig behavior (which
+# IS correctly covered end-to-end by test_cadence_evidence_gig_branch.py / test_gig_cadence_real_
+# evidence.py, both green). Updated to the CURRENT override seam so this assertion exercises the
+# real code path again, needed for the self-heal.md FIND-001 pre-push gate (skills/self/tests/
+# test_cadence_evidence.py must genuinely pass end-to-end for that gate to be usable at all).
+gig_applied = os.path.join(TMP, "gig-applied.jsonl")
+gig_listings = os.path.join(TMP, "gig-listings.jsonl")
+write_jsonl(gig_applied, [{"ts": today_epoch, "requestId": "R1", "status": "applied"}])
+write_jsonl(gig_listings, [])
+os.environ["GIG_APPLIED_PATH"] = gig_applied
+os.environ["GIG_LISTINGS_PATH"] = gig_listings
 status = CE.status_for_loop("gig")
-chk("gig: real today-ts row -> met=true", status["met"], True)
-del os.environ["GIG_FUNNEL_PATH"]
+chk("gig: real today-ts 'applied' row (current GIG_APPLIED_PATH source) -> met=true", status["met"], True)
+del os.environ["GIG_APPLIED_PATH"]
+del os.environ["GIG_LISTINGS_PATH"]
 
 # ---------------------------------------------------------------------------
 # bounty (increment kind): today's checked value must be STRICTLY greater than the prior day's,
