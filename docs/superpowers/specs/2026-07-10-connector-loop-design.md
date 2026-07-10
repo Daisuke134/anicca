@@ -65,9 +65,20 @@
    将来: cloud Life Manager の connector module（tenant 分離+課金 thesis 確定後）
 ```
 
-安全設計: 送信は全て Anicca 自身の名義（Dais の Gmail から他人へ送らない）。intro は double-opt-in（Boardy 式）。gcal は PROPOSED→CONFIRMED（Boardy の実証済み失敗「勝手に会議を入れた」への対策）。risk≥95 絶対承認天井。fake 禁止・evidence 必須は会社共通規約に従う。
+安全設計: 送信は全て Anicca 自身の名義（Dais の Gmail から他人へ送らない）。intro は double-opt-in（Boardy 式）。risk≥95 絶対承認天井。fake 禁止・evidence 必須は会社共通規約に従う。
 
-## 5. 既存資産の再利用（車輪の再発明禁止）
+**イベント応募の鉄則（Dais 2026-07-10 追加、interim の OpenClaw cron にも適用）:**
+1. **FREE イベントのみ**。価格表記のあるイベント（Eventbrite の有料 ticket 等）は応募も calendar 記載も禁止。有料で価値が高いものは Telegram で提案のみ（予約しない）。無料判定は実ページの価格表示で確認（推測禁止）
+2. **実登録が先、calendar は後**。サイト上の実登録 evidence（connpass「参加者への情報」表示 / Luma の参加確定表示 / 確認メール）を取得してから gcal に CONFIRMED で書く。**登録なしの PROPOSED を calendar に残さない**（2026-07-10 に未登録 PROPOSED 2件を削除して是正済み — うち1件は有料 Eventbrite で二重に違反していた）
+3. 登録試行が失敗したら calendar には何も書かず lessons に記録
+
+## 5. 配置の決定: 正式な家 = claude-p（profitable-claude）、OpenClaw は interim（Dais 質問 2026-07-10 への回答）
+
+- **正式**: connector loop は profitable-claude の CEO 配下（self-heal/self-improve/lessons/evidence gate/VCSDD tests/CEO 評価の harness が全部ここにあり、core は Sonnet）
+- **理由**: OpenClaw 側は ①live store 乖離で 6/7-6/22 に silent outage（実証済み）②cron agent が弱モデル（deepseek-v4-flash が37秒で浅い discovery をした実例）③テスト/adversary gate なし — 自己修復・自己改善の器として不適
+- **interim**: 修復済み OpenClaw cron 8本（booking/meetup/connpass/night-fill 等）は connector loop の E2E done まで動かし続ける（discover 結果は connector の signal 源として流用）。connector done 後に OpenClaw 側イベント cron を disable（07-08 spec の OpenClaw 退役方針と整合）
+
+## 5b. 既存資産の再利用（車輪の再発明禁止）
 
 - `anicca-booking`（~/.openclaw、E2E 実績あり、**6/22 から沈黙 = 修理対象**）+ `anicca-meetup-talk-applier`（connpass/AI Tinkerers、discover は稼働中・apply 停滞）= event rail
 - `gcal-policy.sh` = calendar 書込の唯一経路 / `gog` = gmail·gcal / OpenClaw cron delivery = Telegram（to: 8547730585、配線済み）
@@ -102,7 +113,7 @@ feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行
 
 | TODO# | loop/作業 | DONE の機械検証条件 | NOT done の例（禁止される言い方） |
 |---|---|---|---|
-| 1a-b | anicca-booking 復旧 | ①scan buffer 修正 commit 済（`120e863` ✅）②**通常 cron（agent 経由・定時 6:00/18:00）が2連続 run で approved>0 かつ実サイト登録 evidence**（connpass「参加者への情報」snapshot or 確認メール）③gcal PROPOSED→CONFIRMED 遷移を `gog events get` で読返し ④Telegram delivered:true | 手動発火1回で「復旧」/ PROPOSED 書込だけで「応募した」 |
+| 1a-b | anicca-booking 復旧 | ①scan buffer 修正 commit 済（`120e863` ✅）+ cron live store 復旧済（8本 ✅）②**定時 cron 2連続 run で FREE イベントに実サイト登録**（connpass「参加者への情報」/ Luma 参加確定 / 確認メール）③登録済イベントのみ gcal CONFIRMED（`gog events get` 読返し）④Telegram delivered:true ⑤有料イベント予約ゼロ・未登録 calendar 記載ゼロ | 手動発火1回で「復旧」/ PROPOSED 書込だけで「応募した」 |
 | 1c | meetup-applier apply 側 | 新規実応募1件が data/applications/ に記録され、応募先実ページ or 確認メールで独立検証 | discover が動いてるだけで「動いてる」 |
 | 1d | affiliate 投稿再開 | @aishigoto.labo への実投稿 URL を browser 実読で確認 + queue 減少 + commission-watermark 更新継続 | deck 生成だけで「稼働」 |
 | 2-4 | connector-loop 構築 | VCSDD 全 gate PASS（state.json）+ tests/run-all green + registry live + ceo-status 表示 | コードが書けただけ（E2E 前）で「完成」 |
