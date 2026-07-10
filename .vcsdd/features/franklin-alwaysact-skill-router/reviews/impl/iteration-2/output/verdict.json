@@ -1,0 +1,48 @@
+{
+  "phase": "impl-review",
+  "iteration": 2,
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:666-824", "description": "runAlwaysActWake traced line-by-line against behavioral-spec.md sec2.5's 12-row transition matrix; REQ-501/502/504/505/506/508/511/512/513 wiring matches the spec's concrete mechanism (index.mjs's brain.mjs/prompt.mjs/context.mjs wiring, attemptsUsed-only branch selection, currentOfferedSlots-only validity check)."},
+        {"type": "file", "location": "runtime/loop/index.mjs:673-674,847-863", "description": "iteration-1 FIND-001 genuinely resolved: writeAlwaysActEscalation's kind param defaults to 'router_no_realized_action'; ONLY the REQ-502 empty-menu call site (runAlwaysActWake's top guard) passes kind:'router_menu_empty' explicitly, verified by reading every other call site."},
+        {"type": "test-output", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs:437-451", "description": "PROP-502d is a REAL spawn-based integration test (engagedSpawn + ALWAYS_ACT_REGISTRY_PATH_OVERRIDE pointed at a real writeEmptyRegistry fixture, asserts the ACTUAL ledger line's kind from a live wake) -- not the tautological pure-assembleAlwaysActMenu-only test iteration-1 flagged."},
+        {"type": "file", "location": "runtime/loop/go-live.mjs + runtime/loop/__tests__/go-live.test.mjs", "description": "iteration-1 FIND-002 genuinely resolved: go-live.mjs is a standalone, never-wake-loop-invoked module (confirmed both by reading index.mjs's import list, which never references go-live.mjs/recordGoLive, and by go-live.test.mjs's own dedicated structural-check test). REQ-512's EARS text literally names this 'the one-time operational action' as SEPARATE from wake-loop control flow -- the fix matches the spec's actual reading, not merely the fix's own convenience. 4 real tests (real fs, tmp ledger files, actual recordGoLive execution) verify write-once-idempotent behavior."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": []
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": []
+    },
+    "structural_integrity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs:1-257", "description": "Pure Core read in full: imports only ./earn-slot.mjs and ./prompt.mjs, zero fs/http/child_process imports, zero RegExp/.match(/.test(/switch(slot)-style judgment over model-chosen content -- REQ-507's contract holds structurally."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/context.mjs:26-34", "description": "ctx.alwaysActEngaged/ctx.alwaysActMenu are additive, correctly defaulted (false/[]) fields -- non-always-act ctx construction is byte-for-byte unaffected."},
+        {"type": "file", "location": "runtime/loop/brain.mjs:63-69,100-102", "description": "thinkProxy's tools: line and thinkClaudeP's prompt-text line are both correctly conditional on ctx.alwaysActEngaged, matching REQ-504 points 3-4 exactly."}
+      ]
+    }
+  },
+  "blocking_count": 4,
+  "reviewed_commits": ["706e8fcb"],
+  "external_test_evidence": "182/182 pass (thinker-executed at HEAD 706e8fcb, node --test via runtime/loop's npm test) -- not independently re-executed by this adversary (no Bash tool available this session); all 4 findings below are code/spec/test-coverage-shape defects that hold true regardless of the reported pass count, since 3 of the 4 concern tests that either do not exist (FIND-003) or contain a dead/always-true-guarded assertion that trivially passes without ever exercising its claim (FIND-004).",
+  "priorIterationFindingsVerifiedResolved": ["FIND-001", "FIND-002"],
+  "ts": "2026-07-11T05:30:00.000Z"
+}

@@ -36,7 +36,7 @@ import path from 'node:path';
 import { execFileSync } from 'node:child_process';
 import {
   makeTmpHome, writeGenesis, writeMockSkill, writeMockEarnSkill, writeMockGuardBlockedSkill,
-  writeEmptyRegistry,
+  writeEmptyRegistry, writeRiskTaggedRegistry,
   generateSolanaKeypair, writeBlockrunSession, writeAutomatonSolanaJson,
   startMockBrainServer, makeToolCallResponse, makeNarrateResponse,
   spawnLoop, readLedger, waitForLines, waitForCondition, baseSpawnEnv, cleanupHome,
@@ -451,6 +451,41 @@ test('PROP-502d (REAL wake): an empty-yielding registry escalates a REAL spawned
 });
 
 // ===========================================================================
+// REQ-506 / PROP-506f (spec-review iteration-2 FIND-101 regression test, "empty-safe-set-escalates";
+// Phase 3 impl-review iteration-2 FIND-003 fix) -- a REAL spawned wake whose reroute-eligible
+// risk-free set is empty (every OTHER live always-act slot besides the just-picked one is ALSO
+// risk:"capital") must escalate directly -- zero additional think() calls, NEVER a fallback into a
+// risk:"capital" reroute target. Also proves REQ-510's own literal attemptsUsed===0 domain-pin AC for
+// this exact terminal case: one baseline think() call was made, yet attemptsUsed must ledger 0, not 1
+// (falsifying a naive think()-call-count reading of the field).
+// ===========================================================================
+
+test('PROP-506f (empty-safe-set-escalates): reroute-eligible risk-free set is empty (all other live always-act slots besides the pick are risk:"capital") -> immediate REQ-508 escalation, zero additional think() calls, ledgered attemptsUsed===0 despite exactly ONE think() call made', { timeout: 20000 }, async () => {
+  const { home, legacyHome } = setupEngaged();
+  const registryOverridePath = writeRiskTaggedRegistry(home, {
+    'earn/sol-trade': 'capital',
+    hl_trade: 'capital',
+  });
+  const { server, url, requests } = await startMockBrainServer((count) => {
+    if (count === 0) return makeToolCallResponse('earn/sol-trade', {});
+    return makeNarrateResponse(); // must never be reached -- the risk-free-filtered reroute set is empty
+  });
+  writeMockSkill(home, 'earn/sol-trade', 'echo "wait, no edge"\nexit 0'); // exits 0, writes NO earn-ledger line
+  const proc = engagedSpawn({ home, legacyHome, url, extraEnv: { ALWAYS_ACT_REGISTRY_PATH_OVERRIDE: registryOverridePath } });
+  track(proc, server, home, legacyHome);
+
+  const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
+  await new Promise((r) => setTimeout(r, 300));
+  proc.kill('SIGTERM');
+  assert.equal(requests.length, 1, 'the empty risk-free reroute set must spend ZERO additional think() calls -- never a 2nd call');
+  const escalated = lines.find((l) => l.kind === 'router_no_realized_action');
+  assert.ok(escalated, 'must escalate truthfully via REQ-508, never a fallback into a risk:"capital" reroute target');
+  assert.equal(escalated.slot, null);
+  assert.notEqual(escalated.profitable, true);
+  assert.equal(escalated.attemptsUsed, 0, 'REQ-510 domain pin: attemptsUsed ledgers the {0,1} state variable, never a think()-call count -- exactly ONE think() call was made, yet attemptsUsed must be literally 0 here');
+});
+
+// ===========================================================================
 // REQ-506 / PROP-506c (closes FIND-002) — economy/gig and economy/lending are classify-eligible
 // under the widened index.mjs:450 call-site condition, not just menu-eligible
 // ===========================================================================
@@ -547,7 +582,7 @@ test('PROP-509a (money-safety-critical, Tier 0 static guard): this feature\'s cu
   assert.ok(!catalogGateDiff.includes('DEFAULT_BOOTSTRAP_RESERVE_USDC ='), 'this feature must never alter catalog-gate.mjs\'s threshold constant');
 });
 
-test('PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style skip, exits 0, writes no earn-ledger line) on the first pick triggers a reroute to a DIFFERENT slot, and the guard\'s own skip record is preserved VERBATIM in the ledger (never overwritten/silenced)', { timeout: 20000 }, async () => {
+test('PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style skip, exits 0, writes no earn-ledger line) on the first pick triggers a reroute to a DIFFERENT slot, and the guard\'s own skip record is preserved VERBATIM in harness-failures.jsonl (never overwritten/silenced)', { timeout: 20000 }, async () => {
   const { home, legacyHome } = setupEngaged();
   let wakeIds = [];
   const { server, url, requests } = await startMockBrainServer((count, body) => {
@@ -565,14 +600,21 @@ test('PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style s
   const lines = await waitForLines(path.join(home, 'state', 'ledger.jsonl'), 1, 15000);
   proc.kill('SIGTERM');
   assert.equal(lines[0].slot, 'economy/gig', 'the reroute must pick a DIFFERENT slot, never retry earn/sol-trade with a relaxed guard');
-  const allLines = readLedger(path.join(home, 'state', 'ledger.jsonl'));
-  const skillErrorOrWakeForFirstPick = allLines.find((l) => l.slot === 'earn/sol-trade');
-  if (skillErrorOrWakeForFirstPick) {
-    assert.ok(
-      (skillErrorOrWakeForFirstPick.result || '').includes('kill-switch'),
-      'the guard-blocked slot\'s own skip reason must be preserved verbatim in whatever ledger line records its attempt',
-    );
-  }
+  // REQ-509 (Phase 3 impl-review iteration-2 FIND-004 fix): the guard-blocked FIRST pick's own skip
+  // record is NEVER written to ledger.jsonl (runAlwaysActWake's reroute branch never ledgers the
+  // rerouted-away-from attempt as its own terminal wake line -- ledger.jsonl's single line is always
+  // the wake's FINAL outcome) -- it is instead preserved verbatim, unconditionally, in
+  // harness-failures.jsonl (the SAME appendHarnessFailure/formatRecord audit-append mechanism REQ-508
+  // already uses for this router's own escalation detail), under the DISTINCT kind
+  // 'router_reroute_skip'. This assertion is UNCONDITIONAL (no dead-code `if` guard) -- it genuinely
+  // fails if the record is ever missing or its reason text is lost/altered.
+  const failureLines = readLedger(path.join(home, 'state', 'harness-failures.jsonl'));
+  const guardSkipRecord = failureLines.find((l) => l.slot === 'earn/sol-trade' && l.kind === 'router_reroute_skip');
+  assert.ok(guardSkipRecord, 'the guard-blocked slot\'s own skip record must be preserved (not silenced) in harness-failures.jsonl');
+  assert.ok(
+    (guardSkipRecord.detail || '').includes('kill-switch'),
+    'the guard-blocked slot\'s own skip reason must be preserved verbatim',
+  );
 });
 
 // ===========================================================================

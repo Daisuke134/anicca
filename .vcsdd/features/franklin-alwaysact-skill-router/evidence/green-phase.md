@@ -264,3 +264,145 @@ ADDENDUM TOTALS
 Target-feature test() blocks (this feature's own 5 files): 62/62 PASS (+9 vs the original 53: 1 new
   REAL PROP-502d integration test + 4 new PROP-512a pure tests + 4 new go-live.test.mjs tests).
 Full combined suite (182 official package.json + 92 sweep-2) = 274/274 PASS, 0 regressions.
+
+================================================================================
+ADDENDUM — impl-review iter2 fixes (Phase 3 iteration-2 FIND-001..004)
+================================================================================
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+Fixes Phase 3 implementation review iteration-2's 4 blocking findings
+(`.vcsdd/features/franklin-alwaysact-skill-router/reviews/impl/iteration-2/output/findings/`):
+
+FIND-001 (security surface, `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` honored unconditionally in
+production with no production guardrail): mirrors this codebase's own established mitigation for
+EXACTLY this class of test-only env backdoor — `ANICCA_BALANCE_OVERRIDE`'s own sole guardrail is
+`franklin-plist-config.test.mjs`'s deployed-plist-absence check (confirmed live: `ANICCA_BALANCE_OVERRIDE`
+also has NO code-side gate in `balance.mjs` — the plist-absence test is its ONLY mitigation). Added the
+SAME class of test to `franklin-plist-config.test.mjs`, extended to cover BOTH live Franklin plists
+(`ai.anicca.franklin-loop.plist` AND `ai.anicca.franklin2-loop.plist`, not just the one the precedent file
+already read) — 2 new tests assert `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` is absent from each deployed
+plist's real `<EnvironmentVariables>` dict. No code-side gate was added to `index.mjs` (would deviate
+from the established, already-accepted mitigation pattern — "do not invent a new mechanism"); the
+override remains usable by the spawn-based tests exactly as before.
+
+FIND-002 (contract gap, REQ-503/REQ-510 unmapped by any CRIT criterion): added `CRIT-011` (REQ-503,
+bootstrap-reserve gate, references the existing PROP-503a/PROP-503b tests) and `CRIT-012` (REQ-510,
+attemptsUsed domain-pin, references the existing PROP-510a tests plus the new PROP-506f test below) to
+`contracts/sprint-1.md`. Weights rebalanced from 10x0.10 (=1.00) to 10x0.09 + 2x0.05 (=1.00) — verified
+by direct summation. All of REQ-501..REQ-513 now appear within the criteria block itself (verified: each
+REQ-5XX number has >=1 match inside the `criteria:` YAML block). CRIT-006's description/passThreshold
+text was also corrected to match FIND-004's fix (see below) — it previously said the guard-blocked
+slot's skip record is preserved "in the ledger" (ambiguous, and would have meant ledger.jsonl, which is
+NOT where FIND-004's fix preserves it) — now explicitly names `harness-failures.jsonl` and the
+`router_reroute_skip` kind. CRIT-010's expected pass counts were updated from 182/92 to 183/94 to match
+the 2 new test files' additions (+1 target-feature test, +2 sweep tests).
+
+FIND-003 (PROP-506f missing — REQ-506's own named "empty-safe-set-escalates" AC untested): added the
+real, spawn-based `PROP-506f` test to `always-act-reroute.test.mjs`. Uses the SAME
+`ALWAYS_ACT_REGISTRY_PATH_OVERRIDE` test seam PROP-502d already established, pointed at a new
+`writeRiskTaggedRegistry` fixture (added to `always-act-harness.mjs`) containing exactly 2 live,
+capital-risk slots (`earn/sol-trade`, `hl_trade`) — so after the just-picked slot is excluded, the
+remaining risk-free-filtered reroute set is genuinely empty even though the raw excluded-self set is
+not. Asserts: zero additional think() calls (`requests.length === 1`), a real `router_no_realized_action`
+escalation line (never a fallback into a risk:"capital" reroute target), AND REQ-510's own literal
+domain-pin AC — `escalated.attemptsUsed === 0` despite exactly ONE think() call having been made,
+falsifying a naive think()-call-count reading of the field. Manual trace confirmed the underlying
+index.mjs code path (lines 789-795, unmodified by this fix) was already correct; this test closes the
+tautological-coverage gap, it does not change behavior.
+
+FIND-004 (PROP-509b dead-code assertion, REQ-509 AC unmet — no ledger record of a guard-blocked pick
+exists anywhere): traced the root cause — `runAlwaysActWake`'s reroute branch (index.mjs) never wrote
+ANY record of a rerouted-away-from pick's own outcome; `ledger.jsonl`'s single line per wake is always
+the wake's FINAL result, and `classifyLayer({kind:'wake'})` classifies a guard-blocked-but-exit-0 pick as
+`'clean'`, so the pre-existing `appendHarnessFailure` call site (guarded by `classifyLayer(...) !== 'clean'`)
+never fires for it either. Implemented the missing preservation: index.mjs's noRealizedAction/reroute
+branch now calls `appendHarnessFailure` UNCONDITIONALLY (bypassing classifyLayer's routing — this is a
+genuine no-edge/guard-skip signal, not a tool_missing/tool_timeout/tool_logic failure) with a distinct
+`kind: 'router_reroute_skip'`, preserving `slot`/`exitCode`/the raw (already-redacted) skill output
+verbatim in `harness-failures.jsonl` — BEFORE the branch decides whether to reroute successfully or
+escalate, so the record survives either outcome. `ledger.jsonl` was deliberately NOT used for this
+(would have broken ~15 currently-passing reroute tests' `lines[0]` terminal-line assertions, e.g. Row 5/
+Row 6/Row 7/PROP-506c, since `waitForLines(...,1)` resolves on the FIRST line written — an earlier skip
+line would become `lines[0]` instead of the wake's actual terminal outcome). Rewrote `PROP-509b` to
+assert UNCONDITIONALLY (no `if` guard) against the new `harness-failures.jsonl` record, finding it by
+`slot === 'earn/sol-trade' && kind === 'router_reroute_skip'` and asserting `detail` includes
+`'kill-switch'` verbatim. NEGATIVE-CONTROL VERIFIED this session: with the index.mjs fix reverted (git
+stash), the rewritten PROP-509b genuinely FAILS (`AssertionError: the guard-blocked slot's own skip
+record must be preserved (not silenced) in harness-failures.jsonl`) while PROP-506f still passes
+(independent of this fix) — confirming the new assertion is real, not dead code.
+
+FILES CHANGED THIS ADDENDUM:
+  - runtime/loop/index.mjs (unconditional appendHarnessFailure call, kind:'router_reroute_skip', in the
+    noRealizedAction/reroute branch — REQ-509 skip-record preservation)
+  - runtime/loop/__tests__/franklin-plist-config.test.mjs (+2 ALWAYS_ACT_REGISTRY_PATH_OVERRIDE
+    plist-absence guardrail tests, both live Franklin plists; generalized readDeployedEnvironmentVariables)
+  - runtime/loop/__tests__/helpers/always-act-harness.mjs (+writeRiskTaggedRegistry)
+  - runtime/loop/__tests__/always-act-reroute.test.mjs (+1 new PROP-506f test; PROP-509b rewritten to
+    assert unconditionally against harness-failures.jsonl)
+  - .vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md (+CRIT-011, +CRIT-012,
+    rebalanced weights 0.10x10 -> 0.09x10+0.05x2, CRIT-006/CRIT-010 text corrected)
+
+================================================================================
+RAW OUTPUT — target-feature suite (63 tests, 5 files: same 5 files, +1 vs iter1's 62 -- PROP-506f)
+Command (from runtime/loop/): node --test __tests__/always-act-router.test.mjs
+  __tests__/always-act-wire-seam.test.mjs __tests__/always-act-nojudgment.test.mjs
+  __tests__/always-act-reroute.test.mjs __tests__/go-live.test.mjs
+================================================================================
+ℹ tests 63
+ℹ pass 63
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 19879.795792
+
+================================================================================
+RAW OUTPUT — full official package.json `test` script (183 cases: 182 iter1 baseline + 1 PROP-506f)
+Command (from runtime/loop/): npm test
+================================================================================
+ℹ tests 183
+ℹ pass 183
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20024.121416
+
+(This session: 1 of 4 `npm test` runs was clean 183/183 above; the pre-existing, previously-disclosed
+integration.test.mjs ENOTEMPTY teardown-race flake (`proc.kill('SIGTERM')` immediately followed by
+`fs.rmSync`, no wait for child exit) fired on the other 3, each time at a DIFFERENT integration.test.mjs
+PROP-021 subtest (lines 496/601) -- never any always-act-*.test.mjs/go-live.test.mjs test, consistent
+with CRIT-010's own pre-existing disclosure. Rather than keep blindly re-running the full flaky
+combined command, diagnosed directly: (a) `git stash` to the PRISTINE pre-fix baseline commit (no
+diff) -- `npm test` also clean 182/182 on its own first run, proving the flake pre-exists this addendum's
+diff; (b) `integration.test.mjs` run in ISOLATION (its own process, no other files) -- clean 12/12; (c)
+the other 14 package.json files run together WITHOUT integration.test.mjs -- clean 171/171. 171 + 12 =
+183, the exact same total `npm test` covers -- confirming ALL 183 cases genuinely pass; the flake is
+confined to a resource/timing race in integration.test.mjs's own teardown when run sequentially inside
+one long 15-file/183-test node process, not a real regression, and not caused or worsened by this
+addendum's diff.)
+
+================================================================================
+RAW OUTPUT — regression baseline (sweep 2): 94 tests (92 iter1 baseline + 2 new plist guardrail tests)
+Command (from runtime/loop/): node --test __tests__/address-classify.test.mjs
+  __tests__/balance-solana.test.mjs __tests__/brain.test.mjs
+  __tests__/daemon-script-franklin-routing.test.mjs __tests__/earn-slot.test.mjs
+  __tests__/franklin-plist-config.test.mjs __tests__/integration-solana-tier.test.mjs
+  __tests__/liquidity.test.mjs __tests__/prompt.test.mjs __tests__/resolve-identity.test.mjs
+  __tests__/self-eval.test.mjs __tests__/wallet-address-solana.test.mjs
+================================================================================
+ℹ tests 94
+ℹ pass 94
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 12215.752875
+
+================================================================================
+ADDENDUM TOTALS (iter2)
+================================================================================
+Target-feature test() blocks (this feature's own 5 files): 63/63 PASS (+1 vs iter1's 62: PROP-506f).
+Full combined suite (183 official package.json + 94 sweep-2) = 277/277 PASS, 0 regressions.

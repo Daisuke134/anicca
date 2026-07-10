@@ -110,6 +110,29 @@ export function writeEmptyRegistry(home) {
   return registryPath;
 }
 
+/**
+ * Writes a registry.json fixture whose live slots are EXACTLY the given `{name: riskTag}` set (pair
+ * with `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE`, the same test-only seam `writeEmptyRegistry` uses) — lets
+ * PROP-506f construct a REAL, reachable always-act menu where every OTHER live slot besides the
+ * just-picked one is `risk:"capital"` (the risk-free-filtered reroute set is genuinely empty, driven
+ * through a real spawned wake — not merely a pure `assembleAlwaysActMenu` return-value stand-in).
+ *
+ * @param {string} home
+ * @param {Record<string, string>} slotsWithRisk - e.g. `{ 'earn/sol-trade': 'capital', hl_trade: 'capital' }`
+ * @returns {string} absolute path to the written registry.json fixture
+ */
+export function writeRiskTaggedRegistry(home, slotsWithRisk) {
+  const dir = path.join(home, 'fixtures');
+  fs.mkdirSync(dir, { recursive: true });
+  const registryPath = path.join(dir, 'risk-tagged-registry.json');
+  const slots = {};
+  for (const [name, risk] of Object.entries(slotsWithRisk || {})) {
+    slots[name] = { status: 'live', risk };
+  }
+  fs.writeFileSync(registryPath, JSON.stringify({ slots }, null, 2));
+  return registryPath;
+}
+
 // ── Solana identity fixtures (REQ-501) ──────────────────────────────────────
 // Fresh, randomly generated, UNFUNDED keypairs only — never Franklin's real production secret.
 

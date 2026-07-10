@@ -777,6 +777,24 @@ async function runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }) {
     // terminal result exactly like today's ordinary wake — this reroute is never triggered by an
     // execution error (REQ-506 edge case).
     if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) {
+      // REQ-509 (Phase 3 impl-review iteration-2 FIND-004 fix): this attempt's own outcome is NOT
+      // this wake's terminal ledger.jsonl line (it may be silently superseded by a successful reroute
+      // pick, or by REQ-508's own escalation record below) — without this, a guard-blocked pick's own
+      // skip reason (e.g. sol-trade's kill-switch `{"action":"skip","reason":"..."}` trace) would never
+      // be recorded ANYWHERE, violating REQ-509's "preserved verbatim... not overwritten/silenced" AC.
+      // Preserved here via the SAME harness-failures.jsonl audit-append mechanism (appendHarnessFailure,
+      // formatRecord/appendLedgerLine, unmodified) REQ-508 already uses for this router's own truthful
+      // escalation detail — a DISTINCT kind ('router_reroute_skip', never classifyLayer-routed, since
+      // this is a genuine no-edge/guard-skip signal, not a tool_missing/tool_timeout/tool_logic
+      // failure) so it is never conflated with those. This is unconditional — every no-realized-action
+      // pick's own record is preserved this way, whether the wake goes on to reroute successfully or
+      // escalate, so the guard-blocked slot's skip reason is never silently lost either way.
+      await appendHarnessFailure({
+        ts, wakeId, slot, kind: 'router_reroute_skip', layer: 'router',
+        exitCode: skillResult.exitCode != null ? skillResult.exitCode : null,
+        rawDetail: skillResult.output || '',
+      });
+
       const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });
       if (state.exhausted) {
         await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });

@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "additionalDimensions": ["spec_fidelity"],
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "REQ-506's own Acceptance Criteria (behavioral-spec.md, spec-review iteration-2 FIND-101 regression test) explicitly names a required test, 'PROP-506f (\"empty-safe-set-escalates\")': 'A unit test with a fixture always-act menu whose only members besides the just-picked (capital-risking) slot are ALSO risk:\"capital\" ... asserts zero additional think() calls and immediate REQ-508 escalation -- never a reroute into a risk:\"capital\" slot.' This scenario is DISTINCT from every one of the 12 rows in behavioral-spec.md sec2.5's transition matrix (all of which assume either an immediate accept, a reprompt, or a NON-empty reroute-target set) -- it is index.mjs's `rerouteTargets.length === 0` branch (index.mjs:789-795), reached when the risk-free-filtered reroute set is empty even though other (non-safe) slots remain. A comprehensive grep across every always-act-*.test.mjs file for 'PROP-506f', 'empty-safe-set', 'reroute-target-is-risk-free', and the general pattern 'risk-free.*empty|empty.*reroute' returns ZERO matches -- this named, spec-mandated test does not exist anywhere in the 62-test suite this sprint claims. This is also the ONLY code path that could exercise REQ-510's own second literal-domain-pin Acceptance Criterion ('a unit test for REQ-506's empty-reroute-target terminal case ... asserts the ledgered attemptsUsed value is literally 0 even though exactly ONE think() call was actually made -- this is the case that falsifies the think()-call-count reading') -- that AC is therefore also entirely untested. Manual trace of index.mjs:779-795 confirms the CODE correctly passes the pre-increment `attemptsUsed` (not `state.attemptsUsedNext`) to writeAlwaysActEscalation in this branch, so the implementation is plausibly correct on this specific point -- but this is exactly the tautological-coverage class of gap iteration-1's FIND-001 already flagged once in this same sprint (a test suite reporting green while a spec-mandated, money-safety-adjacent branch is never actually exercised by any test).",
+  "evidence": {
+    "filePath": "runtime/loop/index.mjs",
+    "lineRange": "779-795",
+    "snippet": "if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) {\n  const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 });\n  if (state.exhausted) { ... }\n  const rerouteTargets = alwaysActMenu.filter((s) => s !== slot && isMarketRiskFree(s, riskTagOf));\n  if (rerouteTargets.length === 0) {\n    await writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed });\n    ...\n    return;\n  }"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "431-435",
+      "snippet": "**(spec-review iteration-2 FIND-101 regression test, PROP-506f \"empty-safe-set-escalates\")** A unit test with a fixture always-act menu whose only members besides the just-picked (capital-risking) slot are ALSO risk:\"capital\" ... asserts zero additional think() calls and immediate REQ-508 escalation -- never a reroute into a risk:\"capital\" slot."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "522-528",
+      "snippet": "A unit test for REQ-506's empty-reroute-target terminal case ... asserts the ledgered attemptsUsed value is literally 0 even though exactly ONE think() call was actually made -- this is the case that falsifies the think()-call-count reading and confirms the field ledgers attemptsUsed in {0, 1} exclusively."
+    }
+  ],
+  "testCoverageNote": "grep -n 'PROP-506f|empty-safe-set|reroute-target-is-risk-free' across runtime/loop/__tests__/always-act-*.test.mjs: zero matches. grep -n '^test\\(' against always-act-reroute.test.mjs and always-act-router.test.mjs enumerated every one of the 30 test names in this sprint's target-feature suite; none matches this scenario.",
+  "routeToPhase": "2b"
+}
