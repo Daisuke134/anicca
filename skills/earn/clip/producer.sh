@@ -19,7 +19,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/_instance_paths.sh"
 QUEUE="$CLIP_QUEUE"; mkdir -p "$QUEUE"
 POSTED="$CLIP_POSTED"; mkdir -p "$POSTED"
 PENDING_VERIFY="$CLIP_PENDING_VERIFY"; mkdir -p "$PENDING_VERIFY"
-set -a; . "$HOME/.openclaw/.env" 2>/dev/null; set +a
+. "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/../../_shared/lib/load-instance-env.sh"
 export LOCAL_WHISPER_MODEL=tiny
 export GOOGLE_API_KEY="${GOOGLE_API_KEY:-${GEMINI_API_KEY:-}}"
 
