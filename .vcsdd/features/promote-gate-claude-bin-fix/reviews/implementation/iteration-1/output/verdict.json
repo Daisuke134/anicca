@@ -1,0 +1,63 @@
+{
+  "sprintNumber": 2,
+  "feature": "promote-gate-claude-bin-fix",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-10T07:00:00Z",
+  "iteration": 1,
+  "reviewContext": {
+    "reviewType": "implementation",
+    "specPath": ".vcsdd/features/promote-gate-claude-bin-fix/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/promote-gate-claude-bin-fix/specs/verification-architecture.md",
+    "diffBaseline": "compared /Users/operator/anicca/.worktrees/promote-gate-claude-bin-fix (worktree, uncommitted) against /Users/operator/anicca (main checkout) directly via Read, since no Bash/git tool was available in this review environment"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111", "description": "REQ-CB1 (line 105-107: shutil.which hit returned unchanged, no fallback probing), REQ-CB2 (lines 94-101, 108-110: ordered known-good path list ~/.local/bin/claude, /opt/homebrew/bin/claude, /usr/local/bin/claude, first isfile+X_OK match wins), REQ-CB3 (line 111: falls through to literal '/opt/homebrew/bin/claude' identical to the pre-fix default) all traced line-by-line and confirmed to match the EARS wording exactly"},
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py vs /Users/operator/anicca/skills/earn/self-improve/lib/promote_gate_run.py (main)", "description": "REQ-CB4: full byte-for-byte comparison of both files (docstring, imports, ADVERSARY_JSON_SCHEMA, _repo_root, write_realized_gate_escalation, _read_text, _build_prompt, _invoke_adversary, main()) confirms the ONLY functional change is the _resolve_claude_bin block (old lines 93-94 -> new lines 93-111); every other line is identical"},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py", "description": "confirmed new file does not exist on main (Glob returned no match); 5 tests map 1:1 to PROP-CB1/CB2/CB2b/CB2c/CB3 in verification-architecture.md"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:104-111", "description": "manually traced _resolve_claude_bin() against all 5 test scenarios (PATH hit; miss+2nd-candidate-exists; miss+none-exist; miss+both-exist-ordering; miss+exists-but-not-executable) and confirmed the code path produces the exact expected return value and mock-call pattern in every case, no off-by-one or short-circuit errors"},
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:170-183 vs main lines 153-166 (offset +17)", "description": "_invoke_adversary's FileNotFoundError handling and the f'claude binary not found (tried {claude_bin})' error message are byte-identical to main; REQ-CB3's fail-closed error message is preserved verbatim since claude_bin resolves to the same literal string in the exhausted-fallback case"},
+        {"type": "log", "location": ".vcsdd/features/promote-gate-claude-bin-fix/evidence/sprint-2-green-phase.log", "description": "harness-produced GREEN-phase log (same day) reports 5/5 new tests passed and 105/106 total passed with the 1 failure being the documented pre-existing, unrelated test_ledger_reader.py worktree-directory-name artifact; consistent with my independent static trace of all 5 tests against the implementation. NOTE: this review session had no Bash tool available, so pytest could not be independently re-executed live in this pass; this PASS rests on the harness's own dated evidence log plus my own manual instruction-level trace, not a fresh live run"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/promote_gate_run.py:93-111", "description": "addition is minimal (19 lines), uses an immutable tuple for the candidate list, follows the file's existing docstring/comment conventions, introduces no duplication and no dead code; naming (_CLAUDE_BIN_DEFAULT, _CLAUDE_BIN_KNOWN_GOOD_PATHS) is clear and accurate"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_resolve_claude_bin.py:15-17,22-24,42-44", "description": "purity boundary correctly maintained: _resolve_claude_bin remains impure (env+filesystem) with no change in kind; tests isolate it via mock.patch(\"shutil.which\"/\"os.path.isfile\"/\"os.access\") at the module level, which is valid here because promote_gate_run.py does `import shutil`/`import os` (not `from x import y`), so the patches correctly intercept the calls; no real filesystem/PATH dependency in the test suite"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-CB1", "REQ-CB2", "REQ-CB3", "REQ-CB4", "PROP-CB1", "PROP-CB2", "PROP-CB2b", "PROP-CB2c", "PROP-CB3"],
+    "duplicateFindings": []
+  }
+}

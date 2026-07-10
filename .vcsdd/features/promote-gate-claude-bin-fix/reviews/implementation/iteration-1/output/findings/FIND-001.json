@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "medium",
+  "description": "REQ-CB2 explicitly specifies the executable check as `os.access(path, os.X_OK)` and PROP-CB2c's whole purpose is to prove that an existing-but-non-executable candidate is skipped (to avoid an uncaught PermissionError downstream in `_invoke_adversary`'s `subprocess.run`). The implementation at lib/promote_gate_run.py:109 correctly calls `os.access(candidate, os.X_OK)`. However none of the 5 tests in tests/test_resolve_claude_bin.py assert the `mode` argument passed to `os.access` is actually `os.X_OK`: test_which_miss_falls_back_to_first_existing_known_good_path (line 44) uses `mock.patch(\"os.access\", return_value=True)` with no call-arg assertion; test_which_miss_and_no_fallback_exists_returns_original_default_string (line 58) uses `mock.patch(\"os.access\", return_value=False)` with no call-arg assertion; test_which_miss_prefers_local_bin_over_homebrew_when_both_exist (line 79) same pattern; and test_which_miss_skips_candidate_that_exists_but_is_not_executable (lines 100-110), which is the ONE test specifically written to prove the executable-bit distinction, defines `fake_access(path, mode)` but discards `mode` entirely and never asserts `mocked_access.call_args` used `os.X_OK` (only asserts `call_count >= 2`). Consequence: a mutation that swapped `os.X_OK` for e.g. `os.R_OK` or `os.F_OK` in the implementation (silently reintroducing the exact PermissionError-causing defect REQ-CB2c exists to prevent, since a non-executable-but-readable stale file would then be incorrectly selected) would pass all 5 tests unchanged. The suite proves the ordered-candidate-list and existence-check logic, but does not proof-pin the specific permission bit checked, so PROP-CB2c's proof obligation is only partially reflected in the test suite.",
+  "evidence": {
+    "filePath": "skills/earn/self-improve/tests/test_resolve_claude_bin.py",
+    "lineRange": "96-110",
+    "snippet": "def fake_access(path, mode):\n    # ...but only the SECOND is actually executable.\n    return path == \"/opt/homebrew/bin/claude\"\n\nwith mock.patch(\"shutil.which\", return_value=None), mock.patch(\n    \"os.path.isfile\", side_effect=fake_isfile\n), mock.patch(\"os.access\", side_effect=fake_access) as mocked_access:\n    result = promote_gate_run._resolve_claude_bin()\n\nassert result == \"/opt/homebrew/bin/claude\"\nassert mocked_access.call_count >= 2  # both candidates' executable bit was actually checked"
+  },
+  "routeToPhase": "2b"
+}
