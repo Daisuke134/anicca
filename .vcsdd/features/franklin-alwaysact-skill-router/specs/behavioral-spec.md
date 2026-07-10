@@ -99,7 +99,9 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
   `ANICCA_HOME`, derive `CLI_WALLET` under `ANICCA_HOME="$HOME/.blockrun"`, and only proceed when they are
   equal and non-empty. Fail-closed (empty/mismatched → do not proceed) is the existing convention.
 - `skills/self/earning-health.py` — the existing barren-loop detector. It explicitly (by design,
-  docstring lines 12-22) treats a long run of `action:"live-pass"` WAITs inside sol-trade as **healthy**
+  docstring lines 14-22 — spec-review iteration-4 citation correction; lines 12-13 are general
+  doctrine-framing prose, not the skip-vs-live-pass mechanism definition itself) treats a long run of
+  `action:"live-pass"` WAITs inside sol-trade as **healthy**
   (a legitimate sub-agent judgment call), and only a run of identical `action:"skip"` reasons as barren.
   This feature does not change that detector's semantics; it operates one layer up (the router's own
   MUST-pick-a-realized-action-or-reroute layer, REQ-506/REQ-507), and its own escalation (REQ-508) is
@@ -118,11 +120,17 @@ computes EV, never ranks skills, never picks a slot by regex/keyword/if-else.
 ## 2. Purity Boundary Analysis (summary; full map in verification-architecture.md)
 
 - **Pure core (new)**: menu assembly, earn-action classification, no-realized-action detection, reroute
-  bounding, MUST-ACT prompt/tool-definition construction — all deterministic transforms over
+  bounding, MUST-ACT prompt/tool-definition construction, AND — **spec-review iteration-4 FIND-301
+  correction** — the SINGLE `attemptsUsed ∈ {0, 1}` attempt-state machine (`nextRerouteState`) that is the
+  SOLE arbiter of every REQ-505/506/513 retry/reroute/escalation branch decision (never `currentOfferedSlots`
+  array identity, which lives in the pure core only as a per-attempt VALIDITY input to
+  `isRejectableSleepOrOffMenu`, with no branch-selection role) — all deterministic transforms over
   already-loaded data (registry, ctx, earn-ledger line), no I/O, mirrors the existing purity split
   (`context.mjs`, `prompt.mjs`, `tier.mjs`, `catalog-gate.mjs`, `earn-slot.mjs` are pure today).
 - **Effectful shell (extended, not replaced)**: `runtime/loop/index.mjs`'s wake loop (the reroute retry
-  orchestration, ledger appends, escalation writes, and — spec-review FIND-002 correction — the
+  orchestration — **its own local `attemptsUsed` variable is the ONLY thing the shell threads to decide
+  which of REQ-505/506/508 fires next; `currentOfferedSlots` is threaded separately, purely for REQ-513's
+  validity check** — ledger appends, escalation writes, and — spec-review FIND-002 correction — the
   classify-call-site gate at `index.mjs:450` additively widened from `isEarnSlot(slot)` to
   `(ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`), the identity-derivation subprocess
   calls (`wallet-address-solana.mjs` under two `ANICCA_HOME` values, exactly as `sol-trade/run.sh` already
@@ -234,7 +242,17 @@ implementation detail left to Phase 2b):
    `currentOfferedSlots` variable for that attempt (distinct from, and never reassigned back into, the
    static `ctx.alwaysActMenu`), so REQ-513's dispatch guard (below) always validates a parsed response
    against what was ACTUALLY offered for the attempt that produced it — never against the static, full-wake
-   `ctx.alwaysActMenu` once a reroute has narrowed the offered schema.
+   `ctx.alwaysActMenu` once a reroute has narrowed the offered schema. **(spec-review iteration-4 FIND-301
+   correction — `currentOfferedSlots`'s role is now explicitly bounded)** `currentOfferedSlots` is used
+   SOLELY for this per-attempt VALIDITY check (is the parsed `slot` a legal member of what was actually
+   offered this attempt) — it plays NO role in deciding WHICH recovery branch (REQ-505's reprompt, REQ-506's
+   reroute, or REQ-508's escalation) a rejected/invalid outcome routes into. That branch selection is decided
+   EXCLUSIVELY by REQ-511's shared `attemptsUsed` attempt-state, because a REQ-505 reprompt attempt's
+   `currentOfferedSlots` is array-IDENTICAL to the baseline attempt's (`ctx.alwaysActMenu`, since a reprompt
+   never narrows the schema — only a REQ-506 reroute does) — any rule that tried to infer "is this the
+   baseline attempt" from `currentOfferedSlots` identity would misclassify a reprompt attempt as baseline
+   (this was iteration-3's own latent bug, FIND-301). See REQ-511/REQ-513 for the corrected, identity-free
+   branch-selection rule.
 The only callable tool in always-act mode is therefore `run_skill`, with its `slot` enum constrained to
 REQ-503's filtered earn-action menu (or, on a reroute attempt, REQ-506's further-narrowed risk-free set).
 **Edge Cases**:
@@ -261,23 +279,52 @@ REQ-503's filtered earn-action menu (or, on a reroute attempt, REQ-506's further
   captured body's `tools` DOES include `sleep`, proving the conditional wiring — not just the standalone
   helper — is what actually governs the outbound wire.
 
-### REQ-505: A no-tool-call (text-only) response is not accepted as the wake's terminal outcome
-**EARS**: WHEN always-act mode is engaged AND `parseToolCall(rawResponse)` returns falsy THE SYSTEM SHALL
-NOT write the existing `kind:'narrate'` no-op ledger line as the wake's terminal state; instead it SHALL
-re-invoke the brain exactly once more within the same wake with a strengthened MUST-ACT reinforcement
-message (reusing `buildUserMessage`'s existing steer-composition pattern, appending one additional directive
-line), bounded to `MAX_REPROMPTS = 1` for this failure mode.
+### REQ-505: A no-tool-call (text-only) response is not accepted as the wake's terminal outcome — gated by REQ-511's shared attempt-state, never by array identity (spec-review iteration-4 FIND-301 fix)
+**EARS**: WHEN always-act mode is engaged AND `parseToolCall(rawResponse)` returns falsy for a given
+`think()` attempt THE SYSTEM SHALL consult REQ-511's shared attempt-state, `attemptsUsed ∈ {0, 1}` — the
+SOLE arbiter of every retry/reroute/escalation branch across REQ-505/506/511/513 (spec-review iteration-4
+FIND-301 fix; NEVER `currentOfferedSlots`/`ctx.alwaysActMenu` array identity). IF `attemptsUsed === 0` THE
+SYSTEM SHALL NOT write the existing `kind:'narrate'` no-op ledger line as the wake's terminal state; instead
+it SHALL re-invoke the brain exactly once more within the same wake with a strengthened MUST-ACT
+reinforcement message (reusing `buildUserMessage`'s existing steer-composition pattern, appending one
+additional directive line), offering the SAME `currentOfferedSlots` the attempt that just returned no tool
+call was offered (`ctx.alwaysActMenu` for a baseline-attempt no-tool-call), and set `attemptsUsed = 1`. IF
+`attemptsUsed === 1` ALREADY (the shared budget was already spent this wake by an EARLIER retry — a prior
+reprompt, a prior reroute, or a prior REQ-513 rejection), THE SYSTEM SHALL NOT re-invoke `think()` for this
+outcome; it SHALL proceed DIRECTLY to REQ-508's truthful escalation.
 **Edge Cases**:
-- The re-prompt also returns no tool call: this is a genuine no-op after the bound is exhausted — proceed
-  to REQ-508 (truthful record + escalate), never a third silent retry (cost/latency bound).
-- The re-prompt costs one additional model call — this is accepted as intentional harness behavior
-  (bounded to 1), matching this feature's money-safety framing (a bounded retry cost is preferable to a
-  wasted, unproductive wake).
+- The re-prompt also returns no tool call: at that point `attemptsUsed === 1` (the reprompt itself was the
+  one shared extra call), so this proceeds DIRECTLY to REQ-508 — never a third silent retry (cost/latency
+  bound). This is a specific instance of the general `attemptsUsed===1 → escalate` rule above, not a
+  REQ-505-specific rule.
+- **(spec-review iteration-4 FIND-301 fix — the finding this revision closes)** The re-prompt itself
+  (attempt #2, invoked because attempt #1 had `attemptsUsed===0` and returned no tool call) returns a
+  fabricated/off-menu slot (e.g. `slot:'sleep'`) instead of no tool call at all: this is REQ-513's rejection
+  case, evaluated at `attemptsUsed===1` (the reprompt already consumed the shared budget), so it routes
+  DIRECTLY to REQ-508's escalation — NEVER back into this requirement's reprompt path a second time.
+  Iteration-3's revision mis-specified this by branching on whether `currentOfferedSlots === ctx.alwaysActMenu`
+  (REQ-513's then-current "is this the BASELINE attempt" test) — a REQ-505 reprompt attempt's
+  `currentOfferedSlots` also equals `ctx.alwaysActMenu` (a reprompt never narrows the schema), so that test
+  misclassified this exact scenario as a fresh baseline attempt and would have issued a SECOND reprompt (a
+  THIRD `think()` call), violating REQ-511. This revision removes ALL array-identity-based branch selection;
+  `attemptsUsed` alone decides. See the transition-matrix row "no-tool-call→reprompt→fabricated-slot→ESCALATE"
+  (§2.5) and PROP-513e.
+- The re-prompt costs one additional model call — this is accepted as intentional harness behavior (bounded
+  to 1 total across REQ-505/506/513 combined, per REQ-511's single shared counter), matching this feature's
+  money-safety framing (a bounded retry cost is preferable to a wasted, unproductive wake).
 **Acceptance Criteria**:
 - A unit test with a mocked `think()` that first returns no tool call then a valid `run_skill` call
-  asserts exactly 2 `think()` invocations and the second's chosen slot is executed.
+  asserts exactly 2 `think()` invocations, the second's chosen slot is executed, and `attemptsUsed`
+  transitions `0 → 1` at the reprompt.
 - A unit test with a mocked `think()` that never returns a tool call asserts exactly 2 `think()`
   invocations total (not more) and the wake ends in REQ-508's escalation path.
+- **(spec-review iteration-4 FIND-301 regression test, PROP-513e — see REQ-513/verification-architecture.md)**
+  A unit test with a mocked `think()` sequence `[no-tool-call, {slot:'sleep', args:{}}]` (the reprompt
+  attempt itself returning a fabricated slot) asserts: (a) exactly 2 `think()` calls total, never 3, (b) no
+  skill execution is attempted, (c) the wake proceeds DIRECTLY into REQ-508's escalation, (d) `attemptsUsed`
+  is `1` (not `0`) at the moment the fabricated slot is evaluated — proving the reprompt attempt's rejection
+  is never misclassified as a fresh baseline attempt merely because its `currentOfferedSlots` also equals
+  `ctx.alwaysActMenu`.
 
 ### REQ-506: A picked earn slot with no realized economic result triggers a bounded same-wake reroute, via a genuine hard tool-enum exclusion, to a market-risk-free slot only
 **EARS**: WHEN always-act mode is engaged AND the model picks a slot `s` from the earn-action menu AND `s`'s
@@ -291,26 +338,43 @@ isEarnActionSlot(slot) : isEarnSlot(slot))`, so `classifyEarnResult` IS invoked 
 THE SYSTEM SHALL then, IF `classifyEarnResult(wakeId, earnLedgerPath, isProfitableFn).earnLine === null`
 (`runtime/loop/earn-detect.mjs`, unmodified — true for both a guard-triggered `action:"skip"` and a
 sub-agent's own neutral-signal WAIT with no ledger line, per §1), treat this as "no realized action this
-wake" and re-invoke the brain exactly once more with a genuine, HARD tool-enum exclusion of BOTH the
-just-picked slot AND every capital-risking slot (spec-review iteration-2 FIND-101 fix — the doctrine's own
-promise, §0: "routes to a market-risk-free skill ... instead"): `buildAlwaysActToolDefinitions(menuSlots.
+wake" and consult REQ-511's shared attempt-state, `attemptsUsed ∈ {0, 1}` (spec-review iteration-4 FIND-301
+fix — the SOLE arbiter of every retry/reroute/escalation branch across REQ-505/506/511/513, never
+`currentOfferedSlots`/`ctx.alwaysActMenu` array identity). IF `attemptsUsed === 0` THE SYSTEM SHALL
+re-invoke the brain exactly once more with a genuine, HARD tool-enum exclusion of BOTH the just-picked slot
+AND every capital-risking slot (spec-review iteration-2 FIND-101 fix — the doctrine's own promise, §0:
+"routes to a market-risk-free skill ... instead"): `buildAlwaysActToolDefinitions(menuSlots.
 filter(x => x !== s && isMarketRiskFree(x)))`, where `isMarketRiskFree(x)` is `riskTagOf(x) === 'safe'`
 using the SAME injected `riskTagOf` classifier REQ-502/503's `assembleAlwaysActMenu` already threads from
-`skills/registry.json`'s per-slot `risk` field (§1) — not a new, separate classification source. Given the
-current registry (§1), the reroute target set NEVER includes `earn/sol-trade`, `earn/polymarket-trade`,
-`hl_trade`, `token_launch`, or `yield` (all `risk:"capital"`) — a capital-risking slot is never a valid
-reroute target after a no-edge WAIT, regardless of which slot was just picked (spec-review FIND-003 fix —
-REQ-504's own purpose-built, explicit-array tool-definition constructor; this is NOT the soft, prompt-text-
-only `avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated — see §1). The
-just-picked slot AND every capital-risking slot are therefore structurally ABSENT from the reroute's tool
-schema, not merely discouraged in prose, so the model cannot re-select either — bounded to `MAX_REROUTES = 1`
-(shared with REQ-505's budget per REQ-511). **(spec-review FIND-201 fix)** At the exact moment this reroute
-tool schema is built, `index.mjs`'s retry loop sets its own local `currentOfferedSlots` variable to this SAME
-`menuSlots.filter(x => x !== s && isMarketRiskFree(x))` array — so REQ-513's dispatch guard validates the
-reroute attempt's parsed response against exactly this narrower set, never the static `ctx.alwaysActMenu`; a
-re-emitted `s` or any other `risk:"capital"` slot is rejected by REQ-513 even though both remain members of
-the full `ctx.alwaysActMenu`.
+`skills/registry.json`'s per-slot `risk` field (§1) — not a new, separate classification source, AND set
+`attemptsUsed = 1`. Given the current registry (§1), the reroute target set NEVER includes `earn/sol-trade`,
+`earn/polymarket-trade`, `hl_trade`, `token_launch`, or `yield` (all `risk:"capital"`) — a capital-risking
+slot is never a valid reroute target after a no-edge WAIT, regardless of which slot was just picked
+(spec-review FIND-003 fix — REQ-504's own purpose-built, explicit-array tool-definition constructor; this is
+NOT the soft, prompt-text-only `avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated
+— see §1). The just-picked slot AND every capital-risking slot are therefore structurally ABSENT from the
+reroute's tool schema, not merely discouraged in prose, so the model cannot re-select either — bounded to
+`MAX_REROUTES = 1` (shared with REQ-505's budget per REQ-511). **(spec-review FIND-201 fix)** At the exact
+moment this reroute tool schema is built, `index.mjs`'s retry loop sets its own local `currentOfferedSlots`
+variable to this SAME `menuSlots.filter(x => x !== s && isMarketRiskFree(x))` array — so REQ-513's dispatch
+guard validates the reroute attempt's parsed response against exactly this narrower set (its VALIDITY-check
+role only, per REQ-504 point 5's iteration-4 correction), never the static `ctx.alwaysActMenu`; a re-emitted
+`s` or any other `risk:"capital"` slot is rejected by REQ-513 even though both remain members of the full
+`ctx.alwaysActMenu`. IF `attemptsUsed === 1` ALREADY at the moment this no-realized-action result is detected
+(spec-review iteration-4 FIND-301 fix, generalized to REQ-506's own branch — e.g. the slot that just produced
+`earnLine === null` was itself picked and executed on a REQ-505 REPROMPT attempt, which already spent the
+shared budget) THE SYSTEM SHALL NOT re-invoke `think()` for a reroute; it SHALL proceed DIRECTLY to REQ-508's
+truthful escalation — a no-realized-action result is never rerouted more than once total per wake, regardless
+of which prior mechanism (a REQ-505 reprompt or an earlier REQ-506 reroute) already spent the shared budget.
 **Edge Cases**:
+- **(spec-review iteration-4 FIND-301 fix, generalizing FIND-301's fix to REQ-506's own branch)** A valid
+  slot picked and executed on a REQ-505 REPROMPT attempt (i.e. `attemptsUsed` was already `1` at the moment
+  this slot was picked, because the reprompt itself was the shared budget's one extra call) ALSO produces
+  `earnLine === null`: THE SYSTEM SHALL NOT reroute (that would spend a third `think()` call) — it proceeds
+  DIRECTLY to REQ-508's escalation. This is symmetric with REQ-505's own FIND-301 edge case (a reprompt
+  attempt returning a fabricated slot) — both are instances of the single `attemptsUsed===1 → escalate,
+  never a third think()` rule REQ-511 defines. See the transition-matrix row
+  "no-tool-call→reprompt(valid pick)→no-op→ESCALATE" (§2.5) and PROP-506g.
 - A menu slot missing the `risk` field entirely: `isMarketRiskFree(x)` (`riskTagOf(x) === 'safe'`) evaluates
   `undefined === 'safe'` → `false`, so the slot is treated as NOT risk-free and excluded from reroute
   targets — the same fail-closed convention `catalog-gate.mjs` already uses for an untagged slot (REQ-503's
@@ -319,8 +383,10 @@ the full `ctx.alwaysActMenu`.
 - A slot execution that DOES write an earn-ledger line for this wake (`earnLine !== null`) — whether
   `profitable` is `true` or `false` (a real, recorded loss still counts as a realized economic action, not
   a no-op) — is accepted immediately; no reroute.
-- The rerouted second pick ALSO produces `earnLine === null`: the bound is exhausted — proceed to REQ-508
-  (truthful record + escalate), never a third same-wake attempt.
+- The rerouted second pick ALSO produces `earnLine === null`: `attemptsUsed === 1` already (the reroute
+  itself was the shared budget's one extra call) — this is the same general `attemptsUsed===1 → escalate`
+  rule above, applied to the reroute-attempt's own outcome — proceed to REQ-508 (truthful record + escalate),
+  never a third same-wake attempt.
 - REQ-502/503's filtered always-act menu has exactly ONE member overall, and it IS the just-picked slot: the
   hard filter (`menuSlots.filter(x => x !== s && isMarketRiskFree(x))`) leaves ZERO slots — a `run_skill`
   tool schema with an empty `slot.enum` is not a valid/offerable tool definition. THE SYSTEM SHALL, in this
@@ -367,6 +433,12 @@ the full `ctx.alwaysActMenu`.
   `risk:"capital"` (i.e. the risk-free-filtered set is empty though the raw excluded-self set is not) asserts
   zero additional `think()` calls and immediate REQ-508 escalation — never a reroute into a `risk:"capital"`
   slot.
+- **(spec-review iteration-4 FIND-301 regression test, PROP-506g "no-op-after-reprompt-escalates")** A unit
+  test with a mocked `think()` sequence `[no-tool-call, {slot: validEarnSlot, args:{}}]` where the
+  reprompt-attempt's valid pick's fixture earn-ledger has NO line for `wakeId` (`earnLine === null`) asserts:
+  (a) zero additional `think()` calls (no reroute), (b) the wake proceeds DIRECTLY into REQ-508's escalation,
+  (c) `attemptsUsed` is `1` (not `0`) at the moment the no-realized-action result is detected — proving a
+  no-op result on the REPROMPT attempt is never rerouted a further time.
 
 ### REQ-507: Skill choice remains 100% model judgment — the harness never ranks, scores, or filters by strategy content
 **EARS**: THE SYSTEM SHALL, at every point in REQ-502 through REQ-506, treat the model's chosen `slot`
@@ -434,25 +506,53 @@ line was found — reusing the existing `formatRecord`/`safeAppend`/`LEDGER_PATH
 - A unit test asserts the new ledger fields appear on both the "resolved on first pick" and "resolved
   after reroute/reprompt" paths, and that `redactPrivateKeyPatterns` is applied before append.
 
-### REQ-511: Non-functional — bounded cost and latency
-**EARS**: THE SYSTEM SHALL bound the total extra model calls added by always-act enforcement to at most 1
-per wake beyond the baseline single `think()` call — a single shared budget covering EITHER REQ-505's
-reprompt OR REQ-506's reroute, never both in the same wake — so total `think()` calls per wake NEVER exceed
-2 (1 baseline + at most 1 extra), and a pathological model response pattern can never turn one wake into an
-unbounded retry loop or unbounded spend. (spec-review iteration-2 FIND-102 fix: this is the single,
-unambiguous ceiling — 2 total, never 3 — that REQ-505's own acceptance criteria, REQ-506's own acceptance
-criteria, `nextRerouteState`'s `maxAttempts = 1`, and PROP-511a all already assumed; the prior "at most 2 ...
-beyond the baseline" framing is removed.)
+### REQ-511: Non-functional — bounded cost and latency, via a SINGLE explicit attempt-state that is the sole arbiter of every retry/reroute/escalation branch (spec-review iteration-4 FIND-301 fix)
+**EARS**: THE SYSTEM SHALL track, for every always-act-engaged wake, a SINGLE explicit attempt-state
+`attemptsUsed ∈ {0, 1}` (reusing/extending the pure `nextRerouteState({attemptsUsed, maxAttempts,
+lastOutcome})` state machine defined in the Pure Core, `maxAttempts = 1`) that IS, EXCLUSIVELY, the arbiter
+of every retry/reroute/escalation branch decision made by REQ-505 (no-tool-call), REQ-506
+(no-realized-action), and REQ-513 (fabricated/off-menu slot) within that wake. **(spec-review iteration-4
+FIND-301 fix — the class-killing rule)** Branch selection MUST NOT compare `currentOfferedSlots`/
+`ctx.alwaysActMenu` array identity, tool-schema shape, or ANY other proxy signal — it compares ONLY
+`attemptsUsed`. THE SYSTEM SHALL bound the total extra model calls added by always-act enforcement to at
+most 1 per wake beyond the baseline single `think()` call: ANY invalid outcome (a no-tool-call response, a
+REQ-513-rejected fabricated/off-menu slot, or a REQ-506 no-realized-action result) encountered while
+`attemptsUsed === 0` consumes the ONE shared retry — REQ-505's reprompt (same menu) if the outcome was
+no-tool-call or a rejected slot on an attempt that had not yet executed a skill, or REQ-506's reroute
+(risk-free-filtered menu) if the outcome was a no-realized-action result after a valid slot's execution —
+and sets `attemptsUsed = 1`. ANY invalid outcome encountered while `attemptsUsed === 1` (the shared budget
+already spent this wake, REGARDLESS of which prior mechanism spent it — a reprompt, a reroute, or a prior
+REQ-513 rejection) proceeds DIRECTLY to REQ-508's truthful escalation — NEVER a third `think()` call, NEVER
+further skill execution. Total `think()` calls per wake therefore NEVER exceed 2 (1 baseline + at most 1
+shared extra-call budget), for ALL combinations and orderings of failure modes, and a pathological model
+response pattern can never turn one wake into an unbounded retry loop or unbounded spend. (spec-review
+iteration-2 FIND-102 fix, restated: this is the single, unambiguous ceiling — 2 total, never 3.)
 **Edge Cases**:
 - Both a no-tool-call AND a subsequent no-realized-action could theoretically compound; the bound is
-  enforced as a single shared counter (`nextRerouteState`'s `maxAttempts = 1`) across both mechanisms within
-  one wake, not two independent budgets — so the 2-total ceiling is never exceeded regardless of which
-  failure mode(s) occur, and once the shared budget's one extra call is spent (by either a reprompt or a
-  reroute), no further reprompt/reroute is attempted this wake — REQ-508 escalates instead.
+  enforced as a single shared counter (`nextRerouteState`'s `maxAttempts = 1`) across ALL THREE mechanisms
+  (REQ-505/506/513) within one wake, not independent budgets — so the 2-total ceiling is never exceeded
+  regardless of which failure mode(s) occur, and once the shared budget's one extra call is spent, no
+  further reprompt/reroute is attempted this wake — REQ-508 escalates instead.
+- **(spec-review iteration-4 FIND-301 fix)** `attemptsUsed` is a SINGLE counter shared across REQ-505/506/513
+  — it is incremented exactly once, at the moment the FIRST retry (of ANY kind: reprompt or reroute) is
+  invoked, and never reset within a wake. It is NEVER re-derived from, or compared against,
+  `currentOfferedSlots`/`ctx.alwaysActMenu` identity — doing so was iteration-3's own latent bug (FIND-301): a
+  REQ-505 reprompt attempt's `currentOfferedSlots` is array-IDENTICAL to the baseline attempt's
+  (`ctx.alwaysActMenu`, since a reprompt never narrows the schema — only a reroute does), so any branch rule
+  keyed on that identity misclassifies a reprompt attempt's outcome as a fresh baseline outcome, buying an
+  illegitimate extra `think()` call. `attemptsUsed` has no such ambiguity because it is incremented
+  explicitly, exactly once, by whichever mechanism (REQ-505 or REQ-506) fires first — independent of failure
+  type or which array was offered.
 **Acceptance Criteria**:
 - A property test with an adversarial mocked brain that ALWAYS returns no-tool-call or ALWAYS returns a
   slot with no realized ledger line asserts total `think()` calls for that wake never exceed 2 (1 baseline +
   1 shared-budget extra call), never 3.
+- **(spec-review iteration-4 FIND-301, PROP-511a's strengthened coverage)** A property test with an
+  adversarial mocked brain exercising ALL orderings of `{no-tool-call, fabricated/off-menu-slot,
+  no-realized-action}` across up to 2 attempts (including the compound sequence
+  `[no-tool-call, fabricated-slot]` — the FIND-301 scenario, and its REQ-506 symmetric counterpart
+  `[no-tool-call, valid-pick-with-no-op]`) asserts `attemptsUsed` transitions `0 → 1` exactly once, at the
+  first invalid outcome, and total `think()` calls never exceed 2, for EVERY ordering.
 
 ### REQ-512: A silently-OFF flag on a Franklin-identity wake is observable and distinguishable from "not yet enabled" (spec-review FIND-004 fix)
 **EARS**: WHEN the identity check in REQ-501(a) resolves to Franklin AND REQ-501(b)'s flag is
@@ -494,7 +594,7 @@ function alongside `is_fresh_but_barren`, not a modification of that function's 
   `min_run` consecutive `always_act_not_engaged` lines DOES trigger regression-detected; (c) a single
   `always_act_not_engaged` line surrounded by successfully-engaged wakes after go-live does NOT trigger it.
 
-### REQ-513: A fabricated `slot:"sleep"` (or any slot not offered THIS attempt) is rejected by the REAL wake-loop dispatch against the PER-ATTEMPT offered set, not just absent from the schema (spec-review FIND-103 fix; spec-review FIND-201 fix corrects the reference set)
+### REQ-513: A fabricated `slot:"sleep"` (or any slot not offered THIS attempt) is rejected by the REAL wake-loop dispatch against the PER-ATTEMPT offered set for VALIDITY, and routed by REQ-511's `attemptsUsed` state for BRANCH SELECTION — never by array identity (spec-review FIND-103 fix; FIND-201 fix corrected the validity reference set; FIND-301 fix corrects branch selection)
 **EARS**: WHEN always-act mode is engaged (`ctx.alwaysActEngaged === true`) AND `parseToolCall(rawResponse)`
 resolves a non-null `{ slot, args }` for a given `think()` attempt THE SYSTEM SHALL, before `index.mjs`'s
 existing `if (slot === 'sleep')` branch (`index.mjs:402-416`, unconditional string check) can fire, check
@@ -503,27 +603,38 @@ WAS ACTUALLY PASSED to `getToolDefinitions`/`buildAlwaysActToolDefinitions` for 
 (spec-review FIND-201 fix: the baseline attempt's `currentOfferedSlots` equals `ctx.alwaysActMenu`, per REQ-504
 point 5; a REQ-506 reroute attempt's `currentOfferedSlots` equals that reroute's own narrower
 `menuSlots.filter(x => x !== s && isMarketRiskFree(x, riskTagOf))` array — **NEVER** the static, full-wake
-`ctx.alwaysActMenu`, once a reroute has narrowed the offered schema for that attempt). IF EITHER IS TRUE THE
+`ctx.alwaysActMenu`, once a reroute has narrowed the offered schema for that attempt — this is
+`currentOfferedSlots`'s ONLY role, per REQ-504 point 5's iteration-4 correction). IF EITHER IS TRUE THE
 SYSTEM SHALL NOT execute the existing `sleep`/narrate branch and SHALL NOT execute the resolved `slot` as a
-skill. The consequence THEN branches on which attempt was rejected:
-- IF this is the BASELINE attempt (REQ-511's shared extra-call budget not yet spent), THE SYSTEM SHALL treat
-  this exactly as a no-tool-call outcome for REQ-505's bounded-reprompt path (a stray off-menu/`"sleep"` slot
-  consumes the SAME shared retry budget REQ-511 defines, it does not grant an extra attempt).
-- IF this is the REROUTE attempt (REQ-511's shared extra-call budget is ALREADY spent — this attempt IS
-  that one shared extra call), THE SYSTEM SHALL NOT re-invoke `think()` a third time; it SHALL proceed
-  DIRECTLY to REQ-508's truthful escalation (spec-review FIND-201 fix: a rejected slot on the reroute attempt
-  can never fall through to execution merely because it remains a member of the static, full-wake
-  `ctx.alwaysActMenu` — the guard's reference is the per-attempt `currentOfferedSlots` — and can never buy a
-  third `think()` call, since REQ-511's shared budget is already exhausted at the point a reroute attempt's
-  response is being checked).
+skill. The consequence THEN branches SOLELY on REQ-511's shared `attemptsUsed` attempt-state (spec-review
+iteration-4 FIND-301 fix — this REPLACES iteration-3's "IF this is the BASELINE/REROUTE attempt" framing,
+which inferred the attempt's identity from `currentOfferedSlots === ctx.alwaysActMenu`; that inference is
+REMOVED because a REQ-505 reprompt attempt satisfies the exact same equality and was therefore
+misclassified — FIND-301):
+- IF `attemptsUsed === 0` (the shared extra-call budget not yet spent by ANY prior mechanism this wake), THE
+  SYSTEM SHALL treat this exactly as an invalid outcome for REQ-505's bounded-reprompt path and set
+  `attemptsUsed = 1` (a stray off-menu/`"sleep"` slot consumes the SAME shared retry budget REQ-511 defines,
+  it does not grant an extra attempt).
+- IF `attemptsUsed === 1` ALREADY (the shared extra-call budget is spent — by a PRIOR REQ-505 reprompt, a
+  PRIOR REQ-506 reroute, or by this being itself the reroute attempt), THE SYSTEM SHALL NOT re-invoke
+  `think()` a third time; it SHALL proceed DIRECTLY to REQ-508's truthful escalation.
+
+**(spec-review iteration-4 FIND-301 — why this resolves the finding)** A rejected fabricated/off-menu slot
+arriving on a REQ-505 REPROMPT attempt has `currentOfferedSlots === ctx.alwaysActMenu`, IDENTICAL to the
+baseline attempt's — but its `attemptsUsed` is `1` (the reprompt itself already incremented it when it was
+invoked), so the branch rule above correctly routes it to REQ-508's escalation, never back into REQ-505's
+reprompt path a second time. `currentOfferedSlots` identity is never consulted for this decision at all.
 
 Concretely: `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`) becomes conditional —
 `if (slot === 'sleep' && !ctx.alwaysActEngaged)` — and a new guard immediately ahead of skill execution
 (covering both the fabricated-`"sleep"` case and any other slot excluded from the current attempt) checks
-`ctx.alwaysActEngaged && isRejectableSleepOrOffMenu(slot, currentOfferedSlots)`, where `currentOfferedSlots`
-is the retry loop's own local variable for the CURRENT attempt (never `ctx.alwaysActMenu` read directly) —
-routing a baseline-attempt rejection into REQ-505's reprompt handling, and a reroute-attempt rejection
-directly into REQ-508's escalation.
+`ctx.alwaysActEngaged && isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` for VALIDITY, where
+`currentOfferedSlots` is the retry loop's own local variable for the CURRENT attempt (never `ctx.alwaysActMenu`
+read directly). A rejection's BRANCH is then decided exclusively by the retry loop's own `attemptsUsed` local
+variable (REQ-511's shared state, reused/extended from `nextRerouteState`) — `attemptsUsed===0` routes into
+REQ-505's reprompt handling (and sets `attemptsUsed=1`); `attemptsUsed===1` routes DIRECTLY into REQ-508's
+escalation. `isRejectableSleepOrOffMenu` itself has, and needs, NO branch-selection responsibility — it
+answers ONLY "is `slot` valid for this attempt", never "which attempt is this".
 **Edge Cases**:
 - A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected — `index.mjs:402-416`'s
   `sleep` branch fires exactly as it does today, byte-for-byte, since the new guard only activates when
@@ -542,6 +653,14 @@ directly into REQ-508's escalation.
 - A weak/free model repeatedly fabricating `slot:"sleep"` across the bounded retry: this consumes the SAME
   ≤1-extra-call shared budget as any other no-tool-call/no-realized-action failure mode (REQ-511) — it
   cannot be used to multiply the number of `think()` calls beyond REQ-511's ceiling.
+- **(spec-review iteration-4 FIND-301 — the finding this revision closes)** A fabricated/off-menu slot
+  arrives on a REQ-505 REPROMPT attempt (as opposed to a REQ-506 reroute attempt): `currentOfferedSlots` for
+  this attempt is array-IDENTICAL to the baseline attempt's (`ctx.alwaysActMenu`, since REQ-505's reprompt
+  never narrows the schema) — but `attemptsUsed === 1` already (the reprompt itself was the shared budget's
+  one extra call), so this rejection routes DIRECTLY to REQ-508's escalation, NEVER back into REQ-505's
+  reprompt path for a second time (which would be a third `think()` call, violating REQ-511's ceiling). This
+  is the exact scenario iteration-3's array-identity-keyed branch selection failed to cover — see the
+  transition-matrix row "no-tool-call→reprompt→fabricated-slot→ESCALATE" (§2.5).
 **Acceptance Criteria**:
 - A unit test that feeds a mocked `think()` response which `parseToolCall` resolves to exactly
   `{ slot: 'sleep', args: {} }` on the BASELINE attempt (`currentOfferedSlots === ctx.alwaysActMenu`) while
@@ -569,6 +688,43 @@ directly into REQ-508's escalation.
   model picks a valid member of `ctx.alwaysActMenu` (`currentOfferedSlots === ctx.alwaysActMenu` for this
   attempt), executes that skill exactly as it did before this fix — proving the per-attempt signature change
   to `isRejectableSleepOrOffMenu` does not regress the ordinary accept path.
+- **(spec-review iteration-4 FIND-301, PROP-513e — the direct regression test for FIND-301)** A unit test
+  simulates the exact compound sequence: attempt #1 (baseline, `attemptsUsed===0`) returns no tool call →
+  REQ-505 reprompts, `attemptsUsed` becomes `1`; attempt #2 (the REPROMPT, `currentOfferedSlots ===
+  ctx.alwaysActMenu`, array-IDENTICAL to attempt #1's) resolves via `parseToolCall` to `{ slot: 'sleep',
+  args: {} }`. Asserts: (a) no skill execution occurs, (b) NO third `think()` call is made (exactly 2 total),
+  (c) the wake proceeds DIRECTLY into REQ-508's escalation path, NOT a second reprompt — proving branch
+  selection is correctly keyed on `attemptsUsed` (which is `1` at this point) and NOT on
+  `currentOfferedSlots===ctx.alwaysActMenu` (which is ALSO true at this point but is no longer consulted for
+  branch selection at all). This is the direct regression test for spec-review iteration-4 FIND-301.
+
+## 2.5 REQ-511 Attempt-State Transition Matrix (spec-review iteration-4 FIND-301 fix — exhaustive, not illustrative)
+
+This matrix is the AUTHORITATIVE, exhaustive enumeration of every `attempt-1 outcome × attempt-2 outcome`
+combination reachable under REQ-511's `attemptsUsed ∈ {0, 1}` attempt-state machine. It supersedes any
+prose description of "the baseline attempt" / "the reroute attempt" that could be (mis)read as branching on
+`currentOfferedSlots`/`ctx.alwaysActMenu` array identity — the ONLY input to branch selection is
+`attemptsUsed`, per REQ-511/REQ-513. Every row is closed by an explicit AC/PROP reference; there is no
+reachable attempt-1×attempt-2 combination outside this table.
+
+| # | Attempt-1 outcome (`attemptsUsed` starts `0`) | Attempt-2 outcome (only reachable if attempt-1 was invalid) | `attemptsUsed` trace | Terminal result | AC / PROP ref |
+|---|---|---|---|---|---|
+| 1 | Valid slot picked, execution completes, `earnLine !== null` (realized action) | — (no attempt-2; nothing to retry) | stays `0` | **EXECUTE** (immediate accept, 1 `think()` call total) | REQ-506 AC "earnLine!==null accept" / PROP-506b |
+| 2 | No tool call (`parseToolCall` falsy) | Reprompt (same `ctx.alwaysActMenu`): valid slot picked, `earnLine !== null` | `0 → 1` | **EXECUTE** (via reprompt, 2 `think()` calls total) | REQ-505 AC1 / PROP-505a |
+| 3 | No tool call | Reprompt (same `ctx.alwaysActMenu`): fabricated/off-menu slot (e.g. `slot:'sleep'`) — **the FIND-301 scenario** | `0 → 1` (stays `1`, no further increment) | **ESCALATE** (REQ-508, 2 `think()` calls total, never 3) | REQ-505 FIND-301 edge case + AC / REQ-513 FIND-301 edge case + AC / **PROP-513e** |
+| 4 | No tool call | Reprompt (same `ctx.alwaysActMenu`): no tool call again | `0 → 1` (stays `1`) | **ESCALATE** (REQ-508, 2 `think()` calls total) | REQ-505 edge case "re-prompt also returns no tool call" / PROP-505a |
+| 5 | Valid slot `s` picked, execution completes, `earnLine === null` (no-op) | Reroute (risk-free-filtered menu excluding `s` and every `risk:"capital"` slot): valid safe slot picked, `earnLine !== null` | `0 → 1` | **EXECUTE** (via reroute, 2 `think()` calls total) | REQ-506 AC "reroute enum excludes just-picked+capital slots" / PROP-506a |
+| 6 | Valid slot `s` picked, `earnLine === null` | Reroute: model re-emits the just-excluded `s`, or any other `risk:"capital"` slot absent from this reroute's `currentOfferedSlots` (e.g. `hl_trade`) | `0 → 1` (stays `1`) | **ESCALATE** (REQ-508, no execution, no 3rd `think()` call) | REQ-513 FIND-201 scenarios a/b + AC / PROP-513b / PROP-513c |
+| 7 | Valid slot `s` picked, `earnLine === null` | Reroute: valid safe slot picked, execution completes, `earnLine === null` AGAIN (also no-op) | `0 → 1` (stays `1`) | **ESCALATE** (REQ-508 — accepted once rerouted, per REQ-511; never a 3rd `think()` call) | REQ-506 edge case "rerouted second pick ALSO produces earnLine===null" / PROP-506f-adjacent exhaustive coverage under PROP-511a |
+| 8 | Fabricated/off-menu slot on the very FIRST `think()` call (e.g. `slot:'sleep'`, or a syntactically valid slot absent from `ctx.alwaysActMenu`) | Reprompt (same `ctx.alwaysActMenu`, per REQ-513's baseline-attempt branch): valid slot picked, `earnLine !== null` | `0 → 1` | **EXECUTE** (via reprompt, 2 `think()` calls total) | REQ-513 PROP-513a / REQ-505 AC1 |
+| 9 | No tool call | Reprompt (same `ctx.alwaysActMenu`): VALID slot picked, execution completes, but `earnLine === null` (no-op) — **the REQ-506 symmetric extension of FIND-301** | `0 → 1` (stays `1`, no reroute attempted) | **ESCALATE** (REQ-508, no reroute — a 3rd `think()` call would be needed to reroute, which REQ-511 forbids) | REQ-506 FIND-301 generalized edge case + AC / **PROP-506g** |
+
+Row 8's attempt-2 outcome, if instead a fabricated slot or a no-op result, is covered by rows 3/4/9's same
+`attemptsUsed===1 → escalate` pattern (the specific attempt-1 failure type that got the attempt to
+`attemptsUsed=1` is irrelevant to attempt-2's own branch decision — only `attemptsUsed`'s VALUE matters, per
+REQ-511). No other attempt-1×attempt-2 combination is reachable: `attemptsUsed` cannot exceed `1` within a
+wake (REQ-511), and once `attemptsUsed===1`, EVERY invalid outcome (of any type) terminates in row
+3/4/6/7/9's shared **ESCALATE** pattern — never a third `think()` call, never further skill execution.
 
 ## 3. Edge Case Catalog (cross-cutting)
 
@@ -596,12 +752,25 @@ directly into REQ-508's escalation.
 - **Reroute-attempt fabricated re-pick of an excluded slot** (spec-review iteration-3 FIND-201): during a
   REQ-506 reroute, a model re-emits the just-excluded slot `s` or any other `risk:"capital"` slot that
   remains a member of the static `ctx.alwaysActMenu` but was deliberately excluded from THIS reroute
-  attempt's narrower `currentOfferedSlots` — REQ-513's guard, now keyed on the per-attempt
-  `currentOfferedSlots` (never the static `ctx.alwaysActMenu`), rejects it. Because the reroute attempt is
-  already the shared budget's one extra `think()` call, rejection routes DIRECTLY to REQ-508's truthful
+  attempt's narrower `currentOfferedSlots` — REQ-513's guard checks the per-attempt `currentOfferedSlots`
+  (never the static `ctx.alwaysActMenu`) for VALIDITY, and, because `attemptsUsed===1` at this point (the
+  reroute already consumed the shared budget — spec-review iteration-4 FIND-301 fix: BRANCH selection is
+  `attemptsUsed`, not `currentOfferedSlots`, see §2.5), rejection routes DIRECTLY to REQ-508's truthful
   escalation, never a third `think()` call, never skill execution. This closes the dispatch-layer gap that
   would otherwise have silently reopened FIND-101's money-safety fix at exactly the layer meant to enforce
   it.
+- **Reprompt-attempt fabricated/off-menu slot, misclassified as a fresh baseline attempt by array identity**
+  (spec-review iteration-4 FIND-301, the third instance of this failure class after FIND-102/FIND-201): a
+  model's REQ-505 reprompt attempt (attempt #2, invoked because attempt #1 returned no tool call) returns a
+  fabricated `slot:'sleep'` or any off-menu slot instead. This attempt's `currentOfferedSlots` equals
+  `ctx.alwaysActMenu`, array-IDENTICAL to attempt #1's baseline value (a reprompt never narrows the schema —
+  only a reroute does), so a branch rule that inferred "is this the baseline attempt" from
+  `currentOfferedSlots === ctx.alwaysActMenu` (iteration-3's REQ-513 wording) would misclassify this as a
+  fresh baseline attempt and issue a SECOND reprompt — a THIRD `think()` call, violating REQ-511's 2-total
+  ceiling. This revision removes ALL array-identity-based branch selection: REQ-505/506/511/513 now branch
+  EXCLUSIVELY on `attemptsUsed` (`1` at this point, since the reprompt already spent the shared budget), so
+  this rejection correctly routes DIRECTLY to REQ-508's escalation. See the exhaustive transition matrix
+  (§2.5, row 3) and PROP-513e.
 - **Reroute pressures a second capital-risking attempt** (spec-review iteration-2 FIND-101): a legitimate,
   doctrine-sanctioned no-edge WAIT (e.g. `earn/sol-trade`'s baseline strategy) triggers REQ-506's reroute —
   the reroute target set is hard-filtered to `risk:"safe"` slots only (`isMarketRiskFree`); it NEVER offers
@@ -656,6 +825,33 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 
 ## Changelog
 
+- **iteration-4 fix: FIND-301 (branch selection keyed on attempt-state machine, exhaustive transition matrix
+  added)**: REQ-513's iteration-3 fix rejected a parsed slot using the correct per-attempt
+  `currentOfferedSlots` for VALIDITY, but still decided WHICH branch (REQ-505 reprompt vs REQ-508 escalation)
+  to take by asking "is this the BASELINE attempt", operationally defined as
+  `currentOfferedSlots === ctx.alwaysActMenu` (REQ-504 point 5). A REQ-505 reprompt attempt ALSO satisfies
+  that equality (a reprompt never narrows the schema, only a reroute does), so a fabricated slot arriving on
+  the reprompt attempt was misclassified as a fresh baseline attempt, buying a SECOND reprompt — a THIRD
+  `think()` call, violating REQ-511's 2-total ceiling (the third instance of this failure class, after
+  FIND-102 and FIND-201). This revision introduces a SINGLE, explicit attempt-state, `attemptsUsed ∈ {0, 1}`
+  (reusing/extending the already-specified `nextRerouteState` pure state machine), as the SOLE arbiter of
+  every retry/reroute/escalation branch across REQ-505/506/511/513 — branch selection MUST NOT compare array
+  identity, tool-schema shape, or any other proxy; `currentOfferedSlots` is demoted to its FIND-201
+  VALIDITY-check role only (is the parsed slot a legal member of what was offered THIS attempt) and plays no
+  part in branch selection. REQ-504 point 5, REQ-505, REQ-506, REQ-511, and REQ-513 are all rewritten to this
+  rule; REQ-506 gains a symmetric edge case/AC (its own instance of the same class — a valid slot picked and
+  executed on a REQ-505 reprompt attempt that ALSO no-ops must escalate directly, never reroute). A new §2.5
+  "REQ-511 Attempt-State Transition Matrix" adds an exhaustive 9-row table covering every reachable
+  attempt-1×attempt-2 outcome combination, each closed by an explicit AC/PROP reference. New PROP-513e
+  (money-safety-critical, the direct FIND-301 regression test) and PROP-506g (the REQ-506 symmetric
+  extension) added in verification-architecture.md; PROP-511a's adversarial coverage is restated to
+  explicitly include the compound `[no-tool-call, fabricated-slot]` sequence. Two non-blocking iteration-4
+  citation drifts are also corrected: `skills/self/earning-health.py`'s docstring citation narrows from
+  "lines 12-22" to "lines 14-22" (lines 12-13 are general doctrine-framing prose, not the skip-vs-live-pass
+  mechanism definition). (`index.mjs:183`'s citation for `avoidSlot`'s inline comment was independently
+  re-verified against this exact HEAD — the quoted text is still at line 183, not line 187 — so that specific
+  correction noted in iteration-4's review was NOT applied; ground truth confirms the existing citation is
+  accurate.)
 - **iteration-3 fix: FIND-201 (guard validates per-attempt offered set)**: REQ-513's dispatch-level rejection
   guard previously checked a parsed slot against the static, wake-level `ctx.alwaysActMenu` — a model that
   re-emitted the just-excluded slot `s` (or any other `risk:"capital"` slot) during REQ-506's reroute attempt
