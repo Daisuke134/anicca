@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "blocking",
+  "description": "self-heal.md's own fix-design table (row ①) explicitly requires that a change lowering the Cadence Contract bar be gated by 'fresh-context adversary review必須（git hook/CODEOWNERS）→ self-fix 単独で自分のバーを下げられない'. Nothing mechanical was shipped for that. What exists instead is (a) a prose comment block in cadence.py (lines 36-43) and cadence-evidence.py (lines 242-258) telling a future reader/agent not to loosen the check, and (b) a regression-lock test (skills/self/tests/test_cadence_evidence.py:91-109) that WOULD catch a re-loosening IF it is run. Verified absence of any enforcement: (1) grep for CODEOWNERS in the whole worktree returns zero files; (2) the only git hook, .githooks/pre-push, gates exclusively 'skills/**/eval-output/*.txt' (lines 51-56) and has no rule for skills/self/cadence*.py; (3) the only GitHub Actions workflow is .github/workflows/sec-scan.yml — no CI job runs skills/self/tests/*; (4) self-fix.sh (the exact autonomous agent that produced the original Goodhart regression per self-heal.md's own root-cause narrative, commit ab4a39a4) contains zero reference to this guard, to CODEOWNERS, or to running test_cadence_evidence.py before it commits/pushes (grep for 'cadence-evidence|cadence\\.py|GUARDED|adversary review|CODEOWNERS' in self-fix.sh: no matches). A self-fix pass with full write access to this exact file could edit both the production logic AND the regression-lock assertion in the same commit — literally the same failure class root cause #1 already produced once, now defended only by a comment the same class of agent already proved it will not honor. This is a requirement stated in the reviewed design doc that the shipped diff does not satisfy; it also means the verification obligation this feature exists to create (a hard gate on self-fix modifying its own health bar) is not actually verifiable/enforced, only aspirational.",
+  "evidence": {
+    "filePath": "docs/superpowers/evidence/self-heal.md",
+    "lineRange": "49",
+    "snippet": "①「試みた≠達成」再発防止 | cadence-evidence.py の attempt ルールに exit-criteria check(...)。self-fix が cadence 判定を緩める変更は fresh-context Opus adversary review 必須(git hook/CODEOWNERS)→ self-fix 単独で自分のバーを下げられない"
+  },
+  "routeToPhase": "harden"
+}
