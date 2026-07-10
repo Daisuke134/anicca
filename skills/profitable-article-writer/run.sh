@@ -50,8 +50,19 @@
 #                                       never crashes, never fabricates a URL.
 #   env in:  ARTICLE_NOTE_BROWSER_COMMON_DIR  TEST-INJECTION ONLY, forwarded to
 #                                       lib/note-mode-b-publish.py -- see that file's own docstring.
+#
+#   Sprint-5 REQ-27 env vars (view -> yen funnel: a deterministic monetization link on every published
+#   draft, wired as a TOOL step -- not agent judgment -- run AFTER the V0/V0.5 gates pass so it never
+#   perturbs the agent's own craft-judged CTA prose or the gate's V05_CRIT_b scoring of it):
+#   env in:  ARTICLE_CTA_URL             the monetization/product link appended to the draft before
+#                                       publish. Default: lib/config.sh's DEFAULT_CTA_URL. Set to the
+#                                       literal empty string "" to explicitly opt out (no link appended) --
+#                                       distinct from "unset" (which uses the default), same
+#                                       conditional-default convention as MODEL_TIER/DEFAULT_CTA_URL.
+#   env in:  ARTICLE_CTA_TEXT            the lead-in text before the link. Default: DEFAULT_CTA_TEXT.
 #   writes:  $ARTICLE_DIR/STATE.md     last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED|UNCONFIRMED,
-#                                      rounds_used, draft_path, publish_url (Mode B only),
+#                                      rounds_used, draft_path, cta_url (empty if opted out), publish_url
+#                                      (Mode B only),
 #                                      publish_verify_result/publish_verified_at (Mode B real-publish only),
 #                                      notify_path (Mode A only)
 #   exit:    0 for every LEGITIMATE outcome — SKIPPED/DRAFT/PUBLISHED/ABORTED/UNCONFIRMED are all valid,
@@ -196,6 +207,36 @@ json_escape() {
   else
     printf '%s' "$val" | sed -e 's/\\/\\\\/g' -e 's/"/\\"/g' | sed -e ':a' -e 'N' -e '$!ba' -e 's/\n/\\n/g'
   fi
+}
+
+# ---------------------------------------------------------------------------------------------------------
+# REQ-27 (Sprint 5, "view -> yen" funnel): append a deterministic monetization link to the ALREADY-GATED
+# draft (called AFTER the V0/V0.5 gate loop succeeds, never before -- so it never perturbs the agent's own
+# craft-judged CTA prose or the gate's V05_CRIT_b scoring of it). This is a bookkeeping/tool step (a link
+# append), not agent judgment, same purity-boundary bucket as gates/publish-gate.sh and the note-set-*.py
+# publish-prep scripts.
+#
+# stdout: the URL actually appended (empty string if opted out via ARTICLE_CTA_URL="") -- callers use this
+# to record cta_url into STATE.md without re-deriving the default resolution logic.
+# ---------------------------------------------------------------------------------------------------------
+insert_monetization_link() {
+  local path="$1"
+  # Distinguish "unset" (use the declarative default from config.sh) from an explicit opt-out (the literal
+  # empty string) -- ${VAR-default} (no colon) only substitutes when VAR is completely UNSET, never when it
+  # is set-but-empty, which is exactly the distinction REQ-27 requires.
+  local url="${ARTICLE_CTA_URL-$DEFAULT_CTA_URL}"
+  local text="${ARTICLE_CTA_TEXT-$DEFAULT_CTA_TEXT}"
+
+  if [ -z "$url" ]; then
+    printf ''
+    return 0
+  fi
+
+  {
+    printf '\n---\n\n'
+    printf '%s: %s\n' "$text" "$url"
+  } >> "$path"
+  printf '%s' "$url"
 }
 
 # ---------------------------------------------------------------------------------------------------------
@@ -363,6 +404,10 @@ EOF
   exit 0
 fi
 
+# REQ-27: gates PASSED -- append the deterministic monetization link now, before either Mode A or Mode B
+# ever hands draft_path off to a publisher, so BOTH modes' published content carries it (never just one).
+cta_url="$(insert_monetization_link "$draft_path")"
+
 # ---------------------------------------------------------------------------------------------------------
 # 4b. BOTH-PASS: Mode A (effective_mode=A, the default) stops at draft + notifies the human; Mode B
 #     (effective_mode=B, REQ-25's ratio-derived value) publishes directly then distributes (REQ-6, REQ-7).
@@ -431,6 +476,7 @@ EOF
 last_wake_result: PUBLISHED
 rounds_used: $rounds_used
 draft_path: $draft_path
+cta_url: $cta_url
 publish_url: $modeb_url
 publish_verify_result: SUCCESS
 publish_verified_at: $modeb_ts
@@ -445,6 +491,7 @@ EOF
 last_wake_result: UNCONFIRMED
 rounds_used: $rounds_used
 draft_path: $draft_path
+cta_url: $cta_url
 publish_url: ${modeb_url:-unknown}
 publish_verify_result: UNCONFIRMED
 publish_verified_at: $modeb_ts
@@ -461,6 +508,7 @@ EOF
 last_wake_result: PUBLISHED
 rounds_used: $rounds_used
 draft_path: $draft_path
+cta_url: $cta_url
 publish_url: pending-live-rail-integration
 EOF
   echo "WAKE_RESULT: PUBLISHED (rounds_used=$rounds_used)"
@@ -504,6 +552,7 @@ write_state <<EOF
 last_wake_result: DRAFT
 rounds_used: $rounds_used
 draft_path: $draft_path
+cta_url: $cta_url
 notify_path: $notify_path
 EOF
 echo "WAKE_RESULT: DRAFT (rounds_used=$rounds_used, notify_path=$notify_path)"

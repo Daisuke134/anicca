@@ -43,9 +43,12 @@ without a real agent call or network I/O.
 | `ARTICLE_TEST_V0_RESULTS` | comma list, one `PASS`\|`FAIL` per fix+re-gate round (REQ-14, max 3) |
 | `ARTICLE_TEST_V05_RESULTS` | comma list, one `PASS`\|`FAIL` per fix+re-gate round (REQ-14, max 3) |
 | `ARTICLE_TEST_MODE` | named deterministic scenario (e.g. `record_earn_only`) for isolated sub-path checks |
+| `ARTICLE_CTA_URL` | Sprint 5/REQ-27: monetization link appended to the gated draft before publish. Default `lib/config.sh`'s `DEFAULT_CTA_URL`. Explicit `""` opts out |
+| `ARTICLE_CTA_TEXT` | Sprint 5/REQ-27: lead-in text before the link. Default `DEFAULT_CTA_TEXT` |
 
 `STATE.md` fields written by a wake: `last_wake_result: SKIPPED|DRAFT|PUBLISHED|ABORTED`, `rounds_used`,
-`draft_path`, `publish_url` (Mode B only), `notify_path` (Mode A only).
+`draft_path`, `cta_url` (Sprint 5, gated outcomes only), `publish_url` (Mode B only), `notify_path` (Mode A
+only).
 
 ## Layout
 
@@ -67,6 +70,8 @@ skills/profitable-article-writer/
 │                                  'url'), so this genuinely needs the browser path (Sprint-2-fix defect #2)
 ├── lib/note-set-single-price.py   selects 記事タイプ=有料 + price + a 有料エリア指定 paid-line, replacing
 │                                  the old メンバーシップ-hardcoded flow (Sprint-2-fix defect #3)
+├── lib/note-fetch-views.py        Sprint 5/REQ-28: real per-article view/like fetch (authenticated stats
+│                                  API) → state/article-metrics.jsonl, honest "none"+reason on failure
 └── tests/                        VSDD RED-phase oracle tests, one file per proof obligation (PROP-*)
 ```
 
@@ -139,3 +144,35 @@ sentence-length arithmetic, and `gates/v05.sh`'s `judge_v05` response-file parse
 (including its fail-closed-when-unwired default) — are covered SEPARATELY, with `ARTICLE_TEST_FORCE_V0`/
 `ARTICLE_TEST_FORCE_V05` explicitly unset, by `tests/test-v0-real.sh` and `tests/test-v05-real.sh`. Together
 the two test groups cover both the wiring and the real gate logic it wires to.
+
+**Sprint 5 (2026-07-11): the "view -> yen" funnel — REQ-27/28, PROP-27/28.** Every prior sprint proved
+PUBLISH + V1's independent verify; nothing yet made the published URL carry a monetization link, nor
+recorded how many real people saw it. Both gaps close here:
+1. **REQ-27 — deterministic monetization link.** `run.sh`'s new `insert_monetization_link` appends
+   `ARTICLE_CTA_URL` (default `https://aniccaai.com/`, `lib/config.sh`'s `DEFAULT_CTA_URL` — an
+   ALREADY-canonical Anicca product URL, reused verbatim from `ai-entity-article-writer`'s own "[8] 最後に"
+   about-us/CTA convention, never invented fresh) to the draft AFTER the V0/V0.5 gates pass, so it never
+   perturbs the agent's own craft-judged CTA prose (REQ-5b) or the gate's scoring of it. Recorded to
+   `STATE.md`'s `cta_url` for every gated (non-ABORTED) outcome; an explicit `ARTICLE_CTA_URL=""` opts out
+   cleanly. `tests/test-prop27-monetization-cta-link.sh`: 8/8 assertions PASS.
+2. **REQ-28 — real view recording.** `lib/note-fetch-views.py` was researched, not guessed: note.com
+   exposes NO public per-article view-count field (confirmed by probing this account's own live article's
+   public page + the public `GET /api/v3/notes/<key>`), but the SAME authenticated session cookie the
+   publish pipeline already uses (`NOTE_COOKIES_FILE`) reaches `GET /api/v1/stats/pv?filter=all`, which
+   returns a `note_stats` array with real per-note `read_count`/`like_count` fields. Verified live against
+   this account's own real published article `nfb2ace9f0ed8`: `read_count=9, like_count=2` at the time of
+   this sprint. The tool appends one honest line per key to `state/article-metrics.jsonl`
+   (`{ts, key, url, views, likes, revenue_jpy, revenue_source}`); an unresolvable key or a missing/bad
+   session cookie records `"views": "none"` + a specific `views_reason`, never a fabricated number, never a
+   crash (exit 0 either way — best-effort periodic job, callable standalone or via cron independent of
+   `run.sh`'s wake cycle). `revenue_jpy` is hardcoded `0` with `revenue_source:
+   "not_verified_no_sales_api"` in every row — no note.com sales/payout API was found reachable from this
+   account's session during this sprint's research; a future sprint that proves a real sales-read path
+   should replace this constant, not the honesty contract around it.
+   `tests/test-prop28-metrics-views-ledger.sh`: 10/10 assertions PASS, including a REAL live-network call
+   against note.com's authenticated stats endpoint (no mock — same "no dry run" convention as
+   `tests/test-prop23-independent-live-verify.sh`).
+
+**Sprint-5 honesty note (revenue):** as of this sprint, `state/article-metrics.jsonl`'s `revenue_jpy` is
+`0` for every recorded article. This is the actual, current state — no note.com paid-note sale has been
+independently verified yet for any of this account's published articles.

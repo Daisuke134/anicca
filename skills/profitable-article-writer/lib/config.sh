@@ -22,4 +22,13 @@ MODEL_TIER="sonnet"
 # exercised by editing this file's literal source text.
 : "${RECORD_EARN_USES_LLM:=0}"
 
-export MODEL_TIER RECORD_EARN_USES_LLM
+# REQ-27 (Sprint 5, "view -> yen" funnel): the deterministic top-funnel monetization link appended to every
+# published draft (lib/insert_monetization_link in run.sh) when the caller does not override
+# ARTICLE_CTA_URL/ARTICLE_CTA_TEXT. This is a DECLARATIVE default, not a hardcoded judgment — the value is
+# an existing, already-canonical Anicca product URL (reused from ai-entity-article-writer's own "[8] 最後に"
+# about-us/CTA convention: one clean sentence + one product URL), never invented fresh here. Overridable per
+# install/run via the environment, same pattern as MODEL_TIER above.
+: "${DEFAULT_CTA_URL:=https://aniccaai.com/}"
+: "${DEFAULT_CTA_TEXT:=最新情報はこちら}"
+
+export MODEL_TIER RECORD_EARN_USES_LLM DEFAULT_CTA_URL DEFAULT_CTA_TEXT

@@ -184,6 +184,36 @@ the SAME mechanism into the unattended daily loop so no human/Opus ever triggers
   `create_draft`. Any failure in the create/eyecatch/price/verify chain SHALL degrade to the Mode-A safe
   placeholder (REQ-6) rather than crash the wake or fabricate a URL.
 
+## View -> yen funnel (Sprint 5, 2026-07-11: close the "views generate no ¥" gap)
+
+Every prior sprint proved PUBLISH (a live URL) and V1's independent verify. Nothing yet made the published
+URL itself carry a monetization link, nor recorded how many real people actually SAW it. This sprint closes
+both halves.
+
+- **REQ-27 Deterministic monetization link on every gated draft.** WHEN the V0/V0.5 gate loop reaches a
+  BOTH-PASS result (the SAME point REQ-14's 3-round ceiling is checked against), THEN `run.sh` SHALL append
+  a monetization/product link to the draft BEFORE either Mode A or Mode B hands it to a publisher — as a
+  deterministic tool step (`insert_monetization_link`), not agent judgment, and AFTER the gates have already
+  scored the agent's own craft-judged CTA prose (REQ-5b), so the link insertion never perturbs that scoring.
+  The URL/lead-in text SHALL be configurable per-install (`ARTICLE_CTA_URL`/`ARTICLE_CTA_TEXT`, defaulting to
+  `lib/config.sh`'s declarative `DEFAULT_CTA_URL`/`DEFAULT_CTA_TEXT` — an ALREADY-canonical Anicca product URL
+  reused from `ai-entity-article-writer`'s own "[8] 最後に" about-us/CTA convention, never invented fresh).
+  An explicit empty-string override SHALL opt out (no link appended) without crashing the wake; the actual
+  URL used (or empty, if opted out) SHALL be recorded to `STATE.md`'s `cta_url` field for every gated
+  (non-ABORTED) outcome.
+- **REQ-28 Real per-article view recording, honest-or-none.** A periodic tool (`lib/note-fetch-views.py`,
+  callable standalone/via cron, independent of `run.sh`'s wake cycle) SHALL, for every key this skill has
+  independently verified live (`state/live-publishes.jsonl`, `PASS: true`, REQ-22's ledger), fetch that
+  key's REAL view count via note.com's authenticated per-account stats endpoint (the SAME session cookie
+  the publish pipeline already uses) and append ONE line per key to `state/article-metrics.jsonl`:
+  `{ts, key, url, views, likes, revenue_jpy, revenue_source}`. A key the stats response cannot resolve, a
+  missing/unreadable session cookie, or any stats-API failure SHALL record an honest `"views": "none"` with
+  a specific `views_reason` — NEVER a fabricated number, and NEVER a crash (best-effort periodic job
+  semantics, same convention as `lib/note-verify-live.py`'s "never raises uncaught"). `revenue_jpy` SHALL
+  ALWAYS be `0` with `revenue_source: "not_verified_no_sales_api"` until a future sprint proves a real,
+  independently-verifiable sales-read path — inventing or estimating a non-zero figure is explicitly
+  forbidden.
+
 ## Purity-boundary candidates (refined in 1b)
 
 - **Deterministic tools:** `record-earn` ledger, render/screenshot verify, platform publishers, dedup, git, payout routing.
