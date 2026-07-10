@@ -46,3 +46,17 @@ connector 本体 = `~/profitable-claude/skills/human-funded/connector/`（cron a
 - ✅ コード3詰まりは修正・検証・push 済（fabrication/有料登録を防ぐ形で）。
 - ✅ FREE 構造強制・evidence 本物検証で「捏造/有料を gcal に書く」事故を未然に防止（adversary が捕捉）。
 - 🔄 残: core が launchd で生き残れない crash-loop を直す→初の実 booking を gcal CONFIRMED で観測→7日 streak。
+
+
+## 2 runtime blocker 修正後の live 検証（2026-07-11 07:00 JST・正直な到達点）
+2つの runtime blocker を発見・修正（「コードは正しいのに autonomous で回らない」の真犯人）:
+1. **launchd PATH に `$HOME/.local/bin` 欠落** → `claude` 解決不能で core 即死(crash-loop)。fix commit 2d753b7(connector+colony)。healthcheck が ALIVE に変化して実証。
+2. **`ANTHROPIC_API_KEY` 検出の対話プロンプトで headless core 無限停止**（"use this API key? 1.Yes 2.No" に誰も答えず 0 pass）。fix: connector-cli.sh の core spawn を `env -u ANTHROPIC_API_KEY` に（OAuth subscription 強制、~/.claude/.credentials.json 有り、human-funded 構成に整合）。**検証: core が プロンプト通過し STEP0-5 を実行するのを transcript で確認**。
+
+live 検証結果（transcript 実読）: core が STEP2(outreach draft)✔ / STEP3(debrief)✔ / STEP4(scout, 実 finding: IndieHackers "7 autonomous AI agents")✔ を完走。**STEP1(free イベント発見+CloakBrowser で実 RSVP)は turn 終了までに未完**（applications.jsonl=0、gcal 新規なし）。
+
+### 正直な到達点
+- ✅ コード3層(horizon/FREE/evidence/TZ) + 2 runtime blocker(PATH/API-key prompt) 全修正・検証・push 済。core は健全に STEP0-5 を回すようになった。
+- ❌ **まだ実 booking ゼロ**。STEP1 のブラウザ RSVP（イベント発見→CloakBrowser→OTP/login→登録確認 evidence）が単一 pass turn で完走しないのが残る iterate 点。
+- 次: STEP1 のブラウザ登録を完走させる（turn budget/専用サブフロー or 07:35 JST cron の autonomous 実行を観測して iterate）。届いたら `gog calendar events get` で独立読返し。
+- ⚠️ 残ノイズ: core の claude session に `node:...cjs/loader:1458` PreToolUse hook error（non-blocking、commands は実行できている）。要調査だが blocker ではない。
