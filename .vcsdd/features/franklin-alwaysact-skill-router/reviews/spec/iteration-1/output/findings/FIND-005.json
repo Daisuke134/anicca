@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "The Purity Boundary Map's Effectful-Shell entry for brain.mjs is factually incorrect given FIND-001, which means the proposed module split does not actually describe where the required change lives. verification-architecture.md:35 states 'runtime/loop/brain.mjs::think() -- unmodified; called with different ctx/tool-definition inputs on the reprompt/reroute path, same function contract.' But think()/thinkProxy() has no 'tool-definition input' parameter at all -- it derives tools internally from `getToolDefinitions(ctx.activeSkillSlots)` (brain.mjs:63), a plain slot-name array, not a tool-definitions object. For REQ-504's sleep-omission and REQ-506's enum-exclusion to actually reach the model, either brain.mjs's `tools:` line must be modified to accept a pre-built tool-definitions object (contradicting 'unmodified, same function contract'), or getToolDefinitions/SLEEP_TOOL-appending logic in prompt.mjs must itself become conditional (also not disclosed in the purity map, and prompt.mjs is listed only as part of the identity-gated hard-coupling reference in behavioral-spec.md section 1, not flagged as an effectful-shell file that changes). This is a hidden-coupling defect in the proposed module split: the pure-core module's outputs (buildAlwaysActToolDefinitions, buildMustActReinforcement) have no declared integration point into the actual effectful call, so the purity boundary map cannot be trusted to bound where Phase 2b's implementation diff will need to touch.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+    "lineRange": "30-36",
+    "snippet": "runtime/loop/brain.mjs::think() -- unmodified; called with different ctx/tool-definition inputs on the reprompt/reroute path, same function contract."
+  },
+  "routeToPhase": "1b"
+}

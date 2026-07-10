@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-501(b)'s default-OFF explicit-enable flag is analogized to SOL_GATE_LIVE_ENABLE, but the analogy is a category mismatch, and the resulting failure mode -- a silent, unobserved reversion to idle-permitted behavior -- is never enumerated in the Edge Case Catalog (behavioral-spec.md section 3) despite being the single highest-doctrine-risk scenario this feature exists to prevent. Ground truth: SOL_GATE_LIVE_ENABLE (skills/earn/sol-trade/run.sh:68-75) gates ONLY an additive, shadow-observation exploration layer that sits alongside an ALREADY-always-executing baseline trading pass -- the run.sh comment states verbatim 'it NEVER alters what franklin-trading does below,' i.e. the underlying earn action fires every wake regardless of that flag's state. REQ-501(b), by contrast, gates the entire always-act anti-idle mechanism itself: per its own edge case (behavioral-spec.md:91-92), 'flag unset/malformed/non-1 value: treat as disabled (fail-closed) ... the wake falls through to today's unmodified behavior, including the sleep tool' -- i.e. Franklin's wakes become exactly as idle-capable as before the feature existed. Doctrine (behavioral-spec.md section 0, sourced from memory feedback_franklin_never_waits_always_acts_to_earn) explicitly names this exact condition a failure ('idle/WAIT is a failure signal, not a legitimate outcome ... skip は malware だ'). Section 6 item 10 frames the flag flip as a single deliberate post-vcsdd-converge operational action, which is a defensible one-time rollout gate -- but nothing in REQ-501, REQ-508, or REQ-510 requires any ledger/escalation signal distinguishing 'always-act intentionally not yet enabled' from 'always-act silently regressed to OFF after go-live due to a config/deploy/.env bug.' REQ-508's escalation path only fires INSIDE an already-engaged always-act wake when both bounds are exhausted -- it has no visibility into a wake where always-act failed to engage at all. For a feature whose entire premise is that Franklin idling is money-doctrine-critical, this is a real, uncovered edge case.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/earn/sol-trade/run.sh",
+    "lineRange": "68-76",
+    "snippet": "# In the DEFAULT paper mode (SOL_GATE_LIVE_ENABLE unset, REQ-009 HARD dev-safety default) this is PURE SHADOW\n# OBSERVATION: it ALWAYS records a gate trace line (REQ-011) for later offline genome-tuning\n# evaluation, but it NEVER alters what franklin-trading does below -- \"zero live side effect\"\n# (REQ-009)."
+  },
+  "routeToPhase": "1a"
+}

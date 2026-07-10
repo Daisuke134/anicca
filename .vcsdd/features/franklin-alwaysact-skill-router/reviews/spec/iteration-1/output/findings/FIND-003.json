@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "REQ-506 is internally contradictory about whether the excluded slot is structurally removed from the tool schema or merely prompt-nudged, and its EARS clause misdescribes the cited existing mechanism. REQ-506's EARS text (behavioral-spec.md:174-182) says the harness 're-invoke[s] the brain ... with the just-picked slot temporarily excluded from the enum (reusing the existing avoidSlot diversification mechanism, index.mjs:179-421) so the model MUST choose a DIFFERENT earn-menu slot' -- 'excluded from the enum' and 'must choose' assert a hard, structural (tool-schema-level) guarantee. But ground-truth index.mjs's avoidSlot mechanism is proven by its own inline comment to be a soft, text-only nudge, never an enum-level exclusion: index.mjs:183 states verbatim 'the agent's choice is never blocked, only the enforced pause after ignoring it grows,' and index.mjs:205-207 (prompt.mjs) shows avoidSlot is surfaced purely as prose in buildUserMessage ('It is FORBIDDEN this wake. Pick a DIFFERENT slot.') -- it never touches getToolDefinitions' slot.enum. REQ-506's own edge case (behavioral-spec.md:189-192) tacitly admits this: 'if it is forced to repick the same slot because none other qualifies, avoidSlot's existing only-clears-when-different-is-picked semantics naturally surfaces this as still-unresolved' -- which is only a coherent sentence if the model COULD still repick the excluded slot, directly contradicting the EARS clause's 'excluded from the enum ... must choose a DIFFERENT slot' framing. This is not a minor wording slip: PROP-506a asserts 'exactly one reroute call with that slot excluded from the enum' (verification-architecture.md:55) as a Tier-1 property-test obligation, and REQ-511's ≤2-calls ceiling and REQ-508's 'RARE' framing both implicitly assume the reroute reliably steers the model away -- none of which holds if the underlying mechanism is admittedly non-blocking. The requirement is not concrete enough to implement unambiguously: an implementer must silently pick one of two mutually exclusive readings (hard enum removal vs. soft prompt nudge) with no spec-level resolution.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/runtime/loop/index.mjs",
+    "lineRange": "175-184",
+    "snippet": "let avoidSlot = null;\n// Escalating cooldown state (§24 adversary #4): a weak free model can ignore the prompt's \"forbidden\"\n// steer and re-pick the SAME dead slot a few wakes later ... Resets the moment the model diversifies away\n// from avoidSlot — the agent's choice is never blocked, only the enforced pause after ignoring it grows."
+  },
+  "routeToPhase": "1a"
+}

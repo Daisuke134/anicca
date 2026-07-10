@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "REQ-504 (sleep tool withheld on an always-act wake) has no actual wiring path from the proposed pure function `buildAlwaysActToolDefinitions(menuSlots)` to the real outbound tool schema the model sees. The verification-architecture.md Effectful-Shell map explicitly asserts 'runtime/loop/brain.mjs::think() — unmodified' (verification-architecture.md:35), but ground-truth brain.mjs hardcodes the outbound tools array as `tools: getToolDefinitions(ctx.activeSkillSlots)` inside thinkProxy (brain.mjs:63) and identically inside thinkClaudeP's prompt text (brain.mjs:83-93, via getToolDefinitions/buildSystemPrompt/buildUserMessage all called internally with only `ctx`). getToolDefinitions() itself (prompt.mjs:139-173) unconditionally appends SLEEP_TOOL at line 171 for every call. There is no ctx field or parameter by which an always-act wake's constrained, sleep-free tool array can reach the HTTP request body without editing brain.mjs's `tools:` line and/or prompt.mjs's getToolDefinitions signature -- both of which the spec's own purity/effectful-shell map claims stay untouched. PROP-504a (verification-architecture.md:53) only unit-tests the standalone pure function's output, never asserts anything about the actual tools array thinkProxy sends over HTTP. As specified, an implementation could pass every listed test (including PROP-504a) while the model still receives the `sleep` tool on every always-act-engaged wake -- i.e. REQ-504, the feature's core anti-idle mechanism, can be 'verified PASS' while remaining functionally unimplemented.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/runtime/loop/brain.mjs",
+    "lineRange": "48-66",
+    "snippet": "tools: getToolDefinitions(ctx.activeSkillSlots),\ntool_choice: 'auto',"
+  },
+  "routeToPhase": "1a"
+}
