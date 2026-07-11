@@ -102,6 +102,9 @@ connector は独立 loop として dogfood → 検証済みの機構だけが cl
 
 feature 名 `connector-loop`（profitable-claude、mode: lean、全 phase 実行）。E2E 完了条件: 実イベント応募≥1（実 URL）/ 実 gcal 書込+get 検証 / 実 Telegram 日報着信 / 実 outreach draft→承認→送信 1往復 / debrief 1件が次 pass の入力に実際に載る / registry enforce（paused 拒否）動作 / 収益・成果の捏造ゼロ。
 
+## ⚠️ 2026-07-11 真実監査: 🔴 GOAL NOT DONE — 全 loop 壊れ/idle/報告が嘘
+Dais 検証: loop の DID/RESULT 報告を信用してはいけない。実 side-effect を**私自身の目で**(投稿URLをlogged-out browser / 実登録をgcal readback / 実入金をon-chain / ledger実増加)確認するまで "working" と言わない。今日 working なのは connector(部分)/gig(部分)程度。clip/video/reddit/sol/pm/founder/affiliate = 壊れ or 嘘。詳細+全TODO = `docs/superpowers/evidence/LOOPS-TRUTH-AUDIT.md`。self-heal は infra crash は直すが 新故障を検知せず/弱い検証で嘘を通す。#5-#9.5 の「done」は撤回、全 loop の実稼働を own-eyes 検証してからのみ done。
+
 ## 8. MASTER TODO（順序が正。ここ以外に TODO の正本を置かない。更新 2026-07-11）
 
 > **スコープ境界（Dais 2026-07-11）**: この spec / ceo-profitable-claude は **Dais の銀行口座 + Dais 自身のための稼ぎ**（LM subscription / article / capafy / gig / affiliate / bounty / connector）に集中する。**crypto（PM/SOL/HL）と Franklin agent-economy は別 CC が anicca repo の claude-p main loop で担当**するため、本 TODO では触らない（registry の pm/hl/sol=external はこの分業を表す正しい状態）。
