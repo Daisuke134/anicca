@@ -1,0 +1,72 @@
+{
+  "phase": "impl-review",
+  "iteration": 4,
+  "feature": "lending-lender-key-wiring",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["d6d85f12"],
+  "external_test_evidence": "Per task brief: thinker independently executed lending-verify 18/18, lending-orchestrator 39/39, wake-gate 10/10 at HEAD d6d85f12 (full lending suite 148/148, runtime/loop 250/250) -- this adversary has no Bash access and did not itself re-run these; test COUNTS and their correspondence to real, non-tautological assertions were independently verified by reading every test body cited below. Live production ledger independently read this review: ~/.blockrun/skills/economy/lending/state/loans.jsonl still contains exactly the same 2 rows described in iteration-3's own review (loan_Franklin_1, provisioning -> disbursement_uncertain, error \"Cannot read properties of undefined (reading 'slice')\", provisioned_ms=1783744749665) -- no third row, confirming no live wake has run against the fixed code yet, at any point across iterations 3 or 4.",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/behavioral-spec.md:210-244", "description": "REQ-124's own Edge Cases (lines 229-236) and Acceptance Criteria (238-244) describe the cross-loan tx_hash collision purely in terms of an identical-string tx_hash -- they never once consider that the SAME real transaction's hash can reach loanRows.tx_hash via one code path (facilitator-returned, lending-orchestrator.mjs:423) and reach a fresh reconcile candidate via a structurally DIFFERENT code path (RPC-log-extracted, lending-verify.mjs:174), with no code-level guarantee the two serialize identically. REQ-124 as specified is therefore not sufficient to guarantee the money-safety property its own Root Cause paragraph claims to close." }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs:301-348", "description": "Both new FIND-201 tests (cross-loan-replay-rejected and genuinely-new-tx-positive-control) use the IDENTICAL literal string for the stored loanRows.tx_hash and the mock log's transactionHash -- no fixture exercises a case-differing pair representing the realistic facilitator-format-vs-RPC-format source mismatch this finding identifies. lending-orchestrator.test.mjs:375-407's own wiring-assertion test (receivedLoanRows) likewise never exercises casing." }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-verify.mjs:84-86,171-176", "description": "Both alreadyCredited (verifyRepayment) and alreadyRecorded (reconcileProvisionalDisbursement) use raw `row.tx_hash === txHash` -- case-sensitive strict equality, no normalization -- while this SAME codebase's own lending-signer.mjs:32-34 addressesEqual() explicitly lowercases both sides of the structurally-identical hex-string-identity problem for wallet addresses (REQ-119). The inconsistency is a genuine implementation gap, not a stylistic nit, given tx_hash values are sourced cross-process (escrow.mjs:133 facilitator JSON vs. lending-verify.mjs:174 own-RPC eth_getLogs, see FIND-301 for the full trace)." }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:100-217", "description": "resolveStaleProvisioning/defaultReconcile/reconcileWindowSpanMs/resolveReconcileLookbackBlocks reviewed in full: loanRows is now threaded end-to-end (resolveStaleProvisioning:129 -> reconcile() -> defaultReconcile:236 destructures it -> both its test-seam branch:240-246 and its production branch:251-260 forward it into reconcileProvisionalDisbursement) with no branch that silently drops it. No duplicated/divergent constant, no dead code, comments accurately describe the current diff (not stale) -- this iteration's diff (REQ-124's wiring) is minimal and targeted." },
+        { "type": "file", "location": "skills/economy/lending/lib/lending-verify.mjs:131-180", "description": "reconcileProvisionalDisbursement's own FIND-201 addition (lines 171-176) reuses the exact alreadyCredited pattern verifyRepayment already established (lines 84-86) rather than inventing a second, divergent replay-detection mechanism -- consistent, no new abstraction introduced for a single call site." }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-301"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/verification-architecture.md:4-9,40-41", "description": "FIND-202 (iteration-3, spec-drift) IS genuinely fixed this iteration: PROP-122a/b, PROP-123a/b/c, PROP-124a/b are now all present in the Proof Obligations table, test counts reconciled to 148/148 -- independently re-verified, no drift remains between behavioral-spec.md and verification-architecture.md. However, PROP-124a/b's own claim ('rejected... never counted as this loan's own disbursement') is not actually established by its cited Tier-1 node:test evidence once FIND-301's cross-source casing gap is accounted for -- the proof obligation table asserts a stronger guarantee than the underlying test suite verifies." }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "priorIterationFindingsReVerified": {
+    "FIND-201_crossLoanTxHashMisattribution": "PARTIALLY FIXED, confirmed by direct trace -- the STRUCTURAL wiring gap iteration-3 found (loanRows never forwarded from resolveStaleProvisioning into reconcile()) is genuinely closed: loanRows now flows end-to-end from runLockedIssuance's fresh read (lending-orchestrator.mjs:349) through resolveStaleProvisioning(...,loanRows,...):122,129 -> reconcile({loanRow,loanRows}) -> defaultReconcile({loanRow,loanRows},deps):236 -> reconcileProvisionalDisbursement({loanRow,loanRows,...}):240-260 on BOTH its test-seam and production branches, with a dedicated, load-bearing test (lending-orchestrator.test.mjs:375-407) asserting the forwarding itself. The tx_hash-based replay check this wiring feeds (lending-verify.mjs:171-176) correctly rejects a candidate whose tx_hash exactly-string-matches ANY loanRows row, same-loan or cross-loan, with a real, non-tautological test (lending-verify.test.mjs:301-324) and a positive control (326-348). BUT the check's own case-sensitive string comparison (see FIND-301, new this iteration) means the guard is only reliably load-bearing when both sides of the comparison happen to share the same hex casing -- which holds for every currently-tested code path (both sides derived via the SAME extractTxHash from the SAME mock RPC) but is NOT code-guaranteed for the realistic real-world collision path (one side facilitator-derived, escrow.mjs; the other side own-RPC-derived, lending-verify.mjs). The wiring fix is real and necessary; it is not, on its own, sufficient to close the money-safety property REQ-124 claims.",
+    "FIND-202_verificationArchitectureDrift": "FIXED, confirmed by direct read of specs/verification-architecture.md -- PROP-122a/b/PROP-123a/b/c/PROP-124a/b all present, Changelog section added, Verification Strategy test count updated to 148 total / 14 new across 3 iterations, matching the task brief's own externally-verified 148/148 figure exactly. No remaining drift between behavioral-spec.md and verification-architecture.md found this review."
+  },
+  "priorIterationFixesReconfirmed": {
+    "FIND-101_valueBlindTransferMatch (REQ-122)": "STILL INTACT, re-traced this iteration -- lending-verify.mjs:160-177's expectedValueBase/safeBigIntValue exact-match logic is unchanged in substance from iteration-3's own independently-verified trace; no regression in this iteration's diff (which only added the FIND-201/tx_hash block at lines 171-176, strictly additive to the existing value-match check at 169-170).",
+    "FIND-102_staleWindowDoubleDisburse (REQ-120 amendment)": "STILL INTACT, re-traced this iteration -- resolveStaleProvisioning's rowAgeMs vs. reconcileWindowSpanMs(deps) guard (lending-orchestrator.mjs:137-140) and reconcileWindowSpanMs's own tie to resolveReconcileLookbackBlocks(deps) (lines 208-217) are byte-for-byte unchanged from iteration-3; the only change to this function this iteration is the addition of `loanRows` as its own second parameter and its forwarding into reconcile() (line 129) -- the age-guard logic itself was not touched.",
+    "FIND-103_facilitatorNotProvenMainnet (REQ-123)": "STILL INTACT, re-traced this iteration -- preflightFacilitatorMainnet (lending-orchestrator.mjs:277-294) and its call site inside defaultDisburse, BEFORE payViaFacilitator (line 334), are unchanged from iteration-3's own trace; no caching introduced, still fail-closed on both fetch failure and a non-mainnet-advertising response."
+  },
+  "finalLoanTrace": {
+    "ledgerStateVerified": "Read directly this review: ~/.blockrun/skills/economy/lending/state/loans.jsonl contains exactly the same 2 rows as iteration-3's own review -- loan_Franklin_1, provisioning then disbursement_uncertain (error \"Cannot read properties of undefined (reading 'slice')\", provisioned_ms=1783744749665). No active/disbursement_failed/loan_Franklin_2 row exists yet; the fix has still not been exercised against production state as of this review.",
+    "traceResult": "Confirmed via direct code trace against lending-orchestrator.mjs/lending-verify.mjs (not merely by citing a passing test): loan_Franklin_1's own crash happened before any HTTP call ever went out (privateKeyToAccount(undefined) throws inside signAuthorization, before any fetch), so it has NO tx_hash recorded anywhere in loans.jsonl -- FIND-301's casing gap is therefore NOT reachable for THIS SPECIFIC transition, because there is nothing yet stored to collide against. The next real wake for Franklin will: (1) resolveStaleProvisioning finds loan_Franklin_1, calls reconcile({loanRow, loanRows}) with loanRows=the current 2-row ledger (neither row has a tx_hash field) -- the eth_getLogs scan for 0x3EccAD24...->0xe7747Fd8... at value 20000 base units genuinely finds nothing on-chain (correctly, since nothing was ever broadcast), (2) the age-vs-window comparison (rowAgeMs vs reconcileWindowSpanMs(deps), ~5h default) determines whether this specific row is marked disbursement_failed (if within window) or refused stale_row_beyond_reconcile_window (if not) -- this review cannot determine which branch fires without a live Date.now() call this adversary has no tool to make, but BOTH outcomes are money-safe (neither double-spends; the refusal path simply requires manual reconciliation before further progress) -- (3) IF disbursement_failed fires, the SAME wake provisions loan_Franklin_2 and genuinely attempts a fresh $0.02 disbursement, correctly gated by REQ-119/REQ-121/REQ-123's still-intact preflight guards. This one-time recovery step, in isolation, remains safe exactly as iteration-3 found. What is NOT safe to certify is the NEXT such cycle: once loan_Franklin_2 itself reaches 'active' via the happy path (storing a facilitator-format tx_hash), a THIRD stuck row (loan_Franklin_3, same wallet pair, same $0.02 cap, the SAME retry pattern this protocol exists to support) would have its own reconcile scan run directly into FIND-301's unverified cross-format casing assumption."
+  },
+  "goNoGo": "NO-GO, unconditionally, for certifying this iteration as the final gate for ONGOING lending. Exactly as in iteration-3: TODAY's specific, narrow, one-time transition (loan_Franklin_1 -> disbursement_failed-or-refused, with no tx_hash yet recorded to collide against) is independently re-verified safe by direct code trace. What this review blocks is broader: FIND-301 shows that REQ-124's own cross-loan tx_hash-replay guard -- the fix this feature's iteration-3 review explicitly declined to wave through without -- itself silently depends on an unverified, untested, and (given the facilitator is an external x402-rs submodule not present in this checkout) unverifiable-from-this-repo assumption: that a transaction hash string returned by the facilitator's own HTTP JSON API and the SAME transaction hash string returned by this codebase's own eth_getLogs RPC call share identical character casing. This codebase already knows, and already handles, this exact class of problem for wallet addresses (lending-signer.mjs's addressesEqual) but has not applied the same discipline to tx_hash. Recommend: normalize tx_hash to lowercase at every storage and comparison site (mirroring addressesEqual's own established pattern) before this feature is certified for the colony's ongoing, repeated lending operation; add a test fixture proving the guard survives a casing mismatch between the two source formats. Not required before a single, manually-supervised recovery of loan_Franklin_1 itself (which has no tx_hash yet to collide against) -- required before this protocol is trusted to run repeated cold-start cycles unattended."
+}

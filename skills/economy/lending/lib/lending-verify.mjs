@@ -6,6 +6,15 @@
 // application, to the `from` side (that file's own `from` topic is an unchecked substring — resolves
 // FIND-105's honest-attribution requirement). NEVER escrow.mjs, which contains no Transfer-log parsing
 // at all (corrects this feature's own prior FIND-007 mischaracterization).
+//
+// impl-review iteration-4, FIND-301 (critical): both replay-guard comparisons below (`alreadyCredited`,
+// `alreadyRecorded`) now use `txHashesEqual` (`lending-signer.mjs`) instead of raw `===` — a tx_hash
+// reaching loans.jsonl from the facilitator-format disbursement route vs. this module's own
+// `eth_getLogs`-derived `extractTxHash` route has no shared, code-enforced casing contract, and an
+// unnormalized comparison would silently fail to match, reopening FIND-201's cross-loan misattribution
+// hazard on a casing difference alone.
+import { txHashesEqual } from "./lending-signer.mjs";
+
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 // Base mainnet USDC — the same canonical value already declared in economy/gig/lib/escrow.mjs's own
 // USDC_BASE_MAINNET (REQ-107: this feature is Base-mainnet-USDC-only this increment); duplicated as a
@@ -82,7 +91,7 @@ function extractTxHash(log) {
  * loans.jsonl — same-loan OR cross-loan replay (resolves FIND-202).
  */
 export async function verifyRepayment({ txHash, expectedFrom, expectedTo, rpcUrl, loanRows }) {
-  const alreadyCredited = (loanRows || []).some((row) => row && row.tx_hash === txHash);
+  const alreadyCredited = (loanRows || []).some((row) => row && txHashesEqual(row.tx_hash, txHash));
   if (alreadyCredited) return { credited: 0, rejected: true };
 
   let receipt;
@@ -172,7 +181,7 @@ export async function reconcileProvisionalDisbursement({ loanRow, loanRows, rpcU
     // (same-loan or cross-loan) can never be counted as proof of a DIFFERENT/this reconciliation's own
     // disbursement.
     const txHash = extractTxHash(log);
-    const alreadyRecorded = (loanRows || []).some((row) => row && row.tx_hash === txHash);
+    const alreadyRecorded = (loanRows || []).some((row) => row && txHashesEqual(row.tx_hash, txHash));
     return !alreadyRecorded;
   });
   if (!matchingLog) return { found: false };
