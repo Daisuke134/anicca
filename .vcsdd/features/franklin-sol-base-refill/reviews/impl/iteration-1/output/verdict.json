@@ -1,0 +1,73 @@
+{
+  "phase": "impl-review",
+  "feature": "franklin-sol-base-refill",
+  "iteration": 1,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["02089614"],
+  "external_test_evidence": "90/90 funding + 210/210 loop (thinker-executed)",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "/Users/anicca/anicca/.worktrees/sol-base-refill",
+    "specPath": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md",
+    "filesReviewed": [
+      "skills/earn/funding/lib/refill_plan.py",
+      "skills/earn/funding/franklin_sol_base_refill.py",
+      "skills/earn/funding/lib/identity.py",
+      "skills/earn/funding/lib/erc20.py",
+      "skills/earn/funding/lib/ledger.py",
+      "skills/earn/funding/lib/solana_rpc.py",
+      "skills/earn/funding/lib/kill_switch.py",
+      "skills/earn/funding/tests/test_refill_plan.py",
+      "skills/earn/funding/tests/test_franklin_sol_base_refill.py",
+      "skills/earn/sol-to-usdc.py"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002", "FIND-005"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-006"],
+      "evidence": []
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003", "FIND-004"],
+      "evidence": []
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-006", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-005"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py",
+          "description": "Confirmed zero I/O/network/clock imports in the pure module; purity boundary claim in verification-architecture.md holds for this file in isolation."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007"
+    ],
+    "duplicateFindings": []
+  }
+}

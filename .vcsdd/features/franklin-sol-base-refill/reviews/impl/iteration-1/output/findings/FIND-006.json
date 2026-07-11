@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "Several explicit spec edge cases have no orchestration-level test, and production error handling is inconsistent across the effectful shell's dependency functions. (1) REQ-001's 'resolver returns a malformed/undecodable secret: refuse' edge case has a code path (derive_pubkey wrapped in try/except, lines 143-148) but no test ever makes deps['derive_pubkey'] raise -- only the 'no secret at all' case (resolve_secret returns None) is tested. (2) REQ-002's citizens.json failure edge case is untested (see FIND-002). (3) The production wiring for relay_quote() and read_solana_balance_usd() (franklin_sol_base_refill.py:437-445) has NO try/except around it in run_refill() (lines 165-166, 180-191), unlike derive_pubkey, read_base_balance_units (before-read), and build_sign_submit which are all explicitly wrapped. A transient network error calling relay.link's /quote endpoint or the Solana RPC before any broadcast crashes the process with an uncaught exception instead of the clean {'ok': false, ...} JSON result and skipped/failed ledger row that the module's own docstring promises ('exactly one JSON line on stdout... non-zero otherwise') and that every other pre-broadcast refusal path in this same function produces.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "165-166, 180-192",
+    "snippet": "balance_usd = deps[\"read_solana_balance_usd\"](sender_pubkey)\n...\nquote = deps[\"relay_quote\"]({...})"
+  },
+  "crossReference": {
+    "specRequirements": ["REQ-001", "REQ-002"]
+  },
+  "routeToPhase": "2b"
+}

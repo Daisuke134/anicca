@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "REQ-006's independent verification is a coarse wallet-wide balance delta, not a fill-specific check, and its tolerance is wide enough to mask a materially underfilled swap as success. (1) Race with other inflows/outflows: base_balance_before/after (lines 246, 280) read Franklin's total Base USDC balance, not a balance tied to the specific relay fill transaction (e.g. matching a Transfer log against the relay solver's known fill tx hash). Any other credit to the same Base address during the ~180s poll window (a second concurrent invocation of this same script -- REQ-005's ledger-row guard only blocks a second run AFTER the first pending row is written, not during the gap between the balance-read and the ledger-append -- or any other earn engine crediting the same wallet) would be silently counted toward 'verified' for this run, and the converse (a genuine fill overlapping an outflow) could be misreported as failed. (2) BALANCE_DELTA_TOLERANCE_PCT = 20.0 (line 76) accepts a fill as 'sent'/verified even when the delivered amount is up to 20% below the quote's already fee-discounted expected output. Combined with the 8% fee already permitted by REQ-004, a 'sent' row (ok:true) could represent as little as ~73% of the originally-swapped value reaching Franklin's Base wallet, with no failure signal.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "73-76, 246, 276-297",
+    "snippet": "BALANCE_DELTA_TOLERANCE_PCT = 20.0\n...\ndelta_units = base_balance_after - base_balance_before\nexpected_units = int(round(out_usd * 1e6))\ntolerance_units = max(1, int(round(expected_units * (BALANCE_DELTA_TOLERANCE_PCT / 100))))\nverified = delta_units > 0 and (expected_units == 0 or delta_units >= expected_units - tolerance_units)"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-006"
+  },
+  "routeToPhase": "2b"
+}

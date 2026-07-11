@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "The iteration-1 FIND-003 fix (_sanitized_secret_error -- never let str(exc) reach a ledger row or printed output for a secret-decode failure) was applied ONLY to franklin_sol_base_refill.py's own two decode call sites: derive_pubkey (franklin_sol_base_refill.py:191-196) and build_sign_submit (franklin_sol_base_refill.py:321-328). A grep of the whole funding module for str(exc)/f-string exc interpolation surfaces a THIRD site that decodes the same class of raw secret material and was never brought under the same protection: lib/identity.py:70-88's verify_solana_secret_file (unchanged by this feature) calls derive_solana_pubkey_from_secret(secret) -> keypair_from_secret_string(secret) -- the exact same dual-decode helper franklin_sol_base_refill.py's derive_pubkey now uses -- inside a try/except that returns `{'verified': False, 'reason': f\"could not derive pubkey from {path}: {e}\", 'derived': None}` (lib/identity.py:86-87), embedding the raw exception object `e` directly into `reason` with no sanitization at all. This function is called by bridge.py:104 and send_to_franklin.py:89,98 -- both of which immediately embed that unsanitized `reason` string verbatim into a `fail(f\"...: {sender_check['reason']}\")` / `fail(f\"...: {recipient_check['reason']}\")` call (send_to_franklin.py:93,102) that appends a ledger row. Critically, both scripts append to the exact SAME `skills/earn/state/funding-ledger.jsonl` this feature's own module writes to (behavioral-spec.md:17: 'appends to the SAME skills/earn/state/funding-ledger.jsonl'). If the underlying solders/base64 decode exception ever embeds raw input bytes on failure -- the exact unresolved risk iteration-1's own FIND-003 explicitly could not rule out without running solders locally (per iteration-1 notes.md: 'whether solders' base58-decode exception message embeds the raw input... could not be fully resolved') -- this alternate, pre-existing call path would leak the secret into the same ledger file this feature's REQ-001 acceptance criterion is meant to protect, even though this feature's OWN new code correctly avoids that leak on its own two call sites. tests/test_identity.py's test_verify_solana_secret_file_garbage_content_fails_closed (test_identity.py:79-83) only asserts `verified is False`; it never asserts the injected secret is absent from `result['reason']`, so this specific leak path has no regression test anywhere in the module, unlike the two sites this feature's own tests do cover (test_franklin_sol_base_refill.py:188-217).",
+  "evidence": {
+    "filePath": "skills/earn/funding/lib/identity.py",
+    "lineRange": "70-88",
+    "snippet": "except Exception as e:  # noqa: BLE001 -- any failure here must fail closed, not raise\n    return {\"verified\": False, \"reason\": f\"could not derive pubkey from {path}: {e}\", \"derived\": None}"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-001 (ledger-shared money-safety guarantee)",
+    "relatedFinding": "iteration-1 FIND-003 (fixed only for this feature's own two call sites, not module-wide)",
+    "downstreamCallers": "skills/earn/funding/send_to_franklin.py:89-103 (fail() embeds sender_check['reason']/recipient_check['reason'] into a ledger row appended to the SAME funding-ledger.jsonl); skills/earn/funding/bridge.py:104 (same pattern)"
+  },
+  "routeToPhase": "2c"
+}

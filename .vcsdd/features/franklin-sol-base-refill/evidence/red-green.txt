@@ -1,0 +1,66 @@
+## RED phase (before lib/refill_plan.py + franklin_sol_base_refill.py existed)
+
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+$ rtk proxy python3 -m pytest tests/test_refill_plan.py tests/test_franklin_sol_base_refill.py -v
+ERROR collecting tests/test_refill_plan.py
+ModuleNotFoundError: No module named 'lib.refill_plan'
+ERROR collecting tests/test_franklin_sol_base_refill.py
+ModuleNotFoundError: No module named 'franklin_sol_base_refill'
+=========================== short test summary info ============================
+ERROR tests/test_refill_plan.py
+ERROR tests/test_franklin_sol_base_refill.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
+============================== 2 errors in 0.26s ===============================
+
+$ rtk proxy python3 -m pytest tests/test_caps.py tests/test_identity.py tests/test_ledger.py -v
+============================== 33 passed in 0.18s ===============================
+
+## GREEN phase (after implementation)
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+$ rtk proxy python3 -m pytest tests/ -v   (skills/earn/funding, all suites incl. new)
+============================== 90 passed in 0.23s ===============================
+(33 pre-existing test_caps.py/test_identity.py/test_ledger.py + 57 new
+ test_refill_plan.py/test_franklin_sol_base_refill.py, zero failures)
+
+$ cd runtime/loop && npm test
+ℹ tests 210
+ℹ suites 0
+ℹ pass 210
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+
+## REQ-007 cron/loop-wiring check
+
+$ grep -rl "franklin_sol_base_refill\|franklin-sol-base-refill" --include="*.json" \
+  --include="*.sh" --include="*.mjs" --include="*.md" . \
+  | grep -v "^\./.vcsdd" | grep -v "^\./skills/earn/funding"
+(no output -- not referenced from any cron/loop/wake wiring)
+
+## impl-review iteration-2 fixes (FIND-002..006, this pass -- FIND-001 intentionally excluded,
+## routed to a follow-up pass that attaches real relay.link dry-run evidence)
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+$ rtk proxy python3 -m pytest tests/ -v   (skills/earn/funding, all suites incl. new)
+============================== 119 passed in 0.20s ==============================
+(115 pre-fix baseline + 4 new: test_verify_solana_secret_file_decode_failure_reason_never_
+ contains_secret [FIND-002], test_is_killed_raising_treated_as_killed_fails_closed +
+ test_append_ledger_raising_fails_closed_via_stderr_and_nonzero_exit_not_uncaught_crash
+ [FIND-003], test_relay_quote_returns_non_dict_truthy_value_refuses_cleanly [FIND-004];
+ zero failures, zero regressions)
+
+## Tooling note
+
+The `rtk` PostToolUse hook rewrites plain `python3 -m pytest ...` invocations and, in this
+session, repeatedly failed to spawn the process (`os error 2`) for that exact command shape.
+Isolated as a known baseline issue with the rtk command-rewrite wrapper (unrelated to this
+feature's code) -- worked around for the remainder of the session with `rtk proxy <cmd>`,
+which executes the raw command without the rewrite and ran pytest/npm correctly every time.

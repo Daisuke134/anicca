@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "The spec's 'Copy-not-reinvent sources' section claims skills/earn/sol-to-usdc.py's relay.link pattern was 'verified live 2026-07-11', and cites it as the precedent this feature adapts. But sol-to-usdc.py never reads details.currencyIn.amountUsd or details.currencyOut.amountUsd anywhere -- it only reads details.currencyOut.amountFormatted for a print statement (skills/earn/sol-to-usdc.py:83-84). REQ-004's entire 8% fee cap, the paramount money-safety gate for this feature, depends on exactly the two fields (currencyIn.amountUsd, currencyOut.amountUsd) that were NEVER exercised by the cited 'proven'/'verified live' precedent, and the verification-architecture.md's Tier 3 section explicitly states no formal proof applies here, relying entirely on Tier 1/2 pytest coverage over pure functions -- none of which touch the real relay.link API response shape. Combined with FIND-001 (the orchestration layer silently substitutes a fabricated value instead of refusing when these exact fields are absent), the first --live invocation would also be the first time this specific field assumption is checked against production relay.link responses, with no evidence in evidence/red-green.txt that even a non-signing dry-run against the real relay endpoint for this exact currency pair (USDC-SPL Solana -> USDC Base) was fetched and inspected during this session (state.json explicitly notes '--live' was never run, and does not mention a real-network dry-run either).",
+  "evidence": {
+    "filePath": "skills/earn/sol-to-usdc.py",
+    "lineRange": "83-84",
+    "snippet": "det = q.get(\"details\", {})\nprint(\"quote out:\", det.get(\"currencyOut\", {}).get(\"amountFormatted\"), \"USDC\")"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-004",
+    "relatedFinding": "FIND-001",
+    "specClaim": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md:8-12 ('verified live 2026-07-11')"
+  },
+  "routeToPhase": "1b"
+}
