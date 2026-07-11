@@ -11,6 +11,7 @@
 - **G1（gas）**: 全 on-chain 書き込みの前に `ensureGas()` preflight が走る。native 残高が閾値未満のとき、**testnet では**指定 funder から hard cap 内で自動 drip し、**mainnet では自動送金せず**「必要 gas 量つき構造化エラー」を返す（silent fail 禁止・想定外 spend 禁止）。done = Base Sepolia で register→giveFeedback が**手動 ETH 補給ゼロ**で通る E2E ログ。
 - **G2（reputation 書込）**: `gigVerifyAndPay` 成功時に `giveFeedback(takerAgentId, +100, "gig-complete", gigId)`、reject 時に `-100` を Reputation Registry へ書く（fail-open: 書込失敗で payout 自体は失敗させない）。done = Base Sepolia で完了 gig の feedback tx hash + `getSummary` の count 増を独立 `eth_call` で確認。
 - **G3（reputation gate）**: `lending/lib/reputation-gate.mjs` の `passesOnchainReputationGate({borrowerAgentId,minScore,minJobCount})` を lending 与信に合成。**未設定（min=0）なら素通り = fail-open で段階導入**。done = 閾値設定時に実績不足 borrower が弾かれる unit + testnet 実証。
+  - ★2026-07-12 spec 訂正（adversary FIND-002 起因、phase 1c 判断）: gate は**本番の lending 判定経路に実配線する**こと。`isBorrowerEligibleWithReputationGate` を新設して誰も呼ばない dead code にしてはならない。**実経路 = `lending-orchestrator.mjs:executeLoanIssuanceAttempt`（借入発行の実入口）で、eligibility 判定の直後に gate を合成する**（`wake-gate.mjs` が eligibility を別途行うならそこも）。既定 fail-open（min=0 で全通過）ゆえ、閾値未設定なら既存挙動と完全に同一＝安全に配線できる。done に「本番経路からの呼び出しが grep で1件以上」を追加。
 - **G4（gasless 布石）**: ERC-4337 + paymaster（AgentKit `CdpSmartWalletProvider`）による真の gasless を**評価し**、`lib/wallet-provider.mjs` に差し替え可能な seam を作る（本 spec では**実配線しない**、seam のみ）。done = seam の存在 + 評価メモ。
 
 ## 2. Non-goals（この spec でやらない）
@@ -20,7 +21,7 @@
 
 ## 3. 触るファイル境界（worktree 内のみ）
 - 新規: `skills/economy/gig/lib/reputation.mjs`、`skills/economy/gig/lib/ensure-gas.mjs`、`skills/economy/lending/lib/reputation-gate.mjs`、`skills/economy/gig/lib/wallet-provider.mjs`（seam）。
-- 変更: `skills/economy/gig/gig.mjs`（verify/reject 経路に giveFeedback 追加、書込前に ensureGas）、`skills/economy/lending/lib/lending-gate.mjs`（gate 合成、既存 pure 判定は壊さない）。
+- 変更: `skills/economy/gig/gig.mjs`（verify/reject 経路に giveFeedback 追加、書込前に ensureGas）、`skills/economy/lending/lib/lending-gate.mjs`（gate 合成関数の新設、既存 pure 判定 `isBorrowerEligible` は壊さない）、**`skills/economy/lending/lib/lending-orchestrator.mjs`（★FIND-002 訂正: G3 gate を本番の借入発行経路に実配線。fail-open 既定ゆえ挙動不変）**、必要なら `skills/economy/lending/lib/wake-gate.mjs`（eligibility を別途行う箇所があれば同様に）。
 - テスト: 各 lib の unit + Base Sepolia E2E スクリプト。
 
 ## 4. ★ MONEY-SAFETY（MUST、違反=即 FAIL）★
