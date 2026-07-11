@@ -1,0 +1,156 @@
+=== RED phase evidence — franklin-reputation-gasless (G3: reputation-gate.mjs + lending-gate composition) ===
+Captured 2026-07-11T15:46:42Z, reputation-gate.mjs temporarily removed + lending-gate.mjs's isBorrowerEligibleWithReputationGate temporarily removed
+
+file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs:9
+import { isBorrowerEligible, isBorrowerEligibleWithReputationGate } from "../lending-gate.mjs";
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../lending-gate.mjs' does not provide an export named 'isBorrowerEligibleWithReputationGate'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:655:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.6.1
+✖ skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs (130.445625ms)
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/lending/lib/reputation-gate.mjs' imported from /Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/lending/lib/__tests__/reputation-gate.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:865:10)
+    at defaultResolve (node:internal/modules/esm/resolve:991:11)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:713:20)
+    at #resolveAndMaybeBlockOnLoaderThread (node:internal/modules/esm/loader:730:38)
+    at ModuleLoader.resolveSync (node:internal/modules/esm/loader:759:52)
+    at #resolve (node:internal/modules/esm/loader:695:17)
+    at ModuleLoader.getOrCreateModuleJob (node:internal/modules/esm/loader:615:35)
+    at ModuleJob.syncLink (node:internal/modules/esm/module_job:160:33)
+    at ModuleJob.link (node:internal/modules/esm/module_job:245:17) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/lending/lib/reputation-gate.mjs'
+}
+
+Node.js v25.6.1
+✖ skills/economy/lending/lib/__tests__/reputation-gate.test.mjs (125.242125ms)
+ℹ tests 2
+ℹ suites 0
+ℹ pass 0
+ℹ fail 2
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 142.457417
+
+✖ failing tests:
+
+test at skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs:1:1
+✖ skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs (130.445625ms)
+  'test failed'
+
+test at skills/economy/lending/lib/__tests__/reputation-gate.test.mjs:1:1
+✖ skills/economy/lending/lib/__tests__/reputation-gate.test.mjs (125.242125ms)
+  'test failed'
+
+--- G2: gigVerifyAndPay reputation wiring (pre-wiring gig.mjs, recordFeedbackBestEffort defined but never called) ---
+✖ gigVerifyAndPay(verified:true): on success, calls giveFeedbackFn with positive:true for the taker's agentId (14.511792ms)
+✖ gigVerifyAndPay(verified:false): on reject, calls giveFeedbackFn with positive:false (14.897208ms)
+✔ ★MONEY-SAFETY fail-open★ giveFeedbackFn throwing does NOT change gigVerifyAndPay's ok/paid/tx result -- payout is already final (5.182125ms)
+✖ ★MONEY-SAFETY fail-open★ ensureGasFn returning ok:false (e.g. mainnet needs_gas) does NOT change gigVerifyAndPay's ok/paid result, and giveFeedbackFn is never called (4.873167ms)
+✖ reputation write happens AFTER the real payout settles, never before (fund-safety ordering) (5.683834ms)
+✔ gigVerifyAndPay still defaults to fail-closed poster-auth (FINDING 1) exactly as before -- reputation wiring adds no bypass (9.123ms)
+ℹ tests 6
+ℹ suites 0
+ℹ pass 2
+ℹ fail 4
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 640.442959
+
+✖ failing tests:
+
+test at skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:53:1
+✖ gigVerifyAndPay(verified:true): on success, calls giveFeedbackFn with positive:true for the taker's agentId (14.511792ms)
+  AssertionError [ERR_ASSERTION]: giveFeedbackFn must be called on a successful payout
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:72:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async startSubtestAfterBootstrap (node:internal/test_runner/harness:358:3) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:77:1
+✖ gigVerifyAndPay(verified:false): on reject, calls giveFeedbackFn with positive:false (14.897208ms)
+  AssertionError [ERR_ASSERTION]: The expression evaluated to a falsy value:
+  
+    assert.ok(feedbackCall)
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:96:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: null,
+    expected: true,
+    operator: '==',
+    diff: 'simple'
+  }
+
+test at skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:120:1
+✖ ★MONEY-SAFETY fail-open★ ensureGasFn returning ok:false (e.g. mainnet needs_gas) does NOT change gigVerifyAndPay's ok/paid result, and giveFeedbackFn is never called (4.873167ms)
+  TypeError: Cannot read properties of undefined (reading 'ok')
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:140:34)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7)
+
+test at skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:143:1
+✖ reputation write happens AFTER the real payout settles, never before (fund-safety ordering) (5.683834ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    [
+      'payout',
+  -   'feedback'
+    ]
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/franklin-reputation-gasless/skills/economy/gig/__tests__/gig-reputation-wiring.test.mjs:163:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: [ 'payout' ],
+    expected: [ 'payout', 'feedback' ],
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+===========================================================================
+new-feature-tests: FAIL (confirmed above: G3 reputation-gate.mjs ERR_MODULE_NOT_FOUND / lending-gate
+composition ERR_MODULE_NOT_FOUND; G2 wiring: 4 of 6 tests fail against pre-wiring gig.mjs)
+regression-baseline: PASS (see below)
+===========================================================================
+--- regression baseline at RED time (pre-existing 150 lending + 74 gig tests, this feature's own worktree) ---
+--- lending suite (150 tests, pre-existing, this feature's changes stashed) ---
+ℹ tests 150
+ℹ suites 0
+ℹ pass 150
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 874.193292
+
+--- gig suite (51 tests, pre-existing, this feature's changes stashed) ---
+ℹ tests 51
+ℹ suites 0
+ℹ pass 51
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 994.553916

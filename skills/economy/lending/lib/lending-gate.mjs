@@ -5,6 +5,7 @@
 // .vcsdd/features/anicca-agent-lending/specs/behavioral-spec.md (REQ-101..REQ-114) and
 // specs/verification-architecture.md (PROP-101a..PROP-114g).
 import { isSelfFunded } from "../../../_shared/lib/is-self-funded.mjs";
+import { passesOnchainReputationGate as passesOnchainReputationGateReal } from "./reputation-gate.mjs";
 
 // ===========================================================================
 // Constants (REQ-101/102/104/114's own declared, independently-owned values)
@@ -114,6 +115,27 @@ export function isBorrowerEligible({ borrowerAgent, loanRows, borrowerId, borrow
     (r) => r.borrower_id === borrowerId && (r.status === "active" || r.status === "defaulted")
   );
   if (hasOpenLoan) return { eligible: false, reason: "outstanding_loan" };
+  return { eligible: true, reason: "ok" };
+}
+
+// ===========================================================================
+// G3 (franklin-reputation-gasless spec §1) — isBorrowerEligibleWithReputationGate
+// ===========================================================================
+
+// isBorrowerEligible itself (above) is UNTOUCHED -- this is a new, additive composition seam only
+// (spec §3 "既存 pure 判定は壊さない"). Short-circuits on the base (pure, synchronous) check FIRST: an
+// already-ineligible borrower never even triggers the on-chain reputation read, matching Azeth's own
+// ReputationGateHook semantics (a gate is an ADDITIONAL bar on top of the base checks, never a
+// replacement for them).
+export async function isBorrowerEligibleWithReputationGate(
+  baseArgs,
+  reputationGateArgs = {},
+  reputationGateFn = passesOnchainReputationGateReal
+) {
+  const base = isBorrowerEligible(baseArgs);
+  if (!base.eligible) return base;
+  const gateResult = await reputationGateFn(reputationGateArgs);
+  if (!gateResult.eligible) return { eligible: false, reason: gateResult.reason };
   return { eligible: true, reason: "ok" };
 }
 

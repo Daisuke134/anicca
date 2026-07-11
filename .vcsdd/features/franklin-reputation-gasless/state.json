@@ -1,0 +1,58 @@
+{
+  "featureName": "franklin-reputation-gasless",
+  "mode": "lean",
+  "language": "javascript",
+  "currentPhase": "3",
+  "notes": "Design spec = docs/superpowers/specs/2026-07-12-franklin-reputation-gasless-design.md (all of it). Implements G1 (ensure-gas.mjs, testnet-only auto-drip, hard-capped + rate-limited, mainnet never auto-spends), G2 (reputation.mjs giveFeedback/getReputationSummary + gigVerifyAndPay wiring, fail-open, strictly after payout settles), G3 (lending/lib/reputation-gate.mjs + lending-gate.mjs::isBorrowerEligibleWithReputationGate, fail-open on unset thresholds/no-clientAddresses/read-failure, fail-closed only on missing borrowerAgentId with a configured gate), G4 (wallet-provider.mjs seam + evaluation memo, deliberately NOT wired into identity.mjs/reputation.mjs/ensure-gas.mjs per spec's own 'seam only' MUST). STOP at 2c per this session's own task boundary -- fresh-context adversary review (phase 3) intentionally NOT run by this same session; not merged.",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "reason": "Phase 1a: specs/behavioral-spec.md written -- REQ-001..013 (EARS), purity boundary analysis, edge cases, non-functional requirements, derived from the design spec's §0-§7 in full."
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "reason": "Phase 1b: specs/verification-architecture.md written -- purity boundary map, PROP-001..045, tiered verification strategy (Tier 0 regression / Tier 1 unit / Tier 2 one-time address provenance / Tier 3 live-chain E2E, explicitly scoped NOT-RUN this session per money-safety boundary)."
+    },
+    {
+      "from": "1b",
+      "to": "2a",
+      "reason": "Phase 2a (RED): a prior aborted worktree session had already left G1 (ensure-gas.mjs+tests, 12/12 GREEN) and G2 core (reputation.mjs+tests, 11/11 GREEN) implemented and passing, plus 3 test files written but RED against not-yet-existing/not-yet-wired code (G2 wiring in gig.mjs, G3 reputation-gate.mjs + lending-gate composition). This session independently RE-VERIFIED RED for every incomplete piece rather than trusting the prior partial state: (1) G2 wiring -- confirmed 4/6 gig-reputation-wiring.test.mjs tests FAIL against the pre-wiring gig.mjs via a controlled revert+restore (git diff clean after restore); (2) G3 -- confirmed both reputation-gate.test.mjs and lending-gate-reputation-composition.test.mjs FAIL with ERR_MODULE_NOT_FOUND/missing export via a controlled temp-remove+restore of reputation-gate.mjs and the lending-gate.mjs addition (git diff clean after restore). Regression baseline (150 pre-existing lending + 51 pre-existing gig tests) independently confirmed PASS at RED time via `git stash push -u`/`pop` isolation in this same worktree. See evidence/sprint-1-red-phase.log (new-feature-tests: FAIL / regression-baseline: PASS markers)."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "reason": "Phase 2b (GREEN): wired ensureGasFn/giveFeedbackFn into gigVerifyAndPay (both the verified:true payout path and the verified:false reject path, reputation write strictly AFTER the payout/state-save is already final, attached under result.reputation, never altering ok/paid/tx -- fail-open per spec §4); implemented reputation-gate.mjs::passesOnchainReputationGate (Azeth ReputationGateHook JS port, fail-open on unset thresholds/no-clientAddresses/read-failure, fail-closed only on a configured gate with no borrowerAgentId); added lending-gate.mjs::isBorrowerEligibleWithReputationGate (additive composition, isBorrowerEligible itself untouched, short-circuits before ever consulting the reputation gate on a failing base check); added wallet-provider.mjs (G4 seam + evaluation memo, deliberately unwired). All 41 new tests GREEN + 80 pre-existing gig tests GREEN + 162 (150 pre-existing + 12 new G3) lending tests GREEN -- see evidence/sprint-1-green-phase.log (target-feature-tests: PASS / regression-baseline: PASS markers). One pre-existing, unrelated flaky test (lending-orchestrator.test.mjs REQ-116, timing-sensitive) independently reproduced BOTH with and without this feature's changes present via the same stash-isolation technique -- documented in the green-phase log as a known pre-existing flake, not a regression."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "reason": "Phase 2c (refactor review): reviewed all 4 new/modified files for structure, naming, duplication against this repo's own established conventions (identity.mjs/lending-gate.mjs's own header-comment density, DI-parameter style, self-contained GIG_CHAIN re-reads, fail-open/fail-closed reason-string vocabulary). No refactor needed -- the prior session's G1/G2-core code already matched conventions closely (independently reviewed line-by-line this session before building on it); this session's own G2-wiring/G3/G4 additions were written directly in that same style. No duplication introduced: reputation-gate.mjs's default getSummaryFn wiring reuses reputation.mjs's own getReputationSummary rather than re-implementing the read; wallet-provider.mjs deliberately does not touch identity.mjs/reputation.mjs/ensure-gas.mjs (spec's own 'seam only' MUST, avoiding an unused abstraction being force-adopted). Tests remain green after this review pass (no code changed during 2c)."
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "reason": "Handed off for fresh-context adversary implementation review (phase 3), per this session's own explicit task boundary: 'do NOT run adversary yourself'. NOT run by this session. Not merged. E2E (spec §5, Base Sepolia live tx proof) also NOT run this session -- see evidence/e2e-status.md for the exact money-safety-boundary blocker (this session may not read/touch wallet keys or .env, which a live E2E run requires)."
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-franklin-reputation-gasless-1783990860000",
+    "beads": []
+  },
+  "gates": {
+    "reqCoverage": "REQ-001..013 each have >=1 explicit test across skills/economy/gig/__tests__/{ensure-gas,reputation,gig-reputation-wiring}.test.mjs and skills/economy/lending/lib/__tests__/{reputation-gate,lending-gate-reputation-composition}.test.mjs (41 new tests total).",
+    "moneySafetyFileBoundaryCheck": "git diff main --stat for this feature touches only skills/economy/gig/** and skills/economy/lending/lib/** (plus this feature's own .vcsdd/ dir) -- no wallet keys, .env, .solana-session, ledger.mjs, spend-cap constants, or .vcsdd/features/anicca-agent-economy/** were read or modified. Two unrelated live-daemon state files (skills/self/{capafy-loop,life-manager-loop}/state/STATE.md) were found already modified in this worktree by other running loops on this machine and were deliberately EXCLUDED from this feature's commit (out of file boundary, spec §3)."
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-11T15:20:00.000Z",
+  "updatedAt": "2026-07-11T16:05:00.000Z"
+}

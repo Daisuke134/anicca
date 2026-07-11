@@ -64,10 +64,12 @@
 // values so lock-contention/staleness scenarios run in milliseconds, not minutes.
 import { privateKeyToAccount } from "viem/accounts";
 import { payViaFacilitator } from "./lib/escrow.mjs";
-import { verifyIdentity as verifyIdentityReal } from "./lib/identity.mjs";
+import { verifyIdentity as verifyIdentityReal, GIG_CHAIN } from "./lib/identity.mjs";
 import * as store from "./lib/store.mjs";
 import { loadState, saveState } from "./lib/persist.mjs";
 import { withGigLock } from "./lib/lock.mjs";
+import { giveFeedback as giveFeedbackReal } from "./lib/reputation.mjs";
+import { ensureGas as ensureGasReal } from "./lib/ensure-gas.mjs";
 
 // GIG_STATE_PATH override: without it, DEFAULT_STATE_PATH resolves next to THIS module file, which is
 // fine for a single-copy dev/testnet run but WRONG once automaton and Franklin each get their own
@@ -90,6 +92,33 @@ function escrowAddress() {
 }
 function escrowPrivateKey() {
   return process.env.GIG_ESCROW_PRIVATE_KEY || null;
+}
+
+/**
+ * recordFeedbackBestEffort — franklin-reputation-gasless G2: writes ERC-8004 Reputation feedback for
+ * `gig.takerAgentId` (+100 on a real payout, -100 on a poster reject), signed by the POSTER's own key
+ * (the "client" giving feedback about the taker — never the taker rating itself, which the Reputation
+ * contract's own "Self-feedback not allowed" guard would reject anyway).
+ *
+ * ★MONEY-SAFETY (spec §4 MUST: "reputation は fail-open")★ — this function is called ONLY after
+ * gigVerifyAndPay's own `result`/`payout` has ALREADY been decided (funds already final, or the gig
+ * already moved to REJECTED with no payout). Every failure path here (gas preflight, network, revert,
+ * exception) returns a plain {ok:false, ...} object that the caller merely ATTACHES to its own response
+ * under `reputation` — it can NEVER change gigVerifyAndPay's `ok`/`paid`/`tx` fields, and never throws
+ * out of this function (try/catch wraps the whole body).
+ */
+async function recordFeedbackBestEffort({ posterPrivateKey, gig, positive, ensureGasFn = ensureGasReal, giveFeedbackFn = giveFeedbackReal }) {
+  try {
+    if (!gig || !gig.takerAgentId) {
+      return { ok: false, reason: "no takerAgentId on gig -- skipping reputation write" };
+    }
+    const posterAddress = privateKeyToAccount(posterPrivateKey).address;
+    const gas = await ensureGasFn({ address: posterAddress, isMainnet: GIG_CHAIN === "base" });
+    if (!gas.ok) return { ok: false, stage: "ensure-gas", ...gas };
+    return await giveFeedbackFn({ signerPrivateKey: posterPrivateKey, agentId: gig.takerAgentId, positive, gigId: gig.id });
+  } catch (e) {
+    return { ok: false, reason: e.shortMessage || e.message || String(e) };
+  }
 }
 
 /**
@@ -244,6 +273,8 @@ export async function gigVerifyAndPay({
   pay = payViaFacilitator,
   verifyIdentityFn = verifyIdentityReal,
   lockConfig = {},
+  ensureGasFn = ensureGasReal,
+  giveFeedbackFn = giveFeedbackReal,
 }) {
   return withGigLock(
     statePath,
@@ -274,7 +305,10 @@ export async function gigVerifyAndPay({
       if (verified !== true) {
         const result = await applyAndSave(statePath, (freshState) => store.applyVerifyAndPay(freshState, gigId, { verified: false }), lockConfig);
         if (!result.ok) return result;
-        return { ok: true, gig: result.gig, paid: false, reason: "poster rejected -- no payout (fail-closed)" };
+        // G2 (spec §1): reject already final (no payout, no exceptions above) -- reputation write is
+        // strictly AFTER that decision and can never flip it (recordFeedbackBestEffort never throws).
+        const reputation = await recordFeedbackBestEffort({ posterPrivateKey, gig: result.gig, positive: false, ensureGasFn, giveFeedbackFn });
+        return { ok: true, gig: result.gig, paid: false, reason: "poster rejected -- no payout (fail-closed)", reputation };
       }
 
       // FINDING 3: re-verify the taker's identity at payout time, not just at take time.
@@ -296,7 +330,11 @@ export async function gigVerifyAndPay({
         lockConfig
       );
       if (!result.ok) return result;
-      return { ok: true, gig: result.gig, paid: true, tx: payout.tx };
+      // G2 (spec §1): payout is ALREADY final on disk at this point -- reputation write is strictly
+      // AFTER (fund-safety ordering) and fail-open (recordFeedbackBestEffort never throws, never changes
+      // ok/paid/tx below).
+      const reputation = await recordFeedbackBestEffort({ posterPrivateKey, gig: result.gig, positive: true, ensureGasFn, giveFeedbackFn });
+      return { ok: true, gig: result.gig, paid: true, tx: payout.tx, reputation };
     },
     lockConfig
   );
