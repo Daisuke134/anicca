@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "specs/verification-architecture.md's proof-obligation table row `FIND-001a (rewritten, impl-review iter3)` was NOT updated when iter4's FIND-001 fix (fill_tid narrowed from number-OR-SETTLEMENT_ID_VALUE-string to number-ONLY) landed, even though behavioral-spec.md's own Changelog and REQ-702 acceptance criteria WERE updated for iter4 (behavioral-spec.md:10-25, 144-151, 190-193). The stale row's own text ('Also asserts a non-boolean external/confirmed and a non-number/non-string fill_tid are still dropped (fail-closed)') factually misdescribes the current code at ledger-publish.mjs:346 (`case 'fill_tid': return isFiniteNumber(value) ? value : undefined;` -- ANY string, well-formed or not, is now dropped, there is no 'non-number/non-string' distinction left to make) and omits the new, most security-relevant iter4 test entirely (`ledger-publish.test.mjs:275-293`, the secret-shaped-string-fill_tid-must-be-dropped regression proof, which is exactly the kind of Tier-1 boundary-value proof obligation this table exists to enumerate per its own 'Verification Strategy' section, verification-architecture.md:129-136). verification-architecture.md's own Changelog section (lines 3-23) has no iter4 entry at all, unlike behavioral-spec.md's Changelog which explicitly documents both iter4 FIND-001 and FIND-002. This is a genuine, citable violation of this feature's own repeatedly-stated verification-readiness contract (each FIND-numbered fix in prior iterations added or rewrote its own PROP/FIND-lettered row here) and it ships, uncorrected, to the public github.com/Daisuke134/anicca repo as this feature's authoritative verification record -- a future reader trusting this table over the code would believe a string-typed fill_tid can still round-trip if it happens to be 'number/string'-shaped, which is no longer true.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-ledger-push/specs/verification-architecture.md",
+    "lineRange": "104,3-23",
+    "snippet": "| FIND-001a (rewritten, impl-review iter3) | `projectEarnLine`: keeps every REQ-702-allowlisted EARN field, NOW INCLUDING `external`/`confirmed`/`fill_tid` (type/shape-checked, never coerced) -- drops ONLY fields truly outside the explicit list. Also asserts a non-boolean `external`/`confirmed` and a non-number/non-string `fill_tid` are still dropped (fail-closed) |"
+  },
+  "corroborating": [
+    {"filePath": "runtime/loop/ledger-publish.mjs", "lineRange": "219-231,344-346", "note": "Actual current code: fill_tid accepts a finite number ONLY; the SETTLEMENT_ID_VALUE string branch was removed entirely in this same iteration (iter4 FIND-001), so 'non-number/non-string' is no longer the right characterization of what gets dropped -- ALL strings are dropped now, not just malformed ones."},
+    {"filePath": "runtime/loop/__tests__/ledger-publish.test.mjs", "lineRange": "275-293", "note": "The actual iter4 FIND-001 regression test (numeric round-trips; id-shaped string dropped; secret-shaped string dropped; malformed string dropped) -- this test exists and passes, but is not referenced anywhere in verification-architecture.md's proof-obligation table or Changelog."},
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "10-25", "note": "behavioral-spec.md's own Changelog WAS correctly updated for both iter4 FIND-001 and FIND-002 -- confirming this is an inconsistency between the two spec documents, not a case where neither was updated."}
+  ],
+  "routeToPhase": "2c"
+}
