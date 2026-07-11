@@ -1,0 +1,335 @@
+# Sprint 1 — RED phase evidence (ledger-uniqueness)
+
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+## Summary
+
+Both new test files fail exactly as expected (the functions/parameters under test do not
+exist yet):
+- skills/_shared/lib/__tests__/ledger-path.test.mjs -> import-time SyntaxError
+  ("does not provide an export named 'filterOwnWalletRows'"): 1/1 file fails to even load.
+- skills/earn/self-improve/tests/test_ledger_wallet_filter.py -> 14/14 tests FAIL
+  (AttributeError: no attribute 'filter_own_wallet_rows' / TypeError: unexpected keyword
+  argument 'own_wallets').
+
+## Regression baseline (pre-existing suites this feature must not break)
+
+Ran BEFORE any implementation code was touched (RED phase, files untouched: skills/_shared/lib/ledger.mjs,
+skills/earn/self-improve/lib/ledger_reader.py):
+
+- `node --test skills/_shared/lib/__tests__/ledger.test.js skills/_shared/lib/__tests__/ledger.test.mjs`
+  -> 21/21 PASS (unchanged from pre-feature baseline).
+- `cd skills/earn/self-improve && python3 -m pytest tests/test_ledger_reader.py tests/test_ledger_resolution.py tests/test_realized_gate.py -q`
+  -> 41 passed, 3 failed in this worktree.
+
+  Of those 3 failures, ALL THREE are pre-existing and NOT caused by this feature
+  (skills/earn/self-improve/lib/ledger_reader.py has zero diff in this worktree at RED-phase
+  time — confirmed via `git status --short`):
+  1. `test_realized_gate.py::test_resolved_false_blocks_promotion_unconditionally_even_with_adversary_pass`
+  2. `test_realized_gate.py::test_gate_none_vacuous_pass_vs_unconditional_block_side_by_side`
+     -- both fail identically on the PRISTINE main checkout (`/Users/anicca/anicca`, no
+     worktree, no changes from this feature at all): `conftest.py:37: AssertionError:
+     expected baseline text not found (test fixture drifted?):
+     'config.get("edge_weight", 0.25)'` -- a pre-existing fixture/baseline-code drift in
+     `strategies/pm_backtest_strategy.py` vs `conftest.patched_baseline_code`, unrelated to
+     earn-ledger paths or wallets. Confirmed: `cd /Users/anicca/anicca/skills/earn/self-improve
+     && python3 -m pytest tests/test_ledger_reader.py tests/test_ledger_resolution.py
+     tests/test_realized_gate.py -q` -> "2 failed, 41 passed" on the pristine main checkout.
+  3. `test_ledger_reader.py::test_realized_summary_default_path_points_at_the_real_earn_ledger_location`
+     -- PASSES on the pristine main checkout but FAILS only in THIS worktree, because the test
+     hardcodes the literal assertion `DEFAULT_LEDGER_PATH.endswith("anicca/skills/earn/state/earn-ledger.jsonl")`
+     -- a worktree-path-sensitive assertion (this worktree's absolute path ends in
+     ".../anicca/.worktrees/ledger-uniqueness/skills/earn/state/earn-ledger.jsonl", which does
+     NOT end with the literal substring "anicca/skills/earn/state/earn-ledger.jsonl"). This is
+     an environmental artifact of running ANY worktree copy of this pre-existing test (it would
+     fail identically for any other worktree, e.g. .worktrees/ledger-reconcile), not a
+     regression this feature introduces. Out of scope per this feature's Non-Goals (this test
+     file is not one of the 3 files this feature is scoped to touch).
+
+  Net: zero NEW regressions introduced by this feature's RED-phase files. The
+  "regression-baseline: PASS" marker above refers to the scoped baseline this feature is
+  responsible for (ledger.mjs / ledger_reader.py's own pre-existing test files show no
+  behavior change, since neither implementation file has been touched yet).
+
+## Full captured output
+
+### node --test (new RED file)
+
+```
+file:///Users/anicca/anicca/.worktrees/ledger-uniqueness/skills/_shared/lib/__tests__/ledger-path.test.mjs:17
+  filterOwnWalletRows,
+  ^^^^^^^^^^^^^^^^^^^
+SyntaxError: The requested module '../ledger.mjs' does not provide an export named 'filterOwnWalletRows'
+    at #asyncInstantiate (node:internal/modules/esm/module_job:319:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:422:5)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:655:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5)
+
+Node.js v25.6.1
+✖ skills/_shared/lib/__tests__/ledger-path.test.mjs (77.559292ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 82.859958
+
+✖ failing tests:
+
+test at skills/_shared/lib/__tests__/ledger-path.test.mjs:1:1
+✖ skills/_shared/lib/__tests__/ledger-path.test.mjs (77.559292ms)
+  'test failed'
+```
+
+### node --test (regression baseline: pre-existing ledger.test.js + ledger.test.mjs)
+
+```
+(node:35750) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/anicca/anicca/.worktrees/ledger-uniqueness/skills/_shared/lib/__tests__/ledger.test.js is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to /Users/anicca/anicca/.worktrees/ledger-uniqueness/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ deriveLine computes net_usdc = earn - cost and stamps ts (0.842334ms)
+✔ isProfitable true only for EXTERNAL revenue: net>0 AND status 0x1 AND external:true AND not a swap (0.142208ms)
+✔ deriveLine carries the Solana fields sig/confirmed/chain (else the persisted line loses the proof) (0.073375ms)
+✔ isProfitable accepts a Solana line: net>0 AND sig AND confirmed AND external AND not-swap (0.058667ms)
+✔ isProfitable still rejects the OLD EVM negatives unchanged (no regression) (0.05925ms)
+✔ alreadyRecordedSig: true only when a line with that sig already exists in the ledger (4.669792ms)
+✔ appendLedger is append-only: prior line is byte-identical after a second append (1.218375ms)
+✔ readLedger parses every JSONL line into objects (0.991208ms)
+✔ readLedger returns [] for a missing file (no throw) (1.511667ms)
+✔ deriveLine passes fill_tid through unchanged when present (0.773709ms)
+✔ deriveLine omits fill_tid entirely (not just undefined) when absent from input (0.264667ms)
+✔ isProfitable: well-formed Hyperliquid win (chain+fill_tid+confirmed+external+net>0) (0.0845ms)
+✔ isProfitable: Hyperliquid loss (net_usdc<=0) is rejected even though it's a real settled fill (0.060583ms)
+✔ isProfitable: Hyperliquid line missing external is rejected (external omitted) (0.043208ms)
+✔ isProfitable: Hyperliquid line with external:false is rejected (0.036708ms)
+✔ isProfitable: chain=hyperliquid but fill_tid missing is rejected (0.039875ms)
+✔ isProfitable: chain=hyperliquid, fill_tid present, but confirmed:false is rejected (0.035125ms)
+✔ isProfitable: non-regression — real EVM row (tx+status 0x1) still true (0.046375ms)
+✔ isProfitable: non-regression — real Solana row (sig+confirmed) still true (0.07875ms)
+✔ isProfitable: non-regression — narrate-only row (no tx/sig/hl fields) still false (0.111792ms)
+✔ isProfitable: non-regression — swap row (asset rotation) still false even with net>0 (0.035625ms)
+ℹ tests 21
+ℹ suites 0
+ℹ pass 21
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 156.726458
+```
+
+### pytest (new RED file: test_ledger_wallet_filter.py)
+
+```
+FFFFFFFFFFFFFF                                                           [100%]Running teardown with pytest sessionfinish...
+
+=================================== FAILURES ===================================
+____ test_filter_own_wallet_rows_keeps_own_and_walletless_excludes_foreign _____
+
+    def test_filter_own_wallet_rows_keeps_own_and_walletless_excludes_foreign():
+        rows = [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE]
+>       kept = ledger_reader.filter_own_wallet_rows(rows, FOUNDER_WALLET)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:59: AttributeError
+_________________ test_filter_own_wallet_rows_case_insensitive _________________
+
+    def test_filter_own_wallet_rows_case_insensitive():
+        rows = [{**OWN_WIN, "wallet": FOUNDER_WALLET.upper()}]
+>       kept = ledger_reader.filter_own_wallet_rows(rows, FOUNDER_WALLET.lower())
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:65: AttributeError
+___ test_filter_own_wallet_rows_none_own_wallets_excludes_every_walleted_row ___
+
+    def test_filter_own_wallet_rows_none_own_wallets_excludes_every_walleted_row():
+        rows = [OWN_WIN, WALLETLESS_NARRATE]
+>       kept = ledger_reader.filter_own_wallet_rows(rows, None)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:71: AttributeError
+_______ test_filter_own_wallet_rows_empty_list_input_returns_empty_list ________
+
+    def test_filter_own_wallet_rows_empty_list_input_returns_empty_list():
+>       assert ledger_reader.filter_own_wallet_rows([], FOUNDER_WALLET) == []
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:76: AttributeError
+______ test_filter_own_wallet_rows_accepts_a_list_of_multiple_own_wallets ______
+
+    def test_filter_own_wallet_rows_accepts_a_list_of_multiple_own_wallets():
+        second_own = "0xSecondOwnWallet"
+        rows = [OWN_WIN, {**FOREIGN_WIN, "wallet": second_own}, {**FOREIGN_WIN, "wallet": AUTOMATON_POST_ROTATION}]
+>       kept = ledger_reader.filter_own_wallet_rows(rows, [FOUNDER_WALLET, second_own])
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:82: AttributeError
+_ test_filter_own_wallet_rows_property_surviving_walleted_rows_match_own_wallet _
+
+    @given(
+>       rows=st.lists(
+                   ^^^
+            st.fixed_dictionaries({
+                "ts": st.integers(),
+                "wallet": st.one_of(st.none(), st.sampled_from([FOUNDER_WALLET, AUTOMATON_PRE_ROTATION, AUTOMATON_POST_ROTATION])),
+            })
+        )
+    )
+
+tests/test_ledger_wallet_filter.py:87: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+rows = []
+
+    @given(
+        rows=st.lists(
+            st.fixed_dictionaries({
+                "ts": st.integers(),
+                "wallet": st.one_of(st.none(), st.sampled_from([FOUNDER_WALLET, AUTOMATON_PRE_ROTATION, AUTOMATON_POST_ROTATION])),
+            })
+        )
+    )
+    def test_filter_own_wallet_rows_property_surviving_walleted_rows_match_own_wallet(rows):
+>       kept = ledger_reader.filter_own_wallet_rows(rows, FOUNDER_WALLET)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+E       Falsifying example: test_filter_own_wallet_rows_property_surviving_walleted_rows_match_own_wallet(
+E           rows=[],
+E       )
+
+tests/test_ledger_wallet_filter.py:95: AttributeError
+_ test_filter_own_wallet_rows_property_walletless_rows_always_preserved_order_stable _
+
+    @given(
+>       rows=st.lists(st.fixed_dictionaries({"ts": st.integers(), "tag": st.just("walletless")}))
+                   ^^^
+    )
+
+tests/test_ledger_wallet_filter.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+rows = []
+
+    @given(
+        rows=st.lists(st.fixed_dictionaries({"ts": st.integers(), "tag": st.just("walletless")}))
+    )
+    def test_filter_own_wallet_rows_property_walletless_rows_always_preserved_order_stable(rows):
+>       kept = ledger_reader.filter_own_wallet_rows(rows, FOUNDER_WALLET)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+E       Falsifying example: test_filter_own_wallet_rows_property_walletless_rows_always_preserved_order_stable(
+E           rows=[],
+E       )
+
+tests/test_ledger_wallet_filter.py:105: AttributeError
+_____________ test_filter_own_wallet_rows_source_has_no_write_api ______________
+
+    def test_filter_own_wallet_rows_source_has_no_write_api():
+        import inspect
+    
+>       src = inspect.getsource(ledger_reader.filter_own_wallet_rows)
+                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: module 'lib.ledger_reader' has no attribute 'filter_own_wallet_rows'
+
+tests/test_ledger_wallet_filter.py:115: AttributeError
+_ test_realized_summary_own_wallets_none_is_identical_to_pre_feature_behavior __
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_realized_summary_own_wall0')
+
+    def test_realized_summary_own_wallets_none_is_identical_to_pre_feature_behavior(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+    
+        baseline = ledger_reader.realized_summary(ledger_path)
+>       with_none = ledger_reader.realized_summary(ledger_path, own_wallets=None)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: realized_summary() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:127: TypeError
+_ test_confirmed_net_series_own_wallets_none_is_identical_to_pre_feature_behavior _
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_confirmed_net_series_own_0')
+
+    def test_confirmed_net_series_own_wallets_none_is_identical_to_pre_feature_behavior(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+    
+        baseline = ledger_reader.confirmed_net_series(ledger_path)
+>       with_none = ledger_reader.confirmed_net_series(ledger_path, own_wallets=None)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: confirmed_net_series() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:138: TypeError
+_____ test_realized_summary_own_wallets_scopes_to_own_and_walletless_only ______
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_realized_summary_own_wall1')
+
+    def test_realized_summary_own_wallets_scopes_to_own_and_walletless_only(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+    
+>       scoped = ledger_reader.realized_summary(ledger_path, own_wallets=[FOUNDER_WALLET])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: realized_summary() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:150: TypeError
+___ test_realized_summary_own_wallets_empty_list_excludes_every_walleted_row ___
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_realized_summary_own_wall2')
+
+    def test_realized_summary_own_wallets_empty_list_excludes_every_walleted_row(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+    
+>       scoped = ledger_reader.realized_summary(ledger_path, own_wallets=[])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: realized_summary() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:161: TypeError
+___ test_confirmed_net_series_own_wallets_scopes_to_own_and_walletless_only ____
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_confirmed_net_series_own_1')
+
+    def test_confirmed_net_series_own_wallets_scopes_to_own_and_walletless_only(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+    
+>       scoped = ledger_reader.confirmed_net_series(ledger_path, own_wallets=[FOUNDER_WALLET])
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       TypeError: confirmed_net_series() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:170: TypeError
+____ test_realized_summary_with_own_wallets_never_mutates_the_fixture_file _____
+
+tmp_path = PosixPath('/private/tmp/pytest-of-anicca/pytest-33/test_realized_summary_with_own0')
+
+    def test_realized_summary_with_own_wallets_never_mutates_the_fixture_file(tmp_path):
+        ledger_path = _write_jsonl(tmp_path, [OWN_WIN, FOREIGN_WIN, WALLETLESS_NARRATE])
+        before_mtime = os.path.getmtime(ledger_path)
+        before_size = os.path.getsize(ledger_path)
+    
+>       ledger_reader.realized_summary(ledger_path, own_wallets=[FOUNDER_WALLET])
+E       TypeError: realized_summary() got an unexpected keyword argument 'own_wallets'
+
+tests/test_ledger_wallet_filter.py:183: TypeError
+=========================== short test summary info ============================
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_keeps_own_and_walletless_excludes_foreign
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_case_insensitive
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_none_own_wallets_excludes_every_walleted_row
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_empty_list_input_returns_empty_list
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_accepts_a_list_of_multiple_own_wallets
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_property_surviving_walleted_rows_match_own_wallet
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_property_walletless_rows_always_preserved_order_stable
+FAILED tests/test_ledger_wallet_filter.py::test_filter_own_wallet_rows_source_has_no_write_api
+FAILED tests/test_ledger_wallet_filter.py::test_realized_summary_own_wallets_none_is_identical_to_pre_feature_behavior
+FAILED tests/test_ledger_wallet_filter.py::test_confirmed_net_series_own_wallets_none_is_identical_to_pre_feature_behavior
+FAILED tests/test_ledger_wallet_filter.py::test_realized_summary_own_wallets_scopes_to_own_and_walletless_only
+FAILED tests/test_ledger_wallet_filter.py::test_realized_summary_own_wallets_empty_list_excludes_every_walleted_row
+FAILED tests/test_ledger_wallet_filter.py::test_confirmed_net_series_own_wallets_scopes_to_own_and_walletless_only
+FAILED tests/test_ledger_wallet_filter.py::test_realized_summary_with_own_wallets_never_mutates_the_fixture_file
+14 failed in 0.27s
+```
