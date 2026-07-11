@@ -1,0 +1,73 @@
+{
+  "phase": "impl-review",
+  "iteration": 4,
+  "sprintNumber": 1,
+  "feature": "franklin-ledger-push",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "blocking_count": 0,
+  "timestamp": "2026-07-11T05:00:00.000Z",
+  "reviewed_commits": ["166f4274"],
+  "external_test_evidence": "221-222/223 suite (thinker-executed); only known failure is the pre-existing integration.test.mjs ENOTEMPTY /tmp teardown race, reproduced repeatedly on a pristine baseline this session and unrelated to this feature; all ledger-publish tests (40 test() blocks, wired into package.json's official `test`/`test:unit` scripts) pass.",
+  "iteration3_findings_disposition": {
+    "FIND-001 (critical, external/confirmed/fill_tid dropped, isProfitable() unconditionally false)": "KILLED. `projectEarnField()` (ledger-publish.mjs:317-344) now preserves `external`/`confirmed` (boolean-typed, never coerced) and `fill_tid` (finite number or SETTLEMENT_ID_VALUE-shaped string). `runtime/loop/__tests__/ledger-publish.test.mjs:218-264` imports the REAL `skills/_shared/lib/ledger.mjs::isProfitable` (not a re-implementation, confirmed by import statement at test.mjs:33) and independently round-trips all three chain paths (EVM tx+status, Solana sig+confirmed, Hyperliquid fill_tid+confirmed+chain) to `isProfitable(published_line) === true`, each isolated from the other two chain-specific fields so the OR-short-circuit in isProfitable cannot mask a broken path. A fourth test (test.mjs:266-273) confirms wrong-typed external/confirmed/fill_tid are dropped fail-closed, not coerced. Independently traced field-by-field against isProfitable()'s actual requirements (ledger.mjs:51-64) -- no remaining gap for these three fields.",
+    "FIND-002 (major, pushed=true set unconditionally in retry branch)": "KILLED. `pushed = true` now only executes at ledger-publish.mjs:754-755, immediately after the retry's own `git push` call, itself gated behind `if (result.pendingLineCount > 0)` (line 753). Verified against the new phantom-success test (test.mjs:629-659): primary push actually lands on origin then the client throws; post-reset reconcile finds nothing pending; exactly ONE total push call is made (asserted via `pushCalls`) and `result.pushed` is correctly `false` for that cycle, never misreported true, even though the data genuinely reached origin.",
+    "FIND-003 (sig only bare length/type check, not real shape validation)": "KILLED. `SIG_VALUE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/` (ledger-publish.mjs:217) now gives `sig` the same base58-alphabet/length-bound discipline `record-swap.mjs` actually writes and `tx`'s TX_HASH_VALUE already has. Verified against test.mjs:282-289: a correct 88-char base58 value round-trips, a same-length wrong-alphabet value (`'0'.repeat(88)`) is dropped, and a too-short value is dropped."
+  },
+  "new_risk_scan_this_iteration": {
+    "fill_tid string-form allowlist (SETTLEMENT_ID_VALUE)": "NEW GAP FOUND -- this iteration's own fix introduces an overly broad, currently-dead (no real writer emits it), redaction-bypassing string acceptance path for fill_tid. See FIND-001 (this iteration).",
+    "MARKER_DEFAULTS dead code": "NEW MINOR GAP FOUND -- declared, never referenced; readMarker's fallback duplicates the same literal by hand instead. See FIND-002 (this iteration).",
+    "wiring placement (index.mjs)": "Re-verified: publishLedgerCycle() call sits in index.mjs's `while (!shuttingDown) { await runOneWake(); ... }` loop (index.mjs:354-387), strictly AFTER runOneWake() returns, wrapped in its own try/catch as defense-in-depth on top of publishLedgerCycle's own internal non-throwing contract (REQ-703) -- purity boundary intact, no regression.",
+    "package.json wiring": "Re-verified: ledger-publish.test.mjs is present in both the `test` and `test:unit` scripts (package.json:8-9) -- it is genuinely part of the official suite, not an orphaned test file.",
+    "test suite regression scan": "Re-read the entire 758-line ledger-publish.test.mjs top to bottom: all structural-safety tests present in iteration-3's own notes.md (leak test, shallow-clone test, lock-held/lock-stale tests, publish-repo-loss divergence test, outside-writer divergence test, commit-failure recovery test, streak/reachability tests) are still present, none simplified or weakened; test count increased from 34 (iter3) to 40 (this iteration) -- consistent with additive fixes only, no evidence of a weakened or deleted test anywhere in the file."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:317-344", "description": "projectEarnField() traced field-by-field against behavioral-spec.md REQ-702's earn allowlist (ts/wallet/source/wake/earn_usdc/cost_usdc/net_usdc/tx/sig/status/chain/task/external/confirmed/fill_tid) -- every listed field has conforming, type-checked code; no listed field is missing; every field NOT in the allowlist (verified against skills/_shared/lib/ledger.mjs::deriveLine's full output shape) falls through to the default:undefined branch."},
+        {"type": "file", "location": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md REQ-701..709", "description": "Each requirement traced to conforming code (REQ-701 default-off gating at ledger-publish.mjs:654,670; REQ-704 throttle at decidePublish; REQ-705 dedicated-clone setup at ensurePublishRepo; REQ-708 lock at acquireLock/releaseLock; REQ-709 reconciliation at reconcileSource) and a corresponding non-tautological test in ledger-publish.test.mjs."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/__tests__/ledger-publish.test.mjs:275-280", "description": "The only test exercising fill_tid's string-form allowlist proves a well-formed id round-trips and a malformed-charset value is dropped -- it never exercises a plausible SECRET-shaped alphanumeric string within the accepted charset, so the test would keep passing even with FIND-001 (this iteration) present."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs (whole file, all iter3-flagged branches re-traced)", "description": "Independently re-walked all three iter3 findings' fix sites (projectEarnField's external/confirmed/fill_tid case, the retry-path pushed-flag gating, sig's shape regex) against their respective real-git and pure-unit tests -- all three genuinely close the prior gaps with no reopening. One NEW gap found in this same revision's own fill_tid string-form branch (FIND-001, this iteration)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs (whole file)", "description": "Single-responsibility, pure/effectful split unchanged and still matches verification-architecture.md's purity map; SOURCES registry still cleanly generalizes wake/earn duplication; naming remains clear throughout. One dead-code/duplicated-default-literal item found (FIND-002, this iteration) -- MARKER_DEFAULTS declared, never referenced."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/franklin-ledger-push/specs/verification-architecture.md, PROP table rows FIND-001a/b/c/d, FIND-002d", "description": "Each rewritten proof obligation traced to a real, passing test that proves what it claims: FIND-001d's real-isProfitable() round-trip (test.mjs:218-264) is genuinely non-tautological (imports the actual classifier, isolates each of the three chain paths); FIND-002d's phantom-push test (test.mjs:629-659) genuinely proves the truthful-pushed-flag invariant with a real push that lands then throws client-side. Purity boundary (pure core: decidePublish/extractRecordId/projectWakeLine/projectEarnLine/redactBroaderSecretPatterns; effectful shell: everything else) is unchanged and intact -- no I/O, time, randomness, or hidden state found inside any function documented as pure."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-709's own acceptance text (behavioral-spec.md:227-238) claims 'no line is ever silently dropped, because every recovery always starts from pushedLineCount, never from local (potentially wiped) state' -- but recoverFromDivergence() is wired ONLY inside the `catch` of the `git push` call (ledger-publish.mjs:479-505). It is never invoked from ensurePublishRepo()'s own failure path (which instead falls into the generic 'setup-failed' catch at lines 436-442). Reachable silent-data-loss trace: (1) a cycle commits N new lines locally to publishRepoDir (marker.copiedLineCount advances, persisted at line 450) but the push threshold has not yet been reached, so pendingLinesSincePush>0 and pushedLineCount stays behind copiedLineCount -- an ordinary, spec-documented state (REQ-704's own throttle). (2) Before the next cycle runs, publishRepoDir's `.git` is lost (directory deleted/recreated -- e.g. manual `rm -rf` during troubleshooting, a redeploy that resets ANICCA_HOME/state, or any external wipe of $ANICCA_HOME/state/.ledger-publish-repo; no test or code path guards against this). (3) The next cycle's ensurePublishRepo() sees `.git` missing, does a fresh `clone` + `checkout -B branch origin/branch` -- this fast-forwards cleanly to origin's actual tip (=pushedLineCount, NOT copiedLineCount), with zero error. (4) `newLines = sourceLines.slice(marker.copiedLineCount)` then resumes AFTER the lost, never-pushed lines (copiedLineCount already claims they're handled) -- those lines are never re-derived from source. (5) This cycle's new commit descends cleanly from origin's current tip, so the eventual `git push` succeeds as an ORDINARY fast-forward -- no rejection, no divergence signal, recoverFromDivergence() is never called. (6) `pushedLineCount` is then set to `copiedLineCount`, marking the lost lines as falsely 'confirmed pushed'. The gap between the old pushedLineCount and copiedLineCount is permanently, silently absent from the published branch forever, with the marker asserting success. This is exactly the class of bug FIND-005 (impl-review iteration 1) was meant to structurally kill, reopened via a trigger (local publish-repo loss between commit and push) the redesign's recovery path does not cover, because recovery only activates on an explicit push rejection.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "311-332, 436-442, 479-505",
+    "snippet": "} catch (err) {\n  log(`[ledger-publish] publish-repo setup failed, skipping cycle: ${err.message}\\n`);\n  return { published: false, pushed: false, reason: 'setup-failed' };\n}\n... // recoverFromDivergence is called ONLY from the push() catch block below, never from here"
+  },
+  "corroborating": [
+    {"filePath": "runtime/loop/__tests__/ledger-publish.test.mjs", "lineRange": "413-451", "note": "PROP-714 only exercises a rejected-push-from-an-outside-writer trigger; no test simulates publishRepoDir being lost/recreated between a successful commit and the next push."},
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "227-238", "note": "REQ-709's own 'no line is ever silently dropped' claim, contradicted by the trace above."}
+  ],
+  "routeToPhase": "2b"
+}

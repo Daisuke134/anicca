@@ -1,0 +1,55 @@
+{
+  "featureName": "franklin-ledger-push",
+  "mode": "lean",
+  "language": "javascript",
+  "currentPhase": "2c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T00:00:00.000Z",
+      "reason": "Begin behavioral specification for per-wake ledger auto commit+push (P2), source: anicca-project docs/loop-engineering/20-implementation-certainty-2026-07-11.md §D"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T00:05:00.000Z",
+      "reason": "Behavioral spec complete (REQ-701..707), moving to verification architecture"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-11T00:10:00.000Z",
+      "reason": "Verification architecture complete (PROP-701..710, purity boundary map). Lean mode: proceeding to RED without a separate fresh-adversary spec-review gate; a fresh adversary reviews the completed implementation in Phase 3 per the task's own instruction."
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-11T00:15:00.000Z",
+      "sprint": 1,
+      "reason": "Entering RED phase: authored runtime/loop/__tests__/ledger-publish.test.mjs (24 test() blocks covering REQ-701..707 / PROP-701..710)"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-11T00:20:00.000Z",
+      "sprint": 1,
+      "reason": "RED confirmed (module not found, ERR_MODULE_NOT_FOUND) + regression baseline PASS (183/183 pre-existing). Evidence: evidence/sprint-1-red-phase.log"
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-11T00:35:00.000Z",
+      "sprint": 1,
+      "reason": "GREEN: implemented runtime/loop/ledger-publish.mjs (decidePublish/extractWakeId pure core + readMarker/writeMarker/readSourceLinesRaw/appendRawLines/defaultGit/publishLedgerCycle effectful shell) and wired publishLedgerCycle() into index.mjs's main wake loop (after runOneWake(), never inside it) + package.json test script. All 24 new tests PASS on first implementation; full official suite 207/207 PASS (183 pre-existing + 24 new); sweep of 13 pre-existing test files not wired into package.json's script: 96/96 PASS. One pre-existing flaky test (integration.test.mjs ENOTEMPTY /tmp cleanup race) reproduced identically on the unmodified baseline via git stash (3/3 runs) -- confirmed unrelated to this feature. Evidence: evidence/sprint-1-green-phase.log. No refactor needed beyond the as-written implementation (module is already small/single-responsibility with clear pure/effectful separation); Phase 2c reviewed with no changes required."
+    },
+    {
+      "from": "2c",
+      "to": "2c",
+      "timestamp": "2026-07-11T01:00:00.000Z",
+      "sprint": 1,
+      "reason": "impl-review iteration-1 verdict FAIL (blocking_count 2, findings FIND-001..005: unscoped git push origin main against a checkout shared with evolve.mjs's promote() and other same-host instances; raw-copy of ledger lines including the model-authored args object; zero test coverage of the push-scope/divergence hazards; no divergence-recovery story). Thinker-directed structural redesign implemented: (1) DEDICATED per-instance orphan publish clone at $ANICCA_HOME/state/.ledger-publish-repo on branch ledger-<instance>, repoRoot touched ONLY via a read-only `git remote get-url origin` -- never checked out/committed/pushed to (FIND-001/002); (2) explicit field-allowlist projection (projectLedgerLine) replacing the raw-copy, dropping the args object and every unlisted field, plus a second broader-secret redaction pass for result/skip_reason (FIND-003); (3) fetch+hard-reset+reproject-from-pushedLineCount+retry-once divergence recovery on a rejected push, driven by a new push-confirmed pushedLineCount cursor distinct from the local copiedLineCount (FIND-005); (4) mkdir-atomic same-instance overlap lock copied from claude-p-mainloop.sh/disk-cleaner.sh's own idiom. Rewrote runtime/loop/__tests__/ledger-publish.test.mjs (25 tests, up from 24) including a real-git leak test (shared checkout HEAD/status/branch/origin-main byte-identical before/after), a real divergence-recovery test against a `file://` bare-repo fixture, lock-held/lock-stale tests, and allowlist/redaction unit tests -- mirrors evolve.test.mjs's own established real-git-in-tmp-dir precedent (no test ever touches the real ~/anicca repo or a real remote). Full suite: 208/208 PASS (207 baseline - 24 old ledger-publish tests + 25 redesigned tests = 208, zero regressions). Specs (behavioral-spec.md REQ-701..709, verification-architecture.md PROP-701..718) revised to match. Ready for impl-review iteration 2 (fresh-context adversary); this builder session did not re-run vcsdd-adversary itself."
+    }
+  ],
+  "notes": "LEDGER_PUBLISH_ENABLED defaults OFF (unset/non-'1' => disabled), same fail-closed gating style as ALWAYS_ACT_ENABLED. iter1 redesign: destination is <publishRepoDir>/<ANICCA_INSTANCE>.jsonl inside a DEDICATED clone ($ANICCA_HOME/state/.ledger-publish-repo, orphan branch ledger-<instance>) -- never the shared ~/anicca checkout, which is touched only via a read-only `git remote get-url origin`. Throttle/cursor marker ($ANICCA_HOME/state/.ledger-publish-marker) now carries two cursors: copiedLineCount (local) and pushedLineCount (push-confirmed, the only cursor divergence recovery trusts). Same-instance overlap guarded by an mkdir-atomic lock at $ANICCA_HOME/state/.ledger-publish-<instance>.lock. Awaiting fresh-context adversary review (Phase 3, iteration 2) per the task instruction; this builder session did not run vcsdd-adversary itself."
+}
