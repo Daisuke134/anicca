@@ -33,6 +33,7 @@ import { verifyRepayment, reconcileProvisionalDisbursement } from "./lending-ver
 import { LOANS_LEDGER_PATH } from "./lending-path.mjs";
 import { withGigLock } from "../../gig/lib/lock.mjs";
 import { payViaFacilitator } from "../../gig/lib/escrow.mjs";
+import { deriveSignerAddress, addressesEqual } from "./lending-signer.mjs";
 
 function errorMessage(e) {
   return (e && e.message) || String(e);
@@ -157,16 +158,85 @@ function evaluateKillSwitches({ loanRows, borrowerId, nowMs }) {
   return { paused: false, reason: null };
 }
 
+// FIND-002 (critical, impl-review iteration-1): this codebase's own prior FIND-702 fix
+// (skills/self/founder-loop/record-earn.mjs) already discovered -- against this EXACT RPC
+// (mainnet.base.org) -- that public JSON-RPC providers reject/truncate an eth_getLogs call spanning
+// too many blocks (record-earn.mjs's own comment: "commonly 2,000-10,000 blocks"). record-earn.mjs
+// caps its own scan span at 9000 blocks; that SAME proven-safe value is copied here verbatim (never
+// re-derived) rather than "earliest", which this fix's own deps.rpcUrl wiring makes reachable against
+// a real provider for the first time -- an unbounded "earliest" scan is exactly what would have
+// permanently blocked the real stuck loan_Franklin_1 row's every future wake with
+// reason:"reconciliation_failed" (the failure mode REQ-118b explicitly says this fix must resolve).
+// Overridable via LENDING_RECONCILE_LOOKBACK_BLOCKS for an operator whose wake cadence needs a wider
+// window (still bounded by the provider's own eth_getLogs range limit -- widening this must stay
+// within whatever that real limit is, never re-introduce "earliest").
+const DEFAULT_RECONCILE_LOOKBACK_BLOCKS = 9000; // ~5h at Base's ~2s/block; matches record-earn.mjs's own FIND-702 MAX_SPAN for this exact RPC
+
+async function fetchLatestBlockNumber(rpcUrl) {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
+  });
+  const json = await res.json();
+  if (json.error || json.result === undefined) {
+    throw new Error(`eth_blockNumber: ${JSON.stringify(json.error || json)}`);
+  }
+  return Number(BigInt(json.result));
+}
+
 async function defaultReconcile({ loanRow }, deps) {
+  // deps.reconcileFromBlock is a TEST-ONLY seam (mirrors the pre-existing convention) -- production
+  // never sets it, so production always computes a genuinely bounded window below.
+  if (deps.reconcileFromBlock) {
+    return reconcileProvisionalDisbursement({
+      loanRow,
+      rpcUrl: deps.rpcUrl,
+      fromBlock: deps.reconcileFromBlock,
+      toBlock: deps.reconcileToBlock || "latest",
+    });
+  }
+  const lookbackBlocks =
+    deps.reconcileLookbackBlocks || Number(process.env.LENDING_RECONCILE_LOOKBACK_BLOCKS) || DEFAULT_RECONCILE_LOOKBACK_BLOCKS;
+  const latest = await fetchLatestBlockNumber(deps.rpcUrl);
+  const from = Math.max(0, latest - lookbackBlocks);
   return reconcileProvisionalDisbursement({
     loanRow,
     rpcUrl: deps.rpcUrl,
-    fromBlock: deps.reconcileFromBlock || "earliest",
-    toBlock: "latest",
+    // toBlock pinned to the SAME snapshot as fromBlock (never "latest" alongside a numeric fromBlock)
+    // -- keeps the requested range exactly bounded, never silently wider by the time the provider
+    // serves the request.
+    fromBlock: "0x" + from.toString(16),
+    toBlock: "0x" + latest.toString(16),
   });
 }
 
 async function defaultDisburse({ loanRow }, deps) {
+  // FIND-001 (critical, impl-review iteration-1) defensive backstop: wake-gate.mjs's own pre-lock
+  // guard is the PRIMARY defense (refuses BEFORE executeLoanIssuanceAttempt is ever called) -- this is
+  // a SECOND, independent check at the actual point of signing, so a mismatched deps.lenderPrivateKey
+  // can never reach payViaFacilitator even if executeLoanIssuanceAttempt is ever invoked directly
+  // (bypassing wake-gate.mjs -- e.g. a future direct caller or test).
+  const resolvedSignerAddress = deriveSignerAddress(deps.lenderPrivateKey);
+  if (!addressesEqual(resolvedSignerAddress, loanRow.lender_wallet)) {
+    throw new Error(
+      `lender_signer_mismatch: resolved lenderPrivateKey's derived signer address does not match loanRow.lender_wallet (loan_id=${loanRow.loan_id}) -- refusing to sign`
+    );
+  }
+
+  // FIND-003 (medium, impl-review iteration-1): never settle real money against a non-mainnet/unset
+  // GIG_CHAIN. deps.gigChain lets a test explicitly exercise this real function's own control flow
+  // without mutating process.env (mirrors deps.reconcileFromBlock's own test-seam convention);
+  // production always reads the real process.env.GIG_CHAIN. escrow.mjs's own GIG_CHAIN constant
+  // defaults to testnet when unset -- that default must NEVER be silently treated as "go ahead" on
+  // this path, since this feature exists specifically to gate the colony's first REAL on-chain loan.
+  const gigChain = deps.gigChain !== undefined ? deps.gigChain : process.env.GIG_CHAIN;
+  if (gigChain !== "base" && deps.allowNonMainnetChain !== true) {
+    throw new Error(
+      `lending_chain_not_mainnet: GIG_CHAIN must be "base" to disburse real lending money (got ${JSON.stringify(gigChain)}) -- refusing to settle against a non-mainnet/unset chain`
+    );
+  }
+
   return payViaFacilitator({
     privateKey: deps.lenderPrivateKey,
     to: loanRow.borrower_wallet,
