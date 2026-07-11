@@ -1,0 +1,63 @@
+{
+  "phase": "impl-review",
+  "feature": "self-improve-checkpoint-resume",
+  "sprintNumber": 1,
+  "iteration": 1,
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-12T00:00:00Z",
+  "reviewedCommits": ["515eb089", "0288d3e0"],
+  "reviewerToolConstraints": "This review session had no Bash/execute tool available (only Read/Write/Edit/Grep/Glob). I could NOT independently run `python3 -m pytest`, `bash -n run_evolve.sh`, `bash --version`, `git diff`, or `git show`/`git log -p` as the review brief requested. Where the brief required dynamic execution, I substituted: (1) full direct reads of every changed/new file, (2) hand-tracing every test in tests/test_checkpoint_resume.py and tests/test_checkpoint_resume_wiring.py against the implementation logic line-by-line, (3) reading the installed openevolve CLI's own argparse source (~/.anicca-venvs/self-improve/lib/python3.14/site-packages/openevolve/cli.py) to determine real-world impact of a suspected bash bug, (4) treating evidence/green-phase.md's pytest transcript and evidence/red-phase.md as Builder-reported (not independently re-executed) evidence, and (5) a Glob-by-mtime scan of skills/earn/self-improve/** as a proxy for git-diff scope (config.yaml, promote_gate.sh, lib/promote_gate.py, lib/promote.py, strategies/pm_backtest_strategy.py, launchd/ai.anicca.self-improve-evolve.plist all sort well before run_evolve.sh/lib/checkpoint_resume.py in mtime order, consistent with them being untouched, but this is not as conclusive as an actual `git diff --stat`).",
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/checkpoint_resume.py:15-69", "description": "find_latest_checkpoint's REQ-CR1-5/CR10 logic traced by hand against every PROP-CR test in tests/test_checkpoint_resume.py: absolute-path normalization (REQ-CR1, line 52), filter-then-exclude-then-sort-descending-then-iterate (REQ-CR2, lines 56-67), run-name regex `^run-\\d{8}T\\d{6}Z$` matches REQ-CR10 exactly (line 19), integer (not lexicographic) checkpoint comparison via int(match.group(1)) (REQ-CR3, lines 38-41), os.path.isdir guard before any listdir under a candidate (REQ-CR3/EDGE-CR12, line 29) -- all match the spec's literal requirement text."},
+        {"type": "file", "location": "skills/earn/self-improve/run_evolve.sh:75,78-85", "description": "REQ-CR6's pinned call string is present verbatim and positioned before the first literal `\"$OPENEVOLVE_BIN\"` occurrence (line 87, the executable-check, not line 37's `${OPENEVOLVE_BIN:-...}` default-assignment which does not contain the literal substring). REQ-CR9's three pinned log substrings are each present verbatim in their correct branch."},
+        {"type": "file", "location": "skills/earn/self-improve/run_evolve.sh:77,109 + ~/.anicca-venvs/self-improve/lib/python3.14/site-packages/openevolve/cli.py:22-26", "description": "FIND-001: REQ-CR8/INV-CR4's 'byte-for-byte identical' no-checkpoint fallback is reasoned to be violated on the script's own documented target shell (bash < 4.4 / macOS stock /bin/bash) because `\"${CHECKPOINT_ARGS[@]:-}\"` on the empty-array case likely injects one spurious empty-string positional argument, which openevolve-run's real 2-positional argparse (no catch-all) would reject as 'unrecognized arguments'."}
+      ]
+    },
+    "edge_case_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_checkpoint_resume.py:45-417", "description": "Every EDGE-CR1 through EDGE-CR12 case in behavioral-spec.md has a dedicated, correctly-constructed tmp_path fixture and assertion: EDGE-CR2/3 (PROP-CR1/CR2, lines 45-83), EDGE-CR4/5 (PROP-CR5 x2, lines 123-145), EDGE-CR6 (PROP-CR6, lines 152-165), EDGE-CR7 (PROP-CR3, lines 90-100), EDGE-CR8 (PROP-CR8 x2, lines 189-209), EDGE-CR9 (PROP-CR7 + PROP-CR2's second test, lines 78-83,172-182), EDGE-CR10 (PROP-CR10 x2, lines 245-266), EDGE-CR11 (PROP-CR11, lines 274-286), EDGE-CR12 (PROP-CR14 x2, lines 293-314). Each fixture builds the exact adversarial tree the edge case names (e.g. a stray .DS_Store-only checkpoints/ dir for EDGE-CR11, a zero-byte plain file named run-<timestamp> for EDGE-CR12), not a simplified stand-in."},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_checkpoint_resume_wiring.py:253-280", "description": "REQ-CR12's resume-check-crash edge case (PROP-CR13) is exercised via a FAKE_PY_BIN_SCRIPT that actually exits non-zero and writes to stderr, asserting the fallback (no --checkpoint) AND the distinct third log-line wording, both present."}
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/checkpoint_resume.py:1-82", "description": "The pure core itself (find_latest_checkpoint + _latest_checkpoint_in_run) is correct by hand-trace against every REQ-CR1-5/CR10/CR11: no file-content reads, no mutation, only os.listdir/os.path.isdir/os.path.abspath/os.path.join, regex-gated name filtering, integer comparison. This portion of the diff is sound."},
+        {"type": "file", "location": "skills/earn/self-improve/run_evolve.sh:77,109", "description": "FIND-001 (blocking): the `CHECKPOINT_ARGS=()` / `\"${CHECKPOINT_ARGS[@]:-}\"` pairing is the known-flawed bash nounset+empty-array idiom (produces one spurious empty-string argument under bash < 4.4, rather than zero arguments), confirmed against openevolve-run's real argparse (exactly 2 required positionals, no catch-all) to be argparse-rejection-worthy if triggered -- this is the exact 'trickiest part' the reviewing brief asked to be dynamically verified, and I could not execute bash in this session to settle it with certainty (see reviewerToolConstraints)."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/lib/checkpoint_resume.py", "description": "82 lines total, single pure function + one small helper + a thin __main__ CLI wrapper; no duplication; names (find_latest_checkpoint, _latest_checkpoint_in_run) accurately describe behavior; module docstring explicitly cross-references its own purity contract. Follows lib/ledger_reader.py's established __main__ convention exactly as verification-architecture.md's Purity Boundary Map (lines 27-38) specifies -- confirmed by reading both files' __main__ blocks side by side."},
+        {"type": "file", "location": "skills/earn/self-improve/run_evolve.sh:66-85", "description": "The new pre-invocation step is a single, well-commented ~20-line insertion at the pipeline position the spec pins (before the $OPENEVOLVE_BIN existence check, after $RUN_DIR creation); no dead code; no new abstraction introduced beyond what REQ-CR6-9 require."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_checkpoint_resume_wiring.py:176-209", "description": "PROP-CR-WIRE2b (found-branch) correctly discharges its proof obligation: it asserts checkpoint_flag_index == len(capture_lines) - 2, i.e. explicit full-argument-list-position verification, proving the test-writing convention for doing this correctly EXISTS in this same file."},
+        {"type": "file", "location": "skills/earn/self-improve/tests/test_checkpoint_resume_wiring.py:153-169", "description": "FIND-002 (blocking): PROP-CR-WIRE2 (not-found branch) does NOT apply that same convention -- it only checks substring absence of '--checkpoint', never full argv identity/length -- so it cannot catch FIND-001's suspected spurious-empty-argument regression even though it is the test verification-architecture.md cites as proving REQ-CR8/INV-CR4 byte-for-byte identity."}
+      ]
+    }
+  },
+  "blocking_count": 2,
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "blockingFindingCount": 2
+  },
+  "notes": "Non-blocking process observation (out of this review's scoped mandate, not filed as a code finding): evidence/green-phase.md's regression check (18 pre-existing failures) and evidence/red-phase.md were treated as Builder-reported, not independently re-executed by this adversary (no Bash tool in this review session). The 18 pre-existing failures shown are internally consistent with a pm_backtest_strategy.py fixture-drift explanation (repeated 'config.get(\"edge_weight\", 0.25)' literal not found in the current baseline file's docstring-truncated repr) plus one worktree-path-only ledger_reader test, both plausible as pre-existing/unrelated to this feature's diff, but this was reasoned from the transcript rather than independently reproduced via `git stash` + re-run on this reviewer's own execution."
+}
