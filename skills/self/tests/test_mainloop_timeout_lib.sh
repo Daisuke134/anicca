@@ -38,6 +38,12 @@ chk "negative override falls back above old ceiling" TRUE "$(is_gt_3600 "$(resol
 export CLAUDE_P_MAINLOOP_TIMEOUT_SEC="3600.5"
 chk "non-integer decimal override falls back above old ceiling" TRUE "$(is_gt_3600 "$(resolve_mainloop_timeout_sec)")"
 
+export CLAUDE_P_MAINLOOP_TIMEOUT_SEC="999999999"
+chk "absurdly large override is clamped to StartInterval ceiling" 21600 "$(resolve_mainloop_timeout_sec)"
+
+export CLAUDE_P_MAINLOOP_TIMEOUT_SEC="21600"
+chk "override exactly at StartInterval passes through unclamped" 21600 "$(resolve_mainloop_timeout_sec)"
+
 unset CLAUDE_P_MAINLOOP_TIMEOUT_SEC
 
 echo "PASS=$P FAIL=$F"

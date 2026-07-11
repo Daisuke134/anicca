@@ -12,10 +12,19 @@
 # Default chosen (18000s / 5h): 5x the old ceiling, while staying below the plist's 21600s
 # (6h) StartInterval so a stuck run still yields to the single-instance pidfile guard before
 # racing the next scheduled fire.
+# Upper bound: GNU `timeout` silently no-ops on absurdly large durations (setitimer overflow),
+# defeating the ceiling entirely. Clamp any override to <=21600 (the plist's own StartInterval) so
+# a typo'd override can never exceed the fire cadence itself.
+MAINLOOP_TIMEOUT_MAX_SEC=21600
+
 resolve_mainloop_timeout_sec() {
   local val="${CLAUDE_P_MAINLOOP_TIMEOUT_SEC:-}"
   if [[ "$val" =~ ^[0-9]+$ ]] && [ "$val" -gt 0 ]; then
-    echo "$val"
+    if [ "$val" -gt "$MAINLOOP_TIMEOUT_MAX_SEC" ]; then
+      echo "$MAINLOOP_TIMEOUT_MAX_SEC"
+    else
+      echo "$val"
+    fi
   else
     echo "18000"
   fi

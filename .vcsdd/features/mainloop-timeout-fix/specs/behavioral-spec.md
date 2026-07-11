@@ -64,6 +64,19 @@ literal `timeout` argument (not a re-hardcoded 3600), AND SHALL log the resolved
 existing `"launching claude ... (hard timeout Xs)"` log line so a human/adversary reading
 `claude-p-mainloop.out.log` can see which ceiling was actually used for a given fire.
 
+## REQ-006: override is clamped, never exceeds the fire cadence
+
+WHEN `CLAUDE_P_MAINLOOP_TIMEOUT_SEC` is set above 21600 (the plist's `StartInterval`), THE SYSTEM
+SHALL clamp `resolve_mainloop_timeout_sec()`'s output to 21600, because GNU `timeout` can silently
+no-op on values large enough to overflow `setitimer`, which would defeat the ceiling entirely.
+
+## REQ-007: missing lib file fails loudly, not silently
+
+WHEN `skills/self/mainloop-timeout-lib.sh` is missing at run time, THE SYSTEM SHALL log a `FATAL`
+line to `LOG_ERR` and exit 1 before attempting to invoke `claude` (mirrors the existing
+`PROMPT_FILE` missing-file check), rather than continuing with an undefined
+`resolve_mainloop_timeout_sec` and an empty `TIMEOUT_SEC`.
+
 ## Out of scope (explicitly not touched)
 
 - No change to `StartInterval` (21600s), `ThrottleInterval` (300s), or any other plist field.
