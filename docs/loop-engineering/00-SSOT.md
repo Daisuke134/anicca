@@ -102,7 +102,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [ ] L5  affiliate reCAPTCHA突破 — done: 再ログイン→実投稿URL
 [ ] L7  bounty 提出 — done: survivor→提出→賞金 or 正直none
 [ ] L8  explorer 収益化 — done: proposal→実収益導線
-[ ] #6  CEO仕上げ — done: cost自動記録+registry訂正+decision≥1(V3で縮退)
+[x] #6  CEO仕上げ ★クローズ2026-07-12(自分で実装・subagent kill後に take over・全検証自分の目)★ — ①cost自己申告照合を日次light-passに配線(bin/ceo_run.py, record_cost_claim_warnings+stamp_last_observed_at)→実発火確認(gig cost-claim-unbacked を実検知) ②registry真値化=欠落してた sol(Solana) を external/external-anicca で追加(11ループ揃う、capafy/article/pm/hl/sol=external正) ③ceo-decisions.jsonl に週次decision 1行実在。全CEOテスト緑(registry 29/29・last_observed 6/6・cost-wiring 4/4・anicca_ref 5/5・gcal_write 7/7)。commit群 push済。※残1赤 vendor PROP-055=life-manager-cli の vendor 参照=#8/LMの領域(CEO無関係pre-existing)
 [ ] #9.5 SNS factory移行 — done: Dais go後にOpenClaw退役
 ```
 ### Phase 3 — colony 戦略ゴール（★Dais 2026-07-11 原案・end-state・忘れ厳禁★）
