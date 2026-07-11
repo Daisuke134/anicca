@@ -87,7 +87,25 @@ fix = `connector_fill_gaps.sh`（決定論的 per-day driver）:
   4. revive トリガー file 除去（`.connector-core-restart-log` / `.connector-core-selfheal-request.json` / `.connector-core-last-start`）。
 - **結果**: connector のスケジューラは launchd 2本（fill-gaps 07:50 + daily-report 09:10）に collapse。旧持続 tmux パスは退役。driver(PID 44014) が :9222 を専有。他に connector-cli.sh を呼ぶ launchd/cron は無いことを確認。
 
-## 残 TODO（(c) 済、順に (d)→(a)）
+## (a) 真因＝「1件も埋まらない」landing bug（2026-07-12、自分で診断・修正・検証）
+driver の per-day agent が 7/16-18 全て `rc=124`（timeout・ゼロ着地）だった真因は competition ではなく**コードバグ**だった:
+- `connector_fill_gaps.sh` が gcal 登録枠を**丸1日**(`${D}T00:00:00`–`23:59`)で渡し、`gcal_write.py:71-86` がその枠に**何か1つでも予定が重なると必ず abort**。
+- Dais は毎日ルーティン予定（Meditation/MUIT出社/Day job/Team Sync/DS部/ALAEW）がある → **全日 abort → register_and_calendar が status:failed → applications.jsonl 行なし・gcal event なし → その日は永久に "open" → 何度リトライしても埋まらない**。7/13-15 が残ったのは旧フロー（実時刻）で書けたから。
+- **fix（自分で、commit 済）**:
+  1. `gcal_write.py`: ルーティン重複では abort しない。**connector イベント同士の重複だけ** conflict 扱い（`_is_connector_event()` で summary/description/location に connpass/luma/参加確定/?tk=/connector_status を含むか判定）。dedup は OPEN_DAYS が担保済み。7/16 実データで conflict=0 を確認。
+  2. `connector_fill_gaps.sh`: 丸1日枠→agent が読んだ**実イベント時刻**を渡す。
+  3. タブ使い回し（"open a NEW tab" が 108 タブ蓄積→遅延の元。既存 daily-driver タブを navigate、重複19タブ掃除）。
+  4. `timeout 600→900`。
+- **`claude -p` は print mode で出力を完了までバッファ**→ per-day agent の中間監視は不可。監視は **gcal（ground truth）に event が現れるか**で行う。
+- **7/16 実着地・自分の目で検証（gog calendar event 直読、id=8krltisdlhr9f2tsufp62kbf18）**:
+  - 会場 **HASEKO - KUMA HALL, 東京都文京区本郷7丁目3−1**（東大本郷・実会場、online=False）
+  - 13:30–18:30 JST（実時刻）、status confirmed
+  - テーマ = 東大ブロックチェーンイノベーション寄付講座 研究交流会（crypto/blockchain）
+  - Luma `luma.com/d0dvi7zl?tk=guRdzS`、参加確定！、確認メール keiodaisuke@gmail.com 受信
+- driver は 7/16 landing 後 7/17→7/18→…と継続中。各日 gcal で offline+実会場を読返し確認する。
+- **残注意**: 7/21/23/25/26 は online junk が gcal に残り "filled" 扱い→driver が触らない。whole-2-week offline 化には junk 削除→再 driver が必要（Dais は junk 削除を deprioritize だが goal は whole-2-week offline）。
+
+## 残 TODO（(c)(d) 済、(a) 進行中）
 - (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 競合解消後の着地を gcal get_event で各日 location=実会場を読返し確認。
 - (b) 高速化 = discover-once: luma.com/tokyo + /crypto + connpass を1回スクレイプ→次14日の in-person AI/crypto イベントを全抽出→各空き日にマッピング→登録。per-day 再探索を廃す。
 - (d) fresh adversary(Opus) PASS。
