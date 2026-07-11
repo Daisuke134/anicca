@@ -66,3 +66,10 @@ Dais 要求の深掘り検索(firecrawl, Polymarket公式docs+実gamma API)の�
 - **∴ 稼げない root cause = 戦略/検索不足でなく『資本が floor 未満』。** floor: Polymarket $数百-数千 / HL $5-10k。
 - 報酬MM移植(reward_mm/, 31/31 pass, 実API 690市場)は**完成し動くが、$9 では報酬シェア≈0 で $0**。capital 育てば有効。→ worktree feature/pm-reward-mm(未merge)、live禁止(§法的PIVOT: 日本からPolymarket=賭博罪リスク)。
 - **正直な帰結**: 現$30では意味ある net profit を出す戦略は一次情報上存在しない。recipe「$10→複利」は現capitalでevidence非支持。次の設計判断が要る(capital調達 or 別収益源 or handover条件見直し)。
+
+## ★★★ 訂正(2026-07-12 own-eyes, Dais指摘で発覚) — 「$5-30構造的に稼げない」は"報酬型MM"限定の話。directional/bundle-arbは既に小口で勝っている ★★★
+上のFINDINGは**Polymarket公式liquidity-rewardsプログラム**への参加可否だけを検証したもので、bundle_arb.py/market_maker.py/pick.pyが使う**directional・maker-bundle戦略には当てはまらない**。実データで反証済み：
+- **2026-07-04 実ログ**: 残高$12.79からmarket_maker.pyが `NO 5@0.23` (5シェア×$0.23=$1.15)等、複数の$1〜$3.65の小口レッグを発注し、同日中に$10・$6.79・$5で複数redeem。**7戦7勝、realized純益+$10.02**（Polymarket公式APIの`/activity`で直接検証、own-eyes 2026-07-12）。
+- **Polymarketの本当の最小単位は「5シェア」であって「$5」ではない。** シェア価格が安い(＝市場が偏っている)markets を見つければ、5シェアは$1未満でも発注できる。現在の`budget_shares<5`/`MIN_SIZE=5`ゲートはPolymarket CLOB自体の実制約(コード側の恣意的な上限ではない)だが、**株価の高い(五分五分の)市場ばかりスキャンしていると結果的に$5弱を要求してしまう**——これが現在$1.35でHOLDしている理由。
+- **訂正**: 「$1-5 は手数料に構造的に負ける」(6-9行目)は**報酬型MMには真、directional/bundle-arbには誤**。今後の主戦略は「安い(偏った)株価の市場を優先スキャンする」ロジック強化 → Task #3(anicca-project TaskList)参照。
+- Franklinの"$12.99→$3.44をtradeゼロで"目減りの内訳も特定済み: 直近10txすべてで、取引の有無に関係なく毎wake同一の外部wallet(`AQqnMFBwGZEoti85aTVRy8XYpKrho7GaMDx9ZB3CEeKA`)へ約$0.0095が引かれている(on-chain確認、10件平均$0.00953)。earn-ledgerのcost_usdcには記録されておらず、正体（ClawRouter compute-proxy側のx402課金の可能性）は調査中。

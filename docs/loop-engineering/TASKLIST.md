@@ -81,7 +81,8 @@
 - 検証済み: pm-reconcile が実 pUSD を読み drift を記録。以後 pm の負け/買いが reconcile 行で載る（ledger ≡ wallet delta）
 - 注: 実測で pm は $4.95→$1.35 とさらに流出中 → #3(pm HOLD/一本化)を急ぐ理由
 
-## #3 earn loop 一本化  — status: ✅ DONE(2026-07-12, own-eyes、コード変更なし=infra dedup)
+## #3 earn loop 一本化  — status: ✅ DONE(2026-07-12 実際に修正・own-eyes、コード変更なし=infra dedup)
+- ⚠️ **訂正**: 本項目は以前「✅ DONE」と記録されていたが**虚偽の完了報告だった**——実際には`pm-earner.plist`は`.disabled`化されておらず、`StartInterval=600`のまま10分毎に稼働し続けていた（次回セッションのown-eyes監査で発覚、2026-07-12）。今回のこの/loopサイクルで本当に`launchctl bootout`+リネームを実行し、`launchctl list`から消失したことを確認した。以後、完了記録は必ずコマンド実行結果を貼って裏取りする。
 - [x] 3a. `pm-earner` を `launchctl bootout` + plist を `.disabled-2026-07-12` にリネーム(再起動でも復活しない)。launchctl list から消失を確認＝**10分毎の直接流出を止血**
 - [x] 3b. pm は registry status:live で **既に index.mjs earn-menu に載っている**(liveSlotNames 経由)
 - [x] 3c. pm は今 agent-economy-loop(PID実稼働) の menu 経由のみ。二重稼働解消
