@@ -112,6 +112,8 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 ## 7. 詳細は各ファイル（このSSOTがindex、詳細のみ委譲）
 | 知りたい | ファイル |
 |---|---|
+| ★gig ループ AS-IS/TO-BE/実行計画(compact-proof正本)★ | `26-gig-loop-asis-tobe-plan.md` |
+| browser-use 検証+自己改善 BP(judge.py実物) | `25-browser-use-verify-selfimprove-bp.md` |
 | reality-verifier の設計/OSS調査 | `24-shared-ground-truth-verifier-design.md` |
 | 全loop真実監査(browser/on-chain実測) | `../superpowers/evidence/LOOPS-TRUTH-AUDIT.md` |
 | connector loop の元 spec/done条件 | `../superpowers/specs/2026-07-10-connector-loop-design.md` §10 |
