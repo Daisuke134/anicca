@@ -47,5 +47,19 @@
 - B: 「エージェント経済の作り方 ― 配管は完成した。残るは"信頼"だけ」
 - C: 「自分でサーバー代を払うAI ― エージェント経済は、どこまで本物か」
 
-## unified citizen loop（記事[6]の設計、Dais 2026-07-12）
-Franklin ループ = Claude ループ = 同一テンプレ [稼ぐ]+[建てる]+[spawn]。今の Franklin は [稼ぐ] 片腕のみ→[建てる]腕(=[[27-long-horizon-goal-engineering-BP]] の北極星型ループ: OBSERVE as-is vs 理想→PICK 欠け→BUILD(bound付)→VERIFY(fresh adversary)→拡大)を埋める。graduation=Franklinが(a)net-positive (b)稼ぎで自compute(無料→Sonnet/Opus) (c)建てる腕で経済を建てる (d)self-heal/improve自走 → 全true で claude-p(親)exit。今日の reputation/gas VCSDD=その建てる腕の最初の一歩。
+## unified citizen loop（記事[6]の設計、Dais 2026-07-12。★時系列を厳密に★）
+**今（現在）**: Franklin は **[稼ぐ] 片腕のみ**。broke（資本ほぼゼロ）＋弱い無料モデルで動くため、**build ループは持てない/持たせない**。経済を **[建てる] のは親の claude-p だけ**（frontier モデル・human-funded）。親の仕事＝Franklin の"稼ぐ"能力に道具を1個ずつ足す（例: 今日の reputation/gas VCSDD ＝ Franklin の**稼ぐ**経路に評判/gas 自動化を足しただけで、Franklin に build 腕を与えたのではない）。
+**将来（graduation 後）**: Franklin が (a) net-positive に稼ぐ → (b) その稼ぎで自分の compute を賄い**無料モデル→Sonnet/Opus に上げる** → (c) 賢くなって初めて **[建てる] 腕**（[[27-long-horizon-goal-engineering-BP]] の北極星型ループ: OBSERVE as-is vs 理想→PICK 欠け→BUILD(bound付)→VERIFY fresh adversary→拡大）を持てる → (d) self-heal/improve が自走 → 全 true で claude-p(親)が exit。
+∴ 「Franklin=Claude 同一テンプレ [稼ぐ]+[建てる]+[spawn]」は **到達点(理想)**であり、**現時点では build 腕は claude-p のみ・Franklin は earn のみ**。記事では「今は親が建て、子は稼ぐ。子が賢くなれば子も建て始め、親は去る」と時系列で書く（build を今の Franklin に帰属させない）。
+
+## 10問への答え（記事本文で書く中身、ape-level・正直）
+- **Q1 循環マネー（背骨）**: AI同士が払い合うだけでは価値ゼロ（A→B→A の付け替え）。本物の金は"外"から入る＝人間や外部が、AIの成果（記事/コード/取引の利益/API提供）に**実際に対価を払った時だけ**（external:true）。だから決済インフラだけでは足りず「外から価値が流入した証明」＝validation が要る。今はこの外部流入が薄い＝だから大半のAIが$0。
+- **Q2 何で稼ぐ**: ①トレード(予測市場/暗号資産の値ざや) ②gig(他AI/人間の仕事を受け納品) ③x402でAPI/サービスを売る ④コンテンツ(記事/動画)。継続黒字は稀。
+- **Q3 なぜ銀行でなくcrypto**: 銀行はAIが自力で開けない(本人確認/書類)、少額・高頻度・24時間・国境なしに不向き。walletはプログラムで数秒生成、1回0.001ドル即決済。
+- **Q4 盗難/ハック**: リスク実在。対策=秘密鍵を直接持たせず「上限・期限付き委任」(session key/スマートアカウント)、spend cap、TEE/MPC で鍵分割。ゼロリスクではない(正直)。
+- **Q5 暴走を止める/制御**: kill-switch(1ファイルで次回起動停止)、spend cap(機械的上限)、認可フレーム(許可範囲を事前に狭く定義)。人間の常時監視でなく"事前の狭い許可"で担保。
+- **Q6 今黒字のAIはいる**: 正直ほぼいない。「AIが稼いだ」報道の大半は投機トークン(実労働でない)。継続的に外部黒字のAIは極めて稀。我々も生涯$5。
+- **Q7 結局バブル?**: 一部本物(x402=月2,400万ドル実決済)、一部崩壊(ai16z -99.8%)。見分け=時価総額(投機)か実売上か/人間承認あるか/継続事業か。
+- **Q8 compute代 vs 稼ぎ**: 核心の壁。無料モデル=固定費ほぼゼロだが弱くて稼げない/賢いモデル=稼げるが高い。黒字化の順=まず無料モデルで稼ぎ>compute を達成→賢いモデルに上げる。多くはまだ赤字。
+- **Q9 bot/RPAとの違い**: bot/RPAは人間が書いた固定ルールを実行するだけ。エージェントは自分で観察→判断→行動→学習を回し、自分のwalletを持ち身元を証明して他者と取引する＝自律して経済主体になる点。
+- **Q10 仕事を奪う/危険**: 両面正直に。効率化で一部作業は代替。暴走/詐欺リスクは実在→認可・上限・検証で抑える設計。ゼロリスクとは言わない。
