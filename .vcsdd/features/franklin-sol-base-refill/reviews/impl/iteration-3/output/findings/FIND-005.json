@@ -1,0 +1,21 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-GAS-002's acceptance criteria (behavioral-spec.md:343-348) require only that --recipient be a syntactically well-formed EVM address (0x + 40 hex chars) -- is_valid_evm_address performs no EIP-55 checksum validation. Per this review's own task framing: recipient is fully operator-supplied with no default and no citizens.json/allowlist binding whatsoever (by design, since the destination is deliberately an arbitrary shared-infra address, not a citizen wallet) -- the only residual defense against a mistyped/transposed address is the operator reading the printed dry-run plan before choosing to pass --live. A single-character digit/letter transposition in a manually-typed or partially-corrupted address would still pass is_valid_evm_address's syntactic check silently, with no typo-detection signal at all (checksum-aware wallets/tools reject a wrong-case address specifically to catch this class of error). This is acceptable per this review's own task framing (\"Operator-supplied is acceptable IF validated + logged\") given the address IS both syntactically validated and logged (to_addr=recipient appears in every ledger row), but the absence of a checksum-typo safety net is a real, documentable residual risk for a fully unbound real-money destination that the spec does not currently acknowledge or explicitly accept.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "330-348",
+    "snippet": "### REQ-GAS-002: Explicit `--recipient` required -- no default, no citizens.json lookup\n...\n**Acceptance Criteria**:\n- `is_valid_evm_address` is a pure function (deterministic parse of a fixed hex-address format,\n  not a judgment call); unit tests cover valid/None/empty/wrong-prefix/wrong-length/non-hex/\n  non-string-type cases."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "skills/earn/funding/lib/refill_plan.py",
+      "lineRange": "236-252",
+      "note": "is_valid_evm_address's own docstring explicitly frames this as syntactic-only 'fixed on-chain machine format' parsing, not a judgment call -- consistent with the codebase's own building-effective-ai-agents.md convention, but this framing did not separately consider EIP-55 checksum as a typo-safety mechanism distinct from judgment."
+    }
+  ],
+  "remediation": "Non-blocking for this pass. Consider either: (a) explicitly documenting in REQ-GAS-002 that checksum validation was deliberately omitted and why (residual risk accepted), or (b) adding EIP-55 checksum verification when a checksummed (mixed-case) address is supplied, rejecting a mismatched checksum as a typo signal while still accepting an all-lowercase/all-uppercase address (which carries no checksum information at all) -- a common pattern in wallet tooling.",
+  "routeToPhase": "1a"
+}

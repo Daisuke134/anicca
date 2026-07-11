@@ -54,6 +54,32 @@ def eth_tx_confirmed_success(rpc_url: str, tx_hash: str, timeout: int = 30) -> b
     return eth_tx_status(rpc_url, tx_hash, timeout=timeout) == "0x1"
 
 
+def eth_get_balance(rpc_url: str, address: str, timeout: int = 30) -> int:
+    """Raw wei balance of `address`'s NATIVE chain currency (e.g. Base ETH) via the standard
+    `eth_getBalance` JSON-RPC method -- the independent on-chain read the gas-ETH refill mode
+    (franklin_sol_base_refill.py `--gas-eth`) uses BEFORE and AFTER broadcasting, since a plain
+    native-currency transfer emits no ERC-20 `Transfer` log for `parse_erc20_transfer_amount`
+    to parse (unlike the USDC leg, native ETH delivery has no finer-grained on-chain signal than
+    the balance delta itself). Raises on RPC/network failure -- fail-closed callers must treat
+    an exception as 'unknown, do not proceed', never silently treat as 0 (mirrors
+    `erc20_balance_units`'s contract)."""
+    body = {
+        "jsonrpc": "2.0",
+        "id": 1,
+        "method": "eth_getBalance",
+        "params": [address, "latest"],
+    }
+    req = urllib.request.Request(
+        rpc_url,
+        data=json.dumps(body).encode(),
+        headers={"Content-Type": "application/json", "User-Agent": "anicca-funding/1.0"},
+    )
+    resp = json.loads(urllib.request.urlopen(req, timeout=timeout).read())
+    if "result" not in resp:
+        raise RuntimeError(f"eth_getBalance error reading {address}: {resp}")
+    return int(resp["result"], 16)
+
+
 def eth_get_transaction_receipt(rpc_url: str, tx_hash: str, timeout: int = 30) -> Optional[dict]:
     """Full tx receipt (status + logs) -- the fill-specific evidence
     `parse_erc20_transfer_amount` below needs. Returns None if the tx is not yet mined (RPC

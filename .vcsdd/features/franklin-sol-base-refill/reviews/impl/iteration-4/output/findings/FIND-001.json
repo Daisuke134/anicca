@@ -1,0 +1,32 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "crossReferencedDimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The evidence attached to close REQ-GAS-004's MUST live-evidence gate (`.vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md`) does NOT reflect the currently-committed code's actual behavior, and therefore does not prove the exact request payload that will be sent at `--live` time actually works against the real relay.link endpoint. The evidence's raw JSON output shows `\"recipient_base\": \"0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3\"` -- mixed-case, byte-identical to the `--recipient` CLI argument supplied in the evidence's own command line. But in the CURRENTLY REVIEWED code (`franklin_sol_base_refill.py:613-619`, the FIND-003 fix), `run_gas_refill` rebinds `recipient = normalized_recipient` (the LOWER-CASED return value of `is_valid_evm_address`) immediately after validation, and `build_refill_plan`'s `recipient_base=recipient` argument at line 730 is built from that same, now-lowercased local variable. Running the EXACT command in the evidence file against the current commit would therefore print `\"recipient_base\": \"0x1f5b17f41524b02a4ee4d99d4158c86c942e43f3\"` (all lowercase), not the mixed-case string the evidence actually shows. This is airtight given a direct read of the code (not inference): there is no code path in the current `run_gas_refill` that could produce a mixed-case `recipient_base` in its printed plan. The only consistent explanation is that the evidence was captured BEFORE the FIND-003 normalization fix was applied (i.e., against an earlier, already-superseded version of the code in this same development pass) and was never re-run afterward. Since the relay `/quote` POST payload's `recipient` field (`franklin_sol_base_refill.py:673`) is built from this SAME normalized variable, the exact live request body that will actually be sent at `--live` time (all-lowercase recipient) has never itself been verified against the real relay.link endpoint -- only a differently-cased request was. The field-shape claim the evidence DOES support (`details.currencyOut.amount` is present/parseable as raw wei for this Solana-USDC->Base-native-ETH pair, independent of recipient casing) remains genuinely verified; what is NOT verified is that relay.link's live `/quote` endpoint accepts/handles the fully-lowercased, no-checksum recipient address the current code will actually submit. EVM address casing is virtually always treated case-insensitively by JSON-RPC/API layers (EIP-55 checksums are a client-side display convention, not an on-chain or typical API-level enforcement), so the practical risk is LOW -- but 'low' is not 'verified', and this is the literal final gate before a real, irreversible $3 on-chain money move. The spec's own Changelog text ('This gate has been CLOSED... a real non-signing --gas-eth --dry-run invocation was run 2026-07-11') is not fully substantiated for the code as it currently stands and will actually execute at --live time.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "605-619,728-736",
+    "snippet": "normalized_recipient = is_valid_evm_address(recipient)\n    if not normalized_recipient:\n        return fail(...)\n    recipient = normalized_recipient\n    ...\n    plan = build_refill_plan(\n        sender_solana=sender_pubkey,\n        recipient_base=recipient,\n        ..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md",
+      "lineRange": "3-6",
+      "note": "Command line uses --recipient 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3 (mixed case); output JSON's plan.recipient_base is the SAME mixed-case string, not lowercased -- inconsistent with what the current code would print for that exact command."
+    },
+    {
+      "filePath": "skills/earn/funding/lib/refill_plan.py",
+      "lineRange": "236-262",
+      "note": "is_valid_evm_address's docstring itself states it returns 'the NORMALIZED (.strip()-ped, lower-cased) address string on success', confirming the current code's contract that the evidence output does not match."
+    },
+    {
+      "filePath": "skills/earn/funding/tests/test_franklin_gas_eth_refill.py",
+      "lineRange": "384-423",
+      "note": "test_gas_whitespace_padded_recipient_normalized_in_relay_payload_and_ledger and test_gas_dry_run_also_normalizes_recipient_in_ledger_row both assert the CURRENT code normalizes recipient_base/relay-payload recipient to lowercase -- directly contradicting the evidence file's un-lowercased output for the same code path."
+    }
+  ],
+  "remediation": "Before the real --live $3 gas top-up: re-run the EXACT same non-signing command against the current commit (`ANICCA_HOME=/Users/operator/.blockrun ANICCA_INSTANCE=franklin python3 franklin_sol_base_refill.py --gas-eth --recipient 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3 --dry-run`), confirm the printed plan.recipient_base is now lowercased AND that relay.link's /quote still returns a valid, parseable details.currencyOut.amount for that exact (now-normalized) request payload, and overwrite/append fresh evidence reflecting the current commit's actual live-invocation shape. This is a non-signing, zero-cost, zero-risk re-check (no funds move) and closes the gap definitively.",
+  "routeToPhase": "3"
+}
