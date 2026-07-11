@@ -116,10 +116,36 @@ export async function verifyRepayment({ txHash, expectedFrom, expectedTo, rpcUrl
   return { credited: +value.toFixed(6), rejected: false };
 }
 
+// A malformed/non-hex log.data (mirrors safeBigIntNumber's own fail-closed discipline above) makes
+// BigInt() throw — caught here so a corrupted/misbehaving RPC response never crashes reconciliation,
+// it just fails that ONE log's own value-match (the log is correctly treated as non-matching, never as
+// a false positive).
+function safeBigIntValue(hexValue) {
+  try {
+    return BigInt(hexValue);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * reconcileProvisionalDisbursement — recovers a crashed/uncertain issuance attempt's own REAL transfer
  * via an on-chain block-range scan, WITHOUT ever disbursing a second time (REQ-106, resolves FIND-103/
  * FIND-201). Read-only: never invokes a transfer/settle call itself.
+ *
+ * impl-review iteration-2, FIND-101 (critical): matchesTransferLog alone only proves address+from+to
+ * topic equality — it says nothing about whether the MATCHED transfer is actually THIS loan's own
+ * disbursement, vs. some other, unrelated USDC transfer that happens to have moved between the exact
+ * same two wallets within the lookback window (e.g. a completely different payment, or a repayment of a
+ * PRIOR loan between the same lender/borrower pair). A value-blind match risks misattributing an
+ * unrelated transfer as proof of THIS row's own disbursement (silently landing "active" with the WRONG
+ * tx_hash while the intended borrower never actually received THIS loan's own principal_usd) — money
+ * mis-accounting, not a UI nit. Fix: only a transfer whose OWN decoded value EXACTLY equals
+ * loanRow.principal_usd (converted to USDC's 6-decimal base units, the SAME `Math.round(principal_usd *
+ * 1e6)` convention `defaultDisburse` itself already uses to construct amountBase) counts as evidence of
+ * THIS loan's own disbursement. An unrelated-value transfer between the same two wallets is correctly
+ * left unmatched — the row stays whatever `resolveStaleProvisioning`'s caller decides (never falsely
+ * "settled").
  */
 export async function reconcileProvisionalDisbursement({ loanRow, rpcUrl, fromBlock, toBlock }) {
   const fromTopic = padAddressToTopic(loanRow.lender_wallet);
@@ -127,7 +153,12 @@ export async function reconcileProvisionalDisbursement({ loanRow, rpcUrl, fromBl
   const logs = await rpcCall(rpcUrl, "eth_getLogs", [
     { address: USDC_BASE_MAINNET, topics: [TRANSFER_TOPIC, fromTopic, toTopic], fromBlock, toBlock },
   ]);
-  const matchingLog = (logs || []).find((log) => matchesTransferLog(log, fromTopic, toTopic));
+  const expectedValueBase = BigInt(Math.round(loanRow.principal_usd * 1e6));
+  const matchingLog = (logs || []).find((log) => {
+    if (!matchesTransferLog(log, fromTopic, toTopic)) return false;
+    const valueBase = safeBigIntValue(log.data);
+    return valueBase !== null && valueBase === expectedValueBase;
+  });
   if (!matchingLog) return { found: false };
   return { found: true, txHash: extractTxHash(matchingLog) };
 }

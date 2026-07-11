@@ -42,6 +42,7 @@ import {
   executeLoanIssuanceAttempt,
   executeRepaymentClaim,
   executeDefaultDetectionSweep,
+  reconcileWindowSpanMs,
 } from "../lending-orchestrator.mjs";
 import { withGigLock } from "../../../gig/lib/lock.mjs";
 import { verifyRepayment } from "../lending-verify.mjs";
@@ -364,6 +365,79 @@ test("PROP-115c step 5 happy: an unterminated provisioning row is resolved via a
   assert.ok(newRow, "this attempt's own new sequence number (n=2) must be computed AFTER reconciliation resolves n=1, never colliding with it");
 });
 
+// ===========================================================================
+// FIND-102 fix (critical, impl-review iteration-2): a {found:false} reconcile result for a stale row is
+// only trustworthy as "genuinely never disbursed" when the row's own age is still within what the
+// reconciliation window could possibly have scanned -- otherwise a genuine broadcast that landed OUTSIDE
+// the window would be silently marked disbursement_failed and a FRESH disbursement would proceed, a real
+// double-spend. reconcileWindowSpanMs (exported) computes the SAME real-time span
+// resolveStaleProvisioning's own age guard uses, tied to LENDING_RECONCILE_LOOKBACK_BLOCKS.
+// ===========================================================================
+
+test("FIND-102 fix: a stale row well WITHIN the reconcile window's real-time span, reconciled to {found:false}, is trusted -- marked disbursement_failed and a FRESH disbursement proceeds (baseline within-window behavior, unaffected by the new age guard)", async () => {
+  const dir = tmpDir();
+  const staleRow = {
+    loan_id: `loan_${LENDER}_1`,
+    lender_id: LENDER,
+    borrower_id: "priorBorrower",
+    status: "disbursement_uncertain",
+    principal_usd: 0.02,
+    total_due_usd: 0.022,
+    provisioned_ms: NOW_MS - 60000, // 60s old -- far inside any real reconcile window
+  };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(ledgerFileFor(dir), JSON.stringify(staleRow) + "\n");
+  let disburseCalls = 0;
+  const deps = happyDeps(dir, {
+    reconcile: async () => ({ found: false }),
+    disburse: async ({ loanRow }) => {
+      disburseCalls += 1;
+      return {
+        ok: true,
+        tx: "0xwithinwindowfixturetx00000000000000000000000000000000001",
+        to: loanRow.borrower_wallet,
+        amountBase: Math.round(loanRow.principal_usd * 1e6),
+      };
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(result.status, "active", "a within-window {found:false} must still resolve the stale row and let a fresh attempt proceed");
+  assert.equal(disburseCalls, 1, "exactly one fresh disburse call for the new sequence number");
+  const rows = readLoanRows(deps.ledgerFile);
+  const staleFollowUp = rows.find((r) => r.loan_id === staleRow.loan_id && r.status === "disbursement_failed");
+  assert.ok(staleFollowUp, "the stale row must resolve to disbursement_failed when genuinely within the window");
+  const freshRow = rows.find((r) => r.loan_id === `loan_${LENDER}_2`);
+  assert.ok(freshRow, "a fresh sequence number must be computed and issued");
+});
+
+test("FIND-102 fix: a stale row OLDER than the reconcile window's real-time span, reconciled to {found:false}, must be REFUSED (reason: stale_row_beyond_reconcile_window) rather than trusted -- prevents an automatic fresh disbursement that could double-spend a real transfer that landed outside the window's own visibility", async () => {
+  const dir = tmpDir();
+  const windowSpanMs = reconcileWindowSpanMs({});
+  const staleRow = {
+    loan_id: `loan_${LENDER}_1`,
+    lender_id: LENDER,
+    borrower_id: "priorBorrower",
+    status: "disbursement_uncertain",
+    principal_usd: 0.02,
+    total_due_usd: 0.022,
+    provisioned_ms: NOW_MS - (windowSpanMs + 60000), // just OLDER than the window can possibly cover
+  };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(ledgerFileFor(dir), JSON.stringify(staleRow) + "\n");
+  const deps = happyDeps(dir, {
+    reconcile: async () => ({ found: false }),
+    disburse: async () => {
+      throw new Error("disburse must never be called for a stale row beyond the reconcile window -- that would risk a real double-spend");
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "stale_row_beyond_reconcile_window");
+  const rows = readLoanRows(deps.ledgerFile);
+  assert.equal(rows.length, 1, "the pre-existing stale row is left EXACTLY as found -- zero new rows appended, zero sequence number consumed");
+  assert.deepEqual(rows[0], staleRow);
+});
+
 test("PROP-115c step 6 (lock-protected fresh recheck finds the borrower newly ineligible) -> refused, ZERO rows, both locks released normally", async () => {
   const dir = tmpDir();
   let borrowerCallCount = 0;
@@ -490,7 +564,7 @@ test("FIND-003 fix (defensive, real defaultDisburse): GIG_CHAIN unset/non-'base'
   assert.match(result.error, /lending_chain_not_mainnet/, "a non-mainnet/unset GIG_CHAIN must refuse to disburse real money, even with a genuinely matching signer");
 });
 
-test("FIND-001/FIND-003 fixes, matching case (defensive, real defaultDisburse): a genuinely matching signer + GIG_CHAIN=base pass BOTH guards -- proven by a DIFFERENT, network-layer error surfacing once payViaFacilitator is genuinely reached, never either guard's own error", async () => {
+test("FIND-001/FIND-003/FIND-103 fixes, matching case (defensive, real defaultDisburse): a genuinely matching signer + GIG_CHAIN=base + a facilitator that genuinely advertises eip155:8453 pass ALL THREE guards -- proven by a DIFFERENT, network-layer error surfacing once payViaFacilitator is genuinely reached, never any guard's own error", async () => {
   const dir = tmpDir();
   const lenderPrivateKey = "0x" + "5".repeat(64);
   const lenderWallet = privateKeyToAccount(lenderPrivateKey).address;
@@ -503,16 +577,87 @@ test("FIND-001/FIND-003 fixes, matching case (defensive, real defaultDisburse): 
     disburse: undefined, // exercise the REAL defaultDisburse
     lenderPrivateKey,
     gigChain: "base",
-    facilitatorUrl: "http://127.0.0.1:1", // deliberately unreachable -- payViaFacilitator's OWN network attempt must be what fails here, not either guard
+    facilitatorUrl: "http://127.0.0.1:1", // deliberately unreachable -- payViaFacilitator's OWN network attempt must be what fails here, not any guard
+    // FIND-103: the facilitator's own /supported response, mocked here so the preflight guard genuinely
+    // passes (real facilitatorUrl is unreachable -- this mock is scoped ONLY to the preflight's own
+    // fetch, payViaFacilitator itself still uses the real, unreachable facilitatorUrl below).
+    fetchImpl: async (url) => {
+      assert.ok(String(url).endsWith("/supported"), "the preflight must call /supported");
+      return { json: async () => ({ kinds: [{ network: "eip155:8453" }] }) };
+    },
   });
 
   const result = await executeLoanIssuanceAttempt(baseParams(), deps);
 
   assert.equal(result.status, "disbursement_uncertain");
   assert.ok(
-    !/lender_signer_mismatch|lending_chain_not_mainnet/.test(result.error || ""),
-    `both defensive guards must have passed -- expected a network-layer failure, got: ${result.error}`
+    !/lender_signer_mismatch|lending_chain_not_mainnet|facilitator_not_mainnet/.test(result.error || ""),
+    `all three defensive guards must have passed -- expected a network-layer failure, got: ${result.error}`
   );
+});
+
+// ===========================================================================
+// FIND-103 fix (high, impl-review iteration-2): GIG_CHAIN=='base' proves our OWN code's intent, never
+// which network the facilitator PROCESS actually listening at facilitatorUrl is configured for --
+// defaultDisburse must ask the facilitator's own live /supported endpoint before signing.
+// ===========================================================================
+
+test("FIND-103 fix (defensive, real defaultDisburse): a facilitator whose /supported response does NOT advertise eip155:8453 (Base mainnet) throws facilitator_not_mainnet BEFORE payViaFacilitator is ever reached, even when the signer+GIG_CHAIN guards both pass", async () => {
+  const dir = tmpDir();
+  const lenderPrivateKey = "0x" + "6".repeat(64);
+  const lenderWallet = privateKeyToAccount(lenderPrivateKey).address;
+  const citizens = {
+    [LENDER]: baseCitizen(LENDER, { balanceUsd: 10, walletAddress: { evm: lenderWallet } }),
+    [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1 }),
+  };
+  let settleAttempted = false;
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => citizens[id] || null,
+    disburse: undefined, // exercise the REAL defaultDisburse
+    lenderPrivateKey,
+    gigChain: "base",
+    facilitatorUrl: "http://127.0.0.1:8405",
+    fetchImpl: async (url) => {
+      if (String(url).endsWith("/supported")) {
+        // Still testnet-configured (base-sepolia's own eip155:84532), the EXACT WITNESS-RUNBOOK.md
+        // documented failure mode -- a process bound to the expected port but NOT mainnet-configured.
+        return { json: async () => ({ kinds: [{ network: "eip155:84532" }] }) };
+      }
+      settleAttempted = true;
+      throw new Error("payViaFacilitator must never be reached when the facilitator is not mainnet-configured");
+    },
+  });
+
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+
+  assert.equal(result.status, "disbursement_uncertain");
+  assert.match(result.error, /facilitator_not_mainnet/, "a non-mainnet-advertising facilitator must refuse before signing real lending money");
+  assert.equal(settleAttempted, false, "payViaFacilitator's own network calls (which use the real global fetch, not deps.fetchImpl) must never be attempted -- proven here by deps.fetchImpl never being called for anything but /supported");
+});
+
+test("FIND-103 fix (defensive, real defaultDisburse): a facilitator whose /supported call itself fails (unreachable/malformed response) throws facilitator_not_mainnet, fail-closed, never silently proceeds to sign", async () => {
+  const dir = tmpDir();
+  const lenderPrivateKey = "0x" + "9".repeat(64);
+  const lenderWallet = privateKeyToAccount(lenderPrivateKey).address;
+  const citizens = {
+    [LENDER]: baseCitizen(LENDER, { balanceUsd: 10, walletAddress: { evm: lenderWallet } }),
+    [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1 }),
+  };
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => citizens[id] || null,
+    disburse: undefined,
+    lenderPrivateKey,
+    gigChain: "base",
+    facilitatorUrl: "http://127.0.0.1:8405",
+    fetchImpl: async () => {
+      throw new Error("ECONNREFUSED (simulated)");
+    },
+  });
+
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+
+  assert.equal(result.status, "disbursement_uncertain");
+  assert.match(result.error, /facilitator_not_mainnet/, "an unreachable /supported check must fail closed, never be treated as an implicit pass");
 });
 
 test("PROP-115c step 9 sub-case 3 (settle succeeds but the FOLLOW-UP append itself throws) -> provisional row left unterminated, never a false active claim", async () => {

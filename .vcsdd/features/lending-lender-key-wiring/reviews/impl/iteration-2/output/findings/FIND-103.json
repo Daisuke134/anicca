@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-103",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "REQ-121's own 'operator precondition (verified live 2026-07-11)' claim (specs/behavioral-spec.md:143-149) rests on 'confirmed via lsof -iTCP:8405' -- but lsof only proves a process is BOUND to that port, not which GIG_CHAIN/config the process was actually STARTED with. This repo's own skills/economy/gig/WITNESS-RUNBOOK.md (2026-07-07, lines 24-45) explicitly documents that the live process on port 8405 at that time (PID 94412) was the TESTNET facilitator, and that the runbook's own mainnet-config test was deliberately run on a SEPARATE scratch port (8406) specifically 'to avoid touching 8405/PID 94412' -- PID 94412 itself was never restarted with config.mainnet.json during that pass ('I did not touch PID 94412 at any point in this prep', line 45). ~/.anicca-signing/gig-board/.env now sets GIG_CHAIN=base + GIG_FACILITATOR_URL=http://127.0.0.1:8405 (confirmed read this review), which is consistent with -- but does not itself PROVE -- the process actually listening on 8405 today having been restarted since 2026-07-07 with config.mainnet.json rather than still silently serving config.json (testnet) while GIG_CHAIN env-only settings changed around it. No artifact in this fix's own evidence chain (iteration-1's notes.md, this feature's evidence/ directory) shows a live '/supported' response (the check WITNESS-RUNBOOK.md itself used at line 241-242 to genuinely confirm a facilitator's active network: '{\"network\":\"eip155:8453\", ...}') taken against the ACTUAL production facilitatorUrl immediately before this review. A chain-mismatched facilitator most likely fails safely at /verify (network-field mismatch) rather than losing funds -- but that safety property is itself unverified here, not demonstrated.",
+  "evidence": {
+    "filePath": "skills/economy/gig/WITNESS-RUNBOOK.md",
+    "lineRange": "24-45,240-243",
+    "snippet": "**The facilitator that is live RIGHT NOW is running out of THIS WORKTREE...** ... I did not touch PID 94412 at any point in this prep (verified /health before and after all edits). ... confirmed /supported reports {\"network\":\"eip155:8453\", ...} with the throwaway signer address [on the SEPARATE scratch port 8406], then killed only that isolated process. PID 94412 (the live testnet facilitator) answered /health normally both before and after"
+  },
+  "recommendation": "Before triggering the real wake, run a live `curl 127.0.0.1:8405/supported` (or equivalent) and confirm the response's network field is exactly `eip155:8453`, not merely that the port accepts TCP connections. Consider having defaultDisburse (lending-orchestrator.mjs) or payViaFacilitator (escrow.mjs) assert this on every real call as a standing safeguard, not a one-time manual check.",
+  "routeToPhase": "2b"
+}

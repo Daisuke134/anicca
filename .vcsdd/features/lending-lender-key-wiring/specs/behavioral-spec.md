@@ -12,6 +12,19 @@ duplicate, anicca-agent-lending's own already-converged REQ-101..117/PROP-1xx co
   defensive backstop), REQ-120 (bounded reconciliation block-range scan, replaces
   `fromBlock:"earliest"`), REQ-121 (GIG_CHAIN=base + live-facilitator-port operator precondition +
   in-code refusal). See `reviews/impl/iteration-1/output/findings/FIND-001..004.json`.
+- **impl iter2 fixes FIND-101..103** (2026-07-11, impl-review iteration-2): FIND-101 (critical) —
+  `reconcileProvisionalDisbursement` (`lending-verify.mjs`) now requires the matched Transfer log's own
+  decoded value to EXACTLY equal `loanRow.principal_usd` (converted to USDC base units) before treating
+  it as evidence of this loan's own disbursement; a value-blind address+topic-only match risked
+  misattributing an unrelated same-wallet-pair transfer as this row's own settlement. FIND-102
+  (critical) — amended REQ-120 below with the double-disburse consequence + new age-guard
+  (`stale_row_beyond_reconcile_window`) in `resolveStaleProvisioning`, which now refuses (rather than
+  silently proceeding to a fresh disbursement) whenever a `{found:false}` reconcile result is for a row
+  older than the reconciliation window's own real-time span (`reconcileWindowSpanMs`, tied to
+  `LENDING_RECONCILE_LOOKBACK_BLOCKS`). FIND-103 (high) — new REQ-123: `defaultDisburse` now runs a live
+  `/supported` preflight against the facilitator before signing, refusing
+  `facilitator_not_mainnet` unless the facilitator itself advertises `eip155:8453`. See
+  `reviews/impl/iteration-2/output/findings/FIND-101..103.json`.
 
 ## Root cause (verified live)
 
@@ -121,17 +134,96 @@ range there: "commonly 2,000-10,000 blocks"). An unbounded "earliest" scan would
 - Lookback default: 9000 blocks (matches record-earn.mjs's own proven-safe `MAX_SPAN` for this exact
   RPC, ~5h at Base's ~2s/block). Overridable via `LENDING_RECONCILE_LOOKBACK_BLOCKS` — an operator
   with a less-frequent wake cadence than the lookback window risks missing a genuine on-chain
-  reconciliation match for a row stuck longer than that window; widening the lookback must stay
-  within whatever range limit the real provider actually enforces (never re-introduce "earliest").
+  reconciliation match for a row stuck longer than that window.
+- **Corrected (impl-review iteration-2, FIND-102, critical): a missed match is NOT merely "the operator
+  risks a permanently-blocked lender"** — `resolveStaleProvisioning` (`lending-orchestrator.mjs`) reads
+  a `{found:false}` reconcile result as "genuinely never disbursed" and proceeds to a FRESH
+  disbursement for the same borrower. If the stale row's real broadcast happened (e.g. a network
+  timeout mid-settle, not a pre-signing crash) but is OLDER than the lookback window, this is a FALSE
+  NEGATIVE and the fresh disbursement is an actual double-spend of real money. Fix: `resolveStaleProvisioning`
+  now compares the stale row's own age (`nowMs - provisioned_ms`) against the reconciliation window's
+  real-time span (`reconcileWindowSpanMs`, exported from `lending-orchestrator.mjs`, computed as
+  `lookbackBlocks * 2s`, tied to the SAME `LENDING_RECONCILE_LOOKBACK_BLOCKS` figure a real `reconcile`
+  call uses) BEFORE trusting a `{found:false}` result. A row older than that span — or with a missing/
+  non-finite `provisioned_ms` — REFUSES (`reason:"stale_row_beyond_reconcile_window"`, zero rows
+  appended, zero sequence consumed) rather than being marked `disbursement_failed`; recovering such a
+  row requires a wider manual on-chain scan, never an automatic re-disburse. A row within the window
+  behaves exactly as before (marked `disbursement_failed`, fresh disbursement proceeds).
 - The real production `loan_Franklin_1` row's own crash happened BEFORE any facilitator/on-chain call
   ever went out (confirmed: `privateKeyToAccount(undefined)` throws inside `signAuthorization`,
   before any HTTP fetch) — so its own reconciliation genuinely has nothing to find on-chain
   regardless of window size; this bound does not change that row's own correct
-  `disbursement_failed` outcome.
+  `disbursement_failed` outcome (its own `provisioned_ms` age is trivially within any real window).
 
 **Acceptance Criteria**:
 - `wake-gate.test.mjs`'s REQ-118 recovery fixture's mock RPC genuinely REJECTS `fromBlock:"earliest"`
   or any span wider than a real provider's own limit, and the fix's own bounded call still succeeds.
+- `lending-orchestrator.test.mjs`: a stale row within the window's real-time span, reconciled to
+  `{found:false}`, is marked `disbursement_failed` and a fresh disbursement proceeds (baseline).
+- `lending-orchestrator.test.mjs`: a stale row OLDER than the window's real-time span, reconciled to
+  `{found:false}`, is REFUSED (`stale_row_beyond_reconcile_window`) — zero new rows, zero sequence
+  consumed, `disburse` never invoked.
+
+### REQ-122: exact-value Transfer match for reconciliation (impl-review iteration-2, FIND-101, critical)
+**EARS**: WHEN `reconcileProvisionalDisbursement` (`lending-verify.mjs`) evaluates a candidate Transfer
+log against a stuck `loanRow`, THE SYSTEM SHALL additionally require the log's own decoded `value`
+(from `log.data`, USDC 6-decimal base units) to EXACTLY equal `Math.round(loanRow.principal_usd * 1e6)`
+— the SAME base-units convention `defaultDisburse` itself already uses to construct `amountBase` —
+before treating that log as evidence of THIS loan's own disbursement.
+
+**Root cause**: `matchesTransferLog` alone only proves address+`from`-topic+`to`-topic equality — it
+never inspects the matched log's own value. Any OTHER, unrelated USDC transfer between the SAME
+lender/borrower wallet pair within the lookback window (a different payment, a repayment of a PRIOR
+loan between the same pair, or any future coincidental transfer) would be misattributed as proof this
+specific row was disbursed, landing it `active` with the WRONG `tx_hash` while the intended borrower
+never actually received THIS loan's own `principal_usd` — silent money mis-accounting.
+
+**Edge Cases**:
+- A Transfer log matching address+topics but with a DIFFERENT value than `loanRow.principal_usd` →
+  NOT matched (`{found:false}`), even though the wallet pair is exactly correct.
+- Multiple logs in the same window, only one with the exact expected value → the exact-value log is
+  matched, the unrelated-value log(s) are ignored.
+- A malformed/non-hex `log.data` → fails that log's own value check closed (never a false positive,
+  never a throw — mirrors `verifyRepayment`'s own existing fail-closed discipline for malformed data).
+
+**Acceptance Criteria**:
+- `lending-verify.test.mjs`: an unrelated-value transfer between the correct lender/borrower wallets is
+  rejected (`found:false`).
+- `lending-verify.test.mjs`: an exact-value transfer is matched even when an unrelated-value transfer
+  between the same two wallets also appears in the same window.
+
+### REQ-123: live facilitator mainnet preflight before signing (impl-review iteration-2, FIND-103, high)
+**EARS**: WHEN `defaultDisburse` is about to call `payViaFacilitator` against `facilitatorUrl`, THE
+SYSTEM SHALL first fetch `${facilitatorUrl}/supported` and refuse (`facilitator_not_mainnet`) UNLESS
+the response's own `kinds[]` array contains an entry whose `network` is exactly `"eip155:8453"` (Base
+mainnet) — never trusted from `GIG_CHAIN=='base'` (REQ-121, proves only OUR OWN code's intent) or a
+port-liveness check (`lsof`, proves only that a process is bound to the port) alone.
+
+**Root cause**: `WITNESS-RUNBOOK.md`'s own documented history shows the process previously bound to
+port 8405 (PID 94412) was, at the time, the TESTNET facilitator — a port/PID-liveness check cannot
+distinguish that from a genuinely mainnet-reconfigured process on the SAME port. REQ-121's own operator
+precondition (`lsof -iTCP:8405` + `.env`) is necessary but not sufficient proof; only the facilitator's
+own live `/supported` response (the same check `WITNESS-RUNBOOK.md` itself used to genuinely confirm
+mainnet, `services/facilitator/test-facilitator-contract.mjs`'s own `supported.kinds` shape) proves it.
+
+**Edge Cases**:
+- The facilitator's own `/supported` response advertises `eip155:8453` → preflight passes, `payViaFacilitator`
+  is reached normally.
+- The facilitator's own `/supported` response advertises ONLY a non-mainnet network (e.g. `eip155:84532`,
+  testnet) → refused `facilitator_not_mainnet` BEFORE `payViaFacilitator` is ever reached, even when the
+  REQ-119 signer guard and REQ-121 `GIG_CHAIN` guard both pass.
+- The `/supported` fetch itself fails (unreachable/malformed response) → refused `facilitator_not_mainnet`,
+  fail-closed, never treated as an implicit pass.
+- Never cached across calls — a facilitator swapped back to testnet config between wakes must be caught
+  on the very next real disbursement attempt, never trusted from a stale prior check.
+
+**Acceptance Criteria**:
+- `lending-orchestrator.test.mjs`: the REAL `defaultDisburse`, a mocked `/supported` response advertising
+  ONLY a non-mainnet network → throws `facilitator_not_mainnet` before any `payViaFacilitator` call.
+- `lending-orchestrator.test.mjs`: a mocked `/supported` failure (throws) → throws `facilitator_not_mainnet`.
+- `lending-orchestrator.test.mjs`: a mocked `/supported` response advertising `eip155:8453`, combined with
+  a genuinely matching signer + `GIG_CHAIN=base`, passes all three guards — proven by a DIFFERENT,
+  network-layer error surfacing once `payViaFacilitator` is genuinely reached.
 
 ### REQ-121: mainnet chain + facilitator preconditions (impl-review iteration-1, FIND-003, medium)
 **EARS**: WHEN `defaultDisburse` is about to settle real lending money, THE SYSTEM SHALL refuse
