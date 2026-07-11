@@ -115,10 +115,15 @@ driver の per-day agent が 7/16-18 全て `rc=124`（timeout・ゼロ着地）
 - **実証**: 再driver で 7/16 が **WeWork渋谷スクランブルスクエア39F 18:30–20:00**（夜・仕事の後・重複なし）に再登録。agent が「Day job 9-17 の後、重複なし」を自己確認。**loop が自分でダブルブッキングを回避する**ことを実データで確認。
 - 現状 offline確定=5日(7/13-17、全て夜・重複ゼロ)。driver は 7/18→7/24 を継続中。online junk 4日(7/21/23/25/26)は未処理。
 
-## 残 TODO（(c)(d) 済、(a) 進行中）
-- 再driver が 7/18/19/20/22/24 を夜・offline・非重複で埋める（進行中）→各日 gcal 直読で検証。
-- online junk 4日(7/21/23/25/26)を削除→再driver で offline 化＝whole-2-week offline。
-- 全着地でダブルブッキング0の最終確認。
+## ★結論（2026-07-12）: autonomous+continuous ループへハンドオフ、次の loop へ★
+Dais 判断: 「loop が実際に自走して継続的にやるなら、完了まで待つ必要はない。次へ行ける」。以下を確認して連続稼働を担保:
+- **continuous 保証**: launchd `ai.anicca.connector-fill-gaps`(07:50 JST) + `ai.anicca.connector-daily-report`(09:10 JST) 両方 LOADED。毎日 open 日を soonest-first で埋め、Telegram 報告。
+- **各 run の正しさ実証**: gcal_write ガードで**ダブルブッキング自己回避**、実会場のみ、夜(平日18:00+)/週末。7/16 が日中→夜(WeWork渋谷18:30)へ自己再登録した実データが証拠。
+- **online junk 4日(7/21/23/25/26) を削除**（MCP delete_event、全 cancelled 確認）→ 再オープン → 以後の日次 run が offline で埋める。7/12 junk は Dais 指示で放置。
+- **確定 offline = 5日**(7/13 港区 / 7/14 紀尾井町 / 7/15 千代田 / 7/16 渋谷 / 7/17 高輪)、全て夜・重複0。残り空き日(7/18-20,22,24 + 開放した21/23/25/26)は日次 loop が自律で埋めていく（供給次第で NONE の日は正直に空き）。
+- **既知の robustness 限界**: per-day agent は `timeout 900`。該当イベントが無い/探索が長い日は timeout(rc=124)で空きのまま→翌日の run が再挑戦（収束式）。致命でない。
+
+→ connector は「バグ修正済・自律・継続・ダブルブッキング回避・実証済」= **次の loop へ進める状態**。
 - (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 競合解消後の着地を gcal get_event で各日 location=実会場を読返し確認。
 - (b) 高速化 = discover-once: luma.com/tokyo + /crypto + connpass を1回スクレイプ→次14日の in-person AI/crypto イベントを全抽出→各空き日にマッピング→登録。per-day 再探索を廃す。
 - (d) fresh adversary(Opus) PASS。
