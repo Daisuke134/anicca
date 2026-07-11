@@ -145,9 +145,12 @@ is touched.
   candidate for which REQ-CR3 returns a non-`None` checkpoint path is the one used, and iteration
   STOPS there (REQ-CR3's result for that candidate IS the function's overall result, modulo
   REQ-CR1's absolute-path contract). A candidate for which REQ-CR3 returns `None` (for ANY reason —
-  no `checkpoints/` subdirectory at all, an empty one, or one that is non-empty at the OS-listing
-  level but contains ZERO valid `checkpoint_<N>`-shaped entries — see EDGE-CR11) is skipped (not
-  selected, not a fatal error) and iteration CONTINUES to the next-most-recent candidate. If the
+  no `checkpoints/` subdirectory at all, an empty one, one that is non-empty at the OS-listing
+  level but contains ZERO valid `checkpoint_<N>`-shaped entries (see EDGE-CR11), or the candidate
+  entry matching REQ-CR10's name shape being a PLAIN FILE rather than a directory (see EDGE-CR12) —
+  REQ-CR3 treats a same-named file exactly like a directory with no `checkpoints/` subdirectory:
+  `None`, never a raised `NotADirectoryError`/`FileNotFoundError`) is skipped (not selected, not a
+  fatal error) and iteration CONTINUES to the next-most-recent candidate. If the
   entire sorted candidate list is exhausted with every candidate returning `None` from REQ-CR3 (or
   the list was empty to begin with), THE SYSTEM SHALL return `None` (REQ-CR4). This iterate-until-
   a-real-checkpoint-or-exhausted rule is the ONLY selection algorithm this function implements —
@@ -212,10 +215,14 @@ is touched.
   `RUN_ID` = the just-created `$RUN_ID`, correctly excluding itself even though its own now-empty
   directory already exists under `runs/`) and BEFORE the existing `"$OPENEVOLVE_BIN"` invocation.
   `run_evolve.sh` SHALL capture this call's stdout verbatim as the checkpoint path (an empty string
-  meaning "no checkpoint found," per REQ-CR8). `run_evolve.sh` SHALL also capture this call's own
-  exit status separately from its stdout (mirroring the existing pattern at `run_evolve.sh:58-64`'s
-  `OBSERVE_JSON="$(...)"` capture, which does not abort on a non-zero `ledger_reader.py` exit
-  either) — see REQ-CR12 for what happens on a non-zero exit here.
+  meaning "no checkpoint found," per REQ-CR8). `run_evolve.sh` SHALL ALSO explicitly capture this
+  call's own exit status (via `$?` immediately after the command substitution) separately from its
+  stdout — NOTE this is a NEW capture this feature introduces, not a reuse of an existing pattern:
+  the existing OBSERVE step at `run_evolve.sh:58-64` calls `ledger_reader.py` via a bare
+  `OBSERVE_JSON="$(...)"` command substitution and never inspects its exit status at all (any
+  failure there is silently absorbed into an empty/error-shaped `$OBSERVE_JSON` string, logged as
+  data, never treated as a distinct branch) — see REQ-CR12 for what THIS feature does with a
+  non-zero exit, which is stricter than that existing precedent, not a copy of it.
 
 - **REQ-CR12** WHEN the REQ-CR6 call itself exits non-zero (the `checkpoint_resume.py` process
   crashed, raised an uncaught exception, or `$PY_BIN` was not executable) — as DISTINCT from the
@@ -299,10 +306,10 @@ is touched.
 | # | Invariant |
 |---|---|
 | INV-CR1 | `find_latest_checkpoint` AND `lib/checkpoint_resume.py`'s `__main__` entrypoint NEVER write, delete, rename, or mutate anything on disk — both are pure/read-only with respect to the filesystem (REQ-CR5, REQ-CR11) |
-| INV-CR2 | This feature never touches `strategies/pm_backtest_strategy.py`, `promote_gate.sh`, `lib/promote_gate.py`, `lib/promote.py`, `config.yaml`, or `ai.anicca.self-improve-evolve.plist` |
-| INV-CR3 | This feature never reads or writes any wallet key, `.env`, ledger file, or spend-cap value — it is scoped exclusively to `runs/*/checkpoints/*` path selection |
+| INV-CR2 | This feature never touches `strategies/pm_backtest_strategy.py`, `promote_gate.sh`, `lib/promote_gate.py`, `lib/promote.py`, `config.yaml`, or `ai.anicca.self-improve-evolve.plist` (verified by PROP-CR9/PROP-CR12's source-text scans over `lib/checkpoint_resume.py`, which contain no reference to any of these paths, plus a plain `git diff` scope check at review time showing no other file touched) |
+| INV-CR3 | This feature never reads or writes any wallet key, `.env`, ledger file, or spend-cap value — it is scoped exclusively to `runs/*/checkpoints/*` path selection (verified by PROP-CR9's source-text scan finding no `open(`/network reference, PLUS the same `git diff` scope check as INV-CR2 — no wallet/`.env`/ledger file appears in this feature's diff) |
 | INV-CR4 | The fallback path (no checkpoint found) is byte-for-byte identical, in its `openevolve-run` invocation, to `run_evolve.sh`'s pre-feature behavior (REQ-CR8) — this feature can only ADD a `--checkpoint` argument, never change any other existing argument |
-| INV-CR5 | REQ-OE6's "a crashed/killed/timed-out openevolve run is inconclusive, no candidate promoted, baseline untouched" invariant is preserved unchanged — this feature adds no new promotion path and does not weaken that handling for a `--checkpoint`-resumed run |
+| INV-CR5 | REQ-OE6's "a crashed/killed/timed-out openevolve run is inconclusive, no candidate promoted, baseline untouched" invariant is preserved unchanged — this feature adds no new promotion path and does not weaken that handling for a `--checkpoint`-resumed run (verified by PROP-CR-WIRE1/PROP-CR-WIRE2/PROP-CR-WIRE2b together: the `openevolve-run` invocation's existing arguments and its downstream `STATUS=$?`/`promote_gate.sh` handling, both already outside this feature's diff, are shown byte-for-byte unchanged in every branch) |
 
 ## Edge Cases
 
@@ -363,6 +370,17 @@ is touched.
   run-shaped candidate, continuing until a candidate yields a valid `checkpoint_<N>` entry or the
   sorted candidate list is exhausted (→ REQ-CR4 → `None`). This function SHALL NEVER return early
   or raise merely because `checkpoints/` was non-empty at the OS-listing level.
+
+- **EDGE-CR12** A `runs_dir` entry whose NAME matches REQ-CR10's `run-YYYYMMDDTHHMMSSZ` shape is
+  itself a PLAIN FILE, not a directory (e.g. a stray zero-byte file left by some unrelated process,
+  or a leftover artifact from a killed/interrupted run). REQ-CR3's attempt to inspect this
+  candidate's `checkpoints/` subdirectory SHALL treat this exactly like "no `checkpoints/`
+  subdirectory exists" — returning `None` for this candidate — and SHALL NEVER let a
+  `NotADirectoryError`/`FileNotFoundError`/any other OS-level exception escape `find_latest_
+  checkpoint` (this function catches/checks-before-acting, e.g. via `os.path.isdir(...)` before
+  attempting to list a `checkpoints/` path underneath it, rather than relying on a bare `os.listdir`
+  raising and being caught after the fact). REQ-CR2's iteration then falls through to the
+  next-most-recent candidate exactly as EDGE-CR11 does.
 
 ## "Done" / 4-D Convergence
 

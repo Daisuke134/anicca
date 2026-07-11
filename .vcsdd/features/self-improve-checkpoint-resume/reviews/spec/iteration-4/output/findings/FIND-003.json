@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "description": "This iteration's own fix for the prior-round's FIND-001 (INV-CR1 untraceable) explicitly demonstrates the standard this document holds itself to: REQ-CR11 (behavioral-spec.md:292-295) states 'This requirement makes INV-CR1 directly traceable to an explicit, testable REQ ... and is verified by PROP-CR12.' That same standard is NOT applied to the other four Global Invariants (behavioral-spec.md:297-305). INV-CR2 ('This feature never touches strategies/pm_backtest_strategy.py, promote_gate.sh, lib/promote_gate.py, lib/promote.py, config.yaml, or ai.anicca.self-improve-evolve.plist') and INV-CR3 ('This feature never reads or writes any wallet key, .env, ledger file, or spend-cap value') have NO corresponding row in the Proof Obligations table (verification-architecture.md:58-79) at all -- not even an informal one. INV-CR4 and INV-CR5 fare only slightly better: INV-CR4 plausibly maps to PROP-CR-WIRE2 by content (same-argument-list-on-fallback) but the table never says so explicitly the way it does for INV-CR1/PROP-CR12; INV-CR5 ('REQ-OE6's ... invariant is preserved unchanged') has no PROP row and is asserted purely by the prose argument that this feature 'adds no new promotion path,' which is true by non-modification but is never turned into an executable check (e.g. a Phase-5 diff-scope assertion that the changeset's file list is exactly {lib/checkpoint_resume.py, run_evolve.sh, and test files} would trivially and cheaply close INV-CR2/INV-CR3's gap, mirroring how this same document already turned INV-CR1 from an unenforced prose claim into PROP-CR12). This is a real asymmetry in the document's own internal rigor standard, not a hypothetical concern -- it is the exact category of gap ('an invariant with no REQ or test enforcing it') that iteration 2's FIND-001 was raised against and that this iteration's own REQ-CR11 rewrite explicitly took credit for closing, but only for one of five invariants.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "58-79",
+    "snippet": "Proof Obligations table (PROP-CR1 through PROP-CR-LIVE1) contains no row referencing INV-CR2, INV-CR3, or INV-CR5 by ID, unlike INV-CR1's explicit PROP-CR12 cross-reference in behavioral-spec.md:292-295"
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+      "lineRange": "297-305",
+      "snippet": "| INV-CR2 | This feature never touches strategies/pm_backtest_strategy.py, promote_gate.sh, lib/promote_gate.py, lib/promote.py, config.yaml, or ai.anicca.self-improve-evolve.plist |\n| INV-CR3 | This feature never reads or writes any wallet key, .env, ledger file, or spend-cap value ... |\n| INV-CR5 | REQ-OE6's ... invariant is preserved unchanged ... |"
+    }
+  ],
+  "routeToPhase": "1b"
+}

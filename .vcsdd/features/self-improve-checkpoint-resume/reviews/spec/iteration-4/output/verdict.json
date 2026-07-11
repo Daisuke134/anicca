@@ -1,0 +1,61 @@
+{
+  "sprintNumber": null,
+  "feature": "self-improve-checkpoint-resume",
+  "reviewType": "spec",
+  "phase": "1c",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 4,
+  "reviewContext": {
+    "targetSpec": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "targetVerificationArchitecture": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "manifest": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/reviews/spec/iteration-4/input/manifest.json (reviewDimensions restricted to spec_fidelity + verification_readiness; note the manifest itself carries no source-provenance/integration frontmatter this iteration -- a plain {reviewType, artifactsToReview, reviewDimensions} object -- unlike prior iterations' manifests, but this does not change what was reviewed)",
+    "crossCheckedImplementationContext": [
+      "skills/earn/self-improve/run_evolve.sh (full file read, 113 lines -- the exact edit target for REQ-CR6-CR9/CR12)",
+      "skills/earn/self-improve/lib/ledger_reader.py (full file read, 226 lines -- the module REQ-CR6/verification-architecture.md claim to mirror for CLI-entrypoint shape)",
+      "skills/earn/self-improve/config.yaml (full file read, 142 lines -- confirms checkpoint_interval:10 at line 11, db_path:\"runs/db\" at line 129, and the line-128 comment cited in the frontmatter)",
+      "lib/checkpoint_resume.py and any test file: confirmed NOT YET CREATED (Glob returned zero matches) -- consistent with state.json's currentPhase=1b, this is a pure spec-only review with no implementation to cross-check against"
+    ],
+    "priorIterationFindingsStatus": {
+      "FIND-001 (iteration 3, blocking -- no REQ covered checkpoint_resume.py's own process crashing/exiting non-zero)": "RESOLVED -- REQ-CR12 (behavioral-spec.md:220-232) adds a third, distinct branch for the REQ-CR6 call itself exiting non-zero, degrading exactly like REQ-CR8's fallback for openevolve-run's argument list but requiring a THIRD, distinct pinned log substring ('checkpoint_resume: resume-check crashed' + exit status) per REQ-CR9's now-three-branch enumeration (behavioral-spec.md:256-268). PROP-CR13 (verification-architecture.md:73) is a new, dedicated proof obligation exercising exactly this branch via a broken/erroring stand-in for $PY_BIN, distinct from PROP-CR-WIRE3's found/not-found coverage. Cross-checked REQ-CR9's three branches against REQ-CR12's own wording: mutually consistent, no conflation of crash vs. ordinary-not-found. No residual defect found in this specific fix.",
+      "FIND-002 (iteration 3, high -- REQ-CR11's no-mutation denylist missed pathlib mutating methods and os.symlink/os.link)": "RESOLVED -- REQ-CR11 (behavioral-spec.md:272-295) now explicitly denylists os.symlink/os.link and every named pathlib.Path mutating method, PLUS adds a structural requirement that the module SHALL NOT import pathlib at all, converting the pathlib half of the check from an exhaustive (and previously incomplete) method-name enumeration into a trivially-verifiable import-absence scan. Cross-checked for the specific risk this iteration's prompt asked to confirm: REQ-CR1's own normalization clause (behavioral-spec.md:127-133) calls `os.path.abspath` -- an os/os.path function, never pathlib -- so the new 'no pathlib import' structural ban does not conflict with any other requirement's actual needs; REQ-CR1 through REQ-CR10 use only os.listdir/os.path.* operations throughout. PROP-CR12 (verification-architecture.md:72) was updated to a three-part check: (a) expanded static denylist, (b) new pathlib import-absence scan, (c) unchanged dynamic before/after snapshot. No residual defect found in this specific fix.",
+      "FIND-003 (iteration 3, medium -- REQ-CR7's 'existing args unchanged' claim for the found-checkpoint branch had no proof obligation)": "RESOLVED -- PROP-CR-WIRE2b (verification-architecture.md:76) is a new, dedicated proof obligation for exactly this gap: it diffs the with-checkpoint branch's composed argument list against the pre-feature list plus the expected single --checkpoint addition, closing the asymmetry where only PROP-CR-WIRE2 (not-found branch) previously existed. No residual defect found in this specific fix.",
+      "FIND-004 (iteration 3, low -- REQ-CR1's 'absolute path' return contract was not required to be normalized by the function itself)": "RESOLVED -- REQ-CR1 (behavioral-spec.md:125-133) now explicitly requires the function itself to call os.path.abspath on its own return value, with a stated rationale ('true by construction rather than true only by accident of production's RUNS_DIR always being absolute'). PROP-CR1b (verification-architecture.md:61) is a new, dedicated proof obligation using a RELATIVE runs_dir + monkeypatch.chdir to force the distinction to matter. No residual defect found in this specific fix."
+    },
+    "newFindingsThisIteration": ["FIND-001", "FIND-002", "FIND-003"]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:220-232", "description": "REQ-CR12's three-branch crash-handling design verified present, internally consistent with REQ-CR9's three pinned log substrings, and correctly scoped to govern only the REQ-CR6 helper's own exit status (never openevolve-run's, which remains REQ-OE6's unchanged concern) -- no finding raised on this specific fix."},
+        {"type": "file", "location": "specs/behavioral-spec.md:125-133 and :272-295", "description": "Cross-checked REQ-CR1's new os.path.abspath normalization clause against REQ-CR11's new 'SHALL NOT import pathlib at all' structural ban for conflict -- confirmed no conflict: abspath is an os.path function, and no REQ-CR1-CR10 requirement needs pathlib anywhere. The task's explicit request to verify this non-conflict is satisfied."},
+        {"type": "file", "location": "specs/behavioral-spec.md (frontmatter sources list + integration section)", "description": "Re-verified the frontmatter's factual claims against the actual files: config.yaml:11 (checkpoint_interval:10), config.yaml:128-129 (the --checkpoint resume comment + db_path:\"runs/db\"), and run_evolve.sh:50 (RUN_ID's exact date format) all match verbatim. INV-CR2/INV-CR3's live-money/other-file exclusion claims remain true of the current spec text (no strategy/promote/plist/ledger/wallet touch anywhere in the requirements)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:58-79", "description": "Verified every REQ-CR1 through REQ-CR12 has at least one traceable PROP-ID (built a full REQ->PROP cross-reference table during review); confirmed no gap in REQ-level traceability. The gap found this iteration (FIND-003) is specifically at the Global-Invariant level (INV-CR2/CR3/CR5), not the REQ level."},
+        {"type": "file", "location": "specs/verification-architecture.md:71-73", "description": "PROP-CR12's three-part (a)/(b)/(c) closure and PROP-CR13's dedicated crash-branch test independently verified sound and non-overlapping -- (a) and (b) catch the mutation-prohibition via source inspection, (c) via dynamic snapshot, and PROP-CR13 exercises a code path neither of the other two touches. No finding raised on PROP-CR12/PROP-CR13's own content."},
+        {"type": "file", "location": "specs/verification-architecture.md:90-110", "description": "Tier 0/1-only classification re-confirmed proportionate for this ~20-30 line utility on this pass as well -- no numeric/financial invariant, no concurrency claim, no cryptographic claim is smuggled in that would require Tier 2/3 machinery this feature's own scope does not warrant."}
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "nonBlockingFindingsNote": "No finding this iteration rises to 'blocking' in the project's own vcsdd-adversary sense (dev-workflow.md: 'blocking 1件でも次フェーズ進行禁止'): FIND-001 is a citation/documentation-accuracy defect with zero effect on what must be built; FIND-002 is a real but contained algorithm under-specification whose worst-case outcome is already absorbed, safely, by this same iteration's own REQ-CR12 crash-handling design (an extra 'resume-check crashed' log line, never a harness stall or incorrect --checkpoint path); FIND-003 is a documentation-traceability asymmetry (INV-CR2/CR3/CR5 lack the same explicit PROP cross-reference INV-CR1 just received) whose underlying invariants are true by non-modification and cheap to close with a one-line Phase-5 diff-scope check. Dimension verdicts are nonetheless recorded as FAIL per this review's binary-verdict/no-partial-credit mandate (a dimension with any real, evidence-backed finding is not a clean PASS), but none of these three findings should be read as reopening the four substantive gaps iteration 3 found -- all four of those are independently verified resolved and internally consistent (see priorIterationFindingsStatus above). All three findings here are low/medium severity and, unlike iteration 3's set, none block a correct, safe implementation of this narrow fix from proceeding once logged.",
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "iteration3ResolvedCount": 4,
+    "iteration3NotFixedCount": 0,
+    "newFindingsThisIteration": 3,
+    "trendAcrossIterations": "iteration2->3: 2 resolved, 2 new, net FAIL. iteration3->4: 4 resolved, 3 new, net FAIL. Finding severity is trending down (iteration 3: 1 blocking + 1 high + 1 medium + 1 low; iteration 4: 0 blocking + 0 high + 2 medium + 1 low) -- convergence is real but not yet complete; this is not a rubber-stamp continuation of a clean streak."
+  }
+}
