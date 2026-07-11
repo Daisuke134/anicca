@@ -206,3 +206,67 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 - [ ] D5. BlockRunAI/Franklin に autonomous-loop の issue を1つ立てる。done=issue URL。
 
 **Done 判定（全 todo 共通）**: 実 side-effect を A1/A7 verifier が独立確認した時のみ。「稼いだ」= external:true 実 tx を私が on-chain 確認した時のみ。
+
+---
+
+# ★★★ §7 CLEAN SSOT（2026-07-11、§4-§6 を SUPERSEDE。矛盾解消・以後これだけが正本）★★★
+
+**§4/§5/§6 は無効（系統1 gig/CEO/article を混ぜていた矛盾）。以後この §7 だけを読む。**
+
+## スコープ（確定）
+**~/anicca の agent 経済（crypto、各 agent 自身の wallet）だけ。** loop は2つ:
+- **loop①: claude-p 本体ループ** — Claude 自身の agent-economy loop（自 wallet で crypto を稼ぐ）
+- **loop②: Franklin ループ** — Franklin/Franklin2（自 wallet で crypto を稼ぐ）
+
+**対象外**: gig / capafy / article / life-manager / affiliate / bounty / connector = 系統1 = profitable-claude = 別 CC(CEO) 管轄。この session では触らない。
+
+## TO-BE ASCII
+```
+ DAIS = loop の完全に外（入力しない・GO 不要、crypto が増える通知を見るだけ）
+ ═══════════════════════════════════════════════════════════ 金だけ外へ
+ ~/anicca agent 経済（crypto、自 wallet）
+ ┌── loop① claude-p 本体ループ ──┐   ┌── loop② Franklin ループ ──┐
+ │ 各 wake earn 実行             │   │ 各 wake earn 実行          │
+ │   ▼ ★GROUND-TRUTH VERIFIER★  │   │   ▼ ★同じ VERIFIER★        │
+ │   全ツール(Bash+browser+      │   │   on-chain external:true   │
+ │   on-chain+web+screenshot)   │   │   を自分の目で             │
+ │   report/label 信じない       │   │                          │
+ │   ▼ 未達/fake→self-fix(別ctx) │   │   ▼ 未達→self-fix          │
+ └──────────────────────────────┘   └──────────┬───────────────┘
+                                    稼ぎ余剰→lending→Akash spawn→clan拡大
+ ─ 両 loop 人間ゼロで自走。verifier が嘘を構造的に不可能にする ─
+```
+
+## ATOMIC TODO（1行=1アクション、順序厳守、`[ ]`/`[x]`）
+
+### A. 全ツール verifier を作る（P0）
+- [ ] A1. `~/anicca/skills/self/ground-truth-verify.sh` を書く（全ツール: Bash+browser+on-chain+web+screenshot）
+- [ ] A2. その verdict prompt を書く（report禁止・実side-effectを自分の目・binary verdict）
+- [ ] A3. `~/anicca/skills/self/earn-truth-verify.py` を書く（on-chain external:true 判定の決定的コア）
+- [ ] A4. verifier に pm 実態を食わせ、真実（$4.95凍結）を返すか確認する
+- [ ] A5. verifier に Franklin 実態を食わせ、真実（external:true=$0）を返すか確認する
+- [ ] A6. verifier 3原則を `~/.claude/CLAUDE.md` に bake する
+
+### B. 既存 earn agent を稼がせる（P1、私は strategy を書かない §0.25）
+- [ ] B1. pm の $5 床凍結を解除する
+- [ ] B2. pm を1パス実行する
+- [ ] B3. verifier を pm に食わせる
+- [ ] B4. Franklin sol に既存 BASE alpha を1つ wire する
+- [ ] B5. Franklin の1 wake で earn action 実行を確認する
+- [ ] B6. verifier を Franklin に食わせる
+- [ ] B7. cook の explore→wire→earn bridge を1本作る
+
+### C. verifier を daily loop に焼く（babysit ゼロ）
+- [ ] C1. verifier を Franklin の earning-health に配線する
+- [ ] C2. verifier を claude-p 本体ループの healthcheck に配線する
+- [ ] C3. escalation→self-fix trigger を確実化する
+- [ ] C4. Opus session /loop を停止する
+
+### D. 増殖・可視化（稼ぎ確認後）
+- [ ] D1. P5 spawn の adversary iter3 を回す
+- [ ] D2. P5 を main に merge する
+- [ ] D3. mainnet Akash で container boot を確認する（witness②）
+- [ ] D4. dashboard に external:true 実数を出す
+- [ ] D5. BlockRunAI/Franklin に autonomous-loop の issue を1つ立てる
+
+**Done 判定（全 todo 共通）**: verifier が実 side-effect を独立確認した時のみ。「稼いだ」= external:true 実 tx を私が on-chain 確認した時のみ。
