@@ -47,20 +47,27 @@ except Exception:
 " 2>/dev/null; }
 # reddit_account_banned (G2 item1, 2026-07-11 loop-arch redesign / LOOPS-TRUTH-AUDIT.md: "liveurl
 # HTTP200のみ→reddit BAN...を全て見逃す"): a 200 on the post URL itself proves nothing about the
-# ACCOUNT -- a suspended/banned account's account confirmed banned 2026-07-11 (u/anicca_sao,
-# screenshot) is invisible logged-out regardless of any individual post's own HTTP code. Verified
-# live 2026-07-11 (curl, no browser needed): old.reddit.com/user/<name>/ 404s for BOTH a banned
-# account AND a username that never existed, but the <title> differs -- reddit still knows the
-# name for a banned/suspended/deleted account ("u/<name>: page not found", username embedded) vs a
-# truly-never-registered name ("reddit.com: page not found", generic, confirmed against a random
-# unregistered string). That title difference is the deterministic BAN signal.
+# ACCOUNT. CORRECTED 2026-07-12 (self-fix): the prior version here treated a 404 with title
+# "u/<user>: page not found" as the BAN signal ("confirmed banned 2026-07-11" via curl+screenshot).
+# That was a FALSE POSITIVE, reproduced and disproven 2026-07-12: an authenticated camofox browser
+# session loading the SAME anicca_sao account's own overview page rendered it completely normally
+# -- live comment posted "18 hours ago" matching posts.jsonl exactly, edit/delete/reply controls
+# present, nothing suspended. old.reddit.com returns that identical 404 + "u/<user>: page not
+# found" pattern for ANY profile it won't show to a logged-out/unauthenticated curl request
+# (reproduced on the live, active, unbanned anicca_sao account itself) -- it is a visibility
+# restriction (e.g. low karma / newer account), not a ban page, and cannot be used as a BAN
+# signal. The REAL, distinctive ban signature was established 2026-07-12 against a well-documented
+# permanently-suspended account (u/violentacrez): HTTP 403 with title "reddit.com: suspended". A
+# random never-registered username also 404s but with a generic "reddit.com: page not found"
+# title (no username echoed) -- so 404 alone, with or without the username in the title, means
+# "not visible to an anonymous curl request", NOT banned.
 reddit_account_banned(){ local user="$1"; [ -n "$user" ] || { echo "NO-USER"; return; }
   local tmp; tmp="$(mktemp)"
   local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o "$tmp" -w '%{http_code}' --max-time 12 -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' "https://old.reddit.com/user/$user/" 2>/dev/null||echo 000)"
   local title; title="$(grep -o -m1 -iE '<title>[^<]*</title>' "$tmp" 2>/dev/null)"
   rm -f "$tmp"
-  if [ "$code" = "404" ] && printf '%s' "$title" | grep -qi "u/${user}: page not found"; then
-    echo "BANNED(404) u/$user"
+  if [ "$code" = "403" ] && printf '%s' "$title" | grep -qi "suspended"; then
+    echo "BANNED(403) u/$user"
   else
     echo "OK($code) u/$user"
   fi
