@@ -37,13 +37,13 @@ anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self
 | affiliate | 紹介投稿→紹介料 | reCAPTCHAで06-30からlogout・投稿0 |
 | bounty | 懸賞提出→賞金 | idle・survivor0 |
 | explorer | 機会探索→他loopへ供給 | proposal走るが収益化0 |
-| life-manager(core) | 予定/連絡/intake→MRR | ★anicca版と二重起動★・空稼働・MRR0 |
+| life-manager(core) | 予定/連絡/intake→MRR | ★2026-07-12 anicca版(loop)退役済=単一起動★・空稼働・MRR0（次は#8で稼働） |
 ### anicca=crypto/SNS(別CC)+一部bank混線
 | loop | 何をする | 問題 |
 |---|---|---|
 | gig | Coconala出品/提案/返信/納品→銀行 | 24日本体復元済。提案(teian)・出品(shuppin)・納品が足りない ←今 |
 | capafy | skill販売→銀行 | 審査中status=1・public未掲載・"PUBLISHED"嘘(accountはログイン済) |
-| life-manager(loop) | (PC版と重複) | ★二重→退役対象(2x課金)★ |
+| ~~life-manager(loop)~~ | ~~(PC版と重複)~~ | ✅退役完了(2026-07-12): launchd `life-manager-loop-healthcheck` を bootout+disable+plist→.disabled、tmux worker(loop+selffix)kill、worker process 消滅=2x課金停止実証。復活escalation無し(LMHB=report専用)。PC core は生存継続 |
 | clip | IG動画→crypto視聴報酬 | 別垢乱造・blur |
 | clip-promote | 拡散→crypto | 選択だけsuccess・$0 |
 | video | 動画→crypto | grid空・blur |
@@ -53,7 +53,7 @@ anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self
 ## 3. AS-IS（今の実態、launchctl 実測）→ TO-BE（理想）
 ```
 AS-IS（混線・半分移行）:
-  gig・capafy = anicca に居る（場所が間違い）  life-manager = PC と anicca で二重起動
+  gig・capafy = anicca に居る（場所が間違い）  life-manager = ✅単一起動(2026-07-12 anicca loop版退役、PC core のみ)
   connector/affiliate/bounty/explorer = PC（正しい）
 TO-BE（片付け後）:
   PC の 8 loop 全部が PC レシピ・hf-* Label・目覚まし1つずつ・重複ゼロ
@@ -77,7 +77,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 ### Phase 1 — ★方針変更(Dais 2026-07-11): 移動/改名しない・その場で直す・重複退治だけ例外★
 ```
 [x] M1 REVERTED — 私のミス: PC切替が24日動いてたanicca gig loopを止めた→revert完了・anicca本体復元(account ログイン済)。gig は移動しない。
-[ ] M3 life-manager 二重起動を1つに(2x課金停止) — done: 片方の目覚ましを退役(重複退治=唯一の例外)
+[x] M3 life-manager 二重起動を1つに(2x課金停止) — ✅DONE 2026-07-12: anicca版(life-manager-loop) 退役=launchd bootout+disable+plist改名、tmux worker(loop+selffix)kill、worker process 消滅を ps で実証、復活escalation不在を grep 確認。PC版(life-manager-core)は稼働継続。→ ★Phase 1 全完了★
 [~] M2/M4 migration/relabel = 保留(Dais:移動しない)。loopはその場で直す
 [ ] S1 registryからhl削除 — done: hlエントリ無し
 [ ] S2 registryのpmを対象外注記 — done: crypto=別CCと明記
