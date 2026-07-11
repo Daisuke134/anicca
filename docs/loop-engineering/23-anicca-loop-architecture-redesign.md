@@ -395,3 +395,28 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 - [ ] 16. ~/anicca の外部依存（.openclaw 328/.anicca-founder 234/anicca-signing 22/.hermes 12/.franklin2-home 2）を repo 内に vendoring する
 
 **Done 判定**: 実 side-effect を自分が tool で独立確認した時のみ。「稼いだ」= external:true 実 tx を on-chain 確認時のみ。
+
+---
+
+# ★★★ §9 損失の真因診断（2026-07-11、on-chain + log own-eyes。ここが本丸）★★★
+
+**colony 全資金 = 約 $18（散らばってるが「大量」ではない、on-chain 実測）**: claude-p pm 0x904B $4.95🔒 / Franklin 8Fpqd $3.44+0.02SOL / Franklin 0x3EcCAD Base $6.48 / automaton 0xB9dd $0.59。
+
+## なぜ金を失ったか（2つの実証された根因）
+1. **pm の MM adverse selection**: pUSD 12.79→4.19（-$8.60）。戦略=YES/NO 両側を **maker(指値)** で置く。両脚同時約定なら risk-free だが、maker 執行では**片側だけ約定**→ naked 片張り→逆 resolve で負け。「risk-free bundle arb」は執行方式が maker の時 risk-free でない。＝古典的 MM 死因（負ける側だけ約定させられる）。
+2. **self-improve が実 P&L でなく backtest を最適化（Goodhart）**: openevolve は稼働中（7/8→7/10→7/11、combined_score 3.18→4.02、mean_oos_net **+$14**）。だが +$14 は **oos=シミュレーション backtest** の値。実 wallet は同期間 **-$8.6**。fitness が実 on-chain P&L でなくシミュ score なので「改善」が実弾に翻訳されない。**＝「self-improve してない」の正体。**
+3. **sol は WAIT が正しい**: SOL_GATE_MIN_CONVICTION=6、signal neutral(0%)では gate を越えない＋$13 bankroll で 0.4% 手数料が edge を食う→ agent が正しく hold（bug でない）。
+
+## 真のレバー（ceiling 削除でも「24/7強制トレード」でもない）
+- **R1. 実 P&L を fitness に**: self-improve/openevolve の評価関数を backtest oos_net → **実 on-chain external:true P&L** に繋ぐ。これが最重要（Goodhart 解消）。
+- **R2. MM の adverse-selection 漏れを止める**: 片側約定時に即 hedge/cancel、または taker で両脚同時約定のみ、または真の arb(両側 taker で <$1)だけ撃つ。
+- **R3. edge を探す機構は既にある**: `cook`(web-search explore) + openevolve。no-edge は探索の的を実 P&L に向ければ excuse でなくなる（R1 と同じ根）。
+- **R4. Franklin 自身の散在資金を集約**: 0x3EcCAD Base $6.48 → Solana へ寄せて sol bankroll を厚く（Franklin 自 wallet 内＝self-funded、私が実行可・停止点でない）。
+
+## フェーズ1'（§8 のフェーズ1 を上書き。金欠 top-up より先に「漏れを止め self-improve を実弾に繋ぐ」）
+- [ ] 1'. self-improve の fitness を実 on-chain P&L に繋ぐ（R1）— done: evolve の評価が earn-ledger external:true を読む
+- [ ] 2'. pm MM の adverse-selection を止める（R2）— done: 片側約定 naked が発生しないコードに
+- [ ] 3'. Franklin の Base $6.48 を Solana に集約（R4、self-funded・許可不要）— done: 8Fpqd の USDC が増える（on-chain 確認）
+- [ ] 4'. sol/pm/hl を実弾 fitness で回し、edge>コストの時だけ撃つのを1 wake 実証 — done: 非WAITの earn action が実P&Lで+か、正直WAIT
+- [ ] 5'. 「稼いだ」= external:true 実 tx を on-chain 確認（唯一の gate）
+※ claude-p pm($4.95🔒)の top-up は human-funded＝Dais の金＝#1停止点。self-funded の Franklin を先に直す。
