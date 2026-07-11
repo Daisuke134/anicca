@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "description": "REQ-706 (behavioral-spec.md:246-255) claims the earn source's `sig` field is 'validated by shape/type instead' and 'gets the same treatment as an EVM `tx` hash' -- implying a real format check equivalent to `tx`'s `TX_HASH_VALUE` regex. The actual implementation (`projectEarnField`, ledger-publish.mjs:274) only checks `typeof value === 'string' && value.length > 0 && value.length <= 200` -- no base58/character-set or length-floor check at all, unlike `tx`'s `/^0x[0-9a-fA-F]{6,64}$/` shape validation. Because `sig` is also explicitly exempted from BOTH redaction layers (REQ-706 routes structured fields around `redactFreeText`, and the code confirms this -- no `redactFreeText`/`redactBroaderSecretPatterns` call anywhere in the `sig` case), any string up to 200 chars in the source earn-ledger's `sig` field is published to the public branch completely unchecked and unredacted. In the current, well-behaved writer (`record-swap.mjs`) this field is always a real base58 Solana signature, so this is not exploitable today, but the allowlist's own stated 'fail-closed... structural parsing of a fixed machine format' design principle (behavioral-spec.md:111) is not actually enforced for this specific field -- a future/buggy earn-recording writer that put arbitrary text (including an accidentally-embedded secret shorter than the 40-hex/64-88-base58 redaction-pattern floors, or any other short freeform string) into `sig` would have it published verbatim, bypassing the allowlist's own fail-closed contract and both redaction layers simultaneously.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "270-274",
+    "snippet": "case 'tx': return typeof value === 'string' && TX_HASH_VALUE.test(value) ? value : undefined;\ncase 'sig': return typeof value === 'string' && value.length > 0 && value.length <= 200 ? value : undefined;"
+  },
+  "corroborating": [
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "253-255", "note": "REQ-706 explicitly claims sig gets 'the same treatment' as tx's shape validation -- the implementation does not deliver this parity."},
+    {"filePath": "runtime/loop/__tests__/ledger-publish.test.mjs", "lineRange": "214-229", "note": "the only sig test passes an 88-char base58 string and asserts it round-trips -- no test exercises a malformed/non-base58 sig value to confirm the claimed shape validation, because no such validation exists to test."}
+  ],
+  "routeToPhase": "2b"
+}

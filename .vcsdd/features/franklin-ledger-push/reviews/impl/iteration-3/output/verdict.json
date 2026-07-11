@@ -1,0 +1,70 @@
+{
+  "phase": "impl-review",
+  "iteration": 3,
+  "sprintNumber": 1,
+  "feature": "franklin-ledger-push",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "blocking_count": 1,
+  "timestamp": "2026-07-11T03:00:00.000Z",
+  "reviewed_commits": ["814a9de8"],
+  "external_test_evidence": "216/217 (known pre-existing flake), ledger-publish 34/34 (thinker-executed)",
+  "iteration2_findings_disposition": {
+    "FIND-001": "PARTIALLY KILLED, REOPENED IN NARROWER FORM -- both sources are now read and dollar fields (net_usdc/earn_usdc/cost_usdc/tx/sig) do reach the published branch, but external/confirmed/fill_tid (required by skills/_shared/lib/ledger.mjs::isProfitable, the repo's own GATE-0 classifier) are dropped, so a third party still cannot verify published earn lines are real profit rather than internal swaps -- see this iteration's FIND-001.",
+    "FIND-002": "KILLED for the specific reachable trigger (publish-repo directory loss between cycles) -- reconcileSource() correctly re-derives from the actual synced destination file every cycle, no line lost/duplicated across the traced crash matrix. A new, narrower sub-bug in the retry path (pushed:true set unconditionally, not gated on an actual push call) is reopened as this iteration's FIND-002.",
+    "FIND-003": "KILLED -- divergence test now covers the realistic publish-repo-loss trigger, with the outside-writer scenario retained separately and correctly labeled as defense-in-depth.",
+    "FIND-004": "KILLED -- citation now correctly points to skills/self/claude-p-mainloop.sh's real pidfile guard.",
+    "FIND-005": "KILLED -- publishFailureStreak tracked/returned/escalated via appendHarnessFailure at streak>=5, wired in index.mjs's effectful main loop without violating the purity boundary; one-time reachability probe confirmed gated correctly.",
+    "FIND-006": "KILLED -- shallow, depth-capped, single-branch clone confirmed via a real-git test asserting .git/shallow persists across a second cycle."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:261-280", "description": "projectEarnField()'s switch statement traced field-by-field against isProfitable()'s actual requirements; external/confirmed/fill_tid fall through to the default (dropped) branch."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs:51-64", "description": "isProfitable(line) -- the repo's single source of truth for GATE-0 profitability -- requires external===true unconditionally plus a chain-specific confirmation field, none of which survive the published projection."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/__tests__/ledger-publish.test.mjs (whole file)", "description": "No test anywhere in the 34-test suite asserts that a published earn line can be run through isProfitable() by a third party and correctly classified -- the single most direct verification of this feature's own stated purpose is an untested edge case."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:588-734 (publishLedgerCycle, whole function)", "description": "Independently walked the full crash matrix for reconcileSource/ensurePublishRepo/appendAndCommit against publish-repo loss, genuine divergence, commit failure, and persistent push failure -- all four recover correctly with no line lost or duplicated, confirmed against the real-git tests. The retry-path pushed:true bug (FIND-002) and the sig field's weaker-than-claimed shape validation (FIND-003) are the only correctness gaps found."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs (whole file)", "description": "Single-responsibility, ~735 lines, pure/effectful split matches verification-architecture.md's purity map exactly; SOURCES registry cleanly generalizes the wake/earn duplication instead of two parallel code paths; no dead code found; naming is clear and accurate throughout."},
+        {"type": "file", "location": "runtime/loop/index.mjs:354-387, 1072-1088", "description": "Wiring is minimal, placed outside runOneWake(), reuses the existing appendHarnessFailure/appendLedgerLine primitives rather than introducing a new writer."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/franklin-ledger-push/specs/verification-architecture.md:98", "description": "Proof obligation FIND-001a explicitly proves 'drops confirmed/external/fill_tid' as the intended PASSing behavior -- this proof obligation certifies the wrong invariant relative to REQ-702's own acceptance criterion of restored third-party balance-growth verifiability (behavioral-spec.md:135-137). No proof obligation anywhere in the table covers running isProfitable() (or an equivalent classification) against the published data."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

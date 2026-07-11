@@ -27,6 +27,10 @@ import {
   DEFAULT_MIN_LINES,
   DEFAULT_MIN_INTERVAL_MS,
 } from '../ledger-publish.mjs';
+// impl-review iter3 FIND-001: import the REAL classifier (never a re-implementation of its logic)
+// so the projection tests prove the published line actually round-trips through the repo's own
+// single source of truth for "is this a profitable, GATE-0 earn".
+import { isProfitable } from '../../../skills/_shared/lib/ledger.mjs';
 
 function tmpDir(prefix) {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -211,7 +215,7 @@ test("redactBroaderSecretPatterns: a 40-hex string alone is redacted (stricter t
 
 // ── FIND-001: projectEarnLine (pure) — the money-evidence allowlist ────────────────────────────
 
-test('FIND-001: projectEarnLine keeps every allowlisted money field (ts/wallet/source/wake/earn_usdc/cost_usdc/net_usdc/tx/sig/status/chain/task), drops any unknown field', () => {
+test('FIND-001 (iter3, critical): projectEarnLine keeps every allowlisted money field INCLUDING external/confirmed/fill_tid — required by isProfitable(), never dropped', () => {
   const raw = JSON.stringify({
     ts: 1, wallet: '0xabc123', source: 'sol-trade', wake: 'e1',
     earn_usdc: 2.5, cost_usdc: 0.1, net_usdc: 2.4,
@@ -223,9 +227,65 @@ test('FIND-001: projectEarnLine keeps every allowlisted money field (ts/wallet/s
     ts: 1, wallet: '0xabc123', source: 'sol-trade', wake: 'e1',
     earn_usdc: 2.5, cost_usdc: 0.1, net_usdc: 2.4,
     tx: '0x' + 'a'.repeat(64), sig: 'a'.repeat(88), status: '0x1', chain: 'solana',
-    task: 'jupiter swap round-trip',
+    task: 'jupiter swap round-trip', confirmed: true, external: true, fill_tid: 42,
   });
-  assert.ok(!('confirmed' in out) && !('external' in out) && !('fill_tid' in out), 'fields outside the explicit allowlist are dropped');
+  assert.equal(out.confirmed, true, 'FIND-001: confirmed must be preserved — isProfitable() needs it for solOk/hlOk');
+  assert.equal(out.external, true, 'FIND-001: external must be preserved — isProfitable() gates false unconditionally without it');
+  assert.equal(out.fill_tid, 42, 'FIND-001: fill_tid must be preserved — HL\'s only settlement reference');
+  // FIND-001's own restored acceptance criterion: this line, as PUBLISHED, must actually classify
+  // as profitable through the repo's REAL classifier (never a re-implementation of its rules).
+  assert.equal(isProfitable(out), true, 'a real profitable earn line must round-trip to isProfitable()===true after projection');
+});
+
+test('FIND-001 (iter3): projectEarnLine round-trips a Solana-only profitable line (sig+confirmed, no tx) through the real isProfitable()', () => {
+  const raw = JSON.stringify({
+    ts: 1, wallet: 'SoLwaLLetAddr', source: 'sol-trade', wake: 'e2',
+    earn_usdc: 1.2, cost_usdc: 0, net_usdc: 1.2,
+    sig: 'a'.repeat(88), confirmed: true, external: true, chain: 'solana',
+  });
+  const out = JSON.parse(projectEarnLine(raw));
+  assert.equal(out.sig, 'a'.repeat(88));
+  assert.equal(out.confirmed, true);
+  assert.equal(out.external, true);
+  assert.equal(isProfitable(out), true, 'solOk path: sig+confirmed+external+net_usdc>0 must classify as profitable');
+});
+
+test('FIND-001 (iter3): projectEarnLine round-trips a Hyperliquid-only profitable line (fill_tid+confirmed, no tx/sig) through the real isProfitable()', () => {
+  const raw = JSON.stringify({
+    ts: 1, wallet: 'hl-wallet', source: 'hl-trade', wake: 'e3',
+    earn_usdc: 3.0, cost_usdc: 0.5, net_usdc: 2.5,
+    chain: 'hyperliquid', fill_tid: 987654321, confirmed: true, external: true,
+  });
+  const out = JSON.parse(projectEarnLine(raw));
+  assert.equal(out.fill_tid, 987654321);
+  assert.equal(out.confirmed, true);
+  assert.equal(out.chain, 'hyperliquid');
+  assert.equal(isProfitable(out), true, 'hlOk path: fill_tid+confirmed+external+chain==="hyperliquid"+net_usdc>0 must classify as profitable');
+});
+
+test('FIND-001 (iter3): projectEarnLine drops external/confirmed/fill_tid when NOT the correct type (fail-closed, never coerced)', () => {
+  const out = JSON.parse(projectEarnLine(JSON.stringify({
+    ts: 1, external: 'true', confirmed: 1, fill_tid: {},
+  })));
+  assert.ok(!('external' in out), 'a non-boolean external must be dropped, never coerced to true');
+  assert.ok(!('confirmed' in out), 'a non-boolean confirmed must be dropped, never coerced to true');
+  assert.ok(!('fill_tid' in out), 'a non-number/non-string fill_tid must be dropped');
+});
+
+test('FIND-001 (iter3): projectEarnLine accepts a string-shaped fill_tid matching the settlement-id shape, drops a malformed one', () => {
+  const good = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'hl-fill:12345' })));
+  assert.equal(good.fill_tid, 'hl-fill:12345');
+  const bad = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'has a space and $ymbol!' })));
+  assert.ok(!('fill_tid' in bad));
+});
+
+test('FIND-003 (iter3): projectEarnLine now shape-validates sig (base58, 64-88 chars) instead of a bare length check — a non-base58 or wrong-length value is dropped', () => {
+  const good = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, sig: 'a'.repeat(88) })));
+  assert.equal(good.sig, 'a'.repeat(88));
+  const wrongAlphabet = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, sig: '0'.repeat(88) }))); // '0' is outside the base58 alphabet
+  assert.ok(!('sig' in wrongAlphabet), 'a non-base58-shaped sig must be dropped, not published verbatim');
+  const tooShort = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, sig: 'a'.repeat(10) })));
+  assert.ok(!('sig' in tooShort), 'a sig shorter than the real 64-88-char signature shape must be dropped');
 });
 
 test('FIND-001: projectEarnLine drops a non-hash-shaped tx value, redacts+caps the free-text task field', () => {
@@ -564,6 +624,38 @@ test('FIND-002: a push rejected mid-cycle by a real divergence (an outside write
 
   const marker = JSON.parse(fs.readFileSync(opts.markerPath, 'utf8'));
   assert.equal(marker.wake.pushedLineCount, 22);
+});
+
+test('FIND-002 (iter3, major): pushed must be false when the retry issues NO git push (post-reset reconcile found nothing pending) — not misreported true', async () => {
+  const dir = tmpDir('ledger-publish-phantompush-');
+  const { originDir, sharedCheckout } = setupOrigin(dir);
+  const opts = baseOpts(dir);
+  writeLines(opts.ledgerPath, makeLines(10));
+
+  // The FIRST `git push` call actually lands on origin (real push executes) but the client THEN
+  // throws — simulating a network timeout/ambiguous failure observed AFTER the push already
+  // succeeded server-side. Every subsequent push call (there must be none) would be a bug.
+  let pushCalls = 0;
+  const phantomSuccessGit = (args, cwd) => {
+    if (args[0] === 'push') {
+      pushCalls += 1;
+      if (pushCalls === 1) {
+        realGit(args, cwd); // actually lands on origin
+        throw new Error('mock: client-side timeout after the push already succeeded');
+      }
+    }
+    return realGit(args, cwd);
+  };
+
+  const result = await publishLedgerCycle({ ...opts, repoRoot: sharedCheckout, git: phantomSuccessGit, now: () => 0 });
+
+  assert.equal(pushCalls, 1, 'sanity: exactly ONE push call total — the retry must find nothing pending (already on origin) and must NOT issue a second push');
+  assert.equal(result.pushed, false, 'FIND-002: pushed must be false — no push was (re-)issued and observed to succeed inside the retry branch this cycle, even though content already reached origin via the phantom-successful primary attempt');
+
+  // Sanity: the content genuinely IS on origin (no data loss) — only the truthfulness of the
+  // `pushed` flag/marker bookkeeping for THIS cycle's own retry branch is under test here.
+  const verifyDir = cloneBranch(originDir, 'ledger-franklin');
+  assert.equal(readLines(path.join(verifyDir, 'franklin-wake.jsonl')).length, 10, 'sanity: the phantom-successful primary push really did land on origin');
 });
 
 // ── REQ-703: commit failure is caught locally (never the generic outer 'error' catch) ────────────

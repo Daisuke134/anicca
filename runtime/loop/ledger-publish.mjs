@@ -6,7 +6,36 @@
  * is concurrently using.
  *
  * franklin-ledger-push (P2) — spec: .vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md
- * (REQ-701..710). impl-review iter2 fixes (this revision, FIND-001..006):
+ * (REQ-701..710).
+ *
+ * impl-review iter3 fixes (this revision, FIND-001..003 — new numbering, distinct findings from
+ * iter2's own FIND-001..006 documented further below):
+ *
+ *   FIND-001 (critical): `projectEarnField()`'s earn allowlist dropped `external`/`confirmed`/
+ *   `fill_tid` entirely. `skills/_shared/lib/ledger.mjs::isProfitable()` — the repo's SINGLE source
+ *   of truth for "is this earn-ledger line a real, GATE-0 profitable wake" — requires
+ *   `external===true` unconditionally plus a chain-correct confirmation (`tx`+`status==='0x1'` for
+ *   EVM, `sig`+`confirmed===true` for Solana, `fill_tid`+`confirmed===true` for Hyperliquid). Without
+ *   these three fields, `isProfitable()` returns `false` for EVERY published earn line regardless of
+ *   the source line's real profitability, so a third party cloning the branch could see dollar
+ *   amounts but never run the project's own classifier against them. Fixed: `external`/`confirmed`
+ *   (boolean-typed) and `fill_tid` (a settled Hyperliquid fill id — a finite number, or a bounded
+ *   identifier-shaped string) are now preserved, type/shape-checked, never routed through
+ *   free-text redaction (they are structured settlement references, not secrets).
+ *
+ *   FIND-002 (major): in the push-rejection retry branch, `pushed = true` was set unconditionally
+ *   after the retry's try block, even on the path where the post-reset reconcile found nothing
+ *   pending and NO `git push` was actually re-issued — misreporting a push as confirmed (and
+ *   advancing `lastPushTs`/resetting `publishFailureStreak`) when no push call ran in that branch.
+ *   Fixed: `pushed = true` now only executes immediately after the retry's own `git push` call, inside
+ *   the `if (result.pendingLineCount > 0)` guard.
+ *
+ *   FIND-003: `sig` (Solana tx signature) previously only got a bare length/type check
+ *   (`1 <= length <= 200`), not real shape validation — unlike `tx`'s hash-shape regex. Fixed: `sig`
+ *   is now validated against the same base58, 64-88-char shape `record-swap.mjs` actually writes
+ *   (`SIG_VALUE`), giving it the same shape-validation discipline REQ-706 already claimed it had.
+ *
+ * impl-review iter2 fixes (prior revision, FIND-001..006):
  *
  *   FIND-001 (money evidence never published): the ORIGINAL design read only `state/ledger.jsonl`
  *   (per-wake bookkeeping — kind/slot/exit_code, never a dollar amount). The actual money fields
@@ -181,6 +210,20 @@ const TX_HASH_VALUE = /^0x[0-9a-fA-F]{6,64}$/;
 const BASE58_SECRET_RUN = /[1-9A-HJ-NP-Za-km-z]{64,88}/g;
 const HEX_40PLUS_RUN = /(0x)?[0-9a-fA-F]{40,}/g;
 
+// impl-review iter3 FIND-003: `sig` (a Solana tx signature) is base58-alphabet, 64-88 chars — the
+// SAME shape record-swap.mjs actually writes (skills/earn/sol-trade/lib/record-swap.mjs, verified
+// live). This gives `sig` real shape validation, the same discipline TX_HASH_VALUE already gives
+// `tx`, instead of the previous bare length/type check.
+const SIG_VALUE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/;
+
+// impl-review iter3 FIND-001: `fill_tid` is Hyperliquid's per-fill settlement id
+// (skills/earn/hl-trade/lib/reconcile.py:139-148, `fill["tid"]`) — verified live as a JSON
+// integer (the userFills API's own numeric trade id), never a string, in every real HL-sourced
+// earn-ledger line. A bounded alphanumeric/`:`/`-`/`_` string form is ALSO accepted (same
+// identifier-shape discipline as `tx`/`sig`) in case a future writer serializes it as a string —
+// either way it is a settlement REFERENCE, never free text, so it is never routed through redaction.
+const SETTLEMENT_ID_VALUE = /^[A-Za-z0-9:_-]{1,128}$/;
+
 /**
  * redactBroaderSecretPatterns(str) — pure. Second, stricter redaction pass for free-text fields
  * only, applied ON TOP OF redactPrivateKeyPatterns.
@@ -254,10 +297,23 @@ export function projectWakeLine(rawLine) {
 
 // FIND-001: the earn-ledger's own real schema (skills/_shared/lib/ledger.mjs::deriveLine,
 // verified live against $ANICCA_HOME/skills/earn/state/earn-ledger.jsonl): ts, wallet, source, task,
-// earn_usdc, cost_usdc, net_usdc, wake, plus tx/status (EVM) or sig/confirmed/chain (Solana) on real
-// on-chain lines. This allowlist publishes the money-evidence fields structurally (public wallet
-// address, public tx/sig on-chain references, numeric $ amounts, the id/source labels) and redacts
-// the one free-text field (`task`) exactly like the wake source's `result`/`skip_reason`.
+// earn_usdc, cost_usdc, net_usdc, wake, plus tx/status (EVM) or sig/confirmed/chain (Solana) or
+// fill_tid/confirmed/chain (Hyperliquid) on real on-chain lines. This allowlist publishes the
+// money-evidence fields structurally (public wallet address, public tx/sig/fill_tid on-chain/
+// settlement references, numeric $ amounts, the id/source labels) and redacts the one free-text
+// field (`task`) exactly like the wake source's `result`/`skip_reason`.
+//
+// impl-review iter3 FIND-001 (critical): `external`/`confirmed`/`fill_tid` were previously dropped
+// here, which meant `skills/_shared/lib/ledger.mjs::isProfitable()` — the repo's SINGLE source of
+// truth for "is this a real, GATE-0 profitable earn" (external===true AND a chain-correct
+// confirmation: `tx`+`status==='0x1'` for EVM, `sig`+`confirmed===true` for Solana, or
+// `chain==='hyperliquid'`+`fill_tid`+`confirmed===true` for Hyperliquid) — could NEVER return true
+// against the published branch: `external` alone unconditionally gates the whole function to false,
+// Solana lines additionally lost `confirmed`, and Hyperliquid lines lost BOTH of their only two
+// settlement-proof fields (`fill_tid` is HL's sole on-chain-equivalent reference — `tx`/`sig` do not
+// apply to HL fills at all). All three are now preserved, each type/shape-checked, so a third party
+// can run the project's own `isProfitable()` against the published earn line and get the SAME
+// verdict the real ledger would give.
 function projectEarnField(key, value) {
   switch (key) {
     case 'ts': return isFiniteNumber(value) ? value : undefined;
@@ -267,14 +323,22 @@ function projectEarnField(key, value) {
     case 'earn_usdc': return isFiniteNumber(value) ? value : undefined;
     case 'cost_usdc': return isFiniteNumber(value) ? value : undefined;
     case 'net_usdc': return isFiniteNumber(value) ? value : undefined;
-    // tx (EVM) / sig (Solana) are PUBLIC on-chain references, not secrets — validated by shape/type
-    // instead of routed through free-text redaction (same treatment REQ-702/706 already give `tx` on
-    // the wake source).
+    // tx (EVM) / sig (Solana) / fill_tid (Hyperliquid) are PUBLIC on-chain/settlement references,
+    // not secrets — validated by shape/type instead of routed through free-text redaction (same
+    // treatment REQ-702/706 already give `tx` on the wake source).
     case 'tx': return typeof value === 'string' && TX_HASH_VALUE.test(value) ? value : undefined;
-    case 'sig': return typeof value === 'string' && value.length > 0 && value.length <= 200 ? value : undefined;
+    case 'sig': return typeof value === 'string' && SIG_VALUE.test(value) ? value : undefined;
     case 'status': return typeof value === 'string' ? value : undefined;
     case 'chain': return typeof value === 'string' ? value : undefined;
     case 'task': return redactFreeText(value);
+    // FIND-001 (iter3): required by isProfitable() — dropping any of these three silently makes
+    // EVERY published earn line unclassifiable as profitable, regardless of the source line's truth.
+    case 'external': return typeof value === 'boolean' ? value : undefined;
+    case 'confirmed': return typeof value === 'boolean' ? value : undefined;
+    case 'fill_tid':
+      if (typeof value === 'number') return isFiniteNumber(value) ? value : undefined;
+      if (typeof value === 'string') return SETTLEMENT_ID_VALUE.test(value) ? value : undefined;
+      return undefined;
     default: return undefined; // fail-closed, same allowlist discipline as the wake source.
   }
 }
@@ -680,10 +744,16 @@ export async function publishLedgerCycle(opts) {
             git(['reset', '--quiet', '--hard', `origin/${branch}`], publishRepoDir);
             result = await attempt();
             published = published || result.committed;
+            // impl-review iter3 FIND-002: `pushed` must only become true when a `git push` was
+            // actually (re-)issued and observed to succeed THIS cycle — not unconditionally after the
+            // surrounding try block. If the post-reset reconcile finds nothing pending (e.g. origin
+            // already had this cycle's content — the first push attempt landed before the client saw
+            // the failure), no push call is made here and `pushed` correctly stays whatever it already
+            // was (false, since the primary attempt's own `pushed = true;` never ran before it threw).
             if (result.pendingLineCount > 0) {
               git(['push', 'origin', branch], publishRepoDir);
+              pushed = true;
             }
-            pushed = true;
           } catch (retryErr) {
             publishFailureStreak += 1;
             log(`[ledger-publish] retry after re-sync also failed, will retry next cycle: ${retryErr.message}\n`);

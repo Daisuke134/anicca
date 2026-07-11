@@ -7,6 +7,23 @@ git history alone, without making the wake loop dependent on git/network succeed
 
 ## Changelog
 
+- **impl-review iter3 fixes: FIND-001..003 (fresh-context adversary, iteration 3).** (1) **FIND-001
+  (critical)**: iter2's earn allowlist (REQ-702) dropped `external`/`confirmed`/`fill_tid`, so
+  `skills/_shared/lib/ledger.mjs::isProfitable()` — the repo's single source of truth for "is this
+  a real, GATE-0 profitable earn" — could never return `true` against any published earn line
+  (`external!==true` alone gates the whole classifier false unconditionally; Solana lines
+  additionally lost `confirmed`; Hyperliquid lines lost BOTH of their only settlement-proof fields,
+  `fill_tid` and `confirmed`). The published branch could show dollar amounts but never let a third
+  party run the project's own classifier against them — REQ-702's allowlist is rewritten below to
+  include all three, type/shape-checked, never coerced. (2) **FIND-002 (major)**: in the
+  push-rejection retry branch, `pushed = true` was set unconditionally after the retry's try block
+  even when the post-reset reconcile found nothing pending and NO `git push` was actually re-issued
+  — misreporting a push as confirmed (`lastPushTs`/`publishFailureStreak` updated off the false
+  signal). Fixed: `pushed` is now only set true immediately after a `git push` call inside the
+  retry's own `if (pendingLineCount > 0)` guard. (3) **FIND-003**: `sig` only had a bare
+  length/type check, not real shape validation, despite REQ-706 already claiming it gets "the same
+  treatment" as `tx`'s hash-shape check. Fixed: `sig` now requires the base58, 64-88-char shape
+  `record-swap.mjs` actually writes.
 - **impl-review iter1 redesign: FIND-001..005.** A fresh-context adversary (impl-review iteration 1)
   found the original design's `git push origin main` unscoped against a checkout SHARED with
   `evolve.mjs`'s live-wired `promote()` and with other same-host Anicca instances (FIND-001/002 —
@@ -105,9 +122,17 @@ publishes BOTH sources onto the SAME branch as two SEPARATE files, each with its
   `skills/_shared/lib/ledger.mjs::deriveLine` and `skills/earn/sol-trade/lib/record-swap.mjs:48-55`):
   `ts`, `wallet` (a public wallet address, not a secret), `source`, `wake` (this source's own id
   field), `earn_usdc`, `cost_usdc`, `net_usdc`, `tx` (EVM tx hash, hash-shape-validated like the wake
-  source's `tx` field), `sig` (Solana tx signature — a PUBLIC on-chain reference, never routed
-  through free-text redaction, same treatment as `tx`), `status`, `chain`, and `task` (REQ-706's
-  two-layer redaction, capped at 200 chars).
+  source's `tx` field), `sig` (Solana tx signature — a PUBLIC on-chain reference, shape-validated
+  base58/64-88-char, same discipline as `tx`, never routed through free-text redaction), `status`,
+  `chain`, `task` (REQ-706's two-layer redaction, capped at 200 chars), and — **impl-review iter3
+  FIND-001 (critical)** — `external` (boolean), `confirmed` (boolean), and `fill_tid` (Hyperliquid's
+  settlement id: a finite number, or a bounded identifier-shaped string). These three are REQUIRED
+  by `skills/_shared/lib/ledger.mjs::isProfitable(line)` (the repo's single source of truth for "is
+  this a real, GATE-0 profitable earn": `external===true` AND a chain-correct confirmation —
+  `tx`+`status==='0x1'` for EVM, `sig`+`confirmed===true` for Solana, `fill_tid`+`confirmed===true`
+  for Hyperliquid) — dropping any of them makes `isProfitable()` unconditionally return `false`
+  against the published data regardless of the source line's real profitability, which defeats this
+  feature's own stated purpose (third-party-verifiable "the balance grows").
 In BOTH allowlists, every other field is DROPPED, fail-closed — this is structural parsing of a
 fixed machine format, never judgment. The model-authored `args` object is NEVER published.
 **Edge Cases**:
@@ -135,6 +160,11 @@ fixed machine format, never judgment. The model-authored `args` object is NEVER 
 - A fabricated earn-ledger line containing `net_usdc`/`tx`/`sig` results in those exact fields
   appearing, unredacted-by-shape, in the published `<instance>-earn.jsonl` — third-party
   verifiability of "the balance grows" (this feature's stated purpose) is restored (FIND-001).
+- **impl-review iter3 FIND-001**: a real profitable earn-ledger line (one where
+  `skills/_shared/lib/ledger.mjs::isProfitable(line) === true` BEFORE publishing) still satisfies
+  `isProfitable(published_line) === true` AFTER round-tripping through `projectEarnLine` — proven for
+  all three chain paths (EVM `tx`+`status`, Solana `sig`+`confirmed`, Hyperliquid `fill_tid`+
+  `confirmed`), using the real imported `isProfitable`, never a re-implementation of its rules.
 
 ### REQ-703: Best-effort non-fatality
 **EARS**: WHEN any operation in the cycle (origin-url resolution, publish-repo setup, `add`,
@@ -250,9 +280,13 @@ redaction layers in sequence — (1) `redactPrivateKeyPatterns()` (the SAME pure
 already applies to every line at write time) and (2) `redactBroaderSecretPatterns()` (a NEW,
 stricter pass scoped to this feature only: base58 64-88 char runs — the shape of a Solana secret
 key — and generic 40+ hex char runs) — then cap the result at 200 chars. Structured allowlisted
-fields (`tx`/`tx_hash`/`txHash` on the wake source; `tx`/`sig` on the earn source) are validated by
-shape/type instead (REQ-702) and are never routed through this free-text redaction (they are public
-on-chain data, not secrets — a Solana `sig` gets the same treatment as an EVM `tx` hash).
+fields (`tx`/`tx_hash`/`txHash` on the wake source; `tx`/`sig`/`fill_tid` on the earn source) are
+validated by shape/type instead (REQ-702) and are never routed through this free-text redaction
+(they are public on-chain/settlement references, not secrets). **impl-review iter3 FIND-003**: `sig`
+now gets REAL shape validation — matched against `/^[1-9A-HJ-NP-Za-km-z]{64,88}$/` (base58 alphabet,
+64-88 chars — the exact shape `skills/earn/sol-trade/lib/record-swap.mjs` writes, verified live),
+the same discipline `tx` already has via `TX_HASH_VALUE`, not a bare `1 <= length <= 200` check as
+in the previous revision.
 **Edge Cases**:
 - A line whose `result` field contains a `0x[0-9a-fA-F]{64}` pattern: redacted to `[REDACTED]` by
   layer 1.
@@ -264,6 +298,9 @@ on-chain data, not secrets — a Solana `sig` gets the same treatment as an EVM 
 - A field NOT in REQ-702's allowlist is never redacted because it is never published at all (dropped
   upstream by `projectWakeLine()`/`projectEarnLine()` — redaction is defense-in-depth on top of,
   never instead of, the allowlist).
+- **impl-review iter3 FIND-003**: a `sig` value that is the wrong length or contains a character
+  outside the base58 alphabet (e.g. `0`, `O`, `I`, `l`) is DROPPED by the allowlist (REQ-702), not
+  published verbatim and not redacted — shape validation is fail-closed, matching `tx`'s treatment.
 **Acceptance Criteria**:
 - Given a fabricated `result` value containing a 64-hex `0x...` pattern, a base58 88-char run, and a
   bare 40+-hex run, none of the three raw substrings appear in the published field; `[REDACTED]`
@@ -338,7 +375,14 @@ survive a lost/recreated publish-repo directory. WHEN a `git push` is rejected (
 divergence) THE SYSTEM SHALL `git fetch` (the same explicit-refspec, depth-capped form as REQ-705)
 then `git reset --hard origin/ledger-<instance>`, then re-run the SAME reconcile→append→commit
 sequence once more (which naturally re-derives from the FRESH post-reset actual state, not any
-stale local assumption) and retry the push exactly once. WHEN that retry ALSO fails THE SYSTEM SHALL
+stale local assumption) and, ONLY IF that re-derived state still has a positive pending line count
+for either source, retry the push exactly once. **impl-review iter3 FIND-002**: if the re-derived
+pending line count is ZERO after the reset (e.g. origin already had this cycle's content — an
+ambiguous network failure where the primary push actually landed before the client observed the
+failure), NO push call is issued in the retry branch and the cycle's `pushed` result MUST stay
+`false` — it is never set true unless a `git push` call was actually (re-)issued and observed to
+succeed THIS cycle; `lastPushTs`/`publishFailureStreak` follow the SAME truthful flag. WHEN the
+retry's own push call IS issued and ALSO fails THE SYSTEM SHALL
 fall through to REQ-703's non-fatality contract (log, return non-throwing, `publishFailureStreak`
 incremented) — the persisted `pushedLineCount` for each source is set to that cycle's RECONCILED
 `actualPublishedLineCount` (never speculatively advanced past it), so the next cycle re-derives
@@ -361,6 +405,11 @@ makes this 1:1 index alignment hold.
 - The origin branch doesn't exist yet at retry time (a pathological first-cycle push failure): the
   retry's own `git fetch` fails too — caught by the SAME outer non-fatal contract (REQ-703), no
   special-casing needed.
+- **impl-review iter3 FIND-002**: the primary push throws, but by the time the retry's fetch+reset
+  completes, the reconciled pending line count for both sources is zero (origin already has this
+  cycle's content). No push call is issued in the retry branch; `result.pushed` is `false` for this
+  cycle (never misreported `true`), even though the marker's reconciled `pushedLineCount` correctly
+  reflects the now-current actual state via REQ-709's own unconditional reconciliation.
 **Acceptance Criteria**:
 - Deleting the ENTIRE dedicated publish-repo directory between two cycles (with the source ledger
   file untouched) results in the SECOND cycle publishing every source line exactly once, with no
