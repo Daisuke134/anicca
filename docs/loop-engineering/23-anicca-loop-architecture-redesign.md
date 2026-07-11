@@ -140,3 +140,43 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 - [ ] BlockRunAI/Franklin へ PR（autonomous wake-loop、issue 先行）
 
 **Done 判定（全ループ共通、BP準拠 doc22）**: 実 side-effect を fresh tool-verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。**「稼いだ」= external:true 実 tx を私が on-chain 確認した時のみ。**
+
+---
+
+## 6. ATOMIC TODO（1行=1アクション、順序厳守、done追跡）2026-07-11
+
+> ルール: 各 todo は「1つの動詞・1つの対象・1つの done 判定」。複合禁止。上から順に。`[ ]`未 `[x]`完。進むたびに本節を更新（source of truth）。
+
+### フェーズA: tool-verifier を作る（P0、これが無いと全部嘘に戻る）
+- [ ] A1. `~/anicca/skills/self/earn-truth-verify.py` を新規作成する（入力=instance名, 出力=EARNING/NOT-EARNING/SEED の決定的判定）。done=ファイルが存在し実行できる。
+- [ ] A2. A1 を Franklin に対して実行する。done=verdict を1つ出力する。
+- [ ] A3. A1 に on-chain RPC 照合を組み込む（earn-ledger の external:true 件数 と 実 wallet 残高/tx を突き合わせ、seed を earn と偽らない）。done=on-chain 値が verdict に載る。
+- [ ] A4. A1 の verdict が手動確認の真実（external:true=$0）と一致することを確認する。done=verdict が "NOT-EARNING $0" を返す。
+- [ ] A5. `vcsdd-adversary` の agent 定義に Bash を付与する（現状 Read/Write/Edit/Grep/Glob のみ＝静的）。done=agent 定義に Bash が入る。
+- [ ] A6. A5 に on-chain tool（chain_rpc / Base MCP）を付与する。done=agent 定義に on-chain tool が入る。
+- [ ] A7. fresh-context verifier subagent の prompt を書く（A1 を呼び、binary verdict + findings のみ、report 禁止）。done=prompt ファイルが存在する。
+- [ ] A8. `~/.claude/CLAUDE.md` に verifier 3原則を追記する（別context / state-not-report / 決定的on-chainチェック）。done=CLAUDE.md に3原則が載る。
+
+### フェーズB: 既存 earn agent を実際に稼がせる（P1、私は strategy を書かない §0.25）
+- [ ] B1. pm-earner の $5 床凍結を解除する（open UFC の resolve 待ち or 小額 top-up、どちらか1つを選ぶ）。done=free cash > $5。
+- [ ] B2. pm-earner を1パス実行する。done=1回 order を place する（HOLD でない）。
+- [ ] B3. A7 verifier を pm に食わせる。done=verdict を返す（external:true か否か）。
+- [ ] B4. Franklin sol-trade に既存 BASE alpha を1つ wire する（私が戦略を書かず既存 base agent を wire）。done=1 slot が wire される。
+- [ ] B5. Franklin の1 wake で earn action が実行されることを確認する。done=trace に非 WAIT の earn action が1行。
+- [ ] B6. A7 verifier を Franklin sol に食わせる。done=verdict を返す。
+- [ ] B7. cook の explore→wire→earn bridge を1本作る（候補1つを earn slot に wire→no-mock test）。done=候補1つが slot 化される。
+
+### フェーズC: 恒久化（P0の verifier を daily loop に焼く＝babysit ゼロ）
+- [ ] C1. A7 verifier を Franklin の earning-health に配線する。done=earning-health が A1 を呼ぶ。
+- [ ] C2. A7 verifier を claude-p の healthcheck に配線する。done=healthcheck が A1 を呼ぶ。
+- [ ] C3. escalation→self-fix の trigger を確実化する（selfheal-request 存在→self-fix.sh spawn）。done=trigger が発火する。
+- [ ] C4. Opus session /loop を停止する（恒久 verifier が daily loop に入った後）。done=/loop stop。
+
+### フェーズD: 増殖・可視化（稼ぎ確認後）
+- [ ] D1. P5 spawn の adversary iter3 を回す。done=verdict PASS/FAIL。
+- [ ] D2. P5 を main に merge する。done=merge commit。
+- [ ] D3. mainnet Akash で container boot を1回確認する（witness②）。done=child が RPC で確認できる。
+- [ ] D4. dashboard に external:true 実数を出す。done=aniccaai.com が当日値。
+- [ ] D5. BlockRunAI/Franklin に autonomous-loop の issue を1つ立てる。done=issue URL。
+
+**Done 判定（全 todo 共通）**: 実 side-effect を A1/A7 verifier が独立確認した時のみ。「稼いだ」= external:true 実 tx を私が on-chain 確認した時のみ。
