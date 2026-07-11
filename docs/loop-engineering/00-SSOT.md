@@ -28,6 +28,28 @@
 ```
 anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self-improve（crypto/SNS）。**verifier のみ共有**。
 
+## 2b. 全 loop 定義表（実測・repo・何をする・問題・2026-07-11）
+我々=MONITOR（自分でやらない。loopにやらせ browserで実際にやったか見て、足りなければ harness+prompt+credential を直す。最終的に self-heal が自動化）。
+### PC(profitable-claude)=あなたの銀行
+| loop | 何をする | 問題 |
+|---|---|---|
+| connector | イベント登録→gcal+人脈 | healthcheck DEAD誤判定でrestart storm・2/4枠のみ |
+| affiliate | 紹介投稿→紹介料 | reCAPTCHAで06-30からlogout・投稿0 |
+| bounty | 懸賞提出→賞金 | idle・survivor0 |
+| explorer | 機会探索→他loopへ供給 | proposal走るが収益化0 |
+| life-manager(core) | 予定/連絡/intake→MRR | ★anicca版と二重起動★・空稼働・MRR0 |
+### anicca=crypto/SNS(別CC)+一部bank混線
+| loop | 何をする | 問題 |
+|---|---|---|
+| gig | Coconala出品/提案/返信/納品→銀行 | 24日本体復元済。提案(teian)・出品(shuppin)・納品が足りない ←今 |
+| capafy | skill販売→銀行 | 審査中status=1・public未掲載・"PUBLISHED"嘘(accountはログイン済) |
+| life-manager(loop) | (PC版と重複) | ★二重→退役対象(2x課金)★ |
+| clip | IG動画→crypto視聴報酬 | 別垢乱造・blur |
+| clip-promote | 拡散→crypto | 選択だけsuccess・$0 |
+| video | 動画→crypto | grid空・blur |
+| reddit | 投稿→crypto | account BAN |
+| founder/Franklin/pm/sol | trade→crypto | 別CC担当 |
+
 ## 3. AS-IS（今の実態、launchctl 実測）→ TO-BE（理想）
 ```
 AS-IS（混線・半分移行）:
