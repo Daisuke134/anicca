@@ -331,7 +331,7 @@ token=デジタル引換券（誰でも数分で発行、法的権利は通常�
 
 ## §11. Goal engineering + 統一 citizen ループ（2026-07-12、Dais 議論から確定）
 
-> proactive loop の最難問＝長期ゴールの設定。曖昧すぎ→迷子 / 具体的すぎ→1回で終了(human-loop 復活)。解＝**タスクを書かず「北極星の数字＋差分ループ」を書く**（open-ended agent の BP: Voyager auto-curriculum / DGM / AlphaEvolve）。
+> proactive loop の最難問＝長期ゴールの設定。曖昧すぎ→迷子 / 具体的すぎ→1回で終了(human-loop 復活)。解＝**タスクを書かず「北極星の数字＋差分ループ」を書く**。★この BP は当初 無出典で書かれたが、2026-07-12 に web 一次ソースで裏取りし [[27-long-horizon-goal-engineering-BP]] に正本化（Anthropic right-altitude / Stanley objective paradox / DeepMind spec-gaming / Voyager auto-curriculum / OKR / 反復ごと bound）。以下は §17 economy 文脈での適用要約、詳細と出典は 27 を参照。★
 
 ### 良い長期ゴールの5点セット（mission engineering の型）
 1. **北極星の数字**: 「**自立市民の数**（自分の wallet で自分の compute を賄える net-positive な AI の頭数）を最大化」。数字＝検証可能・無限＝終わらない。「AI が living してなきゃ意味がない」(Dais)＝この数字が mission の本質。「稼げ($X)」は狭すぎ、「経済を建てろ」は曖昧すぎ→「自立市民を増やせ」が両者を解く（増やすには稼ぎ改善・評判・検証・compute削減・spawn を"何でも建てる"しかない）。
