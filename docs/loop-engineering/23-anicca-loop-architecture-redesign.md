@@ -423,6 +423,32 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 
 ---
 
+# ★★★ §10 CORRECTED MANDATE（Dais 2026-07-12、§8/§9 の順序を SUPERSEDE）★★★
+
+**Dais 明示の修正**: 「claude-p が最初に稼げなければ話にならない。claude-p は最高知能で、これが稼げないなら低知能の Franklin 群も稼げない。」→ **全リソースを claude-p の自律 earn に集中。Franklin 系は claude-p が稼ぐまで後回し。**
+
+## 修正された3原則
+1. **claude-p = 唯一 1 loop（main = founder = agent-economy-loop）**。pm/sol/hl は**その中の skill/menu**。**standalone pm-earner cron（polymarket 専用、別 launchd）は廃止**（= §8 が指摘した混線の解消）。1 loop が earn-menu から選んで trade する形に一本化。
+2. **記録システムを最優先で直す（負けも必ず記録）**。現状 = ledger は「勝ち redeem」しか書かず「買い(cost 出)・負け($0 resolve)」を書かない（redeem.py:172「the original buy was never itself ledgered」実証）。結果 ledger +$10.02 vs wallet 実 -$7.84 の嘘。→ **wallet 実残高を錨に reconciliation 行を足し、ledger 合計 ≡ wallet 実 delta を構造的に保証**。損失は負の delta として自動計上。副産物: self-improve の realized-gate に真の net(損失込み)が入る（§9 R1/M2 前進）。
+3. **1 loop が私(main session)抜きで自律 earn し、私は wallet でそれを「見る」**（no-me-in-loop）。
+
+## 実装済みの再利用部品（2026-07-12 own-eyes 確認）
+- `runtime/loop/balance.mjs::fetchUsdcBalance(wallet, config)` = 実 on-chain USDC 残高（各 wake で稼働中）
+- `skills/earn/lib/record.mjs` → `_shared/lib/ledger.mjs::deriveLine/appendLedger/isProfitable` + `earn-guard.mjs::checkHalt`(solvency)
+
+## 修正 ATOMIC TODO（この順、§8/§9 の残を置換）
+- [ ] N1. 記録 fix: `skills/earn/lib/reconcile.mjs` を作る（各 wake で fetchUsdcBalance→前回 snapshot との drift を source="reconcile" 行として append、balance_after 記録）。done: 負の drift（損失）が ledger に載り、ledger 合計 ≡ wallet delta。
+- [ ] N2. reconcile を loop の各 wake に配線（index.mjs / run.sh）。done: 毎 wake で snapshot 行が出る。
+- [ ] N3. `ledger_reader.confirmed_net_series` を reconcile 行込みに（realized-gate/fitness が損失込みの真 net を読む）。done: self-improve の realized net が wallet delta と一致。
+- [ ] N4. standalone pm-earner cron を廃止し、pm を claude-p の 1 loop の menu skill に一本化。done: launchd に pm-earner 単独 job が無い、pm は index.mjs の earn-menu 経由でのみ走る。
+- [ ] N5. pm の自動発注を N1-N4 完了まで HOLD（Dais の $4.95 をこれ以上溶かさない）。done: pm が新規 naked を作らない（#2 の fail-closed + 発注停止）。
+- [ ] N6. 1 loop を1 wake 自律実行し、wallet 残高の変化（+でも−でも）が正しく記録されるのを own-eyes 確認。done: wallet delta = ledger delta。
+- [ ] N7. その後、claude-p が実 external:true で + を出すまで回す（唯一の gate）。done: wallet が実 tx で増える。
+
+**Done 判定**: wallet on-chain だけが真実。ledger は wallet に一致して初めて信頼。「稼いだ」= external:true 実 tx で wallet が増えた時のみ。
+
+---
+
 ## §11. 既存OSS部品の採用計画（2026-07-11、実コード実読・patch付き。再発明でなく copy）
 
 > 出典 = [[17-agent-economy-deep-research-2026-07-10]] §9/§10。世界の to-be 10部品のうち、Franklin が「Identity は本番採用済みだが隣の部品を未使用」の3つを copy する。全て実インターフェースを実読で確認済み。**未検証は UNVERIFIED 明記**。業界公認フロンティア = 検証(Validation)/proof-of-earning（a16z「知能が安くなると希少になるのは検証」）→ 評判/検証層の採用は R1(実P&L fitness)と地続き。
