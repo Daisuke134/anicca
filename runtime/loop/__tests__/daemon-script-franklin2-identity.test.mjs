@@ -123,17 +123,21 @@ test('impl-review iteration-1 FIND-002 fix (static): the franklin-branch telemet
   );
 });
 
-test('impl-review iteration-2 FIND-001 fix (static): a one-time, end-anchored legacy-poster cleanup pkill is present, positioned after the scoped pkill and before the poster is (re)launched', () => {
+test('impl-review iteration-3 FIND-001 fix (static): the iteration-2 one-time, unscoped, end-anchored legacy-poster-cleanup pkill is REMOVED — it cross-matched skills/earn/sol-trade/run.sh\'s own flagless one-shot telemetry POST on every invocation, not only during a migration window; the scoped pkill remains the ONLY telemetry-post-franklin.mjs pkill line in step 3, positioned before the poster is (re)launched', () => {
   const step3Start = source.indexOf('# 3. telemetry poster');
   const step4Start = source.indexOf('# 4. brain endpoint');
   const step3 = source.slice(step3Start, step4Start);
+  assert.ok(
+    !/pkill -f "dashboard\/telemetry-post-franklin\\?\.mjs\$"/.test(step3),
+    'no unscoped, end-anchored legacy-poster-cleanup pkill pattern may remain (FIND-001 iter3 fix)',
+  );
   const scopedIdx = step3.indexOf('pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"');
-  const legacyIdx = step3.indexOf('pkill -f "dashboard/telemetry-post-franklin\\.mjs$"');
   const launchIdx = step3.indexOf('node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" --home "$ANICCA_HOME"');
   assert.ok(scopedIdx !== -1, 'expected the FIND-002(iter1) scoped pkill pattern to still be present');
-  assert.ok(legacyIdx !== -1, 'expected a new end-anchored legacy-cleanup pkill pattern (FIND-001 iter2 fix)');
   assert.ok(launchIdx !== -1, 'expected the poster launch line to still be present');
-  assert.ok(scopedIdx < legacyIdx && legacyIdx < launchIdx, 'legacy-cleanup pkill must run after the scoped pkill and before the poster is (re)launched');
+  assert.ok(scopedIdx < launchIdx, 'scoped pkill must still run before the poster is (re)launched');
+  const pkillLineCount = (step3.match(/pkill -f "dashboard\/telemetry-post-franklin/g) || []).length;
+  assert.equal(pkillLineCount, 1, 'exactly one telemetry-post-franklin.mjs pkill -f line may remain in step 3 (the scoped one)');
 });
 
 test('impl-review iteration-2 FIND-002 fix (static): the dead env-var pkill ("FRANKLIN_TELEMETRY_LOOP") is gone — pkill -f matches argv, not exported environment variables, so it never matched anything', () => {
@@ -149,44 +153,59 @@ test('impl-review iteration-2 FIND-002 fix (static): the dead env-var pkill ("FR
   assert.ok(/export FRANKLIN_TELEMETRY_LOOP=1/.test(step3), 'the FRANKLIN_TELEMETRY_LOOP export on the poster subshell is unrelated dead-pkill scope and must remain untouched');
 });
 
-test('impl-review iteration-2 FIND-001 fix — match-matrix simulation: applies the scoped pattern and the new legacy end-anchored pattern to real legacy/new-format argv strings for BOTH live instances, exactly reproducing pkill -f ERE semantics via grep -E', () => {
+test('impl-review iteration-3 FIND-002 fix — match-matrix simulation: applies the scoped pkill pattern, extracted VERBATIM from the real anicca-daemon.sh source text (same technique as extractClassifierFunction()), to real new-format/legacy/sol-trade argv strings for BOTH live instances, exactly reproducing pkill -f ERE semantics via grep -E', () => {
+  const step3Start = source.indexOf('# 3. telemetry poster');
+  const step4Start = source.indexOf('# 4. brain endpoint');
+  const step3 = source.slice(step3Start, step4Start);
+
+  // Extract the scoped pkill pattern VERBATIM from the real source text — the literal text between
+  // the quotes of the pkill -f line, unescaped dots and all. iteration-2's test hand-copied an
+  // independently re-escaped pattern (escaping every dot in $ANICCA_HOME before handing it to
+  // grep -E) that was STRICTER than what pkill actually evaluates (the real string has an unescaped
+  // dot before "mjs" and unescaped dots inside the interpolated $ANICCA_HOME value, which behave as
+  // ERE "match any character", not literal dot). This extraction reproduces the deployed semantics
+  // exactly, with no re-escaping.
+  const patternMatch = step3.match(/pkill -f "(dashboard\/telemetry-post-franklin\.mjs --home \$ANICCA_HOME)"/);
+  assert.ok(patternMatch, 'expected the scoped pkill -f "...--home $ANICCA_HOME" pattern to be present verbatim in step 3');
+  const patternTemplate = patternMatch[1];
+
   // Real deployed --home values (from ai.anicca.franklin-loop.plist / ai.anicca.franklin2-loop.plist,
-  // as confirmed in iteration-2 notes.md / iteration-1 FIND-002).
+  // as confirmed in iteration-1/2 notes.md).
   const HOME_FRANKLIN = '/Users/anicca/.blockrun';
   const HOME_FRANKLIN2 = '/Users/anicca/.franklin2-home/.blockrun';
   const SCRIPT = 'node /Users/anicca/anicca/runtime/dashboard/telemetry-post-franklin.mjs';
+  // skills/earn/sol-trade/run.sh:161's actual flagless, short-lived (`timeout 20`) one-shot
+  // invocation — the argv pkill -f would actually see, ending at the identical script-path
+  // substring with NO --home marker at all (FIND-001 iter3: this is the caller the now-removed
+  // legacy sweep used to cross-kill on every restart).
+  const SOL_TRADE_ONE_SHOT = 'node /Users/anicca/anicca/skills/earn/sol-trade/../../../runtime/dashboard/telemetry-post-franklin.mjs';
 
   const argv = {
-    franklin_legacy: SCRIPT, // pre-29023a55: no --home argv marker at all
     franklin_new: `${SCRIPT} --home ${HOME_FRANKLIN}`,
-    franklin2_legacy: SCRIPT, // identical text to franklin_legacy — legacy argv never differentiates instances
     franklin2_new: `${SCRIPT} --home ${HOME_FRANKLIN2}`,
+    legacy_markerless: SCRIPT, // pre-29023a55 shape — migration is now an operator runbook step, not code
+    sol_trade_one_shot: SOL_TRADE_ONE_SHOT,
   };
+
+  // Expand the verbatim template the way bash's own double-quote interpolation would — a literal
+  // substring replace of the `$ANICCA_HOME` token, NOT a regex-escaped substitution — then hand the
+  // result to grep -E exactly as pkill -f would evaluate it.
+  const scopedPattern = (home) => patternTemplate.replace('$ANICCA_HOME', home);
 
   function pkillMatches(pattern, text) {
     const result = spawnSync('/usr/bin/grep', ['-E', pattern], { input: text, encoding: 'utf8' });
     return result.status === 0;
   }
 
-  const scopedPattern = (home) => `dashboard/telemetry-post-franklin\\.mjs --home ${home.replace(/[.]/g, '\\.')}`;
-  const legacyPattern = 'dashboard/telemetry-post-franklin\\.mjs$';
-
   // Scoped pattern for franklin's own $ANICCA_HOME: matches ONLY franklin_new.
-  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin_legacy), false);
   assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin_new), true);
-  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin2_legacy), false);
   assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin2_new), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.legacy_markerless), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.sol_trade_one_shot), false);
 
   // Scoped pattern for franklin2's own $ANICCA_HOME: matches ONLY franklin2_new.
-  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin_legacy), false);
   assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin_new), false);
-  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin2_legacy), false);
   assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin2_new), true);
-
-  // Legacy end-anchored pattern: matches ONLY markerless (legacy) argv, for EITHER instance — never
-  // a new-format argv (which always has trailing " --home <path>" so it can't end at ".mjs").
-  assert.equal(pkillMatches(legacyPattern, argv.franklin_legacy), true);
-  assert.equal(pkillMatches(legacyPattern, argv.franklin_new), false);
-  assert.equal(pkillMatches(legacyPattern, argv.franklin2_legacy), true);
-  assert.equal(pkillMatches(legacyPattern, argv.franklin2_new), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.legacy_markerless), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.sol_trade_one_shot), false);
 });

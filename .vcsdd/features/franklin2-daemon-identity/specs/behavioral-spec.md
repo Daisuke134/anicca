@@ -88,24 +88,58 @@ derivation).
   can no longer kill ANOTHER concurrently-running instance's in-flight poster process, since both
   instances would otherwise present the identical `dashboard/telemetry-post-franklin.mjs` argv
   substring to an unscoped `pkill -f`.
-- (impl-review iteration-2 FIND-001 fix — migration edge case) Scoping the pkill to `--home
-  $ANICCA_HOME` (FIND-002 above) and adding that same `--home` argv marker to the poster's own launch
-  command landed in the SAME commit (29023a55). This means a poster process still running under the
-  PRIOR daemon.sh version (started before that commit, with NO `--home` argv marker) can never be
-  matched by the new scoped pattern — on the FIRST self-update+restart that pulls this commit, for
-  EITHER live Franklin instance, the old-generation poster is orphaned rather than killed, and a second
-  poster loop starts alongside it, permanently duplicating the dashboard beat (the orphan can never
-  subsequently match ANY future scoped pattern either, since it permanently lacks `--home`). THE SYSTEM
-  SHALL additionally run a ONE-TIME, end-anchored cleanup `pkill -f
-  "dashboard/telemetry-post-franklin\.mjs$"` (ERE `$` end-anchor, dot escaped) immediately after the
-  scoped pkill and before the poster relaunch, so it matches ONLY a legacy (markerless) argv — a
-  new-format argv always has a trailing " --home <path>" and therefore never ends at the script path,
-  so it never double-matches an already-scoped process. This pattern is deliberately NOT
-  instance-scoped (a legacy argv carries no `--home` to scope by) and so MAY cross-kill a sibling
-  Franklin instance's own legacy poster once; that is an accepted, self-healing trade-off (the sibling's
-  own next ~120s loop iteration or restart re-launches it) versus the alternative of permanent
-  duplication. Safe to remove once every live Franklin-family instance has restarted at least once on
-  this commit or later (no legacy-argv poster can exist anymore at that point).
+- (impl-review iteration-3 FIND-001 fix — migration edge case, now OPERATIONAL, not code) Scoping the
+  pkill to `--home $ANICCA_HOME` (FIND-002 above) and adding that same `--home` argv marker to the
+  poster's own launch command landed in the SAME commit (29023a55). This means a poster process still
+  running under the PRIOR daemon.sh version (started before that commit, with NO `--home` argv marker)
+  can never be matched by the new scoped pattern — on the FIRST self-update+restart that pulls this
+  commit, for EITHER live Franklin instance, the old-generation poster is orphaned rather than killed,
+  and a second poster loop starts alongside it, permanently duplicating the dashboard beat. Iteration-2
+  attempted to close this gap with an in-code, one-time, end-anchored, unscoped cleanup `pkill -f
+  "dashboard/telemetry-post-franklin\.mjs$"`. Impl-review iteration-3 FIND-001 found that pattern is
+  NOT actually one-time or migration-scoped in practice: `skills/earn/sol-trade/run.sh`'s own
+  flagless, short-lived (`timeout 20`) one-shot telemetry POST invocation (a currently-live,
+  unmodified, permanently-recurring caller of the identical script, never touched by this feature)
+  ALSO ends its argv at the bare script-path substring on every single invocation, so it satisfies the
+  same end-anchored pattern forever — not merely during a transient migration window. Any daemon.sh
+  restart that overlaps an in-flight sol-trade telemetry POST would SIGTERM that legitimate, non-legacy
+  process. THE SYSTEM THEREFORE SHALL NOT run any such sweep in code — the in-code cleanup pkill is
+  REMOVED. The legacy-poster migration itself is deferred to a documented, ONE-TIME OPERATOR step (see
+  "Deployment / migration runbook" below) performed once per instance, using the judgment a fixed argv
+  pattern cannot safely encode (distinguishing a long-lived legacy LOOP from a short-lived legitimate
+  one-shot caller by process lineage/lifetime, not argv shape alone).
+
+#### Deployment / migration runbook (REQ-002(b), one-time, operational — NOT code)
+
+After merging this commit (or any commit ≥ 29023a55) and restarting each live Franklin-family
+instance's daemon ONCE, the operator performs the following one-time step per instance. This is
+deliberately NOT automated as a pkill pattern — argv shape alone cannot safely distinguish a legacy
+long-lived poster LOOP from `skills/earn/sol-trade/run.sh`'s own legitimate short-lived one-shot
+invocation of the identical script (FIND-001 iter3):
+
+1. `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` — lists every currently-running process
+   invoking the poster script, on this machine, across all instances.
+2. For each listed PID, inspect its parent process (`ps -o ppid= -p <PID>` then `ps -o command=
+   -p <PPID>`) to determine whether it is:
+   - a long-lived LOOP poster (parent is an `anicca-daemon.sh` subshell — the `( export
+     FRANKLIN_TELEMETRY_LOOP=1; while true; do ... sleep 120; done )` construct in step 3) started by
+     a PRE-29023a55 daemon.sh (running since before the instance's most recent restart, argv has no
+     ` --home ` substring) — this is the legacy process to kill, or
+   - a short-lived, `timeout 20`-bounded one-shot invocation from `skills/earn/sol-trade/run.sh` (or
+     any other one-shot caller) — NEVER kill this one; it exits on its own within ~20s.
+3. `kill <PID>` ONLY the PIDs identified as legacy long-lived loop posters in step 2. The scoped,
+   in-code `pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"` (step 3 of
+   anicca-daemon.sh, unchanged) relaunches the correct new-format poster for that instance on its own
+   very next restart, so no manual relaunch is needed.
+4. Re-run `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` and verify no more than one long-lived
+   LOOP poster remains per live instance (transient one-shot callers like sol-trade's may legitimately
+   appear/disappear and are not counted as duplicates).
+
+This step runs ONCE per instance, at or shortly after deploy of this commit — it is not a recurring
+operational task, and it is intentionally NOT expressed as code (iteration-3 FIND-001) because the
+distinction it makes (long-lived loop vs. short-lived one-shot) is a judgment about process lifetime
+and lineage, not a property any fixed argv pattern can safely encode without risking exactly the
+cross-kill regression this fix removes.
 **Acceptance Criteria**:
 - With `ANICCA_INSTANCE=franklin2`, the brain-probe/telemetry/wallet-derivation branch conditions all
   evaluate true (same as `ANICCA_INSTANCE=franklin` today).
@@ -148,3 +182,20 @@ NOT-franklin and drives the same default path as `clawrouter`.
   line — `pkill -f` matches a process's argv, never its exported environment, so this line never
   matched anything, on any instance, ever. The `export FRANKLIN_TELEMETRY_LOOP=1` on the poster
   subshell itself is untouched (harmless, unrelated to the dead pkill that targeted it).
+
+## Changelog — impl iter3 fixes
+
+- **FIND-001 (major, edge_case_coverage/implementation_correctness)**: removed the iteration-2
+  in-code, one-time, unscoped, end-anchored legacy-poster-cleanup `pkill` — it permanently
+  cross-matched `skills/earn/sol-trade/run.sh`'s own flagless, short-lived one-shot telemetry POST
+  invocation on every restart, not only during a transient migration window. The legacy-poster
+  migration is now a documented, one-time OPERATOR step (REQ-002(b) "Deployment / migration
+  runbook" above) — operational, not code.
+- **FIND-002 (minor, structural_integrity)**: the match-matrix simulation test now extracts the
+  scoped pkill pattern VERBATIM from the real `anicca-daemon.sh` source text (rather than
+  hand-copying an independently re-escaped pattern), expands `$ANICCA_HOME` via literal string
+  substitution (matching bash's own interpolation semantics, unescaped dots included), and adds
+  rows asserting sol-trade's one-shot argv is never matched by either instance's scoped pattern.
+- **FIND-003 (minor, verification_readiness)**: synced `verification-architecture.md` with
+  PROP-009 (dead-pkill removal) and PROP-010 (verbatim scoped-pattern matrix / sol-trade
+  non-match), and added the migration edge case to the Verification Strategy prose.
