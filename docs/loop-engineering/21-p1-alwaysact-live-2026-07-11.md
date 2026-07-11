@@ -22,3 +22,22 @@
 - ACT はする、しかし**まだ稼げない**: gig=板空+$0.02 / sol=neutral 市場 / hl=bridge 資金不足。稼ぎの点火 = P4（Franklin2 wallet + Franklin1 Base 資金 + 初ローン）と P1.5 edge（coldstart-evolution）。
 - 出血対策: WAIT が ACT に変わったので、次の監視点は「ACT のコスト（x402 fuel）< 期待収益」の会計 gate 挙動（wake 毎 ~$0.009、cap $0.25/pass は据え置き）。
 - 事件記録: converge 中に外部プロセスが worktree を削除（branch/commit は push 済みで無損失、`.anicca-keep` marker で再発緩和）。fablize hook の「tool failure」誤発火は session 全体の既知 artifact（複数 agent が ledger 検査で実失敗なしと確認）。
+
+## P4 lending — 初ローンの最終ブロッカー（2026-07-11、実 diagnose）
+
+★ MONEY EVIDENCE: 「稼いだ/貸せた」ではない。実バグ diagnose の記録。★
+
+**達成（構造ブロッカー全解除、RPC 実測）:**
+- Franklin2 EVM wallet 生成(`0xe774…7ce9`) + daemon franklin[N] 認識(merged) + citizens.json EVM 行投入 → **lending gate が Franklin→Franklin2 を初 eligible pair 選定**。
+- refill: Solana USDC $6.50→Base、tx `4JWEKF8u…` → Franklin Base USDC $6.4978（RPC 実測）。
+- x402 facilitator mainnet live 起動(:8405、eip155:8453、/health 200、実 build)。
+- lending money-safety fix 5-iter VCSDD(signer==lender / exact-value / bounded-reconcile / mainnet-preflight / tx_hash-replay) merged。**ガードは実戦で正しく動作**: 署名前クラッシュの loan_Franklin_1 を正しく disbursement_failed に解消、二重支払いゼロ。
+
+**最終ブロッカー（payViaFacilitator 直叩きで raw error 捕捉）:**
+```
+settle unexpected_error: -32003 insufficient funds for gas * price + value:
+have 0 want 1059005200000  (facilitator signer 0x1F5b17f4… の Base ETH が 0)
+```
+= コードは正しい。x402 EIP-3009 gasless 送金は **facilitator が payer に代わってガスを立て替える**設計 → facilitator wallet `0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3` に Base ETH(~0.001 ETH)が必要。現状 facilitator=0 ETH、Franklin=0.0000088 ETH（ほぼ枯渇）。
+
+**次タスク（gas-funding harness、lean VCSDD）**: Franklin 自 USDC の一部($1程度)を Base 上で ETH に swap → facilitator signer へ送金（capped、on-chain verify）。これが揃えば初ローン $0.02 が settle し **witness③** 確定。注: loan_Franklin_2..36 の junk 行は全て disbursement_failed（送金ゼロ・二重なし、ガード健全性の実証）。
