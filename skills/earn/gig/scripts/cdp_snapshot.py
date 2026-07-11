@@ -32,7 +32,7 @@ CDP = "http://localhost:9222"
 
 def get_tab():
     data = json.loads(urllib.request.urlopen(f"{CDP}/json/list", timeout=8).read())
-    # prefer a coconala page tab; else the first page tab (parity with cdp_lib48.get_tab)
+    # prefer a coconala page tab; else the first page tab
     pages = [t for t in data if t.get("type") == "page"]
     for t in pages:
         if "coconala.com" in (t.get("url") or ""):

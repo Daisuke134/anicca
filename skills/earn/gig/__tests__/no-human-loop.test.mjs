@@ -9,7 +9,9 @@ import { fileURLToPath } from 'node:url';
 
 const DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
 // All .sh files that are part of the live loop (add new scripts here when created)
-const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh', 'auditor.sh', 'run.sh'];
+// gig_reality_verify.sh added (feature gig-reality-verify, 増分2b): the fresh-spawn reality-verifier
+// runner must also be human-free — it self-invokes claude -p, never asks/waits for a human.
+const FILES = ['gig-cli.sh', 'monitor.sh', 'gig-healthcheck.sh', 'auditor.sh', 'run.sh', 'gig_reality_verify.sh'];
 
 // runtime human-step patterns (the one allowed human element — Dais's one-time KYC/account — is not a
 // runtime step and is only mentioned in comments, which we strip before scanning).
