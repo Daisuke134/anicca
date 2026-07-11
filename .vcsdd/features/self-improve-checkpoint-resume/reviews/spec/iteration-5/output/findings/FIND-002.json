@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "medium",
+  "blocking": false,
+  "description": "REQ-CR11 explicitly states it 'restates and sharpens REQ-CR5's no-file-content-reads rule to also explicitly cover the __main__ entrypoint, not only the pure function' — i.e. the __main__ CLI entrypoint must never call open(...) to read a file's byte contents at all, not just never call it in a mutating mode. No PROP obligation in verification-architecture.md statically checks this for __main__: PROP-CR9's source-text denylist (open(, subprocess, requests, socket, urllib) explicitly EXCLUDES the __main__ block ('excluding its own __main__ CLI-entrypoint block'), and PROP-CR12(a) covers the __main__ block but only denylists open( used with a NON-DEFAULT (write/append/create/truncate) mode -- a read-mode open(path, 'r') inside __main__ (e.g. accidentally opening a checkpoint file, or a wallet/.env/ledger path) would pass both PROP-CR9 and PROP-CR12(a) undetected. PROP-CR12(c)'s dynamic before/after directory-snapshot only catches mutations (mtime changes), not read-only opens, so it would not catch this either. This leaves REQ-CR11's own explicit, sharpened 'never read byte contents, __main__ included' claim without a dedicated static or dynamic PROP that actually exercises it end-to-end.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "69,73",
+    "snippet": "PROP-CR9 | ... find_latest_checkpoint's module source (lib/checkpoint_resume.py, excluding its own __main__ CLI-entrypoint block ...) contains no open(, subprocess, requests, socket, or urllib reference ... / PROP-CR12 | ... (a) static denylist ... contains no reference to os.remove, ... or open( used with a non-default (write/append/create/truncate) mode"
+  },
+  "routeToPhase": "1c-polish-optional"
+}

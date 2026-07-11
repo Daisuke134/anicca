@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "low",
+  "blocking": false,
+  "description": "INV-CR2's parenthetical (behavioral-spec.md) claims it is 'verified by PROP-CR9/PROP-CR12's source-text scans over lib/checkpoint_resume.py, which contain no reference to any of these paths' (i.e. strategies/pm_backtest_strategy.py, promote_gate.sh, lib/promote_gate.py, lib/promote.py, config.yaml, ai.anicca.self-improve-evolve.plist). Neither PROP-CR9 (denylist: open(, subprocess, requests, socket, urllib) nor PROP-CR12(a) (denylist: os.remove/os.mkdir/os.rename/shutil.*/non-default-mode open() + pathlib import-absence) actually scans lib/checkpoint_resume.py's source for those six specific path/filename strings — both PROPs check for a different, unrelated set of tokens. The citation overclaims what those two PROPs test. This is the same pattern iteration-4's FIND-001 flagged for REQ-CR6 (a citation asserting a test/step does something it does not do), recurring here in the newly-added INV-CR2 cross-reference. Substantively INV-CR2 is still covered by the OTHER half of the same parenthetical ('a plain git diff scope check at review time showing no other file touched'), so this is a citation-accuracy defect, not a coverage gap.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "309-310",
+    "snippet": "INV-CR2 | ... (verified by PROP-CR9/PROP-CR12's source-text scans over lib/checkpoint_resume.py, which contain no reference to any of these paths, plus a plain git diff scope check at review time showing no other file touched)"
+  },
+  "routeToPhase": "1c-polish-optional"
+}
