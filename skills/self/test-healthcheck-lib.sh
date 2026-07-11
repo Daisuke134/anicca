@@ -28,4 +28,18 @@ chk "confirm dialog" FIRE 'Do you want to proceed?
 # active searching, no prompt → NOT fire
 chk "active searching" OK '✢ Searching… (7m · ↓ 19k tokens · esc to interrupt)'
 
+# FIND-034: hc_recent_restart must gate the STALE-restart path so a restart storm can't pre-empt a
+# pass before it finishes (the pass touches the heartbeat only at its own final step).
+chkr(){ local name="$1" want="$2" log="$3" now="$4"; if hc_recent_restart "$log" "$now"; then got=FIRE; else got=OK; fi
+  [ "$got" = "$want" ] && { echo "  ok $name ($got)"; P=$((P+1)); } || { echo "  FAIL $name want=$want got=$got"; F=$((F+1)); }; }
+
+TMPLOG="$(mktemp)"
+printf '' > "$TMPLOG"
+chkr "no restart log at all" OK "/tmp/.does-not-exist-$$" 1000000
+printf '999000\n' > "$TMPLOG"
+chkr "restart 1000s ago (within 1200s grace)" FIRE "$TMPLOG" 1000000
+printf '997000\n' > "$TMPLOG"
+chkr "restart 3000s ago (past 1200s grace)" OK "$TMPLOG" 1000000
+rm -f "$TMPLOG"
+
 echo "=== healthcheck-lib stall-detect: $P passed $F failed ==="; [ "$F" = 0 ]&&echo GREEN||exit 1
