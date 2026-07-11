@@ -506,9 +506,11 @@ model text ever determines which slot executes.
 earn-ledger line for the wake THE SYSTEM SHALL write a truthful ledger line (`kind` distinguishing this
 outcome from a clean `wake`, e.g. `kind:'router_no_realized_action'`) — never a fabricated `profitable` or
 success value — AND append one `harness-failures.jsonl` detail line via the existing
-`appendHarnessFailure` mechanism (defined at `index.mjs:1028`; the escalation call sites this requirement's
-own EARS clause describes are `index.mjs:878`/`:914` inside `writeAlwaysActEscalation` — converge doc-sync
-2026-07-11 line-number correction, see FIND-007; `index.mjs:458-475` is actually the unrelated
+`appendHarnessFailure` mechanism (defined at `index.mjs:1028`; the escalation call site this requirement's
+own EARS clause describes is `index.mjs:914` inside `writeAlwaysActEscalation` (function starts `:899`);
+`index.mjs:878` is inside the separate shared brain-transport-failure handler `writeWakeErrorAndSleep`
+(starts `:868`), not part of this requirement — converge iter4 FIND-008 enclosing-function correction;
+`index.mjs:458-475` is actually the unrelated
 bootstrap-reserve `filterCatalog` try/catch block, unmodified) so the existing self-heal escalation
 path (mirrors `self/issue-dev`, `skills/self/earning-health.py`'s barren detector) can pick it up.
 **Edge Cases**:

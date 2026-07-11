@@ -1,0 +1,44 @@
+{
+  "findingId": "FIND-008",
+  "phase": "converge",
+  "iteration": 4,
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "blocking",
+  "description": "REQ-508's EARS clause -- the requirement's own most-authoritative sentence -- makes a false claim about the shipped code's structure, introduced BY the very citation-audit fix (converge iter3 -> iter4 mechanical sweep, FIND-007's rewrite) that was supposed to have made every citation in this document mechanically re-verified and exhaustively accurate. behavioral-spec.md:509-510 reads: 'the escalation call sites this requirement's own EARS clause describes are `index.mjs:878`/`:914` inside `writeAlwaysActEscalation`'. This is only half true: `index.mjs:914` IS inside `writeAlwaysActEscalation` (function spans index.mjs:899-920, confirmed by grep and direct read), but `index.mjs:878` is NOT -- it is inside a completely different function, `writeWakeErrorAndSleep` (spans index.mjs:868-883, confirmed by grep: `grep -n '^async function writeWakeErrorAndSleep|^async function writeAlwaysActEscalation' runtime/loop/index.mjs` returns `868:async function writeWakeErrorAndSleep(...)` and `899:async function writeAlwaysActEscalation(...)`). `writeWakeErrorAndSleep` is the shared THINK-transport-failure handler (its own JSDoc at index.mjs:862-867 says so explicitly) -- a structurally distinct code path from REQ-508's exhausted-retry-bound escalation, which is what `writeAlwaysActEscalation` (index.mjs:899-920) actually implements. The number 878 is not stale (a `appendHarnessFailure` call genuinely exists at that exact line) -- the citation-audit's grep-based method (confirm the substring/construct exists at the cited line) correctly verified the LINE NUMBER but never checked the ENCLOSING-FUNCTION claim wrapped around it, so this over-claim survived the 'mechanical, exhaustive, 0 DRIFTED remaining' sweep. The identical over-claim is also baked into the citation-audit's own evidence artifact (evidence/citation-audit-2026-07-11.md row 27's 'Description' column: 'Escalation call sites: `index.mjs:878`/`:914` (`writeAlwaysActEscalation`)') and into behavioral-spec.md's iter3 Changelog entry's parenthetical ('call sites `613`/`767`/`878`/`914`' -- this specific listing does not itself claim same-function, so it is technically accurate as a flat list, but it is presented immediately alongside the EARS-clause claim that IS wrong). verification-architecture.md and verification-report.md do NOT repeat this specific over-claim (verification-report.md:121 correctly cites `index.mjs:899-910` for `writeAlwaysActEscalation` with no mention of 878), so this is a single-location, non-propagated defect -- unlike FIND-005/006/007's multi-site drift -- but it sits inside the one sentence REQ-508 itself designates as its EARS clause, the same category FIND-003 already treated as blocking when found stale for REQ-513 (behavioral-spec.md's own converge-iter2 Changelog entry: 'REQ-513's own EARS clause (most authoritative sentence)'). Zero behavioral/test impact: `writeWakeErrorAndSleep`'s own appendHarnessFailure call (878) and `writeAlwaysActEscalation`'s own appendHarnessFailure call (914) both function correctly and are both exercised by the passing 183/183 suite; only the spec's structural description of WHERE 878 lives is wrong.",
+  "evidence": {
+    "filePath": "specs/behavioral-spec.md",
+    "lineRange": "509-510",
+    "snippet": "`appendHarnessFailure` mechanism (defined at `index.mjs:1028`; the escalation call sites this requirement's own EARS clause describes are `index.mjs:878`/`:914` inside `writeAlwaysActEscalation` -- converge doc-sync 2026-07-11 line-number correction, see FIND-007; ...)"
+  },
+  "counterEvidence": [
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "868",
+      "snippet": "async function writeWakeErrorAndSleep({ wakeId, ts, err }) {"
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "878",
+      "snippet": "  await appendHarnessFailure({\n    ts, wakeId, kind: 'wake_error', layer: 'brain_transport', exitCode: null,\n    rawDetail: redactPrivateKeyPatterns(err.message || ''),\n  });"
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "899",
+      "snippet": "async function writeAlwaysActEscalation({ wakeId, ts, sleepS, attemptsUsed, kind = 'router_no_realized_action' }) {"
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "914",
+      "snippet": "  await appendHarnessFailure({\n    ts, wakeId, kind, layer: 'router', exitCode: null, ..."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/evidence/citation-audit-2026-07-11.md",
+      "lineRange": "59",
+      "snippet": "| 27 | behavioral-spec.md REQ-508 EARS : `index.mjs:458-475` | ... | Definition: `index.mjs:1028`. Escalation call sites: `index.mjs:878`/`:914` (`writeAlwaysActEscalation`). | DRIFTED -> REWRITE | **FIND-007** |"
+    }
+  ],
+  "propagationScope": "Confined to behavioral-spec.md:509-510 (REQ-508 EARS clause) and the audit table's row 27 description column. verification-architecture.md and verification-report.md do not repeat the same-function claim for line 878 -- verification-report.md:121 cites the correct `index.mjs:899-910` range for `writeAlwaysActEscalation` with no mention of 878. Not a multi-site drift like FIND-005/006/007.",
+  "routeToPhase": "6",
+  "recommendedFix": "In behavioral-spec.md:509-510, replace 'the escalation call sites this requirement's own EARS clause describes are `index.mjs:878`/`:914` inside `writeAlwaysActEscalation`' with an accurate description, e.g.: 'the REQ-508 exhausted-bound escalation call site is `index.mjs:914`, inside `writeAlwaysActEscalation` (`index.mjs:899-920`); `index.mjs:878` is a SEPARATE `appendHarnessFailure` call site inside the shared brain-transport-failure handler `writeWakeErrorAndSleep` (`index.mjs:868-883`), not REQ-508's own escalation path.' Apply the same correction to evidence/citation-audit-2026-07-11.md row 27's description column so the audit artifact itself is accurate. Recommend the next fix pass explicitly extend the mechanical audit's verification method beyond 'does the cited construct exist at this line' to also check any enclosing-function/scope claim asserted alongside a citation -- this is the specific methodological gap that let this survive an otherwise-exhaustive, grep-based, line-by-line-reverified sweep."
+}
