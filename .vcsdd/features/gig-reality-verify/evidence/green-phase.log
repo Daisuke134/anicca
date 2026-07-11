@@ -84,3 +84,31 @@ by a REAL, observed, non-fabricated side-effecting run — a fresh-spawned, repo
 navigated the real Coconala screens and reached the SAME conclusion (all claims real) that I would
 have reached manually, exactly replacing the "私が main session で navigate→screenshot→判定" step
 this feature exists to automate (docs/loop-engineering/26-...md §8 goal statement).
+
+=== FIX ROUND (fresh-adversary FAIL, 3 blocking + 1 mitigation) — GREEN confirmed ===
+target-feature-tests: PASS
+regression-baseline: PASS (except the same 1 PRE-EXISTING baseline failure, unrelated, untouched)
+
+Command: cd .../skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 67, pass 66, fail 1 (only the pre-existing max_apply_per_pass baseline failure remains)
+
+New tests added for this fix round (all GREEN):
+  - test_gig_judge.py: +13 tests for REQ-006/008/009 prompt changes (pass_id required, nav-helper
+    instruction, rejection warning, <untrusted_claim> wrapping) and +7 tests for gate_verdict
+    (REQ-007/PROP-009) — 34/34 total in this file.
+  - test_gig_reality_gate.py (new): 12/12 — the adversary's explicit case ("fake verdict:true + empty
+    trajectory -> script must NOT accept it as a clean pass") plus stale-row exclusion, cross-pass_id
+    isolation, sufficient-evidence acceptance, false-verdict-never-upgraded, unparseable-input safety.
+  - cdp-nav-snapshot.test.mjs (new): 8/8 — Page.navigate present, load-wait present
+    (loadEventFired/readyState), screenshot capture, trajectory append, get_tab() defined IN the file
+    (no dangling ~/gig/cdp_lib48.py cross-repo reference), and cdp_snapshot.py's own dangling comment
+    fixed.
+  - gig-reality-verify.test.mjs: +5 tests — PASS_ID generated before the actual `"$CLAUDE" -p` spawn
+    line, pass_id threaded into build_verifier_prompt, gig_reality_gate.py invoked (not a bare
+    parse-and-trust), RUN_START timestamp captured, required_count derived from
+    DEFAULT_GROUND_TRUTH_URLS (not hardcoded).
+
+Command: python3 test_gig_judge.py -> 34 passed 0 failed
+Command: python3 test_gig_reality_gate.py -> 12 passed 0 failed
+Command: bash -n gig_reality_verify.sh / auditor.sh -> both OK
+Command: python3 -m py_compile scripts/cdp_nav_snapshot.py scripts/gig_reality_gate.py gig_judge.py -> all compile
