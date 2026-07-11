@@ -341,21 +341,26 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 - 「稼いだ」= external:true 実 tx を on-chain で自分が確認時のみ
 
 ## スコープ
-~/anicca の crypto 2ループだけ。gig/article/CEO(系統1)は対象外。
+~/anicca の crypto = **2インスタンス(claude-p / Franklin)、各々が同じ `runtime/loop/index.mjs`（always-act-router）で「earn-menu から毎 wake 1つ選んで trade」するループ**。pm 専用ではない。メニュー(registry.json `status:live`) = pm(earn/polymarket-trade) / sol(earn/sol-trade) / hl(hl_trade) / yield / x402_sell / token_launch / gig / lending / spawn / clip / video / cook。gig/article/CEO(系統1=profitable-claude)は対象外。
 
 ## TO-BE ASCII
 ```
  DAIS = loop の外（入力しない・GO 不要、crypto 増加を見るだけ）
  ═══════════════════════════════════════════════ 金だけ外へ
- ~/anicca crypto 経済（自 wallet）
- ┌── loop① pm-earner (claude-p, 0x904B pUSD) ──┐  ┌── loop② Franklin (8Fpqd, free/glm-4.7) ──┐
- │ 10分毎: redeem→arb(両側BUY=ロック益)→MM      │  │ 2分毎: signal で franklin-trading 売買     │
- │  ▼ 自分で verify(prompt+tool):              │  │  ▼ 自分で verify(prompt+tool):           │
- │    on-chain で pUSD 増えたか自分の目で       │  │    on-chain external:true を自分の目で    │
- │  ▼ 未達/嘘 → self-fix(別ctx) → 根因fix       │  │  ▼ 未達 → self-fix → 根因fix             │
- └──────────────────────────────────────────────┘  └────────────┬──────────────────────────┘
-                                        稼ぎ余剰→lending→Akash spawn→Franklin clan 拡大
+ ~/anicca crypto 経済（同じ index.mjs、instance 毎に別 wallet/home）
+ ┌── loop① agent-economy-loop (claude-p) ──┐  ┌── loop② Franklin (自Sol wallet 8Fpqd) ──┐
+ │ 各wake: earn-menu 全体を見て1つ選ぶ       │  │ 各wake: 同じ menu から1つ選ぶ            │
+ │  {pm / sol / hl / yield / x402 / gig /   │  │  {pm / sol / hl / …}                    │
+ │   lending / spawn / clip / video / cook} │  │                                        │
+ │  ▼ 選んだ base agent が自分で分析→trade    │  │  ▼ 同左（自 Solana wallet で自走）        │
+ │    (待ちの原因=金欠/gas欠を除去済なら撃つ)  │  │                                        │
+ │  ▼ ★verify(prompt+tool)★:                │  │  ▼ ★同じ verify★                        │
+ │    on-chain external:true を自分の目で     │  │    on-chain external:true を自分の目で   │
+ │  ▼ 未達/嘘 → self-fix(別ctx) → 根因fix     │  │  ▼ 未達 → self-fix → 根因fix            │
+ └───────────────────────────────────────────┘  └────────────┬──────────────────────────┘
+                                        稼ぎ余剰→lending→他citizen→Akash spawn→clan 拡大
  ─ 両 loop 人間ゼロ自走。verify は各 loop 自身が prompt+tool で実 side-effect を見る ─
+ ※ 別に pm-earner standalone cron(polymarket専用,bundle_arb.py+market_maker.py,10分毎)が存在=混線。要整理(フェーズ1で解決) ─
 ```
 
 ## ATOMIC TODO（1行=1アクション、順序厳守、`[ ]`/`[x]`）
@@ -365,19 +370,19 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 - [x] 0b. Opus session /loop を停止する（daily loop は全て Sonnet/free-model、Opus 常駐は不要）✅済(2026-07-11)
 - [ ] 0c. 4ループ(agent-economy/franklin/franklin2/automaton)が互いに依存しないことを確認する（各自 wallet/home/state が独立）
 
-### フェーズ1: 今すぐ稼がせる（壊れを直す。edge でなく「壊れ」が原因）
-- [ ] 1. pm-earner の pUSD を $5 超に top-up する（$5 CLOB 床凍結の解除）
-- [ ] 2. pm-earner を1パス実行する（arb/MM が発注するか）
+### フェーズ1: 待ちを殺して毎日 trade（「壊れ」=金欠/gas欠 を除去。edge の trade/hold 判断は base agent に残す＝無駄撃ちで溶かさない。取引所の最小注文ルールは曲げない）
+- [ ] 1. pm の $5床凍結を解除する（pUSD を $5 超に top-up。$5=Polymarket CLOB 最小注文=取引所ルール、曲げず金を入れて撃てる状態に）
+- [ ] 2. pm を1パス実行する（arb/MM が実発注するか）
 - [ ] 3. pm の pUSD 増減を on-chain で自分の目で確認する
 - [ ] 4. Franklin の Solana wallet に SOL gas を送る（gas ゼロで swap 不可の解除）
-- [ ] 5. Franklin sol-trade を1 wake 実行する（signal で実 trade するか）
+- [ ] 5. Franklin sol-trade を1 wake 実行する（金欠/gas欠が消えて実 trade するか。no-edge WAIT は正常）
 - [ ] 6. Franklin の external:true を on-chain で自分の目で確認する
 
 ### フェーズ2: verify+self-heal を loop 自身に埋め込む（babysit ゼロ）
 - [ ] 7. loop① の wake prompt に「verify-yourself」節を足す（report禁止・tool で実 side-effect・external:true を on-chain）
 - [ ] 8. loop② の wake prompt に同じ verify-yourself 節を足す
 - [ ] 9. verify FAIL 時に self-fix を spawn する trigger を確実化する
-- [ ] 10. Opus session /loop を停止する
+（旧 task10「Opus /loop 停止」は 0b で完了済み＝削除）
 
 ### フェーズ3: 増殖・可視化（稼ぎ確認後）
 - [ ] 11. P5 spawn の adversary iter3 を回す
