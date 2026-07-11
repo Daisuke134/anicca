@@ -23,6 +23,8 @@
 | PROP-006 | Non-franklin/PORT-resolution behavior from the pre-existing `daemon-script-franklin-routing.test.mjs` suite is untouched (regression) | 0 | true | pre-existing node:test file, re-run unmodified where possible |
 | PROP-007 | `instanceHostLabel()` (telemetry-post-franklin.mjs) maps `franklin`/unset → `"Franklin"`, `franklin2` → `"Franklin2"`, `franklin<N>` → `"Franklin<N>"` (impl-review iteration-1 FIND-001 fix) | 0 | true | node:test, source-text function extraction + `node --eval` subprocess |
 | PROP-008 | The franklin-branch telemetry `pkill -f` pattern in `anicca-daemon.sh` step 3 includes `$ANICCA_HOME`, and no unscoped script-path-only pkill pattern remains (impl-review iteration-1 FIND-002 fix) | 0 | true | node:test, static source-text regex assertion |
+| PROP-009 | The dead `pkill -f "FRANKLIN_TELEMETRY_LOOP"` line (targeted an exported env var, which `pkill -f` can never match against argv) is absent from `anicca-daemon.sh` step 3; the unrelated `export FRANKLIN_TELEMETRY_LOOP=1` on the poster subshell remains untouched (impl-review iteration-2 FIND-002 fix) | 0 | true | node:test, static source-text regex assertion |
+| PROP-010 | The franklin-branch telemetry `pkill -f` pattern, extracted VERBATIM from `anicca-daemon.sh` source text and expanded per the real `$ANICCA_HOME` value of each live instance, matches ONLY that instance's own new-format poster argv — never a sibling instance's, never a legacy markerless argv, and never `skills/earn/sol-trade/run.sh`'s own flagless one-shot telemetry POST invocation. No unscoped, end-anchored legacy-cleanup pkill pattern exists anywhere in the file (impl-review iteration-3 FIND-001/FIND-002 fix — this is the property whose absence let iteration-2's now-removed legacy sweep cross-kill sol-trade's one-shot caller on every restart) | 1 | true | node:test, verbatim source-text pattern extraction + grep -E ERE simulation |
 
 ## Verification Strategy
 
@@ -42,6 +44,24 @@
   pure string-mapping function of bounded cardinality (Tier 0, direct assertion suffices), and the
   `pkill` scoping fix is a static source-text regex assertion (Tier 0, no execution of the actual `pkill`
   needed or wanted in a test).
+- PROP-009 (impl-review iteration-2 fix) is Tier 0: a static absence assertion over source text (dead
+  code removal, no execution semantics to verify).
+- PROP-010 (impl-review iteration-3 fix) is Tier 1: it enumerates a representative argv table (both
+  live instances' new-format posters, a legacy markerless argv, and `sol-trade/run.sh`'s own one-shot
+  invocation) and feeds it through `grep -E` using the pkill pattern extracted VERBATIM (no
+  re-escaping) from the real source text, so the test's ERE evaluation matches exactly what `pkill -f`
+  itself would evaluate at runtime — this is what iteration-2's independently-re-escaped copy of the
+  pattern failed to guarantee (FIND-002 iter3).
+- **Migration edge case (impl-review iteration-3 FIND-001)**: the legacy-poster migration described in
+  behavioral-spec.md REQ-002(b) "Deployment / migration runbook" is explicitly OPERATIONAL, not code —
+  it is NOT a proof obligation in this table, and deliberately so. The property it depends on (telling
+  a long-lived legacy poster LOOP apart from a short-lived legitimate one-shot caller like
+  `sol-trade/run.sh`'s) is a judgment about process lineage/lifetime that no fixed argv pattern can
+  encode without risking exactly the cross-kill regression FIND-001 found (iteration-2's now-removed
+  sweep). Formalizing "the operator followed the runbook correctly" is out of scope for this feature's
+  automated test suite; PROP-010 instead formally guarantees the narrower, code-level property that
+  the removal was correct: the scoped pkill pattern that DOES remain in code never matches that
+  one-shot caller.
 
 ## Test Execution Convention
 
@@ -57,6 +77,17 @@ call-site wiring (PROP-005, PROP-008).
 longer excluded by convention) — these 4 files are exactly the regression protection for the bug this
 feature fixes (a future edit reintroducing the literal `"$INSTANCE" = "franklin"` comparison, or
 reintroducing an unscoped telemetry `pkill`/hardcoded `host` label, is now caught automatically by
-`npm test`/CI, not only by someone remembering to run these files by hand). `npm test`'s baseline grows
-from 183 to 207 (183 + 18 pre-existing franklin/plist tests + 1 new FIND-002 static test + 5 new
-`telemetry-host-label.test.mjs` tests) — verified green in this worktree.
+`npm test`/CI, not only by someone remembering to run these files by hand). `npm test`'s baseline grew
+from 183 to 207 at iteration-1 (183 + 18 pre-existing franklin/plist tests + 1 new FIND-002 static test
++ 5 new `telemetry-host-label.test.mjs` tests).
+
+**impl-review iteration-2**: `daemon-script-franklin2-identity.test.mjs` grew from 9 to 12 tests (+1
+FIND-001 legacy-cleanup-pkill-positioned test, +1 FIND-002 dead-env-var-pkill-removed test, +1
+FIND-001 match-matrix simulation test) — `npm test` baseline grew from 207 to 210.
+
+**impl-review iteration-3** (this iteration): `daemon-script-franklin2-identity.test.mjs` stays at 12
+tests — the FIND-001 legacy-cleanup-pkill-positioned test (iteration-2) is REPLACED in place by a
+regression guard asserting that pkill is absent and exactly one `telemetry-post-franklin.mjs` pkill
+line remains, and the FIND-001 match-matrix test (iteration-2) is REWRITTEN in place to extract its
+pattern verbatim from source and add a sol-trade non-match row (net test count unchanged: 12 → 12).
+`npm test` baseline stays at 210 (210 → 210) — verified green in this worktree.

@@ -132,20 +132,19 @@ if is_franklin_instance "$INSTANCE"; then
   # unscoped pattern would match both (confirmed: two live launchd jobs, ai.anicca.franklin-loop and
   # ai.anicca.franklin2-loop, each with their own distinct $ANICCA_HOME).
   pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME" 2>/dev/null || true
-  # franklin2-daemon-identity impl-review iteration-2 FIND-001 fix: ONE-TIME migration sweep for
-  # "legacy" poster processes launched by a daemon.sh version BEFORE commit 29023a55 added the
-  # --home argv marker above. The scoped pkill on the line above can never match a legacy process
-  # (it permanently lacks the "--home $ANICCA_HOME" substring), which would otherwise orphan it
-  # forever as a duplicate poster on the FIRST self-update+restart that pulls this commit. This
-  # pattern is end-anchored (ERE `$`, dot escaped since pkill uses ERE) so it matches ONLY an argv
-  # that ends exactly at the script path (the legacy shape) — a new-format invocation always has a
-  # trailing " --home <path>" and so never matches this pattern. It is NOT instance-scoped: it may
-  # cross-kill a sibling Franklin instance's own legacy poster once, but that self-heals within one
-  # wake (~120s, that sibling's own next loop iteration or restart re-launches it) and is strictly
-  # better than the permanent duplication it prevents. Safe to delete once both live Franklin
-  # instances have restarted at least once on this commit or later (no legacy-argv poster can exist
-  # anymore).
-  pkill -f "dashboard/telemetry-post-franklin\.mjs$" 2>/dev/null || true
+  # franklin2-daemon-identity impl-review iteration-3 FIND-001 fix: the iteration-2 one-time,
+  # unscoped, end-anchored legacy-poster-cleanup pkill that used to run here is REMOVED. It was
+  # meant to catch ONLY a stale poster LOOP left running by a pre-29023a55 daemon.sh (no --home argv
+  # marker), but its end-anchored pattern also matched skills/earn/sol-trade/run.sh's own flagless,
+  # `timeout 20`-bounded, short-lived one-shot telemetry POST — a currently-live, unmodified caller
+  # of this identical script that never carries a --home marker and never will — on EVERY invocation,
+  # forever, not only during a transient migration window. That made every daemon restart a chance to
+  # SIGTERM a legitimate, in-flight, non-legacy process belonging to this SAME instance's own
+  # sol-trade pass. No argv-shape pattern can safely tell "stale long-lived loop" apart from
+  # "legitimate short-lived one-shot" here, so this is no longer done in code at all. The one-time
+  # migration of any still-running pre-29023a55 legacy poster LOOP is now a documented, ONE-TIME
+  # OPERATOR step performed once per instance at deploy — see behavioral-spec.md REQ-002(b)
+  # "Deployment / migration runbook".
   ( export FRANKLIN_TELEMETRY_LOOP=1; while true; do node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" --home "$ANICCA_HOME" >>"$LOGDIR/poster.log" 2>&1; sleep 120; done ) &
 else
   pkill -f "dashboard/telemetry-poster.mjs" 2>/dev/null || true
