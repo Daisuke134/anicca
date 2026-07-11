@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "The money-critical constant DESTINATION_AKASH_ADDRESS (\"akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523\") is defined as an independent literal in BOTH bin/spawn-funding-swap.mjs (line 35) and lib/real-clients/base-signer.mjs (line 73), and BASE_CHAIN_ID/BASE_USDC_DENOM/AKASH_CHAIN_ID/AKASH_UAKT_DENOM are independently re-literal'd a THIRD time in lib/driver.mjs (lines 24-27). This directly violates lib/pure/constants.mjs's own documented single-choke-point discipline ('Every value here is a literal, defined ONCE, in this one file... No second definition of any of these values is permitted anywhere else in this feature's codebase') -- a discipline this sprint's own new money-critical literal (DESTINATION_AKASH_ADDRESS) does not follow. The module comments acknowledge and justify the duplication ('duplicated here... because the frozen signAndBroadcast interface receives only {amount, nonce, sourceAddress, destinationAkashAddress}'), but the interface constraint only explains why base-signer.mjs needs its OWN comparison value -- it does not explain why that value is a hand-copied literal instead of an import from a single shared constants module. A future edit to one copy without the other fails closed (signAndBroadcast would refuse to sign) rather than fund-loss, but it is a real, easily-triggered reliability defect in the highest-risk code path with zero test coverage for cross-file consistency.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/real-clients/base-signer.mjs",
+    "lineRange": "69-73",
+    "snippet": "const DESTINATION_AKASH_ADDRESS = \"akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523\";\n// duplicated verbatim in bin/spawn-funding-swap.mjs:35 and (chain-id/denom literals) lib/driver.mjs:24-27, never imported from one shared source"
+  },
+  "routeToPhase": "impl"
+}

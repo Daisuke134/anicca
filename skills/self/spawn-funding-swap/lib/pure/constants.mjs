@@ -25,3 +25,23 @@ export const MIN_GAS_WEI = 1_000_000_000_000_000n;
 // 50 bps (0.5%) — tight enough to reject a materially worse-than-quoted fill while tolerating ordinary
 // multi-hop IBC rounding/fee dust, per behavioral-spec.md's REQ-007 reasoning.
 export const TOLERANCE_BPS = 50;
+
+// ==== Sprint-2 additions (REQ-013..REQ-018) — FIND-005 fix (impl review iter1) ====
+// Every one of these was previously an INDEPENDENT hand-copied literal in TWO OR THREE separate files
+// (bin/spawn-funding-swap.mjs, lib/driver.mjs, lib/real-clients/base-signer.mjs), violating this file's
+// own single-choke-point discipline stated above. Now defined ONCE here; every one of those files
+// imports from here instead.
+
+// DESTINATION_AKASH_ADDRESS — REQ-009/REQ-018: the single colony-wide "anicca-akash" keyring's OWN
+// address (verified against the identical `akash keys show anicca-akash -a` fixture literal in
+// skills/self/spawn/scripts/test-akt-treasury.sh and test-deploy-akash.sh). A receive-side destination,
+// never overridable via env/CLI/genome/config.
+export const DESTINATION_AKASH_ADDRESS = "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523";
+
+// Skip API route parameters for this feature's ONE currently-viable source/dest pair (REQ-002/REQ-016),
+// confirmed live 2026-07-11 (behavioral-spec.md). The route response itself (validateRoute) remains the
+// source of truth every invocation, never assumed.
+export const BASE_CHAIN_ID = 8453;
+export const BASE_USDC_DENOM = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+export const AKASH_CHAIN_ID = "akashnet-2";
+export const AKASH_UAKT_DENOM = "uakt";

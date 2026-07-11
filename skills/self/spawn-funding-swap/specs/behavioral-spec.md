@@ -153,6 +153,27 @@ broadcast EXACTLY ONE real Base-chain transaction — the `evm_tx` returned by S
   prior approval-settlement did not actually land): THE SYSTEM SHALL throw rather than attempt a SECOND
   approve transaction inline (which would consume an extra nonce and break the driver's single-nonce
   crash-recovery tracking — see the module's own header comment for the full nonce-tracking rationale).
+- **(impl review iter1, FIND-001 CRITICAL fix / PROP-050)** Skip's `/v2/fungible/msgs` response is a
+  third-party HTTP body, NEVER trusted on faith for the actual value-moving contents of `evm_tx`: THE
+  SYSTEM SHALL decode and bound-check `evm_tx` against the driver-supplied intent BEFORE ever signing —
+  (a) `evm_tx.data` MUST NOT decode as a bare ERC-20 `transfer`/`transferFrom` selector (this route's
+  live-confirmed shape is always a router/entry-point contract call, per Skip's own EVM Transactions doc:
+  a bare transfer selector needs no approval at all and could move up to the entire wallet balance); (b)
+  `evm_tx.to` MUST exactly equal the sole `required_erc20_approvals[0].spender` and MUST NOT be the USDC
+  contract itself (self-consistency allowlist, derived from the live route response, never a hardcoded
+  Skip contract-address literal); (c) `required_erc20_approvals[0].amount` MUST exactly equal the
+  driver-supplied `amount` parameter (bigint equality, not merely "current allowance covers it") and MUST
+  NOT exceed `MAX_SWAP_BASE_UNITS` (an absolute, independent ceiling, reusing `APPROVAL_CAP_BASE_UNITS`'s
+  $100 bound); (d) `evm_tx.value` MUST be exactly `0n`. THE SYSTEM SHALL throw (never broadcast) on any
+  violation.
+- **(impl review iter1, FIND-003, documented assumption)** `getNextNonce()`'s approval-probe uses a small
+  fixed `APPROVAL_PROBE_AMOUNT_BASE_UNITS` (1 USDC) to learn which spender contract to grant an allowance
+  to, independent of the real swap amount (unknown at `getNextNonce()` time). Skip's spender-contract
+  selection for a route COULD in principle vary by amount tier: IF that happens, THE SYSTEM SHALL fail
+  CLOSED (refuse to sign, via the existing allowance check AND the new self-consistency gate above) —
+  this is an accepted denial-of-service risk (this feature's funding mechanism stops working until the
+  probe/real spenders agree again), NEVER a fund-loss risk (no tx is ever signed/broadcast against a
+  spender that was not actually granted the on-chain-capped allowance).
 - `ANICCA_HOME` unset when this module's own key-resolution is invoked: THE SYSTEM SHALL throw (mirrors
   `resolve-swap-identity.mjs`'s own fail-closed gate; belt-and-suspenders since the CLI's REQ-009 check
   already guarantees this in production).
@@ -168,6 +189,16 @@ broadcast EXACTLY ONE real Base-chain transaction — the `evm_tx` returned by S
 - The Cosmos-SDK addresses passed into Skip's `address_list` for noble-1/osmosis-1 are ALWAYS derived
   from this SAME module's own resolved private key (REQ-013) — never a hardcoded/random placeholder
   string, so any relay-failure `recover_address` refund remains recoverable by this instance.
+- **(impl review iter1, PROP-050)** `signAndBroadcast` NEVER broadcasts an `evm_tx` whose decoded/verified
+  amount, destination contract, or native value diverge from the driver-supplied intent (see the new
+  edge case above) — proven via the injected `walletClientFactory` spy in this module's own tests:
+  `walletClientFactory.sent.length` stays `0` on every one of PROP-050's refusal-path tests, and is
+  exactly `1` on its honest-tx path test.
+- **(impl review iter1, FIND-004)** When the caller (driver.mjs) supplies `expectedAmountOutUakt`/
+  `expectedTxsRequired` (its own REQ-002-validated quote), `signAndBroadcast`'s own necessary route
+  re-fetch is reconciled against them and refuses to sign if they diverge — this parameter pair is
+  OPTIONAL (omitting it preserves this module's prior, narrower guarantee for any caller that cannot
+  supply it), but driver.mjs's own `ensureLeg0Submitted` ALWAYS supplies it.
 
 ## Non-functional requirements (sprint-2)
 
@@ -185,3 +216,34 @@ broadcast EXACTLY ONE real Base-chain transaction — the `evm_tx` returned by S
   spender contract is capped at a small, fixed literal (`APPROVAL_CAP_BASE_UNITS = 100_000_000n`, $100),
   never `MAX_UINT256` — mirrors `lib/pure/constants.mjs`'s own `SWAP_MAX_USD=20` bounded-literal
   philosophy.
+- **NFR-8 (impl review iter1, FIND-006, documented assumption)**: the nonce-tracking crash-recovery
+  guarantee (base-signer.mjs's own header comment, "Nonce-tracking / ERC-20 approval design") is provably
+  correct ONLY under the assumption that this feature's Base wallet's on-chain nonce space is NEVER
+  advanced by any OTHER concurrent process sharing the SAME `ANICCA_HOME`-resolved private key. REQ-010's
+  canonical lock (`ledgerStore.withLock(destinationAkashAddress, ...)`) guards against a second
+  CONCURRENT swap run of THIS feature, but does nothing to serialize this wallet's nonce space against
+  any other Base-signing activity elsewhere in the colony for the same instance's key. This is currently
+  safe because, per base-signer.mjs's own module header, every OTHER Base-chain signer in this repo
+  (`skills/economy/gig/lib/escrow.mjs`) only ever signs a GASLESS EIP-3009 authorization — no other
+  on-chain-nonce-consuming Base signer currently exists for this key. This assumption is NOT enforced by
+  any runtime check (e.g. verifying the pending nonce hasn't moved between `getNextNonce()`'s approval-
+  settlement and the driver's own durable write); a future colony change (a second skill reusing this
+  same key for a real on-chain tx) would silently break this guarantee and MUST re-verify this NFR before
+  shipping.
+
+## Spec changelog
+
+- **sprint-2 impl iter1 fixes FIND-001..007** (impl review iteration 1, findings closed): FIND-001
+  (CRITICAL, PROP-050) — `signAndBroadcast` now decodes+verifies the actual signed tx amount/destination/
+  value against intent before broadcasting, rather than trusting Skip's HTTP response; FIND-002 — PROP-050
+  closes the proof-obligation gap this finding identified; FIND-003 — the probe-vs-real spender assumption
+  is now documented (REQ-018 edge cases) and tested (PROP-051), fail-closed confirmed; FIND-004 —
+  `signAndBroadcast` now accepts optional `expectedAmountOutUakt`/`expectedTxsRequired` and reconciles its
+  own route re-fetch against driver.mjs's already-validated REQ-002 quote; FIND-005 — `DESTINATION_AKASH_
+  ADDRESS`/`BASE_CHAIN_ID`/`BASE_USDC_DENOM`/`AKASH_CHAIN_ID`/`AKASH_UAKT_DENOM` are now defined once in
+  `lib/pure/constants.mjs` and imported everywhere, closing the cross-file hand-copied-literal drift risk;
+  FIND-006 — the wallet-global-nonce-ownership assumption is now documented as NFR-8; FIND-007 — PROP-049's
+  scan now actually implements the "no bare `createRealXxx()`" check its own description claimed (plus a
+  string-literal-aware comment-stripper fix discovered while implementing it), and the previously-bare
+  call sites (2 in base-signer.test.mjs, 2 in relay-poller.test.mjs) now inject an explicit throw-guard
+  `fetchImpl`.

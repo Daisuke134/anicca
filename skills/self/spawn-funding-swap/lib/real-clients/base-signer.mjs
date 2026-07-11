@@ -43,46 +43,150 @@
 // been sent yet), and only returns the nonce AFTER any needed approval has landed -- so the nonce it
 // returns (and the ledger durably records) is always the swap tx's own, real, exclusive nonce.
 import { privateKeyToAccount } from "viem/accounts";
-import { createPublicClient, createWalletClient, http as viemHttp, encodeFunctionData } from "viem";
+import { createPublicClient, createWalletClient, http as viemHttp, encodeFunctionData, decodeFunctionData } from "viem";
 import { base } from "viem/chains";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import { resolveEvmPrivateKey } from "../../../../earn/lib/resolve-identity.mjs";
 import { deriveCosmosAddress } from "../pure/cosmos-address.mjs";
+import { BASE_CHAIN_ID, BASE_USDC_DENOM, AKASH_CHAIN_ID, AKASH_UAKT_DENOM, DESTINATION_AKASH_ADDRESS } from "../pure/constants.mjs";
 
 const DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
 const SKIP_ROUTE_ENDPOINT = "https://api.skip.build/v2/fungible/route";
 const SKIP_MSGS_ENDPOINT = "https://api.skip.build/v2/fungible/msgs";
 
-// Must equal driver.mjs's own BASE_CHAIN_ID/BASE_USDC_DENOM/AKASH_CHAIN_ID/AKASH_UAKT_DENOM literals
-// (lib/driver.mjs:24-27) -- duplicated here (not imported) because the frozen signAndBroadcast interface
-// receives only {amount, nonce, sourceAddress, destinationAkashAddress}, never the quoteSnapshot/route
-// params driver.mjs already validated, so this module must independently re-derive the same route.
-const BASE_CHAIN_ID = 8453;
-const BASE_USDC_DENOM = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const AKASH_CHAIN_ID = "akashnet-2";
-const AKASH_UAKT_DENOM = "uakt";
+// BASE_CHAIN_ID/BASE_USDC_DENOM/AKASH_CHAIN_ID/AKASH_UAKT_DENOM/DESTINATION_AKASH_ADDRESS are now
+// imported from lib/pure/constants.mjs (FIND-005 fix, impl review iter1) -- previously each was an
+// independent hand-copied literal here, in lib/driver.mjs, and (for DESTINATION_AKASH_ADDRESS) in
+// bin/spawn-funding-swap.mjs too. Only pure/constants.mjs defines them now; every one of these files
+// imports from there. This module still needs its OWN re-derivation of the route/evm_tx (the frozen
+// signAndBroadcast interface receives no quoteSnapshot param), but the LITERAL VALUES it re-derives
+// against are single-sourced.
 const NOBLE_CHAIN_ID = "noble-1";
 const OSMOSIS_CHAIN_ID = "osmosis-1";
-
-// Must equal bin/spawn-funding-swap.mjs's own DESTINATION_AKASH_ADDRESS literal (the single colony-wide
-// "anicca-akash" keyring address, never overridable) -- duplicated for the same reason as above
-// (getNextNonce() has no destinationAkashAddress parameter to work from; signAndBroadcast defensively
-// verifies its own destinationAkashAddress argument matches this constant before ever signing).
-const DESTINATION_AKASH_ADDRESS = "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523";
 
 // A small probe amount used ONLY by getNextNonce() to learn which spender contract this route's evm_tx
 // would require an ERC-20 approval for -- decoupled from the real swap amount (unknown at getNextNonce()
 // time) because CCTP's spender contract is determined by the ROUTE/bridge choice, not the amount.
+//
+// FIND-003 (impl review iter1, documented assumption, not fixed this iteration -- accepted risk): Skip's
+// spender-contract selection for a route COULD in principle vary by amount tier (a different bridge/venue
+// chosen for a 1-USDC probe vs. the real, larger swap amount). If that ever happens, the allowance
+// getNextNonce() settles targets the wrong spender, and signAndBroadcast's own allowance check (which
+// correctly refuses to attempt a second, nonce-colliding approve -- see PROP-047) throws on every real
+// invocation: a silent, fail-CLOSED denial-of-service (this feature's funding mechanism stops working),
+// NEVER a fund-loss mode (no tx is ever signed/broadcast with a mismatched spender; signAndBroadcast's
+// verifyEvmTxAgainstIntent below additionally REQUIRES evm_tx.to to equal the spender the on-chain
+// allowance was actually granted to, so even a wrong-spender probe cannot cause a fund-unsafe broadcast --
+// it can only ever cause a refusal). This is exercised by PROP-051's test in base-signer.test.mjs
+// ("getNextNonce()'s probe-vs-real spender mismatch fails closed via signAndBroadcast's allowance/
+// self-consistency checks, never signs against a mismatched spender").
 const APPROVAL_PROBE_AMOUNT_BASE_UNITS = 1_000_000n; // 1 USDC
 // Bounded allowance cap -- never MAX_UINT256 (mirrors lib/pure/constants.mjs's SWAP_MAX_USD=20 "small,
 // bounded literal" philosophy: a compromised spender contract can drain at most this much, not the whole
 // wallet). $100 gives headroom for many swaps at SWAP_MAX_USD=20 before a re-approval is ever needed.
 const APPROVAL_CAP_BASE_UNITS = 100_000_000n; // $100
 
+// MAX_SWAP_BASE_UNITS -- FIND-001 fix (CRITICAL, impl review iter1, PROP-050). The ABSOLUTE, independent
+// ceiling signAndBroadcast enforces on the decoded USDC amount a signed tx may move, regardless of what
+// `amount` parameter it was called with (defense in depth: a buggy/compromised CALLER of this module can
+// never cause it to sign a tx moving more than this). Deliberately reuses APPROVAL_CAP_BASE_UNITS's own
+// $100 bound/rationale rather than introducing a second, independently-tunable literal -- the two values
+// protect the exact same invariant (this wallet's key can never authorize moving more than $100 of USDC
+// in one signed transaction, full stop), so keeping them equal (not merely "smaller than") means the
+// approval cap ITSELF is always the binding constraint, never silently overridden by a separate ceiling.
+const MAX_SWAP_BASE_UNITS = APPROVAL_CAP_BASE_UNITS;
+
 const ERC20_ALLOWANCE_ABI = [{ type: "function", name: "allowance", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ name: "", type: "uint256" }] }];
 const ERC20_APPROVE_ABI = [{ type: "function", name: "approve", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] }];
+// FIND-001 fix -- the bare ERC-20 transfer/transferFrom selectors this route's evm_tx.data must NEVER
+// encode (Skip's own EVM Transactions doc, docs.skip.build/go/advanced-transfer/evm-transactions,
+// verified live 2026-07-11: "data... will be interpreted according to the ABI of the contract... If this
+// field is empty, it means the transaction is sending funds to an address" -- this feature's live-
+// confirmed CCTP multi-hop route is ALWAYS a contract call into a router/entry-point contract, which
+// itself performs any USDC movement via transferFrom against an on-chain-capped allowance; a bare
+// transfer()/transferFrom() selector in evm_tx.data is therefore NEVER this route's legitimate shape).
+const ERC20_TRANSFER_SELECTOR = "0xa9059cbb"; // transfer(address,uint256)
+const ERC20_TRANSFER_FROM_SELECTOR = "0x23b872dd"; // transferFrom(address,address,uint256)
+const ERC20_TRANSFER_ABI = [{ type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] }];
+const ERC20_TRANSFER_FROM_ABI = [{ type: "function", name: "transferFrom", stateMutability: "nonpayable", inputs: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] }];
+
+/**
+ * verifyEvmTxAgainstIntent -- FIND-001 (CRITICAL) / FIND-002 fix, PROP-050 (Tier-2, money-safety-
+ * critical). Decodes and bound-checks the ACTUAL evm_tx Skip returned against the driver-supplied intent
+ * BEFORE signAndBroadcast ever signs anything. Previously (iter1 finding) this module trusted evm_tx.to/
+ * data/value completely; every gate below is independent and ALL must pass, fail-closed (throw) on any
+ * violation:
+ *
+ *  1. evm_tx.data must NOT decode as a bare ERC-20 transfer()/transferFrom() call -- this feature's
+ *     route shape is always a router/entry-point contract call (see ERC20_TRANSFER_SELECTOR comment
+ *     above); a bare transfer selector is the exact "direct wallet-authorized movement, bypasses any
+ *     approval cap entirely" attack FIND-001 identified (up to the ENTIRE USDC balance, not bounded by
+ *     APPROVAL_CAP_BASE_UNITS/SWAP_MAX_USD) and is refused unconditionally, regardless of `to`.
+ *  2. evm_tx.to must be a single, non-USDC-contract address that EXACTLY equals the sole entry in
+ *     evm_tx.required_erc20_approvals[].spender. This allowlist is deliberately NOT a hardcoded Skip
+ *     contract-address literal (Skip's own deployed router/entry-point address can differ across route
+ *     variants/redeployments, and a wrong hardcoded guess would either falsely refuse legitimate swaps or
+ *     -- worse -- be silently stale); instead it is derived FROM the live route response itself, self-
+ *     consistently: the only contract this wallet's key is ever asked to call is the exact contract this
+ *     same code path also grants a bounded on-chain ERC-20 allowance to (APPROVAL_CAP_BASE_UNITS, $100,
+ *     enforced by the existing allowance-check loop below). Since USDC can only leave this wallet via
+ *     that contract's own transferFrom (never a raw transfer -- gate 1 above already forbids that), the
+ *     on-chain allowance cap is what actually, structurally bounds this contract's total spend authority,
+ *     regardless of what its own internal calldata/logic does.
+ *  3. required_erc20_approvals[].amount (the exact amount that spender is being authorized to pull, and
+ *     therefore the only amount it CAN pull via transferFrom once approved) must equal the driver-
+ *     supplied `amount` parameter EXACTLY (bigint ===) -- not merely "the current on-chain allowance
+ *     covers it" (the pre-existing, insufficient check) -- and must not exceed MAX_SWAP_BASE_UNITS. This
+ *     closes the "Skip quote re-priced/rounded/cached-stale, or was tampered with, and this module signed
+ *     whatever amount it said" gap: even a compromised or buggy Skip response cannot cause this module to
+ *     authorize moving anything other than the exact, capped, intended amount.
+ *  4. evm_tx.value (native ETH) must be exactly 0n -- this feature's route is USDC-only; there is no
+ *     legitimate reason for a non-zero native-value transfer, so any non-zero value is refused.
+ */
+function verifyEvmTxAgainstIntent(evmTx, amount) {
+  const dataHex = typeof evmTx.data === "string" ? evmTx.data : "";
+  const selector = dataHex.slice(0, 10).toLowerCase();
+  if (selector === ERC20_TRANSFER_SELECTOR || selector === ERC20_TRANSFER_FROM_SELECTOR) {
+    let decodedArgs = null;
+    try {
+      const abi = selector === ERC20_TRANSFER_SELECTOR ? ERC20_TRANSFER_ABI : ERC20_TRANSFER_FROM_ABI;
+      decodedArgs = decodeFunctionData({ abi, data: evmTx.data }).args;
+    } catch {
+      // Decoding is best-effort (only used to enrich the thrown error message) -- the selector match
+      // alone is sufficient grounds to refuse, decodable or not.
+    }
+    throw new Error(`base-signer: evm_tx.data encodes a bare ERC-20 transfer/transferFrom call (selector ${selector}${decodedArgs ? `, decoded args ${JSON.stringify(decodedArgs, (_k, v) => (typeof v === "bigint" ? v.toString() : v))}` : ""}) -- never a legitimate shape for this feature's CCTP router route, refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+
+  const approvals = evmTx.required_erc20_approvals || [];
+  if (approvals.length !== 1) {
+    throw new Error(`base-signer: expected exactly ONE required_erc20_approvals entry in evm_tx (got ${approvals.length}) -- a zero-approval evm_tx can move USDC with no on-chain-enforced bound at all, and a multi-approval evm_tx is an unsupported shape; refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+  const [approval] = approvals;
+  if (typeof evmTx.to !== "string" || typeof approval.spender !== "string" || evmTx.to.toLowerCase() !== approval.spender.toLowerCase()) {
+    throw new Error(`base-signer: evm_tx.to (${evmTx.to}) does not equal its own required_erc20_approvals[0].spender (${approval.spender}) -- the contract this tx calls MUST be the same contract this feature grants a bounded ERC-20 allowance to (self-consistency allowlist, money-safety, PROP-050/FIND-001)`);
+  }
+  if (evmTx.to.toLowerCase() === BASE_USDC_DENOM.toLowerCase()) {
+    throw new Error(`base-signer: evm_tx.to is the USDC contract itself (${BASE_USDC_DENOM}) -- never a legitimate call target for this feature's router-based route shape; refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+  if (typeof approval.token_contract === "string" && approval.token_contract.toLowerCase() !== BASE_USDC_DENOM.toLowerCase()) {
+    throw new Error(`base-signer: required_erc20_approvals[0].token_contract (${approval.token_contract}) is not the expected USDC contract (${BASE_USDC_DENOM}) -- refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+  const approvalAmount = BigInt(approval.amount);
+  const intendedAmount = BigInt(amount);
+  if (approvalAmount !== intendedAmount) {
+    throw new Error(`base-signer: required_erc20_approvals[0].amount (${approvalAmount}) does not exactly equal the driver-supplied swap amount (${intendedAmount}) -- refusing to sign a tx authorizing a different amount than intended (money-safety, PROP-050/FIND-001)`);
+  }
+  if (approvalAmount > MAX_SWAP_BASE_UNITS) {
+    throw new Error(`base-signer: required_erc20_approvals[0].amount (${approvalAmount}) exceeds the absolute per-swap ceiling MAX_SWAP_BASE_UNITS (${MAX_SWAP_BASE_UNITS}) -- refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+  const evmValue = BigInt(evmTx.value || 0);
+  if (evmValue !== 0n) {
+    throw new Error(`base-signer: evm_tx.value (${evmValue}) is non-zero -- this feature's USDC-only route never legitimately sends native ETH value; refusing to sign (money-safety, PROP-050/FIND-001)`);
+  }
+}
 
 async function rpcCall(fetchImpl, rpcUrl, method, params) {
   const res = await fetchImpl(rpcUrl, {
@@ -257,9 +361,14 @@ export function createRealBaseSigner({
       return BigInt(nonceHex);
     },
 
-    /** signAndBroadcast — REQ-004/REQ-005/REQ-009. Signs and submits EXACTLY the pre-reserved `nonce`;
-     * never fetches or spends a different nonce (see module header). */
-    async signAndBroadcast({ amount, nonce, sourceAddress, destinationAkashAddress }) {
+    /** signAndBroadcast — REQ-004/REQ-005/REQ-009/REQ-018 + PROP-050 (FIND-001 fix). Signs and submits
+     * EXACTLY the pre-reserved `nonce`; never fetches or spends a different nonce (see module header).
+     * `expectedAmountOutUakt`/`expectedTxsRequired` are OPTIONAL (FIND-004 fix): when the caller (driver.mjs)
+     * supplies them, they are the SAME REQ-002-validated quoteSnapshot values driver.mjs already derived
+     * from its own earlier Skip route fetch -- this module's own necessary re-fetch below (the frozen
+     * interface has no quoteSnapshot param) is reconciled against them and refuses to sign if the two
+     * diverge, rather than silently trusting whichever route happened to come back second. */
+    async signAndBroadcast({ amount, nonce, sourceAddress, destinationAkashAddress, expectedAmountOutUakt, expectedTxsRequired }) {
       const acct = account();
       if (typeof sourceAddress === "string" && sourceAddress.toLowerCase() !== acct.address.toLowerCase()) {
         throw new Error(`base-signer: sourceAddress ${sourceAddress} does not match this signer's own address ${acct.address} -- refusing to sign (money-safety)`);
@@ -269,6 +378,19 @@ export function createRealBaseSigner({
       }
 
       const route = await fetchSkipRoute(fetchImpl, BigInt(amount));
+      // FIND-004 fix: reconcile this module's OWN re-fetched route against the driver's already-validated
+      // REQ-002 quote, when supplied. Fail closed (never sign) if Skip's route re-priced/re-topologized
+      // between driver.mjs's earlier fetch and this one.
+      if (expectedAmountOutUakt !== undefined) {
+        const refetchedAmountOut = BigInt(route.amount_out);
+        if (refetchedAmountOut !== BigInt(expectedAmountOutUakt)) {
+          throw new Error(`base-signer: re-fetched Skip route's amount_out (${refetchedAmountOut}) diverges from the driver's already-validated REQ-002 quote (${expectedAmountOutUakt}) -- refusing to sign against a route that may have re-priced since validation (money-safety, FIND-004)`);
+        }
+      }
+      if (expectedTxsRequired !== undefined && route.txs_required !== expectedTxsRequired) {
+        throw new Error(`base-signer: re-fetched Skip route's txs_required (${route.txs_required}) diverges from the driver's already-validated REQ-002 quote (${expectedTxsRequired}) -- refusing to sign against a route whose leg topology changed since validation (money-safety, FIND-004)`);
+      }
+
       const { nobleAddress, osmosisAddress } = cosmosAddresses();
       const msgsResponse = await fetchSkipMsgs(fetchImpl, route, {
         sourceBaseAddress: acct.address,
@@ -280,6 +402,14 @@ export function createRealBaseSigner({
       if (evmTx.signer_address.toLowerCase() !== acct.address.toLowerCase()) {
         throw new Error(`base-signer: Skip evm_tx.signer_address ${evmTx.signer_address} does not match this signer's own address -- refusing to sign`);
       }
+
+      // PROP-050 / FIND-001 fix (CRITICAL): independently decode+verify the ACTUAL evm_tx contents
+      // (destination contract, encoded amount, native value) against the driver-supplied intent BEFORE
+      // ever touching a wallet client. See verifyEvmTxAgainstIntent's own doc comment for the full
+      // four-gate rationale. This is the ONLY thing standing between "sign whatever Skip's HTTP response
+      // said" and "sign only the exact, capped, intended amount to an allowlisted contract".
+      verifyEvmTxAgainstIntent(evmTx, amount);
+
       for (const approval of evmTx.required_erc20_approvals || []) {
         const have = await currentAllowance(acct.address, approval.spender);
         if (have < BigInt(approval.amount)) {

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "low",
+  "description": "verification-architecture.md's NFR-6/PROP-049 description claims 'every test constructs its client with an injected fetchImpl/execFileImpl/walletClientFactory (never globalThis.fetch/a bare createRealXxx() with no transport override)', but the ACTUAL PROP-049 scan (lib/real-clients/__tests__/test-money-safety-scan.test.mjs) only greps for real-endpoint URL literals in source text -- it never checks for the presence/absence of an injected transport override. In practice, two tests in base-signer.test.mjs (PROP-041's 'getAddress throws when ANICCA_HOME is unset' and PROP-042's 'getAddress returns the address...') construct `createRealBaseSigner({ env: {...} })` with NO fetchImpl override at all. This happens to be safe (getAddress() never reaches the network in this implementation), but the written verification-architecture claim overclaims what the automated scan actually enforces, and nothing would catch a FUTURE test that added a bare createRealXxx() call on a code path that DOES reach the network.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/real-clients/__tests__/test-money-safety-scan.test.mjs",
+    "lineRange": "37-47",
+    "snippet": "test(\"PROP-049: no file under lib/real-clients/__tests__/ contains a real Skip/CoinGecko/Base-RPC/Akash-RPC endpoint literal outside a comment\", () => {\n  // only scans for REAL_ENDPOINT_PATTERNS string literals -- never checks for a missing fetchImpl/execFileImpl/walletClientFactory override\n});\n// cf. lib/real-clients/__tests__/base-signer.test.mjs:108,119 -- createRealBaseSigner({ env: {...} }) with no fetchImpl"
+  },
+  "routeToPhase": "impl"
+}

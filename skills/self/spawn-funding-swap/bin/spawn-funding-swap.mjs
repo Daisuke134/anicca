@@ -22,17 +22,18 @@
 import { runSwap } from "../lib/driver.mjs";
 import { resolveOwnBaseIdentity } from "../lib/resolve-swap-identity.mjs";
 import { resolveSwapStateDir } from "../lib/resolve-swap-state-dir.mjs";
+import { DESTINATION_AKASH_ADDRESS } from "../lib/pure/constants.mjs";
 
 // DESTINATION_AKASH_ADDRESS -- REQ-009/FIND-002 decision: this is the single colony-wide "anicca-akash"
 // keyring's OWN address (verified against the identical `akash keys show anicca-akash -a` fixture
 // literal in skills/self/spawn/scripts/test-akt-treasury.sh and test-deploy-akash.sh). It is a
 // receive-side destination, not a per-instance signer identity, but it is still money-critical (a
 // redirect target) -- mirroring driver.mjs's own documented design for SWAP_MAX_USD/MIN_GAS_WEI/
-// TOLERANCE_BPS ("fixed literals ... never read from process.env/CLI/genome/config"), it is now a
-// single sourced constant, never overridable via env. No test (production or fixture) ever set the
-// removed SPAWN_FUNDING_SWAP_DESTINATION_AKASH_ADDRESS override, so this closes a fund-redirect vector
-// with zero behavior change for any existing caller.
-const DESTINATION_AKASH_ADDRESS = "akash1ms7gr5sxkv33ra353hg5lu8dm7akljdaamj523";
+// TOLERANCE_BPS ("fixed literals ... never read from process.env/CLI/genome/config"), it is a single
+// sourced constant, never overridable via env. No test (production or fixture) ever set the removed
+// SPAWN_FUNDING_SWAP_DESTINATION_AKASH_ADDRESS override, so this closes a fund-redirect vector with zero
+// behavior change for any existing caller. FIND-005 fix (impl review iter1): now imported from
+// lib/pure/constants.mjs (single choke point) instead of being a second hand-copied literal.
 
 const THRESHOLD_AKT = Number(process.env.SPAWN_FUNDING_SWAP_THRESHOLD_AKT || "26");
 const LEG_TIMEOUT_MS = Number(process.env.SPAWN_FUNDING_SWAP_LEG_TIMEOUT_MS || "600000"); // NFR-4: <=10min default

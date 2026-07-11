@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "implementation_correctness",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "The nonce-tracking fix (approval-inside-getNextNonce) is provably correct ONLY under the assumption that this feature's Base wallet's on-chain nonce space is never advanced by any OTHER concurrent process on the same instance (e.g. a different cron/skill sharing the SAME ANICCA_HOME-resolved private key for an unrelated Base transaction). REQ-010's canonical lock (lib/driver.mjs:281, `deps.ledgerStore.withLock(deps.destinationAkashAddress, ...)`) is keyed by destinationAkashAddress, which guards against a second CONCURRENT swap run, but does nothing to serialize this wallet's nonce space against any other Base-signing activity elsewhere in the colony. Since the module's own header comment states 'every other Base-chain signer... only ever signs a GASLESS EIP-3009 authorization' (implying no other on-chain-nonce-consuming Base signer currently exists for this key), this is a documented ASSUMPTION rather than a currently-live bug, but it is neither stated as a spec requirement/NFR nor guarded by any runtime check (e.g. verifying the pending nonce hasn't moved between getNextNonce()'s approval-settlement and the driver's own durable write) -- a future colony change (e.g. a second skill reusing this same key for a real on-chain tx) would silently break the crash-recovery nonce-tracking guarantee this sprint's design depends on.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/real-clients/base-signer.mjs",
+    "lineRange": "32-44",
+    "snippet": "// ==== Nonce-tracking / ERC-20 approval design (money-safety-critical, READ BEFORE MODIFYING) ====\n// ... this module's own header comment documents the nonce-exclusivity assumption but it is never enforced or spec'd as an NFR"
+  },
+  "routeToPhase": "impl"
+}

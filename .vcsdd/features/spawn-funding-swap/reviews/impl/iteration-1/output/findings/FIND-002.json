@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "verification-architecture.md's own proof-obligation table (PROP-030..PROP-049) contains NO property at all covering 'the signed evm_tx actually moves the intended amount to an expected/allowlisted contract' -- the single highest-risk fact about this sprint's HIGHEST-RISK module. PROP-048 ('signAndBroadcast's broadcast call always uses nonce EXACTLY as passed in') is the closest analog and only asserts the NONCE field, never the amount/recipient encoded in evm_tx.data/evm_tx.to. Consequently base-signer.test.mjs (see PROP-048's own test) asserts `walletClientFactory.sent[0].nonce` and `.to === evm_tx.to` (an opaque fixture string) but never decodes or asserts anything about the payload's encoded transfer amount matching the `amount` parameter passed into signAndBroadcast. This is a verification-architecture gap, not merely an implementation gap: even a perfect implementation review cannot be checked against a proof obligation that was never written, and Tier-2 (the tier explicitly reserved for 'the money-safety-critical properties this sprint exists to get right') omits this property entirely while including two lower-risk nonce-ordering properties (PROP-043/047/048). This directly causes FIND-001 to go completely undetected by the sprint's own test suite despite 159/159 tests passing.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/specs/verification-architecture.md",
+    "lineRange": "36-44",
+    "snippet": "| PROP-048 | `signAndBroadcast`'s broadcast call always uses `nonce` EXACTLY as passed in (spy assertion on the injected `walletClientFactory`) | 2 | true | node:test |\n// no PROP anywhere asserts evm_tx.data's encoded transfer amount / evm_tx.to against `amount` or an allowlist"
+  },
+  "routeToPhase": "impl"
+}

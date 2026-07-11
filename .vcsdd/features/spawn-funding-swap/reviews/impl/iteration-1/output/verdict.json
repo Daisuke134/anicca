@@ -1,0 +1,69 @@
+{
+  "sprintNumber": 2,
+  "feature": "spawn-funding-swap",
+  "scope": "sprint-2 real-clients (lib/real-clients/{chain-reader,price-oracle,skip-api-client,base-signer,relay-poller}.mjs + lib/pure/cosmos-address.mjs)",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/chain-reader.mjs", "description": "REQ-014 verified: getAkashBalance/getBaseUsdc/getBaseGas/getBaseTxStatusByNonce match the fake-clients.mjs contract and behavioral-spec.md's raw-bigint/fail-closed requirements exactly"},
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/price-oracle.mjs", "description": "REQ-015 verified: CoinGecko client throws on every invalid-price shape, matches PROP-036"},
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/pure/cosmos-address.mjs", "description": "REQ-013 verified against known-answer bech32 vectors in lib/__tests__/cosmos-address.test.mjs (PROP-030/031)"},
+        {"type": "note", "description": "FAIL driven by FIND-004: the two independent Skip route fetches (driver.mjs's REQ-002 pre-validation vs. base-signer.mjs's own internal re-fetch) are never reconciled, a real requirement gap in how REQ-002/REQ-004/REQ-007 are meant to compose with REQ-018"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "test-file", "location": "skills/self/spawn-funding-swap/lib/real-clients/__tests__/base-signer.test.mjs", "description": "PROP-041/042/043/044/045/046/047/048 all present and exercised: identity fail-closed, destination fail-closed, wrong-route fail-closed, zero/multi evm_tx fail-closed, wrong signer_address fail-closed, insufficient-allowance fail-closed, nonce-exactness"},
+        {"type": "test-file", "location": "skills/self/spawn-funding-swap/lib/real-clients/__tests__/chain-reader.test.mjs", "description": "PROP-032..035 cover missing-uakt/empty-balances/unparseable-stdout/unset-env/nonce-boundary edge cases"},
+        {"type": "note", "description": "FAIL driven by FIND-003: the probe-amount-vs-real-amount route/spender mismatch edge case is neither specified nor tested anywhere"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/pure/cosmos-address.mjs", "description": "bech32 encoding is structurally correct BIP-173 (standard generator polynomial, correct checksum constant for bech32-not-bech32m, correct HRP-expand/checksum ordering) and matches an independent known-answer vector"},
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/skip-api-client.mjs", "description": "chain_id string coercion, allow_unsafe/allow_multi_tx, fail-closed on non-2xx/code-bearing responses all verified correct against PROP-037/038"},
+        {"type": "note", "description": "FAIL driven by FIND-001 (CRITICAL): signAndBroadcast never verifies the signed transaction's actual amount/destination-contract against the intended, capped amount -- the single most important correctness property of this sprint's HIGHEST-RISK module is unimplemented"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/*.mjs", "description": "Files are small, single-responsibility, clearly named, no dead code found; fetchImpl/execFileImpl/walletClientFactory/publicClientFactory injection seams are consistent across all 5 modules"},
+        {"type": "note", "description": "FAIL driven by FIND-005: money-critical constant duplication (DESTINATION_AKASH_ADDRESS, chain-id/denom literals) across bin/driver/base-signer violates this feature's own single-choke-point constant discipline"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-007"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/specs/verification-architecture.md", "description": "Purity boundary map correct: cosmos-address.mjs is genuinely I/O-free; all 5 real-clients are genuinely effectful-shell with fully injectable transports"},
+        {"type": "note", "description": "FAIL driven by FIND-002: no proof obligation (PROP-030..049) exists for 'signed tx amount/destination-contract matches intent', so the sprint's own verification architecture cannot detect FIND-001 even in principle; compounded by FIND-007's PROP-049 overclaim"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 7,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-013", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-018"],
+    "duplicateFindings": []
+  },
+  "moneyMovementGoNoGo": {
+    "decision": "NO-GO",
+    "reason": "FIND-001 (CRITICAL): the sole value-moving Base transaction is signed and broadcast from a third-party (Skip) HTTP response with zero independent verification that the encoded amount/destination-contract matches the driver-intended, capped amount. Until this is fixed (at minimum: decode evm_tx.data's transfer amount and cross-check it equals `amount`, and/or allowlist the expected Skip/CCTP contract address(es) for evm_tx.to, and/or cross-check the re-fetched route's own amount_in/amount_out against the originally-validated quoteSnapshot per FIND-004), a real Base->Akash swap MUST NOT be run. FIND-003 additionally means a real invocation may simply fail-closed (denial, not loss) if the probe-vs-real route spender diverges -- functionally blocking, but safe; FIND-001 is the loss-risk blocker."
+  }
+}

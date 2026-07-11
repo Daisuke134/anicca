@@ -40,7 +40,9 @@ own verification architecture (driver.mjs + pure core vs fakes) is unchanged and
 | PROP-046 | `signAndBroadcast` throws when the re-fetched route's destination fields don't match `uakt`/`akashnet-2`, or when the msgs response contains zero/multiple `evm_tx` entries, or when `evm_tx.signer_address` mismatches | 0 | true | node:test |
 | PROP-047 | `signAndBroadcast` throws (never signs) if the allowance check at sign time is still insufficient, rather than attempting a second, nonce-colliding approve | 2 | true | node:test |
 | PROP-048 | `signAndBroadcast`'s broadcast call always uses `nonce` EXACTLY as passed in (spy assertion on the injected `walletClientFactory`) | 2 | true | node:test |
-| PROP-049 | (structural, this sprint's own Test-Money-Safety extension) no file under `lib/real-clients/__tests__/**` references a live Skip/CoinGecko/`mainnet.base.org`/Akash RPC endpoint literal outside a documented comment, and every test constructs its client with an injected `fetchImpl`/`execFileImpl`/`walletClientFactory` (never `globalThis.fetch`/a bare `createRealXxx()` with no transport override) | 0 | true | node:test (static source scan, same technique as `test-money-safety-scan.test.mjs`) |
+| PROP-049 | (structural, this sprint's own Test-Money-Safety extension) no file under `lib/real-clients/__tests__/**` references a live Skip/CoinGecko/`mainnet.base.org`/Akash RPC endpoint literal outside a documented comment, and no test constructs a bare `createRealXxx()` with no injected `fetchImpl`/`execFileImpl` transport seam in its argument object | 0 | true | node:test (static source scan, string-literal-aware comment stripper + balanced-paren call-argument extraction) |
+| PROP-050 | (CRITICAL, FIND-001/FIND-002 fix, impl review iter1) `signAndBroadcast` decodes and bound-checks the ACTUAL `evm_tx` Skip returned against the driver-supplied intent BEFORE ever signing: (a) `evm_tx.data` never decodes as a bare ERC-20 `transfer`/`transferFrom` selector; (b) `evm_tx.to` exactly equals the sole `required_erc20_approvals[0].spender` and is never the USDC contract itself; (c) `required_erc20_approvals[0].amount` exactly equals the driver-supplied `amount` (bigint `===`, not merely "current allowance covers it") and is `<= MAX_SWAP_BASE_UNITS`; (d) `evm_tx.value` is exactly `0n`. Refuses (throws, never broadcasts) on any violation | 2 | true | node:test (spy assertion: `walletClientFactory.sent.length === 0` on every refusal path, `=== 1` on the honest-tx path) |
+| PROP-051 | (FIND-003 documented-assumption test) `getNextNonce()`'s approval-probe spender diverging from `signAndBroadcast`'s real-route spender fails CLOSED — the on-chain allowance check (never a second, nonce-colliding approve) refuses to sign, and PROP-050's own self-consistency gate additionally guarantees no broadcast happens against a mismatched spender | 1 | true | node:test (route-fetch routed by `amount_in` to distinguish probe vs. real spender) |
 
 ## Verification Strategy
 
@@ -48,12 +50,16 @@ own verification architecture (driver.mjs + pure core vs fakes) is unchanged and
   PROP-033, PROP-038, PROP-041, PROP-045, PROP-046, PROP-049) — simple, deterministic branch coverage.
 - **Tier 1** (property/example-based tests, `node:test`): parsing/serialization correctness for each
   client's happy-path and malformed-response handling (PROP-030, PROP-032, PROP-034, PROP-035, PROP-036,
-  PROP-037, PROP-039, PROP-040, PROP-042, PROP-044).
+  PROP-037, PROP-039, PROP-040, PROP-042, PROP-044) — plus PROP-051 (impl review iter1: the documented
+  probe-vs-real spender assumption fails closed, never fund-unsafe).
 - **Tier 2** (the money-safety-critical properties this sprint exists to get right): the nonce-ordering
   guarantee between an internal ERC-20 approval and the tracked leg-0 nonce (PROP-043, PROP-047,
   PROP-048) — verified via spy-based assertions on the exact sequence and arguments of every mocked
-  `sendTransaction`/`eth_getTransactionCount` call, not merely "did it not throw". These are the
-  properties an adversary review (Phase 3, per this repo's `dev-workflow.md`) should scrutinize hardest.
+  `sendTransaction`/`eth_getTransactionCount` call, not merely "did it not throw" — AND (impl review
+  iter1 addition) PROP-050: that the ACTUAL signed transaction content (destination contract, encoded
+  USDC amount, native value) matches the driver's intent exactly, bounded, and allowlisted, never taken
+  on faith from Skip's HTTP response. These are the properties an adversary review (Phase 3, per this
+  repo's `dev-workflow.md`) should scrutinize hardest.
 - **Tier 3** (not attempted this sprint): no formal/symbolic proof of the Skip API's own route-selection
   or smart-relay execution guarantees — those are a third party's infrastructure, out of this feature's
   verification boundary; this feature's own safety net for that is REQ-007's independent on-chain

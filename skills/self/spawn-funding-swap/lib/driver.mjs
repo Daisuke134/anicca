@@ -16,15 +16,21 @@ import { validateRoute as defaultValidateRoute } from "./pure/route-validation.m
 import { checkSourceFunded as defaultCheckSourceFunded } from "./pure/funding-check.mjs";
 import { verifySettlement as defaultVerifySettlement } from "./pure/settlement.mjs";
 import { planNextLeg as defaultPlanNextLeg, reconcileLedgerOnResume as defaultReconcileLedgerOnResume } from "./pure/ledger-plan.mjs";
-import { USDC_DECIMALS_BASE, AKT_DECIMALS, MIN_GAS_WEI, TOLERANCE_BPS } from "./pure/constants.mjs";
+import {
+  USDC_DECIMALS_BASE,
+  AKT_DECIMALS,
+  MIN_GAS_WEI,
+  TOLERANCE_BPS,
+  BASE_CHAIN_ID,
+  BASE_USDC_DENOM,
+  AKASH_CHAIN_ID,
+  AKASH_UAKT_DENOM,
+} from "./pure/constants.mjs";
 
 // Skip API route parameters confirmed live this session (behavioral-spec.md) — the ONLY currently-
 // viable source chain/asset for this pair; the route response itself (validateRoute) remains the source
-// of truth every invocation, never assumed (REQ-002).
-const BASE_CHAIN_ID = 8453;
-const BASE_USDC_DENOM = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const AKASH_CHAIN_ID = "akashnet-2";
-const AKASH_UAKT_DENOM = "uakt";
+// of truth every invocation, never assumed (REQ-002). FIND-005 fix (impl review iter1): these four are
+// now imported from pure/constants.mjs (single choke point), never re-literal'd here.
 const REQUIRED_AKASH_KEY_NAME = "anicca-akash";
 
 function defaultPureFns() {
@@ -88,11 +94,17 @@ async function ensureLeg0Submitted(ctx, ledgerState, requiredBaseUnits, quoteSna
   const submittingState = withQuoteSnapshot(upsertLeg(ledgerState, { legIndex: 0, status: "submitting", nonce }), quoteSnapshot);
   await ctx.ledgerStore.writeState(ctx.destinationAkashAddress, submittingState);
 
+  // FIND-004 fix (impl review iter1): pass the driver's ALREADY-VALIDATED REQ-002 quote through, so
+  // base-signer's own necessary re-fetch (its frozen interface has no quoteSnapshot param, only
+  // {amount, nonce, sourceAddress, destinationAkashAddress}) can be reconciled against it rather than
+  // silently drifting if Skip's route re-priced/re-topologized between the two fetches.
   const { txHash } = await ctx.baseSigner.signAndBroadcast({
     amount: requiredBaseUnits,
     nonce,
     sourceAddress: ctx.sourceBaseAddress,
     destinationAkashAddress: ctx.destinationAkashAddress,
+    expectedAmountOutUakt: quoteSnapshot.amountOutUakt,
+    expectedTxsRequired: quoteSnapshot.txsRequired,
   });
 
   const relayStatus = await ctx.relayPoller.waitForConfirmation(BASE_CHAIN_ID, txHash, ctx.legTimeoutMs);

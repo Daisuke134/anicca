@@ -36,13 +36,20 @@ test("PROP-039: numeric chainId + falsy txHash resolves 'pending' immediately (n
   assert.equal(await poller.waitForConfirmation(8453, null, 1000), "pending");
 });
 
+// FIND-007 fix (impl review iter1): both string-chainId tests below now inject an explicit fetchImpl
+// that THROWS if ever called -- the string-chainId branch is a pure setTimeout-based wait (never touches
+// fetchImpl in this implementation), but PROP-049's tightened scan now REQUIRES every createRealXxx()
+// call in this directory to inject a transport seam, closing the gap where a FUTURE change to the
+// string-chainId branch that DID reach the network would go undetected by a bare construction.
+const NEVER_CALLED_FETCH = async () => { throw new Error("must not be called"); };
+
 test("PROP-040: string chainId (relay-only leg) resolves 'confirmed' once the injected settle window fully elapses within timeoutMs", async () => {
-  const poller = createRealRelayPoller({ relaySettleWaitMs: 10 });
+  const poller = createRealRelayPoller({ relaySettleWaitMs: 10, fetchImpl: NEVER_CALLED_FETCH });
   assert.equal(await poller.waitForConfirmation("akashnet-2", null, 1000), "confirmed");
 });
 
 test("PROP-040: string chainId resolves 'pending' when timeoutMs is smaller than the settle window", async () => {
-  const poller = createRealRelayPoller({ relaySettleWaitMs: 1000 });
+  const poller = createRealRelayPoller({ relaySettleWaitMs: 1000, fetchImpl: NEVER_CALLED_FETCH });
   assert.equal(await poller.waitForConfirmation("akashnet-2", null, 10), "pending");
 });
 

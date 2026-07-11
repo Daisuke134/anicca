@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "driver.mjs's REQ-002 fetches and validates ONE Skip route (via skipApiClient.getRoute + pure validateRoute) BEFORE the leg-execution loop begins, deriving quoteSnapshot.txsRequired/amountOutUakt that REQ-004's planNextLeg loop and REQ-007's verifySettlement both key off for the REST of the run. base-signer.mjs's signAndBroadcast independently fetches a SECOND, brand-new Skip route (fetchSkipRoute inside signAndBroadcast, using the same `amount` but a fresh HTTP call, potentially minutes later and after the driver's own pre-broadcast durable write) to build the actual evm_tx it signs. There is no cross-check anywhere that this second route's txs_required/amount_out/operations are consistent with the FIRST route driver.mjs already validated and is tracking legs against. If Skip's route topology or quote genuinely differs between the two fetches (a real possibility given quotes can expire/reprice), the leg-tracking loop (ensureRelayOnlyLegSubmitted for legIndex>=1) continues to wait against a leg count that may no longer match what was actually signed, and REQ-007's final settlement check evaluates the ORIGINAL (possibly stale) amountOutUakt rather than the actually-executed route's own quote -- a design inconsistency the spec never surfaces as a requirement or edge case.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/driver.mjs",
+    "lineRange": "172-189",
+    "snippet": "routeResponse = await ctx.skipApiClient.getRoute({...}); const validated = pureFns.validateRoute(routeResponse); const quoteSnapshot = { txsRequired: validated.txsRequired, amountOutUakt: validated.amountOutUakt };\n// vs. base-signer.mjs:271 -- const route = await fetchSkipRoute(fetchImpl, BigInt(amount)); // a SECOND, independent fetch, never reconciled with quoteSnapshot above"
+  },
+  "routeToPhase": "impl"
+}

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "getNextNonce()'s approval-settlement (ensureApprovalsSettled) determines which spender to approve by fetching a SEPARATE, small fixed-size 'probe' route (APPROVAL_PROBE_AMOUNT_BASE_UNITS = 1 USDC), independent from the REAL swap route signAndBroadcast fetches later using the actual, driver-computed amount (up to $20 / SWAP_MAX_USD). Neither behavioral-spec.md nor verification-architecture.md's edge cases discuss the risk that Skip's route/operations/spender selection for a 1-USDC probe amount could differ from the selection for the real (larger) amount -- e.g. a different bridge/spender contract chosen at a different amount tier. If that happens, the approval settled at getNextNonce()-time targets the WRONG spender, and signAndBroadcast's own allowance check (which IS correctly designed to fail closed rather than attempt a second, nonce-colliding approve) will throw on every real invocation, permanently blocking this feature's only funding mechanism -- a silent, hard-to-diagnose denial-of-service that no test exercises (no test fixture ever uses two DIFFERENT routes/spenders for the probe vs. the real signAndBroadcast call).",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/real-clients/base-signer.mjs",
+    "lineRange": "75-78,223-244",
+    "snippet": "const APPROVAL_PROBE_AMOUNT_BASE_UNITS = 1_000_000n; // 1 USDC\n...\nasync function ensureApprovalsSettled(acct) {\n  const probeRoute = await fetchSkipRoute(fetchImpl, APPROVAL_PROBE_AMOUNT_BASE_UNITS);\n  // spender approved here may not equal the spender the REAL amount's route (signAndBroadcast) requires"
+  },
+  "routeToPhase": "impl"
+}

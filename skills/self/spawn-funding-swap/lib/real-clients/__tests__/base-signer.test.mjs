@@ -1,13 +1,15 @@
-// VCSDD spawn-funding-swap Phase 2a (sprint-2, RED). PROP-041..PROP-048 — lib/real-clients/base-signer.mjs,
+// VCSDD spawn-funding-swap Phase 2a/2b (sprint-2). PROP-041..PROP-051 — lib/real-clients/base-signer.mjs,
 // the SOLE value-moving Base transaction in this repo. Every transport boundary (fetchImpl,
 // walletClientFactory, publicClientFactory) is mocked; NO real network call, real signing, or real
-// subprocess is ever made from this file (NFR-6). Written against a file that does NOT exist yet as of
-// this commit -- every test below MUST fail (module-not-found) until Phase 2b.
+// subprocess is ever made from this file (NFR-6). PROP-050 (FIND-001 CRITICAL fix, impl review iter1)
+// added below: verifyEvmTxAgainstIntent's decode-and-bound-check gates. PROP-051 (FIND-003): the
+// probe-vs-real spender mismatch fails closed.
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import { encodeFunctionData } from "viem";
 import { createRealBaseSigner } from "../base-signer.mjs";
 
 // Known-answer fixture key -- the SAME vector used to independently derive the expected Base address and
@@ -40,16 +42,33 @@ const LIVE_SHAPED_ROUTE = {
   chain_ids: ["8453", "noble-1", "osmosis-1", "akashnet-2"],
 };
 
-function evmTxFixture({ requiresApproval = true, signerAddress = EXPECTED_ADDRESS } = {}) {
+// ROUTER_CONTRACT_ADDRESS -- PROP-050's gate 2 (base-signer.mjs) requires evm_tx.to to EXACTLY equal
+// evm_tx.required_erc20_approvals[0].spender (self-consistency allowlist), so every fixture below that
+// intends a LEGITIMATE, signable evm_tx now uses the SAME address for both `to` and `spender`. Must be a
+// well-formed 20-byte hex address (viem's encodeFunctionData validates this when currentAllowance()
+// encodes it as an ERC-20 `allowance(owner,spender)` argument) -- ASCII "skiprouter" hex-encoded, never a
+// real/live contract address (opaque test placeholder).
+const ROUTER_CONTRACT_ADDRESS = "0x736b6970726f7574657230303030303030303030";
+
+function evmTxFixture({
+  requiresApproval = true,
+  signerAddress = EXPECTED_ADDRESS,
+  to = ROUTER_CONTRACT_ADDRESS,
+  approvalSpender = ROUTER_CONTRACT_ADDRESS,
+  approvalAmount = "15000000",
+  approvalTokenContract = BASE_USDC_DENOM,
+  value = "0",
+  data = "0xd77d6ec0deadbeef",
+} = {}) {
   return {
     txs: [
       {
         evm_tx: {
           chain_id: "8453",
-          to: "0xSKIPRELAYCONTRACT00000000000000000001",
-          value: "0",
-          data: "0xd77d6ec0deadbeef",
-          required_erc20_approvals: requiresApproval ? [{ token_contract: BASE_USDC_DENOM, spender: "0x1111111111111111111111111111111111111111", amount: "15000000" }] : [],
+          to,
+          value,
+          data,
+          required_erc20_approvals: requiresApproval ? [{ token_contract: approvalTokenContract, spender: approvalSpender, amount: approvalAmount }] : [],
           signer_address: signerAddress,
         },
       },
@@ -104,19 +123,27 @@ function makePublicClientFactory() {
   return () => ({ async waitForTransactionReceipt() { return { status: "success" }; } });
 }
 
+// FIND-007 fix (impl review iter1): every createRealBaseSigner() call below now injects an explicit
+// fetchImpl that THROWS if ever called -- even though getAddress() never reaches the network in this
+// implementation (so a bare, transport-less construction was previously "safe by accident"), PROP-049's
+// tightened scan (test-money-safety-scan.test.mjs) now REQUIRES every createRealXxx() call in this
+// directory to inject fetchImpl/execFileImpl, closing the gap where a FUTURE test adding a bare
+// createRealXxx() call on a code path that DOES reach the network would go undetected.
+const NEVER_CALLED_FETCH = async () => { throw new Error("must not be called"); };
+
 test("PROP-041: getAddress throws when ANICCA_HOME is unset", async () => {
-  const signer = createRealBaseSigner({ env: {} });
+  const signer = createRealBaseSigner({ env: {}, fetchImpl: NEVER_CALLED_FETCH });
   await assert.rejects(() => signer.getAddress(), /ANICCA_HOME/);
 });
 
 test("PROP-041: getNextNonce throws when ANICCA_HOME is unset", async () => {
-  const signer = createRealBaseSigner({ env: {}, fetchImpl: async () => { throw new Error("must not be called"); } });
+  const signer = createRealBaseSigner({ env: {}, fetchImpl: NEVER_CALLED_FETCH });
   await assert.rejects(() => signer.getNextNonce(), /ANICCA_HOME/);
 });
 
 test("PROP-042: getAddress returns the address viem's privateKeyToAccount derives from the SAME resolved fixture key", async () => {
   const home = makeFixtureHome();
-  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home } });
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl: NEVER_CALLED_FETCH });
   assert.equal(await signer.getAddress(), EXPECTED_ADDRESS);
 });
 
@@ -206,7 +233,9 @@ test("PROP-047: signAndBroadcast throws (never signs) when the allowance check a
 
 test("PROP-048: signAndBroadcast's broadcast call uses `nonce` EXACTLY as passed in, and returns the resulting txHash", async () => {
   const home = makeFixtureHome();
-  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16), evmTxOptions: { requiresApproval: false } });
+  // requiresApproval defaults true (evmTxFixture) -- PROP-050's gate 2 now requires exactly one
+  // required_erc20_approvals entry whose spender equals evm_tx.to on every legitimate/signable fixture.
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
   const walletClientFactory = makeWalletClientFactory();
   const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
 
@@ -214,24 +243,215 @@ test("PROP-048: signAndBroadcast's broadcast call uses `nonce` EXACTLY as passed
 
   assert.equal(walletClientFactory.sent.length, 1);
   assert.equal(walletClientFactory.sent[0].nonce, 8);
-  assert.equal(walletClientFactory.sent[0].to, "0xSKIPRELAYCONTRACT00000000000000000001");
+  assert.equal(walletClientFactory.sent[0].to, ROUTER_CONTRACT_ADDRESS);
   assert.equal(result.txHash, "0xhash1");
 });
 
 test("REQ-013/PROP-042 (integration sanity): the noble-1/osmosis-1 addresses this signer would submit to Skip's address_list are the SAME known-answer values REQ-013's own cosmos-address tests independently verify", async () => {
   const home = makeFixtureHome();
-  let capturedMsgsBody = null;
-  const fetchImpl = async (url, init) => {
-    if (String(url).includes("fungible/route")) return { ok: true, json: async () => LIVE_SHAPED_ROUTE };
-    if (String(url).includes("fungible/msgs")) {
-      capturedMsgsBody = JSON.parse(init.body);
-      return { ok: true, json: async () => evmTxFixture({ requiresApproval: false }) };
-    }
-    throw new Error("must not reach RPC");
-  };
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
   const walletClientFactory = makeWalletClientFactory();
   const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
   await signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS });
 
-  assert.deepEqual(capturedMsgsBody.address_list, [EXPECTED_ADDRESS, EXPECTED_NOBLE_ADDRESS, EXPECTED_OSMO_ADDRESS, DESTINATION_AKASH_ADDRESS]);
+  const msgsCall = fetchImpl.calls.find((c) => typeof c.url === "string" && c.url.includes("fungible/msgs"));
+  assert.deepEqual(msgsCall.body.address_list, [EXPECTED_ADDRESS, EXPECTED_NOBLE_ADDRESS, EXPECTED_OSMO_ADDRESS, DESTINATION_AKASH_ADDRESS]);
+});
+
+// ==== PROP-050 (Tier-2, money-safety-critical, FIND-001 CRITICAL fix, impl review iter1) ====
+// verifyEvmTxAgainstIntent's four independent gates: (a) honest evm_tx from a well-formed Skip response
+// signs successfully, (b) a tampered/inflated approval amount is refused, (c) a tampered/arbitrary `to`
+// (a drain address unrelated to the approved spender) is refused, (d) an amount exceeding the absolute
+// MAX_SWAP_BASE_UNITS ceiling is refused -- even if it were otherwise self-consistent.
+
+test("PROP-050(a): signAndBroadcast SIGNS an honest evm_tx whose to/approval-spender/approval-amount are all self-consistent and within the ceiling", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  const result = await signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS });
+
+  assert.equal(walletClientFactory.sent.length, 1, "the honest tx must actually be broadcast");
+  assert.equal(result.txHash, "0xhash1");
+});
+
+test("PROP-050(b): signAndBroadcast REFUSES (never broadcasts) a tampered evm_tx whose required_erc20_approvals[0].amount is inflated above the driver-supplied intended amount", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({
+    allowanceHex: "0x" + (200_000_000n).toString(16),
+    evmTxOptions: { approvalAmount: "99000000" }, // Skip/attacker claims a $99 pull, driver only asked for $15
+  });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /does not exactly equal the driver-supplied swap amount/
+  );
+  assert.equal(walletClientFactory.sent.length, 0, "an inflated-amount tx must NEVER be broadcast");
+});
+
+test("PROP-050(b): signAndBroadcast REFUSES a bare ERC-20 transfer() call (evm_tx.data encodes transfer(evilRecipient, fullBalance), no approval at all) -- the exact FIND-001 attack shape", async () => {
+  const home = makeFixtureHome();
+  const evilRecipient = "0x6576696c726563697069656e7430303030303030"; // ASCII "evilrecipient" hex-encoded, opaque test placeholder
+  const bareTransferData = encodeFunctionData({ abi: [{ type: "function", name: "transfer", stateMutability: "nonpayable", inputs: [{ name: "to", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] }], functionName: "transfer", args: [evilRecipient, 999_000_000n] });
+  const fetchImpl = makeFetchMock({
+    allowanceHex: "0x" + (200_000_000n).toString(16),
+    evmTxOptions: { to: BASE_USDC_DENOM, data: bareTransferData, requiresApproval: false },
+  });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /bare ERC-20 transfer\/transferFrom/
+  );
+  assert.equal(walletClientFactory.sent.length, 0, "a bare-transfer drain tx must NEVER be broadcast, regardless of amount/no-approval-needed");
+});
+
+test("PROP-050(c): signAndBroadcast REFUSES a tampered evm_tx whose `to` is an arbitrary drain address unrelated to the approved spender", async () => {
+  const home = makeFixtureHome();
+  const drainAddress = "0x647261696e616464726573733030303030303030"; // ASCII "drainaddress" hex-encoded, opaque test placeholder, != approval spender
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16), evmTxOptions: { to: drainAddress } });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /does not equal its own required_erc20_approvals\[0\]\.spender/
+  );
+  assert.equal(walletClientFactory.sent.length, 0, "a to-mismatched tx must NEVER be broadcast");
+});
+
+test("PROP-050(c): signAndBroadcast REFUSES an evm_tx whose `to` is the USDC contract itself (even with a matching, self-consistent approval)", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16), evmTxOptions: { to: BASE_USDC_DENOM, approvalSpender: BASE_USDC_DENOM } });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /evm_tx\.to is the USDC contract itself/
+  );
+  assert.equal(walletClientFactory.sent.length, 0);
+});
+
+test("PROP-050(d): signAndBroadcast REFUSES an evm_tx/amount whose approval amount exceeds MAX_SWAP_BASE_UNITS, even when self-consistent and matching the (attacker-supplied) intended amount", async () => {
+  const home = makeFixtureHome();
+  const overCeilingAmount = 150_000_000n; // > MAX_SWAP_BASE_UNITS (100_000_000n == APPROVAL_CAP_BASE_UNITS, $100)
+  const fetchImpl = makeFetchMock({
+    allowanceHex: "0x" + (300_000_000n).toString(16),
+    evmTxOptions: { approvalAmount: overCeilingAmount.toString() },
+  });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: overCeilingAmount, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /exceeds the absolute per-swap ceiling MAX_SWAP_BASE_UNITS/
+  );
+  assert.equal(walletClientFactory.sent.length, 0, "an over-ceiling tx must NEVER be broadcast even if internally self-consistent");
+});
+
+test("PROP-050: signAndBroadcast REFUSES an evm_tx carrying a non-zero native `value` (this feature's route is USDC-only)", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16), evmTxOptions: { value: "1000000000000000" } });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /evm_tx\.value.*is non-zero/
+  );
+  assert.equal(walletClientFactory.sent.length, 0);
+});
+
+test("PROP-050: signAndBroadcast REFUSES an evm_tx with zero required_erc20_approvals entries (the exact no-approval-needed bypass shape)", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16), evmTxOptions: { requiresApproval: false, to: ROUTER_CONTRACT_ADDRESS } });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }),
+    /expected exactly ONE required_erc20_approvals entry/
+  );
+  assert.equal(walletClientFactory.sent.length, 0);
+});
+
+// ==== FIND-004 fix (route reconciliation) ====
+
+test("FIND-004: signAndBroadcast REFUSES when its own re-fetched route's amount_out diverges from the driver-supplied expectedAmountOutUakt", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS, expectedAmountOutUakt: 999999999n, expectedTxsRequired: 2 }),
+    /re-fetched Skip route's amount_out.*diverges/
+  );
+});
+
+test("FIND-004: signAndBroadcast REFUSES when its own re-fetched route's txs_required diverges from the driver-supplied expectedTxsRequired", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl });
+
+  await assert.rejects(
+    () => signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS, expectedAmountOutUakt: BigInt(LIVE_SHAPED_ROUTE.amount_out), expectedTxsRequired: 999 }),
+    /re-fetched Skip route's txs_required.*diverges/
+  );
+});
+
+test("FIND-004: signAndBroadcast SIGNS when its own re-fetched route matches the driver-supplied expectedAmountOutUakt/expectedTxsRequired exactly", async () => {
+  const home = makeFixtureHome();
+  const fetchImpl = makeFetchMock({ allowanceHex: "0x" + (200_000_000n).toString(16) });
+  const walletClientFactory = makeWalletClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory });
+
+  const result = await signer.signAndBroadcast({ amount: 15_000_000n, nonce: 8n, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS, expectedAmountOutUakt: BigInt(LIVE_SHAPED_ROUTE.amount_out), expectedTxsRequired: LIVE_SHAPED_ROUTE.txs_required });
+
+  assert.equal(result.txHash, "0xhash1");
+  assert.equal(walletClientFactory.sent.length, 1);
+});
+
+// ==== FIND-003 (documented probe-vs-real spender assumption) ====
+
+test("PROP-051 (FIND-003): a probe-route spender that diverges from the real route's spender fails CLOSED (refuses to sign), never signs against a mismatched/under-approved spender", async () => {
+  const home = makeFixtureHome();
+  // getNextNonce() settles an allowance for PROBE_SPENDER (via the probe route), but the REAL route
+  // signAndBroadcast fetches back requires REAL_SPENDER instead -- simulating Skip choosing a different
+  // bridge/venue contract at the real (larger) amount than it chose for the 1-USDC probe.
+  const PROBE_SPENDER = "0x70726f62657370656e6465723030303030303030"; // ASCII "probespender" hex-encoded
+  const REAL_SPENDER = "0x7265616c7370656e646572303030303030303030"; // ASCII "realspender" hex-encoded
+  let sawApprove = false;
+  const fetchImpl = async (url, init) => {
+    const urlStr = String(url);
+    if (urlStr.includes("fungible/route")) return { ok: true, json: async () => LIVE_SHAPED_ROUTE };
+    if (urlStr.includes("fungible/msgs")) {
+      // getNextNonce()'s probe uses APPROVAL_PROBE_AMOUNT_BASE_UNITS (1 USDC) as amount_in; the real
+      // signAndBroadcast call uses the full 15 USDC. Route the spender by that distinguishing field.
+      const body = JSON.parse(init.body);
+      const isProbe = body.amount_in === "1000000";
+      return { ok: true, json: async () => evmTxFixture({ approvalSpender: isProbe ? PROBE_SPENDER : REAL_SPENDER, to: isProbe ? PROBE_SPENDER : REAL_SPENDER }) };
+    }
+    const body = JSON.parse(init.body);
+    if (body.method === "eth_call") return { ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result: "0x0" }) }; // no prior allowance for either spender
+    if (body.method === "eth_getTransactionCount") return { ok: true, json: async () => ({ jsonrpc: "2.0", id: 1, result: "0x1" }) };
+    throw new Error(`unexpected RPC method: ${body.method}`);
+  };
+  const walletClientFactory = makeWalletClientFactory();
+  const publicClientFactory = makePublicClientFactory();
+  const signer = createRealBaseSigner({ env: { ANICCA_HOME: home }, fetchImpl, walletClientFactory, publicClientFactory });
+
+  const nonce = await signer.getNextNonce(); // settles allowance for PROBE_SPENDER only
+  sawApprove = walletClientFactory.sent.length === 1 && walletClientFactory.sent[0].to === BASE_USDC_DENOM;
+  assert.ok(sawApprove, "getNextNonce() must have approved the PROBE route's spender");
+
+  // The REAL route's evm_tx.to is REAL_SPENDER, which was NEVER approved (only PROBE_SPENDER was) -- the
+  // allowance-check loop must refuse (fail closed), never attempt a second, nonce-colliding approve.
+  const preRealSendCount = walletClientFactory.sent.length;
+  await assert.rejects(() => signer.signAndBroadcast({ amount: 15_000_000n, nonce, sourceAddress: EXPECTED_ADDRESS, destinationAkashAddress: DESTINATION_AKASH_ADDRESS }));
+  assert.equal(walletClientFactory.sent.length, preRealSendCount, "no additional tx (approve or swap) may ever be sent once the spender mismatch is detected");
 });
