@@ -8,6 +8,8 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 3. done = deterministic check、**text match / self-report 禁止**
 唯一これを満たすのは connector の `connector_streak_verify.py`（一次情報を独立再検証）。他は全て heartbeat mtime のみ = 壊れてる半分。
 
+**モデル方針（Dais 2026-07-11 override、token 節約）**: 本作業の**全 subagent（build / verify / adversary / reality-verifier）= Sonnet**。global CLAUDE.md の「adversary=Opus」は本作業では上書き。Sonnet で build も verify も adversary も回して everything works。
+
 ## 0.5 CEO の是非 + 逃げ禁止（Dais 2026-07-11 確定）
 - **CEO の kill/spawn/portfolio 判断 = 削除（危険）**。今どの loop も稼いでない → 「稼いでないから全部殺す」に倒れる。loop も claude-p もその判断能力を持たない。**loop を殺す/生む決定を agent に持たせない。** CEO は実質何もしない → 機械予算 hard-stop 以外は as we go で削除。日次 LLM CEO は廃止（S8 launchd install 取消）。
 - **「別 repo だから scope 外」= 逃げ（jijitsu ha nige）**。根因が anicca-dais / profitable-claude 等 別 repo にあっても、それを理由に直さないのは逃げ。**verifier も self-fix も repo を跨いで根因まで直す。** honest-gap を「範囲外」で閉じない。
