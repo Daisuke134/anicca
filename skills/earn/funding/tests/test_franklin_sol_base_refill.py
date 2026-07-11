@@ -4,7 +4,13 @@ import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
-from franklin_sol_base_refill import STEP, resolve_live_flag, run_refill  # noqa: E402
+from franklin_sol_base_refill import (  # noqa: E402
+    STEP,
+    USDC_BASE,
+    resolve_live_flag,
+    run_refill,
+)
+from lib.erc20 import ERC20_TRANSFER_TOPIC0  # noqa: E402
 from lib.ledger import append_ledger, build_row, read_ledger  # noqa: E402
 
 FRANKLIN_ROW = {
@@ -14,6 +20,33 @@ FRANKLIN_ROW = {
         "evm": "0x3EcCAD24794ca298D25378E9902A251322ea8749",
     },
 }
+
+FILL_TX_HASH = "0xfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeedfeed"
+
+
+def _pad_topic(addr: str) -> str:
+    return "0x" + addr.lower().replace("0x", "").rjust(64, "0")
+
+
+def _transfer_log(*, token_address: str, to_address: str, amount_units: int) -> dict:
+    """A single ERC-20 Transfer(address,address,uint256) log matching
+    `lib.erc20.parse_erc20_transfer_amount`'s expected shape."""
+    return {
+        "address": token_address,
+        "topics": [
+            ERC20_TRANSFER_TOPIC0,
+            _pad_topic("0x1111111111111111111111111111111111111111"),  # from (arbitrary)
+            _pad_topic(to_address),
+        ],
+        "data": hex(amount_units),
+    }
+
+
+def _fill_receipt(*, to_address: str, amount_units: int, status: str = "0x1") -> dict:
+    return {
+        "status": status,
+        "logs": [_transfer_log(token_address=USDC_BASE, to_address=to_address, amount_units=amount_units)],
+    }
 
 
 def make_deps(tmp_path, **overrides):
@@ -52,7 +85,7 @@ def make_deps(tmp_path, **overrides):
 
     def default_poll(check_endpoint):
         call_log.append(("poll_relay_status", check_endpoint))
-        return {"status": "success"}
+        return {"status": "success", "txHashes": [FILL_TX_HASH]}
 
     def default_build_sign_submit(secret, quote):
         call_log.append(("build_sign_submit", None))
@@ -65,6 +98,12 @@ def make_deps(tmp_path, **overrides):
         base_balance_calls["n"] += 1
         call_log.append(("read_base_balance_units", base_balance_calls["n"]))
         return balances["before"] if base_balance_calls["n"] == 1 else balances["after"]
+
+    def default_read_base_tx_receipt(tx_hash):
+        call_log.append(("read_base_tx_receipt", tx_hash))
+        return _fill_receipt(
+            to_address=FRANKLIN_ROW["walletAddress"]["evm"], amount_units=int(round(2.9 * 1e6))
+        )
 
     citizens_calls = []
 
@@ -83,6 +122,7 @@ def make_deps(tmp_path, **overrides):
         "read_base_balance_units": default_read_base_balance_units,
         "relay_quote": default_quote,
         "poll_relay_status": default_poll,
+        "read_base_tx_receipt": default_read_base_tx_receipt,
         "build_sign_submit": default_build_sign_submit,
     }
     deps.update(overrides)
@@ -124,6 +164,58 @@ def test_no_identity_resolved_refuses_before_citizens_lookup(tmp_path):
     assert "build_sign_submit" not in call_names(call_log)
 
 
+# --- FIND-006 edge case: derive_pubkey raising (undecodable secret) fails closed ---
+
+
+def test_derive_pubkey_raising_refuses_with_ledger_row(tmp_path):
+    def raising_derive(secret):
+        raise ValueError("could not decode base58/base64")
+
+    deps, _, ledger_path, _ = make_deps(tmp_path, derive_pubkey=raising_derive)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    rows = read_ledger(ledger_path)
+    assert len(rows) == 1
+    assert rows[0]["status"] == "failed"
+
+
+# --- FIND-003: secret-safety -- decode-failure ledger rows must never leak the raw secret ---
+
+
+FAKE_SECRET = "TOTALLY_SECRET_VALUE_THAT_MUST_NEVER_APPEAR_IN_ANY_LOG_1234567890"
+
+
+def test_derive_pubkey_decode_failure_ledger_row_never_contains_secret(tmp_path):
+    def raising_derive(secret):
+        # Simulate a decode library whose exception message embeds the raw input it failed to
+        # parse -- exactly the risk FIND-003 flags.
+        raise ValueError(f"invalid base58 string: {secret}")
+
+    deps, _, ledger_path, _ = make_deps(
+        tmp_path, resolve_secret=lambda: FAKE_SECRET, derive_pubkey=raising_derive
+    )
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert FAKE_SECRET not in json.dumps(result)
+    rows = read_ledger(ledger_path)
+    assert len(rows) == 1
+    assert FAKE_SECRET not in json.dumps(rows[0])
+
+
+def test_build_sign_submit_decode_failure_ledger_row_never_contains_secret(tmp_path):
+    def raising_build_sign_submit(secret, quote):
+        raise ValueError(f"solders decode error, input was: {secret}")
+
+    deps, _, ledger_path, _ = make_deps(
+        tmp_path, resolve_secret=lambda: FAKE_SECRET, build_sign_submit=raising_build_sign_submit
+    )
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert FAKE_SECRET not in json.dumps(result)
+    rows = read_ledger(ledger_path)
+    assert all(FAKE_SECRET not in json.dumps(r) for r in rows)
+
+
 # --- REQ-002: own-citizen destination binding ---
 
 
@@ -131,6 +223,41 @@ def test_citizen_mismatch_refuses_before_relay_quote(tmp_path):
     deps, call_log, _, _ = make_deps(
         tmp_path, derive_pubkey=lambda secret: "SomeUnrelatedPubkey1111111111111111111111"
     )
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "relay_quote" not in call_names(call_log)
+
+
+# --- FIND-002: citizens.json missing/unreadable/malformed must fail closed, never crash ---
+
+
+def test_citizens_file_not_found_refuses_with_ledger_row(tmp_path):
+    def raising_read_citizens():
+        raise FileNotFoundError("~/.hermes/state/citizens.json")
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, read_citizens=raising_read_citizens)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "relay_quote" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert len(rows) == 1
+    assert rows[0]["status"] == "failed"
+
+
+def test_citizens_malformed_json_refuses_with_ledger_row(tmp_path):
+    def raising_read_citizens():
+        raise json.JSONDecodeError("Expecting value", "not json", 0)
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, read_citizens=raising_read_citizens)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "relay_quote" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[0]["status"] == "failed"
+
+
+def test_citizens_no_matching_row_refuses(tmp_path):
+    deps, call_log, _, _ = make_deps(tmp_path, read_citizens=lambda: [])
     result = run_refill(deps=deps, live=True)
     assert result["ok"] is False
     assert "relay_quote" not in call_names(call_log)
@@ -144,6 +271,21 @@ def test_low_balance_refuses_before_relay_quote(tmp_path):
     result = run_refill(deps=deps, live=True)
     assert result["ok"] is False
     assert "relay_quote" not in call_names(call_log)
+
+
+# --- FIND-006: transient network error reading the live Solana balance fails closed ---
+
+
+def test_read_solana_balance_raising_refuses_with_ledger_row(tmp_path):
+    def raising_balance(pubkey):
+        raise ConnectionError("solana rpc timeout")
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, read_solana_balance_usd=raising_balance)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "relay_quote" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[0]["status"] == "skipped"
 
 
 # --- REQ-004: relay fee cap ---
@@ -160,6 +302,84 @@ def test_high_fee_refuses_before_signing(tmp_path):
     result = run_refill(deps=deps, live=True)
     assert result["ok"] is False
     assert "build_sign_submit" not in call_names(call_log)
+
+
+# --- FIND-001: relay quote missing/malformed currencyIn/currencyOut must REFUSE, never
+# fabricate a substitute value from the locally-computed requested amount ---
+
+
+def test_quote_missing_currency_in_entirely_refuses(tmp_path):
+    def quote_missing_currency_in(payload):
+        return {
+            "details": {"currencyOut": {"amountUsd": "6.45"}},  # no currencyIn key at all
+            "steps": [{"items": [{"data": {"instructions": []}, "check": {"endpoint": "/x"}}]}],
+        }
+
+    deps, call_log, _, _ = make_deps(tmp_path, relay_quote=quote_missing_currency_in)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+
+
+def test_quote_currency_in_null_amount_usd_refuses(tmp_path):
+    def quote_null_amount(payload):
+        return {
+            "details": {"currencyIn": {"amountUsd": None}, "currencyOut": {"amountUsd": "6.45"}},
+            "steps": [{"items": [{"data": {"instructions": []}, "check": {"endpoint": "/x"}}]}],
+        }
+
+    deps, call_log, _, _ = make_deps(tmp_path, relay_quote=quote_null_amount)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+
+
+def test_quote_currency_in_wrong_type_refuses(tmp_path):
+    def quote_wrong_type(payload):
+        return {
+            "details": {"currencyIn": "not-an-object", "currencyOut": {"amountUsd": "6.45"}},
+            "steps": [{"items": [{"data": {"instructions": []}, "check": {"endpoint": "/x"}}]}],
+        }
+
+    deps, call_log, _, _ = make_deps(tmp_path, relay_quote=quote_wrong_type)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+
+
+def test_quote_currency_out_missing_does_not_substitute_requested_amount(tmp_path):
+    """The exact FIND-001 regression: a quote reporting currencyOut but no currencyIn at all
+    must NEVER have in_usd silently backfilled with the locally-requested swap amount (which
+    would fabricate a passing fee_pct even though relay never reported the input economics)."""
+
+    def quote_missing_currency_in(payload):
+        return {
+            "details": {"currencyOut": {"amountUsd": "6.45"}},
+            "steps": [{"items": [{"data": {"instructions": []}, "check": {"endpoint": "/x"}}]}],
+        }
+
+    deps, _, ledger_path, _ = make_deps(tmp_path, relay_quote=quote_missing_currency_in)
+    result = run_refill(deps=deps, live=True, amount_usd=6.50)
+    assert result["ok"] is False
+    rows = read_ledger(ledger_path)
+    plan = rows[-1].get("plan", {})
+    assert plan.get("in_usd") is None
+    assert plan.get("fee_allowed") is False
+
+
+# --- FIND-006: transient relay.link network error fails closed ---
+
+
+def test_relay_quote_raising_refuses_with_ledger_row(tmp_path):
+    def raising_quote(payload):
+        raise TimeoutError("relay.link /quote timeout")
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, relay_quote=raising_quote)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[0]["status"] == "skipped"
 
 
 # --- REQ-005: single in-flight guard ---
@@ -208,15 +428,93 @@ def test_pending_row_written_before_poll_relay_status_call_order(tmp_path):
     assert names.index("append_ledger") < names.index("poll_relay_status")
 
 
-def test_relay_success_but_no_balance_delta_writes_failed_not_sent(tmp_path):
+def test_flat_balance_delta_is_recorded_as_sanity_flag_but_does_not_override_tx_verification(tmp_path):
+    """FIND-004: the coarse wallet-wide balance delta is now a SECONDARY sanity check only --
+    it is recorded on the ledger row for audit, but a flat/zero delta does NOT by itself flip a
+    tx-receipt-verified fill to 'failed' (the tx-specific check is authoritative)."""
+
     def flat_balance(address):
-        return 1_000_000  # identical before/after -> no verified delta
+        return 1_000_000  # identical before/after -> the coarse delta check alone would fail
 
     deps, _, ledger_path, _ = make_deps(tmp_path, read_base_balance_units=flat_balance)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is True
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "sent"
+    assert rows[-1]["base_balance_delta_sanity_ok"] is False
+
+
+# --- FIND-004: tx-specific fill verification (not just a coarse balance delta) ---
+
+
+def test_correct_fill_tx_receipt_verifies_and_writes_sent(tmp_path):
+    """The happy-path default fixtures already carry a matching tx receipt/Transfer log --
+    this is the explicit 'correct fill verified' case FIND-004 requires."""
+    deps, _, ledger_path, _ = make_deps(tmp_path)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is True
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "sent"
+    assert rows[-1]["fill_tx_hash"] == FILL_TX_HASH
+
+
+def test_unrelated_inflow_without_matching_tx_receipt_not_verified(tmp_path):
+    """A wallet-wide balance delta CAN increase from something unrelated to this fill (a second
+    concurrent invocation, another earn engine crediting the same wallet). If the relay fill
+    tx's own receipt has no Transfer log naming OUR recipient, the run must NOT be marked
+    verified even though the coarse balance delta alone would look fine."""
+
+    def unrelated_receipt(tx_hash):
+        return _fill_receipt(
+            to_address="0x9999999999999999999999999999999999999999", amount_units=int(round(2.9 * 1e6))
+        )
+
+    deps, _, ledger_path, _ = make_deps(tmp_path, read_base_tx_receipt=unrelated_receipt)
     result = run_refill(deps=deps, live=True)
     assert result["ok"] is False
     rows = read_ledger(ledger_path)
     assert rows[0]["status"] == "pending"
+    assert rows[-1]["status"] == "failed"
+
+
+def test_short_fill_under_85_pct_refused(tmp_path):
+    """A Transfer log that names our address but delivers materially less than the quote's
+    expected output (< FILL_MIN_DELIVERED_PCT) must be refused/flagged, not silently accepted."""
+
+    def short_fill_receipt(tx_hash):
+        # 70% of the expected 2.9 USDC (2_900_000 units) -- below the 85% floor.
+        return _fill_receipt(
+            to_address=FRANKLIN_ROW["walletAddress"]["evm"],
+            amount_units=int(round(2.9 * 1e6 * 0.70)),
+        )
+
+    deps, _, ledger_path, _ = make_deps(tmp_path, read_base_tx_receipt=short_fill_receipt)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "failed"
+
+
+def test_tx_receipt_not_success_status_refused(tmp_path):
+    def reverted_receipt(tx_hash):
+        return _fill_receipt(
+            to_address=FRANKLIN_ROW["walletAddress"]["evm"], amount_units=int(round(2.9 * 1e6)), status="0x0"
+        )
+
+    deps, _, ledger_path, _ = make_deps(tmp_path, read_base_tx_receipt=reverted_receipt)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "failed"
+
+
+def test_relay_reports_success_but_no_tx_hash_refused(tmp_path):
+    deps, _, ledger_path, _ = make_deps(
+        tmp_path, poll_relay_status=lambda ep: {"status": "success", "txHashes": []}
+    )
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    rows = read_ledger(ledger_path)
     assert rows[-1]["status"] == "failed"
 
 

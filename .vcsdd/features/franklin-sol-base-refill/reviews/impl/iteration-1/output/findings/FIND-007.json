@@ -1,0 +1,12 @@
+{
+  "findingId": "FIND-007",
+  "dimension": "structural_integrity",
+  "category": "duplication",
+  "severity": "low",
+  "description": "The Solana instruction/address-lookup-table/blockhash/sign/submit logic (_parse_alt + the body of _build_sign_submit_solana_tx, franklin_sol_base_refill.py:353-417) is copy-pasted near-verbatim from skills/earn/sol-to-usdc.py's main() (lines 90-123, 126-142 in that file) rather than extracted into a shared helper (e.g. lib/solana_tx.py), despite this project's own lib/ convention (identity.py, erc20.py, solana_rpc.py) already establishing the pattern of factoring out exactly this kind of reusable, money-critical primitive from a single-script original. This creates two independently-maintained copies of the money-critical instruction-building/ALT-parsing/signing code; a correctness fix discovered in one (e.g. an ALT-parsing edge case) will not automatically propagate to the other.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "353-417"
+  },
+  "routeToPhase": "2c"
+}
