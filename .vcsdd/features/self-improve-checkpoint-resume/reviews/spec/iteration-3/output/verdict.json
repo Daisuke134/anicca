@@ -1,0 +1,57 @@
+{
+  "sprintNumber": null,
+  "feature": "self-improve-checkpoint-resume",
+  "reviewType": "spec",
+  "phase": "1c",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 3,
+  "reviewContext": {
+    "targetSpec": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "targetVerificationArchitecture": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "manifest": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/reviews/spec/iteration-3/input/manifest.json (reviewDimensions restricted to spec_fidelity + verification_readiness)",
+    "crossCheckedImplementationContext": [
+      "skills/earn/self-improve/run_evolve.sh (full file read)",
+      "skills/earn/self-improve/lib/ledger_reader.py (full file read -- the module this feature explicitly claims to mirror)",
+      "skills/earn/self-improve/config.yaml (full file read -- confirms checkpoint_interval/db_path claims)",
+      "skills/earn/self-improve/lib/gate_math.py (full file read -- confirms this repo's pure-core/no-I/O convention)"
+    ],
+    "priorIterationFindingsStatus": {
+      "FIND-001 (iteration 2, blocking -- INV-CR1 untraceable to any enforcing REQ/test)": "RESOLVED -- REQ-CR11 (behavioral-spec.md:244-260) now explicitly names the exact denylisted API surface for BOTH the pure function and the __main__ entrypoint, and states 'This requirement makes INV-CR1 directly traceable to an explicit, testable REQ ... and is verified by PROP-CR12.' PROP-CR12 (verification-architecture.md:71) is a new, dedicated proof obligation (static denylist scan + dynamic tmp_path snapshot-before/after). Traceability gap closed. HOWEVER a residual, narrower defect in this exact mechanism is found this iteration: see FIND-002 (PROP-CR12(a)'s static half is a denylist, not the allowlist REQ-CR11 itself claims, and misses pathlib/os.symlink/os.link mutation paths).",
+      "FIND-002 (iteration 2, major -- not-found log branch only line-count-checked)": "RESOLVED -- REQ-CR9 (behavioral-spec.md:227-240) now pins literal substrings for BOTH branches verbatim ('checkpoint_resume: resuming from checkpoint' / 'checkpoint_resume: no prior checkpoint found') and explicitly states 'a bare line-count check is not sufficient evidence.' PROP-CR-WIRE3 (verification-architecture.md:74) and PROP-CR-LIVE1 (verification-architecture.md:75) were both updated to assert on these exact substrings in both branches, not merely count(lines)==1. No residual defect found in this specific fix."
+    },
+    "newFindingsThisIteration": ["FIND-001", "FIND-002", "FIND-003", "FIND-004"]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:227-240", "description": "REQ-CR9's iteration-2 fix (pinned literal log substrings for both branches) verified present and correctly worded -- no finding raised on this specific point."},
+        {"type": "file", "location": "specs/behavioral-spec.md:90-119", "description": "Purity Boundary Analysis section correctly identifies the pure core as find_latest_checkpoint only, with the __main__ CLI entrypoint and run_evolve.sh both explicitly effectful -- no hidden coupling found in this section."},
+        {"type": "file", "location": "specs/behavioral-spec.md (frontmatter, integration.does_not_replace_or_modify)", "description": "Confirmed this feature's own scope statement excludes any live-money path, wallet key, .env, ledger file, spend cap, and the launchd plist -- cross-checked against run_evolve.sh's real OPENEVOLVE_BIN/promote_gate.sh invocations (run_evolve.sh:82-110), which this feature's spec correctly never touches. INV-CR3/INV-CR2 remain true of the current spec text: this is still a paper-only backtest-infrastructure change with no live-money surface."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:58-70", "description": "PROP-CR1 through PROP-CR11 verified individually traceable to a specific REQ-CR/EDGE-CR combination each, with concrete (non-tautological) assertions -- e.g. PROP-CR4/PROP-CR11 specifically construct adversarial fixtures (integer-vs-lexicographic checkpoint numbering, a stray .DS_Store-only checkpoints/ dir) rather than happy-path-only cases. No finding raised on PROP-CR1-CR11's own individual content."},
+        {"type": "file", "location": "specs/verification-architecture.md:109-117", "description": "Regression Table correctly scopes the pre-existing 14-file pytest suite as required-green and correctly notes no existing test imports the new module -- accurate, grounded claim (checkpoint_resume.py does not exist yet, confirmed via direct filesystem check, so it cannot be imported by any pre-existing test)."},
+        {"type": "file", "location": "specs/verification-architecture.md:87-107", "description": "Tier 0/1-only classification (no Tier 2/3) is a defensible, non-inflated choice for a ~20-line path-selection function with no numeric/financial invariant and no concurrency -- correctly contrasted against gate_math.py's own Tier-2-warranting risk_adjusted_score/is_implausible_jump in the same Verification Strategy section."}
+      ]
+    }
+  ],
+  "blockingFindings": ["FIND-001", "FIND-002"],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "iteration2ResolvedCount": 2,
+    "iteration2NotFixedCount": 0,
+    "newFindingsThisIteration": 4
+  }
+}
