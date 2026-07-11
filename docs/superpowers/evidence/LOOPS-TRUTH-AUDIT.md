@@ -45,3 +45,16 @@
 
 ## 検証原則（今後厳守）
 loop の DID/RESULT/EARNED を信用しない。**実 side-effect(投稿URLをlogged-out browser / 実登録をgcal readback / 実入金をon-chain / ledger 実増加)を私自身の目で確認するまで "working" と言わない。**
+
+## BROWSER 確定検証（自分の目、logged-out/on-chain）— 2026-07-11 18:xx JST
+| loop | browser 実確認 | 判定 | 根因 |
+|---|---|---|---|
+| clip | 最終投稿 reel/DanlbElPLGr は17h前、以降ゼロ。post_reel.py が毎pass shared-unconfirmed(IGシェアモーダル無限)。clip-promote-core DEAD。ledger未記録投稿4件=grid乖離 | 🔴 投稿停止 | shared-unconfirmed根因未特定+promote-core修復未着手 |
+| video | @money_blueprintdaily = 「投稿はまだありません」grid空。warmup_day state間で4vs0矛盾、2日停滞 | 🔴 投稿ゼロ | warmup未完+2state不整合(未検知) |
+| reddit | account u/anicca_sao **BAN済**(スクショ確認)、コメントlogged-out不可視、公開impressionゼロ | 🔴 死亡 | BAN。self-heal liveurl()がHTTP200しか見ずBAN検知不能 |
+| gig | 出品3件実在だが**全て実績0件**=稼ぎゼロ。login失敗(reCAPTCHA/fraud)、pass counter 07-06停止 | 🔴 稼ぎゼロ | login構造ブロック+実績ゼロ |
+
+## self-heal の確定した穴（browser で実証）
+- `verify-loops-audit.sh:18-29 liveurl()` = **HTTP status しか見ない** → reddit BAN/コメント非表示/IG false-negative を全て見逃す。→ logged-out DOM 本文存在チェック + BAN チェックが必須。
+- clip: healthcheck が clip-promote-core DEAD を検知し selfheal-request を書いたが、**escalation→self-fix 実行の trigger が引かれてない**(self-fix 本日0件)。
+- video: 2つの state file(warmup_day 4 vs 0)の整合性チェックが無い。
