@@ -7,11 +7,17 @@
   behavioral-spec.md by impl-review iteration-2/3 but never previously reflected here (FIND-202: a real
   drift between the two governing spec documents). Verification Strategy paragraph's test count updated
   accordingly. See `reviews/impl/iteration-3/output/findings/FIND-201..202.json`.
+- **impl iter4 fix FIND-301 (tx_hash case normalization)** (2026-07-11): added PROP-125a/b/c (REQ-125,
+  tx_hash storage-side normalization + comparison-side case-insensitive equality) to the Proof
+  Obligations table below. `lending-signer.mjs`'s Pure Core entry extended to include
+  `normalizeTxHash`/`txHashesEqual`. Verification Strategy paragraph's test count updated accordingly.
+  See `reviews/impl/iteration-4/output/findings/FIND-301.json`.
 
 ## Purity Boundary Map
 - **Pure Core**: `lending-gate.mjs`, `lending-orchestrator.mjs`'s own sequencing (unchanged, sprint-2
   converged) — deterministic, already formally verified under `anicca-agent-lending`. New this fix:
-  `lending-signer.mjs` (`deriveSignerAddress`/`addressesEqual`) — pure, deterministic, no I/O.
+  `lending-signer.mjs` (`deriveSignerAddress`/`addressesEqual`, and — impl-review iteration-4, FIND-301 —
+  `normalizeTxHash`/`txHashesEqual`) — pure, deterministic, no I/O.
 - **Effectful Shell**: `wake-gate.mjs::runWakeGate`'s new key/rpcUrl resolution (env/file reads) and
   its new REQ-119 signer-match guard (in-memory comparison, no I/O), plus `defaultDisburse`/
   `defaultReconcile` (network I/O) — extended this fix (impl-review iteration-1) with a bounded
@@ -39,6 +45,9 @@
 | PROP-123c | REQ-123: a `/supported` response advertising `eip155:8453`, combined with a matching signer + `GIG_CHAIN=base`, passes all three guards — proven by a DIFFERENT, network-layer error surfacing once `payViaFacilitator` is genuinely reached | 1 | true | node:test (`lending-orchestrator.test.mjs`) |
 | PROP-124a | REQ-124 (FIND-201): a wallet-pair+exact-value-matching Transfer whose `tx_hash` is already recorded against a DIFFERENT `loan_id` in `loanRows` is rejected (`found:false`) — never counted as this loan's own disbursement | 1 | true | node:test (`lending-verify.test.mjs`, FIND-201 cross-loan replay case) |
 | PROP-124b | REQ-124: `resolveStaleProvisioning` forwards the FULL current `loanRows` ledger (not just the stale row alone) into `reconcile({loanRow, loanRows})`, and a genuinely new `tx_hash` (not present in `loanRows`) is still matched normally (positive control) | 1 | true | node:test (`lending-verify.test.mjs` positive control + `lending-orchestrator.test.mjs` wiring assertion) |
+| PROP-125a | REQ-125 (FIND-301): `verifyRepayment`'s `alreadyCredited` guard rejects a `txHash` matching an already-recorded row's `tx_hash` in a DIFFERENT case — a casing-only difference never defeats the replay guard | 1 | true | node:test (`lending-verify.test.mjs`, FIND-301 repayment-guard casing-mismatch case) |
+| PROP-125b | REQ-125 (FIND-301): `reconcileProvisionalDisbursement`'s `alreadyRecorded` guard rejects a candidate whose `extractTxHash`-derived `tx_hash` matches an already-recorded row's `tx_hash` in a DIFFERENT case | 1 | true | node:test (`lending-verify.test.mjs`, FIND-301 reconcile-guard casing-mismatch case) |
+| PROP-125c | REQ-125: `tx_hash` is normalized to lowercase at every storage site (`activeStatusFields`, `executeRepaymentClaim`'s repayment-row construction) — no pre-existing, same-casing test fixture changes outcome | 0 | true | manual trace of every `tx_hash`/`disbursement_tx` write site + full lending suite regression (no fixture assumed a specific casing beyond what it itself supplied) |
 
 ## Verification Strategy
 - **Tier 0**: money-safety (no logging) — verified by grep of the diff and of `runWakeGate`'s own
@@ -57,9 +66,15 @@
   convention. Impl-review iteration-3 fix (FIND-201, PROP-124a/b): 3 additional new tests — 2 in
   `lending-verify.test.mjs` (cross-loan replay rejection + genuinely-new-tx_hash positive control) and 1
   in `lending-orchestrator.test.mjs` (asserts `resolveStaleProvisioning` forwards the full `loanRows`
-  ledger into `reconcile()`), same GREEN-directly-against-the-fix convention. Running total: 14 new
-  tests across the three impl-review iterations, all currently passing alongside the full pre-existing
-  lending suite (148 tests as of impl-review iteration-3).
+  ledger into `reconcile()`), same GREEN-directly-against-the-fix convention. Impl-review iteration-4 fix
+  (FIND-301, PROP-125a/b/c): 2 additional new tests in `lending-verify.test.mjs` — a casing-mismatch
+  fixture for `verifyRepayment`'s `alreadyCredited` guard and one for
+  `reconcileProvisionalDisbursement`'s `alreadyRecorded` guard, each recording an already-credited
+  `tx_hash` in one case and supplying the SAME logical hash in a DIFFERENT case as the candidate,
+  asserting the guard still rejects it — same GREEN-directly-against-the-fix convention. Running total:
+  16 new tests across the four impl-review iterations, all currently passing alongside the full
+  pre-existing lending suite (150 tests as of impl-review iteration-4; `runtime/loop`'s own suite,
+  untouched by this fix, independently reconfirmed at 250/250).
 - **Tier 2/3**: not applicable — this is a narrow wiring fix over already-hardened (sprint-2/3,
   Phase-5-complete) pure functions; no new arithmetic/decision logic is introduced. `lending-signer.mjs`
   is a thin wrapper over viem's own already-audited `privateKeyToAccount`, not new cryptography.

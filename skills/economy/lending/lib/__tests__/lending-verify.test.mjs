@@ -179,6 +179,29 @@ test("PROP-108e: verifyRepayment rejects a txHash already credited toward a DIFF
   }
 });
 
+test("FIND-301 fix (critical, impl-review iteration-4): verifyRepayment's alreadyCredited guard rejects a txHash that matches an already-recorded row's tx_hash in a DIFFERENT case -- tx_hash reaches loans.jsonl from two uncoordinated sources (the facilitator-format disbursement route vs. this module's own eth_getLogs-derived extractTxHash) with no shared, code-enforced casing contract, so a mere casing difference must never let the replay guard silently fail to match", async () => {
+  const rpc = await startMockRpc({
+    eth_getTransactionReceipt: () => ({ status: "0x1", blockNumber: "0x64", logs: [transferLog({ from: BORROWER, to: LENDER, valueBase: 22000 })] }),
+    eth_getBlockByNumber: () => ({ number: "0x64" }),
+  });
+  try {
+    // Recorded lowercase (the SAME casing normalizeTxHash's storage-side fix would produce); the caller
+    // submits the SAME logical hash in a DIFFERENT case -- the SAME real transaction, casing differs only.
+    const alreadyCreditedRows = [{ loan_id: "loan_L1_1", status: "active", repaid_usd: 0.022, tx_hash: "0xcasingmismatchtx00000000000000000000000000000000000000000001" }];
+    const result = await verifyRepayment({
+      txHash: "0xCASINGMISMATCHTX00000000000000000000000000000000000000000001",
+      expectedFrom: BORROWER,
+      expectedTo: LENDER,
+      rpcUrl: rpc.url,
+      loanRows: alreadyCreditedRows,
+    });
+    assert.equal(result.credited, 0, "a casing-only difference must never let an already-credited tx_hash be counted again");
+    assert.equal(result.rejected, true);
+  } finally {
+    await rpc.close();
+  }
+});
+
 test("PROP-108f: verifyRepayment fails closed (credits 0, rejected:true) rather than throwing when a structurally-matching Transfer log's own `data` field is malformed/non-hex (resolves FIND-901)", async () => {
   const badDataLog = {
     address: USDC,
@@ -342,6 +365,33 @@ test("FIND-201 fix: reconcileProvisionalDisbursement still finds a genuinely NEW
     const result = await reconcileProvisionalDisbursement({ loanRow, loanRows, rpcUrl: rpc.url, fromBlock: "0x1", toBlock: "0x64" });
     assert.equal(result.found, true);
     assert.equal(result.txHash, "0xgenuinelynewtxforloanB0000000000000000000000000000000000000002");
+  } finally {
+    await rpc.close();
+  }
+});
+
+test("FIND-301 fix (critical, impl-review iteration-4): reconcileProvisionalDisbursement's alreadyRecorded guard rejects a candidate whose extractTxHash-derived tx_hash matches an already-recorded row's tx_hash in a DIFFERENT case -- the same cross-source casing gap as the repayment guard above, on the reconciliation side", async () => {
+  const loanRowB = {
+    loan_id: "loan_Franklin_2",
+    lender_id: "L1",
+    borrower_id: "franklin2",
+    lender_wallet: LENDER,
+    borrower_wallet: BORROWER,
+    principal_usd: 0.02,
+  };
+  // loan_Franklin_1 recorded this tx_hash lowercase (the SAME casing normalizeTxHash's storage-side fix
+  // would produce); the mock RPC's own eth_getLogs response returns the SAME logical hash in a
+  // DIFFERENT case -- mirrors a real facilitator-format-vs-RPC-format casing divergence for the
+  // identical transaction (FIND-301's exact hazard shape).
+  const loanRows = [
+    { loan_id: "loan_Franklin_1", lender_id: "L1", borrower_id: "franklin2", tx_hash: "0xcasingmismatchreconciletx0000000000000000000000000000000001", status: "active" },
+  ];
+  const rpc = await startMockRpc({
+    eth_getLogs: () => [transferLog({ from: LENDER, to: BORROWER, valueBase: 20000, transactionHash: "0xCASINGMISMATCHRECONCILETX0000000000000000000000000000000001" })],
+  });
+  try {
+    const result = await reconcileProvisionalDisbursement({ loanRow: loanRowB, loanRows, rpcUrl: rpc.url, fromBlock: "0x1", toBlock: "0x64" });
+    assert.equal(result.found, false, "a casing-only difference must never let an already-recorded tx_hash be counted as this loan's own disbursement");
   } finally {
     await rpc.close();
   }

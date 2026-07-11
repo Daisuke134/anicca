@@ -33,7 +33,7 @@ import { verifyRepayment, reconcileProvisionalDisbursement } from "./lending-ver
 import { LOANS_LEDGER_PATH } from "./lending-path.mjs";
 import { withGigLock } from "../../gig/lib/lock.mjs";
 import { payViaFacilitator } from "../../gig/lib/escrow.mjs";
-import { deriveSignerAddress, addressesEqual } from "./lending-signer.mjs";
+import { deriveSignerAddress, addressesEqual, normalizeTxHash } from "./lending-signer.mjs";
 
 function errorMessage(e) {
   return (e && e.message) || String(e);
@@ -70,10 +70,17 @@ function findLastRowForLoanId(loanRows, loanId) {
 
 // The "active" row shape (REQ-106's own step-3 definition) landed via either step 9's own fresh
 // disbursement or step 5's reconciliation of a stale prior attempt — identical fields either way.
+//
+// impl-review iteration-4, FIND-301 (critical): this is the SINGLE storage site both routes share, so
+// normalizing `tx_hash` here (via `normalizeTxHash`, `lending-signer.mjs`) covers BOTH the happy-path
+// disbursement's facilitator-format `disburseResult.tx` (escrow.mjs's own `settle.json.transaction`,
+// an external, third-party-serialized string) and reconciliation's own RPC-derived
+// `reconcileResult.txHash` (`extractTxHash`'s `log.transactionHash`) — the two uncoordinated sources
+// this fix's casing gap spans.
 function activeStatusFields(txHash, nowMs) {
   return {
     status: "active",
-    tx_hash: txHash,
+    tx_hash: normalizeTxHash(txHash),
     issued_ms: nowMs,
     due_ms: nowMs + LOAN_REPAYMENT_WINDOW_DAYS * 86400000,
   };
@@ -507,9 +514,14 @@ export async function executeRepaymentClaim({ loanId, txHash, nowMs = Date.now()
 
     const repaidUsd = +(( lastRow.repaid_usd || 0) + verifyResult.credited).toFixed(6);
     const reachedFull = repaidUsd >= lastRow.total_due_usd;
+    // impl-review iteration-4, FIND-301 (critical): the repayment-row tx_hash storage site — the
+    // caller-supplied `txHash` (already independently verified by `verifyRepayment` above) is normalized
+    // the SAME way as `activeStatusFields`'s own disbursement-side tx_hash, so a later replay-guard
+    // comparison never depends on the caller's own casing choice.
+    const normalizedTxHash = normalizeTxHash(txHash);
     const newRow = reachedFull
-      ? { ...lastRow, repaid_usd: repaidUsd, status: "repaid", tx_hash: txHash, on_time: nowMs <= lastRow.due_ms }
-      : { ...lastRow, repaid_usd: repaidUsd, status: "active", tx_hash: txHash };
+      ? { ...lastRow, repaid_usd: repaidUsd, status: "repaid", tx_hash: normalizedTxHash, on_time: nowMs <= lastRow.due_ms }
+      : { ...lastRow, repaid_usd: repaidUsd, status: "active", tx_hash: normalizedTxHash };
     appendLoanRow(ledgerFile, newRow);
     return { credited: verifyResult.credited, status: newRow.status };
   });

@@ -40,6 +40,19 @@ duplicate, anicca-agent-lending's own already-converged REQ-101..117/PROP-1xx co
   extended past impl-review iteration-1 to cover iteration-2's REQ-122/REQ-123, nor now iteration-3's
   REQ-124; both are corrected in this changelog entry and in `verification-architecture.md` directly.
   See `reviews/impl/iteration-3/output/findings/FIND-201..202.json`.
+- **impl iter4 fix FIND-301 (tx_hash case normalization)** (2026-07-11, impl-review iteration-4): FIND-301
+  (critical) — new REQ-125: `tx_hash` is now normalized to lowercase at every STORAGE site
+  (`lending-orchestrator.mjs`'s `activeStatusFields`, shared by both the happy-path disbursement route
+  and the reconciliation route; and `executeRepaymentClaim`'s own repayment-row construction), and both
+  REQ-108e/REQ-124's replay-guard COMPARISON sites (`lending-verify.mjs`'s `alreadyCredited`/
+  `alreadyRecorded`) now use a new `txHashesEqual` helper (`lending-signer.mjs`) instead of raw `===`,
+  mirroring `addressesEqual`'s own already-proven case-insensitive-hex-identity precedent exactly. Without
+  this, a tx_hash reaching `loans.jsonl` from the facilitator-format disbursement route
+  (`escrow.mjs`'s own `settle.json.transaction`, an external, third-party-serialized string) vs. this
+  codebase's own `eth_getLogs`-derived `extractTxHash` route had no shared, code-enforced casing
+  contract — a casing-only difference could silently defeat REQ-108e/REQ-124's replay guard, reopening
+  FIND-201's cross-loan fund-misattribution hazard on casing alone. See
+  `reviews/impl/iteration-4/output/findings/FIND-301.json`.
 
 ## Root cause (verified live)
 
@@ -242,6 +255,56 @@ own `reconcile()` call, and `reconcileProvisionalDisbursement`'s signature had n
   normally (positive control).
 - `lending-orchestrator.test.mjs`: `resolveStaleProvisioning` forwards the FULL current `loanRows`
   ledger (not just the stale row alone) into `reconcile({loanRow, loanRows})`.
+
+### REQ-125: tx_hash case normalization at storage and comparison (impl-review iteration-4, FIND-301, critical)
+**EARS**: WHEN a `tx_hash` value is written to a loan row (`lending-orchestrator.mjs`'s
+`activeStatusFields` — shared by both the happy-path disbursement route's `disburseResult.tx` and the
+reconciliation route's `reconcileResult.txHash` — and `executeRepaymentClaim`'s own repayment-row
+construction), THE SYSTEM SHALL lowercase it first (`normalizeTxHash`, `lending-signer.mjs`); AND WHEN
+REQ-108e's `alreadyCredited` guard (`verifyRepayment`) or REQ-124's `alreadyRecorded` guard
+(`reconcileProvisionalDisbursement`) compares a candidate `tx_hash` against any row's own recorded
+`tx_hash`, THE SYSTEM SHALL use case-insensitive equality (`txHashesEqual`, `lending-signer.mjs`)
+instead of raw `===`.
+
+**Root cause**: `tx_hash` values reach `loans.jsonl` from two structurally different, uncoordinated
+sources with no shared, code-enforced casing contract: (1) the happy-path disbursement route stores
+`disburseResult.tx`, which is `settle.json.transaction` (`escrow.mjs`) — a raw field parsed out of an
+HTTP JSON response from the self-hosted facilitator, an external, third-party codebase this feature does
+not control or verify; (2) the reconciliation route stores `extractTxHash(log)`, which reads
+`log.transactionHash` directly off this codebase's own `eth_getLogs` call against Base mainnet. Nothing
+in this feature's spec, code, or tests ever asserted that these two sources serialize the SAME real
+transaction hash with IDENTICAL character casing — and unlike EVM addresses (which have an EIP-55
+checksum convention this codebase already normalizes via `addressesEqual`), transaction hashes have no
+analogous cross-implementation casing guarantee. A casing mismatch would silently defeat REQ-108e's
+same-loan/cross-loan replay guard and REQ-124's cross-loan reconciliation replay guard alike — reopening
+FIND-201's exact fund-misattribution hazard (loan B's reconcile silently claiming loan A's own
+already-credited transfer) on a casing difference alone, even though the wiring and value/wallet-pair
+matching both guards depend on remains otherwise sound.
+
+**Edge Cases**:
+- A row's recorded `tx_hash` and a freshly-supplied/extracted candidate `tx_hash` are the SAME logical
+  transaction hash but differ ONLY in character casing → `txHashesEqual` returns `true`; the replay
+  guard rejects the candidate exactly as it would for an identical-casing match (resolves FIND-301).
+- Storage-side normalization (`normalizeTxHash`) is the durable fix for all NEWLY written rows;
+  comparison-side normalization (`txHashesEqual`) is defense-in-depth so a row written before this fix
+  landed (in whatever casing it happened to receive) still compares correctly against a freshly
+  normalized or freshly extracted candidate.
+- Neither side of a `txHashesEqual` comparison being a non-empty string → treated as unequal
+  (fail-closed — mirrors `addressesEqual`'s own discipline; a missing/malformed `tx_hash` never
+  compares "equal" to anything).
+- A non-string `tx_hash` reaching `normalizeTxHash` (should not occur; every caller already constructs a
+  string) → passed through unchanged, never fabricated into a string (`normalizeTxHash` never masks a
+  missing value as an empty/placeholder hash).
+
+**Acceptance Criteria**:
+- `lending-verify.test.mjs`: `verifyRepayment`'s `alreadyCredited` guard rejects a `txHash` matching an
+  already-recorded row's `tx_hash` in a DIFFERENT case.
+- `lending-verify.test.mjs`: `reconcileProvisionalDisbursement`'s `alreadyRecorded` guard rejects a
+  candidate whose `extractTxHash`-derived `tx_hash` matches an already-recorded row's `tx_hash` in a
+  DIFFERENT case.
+- Full lending suite + `runtime/loop` suite remain green (no regression to any existing same-casing
+  fixture — every pre-existing test fixture already uses the SAME literal casing on both sides of any
+  `tx_hash` comparison, so lowercasing both sides changes no existing outcome).
 
 ### REQ-123: live facilitator mainnet preflight before signing (impl-review iteration-2, FIND-103, high)
 **EARS**: WHEN `defaultDisburse` is about to call `payViaFacilitator` against `facilitatorUrl`, THE

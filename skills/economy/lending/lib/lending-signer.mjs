@@ -32,3 +32,37 @@ export function deriveSignerAddress(privateKey) {
 export function addressesEqual(a, b) {
   return typeof a === "string" && a.length > 0 && typeof b === "string" && b.length > 0 && a.toLowerCase() === b.toLowerCase();
 }
+
+/**
+ * normalizeTxHash — lowercases a tx hash before it is ever written to loans.jsonl (impl-review
+ * iteration-4, FIND-301, critical). tx_hash values reach the ledger from TWO uncoordinated sources with
+ * no shared, code-enforced casing contract: the happy-path disbursement route stores the external
+ * facilitator's own `settle.json.transaction` string (`escrow.mjs`, a third-party Rust codebase this
+ * feature does not control), while the reconciliation route stores THIS codebase's own
+ * `eth_getLogs`-derived `log.transactionHash` (`lending-verify.mjs::extractTxHash`). Neither side of a
+ * later replay-guard comparison (REQ-108e/REQ-124) can be trusted to already share casing — normalizing
+ * at every storage site is the durable fix, the SAME "checksummed vs. lowercased forms of the SAME
+ * value must compare equal" problem `addressesEqual` above already solves for wallet addresses.
+ * Non-string input passes through unchanged (never fabricates a value; callers already reject a
+ * falsy/missing tx_hash elsewhere).
+ * @param {string|null|undefined} txHash
+ * @returns {string|null|undefined}
+ */
+export function normalizeTxHash(txHash) {
+  return typeof txHash === "string" ? txHash.toLowerCase() : txHash;
+}
+
+/**
+ * txHashesEqual — case-insensitive tx-hash equality (impl-review iteration-4, FIND-301, critical),
+ * mirroring `addressesEqual` exactly for the SAME class of hex-string identity problem. Used at every
+ * tx_hash COMPARISON site (`lending-verify.mjs`'s `alreadyCredited`/`alreadyRecorded` guards) as
+ * defense-in-depth alongside `normalizeTxHash`'s storage-side fix — so a row written before this fix
+ * landed (already-lowercase or not) still compares correctly against a freshly-extracted candidate of
+ * different casing. Fail-closed: neither side being a non-empty string is treated as unequal.
+ * @param {string|null|undefined} a
+ * @param {string|null|undefined} b
+ * @returns {boolean}
+ */
+export function txHashesEqual(a, b) {
+  return typeof a === "string" && a.length > 0 && typeof b === "string" && b.length > 0 && a.toLowerCase() === b.toLowerCase();
+}
