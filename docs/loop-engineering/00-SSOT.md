@@ -58,7 +58,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 ```
 ### Phase 1 — 片付け/引っ越し（M/S/C、Phase2 の前提）
 ```
-[ ] M1 gig を anicca→PC一本化 — done: PC版(env-u済)起動+anicca版bootout+Label hf-gig-*
+[x] M1 gig を anicca→PC一本化 — DONE(2026-07-11): Label hf-gig-*修正+anicca版bootout+PC版起動、pane実測でAPI-key hang無し(env-u OK)。evidence=evidence/M1-gig-consolidation.md。残: L1(実出品/提案をreality-verifier確認)+M4b(session名分離)
 [ ] M2 capafy を anicca→PC移管 — done: PC closed folder+Label hf-capafy-*
 [ ] M3 life-manager 二重起動を解消 — done: PC一本化・anicca側目覚まし退役
 [ ] M4 PC全ループのLabelをhf-*に改名 — done: launchctl衝突ゼロ
