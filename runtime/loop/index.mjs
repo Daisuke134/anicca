@@ -353,17 +353,34 @@ process.stderr.write(`[loop] Starting Anicca loop. ANICCA_HOME=${ANICCA_HOME}\n`
 
 while (!shuttingDown) {
   await runOneWake();
-  // franklin-ledger-push (P2) REQ-701..707: best-effort, default-OFF (LEDGER_PUBLISH_ENABLED)
-  // publish of this wake's ledger.jsonl evidence into the ~/anicca repo. publishLedgerCycle() itself
-  // never throws (its own REQ-703 contract) -- this try/catch is deliberate defense-in-depth so a
-  // ledger-publish regression can NEVER take the wake loop down with it.
+  // franklin-ledger-push (P2) REQ-701..709: best-effort, default-OFF (LEDGER_PUBLISH_ENABLED)
+  // publish of BOTH this instance's ledger evidence sources (state/ledger.jsonl wake bookkeeping AND
+  // skills/earn/state/earn-ledger.jsonl money evidence -- impl-review iter2 FIND-001) into the
+  // ~/anicca repo. publishLedgerCycle() itself never throws (its own REQ-703 contract) -- this
+  // try/catch is deliberate defense-in-depth so a ledger-publish regression can NEVER take the wake
+  // loop down with it.
   try {
-    await publishLedgerCycle({
+    const publishResult = await publishLedgerCycle({
       ledgerPath: LEDGER_PATH,
+      earnLedgerPath: defaultEarnLedgerPath(config),
       repoRoot: LOOP_REPO_ROOT,
       markerPath: LEDGER_PUBLISH_MARKER_PATH,
       instance: process.env.ANICCA_INSTANCE || 'clawrouter',
     });
+    // impl-review iter2 FIND-005: N=5 consecutive publish-cycle failures escalate via the EXISTING
+    // appendHarnessFailure mechanism (never a new writer) so healthchecks can see a stuck
+    // ledger-publish pipeline (e.g. a revoked/read-only git credential) instead of it failing
+    // silently on stderr forever.
+    if (publishResult && publishResult.publishFailureStreak >= 5) {
+      await appendHarnessFailure({
+        ts: Math.floor(Date.now() / 1000),
+        wakeId: 'n/a',
+        kind: 'ledger_publish_stuck',
+        layer: 'ledger_publish',
+        exitCode: null,
+        rawDetail: `ledger-publish: ${publishResult.publishFailureStreak} consecutive cycle failures, last reason=${publishResult.reason}`,
+      });
+    }
   } catch (err) {
     process.stderr.write(`[loop] ledger-publish cycle threw unexpectedly (should be impossible): ${err.message}\n`);
   }

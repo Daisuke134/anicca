@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The divergence-recovery test (PROP-714, 'a push rejected by a non-fast-forward divergence is recovered') triggers the rejection by having an OUTSIDE clone push a commit directly onto the exclusive per-instance branch `ledger-franklin` (test lines 422-429). But REQ-705's own text (behavioral-spec.md:217-220) calls exactly this scenario 'structurally impossible': 'no two instances ... ever write to the same branch'. The test therefore proves recoverFromDivergence()'s MECHANICS work once triggered, but never proves the mechanism is reachable in the real, single-writer-per-branch production topology this design otherwise guarantees. Per FIND-002 (this review), the realistic same-instance trigger for a lost-write scenario -- publishRepoDir being lost/recreated between a local commit and its eventual push -- produces a clean fast-forward, NOT a rejected push, so it is never caught by this test or by the code path it exercises. A reader of this suite would reasonably conclude divergence-safety is proven end-to-end for this feature's actual deployment; it is not.",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/ledger-publish.test.mjs",
+    "lineRange": "413-451",
+    "snippet": "const outsideWriter = cloneBranch(originDir, 'ledger-franklin');\nfs.writeFileSync(path.join(outsideWriter, 'external-marker.txt'), 'someone else pushed this\\n');\n... sh(['push', '-q', 'origin', 'ledger-franklin'], outsideWriter);"
+  },
+  "corroborating": [
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "217-220", "note": "explicitly frames cross-writer collision on the same branch as structurally impossible -- the test's own trigger contradicts the design's stated invariant."}
+  ],
+  "routeToPhase": "2a"
+}

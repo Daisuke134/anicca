@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The feature's stated purpose (behavioral-spec.md:5-6: 'every Franklin wake's ledger evidence becomes third-party-verifiable ... so \"the balance/actions grow every hour\" is third-party-verifiable from git history alone') is not met by the implementation. publishLedgerCycle() only ever reads `ledgerPath` = `state/ledger.jsonl` (the per-WAKE ledger). Every field that could ever satisfy 'balance grows' verifiability -- `net_usdc`/`earn_usdc`/`cost_usdc` and the on-chain `tx`/`sig` reference -- is written EXCLUSIVELY to a completely separate file, `skills/earn/state/earn-ledger.jsonl` (via record-swap.mjs), which ledger-publish.mjs never reads and never publishes. Tracing every site in index.mjs that constructs a `state/ledger.jsonl` record (lines 338-343, 391, 448, 565-585, 660-663, 830-841, 868-880, 899, 927-934) shows the field set is always a subset of {ts, wake_id, kind, sleep_s, model, slot, attemptsUsed, args, profitable(boolean), exit_code, result, skip_reason} -- never net_usdc/earn_usdc/cost_usdc/tx/sig. Consequently `projectLedgerLine()`'s own NUMERIC_STAT_FIELD (`net_*`/`earn_*`/`cost_*`) and TX_HASH_FIELD (`tx`/`tx_hash`/`txHash`) allowlist branches (ledger-publish.mjs:117-120,151-169) are dead code against the real source schema -- they can never fire. A third party reading the published `ledger-<instance>` branch would see only a `profitable: true/false` boolean per wake with no backing dollar amount or on-chain reference -- it cannot verify 'the balance grows' at all, which is the feature's entire reason for existing. This is a spec-level design flaw (the spec itself, not just the code, names `state/ledger.jsonl` as the sole source throughout REQ-701..709 and never once mentions `earn-ledger.jsonl` as a candidate source), not a simple implementation slip.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "396-411, 117-120, 151-169",
+    "snippet": "const { ... ledgerPath, ... } = opts; ... const sourceLines = await readSourceLinesRaw(ledgerPath); // ledgerPath is ALWAYS state/ledger.jsonl per index.mjs:361-366's wiring, never earn-ledger.jsonl"
+  },
+  "corroborating": [
+    {"filePath": "runtime/loop/index.mjs", "lineRange": "868-880", "note": "the ONLY fields ever written into a terminal state/ledger.jsonl record -- no net_usdc/tx/sig field exists anywhere in this file's ledger-line construction."},
+    {"filePath": "skills/earn/sol-trade/lib/record-swap.mjs", "lineRange": "48-55", "note": "sig/net_usdc/earn_usdc/cost_usdc are written to earn-ledger.jsonl, a file ledger-publish.mjs never opens."},
+    {"filePath": "runtime/loop/index.mjs", "lineRange": "425", "note": "earnLedgerPath = skills/earn/state/earn-ledger.jsonl, a path never passed to publishLedgerCycle()."},
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "5-6", "note": "states the feature's entire purpose is external balance verifiability, which the actual wiring cannot deliver."}
+  ],
+  "routeToPhase": "1a"
+}
