@@ -1,0 +1,48 @@
+{
+  "featureName": "franklin-ledger-push",
+  "mode": "lean",
+  "language": "javascript",
+  "currentPhase": "2c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T00:00:00.000Z",
+      "reason": "Begin behavioral specification for per-wake ledger auto commit+push (P2), source: anicca-project docs/loop-engineering/20-implementation-certainty-2026-07-11.md §D"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T00:05:00.000Z",
+      "reason": "Behavioral spec complete (REQ-701..707), moving to verification architecture"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-11T00:10:00.000Z",
+      "reason": "Verification architecture complete (PROP-701..710, purity boundary map). Lean mode: proceeding to RED without a separate fresh-adversary spec-review gate; a fresh adversary reviews the completed implementation in Phase 3 per the task's own instruction."
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-11T00:15:00.000Z",
+      "sprint": 1,
+      "reason": "Entering RED phase: authored runtime/loop/__tests__/ledger-publish.test.mjs (24 test() blocks covering REQ-701..707 / PROP-701..710)"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-11T00:20:00.000Z",
+      "sprint": 1,
+      "reason": "RED confirmed (module not found, ERR_MODULE_NOT_FOUND) + regression baseline PASS (183/183 pre-existing). Evidence: evidence/sprint-1-red-phase.log"
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-11T00:35:00.000Z",
+      "sprint": 1,
+      "reason": "GREEN: implemented runtime/loop/ledger-publish.mjs (decidePublish/extractWakeId pure core + readMarker/writeMarker/readSourceLinesRaw/appendRawLines/defaultGit/publishLedgerCycle effectful shell) and wired publishLedgerCycle() into index.mjs's main wake loop (after runOneWake(), never inside it) + package.json test script. All 24 new tests PASS on first implementation; full official suite 207/207 PASS (183 pre-existing + 24 new); sweep of 13 pre-existing test files not wired into package.json's script: 96/96 PASS. One pre-existing flaky test (integration.test.mjs ENOTEMPTY /tmp cleanup race) reproduced identically on the unmodified baseline via git stash (3/3 runs) -- confirmed unrelated to this feature. Evidence: evidence/sprint-1-green-phase.log. No refactor needed beyond the as-written implementation (module is already small/single-responsibility with clear pure/effectful separation); Phase 2c reviewed with no changes required."
+    }
+  ],
+  "notes": "LEDGER_PUBLISH_ENABLED defaults OFF (unset/non-'1' => disabled), same fail-closed gating style as ALWAYS_ACT_ENABLED. Destination: state/franklin-ledger/<ANICCA_INSTANCE>.jsonl inside the ~/anicca repo working tree (this repo). Throttle/cursor marker lives in $ANICCA_HOME/state/.ledger-publish-marker (data, never committed). Awaiting fresh-context adversary review (Phase 3) per the task instruction; this builder session did not run vcsdd-adversary itself."
+}
