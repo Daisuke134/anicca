@@ -117,8 +117,18 @@ deliberately NOT automated as a pkill pattern — argv shape alone cannot safely
 long-lived poster LOOP from `skills/earn/sol-trade/run.sh`'s own legitimate short-lived one-shot
 invocation of the identical script (FIND-001 iter3):
 
-1. `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` — lists every currently-running process
-   invoking the poster script, on this machine, across all instances.
+1. DETECTION — do NOT grep for the poster script name: the poster is a 1-5s one-shot inside a 120s
+   sleep cycle, so a script-name `pgrep` snapshot has only a ~1-4% catch rate (iteration-5 FIND-001).
+   The DETERMINISTIC signature is the loop SUBSHELL itself: it is forked (not exec'd) from
+   anicca-daemon.sh, so it appears in `ps` permanently as a bash process carrying the parent's argv:
+   `ps -ax -o pid,ppid,command | grep "bash.*anicca-daemon\.sh" | grep -v grep`
+   Because anicca-daemon.sh `exec`s the node loop at its end, every bash still showing the daemon
+   script argv IS a poster-loop subshell (one per live instance is the healthy state). This check is
+   timing-independent — the subshell never disappears between cycles.
+   ★ LIVE EVIDENCE (2026-07-11 12:2x JST, this machine, post-restart): exactly one such bash existed
+   (PID 24053) for the franklin instance and zero legacy poster loops — the launchd bootout/kickstart
+   process-group kill had already reaped pre-migration loops, so in practice this runbook found
+   nothing to clean. Recorded here so future operators know the expected healthy baseline. ★
 2. For each listed PID, inspect its parent process (`ps -o ppid= -p <PID>` then `ps -o command=
    -p <PPID>`) to determine whether it is:
    - a long-lived LOOP poster (parent is an `anicca-daemon.sh` subshell — the `( export
@@ -135,13 +145,11 @@ invocation of the identical script (FIND-001 iter3):
    `pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"` (step 3 of
    anicca-daemon.sh, unchanged) relaunches the correct new-format poster for that instance on its own
    very next restart, so no manual relaunch is needed.
-4. CONVERGENCE CHECK (not a single snapshot — a snapshot taken seconds after step 3 gives false
-   confidence because legacy posters are one-shot children that exit and respawn on a 120s cycle):
-   wait at least 150 seconds (> one full 120s respawn cycle), then re-run
-   `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` AND re-inspect parent lineage per step 2.
-   Repeat the 150s-wait + check until two consecutive checks show zero legacy (markerless, loop-parented)
-   posters. Transient one-shot callers like sol-trade's may legitimately appear/disappear and are not
-   counted as duplicates.
+4. CONVERGENCE CHECK — re-run the step-1 SUBSHELL detection (`ps ... | grep "bash.*anicca-daemon\.sh"`).
+   Because the subshell signature is timing-independent (unlike the transient node child), a single
+   post-kill check is deterministic: expected result = exactly one such bash per live instance (its
+   own new-format loop, relaunched by the daemon), zero additional ones. If the count exceeds
+   one-per-instance, the extras are surviving legacy loops — return to step 2/3 for those PIDs.
 
 This step runs ONCE per instance, at or shortly after deploy of this commit — it is not a recurring
 operational task, and it is intentionally NOT expressed as code (iteration-3 FIND-001) because the
@@ -207,3 +215,19 @@ NOT-franklin and drives the same default path as `clawrouter`.
 - **FIND-003 (minor, verification_readiness)**: synced `verification-architecture.md` with
   PROP-009 (dead-pkill removal) and PROP-010 (verbatim scoped-pattern matrix / sol-trade
   non-match), and added the migration edge case to the Verification Strategy prose.
+
+## Changelog — impl iter4 fixes (2026-07-11)
+- FIND-001: runbook step 3 corrected — kill the PARENT while-loop subshell (PPID), not the transient node child; convergence check added.
+
+## Changelog — impl iter5 fixes (2026-07-11)
+- FIND-001: runbook detection/convergence rewritten to the DETERMINISTIC subshell-argv signature (`bash …anicca-daemon.sh` in ps — timing-independent) after the script-name pgrep was shown ~1-4% effective; live-system evidence recorded (zero legacy loops exist post-restart; process-group kill already reaped them).
+- FIND-002: iter4/iter5 changelog sections added (this section), restoring the audit-trail convention.
+
+## Escalation record (iteration limit, 2026-07-11)
+Five impl-review iterations completed (FAIL×5, findings 3→2→3→1→2 with all CODE findings closed by
+iter4 — iterations 4-5 found only operator-runbook documentation defects; code untouched and clean
+since c4ddb38a). Per the project rule (max 5 iterations → escalate), the thinker/operator resolved the
+final runbook defect directly with live-system verification (see LIVE EVIDENCE in REQ-002(b)) and
+accepts the residual: the migration this runbook describes was verified UNNECESSARY on the live
+system (zero legacy loops exist). The operator executing the deploy will re-verify with the
+deterministic subshell check and record actual output as evidence.
