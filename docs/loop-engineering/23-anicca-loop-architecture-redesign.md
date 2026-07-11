@@ -361,8 +361,8 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 ## ATOMIC TODO（1行=1アクション、順序厳守、`[ ]`/`[x]`）
 
 ### フェーズ0: 命名整理 + 依存排除（最初にやる）
-- [ ] 0a. launchd Label `ai.anicca.founder-loop` を `ai.anicca.agent-economy-loop` にリネームする（中身=index.mjs は不変、bootout→新plist→bootstrap→PID/wallet 不変を確認）
-- [ ] 0b. Opus session /loop を停止する（daily loop は全て Sonnet/free-model、Opus 常駐は不要）✅済(2026-07-11)
+- [x] 0a. launchd Label `ai.anicca.founder-loop` を `ai.anicca.agent-economy-loop` にリネームする（中身=index.mjs は不変、bootout→新plist→bootstrap→PID/wallet 不変を確認）
+- [x] 0b. Opus session /loop を停止する（daily loop は全て Sonnet/free-model、Opus 常駐は不要）✅済(2026-07-11)
 - [ ] 0c. 4ループ(agent-economy/franklin/franklin2/automaton)が互いに依存しないことを確認する（各自 wallet/home/state が独立）
 
 ### フェーズ1: 今すぐ稼がせる（壊れを直す。edge でなく「壊れ」が原因）
