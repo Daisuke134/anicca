@@ -232,12 +232,12 @@
       "updatedAt": "2026-07-10T13:17:42.269Z"
     },
     "franklin-alwaysact-skill-router": {
-      "status": "active",
+      "status": "complete",
       "createdAt": "2026-07-10T14:57:09.001Z",
       "mode": "strict",
       "language": "typescript",
-      "currentPhase": "1c",
-      "updatedAt": "2026-07-10T20:21:12.387Z"
+      "currentPhase": "complete",
+      "updatedAt": "2026-07-11T01:16:39.166Z"
     }
   },
   "activeFeature": "franklin-alwaysact-skill-router"
