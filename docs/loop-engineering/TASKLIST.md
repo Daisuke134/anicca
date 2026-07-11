@@ -4,7 +4,9 @@
 記録/検証/一本化(#1-#6 下記)は全 DONE。今は「実 external:true を出す」フェーズ。
 残タスク(doc29 の実装順):
 - **G1. native→stablecoin swap** ✅ DONE(2026-07-12, 実マネー own-eyes): relay.link で POL→USDC.e 実行。0x810f = **$23.55 USDC.e** + 13 POL(gas)。tx 766894ff($2実証)→56348c8d($21.5本体)。手法= relay.link /quote → EVM tx を founder key で署名(web3.py)→ solver が非同期 fill。全エンジンの前提クリア。次: half を Franklin へ bridge + PM/HL/x402 に配分。
-- **G2. 層0 x402 seller を live 化**（$0 資本の最速 earner）→ 最初の external:true。
+- **G1.7 realtime 発見(2026-07-12)**: loop(index.mjs balance.mjs) は **Base USDC** を残高として読む(0x810f Base)。funds は **Polygon USDC.e $23.55** → loop から見えない。かつ **loop の現戦略は弱い方**(pm=方向性/sol=momentum WAIT)。→ **今 Base に bridge して funding すると弱戦略で溶ける**。∴ 順序 = ①良い戦略を loop に build(poly-maker MM/HL funding-arb, doc28) → ②Base に bridge → ③loop 自律 trade。戦略 build が先(要 clean context, 実マネー安全)。
+- **G2(strategy build 本丸). loop に構造 edge 戦略を移植**: pm=poly-maker(WS板+regime+risk, post-only=naked構造排除), hl=funding-arb。loop が自律 wake で回す。← autonomous earning の核。私は trade しない、loop がやる。
+- **G3. 層0 x402 seller を live 化**（$0 資本の最速 earner）→ 最初の external:true。
 - **G3. 層1 yield floor**(Beefy/Aave hedge) / **G4. 層2 HL funding-arb**($50-100超で)。
 - 資金配分: claude-p $15 + Franklin $15。全員が同じ共有 skill で稼ぐ。
 現在残高(own-eyes 2026-07-12): 0x810f=308 POL(≈$25-30), pm 0x904B=$1.35 pUSD, PM deposit 0x4c176=$0, Franklin Base 0x3EcCAD=$6.48。
