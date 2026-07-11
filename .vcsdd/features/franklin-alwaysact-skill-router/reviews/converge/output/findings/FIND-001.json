@@ -1,0 +1,38 @@
+{
+  "findingId": "FIND-001",
+  "phase": "converge",
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence"],
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "specs/verification-architecture.md's own Pure Core declaration for `nextRerouteState` (the state machine verification-architecture.md itself calls 'the SOLE arbiter of every retry/reroute/escalation branch decision', and which Phase 5's purity-audit.md claims to have independently re-verified 'matches declared' with 'zero deviations') does NOT match the actual shipped implementation. Declared (verification-architecture.md:93-96, Pure Core section): `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })` returning `{ shouldRetry: boolean, excludeSlot: string|null, exhausted: boolean }`. Actual implementation (runtime/loop/always-act-router.mjs:148-153): `nextRerouteState({ attemptsUsed, maxAttempts })` -- no `lastOutcome` parameter exists anywhere in the function or any of its call sites -- returning `{ shouldRetry: boolean, attemptsUsedNext: number, exhausted: boolean }` -- no `excludeSlot` field is ever produced. This is independently confirmed by the raw test-runner output itself: verification/proof-harnesses/full-suite-run.txt line 47 reads 'nextRerouteState: attemptsUsed===0 -> shouldRetry true, attemptsUsedNext 1, exhausted false; attemptsUsed===1 -> shouldRetry false, exhausted true (maxAttempts=1)' -- confirming `attemptsUsedNext` (not `excludeSlot`) is the real second field, and no `lastOutcome` input is exercised anywhere. Every one of `index.mjs`'s 4 call sites of `nextRerouteState` (lines 702, 718, 816) passes only `{ attemptsUsed, maxAttempts: 1 }`, never a third `lastOutcome` argument. verification-architecture.md was actively maintained through 4 spec-review-driven Changelog entries (iterations 1-4) but this function-shape description was never reconciled against the actual Phase 2b/2c implementation, and Phase 5's own purity-audit.md (section 'Mismatches found', line 120-129) explicitly and incorrectly asserts 'None. Every item in the declared Purity Boundary Map was independently re-derived this session (fresh reads + greps, not merely re-quoting Phase 1b's own claims) and matches.' That self-certification is factually false for this specific, named function -- the purity-audit session apparently verified the ABSENCE of I/O and judgment-branching (which does hold) but did not actually diff the declared function SIGNATURE/return-shape against the real one it claims to have read in full.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+    "lineRange": "93-96",
+    "snippet": "`nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })` -- REQ-505/506/511/513: pure bounded-retry state machine (`{ shouldRetry: boolean, excludeSlot: string|null, exhausted: boolean }`) -- the single shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "runtime/loop/always-act-router.mjs",
+      "lineRange": "148-153",
+      "snippet": "export function nextRerouteState({ attemptsUsed, maxAttempts }) {\n  if (attemptsUsed < maxAttempts) {\n    return { shouldRetry: true, attemptsUsedNext: attemptsUsed + 1, exhausted: false };\n  }\n  return { shouldRetry: false, attemptsUsedNext: attemptsUsed, exhausted: true };\n}"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/purity-audit.md",
+      "lineRange": "120-129",
+      "snippet": "## Mismatches found\n\n**None.** Every item in the declared Purity Boundary Map was independently re-derived this session (fresh reads + greps, not merely re-quoting Phase 1b's own claims) and matches."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/proof-harnesses/full-suite-run.txt",
+      "lineRange": "47",
+      "snippet": "nextRerouteState: attemptsUsed===0 -> shouldRetry true, attemptsUsedNext 1, exhausted false; attemptsUsed===1 -> shouldRetry false, exhausted true (maxAttempts=1)"
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "702,718,816",
+      "snippet": "const state = nextRerouteState({ attemptsUsed, maxAttempts: 1 }); -- three call sites, none ever pass a third `lastOutcome` argument."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Update specs/verification-architecture.md's Pure Core `nextRerouteState` entry to the actual shipped signature/return shape (`{attemptsUsed, maxAttempts}` -> `{shouldRetry, attemptsUsedNext, exhausted}`, no `lastOutcome`/`excludeSlot`), and correct purity-audit.md's 'zero deviations' claim to either be accurate or explicitly disclose this one deviation as harmless (behavior is correct; only the Phase 1b design doc's literal signature/shape description is stale). This is a documentation-accuracy fix only -- no source/test change is implied, since the actual implementation and its tests are internally consistent and correct."
+}
