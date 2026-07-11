@@ -1,0 +1,110 @@
+#!/usr/bin/env bash
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; python3 lives in homebrew
+# earning-health-allslots.sh — GENERALIZES the sol-trade/pm-trade barren-earning CONTENT check
+# (earning-health.py::is_fresh_but_barren) across every REQUIRED earn slot via ONE shared,
+# registry-driven script (self-heal-allslots spec, REQ-AS-001..006). DRY: no per-slot copy-paste
+# healthcheck.sh, no N launchd jobs — ONE job (ai.anicca.earning-health-allslots) iterates the
+# registry and applies the SAME pure predicate `sol-trade-healthcheck.sh` already proved out.
+#
+# Adding barren-detection coverage for a new slot = add one registry entry (+ instrument that
+# slot's own run.sh to emit {"action":"skip","reason":"..."} lines on a genuine mechanism
+# rejection) — never write a new script. A registry entry with instrumented=false is a DOCUMENTED
+# GAP (its gapNote explains why): this script logs it as NOT-INSTRUMENTED and NEVER calls
+# self-fix.sh for it and NEVER prints OK/BARREN for it — never fabricate a verdict over data that
+# does not exist (same "never fabricate, never brick" discipline earning-health.py's own docstring
+# establishes).
+#
+# Instance-agnostic by design (REQ-AS-006): every path is resolved RELATIVE TO THIS SCRIPT'S OWN
+# location (mirrors sol-trade-healthcheck.sh's SKILL_DIR-relative pattern), so whichever copy of
+# the repo this runs from (a dev checkout, or an ANICCA_HOME-rsynced deployment such as Franklin's
+# ~/.blockrun) checks ITS OWN adjacent registry/trace/state — never a different instance's
+# hardcoded absolute path baked into shared OSS code. self-fix.sh's OWN bookkeeping paths
+# ($HOME/.openclaw/{state,logs}) remain a documented graduation gap — see
+# .vcsdd/features/self-heal-allslots/specs/behavioral-spec.md REQ-AS-006 / CHANGELOG.md.
+set -uo pipefail
+SELF_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REGISTRY="${EARNHC_REGISTRY:-$SELF_DIR/earning-health-registry.json}"
+EARN_STATE_DIR="${EARNHC_EARN_STATE_DIR:-$SELF_DIR/../earn/state}"
+STATE_DIR="${EARNHC_STATE_DIR:-$HOME/.openclaw/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
+LOG="${EARNHC_LOG:-$HOME/.openclaw/logs/earning-health-allslots.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+
+if [ ! -f "$REGISTRY" ]; then
+  echo "$(date '+%F %T') no registry at $REGISTRY -- nothing to check" >> "$LOG"
+  exit 0
+fi
+
+# Registry JSON -> one TSV row per slot. Pure field-extraction-with-defaults (no branching logic
+# beyond that), so a dedicated unit test isn't split out separately — the wiring tests below
+# exercise every field this emits end-to-end (REQ-AS-001, verification-architecture.md).
+ROWS="$(python3 -c '
+import json, sys
+try:
+    with open(sys.argv[1]) as f:
+        reg = json.load(f)
+except Exception as e:
+    print(f"__REGISTRY_PARSE_ERROR__\t{e}")
+    sys.exit(0)
+for s in reg.get("slots", []) or []:
+    row = [
+        str(s.get("id", "")),
+        "1" if s.get("instrumented") else "0",
+        str(s.get("traceFile") or ""),
+        str(s.get("minRun", 20)),
+        str(s.get("selfFixTarget", "")),
+        str(s.get("escalateEveryHrs", 24)),
+        str(s.get("gapNote", "")).replace("\n", " ").replace("\t", " "),
+    ]
+    print("\t".join(row))
+' "$REGISTRY")"
+
+if printf '%s' "$ROWS" | grep -q '^__REGISTRY_PARSE_ERROR__'; then
+  echo "$(date '+%F %T') registry at $REGISTRY is not valid JSON -- nothing to check" >> "$LOG"
+  exit 0
+fi
+
+while IFS=$'\t' read -r ID INSTR TRACEFILE MINRUN TARGET ESC_HRS GAPNOTE; do
+  [ -z "$ID" ] && continue
+
+  # REQ-AS-004: a non-instrumented slot is a DOCUMENTED gap, never a fabricated OK/BARREN verdict.
+  if [ "$INSTR" != "1" ]; then
+    echo "$(date '+%F %T') NOT-INSTRUMENTED $ID -- ${GAPNOTE:-no gapNote recorded}" >> "$LOG"
+    continue
+  fi
+
+  TRACE="$EARN_STATE_DIR/$TRACEFILE"
+  if [ -z "$TRACEFILE" ] || [ ! -f "$TRACE" ]; then
+    echo "$(date '+%F %T') $ID: no trace file at $TRACE -- nothing to check (not deployed/run here yet)" >> "$LOG"
+    continue
+  fi
+
+  # bound the read (trace files grow forever); MINRUN*3 always has headroom for a mix of
+  # live-pass/skip lines in between, without reading a multi-hundred-KB file every 5min.
+  TAIL_JSON="$(tail -n "$(( MINRUN * 3 ))" "$TRACE" 2>/dev/null)"
+
+  # REQ-AS-002: reuse the SAME pure predicate sol-trade-healthcheck.sh already uses, unmodified.
+  if printf '%s\n' "$TAIL_JSON" | python3 "$SELF_DIR/earning-health.py" is-barren "$MINRUN"; then
+    REASON="$(printf '%s\n' "$TAIL_JSON" | tail -1 | python3 -c '
+import json, sys
+try:
+    print(json.loads(sys.stdin.read()).get("reason", "unknown"))
+except Exception:
+    print("unknown")
+' 2>/dev/null)"
+    now=$(date +%s)
+    # REQ-AS-003: a per-SLOT marker filename (never one shared marker) so N slots never collide.
+    SLOTKEY="$(printf '%s' "$ID" | tr -c 'A-Za-z0-9' '_')"
+    MK="$STATE_DIR/.earning-health-allslots-${SLOTKEY}-escalated"
+    age_hrs=99999
+    [ -f "$MK" ] && age_hrs=$(( (now - $(stat -f %m "$MK" 2>/dev/null || echo 0)) / 3600 ))
+    if [ "$age_hrs" -ge "$ESC_HRS" ]; then
+      touch "$MK"
+      echo "$(date '+%F %T') $ID BARREN: last $MINRUN trace lines are all skip/'$REASON' -> self-fix escalated" >> "$LOG"
+      bash "$SELF_DIR/self-fix.sh" "$TARGET" "$ID trace is fresh (a new line every wake) but the last $MINRUN wakes are ALL action=skip with the identical reason '$REASON' -- the loop is alive but a deterministic guard (identity-mismatch / kill-switch / earn-guard) is rejecting every wake before the agent ever gets to trade. Diagnose why (identity resolution, ANICCA_HOME/ANICCA_REPO path, env) and fix it so the agent actually gets to run its pass." >> "$LOG" 2>&1 \
+        || echo "$(date '+%F %T') $ID: self-fix launch failed" >> "$LOG"
+    else
+      echo "$(date '+%F %T') $ID BARREN but already escalated ${age_hrs}h ago (<${ESC_HRS}h) -- skip (no repeat spam)" >> "$LOG"
+    fi
+  else
+    echo "$(date '+%F %T') $ID OK (last $MINRUN trace entries are not all-same-reason-skip)" >> "$LOG"
+  fi
+done <<< "$ROWS"
