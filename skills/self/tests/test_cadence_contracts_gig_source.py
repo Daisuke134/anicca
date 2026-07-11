@@ -59,7 +59,10 @@ UNCHANGED_BASELINE = {
         "boundary_tz": "Asia/Tokyo",
     },
     "founder-loop": {
-        "kind": "pass-marker", "source": "~/.anicca-founder/state/STATE.md mtime",
+        # BUG FIX 2026-07-11: source path corrected from ".../state/STATE.md" (never matched
+        # where founder-loop.sh actually writes) to ".../STATE.md" — see cadence-evidence.py's
+        # _founder_state_md_path() comment for the full root-cause trace.
+        "kind": "pass-marker", "source": "~/.anicca-founder/STATE.md mtime",
         "boundary_tz": "Asia/Tokyo",
     },
     "pm-earner": {

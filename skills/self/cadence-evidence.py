@@ -343,7 +343,15 @@ def _bounty_today_and_previous_checked(today_jst_date):
 
 
 def _founder_state_md_path():
-    return os.environ.get("FOUNDER_STATE_MD_PATH") or os.path.expanduser("~/.anicca-founder/state/STATE.md")
+    # BUG FIX (2026-07-11 self-fix, cadence audit false-daily-miss): founder-loop.sh (see
+    # skills/self/founder-loop/founder-loop.sh's STATE_MD="$DIR/STATE.md") has ALWAYS written to
+    # ~/.anicca-founder/STATE.md, never .../state/STATE.md — confirmed via `git log -p --follow`
+    # back to that script's very first commit, and documented correctly in
+    # skills/self/launchd/README.md. This function's default had the wrong path since ITS OWN
+    # first commit too, so founder-loop's Cadence Contract's marker_jst_date was always None and
+    # cadence_met() always returned False here — every 21:00 JST cadence-deadline-check.sh
+    # escalated a false "NOT met" self-fix for founder-loop regardless of real earn activity.
+    return os.environ.get("FOUNDER_STATE_MD_PATH") or os.path.expanduser("~/.anicca-founder/STATE.md")
 
 
 def _founder_loop_marker_jst_date():
