@@ -1,0 +1,19 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "title": "Neither the spec nor the diff addresses the GIG_CHAIN / GIG_FACILITATOR_URL precondition that actually determines whether the disbursement settles on Base mainnet vs. Base Sepolia testnet",
+  "description": "defaultDisburse (lending-orchestrator.mjs line 174) defaults `facilitatorUrl` to `process.env.GIG_FACILITATOR_URL || \"http://127.0.0.1:8405\"`, and payViaFacilitator's own chain/usdcAddress/rpcUrl selection (escrow.mjs lines 31, 44-49) is driven entirely by `GIG_CHAIN` (default 'base-sepolia', testnet, unless explicitly set to 'base'). Per this same repo's own skills/economy/gig/WITNESS-RUNBOOK.md (lines 217, 227, 236, 254), port 8405 is the documented TESTNET facilitator and port 8407 is the documented MAINNET facilitator -- going live requires the lender's own per-instance env to explicitly set both `GIG_CHAIN=base` and `GIG_FACILITATOR_URL=http://127.0.0.1:8407`. This fix's own behavioral-spec.md never mentions this precondition at all (its 'Non-functional requirements' section only covers money-safety-of-the-key and fail-closed key resolution), and no test in wake-gate.test.mjs or lending-orchestrator.test.mjs asserts anything about GIG_CHAIN/GIG_FACILITATOR_URL. Since this review is explicitly gating 'the colony's FIRST real on-chain loan', and the manifest asks to trace the full disburse path for exactly that loan, this is a load-bearing precondition this feature's own spec and tests are silent on: if the lender's env is missing GIG_CHAIN=base or still points GIG_FACILITATOR_URL at 8405, the 'first real loan' could silently settle against testnet (worthless) or fail signature verification (escrow.mjs lines 33-43 document the exact 'FiatTokenV2: invalid signature' failure mode from a domain-name/chain mismatch) rather than genuinely moving real USDC on Base mainnet as the manifest claims will happen.",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/lending-orchestrator.mjs",
+    "lineRange": "169-176",
+    "snippet": "async function defaultDisburse({ loanRow }, deps) {\n  return payViaFacilitator({\n    privateKey: deps.lenderPrivateKey,\n    to: loanRow.borrower_wallet,\n    amountBase: Math.round(loanRow.principal_usd * 1e6),\n    facilitatorUrl: deps.facilitatorUrl || process.env.GIG_FACILITATOR_URL || \"http://127.0.0.1:8405\",\n  });\n}"
+  },
+  "additionalEvidence": [
+    { "filePath": "skills/economy/gig/lib/escrow.mjs", "lineRange": "28-31", "note": "GIG_CHAIN defaults to base-sepolia unless explicitly overridden to 'base'" },
+    { "filePath": "skills/economy/gig/WITNESS-RUNBOOK.md", "lineRange": "217, 227, 236, 254", "note": "documents 8405=testnet / 8407=mainnet facilitator port convention and the GIG_CHAIN=base + GIG_FACILITATOR_URL=8407 go-live requirement" },
+    { "filePath": ".vcsdd/features/lending-lender-key-wiring/specs/behavioral-spec.md", "lineRange": "65-84", "note": "Non-functional requirements section covers key money-safety only, never GIG_CHAIN/GIG_FACILITATOR_URL" }
+  ],
+  "routeToPhase": "2b"
+}

@@ -30,6 +30,7 @@ import { readChildren } from "../../../self/spawn/lib/ledger.js";
 import { CITIZENS_REGISTRY_PATH } from "../../../self/spawn/lib/registry-path.mjs";
 import { ensureCitizensRegistry as ensureCitizensRegistryReal } from "../../../self/spawn/lib/citizens-registry.mjs";
 import { resolveEvmPrivateKey } from "../../../earn/lib/resolve-identity.mjs";
+import { deriveSignerAddress, addressesEqual } from "../lib/lending-signer.mjs";
 
 // The same Base-mainnet RPC default every other production caller in this repo already uses
 // (_shared/lib/usdc.mjs, _shared/lib/verify-tx.mjs, earn/execute-yield.mjs, ...) -- REQ-107/REQ-108
@@ -139,15 +140,24 @@ export async function runWakeGate({ argv = [], env = process.env, deps = {} } = 
   // deps.lenderPrivateKey wiring (fixes: defaultDisburse's payViaFacilitator call always received
   // deps.lenderPrivateKey===undefined -> privateKeyToAccount(undefined) crashed with "Cannot read
   // properties of undefined (reading 'slice')" on every real wake, because nothing on this production
-  // path ever resolved+injected it). This wake ALWAYS runs under the LENDER's own per-instance env
-  // (ANICCA_HOME scoped to that instance's own home -- see run.sh's shared load-instance-env.sh
-  // helper), so resolve-identity.mjs's resolveEvmPrivateKey (already fail-closed, already
-  // ANICCA_HOME-gated, R5) resolves exactly THIS instance's own key -- an instance can only ever sign
-  // as itself here, never another instance's. Fail-closed (money-safety): if the key can't be
-  // resolved, this attempt is refused BEFORE executeLoanIssuanceAttempt is ever called -- an
-  // unresolved key must never reach defaultDisburse/payViaFacilitator. The key itself is never
-  // logged/persisted anywhere in this function (R5 discipline) -- it only ever flows, in-memory, into
-  // executeLoanIssuanceAttempt's own deps.lenderPrivateKey seam below.
+  // path ever resolved+injected it). resolve-identity.mjs's resolveEvmPrivateKey (already fail-closed,
+  // already ANICCA_HOME-gated, R5) resolves exactly THIS PROCESS's own key, scoped to whatever
+  // ANICCA_HOME this wake happens to be running under -- economy/lending/run.sh is invoked on EACH
+  // self-funded citizen's own wake cadence (mirroring self/spawn/run.sh's shape), and findSelectedPair
+  // (above) scans the FULL shared registry independent of which instance is currently executing. A
+  // prior version of this comment ASSERTED "an instance can only ever sign as itself here, never
+  // another instance's" as though that followed automatically -- it does NOT: if Franklin2's own wake
+  // resolves Franklin2's own key while findSelectedPair's deterministic scan (over the SAME shared
+  // registry/ledger) selects {lenderId:"Franklin", ...}, resolveLenderPrivateKey would still return
+  // Franklin2's key, which does not belong to Franklin (impl-review iteration-1, FIND-001, critical).
+  // The guard immediately below (resolvedSignerAddress vs. the selected lenderId's OWN registered
+  // wallet) is what actually enforces the claim this comment used to only assert. Fail-closed
+  // (money-safety): if the key can't be resolved, OR the resolved key's derived signer address does
+  // not match the selected pair's own recorded lender wallet, this attempt is refused BEFORE
+  // executeLoanIssuanceAttempt is ever called -- neither an undefined nor a foreign-instance key must
+  // ever reach defaultDisburse/payViaFacilitator. The key itself is never logged/persisted anywhere in
+  // this function (R5 discipline) -- it only ever flows, in-memory, into executeLoanIssuanceAttempt's
+  // own deps.lenderPrivateKey seam below.
   //
   // deps.rpcUrl wiring: executeLoanIssuanceAttempt's own step-5 stale-provisioning reconciliation
   // (defaultReconcile) and defaultDisburse's own on-chain settle-confirmation both need a REAL rpcUrl;
@@ -162,6 +172,21 @@ export async function runWakeGate({ argv = [], env = process.env, deps = {} } = 
     const lenderPrivateKey = resolveLenderPrivateKey({ env });
     if (!lenderPrivateKey) {
       issuance = { status: "refused", reason: "lender_private_key_unresolved" };
+    } else if (
+      // FIND-001 (critical, impl-review iteration-1): the resolved key's derived on-chain signer
+      // address must equal the SELECTED lenderId's own registered wallet (citizensById's fresh
+      // getCitizen(lenderId) record, the SAME record findSelectedPair itself already used) -- never
+      // trust the removed comment's old assumption that "this process's own resolved key" and "the
+      // ledger's own lender_wallet for this pair" are the same thing by construction. If this wake's
+      // OWN resolved key belongs to a DIFFERENT citizen than the one findSelectedPair selected as
+      // lenderId, refuse here -- this instance may only ever act as lender for a pair where ITS OWN
+      // key is the selected lender's own key.
+      !addressesEqual(
+        deriveSignerAddress(lenderPrivateKey),
+        citizensById.get(selectedPair.lenderId) && citizensById.get(selectedPair.lenderId).walletAddress && citizensById.get(selectedPair.lenderId).walletAddress.evm
+      )
+    ) {
+      issuance = { status: "refused", reason: "lender_not_this_instance" };
     } else {
       issuance = await executeLoanIssuanceAttempt(
         { lenderId: selectedPair.lenderId, borrowerId: selectedPair.borrowerId, nowMs },

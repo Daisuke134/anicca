@@ -1,0 +1,68 @@
+{
+  "phase": "impl-review",
+  "iteration": 1,
+  "feature": "lending-lender-key-wiring",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["0a3350cf"],
+  "external_test_evidence": "8/8 wake-gate + 134 lending + 250 loop (thinker-executed)",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-003"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/behavioral-spec.md:65-84", "description": "Non-functional requirements cover key money-safety and fail-closed resolution but assert, without any enforcement mechanism, that 'an instance can only ever sign as itself' and never address GIG_CHAIN/GIG_FACILITATOR_URL as a precondition for a REAL mainnet settle" }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/__tests__/wake-gate.test.mjs:337-448", "description": "no fixture exercises 'caller env belongs to citizen X while selectedPair.lenderId resolves to citizen Y', and the recovery fixture's mock RPC never models a real provider's block-range limit on fromBlock:'earliest'" }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:169-176,226-258", "description": "defaultDisburse forwards deps.lenderPrivateKey without ever cross-checking the derived payerAddress against provisionalRow.lender_wallet; defaultReconcile's fromBlock defaults to 'earliest' with no cap" }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/scripts/wake-gate.mjs:1-209", "description": "diff is small, targeted, well-commented, follows the existing self/spawn-sibling run.sh/wake-gate.mjs convention; no reimplemented eligibility/sizing arithmetic (verified: no balanceUsd/surplusUsd/defaultRateUsd comparisons in wake-gate.mjs)" },
+        { "type": "test-output", "location": "skills/economy/lending/lib/__tests__/wake-gate-structural.test.mjs:134-142", "description": "structural test confirms executeLoanIssuanceAttempt/executeDefaultDetectionSweep have exactly one production call site (wake-gate.mjs); scope stayed within wake-gate.mjs only" },
+        { "type": "file", "location": "skills/economy/lending/lib/lending-gate.mjs:1-60", "description": "reviewed: FIRST_LOAN_USD/LOAN_INTEREST_RATE/DEFAULT_RESERVE_USD constants untouched by this diff, consistent with the 'caps untouched' claim" }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/__tests__/wake-gate.test.mjs:311-335", "description": "startMockRpc's eth_getLogs handler ignores fromBlock/toBlock entirely, so it cannot prove PROP-118c's 'never permanently blocks' claim against a real provider's constraints" }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "moneySafetyChecks": {
+    "keyNeverLoggedOrPersisted": "PASS -- grepped wake-gate.mjs, resolve-identity.mjs, escrow.mjs, lending-orchestrator.mjs for console.log/console.error/JSON.stringify near lenderPrivateKey/privateKey; only the CLI's `console.log(JSON.stringify(result))` (wake-gate.mjs:202) and none of its constituent fields (candidatesConsidered/selectedPair/issuance/sweep) ever contain the key",
+    "resolveEvmPrivateKeyForeignInstanceGate": "PASS in isolation -- resolve-identity.mjs:69-100 is correctly fail-closed and ANICCA_HOME-scoped; a spawn with a different ANICCA_HOME genuinely cannot resolve another instance's key",
+    "callerIdentityVsSelectedLenderId": "FAIL -- see FIND-001: nothing binds the resolved key's owner to selectedPair.lenderId",
+    "reconciliationRealOnChainCheck": "PASS for the logic itself (reconcileProvisionalDisbursement is genuinely read-only, exact zero-padded topic match, tested in lending-verify.test.mjs) but FAIL for real-world reachability -- see FIND-002/FIND-004",
+    "capsUntouched": "PASS -- FIRST_LOAN_USD=0.02, LOAN_INTEREST_RATE=0.1, DEFAULT_RESERVE_USD=5.0 (lending-gate.mjs:19-25) and withGigLock single-in-flight locking (lending-orchestrator.mjs:297-308) are unmodified by this diff",
+    "redPhaseGenuine": "PASS -- evidence/sprint-1-red-phase.log shows exactly the 3 new REQ-118 tests genuinely failing (5/8 pass, 3/8 fail) pre-fix, with real AssertionError diffs (disbursement_uncertain vs refused; 0 vs 1 resolve calls; refused vs active), matching evidence/sprint-1-green-phase-wake-gate.log's 8/8 pass post-fix"
+  },
+  "goNoGo": "NO-GO for the first live loan as-is: FIND-001 (no cross-check that the resolved signing key's address matches the selected lender's own registered wallet) and FIND-002 (unbounded eth_getLogs fromBlock:'earliest' reconciliation scan, untested against real RPC provider limits, directly risking the exact 'permanent block' failure this fix exists to resolve) must be fixed or the operational precondition explicitly ruled out (e.g. confirm today's colony topology genuinely guarantees wake-gate.mjs is invoked ONLY by Franklin's own process for this specific loan, and confirm mainnet.base.org actually accepts fromBlock:'earliest' for this filter shape) before triggering a real disbursement."
+}

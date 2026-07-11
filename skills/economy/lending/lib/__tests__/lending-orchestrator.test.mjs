@@ -45,6 +45,7 @@ import {
 } from "../lending-orchestrator.mjs";
 import { withGigLock } from "../../../gig/lib/lock.mjs";
 import { verifyRepayment } from "../lending-verify.mjs";
+import { privateKeyToAccount } from "viem/accounts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ORCH_PATH = path.resolve(__dirname, "../lending-orchestrator.mjs");
@@ -441,6 +442,77 @@ test("PROP-115c step 9 sub-case 2 (payViaFacilitator throws mid-call, in-process
   assert.equal(rows.length, 2);
   assert.equal(rows[1].status, "disbursement_uncertain");
   assert.equal(rows.some((r) => r.status === "active"), false);
+});
+
+// ===========================================================================
+// FIND-001/FIND-003 fixes (impl-review iteration-1): defaultDisburse's OWN defensive guards (a SECOND,
+// independent backstop behind wake-gate.mjs's own primary pre-lock guard -- see wake-gate.test.mjs's
+// own FIND-001 fixtures for the primary-guard coverage). These tests exercise the REAL defaultDisburse
+// (deps.disburse deliberately omitted, so happyDeps's own stub does NOT shadow it) with a deliberately
+// unreachable facilitatorUrl -- proving each guard throws its OWN specific error BEFORE any network
+// call is ever attempted (a network-layer error would look completely different).
+// ===========================================================================
+
+test("FIND-001 fix (defensive, real defaultDisburse): resolved lenderPrivateKey's derived signer address mismatched against loanRow.lender_wallet throws lender_signer_mismatch BEFORE payViaFacilitator is ever reached", async () => {
+  const dir = tmpDir();
+  const deps = happyDeps(dir, {
+    disburse: undefined, // exercise the REAL defaultDisburse, not happyDeps's own stub
+    lenderPrivateKey: "0x" + "3".repeat(64), // derives to a DIFFERENT address than LENDER's own baseCitizen() walletAddress.evm
+    gigChain: "base",
+    facilitatorUrl: "http://127.0.0.1:1", // would surface a DIFFERENT (network-layer) error if ever reached -- the signer-mismatch guard must fire FIRST
+  });
+
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+
+  assert.equal(result.status, "disbursement_uncertain");
+  assert.match(result.error, /lender_signer_mismatch/, "the signer/lender_wallet mismatch guard must throw before any network call is attempted");
+});
+
+test("FIND-003 fix (defensive, real defaultDisburse): GIG_CHAIN unset/non-'base' throws lending_chain_not_mainnet BEFORE payViaFacilitator is ever reached, even when the signer genuinely matches loanRow.lender_wallet", async () => {
+  const dir = tmpDir();
+  const lenderPrivateKey = "0x" + "4".repeat(64);
+  const lenderWallet = privateKeyToAccount(lenderPrivateKey).address;
+  const citizens = {
+    [LENDER]: baseCitizen(LENDER, { balanceUsd: 10, walletAddress: { evm: lenderWallet } }),
+    [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1 }),
+  };
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => citizens[id] || null,
+    disburse: undefined, // exercise the REAL defaultDisburse
+    lenderPrivateKey,
+    gigChain: "base-sepolia", // explicitly NOT mainnet
+    facilitatorUrl: "http://127.0.0.1:1",
+  });
+
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+
+  assert.equal(result.status, "disbursement_uncertain");
+  assert.match(result.error, /lending_chain_not_mainnet/, "a non-mainnet/unset GIG_CHAIN must refuse to disburse real money, even with a genuinely matching signer");
+});
+
+test("FIND-001/FIND-003 fixes, matching case (defensive, real defaultDisburse): a genuinely matching signer + GIG_CHAIN=base pass BOTH guards -- proven by a DIFFERENT, network-layer error surfacing once payViaFacilitator is genuinely reached, never either guard's own error", async () => {
+  const dir = tmpDir();
+  const lenderPrivateKey = "0x" + "5".repeat(64);
+  const lenderWallet = privateKeyToAccount(lenderPrivateKey).address;
+  const citizens = {
+    [LENDER]: baseCitizen(LENDER, { balanceUsd: 10, walletAddress: { evm: lenderWallet } }),
+    [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1 }),
+  };
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => citizens[id] || null,
+    disburse: undefined, // exercise the REAL defaultDisburse
+    lenderPrivateKey,
+    gigChain: "base",
+    facilitatorUrl: "http://127.0.0.1:1", // deliberately unreachable -- payViaFacilitator's OWN network attempt must be what fails here, not either guard
+  });
+
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+
+  assert.equal(result.status, "disbursement_uncertain");
+  assert.ok(
+    !/lender_signer_mismatch|lending_chain_not_mainnet/.test(result.error || ""),
+    `both defensive guards must have passed -- expected a network-layer failure, got: ${result.error}`
+  );
 });
 
 test("PROP-115c step 9 sub-case 3 (settle succeeds but the FOLLOW-UP append itself throws) -> provisional row left unterminated, never a false active claim", async () => {
