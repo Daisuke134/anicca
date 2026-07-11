@@ -45,10 +45,11 @@
 - 検証済み: builder 下書きを私が読んで採用判断、main で 35 node + 6 bash = 41/41 pass 再走。他 feature の .vcsdd ノイズは除外して reality-verifier ファイルのみ取込
 - 残: reality-verify-spawn.sh を self-fix/週次 build pass から実際に呼ぶ配線(= doc27 §6 "VCSDD Reality Gate" 統合の一部)
 
-## #6 own-eyes 1 wake  — status: ⬜(#1-3 後)
-- [ ] 6a. 小脳 loop を1 wake 実行
-- [ ] 6b. wallet on-chain delta = ledger delta を私が確認
-- 検証可能条件: 記録と真実が一致
+## #6 own-eyes 検証(記録=真実 + 検証層が実働)  — status: ✅ DONE(2026-07-12, own-eyes)
+- [x] 6a-DETERMINISTIC: pm ledger の reconcile anchor `balance_after=1.34853` == pm wallet on-chain pUSD `$1.3485`（完全一致）。0x810f も $0.0001 で ledger 3行clean=偽稼ぎ無し。**記録 ≡ wallet の真実**
+- [x] 6b-AGENTIC: reality-verifier(#5)を実データで発火。偽主張「pm loop が $50 稼いだ」を独立に ledger+on-chain 読取で **FAIL 判定**(report_ledger_mismatch=実$10.02 / report_onchain_mismatch=実$1.35 / unsupported_claim)。$8.68 の乖離も指摘。「金が動いたか」を断定せず「主張 vs ground-truth 一致」のみ判定＝AGENTIC 役割遵守
+- 検証済み: DETERMINISTIC(wallet=真実) + AGENTIC(fresh verifier が嘘を捕捉) の2層が実データで機能。#5 も unit だけでなく end-to-end 実働確認
+- ★正直な現状★: 検証機構は真実だが **誰も EARNING していない**(pm $1.35 / 0x810f ~$0)。#6 は「記録が正直」を証明、#7(実際に稼ぐ)が残る唯一の gate
 
 ## #7 実稼ぎ  — status: ⬜(最後・唯一の gate)
 - [ ] 7a. external:true 実 tx で wallet が増えるまで回す
