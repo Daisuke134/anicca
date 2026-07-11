@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-002's edge case explicitly requires: 'citizens.json missing/unreadable/malformed JSON: refuse.' The production read_citizens() implementation has no try/except around open()/json.load(), and run_refill() calls deps['read_citizens']() at line 150 with no surrounding try/except either -- unlike every other identity-resolution step in the same function (derive_pubkey IS wrapped in try/except at lines 143-148). A missing, unreadable, or malformed ~/.hermes/state/citizens.json therefore raises an UNCAUGHT exception that crashes the whole process instead of the clean fail-closed refusal (JSON stdout line + ledger row) every other refusal path produces. This also breaks the module's own documented output contract ('exactly one JSON line on stdout... non-zero otherwise' -- franklin_sol_base_refill.py:28-29): a crash emits a Python traceback, not a JSON line, and appends NO ledger row recording the refusal (every other refusal path calls fail(), which appends a row). No orchestration test ever makes read_citizens() raise or return malformed data -- the injected fixture in tests/test_franklin_sol_base_refill.py's make_deps() always returns a valid [FRANKLIN_ROW] list, so this explicit, named spec edge case is both unimplemented (as fail-closed-with-ledger-row) and untested.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "150-154 (call site), 427-429 (unguarded production impl)",
+    "snippet": "citizens = deps[\"read_citizens\"]()\ncitizen_match = assert_own_citizen_row(citizens=citizens, derived_solana_pubkey=sender_pubkey)\n...\ndef read_citizens():\n    with open(CITIZENS_PATH, \"r\", encoding=\"utf-8\") as f:\n        return json.load(f)"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-002",
+    "contrastWithHandledPath": "skills/earn/funding/franklin_sol_base_refill.py:143-148 (derive_pubkey IS wrapped in try/except and fails closed via fail())"
+  },
+  "routeToPhase": "2b"
+}

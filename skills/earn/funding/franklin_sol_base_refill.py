@@ -41,8 +41,15 @@ from typing import Callable, Mapping, Optional
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 
-from lib.erc20 import erc20_balance_units  # noqa: E402
-from lib.identity import derive_solana_pubkey_from_secret  # noqa: E402
+from lib.erc20 import (  # noqa: E402
+    erc20_balance_units,
+    eth_get_transaction_receipt,
+    parse_erc20_transfer_amount,
+)
+from lib.identity import (  # noqa: E402
+    derive_solana_pubkey_from_secret,
+    keypair_from_secret_string,
+)
 from lib.kill_switch import is_killed  # noqa: E402
 from lib.ledger import append_ledger, build_row, read_ledger  # noqa: E402
 from lib.refill_plan import (  # noqa: E402
@@ -53,6 +60,7 @@ from lib.refill_plan import (  # noqa: E402
     has_unresolved_pending,
     select_refill_amount,
 )
+from lib.relay_swap import build_sign_submit_solana_tx  # noqa: E402
 from lib.solana_rpc import spl_token_balance_units  # noqa: E402
 
 LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/funding-ledger.jsonl")
@@ -70,9 +78,17 @@ BASE_CHAIN_ID = 8453
 SOLANA_RPC = os.environ.get("SOLANA_RPC_URL", "https://api.mainnet-beta.solana.com")
 BASE_RPC = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
 RELAY_API = "https://api.relay.link"
-# REQ-006: the independent Base-balance-delta check's tolerance against the quote's expected
-# output (relay solver credit timing/rounding can land a few % short of the quoted estimate;
-# this is generous enough to absorb that without accepting a near-zero, unverified "fill").
+# REQ-006/FIND-004: the PRIMARY fill check is tx-specific (the relay-reported fill tx's
+# on-chain Transfer log to OUR address, see `parse_erc20_transfer_amount`) -- this is the
+# minimum fraction of the quote's expected output that Transfer log amount must deliver to
+# count as verified (relay solver credit timing/rounding can land a few % short of the quoted
+# estimate; this is generous enough to absorb that without accepting a materially underfilled
+# swap as "sent").
+FILL_MIN_DELIVERED_PCT = 85.0
+# The coarse wallet-wide balance delta is now a SECONDARY sanity check only (FIND-004): it
+# cannot by itself distinguish this fill from an unrelated concurrent inflow/outflow on the
+# same address, so it never gates "sent" -- it is only recorded for audit/anomaly-flagging
+# alongside the tx-specific check above.
 BALANCE_DELTA_TOLERANCE_PCT = 20.0
 
 
@@ -108,6 +124,38 @@ def resolve_identity_secret(*, env: Optional[Mapping[str, str]] = None) -> Optio
     return secret or None
 
 
+def _sanitized_secret_error(context: str, exc: Exception) -> str:
+    """FIND-003: ANY exception raised while decoding/signing with the raw resolved secret must
+    NEVER have its message text (`str(exc)`) interpolated into a ledger row or printed output
+    -- the underlying decode/sign library's exception message could embed raw input bytes
+    (e.g. a base58/base64 decoder echoing the string it failed to parse). Only a fixed,
+    pre-written context string plus the exception's CLASS NAME (never its message) is
+    recorded. Applies to both `derive_pubkey` (REQ-002's citizen-match step) and
+    `build_sign_submit` (the real signing call) -- both consume the same untrusted secret."""
+    return f"{context} (exception class: {type(exc).__name__}; message withheld for secret safety)"
+
+
+def _extract_quote_usd(details: Mapping, key: str) -> Optional[float]:
+    """REQ-004/FIND-001: extract a relay quote's reported `details.<key>.amountUsd` WITHOUT
+    inventing a substitute value when the field is absent, non-numeric, or the wrong shape --
+    returns None (never a locally-computed fallback like the requested swap amount) so
+    `evaluate_relay_fee`'s fail-closed check on non-numeric input is actually exercised for the
+    spec's named edge case ('missing details.currencyIn/currencyOut fields entirely: refuse')."""
+    try:
+        sub = details.get(key)
+    except AttributeError:
+        return None
+    if not isinstance(sub, Mapping):
+        return None
+    raw = sub.get("amountUsd")
+    if raw is None:
+        return None
+    try:
+        return float(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 def run_refill(
     *,
     deps: Mapping[str, Callable],
@@ -120,7 +168,7 @@ def run_refill(
 
     Required deps keys: is_killed, resolve_secret, derive_pubkey, read_citizens, read_ledger,
     append_ledger, read_solana_balance_usd, read_base_balance_units, relay_quote,
-    poll_relay_status, build_sign_submit.
+    poll_relay_status, read_base_tx_receipt, build_sign_submit.
     """
 
     def fail(reason: str, extra: Optional[dict] = None, status: str = "failed") -> dict:
@@ -143,11 +191,17 @@ def run_refill(
     try:
         sender_pubkey = deps["derive_pubkey"](secret)
     except Exception as exc:  # noqa: BLE001 -- any decode failure must fail closed, not raise
-        return fail(f"could not derive Solana pubkey from resolved secret: {exc}")
+        return fail(
+            _sanitized_secret_error("could not derive Solana pubkey from resolved secret", exc)
+        )
     if not sender_pubkey:
         return fail("resolved secret did not derive a usable Solana pubkey")
 
-    citizens = deps["read_citizens"]()
+    try:
+        citizens = deps["read_citizens"]()
+    except Exception as exc:  # noqa: BLE001 -- REQ-002: missing/unreadable/malformed
+        # citizens.json must fail closed with a ledger row, never crash uncaught.
+        return fail(f"could not read citizens registry: {exc}")
     citizen_match = assert_own_citizen_row(citizens=citizens, derived_solana_pubkey=sender_pubkey)
     if not citizen_match.ok:
         return fail(f"citizens.json binding failed: {citizen_match.reason}")
@@ -162,7 +216,10 @@ def run_refill(
                 status="skipped",
             )
 
-    balance_usd = deps["read_solana_balance_usd"](sender_pubkey)
+    try:
+        balance_usd = deps["read_solana_balance_usd"](sender_pubkey)
+    except Exception as exc:  # noqa: BLE001 -- transient RPC failure must fail closed
+        return fail(f"could not read live Solana USDC balance: {exc}", status="skipped")
     amount_decision = select_refill_amount(balance_usd=balance_usd, requested_usd=amount_usd)
     if not amount_decision.allowed:
         plan = build_refill_plan(
@@ -177,18 +234,28 @@ def run_refill(
     amount = amount_decision.amount_usd
     amount_units = int(round(amount * 1e6))
 
-    quote = deps["relay_quote"](
-        {
-            "user": sender_pubkey,
-            "recipient": recipient_base,
-            "originChainId": SOLANA_CHAIN_ID,
-            "destinationChainId": BASE_CHAIN_ID,
-            "originCurrency": USDC_SOLANA_MINT,
-            "destinationCurrency": USDC_BASE,
-            "amount": str(amount_units),
-            "tradeType": "EXACT_INPUT",
-        }
-    )
+    try:
+        quote = deps["relay_quote"](
+            {
+                "user": sender_pubkey,
+                "recipient": recipient_base,
+                "originChainId": SOLANA_CHAIN_ID,
+                "destinationChainId": BASE_CHAIN_ID,
+                "originCurrency": USDC_SOLANA_MINT,
+                "destinationCurrency": USDC_BASE,
+                "amount": str(amount_units),
+                "tradeType": "EXACT_INPUT",
+            }
+        )
+    except Exception as exc:  # noqa: BLE001 -- relay.link network error must fail closed
+        plan = build_refill_plan(
+            sender_solana=sender_pubkey,
+            recipient_base=recipient_base,
+            amount_usd=amount,
+            balance_usd=balance_usd,
+            cap_decision=amount_decision,
+        )
+        return fail(f"relay quote request raised: {exc}", {"plan": plan}, status="skipped")
     details = (quote or {}).get("details") or {}
     if not details:
         plan = build_refill_plan(
@@ -204,8 +271,8 @@ def run_refill(
             status="skipped",
         )
 
-    in_usd = float((details.get("currencyIn") or {}).get("amountUsd") or amount)
-    out_usd = float((details.get("currencyOut") or {}).get("amountUsd") or 0)
+    in_usd = _extract_quote_usd(details, "currencyIn")
+    out_usd = _extract_quote_usd(details, "currencyOut")
     fee_decision = evaluate_relay_fee(in_usd=in_usd, out_usd=out_usd)
 
     plan = build_refill_plan(
@@ -254,7 +321,11 @@ def run_refill(
     try:
         signature = deps["build_sign_submit"](secret, quote)
     except Exception as exc:  # noqa: BLE001 -- nothing broadcast yet, safe to record as failed
-        return fail(f"solana tx build/sign/submit failed: {exc}", {"plan": plan}, status="failed")
+        return fail(
+            _sanitized_secret_error("solana tx build/sign/submit failed", exc),
+            {"plan": plan},
+            status="failed",
+        )
 
     # Finding-A pattern (money-safety adversary review, 2026-07-08, already applied to
     # bridge.py/send_to_franklin.py): the Solana tx is ALREADY broadcast at this point -- record
@@ -277,6 +348,9 @@ def run_refill(
         relay_result = (
             deps["poll_relay_status"](check_endpoint) if check_endpoint else {"status": "unknown"}
         )
+        fill_tx_hashes = (relay_result or {}).get("txHashes") or []
+        fill_tx_hash = fill_tx_hashes[0] if fill_tx_hashes else None
+        fill_receipt = deps["read_base_tx_receipt"](fill_tx_hash) if fill_tx_hash else None
         base_balance_after = deps["read_base_balance_units"](recipient_base)
     except Exception as exc:  # noqa: BLE001 -- the pending row above is already the audit trail
         return {
@@ -289,14 +363,51 @@ def run_refill(
             "signature": signature,
         }
 
-    delta_units = base_balance_after - base_balance_before
+    # FIND-004: PRIMARY check is tx-specific -- the relay-reported fill tx's own receipt must
+    # be a success AND its USDC Transfer log must name OUR recipient address, delivering at
+    # least FILL_MIN_DELIVERED_PCT of the quote's expected output. A coarse wallet-wide balance
+    # delta cannot distinguish this fill from an unrelated concurrent inflow (a second
+    # concurrent invocation, another earn engine crediting the same wallet, etc.) -- that delta
+    # is now only a SECONDARY sanity check, recorded for audit but never itself the reason a
+    # "sent" row is written.
     expected_units = int(round(out_usd * 1e6))
+    min_delivered_units = (
+        int(round(expected_units * (FILL_MIN_DELIVERED_PCT / 100))) if expected_units else 0
+    )
+
+    delivered_units = None
+    tx_receipt_ok = False
+    if fill_receipt:
+        tx_receipt_ok = fill_receipt.get("status") == "0x1"
+        delivered_units = parse_erc20_transfer_amount(
+            logs=fill_receipt.get("logs") or [],
+            token_address=USDC_BASE,
+            to_address=recipient_base,
+        )
+
+    verified = (
+        fill_tx_hash is not None
+        and tx_receipt_ok
+        and delivered_units is not None
+        and (expected_units == 0 or delivered_units >= min_delivered_units)
+    )
+
+    delta_units = base_balance_after - base_balance_before
     tolerance_units = max(1, int(round(expected_units * (BALANCE_DELTA_TOLERANCE_PCT / 100))))
-    verified = delta_units > 0 and (
+    balance_sanity_ok = delta_units > 0 and (
         expected_units == 0 or delta_units >= expected_units - tolerance_units
     )
 
     relay_status = (relay_result or {}).get("status")
+    verification_extra = {
+        "plan": plan,
+        "relay_status": relay_status,
+        "fill_tx_hash": fill_tx_hash,
+        "delivered_units": delivered_units,
+        "min_delivered_units": min_delivered_units,
+        "base_balance_delta_units": delta_units,
+        "base_balance_delta_sanity_ok": balance_sanity_ok,
+    }
 
     if relay_status == "refund":
         row = build_row(
@@ -307,7 +418,7 @@ def run_refill(
             tx_hash=signature,
             from_addr=sender_pubkey,
             to_addr=recipient_base,
-            extra={"plan": plan, "relay_status": relay_status, "base_balance_delta_units": delta_units},
+            extra=verification_extra,
         )
         deps["append_ledger"](row)
         return {"ok": False, "step": STEP, "error": row["reason"], "signature": signature}
@@ -318,13 +429,15 @@ def run_refill(
             amount_usd=amount,
             status="failed",
             reason=(
-                f"independent Base balance check did not confirm the fill "
-                f"(delta={delta_units} units, expected>={expected_units - tolerance_units})"
+                "independent tx-specific fill check did not confirm the fill "
+                f"(fill_tx_hash={fill_tx_hash}, receipt_status_ok={tx_receipt_ok}, "
+                f"delivered={delivered_units} units, required>={min_delivered_units} units; "
+                f"balance-delta sanity check: {balance_sanity_ok})"
             ),
             tx_hash=signature,
             from_addr=sender_pubkey,
             to_addr=recipient_base,
-            extra={"plan": plan, "relay_status": relay_status, "base_balance_delta_units": delta_units},
+            extra=verification_extra,
         )
         deps["append_ledger"](row)
         return {"ok": False, "step": STEP, "error": row["reason"], "signature": signature}
@@ -333,11 +446,14 @@ def run_refill(
         step=STEP,
         amount_usd=amount,
         status="sent",
-        reason="independently verified: Base USDC balance increased consistent with relay quote",
+        reason=(
+            "independently verified: relay fill tx receipt succeeded and its USDC Transfer "
+            "log delivered the recipient at least the required amount"
+        ),
         tx_hash=signature,
         from_addr=sender_pubkey,
         to_addr=recipient_base,
-        extra={"plan": plan, "relay_status": relay_status, "base_balance_delta_units": delta_units},
+        extra=verification_extra,
     )
     deps["append_ledger"](row)
     return {
@@ -348,73 +464,6 @@ def run_refill(
         "plan": plan,
         "base_balance_delta_units": delta_units,
     }
-
-
-def _parse_alt(addr: str, raw: bytes):
-    from solders.address_lookup_table_account import AddressLookupTableAccount
-    from solders.pubkey import Pubkey
-
-    # ALT layout: 56-byte header, then 32-byte addresses (same parse sol-to-usdc.py uses).
-    addrs = [Pubkey.from_bytes(raw[i : i + 32]) for i in range(56, len(raw), 32)]
-    return AddressLookupTableAccount(key=Pubkey.from_string(addr), addresses=addrs)
-
-
-def _build_sign_submit_solana_tx(secret_b58: str, quote: dict) -> str:
-    """Real effectful implementation of the `build_sign_submit` dep -- copies
-    `skills/earn/sol-to-usdc.py`'s proven quote-instructions -> build -> sign -> submit path
-    verbatim (same instruction/ALT/blockhash handling), adapted only in that the quote's
-    instructions already encode a USDC-SPL transfer (not native SOL) and the signer is
-    Franklin's own resolved secret, not a hardcoded env var. Never called by any test (REQ-006
-    NFR: no test performs real network I/O) -- only reachable via `build_default_deps()`."""
-    import base64
-    import json as _json
-    import urllib.request
-
-    from solders.hash import Hash
-    from solders.instruction import AccountMeta, Instruction
-    from solders.keypair import Keypair
-    from solders.message import MessageV0
-    from solders.pubkey import Pubkey
-    from solders.transaction import VersionedTransaction
-
-    def rpc(method: str, params: list):
-        body = _json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode()
-        req = urllib.request.Request(
-            SOLANA_RPC, data=body, headers={"Content-Type": "application/json"}
-        )
-        return _json.loads(urllib.request.urlopen(req, timeout=30).read())["result"]
-
-    kp = Keypair.from_base58_string(secret_b58)
-    step = quote["steps"][0]
-    item = step["items"][0]
-    data = item["data"]
-
-    ixs = []
-    for ix in data["instructions"]:
-        ixs.append(
-            Instruction(
-                program_id=Pubkey.from_string(ix["programId"]),
-                accounts=[
-                    AccountMeta(Pubkey.from_string(a["pubkey"]), a["isSigner"], a["isWritable"])
-                    for a in ix["keys"]
-                ],
-                data=bytes.fromhex(ix["data"][2:] if ix["data"].startswith("0x") else ix["data"]),
-            )
-        )
-
-    alts = []
-    for addr in data.get("addressLookupTableAddresses", []):
-        acc = rpc("getAccountInfo", [addr, {"encoding": "base64"}])
-        raw = base64.b64decode(acc["value"]["data"][0])
-        alts.append(_parse_alt(addr, raw))
-
-    bh = rpc("getLatestBlockhash", [{"commitment": "finalized"}])["value"]["blockhash"]
-    msg = MessageV0.try_compile(kp.pubkey(), ixs, alts, Hash.from_string(bh))
-    tx = VersionedTransaction(msg, [kp])
-
-    return rpc(
-        "sendTransaction", [base64.b64encode(bytes(tx)).decode(), {"encoding": "base64", "skipPreflight": True}]
-    )
 
 
 def build_default_deps() -> dict:
@@ -454,6 +503,12 @@ def build_default_deps() -> dict:
                 break
         return status
 
+    def read_base_tx_receipt(tx_hash: str):
+        return eth_get_transaction_receipt(BASE_RPC, tx_hash)
+
+    def build_sign_submit(secret: str, quote: dict) -> str:
+        return build_sign_submit_solana_tx(secret, quote, SOLANA_RPC)
+
     return {
         "is_killed": lambda: is_killed(HERE),
         "resolve_secret": resolve_secret,
@@ -465,7 +520,8 @@ def build_default_deps() -> dict:
         "read_base_balance_units": read_base_balance_units,
         "relay_quote": relay_quote,
         "poll_relay_status": poll_relay_status,
-        "build_sign_submit": _build_sign_submit_solana_tx,
+        "read_base_tx_receipt": read_base_tx_receipt,
+        "build_sign_submit": build_sign_submit,
     }
 
 

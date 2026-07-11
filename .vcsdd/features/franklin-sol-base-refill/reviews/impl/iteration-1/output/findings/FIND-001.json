@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "REQ-004's edge case explicitly requires: 'Missing details.currencyIn/currencyOut fields entirely: refuse (cannot verify economics).' The pure function evaluate_relay_fee() correctly fails closed when given None, but the orchestration layer never lets it see None -- it silently substitutes the LOCALLY-COMPUTED requested amount instead of the relay-reported input value whenever the field is absent, then feeds that fabricated number into the fee-cap check. Concretely: if a relay quote returns details={'currencyOut': {'amountUsd': '6.45'}} with no currencyIn key at all, in_usd resolves to the local `amount` (e.g. 6.50) via the `or amount` fallback instead of None, and evaluate_relay_fee(in_usd=6.50, out_usd=6.45) computes a passing 0.77% fee -- even though the quote's actual input-side economics were never reported by relay at all. This defeats the fail-closed guarantee of the pure function precisely in the failure mode REQ-004 names, and does so for the paramount money-safety cap in this feature (the 8% relay-fee cap). No orchestration test (tests/test_franklin_sol_base_refill.py) ever supplies a quote fixture missing currencyIn/currencyOut -- every relay_quote fixture in the suite includes both fields fully populated, so this fallback path is never exercised or caught by the 57 new tests.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "207-209",
+    "snippet": "in_usd = float((details.get(\"currencyIn\") or {}).get(\"amountUsd\") or amount)\nout_usd = float((details.get(\"currencyOut\") or {}).get(\"amountUsd\") or 0)\nfee_decision = evaluate_relay_fee(in_usd=in_usd, out_usd=out_usd)"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-004",
+    "pureFunctionEvidence": "skills/earn/funding/lib/refill_plan.py:83-99 (evaluate_relay_fee correctly fails closed on non-numeric/missing in_usd/out_usd when actually given None -- the orchestration bug is that it never passes None through)"
+  },
+  "routeToPhase": "2b"
+}
