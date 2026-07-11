@@ -1,0 +1,71 @@
+{
+  "phase": "converge",
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "NOT_CONVERGED",
+  "iteration": 2,
+  "priorIteration": {
+    "verdict": "NOT_CONVERGED",
+    "blocking_findings": ["FIND-001", "FIND-002"],
+    "reviewed_commit": "5eccf34a"
+  },
+  "priorIterationFindingsVerifiedResolved": {
+    "FIND-001": {
+      "status": "RESOLVED",
+      "basis": "specs/verification-architecture.md:93-96 now declares nextRerouteState({attemptsUsed, maxAttempts}) -> {shouldRetry, attemptsUsedNext, exhausted}; independently re-read runtime/loop/always-act-router.mjs:148-153 this session and confirmed byte-for-byte match. purity-audit.md:126-138 carries a dated correction note naming this finding and its resolution."
+    },
+    "FIND-002": {
+      "status": "PARTIALLY_RESOLVED",
+      "basis": "The specific 'Concretely:' paragraph FIND-002 cited (specs/verification-architecture.md:149-169, specs/behavioral-spec.md:649-668) is now accurate and independently confirmed against runtime/loop/index.mjs:511-518,548-564. However the same requirement's EARS clause and two further bullets were NOT updated and still assert the disproven mechanism -- see FIND-003 (new, this iteration), which supersedes FIND-002 as the still-open blocker on this requirement."
+    }
+  },
+  "dimensions": [
+    {"name": "spec_fidelity", "verdict": "PASS", "findings": [], "evidence": [{"type": "file", "location": ".vcsdd/features/franklin-alwaysact-skill-router/verification/verification-report.md:96-143", "description": "33-row Proof Obligations table unchanged by the doc-sync fix, independently spot-read this session; not touched by commits 5eccf34a/3f657ba4."}]},
+    {"name": "edge_case_coverage", "verdict": "PASS", "findings": [], "evidence": [{"type": "file", "location": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md:732-770", "description": "12-row §2.5 transition matrix re-read this session, internally consistent with verification-report.md's 12-row citation; unaffected by the doc-sync commit."}]},
+    {"name": "implementation_correctness", "verdict": "PASS", "findings": [], "evidence": [{"type": "file", "location": "runtime/loop/index.mjs:511-564,666-724", "description": "Independently re-read this session: early-return dispatch at 516-518, unconditional unmodified sleep branch at 551, runAlwaysActWake's full retry loop at 666-724 -- all behave exactly as PROP-513a/b/c/e (all passing) and the corrected doc paragraph describe."}]},
+    {"name": "structural_integrity", "verdict": "FAIL", "findings": ["FIND-003"], "evidence": []},
+    {"name": "verification_readiness", "verdict": "FAIL", "findings": ["FIND-003", "FIND-004"], "evidence": []}
+  ],
+  "criteria": {
+    "finding_diminishment": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "Unaffected by this fix commit -- reviews/{spec,impl}/iteration-*/output/* untouched (confirmed by directory listing + diff scope: only specs/verification-architecture.md, specs/behavioral-spec.md's REQ-513 section + both files' Changelogs, and verification/purity-audit.md's Mismatches section changed). Iteration-1's PASS basis (5->3->1->1->0 spec-review, 2->4->1->0 impl-review, both terminating at 0 blocking) stands unmodified."
+    },
+    "finding_specificity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "Unaffected by this fix commit for the same reason. Additionally, this iteration's own FIND-003/FIND-004 are themselves held to the same bar: concrete file:line citations independently re-verified against the real files this session, not asserted from iteration-1 prose."
+    },
+    "criteria_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "contracts/sprint-1.md's CRIT-001..012 mapping and verification-report.md's 33-row PROP table are untouched by this fix commit (spot-read this session, lines 96-143); iteration-1's 33/33 count stands."
+    },
+    "duplicate_detection": {
+      "verdict": "FAIL",
+      "findings": ["FIND-003", "FIND-004"],
+      "evidence": "FIND-001 and FIND-002's originally-cited paragraphs are now genuinely fixed and internally consistent with the real code (independently re-confirmed this session). However FIND-003 (new, this iteration): REQ-513's own EARS clause (behavioral-spec.md:619-622) and two further bullets (670-672, 789-793) still assert the disproven 'in-place conditional guard on index.mjs:402-416's if(slot==='sleep') branch' mechanism as current fact, directly self-contradicting the corrected paragraph 28 lines below it in the SAME requirement -- independently re-confirmed against runtime/loop/index.mjs:395-424 (402-416 is unrelated loop-detect code today) and :666-724 (runAlwaysActWake has no if(slot==='sleep') branch at all). FIND-004 (re-flagged): the 9-row/12-row staleness iteration-1 explicitly recommended fixing (specs/verification-architecture.md:42,316,343,360) was not corrected by this fix commit."
+    },
+    "four_dimensional_convergence": {
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": "REQ-513 re-spot-checked end-to-end this iteration. Test dimension (PROP-513a/b/c/e, passing, unchanged) and impl dimension (independently re-read runtime/loop/index.mjs and always-act-router.mjs) remain mutually consistent. The spec dimension is now internally split: one part of REQ-513's own text matches the impl (the corrected 'Concretely:' paragraph); another part of the SAME requirement's own text (its EARS clause -- the most authoritative sentence of the requirement -- plus 2 further bullets) does not. A requirement that disagrees with itself does not converge with the implementation in the sense this criterion requires."
+    },
+    "residuals_honest": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "security-report.md and purity-audit.md's follow-up/residual sections are unaffected by this fix commit beyond the new, honestly-labeled 'Mismatches found' correction note (which itself candidly discloses FIND-001/002 rather than silently absorbing them) -- confirmed by reading purity-audit.md:117-155 in full this session. Iteration-1's PASS basis stands."
+    }
+  },
+  "blocking_count": 2,
+  "reviewed_commit": "3f657ba4",
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011", "CRIT-012"],
+    "duplicateFindings": [
+      {"iteration1": "FIND-002", "iteration2": "FIND-003", "relationship": "FIND-003 is a distinct-but-related defect: it identifies that FIND-002's fix was applied to only one of at least four places in the document making the same claim, leaving the other three (including the requirement's own EARS clause) uncorrected. Not a duplicate finding -- a new, narrower gap surfaced by checking adjacent paragraphs, which iteration 1 did not do."}
+    ]
+  },
+  "ts": "2026-07-11T10:30:00.000Z"
+}

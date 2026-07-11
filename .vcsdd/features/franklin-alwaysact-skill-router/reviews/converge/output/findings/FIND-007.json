@@ -1,0 +1,34 @@
+{
+  "findingId": "FIND-007",
+  "phase": "converge",
+  "iteration": 3,
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence", "residuals_honest"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Independently discovered this session: REQ-508's own EARS clause (its most authoritative sentence, the same category of citation FIND-003 already treated as blocking when found stale for REQ-513) cites `index.mjs:458-475` as the location of the pre-existing, unmodified `appendHarnessFailure` mechanism this feature reuses for its own truthful-escalation requirement. Independently re-read this session: `index.mjs:458-475` is NOT `appendHarnessFailure` at all -- it is part of the bootstrap-reserve `filterCatalog` try/catch block and the 'REQ-502/503: the earn-action-only menu' comment/assembly code (confirmed via direct read of `index.mjs:440-490` this session, and independently corroborated by `index.mjs:450` also being misattributed in FIND-005). The REAL `appendHarnessFailure` function is defined at `index.mjs:1028` (`async function appendHarnessFailure({ ts, wakeId, slot, kind, layer, exitCode, rawDetail }) {`), with call sites at `index.mjs:613`, `:767`, `:878`, and `:914` -- none within roughly 550 lines of the cited `458-475` range. This is the SAME line-shift-from-code-insertion root cause as FIND-006 (Phase 2b/2c's additions earlier in the file silently invalidated a Phase 1a citation that was presumably accurate when REQ-508 was first authored, pre-implementation) rather than a wiring-mechanism redesign like FIND-002/003/005. The underlying claim itself -- that `appendHarnessFailure` is an existing, unmodified mechanism this feature's own escalation path reuses -- remains true and is correctly reflected in the real code (confirmed: `index.mjs:878` and `:914`, inside/near `writeAlwaysActEscalation`, both call the real, unmodified `appendHarnessFailure`); only the cited line range is wrong. Documentation-accuracy-only, zero behavioral impact (183/183 unaffected).",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "467-469",
+    "snippet": "...AND append one `harness-failures.jsonl` detail line via the existing `appendHarnessFailure` mechanism (`index.mjs:458-475`, unmodified) so the existing self-heal escalation path... can pick it up."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "406-409 (REQ-506 Edge Cases bullet)",
+      "snippet": "This reroute is NEVER triggered by a slot execution that itself errors/times out ... in a way that bypasses REQ-508's existing `appendHarnessFailure` mechanism (`index.mjs:458-475`) — that mechanism is unmodified and fires independently."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "440-490 (the real content of the cited 458-475 range)",
+      "snippet": "455-468: `let eligibleSkillSlots = activeSkillSlots; try { eligibleSkillSlots = filterCatalog({...}); } catch (err) {...}` and the '5c. franklin-alwaysact-skill-router REQ-502/503' comment block -- unrelated to appendHarnessFailure."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "1028, 613, 767, 878, 914",
+      "snippet": "1028: `async function appendHarnessFailure({ ts, wakeId, slot, kind, layer, exitCode, rawDetail }) {` (real definition). Call sites independently re-confirmed at 613 (runOneWake legacy path), 767 (runAlwaysActWake, mirrors the legacy call), 878 and 914 (writeAlwaysActEscalation's REQ-508 escalation path -- the actual call sites REQ-508's own EARS clause is describing)."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Update REQ-508's EARS clause (behavioral-spec.md:467-469) and REQ-506's Edge Cases bullet (406-409) to cite the real `appendHarnessFailure` definition site (`index.mjs:1028`) and/or the specific call site REQ-508's escalation path actually uses (`index.mjs:878`/`:914` inside `writeAlwaysActEscalation`), replacing the stale `458-475` range. Fold this into the same mechanical line-citation audit pass FIND-006 recommends, since both share the same root cause. Documentation-accuracy fix only; no source/test change implied."
+}

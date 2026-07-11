@@ -1,0 +1,39 @@
+{
+  "findingId": "FIND-006",
+  "phase": "converge",
+  "iteration": 3,
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence", "residuals_honest"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Independently discovered this session: both spec files' description of `avoidSlot` (the pre-existing, unmodified, unrelated soft loop-detect mechanism this feature repeatedly cites as 'NOT what REQ-506's hard reroute filter is') cites stale `index.mjs` line numbers that no longer point at `avoidSlot` at all in the current HEAD. Declared: `index.mjs:175-184` for the `avoidSlot` mechanism block, `index.mjs:183` for its inline soft-nudge comment, and `index.mjs:179-421` for 'the loop-detect diversification' range. Independently re-read this session: `index.mjs:175-184` is actually `queryHlTradeOpenPositions` (Hyperliquid open-position query subprocess code, wholly unrelated to `avoidSlot`); the real `avoidSlot` state variable is declared at `index.mjs:296` (`let avoidSlot = null;`) and its actual soft-nudge inline comment ('the agent's choice is never blocked, only the enforced pause after ignoring it grows') is at `index.mjs:302` -- both roughly 113-119 lines below the cited numbers, consistent with this feature's own REQ-501 identity-gate code having been inserted earlier in the file during Phase 2b, shifting everything below it down without the citations being updated. The cited `179-421` range for 'loop-detect diversification' is similarly stale; the actual isLooping/avoidSlot-consuming block spans roughly `index.mjs:296-425` today. Most notably, this file's OWN iteration-4 Changelog entry (behavioral-spec.md:933-936) makes an explicit, confident, now-FALSE claim: '(`index.mjs:183`'s citation for `avoidSlot`'s inline comment was independently re-verified against this exact HEAD... so that specific correction noted in iteration-4's review was NOT applied; ground truth confirms the existing citation is accurate.)' -- that re-verification was genuinely accurate AT THE TIME it was performed (Phase 1c, iteration-4, before Phase 2b/2c implementation added the code that shifted these lines), but is no longer true against the current, post-implementation HEAD, and neither Phase 3's four impl-review iterations, Phase 5's purity-audit.md, nor converge iterations 1-2 caught that this self-certified-accurate citation had gone stale. This is a documentation-accuracy-only defect (the underlying claim -- avoidSlot is a soft, prompt-text-only nudge, structurally unrelated to and untouched by this feature's REQ-506 hard-array-filter reroute mechanism -- remains TRUE; only the cited line numbers are wrong) with zero behavioral impact (183/183 unaffected).",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "71-72",
+    "snippet": "**`avoidSlot`'s real semantics (spec-review FIND-003 ground truth)**: `index.mjs:175-184`'s `avoidSlot` mechanism is, by its own inline comment (`index.mjs:183`), a SOFT, prompt-text-only nudge..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "83, 354",
+      "snippet": "`avoidSlot` / `index.mjs:179-421`'s loop-detect diversification remains completely unmodified and continues to operate independently... / ...this is NOT the soft, prompt-text-only `avoidSlot` mechanism at `index.mjs:179-421`, which is untouched and unrelated..."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+      "lineRange": "142",
+      "snippet": "NOT the soft `avoidSlot` field (`index.mjs:179-421`), which stays completely unmodified and independent of this feature."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "933-936 (iteration-4 Changelog)",
+      "snippet": "(`index.mjs:183`'s citation for `avoidSlot`'s inline comment was independently re-verified against this exact HEAD -- the quoted text is still at line 183, not line 187 -- so that specific correction noted in iteration-4's review was NOT applied; ground truth confirms the existing citation is accurate.) -- this claim is no longer true against the current HEAD."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "179-187, 293-305",
+      "snippet": "179-187: `async function queryHlTradeOpenPositions() { ... }` (unrelated Hyperliquid query code). / 296: `let avoidSlot = null;` / 302: `// from avoidSlot — the agent's choice is never blocked, only the enforced pause after ignoring it grows.` (the real location of both cited elements)."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Update all 4 live citations (behavioral-spec.md:71-72, 83, 354; verification-architecture.md:142) to the real current line numbers (avoidSlot declaration + comment: index.mjs:296/302; the fuller loop-detect range this feature disclaims touching: roughly index.mjs:293-425) and correct the now-false iteration-4 Changelog re-verification claim (behavioral-spec.md:933-936) to either re-verify against the current HEAD or explicitly note it was accurate only as of the pre-implementation Phase 1c snapshot. Recommend a full, mechanical line-number citation pass across both spec files (not just the specific instances already found across FIND-002/003/005/006/007) given the demonstrated pattern of Phase 2b/2c code insertions silently invalidating Phase 1a/1b citations. Documentation-accuracy fix only; no source/test change implied."
+}

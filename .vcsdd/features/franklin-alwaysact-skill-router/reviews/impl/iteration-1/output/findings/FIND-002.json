@@ -1,0 +1,32 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["edge_case_coverage"],
+  "category": "test_coverage",
+  "severity": "critical",
+  "description": "REQ-512 (behavioral-spec.md lines 578-616) requires TWO distinct, cooperating pieces of observability: (1) a Franklin-identity wake with the flag unset/malformed appends `kind:'always_act_not_engaged'` (IMPLEMENTED, verified at index.mjs:352-364, tested by always-act-reroute.test.mjs PROP-501b tests); and (2) 'the one-time operational action that flips REQ-501(b)'s flag to \"1\" ... SHALL itself append a ledger line with `kind:'always_act_go_live'` (`ts`, and the config source it was set from) at the moment of that flip' -- this second half is NOT IMPLEMENTED anywhere. REQ-512's own Acceptance Criteria (line 611-612) explicitly demands: 'A unit test asserts the go-live operational action appends `kind:'always_act_go_live'` exactly once at the flip, never on any other wake.' No such unit test exists, and no such production code (e.g. a `recordGoLive()`-style function) exists anywhere in the diff. A repo-wide grep for `always_act_go_live` finds it ONLY as: (a) a comment/docstring reference inside always-act-router.mjs's isPostGoLiveRegression documentation (lines 194,211), (b) the consumer-side detector's own kind-matching logic inside isPostGoLiveRegression itself (line 211: `if (kind === 'always_act_go_live')`), and (c) hardcoded literal test FIXTURES inside always-act-router.test.mjs (`const goLive = () => ({ kind: 'always_act_go_live' })`, line 397) used only to feed isPostGoLiveRegression's own unit tests. Nothing in the entire diff ever WRITES this ledger kind in response to a real flag-flip action. This was already flagged during spec review: reviews/spec/iteration-2/output/notes.md's non-blocking observation #2 explicitly recommended 'Phase 2a should make this split explicit (a small `recordGoLive()`-style function, unit-tested, invoked manually by the operator's own one-time command) to avoid ambiguity for whoever implements REQ-512' -- neither Phase 2a (RED, evidence/red-phase.md) nor Phase 2b (GREEN, evidence/green-phase.md) implemented this. Consequence: REQ-512's own stated doctrine purpose -- distinguishing the benign 'not yet enabled' state from the doctrine-'malware' condition ('a Franklin-identity wake with the flag unset/malformed occurring AFTER the one-time go-live operational action has already fired', behavioral-spec.md line 774-778) -- is structurally UNVERIFIABLE in production: isPostGoLiveRegression can never observe a real `always_act_go_live` anchor line because nothing in this codebase ever writes one, so the regression detector this feature exists to build can never fire for the exact scenario it was built to catch.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "584-587,609-612",
+    "snippet": "the one-time operational action that flips REQ-501(b)'s flag to \"1\" ... SHALL itself append a ledger line with `kind:'always_act_go_live'` ... A unit test asserts the go-live operational action appends `kind:'always_act_go_live'` exactly once at the flip, never on any other wake."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/reviews/spec/iteration-2/output/notes.md",
+      "lineRange": "13-20",
+      "snippet": "Phase 2a should make this split explicit (a small `recordGoLive()`-style function, unit-tested, invoked manually by the operator's own one-time command) to avoid ambiguity for whoever implements REQ-512."
+    },
+    {
+      "filePath": "runtime/loop/always-act-router.mjs",
+      "lineRange": "204-225",
+      "snippet": "export function isPostGoLiveRegression(ledgerTail, { minRun } = {}) { ... if (kind === 'always_act_go_live') { sinceGoLive = true; ... } ... } -- the CONSUMER exists; no PRODUCER of this kind exists anywhere."
+    },
+    {
+      "filePath": "runtime/loop/__tests__/always-act-router.test.mjs",
+      "lineRange": "396-427",
+      "snippet": "const goLive = () => ({ kind: 'always_act_go_live' }); -- only ever used as a synthetic fixture literal for isPostGoLiveRegression's own consumer-side tests, never asserting a real production code path writes this kind."
+    }
+  ],
+  "verifiedAbsence": "grep -r 'always_act_go_live' across runtime/ and skills/ (production code, not specs/tests) returns zero writer sites; index.mjs's resolveAlwaysActGate()/checkAlwaysActIdentity() (lines 267-284, 243-265) -- the only place REQ-501(b)'s flag is read every wake -- contains no companion go-live-flip recorder, and no other file in the diff (`prompt.mjs`, `brain.mjs`, `context.mjs`) introduces one either.",
+  "routeToPhase": "2b"
+}

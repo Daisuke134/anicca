@@ -1,0 +1,110 @@
+{
+  "phase": "converge",
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "NOT_CONVERGED",
+  "iteration": 4,
+  "priorIteration": {
+    "verdict": "NOT_CONVERGED",
+    "blocking_findings": ["FIND-005", "FIND-006", "FIND-007"],
+    "reviewed_commit": "f3c27de9"
+  },
+  "toolFailureHookNote": "A PostToolUse:Write hook fired after this session's Write calls, stating 'fablize gate observed a tool failure. Do not report completion until it is fixed, isolated as a known baseline, or explicitly documented.' Every Write invocation itself returned 'File created successfully' with no error surfaced to this adversary, and this adversary has no Bash/shell tool this session to independently investigate the underlying fablize-gate signal. This is the SAME known, previously-disclosed condition converge iteration-3's own notes-iteration-3.md and this feature's baseline reviews/converge/output/verdict.json both already recorded under identical circumstances (no Bash tool, no visible Write failure). Disclosed here again, on the same basis, as a recurring session-external condition unrelated to any finding's content -- every finding below is grounded in direct Read/Grep evidence of the reviewed commit's actual files, independently re-executed this session.",
+  "priorIterationFindingsVerifiedResolved": {
+    "FIND-005": {
+      "status": "RESOLVED",
+      "basis": "The declared single-line `index.mjs:450` classify-gate ternary is gone from every citing location (behavioral-spec.md sec1/sec2/REQ-506 EARS/REQ-506 AC/sec6 Task List; verification-architecture.md's Purity Boundary Map summary, isEarnActionSlot bullet, Effectful Shell bullet, PROP-506c row). Independently re-read runtime/loop/index.mjs:598 (`} else if (isEarnSlot(slot)) {`, legacy, inside `runOneWake`) and :754 (`else if (isEarnActionSlot(slot)) {`, inside `runAlwaysActWake`, function starting :666) this session -- both match the corrected two-call-site description byte-for-byte. classifyEarnResult's own call sites (index.mjs:602 legacy, :759 always-act) also independently re-read and confirmed."
+    },
+    "FIND-006": {
+      "status": "RESOLVED",
+      "basis": "avoidSlot's citations now read index.mjs:296 (declaration), :294-295 (intro comment), :302 (inline soft-nudge comment quoted verbatim -- 'the agent's choice is never blocked, only the enforced pause after ignoring it grows', matches source exactly), and :293-425 for the loop-detect diversification block (state declared 293-305, isLooping-consuming block 405-425, both ranges independently re-read this session and confirmed exact). The now-false iteration-4 Changelog claim (that the stale index.mjs:183 citation was 're-verified against this exact HEAD') is annotated in-place (not rewritten), per the historical-record convention -- confirmed present at behavioral-spec.md:1021-1030."
+    },
+    "FIND-007": {
+      "status": "PARTIALLY RESOLVED -- new, distinct sub-defect found this session (see FIND-008)",
+      "basis": "appendHarnessFailure's definition citation (index.mjs:1028) and the REQ-506 Edge Cases bullet's call-site citation (index.mjs:767, inside runAlwaysActWake) are both independently confirmed accurate. However, REQ-508's own EARS clause -- the specific sentence FIND-007 rewrote -- introduces a NEW, previously-undisclosed inaccuracy while fixing the old one: it now claims index.mjs:878 is 'inside writeAlwaysActEscalation', which is false (878 is inside a different function, writeWakeErrorAndSleep, index.mjs:868-883; writeAlwaysActEscalation is index.mjs:899-920). See FIND-008."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md sec2.5 (12-row transition matrix)", "description": "Re-read again this session (unchanged since iteration-3's own confirmation); internally consistent, unaffected by FIND-008 which is a single-sentence function-attribution error, not an edge-case coverage gap."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:868-883 (writeWakeErrorAndSleep), :899-920 (writeAlwaysActEscalation), :1028 (appendHarnessFailure definition)", "description": "Independently re-read this session via grep (`grep -n '^async function writeWakeErrorAndSleep|^async function writeAlwaysActEscalation' runtime/loop/index.mjs`) and direct Read: both functions behave correctly and independently -- writeWakeErrorAndSleep handles brain-transport failures (both always-act and non-always-act paths), writeAlwaysActEscalation handles REQ-508's exhausted-bound truthful escalation. Both call appendHarnessFailure correctly for their own distinct purpose. FIND-008 is a documentation-attribution error only; the shipped code is correct and unaffected."},
+        {"type": "test-output", "location": "external, task-stated", "description": "183/183 pass at fb7fc4de (all commits since 39a9c217 task-disclosed as docs/evidence-only, confirmed by inspection: only specs/behavioral-spec.md, specs/verification-architecture.md, evidence/citation-audit-2026-07-11.md, and verification/purity-audit.md were touched this session's diff -- no runtime/loop/*.mjs or __tests__/* file was written)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:504-521 (REQ-508, full requirement re-read)", "description": "FIND-008's over-claim ('index.mjs:878 is inside writeAlwaysActEscalation') appears in exactly ONE location -- REQ-508's own EARS clause. No sibling citation elsewhere in either spec file repeats or contradicts this specific claim (verification-architecture.md and verification-report.md both describe writeAlwaysActEscalation's location as index.mjs:899-910/899-920, correctly, with no mention of 878; the iter3 Changelog entry's '613/767/878/914' listing is a flat list of appendHarnessFailure call sites, not a same-function claim, and is not itself false). This is a spec-vs-code mismatch confined to a single sentence, not an internal self-contradiction between two parts of the document (the FIND-003 class) -- correctly classified under spec_fidelity/verification_readiness, consistent with iteration-3's own classification precedent for FIND-005/006/007."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": []
+    }
+  ],
+  "criteria": {
+    "finding_diminishment": {
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": "Raw finding COUNT dropped from 3 (iteration-3: FIND-005/006/007) to 1 (iteration-4: FIND-008) -- on volume alone this looks like real diminishment, and IS partial genuine progress: 56 of 57 audited citation rows in evidence/citation-audit-2026-07-11.md are independently re-confirmed accurate this session (spot-checked far beyond the mandated 12+5: essentially every row of the table plus every real-file line number in the table's own 'Post-fix re-verification' line-dump was independently re-read against runtime/loop/index.mjs, prompt.mjs, brain.mjs, always-act-router.mjs, earn-detect.mjs, skills/earn/sol-trade/run.sh this session -- zero further drift found beyond FIND-008). However, this criterion is judged here by whether THIS iteration found anything the mechanical-audit CLASS does not already cover, per this task's explicit instruction -- and it did: FIND-008 is not a stale/drifted LINE NUMBER (the mechanical audit's grep-based method correctly verifies line-number/construct existence) but a false FUNCTION-ATTRIBUTION claim riding along a correct line number -- a distinct sub-defect the mechanical audit's own method has a structural blind spot for (it checks 'does the cited construct exist at this line', never 'is the enclosing-scope claim asserted alongside this citation also true'). The specific premise iteration-3 recommended and iteration-4's fix delivered -- 'ONE mechanical, exhaustive pass... would have caught FIND-005/006/007 in a single pass' and closed this entire failure class -- is therefore not fully vindicated: the pass caught 100% of pure line-number drift but missed this one attribution over-claim. Verdicted FAIL to keep this criterion strict and consistent with iteration-3's own precedent (which FAILed this criterion for 3 new findings even though they were a distinct-but-related class from FIND-001..004); a single, low-severity, non-propagated finding after an exhaustive audit is real forward progress and should shorten -- but not skip -- the next verification pass."
+    },
+    "finding_specificity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "FIND-008 cites exact file:line evidence (behavioral-spec.md:509-510) and counter-evidence (index.mjs:868/878/899/914), independently re-verified this session via both `grep -n '^async function ...'` (confirming function boundaries) and direct Read (confirming which appendHarnessFailure call falls inside which function) -- not asserted from memory or from the audit table's own prose."
+    },
+    "criteria_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "contracts/sprint-1.md's CRIT-001..012 independently re-read in full this session (lines 1-113): none cite index.mjs:878, index.mjs:914, or writeAlwaysActEscalation by name in their passThreshold text -- CRIT-010's passThreshold is scoped to running the real test suite (`npm test`, node --test on named files) and checking pass/fail counts, not to any specific escalation-handler line citation. FIND-008 does not touch any CRIT's pass/fail criteria. verification-report.md:121 (PROP-508a's discharge row) independently re-read and confirmed it correctly cites `index.mjs:899-910` for writeAlwaysActEscalation with no mention of 878 -- criteria_coverage's evidentiary basis is unaffected by FIND-008."
+    },
+    "duplicate_detection": {
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": "FIND-005/006/007 (iteration-3's blockers) are genuinely resolved this session for the specific claims they named (see priorIterationFindingsVerifiedResolved) -- but FIND-007's own fix, in the same sentence, introduced FIND-008: a new, previously-undisclosed instance of the broader citation-accuracy failure class this feature has now exhibited across FOUR consecutive converge iterations (iter1->2: FIND-002's fix left FIND-003; iter2->3: FIND-003/004's fix left FIND-005/006/007; iter3->4: FIND-005/006/007's own mechanical, exhaustive fix left FIND-008). FIND-008 is not a literal duplicate of any prior finding (distinct requirement-sentence, distinct real-code target, distinct failure MECHANISM -- a false function-attribution over-claim rather than a stale line number) but is the 4th consecutive recurrence of the underlying PATTERN: a fix pass that self-certifies exhaustive/complete ('0 DRIFTED citations remain', 'every corrected line number... independently re-verified... All 26 real-file line dumps above match the corrected spec citations exactly') while a further, undisclosed instance of the same general defect class survives, undiscovered until the next fresh-context adversary's own independent re-derivation."
+    },
+    "four_dimensional_convergence": {
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": "TEST dimension (183/183, task-stated and consistent with an evidence-only diff since fb7fc4de) and IMPL dimension (index.mjs:868-883/899-920/1028, independently re-read this session) remain mutually consistent and correct -- writeWakeErrorAndSleep and writeAlwaysActEscalation both function exactly as their own code/JSDoc describes, independent of the spec's mis-attribution. The SPEC dimension is demonstrably NOT converged with the IMPL dimension for REQ-508's own EARS-clause claim about which function index.mjs:878 lives inside -- a future maintainer following this citation to locate 'the escalation call site' would land inside the wrong function (a brain-transport-failure handler shared by both always-act and non-always-act paths, not REQ-508's own exhausted-bound escalation writer)."
+    },
+    "residuals_honest": {
+      "verdict": "FAIL",
+      "findings": ["FIND-008"],
+      "evidence": "This session's mechanical citation-audit fix (evidence/citation-audit-2026-07-11.md) headlines '58 live citation occurrences extracted... 0 DRIFTED remain' and behavioral-spec.md's Maintenance Note asserts 'Every ... citation below was independently re-verified against the real files at that commit... never re-read from memory of where it should be.' Both claims are shown incomplete by FIND-008: index.mjs:878 was indeed checked for EXISTENCE (a real appendHarnessFailure call is genuinely there) but the ADDITIONAL claim wrapped around it ('inside writeAlwaysActEscalation') was never independently checked against the real function boundary, and is false. This directly continues the pattern verification/purity-audit.md's own second correction note already explicitly warned about this session ('This is the third time this exact zero deviations self-certification has been shown false... a future Phase 5 pass should stop asserting zero deviations... to avoid re-falsifying an unscoped claim a fourth time') -- a variant of that exact 4th-time falsification has now occurred again, this time for the citation-audit's own '0 DRIFTED remain' self-certification rather than purity-audit's 'zero deviations' claim. This is assessed as a good-faith, extensively-documented near-miss (56/57 rows genuinely fixed and independently re-confirmed this session, zero behavioral impact) rather than any dishonesty, but the specific 'fully audited, 0 remaining' self-certification bar this criterion measures is not met a 4th time running."
+    }
+  },
+  "blocking_count": 1,
+  "reviewed_commit": "fb7fc4de",
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011", "CRIT-012"],
+    "duplicateFindings": [
+      {"iteration3": "FIND-005", "iteration4": "n/a", "relationship": "Genuinely resolved this iteration -- all citing locations independently re-confirmed against index.mjs:598/754/602/759."},
+      {"iteration3": "FIND-006", "iteration4": "n/a", "relationship": "Genuinely resolved this iteration -- avoidSlot citations independently re-confirmed against index.mjs:296/294-295/302/293-425/405-425; the false Changelog claim is honestly annotated, not silently rewritten."},
+      {"iteration3": "FIND-007", "iteration4": "FIND-008", "relationship": "FIND-007's own named claim (appendHarnessFailure's definition/REQ-506-edge-case call-site citation) is genuinely fixed (index.mjs:1028/767 both confirmed accurate). But the SAME sentence-rewrite that fixed FIND-007 introduced a new, distinct sub-defect (a false 'inside writeAlwaysActEscalation' function-attribution for index.mjs:878) -- not a literal duplicate (different failure mechanism: mis-attribution vs. stale line number) but the 4th consecutive instance of the broader 'self-certified-exhaustive fix pass leaves one further undisclosed defect of the same general class' pattern this feature has now exhibited across every converge iteration to date (iter1->2, iter2->3, iter3->4)."}
+    ]
+  },
+  "ts": "2026-07-11T18:00:00.000Z"
+}

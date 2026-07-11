@@ -134,15 +134,21 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
 /**
  * @param {string[]} [slots] - live skill slots; when provided, the run_skill
  *   `slot` param is constrained to this enum so the LLM picks among REAL skills.
+ * @param {{omitSleep?: boolean}} [opts] - franklin-alwaysact-skill-router REQ-504: additive,
+ *   backward-compatible. Default (`omitSleep` omitted/false) is byte-identical to the original
+ *   single-arg call — every existing call site is unaffected. When `omitSleep === true`, the
+ *   returned array omits SLEEP_TOOL entirely (used by always-act-engaged wakes, which must never
+ *   offer a legal "do nothing" choice — see behavioral-spec.md sec0/REQ-504).
  * @returns {object[]} OpenAI-compatible tool definitions
  */
-export function getToolDefinitions(slots) {
+export function getToolDefinitions(slots, opts = {}) {
+  const omitSleep = opts && opts.omitSleep === true;
   const slotProp = {
     type: 'string',
     description: 'Skill slot to execute (e.g. "earn", "report", "self/spawn")',
   };
   if (Array.isArray(slots) && slots.length) slotProp.enum = slots;
-  return [
+  const defs = [
     {
       type: 'function',
       function: {
@@ -168,8 +174,9 @@ export function getToolDefinitions(slots) {
         },
       },
     },
-    SLEEP_TOOL,
   ];
+  if (!omitSleep) defs.push(SLEEP_TOOL);
+  return defs;
 }
 
 /**
@@ -214,6 +221,11 @@ export function buildUserMessage(ctx) {
   // SELF-EVAL (H2/H3): the AI's OWN realised P&L per action. This is the money signal the loop was
   // missing — it turns "you did hl_trade a lot" into "hl_trade made you $0, it's DEAD" so the AI stops it.
   const earnSteer = typeof ctx.earnSteer === 'string' ? ctx.earnSteer : '';
+  // franklin-alwaysact-skill-router REQ-505: an additive, optional MUST-ACT reinforcement line —
+  // reuses this function's existing steer-composition pattern (.filter(Boolean).join). Absent on
+  // every ctx that doesn't set it (the overwhelming majority of wakes), so this is byte-for-byte
+  // unaffected for any existing caller.
+  const mustActReinforcement = typeof ctx.mustActReinforcement === 'string' ? ctx.mustActReinforcement : '';
   return [
     `Wake ${ctx.wakeId}: liquid $${ctx.balanceUsdc.toFixed(4)}${pos} (tier ${ctx.tier}).`,
     lowLiquid,
@@ -230,5 +242,6 @@ export function buildUserMessage(ctx) {
     `  - self/issue-dev — file a bug to fix yourself if you're stuck.`,
     earnSubs.length ? `  - per-method earners (each makes real money a different way): ${earnSubs.join(', ')}.` : '',
     `These are all open to you every wake — choose by your situation, include args. Vary your actions.`,
+    mustActReinforcement,
   ].filter(Boolean).join('\n');
 }

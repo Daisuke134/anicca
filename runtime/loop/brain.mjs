@@ -60,7 +60,13 @@ async function thinkProxy(ctx, config) {
       { role: 'system', content: buildSystemPrompt(ctx) },
       { role: 'user',   content: buildUserMessage(ctx) },
     ],
-    tools: getToolDefinitions(ctx.activeSkillSlots),
+    // franklin-alwaysact-skill-router REQ-504: an always-act-engaged ctx offers ONLY the (possibly
+    // reroute-narrowed) always-act menu, with sleep withheld — a non-engaged ctx (the overwhelming
+    // majority of all wakes) produces the exact byte-for-byte current call.
+    tools: getToolDefinitions(
+      ctx.alwaysActEngaged ? ctx.alwaysActMenu : ctx.activeSkillSlots,
+      { omitSleep: ctx.alwaysActEngaged === true },
+    ),
     tool_choice: 'auto',
     max_tokens: 512,
   });
@@ -89,7 +95,11 @@ async function thinkClaudeP(ctx, config) {
     '',
     buildUserMessage(ctx),
     '',
-    'Respond with a JSON tool_calls block using run_skill or sleep.',
+    // franklin-alwaysact-skill-router REQ-504: an always-act-engaged wake must not be told sleep is
+    // an option, so the text-mode brain path stays consistent with the tool-schema path.
+    ctx.alwaysActEngaged === true
+      ? 'Respond with a JSON tool_calls block using run_skill.'
+      : 'Respond with a JSON tool_calls block using run_skill or sleep.',
   ].join('\n');
 
   // MINIMAL env (not the full process.env): a full env + the project cwd makes `claude -p` load this

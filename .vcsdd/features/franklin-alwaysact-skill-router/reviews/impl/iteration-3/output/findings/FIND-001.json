@@ -1,0 +1,36 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "additionalDimensions": ["implementation_correctness"],
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The iteration-2 FIND-004 fix genuinely resolves the DEAD-ASSERTION defect (the guard-skip-preservation assertion in PROP-509b now runs unconditionally, no dead `if` guard) but does NOT resolve the underlying requirement: REQ-509's own literal Acceptance Criteria text (behavioral-spec.md:493-495, UNCHANGED since iteration-2 and still unchanged at this HEAD) reads 'the guard-blocked slot's own skip record is preserved verbatim in the ledger (not overwritten/silenced)'. Throughout this same spec file, 'the ledger' is a specific, consistently-used proper noun distinct from 'harness-failures.jsonl' and from 'earn-ledger.jsonl' -- REQ-510's EARS clause defines it explicitly as the file the wake-loop's LEDGER_PATH/formatRecord/safeAppend machinery writes 'a ledger line' to for every wake (REQ-510, REQ-512's own ledger-line append, and behavioral-spec.md:777's 'distinguishable from the ledger alone' all refer to this SAME file, which the implementation itself resolves as `LEDGER_PATH` -> `state/ledger.jsonl`). REQ-508's AC, by contrast, explicitly and separately names 'harness-failures.jsonl' every time it is meant -- the spec never once calls harness-failures.jsonl 'the ledger'. The iteration-2 fix instead writes the guard-blocked slot's skip record to harness-failures.jsonl under a new kind:'router_reroute_skip' (index.mjs:792-796) and ledger.jsonl is left with NO trace of the rerouted-away-from attempt at all (confirmed by reading runAlwaysActWake in full: the only safeAppend(LEDGER_PATH, ...) calls in the reroute branch's containing function are the terminal EXECUTE write at the end of the loop and writeAlwaysActEscalation's write -- neither ever carries the rerouted-away-from slot's own skip reason). This is a genuine, undisclosed reinterpretation of a money-safety-critical AC's literal target, made unilaterally by rewriting the CODE and the TEST's own assertion text (both now say 'harness-failures.jsonl') without a corresponding spec-review changelog entry amending REQ-509's AC in behavioral-spec.md itself -- unlike every other design pivot in this feature's history (FIND-101/102/103/201/301 etc.), each of which was closed by an explicit, dated changelog entry rewriting the actual requirement text. The strict-mode contract (contracts/sprint-1.md CRIT-006) was quietly rewritten to assert 'never ledger.jsonl' with a supporting rationale ('ledger.jsonl's one line per wake is always the wake's own FINAL outcome') that is itself an unstated design INFERENCE, not an explicit REQ-510 prohibition -- REQ-510's EARS text requires a ledger line containing AT LEAST the named minimum fields for the wake's final outcome; it never states ledger.jsonl may carry no OTHER line for that wake_id, so appending an additional, distinctly-kinded ledger.jsonl line for the guard-blocked attempt (the way REQ-512's always_act_not_engaged/always_act_go_live lines already coexist with ordinary wake lines in the SAME file) was an available, spec-literal-compliant design this fix did not take. Practically: an operator inspecting ledger.jsonl (the file every other REQ-51x observability requirement in this spec directs them to) after a real guard-block-then-reroute event sees only the final, successfully-rerouted pick -- exactly the operator-visibility gap REQ-509's AC exists to close -- and would have to separately know to cross-reference harness-failures.jsonl (a file REQ-508 defines for a totally different purpose: the TERMINAL exhausted-bound failure case, not an in-flight, ultimately-successful reroute) to find it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "493-495",
+    "snippet": "An integration-style test using real (unmodified) guard modules with a fixture forcing a guard-block on the first-picked slot asserts the reroute picks a different slot and the guard-blocked slot's own skip record is preserved verbatim in the ledger (not overwritten/silenced)."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "779-818",
+      "snippet": "if (kind === 'wake' && isEarnActionSlot(slot) && noRealizedAction(earnLine)) { await appendHarnessFailure({ ts, wakeId, slot, kind: 'router_reroute_skip', layer: 'router', ... }); const state = nextRerouteState(...); ... continue; } -- no safeAppend(LEDGER_PATH, ...) call anywhere in this branch; the guard-blocked slot's own record never reaches ledger.jsonl."
+    },
+    {
+      "filePath": "runtime/loop/__tests__/always-act-reroute.test.mjs",
+      "lineRange": "585,604-613",
+      "snippet": "test('PROP-509b ... the guard's own skip record is preserved VERBATIM in harness-failures.jsonl (never overwritten/silenced)' ...) -- the test's own title/comments now assert against harness-failures.jsonl, silently substituting for the spec AC's literal 'in the ledger' target with no corresponding behavioral-spec.md changelog entry."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md",
+      "lineRange": "33-37",
+      "snippet": "CRIT-006 description: '... the guard's own skip record preserved verbatim (Phase 3 impl-review iteration-2 FIND-004 fix: via the appendHarnessFailure/formatRecord audit-append mechanism, distinct kind:'router_reroute_skip', in harness-failures.jsonl -- never ledger.jsonl, whose one line per wake is always the wake's own FINAL outcome...' -- this contract-level rationale amends REQ-509's AC by fiat; behavioral-spec.md's own REQ-509 AC text (lines 490-495) was never correspondingly revised."
+    },
+    {
+      "filePath": "runtime/loop/harness-health.mjs",
+      "lineRange": "24,40-48",
+      "snippet": "CLEAN_KINDS/classifyLayer operate only over ledger.jsonl-shaped records with kind in {wake,narrate,shutdown,wake_error,skill_missing,skill_timeout,skill_error} -- 'router_reroute_skip' is a harness-failures.jsonl-only kind, structurally invisible to computeSlotHealth/computeHarnessHealth's per-slot escalation tracking, which reads ledger.jsonl records exclusively."
+    }
+  ],
+  "routeToPhase": "2b"
+}

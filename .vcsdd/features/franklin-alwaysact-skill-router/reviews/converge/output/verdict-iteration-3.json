@@ -1,0 +1,105 @@
+{
+  "phase": "converge",
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "NOT_CONVERGED",
+  "iteration": 3,
+  "priorIteration": {
+    "verdict": "NOT_CONVERGED",
+    "blocking_findings": ["FIND-003", "FIND-004"],
+    "reviewed_commit": "3f657ba4"
+  },
+  "priorIterationFindingsVerifiedResolved": {
+    "FIND-003": {
+      "status": "RESOLVED",
+      "basis": "behavioral-spec.md:619-635 (REQ-513 EARS clause) now describes the real early-return-dispatch mechanism (index.mjs:516-518 -> runAlwaysActWake, guard isRejectableSleepOrOffMenu at index.mjs:717) instead of the disproven 'in-place conditional' framing; independently re-read runtime/loop/index.mjs:511-518 and :548-564 this session, byte-for-byte match. Edge Cases bullet (670-672/678-682) and Edge Case Catalog bullet (789-793/799-805) both independently re-read this session and now correctly cite index.mjs:516-518/717, not the stale 402-416. REQ-513 is no longer internally self-contradictory."
+    },
+    "FIND-004": {
+      "status": "RESOLVED",
+      "basis": "Grepped '9-row'/'12-row' across specs/verification-architecture.md this session: zero live '9-row' matches remain (only 2 historical Changelog mentions at lines 338/346, correctly framed as past-state description of what iteration-1/converge-iter1 found wrong, not current-tense fact). Line 44 and 318 and 373 all now read '12-row', matching behavioral-spec.md's real 12-row §2.5 matrix (independently re-read lines 742-780 this session) and verification-report.md's own '12-row' citation."
+    }
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": []
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:742-780", "description": "12-row §2.5 transition matrix independently re-read this session; internally consistent, unaffected by this iteration's 3 new findings (which are pure line-citation/mechanism-description drift, not edge-case-coverage gaps)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:598,754,717,718,702,816,1028", "description": "Independently re-read this session: all call sites (legacy isEarnSlot classify at 598, always-act isEarnActionSlot classify at 754, isRejectableSleepOrOffMenu guard at 717, nextRerouteState at 702/718/816, appendHarnessFailure at 1028/613/767/878/914) behave exactly as the transition matrix and PROP-506c/513a-e (all passing) describe. This iteration's 3 new findings are documentation-citation-accuracy issues only -- the underlying shipped behavior is correct and unaffected."},
+        {"type": "test-output", "location": "verification/proof-harnesses/target-feature-run.txt:21, full-suite-run.txt:25", "description": "PROP-506c passes; 183/183 external test evidence unchanged (task-stated, builder-run at f3c27de9)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md REQ-513 (619-741)", "description": "Re-read in full this session: no internal self-contradiction remains within REQ-513 (the FIND-003 defect class). This iteration's 3 new findings are each internally consistent within their own requirement -- every citation of a given stale claim across both spec files agrees with every other (uniformly wrong against the real code, not self-contradictory against an adjacent correct paragraph) -- so this is classified spec_fidelity/verification_readiness, not structural_integrity."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": []
+    }
+  ],
+  "criteria": {
+    "finding_diminishment": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "The upstream phase-level finding trajectories this criterion tracks (spec-review 1c: 5->3->1->1->0; impl-review Phase 3: 2->4->1->0, both terminating at 0 blocking) are unmodified by this iteration's diff -- confirmed no reviews/{spec,impl}/iteration-*/output/* file was touched between iteration-2's reviewed commit (3f657ba4) and this iteration's HEAD (f3c27de9); only specs/behavioral-spec.md and specs/verification-architecture.md's REQ-513-adjacent text and Changelogs changed. Iteration-1/2's own PASS basis for this criterion stands unmodified. (Note: converge-phase blocking_count itself rose 2 (iter2) -> 3 (iter3) as a direct result of this iteration's own independent, wider-scope sweep -- per Task 2's explicit mandate to search beyond the builder's known list -- surfacing 3 NEW, previously-undetected defects of the SAME architectural class already partially disclosed by FIND-002/003, not a recurrence of any already-fixed defect. This is reported honestly here rather than folded silently into a PASS.)"
+    },
+    "finding_specificity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "FIND-005/006/007 (this iteration's own findings) are held to the same bar as iteration-1/2's: concrete file:line citations, independently re-verified against the real files this session (runtime/loop/index.mjs at the exact cited ranges, cross-checked against grep results for the exact quoted expressions), not asserted from prior-iteration prose or from the spec's own self-certifying Changelog claims."
+    },
+    "criteria_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "contracts/sprint-1.md's CRIT-001..012 mapping independently re-read this session (full file, lines 1-70): none of CRIT-002/005/006/011/012 (the REQ-502/506/509/503/510-mapped criteria) cite index.mjs:450, index.mjs:458-475, or index.mjs:175-184/179-421 in their passThreshold text -- the contract's own pass criteria are phrased in terms of test names and behavioral assertions, not the stale line citations this iteration's findings concern, so criteria_coverage itself is unaffected. verification-report.md's 33-row Proof Obligations table (spot-read again this session, lines 96-143) likewise does not cite these stale ranges. Iteration-1's 33/33 count stands."
+    },
+    "duplicate_detection": {
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": "FIND-003 and FIND-004 (iteration-2's blockers) are both genuinely resolved this session (see priorIterationFindingsVerifiedResolved). However, this iteration's own independent staleness sweep (Task 2, explicitly mandated to search beyond the builder's disclosed list) found 3 NEW, previously-undisclosed instances of the same general failure class already established by FIND-002/003 (declared spec mechanism/citation vs. actual shipped code): FIND-005 (REQ-506's 'index.mjs:450' classify-gate ternary does not exist in the real code -- two separate call sites at 598/754 instead), FIND-006 (REQ-501/506's 'avoidSlot' citations index.mjs:175-184/183/179-421 are stale by ~113-119 lines; real location is 296/302, and the file's own iteration-4 Changelog explicitly but now-falsely claims this was re-verified accurate), and FIND-007 (REQ-508/506's 'appendHarnessFailure' citation index.mjs:458-475 is stale; real definition is at line 1028). None of these three duplicate each other or FIND-001..004 -- each cites a distinct requirement, a distinct spec-file location, and a distinct real-code location. This is the SAME criterion-level failure mode iteration-2 identified in FIND-002-vs-FIND-003 ('the fix pass touched only the specific paragraph named by the finding and did not apply the same correction methodology elsewhere'), recurring a second time despite iteration-2's fix commit being described as an 'exhaustive grep sweep.'"
+    },
+    "four_dimensional_convergence": {
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": "REQ-506, REQ-508, and REQ-501's own citations of `avoidSlot` were spot-checked this iteration as part of Task 2's independent 8-citation sweep (candidates included prompt.mjs:139-173/171, brain.mjs:63/92, index.mjs:450/458-475/175-184/183/179-421/717/718/1028, earn-detect.mjs:23-50, sol-trade/run.sh:28-41, earning-health.py:1-23 -- 5 of these 8+ spot-checked citations were found accurate, 3 were found stale). The TEST dimension (PROP-506c and all Row 1-12 transition-matrix tests, passing per the raw logs) and the IMPL dimension (the real index.mjs code, independently re-read) remain mutually consistent and correct. The SPEC dimension, however, is demonstrably NOT converged with the IMPL dimension for 3 distinct citations across 2 requirements (REQ-506, REQ-508) plus one cross-cutting ground-truth bullet (avoidSlot, referenced by REQ-501/506/509) -- a fresh reader or future Phase-5-style re-verifier relying on these specific line numbers to locate and re-derive the real mechanism would be misdirected to unrelated code (a bootstrap-reserve carve-out function, a Hyperliquid position query, and a catalog-filter block, respectively) rather than the actual classify-gate/avoidSlot/appendHarnessFailure code."
+    },
+    "residuals_honest": {
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006", "FIND-007"],
+      "evidence": "verification/purity-audit.md's Summary section (independently re-read in full this session, lines 167-177) states the implementation 'matches the declared Purity Boundary Map with zero deviations' -- this claim is now demonstrably false for 3 additional, undisclosed reasons beyond the FIND-001/002 deviations it already amended for: the Purity Boundary Map's Effectful Shell section (verification-architecture.md:9,134-138,142) declares the false index.mjs:450 ternary and the stale avoidSlot/appendHarnessFailure line ranges as accurate fact, and purity-audit.md's own 'Effectful shell — verified by direct read' section (lines 71-88) describes runAlwaysActWake's real behavior accurately but never cross-checks it against these specific declared citations, repeating the exact same class of self-certification gap ('verified the absence of a defect class without diffing the specific declared claim against the real code') that FIND-001/002 already exposed once for this same audit document. A verification artifact whose own headline claim ('zero deviations') is provably false, even after one already-disclosed round of correction, does not meet this criterion's honest-residuals bar."
+    }
+  },
+  "blocking_count": 3,
+  "reviewed_commit": "f3c27de9",
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011", "CRIT-012"],
+    "duplicateFindings": [
+      {"iteration2": "FIND-003", "iteration3": "n/a", "relationship": "Genuinely resolved this iteration, not a duplicate of anything new -- confirmed independently against the real REQ-513 EARS clause and edge cases."},
+      {"iteration2": "FIND-004", "iteration3": "n/a", "relationship": "Genuinely resolved this iteration -- confirmed via grep, zero live '9-row' citations remain."},
+      {"iteration2": "FIND-002/FIND-003 (as a CLASS)", "iteration3": "FIND-005/FIND-006/FIND-007", "relationship": "Not literal duplicates (each cites a distinct requirement/location/real-code target) but a recurrence of the SAME underlying failure MODE already named in iteration-2's own verdict: a doc-sync fix pass correcting only the specific paragraph(s) a prior finding named, without applying the same correction methodology to sibling citations elsewhere in the same or adjacent requirements. This is the third consecutive converge iteration in which this exact pattern has produced new findings (iteration1->2: FIND-002's fix left FIND-003; iteration2->3: FIND-003/004's fix, while itself correct and complete for what it targeted, left FIND-005/006/007 undiscovered)."}
+    ]
+  },
+  "ts": "2026-07-11T14:00:00.000Z"
+}

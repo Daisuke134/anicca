@@ -1,0 +1,44 @@
+{
+  "findingId": "FIND-003",
+  "phase": "converge",
+  "iteration": 2,
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence"],
+  "category": "spec_gap",
+  "severity": "critical",
+  "description": "The converge doc-sync fix (commit 3f657ba4) corrected FIND-002's flagged 'Concretely:' mechanism paragraph in behavioral-spec.md's REQ-513 section (lines 649-668, now accurate), but did NOT propagate that correction to at least three other places within the SAME REQ-513 requirement (and one adjacent requirement) that still assert the disproven mechanism as current fact. This leaves REQ-513 internally self-contradictory: its own normative EARS clause and its own Edge Cases bullet directly conflict with its own corrected 'Concretely:' explanation, all within the same ~50-line requirement block. Specifically: (1) behavioral-spec.md:621 (REQ-513's EARS clause itself -- the most authoritative part of the requirement) reads 'THE SYSTEM SHALL, before index.mjs's existing if (slot === 'sleep') branch (index.mjs:402-416, unconditional string check) can fire, check whether slot === 'sleep' OR slot is not a member of currentOfferedSlots' -- this describes an in-place precondition guard on a still-existing 'if (slot===sleep)' branch. The corrected paragraph 28 lines below (behavioral-spec.md:653-658) establishes there is no such branch inside the real guarded code path at all: runAlwaysActWake (index.mjs:666-724, independently re-read this session) contains no 'if (slot === 'sleep')' branch whatsoever -- its guard at index.mjs:717 (`isRejectableSleepOrOffMenu(slot, currentOfferedSlots)`) precedes generic skill execution, not any sleep-specific branch; the real 'if (slot === 'sleep')' branch (index.mjs:551) lives in a DIFFERENT function entirely and is never reached by an always-act-engaged wake because of the early return at index.mjs:516-518, not because anything 'fires before' it. (2) behavioral-spec.md:670-672 (REQ-513's own Edge Cases bullet) repeats the identical falsified claim: 'A non-always-act wake... is completely unaffected -- index.mjs:402-416's sleep branch fires exactly as it does today... since the new guard only activates when ctx.alwaysActEngaged === true' -- there is no 'new guard' anywhere near index.mjs:402-416 (that line range is confirmed, by direct read this session, to be unrelated loop-detect code, not the sleep branch at all -- the sleep branch is now at index.mjs:551). (3) behavioral-spec.md:789-793 (the cross-cutting Edge Case Catalog, section 3) again asserts current-tense 'REQ-513 rejects it at the REAL index.mjs:402-416 dispatch point' -- same stale claim, same section-3 normative context (not changelog prose). All three are ACTIVE, current-tense normative spec text -- not changelog/historical framing (the file's own '## Changelog' section starts at line 869 and does not encompass any of these three citations) -- so per this feature's own established convention (used correctly in the corrected 'Concretely:' paragraph and in verification-architecture.md's dedicated Changelog section), a REQ's live EARS/Edge-Case/Edge-Case-Catalog text must describe the actual shipped mechanism, and here it still does not for REQ-513 in 3 of its at least 4 internal mechanism descriptions. This is not a NEW code defect (the shipped behavior, per PROP-513a/b/c/e, is correct) -- it is a NEW-to-this-iteration, still-unresolved documentation self-contradiction: the fix pass touched one paragraph of a multi-paragraph requirement and left the requirement's own EARS clause -- its most authoritative sentence -- uncorrected and directly contradicting the paragraph fixed 28 lines below it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "619-622",
+    "snippet": "**EARS**: WHEN always-act mode is engaged (`ctx.alwaysActEngaged === true`) AND `parseToolCall(rawResponse)` resolves a non-null `{ slot, args }` for a given `think()` attempt THE SYSTEM SHALL, before `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`, unconditional string check) can fire, check whether `slot === 'sleep'` OR `slot` is not a member of `currentOfferedSlots`"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "670-672",
+      "snippet": "A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected -- `index.mjs:402-416`'s `sleep` branch fires exactly as it does today, byte-for-byte, since the new guard only activates when `ctx.alwaysActEngaged === true`."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "789-793",
+      "snippet": "REQ-513 rejects it at the REAL `index.mjs:402-416` dispatch point and, on the baseline attempt, routes it into REQ-505/511's bounded reprompt path"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "649-668",
+      "snippet": "the correctly doc-synced paragraph this finding's 3 citations contradict: 'the actual shipped mechanism is an early-return dispatch, not an in-place conditional... that branch itself stays byte-for-byte unconditional and unmodified...'"
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "395-424",
+      "snippet": "independently re-read this session: index.mjs:402-416 is loop-detect code (isLooping/avoidSlot/loopDetectStreak), unrelated to the sleep branch, which is actually at line 551."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "666-724",
+      "snippet": "runAlwaysActWake's full body, independently re-read: contains parseToolCall (line 698) and the isRejectableSleepOrOffMenu guard (line 717) but no 'if (slot === \"sleep\")' branch of any kind -- confirming EARS line 621's 'before... branch... can fire' framing has no referent inside this function."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Rewrite behavioral-spec.md REQ-513's EARS clause (lines 619-622) itself -- not just the explanatory 'Concretely:' paragraph -- to describe the real early-return-dispatch mechanism (or, better, phrase the EARS clause mechanism-agnostically in terms of observable behavior and push the citable line numbers only into the 'Concretely:' paragraph, avoiding duplicate mechanism descriptions that can drift independently). Also correct the Edge Cases bullet (670-672) and the Edge Case Catalog bullet (789-793) to match. Documentation-accuracy fix only; no source/test change implied; 183/183 remains the correct external test evidence throughout."
+}

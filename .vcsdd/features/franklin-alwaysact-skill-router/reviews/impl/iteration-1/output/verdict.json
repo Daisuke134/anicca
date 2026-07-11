@@ -1,0 +1,64 @@
+{
+  "phase": "impl-review",
+  "feature": "franklin-alwaysact-skill-router",
+  "iteration": 1,
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewedCommits": ["6539394", "939f3da"],
+  "reviewed_commits": ["6539394", "939f3da"],
+  "reviewContext": {
+    "reviewType": "impl",
+    "worktree": "/Users/operator/anicca/.worktrees/alwaysact-impl",
+    "branch": "feature/franklin-alwaysact-skill-router",
+    "specPath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+    "toolConstraintNote": "This review session's tool set did not include a Bash/shell execution tool -- only Read/Write/Edit/Grep/Glob were available. `git diff`, `git log`, and `node --test` could NOT be executed directly by this adversary. All findings below are grounded in full-file reads of the actual runtime/loop/*.mjs source and *.test.mjs test files (line-cited), plus repo-wide Grep sweeps used as a substitute for `git diff --stat`/`grep -r` scope checks. Builder-reported test counts (265/265, evidence/green-phase.md) were NOT independently re-executed; they are treated as a claim, not verified fact, and are called out explicitly wherever relied upon."
+  },
+  "dimensions": {
+    "spec_fidelity": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": []
+    },
+    "edge_case_coverage": {
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/__tests__/always-act-reroute.test.mjs", "description": "23 spawn-based integration tests reviewed line-by-line and cross-mapped against every row (1-12) of behavioral-spec.md sec2.5's attempt-state transition matrix -- rows 1-12 are all present and each asserts the correct think()-call count, terminal kind, and (where applicable) the real outbound tool-enum exclusion. This part of edge-case coverage is genuinely strong; the dimension fails solely on REQ-512's untested go-live acceptance criterion (FIND-002), not on the transition-matrix coverage."}
+      ]
+    },
+    "implementation_correctness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:662-817", "description": "runAlwaysActWake() traced line-by-line against REQ-505/506/508/511/513 and behavioral-spec.md sec2.5's 12-row matrix: attemptsUsed is the sole branch arbiter (never currentOfferedSlots identity, matching the FIND-301 fix); the reroute filter correctly hard-excludes the just-picked slot AND every risk:\"capital\" slot (isMarketRiskFree); the classify call-site at line 747 correctly uses isEarnActionSlot (not isEarnSlot) only inside runAlwaysActWake, leaving the non-engaged path (line 594) on the original isEarnSlot -- REQ-506/FIND-002 widening confirmed correct. REQ-513's dispatch rejection (isRejectableSleepOrOffMenu against the per-attempt currentOfferedSlots, never the static ctx.alwaysActMenu once a reroute is in flight) is correctly wired at lines 710-721 and 780-793. The one confirmed defect is FIND-001 (wrong/missing kind value for the empty-menu terminal case)."},
+        {"type": "file", "location": "runtime/loop/index.mjs:216-284", "description": "REQ-501 identity+flag gate (checkAlwaysActIdentity/resolveAlwaysActGate) traced against the sol-trade/run.sh:28-41 idiom it mirrors: envWithoutSolanaKey strips ANICCA_SOLANA_PRIVATE_KEY before EITHER derivation (closes the ambient-override bypass sol-trade's own FIND-001 fix addressed), the A-B-A re-confirmation guards a TOCTOU race, and the flag check is a strict `flagRaw === '1'` fail-closed comparison. Confirmed FAIL-CLOSED and non-weakening."}
+      ]
+    },
+    "structural_integrity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs (full file, 226 lines)", "description": "Pure Core module reviewed in full: no I/O imports (fs/http/child_process), every classifier injected, functions small (largest ~25 lines) and single-purpose, names match the spec's own vocabulary (isEarnActionSlot, isMarketRiskFree, nextRerouteState, etc.), no dead code paths found."},
+        {"type": "file", "location": "runtime/loop/index.mjs:654-817", "description": "runAlwaysActWake is a new, clearly-separated function rather than a tangle of conditionals inside runOneWake -- a reasonable structural choice. Noted (non-blocking, not filed as a finding): the loop-detect bookkeeping block (avoidSlot/loopDetectStreak/recentActions windowing) is duplicated near-verbatim between runOneWake's step 8 (lines 562-570) and runAlwaysActWake's Case C (lines 725-729) -- Phase 2c's own refactor pass extracted only the wake_error helper, not this second duplication. This is a DRY opportunity, not a defect: both copies are currently behaviorally identical and the duplication does not affect correctness."}
+      ]
+    },
+    "verification_readiness": {
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/always-act-router.mjs", "description": "Purity boundary confirmed intact: the Pure Core module has zero side effects, matching verification-architecture.md's Purity Boundary Map. All Tier-1 pure-function proof obligations (PROP-502a/b/c, 503a, 504a, 505a-shape, 506a/b/e-shape, 507a-shape, 510a, 511a, 512b) are traceable to real, small, testable pure functions."}
+      ]
+    }
+  },
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": false,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "note": "This is a Phase-3-style implementation review against behavioral-spec.md REQ-501..REQ-513 directly -- no contracts/sprint-1.md CRIT-* file exists in this worktree for this feature (confirmed via Glob: 'features/franklin-alwaysact-skill-router/contracts/**' returns no files), despite state.json declaring mode:'strict' and the feature's own Embedded VCSDD Task List (behavioral-spec.md sec6, item 7) requiring 'Sprint contract (strict mode) — write contracts/sprint-1.md mapping CRIT-* to REQ-501..REQ-513 before Phase 3 adversarial review.' evaluatedCriteria is empty because there is no approved CRIT-* set to enumerate; this is a process-sequencing gap independent of the two blocking findings above and should be resolved (either the contract authored, or the mode reconciled to lean) before any further Phase 3 iteration is spawned."
+  },
+  "blocking_count": 2,
+  "ts": "2026-07-11T00:00:00Z"
+}
