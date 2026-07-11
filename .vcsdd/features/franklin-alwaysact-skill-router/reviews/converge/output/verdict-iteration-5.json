@@ -1,0 +1,117 @@
+{
+  "phase": "converge",
+  "feature": "franklin-alwaysact-skill-router",
+  "verdict": "CONVERGED",
+  "iteration": 5,
+  "priorIteration": {
+    "verdict": "NOT_CONVERGED",
+    "blocking_findings": ["FIND-008"],
+    "reviewed_commit": "fb7fc4de"
+  },
+  "priorIterationFindingsVerifiedResolved": {
+    "FIND-008": {
+      "status": "RESOLVED",
+      "basis": "behavioral-spec.md:509-514 (REQ-508 EARS clause) now reads: '...the escalation call site this requirement's own EARS clause describes is `index.mjs:914` inside `writeAlwaysActEscalation` (function starts `:899`); `index.mjs:878` is inside the separate shared brain-transport-failure handler `writeWakeErrorAndSleep` (starts `:868`), not part of this requirement...'. Independently re-verified this session via `grep -n '^async function writeWakeErrorAndSleep|^async function writeAlwaysActEscalation|^async function appendHarnessFailure' runtime/loop/index.mjs` -> `868:async function writeWakeErrorAndSleep(...)`, `899:async function writeAlwaysActEscalation(...)`, `1028:async function appendHarnessFailure(...)`, and a full ordered function-boundary scan (`grep -n '^(async )?function \\w+\\('`) confirming writeWakeErrorAndSleep spans exactly 868-898 (next function at 899) and writeAlwaysActEscalation spans exactly 899-926 (next function at 927). Direct Read of index.mjs:868-920 confirms the sole appendHarnessFailure call inside writeWakeErrorAndSleep is at :878 and the sole one inside writeAlwaysActEscalation is at :914. The corrected sentence is now byte-for-byte true. evidence/citation-audit-2026-07-11.md row 27's 'Real location' column was also corrected to the same accurate description ('Escalation call site: index.mjs:914 inside writeAlwaysActEscalation (starts :899); index.mjs:878 is inside writeWakeErrorAndSleep (starts :868), a different shared handler — corrected per converge iter4 FIND-008.'), verdict column updated to 'DRIFTED -> REWRITE (corrected iter4)', Source column appended 'FIND-008'. No sibling citation of index.mjs:878/914/writeAlwaysActEscalation/writeWakeErrorAndSleep exists anywhere else in behavioral-spec.md, verification-architecture.md, verification-report.md (grepped fresh this session), or contracts/sprint-1.md (grepped fresh this session, only match is CRIT-002's unrelated 'kind' param description at line 22, which carries no line-number claim and is unaffected)."
+    }
+  },
+  "methodExtension": {
+    "description": "Per iter4's own recommended method extension, every audit-table row (and every other in-spec citation, grepped fresh via 'inside `\\w+`'/'function starts'/'starts `:' patterns across both spec files) whose description NAMES an enclosing function was independently re-verified against real function boundaries this session, not merely against grep-based line-content existence.",
+    "rowsChecked": [
+      {"citation": "index.mjs:66 (thinkProxy tools: line, function starts :48)", "verified": "grep '^async function thinkProxy' -> line 48. Accurate."},
+      {"citation": "index.mjs:100-102 (thinkClaudeP prompt-text line, function starts :89)", "verified": "grep '^async function thinkClaudeP' -> line 89. Accurate."},
+      {"citation": "index.mjs:598/602 (isEarnSlot + classifyEarnResult, inside runOneWake)", "verified": "runOneWake spans 347-665 (next function runAlwaysActWake at 666); 598 and 602 both fall inside. Direct Read of lines 595-604 confirms the isEarnSlot branch and classifyEarnResult call are exactly as described. Accurate."},
+      {"citation": "index.mjs:754/759/767 (isEarnActionSlot + classifyEarnResult + appendHarnessFailure, inside runAlwaysActWake)", "verified": "runAlwaysActWake spans 666-867 (next function writeWakeErrorAndSleep at 868); 754/759/767 all fall inside. Direct Read of lines 750-771 confirms isEarnActionSlot branch, classifyEarnResult call, and appendHarnessFailure call all exactly as described. Accurate."},
+      {"citation": "index.mjs:717/718 (isRejectableSleepOrOffMenu / nextRerouteState, inside runAlwaysActWake)", "verified": "717/718 fall inside runAlwaysActWake's 666-867 range. Accurate."},
+      {"citation": "index.mjs:914 inside writeAlwaysActEscalation (function starts :899); index.mjs:878 inside writeWakeErrorAndSleep (starts :868)", "verified": "The FIND-008 fix itself; both boundaries independently confirmed via grep + Read of index.mjs:899-920 (profitable:false at :909, appendHarnessFailure at :914, both inside 899-926) and index.mjs:868-883 (appendHarnessFailure at :878, inside 868-898). Accurate."},
+      {"citation": "verification-report.md:121 PROP-508a: writeAlwaysActEscalation (index.mjs:899-910)", "verified": "899-910 is a true subset of the real 899-926 function body -- not a full-range overclaim, and the specific cited fields (profitable:false at :909, ledgerFields.slot at :907) genuinely fall within 899-910. Direct Read of index.mjs:899-920 confirms. Accurate, not misleading."}
+    ],
+    "result": "Zero new enclosing-function misattributions found. FIND-008's fix does not merely patch the one named sentence -- the underlying enclosing-function claims elsewhere in the document (which iter4's own audit had already independently verified accurate pre-fix) remain accurate post-fix, and no new claim introduced by the a4720db diff (limited to behavioral-spec.md:509-514 and the audit table's row 27) creates a fresh misattribution."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:504-522 (REQ-508, full requirement re-read)", "description": "EARS clause, Edge Cases, and Acceptance Criteria all internally consistent and independently re-verified against runtime/loop/index.mjs this session."},
+        {"type": "file", "location": "runtime/loop/index.mjs:868,899,1028 (function declarations) + :878,914 (call sites)", "description": "grep-confirmed enclosing-function boundaries match the corrected spec sentence exactly."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md sec2.5 (12-row transition matrix)", "description": "Unchanged since iter3/iter4 confirmation; the a4720db diff touched only REQ-508's EARS sentence and the audit table, not this matrix."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/index.mjs:868-898 (writeWakeErrorAndSleep), :899-926 (writeAlwaysActEscalation), :1028-1045 (appendHarnessFailure)", "description": "Independently re-read this session; both handlers behave correctly and independently, each calling appendHarnessFailure for its own distinct purpose. Unaffected by the doc-only fix."},
+        {"type": "test-output", "location": "external, task-stated", "description": "183/183 pass; all commits since 39a9c217 (the last code-affecting commit) are docs/evidence-only per task disclosure, consistent with the a4720db diff scope observed (behavioral-spec.md + citation-audit-2026-07-11.md only)."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/behavioral-spec.md:504-522, evidence/citation-audit-2026-07-11.md row 27", "description": "The single corrected sentence and its mirrored audit-table row are mutually consistent; no sibling citation elsewhere in the document set repeats the old over-claim (grepped fresh this session across behavioral-spec.md, verification-architecture.md, verification-report.md, contracts/sprint-1.md)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "specs/verification-architecture.md:150-151,371,728 + verification-report.md:121", "description": "All enclosing-function claims (runOneWake/runAlwaysActWake/writeAlwaysActEscalation boundaries) independently re-verified against real function-declaration line numbers this session; none misattribute a call site to the wrong function."}
+      ]
+    }
+  ],
+  "criteria": {
+    "finding_diminishment": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "Trend across converge iterations: 2 (iter1->2) -> 2 (iter2->3, net; 3 raised/2 resolved) -> 3 (iter3->4, gross new) -> 1 (iter4->5: FIND-008 only) -> 0 (this session: FIND-008 resolved, zero new findings survive after extending the audit method to enclosing-function claims across the full document set). This is the first iteration in this feature's convergence history with a genuine zero-finding outcome after independent re-derivation, not merely a lower gross count."
+    },
+    "finding_specificity": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "N/A -- no findings this iteration. The prior iteration's FIND-008 specificity bar (exact file:line evidence + counter-evidence, independently grep/Read-verified) is met by its resolution: the fix's new text was checked byte-for-byte against the same grep commands FIND-008 itself specified."
+    },
+    "criteria_coverage": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "contracts/sprint-1.md CRIT-001..012 re-read; CRIT-002's writeAlwaysActEscalation kind-param description (line 22) carries no line-number claim and is unaffected by the FIND-008 fix. No CRIT's passThreshold text cites index.mjs:878/914 or writeAlwaysActEscalation/writeWakeErrorAndSleep by line-attribution."
+    },
+    "duplicate_detection": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "FIND-008 is genuinely resolved (not merely renamed/deferred): the corrected sentence, the corrected audit-table row, and every other enclosing-function claim in the document set (checked via the extended method) are mutually consistent and independently accurate. The 4-iteration pattern of 'exhaustive fix leaves one further undisclosed same-class defect' (iter1->2->3->4) does not recur a 5th time: this session's extension of the audit method specifically to enclosing-function attribution (the exact blind spot FIND-008 identified in the prior mechanical audit) found nothing further."
+    },
+    "four_dimensional_convergence": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "SPEC (behavioral-spec.md:504-522), TEST (183/183, evidence-only diff since 39a9c217), IMPL (index.mjs:868-926,1028-1045 independently re-read), and VERIFICATION (verification-architecture.md PROP-508a description + verification-report.md:121 discharge row, both independently re-read) are now mutually consistent for REQ-508's escalation mechanism, including the specific enclosing-function claim that was the sole remaining discrepancy."
+    },
+    "residuals_honest": {
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": "The fix does not re-assert a blanket 'zero deviations'/'fully audited' self-certification this time -- the corrected sentence and audit-table row are narrowly scoped to the specific FIND-008 correction, annotated in place ('corrected per converge iter4 FIND-008'), consistent with this feature's historical-record convention. No new sweeping completeness claim was made that this session's independent re-derivation could falsify."
+    }
+  },
+  "blocking_count": 0,
+  "reviewed_commit": "a4720db",
+  "convergenceSignals": {
+    "findingCount": 0,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["CRIT-001", "CRIT-002", "CRIT-003", "CRIT-004", "CRIT-005", "CRIT-006", "CRIT-007", "CRIT-008", "CRIT-009", "CRIT-010", "CRIT-011", "CRIT-012"],
+    "duplicateFindings": [
+      {"iteration4": "FIND-008", "iteration5": "n/a", "relationship": "Genuinely resolved this iteration -- the corrected sentence (behavioral-spec.md:509-514) and audit-table row 27 independently re-verified byte-for-byte against runtime/loop/index.mjs's real function boundaries (868/899/1028). Method extended per iter4's own recommendation to check every OTHER enclosing-function claim in the document set; zero further misattributions found."}
+    ]
+  },
+  "ts": "2026-07-11T20:00:00.000Z"
+}
