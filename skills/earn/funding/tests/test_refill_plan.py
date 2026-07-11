@@ -4,7 +4,13 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from lib.refill_plan import (  # noqa: E402
+    GAS_FILL_MIN_DELIVERED_PCT,
+    GAS_MAX_FEE_PCT,
+    GAS_PER_INVOCATION_USD_CAP,
+    GAS_RESERVE_USD,
+    GAS_STEP,
     MAX_FEE_PCT,
+    NATIVE_ETH_BASE,
     PER_INVOCATION_USD_CAP,
     RESERVE_USD,
     STEP,
@@ -12,8 +18,10 @@ from lib.refill_plan import (  # noqa: E402
     FeeDecision,
     assert_own_citizen_row,
     build_refill_plan,
+    evaluate_native_delivery,
     evaluate_relay_fee,
     has_unresolved_pending,
+    is_valid_evm_address,
     select_refill_amount,
 )
 
@@ -299,3 +307,170 @@ def test_build_refill_plan_fee_fields_none_when_omitted():
     )
     assert plan["fee_pct"] is None
     assert plan["fee_allowed"] is None
+
+
+# --- Gas-ETH mode caps (REQ-GAS-001..005) -- select_refill_amount/evaluate_relay_fee are
+# already generic pure functions, reused here with the gas-mode literals instead of new pure
+# functions (only the constants differ). ---
+
+
+def test_gas_cap_constants_are_smaller_and_never_weaken_usdc_mode():
+    assert GAS_PER_INVOCATION_USD_CAP == 3.00
+    assert GAS_RESERVE_USD == 3.00
+    assert GAS_MAX_FEE_PCT == 12.0
+    assert GAS_STEP == "franklin_gas_eth_refill"
+    assert GAS_STEP != STEP
+    assert NATIVE_ETH_BASE == "0x0000000000000000000000000000000000000000"
+
+
+def test_select_refill_amount_gas_mode_at_exact_cap_boundary():
+    # headroom = 6.44 - 3.00 = 3.44, above the 3.00 cap -> clips to the cap
+    d = select_refill_amount(
+        balance_usd=6.44, reserve_usd=GAS_RESERVE_USD, per_invocation_cap_usd=GAS_PER_INVOCATION_USD_CAP
+    )
+    assert d.allowed is True
+    assert d.amount_usd == GAS_PER_INVOCATION_USD_CAP
+
+
+def test_select_refill_amount_gas_mode_below_reserve_refuses():
+    d = select_refill_amount(
+        balance_usd=2.99, reserve_usd=GAS_RESERVE_USD, per_invocation_cap_usd=GAS_PER_INVOCATION_USD_CAP
+    )
+    assert d.allowed is False
+    assert d.amount_usd == 0.0
+
+
+def test_select_refill_amount_gas_mode_never_exceeds_gas_cap_property():
+    for balance in [3.01, 4, 6, 6.44, 100]:
+        d = select_refill_amount(
+            balance_usd=balance,
+            reserve_usd=GAS_RESERVE_USD,
+            per_invocation_cap_usd=GAS_PER_INVOCATION_USD_CAP,
+        )
+        assert d.amount_usd <= GAS_PER_INVOCATION_USD_CAP
+        assert balance - d.amount_usd >= GAS_RESERVE_USD - 1e-9
+
+
+def test_evaluate_relay_fee_gas_mode_exactly_at_12pct_allowed():
+    d = evaluate_relay_fee(in_usd=3.00, out_usd=2.64, max_fee_pct=GAS_MAX_FEE_PCT)  # exactly 12%
+    assert d.allowed is True
+    assert round(d.fee_pct, 6) == GAS_MAX_FEE_PCT
+
+
+def test_evaluate_relay_fee_gas_mode_just_over_12pct_refused():
+    d = evaluate_relay_fee(in_usd=3.00, out_usd=2.639, max_fee_pct=GAS_MAX_FEE_PCT)  # ~12.03%
+    assert d.allowed is False
+
+
+def test_evaluate_relay_fee_gas_mode_within_usdc_mode_default_would_refuse():
+    # 10% fee: refused under the USDC-mode default 8% cap, but allowed under gas mode's 12% cap
+    # -- confirms the two modes' caps are genuinely independent, never accidentally shared.
+    assert evaluate_relay_fee(in_usd=3.00, out_usd=2.70).allowed is False  # default MAX_FEE_PCT=8
+    assert evaluate_relay_fee(in_usd=3.00, out_usd=2.70, max_fee_pct=GAS_MAX_FEE_PCT).allowed is True
+
+
+def test_has_unresolved_pending_gas_step_ignores_usdc_step_rows():
+    rows = [{"step": STEP, "status": "pending", "tx_hash": "sigX"}]
+    assert has_unresolved_pending(ledger_rows=rows, step=GAS_STEP) is False
+
+
+# --- is_valid_evm_address (REQ-GAS-002: recipient is required, never a default) ---
+
+
+def test_is_valid_evm_address_accepts_well_formed_address():
+    assert is_valid_evm_address("0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3") is True
+
+
+def test_is_valid_evm_address_rejects_none():
+    assert is_valid_evm_address(None) is False
+
+
+def test_is_valid_evm_address_rejects_empty_string():
+    assert is_valid_evm_address("") is False
+
+
+def test_is_valid_evm_address_rejects_missing_0x_prefix():
+    assert is_valid_evm_address("1F5b17f41524B02a4ee4d99D4158c86C942e43f3") is False
+
+
+def test_is_valid_evm_address_rejects_wrong_length():
+    assert is_valid_evm_address("0x1234") is False
+
+
+def test_is_valid_evm_address_rejects_non_hex_characters():
+    assert is_valid_evm_address("0x" + "z" * 40) is False
+
+
+def test_is_valid_evm_address_rejects_non_string_type():
+    assert is_valid_evm_address(0x1234) is False
+
+
+# --- evaluate_native_delivery (REQ-GAS-004: independent eth_getBalance-delta verification --
+# native ETH has no ERC-20 Transfer log, so the delta itself is the tx-specific evidence) ---
+
+
+def test_evaluate_native_delivery_full_delivery_verified():
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=1_000_000_000_000_000, expected_wei=1_000_000_000_000_000
+    )
+    assert d.verified is True
+    assert d.delivered_wei == 1_000_000_000_000_000
+
+
+def test_evaluate_native_delivery_at_exact_85_pct_floor_verified():
+    expected = 1_000_000_000_000_000
+    delivered = int(round(expected * 0.85))
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=delivered, expected_wei=expected
+    )
+    assert d.verified is True
+
+
+def test_evaluate_native_delivery_just_under_85_pct_refused():
+    expected = 1_000_000_000_000_000
+    delivered = int(round(expected * 0.84))
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=delivered, expected_wei=expected
+    )
+    assert d.verified is False
+
+
+def test_evaluate_native_delivery_zero_delta_refused():
+    d = evaluate_native_delivery(balance_before_wei=5_000, balance_after_wei=5_000, expected_wei=1_000)
+    assert d.verified is False
+    assert d.delivered_wei == 0
+
+
+def test_evaluate_native_delivery_negative_delta_refused():
+    """An unrelated concurrent outflow during the same window must never be misread as a fill."""
+    d = evaluate_native_delivery(balance_before_wei=5_000, balance_after_wei=4_000, expected_wei=1_000)
+    assert d.verified is False
+    assert d.delivered_wei == -1_000
+
+
+def test_evaluate_native_delivery_unrelated_small_inflow_below_threshold_refused():
+    """A tiny unrelated inflow (e.g. dust) must not be mistaken for the real fill."""
+    d = evaluate_native_delivery(balance_before_wei=0, balance_after_wei=1, expected_wei=1_000_000_000_000_000)
+    assert d.verified is False
+
+
+def test_evaluate_native_delivery_non_int_input_fails_closed():
+    d = evaluate_native_delivery(balance_before_wei="oops", balance_after_wei=100, expected_wei=100)
+    assert d.verified is False
+    assert d.delivered_wei == 0
+
+
+def test_evaluate_native_delivery_bool_input_fails_closed():
+    # bool is technically an int subclass in Python -- must be explicitly rejected, mirroring
+    # select_refill_amount's/evaluate_relay_fee's existing isinstance(..., bool) guards.
+    d = evaluate_native_delivery(balance_before_wei=True, balance_after_wei=100, expected_wei=100)
+    assert d.verified is False
+
+
+def test_evaluate_native_delivery_default_pct_matches_constant():
+    expected = 1_000_000_000_000_000
+    just_under_default = int(round(expected * (GAS_FILL_MIN_DELIVERED_PCT / 100))) - 1
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=just_under_default, expected_wei=expected
+    )
+    assert d.verified is False

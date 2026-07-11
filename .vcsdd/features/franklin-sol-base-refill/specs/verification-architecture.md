@@ -37,6 +37,13 @@
 | PROP-015 | Any exception raised while decoding/signing with the raw resolved secret (`derive_pubkey`, `build_sign_submit`) never has `str(exc)` written to a ledger row or printed result; an injected fake secret is asserted absent from all ledger rows and the result JSON on a decode failure (FIND-003) | 2 | true | pytest asserting substring-absence over `json.dumps(row)`/`json.dumps(result)` |
 | PROP-016 | A `"sent"` row requires ALL of: a relay-reported fill tx hash, that tx's receipt `status == "0x1"`, and a matching USDC Transfer log to our own address delivering >= 85% of the quote's expected output; a wallet-wide balance increase alone (no matching Transfer log) never triggers `"sent"`, and a flat/failed balance-delta sanity flag alone never downgrades a tx-verified fill to `"failed"` (FIND-004) | 2 | true | pytest with fake relay/receipt fixtures: correct fill, unrelated-inflow-only, short-fill (<85%) |
 | PROP-017 | `parse_erc20_transfer_amount` (pure) correctly matches/ignores logs by token address, recipient address, and event topic, and never raises on malformed log shapes | 1 | true | pytest boundary/malformed-shape table |
+| PROP-018 | `is_valid_evm_address` accepts only well-formed `0x` + 40 hex-char strings; rejects None, empty, wrong prefix, wrong length, non-hex chars, non-string types (REQ-GAS-002) | 1 | true | pytest boundary table |
+| PROP-019 | `evaluate_native_delivery` never verifies a non-positive or negative wei delta, and never verifies a delta below `min_delivered_pct` of `expected_wei`; fails closed on non-int/bool inputs (REQ-GAS-004) | 1 | true | pytest boundary table (full delivery, exactly-85%, just-under-85%, zero-delta, negative-delta, non-int/bool) |
+| PROP-020 | Gas-ETH mode's `select_refill_amount`/`evaluate_relay_fee` calls (reused pure functions) never share cap state with USDC mode's calls -- a 10% fee is refused under `MAX_FEE_PCT`=8 but allowed under `GAS_MAX_FEE_PCT`=12 (REQ-GAS-003) | 1 | true | pytest, same fee inputs evaluated against both cap constants |
+| PROP-021 | Orchestration: `run_gas_refill` with a missing or malformed `recipient` never calls `relay_quote`/`build_sign_submit`, in both dry-run and `--live` (REQ-GAS-002) | 2 | true | pytest with a spy dep asserting zero calls |
+| PROP-022 | Orchestration: `run_gas_refill`'s single-in-flight guard (`GAS_STEP`) is independent of USDC mode's (`STEP`) -- a pending row of one step never blocks a live run of the other (REQ-GAS-004) | 2 | true | pytest with cross-step pending-row fixtures |
+| PROP-023 | Orchestration: a `"sent"` gas-ETH row requires ALL of a relay-reported fill tx hash, that tx's receipt `status == "0x1"`, and `evaluate_native_delivery(...).verified == True`; a flat/negative/short native-balance delta alone never triggers `"sent"` (REQ-GAS-004) | 2 | true | pytest with fake relay/RPC fixtures: correct fill, flat delta, short fill (<85%), reverted receipt |
+| PROP-024 | Orchestration: `run_gas_refill` refuses BEFORE broadcasting when `details.currencyOut.amount` (raw wei) cannot be extracted from the relay quote, even if `details.currencyOut.amountUsd`/the fee check both look fine (REQ-GAS-004) | 2 | true | pytest with a quote fixture missing the `amount` field |
 
 ## Verification Strategy
 - **Tier 0** (no formal proof needed): CLI argument parsing, print/JSON-output formatting,
@@ -61,6 +68,15 @@
 
 ## Changelog
 
+**gas-ETH mode** (2026-07-11): added PROP-018..024 (see table above) covering the new
+`is_valid_evm_address`/`evaluate_native_delivery` pure functions (Tier 1) and `run_gas_refill`'s
+orchestration (Tier 2). Purity Boundary Map additions: `is_valid_evm_address`,
+`evaluate_native_delivery` (both pure, `lib/refill_plan.py`); `eth_get_balance` (effectful,
+`lib/erc20.py`, mirrors `erc20_balance_units`'s raw-RPC-call contract but for native currency).
+No changes to Tier 3 rationale -- gas-ETH mode is the same class of lean, bounded, one-shot
+operator tool as USDC mode, with its own caps/reserve/single-flight/on-chain-verify-before-sent
+invariants fully covered by these new Tier 1/2 property tests.
+
 **impl iter1 fixes FIND-001..007** (2026-07-11): added PROP-013..017 (see table above) covering
 the orchestration-layer fail-closed fixes; `parse_erc20_transfer_amount` (new, in `lib/erc20.py`)
 is a pure function added to the Purity Boundary Map's reusable-primitives set (it performs no
@@ -70,12 +86,17 @@ shell into `skills/earn/funding/lib/relay_swap.py` (FIND-007) — still effectfu
 dependency-injected as the `build_sign_submit` dep, only the module location changed.
 
 ## Reused, Not Re-Verified
-`lib/caps.py`, `lib/identity.py`, `lib/ledger.py`, `lib/kill_switch.py`, `lib/erc20.py`,
-`lib/solana_rpc.py`, `lib/solana_cli.py` are unchanged by this feature and already carry a
-PASS money-safety adversary verdict (`skills/earn/funding/MONEY-SAFETY-VERDICT.md`,
-2026-07-08) plus their own passing test suites (`tests/test_caps.py`, `tests/test_identity.py`,
-`tests/test_ledger.py`). This feature's own test suite (`tests/test_refill_plan.py`,
-`tests/test_franklin_sol_base_refill.py`) covers only the NEW code
-(`lib/refill_plan.py` + `franklin_sol_base_refill.py`) and must not duplicate or weaken those
-existing suites — running the FULL `skills/earn/funding/tests/` directory after this feature's
-changes is the regression check (all existing tests must remain green, unchanged pass count).
+`lib/caps.py`, `lib/identity.py`, `lib/ledger.py`, `lib/kill_switch.py`,
+`lib/solana_rpc.py`, `lib/solana_cli.py`, `lib/relay_swap.py`, and every pre-existing function in
+`lib/erc20.py` (`erc20_balance_units`, `eth_tx_status`, `eth_tx_confirmed_success`,
+`eth_get_transaction_receipt`, `parse_erc20_transfer_amount`) are unchanged by the gas-ETH mode
+addition and already carry a PASS money-safety adversary verdict
+(`skills/earn/funding/MONEY-SAFETY-VERDICT.md`, 2026-07-08) plus their own passing test suites
+(`tests/test_caps.py`, `tests/test_identity.py`, `tests/test_ledger.py`, `tests/test_erc20.py`).
+This feature's own test suites (`tests/test_refill_plan.py`, `tests/test_franklin_sol_base_refill.py`,
+plus the new `tests/test_franklin_gas_eth_refill.py`) cover only the NEW code
+(`lib/refill_plan.py` additions + `franklin_sol_base_refill.py`'s `run_gas_refill` +
+`lib/erc20.py`'s new `eth_get_balance`) and must not duplicate or weaken those existing suites —
+running the FULL `skills/earn/funding/tests/` directory after this feature's changes is the
+regression check (all existing tests must remain green, unchanged pass count: 167 total after
+the gas-ETH mode addition, up from 119 at the end of impl iteration-2).

@@ -64,3 +64,73 @@ session, repeatedly failed to spawn the process (`os error 2`) for that exact co
 Isolated as a known baseline issue with the rtk command-rewrite wrapper (unrelated to this
 feature's code) -- worked around for the remainder of the session with `rtk proxy <cmd>`,
 which executes the raw command without the rewrite and ran pytest/npm correctly every time.
+
+## gas-ETH mode addition (2026-07-11, --gas-eth/--recipient, REQ-GAS-001..005)
+
+### RED phase (verified by `git stash push --keep-index` on just the 3 implementation files,
+### leaving the new/extended test files in place)
+
+new-feature-tests: FAIL
+regression-baseline: PASS (119 pre-existing tests untouched by the stash)
+
+$ git stash push --keep-index -- franklin_sol_base_refill.py lib/erc20.py lib/refill_plan.py
+$ rtk proxy python3 -m pytest tests/test_franklin_gas_eth_refill.py tests/test_refill_plan.py -q
+ERROR collecting tests/test_franklin_gas_eth_refill.py
+ImportError: cannot import name 'GAS_STEP' from 'franklin_sol_base_refill'
+ERROR collecting tests/test_refill_plan.py
+ImportError: cannot import name 'GAS_FILL_MIN_DELIVERED_PCT' from 'lib.refill_plan'
+2 errors in 0.25s
+$ git stash pop   # implementation restored
+
+### GREEN phase (after run_gas_refill + is_valid_evm_address + evaluate_native_delivery +
+### eth_get_balance implemented)
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+$ rtk proxy python3 -m pytest tests/ -v   (skills/earn/funding, all suites incl. gas-ETH mode)
+============================== 167 passed in 0.26s ==============================
+(119 pre-existing (USDC mode + lib/caps,identity,ledger,erc20) + 48 new: 24 pure-function tests
+ added to tests/test_refill_plan.py (gas caps reuse, is_valid_evm_address, evaluate_native_delivery;
+ 36 -> 60 test functions in that file) + 24 orchestration tests in the new
+ tests/test_franklin_gas_eth_refill.py; zero failures, zero regressions)
+
+### PROP-012-style network-call check (gas-ETH tests too)
+
+$ grep -rn "requests\.\(get\|post\)\|urllib\.request\.urlopen" tests/
+(no output -- PROP-012 holds for the new test files as well)
+
+### CLI smoke checks (fail-closed, exit non-zero, no crash -- NOT --live, no real money)
+
+$ python3 franklin_sol_base_refill.py --gas-eth
+{"ok": false, "step": "franklin_gas_eth_refill", "error": "recipient is required in gas-ETH
+mode and must be a valid Base EVM address (0x + 40 hex chars) -- there is no default
+destination"}   exit=1
+
+$ env -u ANICCA_HOME python3 franklin_sol_base_refill.py --gas-eth \
+  --recipient 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3
+{"ok": false, "step": "franklin_gas_eth_refill", "error": "no Solana identity resolved
+(ANICCA_HOME gate failed or resolver returned nothing) -- fail-closed, never falling back to
+another instance"}   exit=1
+
+(Both smoke-check invocations appended a "failed" ledger row to the REAL
+~/anicca/skills/earn/state/funding-ledger.jsonl via build_default_deps(); both rows were removed
+immediately after via a snapshot-diff cleanup -- confirmed the only 2 rows removed matched these
+exact two reasons, leaving the pre-existing 64 rows -- including the prior session's USDC-mode
+live-dryrun evidence -- untouched.)
+
+## relay.link research (search-first, cited before implementing -- persisted here per project
+## rule, not just in chat)
+
+- https://docs.relay.link/references/api/get-quote (the exact `/quote` endpoint this codebase's
+  RELAY_API constant targets) -- own documented example: `originCurrency`/`destinationCurrency`
+  "0x0000000000000000000000000000000000000000" swaps Base ETH (chain 8453) for Optimism ETH
+  (chain 10). Confirms the all-zero address is relay.link's sentinel for a chain's native
+  currency (not USDC-specific).
+- https://docs.relay.link/references/api/get-quote-v2 -- identical request/response shape,
+  confirms `details.currencyIn`/`currencyOut.amount` is the raw base-unit string (wei for native
+  ETH), sibling to `.amountUsd` this feature's existing `_extract_quote_usd` already parses.
+- https://docs.relay.link/features/gas-top-up -- confirms "Gas Top-Up" (`topupGas`) is a
+  DIFFERENT feature (adds native gas alongside a non-native bridged token; explicitly
+  incompatible with bridging TO the native token itself) -- NOT used by this mode, which does a
+  plain USDC-in/native-ETH-out swap via the existing quote/poll/sign/submit flow.
