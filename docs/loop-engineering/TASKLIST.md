@@ -9,8 +9,9 @@
 - **G3. 層0 x402 seller を live 化**（$0 資本の最速 earner）→ 最初の external:true。
 - **G3. 層1 yield floor**(Beefy/Aave hedge) / **G4. 層2 HL funding-arb**($50-100超で)。
 - 資金配分: claude-p $15 + Franklin $15。全員が同じ共有 skill で稼ぐ。
-現在残高(own-eyes 2026-07-12): 0x810f=308 POL(≈$25-30), pm 0x904B=$1.35 pUSD, PM deposit 0x4c176=$0, Franklin Base 0x3EcCAD=$6.48。
-次アクション: G1 の POL→USDC.e swap を relay.link で(clean context 推奨、$30 保護)。
+現在残高(own-eyes 2026-07-12 更新): **claude-p 0x810f Base USDC = $22.97**(loop が読む場所、reserve$20超=loop 自律trade可) + 13 POL(gas), pm 0x904B=$1.35, Franklin Base 0x3EcCAD=$6.48。
+✅ G1完了(POL→USDC.e swap, tx 56348c8d) + ✅ Base bridge完了(relay Polygon→Base, tx 1fba42d, $22.97着) = **loop が funded・自律earn可能に**。
+次: (a)loop の戦略を良い方に(poly-maker/funding-arb, 弱戦略のままだと funded でも溶ける) (b)loop の実 wake を観測し external:true を dashboard で確認。私は trade しない=loop がやる。
 
 ---
 
