@@ -105,7 +105,7 @@
       "track": "A",
       "dir": "skills/cook",
       "entrypoint": "run.sh",
-      "status": "dormant",
+      "status": "live",
       "spec": "02 cook-loop",
       "summary": "EXPLORE: web-search for a NEW earner; surface real candidate URLs; the model decides what to try. args.query = your curiosity.",
       "owner": "wf-a:earn",
