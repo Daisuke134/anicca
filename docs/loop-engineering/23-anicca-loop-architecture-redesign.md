@@ -368,7 +368,7 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 ### フェーズ0: 命名整理 + 依存排除（最初にやる）
 - [x] 0a. launchd Label `ai.anicca.founder-loop` を `ai.anicca.agent-economy-loop` にリネームする（中身=index.mjs は不変、bootout→新plist→bootstrap→PID/wallet 不変を確認）
 - [x] 0b. Opus session /loop を停止する（daily loop は全て Sonnet/free-model、Opus 常駐は不要）✅済(2026-07-11)
-- [ ] 0c. 4ループ(agent-economy/franklin/franklin2/automaton)が互いに依存しないことを確認する（各自 wallet/home/state が独立）
+- [x] 0c. 4ループの相互独立を確認 — done(own-eyes 2026-07-11): 別HOME(.anicca-founder/.blockrun/.franklin2-home/.anicca)・別wallet(0x810f/0x3EcCAD+8Fpqd/0xe774/0xB9dd)・全live(PID 98657/79988/6026/595)。共有state`.hermes/state`を指すのはfranklin2のみ=書込み競合なし。唯一の結合=同じanicca-daemon.sh(git pull ~/anicca)＝code共有・money/state独立＝設計通り(bugでない)
 
 ### フェーズ1: 待ちを殺して毎日 trade（「壊れ」=金欠/gas欠 を除去。edge の trade/hold 判断は base agent に残す＝無駄撃ちで溶かさない。取引所の最小注文ルールは曲げない）
 - [ ] 1. pm の $5床凍結を解除する（pUSD を $5 超に top-up。$5=Polymarket CLOB 最小注文=取引所ルール、曲げず金を入れて撃てる状態に）
