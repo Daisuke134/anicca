@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "major",
+  "description": "Trace-derived, loop-generated free text (the trace file's own `reason` field, extracted at earning-health-allslots.sh:86-92) is interpolated, unsanitized, directly into the BLOCKER string passed to self-fix.sh (earning-health-allslots.sh:102), which self-fix.sh then embeds verbatim into the initial TASK prompt (self-fix.sh:75-83) for a detached `tmux`+`claude --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\"` spawn -- a full-power autonomous coding agent with Bash/Edit/browser access and NO human confirmation gate. There is no sanitization, escaping, or length/charset validation boundary between 'data read from a trace file' and 'text injected into an autonomous agent's system-level task prompt.' This pattern is inherited unchanged from the pre-existing skills/earn/sol-trade/sol-trade-healthcheck.sh:37-52 (not a NEW vulnerability introduced this sprint), but this sprint's explicit purpose is to DRY/generalize this exact mechanism across every future registry-instrumented slot -- meaning every slot added to the registry going forward inherits the identical unsanitized data->prompt boundary by construction, with zero additional review per slot. The spec's Non-functional section (behavioral-spec.md:103-108, 'Money-safety untouched ... no new signing key, no new spend path') addresses signing-key/spend-path safety but does not acknowledge or scope this widened prompt-injection surface for the self-fix spawn.",
+  "evidence": {
+    "filePath": "skills/self/earning-health-allslots.sh",
+    "lineRange": "86-102",
+    "snippet": "REASON=\"$(printf '%s\\n' \"$TAIL_JSON\" | tail -1 | python3 -c '...json.loads(...).get(\"reason\", \"unknown\")...')\"\n...\nbash \"$SELF_DIR/self-fix.sh\" \"$TARGET\" \"$ID trace is fresh ... the identical reason '$REASON' -- ...\" >> \"$LOG\" 2>&1"
+  },
+  "crossReference": {
+    "downstreamSink": "skills/self/self-fix.sh:75-84 (TASK=... ${BLOCKER} ...; tmux new-session -d -s \"$SESSION\" \"$CLAUDE\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"$TASK\")"
+  },
+  "routeToPhase": "2b"
+}

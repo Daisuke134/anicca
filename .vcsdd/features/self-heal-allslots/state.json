@@ -1,0 +1,29 @@
+{
+  "featureName": "self-heal-allslots",
+  "mode": "lean",
+  "currentPhase": "refactor",
+  "phaseHistory": [
+    "spec",
+    "red",
+    "green",
+    "refactor"
+  ],
+  "iterations": {},
+  "proofObligations": [
+    "PROP-AS-001",
+    "PROP-AS-002",
+    "PROP-AS-003",
+    "PROP-AS-004",
+    "PROP-AS-005",
+    "PROP-AS-006",
+    "PROP-AS-007"
+  ],
+  "traceability": {
+    "epicId": "VCSDD-self-heal-allslots-1783755136818",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 1,
+  "createdAt": "2026-07-11T07:32:16.000Z",
+  "updatedAt": "2026-07-11T08:05:00.000Z"
+}

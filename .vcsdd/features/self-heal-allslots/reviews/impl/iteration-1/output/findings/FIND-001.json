@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "The CHANGELOG (and by extension REQ-AS-002's claim that pm-trade 'already writes the EXACT contract is_fresh_but_barren needs') is factually inaccurate. sol-trade/run.sh genuinely has a clean 2-state trace vocabulary -- action is EITHER 'skip' (3 mechanism-failure gates: kill-switch, identity-mismatch, earn-guard breach; sol-trade/run.sh:22,39,46) OR 'live-pass' (a real agent decision; sol-trade/run.sh:152) -- so is_fresh_but_barren's action==\"skip\"-only predicate correctly sees every sustained mechanism failure sol-trade can produce. pm-trade/run.sh does NOT have that same clean vocabulary: it has a THIRD, untracked failure mode -- action:\"error\" -- fired when AGENT_HOME is missing (polymarket-trade/run.sh:22-23) or when pick.py exits non-zero (polymarket-trade/run.sh:184-186). Neither of these is action==\"skip\", so is_fresh_but_barren (earning-health.py:45: `entry.get(\"action\") == \"skip\"`) can NEVER flag them, no matter how many consecutive wakes hit them. A real, plausible scenario -- e.g. PM_TRADE_AGENT_HOME getting wiped/misconfigured, or pick.py permanently crashing (a code/env bug, not a trading decision) -- would write action:\"error\" on every single wake forever, and earning-health-allslots.sh would report 'earn/polymarket-trade OK' forever, never escalating self-fix. This is EXACTLY the 'alive but mechanically broken, undetected' blind spot the whole self-heal-allslots feature exists to close (see earning-health.py's own docstring, lines 2-8) -- and it silently exists for one of the two slots this sprint claims to have fully, correctly wired.",
+  "evidence": {
+    "filePath": "skills/earn/polymarket-trade/run.sh",
+    "lineRange": "22-23, 184-186",
+    "snippet": "echo \"{\\\"ts\\\":\\\"$(now)\\\",\\\"slot\\\":\\\"earn/pm-trade\\\",\\\"action\\\":\\\"error\\\",\\\"error\\\":\\\"agent home missing: $AGENT_HOME\\\"}\" >> \"$TRACE\"\n...\necho \"{\\\"ts\\\":\\\"$(now)\\\",\\\"slot\\\":\\\"earn/pm-trade\\\",\\\"action\\\":\\\"error\\\",\\\"error\\\":\\\"pick.py failed rc=$PICK_RC\\\"}\" >> \"$TRACE\""
+  },
+  "crossReference": {
+    "compareAgainst": "skills/earn/sol-trade/run.sh:22,39,46,152 (skip/live-pass only, no error state) and skills/self/earning-health.py:45 (`entry.get(\"action\") == \"skip\"` -- the only branch that can ever return True/BARREN)",
+    "claimUnderTest": ".vcsdd/features/self-heal-allslots/CHANGELOG.md line 40-45: \"both [sol-trade, pm-trade] already write a dedicated per-wake {\\\"action\\\":\\\"skip\\\",\\\"reason\\\":\\\"...\\\"} trace ... the EXACT contract is_fresh_but_barren needs. Wiring these was a direct, safe generalization\""
+  },
+  "routeToPhase": "2b"
+}
