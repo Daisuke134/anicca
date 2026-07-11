@@ -76,9 +76,19 @@ fix = `connector_fill_gaps.sh`（決定論的 per-day driver）:
 ## commit（全 push 済、profitable-claude repo）
 0652d43(offline+crypto) / runbookコピペ / crypto-quality / file-based-prompt / fill-every-day / connector_fill_gaps.sh driver / connector_daily_report.sh。
 
-## 残 TODO（次セッション、compact 後の最優先）
-- (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 実行中、slow（各日 discovery を1から再実行）。gcal get_event で各日 location=実会場を読返し確認。
+## (c) 競合 revival 根絶（2026-07-12、DONE・検証済み）
+真の revival 経路は cron でなく **healthcheck launchd** だった（当初仮説の cron `ad89027d` は副経路）。
+- **真犯人**: `ai.anicca.connector-core-healthcheck` launchd が **5分ごと**に tmux `anicca-connector-core` の生存を確認し、無ければ `connector-cli.sh --restart`（旧2-3件単発パス）を revive（`connector-healthcheck.sh:75-76→58`）。ログで 04:24/04:34 の実 restart を確認。
+- **リアルタイム証拠**: driver の 7/16 `rc=124` / 7/17 `rc=124`（各600s timeout・未着地）= 旧パスと :9222 を奪い合い browser を掴めなかった為。
+- **打った fix**:
+  1. `openclaw cron disable ad89027d-c869-...`（full id 必須、短縮 id は "not found"）→ `enabled:false`。
+  2. `launchctl bootout gui/<uid>/ai.anicca.connector-core-healthcheck` + plist を `.disabled` にリネーム（次ログインで再ロードさせない）→ `NOT loaded` 確認。
+  3. 旧 tmux パス `tmux kill-session -t anicca-connector-core` → `DEAD` 確認。
+  4. revive トリガー file 除去（`.connector-core-restart-log` / `.connector-core-selfheal-request.json` / `.connector-core-last-start`）。
+- **結果**: connector のスケジューラは launchd 2本（fill-gaps 07:50 + daily-report 09:10）に collapse。旧持続 tmux パスは退役。driver(PID 44014) が :9222 を専有。他に connector-cli.sh を呼ぶ launchd/cron は無いことを確認。
+
+## 残 TODO（(c) 済、順に (d)→(a)）
+- (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 競合解消後の着地を gcal get_event で各日 location=実会場を読返し確認。
 - (b) 高速化 = discover-once: luma.com/tokyo + /crypto + connpass を1回スクレイプ→次14日の in-person AI/crypto イベントを全抽出→各空き日にマッピング→登録。per-day 再探索を廃す。
-- (c) cron `ad89027d` は今も `connector-cli.sh --restart`（旧2-3件パス）を指す→07:35 JST で旧パス復活し driver(07:50) と :9222 競合リスク。**fill_gaps に向け直す or disable 必須**（`openclaw cron edit` は id 指定要調整）。
 - (d) fresh adversary(Opus) PASS。
 - (e) 7日 streak（時間累積、Dais は不要と発言だが §10 done 条件には残る）。
