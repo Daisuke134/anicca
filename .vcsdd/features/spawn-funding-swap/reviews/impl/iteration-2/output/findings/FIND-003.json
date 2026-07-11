@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "behavioral-spec.md's REQ-018 verification-summary prose (line 192-196: 'signAndBroadcast NEVER broadcasts an evm_tx whose decoded/verified amount, destination contract, or native value diverge from the driver-supplied intent') makes the same overclaim as FIND-002 at the spec level -- 'decoded/verified amount' implies evm_tx.data's actual encoded pull is decoded and checked, which it is not for the router/entry-point-call path (see FIND-001/FIND-002). Separately and more importantly: REQ-018's own Edge Cases text (line 164-166) DOES correctly state gate (c)'s ceiling is `MAX_SWAP_BASE_UNITS` ($100, described as 'an absolute, independent ceiling') -- but nowhere does the spec reconcile this against REQ-006/NFR-3's `SWAP_MAX_USD` ($20, constants.mjs:16, 'the hard, never-overridable per-invocation spend cap'), or state the resulting fact that a single compromised-route incident can therefore cost up to 5x the amount any individual swap was ever supposed to move. NFR-7 (line 215-218) documents the $100 allowance cap's EXISTENCE and rationale ('mirrors ... SWAP_MAX_USD=20 bounded-literal philosophy') but never states the ratio or the consequence for a compromised route explicitly, unlike FIND-003/iter1's probe-spender-divergence, which IS explicitly written up as an accepted, bounded risk with a named failure mode (denial-of-service, never fund-loss) in both behavioral-spec.md (line 169-176) and base-signer.mjs's own comments. The genuinely novel money-safety invariant this iteration's review needed to check -- 'is worst-case loss under a fully-malicious route bounded to `amount`, or to something larger?' -- is answered 'something larger ($100)' by the code, but this answer and its consequence are not stated anywhere as an accepted risk; the spec's own words instead read as though gate (c) achieves per-swap-exact binding.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/specs/behavioral-spec.md",
+    "lineRange": "164-168, 192-196, 215-218",
+    "snippet": "(c) `required_erc20_approvals[0].amount` MUST exactly equal the driver-supplied `amount` parameter ... and MUST NOT exceed `MAX_SWAP_BASE_UNITS` (an absolute, independent ceiling, reusing `APPROVAL_CAP_BASE_UNITS`'s $100 bound) ...\n...\nsignAndBroadcast NEVER broadcasts an evm_tx whose decoded/verified amount, destination contract, or native value diverge from the driver-supplied intent (see the new edge case above)"
+  },
+  "routeToPhase": "impl"
+}

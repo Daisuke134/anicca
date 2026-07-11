@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "No test in base-signer.test.mjs exercises the realistic steady-state scenario this module's own design deliberately creates: a spender contract already holding a STANDING on-chain allowance (from a prior swap's ensureApprovalsSettled top-up, base-signer.mjs:327-348) that is HIGHER than the current swap's intended `amount`, combined with a current route whose evm_tx targets that same spender with attacker-influenced/diverging calldata. Every PROP-050 test sets `allowanceHex` to a high pre-existing value purely so the trailing sufficiency check (base-signer.mjs:413-418) passes on the honest path -- none of them probe whether that PRE-EXISTING high allowance is itself a live attack surface once evm_tx.to/data is attacker-controlled (which is exactly FIND-001's vector). Given the module's own header comment states the $100 cap is deliberately never re-lowered ('$100 gives headroom for many swaps ... before a re-approval is ever needed'), the wallet will carry this standing allowance for nearly all of its operational life after the first swap -- yet the test suite never asks 'what if a malicious/compromised route response arrives while this standing allowance is already in place'. This is a genuine untested edge case directly relevant to REQ-018's own 'HIGHEST RISK' designation, not merely a theoretical gap: PROP-050(a)/(b)/(c)/(d)'s use of the same opaque `data: '0xd77d6ec0deadbeef'` placeholder across every fixture (evmTxFixture default) means the suite structurally cannot distinguish 'the reported approval-amount metadata is honest' from 'the reported metadata is a lie and the real calldata pulls more' -- these are exercised as though they were the same case.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/lib/real-clients/__tests__/base-signer.test.mjs",
+    "lineRange": "53-77, 267-355",
+    "snippet": "function evmTxFixture({ ..., data = \"0xd77d6ec0deadbeef\" } = {}) { ... } // same opaque, never-decoded placeholder in every PROP-050 test\n...\ntest(\"PROP-050(a): ... allowanceHex: '0x' + (200_000_000n).toString(16) ...\") // pre-existing high allowance used only to satisfy the trailing sufficiency check, never tested as an attack surface"
+  },
+  "routeToPhase": "impl"
+}

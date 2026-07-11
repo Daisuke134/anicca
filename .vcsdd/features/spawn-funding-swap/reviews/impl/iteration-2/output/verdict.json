@@ -1,0 +1,70 @@
+{
+  "sprintNumber": 2,
+  "feature": "spawn-funding-swap",
+  "scope": "sprint-2 real-clients ITERATION 2 (fresh-context re-review of FIND-001..007 fixes at HEAD 74d0af34, focused on verifyEvmTxAgainstIntent completeness) -- skills/self/spawn-funding-swap/lib/real-clients/base-signer.mjs + supporting driver.mjs/pure/constants.mjs",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/specs/behavioral-spec.md", "description": "FIND-005/FIND-006/FIND-007 (iter1) verified genuinely closed: constants single-sourced (line references DESTINATION_AKASH_ADDRESS etc. to constants.mjs), NFR-8 documents the nonce-ownership assumption, PROP-049 self-check test exists"},
+        {"type": "note", "description": "FAIL driven by FIND-003: REQ-018's verification-summary prose and NFR-7 overclaim/under-explain the actual worst-case-loss-vs-intended-amount relationship (see FIND-001/FIND-002); the spec is not honest about the $100-vs-$20 gap the way it is honest about FIND-003/iter1's probe-spender-divergence risk"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {"type": "test-file", "location": "skills/self/spawn-funding-swap/lib/real-clients/__tests__/base-signer.test.mjs", "description": "PROP-050(a)-(d)/PROP-051/FIND-004 tests all present and genuinely exercised: honest-tx signs, inflated-approval-amount refused, bare-transfer refused, to-mismatch refused, USDC-contract-as-to refused, over-ceiling refused, non-zero-value refused, zero-approvals refused, probe-vs-real spender-divergence fails closed, route re-fetch reconciliation (amount_out/txs_required) refused-on-divergence and signs-on-match"},
+        {"type": "note", "description": "FAIL driven by FIND-004: no test (and, per FIND-001, no implementation) covers the standing-high-allowance-plus-attacker-controlled-calldata scenario -- the module's own design guarantees this exact state (allowance near $100) for nearly all of its operational life after the first swap"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/base-signer.mjs", "description": "FIND-001/FIND-002 (iter1, bare-transfer whole-balance-drain vector) genuinely CLOSED: gate 1 (lines 151-161) unconditionally rejects bare ERC-20 transfer()/transferFrom() selectors regardless of amount/approval-presence, verified by PROP-050(b)'s bare-transfer test"},
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/pure/swap-need.mjs", "description": "capUsd (lines 41-46) verified: `amount` reaching signAndBroadcast is genuinely, independently capped at SWAP_MAX_USD=$20 via a pure choke point never reading process.env, confirming the driver-side half of the crux question"},
+        {"type": "note", "description": "FAIL driven by FIND-001 (CRITICAL): despite the above, worst-case loss under a fully-malicious/compromised Skip route is bounded to APPROVAL_CAP_BASE_UNITS/MAX_SWAP_BASE_UNITS ($100), NOT to the driver-supplied `amount` (max $20) -- a 5x loss-amplification vector via a standing, never-revoked on-chain allowance to a route-supplied spender, which no gate decodes/bounds against the actual evm_tx.data payload's real transferFrom pull"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/pure/constants.mjs", "description": "FIND-005 (iter1) verified genuinely closed: DESTINATION_AKASH_ADDRESS/BASE_CHAIN_ID/BASE_USDC_DENOM/AKASH_CHAIN_ID/AKASH_UAKT_DENOM defined exactly once here; grep across lib/**, bin/spawn-funding-swap.mjs confirms every other file imports these from constants.mjs, no hand-copied literal remains (other '8453'/'akashnet-2' occurrences found are comments only)"},
+        {"type": "file", "location": "skills/self/spawn-funding-swap/lib/real-clients/*.mjs", "description": "Five real-client modules remain small, single-responsibility, consistently named; fetchImpl/execFileImpl/walletClientFactory/publicClientFactory injection seams consistent across all; no dead code found"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/spawn-funding-swap/specs/verification-architecture.md", "description": "Purity boundary map remains correct; PROP-049's own self-check test (base-signer's/relay-poller's previously-bare createRealXxx() calls, FIND-007 iter1) genuinely fixed -- test-money-safety-scan.test.mjs's own PROP-049 self-check ('the detector must flag a createRealXxx() call with no fetchImpl/execFileImpl key') actually exercises the detector, closing the iter1 overclaim gap"},
+        {"type": "note", "description": "FAIL driven by FIND-002: PROP-050's own Tier-2 description overclaims that 'encoded USDC amount' is decoded/verified against intent; in fact only a self-reported JSON metadata field is checked, and no test can (or does) distinguish that field from the actual calldata's real pull amount -- the verification architecture cannot detect FIND-001 even in principle, mirroring iter1's FIND-002's original criticism of the pre-fix state"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-013", "REQ-014", "REQ-015", "REQ-016", "REQ-017", "REQ-018"],
+    "duplicateFindings": []
+  },
+  "regressionCheck": {
+    "claim": "173/173 pass (159 baseline + 14 new) at HEAD 74d0af34, independently run by thinker (not re-run by this adversary, which has no Bash tool in this environment)",
+    "codeReviewFindings": "iter1 FIND-005/006/007 confirmed genuinely closed by direct file/grep inspection (constants dedupe has zero remaining hand-copied literals outside comments; NFR-8 documents nonce-ownership; PROP-049's bare-createRealXxx detector has its own self-check test). iter1 FIND-003/004 confirmed genuinely closed: PROP-051 test exists and asserts fail-closed spender-divergence behavior with zero additional broadcast/approve calls; FIND-004's expectedAmountOutUakt/expectedTxsRequired reconciliation tests (both divergence and match cases) exist and are correctly wired from driver.mjs:97-108 through to base-signer.mjs:384-392. No evidence found that constants dedupe changed any value, or that driver reconciliation broke crash-recovery (driver-crash-recovery.test.mjs's PROP-009/PROP-020 tests are unaffected -- they exercise the driver against a FAKE baseSigner, not base-signer.mjs's own reconciliation logic, which is separately covered in base-signer.test.mjs's own FIND-004 tests)."
+  },
+  "moneyMovementGoNoGo": {
+    "decision": "NO-GO",
+    "reason": "FIND-001 (CRITICAL, this iteration): the sole value-moving Base transaction's four-gate verifyEvmTxAgainstIntent check (the iter1 FIND-001/002 fix) closes the BARE-transfer whole-balance-drain vector but does not close a narrower, still-severe vector: a fully-malicious/compromised Skip route response can cause this module to sign a transaction whose actual on-chain execution pulls up to APPROVAL_CAP_BASE_UNITS ($100) via an already-standing ERC-20 allowance to a route-supplied spender contract, regardless of the driver's independently-capped, much smaller `amount` (max $20, SWAP_MAX_USD). This is because gate 3 only cross-checks a SELF-REPORTED metadata field in Skip's HTTP response against the intended amount -- it never decodes evm_tx.data to verify what the target contract's own logic will actually pull, and the on-chain allowance itself was set (in a PRIOR, separate approve() call from getNextNonce()) to a fixed $100 ceiling independent of any specific swap's amount, and is never lowered/revoked between swaps. Answer to the reviewer-crux question: loss under a fully-malicious Skip route is NOT bounded to `amount` -- it is bounded to $100 (a real, quantifiable, 5x-of-intended-amount loss ceiling), which is bounded (not whole-balance) but is neither claimed as an accepted risk anywhere in the spec/verification-architecture nor actually mitigated by the code's own doc comments' claims. Recommend (not prescriptive): either (a) decode evm_tx.data for the entry-point-call path and independently verify the encoded pull amount against `amount` (closing the gap at its root), and/or (b) stop maintaining a standing $100 allowance across swaps -- approve exactly `amount` per swap and let it be consumed, so the on-chain allowance itself (not a self-reported metadata field) is the thing that structurally equals the intended amount every time. Until one of these lands, a real Base->Akash swap should not be run against a Skip endpoint whose integrity cannot be fully trusted (TLS MITM, Skip-side compromise, or a Skip-side bug returning a wrong spender/calldata pairing)."
+  }
+}

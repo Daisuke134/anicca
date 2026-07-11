@@ -30,9 +30,9 @@
 // sent to either intermediate address.
 //
 // ==== Nonce-tracking / ERC-20 approval design (money-safety-critical, READ BEFORE MODIFYING) ====
-// driver.mjs's ensureLeg0Submitted (lib/driver.mjs:67-108) calls `ctx.baseSigner.getNextNonce()` EXACTLY
-// ONCE per fresh leg-0 submission, durably writes that nonce to the ledger as `submitting` BEFORE ever
-// calling signAndBroadcast, and later (on resume, e.g. after a crash) re-derives THAT SAME nonce's
+// driver.mjs's ensureLeg0Submitted (lib/driver.mjs:67-108) calls `ctx.baseSigner.getNextNonce(amount)`
+// EXACTLY ONCE per fresh leg-0 submission, durably writes that nonce to the ledger as `submitting` BEFORE
+// ever calling signAndBroadcast, and later (on resume, e.g. after a crash) re-derives THAT SAME nonce's
 // on-chain status via `chainReader.getBaseTxStatusByNonce(sourceAddress, nonce)`. This means the nonce
 // this module reports via getNextNonce() MUST be EXACTLY the nonce the swap transaction itself will use
 // on-chain -- if this module also needed to submit a SEPARATE ERC-20 `approve` transaction, sending it
@@ -41,7 +41,45 @@
 // actually belong to" money-safety bug). The fix: getNextNonce() itself performs the approval
 // check-and-send (using the account's CURRENT pending nonce, since at that point NO tx for this leg has
 // been sent yet), and only returns the nonce AFTER any needed approval has landed -- so the nonce it
-// returns (and the ledger durably records) is always the swap tx's own, real, exclusive nonce.
+// returns (and the ledger durably records) is always the swap tx's own, real, exclusive nonce. `amount`
+// is `requiredBaseUnits` -- already computed by driver.mjs's REQ-006/REQ-012 choke point BEFORE
+// ensureLeg0Submitted is ever called (lib/driver.mjs:174-175/213) -- so it is available at getNextNonce()
+// call time even though it was not previously threaded through this interface.
+//
+// ==== FIND-001 iter2 fix (CRITICAL, impl review iteration 2): per-swap EXACT-amount approval ====
+// PREVIOUSLY (iter1): ensureApprovalsSettled topped the on-chain allowance up to a flat
+// APPROVAL_CAP_BASE_UNITS ($100) and NEVER lowered it once reached -- a STANDING allowance that
+// outlived any individual swap. verifyEvmTxAgainstIntent's gate 3 only checked Skip's SELF-REPORTED
+// `required_erc20_approvals[0].amount` metadata field against the driver's `amount`; it never checked
+// what the ACTUAL on-chain allowance was. A fully-malicious/compromised Skip response could therefore
+// name the already-$100-approved spender, report a small/honest metadata amount (passing gate 3), and
+// embed calldata that pulls the FULL standing $100 allowance on execution -- a 5x loss-amplification
+// over SWAP_MAX_USD ($20), because the metadata field has no cryptographic or on-chain link to what the
+// spender's own bytecode will actually execute via transferFrom.
+//
+// THE FIX: this module now approves EXACTLY `amount` (the driver's already-capped, <= SWAP_MAX_USD
+// value) for THIS swap's spender, every swap, never a standing higher cap (ensureApprovalsSettled,
+// below). The invariant this guarantees: the on-chain allowance available to any spender this module
+// ever calls is ALWAYS <= `amount` -- so even a fully-malicious route, naming a spender with an
+// arbitrary calldata payload, can never pull more than `amount` (<= $20), because that is structurally
+// the most that was ever approved. signAndBroadcast's post-gate allowance check (below) independently
+// re-verifies this by querying the CURRENT on-chain allowance at broadcast time and refusing to sign if
+// it exceeds the intended amount -- never trusting Skip's metadata alone. Approve-race handling: many
+// ERC-20s (historically USDT-style, and defensively assumed here even though Base USDC is a standard
+// OpenZeppelin ERC-20 that does not require it) reject setting a non-zero allowance directly over an
+// existing non-zero allowance; ensureApprovalsSettled resets to 0 first whenever the current allowance is
+// non-zero and does not already exactly equal the desired amount, then sets the desired amount.
+// Post-swap reset: a successful swap's transferFrom pull of exactly `amount` naturally leaves the
+// allowance at 0 (the honest case). This module does NOT send an additional post-swap reset-to-0
+// transaction: doing so would need its own nonce, which the ledger's single-nonce-per-leg-0
+// crash-recovery model (this same header comment, above) does not track -- a crash between the swap
+// broadcast and a hypothetical reset tx would leave that reset's own state unaccounted for by
+// `ensureLeg0Submitted`'s resume logic, and resuming a `submitting` leg re-derives ONLY the swap tx's own
+// nonce/status, never a second one. Instead, any residual (non-zero but never-more-than-the-last-swap's-
+// `amount`, i.e. <= SWAP_MAX_USD) allowance is self-healed by the NEXT swap's ensureApprovalsSettled call
+// (reset-to-0-then-set-to-the-new-amount), so no standing allowance ever exceeds a single swap's own
+// `amount` for longer than the gap between two swaps -- and even during that gap, the bound is <= $20,
+// never $100.
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, createWalletClient, http as viemHttp, encodeFunctionData, decodeFunctionData } from "viem";
 import { base } from "viem/chains";
@@ -50,7 +88,15 @@ import { sha256 } from "@noble/hashes/sha256";
 import { ripemd160 } from "@noble/hashes/ripemd160";
 import { resolveEvmPrivateKey } from "../../../../earn/lib/resolve-identity.mjs";
 import { deriveCosmosAddress } from "../pure/cosmos-address.mjs";
-import { BASE_CHAIN_ID, BASE_USDC_DENOM, AKASH_CHAIN_ID, AKASH_UAKT_DENOM, DESTINATION_AKASH_ADDRESS } from "../pure/constants.mjs";
+import {
+  BASE_CHAIN_ID,
+  BASE_USDC_DENOM,
+  AKASH_CHAIN_ID,
+  AKASH_UAKT_DENOM,
+  DESTINATION_AKASH_ADDRESS,
+  SWAP_MAX_USD,
+  USDC_DECIMALS_BASE,
+} from "../pure/constants.mjs";
 
 const DEFAULT_BASE_RPC_URL = "https://mainnet.base.org";
 const SKIP_ROUTE_ENDPOINT = "https://api.skip.build/v2/fungible/route";
@@ -67,8 +113,10 @@ const NOBLE_CHAIN_ID = "noble-1";
 const OSMOSIS_CHAIN_ID = "osmosis-1";
 
 // A small probe amount used ONLY by getNextNonce() to learn which spender contract this route's evm_tx
-// would require an ERC-20 approval for -- decoupled from the real swap amount (unknown at getNextNonce()
-// time) because CCTP's spender contract is determined by the ROUTE/bridge choice, not the amount.
+// would require an ERC-20 approval for -- decoupled from the real swap amount for SPENDER DISCOVERY ONLY
+// (the actual amount approved to that spender is always the real `amount`, never this probe value -- see
+// ensureApprovalsSettled below) because CCTP's spender contract is determined by the ROUTE/bridge choice,
+// not the amount.
 //
 // FIND-003 (impl review iter1, documented assumption, not fixed this iteration -- accepted risk): Skip's
 // spender-contract selection for a route COULD in principle vary by amount tier (a different bridge/venue
@@ -83,20 +131,19 @@ const OSMOSIS_CHAIN_ID = "osmosis-1";
 // ("getNextNonce()'s probe-vs-real spender mismatch fails closed via signAndBroadcast's allowance/
 // self-consistency checks, never signs against a mismatched spender").
 const APPROVAL_PROBE_AMOUNT_BASE_UNITS = 1_000_000n; // 1 USDC
-// Bounded allowance cap -- never MAX_UINT256 (mirrors lib/pure/constants.mjs's SWAP_MAX_USD=20 "small,
-// bounded literal" philosophy: a compromised spender contract can drain at most this much, not the whole
-// wallet). $100 gives headroom for many swaps at SWAP_MAX_USD=20 before a re-approval is ever needed.
-const APPROVAL_CAP_BASE_UNITS = 100_000_000n; // $100
 
-// MAX_SWAP_BASE_UNITS -- FIND-001 fix (CRITICAL, impl review iter1, PROP-050). The ABSOLUTE, independent
-// ceiling signAndBroadcast enforces on the decoded USDC amount a signed tx may move, regardless of what
-// `amount` parameter it was called with (defense in depth: a buggy/compromised CALLER of this module can
-// never cause it to sign a tx moving more than this). Deliberately reuses APPROVAL_CAP_BASE_UNITS's own
-// $100 bound/rationale rather than introducing a second, independently-tunable literal -- the two values
-// protect the exact same invariant (this wallet's key can never authorize moving more than $100 of USDC
-// in one signed transaction, full stop), so keeping them equal (not merely "smaller than") means the
-// approval cap ITSELF is always the binding constraint, never silently overridden by a separate ceiling.
-const MAX_SWAP_BASE_UNITS = APPROVAL_CAP_BASE_UNITS;
+// MAX_SWAP_BASE_UNITS -- FIND-001 fix (CRITICAL, impl review iter1, tightened impl review iter2). The
+// ABSOLUTE, independent ceiling signAndBroadcast enforces on the decoded USDC amount a signed tx may
+// move, regardless of what `amount` parameter it was called with (defense in depth: a buggy/compromised
+// CALLER of this module can never cause it to sign a tx moving more than this). Derived directly from
+// `SWAP_MAX_USD`/`USDC_DECIMALS_BASE` (lib/pure/constants.mjs's own single choke point for this feature's
+// per-invocation spend cap) rather than a second, independently-tunable literal -- iter1 previously
+// reused a separate `APPROVAL_CAP_BASE_UNITS` ($100) here, which was 5x looser than the driver's own
+// SWAP_MAX_USD=$20 cap and was exactly FIND-001 (iter2)'s root cause (see this module's header comment).
+// Since ensureApprovalsSettled below now approves EXACTLY `amount` per swap (never a standing higher
+// cap), this ceiling and the actual on-chain allowance are now the SAME bound, at the SAME ($20, not
+// $100) magnitude -- `APPROVAL_CAP_BASE_UNITS` no longer exists as a separate concept.
+const MAX_SWAP_BASE_UNITS = BigInt(SWAP_MAX_USD) * 10n ** BigInt(USDC_DECIMALS_BASE);
 
 const ERC20_ALLOWANCE_ABI = [{ type: "function", name: "allowance", stateMutability: "view", inputs: [{ name: "owner", type: "address" }, { name: "spender", type: "address" }], outputs: [{ name: "", type: "uint256" }] }];
 const ERC20_APPROVE_ABI = [{ type: "function", name: "approve", stateMutability: "nonpayable", inputs: [{ name: "spender", type: "address" }, { name: "amount", type: "uint256" }], outputs: [{ name: "", type: "bool" }] }];
@@ -123,26 +170,33 @@ const ERC20_TRANSFER_FROM_ABI = [{ type: "function", name: "transferFrom", state
  *     route shape is always a router/entry-point contract call (see ERC20_TRANSFER_SELECTOR comment
  *     above); a bare transfer selector is the exact "direct wallet-authorized movement, bypasses any
  *     approval cap entirely" attack FIND-001 identified (up to the ENTIRE USDC balance, not bounded by
- *     APPROVAL_CAP_BASE_UNITS/SWAP_MAX_USD) and is refused unconditionally, regardless of `to`.
+ *     MAX_SWAP_BASE_UNITS/SWAP_MAX_USD) and is refused unconditionally, regardless of `to`.
  *  2. evm_tx.to must be a single, non-USDC-contract address that EXACTLY equals the sole entry in
  *     evm_tx.required_erc20_approvals[].spender. This allowlist is deliberately NOT a hardcoded Skip
  *     contract-address literal (Skip's own deployed router/entry-point address can differ across route
  *     variants/redeployments, and a wrong hardcoded guess would either falsely refuse legitimate swaps or
  *     -- worse -- be silently stale); instead it is derived FROM the live route response itself, self-
  *     consistently: the only contract this wallet's key is ever asked to call is the exact contract this
- *     same code path also grants a bounded on-chain ERC-20 allowance to (APPROVAL_CAP_BASE_UNITS, $100,
- *     enforced by the existing allowance-check loop below). Since USDC can only leave this wallet via
- *     that contract's own transferFrom (never a raw transfer -- gate 1 above already forbids that), the
- *     on-chain allowance cap is what actually, structurally bounds this contract's total spend authority,
- *     regardless of what its own internal calldata/logic does.
- *  3. required_erc20_approvals[].amount (the exact amount that spender is being authorized to pull, and
- *     therefore the only amount it CAN pull via transferFrom once approved) must equal the driver-
- *     supplied `amount` parameter EXACTLY (bigint ===) -- not merely "the current on-chain allowance
- *     covers it" (the pre-existing, insufficient check) -- and must not exceed MAX_SWAP_BASE_UNITS. This
- *     closes the "Skip quote re-priced/rounded/cached-stale, or was tampered with, and this module signed
- *     whatever amount it said" gap: even a compromised or buggy Skip response cannot cause this module to
- *     authorize moving anything other than the exact, capped, intended amount.
- *  4. evm_tx.value (native ETH) must be exactly 0n -- this feature's route is USDC-only; there is no
+ *     same code path also grants an EXACT-`amount`-bounded on-chain ERC-20 allowance to, never a standing
+ *     higher cap (enforced by ensureApprovalsSettled AND independently re-verified by the allowance-check
+ *     loop below, which queries the CURRENT on-chain allowance -- not Skip's metadata -- at broadcast
+ *     time). Since USDC can only leave this wallet via that contract's own transferFrom (never a raw
+ *     transfer -- gate 1 above already forbids that), the ACTUAL on-chain allowance is what structurally
+ *     bounds this contract's total spend authority to <= `amount`, regardless of what its own internal
+ *     calldata/logic does (iter2 fix: no longer relies on Skip's self-reported metadata amount alone).
+ *  3. required_erc20_approvals[].amount (Skip's self-reported metadata field) must equal the driver-
+ *     supplied `amount` parameter EXACTLY (bigint ===) and must not exceed MAX_SWAP_BASE_UNITS. This is
+ *     ONE layer of defense against "Skip quote re-priced/rounded/cached-stale, or was tampered with" --
+ *     but (iter2 fix, FIND-001 CRITICAL) it is NEVER trusted alone: gate 4 below independently queries the
+ *     REAL on-chain allowance and refuses to sign unless it too is EXACTLY `amount`, so even a fully
+ *     malicious Skip response that lies about this metadata field in a way that happens to match `amount`
+ *     cannot cause this module to sign against a spender that was actually granted more.
+ *  4. (post-gate, in signAndBroadcast below, after ensureApprovalsSettled has run) the ACTUAL current
+ *     on-chain allowance for approval.spender must be EXACTLY `amount` -- neither insufficient (the swap
+ *     would revert on-chain) NOR in excess (a standing/stale higher allowance from a prior swap or a
+ *     compromised probe, the exact iter2 CRITICAL attack: metadata says `amount`, on-chain allowance says
+ *     more). This is a REAL RPC query against Base state, never taken on faith from any HTTP response.
+ *  5. evm_tx.value (native ETH) must be exactly 0n -- this feature's route is USDC-only; there is no
  *     legitimate reason for a non-zero native-value transfer, so any non-zero value is refused.
  */
 function verifyEvmTxAgainstIntent(evmTx, amount) {
@@ -321,10 +375,39 @@ export function createRealBaseSigner({
     return BigInt(raw === "0x" || !raw ? "0x0" : raw);
   }
 
-  // ensureApprovalsSettled — see module header's "Nonce-tracking / ERC-20 approval design". Runs ONLY
-  // from getNextNonce(), BEFORE the tracked leg-0 nonce is ever handed to the driver, so any approve tx
-  // it sends uses a nonce that is provably free (no swap-leg nonce has been reserved yet).
-  async function ensureApprovalsSettled(acct) {
+  // sendApprove — one on-chain ERC-20 approve(spender, amountBaseUnits), using the account's CURRENT
+  // pending nonce (fetched fresh, immediately before sending), and blocking until it lands. Extracted so
+  // ensureApprovalsSettled can call it either once (the common case: allowance is already 0, no reset
+  // needed) or twice in sequence (reset-to-0, then set-to-desired), each with its own freshly-fetched,
+  // strictly-sequential nonce.
+  async function sendApprove(acct, spender, amountBaseUnits) {
+    const approveData = encodeFunctionData({ abi: ERC20_APPROVE_ABI, functionName: "approve", args: [spender, amountBaseUnits] });
+    const nonceHex = await rpcCall(fetchImpl, rpcUrl, "eth_getTransactionCount", [acct.address, "pending"]);
+    const approveNonce = Number(BigInt(nonceHex));
+    const wc = getWalletClient(acct);
+    const hash = await wc.sendTransaction({ to: BASE_USDC_DENOM, data: approveData, value: 0n, nonce: approveNonce });
+    const pc = getPublicClient();
+    await pc.waitForTransactionReceipt({ hash });
+  }
+
+  // ensureApprovalsSettled — see module header's "Nonce-tracking / ERC-20 approval design" AND its
+  // "FIND-001 iter2 fix" section. Runs ONLY from getNextNonce(), BEFORE the tracked leg-0 nonce is ever
+  // handed to the driver, so any approve tx it sends uses a nonce that is provably free (no swap-leg
+  // nonce has been reserved yet). `amount` is the driver's own already-capped (<= SWAP_MAX_USD) swap
+  // amount -- this function grants EXACTLY that much allowance to the spender this route's probe
+  // identifies, NEVER a standing higher cap:
+  //  - if the current on-chain allowance already EXACTLY equals `amount`, no tx is sent (idempotent
+  //    resume-safe: a prior swap for the SAME amount, or this same swap's own already-settled approval,
+  //    needs no further action).
+  //  - if the current allowance is non-zero and does NOT already equal `amount` (a residual from a prior
+  //    swap's different amount, e.g. a route that didn't fully consume its allowance, or a stale grant
+  //    from before this fix existed), it is first reset to 0, then set to `amount` -- the standard
+  //    ERC-20 approve-race-safe sequence (some tokens revert setting a non-zero allowance directly over
+  //    an existing non-zero one; Base USDC is a standard OpenZeppelin ERC-20 that does not require this,
+  //    but the reset-first sequence is applied defensively regardless, since it is always safe/idempotent
+  //    for a standard-compliant token).
+  //  - if the current allowance is exactly 0, it is set directly to `amount` (one tx, the common case).
+  async function ensureApprovalsSettled(acct, amount) {
     const { nobleAddress, osmosisAddress } = cosmosAddresses();
     const probeRoute = await fetchSkipRoute(fetchImpl, APPROVAL_PROBE_AMOUNT_BASE_UNITS);
     const msgsResponse = await fetchSkipMsgs(fetchImpl, probeRoute, {
@@ -334,16 +417,14 @@ export function createRealBaseSigner({
       destinationAkashAddress: DESTINATION_AKASH_ADDRESS,
     });
     const evmTx = extractSingleEvmTx(msgsResponse);
+    const desired = BigInt(amount);
     for (const approval of evmTx.required_erc20_approvals || []) {
       const have = await currentAllowance(acct.address, approval.spender);
-      if (have >= APPROVAL_CAP_BASE_UNITS) continue;
-      const approveData = encodeFunctionData({ abi: ERC20_APPROVE_ABI, functionName: "approve", args: [approval.spender, APPROVAL_CAP_BASE_UNITS] });
-      const nonceHex = await rpcCall(fetchImpl, rpcUrl, "eth_getTransactionCount", [acct.address, "pending"]);
-      const approveNonce = Number(BigInt(nonceHex));
-      const wc = getWalletClient(acct);
-      const hash = await wc.sendTransaction({ to: BASE_USDC_DENOM, data: approveData, value: 0n, nonce: approveNonce });
-      const pc = getPublicClient();
-      await pc.waitForTransactionReceipt({ hash });
+      if (have === desired) continue;
+      if (have !== 0n) {
+        await sendApprove(acct, approval.spender, 0n);
+      }
+      await sendApprove(acct, approval.spender, desired);
     }
   }
 
@@ -352,11 +433,14 @@ export function createRealBaseSigner({
       return account().address;
     },
 
-    /** getNextNonce — see module header. Performs approval check-and-settle FIRST, THEN returns the
-     * account's current pending nonce -- guaranteed to be the swap tx's own, exclusive nonce. */
-    async getNextNonce() {
+    /** getNextNonce(amount) — see module header. `amount` is the real, already-capped swap amount
+     * (driver.mjs's requiredBaseUnits, computed BEFORE this is called -- REQ-006/REQ-012). Performs
+     * approval check-and-settle FIRST (granting EXACTLY `amount`, never a standing higher cap -- FIND-001
+     * iter2 fix), THEN returns the account's current pending nonce -- guaranteed to be the swap tx's own,
+     * exclusive nonce. */
+    async getNextNonce(amount) {
       const acct = account();
-      await ensureApprovalsSettled(acct);
+      await ensureApprovalsSettled(acct, amount);
       const nonceHex = await rpcCall(fetchImpl, rpcUrl, "eth_getTransactionCount", [acct.address, "pending"]);
       return BigInt(nonceHex);
     },
@@ -406,14 +490,27 @@ export function createRealBaseSigner({
       // PROP-050 / FIND-001 fix (CRITICAL): independently decode+verify the ACTUAL evm_tx contents
       // (destination contract, encoded amount, native value) against the driver-supplied intent BEFORE
       // ever touching a wallet client. See verifyEvmTxAgainstIntent's own doc comment for the full
-      // four-gate rationale. This is the ONLY thing standing between "sign whatever Skip's HTTP response
+      // gate rationale. This is the ONLY thing standing between "sign whatever Skip's HTTP response
       // said" and "sign only the exact, capped, intended amount to an allowlisted contract".
       verifyEvmTxAgainstIntent(evmTx, amount);
 
+      // FIND-001 iter2 fix (CRITICAL): query the REAL, CURRENT on-chain allowance for approval.spender --
+      // never trust Skip's self-reported required_erc20_approvals[0].amount metadata field alone (gate 3
+      // above already checked that field, but a fully-malicious/compromised Skip response could report an
+      // honest-looking metadata amount while a STANDING, HIGHER allowance from a prior swap or a
+      // compromised probe is what's actually granted on-chain -- exactly the iter2 CRITICAL finding).
+      // The invariant enforced here: the on-chain allowance available to evm_tx.to is EXACTLY `amount`,
+      // never less (the swap would revert) and never more (a standing excess is itself the attack surface
+      // -- worst-case loss under a fully-malicious route is therefore bounded to `amount`, not to
+      // whatever a stale/standing allowance happens to be).
+      const intendedAmount = BigInt(amount);
       for (const approval of evmTx.required_erc20_approvals || []) {
         const have = await currentAllowance(acct.address, approval.spender);
-        if (have < BigInt(approval.amount)) {
-          throw new Error(`base-signer: insufficient USDC allowance for spender ${approval.spender} at sign time (getNextNonce() should have already settled this) -- refusing to sign without a verified allowance (money-safety)`);
+        if (have < intendedAmount) {
+          throw new Error(`base-signer: insufficient USDC allowance for spender ${approval.spender} at sign time (on-chain allowance ${have} < intended amount ${intendedAmount}; getNextNonce() should have already settled this) -- refusing to sign without a verified allowance (money-safety)`);
+        }
+        if (have > intendedAmount) {
+          throw new Error(`base-signer: on-chain USDC allowance for spender ${approval.spender} (${have}) EXCEEDS the intended swap amount (${intendedAmount}) -- a standing/excess allowance is never trusted even if Skip's reported metadata amount matches intent exactly; refusing to sign until the allowance is reset to exactly \`amount\` (money-safety, PROP-050/FIND-001 iter2 CRITICAL fix -- this is precisely the attack a standing higher allowance enables)`);
         }
       }
 

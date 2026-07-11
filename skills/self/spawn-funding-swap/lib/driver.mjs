@@ -87,7 +87,11 @@ async function ensureLeg0Submitted(ctx, ledgerState, requiredBaseUnits, quoteSna
     // "not-found" -- the earlier broadcast RPC call never actually landed on chain; fall through and
     // (re)submit using this SAME re-derived nonce, never a blindly-fresh one.
   } else {
-    nonce = await ctx.baseSigner.getNextNonce();
+    // FIND-001 iter2 fix (base-signer.mjs): getNextNonce(amount) now settles an EXACT-`amount` ERC-20
+    // approval (never a standing higher cap) for this leg-0 submission's spender, so it needs the real,
+    // already-capped swap amount -- which runInsideLock has already computed (REQ-006/REQ-012 choke
+    // point) BEFORE ensureLeg0Submitted is ever called, so it is available here unchanged.
+    nonce = await ctx.baseSigner.getNextNonce(requiredBaseUnits);
   }
 
   // Pre-broadcast durable write -- SYNCHRONOUS and BEFORE the broadcast RPC call (REQ-005/PROP-020).

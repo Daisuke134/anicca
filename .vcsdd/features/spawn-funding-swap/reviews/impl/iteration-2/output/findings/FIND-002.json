@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "description": "specs/verification-architecture.md's PROP-050 row and Tier-2 narrative overclaim what is actually verified. PROP-050's Tier-2 description (line 59-60) states PROP-050 proves 'the ACTUAL signed transaction content (destination contract, encoded USDC amount, native value) matches the driver's intent exactly, bounded, and allowlisted, never taken on faith from Skip's HTTP response.' This is not what the implementation or tests do for the 'encoded USDC amount' clause: `evm_tx.data` is decoded ONLY to detect a bare transfer()/transferFrom() top-level selector (base-signer.mjs:151-161); for every other (i.e. every legitimate router/entry-point) call shape, `evm_tx.data` is never decoded, and the 'encoded USDC amount' verified is in fact `required_erc20_approvals[0].amount`, a self-reported JSON metadata field in Skip's HTTP response with no cryptographic or on-chain link to what the target contract's bytecode will actually execute (see FIND-001). Every PROP-050(a)-(d) test in base-signer.test.mjs constructs its evm_tx fixture with the SAME opaque, never-decoded `data: '0xd77d6ec0deadbeef'` placeholder (evmTxFixture default, base-signer.test.mjs:61) and varies only the `approvalAmount`/`to`/`value` metadata fields -- no test exercises (or could catch, given the current implementation) a case where the metadata field and the actual encoded/executed pull amount diverge. Tier-2 is explicitly defined in this same file (line 55-58) as 'the money-safety-critical properties this sprint exists to get right ... verified via spy-based assertions on the exact sequence and arguments ... not merely did it not throw' -- the PROP-050 description fails that bar for its 'encoded USDC amount' clause specifically, giving a false sense of assurance on the single highest-risk property in this sprint.",
+  "evidence": {
+    "filePath": "skills/self/spawn-funding-swap/specs/verification-architecture.md",
+    "lineRange": "44, 58-61",
+    "snippet": "| PROP-050 | ... `signAndBroadcast` decodes and bound-checks the ACTUAL `evm_tx` Skip returned ... |\n... AND (impl review iter1 addition) PROP-050: that the ACTUAL signed transaction content (destination contract, encoded USDC amount, native value) matches the driver's intent exactly, bounded, and allowlisted, never taken on faith from Skip's HTTP response."
+  },
+  "routeToPhase": "impl"
+}
