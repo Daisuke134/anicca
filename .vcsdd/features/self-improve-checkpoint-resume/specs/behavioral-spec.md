@@ -104,7 +104,11 @@ is touched.
   open; see REQ-CR6 for the exact command line). That entrypoint takes NO argv, reads `RUNS_DIR`
   and `RUN_ID` from the process environment, calls `find_latest_checkpoint(runs_dir=os.environ[
   "RUNS_DIR"], current_run_id=os.environ["RUN_ID"])`, and prints EXACTLY one line to stdout — the
-  resulting path, or an empty string when `None` — nothing else. This is a byte-for-byte mirror of
+  resulting path, or an empty string when `None` — nothing else. This entrypoint's own effects are
+  strictly limited to reading `os.environ` and writing to stdout: it NEVER itself creates, deletes,
+  renames, or writes bytes to any file or directory (REQ-CR11) — its only output channel is that one
+  stdout line; any subsequent logging of that output to `$LOG` is `run_evolve.sh`'s own
+  responsibility (REQ-CR9), not this Python entrypoint's. This is a byte-for-byte mirror of
   `lib/ledger_reader.py`'s own established convention (confirmed live, `lib/ledger_reader.py:222-
   225`: no argv, reads its own env-derived config internally, prints one line of JSON to stdout;
   called from `run_evolve.sh:60` as `"$PY_BIN" "$SKILL_DIR/lib/ledger_reader.py"`, no `-c`, no
@@ -220,17 +224,46 @@ is touched.
   `--checkpoint` flag at all) — i.e. this feature's fallback path is byte-for-byte the pre-existing
   behavior, never a degraded or different variant of it.
 
-- **REQ-CR9** THE SYSTEM SHALL append a log line to `$LOG` (the same file/convention every other
-  `run_evolve.sh` step already writes to) stating EITHER the checkpoint path selected and used, OR
-  that none was found — this decision SHALL NEVER be silent. This restates this repo's existing
-  "loud, visible logging, never a silent branch" convention (every other step in `run_evolve.sh`
-  already follows it; REQ-CR9 makes it explicit for this feature's own new step).
+- **REQ-CR9** THE SYSTEM SHALL append EXACTLY one log line to `$LOG` (the same
+  `echo "$(now) <message>" >> "$LOG"` file/convention every other `run_evolve.sh` step already
+  writes to, e.g. `run_evolve.sh:91`'s `echo "$(now) run_id=$RUN_ID status=$STATUS" >> "$LOG"`) on
+  EVERY invocation of this feature's new step — this decision SHALL NEVER be silent, and its content
+  SHALL NEVER be merely "some line got written" (a bare line-count check is not sufficient evidence
+  this requirement holds; the line's TEXT is pinned below so a test can assert on it directly).
+  WHEN the REQ-CR6 call returns a non-empty checkpoint path, the log line's message SHALL contain the
+  literal substring `checkpoint_resume: resuming from checkpoint` immediately followed by the actual
+  resolved path. WHEN the REQ-CR6 call returns empty/`None` (no prior checkpoint found, for any
+  reason), the log line's message SHALL contain the literal substring
+  `checkpoint_resume: no prior checkpoint found` — a concrete, non-blank, informative string, not a
+  generic placeholder. Both wordings are pinned here, verbatim, precisely so two independent
+  implementers cannot diverge on wording and so a test can assert on this exact content in BOTH
+  branches (not just the found branch), never merely `count(lines) == 1`.
+
+### Group CR-SAFETY — no filesystem mutation, anywhere in this feature's code
+
+- **REQ-CR11** Neither `find_latest_checkpoint` NOR `lib/checkpoint_resume.py`'s `__main__` CLI
+  entrypoint (REQ-CR6) SHALL EVER call any filesystem-mutating API. Concretely, this module's own
+  source code (in both the pure function and the `__main__` block) SHALL NEVER call: `os.remove`,
+  `os.unlink`, `os.rmdir`, `os.removedirs`, `os.mkdir`, `os.makedirs`, `os.rename`, `os.replace`,
+  `os.truncate`, any `shutil.*` function (`shutil.rmtree`, `shutil.copy*`, `shutil.move`, etc.), or
+  `open(...)` with any mode other than the implicit read-only default (i.e. never `'w'`, `'a'`,
+  `'x'`, `'w+'`, or any other write/append/create/truncate mode) — nor any equivalent operation that
+  creates, deletes, renames, or writes bytes to a file or directory. THE ONLY filesystem operations
+  this module's runtime code MAY perform are READ-ONLY directory traversal: `os.listdir`,
+  `os.scandir`, and `os.path.*` queries (`isdir`, `isfile`, `exists`, `join`, `abspath`, etc.) —
+  listing directory entries and inspecting their names/existence, NEVER opening or reading the byte
+  contents of any file (this restates and sharpens REQ-CR5's "no file-content reads" rule to also
+  explicitly cover the `__main__` entrypoint, not only the pure function). The `__main__`
+  entrypoint's only permitted output channel is stdout (REQ-CR6); it never writes to any file. This
+  requirement makes INV-CR1 directly traceable to an explicit, testable REQ (closing the gap where
+  INV-CR1 previously had no REQ or test enforcing it) and is verified by PROP-CR12 (static
+  denylist scan + dynamic before/after directory-snapshot comparison).
 
 ## Global Invariants
 
 | # | Invariant |
 |---|---|
-| INV-CR1 | `find_latest_checkpoint` NEVER writes, deletes, renames, or mutates anything on disk — it is a pure read-only path/existence query (REQ-CR5) |
+| INV-CR1 | `find_latest_checkpoint` AND `lib/checkpoint_resume.py`'s `__main__` entrypoint NEVER write, delete, rename, or mutate anything on disk — both are pure/read-only with respect to the filesystem (REQ-CR5, REQ-CR11) |
 | INV-CR2 | This feature never touches `strategies/pm_backtest_strategy.py`, `promote_gate.sh`, `lib/promote_gate.py`, `lib/promote.py`, `config.yaml`, or `ai.anicca.self-improve-evolve.plist` |
 | INV-CR3 | This feature never reads or writes any wallet key, `.env`, ledger file, or spend-cap value — it is scoped exclusively to `runs/*/checkpoints/*` path selection |
 | INV-CR4 | The fallback path (no checkpoint found) is byte-for-byte identical, in its `openevolve-run` invocation, to `run_evolve.sh`'s pre-feature behavior (REQ-CR8) — this feature can only ADD a `--checkpoint` argument, never change any other existing argument |
@@ -301,7 +334,7 @@ is touched.
 | dimension | condition |
 |---|---|
 | spec | this document + verification-architecture.md |
-| test | RED: unit tests for `find_latest_checkpoint` covering REQ-CR1-5, REQ-CR10, and EDGE-CR1-11 all written and failing (module does not yet exist) before any implementation; GREEN: all passing |
+| test | RED: unit tests for `find_latest_checkpoint` covering REQ-CR1-5, REQ-CR10, REQ-CR11, and EDGE-CR1-11 all written and failing (module does not yet exist) before any implementation; GREEN: all passing |
 | impl | `lib/checkpoint_resume.py::find_latest_checkpoint` + `run_evolve.sh`'s new pre-invocation step (REQ-CR6-9), both present and runnable |
 | impl review | fresh-context `vcsdd-adversary` review of both files returns PASS (lean mode: no BLOCKING findings) |
 | verification | Phase 5: proof obligations in verification-architecture.md discharged; a real, hand-constructed two-run `tmp_path` fixture demonstrates `run_evolve.sh`'s new step selecting and logging the correct `--checkpoint` path end-to-end (or a documented reason it could not be exercised without touching the production `runs/` tree, per EDGE-CR1) |

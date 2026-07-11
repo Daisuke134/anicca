@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "REQ-CR9 (behavioral-spec.md:223-227) requires the log line to state 'EITHER the checkpoint path selected and used, OR that none was found' and explicitly says 'this decision SHALL NEVER be silent' -- a requirement on BOTH branches. Of the two proof obligations that touch this requirement, only PROP-CR-LIVE1 (verification-architecture.md:74) actually checks log-line CONTENT, and only for the found branch ('produces the log line naming checkpoint_20's path'). The only obligation covering the not-found branch, PROP-CR-WIRE3 (verification-architecture.md:73), checks solely that '$LOG gained exactly one new line each time' -- it makes no assertion about that line's actual text. As specified, an implementation that appends a blank line, a generic timestamp-only line, or any other content-free placeholder on the not-found branch would satisfy PROP-CR-WIRE3's line-count check while directly violating REQ-CR9's 'never silent' requirement for that branch, and no other row in the Proof Obligations table would catch it. Fix: add (or extend PROP-CR-LIVE1 to cover) a not-found-branch fixture whose expected log line is asserted to actually name the outcome (e.g. contains a recognizable 'no checkpoint found' marker), mirroring the found-branch treatment PROP-CR-LIVE1 already gives.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "73-74",
+    "snippet": "PROP-CR-WIRE3 | Every code path through the new step (found / not-found) appends exactly one line to $LOG ... | 1 | true | shell-level check ... assert $LOG gained exactly one new line each time"
+  },
+  "routeToPhase": "1a/1b"
+}
