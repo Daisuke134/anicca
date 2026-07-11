@@ -70,3 +70,18 @@ REALITY_VERIFY="$(dirname "${BASH_SOURCE[0]}")/gig_reality_verify.sh"
 if [ -x "$REALITY_VERIFY" ]; then
   bash "$REALITY_VERIFY" >/dev/null 2>>"$G/.reality-verify.err.log" || true
 fi
+
+# ─── self-heal wire (gig L1-a) ────────────────────────────────────────────────────────────────────
+# If the reality-verifier just wrote a self-heal request (verdict:false = the core's jsonl claims did
+# NOT match the real Coconala UI), hand it to the dedicated autonomous fixer self-fix.sh (a fresh
+# Sonnet with browser+Bash+Edit that diagnoses the root cause, fixes the code, and commits — no human).
+# Then remove the request so it dispatches exactly once per discrepancy. self-fix.sh self-guards
+# against duplicate/hung fixers, so a second hourly run while a fixer is live is a safe no-op.
+SELFHEAL_REQ="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
+SELF_FIX="$HOME/anicca/skills/self/self-fix.sh"
+if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
+  REASON="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('reason','') or json.load(open('$SELFHEAL_REQ')).get('failure_reason',''))" 2>/dev/null || echo '')"
+  [ -z "$REASON" ] && REASON="reality-verifier could not confirm the gig core's reported 出品/応募/納品 on the real Coconala pages"
+  bash "$SELF_FIX" gig "reality-verify FAIL: ${REASON}. The gig core reported side-effects the fresh reality-verifier could NOT confirm on the real Coconala UI. Find why claim != reality and fix the code so future claims are backed by real on-page state." >/dev/null 2>>"$G/.self-fix.err.log" || true
+  rm -f "$SELFHEAL_REQ"
+fi
