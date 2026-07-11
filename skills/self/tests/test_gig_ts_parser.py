@@ -66,6 +66,13 @@ chk("null ts -> None, never crash", parse(None), None)
 chk("missing ts (empty string) -> None, never crash", parse(""), None)
 chk("unparseable string ts -> None, never crash", parse("not-a-timestamp-at-all"), None)
 
+# regression pin (found live 2026-07-11, gig-cadence self-fix session): a bash-written row can quote
+# a UNIX epoch as a JSON STRING of digits (`"ts":"$(date +%s)"`) rather than an ISO string or a bare
+# JSON number — this must resolve the same as the numeric-epoch case, not silently return None.
+epoch_str = str(int(datetime.datetime(2026, 7, 11, 21, 22, 38, tzinfo=JST).timestamp()))
+chk("digit-only STRING epoch ts -> correct JST date (bash `\"ts\":\"$(date +%s)\"` convention)",
+    parse(epoch_str), "2026-07-11")
+
 # regression pin: the EXISTING numeric-only helper is untouched by this feature.
 existing_epoch_jst = CE._epoch_to_jst_date(epoch_jst_noon)
 chk("regression: existing _epoch_to_jst_date (clip/affiliate/video) still works unchanged",
