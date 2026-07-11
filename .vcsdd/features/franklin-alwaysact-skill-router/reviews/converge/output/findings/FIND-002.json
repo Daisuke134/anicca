@@ -1,0 +1,33 @@
+{
+  "findingId": "FIND-002",
+  "phase": "converge",
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "specs/verification-architecture.md's declared Effectful Shell mechanism for REQ-513 does not match the actual shipped implementation, for the SAME 'index.mjs:402-416's if (slot === 'sleep') branch' this feature's own behavioral-spec.md REQ-513 EARS text and 3 separate spec-review changelog entries (iteration-2/3/4) all describe as the concrete wiring point being modified. Declared (verification-architecture.md:147-148, Effectful Shell section): '`index.mjs:402-416`'s existing `if (slot === 'sleep')` branch becomes conditional (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`)'. behavioral-spec.md REQ-513 (line 649-651) makes the identical claim verbatim: 'Concretely: `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`) becomes conditional -- `if (slot === 'sleep' && !ctx.alwaysActEngaged)`'. The actual shipped code (runtime/loop/index.mjs:551) reads `if (slot === 'sleep') {` -- completely UNCONDITIONAL, byte-for-byte identical to the pre-feature original, never modified with any `&& !ctx.alwaysActEngaged` guard. Instead, the real implementation takes a structurally different (and functionally equivalent, correctly-tested) route: an always-act-engaged ctx is diverted at index.mjs:516-518 (`if (ctx.alwaysActEngaged) { return runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }); }`) into an entirely separate function BEFORE line 551 is ever reached, so line 551 is simply unreachable code for an always-act wake rather than being made conditional in place. The behavioral OUTCOME both artifacts and REQ-513's acceptance criteria describe is genuinely achieved (confirmed: PROP-513a/b/c/e all pass, per verification/proof-harnesses/target-feature-run.txt and full-suite-run.txt), so this is not a behavioral defect -- but it IS a literal, citable mismatch between what specs/verification-architecture.md and behavioral-spec.md both declare as the concrete implementation MECHANISM and what was actually built, on the single most heavily-scrutinized requirement in this feature's entire spec-review history (REQ-513 was the direct subject of 3 of the 5 spec-review iterations' findings: FIND-103/FIND-201/FIND-301). None of Phase 3's 4 impl-review iterations nor Phase 5's purity-audit.md flagged this literal-mechanism drift -- purity-audit.md's own 'Effectful shell' section (lines 71-88) describes `runAlwaysActWake`'s real control flow accurately but never cross-checks it against verification-architecture.md's own stated 'the existing if (slot === 'sleep') branch becomes conditional' claim, which its 'Mismatches found: None' conclusion implicitly (and incorrectly) endorses.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+    "lineRange": "147-148",
+    "snippet": "`index.mjs:402-416`'s existing `if (slot === 'sleep')` branch becomes conditional (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`), and a new guard immediately ahead of skill execution rejects (for VALIDITY) a fabricated `slot:'sleep'`..."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "649-651",
+      "snippet": "Concretely: `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`) becomes conditional -- `if (slot === 'sleep' && !ctx.alwaysActEngaged)` -- and a new guard immediately ahead of skill execution..."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "516-518,548-564",
+      "snippet": "if (ctx.alwaysActEngaged) {\n    return runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu });\n  }\n  ...\n  const { slot, args } = toolCall;\n  // Sleep tool call\n  if (slot === 'sleep') { ... }  -- unconditional, unmodified from pre-feature original; unreachable for an always-act wake only because of the early return above, never because this line itself was made conditional."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/purity-audit.md",
+      "lineRange": "71-88,120-129",
+      "snippet": "Effectful shell section describes `runAlwaysActWake` accurately but never checks it against verification-architecture.md's own literal 'if (slot === 'sleep') branch becomes conditional' claim; 'Mismatches found: None' does not hold for this specific declared mechanism."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Update specs/verification-architecture.md's (and, for full internal consistency, behavioral-spec.md REQ-513's own 'Concretely:' paragraph's) description of the REQ-513 wiring mechanism to match the actual shipped design (an early-return dispatch to a dedicated `runAlwaysActWake` function, leaving index.mjs:551's `if (slot === 'sleep')` branch untouched and simply unreachable for always-act wakes) rather than the 'the branch becomes conditional' framing neither artifact's own implementation actually followed. Documentation-accuracy fix only; no behavioral defect."
+}

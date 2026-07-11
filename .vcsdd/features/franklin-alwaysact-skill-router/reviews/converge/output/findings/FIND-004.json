@@ -1,0 +1,39 @@
+{
+  "findingId": "FIND-004",
+  "phase": "converge",
+  "iteration": 2,
+  "criterion": "duplicate_detection",
+  "additionalCriteria": [],
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "Iteration-1's converge review (reviews/converge/output/notes.md, criterion-4 row) explicitly recorded a non-blocking staleness: specs/verification-architecture.md still describes behavioral-spec.md section 2.5's transition matrix as '9-row' (an iteration-4-era row count) though the matrix was expanded to 12 rows by the iteration-5 spec-review precision fix, and verification-report.md itself correctly says '12-row' (verification-report.md:139: '## Section 2.5 Transition-matrix coverage (behavioral-spec.md, the authoritative exhaustive 12-row table)'). Iteration-1's own written recommendation explicitly asked for this to be corrected in the same doc-sync pass ('...and updating the stale \"9-row\" references to \"12-row\"'). The fix commit (3f657ba4) did not apply this part of the recommendation: specs/verification-architecture.md still reads '9-row' in 4 places (lines 42, 316, 343, 360), independently re-confirmed this session by direct grep. This remains a real, citable cross-artifact contradiction (verification-architecture.md's own '9-row' vs. behavioral-spec.md's actual 12-row table vs. verification-report.md's correct '12-row' citation) -- not a new regression, but a known, previously-disclosed gap that survived a fix pass whose own stated recommendation covered it.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+    "lineRange": "42",
+    "snippet": "See §2.5 of behavioral-spec.md for the exhaustive 9-row transition matrix this correction is verified against."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+      "lineRange": "316",
+      "snippet": "suite is required to exercise EVERY row of behavioral-spec.md §2.5's exhaustive 9-row transition matrix"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+      "lineRange": "343,360",
+      "snippet": "exhaustive transition matrix ... behavioral-spec.md §2.5's new exhaustive 9-row transition matrix."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/verification-report.md",
+      "lineRange": "139",
+      "snippet": "## §2.5 Transition-matrix coverage (behavioral-spec.md, the authoritative exhaustive 12-row table)"
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "732,766-767",
+      "snippet": "## 2.5 REQ-511 Attempt-State Transition Matrix ... The full attempt-1(3 non-terminal classes) x attempt-2(4 classes) = 12-cell product is now covered by exactly 12 rows"
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Global find-replace '9-row' -> '12-row' in specs/verification-architecture.md (4 occurrences: lines 42, 316, 343, 360). Zero behavioral/test impact."
+}

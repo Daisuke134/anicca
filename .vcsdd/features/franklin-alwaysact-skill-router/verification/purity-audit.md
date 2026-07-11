@@ -175,3 +175,36 @@ only constrains the offered STRUCTURE). Every Effectful Shell function extended 
 (`index.mjs`'s gate/retry-loop/dispatch-guard, `go-live.mjs`, `brain.mjs`, `context.mjs`) delegates its
 actual decision logic to the pure core rather than re-implementing it inline, confirmed by direct read
 of every touched function's full body this session. No purity or judgment-hardcoding violation found.
+
+**Converge doc-sync 2026-07-11 correction (SECOND correction, mechanical citation-audit session, following
+the FIND-001/FIND-002 correction above)**: the "zero deviations" claim in this Summary is, again,
+FALSIFIED for the SAME reason as the correction above — it certifies the underlying
+purity/impurity/judgment-freedom CLASSIFICATION (which does still hold; this correction does not dispute
+that) without ever cross-checking the SPECIFIC line-number citations `specs/verification-architecture.md`'s
+declared Purity Boundary Map used to describe that classification. Converge iteration-3's fresh-context
+adversary independently found 3 further stale citations this audit session did not catch (FIND-005/006/007:
+REQ-506's declared single-line `index.mjs:450` classify-gate ternary does not exist in the shipped code —
+the real mechanism is `index.mjs:598`/`:754`, two separate call sites; `avoidSlot`'s declared
+`index.mjs:175-184`/`:183`/`:179-421` citations are stale by ~113-119 lines — real: `:296`/`:302`/`:293-425`;
+REQ-508's `appendHarnessFailure` citation `index.mjs:458-475` is actually the unrelated bootstrap-reserve
+`filterCatalog` block — real definition `:1028`, call sites `613`/`767`/`878`/`914`), and this session's own
+follow-up mechanical, exhaustive re-grep of every citation in `specs/behavioral-spec.md` and
+`specs/verification-architecture.md` found 4 MORE stale citations beyond FIND-005/006/007
+(`index.mjs:382-416`, `index.mjs:440-456`, `prompt.mjs:139-173`/`:171`, `brain.mjs:63`/`:92`,
+`prompt.mjs:205-207` — see
+`.vcsdd/features/franklin-alwaysact-skill-router/evidence/citation-audit-2026-07-11.md` for the full
+58-citation audit table). This purity-audit.md file's OWN internal citations (e.g. lines 78/89/98 above,
+`index.mjs:674/704/.../913`, `prompt.mjs:137-179`, `brain.mjs:63-100`) were NOT part of this correction's
+scope (the mechanical citation-audit task this session performed was scoped to
+`specs/behavioral-spec.md`/`specs/verification-architecture.md`/`contracts/sprint-1.md` only, per its own
+explicit method — `verification/*.md` files were only touched where a FIND finding named them, per that
+task's own instruction) and have not been independently re-verified this session; they should be treated
+as UNAUDITED, not confirmed-accurate, until a future pass extends the mechanical grep-based method to
+`verification/`. The underlying runtime behavior remains correct and fully test-covered throughout
+(183/183, docs-only fix) — this is, again, a documentation-accuracy-only finding, not a behavioral
+regression. **This is the third time this exact "zero deviations" self-certification has been shown false
+by a fresh-context re-check** (once for FIND-001/002, once now for FIND-005/006/007 + this session's own
+sweep) — a future Phase 5 pass should stop asserting "zero deviations" in this Summary as a headline claim
+and instead scope it explicitly to "purity/judgment classification, independently re-verified; line-number
+citations audited separately, see citation-audit-2026-07-11.md" to avoid re-falsifying an unscoped claim a
+fourth time.
