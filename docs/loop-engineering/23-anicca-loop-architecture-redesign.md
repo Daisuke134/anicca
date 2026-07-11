@@ -8,6 +8,10 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 3. done = deterministic check、**text match / self-report 禁止**
 唯一これを満たすのは connector の `connector_streak_verify.py`（一次情報を独立再検証）。他は全て heartbeat mtime のみ = 壊れてる半分。
 
+## 0.5 CEO の是非 + 逃げ禁止（Dais 2026-07-11 確定）
+- **CEO の kill/spawn/portfolio 判断 = 削除（危険）**。今どの loop も稼いでない → 「稼いでないから全部殺す」に倒れる。loop も claude-p もその判断能力を持たない。**loop を殺す/生む決定を agent に持たせない。** CEO は実質何もしない → 機械予算 hard-stop 以外は as we go で削除。日次 LLM CEO は廃止（S8 launchd install 取消）。
+- **「別 repo だから scope 外」= 逃げ（jijitsu ha nige）**。根因が anicca-dais / profitable-claude 等 別 repo にあっても、それを理由に直さないのは逃げ。**verifier も self-fix も repo を跨いで根因まで直す。** honest-gap を「範囲外」で閉じない。
+
 ## 1. 2系統の分離（Dais 明示）
 - **系統1 = profitable-claude / CEO 配下 = 人間(Dais)のために稼ぐ（fiat→Dais 銀行/MUFG/Stripe）**: gig / capafy / article / life-manager(MRR) / affiliate / bounty / connector。
 - **系統2 = ~/anicca / H の agent 経済 = agent 自身の wallet で稼ぎ経済を養う（crypto/on-chain）**: Franklin/Franklin2(SOL) / sol-funding / clip・video・reddit(on-chain USDC 視聴報酬) / x402-sell / token-launch / hl-trade(dormant) / self-improve / spawn。**claude-p(私)の CEO の管轄外。**
@@ -66,26 +70,22 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 ```
 
 ## 4. FULL 残 TODO（優先順、全て「fix→FRESH verifier配線→browser/on-chain own-eyes確認」まで）
+**★ 全体原則（Dais 2026-07-11 確定）**: ①1 loop = 1 closed folder（BASE + verifier + self-heal を正しい repo に全部入れる。散らさない）。②別 repo だから直せない = 逃げ。跨いで根因まで直す/copy して集約。③loop の kill/spawn を agent に持たせない。
+
 **P0 土台（verifier を直す＝これが無いと全部嘘に戻る）**
-- [ ] G0 **各 loop の healthcheck を「fresh-context verifier + 実side-effectチェック」に作り替え**（report/heartbeat卒業）。connector_streak_verify.py を雛形に横展開。
-- [ ] G1 **escalation→self-fix 実行の trigger を確実化**（selfheal-request 存在→self-fix.sh spawn を必ず起動、残存で再escalate）。
-- [ ] G2 **liveurl を logged-out DOM本文+BANチェックに**（reddit/IG）。state整合性チェック(video 4vs0)。ラベルvs実side-effect照合(capafy PUBLISHED)。healthcheck DEAD誤判定(connector 正常終了)修正。
-- [ ] G3 **Opusセッション内 /loop 機構**を作る（全loop実side-effectを独立subagentで毎回検証、done=検証出力）。CLAUDE.md に verifier 3原則を bake。
+- [x] G1 escalation→self-fix trigger 確実化（`76a4fdc4`、fresh Opus 実走 PASS、push 済）
+- [x] G2 liveurl logged-out+BAN / video state整合 / capafy label照合 / DEAD誤判定（同 commit、実発火確認）
+- [ ] **G3 ★#1★ 共有 ground-truth verifier を build → 全 loop に配る**（doc24: fresh Opus + ProofShot(browser) + Base MCP(on-chain) + Bash(exec)、evaluator-optimizer + tau-bench「final state を見る」。other CC と1本に収束＝2つ作らない）。雛形 = `connector_streak_verify.py`。CLAUDE.md に verifier 3原則 bake。
+- [ ] G4 CEO を機械予算 hard-stop のみに縮退（**kill/spawn/portfolio 判断は削除**、日次 LLM CEO 廃止、S8 取消）
 
-**P1 系統整理（混線・stub 解消）**
-- [ ] S1 hl 削除 / S2 pm 訂正 / S3 **gig Label衝突改名(緊急)** / S4 vestigial cron削除 / S5 cruft削除 / S6 capafy・article を profitable-claude 移管 / S7 CANONICAL_LOOPS に connector / S8 CEO launchd install。
+**P1 系統整理（混線・stub 解消 / closed folder 化）**
+- [ ] S3 **gig Label衝突改名(緊急)** / S6 **capafy・article を profitable-claude の closed folder に集約**（capafy: openclaw の publisher + anicca の healthcheck を copy して1 folder に） / S1 hl 削除 / S2 pm 訂正 / S4 vestigial cron削除 / S5 cruft削除 / S7 CANONICAL_LOOPS に connector / ~~S8 CEO launchd install~~（取消）
 
-**P2 各 loop を実際に稼がせる（own-eyes確認まで）**
-- [ ] L1 gig: 出品+提案+見積+返信 が実行され Coconala で実確認、実績>0
-- [ ] L2 capafy: public listing 実掲載(status=4)、"PUBLISHED"嘘修正
-- [ ] L3 article: 新側 merge、実publish+視聴→¥導線、実測metrics
-- [ ] L4 life-manager: 空稼働解消(実calendar/call/intake action)→実signup→MRR
-- [ ] L5 affiliate: reCAPTCHA突破(tier-a-bypass)再ログイン→日次投稿
-- [ ] L6 connector: 全horizon枠応募 + healthcheck修正 + 7日streak
-- [ ] L7 bounty: survivor→提出→賞金
-- [ ] (系統2は別instance管轄: clip投稿停止/video空/reddit BAN も H側で。ただし混線分だけ整理)
+**P2 各 loop を実際に稼がせる（own-eyes確認まで、G3 verifier で検証）**
+- [ ] L1 gig(実績>0) / L2 capafy(public掲載 status=4, "PUBLISHED"嘘修正) / L3 article(実publish→¥) / L4 LM(空稼働解消→signup→MRR) / L5 affiliate(reCAPTCHA突破→投稿) / L6 connector(全枠応募+7日streak) / L7 bounty(survivor→提出→賞金)
+- [ ] 系統2(clip/video/reddit/sol/pm/founder) は別 instance(H)管轄だが、混線・closed folder 化はここで整理
 
-**Done判定（全 loop 共通、BP準拠）**: 実side-effectを fresh verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。
+**Done判定（全 loop 共通、BP準拠）**: 実side-effectを G3 verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。
 
 ---
 
