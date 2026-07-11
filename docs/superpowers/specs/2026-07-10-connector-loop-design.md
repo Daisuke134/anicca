@@ -128,6 +128,8 @@ Dais 検証: loop の DID/RESULT 報告を信用してはいけない。実 side
 
 ## 8.1 アーキ実態 + 片付け TODO（2026-07-11 launchctl 実測、Dais「幻覚でなく真実を bake」）
 
+> **task の正本 = `docs/loop-engineering/00-SSOT.md` §5**（scatter 防止、更新はそこだけ）。本節は設計背景を保持。
+
 **loop の走り方 = 3層**: ①launchd目覚まし(機械上、~/Library/LaunchAgents、一意 Label 必須) → ②repo 内のレシピ(script) → ③tmux headless claude(働き手)。「どこで動く」=②のレシピがどの repo か。同名 Label は片方しか起動しない(=衝突)。
 
 **AS-IS（実測、1行1ループ、レシピの repo）**

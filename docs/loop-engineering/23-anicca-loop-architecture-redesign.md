@@ -119,7 +119,7 @@ profitable-claude の loop が **repo 外**を参照している＝OSS で他人
       それが唯一の "closed" の条件。verifier が fake なら全部が嘘のまま回る。
 ```
 
-## 4. FULL 残 TODO（優先順、全て「fix→FRESH verifier配線→browser/on-chain own-eyes確認」まで）
+## 4. FULL 残 TODO　→ ★task 正本は `00-SSOT.md` §5 に一本化した★（以下は履歴、更新は 00-SSOT のみ）
 **★ 全体原則（Dais 2026-07-11 確定）**: ①1 loop = 1 closed folder（BASE + verifier + self-heal を正しい repo に全部入れる。散らさない）。②別 repo だから直せない = 逃げ。跨いで根因まで直す/copy して集約。③loop の kill/spawn を agent に持たせない。
 
 **書式規約（BP=github/spec-kit 119k★ + INVEST）**: `- [ ] <ID> <動詞> <対象/path> — done: <検証可能条件>`。1行=1動詞1成果、and で2つは即分割、末尾 done 必須、`[dep:ID]` で依存明示。出典 https://github.com/github/spec-kit `templates/commands/tasks.md` + Wikipedia INVEST。
