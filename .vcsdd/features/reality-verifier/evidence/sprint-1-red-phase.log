@@ -1,0 +1,77 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+=== node --test (target feature: reality-verdict-schema + agent-definition content) ===
+Command: node --test skills/self/lib/__tests__/reality-verdict-schema.test.mjs \
+  skills/self/lib/__tests__/reality-verdict-schema.property.test.mjs \
+  skills/self/__tests__/reality-verifier-agent-definition.test.mjs
+
+Result: FAIL (expected — skills/self/lib/reality-verdict-schema.mjs and
+.claude/agents/reality-verifier.md do not exist yet, this is the RED phase).
+
+Representative failures (all import/read errors, confirming zero implementation exists):
+  ✖ skills/self/lib/__tests__/reality-verdict-schema.test.mjs
+    Error: Cannot find module '.../skills/self/lib/reality-verdict-schema.mjs'
+  ✖ skills/self/lib/__tests__/reality-verdict-schema.property.test.mjs
+    Error: Cannot find module '.../skills/self/lib/reality-verdict-schema.mjs'
+  ✖ PROP-006: frontmatter declares name: reality-verifier
+    Error: ENOENT: no such file or directory, open '.../.claude/agents/reality-verifier.md'
+  ✖ PROP-006: frontmatter tools array is exactly Read, Grep, Glob, Bash (no Write/Edit)
+    Error: ENOENT (same path)
+  ✖ PROP-007: prompt states the DETERMINISTIC-vs-AGENTIC role boundary (REQ-003)
+    Error: ENOENT (same path)
+  ✖ PROP-007: prompt states the fresh-context / no-self-eval instruction (REQ-004)
+    Error: ENOENT (same path)
+  ✖ PROP-007: prompt enumerates all 6 REQ-005 finding categories verbatim
+    Error: ENOENT (same path)
+  ✖ PROP-007: prompt states the read-only RPC allow-list and forbids signing/sending (REQ-007)
+    Error: ENOENT (same path)
+  ✖ PROP-007: prompt states the money-safety no-mutation constraint (REQ-007)
+    Error: ENOENT (same path)
+All 20 tests in reality-verdict-schema.test.mjs and all 6 property tests in
+reality-verdict-schema.property.test.mjs failed identically (module not found).
+All 9 tests in reality-verifier-agent-definition.test.mjs failed identically (ENOENT).
+
+=== bash skills/self/__tests__/test-reality-verify-spawn.sh (target feature) ===
+(A) missing arguments -> non-zero exit, nothing spawned
+  ok no-args -> non-zero exit (127)
+  ok missing artifact path -> non-zero exit (127)
+(B) REALITY_VERIFY_DRYRUN=1 -> deterministic path derivation, no process spawned
+  FAIL short 'capafy' -> LOOP=capafy-loop want:[LOOP=capafy-loop] got:[bash: .../reality-verify-spawn.sh: No such file or directory]
+  FAIL dryrun output references RESULT path want:[RESULT=] got:[bash: .../reality-verify-spawn.sh: No such file or directory]
+  ok short==long identical (loop-name normalization parity)
+(C) dryrun never spawns a tmux session
+  ok tmux session count unchanged after dryrun call
+=== test-reality-verify-spawn: 4 passed 2 failed ===
+Result: FAIL (expected — skills/self/reality-verify-spawn.sh does not exist yet, RED phase).
+2 of 6 checks fail with "No such file or directory" (the script itself is missing); this
+confirms the RED phase for REQ-008's spawn wrapper.
+
+=== regression baseline: bash skills/self/test-self-fix.sh (pre-existing suite, untouched by this feature) ===
+(A) loop-name normalization
+  ok short 'capafy' -> LOOP=capafy-loop
+  ok short -> RESULT .self-fix-capafy-loop.result
+  ok short==long identical
+  ok life-manager -> life-manager-loop
+(B) FIND-029/030 hang fingerprint
+  ok frozen body, only timer/tokens changed -> SAME fingerprint (hang detectable)
+  ok real new text -> DIFFERENT fingerprint (progress)
+(D) FIND-032 past-ceiling continue-vs-kill decision (sf_should_continue)
+  ok generating + fingerprint advanced -> CONTINUE
+  ok generating + fingerprint FROZEN -> KILL (hung)
+  ok not generating (idle/errored) -> KILL
+  ok first check (prev=none) generating -> CONTINUE
+(C) FIND-026/031 real lock acquire/steal via hc_acquire_lock
+  ok acquire when no lock
+  ok refuse fresh held lock
+  ok steal NON-EMPTY stale lock (rm -rf recovery)
+=== self-fix: 13 passed 0 failed ===
+GREEN
+
+regression-baseline: PASS
+
+=== Operational note ===
+This RED run was captured on the SECOND attempt at this worktree. The first attempt's
+branch/worktree was garbage-collected by a concurrent process mid-session before any commit
+existed (see behavioral-spec.md "Operational Note"). The RED evidence and content are
+identical in substance to the first attempt; only file mtimes/timestamps differ.
