@@ -127,13 +127,21 @@ invocation of the identical script (FIND-001 iter3):
      ` --home ` substring) — this is the legacy process to kill, or
    - a short-lived, `timeout 20`-bounded one-shot invocation from `skills/earn/sol-trade/run.sh` (or
      any other one-shot caller) — NEVER kill this one; it exits on its own within ~20s.
-3. `kill <PID>` ONLY the PIDs identified as legacy long-lived loop posters in step 2. The scoped,
-   in-code `pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"` (step 3 of
+3. Kill the PARENT loop subshell, NOT the transient node child: `kill <PPID>` (the subshell PID
+   identified in step 2 whose command is the `while true; do ... sleep 120; done` construct). Killing
+   only the child `node <PID>` is INSUFFICIENT — the orphaned parent loop respawns a fresh legacy-argv
+   poster within 120 seconds (iteration-4 FIND-001). After killing the parent, also `kill` any
+   still-running node child it spawned. The scoped, in-code
+   `pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"` (step 3 of
    anicca-daemon.sh, unchanged) relaunches the correct new-format poster for that instance on its own
    very next restart, so no manual relaunch is needed.
-4. Re-run `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` and verify no more than one long-lived
-   LOOP poster remains per live instance (transient one-shot callers like sol-trade's may legitimately
-   appear/disappear and are not counted as duplicates).
+4. CONVERGENCE CHECK (not a single snapshot — a snapshot taken seconds after step 3 gives false
+   confidence because legacy posters are one-shot children that exit and respawn on a 120s cycle):
+   wait at least 150 seconds (> one full 120s respawn cycle), then re-run
+   `pgrep -fl "dashboard/telemetry-post-franklin.mjs"` AND re-inspect parent lineage per step 2.
+   Repeat the 150s-wait + check until two consecutive checks show zero legacy (markerless, loop-parented)
+   posters. Transient one-shot callers like sol-trade's may legitimately appear/disappear and are not
+   counted as duplicates.
 
 This step runs ONCE per instance, at or shortly after deploy of this commit — it is not a recurring
 operational task, and it is intentionally NOT expressed as code (iteration-3 FIND-001) because the
