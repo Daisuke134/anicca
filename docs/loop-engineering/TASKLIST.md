@@ -1,5 +1,16 @@
 # TASKLIST — earn/record/verify を稼げる状態にする（atomic SSOT）
 
+## ★★★ 唯一の真実 = NET PROFIT（Dais 2026-07-12 焼き込み）★★★
+成果 = **loop が自分で redeem して、渡された額より wallet が増えた時のみ**。activity/build/建玉/test-green は成果でない。
+- claude-p: 渡し合計 $18(POL$30由来) → **超えて初めて成功**。
+- Franklin: 渡し $9〜 → 超えて初めて成功。
+- source of truth = on-chain wallet が渡し額を上回る（loop 自身が redeem）。私(session AI)は trade しない・監視のみ。
+
+## ★ HANDOVER 現状(2026-07-12, own-eyes) ★
+**動く(verify済)**: loop3つ自律稼働 / 資金 loop の手に(claude-p Base$3.95+pm$1.35+Polymarket建玉$5未resolve / Franklin Sol$10.87) / menu=money-maker(pm/sol/hl/yield)のみ / 記録reconcile / 検証reality-verifier / 非-gamble bundle-arb戦略(claude-p自律でPolymarket bet実績)。
+**未(=稼げない最後の1ピース)**: **報酬型MM(poly-maker liquidity-rewards)** = 「和<1でなくても板に居るだけで稼ぐ→複利」。builder移植中。これが入るまで net profit は出ない(bundle-arbは和<1が稀)。
+**実現 net profit = まだ $0(この建玉 -$0.15微損, 未resolve)**。
+
 ## ★ CURRENT PHASE (2026-07-12) = 実際に稼ぐ。正本 game plan = `29-earn-game-plan.md` ★
 記録/検証/一本化(#1-#6 下記)は全 DONE。今は「実 external:true を出す」フェーズ。
 残タスク(doc29 の実装順):
