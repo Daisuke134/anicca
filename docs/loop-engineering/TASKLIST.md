@@ -43,7 +43,7 @@
 - [x] 5d. spawn 配線 = `skills/self/reality-verify-spawn.sh`(fresh detached, self-fix 同型, DRYRUN seam)。※live cron(self-fix/週次)へのフック挿入は最後の1マイル follow-up
 - [x] verdict schema(`reality-verdict-schema.mjs`): vague-PASS / evidence無しFAIL を機械拒否
 - 検証済み: builder 下書きを私が読んで採用判断、main で 35 node + 6 bash = 41/41 pass 再走。他 feature の .vcsdd ノイズは除外して reality-verifier ファイルのみ取込
-- 残: reality-verify-spawn.sh を self-fix/週次 build pass から実際に呼ぶ配線(= doc27 §6 "VCSDD Reality Gate" 統合の一部)
+- [x] 残(last-mile) DONE(2026-07-12): `reality-verify-on-new-earn.sh` を `verify-loops-audit.sh`(6h cron)に配線。新 external:true earn が出た時だけ reality-verifier を fresh spawn(cursor 二度打ち防止・DRYRUN 状態不変・token-safe=earn0で0発火)。own-eyes: franklin gig+0.02 検出、冪等確認。**loop が私抜きで稼ぎの正直さを自己検証し続ける＝止まらない**
 
 ## #6 own-eyes 検証(記録=真実 + 検証層が実働)  — status: ✅ DONE(2026-07-12, own-eyes)
 - [x] 6a-DETERMINISTIC: pm ledger の reconcile anchor `balance_after=1.34853` == pm wallet on-chain pUSD `$1.3485`（完全一致）。0x810f も $0.0001 で ledger 3行clean=偽稼ぎ無し。**記録 ≡ wallet の真実**
