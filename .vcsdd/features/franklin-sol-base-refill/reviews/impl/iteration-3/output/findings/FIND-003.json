@@ -1,0 +1,26 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "medium",
+  "description": "is_valid_evm_address validates a STRIPPED local copy of its argument (`c = candidate.strip()` at lib/refill_plan.py:245) but returns only a bool -- it never returns the normalized/stripped value. Every caller then uses the ORIGINAL, unstripped `recipient` string for every downstream operation: the validation check itself at franklin_sol_base_refill.py:615 (`if not is_valid_evm_address(recipient):`), the relay quote payload's \"recipient\" field at line 673, the build_sign_submit call at line 780, and every ledger row's to_addr=recipient at lines 748/802/852/871/887. This is a validate-vs-use mismatch: a --recipient value with leading/trailing whitespace (e.g. `\" 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3\\n\"`, plausible if the address is ever piped/interpolated from another tool's output rather than typed directly) would PASS is_valid_evm_address (since the internal strip() succeeds) yet be sent to relay.link's API and recorded in the funding ledger with the whitespace still attached, verbatim. The actual on-chain behavior of relay.link's API given a whitespace-padded recipient string is unverified by this codebase (untested, no live check) -- it may silently accept/trim it, or it may reject/misroute it; either way, the validation function's job (proving the exact string that will be used downstream is a well-formed address) is not actually being done, since it checks a value that is discarded immediately after the check.",
+  "evidence": {
+    "filePath": "skills/earn/funding/lib/refill_plan.py",
+    "lineRange": "236-252",
+    "snippet": "def is_valid_evm_address(candidate) -> bool:\n    if not isinstance(candidate, str):\n        return False\n    c = candidate.strip()\n    if not c.startswith(\"0x\") or len(c) != 42:\n        return False\n    try:\n        int(c[2:], 16)\n    except ValueError:\n        return False\n    return True"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+      "lineRange": "615-619",
+      "note": "Validation call site: checks is_valid_evm_address(recipient) but keeps using the unstripped `recipient` variable everywhere after."
+    },
+    {
+      "filePath": "skills/earn/funding/tests/test_refill_plan.py",
+      "lineRange": "380-406",
+      "note": "No test constructs a whitespace-padded candidate to confirm the validate-then-use mismatch does not exist -- the gap is untested as well as unfixed."
+    }
+  ],
+  "remediation": "Either (a) have is_valid_evm_address reject any candidate whose stripped form differs from the original (no silent normalization), or (b) have callers use the stripped/normalized value everywhere downstream instead of the raw argparse string. Add a regression test with a whitespace-padded valid-looking address asserting the SAME string that passed validation is the one that reaches relay_quote/build_sign_submit/ledger rows.",
+  "routeToPhase": "2b"
+}

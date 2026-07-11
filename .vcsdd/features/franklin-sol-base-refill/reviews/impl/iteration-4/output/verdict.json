@@ -1,0 +1,135 @@
+{
+  "phase": "impl-review",
+  "feature": "franklin-sol-base-refill",
+  "scopeLabel": "gas-eth-mode-extension-iteration-2-final-money-gate",
+  "iteration": 4,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["6fe4908e"],
+  "external_test_evidence": "177/177 funding tests pass at HEAD 6fe4908e (thinker-executed, taken as given -- this role has no Bash tool). A REAL, non-signing --gas-eth dry-run was also personally run by the thinker against the live api.relay.link/quote endpoint; its raw response is attached at .vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md. This review found that evidence file's own content is inconsistent with the currently-committed code's behavior (see FIND-001) -- the field-shape claim it supports remains valid, but it does not prove the exact live request payload the current code will send at --live time.",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "/Users/anicca/anicca/.worktrees/gas-refill",
+    "specPath": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md",
+    "scopeNote": "Final gate re-review of the --gas-eth mode after the FIND-001..005 fixes from reviews/impl/iteration-3/output/verdict.json (FAIL, 5 findings). This is iteration-2 of the gas-eth mode's OWN implementation review (feature-level iteration-4). Zero Builder context; fresh-context adversary.",
+    "filesReviewed": [
+      "skills/earn/funding/franklin_sol_base_refill.py (full read, all 1012 lines, run_refill unchanged-check + run_gas_refill line-by-line re-trace against every REQ-GAS-001..005 clause and against each of iteration-3's FIND-001..005)",
+      "skills/earn/funding/lib/refill_plan.py (full read, all 334 lines, is_valid_evm_address + evaluate_native_delivery re-traced against FIND-002/FIND-003/FIND-005 fixes)",
+      "skills/earn/funding/lib/erc20.py (full read, eth_get_balance unchanged since iteration-3, still no dedicated unit test, consistent with existing accepted precedent)",
+      "skills/earn/funding/tests/test_franklin_gas_eth_refill.py (full read, all 48 lines->tests re-counted: 25 gas-mode orchestration tests including the new FIND-001/002/003 regression tests)",
+      "skills/earn/funding/tests/test_refill_plan.py (full read, gas-eth section lines 300-521, including the new zero/negative-expected_wei and whitespace-normalization regression tests)",
+      ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md (full read, REQ-GAS-001..005 + both Changelog entries)",
+      ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md (full read, PROP-018..025 + both Changelog entries)",
+      ".vcsdd/features/franklin-sol-base-refill/state.json (full read, all phaseHistory entries)",
+      ".vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md (full read, cross-checked against current code's expected output shape)",
+      ".vcsdd/features/franklin-sol-base-refill/reviews/impl/iteration-3/output/verdict.json + findings/FIND-001..005.json + notes.md (full read, prior findings re-verified as fixed or newly disputed)"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:389-462",
+          "description": "REQ-GAS-004's acceptance criteria now carry the same explicit MUST live-evidence gate structure REQ-004 has (iteration-3 FIND-001 fix); the gas-mode-specific edge cases for present-but-non-positive expected_wei are documented (iteration-3 FIND-002 fix)."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:236-262",
+          "description": "REQ-GAS-002's accepted no-EIP-55-checksum residual is now explicitly documented in is_valid_evm_address's own docstring, closing iteration-3's FIND-005 (spec_fidelity, LOW)."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_refill_plan.py:486-511",
+          "description": "test_evaluate_native_delivery_zero_expected_wei_refused, test_evaluate_native_delivery_negative_expected_wei_refused, and test_evaluate_native_delivery_zero_expected_wei_refused_even_with_large_delta directly close iteration-3's FIND-002 gap -- all three assert d.verified is False with expected_wei <= 0, including the previously-unreachable degenerate case of a LARGE positive delta against a zero expected_wei."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_franklin_gas_eth_refill.py:350-378",
+          "description": "test_gas_quote_currency_out_amount_wei_zero_refuses_before_signing is a genuine orchestration-level regression test for the same FIND-002 bug, asserting build_sign_submit is never called and the ledger row is 'skipped' when the live relay quote returns amount: \"0\"."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:290-311",
+          "description": "evaluate_native_delivery hand-traced: type checks first (rejecting non-int and bool, including for expected_wei itself), THEN an explicit `if expected_wei <= 0: return NativeDeliveryDecision(False, ...)` BEFORE min_required is ever computed -- no code path remains where a non-positive expected_wei silently sets min_required=0 and lets any positive delta pass. Confirmed no other caller of evaluate_native_delivery exists that could route around this check."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:754-766",
+          "description": "run_gas_refill has its OWN symmetric pre-sign guard (`if expected_wei is None or expected_wei <= 0: return fail(...)`) placed strictly BEFORE `read_base_native_balance_wei`/`build_sign_submit` are ever called (lines 776, 785) -- a defense-in-depth duplicate of evaluate_native_delivery's own guard, so a degenerate quote is refused before any network read or signing, not merely before the post-hoc delivery check."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:613-619,673,730,748,806,857,875,891",
+          "description": "FIND-003 fix re-verified structurally sound in the CURRENT code (independent of the evidence-staleness finding below): `recipient` is reassigned to `is_valid_evm_address(recipient)`'s normalized return value once, immediately after validation and before any other use; every downstream reference (relay quote payload's `recipient` key, every `to_addr=recipient` ledger-row argument, the dry-run plan) reads that SAME reassigned local variable -- no remaining reference to the original, unnormalized parameter exists anywhere in run_gas_refill. Confirmed directly by test_gas_whitespace_padded_recipient_normalized_in_relay_payload_and_ledger and test_gas_dry_run_also_normalizes_recipient_in_ledger_row, both of which pass a whitespace-padded candidate and assert the relay payload AND every ledger row's `to` field equal the normalized form."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:193-211,241,586",
+          "description": "FIND-004 dedup re-verified: _safe_append_ledger_factory is now the SOLE fail-closed ledger-append wrapper, bound once in run_refill (line 241) and once in run_gas_refill (line 586) -- no duplicate inline try/except copy remains in either function's body."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py + lib/refill_plan.py",
+          "description": "No new duplication introduced by this pass's fixes; the shared _safe_append_ledger_factory (FIND-004) is a net REDUCTION in duplication versus iteration-3's two independently-maintained inline copies. Naming remains clear (GAS_STEP vs STEP, GAS_* constants vs base constants)."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:236-262,273-311",
+          "description": "Purity re-confirmed: is_valid_evm_address and evaluate_native_delivery remain pure (no I/O/network/clock reads), matching PROP-018/PROP-019's claims and verification-architecture.md's Changelog note that the FIND-002/003 fixes are 'return-type change only, still no I/O'."
+        },
+        {
+          "type": "file",
+          "location": ".vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md",
+          "description": "See FIND-001: this evidence's own printed output (mixed-case plan.recipient_base) is inconsistent with what the currently-committed code (post FIND-003 normalization fix) would print for the identical command, indicating the evidence predates the final fix set and does not verify the exact request payload the code will send at --live time."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-GAS-001", "REQ-GAS-002", "REQ-GAS-003", "REQ-GAS-004", "REQ-GAS-005"],
+    "duplicateFindings": [],
+    "priorFindingsReVerified": {
+      "FIND-001-of-iteration-3": "genuinely fixed at the field-shape level (docstring cites live-verified expected_wei=1654875211425918); NOT fully closed at the exact-request-payload level -- see this review's own FIND-001",
+      "FIND-002-of-iteration-3": "genuinely fixed -- evaluate_native_delivery + run_gas_refill both now refuse expected_wei<=0 before signing, with direct test coverage",
+      "FIND-003-of-iteration-3": "genuinely fixed in the current code -- is_valid_evm_address returns the normalized address, used consistently everywhere downstream, with direct test coverage",
+      "FIND-004-of-iteration-3": "genuinely fixed -- _safe_append_ledger_factory dedup confirmed, no duplicate inline copy remains",
+      "FIND-005-of-iteration-3": "genuinely fixed -- no-EIP-55-checksum residual now explicitly documented in code + spec"
+    },
+    "goLiveRecommendation": "NO-GO for the real --live $3 gas-ETH top-up until this review's FIND-001 is closed: re-run the exact same non-signing `--gas-eth --dry-run` command against the CURRENT commit (6fe4908e) and attach FRESH evidence confirming (a) plan.recipient_base is printed lowercased (proving the normalized-recipient code path actually executed) and (b) relay.link's live /quote endpoint still returns a valid, parseable details.currencyOut.amount for that exact, now-normalized request payload. This is a zero-cost, zero-risk, non-signing re-check (no funds move, ~30 seconds) that directly closes the one remaining gap in an otherwise fully-remediated FIND-001..005 fix set. All caps/fee/reserve/single-flight/on-chain-verify-before-sent money-safety logic is independently traced and correct with real test coverage; the sole blocker is evidentiary freshness for the final live-request-shape verification, not a code defect."
+  }
+}
