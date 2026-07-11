@@ -74,12 +74,11 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 0. **verifier を全ツール使える様に直す** — [x] DONE: reality-verifier に「:9222ログイン済browser drive/on-chain/gcal 必須・report読むな」明記
 1. **各ループを実際に稼ぐ/仕事する様に直す**（1つずつ・私がbrowserで実state確認・移動/改名しない・重複退治だけ例外）
 2. **self-heal を各ループに内蔵**（healthcheck/self-fix が fresh adversary=reality-verifier[全ツール] を呼び実side-effectで判定→乖離→修復→再発防止をcodeに焼く。babysit不要に）
-### Phase 1 — 片付け/引っ越し（M/S/C、Phase2 の前提）
+### Phase 1 — ★方針変更(Dais 2026-07-11): 移動/改名しない・その場で直す・重複退治だけ例外★
 ```
-[x] M1 gig を anicca→PC一本化 — DONE(2026-07-11): Label hf-gig-*修正+anicca版bootout+PC版起動、pane実測でAPI-key hang無し(env-u OK)。evidence=evidence/M1-gig-consolidation.md。残: L1(実出品/提案をreality-verifier確認)+M4b(session名分離)
-[ ] M2 capafy を anicca→PC移管 — done: PC closed folder+Label hf-capafy-*
-[ ] M3 life-manager 二重起動を解消 — done: PC一本化・anicca側目覚まし退役
-[ ] M4 PC全ループのLabelをhf-*に改名 — done: launchctl衝突ゼロ
+[x] M1 REVERTED — 私のミス: PC切替が24日動いてたanicca gig loopを止めた→revert完了・anicca本体復元(account ログイン済)。gig は移動しない。
+[ ] M3 life-manager 二重起動を1つに(2x課金停止) — done: 片方の目覚ましを退役(重複退治=唯一の例外)
+[~] M2/M4 migration/relabel = 保留(Dais:移動しない)。loopはその場で直す
 [ ] S1 registryからhl削除 — done: hlエントリ無し
 [ ] S2 registryのpmを対象外注記 — done: crypto=別CCと明記
 [ ] S4 vestigial cron削除 — done: 5分毎起動しない
@@ -95,7 +94,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 ```
 ### Phase 2 — 各loop修理（1つずつ・VCSDD lean・adversary=Sonnet・私のbrowserで実side-effect確認・verifyまで次に行かない。clip/video/reddit=anicca別CC）
 ```
-[~] L1  gig 実績>0 — hang解消済(M1✅)だが pass14分未完走(applied273のまま)=実出品未確認。残: pass完走しない根因(hook error?)を突き止め→実出品/提案をbrowser確認  ← 今ここ
+[~] L1  gig 実際に仕事させる — 24日本体復元済(account ログイン済)。真因: 提案(teian)+出品(shuppin)+納品が"足りない"。残: harness/promptを直し→私がbrowserで実提案/実出品/実納品をmonitor確認  ← 今ここ
 [ ] #5  connector 全horizon枠+7日streak — done: 各日Telegram delivered:true+gcal readback
 [ ] #8  life-manager セルフマーケ — done: MoneyPrinterTurbo→Reddit/IG実投稿URL≥1+MRR導線
 [ ] L2  capafy public掲載 — done: status=4 browser確認、"PUBLISHED"嘘出ない
