@@ -119,6 +119,16 @@ Dais 確定方針(2026-07-11):
 
 **全体 ~30-40% → 目標 100%。** 各項目 done = 私が結果画面 or loop出力で実装を実確認。
 
+## §8 増分2b 設計 — own-eyes 検証を loop に焼く（reality-verifier を自走化）★実装中★
+目的: 「私が main session で navigate→screenshot→判定」した手順を、**loop が毎時 自分で起動する fresh claude** に置換。auditor が core の jsonl を信じるのをやめ、実画面で report-skeptical 判定する。
+触るファイル(live `~/anicca/skills/earn/gig/`):
+1. **gig_judge.py**（新規・`scratchpad/judge_bu.py`=browser-use/benchmark judge.py 198L を copy+tweak）: `JudgementResult{reasoning,verdict:bool,failure_reason,impossible_task,reached_captcha}` + `build_verifier_prompt(claims, ground_truth)`。system prompt は judge.py L79-163 を踏襲（report-skeptical: L148「be initially doubtful of self reported success」/L101「報告完了でも画面が未完了なら false」/L76「ground_truth 不一致なら必ず false」）。ground_truth = /mypage/services_lists・/received_orders/open・売上 の実DOM。
+2. **gig_reality_verify.sh**（新規・runner）: 直近 N の shuppin.jsonl/applied.jsonl/earnings.jsonl の claim を読む → **fresh `claude -p`（sonnet, --add-dir $HOME, :9222 CDP 使用可）を spawn** し、gig_judge prompt で「結果ページに navigate → cdp_snapshot で screenshot → 実DOM 読む → claim が実画面に実在するか二値判定し JudgementResult JSON を出せ」と指示 → verdict を parse → `~/gig/audit-reality.jsonl` に追記 → verdict=false なら `~/.openclaw/state/.gig-core-selfheal-request.json{reason,failure_reason,ts}` を書く。
+3. **auditor.sh**: 既存の決定論 verdict の後に gig_reality_verify.sh を呼ぶ（launchd :45 毎時、新規 job 不要）。
+4. **self-heal**: selfheal-request を次 core pass が冒頭で読む（既存フック）+ self-fix.sh がコード修正。
+検証(RED/GREEN): gig_judge.py が import/parse OK・gig_reality_verify.sh bash -n・**実 claim(現 live 3出品)→PASS / 偽 claim→FAIL** を実走で確認（=私の手動検証と同じ結論を loop が自力で出すこと）。
+※判断=agent（画面を見て真偽）/決定論=起動・記帳・selfheal-request 書込のみ。regex 判定禁止。
+
 ## §7 既に作った物 / 状態
 - ✅ `~/anicca/skills/earn/gig/scripts/cdp_snapshot.py` — trajectory capture。**実 :9222 で screenshot 実撮影・成功確認済**（1920×854 PNG + trajectory.jsonl 生成、URL/title 記録）。
 - ✅ `docs/loop-engineering/25-...bp.md` — 検証+自己改善BP（judge.py 実物裏取り）。
