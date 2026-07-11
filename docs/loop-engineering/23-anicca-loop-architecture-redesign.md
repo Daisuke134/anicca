@@ -29,6 +29,18 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 | S7 | CANONICAL_LOOPS に connector 欠落 | 予算 gate drift | connector 追加 |
 | S8 | CEO launchd 未 install | ceo-runner/ceo-weekly-eval が repo template のみ | launchctl load |
 
+## 2.5 外部依存監査（OSS化を阻む repo外参照、2026-07-11 grep実証）
+profitable-claude の loop が **repo 外**を参照している＝OSS で他人が動かせない。全て confine（repo内に copy/local 化）が必要:
+| 外部 path | 参照してる loop | 何を取ってる | confine 方法 |
+|---|---|---|---|
+| `~/.openclaw/logs` `~/.openclaw/state` | connector, bounty, explorer, life-manager 全 healthcheck | ログ/state 書込先 | repo-local な data dir（例 `$LOOP_DATA` 既定=repo内）に変更 |
+| `~/.openclaw/.env` | life-manager vendor(opportunity-calendar, meetup-applier) | secrets | repo に `.env.example` + 各自の .env（personal .env を source しない） |
+| `~/.openclaw/skills/opportunity-calendar` `~/.openclaw/skills/anicca-meetup-talk-applier` `~/.openclaw/skills/camofox-browser` `~/.openclaw/skills/_shared/lib/gcal-policy.sh` | life-manager, connector | **vendor は wrapper だけ copy、本体は外部 skill を shell out**＝偽 vendoring | 本体 skill を実際に repo へ copy（wrapper が外部を呼ばない） |
+| `~/.cloak` | affiliate | browser profile | repo 相対 or 初回生成に |
+| `~/anicca` | bounty, affiliate, gig の cli | OSS 本体の何か | 参照を repo 内 copy に |
+
+→ **「vendor/ に置いた＝confine 済」は嘘**。vendor 内 script が `~/.openclaw/skills/...` を呼んでる＝根が外に残ってる。真の confine = 本体 code を copy し外部参照をゼロにする（closed folder の完成条件）。TODO の C 群（§4）で解消。
+
 ## 3. FULL TO-BE ASCII（最終設計: verifier は各 loop 内、CEO は薄い機械 gate、no human in loop）
 ```
    ① ONBOARDING（人間がやるのは ここ1回だけ。以後 loop の外）
@@ -100,6 +112,15 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 - [ ] S4 vestigial な affiliate/bounty/gig-proactive cron を削除 — done: 該当 cron が5分毎起動しない
 - [ ] S5 `.disabled-agent-economy` cruft を削除 — done: 存在しないパス残骸が無い
 - [ ] S7 CANONICAL_LOOPS に connector を追加 — done: connector が予算 gate に載る
+
+**C 群 外部依存の confine（OSS化の必須、§2.5 監査）**
+- [ ] C1 logs/state を repo-local data dir に — done: `~/.openclaw/logs|state` 参照が profitable-claude skills から消える（grep 0件）
+- [ ] C2 vendor skill の本体を実 copy — done: opportunity-calendar/meetup-applier/camofox が repo 内で完結、`~/.openclaw/skills/...` を shell out しない
+- [ ] C3 gcal-policy.sh を repo 内に copy — done: connector が `~/.openclaw/skills/_shared/lib/gcal-policy.sh` を参照しない
+- [ ] C4 .env を repo-local 化 — done: `.env.example` 有り、`~/.openclaw/.env` を source しない
+- [ ] C5 affiliate の `~/.cloak` 参照を confine — done: repo 相対 or 初回生成
+- [ ] C6 bounty/affiliate/gig cli の `~/anicca` 参照を confine — done: repo 内 copy 参照、grep 0件
+- [ ] C7 confine 完了を機械検証 — done: `grep -r '\.openclaw\|\.cloak\|/anicca/' skills` が state/log 除き 0件 `[dep:C1-C6]`
 
 **P2 各 loop を実際に稼がせる（G3 verifier で own-eyes 確認）**
 - [ ] L1 gig を full 稼働 — done: 出品/提案/見積/返信が実行され Coconala で実績>0 を logged-out 確認
