@@ -40,6 +40,13 @@ USDC_BASE = "0x833589fcd6edb6e08f4c7c32d4f71b54bda02913"
 SOL_NATIVE = "11111111111111111111111111111111"
 SOLANA = 792703809
 BASE = 8453
+# 2026-07-12: the destination was hardcoded to Base/USDC-on-Base, so a Solana->Polygon leg (needed to
+# top up the Polymarket owner EOA in ONE hop instead of Solana->Base->Polygon) had no way to express
+# itself and would have forced a second bridge -- exactly the multi-hop fee bleed that cost ~$8 on
+# 2026-07-12. Both are now env-overridable; the defaults keep every existing caller (the unattended
+# sol-funding-daemon, which sets neither) on the identical Base/USDC route it has always used.
+DEST_CHAIN = int(os.environ.get("SWAP_DEST_CHAIN", BASE))
+DEST_CURRENCY = os.environ.get("SWAP_DEST_CURRENCY", USDC_BASE).lower()
 RPC = os.environ.get("SOLANA_RPC", "https://api.mainnet-beta.solana.com")
 RENT_BUFFER = 5_000_000  # leave ~0.005 SOL for fees/rent
 
@@ -72,12 +79,12 @@ def main():
     if amount <= 0:
         print("no swappable SOL (need funds + rent buffer)")
         return
-    print(f"swapping {amount/1e9} SOL -> USDC(Base) to {ANICCA_BASE}")
+    print(f"swapping {amount/1e9} SOL -> chain {DEST_CHAIN} token {DEST_CURRENCY} to {ANICCA_BASE}")
 
     q = post("https://api.relay.link/quote", {
         "user": me, "recipient": ANICCA_BASE,
-        "originChainId": SOLANA, "destinationChainId": BASE,
-        "originCurrency": SOL_NATIVE, "destinationCurrency": USDC_BASE,
+        "originChainId": SOLANA, "destinationChainId": DEST_CHAIN,
+        "originCurrency": SOL_NATIVE, "destinationCurrency": DEST_CURRENCY,
         "amount": str(amount), "tradeType": "EXACT_INPUT",
     })
     det = q.get("details", {})
