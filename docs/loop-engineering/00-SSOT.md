@@ -94,7 +94,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 ```
 ### Phase 2 — 各loop修理（1つずつ・VCSDD lean・adversary=Sonnet・私のbrowserで実side-effect確認・verifyまで次に行かない。clip/video/reddit=anicca別CC）
 ```
-[~] L1  gig 実際に仕事させる — 24日本体復元済(account ログイン済)。真因: 提案(teian)+出品(shuppin)+納品が"足りない"。残: harness/promptを直し→私がbrowserで実提案/実出品/実納品をmonitor確認  ← 今ここ
+[~] L1  gig 実際に仕事させる — 24日本体復元済・ALIVE・.last-pass=今日・KYC全済(Dais確認)。★確定RCA(files実測+loop自lesson)★: earnings.jsonl=空=¥0。真因3点=(A)出品(shuppin)ステップがharnessに1つも無い→受動受注チャネル欠落(応募だけ=構造的accept2%床・飽和・¥0、loop自lesson pass88/92で5回確認)、(B)auditor.shがreport-blindでない=core自作jsonlを信じbrowser実UI照合せず、(C)応募数少なすぎ(max_apply_per_pass=5/時)。fix=[FIX A]B0出品step追加 [FIX B]auditorにreality-verifier(browser:9222)組込みreport-blind化 [FIX C]¥0継続/主張≠実UIでself-fix.shにコード修正escalate + 応募throughput増。★browser-use検証+self-improveのBPを自己流にせずweb/gh調査中→docs/loop-engineering/25-...bp.md→そのBPでverifier実装★  ← 今ここ
 [ ] #5  connector 全horizon枠+7日streak — done: 各日Telegram delivered:true+gcal readback
 [ ] #8  life-manager セルフマーケ — done: MoneyPrinterTurbo→Reddit/IG実投稿URL≥1+MRR導線
 [ ] L2  capafy public掲載 — done: status=4 browser確認、"PUBLISHED"嘘出ない
