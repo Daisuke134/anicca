@@ -24,11 +24,12 @@
 - 検証済み: pm-reconcile が実 pUSD を読み drift を記録。以後 pm の負け/買いが reconcile 行で載る（ledger ≡ wallet delta）
 - 注: 実測で pm は $4.95→$1.35 とさらに流出中 → #3(pm HOLD/一本化)を急ぐ理由
 
-## #3 earn loop 一本化  — status: ⬜(#2 後)
-- [ ] 3a. `pm-earner` launchd job を unload/廃止
-- [ ] 3b. registry で polymarket-trade が index.mjs earn-menu に載るか確認、無ければ登録
-- [ ] 3c. index.mjs 経由でのみ pm が回ることを確認（二重稼働解消）
-- 検証可能条件: claude-p の earn loop が1本、pm は menu 経由のみ
+## #3 earn loop 一本化  — status: ✅ DONE(2026-07-12, own-eyes、コード変更なし=infra dedup)
+- [x] 3a. `pm-earner` を `launchctl bootout` + plist を `.disabled-2026-07-12` にリネーム(再起動でも復活しない)。launchctl list から消失を確認＝**10分毎の直接流出を止血**
+- [x] 3b. pm は registry status:live で **既に index.mjs earn-menu に載っている**(liveSlotNames 経由)
+- [x] 3c. pm は今 agent-economy-loop(PID実稼働) の menu 経由のみ。二重稼働解消
+- [x] 追加安全: pm risk='capital'・carve-out 無し → 残高 $1.35 << BOOTSTRAP_RESERVE_USDC($20) なので filterCatalog が pm を menu から自動除外＝**低残高で自動 HOLD**(§10 N5 を構造的に満たす)
+- 検証済み: claude-p の earn loop は agent-economy-loop 1本、pm は menu skill 化、流出停止
 
 ## #4 build loop 一本化  — status: ✅ 既に達成(2026-07-12 own-eyes で判明、実質no-op)
 - [x] 検証: `founder-loop.sh` は **claude を呼ばない**（record-earn.mjs = 唯一の ledger writer + ceo bandit、prompt.txt 無し）。`claude --model sonnet -p` を呼ぶ build loop は **claude-p-mainloop ただ1本**。→ 「2つの重複 claude build loop」は存在しなかった（doc27 旧記述が誤り、私の前回 stale-read が原因）
