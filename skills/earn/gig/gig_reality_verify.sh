@@ -120,6 +120,22 @@ if [ -z "$PROMPT" ]; then
   exit 1
 fi
 
+# ─── 3.5 CDP :9222 mutex (gig L1-d) — acquire BEFORE the browser-driving judge spawn so the ────
+# verifier never navigates the shared daily-driver tab while the core's :27 pass is mid-応募/フォーム
+# 入力 (and vice versa). Steps 1-3 above are file-only (no browser); the judge spawn below is what
+# drives :9222. If the core holds the lock and does not release within the wait window, DEFER this
+# round: record note=deferred_cdp_busy, do NOT spawn, do NOT write a selfheal-request (a deferral is
+# not a reality failure). The lock auto-steals a stale holder (crashed core) via cdp_lock.sh.
+source "$SELF_DIR/scripts/cdp_lock.sh"
+if ! cdp_lock_acquire "reality-verifier" 120; then
+  echo "$(date '+%F %T') gig_reality_verify: :9222 busy (core driving) — deferring this round" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':None,'note':'deferred_cdp_busy','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  echo "$ROW"
+  exit 0
+fi
+trap 'cdp_lock_release' EXIT
+
 # ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
 # env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
 # idiom), not pay-per-token API billing. --dangerously-skip-permissions + --add-dir "$HOME": the
