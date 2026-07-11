@@ -29,6 +29,13 @@ import { usdcBalance } from "../../../_shared/lib/usdc.mjs";
 import { readChildren } from "../../../self/spawn/lib/ledger.js";
 import { CITIZENS_REGISTRY_PATH } from "../../../self/spawn/lib/registry-path.mjs";
 import { ensureCitizensRegistry as ensureCitizensRegistryReal } from "../../../self/spawn/lib/citizens-registry.mjs";
+import { resolveEvmPrivateKey } from "../../../earn/lib/resolve-identity.mjs";
+
+// The same Base-mainnet RPC default every other production caller in this repo already uses
+// (_shared/lib/usdc.mjs, _shared/lib/verify-tx.mjs, earn/execute-yield.mjs, ...) -- REQ-107/REQ-108
+// scope this feature to Base-mainnet-USDC-only. Overridable via BASE_RPC_URL, exactly like those
+// callers, so this is never a second, competing RPC-selection convention.
+const DEFAULT_RPC_URL = "https://mainnet.base.org";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -128,19 +135,48 @@ export async function runWakeGate({ argv = [], env = process.env, deps = {} } = 
 
   // Step 6: at most one new issuance attempt per wake, never a second candidate pair retried within
   // the same invocation.
+  //
+  // deps.lenderPrivateKey wiring (fixes: defaultDisburse's payViaFacilitator call always received
+  // deps.lenderPrivateKey===undefined -> privateKeyToAccount(undefined) crashed with "Cannot read
+  // properties of undefined (reading 'slice')" on every real wake, because nothing on this production
+  // path ever resolved+injected it). This wake ALWAYS runs under the LENDER's own per-instance env
+  // (ANICCA_HOME scoped to that instance's own home -- see run.sh's shared load-instance-env.sh
+  // helper), so resolve-identity.mjs's resolveEvmPrivateKey (already fail-closed, already
+  // ANICCA_HOME-gated, R5) resolves exactly THIS instance's own key -- an instance can only ever sign
+  // as itself here, never another instance's. Fail-closed (money-safety): if the key can't be
+  // resolved, this attempt is refused BEFORE executeLoanIssuanceAttempt is ever called -- an
+  // unresolved key must never reach defaultDisburse/payViaFacilitator. The key itself is never
+  // logged/persisted anywhere in this function (R5 discipline) -- it only ever flows, in-memory, into
+  // executeLoanIssuanceAttempt's own deps.lenderPrivateKey seam below.
+  //
+  // deps.rpcUrl wiring: executeLoanIssuanceAttempt's own step-5 stale-provisioning reconciliation
+  // (defaultReconcile) and defaultDisburse's own on-chain settle-confirmation both need a REAL rpcUrl;
+  // without this, a previously stuck disbursement_uncertain/provisioning row could never be resolved
+  // (defaultReconcile's own rpcCall(undefined, ...) would itself throw, surfacing as
+  // reason:"reconciliation_failed" on every subsequent wake for that lender, forever).
+  const resolveLenderPrivateKey = deps.resolveLenderPrivateKey || resolveEvmPrivateKey;
+  const rpcUrl = deps.rpcUrl || env.BASE_RPC_URL || DEFAULT_RPC_URL;
+
   let issuance = null;
   if (selectedPair) {
-    issuance = await executeLoanIssuanceAttempt(
-      { lenderId: selectedPair.lenderId, borrowerId: selectedPair.borrowerId, nowMs },
-      {
-        ledgerFile,
-        lockStatePath: ledgerFile,
-        getCitizen,
-        gojoLogRows,
-        reconcile: deps.reconcile,
-        disburse: deps.disburse,
-      }
-    );
+    const lenderPrivateKey = resolveLenderPrivateKey({ env });
+    if (!lenderPrivateKey) {
+      issuance = { status: "refused", reason: "lender_private_key_unresolved" };
+    } else {
+      issuance = await executeLoanIssuanceAttempt(
+        { lenderId: selectedPair.lenderId, borrowerId: selectedPair.borrowerId, nowMs },
+        {
+          ledgerFile,
+          lockStatePath: ledgerFile,
+          getCitizen,
+          gojoLogRows,
+          reconcile: deps.reconcile,
+          disburse: deps.disburse,
+          lenderPrivateKey,
+          rpcUrl,
+        }
+      );
+    }
   }
 
   // Step 7 (unconditional, regardless of steps 5/6's own outcome). Step 8: executeRepaymentClaim is
