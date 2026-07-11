@@ -44,6 +44,13 @@
       "verdict": "FAIL",
       "findingCount": 6,
       "openFindings": ["FIND-001-of-iteration-2 (evidence gate, unresolved)"]
+    },
+    {
+      "from": "3",
+      "to": "3",
+      "reason": "gas-ETH mode extension (2026-07-11, lean, separate PR/worktree feature/franklin-gas-refill): added --gas-eth/--recipient (REQ-GAS-001..005) to unblock the x402 facilitator's own signer wallet needing Base ETH for EIP-3009 gasless destination-gas payment. RED verified via `git stash push --keep-index` isolating the 3 implementation files (ImportError on GAS_STEP/GAS_FILL_MIN_DELIVERED_PCT with tests present) then `git stash pop` to GREEN (167/167 pass, 119 pre-existing + 48 new, zero regressions). New pure fns is_valid_evm_address/evaluate_native_delivery in lib/refill_plan.py, new eth_get_balance in lib/erc20.py, new run_gas_refill orchestration + CLI flags in franklin_sol_base_refill.py, new tests/test_franklin_gas_eth_refill.py. Spec extended in-place (behavioral-spec.md REQ-GAS-001..005 + Changelog, verification-architecture.md PROP-018..024 + Changelog) rather than lean-init a sibling feature, since this is additive to the same script/module and reuses its proven relay-quote/sign/submit/poll/ledger machinery maximally. currentPhase stays at 3 -- this addition has NOT yet been through its own fresh-context adversary review pass; not merged, not run --live.",
+      "iteration": "gas-eth-1",
+      "verdict": "pending-adversary-review"
     }
   ],
   "iterations": {
@@ -52,7 +59,8 @@
     "2a": 1,
     "2b": 1,
     "2c": 1,
-    "3": 2
+    "3": 2,
+    "gas-eth-extension": 1
   },
   "gates": {
     "reqCoverage": "REQ-001..007 each have >=1 explicit test; see tests/test_refill_plan.py + tests/test_franklin_sol_base_refill.py",
@@ -72,5 +80,5 @@
       }
     }
   },
-  "notes": "NOT run with --live in this session (operator-invoked one-shot, out of scope for this VCSDD build task). Do not merge; branch feature/franklin-sol-base-refill pushed for review. currentPhase stays at 3 (impl-review) pending a fresh-context re-review of this iter2 fix + the FIND-001-of-iteration-2 live dry-run evidence."
+  "notes": "NOT run with --live in this session (operator-invoked one-shot, out of scope for this VCSDD build task). Do not merge; branch feature/franklin-sol-base-refill pushed for review. currentPhase stays at 3 (impl-review) pending a fresh-context re-review of this iter2 fix + the FIND-001-of-iteration-2 live dry-run evidence. gas-ETH mode (2026-07-11) extends this same feature in a separate worktree/branch (feature/franklin-gas-refill) -- also NOT run with --live, also not merged, also pending its own fresh-context adversary pass."
 }
