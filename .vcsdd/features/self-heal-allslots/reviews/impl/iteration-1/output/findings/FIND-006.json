@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "moderate",
+  "description": "skills/earn/sol-trade/sol-trade-healthcheck.sh (the OLD, single-slot-hardcoded script that earning-health-allslots.sh's own header says it 'GENERALIZES' and 'mirrors ... exactly') is left fully intact in the tree, implementing the IDENTICAL barren-detection-and-self-fix-escalation algorithm for the same earn/sol-trade slot a second time, in parallel with the new registry-driven script. This duplication is honestly disclosed in .vcsdd/features/self-heal-allslots/CHANGELOG.md ('Old ai.anicca.sol-trade-earning-healthcheck.plist NOT unloaded/removed ... Not done this sprint') and in skills/self/launchd/README.md (explicit unload-before-load instruction) -- so this is NOT a fabrication concern -- but the disclosure lives ONLY in the NEW script's docs. sol-trade-healthcheck.sh itself (the file most likely to be read in isolation by a future maintainer) carries no comment anywhere indicating it is now superseded by earning-health-allslots.sh + the registry, or any deprecation marker. Two independently-triggerable code paths that can each spawn self-fix.sh for the same slot now permanently coexist in the codebase with no removal plan tracked anywhere in this sprint's artifacts.",
+  "evidence": {
+    "filePath": "skills/earn/sol-trade/sol-trade-healthcheck.sh",
+    "lineRange": "1-58",
+    "snippet": "(full file re-read: no comment referencing earning-health-allslots.sh, the registry, or its own superseded/duplicate status anywhere in the file)"
+  },
+  "routeToPhase": "2b"
+}

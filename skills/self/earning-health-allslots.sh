@@ -27,6 +27,11 @@ REGISTRY="${EARNHC_REGISTRY:-$SELF_DIR/earning-health-registry.json}"
 EARN_STATE_DIR="${EARNHC_EARN_STATE_DIR:-$SELF_DIR/../earn/state}"
 STATE_DIR="${EARNHC_STATE_DIR:-$HOME/.openclaw/state}"; mkdir -p "$STATE_DIR" 2>/dev/null || true
 LOG="${EARNHC_LOG:-$HOME/.openclaw/logs/earning-health-allslots.log}"; mkdir -p "$(dirname "$LOG")" 2>/dev/null || true
+# FIND-005 test seam (mirrors self-fix.sh's own SELF_FIX_DRYRUN seam): lets a test point the
+# self-fix invocation at a stub script that records its raw args, so the sanitization boundary can
+# be proven end-to-end without needing self-fix.sh itself to echo its BLOCKER (which it doesn't,
+# even under SELF_FIX_DRYRUN=1). Defaults to the real self-fix.sh -- production behavior unchanged.
+SELF_FIX_SCRIPT="${EARNHC_SELF_FIX_SCRIPT:-$SELF_DIR/self-fix.sh}"
 
 if [ ! -f "$REGISTRY" ]; then
   echo "$(date '+%F %T') no registry at $REGISTRY -- nothing to check" >> "$LOG"
@@ -82,14 +87,31 @@ while IFS=$'\t' read -r ID INSTR TRACEFILE MINRUN TARGET ESC_HRS GAPNOTE; do
   TAIL_JSON="$(tail -n "$(( MINRUN * 3 ))" "$TRACE" 2>/dev/null)"
 
   # REQ-AS-002: reuse the SAME pure predicate sol-trade-healthcheck.sh already uses, unmodified.
+  # FIND-001: is-barren itself now also recognizes a sustained run of action=="error" (not just
+  # "skip") as unhealthy -- see earning-health.py::is_fresh_but_barren / _mechanism_failure_cause.
   if printf '%s\n' "$TAIL_JSON" | python3 "$SELF_DIR/earning-health.py" is-barren "$MINRUN"; then
-    REASON="$(printf '%s\n' "$TAIL_JSON" | tail -1 | python3 -c '
+    # FIND-001: the window's shared cause lives in `reason` for a skip entry, `error` for an error
+    # entry (pm-trade's run.sh never writes a `reason` field on its error lines) -- read whichever
+    # is present on the LAST line.
+    RAW_REASON="$(printf '%s\n' "$TAIL_JSON" | tail -1 | python3 -c '
 import json, sys
 try:
-    print(json.loads(sys.stdin.read()).get("reason", "unknown"))
+    d = json.loads(sys.stdin.read())
+    print(d.get("reason") or d.get("error") or "unknown")
 except Exception:
     print("unknown")
 ' 2>/dev/null)"
+    # FIND-005: RAW_REASON is trace-derived free text that ultimately feeds self-fix.sh''s
+    # --dangerously-skip-permissions autonomous claude spawn prompt with ZERO human confirmation
+    # gate -- never let it reach that prompt un-neutralized. Sanitize through the SAME pure
+    # allowlist function earning-health.py::sanitize_for_prompt exposes (single source of truth,
+    # unit-tested at the pure-core level in test_earning_health.py) -- likewise sanitize the
+    # (registry-derived, but defense-in-depth) slot id. The self-fix invocation below embeds ONLY
+    # these two sanitized fields into a FIXED structured message, never the raw trace text itself.
+    REASON="$(printf '%s' "$RAW_REASON" | python3 "$SELF_DIR/earning-health.py" sanitize-reason 200)"
+    [ -z "$REASON" ] && REASON="unspecified"
+    SAFE_ID="$(printf '%s' "$ID" | python3 "$SELF_DIR/earning-health.py" sanitize-reason 80)"
+    [ -z "$SAFE_ID" ] && SAFE_ID="unspecified-slot"
     now=$(date +%s)
     # REQ-AS-003: a per-SLOT marker filename (never one shared marker) so N slots never collide.
     SLOTKEY="$(printf '%s' "$ID" | tr -c 'A-Za-z0-9' '_')"
@@ -98,13 +120,13 @@ except Exception:
     [ -f "$MK" ] && age_hrs=$(( (now - $(stat -f %m "$MK" 2>/dev/null || echo 0)) / 3600 ))
     if [ "$age_hrs" -ge "$ESC_HRS" ]; then
       touch "$MK"
-      echo "$(date '+%F %T') $ID BARREN: last $MINRUN trace lines are all skip/'$REASON' -> self-fix escalated" >> "$LOG"
-      bash "$SELF_DIR/self-fix.sh" "$TARGET" "$ID trace is fresh (a new line every wake) but the last $MINRUN wakes are ALL action=skip with the identical reason '$REASON' -- the loop is alive but a deterministic guard (identity-mismatch / kill-switch / earn-guard) is rejecting every wake before the agent ever gets to trade. Diagnose why (identity resolution, ANICCA_HOME/ANICCA_REPO path, env) and fix it so the agent actually gets to run its pass." >> "$LOG" 2>&1 \
+      echo "$(date '+%F %T') $ID BARREN: last $MINRUN trace lines are all skip/error, cause '$REASON' -> self-fix escalated" >> "$LOG"
+      bash "$SELF_FIX_SCRIPT" "$TARGET" "$SAFE_ID trace is fresh (a new line every wake) but the last $MINRUN wakes are ALL a mechanism-failure action (skip or error) with the identical cause '$REASON' -- the loop is alive but a deterministic guard or a code/env error (identity-mismatch / kill-switch / earn-guard / missing AGENT_HOME / a crashing sub-process) is rejecting or breaking every wake before the agent ever gets to trade. Diagnose why (identity resolution, ANICCA_HOME/ANICCA_REPO path, env) and fix it so the agent actually gets to run its pass." >> "$LOG" 2>&1 \
         || echo "$(date '+%F %T') $ID: self-fix launch failed" >> "$LOG"
     else
       echo "$(date '+%F %T') $ID BARREN but already escalated ${age_hrs}h ago (<${ESC_HRS}h) -- skip (no repeat spam)" >> "$LOG"
     fi
   else
-    echo "$(date '+%F %T') $ID OK (last $MINRUN trace entries are not all-same-reason-skip)" >> "$LOG"
+    echo "$(date '+%F %T') $ID OK (last $MINRUN trace entries are not all-same-cause skip/error)" >> "$LOG"
   fi
 done <<< "$ROWS"

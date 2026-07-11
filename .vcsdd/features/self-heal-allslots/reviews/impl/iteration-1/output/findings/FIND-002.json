@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "REQ-AS-003's explicit EARS edge case ('Two different slots BARREN in the same run: two independent self-fix.sh calls, two independent markers -- never conflated into one') and its corresponding Tier-1, Required=true proof obligation PROP-AS-003 ('Same-slot BARREN within escalateEveryHrs does not re-invoke self-fix.sh (per-slot marker, not a single shared marker)') / PROP-AS-002 ('BARREN slot invokes self-fix.sh with exactly that slot's selfFixTarget, never another slot's') are NOT exercised by any test that puts TWO slots into a BARREN state in the SAME run. skills/self/tests/test_earning_health_allslots.sh's registry fixture has exactly ONE barren slot (slot-a), one healthy slot (slot-b), one no-trace slot (slot-c), and one not-instrumented slot (slot-d) -- there is no test scenario with, e.g., slot-a AND slot-b both barren in one invocation verifying two independent self-fix.sh calls fire (each with its own selfFixTarget) and two independent, non-colliding marker files get written. The per-slot marker-uniqueness claim is currently proven only by static reasoning about the SLOTKEY derivation (earning-health-allslots.sh:95), never by an actual dual-barren run.",
+  "evidence": {
+    "filePath": "skills/self/tests/test_earning_health_allslots.sh",
+    "lineRange": "17-64",
+    "snippet": "mk_barren_trace \"$EARN_STATE/slot-a.trace.jsonl\" \"$REASON_A\" 20\nmk_healthy_trace \"$EARN_STATE/slot-b.trace.jsonl\"\n# slot-c: instrumented=true but no trace file deployed yet (fresh instance) -> no-op\n# slot-d: instrumented=false (documented gap) -> NOT-INSTRUMENTED, self-fix NEVER called for it"
+  },
+  "routeToPhase": "2a"
+}

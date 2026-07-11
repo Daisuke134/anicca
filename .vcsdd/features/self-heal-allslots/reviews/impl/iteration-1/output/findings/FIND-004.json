@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "The wiring test's 'healthy slot' fixture proves REQ-AS-002's second acceptance criterion ('A trace ending in ANY action != \"skip\" line ... -> NOT barren, regardless of how many skip lines precede it') for the wrong reason. mk_healthy_trace() writes 15 skip lines + 1 trailing live-pass line = 16 TOTAL lines, against minRun=20 in the registry fixture. Since len(trace_tail) < min_run is the FIRST short-circuit in is_fresh_but_barren (earning-health.py:42-43), slot-b's 'OK' result in test_earning_health_allslots.sh is produced purely by insufficient trace length -- the exact same 'OK' would be logged even with ZERO skip lines, or even if the trailing-live-pass-overrides-prior-skips logic in the wiring script were completely broken. The WIRING layer (the actual shell script + tail + python3 subprocess pipe under test here) never exercises a full min_run-length trace that ends in a non-skip line through the real end-to-end path. (The underlying PURE predicate is correctly proven at the exact 20-line boundary at the unit level in skills/self/tests/test_earning_health.py:61-63 -- 19 skips + 1 live_pass = exactly min_run=20 -- so this is a wiring-test-only weakness, not a demonstrated production defect, but it means REQ-AS-002's acceptance criterion #2 is NOT actually proven through the artifact this sprint added (earning-health-allslots.sh), only assumed to carry over correctly.)",
+  "evidence": {
+    "filePath": "skills/self/tests/test_earning_health_allslots.sh",
+    "lineRange": "24-31",
+    "snippet": "mk_healthy_trace(){\n  local out=\"$1\"\n  : > \"$out\"\n  for i in $(seq 1 15); do\n    printf '{\"ts\":\"2026-07-08T%02d:00:00Z\",\"action\":\"skip\",\"reason\":\"%s\"}\\n' \"$((i % 24))\" \"$REASON_A\" >> \"$out\"\n  done\n  printf '{\"ts\":\"2026-07-10T14:04:39Z\",\"action\":\"live-pass\",\"exit\":0,\"note\":\"WAIT\"}\\n' >> \"$out\"\n}"
+  },
+  "routeToPhase": "2a"
+}
