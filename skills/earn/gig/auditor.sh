@@ -59,3 +59,14 @@ os.makedirs(G,exist_ok=True)
 open(AUDIT,"a").write(json.dumps(row,ensure_ascii=False)+"\n")
 print(json.dumps(row,ensure_ascii=False))
 PY
+
+# ─── reality-verifier (feature gig-reality-verify, 増分2b) ────────────────────────────────────────
+# AFTER the deterministic verdict above (never before — the deterministic audit is the pre-existing
+# safety net and must not be blocked by this). Spawns a FRESH, report-independent `claude -p` judge
+# that navigates the REAL Coconala screens and judges the core's jsonl claims report-skeptically
+# (docs/loop-engineering/26-gig-loop-asis-tobe-plan.md §8, BP=25). Missing/non-executable script must
+# never abort this audit run.
+REALITY_VERIFY="$(dirname "${BASH_SOURCE[0]}")/gig_reality_verify.sh"
+if [ -x "$REALITY_VERIFY" ]; then
+  bash "$REALITY_VERIFY" >/dev/null 2>>"$G/.reality-verify.err.log" || true
+fi

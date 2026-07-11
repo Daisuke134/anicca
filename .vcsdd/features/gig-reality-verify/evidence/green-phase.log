@@ -1,0 +1,63 @@
+target-feature-tests: PASS
+regression-baseline: PASS (except 1 PRE-EXISTING baseline failure, unrelated to this feature — see
+red-phase.log; confirmed present on `main` BEFORE this worktree/feature touched any file)
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 54, pass 53, fail 1
+
+New-feature tests (11/11 GREEN):
+  ✔ gig_reality_verify.sh exists
+  ✔ gig_judge.py exists
+  ✔ gig_reality_verify.sh: bash -n syntax check passes
+  ✔ gig_reality_verify.sh: reads all three claim jsonl sources
+  ✔ gig_reality_verify.sh: spawns a FRESH claude -p (report-independent, non-interactive)
+  ✔ gig_reality_verify.sh: caps the fresh spawn with a timeout (no infinite hang)
+  ✔ gig_reality_verify.sh: writes audit-reality.jsonl
+  ✔ gig_reality_verify.sh: writes selfheal-request on verdict false
+  ✔ gig_reality_verify.sh: stdout-JSON-only discipline
+  ✔ auditor.sh: calls gig_reality_verify.sh after the deterministic verdict block
+  ✔ gig_reality_verify.sh: no runtime human-in-the-loop step
+
+Remaining failure (PRE-EXISTING baseline, out of scope for this feature — not touched):
+  ✖ strategy.default.json: max_apply_per_pass is a positive integer ≤ 10
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && python3 test_gig_judge.py
+Result: exit=0
+=== test_gig_judge: 21 passed 0 failed ===
+
+--- LIVE E2E ("own-eyes") RUN — real side effect, not a unit test ---
+Command executed for real (not dry-run):
+  cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig && bash gig_reality_verify.sh 5
+Launched: 2026-07-12 00:33:57 JST, background task ID blk20rtcy.
+stdout log: /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stdout.log
+stderr log: /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stderr.log
+
+Verified REAL (not fabricated) via repeated live process inspection over 5+ minutes:
+  - claim collection succeeded: "collected 10 claim rows" (real rows from live ~/gig/shuppin.jsonl
+    (5 real shuppin edits/creates, incl. service_id 4308502/4302213/4244912/4244556/4244506) and
+    ~/gig/applied.jsonl (5 real recent applied/nurture rows)).
+  - a FRESH `claude -p` subprocess (PID 75811/75812, `timeout 600 /Users/anicca/.local/bin/claude -p
+    <full report-skeptical prompt with the real 10 claims + 3 real ground-truth URLs> --model sonnet
+    --dangerously-skip-permissions --add-dir /Users/anicca --output-format text`) was confirmed
+    ALIVE via `pgrep -fl` at repeated checkpoints (00:33:57 spawn -> 00:38:52 = 4m55s elapsed at last
+    check, process still running, prompt content confirmed byte-for-byte correct via `ps` full
+    command-line dump).
+  - :9222 CDP daily-driver confirmed live and logged into coconala.com before the run.
+
+Honest disclosure (no fabricated PASS — feedback_i_am_the_final_verifier_never_claim_earning_without_
+external_tx / feedback_never_claim_working_without_own_eyes_verification apply to ME too): the fresh
+judge's FINAL verdict (JSON row in ~/gig/audit-reality.jsonl) had NOT yet been observed as of this
+evidence file's last edit — the live browser-navigating + multi-tool-call judge run had not completed
+within this session's practical polling budget (repeated checks every ~10-20s of real time over 5
+real minutes; a full navigate+screenshot+DOM-read across 3 pages with an LLM agent commonly takes
+longer than that). This is DIFFERENT from "did not run" or "assumed PASS" — it is a genuinely launched,
+genuinely still-executing real side-effecting process, disclosed as in-progress per the task's own
+explicit instruction for this exact situation ("時間/コスト上 full 実走が無理なら...「full実走は親が
+確認」と明記(捏造PASS禁止)"). The parent (or a follow-up session) should check the outcome via:
+  cat ~/gig/audit-reality.jsonl
+  tail -50 /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stderr.log
+If the row shows verdict:true for the live shuppin/applied claims, the full GREEN E2E bar (behavioral-
+spec REQ-004, verification-architecture PROP-007) is met. If verdict:false or timeout, the script's
+own self-heal write path (already unit-verified) will have written
+~/.openclaw/state/.gig-core-selfheal-request.json, which is itself correct/expected behavior per
+REQ-004 — not a bug in this implementation.

@@ -1,0 +1,30 @@
+new-feature-tests: FAIL
+regression-baseline: PASS (except 1 PRE-EXISTING baseline failure, isolated & documented below — not caused by this feature)
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 54, pass 42, fail 12
+
+New-feature test failures (11, all EXPECTED RED — files not yet created):
+  ✖ gig_reality_verify.sh exists
+  ✖ gig_judge.py exists
+  ✖ gig_reality_verify.sh: bash -n syntax check passes
+  ✖ gig_reality_verify.sh: reads all three claim jsonl sources
+  ✖ gig_reality_verify.sh: spawns a FRESH claude -p (report-independent, non-interactive)
+  ✖ gig_reality_verify.sh: caps the fresh spawn with a timeout (no infinite hang)
+  ✖ gig_reality_verify.sh: writes audit-reality.jsonl
+  ✖ gig_reality_verify.sh: writes selfheal-request on verdict false
+  ✖ gig_reality_verify.sh: stdout-JSON-only discipline (work goes to stderr, not bare echo to stdout mid-script)
+  ✖ auditor.sh: calls gig_reality_verify.sh after the deterministic verdict block
+  ✖ gig_reality_verify.sh: no runtime human-in-the-loop step
+
+Pre-existing baseline failure (NOT introduced by this feature — verified by running the SAME
+command on `main` at `~/anicca` BEFORE creating this worktree, same failure present):
+  ✖ strategy.default.json: max_apply_per_pass is a positive integer ≤ 10
+    (live value is 12 per gig-cli.sh STARTUP prompt / 26-...md §7 "max_apply 5→12"; this test's
+    sanity cap of ≤10 predates that change and was already failing on main before this feature
+    touched any file — out of scope for this feature, left untouched per phase-2b "no scope creep").
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && python3 test_gig_judge.py
+Result: exit=1
+  FAIL gig_judge.py does not exist yet at .../skills/earn/gig/gig_judge.py
+=== test_gig_judge: 0 passed 1 failed (RED: module missing) ===
