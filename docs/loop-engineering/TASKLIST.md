@@ -23,6 +23,13 @@
 
 ---
 
+## ★ REALTIME 2026-07-12 ~04:30 (実マネー配分実行中) ★
+- Dais 配分指示: Franklin $9 + claude-p $9、各 loop が最小額で earn 実証(少額で稼げねば誰も追加しない)。
+- HL $18 を取り戻し中: HL withdraw3(EIP-712 直署名)成立 → HL accountValue $18.78→$0.78、$18 が Arbitrum 0x810f へ transit(HL出金~5分)。
+- 次: Arbitrum 着 → relay で $9→Franklin(Solana 8Fpqd) + $9→claude-p Polymarket(Polygon pUSD)。loop が Polymarket MM(poly-maker報酬型=少額でも稼ぐ)で自律 trade。
+- Franklin 既存 ~$10(Base $6.48+Sol $3.44)。claude-p pm 0x904B $1.35 + Base $0.97。
+- 私は trade しない=loop がやる。私=資金配分+戦略改善+監視。
+
 
 **これがタスクの source of truth。** 設計の正本(spec)は分離: `27-ideal-earn-record-verify-architecture.md`（2種の Anicca / 3層 / 図）。上位方針 = `23-...redesign.md §10`。
 **進め方（Dais 2026-07-12 明示）**: ここから **main(私) が自分で build、1つずつ**。builder は信用せず、その出力は「下書き」として fresh adversary(Sonnet)+own-eyes で検証し、良い所だけ取り私が仕上げる/作り直す。3つ同時にやらない。
