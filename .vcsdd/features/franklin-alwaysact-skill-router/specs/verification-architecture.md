@@ -90,9 +90,12 @@ matrix this correction is verified against.
     valid for THIS attempt" — it has NO branch-selection role and is never consulted to decide "which attempt
     is this" or "which recovery path applies"; that decision belongs EXCLUSIVELY to `nextRerouteState`'s
     `attemptsUsed` output, below.
-  - `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })` — REQ-505/506/511/513: pure bounded-retry
-    state machine (`{ shouldRetry: boolean, excludeSlot: string|null, exhausted: boolean }`) — the single
-    shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling of 2 total `think()` calls per wake
+  - `nextRerouteState({ attemptsUsed, maxAttempts })` — REQ-505/506/511/513: pure bounded-retry
+    state machine (`{ shouldRetry: boolean, attemptsUsedNext: number, exhausted: boolean }`, per the
+    actual shipped signature at `runtime/loop/always-act-router.mjs:148-153` — no `lastOutcome` input
+    is ever passed, and there is no `excludeSlot` output field; **converge doc-sync 2026-07-11 correction,
+    FIND-001** — this entry previously mis-declared both the input and output shape, see Changelog) — the
+    single shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling of 2 total `think()` calls per wake
     (1 baseline + at most 1 shared extra-call budget, spec-review iteration-2 FIND-102 fix — not "2 extra").
     **(spec-review iteration-4 FIND-301 fix — this function's role is elevated and made explicit)** Its
     `attemptsUsed` input/tracking IS, EXCLUSIVELY, the arbiter of every retry/reroute/escalation branch
@@ -143,21 +146,34 @@ matrix this correction is verified against.
     variable to `1` (this reroute call IS the shared budget's one extra call) — `attemptsUsed`, not
     `currentOfferedSlots`, is what any subsequent invalid-outcome check consults to decide reprompt-vs-reroute-
     vs-escalate. **REQ-513 (spec-review iteration-2 FIND-103 fix; iteration-3 FIND-201 fix corrects the
-    VALIDITY reference set; iteration-4 FIND-301 fix corrects BRANCH SELECTION) — ADDITIVELY MODIFIED,
-    previously unlisted**: `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch becomes conditional
-    (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`), and a new guard immediately ahead of skill execution
-    rejects (for VALIDITY) a fabricated `slot:'sleep'` or any slot absent from the CURRENT attempt's
+    VALIDITY reference set; iteration-4 FIND-301 fix corrects BRANCH SELECTION; **converge doc-sync
+    2026-07-11 correction, FIND-002** — this entry's wiring-MECHANISM description below is corrected to
+    match the actual shipped code, see Changelog) — ADDITIVELY MODIFIED, previously unlisted**: the actual
+    shipped mechanism is an early-return dispatch, not an in-place conditional. `index.mjs:516-518` adds
+    `if (ctx.alwaysActEngaged) { return runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }); }` immediately
+    ahead of the pre-existing `think()`/tool-call-parse flow, diverting an always-act-engaged wake into the
+    dedicated `runAlwaysActWake` function BEFORE `index.mjs:551`'s pre-existing `if (slot === 'sleep')`
+    branch is ever reached — that branch itself is left byte-for-byte unconditional and unmodified from the
+    pre-feature original; it is unreachable for an engaged wake solely because of the earlier return, never
+    because it was made conditional in place (it was NOT changed to
+    `if (slot === 'sleep' && !ctx.alwaysActEngaged)`, contrary to this entry's own prior text). Inside
+    `runAlwaysActWake` (`index.mjs:666-`, its own per-attempt retry loop), a new guard immediately ahead of
+    skill execution — `isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` at `index.mjs:717` — rejects
+    (for VALIDITY) a fabricated `slot:'sleep'` or any slot absent from the CURRENT attempt's
     `currentOfferedSlots` (baseline attempt: `ctx.alwaysActMenu`; reroute attempt: the narrower
     risk-free-filtered array set above — **never the static `ctx.alwaysActMenu` once a reroute is in flight**)
     when `ctx.alwaysActEngaged === true`. The rejection's BRANCH is then decided EXCLUSIVELY by the retry
-    loop's own `attemptsUsed` local variable (spec-review iteration-4 FIND-301 fix — supersedes iteration-3's
-    "baseline attempt vs reroute attempt" framing, which was itself keyed on `currentOfferedSlots` identity):
+    loop's own `attemptsUsed` local variable, via `nextRerouteState({ attemptsUsed, maxAttempts: 1 })` at
+    `index.mjs:718` (spec-review iteration-4 FIND-301 fix — supersedes iteration-3's "baseline attempt vs
+    reroute attempt" framing, which was itself keyed on `currentOfferedSlots` identity):
     `attemptsUsed===0` routes into REQ-505's reprompt path (and sets `attemptsUsed=1`); `attemptsUsed===1`
     routes DIRECTLY into REQ-508's escalation (no third `think()` call is made) — this correctly handles BOTH
     a rejected reroute-attempt response (attemptsUsed was already 1 from the reroute call itself) AND a
     rejected REQ-505 reprompt-attempt response (attemptsUsed was already 1 from the reprompt call itself,
     even though that attempt's `currentOfferedSlots` is array-identical to the baseline's — the FIND-301 fix)
-    — a non-always-act `ctx` is completely unaffected, the existing branch fires exactly as today. **REQ-512**: appends
+    — a non-always-act `ctx` is completely unaffected: `ctx.alwaysActEngaged` is falsy, so `index.mjs:516`'s
+    early return never fires, and the wake falls straight through to `index.mjs:551`'s existing branch,
+    exactly as today. **REQ-512**: appends
     `kind:'always_act_not_engaged'`/`kind:'always_act_go_live'` ledger lines (new, additive `kind` values
     reusing `formatRecord`/`safeAppend` unmodified).
   - `runtime/loop/brain.mjs::think()` / `thinkProxy()` / `thinkClaudeP()` — **ADDITIVELY MODIFIED, not
@@ -311,6 +327,19 @@ Phase 2a/2b review outright, regardless of its assertions.
 
 ## Changelog
 
+- **converge fix: doc-sync FIND-001/002 (declared design synced to shipped implementation, no code
+  change)**: Phase 6 convergence review found two literal contradictions between this document's declared
+  design and the actual shipped code, both documentation-accuracy issues only. FIND-001: the Pure Core
+  `nextRerouteState` entry declared `({attemptsUsed, maxAttempts, lastOutcome}) -> {shouldRetry, excludeSlot,
+  exhausted}`; the real signature at `runtime/loop/always-act-router.mjs:148-153` is
+  `({attemptsUsed, maxAttempts}) -> {shouldRetry, attemptsUsedNext, exhausted}` — corrected above. FIND-002:
+  the REQ-513 Effectful Shell entry declared `index.mjs:402-416`'s `if (slot === 'sleep')` branch "becomes
+  conditional"; the real mechanism is an early-return dispatch at `index.mjs:516-518` into a dedicated
+  `runAlwaysActWake` function, leaving `index.mjs:551`'s branch unconditional and unmodified — corrected
+  above with current line numbers. Both corrections are source-and-test-unchanged; the actual runtime
+  behavior was, and remains, correct and fully test-covered (183/183). See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-001.json` and
+  `FIND-002.json`, and the corresponding correction note in `verification/purity-audit.md`.
 - **iteration-4 fix: FIND-301 (branch selection keyed on attempt-state machine, exhaustive transition matrix
   added)**: `nextRerouteState`'s `attemptsUsed` output is elevated to the SOLE arbiter of every
   retry/reroute/escalation branch decision across REQ-505/506/511/513 (Pure Core: `nextRerouteState` bullet
