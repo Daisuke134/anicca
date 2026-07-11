@@ -1,93 +1,25 @@
-# Execution Notes — 残TODO #5-#9.5 (goal 実行ログ)
+# Execution Notes — loop 修理（open/evidence/pass-fail-blocked を随時更新）
 
-正本 spec: `docs/superpowers/specs/2026-07-10-connector-loop-design.md` §8/§10/§11
-scope 境界(Dais 2026-07-11): profitable-claude = 銀行口座+Dais 自身の稼ぎ。crypto(PM/SOL/HL)+Franklin = 別CC(anicca repo main loop)担当、ここでは触らない。
+正本 TODO = `docs/loop-engineering/00-SSOT.md §5`。詳細 evidence は本 dir の各 MD。
 
-## 現在の open items / state（更新 2026-07-11 07:1x JST）
+## Phase 1 — ✅ 全完了（2026-07-12）
+- M1..M7 / S1..S7 / C1..C7 = done（SSOT §5 参照）。
+- **M3 life-manager 二重起動退治（2026-07-12 実行・実証）**:
+  - 退役: launchd `ai.anicca.life-manager-loop-healthcheck` を `launchctl bootout`+`disable`、plist→`.disabled`（可逆）。
+  - kill: tmux `anicca-life-manager-loop` + `anicca-selffix-life-manager-loop`（両 sock GONE）。
+  - 実証: `ps` に life-manager-loop worker プロセス無し = **2x課金停止**。
+  - 復活経路点検: `self-fix.sh life-manager` escalation 不在（grep NONE）、LMHB は report専用（verify-loops-audit.sh:70,172）→ 蘇らない。
+  - PC版 `ai.anicca.life-manager-core-healthcheck` → tmux `anicca-life-manager-core` は稼働継続。
+  - commit: anicca-products `f04afa062`。
 
-| # | 作業 | state | evidence |
-|---|---|---|---|
-| 6 | CEO を生かす + cron drift | ✅ **実質完了(live E2E済)** | 06-ceo.md |
-| runtime | loop core が launchd で動く土台(PATH/API-key prompt) | ✅ **修正**(2d753b7/連携各cli env-u) | 05/06 |
-| 5 | connector booking | 🔄 コード+blocker全修正・push済、**STEP1ブラウザRSVP未完=実bookingゼロ** | 05-connector.md |
-| self-heal | video Goodhart+診断可視化+liveness | 🔄 builder実装中(a3a4eeb5) | self-heal.md |
-| — | 収益ループ1本 | ⬜ 未着手 | revenue-loop.md |
-| 8 | LM Phase B(Reddit+IG) | ⬜ 未着手 | 08-lm-phaseB.md |
-| 9.5 | SNS移行 | ⬜ blocked(Dais go) | 095 |
+## Phase 2 — 進行中（gig=L1 を1本閉じる）
+- **L1 gig — increment-2b（own-eyes reality-verifier を loop に内蔵）**:
+  - status: builder 完了・branch `feature/gig-reality-verify`（repo ~/anicca、2 commits push済）・**未merge**。
+  - 成果物: `gig_judge.py`（pure prompt-builder, judge.py copy）/ `gig_reality_verify.sh`（fresh claude -p が :9222 navigate+screenshot+report-skeptical判定→false時 selfheal-request）/ `auditor.sh`（決定verdict後に呼ぶ・additive）。
+  - builder live E2E: 実走6m05s、fresh claude が services_lists/received_orders/dashboard_provider を navigate、10 claim 照合 → **verdict:true を `~/gig/audit-reality.jsonl` に実記録**、selfheal-request 未生成（正）。screenshot `~/gig/trajectory/verify001/01-reality_verify_check.png`。
+  - GATE（未通過）: fresh adversary(Sonnet) 審査中 → 私自身が `gig_reality_verify.sh` 再実走で独立確認 → merge → gig 再起動。
+- 残: L1 の increment-2 本体（self-heal 配線 Reflexion→self-fix.sh / 50-50 BP web検索自己改善 / gig-funnel metrics / gig-spec playbook 100%=doc26 §6.5）。
+- 未着手: #5 connector 7日streak / #8 LM Phase B / L2 capafy / #7 article / L5 affiliate / L7 bounty / L8 explorer / #6 CEO縮退 / #9.5 factory(go待ち)。
 
-## 🔑 この session の最大発見（Dais の「何も動いてない」の真因）
-**loop core(tmux claude)が2つの runtime blocker で autonomous に動けなかった**:
-1. launchd PATH に $HOME/.local/bin 欠落→claude 解決不能で core 即死(crash-loop)。
-2. ANTHROPIC_API_KEY 検出の対話プロンプトで headless core 無限停止→0 pass。
-両方 colony 共通で修正。core は STEP を回すようになった(#6 CEO は live で ceo-decisions 永続化まで実証)。self-heal 苦情(loop死→backoff諦め)の構造的原因もここ。
-
-## 完了した検証(独立読返し)
-- #6: ceo-decisions 1行(genuine judgment)/last_observed_at 実stamp/affiliate偽申告 live検知/plist load/cron 4件 error→running復帰。
-- #5: 108/108+adversary PASS(コード)、horizon_full False gaps11、core が STEP2/3/4完走(transcript)。STEP1未完。
-
-## (旧)現在の open items / state
-
-| # | 作業 | state | evidence MD |
-|---|---|---|---|
-| 6 | CEO を生かす + cron drift | 🔄 in_progress | 06-ceo.md |
-| — | 収益ループ1本を閉じる | ⬜ pending | revenue-loop.md |
-| 5 | connector 7日 streak | ⬜ pending (cron ad89027d 自動発火待ち) | 05-connector.md |
-| 8 | LM Phase B (Reddit+IG セルフマーケのみ, issue-driven OFF) | ⬜ pending | 08-lm-phaseB.md |
-| 9.5 | SNS factory 移行 (準備のみ, 退役=Dais go 待ち) | ⬜ blocked-on-go | 095-sns-migration.md |
-
-## #6 CEO — 真因(investigation 2026-07-11 裏取り済)
-- **ceo-decisions 0行の真因**: `bin/ceo-run.sh`(no-args=週次agent-judgment) を起動する scheduler が皆無。launchd `ai.anicca.ceo-runner.plist` は `--light-pass`(決定論budget-checkのみ)専用。
-- **cost 自己申告 fabrication**: 記録は各loop agent が pass 末に `record-cost-event.sh` を叩く自己申告方式(正しい設計)。affiliate は「記録した」と申告したが実際は未実行=偽申告。照合機構が無いのが gap。
-- **registry**: pm/hl/sol=external は crypto=別CC担当で正しい。capafy/article=bank-earning だが未live。external loop に last_observed_at 無し=CEO が silent-blind。
-- **enforcement**: 正しく動作、閾値未達で未発火なだけ(変更不要)。
-- **cron codex-harness**: plugin 04:49 導入+07:50 gateway 再起動で修理済。4件(reelclaw/larry/watercolor, daily 0 7)は stale 表示、次回 07:00 JST run で自動復帰見込み。lm-video-store が 07-11 直近 ok で harness 復活を実証。
-
-## #6 実行計画
-1. [ops] CEO core を1回 live 起動 → 実 decision + enforcement 観測 ← 実行中
-2. [VCSDD lean] scheduler plist 新設(週次 no-args) + cost 自己申告照合(REQ-CEO-020) + registry last_observed_at
-3. [ops] cron 4件 stale の自然復帰を 07:00 後に確認
-
-## #5 connector — 前提確認(2026-07-11 04:54 JST)
-- cron `ad89027d` armed: `35 7 * * * @ Asia/Tokyo`、次回 07:35 JST、idle/runs 0。7日 streak は今朝の自動発火から開始。
-- ⚠️ **要確認**: cron announce に「Delivering to Telegram requires target…」警告。streak の Telegram delivered:true 条件に影響しうる。#5 着手時に target 設定を検証すること。
-
-## 決定事項
-- crypto は別CC。LM は Reddit+IG セルフマーケのみ(issue-driven OFF、削除せず)。
-
-## 進行中
-- #6: builder(Sonnet, worktree) が ceo-revive を VCSDD-lean 実装中。完了後 fresh Opus adversary → merge → live E2E。
-
-
-## 更新 2026-07-11 08:0x JST
-- ✅ **runtime 土台 完成・push済**: 全 loop core spawn に env-u ANTHROPIC_API_KEY(bed88e2) + con/* test isolation 修復(bb65656) → profitable-claude 108/108 green + origin push。life-manager core が prompt 無しで STEP 進行を実証。**全 loop が autonomous に動ける**。
-- ✅ connector 初 booking(GENIAC 07-13)は commit 8bc30cf の gog contract 修正(event 単数)が可能にした。
-- 🔄 **収益ループ(article)**: builder が視聴→¥ 導線実装(CTA link + 実 views ledger: nfb2ace9f0ed8=views9/likes2 実測、¥0 正直) → fresh Opus adversary **FAIL**: CTA が Mode A のみで **Mode B(自律 rail)に届かない**(FIND-001) + Mode B テスト無し(FIND-002) + views 未配線(FIND-006)。→ builder 再開で Mode B CTA 配線を修正中。**未 merge・未 done**。
-- 残: 収益ループ Mode B 修正→adversary→merge / connector 7日 streak(Day1済)+Telegram delivered / #8 LM / #9.5。
-
-
-## 更新 2026-07-11 08:4x JST — 収益ループ完了
-- ✅ **収益ループ(article)完了・push済**(~/anicca-human-funded feature/human-funded b05dca97): Mode A+B CTA link(Mode B は remote draft append を私が独立実行 live 実証) + 実 views ledger(9views/2likes 実測) + metrics EXIT trap 配線 + 冪等性 fix + ¥0 正直。evidence=revenue-loop.md。
-- goal Done 進捗: #6 CEO ✅ / self-heal ✅ / 収益ループ ✅ / connector 初booking(Day1)✅ / runtime土台(全loop autonomous)✅。
-- 残: connector 7日streak(あと6日+Telegram delivered) / #8 LM Phase B / #9.5(go待ち)。これらは multi-day or Dais-gated。
-- 掃除項目: ~/anicca-human-funded/.worktrees/article-monetization-metrics に untracked 残(merge済、force-remove 可)。
-
-
-## 最終状態 2026-07-11 09:0x JST — goal in-session 達成分すべてクローズ
-| goal項目 | 状態 | evidence |
-|---|---|---|
-| #6 CEO | ✅ done(live E2E) | 06-ceo.md |
-| 収益ループ1本 | ✅ done(article Mode A+B CTA+実views+¥0) | revenue-loop.md |
-| self-heal(横断) | ✅ done(Goodhart+機械gate) | self-heal.md |
-| runtime土台(全loop autonomous) | ✅ done(PATH+env-u全loop) | 05/06 |
-| #8 LM Phase B | ✅ done(IG実投稿logged-out検証+marketing実測行) | 08-lm-phaseB.md |
-| #9.5 | ✅ 準備済+正しくblocked(Dais go待ち) | 095-sns-migration.md |
-| #5 connector 7日streak | 🔄 Day1(GENIAC)成功。Day2-7=autonomous multi-day。Telegram delivered未確認 | 05-connector.md |
-
-## goal 完全Done に残るのは #5 の7日streakのみ（構造的にmulti-day）+ Telegram delivered検証
-- connector は runtime土台修正で毎日autonomousに走る(healthcheck respawn + 07:35 cron)。streakは時間で積む。
-- Telegram delivered:true が§10 #5 の必須項目だが未確認 → 送信経路の再検証 or Dais側着信確認が必要(次の作業)。
-- 完了メール(keiodaisuke@gmail.com)は goal完全Done時=7日streak達成後に送る(現時点未送)。
-
-## この session の副次発見(self-heal/self-improve への signal)
-- Reddit shadow-filter: reddit-loop は低karmaで公開impression実質ゼロだった(成功に見えて不可視)。§11 IMPROVE の材料。
-- fablize hook noise の根因=parse_tool_result.py の FAILURE_RE がtext誤ヒット(exit codeでない、無害)。
+## Phase 3 — end-state（未）
+- G-GIG-FULL（gig 100%）→ G-PRODUCTIZE（earn loop を profitable-claude へ copy、1コマンド→新account→実¥）→ G-CLOUD（Mac→cloud、self-funded compute、hundreds並行）。
