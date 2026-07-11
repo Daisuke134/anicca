@@ -291,3 +291,38 @@ token=デジタル引換券（誰でも数分で発行、法的権利は通常�
 - ✅ x402 決済 + ACP 同型 escrow: §7 の gig board。
 - ⚠️ 未採用（copy 余地）: ERC-8004 Reputation registry、AgentKit wallet 抽象、Azeth/UFX 統合パターン。
 - ❌ 未解決（我々が作る）: 稼ぐコードの live 自己改善ループ（§4/§8 の frontier）。
+
+---
+
+## §10. 理想のエージェント経済＝必要な構成要素（to-be、2026-07-11 記事・思想リーダー調査）
+
+> 目的: 「as-is（今の乱立）」に対する「to-be（あるべき姿）」を思想リーダーの一次ソースで確定し、**そこから『何が欠けているか』を演繹**する。記事/本の「定義→理想→現状→欠落→我々」の骨格の「理想」パート。
+
+### 骨格 = Agent Payments Stack 6層（Komlock lab @brto_0224, agentpaymentsstack.com, 100+ project マッピング）
+`L0 決済基盤 / L1 wallet・鍵管理 / L2 ルーティング・抽象化 / L3 決済プロトコル / L4 ガバナンス・認可 / L5 アプリ`。これに ERC-8004(身元/評判/検証)・A2A・MCP・ERC-8183(escrow) を重ねると全体像。
+
+### 必要な10構成要素（誰が言っているか付き）
+| # | 構成要素 | 一言 | 主要ソースの主張 | 成熟度 |
+|---|---|---|---|---|
+| 1 | **身元 Identity** | このAIは誰か（KYA=Know Your Agent） | a16z「ボトルネックはもはや知能でなく**身元**。非人間IDは人間従業員の~100倍」。ERC-8004 Identity(ERC-721)が early-2026 mainnet 稼働 | 未成熟(標準ラベルはDraft) |
+| 2 | **発見・通信 A2A/MCP** | 相手を見つけ共通言語で話す | Anthropic MCP(2024-11)+Google A2A(Linux Foundation 中立化)。ERC-8004 は「通信層と信頼層は別物」と明言 | 成熟(広く採用) |
+| 3 | **wallet・鍵管理** | 秘密鍵を直渡しせず上限付きで払わせる | TEE/MPC/ローカル暗号/スマコンwallet の5方式。Nevermined「ERC-4337 session key で上限・期限」 | 成熟に近い |
+| 4 | **決済プロトコル** | 払う瞬間の手続き | x402(Coinbase)/MPP(Stripe)/ACP(OpenAI×Stripe)/AP2(Google)が**担当範囲違いで並立**。決済の98.6%が USDC 建て | 成熟(実稼働) |
+| 5 | **ルーティング・抽象化** | チェーン/トークン差を吸収 | Bridge(Stripe $11億買収)/Circle CCTP/BVNK(Mastercard $18億)。大手が裏取りに本気 | 成熟寄り |
+| 6 | **escrow 安全な取引** | 発注→ロック→検収→精算 | ERC-8183(EF dAI×Virtuals, 2026-02提案) Client/Provider/**Evaluator**の3者。CertiK「Evaluator は最大の単一障害点、"コントラクトより難しい"」 | 設計完成・運用初期 |
+| 7 | **評判 Reputation** | 過去の実績 | ERC-8004 Reputation。Komlock「自作自演で水増し可能(Sybil)、本番活用は発展途上」 | 未成熟 |
+| 8 | **検証 Validation** | その仕事は本当に正しかったか | ★a16z「知能が安くなると高くなるのは**検証**。信頼はhardcodeするしかない」。CertiK「実装は初期・事例限定」 | **最も未成熟＝業界公認フロンティア** |
+| 9 | **ガバナンス・認可** | どこまで自律させるか | Google AP2 の3種 Mandate(署名付き委任状)。MetaMask Delegation/AgentKit が scope 限定 | 未成熟・標準未収束 |
+| 10 | **アプリ層** | 実ユースケース | DeFi自動運用(Giza)/市場(Virtuals)/計算(Akash)/データ(Ocean) | 上9つ次第 |
+
+### ★決定的な2つの発見（as-is→欠落の核）★
+1. **業界公認のフロンティア = 検証(Validation)/proof-of-earning**。a16z が最も明確: 「知能がタダになる世界で希少になるのは検証」「エージェントのスループットは既に人間の監督能力を超えた→信頼はアーキテクチャに hardcode するしかない」。CertiK も ERC-8183 の Evaluator を「コントラクトより難しい」と。＝**"本当に価値を生んだかの証明"を誰も解けていない**。これは我々の [[25-agent-economy-full-map]] の「proof-of-earning は空白」と業界が完全に一致。
+2. **「自己改善・学習」を構成要素に挙げた思想リーダーは皆無**（x402/ERC-8004/A2A/MCP/Messari/a16z/Nevermined/CertiK/Komlock 全て）。設計思想は「エージェントは**今の能力のまま**経済に参加し、身元・支払い・信頼だけ外付けする」。self-improving agents の記事(Addy Osmani 等)はあるが「個の能力向上」で「経済インフラ」の議論と**完全に分離**。
+
+### 我々への含意（正直に）
+- 配管(1〜5)は**成熟＝採用するだけ**（[[§9]] の通り x402/ERC-8004/AgentKit を copy/乗る）。
+- 業界公認の空白 = **検証(8)・評判(7)・escrow運用(6)・認可(9)**。特に**検証/proof-of-earning が本丸**。我々の GLVS の「ground-truth verifier（報告でなく on-chain/ledger を独立再検証）」はまさにこの層への賭け。
+- 我々の**自己改善ループ**は、業界が「構成要素」とすら見ていない直交領域＝我々固有の賭け。**honest 両刃**: これは我々の insight かもしれないし、業界が「不要」と判断している blind spot かもしれない。本ではこの緊張をそのまま書く（断定しない）。
+- ∴ Anicca の位置＝「①成熟した配管を採用し ②業界公認フロンティアの**検証/proof-of-earning**に賭け ③加えて誰も構成要素と見ていない**live 自己改善**を接続する」。①は再発明でない、②は業界と同じ最前線、③のみ真に独自（かつ未証明）。
+
+**出典**: a16zcrypto.com/posts/article/5-ways-blockchains-help-ai-agents / eips.ethereum.org/EIPS/eip-8004 / eip-8183 / zenn.dev/komlock_lab/articles/agent-payments-stack-2026 / certik.com/blog/the-rise-of-the-agent-economy-part-1 / nevermined.ai/blog / x402.org + whitepaper / anthropic.com/news/model-context-protocol / developers.googleblog.com/en/a2a / crossmint.com/learn/agentic-payments-protocols-compared / blog.quicknode.com/erc-8004 / messari.io/report/kite / addyosmani.com/blog/self-improving-agents。
