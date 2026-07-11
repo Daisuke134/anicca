@@ -1,0 +1,80 @@
+{
+  "featureName": "ledger-uniqueness",
+  "mode": "lean",
+  "currentPhase": "2c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T16:00:06.171Z",
+      "reason": "Phase 1a: behavioral-spec.md written (EARS REQ-001..005), grounded in Read/Grep evidence of the live earn-ledger contamination (155 foreign-wallet rows found in .anicca-founder/skills/earn/state/earn-ledger.jsonl)."
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T16:00:06.173Z",
+      "reason": "Phase 1b: verification-architecture.md written (purity boundary map, PROP-LU-001..011, tiered verification strategy: Tier0 structural, Tier1 property tests via fast-check/hypothesis, Tier2 exact-arithmetic fixture)."
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-11T16:00:06.174Z",
+      "reason": "Phase 1c: spec-review gate entered (both spec files present)."
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-11T16:00:24.347Z",
+      "reason": "Phase 2a: sprint 1 RED — writing failing tests for resolveEarnLedgerPath/filterOwnWalletRows (JS) and filter_own_wallet_rows/own_wallets param (Python), which do not exist yet.",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-11T16:03:54.373Z",
+      "reason": "Phase 2b: sprint 1 GREEN — implement resolveEarnLedgerPath/filterOwnWalletRows (JS) and filter_own_wallet_rows/own_wallets param (Python) to make the RED tests pass.",
+      "sprint": 1
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-11T16:06:55.814Z",
+      "reason": "Phase 2c: refactor — review for duplication/naming/clarity while keeping tests green (no new features, no spec changes).",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-ledger-uniqueness-1783784426033",
+    "beads": []
+  },
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-11T16:00:19.283Z",
+      "reviewedBy": "verifier",
+      "details": {
+        "checklist": [
+          "every REQ-XXX uses WHEN/THE SYSTEM SHALL EARS syntax",
+          "every REQ-XXX has Edge Cases and Acceptance Criteria",
+          "purity boundary explicitly mapped (pure core vs effectful shell)",
+          "evidence trail cites real files/line numbers read this session, not assumed",
+          "Non-Goals section prevents scope creep into money-critical writers",
+          "verification-architecture.md assigns a tier (0-3) and required=true/false to every PROP-LU-XXX"
+        ],
+        "note": "Lean mode: builder self-review gate (reviewedBy=verifier). Full fresh-context adversary review of the IMPLEMENTATION happens later in phase 3, outside this builder sprint."
+      }
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-11T15:40:26.032Z",
+  "updatedAt": "2026-07-11T16:06:55.815Z"
+}
