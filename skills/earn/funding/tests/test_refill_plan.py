@@ -375,34 +375,50 @@ def test_has_unresolved_pending_gas_step_ignores_usdc_step_rows():
 
 
 # --- is_valid_evm_address (REQ-GAS-002: recipient is required, never a default) ---
+# FIND-003 (impl iteration-3): returns the NORMALIZED (stripped, lower-cased) address string on
+# success, `None` on any failure -- never a bare bool -- so callers can bind the SAME normalized
+# value everywhere downstream instead of re-using the original, possibly-unstripped candidate.
 
 
-def test_is_valid_evm_address_accepts_well_formed_address():
-    assert is_valid_evm_address("0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3") is True
+def test_is_valid_evm_address_accepts_well_formed_address_returns_lowercased():
+    assert (
+        is_valid_evm_address("0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3")
+        == "0x1f5b17f41524b02a4ee4d99d4158c86c942e43f3"
+    )
+
+
+def test_is_valid_evm_address_strips_and_lowercases_whitespace_padded_address():
+    """FIND-003 regression: the exact validate-vs-use mismatch this finding closed -- a
+    whitespace-padded candidate must validate AND return the stripped/lowercased form, never
+    the original padded string."""
+    assert (
+        is_valid_evm_address("  0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3\n")
+        == "0x1f5b17f41524b02a4ee4d99d4158c86c942e43f3"
+    )
 
 
 def test_is_valid_evm_address_rejects_none():
-    assert is_valid_evm_address(None) is False
+    assert is_valid_evm_address(None) is None
 
 
 def test_is_valid_evm_address_rejects_empty_string():
-    assert is_valid_evm_address("") is False
+    assert is_valid_evm_address("") is None
 
 
 def test_is_valid_evm_address_rejects_missing_0x_prefix():
-    assert is_valid_evm_address("1F5b17f41524B02a4ee4d99D4158c86C942e43f3") is False
+    assert is_valid_evm_address("1F5b17f41524B02a4ee4d99D4158c86C942e43f3") is None
 
 
 def test_is_valid_evm_address_rejects_wrong_length():
-    assert is_valid_evm_address("0x1234") is False
+    assert is_valid_evm_address("0x1234") is None
 
 
 def test_is_valid_evm_address_rejects_non_hex_characters():
-    assert is_valid_evm_address("0x" + "z" * 40) is False
+    assert is_valid_evm_address("0x" + "z" * 40) is None
 
 
 def test_is_valid_evm_address_rejects_non_string_type():
-    assert is_valid_evm_address(0x1234) is False
+    assert is_valid_evm_address(0x1234) is None
 
 
 # --- evaluate_native_delivery (REQ-GAS-004: independent eth_getBalance-delta verification --
@@ -464,6 +480,34 @@ def test_evaluate_native_delivery_bool_input_fails_closed():
     # bool is technically an int subclass in Python -- must be explicitly rejected, mirroring
     # select_refill_amount's/evaluate_relay_fee's existing isinstance(..., bool) guards.
     d = evaluate_native_delivery(balance_before_wei=True, balance_after_wei=100, expected_wei=100)
+    assert d.verified is False
+
+
+def test_evaluate_native_delivery_zero_expected_wei_refused():
+    """FIND-002 (impl iteration-3, CRITICAL): expected_wei == 0 must be a REFUSAL, not a
+    silent bypass of the 85% floor. Before this fix, `min_required` was hard-coded to 0
+    whenever expected_wei <= 0, so ANY positive delta -- even 1 wei -- verified as True."""
+    d = evaluate_native_delivery(balance_before_wei=0, balance_after_wei=1, expected_wei=0)
+    assert d.verified is False
+    assert "positive" in d.reason.lower()
+
+
+def test_evaluate_native_delivery_negative_expected_wei_refused():
+    """FIND-002: same bypass, negative variant (e.g. a malformed relay-quote sign flip)."""
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=1_000_000, expected_wei=-1
+    )
+    assert d.verified is False
+    assert "positive" in d.reason.lower()
+
+
+def test_evaluate_native_delivery_zero_expected_wei_refused_even_with_large_delta():
+    """The FIND-002 bypass was reachable with ANY positive delta, not just tiny ones --
+    confirm a large, otherwise-plausible-looking delivery is still refused when expected_wei
+    itself is degenerate (there is nothing to verify the delta AGAINST)."""
+    d = evaluate_native_delivery(
+        balance_before_wei=0, balance_after_wei=5_000_000_000_000_000, expected_wei=0
+    )
     assert d.verified is False
 
 

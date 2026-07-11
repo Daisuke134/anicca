@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "edge_case_coverage",
+  "crossReferencedDimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "evaluate_native_delivery silently bypasses the 85%-delivered floor whenever expected_wei is 0 or negative -- ANY positive balance delta, however tiny, is reported as verified=True in that case. The min_required computation is `int(round(expected_wei * (min_delivered_pct / 100))) if expected_wei > 0 else 0` (lib/refill_plan.py:288-290), and the floor check itself is gated behind `if expected_wei > 0 and delivered < min_required` (line 299) -- when expected_wei <= 0, this whole branch is skipped, so the function falls through to the unconditional 'verified: True' return at line 307-309 as soon as delivered > 0. The ONLY guard against a degenerate expected_wei in the orchestration layer is `if expected_wei is None: return fail(...)` at franklin_sol_base_refill.py:755-761 -- this catches a MISSING details.currencyOut.amount field, but not a PRESENT-but-zero-or-negative one. Since expected_wei (via _extract_quote_raw_units, reading details.currencyOut.amount) and out_usd (via _extract_quote_usd, reading details.currencyOut.amountUsd) are extracted independently from two different sibling fields of the same relay response with no cross-check between them, a relay quirk/bug that returns a valid nonzero amountUsd alongside amount='0' (or a negative string) would sail through evaluate_relay_fee's fee-cap check (which only inspects amountUsd, not the raw-wei field) and then have its delivery-verification floor silently disabled, accepting a native-ETH top-up of as little as 1 wei as a fully 'sent'/verified fill. This is a genuine fail-open path in the exact function this money move's independent on-chain proof depends on. Note: the USDC-mode sibling logic (franklin_sol_base_refill.py's expected_units==0 bypass at line 494) has the identical shape, but in that mode out_usd IS the same value used both for the fee check and for computing expected_units, so out_usd<=0 is already caught upstream by evaluate_relay_fee (out_usd=0 forces fee_pct=100%, which fails the cap) before it can ever reach the delivery-floor bypass. Gas mode breaks that implicit protection because expected_wei is parsed from a DIFFERENT field than the one the fee check inspects, so the same bypass pattern is newly exploitable here in a way it structurally is not in the USDC mode.",
+  "evidence": {
+    "filePath": "skills/earn/funding/lib/refill_plan.py",
+    "lineRange": "263-309",
+    "snippet": "    delivered = balance_after_wei - balance_before_wei\n    min_required = (\n        int(round(expected_wei * (min_delivered_pct / 100))) if expected_wei > 0 else 0\n    )\n\n    if delivered <= 0:\n        return NativeDeliveryDecision(False, ..., delivered, min_required)\n    if expected_wei > 0 and delivered < min_required:\n        return NativeDeliveryDecision(False, ..., delivered, min_required)\n    return NativeDeliveryDecision(\n        True, \"balance delta meets minimum delivered threshold\", delivered, min_required\n    )"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+      "lineRange": "755-761",
+      "note": "Only `expected_wei is None` is guarded before signing/broadcasting -- expected_wei <= 0 is not."
+    },
+    {
+      "filePath": "skills/earn/funding/tests/test_refill_plan.py",
+      "lineRange": "412-476",
+      "note": "All 10 evaluate_native_delivery test cases use a strictly-positive expected_wei; none exercises expected_wei=0 or a negative value."
+    }
+  ],
+  "remediation": "In evaluate_native_delivery, treat expected_wei <= 0 as a fail-closed input the same way non-int/bool inputs already are (return verified=False with a distinct reason), rather than silently setting min_required=0. Add explicit test cases for expected_wei=0 and expected_wei=-1 confirming refusal. In run_gas_refill, also refuse before signing when expected_wei <= 0 (not just expected_wei is None), symmetric with the existing None guard.",
+  "routeToPhase": "2b"
+}

@@ -37,13 +37,14 @@
 | PROP-015 | Any exception raised while decoding/signing with the raw resolved secret (`derive_pubkey`, `build_sign_submit`) never has `str(exc)` written to a ledger row or printed result; an injected fake secret is asserted absent from all ledger rows and the result JSON on a decode failure (FIND-003) | 2 | true | pytest asserting substring-absence over `json.dumps(row)`/`json.dumps(result)` |
 | PROP-016 | A `"sent"` row requires ALL of: a relay-reported fill tx hash, that tx's receipt `status == "0x1"`, and a matching USDC Transfer log to our own address delivering >= 85% of the quote's expected output; a wallet-wide balance increase alone (no matching Transfer log) never triggers `"sent"`, and a flat/failed balance-delta sanity flag alone never downgrades a tx-verified fill to `"failed"` (FIND-004) | 2 | true | pytest with fake relay/receipt fixtures: correct fill, unrelated-inflow-only, short-fill (<85%) |
 | PROP-017 | `parse_erc20_transfer_amount` (pure) correctly matches/ignores logs by token address, recipient address, and event topic, and never raises on malformed log shapes | 1 | true | pytest boundary/malformed-shape table |
-| PROP-018 | `is_valid_evm_address` accepts only well-formed `0x` + 40 hex-char strings; rejects None, empty, wrong prefix, wrong length, non-hex chars, non-string types (REQ-GAS-002) | 1 | true | pytest boundary table |
-| PROP-019 | `evaluate_native_delivery` never verifies a non-positive or negative wei delta, and never verifies a delta below `min_delivered_pct` of `expected_wei`; fails closed on non-int/bool inputs (REQ-GAS-004) | 1 | true | pytest boundary table (full delivery, exactly-85%, just-under-85%, zero-delta, negative-delta, non-int/bool) |
+| PROP-018 | `is_valid_evm_address` accepts only well-formed `0x` + 40 hex-char strings and returns the NORMALIZED (stripped, lower-cased) address string on success (never a bare bool); rejects (returns `None`) on None, empty, wrong prefix, wrong length, non-hex chars, non-string types (REQ-GAS-002; impl iteration-3 FIND-003 fix) | 1 | true | pytest boundary table, incl. whitespace-padded/mixed-case normalization assertions |
+| PROP-019 | `evaluate_native_delivery` never verifies a non-positive or negative wei delta, never verifies a delta below `min_delivered_pct` of `expected_wei`, and never verifies when `expected_wei` itself is <= 0 (fails closed, never a `min_required=0` bypass — impl iteration-3 FIND-002 fix); fails closed on non-int/bool inputs (REQ-GAS-004) | 1 | true | pytest boundary table (full delivery, exactly-85%, just-under-85%, zero-delta, negative-delta, zero/negative expected_wei, non-int/bool) |
 | PROP-020 | Gas-ETH mode's `select_refill_amount`/`evaluate_relay_fee` calls (reused pure functions) never share cap state with USDC mode's calls -- a 10% fee is refused under `MAX_FEE_PCT`=8 but allowed under `GAS_MAX_FEE_PCT`=12 (REQ-GAS-003) | 1 | true | pytest, same fee inputs evaluated against both cap constants |
 | PROP-021 | Orchestration: `run_gas_refill` with a missing or malformed `recipient` never calls `relay_quote`/`build_sign_submit`, in both dry-run and `--live` (REQ-GAS-002) | 2 | true | pytest with a spy dep asserting zero calls |
 | PROP-022 | Orchestration: `run_gas_refill`'s single-in-flight guard (`GAS_STEP`) is independent of USDC mode's (`STEP`) -- a pending row of one step never blocks a live run of the other (REQ-GAS-004) | 2 | true | pytest with cross-step pending-row fixtures |
 | PROP-023 | Orchestration: a `"sent"` gas-ETH row requires ALL of a relay-reported fill tx hash, that tx's receipt `status == "0x1"`, and `evaluate_native_delivery(...).verified == True`; a flat/negative/short native-balance delta alone never triggers `"sent"` (REQ-GAS-004) | 2 | true | pytest with fake relay/RPC fixtures: correct fill, flat delta, short fill (<85%), reverted receipt |
-| PROP-024 | Orchestration: `run_gas_refill` refuses BEFORE broadcasting when `details.currencyOut.amount` (raw wei) cannot be extracted from the relay quote, even if `details.currencyOut.amountUsd`/the fee check both look fine (REQ-GAS-004) | 2 | true | pytest with a quote fixture missing the `amount` field |
+| PROP-024 | Orchestration: `run_gas_refill` refuses BEFORE broadcasting when `details.currencyOut.amount` (raw wei) cannot be extracted from the relay quote (missing/null/non-numeric) OR is present but non-positive, even if `details.currencyOut.amountUsd`/the fee check both look fine (REQ-GAS-004; impl iteration-3 FIND-001/FIND-002 fixes) | 2 | true | pytest with quote fixtures: missing/null/non-numeric/zero `amount` field |
+| PROP-025 | Orchestration: `run_gas_refill` normalizes `recipient` ONCE (via `is_valid_evm_address`'s return value) and uses the SAME normalized string in the relay quote payload, `build_sign_submit`, and every ledger row — a whitespace-padded/mixed-case `--recipient` never reaches production unnormalized (REQ-GAS-002; impl iteration-3 FIND-003 fix) | 2 | true | pytest asserting the relay-payload `recipient` field and every ledger row's `to` address equal the normalized form |
 
 ## Verification Strategy
 - **Tier 0** (no formal proof needed): CLI argument parsing, print/JSON-output formatting,
@@ -84,6 +85,14 @@ I/O, unlike its sibling `eth_get_transaction_receipt` in the same module, which 
 the ALT-parsing/build/sign/submit block moved out of `franklin_sol_base_refill.py`'s effectful
 shell into `skills/earn/funding/lib/relay_swap.py` (FIND-007) — still effectful, still
 dependency-injected as the `build_sign_submit` dep, only the module location changed.
+
+**gas-eth impl iter1 fixes FIND-001..005** (2026-07-11): added PROP-025 (recipient
+normalization); revised PROP-018 (`is_valid_evm_address` now returns the normalized address
+string, not a bool), PROP-019/024 (both now cover `expected_wei <= 0` as a fail-closed refusal,
+not just missing/`None`). No Purity Boundary Map changes — `is_valid_evm_address` and
+`evaluate_native_delivery` remain pure (return-type change only, still no I/O); the
+`_safe_append_ledger_factory`/`run_refill` ledger-append dedupe (FIND-004) is a structural,
+behavior-preserving refactor of the effectful shell, not a new proof obligation.
 
 ## Reused, Not Re-Verified
 `lib/caps.py`, `lib/identity.py`, `lib/ledger.py`, `lib/kill_switch.py`,

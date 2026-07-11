@@ -226,25 +226,19 @@ def run_refill(
     poll_relay_status, read_base_tx_receipt, build_sign_submit.
     """
 
-    def safe_append_ledger(row: dict) -> None:
-        """FIND-003 (impl iteration-2): a ledger-write failure (disk-full/permissions on the
-        underlying `open(path, 'a')`/`os.makedirs`) must never crash the process uncaught --
-        `fail()` below calls this as its FIRST action on EVERY refusal path, so an unguarded
-        failure here would crash with a bare traceback at exactly the moment we are trying to
-        record a money-safety refusal, printing NO JSON line and leaving NO audit trail at all
-        -- strictly worse than every other already-fixed failure mode in this module. Fails
-        closed by reporting the failure on stderr and exiting non-zero directly: there is no
-        ledger row left to trust, so returning a normal JSON-on-stdout dict would misrepresent
-        this run as auditable when it was not."""
-        try:
-            deps["append_ledger"](row)
-        except Exception as exc:  # noqa: BLE001 -- see docstring: fail closed, never crash bare
-            print(
-                f"FATAL: could not append ledger row (step={row.get('step')!r}, "
-                f"status={row.get('status')!r}): {type(exc).__name__}",
-                file=sys.stderr,
-            )
-            sys.exit(1)
+    # FIND-003 (impl iteration-2) / FIND-004 (impl iteration-3): a ledger-write failure
+    # (disk-full/permissions on the underlying `open(path, 'a')`/`os.makedirs`) must never
+    # crash the process uncaught -- `fail()` below calls this as its FIRST action on EVERY
+    # refusal path, so an unguarded failure here would crash with a bare traceback at exactly
+    # the moment we are trying to record a money-safety refusal, printing NO JSON line and
+    # leaving NO audit trail at all -- strictly worse than every other already-fixed failure
+    # mode in this module. Shares the SAME fail-closed wrapper `run_gas_refill` uses (impl
+    # iteration-3 FIND-004 dedupe: this used to be a byte-for-byte-identical inline copy of
+    # `_safe_append_ledger_factory`'s body kept separate to avoid re-touching this
+    # already-adversary-reviewed function -- the two copies would otherwise have to be kept in
+    # sync by hand forever; a single shared factory removes that drift risk with no behavior
+    # change).
+    safe_append_ledger = _safe_append_ledger_factory(deps)
 
     def fail(reason: str, extra: Optional[dict] = None, status: str = "failed") -> dict:
         row = build_row(
@@ -611,12 +605,18 @@ def run_gas_refill(
     # REQ-GAS-002: recipient is required and validated BEFORE any subprocess/network call --
     # gas-ETH mode has no citizens.json binding to fall back on, so a missing/malformed
     # --recipient must refuse immediately, exactly like REQ-001's ANICCA_HOME gate refuses
-    # before spawning a subprocess.
-    if not is_valid_evm_address(recipient):
+    # before spawning a subprocess. FIND-003 (impl iteration-3): `is_valid_evm_address` returns
+    # the NORMALIZED (stripped, lower-cased) address on success -- rebind `recipient` to that
+    # return value immediately so EVERY downstream use (relay payload, build_sign_submit,
+    # every ledger row's to_addr) sees the SAME normalized string that was actually validated,
+    # never the original raw argv value.
+    normalized_recipient = is_valid_evm_address(recipient)
+    if not normalized_recipient:
         return fail(
             "recipient is required in gas-ETH mode and must be a valid Base EVM address "
             "(0x + 40 hex chars) -- there is no default destination"
         )
+    recipient = normalized_recipient
 
     secret = deps["resolve_secret"]()
     if not secret:
@@ -752,10 +752,15 @@ def run_gas_refill(
         return {"ok": True, "dry": True, "step": GAS_STEP, "plan": plan}
 
     # --- LIVE from here on ---
-    if expected_wei is None:
+    # FIND-002 (impl iteration-3): a PRESENT-but-non-positive expected_wei (relay quirk/bug
+    # returning `amount: "0"` or a negative string) must refuse here too, symmetric with the
+    # `expected_wei is None` guard -- `evaluate_native_delivery` now also fails closed on
+    # expected_wei <= 0, but that guard must never be the ONLY thing standing between a
+    # degenerate quote and a real broadcast; refuse before signing, not just before verifying.
+    if expected_wei is None or expected_wei <= 0:
         return fail(
-            "relay quote missing/malformed details.currencyOut.amount (raw wei) -- cannot "
-            "independently verify native-ETH delivery, refusing before signing",
+            "relay quote missing/malformed or non-positive details.currencyOut.amount (raw "
+            "wei) -- cannot independently verify native-ETH delivery, refusing before signing",
             {"plan": plan},
             status="skipped",
         )

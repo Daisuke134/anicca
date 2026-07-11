@@ -344,8 +344,28 @@ wallet, which is NOT a citizen of this colony).
 - `is_valid_evm_address` is a pure function (deterministic parse of a fixed hex-address format,
   not a judgment call); unit tests cover valid/None/empty/wrong-prefix/wrong-length/non-hex/
   non-string-type cases.
+- `is_valid_evm_address` returns the NORMALIZED (`.strip()`-ped, lower-cased) address string on
+  success, never a bare bool — the caller MUST bind `recipient` to that returned value
+  immediately and use ONLY the normalized value for every downstream operation (the relay quote
+  payload's `recipient` field, `build_sign_submit`, and every ledger row's destination address),
+  never the original raw `--recipient` argv string. A regression test proves a whitespace-padded
+  (or differently-cased) but otherwise well-formed `--recipient` reaches the relay payload AND
+  every ledger row in the SAME normalized form (impl iteration-3 FIND-003 fix — closes a
+  validate-vs-use mismatch where the pre-fix `is_valid_evm_address` validated a stripped LOCAL
+  copy but returned only a bool, leaving every caller still using the original, unstripped
+  string).
 - An orchestration test asserts zero `relay_quote`/`build_sign_submit` calls when `--recipient`
   is missing or malformed.
+- **Accepted residual (impl iteration-3 FIND-005)**: `is_valid_evm_address` performs syntactic
+  validation ONLY (`0x` + 40 hex chars) — it does NOT perform EIP-55 checksum verification, so a
+  single mistyped/transposed character in an otherwise well-formed `--recipient` passes silently,
+  with no typo-detection signal (checksum-aware wallets reject a wrong-case address specifically
+  to catch this class of error). This is a DELIBERATELY ACCEPTED residual, not an oversight: the
+  destination is operator-supplied, fully validated (syntactically) and logged (every ledger row
+  records the normalized `to` address) for a shared-infra gas-funding recipient that has no
+  citizens.json/allowlist binding by design (REQ-GAS-002's whole premise is an arbitrary
+  caller-named address). The only remaining defense against a mistyped address is the operator
+  reading the printed dry-run plan before choosing to pass `--live`.
 
 ### REQ-GAS-003: Amount caps — smaller, separate literals from USDC mode
 **EARS**: WHEN computing the gas-ETH refill amount THE SYSTEM SHALL cap it at $3.00 per
@@ -397,6 +417,12 @@ supplement does not exist for native transfers).
 - relay quote response is missing/malformed `details.currencyOut.amount` (the raw-wei field):
   refuse BEFORE signing/broadcasting (there is no expected value to verify delivery against) —
   a `"skipped"` row, not `"failed"` (nothing was ever broadcast).
+- relay quote response has `details.currencyOut.amount` PRESENT but non-positive (`"0"` or a
+  negative value — a relay quirk/bug): refuse BEFORE signing/broadcasting, exactly like the
+  missing-field case above — a non-positive `expected_wei` is not a valid quantity to verify
+  delivery against, and `evaluate_native_delivery` itself also fails closed on this input (never
+  a silent `min_required = 0` bypass of the 85% floor that would let ANY positive delta, however
+  tiny, verify as "delivered") (impl iteration-3 FIND-002 fix).
 - The receipt-fetch/balance-read RPC calls themselves raise after broadcast: the `"pending"` row
   already written is the audit trail; the run reports "needs manual reconciliation" (identical
   pattern to REQ-006's own edge case), never fabricating a `"sent"` row.
@@ -404,12 +430,36 @@ supplement does not exist for native transfers).
 **Acceptance Criteria**:
 - `evaluate_native_delivery` is a pure function (no I/O) taking already-read before/after wei
   balances and the quote's expected wei output; unit tests cover full delivery, exactly-85%,
-  just-under-85%, zero-delta, negative-delta (an unrelated concurrent outflow), and non-int/bool
+  just-under-85%, zero-delta, negative-delta (an unrelated concurrent outflow), zero/negative
+  `expected_wei` (refused, never a bypass — impl iteration-3 FIND-002), and non-int/bool
   fail-closed inputs.
+- `_extract_quote_raw_units` (the extraction feeding `expected_wei`) FAILS CLOSED — returns
+  `None`, never a fabricated/coerced fallback — when `details.currencyOut.amount` is missing,
+  `null`, or non-numeric; unit-equivalent orchestration tests cover all three shapes (impl
+  iteration-3 FIND-001 fix, mirroring `_extract_quote_usd`'s existing missing/null/wrong-type
+  coverage for the USDC mode).
 - No test in this mode's suite performs real network I/O — orchestration tests inject fake
   relay/RPC clients (same convention as REQ-006's acceptance criteria).
 - An orchestration test asserts the `"pending"` row is written strictly before the
   `poll_relay_status` call (same call-order-spy technique as REQ-006).
+- **Operator gate (impl iteration-3 FIND-001 fix, mirroring REQ-004's own MUST gate)**: before
+  this feature's own `_extract_quote_raw_units` field assumption (`details.currencyOut.amount`,
+  raw wei, for the actual Solana-USDC → Base-native-ETH pair) had ever been checked against a
+  real relay.link response, the only verification on record was relay.link's own STATIC
+  documentation example for a DIFFERENT pair (Base-ETH↔Optimism-ETH) — the identical class of
+  gap REQ-004's own MUST gate exists to close for the USDC mode's `amountUsd` fields (impl
+  iteration-1 FIND-005). THE OPERATOR MUST run a real (non-signing) dry-run against the live
+  `api.relay.link/quote` endpoint for this exact pair BEFORE the first `--gas-eth --live`
+  invocation, and attach that raw response as evidence in this feature's `.vcsdd` directory. This
+  gate has been CLOSED: a real non-signing `--gas-eth --dry-run` invocation was run 2026-07-11
+  and its raw relay.link response — confirming `details.currencyOut.amount` (raw wei,
+  `expected_wei=1654875211425918`) AND `currencyIn`/`currencyOut.amountUsd` both actually present
+  and parseable for the real pair, not just relay's docs example — is attached at
+  `.vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md`. This is
+  a MUST gate, not a recommendation — the code's own fail-closed behavior (refuse on any
+  unexpected shape) makes an unverified field assumption safe-to-attempt but NOT verified-to-
+  work; only a real dry-run against the exact pair in use closes that gap, and it has now been
+  closed.
 
 ### REQ-GAS-005: Dry-run-by-default, operator-invoked one-shot only (same as REQ-007)
 **EARS**: identical to REQ-007, but for `--gas-eth`: WITHOUT `--live`, THE SYSTEM SHALL perform
@@ -451,3 +501,63 @@ tested in the new `tests/test_franklin_gas_eth_refill.py` (kept separate from th
 `select_refill_amount`, `evaluate_relay_fee`, `has_unresolved_pending`, `build_refill_plan`,
 `parse_erc20_transfer_amount`, `eth_get_transaction_receipt`) are UNCHANGED by this pass — gas
 mode is purely additive.
+
+**gas-eth impl iter1 fixes FIND-001..005** (2026-07-11, addressing
+`reviews/impl/iteration-3/output/` verdict FAIL / 5 findings — the `--gas-eth` mode's OWN first
+fresh-context adversary review pass):
+- FIND-001 (critical, spec_fidelity + verification_readiness): REQ-GAS-004 previously had no
+  MUST live-evidence gate equivalent to REQ-004's — `_extract_quote_raw_units`'s field
+  assumption (`details.currencyOut.amount`) had only ever been checked against relay.link's
+  static docs example for a DIFFERENT pair, never a real response for the actual
+  Solana-USDC→Base-native-ETH pair. Closed: a real non-signing `--gas-eth --dry-run` was run
+  2026-07-11 (`expected_wei=1654875211425918` actually resolved from the live response), evidence
+  attached at `.vcsdd/features/franklin-sol-base-refill/evidence/live-dryrun-gas-eth-2026-07-11.md`,
+  and REQ-GAS-004's acceptance criteria now carry the same explicit MUST gate REQ-004 has. Code
+  side: `_extract_quote_raw_units` already failed closed (returned `None`, no fallback) on
+  missing/null/non-numeric `amount` — this pass adds the missing test coverage for the null and
+  non-numeric cases (`test_gas_quote_currency_out_amount_wei_null_refuses_before_signing`,
+  `test_gas_quote_currency_out_amount_wei_non_numeric_refuses_before_signing`,
+  `test_gas_quote_currency_out_wrong_type_refuses`) that exercised only the missing-key case
+  before.
+- FIND-002 (critical, edge_case_coverage + implementation_correctness): `evaluate_native_delivery`
+  silently disabled its own 85%-floor check whenever `expected_wei <= 0` (`min_required` was
+  hard-coded to `0` in that branch), so ANY positive balance delta — even 1 wei — verified as
+  `True`. Fixed: `expected_wei <= 0` is now its own fail-closed refusal, checked immediately after
+  the existing non-int/bool type guards, before `min_required` is ever computed. `run_gas_refill`'s
+  pre-signing guard (previously only `expected_wei is None`) now also refuses on
+  `expected_wei <= 0`, symmetric with the `None` case — never relying on
+  `evaluate_native_delivery` alone to be the sole guard against a degenerate quote reaching a real
+  broadcast. New tests: `test_evaluate_native_delivery_zero_expected_wei_refused`,
+  `test_evaluate_native_delivery_negative_expected_wei_refused`,
+  `test_evaluate_native_delivery_zero_expected_wei_refused_even_with_large_delta`,
+  `test_gas_quote_currency_out_amount_wei_zero_refuses_before_signing`.
+- FIND-003 (medium, implementation_correctness, security_surface): `is_valid_evm_address`
+  validated a `.strip()`-ped LOCAL copy of its argument but returned only a bool — every
+  downstream use (relay payload, `build_sign_submit`, every ledger row) kept using the ORIGINAL,
+  unstripped/mixed-case `recipient` string, so a whitespace-padded (or differently-cased)
+  address would pass validation yet reach production unnormalized. Fixed: `is_valid_evm_address`
+  now returns the NORMALIZED (stripped, lower-cased) address string on success (`None` on
+  failure); `run_gas_refill` rebinds `recipient` to that return value immediately after
+  validation, so every downstream use — relay quote payload, `build_sign_submit`, every ledger
+  row's `to` address — sees the identical normalized string. New tests:
+  `test_is_valid_evm_address_strips_and_lowercases_whitespace_padded_address`,
+  `test_gas_whitespace_padded_recipient_normalized_in_relay_payload_and_ledger`,
+  `test_gas_dry_run_also_normalizes_recipient_in_ledger_row`; existing
+  `is_valid_evm_address`/`evaluate_native_delivery` bool-return assertions in
+  `tests/test_refill_plan.py` updated to match the new `Optional[str]` return contract.
+- FIND-004 (medium, structural_integrity, non-blocking): the fail-closed ledger-append helper
+  existed in two independently-maintained, byte-for-byte-identical copies (`run_refill`'s inline
+  closure and the module-level `_safe_append_ledger_factory` built for `run_gas_refill`), a
+  drift risk for money-safety-critical logic. Fixed: `run_refill` now calls
+  `_safe_append_ledger_factory(deps)` too (mechanical, behavior-preserving — no other change to
+  `run_refill`'s logic), removing the duplicate.
+- FIND-005 (low, spec_fidelity, accepted residual): `is_valid_evm_address` performs syntactic
+  validation only, no EIP-55 checksum — documented as a deliberately accepted residual in
+  REQ-GAS-002's acceptance criteria (this pass), since the destination is operator-supplied,
+  validated, and logged for a shared-infra gas-funding recipient with no allowlist binding by
+  design. No code change.
+
+All 5 findings fixed/documented; funding suite: 177/177 pass (was 167/167 before this pass — 10
+new regression tests, 0 removed, 0 regressions). NOT run with `--live` in this pass — the real
+$3 `--gas-eth --live` invocation remains a separate, explicit operator action after this fix
+commit merges and clears its own fresh-context re-review.
