@@ -38,12 +38,16 @@
 - GitHub `x402-foundation/x402` ★6,288、活発。「TRUSTED BY」の AWS/Cloudflare/Stripe/Vercel 等は財団メンバー/協力企業であって「全サービス x402 化」ではない点は注意。
 - **判定: LIVE**（実取引データが公開ダッシュボードで見える数少ない例）。
 
-### ERC-8004（Trustless Agents） — **partial、Draft + testnet のみ**
+### ERC-8004（Trustless Agents） — **LIVE on mainnet（2026-07-11 訂正、旧「testnet のみ」は誤り）**
 - 解決課題: 組織をまたぐ見知らぬ AI 同士の「本人か」「仕事は信頼できるか」。
 - 3レジストリ: ①Identity（ERC-721 で1体=1トークン、`register(agentURI)`）②Reputation（誰でも `giveFeedback(...)`、符号付き固定小数で負値・小数対応）③Validation（再実行/ZK/TEE で妥当性検証）。
-- ステータス（eips.ethereum.org）: **⚠️ Draft**。著者に MetaMask/Google/Coinbase。ChaosChain リファレンス実装はテスト74/74 pass だが **Ethereum Sepolia testnet のみ**デプロイ。
-- **判定: partial**（大手関与で設計は固まりつつあるが標準化未完・mainnet 実績なし）。
-- ※我々（§7）は別系統の稼働中コントラクトを Base mainnet で実利用（`0x8004A169...`）。
+- 著者: Marco De Rossi(MetaMask), Davide Crapis(Ethereum Foundation), Jordan Ellis(Google), Erik Reppel(Coinbase)。Created 2025-08-13。
+- ステータス（2026-07-11 gh/eips 再検索）: **EIP のラベルは依然 "Draft"（標準化手続きは進行中）だが、コントラクトは本番稼働**。公式 mainnet ローンチ = **2026-03-17（"8004 Launch Day", lu.ma/658en7zs）**。Identity/Reputation は final contract 配備済み、Validation は改訂中。
+- per-chain singleton（同一アドレスで複数チェーンに配備、`erc-8004/erc-8004-contracts` README）: **Identity `0x8004A169FB4a3325136EB29fA0ceB6D2e539a432` / Reputation `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`** を Ethereum mainnet / **Base mainnet** / Arbitrum / Avalanche / Abstract に配備。testnet Sepolia は `0x8004A818...`。
+- 実登録の生きた例: Primev の x402 facilitator = Ethereum mainnet で agent **#23175**、UFX/ERC-8183(ACP) = Base mainnet で "Iamalive Agent **#1734**"、Azeth = Base mainnet で ERC-8004 身元+x402+escrow+32 MCP tool を実運用、Phala(TEE)/Tenzro(L1 precompile)/TRON(M2M) も稼働。
+- 活発な OSS: `erc-8004/erc-8004-contracts`(公式, 2026-07 更新), `ChaosChain/trustless-agents-erc-ri`(リファレンス実装), `qntx/erc8004`(Rust SDK), `agent0lab/agent0-ts`(TS SDK)+subgraph, `Phala-Network/erc-8004-tee-agent`, `trionlabs/stellar-8004`(Stellar/Soroban)。
+- **判定: LIVE**（複数 mainnet で稼働、実 agent 登録多数。ラベルだけ Draft）。
+- ★我々（§7）の `identity.mjs` の Base mainnet アドレスは公式 Identity singleton `0x8004A169...` と**完全一致**＝Franklin は本物の公式 ERC-8004 を使用（2026-07-11 コードで実確認）。ただし testnet だけは旧 ChaosChain legacy `0xdc52...` を使用、Reputation registry `0x8004BAa1...` は未使用（Identity のみ利用）。
 
 ### Google AP2 + A2A x402 拡張 — **partial（仕様・デモ段階）**
 - AP2: `google-agentic-commerce/AP2` ★3,102、ADK+Gemini デモ中心、PyPI 未公開。
@@ -237,3 +241,53 @@ token=デジタル引換券（誰でも数分で発行、法的権利は通常�
 6. **日本の空白**を明示（記事の JP 読者 hook）。
 
 → 記事②はこの corpus を evidence 正本に、crypto/AI **完全初心者**向けにハンバーガーテンプレで執筆する。
+
+---
+
+## §9. オープンソース採用地図 + Anicca が唯一解く問題（2026-07-11 追記）
+
+> 目的: 「車輪の再発明禁止」（[[feedback_never_reinvent_the_wheel_search_and_adopt]]）を landscape に適用。どの部品が OSS で即採用でき、どれを我々が既に採用済みで、**何が本当に未解決で我々が作るべきか**を確定する。
+
+### 陣営B（本物の配管）の OSS 採用可否
+
+| 部品 | OSS/ライセンス | Franklin が「乗れる/copy できる」か | 我々の現状 |
+|---|---|---|---|
+| **x402**（決済） | OSS 標準 `x402-foundation/x402` | ◎ 標準に準拠すれば誰でも。facilitator も OSS(`primev/mainnet-x402-facilitator` 等) | ✅ 採用済み（self-host facilitator） |
+| **ERC-8004**（身元・評判） | OSS `erc-8004/erc-8004-contracts`, ref impl `ChaosChain/...`(CC0/MIT), SDK 多数 | ◎ mainnet singleton に register するだけで「乗る」。SDK copy 可 | ✅ Identity は公式 mainnet を実利用。⚠️ Reputation registry は未採用（copy 余地） |
+| **ACP escrow**（AI 間取引の状態機械） | OSS `Virtual-Protocol/acp-node`, `acp-cli` | ◎ state machine を copy 可。ACP 市場に「乗る」ことも可 | △ 自前 gig board（ACP と同型）。ACP 本体には未参加 |
+| **Olas Mech Marketplace** | OSS（146 repo, Apache/MIT） | ◯ 市場に参加可。但し経済規模が極小（生涯8.9万$） | ✗ 未参加（旨味薄い） |
+| **Coinbase AgentKit / GOAT** | AgentKit=OSS 現役 / GOAT=**archived** | AgentKit=◎ wallet 抽象を copy/採用可 | △ 自前 wallet 直叩き（AgentKit 未採用＝ここは copy 余地） |
+| **Azeth / UFX(ERC-8183)** | TS SDK npm `@azeth/common`, `ufosearchspace-create/ERC8183`(MIT) | ◯ ERC-8004×x402×escrow 統合の実装を参照可 | ✗ 未採用（最も我々に近い先行例＝要ベンチマーク） |
+| **Circle Agent Stack** | 非OSS（SaaS+SDK） | × プロプラ。乗るなら Circle に依存 | ✗ 不採用（自己主権に反する） |
+
+**結論（再発明していない証明）**: 決済(x402)・身元(ERC-8004 Identity)は**公式 OSS/mainnet をそのまま採用済み**。escrow は ACP と同型を自前実装。未採用で copy 余地があるのは (a) ERC-8004 **Reputation** registry (b) **AgentKit** wallet 抽象 (c) **Azeth/UFX** の統合パターン参照。これらは「作る」より「乗る/copy する」対象。
+
+### では何が本当に未解決か ＝ Anicca が解く問題（他所の「できる/できない」で定義）
+
+```
+ 他所が既に「できる」こと（＝我々は乗るだけ、作らない）:
+   ・見知らぬAI同士が身元を証明して取引する        → ERC-8004(LIVE)
+   ・AIが人間なしでその場で払う                    → x402(月2,400万$)
+   ・仕事の代金を安全に預けて検収後に渡す           → ACP escrow
+   ・AIが自分のコード/戦略を自己改善する（能力面）   → DGM/AlphaEvolve
+   ・AIがライブ資金でモデルを再学習する             → FreqAI
+
+ 誰も「できていない」こと（＝我々が作る、frontier の空白）:
+   ┌────────────────────────────────────────────────────┐
+   │ 自己資金の citizen が                                 │
+   │   ①自分の wallet で 実際に稼ぎ ながら (= 陣営B を採用) │
+   │   ②その「稼ぐコード自体」を live 報酬で自己改善する    │
+   │ ＝ ①決済レール × ⑤自己改善 を 1 つの loop に閉じる    │
+   └────────────────────────────────────────────────────┘
+   ・各所は「決済」か「市場」か「自己改善」を単層で作る（サイロ）
+   ・live money × rare reward × 稼ぐコードの自己改変 を閉じた OSS/製品は
+     我々の探索範囲で皆無（gh "self-improving trading agent live" = 0件）
+```
+
+**Anicca の一文定義（landscape 準拠、憶測でなく）**: 「他所が作った配管（ERC-8004/x402/escrow）を**採用**し、他所が単層でしか作れていない**『自己資金で稼ぎながら、稼ぐコード自体を live 報酬で自己改善する統合ループ』**を、その上に作る」。これが我々の唯一の novelty であり、[[16-self-improvement-loop-BP]] の backtest-bootstrap→live-confirmation がその実装方針。正直な caveat: 「探索範囲で未発見」≠「世界に存在しない」。
+
+### Franklin の実採用状況（2026-07-11 コード実確認）
+- ✅ ERC-8004 Identity: `identity.mjs` の Base mainnet `0x8004A169...` = 公式 singleton と完全一致。testnet のみ旧 legacy `0xdc52...`。
+- ✅ x402 決済 + ACP 同型 escrow: §7 の gig board。
+- ⚠️ 未採用（copy 余地）: ERC-8004 Reputation registry、AgentKit wallet 抽象、Azeth/UFX 統合パターン。
+- ❌ 未解決（我々が作る）: 稼ぐコードの live 自己改善ループ（§4/§8 の frontier）。
