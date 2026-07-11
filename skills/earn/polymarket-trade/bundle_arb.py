@@ -30,11 +30,18 @@ def mint(): return mint_relayer_api_key(acct)
 from polymarket.clients.secure import SecureClient
 from polymarket.auth import RelayerApiKey
 
+import no_naked
+
 def best_ask(ob):
     asks=getattr(ob,'asks',[]) or []
     if not asks: return None,0
     a=min(asks, key=lambda x: float(getattr(x,'price',None) or x['price']))
     return float(getattr(a,'price',None) or a['price']), float(getattr(a,'size',None) or a.get('size',0))
+
+def best_bid_price(ob):
+    bids=getattr(ob,'bids',[]) or []
+    if not bids: return None
+    return max(float(getattr(b,'price',None) or b['price']) for b in bids)
 
 def main():
     tmp=SecureClient._create(private_key=KEY,validate_credentials=True); creds=tmp._ctx.credentials; tmp.close()
@@ -79,11 +86,28 @@ def main():
     print(f"ARB FOUND: {q[:50]} | ask_YES {ay}+ask_NO {an}={ay+an:.3f} | locked edge {edge*100:.2f}%")
     shares=max(5, min(int(msz), int((avail*0.9)/(ay+an)), budget_shares))
     print(f"buying {shares} YES + {shares} NO (FOK) = locked ${shares*edge:.3f} profit...")
-    from polymarket.clients.secure import SecureClient as SC
+    # SPEC-no-naked-fills R4: the two FOK legs are NOT atomic together. Track each leg's fill; if
+    # exactly one filled, immediately unwind it so no naked directional position survives this pass.
+    legs=[]
     for tid,px in [(yes,ay),(no,an)]:
         o=c.create_market_order(token_id=tid, side="BUY", amount=str(round(shares*px,2)), max_price=str(round(px+0.01,3)), order_type="FOK")
         r=c.post_order(o)
+        # UNVERIFIED(live SDK): FOK success signalled by ok=True / status matched|filled
+        status=str(getattr(r,'status','')).lower()
+        filled=bool(getattr(r,'ok',False)) or status in ("matched","filled","success")
+        legs.append({"token":tid,"filled":filled})
         print(f"  leg -> ok={getattr(r,'ok',None)} status={getattr(r,'status','')} id={getattr(r,'order_id','')[:14]}")
+    for u in no_naked.plan_arb_unwind(legs):
+        try:
+            bid=best_bid_price(c.get_order_book(token_id=u["token"]))
+            if bid:
+                # UNVERIFIED(live SDK): sell the lone filled leg at bid to flatten (no naked survives)
+                o=c.create_limit_order(token_id=u["token"], price=str(bid), size=str(shares), side="SELL", post_only=False)
+                c.post_order(o); print(f"  ARB-UNWIND sold naked leg {u['token'][:12]} {shares}@{bid}")
+            else:
+                print(f"  ARB-UNWIND WARN: no bid to sell naked leg {u['token'][:12]} — manual review")
+        except Exception as e:
+            print(f"  ARB-UNWIND failed: {str(e)[:80]}")
     c.close(); return 0
 
 if __name__=="__main__":
