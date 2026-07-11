@@ -79,3 +79,11 @@ live 検証結果（transcript 実読）: core が STEP2(outreach draft)✔ / ST
 ## #5 streak 残検証項目（2026-07-11 記録）
 - **Telegram delivered 経路 = VERIFIED**（2026-07-11 実送信テスト）: `openclaw message send --channel telegram --target 8547730585` が **Message ID: 1879 で Dais に実着信**。telegram-notify.sh(211 cron 共通の経路)はこれのラッパで、connector STARTUP(REQ-CON-103)に配線済み。→ 機構は確実に届く。各日 pass の実 delivery(delivered:true)は streak 進行中に per-pass 確認する（agent が STARTUP 指示通り送る前提、信頼性を上げるなら deterministic post-pass send 化が次の改善)。
 - **7日 streak**: Day1(GENIAC 予約)成功。Day2-7 は connector が毎日 autonomous に走る（runtime 土台修正済）が、各日の FREE 実登録 or 正直 none + Telegram delivered + fresh adversary PASS が §10 Done。multi-day で継続。
+
+
+## ✅ #5 を人手ゼロで自動完成させる機構 稼働（2026-07-11、profitable-claude main 55635c3 pushed）
+7日 streak を「私が待つ」から「システムが日次で自己検証して day-7 に自動完成」へ:
+- `bin/connector_streak_verify.py`(+cron wrapper): 毎日 primary source から再導出(cron_ok=last-pass marker mtime→JST / registration=applications.jsonl + `gog calendar event primary` readback / telegram=実 message id)。self-report を信用せず。7連続 day_pass:true で完了メールを keiodaisuke@gmail.com に1回だけ送信(二重送信 guard)。9/9 test + 33 既存 green。
+- **cron `30245234-...` `connector-streak-verify-daily` daily 08:00 JST 登録済**(openclaw CLI、id で独立確認)。
+- **Day1(2026-07-11) = day_pass:true**（台帳独立読返し）: cron_ok:true + **無料イベント2件予約**(GENIAC `d27fulks...` + 論文読み会 `i98dqbb...`、両方 `gog calendar event primary` で confirmed:true 再検証) + telegram_msg_id:1881 delivered:true。
+→ 残り Day2-7 は autonomous に積む。7日連続で §10 #5 PASS → 完了メール自動送信。fake 禁止(登録実在せず horizon_full でもない日は day_pass:false でリセット)。
