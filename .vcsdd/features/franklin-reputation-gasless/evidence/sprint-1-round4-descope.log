@@ -1,0 +1,145 @@
+franklin-reputation-gasless — sprint-1, round 4 (final convergence pass, G3 DE-SCOPE)
+2026-07-12
+
+WHY (adversary FIND-201, independently confirmed this round against child-spec.js:65,
+spawn-orchestrator.mjs:~680/~711-721, wake-gate.mjs:47-71, spawn-orchestrator.test.mjs:494-510):
+the citizens registry row (skills/self/spawn/registry/citizens.seed.json Franklin row;
+spawn-orchestrator.mjs's own `citizenRecord`, ~line 713) carries NO agent_id field at all — only
+id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator. agent_id is written
+only onto the separate children LEDGER row (child-spec.js:65 -> appendChild, a DIFFERENT store than
+CITIZENS_REGISTRY_PATH). Round-3's FIND-101 fix (freshBorrower.agent_id ?? freshBorrower.agentId)
+corrected a field-CASING assumption that was itself false for the real registry row — so
+freshBorrower.agent_id is ALWAYS undefined in the real lending path once wired, and a configured
+reputation gate would reject 100% of real borrowers, inverting G3's purpose. G3 cannot correctly ship
+wired until a follow-up spec adds agent_id to the registry (or a wallet->agentId resolver).
+
+REVERT (step 1 — lending-orchestrator.mjs, real production issuance path):
+runLockedIssuance's step 6 (the eligibility call) now reads, byte-for-byte:
+
+  const eligibility = isBorrowerEligible({
+    borrowerAgent: freshBorrower,
+    loanRows,
+    borrowerId,
+    borrowerBalanceUsd: freshBorrower.balanceUsd,
+    lenderId,
+  });
+  if (!eligibility.eligible) {
+
+— identical to `main`. Verified via:
+
+  $ git diff main -- skills/economy/lending/lib/lending-orchestrator.mjs
+  (zero output — no functional diff)
+
+The `isBorrowerEligibleWithReputationGate` import (added round-2) was removed from the import list
+alongside the call-site revert (it has zero remaining call sites in this file).
+
+TESTS REMOVED (step 2a — orchestrator-level tests exercising the now-reverted wiring):
+skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs — removed the entire round-2/round-3
+G3-wiring block (previously lines ~216-350, comments + 5 tests):
+  - "★FIND-002 wiring★ REQ-115: a CONFIGURED reputation gate is actually consulted on the real
+    executeLoanIssuanceAttempt path..." (round-2, deps.reputationGateFn mock)
+  - "★FIND-002★ REQ-115: with NO reputationGate config (the default), the gate fail-opens..." (round-2)
+  - "★FIND-101★ REQ-115/G3: a registry-shaped borrower (snake_case agent_id...) with SUFFICIENT
+    on-chain reputation PASSES..." (round-3, invented agent_id:"42" registry fixture)
+  - "★FIND-101★ REQ-115/G3: ...with INSUFFICIENT on-chain reputation is REJECTED..." (round-3)
+  - "★FIND-101★ REQ-115/G3: a citizen row genuinely missing agent_id still fail-CLOSES..." (round-3)
+All 5 asserted a code path (deps.reputationGate/deps.reputationGateFn consultation inside
+executeLoanIssuanceAttempt) that no longer exists after the step-1 revert, and 3 of the 5 (FIND-101)
+additionally used a fixture (`agent_id: "42"` on the citizen record) that does not match the real
+registry schema per FIND-201's own finding. Confirmed each of the 4 assertion-bearing tests genuinely
+FAILED against the pre-removal (post-revert) source before deletion:
+
+  $ node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs
+  ✖ ★FIND-002 wiring★ ... (reputationGateCalled: false !== true)
+  ✖ ★FIND-101★ ... SUFFICIENT ... (getSummaryFnCalledWithAgentId: null !== '42')
+  ✖ ★FIND-101★ ... INSUFFICIENT ... (result.status: 'active' !== 'refused')
+  ✖ ★FIND-101★ ... missing agent_id ... (result.status: 'active' !== 'refused')
+  tests 44, pass 40, fail 4
+  (the 5th removed test, "with NO reputationGate config", passed trivially post-revert since the
+  orchestrator no longer reads deps.reputationGate at all -- kept-and-passing is not evidence it still
+  tests anything about G3, so it was removed alongside its sibling block for the same reason: it no
+  longer proves anything about wiring that doesn't exist.)
+
+TESTS KEPT (step 2b — lib-level, pure-function tests, no orchestrator, no invented registry fixture):
+  - skills/economy/lending/lib/__tests__/reputation-gate.mjs's own test file
+    (reputation-gate.test.mjs) — passesOnchainReputationGate, unchanged, still tests the pure/mocked
+    gate logic in isolation. 9 tests.
+  - skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs — tests
+    isBorrowerEligibleWithReputationGate (the lib-level composition of isBorrowerEligible +
+    passesOnchainReputationGate) by calling it DIRECTLY with an explicit borrowerAgentId string
+    argument, never through the orchestrator, never from a citizens-registry fixture. 4 tests
+    (+1 fixture-sanity test = 5 total in that file). Kept unmodified.
+  - skills/economy/gig/__tests__/{ensure-gas,reputation,gig-reputation-wiring}.test.mjs — G1/G2, fully
+    untouched this round.
+
+DEAD-CODE DECISION (step 2, lending-gate.mjs::isBorrowerEligibleWithReputationGate):
+zero remaining production call sites (confirmed via
+`grep -rn "isBorrowerEligibleWithReputationGate" --include="*.mjs" .` -- only
+lending-gate.mjs's own definition + the 2 test files above). Chose KEEP-with-explicit-unwired-comment
+over delete: it is a proven-correct pure composition primitive, has its own dedicated passing unit
+tests, and is the exact seam the follow-up spec will re-wire once the registry gains agent_id --
+deleting it would just require re-deriving the identical composition later. The function's own
+header comment now states, in full: "★ UNWIRED -- NOT called from any production entry point ...
+De-scoped 2026-07-12 per adversary FIND-201 ... Kept here, tested ..., as a proven-correct PURE
+composition primitive for the follow-up spec". Zero misleading "it's wired" language remains anywhere
+in the diff.
+
+SPEC UPDATES (step 3):
+  - .vcsdd/features/franklin-reputation-gasless/specs/verification-architecture.md: PROP-045/048/049
+    marked DEFERRED (Required: false) with the FIND-201 reason; PROP-036..039 annotated
+    "lib-level only, UNWIRED"; new "G3 DEFERRED" section added explaining the root cause, the revert,
+    what remains tested-but-unwired, and the follow-up spec pointer. PROP-001..028/040/041/046/047
+    (G1/G2 + regression) untouched, still Required: true.
+  - .vcsdd/features/franklin-reputation-gasless/specs/behavioral-spec.md: the round-2 "spec 訂正"
+    under REQ-012 (which had mandated the wiring) is superseded in-place by a round-4 correction
+    documenting the DE-SCOPE, root cause, and the new, current Acceptance Criteria (git diff main
+    shows zero functional change to the eligibility call; grep for
+    isBorrowerEligibleWithReputationGate in lending-orchestrator.mjs returns zero matches; the
+    lib-level composition test file stays green).
+
+G1/G2 CONFIRMED UNTOUCHED AND GREEN (step 4):
+  $ git diff main --stat -- skills/economy/gig/lib/ensure-gas.mjs skills/economy/gig/lib/reputation.mjs skills/economy/gig/gig.mjs
+  (unchanged from before this round -- no new diff introduced this round to any G1/G2 file)
+  gig suite: 82/82 pass (unchanged count from round-3).
+
+REGRESSION RE-RUN (step 5, combined lending + gig suites):
+✔ FIND-001 fix: Franklin2-wake-selects-Franklin-as-lender -- the resolved key belongs to a DIFFERENT citizen than the selected lenderId -- refused reason "lender_not_this_instance", disburse never called, no signing attempted (3.050291ms)
+✔ FIND-001 fix, matching case: the resolved key's derived signer address equals the selected lenderId's own registered wallet -- proceeds to a genuine 'active' outcome, exactly like the pre-guard behavior (9.39625ms)
+ℹ tests 244
+ℹ suites 0
+ℹ pass 244
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 8715.181084
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+Counts: lending 162/162 (was 167 pre-round-4; -5 = the removed G3-wiring block), gig 82/82 (unchanged).
+Combined 244/244, re-run clean 4/5 consecutive times (see below for the one flake instance).
+
+KNOWN PRE-EXISTING FLAKE (not a regression, not touched by this round's diff):
+lending-orchestrator.test.mjs's own REQ-116 "executeDefaultDetectionSweep: a candidate flagged by step
+1's read but found already-repaid at step 2's own fresh re-read is correctly skipped, never defaulted"
+— a timing-sensitive race-window test, documented as a known flake in this feature's own state.json
+across rounds 2 and 3 (identical assertion signature: actual/expected both "defaulted", a
+notStrictEqual assertion racing against real wall-clock timing inside the test itself, nowhere near
+this round's diff). Reproduced 2/8 isolated runs of this file alone this round (comparable rate to
+round-2's own documented "1 of 4 runs"). This round's diff touches ONLY the eligibility call site
+(reverted to main) and the import list (isBorrowerEligibleWithReputationGate removed) — neither
+change is anywhere near the executeDefaultDetectionSweep/REQ-116 code path. Not isolated via
+git-stash this round (the pattern is already independently established across 2 prior rounds in this
+same file with 0 changes to that code path since); treated as accepted pre-existing baseline noise
+per this feature's own established precedent.
+
+MONEY-SAFETY FILE BOUNDARY CHECK (round 4):
+git status --short touches only: this feature's own .vcsdd/ dir (specs + evidence + the pre-existing
+reviews/verdict.json + untracked FIND-201.json, both written by the adversary run that produced this
+round's task, not by this session) + skills/economy/lending/lib/lending-orchestrator.mjs +
+skills/economy/lending/lib/lending-gate.mjs + skills/economy/lending/lib/__tests__/
+lending-orchestrator.test.mjs. No wallet keys, .env, .solana-session, ledger.mjs, spend-cap constants,
+SOL_TRADE_MAX_SPEND, or anicca-agent-economy/** touched.
+
+STOP at GREEN per this round's own task boundary: adversary NOT run by this session, not merged.

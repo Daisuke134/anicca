@@ -12,7 +12,6 @@ import path from "node:path";
 
 import {
   isBorrowerEligible,
-  isBorrowerEligibleWithReputationGate,
   computeLenderAvailableUsd,
   computeTotalDueUsd,
   computeLoanCapUsd,
@@ -365,45 +364,13 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
   const [freshLender, freshBorrower] = await Promise.all([getCitizen(lenderId), getCitizen(borrowerId)]);
   if (!freshBorrower) return { status: "refused", reason: "not_found" };
 
-  // FIND-002 fix (adversary round 2, spec §1 G3 correction): compose the G3 on-chain reputation gate
-  // right here, immediately after the base eligibility check -- this IS "実経路 = lending-orchestrator.
-  // mjs:executeLoanIssuanceAttempt（借入発行の実入口）" the corrected spec names explicitly. Previously
-  // isBorrowerEligibleWithReputationGate existed but had zero real call sites (dead code); this is the
-  // one and only production wiring. deps.reputationGate (minScore/minJobCount/clientAddresses/tag1/tag2)
-  // is unset by default -> passesOnchainReputationGate's own gateConfigured check short-circuits to
-  // fail-open passthrough WITHOUT ever calling deps.reputationGateFn/the real on-chain read -- so this
-  // wiring is a no-op on every existing caller until a lender explicitly configures thresholds (spec's
-  // own "既定 fail-open ゆえ挙動不変" safety argument). deps.reputationGateFn mirrors deps.reconcile/
-  // deps.disburse's own DI convention (production default: the real passesOnchainReputationGate).
-  //
-  // wake-gate.mjs's own findSelectedPair() runs a SEPARATE, PURE, synchronous eligibility pre-filter
-  // (candidate-pair selection heuristic only) — it is never the authoritative decision and never itself
-  // disburses; every real attempt it selects still flows through THIS function. So wiring the gate here
-  // is sufficient to make it authoritative on every real disbursement path without turning that pure
-  // selection heuristic into an async on-chain read.
-  // FIND-101 fix (adversary round 2, spec_fidelity, critical): the real, on-disk citizen-registry row
-  // stores the borrower's ERC-8004 identity under snake_case `agent_id` (canonical write site:
-  // skills/self/spawn/lib/child-spec.js:65 -- `spec.agent_id = agentId;`; also
-  // spawn-orchestrator.mjs's own `agent_id: identityResult.agentId,` write). wake-gate.mjs's real
-  // production getCitizen closure (buildDefaultGetCitizen) spreads that raw row unmodified
-  // (`{ ...citizen, balanceUsd }`) -- there is zero camelCase normalization anywhere in this repo. The
-  // previous `freshBorrower.agentId` read was therefore ALWAYS undefined for every real borrower,
-  // which reputation-gate.mjs's own intentional fail-closed branch (`no_borrower_agent_id`) then
-  // rejected unconditionally the instant any lender configured a threshold -- inverting G3's purpose.
-  // Read the canonical snake_case field; fall back to camelCase defensively (never re-introduce a
-  // fail-closed-by-default regression for a caller that already normalizes its own shape upstream).
-  const borrowerAgentId = freshBorrower.agent_id ?? freshBorrower.agentId;
-  const eligibility = await isBorrowerEligibleWithReputationGate(
-    {
-      borrowerAgent: freshBorrower,
-      loanRows,
-      borrowerId,
-      borrowerBalanceUsd: freshBorrower.balanceUsd,
-      lenderId,
-    },
-    { borrowerAgentId, ...(deps.reputationGate || {}) },
-    deps.reputationGateFn
-  );
+  const eligibility = isBorrowerEligible({
+    borrowerAgent: freshBorrower,
+    loanRows,
+    borrowerId,
+    borrowerBalanceUsd: freshBorrower.balanceUsd,
+    lenderId,
+  });
   if (!eligibility.eligible) {
     return { status: "refused", reason: eligibility.reason };
   }

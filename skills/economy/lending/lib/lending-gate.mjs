@@ -122,11 +122,24 @@ export function isBorrowerEligible({ borrowerAgent, loanRows, borrowerId, borrow
 // G3 (franklin-reputation-gasless spec §1) — isBorrowerEligibleWithReputationGate
 // ===========================================================================
 
-// isBorrowerEligible itself (above) is UNTOUCHED -- this is a new, additive composition seam only
-// (spec §3 "既存 pure 判定は壊さない"). Short-circuits on the base (pure, synchronous) check FIRST: an
-// already-ineligible borrower never even triggers the on-chain reputation read, matching Azeth's own
-// ReputationGateHook semantics (a gate is an ADDITIONAL bar on top of the base checks, never a
-// replacement for them).
+// ★ UNWIRED — NOT called from any production entry point (lending-orchestrator.mjs's own
+// runLockedIssuance calls isBorrowerEligible directly, byte-identical to main) ★. De-scoped 2026-07-12
+// per adversary FIND-201 (see .vcsdd/features/franklin-reputation-gasless/specs/verification-
+// architecture.md, G3 obligations, status: DEFERRED): the citizens registry row this function's own
+// `borrowerAgentId` argument would need to be sourced from at the real call site carries no ERC-8004
+// agent_id at all (`skills/self/spawn/registry/citizens.seed.json`'s Franklin row /
+// spawn-orchestrator.mjs's own `citizenRecord`, ~line 713, only ever has
+// id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator — agent_id exists
+// only on the separate children LEDGER row). Wiring this into runLockedIssuance today would make
+// borrowerAgentId always undefined for every real borrower, and a configured gate would reject 100% of
+// them (inverting G3's purpose) — see the design spec's own §1 G3 correction for the full reasoning.
+// Kept here, tested (lending-gate-reputation-composition.test.mjs), as a proven-correct PURE
+// composition primitive for the follow-up spec that will add agent_id to the registry (or a
+// wallet->agentId resolver) and then wire this in for real. isBorrowerEligible itself (above) is
+// UNTOUCHED -- this is a new, additive composition seam only (spec §3 "既存 pure 判定は壊さない").
+// Short-circuits on the base (pure, synchronous) check FIRST: an already-ineligible borrower never even
+// triggers the on-chain reputation read, matching Azeth's own ReputationGateHook semantics (a gate is
+// an ADDITIONAL bar on top of the base checks, never a replacement for them).
 export async function isBorrowerEligibleWithReputationGate(
   baseArgs,
   reputationGateArgs = {},

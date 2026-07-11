@@ -174,19 +174,30 @@ reason:"ok"}` if both pass.
 **Acceptance Criteria**: `isBorrowerEligible`'s own pre-existing test suite (150+ tests) is untouched and
 stays green; the composition is additive-only, covered by its own separate test file.
 
-★2026-07-12 spec 訂正 (adversary round-2 FIND-002)★: `isBorrowerEligibleWithReputationGate` MUST be wired
-into the real production loan-issuance entry point — `lending-orchestrator.mjs::executeLoanIssuanceAttempt`
-(step 6, immediately after the base `isBorrowerEligible` check) — not left as an unreachable, zero-call-site
-function. Default behavior (no `deps.reputationGate` config supplied) MUST be byte-identical to the
-pre-wiring behavior (fail-open passthrough, `deps.reputationGateFn` never even invoked when thresholds are
-unset). `wake-gate.mjs`'s own `findSelectedPair` pure candidate-selection pre-filter is NOT required to be
-separately wired, because it never itself authorizes a disbursement — every pair it selects still flows
-through `executeLoanIssuanceAttempt`, which now enforces the gate authoritatively.
-**Acceptance Criteria**: `grep -n "isBorrowerEligibleWithReputationGate" skills/economy/lending/lib/lending-orchestrator.mjs`
-returns at least one match; a dedicated test in `lending-orchestrator.test.mjs` proves a configured
-`deps.reputationGate` is genuinely consulted (via `deps.reputationGateFn`) and its rejection refuses the
-loan before any ledger row is written; a second test proves the unset-config default reaches `"active"`
-identically to before this wiring.
+★2026-07-12 spec 訂正 (adversary round-2 FIND-002)★: (superseded by the round-4 correction directly below —
+kept, struck through in effect, not deleted, so this file's own edit history shows why the wiring
+requirement appeared and then reversed). Originally required `isBorrowerEligibleWithReputationGate` to be
+wired into `lending-orchestrator.mjs::executeLoanIssuanceAttempt` step 6.
+
+★2026-07-12 spec 訂正 round-4 (adversary FIND-201, DE-SCOPE — supersedes the round-2 correction above)★:
+G3 (the reputation-gate wiring this REQ-012 note above required) is **DE-SCOPED** for this sprint. Round-3
+already fixed the round-2 wiring's field-name bug (FIND-101: `agent_id` vs `.agentId`), but FIND-201 found
+a deeper, structural blocker underneath that fix: the real, on-disk citizens registry row a borrower's
+`agent_id` would need to come from (`skills/self/spawn/registry/citizens.seed.json`'s Franklin row /
+`spawn-orchestrator.mjs`'s own `citizenRecord`) carries **no `agent_id` field at all** — only
+`id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator`; `agent_id` exists only
+on the separate children **ledger** row. Wiring the gate today makes `freshBorrower.agent_id` always
+`undefined` for every real borrower, so a configured gate rejects 100% of borrowers — inverting G3's own
+purpose. `lending-orchestrator.mjs::executeLoanIssuanceAttempt` now calls `isBorrowerEligible` exactly as
+on `main` (byte-for-byte for that call — verified via `git diff main`); the round-2/round-3 wiring and its
+own orchestrator-level tests have been reverted/removed. `isBorrowerEligibleWithReputationGate`
+(`lending-gate.mjs`) remains as a tested, but explicitly UNWIRED, pure composition primitive (own unit
+tests in `lending-gate-reputation-composition.test.mjs` still pass) for a follow-up spec that first adds
+`agent_id` to the registry (or a wallet→agentId resolver), then re-wires this.
+**Acceptance Criteria (round-4, current)**: `git diff main -- skills/economy/lending/lib/lending-orchestrator.mjs`
+shows zero functional change to the `isBorrowerEligible` call site; `grep -rn "isBorrowerEligibleWithReputationGate"
+skills/economy/lending/lib/lending-orchestrator.mjs` returns zero matches; `lending-gate-reputation-composition.test.mjs`
+(lib-level, no orchestrator) stays green.
 
 ### REQ-013: Gas/reputation money-safety invariants (cross-cutting, spec §4 MUST)
 **EARS**: THE SYSTEM SHALL NEVER read, log, or otherwise touch wallet private keys outside their

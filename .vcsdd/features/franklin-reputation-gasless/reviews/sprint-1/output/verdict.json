@@ -2,45 +2,43 @@
   "sprintNumber": 1,
   "feature": "franklin-reputation-gasless",
   "overallVerdict": "FAIL",
-  "timestamp": "2026-07-12T00:00:00Z",
-  "iteration": 2,
+  "timestamp": "2026-07-12T12:00:00Z",
+  "iteration": 3,
   "reviewContext": {
     "reviewType": "implementation",
     "worktree": ".worktrees/franklin-reputation-gasless",
     "branch": "feature/franklin-reputation-gasless",
-    "commit": "5e56e22c",
-    "priorCommitReviewed": "b0fd03e1",
+    "commit": "a924c3af",
+    "priorCommitReviewed": "5e56e22c",
     "designSpecPath": "docs/superpowers/specs/2026-07-12-franklin-reputation-gasless-design.md",
-    "toolConstraintNote": "This review session had NO Bash/shell/network tool access (Read/Write/Edit/Grep/Glob only). `git diff main --stat` and `node --test` could NOT be independently executed. Test-pass claims (gig 82/82, lending 164/164) were cross-checked by counting `test(...)` block occurrences per file via Grep and matched the builder's own evidence/sprint-1-green-phase-round2.log claims EXACTLY (gig: 82 across 8 files; lending: 164 across 10 files) -- strong corroboration, not independent execution. The REQ-116 flaky-test-is-pre-existing claim and the exact green/red pass/fail transcripts are read from evidence/sprint-1-{red,green}-phase-round2.log, not independently re-run. All 5 round-1 findings (FIND-001..005) were independently re-verified via full-file reads of the actual current source (not just the evidence logs) against their own claimed fixes; FIND-001, FIND-003, FIND-004, FIND-005 hold up under independent static re-verification. FIND-002's fix genuinely resolves round-1's specific complaint (unreachable dead code -> now reachable from lending-orchestrator.mjs step 6, confirmed by direct read + repo-wide grep showing zero other production call sites needed), but independent re-verification of FIND-002's surrounding data flow (not requested verbatim by round-1, but implied by 'confirm reachable in production... fail-open by default') surfaced a NEW, critical, round-2-introduced defect: FIND-101 (see below) -- the wiring reads a citizen-record field name that does not exist in this repo's own canonical, tested registry schema, so the gate silently fails EVERY borrower the instant a lender configures it, the opposite of dead-code-but-safe."
+    "toolConstraintNote": "This review session had NO Bash/shell/network tool access (Read/Grep/Glob only). `git diff main --stat` and `node --test` could NOT be independently executed. Test-pass claims (lending 167/167, gig 82/82, combined 249) were cross-checked by independently counting `test(...)` block occurrences per file via Grep and they matched the builder's own state.json claims EXACTLY (lending: 167 across 10 files; gig: 82 across 8 files) -- strong corroboration, not independent execution. The FIND-101-fix-verification task (this round's primary ask) was NOT accepted at face value: this session independently traced the full data-flow chain -- reputation-gate.mjs -> lending-orchestrator.mjs -> wake-gate.mjs's buildDefaultGetCitizen -> the citizens-registry file -> every writer of that file (spawn-orchestrator.mjs's appendCitizenRecord call site AND citizens.seed.json) -- by direct file reads, not by trusting the fix's own code comments or FIND-101.json's own evidence citations. That trace surfaced a NEW, critical, still-unresolved defect: FIND-201.",
+    "adversaryModel": "claude-opus-4-8 (per this repo's own CLAUDE.md model-division table)"
   },
   "dimensions": [
     {
       "name": "spec_fidelity",
       "verdict": "FAIL",
-      "findings": ["FIND-101"],
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": "skills/economy/gig/lib/ensure-gas.mjs:194-230", "description": "FIND-001 fix re-verified by full read: appendDripLog (status:'broadcast') now runs immediately after `sent.hash` exists (line 212-218), strictly BEFORE waitForTransactionReceipt (line 220-225) -- the only call site, no second append after the receipt resolves. No exception path from `drip()` broadcasting onward can leave a real, broadcast drip uncounted against maxDripsPerDay. Genuinely fixed."},
-        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:368-397", "description": "FIND-002's SPECIFIC round-1 complaint (isBorrowerEligibleWithReputationGate has zero production call sites) is genuinely resolved: it is now called at runLockedIssuance step 6, the real function backing executeLoanIssuanceAttempt (wake-gate.mjs:191's own production entry point). REQ-012's corrected acceptance criteria ('grep returns >=1 match'; 'a dedicated test proves a configured deps.reputationGate is genuinely consulted'; 'unset-config default reaches active identically') are all literally satisfied by lending-orchestrator.test.mjs:225-253. BUT the wiring itself is functionally broken for real data -- see FIND-101: `freshBorrower.agentId` (lending-orchestrator.mjs:392) does not match this repo's own canonical citizen-registry field `agent_id` (skills/self/spawn/lib/child-spec.js:65, spawn-orchestrator.mjs:680, both independently tested at __tests__/spawn-orchestrator.test.mjs:191/538 and __tests__/child-spec-erc8004.test.js:37/66/85), so every real borrower is rejected the instant a lender configures the gate -- the design spec's own G3 goal ('閾値設定時に実績不足 borrower が弾かれる') is not met; ALL borrowers are rejected, not just insufficient ones."},
-        {"type": "file", "location": "specs/behavioral-spec.md:177-188", "description": "The 2026-07-12 spec correction for REQ-012 (adversary round-2 FIND-002) is read verbatim and matches the actual wiring location (lending-orchestrator.mjs step 6) exactly -- the spec-code alignment itself is honest and accurate; the remaining gap is a pure implementation defect (wrong field name), not a spec ambiguity."}
+        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:395", "description": "Round-3's specific casing fix (`freshBorrower.agent_id ?? freshBorrower.agentId`) is itself a correct, minimal, well-targeted read IF the registry ever carried `agent_id` on a real row. It does not, in this codebase, ever carry that field -- see FIND-201. So the fix does not close G3's actual functional gap; it only changes which field name is (still, always) undefined."},
+        {"type": "file", "location": "skills/self/spawn/lib/spawn-orchestrator.mjs:713-724", "description": "The ACTUAL citizens-registry append (`citizenRecord`, then `appendCitizenRecord(citizensRegistryFile, citizenRecord)`) omits agent_id/agent_evm_address entirely -- independently confirmed against this repo's own spawn-orchestrator.test.mjs:494-510 exhaustive schema assertion (no agent_id) and citizens.seed.json's own Franklin row (no agent_id). See FIND-201 for the full chain."},
+        {"type": "file", "location": "docs/superpowers/specs/2026-07-12-franklin-reputation-gasless-design.md:13", "description": "G3's own done-criterion ('閾値設定時に実績不足 borrower が弾かれる' -- a configured gate must reject the INSUFFICIENT, i.e. implicitly PASS the sufficient) is still not achievable in production: a configured gate rejects ALL borrowers unconditionally via the 'no_borrower_agent_id' fail-closed branch, because borrowerAgentId is genuinely always undefined for every real citizen row, spawned or genesis."}
       ]
     },
     {
       "name": "edge_case_coverage",
       "verdict": "FAIL",
-      "findings": ["FIND-101"],
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": "skills/economy/gig/__tests__/ensure-gas.test.mjs:188-260", "description": "FIND-003 fix re-verified: both exception-throwing branches (sendDripFn itself throws, line 190; waitForTransactionReceipt throws post-broadcast, line 224) are now genuinely covered, including the specific FIND-001 double-drip-past-cap retry proof (lines 252-259: asserts sendCount stays at 1 on retry). Genuinely fixed."},
-        {"type": "file", "location": "skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs:39-89", "description": "FIND-004 fix re-verified: all 3 silent `if (!base.eligible) return;` no-ops are gone, replaced with loud `assert.equal(base.eligible, true, ...)` preconditions (lines 58-59, 72-73, 85-86); the fixture itself was corrected to the known-good `fuel.provider`/`humanDependencies` shape. Genuinely fixed."},
-        {"type": "file", "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:225-253", "description": "The FIND-002 wiring test set is a NEW edge-case gap in its own right (see FIND-101): it only ever exercises isBorrowerEligibleWithReputationGate with an INJECTED `deps.reputationGateFn` stub (never the real production default `passesOnchainReputationGate`) against a borrower fixture (`baseCitizen()`, line 80-91) that -- correctly, matching the real registry schema -- has no `.agentId`/`.agent_id` field at all. No test anywhere in this feature's 45 new tests calls the REAL default reputationGateFn with a CONFIGURED gate against a citizen shaped like a genuine production registry row, so the agentId field-name defect (FIND-101) produces zero test failures despite being a complete functional inversion of the feature's stated purpose."}
+        {"type": "file", "location": "skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:274-349", "description": "The 3 new round-3 tests genuinely exercise the REAL isBorrowerEligibleWithReputationGate -> passesOnchainReputationGate chain (deps.reputationGateFn is NOT overridden, confirmed by direct read) and their own internal logic (sufficient-PASS/insufficient-REJECT/missing-agentId-fail-closed) is correct GIVEN their fixture. But the fixture (`baseCitizen(BORROWER, { agent_id: '42' })`) is hand-invented by this feature's own test file and has now been proven, by a DIFFERENT part of this same repo (spawn-orchestrator.test.mjs:494-510, citizens.seed.json), to never match a real citizens-registry row's shape. No test anywhere in this feature's 51 new tests (48 round-1/2 + 3 round-3) exercises the gate against a citizen record shaped exactly like `spawn-orchestrator.mjs`'s own real `citizenRecord` object (id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator, no agent_id) or `citizens.seed.json`'s real seeded row -- both of which WOULD reproduce the exact false-rejection FIND-101 originally reported and these 3 tests claim to have fixed."}
       ]
     },
     {
       "name": "implementation_correctness",
       "verdict": "FAIL",
-      "findings": ["FIND-101"],
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": "skills/economy/gig/lib/ensure-gas.mjs:212-218", "description": "Single appendDripLog call site, `status:'broadcast'` recorded atomically at broadcast time -- re-verified no other code in this repo reads the drip log's `status` field for anything other than this module's own `countRecentDrips` (which is status-agnostic, counting by address+timestamp only), so this is not a regression against any other consumer (repo-wide grep for `dripLogPath`/`gas-drip-log` confirms ensure-gas.mjs/its own test are the only readers)."},
-        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:392", "description": "`borrowerAgentId: freshBorrower.agentId` -- a straightforward wrong-property-access bug: `freshBorrower` is whatever wake-gate.mjs's `buildDefaultGetCitizen` returns, a raw spread of the on-disk registry row (`{...citizen, balanceUsd}`, wake-gate.mjs:64-71), which per this repo's own canonical, tested schema carries the borrower's ERC-8004 identity under `agent_id`, never `agentId`. This single character-casing/underscore mismatch makes the entire G3 configured-gate path unconditionally fail-closed against every real borrower -- see FIND-101 for full evidence chain."}
+        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:395", "description": "Reads a field (agent_id, and its camelCase fallback) that this repo's own real citizens-registry write path never populates -- confirmed by tracing every file under skills/ that writes to CITIZENS_REGISTRY_PATH (spawn-orchestrator.mjs's appendCitizenRecord call site, the only runtime writer) and the git-tracked seed (citizens.seed.json, the only bootstrap writer). Neither ever sets agent_id/agent_evm_address on a citizens-registry row."}
       ]
     },
     {
@@ -48,18 +46,51 @@
       "verdict": "PASS",
       "findings": [],
       "evidence": [
-        {"type": "file", "location": "skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs:1-89", "description": "FIND-004's fix is structurally sound: no duplication introduced, the corrected fixture reuses lending-gate.test.mjs's own known-good BASE_BORROWER shape rather than inventing a new one, matching this repo's own stated convention."},
-        {"type": "file", "location": "skills/economy/lending/scripts/wake-gate.mjs:74-102, 191-204", "description": "Re-verified wake-gate.mjs itself was NOT modified this round and remains structurally sound: findSelectedPair (line 78) is a pure, synchronous pre-filter using the raw isBorrowerEligible (never isBorrowerEligibleWithReputationGate) purely for candidate selection; every selected pair is still routed through executeLoanIssuanceAttempt (line 191), which now authoritatively enforces the (functionally-broken, per FIND-101, but structurally correctly-placed) gate at step 6. The design's own 'wake-gate.mjs need not be separately wired' claim (behavioral-spec.md:181-184) is structurally accurate regardless of FIND-101."},
-        {"type": "file", "location": "skills/economy/gig/lib/ensure-gas.mjs:1-231", "description": "No dead code, no unnecessary abstraction; the FIND-001 fix is a single, minimally-invasive relocation of one existing appendDripLog call plus a status-value change, matching the file's own established comment-density/DI conventions."}
+        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:384-395", "description": "Round-3's own diff (the field-read line, its comment, and the 3 new tests) is minimal, single-call-site, and matches this file's own established DI-parameter/fail-open/fail-closed/comment-density conventions -- no duplication, no dead code introduced by this round's own change. (FIND-201 is a data-plumbing/spec-fidelity defect in a DIFFERENT, pre-existing file -- spawn-orchestrator.mjs's citizen-registry-vs-ledger split predates this feature and is not itself disorganized code introduced by this round.)"}
       ]
     },
     {
       "name": "verification_readiness",
       "verdict": "FAIL",
-      "findings": ["FIND-101"],
+      "findings": ["FIND-201"],
       "evidence": [
-        {"type": "file", "location": ".vcsdd/features/franklin-reputation-gasless/evidence/e2e-status.md:31-34", "description": "FIND-005 re-verified: PROP-043/044/045 honestly re-confirmed NOT-RUN this round too, same documented money-safety-wall blocker, no fabricated or simulated E2E claim found anywhere in state.json, the evidence logs, or code comments. This specific finding's remediation intent (honesty, not fabrication) is genuinely satisfied and is NOT, by itself, a blocking gap for this round."},
-        {"type": "file", "location": "specs/verification-architecture.md:74-75", "description": "PROP-048 ('a configured deps.reputationGate is genuinely consulted... and its rejection refuses the loan') is marked Required:true/PASS via node:test, but as implemented (lending-orchestrator.test.mjs:225-246) it only proves the DI SEAM is wired, not that the real production default (passesOnchainReputationGate, deps.reputationGateFn omitted) produces a correct eligibility decision against a realistically-shaped citizen record -- the exact gap that let FIND-101 land as an undetected critical regression. The verification architecture's own proof-obligation table has no PROP-ID asserting 'the real reputationGateFn, given a genuine registry-shaped borrower record and a configured gate, evaluates correctly' -- this is the same class of gap round-1's own FIND-005 finding flagged for PROP-045 ('a testnet run of PROP-045 would only demonstrate the standalone function works in isolation'), now manifesting one layer earlier, at the unit level, because the mock-based proof was accepted as sufficient."}
+        {"type": "file", "location": ".vcsdd/features/franklin-reputation-gasless/specs/verification-architecture.md", "description": "The same class of gap round-2's own verdict flagged for PROP-048 (a mock-based proof accepted as sufficient for an integration-level claim) recurs here one layer deeper: no PROP-ID in this feature's verification architecture requires 'the reputation-gate integration test's borrower fixture matches the ACTUAL schema spawn-orchestrator.mjs's own appendCitizenRecord (or the seed file) produces' -- so a fixture that quietly diverges from the real production data shape (as round-3's own 3 new tests do) passes every existing proof obligation while still leaving G3 functionally inert in production."}
+      ]
+    },
+    {
+      "name": "money_safety",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs, lending-gate.mjs, reputation-gate.mjs, skills/economy/gig/lib/ensure-gas.mjs, reputation.mjs, wallet-provider.mjs", "description": "Direct read of every file this round's changes touch or that FIND-201's trace passed through: no wallet private key is read/logged outside its documented DI parameter in any of these files; ensure-gas.mjs's decideGasAction never auto-spends on mainnet (isMainnet:true always returns needs_gas, never drip); reputation-gate.mjs's gateConfigured short-circuit means an unconfigured gate (the shipped default) never even reads borrowerAgentId or calls getSummaryFn -- confirmed byte-identical to pre-wiring behavior via lending-orchestrator.test.mjs's own dedicated 'defaults to active' test. FIND-201 causes a gate to over-REFUSE (fail closed), never to authorize an unintended disbursement -- it is a functional/spec defect, not a money-safety-boundary violation."},
+        {"type": "note", "location": "tool-constraint", "description": "`git diff main --stat` could not be independently executed (no Bash tool). File-boundary scope was instead verified by direct content review of every file named in state.json's own moneySafetyFileBoundaryCheck claim (lending-orchestrator.mjs + its test file) plus every file this round's own FIND-201 trace required reading (spawn-orchestrator.mjs, child-spec.js, wake-gate.mjs, citizens.seed.json) -- none contain key material, .env access, or spend-cap constants. This is REASONED (direct read), not VERIFIED (executed diff)."}
+      ]
+    },
+    {
+      "name": "test_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/economy/lending/lib/__tests__/*.test.mjs", "description": "Independently counted `test(...)` block occurrences via Grep: 167 across 10 files, exactly matching state.json's claimed lending count."},
+        {"type": "file", "location": "skills/economy/gig/__tests__/*.test.mjs", "description": "Independently counted: 82 across 8 files, exactly matching state.json's claimed gig count. 167+82=249 matches the claimed combined total."},
+        {"type": "note", "location": "tool-constraint", "description": "`node --test` could not be independently executed (no Bash tool) -- pass/fail execution outcomes and the REQ-116 pre-existing-flake claim are read from the builder's own evidence/sprint-1-*-phase-round3.log, not independently re-run this round. This is the same, explicitly-documented limitation round-2's own review accepted as non-blocking given strong count corroboration and no sign of fabricated transcripts."}
+      ]
+    },
+    {
+      "name": "erc8004_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/economy/lending/lib/reputation-gate.mjs:20-49", "description": "passesOnchainReputationGate's branch logic matches behavioral-spec.md REQ-011's Edge Cases exactly, line for line: configured+no borrowerAgentId -> fail-closed (reputation-gate.mjs:32); configured+empty clientAddresses -> fail-open (line 33-35); getSummaryFn {ok:false} -> fail-open (line 38-40); minJobCount/minScore checks independently short-circuit-able (line 42-47). Internally consistent with the spec's own stated ERC-8004 ReputationGateHook port."},
+        {"type": "note", "location": "skills/economy/gig/lib/reputation.mjs:1-33", "description": "Contract addresses/ABI and the header comment's own live-verification claims (getVersion/getIdentityRegistry eth_call results) are UNCHANGED from prior rounds and not touched by round 3's diff; this session had no network tool to re-verify on-chain liveness independently, so that specific sub-claim is REASONED (unchanged code, previously reviewed), not re-VERIFIED this round."}
+      ]
+    },
+    {
+      "name": "honesty",
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        {"type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:384-394 (comment) and reviews/sprint-1/output/findings/FIND-101.json", "description": "Both the round-3 fix's own inline comment and FIND-101.json's evidence chain assert, with specific line-number citations and high confidence, that 'the real, on-disk citizen-registry row stores the borrower's ERC-8004 identity under snake_case agent_id (canonical write site: skills/self/spawn/lib/child-spec.js:65 ... also spawn-orchestrator.mjs's own agent_id: identityResult.agentId write)'. This claim is FALSE: those two cited lines write the CHILDREN LEDGER (a different file/store), not the citizens-registry row the gate actually reads at runtime -- the real citizens-registry write, 30-60 lines further down in the SAME function (spawn-orchestrator.mjs:713-724), was not checked before this claim was asserted as fact, despite this round's entire task being specifically about registry-row shape. The cited line numbers are real and exist (not hallucinated), but they do not establish what the claim says they establish. This is not a fabricated test result -- the 3 new tests genuinely pass against their own fixture, and the test counts are genuinely accurate -- but it is a confident, specific, checkable factual claim about this codebase's own data model that was never actually checked against the sibling code three lines away, and it was allowed to become the load-bearing justification for closing round 2's critical finding."}
       ]
     }
   ],
@@ -68,8 +99,8 @@
     "allCriteriaEvaluated": true,
     "evaluatedCriteria": ["REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007", "REQ-008", "REQ-009", "REQ-010", "REQ-011", "REQ-012", "REQ-013"],
     "duplicateFindings": [],
-    "priorRoundFindingsResolved": ["FIND-001", "FIND-003", "FIND-004", "FIND-005"],
-    "priorRoundFindingsPartiallyResolved": ["FIND-002"],
-    "priorRoundFindingsResolutionNote": "FIND-002's specific round-1 complaint (unreachable dead code) is resolved -- isBorrowerEligibleWithReputationGate is now genuinely called from the real production loan-issuance entry point. A NEW, distinct, round-2-introduced defect (FIND-101) was found in the SAME wiring: a wrong citizen-record field name (`agentId` vs the repo's own canonical `agent_id`) makes the now-reachable gate unconditionally reject every real borrower once configured, defeating G3's entire purpose. This is reported as a new finding, not a re-opened FIND-002, because the specific defect (reachability) round-1 identified is genuinely fixed; the new defect is a different, previously-undetected bug this round's own fix introduced/exposed."
+    "priorRoundFindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005"],
+    "priorRoundFindingsPartiallyResolved": ["FIND-101"],
+    "priorRoundFindingsResolutionNote": "FIND-001/003/004/005 (round 2) independently re-confirmed still resolved, unregressed by round 3, via full-file re-reads of ensure-gas.mjs (lines 194-231) and lending-gate-reputation-composition.test.mjs (all 5 tests). FIND-101's OWN specific complaint (wrong field casing, freshBorrower.agentId vs .agent_id) is genuinely fixed -- lending-orchestrator.mjs:395 now reads the correct casing. But independent re-tracing of the full data-flow chain this round (reputation-gate.mjs -> lending-orchestrator.mjs -> wake-gate.mjs's buildDefaultGetCitizen -> CITIZENS_REGISTRY_PATH -> every real writer of that file) surfaced that NEITHER casing of the field is EVER present on a real citizens-registry row -- the citation FIND-101's own fix used to justify 'this is the canonical write site' actually pointed at a different store (the children ledger). The net, user-visible defect FIND-101 originally reported (a configured reputation gate rejects 100% of real borrowers, defeating G3's entire purpose) is UNCHANGED and still present after round 3's fix, now tracked as FIND-201 because its confirmed root cause differs from what FIND-101/the round-3 fix addressed."
   }
 }

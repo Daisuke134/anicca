@@ -57,10 +57,10 @@
 | PROP-033 | `passesOnchainReputationGate`: configured gate + no borrowerAgentId -> eligible:false (fail-closed) | 1 | true | node:test |
 | PROP-034 | `passesOnchainReputationGate`: read failure -> eligible:true (fail-open) | 1 | true | node:test |
 | PROP-035 | `passesOnchainReputationGate`: no clientAddresses -> eligible:true (fail-open) | 1 | true | node:test |
-| PROP-036 | `isBorrowerEligibleWithReputationGate`: base check fails -> reputation gate never consulted | 1 | true | node:test |
-| PROP-037 | `isBorrowerEligibleWithReputationGate`: base passes, gate rejects -> eligible:false | 1 | true | node:test |
-| PROP-038 | `isBorrowerEligibleWithReputationGate`: both pass -> eligible:true | 1 | true | node:test |
-| PROP-039 | `isBorrowerEligibleWithReputationGate`: defaults to real gate when no override given | 1 | true | node:test |
+| PROP-036 | `isBorrowerEligibleWithReputationGate`: base check fails -> reputation gate never consulted (★lib-level only, ★UNWIRED★ — see G3 DEFERRED note below) | 1 | true | node:test |
+| PROP-037 | `isBorrowerEligibleWithReputationGate`: base passes, gate rejects -> eligible:false (★lib-level only, ★UNWIRED★) | 1 | true | node:test |
+| PROP-038 | `isBorrowerEligibleWithReputationGate`: both pass -> eligible:true (★lib-level only, ★UNWIRED★) | 1 | true | node:test |
+| PROP-039 | `isBorrowerEligibleWithReputationGate`: defaults to real gate when no override given (★lib-level only, ★UNWIRED★) | 1 | true | node:test |
 | PROP-040 | pre-existing `isBorrowerEligible`/`lending-gate` suite (150+ tests) unaffected | 0 | true | node:test (regression) |
 | PROP-041 | pre-existing gig/store/lock suite (80 tests incl. this feature's 6) unaffected | 0 | true | node:test (regression) |
 | PROP-042 | Reputation Registry addresses used match independently-confirmed `eth_call` results (mainnet
@@ -68,11 +68,40 @@
 | PROP-043 (E2E) | Base Sepolia: register->giveFeedback with zero manual ETH top-up | 3 | true | live testnet script |
 | PROP-044 (E2E) | Base Sepolia: getSummary count increases after a real giveFeedback tx, confirmed via an
   independent `eth_call` | 3 | true | live testnet script |
-| PROP-045 (E2E) | configured gate rejects a real low-reputation borrower on testnet | 3 | true | live testnet script |
+| PROP-045 (E2E) | configured gate rejects a real low-reputation borrower on testnet — **DEFERRED (FIND-201, 2026-07-12)**: the production entry point this would exercise (`executeLoanIssuanceAttempt`) no longer wires the gate; see G3 DEFERRED note below | 3 | false | live testnet script (out of scope this sprint) |
 | PROP-046 | `ensureGas`: `sendDripFn` throws before broadcast -> ok:false, daily cap NOT consumed (FIND-003) | 1 | true | node:test |
 | PROP-047 | `ensureGas`: `waitForTransactionReceipt` throws after broadcast -> ok:false, drip IS counted against the daily cap, a retry cannot double-drip (FIND-001 fix proof) | 1 | true | node:test |
-| PROP-048 | `executeLoanIssuanceAttempt`: a configured `deps.reputationGate` is genuinely consulted via `deps.reputationGateFn` and its rejection refuses the loan before any ledger row is written (FIND-002 wiring proof) | 1 | true | node:test |
-| PROP-049 | `executeLoanIssuanceAttempt`: unset `deps.reputationGate` (default) reaches `"active"` identically to pre-wiring behavior (fail-open no-op) | 1 | true | node:test |
+| PROP-048 | `executeLoanIssuanceAttempt`: a configured `deps.reputationGate` is genuinely consulted via `deps.reputationGateFn` and its rejection refuses the loan before any ledger row is written (FIND-002 wiring proof) — **DEFERRED (FIND-201, 2026-07-12)**: this wiring itself has been REVERTED (round-4 de-scope); `executeLoanIssuanceAttempt` calls `isBorrowerEligible` exactly as on `main`, byte-for-byte. This obligation, and its 2 backing tests, no longer exist — re-opens with the follow-up spec that adds `agent_id` to the registry | 1 | false | n/a (obligation withdrawn, not merely unrun) |
+| PROP-049 | `executeLoanIssuanceAttempt`: unset `deps.reputationGate` (default) reaches `"active"` identically to pre-wiring behavior (fail-open no-op) — **DEFERRED (FIND-201, 2026-07-12)**: moot, same revert as PROP-048 — the orchestrator has no `deps.reputationGate` concept at all now | 1 | false | n/a (obligation withdrawn, not merely unrun) |
+
+### G3 DEFERRED (2026-07-12, adversary FIND-201, independently confirmed)
+
+G3 (reputation-gate wiring into `executeLoanIssuanceAttempt`) is **DE-SCOPED for this sprint**, per the
+design spec's own §1 G3 correction. Root cause: the real, on-disk citizens registry row a borrower's
+`agent_id` would need to be read from at the real call site (`skills/self/spawn/registry/citizens.seed.json`'s
+Franklin row / `spawn-orchestrator.mjs`'s own `citizenRecord`, ~line 713) carries **no `agent_id` field at
+all** — only `id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator`. `agent_id`
+exists only on the separate children **ledger** row. Wiring the gate today would make
+`freshBorrower.agent_id` always `undefined` for every real borrower, and a configured gate would reject
+100% of borrowers (inverting G3's purpose) — a data-availability gap, not a field-naming bug (round-3
+already fixed the field-naming half, FIND-101; FIND-201 is the deeper, structural gap underneath it).
+
+**Reverted this round**: `lending-orchestrator.mjs`'s `runLockedIssuance` step 6 now calls
+`isBorrowerEligible` exactly as on `main` (verified via `git diff main` showing zero functional diff for
+that call). `isBorrowerEligibleWithReputationGate` (`lending-gate.mjs`) and
+`passesOnchainReputationGate` (`reputation-gate.mjs`) remain as **tested-but-unwired pure/effectful
+lib primitives** (PROP-029..039 still pass, still exercised directly by their own unit tests) — zero
+production call sites, clearly commented as such at their own definition sites.
+
+**Follow-up spec (tracked separately, not this sprint)**: add `agent_id`/`agent_evm_address` to the
+citizens registry's own `citizenRecord` (+ seed migration), or add a wallet→agentId ERC-8004 resolver;
+then re-wire `isBorrowerEligibleWithReputationGate` into `runLockedIssuance` step 6 and re-open
+PROP-045/048/049. See [[../../../../docs/superpowers/specs/2026-07-12-franklin-reputation-gasless-design.md]]
+§1 G3 and [[../../loop-engineering/23-anicca-loop-architecture-redesign]].
+
+**G1/G2 unaffected**: `ensure-gas.mjs` (G1) and `reputation.mjs`/`gig.mjs`'s `gigVerifyAndPay` wiring (G2)
+were not touched this round — `git diff main` for those files/paths is unchanged from before this round's
+revert, and their own regression suites (gig 82/82, see PROP-001..028/046/047) remain green.
 
 ## Verification Strategy
 
