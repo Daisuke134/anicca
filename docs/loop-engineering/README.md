@@ -8,6 +8,7 @@ anicca の「毎日 自走し、自分で壊れを直し、自分で改善する
 | 知りたいこと | file | 種別 |
 |---|---|---|
 | **loop 全体の設計 SSOT**（2系統分離 / to-be ASCII / 全 TODO / verifier 原則） | `23-anicca-loop-architecture-redesign.md` | ★正本(最新) |
+| **全 loop 共通 verifier の設計**（OSS 調査→ProofShot+Base MCP+evaluator-optimizer を copy+tweak、全 loop へ配布） | `24-shared-ground-truth-verifier-design.md` | ★正本(verifier) |
 | **loop 設計の BP**（Anthropic/AWS 一次ソース + 我々の設計評価 + /loop 活用） | `22-anthropic-bp-loop-verification-review-2026-07-11.md` | 参考(引用付) |
 | **全 loop の真実監査**（報告 vs 実 side-effect、どれが壊れ/嘘か、browser/on-chain 実確認） | `../superpowers/evidence/LOOPS-TRUTH-AUDIT.md` | ★真実(最新) |
 | **嘘防止の鉄則**（report/ledger/test-green ≠ working、own-eyes 必須） | memory `feedback_never_claim_working_without_own_eyes_verification.md` | ★行動則 |
