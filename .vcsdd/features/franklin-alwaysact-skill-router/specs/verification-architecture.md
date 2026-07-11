@@ -14,10 +14,12 @@ revision — (1) REQ-506's reroute filter gains a `risk:"safe"`-only constraint 
 from the registry's existing `risk` field, not a new classification source) so a capital-risking slot is
 never offered as a reroute target (FIND-101); (2) REQ-511's ceiling is restated unambiguously as at most 1
 extra `think()` call beyond baseline (2 total), matching `nextRerouteState`'s `maxAttempts = 1` and
-PROP-511a verbatim (FIND-102); (3) a new pure guard + Effectful Shell modification (REQ-513) makes
-`index.mjs`'s real `if (slot === 'sleep')` dispatch (`index.mjs:402-416`) reject a fabricated
-`slot:'sleep'`/off-menu pick while always-act is engaged, closing a structural bypass of the entire
-always-act mechanism (FIND-103).
+PROP-511a verbatim (FIND-102); (3) a new pure guard + Effectful Shell modification (REQ-513) makes the
+wake-loop dispatch, inside the dedicated `runAlwaysActWake` function reached via an early-return dispatch
+(`index.mjs:516-518`), reject a fabricated `slot:'sleep'`/off-menu pick while always-act is engaged, closing
+a structural bypass of the entire always-act mechanism (FIND-103) — see the REQ-513 Effectful Shell entry
+below for the full, converge-corrected wiring-mechanism description (single source of truth for citable line
+numbers).
 
 **Spec-review iteration-3 correction (FIND-201)**: `isRejectableSleepOrOffMenu`'s second argument is
 corrected from the static, wake-level `ctx.alwaysActMenu` to a per-attempt `currentOfferedSlots` value — a
@@ -39,7 +41,7 @@ third instance). This revision removes array-identity-based branch selection ENT
 arbiter of every REQ-505/506/511/513 branch decision — `attemptsUsed===0` → one shared retry (reprompt or
 reroute, whichever failure type fired); `attemptsUsed===1` → REQ-508 escalation, unconditionally, regardless
 of failure type or which array was offered. `currentOfferedSlots`/`isRejectableSleepOrOffMenu` are demoted to
-their FIND-201 VALIDITY-check role only. See §2.5 of behavioral-spec.md for the exhaustive 9-row transition
+their FIND-201 VALIDITY-check role only. See §2.5 of behavioral-spec.md for the exhaustive 12-row transition
 matrix this correction is verified against.
 
 - **Pure Core** (new module(s), e.g. `runtime/loop/always-act-router.mjs`, deterministic, no I/O,
@@ -313,7 +315,7 @@ Phase 2a/2b review outright, regardless of its assertions.
   `[no-tool-call, fabricated-slot]` sequence proving branch selection is keyed on `attemptsUsed`, never
   `currentOfferedSlots` identity (PROP-513e), and its REQ-506 symmetric counterpart, a no-op result on a
   REQ-505-reprompt-attempt's valid pick never triggering a further reroute (PROP-506g). This file's test
-  suite is required to exercise EVERY row of behavioral-spec.md §2.5's exhaustive 9-row transition matrix,
+  suite is required to exercise EVERY row of behavioral-spec.md §2.5's exhaustive 12-row transition matrix,
   not merely the PROP-labeled subset.
 - `verification/always-act-nojudgment.property.test.mjs` — runs PROP-507a (menu × args generator) +
   PROP-507b (grep check, invoked as a subprocess assertion from the test file so it participates in the
@@ -327,6 +329,17 @@ Phase 2a/2b review outright, regardless of its assertions.
 
 ## Changelog
 
+- **converge iter2 fix: doc-sync FIND-003/004 (REQ-513 EARS clause + all residual stale references,
+  exhaustive grep sweep)**: converge iteration-2's fresh-context adversary found the first doc-sync pass
+  (FIND-001/002 below) left REQ-513's own live text in `specs/behavioral-spec.md` (EARS clause, Edge Cases
+  bullet, Edge Case Catalog) still asserting the disproven "in-place conditional guard before
+  `index.mjs:402-416`" mechanism (FIND-003), and left this file's Purity Boundary Map summary paragraph
+  (iteration-2 correction, above) repeating the same stale `index.mjs:402-416` citation, undiscovered by the
+  first pass. Also applies FIND-004's still-outstanding 9-row → 12-row correction (lines 18-20/42/316/360)
+  that iteration-1's own recommendation had already asked for. All fixes are documentation-accuracy only —
+  no source/test change; 183/183 unchanged throughout. See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-003.json` and
+  `FIND-004.json`.
 - **converge fix: doc-sync FIND-001/002 (declared design synced to shipped implementation, no code
   change)**: Phase 6 convergence review found two literal contradictions between this document's declared
   design and the actual shipped code, both documentation-accuracy issues only. FIND-001: the Pure Core
@@ -357,7 +370,7 @@ Phase 2a/2b review outright, regardless of its assertions.
   coverage description is strengthened to explicitly enumerate ALL orderings of the three failure modes
   (not just "always X"), including both compound sequences. Verification Strategy's Tier 2 list and the
   Phase 5 `always-act-reroute.property.test.mjs` harness plan updated to require coverage of every row in
-  behavioral-spec.md §2.5's new exhaustive 9-row transition matrix.
+  behavioral-spec.md §2.5's exhaustive 12-row transition matrix.
 - **iteration-3 fix: FIND-201 (guard validates per-attempt offered set)**: `isRejectableSleepOrOffMenu`'s
   second argument is corrected from the static `ctx.alwaysActMenu` to a per-attempt `currentOfferedSlots`
   value (a local variable in `index.mjs`'s retry loop, set at the same point the per-attempt tool

@@ -260,7 +260,7 @@ REQ-503's filtered earn-action menu (or, on a reroute attempt, REQ-506's further
   spec/tool-contract violation by the model, not the harness — the schema truly does not offer it) is NOT
   auto-rejected by any pre-existing enum-validation step (spec-review FIND-103 correction: no such step
   exists in `index.mjs`'s real wake loop today — `parseToolCall` performs no cross-check against the offered
-  `tools` array, and the existing `if (slot === 'sleep')` branch at `index.mjs:402-416` is a bare string
+  `tools` array, and the existing `if (slot === 'sleep')` branch at `index.mjs:551` is a bare string
   check that would otherwise honor it). REQ-513 defines the concrete, real mechanism that makes this case
   actually safe.
 - `thinkClaudeP`'s text-prompt path has no formal JSON-schema enum enforcement; if the model emits a
@@ -529,8 +529,9 @@ a reroute) was spent this wake, regardless of which of REQ-505/506/513 spent it.
 
 ### REQ-511: Non-functional — bounded cost and latency, via a SINGLE explicit attempt-state that is the sole arbiter of every retry/reroute/escalation branch (spec-review iteration-4 FIND-301 fix)
 **EARS**: THE SYSTEM SHALL track, for every always-act-engaged wake, a SINGLE explicit attempt-state
-`attemptsUsed ∈ {0, 1}` (reusing/extending the pure `nextRerouteState({attemptsUsed, maxAttempts,
-lastOutcome})` state machine defined in the Pure Core, `maxAttempts = 1`) that IS, EXCLUSIVELY, the arbiter
+`attemptsUsed ∈ {0, 1}` (reusing/extending the pure `nextRerouteState({attemptsUsed, maxAttempts})`
+state machine defined in the Pure Core, `maxAttempts = 1` — actual shipped signature, no `lastOutcome`
+input; converge doc-sync 2026-07-11 correction, FIND-001/FIND-003) that IS, EXCLUSIVELY, the arbiter
 of every retry/reroute/escalation branch decision made by REQ-505 (no-tool-call), REQ-506
 (no-realized-action), and REQ-513 (fabricated/off-menu slot) within that wake. **(spec-review iteration-4
 FIND-301 fix — the class-killing rule)** Branch selection MUST NOT compare `currentOfferedSlots`/
@@ -616,22 +617,26 @@ function alongside `is_fresh_but_barren`, not a modification of that function's 
   `always_act_not_engaged` line surrounded by successfully-engaged wakes after go-live does NOT trigger it.
 
 ### REQ-513: A fabricated `slot:"sleep"` (or any slot not offered THIS attempt) is rejected by the REAL wake-loop dispatch against the PER-ATTEMPT offered set for VALIDITY, and routed by REQ-511's `attemptsUsed` state for BRANCH SELECTION — never by array identity (spec-review FIND-103 fix; FIND-201 fix corrected the validity reference set; FIND-301 fix corrects branch selection)
-**EARS**: WHEN always-act mode is engaged (`ctx.alwaysActEngaged === true`) AND `parseToolCall(rawResponse)`
-resolves a non-null `{ slot, args }` for a given `think()` attempt THE SYSTEM SHALL, before `index.mjs`'s
-existing `if (slot === 'sleep')` branch (`index.mjs:402-416`, unconditional string check) can fire, check
-whether `slot === 'sleep'` OR `slot` is not a member of `currentOfferedSlots` — **the exact slot array that
-WAS ACTUALLY PASSED to `getToolDefinitions`/`buildAlwaysActToolDefinitions` for THIS SPECIFIC attempt**
-(spec-review FIND-201 fix: the baseline attempt's `currentOfferedSlots` equals `ctx.alwaysActMenu`, per REQ-504
-point 5; a REQ-506 reroute attempt's `currentOfferedSlots` equals that reroute's own narrower
+**EARS**: WHEN always-act mode is engaged (`ctx.alwaysActEngaged === true`) THE SYSTEM SHALL, via the
+early-return dispatch that diverts the wake into `runAlwaysActWake` (`index.mjs:516-518`) BEFORE `index.mjs`'s
+ordinary `think()`/tool-call-parse flow — including its pre-existing `if (slot === 'sleep')` branch
+(`index.mjs:551`, unconditional string check, left untouched by this dispatch) — ever runs, check, for EACH
+`think()` attempt inside `runAlwaysActWake`'s own retry loop, immediately ahead of any skill execution: once
+`parseToolCall(rawResponse)` resolves a non-null `{ slot, args }` for that attempt, whether `slot === 'sleep'`
+OR `slot` is not a member of `currentOfferedSlots` — **the exact slot array that WAS ACTUALLY PASSED to
+`getToolDefinitions`/`buildAlwaysActToolDefinitions` for THIS SPECIFIC attempt** (spec-review FIND-201 fix:
+the baseline attempt's `currentOfferedSlots` equals `ctx.alwaysActMenu`, per REQ-504 point 5; a REQ-506
+reroute attempt's `currentOfferedSlots` equals that reroute's own narrower
 `menuSlots.filter(x => x !== s && isMarketRiskFree(x, riskTagOf))` array — **NEVER** the static, full-wake
 `ctx.alwaysActMenu`, once a reroute has narrowed the offered schema for that attempt — this is
 `currentOfferedSlots`'s ONLY role, per REQ-504 point 5's iteration-4 correction). IF EITHER IS TRUE THE
-SYSTEM SHALL NOT execute the existing `sleep`/narrate branch and SHALL NOT execute the resolved `slot` as a
-skill. The consequence THEN branches SOLELY on REQ-511's shared `attemptsUsed` attempt-state (spec-review
-iteration-4 FIND-301 fix — this REPLACES iteration-3's "IF this is the BASELINE/REROUTE attempt" framing,
-which inferred the attempt's identity from `currentOfferedSlots === ctx.alwaysActMenu`; that inference is
-REMOVED because a REQ-505 reprompt attempt satisfies the exact same equality and was therefore
-misclassified — FIND-301):
+SYSTEM SHALL NOT execute the resolved `slot` as a skill (`index.mjs:551`'s legacy `sleep`/narrate branch is
+never reached by this codepath at all — it lives in a different function and is architecturally unreachable
+for an engaged wake, see "Concretely:" below; this guard neither gates nor modifies it). The consequence THEN
+branches SOLELY on REQ-511's shared `attemptsUsed` attempt-state (spec-review iteration-4 FIND-301 fix — this
+REPLACES iteration-3's "IF this is the BASELINE/REROUTE attempt" framing, which inferred the attempt's
+identity from `currentOfferedSlots === ctx.alwaysActMenu`; that inference is REMOVED because a REQ-505
+reprompt attempt satisfies the exact same equality and was therefore misclassified — FIND-301):
 - IF `attemptsUsed === 0` (the shared extra-call budget not yet spent by ANY prior mechanism this wake), THE
   SYSTEM SHALL treat this exactly as an invalid outcome for REQ-505's bounded-reprompt path and set
   `attemptsUsed = 1` (a stray off-menu/`"sleep"` slot consumes the SAME shared retry budget REQ-511 defines,
@@ -646,9 +651,13 @@ baseline attempt's — but its `attemptsUsed` is `1` (the reprompt itself alread
 invoked), so the branch rule above correctly routes it to REQ-508's escalation, never back into REQ-505's
 reprompt path a second time. `currentOfferedSlots` identity is never consulted for this decision at all.
 
-**Converge doc-sync 2026-07-11 correction, FIND-002**: the paragraph below previously described this as the
-existing `if (slot === 'sleep')` branch being made conditional in place. That is NOT what was shipped — see
-the actual mechanism, restated to match `runtime/loop/index.mjs`:
+**Converge doc-sync 2026-07-11 correction, FIND-002/FIND-003**: this requirement previously described the
+wiring mechanism — in its EARS clause above, in this "Concretely:" paragraph, in its Edge Cases bullet below,
+and in the cross-cutting Edge Case Catalog (§3) — as the existing `if (slot === 'sleep')` branch being made
+conditional in place. That is NOT what was shipped (FIND-002 fixed only this paragraph in the first doc-sync
+pass; FIND-003, this iteration, propagates the same correction to the EARS clause and both edge-case
+citations so the requirement no longer contradicts itself). See the actual mechanism, restated to match
+`runtime/loop/index.mjs`:
 
 Concretely: `index.mjs:516-518` adds an early return — `if (ctx.alwaysActEngaged) { return runAlwaysActWake({
 ctx, wakeId, ts, alwaysActMenu }); }` — immediately ahead of the pre-existing `think()`/tool-call-parse flow.
@@ -667,9 +676,10 @@ routes DIRECTLY into REQ-508's escalation. `isRejectableSleepOrOffMenu` itself h
 branch-selection responsibility — it answers ONLY "is `slot` valid for this attempt", never "which attempt is
 this".
 **Edge Cases**:
-- A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected — `index.mjs:402-416`'s
-  `sleep` branch fires exactly as it does today, byte-for-byte, since the new guard only activates when
-  `ctx.alwaysActEngaged === true`.
+- A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected — `index.mjs:516`'s early
+  return never fires for it, so the wake falls straight through to `index.mjs:551`'s pre-existing `if (slot
+  === 'sleep')` branch exactly as it does today, byte-for-byte; the new guard (`isRejectableSleepOrOffMenu`
+  at `index.mjs:717`, inside `runAlwaysActWake`) only activates when `ctx.alwaysActEngaged === true`.
 - **(spec-review FIND-201)** A fabricated/off-menu slot arrives on the REROUTE attempt: this is NOT folded
   into a fresh REQ-505 reprompt (that would be a third `think()` call, violating REQ-511's 2-total ceiling) —
   it goes DIRECTLY to REQ-508's truthful escalation. This holds whether the rejected slot is `'sleep'`, a
@@ -789,8 +799,9 @@ execution. No other attempt-1×attempt-2 combination is reachable.
 - **Fabricated off-menu/`"sleep"` tool call** (spec-review iteration-2 FIND-103): a model emits
   `slot:"sleep"` or any slot absent from `currentOfferedSlots` despite the schema truly not offering it (a
   realistic risk for weak/free models, per §1's `parse-tool-call.mjs` scavenge-parser evidence) — REQ-513
-  rejects it at the REAL `index.mjs:402-416` dispatch point and, on the baseline attempt, routes it into
-  REQ-505/511's bounded reprompt path; it is NEVER silently honored as an idle/sleep outcome, closing the
+  rejects it at the REAL `runAlwaysActWake` dispatch point (`isRejectableSleepOrOffMenu` at `index.mjs:717`,
+  reached only via the early-return dispatch at `index.mjs:516-518`) and, on the baseline attempt, routes it
+  into REQ-505/511's bounded reprompt path; it is NEVER silently honored as an idle/sleep outcome, closing the
   structural bypass that would otherwise defeat REQ-504/505/506's entire purpose.
 - **Reroute-attempt fabricated re-pick of an excluded slot** (spec-review iteration-3 FIND-201): during a
   REQ-506 reroute, a model re-emits the just-excluded slot `s` or any other `risk:"capital"` slot that
@@ -849,7 +860,8 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
    (the REQ-504 wiring-seam test asserts the REAL outbound tool schema, not just the pure helper; the
    REQ-506 test asserts the REAL `index.mjs:450` call-site widening for `economy/gig`/`economy/lending` AND
    that the reroute enum excludes every `risk:"capital"` slot; the REQ-513 test asserts the REAL
-   `index.mjs:402-416` dispatch rejects a fabricated `slot:'sleep'`/off-menu pick) — confirm all new tests
+   `runAlwaysActWake` dispatch (`isRejectableSleepOrOffMenu` at `index.mjs:717`) rejects a fabricated
+   `slot:'sleep'`/off-menu pick) — confirm all new tests
    FAIL, confirm regression baseline (existing `earn-slot.mjs`, `catalog-gate.mjs`, `context.mjs`,
    `prompt.mjs`, `brain.mjs`, `earn-detect.mjs`, `earning-health.py` test suites) still PASS.
 5. Phase 2b (GREEN) — implement the pure core module(s) + wire the effectful shell changes into
@@ -868,6 +880,22 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 
 ## Changelog
 
+- **converge iter2 fix: doc-sync FIND-003/004 (REQ-513 EARS clause + all residual stale references,
+  exhaustive grep sweep)**: converge iteration-2's fresh-context adversary found the first doc-sync pass
+  (FIND-001/002 below) corrected only REQ-513's "Concretely:" paragraph, leaving REQ-513's own EARS clause
+  (§REQ-513, most authoritative sentence), its Edge Cases bullet, and the cross-cutting Edge Case Catalog
+  (§3) still asserting the disproven "in-place conditional guard before `index.mjs:402-416`'s `if (slot ===
+  'sleep')` branch" mechanism as current fact (FIND-003) — an internal self-contradiction within the same
+  requirement. This revision propagates the corrected early-return-dispatch mechanism
+  (`index.mjs:516-518` → `runAlwaysActWake`, guard `isRejectableSleepOrOffMenu` at `index.mjs:717`, legacy
+  `index.mjs:551` branch untouched/unreachable for engaged wakes) to all of REQ-513's own restatements, plus
+  one further stale `index.mjs:402-416` citation found by an exhaustive grep sweep (REQ-504's edge case,
+  §2). Also applies FIND-004's still-outstanding 9-row → 12-row correction (`specs/verification-architecture.md`
+  lines 18-20/42/316/360 and this file's own iteration-4 changelog entry below) that iteration-1's own
+  recommendation asked for but the first fix pass did not apply. Documentation-accuracy only — no
+  source/test change; 183/183 unchanged throughout. See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-003.json` and
+  `FIND-004.json`.
 - **converge fix: doc-sync FIND-001/002 (declared design synced to shipped implementation, no code
   change)**: Phase 6 convergence review found REQ-513's "Concretely:" paragraph declared the wiring
   mechanism as `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch "becomes conditional"
@@ -895,7 +923,7 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
   part in branch selection. REQ-504 point 5, REQ-505, REQ-506, REQ-511, and REQ-513 are all rewritten to this
   rule; REQ-506 gains a symmetric edge case/AC (its own instance of the same class — a valid slot picked and
   executed on a REQ-505 reprompt attempt that ALSO no-ops must escalate directly, never reroute). A new §2.5
-  "REQ-511 Attempt-State Transition Matrix" adds an exhaustive 9-row table covering every reachable
+  "REQ-511 Attempt-State Transition Matrix" adds an exhaustive 12-row table covering every reachable
   attempt-1×attempt-2 outcome combination, each closed by an explicit AC/PROP reference. New PROP-513e
   (money-safety-critical, the direct FIND-301 regression test) and PROP-506g (the REQ-506 symmetric
   extension) added in verification-architecture.md; PROP-511a's adversarial coverage is restated to
