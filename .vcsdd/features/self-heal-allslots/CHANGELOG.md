@@ -37,12 +37,14 @@ Investigated every required slot's actual telemetry (read `skills/earn/*/run.sh`
 `skills/earn/gig/*.sh`, `skills/earn/video/*.py`, `skills/earn/clip/*.sh`,
 `skills/_shared/lib/ledger.mjs`):
 
-- **`earn/sol-trade`, `earn/polymarket-trade`**: both already write a dedicated per-wake
-  `{"action":"skip","reason":"..."}` trace (`sol-trade.trace.jsonl` / `pm-trade.trace.jsonl` under
-  `skills/earn/state/`) — the EXACT contract `is_fresh_but_barren` needs. Wiring these was a direct,
-  safe generalization (pm-trade newly wired this sprint; sol-trade was already wired via the
-  pre-existing slot-specific script, now duplicated by the registry for parity/regression, plist
-  NOT double-loaded — see `launchd/README.md`).
+- **`earn/sol-trade`, `earn/polymarket-trade`**: both write a per-wake mechanism-failure trace line
+  (`sol-trade.trace.jsonl` / `pm-trade.trace.jsonl` under `skills/earn/state/`) and both are wired
+  into the registry this sprint. **Correction (iter1 adversary review, FIND-001)**: the original
+  claim here — "both already write the EXACT contract `is_fresh_but_barren` needs" — was factually
+  inaccurate. sol-trade's vocabulary is a clean `skip`/`live-pass` pair; pm-trade has a genuine
+  THIRD state, `action:"error"` (AGENT_HOME missing / `pick.py` non-zero exit), that the original
+  `action == "skip"`-only predicate could never see. See "self-heal iter1 fixes FIND-001..006"
+  below for the fix (the pure predicate now also recognizes a sustained `error` run as unhealthy).
 - **`hl_trade`, `x402_sell`, `token_launch`**: all three are branches of ONE shared dispatcher,
   `skills/earn/run.sh`, writing to ONE shared `skills/earn/state/earn-ledger.jsonl` keyed by a
   free-text `task` field (e.g. `"hl-cooldown — holding..."`, `"x402 server up..."`,
@@ -108,3 +110,56 @@ this sprint, documented here for the next P3 iteration.
   that it should be, before the new plist is loaded, to avoid duplicate self-fix spawns for
   `earn/sol-trade`).
 - No merge to `main`/`origin/main` — branch pushed only.
+
+## self-heal iter1 fixes FIND-001..006
+
+Fresh-context adversary impl review (`reviews/impl/iteration-1`, model per model-division table)
+returned FAIL with 6 findings. This section is the honest correction of iteration-1's claims and
+the fix for every finding.
+
+- **FIND-001 (critical, correctness)**: iteration-1's CHANGELOG text above ("both [sol-trade,
+  pm-trade] already write... the EXACT contract `is_fresh_but_barren` needs") was factually wrong.
+  `earn/polymarket-trade`'s `run.sh` has a genuine THIRD trace state, `action:"error"`
+  (`AGENT_HOME` missing / `pick.py` non-zero exit — `skills/earn/polymarket-trade/run.sh:23,185-186`),
+  that the old `action == "skip"`-only predicate could never see, meaning a sustained pm-trade code
+  bug would report `OK` forever. Fixed at the pure-core level:
+  `earning-health.py::is_fresh_but_barren` now treats a sustained, identical-cause run of `skip` OR
+  `error` entries as unhealthy (`_mechanism_failure_cause` reads `reason` for skip, `error` for
+  error) — sol-trade's clean skip/live-pass-only vocabulary is unaffected (it never emits `error`).
+  New pure-core tests: 20 identical errors → BARREN; 20 errors with two different causes → NOT
+  barren; 19 errors then a real trade → NOT barren; empty error message → NOT barren
+  (`skills/self/tests/test_earning_health.py`).
+- **FIND-002 (major, coverage)**: added a genuine two-slots-BARREN-in-one-run scenario
+  (`earn/slot-a` + `earn/slot-e`, different reasons/targets) to
+  `skills/self/tests/test_earning_health_allslots.sh` — both flagged BARREN, both fire their own
+  `self-fix.sh` call with their own `selfFixTarget`, both get their own marker file (asserted:
+  exactly 2 distinct marker files exist), and each call's BLOCKER text is proven to carry only its
+  OWN slot's reason (no cross-fire), via a new `EARNHC_SELF_FIX_SCRIPT` test seam + capture stub.
+- **FIND-003 (minor, coverage)**: added a `slots: []` (present, valid, empty registry) test case,
+  distinct from the pre-existing missing-registry-FILE case — asserts exit 0, zero
+  OK/BARREN/NOT-INSTRUMENTED lines logged.
+- **FIND-004 (major, test quality)**: `mk_healthy_trace()`'s fixture was 15 skip + 1 live-pass = 16
+  total lines, below `minRun=20`, so the "healthy" verdict was actually proven by the
+  `len(trace_tail) < min_run` short-circuit, not the trailing-live-pass-overrides-prior-skips path.
+  Fixed to 25 skip + 1 live-pass = 26 total lines (>= minRun), which now genuinely exercises the
+  real end-to-end wiring path this sprint added.
+- **FIND-005 (major, security)**: trace-derived `reason`/`error` free text flowed unsanitized into
+  `self-fix.sh`'s `--dangerously-skip-permissions` autonomous claude spawn prompt (zero human
+  confirmation gate). Added `earning-health.py::sanitize_for_prompt` — an allowlist-only (letters,
+  digits, space, `. , : ( ) = / -`) pure function, plus a `sanitize-reason` CLI subcommand —
+  and wired `earning-health-allslots.sh` to sanitize BOTH the extracted reason/error text AND the
+  slot id before building a FIXED structured BLOCKER message (never the raw trace text itself).
+  Unit-tested at the pure-core level (malicious payload with backtick/`$()`/pipe/semicolon/angle
+  brackets/ampersand all stripped, safe substring preserved, length capped, fail-soft on non-str)
+  AND end-to-end via a new `EARNHC_SELF_FIX_SCRIPT` test seam + capture stub that proves the actual
+  BLOCKER text handed to the self-fix invocation is neutralized.
+- **FIND-006 (moderate, structural)**: added an in-file `DEPRECATED` header to
+  `skills/earn/sol-trade/sol-trade-healthcheck.sh` pointing at `earning-health-allslots.sh` +
+  the registry as the superseding mechanism, explaining why the file is kept (the old plist may
+  still reference it until migration) rather than deleted.
+
+Verified GREEN after all fixes:
+```
+target-feature-tests: PASS (test_earning_health.py 18/18, test_earning_health_allslots.sh 35/35)
+regression-baseline: PASS (test_sol_trade_healthcheck.sh 9/9)
+```

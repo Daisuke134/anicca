@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "REQ-AS-001's explicit EARS edge case ('Registry file present but empty slots: []: loop body runs zero times, exits 0 cleanly') is not covered by any test. test_earning_health_allslots.sh's section (C) tests a MISSING registry FILE (EARNHC_REGISTRY pointing at a path that does not exist), not a PRESENT, valid, well-formed registry whose `slots` array is empty -- a materially different code path (the `[ ! -f \"$REGISTRY\" ]` early-exit at earning-health-allslots.sh:31-34 vs. the python row-extraction + while-loop-over-zero-rows path at lines 39-110). Static trace-through of the script suggests the empty-array path does exit 0 cleanly, but this is unverified by any actual test run, and is exactly the kind of edge case REQ-AS-001 explicitly calls out as needing to 'never crash a launchd tick.'",
+  "evidence": {
+    "filePath": "skills/self/tests/test_earning_health_allslots.sh",
+    "lineRange": "72-76",
+    "snippet": "echo \"(C) missing registry file -> no-op, never crashes\"\nD2=\"$(mktemp -d)\"\nOUT3=\"$(EARNHC_REGISTRY=\"$D2/missing-registry.json\" ... bash \"$SCRIPT\" ...)\"\na \"missing registry logs and exits cleanly\" \"$OUT3\" \"no registry at\""
+  },
+  "routeToPhase": "2a"
+}

