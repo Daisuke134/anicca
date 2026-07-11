@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (native installer, not homebrew)
 # clip-promote-healthcheck.sh — OS-level supervisor (launchd, every 5min). If the always-on
 # clip-promote-core tmux session is dead, restart it. Ported verbatim (v5 pattern) from
 # clip-healthcheck.sh / gig-healthcheck.sh — same incidents, same fixes, applied up front instead
@@ -22,6 +22,18 @@ SOCK="/tmp/anicca-clip-promote-tmux.sock"; SESSION="anicca-clip-promote-core"
 HB="$HOME/.openclaw/state/.clip-promote-core-last-pass"; START="$HOME/.openclaw/state/.clip-promote-core-last-start"; STALE_MIN=250
 LOG="$HOME/.openclaw/logs/clip-promote-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/.openclaw/state/.clip-promote-core-restart-log"
+
+# FIND-033 (2026-07-10, life-manager-loop 3-day outage; see healthcheck-lib.sh for the full
+# writeup): under low free disk, macOS can't grow its swapfile and every fresh fork()/exec() on the
+# box — including this script's own tmux+claude respawn — starts failing, so a DEAD session can
+# restart-loop indefinitely even though the loop's own code is fine. That shared fix
+# (hc_reclaim_disk_if_low) was applied to capafy/reddit/life-manager-loop via hc_run() but never
+# ported to this standalone script, even though clip-promote-core-healthcheck.log shows the exact
+# same signature (instant DEAD-after-restart, recurring for hours) since at least 2026-07-06.
+# Source just the disk-reclaim helper (function defs only, no top-level side effects) so a restart
+# always gets a real chance to fork.
+# shellcheck source=/Users/operator/anicca/skills/self/healthcheck-lib.sh
+source "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null || true
 
 LOCK_DIR="/tmp/.clip-promote-healthcheck.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -55,6 +67,8 @@ restart() {
   echo "$now" >> "$RESTART_LOG"
   pkill -f "claude --name $SESSION" 2>/dev/null || true
   pkill -f "tmux -S $SOCK new-session" 2>/dev/null || true
+  command -v hc_reclaim_disk_if_low >/dev/null 2>&1 && hc_reclaim_disk_if_low
+  command -v hc_reap_stale_cozempic_guards >/dev/null 2>&1 && hc_reap_stale_cozempic_guards
   sleep 1
   echo "$(date '+%F %T') ${1:-clip-promote-core DEAD} → restarting" >> "$LOG"
   bash "$HOME/anicca/skills/earn/clip-promote/clip-promote-cli.sh" --restart >> "$LOG" 2>&1 || true
