@@ -34,6 +34,14 @@
 
 ---
 
+## ★ REALTIME 2026-07-12 ~06:00 (directional bet エンジンを修復) ★
+- **真のバグ発見&修正**: pick.py(consensus+whale の directional +EV エンジン)が常に WAIT だったのは戦略/資本でなく **①blockrun_llm SDK 未install ②brain env(OPENAI_BASE_URL) 未設定** → analyzer 死亡 → 永遠に "analyzer-unavailable" → **一度も賭けてなかった**。
+- 修正: SDK を .venv-pysdk に install + run.sh に brain env(ClawRouter:8402 free) 追加 + loop HOME に sync。
+- 検証(own-eyes): pick.py 再実行 → "analyzer-unavailable" から **"no-candidate-cleared-edge-confidence-gate"** に変化 = **consensus analyzer が実際に動き、市場をスキャンし、edge≥0.15 が無いので正しく WAIT**(盲賭けしない=right strategy)。
+- → agent-economy-loop が pm を選ぶ度に pick.py が consensus で判断し、**edge≥0.15 & conf≥7 の市場が出たら自律で賭ける**。今は edge 無しで WAIT。
+- 注: 一次情報では $20 directional は base rate 7.6% で大半-EV、pick.py の LLM推定 edge も未実証。だが「right strategy で edge がある時だけ賭ける」エンジンは今動く。日本 Polymarket 法リスクは Dais informed 判断。
+- net profit 依然 $0(まだ賭けが約定してない=edge待ち)。
+
 ## ★ REALTIME 2026-07-12 ~04:45 (配分完了・自律trade解禁・監視へ) ★
 - ✅ $18 を各 loop wallet へ配分完了(own-eyes): claude-p 0x810f **Base USDC $8.95** / Franklin 8Fpqd **Solana USDC $10.90**(+Franklin Base $6.48)。経路 HL withdraw→Arbitrum→relay分配。
 - ✅ **reserve gate $20→$2** に下げた(3 loop plist, reload済 PID 86608/86678/86698)＝「$50 minimum の嘘」をコードで撤廃。両 loop が **$9-11 の少額で capital slot(pm/sol/hl/yield)を trade 可能に**。
