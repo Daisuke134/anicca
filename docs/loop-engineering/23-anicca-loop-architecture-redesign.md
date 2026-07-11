@@ -86,3 +86,57 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 - [ ] (系統2は別instance管轄: clip投稿停止/video空/reddit BAN も H側で。ただし混線分だけ整理)
 
 **Done判定（全 loop 共通、BP準拠）**: 実side-effectを fresh verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。
+
+---
+
+## 5. モデル実態 + Opus /loop の位置づけ（2026-07-11、own-eyes 確認・Dais 明示）
+
+### 5.1 各ループが今どのモデルで回っているか（自分の目で確認）
+| ループ | モデル | 稼働 | 証拠 |
+|---|---|---|---|
+| claude-p main loop（系統1 CEO/開発） | **Sonnet**（`claude --model sonnet`） | ✅ live（直近 exit 124=timeout に注意） | claude-p-mainloop.sh + out.log |
+| Franklin loop（系統2 agent経済） | **free/glm-4.7**（弱い無料モデル、Sonnet ではない） | ✅ live PID 79988 | daemon.err `funded=free/glm-4.7` + ledger `model:free/glm-4.7` |
+
+→ Franklin の engaged wake ~80% escalation（tool call を出せない）は**弱モデルが直接原因**。P1-sprint2（few-shot + 観測性）の背景。
+
+### 5.2 Opus /loop = このセッション限定の「一時的検証ハーネス」（恒久ランナーではない）
+★ Dais 明示: このセッション内の Opus `/loop` は**一時的**。全ループが「実 side-effect を独立 tool-verifier で自己検証し、独立自走できる」ことを**検証し終えるまで**だけ回す。毎日回る恒久ランナーではない。★
+
+- **恒久ランナー = Sonnet の claude-p daily loop + free/glm-4.7 の Franklin loop**（今のまま継続）。
+- **恒久の verifier は「daily loop の中に bake」する** — babysit を無くすのが目的。Opus /loop で「正しい verifier の形」を確立→検証→**その verifier を daily loop（healthcheck / self-fix.sh の verify 段）に恒久配線**→Opus /loop は用済みで停止。
+- つまり Opus /loop の成果物 = ①今セッションで全ループが実際に稼ぐことを tool で確認 ②その tool-verifier を daily loop に焼いて独立自走させる。
+
+### 5.3 恒久 TO-BE（verifier が daily loop の中に居る姿）
+```
+  [Sonnet claude-p daily loop]                 [free/glm-4.7 Franklin daily loop]
+   各wake: BASE実行                              各wake: earn実行(自wallet)
+     → self-heal(healthcheck)                     → self-heal(earning-health)
+        = ★fresh-context tool-verifier★              = ★fresh-context tool-verifier★
+          (on-chain RPC/実API/実DOMを自分で叩く,        (on-chain external:true 増を自分で叩く,
+           report/ledger自己申告を信じない)              ledger自己申告を信じない)
+     → 乖離/未稼ぎ → self-fix spawn(別context Opus)   → 同左
+        → 根治 → verify → 再発防止をcodeに焼く
+   ─ babysit ゼロ。人間(私)は issue+go だけ ─       ─ H instance 管轄、claude-p 管轄外 ─
+
+  [Opus session /loop] = 一時的。上の verifier を確立・検証したら停止。恒久には残さない。
+```
+
+### 5.4 FULL 残 TODO（恒久 verifier を daily loop に焼くまで、優先順）
+**P0 verifier を直す（tool を使える general verifier に。これが無いと全部嘘に戻る）**
+- [ ] G3 Opus セッション内 /loop 機構を作る（一時的検証ハーネス、done=独立 tool-verifier の on-chain 出力）
+- [ ] G0 各 daily loop の healthcheck を「fresh-context + tool 使用（on-chain/実API/実DOM）」verifier に作り替え。VCSDD adversary が tool を使えず ledger しか見られない欠陥を解消
+- [ ] G1 escalation→self-fix trigger 確実化 + self-fix の verify 段にも fresh-adversary 原則適用
+- [ ] CLAUDE.md に verifier 3原則を bake（別context / state-not-report / 決定的on-chainチェック）
+
+**P1 既にある earn agent を実際に稼がせる（own-eyes on-chain 確認まで）— 私は strategy を書かない(§0.25)**
+- [ ] E1 Franklin sol-trade: 実 external:true earned tx を1つ（弱モデルでも撃てる BASE alpha を wire、私が戦略を書くのでなく既存 base agent を wire）
+- [ ] E2 pm-earner: $5床 unstick（open UFC resolve or 小額 top-up）+ 実 external:true
+- [ ] E3 cook の EXPLORE→WIRE→EARN bridge（候補→wire→no-mock test→稼いだら auto-merge）= SSOT 最高レバレッジ
+- [ ] E4 Franklin モデル格上げ検討（free/glm-4.7 の tool-call 失敗が earn を阻む場合）
+
+**P2 増殖・可視化（稼ぎ確認後）**
+- [ ] P5 spawn（real-clients 176/176 済、adversary iter3→mainnet Akash boot→Franklin spawn=witness②）
+- [ ] P6 dashboard real-time（aniccaai.com、全 Franklin + external:true 実数）
+- [ ] BlockRunAI/Franklin へ PR（autonomous wake-loop、issue 先行）
+
+**Done 判定（全ループ共通、BP準拠 doc22）**: 実 side-effect を fresh tool-verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。**「稼いだ」= external:true 実 tx を私が on-chain 確認した時のみ。**
