@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "verification-architecture.md's Proof Obligations table and Verification Strategy section were not updated by the iteration-1-fix commit and now misdescribe the actual proof surface. PROP-AS-006 reads: 'earning-health.py's own 9 pure-predicate tests still pass unmodified' -- but earning-health.py was in fact modified this same feature (FIND-001: new _mechanism_failure_cause helper changing is_fresh_but_barren's own logic; FIND-005: an entirely new pure function sanitize_for_prompt plus a new CLI subcommand), and the pure-predicate test count is 18, not 9. sanitize_for_prompt -- a NEW pure-core function whose entire purpose is to close a critical security finding (unsanitized trace text reaching an autonomous --dangerously-skip-permissions claude spawn prompt) -- has no corresponding row in the Proof Obligations table and is not mentioned anywhere in the Purity Boundary Map, even though it is exactly the kind of security-relevant pure logic this table exists to track. Separately, the Verification Strategy section (line 27-28) still describes Tier 1 wiring proof as using only 'the same SELF_FIX_DRYRUN=1 seam self-fix.sh already exposes' -- but the actual FIND-002/FIND-005 dual-barren and sanitization-neutralization proofs in test_earning_health_allslots.sh depend on a DIFFERENT, newly-added seam (EARNHC_SELF_FIX_SCRIPT, a stub-script capture mechanism -- see the test file's own comment at lines 62-67 explaining SELF_FIX_DRYRUN=1 alone cannot prove this because it never echoes the BLOCKER text). The document a fresh reviewer is pointed to as the proof-obligation ledger for this feature currently omits or misdescribes exactly the two things (the new security-critical pure function, and the new test seam that proves it end-to-end) that the iteration-1 fix added.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-heal-allslots/specs/verification-architecture.md",
+    "lineRange": "21,27-28",
+    "snippet": "| PROP-AS-006 (regression) | `earning-health.py`'s own 9 pure-predicate tests still pass unmodified | 0 | true | `python3 skills/self/tests/test_earning_health.py` |\n...\n- Tier 1: every new behavior ... is covered by example-based bash wiring tests using the same\n  `SELF_FIX_DRYRUN=1` seam `self-fix.sh` already exposes"
+  },
+  "crossReference": {
+    "actualState": "skills/self/tests/test_earning_health.py (18 chk(...) calls, includes sanitize_for_prompt tests at lines 126-138) and skills/self/tests/test_earning_health_allslots.sh:62-79 (EARNHC_SELF_FIX_SCRIPT stub-capture seam, not SELF_FIX_DRYRUN=1, is what proves PROP-AS-002/003 dual-fire + FIND-005 sanitization end-to-end)"
+  },
+  "routeToPhase": "spec"
+}

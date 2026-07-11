@@ -163,3 +163,46 @@ Verified GREEN after all fixes:
 target-feature-tests: PASS (test_earning_health.py 18/18, test_earning_health_allslots.sh 35/35)
 regression-baseline: PASS (test_sol_trade_healthcheck.sh 9/9)
 ```
+
+## self-heal iter2 doc-sync + empty-sanitization test FIND-001..003
+
+Fresh-context adversary impl review (`reviews/impl/iteration-2`) independently re-verified every
+iteration-1 fix correct by hand-tracing the actual code/data paths (including the critical FIND-001
+correctness fix and the critical FIND-005 security fix) and returned FAIL with 3 new, all-MINOR,
+all-documentation-or-test-gap findings — no defect in the shipped script, pure core, or tests.
+
+- **FIND-001 (iter2, spec_fidelity)**: `specs/behavioral-spec.md`'s Purity boundary section still
+  claimed the pure core (`earning-health.py::is_fresh_but_barren`) was "reused, unmodified" with
+  "9/9 green" tests — false as of this same feature's own iter1 fixes (FIND-001/FIND-005 above
+  modified it and added `sanitize_for_prompt`; its test file grew to 18 checks). Fixed: the Purity
+  boundary section now names both changes (the `error`-state extension via
+  `_mechanism_failure_cause`, and the new `sanitize_for_prompt` pure function + `sanitize-reason` CLI
+  subcommand) and the correct 18-check count.
+- **FIND-002 (iter2, verification_readiness)**: `specs/verification-architecture.md`'s Proof
+  Obligations table still described the pre-iter1 state (`PROP-AS-006` claimed "9 pure-predicate
+  tests... unmodified"), had no proof-obligation row for the new security-critical
+  `sanitize_for_prompt`, and the Verification Strategy section named only the `SELF_FIX_DRYRUN=1`
+  test seam when the actual dual-barren/sanitization wiring proofs depend on the newly-added
+  `EARNHC_SELF_FIX_SCRIPT` stub-capture seam. Fixed: `PROP-AS-006` corrected to 18 checks; new
+  `PROP-AS-007` row added for `sanitize_for_prompt` (pure unit + end-to-end wiring proof); Purity
+  Boundary Map and Verification Strategy both updated to name `sanitize_for_prompt` and the
+  `EARNHC_SELF_FIX_SCRIPT` seam explicitly.
+- **FIND-003 (iter2, edge_case_coverage)**: `earning-health-allslots.sh:111-114`'s
+  `[ -z "$REASON" ] && REASON="unspecified"` / analogous `SAFE_ID` fallback is a reachable branch (a
+  raw, non-empty reason/error consisting ENTIRELY of characters outside `sanitize_for_prompt`'s
+  allowlist — e.g. emoji/CJK/pure-punctuation — passes `is_fresh_but_barren`'s raw non-empty check
+  but sanitizes to `""`) that had zero test coverage. Fixed: added block (E) to
+  `test_earning_health_allslots.sh` — a slot whose trace reason is `'!!!???@@@###%%%^^^&&&'` (every
+  char outside the allowlist, none of them a literal `"`/`\` so the naive JSONL fixture stays valid)
+  still flags BARREN (raw non-empty) and still escalates to self-fix, with the captured BLOCKER text
+  asserted to carry the safe `cause 'unspecified'` fallback (never an empty/broken cause fragment)
+  and never the raw metachar-only string verbatim.
+
+No changes to `earning-health.py`, `earning-health-allslots.sh`, or `self-fix.sh` — doc-only + one
+new test block, per the adversary's own recommendation.
+
+Verified GREEN after all iter2 fixes:
+```
+target-feature-tests: PASS (test_earning_health_allslots.sh 40/40, +5 new (E) block checks)
+regression-baseline: PASS (test_earning_health.py 18/18, test_sol_trade_healthcheck.sh 9/9)
+```
