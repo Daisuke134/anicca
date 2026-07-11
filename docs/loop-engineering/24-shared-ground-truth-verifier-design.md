@@ -37,3 +37,36 @@
 
 ## Done（この verifier 自体の検証）
 実際に clip(投稿停止)/reddit(BAN)/founder($9.02 on-chain)/connector(gcal readback) を**この verifier に食わせて、report と乖離した真実を返せた**時のみ working。＝ 2026-07-11 に手動でやった検証を verifier に焼き込む。
+
+---
+
+## v2 — verifier は「全ツール」を持つ（Dais 2026-07-11 明示、怒り）
+
+★ 原則: verifier は **every tool** を持たねばならない。ツールが足りない verifier は truth を見られず＝無意味。★ 現状の vcsdd-adversary(Read/Write/Edit/Grep/Glob = Bash無・browser無・on-chain無) も vcsdd-verifier(Bash はあるが browser無・on-chain MCP無・役割は formal code hardening) も**不足**。
+
+### 必須ツール一覧（verifier が持つべき全部）
+| ドメイン | tool | 見る truth |
+|---|---|---|
+| shell/exec | **Bash** | 実コマンド・test 再実行・log raw tail・プロセス確認 |
+| browser（自分の目で見る） | **agent-browser / playwright-cli / CloakBrowser :9222** | aniccaai.com/dashboard を実際に開く・logged-out DOM 本文・BAN/shadow-filter・UI が本当に動くか |
+| on-chain | **mcp__claude_ai_Base_MCP__* / chain_rpc_request / blockrun_rpc / blockrun_wallet** | 実 tx・残高増・external:true（seed を earn と偽らない、ERC-8004 独立再検証） |
+| web/API | **firecrawl / WebFetch / 直接 curl** | 実サイトの掲載状態・実 API レスポンス |
+| file/search | Read/Grep/Glob | spec・ledger・state（ただし ledger 自己申告は truth でなく参照） |
+| screenshot 証跡 | **proofshot / screenshot** | 見たものを証拠として残す |
+
+= Anthropic 公式「agent = LLM + tools」。verifier は全 tool を持ち、**report/ledger の自己申告を信じず、実 side-effect を自分の目（browser DOM / on-chain tx / 実ログ）で見て binary verdict**。
+
+### 判定原則（変えない）
+1. executor と別の fresh context（自己採点禁止）
+2. report でなく state/outcome（実 side-effect）を見る
+3. done = 決定的（on-chain tx / DOM 本文 / exit code）、LLM テキスト不可
+4. 「稼いだ」= external:true 実 tx を on-chain で自分が確認した時のみ
+5. fake を疑う: label（"PUBLISHED"/"EARNING"）と実 side-effect を必ず突き合わせ、乖離を findings に
+
+### 配布
+- プロジェクト版 agent `ground-truth-verifier`（全 tool 付き）を `.claude/agents/` に置く（marketplace plugin は update で消えるので直接編集しない）。
+- vcsdd の Phase 3/1c review と、各 daily loop の healthcheck / self-fix verify 段の両方でこの1つを使う。
+- 雛形 = connector_streak_verify.py（一次情報の独立再検証）を「browser+on-chain+全tool」版に一般化。
+
+### Done（この verifier 自体の検証）
+clip(投稿停止)/reddit(BAN)/founder($9.02 on-chain)/connector(gcal readback)/pm($4.95凍結)/Franklin(external:true=$0) を実際に食わせ、**report と乖離した真実を browser/on-chain で自分の目で返せた**時のみ working。
