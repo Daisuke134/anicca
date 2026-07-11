@@ -57,3 +57,12 @@ Polymarket deposit(pUSD)= `0x4c176db1cd976E570fD35E92e0F6559e1Ba515Aa`（BlockRu
 
 ## OSS 化（Anicca 第1 feature）
 `git clone anicca && ./install.sh` → Franklin instance(wallet+loop)生成 → $50 送金 → autopilot で稼ぐ + reality-verifier が正直さ検証。稼げる実証後に install.sh を磨いて公開 → lending/marketplace/spawn を追加。
+
+## ★★★ 決定的 FINDING (2026-07-12, 一次情報検索で確定) — $5-30 は net profit 構造的に不可能 ★★★
+Dais 要求の深掘り検索(firecrawl, Polymarket公式docs+実gamma API)の結論:
+- **Polymarket 報酬 MM**: 高報酬市場は rewardsMinSize 200-1000株($40-1000+)で参加不可。薄い市場でも報酬は流動性シェア按分→$9 vs 数百万$板=シェア≈0→日次<$1=**$0払い**(help.polymarket.com「$1未満不払い」)。出典 docs.polymarket.com/market-makers/liquidity-rewards の S(v,s)=((v-s)/v)^2·b, Qnormal=Qmin/ΣQmin。
+- **HL funding-arb**: 手数料超えは $5,000-10,000 notional から。$5-30 不成立。
+- poly-maker README 自身「利益保証なし・損あり」。
+- **∴ 稼げない root cause = 戦略/検索不足でなく『資本が floor 未満』。** floor: Polymarket $数百-数千 / HL $5-10k。
+- 報酬MM移植(reward_mm/, 31/31 pass, 実API 690市場)は**完成し動くが、$9 では報酬シェア≈0 で $0**。capital 育てば有効。→ worktree feature/pm-reward-mm(未merge)、live禁止(§法的PIVOT: 日本からPolymarket=賭博罪リスク)。
+- **正直な帰結**: 現$30では意味ある net profit を出す戦略は一次情報上存在しない。recipe「$10→複利」は現capitalでevidence非支持。次の設計判断が要る(capital調達 or 別収益源 or handover条件見直し)。
