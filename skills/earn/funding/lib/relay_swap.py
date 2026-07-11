@@ -48,7 +48,7 @@ def _parse_address_lookup_table(addr: str, raw: bytes):
     return AddressLookupTableAccount(key=Pubkey.from_string(addr), addresses=addrs)
 
 
-def build_sign_submit_solana_tx(secret_b58: str, quote: dict, rpc_url: str) -> str:
+def build_sign_submit_solana_tx(secret_str: str, quote: dict, rpc_url: str) -> str:
     """Build, sign, and submit the Solana-leg transaction from a relay `/quote` response's
     first step/item instructions -- the real effectful `build_sign_submit` dependency wired by
     `franklin_sol_base_refill.py`'s `build_default_deps()`. Never called by any test (no test
@@ -61,7 +61,7 @@ def build_sign_submit_solana_tx(secret_b58: str, quote: dict, rpc_url: str) -> s
     from solders.transaction import VersionedTransaction
     from solders.pubkey import Pubkey
 
-    kp = keypair_from_secret_string(secret_b58)
+    kp = keypair_from_secret_string(secret_str)
     step = quote["steps"][0]
     item = step["items"][0]
     data = item["data"]

@@ -249,6 +249,36 @@ verdict FAIL / 7 findings):
   is proven and live under another job) with a one-line origin comment noting the future
   consolidation candidate.
 
+**impl iter2 fixes FIND-002..006** (2026-07-11, addressing `reviews/impl/iteration-2/output/`
+verdict FAIL / 6 findings; FIND-001-of-iteration-2, the live relay.link dry-run evidence gate,
+is intentionally NOT part of this pass — it is routed to a follow-up pass that runs the real
+dry-run and attaches its response as evidence):
+- FIND-002 (high, secret safety, module-wide gap): iteration-1's FIND-003 sanitization
+  (`_sanitized_secret_error`) was applied only to this feature's own two decode call sites.
+  Moved the pattern into `lib/identity.py` as the shared `sanitized_secret_error(context, exc)`
+  helper; `verify_solana_secret_file`'s decode-failure `reason` now goes through it too (never
+  `str(exc)`, only the path plus the exception's class name), closing the third leak path
+  reachable via `bridge.py:104`/`send_to_franklin.py:89,98` into the SAME
+  `funding-ledger.jsonl`. `franklin_sol_base_refill.py` now imports the shared helper instead
+  of defining its own copy. New regression test injects a fake secret through
+  `verify_solana_secret_file`'s real failing path and asserts its absence from `reason`.
+- FIND-003 (medium): `deps["append_ledger"]` (called from `fail()` on every refusal path plus
+  five more sites) and `deps["is_killed"]()` are now wrapped fail-closed: an `append_ledger`
+  failure reports on stderr and exits non-zero (never an uncaught bare traceback with zero
+  audit trail); an `is_killed` failure is treated as killed=True. Two new tests cover both.
+- FIND-004 (low): guarded the non-dict-truthy `quote` case at `(quote or {}).get("details")`
+  itself (a relay.link rate-limit/error response could plausibly return a top-level JSON
+  array) — refuses cleanly with a `skipped` ledger row instead of an uncaught `AttributeError`
+  one level above `_extract_quote_usd`'s own existing guard. New test covers a list-shaped
+  `relay_quote` return.
+- FIND-005 (low): renamed `lib/relay_swap.py`'s `build_sign_submit_solana_tx` parameter from
+  `secret_b58` to `secret_str`, matching the dual-decode (base58-or-base64) reality FIND-003-
+  of-iteration-1 already established; the sole caller (`franklin_sol_base_refill.py`) passes it
+  positionally, no call-site change needed.
+- FIND-006 (low): this Changelog entry plus the accompanying `state.json` update are
+  themselves the fix — `state.json` now records both impl-review iterations' FAIL verdicts and
+  this fix cycle instead of stopping at phase `2c`.
+
 ## Non-Functional Requirements
 - No test in this feature's suite performs real network I/O or moves real funds — all
   relay/RPC interactions are mocked/injected (matches REQ-006's acceptance criterion).

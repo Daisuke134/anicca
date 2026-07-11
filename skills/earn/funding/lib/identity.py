@@ -37,6 +37,20 @@ def verify_evm_address(*, candidate: str, known_address: str) -> IdentityCheck:
     }
 
 
+def sanitized_secret_error(context: str, exc: Exception) -> str:
+    """FIND-003 (franklin-sol-base-refill impl iteration-1) / FIND-002 (iteration-2, this
+    module): ANY exception raised while decoding/deriving from a raw resolved secret must
+    NEVER have its message text (`str(exc)`) interpolated into a ledger row or printed output
+    -- the underlying decode library's exception message could embed raw input bytes (e.g. a
+    base58/base64 decoder echoing the string it failed to parse). Only a fixed, pre-written
+    context string plus the exception's CLASS NAME (never its message) is recorded. Shared
+    module-wide so every caller that decodes a secret through `keypair_from_secret_string`
+    (`derive_solana_pubkey_from_secret`, `verify_solana_secret_file`, and
+    `franklin_sol_base_refill.py`'s own `derive_pubkey`/`build_sign_submit` call sites) reports
+    failures through the identical sanitization, not three independently-maintained copies."""
+    return f"{context} (exception class: {type(exc).__name__}; message withheld for secret safety)"
+
+
 def keypair_from_secret_string(secret: str):
     """Decode a Solana secret-key STRING into a `solders.keypair.Keypair`, trying base58 first
     (the format Franklin's own `~/.blockrun/.solana-session` genuinely uses -- verified live,
@@ -84,7 +98,11 @@ def verify_solana_secret_file(*, path: str, known_address: str) -> IdentityCheck
             secret = json.loads(raw)["secret_key_base58"]
         derived = derive_solana_pubkey_from_secret(secret)
     except Exception as e:  # noqa: BLE001 -- any failure here must fail closed, not raise
-        return {"verified": False, "reason": f"could not derive pubkey from {path}: {e}", "derived": None}
+        return {
+            "verified": False,
+            "reason": sanitized_secret_error(f"could not derive pubkey from {path}", e),
+            "derived": None,
+        }
 
     if derived != known_address:
         return {

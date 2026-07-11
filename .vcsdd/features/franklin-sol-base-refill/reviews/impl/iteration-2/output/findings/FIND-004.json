@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "low",
+  "description": "`details = (quote or {}).get(\"details\") or {}` (franklin_sol_base_refill.py:259) assumes `quote` is either falsy or a Mapping. If deps['relay_quote'] returns ANY truthy non-Mapping value (e.g. a JSON array -- which `requests.Response.json()` would produce verbatim if relay.link's API ever returned a top-level array instead of an object, plausible on certain error/rate-limit responses from a third-party API this feature has never live-tested against, see FIND-001-of-this-iteration), `.get('details')` raises an uncaught AttributeError at line 259, one level ABOVE where `_extract_quote_usd` (lines 138-156) already has an explicit `except AttributeError: return None` guard for exactly this failure mode -- that inner guard never gets a chance to run because the crash happens earlier, at the unguarded `.get()` call on `quote` itself. No test in tests/test_franklin_sol_base_refill.py exercises deps['relay_quote'] returning a non-dict truthy value; the existing relay_quote fixtures either return a well-formed dict, `None`-via-falsy-fallback, or raise an exception (which IS caught, at lines 237-258) -- a returned-but-malformed-shape non-dict is never exercised. REQ-004's own edge-case list (behavioral-spec.md:116-120) only names missing/malformed fields WITHIN `details.currencyIn/currencyOut`, never a malformed top-level quote object itself, so this is also a spec_gap for the edge-case enumeration, not just missing test coverage.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "259-260",
+    "snippet": "details = (quote or {}).get(\"details\") or {}\nif not details:"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-004 edge cases (behavioral-spec.md:116-120)",
+    "contrastWithGuardedSite": "franklin_sol_base_refill.py:144-149 (_extract_quote_usd already catches AttributeError one level down)"
+  },
+  "routeToPhase": "2a"
+}

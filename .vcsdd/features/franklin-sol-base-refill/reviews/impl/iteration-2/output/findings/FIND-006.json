@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "process_integrity",
+  "severity": "low",
+  "description": "state.json:4 still reports `\"currentPhase\": \"2c\"`, and `phaseHistory` (state.json:5-31) has no entry at all for an implementation-review phase, despite: (a) a full iteration-1 impl-review having already run and produced a FAIL verdict with 7 findings (reviews/impl/iteration-1/output/verdict.json), and (b) behavioral-spec.md's own Changelog section (lines 222-250, 'impl iter1 fixes FIND-001..007') documenting that all 7 findings were subsequently fixed at the code level. The feature's own tracked build-state record therefore does not reflect its actual, already-more-advanced progress -- per this project's own VCSDD process rule (CLAUDE.md: 'SPEC本文への手書き追記だけで進捗を語り、コマンドを呼ばない/state.jsonが進まないのは Verify をやったことにならない'), state.json failing to advance past 2c despite a completed review-and-fix cycle is itself a process-integrity gap, not merely a paperwork nit -- it means anyone consulting state.json alone (rather than reading the reviews/ tree and the spec Changelog by hand, as this review had to) would incorrectly believe no implementation review has ever occurred on this feature.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-sol-base-refill/state.json",
+    "lineRange": "2-31",
+    "snippet": "\"currentPhase\": \"2c\",\n  \"phaseHistory\": [ ... 5 entries, none for phase 3/impl-review ... ]"
+  },
+  "crossReference": {
+    "contradictingArtifact": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md:222-250 (Changelog documents FIND-001..007 fixes already applied)"
+  },
+  "routeToPhase": "2c"
+}
