@@ -40,6 +40,29 @@
 
 ---
 
+## ★ v3 — 深掘り再調査(13候補)の最終決定（採用framework確定）2026-07-11
+
+**採用 = Claude Code subagent primitive を verifier に（新 framework は入れない）。名前 `reality-verifier`（agent 定義）。** verifier は **shell file でなくモデル(tool を持つ Claude subagent)**＝Dais の指摘が正。
+
+**なぜこれ（NEVER COMBINE、1つ）**:
+- 新規依存ゼロ。我々は既に fresh subagent を毎日 spawn してる（agent 実行=満たす / headless cron 起動=満たす）。**欠けてるのは framework でなく「tool + prompt discipline」だけ。**
+- Inspect AI 一式を入れると、既にある subagent-spawn 機構を Inspect の Task/Solver/Scorer 抽象で**再発明**する＝車輪の再発明禁止に抵触。
+- 出典 = Anthropic "Building Effective Agents"（augmented LLM / orchestrator-worker 公式パターン）。
+
+**tweak（既存 agent 定義に足すだけ）**:
+1. tool 権限: **agent-browser + Base MCP(chain_rpc/get_transaction_history) + Bash(curl/exec)** を付与（現状 vcsdd-adversary は Read系のみ=盲目）。
+2. prompt に3つの引用原則を明記:
+   - **agent-as-a-judge**（metauto-ai/agent-as-a-judge, MIT 795★）= LLM judge が tool を能動的に呼び **claim 単位で証拠を引用**して判定。
+   - **tau-bench / attest** = trace/narrative でなく **receipts/最終 state** を見る。
+   - **Gaming the Judge**（Khalifa et al. 2026, arXiv:2601.14691）★外部証明★ = 「agent の行動はそのままに reasoning だけ書き換えると AI judge の false-positive が最大90%上がる」＝ **narrative/report ベース判定は騙される**。我々の脳外科ルールの正しさを裏付ける。
+3. 直前 agent の report/log を ground truth として**読ませない**（毎回自分で tool を呼ばせる）。
+
+**具体 action**: `.claude/agents/reality-verifier.md` を新規作成（or vcsdd-adversary を拡張）。loop からは fresh subagent として spawn（既存 self-fix.sh の spawn を、report を読ませず reality-verifier を呼ぶ形にする）。
+
+**却下**: DeepEval/Ragas/TruLens/promptfoo/Langfuse/Phoenix/OpenAI evals = **テキスト/trace 採点のみ、現実を tool で見ない**（要件不適合）。attest = agent 自身が記録した tool 出力ログを信じる（source 汚染に弱い）。tau2-bench = 決定論 benchmark で任意 loop に差し込めない。metauto agent-as-a-judge = 良い architecture だが tool が code-workspace 専用（browser/on-chain 無）→原則だけ借用。
+
+---
+
 ## v2 — verifier は「全ツール」を持つ（Dais 2026-07-11 明示、怒り）
 
 ★ 原則: verifier は **every tool** を持たねばならない。ツールが足りない verifier は truth を見られず＝無意味。★ 現状の vcsdd-adversary(Read/Write/Edit/Grep/Glob = Bash無・browser無・on-chain無) も vcsdd-verifier(Bash はあるが browser無・on-chain MCP無・役割は formal code hardening) も**不足**。
