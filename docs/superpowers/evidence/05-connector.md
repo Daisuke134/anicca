@@ -77,5 +77,5 @@ live 検証結果（transcript 実読）: core が STEP2(outreach draft)✔ / ST
 
 
 ## #5 streak 残検証項目（2026-07-11 記録）
-- **Telegram delivered 未確認**: connector コードは telegram-notify.sh/openclaw message send を STARTUP に配線済みだが、07:16 pass の実 delivery を lessons/log で確認できず（専用 telegram-notify log 無し、transcript はノイズ）。§10 #5 の「各日 Telegram delivered:true」は**未確認**。→ streak 検証時に Telegram 実着信を Dais 側で確認 or 送信経路を再検証する必要あり。
+- **Telegram delivered 経路 = VERIFIED**（2026-07-11 実送信テスト）: `openclaw message send --channel telegram --target 8547730585` が **Message ID: 1879 で Dais に実着信**。telegram-notify.sh(211 cron 共通の経路)はこれのラッパで、connector STARTUP(REQ-CON-103)に配線済み。→ 機構は確実に届く。各日 pass の実 delivery(delivered:true)は streak 進行中に per-pass 確認する（agent が STARTUP 指示通り送る前提、信頼性を上げるなら deterministic post-pass send 化が次の改善)。
 - **7日 streak**: Day1(GENIAC 予約)成功。Day2-7 は connector が毎日 autonomous に走る（runtime 土台修正済）が、各日の FREE 実登録 or 正直 none + Telegram delivered + fresh adversary PASS が §10 Done。multi-day で継続。
