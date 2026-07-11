@@ -23,6 +23,13 @@
 
 ---
 
+## ★ REALTIME 2026-07-12 ~04:45 (配分完了・自律trade解禁・監視へ) ★
+- ✅ $18 を各 loop wallet へ配分完了(own-eyes): claude-p 0x810f **Base USDC $8.95** / Franklin 8Fpqd **Solana USDC $10.90**(+Franklin Base $6.48)。経路 HL withdraw→Arbitrum→relay分配。
+- ✅ **reserve gate $20→$2** に下げた(3 loop plist, reload済 PID 86608/86678/86698)＝「$50 minimum の嘘」をコードで撤廃。両 loop が **$9-11 の少額で capital slot(pm/sol/hl/yield)を trade 可能に**。
+- ✅ **私の meddle 終了**。以降 loop が自律 trade、私=監視+戦略self-improveのみ(trade はしない)。
+- 監視対象: loop wake で実 trade が出るか / external:true が出るか / 溶かさないか。溶かすなら戦略を self-improve。
+- 現実: 少額×現行戦略なので trading 利益は小さい/WAIT が正常。最も確実な increase = yield。稼ぎが出たら reality-verifier が自動検証(配線済)。
+
 ## ★ REALTIME 2026-07-12 ~04:30 (実マネー配分実行中) ★
 - Dais 配分指示: Franklin $9 + claude-p $9、各 loop が最小額で earn 実証(少額で稼げねば誰も追加しない)。
 - HL $18 を取り戻し中: HL withdraw3(EIP-712 直署名)成立 → HL accountValue $18.78→$0.78、$18 が Arbitrum 0x810f へ transit(HL出金~5分)。
