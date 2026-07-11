@@ -238,7 +238,7 @@ test("★FIND-002 wiring★ REQ-115: a CONFIGURED reputation gate is actually co
   assert.equal(reputationGateCalled, true, "a configured reputation gate must be consulted on this real production entry point -- it must not be dead code");
   assert.equal(receivedArgs.minScore, 50);
   assert.equal(receivedArgs.minJobCount, 1);
-  assert.equal("borrowerAgentId" in receivedArgs, true, "the gate must be called WITH a borrowerAgentId key threaded through (this fixture's citizen record has no .agentId set yet, so the value is undefined -- that is a separate, future data-plumbing concern; the wiring itself must still pass the key)");
+  assert.equal("borrowerAgentId" in receivedArgs, true, "the gate must be called WITH a borrowerAgentId key threaded through");
   assert.equal(result.status, "refused");
   assert.equal(result.reason, "insufficient_score");
   const rows = readLoanRows(deps.ledgerFile);
@@ -250,6 +250,102 @@ test("★FIND-002★ REQ-115: with NO reputationGate config (the default), the g
   const deps = happyDeps(dir);
   const result = await executeLoanIssuanceAttempt(baseParams(), deps);
   assert.equal(result.status, "active", "unset thresholds (spec §1 G3 MUST: 段階導入 fail-open) must be a complete no-op on the pre-existing happy path");
+});
+
+// ---------------------------------------------------------------------------
+// FIND-101 (adversary round 2, spec_fidelity, critical): the FIND-002 wiring test above only ever
+// exercises a fully-mocked deps.reputationGateFn -- it never proves the REAL default reputationGateFn
+// (isBorrowerEligibleWithReputationGate's own default, passesOnchainReputationGate from
+// lending-gate.mjs/reputation-gate.mjs) evaluates correctly against a citizen record shaped like a
+// genuine registry row. The real, on-disk registry schema stores the borrower's ERC-8004 identity under
+// snake_case `agent_id` (skills/self/spawn/lib/child-spec.js:65 -- `spec.agent_id = agentId;` -- the
+// canonical write site) and wake-gate.mjs's own buildDefaultGetCitizen spreads that raw row unmodified
+// (`{ ...citizen, balanceUsd }`, zero camelCase normalization anywhere in this repo) -- so
+// `freshBorrower.agentId` was ALWAYS undefined for every real borrower before this fix. These 3 tests
+// deliberately do NOT set deps.reputationGateFn (so the REAL isBorrowerEligibleWithReputationGate ->
+// passesOnchainReputationGate chain runs) -- only the genuinely effectful on-chain read
+// (passesOnchainReputationGate's own getSummaryFn parameter) is mocked, threaded through via
+// deps.reputationGate.getSummaryFn (that whole object is spread verbatim into reputationGateArgs at
+// lending-orchestrator.mjs's own call site, so a getSummaryFn key placed there reaches
+// passesOnchainReputationGate's own destructured `getSummaryFn` parameter exactly as
+// deps.reconcile/deps.disburse's own DI convention already does for their respective real functions).
+// ---------------------------------------------------------------------------
+
+test("★FIND-101★ REQ-115/G3: a registry-shaped borrower (snake_case agent_id, matching wake-gate.mjs's real buildDefaultGetCitizen output) with SUFFICIENT on-chain reputation PASSES a configured gate via the REAL default reputationGateFn (deps.reputationGateFn NOT overridden)", async () => {
+  const dir = tmpDir();
+  let getSummaryFnCalledWithAgentId = null;
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => {
+      const citizens = {
+        [LENDER]: baseCitizen(LENDER, { balanceUsd: 10 }),
+        [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1, agent_id: "42" }), // real registry shape: snake_case only, no .agentId
+      };
+      return citizens[id] || null;
+    },
+    reputationGate: {
+      minScore: 50,
+      minJobCount: 1,
+      clientAddresses: ["0xClient1"],
+      getSummaryFn: async ({ agentId }) => {
+        getSummaryFnCalledWithAgentId = agentId;
+        return { ok: true, count: 5, summaryValue: 90 };
+      },
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(getSummaryFnCalledWithAgentId, "42", "the real gate must read the borrower's on-chain identity from the registry's own snake_case agent_id field, not an undefined .agentId");
+  assert.equal(result.status, "active", "sufficient real on-chain reputation must PASS a configured gate, not be silently rejected by a field-name bug");
+});
+
+test("★FIND-101★ REQ-115/G3: a registry-shaped borrower (snake_case agent_id) with INSUFFICIENT on-chain reputation is REJECTED by a configured gate via the REAL default reputationGateFn", async () => {
+  const dir = tmpDir();
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => {
+      const citizens = {
+        [LENDER]: baseCitizen(LENDER, { balanceUsd: 10 }),
+        [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1, agent_id: "42" }),
+      };
+      return citizens[id] || null;
+    },
+    reputationGate: {
+      minScore: 50,
+      minJobCount: 1,
+      clientAddresses: ["0xClient1"],
+      getSummaryFn: async () => ({ ok: true, count: 0, summaryValue: 0 }),
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "insufficient_job_count", "a genuinely under-threshold borrower must be rejected by the real gate's own reason, proving the gate is actually evaluated (not just always-open due to a field-name mismatch)");
+  const rows = readLoanRows(deps.ledgerFile);
+  assert.equal(rows.length, 0);
+});
+
+test("★FIND-101★ REQ-115/G3: a citizen row genuinely missing agent_id still fail-CLOSES against a configured gate via the REAL default reputationGateFn (the documented caller-bug branch, distinct from a reputation-read failure)", async () => {
+  const dir = tmpDir();
+  let getSummaryFnCalled = false;
+  const deps = happyDeps(dir, {
+    getCitizen: async (id) => {
+      const citizens = {
+        [LENDER]: baseCitizen(LENDER, { balanceUsd: 10 }),
+        [BORROWER]: baseCitizen(BORROWER, { balanceUsd: 0.1 }), // no agent_id at all
+      };
+      return citizens[id] || null;
+    },
+    reputationGate: {
+      minScore: 50,
+      minJobCount: 1,
+      clientAddresses: ["0xClient1"],
+      getSummaryFn: async () => {
+        getSummaryFnCalled = true;
+        return { ok: true, count: 99, summaryValue: 999 };
+      },
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(getSummaryFnCalled, false, "no borrowerAgentId at all is a caller-bug branch that must fail-closed WITHOUT ever attempting the on-chain read");
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "no_borrower_agent_id");
 });
 
 // ---------------------------------------------------------------------------

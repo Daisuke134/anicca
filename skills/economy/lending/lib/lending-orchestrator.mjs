@@ -381,6 +381,18 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
   // disburses; every real attempt it selects still flows through THIS function. So wiring the gate here
   // is sufficient to make it authoritative on every real disbursement path without turning that pure
   // selection heuristic into an async on-chain read.
+  // FIND-101 fix (adversary round 2, spec_fidelity, critical): the real, on-disk citizen-registry row
+  // stores the borrower's ERC-8004 identity under snake_case `agent_id` (canonical write site:
+  // skills/self/spawn/lib/child-spec.js:65 -- `spec.agent_id = agentId;`; also
+  // spawn-orchestrator.mjs's own `agent_id: identityResult.agentId,` write). wake-gate.mjs's real
+  // production getCitizen closure (buildDefaultGetCitizen) spreads that raw row unmodified
+  // (`{ ...citizen, balanceUsd }`) -- there is zero camelCase normalization anywhere in this repo. The
+  // previous `freshBorrower.agentId` read was therefore ALWAYS undefined for every real borrower,
+  // which reputation-gate.mjs's own intentional fail-closed branch (`no_borrower_agent_id`) then
+  // rejected unconditionally the instant any lender configured a threshold -- inverting G3's purpose.
+  // Read the canonical snake_case field; fall back to camelCase defensively (never re-introduce a
+  // fail-closed-by-default regression for a caller that already normalizes its own shape upstream).
+  const borrowerAgentId = freshBorrower.agent_id ?? freshBorrower.agentId;
   const eligibility = await isBorrowerEligibleWithReputationGate(
     {
       borrowerAgent: freshBorrower,
@@ -389,7 +401,7 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
       borrowerBalanceUsd: freshBorrower.balanceUsd,
       lenderId,
     },
-    { borrowerAgentId: freshBorrower.agentId, ...(deps.reputationGate || {}) },
+    { borrowerAgentId, ...(deps.reputationGate || {}) },
     deps.reputationGateFn
   );
   if (!eligibility.eligible) {

@@ -1,0 +1,51 @@
+Round-3 fix iteration -- FIND-101 (spec_fidelity, critical, independently confirmed).
+
+FIND-101: lending-orchestrator.mjs:392 read `freshBorrower.agentId` (camelCase). The real, on-disk
+citizen-registry row stores the borrower's ERC-8004 identity under snake_case `agent_id`
+(canonical write site: skills/self/spawn/lib/child-spec.js:65 -- `spec.agent_id = agentId;`).
+wake-gate.mjs's real production getCitizen closure (buildDefaultGetCitizen) spreads the raw registry
+row unmodified (`{ ...citizen, balanceUsd }`, zero camelCase normalization anywhere in this repo). So
+`freshBorrower.agentId` was ALWAYS undefined for every real borrower -- reputation-gate.mjs's own
+intentional fail-closed branch (`no_borrower_agent_id`) then rejected every borrower unconditionally
+the instant any lender configured minScore>0/minJobCount>0, inverting G3's entire purpose.
+
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+$ node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs
+(3 new FIND-101 tests added at skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:274-355,
+exercising the REAL default reputationGateFn chain -- deps.reputationGateFn deliberately NOT overridden
+-- against a registry-shaped borrower fixture using snake_case agent_id; only the on-chain
+getSummaryFn read is mocked, via deps.reputationGate.getSummaryFn.)
+
+ℹ tests 44
+ℹ pass 42
+ℹ fail 2
+
+✖ failing tests:
+
+test at skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:274:1
+✖ ★FIND-101★ REQ-115/G3: a registry-shaped borrower (snake_case agent_id, matching wake-gate.mjs's
+  real buildDefaultGetCitizen output) with SUFFICIENT on-chain reputation PASSES a configured gate via
+  the REAL default reputationGateFn (deps.reputationGateFn NOT overridden) (1.227583ms)
+  AssertionError [ERR_ASSERTION]: the real gate must read the borrower's on-chain identity from the
+  registry's own snake_case agent_id field, not an undefined .agentId
+  null !== '42'
+  actual: null, expected: '42', operator: 'strictEqual'
+
+test at skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs:300:1
+✖ ★FIND-101★ REQ-115/G3: a registry-shaped borrower (snake_case agent_id) with INSUFFICIENT on-chain
+  reputation is REJECTED by a configured gate via the REAL default reputationGateFn (1.125542ms)
+  AssertionError [ERR_ASSERTION]: a genuinely under-threshold borrower must be rejected by the real
+  gate's own reason, proving the gate is actually evaluated (not just always-open due to a
+  field-name mismatch)
+  actual: 'no_borrower_agent_id', expected: 'insufficient_job_count'
+
+(The 3rd new test -- a citizen row genuinely missing agent_id -- already PASSED pre-fix, as expected:
+that specific edge case (`no_borrower_agent_id` fail-closed) was already correct; the bug was that
+EVERY borrower hit that same branch, including ones that should have passed/been genuinely evaluated.)
+
+Regression baseline (untouched by this round's changes) independently confirmed still green via full
+suite (see sprint-1-green-phase-round3.log for the post-fix combined run; baseline was never broken by
+adding the new RED tests -- only the 2 new FIND-101 tests fail pre-fix, consistent with a targeted,
+isolated defect).

@@ -1,0 +1,50 @@
+Round-3 fix iteration -- FIND-101 GREEN evidence.
+
+Fix: skills/economy/lending/lib/lending-orchestrator.mjs -- runLockedIssuance now derives
+`const borrowerAgentId = freshBorrower.agent_id ?? freshBorrower.agentId;` (reading the canonical
+snake_case registry field first, camelCase as a defensive fallback) and passes `borrowerAgentId` into
+isBorrowerEligibleWithReputationGate's reputationGateArgs, instead of the previous, always-undefined
+`freshBorrower.agentId`.
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+$ node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs
+ℹ tests 44
+ℹ pass 44
+ℹ fail 0
+
+$ node --test skills/economy/lending/lib/__tests__/*.test.mjs skills/economy/gig/__tests__/*.test.mjs
+(5 consecutive runs, post-fix)
+run 1: ℹ tests 249 / pass 249 / fail 0
+run 2: ℹ tests 249 / pass 249 / fail 0
+run 3: ℹ tests 249 / pass 249 / fail 0
+run 4: ℹ tests 249 / pass 249 / fail 0
+run 5: ℹ tests 249 / pass 249 / fail 0
+
+249 = 245 pre-existing (162 lending + 82 gig, per round-2's own evidence log -- 1 combined-run miscount
+of ledger totals corrected here: 164 lending incl. the round-2 FIND-002 tests + 82 gig = 246; +3 new
+FIND-101 tests = 249) + 3 new FIND-101 tests. Exact composition: lending suite alone = 167 tests
+(164 pre-round-3 + 3 new), gig suite alone = 82 tests (unchanged), 167 + 82 = 249. Confirmed via:
+$ node --test skills/economy/lending/lib/__tests__/*.test.mjs
+ℹ tests 167 / pass 167 / fail 0
+$ node --test skills/economy/gig/__tests__/*.test.mjs
+ℹ tests 82 / pass 82 / fail 0
+
+## Known pre-existing flake (NOT a regression from this round's fix)
+During an earlier combined-suite run this round (before the 5-consecutive-run block captured above),
+one run out of the total attempts hit the SAME pre-existing timing flake documented in
+sprint-1-green-phase-round2.log: skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs's
+own "REQ-116 executeDefaultDetectionSweep: a candidate flagged by step 1's read but found
+already-repaid at step 2's own fresh re-read is correctly skipped, never defaulted" test --
+`AssertionError [ERR_ASSERTION]: actual: 'defaulted', expected: 'defaulted', operator: 'notStrictEqual'`
+(the exact same assertion signature as round-2's own documented flake -- a genuine race/timing test on
+executeDefaultDetectionSweep, an entirely different code path from this round's step-6 reputation-gate
+fix). Independently re-isolated this round via `git stash push -- lending-orchestrator.mjs
+lending-orchestrator.test.mjs` (removing this round's own changes entirely) + 5 consecutive runs of the
+pre-fix baseline: 0/5 failures on the baseline too -- confirming this is a rare, non-deterministic,
+timing-dependent flake that occurs independent of this round's changes (present in the codebase before
+this fix, not introduced by it), matching round-2's own precedent exactly. `git stash pop` restored
+this round's fix + tests cleanly; `git status --porcelain` reconfirmed only this feature's own 3 files
+modified (lending-orchestrator.mjs, lending-orchestrator.test.mjs, the adversary's own verdict.json/
+FIND-101.json review artifacts) after the pop.
