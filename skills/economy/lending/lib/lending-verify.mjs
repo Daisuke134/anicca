@@ -146,8 +146,18 @@ function safeBigIntValue(hexValue) {
  * THIS loan's own disbursement. An unrelated-value transfer between the same two wallets is correctly
  * left unmatched — the row stays whatever `resolveStaleProvisioning`'s caller decides (never falsely
  * "settled").
+ *
+ * impl-review iteration-3, FIND-201 (critical): an exact wallet-pair + exact-value match is STILL not
+ * sufficient proof of THIS row's own disbursement when the SAME borrower has multiple stuck rows —
+ * computeLoanCapUsd returns a flat cap for every cold-start attempt, so repeat stuck-row cycles to the
+ * same struggling borrower share both the identical wallet pair AND the identical value FIND-101's own
+ * fix now trusts. Fix: reuse verifyRepayment's own already-proven cross-ledger replay guard
+ * (lending-verify.mjs:84-86) here too — a candidate log whose own tx_hash is ALREADY recorded against
+ * ANY row in loanRows (this loan's own row or a DIFFERENT loan_id) is never trusted as evidence of this
+ * row's disbursement. Fail-closed: such a candidate is treated as non-matching, never as a match — the
+ * row stays unconfirmed rather than risk misattributing another loan's real transfer as this one's.
  */
-export async function reconcileProvisionalDisbursement({ loanRow, rpcUrl, fromBlock, toBlock }) {
+export async function reconcileProvisionalDisbursement({ loanRow, loanRows, rpcUrl, fromBlock, toBlock }) {
   const fromTopic = padAddressToTopic(loanRow.lender_wallet);
   const toTopic = padAddressToTopic(loanRow.borrower_wallet);
   const logs = await rpcCall(rpcUrl, "eth_getLogs", [
@@ -157,7 +167,13 @@ export async function reconcileProvisionalDisbursement({ loanRow, rpcUrl, fromBl
   const matchingLog = (logs || []).find((log) => {
     if (!matchesTransferLog(log, fromTopic, toTopic)) return false;
     const valueBase = safeBigIntValue(log.data);
-    return valueBase !== null && valueBase === expectedValueBase;
+    if (valueBase === null || valueBase !== expectedValueBase) return false;
+    // FIND-201: same guard verifyRepayment already applies — a tx_hash already bound to ANY loan row
+    // (same-loan or cross-loan) can never be counted as proof of a DIFFERENT/this reconciliation's own
+    // disbursement.
+    const txHash = extractTxHash(log);
+    const alreadyRecorded = (loanRows || []).some((row) => row && row.tx_hash === txHash);
+    return !alreadyRecorded;
   });
   if (!matchingLog) return { found: false };
   return { found: true, txHash: extractTxHash(matchingLog) };

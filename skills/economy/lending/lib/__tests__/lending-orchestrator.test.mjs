@@ -366,6 +366,52 @@ test("PROP-115c step 5 happy: an unterminated provisioning row is resolved via a
 });
 
 // ===========================================================================
+// FIND-201 fix (critical, impl-review iteration-3): resolveStaleProvisioning had `loanRows` in scope but
+// never forwarded it into its own reconcile() call, so reconcileProvisionalDisbursement had no way to
+// apply verifyRepayment's own already-proven cross-ledger tx_hash-replay guard (lending-verify.mjs:84-86)
+// to the disbursement side of reconciliation. Now threaded through.
+// ===========================================================================
+
+test("FIND-201 fix (critical, impl-review iteration-3): resolveStaleProvisioning forwards the FULL current loanRows ledger into reconcile({loanRow, loanRows}) -- not just the stale row alone -- so reconcileProvisionalDisbursement can apply its own cross-loan tx_hash-replay guard", async () => {
+  const dir = tmpDir();
+  const priorRow = {
+    loan_id: `loan_${LENDER}_1`,
+    lender_id: LENDER,
+    borrower_id: BORROWER,
+    status: "active",
+    principal_usd: 0.02,
+    total_due_usd: 0.022,
+    tx_hash: "0xpriorloanalreadycreditedtx000000000000000000000000000000000001",
+    provisioned_ms: NOW_MS - 500000,
+  };
+  const staleRow = {
+    loan_id: `loan_${LENDER}_2`,
+    lender_id: LENDER,
+    borrower_id: BORROWER,
+    status: "disbursement_uncertain",
+    principal_usd: 0.02,
+    total_due_usd: 0.022,
+    provisioned_ms: NOW_MS - 60000,
+  };
+  fs.mkdirSync(dir, { recursive: true });
+  fs.writeFileSync(ledgerFileFor(dir), [priorRow, staleRow].map((r) => JSON.stringify(r)).join("\n") + "\n");
+  let receivedLoanRows;
+  const deps = happyDeps(dir, {
+    reconcile: async ({ loanRow, loanRows }) => {
+      assert.equal(loanRow.loan_id, staleRow.loan_id, "reconcile is still called with the SAME stale row as its own loanRow");
+      receivedLoanRows = loanRows;
+      return { found: false };
+    },
+  });
+  await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.ok(Array.isArray(receivedLoanRows), "reconcile must receive a loanRows array, not undefined -- production reconcileProvisionalDisbursement needs it to reject an already-recorded tx_hash");
+  assert.ok(
+    receivedLoanRows.some((r) => r.loan_id === priorRow.loan_id && r.tx_hash === priorRow.tx_hash),
+    "the FULL ledger (including OTHER loan rows with their own tx_hash) must be forwarded, not just the stale row alone -- otherwise reconcileProvisionalDisbursement has nothing to check its cross-loan replay guard against"
+  );
+});
+
+// ===========================================================================
 // FIND-102 fix (critical, impl-review iteration-2): a {found:false} reconcile result for a stale row is
 // only trustworthy as "genuinely never disbursed" when the row's own age is still within what the
 // reconciliation window could possibly have scanned -- otherwise a genuine broadcast that landed OUTSIDE
