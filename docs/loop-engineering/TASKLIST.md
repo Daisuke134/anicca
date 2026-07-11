@@ -24,6 +24,12 @@
 ✅ G1完了(POL→USDC.e swap, tx 56348c8d) + ✅ Base bridge完了(relay Polygon→Base, tx 1fba42d, $22.97着) = **loop が funded・自律earn可能に**。
 次: (a)loop の戦略を良い方に(poly-maker/funding-arb, 弱戦略のままだと funded でも溶ける) (b)loop の実 wake を観測し external:true を dashboard で確認。私は trade しない=loop がやる。
 
+## ★ #4 bridge手数料 root cause 検証(2026-07-12, own-eyes) ★
+G1〜G1.7の POL→USDC.e swap→Polygon→Base bridge→HL入金→HL出金(fee $1.22)→再配分という多段移動で、claude-pの資金は$30近くから$18程度まで目減りした。**これは「今も繰り返している自動バグ」ではなく「一度きりの手動再配分オペレーション」だった**ことをコードで確認:
+- `fund_via_bridge.py` は idempotent 設計（`get_balance_allowance` が既に解決すれば即exit、毎wake再bridgeしない）
+- 0x810f のBase USDC送金ログ(直近ブロック)を直接RPCで確認 → **新規の不要な出金は発生していない**（live bugではない）
+- **教訓（今後のポリシー、コード変更ではない）**: 資金投入は各wallet/chainへ**直接**行う（例: Franklinには直接Solana native SOL、claude-pには直接Polygon pUSD）。POL→swap→bridge→HL→再配分のような多段は今後行わない。→ memory `feedback_dais_funds_native_sol_only_and_polymarket_japan_illegal` と整合。
+
 ## ★ REALTIME 2026-07-12 04:06 (loop 自律行動を own-eyes 観測) ★
 - **loop が自律で HL に入金した**: hl_trade wake が "balance $0<trade$20 → self-fund relay Base→HL" を実行。HL account value=**$18.78**(on-chain 検証, fee $1.22)。まだ position 無し(WAIT/narrate)。**＝自律 capital 管理 machinery は本物に動く。**
 - 資金現況: HL $18.78 + Base USDC $0.97 + pm 0x904B $1.35 ≈ $21（$30 POL から swap/bridge fee ~$5 + 履歴 naked 損で目減り）。
