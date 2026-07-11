@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "crossReferencedDimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "critical",
+  "description": "Gas-ETH mode introduces TWO things that have never been checked against a real, live relay.link response for this exact currency pair: (1) a brand-new destination currency (native ETH via the 0x00...00 sentinel, not USDC), and (2) a brand-new field dependency, details.currencyOut.amount (raw wei), read by _extract_quote_raw_units -- a sibling of _extract_quote_usd but reading a DIFFERENT field the USDC mode never touches at all. The spec's own citation for this (behavioral-spec.md:299-318) verifies the field's SHAPE only against docs.relay.link's static documentation example (a Base-ETH<->Optimism-ETH swap, not the SOL-USDC->Base-native-ETH pair this feature actually performs), via a firecrawl scrape of the docs page -- never against a real queried response for the pair in use. This is the EXACT same class of gap iteration-1's FIND-005 identified for the USDC mode's currencyIn/currencyOut.amountUsd fields, which was elevated into an explicit MUST acceptance-criterion on REQ-004 (behavioral-spec.md:135-148: 'THE OPERATOR MUST run a real (non-signing) dry-run against the live api.relay.link/quote endpoint for this exact currency pair and manually inspect the returned details shape BEFORE the first --live invocation, and attach that raw response as evidence'). REQ-GAS-004 (behavioral-spec.md:369-412) has NO equivalent MUST gate at all -- its acceptance criteria (lines 404-412) only describe pytest fixture coverage, never a live-response verification requirement, despite the underlying risk being structurally identical (a real-money delivery-verification cap depending on an as-yet-unverified live field shape). state.json's own gas-eth-1 phaseHistory entry confirms this gap was never closed ('this addition has NOT yet been through its own fresh-context adversary review pass; not merged, not run --live') but does not surface it as the specific live-evidence requirement it is.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "169-190",
+    "snippet": "def _extract_quote_raw_units(details: Mapping, key: str) -> Optional[int]:\n    \"\"\"REQ-GAS-004: extract a relay quote's reported `details.<key>.amount` (the RAW base-unit\n    output, e.g. wei for a native-ETH `currencyOut` -- verified live 2026-07-11 against\n    docs.relay.link's own Get Quote request/response example, both `/quote` and `/quote/v2`)\n    ...\"\"\"\n    try:\n        sub = details.get(key)\n    except AttributeError:\n        return None\n    if not isinstance(sub, Mapping):\n        return None\n    raw = sub.get(\"amount\")\n    if raw is None:\n        return None\n    try:\n        return int(raw)\n    except (TypeError, ValueError):\n        return None"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "369-412",
+      "note": "REQ-GAS-004's full text -- no MUST live-evidence gate, unlike REQ-004:135-148's explicit one for the USDC pair."
+    },
+    {
+      "filePath": "specs/behavioral-spec.md",
+      "lineRange": "299-318",
+      "note": "The gas-eth mode's own citation admits the verification source is docs.relay.link's static example, not a live query for this pair."
+    }
+  ],
+  "remediation": "Before the first --live --gas-eth invocation: (1) run `python3 franklin_sol_base_refill.py --gas-eth --recipient 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3` WITHOUT --live (this already makes a real relay.link POST /quote call in production wiring per build_default_deps()); (2) inspect the printed plan's expected_wei/in_usd/out_usd fields and confirm details.currencyOut.amount was actually present and parsed (expected_wei is not None); (3) save the raw relay.link response as evidence under .vcsdd/features/franklin-sol-base-refill/evidence/; (4) add an explicit MUST acceptance-criterion to REQ-GAS-004 mirroring REQ-004's, and record the evidence path there. Do not run --live before this is done.",
+  "routeToPhase": "1a"
+}

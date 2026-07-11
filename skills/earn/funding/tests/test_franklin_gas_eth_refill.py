@@ -269,6 +269,160 @@ def test_gas_quote_missing_currency_out_amount_wei_refuses_before_signing(tmp_pa
     assert rows[-1]["status"] == "skipped"
 
 
+def test_gas_quote_currency_out_amount_wei_null_refuses_before_signing(tmp_path):
+    """FIND-001 (impl iteration-3): `_extract_quote_raw_units` must FAIL-CLOSED (return None,
+    never a fabricated fallback) when `details.currencyOut.amount` is explicitly `null` --
+    mirrors `_extract_quote_usd`'s existing null-amount regression test for the USDC mode."""
+
+    def quote_null_wei_amount(payload):
+        return {
+            "details": {
+                "currencyIn": {"amountUsd": "3.0"},
+                "currencyOut": {"amountUsd": "2.8", "amount": None},
+            },
+            "steps": [
+                {
+                    "items": [
+                        {"data": {"instructions": []}, "check": {"endpoint": "/intents/status/fake-gas"}}
+                    ]
+                }
+            ],
+        }
+
+    deps, call_log, ledger_path = make_gas_deps(tmp_path, relay_quote=quote_null_wei_amount)
+    result = run_gas_refill(deps=deps, live=True, recipient=RECIPIENT)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "skipped"
+
+
+def test_gas_quote_currency_out_amount_wei_non_numeric_refuses_before_signing(tmp_path):
+    """FIND-001: a non-numeric `amount` string (relay glitch/error-shaped response) must refuse
+    the same way, never crash and never coerce to a fabricated 0."""
+
+    def quote_non_numeric_wei_amount(payload):
+        return {
+            "details": {
+                "currencyIn": {"amountUsd": "3.0"},
+                "currencyOut": {"amountUsd": "2.8", "amount": "not-a-number"},
+            },
+            "steps": [
+                {
+                    "items": [
+                        {"data": {"instructions": []}, "check": {"endpoint": "/intents/status/fake-gas"}}
+                    ]
+                }
+            ],
+        }
+
+    deps, call_log, ledger_path = make_gas_deps(tmp_path, relay_quote=quote_non_numeric_wei_amount)
+    result = run_gas_refill(deps=deps, live=True, recipient=RECIPIENT)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "skipped"
+
+
+def test_gas_quote_currency_out_wrong_type_refuses(tmp_path):
+    """Mirrors the USDC mode's `test_quote_currency_in_wrong_type_refuses`: a non-object
+    `currencyOut` must refuse cleanly at `_extract_quote_raw_units`'s own isinstance guard,
+    never raise."""
+
+    def quote_wrong_type_currency_out(payload):
+        return {
+            "details": {"currencyIn": {"amountUsd": "3.0"}, "currencyOut": "not-an-object"},
+            "steps": [
+                {
+                    "items": [
+                        {"data": {"instructions": []}, "check": {"endpoint": "/intents/status/fake-gas"}}
+                    ]
+                }
+            ],
+        }
+
+    deps, call_log, _ = make_gas_deps(tmp_path, relay_quote=quote_wrong_type_currency_out)
+    result = run_gas_refill(deps=deps, live=True, recipient=RECIPIENT)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+
+
+def test_gas_quote_currency_out_amount_wei_zero_refuses_before_signing(tmp_path):
+    """FIND-002 (impl iteration-3, CRITICAL): a PRESENT-but-zero `details.currencyOut.amount`
+    must refuse BEFORE signing/broadcasting, symmetric with the pre-existing `amount` missing
+    entirely refusal above -- expected_wei=0 is not a valid quantity to verify delivery
+    against, and must never reach `evaluate_native_delivery`'s (now also fail-closed) floor
+    check via a live broadcast."""
+
+    def quote_zero_wei_amount(payload):
+        return {
+            "details": {
+                "currencyIn": {"amountUsd": "3.0"},
+                "currencyOut": {"amountUsd": "2.8", "amount": "0"},
+            },
+            "steps": [
+                {
+                    "items": [
+                        {"data": {"instructions": []}, "check": {"endpoint": "/intents/status/fake-gas"}}
+                    ]
+                }
+            ],
+        }
+
+    deps, call_log, ledger_path = make_gas_deps(tmp_path, relay_quote=quote_zero_wei_amount)
+    result = run_gas_refill(deps=deps, live=True, recipient=RECIPIENT)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "skipped"
+
+
+# --- FIND-003 (impl iteration-3): recipient must be normalized ONCE and that SAME normalized
+# value used everywhere downstream, never the original unstripped/mixed-case argv string ---
+
+
+def test_gas_whitespace_padded_recipient_normalized_in_relay_payload_and_ledger(tmp_path):
+    padded_recipient = f"  {RECIPIENT}\n"
+    normalized = RECIPIENT.strip().lower()
+    seen_payload_recipients = []
+
+    def quote_capturing_recipient(payload):
+        seen_payload_recipients.append(payload.get("recipient"))
+        return {
+            "details": {
+                "currencyIn": {"amountUsd": "3.0"},
+                "currencyOut": {"amountUsd": "2.8", "amount": str(EXPECTED_WEI)},
+            },
+            "steps": [
+                {
+                    "items": [
+                        {"data": {"instructions": []}, "check": {"endpoint": "/intents/status/fake-gas"}}
+                    ]
+                }
+            ],
+        }
+
+    deps, _, ledger_path = make_gas_deps(tmp_path, relay_quote=quote_capturing_recipient)
+    result = run_gas_refill(deps=deps, live=True, recipient=padded_recipient)
+    assert result["ok"] is True
+    assert seen_payload_recipients == [normalized]
+    rows = read_ledger(ledger_path)
+    assert len(rows) >= 2
+    assert all(r["to"] == normalized for r in rows)
+    assert all(r["to"] != padded_recipient for r in rows)
+
+
+def test_gas_dry_run_also_normalizes_recipient_in_ledger_row(tmp_path):
+    padded_recipient = f"{RECIPIENT}  "
+    normalized = RECIPIENT.strip().lower()
+    deps, _, ledger_path = make_gas_deps(tmp_path)
+    result = run_gas_refill(deps=deps, live=False, recipient=padded_recipient)
+    assert result["ok"] is True
+    assert result["plan"]["recipient_base"] == normalized
+    rows = read_ledger(ledger_path)
+    assert rows[0]["to"] == normalized
+
+
 # --- single in-flight guard (REQ-GAS-005 / mirrors REQ-005), independent of USDC-mode step ---
 
 

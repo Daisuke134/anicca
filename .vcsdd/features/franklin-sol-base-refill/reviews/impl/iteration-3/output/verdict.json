@@ -1,0 +1,128 @@
+{
+  "phase": "impl-review",
+  "feature": "franklin-sol-base-refill",
+  "scopeLabel": "gas-eth-mode-extension-iteration-1",
+  "iteration": 3,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["e98f83ad"],
+  "external_test_evidence": "167/167 funding tests pass at HEAD e98f83ad (thinker-executed, taken as given -- this role has no Bash tool; all findings below are from static code/spec/test cross-referencing, not from re-running the suite myself)",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "/Users/anicca/anicca/.worktrees/gas-refill",
+    "specPath": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md",
+    "scopeNote": "This is a fresh-context review of ONLY the --gas-eth mode extension (REQ-GAS-001..005, PROP-018..024) added on top of the already-PASS-reviewed-then-live-run USDC refill mode. The USDC mode's own still-open evidence gap (FIND-001-of-iteration-2, unresolved per state.json) is out of this review's primary scope but noted where it bears directly on the go/no-go decision for a real --live invocation.",
+    "filesReviewed": [
+      "skills/earn/funding/franklin_sol_base_refill.py (full read, all 1006 lines)",
+      "skills/earn/funding/lib/refill_plan.py (full read, all 310 lines)",
+      "skills/earn/funding/lib/erc20.py (full read, all 136 lines)",
+      "skills/earn/funding/tests/test_franklin_gas_eth_refill.py (full read, all 394 lines, 24 tests)",
+      "skills/earn/funding/tests/test_refill_plan.py (full read; gas-eth section lines 300-477, 24 gas-related tests)",
+      "skills/earn/funding/tests/test_erc20.py (full read, confirms eth_get_balance has no dedicated unit test -- consistent with existing erc20_balance_units precedent)",
+      ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md (full read, REQ-001..007 + REQ-GAS-001..005 + both Changelogs)",
+      ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md (full read, PROP-001..024)",
+      ".vcsdd/features/franklin-sol-base-refill/state.json (full read, all phaseHistory entries)",
+      ".vcsdd/features/franklin-sol-base-refill/reviews/impl/iteration-1/output/verdict.json + iteration-2/output/verdict.json (read for context on the still-open USDC-mode evidence gate)"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-005"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:611-619",
+          "description": "REQ-GAS-002's ordering requirement ('no quote, no identity-independent action beyond the kill-switch check' when recipient is missing/malformed) is correctly implemented: is_valid_evm_address(recipient) is checked immediately after the kill-switch check and strictly before resolve_secret/derive_pubkey/any network call, in both dry-run and --live (no live-only branch around this check)."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:36-50 vs franklin_sol_base_refill.py:650-739",
+          "description": "REQ-GAS-003's caps are genuinely separate literals (GAS_PER_INVOCATION_USD_CAP=3.00, GAS_RESERVE_USD=3.00, GAS_MAX_FEE_PCT=12.0), never derived from or sharing state with the USDC-mode constants; select_refill_amount/evaluate_relay_fee are called with these literals explicitly passed, not defaulted."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_franklin_gas_eth_refill.py:245-269",
+          "description": "REQ-GAS-004's named edge case 'relay quote response is missing/malformed details.currencyOut.amount: refuse BEFORE signing/broadcasting' is genuinely covered by test_gas_quote_missing_currency_out_amount_wei_refuses_before_signing, which asserts build_sign_submit is never called and the ledger row is 'skipped'."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_refill_plan.py:412-476",
+          "description": "evaluate_native_delivery's 10 boundary tests (full delivery, exactly-85%, just-under-85%, zero-delta, negative-delta, unrelated-small-inflow, non-int, bool, default-pct) are genuine distinct fixtures, not a reused happy-path -- but none of the 10 cases sets expected_wei to 0 or a negative value, missing the case this review's FIND-002 identifies."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:738-780",
+          "description": "Caps/fee-cap ordering manually traced end-to-end for run_gas_refill: select_refill_amount (REQ-GAS-003 amount cap) at line 650 and evaluate_relay_fee (REQ-GAS-003 fee cap, gas-mode literal GAS_MAX_FEE_PCT=12.0 explicitly passed) at line 726 are BOTH evaluated and allowed before build_sign_submit is ever called at line 780 -- no code path reaches signing without both caps having passed. Confirmed no accidental sharing with USDC-mode's MAX_FEE_PCT=8.0 default (evaluate_relay_fee's own default parameter is never relied upon in the gas path)."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:169-190,169 vs franklin_sol_base_refill.py:667",
+          "description": "No wei/decimal unit confusion found: amount_units (source leg, Solana USDC) is computed as int(round(amount * 1e6)) -- correct 6-decimal USDC scaling, explicitly commented 'source leg is still Solana USDC (6 decimals)'; expected_wei (destination leg, native ETH) is taken directly from _extract_quote_raw_units's int(raw) with NO additional *1e18/1e6 scaling applied anywhere -- correct, since relay.link's documented amount field is already the raw base-unit (wei) string, and eth_get_balance/evaluate_native_delivery consistently operate on raw wei ints throughout."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:628-633,779-786",
+          "description": "Secret safety re-confirmed for the new run_gas_refill path: both derive_pubkey and build_sign_submit exception handlers route through the same sanitized_secret_error(context, exc) helper (never str(exc)) already established for run_refill -- no raw exception interpolation reintroduced. Directly matched against tests/test_franklin_gas_eth_refill.py:165-190 (test_gas_derive_pubkey_decode_failure_ledger_row_never_contains_secret, test_gas_build_sign_submit_decode_failure_never_leaks_secret), which inject a real FAKE_SECRET through the raising path and assert its absence from json.dumps(result) and every ledger row -- genuine failing-path injections, not tautological."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_franklin_gas_eth_refill.py + test_refill_plan.py (gas section)",
+          "description": "Test-file organization follows the many-small-files convention as claimed: the new gas-eth orchestration suite is a separate file (test_franklin_gas_eth_refill.py, 24 tests) rather than appended to the already-large test_franklin_sol_base_refill.py; pure-function gas tests are appended to the existing test_refill_plan.py (appropriate, since is_valid_evm_address/evaluate_native_delivery live in the same refill_plan.py module). Total new-test count independently verified by grep-counting '^def test_' across both files: 24 + 24 = 48, matching the claimed figure exactly."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py:236-309",
+          "description": "Purity re-confirmed: is_valid_evm_address and evaluate_native_delivery both take only their explicit arguments, perform no I/O/network/clock reads, and evaluate_native_delivery is a dataclass-returning pure function matching the purity-boundary claim in verification-architecture.md's Changelog. No I/O import (requests/urllib/subprocess/time) anywhere in refill_plan.py."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/erc20.py:57-80",
+          "description": "eth_get_balance mirrors the already-reviewed erc20_balance_units/eth_get_transaction_receipt contract exactly (raises on RPC/network failure rather than silently returning 0, same User-Agent header, same raw-hex-to-int parsing) -- structurally consistent with the existing PASS-reviewed precedent in the same file, even though (like its precedent) it has no dedicated unit test of its own (I/O function, mocked only at the orchestration-test deps boundary, consistent with existing convention)."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 5,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["REQ-GAS-001", "REQ-GAS-002", "REQ-GAS-003", "REQ-GAS-004", "REQ-GAS-005"],
+    "duplicateFindings": [
+      {
+        "findingId": "FIND-001",
+        "note": "Intentionally cross-referenced under BOTH spec_fidelity (the spec itself omits an equivalent MUST evidence-gate) and verification_readiness (the underlying live-relay-response assumption is genuinely unverified) -- not a process duplication, both framings are independently true of the same root cause."
+      }
+    ],
+    "goLiveRecommendation": "NO-GO for a --live $3 gas-ETH top-up until FIND-001 (critical) is remediated: run a real, non-signing `--gas-eth --recipient 0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3` invocation (no --live) against the live api.relay.link/quote endpoint, inspect the raw response for a present/parseable details.currencyOut.amount field, attach that raw response as evidence under this feature's .vcsdd directory, and add an explicit MUST acceptance-criterion to REQ-GAS-004 requiring this (mirroring REQ-004's own existing gate for the USDC pair). FIND-002 (the expected_wei<=0 floor-bypass in evaluate_native_delivery) should also be fixed first, since it is a genuine fail-open path in the exact function this real money move depends on for independent delivery proof, even though it requires a degenerate relay response to trigger. FIND-003 (whitespace validate/use mismatch) is lower-probability but trivial to fix and should not block release."
+  }
+}
