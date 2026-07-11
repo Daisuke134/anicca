@@ -38,6 +38,26 @@ hc_is_stuck_pane() {
     && ! printf '%s' "$pane" | grep -qE 'esc to interrupt'
 }
 
+# G2 item4 (2026-07-11 loop-arch redesign / LOOPS-TRUTH-AUDIT.md "healthcheck DEAD誤判定(connector:
+# 正常終了をDEAD扱いでrestart storm→stuck)"): confirmed real incident 2026-07-11 -- connector's own
+# standalone healthcheck.sh judged session-liveness (tmux has-session) alone, misjudged a legitimate
+# once-daily-cron loop with a genuinely-completed recent pass as DEAD, and restart-stormed it (15分
+# 4回restart観測), leaving a stuck orphan process (PID 73590, 10.5h). Any healthcheck for a loop
+# whose cadence is "wakes, runs one pass, exits" (rather than "always-on tmux session") should check
+# THIS before any DEAD/STALE judgment: a genuinely-completed-pass marker touched within the last
+# max_age_min minutes means the loop is healthy right now, regardless of what a bare
+# session-liveness check alone would conclude. Pure/testable (no side effects), shared here (not
+# duplicated per-caller) so every standalone healthcheck.sh -- capafy/reddit/life-manager-loop via
+# hc_run() today, and any future once-daily-cron loop's own healthcheck.sh (e.g. connector-style) --
+# has ONE place to get this right instead of re-deriving it.
+hc_last_pass_recent() {
+  local hb_file="$1" max_age_min="$2" now mtime age_min
+  [ -f "$hb_file" ] || return 1
+  now=$(date +%s); mtime=$(stat -f %m "$hb_file" 2>/dev/null || echo 0)
+  age_min=$(( (now - mtime) / 60 ))
+  [ "$age_min" -lt "$max_age_min" ]
+}
+
 # FIND-033 (life-manager-loop 3-day outage, 2026-07-10): a near-full data volume stops macOS growing its
 # swapfile, which surfaces as intermittent fork() failures ("Resource temporarily unavailable") for EVERY
 # new process on the box — including this script's own tmux/pkill calls (seen directly in launchd's error
