@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Both the implementation's own header comment and the spec cite `scripts/disk-cleaner.sh` as an already-established 'mkdir-atomic lock' precedent in this repo, used to justify NOT writing a fresh test/design for the lock mechanism from scratch ('macOS has no flock(1) binary, both those scripts already solve this the same way'). No such file exists anywhere in this repository: `Glob scripts/*.sh` under the repo root returns zero results (no `scripts/` directory exists at all, on this feature branch or on the checked-out main tree). The ONLY actually-existing sibling precedent, `skills/self/claude-p-mainloop.sh`, uses a PIDFILE guard explicitly documented as 'NOT flock' (its own header, lines 7-9) -- a materially different mechanism (a single global pidfile vs. this feature's `mkdir`-based directory lock) than the one claimed to already exist twice over. This is a fabricated code-precedent citation baked into both the implementation comments (which future maintainers will trust) and the spec's own REQ-708 justification text.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "38-42, 262-264",
+    "snippet": "// Copied idiom from skills/self/claude-p-mainloop.sh's pidfile guard +\n// scripts/disk-cleaner.sh's mkdir-atomic lock -- macOS has no flock(1) binary, both those scripts\n// already solve this the same way."
+  },
+  "corroborating": [
+    {"filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md", "lineRange": "207-208", "note": "same fabricated dual-precedent claim repeated in the spec's own REQ-708 EARS text."},
+    {"filePath": "skills/self/claude-p-mainloop.sh", "lineRange": "7-9", "note": "the only real sibling script uses a pidfile, and its own header explicitly says 'NOT flock' -- a single-file pidfile guard, not an mkdir-atomic directory lock."}
+  ],
+  "routeToPhase": "1c"
+}

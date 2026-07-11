@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-006",
+  "dimension": "structural_integrity",
+  "category": "performance",
+  "severity": "minor",
+  "description": "ensurePublishRepo()'s initial clone has no `--depth`/`--single-branch`/`--filter` limiting flag, so any fresh setup fetches the FULL history of every branch of the entire `anicca` mother repo merely to publish a small side orphan branch. Non-blocking on its own (the task description's own framing), but combined with FIND-002's reachable 'publishRepoDir loss' trigger, a full re-clone can happen more often than a true one-time setup, each time paying for a full-history fetch of the whole mother repo.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "311-316",
+    "snippet": "git(['clone', '--no-checkout', '--quiet', originUrl, publishRepoDir]);"
+  },
+  "routeToPhase": "2b"
+}

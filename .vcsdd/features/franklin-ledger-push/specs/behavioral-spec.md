@@ -17,25 +17,60 @@ git history alone, without making the wake loop dependent on git/network succeed
   DEDICATED per-instance orphan publish clone (never the shared checkout), an explicit field
   allowlist (never a raw copy), a push-confirmed cursor (`pushedLineCount`) with fetch+hard-reset+
   reproject recovery on divergence, and a same-instance mkdir-atomic lock.
+- **impl-review iter2 fixes: FIND-001..006 (fresh-context adversary, iteration 2).** (1) **FIND-001
+  (critical)**: the iter1 design only ever read `state/ledger.jsonl` (per-wake bookkeeping — no dollar
+  amount, no on-chain reference), so the published branch could never actually prove "the
+  balance/actions grow" — the money evidence lives EXCLUSIVELY in
+  `skills/earn/state/earn-ledger.jsonl`, a file the feature never read. Fixed by publishing BOTH
+  sources onto the SAME per-instance branch as two separate files — `<instance>-wake.jsonl` and
+  `<instance>-earn.jsonl` — each with its own field allowlist (REQ-702 rewritten below) and its own
+  independently-reconciled cursor. (2) **FIND-002 (critical)**: the iter1 recovery only fired on a
+  REJECTED push; a publish-repo directory lost/recreated between a local commit and its later push
+  produced a CLEAN fast-forward instead, so the recovery never triggered and the marker falsely
+  claimed the lost lines were pushed — REQ-709 is rewritten below: the marker's cached
+  `pushedLineCount` is NEVER trusted; every cycle reconciles each source's cursor directly against
+  the ACTUAL, just-synced destination file's line count. (3) **FIND-003**: the iter1 divergence test
+  used an outside writer colliding on the SAME exclusive branch — REQ-705 itself calls this
+  "structurally impossible". The suite now proves recovery against the REALISTIC, reachable trigger
+  for THIS topology: publish-repo directory loss between cycles. (4) **FIND-004**: the iter1 header
+  comment and REQ-708 falsely cited `scripts/disk-cleaner.sh` as an established mkdir-atomic-lock
+  precedent — that file does not exist anywhere in this repository. The only real sibling precedent
+  is `skills/self/claude-p-mainloop.sh`'s pidfile guard; the fabricated citation is removed from both
+  the code and REQ-708 below. (5) **FIND-005**: no escalation path existed for a persistently-broken
+  publish pipeline (e.g. a revoked git credential) — REQ-703 now tracks a `publishFailureStreak`,
+  escalated by `index.mjs`'s wiring via the EXISTING `appendHarnessFailure` mechanism at 5
+  consecutive failures, plus a one-time, non-fatal `git ls-remote` reachability probe at first-ever
+  setup. (6) **FIND-006**: the dedicated clone had no `--depth`/`--single-branch` limiting flag,
+  fetching the mother repo's full history merely to publish a small side branch — REQ-705 now
+  specifies a shallow (`--depth 1 --single-branch --no-tags`) clone with every subsequent fetch also
+  depth-capped.
 
 ## Purity Boundary Analysis
 
 - **Pure core**: `decidePublish()` (batch/throttle decision — line-count OR time-elapsed),
-  `extractWakeId()` (parse a JSON ledger line, pull `wake_id`), `projectLedgerLine()` (REQ-702's
-  field-allowlist projection — parses one raw ledger.jsonl line and returns only known-safe,
-  type-checked fields; every other field, including the model-authored `args` object, is dropped),
-  `redactBroaderSecretPatterns()` (REQ-706's second, stricter redaction pass for free-text fields),
-  and reuse of the existing pure `redactPrivateKeyPatterns()` (`env-filter.mjs`, unmodified). No
-  I/O, deterministic, directly unit-testable.
+  `extractWakeId()`/`extractEarnRef()` (parse a source line, pull its own id field), `projectWakeLine()`
+  / `projectEarnLine()` (REQ-702's per-source field-allowlist projections — FIND-001: TWO distinct
+  allowlists, one per source, since the wake and earn schemas are unrelated — parse one raw source
+  line and return only known-safe, type-checked fields; every other field, including the
+  model-authored `args` object, is dropped), `redactBroaderSecretPatterns()` (REQ-706's second,
+  stricter redaction pass for free-text fields), and reuse of the existing pure
+  `redactPrivateKeyPatterns()` (`env-filter.mjs`, unmodified). No I/O, deterministic, directly
+  unit-testable.
 - **Effectful shell**: `readMarker`/`writeMarker` (fs, cursor state at
-  `$ANICCA_HOME/state/.ledger-publish-marker`), `readSourceLinesRaw`/`appendRawLines` (fs, source
-  `ledger.jsonl` → `<publishRepoDir>/<instance>.jsonl`), `acquireLock`/`releaseLock` (REQ-708,
-  mkdir-atomic same-instance-overlap guard), `ensurePublishRepo` (REQ-705, sets up the DEDICATED
-  clone + orphan/tracking branch), `recoverFromDivergence` (REQ-709), `defaultGit` (child_process
-  `execFileSync`, injectable), and the orchestrator `publishLedgerCycle()` which sequences all of
-  the above. Wired into `index.mjs`'s main wake loop (`while (!shuttingDown) { await runOneWake();
-  ... }`) — never inside `runOneWake()` itself, so it never affects any of `runOneWake`'s own return
-  paths.
+  `$ANICCA_HOME/state/.ledger-publish-marker`, now `{ wake: {pushedLineCount}, earn:
+  {pushedLineCount}, lastPushTs, publishFailureStreak }` — FIND-001/002), `readLinesOrEmpty`/
+  `appendRawLines` (fs, source jsonl → `<publishRepoDir>/<instance>-{wake,earn}.jsonl`),
+  `acquireLock`/`releaseLock` (REQ-708, mkdir-atomic same-instance-overlap guard),
+  `ensurePublishRepo` (REQ-705, sets up the DEDICATED shallow clone + orphan/tracking branch, FIND-
+  002/006), `reconcileSource` (REQ-709 — FIND-002: derives each source's ground-truth
+  `pushedLineCount` directly from the just-synced destination file's actual line count, never the
+  marker), `checkOriginReachability` (REQ-703 — FIND-005, one-time non-fatal probe at first-ever
+  setup), `defaultGit` (child_process `execFileSync`, injectable), and the orchestrator
+  `publishLedgerCycle()` which sequences all of the above for BOTH sources every cycle. Wired into
+  `index.mjs`'s main wake loop (`while (!shuttingDown) { await runOneWake(); ... }`) — never inside
+  `runOneWake()` itself, so it never affects any of `runOneWake`'s own return paths; the wiring also
+  inspects the returned `publishFailureStreak` and escalates via the existing `appendHarnessFailure`
+  mechanism at 5 consecutive failures (FIND-005).
 
 ## Requirements
 
@@ -51,35 +86,55 @@ publishing (mirrors `ALWAYS_ACT_ENABLED`'s own fail-closed gating style, `index.
 - `publishLedgerCycle({ enabled: false, ... })` returns `{ published: false, pushed: false, reason:
   'disabled' }` without touching the injected `git` function or the filesystem.
 
-### REQ-702: Field-allowlist copy + path-scoped local commit into the DEDICATED publish repo
-**EARS**: WHEN `LEDGER_PUBLISH_ENABLED="1"` AND the source `ledger.jsonl` has lines not yet copied
-THE SYSTEM SHALL project each new line through the explicit field allowlist (`projectLedgerLine()`
-— FIND-003) and append the projected lines to `<publishRepoDir>/<ANICCA_INSTANCE>.jsonl` (inside
-the DEDICATED clone, REQ-705 — never inside the shared checkout), committing ONLY that path (+ the
-one-time `README.md`), copying `evolve.mjs:154-192`'s idiom: `git add -- <path>`, then
-`git -c user.name=... -c user.email=... commit -m "ledger(<instance>): wake <wake_id>" -- <path>`.
-**Field allowlist** (every other field is DROPPED, fail-closed — this is structural parsing of a
-fixed machine format, never judgment): `ts`, `wake_id`, `kind`, `slot`, `attemptsUsed`,
-`profitable`, `exit_code`, `sleep_s`, `model`, any `net_*`/`earn_*`/`cost_*` numeric field (matches
-`self-eval.mjs`'s own `net_usdc`/`cost_usdc`/`earn_usdc` convention), any `tx`/`tx_hash`/`txHash`
-field whose value matches a hash shape (`0x[0-9a-fA-F]{6,64}`), and `result`/`skip_reason` (passed
-through REQ-706's two-layer redaction, capped at 200 chars). The model-authored `args` object is
-NEVER published (not in the allowlist).
+### REQ-702: Dual-source field-allowlist copy + path-scoped local commit into the DEDICATED publish repo
+**EARS**: WHEN `LEDGER_PUBLISH_ENABLED="1"` AND either source has lines not yet reconciled as
+published (REQ-709) THE SYSTEM SHALL project each new line through that source's explicit field
+allowlist and append the projected lines to `<publishRepoDir>/<ANICCA_INSTANCE>-<source>.jsonl`
+(inside the DEDICATED clone, REQ-705 — never inside the shared checkout), then commit ONLY the
+touched path(s) this cycle (+ the one-time `README.md`), copying `evolve.mjs:154-192`'s idiom:
+`git add -- <paths>`, then `git -c user.name=... -c user.email=... commit -m "ledger(<instance>):
+wake <id> [+ earn <id>]" -- <paths>`. **FIND-001 (impl-review iter2, critical)**: this feature
+publishes BOTH sources onto the SAME branch as two SEPARATE files, each with its own allowlist:
+- **wake source** (`state/ledger.jsonl` → `<instance>-wake.jsonl`): `ts`, `wake_id`, `kind`, `slot`,
+  `attemptsUsed`, `profitable`, `exit_code`, `sleep_s`, `model`, any `net_*`/`earn_*`/`cost_*`
+  numeric field (matches `self-eval.mjs`'s own `net_usdc`/`cost_usdc`/`earn_usdc` convention), any
+  `tx`/`tx_hash`/`txHash` field whose value matches a hash shape (`0x[0-9a-fA-F]{6,64}`), and
+  `result`/`skip_reason` (REQ-706's two-layer redaction, capped at 200 chars).
+- **earn source** (`skills/earn/state/earn-ledger.jsonl` → `<instance>-earn.jsonl`, THE money
+  evidence — `ts`/`net_usdc`/`tx`/`sig` never exist in the wake source at all, verified live against
+  `skills/_shared/lib/ledger.mjs::deriveLine` and `skills/earn/sol-trade/lib/record-swap.mjs:48-55`):
+  `ts`, `wallet` (a public wallet address, not a secret), `source`, `wake` (this source's own id
+  field), `earn_usdc`, `cost_usdc`, `net_usdc`, `tx` (EVM tx hash, hash-shape-validated like the wake
+  source's `tx` field), `sig` (Solana tx signature — a PUBLIC on-chain reference, never routed
+  through free-text redaction, same treatment as `tx`), `status`, `chain`, and `task` (REQ-706's
+  two-layer redaction, capped at 200 chars).
+In BOTH allowlists, every other field is DROPPED, fail-closed — this is structural parsing of a
+fixed machine format, never judgment. The model-authored `args` object is NEVER published.
 **Edge Cases**:
 - `publishRepoDir` does not exist yet: created via REQ-705's `ensurePublishRepo`.
 - `ANICCA_INSTANCE` unset: falls back to `"clawrouter"` (matches `anicca-daemon.sh:28`'s own default).
-- Zero new source lines: no append, no commit attempted this cycle (`reason: 'no-new-lines'` when
-  there is also no push-pending backlog).
-- A source line that is malformed JSON or not a plain object: `projectLedgerLine()` returns `null`
-  and that line is silently excluded from the destination file (the SOURCE-line cursor still
-  advances past it — no index desync, just nothing published for it).
+- One source has new lines, the other doesn't: only the touched source's file is written/added to
+  the commit — a source with zero lines ever published has no file on the branch at all yet.
+- Zero new lines on EITHER source: no append, no commit attempted this cycle (`reason:
+  'no-new-lines'`).
+- A source line that is malformed JSON or not a plain object: the pure `projectWakeLine()`/
+  `projectEarnLine()` returns `null` for it, but the ORCHESTRATOR substitutes an empty `{}`
+  placeholder line rather than silently dropping it from the position sequence (FIND-002, REQ-709):
+  every processed source line ALWAYS produces exactly one destination line, so the destination
+  file's actual line count stays a valid 1:1 proxy for "source lines processed", which is what makes
+  REQ-709's published-content-as-truth reconciliation sound.
 **Acceptance Criteria**:
-- After a cycle with N new source lines, the destination file's line count is at most N (fewer if
-  any malformed) and each written line's content is a strict subset of the allowlisted fields.
-- The commit message matches `ledger(<instance>): wake <wake_id>` where `<wake_id>` is the `wake_id`
-  field of the LAST newly-copied raw source line.
-- `git commit` is invoked with `-- <relDestPath>` (path-scoped — never a bare `git add -A`/`git
+- After a cycle with N new source lines on a given source, that source's destination file's line
+  count increases by exactly N (never fewer, per the placeholder rule above) and each written line's
+  content is a strict subset of that source's allowlisted fields.
+- The commit message includes `wake <id>` and/or `earn <id>` segments for whichever source(s) had
+  new content this cycle, where `<id>` is that source's own id field (`wake_id` for wake, `wake` for
+  earn) of the LAST newly-projected line.
+- `git commit` is invoked with `-- <touched paths>` (path-scoped — never a bare `git add -A`/`git
   commit -a`), with `cwd=publishRepoDir` (never the shared checkout).
+- A fabricated earn-ledger line containing `net_usdc`/`tx`/`sig` results in those exact fields
+  appearing, unredacted-by-shape, in the published `<instance>-earn.jsonl` — third-party
+  verifiability of "the balance grows" (this feature's stated purpose) is restored (FIND-001).
 
 ### REQ-703: Best-effort non-fatality
 **EARS**: WHEN any operation in the cycle (origin-url resolution, publish-repo setup, `add`,
@@ -93,12 +148,14 @@ throw — the wake loop's own `while` loop and every future wake continue unaffe
 - The lock (REQ-708) is already held by a live process: the entire cycle is skipped non-fatally
   (`reason: 'locked'`); no destination-file append, no marker mutation, no publish-repo writes.
 - `git commit` fails AFTER the destination file was already appended (e.g. lock file): the append is
-  NOT undone (best-effort, evidence stays on disk uncommitted) but the marker's `copiedLineCount` is
-  still advanced past those lines (REQ-707) so the SAME source lines are never re-appended on retry.
-- `git push` fails (including when REQ-709's own recovery retry ALSO fails, e.g. persistent network
-  outage): logged, `pendingLinesSincePush`/`pushedLineCount`/`lastPushTs` in the marker are left at
-  their pre-attempt values so the next eligible cycle retries both the push and, if needed,
-  divergence recovery — no data loss, no duplicate accounting.
+  NOT undone (best-effort, evidence stays on disk uncommitted), caught locally in `appendAndCommit`
+  (REQ-707); neither source's persisted `pushedLineCount` is advanced past this cycle's reconciled
+  actual state, so the NEXT cycle's fresh sync-then-reconcile (REQ-709) never re-appends duplicates.
+- `git push` fails (including when the same-cycle re-sync retry ALSO fails, e.g. persistent network
+  outage): logged, `pushedLineCount`/`lastPushTs` in the marker are left at their pre-attempt
+  (reconciled-actual) values so the next eligible cycle retries both the push and, if needed,
+  divergence recovery — no data loss, no duplicate accounting; `publishFailureStreak` increments
+  (FIND-005).
 - Any unexpected exception anywhere in the cycle (e.g. marker file I/O error): caught by an outermost
   try/catch inside `publishLedgerCycle` itself — the function NEVER throws under any input.
 **Acceptance Criteria**:
@@ -107,6 +164,27 @@ throw — the wake loop's own `while` loop and every future wake continue unaffe
   (never rejects) and the caller sees a non-throwing result object.
 - The wiring call site in `index.mjs` additionally wraps the call in try/catch as defense-in-depth
   (belt-and-suspenders — the module contract alone must already hold).
+
+**FIND-005 (impl-review iter2) — consecutive-failure escalation + reachability probe**: the marker
+persists a `publishFailureStreak` counter, incremented on a setup failure OR a push-attempt failure
+(both the primary attempt and its one re-sync retry), and reset to `0` the moment `ensurePublishRepo`
+itself succeeds (proof the auth/clone/fetch/checkout path is healthy this cycle, independent of
+whether there was anything new to push). `publishLedgerCycle()` returns this streak to the caller;
+`index.mjs`'s wiring escalates via the EXISTING `appendHarnessFailure` mechanism (never a new
+writer) once the streak reaches 5 consecutive failures (`kind: 'ledger_publish_stuck'`), so a stuck
+pipeline (e.g. a revoked/read-only git credential) surfaces to healthchecks instead of failing
+silently on stderr forever. A ONE-TIME, non-fatal `git ls-remote --exit-code <originUrl> HEAD` probe
+runs right before the FIRST-EVER dedicated-clone setup and logs clearly (no secrets — the origin URL
+for this repo carries no embedded token; auth is via the host-global `gh auth git-credential` helper,
+never printed) if it fails; it never blocks the cycle either way.
+**Acceptance Criteria**:
+- 5 consecutive cycles whose setup fails leave `result.publishFailureStreak === 5`; the next
+  successful setup resets it to `0`.
+- A failing `ls-remote` probe logs a message containing neither the origin URL's credentials nor any
+  `ghp_`/`gho_`/`github_pat_`-shaped token, and the cycle still completes (published/pushed
+  normally) despite the probe's own failure.
+- The probe is invoked at most once per dedicated-clone lifetime (never re-run once
+  `publishRepoDir/.git` already exists).
 
 ### REQ-704: Push throttle (pure decision)
 **EARS**: WHEN deciding whether to `git push` on a given cycle THE SYSTEM SHALL push if AND ONLY IF
@@ -133,11 +211,23 @@ file or in any test of it. Each instance's branch and dedicated clone are exclus
 instance, so no two instances (e.g. `automaton` and `Franklin`, confirmed by impl-review iteration 1
 to share the same host and default `ANICCA_REPO`) ever write to the same branch or directory.
 **Setup** (idempotent, `ensurePublishRepo`): if `publishRepoDir/.git` is missing, `git clone
---no-checkout <originUrl> <publishRepoDir>`. Then `git fetch origin ledger-<instance>`; if that
-succeeds (a prior publish already exists on origin), `git checkout -B ledger-<instance>
-origin/ledger-<instance>` (tracking); if it fails (first-ever publish for this instance),
-`git checkout --orphan ledger-<instance>`. The branch contains ONLY `<instance>.jsonl` + a one-time
-`README.md` stub — never any file from `repoRoot`.
+--no-checkout --depth 1 --single-branch --no-tags <originUrl> <publishRepoDir>` (FIND-006, impl-
+review iter2: shallow — this clone only ever needs ONE small orphan branch's tip, never the mother
+repo's full history across every branch). Then `git fetch --depth 1 --no-tags origin
++refs/heads/ledger-<instance>:refs/remotes/origin/ledger-<instance>` (an EXPLICIT `src:dst` refspec
+— this ALWAYS creates/updates the remote-tracking ref regardless of the clone's single-branch
+default, which only knows the remote's default HEAD branch, e.g. `main`, not this per-instance
+branch; `--depth 1` keeps every subsequent fetch shallow too, never silently deepening/unshallowing
+the clone); if that succeeds (a prior publish already exists on origin), `git checkout -B
+ledger-<instance> origin/ledger-<instance>` (tracking — this syncs the local working tree to
+origin's REAL current tip, which is what makes REQ-709's published-content-as-truth reconciliation
+valid); if it fails (first-ever publish for this instance), the system forces a deterministic,
+GUARANTEED-EMPTY orphan state on EVERY such call (never trusting locally-lingering
+committed-but-never-confirmed content from a prior cycle as truth — FIND-002): `git checkout
+--orphan ledger-<instance>` (or a plain `checkout` if already on that branch from a prior not-yet-
+pushed cycle) followed by deleting both destination files + `README.md` from the working tree. The
+branch contains ONLY `<instance>-wake.jsonl` + `<instance>-earn.jsonl` + a one-time `README.md`
+stub — never any file from `repoRoot`.
 **Edge Cases**:
 - `repoRoot` has uncommitted AND committed-but-unpushed changes at cycle time (e.g. `evolve.mjs`'s
   `promote()` mid-flight): both are byte-identical before and after the cycle — proven by the
@@ -148,19 +238,21 @@ origin/ledger-<instance>` (tracking); if it fails (first-ever publish for this i
 - `publishRepoDir` already exists and is already on the right branch: idempotent no-op re-fetch.
 **Acceptance Criteria**:
 - After a cycle with `pushed:true`, a FRESH clone of `ledger-<instance>` from origin contains ONLY
-  `README.md` and `<instance>.jsonl` — nothing else, ever.
+  `README.md` and whichever of `<instance>-wake.jsonl`/`<instance>-earn.jsonl` have ever had content
+  — nothing else, ever (FIND-001: both files when both sources have published at least once).
 - `repoRoot`'s `git rev-parse HEAD`, `git status --porcelain`, and `git branch --show-current` are
   identical before and after any publish cycle, regardless of outcome.
 
 ### REQ-706: Two-layer redaction (security)
-**EARS**: WHEN a raw ledger line's `result` or `skip_reason` free-text field is projected
-(REQ-702) THE SYSTEM SHALL pass it through TWO redaction layers in sequence — (1)
-`redactPrivateKeyPatterns()` (the SAME pure filter `index.mjs` already applies to every line at
-write time) and (2) `redactBroaderSecretPatterns()` (a NEW, stricter pass scoped to this feature
-only: base58 64-88 char runs — the shape of a Solana secret key — and generic 40+ hex char runs) —
-then cap the result at 200 chars. Structured allowlisted fields (`tx`/`tx_hash`/`txHash`) are
-validated by shape instead (REQ-702) and are never routed through this free-text redaction (they are
-public on-chain data, not secrets).
+**EARS**: WHEN a raw source line's free-text field (`result`/`skip_reason` on the wake source,
+`task` on the earn source — FIND-001) is projected (REQ-702) THE SYSTEM SHALL pass it through TWO
+redaction layers in sequence — (1) `redactPrivateKeyPatterns()` (the SAME pure filter `index.mjs`
+already applies to every line at write time) and (2) `redactBroaderSecretPatterns()` (a NEW,
+stricter pass scoped to this feature only: base58 64-88 char runs — the shape of a Solana secret
+key — and generic 40+ hex char runs) — then cap the result at 200 chars. Structured allowlisted
+fields (`tx`/`tx_hash`/`txHash` on the wake source; `tx`/`sig` on the earn source) are validated by
+shape/type instead (REQ-702) and are never routed through this free-text redaction (they are public
+on-chain data, not secrets — a Solana `sig` gets the same treatment as an EVM `tx` hash).
 **Edge Cases**:
 - A line whose `result` field contains a `0x[0-9a-fA-F]{64}` pattern: redacted to `[REDACTED]` by
   layer 1.
@@ -170,42 +262,46 @@ public on-chain data, not secrets).
   — a DELIBERATELY stricter bar than `env-filter.mjs`'s own 64-hex-only contract, because this text
   is bound for a PUBLIC git branch rather than staying local.
 - A field NOT in REQ-702's allowlist is never redacted because it is never published at all (dropped
-  upstream by `projectLedgerLine()` — redaction is defense-in-depth on top of, never instead of, the
-  allowlist).
+  upstream by `projectWakeLine()`/`projectEarnLine()` — redaction is defense-in-depth on top of,
+  never instead of, the allowlist).
 **Acceptance Criteria**:
 - Given a fabricated `result` value containing a 64-hex `0x...` pattern, a base58 88-char run, and a
   bare 40+-hex run, none of the three raw substrings appear in the published field; `[REDACTED]`
   does; the field is `<= 200` chars.
 
-### REQ-707: Idempotent cursor advance (two cursors: local vs push-confirmed)
-**EARS**: The marker persists TWO distinct cursors — `copiedLineCount` (source lines already
-appended to the publish repo's working file, whether pushed or not) and `pushedLineCount` (source
-lines CONFIRMED present on origin, the only cursor REQ-709's recovery ever trusts). WHEN new source
-lines are appended THE SYSTEM SHALL persist the advanced `copiedLineCount` BEFORE attempting `git
-commit` for that batch, so that a subsequent cycle never re-reads and re-appends the same source
-lines into the destination file. WHEN a push succeeds THE SYSTEM SHALL advance `pushedLineCount` to
-match `copiedLineCount` ONLY at that point — never speculatively.
+### REQ-707: Idempotent commit failure (superseded by REQ-709's published-content-as-truth model)
+**EARS**: The iter1 design's separate `copiedLineCount` (local-only, "committed but maybe not
+pushed") cursor is REMOVED entirely (impl-review iter2 FIND-002): tracking a local-only cursor
+across cycles is exactly the assumption that made a lost/recreated publish-repo directory produce a
+silent gap. WHEN `git add`/`git commit` fails for a batch that was already appended to the
+destination working file THE SYSTEM SHALL log and treat the cycle as `committed:false` (REQ-703 —
+caught in `appendAndCommit`'s own try/catch, never falling through to the generic outermost 'error'
+catch), and SHALL NOT advance either source's persisted `pushedLineCount` past that cycle's
+RECONCILED `actualPublishedLineCount` (REQ-709) — regardless of whether the uncommitted append is
+still sitting in the working tree. The NEXT cycle's `ensurePublishRepo` (REQ-705) resyncs the
+dedicated clone to actual origin/guaranteed-empty state before any new work is derived, so the
+uncommitted leftover is superseded (never duplicated) rather than needing its own persisted cursor.
 **Edge Cases**:
-- Commit fails right after a successful append+marker-write: next cycle's `readSourceLinesRaw` slice
-  starts strictly after the already-copied lines — no duplicate append.
-- Push fails (with or without a divergence-recovery attempt): `pushedLineCount` is left at its prior
-  (last-confirmed) value — never advanced on a failed or merely-attempted push.
-- Marker write itself fails (disk error): caught by REQ-703's outermost try/catch; the cycle is a
-  no-op for accounting purposes (an acceptable, documented, non-money-critical risk — evidence
-  duplication if it ever recurs is harmless for third-party verifiability, never silently lost).
+- Commit fails right after a successful append: the destination working file physically contains the
+  appended (uncommitted) content, but `pushedLineCount` was NOT advanced for it — the next cycle's
+  resync-then-reconcile naturally supersedes it with a freshly-derived, non-duplicated batch.
+- Marker write itself fails (disk error): caught by REQ-703's outermost try/catch.
 **Acceptance Criteria**:
-- Two consecutive `publishLedgerCycle()` calls where the FIRST call's injected `git` throws on
-  `commit`: the SECOND call's destination-file content contains each source line exactly once (no
-  duplicates), because its `newLines` slice starts from the already-advanced `copiedLineCount`.
-- After a successful push, `marker.pushedLineCount === marker.copiedLineCount` and
-  `marker.pendingLinesSincePush === 0`.
+- Two consecutive `publishLedgerCycle()` calls where the FIRST call's injected `git` throws
+  specifically on `commit`: the SECOND call's destination-file content (once actually confirmed
+  pushed) contains each source line exactly once — no duplicates, and `reason` is never the generic
+  `'error'` for a commit-only failure.
+- After a successful push, `marker.<source>.pushedLineCount` equals that source's actual published
+  line count for both sources.
 
 ### REQ-708: Same-instance overlap lock (mkdir-atomic, pid-staleness reclaim)
 **EARS**: WHEN a publish cycle is about to touch the publish repo THE SYSTEM SHALL first acquire an
 mkdir-atomic lock at `lockDir` (default `$ANICCA_HOME/state/.ledger-publish-<instance>.lock`),
-copying the idiom already established in this repo by `skills/self/claude-p-mainloop.sh` (pidfile
-guard) and `scripts/disk-cleaner.sh` (mkdir-atomic lock — macOS has no `flock(1)` binary, both those
-scripts already solve this the same way). WHEN the lock is already held by a LIVE process (`pid`
+copying the idiom already established in this repo by `skills/self/claude-p-mainloop.sh`'s pidfile
+guard (its own header explicitly documents "NOT flock — macOS has no `flock(1)` binary"; this is the
+ONLY real sibling precedent in this repository — impl-review iter2 FIND-004 found the previously-
+cited `scripts/disk-cleaner.sh` does not exist anywhere in this repo, and that citation has been
+removed from both this spec and the implementation). WHEN the lock is already held by a LIVE process (`pid`
 alive per `process.kill(pid, 0)`) THE SYSTEM SHALL skip the entire cycle non-fatally
 (`reason: 'locked'`). WHEN the lock is held by a DEAD/unreadable pid THE SYSTEM SHALL reclaim it and
 proceed. The lock is released in a `finally` block regardless of outcome.
@@ -224,44 +320,78 @@ proceed. The lock is released in a `finally` block regardless of outcome.
 - With `lockDir` pre-seeded with an astronomically-unlikely-to-be-alive pid, the cycle proceeds and
   the lock directory no longer exists once the cycle returns.
 
-### REQ-709: Divergence recovery on a rejected push (FIND-005)
-**EARS**: WHEN a `git push` is rejected (any push failure, most commonly a non-fast-forward
-divergence — e.g. a stale local publish-repo state after an unclean shutdown) THE SYSTEM SHALL: (1)
-`git fetch origin ledger-<instance>` then `git reset --hard origin/ledger-<instance>` in the publish
-repo (never the shared checkout); (2) RE-PROJECT every source line from `marker.pushedLineCount`
-(the only cursor known to be safely on origin — NEVER from the possibly-just-discarded
-`copiedLineCount`) through the current end of `ledger.jsonl`, through REQ-702's field allowlist
-again; (3) append, path-scoped commit, and retry the push exactly once. WHEN that retry ALSO fails
-THE SYSTEM SHALL fall through to REQ-703's non-fatality contract (log, return non-throwing,
-`pendingLinesSincePush`/`pushedLineCount` left at their pre-attempt values for the next cycle to
-retry from scratch) — no line is ever silently dropped, because every recovery always starts from
-`pushedLineCount`, never from local (potentially wiped) state.
+### REQ-709: Published-content-as-truth cursor reconciliation (FIND-002, rewritten impl-review iter2)
+**EARS**: THE SYSTEM SHALL NEVER trust the marker's cached `pushedLineCount` as ground truth for
+either source. EVERY cycle, AFTER `ensurePublishRepo` (REQ-705) syncs the dedicated clone's working
+tree to origin's REAL current tip (or to a guaranteed-empty state pre-first-push), THE SYSTEM SHALL
+derive that source's `pushedLineCount` for THIS cycle directly from the ACTUAL line count of the
+just-synced destination file (`reconcileSource`) — unconditionally. This single reconciliation
+simultaneously covers both directions the marker's cache could be wrong: a cached value that was too
+HIGH (commits actually lost — e.g. the publish-repo directory was deleted/recreated between cycles,
+impl-review iter2 FIND-002's exact reachable trigger) is healed DOWNWARD to the real count; a cached
+value that was too LOW (the marker itself was lost/reset while origin already had more content) is
+adopted UPWARD to the real count. New source lines (`sourceLines.slice(reconciledPushedLineCount)`)
+are re-derived from `ledgerPath`/`earnLedgerPath` (both durable, entirely independent of the
+disposable publish-repo clone) EVERY cycle — never from a separately-tracked "locally committed but
+not yet pushed" cursor, which is exactly the kind of state that FIND-002 showed cannot be trusted to
+survive a lost/recreated publish-repo directory. WHEN a `git push` is rejected (e.g. a genuine
+divergence) THE SYSTEM SHALL `git fetch` (the same explicit-refspec, depth-capped form as REQ-705)
+then `git reset --hard origin/ledger-<instance>`, then re-run the SAME reconcile→append→commit
+sequence once more (which naturally re-derives from the FRESH post-reset actual state, not any
+stale local assumption) and retry the push exactly once. WHEN that retry ALSO fails THE SYSTEM SHALL
+fall through to REQ-703's non-fatality contract (log, return non-throwing, `publishFailureStreak`
+incremented) — the persisted `pushedLineCount` for each source is set to that cycle's RECONCILED
+`actualPublishedLineCount` (never speculatively advanced past it), so the next cycle re-derives
+exactly the same, still-unconfirmed delta from source — no line is ever silently dropped or
+double-counted.
+**FIND-002's structural precondition**: for "actual destination file line count" to be a valid proxy
+for "source lines processed", every processed source line must produce EXACTLY one destination line
+— REQ-702's placeholder rule (a `{}` for a malformed/non-object source line, never a drop) is what
+makes this 1:1 index alignment hold.
 **Edge Cases**:
-- The publish repo has fallen behind origin (someone/something else advanced `ledger-<instance>`,
-  e.g. this same instance restarting with a fresh/reset local clone): `reset --hard` fast-forwards
-  onto origin's tip, PRESERVING whatever commits are already there (never a force-overwrite of
-  origin) — only the LOCAL working copy is reset, then rebuilt on top.
-- The origin branch doesn't exist yet at recovery time (a pathological first-cycle push failure):
-  `git fetch` fails inside recovery too — caught by the SAME outer non-fatal contract (REQ-703), no
+- The publish-repo directory is lost/recreated entirely between two cycles (FIND-002/FIND-003's
+  realistic trigger — never an outside writer on the same exclusive branch, which REQ-705 already
+  makes structurally impossible): the next cycle's `ensurePublishRepo` either syncs fresh from
+  origin (if a prior cycle's push had already landed) or forces the guaranteed-empty pre-first-push
+  state — either way `reconcileSource` reads the REAL actual state and re-derives any genuinely
+  unconfirmed source lines from scratch. No gap.
+- A genuine divergence (a rejected push mid-cycle): fetch+reset onto origin's tip PRESERVES whatever
+  commits are already there (never a force-overwrite of origin) — only the LOCAL working copy is
+  reset, then rebuilt on top.
+- The origin branch doesn't exist yet at retry time (a pathological first-cycle push failure): the
+  retry's own `git fetch` fails too — caught by the SAME outer non-fatal contract (REQ-703), no
   special-casing needed.
 **Acceptance Criteria**:
-- Given a first successful publish (branch established on origin) followed by an OUTSIDE process
-  pushing an unrelated commit to `ledger-<instance>`, and then a second local cycle with new source
-  lines that reaches the push threshold: the second cycle's `pushed` is `true`, a FRESH clone of the
-  branch contains every `wake_id` from BOTH the first and second cycle exactly once (no duplicates,
-  no drops), and the outside process's commit is still present in history (never overwritten).
-- `marker.pushedLineCount` after a successful recovery equals the total number of source lines
-  processed so far; `marker.pendingLinesSincePush` is `0`.
+- Deleting the ENTIRE dedicated publish-repo directory between two cycles (with the source ledger
+  file untouched) results in the SECOND cycle publishing every source line exactly once, with no
+  drops and no duplicates — proven against REAL git, not a mocked call sequence (impl-review iter2
+  FIND-003: this is the actual reachable trigger, replacing the iter1 test's unrealistic
+  outside-writer-on-the-same-exclusive-branch scenario).
+- Given a first successful publish followed by an OUTSIDE process pushing an unrelated commit to
+  `ledger-<instance>` (a genuine divergence, still covered as defense-in-depth even though it cannot
+  occur from a same-topology writer), and then a second local cycle with new source lines that
+  reaches the push threshold: the second cycle's `pushed` is `true`, a FRESH clone of the branch
+  contains every id from BOTH cycles exactly once, and the outside process's commit is still present
+  in history (never overwritten).
+- `marker.<source>.pushedLineCount` after any cycle equals that source's ACTUAL, currently-confirmed
+  published line count — never a value ahead of what a fresh clone of the branch would show.
 
 ## Non-Functional Requirements
 - **Performance**: a disabled-flag cycle (the default) must add negligible overhead to the wake loop
-  (no I/O at all — single env-var string comparison).
+  (no I/O at all — single env-var string comparison). An enabled cycle with genuinely nothing new to
+  publish still performs a lock acquisition + a shallow `git fetch` (REQ-709's published-content-as-
+  truth model requires syncing to actual origin state before knowing whether there is new work) —
+  accepted cost, kept cheap by REQ-705's shallow/depth-capped clone (FIND-006).
 - **Security**: never publishes `daemon.err`, `.env`, wallet files, the model-authored `args` object,
-  or any field outside REQ-702's explicit allowlist; free-text fields get REQ-706's two-layer
-  redaction; the destination is a single instance-scoped file inside a DEDICATED clone, never a
-  directory sweep, never the shared checkout.
+  or any field outside REQ-702's explicit per-source allowlists; free-text fields get REQ-706's
+  two-layer redaction; the destination is two instance-scoped files (`<instance>-wake.jsonl`,
+  `<instance>-earn.jsonl`) inside a DEDICATED clone, never a directory sweep, never the shared
+  checkout.
 - **Concurrency**: cross-instance concurrency is structurally impossible (REQ-705 — disjoint
   `publishRepoDir`/branch/`lockDir` per instance); same-instance overlap is guarded by REQ-708's
   mkdir-atomic lock. The shared checkout (`repoRoot`) is touched by AT MOST one read-only `git
   remote get-url origin` call per cycle — never written to, so it can never conflict with
   `evolve.mjs`'s `promote()` or any other writer of that checkout.
+- **Verification readiness**: a persistently-broken publish pipeline is observable via
+  `publishFailureStreak` (REQ-703/FIND-005), escalated to `harness-failures.jsonl` at 5 consecutive
+  failures — never silent-forever on stderr alone.

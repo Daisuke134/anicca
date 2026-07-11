@@ -1,0 +1,71 @@
+{
+  "phase": "impl-review",
+  "iteration": 2,
+  "sprintNumber": 1,
+  "feature": "franklin-ledger-push",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "blocking_count": 2,
+  "timestamp": "2026-07-11T02:00:00.000Z",
+  "reviewed_commits": ["6d8eee36"],
+  "external_test_evidence": "208/208 (thinker-executed)",
+  "iteration1_findings_disposition": {
+    "FIND-001": "KILLED -- repoRoot is used exactly once, read-only (`git remote get-url origin`, ledger-publish.mjs:437); traced every `git()` call site in the file, no git write command ever runs with cwd=repoRoot. Empirically confirmed by the leak test (test:285-320).",
+    "FIND-002": "KILLED -- each instance gets a disjoint publishRepoDir/branch/lockDir (ledger-publish.mjs:403-404); combined with FIND-001's kill, cross-instance shared-checkout concurrency is structurally moot.",
+    "FIND-003": "KILLED -- projectLedgerLine()'s fail-closed allowlist (ledger-publish.mjs:151-169) drops `args` and every unknown field; PROP-706 explicitly asserts this and passes.",
+    "FIND-004": "PARTIALLY KILLED, REOPENED IN MODIFIED FORM -- real-git leak/divergence tests now exist and pass, but the divergence test's trigger is not the realistic one (see FIND-003, this iteration)",
+    "FIND-005": "PARTIALLY KILLED, REOPENED IN MODIFIED FORM -- recoverFromDivergence() correctly re-derives from pushedLineCount when triggered, but is only wired to the push-rejection path, leaving a silent-data-loss gap on the ensurePublishRepo failure path (see FIND-002, this iteration)"
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:396-411", "description": "publishLedgerCycle() reads only state/ledger.jsonl (LEDGER_PATH), traced against index.mjs's own wiring at lines 361-366."},
+        {"type": "file", "location": "runtime/loop/index.mjs:868-880", "description": "Enumerated every field ever written into a terminal state/ledger.jsonl record -- confirmed no net_usdc/tx/sig field exists there; the real financial evidence lives exclusively in a separate, never-read earn-ledger.jsonl (skills/earn/sol-trade/lib/record-swap.mjs:48-55)."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/__tests__/ledger-publish.test.mjs:413-451", "description": "Confirmed the divergence-recovery test's trigger (outside writer to the exclusive per-instance branch) contradicts REQ-705's own 'structurally impossible' framing (behavioral-spec.md:217-220) and misses the realistic same-instance publishRepoDir-loss trigger identified in FIND-002."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:311-332, 436-505", "description": "Traced recoverFromDivergence()'s wiring: called ONLY from the push() catch block, never from ensurePublishRepo()'s own failure/re-clone path -- a re-clone after publishRepoDir loss silently truncates the sourceLines slice at marker.copiedLineCount and the resulting push succeeds as an ordinary fast-forward, so the loss is never detected or recovered."},
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:113-193, 179-193", "description": "Independently verified projectLedgerLine()'s field-by-field logic (fail-closed default, isFiniteNumber/type checks per field) is internally correct against REQ-702's allowlist text -- this specific function has no logic errors."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-004", "FIND-006"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs (whole file)", "description": "Pure/effectful split matches verification-architecture.md's map exactly; module is single-responsibility, ~520 lines, clearly named, no dead-code branches beyond the schema-mismatch noted in FIND-001; wiring into index.mjs (index.mjs:354-370) is minimal and correctly placed outside runOneWake()."},
+        {"type": "file", "location": "Glob scripts/*.sh under /Users/anicca/anicca", "description": "Confirmed zero results -- the 'scripts/disk-cleaner.sh' precedent cited twice (code comment + spec) does not exist anywhere in this repository (FIND-004, a hallucinated citation)."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-005"],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/franklin-ledger-push/specs/verification-architecture.md:51-73", "description": "PROP-701..718 table reviewed against the actual code; Tier-2 real-git tests (PROP-711/712/714) genuinely run real git against file:// fixtures as claimed -- this Tier-2 methodology itself is sound. However PROP-714's own 'no line dropped' claim (mirrored in REQ-709's acceptance criteria, behavioral-spec.md:247-252) is not actually proven for the realistic same-instance trigger identified in FIND-002, and there is no proof obligation anywhere covering ensurePublishRepo-path divergence at all -- a real gap in the proof-obligation table, not just the tests."},
+        {"type": "file", "location": "/Users/anicca/.gitconfig:4-8", "description": "Confirmed origin auth depends entirely on a host-global gh credential helper, never exercised end-to-end by any test in this suite, and no healthcheck exists to surface a persistent auth/push failure (FIND-005)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}
