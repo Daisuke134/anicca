@@ -304,6 +304,23 @@ def test_high_fee_refuses_before_signing(tmp_path):
     assert "build_sign_submit" not in call_names(call_log)
 
 
+# --- FIND-004 (impl iteration-2): a truthy non-Mapping relay_quote return (e.g. a top-level
+# JSON array, plausible on a rate-limit/error response from relay.link) must refuse cleanly
+# rather than crash uncaught at `(quote or {}).get("details")` ---
+
+
+def test_relay_quote_returns_non_dict_truthy_value_refuses_cleanly(tmp_path):
+    def list_quote(payload):
+        return ["not", "an", "object"]
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, relay_quote=list_quote)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[-1]["status"] == "skipped"
+
+
 # --- FIND-001: relay quote missing/malformed currencyIn/currencyOut must REFUSE, never
 # fabricate a substitute value from the locally-computed requested amount ---
 
@@ -547,6 +564,53 @@ def test_kill_switch_blocks_live_run_before_any_quote(tmp_path):
     result = run_refill(deps=deps, live=True)
     assert result["ok"] is False
     assert "relay_quote" not in call_names(call_log)
+
+
+# --- FIND-003 (impl iteration-2): deps["append_ledger"]/deps["is_killed"] failures must fail
+# closed (never crash uncaught), matching every other effectful call FIND-006-of-iteration-1
+# already wrapped ---
+
+
+def test_is_killed_raising_treated_as_killed_fails_closed(tmp_path):
+    """A kill-switch check failure (e.g. the underlying os.path.exists call raising) must be
+    treated as killed=True -- refuse the run, never silently proceed as if unkilled."""
+
+    def raising_is_killed():
+        raise RuntimeError("cannot stat KILL file")
+
+    deps, call_log, ledger_path, _ = make_deps(tmp_path, is_killed=raising_is_killed)
+    result = run_refill(deps=deps, live=True)
+    assert result["ok"] is False
+    assert "relay_quote" not in call_names(call_log)
+    assert "build_sign_submit" not in call_names(call_log)
+    rows = read_ledger(ledger_path)
+    assert rows[0]["status"] == "skipped"
+
+
+def test_append_ledger_raising_fails_closed_via_stderr_and_nonzero_exit_not_uncaught_crash(
+    tmp_path, capsys
+):
+    """The ledger itself failing to write (disk-full/permissions) is called from `fail()` as
+    the FIRST action on EVERY refusal path -- an unguarded failure here would otherwise crash
+    with a bare, uncaught traceback and leave zero audit trail. Must instead report on stderr
+    and exit non-zero deliberately (there is no ledger row left to trust)."""
+
+    def raising_append(row):
+        raise OSError("disk full")
+
+    deps, _, _, _ = make_deps(tmp_path, is_killed=lambda: True, append_ledger=raising_append)
+    exit_code = None
+    try:
+        run_refill(deps=deps, live=True)
+        raised = False
+    except SystemExit as exc:
+        raised = True
+        exit_code = exc.code
+    assert raised is True
+    assert exit_code != 0 and exit_code is not None
+    captured = capsys.readouterr()
+    assert "could not append ledger row" in captured.err
+    assert "OSError" in captured.err
 
 
 # --- resolve_live_flag (REQ-007 CLI edge case) ---

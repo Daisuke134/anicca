@@ -49,6 +49,7 @@ from lib.erc20 import (  # noqa: E402
 from lib.identity import (  # noqa: E402
     derive_solana_pubkey_from_secret,
     keypair_from_secret_string,
+    sanitized_secret_error,
 )
 from lib.kill_switch import is_killed  # noqa: E402
 from lib.ledger import append_ledger, build_row, read_ledger  # noqa: E402
@@ -124,17 +125,6 @@ def resolve_identity_secret(*, env: Optional[Mapping[str, str]] = None) -> Optio
     return secret or None
 
 
-def _sanitized_secret_error(context: str, exc: Exception) -> str:
-    """FIND-003: ANY exception raised while decoding/signing with the raw resolved secret must
-    NEVER have its message text (`str(exc)`) interpolated into a ledger row or printed output
-    -- the underlying decode/sign library's exception message could embed raw input bytes
-    (e.g. a base58/base64 decoder echoing the string it failed to parse). Only a fixed,
-    pre-written context string plus the exception's CLASS NAME (never its message) is
-    recorded. Applies to both `derive_pubkey` (REQ-002's citizen-match step) and
-    `build_sign_submit` (the real signing call) -- both consume the same untrusted secret."""
-    return f"{context} (exception class: {type(exc).__name__}; message withheld for secret safety)"
-
-
 def _extract_quote_usd(details: Mapping, key: str) -> Optional[float]:
     """REQ-004/FIND-001: extract a relay quote's reported `details.<key>.amountUsd` WITHOUT
     inventing a substitute value when the field is absent, non-numeric, or the wrong shape --
@@ -171,14 +161,42 @@ def run_refill(
     poll_relay_status, read_base_tx_receipt, build_sign_submit.
     """
 
+    def safe_append_ledger(row: dict) -> None:
+        """FIND-003 (impl iteration-2): a ledger-write failure (disk-full/permissions on the
+        underlying `open(path, 'a')`/`os.makedirs`) must never crash the process uncaught --
+        `fail()` below calls this as its FIRST action on EVERY refusal path, so an unguarded
+        failure here would crash with a bare traceback at exactly the moment we are trying to
+        record a money-safety refusal, printing NO JSON line and leaving NO audit trail at all
+        -- strictly worse than every other already-fixed failure mode in this module. Fails
+        closed by reporting the failure on stderr and exiting non-zero directly: there is no
+        ledger row left to trust, so returning a normal JSON-on-stdout dict would misrepresent
+        this run as auditable when it was not."""
+        try:
+            deps["append_ledger"](row)
+        except Exception as exc:  # noqa: BLE001 -- see docstring: fail closed, never crash bare
+            print(
+                f"FATAL: could not append ledger row (step={row.get('step')!r}, "
+                f"status={row.get('status')!r}): {type(exc).__name__}",
+                file=sys.stderr,
+            )
+            sys.exit(1)
+
     def fail(reason: str, extra: Optional[dict] = None, status: str = "failed") -> dict:
         row = build_row(
             step=STEP, amount_usd=amount_usd or 0, status=status, reason=reason, extra=extra or {}
         )
-        deps["append_ledger"](row)
+        safe_append_ledger(row)
         return {"ok": False, "step": STEP, "error": reason}
 
-    if deps["is_killed"]():
+    try:
+        killed = deps["is_killed"]()
+    except Exception as exc:  # noqa: BLE001 -- FIND-003: an is_killed check failure must be
+        # treated as killed=True (fail closed), never silently treated as "not killed".
+        return fail(
+            f"is_killed check raised, treating as killed (fail-closed): {type(exc).__name__}",
+            status="skipped",
+        )
+    if killed:
         return fail("kill-switch present", status="skipped")
 
     secret = deps["resolve_secret"]()
@@ -192,7 +210,7 @@ def run_refill(
         sender_pubkey = deps["derive_pubkey"](secret)
     except Exception as exc:  # noqa: BLE001 -- any decode failure must fail closed, not raise
         return fail(
-            _sanitized_secret_error("could not derive Solana pubkey from resolved secret", exc)
+            sanitized_secret_error("could not derive Solana pubkey from resolved secret", exc)
         )
     if not sender_pubkey:
         return fail("resolved secret did not derive a usable Solana pubkey")
@@ -256,6 +274,25 @@ def run_refill(
             cap_decision=amount_decision,
         )
         return fail(f"relay quote request raised: {exc}", {"plan": plan}, status="skipped")
+
+    if quote is not None and not isinstance(quote, Mapping):
+        # FIND-004 (impl iteration-2): a truthy non-Mapping quote (e.g. a JSON array, plausible
+        # on a rate-limit/error response from a third-party API this feature has never
+        # live-tested against) must refuse cleanly here, one level ABOVE where
+        # `_extract_quote_usd`'s own AttributeError guard lives -- that inner guard never gets
+        # a chance to run if `.get("details")` itself crashes first.
+        plan = build_refill_plan(
+            sender_solana=sender_pubkey,
+            recipient_base=recipient_base,
+            amount_usd=amount,
+            balance_usd=balance_usd,
+            cap_decision=amount_decision,
+        )
+        return fail(
+            "relay quote returned a non-object response (malformed shape, cannot extract details)",
+            {"plan": plan, "raw_quote": str(quote)[:300]},
+            status="skipped",
+        )
     details = (quote or {}).get("details") or {}
     if not details:
         plan = build_refill_plan(
@@ -298,7 +335,7 @@ def run_refill(
             to_addr=recipient_base,
             extra={"plan": plan},
         )
-        deps["append_ledger"](row)
+        safe_append_ledger(row)
         return {"ok": True, "dry": True, "step": STEP, "plan": plan}
 
     # --- LIVE from here on ---
@@ -322,7 +359,7 @@ def run_refill(
         signature = deps["build_sign_submit"](secret, quote)
     except Exception as exc:  # noqa: BLE001 -- nothing broadcast yet, safe to record as failed
         return fail(
-            _sanitized_secret_error("solana tx build/sign/submit failed", exc),
+            sanitized_secret_error("solana tx build/sign/submit failed", exc),
             {"plan": plan},
             status="failed",
         )
@@ -331,7 +368,7 @@ def run_refill(
     # bridge.py/send_to_franklin.py): the Solana tx is ALREADY broadcast at this point -- record
     # a 'pending' row with its signature BEFORE waiting for the relay fill/confirmation, so a
     # crash in the next block never leaves a real, already-broadcast transfer unlogged.
-    deps["append_ledger"](
+    safe_append_ledger(
         build_row(
             step=STEP,
             amount_usd=amount,
@@ -420,7 +457,7 @@ def run_refill(
             to_addr=recipient_base,
             extra=verification_extra,
         )
-        deps["append_ledger"](row)
+        safe_append_ledger(row)
         return {"ok": False, "step": STEP, "error": row["reason"], "signature": signature}
 
     if not verified:
@@ -439,7 +476,7 @@ def run_refill(
             to_addr=recipient_base,
             extra=verification_extra,
         )
-        deps["append_ledger"](row)
+        safe_append_ledger(row)
         return {"ok": False, "step": STEP, "error": row["reason"], "signature": signature}
 
     row = build_row(
@@ -455,7 +492,7 @@ def run_refill(
         to_addr=recipient_base,
         extra=verification_extra,
     )
-    deps["append_ledger"](row)
+    safe_append_ledger(row)
     return {
         "ok": True,
         "step": STEP,
