@@ -22,6 +22,16 @@ set -uo pipefail
 # FIND-014/021: single source of truth for "is this pane an idle prompt awaiting a human?" — fires ONLY on
 # unambiguous input-await markers AND ONLY when NOT actively generating ("esc to interrupt" = live generation).
 # test-healthcheck-lib.sh sources THIS function (no duplication → no drift).
+# FIND-034: restart-storm guard — see hc_run()'s STALE-check callers for why a fresh restart needs a grace
+# window before the STALE check is allowed to fire again. test-healthcheck-lib.sh sources THIS function directly.
+hc_recent_restart() {
+  local log="$1" now="$2" grace="${HC_RESTART_GRACE_SEC:-1200}" last
+  [ -f "$log" ] || return 1
+  last="$(tail -1 "$log" 2>/dev/null)"
+  [ -n "$last" ] || return 1
+  [ $(( now - last )) -lt "$grace" ]
+}
+
 hc_is_stuck_pane() {
   local pane="$1"
   printf '%s' "$pane" | grep -qE 'Enter to select|↑/↓ to navigate|Type something\.|Do you want to proceed' \
@@ -144,6 +154,16 @@ hc_run() {
   hc_acquire_lock "$LOCK_DIR" "$now" || return 0
   trap 'rm -rf "$LOCK_DIR" 2>/dev/null' RETURN
 
+  # FIND-034 (capafy-loop restart storm, 2026-07-11): once the heartbeat crosses STALE_MIN, a restart-killed
+  # session gets re-spawned but its STARTUP pass (CronList + read STATE.md + run daily_loop.sh + verify + report)
+  # takes several minutes — LONGER than the 5min healthcheck cadence. Without a grace window, the VERY NEXT
+  # healthcheck cycle sees the heartbeat still stale (it hasn't been touched yet — that only happens at the pass's
+  # own final step) and kills+restarts AGAIN, forever pre-empting the one pass that would clear the staleness.
+  # This burns all 5 restarts/60min and escalates to self-fix even though nothing is actually hung. Give a fresh
+  # restart a grace window (default 20min, comfortably longer than one STARTUP pass) before the STALE check is
+  # allowed to fire again — DEAD (a) and STUCK (b) checks above are untouched by this and still fire every cycle,
+  # since those are real distress signals a busy-but-healthy pass cannot fake.
+
   _selffix() {  # FIND-006: give-up → actually spawn the Opus fixer, not a dead note
     echo "$(date '+%F %T') give-up → self-fix.sh $LOOP" >> "$LOG"
     bash "$HOME/anicca/skills/self/self-fix.sh" "$LOOP" "$1" >> "$LOG" 2>&1 || echo "$(date '+%F %T') self-fix launch failed" >> "$LOG"
@@ -171,9 +191,15 @@ hc_run() {
   # (c) liveness heartbeat stale
   local hb_age m
   if [ ! -f "$HB" ]; then m="$(stat -f %m "$START" 2>/dev/null||echo "$now")"; hb_age=$(( (now-m)/60 ))
-    if [ "$hb_age" -ge "$STALE_MIN" ]; then _restart "no pass in ${hb_age}min"; return; fi
+    if [ "$hb_age" -ge "$STALE_MIN" ]; then
+      if hc_recent_restart "$RESTART_LOG" "$now"; then echo "$(date '+%F %T') STALE ${hb_age}min but restarted <grace ago → giving this pass room to finish" >> "$LOG"; return; fi
+      _restart "no pass in ${hb_age}min"; return
+    fi
   else hb_age=$(( (now-$(stat -f %m "$HB" 2>/dev/null||echo "$now"))/60 ))
-    if [ "$hb_age" -ge "$STALE_MIN" ]; then _restart "STALE ${hb_age}min"; return; fi
+    if [ "$hb_age" -ge "$STALE_MIN" ]; then
+      if hc_recent_restart "$RESTART_LOG" "$now"; then echo "$(date '+%F %T') STALE ${hb_age}min but restarted <grace ago → giving this pass room to finish" >> "$LOG"; return; fi
+      _restart "STALE ${hb_age}min"; return
+    fi
   fi
 
   # (d) running but producing NOTHING real (FIND-009): the real output artifact is the ONLY success signal. If it has
