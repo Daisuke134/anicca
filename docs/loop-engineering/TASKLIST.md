@@ -36,12 +36,14 @@
 - [x] つまり大脳 build loop は既に1本。追加統合は不要。builder が入れた mainloop の model override(`CLAUDE_P_MAINLOOP_MODEL`)は任意採用（未 merge、優先度低）
 - 注: founder-loop(30min, deterministic 記録+CEO) と mainloop(6h, claude build) は**別役割**で、統合してはいけない（記録を6hに遅らせるのは害）
 
-## #5 AGENTIC 検証実装(reality-verifier)  — status: 🧪(builder下書き worktree reality-verifier、要検証)
-- [ ] 5a. `.claude/agents/reality-verifier.md` を doc24 準拠で作成
-- [ ] 5b. 検証項目: report vs on-chain / 空稼働 / 内部送金 / mock / narrate-only
-- [ ] 5c. DETERMINISTIC と役割境界を定義に明記
-- [ ] 5d. spawn 配線案（self-fix/週次から fresh）
-- 検証可能条件: fresh adversary が report vs on-chain 突合し PASS/FAIL を出す
+## #5 AGENTIC 検証実装(reality-verifier)  — status: ✅ DONE(2026-07-12, main merged, own-eyes 41/41)
+- [x] 5a. `.claude/agents/reality-verifier.md` 作成(fresh-context, model:sonnet, tools=Read/Grep/Glob/Bash のみ=送金/署名不可)
+- [x] 5b. 6カテゴリ: report_ledger_mismatch / report_onchain_mismatch / internal_transfer_mislabeled / mock_marker_in_success_path / narrate_only_claim / unhealthy_strategy
+- [x] 5c. DETERMINISTIC(金の真実=on-chain,自分では判定しない) vs AGENTIC(正直さ=報告 vs ground-truth の一致) を定義に二重明記 + schema `role:agentic-honesty-check` で機械強制
+- [x] 5d. spawn 配線 = `skills/self/reality-verify-spawn.sh`(fresh detached, self-fix 同型, DRYRUN seam)。※live cron(self-fix/週次)へのフック挿入は最後の1マイル follow-up
+- [x] verdict schema(`reality-verdict-schema.mjs`): vague-PASS / evidence無しFAIL を機械拒否
+- 検証済み: builder 下書きを私が読んで採用判断、main で 35 node + 6 bash = 41/41 pass 再走。他 feature の .vcsdd ノイズは除外して reality-verifier ファイルのみ取込
+- 残: reality-verify-spawn.sh を self-fix/週次 build pass から実際に呼ぶ配線(= doc27 §6 "VCSDD Reality Gate" 統合の一部)
 
 ## #6 own-eyes 1 wake  — status: ⬜(#1-3 後)
 - [ ] 6a. 小脳 loop を1 wake 実行
