@@ -79,11 +79,13 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 **P0 verifier 土台（これが無いと全部嘘に戻る）**
 - [x] G1 escalation→self-fix trigger を配線 — done: 本物 marker で self-fix.sh 実 spawn（`76a4fdc4` Opus実走PASS push済）
 - [x] G2 verifier に実side-effectチェック追加 — done: reddit BAN/video drift/capafy label が実データで発火（同 commit）
-- [ ] G3a `skills/self/ground-truth-verify.sh` を書く — done: headless claude を browser+Base MCP+bash 付きで spawn し verdict marker を吐く
-- [ ] G3b 各 loop の ground-truth check 定義を書く — done: reddit/clip/video/gig/capafy/connector/founder 各1個の「実物で見る」check spec が存在 `[dep:G3a]`
-- [ ] G3c `verify-loops-audit.sh` を verdict marker 参照に切替 — done: healthcheck が heartbeat でなく G3a の verdict.json で生死判定 `[dep:G3b]`
-- [ ] G3d verifier 3原則を CLAUDE.md に bake — done: report読まない/実side-effect/binary の3行が CLAUDE.md に有る
-- [ ] G3e other CC と verifier を1本に収束 — done: 共有 subagent 定義が1つ、2実装が並存しない
+★ verifier = **モデル(tool を持つ agent)**であって shell file でない（Dais 2026-07-11 確定、shell engine 案は破棄）。既存 framework を丸ごと採り tweak する（reinvent 禁止）。
+- [ ] G3a 既存 verifier framework を深く検索し採用1つを名指す — done: 10+候補の6軸 matrix + 推奨1つ（verifier-search 実行中）
+- [ ] G3b 採用 framework を verifier AGENT として定義 — done: agent 定義1つ(モデル+tool: agent-browser/Base MCP/bash, report読まない prompt=tau-bench)、実 tool を呼べるを VERIFIED `[dep:G3a]`
+- [ ] G3c 各 loop の check-config を書く — done: reddit/clip/video/gig/capafy/connector/founder 各1個の「実物で見る」spec `[dep:G3b]`
+- [ ] G3d 私(Opus)が1回 verifier兼fixer を実演 — done: clip の login失敗/投稿timeout を実 browser で直した own-eyes 証拠 `[dep:G3b]`
+- [ ] G3e verifier agent を各 loop の self-heal に埋込 — done: verify-loops-audit が heartbeat でなく agent verdict を参照 `[dep:G3c]`
+- [ ] G3f verifier 3原則を CLAUDE.md に bake + other CC と1本に収束 — done: 3行が CLAUDE.md に有り共有定義が1つ（2実装並存しない）
 - [ ] G4a CEO の kill/spawn/portfolio コードを削除 — done: ceo_run に loop 殺す/生む判断 path が無い
 - [ ] G4b CEO を機械予算 hard-stop のみに縮退 — done: 予算 gate が deterministic、日次 LLM 呼び出し無し
 - [ ] G4c S8 CEO launchd install を取消 — done: ceo-runner/weekly-eval を load しない
