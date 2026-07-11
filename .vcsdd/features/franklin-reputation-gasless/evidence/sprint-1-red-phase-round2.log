@@ -1,0 +1,74 @@
+# Sprint-1 round-2 RED phase — franklin-reputation-gasless fix iteration
+# Fresh-context adversary (Opus 4.8) FAILED round-1 (commit b0fd03e1) with 5 blocking findings
+# (FIND-001..005, see .vcsdd/features/franklin-reputation-gasless/reviews/sprint-1/output/).
+# This log records RED evidence for the two findings that required genuinely NEW test coverage
+# proving a genuinely NEW production behavior (FIND-001/FIND-003 exception-branch tests, and the
+# FIND-002 production-wiring test). FIND-004 is a test-quality fix (see note below, not a RED/GREEN
+# pair in the traditional sense). FIND-005 required no code/test change (see e2e-status.md).
+
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+## FIND-001/FIND-003 — ensure-gas.mjs exception-branch tests, run against the PRE-FIX source
+## (skills/economy/gig/lib/ensure-gas.mjs temporarily reverted via `git stash push -- <file>`)
+
+$ node --test skills/economy/gig/__tests__/ensure-gas.test.mjs
+✔ decideGasAction: balance >= threshold -> 'ok', regardless of network (1.105125ms)
+✔ decideGasAction: testnet + low balance -> 'drip' (never 'needs_gas') (0.063042ms)
+✔ ★MONEY-SAFETY★ decideGasAction: mainnet + low balance -> 'needs_gas', NEVER 'drip' (no auto-spend on mainnet) (0.047584ms)
+✔ countRecentDrips: counts only rows for the given address within the window (1.382542ms)
+✔ countRecentDrips: malformed rows are ignored, never throw (0.113ms)
+✔ ensureGas: sufficient balance -> ok:true, action:'ok', no drip attempted (2.354625ms)
+✔ ★MONEY-SAFETY★ ensureGas: mainnet + low balance -> ok:false, structured 'needs_gas' error, NO drip function ever called (2.303458ms)
+✔ ensureGas: testnet + low balance -> auto-drips via sendDripFn, hard-capped at MAX_DRIP_WEI_PER_OP even if a larger amount is requested (1.070625ms)
+✔ ensureGas: testnet drip refuses (fail-closed) once the daily drip cap for that address is reached, no further drip sent (1.683458ms)
+✔ ensureGas: testnet drip with no funder configured -> ok:false, needs_gas, no throw (0.394709ms)
+✔ ensureGas: a reverted drip tx is reported as failure, never as ok:true (0.611708ms)
+✔ ensureGas: no address -> ok:false, never crashes (0.059584ms)
+✔ ★FIND-003★ ensureGas: sendDripFn itself throws (tx never broadcasts) -> ok:false, needs_gas, and the daily cap is NOT consumed (nothing was ever broadcast) (0.483541ms)
+✖ ★FIND-001/FIND-003★ ensureGas: waitForTransactionReceipt throws AFTER broadcast -> ok:false, BUT the drip IS counted against the daily cap so a retry cannot double-drip past the cap (1.077625ms)
+  AssertionError [ERR_ASSERTION]: The input did not match the regular expression /daily drip cap/. Input:
+  'drip tx receipt wait failed: RPC timeout waiting for receipt'
+  actual: 'drip tx receipt wait failed: RPC timeout waiting for receipt'
+  expected: /daily drip cap/
+ℹ tests 14
+ℹ pass 13
+ℹ fail 1
+
+## FIND-002 — lending-orchestrator.mjs production-wiring test, run against the PRE-FIX source
+## (skills/economy/lending/lib/lending-orchestrator.mjs + its own test file temporarily reverted)
+
+$ node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs
+... (39 pre-existing tests pass, unaffected) ...
+✔ REQ-115: a real invocation calls every one of steps 1-9 exactly once, in the canonical order, for a happy-path issuance attempt (5.995709ms)
+✖ ★FIND-002 wiring★ REQ-115: a CONFIGURED reputation gate is actually consulted on the real executeLoanIssuanceAttempt path, and its rejection refuses the loan with the gate's own reason (1.313625ms)
+  AssertionError: reputationGateCalled expected true, got false -- deps.reputationGateFn was never invoked
+  (isBorrowerEligibleWithReputationGate had zero call sites in lending-orchestrator.mjs pre-fix, exactly
+  as FIND-002 described)
+✔ ★FIND-002★ REQ-115: with NO reputationGate config (the default), the gate fail-opens -- behavior is IDENTICAL to before this wiring existed (happy path still reaches 'active') (1.064083ms)
+  (passes even pre-fix, since it asserts a no-op -- documents the safety of the wiring, not the wiring
+  itself; the "actually consulted" test above is the one that proves the wiring was genuinely missing)
+ℹ tests 41
+ℹ pass 40
+ℹ fail 1
+
+## FIND-004 note (not a RED/GREEN pair): the 3 affected tests in
+## lending-gate-reputation-composition.test.mjs used `if (!base.eligible) return;`, which reported
+## PASS both before and after this fix WITHOUT genuinely exercising the composition -- because the old
+## fixture used wrong field names (`walletProvenance`/`fundingSource` instead of
+## `fuel.provider`/`humanDependencies`) and silently failed isBorrowerEligible every real run. Removing
+## the silent early-exit and asserting `base.eligible === true` loudly SURFACED this: with the OLD
+## fixture, the sanity assertion itself failed (see below) -- proving the finding's exact concern (a
+## fixture that silently never worked). This is the genuine "RED" for FIND-004: not a missing feature,
+## but a fixture bug the silent-return had been hiding.
+
+$ node --test skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs
+(with old fixture + new loud assertions, before the fixture itself was corrected)
+✖ isBorrowerEligibleWithReputationGate: defaults to the REAL passesOnchainReputationGate when no reputationGateFn override is given (unset thresholds -> fail-open passthrough)
+  AssertionError: fixture precondition: BASE_ELIGIBLE_ARGS must pass isBorrowerEligible
+  actual: false
+  expected: true
+
+## Regression baseline PASS (confirmed both before and independent of this round's fixes)
+$ node --test skills/economy/gig/__tests__/*.test.mjs        -> 82/82 pass (baseline, unaffected by these RED runs)
+$ node --test skills/economy/lending/lib/__tests__/*.test.mjs -> confirmed pre-fix baseline unaffected outside the 2 targeted findings above

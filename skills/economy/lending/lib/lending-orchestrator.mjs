@@ -12,6 +12,7 @@ import path from "node:path";
 
 import {
   isBorrowerEligible,
+  isBorrowerEligibleWithReputationGate,
   computeLenderAvailableUsd,
   computeTotalDueUsd,
   computeLoanCapUsd,
@@ -364,13 +365,33 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
   const [freshLender, freshBorrower] = await Promise.all([getCitizen(lenderId), getCitizen(borrowerId)]);
   if (!freshBorrower) return { status: "refused", reason: "not_found" };
 
-  const eligibility = isBorrowerEligible({
-    borrowerAgent: freshBorrower,
-    loanRows,
-    borrowerId,
-    borrowerBalanceUsd: freshBorrower.balanceUsd,
-    lenderId,
-  });
+  // FIND-002 fix (adversary round 2, spec §1 G3 correction): compose the G3 on-chain reputation gate
+  // right here, immediately after the base eligibility check -- this IS "実経路 = lending-orchestrator.
+  // mjs:executeLoanIssuanceAttempt（借入発行の実入口）" the corrected spec names explicitly. Previously
+  // isBorrowerEligibleWithReputationGate existed but had zero real call sites (dead code); this is the
+  // one and only production wiring. deps.reputationGate (minScore/minJobCount/clientAddresses/tag1/tag2)
+  // is unset by default -> passesOnchainReputationGate's own gateConfigured check short-circuits to
+  // fail-open passthrough WITHOUT ever calling deps.reputationGateFn/the real on-chain read -- so this
+  // wiring is a no-op on every existing caller until a lender explicitly configures thresholds (spec's
+  // own "既定 fail-open ゆえ挙動不変" safety argument). deps.reputationGateFn mirrors deps.reconcile/
+  // deps.disburse's own DI convention (production default: the real passesOnchainReputationGate).
+  //
+  // wake-gate.mjs's own findSelectedPair() runs a SEPARATE, PURE, synchronous eligibility pre-filter
+  // (candidate-pair selection heuristic only) — it is never the authoritative decision and never itself
+  // disburses; every real attempt it selects still flows through THIS function. So wiring the gate here
+  // is sufficient to make it authoritative on every real disbursement path without turning that pure
+  // selection heuristic into an async on-chain read.
+  const eligibility = await isBorrowerEligibleWithReputationGate(
+    {
+      borrowerAgent: freshBorrower,
+      loanRows,
+      borrowerId,
+      borrowerBalanceUsd: freshBorrower.balanceUsd,
+      lenderId,
+    },
+    { borrowerAgentId: freshBorrower.agentId, ...(deps.reputationGate || {}) },
+    deps.reputationGateFn
+  );
   if (!eligibility.eligible) {
     return { status: "refused", reason: eligibility.reason };
   }

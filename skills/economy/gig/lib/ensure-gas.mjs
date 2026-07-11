@@ -198,20 +198,31 @@ export async function ensureGas({
     return { ok: false, action: "needs_gas", reason: `drip tx failed: ${e.shortMessage || e.message || String(e)}` };
   }
 
+  // FIND-001 fix (adversary round 2): record the drip against the daily cap ATOMICALLY at broadcast
+  // time -- i.e. the instant `sent.hash` exists -- and BEFORE waitForTransactionReceipt. Previously this
+  // append happened only after a successful receipt, so a receipt-wait exception (RPC drop, timeout)
+  // left an already-broadcast drip uncounted: a caller that retried ensureGas after that exception would
+  // re-read this same log via countRecentDrips(), see the cap as not-yet-hit, and drip again -- doubling
+  // real spend past the daily cap. Moving the append to right here (single call site, no second append
+  // once the receipt resolves) closes that window: no exception path from this point forward can leave a
+  // broadcast drip uncounted, so a retry can never double-drip past the cap. status:"broadcast" reflects
+  // that receipt confirmation has not yet happened -- the row exists purely to gate the cap, not to
+  // assert success (a reverted/timed-out tx below still consumed one of this address's daily drip slots,
+  // matching real-world gas spend: the funder paid gas for that broadcast regardless of outcome).
+  appendDripLog(dripLogPath, {
+    ts: new Date(nowMs).toISOString(),
+    address,
+    amountWei: amount.toString(),
+    tx: sent.hash,
+    status: "broadcast",
+  });
+
   let receipt;
   try {
     receipt = await client.waitForTransactionReceipt({ hash: sent.hash });
   } catch (e) {
     return { ok: false, action: "needs_gas", reason: `drip tx receipt wait failed: ${e.shortMessage || e.message || String(e)}`, tx: sent.hash };
   }
-
-  appendDripLog(dripLogPath, {
-    ts: new Date(nowMs).toISOString(),
-    address,
-    amountWei: amount.toString(),
-    tx: sent.hash,
-    status: receipt.status,
-  });
 
   if (receipt.status !== "success") {
     return { ok: false, action: "needs_gas", reason: `drip tx reverted: ${sent.hash}`, tx: sent.hash };

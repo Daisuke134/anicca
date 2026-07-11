@@ -51,12 +51,21 @@ already been sent to that address within the trailing 24h window.
 - No funder configured (`GIG_GAS_FUNDER_PRIVATE_KEY` unset, no `sendDripFn` override): refuse with
   `{ok:false, action:"needs_gas"}`, never throw, never silently skip to "ok".
 - Drip tx reverts: report failure (`{ok:false}`), never `{ok:true}`.
-- Drip tx receipt wait throws: report failure, never leave the caller uncertain about whether money moved.
+- Drip tx receipt wait throws: report failure, never leave the caller uncertain about whether money moved,
+  AND the drip log entry must already exist by this point (recorded at broadcast, before the receipt-wait
+  begins — FIND-001, adversary round 2) so the daily cap counts it — a caller that retries `ensureGas`
+  after this exception must be refused by the cap rather than able to broadcast a second real drip.
+- `sendDripFn` itself throws (the tx never broadcasts, no `hash` was ever obtained): report failure, and
+  the daily cap must NOT be consumed — nothing was actually sent, so a retry must still be permitted under
+  the same cap (distinguishes "never broadcast" from "broadcast, outcome uncertain").
 - Malformed/unparseable rows in the on-disk drip log: ignored by `countRecentDrips`, never thrown.
 **Acceptance Criteria**:
 - The daily cap is enforced BEFORE any `sendDripFn` call is attempted once the cap is reached.
 - `MAX_DRIP_WEI_PER_OP` caps the sent amount even if a caller passes a larger `dripAmountWei`.
 - `ensureGas` never throws — every failure path returns `{ok:false, ...}`.
+- The drip-log append happens exactly once per real broadcast, at broadcast time (once `sent.hash`
+  exists), never a second time after the receipt resolves — so no exception path between broadcast and
+  receipt can leave a real drip uncounted against the cap (FIND-001, adversary round 2).
 
 ### REQ-003: Gas preflight (mainnet — no auto-spend)
 **EARS**: WHEN `ensureGas` is called for a mainnet address with a balance below threshold THE SYSTEM
@@ -164,6 +173,20 @@ reason:"ok"}` if both pass.
 `passesOnchainReputationGate`, which itself fail-opens on unset thresholds.
 **Acceptance Criteria**: `isBorrowerEligible`'s own pre-existing test suite (150+ tests) is untouched and
 stays green; the composition is additive-only, covered by its own separate test file.
+
+★2026-07-12 spec 訂正 (adversary round-2 FIND-002)★: `isBorrowerEligibleWithReputationGate` MUST be wired
+into the real production loan-issuance entry point — `lending-orchestrator.mjs::executeLoanIssuanceAttempt`
+(step 6, immediately after the base `isBorrowerEligible` check) — not left as an unreachable, zero-call-site
+function. Default behavior (no `deps.reputationGate` config supplied) MUST be byte-identical to the
+pre-wiring behavior (fail-open passthrough, `deps.reputationGateFn` never even invoked when thresholds are
+unset). `wake-gate.mjs`'s own `findSelectedPair` pure candidate-selection pre-filter is NOT required to be
+separately wired, because it never itself authorizes a disbursement — every pair it selects still flows
+through `executeLoanIssuanceAttempt`, which now enforces the gate authoritatively.
+**Acceptance Criteria**: `grep -n "isBorrowerEligibleWithReputationGate" skills/economy/lending/lib/lending-orchestrator.mjs`
+returns at least one match; a dedicated test in `lending-orchestrator.test.mjs` proves a configured
+`deps.reputationGate` is genuinely consulted (via `deps.reputationGateFn`) and its rejection refuses the
+loan before any ledger row is written; a second test proves the unset-config default reaches `"active"`
+identically to before this wiring.
 
 ### REQ-013: Gas/reputation money-safety invariants (cross-cutting, spec §4 MUST)
 **EARS**: THE SYSTEM SHALL NEVER read, log, or otherwise touch wallet private keys outside their

@@ -184,3 +184,77 @@ test("ensureGas: no address -> ok:false, never crashes", async () => {
   const result = await ensureGas({ isMainnet: false, publicClient: fakePublicClient(0n) });
   assert.equal(result.ok, false);
 });
+
+// ============ FIND-003 (adversary round 2): both exception branches, incl. the FIND-001 fix proof ============
+
+test("★FIND-003★ ensureGas: sendDripFn itself throws (tx never broadcasts) -> ok:false, needs_gas, and the daily cap is NOT consumed (nothing was ever broadcast)", async () => {
+  const dripLogPath = await tmpLog();
+  const address = "0xSomeone000000000000000000000000000000";
+  let sendAttempts = 0;
+  const result = await ensureGas({
+    address,
+    isMainnet: false,
+    publicClient: fakePublicClient(0n),
+    sendDripFn: async () => {
+      sendAttempts += 1;
+      throw new Error("network down, tx never sent");
+    },
+    dripLogPath,
+    maxDripsPerDay: 1,
+  });
+  assert.equal(result.ok, false);
+  assert.equal(result.action, "needs_gas");
+  assert.match(result.reason, /drip tx failed/);
+  assert.equal(sendAttempts, 1);
+
+  // a real drip never broadcast (sendDripFn threw before any hash existed) -- a retry against the same
+  // cap must still be allowed, proving this failure mode never consumes a cap slot.
+  const retry = await ensureGas({
+    address,
+    isMainnet: false,
+    publicClient: fakePublicClient(0n),
+    sendDripFn: async () => ({ hash: "0xretrytx1" }),
+    dripLogPath,
+    maxDripsPerDay: 1,
+  });
+  assert.equal(retry.ok, true, "a broadcast-never-attempted failure must not consume a daily-cap slot");
+  assert.equal(retry.action, "dripped");
+});
+
+test("★FIND-001/FIND-003★ ensureGas: waitForTransactionReceipt throws AFTER broadcast -> ok:false, BUT the drip IS counted against the daily cap so a retry cannot double-drip past the cap", async () => {
+  const dripLogPath = await tmpLog();
+  const address = "0xSomeone000000000000000000000000000000";
+  let sendCount = 0;
+  const opts = {
+    address,
+    isMainnet: false,
+    publicClient: {
+      getBalance: async () => 0n,
+      waitForTransactionReceipt: async () => {
+        throw new Error("RPC timeout waiting for receipt");
+      },
+    },
+    sendDripFn: async () => {
+      sendCount += 1;
+      return { hash: `0xdriptx${sendCount}` };
+    },
+    dripLogPath,
+    maxDripsPerDay: 1,
+  };
+
+  const r1 = await ensureGas(opts);
+  assert.equal(r1.ok, false);
+  assert.equal(r1.action, "needs_gas");
+  assert.match(r1.reason, /receipt wait failed/);
+  assert.equal(r1.tx, "0xdriptx1");
+  assert.equal(sendCount, 1, "the drip DID broadcast before the receipt-wait threw");
+
+  // FIND-001: a retry (caller re-invoking ensureGas after the exception) must be refused by the cap --
+  // NOT allowed to broadcast a second real drip. Pre-fix, appendDripLog never ran on this path, so the
+  // cap counter stayed at 0 and this retry would have broadcast a second tx (sendCount would reach 2).
+  const r2 = await ensureGas(opts);
+  assert.equal(r2.ok, false);
+  assert.equal(r2.action, "needs_gas");
+  assert.match(r2.reason, /daily drip cap/);
+  assert.equal(sendCount, 1, "sendDripFn must NOT be called again -- the already-broadcast first drip already exhausted the cap (proves FIND-001 fix)");
+});

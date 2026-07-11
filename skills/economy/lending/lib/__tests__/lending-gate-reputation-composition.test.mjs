@@ -8,8 +8,14 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { isBorrowerEligible, isBorrowerEligibleWithReputationGate } from "../lending-gate.mjs";
 
+// FIND-004 fix (adversary round 2): the ORIGINAL fixture below used `walletProvenance`/`fundingSource`
+// -- fields isSelfFunded() (_shared/lib/is-self-funded.mjs) does not read at all (it reads
+// `fuel.provider` + `humanDependencies`). That made BASE_ELIGIBLE_ARGS fail isBorrowerEligible with
+// reason "not_self_funded" in every real run -- silently masked by the `if (!base.eligible) return;`
+// early-exits this fix also removes below. Now reuses the EXACT known-good shape from
+// lending-gate.test.mjs's own BASE_BORROWER fixture (line 60 there) rather than inventing a new one.
 const BASE_ELIGIBLE_ARGS = {
-  borrowerAgent: { wallet: { evm: true }, walletProvenance: "self-funded", fundingSource: "self-funded" },
+  borrowerAgent: { wallet: { evm: true }, fuel: { provider: "x402" }, humanDependencies: [] },
   loanRows: [],
   borrowerId: "borrower-1",
   borrowerBalanceUsd: 0.1,
@@ -46,8 +52,11 @@ test("isBorrowerEligibleWithReputationGate: base check fails -> short-circuits, 
 });
 
 test("isBorrowerEligibleWithReputationGate: base check passes but reputation gate rejects -> eligible:false, reputation's own reason surfaces", async () => {
+  // FIND-004 fix (adversary round 2): assert the fixture IS eligible, loudly, rather than silently
+  // no-op'ing (the old `if (!base.eligible) return;` reported PASS even if the fixture ever broke,
+  // which would have hidden this test genuinely never exercising the gate-rejection branch at all).
   const base = isBorrowerEligible(BASE_ELIGIBLE_ARGS);
-  if (!base.eligible) return; // fixture precondition not met in this environment -- covered by the sanity test above
+  assert.equal(base.eligible, true, "fixture precondition: BASE_ELIGIBLE_ARGS must pass isBorrowerEligible for this test to exercise the gate-rejection branch it claims to");
   const result = await isBorrowerEligibleWithReputationGate(
     BASE_ELIGIBLE_ARGS,
     { borrowerAgentId: "5", minScore: 50 },
@@ -58,8 +67,10 @@ test("isBorrowerEligibleWithReputationGate: base check passes but reputation gat
 });
 
 test("isBorrowerEligibleWithReputationGate: both base AND reputation gate pass -> eligible:true", async () => {
+  // FIND-004 fix (adversary round 2): see the sibling test above for why this asserts rather than
+  // silently returns.
   const base = isBorrowerEligible(BASE_ELIGIBLE_ARGS);
-  if (!base.eligible) return;
+  assert.equal(base.eligible, true, "fixture precondition: BASE_ELIGIBLE_ARGS must pass isBorrowerEligible");
   const result = await isBorrowerEligibleWithReputationGate(
     BASE_ELIGIBLE_ARGS,
     { borrowerAgentId: "5", minScore: 50 },
@@ -69,8 +80,10 @@ test("isBorrowerEligibleWithReputationGate: both base AND reputation gate pass -
 });
 
 test("isBorrowerEligibleWithReputationGate: defaults to the REAL passesOnchainReputationGate when no reputationGateFn override is given (unset thresholds -> fail-open passthrough)", async () => {
+  // FIND-004 fix (adversary round 2): see the sibling tests above for why this asserts rather than
+  // silently returns.
   const base = isBorrowerEligible(BASE_ELIGIBLE_ARGS);
-  if (!base.eligible) return;
+  assert.equal(base.eligible, true, "fixture precondition: BASE_ELIGIBLE_ARGS must pass isBorrowerEligible");
   const result = await isBorrowerEligibleWithReputationGate(BASE_ELIGIBLE_ARGS, { borrowerAgentId: "5" });
   assert.equal(result.eligible, true, "no minScore/minJobCount configured -> real gate fail-opens, composition passes");
 });

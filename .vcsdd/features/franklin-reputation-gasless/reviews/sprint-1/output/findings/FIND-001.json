@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "ensure-gas.mjs's testnet auto-drip daily-cap accounting can be silently bypassed. appendDripLog(...) (the ONLY place a drip is recorded against maxDripsPerDay) is called strictly AFTER `client.waitForTransactionReceipt({hash: sent.hash})` returns successfully (line 208). But if that receipt-wait itself THROWS (RPC timeout/flake -- a realistic, common failure mode, not a hypothetical), the function returns `{ok:false, action:'needs_gas', reason:'drip tx receipt wait failed: ...', tx: sent.hash}` at line 205 WITHOUT ever calling appendDripLog. At that point `drip()` (line 196, `sent = await drip(...)`) has already returned a real transaction hash, meaning the drip transaction was genuinely broadcast (and typically DOES land on-chain, spending the funder's real testnet ETH) -- but it is never written to the drip log. A caller that retries ensureGas after such a timeout (e.g. gig.mjs's own recordFeedbackBestEffort, called automatically on every gigVerifyAndPay) will see `countRecentDrips` under-count this address's true recent-drip total and will be permitted to trigger ANOTHER real drip. Repeated under a flaky/slow RPC endpoint, this defeats the money-safety hard rate-limit the behavioral spec explicitly mandates (REQ-002: 'the daily cap is enforced BEFORE any sendDripFn call is attempted once the cap is reached' / design spec §4 MUST: '1日 ≤ N回...cap 超過で停止'). The cap is enforced correctly against the LOG, but the log itself can systematically under-report real spend under this one specific, realistic failure path.",
+  "evidence": {
+    "filePath": "skills/economy/gig/lib/ensure-gas.mjs",
+    "lineRange": "194-219",
+    "snippet": "let sent;\n  try {\n    sent = await drip({ to: address, amountWei: amount });\n  } catch (e) {\n    return { ok: false, action: \"needs_gas\", reason: `drip tx failed: ${e.shortMessage || e.message || String(e)}` };\n  }\n\n  let receipt;\n  try {\n    receipt = await client.waitForTransactionReceipt({ hash: sent.hash });\n  } catch (e) {\n    return { ok: false, action: \"needs_gas\", reason: `drip tx receipt wait failed: ${e.shortMessage || e.message || String(e)}`, tx: sent.hash };\n  }\n\n  appendDripLog(dripLogPath, {\n    ts: new Date(nowMs).toISOString(),\n    address,\n    amountWei: amount.toString(),\n    tx: sent.hash,\n    status: receipt.status,\n  });"
+  },
+  "routeToPhase": "2b"
+}

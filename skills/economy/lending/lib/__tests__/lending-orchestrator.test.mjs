@@ -214,6 +214,45 @@ test("REQ-115: a real invocation calls every one of steps 1-9 exactly once, in t
 });
 
 // ---------------------------------------------------------------------------
+// FIND-002 (adversary round 2, spec §1 G3 correction): the G3 reputation gate must be wired into THIS
+// real production entry point (runLockedIssuance's step 6, right after isBorrowerEligible), not left as
+// unreachable dead code (isBorrowerEligibleWithReputationGate previously had zero production call
+// sites). deps.reputationGate (config: minScore/minJobCount/clientAddresses/tag1/tag2) and
+// deps.reputationGateFn (DI override, mirrors deps.reconcile/deps.disburse's own convention) are the
+// production/test wiring seam.
+// ---------------------------------------------------------------------------
+
+test("★FIND-002 wiring★ REQ-115: a CONFIGURED reputation gate is actually consulted on the real executeLoanIssuanceAttempt path, and its rejection refuses the loan with the gate's own reason", async () => {
+  const dir = tmpDir();
+  let reputationGateCalled = false;
+  let receivedArgs = null;
+  const deps = happyDeps(dir, {
+    reputationGate: { minScore: 50, minJobCount: 1, clientAddresses: ["0xClient1"] },
+    reputationGateFn: async (args) => {
+      reputationGateCalled = true;
+      receivedArgs = args;
+      return { eligible: false, reason: "insufficient_score" };
+    },
+  });
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(reputationGateCalled, true, "a configured reputation gate must be consulted on this real production entry point -- it must not be dead code");
+  assert.equal(receivedArgs.minScore, 50);
+  assert.equal(receivedArgs.minJobCount, 1);
+  assert.equal("borrowerAgentId" in receivedArgs, true, "the gate must be called WITH a borrowerAgentId key threaded through (this fixture's citizen record has no .agentId set yet, so the value is undefined -- that is a separate, future data-plumbing concern; the wiring itself must still pass the key)");
+  assert.equal(result.status, "refused");
+  assert.equal(result.reason, "insufficient_score");
+  const rows = readLoanRows(deps.ledgerFile);
+  assert.equal(rows.length, 0, "a reputation-gate refusal must happen BEFORE the provisional row append (step 8), same discipline as every other step-6 refusal");
+});
+
+test("★FIND-002★ REQ-115: with NO reputationGate config (the default), the gate fail-opens -- behavior is IDENTICAL to before this wiring existed (happy path still reaches 'active')", async () => {
+  const dir = tmpDir();
+  const deps = happyDeps(dir);
+  const result = await executeLoanIssuanceAttempt(baseParams(), deps);
+  assert.equal(result.status, "active", "unset thresholds (spec §1 G3 MUST: 段階導入 fail-open) must be a complete no-op on the pre-existing happy path");
+});
+
+// ---------------------------------------------------------------------------
 // REQ-115 / CRIT-203 / PROP-115c: a failure/refusal injected at each of the 9 canonical steps.
 // ---------------------------------------------------------------------------
 

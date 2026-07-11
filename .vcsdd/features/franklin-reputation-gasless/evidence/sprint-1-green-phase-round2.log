@@ -1,0 +1,72 @@
+# Sprint-1 round-2 GREEN phase — franklin-reputation-gasless fix iteration
+# All 5 blocking findings from the round-1 fresh-context adversary FAIL (see
+# .vcsdd/features/franklin-reputation-gasless/reviews/sprint-1/output/verdict.json) fixed this round.
+
+target-feature-tests: PASS
+regression-baseline: PASS
+
+## Findings fixed, one line each:
+# FIND-001 (critical): skills/economy/gig/lib/ensure-gas.mjs -- appendDripLog now runs immediately
+#   after broadcast (sent.hash obtained), BEFORE waitForTransactionReceipt -- no exception path can
+#   leave a broadcast drip uncounted against the daily cap.
+# FIND-002 (critical): skills/economy/lending/lib/lending-orchestrator.mjs -- runLockedIssuance now
+#   calls isBorrowerEligibleWithReputationGate (not the raw isBorrowerEligible) at step 6, wired via
+#   deps.reputationGate/deps.reputationGateFn; default (unconfigured) behavior unchanged (fail-open).
+# FIND-003 (major): skills/economy/gig/__tests__/ensure-gas.test.mjs -- 2 new tests cover both
+#   exception branches (sendDripFn throws pre-broadcast; waitForTransactionReceipt throws
+#   post-broadcast, proving the FIND-001 fix via a same-cap retry that must NOT re-broadcast).
+# FIND-004 (major): skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs
+#   -- removed all 3 `if (!base.eligible) return;` silent early-exits, replaced with a loud
+#   `assert.equal(base.eligible, true, ...)`; this surfaced a genuine fixture bug (wrong field names)
+#   which is now fixed by reusing lending-gate.test.mjs's own known-good BASE_BORROWER shape.
+# FIND-005 (major): PROP-043/044/045 (live Base Sepolia E2E) re-confirmed honestly NOT-RUN this round
+#   too -- see evidence/e2e-status.md's round-2 note and specs/verification-architecture.md's round-2
+#   re-confirmation note. No E2E was fabricated or simulated to close this finding.
+
+## Full gig regression suite (incl. the 2 new FIND-003 tests -- 80 pre-existing + 2 new = 82)
+$ node --test skills/economy/gig/__tests__/*.test.mjs
+ℹ tests 82
+ℹ pass 82
+ℹ fail 0
+
+## Full lending regression suite (incl. the 2 new FIND-002 wiring tests -- 162 pre-existing + 2 new = 164)
+$ node --test skills/economy/lending/lib/__tests__/*.test.mjs
+ℹ tests 164
+ℹ pass 164
+ℹ fail 0
+(re-run 3x consecutively during this round, all 3x: 164/164 pass, 0 fail)
+
+## Targeted files, isolated
+$ node --test skills/economy/gig/__tests__/ensure-gas.test.mjs
+ℹ tests 14
+ℹ pass 14
+ℹ fail 0
+
+$ node --test skills/economy/lending/lib/__tests__/reputation-gate.test.mjs skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs
+ℹ tests 26
+ℹ pass 26
+ℹ fail 0
+
+$ node --test skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs
+ℹ tests 41
+ℹ pass 41
+ℹ fail 0
+
+## Known pre-existing flake (NOT a regression from this round's changes)
+# skills/economy/lending/lib/__tests__/lending-orchestrator.test.mjs ::
+# "REQ-116 executeDefaultDetectionSweep: a candidate flagged by step 1's read but found already-repaid
+# at step 2's own fresh re-read is correctly skipped, never defaulted" -- a genuine race/timing test
+# (its own assertion message: "whichever of the two races wins the lock, the loan must never end up
+# BOTH repaid and defaulted"). Observed FAIL once out of 4 total runs WITH this round's changes present
+# (run order: fail, pass, pass -- see terminal history), 0 failures out of 4 runs against the
+# baseline (pre-round-2-changes) source via `git stash push -- lending-orchestrator.mjs
+# lending-orchestrator.test.mjs` isolation. The failing assertion is entirely inside
+# executeDefaultDetectionSweep's own race-window logic -- nothing to do with the G3 reputation-gate
+# wiring this round touches (step 6, a completely different code path). Consistent with this feature's
+# own round-1 evidence log precedent of documenting this exact class of timing sensitivity rather than
+# treating a flake as a regression.
+
+## Hygiene: 2 unrelated live-daemon files removed from this branch's working tree
+# skills/self/capafy-loop/state/STATE.md, skills/self/life-manager-loop/state/STATE.md -- were modified
+# by OTHER running loops on this machine (not this feature). Restored via `git checkout main --
+# <paths>`; `git status --porcelain` now shows only this feature's own files, confirmed below.

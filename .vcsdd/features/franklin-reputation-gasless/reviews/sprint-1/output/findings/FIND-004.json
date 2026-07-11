@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "structural_integrity",
+  "category": "test_quality",
+  "severity": "major",
+  "description": "Three of lending-gate-reputation-composition.test.mjs's five tests contain a silent early-return guard `if (!base.eligible) return;` (lines 50, 62, 73) that makes the ENTIRE test body -- including every assertion after the guard -- a no-op if `isBorrowerEligible(BASE_ELIGIBLE_ARGS)` ever stops returning eligible:true (e.g. if `isSelfFunded`'s field contract in `_shared/lib/is-self-funded.mjs` changes shape in a future, unrelated commit). node:test reports a test with zero assertions and no thrown error as PASS -- there is no skip marker, no `t.skip()`, no console warning, nothing that would surface in a CI run or in this feature's own green-phase.log. The file's own comment (lines 24-28) acknowledges this exact risk ('if this fixture doesn't pass isBorrowerEligible on its own, the composition tests below would trivially fail for the WRONG reason') but the mitigation chosen (a companion 'fixture sanity' test asserting `base.reason` is one of six enumerated strings) does NOT actually fail if the fixture regresses -- `not_self_funded`/`not_broke_enough`/etc. are all in that same enumerated list, so the sanity test keeps passing right alongside the three now-vacuous composition tests, giving a false impression that G3's composition logic (isBorrowerEligible short-circuit, gate-reject propagation, both-pass success) is still verified when it would silently no longer be exercised at all.",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/__tests__/lending-gate-reputation-composition.test.mjs",
+    "lineRange": "48-58",
+    "snippet": "test(\"isBorrowerEligibleWithReputationGate: base check passes but reputation gate rejects -> eligible:false, reputation's own reason surfaces\", async () => {\n  const base = isBorrowerEligible(BASE_ELIGIBLE_ARGS);\n  if (!base.eligible) return; // fixture precondition not met in this environment -- covered by the sanity test above\n  const result = await isBorrowerEligibleWithReputationGate(...);\n  assert.equal(result.eligible, false);\n  assert.equal(result.reason, \"insufficient_score\");\n});"
+  },
+  "routeToPhase": "2b"
+}

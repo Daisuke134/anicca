@@ -27,3 +27,8 @@ constraint — this is a structural exclusion, not a "couldn't find a key" failu
 the design spec's own definition (§1 G1/G2 "done = ... E2E ログ"), a separate, explicitly money-authorized
 session/operator must run `e2e-reputation-testnet.mjs` with a funded Base Sepolia key and attach its
 output here.
+
+**Round-2 fix iteration (adversary FIND-005, 2026-07-12)**: re-confirmed NOT-RUN — same money-safety
+boundary as above, unchanged this round. This round's fixes (FIND-001..004) were all closed via unit
+tests + a production-path wiring test (see `sprint-1-green-phase-round2.log`), never via a fabricated or
+simulated E2E claim. Status remains gated to a separately-authorized operator run.

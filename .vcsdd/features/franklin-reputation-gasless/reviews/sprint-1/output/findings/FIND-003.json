@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "major",
+  "description": "Behavioral spec REQ-002's own listed edge cases ('Drip tx reverts: report failure...never {ok:true}' and 'Drip tx receipt wait throws: report failure, never leave the caller uncertain about whether money moved') map to TWO distinct exception-handling branches in ensure-gas.mjs's money-moving drip path: the `drip({...})` call itself throwing (lines 194-199, 'drip tx failed') and `client.waitForTransactionReceipt(...)` throwing (lines 201-206, 'drip tx receipt wait failed' -- this is also the exact branch FIND-001 identifies as the money-safety cap-bypass bug). ensure-gas.test.mjs contains exactly one 'reverted drip tx' test (lines 168-181), but that test only exercises the THIRD, already-covered branch: waitForTransactionReceipt resolving successfully with `{status:'reverted'}` (lines 216-217 of the source). Neither exception-throwing branch (the drip() call itself throwing, nor waitForTransactionReceipt itself throwing) has any test in ensure-gas.test.mjs, and neither appears as its own distinct PROP-ID in verification-architecture.md (PROP-011 conflates 'reverted drip tx' with these, but only actually covers the status-based revert). A test asserting these two branches' contract (ok:false, no throw escaping ensureGas, AND -- per FIND-001 -- that the daily cap accounting is not silently bypassed) is completely absent from a money-moving code path.",
+  "evidence": {
+    "filePath": "skills/economy/gig/__tests__/ensure-gas.test.mjs",
+    "lineRange": "168-181",
+    "snippet": "test(\"ensureGas: a reverted drip tx is reported as failure, never as ok:true\", async () => {\n  ...\n  publicClient: {\n    getBalance: async () => 0n,\n    waitForTransactionReceipt: async () => ({ status: \"reverted\" }),\n  },\n  sendDripFn: async () => ({ hash: \"0xrevertedtx\" }),\n  ..."
+  },
+  "routeToPhase": "2b"
+}

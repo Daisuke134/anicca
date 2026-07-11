@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "verification-architecture.md marks PROP-043/044/045 (the three Tier-3 live-chain E2E proof obligations from design spec §5) as 'Required: true', and design spec §1 explicitly defines G1/G2's own 'done' condition as the existence of a real Base Sepolia E2E log ('done = Base Sepolia で register→giveFeedback が手動 ETH 補給ゼロで通る E2E ログ' / 'done = ... feedback tx hash + getSummary の count 増を独立 eth_call で確認'). evidence/e2e-status.md honestly documents these as NOT-RUN (correctly avoiding a faked claim), so none of PROP-043/044/045 are actually closed. Separately and independently of the money-safety-walled key-access blocker, PROP-045 ('configured gate rejects a real low-reputation borrower on testnet') could not prove anything about the REAL system even if it were run today, because of FIND-002: passesOnchainReputationGate/isBorrowerEligibleWithReputationGate has no production call site, so a testnet run of PROP-045 would only demonstrate the standalone function works in isolation, not that any real lending decision in this codebase is actually gated by it. The verification architecture's own proof-obligation table does not capture this second gap (no PROP-ID asserts 'the reputation gate is reachable from a real lending decision entrypoint').",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-reputation-gasless/specs/verification-architecture.md",
+    "lineRange": "84-90",
+    "snippet": "Tier 3: the three E2E items (PROP-043..045) require a funded Base Sepolia signer key. This build session's own MONEY-SAFETY boundary explicitly forbids reading/touching wallet private keys or .env at all... They remain open, tracked here..."
+  },
+  "routeToPhase": "2b"
+}

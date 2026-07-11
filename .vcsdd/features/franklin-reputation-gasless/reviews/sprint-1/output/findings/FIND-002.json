@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "critical",
+  "description": "G3's stated purpose (design spec §0 problem 3 'lending cold-start': '与信は自前 loans.jsonl のみ...信用が可搬せず...新規 lender/他 instance 間でリセット' and §1 G3 'passesOnchainReputationGate(...) を lending 与信に合成') is NOT achieved by this diff in the live system. `isBorrowerEligibleWithReputationGate` (lending-gate.mjs:130-140) is exported but has ZERO call sites anywhere in production code -- confirmed via repo-wide grep, the only callers are this feature's own new test files. Every real production entrypoint that decides lending eligibility still calls the raw, unmodified `isBorrowerEligible` directly: `lending-orchestrator.mjs:367` (inside `executeLoanIssuanceAttempt`, the ONLY function that actually issues a loan) and `wake-gate.mjs:89` (candidate-pair selection). This means: even if a lender configured minScore/minJobCount>0 today, there is no code path in this repo that would ever read that configuration or call `passesOnchainReputationGate` during a real loan decision -- the entire G3 feature is unreachable dead code from the live system's perspective, despite state.json's own phase-history notes describing G3 as 'implemented ... isBorrowerEligibleWithReputationGate' without this caveat. This is not merely an E2E-not-run gap (like G1/G2's money-safety-walled Base Sepolia blocker) -- it is a wiring gap that no live-key access would fix, since the composed function is never invoked regardless of network. Root cause: the design spec's own §3 file boundary declares only `lending/lib/lending-gate.mjs` as 'changed' and does not list `lending/lib/lending-orchestrator.mjs` or `lending/scripts/wake-gate.mjs` -- the two files that would need to change to actually wire G3 into a real decision -- so the spec's own G3 goal and its own file boundary are in tension. This needs a spec decision (either extend the file boundary and wire it, or make G3 explicitly seam-only like G4 and correct the notes/claims), not a silent 'done'.",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/lending-orchestrator.mjs",
+    "lineRange": "367-373",
+    "snippet": "const eligibility = isBorrowerEligible({\n    borrowerAgent: freshBorrower,\n    loanRows,\n    borrowerId,\n    borrowerBalanceUsd: freshBorrower.balanceUsd,\n    lenderId,\n  });"
+  },
+  "routeToPhase": "1c"
+}

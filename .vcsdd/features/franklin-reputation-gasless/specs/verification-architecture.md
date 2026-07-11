@@ -69,6 +69,10 @@
 | PROP-044 (E2E) | Base Sepolia: getSummary count increases after a real giveFeedback tx, confirmed via an
   independent `eth_call` | 3 | true | live testnet script |
 | PROP-045 (E2E) | configured gate rejects a real low-reputation borrower on testnet | 3 | true | live testnet script |
+| PROP-046 | `ensureGas`: `sendDripFn` throws before broadcast -> ok:false, daily cap NOT consumed (FIND-003) | 1 | true | node:test |
+| PROP-047 | `ensureGas`: `waitForTransactionReceipt` throws after broadcast -> ok:false, drip IS counted against the daily cap, a retry cannot double-drip (FIND-001 fix proof) | 1 | true | node:test |
+| PROP-048 | `executeLoanIssuanceAttempt`: a configured `deps.reputationGate` is genuinely consulted via `deps.reputationGateFn` and its rejection refuses the loan before any ledger row is written (FIND-002 wiring proof) | 1 | true | node:test |
+| PROP-049 | `executeLoanIssuanceAttempt`: unset `deps.reputationGate` (default) reaches `"active"` identically to pre-wiring behavior (fail-open no-op) | 1 | true | node:test |
 
 ## Verification Strategy
 
@@ -88,3 +92,9 @@
   by a separate, explicitly-authorized session/operator that runs the live script with a funded key,
   before this feature is considered fully done per the design spec's own §5 "E2E（Base Sepolia、fresh
   evidence）" requirement.
+
+**Round-2 re-confirmation (adversary FIND-005, 2026-07-12)**: re-checked this session — PROP-043/044/045
+remain honestly NOT-RUN (see `evidence/e2e-status.md`'s own updated round-2 note). No live testnet
+transaction was fabricated or simulated to close this finding; the money-safety wall (no wallet-key
+access in this session) is unchanged. This is the accepted, documented scope boundary for this round, not
+a regression.
