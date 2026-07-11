@@ -9,6 +9,7 @@ launchd plists for `skills/self/`-level periodic scripts (not tied to one earn l
 | `ai.anicca.cadence-deadline-check.plist` | `cadence-deadline-check.sh` | daily at 21:05 JST (`StartCalendarInterval` Hour=21 Minute=5) | REQ-LV-102 |
 | `ai.anicca.runtime-loop-healthcheck.plist` | `healthcheck-runtime-loop.sh` (checks all 4 targets: a3cdd4/franklin/pm-earner/founder-proxy) | every 5min (`StartInterval` 300s) | REQ-LV-050/051 |
 | `ai.anicca.founder-loop-cadence.plist` | `../founder-loop/founder-loop.sh` (the ONE wake that writes `~/.anicca-founder/STATE.md`, which is what `cadence-contracts.json`'s `founder-loop` pass-marker actually watches) | every 30min (`StartInterval` 1800s), `RunAtLoad` true | gh #986 follow-up, 2026-07-10 |
+| `ai.anicca.earning-health-allslots.plist` | `earning-health-allslots.sh` (registry-driven barren-earning CONTENT check across EVERY earn slot listed in `earning-health-registry.json` — generalizes what `sol-trade-healthcheck.sh` proved for `earn/sol-trade` alone; see `.vcsdd/features/self-heal-allslots/`) | every 5min (`StartInterval` 300s) | self-heal-allslots spec (P3), 2026-07-11 |
 
 `ai.anicca.cadence-deadline-check.plist` uses `StartCalendarInterval` (fixed wall-clock time),
 NOT `StartInterval` (rolling relative time) — REQ-LV-102's "escalate if today's Cadence Contract
@@ -40,6 +41,17 @@ this job existed. `founder-loop.sh` itself was also missing an explicit `PATH` e
 launchd-scheduled run silently died at `node "$RECORD"` ("node: command not found", rc 127) even
 after this plist was installed -- fixed in the script directly (now exports PATH like every sibling
 `self/*.sh` launchd script), verified by a real `record_rc=0` run under `launchctl kickstart`.
+
+`ai.anicca.earning-health-allslots.plist`'s `EARNHC_EARN_STATE_DIR` points at Franklin's own
+deployed `~/.blockrun/skills/earn/state` (mirrors the pre-existing
+`ai.anicca.sol-trade-earning-healthcheck.plist`'s `SOL_TRADE_HC_TRACE` override) so this ONE job
+checks FRANKLIN's real `earn/sol-trade` + `earn/polymarket-trade` traces, not the shared dev
+checkout's empty ones. **Before loading this plist, unload+remove the older
+`ai.anicca.sol-trade-earning-healthcheck.plist`** — both would otherwise independently detect the
+same `earn/sol-trade` barren condition and each spawn its own `self-fix.sh sol-trade` call
+(duplicate, wasteful fixer spawns; not unsafe, but not intended). This plist is committed but
+**NOT loaded** by the self-heal-allslots sprint that added it — Dais reviews first (see
+`.vcsdd/features/self-heal-allslots/CHANGELOG.md`).
 
 ## Install (orchestrator step, run after merge)
 
