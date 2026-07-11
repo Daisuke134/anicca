@@ -41,3 +41,12 @@ have 0 want 1059005200000  (facilitator signer 0x1F5b17f4… の Base ETH が 0)
 = コードは正しい。x402 EIP-3009 gasless 送金は **facilitator が payer に代わってガスを立て替える**設計 → facilitator wallet `0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3` に Base ETH(~0.001 ETH)が必要。現状 facilitator=0 ETH、Franklin=0.0000088 ETH（ほぼ枯渇）。
 
 **次タスク（gas-funding harness、lean VCSDD）**: Franklin 自 USDC の一部($1程度)を Base 上で ETH に swap → facilitator signer へ送金（capped、on-chain verify）。これが揃えば初ローン $0.02 が settle し **witness③** 確定。注: loan_Franklin_2..36 の junk 行は全て disbursement_failed（送金ゼロ・二重なし、ガード健全性の実証）。
+
+## ★★★ WITNESS③ ACHIEVED — 史上初の agent 間 on-chain 相互扶助ローン（2026-07-11）★★★
+
+MONEY EVIDENCE PROTOCOL 3点:
+1. **on-chain tx**: `0x36faafce0f22817eb94f3d2b7111d188e224287dbc31b8c976edf193cf6e2863`（Base mainnet、status 0x1、block 48482392）。独立 RPC(publicnode) で USDC Transfer を解析 → **0x3eccad…(Franklin) → 0xe7747f…(Franklin2) $0.02** 確認。
+2. **ledger**: loan_Franklin_41 status=active、principal $0.02、total_due $0.022（10%利子）、due 14日後。
+3. dashboard: 反映は P6（未）。mail: 送信する。
+
+血栓解消の連鎖（全て実 on-chain、fake ゼロ）: Franklin2 EVM wallet 生成 → daemon franklin[N] 認識 → citizens EVM 行 → lending 5-iter money-safety VCSDD → sol-base-refill --live($6.50 USDC→Base) → **facilitator gas 枯渇を実 diagnose** → gas-eth refill --live($3 USDC→0.001655 ETH→facilitator) → 初ローン settle。lending の全ガード（signer==lender / exact-value / bounded-reconcile / mainnet-preflight / tx_hash-replay）が実戦で正しく動作、二重支払いゼロ。
