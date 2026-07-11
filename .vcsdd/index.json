@@ -238,7 +238,14 @@
       "language": "typescript",
       "currentPhase": "complete",
       "updatedAt": "2026-07-11T01:16:39.166Z"
+    },
+    "build-loop-unify": {
+      "status": "active",
+      "createdAt": "2026-07-11T15:58:28.933Z",
+      "mode": "lean",
+      "currentPhase": "2c",
+      "updatedAt": "2026-07-11T16:06:14.978Z"
     }
   },
-  "activeFeature": "franklin-alwaysact-skill-router"
+  "activeFeature": "build-loop-unify"
 }

@@ -1,0 +1,14 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+$ bash skills/self/test-claude-p-mainloop.sh
+  - FAIL REQ-006: CLAUDE_P_MAINLOOP_TEST isolation seam present in claude-p-mainloop.sh
+  - FAIL REQ-005: CLAUDE_P_MAINLOOP_MODEL override present in claude-p-mainloop.sh
+  - FAIL REQ-003: prompt explicitly forbids the build loop from performing/simulating an earn action
+  - FAIL REQ-003: prompt names on-chain wallet/ledger as the only earn-truth source
+  - SKIP dynamic PROP-002/PROP-003/PROP-007 (isolation seam not yet implemented — refusing to execute claude-p-mainloop.sh against live production paths)
+FAIL (7)
+EXIT=1
+
+$ bash skills/self/founder-loop/test-founder-loop.sh
+PASS — founder-loop harness invariants hold (INV-H1 read-state-first · H2 ledger-via-record-earn-only · H3 atomic STATE · H4 no-human · H5 goal-on-real-ledger · H6 fail-safe · FOUNDER_LEDGER TEST-gated · corrupt-ledger fail-safe)

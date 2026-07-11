@@ -1,0 +1,32 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+$ bash skills/self/test-claude-p-mainloop.sh
+PASS — build-loop-unify invariants hold (REQ-000 corrected finding · REQ-001 founder-loop untouched/non-LLM · REQ-002 single build cron · REQ-003 LOOP B purity in prompt · REQ-004 pidfile/kill-switch/prompt-file preserved · REQ-005 model override · REQ-006 test isolation seam, live pidfile untouched)
+EXIT=0
+
+$ bash skills/self/founder-loop/test-founder-loop.sh
+PASS — founder-loop harness invariants hold (INV-H1 read-state-first · H2 ledger-via-record-earn-only · H3 atomic STATE · H4 no-human · H5 goal-on-real-ledger · H6 fail-safe · FOUNDER_LEDGER TEST-gated · corrupt-ledger fail-safe)
+
+$ bash -n skills/self/claude-p-mainloop.sh && echo OK
+OK
+$ bash -n skills/self/test-claude-p-mainloop.sh && echo OK
+OK
+
+$ shellcheck skills/self/claude-p-mainloop.sh
+In skills/self/claude-p-mainloop.sh line 95:
+cleanup() { rm -f "$PIDFILE"; }
+^-----------------------------^ SC2329 (info): This function is never invoked. Check usage (or ignored if invoked indirectly).
+(exit=1, info-only — IDENTICAL to the pre-existing baseline warning on this script before
+this feature's changes; no new shellcheck warning category introduced)
+
+$ shellcheck skills/self/test-claude-p-mainloop.sh
+3x SC2016 (info) + 1x SC2015 (info) — same info-only pattern already present in the
+sibling test-founder-loop.sh (verified: identical SC2016/SC2015 hits on that file too),
+i.e. this matches the established test-file style in this repo, not a new problem.
+
+$ stat -f '%Sm %N' "$HOME/.openclaw/state/claude-p-mainloop.pid"
+Jul 12 00:54:50 2026 /Users/anicca/.openclaw/state/claude-p-mainloop.pid
+(mtime unchanged before/after the isolated test run — PROP-007 confirms the live
+production pidfile used by the running ai.anicca.claude-p-mainloop cron was never
+touched by this feature's tests)
