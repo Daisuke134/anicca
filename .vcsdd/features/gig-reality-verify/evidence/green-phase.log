@@ -1,0 +1,161 @@
+target-feature-tests: PASS
+regression-baseline: PASS (except 1 PRE-EXISTING baseline failure, unrelated to this feature — see
+red-phase.log; confirmed present on `main` BEFORE this worktree/feature touched any file)
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 54, pass 53, fail 1
+
+New-feature tests (11/11 GREEN):
+  ✔ gig_reality_verify.sh exists
+  ✔ gig_judge.py exists
+  ✔ gig_reality_verify.sh: bash -n syntax check passes
+  ✔ gig_reality_verify.sh: reads all three claim jsonl sources
+  ✔ gig_reality_verify.sh: spawns a FRESH claude -p (report-independent, non-interactive)
+  ✔ gig_reality_verify.sh: caps the fresh spawn with a timeout (no infinite hang)
+  ✔ gig_reality_verify.sh: writes audit-reality.jsonl
+  ✔ gig_reality_verify.sh: writes selfheal-request on verdict false
+  ✔ gig_reality_verify.sh: stdout-JSON-only discipline
+  ✔ auditor.sh: calls gig_reality_verify.sh after the deterministic verdict block
+  ✔ gig_reality_verify.sh: no runtime human-in-the-loop step
+
+Remaining failure (PRE-EXISTING baseline, out of scope for this feature — not touched):
+  ✖ strategy.default.json: max_apply_per_pass is a positive integer ≤ 10
+
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && python3 test_gig_judge.py
+Result: exit=0
+=== test_gig_judge: 21 passed 0 failed ===
+
+--- LIVE E2E ("own-eyes") RUN — real side effect, not a unit test ---
+Command executed for real (not dry-run):
+  cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig && bash gig_reality_verify.sh 5
+Launched: 2026-07-12 00:33:57 JST, background task ID blk20rtcy.
+stdout log: /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stdout.log
+stderr log: /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stderr.log
+
+Verified REAL (not fabricated) via repeated live process inspection over 5+ minutes:
+  - claim collection succeeded: "collected 10 claim rows" (real rows from live ~/gig/shuppin.jsonl
+    (5 real shuppin edits/creates, incl. service_id 4308502/4302213/4244912/4244556/4244506) and
+    ~/gig/applied.jsonl (5 real recent applied/nurture rows)).
+  - a FRESH `claude -p` subprocess (PID 75811/75812, `timeout 600 /Users/anicca/.local/bin/claude -p
+    <full report-skeptical prompt with the real 10 claims + 3 real ground-truth URLs> --model sonnet
+    --dangerously-skip-permissions --add-dir /Users/anicca --output-format text`) was confirmed
+    ALIVE via `pgrep -fl` at repeated checkpoints (00:33:57 spawn -> 00:38:52 = 4m55s elapsed at last
+    check, process still running, prompt content confirmed byte-for-byte correct via `ps` full
+    command-line dump).
+  - :9222 CDP daily-driver confirmed live and logged into coconala.com before the run.
+
+--- LIVE E2E RESULT (completed 2026-07-12 00:40:02 JST, 6m05s real wall-clock after spawn) ---
+Background task blk20rtcy finished (exit code 0). ~/gig/audit-reality.jsonl gained exactly one new
+row, appended by the script itself (not fabricated by me — read directly from the file after the
+background process's own completion notification):
+
+  {"ts": 1783784402, "verdict": true, "failure_reason": "", "impossible_task": false,
+   "reached_captcha": false, "claims_checked": 10}
+
+Full "reasoning" field (truncated pointer — see ~/gig/audit-reality.jsonl for the complete text):
+the fresh judge independently navigated /mypage/services_lists, each individual /services/<id> page
+for the 4 typo-fix claims, /mypage/received_orders/open, /mypage/dashboard_provider, and each
+/requests/<id> page for the 4 applied claims — and matched EVERY one of the 10 real live claims
+(5 shuppin publish/typo-fix rows + 4 applied rows + 1 nurture-narrative row) against the actual
+screen content: all 5 services confirmed 公開中 with matching titles/prices; doubled-ます typo
+confirmed absent from all 4 edited services' own text (one false-positive substring match in an
+UNRELATED third-party sidebar listing was correctly excluded, not our copy); the 1 real
+取引中 order (jibieaian, ¥40,000) matched exactly; all 4 applied requests confirmed 応募済み with
+matching titles/budgets. verdict:true, reached_captcha:false, impossible_task:false,
+failure_reason:"" (empty, i.e. no failure).
+
+Fresh-screenshot proof this was a REAL navigate, not a hallucinated report: a NEW trajectory file
+was written DURING this exact run window (mtime 2026-07-12 00:34:38, i.e. 41s after spawn, well
+inside the run):
+  ~/gig/trajectory/verify001/01-reality_verify_check.png (237.9K PNG)
+  ~/gig/trajectory/verify001/trajectory.jsonl ->
+    {"ts": 1783784078, "pass_id": "verify001", "seq": "01", "label": "reality_verify_check",
+     "url": "https://coconala.com/mypage/services_lists",
+     "title": "出品サービス管理 | マイページ | ココナラ", ...}
+This is the judge itself calling cdp_snapshot.py on the real live page, per its instructions —
+independent confirmation beyond the judge's own self-reported JSON.
+
+Selfheal-request check: ~/.openclaw/state/.gig-core-selfheal-request.json was NOT written/touched by
+this run (verdict was true) — confirms REQ-004's "on verdict:true, do NOT write selfheal" edge case
+holds in the real run, not just in unit tests.
+
+CONCLUSION: behavioral-spec REQ-004 and verification-architecture PROP-007 (full E2E, live) are MET
+by a REAL, observed, non-fabricated side-effecting run — a fresh-spawned, report-independent judge
+navigated the real Coconala screens and reached the SAME conclusion (all claims real) that I would
+have reached manually, exactly replacing the "私が main session で navigate→screenshot→判定" step
+this feature exists to automate (docs/loop-engineering/26-...md §8 goal statement).
+
+=== FIX ROUND (fresh-adversary FAIL, 3 blocking + 1 mitigation) — GREEN confirmed ===
+target-feature-tests: PASS
+regression-baseline: PASS (except the same 1 PRE-EXISTING baseline failure, unrelated, untouched)
+
+Command: cd .../skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 67, pass 66, fail 1 (only the pre-existing max_apply_per_pass baseline failure remains)
+
+New tests added for this fix round (all GREEN):
+  - test_gig_judge.py: +13 tests for REQ-006/008/009 prompt changes (pass_id required, nav-helper
+    instruction, rejection warning, <untrusted_claim> wrapping) and +7 tests for gate_verdict
+    (REQ-007/PROP-009) — 34/34 total in this file.
+  - test_gig_reality_gate.py (new): 12/12 — the adversary's explicit case ("fake verdict:true + empty
+    trajectory -> script must NOT accept it as a clean pass") plus stale-row exclusion, cross-pass_id
+    isolation, sufficient-evidence acceptance, false-verdict-never-upgraded, unparseable-input safety.
+  - cdp-nav-snapshot.test.mjs (new): 8/8 — Page.navigate present, load-wait present
+    (loadEventFired/readyState), screenshot capture, trajectory append, get_tab() defined IN the file
+    (no dangling ~/gig/cdp_lib48.py cross-repo reference), and cdp_snapshot.py's own dangling comment
+    fixed.
+  - gig-reality-verify.test.mjs: +5 tests — PASS_ID generated before the actual `"$CLAUDE" -p` spawn
+    line, pass_id threaded into build_verifier_prompt, gig_reality_gate.py invoked (not a bare
+    parse-and-trust), RUN_START timestamp captured, required_count derived from
+    DEFAULT_GROUND_TRUTH_URLS (not hardcoded).
+
+Command: python3 test_gig_judge.py -> 34 passed 0 failed
+Command: python3 test_gig_reality_gate.py -> 12 passed 0 failed
+Command: bash -n gig_reality_verify.sh / auditor.sh -> both OK
+Command: python3 -m py_compile scripts/cdp_nav_snapshot.py scripts/gig_reality_gate.py gig_judge.py -> all compile
+
+=== LIVE E2E RE-RUN (post-fix, proves FIND-001/002/003 for real) ===
+First re-run attempt (pass_id realityverify-1783785864-38131, launched 01:04:24 JST) was CUT SHORT
+by an unrelated session interruption (background process was killed mid-run after producing 8/8
+real trajectory rows, including all 3/3 ground-truth URLs with navigated_ok:true — already proof
+the deterministic nav helper works — but no final gated verdict was recorded before the kill).
+Honestly disclosed rather than silently discarded; a full completed re-run follows.
+
+SECOND re-run (pass_id realityverify-1783786255-51970, launched 01:10:55 JST, completed 01:18:23
+JST — 7m28s wall-clock, uninterrupted) — COMPLETE, real, non-fabricated result:
+
+stderr log (script's own log, includes the NEW "recorded gated verdict row" line proving the
+deterministic gate in step 5 actually ran, not a bare parse-and-trust):
+  2026-07-12 01:10:55 gig_reality_verify: starting (N=5)
+  2026-07-12 01:10:55 gig_reality_verify: collected 10 claim rows
+  2026-07-12 01:10:55 gig_reality_verify: pass_id=realityverify-1783786255-51970 run_start=1783786255
+  2026-07-12 01:10:55 gig_reality_verify: spawning fresh claude -p judge (timeout 600s)
+  2026-07-12 01:18:23 gig_reality_verify: recorded gated verdict row
+
+Final row appended to ~/gig/audit-reality.jsonl (verbatim, this is the ACTUAL gated output, produced
+by scripts/gig_reality_gate.py reading the REAL trajectory file — not a hand-written claim):
+  {"ts": 1783786703, "verdict": true, "failure_reason": "", "impossible_task": false,
+   "reached_captcha": false, "pass_id": "realityverify-1783786255-51970",
+   "evidence_captured": 3, "evidence_required": 3, "claims_checked": 10}
+
+** THE KEY NUMBER THE ADVERSARY ASKED FOR: evidence_captured (3) == evidence_required (3) ==
+   number of ground-truth URLs (3). Trajectory row count == ground-truth URL count, reproducibly. **
+
+Corroborating REAL trajectory.jsonl for this pass_id (3 rows, one per ground-truth URL, each with
+navigated_ok:true and the REAL Coconala page title returned by the CDP Runtime.evaluate call —
+this is what scripts/gig_reality_gate.py counted to compute evidence_captured=3):
+  seq 01: https://coconala.com/mypage/services_lists -> navigated_ok:true, title "出品サービス管理 | マイページ | ココナラ"
+  seq 02: https://coconala.com/mypage/received_orders/open -> navigated_ok:true, title "取引中 | 取引管理（出品） | ココナラ"
+  seq 03: https://coconala.com/mypage/dashboard_provider -> navigated_ok:true, title "出品者向けダッシュボード | マイページ | ココナラ"
+
+Full judge reasoning (verbatim, from the fresh judge's own JSON — describes it navigating via
+cdp_nav_snapshot.py by name, and cross-checking claims 1-10 against the real DOM, including a
+timestamp cross-check on a real 応募者一覧 entry): see the "reasoning" field in the row above /
+~/gig/audit-reality.jsonl directly.
+
+Selfheal check: ~/.openclaw/state/.gig-core-selfheal-request.json does NOT exist / was not written
+by this run (verdict:true, correctly untouched — REQ-004/REQ-007 edge case holds in the real run).
+
+CONCLUSION: FIND-001 (reproducible navigation), FIND-002 (deterministic evidence gate — the caller
+independently confirmed real evidence before accepting verdict:true, not report-blind), and FIND-003
+(stable pass_id ties evidence to one run, evidence count == ground-truth URL count) are all
+confirmed fixed by a REAL, complete, non-fabricated live run.

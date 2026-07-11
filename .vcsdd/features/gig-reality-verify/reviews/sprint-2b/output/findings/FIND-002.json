@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "major",
+  "description": "The effectful shell (gig_reality_verify.sh) recursively repeats the exact 'report-blind' anti-pattern this feature exists to eliminate for the gig core -- just one level up, for the judge itself. After spawning the fresh claude -p judge, the script extracts the JSON object from JUDGE_RAW and constructs a JudgementResult purely from that self-reported text (extract_json_obj + JudgementResult.from_dict), then appends it to audit-reality.jsonl and conditionally writes the selfheal-request file -- with ZERO deterministic cross-check that the judge actually produced any trajectory/screenshot evidence during this run (e.g. no check that a new row was appended to ~/gig/trajectory/*/trajectory.jsonl with a timestamp inside [spawn_ts, spawn_ts+TIMEOUT_SECS], no check of PNG file mtimes). A judge that hallucinates 'verdict: true, reasoning: <plausible fabricated detail>' without ever touching :9222 would produce output structurally indistinguishable, to this script, from a judge that genuinely navigated and read the DOM. This is an accepted, common limitation of LLM-judge architectures (judge.py itself has the same property) so I am not marking it blocking on its own, but it directly undercuts the feature's stated purpose ('own-eyes... never trusting the core's self-report', behavioral-spec.md Purpose section) since the auditor's trust in the verifier is, itself, ultimately just as report-blind as the original problem this feature was built to fix.",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig_reality_verify.sh",
+    "lineRange": "117-150",
+    "snippet": "d = extract_json_obj(raw)\njr = gig_judge.JudgementResult.from_dict(d)\nrow = {\"ts\": int(time.time()), \"verdict\": jr.verdict, \"reasoning\": jr.reasoning, ...}\n# no correlation against ~/gig/trajectory/*/trajectory.jsonl mtimes anywhere in this file"
+  },
+  "recommendation": "Before accepting verdict:true, deterministically check that at least one trajectory row was appended under ~/gig/trajectory/ with mtime inside the spawn window; if none exists, downgrade to verdict:false/failure_reason:'no_trajectory_evidence' regardless of what the judge's JSON says.",
+  "routeToPhase": "2b"
+}
