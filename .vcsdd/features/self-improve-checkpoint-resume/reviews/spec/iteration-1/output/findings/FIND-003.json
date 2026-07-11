@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "The Purity Boundary Analysis section (behavioral-spec.md:100-108) leaves the shell-to-pure-function call convention genuinely open: it offers TWO alternative invocation shapes ('via \"$PY_BIN\" -c' OR 'a thin CLI entrypoint, mirroring lib/ledger_reader.py's existing... call convention') without committing to one, and REQ-CR6 (behavioral-spec.md:150-153) only says the function is invoked 'via \"$PY_BIN\"' without pinning the exact command line. Confirmed live: `lib/ledger_reader.py`'s actual convention (run_evolve.sh:60, `\"$PY_BIN\" \"$SKILL_DIR/lib/ledger_reader.py\"`) is a full-script invocation relying on a `__main__`-style entrypoint that reads no argv and prints JSON to stdout -- a materially different code shape from an inline `-c` snippet (which would need the module imported and called inline from the shell, with `checkpoint_resume.py` needing no `__main__` block at all, taking `runs_dir`/`current_run_id` as function arguments passed through `-c`'s own argument string). Since PROP-CR-WIRE1 (verification-architecture.md:60) only checks 'the call... appears BEFORE the invocation' via a text-position/grep check, this ambiguity will not surface as a test failure at Phase 2/5 either -- it is left to whichever the implementer happens to pick, undermining REQ-CR6/CR9's own stated goal of mirroring an established convention.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "100-108",
+    "snippet": "\"$PY_BIN\" -c\" or a thin CLI entrypoint, mirroring `lib/ledger_reader.py`'s existing... call convention"
+  },
+  "routeToPhase": "1a/1b"
+}

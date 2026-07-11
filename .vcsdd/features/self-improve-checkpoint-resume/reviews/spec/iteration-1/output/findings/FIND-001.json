@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "blocking",
+  "description": "REQ-CR2 instructs `find_latest_checkpoint` to 'list the immediate subdirectories of runs_dir' and select among them, but the spec never accounts for a real, always-present non-run-named sibling entry that DOES live directly under runs_dir in production: `config.yaml`'s `database.db_path: \"runs/db\"` (skills/earn/self-improve/config.yaml:129), which `run_evolve.sh`'s own comment (run_evolve.sh:28-32) confirms resolves to `$SKILL_DIR/runs/db` after the script's `cd \"$SKILL_DIR\"`. This is not hypothetical: a prior, already-reviewed sibling feature's live verification logs show openevolve actually writing/loading this exact directory ('Loaded database with 82 programs from runs/db', .vcsdd/features/self-improve-real-ledger/verification/live-results/PROP-RL-LIVE3-fresh-log-excerpt.txt:12). So the REAL runs_dir this feature's function will scan in production contains at least one entry ('db') that is not a `run-YYYYMMDDTHHMMSSZ` directory and has no `checkpoints/` subdirectory of its own. REQ-CR2 (behavioral-spec.md:118-125) and the full EDGE-CR1..CR9 list (behavioral-spec.md:189-222) never mention or test this entry. The algorithm as literally written happens to tolerate it only by lexicographic accident ('d' < 'r', so 'db' always sorts after every 'run-*' name in descending order, and it lacks checkpoints/ so REQ-CR2's skip rule applies) -- an undocumented, untested invariant rather than a specified one. verification-architecture.md's Proof Obligations table (lines 49-63) has no PROP-CR* entry exercising a runs_dir that contains this real sibling directory, so a test-writer following this spec exactly would plausibly never construct a fixture containing it, leaving the real production shape of runs_dir completely unverified by Phase 2's own test suite.",
+  "evidence": {
+    "filePath": "skills/earn/self-improve/config.yaml",
+    "lineRange": "124-129",
+    "snippet": "database:\n  db_path: \"runs/db\""
+  },
+  "routeToPhase": "1a/1b"
+}
