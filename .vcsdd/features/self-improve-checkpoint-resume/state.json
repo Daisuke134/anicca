@@ -1,0 +1,31 @@
+{
+  "featureName": "self-improve-checkpoint-resume",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T09:01:42.930Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T09:01:42.933Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-self-improve-checkpoint-resume-1783760284512",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-11T08:58:04.512Z",
+  "updatedAt": "2026-07-11T09:01:42.933Z"
+}

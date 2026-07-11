@@ -238,7 +238,15 @@
       "language": "typescript",
       "currentPhase": "complete",
       "updatedAt": "2026-07-11T01:16:39.166Z"
+    },
+    "self-improve-checkpoint-resume": {
+      "status": "active",
+      "createdAt": "2026-07-11T08:58:04.512Z",
+      "mode": "lean",
+      "language": "python",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-11T09:01:42.933Z"
     }
   },
-  "activeFeature": "franklin-alwaysact-skill-router"
+  "activeFeature": "self-improve-checkpoint-resume"
 }
