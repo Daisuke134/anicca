@@ -13,7 +13,7 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 - **「別 repo だから scope 外」= 逃げ（jijitsu ha nige）**。根因が anicca-dais / profitable-claude 等 別 repo にあっても、それを理由に直さないのは逃げ。**verifier も self-fix も repo を跨いで根因まで直す。** honest-gap を「範囲外」で閉じない。
 
 ## 1. 2系統の分離（Dais 明示）
-- **系統1 = profitable-claude / CEO 配下 = 人間(Dais)のために稼ぐ（fiat→Dais 銀行/MUFG/Stripe）**: gig / capafy / article / life-manager(MRR) / affiliate / bounty / connector。
+- **系統1 = profitable-claude = 人間(Dais)のために稼ぐ（fiat→Dais 銀行/MUFG/Stripe）**: gig / capafy / article / life-manager(MRR) / affiliate / bounty / connector / explorer。CEO は薄い機械 gate のみ（§0.5、kill/spawn 判断なし）。各 loop は reality-verifier で自己検証し自己修復する（CEO の監督不要）。
 - **系統2 = ~/anicca / H の agent 経済 = agent 自身の wallet で稼ぎ経済を養う（crypto/on-chain）**: Franklin/Franklin2(SOL) / sol-funding / clip・video・reddit(on-chain USDC 視聴報酬) / x402-sell / token-launch / hl-trade(dormant) / self-improve / spawn。**claude-p(私)の CEO の管轄外。**
 - ★ **pm/hl/sol の crypto trading は系統1(profitable-claude CEO)に属さない** → registry の stub は削除/移管。
 
@@ -40,6 +40,40 @@ profitable-claude の loop が **repo 外**を参照している＝OSS で他人
 | `~/anicca` | bounty, affiliate, gig の cli | OSS 本体の何か | 参照を repo 内 copy に |
 
 → **「vendor/ に置いた＝confine 済」は嘘**。vendor 内 script が `~/.openclaw/skills/...` を呼んでる＝根が外に残ってる。真の confine = 本体 code を copy し外部参照をゼロにする（closed folder の完成条件）。TODO の C 群（§4）で解消。
+
+## 2.6 全 loop 台帳（実 registry 実証、2026-07-11、owner 分け）
+🟢=稼いで verified / 🟡=稼働だが$0 or 部分 / 🔴=壊れ。**🟢はゼロ。実収益=founder $9.02(過去)のみ。全🔴🟡→🟢が仕事。**
+
+**系統1 = profitable-claude（★claude-p=私が直す★）**
+| loop | 問題(browser/on-chain実証) | 状態 | 直すTODO |
+|---|---|---|---|
+| gig | Label衝突でdead、login失敗、実績0 | 🔴 | S3,L1 |
+| capafy | status=1審査中、public未掲載、"PUBLISHED"嘘 | 🔴 | S6a/b,G2,L2 |
+| article | 未merge、視聴→¥導線なし | 🔴 | S6c,L3 |
+| life-manager | state 0バイト空稼働、MRR$0 | 🔴 | L4 |
+| affiliate | reCAPTCHAで06-30からlogout、投稿0 | 🔴 | L5 |
+| bounty | survivor0、idle | 🟡 | L7 |
+| connector | 予約2件実、healthcheck DEAD誤判定でrestart storm、2/4枠 | 🟡 | G2,L6 |
+| explorer | proposal走るが収益化0 | 🟡 | P2 |
+| CEO | decision1回、日次LLM無駄→縮退 | 🟡 | G4a-c |
+| pm/hl(registry stub) | 誤帰属(実体は系統2) | 🔴stub | S1,S2 |
+
+**系統2 = ~/anicca（★別agentが直す。私はverifier共有のみ★）**
+| loop | 問題(実証) | 状態 |
+|---|---|---|
+| founder | on-chain$9.02は実、but THIS pass$0で"EARNING"報告 | 🟡report嘘 |
+| clip | 投稿hang280s、新垢乱造で逃げる、今日投稿なし | 🔴 |
+| clip-promote | 選択だけでsuccess、$0 | 🔴誤success |
+| clip-producer | clip依存、産出未確認 | 🟡 |
+| video | grid空、warmup 4vs0矛盾 | 🔴 |
+| reddit | account BAN済、impression0 | 🔴 |
+| sol-trade | 7日WAIT、trade0 | 🟡 |
+| hl-trade | wallet分断、$8.96孤立 | 🔴 |
+| polymarket(pm) | 資金<$5、HOLD | 🟡 |
+| Franklin | 稼働だがnet$0.02 | 🟡 |
+| sol-funding/token-launch/finchip-publish/board-poller/self-improve/spawn | dormant/未確認 | 🟡 |
+
+系統2 の全 loop は verifier(G3)を共有して別 agent が直す。founder は claude-p CEO 配下でない（merge されない）。
 
 ## 3. FULL TO-BE ASCII（最終設計: verifier は各 loop 内、CEO は薄い機械 gate、no human in loop）
 ```
