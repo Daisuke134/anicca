@@ -98,14 +98,21 @@ is touched.
   files — see REQ-CR5). Same input directory tree → same output, every time, in-process.
 - **Effectful shell:** `run_evolve.sh`'s existing bash — it already creates `$RUN_DIR`, invokes
   `openevolve-run`, and appends to `$LOG` (REQ-OE6/OE7, unchanged conventions). This feature adds
-  exactly one new effectful step to that shell script: shell out to the pure function (via
-  `"$PY_BIN" -c` or a thin CLI entrypoint, mirroring `lib/ledger_reader.py`'s existing
-  `"$PY_BIN" "$SKILL_DIR/lib/<module>.py"` call convention) BEFORE the `openevolve-run` invocation,
-  capture its stdout (a path or empty string), log the outcome, and conditionally append
-  `--checkpoint "<path>"` to the existing command array. `openevolve-run` itself (a separate
-  process, already effectful, unchanged by this feature) is what actually reads the checkpoint
-  directory's contents and resumes from it — that read is entirely outside this feature's own
-  code.
+  exactly one new effectful step to that shell script: shell out to the pure function via a thin
+  CLI entrypoint living INSIDE `lib/checkpoint_resume.py` itself (its own `if __name__ ==
+  "__main__":` block) — this is the ONE committed invocation shape (no alternative form is left
+  open; see REQ-CR6 for the exact command line). That entrypoint takes NO argv, reads `RUNS_DIR`
+  and `RUN_ID` from the process environment, calls `find_latest_checkpoint(runs_dir=os.environ[
+  "RUNS_DIR"], current_run_id=os.environ["RUN_ID"])`, and prints EXACTLY one line to stdout — the
+  resulting path, or an empty string when `None` — nothing else. This is a byte-for-byte mirror of
+  `lib/ledger_reader.py`'s own established convention (confirmed live, `lib/ledger_reader.py:222-
+  225`: no argv, reads its own env-derived config internally, prints one line of JSON to stdout;
+  called from `run_evolve.sh:60` as `"$PY_BIN" "$SKILL_DIR/lib/ledger_reader.py"`, no `-c`, no
+  extra args). `run_evolve.sh` invokes it BEFORE the `openevolve-run` invocation, captures its
+  stdout, logs the outcome, and conditionally appends `--checkpoint "<path>"` to the existing
+  command array. `openevolve-run` itself (a separate process, already effectful, unchanged by this
+  feature) is what actually reads the checkpoint directory's contents and resumes from it — that
+  read is entirely outside this feature's own code.
 
 ## EARS-Format Functional Requirements
 
@@ -116,25 +123,64 @@ is touched.
   checkpoint directory to resume from, or `None` when no prior run has any usable checkpoint.
 
 - **REQ-CR2** WHEN selecting which PRIOR RUN to resume from, THE SYSTEM SHALL: list the immediate
-  subdirectories of `runs_dir`, EXCLUDE any entry equal to `current_run_id`, sort the REMAINING
-  candidate names lexicographically DESCENDING (run directory names are `run-YYYYMMDDTHHMMSSZ` UTC
-  timestamps, which sort correctly as plain strings — REQ-OE7's existing naming convention,
-  unchanged), and select the FIRST (most recent) candidate that has a non-empty `checkpoints/`
-  subdirectory (per REQ-CR3's definition of "has a checkpoint"). Runs with no `checkpoints/`
-  subdirectory, or an EMPTY one, SHALL be skipped over (not selected, but also not treated as a
-  fatal error) in favor of the next-most-recent candidate.
+  entries of `runs_dir`, filter that list down to ONLY entries whose name matches REQ-CR10's
+  run-directory-name shape (this step is unconditional and happens BEFORE any other filtering — an
+  entry that does not match REQ-CR10's shape, such as the real, always-present `runs/db` sibling
+  directory created by `config.yaml`'s `database.db_path: "runs/db"` — see EDGE-CR10 — is NEVER a
+  candidate, regardless of what it contains or how it sorts), EXCLUDE any remaining entry equal
+  to `current_run_id`, sort the REMAINING run-shaped candidate names lexicographically DESCENDING
+  (run directory names are `run-YYYYMMDDTHHMMSSZ` UTC timestamps, which sort correctly as plain
+  strings — REQ-OE7's existing naming convention, unchanged), and THEN iterate that sorted list IN
+  ORDER, calling REQ-CR3's per-run checkpoint selector on each candidate in turn: the FIRST
+  candidate for which REQ-CR3 returns a non-`None` checkpoint path is the one used, and iteration
+  STOPS there (REQ-CR3's result for that candidate IS the function's overall result, modulo
+  REQ-CR1's absolute-path contract). A candidate for which REQ-CR3 returns `None` (for ANY reason —
+  no `checkpoints/` subdirectory at all, an empty one, or one that is non-empty at the OS-listing
+  level but contains ZERO valid `checkpoint_<N>`-shaped entries — see EDGE-CR11) is skipped (not
+  selected, not a fatal error) and iteration CONTINUES to the next-most-recent candidate. If the
+  entire sorted candidate list is exhausted with every candidate returning `None` from REQ-CR3 (or
+  the list was empty to begin with), THE SYSTEM SHALL return `None` (REQ-CR4). This iterate-until-
+  a-real-checkpoint-or-exhausted rule is the ONLY selection algorithm this function implements —
+  there is no early return on "first candidate encountered," only on "first candidate that
+  actually yields a usable checkpoint."
 
-- **REQ-CR3** WITHIN the selected prior run's `checkpoints/` directory, THE SYSTEM SHALL consider
-  only entries whose name matches the literal pattern `checkpoint_<N>` where `<N>` is one or more
-  ASCII digits, parse `<N>` as an INTEGER (not a string), and select the entry with the LARGEST
-  integer `<N>` (e.g. `checkpoint_100` SHALL be selected over `checkpoint_20` — NEVER a lexicographic
-  comparison, which would incorrectly rank `checkpoint_20` above `checkpoint_100`). Any entry inside
-  `checkpoints/` that does NOT match this pattern (a stray file, a differently-named directory, a
-  hidden dotfile) SHALL be ignored — its presence SHALL NEVER raise an exception or abort the scan.
+- **REQ-CR3** GIVEN a single candidate run directory (as selected by REQ-CR2's iteration), THE
+  SYSTEM SHALL: if that directory has no `checkpoints/` subdirectory at all, return `None`
+  immediately. Otherwise, list `checkpoints/`'s immediate entries and consider ONLY those whose
+  name matches the literal pattern `checkpoint_<N>` where `<N>` is one or more ASCII digits — any
+  entry that does NOT match this pattern (a stray file such as `.DS_Store`, a differently-named
+  directory, a hidden dotfile) SHALL be ignored and SHALL NEVER raise an exception or abort the
+  scan. If, after this filter, there are ZERO matching entries — whether because `checkpoints/` was
+  literally empty (zero entries of any kind) OR because it was non-empty at the OS-listing level
+  but every entry present failed the `checkpoint_<N>` shape test (EDGE-CR11) — THE SYSTEM SHALL
+  return `None` for this candidate (these two cases are INDISTINGUISHABLE in their outcome: both
+  mean "this candidate has no usable checkpoint," and REQ-CR2's caller treats both identically as a
+  reason to move on to the next-most-recent candidate). Otherwise (at least one matching entry
+  exists), parse each matching entry's `<N>` as an INTEGER (not a string) and return the absolute
+  path of the entry with the LARGEST integer `<N>` (e.g. `checkpoint_100` SHALL be selected over
+  `checkpoint_20` — NEVER a lexicographic comparison, which would incorrectly rank `checkpoint_20`
+  above `checkpoint_100`).
 
-- **REQ-CR4** WHEN `runs_dir` does not exist at all, is empty, or contains ONLY the excluded
-  `current_run_id` entry, THE SYSTEM SHALL return `None` — this is the ordinary, expected "first-ever
-  run" case, not an error condition.
+- **REQ-CR10** A `runs_dir` entry SHALL be considered a candidate run directory (eligible for
+  REQ-CR2's iteration at all) ONLY IF its name matches the literal shape `run-` followed by exactly
+  the UTC timestamp format this repo's own `run_evolve.sh:50` already produces (`run-$(date -u
+  +%Y%m%dT%H%M%SZ)`, i.e. `run-YYYYMMDDTHHMMSSZ`: 8 ASCII digits, literal `T`, 6 ASCII digits,
+  literal `Z`) — concretely, a regex equivalent to `^run-\d{8}T\d{6}Z$`. This is the ONLY test used
+  to decide "is this a run directory" — it is applied BEFORE, and independently of, the
+  `current_run_id` exclusion, and independently of whatever the entry contains (a directory or a
+  file, empty or not). Any entry that does not match this shape — including, concretely, the real
+  `runs/db` sibling directory that `config.yaml`'s `database.db_path: "runs/db"` causes
+  `openevolve-run` to create directly under `runs_dir` on every real production cycle (confirmed:
+  `skills/earn/self-improve/config.yaml:129`) — is EXCLUDED from candidacy entirely, never
+  considered, never inspected for a `checkpoints/` subdirectory, regardless of its lexicographic
+  sort position relative to any `run-*` name.
+
+- **REQ-CR4** WHEN `runs_dir` does not exist at all, is empty, contains ONLY the excluded
+  `current_run_id` entry, contains ONLY entries that fail REQ-CR10's run-directory-name shape
+  filter (e.g. `runs_dir` contains only `db`, per EDGE-CR10, and no `run-*` entry at all), OR every
+  run-shaped candidate's REQ-CR3 result is `None` (REQ-CR2's iteration exhausted), THE SYSTEM SHALL
+  return `None` — this is the ordinary, expected "no usable prior checkpoint" case, not an error
+  condition.
 
 - **REQ-CR5** `find_latest_checkpoint` SHALL perform PATH/EXISTENCE logic only (directory listing,
   name pattern matching, integer comparison). It SHALL NEVER open, read, or validate the byte
@@ -147,10 +193,16 @@ is touched.
 
 ### Group CR-WIRE — wiring into run_evolve.sh
 
-- **REQ-CR6** `run_evolve.sh` SHALL invoke the REQ-CR1 function, via `"$PY_BIN"`, AFTER `$RUN_DIR`
-  is created (so `current_run_id` = the just-created `$RUN_ID`, correctly excluding itself even
-  though its own now-empty directory already exists under `runs/`) and BEFORE the existing
-  `"$OPENEVOLVE_BIN"` invocation.
+- **REQ-CR6** `run_evolve.sh` SHALL invoke `lib/checkpoint_resume.py`'s CLI entrypoint via EXACTLY
+  the command `RUNS_DIR="$RUNS_DIR" RUN_ID="$RUN_ID" "$PY_BIN" "$SKILL_DIR/lib/checkpoint_resume.py"`
+  — no `-c` inline snippet, no positional argv, environment-variable assignment ONLY, mirroring
+  `lib/ledger_reader.py`'s existing `"$PY_BIN" "$SKILL_DIR/lib/ledger_reader.py"` call shape
+  (`run_evolve.sh:60`) exactly, with the sole addition of the two inline env-var assignments this
+  module needs that `ledger_reader.py` does not. This call happens AFTER `$RUN_DIR` is created (so
+  `RUN_ID` = the just-created `$RUN_ID`, correctly excluding itself even though its own now-empty
+  directory already exists under `runs/`) and BEFORE the existing `"$OPENEVOLVE_BIN"` invocation.
+  `run_evolve.sh` SHALL capture this call's stdout verbatim as the checkpoint path (an empty string
+  meaning "no checkpoint found," per REQ-CR8).
 
 - **REQ-CR7** WHEN the REQ-CR6 call returns a non-empty checkpoint path, THE SYSTEM SHALL append
   exactly one additional argument pair, `--checkpoint "<path>"`, to the EXISTING `openevolve-run`
@@ -197,14 +249,17 @@ is touched.
 - **EDGE-CR3** `runs/` exists but is empty, or contains ONLY the current run's own just-created
   directory → REQ-CR4 → `None` → REQ-CR8 fallback.
 - **EDGE-CR4** A prior run directory exists but has no `checkpoints/` subdirectory at all (e.g. it
-  crashed before `checkpoint_interval` iterations, or predates this feature) → skipped per REQ-CR2,
-  next-most-recent candidate considered instead; if none qualifies, REQ-CR4 → `None`.
-- **EDGE-CR5** A prior run directory has a `checkpoints/` subdirectory that is present but EMPTY →
-  same treatment as EDGE-CR4 (skipped, not selected).
+  crashed before `checkpoint_interval` iterations, or predates this feature) → REQ-CR3 returns
+  `None` for it → REQ-CR2's iteration skips it and continues to the next-most-recent run-shaped
+  candidate; if none qualifies, REQ-CR4 → `None`.
+- **EDGE-CR5** A prior run directory has a `checkpoints/` subdirectory that is present but literally
+  EMPTY (zero entries of any kind) → REQ-CR3 returns `None` for it (same treatment as EDGE-CR4:
+  skipped, iteration continues).
 - **EDGE-CR6** A `checkpoints/` directory contains non-`checkpoint_<N>`-shaped entries (a stray
-  file, a hidden dotfile, a directory with a non-numeric suffix) interleaved with valid
-  `checkpoint_<N>` entries → REQ-CR3 ignores the non-matching entries and selects correctly among
-  the valid ones; their mere presence never raises an exception.
+  file, a hidden dotfile, a directory with a non-numeric suffix) interleaved with AT LEAST ONE
+  valid `checkpoint_<N>` entry → REQ-CR3 ignores the non-matching entries and selects correctly
+  among the valid ones; their mere presence never raises an exception. (Contrast EDGE-CR11, where
+  ZERO valid entries survive the filter.)
 - **EDGE-CR7** Multiple prior runs each have checkpoints; the most recent run BY DIRECTORY NAME has
   fewer/lower-numbered checkpoints than an older run (e.g. it crashed early). REQ-CR2 still selects
   the MOST RECENT run (by directory-name recency), NOT the run with the globally highest checkpoint
@@ -220,13 +275,33 @@ is touched.
   directory present under `runs_dir` at scan time (true in practice, since `run_evolve.sh` creates
   `$RUN_DIR` before calling this function, per REQ-CR6) — REQ-CR2's explicit exclusion of
   `current_run_id` prevents a run from ever "resuming from itself."
+- **EDGE-CR10** `runs_dir` contains a real, always-present, non-run-shaped sibling entry that is NOT
+  a run directory at all: `runs/db`, created directly under `runs_dir` by `config.yaml`'s
+  `database.db_path: "runs/db"` (confirmed: `skills/earn/self-improve/config.yaml:129`; this is not
+  hypothetical — it is a real directory openevolve itself writes on every production cycle, e.g.
+  "Loaded database with 82 programs from runs/db" per prior-phase live logs). REQ-CR10's
+  run-directory-name shape filter (`^run-\d{8}T\d{6}Z$`) EXCLUDES `db` from candidacy entirely,
+  before any lexicographic sort and before any `checkpoints/` inspection — it is NEVER selected,
+  NEVER treated as "the most recent candidate," regardless of its name's sort position relative to
+  `run-*` names.
+- **EDGE-CR11** A run-shaped candidate directory's `checkpoints/` subdirectory is non-empty at the
+  OS-listing level (`os.listdir` returns >= 1 entry) but contains ZERO entries matching the
+  `checkpoint_<N>` shape — for example, only a stray macOS `.DS_Store` file (a concrete,
+  environment-grounded risk: this repo's own CLAUDE.md names the production execution host as a
+  Mac Mini, where Finder/Spotlight can drop `.DS_Store` into any browsed/indexed directory). This is
+  NOT the same test as "non-empty `checkpoints/` dir" (contrast EDGE-CR6, where at least one valid
+  entry survives). Per REQ-CR3, this candidate returns `None` (treated identically to EDGE-CR4/
+  EDGE-CR5, NOT as an error) and REQ-CR2's iteration falls through to the next-most-recent
+  run-shaped candidate, continuing until a candidate yields a valid `checkpoint_<N>` entry or the
+  sorted candidate list is exhausted (→ REQ-CR4 → `None`). This function SHALL NEVER return early
+  or raise merely because `checkpoints/` was non-empty at the OS-listing level.
 
 ## "Done" / 4-D Convergence
 
 | dimension | condition |
 |---|---|
 | spec | this document + verification-architecture.md |
-| test | RED: unit tests for `find_latest_checkpoint` covering REQ-CR1-5 and EDGE-CR1-9 all written and failing (module does not yet exist) before any implementation; GREEN: all passing |
+| test | RED: unit tests for `find_latest_checkpoint` covering REQ-CR1-5, REQ-CR10, and EDGE-CR1-11 all written and failing (module does not yet exist) before any implementation; GREEN: all passing |
 | impl | `lib/checkpoint_resume.py::find_latest_checkpoint` + `run_evolve.sh`'s new pre-invocation step (REQ-CR6-9), both present and runnable |
 | impl review | fresh-context `vcsdd-adversary` review of both files returns PASS (lean mode: no BLOCKING findings) |
 | verification | Phase 5: proof obligations in verification-architecture.md discharged; a real, hand-constructed two-run `tmp_path` fixture demonstrates `run_evolve.sh`'s new step selecting and logging the correct `--checkpoint` path end-to-end (or a documented reason it could not be exercised without touching the production `runs/` tree, per EDGE-CR1) |

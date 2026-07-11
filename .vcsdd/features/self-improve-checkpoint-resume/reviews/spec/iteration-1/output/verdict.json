@@ -1,0 +1,43 @@
+{
+  "feature": "self-improve-checkpoint-resume",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c",
+    "mode": "lean",
+    "iterationDir": "reviews/spec/iteration-1"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 1,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/self-improve/run_evolve.sh:82-89", "description": "Confirmed live: today's openevolve-run invocation never passes --checkpoint; --output \"$RUN_DIR\" is fresh every cycle, matching the spec's stated root-cause narrative."},
+        {"type": "file", "location": "skills/earn/self-improve/config.yaml:11,128-129", "description": "Confirmed checkpoint_interval is a top-level Config field (not database.checkpoint_interval) and its own comment already anticipates --checkpoint resume, exactly as the spec's sources claim."},
+        {"type": "file", "location": "/Users/anicca/.anicca-venvs/self-improve/lib/python3.14/site-packages/openevolve/cli.py:49-50,116-121,166-171", "description": "Confirmed live in the actual installed openevolve==0.3.0 venv: --checkpoint is a real CLI flag, a missing/invalid checkpoint path returns exit code 1 (non-zero), and any exception during checkpoint load is caught and also returns 1 -- validating REQ-CR7/EDGE-CR8's claim that failure surfaces through the existing non-zero-exit 'crashed run is inconclusive' handling already in run_evolve.sh (lines 78-91), with no new failure-handling branch needed."},
+        {"type": "file", "location": "/Users/anicca/.anicca-venvs/self-improve/lib/python3.14/site-packages/openevolve/controller.py:451-462", "description": "Confirmed checkpoint directories are actually named checkpoint_{iteration} under <output>/checkpoints/, matching REQ-CR3's assumed checkpoint_<N> naming pattern exactly."},
+        {"type": "file", "location": "skills/earn/self-improve/.gitignore:1-2", "description": "Confirmed runs/ and state/ are gitignored, validating EDGE-CR1's worktree-fixture-only testing constraint."},
+        {"type": "file", "location": "skills/earn/self-improve/lib/ledger_reader.py:1-38, run_evolve.sh:59-64", "description": "Confirmed the '$PY_BIN $SKILL_DIR/lib/<module>.py' shell-call convention this feature claims to mirror is real and already in use for the OBSERVE step."},
+        {"type": "grep", "location": "skills/_search for wallet/.env/ledger/spend-cap references inside the two spec files", "description": "No occurrence found; INV-CR3's claim of zero wallet/ledger/spend-cap touch is consistent with the spec's own text and with promote_gate.sh/lib/promote.py/config.yaml/plist being untouched per the frontmatter's does_not_replace_or_modify list."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002", "FIND-003", "FIND-004"],
+      "evidence": [
+        {"type": "file", "location": "verification-architecture.md:75-92", "description": "Tier assignment (0/1/wire only, no Tier 2/3) is proportionate and justified for ~20 lines of path/existence logic; no unjustified formal machinery introduced, consistent with lean mode."},
+        {"type": "file", "location": "verification-architecture.md:94-102", "description": "Regression table correctly scopes the pre-existing 14-file pytest suite plus a bash -n smoke check; accurate given no pre-existing test imports run_evolve.sh's Python surface."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 4,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

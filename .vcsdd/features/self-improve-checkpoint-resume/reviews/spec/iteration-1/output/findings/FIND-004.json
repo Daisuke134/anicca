@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "PROP-CR9 (verification-architecture.md:59) claims its source-text purity scan for `checkpoint_resume.py` 'mirrors this repo's existing `gate_math.py` AST/text-scan convention.' A grep of `skills/earn/self-improve/tests/` for an AST/text-import-scan test targeting `gate_math.py`'s imports did not locate any such dedicated test file -- only `gate_math.py`'s own module docstring (gate_math.py:1-21) asserts the no-I/O-imports property, without a located enforcing test to confirm the claimed precedent actually exists as a runnable check today. This citation should be corrected to a concrete file:line, or the 'mirrors an existing convention' claim should be dropped so PROP-CR9 stands on its own rather than an unverified precedent.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "59",
+    "snippet": "mirrors this repo's existing `gate_math.py` AST/text-scan convention"
+  },
+  "routeToPhase": "1a/1b"
+}
