@@ -48,13 +48,10 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 
 ## 5. FULL TASK LIST（唯一・atomic・1行1アクション+done。上から実行）
 
-### Phase 0 — 検証役の土台（V/G）
+### Phase 0 — 検証役（★Dais 2026-07-11: 専用 verifier トラックは保留★）
+reality-verifier(V1)は作ったが browser tool 不足で不十分と判明 → **専用トラックは後回し**。当面の検証は **各 loop の VCSDD adversary(Sonnet) + 私の実browser** で行う。CEO 縮退(旧V3)は Phase3 整理へ移動。
 ```
-[x] V1 reality-verifier 作成 — done: profitable-claude/.claude/agents/reality-verifier.md、connector PASS実証、メール送付済
-[ ] V2 reality-verifier を各loopのhealthcheck/self-fixに埋込 — done: verdictで生死判定(heartbeat卒業)
-[ ] V3 CEOを機械予算gateに縮退 — done: kill/spawn/portfolio削除・日次LLM無し
-[ ] G3c 各loopのcheck-config作成 — done: gig/capafy/connector/LM/affiliate/bounty/article 各1
-[ ] G3f verifier3原則をCLAUDE.mdにbake — done: report読まない/実side-effect/binary
+[保留] V1 reality-verifier(browser tool不足) / V2 self-heal埋込 / G3c check-config / G3f CLAUDE.md bake
 ```
 ### Phase 1 — 片付け/引っ越し（M/S/C、Phase2 の前提）
 ```
@@ -75,9 +72,9 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [ ] C6 bounty/affiliate/gig cliの~/anicca参照confine — done
 [ ] C7 confine完了をgrep0件で検証 — done: state/log除き0件
 ```
-### Phase 2 — 各loop修理（1つずつ・verifyまで次に行かない。spec§8対応番号併記）
+### Phase 2 — 各loop修理（1つずつ・VCSDD lean・adversary=Sonnet・私のbrowserで実side-effect確認・verifyまで次に行かない。clip/video/reddit=anicca別CC）
 ```
-[ ] L1  gig 実績>0 — done: 出品/提案/見積/返信をCoconalaで実確認(hang解消後)  ← 今ここ
+[~] L1  gig 実績>0 — hang解消済(M1✅)だが pass14分未完走(applied273のまま)=実出品未確認。残: pass完走しない根因(hook error?)を突き止め→実出品/提案をbrowser確認  ← 今ここ
 [ ] #5  connector 全horizon枠+7日streak — done: 各日Telegram delivered:true+gcal readback
 [ ] #8  life-manager セルフマーケ — done: MoneyPrinterTurbo→Reddit/IG実投稿URL≥1+MRR導線
 [ ] L2  capafy public掲載 — done: status=4 browser確認、"PUBLISHED"嘘出ない
