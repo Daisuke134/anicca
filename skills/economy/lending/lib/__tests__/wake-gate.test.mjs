@@ -29,6 +29,21 @@
 //                                                     lending-orchestrator.test.mjs's own happyDeps()
 //                                                     convention (deps.disburse stub, never a real
 //                                                     payViaFacilitator/facilitator HTTP call).
+//   resolveLenderPrivateKey / env.ANICCA_EVM_PRIVATE_KEY -- REQ-118 (fix: wire the lender's own EVM key
+//                                                     into deps.lenderPrivateKey, which was previously
+//                                                     NEVER resolved on this production path, so
+//                                                     defaultDisburse's payViaFacilitator always crashed
+//                                                     with privateKeyToAccount(undefined)). Every fixture
+//                                                     below that reaches a real executeLoanIssuanceAttempt
+//                                                     call (selectedPair truthy) must now supply EITHER a
+//                                                     resolvable env.ANICCA_EVM_PRIVATE_KEY OR a
+//                                                     deps.resolveLenderPrivateKey override -- an empty
+//                                                     env (the pre-REQ-118 default every fixture used) now
+//                                                     correctly, fail-closedly, refuses instead.
+//   rpcUrl                                        -- REQ-118 (fix: wire a real rpcUrl into deps so
+//                                                     executeLoanIssuanceAttempt's own step-5 stale-
+//                                                     provisioning reconciliation is genuinely reachable,
+//                                                     never rpcCall(undefined, ...)).
 //
 // executeLoanIssuanceAttempt/executeDefaultDetectionSweep themselves are NEVER stubbed here -- they are
 // the REAL, unmodified sprint-2 functions (lending-orchestrator.mjs), invoked by the REAL wake-gate.mjs
@@ -40,10 +55,30 @@ import assert from "node:assert/strict";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import http from "node:http";
 import { fileURLToPath } from "node:url";
+import { privateKeyToAccount } from "viem/accounts";
 import { runWakeGate } from "../../scripts/wake-gate.mjs";
 
 const NOW_MS = 1_800_000_000_000;
+
+// REQ-118: a throwaway, never-funded, deterministic test key -- resolves through the REAL
+// resolve-identity.mjs::resolveEvmPrivateKey priority-① env-override path (env.ANICCA_EVM_PRIVATE_KEY),
+// exactly like a real lender instance's own $ANICCA_EVM_PRIVATE_KEY override would. Every fixture below
+// that needs a real executeLoanIssuanceAttempt call (selectedPair truthy) supplies this via `env`.
+const TEST_LENDER_KEY = "0x" + "7".repeat(64);
+
+// FIND-001 fix (impl-review iteration-1): every fixture below that resolves TEST_LENDER_KEY as the
+// lender's signing key must now also register that citizen's OWN walletAddress.evm as THIS key's own
+// derived signer address -- the new wake-gate.mjs guard refuses whenever the resolved key's derived
+// address does not match the selected lenderId's own registered wallet. Computed once, real viem
+// derivation (never hand-picked/arbitrary), so every "happy path" fixture below stays genuinely happy
+// under the new guard.
+const TEST_LENDER_ADDRESS = privateKeyToAccount(TEST_LENDER_KEY).address;
+
+// A second, DIFFERENT throwaway test key -- used only by the FIND-001 mismatch fixture below to prove
+// a resolved key that belongs to a DIFFERENT citizen than the selected lenderId is refused.
+const OTHER_INSTANCE_KEY = "0x" + "8".repeat(64);
 
 function tmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), "anicca-lending-wake-gate-"));
@@ -181,7 +216,7 @@ test("PROP-117c fixture 2: a registry with exactly ONE self-funded, EVM-walleted
 
 test('PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wake selects the correct pair and executeLoanIssuanceAttempt genuinely returns {status:"active"}, never "refused"', async () => {
   const dir = tmpDir();
-  const LENDER_WALLET = "0x1111111111111111111111111111111111111111";
+  const LENDER_WALLET = TEST_LENDER_ADDRESS; // FIND-001: must equal TEST_LENDER_KEY's own derived signer address
   const BORROWER_WALLET = "0x2222222222222222222222222222222222222222";
   seedCitizens(dir, [fullCitizen("citizen-lender", LENDER_WALLET), fullCitizen("citizen-borrower", BORROWER_WALLET)]);
   const deps = baseDeps(dir, {
@@ -197,7 +232,7 @@ test('PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wak
     }),
   });
 
-  const result = await runWakeGate({ argv: [], env: {}, deps });
+  const result = await runWakeGate({ argv: [], env: { ANICCA_EVM_PRIVATE_KEY: TEST_LENDER_KEY }, deps });
 
   assert.deepEqual(result.selectedPair, { lenderId: "citizen-lender", borrowerId: "citizen-borrower" });
   assert.ok(result.issuance, "executeLoanIssuanceAttempt must have been invoked");
@@ -221,11 +256,11 @@ test('PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wak
 test("a fully-populated deps.getCitizen override ({...registryCitizen, balanceUsd}) is threaded through to a genuine, non-refused executeLoanIssuanceAttempt outcome", async () => {
   const dir = tmpDir();
   seedCitizens(dir, [
-    fullCitizen("citizen-lender", "0x1111111111111111111111111111111111111111"),
+    fullCitizen("citizen-lender", TEST_LENDER_ADDRESS), // FIND-001: must equal TEST_LENDER_KEY's own derived signer address
     fullCitizen("citizen-borrower", "0x2222222222222222222222222222222222222222"),
   ]);
   const citizens = {
-    "citizen-lender": { ...fullCitizen("citizen-lender", "0x1111111111111111111111111111111111111111"), balanceUsd: 10 },
+    "citizen-lender": { ...fullCitizen("citizen-lender", TEST_LENDER_ADDRESS), balanceUsd: 10 },
     "citizen-borrower": { ...fullCitizen("citizen-borrower", "0x2222222222222222222222222222222222222222"), balanceUsd: 0.1 },
   };
   const deps = baseDeps(dir, {
@@ -238,7 +273,7 @@ test("a fully-populated deps.getCitizen override ({...registryCitizen, balanceUs
     }),
   });
 
-  const result = await runWakeGate({ argv: [], env: {}, deps });
+  const result = await runWakeGate({ argv: [], env: { ANICCA_EVM_PRIVATE_KEY: TEST_LENDER_KEY }, deps });
 
   assert.equal(result.issuance.status, "active", "a getCitizen override wiring must reach a genuine outcome, never a silent missing-field refusal");
 });
@@ -253,7 +288,7 @@ test("a fully-populated deps.getCitizen override ({...registryCitizen, balanceUs
 
 test("REQ-117 step 6: executeLoanIssuanceAttempt is invoked with the real 2-argument ({lenderId, borrowerId, nowMs}, deps) shape -- never throws TypeError: getCitizen is not a function", async () => {
   const dir = tmpDir();
-  const LENDER_WALLET = "0x3333333333333333333333333333333333333333";
+  const LENDER_WALLET = TEST_LENDER_ADDRESS; // FIND-001: must equal TEST_LENDER_KEY's own derived signer address
   const BORROWER_WALLET = "0x4444444444444444444444444444444444444444";
   seedCitizens(dir, [fullCitizen("citizen-lender", LENDER_WALLET), fullCitizen("citizen-borrower", BORROWER_WALLET)]);
   const deps = baseDeps(dir, {
@@ -266,6 +301,252 @@ test("REQ-117 step 6: executeLoanIssuanceAttempt is invoked with the real 2-argu
     }),
   });
 
-  await assert.doesNotReject(runWakeGate({ argv: [], env: {}, deps }));
+  await assert.doesNotReject(runWakeGate({ argv: [], env: { ANICCA_EVM_PRIVATE_KEY: TEST_LENDER_KEY }, deps }));
   assert.equal(readLedgerRows(deps.ledgerFile).some((r) => r.status === "active"), true, "the real executeLoanIssuanceAttempt call was genuinely reached, not skipped");
+});
+
+// ===========================================================================
+// REQ-118 (lending-lender-key-wiring fix): scripts/wake-gate.mjs's own real production path NEVER
+// resolved+injected deps.lenderPrivateKey into executeLoanIssuanceAttempt -- every fixture above only
+// ever exercised defaultDisburse via a deps.disburse STUB, so the real
+// defaultDisburse->payViaFacilitator->privateKeyToAccount(undefined) crash (reproduced live: a real
+// loan row, loan_Franklin_1, is currently stuck at status "disbursement_uncertain" in production
+// loans.jsonl) was never once exercised by this file's own pre-existing coverage. These tests close
+// that gap: (1) fail-closed -- an unresolvable key refuses BEFORE executeLoanIssuanceAttempt is ever
+// called, zero rows, zero risk of an undefined key reaching payViaFacilitator; (2) the resolved key is
+// genuinely forwarded into executeLoanIssuanceAttempt's own deps (mocking resolve-identity via
+// deps.resolveLenderPrivateKey); (3) idempotent recovery -- a stuck disbursement_uncertain row from a
+// lender's own prior crashed attempt is reconciled (via a real rpcUrl, now also wired) and a fresh
+// issuance succeeds, WITHOUT a second real disbursement for the already-uncertain row (money-safety:
+// the mock facilitator/disburse stub below proves exactly one disburse call happens).
+// ===========================================================================
+
+// Minimal local JSON-RPC mock server for eth_getLogs/eth_blockNumber -- reused verbatim from
+// lending-verify.test.mjs's own sprint-1 precedent (startMockRpc), so reconcileProvisionalDisbursement's
+// REAL production default (deps.reconcile omitted, only deps.rpcUrl supplied) is genuinely reachable
+// here too. FIND-004 fix (impl-review iteration-1): each handler now receives the REAL `params` array
+// from the request (previously discarded), so a handler can genuinely inspect fromBlock/toBlock and
+// reject an over-wide range exactly like a real provider would -- a handler that throws surfaces as a
+// genuine JSON-RPC error response (never a silently-swallowed success), so rpcCall's own
+// `if (json.error ...) throw` path is genuinely exercised too.
+function startMockRpc(handlers) {
+  return new Promise((resolve) => {
+    const server = http.createServer((req, res) => {
+      let body = "";
+      req.on("data", (c) => (body += c));
+      req.on("end", () => {
+        const { method, id, params } = JSON.parse(body || "{}");
+        const handler = handlers[method];
+        res.setHeader("Content-Type", "application/json");
+        if (!handler) {
+          res.end(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32601, message: `no mock handler for ${method}` } }));
+          return;
+        }
+        try {
+          res.end(JSON.stringify({ jsonrpc: "2.0", id, result: handler(params) }));
+        } catch (e) {
+          res.end(JSON.stringify({ jsonrpc: "2.0", id, error: { code: -32000, message: (e && e.message) || String(e) } }));
+        }
+      });
+    });
+    server.listen(0, "127.0.0.1", () => {
+      const { port } = server.address();
+      resolve({ url: `http://127.0.0.1:${port}`, close: () => new Promise((r) => server.close(r)) });
+    });
+  });
+}
+
+test("REQ-118 fail-closed: an unresolvable lender EVM key (empty env, no ANICCA_HOME wallet, no override) refuses BEFORE executeLoanIssuanceAttempt is ever called -- zero ledger rows, never risks privateKeyToAccount(undefined) on the real disbursement path", async () => {
+  const dir = tmpDir();
+  const LENDER_WALLET = "0x5555555555555555555555555555555555555555";
+  const BORROWER_WALLET = "0x6666666666666666666666666666666666666666";
+  seedCitizens(dir, [fullCitizen("citizen-lender", LENDER_WALLET), fullCitizen("citizen-borrower", BORROWER_WALLET)]);
+  const emptyHome = tmpDir(); // no .automaton/wallet.json, no wallet.json anywhere under it
+  const deps = baseDeps(dir, {
+    fetchImpl: fetchImplForBalances({ [LENDER_WALLET]: 10, [BORROWER_WALLET]: 0.1 }),
+    // If this were ever reached with an undefined lenderPrivateKey, this stub throwing proves it --
+    // but the whole point of this test is that it must NEVER be called at all.
+    disburse: async () => {
+      throw new Error("disburse must never be called when the lender key is unresolvable");
+    },
+  });
+
+  const result = await runWakeGate({
+    argv: [],
+    env: { ANICCA_HOME: emptyHome, HOME: emptyHome }, // deliberately NOT the legacy owner path either
+    deps,
+  });
+
+  assert.deepEqual(result.selectedPair, { lenderId: "citizen-lender", borrowerId: "citizen-borrower" }, "a genuinely eligible pair must still be found -- the refusal is about the KEY, not eligibility");
+  assert.deepEqual(result.issuance, { status: "refused", reason: "lender_private_key_unresolved" });
+  assert.equal(readLedgerRows(deps.ledgerFile).length, 0, "zero rows -- executeLoanIssuanceAttempt (and therefore any provisioning/disbursement) must never have been invoked");
+  assert.deepEqual(result.sweep, { defaulted: [] }, "the unconditional default-detection sweep must still run");
+});
+
+test("REQ-118: a resolved lenderPrivateKey (mocking resolve-identity via deps.resolveLenderPrivateKey) is genuinely forwarded into executeLoanIssuanceAttempt's own deps, gating a real 'active' outcome", async () => {
+  const dir = tmpDir();
+  const LENDER_WALLET = TEST_LENDER_ADDRESS; // FIND-001: must equal TEST_LENDER_KEY's own derived signer address
+  const BORROWER_WALLET = "0x8888888888888888888888888888888888888888";
+  seedCitizens(dir, [fullCitizen("citizen-lender", LENDER_WALLET), fullCitizen("citizen-borrower", BORROWER_WALLET)]);
+  let resolveCalls = 0;
+  const deps = baseDeps(dir, {
+    fetchImpl: fetchImplForBalances({ [LENDER_WALLET]: 10, [BORROWER_WALLET]: 0.1 }),
+    resolveLenderPrivateKey: ({ env }) => {
+      resolveCalls += 1;
+      assert.ok(env, "resolveLenderPrivateKey must be called with the real env, mirroring resolve-identity.mjs's own {env} shape");
+      return TEST_LENDER_KEY;
+    },
+    disburse: async ({ loanRow }) => ({
+      ok: true,
+      tx: "0xmockresolvedkeyfixturetx000000000000000000000000000000001",
+      to: loanRow.borrower_wallet,
+      amountBase: Math.round(loanRow.principal_usd * 1e6),
+    }),
+  });
+
+  const result = await runWakeGate({ argv: [], env: {}, deps });
+
+  assert.equal(resolveCalls, 1, "the resolve-identity seam must be invoked exactly once for this attempt");
+  assert.equal(result.issuance.status, "active", "the mocked-resolved key must genuinely gate a real executeLoanIssuanceAttempt call through to disbursement");
+});
+
+test("REQ-118 idempotent recovery: a stuck disbursement_uncertain row from a prior crashed attempt (the exact production symptom -- loan_Franklin_1) is reconciled via a REAL rpcUrl on the next wake, never double-disbursed, and a fresh issuance for the SAME lender/borrower pair succeeds", async () => {
+  const dir = tmpDir();
+  const LENDER_ID = "citizen-lender";
+  const BORROWER_ID = "citizen-borrower";
+  const LENDER_WALLET = TEST_LENDER_ADDRESS; // FIND-001: must equal TEST_LENDER_KEY's own derived signer address
+  const BORROWER_WALLET = "0xaAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA";
+  seedCitizens(dir, [fullCitizen(LENDER_ID, LENDER_WALLET), fullCitizen(BORROWER_ID, BORROWER_WALLET)]);
+
+  const ledgerFile = path.join(dir, "loans.jsonl");
+  const stuckRow = {
+    loan_id: `loan_${LENDER_ID}_1`,
+    lender_id: LENDER_ID,
+    borrower_id: BORROWER_ID,
+    lender_wallet: LENDER_WALLET,
+    borrower_wallet: BORROWER_WALLET,
+    status: "disbursement_uncertain",
+    principal_usd: 0.02,
+    total_due_usd: 0.021,
+    provisioned_ms: NOW_MS - 60_000,
+    error: "Cannot read properties of undefined (reading 'slice')", // the REAL production symptom
+  };
+  fs.writeFileSync(ledgerFile, JSON.stringify(stuckRow) + "\n");
+
+  // FIND-004 fix (impl-review iteration-1): a RANGE-RESTRICTING mock -- genuinely inspects
+  // fromBlock/toBlock and REJECTS "earliest" or any span wider than a real provider's own limit
+  // (mirrors record-earn.mjs's own documented 2,000-10,000-block constraint) -- so this test can only
+  // pass if defaultReconcile's own FIND-002 fix (lending-orchestrator.mjs) genuinely sends a bounded,
+  // numeric-hex fromBlock/toBlock pair. Also serves eth_blockNumber, which defaultReconcile's own
+  // bounded-window computation now calls before eth_getLogs.
+  const LATEST_BLOCK = 30_000_000;
+  const MAX_PROVIDER_SPAN_BLOCKS = 10_000; // the loosest real-provider limit record-earn.mjs's own comment documents
+  const rpc = await startMockRpc({
+    eth_blockNumber: () => "0x" + LATEST_BLOCK.toString(16),
+    eth_getLogs: (params) => {
+      const filter = (params || [])[0] || {};
+      const { fromBlock, toBlock } = filter;
+      if (fromBlock === "earliest" || typeof fromBlock !== "string" || !fromBlock.startsWith("0x")) {
+        throw new Error("block range too large: fromBlock must be a bounded numeric block, never 'earliest'");
+      }
+      if (typeof toBlock !== "string" || !toBlock.startsWith("0x")) {
+        throw new Error("block range too large: toBlock must be a bounded numeric block, never 'latest' alongside a numeric fromBlock");
+      }
+      const from = Number(BigInt(fromBlock));
+      const to = Number(BigInt(toBlock));
+      if (to - from > MAX_PROVIDER_SPAN_BLOCKS) {
+        throw new Error(`block range too large: requested ${to - from} blocks exceeds this provider's own ${MAX_PROVIDER_SPAN_BLOCKS}-block limit`);
+      }
+      // The real-world case this fixture reproduces: the crash happened BEFORE any facilitator/
+      // on-chain call ever went out, so there is genuinely nothing to find on-chain yet.
+      return [];
+    },
+  });
+  let disburseCalls = 0;
+  try {
+    const deps = baseDeps(dir, {
+      ledgerFile,
+      fetchImpl: fetchImplForBalances({ [LENDER_WALLET]: 10, [BORROWER_WALLET]: 0.1 }),
+      rpcUrl: rpc.url,
+      disburse: async ({ loanRow }) => {
+        disburseCalls += 1;
+        return {
+          ok: true,
+          tx: "0xrecoveryfixturetx00000000000000000000000000000000000001",
+          to: loanRow.borrower_wallet,
+          amountBase: Math.round(loanRow.principal_usd * 1e6),
+        };
+      },
+    });
+
+    const result = await runWakeGate({ argv: [], env: { ANICCA_EVM_PRIVATE_KEY: TEST_LENDER_KEY }, deps });
+
+    assert.deepEqual(result.selectedPair, { lenderId: LENDER_ID, borrowerId: BORROWER_ID });
+    assert.equal(result.issuance.status, "active", "the stuck row must be reconciled out of the way, then a fresh attempt must succeed");
+    assert.equal(disburseCalls, 1, "money-safety: exactly ONE real disburse call for this wake -- the stuck row is reconciled (read-only), never re-disbursed");
+
+    const rows = readLedgerRows(ledgerFile);
+    const staleFollowUp = rows.find((r) => r.loan_id === stuckRow.loan_id && r.status === "disbursement_failed");
+    assert.ok(staleFollowUp, "the stuck loan_Franklin_1-equivalent row must be resolved to disbursement_failed (no matching on-chain transfer found) BEFORE any new sequence number is consumed");
+    const freshActive = rows.find((r) => r.loan_id === `loan_${LENDER_ID}_2` && r.status === "active");
+    assert.ok(freshActive, "a FRESH loan row (next sequence number) must land active -- the stuck row must never permanently block this lender");
+  } finally {
+    await rpc.close();
+  }
+});
+
+// ===========================================================================
+// FIND-001 fix (impl-review iteration-1, critical): resolveLenderPrivateKey's own resolved key must
+// be the SELECTED lenderId's own key -- not merely SOME resolvable key. Reproduces the exact real
+// production scenario the finding names: Franklin2's own wake (resolving Franklin2's own EVM key)
+// while findSelectedPair's deterministic scan over the shared registry/ledger selects {lenderId:
+// "Franklin", ...} -- Franklin2 must NEVER sign a loan the ledger attributes to Franklin.
+// ===========================================================================
+
+test('FIND-001 fix: Franklin2-wake-selects-Franklin-as-lender -- the resolved key belongs to a DIFFERENT citizen than the selected lenderId -- refused reason "lender_not_this_instance", disburse never called, no signing attempted', async () => {
+  const dir = tmpDir();
+  // "Franklin" is the selected pair's own registered lender -- its OWN registered wallet is
+  // TEST_LENDER_ADDRESS (TEST_LENDER_KEY's own derived signer address), exactly as a correctly
+  // functioning wake for Franklin itself would resolve.
+  const FRANKLIN_WALLET = TEST_LENDER_ADDRESS;
+  const FRANKLIN2_BORROWER_WALLET = "0xbbbb11111111111111111111111111111111bbbb";
+  seedCitizens(dir, [fullCitizen("Franklin", FRANKLIN_WALLET), fullCitizen("Franklin2", FRANKLIN2_BORROWER_WALLET)]);
+  const deps = baseDeps(dir, {
+    fetchImpl: fetchImplForBalances({ [FRANKLIN_WALLET]: 10, [FRANKLIN2_BORROWER_WALLET]: 0.1 }),
+    // This wake is running under FRANKLIN2's OWN env -- resolveLenderPrivateKey correctly (per
+    // resolve-identity.mjs's own fail-closed, ANICCA_HOME-scoped contract) resolves FRANKLIN2's OWN
+    // key here (OTHER_INSTANCE_KEY), which does NOT derive to FRANKLIN_WALLET.
+    resolveLenderPrivateKey: () => OTHER_INSTANCE_KEY,
+    disburse: async () => {
+      throw new Error("disburse must never be called when the resolved key belongs to a different citizen than the selected lenderId");
+    },
+  });
+
+  const result = await runWakeGate({ argv: [], env: {}, deps });
+
+  assert.deepEqual(result.selectedPair, { lenderId: "Franklin", borrowerId: "Franklin2" }, "the deterministic pair-selection scan is unaffected by which instance's key resolves -- the refusal is about the KEY, not eligibility");
+  assert.deepEqual(result.issuance, { status: "refused", reason: "lender_not_this_instance" });
+  assert.equal(readLedgerRows(deps.ledgerFile).length, 0, "zero rows -- executeLoanIssuanceAttempt (and therefore any provisioning/disbursement/signing) must never have been invoked");
+  assert.deepEqual(result.sweep, { defaulted: [] }, "the unconditional default-detection sweep must still run");
+});
+
+test("FIND-001 fix, matching case: the resolved key's derived signer address equals the selected lenderId's own registered wallet -- proceeds to a genuine 'active' outcome, exactly like the pre-guard behavior", async () => {
+  const dir = tmpDir();
+  const LENDER_WALLET = TEST_LENDER_ADDRESS; // genuinely THIS instance's own key/wallet pair
+  const BORROWER_WALLET = "0xcccc22222222222222222222222222222222cccc";
+  seedCitizens(dir, [fullCitizen("citizen-lender", LENDER_WALLET), fullCitizen("citizen-borrower", BORROWER_WALLET)]);
+  const deps = baseDeps(dir, {
+    fetchImpl: fetchImplForBalances({ [LENDER_WALLET]: 10, [BORROWER_WALLET]: 0.1 }),
+    disburse: async ({ loanRow }) => ({
+      ok: true,
+      tx: "0xmatchingsignerfixturetx0000000000000000000000000000000001",
+      to: loanRow.borrower_wallet,
+      amountBase: Math.round(loanRow.principal_usd * 1e6),
+    }),
+  });
+
+  const result = await runWakeGate({ argv: [], env: { ANICCA_EVM_PRIVATE_KEY: TEST_LENDER_KEY }, deps });
+
+  assert.equal(result.issuance.status, "active", "a genuinely matching signer/lender_wallet pair must proceed exactly as before this fix");
+  assert.equal(readLedgerRows(deps.ledgerFile).some((r) => r.status === "active"), true);
 });

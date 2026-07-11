@@ -33,6 +33,7 @@ import { verifyRepayment, reconcileProvisionalDisbursement } from "./lending-ver
 import { LOANS_LEDGER_PATH } from "./lending-path.mjs";
 import { withGigLock } from "../../gig/lib/lock.mjs";
 import { payViaFacilitator } from "../../gig/lib/escrow.mjs";
+import { deriveSignerAddress, addressesEqual, normalizeTxHash } from "./lending-signer.mjs";
 
 function errorMessage(e) {
   return (e && e.message) || String(e);
@@ -69,10 +70,17 @@ function findLastRowForLoanId(loanRows, loanId) {
 
 // The "active" row shape (REQ-106's own step-3 definition) landed via either step 9's own fresh
 // disbursement or step 5's reconciliation of a stale prior attempt — identical fields either way.
+//
+// impl-review iteration-4, FIND-301 (critical): this is the SINGLE storage site both routes share, so
+// normalizing `tx_hash` here (via `normalizeTxHash`, `lending-signer.mjs`) covers BOTH the happy-path
+// disbursement's facilitator-format `disburseResult.tx` (escrow.mjs's own `settle.json.transaction`,
+// an external, third-party-serialized string) and reconciliation's own RPC-derived
+// `reconcileResult.txHash` (`extractTxHash`'s `log.transactionHash`) — the two uncoordinated sources
+// this fix's casing gap spans.
 function activeStatusFields(txHash, nowMs) {
   return {
     status: "active",
-    tx_hash: txHash,
+    tx_hash: normalizeTxHash(txHash),
     issued_ms: nowMs,
     due_ms: nowMs + LOAN_REPAYMENT_WINDOW_DAYS * 86400000,
   };
@@ -100,22 +108,44 @@ function findHighestSequenceRow(loanRows, lenderId) {
 // unterminated, resolve it via a REAL on-chain lookup BEFORE this attempt computes/uses any new
 // sequence number. Returns {ok:false, reason} on a reconciliation-lookup failure (zero rows appended,
 // zero sequence consumed) or {ok:true} once the ledger is clean (nothing to resolve, or resolved).
-async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, reconcile) {
+//
+// impl-review iteration-2, FIND-102 (critical): a {found:false} reconcile result is only trustworthy as
+// "this row genuinely never disbursed" when the row's own age is still within what the reconciliation
+// window (REQ-120's bounded eth_getLogs scan) could POSSIBLY have seen. If the row's real broadcast
+// happened (e.g. a network timeout during waitForTransactionReceipt, not a pre-signing crash) but is
+// OLDER than the lookback window, a {found:false} here is a FALSE NEGATIVE — trusting it would append
+// disbursement_failed and let the caller proceed to a FRESH disbursement for the same borrower, an
+// actual double-spend of real money. Fix: before trusting {found:false}, compare the row's own age
+// (nowMs - provisioned_ms) against the reconciliation window's real-time span (tied to the SAME
+// LENDING_RECONCILE_LOOKBACK_BLOCKS this exact `reconcile` call would have used — see
+// reconcileWindowSpanMs below). A too-old row REFUSES (reason: stale_row_beyond_reconcile_window) —
+// zero rows appended, zero sequence consumed — rather than being silently marked disbursement_failed;
+// recovering it requires a wider manual scan, never an automatic re-disburse.
+//
+// impl-review iteration-3, FIND-201 (critical): `loanRows` was already a parameter of this function
+// but was never forwarded into `reconcile()` — without it, reconcileProvisionalDisbursement has no way
+// to reject a matched Transfer whose tx_hash is already recorded against a DIFFERENT loan_id (the same
+// cross-ledger replay hazard verifyRepayment already guards against). Now threaded through.
+async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, reconcile, deps) {
   const staleRow = findHighestSequenceRow(loanRows, lenderId);
   if (!staleRow || (staleRow.status !== "provisioning" && staleRow.status !== "disbursement_uncertain")) {
     return { ok: true };
   }
   let reconcileResult;
   try {
-    reconcileResult = await reconcile({ loanRow: staleRow });
+    reconcileResult = await reconcile({ loanRow: staleRow, loanRows });
   } catch (e) {
     return { ok: false, reason: "reconciliation_failed", error: errorMessage(e) };
   }
   if (reconcileResult && reconcileResult.found) {
     appendLoanRow(ledgerFile, { ...staleRow, ...activeStatusFields(reconcileResult.txHash, nowMs) });
-  } else {
-    appendLoanRow(ledgerFile, { ...staleRow, status: "disbursement_failed" });
+    return { ok: true };
   }
+  const rowAgeMs = nowMs - staleRow.provisioned_ms;
+  if (!Number.isFinite(staleRow.provisioned_ms) || !Number.isFinite(rowAgeMs) || rowAgeMs > reconcileWindowSpanMs(deps)) {
+    return { ok: false, reason: "stale_row_beyond_reconcile_window" };
+  }
+  appendLoanRow(ledgerFile, { ...staleRow, status: "disbursement_failed" });
   return { ok: true };
 }
 
@@ -157,21 +187,164 @@ function evaluateKillSwitches({ loanRows, borrowerId, nowMs }) {
   return { paused: false, reason: null };
 }
 
-async function defaultReconcile({ loanRow }, deps) {
+// FIND-002 (critical, impl-review iteration-1): this codebase's own prior FIND-702 fix
+// (skills/self/founder-loop/record-earn.mjs) already discovered -- against this EXACT RPC
+// (mainnet.base.org) -- that public JSON-RPC providers reject/truncate an eth_getLogs call spanning
+// too many blocks (record-earn.mjs's own comment: "commonly 2,000-10,000 blocks"). record-earn.mjs
+// caps its own scan span at 9000 blocks; that SAME proven-safe value is copied here verbatim (never
+// re-derived) rather than "earliest", which this fix's own deps.rpcUrl wiring makes reachable against
+// a real provider for the first time -- an unbounded "earliest" scan is exactly what would have
+// permanently blocked the real stuck loan_Franklin_1 row's every future wake with
+// reason:"reconciliation_failed" (the failure mode REQ-118b explicitly says this fix must resolve).
+// Overridable via LENDING_RECONCILE_LOOKBACK_BLOCKS for an operator whose wake cadence needs a wider
+// window (still bounded by the provider's own eth_getLogs range limit -- widening this must stay
+// within whatever that real limit is, never re-introduce "earliest").
+const DEFAULT_RECONCILE_LOOKBACK_BLOCKS = 9000; // ~5h at Base's ~2s/block; matches record-earn.mjs's own FIND-702 MAX_SPAN for this exact RPC
+
+// Base's own documented average block time -- the SAME ~2s/block figure DEFAULT_RECONCILE_LOOKBACK_BLOCKS's
+// own comment above already derives its "~5h" claim from, now made an explicit, reusable constant
+// (impl-review iteration-2, FIND-102) so resolveStaleProvisioning's own age-vs-window guard is
+// genuinely TIED to the same lookback-blocks figure the reconciliation scan itself uses, never a
+// separately-guessed number.
+const BASE_BLOCK_TIME_SECONDS = 2;
+
+// The SAME lookback-blocks resolution defaultReconcile already performs (deps override -> env override
+// -> DEFAULT_RECONCILE_LOOKBACK_BLOCKS) -- extracted so resolveStaleProvisioning's own age guard (below)
+// computes the window's real-time span against the IDENTICAL figure a real reconcile call would use,
+// never a duplicated/divergent computation.
+function resolveReconcileLookbackBlocks(deps) {
+  return (deps && deps.reconcileLookbackBlocks) || Number(process.env.LENDING_RECONCILE_LOOKBACK_BLOCKS) || DEFAULT_RECONCILE_LOOKBACK_BLOCKS;
+}
+
+// impl-review iteration-2, FIND-102: the real-time span the reconciliation window can possibly have
+// scanned, in milliseconds -- exported so tests can assert the age guard's own boundary against the
+// SAME constant this module computes it from, never a hand-copied literal.
+export function reconcileWindowSpanMs(deps) {
+  return resolveReconcileLookbackBlocks(deps) * BASE_BLOCK_TIME_SECONDS * 1000;
+}
+
+async function fetchLatestBlockNumber(rpcUrl) {
+  const res = await fetch(rpcUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_blockNumber", params: [] }),
+  });
+  const json = await res.json();
+  if (json.error || json.result === undefined) {
+    throw new Error(`eth_blockNumber: ${JSON.stringify(json.error || json)}`);
+  }
+  return Number(BigInt(json.result));
+}
+
+// impl-review iteration-3, FIND-201: `loanRows` is now accepted (forwarded from resolveStaleProvisioning
+// via `reconcile({loanRow, loanRows})`) and passed straight through to reconcileProvisionalDisbursement
+// on both branches below, so its own cross-ledger tx_hash-replay guard has the full ledger to check
+// against.
+async function defaultReconcile({ loanRow, loanRows }, deps) {
+  // deps.reconcileFromBlock is a TEST-ONLY seam (mirrors the pre-existing convention) -- production
+  // never sets it, so production always computes a genuinely bounded window below.
+  if (deps.reconcileFromBlock) {
+    return reconcileProvisionalDisbursement({
+      loanRow,
+      loanRows,
+      rpcUrl: deps.rpcUrl,
+      fromBlock: deps.reconcileFromBlock,
+      toBlock: deps.reconcileToBlock || "latest",
+    });
+  }
+  const lookbackBlocks = resolveReconcileLookbackBlocks(deps);
+  const latest = await fetchLatestBlockNumber(deps.rpcUrl);
+  const from = Math.max(0, latest - lookbackBlocks);
   return reconcileProvisionalDisbursement({
     loanRow,
+    loanRows,
     rpcUrl: deps.rpcUrl,
-    fromBlock: deps.reconcileFromBlock || "earliest",
-    toBlock: "latest",
+    // toBlock pinned to the SAME snapshot as fromBlock (never "latest" alongside a numeric fromBlock)
+    // -- keeps the requested range exactly bounded, never silently wider by the time the provider
+    // serves the request.
+    fromBlock: "0x" + from.toString(16),
+    toBlock: "0x" + latest.toString(16),
   });
 }
 
+// The chain identifier a Base-mainnet-configured x402 facilitator's own `/supported` response is
+// expected to advertise (CAIP-2 format, matches escrow.mjs's own `network: eip155:${chainId}` payload
+// field, CHAIN_ID_BASE_MAINNET=8453) -- see services/facilitator/test-facilitator-contract.mjs's own
+// `supported.kinds?.some((k) => k.network === "eip155:...")` precedent for this exact response shape.
+const FACILITATOR_MAINNET_NETWORK = "eip155:8453";
+
+// FIND-103 (high, impl-review iteration-2): asks the facilitator itself, live, whether it is genuinely
+// mainnet-configured -- never assumed from our own GIG_CHAIN env var or a port-liveness check alone.
+// deps.fetchImpl (mirrors this repo's own established injectable-fetch convention --
+// _shared/lib/usdc.mjs, wake-gate.mjs's buildDefaultGetCitizen, sol-gate.mjs -- never a bespoke seam)
+// defaults to the real global fetch; production always uses it. Throws (never returns a boolean) so
+// defaultDisburse's own single try/catch (REQ-106's in-process-exception discipline, already in
+// runLockedIssuance) uniformly converts an unreachable/misconfigured facilitator into the SAME
+// disbursement_uncertain outcome every other pre-signing guard already produces.
+async function preflightFacilitatorMainnet(facilitatorUrl, deps) {
+  const fetchImpl = deps.fetchImpl || globalThis.fetch;
+  let supported;
+  try {
+    const res = await fetchImpl(`${facilitatorUrl}/supported`);
+    supported = await res.json();
+  } catch (e) {
+    throw new Error(
+      `facilitator_not_mainnet: could not reach ${facilitatorUrl}/supported to confirm mainnet network before signing real lending money (${errorMessage(e)})`
+    );
+  }
+  const advertisesMainnet = Array.isArray(supported && supported.kinds) && supported.kinds.some((k) => k && k.network === FACILITATOR_MAINNET_NETWORK);
+  if (!advertisesMainnet) {
+    throw new Error(
+      `facilitator_not_mainnet: ${facilitatorUrl}/supported does not advertise network "${FACILITATOR_MAINNET_NETWORK}" (Base mainnet) -- refusing to sign real lending money against an unverified/non-mainnet facilitator`
+    );
+  }
+}
+
 async function defaultDisburse({ loanRow }, deps) {
+  // FIND-001 (critical, impl-review iteration-1) defensive backstop: wake-gate.mjs's own pre-lock
+  // guard is the PRIMARY defense (refuses BEFORE executeLoanIssuanceAttempt is ever called) -- this is
+  // a SECOND, independent check at the actual point of signing, so a mismatched deps.lenderPrivateKey
+  // can never reach payViaFacilitator even if executeLoanIssuanceAttempt is ever invoked directly
+  // (bypassing wake-gate.mjs -- e.g. a future direct caller or test).
+  const resolvedSignerAddress = deriveSignerAddress(deps.lenderPrivateKey);
+  if (!addressesEqual(resolvedSignerAddress, loanRow.lender_wallet)) {
+    throw new Error(
+      `lender_signer_mismatch: resolved lenderPrivateKey's derived signer address does not match loanRow.lender_wallet (loan_id=${loanRow.loan_id}) -- refusing to sign`
+    );
+  }
+
+  // FIND-003 (medium, impl-review iteration-1): never settle real money against a non-mainnet/unset
+  // GIG_CHAIN. deps.gigChain lets a test explicitly exercise this real function's own control flow
+  // without mutating process.env (mirrors deps.reconcileFromBlock's own test-seam convention);
+  // production always reads the real process.env.GIG_CHAIN. escrow.mjs's own GIG_CHAIN constant
+  // defaults to testnet when unset -- that default must NEVER be silently treated as "go ahead" on
+  // this path, since this feature exists specifically to gate the colony's first REAL on-chain loan.
+  const gigChain = deps.gigChain !== undefined ? deps.gigChain : process.env.GIG_CHAIN;
+  if (gigChain !== "base" && deps.allowNonMainnetChain !== true) {
+    throw new Error(
+      `lending_chain_not_mainnet: GIG_CHAIN must be "base" to disburse real lending money (got ${JSON.stringify(gigChain)}) -- refusing to settle against a non-mainnet/unset chain`
+    );
+  }
+
+  const facilitatorUrl = deps.facilitatorUrl || process.env.GIG_FACILITATOR_URL || "http://127.0.0.1:8405";
+
+  // FIND-103 (high, impl-review iteration-2): GIG_CHAIN=='base' proves OUR OWN code intends to settle
+  // against mainnet -- it says nothing about which network the facilitator PROCESS actually listening at
+  // `facilitatorUrl` is configured for. lsof-style "is a process bound to this port" checks (this fix's
+  // own prior operator precondition, REQ-121) cannot distinguish a genuinely mainnet-configured
+  // facilitator from one still silently serving testnet config on the same port (WITNESS-RUNBOOK.md's
+  // own documented history: PID 94412 on port 8405 WAS the testnet facilitator on 2026-07-07). A
+  // mainnet-config-only-in-our-own-process assumption must never be trusted for real money -- ask the
+  // facilitator itself, every real disbursement attempt (never cached: a facilitator swapped back to
+  // testnet config between wakes must be caught immediately, not trusted from a stale prior check).
+  // Fail-closed: unreachable/malformed/non-mainnet /supported response -> refuse, never sign.
+  await preflightFacilitatorMainnet(facilitatorUrl, deps);
+
   return payViaFacilitator({
     privateKey: deps.lenderPrivateKey,
     to: loanRow.borrower_wallet,
     amountBase: Math.round(loanRow.principal_usd * 1e6),
-    facilitatorUrl: deps.facilitatorUrl || process.env.GIG_FACILITATOR_URL || "http://127.0.0.1:8405",
+    facilitatorUrl,
   });
 }
 
@@ -181,7 +354,7 @@ async function runLockedIssuance({ ledgerFile, lenderId, borrowerId, nowMs, getC
 
   // Step 5.
   let loanRows = readLoanRows(ledgerFile);
-  const staleResolution = await resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, reconcile);
+  const staleResolution = await resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, reconcile, deps);
   if (!staleResolution.ok) {
     return { status: "refused", reason: staleResolution.reason, error: staleResolution.error };
   }
@@ -341,9 +514,14 @@ export async function executeRepaymentClaim({ loanId, txHash, nowMs = Date.now()
 
     const repaidUsd = +(( lastRow.repaid_usd || 0) + verifyResult.credited).toFixed(6);
     const reachedFull = repaidUsd >= lastRow.total_due_usd;
+    // impl-review iteration-4, FIND-301 (critical): the repayment-row tx_hash storage site — the
+    // caller-supplied `txHash` (already independently verified by `verifyRepayment` above) is normalized
+    // the SAME way as `activeStatusFields`'s own disbursement-side tx_hash, so a later replay-guard
+    // comparison never depends on the caller's own casing choice.
+    const normalizedTxHash = normalizeTxHash(txHash);
     const newRow = reachedFull
-      ? { ...lastRow, repaid_usd: repaidUsd, status: "repaid", tx_hash: txHash, on_time: nowMs <= lastRow.due_ms }
-      : { ...lastRow, repaid_usd: repaidUsd, status: "active", tx_hash: txHash };
+      ? { ...lastRow, repaid_usd: repaidUsd, status: "repaid", tx_hash: normalizedTxHash, on_time: nowMs <= lastRow.due_ms }
+      : { ...lastRow, repaid_usd: repaidUsd, status: "active", tx_hash: normalizedTxHash };
     appendLoanRow(ledgerFile, newRow);
     return { credited: verifyResult.credited, status: newRow.status };
   });

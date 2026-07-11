@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-202",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "specs/verification-architecture.md's own Proof Obligations table (lines 14-26) and Verification Strategy section (lines 28-42) were never updated for impl-review iteration-2's own REQ-122 (exact-value Transfer match, FIND-101) and REQ-123 (live facilitator mainnet preflight, FIND-103), nor for the FIND-102 age-guard amendment to REQ-120. The table still ends at PROP-121b and the Verification Strategy prose still says '5 new tests (2 in wake-gate.test.mjs, 3 in lending-orchestrator.test.mjs)' -- iteration-2's own changelog (specs/behavioral-spec.md:15-27) documents 6 additional new tests across lending-verify.test.mjs/lending-orchestrator.test.mjs for exactly these three fixes, none of which have a corresponding PROP-1xx id or Tier classification in the governing verification-architecture document. behavioral-spec.md itself (the authoritative spec) WAS correctly amended with REQ-122/REQ-123 -- this is specifically a drift between the two governing spec documents this feature's own VCSDD process requires to stay in lockstep (verification-architecture.md is supposed to be the proof-obligation ledger the Tier/tool columns hold implementers and reviewers accountable to).",
+  "evidence": {
+    "filePath": ".vcsdd/features/lending-lender-key-wiring/specs/verification-architecture.md",
+    "lineRange": "14-42",
+    "snippet": "| PROP-121a | ... |\n| PROP-121b | ... |\n(table ends here -- no PROP-122x for REQ-122's exact-value match, no PROP-123x for REQ-123's facilitator preflight, no amended PROP-120 entry for FIND-102's age guard)"
+  },
+  "recommendation": "Add PROP-122a/b (exact-value match positive/negative cases) and PROP-123a/b/c (mainnet-advertised pass, non-mainnet refuse, unreachable-fetch fail-closed) rows to the Proof Obligations table, tied to their actual lending-verify.test.mjs/lending-orchestrator.test.mjs test names, and update the Verification Strategy paragraph's test count from 5 to 11 total iteration fixes.",
+  "routeToPhase": "1b"
+}

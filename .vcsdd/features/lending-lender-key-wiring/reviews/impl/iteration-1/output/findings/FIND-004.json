@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "verification_readiness",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "title": "PROP-118c's 'never permanently blocks / never double-disburses' claim is proven only against a fully-permissive local mock RPC, not against anything resembling the real target endpoint's constraints",
+  "description": "verification-architecture.md's PROP-118c (line 14) claims: 'A stuck disbursement_uncertain row is reconciled via a real rpcUrl, never permanently blocks the lender, never double-disburses' -- Tier 1, node:test with a mock JSON-RPC server. The mock server (wake-gate.test.mjs lines 314-335, reused verbatim from lending-verify.test.mjs's own startMockRpc) responds to any eth_getLogs call unconditionally via `handler()` with no inspection of the `fromBlock`/`toBlock`/filter params at all -- it cannot distinguish a well-formed, narrow-range request from the actual production request (`fromBlock:'earliest', toBlock:'latest'`, see FIND-002) that a real provider is likely to reject. This means the chosen verification tool (a permissive local HTTP mock) is structurally incapable of proving the 'never permanently blocks' half of PROP-118c against the real mainnet.base.org endpoint this fix is about to be exercised against for the first time -- the property is asserted PASS in the verdict this feature's own state.json records, but the underlying claim about real-world reachability is unverified, not merely low-risk.",
+  "evidence": {
+    "filePath": "skills/economy/lending/lib/__tests__/wake-gate.test.mjs",
+    "lineRange": "311-335",
+    "snippet": "function startMockRpc(handlers) {\n  return new Promise((resolve) => {\n    const server = http.createServer((req, res) => {\n      ...\n      const handler = handlers[method];\n      ...\n      res.end(JSON.stringify({ jsonrpc: \"2.0\", id, result: handler() }));\n    });\n    ...\n  });\n}"
+  },
+  "additionalEvidence": [
+    { "filePath": ".vcsdd/features/lending-lender-key-wiring/specs/verification-architecture.md", "lineRange": "14, 18-26", "note": "PROP-118c claims 'never permanently blocks', Tier 1 only, node:test mock JSON-RPC server -- no Tier 2/3 real-endpoint check for this specific property despite it being the exact mechanism this fix newly makes reachable" }
+  ],
+  "routeToPhase": "2b"
+}

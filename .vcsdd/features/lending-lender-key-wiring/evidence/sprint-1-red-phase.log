@@ -1,0 +1,78 @@
+✔ PROP-117c fixture 1: a registry where every self-funded citizen fails wallet.evm===true produces zero candidate pairs, never invokes executeLoanIssuanceAttempt, still runs executeDefaultDetectionSweep exactly once, and is a clean no-op (2.080416ms)
+✔ PROP-117c fixture 2: a registry with exactly ONE self-funded, EVM-walleted, co-located citizen produces zero candidate pairs via the lenderId!==borrowerId impossibility (never the wallet.evm-exclusion path), still runs executeDefaultDetectionSweep exactly once (0.746333ms)
+✔ PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wake selects the correct pair and executeLoanIssuanceAttempt genuinely returns {status:"active"}, never "refused" (4.569042ms)
+✔ a fully-populated deps.getCitizen override ({...registryCitizen, balanceUsd}) is threaded through to a genuine, non-refused executeLoanIssuanceAttempt outcome (1.061583ms)
+✔ REQ-117 step 6: executeLoanIssuanceAttempt is invoked with the real 2-argument ({lenderId, borrowerId, nowMs}, deps) shape -- never throws TypeError: getCitizen is not a function (1.993291ms)
+✖ REQ-118 fail-closed: an unresolvable lender EVM key (empty env, no ANICCA_HOME wallet, no override) refuses BEFORE executeLoanIssuanceAttempt is ever called -- zero ledger rows, never risks privateKeyToAccount(undefined) on the real disbursement path (2.099209ms)
+✖ REQ-118: a resolved lenderPrivateKey (mocking resolve-identity via deps.resolveLenderPrivateKey) is genuinely forwarded into executeLoanIssuanceAttempt's own deps, gating a real 'active' outcome (1.534084ms)
+✖ REQ-118 idempotent recovery: a stuck disbursement_uncertain row from a prior crashed attempt (the exact production symptom -- loan_Franklin_1) is reconciled via a REAL rpcUrl on the next wake, never double-disbursed, and a fresh issuance for the SAME lender/borrower pair succeeds (5.331541ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 5
+ℹ fail 3
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 219.544
+
+✖ failing tests:
+
+test at skills/economy/lending/lib/__tests__/wake-gate.test.mjs:337:1
+✖ REQ-118 fail-closed: an unresolvable lender EVM key (empty env, no ANICCA_HOME wallet, no override) refuses BEFORE executeLoanIssuanceAttempt is ever called -- zero ledger rows, never risks privateKeyToAccount(undefined) on the real disbursement path (2.099209ms)
+  AssertionError [ERR_ASSERTION]: Expected values to be strictly deep-equal:
+  + actual - expected
+  
+    {
+  +   error: 'disburse must never be called when the lender key is unresolvable',
+  +   loanId: 'loan_citizen-lender_1',
+  +   status: 'disbursement_uncertain'
+  -   reason: 'lender_private_key_unresolved',
+  -   status: 'refused'
+    }
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/lending-lender-key/skills/economy/lending/lib/__tests__/wake-gate.test.mjs:359:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: true,
+    code: 'ERR_ASSERTION',
+    actual: { status: 'disbursement_uncertain', loanId: 'loan_citizen-lender_1', error: 'disburse must never be called when the lender key is unresolvable' },
+    expected: { status: 'refused', reason: 'lender_private_key_unresolved' },
+    operator: 'deepStrictEqual',
+    diff: 'simple'
+  }
+
+test at skills/economy/lending/lib/__tests__/wake-gate.test.mjs:364:1
+✖ REQ-118: a resolved lenderPrivateKey (mocking resolve-identity via deps.resolveLenderPrivateKey) is genuinely forwarded into executeLoanIssuanceAttempt's own deps, gating a real 'active' outcome (1.534084ms)
+  AssertionError [ERR_ASSERTION]: the resolve-identity seam must be invoked exactly once for this attempt
+  
+  0 !== 1
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/lending-lender-key/skills/economy/lending/lib/__tests__/wake-gate.test.mjs:387:10)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 0,
+    expected: 1,
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+test at skills/economy/lending/lib/__tests__/wake-gate.test.mjs:391:1
+✖ REQ-118 idempotent recovery: a stuck disbursement_uncertain row from a prior crashed attempt (the exact production symptom -- loan_Franklin_1) is reconciled via a REAL rpcUrl on the next wake, never double-disbursed, and a fresh issuance for the SAME lender/borrower pair succeeds (5.331541ms)
+  AssertionError [ERR_ASSERTION]: the stuck row must be reconciled out of the way, then a fresh attempt must succeed
+  + actual - expected
+  
+  + 'refused'
+  - 'active'
+  
+      at TestContext.<anonymous> (file:///Users/anicca/anicca/.worktrees/lending-lender-key/skills/economy/lending/lib/__tests__/wake-gate.test.mjs:437:12)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'refused',
+    expected: 'active',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }

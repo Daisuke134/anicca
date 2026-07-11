@@ -6,6 +6,15 @@
 // application, to the `from` side (that file's own `from` topic is an unchecked substring — resolves
 // FIND-105's honest-attribution requirement). NEVER escrow.mjs, which contains no Transfer-log parsing
 // at all (corrects this feature's own prior FIND-007 mischaracterization).
+//
+// impl-review iteration-4, FIND-301 (critical): both replay-guard comparisons below (`alreadyCredited`,
+// `alreadyRecorded`) now use `txHashesEqual` (`lending-signer.mjs`) instead of raw `===` — a tx_hash
+// reaching loans.jsonl from the facilitator-format disbursement route vs. this module's own
+// `eth_getLogs`-derived `extractTxHash` route has no shared, code-enforced casing contract, and an
+// unnormalized comparison would silently fail to match, reopening FIND-201's cross-loan misattribution
+// hazard on a casing difference alone.
+import { txHashesEqual } from "./lending-signer.mjs";
+
 const TRANSFER_TOPIC = "0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef";
 // Base mainnet USDC — the same canonical value already declared in economy/gig/lib/escrow.mjs's own
 // USDC_BASE_MAINNET (REQ-107: this feature is Base-mainnet-USDC-only this increment); duplicated as a
@@ -82,7 +91,7 @@ function extractTxHash(log) {
  * loans.jsonl — same-loan OR cross-loan replay (resolves FIND-202).
  */
 export async function verifyRepayment({ txHash, expectedFrom, expectedTo, rpcUrl, loanRows }) {
-  const alreadyCredited = (loanRows || []).some((row) => row && row.tx_hash === txHash);
+  const alreadyCredited = (loanRows || []).some((row) => row && txHashesEqual(row.tx_hash, txHash));
   if (alreadyCredited) return { credited: 0, rejected: true };
 
   let receipt;
@@ -116,18 +125,65 @@ export async function verifyRepayment({ txHash, expectedFrom, expectedTo, rpcUrl
   return { credited: +value.toFixed(6), rejected: false };
 }
 
+// A malformed/non-hex log.data (mirrors safeBigIntNumber's own fail-closed discipline above) makes
+// BigInt() throw — caught here so a corrupted/misbehaving RPC response never crashes reconciliation,
+// it just fails that ONE log's own value-match (the log is correctly treated as non-matching, never as
+// a false positive).
+function safeBigIntValue(hexValue) {
+  try {
+    return BigInt(hexValue);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * reconcileProvisionalDisbursement — recovers a crashed/uncertain issuance attempt's own REAL transfer
  * via an on-chain block-range scan, WITHOUT ever disbursing a second time (REQ-106, resolves FIND-103/
  * FIND-201). Read-only: never invokes a transfer/settle call itself.
+ *
+ * impl-review iteration-2, FIND-101 (critical): matchesTransferLog alone only proves address+from+to
+ * topic equality — it says nothing about whether the MATCHED transfer is actually THIS loan's own
+ * disbursement, vs. some other, unrelated USDC transfer that happens to have moved between the exact
+ * same two wallets within the lookback window (e.g. a completely different payment, or a repayment of a
+ * PRIOR loan between the same lender/borrower pair). A value-blind match risks misattributing an
+ * unrelated transfer as proof of THIS row's own disbursement (silently landing "active" with the WRONG
+ * tx_hash while the intended borrower never actually received THIS loan's own principal_usd) — money
+ * mis-accounting, not a UI nit. Fix: only a transfer whose OWN decoded value EXACTLY equals
+ * loanRow.principal_usd (converted to USDC's 6-decimal base units, the SAME `Math.round(principal_usd *
+ * 1e6)` convention `defaultDisburse` itself already uses to construct amountBase) counts as evidence of
+ * THIS loan's own disbursement. An unrelated-value transfer between the same two wallets is correctly
+ * left unmatched — the row stays whatever `resolveStaleProvisioning`'s caller decides (never falsely
+ * "settled").
+ *
+ * impl-review iteration-3, FIND-201 (critical): an exact wallet-pair + exact-value match is STILL not
+ * sufficient proof of THIS row's own disbursement when the SAME borrower has multiple stuck rows —
+ * computeLoanCapUsd returns a flat cap for every cold-start attempt, so repeat stuck-row cycles to the
+ * same struggling borrower share both the identical wallet pair AND the identical value FIND-101's own
+ * fix now trusts. Fix: reuse verifyRepayment's own already-proven cross-ledger replay guard
+ * (lending-verify.mjs:84-86) here too — a candidate log whose own tx_hash is ALREADY recorded against
+ * ANY row in loanRows (this loan's own row or a DIFFERENT loan_id) is never trusted as evidence of this
+ * row's disbursement. Fail-closed: such a candidate is treated as non-matching, never as a match — the
+ * row stays unconfirmed rather than risk misattributing another loan's real transfer as this one's.
  */
-export async function reconcileProvisionalDisbursement({ loanRow, rpcUrl, fromBlock, toBlock }) {
+export async function reconcileProvisionalDisbursement({ loanRow, loanRows, rpcUrl, fromBlock, toBlock }) {
   const fromTopic = padAddressToTopic(loanRow.lender_wallet);
   const toTopic = padAddressToTopic(loanRow.borrower_wallet);
   const logs = await rpcCall(rpcUrl, "eth_getLogs", [
     { address: USDC_BASE_MAINNET, topics: [TRANSFER_TOPIC, fromTopic, toTopic], fromBlock, toBlock },
   ]);
-  const matchingLog = (logs || []).find((log) => matchesTransferLog(log, fromTopic, toTopic));
+  const expectedValueBase = BigInt(Math.round(loanRow.principal_usd * 1e6));
+  const matchingLog = (logs || []).find((log) => {
+    if (!matchesTransferLog(log, fromTopic, toTopic)) return false;
+    const valueBase = safeBigIntValue(log.data);
+    if (valueBase === null || valueBase !== expectedValueBase) return false;
+    // FIND-201: same guard verifyRepayment already applies — a tx_hash already bound to ANY loan row
+    // (same-loan or cross-loan) can never be counted as proof of a DIFFERENT/this reconciliation's own
+    // disbursement.
+    const txHash = extractTxHash(log);
+    const alreadyRecorded = (loanRows || []).some((row) => row && txHashesEqual(row.tx_hash, txHash));
+    return !alreadyRecorded;
+  });
   if (!matchingLog) return { found: false };
   return { found: true, txHash: extractTxHash(matchingLog) };
 }
