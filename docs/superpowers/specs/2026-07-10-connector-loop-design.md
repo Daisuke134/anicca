@@ -126,6 +126,45 @@ Dais 検証: loop の DID/RESULT 報告を信用してはいけない。実 side
 | 別 | ✅ | clip blur self-heal（2026-07-11）: 根因=360p fallback+解像度床なし+gate がアスペクト比のみ → 上流根治(≥720p 必須+1080x1920 正規化+4Mbps床) + gate 増強(両方向実証) + metrics/lessons/evaluator penalty 配線 | ~/anicca `f435998`、同一動画で 202×360→1080×1920 実測 |
 | 9 | ⬜ | 製品化: connector module → cloud Life Manager（課金 thesis 確定後、別 spec） | — |
 
+## 8.1 アーキ実態 + 片付け TODO（2026-07-11 launchctl 実測、Dais「幻覚でなく真実を bake」）
+
+**loop の走り方 = 3層**: ①launchd目覚まし(機械上、~/Library/LaunchAgents、一意 Label 必須) → ②repo 内のレシピ(script) → ③tmux headless claude(働き手)。「どこで動く」=②のレシピがどの repo か。同名 Label は片方しか起動しない(=衝突)。
+
+**AS-IS（実測、1行1ループ、レシピの repo）**
+```
+gig          anicca(earn/gig)          bank    🔴hang(anicca版にenv-u欠落→API-key promptで24hフリーズ。PC版は修正済だが未登録=死蔵)
+capafy       anicca(self/capafy-loop)  bank    🔴審査中
+article      (未live)                   bank    🔴未merge
+life-manager PC + anicca 両方(重複)     bank    🔴二重起動+空稼働
+affiliate    PC(human-funded)          bank    🔴logout(reCAPTCHA)
+bounty       PC(human-funded)          bank    🟡idle
+connector    PC(human-funded)          bank    🟡予約実/枠不足
+explorer     PC(human-funded)          bank    🟡収益0
+clip/video/reddit/clip-promote  anicca(earn,self)  crypto/SNS  🔴(別CC担当)
+founder/Franklin/pm/sol/self-improve  anicca(runtime,earn)  crypto  🟡(別CC担当)
+```
+
+**TO-BE（理想＝spec §5/§8境界に一致、1行1ループ）**
+```
+profitable-claude(bank): gig capafy article life-manager affiliate bounty connector explorer
+anicca(crypto、別CC):     founder Franklin pm sol clip video reddit self-improve
+規則: 1ループ=1目覚まし=1repoのレシピ。PC目覚ましは Label 接頭辞 hf- で衝突ゼロ。二重なし。
+```
+
+**片付け TODO（M=移行、V=検証役、この spec §8 #5-#9.5 と併走。crypto は触らない=別CC）**
+```
+M1 gig を anicca→PC に一本化(PC版env-u修正済を起こす、anicca版退役bootout、Label hf-gig-*)
+M2 capafy を anicca→PC に移管(closed folder、Label hf-capafy-*)
+M3 life-manager 二重起動を PC に一本化(anicca側 life-manager-loop 目覚ましを退役)
+M4 PC 全ループの Label を hf-* に改名(衝突ゼロ、独立)
+M5 外部依存 confine(~/.openclaw/~/.cloak/~/anicca 参照を repo内 copy に、grep 0件で検証)
+V1 reality-verifier(現実を見る検証役) = profitable-claude/.claude/agents/reality-verifier.md ✅作成済(connector PASS実証、メール送付済)
+V2 reality-verifier を各ループの healthcheck/self-fix に埋込(report でなく実side-effectで生死判定)
+V3 CEO を薄い機械予算gateに(kill/spawn判断なし、日次LLM廃止)
+```
+
+**修理順（Dais 2026-07-11、1つずつ・verify するまで次へ行かない）**: gig → clip → connector → life-manager → capafy → article/affiliate/bounty/explorer。各ループ: 根因fix → reality-verifier で実side-effect確認 → その検証を self-heal に内蔵。
+
 ## 10. DONE CONDITIONS（自己欺瞞防止、Dais 2026-07-10 指示。宣言には「実行コマンド+出力」の記録必須）
 
 **共通原則**: done = ①実世界の結果を**独立経路で読み返せる**（gcal は `gog calendar events get <id>`、応募はサイト実ページ/確認メール、送信は message id、売上は on-chain/Stripe 実記録）②1回きりでなく **cadence streak** で判定 ③fresh adversary（Opus）が evidence を読み返して PASS ④「PROPOSED を書いた」「draft を作った」「enqueue した」は done ではない。evidence の無い done 宣言 = 罪。
