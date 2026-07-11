@@ -63,7 +63,11 @@ know if you want me to...'. If you catch yourself about to offer options, that m
 enough information to decide right now — so decide. Execute a REAL swap only if the edge clears the fee \
 hurdle; otherwise WAIT and say why in one line. Every pass ends in exactly one of those two states — a \
 filled trade or a one-line WAIT reason — never an open question. Keep a note for next session. Mind model \
-spend — your fuel is the same wallet."
+spend — your fuel is the same wallet. 5) EVERY tool call, including TradingSignal, is paid for via x402 \
+from this same wallet, whether or not you end up trading — on a small bankroll this bleeds you quietly \
+even while you correctly WAIT. Use judgment: if you checked TradingSignal very recently and nothing has \
+plausibly moved enough to change the verdict, skip re-checking it this pass and just WAIT with a note — \
+don't pay for the same answer twice in a row."
 
 # --- SOL_GATE pre-gate (franklin-sol-evolvable-edge, REQ-001..018) ---------------------------
 # Evolvable, earnings-gated exploration layer sitting ALONGSIDE the existing pass. In the DEFAULT

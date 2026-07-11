@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "verification_tool_mismatch",
+  "severity": "major",
+  "description": "gig_judge.py's prompt instructs the fresh judge to 'Navigate the running CloakBrowser daily-driver (CDP :9222) to EACH of the ground-truth URLs' and then 'capture a screenshot via cdp_snapshot.py', but no navigation primitive exists anywhere in the reviewed codebase. scripts/cdp_snapshot.py only connects to whatever tab is CURRENTLY open (get_tab() picks the existing coconala.com page tab or the first page tab) and calls Page.captureScreenshot / Runtime.evaluate('document.location.href') on it -- it contains no Page.navigate call and takes no target-URL argument. The comment 'parity with cdp_lib48.get_tab' at cdp_snapshot.py:35 references a file that does not exist anywhere in this repo (verified via grep across the whole anicca tree -- only matches in unrelated chat-history jsonl, not source). So the ONLY committed, testable capability the fresh spawn is given is 'screenshot whatever is currently loaded'; actual navigation to the 3+ distinct ground-truth URLs (and the ~8 additional per-claim detail pages the judge visited in the recorded live run) depends entirely on the freshly-spawned claude improvising its own ad hoc CDP Page.navigate websocket calls via the Bash tool, on its own initiative, with zero guidance, helper script, or test coverage for that specific capability. In the one recorded live E2E run this worked (evidence/green-phase.log), but nothing in the repo makes this reproducible or verifiable across future runs/model versions -- a judge that fails to navigate (e.g. silently screenshots a stale/wrong tab) would still be able to emit a well-formed JudgementResult JSON and the wrapper (gig_reality_verify.sh) would accept it at face value (see FIND-002).",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig_judge.py",
+    "lineRange": "96-101",
+    "snippet": "Navigate the running CloakBrowser daily-driver (CDP :9222, already logged in as mtdc) to EACH of the\nground-truth URLs below. For each page, capture a screenshot via:\n  python3 ~/anicca/skills/earn/gig/scripts/cdp_snapshot.py <pass_id> <seq> reality_verify_check\nthen read the ACTUAL rendered DOM/text (not the claim text) to see what is really there."
+  },
+  "secondaryEvidence": {
+    "filePath": "skills/earn/gig/scripts/cdp_snapshot.py",
+    "lineRange": "33-90",
+    "note": "get_tab()/snapshot() only capture the current tab; no Page.navigate anywhere in the file."
+  },
+  "routeToPhase": "2b"
+}

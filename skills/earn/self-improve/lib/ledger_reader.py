@@ -82,6 +82,41 @@ DEFAULT_LEDGER_PATH = resolve_ledger_path()[0]
 SWAP_SOURCES = frozenset({"swap-eth-usdc", "swap", "swap-usdc-eth"})
 
 
+def filter_own_wallet_rows(rows: list, own_wallets) -> list:
+    """ledger-uniqueness REQ-003: wallet-based allow-list filter, mirroring
+    `skills/_shared/lib/ledger.mjs::filterOwnWalletRows` exactly. Pure, read-only — never opens
+    a file, never mutates `rows` or any row dict (returns a NEW list via a list comprehension).
+
+    `own_wallets` is `None`, a single wallet string, or an iterable of wallet strings (this
+    instance's own wallet address(es)). `None`/empty means "no known own wallet", so every
+    walleted row is excluded (fail-closed). A row with no `wallet` key (or `wallet: None`) —
+    Solana/Hyperliquid/narrate rows never stamp an EVM wallet — always passes through: it is
+    never cross-instance-attributable by this check. Comparison is case-insensitive. This is an
+    ALLOW-list (not the SHARED blacklist pinned in record-earn.mjs:39), so it fails closed
+    against any foreign wallet, not only the three currently-pinned ones."""
+    if own_wallets is None:
+        wallets_list = []
+    elif isinstance(own_wallets, str):
+        wallets_list = [own_wallets]
+    else:
+        wallets_list = list(own_wallets)
+    own_set = {w.lower() for w in wallets_list if isinstance(w, str) and w}
+
+    kept = []
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        wallet = row.get("wallet")
+        if wallet is None:
+            kept.append(row)  # walletless row: always passes
+            continue
+        if not isinstance(wallet, str) or wallet == "":
+            continue  # no proof of ownership
+        if wallet.lower() in own_set:
+            kept.append(row)
+    return kept
+
+
 def read_ledger(path: Optional[str] = None) -> list:
     """Read every JSONL line into a dict. `path=None` resolves fresh via `resolve_ledger_path()`
     (REQ-RL2/RL3: an explicit `path` always overrides; the default is NEVER a frozen constant).
@@ -148,12 +183,22 @@ def confirmed_net_series(
     path: Optional[str] = None,
     window_start_ts: Optional[float] = None,
     window_end_ts: Optional[float] = None,
+    own_wallets=None,
 ) -> list:
     """(ts, net_usdc) pairs for every `is_confirmed` row (REQ-RL6), optionally restricted to
     `[window_start_ts, window_end_ts)`. Powers REQ-RL8's `gate_math.realized_window_split` input
     and REQ-RL14's data_source row-count check. `path=None` resolves fresh (REQ-RL2/RL3, same
-    convention as `read_ledger`/`realized_summary`)."""
+    convention as `read_ledger`/`realized_summary`).
+
+    ledger-uniqueness REQ-003: `own_wallets` (default `None`) is a NEW, OPT-IN, non-breaking
+    parameter. `None` (the default) applies NO filtering — behavior is byte-identical to this
+    function's pre-feature implementation. When provided (a wallet string, an iterable of
+    wallet strings, or `[]`), `filter_own_wallet_rows` is applied to the rows read from the
+    ledger BEFORE `is_confirmed` classification, scoping the series to THIS instance's own
+    wallet (+ walletless rows) and excluding contaminated foreign-wallet rows."""
     rows = read_ledger(path)
+    if own_wallets is not None:
+        rows = filter_own_wallet_rows(rows, own_wallets)
     series = []
     for row in rows:
         ts = row.get("ts")
@@ -181,6 +226,7 @@ def realized_summary(
     path: Optional[str] = None,
     window_start_ts: Optional[float] = None,
     window_end_ts: Optional[float] = None,
+    own_wallets=None,
 ) -> dict:
     """The OBSERVE-step summary `run_evolve.sh` logs before every evolve run: real, ledger-derived
     realized net USD + the count of isProfitable rows, optionally restricted to
@@ -191,13 +237,22 @@ def realized_summary(
 
     `path=None` (REQ-RL3) resolves FRESH via `resolve_ledger_path()` on every call — never a
     module-level constant frozen at import time — and the returned dict carries `resolved`/
-    `resolution_source` (REQ-RL4) so a caller/log line can see WHICH resolution branch fired."""
+    `resolution_source` (REQ-RL4) so a caller/log line can see WHICH resolution branch fired.
+
+    ledger-uniqueness REQ-003: `own_wallets` (default `None`) is a NEW, OPT-IN, non-breaking
+    parameter, identical convention to `confirmed_net_series` above — `None` never filters
+    (byte-identical to pre-feature behavior); when provided, scopes `total_rows`/
+    `profitable_row_count`/`realized_net_usd` to THIS instance's own wallet(s) + walletless
+    rows, excluding contaminated foreign-wallet rows (the live 0xa3cdd4/0xb9dd3b67 contamination
+    documented in behavioral-spec.md's Evidence trail)."""
     resolved = True
     resolution_source = "explicit_path"
     if path is None:
         path, resolved, resolution_source = resolve_ledger_path()
 
     rows = read_ledger(path)
+    if own_wallets is not None:
+        rows = filter_own_wallet_rows(rows, own_wallets)
     total_rows = len(rows)
     profitable_rows = []
     for row in rows:

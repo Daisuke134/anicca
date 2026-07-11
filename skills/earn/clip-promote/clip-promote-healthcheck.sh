@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (native installer, not homebrew)
 # clip-promote-healthcheck.sh — OS-level supervisor (launchd, every 5min). If the always-on
 # clip-promote-core tmux session is dead, restart it. Ported verbatim (v5 pattern) from
 # clip-healthcheck.sh / gig-healthcheck.sh — same incidents, same fixes, applied up front instead
@@ -22,6 +22,18 @@ SOCK="/tmp/anicca-clip-promote-tmux.sock"; SESSION="anicca-clip-promote-core"
 HB="$HOME/.openclaw/state/.clip-promote-core-last-pass"; START="$HOME/.openclaw/state/.clip-promote-core-last-start"; STALE_MIN=250
 LOG="$HOME/.openclaw/logs/clip-promote-core-healthcheck.log"; mkdir -p "$(dirname "$LOG")"
 RESTART_LOG="$HOME/.openclaw/state/.clip-promote-core-restart-log"
+
+# FIND-033 (2026-07-10, life-manager-loop 3-day outage; see healthcheck-lib.sh for the full
+# writeup): under low free disk, macOS can't grow its swapfile and every fresh fork()/exec() on the
+# box — including this script's own tmux+claude respawn — starts failing, so a DEAD session can
+# restart-loop indefinitely even though the loop's own code is fine. That shared fix
+# (hc_reclaim_disk_if_low) was applied to capafy/reddit/life-manager-loop via hc_run() but never
+# ported to this standalone script, even though clip-promote-core-healthcheck.log shows the exact
+# same signature (instant DEAD-after-restart, recurring for hours) since at least 2026-07-06.
+# Source just the disk-reclaim helper (function defs only, no top-level side effects) so a restart
+# always gets a real chance to fork.
+# shellcheck source=/Users/operator/anicca/skills/self/healthcheck-lib.sh
+source "$HOME/anicca/skills/self/healthcheck-lib.sh" 2>/dev/null || true
 
 LOCK_DIR="/tmp/.clip-promote-healthcheck.lock"
 if ! mkdir "$LOCK_DIR" 2>/dev/null; then
@@ -55,14 +67,25 @@ restart() {
   echo "$now" >> "$RESTART_LOG"
   pkill -f "claude --name $SESSION" 2>/dev/null || true
   pkill -f "tmux -S $SOCK new-session" 2>/dev/null || true
+  command -v hc_reclaim_disk_if_low >/dev/null 2>&1 && hc_reclaim_disk_if_low
+  command -v hc_reap_stale_cozempic_guards >/dev/null 2>&1 && hc_reap_stale_cozempic_guards
   sleep 1
   echo "$(date '+%F %T') ${1:-clip-promote-core DEAD} → restarting" >> "$LOG"
   bash "$HOME/anicca/skills/earn/clip-promote/clip-promote-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
+HB_MTIME="$(stat -f %m "$HB" 2>/dev/null || echo 0)"
+START_MTIME_CHECK="$(stat -f %m "$START" 2>/dev/null || echo 0)"
+
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "clip-promote-core DEAD"
-elif [ ! -f "$HB" ]; then
+elif [ ! -f "$HB" ] || [ "$HB_MTIME" -lt "$START_MTIME_CHECK" ]; then
+  # No completed pass yet UNDER THE CURRENT SESSION -- either $HB was never written, or it's a
+  # leftover from a PRIOR session (its mtime predates this session's $START marker). Either way
+  # this is NOT evidence of staleness; use the post-restart grace window instead of comparing
+  # $HB's raw age. (2026-07-11 incident: a freshly-restarted, actively-working session was killed
+  # mid-flight because the pre-restart $HB was days-stale and this branch only special-cased a
+  # totally-ABSENT $HB, not a stale-but-present one that predated the restart.)
   if [ ! -f "$START" ]; then
     # $START marker itself missing (e.g. wiped by external cleanup). Both "now" and epoch-0
     # fallbacks caused real incidents (now = STALE detection permanently disabled; epoch-0 =
@@ -71,15 +94,14 @@ elif [ ! -f "$HB" ]; then
     touch "$START"
     echo "$(date '+%F %T') clip-promote-core: .last-start marker missing -- reseeded now, will re-check next pass" >> "$LOG"
   else
-    START_MTIME="$(stat -f %m "$START")"
-    START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
+    START_AGE="$(( ($(date +%s) - START_MTIME_CHECK) / 60 ))"
     if [ "$START_AGE" -ge "$STALE_MIN" ]; then
       restart "clip-promote-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
     else
       echo "$(date '+%F %T') clip-promote-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
     fi
   fi
-elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
+elif [ "$(( ($(date +%s) - HB_MTIME) / 60 ))" -ge "$STALE_MIN" ]; then
   restart "clip-promote-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
   echo "$(date '+%F %T') clip-promote-core ALIVE+fresh" >> "$LOG"

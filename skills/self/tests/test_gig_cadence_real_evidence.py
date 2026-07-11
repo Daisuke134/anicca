@@ -71,6 +71,11 @@ def _reference_ts_to_jst_date(ts):
             return None
     if isinstance(ts, str) and ts:
         s = ts.strip()
+        if s.isdigit():
+            try:
+                return datetime.datetime.fromtimestamp(int(s), tz=JST).date().isoformat()
+            except (OSError, OverflowError, ValueError):
+                return None
         if s.endswith("Z"):
             s = s[:-1] + "+00:00"
         try:

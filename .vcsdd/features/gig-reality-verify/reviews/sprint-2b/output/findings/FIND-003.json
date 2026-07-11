@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "gig_judge.py's prompt instructs 'For each page, capture a screenshot via cdp_snapshot.py ... then read the ACTUAL rendered DOM/text' (gig_judge.py:98-100), implying per-page photographic evidence. The recorded live E2E run (evidence/green-phase.log lines 55-76, corroborated by the raw file at ~/gig/trajectory/verify001/trajectory.jsonl) shows the judge's own 'reasoning' field claims it visited ~10 distinct pages (services_lists, 4 individual /services/<id> pages, received_orders/open, dashboard_provider, 4 /requests/<id> pages) but only ONE trajectory row / screenshot (services_lists, seq 01) was ever written -- i.e. 9 of the ~10 claimed page-checks produced no photographic artifact, only the judge's own textual claim to have read the DOM. Neither behavioral-spec.md nor verification-architecture.md defines a required minimum photographic-evidence density (e.g. 'one screenshot per ground-truth URL, minimum'), so there is no acceptance criterion this violates -- but it is a real edge case the spec missed: a judge could, in principle, screenshot ONE innocuous page for show and then fabricate DOM-read claims for the rest without violating any written requirement or being caught by gig_reality_verify.sh's parsing logic (see FIND-002). Doc 25 section 1 ('screenshot が正、DOMリプレイは捨てる' -- screenshot is the source of truth) explicitly motivates screenshot-based verification precisely because DOM/text reconstruction can diverge from reality; this feature's own live run undercuts that principle for 9/10 of the claims it judged.",
+  "evidence": {
+    "filePath": ".vcsdd/features/gig-reality-verify/evidence/green-phase.log",
+    "lineRange": "55-76",
+    "snippet": "the fresh judge independently navigated /mypage/services_lists, each individual /services/<id> page for the 4 typo-fix claims, /mypage/received_orders/open, /mypage/dashboard_provider, and each /requests/<id> page for the 4 applied claims -- [...] a NEW trajectory file was written [...] ~/gig/trajectory/verify001/01-reality_verify_check.png (237.9K PNG)"
+  },
+  "routeToPhase": "1c"
+}

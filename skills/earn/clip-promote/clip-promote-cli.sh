@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; tmux/python3/node/claude live in homebrew
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (native installer, not homebrew)
 # clip-promote-cli.sh — launch the ALWAYS-ON clip-promote-loop claude-p session (same pattern as
 # clip-cli.sh / gig-cli.sh: a detached tmux session running headless `claude` with
 # --dangerously-skip-permissions; the session registers a recurring internal cron that drives the
@@ -16,7 +16,7 @@ export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PAT
 set -uo pipefail
 SOCK="/tmp/anicca-clip-promote-tmux.sock"
 SESSION="anicca-clip-promote-core"
-CLAUDE="$(command -v claude || echo /opt/homebrew/bin/claude)"
+CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
 
 # the startup prompt the headless session runs once, then idles (internal cron drives the loop
 # thereafter). promote.fun campaigns move slower than the clip-rewards loop, so the internal cron

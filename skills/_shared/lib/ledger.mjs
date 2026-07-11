@@ -2,8 +2,19 @@
 // One JSON object per line. Prior lines are NEVER rewritten — appendLedger only ever
 // appends. The GATE-0 classifier (isProfitable) is the single source of truth for
 // "1 profitable wake": net_usdc > 0 AND a real on-chain receipt status of 0x1.
+//
+// ledger-uniqueness (REQ-005): TWO deliberately separate canonical ledgers exist per
+// instance — do not "fix" the split by merging them.
+//   1. `<ANICCA_HOME>/state/earn-ledger.jsonl` — founder-loop's own GATE-0 ledger
+//      (skills/self/founder-loop/record-earn.mjs is the ONLY writer; EVM/Base-RPC-verified
+//      external inflow only, wallet-pinned). Purpose: "did the founder wallet receive real
+//      external USDC" — founder-loop.sh's literal done-check.
+//   2. `<ANICCA_HOME>/skills/earn/state/earn-ledger.jsonl` — THIS file's own module, and the
+//      canonical general multi-strategy ledger (x402/sol-trade/hl-trade/gig/cook/…, many
+//      writers, many wallets/chains). `resolveEarnLedgerPath` below resolves THIS path.
 import { promises as fs } from "node:fs";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const round = (n) => Math.round(n * 1e6) / 1e6; // keep USDC at 6dp, kill fp noise
 
@@ -99,4 +110,62 @@ export async function readLedger(file) {
       }
     })
     .filter(Boolean);
+}
+
+// ledger-uniqueness REQ-001: canonical general-earn-ledger path resolver. Pure — computes a
+// string only, never touches the filesystem. Mirrors
+// skills/earn/self-improve/lib/ledger_reader.py::resolve_ledger_path()'s exact two-branch
+// priority so both languages agree on ONE logical location by construction:
+//   1. ANICCA_HOME (explicit `home`, else `env.ANICCA_HOME`, else `process.env.ANICCA_HOME`)
+//      when non-empty -> <that>/skills/earn/state/earn-ledger.jsonl.
+//   2. else -> this module's own file-relative earn/state/ (climbs _shared/lib -> _shared ->
+//      skills, mirrors the Python module's lib -> self-improve -> earn climb).
+// Resolves FRESH on every call (REQ-RL3 convention) — never a frozen module-level constant.
+const EARN_LEDGER_FILENAME = "earn-ledger.jsonl"; // single source of truth for the filename both branches below join onto
+
+export function resolveEarnLedgerPath({ home, env } = {}) {
+  const effectiveEnv = env !== undefined ? env : process.env;
+  const aniccaHome = home && home !== "" ? home : effectiveEnv && effectiveEnv.ANICCA_HOME;
+  if (aniccaHome) {
+    return {
+      path: path.join(aniccaHome, "skills", "earn", "state", EARN_LEDGER_FILENAME),
+      resolved: true,
+      resolutionSource: "anicca_home_env",
+    };
+  }
+
+  // this file: <root>/skills/_shared/lib/ledger.mjs
+  const libDir = path.dirname(fileURLToPath(import.meta.url)); // skills/_shared/lib
+  const sharedDir = path.dirname(libDir); // skills/_shared
+  const skillsDir = path.dirname(sharedDir); // skills
+  return {
+    path: path.join(skillsDir, "earn", "state", EARN_LEDGER_FILENAME),
+    resolved: true,
+    resolutionSource: "file_relative_default",
+  };
+}
+
+// ledger-uniqueness REQ-002: wallet-based allow-list filter over already-parsed ledger rows
+// (the output of readLedger). Pure, read-only, never mutates `rows` or any row object —
+// Array.prototype.filter always returns a NEW array and this function never assigns into a
+// row. `ownWallets` is a string or array of strings (this instance's own wallet address(es));
+// omitted/empty means "no known own wallet", so every walleted row is excluded (fail-closed —
+// see REQ-002 edge cases). A row with NO `wallet` key (Solana/Hyperliquid/narrate rows never
+// stamp an EVM wallet) always passes through: it is never cross-instance-attributable by this
+// check. Comparison is case-insensitive. This is an ALLOW-list (not the SHARED blacklist
+// pinned in record-earn.mjs:39), so it fails closed against wallets not yet known to be
+// compromised, not only the three currently-pinned ones.
+export function filterOwnWalletRows(rows, ownWallets) {
+  const inputRows = Array.isArray(rows) ? rows : [];
+  const ownList = ownWallets == null ? [] : Array.isArray(ownWallets) ? ownWallets : [ownWallets];
+  const ownSet = new Set(
+    ownList.filter((w) => typeof w === "string" && w.length > 0).map((w) => w.toLowerCase())
+  );
+  return inputRows.filter((row) => {
+    if (!row || typeof row !== "object") return false;
+    const wallet = row.wallet;
+    if (wallet === undefined || wallet === null) return true; // walletless row: always passes
+    if (typeof wallet !== "string" || wallet.length === 0) return false; // no proof of ownership
+    return ownSet.has(wallet.toLowerCase());
+  });
 }

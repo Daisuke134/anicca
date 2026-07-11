@@ -27,6 +27,51 @@ liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
   # browser UA) — a false DEAD would have spuriously re-triggered self-fix on a healthy loop.
   local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o /dev/null -w '%{http_code}' --max-time 12 -L -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' "$u" 2>/dev/null||echo 000)"
   case "$code" in 200|201|202|301|302|308) echo "LIVE($code) $u";; *) echo "DEAD($code) $u";; esac; }
+# reddit_username (G2 item1, self-heal.md root cause #3 continuation): newest posts.jsonl record's
+# own "account" field -- the account that actually made the newest post, never guessed.
+reddit_username(){ local f="$1"; [ -f "$f" ] || { echo ""; return; }
+  python3 -c "
+import json
+try:
+    for line in reversed(open('$f').read().splitlines()):
+        line = line.strip()
+        if not line:
+            continue
+        d = json.loads(line)
+        u = d.get('account')
+        if u:
+            print(u)
+            break
+except Exception:
+    pass
+" 2>/dev/null; }
+# reddit_account_banned (G2 item1, 2026-07-11 loop-arch redesign / LOOPS-TRUTH-AUDIT.md: "liveurl
+# HTTP200のみ→reddit BAN...を全て見逃す"): a 200 on the post URL itself proves nothing about the
+# ACCOUNT. CORRECTED 2026-07-12 (self-fix): the prior version here treated a 404 with title
+# "u/<user>: page not found" as the BAN signal ("confirmed banned 2026-07-11" via curl+screenshot).
+# That was a FALSE POSITIVE, reproduced and disproven 2026-07-12: an authenticated camofox browser
+# session loading the SAME anicca_sao account's own overview page rendered it completely normally
+# -- live comment posted "18 hours ago" matching posts.jsonl exactly, edit/delete/reply controls
+# present, nothing suspended. old.reddit.com returns that identical 404 + "u/<user>: page not
+# found" pattern for ANY profile it won't show to a logged-out/unauthenticated curl request
+# (reproduced on the live, active, unbanned anicca_sao account itself) -- it is a visibility
+# restriction (e.g. low karma / newer account), not a ban page, and cannot be used as a BAN
+# signal. The REAL, distinctive ban signature was established 2026-07-12 against a well-documented
+# permanently-suspended account (u/violentacrez): HTTP 403 with title "reddit.com: suspended". A
+# random never-registered username also 404s but with a generic "reddit.com: page not found"
+# title (no username echoed) -- so 404 alone, with or without the username in the title, means
+# "not visible to an anonymous curl request", NOT banned.
+reddit_account_banned(){ local user="$1"; [ -n "$user" ] || { echo "NO-USER"; return; }
+  local tmp; tmp="$(mktemp)"
+  local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o "$tmp" -w '%{http_code}' --max-time 12 -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' "https://old.reddit.com/user/$user/" 2>/dev/null||echo 000)"
+  local title; title="$(grep -o -m1 -iE '<title>[^<]*</title>' "$tmp" 2>/dev/null)"
+  rm -f "$tmp"
+  if [ "$code" = "403" ] && printf '%s' "$title" | grep -qi "suspended"; then
+    echo "BANNED(403) u/$user"
+  else
+    echo "OK($code) u/$user"
+  fi
+}
 CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
 POSTS="$SELF/reddit-loop/state/posts.jsonl"
 LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
@@ -40,7 +85,94 @@ LMHB="$HOME/.openclaw/state/.life-manager-loop-last-pass"
 NACC=0; [ -f "$HOME/.cloak/reddit-accounts.json" ] && NACC="$(python3 -c "import json;d=json.load(open('$HOME/.cloak/reddit-accounts.json'));print(len(d if isinstance(d,list) else d.get('accounts',[])))" 2>/dev/null||echo 0)"
 REDDIT_STALE=0; [ "$(stale_hrs "$POSTS")" -ge 30 ] 2>/dev/null && REDDIT_STALE=1
 REDDIT_DEAD=0; case "$(liveurl "$POSTS")" in DEAD*) REDDIT_DEAD=1;; esac
-{ [ "$NACC" -ge 1 ] 2>/dev/null && { [ "$REDDIT_STALE" = 1 ] || [ "$REDDIT_DEAD" = 1 ]; }; } && bash "$SELF/self-fix.sh" reddit "audit: reddit has an account but no real post in >30h (posts.jsonl stale=$REDDIT_STALE) or the newest post URL is DEAD (dead=$REDDIT_DEAD). Make it post one honest disclosed contribution and log the URL." >> "$LOG" 2>&1 || true
+# G2 item1: account-level BAN check (independent of any single post's own HTTP code -- a banned
+# account can still show a stale-but-200 post while being invisible/unusable going forward).
+REDDIT_USER="$(reddit_username "$POSTS")"
+REDDIT_BANNED=0; REDDIT_BAN_STATUS="skipped(no account field in posts.jsonl)"
+if [ -n "$REDDIT_USER" ]; then
+  REDDIT_BAN_STATUS="$(reddit_account_banned "$REDDIT_USER")"
+  case "$REDDIT_BAN_STATUS" in BANNED*) REDDIT_BANNED=1;; esac
+fi
+{ [ "$NACC" -ge 1 ] 2>/dev/null && { [ "$REDDIT_STALE" = 1 ] || [ "$REDDIT_DEAD" = 1 ] || [ "$REDDIT_BANNED" = 1 ]; }; } && bash "$SELF/self-fix.sh" reddit "audit: reddit has an account but no real post in >30h (posts.jsonl stale=$REDDIT_STALE) or the newest post URL is DEAD (dead=$REDDIT_DEAD) or the account itself is BANNED/suspended (banned=$REDDIT_BANNED, $REDDIT_BAN_STATUS). If banned, posting more from this same account cannot work -- get a new honest disclosed account (see reddit-loop/loop.sh's NO-REDDIT-ACCOUNT heal path) rather than retrying the dead one; otherwise make it post one honest disclosed contribution and log the URL." >> "$LOG" 2>&1 || true
+
+# G2 item2 (2026-07-11 loop-arch redesign / LOOPS-TRUTH-AUDIT.md "video: 2つの state file(warmup_day
+# 4 vs 0)の整合性チェックが無い"): video's warmup_day is tracked in TWO independently-written
+# files that can silently diverge -- run.sh's own gating state ~/.cloak/earn-video-<handle>.json
+# (what decide.py actually reads to choose S1_warmup vs post) and the separately-maintained
+# ~/.cloak/ig-warmup-<handle>.json (written by the ig-account-warmer skill's own warm_iso.py/
+# warm.py). Confirmed real drift 2026-07-11: earn-video-money_blueprintdaily.json warmup_day=4 vs
+# ig-warmup-money_blueprintdaily.json warmup_day=0, same last_warmup_date -- nothing detected it
+# before now. Escalates to self-fix so the two trackers get reconciled to one source of truth.
+for VF in "$HOME"/.cloak/earn-video-*.json; do
+  [ -f "$VF" ] || continue
+  V_HANDLE="$(python3 -c "
+import json
+try:
+    print(json.load(open('$VF')).get('handle') or '')
+except Exception:
+    print('')" 2>/dev/null)"
+  [ -n "$V_HANDLE" ] || continue
+  IGF="$HOME/.cloak/ig-warmup-${V_HANDLE}.json"
+  [ -f "$IGF" ] || continue
+  V_DAY="$(python3 -c "
+import json
+try:
+    d = json.load(open('$VF')).get('warmup_day')
+    print(d if d is not None else 'NA')
+except Exception:
+    print('NA')" 2>/dev/null)"
+  IG_DAY="$(python3 -c "
+import json
+try:
+    d = json.load(open('$IGF')).get('warmup_day')
+    print(d if d is not None else 'NA')
+except Exception:
+    print('NA')" 2>/dev/null)"
+  if [ "$V_DAY" != "NA" ] && [ "$IG_DAY" != "NA" ] && [ "$V_DAY" != "$IG_DAY" ]; then
+    bash "$SELF/self-fix.sh" video "audit: warmup_day state DRIFT for handle=$V_HANDLE -- $VF (the file run.sh/decide.py actually gate on) says warmup_day=$V_DAY, but $IGF (a second, separately-written warmup tracker) says warmup_day=$IG_DAY. These must be reconciled to ONE source of truth -- either make run.sh read $IGF instead, make the ig-account-warmer skill stop writing its own copy, or make one file derive from the other -- so warmup progress is never ambiguous again." >> "$LOG" 2>&1 || true
+  fi
+done
+
+# G2 item3 (2026-07-11 loop-arch redesign / LOOPS-TRUTH-AUDIT.md "capafy: 'PUBLISHED/DRAINED'等
+# ラベルの誤表示を実side-effect...で照合してない"): confirmed real incident 2026-07-11 --
+# daily_loop.log's own "done" line read '...rc=1 (PUBLISHED — post-verdict=DRAINED, marker
+# touched)' right after 'Error: Reached max turns' and a reconcile pass with appended=0 -- PUBLISHED
+# there is a static post-verdict label (echoing the PRE-run verdict), not proof a listing actually
+# went live. Detect the mismatch directly against the real ledger: if the newest 'daily_loop done'
+# log line claims PUBLISHED but published.jsonl gained zero new row today (JST) whose own status
+# shows a genuinely live listing (contains "status=4" or "online"), the label is lying.
+CAPLOG="$HOME/.openclaw/skills/capafy-autopublish/state/daily_loop.log"
+if [ -f "$CAPLOG" ]; then
+  CAP_LAST_DONE="$(grep -E 'daily_loop done' "$CAPLOG" 2>/dev/null | tail -1)"
+  case "$CAP_LAST_DONE" in
+    *PUBLISHED*)
+      CAP_NEW_LIVE_TODAY="$(TODAY_JST_FOR_CAP="$(TZ=Asia/Tokyo date +%F)" python3 -c "
+import json, os
+today = os.environ['TODAY_JST_FOR_CAP']
+n = 0
+try:
+    for line in open('$CAP'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            d = json.loads(line)
+        except Exception:
+            continue
+        status = str(d.get('status', ''))
+        if str(d.get('date', '')) == today and ('status=4' in status or 'online' in status.lower()):
+            n += 1
+except Exception:
+    pass
+print(n)" 2>/dev/null)"
+      CAP_NEW_LIVE_TODAY="${CAP_NEW_LIVE_TODAY:-0}"
+      if [ "$CAP_NEW_LIVE_TODAY" = "0" ] 2>/dev/null; then
+        bash "$SELF/self-fix.sh" capafy "audit: daily_loop.log's newest 'daily_loop done' line claims PUBLISHED ($CAP_LAST_DONE) but published.jsonl gained ZERO new row today (JST) whose status shows a real live listing (status=4/online). The PUBLISHED label does not correspond to a real new publish this run -- find where daily_loop.sh emits that label (it looks like it is echoing the pre-run inventory post-verdict, not a genuine outcome) and fix it so it only says PUBLISHED when a real new listing actually went live; also check whether today's publish attempt needs to be re-run." >> "$LOG" 2>&1 || true
+      fi
+      ;;
+  esac
+fi
+
 # LM has no daily artifact; if its liveness heartbeat is stale the healthcheck restarts it — the audit surfaces both
 # the staleness (in HOURS, FIND-022 bug fix: was interpolating the file PATH) and the live Stripe MRR so a no-op LM
 # loop is visible in every 6h report.
@@ -95,4 +227,9 @@ done
 if [ -x "$SELF/../report/loop-report.sh" ]; then
   bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-3000)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
 fi
+# AGENTIC verification (#5 last mile): after the deterministic side-effect audit above, fire the
+# fresh-context reality-verifier on any loop that booked a NEW external:true earn since last check.
+# Token-safe: spawns nothing when there are no new earns (today's state). Fail-safe: never breaks this audit.
+bash "$SELF/reality-verify-on-new-earn.sh" >> "$LOG" 2>&1 || true
+
 echo "[verify-loops-audit] done $(date '+%F %T')"
