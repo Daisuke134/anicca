@@ -1,0 +1,12 @@
+✔ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (6.795792ms)
+✔ REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids) (3.272959ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the arbitrary-risk-tag backdoor this override would otherwise let an attacker-controlled registry.json defeat REQ-506's reroute filter through) (2.987291ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin2-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the second live Franklin instance is covered by the SAME guardrail, never assumed safe by omission) (3.151583ms)
+ℹ tests 4
+ℹ suites 0
+ℹ pass 4
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 81.290084
