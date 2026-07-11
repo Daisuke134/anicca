@@ -6,6 +6,22 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Fixed
+
+- **lending: wired the lender's own EVM key into disbursement** (`skills/economy/lending/scripts/wake-gate.mjs`,
+  lean VCSDD `lending-lender-key-wiring`) — `lending-orchestrator.mjs`'s `defaultDisburse` always
+  called `payViaFacilitator({privateKey: deps.lenderPrivateKey, ...})`, but no production caller ever
+  resolved/injected `deps.lenderPrivateKey`, so every real wake crashed at
+  `privateKeyToAccount(undefined)` (live symptom: `loan_Franklin_1` stuck at status
+  `disbursement_uncertain`). `runWakeGate` now resolves the LENDER's own key via
+  `resolve-identity.mjs::resolveEvmPrivateKey({env})` (fail-closed — an unresolvable key refuses with
+  `reason:"lender_private_key_unresolved"` BEFORE `executeLoanIssuanceAttempt` is ever called, never
+  reaching `payViaFacilitator` with `undefined`) and also wires a real `deps.rpcUrl` (defaults to
+  `https://mainnet.base.org`, overridable via `BASE_RPC_URL`) so a stuck row's own reconciliation
+  lookup is genuinely reachable and no longer permanently blocks the lender. 8 new/updated
+  `wake-gate.test.mjs` tests (RED confirmed against pre-fix code via `git stash`, then GREEN); full
+  `anicca-agent-lending` suite 134/134 pass.
+
 ### Added
 
 - **CI security gate** (`.github/workflows/sec-scan.yml`) — gitleaks 8.30.1 +

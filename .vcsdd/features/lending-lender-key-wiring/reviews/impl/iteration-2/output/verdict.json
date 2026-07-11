@@ -1,0 +1,66 @@
+{
+  "phase": "impl-review",
+  "iteration": 2,
+  "feature": "lending-lender-key-wiring",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["9a4a3db4"],
+  "external_test_evidence": "wake-gate.test.mjs 10/10, lending-orchestrator.test.mjs 34/34 (thinker-executed, HEAD 9a4a3db4); full lending suite 139/139, runtime/loop 250/250 (builder-reported, not independently re-run by this adversary -- no Bash access)",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-102"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/behavioral-spec.md:120-125", "description": "REQ-120's own Edge Cases text states the lookback window's only risk is 'missing a genuine on-chain reconciliation match' (i.e. an availability/blocking concern) -- it never states or requires a mitigation for the actual, more serious consequence traced in FIND-102: a miss silently becomes an active double-disburse, not merely a block" }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs:237-255", "description": "PROP-106g/PROP-106h's own reconcile fixture only ever exercises a mocked Transfer log whose value happens to equal loanRow.principal_usd -- no fixture proves a same-wallet-pair, DIFFERENT-value transfer is rejected, and no fixture proves a genuinely-broadcast-but-outside-the-lookback-window disbursement is NOT silently converted into a fresh double-disburse" }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-verify.mjs:119-133", "description": "reconcileProvisionalDisbursement's matchingLog lookup never compares the found log's own value to loanRow.principal_usd -- any same-wallet-pair transfer of ANY amount within the block window is treated as proof of this specific loan's own disbursement" },
+        { "type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:104-121", "description": "resolveStaleProvisioning has no elapsed-time cross-check between staleRow.provisioned_ms and the reconciliation lookback's own real-time span before treating {found:false} as ground truth and proceeding to a fresh disbursement" }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-signer.mjs:1-35", "description": "reviewed in full: deriveSignerAddress/addressesEqual are genuinely pure (no I/O, no mutation, fail-closed on malformed input), correctly reused identically by both wake-gate.mjs's primary guard and lending-orchestrator.mjs's defensive backstop -- no duplicated derivation logic" },
+        { "type": "file", "location": "skills/economy/lending/scripts/wake-gate.mjs:170-205", "description": "the FIND-001 guard is inserted at exactly one call site, before executeLoanIssuanceAttempt, with a clear comment trail explaining the prior (removed) false assumption -- small, targeted, well-organized diff" }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-101", "FIND-102", "FIND-103"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/gig/WITNESS-RUNBOOK.md:24-45,240-243", "description": "this repo's own runbook documents that port 8405/PID 94412 was confirmed-testnet as of 2026-07-07 and deliberately left untouched during that pass -- REQ-121's 'verified live' claim (lsof port-bound check only) does not establish the currently-running process's actual GIG_CHAIN mode, and no /supported-style live network-id check is present anywhere in this fix's own evidence trail" }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "iteration1FindingsReVerified": {
+    "FIND-001_signerMustEqualLenderWallet": "FIXED, confirmed by direct trace -- wake-gate.mjs:170-205 refuses reason:'lender_not_this_instance' BEFORE executeLoanIssuanceAttempt is ever invoked, on EVERY branch (including the stuck-row recovery path, which only runs inside runLockedIssuance, itself only reachable after this guard passes); lending-orchestrator.mjs:214-225 defaultDisburse independently re-derives and throws lender_signer_mismatch before payViaFacilitator as a genuine second layer. addressesEqual is correctly case-insensitive (lending-signer.mjs:32-34) and fail-closed on missing/non-string inputs. wake-gate.test.mjs:506-552 and lending-orchestrator.test.mjs:456-469,493-516 genuinely exercise both layers, including the exact Franklin/Franklin2 production scenario named in the finding. No path found that can reach payViaFacilitator with a mismatched key.",
+    "FIND-002_unboundedReconcileScan": "PARTIALLY FIXED -- the block-SPAN bound (never 'earliest', capped at 9000 blocks, single eth_blockNumber snapshot for both fromBlock/toBlock) is genuinely implemented (lending-orchestrator.mjs:161-212) and genuinely tested against a range-restricting mock (wake-gate.test.mjs:436-464). However this iteration's own re-review (FIND-102) finds the fix trades the original 'permanent block' availability bug for an unaddressed correctness bug: a too-short window relative to the ACTUAL, unbounded gap between a crash and its own next reconciliation attempt (governed by the model-driven always-act wake cadence, not a fixed interval) can silently produce a genuine double-disburse -- not just a missed match.",
+    "FIND-003_mainnetChainGate": "FIXED at the code level (lending-orchestrator.mjs:227-238, lending-orchestrator.test.mjs:471-491) -- GIG_CHAIN!=='base' genuinely refuses before payViaFacilitator, tested. The 'operator precondition verified live' claim about port 8405 is NOT fully verified by this review (see FIND-103) -- the code-level gate is sound, but its real-world precondition (a genuinely mainnet-configured facilitator actually listening on the URL defaultDisburse will call) is not proven by the cited evidence (lsof only).",
+    "FIND-004_permissiveMockRpc": "FIXED, confirmed -- startMockRpc (wake-gate.test.mjs:332-357) now forwards real params to handlers, and the REQ-118 recovery fixture's eth_getLogs handler (wake-gate.test.mjs:446-463) genuinely rejects fromBlock:'earliest' or any span exceeding a real provider's own documented limit."
+  },
+  "goNoGo": "NO-GO for the first live loan as-is. Two NEW critical findings this iteration (FIND-101, FIND-102) mean the reconciliation mechanism REQ-118b/REQ-120 built specifically to make this fix safe for real money is itself capable of producing a genuine double-disburse or a mis-attributed ledger row, under conditions plausible for THIS exact colony (model-driven, non-cron wake cadence; Franklin and Franklin2 already have a documented prior on-chain transaction history with each other per this session's own memory context, which is exactly the shape of coincidental same-wallet-pair transfer FIND-101 warns about). Narrowly for TODAY's SPECIFIC stuck loan_Franklin_1 row: the crash is independently confirmed (loans.jsonl, provisioned_ms=1783744749665, error='Cannot read properties of undefined (reading slice)') to have happened at privateKeyToAccount(undefined) inside signAuthorization, BEFORE any fetch() call anywhere in escrow.mjs's payViaFacilitator/settleBody/verifyWithRetry chain -- so there is genuinely no real transfer FOR THIS ROW to double-disburse against, and reconciling it to disbursement_failed is the objectively correct outcome regardless of window size, PROVIDED FIND-101's value-blind matching does not coincidentally match an unrelated Franklin<->Franklin2 transfer within the lookback window (unverified -- this review has no RPC/Bash access to check Base mainnet directly). Recommend: (1) add a value-match check to reconcileProvisionalDisbursement (FIND-101) before trusting ANY reconciliation result for real money, (2) either bound resolveStaleProvisioning by staleRow age vs. the lookback's real-time span (refusing rather than silently proceeding when age exceeds it) or accept and explicitly document the residual double-disburse risk as a scope exclusion with an operational mitigation (e.g. an external, cron-guaranteed reconciliation sweep independent of the model's own wake choices) (FIND-102), (3) obtain a live /supported (or equivalent) confirmation of the actual facilitatorUrl's network before the first live disbursement (FIND-103)."
+}

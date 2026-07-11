@@ -1,0 +1,68 @@
+{
+  "phase": "impl-review",
+  "iteration": 3,
+  "feature": "lending-lender-key-wiring",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["2e91255a"],
+  "external_test_evidence": "lending-verify.test.mjs 16/16, lending-orchestrator.test.mjs 38/38, wake-gate.test.mjs 10/10 (thinker-executed, HEAD 2e91255a); full lending suite 145/145, runtime/loop 250/250 (builder-reported, not independently re-run by this adversary -- no Bash access). Live production ledger independently read this review: ~/.blockrun/skills/economy/lending/state/loans.jsonl still contains exactly the 2 rows described (loan_Franklin_1, provisioning -> disbursement_uncertain, error 'Cannot read properties of undefined (reading slice)') -- no third row, confirming no live wake has run against the fixed code yet.",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/behavioral-spec.md:167-193", "description": "REQ-122's own Edge Cases enumerate 'different-value transfer -> not matched' and 'multiple logs, one exact-value -> exact one matched' but never the case this review found reachable: two DIFFERENT loan_ids to the SAME wallet pair sharing the IDENTICAL exact value ($0.02, the flat cold-start cap), where an earlier row's own already-real transfer can be misattributed to a later stuck row -- REQ-122 as specified is a necessary but not sufficient fix for the hazard class it was written to close" }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/__tests__/lending-verify.test.mjs:257-298", "description": "FIND-101's own new tests only ever exercise a single candidate loanRow against value-matched/value-mismatched logs -- no fixture supplies a loanRows ledger with an already-attributed tx_hash for a DIFFERENT loan_id at the SAME wallet pair and SAME value, which is exactly the collision this cold-start protocol's own flat $0.02 repeat-attempt pattern (lending-gate.mjs:134-145, computeLoanCapUsd stays 0.02 until the FIRST successful on-time repayment) makes reachable" }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-201"],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:117-138", "description": "resolveStaleProvisioning has loanRows in scope as its own second parameter but never forwards it into reconcile({loanRow: staleRow}) -- reconcileProvisionalDisbursement (lending-verify.mjs:150-164) has no loanRows parameter to receive it even if it were passed, so it cannot apply the SAME already-credited-tx_hash cross-check verifyRepayment already implements (lending-verify.mjs:84-86, resolves FIND-202) for the structurally identical replay hazard" }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        { "type": "file", "location": "skills/economy/lending/lib/lending-orchestrator.mjs:190-283", "description": "reviewed in full: DEFAULT_RECONCILE_LOOKBACK_BLOCKS, BASE_BLOCK_TIME_SECONDS, resolveReconcileLookbackBlocks, and the new reconcileWindowSpanMs export are a single, non-duplicated source of truth genuinely shared between defaultReconcile's own real scan and resolveStaleProvisioning's own age guard -- no divergent hand-copied constant. preflightFacilitatorMainnet is a small (18-line), single-purpose function with a clear fail-closed try/catch, correctly reusing deps.fetchImpl's established injectable-fetch convention (matches _shared/lib/usdc.mjs's own precedent)" },
+        { "type": "file", "location": "skills/economy/lending/lib/lending-verify.mjs:119-164", "description": "safeBigIntValue mirrors safeBigIntNumber's existing fail-closed discipline exactly (no new pattern introduced); reconcileProvisionalDisbursement's own value-match addition is a minimal, targeted diff (comment block + 3 new lines), no unrelated refactor" }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-201", "FIND-202"],
+      "evidence": [
+        { "type": "file", "location": ".vcsdd/features/lending-lender-key-wiring/specs/verification-architecture.md:14-42", "description": "Proof Obligations table and Verification Strategy prose were never extended past PROP-121b / '5 new tests' for iteration-2's own REQ-122/REQ-123 additions -- a real drift against behavioral-spec.md, which WAS correctly updated" }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  },
+  "priorIterationFindingsReVerified": {
+    "FIND-101_valueBlindTransferMatch": "FIXED, confirmed by direct trace -- reconcileProvisionalDisbursement (lending-verify.mjs:150-164) now computes expectedValueBase = BigInt(Math.round(loanRow.principal_usd * 1e6)) (the identical convention defaultDisburse itself uses for amountBase, lending-orchestrator.mjs:328 -- no drift between the two) and requires safeBigIntValue(log.data) === expectedValueBase before treating a log as a match; log.data is the Transfer event's sole non-indexed field (a single 32-byte word), so BigInt(log.data) decodes the value directly with no byte-offset ambiguity. A value-mismatched transfer between the correct wallets is correctly rejected (lending-verify.test.mjs:257-274, live-verified). RESIDUAL (new this iteration, FIND-201): a value-MATCHED, wrong-loan transfer at the SAME wallet pair (a different loan_id sharing the same $0.02 cold-start cap) is NOT rejected -- there is no loan-id/reference field in a plain USDC Transfer event to bind against, but this exact codebase already has a working tx_hash-uniqueness-based binding (verifyRepayment's alreadyCredited check) that reconcileProvisionalDisbursement does not reuse. This residual is NOT accepted as tolerable for $0.02 -- it is trivially fixable by reusing the existing pattern, and this review declines to wave it through at the final gate for real money.",
+    "FIND-102_doubleDisburseOnStaleWindowMiss": "FIXED for its own stated scope, confirmed by direct trace -- resolveStaleProvisioning (lending-orchestrator.mjs:117-138) now computes rowAgeMs = nowMs - staleRow.provisioned_ms and refuses reason:stale_row_beyond_reconcile_window (zero rows appended, zero sequence consumed) when rowAgeMs > reconcileWindowSpanMs(deps) or provisioned_ms/rowAgeMs is non-finite. reconcileWindowSpanMs (lending-orchestrator.mjs:210-212) is exported and computed as resolveReconcileLookbackBlocks(deps) * BASE_BLOCK_TIME_SECONDS * 1000 -- genuinely the SAME lookbackBlocks figure (default 9000, override via LENDING_RECONCILE_LOOKBACK_BLOCKS or deps.reconcileLookbackBlocks) defaultReconcile itself uses to build its real eth_getLogs window, so the age guard is tied to the SAME constant, never a hand-guessed duplicate. 9000 * 2 * 1000 = 18,000,000ms = 5h, matching the doc's own '~5h' claim -- no ms/s unit error found. Both directions tested (lending-orchestrator.test.mjs:377-435): within-window -> disbursement_failed + fresh attempt proceeds (baseline preserved); beyond-window -> refused, zero rows. Minor, non-blocking observation: the boundary check is strict `>` (a row aged EXACTLY equal to the window's span is still treated as within-window, not refused) and no test exercises that exact boundary -- immaterial given BASE_BLOCK_TIME_SECONDS is itself only an average approximation, not a guaranteed bound, so exact-boundary precision was never actually achievable here; not raised as a separate finding.",
+    "FIND-103_facilitatorNotProvenMainnet": "FIXED, confirmed by direct trace -- defaultDisburse (lending-orchestrator.mjs:285-331) now calls preflightFacilitatorMainnet(facilitatorUrl, deps) (lending-orchestrator.mjs:266-283) BEFORE payViaFacilitator on every real call (no module-level caching -- a fresh fetch every invocation), fail-closed (any fetch/parse failure or a /supported response not advertising kinds[].network === 'eip155:8453' throws facilitator_not_mainnet before payViaFacilitator is ever reached). The mocked response shape ({kinds: [{network}]}) used by lending-orchestrator.test.mjs:567-661 genuinely matches the REAL facilitator contract (independently confirmed this review: services/facilitator/test-facilitator-contract.mjs:9-17 asserts `supported.kinds?.some(k => k.network === 'eip155:84532')` against the SAME live facilitator's own /supported endpoint) -- the mock is faithful, not a fabricated shape. No live curl against the actual production facilitatorUrl was run by this review (no Bash/network access) -- but the CODE-LEVEL guard itself is sound and, unlike REQ-121's own operator precondition, is now enforced on EVERY real disbursement attempt rather than a one-time manual check, closing the exact gap FIND-103 identified."
+  },
+  "finalLoanTrace": {
+    "ledgerStateVerified": "Read directly this review: ~/.blockrun/skills/economy/lending/state/loans.jsonl contains exactly 2 rows for loan_Franklin_1 (provisioning, then disbursement_uncertain with error 'Cannot read properties of undefined (reading slice)', provisioned_ms=1783744749665) -- no active/disbursement_failed/loan_Franklin_2 row exists yet; the fix has not been exercised against production state.",
+    "traceResult": "Confirmed via wake-gate.test.mjs:413-496's own recovery fixture (which reproduces this exact row's shape, wallet pair, principal_usd, and error string): the next real wake for Franklin will (1) resolve+verify Franklin's own key against Franklin's own registered wallet (REQ-119, PASS), (2) resolveStaleProvisioning finds loan_Franklin_1 as the highest-sequence row, calls reconcile -> a bounded, correctly-scoped eth_getLogs scan for EXACTLY 0x3EccAD24...->0xe7747Fd8... at value 20000 finds NOTHING (the crash happened before any HTTP call ever went out -- there is genuinely nothing on-chain for this row), (3) rowAgeMs is trivially within reconcileWindowSpanMs (provisioned today, well under 5h) so the miss is trusted -> loan_Franklin_1 is correctly appended as disbursement_failed, zero double-spend risk for THIS row, (4) the SAME wake then provisions loan_Franklin_2 (Franklin/Franklin2, still 0 successful repayments -> SAME $0.02 cap), passes preflightFacilitatorMainnet (REQ-123), and genuinely signs+broadcasts. This SPECIFIC transition is safe and matches the spec's own intended REQ-118b behavior exactly. The NEW risk (FIND-201) is NOT about this specific transition -- it is about what happens on loan_Franklin_2's (or a later loan_Franklin_N's) OWN eventual reconciliation, given the codebase's own established possibility of a false-negative reconcile (REQ-120's documented edge case) combined with the missing cross-row anti-replay check now confirmed absent."
+  },
+  "goNoGo": "NO-GO, unconditionally, for treating this iteration as the final gate. TODAY's specific, narrow transition (loan_Franklin_1 -> disbursement_failed -> loan_Franklin_2 fresh disbursement, all in the same wake) is independently verified safe by direct trace against the live ledger and the exact-matching wake-gate.test.mjs fixture -- if the ONLY goal were 'unstick loan_Franklin_1 once,' this fix would be sufficient. But this feature's own stated purpose is broader ('the FIRST live loan' as the first of an ongoing colony lending operation, not a one-shot manual recovery), and FIND-201 shows the reconciliation machinery this exact fix relies on to make REPEATED cold-start lending safe still has a fund-misattribution hole that becomes reachable on this SAME wallet pair's own very next stuck-row cycle, precisely because this protocol's own cold-start cap is a flat, repeated $0.02 until the first successful on-time repayment. Recommend: extend reconcileProvisionalDisbursement/resolveStaleProvisioning to reuse verifyRepayment's own already-proven cross-ledger tx_hash replay guard (FIND-201) before authorizing this fix for anything beyond a single supervised manual recovery of loan_Franklin_1 itself; separately, resync verification-architecture.md's Proof Obligations table with behavioral-spec.md's own REQ-122/REQ-123 (FIND-202, non-blocking for money-safety but a real spec-drift)."
+}
