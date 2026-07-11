@@ -106,7 +106,7 @@ fi
   --config "$SKILL_DIR/config.yaml" \
   --iterations "$ITERATIONS" \
   --output "$RUN_DIR" \
-  "${CHECKPOINT_ARGS[@]:-}" \
+  "${CHECKPOINT_ARGS[@]+"${CHECKPOINT_ARGS[@]}"}" \
   >> "$LOG" 2>&1
 STATUS=$?
 

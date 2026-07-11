@@ -163,6 +163,27 @@ def test_prop_cr_wire2_no_checkpoint_found_argument_list_unchanged_and_logged(tm
         "openevolve-run's argument list must NOT contain --checkpoint when no prior checkpoint "
         "was found (REQ-CR8/INV-CR4)"
     )
+    # FIND-001/FIND-002 regression guard: REQ-CR8 requires the fallback argument list to be
+    # BYTE-FOR-BYTE identical to pre-feature behavior — not merely "no --checkpoint substring
+    # anywhere". A naive `"${CHECKPOINT_ARGS[@]:-}"` empty-array-expansion bug (bash <4.4/set -u)
+    # appends ONE stray empty-string argument even when CHECKPOINT_ARGS is empty, which the old
+    # substring-only assertion above could not detect (no literal "--checkpoint" text, but argv
+    # grows by one anyway). Assert the exact argument COUNT (8: 2 positionals + 3 flag pairs) and
+    # that no argument is an empty/stray string.
+    capture_lines = capture_content.splitlines()
+    assert len(capture_lines) == 8, (
+        "openevolve-run's argument list must be BYTE-FOR-BYTE identical to pre-feature behavior "
+        f"when no checkpoint is found (REQ-CR8/INV-CR4) — expected exactly 8 arguments (2 "
+        f"positionals + 3 flag pairs), no stray trailing empty-string argument. got "
+        f"{len(capture_lines)}: {capture_lines!r}"
+    )
+    assert "" not in capture_lines, (
+        f"openevolve-run's argument list must never contain a stray empty-string argument "
+        f"(REQ-CR8/INV-CR4). got: {capture_lines!r}"
+    )
+    assert capture_lines[2:7] == ["--config", str(skill_dir / "config.yaml"), "--iterations", "20", "--output"], (
+        f"unexpected argument list shape: {capture_lines!r}"
+    )
     assert "checkpoint_resume: no prior checkpoint found" in log_content, (
         "expected the REQ-CR9 'no prior checkpoint found' log line — proves the new REQ-CR6 step "
         "actually ran, not merely that today's unmodified fallback happens to match"
