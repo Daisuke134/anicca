@@ -48,11 +48,10 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 
 ## 5. FULL TASK LIST（唯一・atomic・1行1アクション+done。上から実行）
 
-### Phase 0 — 検証役（★Dais 2026-07-11: 専用 verifier トラックは保留★）
-reality-verifier(V1)は作ったが browser tool 不足で不十分と判明 → **専用トラックは後回し**。当面の検証は **各 loop の VCSDD adversary(Sonnet) + 私の実browser** で行う。CEO 縮退(旧V3)は Phase3 整理へ移動。
-```
-[保留] V1 reality-verifier(browser tool不足) / V2 self-heal埋込 / G3c check-config / G3f CLAUDE.md bake
-```
+### 実行方針（Dais 2026-07-11 確定・3ステップ・gigから1つずつ）
+0. **verifier を全ツール使える様に直す** — [x] DONE: reality-verifier に「:9222ログイン済browser drive/on-chain/gcal 必須・report読むな」明記
+1. **各ループを実際に稼ぐ/仕事する様に直す**（1つずつ・私がbrowserで実state確認・移動/改名しない・重複退治だけ例外）
+2. **self-heal を各ループに内蔵**（healthcheck/self-fix が fresh adversary=reality-verifier[全ツール] を呼び実side-effectで判定→乖離→修復→再発防止をcodeに焼く。babysit不要に）
 ### Phase 1 — 片付け/引っ越し（M/S/C、Phase2 の前提）
 ```
 [x] M1 gig を anicca→PC一本化 — DONE(2026-07-11): Label hf-gig-*修正+anicca版bootout+PC版起動、pane実測でAPI-key hang無し(env-u OK)。evidence=evidence/M1-gig-consolidation.md。残: L1(実出品/提案をreality-verifier確認)+M4b(session名分離)
