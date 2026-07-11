@@ -1,7 +1,7 @@
 {
   "version": 1,
   "updated_ts": "2026-06-30T00:00:00Z",
-  "max_apply_per_pass": 5,
+  "max_apply_per_pass": 12,
   "improve_cadence_passes": 4,
   "priority_categories": [
     "PPT/スライド",
