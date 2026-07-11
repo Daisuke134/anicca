@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "test_quality",
+  "severity": "high",
+  "blocking": true,
+  "description": "verification-architecture.md's PROP-CR-WIRE2 (line 76) claims to verify: 'WHEN no checkpoint is found, the resulting openevolve-run argument list is IDENTICAL (same arguments, same order) to the pre-feature invocation -- no --checkpoint flag appears (REQ-CR8, INV-CR4)'. The test that is supposed to discharge this proof obligation, test_prop_cr_wire2_no_checkpoint_found_argument_list_unchanged_and_logged (tests/test_checkpoint_resume_wiring.py:153-169), only asserts `result.returncode == 0`, `\"--checkpoint\" not in capture_content` (a substring check), and the presence of the REQ-CR9 log substring. It never asserts the captured argv (`capture_content`/`capture_lines`) has the same LENGTH or same CONTENT as the pre-feature argument list -- it does not even split capture_content into lines and count them, unlike its sibling test for the found-branch, test_prop_cr_wire2b_checkpoint_found_appends_single_checkpoint_flag (same file, lines 176-209), which DOES assert `checkpoint_flag_index == len(capture_lines) - 2` (i.e. explicitly checks nothing trails the appended pair). This asymmetry means a spurious extra token appended after `--output \"$RUN_DIR\"` in the not-found branch -- exactly what FIND-001 reasons the bash 3.2 `\"${CHECKPOINT_ARGS[@]:-}\"` idiom likely produces -- would silently pass this test suite. The proof obligation PROP-CR-WIRE2 is therefore not actually discharged by the test cited as discharging it; the 31/31-green evidence in evidence/green-phase.md provides false confidence specifically for the branch (the fallback / 'no checkpoint found' case) that is the MOST FREQUENTLY exercised branch of this feature in production. Fix: add an explicit assertion in test_prop_cr_wire2_no_checkpoint_found_argument_list_unchanged_and_logged that `capture_lines` (split of capture_content) has the exact same length/content as a captured pre-feature baseline argument list (or, at minimum, assert capture_content.strip() has no extra trailing token beyond '--output <RUN_DIR>').",
+  "evidence": {
+    "filePath": "skills/earn/self-improve/tests/test_checkpoint_resume_wiring.py",
+    "lineRange": "153-169",
+    "snippet": "def test_prop_cr_wire2_no_checkpoint_found_argument_list_unchanged_and_logged(tmp_path):\n    ...\n    assert result.returncode == 0, ...\n    assert \"--checkpoint\" not in capture_content, (\n        \"openevolve-run's argument list must NOT contain --checkpoint when no prior checkpoint \"\n        \"was found (REQ-CR8/INV-CR4)\"\n    )\n    assert \"checkpoint_resume: no prior checkpoint found\" in log_content, (...)"
+  },
+  "routeToPhase": "2b"
+}

@@ -1,0 +1,47 @@
+{
+  "feature": "self-improve-checkpoint-resume",
+  "reviewType": "spec",
+  "overallVerdict": "PASS",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 5,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:209-225 (REQ-CR6)",
+          "description": "Confirmed FIND-001 (iteration-4) fix is real and accurate: REQ-CR6 now explicitly states the exit-status capture is 'a NEW capture this feature introduces, not a reuse of an existing pattern', and correctly cites that run_evolve.sh's existing OBSERVE step (run_evolve.sh:60, read directly) never inspects $? after the OBSERVE_JSON=\"$(...)\" command substitution. The corrected citation matches the actual source exactly (no `$?` check appears anywhere near run_evolve.sh:59-64)."
+        },
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:135-158,177-189,374-383 (REQ-CR2, REQ-CR10, EDGE-CR12) and verification-architecture.md:72 (PROP-CR14)",
+          "description": "Confirmed FIND-002 (iteration-4) fix is real and adequate: new EDGE-CR12 requires REQ-CR3 to treat a run-shaped-named PLAIN FILE exactly like 'no checkpoints/ subdirectory', explicitly mandates a check-before-acting approach (os.path.isdir before listing) rather than exception-catching, and REQ-CR2's own text (lines 150-152) folds this case into its enumerated 'REQ-CR3 returns None for ANY reason' list. New PROP-CR14 pins a concrete tmp_path fixture (zero-byte file named run-<timestamp> alongside a real older run with a valid checkpoint) that would fail today (module does not exist) and would pass once EDGE-CR12 is implemented as specified."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "PASS",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "specs/behavioral-spec.md:309-312 (INV-CR2, INV-CR3, INV-CR5)",
+          "description": "Confirmed FIND-003 (iteration-4) fix is real: INV-CR2, INV-CR3, and INV-CR5 each now carry an explicit PROP cross-reference parenthetical (PROP-CR9/PROP-CR12 for CR2, PROP-CR9+git-diff for CR3, PROP-CR-WIRE1/2/2b for CR5), closing the asymmetry with INV-CR1 that iteration-4 flagged. Non-blocking follow-on: FIND-001 notes the INV-CR2 citation of PROP-CR9/PROP-CR12 overclaims what those two PROPs literally scan for (see finding for detail); this does not remove INV-CR2's actual coverage, which the same parenthetical's git-diff-scope-check half already supplies."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": false,
+    "evaluatedCriteria": [],
+    "duplicateFindings": [],
+    "priorIterationFindingsVerifiedFixed": ["FIND-001-iter4", "FIND-002-iter4", "FIND-003-iter4"],
+    "newFindingsThisIteration": ["FIND-001", "FIND-002"],
+    "blockingFindingCount": 0
+  }
+}
