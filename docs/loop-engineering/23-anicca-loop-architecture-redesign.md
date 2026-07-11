@@ -420,3 +420,40 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 - [ ] 4'. sol/pm/hl を実弾 fitness で回し、edge>コストの時だけ撃つのを1 wake 実証 — done: 非WAITの earn action が実P&Lで+か、正直WAIT
 - [ ] 5'. 「稼いだ」= external:true 実 tx を on-chain 確認（唯一の gate）
 ※ claude-p pm($4.95🔒)の top-up は human-funded＝Dais の金＝#1停止点。self-funded の Franklin を先に直す。
+
+---
+
+## §11. 既存OSS部品の採用計画（2026-07-11、実コード実読・patch付き。再発明でなく copy）
+
+> 出典 = [[17-agent-economy-deep-research-2026-07-10]] §9/§10。世界の to-be 10部品のうち、Franklin が「Identity は本番採用済みだが隣の部品を未使用」の3つを copy する。全て実インターフェースを実読で確認済み。**未検証は UNVERIFIED 明記**。業界公認フロンティア = 検証(Validation)/proof-of-earning（a16z「知能が安くなると希少になるのは検証」）→ 評判/検証層の採用は R1(実P&L fitness)と地続き。
+
+### 部品1: ERC-8004 Reputation Registry（Base mainnet `0x8004BAa17C55a88189AE136b182e5fdA19dE9b63`）
+- 実IF（`erc-8004/erc-8004-contracts` + ChaosChain ref 一致確認、2026-01更新で feedbackAuth 撤廃＝誰でも直接送信可、Sybil対策はoff-chain）:
+  `giveFeedback(uint256 agentId,int128 value,uint8 valueDecimals,string tag1,string tag2,string endpoint,string feedbackURI,bytes32 feedbackHash)` / `getSummary(agentId,address[] clients,tag1,tag2)→(count,summaryValue,decimals)`。
+- **AS-IS**: `gig.mjs:gigVerifyAndPay`(L239-303) は payout 後 `paid` にするだけ、Reputation 書込ゼロ。`identity.mjs` の ABI は register/ownerOf のみ。lending の与信(`lending-gate.mjs::computeLoanCapUsd` L134-150)は**自前 loans.jsonl の返済回数のみ**。
+- **PROBLEM**: gig 実績が on-chain に残らず全 gig が trust-blind（毎回ゼロから信用構築）。lending 与信がローカル ledger に閉じ**信用が可搬しない**→cold-start が個体ごとに毎回リセット。既に持つ agentId を活かせていない。
+- **PATCH**: `lib/reputation.mjs` 新設（identity.mjs と同 viem スタイル）→ `gigVerifyAndPay` 成功後に fire-and-forget で `giveFeedback(agentId=takerAgentId, +100, "gig-complete", gigId)`、reject 経路で -100。lending は `getReputationSummary` を `isBorrowerEligible` に合成。※base-sepolia の Reputation アドレスは **UNVERIFIED**（使用前に eth_call 確認）。fail-open（reputation 書込失敗で payout 自体は失敗させない、資金は確定済）。
+- **AFTER**: 実績が Base mainnet に恒久記録 → ①第三者 agent が初対面で検証可 ②lending 与信をオンチェーン実績で補強し cold-start 緩和 ③Azeth 等が読む同じ registry に書くので colony 外からも Franklin の実績が見える。
+
+### 部品2: Coinbase AgentKit（`@coinbase/agentkit`）
+- 実読: `viemWalletProvider.ts`（既存 viem WalletClient を薄く包む）/ `cdpSmartWalletProvider.ts`（ERC-4337 + **`paymasterUrl` でガスレス**）/ `action-providers/erc8004/`（Identity+Reputation の action を既実装、内部 agent0-ts=UNVERIFIED）。
+- **AS-IS**: `identity.mjs`(L28-93) は毎回自前で viem client 組立、gas(native ETH) を呼出wallet が持つ前提＝**gas seeding が手運用**（"see WITNESS-RUNBOOK.md" コメント）。AgentKit 未使用。
+- **PROBLEM**: register/settle 毎の ETH 補給がマニュアル作業。viem boilerplate を identity/escrow/reputation の3箇所で重複。※ただし現行 viem 直叩きは薄く依存が軽い＝全面移行は過剰。
+- **PATCH**: `lib/wallet-provider.mjs` で既存 privateKey を `ViemWalletProvider` で包む薄い橋のみ。ガスレスが要る時だけ `CdpSmartWalletProvider.configureWithWallet({paymasterUrl})` に一箇所差替。
+- **AFTER**: 即効果ゼロ（現行の方が薄い）。**"gasless onboarding が実際にボトルネックになった時"のオプション**として導線を残す。「車輪の再発明禁止」との整合は自前 viem の方が高い＝今すぐの採用は非推奨、判断は onboarding ボトルネック発生時。
+
+### 部品3: Azeth / UFX（ERC-8183 ACP, `ufosearchspace-create/ERC8183`）= 最も近い先行実装
+- 実読: `createJob→fund→submit→complete/reject`、`claimRefund` は非hookable(client保護)。`IACPHook.before/afterAction` を各 selector にディスパッチする合成可能ミドルウェア。
+  - `ReputationHook.afterAction`(L57-77): complete で `giveFeedback(+100,"agentic-commerce","job-complete")`、reject で -100 を**自動書込**。
+  - `ReputationGateHook.beforeAction`(L52-70): fund 前に `getSummary` を読み `score<min` or `count<min` で **revert**（実績不足の provider に金を出させない）。
+  - Base mainnet 実デプロイ・Sourcify verified・Solidity 208 test。`@azeth/common` npm v0.2.24（viem 依存、内部 export は UNVERIFIED）。
+- **AS-IS**: Franklin に hook 機構なし。verify_and_pay も lending disbursement も結果を外部信用へフィードバックしない一方通行。default 検知は自前ローカルのみ。
+- **PROBLEM**: Azeth は hook をコントラクトで**強制**＝reputation 書き忘れが構造的に起きない（atomic）。Franklin は JS の best-effort `.catch()` 頼みで crash 時に漏れうる。lending 与信が「自分の loans.jsonl だけ」＝他取引先の実績を見てから貸す発想が欠落、cold-start bias が原理的に消せない。
+- **PATCH**: Solidity hook は移植不可 → 発想だけ JS 移植。`lending/lib/reputation-gate.mjs`（`passesOnchainReputationGate({borrowerAgentId,minScore,minJobCount})` = ReputationGateHook の JS 版、未設定なら fail-open で段階導入）+ gig reject 経路に -100 フィードバック。
+- **AFTER**: gig 成功/失敗が Azeth と同じ tag 規約でオンチェーンに残り、lending が「他 lender との実績」を colony/agent-economy 全体で共有される信用として参照 → 新規 lender でも borrower 信用がゼロ始まりでなく、未取引の borrower も他者評価で事前に弾ける。
+
+### 実装優先順（このファイルの R1〜R4 と整合）
+1. **部品1(Reputation 書込)** = 最優先。R1(実 P&L fitness)+proof-of-earning 層の第一歩。gigVerifyAndPay に giveFeedback を足すだけ、低リスク。
+2. **部品3(reputation-gate)** = 部品1 の直後。lending cold-start bias を業界標準(Azeth)パターンで緩和。
+3. **部品2(AgentKit)** = 保留。gasless onboarding が実ボトルネックになるまで採用しない（自前 viem の方が薄い）。
+※ VCSDD で harness-not-cook。全 subagent = Sonnet（§0 モデル方針）。
