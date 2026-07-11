@@ -29,63 +29,87 @@ Anthropic/AWS BP: **verifier が loop の自己報告テキストを読む = 名
 | S7 | CANONICAL_LOOPS に connector 欠落 | 予算 gate drift | connector 追加 |
 | S8 | CEO launchd 未 install | ceo-runner/ceo-weekly-eval が repo template のみ | launchctl load |
 
-## 3. FULL TO-BE ASCII（全部が本当に動く目標像）
+## 3. FULL TO-BE ASCII（最終設計: verifier は各 loop 内、CEO は薄い機械 gate、no human in loop）
 ```
-                        ┌──────────────────────────────────────────┐
-                        │  DAIS (human) — 良い issue を書く + go 判断  │
-                        │  受け取る: 銀行¥(MUFG/Stripe) + 人脈 + 時間  │
-                        └───────────────────┬──────────────────────┘
-   ═══════════════════════════════════════ │ ═══════════════════════════════════════
-   系統1: profitable-claude / CEO（人間のために稼ぐ, fiat→Dais 口座）  │
-                        ┌───────────────────▼──────────────────────┐
-                        │  CEO LOOP  (ceo_run.py, 週次agent判断+日次予算)│
-                        │  registry(全loop) · 予算hard-stop · §11配分   │
-                        │  ★各loopを FRESH-CONTEXT VERIFIER で検証★     │
-                        │   (report信用せず: 実投稿/実登録/実入金/ledger) │
-                        └──┬────┬────┬────┬────┬────┬────┬──────────┘
-                           ▼    ▼    ▼    ▼    ▼    ▼    ▼
-                         gig  capafy article life-mgr affil bounty connector
-                         出品  skill  note   MRR課金  コミッ 懸賞  イベント/人脈
-                         提案  販売   Zenn   集客→   ション 金   登録→gcal
-                         見積  →bank  有料    signup                +Telegram
-                         返信          記事    →Stripe
-                         →Coconala
-                         →MUFG
-                           │各loop = BASE + self-improve + self-heal(3層)
-                           ▼ 毎日: ①実行 ②実side-effectを出す
-                             ③FRESH verifierが state/outcomeを独立確認(babysitting無)
-                             ④乖離/失敗→self-fix spawn→根治→verify→再発防止をcodeに焼く
-                             ⑤SUCCESS後も毎日再検証(新故障検知)、escalation→修復が必ずtrigger
+   ① ONBOARDING（人間がやるのは ここ1回だけ。以後 loop の外）
+     $ curl anicca.sh | sh  → 自分の Claude subscription 接続 + credential vault
+       (bank/Stripe·Coconala·Google·wallet·SNS) + 稼ぎ先/やりたい事を選ぶ
+   ══════════ ここより下に人間はいない (no human in loop) ══════════
+   ② SPIN-UP: daemon(launchd/cron)が registry を読み、選んだ loop を起動
+      各 loop = 1 closed folder（BASE + verifier + self-heal が同居、散らさない）
 
-   ═══════════════════════════════════════════════════════════════════════════════
-   系統2: ~/anicca / H agent 経済（agent 自身の wallet, crypto）※claude-p 管轄外  
-     Franklin/Franklin2(SOL trade) · clip/video/reddit(on-chain USDC視聴報酬)
-     · x402-sell · token-launch · hl-trade · self-improve · spawn
-     → 自分の wallet で稼ぎ、spawn/lending で agent 経済を養う。別 instance(H)が管理。
-   ═══════════════════════════════════════════════════════════════════════════════
+   系統1: profitable-claude（人間のために稼ぐ, fiat→本人口座）
+     gig   capafy  article  life-mgr  affil  bounty  connector   …増やせる
+     出品  販売    Zenn     予定/連絡  紹介   懸賞    会議/人脈予約
+     →Coconala →bank 有料記事 →MRR            賞金    →gcal+Telegram
+        │
+   ③ 各 loop の中で毎日回る「閉じたサイクル」(全 loop 共通の型)
+   ┌────────────────────────────────────────────────────────────────┐
+   │ [BASE] 行動(出品/投稿/登録/取引/予約)                            │
+   │   ▼ 実 side-effect(実URL·実tx·gcal event·ledger行)を出す         │
+   │ [GROUND-TRUTH VERIFIER] ★信頼の核・各loop内★ report を読まない  │
+   │   browser(logged-out投稿/BAN)·on-chain(実入金)·exec(ledger実増)  │
+   │   ·gcal readback = tau-bench「実 final state を見る」            │
+   │   ▼PASS? ─yes→記録(SUCCESS後も毎日再検証=新故障を再検知)         │
+   │         └no →[SELF-HEAL] escalate→self-fix spawn→根因fix(repo跨)  │
+   │              →再verify PASS→再発防止を code に焼く                │
+   │   ＋[SELF-IMPROVE] 日次で戦略1変異→verifierが実成果で採否         │
+   └────────────────────────────────────────────────────────────────┘
+   ④ 価値が本人に返る: gig/capafy/article/LM→銀行¥/Stripe、connector/LM→gcal+Telegram
 
-   ★ ANTI-LIE 機構(Opusセッション内 /loop): 全loopの実side-effectを毎回
-     独立subagent verifierで確認する /loop を回す→検証コマンド出力が毎回truthを突きつけ、
-     私(agent)が嘘をついても構造的にバレる。done判定=検証コマンド出力、自己判断禁止。
+   [CEO = 薄い機械コンポーネント。LLM を毎日は回さない]
+     予算 hard-stop(固定path=機械gate) · registry(生死=各loopのverifier結果)
+     ★loop の kill/spawn/portfolio 判断は持たせない(危険、削除済)★
+     portfolio 判断が要る時だけ週次/月次に1回(通常は不要)
+
+   ═══════════════════════════════════════════════════════════════════
+   系統2: ~/anicca / H agent 経済（agent 自身の wallet, crypto）※claude-p 管轄外
+     Franklin/Franklin2(SOL)·clip/video/reddit(on-chain視聴報酬)·x402·spawn
+     → 自分の wallet で稼ぎ経済を養う。別 instance(H)が管理。型は③と同じ。
+   ═══════════════════════════════════════════════════════════════════
+   ⑤ なぜ human も CEO も立ち去れるか = verifier が各 loop に内在し実物で証明するから。
+      それが唯一の "closed" の条件。verifier が fake なら全部が嘘のまま回る。
 ```
 
 ## 4. FULL 残 TODO（優先順、全て「fix→FRESH verifier配線→browser/on-chain own-eyes確認」まで）
 **★ 全体原則（Dais 2026-07-11 確定）**: ①1 loop = 1 closed folder（BASE + verifier + self-heal を正しい repo に全部入れる。散らさない）。②別 repo だから直せない = 逃げ。跨いで根因まで直す/copy して集約。③loop の kill/spawn を agent に持たせない。
 
-**P0 土台（verifier を直す＝これが無いと全部嘘に戻る）**
-- [x] G1 escalation→self-fix trigger 確実化（`76a4fdc4`、fresh Opus 実走 PASS、push 済）
-- [x] G2 liveurl logged-out+BAN / video state整合 / capafy label照合 / DEAD誤判定（同 commit、実発火確認）
-- [ ] **G3 ★#1★ 共有 ground-truth verifier を build → 全 loop に配る**（doc24: fresh Opus + ProofShot(browser) + Base MCP(on-chain) + Bash(exec)、evaluator-optimizer + tau-bench「final state を見る」。other CC と1本に収束＝2つ作らない）。雛形 = `connector_streak_verify.py`。CLAUDE.md に verifier 3原則 bake。
-- [ ] G4 CEO を機械予算 hard-stop のみに縮退（**kill/spawn/portfolio 判断は削除**、日次 LLM CEO 廃止、S8 取消）
+**書式規約（BP=github/spec-kit 119k★ + INVEST）**: `- [ ] <ID> <動詞> <対象/path> — done: <検証可能条件>`。1行=1動詞1成果、and で2つは即分割、末尾 done 必須、`[dep:ID]` で依存明示。出典 https://github.com/github/spec-kit `templates/commands/tasks.md` + Wikipedia INVEST。
 
-**P1 系統整理（混線・stub 解消 / closed folder 化）**
-- [ ] S3 **gig Label衝突改名(緊急)** / S6 **capafy・article を profitable-claude の closed folder に集約**（capafy: openclaw の publisher + anicca の healthcheck を copy して1 folder に） / S1 hl 削除 / S2 pm 訂正 / S4 vestigial cron削除 / S5 cruft削除 / S7 CANONICAL_LOOPS に connector / ~~S8 CEO launchd install~~（取消）
+**P0 verifier 土台（これが無いと全部嘘に戻る）**
+- [x] G1 escalation→self-fix trigger を配線 — done: 本物 marker で self-fix.sh 実 spawn（`76a4fdc4` Opus実走PASS push済）
+- [x] G2 verifier に実side-effectチェック追加 — done: reddit BAN/video drift/capafy label が実データで発火（同 commit）
+- [ ] G3a `skills/self/ground-truth-verify.sh` を書く — done: headless claude を browser+Base MCP+bash 付きで spawn し verdict marker を吐く
+- [ ] G3b 各 loop の ground-truth check 定義を書く — done: reddit/clip/video/gig/capafy/connector/founder 各1個の「実物で見る」check spec が存在 `[dep:G3a]`
+- [ ] G3c `verify-loops-audit.sh` を verdict marker 参照に切替 — done: healthcheck が heartbeat でなく G3a の verdict.json で生死判定 `[dep:G3b]`
+- [ ] G3d verifier 3原則を CLAUDE.md に bake — done: report読まない/実side-effect/binary の3行が CLAUDE.md に有る
+- [ ] G3e other CC と verifier を1本に収束 — done: 共有 subagent 定義が1つ、2実装が並存しない
+- [ ] G4a CEO の kill/spawn/portfolio コードを削除 — done: ceo_run に loop 殺す/生む判断 path が無い
+- [ ] G4b CEO を機械予算 hard-stop のみに縮退 — done: 予算 gate が deterministic、日次 LLM 呼び出し無し
+- [ ] G4c S8 CEO launchd install を取消 — done: ceo-runner/weekly-eval を load しない
 
-**P2 各 loop を実際に稼がせる（own-eyes確認まで、G3 verifier で検証）**
-- [ ] L1 gig(実績>0) / L2 capafy(public掲載 status=4, "PUBLISHED"嘘修正) / L3 article(実publish→¥) / L4 LM(空稼働解消→signup→MRR) / L5 affiliate(reCAPTCHA突破→投稿) / L6 connector(全枠応募+7日streak) / L7 bounty(survivor→提出→賞金)
-- [ ] 系統2(clip/video/reddit/sol/pm/founder) は別 instance(H)管轄だが、混線・closed folder 化はここで整理
+**P1 系統整理（closed folder 化・stub 解消）**
+- [ ] S3 profitable-claude gig の launchd Label を `ai.anicca.hf-gig-*` に改名 — done: ~/anicca/earn/gig と衝突せず gig plist が load（緊急）
+- [ ] S6a capafy publisher を `~/.openclaw/skills/capafy-autopublish` → `profitable-claude/skills/human-funded/capafy/` に copy — done: 新 folder から publisher が実行できる
+- [ ] S6b capafy healthcheck を `~/anicca/skills/self/capafy-loop` から同 folder に copy — done: base+healthcheck が同居 `[dep:S6a]`
+- [ ] S6c article loop を profitable-claude の closed folder に集約 — done: article の base+verifier が同居
+- [ ] S1 registry+CANONICAL_LOOPS から hl を削除 — done: hl エントリが無い
+- [ ] S2 registry の pm を「claude-p個人・対象外」注記 — done: pm が誤帰属でない
+- [ ] S4 vestigial な affiliate/bounty/gig-proactive cron を削除 — done: 該当 cron が5分毎起動しない
+- [ ] S5 `.disabled-agent-economy` cruft を削除 — done: 存在しないパス残骸が無い
+- [ ] S7 CANONICAL_LOOPS に connector を追加 — done: connector が予算 gate に載る
 
-**Done判定（全 loop 共通、BP準拠）**: 実side-effectを G3 verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。
+**P2 各 loop を実際に稼がせる（G3 verifier で own-eyes 確認）**
+- [ ] L1 gig を full 稼働 — done: 出品/提案/見積/返信が実行され Coconala で実績>0 を logged-out 確認
+- [ ] L2 capafy を public 掲載 — done: listing status=4 を browser 確認、"PUBLISHED"嘘が出ない
+- [ ] L3 article を実 publish→¥ 導線化 — done: 実 publish + 視聴→有料 導線 + 実測 metrics
+- [ ] L4 LM の空稼働を解消 — done: 実 calendar/call/intake action→実 signup→MRR>0
+- [ ] L5 affiliate の reCAPTCHA を突破 — done: tier-a-bypass で再ログイン→日次投稿が再開
+- [ ] L6 connector を全枠+streak化 — done: 全 horizon 枠に FREE 応募 + 7日連続 gcal readback
+- [ ] L7 bounty を提出まで — done: survivor→提出→賞金 or 正直 none 行
+- [ ] L8 系統2(clip/video/reddit) の混線を closed folder 化 — done: 別 instance(H)管轄分と分離（稼働自体は H）
+
+**Done判定（全 loop 共通）**: 実side-effectを G3 verifier が独立確認できた時のみ working。report/test-green/adversary-PASS は working でない。
 
 ---
 
