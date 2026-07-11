@@ -646,16 +646,26 @@ baseline attempt's — but its `attemptsUsed` is `1` (the reprompt itself alread
 invoked), so the branch rule above correctly routes it to REQ-508's escalation, never back into REQ-505's
 reprompt path a second time. `currentOfferedSlots` identity is never consulted for this decision at all.
 
-Concretely: `index.mjs`'s existing `if (slot === 'sleep')` branch (`index.mjs:402-416`) becomes conditional —
-`if (slot === 'sleep' && !ctx.alwaysActEngaged)` — and a new guard immediately ahead of skill execution
-(covering both the fabricated-`"sleep"` case and any other slot excluded from the current attempt) checks
-`ctx.alwaysActEngaged && isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` for VALIDITY, where
-`currentOfferedSlots` is the retry loop's own local variable for the CURRENT attempt (never `ctx.alwaysActMenu`
-read directly). A rejection's BRANCH is then decided exclusively by the retry loop's own `attemptsUsed` local
-variable (REQ-511's shared state, reused/extended from `nextRerouteState`) — `attemptsUsed===0` routes into
-REQ-505's reprompt handling (and sets `attemptsUsed=1`); `attemptsUsed===1` routes DIRECTLY into REQ-508's
-escalation. `isRejectableSleepOrOffMenu` itself has, and needs, NO branch-selection responsibility — it
-answers ONLY "is `slot` valid for this attempt", never "which attempt is this".
+**Converge doc-sync 2026-07-11 correction, FIND-002**: the paragraph below previously described this as the
+existing `if (slot === 'sleep')` branch being made conditional in place. That is NOT what was shipped — see
+the actual mechanism, restated to match `runtime/loop/index.mjs`:
+
+Concretely: `index.mjs:516-518` adds an early return — `if (ctx.alwaysActEngaged) { return runAlwaysActWake({
+ctx, wakeId, ts, alwaysActMenu }); }` — immediately ahead of the pre-existing `think()`/tool-call-parse flow.
+This diverts an always-act-engaged wake into the dedicated `runAlwaysActWake` function BEFORE `index.mjs:551`'s
+pre-existing `if (slot === 'sleep')` branch is ever reached; that branch itself stays byte-for-byte
+unconditional and unmodified from the pre-feature original — it is simply unreachable for an engaged wake
+because of the earlier return, not because it was made conditional. Inside `runAlwaysActWake`'s own per-attempt
+retry loop, a new guard immediately ahead of skill execution (`index.mjs:717`, covering both the
+fabricated-`"sleep"` case and any other slot excluded from the current attempt) checks
+`isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` for VALIDITY, where `currentOfferedSlots` is the retry
+loop's own local variable for the CURRENT attempt (never `ctx.alwaysActMenu` read directly). A rejection's
+BRANCH is then decided exclusively by the retry loop's own `attemptsUsed` local variable, via
+`nextRerouteState({ attemptsUsed, maxAttempts: 1 })` at `index.mjs:718` (REQ-511's shared state) —
+`attemptsUsed===0` routes into REQ-505's reprompt handling (and sets `attemptsUsed=1`); `attemptsUsed===1`
+routes DIRECTLY into REQ-508's escalation. `isRejectableSleepOrOffMenu` itself has, and needs, NO
+branch-selection responsibility — it answers ONLY "is `slot` valid for this attempt", never "which attempt is
+this".
 **Edge Cases**:
 - A non-always-act wake (`ctx.alwaysActEngaged` falsy) is completely unaffected — `index.mjs:402-416`'s
   `sleep` branch fires exactly as it does today, byte-for-byte, since the new guard only activates when
@@ -858,6 +868,17 @@ violation and must be rewritten with fixtures before it can pass Phase 2a/2b rev
 
 ## Changelog
 
+- **converge fix: doc-sync FIND-001/002 (declared design synced to shipped implementation, no code
+  change)**: Phase 6 convergence review found REQ-513's "Concretely:" paragraph declared the wiring
+  mechanism as `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch "becomes conditional"
+  (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`). The actual shipped mechanism, confirmed by reading
+  `runtime/loop/index.mjs`, is an early-return dispatch at `index.mjs:516-518` into a dedicated
+  `runAlwaysActWake` function BEFORE `index.mjs:551`'s branch (left unconditional and unmodified) is ever
+  reached. The "Concretely:" paragraph is rewritten above to describe the real mechanism with current line
+  numbers. This is a documentation-accuracy fix only — no behavioral defect; PROP-513a/b/c/e all passed
+  before and after this correction (183/183). Companion fix (FIND-001, `verification-architecture.md`'s
+  `nextRerouteState` signature) applied in that file. See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-002.json`.
 - **iteration-4 fix: FIND-301 (branch selection keyed on attempt-state machine, exhaustive transition matrix
   added)**: REQ-513's iteration-3 fix rejected a parsed slot using the correct per-attempt
   `currentOfferedSlots` for VALIDITY, but still decided WHICH branch (REQ-505 reprompt vs REQ-508 escalation)

@@ -119,13 +119,42 @@ repeatedly cite.
 
 ## Mismatches found
 
-**None.** Every item in the declared Purity Boundary Map was independently re-derived this session
-(fresh reads + greps, not merely re-quoting Phase 1b's own claims) and matches. No hidden side effect
-was found inside any function classified Pure Core; no impure function re-implements pure-core decision
-logic inline; no verifier-hostile coupling (e.g. a pure function reaching into module-level mutable
-state) was found — `always-act-router.mjs` has zero module-level `let`/mutable state at all (only the
-one `const DOCTRINE_EARN_ACTIONS = new Set([...])`, itself immutable after definition and never mutated
-by any exported function — confirmed by reading the full file, no `.add(`/`.delete(` call anywhere).
+**None**, for the purity/impurity classification itself (I/O-freedom and judgment-freedom of every
+declared Pure Core function, and the delegate-don't-reimplement discipline of every declared Effectful
+Shell function) — see below for the caveat this session's own audit missed.
+
+**Converge doc-sync 2026-07-11 correction**: the "None" conclusion above was FALSIFIED by Phase 6
+convergence review for two specific, named claims that this audit session did not check — it verified
+the ABSENCE of I/O/judgment-branching in `nextRerouteState` and `runAlwaysActWake` (which does hold) but
+never diffed the declared function SIGNATURE/return-shape or the declared WIRING MECHANISM in
+`specs/verification-architecture.md` against the real code it was reading:
+
+- **FIND-001** (`.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-001.json`):
+  `specs/verification-architecture.md` declared `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })`
+  → `{ shouldRetry, excludeSlot, exhausted }`. The actual shipped signature at
+  `runtime/loop/always-act-router.mjs:148-153` is `nextRerouteState({ attemptsUsed, maxAttempts })` →
+  `{ shouldRetry, attemptsUsedNext, exhausted }` — no `lastOutcome` input, no `excludeSlot` output.
+  Resolved by doc-sync: `specs/verification-architecture.md`'s Pure Core entry now states the real
+  signature/return shape.
+- **FIND-002** (`.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-002.json`):
+  `specs/verification-architecture.md` and `behavioral-spec.md` REQ-513 both declared the wiring
+  mechanism as `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch "becomes conditional"
+  (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`). The actual shipped mechanism is an early-return
+  dispatch at `index.mjs:516-518` (`if (ctx.alwaysActEngaged) { return runAlwaysActWake(...); }`) that
+  diverts an engaged wake into `runAlwaysActWake` BEFORE `index.mjs:551`'s unconditional, unmodified
+  `if (slot === 'sleep')` branch is ever reached — that branch was never made conditional in place.
+  Resolved by doc-sync: both spec documents now describe the early-return dispatch mechanism with
+  current line numbers.
+
+Both are documentation-accuracy issues only — independently re-confirmed by the converge review's own
+raw test-output cross-checks that the ACTUAL runtime behavior is correct, money-safety-conformant, and
+fully test-covered (183/183, 0 semgrep findings). No source or test change was made or is implied by
+either correction. No hidden side effect was found inside any function classified Pure Core; no impure
+function re-implements pure-core decision logic inline; no verifier-hostile coupling (e.g. a pure
+function reaching into module-level mutable state) was found — `always-act-router.mjs` has zero
+module-level `let`/mutable state at all (only the one `const DOCTRINE_EARN_ACTIONS = new Set([...])`,
+itself immutable after definition and never mutated by any exported function — confirmed by reading the
+full file, no `.add(`/`.delete(` call anywhere).
 
 ## Follow-up before Phase 6
 
