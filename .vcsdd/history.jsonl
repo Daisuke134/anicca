@@ -348,3 +348,7 @@
 {"timestamp":"2026-07-11T08:58:04.515Z","event":"feature_created","featureName":"self-improve-checkpoint-resume","mode":"lean","language":"python"}
 {"timestamp":"2026-07-11T09:01:42.933Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-11T09:01:42.934Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-11T09:48:39.608Z","event":"gate_recorded","featureName":"self-improve-checkpoint-resume","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-11T09:48:45.130Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-11T09:48:45.136Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-11T09:48:45.136Z","event":"sprint_started","featureName":"self-improve-checkpoint-resume","sprintNumber":1,"phase":"2a"}
