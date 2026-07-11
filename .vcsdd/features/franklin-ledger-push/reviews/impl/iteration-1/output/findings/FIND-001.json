@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "`git push origin main` (ledger-publish.mjs:215) pushes the ENTIRE local `main` branch history, not just the path-scoped ledger commit. This directly contradicts the behavioral-spec's own security guarantee (behavioral-spec.md:141-142, NFR-Security: 'never publishes daemon.err, .env, wallet files, or anything outside ledger.jsonl's own already-redacted lines') and REQ-706's framing ('never publish daemon.err or any file other than ledger.jsonl lines'). `git commit -- <destPath>` (REQ-702) is correctly path-scoped, but the eventual `push` is NOT — it publishes every local commit currently sitting ahead of origin/main, regardless of which file(s) it touched or whether it was made by ledger-publish.mjs at all. Concretely: `skills/earn/lib/evolve.mjs:169-194` (`promote()`) makes a LOCAL-ONLY `git commit` (never pushes) against `skills/earn/baseline-genome.json` (CANONICAL_BASELINE_PATH, `skills/earn/lib/genome.mjs:25`) inside the exact same repo checkout that `ledger-publish.mjs`'s default `repoRoot` resolves to (`path.resolve(__dirname, '..', '..')`, ledger-publish.mjs:147, == the repo two dirs up from runtime/loop/index.mjs, the SAME repo evolve.mjs's own repoRoot derivation resolves to). `promote()` is wired LIVE into the wake loop's own earn-skill execution via `skills/earn/sol-trade/run.sh:142` (`node \"$SKILL_DIR/lib/sol-evolve.mjs\" ...` -> `promote()`). So: a wake that (a) runs sol-trade and triggers a genome promotion (local commit to baseline-genome.json, unredacted, un-reviewed, never itself pushed by evolve.mjs), followed later by (b) a ledger-publish cycle whose throttle crosses the 10-line/15-min threshold, will `git push origin main` and thereby publish the evolve.mjs genome commit to the PUBLIC github.com/Daisuke134/anicca repo as a side effect — a file/commit this feature's own spec explicitly promises never to publish, with zero redaction pass applied to it (redactPrivateKeyPatterns is only ever applied to the ledger lines this module itself appends, ledger-publish.mjs:182, never to whatever else is already committed on local main).",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "213-222",
+    "snippet": "if (decision.shouldPush && pendingLinesSincePush > 0) {\n  try {\n    git(['push', 'origin', 'main'], repoRoot);"
+  },
+  "routeToPhase": "2b"
+}

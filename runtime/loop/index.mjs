@@ -85,11 +85,15 @@ const LEDGER_PATH = path.join(ANICCA_HOME, 'state', 'ledger.jsonl');
 // (INV-NO-PROMPT-REGRESSION) — reuses the EXISTING appendLedgerLine primitive, never a new writer.
 const HARNESS_FAILURES_PATH = path.join(ANICCA_HOME, 'state', 'harness-failures.jsonl');
 const GENESIS_PATH = path.join(ANICCA_HOME, 'identity', 'genesis.md');
-// franklin-ledger-push (P2): throttle/cursor state for ledger-publish.mjs — deliberately in
-// ANICCA_HOME (data), NEVER inside the ~/anicca repo working tree (which is what gets committed).
+// franklin-ledger-push (P2) iter1 redesign: throttle/cursor state for ledger-publish.mjs —
+// deliberately in ANICCA_HOME (data). The DEDICATED publish clone (never the shared checkout
+// below) defaults to $ANICCA_HOME/state/.ledger-publish-repo, derived by ledger-publish.mjs itself
+// from this marker path's directory — see ledger-publish.mjs's publishRepoDir default.
 const LEDGER_PUBLISH_MARKER_PATH = path.join(ANICCA_HOME, 'state', '.ledger-publish-marker');
-// This file itself lives at <repo>/runtime/loop/index.mjs — two dirs up is the repo root that
-// ledger-publish.mjs commits into (mirrors evolve.mjs's own repoRoot derivation).
+// This file itself lives at <repo>/runtime/loop/index.mjs — two dirs up is the SHARED checkout's
+// repo root. ledger-publish.mjs reads ONLY `git remote get-url origin` from it (never writes to
+// it, never checks out/commits/pushes against it — FIND-001/002's fix) to resolve where its own
+// DEDICATED clone should point.
 const LOOP_REPO_ROOT = path.resolve(__dirname, '..', '..');
 
 // Read genesis prompt (missing = warn + empty string)

@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "security_surface",
+  "severity": "critical",
+  "description": "No concurrency guard exists for MULTIPLE Anicca instances sharing the SAME `~/anicca` git working tree on the SAME host, which is the deployment topology this repo actually runs. `publishLedgerCycle`'s default `repoRoot` (ledger-publish.mjs:147, `path.resolve(__dirname, '..', '..')`) resolves to the SAME physical directory regardless of `ANICCA_INSTANCE`/`ANICCA_HOME` — it is derived from the module's own file location, not the per-instance home. `runtime/anicca-daemon.sh:26` (`REPO=\"${ANICCA_REPO:-$HOME/anicca}\"`) uses the SAME default for every instance, and `skills/earn/polymarket-trade/run.sh:41-42`'s own comment confirms automaton (`com.anicca.daemon.plist`, ANICCA_HOME=~/.anicca) and Franklin (`ai.anicca.franklin-loop.plist`, ANICCA_HOME=~/.blockrun) both run via this shared daemon pattern on the same colony host (per project CLAUDE.md's colony table, both are Mac-Mini-resident). That means TWO independent long-running Node wake loops each call `publishLedgerCycle()` on their own cadence, each doing `git fetch`/`merge --ff-only`/`add`/`commit`/`push` via `execFileSync` against the SAME `.git/index` and `.git/HEAD`, with zero locking or mutual exclusion. The spec's Concurrency NFR (behavioral-spec.md:143-145) only reasons about a SINGLE instance's single-process wake loop ('no two publishLedgerCycle() invocations for the SAME instance ever run concurrently') and never addresses cross-instance sharing of the same checkout -- the actual hazard. Concurrent git subprocess invocations against one working tree risk `.git/index.lock` contention (stale-lock hangs/failures), index corruption, or one process's `git add` staging the OTHER instance's in-flight destPath changes. This is untested (no test seeds a repoRoot already locked/mutated by a concurrent process) and unaddressed anywhere in the implementation or verification-architecture.md's proof-obligation table (PROP-701..710 has no concurrency-hazard entry beyond the single-instance framing).",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "143-157",
+    "snippet": "repoRoot = path.resolve(__dirname, '..', '..'),\n... git = defaultGit,"
+  },
+  "routeToPhase": "2b"
+}
