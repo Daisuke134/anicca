@@ -137,15 +137,15 @@ honesty ラベル: **[V]**=research/ファイルで確認 / **[R]**=既知情報
 | ID | 欠けピース | 根拠 | done 条件 | 依存 |
 |---|---|---|---|---|
 | **M1** | reality-verifier(検証層)を doc24 設計 → 実装。**我々の #1 wedge** | 穴①、§5 核が未実装 | 各 loop の wake で on-chain external:true を独立確認する verifier が実走 | §9-1',§8-7/8 |
-| **M2** | fitness を実 on-chain P&L に繋ぐ（openevolve が earn-ledger external:true を読む） | 穴③、§9 R1、Goodhart | evolve の評価関数が backtest でなく実 tx を読む | M1 |
-| **M3** | openevolve が実際に fork/統合されているか検証、無ければ統合 or 撤回 | 内部棚卸しで統合コード未発見[?] | fork の実在をファイルで確認 or docs から撤回 | — |
+| **M2**〔再定義〕 | ~~fitness を実 P&L に直読~~ → **backtest fixture を live に忠実化(sim-to-real ギャップを潰す)**。literal な ledger 直読は 1 datapoint で最適化不能・Verifier's Law 違反ゆえ却下(M3 結果) | 穴③、§9 R1/R2、Goodhart の真因=sim-to-real | backtest が adverse-selection を含み、live P&L と backtest が乖離しない | M3 |
+| **M3**〔✅完了 2026-07-11〕 | openevolve が fork/統合されているか検証 | 内部棚卸しで統合コード未発見[?] | **DONE: 統合済み**。VCSDD `self-improve-real-ledger`=complete(2026-07-08)。fitness=リスク調整 backtest(意図的, Verifier's Law)、real ledger は promotion gate/cross-check であって fitness でない。realized gate は動作(verdict promote:false)。真因=実現利益$5のみ=cold-start データ枯渇 | — |
 | **M4** | 稼ぎを**需要不要 rail（pm/sol/hl/yield）に集中**、gig/clip/video を降格 | 穴②、gig=testnet/clip=broken[V] | registry 優先度が trading 系上位、broken slot は status 降格 | — |
 | **M5** | 配管は x402 スタックに準拠（独自を作らない）。x402-sell/gig を mainnet x402 へ | 🟢部品は copy、gig=Sepolia のみ[V] | gig/x402-sell が x402 mainnet で1 tx | — |
 | **M6** | always-act 強制を全 citizen に（今 Franklin のみ） | §5 gap | claude-p/Franklin2 も always-act gate に載る | — |
 | **M7** | pm MM の adverse-selection を止める | 穴③、§9 R2 | 片側約定 naked が起きないコード | — |
 | **M8** | Franklin Base $6.48 → Solana 集約（self-funded・許可不要） | §9 R4 | 8Fpqd の USDC 増を on-chain 確認 | — |
 
-**クリティカルパス**: M3(openevolve 真偽) → M1(検証層) → M2(fitness を実弾) → M7(漏れ止め) → M8(bankroll) → §9-4'/5'(1 wake で external:true 実 tx)。ここが緑になるまで拡大(spawn/dashboard)に進まない。
+**クリティカルパス〔M3 後に更新〕**: ~~M3~~✅ → **A = M7+M2再定義（sim-to-real を潰す: backtest に adverse-selection をモデル + pm naked 片側約定を止める。Dais 2026-07-11 選択）** → M8(bankroll) → §9-4'/5'(1 wake で external:true 実 tx) → M1(検証層) → 拡大。M3 の発見: openevolve は既に動く、詰まりは「backtest が live を再現してない(+$14 vs 実 -$8.6)」ゆえ、fitness 差し替えでなく backtest 忠実化が正しいレバー。
 
 ---
 
