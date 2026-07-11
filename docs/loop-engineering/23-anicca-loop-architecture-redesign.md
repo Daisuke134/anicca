@@ -43,8 +43,8 @@ profitable-claude の loop が **repo 外**を参照している＝OSS で他人
 
 ## 3. FULL TO-BE ASCII（最終設計: verifier は各 loop 内、CEO は薄い機械 gate、no human in loop）
 ```
-   ① ONBOARDING（人間がやるのは ここ1回だけ。以後 loop の外）
-     $ curl anicca.sh | sh  → 自分の Claude subscription 接続 + credential vault
+   ① ONBOARDING（人間がやるのは ここ1回だけ。以後 loop の外）※installer は未作成=TODO
+     $ curl .../profitable-claude/install.sh | sh  → 自分の Claude subscription 接続 + credential vault
        (bank/Stripe·Coconala·Google·wallet·SNS) + 稼ぎ先/やりたい事を選ぶ
    ══════════ ここより下に人間はいない (no human in loop) ══════════
    ② SPIN-UP: daemon(launchd/cron)が registry を読み、選んだ loop を起動
