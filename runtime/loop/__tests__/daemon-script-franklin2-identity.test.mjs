@@ -122,3 +122,71 @@ test('impl-review iteration-1 FIND-002 fix (static): the franklin-branch telemet
     'the poster must be launched with the --home "$ANICCA_HOME" argv marker so the scoped pkill pattern above can actually match it',
   );
 });
+
+test('impl-review iteration-2 FIND-001 fix (static): a one-time, end-anchored legacy-poster cleanup pkill is present, positioned after the scoped pkill and before the poster is (re)launched', () => {
+  const step3Start = source.indexOf('# 3. telemetry poster');
+  const step4Start = source.indexOf('# 4. brain endpoint');
+  const step3 = source.slice(step3Start, step4Start);
+  const scopedIdx = step3.indexOf('pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME"');
+  const legacyIdx = step3.indexOf('pkill -f "dashboard/telemetry-post-franklin\\.mjs$"');
+  const launchIdx = step3.indexOf('node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" --home "$ANICCA_HOME"');
+  assert.ok(scopedIdx !== -1, 'expected the FIND-002(iter1) scoped pkill pattern to still be present');
+  assert.ok(legacyIdx !== -1, 'expected a new end-anchored legacy-cleanup pkill pattern (FIND-001 iter2 fix)');
+  assert.ok(launchIdx !== -1, 'expected the poster launch line to still be present');
+  assert.ok(scopedIdx < legacyIdx && legacyIdx < launchIdx, 'legacy-cleanup pkill must run after the scoped pkill and before the poster is (re)launched');
+});
+
+test('impl-review iteration-2 FIND-002 fix (static): the dead env-var pkill ("FRANKLIN_TELEMETRY_LOOP") is gone — pkill -f matches argv, not exported environment variables, so it never matched anything', () => {
+  const step3Start = source.indexOf('# 3. telemetry poster');
+  const step4Start = source.indexOf('# 4. brain endpoint');
+  const step3 = source.slice(step3Start, step4Start);
+  assert.ok(
+    !/pkill -f "FRANKLIN_TELEMETRY_LOOP"/.test(step3),
+    'the dead pkill -f "FRANKLIN_TELEMETRY_LOOP" line must be removed (it matches argv, never an exported env var)',
+  );
+  // The export itself is untouched (harmless env marker on the poster subshell) — only the
+  // ineffective pkill targeting it was dead code.
+  assert.ok(/export FRANKLIN_TELEMETRY_LOOP=1/.test(step3), 'the FRANKLIN_TELEMETRY_LOOP export on the poster subshell is unrelated dead-pkill scope and must remain untouched');
+});
+
+test('impl-review iteration-2 FIND-001 fix — match-matrix simulation: applies the scoped pattern and the new legacy end-anchored pattern to real legacy/new-format argv strings for BOTH live instances, exactly reproducing pkill -f ERE semantics via grep -E', () => {
+  // Real deployed --home values (from ai.anicca.franklin-loop.plist / ai.anicca.franklin2-loop.plist,
+  // as confirmed in iteration-2 notes.md / iteration-1 FIND-002).
+  const HOME_FRANKLIN = '/Users/operator/.blockrun';
+  const HOME_FRANKLIN2 = '/Users/operator/.franklin2-home/.blockrun';
+  const SCRIPT = 'node /Users/operator/anicca/runtime/dashboard/telemetry-post-franklin.mjs';
+
+  const argv = {
+    franklin_legacy: SCRIPT, // pre-29023a55: no --home argv marker at all
+    franklin_new: `${SCRIPT} --home ${HOME_FRANKLIN}`,
+    franklin2_legacy: SCRIPT, // identical text to franklin_legacy — legacy argv never differentiates instances
+    franklin2_new: `${SCRIPT} --home ${HOME_FRANKLIN2}`,
+  };
+
+  function pkillMatches(pattern, text) {
+    const result = spawnSync('/usr/bin/grep', ['-E', pattern], { input: text, encoding: 'utf8' });
+    return result.status === 0;
+  }
+
+  const scopedPattern = (home) => `dashboard/telemetry-post-franklin\\.mjs --home ${home.replace(/[.]/g, '\\.')}`;
+  const legacyPattern = 'dashboard/telemetry-post-franklin\\.mjs$';
+
+  // Scoped pattern for franklin's own $ANICCA_HOME: matches ONLY franklin_new.
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin_legacy), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin_new), true);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin2_legacy), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN), argv.franklin2_new), false);
+
+  // Scoped pattern for franklin2's own $ANICCA_HOME: matches ONLY franklin2_new.
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin_legacy), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin_new), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin2_legacy), false);
+  assert.equal(pkillMatches(scopedPattern(HOME_FRANKLIN2), argv.franklin2_new), true);
+
+  // Legacy end-anchored pattern: matches ONLY markerless (legacy) argv, for EITHER instance — never
+  // a new-format argv (which always has trailing " --home <path>" so it can't end at ".mjs").
+  assert.equal(pkillMatches(legacyPattern, argv.franklin_legacy), true);
+  assert.equal(pkillMatches(legacyPattern, argv.franklin_new), false);
+  assert.equal(pkillMatches(legacyPattern, argv.franklin2_legacy), true);
+  assert.equal(pkillMatches(legacyPattern, argv.franklin2_new), false);
+});

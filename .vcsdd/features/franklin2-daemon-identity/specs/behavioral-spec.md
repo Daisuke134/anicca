@@ -88,6 +88,24 @@ derivation).
   can no longer kill ANOTHER concurrently-running instance's in-flight poster process, since both
   instances would otherwise present the identical `dashboard/telemetry-post-franklin.mjs` argv
   substring to an unscoped `pkill -f`.
+- (impl-review iteration-2 FIND-001 fix — migration edge case) Scoping the pkill to `--home
+  $ANICCA_HOME` (FIND-002 above) and adding that same `--home` argv marker to the poster's own launch
+  command landed in the SAME commit (29023a55). This means a poster process still running under the
+  PRIOR daemon.sh version (started before that commit, with NO `--home` argv marker) can never be
+  matched by the new scoped pattern — on the FIRST self-update+restart that pulls this commit, for
+  EITHER live Franklin instance, the old-generation poster is orphaned rather than killed, and a second
+  poster loop starts alongside it, permanently duplicating the dashboard beat (the orphan can never
+  subsequently match ANY future scoped pattern either, since it permanently lacks `--home`). THE SYSTEM
+  SHALL additionally run a ONE-TIME, end-anchored cleanup `pkill -f
+  "dashboard/telemetry-post-franklin\.mjs$"` (ERE `$` end-anchor, dot escaped) immediately after the
+  scoped pkill and before the poster relaunch, so it matches ONLY a legacy (markerless) argv — a
+  new-format argv always has a trailing " --home <path>" and therefore never ends at the script path,
+  so it never double-matches an already-scoped process. This pattern is deliberately NOT
+  instance-scoped (a legacy argv carries no `--home` to scope by) and so MAY cross-kill a sibling
+  Franklin instance's own legacy poster once; that is an accepted, self-healing trade-off (the sibling's
+  own next ~120s loop iteration or restart re-launches it) versus the alternative of permanent
+  duplication. Safe to remove once every live Franklin-family instance has restarted at least once on
+  this commit or later (no legacy-argv poster can exist anymore at that point).
 **Acceptance Criteria**:
 - With `ANICCA_INSTANCE=franklin2`, the brain-probe/telemetry/wallet-derivation branch conditions all
   evaluate true (same as `ANICCA_INSTANCE=franklin` today).
@@ -120,3 +138,13 @@ NOT-franklin and drives the same default path as `clawrouter`.
 - Must remain POSIX-safe under the file's own `#!/usr/bin/env bash` + `set -uo pipefail` (no bashisms
   beyond what the file already uses, e.g. `${VAR:-default}`, `case`, are already in use elsewhere in the
   motherboard/repo).
+
+## Changelog — impl iter2 fixes
+
+- **FIND-001 (major, edge_case_coverage/implementation_correctness)**: added the one-time,
+  end-anchored legacy-poster cleanup `pkill` documented in REQ-002(b) above, to close the
+  guaranteed-to-occur orphaned-poster gap on the first restart after commit 29023a55.
+- **FIND-002 (minor, structural_integrity)**: removed the dead `pkill -f "FRANKLIN_TELEMETRY_LOOP"`
+  line — `pkill -f` matches a process's argv, never its exported environment, so this line never
+  matched anything, on any instance, ever. The `export FRANKLIN_TELEMETRY_LOOP=1` on the poster
+  subshell itself is untouched (harmless, unrelated to the dead pkill that targeted it).
