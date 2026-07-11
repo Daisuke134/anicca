@@ -22,7 +22,10 @@ liveurl(){ local f="$1"; [ -f "$f" ] || { echo "NO-FILE"; return; }
   # VERIFY_LOOPS_SELF_DIR/EARN_VIDEO_STATE_PATH/CADENCE_DEADLINE_NOW_HOUR_JST convention) so a test
   # can stub the HTTP outcome without touching the real network or fighting this script's own
   # hardcoded PATH= line (which always puts the real system curl ahead of any PATH-based stub).
-  local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o /dev/null -w '%{http_code}' --max-time 12 -L "$u" 2>/dev/null||echo 000)"
+  # UA (self-fix 2026-07-11): reddit.com/old.reddit.com returns 403 to curl's default bare
+  # User-Agent even for genuinely-live posts (confirmed live: same URL returns 200 with a
+  # browser UA) — a false DEAD would have spuriously re-triggered self-fix on a healthy loop.
+  local code; code="$("${VERIFY_LOOPS_AUDIT_CURL_BIN:-curl}" -s -o /dev/null -w '%{http_code}' --max-time 12 -L -A 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' "$u" 2>/dev/null||echo 000)"
   case "$code" in 200|201|202|301|302|308) echo "LIVE($code) $u";; *) echo "DEAD($code) $u";; esac; }
 CAP="$HOME/.openclaw/skills/capafy-autopublish/state/published.jsonl"
 POSTS="$SELF/reddit-loop/state/posts.jsonl"
