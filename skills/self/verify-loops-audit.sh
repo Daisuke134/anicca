@@ -220,4 +220,9 @@ done
 if [ -x "$SELF/../report/loop-report.sh" ]; then
   bash "$SELF/../report/loop-report.sh" audit "$(printf '%s' "$OUT" | tr '\n' ' ' | cut -c1-3000)$LM_NOTE |$CADENCE_SCORECARD" no-op 0 "none: routine 6h scorecard, no per-pass artifact" >> "$LOG" 2>&1 || true
 fi
+# AGENTIC verification (#5 last mile): after the deterministic side-effect audit above, fire the
+# fresh-context reality-verifier on any loop that booked a NEW external:true earn since last check.
+# Token-safe: spawns nothing when there are no new earns (today's state). Fail-safe: never breaks this audit.
+bash "$SELF/reality-verify-on-new-earn.sh" >> "$LOG" 2>&1 || true
+
 echo "[verify-loops-audit] done $(date '+%F %T')"
