@@ -1,0 +1,16 @@
+{
+  "featureName": "reality-verifier",
+  "mode": "lean",
+  "currentPhase": "init",
+  "phaseHistory": [],
+  "iterations": {},
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-reality-verifier-1783785703102",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-11T16:01:43.102Z",
+  "updatedAt": "2026-07-11T16:01:43.102Z"
+}

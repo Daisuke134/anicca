@@ -238,7 +238,14 @@
       "language": "typescript",
       "currentPhase": "complete",
       "updatedAt": "2026-07-11T01:16:39.166Z"
+    },
+    "reality-verifier": {
+      "status": "active",
+      "createdAt": "2026-07-11T16:01:43.102Z",
+      "mode": "lean",
+      "currentPhase": "init",
+      "updatedAt": "2026-07-11T16:01:43.102Z"
     }
   },
-  "activeFeature": "franklin-alwaysact-skill-router"
+  "activeFeature": "reality-verifier"
 }
