@@ -105,7 +105,20 @@ driver の per-day agent が 7/16-18 全て `rc=124`（timeout・ゼロ着地）
 - driver は 7/16 landing 後 7/17→7/18→…と継続中。各日 gcal で offline+実会場を読返し確認する。
 - **残注意**: 7/21/23/25/26 は online junk が gcal に残り "filled" 扱い→driver が触らない。whole-2-week offline 化には junk 削除→再 driver が必要（Dais は junk 削除を deprioritize だが goal は whole-2-week offline）。
 
+## ★ダブルブッキング bug（Dais最重要指摘 2026-07-12）→ 特定・修正・実証★
+最初の landing-fix（gcal_write を「connector同士の重複のみ abort」に緩和）が**緩すぎ**、7/16 に **13:30–18:30** の日中イベントを登録＝**Dais の「Day job 9-17 JST」とダブルブッキング**した。
+- **正しい設計**: 元の any-overlap abort は正しく、唯一のバグは**丸1日枠**だった。実時刻に直した今、ガードはこうあるべき: **イベントの実時刻窓に重なる「時刻付き(all-dayでない)・非connector予定」があれば abort**。夜(18:00+)/週末は仕事(9-17)と重ならないので通り、日中の仕事重複は正しく拒否。
+- **fix（自分で、commit 済）**:
+  1. `gcal_write.py`: `_is_busy_conflict()` = 時刻付き非connector予定が窓に重なれば abort（all-day marker と connector event は除外）。**実gogで検証**: 夜19-21窓→Day job返らず=WRITE OK / 日中13:30-18:30窓→Day job返る=ABORT。
+  2. `connector_fill_gaps.sh` prompt: HARD「平日は18:00以降のみ、9-17重複は拒否、土日自由」。
+  3. ダブルブッキングした 7/16 イベント + 残骸 travel 2件を MCP delete_event で削除。
+- **実証**: 再driver で 7/16 が **WeWork渋谷スクランブルスクエア39F 18:30–20:00**（夜・仕事の後・重複なし）に再登録。agent が「Day job 9-17 の後、重複なし」を自己確認。**loop が自分でダブルブッキングを回避する**ことを実データで確認。
+- 現状 offline確定=5日(7/13-17、全て夜・重複ゼロ)。driver は 7/18→7/24 を継続中。online junk 4日(7/21/23/25/26)は未処理。
+
 ## 残 TODO（(c)(d) 済、(a) 進行中）
+- 再driver が 7/18/19/20/22/24 を夜・offline・非重複で埋める（進行中）→各日 gcal 直読で検証。
+- online junk 4日(7/21/23/25/26)を削除→再driver で offline 化＝whole-2-week offline。
+- 全着地でダブルブッキング0の最終確認。
 - (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 競合解消後の着地を gcal get_event で各日 location=実会場を読返し確認。
 - (b) 高速化 = discover-once: luma.com/tokyo + /crypto + connpass を1回スクレイプ→次14日の in-person AI/crypto イベントを全抽出→各空き日にマッピング→登録。per-day 再探索を廃す。
 - (d) fresh adversary(Opus) PASS。
