@@ -1,0 +1,53 @@
+{
+  "featureName": "franklin2-daemon-identity",
+  "mode": "lean",
+  "language": "bash",
+  "currentPhase": "2c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T00:00:00.000Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T00:00:00.500Z"
+    },
+    {
+      "from": "1b",
+      "to": "2a",
+      "timestamp": "2026-07-11T00:05:00.000Z"
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "timestamp": "2026-07-11T00:15:00.000Z",
+      "note": "RED confirmed: 7/8 new tests failed against unmodified daemon.sh (evidence/sprint-1-red-phase.log); npm test 183-baseline unaffected (pre-existing PROP-023(e) flake in integration.test.mjs isolated and documented, unrelated to this feature)."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "timestamp": "2026-07-11T00:25:00.000Z",
+      "note": "GREEN: is_franklin_instance() implemented + wired at all 3 call sites; 18/18 franklin daemon/plist tests pass (evidence/sprint-1-green-phase.log); npm test 183-baseline unaffected. Updated the 2 pre-existing daemon-script-franklin-routing.test.mjs assertions that hardcoded the literal `[ \"$INSTANCE\" = \"franklin\" ]` source text to match the new is_franklin_instance call form (same behavioral assertions, condition text legitimately changed by this feature). No further refactor needed (4-line diff already minimal, no duplication)."
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "2a": 1,
+    "2b": 1
+  },
+  "proofObligations": [
+    "PROP-001", "PROP-002", "PROP-003", "PROP-004", "PROP-005", "PROP-006"
+  ],
+  "traceability": {
+    "epicId": "VCSDD-franklin2-daemon-identity-1783807200000",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-11T00:00:00.000Z",
+  "updatedAt": "2026-07-11T00:00:00.500Z",
+  "note": "P4-code, lean mode, worktree feature/franklin2-daemon-identity. Phase 3 (fresh-context adversary implementation review) is the parent orchestrator's next step, not run by this builder pass."
+}

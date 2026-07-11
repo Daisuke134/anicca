@@ -34,6 +34,25 @@ LOGDIR="$ANICCA_HOME/logs"; mkdir -p "$LOGDIR"
 
 log() { echo "[$(date -u +%FT%TZ)] anicca-daemon: $*" >&2; }
 
+# franklin2-daemon-identity REQ-001: pure, deterministic instance-classification predicate — matches
+# 'franklin' (unchanged, original citizen) or 'franklin' followed by a digit-run (franklin2, franklin10,
+# … future spawned Franklin siblings). Fails CLOSED (exit 1 / false) on anything else, including empty,
+# case variants (Franklin2), and non-digit suffixes (franklinX) — those keep today's default/EVM path
+# unchanged (REQ-003/REQ-004). Used at all 3 routing call sites below (brain-probe, telemetry-poster
+# choice, wallet-address derivation) so they can never diverge. Parsing a fixed machine identifier format
+# via a POSIX `case` pattern here is genuine parsing, not judgment (same class as the PORT parsing
+# elsewhere in this file) — no LLM-replaceable decision is being made.
+is_franklin_instance() {
+  local suffix
+  suffix="${1#franklin}"
+  [ "$suffix" = "$1" ] && return 1  # no literal 'franklin' prefix at all (case-sensitive)
+  case "$suffix" in
+    '') return 0 ;;             # exactly 'franklin'
+    *[!0-9]*) return 1 ;;       # suffix has a non-digit char anywhere -> fail closed
+    *) return 0 ;;              # suffix is a non-empty digit-run -> 'franklin<N>'
+  esac
+}
+
 # 1. self-update from the mother (fast-forward only; never clobber local state) ------------------
 if [ -d "$REPO/.git" ]; then
   git -C "$REPO" fetch --quiet origin main 2>/dev/null \
@@ -53,7 +72,7 @@ if [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
     && log "linked node_modules for skill deps"
 fi
 # 2. brain: start this instance's own OpenAI-compatible proxy on $PORT if not already answering.
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # franklin-loop-revival REQ-004(b)/REQ-005/PROP-016 (2026-07-08): Franklin's brain is the
   # ALREADY-RUNNING, SEPARATELY-launchd shared free-tier LLM-router job on :8402 (its own
   # RunAtLoad+KeepAlive plist, confirmed live — free-tier-only, no shared-wallet credential
@@ -101,13 +120,32 @@ else
 fi
 
 # 3. telemetry poster: one instance (kill any stale one first so the dashboard never doubles) -----
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # telemetry-post-franklin.mjs is a ONE-SHOT script (ed25519 signer over Franklin's own Solana key,
   # was previously appended to sol-trade/run.sh) — no built-in setInterval like telemetry-poster.mjs,
   # so loop it here every 120s (same cadence as the EVM poster) to keep Franklin alive on the dashboard.
-  pkill -f "dashboard/telemetry-post-franklin.mjs" 2>/dev/null || true
-  pkill -f "FRANKLIN_TELEMETRY_LOOP" 2>/dev/null || true
-  ( export FRANKLIN_TELEMETRY_LOOP=1; while true; do node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" >>"$LOGDIR/poster.log" 2>&1; sleep 120; done ) &
+  # franklin2-daemon-identity impl-review iteration-1 FIND-002 fix: pkill -f is scoped to THIS
+  # instance's own $ANICCA_HOME (via the `--home` argv marker the poster is invoked with below, which
+  # the script itself never reads/parses — it is present purely so this pattern can target it) so a
+  # daemon restart of ONE Franklin-family instance can never kill ANOTHER concurrently-running
+  # instance's in-flight poster process — both instances run the identical script path, so an
+  # unscoped pattern would match both (confirmed: two live launchd jobs, ai.anicca.franklin-loop and
+  # ai.anicca.franklin2-loop, each with their own distinct $ANICCA_HOME).
+  pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME" 2>/dev/null || true
+  # franklin2-daemon-identity impl-review iteration-3 FIND-001 fix: the iteration-2 one-time,
+  # unscoped, end-anchored legacy-poster-cleanup pkill that used to run here is REMOVED. It was
+  # meant to catch ONLY a stale poster LOOP left running by a pre-29023a55 daemon.sh (no --home argv
+  # marker), but its end-anchored pattern also matched skills/earn/sol-trade/run.sh's own flagless,
+  # `timeout 20`-bounded, short-lived one-shot telemetry POST — a currently-live, unmodified caller
+  # of this identical script that never carries a --home marker and never will — on EVERY invocation,
+  # forever, not only during a transient migration window. That made every daemon restart a chance to
+  # SIGTERM a legitimate, in-flight, non-legacy process belonging to this SAME instance's own
+  # sol-trade pass. No argv-shape pattern can safely tell "stale long-lived loop" apart from
+  # "legitimate short-lived one-shot" here, so this is no longer done in code at all. The one-time
+  # migration of any still-running pre-29023a55 legacy poster LOOP is now a documented, ONE-TIME
+  # OPERATOR step performed once per instance at deploy — see behavioral-spec.md REQ-002(b)
+  # "Deployment / migration runbook".
+  ( export FRANKLIN_TELEMETRY_LOOP=1; while true; do node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" --home "$ANICCA_HOME" >>"$LOGDIR/poster.log" 2>&1; sleep 120; done ) &
 else
   pkill -f "dashboard/telemetry-poster.mjs" 2>/dev/null || true
   sleep 1
@@ -117,7 +155,7 @@ fi
 # 4. brain endpoint + model the loop should use -------------------------------------------------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local}"
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # franklin-loop-revival REQ-001: derive Franklin's OWN Solana wallet address (base58 pubkey) via
   # the gated per-instance resolve-identity.mjs::resolveSolanaSecret path (never bare-grepped, never
   # falls back to scanning another instance's dot-directory — REQ-005/REQ-006). A missing or
