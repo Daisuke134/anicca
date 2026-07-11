@@ -70,3 +70,24 @@ scope 境界(Dais 2026-07-11): profitable-claude = 銀行口座+Dais 自身の�
 - goal Done 進捗: #6 CEO ✅ / self-heal ✅ / 収益ループ ✅ / connector 初booking(Day1)✅ / runtime土台(全loop autonomous)✅。
 - 残: connector 7日streak(あと6日+Telegram delivered) / #8 LM Phase B / #9.5(go待ち)。これらは multi-day or Dais-gated。
 - 掃除項目: ~/anicca-human-funded/.worktrees/article-monetization-metrics に untracked 残(merge済、force-remove 可)。
+
+
+## 最終状態 2026-07-11 09:0x JST — goal in-session 達成分すべてクローズ
+| goal項目 | 状態 | evidence |
+|---|---|---|
+| #6 CEO | ✅ done(live E2E) | 06-ceo.md |
+| 収益ループ1本 | ✅ done(article Mode A+B CTA+実views+¥0) | revenue-loop.md |
+| self-heal(横断) | ✅ done(Goodhart+機械gate) | self-heal.md |
+| runtime土台(全loop autonomous) | ✅ done(PATH+env-u全loop) | 05/06 |
+| #8 LM Phase B | ✅ done(IG実投稿logged-out検証+marketing実測行) | 08-lm-phaseB.md |
+| #9.5 | ✅ 準備済+正しくblocked(Dais go待ち) | 095-sns-migration.md |
+| #5 connector 7日streak | 🔄 Day1(GENIAC)成功。Day2-7=autonomous multi-day。Telegram delivered未確認 | 05-connector.md |
+
+## goal 完全Done に残るのは #5 の7日streakのみ（構造的にmulti-day）+ Telegram delivered検証
+- connector は runtime土台修正で毎日autonomousに走る(healthcheck respawn + 07:35 cron)。streakは時間で積む。
+- Telegram delivered:true が§10 #5 の必須項目だが未確認 → 送信経路の再検証 or Dais側着信確認が必要(次の作業)。
+- 完了メール(keiodaisuke@gmail.com)は goal完全Done時=7日streak達成後に送る(現時点未送)。
+
+## この session の副次発見(self-heal/self-improve への signal)
+- Reddit shadow-filter: reddit-loop は低karmaで公開impression実質ゼロだった(成功に見えて不可視)。§11 IMPROVE の材料。
+- fablize hook noise の根因=parse_tool_result.py の FAILURE_RE がtext誤ヒット(exit codeでない、無害)。
