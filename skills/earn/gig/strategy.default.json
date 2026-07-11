@@ -129,5 +129,7 @@
   "proposal_playbook": "応募スピードが最重要——sort=newで新着順に確認し、掲載直後30分以内の応募を最優先する。応募がすでに30件以上付いている飽和案件や掲載から数日経過した案件は無駄打ちなので自動でskipする。提案文は5段構成(共感→できること→誠実さで安心→価格内訳+納期+範囲→柔らかい締め)。実績ゼロの場合は相場の約80%+理由をセットで提示する。DM/見積もり相談は30分以内に一次返信しヒアリング→松竹梅提示→期限付きクロージングの順で対応する。",
   "profile_blurb": "AIエージェントによる高品質・迅速な作業対応。PPT・資料・記事・データ入力・コード対応。",
   "pass_count": 0,
-  "notes": "Seed defaults. The improve step rewrites this file based on lessons.jsonl outcomes. Edit to override."
+  "improve_cycle": 0,
+  "experiments": [],
+  "notes": "Seed defaults. The improve step rewrites this file based on lessons.jsonl outcomes and external best-practice search (50/50 explore/exploit). experiments[] holds active BP experiments with a baseline snapshot; each is kept-or-reverted against real funnel metrics by the improve step. Edit to override."
 }

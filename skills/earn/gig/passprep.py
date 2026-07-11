@@ -46,6 +46,8 @@ FALLBACK = {
     "proposal_templates": {},
     "profile_blurb": "AIエージェントによる高品質・迅速な作業対応。PPT・資料・記事・データ入力・コード対応。",
     "pass_count": 0,
+    "improve_cycle": 0,
+    "experiments": [],
     "notes": "Fallback defaults — strategy.default.json was not found.",
 }
 
@@ -116,16 +118,44 @@ def main():
         pass_count = int(strategy.get("pass_count") or 0) + 1
         strategy["pass_count"] = pass_count
 
-        # Write back atomically
-        atomic_write(STRATEGY_FILE, strategy)
-
         # Compute do_improve: true when pass_count is a multiple of improve_cadence_passes
         cadence = max(1, int(strategy.get("improve_cadence_passes") or 4))
         do_improve = (pass_count % cadence == 0)
 
+        # 50/50 explore/exploit self-improve (gig L1-b): advance the improve_cycle
+        # counter ONLY on an improve pass and alternate the mode so half of all
+        # improve cycles search EXTERNAL best-practices (explore) and half tune
+        # introspectively from own lessons (exploit). First improve = explore.
+        # This is deterministic bookkeeping only; WHICH change to make stays the
+        # agent's judgment (no hardcoded rule picks the mutation).
+        improve_cycle = int(strategy.get("improve_cycle") or 0)
+        if do_improve:
+            improve_cycle += 1
+            strategy["improve_cycle"] = improve_cycle
+            improve_mode = "explore" if (improve_cycle % 2 == 1) else "exploit"
+        else:
+            improve_mode = None
+
+        # Surface active experiments whose evaluation window has elapsed so the
+        # improve step can keep-or-revert them against REAL funnel metrics.
+        experiments = strategy.get("experiments")
+        experiments = experiments if isinstance(experiments, list) else []
+        experiments_due = [
+            e for e in experiments
+            if isinstance(e, dict)
+            and e.get("status") == "active"
+            and isinstance(e.get("eval_by_pass"), int)
+            and pass_count >= e["eval_by_pass"]
+        ]
+
+        # Single atomic write-back (pass_count and possibly improve_cycle advanced)
+        atomic_write(STRATEGY_FILE, strategy)
+
         result = {
             "pass_count": pass_count,
             "do_improve": do_improve,
+            "improve_mode": improve_mode,
+            "experiments_due": experiments_due,
             "max_apply_per_pass": int(strategy.get("max_apply_per_pass") or 5),
             "priority_categories": list(strategy.get("priority_categories") or []),
             "skip_categories": list(strategy.get("skip_categories") or []),
@@ -139,6 +169,8 @@ def main():
         fallback_result = {
             "pass_count": 0,
             "do_improve": False,
+            "improve_mode": None,
+            "experiments_due": [],
             "max_apply_per_pass": 5,
             "priority_categories": FALLBACK["priority_categories"],
             "skip_categories": [],
