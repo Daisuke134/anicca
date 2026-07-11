@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-CR1 (behavioral-spec.md:125-127) declares find_latest_checkpoint's return contract as 'the absolute path to a checkpoint directory,' but no requirement states whether the function itself must normalize its result via os.path.abspath independent of whether the caller-supplied runs_dir argument is itself absolute, versus 'absolute' being merely an inherited property that happens to hold because run_evolve.sh's own RUNS_DIR (derived via `cd ... && pwd`) is always absolute in production. REQ-CR2/REQ-CR3's own selection-algorithm text never mentions abspath normalization. Every Proof Obligation that exercises this function (PROP-CR1 through PROP-CR11) is built over pytest's tmp_path fixture, which is always already an absolute path -- so no test in the current table would distinguish an implementation that actively normalizes its result from one that merely echoes back whatever path shape the caller supplied (e.g. one that would silently return a relative path if ever called with a relative runs_dir). This is a minor, non-safety-affecting ambiguity given the one real production call site, but it means the function's own stated 'absolute path' contract is accidentally, not verifiably, true.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "125-149",
+    "snippet": "REQ-CR1 ... find_latest_checkpoint(runs_dir: str, current_run_id: str) -> Optional[str] that returns the absolute path to a checkpoint directory to resume from, or None ..."
+  },
+  "routeToPhase": "1b"
+}

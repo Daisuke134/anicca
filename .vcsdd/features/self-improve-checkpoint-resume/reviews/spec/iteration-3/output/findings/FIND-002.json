@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "verification_readiness",
+  "category": "purity_boundary",
+  "severity": "high",
+  "description": "REQ-CR11 (behavioral-spec.md:244-260) itself states the requirement in a strong ALLOWLIST form: 'THE ONLY filesystem operations this module's runtime code MAY perform are READ-ONLY directory traversal: os.listdir, os.scandir, and os.path.* queries.' The Proof Obligation this requirement names as its own verification (PROP-CR12, verification-architecture.md:71) implements only the (a) static half of this as a NEGATIVE DENYLIST scan -- grepping the module source for the absence of the literal names os.remove/os.unlink/os.rmdir/os.removedirs/os.mkdir/os.makedirs/os.rename/os.replace/os.truncate, any shutil.* attribute, and open(...) in a non-default mode. This denylist omits an entire class of filesystem-mutating APIs that create/delete/rename/write bytes just as effectively as the named ones: pathlib.Path mutating methods (.mkdir(), .unlink(), .rmdir(), .rename(), .replace(), .write_text(), .write_bytes(), .touch(), Path.open('w', ...)), and os.symlink/os.link (both literally CREATE a filesystem entry, matching REQ-CR11's own 'creates ... a file or directory' clause verbatim). A conforming implementation that used pathlib for its read-side logic (e.g. Path(runs_dir).iterdir()/glob()) and, on some untested error-handling branch, called Path(...).mkdir() or os.symlink(...) would pass PROP-CR12(a)'s static scan cleanly -- none of its denylisted literal strings appear in the source -- while directly violating REQ-CR11's own allowlist prose. PROP-CR12(b)'s dynamic before/after directory-snapshot comparison is a real, independent, API-agnostic safety net, but it only observes the SPECIFIC code paths the two named fixtures exercise (an empty tree returning None; a populated two-run tree returning a real path) -- a mutation on a branch neither fixture reaches (e.g. an exception handler, or a third code path introduced later) would escape both PROP-CR12(a) and PROP-CR12(b). Given that INV-CR1/REQ-CR11 is this feature's single money-adjacent safety claim (the entire reason FIND-001 from the prior review iteration required an explicit REQ+PROP in the first place), the static half of its own designated verification mechanism does not actually discharge the requirement as written -- it discharges a strictly narrower one (absence of ~10 named os/shutil identifiers), not 'the only filesystem ops this module may perform are 3 named read-only forms.'",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "71",
+    "snippet": "PROP-CR12 | ... (a) static -- lib/checkpoint_resume.py's FULL module source ... contains no reference to os.remove, os.unlink, os.rmdir, os.removedirs, os.mkdir, os.makedirs, os.rename, os.replace, os.truncate, any shutil. attribute access, or open( used with a non-default ... mode ..."
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+      "lineRange": "251-256",
+      "snippet": "THE ONLY filesystem operations this module's runtime code MAY perform are READ-ONLY directory traversal: os.listdir, os.scandir, and os.path.* queries (isdir, isfile, exists, join, abspath, etc.) -- listing directory entries and inspecting their names/existence, NEVER opening or reading the byte contents of any file"
+    }
+  ],
+  "routeToPhase": "1b"
+}

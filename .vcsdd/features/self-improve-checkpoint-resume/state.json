@@ -1,0 +1,111 @@
+{
+  "featureName": "self-improve-checkpoint-resume",
+  "mode": "lean",
+  "language": "python",
+  "currentPhase": "complete",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-11T09:01:42.930Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-11T09:01:42.933Z"
+    },
+    {
+      "from": "1b",
+      "to": "1c",
+      "timestamp": "2026-07-11T09:48:45.128Z"
+    },
+    {
+      "from": "1c",
+      "to": "2a",
+      "timestamp": "2026-07-11T09:48:45.135Z",
+      "sprint": 1
+    },
+    {
+      "from": "2a",
+      "to": "3",
+      "timestamp": "2026-07-11T22:19:01.000Z",
+      "reason": "AGENT ECONOMY LOOP session: RED phase confirmed (git-stash-verified collection error / 7-of-8 wiring test failures before impl existed, evidence/red-phase.md), then GREEN phase 2b implemented: lib/checkpoint_resume.py::find_latest_checkpoint (REQ-CR1-5,10,11 pure read-only checkpoint discovery) + run_evolve.sh's REQ-CR6-9,12 pre-invocation step (positioned before the $OPENEVOLVE_BIN existence check so the pinned-string-position PROP-CR-WIRE1 test passes against the FIRST occurrence of \"$OPENEVOLVE_BIN\" in source). 31/31 new tests pass (evidence/green-phase.md); full suite shows the same 18 pre-existing failures confirmed present on main HEAD too (pm_backtest_strategy.py fixture drift + one worktree-path-only test) -- zero regressions. No separate 2c refactor needed (implementation was already minimal/clean on first GREEN pass). Live-verified and fixed a bash 3.2 gotcha before shipping: \"${CHECKPOINT_ARGS[@]}\" on an empty array raises \"unbound variable\" under this script's set -u on bash 3.2 (this Mac's default /bin/bash, confirmed via bash --version); used \"${CHECKPOINT_ARGS[@]:-}\" instead. commit 515eb089. Entering Phase 3 (impl-review, fresh adversary).",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "3",
+      "timestamp": "2026-07-11T22:22:00.000Z",
+      "reason": "Phase 3 impl-review iteration 1 verdict: FAIL -- 2 blocking findings. FIND-001 (critical, implementation_correctness, run_evolve.sh:109): \"${CHECKPOINT_ARGS[@]:-}\" on an empty array under this script's set -u on bash 3.2 (this Mac's default /bin/bash) expands to ONE stray empty-string argument, not zero -- would break openevolve-run's argparse (no catch-all positional) on the common \"no checkpoint found\" path. FIND-002 (high, verification_readiness, tests/test_checkpoint_resume_wiring.py): PROP-CR-WIRE2's test only checked substring absence of '--checkpoint', not argument count, so it could not have caught FIND-001. reviews/impl/iteration-1/output/verdict.json. Gate 3 NOT yet passed.",
+      "sprint": 1
+    },
+    {
+      "from": "3",
+      "to": "5",
+      "timestamp": "2026-07-11T22:35:04.000Z",
+      "reason": "Iteration-1 findings fixed (commit eba2270a: FIND-001 -- live bash -c repro confirmed the bug (argc=1, arg=\"\") and the canonical fix (argc=0 empty / argc=2 populated), replaced with \"${CHECKPOINT_ARGS[@]+\"${CHECKPOINT_ARGS[@]}\"}\"; FIND-002 -- test_prop_cr_wire2 strengthened to assert exact argument count (8) + no empty-string argument, verified this strengthened test FAILS against the pre-fix code (9 args w/ trailing \"\") and PASSES against the fix). Phase 3 impl-review iteration 2 verdict: PASS -- 0 blocking findings across all 5 dimensions (spec_fidelity, edge_case_coverage, implementation_correctness, structural_integrity, verification_readiness); FIND-001/FIND-002 both independently confirmed resolved (forensic pytest-cache + .pyc + git HEAD corroboration). reviewed_commit eba2270a. 31/31 feature tests pass, same 18 pre-existing unrelated failures unchanged (0 regressions). reviews/impl/iteration-2/output/verdict.json. Gate 3 PASSED at commit eba2270a. Entering Phase 5 (formal hardening).",
+      "sprint": 1
+    },
+    {
+      "from": "5",
+      "to": "6",
+      "timestamp": "2026-07-11T22:37:46.000Z",
+      "reason": "Phase 5 formal hardening complete: verification/verification-report.md (all 19 PROP-CR* proof obligations from verification-architecture.md mapped to their discharging pytest test, 31/31 re-run live this session and PASS at commit eba2270a; full-suite regression baseline 18 pre-existing-failed/102 passed/1 skipped, same failure set confirmed present on main HEAD, zero new regressions), verification/security-report.md (semgrep --config auto over both new/modified files: 0 findings, 0 errors; threat-surface analysis: no network/subprocess/filesystem-mutation/file-content-read/wallet-or-ledger-or-live-money-path access anywhere in this feature), verification/purity-audit.md (PROP-CR9/12a/12b static scans + PROP-CR12c dynamic before/after directory-snapshot comparison independently re-confirmed against the actually-shipped code this session; zero deviations from the declared Purity Boundary Analysis). mode:lean -- no separate fuzz/mutation/proof-harness artifacts required beyond the pytest-discharged PROP table (verification/{fuzz-results,mutation-results,proof-harnesses,security-results}/ scaffold dirs left empty, consistent with lean mode). Entering Phase 6 (convergence).",
+      "sprint": 1
+    },
+    {
+      "from": "6",
+      "to": "complete",
+      "timestamp": "2026-07-11T22:45:30.000Z",
+      "reason": "Phase 6 convergence iteration 1 verdict: CONVERGED -- 0 blocking findings. Fresh Sonnet adversary cross-checked every factual claim in verification-report.md/security-report.md/purity-audit.md against the actual current file contents (line numbers, substrings, test counts) rather than rubber-stamping, per this repo's own precedent (franklin-alwaysact-skill-router's purity-audit was found false twice on citation-accuracy grounds by a prior feature's converge review) -- found zero citation drift, confirmed the 31-test count by direct def-test_ count in both test files matching .pytest_cache/v/cache/nodeids, confirmed INV-CR2 scope (zero references to checkpoint_resume in config.yaml/promote_gate.sh/lib/promote.py/lib/promote_gate.py/strategies/pm_backtest_strategy.py/the launchd plist), confirmed git reflog matches state.json's phaseHistory narrative. One non-blocking residual disclosed (a cited __pycache__/*.pyc forensic file from iteration-2's impl-review no longer exists in the worktree, gitignored/transient -- underlying claim independently corroborated by .pytest_cache instead, does not falsify anything). reviews/converge/output/verdict.json. Gate 6 PASSED (CONVERGED). Entering phase complete.",
+      "sprint": 1
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "1c": 1,
+    "2a": 1,
+    "2b": 1,
+    "3": 2,
+    "5": 1,
+    "6": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-self-improve-checkpoint-resume-1783760284512",
+    "beads": []
+  },
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-11T09:48:39.607Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iteration": 5,
+        "blockingFindings": 0
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-11T09:48:39.607Z"
+    },
+    "3": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-11T22:35:04.000Z",
+      "reviewedBy": "adversary",
+      "details": "Phase 3 impl-review PASS at iteration 2 (reviews/impl/iteration-2/output/verdict.json): 0 blocking findings across all 5 dimensions. reviewed_commit eba2270a. Iteration 1 (reviews/impl/iteration-1/output/verdict.json) found 2 blocking findings (FIND-001 critical bash argv-injection bug, FIND-002 test-coverage gap), both fixed and independently re-verified resolved by iteration 2.",
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-11T22:35:04.000Z"
+    },
+    "6": {
+      "verdict": "CONVERGED",
+      "timestamp": "2026-07-11T22:45:30.000Z",
+      "reviewedBy": "adversary",
+      "details": "Phase 6 convergence CONVERGED at iteration 1 (reviews/converge/output/verdict.json): 0 blocking findings, every factual claim in the three Phase 5 verification artifacts cross-checked against actual shipped-code contents (not rubber-stamped). One non-blocking residual disclosed (a transient __pycache__ forensic citation, independently corroborated another way).",
+      "adversaryVerdict": "CONVERGED",
+      "adversaryReviewedAt": "2026-07-11T22:45:30.000Z"
+    }
+  },
+  "sprintCount": 1,
+  "createdAt": "2026-07-11T08:58:04.512Z",
+  "updatedAt": "2026-07-11T22:45:30.000Z"
+}

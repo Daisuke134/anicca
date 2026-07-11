@@ -1,0 +1,41 @@
+{
+  "feature": "self-improve-checkpoint-resume",
+  "reviewContext": {
+    "reviewType": "spec",
+    "phase": "1c",
+    "mode": "lean",
+    "iterationDir": "reviews/spec/iteration-2"
+  },
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "iteration": 2,
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "behavioral-spec.md REQ-CR10 / EDGE-CR10 / verification-architecture.md PROP-CR10", "description": "Iteration-1 FIND-001 (runs/db sibling-directory collision, blocking) is RESOLVED: REQ-CR10 pins an explicit regex `^run-\\d{8}T\\d{6}Z$` applied unconditionally before any other filtering; EDGE-CR10 names the real `runs/db` sibling and its exclusion by name-shape alone, independent of sort order or contents; PROP-CR10 gives it a dedicated adversarial fixture (a `db` entry given its own `checkpoints/checkpoint_1/`) and asserts it is still never selected. Cross-checked live against skills/earn/self-improve/run_evolve.sh:50 (`RUN_ID=\"run-$(date -u +%Y%m%dT%H%M%SZ)\"`) and config.yaml:129 (`db_path: \"runs/db\"`) -- both citations are accurate."},
+        {"type": "file", "location": "behavioral-spec.md REQ-CR2/REQ-CR3/EDGE-CR11 / verification-architecture.md PROP-CR11", "description": "Iteration-1 FIND-002 (ambiguity: non-empty-but-zero-valid-entries checkpoints/ dir, blocking) is RESOLVED: REQ-CR2 now explicitly states a REQ-CR3 None result 'for ANY reason' (no checkpoints/, empty one, or zero-valid-entries) is skipped and iteration CONTINUES to the next-most-recent candidate -- pinning fall-through (option b), never immediate None. EDGE-CR11 and PROP-CR11 (two-run fixture: newer run has stray-file-only checkpoints/, older run has a valid checkpoint_<N>/) directly exercise this exact scenario and assert the correct fall-through outcome."},
+        {"type": "grep", "location": "behavioral-spec.md, verification-architecture.md (full text scan for '-c' inline-snippet alternative)", "description": "No remaining reference to a `\"$PY_BIN\" -c` alternative invocation shape anywhere in either file; REQ-CR6 and the Purity Boundary Analysis both now state the ONE committed shape verbatim and explicitly say no alternative form is left open -- Iteration-1 FIND-003 (major) is RESOLVED."},
+        {"type": "file", "location": "verification-architecture.md:68 (PROP-CR9), skills/earn/self-improve/tests/ (globbed, no import-scan test targeting gate_math.py found)", "description": "Iteration-1 FIND-004 (minor, unverified gate_math.py citation) is RESOLVED: PROP-CR9's reworded text drops the comparison entirely and stands on its own ('asserts INV-CR1 directly ... rather than by comparison to any other file's test'). Confirmed independently: no dedicated AST/text-import-scan test for gate_math.py exists among the 13 files in skills/earn/self-improve/tests/, so dropping the unverifiable precedent claim was the correct fix."},
+        {"type": "file", "location": "/Users/anicca/.anicca-venvs/self-improve/lib/python3.14/site-packages/openevolve/cli.py:48-52,116-124; controller.py:462", "description": "Live re-verification: the installed openevolve==0.3.0 --checkpoint flag, its missing-path/exception-caught non-zero-exit behavior (REQ-CR7/EDGE-CR8's basis), and checkpoint_{iteration} (plain-int, no zero-padding) naming (REQ-CR3's checkpoint_<N> assumption) all still hold exactly as iteration-1 confirmed."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001", "FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "verification-architecture.md:51-56, 88-103", "description": "Tier assignment (0/1/wire only) remains proportionate for ~20 lines of path/existence logic; Tier 2/3 correctly declined and justified by contrast with gate_math.py's own risk_adjusted_score/is_implausible_jump, which DO warrant it in that file's own spec."},
+        {"type": "file", "location": "verification-architecture.md:105-113", "description": "Regression table correctly scopes the pre-existing 14-file pytest suite (confirmed via Glob: conftest.py + 13 test_*.py files) plus a bash -n smoke check; accurate, no pre-existing test imports checkpoint_resume.py (module does not exist yet, confirmed)."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 2,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

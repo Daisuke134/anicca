@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-CR6/REQ-CR8/REQ-CR9 (behavioral-spec.md:200-240) collectively define exactly two outcomes for the new checkpoint-resume step: 'the REQ-CR6 call returns a non-empty checkpoint path' (REQ-CR7) and 'the REQ-CR6 call returns empty/None' (REQ-CR8), with REQ-CR9 requiring one of two fixed log substrings depending on which of those two outcomes fired. No requirement, and no EDGE-CR, addresses a third, distinct outcome: the CLI entrypoint invocation itself fails to complete cleanly (an uncaught Python exception inside checkpoint_resume.py, `$PY_BIN` missing/not executable, a syntax error in the module). REQ-CR6 only specifies 'run_evolve.sh SHALL capture this call's stdout verbatim as the checkpoint path' -- it says nothing about the invocation's exit code or its stderr. A crashed invocation necessarily produces empty captured stdout (nothing is printed before a mid-function exception, and command-not-found also yields empty $() output), and REQ-CR8's own wording -- 'WHEN the REQ-CR6 call returns empty/None (no prior checkpoint found, for ANY reason ...)' -- explicitly folds a crash into the SAME branch as a genuine, expected cold start, which REQ-CR9 then requires logging as the literal string 'checkpoint_resume: no prior checkpoint found'. This is indistinguishable, in the one artifact an unsupervised operator would ever look at ($LOG), from ordinary first-run/no-checkpoint behavior -- masking a real bug or environment breakage (e.g. a permissions error walking runs_dir, a broken/rotated venv) as harmless steady-state, in a script that fires autonomously on a ~6h launchd timer with no human in the loop. This is not a hypothetical concern for this specific harness: the SAME file already contains a precedent for exactly this failure mode -- the pre-existing OBSERVE step explicitly guards `if [ -x \"$PY_BIN\" ]` and emits a DISTINCT log message ('OBSERVE SKIPPED (python not found at $PY_BIN) -- proceeding to EVOLVE anyway') specifically so a broken interpreter is never silently reinterpreted as 'nothing to observe' (run_evolve.sh:59-64). REQ-CR6 claims to be 'a byte-for-byte mirror of lib/ledger_reader.py's own established convention,' but on this one dimension -- distinguishing 'call failed' from 'call succeeded and returned a negative/empty answer' -- it does not carry that safeguard over, and no requirement pins whether run_evolve.sh must add an equivalent guard or a third, distinct log message for this new step. Two independent implementers could diverge here: one lets a checkpoint_resume.py crash go completely unremarked (falls straight into the 'no prior checkpoint found' log line), another adds its own extra guard/log line -- both are consistent with the letter of REQ-CR6/CR8/CR9 as currently written.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "200-240",
+    "snippet": "REQ-CR6: '...run_evolve.sh SHALL capture this call's stdout verbatim as the checkpoint path (an empty string meaning \"no checkpoint found,\" per REQ-CR8).' / REQ-CR8: 'WHEN the REQ-CR6 call returns empty/None (no prior checkpoint found, for ANY reason -- first-ever run, all prior runs lack a checkpoints/ dir, or runs_dir itself is missing) ...' -- no branch for 'the call itself failed to run'."
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/skills/earn/self-improve/run_evolve.sh",
+      "lineRange": "59-64",
+      "snippet": "if [ -x \"$PY_BIN\" ]; then\n  OBSERVE_JSON=\"$(\"$PY_BIN\" \"$SKILL_DIR/lib/ledger_reader.py\" 2>>\"$LOG\")\"\n  echo \"$(now) OBSERVE realized_ledger=${OBSERVE_JSON:-'{\"error\":\"ledger_reader produced no output\"}'}\" >> \"$LOG\"\nelse\n  echo \"$(now) OBSERVE SKIPPED (python not found at $PY_BIN) -- proceeding to EVOLVE anyway\" >> \"$LOG\"\nfi"
+    }
+  ],
+  "routeToPhase": "1a"
+}

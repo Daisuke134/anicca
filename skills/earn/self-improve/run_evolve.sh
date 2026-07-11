@@ -63,6 +63,27 @@ else
   echo "$(now) OBSERVE SKIPPED (python not found at $PY_BIN) — proceeding to EVOLVE anyway" >> "$LOG"
 fi
 
+# ---- checkpoint_resume (self-improve-checkpoint-resume, REQ-CR6-9,12): resume this cycle's
+# openevolve-run from the most recent PRIOR cycle's checkpoint instead of cold-starting every
+# ~6h cycle (root cause of 3 consecutive tied-score, zero-forward-progress cycles — see
+# behavioral-spec.md sources). Read-only path selection only (lib/checkpoint_resume.py never
+# mutates anything on disk); a crashed/missing-$PY_BIN resume-check degrades to the same
+# no-checkpoint fallback as "no prior run exists yet" for the purposes of this invocation
+# (REQ-CR12) — resuming is a pure optimization, never a precondition for this cycle to run.
+# Positioned BEFORE the $OPENEVOLVE_BIN existence check (not just before its invocation) so
+# resume-check evidence lands in $LOG even on the rare path where openevolve itself is missing.
+CHECKPOINT_PATH="$(RUNS_DIR="$RUNS_DIR" RUN_ID="$RUN_ID" "$PY_BIN" "$SKILL_DIR/lib/checkpoint_resume.py" 2>>"$LOG")"
+CHECKPOINT_STATUS=$?
+CHECKPOINT_ARGS=()
+if [ "$CHECKPOINT_STATUS" -ne 0 ]; then
+  echo "$(now) checkpoint_resume: resume-check crashed exit_status=$CHECKPOINT_STATUS" >> "$LOG"
+elif [ -n "$CHECKPOINT_PATH" ]; then
+  echo "$(now) checkpoint_resume: resuming from checkpoint $CHECKPOINT_PATH" >> "$LOG"
+  CHECKPOINT_ARGS=(--checkpoint "$CHECKPOINT_PATH")
+else
+  echo "$(now) checkpoint_resume: no prior checkpoint found" >> "$LOG"
+fi
+
 if [ ! -x "$OPENEVOLVE_BIN" ]; then
   # LOUD failure, never a silent "pretend success" exit 0: a missing openevolve binary means
   # REQ-OE7's recurring trigger cannot run at all, and that must be visible (non-zero exit +
@@ -85,6 +106,7 @@ fi
   --config "$SKILL_DIR/config.yaml" \
   --iterations "$ITERATIONS" \
   --output "$RUN_DIR" \
+  "${CHECKPOINT_ARGS[@]+"${CHECKPOINT_ARGS[@]}"}" \
   >> "$LOG" 2>&1
 STATUS=$?
 

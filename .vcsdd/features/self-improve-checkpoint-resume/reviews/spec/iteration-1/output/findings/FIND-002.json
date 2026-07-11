@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "blocking",
+  "description": "The composed REQ-CR2/REQ-CR3 selection algorithm has an unresolved case. REQ-CR2 (behavioral-spec.md:118-125) selects a single prior-run candidate based on it having 'a non-empty checkpoints/ subdirectory,' then REQ-CR3 (behavioral-spec.md:127-133) filters entries WITHIN that already-selected directory down to only `checkpoint_<N>`-shaped names, ignoring everything else. These are two different predicates: a `checkpoints/` directory can be non-empty at the OS-listing level while containing ZERO `checkpoint_<N>`-shaped entries (for example a stray macOS Finder `.DS_Store` file -- a concrete, environment-grounded risk given this repo's own CLAUDE.md states the production execution host is 'Mac Mini (anicca-mac-mini-1)', where Finder/Spotlight can and does drop `.DS_Store` into any directory that gets browsed or indexed). EDGE-CR5 (behavioral-spec.md:202-203) only covers a checkpoints/ dir that is literally EMPTY ('same treatment as EDGE-CR4'). EDGE-CR6 (behavioral-spec.md:204-207) only covers stray entries INTERLEAVED WITH at least one genuinely valid `checkpoint_<N>` entry. Neither edge case -- nor any PROP-CR* proof obligation in verification-architecture.md:49-63 -- specifies the actual case in dispute: what must `find_latest_checkpoint` do when the run REQ-CR2 selected turns out, after REQ-CR3's filtering, to have NO valid `checkpoint_<N>` entry at all? Two materially different, both textually plausible, implementations exist: (a) return `None` immediately, even if an OLDER prior run has a genuinely valid checkpoint (silently forfeiting a usable resume), or (b) fall through and re-run REQ-CR2's selection against the next-most-recent candidate. The spec must pin exactly one of these and add a corresponding EDGE-CR id and PROP-CR obligation before Phase 2 TDD, or two independent implementers following this spec verbatim could produce silently divergent, both-'spec-compliant' behavior.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "118-133 and 199-207",
+    "snippet": "REQ-CR2: '...select the FIRST (most recent) candidate that has a non-empty checkpoints/ subdirectory...' / REQ-CR3: '...consider only entries whose name matches...checkpoint_<N>...'"
+  },
+  "routeToPhase": "1a/1b"
+}
