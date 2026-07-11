@@ -21,6 +21,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 import { readDotenvFile } from './dotenv.mjs';
 import { loadConfig } from './config.mjs';
@@ -55,8 +56,10 @@ import {
   buildMustActReinforcement,
   buildAlwaysActLedgerFields,
 } from './always-act-router.mjs';
+import { publishLedgerCycle } from './ledger-publish.mjs';
 
 const execFileAsync = promisify(execFile);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Inline ULID generator (no npm dependency — uses crypto.randomUUID as entropy source)
 function ulid() {
@@ -82,6 +85,12 @@ const LEDGER_PATH = path.join(ANICCA_HOME, 'state', 'ledger.jsonl');
 // (INV-NO-PROMPT-REGRESSION) — reuses the EXISTING appendLedgerLine primitive, never a new writer.
 const HARNESS_FAILURES_PATH = path.join(ANICCA_HOME, 'state', 'harness-failures.jsonl');
 const GENESIS_PATH = path.join(ANICCA_HOME, 'identity', 'genesis.md');
+// franklin-ledger-push (P2): throttle/cursor state for ledger-publish.mjs — deliberately in
+// ANICCA_HOME (data), NEVER inside the ~/anicca repo working tree (which is what gets committed).
+const LEDGER_PUBLISH_MARKER_PATH = path.join(ANICCA_HOME, 'state', '.ledger-publish-marker');
+// This file itself lives at <repo>/runtime/loop/index.mjs — two dirs up is the repo root that
+// ledger-publish.mjs commits into (mirrors evolve.mjs's own repoRoot derivation).
+const LOOP_REPO_ROOT = path.resolve(__dirname, '..', '..');
 
 // Read genesis prompt (missing = warn + empty string)
 let genesisPrompt = '';
@@ -340,6 +349,20 @@ process.stderr.write(`[loop] Starting Anicca loop. ANICCA_HOME=${ANICCA_HOME}\n`
 
 while (!shuttingDown) {
   await runOneWake();
+  // franklin-ledger-push (P2) REQ-701..707: best-effort, default-OFF (LEDGER_PUBLISH_ENABLED)
+  // publish of this wake's ledger.jsonl evidence into the ~/anicca repo. publishLedgerCycle() itself
+  // never throws (its own REQ-703 contract) -- this try/catch is deliberate defense-in-depth so a
+  // ledger-publish regression can NEVER take the wake loop down with it.
+  try {
+    await publishLedgerCycle({
+      ledgerPath: LEDGER_PATH,
+      repoRoot: LOOP_REPO_ROOT,
+      markerPath: LEDGER_PUBLISH_MARKER_PATH,
+      instance: process.env.ANICCA_INSTANCE || 'clawrouter',
+    });
+  } catch (err) {
+    process.stderr.write(`[loop] ledger-publish cycle threw unexpectedly (should be impossible): ${err.message}\n`);
+  }
 }
 
 // ── Single wake ───────────────────────────────────────────────────────────────
