@@ -1,0 +1,49 @@
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+=== new test file (daemon-script-franklin2-identity.test.mjs) RED output ===
+✖ REQ-001 PROP-001 (regression): is_franklin_instance("franklin") matches — the original citizen, unchanged (0.906916ms)
+✖ REQ-001 PROP-002 (new): is_franklin_instance("franklin2") matches — the exact bug this feature fixes (0.059125ms)
+✖ REQ-001 PROP-003: is_franklin_instance matches franklin + any digit-run (franklin3, franklin10, franklin99) (0.054958ms)
+✖ REQ-001/REQ-004 PROP-004: is_franklin_instance rejects non-matching decoys (fail-closed) (0.056375ms)
+✖ REQ-001 PROP-005 (static): all 3 daemon call sites use is_franklin_instance — zero remaining literal `"$INSTANCE" = "franklin"` string-equality left in the file (0.651708ms)
+✖ REQ-002(b): step-3 telemetry branch condition now reached for franklin2 (static: step 3 still selects telemetry-post-franklin.mjs behind is_franklin_instance) (0.11675ms)
+✖ REQ-002(c): step-4 wallet-derivation branch condition now reached for franklin2 (static: step 4 still selects wallet-address-solana.mjs behind is_franklin_instance) (0.07325ms)
+✔ REQ-003 (regression): non-franklin/unset still resolves to the default EVM/ClawRouter path (static: step 4 else-branch still uses wallet-address.mjs, not solana) (0.081625ms)
+ℹ tests 8
+ℹ pass 1
+ℹ fail 7
+✖ failing tests:
+✖ REQ-001 PROP-001 (regression): is_franklin_instance("franklin") matches — the original citizen, unchanged (0.906916ms)
+✖ REQ-001 PROP-002 (new): is_franklin_instance("franklin2") matches — the exact bug this feature fixes (0.059125ms)
+✖ REQ-001 PROP-003: is_franklin_instance matches franklin + any digit-run (franklin3, franklin10, franklin99) (0.054958ms)
+✖ REQ-001/REQ-004 PROP-004: is_franklin_instance rejects non-matching decoys (fail-closed) (0.056375ms)
+✖ REQ-001 PROP-005 (static): all 3 daemon call sites use is_franklin_instance — zero remaining literal `"$INSTANCE" = "franklin"` string-equality left in the file (0.651708ms)
+✖ REQ-002(b): step-3 telemetry branch condition now reached for franklin2 (static: step 3 still selects telemetry-post-franklin.mjs behind is_franklin_instance) (0.11675ms)
+✖ REQ-002(c): step-4 wallet-derivation branch condition now reached for franklin2 (static: step 4 still selects wallet-address-solana.mjs behind is_franklin_instance) (0.07325ms)
+
+=== npm test (183-baseline) ===
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    generatedMessage: false,
+    code: 'ERR_ASSERTION',
+    actual: 'narrate',
+    expected: 'shutdown',
+    operator: 'strictEqual',
+    diff: 'simple'
+  }
+
+=== pre-existing franklin daemon/plist tests (standalone, unmodified) ===
+ℹ tests 10
+ℹ suites 0
+ℹ pass 10
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 148.60625
+
+=== NOTE: npm test flakiness isolation (pre-existing, unrelated to this feature) ===
+PROP-023(e) in __tests__/integration.test.mjs (ANICCA_BRAIN=claude-p missing-binary fallback timing) flakes
+intermittently (182-183/183 across 4 repeated runs on this UNMODIFIED baseline, before any anicca-daemon.sh
+edit in this feature). Confirmed pre-existing on origin/main, not introduced by franklin2-daemon-identity —
+this feature never touches runtime/loop/__tests__/integration.test.mjs or any brain/inference source.

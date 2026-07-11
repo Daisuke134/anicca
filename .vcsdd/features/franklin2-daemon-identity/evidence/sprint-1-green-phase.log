@@ -1,0 +1,30 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+=== new + pre-existing franklin daemon/plist tests (standalone) ===
+✔ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (25.395125ms)
+✔ REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids) (25.953958ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the arbitrary-risk-tag backdoor this override would otherwise let an attacker-controlled registry.json defeat REQ-506's reroute filter through) (11.647208ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin2-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the second live Franklin instance is covered by the SAME guardrail, never assumed safe by omission) (9.116417ms)
+ℹ tests 18
+ℹ suites 0
+ℹ pass 18
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 246.306292
+
+=== bash -n syntax check ===
+SYNTAX_OK
+
+=== npm test (183-baseline, 3 runs; pre-existing PROP-023(e) flake documented in red-phase log, unrelated to this feature) ===
+ℹ tests 183
+ℹ pass 183
+ℹ fail 0
+ℹ tests 183
+ℹ pass 182
+ℹ fail 1
+ℹ tests 183
+ℹ pass 183
+ℹ fail 0

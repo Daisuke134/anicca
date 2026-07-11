@@ -36,6 +36,20 @@ Versioning: [SemVer](https://semver.org/spec/v2.0.0.html).
   current location into the destination** — explicit `home_address()`
   injection means the lateness loop will never say "leave the cafe for
   sleep" or fabricate a station name.
+- **franklin2-daemon-identity impl iter1 fixes (FIND-001..003)** — `runtime/anicca-daemon.sh`'s new
+  `is_franklin_instance()` classifier (which lets `franklin2`, `franklin3`, … route through the same
+  brain/telemetry/wallet paths as the original `franklin` citizen) newly makes two effectful bodies
+  reachable by a SECOND concurrently-running instance for the first time; both are now instance-aware:
+  (1) `runtime/dashboard/telemetry-post-franklin.mjs`'s dashboard `host` label now derives from
+  `ANICCA_INSTANCE` (`franklin`/unset → `"Franklin"`, backward-compat; `franklin2` → `"Franklin2"`; …)
+  instead of a hardcoded literal, so two Franklin-family instances no longer report under the identical
+  dashboard row name; (2) the franklin-branch telemetry `pkill -f` in `anicca-daemon.sh` step 3 is now
+  scoped to `$ANICCA_HOME` (via a `--home "$ANICCA_HOME"` argv marker on the poster invocation), so a
+  daemon restart of one Franklin-family instance can no longer kill another concurrently-running
+  instance's in-flight poster process. (3) The 4 franklin-routing/plist/telemetry test files (18
+  pre-existing + 1 new static + 5 new `telemetry-host-label.test.mjs` tests) are now wired into
+  `runtime/loop/package.json`'s `test` script, so this regression protection runs under `npm test`/CI
+  instead of requiring manual invocation (`npm test` baseline: 183 → 207, all green).
 
 ### Security
 
