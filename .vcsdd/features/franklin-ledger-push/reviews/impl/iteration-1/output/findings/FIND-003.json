@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "spec_fidelity",
+  "category": "requirement_mismatch",
+  "severity": "high",
+  "description": "REQ-706's parenthetical claim (behavioral-spec.md:107-109) — 'verified: every safeAppend(LEDGER_PATH, ...) call site in index.mjs either builds from known-safe structured fields only, or passes free-text through redactPrivateKeyPatterns first' — is factually false. `runtime/loop/index.mjs:576-584` appends `formatRecord({ ts, wake_id, kind: 'narrate', sleep_s, model, note: args.reason || 'agent chose to sleep' })` directly to `safeAppend(LEDGER_PATH, record)` with NO `redactPrivateKeyPatterns` call anywhere in that path. `args.reason` originates from `parseToolCall()`'s parse of the LLM's OWN generated tool-call arguments (the model's free-form 'reason' string for choosing to sleep) -- this is not a 'known-safe structured field', it is arbitrary model-generated text that could echo anything present in the model's context window, including a secret the model was manipulated (or simply hallucinated) into repeating. In practice this specific gap is masked because ledger-publish.mjs applies its OWN unconditional second redaction pass to every line it copies (ledger-publish.mjs:182), but that pass only matches the narrow EVM pattern `0x[0-9a-fA-F]{64}` (env-filter.mjs:19) -- it would not catch a Solana base58-encoded private key, an API token, a JWT, or any other secret shape the model might echo into `note`. Now that this exact source file (ledger.jsonl) is, for the first time, being copied to a PUBLIC github repo, the spec's factually-incorrect 'verified' claim about its own upstream write-time redaction, combined with a redaction filter narrow enough to miss non-EVM-hex secrets, is a materially higher-stakes gap than when this same code only ever wrote to a private, non-published ledger file.",
+  "evidence": {
+    "filePath": "runtime/loop/index.mjs",
+    "lineRange": "576-584",
+    "snippet": "const record = formatRecord({\n  ts,\n  wake_id: wakeId,\n  kind: 'narrate',\n  sleep_s: sleepS,\n  model: currentTier.model,\n  note: args.reason || 'agent chose to sleep',\n});\nawait safeAppend(LEDGER_PATH, record);"
+  },
+  "routeToPhase": "2b"
+}

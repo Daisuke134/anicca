@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-004",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "high",
+  "description": "No test in `runtime/loop/__tests__/ledger-publish.test.mjs` (24 tests, all reviewed) exercises the 'push sweeps unrelated pre-existing local commits' scenario described in FIND-001, nor a permanent-divergence/no-automatic-recovery scenario. Every test's `repoRoot` is a fresh empty tmp dir with a mock `git` recorder (makeMockGit) -- none seed `repoRoot` with a prior, unrelated LOCAL commit (simulating evolve.mjs's promote() or any other automation) already ahead of a simulated 'origin' before the push assertion, so the test suite cannot and does not catch that `git push origin main` is unscoped. Given the spec's own security NFR promises this file publishes ONLY ledger.jsonl content, and that promise is the single most safety-critical property of a feature whose entire purpose is publishing to a PUBLIC repo, its absence from both PROP-701..710 and the 24 implemented tests is a material coverage gap, not a minor omission.",
+  "evidence": {
+    "filePath": "runtime/loop/__tests__/ledger-publish.test.mjs",
+    "lineRange": "1-447",
+    "snippet": "// mock git recorder + fresh tmp dir per test; no test seeds repoRoot with a pre-existing unrelated local commit before asserting on git(['push', ...])"
+  },
+  "routeToPhase": "2b"
+}

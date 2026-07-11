@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "behavioral-spec.md REQ-705's edge case ('Non-fast-forward-able divergence... cycle skipped this wake, retried next wake after the situation potentially resolves') never specifies HOW or whether divergence ever actually resolves, and no automatic recovery path (e.g. a bounded-retry-then-`git reset --hard origin/main`) exists anywhere in ledger-publish.mjs, index.mjs, or any skill. Once local `main` diverges from origin (a real possibility given FIND-002's shared-checkout concurrency hazard, or simply a human's own local edit in `~/anicca`), `merge --ff-only origin/main` will fail identically on EVERY subsequent wake forever, silently and permanently disabling publishing for that instance with no self-healing path -- a direct violation of this codebase's own zero-human-loop operating principle. Worse: because REQ-707 deliberately advances `copiedLineCount` in the marker BEFORE the commit is attempted (by design, for idempotency), if a future recovery mechanism were ever added that resets local main to origin/main, any source lines that were locally committed-but-never-pushed at the moment of divergence would be permanently lost -- the cursor has already moved past them and readSourceLinesRaw will never re-slice them. This failure mode is absent from both the spec's edge-case list and verification-architecture.md's proof-obligation table (PROP-701..710has no divergence-recovery or permanent-skip entry).",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md",
+    "lineRange": "97-99",
+    "snippet": "Non-fast-forward-able divergence... `merge --ff-only` fails -> cycle skipped this wake, retried next wake after the situation potentially resolves."
+  },
+  "routeToPhase": "2b"
+}
