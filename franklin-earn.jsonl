@@ -995,3 +995,4 @@
 {"ts":1783800351,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGSNW6F7AA905D075E14ECF"}
 {"ts":1783800489,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGSQTGEFA34DE70C84E47F4"}
 {"ts":1783801031,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"hl-trade","task":"hl-fund-skipped: uneconomic","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGT2K9YB7B0BF96F89C4A89"}
+{"ts":1783802434,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"token","task":"token-launch FRT","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGTWOB9FF591EF2938142DD"}
