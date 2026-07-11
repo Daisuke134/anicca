@@ -22,3 +22,11 @@ builder 実装 → fresh Opus adversary FAIL(Mode B CTA 未到達) → 修正 �
 - metrics pass の cron 化は operator action(SKILL.md に手順、まだ ~/.openclaw cron 未配線)。
 - `&` 含む tracking URL の重複テストは未追加(fix は入れた、既定 URL は安全)。
 - V4(実売上)は別 gate: ¥0。「publish + 視聴計測まで done、売上 not yet」と分離。
+
+
+## ✅ fresh Opus adversary PASS（bash 実行付き、2026-07-11）
+過去2回の adversary は vcsdd-adversary の bash 非対応で実行検証できず FAIL だった。bash 付き Opus で再検証 = **overall PASS, blocking 0**:
+- 全テスト自分で実行: 31/34 pass。3件失敗は共有 fixture 記事 `ne94efe526c9a` が note.com で status:deleted(Sprint4 導入、今回 merge と無関係、git log -S 確認)＝pre-existing baseline。
+- CTA が Mode A+B 両方到達を run.sh で確認。**冪等性 fix を live 実証**(ephemeral draft create→append→再append no-op→削除、残渣ゼロ独立確認)。
+- `note-fetch-views.py` 自分で実行: views 9/likes 2 実取得(捏造なし)、削除記事は none:reason 正直、revenue_jpy=0 固定 honest。
+→ 収益ループの §10 + fresh adversary PASS 要件を正式に充足。
