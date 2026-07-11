@@ -1,0 +1,69 @@
+{
+  "feature": "self-heal-allslots",
+  "reviewType": "impl",
+  "iteration": 2,
+  "priorIteration": 1,
+  "priorFindingsResolved": ["FIND-001", "FIND-002", "FIND-003", "FIND-004", "FIND-005", "FIND-006"],
+  "headCommit": "7c047bbf18bdce7b0ef340be991ea7ac4a6fd1c3",
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/earning-health.py:42-104", "description": "FIND-001/FIND-005 fixes verified correct: _MECHANISM_FAILURE_ACTIONS={skip,error}, _mechanism_failure_cause reads reason for skip / error for error, is_fresh_but_barren window logic (len<min_run short-circuit, any(cause is None), len(set(causes))!=1, bool(only_reason)) all read line-by-line and match CHANGELOG's claims"},
+        {"type": "file", "location": "skills/earn/polymarket-trade/run.sh", "description": "grepped for the run.sh referenced by FIND-001 (self-heal-allslots.CHANGELOG.md line 40-47) to confirm pm-trade's action:\"error\" state; not modified this iteration, correctly handled by the pure-core fix instead"}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/tests/test_earning_health_allslots.sh:44-105 (A2 block)", "description": "FIND-002 (iter1) two-simultaneous-BARREN-slots scenario verified genuine: slot-a + slot-e independently barren in one registry, exactly 2 distinct marker files asserted, per-block cross-fire checks (A_BLOCK/E_BLOCK via awk range extraction) prove no reason/target bleed between the two self-fix calls"},
+        {"type": "file", "location": "skills/self/tests/test_earning_health_allslots.sh:121-128 (C2 block)", "description": "FIND-003 (iter1) empty slots:[] registry (present + valid JSON, distinct code path from the missing-file case) verified: exits 0, zero OK/BARREN/NOT-INSTRUMENTED lines, zero PARSE_ERROR"}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/self/earning-health.py:38-81", "description": "Traced is_fresh_but_barren + _mechanism_failure_cause by hand against 3 scenarios required by the task: (1) sustained identical-cause action=='error' over the window -> flags unhealthy (all_errors test, test_earning_health.py:99-101); (2) a RECOVERED slot (19 identical errors then a real trade/gain entry) -> stays healthy, no false-positive spam (test_earning_health.py:107-110); (3) sol-trade's clean skip/live-pass-only vocabulary is unaffected since live-pass is never in _MECHANISM_FAILURE_ACTIONS -> any(cause is None) short-circuits to NOT-barren, confirmed unchanged by test_sol_trade_healthcheck.sh 9/9 (skills/earn/sol-trade/tests/test_sol_trade_healthcheck.sh, all 9 checks re-counted and traced)"},
+        {"type": "file", "location": "skills/self/earning-health.py:91,94-104 and skills/self/earning-health-allslots.sh:96-114", "description": "FIND-005 security fix traced end-to-end: sanitize_for_prompt's allowlist regex [^A-Za-z0-9 ._,:()=/-] strips every shell/prompt-injection metacharacter (backtick $ | ; \" ' < > { } [ ] \\\\ newline), confirmed by test_earning_health.py:121-138 malicious-payload test AND by test_earning_health_allslots.sh's wiring-level (D) block:130-157 which asserts the 6 dangerous substrings ` $( | ; <script> & are absent from the CAPTURED self-fix BLOCKER text via the new EARNHC_SELF_FIX_SCRIPT stub seam (not just the SELF_FIX_DRYRUN=1 seam, which cannot see BLOCKER text at all)"},
+        {"type": "file", "location": "skills/self/self-fix.sh:28,75-84", "description": "Confirmed the ONLY trace-derived text reaching self-fix.sh's --dangerously-skip-permissions claude spawn is the already-sanitized BLOCKER positional arg ($2), embedded once into TASK; no env var or additional arg carries RAW_REASON/raw trace text into self-fix.sh -- read the full file, no other injection surface"},
+        {"type": "file", "location": "skills/self/earning-health-allslots.sh:117-118", "description": "SLOTKEY = tr -c 'A-Za-z0-9' '_' applied to the registry-derived slot id -> per-slot marker filename; confirmed distinct for earn/slot-a vs earn/slot-e (.earning-health-allslots-earn_slot_a-escalated vs ...-earn_slot_e-escalated), matches REQ-AS-003"}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "skills/earn/sol-trade/sol-trade-healthcheck.sh:3-13", "description": "FIND-006 (iter1) verified fixed: explicit DEPRECATED header naming the superseding script (earning-health-allslots.sh + registry), explains why kept (old plist may still reference it), and instructs against adding new features there -- read in full, no other undisclosed duplication introduced this iteration"},
+        {"type": "file", "location": "skills/self/launchd/README.md:45-54 and skills/self/launchd/ai.anicca.earning-health-allslots.plist", "description": "Confirmed the plist is committed but not referenced by any launchctl load/LaunchAgents-copy command anywhere in the worktree (grepped); README explicitly documents the unload-old-before-load-new sequencing Dais must run manually"}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {"type": "file", "location": "skills/self/earning-health.py + skills/self/tests/test_earning_health.py", "description": "The actual pure-core/test surface (18 tests, 2 new pure functions: _mechanism_failure_cause path inside is_fresh_but_barren, sanitize_for_prompt) was traced and IS correctly tested -- the FAIL here is that specs/verification-architecture.md's own Proof Obligations table and Purity Boundary Map do not reflect this surface (see FIND-002 for exact citations), not that the surface itself is unverified"}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 3,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": ["PROP-AS-001", "PROP-AS-002", "PROP-AS-003", "PROP-AS-004", "PROP-AS-005", "PROP-AS-006"],
+    "duplicateFindings": [],
+    "regressionCheck": {
+      "test_earning_health.py": "18/18 traced by hand, matches claim",
+      "test_earning_health_allslots.sh": "35/35 traced by hand, matches claim",
+      "test_sol_trade_healthcheck.sh (skills/earn/sol-trade/tests/)": "9/9 traced by hand, matches claim, unaffected by FIND-001 fix (sol-trade never emits action==\"error\")"
+    }
+  }
+}

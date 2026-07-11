@@ -1,0 +1,41 @@
+# self-heal-allslots — iteration-2 adversary notes (fresh context)
+
+HEAD verified: `7c047bbf18bdce7b0ef340be991ea7ac4a6fd1c3` (refs/heads/feature/self-heal-allslots, read directly from `.git/refs/heads/feature/self-heal-allslots`).
+
+## What was checked, line by line, against the 6 iteration-1 findings
+
+- **FIND-001 (critical, was: pm-trade `action:"error"` invisible to detector)**: FIXED. `earning-health.py::_MECHANISM_FAILURE_ACTIONS = frozenset({"skip","error"})` + `_mechanism_failure_cause` (reads `reason` for skip, `error` for error) + `is_fresh_but_barren` unchanged control flow otherwise. Traced by hand against all 3 scenarios the task asked me to verify:
+  1. Sustained identical-cause `error` over the window -> BARREN. Confirmed (`test_earning_health.py:99-101`, `all_errors`).
+  2. A RECOVERED slot (errors then a recent live-pass/gain) -> stays healthy. Confirmed (`test_earning_health.py:107-110`, 19 errors + 1 trade -> NOT barren).
+  3. sol-trade's skip/live-pass-only vocabulary unbroken: `live-pass` is not in `_MECHANISM_FAILURE_ACTIONS` -> `_mechanism_failure_cause` returns `None` -> `any(cause is None)` short-circuits False. Confirmed unaffected by re-reading + hand-tracing `test_sol_trade_healthcheck.sh` (9/9, unmodified by this iteration, still exercises the real shell script).
+- **FIND-002 (major, was: no two-slots-barren test)**: FIXED. `test_earning_health_allslots.sh` (A2) block adds `earn/slot-e` as a second, independently-barren slot in the SAME run as `earn/slot-a`. Verified: 2 distinct marker files asserted (`ls | grep -c -- '-escalated$'` == 2), and per-slot cross-fire is checked by extracting each `STUBFIX_LOOP=...`..`STUBFIX_END` block via `awk` range and asserting slot-a's block contains only "slot-a" and never "slot-e" (and vice versa). This is a real dual-fire proof, not just static reasoning.
+- **FIND-003 (minor, was: no empty-slots test)**: FIXED. (C2) block: `{"slots": []}` (present, valid, distinct from the missing-file case in (C)) -> rc=0, zero OK/BARREN/PARSE_ERROR lines. Traced the shell's here-string (`<<< "$ROWS"`) behavior by hand: an empty `$ROWS` still feeds one empty line to the `while read` loop, but the `[ -z "$ID" ] && continue` guard correctly no-ops it -- functionally zero-slots behavior, verified by the new test.
+- **FIND-004 (major, was: healthy fixture false-passed via <minRun short-circuit)**: FIXED. `mk_healthy_trace` now writes 25 skip + 1 live-pass = 26 lines (>= minRun=20). Traced by hand: `tail -n $((MINRUN*3))` reads all 26 lines; `is-barren 20`'s window = last 20 lines = 19 trailing skips + 1 live-pass -> the live-pass forces `any(cause is None)` True -> NOT barren via the REAL trailing-override logic, not the length short-circuit. Genuinely fixed.
+- **FIND-005 (critical, security — unsanitized reason into `--dangerously-skip-permissions` claude spawn)**: FIXED, verified thoroughly (this is the highest-stakes finding, so I traced the ENTIRE data path):
+  - `sanitize_for_prompt`'s allowlist regex `[^A-Za-z0-9 ._,:()=/-]` is a strip (not escape), confirmed by regex read + by the malicious-payload unit test (`test_earning_health.py:121-138`) AND a second, independent wiring-level proof (`test_earning_health_allslots.sh` (D) block:130-157) that captures the ACTUAL BLOCKER text handed to the self-fix invocation via a new stub-script seam (`EARNHC_SELF_FIX_SCRIPT`) and asserts backtick/`$(`/pipe/semicolon/`<script>`/ampersand are all absent, while the safe substring `kill-switch` survives.
+  - Read `self-fix.sh` in full: the ONLY trace-derived text that reaches its `--dangerously-skip-permissions` claude spawn's `TASK` is the already-sanitized `$2`/`BLOCKER` positional arg. No env var, no other arg, carries `RAW_REASON`. Confirmed no leak path.
+  - Both `REASON` (reason/error text) and `SAFE_ID` (slot id) are sanitized before being embedded (`earning-health-allslots.sh:111-114`) -- both pieces of trace-adjacent text the task asked me to check.
+  - Length cap (`max_len=200`/`80`) verified applied AFTER the strip (`_SAFE_PROMPT_CHARS_RE.sub("", text)[:max_len]`), confirmed by the exact-50-char unit test.
+- **FIND-006 (moderate, structural — old healthcheck not deprecated)**: FIXED. `sol-trade-healthcheck.sh:3-13` now carries an explicit DEPRECATED header naming the superseding mechanism and explaining why it's kept (old plist may still point at it). No new duplication introduced.
+
+## Deferral of hl/x402/token/gig/clip/video — re-confirmed honest
+
+Re-read `CHANGELOG.md`'s "Why only 2 of 8 slots" section against the actual registry (`earning-health-registry.json`, all 6 `instrumented:false` entries carry a real, specific `gapNote` explaining the actual telemetry shape that blocks wiring, e.g. `hl_trade`'s shared free-text `task` field). `NOT-INSTRUMENTED <id> -- <gapNote>` logging is unconditional per-run (not gated behind any flag), confirmed by the script's loop structure (`earning-health-allslots.sh:73-77`) and exercised by the slot-d test case. No fabricated OK/BARREN verdict for any of the 6 gap slots.
+
+## New findings this iteration (all documentation-only, code/tests are sound)
+
+Three findings, all traced to real, cite-able discrepancies, all MINOR severity, none touching the actual shipped script/pure-core/tests:
+
+1. **FIND-001 (iter2, spec_fidelity)**: `specs/behavioral-spec.md:10-12`'s Purity Boundary claim ("reused, unmodified... NOT touched by this feature", "9/9 green") is now false -- the pure core WAS modified this feature (FIND-001/FIND-005 fixes) and has 18 tests, not 9. Never amended.
+2. **FIND-002 (iter2, verification_readiness)**: `specs/verification-architecture.md`'s PROP-AS-006 row and Purity Boundary Map still describe the pre-fix state (9 "unmodified" tests); the new security-critical pure function `sanitize_for_prompt` has no proof-obligation row; the Verification Strategy section still names only the `SELF_FIX_DRYRUN=1` seam when the actual PROP-AS-002/003/FIND-005 wiring proofs depend on the newly-added `EARNHC_SELF_FIX_SCRIPT` seam.
+3. **FIND-003 (iter2, edge_case_coverage)**: `earning-health-allslots.sh:112,114`'s `[-z "$REASON"] && REASON="unspecified"` / analogous `SAFE_ID` fallback is a reachable branch (a raw, non-empty reason/error consisting entirely of characters outside the sanitizer's allowlist -- e.g. emoji/CJK/pure-punctuation -- passes `is_fresh_but_barren`'s raw non-empty check but sanitizes to `""`) with zero test coverage at either the pure-core or wiring level.
+
+## Verification limits of this review
+
+No Bash tool was available to me (by design, per the review protocol). I verified `plutil -lint`/actual test-run PASS claims by static tracing + hand-counting `chk`/`a`/`na` call sites against the claimed 18/35/9 totals (all matched exactly) rather than by re-executing the suites myself. I confirmed the plist is not referenced by any `launchctl load`/LaunchAgents-copy command anywhere in the worktree via Grep, but could not independently confirm the live `launchctl list` state of this machine.
+
+## Go/no-go recommendation on loading the plist live
+
+The formal verdict is FAIL (3 of 5 dimensions), per VCSDD's binary-per-dimension rule, because of the 3 findings above. All 3 are documentation-drift in the spec/verification-architecture artifacts, not defects in the shipped script, pure core, or tests -- every one of the 6 iteration-1 findings (including the critical security one, FIND-005, and the critical correctness one, FIND-001) was independently re-verified correct by hand-tracing the actual code and data paths, not just by reading the CHANGELOG's claims.
+
+Recommendation: patch the two spec-doc paragraphs (specs/behavioral-spec.md Purity Boundary section, specs/verification-architecture.md Proof Obligations table + Verification Strategy section) and add one small wiring/unit test for the empty-after-sanitization fallback (FIND-003) -- none of these require touching earning-health.py, earning-health-allslots.sh, or self-fix.sh. Once done, from a pure runtime-safety standpoint there is no code-level blocker found to loading `ai.anicca.earning-health-allslots.plist` live (after first unloading the old `ai.anicca.sol-trade-earning-healthcheck.plist` per the README's own instruction, to avoid the disclosed duplicate-spawn risk for `earn/sol-trade`).

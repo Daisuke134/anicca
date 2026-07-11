@@ -156,5 +156,33 @@ for meta in '`' '$(' '|' ';' '<script>' '&' ; do
 done
 a "self-fix BLOCKER text still carries the safe substring 'kill-switch' (not fabricated away)" "$CAPTURED4" "kill-switch"
 
-rm -rf "$D" "$D2" "$D3" "$D4"
+echo "(E) FIND-003 (iter2): a reason that is NON-EMPTY raw (so is_fresh_but_barren still flags BARREN)"
+echo "    but sanitizes to EMPTY (every char outside sanitize_for_prompt's allowlist) -> the shell's"
+echo "    'unspecified' fallback fires, self-fix still gets a valid, non-empty structured message"
+D5="$(mktemp -d)"
+EARN_STATE5="$D5/earn-state"; mkdir -p "$EARN_STATE5"
+# Every character here (! ? @ # % ^ &) is OUTSIDE sanitize_for_prompt's allowlist
+# ([^A-Za-z0-9 ._,:()=/-]) -- none are letters/digits/space/./,/:/(/)/=//-, and none are a literal
+# double-quote or backslash (would corrupt mk_barren_trace's naive JSON embedding, per the (D) block's
+# own note above). is_fresh_but_barren only requires the RAW string to be non-empty, so this trace
+# still flags BARREN even though sanitize_for_prompt(RAW) == "".
+ONLY_METACHARS_REASON='!!!???@@@###%%%^^^&&&'
+mk_barren_trace "$EARN_STATE5/slot-empty-reason.trace.jsonl" "$ONLY_METACHARS_REASON" 20
+REGISTRY5="$D5/registry.json"
+cat > "$REGISTRY5" <<JSON
+{"slots": [{"id":"earn/slot-empty-reason","instrumented":true,"traceFile":"slot-empty-reason.trace.jsonl","minRun":20,"selfFixTarget":"slot-empty-reason","escalateEveryHrs":24}]}
+JSON
+CAPTURE5="$D5/self-fix-capture.log"
+OUT6="$(EARNHC_REGISTRY="$REGISTRY5" EARNHC_EARN_STATE_DIR="$EARN_STATE5" \
+        EARNHC_STATE_DIR="$D5/state" EARNHC_LOG="$D5/hc.log" \
+        CAPTURE_FILE="$CAPTURE5" EARNHC_SELF_FIX_SCRIPT="$STUB" \
+        bash "$SCRIPT" 2>&1; cat "$D5/hc.log" 2>/dev/null)"
+a "empty-after-sanitize slot still detected BARREN (raw reason is non-empty)" "$OUT6" "earn/slot-empty-reason BARREN"
+a "empty-after-sanitize slot still escalates to self-fix (no silent drop)" "$(cat "$CAPTURE5" 2>/dev/null)" "STUBFIX_LOOP=slot-empty-reason"
+CAPTURED5="$(cat "$CAPTURE5" 2>/dev/null)"
+a "self-fix BLOCKER uses the safe 'unspecified' fallback cause (never an empty/broken cause)" "$CAPTURED5" "cause 'unspecified'"
+a "self-fix BLOCKER carries the STUBFIX_END terminator (whole structured message written, not truncated)" "$CAPTURED5" "STUBFIX_END"
+na "self-fix BLOCKER never contains the raw metachar-only reason verbatim (it was sanitized away)" "$CAPTURED5" "$ONLY_METACHARS_REASON"
+
+rm -rf "$D" "$D2" "$D3" "$D4" "$D5"
 echo "=== earning-health-allslots: $P passed $F failed ==="; [ "$F" = 0 ] && echo GREEN || exit 1

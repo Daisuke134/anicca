@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "minor",
+  "description": "The behavioral spec's own foundational Purity Boundary claim is now factually wrong and was never amended by the iteration-1-fix commit. specs/behavioral-spec.md:10-12 states: 'Pure core (reused, unmodified): skills/self/earning-health.py::is_fresh_but_barren ... Already has its own test file (skills/self/tests/test_earning_health.py, 9/9 green) -- NOT touched by this feature.' This is no longer true: the FIND-001 fix (documented in CHANGELOG.md's own 'self-heal iter1 fixes' section) modified earning-health.py -- it added a new module-level constant (_MECHANISM_FAILURE_ACTIONS), a new helper function (_mechanism_failure_cause), changed is_fresh_but_barren's own body (it now calls _mechanism_failure_cause instead of directly reading entry['reason']), and added an entirely new pure function (sanitize_for_prompt, FIND-005) plus a new CLI subcommand (sanitize-reason). The test file grew from 9 to 18 checks (skills/self/tests/test_earning_health.py has 18 chk(...) calls at HEAD 7c047bbf, verified by direct read). A reader of behavioral-spec.md's Purity Boundary section today is told the pure core was never touched and still has '9/9' tests, both of which are false as of this same feature's own iteration-2 commit. CHANGELOG.md was correctly amended to document the FIND-001/FIND-005 fixes, but specs/behavioral-spec.md -- the document this project's own VCSDD process treats as authoritative -- was not.",
+  "evidence": {
+    "filePath": ".vcsdd/features/self-heal-allslots/specs/behavioral-spec.md",
+    "lineRange": "8-19",
+    "snippet": "- **Pure core (reused, unmodified)**: `skills/self/earning-health.py::is_fresh_but_barren` -- takes\n  a list of trace-line dicts, returns bool. No I/O. Already has its own test file\n  (`skills/self/tests/test_earning_health.py`, 9/9 green) -- NOT touched by this feature."
+  },
+  "crossReference": {
+    "actualState": "skills/self/earning-health.py:38-104 (new _MECHANISM_FAILURE_ACTIONS, _mechanism_failure_cause, sanitize_for_prompt, sanitize-reason CLI subcommand -- all added/modified after the spec text above was written) and skills/self/tests/test_earning_health.py (18 chk(...) calls, not 9, read in full at HEAD 7c047bbf)"
+  },
+  "routeToPhase": "spec"
+}

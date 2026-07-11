@@ -7,9 +7,15 @@ iterates every REQUIRED earn slot: `economy/gig`, `hl_trade`, `x402_sell`, `toke
 
 ## Purity boundary
 
-- **Pure core (reused, unmodified)**: `skills/self/earning-health.py::is_fresh_but_barren` — takes
-  a list of trace-line dicts, returns bool. No I/O. Already has its own test file
-  (`skills/self/tests/test_earning_health.py`, 9/9 green) — NOT touched by this feature.
+- **Pure core (reused, extended this feature)**: `skills/self/earning-health.py::is_fresh_but_barren`
+  — takes a list of trace-line dicts, returns bool. No I/O. This feature's own iteration-1 fixes
+  extended it: `_mechanism_failure_cause` (FIND-001) makes a sustained `action:"error"` run
+  (pm-trade's crash/misconfiguration state) barren-eligible, not just `action:"skip"`; a new pure
+  function `sanitize_for_prompt` (FIND-005) neutralizes trace-derived free text (allowlist strip)
+  before it reaches `self-fix.sh`'s autonomous, unconfirmed spawn prompt, exposed to the shell
+  caller via a new `sanitize-reason` CLI subcommand. Its test file
+  (`skills/self/tests/test_earning_health.py`) grew from 9 to 18 `chk(...)` checks covering both
+  additions — touched by this feature, not merely reused.
 - **Pure-ish core (new)**: the registry-loading + per-slot row derivation is pure JSON->rows
   transformation (no side effects beyond reading the registry file itself, which is treated as
   input data, mirroring how `sol-trade-healthcheck.sh` treats its trace file as input data).
