@@ -106,17 +106,18 @@ honesty: [V]=ファイル/実測確認 / [R]=推論 / [?]=未確認。金の真�
 
 実行は VCSDD（mode: lean 可、フェーズ飛ばさない、adversary=Sonnet）。1つ完了→次。
 
-| 順 | TODO | 内容 | done（検証可能） | 手本/部品 | 停止点 |
+| 順 | TODO | 内容 | done（検証可能） | 手本/部品 | 状態(2026-07-12) |
 |---|---|---|---|---|---|
-| **1** | ledger 一意化 | founder の earn-ledger を1パスに統一、混入 wallet(0xa3cdd4)行を隔離、`defaultEarnLedgerPath` を正パスへ | 1 instance=1 ledger、読む場所が一意 | 監査が正パス特定 | 否 |
-| **2** | pm に reconcile 配線 | worktree の reconcile.mjs を本番 merge、毎 wake 呼ぶ（HL と同形）。負け・買いが載る | pm でも ledger 合計 ≡ wallet delta | **HL reconcile.py が手本** | 否 |
-| **3** | earn loop 一本化 | pm-earner cron 廃止、pm を index.mjs earn-menu の skill に | claude-p の earn loop が1本、pm は menu 経由のみ | index.mjs 既存 | 否 |
-| **4** | BUILD loop 一本化 | mainloop(6h)+founder-loop(30min) を build=1 loop に統合（重い build+速い tick を1本 or 片方 skill 化） | 大脳 loop が1本、cron 重複解消 | 既存2スクリプト | 否 |
-| **5** | AGENTIC 検証実装 | doc24 の reality-verifier を `.claude/agents/reality-verifier.md` 実装、self-fix/週次から fresh spawn。DETERMINISTIC と分離 | fresh adversary が report vs on-chain 突合 PASS/FAIL | doc24 + VCSDD adversary 流用 | 否 |
-| **6** | 1 wake 自律実行 own-eyes | 小脳 loop を1回、wallet delta = ledger delta を私が on-chain 確認 | 記録と真実が一致 | — | 否 |
-| **7** | 実 external:true が出るまで回す | 小脳が実際に稼ぐ（唯一の gate） | wallet が実 tx で増える | — | 否 |
+| **1** | ledger 一意化 | founder の earn-ledger を1パスに統一、混入 wallet(0xa3cdd4)行を隔離、`defaultEarnLedgerPath` を正パスへ | 1 instance=1 ledger、読む場所が一意 | 監査が正パス特定 | 🔄 builder(Sonnet) worktree ledger-uniqueness |
+| **2** | pm に reconcile 配線 | worktree の reconcile.mjs を本番 merge、毎 wake 呼ぶ（HL と同形）。負け・買いが載る | pm でも ledger 合計 ≡ wallet delta | **HL reconcile.py が手本** | ⏸ #1 待ち(canonical パスに書くため) |
+| **3** | earn loop 一本化 | pm-earner cron 廃止、pm を index.mjs earn-menu の skill に | claude-p の earn loop が1本、pm は menu 経由のみ | index.mjs 既存 | ⏸ #2 後(pm が損失記録できてから) |
+| **4** | BUILD loop 一本化 | mainloop(6h)+founder-loop(30min) を build=1 loop に統合。実 launchd は触らず worktree に統合案+SWITCHOVER.md | 大脳 loop が1本、cron 重複解消 | 既存2スクリプト | 🔄 builder(Sonnet) worktree build-loop-unify(並列・独立) |
+| **5** | AGENTIC 検証実装 | doc24 の reality-verifier を `.claude/agents/reality-verifier.md` 実装、self-fix/週次から fresh spawn。DETERMINISTIC と分離 | fresh adversary が report vs on-chain 突合 PASS/FAIL | doc24 + VCSDD adversary 流用 | 🔄 builder(Sonnet) worktree reality-verifier(並列・独立) |
+| **6** | 1 wake 自律実行 own-eyes | 小脳 loop を1回、wallet delta = ledger delta を私が on-chain 確認 | 記録と真実が一致 | — | ⏸ #1-3 後 |
+| **7** | 実 external:true が出るまで回す | 小脳が実際に稼ぐ（唯一の gate） | wallet が実 tx で増える | — | ⏸ 最後 |
 
-**クリティカルパス**: 1 → 2 → 3 → 4 → 5 → 6 → 7。
+**依存グラフ**: `1 → 2 → 3 → 6 → 7`（earn/記録の直列）。`4`(build loop) と `5`(agentic 検証)は独立ファイル群 → **並列で先行可**。各 builder は worktree 隔離・merge せず戻す → 親が fresh adversary(Sonnet) review → own-eyes → merge。
+**並列実行中(2026-07-12)**: #1(ledger paths) / #4(build scripts) / #5(.claude/agents) を3 builder 同時。衝突なし（触るファイル群が完全に分離）。
 **核心**: 足りないのは新規でなく「記録を正す(複式・wallet 錨・1本化) + 検証を2層に分ける(既存 DETERMINISTIC + 未実装 AGENTIC を実装)」。部品は全部ある。繋ぐだけ。
 
 ---
