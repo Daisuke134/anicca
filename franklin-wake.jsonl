@@ -4495,3 +4495,11 @@
 {"ts":1783751308,"wake_id":"00MRFZH20WE7CF5930DAA94DF0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783751468,"wake_id":"00MRFZKHDA5876FFE2F8B44708","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783751599,"wake_id":"00MRFZNAJWA35745B88CA94103","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783751729,"wake_id":"00MRFZQ3HG4DF12BF865D0473F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783751859,"wake_id":"00MRFZSVQA766B890361BC4823","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"economy/gig","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [gig] balance=$6.4978 open_gigs=0 eligible=post -> {\"action\":\"post\",\"reason\":\"su"}
+{"ts":1783751990,"wake_id":"00MRFZVOPWD4C1E309A5C24175","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783752121,"wake_id":"00MRFZYHXJCB52032A5E144714","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783752250,"wake_id":"00MRG0195QCC516910FB104B05","kind":"router_reroute_skip","slot":"earn/clip-producer","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"producer\":\"clip\",\"did\":\"queued P7Y-fynYsgE_EN.mp4 (verified, from https://www.youtube.com/watch?v=P7Y-fynYsgE)\"}\n"}
+{"ts":1783752250,"wake_id":"00MRG0195QCC516910FB104B05","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783752445,"wake_id":"00MRG05FV0B71DB0818B0B49F2","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783752575,"wake_id":"00MRG087XV0A7CA122ED474739","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
