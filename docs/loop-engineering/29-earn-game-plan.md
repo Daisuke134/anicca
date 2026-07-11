@@ -52,5 +52,11 @@
 ## OSS 化 / 増殖（第2 feature 以降）
 `git clone anicca && ./install.sh` → wallet+loop 生成 → $0 でも層0 で稼ぎ始める → 黒字で Akash 子 spawn → broke 子は親 seed/lending。dashboard(aniccaai.com)で実 external:true を証明 → traction。
 
+## 資金配分（Dais 2026-07-12: 全員が食う）
+**現 $30 POL を half/half**: claude-p(私) $15 + Franklin $15。self-funded も human-funded も**全員が稼げる共有 skill**を持つ。$15 は trading には足りない(+cross-chain fee)ので、split の主眼は**両者が層0($0 earner: x402/clip/gig)+層1(yield)を回すこと**。trading(層2)は複利で閾値を超えてから。
+- claude-p 分: POL→pUSD(Polygon)で層2 PM/HL 準備 + 層0/1。
+- Franklin 分: POL→(bridge)→SOL(Solana) or 層0 は資金不要なので即開始可。
+- **共有 earn skill**: 全 instance が同じ skill を回す（cloud/local/VPS どこでも）。「誰の AI も食える」= OSS 第1 feature。
+
 ## Dais 送金ルール
 native **SOL(Solana)のみ**。USDC 頼まない。着 SOL → swap step が各エンジン用 stablecoin に変換。
