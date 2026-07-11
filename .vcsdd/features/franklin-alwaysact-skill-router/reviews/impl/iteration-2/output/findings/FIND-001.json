@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "implementation_correctness",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "security_surface",
+  "severity": "major",
+  "description": "The FIND-001 fix commit introduces `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE`, a new environment variable that unconditionally overrides the path index.mjs reads skills/registry.json from -- the SAME registry object that populates `registryForAlwaysAct`, `riskTagBySlot` (via `riskTagOf`), and `activeSkillSlots` for EVERY wake, not just test wakes. Unlike this codebase's own established precedent for exactly this class of test-only backdoor (`ANICCA_BALANCE_OVERRIDE`), which has a dedicated production guardrail test (`franklin-plist-config.test.mjs` asserting the DEPLOYED Franklin plist's <EnvironmentVariables> dict never contains that key), no equivalent guardrail exists for `ALWAYS_ACT_REGISTRY_PATH_OVERRIDE`. The code itself performs no NODE_ENV/test-mode gating -- it is read unconditionally in production: `process.env.ALWAYS_ACT_REGISTRY_PATH_OVERRIDE || path.join(repoRoot, 'skills', 'registry.json')`. If this variable were ever present in Franklin's live environment (misconfigured .env, launchd plist drift, or an attacker with local env-write access), it would let an attacker-controlled JSON file define arbitrary `risk` tags for every slot -- directly defeating REQ-506's money-safety-critical guarantee that `isMarketRiskFree`/the reroute filter never offers a `risk:\"capital\"` slot as a reroute target, since `riskTagOf` reads straight from this overridable file with no independent validation. This is precisely the class of fail-closed-money-gate weakening the project's own doctrine (memory `feedback_earn_identity_resolve_per_instance_gate_on_anicca_home`, the sol-trade identity-match idiom this same feature explicitly mirrors) warns against, and the codebase's own established mitigation pattern (a plist-absence regression test) was not extended to cover it.",
+  "evidence": {
+    "filePath": "runtime/loop/index.mjs",
+    "lineRange": "136-158",
+    "snippet": "const registryPath = process.env.ALWAYS_ACT_REGISTRY_PATH_OVERRIDE || path.join(repoRoot, 'skills', 'registry.json');\n  try {\n    const registry = JSON.parse(await fs.readFile(registryPath, 'utf8'));\n    registryForAlwaysAct = registry;\n    activeSkillSlots = liveSlotNames(registry);\n    for (const name of activeSkillSlots) {\n      const slotDef = registry.slots[name] || {};\n      ...\n      riskTagBySlot[name] = slotDef.risk;"
+  },
+  "additionalEvidence": [
+    {
+      "filePath": "runtime/loop/__tests__/franklin-plist-config.test.mjs",
+      "lineRange": "43-49",
+      "snippet": "test('REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids)', () => { ... assert.ok(!Object.prototype.hasOwnProperty.call(env, 'ANICCA_BALANCE_OVERRIDE'), ...) }); -- this is the established mitigation pattern for exactly this class of test-only env backdoor; ALWAYS_ACT_REGISTRY_PATH_OVERRIDE has no equivalent test anywhere in the diff."
+    },
+    {
+      "filePath": "runtime/loop/always-act-router.mjs",
+      "lineRange": "107-109",
+      "snippet": "export function isMarketRiskFree(slot, riskTagOf) { return typeof riskTagOf === 'function' && riskTagOf(slot) === 'safe'; } -- this money-safety-critical predicate has no independent source of truth beyond whatever riskTagOf (ultimately sourced from the overridable registry file) reports."
+    }
+  ],
+  "verifiedAbsence": "grep -r 'ALWAYS_ACT_REGISTRY_PATH_OVERRIDE' across runtime/loop returns exactly 3 sites: the index.mjs read site (unconditional, no test-mode guard), the harness comment, and the PROP-502d test's own usage -- no production-side guardrail test asserting its absence from any deployed config exists anywhere in this diff.",
+  "routeToPhase": "2b"
+}

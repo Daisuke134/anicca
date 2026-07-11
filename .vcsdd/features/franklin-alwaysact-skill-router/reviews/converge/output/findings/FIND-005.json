@@ -1,0 +1,44 @@
+{
+  "findingId": "FIND-005",
+  "phase": "converge",
+  "iteration": 3,
+  "criterion": "duplicate_detection",
+  "additionalCriteria": ["four_dimensional_convergence", "residuals_honest"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "Independently discovered this session (Task 2's own staleness sweep, not on the builder's known FIND-001..004 list): both spec files declare REQ-506's earn-result classify call-site widening as a SINGLE line, `index.mjs:450`, whose condition 'becomes' the ternary `else if (ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`. This exact ternary expression does not exist anywhere in the shipped code (independently grepped this session across the entire worktree: zero matches for the string 'alwaysActEngaged ? isEarnActionSlot' outside the spec files themselves and one Phase-1c-era verdict.json). The real, shipped implementation is architecturally identical in KIND to FIND-002/003's already-disclosed drift (the REQ-513 early-return-dispatch restructuring split what was declared as one conditional call site into two structurally separate call sites in two separate functions) but this instance, for REQ-506, was never caught by iteration-2's 'exhaustive grep sweep' fix commit (f3c27de9) nor by any Phase 3 impl-review iteration nor by Phase 5's purity-audit.md. The real code has: (1) `index.mjs:598` (`} else if (isEarnSlot(slot)) {`, inside the legacy `runOneWake` function) — completely unconditional, never reads `ctx.alwaysActEngaged`, byte-for-byte the pre-feature original (this path is in fact unreachable for an always-act-engaged wake at all, since `ctx.alwaysActEngaged` triggers an early return at `index.mjs:516-518` into `runAlwaysActWake` long before line 598 is ever reached); and (2) `index.mjs:754` (`else if (isEarnActionSlot(slot)) {`, inside the wholly separate `runAlwaysActWake` function) — a genuinely distinct call site that was never merged into a ternary with line 598's. `index.mjs:450` itself, independently re-read this session, is `function hasOpenRiskPositionOf(slotName) {` — unrelated bootstrap-reserve carve-out code, not any classify call-site at all. The underlying BEHAVIOR is correct and tested (PROP-506c passes, confirmed in `verification/proof-harnesses/target-feature-run.txt:21` and `full-suite-run.txt:25` — though notably, even that PASSING test's own descriptive name string still bakes in the same stale '(classify call-site widening, index.mjs:450)' citation, showing the drift propagated into the test suite's own documentation, not just the spec). This is a documentation-accuracy-only defect (no behavioral regression, 183/183 unaffected) but it is a real, citable, previously-undisclosed contradiction between the spec's declared wiring mechanism and the actual shipped code, appearing in 5 separate live (non-Changelog) locations.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+    "lineRange": "334-337",
+    "snippet": "Concretely (spec-review FIND-002 fix): `index.mjs:450`'s classify call-site condition becomes `else if (ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`, so `classifyEarnResult` IS invoked for an `economy/gig` or `economy/lending` pick on an always-act-engaged wake, exactly as it already is for any `isEarnSlot` member."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "67-70 (Section 1 ground truth), 133-135 (Section 2 Purity Boundary Analysis)",
+      "snippet": "...its CALL SITE at `index.mjs:450` IS additively widened for always-act-engaged wakes only (REQ-506): `else if (ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`... / ...the classify-call-site gate at `index.mjs:450` additively widened from `isEarnSlot(slot)` to `(ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))`)..."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/verification-architecture.md",
+      "lineRange": "9, 134-138",
+      "snippet": "the widened classify call-site... / **REQ-506/ FIND-002 correction — ADDITIVELY MODIFIED, not unmodified**: the classify call-site gate at `index.mjs:450` changes from `else if (isEarnSlot(slot))` to `else if (ctx.alwaysActEngaged ? isEarnActionSlot(slot) : isEarnSlot(slot))` — a non-always-act `ctx` evaluates `isEarnSlot(slot)` exactly as today."
+    },
+    {
+      "filePath": "runtime/loop/index.mjs",
+      "lineRange": "450, 598, 754",
+      "snippet": "450: `function hasOpenRiskPositionOf(slotName) {` (unrelated carve-out code, not a classify call-site). / 598: `} else if (isEarnSlot(slot)) {` (legacy, unconditional, inside runOneWake). / 754: `else if (isEarnActionSlot(slot)) {` (inside the separate runAlwaysActWake function, comment at 755-757 explicitly labels it 'REQ-506/FIND-002: the always-act-widened classify gate')."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/proof-harnesses/target-feature-run.txt",
+      "lineRange": "21",
+      "snippet": "✔ PROP-506c: economy/gig pick with earnLine===null triggers the SAME reroute path as any isEarnSlot member (classify call-site widening, index.mjs:450) (930.019583ms) -- test PASSES (behavior correct) but its own name string bakes in the same stale citation."
+    },
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/verification/purity-audit.md",
+      "lineRange": "18-19, 169-177",
+      "snippet": "Declared Effectful Shell boundary lists 'the widened classify call-site' without independently re-deriving its actual location; Summary claims 'zero deviations' -- both now falsified by this finding, the same class of self-certification gap FIND-001/002 already exposed once for a different pair of claims."
+    }
+  ],
+  "routeToPhase": "5",
+  "recommendation": "Rewrite the REQ-506 'Concretely:' mechanism description (behavioral-spec.md's Section 1 ground-truth bullet, Section 2 Purity Boundary Analysis summary, REQ-506's own EARS clause) and verification-architecture.md's Effectful Shell entry to describe the ACTUAL shipped structure: two structurally separate classify call sites in two separate functions (index.mjs:598 inside the legacy runOneWake, unconditional/untouched; index.mjs:754 inside the dedicated runAlwaysActWake, using isEarnActionSlot) rather than a single line-450 ternary that was never built. Also correct the stale test-name citation in always-act-reroute.property.test.mjs (PROP-506c) and re-run purity-audit.md's cross-check to confirm 'zero deviations' after this fix. Documentation-accuracy fix only; no source/test change implied; 183/183 remains correct external test evidence throughout."
+}

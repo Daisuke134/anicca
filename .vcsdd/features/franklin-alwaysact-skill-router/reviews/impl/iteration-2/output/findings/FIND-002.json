@@ -1,0 +1,26 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "additionalDimensions": ["verification_readiness"],
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "behavioral-spec.md's own Embedded VCSDD Task List item 7 (line 850) requires 'Sprint contract (strict mode) -- write contracts/sprint-1.md mapping CRIT-* to REQ-501..REQ-513 before Phase 3 adversarial review'. state.json's mode is 'strict'. The actual contracts/sprint-1.md defines exactly 10 CRIT-* criteria (CRIT-001..CRIT-010), and a full-text grep of the file for the literal strings 'REQ-503' and 'REQ-510' returns zero matches -- neither the bootstrap-reserve catalog gate (REQ-503, which has its own dedicated Acceptance Criteria and its own dedicated tests PROP-503a/PROP-503b) nor the per-wake ledger-record contract (REQ-510, whose attemptsUsed-domain-pin was the subject of two dedicated spec-review-iteration-5 Acceptance Criteria specifically added to disambiguate it from a naive think()-call-count reading) is named, described, or covered by ANY of the 10 CRIT criteria's descriptions or passThreshold text. Every other REQ-501/502/504/505/506/507/509/511/512/513 is traceably covered by at least one CRIT item; REQ-503 and REQ-510 are the two silent gaps. This means the strict-mode grading contract that is supposed to be the authoritative pass/fail rubric for this Phase 3 review does not actually grade two concrete, currently-implemented, currently-tested requirements at all -- an operator or a future adversary relying solely on contracts/sprint-1.md's CRIT list (as the review manifest instructs: 're-runs node --test ... and confirms these tests, by exact name, pass') would never be directed to run PROP-503a/PROP-503b or PROP-510a, and a future regression in either requirement could ship without ever failing a named CRIT passThreshold.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/contracts/sprint-1.md",
+    "lineRange": "8-57",
+    "snippet": "CRIT-001..CRIT-010 criteria list -- grep for 'REQ-503' and 'REQ-510' inside this file returns zero matches; only CRIT-002's passThreshold references always-act-router.test.mjs (REQ-502 only) and no criterion's description or passThreshold names REQ-503 or REQ-510."
+  },
+  "additionalEvidence": [
+    {
+      "filePath": ".vcsdd/features/franklin-alwaysact-skill-router/specs/behavioral-spec.md",
+      "lineRange": "850",
+      "snippet": "7. Sprint contract (strict mode) -- write `contracts/sprint-1.md` mapping CRIT-* to REQ-501..REQ-513 before Phase 3 adversarial review."
+    },
+    {
+      "filePath": "runtime/loop/__tests__/always-act-router.test.mjs",
+      "lineRange": "171-215,362-390",
+      "snippet": "PROP-503a/PROP-503b (REQ-503) and PROP-510a (REQ-510) exist and are real, implemented tests -- the requirements themselves ARE tested; only the strict-mode CRIT contract fails to name/grade them."
+    }
+  ],
+  "routeToPhase": "2b"
+}

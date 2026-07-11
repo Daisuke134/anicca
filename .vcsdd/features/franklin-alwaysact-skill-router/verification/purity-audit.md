@@ -1,0 +1,210 @@
+# Purity Boundary Audit — franklin-alwaysact-skill-router (VCSDD Phase 5)
+
+Compares `specs/verification-architecture.md`'s "Purity Boundary Map" (Phase 1b, iteration-4-corrected)
+against the real implementation, worktree `/Users/anicca/anicca/.worktrees/alwaysact-impl`, HEAD
+`39a9c217`.
+
+## Declared Boundaries
+
+**Pure Core** (declared): a new module `runtime/loop/always-act-router.mjs` — `isEarnActionSlot`,
+`assembleAlwaysActMenu`, `buildAlwaysActToolDefinitions`, `isMarketRiskFree`, `noRealizedAction`,
+`isRejectableSleepOrOffMenu`, `nextRerouteState`, `buildMustActReinforcement`,
+`buildAlwaysActLedgerFields`, `isPostGoLiveRegression`, `buildGoLiveRecord`, `shouldRecordGoLive` — "no
+I/O, every input pre-loaded and passed in, every classifier injected." Plus one additively-modified
+pre-existing pure function: `prompt.mjs::getToolDefinitions(slots, opts)` gains an optional
+`{omitSleep}` parameter, "a pure, deterministic string/object transform," and `buildAlwaysActToolDefinitions`
+is declared a thin, non-duplicating wrapper reusing it.
+
+**Effectful Shell** (declared, extended not replaced): `runtime/loop/index.mjs` (identity-gate
+subprocess calls, the reprompt/reroute retry loop, the widened classify call-site, the REQ-513 dispatch
+guard, all ledger appends); `runtime/loop/go-live.mjs` (new, the one-time operational append);
+`runtime/loop/brain.mjs::thinkProxy`/`thinkClaudeP` (additively modified `tools:`/prompt-text lines,
+conditional on `ctx.alwaysActEngaged`); `runtime/loop/context.mjs::assembleContext` (additively modified,
+new `alwaysActEngaged`/`alwaysActMenu` fields, still itself I/O-free per its own pre-existing contract).
+REQ-507's explicit no-judgment contract: "every branch reads only registry bookkeeping fields... or the
+harness's own attempt-state counter, never the model's args or free-text output."
+
+## Observed Boundaries
+
+### `always-act-router.mjs` — zero I/O, verified by direct read + grep this session
+
+```
+$ grep -n "^import" always-act-router.mjs
+22:import { isEarnSlot } from './earn-slot.mjs';
+23:import { getToolDefinitions } from './prompt.mjs';
+```
+Exactly 2 imports, both to other declared-pure modules (`earn-slot.mjs`, `prompt.mjs`) — **zero**
+`node:fs`/`node:http`/`node:child_process`/`node:path`/any I/O-capable import. ✅ matches declared.
+
+```
+$ grep -n "RegExp\|\.match(\|\.test(" always-act-router.mjs
+(zero matches)
+```
+No regex/pattern-matching over model output anywhere in the file. ✅ matches CRIT-009's own
+passThreshold text verbatim (re-derived independently this session, not merely copied from the
+contract).
+
+Every one of the 12 exported functions was read in full this session (236 lines total). Each takes its
+inputs as plain-value parameters and returns a plain value/object — no function opens a file, spawns a
+process, reads `process.env`, or calls `Date.now()`/`Math.random()` internally
+(`buildGoLiveRecord`/`isPostGoLiveRegression` take `ts`/pre-gathered `ledgerTail` as caller-supplied
+arguments, never self-derived). ✅ matches declared.
+
+### No judgment hardcoding — REQ-507's contract, verified by reading every branch
+
+Every conditional in `always-act-router.mjs` branches on one of: (a) a registry BOOKKEEPING field
+(`slots[name].status`, `riskTagOf(slot)`, `alwaysAvailableOf`), (b) the doctrine-named fixed set
+(`DOCTRINE_EARN_ACTIONS`, a hardcoded `Set` of 2 slot NAMES — bookkeeping, not the model's free-text
+`args` content), (c) set-membership of a `slot` NAME against an offered-slots array
+(`isRejectableSleepOrOffMenu`), or (d) the harness's own numeric `attemptsUsed` counter
+(`nextRerouteState`). The one place `args` (the model's chosen parameters) appears at all is
+`buildAlwaysActLedgerFields`'s pass-through (`args && typeof args === 'object' ? args : {}`, a type
+GUARD, not a content branch) and `buildMustActReinforcement`'s template-string interpolation of the
+MENU (not `args`). **No branch anywhere reads `args`' CONTENT to decide behavior** — confirmed by the
+`grep -n "args\." always-act-router.mjs` re-check this session, whose single hit is inside a template
+literal (`` `... and your real args. Pick one now...` ``), not code. The model chooses freely among the
+offered slots and its own `args`; the router only constrains the STRUCTURE (which slot names are
+legal this attempt) and NEVER inspects/ranks/filters by what the model decided to DO with a slot. ✅
+matches REQ-507/PROP-507b's own contract, independently re-derived (not merely quoting the contract's
+own claim).
+
+### Effectful shell — `index.mjs`'s real dispatch, verified by direct read
+
+- `resolveAlwaysActGate`/`checkAlwaysActIdentity` (`index.mjs:247-288`): genuinely impure —
+  `process.env.HOME`/`process.env.ALWAYS_ACT_ENABLED` reads, `execFileAsync` subprocess spawns
+  (`deriveSolanaAddress`), a real `setTimeout` pacing floor. Correctly classified Effectful Shell. ✅
+- `runAlwaysActWake` (`index.mjs:666-860`): the retry-loop orchestrator — calls the impure `think()`,
+  `runSkillWithKillRef`, `classifyEarnResult`, and 4 distinct `safeAppend(LEDGER_PATH, ...)` write sites
+  (lines 674/704/720/814/818/828/856/913 across the function and its `writeAlwaysActEscalation` helper) —
+  but every BRANCH DECISION inside it (whether to retry/reroute/escalate) is made by calling the pure
+  `nextRerouteState`/`isRejectableSleepOrOffMenu`/`noRealizedAction`/`isMarketRiskFree` and reading their
+  plain return values — the loop never re-implements their logic inline. Confirmed by reading the full
+  function body this session (lines 666-860): every `if` that decides retry-vs-escalate calls
+  `nextRerouteState({attemptsUsed, maxAttempts: 1})` and reads `.exhausted`/`.attemptsUsedNext`, never
+  re-deriving that decision from `currentOfferedSlots` identity inline (the exact FIND-301 class of bug
+  the spec's own iteration-4 fix eliminated — re-verified NOT reintroduced: `attemptsUsed` is the only
+  variable read at every branch point, `currentOfferedSlots` is read only inside the
+  `isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` call itself, for validity, never for branch
+  selection). ✅ matches declared "impure orchestrator calls pure core, never duplicates its logic."
+- `prompt.mjs::getToolDefinitions` (lines 137-179, read in full this session): the new `opts.omitSleep`
+  parameter only conditionally skips one `defs.push(SLEEP_TOOL)` line — no I/O added, no existing
+  call site's behavior changed when `opts` is omitted (confirmed: `if (!omitSleep) defs.push(SLEEP_TOOL)`,
+  `omitSleep` defaults `false` via `opts.omitSleep === true`). ✅ stays pure, matches declared.
+- `context.mjs::assembleContext` (read in full, 60 lines): the 2 new fields
+  (`alwaysActEngaged: alwaysActEngaged === true`, `alwaysActMenu: Array.isArray(...) ? ... : []`) are
+  pure type-coercions of caller-supplied arguments — no new I/O introduced to this already-pure module.
+  ✅ matches declared "unmodified from Phase 2c" (an even stronger guarantee than the spec required,
+  since Phase 2c's own diff already landed this additive change before Phase 3).
+- `brain.mjs::thinkProxy`/`thinkClaudeP` (`brain.mjs:63-100`, read in full): `tools:` line and the
+  prompt-text sleep-mention line both branch on `ctx.alwaysActEngaged` — a plain boolean read off the
+  already-assembled `ctx` object, not a new I/O read; `PROP-504b`'s own wire-seam test (re-run this
+  session, 3/3 green) proves this conditional actually governs the REAL outbound HTTP body, not merely
+  a standalone pure helper's return value. ✅ matches declared.
+- `go-live.mjs::recordGoLive` (read in full, 60 lines): impure (reads the real ledger tail via
+  `readLedgerLines`, appends via `appendLedgerLine`) but delegates ALL decision logic to the pure
+  `shouldRecordGoLive`/`buildGoLiveRecord` — confirmed by direct read, the function body is exactly
+  "read tail → ask pure predicate → build pure record → append," no inline re-derivation. ✅ matches
+  declared. Confirmed this session (again) that `index.mjs` never imports this module (`grep -n
+  "go-live.mjs\|recordGoLive" index.mjs` → zero matches) — the go-live action is genuinely isolated from
+  every wake's own control flow, exactly as declared ("index.mjs never imports or calls this module").
+
+### Ledger-record structural purity (`ledger-record.mjs`, unmodified by this feature)
+
+`formatRecord = (fields) => JSON.stringify(fields) + '\n'` — confirmed still a single-line pure
+function, unmodified by this feature's diff, and reused unchanged by every new ledger-write call site
+this feature adds (`router_reroute_skip`, `router_no_realized_action`, `router_menu_empty`,
+`always_act_not_engaged`, `always_act_go_live`) — no new, parallel record-formatting primitive was
+introduced. ✅ matches the codebase's existing "no new writer" convention this feature's own comments
+repeatedly cite.
+
+## Mismatches found
+
+**None**, for the purity/impurity classification itself (I/O-freedom and judgment-freedom of every
+declared Pure Core function, and the delegate-don't-reimplement discipline of every declared Effectful
+Shell function) — see below for the caveat this session's own audit missed.
+
+**Converge doc-sync 2026-07-11 correction**: the "None" conclusion above was FALSIFIED by Phase 6
+convergence review for two specific, named claims that this audit session did not check — it verified
+the ABSENCE of I/O/judgment-branching in `nextRerouteState` and `runAlwaysActWake` (which does hold) but
+never diffed the declared function SIGNATURE/return-shape or the declared WIRING MECHANISM in
+`specs/verification-architecture.md` against the real code it was reading:
+
+- **FIND-001** (`.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-001.json`):
+  `specs/verification-architecture.md` declared `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })`
+  → `{ shouldRetry, excludeSlot, exhausted }`. The actual shipped signature at
+  `runtime/loop/always-act-router.mjs:148-153` is `nextRerouteState({ attemptsUsed, maxAttempts })` →
+  `{ shouldRetry, attemptsUsedNext, exhausted }` — no `lastOutcome` input, no `excludeSlot` output.
+  Resolved by doc-sync: `specs/verification-architecture.md`'s Pure Core entry now states the real
+  signature/return shape.
+- **FIND-002** (`.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-002.json`):
+  `specs/verification-architecture.md` and `behavioral-spec.md` REQ-513 both declared the wiring
+  mechanism as `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch "becomes conditional"
+  (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`). The actual shipped mechanism is an early-return
+  dispatch at `index.mjs:516-518` (`if (ctx.alwaysActEngaged) { return runAlwaysActWake(...); }`) that
+  diverts an engaged wake into `runAlwaysActWake` BEFORE `index.mjs:551`'s unconditional, unmodified
+  `if (slot === 'sleep')` branch is ever reached — that branch was never made conditional in place.
+  Resolved by doc-sync: both spec documents now describe the early-return dispatch mechanism with
+  current line numbers.
+
+Both are documentation-accuracy issues only — independently re-confirmed by the converge review's own
+raw test-output cross-checks that the ACTUAL runtime behavior is correct, money-safety-conformant, and
+fully test-covered (183/183, 0 semgrep findings). No source or test change was made or is implied by
+either correction. No hidden side effect was found inside any function classified Pure Core; no impure
+function re-implements pure-core decision logic inline; no verifier-hostile coupling (e.g. a pure
+function reaching into module-level mutable state) was found — `always-act-router.mjs` has zero
+module-level `let`/mutable state at all (only the one `const DOCTRINE_EARN_ACTIONS = new Set([...])`,
+itself immutable after definition and never mutated by any exported function — confirmed by reading the
+full file, no `.add(`/`.delete(` call anywhere).
+
+## Follow-up before Phase 6
+
+None required for the purity boundary itself. One adjacent, non-purity observation carried over from
+`security-report.md` §4 (`go-live.mjs`'s idempotency TOCTOU race under genuinely concurrent invocation)
+is a money-observability robustness gap, not a purity violation — `recordGoLive`'s pure/impure split is
+itself correct regardless of that race (the race is in the ORCHESTRATION of two impure calls racing each
+other, not in any function crossing the pure/impure boundary incorrectly). Not blocking.
+
+## Summary
+
+The implemented core/shell split matches the declared Purity Boundary Map with **zero deviations**:
+`always-act-router.mjs` is verified I/O-free (2 pure imports only, no `fs`/`http`/`child_process`, no
+mutable module state) and judgment-free (every branch reads registry bookkeeping, a fixed doctrine set,
+slot-name membership, or the harness's own `attemptsUsed` counter — never the model's `args` content;
+the model retains 100% of the judgment over WHICH offered slot to pick and WHAT args to pass, the router
+only constrains the offered STRUCTURE). Every Effectful Shell function extended by this feature
+(`index.mjs`'s gate/retry-loop/dispatch-guard, `go-live.mjs`, `brain.mjs`, `context.mjs`) delegates its
+actual decision logic to the pure core rather than re-implementing it inline, confirmed by direct read
+of every touched function's full body this session. No purity or judgment-hardcoding violation found.
+
+**Converge doc-sync 2026-07-11 correction (SECOND correction, mechanical citation-audit session, following
+the FIND-001/FIND-002 correction above)**: the "zero deviations" claim in this Summary is, again,
+FALSIFIED for the SAME reason as the correction above — it certifies the underlying
+purity/impurity/judgment-freedom CLASSIFICATION (which does still hold; this correction does not dispute
+that) without ever cross-checking the SPECIFIC line-number citations `specs/verification-architecture.md`'s
+declared Purity Boundary Map used to describe that classification. Converge iteration-3's fresh-context
+adversary independently found 3 further stale citations this audit session did not catch (FIND-005/006/007:
+REQ-506's declared single-line `index.mjs:450` classify-gate ternary does not exist in the shipped code —
+the real mechanism is `index.mjs:598`/`:754`, two separate call sites; `avoidSlot`'s declared
+`index.mjs:175-184`/`:183`/`:179-421` citations are stale by ~113-119 lines — real: `:296`/`:302`/`:293-425`;
+REQ-508's `appendHarnessFailure` citation `index.mjs:458-475` is actually the unrelated bootstrap-reserve
+`filterCatalog` block — real definition `:1028`, call sites `613`/`767`/`878`/`914`), and this session's own
+follow-up mechanical, exhaustive re-grep of every citation in `specs/behavioral-spec.md` and
+`specs/verification-architecture.md` found 4 MORE stale citations beyond FIND-005/006/007
+(`index.mjs:382-416`, `index.mjs:440-456`, `prompt.mjs:139-173`/`:171`, `brain.mjs:63`/`:92`,
+`prompt.mjs:205-207` — see
+`.vcsdd/features/franklin-alwaysact-skill-router/evidence/citation-audit-2026-07-11.md` for the full
+58-citation audit table). This purity-audit.md file's OWN internal citations (e.g. lines 78/89/98 above,
+`index.mjs:674/704/.../913`, `prompt.mjs:137-179`, `brain.mjs:63-100`) were NOT part of this correction's
+scope (the mechanical citation-audit task this session performed was scoped to
+`specs/behavioral-spec.md`/`specs/verification-architecture.md`/`contracts/sprint-1.md` only, per its own
+explicit method — `verification/*.md` files were only touched where a FIND finding named them, per that
+task's own instruction) and have not been independently re-verified this session; they should be treated
+as UNAUDITED, not confirmed-accurate, until a future pass extends the mechanical grep-based method to
+`verification/`. The underlying runtime behavior remains correct and fully test-covered throughout
+(183/183, docs-only fix) — this is, again, a documentation-accuracy-only finding, not a behavioral
+regression. **This is the third time this exact "zero deviations" self-certification has been shown false
+by a fresh-context re-check** (once for FIND-001/002, once now for FIND-005/006/007 + this session's own
+sweep) — a future Phase 5 pass should stop asserting "zero deviations" in this Summary as a headline claim
+and instead scope it explicitly to "purity/judgment classification, independently re-verified; line-number
+citations audited separately, see citation-audit-2026-07-11.md" to avoid re-falsifying an unscoped claim a
+fourth time.

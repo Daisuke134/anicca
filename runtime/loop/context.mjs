@@ -23,8 +23,15 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer }) {
+export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer, alwaysActEngaged, alwaysActMenu }) {
   return {
+    // franklin-alwaysact-skill-router REQ-504: additive fields set by index.mjs's wake loop only for
+    // Franklin-identity, flag-engaged wakes (REQ-501). alwaysActEngaged defaults false (byte-for-byte
+    // unaffected for every non-always-act ctx); alwaysActMenu is the STATIC, full-wake menu (REQ-502/
+    // 503) — never itself the per-attempt reference REQ-513's dispatch guard checks once a reroute is
+    // in flight (index.mjs's own local `currentOfferedSlots` owns that role).
+    alwaysActEngaged: alwaysActEngaged === true,
+    alwaysActMenu: Array.isArray(alwaysActMenu) ? alwaysActMenu : [],
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
     // loop-break + diversification signals — index.mjs passes these; without them here they were DROPPED,

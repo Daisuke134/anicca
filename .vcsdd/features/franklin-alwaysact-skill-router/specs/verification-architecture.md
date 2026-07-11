@@ -1,23 +1,35 @@
 # Verification Architecture — franklin-alwaysact-skill-router
 
+> **MAINTENANCE NOTE (2026-07-11, mechanical citation audit)**: Line-number citations in this document
+> are pinned to commit `f3c27de9` + the mechanical citation-audit fix that follows it (see Changelog).
+> Every `index.mjs:<N>` / `prompt.mjs:<N>` / `brain.mjs:<N>` / `always-act-router.mjs:<N>` / `run.sh:<N>`
+> citation below was independently re-verified against the real files at that commit (grep for the
+> literal quoted code/comment string, never re-read from memory of where it "should" be) — see
+> `.vcsdd/features/franklin-alwaysact-skill-router/evidence/citation-audit-2026-07-11.md` for the full
+> audit table. **Re-audit mechanically after any further code change.**
+
 ## Purity Boundary Map
 
 **Spec-review iteration-1 correction (FIND-001/FIND-002/FIND-003/FIND-005)**: the original map below
 understated where the real implementation diff lands. Three existing modules that were previously described
 as "unmodified" or not mentioned at all ARE additively modified by this feature — `runtime/loop/prompt.mjs`
 (stays Pure Core, gains an additive parameter), `runtime/loop/brain.mjs` (stays Effectful Shell, its
-`tools:`/prompt-text lines become conditional), and `runtime/loop/index.mjs:450`'s classify call-site gate
-(stays Effectful Shell, its condition is additively widened). This is the AUTHORITATIVE, corrected map.
+`tools:`/prompt-text lines become conditional), and `runtime/loop/index.mjs:598`/`:754`'s classify call
+sites (stays Effectful Shell, additively widened for the `:754` always-act codepath — converge doc-sync
+2026-07-11 line-number correction, see FIND-005: the shipped mechanism is two separate call sites, not a
+single `index.mjs:450` in-place ternary). This is the AUTHORITATIVE, corrected map.
 
 **Spec-review iteration-2 correction (FIND-101/FIND-102/FIND-103)**: three further corrections land in this
 revision — (1) REQ-506's reroute filter gains a `risk:"safe"`-only constraint (`isMarketRiskFree`, sourced
 from the registry's existing `risk` field, not a new classification source) so a capital-risking slot is
 never offered as a reroute target (FIND-101); (2) REQ-511's ceiling is restated unambiguously as at most 1
 extra `think()` call beyond baseline (2 total), matching `nextRerouteState`'s `maxAttempts = 1` and
-PROP-511a verbatim (FIND-102); (3) a new pure guard + Effectful Shell modification (REQ-513) makes
-`index.mjs`'s real `if (slot === 'sleep')` dispatch (`index.mjs:402-416`) reject a fabricated
-`slot:'sleep'`/off-menu pick while always-act is engaged, closing a structural bypass of the entire
-always-act mechanism (FIND-103).
+PROP-511a verbatim (FIND-102); (3) a new pure guard + Effectful Shell modification (REQ-513) makes the
+wake-loop dispatch, inside the dedicated `runAlwaysActWake` function reached via an early-return dispatch
+(`index.mjs:516-518`), reject a fabricated `slot:'sleep'`/off-menu pick while always-act is engaged, closing
+a structural bypass of the entire always-act mechanism (FIND-103) — see the REQ-513 Effectful Shell entry
+below for the full, converge-corrected wiring-mechanism description (single source of truth for citable line
+numbers).
 
 **Spec-review iteration-3 correction (FIND-201)**: `isRejectableSleepOrOffMenu`'s second argument is
 corrected from the static, wake-level `ctx.alwaysActMenu` to a per-attempt `currentOfferedSlots` value — a
@@ -39,7 +51,7 @@ third instance). This revision removes array-identity-based branch selection ENT
 arbiter of every REQ-505/506/511/513 branch decision — `attemptsUsed===0` → one shared retry (reprompt or
 reroute, whichever failure type fired); `attemptsUsed===1` → REQ-508 escalation, unconditionally, regardless
 of failure type or which array was offered. `currentOfferedSlots`/`isRejectableSleepOrOffMenu` are demoted to
-their FIND-201 VALIDITY-check role only. See §2.5 of behavioral-spec.md for the exhaustive 9-row transition
+their FIND-201 VALIDITY-check role only. See §2.5 of behavioral-spec.md for the exhaustive 12-row transition
 matrix this correction is verified against.
 
 - **Pure Core** (new module(s), e.g. `runtime/loop/always-act-router.mjs`, deterministic, no I/O,
@@ -48,16 +60,18 @@ matrix this correction is verified against.
   - `isEarnActionSlot(name)` — REQ-502: `isEarnSlot(name) || DOCTRINE_EARN_ACTIONS.has(name)` where
     `DOCTRINE_EARN_ACTIONS = {'economy/gig', 'economy/lending'}` is a fixed, doctrine-derived,
     non-inferred set (bookkeeping data, not judgment — same category as `catalog-gate.mjs`'s injected
-    `riskTagOf`/`alwaysAvailableOf` classifiers). **REQ-506 correction**: this predicate is also the one
-    used at the widened `index.mjs:450` classify call-site — see Effectful Shell below — so `economy/gig`
-    and `economy/lending` are classify-eligible, not just menu-eligible.
+    `riskTagOf`/`alwaysAvailableOf` classifiers). **REQ-506 correction (converge doc-sync 2026-07-11
+    line-number correction, see FIND-005)**: this predicate is also the one used at the widened
+    `index.mjs:754` classify call-site inside `runAlwaysActWake` — see Effectful Shell below — so
+    `economy/gig` and `economy/lending` are classify-eligible, not just menu-eligible.
   - `assembleAlwaysActMenu({ registry, activeSkillSlots, catalogFilterFn, balanceUsdc,
     reserveThresholdUsdc, riskTagOf, alwaysAvailableOf, hasOpenRiskPositionOf })` — REQ-502/503: pure
     composition of `liveSlotNames`-equivalent filtering + `isEarnActionSlot` + `filterCatalog`
     (`catalog-gate.mjs`, injected as a function reference, never re-implemented).
   - `runtime/loop/prompt.mjs::getToolDefinitions(slots, opts)` — REQ-504: **ADDITIVELY MODIFIED, not
     unmodified** (FIND-001/FIND-005 correction). Gains an optional second parameter `opts = { omitSleep:
-    false }`; when `omitSleep === true`, `SLEEP_TOOL` (`prompt.mjs:171`) is not appended. Every existing
+    false }`; when `omitSleep === true`, `SLEEP_TOOL` (`prompt.mjs:178`, converge doc-sync 2026-07-11
+    line-number correction) is not appended. Every existing
     call site (which never passes `opts`) is byte-for-byte unaffected — this stays a pure, deterministic
     string/object transform, correctly Pure Core, but is no longer "unmodified."
   - `buildAlwaysActToolDefinitions(menuSlots)` — REQ-504: a thin wrapper —
@@ -90,9 +104,12 @@ matrix this correction is verified against.
     valid for THIS attempt" — it has NO branch-selection role and is never consulted to decide "which attempt
     is this" or "which recovery path applies"; that decision belongs EXCLUSIVELY to `nextRerouteState`'s
     `attemptsUsed` output, below.
-  - `nextRerouteState({ attemptsUsed, maxAttempts, lastOutcome })` — REQ-505/506/511/513: pure bounded-retry
-    state machine (`{ shouldRetry: boolean, excludeSlot: string|null, exhausted: boolean }`) — the single
-    shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling of 2 total `think()` calls per wake
+  - `nextRerouteState({ attemptsUsed, maxAttempts })` — REQ-505/506/511/513: pure bounded-retry
+    state machine (`{ shouldRetry: boolean, attemptsUsedNext: number, exhausted: boolean }`, per the
+    actual shipped signature at `runtime/loop/always-act-router.mjs:148-153` — no `lastOutcome` input
+    is ever passed, and there is no `excludeSlot` output field; **converge doc-sync 2026-07-11 correction,
+    FIND-001** — this entry previously mis-declared both the input and output shape, see Changelog) — the
+    single shared counter (`maxAttempts = 1`) enforcing REQ-511's ceiling of 2 total `think()` calls per wake
     (1 baseline + at most 1 shared extra-call budget, spec-review iteration-2 FIND-102 fix — not "2 extra").
     **(spec-review iteration-4 FIND-301 fix — this function's role is elevated and made explicit)** Its
     `attemptsUsed` input/tracking IS, EXCLUSIVELY, the arbiter of every retry/reroute/escalation branch
@@ -127,14 +144,19 @@ matrix this correction is verified against.
     invalid-outcome check on either the reprompt attempt or a further outcome consults to pick REQ-505's
     reprompt path vs REQ-508's escalation. `classifyEarnResult`/`appendHarnessFailure`/`safeAppend` (all
     pre-existing, unmodified) are called as before. **REQ-506/
-    FIND-002 correction — ADDITIVELY MODIFIED, not unmodified**: the classify call-site gate at
-    `index.mjs:450` changes from `else if (isEarnSlot(slot))` to `else if (ctx.alwaysActEngaged ?
-    isEarnActionSlot(slot) : isEarnSlot(slot))` — a non-always-act `ctx` evaluates `isEarnSlot(slot)`
+    FIND-002 correction — ADDITIVELY MODIFIED, not unmodified (converge doc-sync 2026-07-11 line-number
+    correction, see FIND-005: the shipped mechanism is TWO separate call sites, never a single in-place
+    ternary)**: the classify call-site gate additively widens from `index.mjs:598`'s legacy
+    `else if (isEarnSlot(slot))` (inside `runOneWake`) to `index.mjs:754`'s
+    `else if (isEarnActionSlot(slot))` (inside `runAlwaysActWake`) — a non-always-act `ctx` never reaches
+    `runAlwaysActWake` (the `index.mjs:516-518` early return only fires when `ctx.alwaysActEngaged`) so it
+    evaluates `isEarnSlot(slot)` at `index.mjs:598`
     exactly as today. **REQ-506/FIND-003 correction (spec-review iteration-2 FIND-101 further correction)**:
     the reroute re-invocation builds its tool schema via `buildAlwaysActToolDefinitions(menuSlots.filter(x =>
     x !== pickedSlot && isMarketRiskFree(x, riskTagOf)))` — a genuine hard array filter over the pure-core
     menu that ALSO excludes every `risk:"capital"` slot, not only the just-picked one — NOT the soft
-    `avoidSlot` field (`index.mjs:179-421`), which stays completely unmodified and independent of this
+    `avoidSlot` field (`index.mjs:293-425`, converge doc-sync 2026-07-11 line-number correction, see
+    FIND-006), which stays completely unmodified and independent of this
     feature. **(spec-review iteration-3 FIND-201 fix)** At this exact point — where the reroute's tool
     schema is built — the retry loop also sets its own local `currentOfferedSlots` variable to this SAME
     filtered array (distinct from, and never reassigned back into, `ctx.alwaysActMenu`); this is the value
@@ -143,28 +165,43 @@ matrix this correction is verified against.
     variable to `1` (this reroute call IS the shared budget's one extra call) — `attemptsUsed`, not
     `currentOfferedSlots`, is what any subsequent invalid-outcome check consults to decide reprompt-vs-reroute-
     vs-escalate. **REQ-513 (spec-review iteration-2 FIND-103 fix; iteration-3 FIND-201 fix corrects the
-    VALIDITY reference set; iteration-4 FIND-301 fix corrects BRANCH SELECTION) — ADDITIVELY MODIFIED,
-    previously unlisted**: `index.mjs:402-416`'s existing `if (slot === 'sleep')` branch becomes conditional
-    (`if (slot === 'sleep' && !ctx.alwaysActEngaged)`), and a new guard immediately ahead of skill execution
-    rejects (for VALIDITY) a fabricated `slot:'sleep'` or any slot absent from the CURRENT attempt's
+    VALIDITY reference set; iteration-4 FIND-301 fix corrects BRANCH SELECTION; **converge doc-sync
+    2026-07-11 correction, FIND-002** — this entry's wiring-MECHANISM description below is corrected to
+    match the actual shipped code, see Changelog) — ADDITIVELY MODIFIED, previously unlisted**: the actual
+    shipped mechanism is an early-return dispatch, not an in-place conditional. `index.mjs:516-518` adds
+    `if (ctx.alwaysActEngaged) { return runAlwaysActWake({ ctx, wakeId, ts, alwaysActMenu }); }` immediately
+    ahead of the pre-existing `think()`/tool-call-parse flow, diverting an always-act-engaged wake into the
+    dedicated `runAlwaysActWake` function BEFORE `index.mjs:551`'s pre-existing `if (slot === 'sleep')`
+    branch is ever reached — that branch itself is left byte-for-byte unconditional and unmodified from the
+    pre-feature original; it is unreachable for an engaged wake solely because of the earlier return, never
+    because it was made conditional in place (it was NOT changed to
+    `if (slot === 'sleep' && !ctx.alwaysActEngaged)`, contrary to this entry's own prior text). Inside
+    `runAlwaysActWake` (`index.mjs:666-`, its own per-attempt retry loop), a new guard immediately ahead of
+    skill execution — `isRejectableSleepOrOffMenu(slot, currentOfferedSlots)` at `index.mjs:717` — rejects
+    (for VALIDITY) a fabricated `slot:'sleep'` or any slot absent from the CURRENT attempt's
     `currentOfferedSlots` (baseline attempt: `ctx.alwaysActMenu`; reroute attempt: the narrower
     risk-free-filtered array set above — **never the static `ctx.alwaysActMenu` once a reroute is in flight**)
     when `ctx.alwaysActEngaged === true`. The rejection's BRANCH is then decided EXCLUSIVELY by the retry
-    loop's own `attemptsUsed` local variable (spec-review iteration-4 FIND-301 fix — supersedes iteration-3's
-    "baseline attempt vs reroute attempt" framing, which was itself keyed on `currentOfferedSlots` identity):
+    loop's own `attemptsUsed` local variable, via `nextRerouteState({ attemptsUsed, maxAttempts: 1 })` at
+    `index.mjs:718` (spec-review iteration-4 FIND-301 fix — supersedes iteration-3's "baseline attempt vs
+    reroute attempt" framing, which was itself keyed on `currentOfferedSlots` identity):
     `attemptsUsed===0` routes into REQ-505's reprompt path (and sets `attemptsUsed=1`); `attemptsUsed===1`
     routes DIRECTLY into REQ-508's escalation (no third `think()` call is made) — this correctly handles BOTH
     a rejected reroute-attempt response (attemptsUsed was already 1 from the reroute call itself) AND a
     rejected REQ-505 reprompt-attempt response (attemptsUsed was already 1 from the reprompt call itself,
     even though that attempt's `currentOfferedSlots` is array-identical to the baseline's — the FIND-301 fix)
-    — a non-always-act `ctx` is completely unaffected, the existing branch fires exactly as today. **REQ-512**: appends
+    — a non-always-act `ctx` is completely unaffected: `ctx.alwaysActEngaged` is falsy, so `index.mjs:516`'s
+    early return never fires, and the wake falls straight through to `index.mjs:551`'s existing branch,
+    exactly as today. **REQ-512**: appends
     `kind:'always_act_not_engaged'`/`kind:'always_act_go_live'` ledger lines (new, additive `kind` values
     reusing `formatRecord`/`safeAppend` unmodified).
   - `runtime/loop/brain.mjs::think()` / `thinkProxy()` / `thinkClaudeP()` — **ADDITIVELY MODIFIED, not
     unmodified** (FIND-001/FIND-005 correction — this was the central defect in spec-review iteration-1).
-    `thinkProxy`'s `tools:` line (`brain.mjs:63`) becomes `tools: getToolDefinitions(ctx.alwaysActEngaged ?
+    `thinkProxy`'s `tools:` line (`brain.mjs:66`, converge doc-sync 2026-07-11 line-number correction)
+    becomes `tools: getToolDefinitions(ctx.alwaysActEngaged ?
     ctx.alwaysActMenu : ctx.activeSkillSlots, { omitSleep: ctx.alwaysActEngaged === true })`.
-    `thinkClaudeP`'s prompt-text instruction line (`brain.mjs:92`) conditionally drops the sleep mention on
+    `thinkClaudeP`'s prompt-text instruction ternary (`brain.mjs:100-102`, converge doc-sync 2026-07-11
+    line-number correction) conditionally drops the sleep mention on
     the same `ctx.alwaysActEngaged` flag. A non-always-act `ctx` (`alwaysActEngaged` falsy — the
     overwhelming majority of all wakes, every non-Franklin instance) produces byte-for-byte identical output
     to today's unconditional call — the function CONTRACT (inputs: `ctx`, `config`; output: raw response)
@@ -193,7 +230,7 @@ matrix this correction is verified against.
 | PROP-505a | No-tool-call response → exactly 2 `think()` calls total (1 reprompt), never 1, never 3+ | 1 | true | fast-check (adversarial mock sequences) |
 | PROP-506a | Picked slot (any `isEarnSlot` member) with `earnLine === null` → exactly one reroute call whose ACTUAL constructed tool schema's `slot.enum` (array-content assertion, not a bookkeeping flag) does not contain that slot — a genuine hard exclusion, not the soft `avoidSlot` prompt nudge | 1 | true | fast-check |
 | PROP-506b | Picked slot with `earnLine !== null` (any `profitable` value) → zero reroute calls (immediate accept) | 1 | true | fast-check |
-| PROP-506c (closes FIND-002) | `economy/gig` and `economy/lending` picks specifically, under `ctx.alwaysActEngaged===true`, trigger `classifyEarnResult` invocation via the widened `index.mjs:450` call-site condition (`isEarnActionSlot`, not `isEarnSlot`) and `earnLine===null` drives the SAME reroute path as any `isEarnSlot` member — verified against `index.mjs`'s actual branching, never falling through to a silent `kind:'wake'` accept | 2 | true | vitest/jest integration |
+| PROP-506c (closes FIND-002) | `economy/gig` and `economy/lending` picks specifically, under `ctx.alwaysActEngaged===true`, trigger `classifyEarnResult` invocation via the widened `index.mjs:754` call-site condition inside `runAlwaysActWake` (`isEarnActionSlot`, not `isEarnSlot`; converge doc-sync 2026-07-11 line-number correction, see FIND-005) and `earnLine===null` drives the SAME reroute path as any `isEarnSlot` member — verified against `index.mjs`'s actual branching, never falling through to a silent `kind:'wake'` accept | 2 | true | vitest/jest integration |
 | PROP-506d (closes FIND-003's empty-enum edge case) | Always-act menu of size 1 equal to the just-picked slot, with `earnLine===null` → zero additional `think()` calls, immediate REQ-508 escalation (never a forced same-slot re-invocation) | 2 | true | vitest/jest exhaustive-case |
 | PROP-506e (money-safety-critical, closes FIND-101) | Reroute target set is filtered to `risk:"safe"` slots only (`isMarketRiskFree`) — for an arbitrary always-act menu containing a mix of `risk:"safe"`/`risk:"capital"` members, the ACTUAL constructed reroute tool schema's `slot.enum` never contains a `risk:"capital"` slot, for ALL such menus (property test), plus a literal fixture asserting `earn/sol-trade`/`hl_trade`/`token_launch`/`earn/polymarket-trade`/`yield` are never valid reroute targets | 2 | true | fast-check + vitest/jest literal |
 | PROP-506f (money-safety-critical, closes FIND-101) | Risk-free-filtered reroute set is empty (though the raw excluded-self set is non-empty, e.g. every remaining slot is `risk:"capital"`) → zero additional `think()` calls, immediate REQ-508 escalation — NEVER a fallback into a `risk:"capital"` reroute target | 2 | true | vitest/jest exhaustive-case |
@@ -297,7 +334,7 @@ Phase 2a/2b review outright, regardless of its assertions.
   `[no-tool-call, fabricated-slot]` sequence proving branch selection is keyed on `attemptsUsed`, never
   `currentOfferedSlots` identity (PROP-513e), and its REQ-506 symmetric counterpart, a no-op result on a
   REQ-505-reprompt-attempt's valid pick never triggering a further reroute (PROP-506g). This file's test
-  suite is required to exercise EVERY row of behavioral-spec.md §2.5's exhaustive 9-row transition matrix,
+  suite is required to exercise EVERY row of behavioral-spec.md §2.5's exhaustive 12-row transition matrix,
   not merely the PROP-labeled subset.
 - `verification/always-act-nojudgment.property.test.mjs` — runs PROP-507a (menu × args generator) +
   PROP-507b (grep check, invoked as a subprocess assertion from the test file so it participates in the
@@ -311,6 +348,42 @@ Phase 2a/2b review outright, regardless of its assertions.
 
 ## Changelog
 
+- **converge iter3 fix: mechanical, exhaustive citation-accuracy audit (FIND-005/006/007 + full sweep)**:
+  companion fix to `specs/behavioral-spec.md`'s own iter3 Changelog entry of the same name — every
+  `index.mjs:<N>`/`prompt.mjs:<N>`/`brain.mjs:<N>`/`always-act-router.mjs:<N>` citation in THIS file was
+  independently re-extracted and cross-checked against the current real file via grep. Fixed in this file:
+  the Purity Boundary Map's iteration-1-correction summary paragraph, the `isEarnActionSlot` Pure Core
+  bullet, the `getToolDefinitions`/`SLEEP_TOOL` Pure Core bullet (`prompt.mjs:171` → real `:178`), the
+  Effectful Shell's `index.mjs`/`brain.mjs` bullets (`index.mjs:450` → real `index.mjs:598`/`:754` two-call-site
+  split, matching FIND-005; `index.mjs:179-421` → real `:293-425`, matching FIND-006; `brain.mjs:63`/`:92` →
+  real `:66`/`100-102`), and PROP-506c's own Proof Obligations table row. See
+  `specs/behavioral-spec.md`'s companion Changelog entry and
+  `.vcsdd/features/franklin-alwaysact-skill-router/evidence/citation-audit-2026-07-11.md` for the full
+  audit table. Documentation-accuracy only — no source/test change; 183/183 unchanged throughout.
+- **converge iter2 fix: doc-sync FIND-003/004 (REQ-513 EARS clause + all residual stale references,
+  exhaustive grep sweep)**: converge iteration-2's fresh-context adversary found the first doc-sync pass
+  (FIND-001/002 below) left REQ-513's own live text in `specs/behavioral-spec.md` (EARS clause, Edge Cases
+  bullet, Edge Case Catalog) still asserting the disproven "in-place conditional guard before
+  `index.mjs:402-416`" mechanism (FIND-003), and left this file's Purity Boundary Map summary paragraph
+  (iteration-2 correction, above) repeating the same stale `index.mjs:402-416` citation, undiscovered by the
+  first pass. Also applies FIND-004's still-outstanding 9-row → 12-row correction (lines 18-20/42/316/360)
+  that iteration-1's own recommendation had already asked for. All fixes are documentation-accuracy only —
+  no source/test change; 183/183 unchanged throughout. See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-003.json` and
+  `FIND-004.json`.
+- **converge fix: doc-sync FIND-001/002 (declared design synced to shipped implementation, no code
+  change)**: Phase 6 convergence review found two literal contradictions between this document's declared
+  design and the actual shipped code, both documentation-accuracy issues only. FIND-001: the Pure Core
+  `nextRerouteState` entry declared `({attemptsUsed, maxAttempts, lastOutcome}) -> {shouldRetry, excludeSlot,
+  exhausted}`; the real signature at `runtime/loop/always-act-router.mjs:148-153` is
+  `({attemptsUsed, maxAttempts}) -> {shouldRetry, attemptsUsedNext, exhausted}` — corrected above. FIND-002:
+  the REQ-513 Effectful Shell entry declared `index.mjs:402-416`'s `if (slot === 'sleep')` branch "becomes
+  conditional"; the real mechanism is an early-return dispatch at `index.mjs:516-518` into a dedicated
+  `runAlwaysActWake` function, leaving `index.mjs:551`'s branch unconditional and unmodified — corrected
+  above with current line numbers. Both corrections are source-and-test-unchanged; the actual runtime
+  behavior was, and remains, correct and fully test-covered (183/183). See
+  `.vcsdd/features/franklin-alwaysact-skill-router/reviews/converge/output/findings/FIND-001.json` and
+  `FIND-002.json`, and the corresponding correction note in `verification/purity-audit.md`.
 - **iteration-4 fix: FIND-301 (branch selection keyed on attempt-state machine, exhaustive transition matrix
   added)**: `nextRerouteState`'s `attemptsUsed` output is elevated to the SOLE arbiter of every
   retry/reroute/escalation branch decision across REQ-505/506/511/513 (Pure Core: `nextRerouteState` bullet
@@ -328,7 +401,7 @@ Phase 2a/2b review outright, regardless of its assertions.
   coverage description is strengthened to explicitly enumerate ALL orderings of the three failure modes
   (not just "always X"), including both compound sequences. Verification Strategy's Tier 2 list and the
   Phase 5 `always-act-reroute.property.test.mjs` harness plan updated to require coverage of every row in
-  behavioral-spec.md §2.5's new exhaustive 9-row transition matrix.
+  behavioral-spec.md §2.5's exhaustive 12-row transition matrix.
 - **iteration-3 fix: FIND-201 (guard validates per-attempt offered set)**: `isRejectableSleepOrOffMenu`'s
   second argument is corrected from the static `ctx.alwaysActMenu` to a per-attempt `currentOfferedSlots`
   value (a local variable in `index.mjs`'s retry loop, set at the same point the per-attempt tool
