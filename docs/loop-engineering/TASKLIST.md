@@ -3,7 +3,7 @@
 ## ★ CURRENT PHASE (2026-07-12) = 実際に稼ぐ。正本 game plan = `29-earn-game-plan.md` ★
 記録/検証/一本化(#1-#6 下記)は全 DONE。今は「実 external:true を出す」フェーズ。
 残タスク(doc29 の実装順):
-- **G1. native→stablecoin swap step** = 全エンジンの前提。**realtime 発見: swap infra は既にある**(`skills/earn/funding/lib/relay_swap.py`=relay.link, `bridge.py`=Polygon USDC.e→Solana, `franklin_sol_base_refill.py`)。gap = ①POL→USDC.e swap(Polygon, relay.link) ②env 確認(POLYGON_WALLET_PRIVATE_KEY 等は anicca-daemon.sh が runtime 注入、.env に無い)。$30 POL を half/half に。※実マネー=clean context で実行。
+- **G1. native→stablecoin swap** ✅ DONE(2026-07-12, 実マネー own-eyes): relay.link で POL→USDC.e 実行。0x810f = **$23.55 USDC.e** + 13 POL(gas)。tx 766894ff($2実証)→56348c8d($21.5本体)。手法= relay.link /quote → EVM tx を founder key で署名(web3.py)→ solver が非同期 fill。全エンジンの前提クリア。次: half を Franklin へ bridge + PM/HL/x402 に配分。
 - **G2. 層0 x402 seller を live 化**（$0 資本の最速 earner）→ 最初の external:true。
 - **G3. 層1 yield floor**(Beefy/Aave hedge) / **G4. 層2 HL funding-arb**($50-100超で)。
 - 資金配分: claude-p $15 + Franklin $15。全員が同じ共有 skill で稼ぐ。
