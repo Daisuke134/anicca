@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "verification_readiness",
+  "category": "spec_gap",
+  "severity": "major",
+  "description": "REQ-703 collapses every failure mode (origin-url resolution, clone, commit, push, and divergence-recovery-retry) into the same outcome: log one stderr line, return a non-throwing result, retry next cycle -- forever, with no escalation. There is no counter, no N-consecutive-failure alert, and no healthcheck script for ledger-publish (compare `skills/earn/sol-trade/sol-trade-healthcheck.sh`, an established precedent for monitoring a sibling effectful loop in this same repo -- no equivalent exists for this feature). The design's own success in production depends entirely on the shared checkout's `origin` remote (verified live: `https://github.com/Daisuke134/anicca.git`, no embedded token, per ~/anicca/.git/config) authenticating via the host-global `gh auth git-credential` helper (~/.gitconfig:6-8) actually holding WRITE-scoped auth for this exact repo -- an assumption never exercised by any test (the file:// bare-repo fixtures used throughout the suite require no authentication at all, so real-credential push success is entirely unverified). If that credential is ever read-only, revoked, or scoped to a different repo, this feature silently fails on every single cycle forever, defeating its own stated purpose, with nothing surfacing beyond a stderr line nobody is shown to monitor.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "436-442, 497-503, 512-515",
+    "snippet": "log(`[ledger-publish] divergence recovery failed, will retry next cycle: ${recoverErr.message}\\n`); ... log(`[ledger-publish] cycle failed unexpectedly: ${err.message}\\n`); return { published: false, pushed: false, reason: 'error' };"
+  },
+  "corroborating": [
+    {"filePath": "/Users/anicca/.gitconfig", "lineRange": "4-8", "note": "confirms origin auth is entirely dependent on a host-global gh credential helper, never exercised by any test in this feature."},
+    {"filePath": "skills/earn/sol-trade/sol-trade-healthcheck.sh", "lineRange": "n/a (file exists)", "note": "the established sibling-loop healthcheck precedent this feature has no equivalent of."}
+  ],
+  "routeToPhase": "1a"
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "major",
+  "description": "In the push-rejection retry branch of `publishLedgerCycle()` (ledger-publish.mjs:672-692), `pushed = true` is set UNCONDITIONALLY after the retry's try block completes, regardless of whether an actual `git push` call was made. The push is only re-issued `if (result.pendingLineCount > 0)` (line 683-685); if the post-reset re-reconciliation finds `pendingLineCount === 0` (e.g. an ambiguous network failure where the FIRST push attempt actually landed on the remote before the client saw a non-zero exit/timeout, or a genuine outside divergence that happened to already contain everything this cycle wanted to publish), the code falls through to `pushed = true;` on line 686 having never called `git push` in this branch. `lastPushTs`/`publishFailureStreak` are then updated purely off this over-broad `pushed` flag (lines 694-697: `if (pushed) { lastPushTs = nowMs; publishFailureStreak = 0; }`), not off any direct confirmation that a push actually executed this cycle. While the specific reachable instances I traced end up benign in isolation (the `confirmedThisCycle = pushed && result.committed` gate on lines 702-708 happens to prevent the *cursor* from being advanced incorrectly in the sub-case where `result.committed` is also false), the RETURNED `result.pushed` value and the persisted `lastPushTs`/`publishFailureStreak` state can misreport a push as having happened when no `git push` command actually ran in that code path -- a caller or healthcheck relying on `pushed:true` to mean 'a push was attempted and observed to succeed this cycle' receives a false signal in this branch. The fix is a one-line correctness issue: `pushed` should only be set true inside the `if (result.pendingLineCount > 0)` block (immediately after the `git push` call succeeds), not unconditionally after the surrounding try block.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "677-691",
+    "snippet": "try {\n  git(['fetch', ...], publishRepoDir);\n  git(['reset', '--quiet', '--hard', `origin/${branch}`], publishRepoDir);\n  result = await attempt();\n  published = published || result.committed;\n  if (result.pendingLineCount > 0) {\n    git(['push', 'origin', branch], publishRepoDir);\n  }\n  pushed = true;  // <-- set even when the `if` above did NOT run\n} catch (retryErr) { ... }"
+  },
+  "corroborating": [
+    {"filePath": "runtime/loop/ledger-publish.mjs", "lineRange": "694-708", "note": "lastPushTs/publishFailureStreak reset off the bare `pushed` flag, and the wakePushedLineCount/earnPushedLineCount cursor advance is gated by `confirmedThisCycle = pushed && result.committed` -- the cursor happens to be protected by the second half of this AND, but `pushed`/`lastPushTs`/`publishFailureStreak` are not."},
+    {"filePath": "runtime/loop/__tests__/ledger-publish.test.mjs", "lineRange": "535-567", "note": "the only divergence/retry test (FIND-002 divergence) always has pendingLineCount>0 after reset, so this specific fallthrough (retry succeeds structurally but issues zero actual push calls) is never exercised by any test in the suite."}
+  ],
+  "routeToPhase": "2b"
+}

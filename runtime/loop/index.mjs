@@ -21,6 +21,7 @@ import path from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import { fileURLToPath } from 'node:url';
 
 import { readDotenvFile } from './dotenv.mjs';
 import { loadConfig } from './config.mjs';
@@ -55,8 +56,10 @@ import {
   buildMustActReinforcement,
   buildAlwaysActLedgerFields,
 } from './always-act-router.mjs';
+import { publishLedgerCycle } from './ledger-publish.mjs';
 
 const execFileAsync = promisify(execFile);
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 // Inline ULID generator (no npm dependency — uses crypto.randomUUID as entropy source)
 function ulid() {
@@ -82,6 +85,16 @@ const LEDGER_PATH = path.join(ANICCA_HOME, 'state', 'ledger.jsonl');
 // (INV-NO-PROMPT-REGRESSION) — reuses the EXISTING appendLedgerLine primitive, never a new writer.
 const HARNESS_FAILURES_PATH = path.join(ANICCA_HOME, 'state', 'harness-failures.jsonl');
 const GENESIS_PATH = path.join(ANICCA_HOME, 'identity', 'genesis.md');
+// franklin-ledger-push (P2) iter1 redesign: throttle/cursor state for ledger-publish.mjs —
+// deliberately in ANICCA_HOME (data). The DEDICATED publish clone (never the shared checkout
+// below) defaults to $ANICCA_HOME/state/.ledger-publish-repo, derived by ledger-publish.mjs itself
+// from this marker path's directory — see ledger-publish.mjs's publishRepoDir default.
+const LEDGER_PUBLISH_MARKER_PATH = path.join(ANICCA_HOME, 'state', '.ledger-publish-marker');
+// This file itself lives at <repo>/runtime/loop/index.mjs — two dirs up is the SHARED checkout's
+// repo root. ledger-publish.mjs reads ONLY `git remote get-url origin` from it (never writes to
+// it, never checks out/commits/pushes against it — FIND-001/002's fix) to resolve where its own
+// DEDICATED clone should point.
+const LOOP_REPO_ROOT = path.resolve(__dirname, '..', '..');
 
 // Read genesis prompt (missing = warn + empty string)
 let genesisPrompt = '';
@@ -340,6 +353,37 @@ process.stderr.write(`[loop] Starting Anicca loop. ANICCA_HOME=${ANICCA_HOME}\n`
 
 while (!shuttingDown) {
   await runOneWake();
+  // franklin-ledger-push (P2) REQ-701..709: best-effort, default-OFF (LEDGER_PUBLISH_ENABLED)
+  // publish of BOTH this instance's ledger evidence sources (state/ledger.jsonl wake bookkeeping AND
+  // skills/earn/state/earn-ledger.jsonl money evidence -- impl-review iter2 FIND-001) into the
+  // ~/anicca repo. publishLedgerCycle() itself never throws (its own REQ-703 contract) -- this
+  // try/catch is deliberate defense-in-depth so a ledger-publish regression can NEVER take the wake
+  // loop down with it.
+  try {
+    const publishResult = await publishLedgerCycle({
+      ledgerPath: LEDGER_PATH,
+      earnLedgerPath: defaultEarnLedgerPath(config),
+      repoRoot: LOOP_REPO_ROOT,
+      markerPath: LEDGER_PUBLISH_MARKER_PATH,
+      instance: process.env.ANICCA_INSTANCE || 'clawrouter',
+    });
+    // impl-review iter2 FIND-005: N=5 consecutive publish-cycle failures escalate via the EXISTING
+    // appendHarnessFailure mechanism (never a new writer) so healthchecks can see a stuck
+    // ledger-publish pipeline (e.g. a revoked/read-only git credential) instead of it failing
+    // silently on stderr forever.
+    if (publishResult && publishResult.publishFailureStreak >= 5) {
+      await appendHarnessFailure({
+        ts: Math.floor(Date.now() / 1000),
+        wakeId: 'n/a',
+        kind: 'ledger_publish_stuck',
+        layer: 'ledger_publish',
+        exitCode: null,
+        rawDetail: `ledger-publish: ${publishResult.publishFailureStreak} consecutive cycle failures, last reason=${publishResult.reason}`,
+      });
+    }
+  } catch (err) {
+    process.stderr.write(`[loop] ledger-publish cycle threw unexpectedly (should be impossible): ${err.message}\n`);
+  }
 }
 
 // ── Single wake ───────────────────────────────────────────────────────────────

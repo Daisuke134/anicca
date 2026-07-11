@@ -1,0 +1,72 @@
+{
+  "phase": "impl-review",
+  "iteration": 5,
+  "sprintNumber": 1,
+  "feature": "franklin-ledger-push",
+  "verdict": "FAIL",
+  "overallVerdict": "FAIL",
+  "blocking_count": 0,
+  "timestamp": "2026-07-11T06:00:00.000Z",
+  "reviewed_commits": ["353f6f1f"],
+  "external_test_evidence": "223/223 (thinker-executed)",
+  "iteration4_findings_disposition": {
+    "FIND-001 (major, security_surface, fill_tid string-form allowlist SETTLEMENT_ID_VALUE overly broad + redaction-exempt)": "KILLED. `projectEarnField()`'s `fill_tid` case (ledger-publish.mjs:344-346) now accepts ONLY `isFiniteNumber(value)`; the `typeof value === 'string'` branch and the `SETTLEMENT_ID_VALUE = /^[A-Za-z0-9:_-]{1,128}$/` regex are both physically absent from the file (grep-confirmed: zero occurrences of `SETTLEMENT_ID_VALUE` anywhere in ledger-publish.mjs, only comment-references to the fact that it was removed, at lines 219-231/345). `isProfitable()`'s Hyperliquid path (`skills/_shared/lib/ledger.mjs:62`, `line.fill_tid != null`) only requires presence, independently re-verified live against the real source (read in full) -- confirmed unaffected: the existing FIND-001d round-trip test (test.mjs:253-264) still passes a numeric fill_tid through `isProfitable()===true`. A NEW, specifically-targeted test (test.mjs:275-293) proves the closure directly: a numeric fill_tid round-trips; an id-shaped string (`'hl-fill:12345'`, which WOULD have matched the old regex) is dropped; a genuinely secret-shaped 62-char mixed-alphanumeric string (deliberately constructed to sit in the OLD regex's accepted charset while evading BOTH `redactBroaderSecretPatterns()`'s base58 run -- it contains '0'/'O', outside the base58 alphabet -- and its 40+-hex run -- it contains letters g-z outside the hex alphabet, independently verified character-by-character) is also dropped; a malformed string is dropped. This is a genuine, non-tautological regression proof: if the removed string branch were ever reintroduced verbatim, this exact test would fail (the id-shaped and secret-shaped fixtures both fall inside the old regex's accepted charset/length).",
+    "FIND-002 (minor, dead_code, MARKER_DEFAULTS declared with zero call sites)": "KILLED. `readMarker()`'s catch-block (ledger-publish.mjs:393-399) now derives its fallback shape from `MARKER_DEFAULTS` via a fresh spread-copy (`{ ...MARKER_DEFAULTS.wake }` etc., not the shared object -- correctly avoids cross-call mutation leakage), eliminating the hand-duplicated literal iter4 flagged. No remaining reference to a second, independently-maintained copy of the default marker shape."
+  },
+  "new_risk_scan_this_iteration": {
+    "amended test fixture (post GitHub secret-scanning push-protection block)": "VERIFIED SAFE and MEANINGFUL. The `secretShaped` fixture at ledger-publish.test.mjs:286-288 (`'q9fB2kLmN0pQrStUvWxYz1234567890AbCdEfGhIjKlMnOpQrStUvWxYz0011'`) carries none of the known secret-provider prefixes GitHub push-protection/gitleaks/TruffleHog key on (`sk_live_`/`sk_test_`/`ghp_`/`gho_`/`github_pat_`/`AKIA`/`xox`/`-----BEGIN` -- grep-confirmed zero matches for any of these across runtime/loop/), is not TruffleHog-`--only-verified`-flaggable (a random fixture string cannot verify against any live credential API), and is not adjacent to a `keyword=value`-shaped assignment gitleaks' generic-api-key rule keys on (the variable name `secretShaped` sits on its own declaration line, several tokens away from the actual string literal, never in a direct `secret = '...'`-style assignment). It remains genuinely secret-SHAPED and NOT redaction-catchable by this feature's own two redaction layers (independently verified: it contains '0' and 'O', both outside the base58 alphabet `redactBroaderSecretPatterns()`'s `BASE58_SECRET_RUN` requires, and contains many letters g/j/k/l/m/n/o/p/q/r/s/t/u/w/y/z outside the hex alphabet its `HEX_40PLUS_RUN` requires) -- so the test genuinely exercises the exact class of gap the removed string branch had, without being a scanner-tripping literal.",
+    "regression scan 166f4274..353f6f1f": "Full re-read of ledger-publish.mjs (814 lines) and ledger-publish.test.mjs (771 lines) end to end (no Bash/git-diff available this session; comparison is file-content-level against iteration-4's own verdict.json/notes.md citations, which is sufficient since iteration-4 already quoted exact line ranges for every prior finding's fix site). Every structural-safety test iteration-4 itself catalogued (leak test, shallow-clone test, lock-held/stale tests, publish-repo-loss + outside-writer divergence tests, commit-failure recovery test, streak/reachability tests, FIND-001d real-isProfitable round-trip tests, FIND-002d phantom-push test, FIND-003 sig-shape test) is still present verbatim, unweakened. Test count increased by exactly 1 net (40 -> confirmed 40 test() blocks still present plus no new ones added beyond the fixture rewrite, which is a same-test content edit, not an addition) -- consistent with a scanner-triggered amend-and-rewrite of one existing test's fixture data, not a new behavioral change. index.mjs's wiring (lines 354-387) and package.json's test/test:unit scripts (package.json:8-9) independently re-verified unchanged from iteration-4's own citations.",
+    "NEW GAP FOUND -- verification-architecture.md drift (this iteration's own FIND-001)": "The iter4 code/test fix is real and correct, but `specs/verification-architecture.md`'s proof-obligation table row for `FIND-001a` still describes the OLD (iter3) 'non-number/non-string fill_tid dropped' shape and was never given an iter4 Changelog entry, unlike behavioral-spec.md which explicitly documents both iter4 fixes. See FIND-001 (this iteration)."
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": ".vcsdd/features/franklin-ledger-push/specs/behavioral-spec.md REQ-701..709", "description": "Each requirement re-traced to conforming code at 353f6f1f: REQ-701 default-off gating (ledger-publish.mjs:679), REQ-702 dual-allowlist projection (projectWakeField:272-290, projectEarnField:323-349), REQ-703 non-fatality (outermost try/catch:684-812, per-call try/catches throughout), REQ-704 throttle (decidePublish:155-168), REQ-705 dedicated shallow orphan clone (ensurePublishRepo:528-572), REQ-706 two-layer redaction (redactFreeText:245-250), REQ-707 superseded/reconciliation model (reconcileSource:579-585), REQ-708 mkdir-atomic lock (acquireLock/releaseLock:467-494), REQ-709 published-content-as-truth reconciliation (publishLedgerCycle body:684-812). behavioral-spec.md's own Changelog (lines 10-25) correctly and completely documents both iter4 fixes with accurate line-level citations that match the actual code."},
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:219-231,344-346", "description": "iter4's FIND-001 disposition independently re-verified: the string branch for fill_tid and the SETTLEMENT_ID_VALUE regex are both physically absent from the file; the case statement accepts isFiniteNumber(value) only."}
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/__tests__/ledger-publish.test.mjs:275-293", "description": "The fill_tid edge-case matrix now covers all four relevant shapes in one test: finite-number (accept), id-shaped string (reject), secret-shaped string (reject, the exact iter4-FIND-001 gap), malformed string (reject) -- closing iteration-4's own edge_case_coverage FAIL, which specifically flagged that no test exercised a plausible secret-shaped value."},
+        {"type": "file", "location": "runtime/loop/__tests__/ledger-publish.test.mjs (whole file)", "description": "decidePublish boundary matrix (PROP-701..704, lines 117-142), lock live/stale (534-564), setup-failure/clone-failure (353-380), divergence via publish-repo-loss (568-606) and outside-writer (608-640), phantom-push truthfulness (642-672), commit-failure recovery (676-698), throttle-without-push (700-712), and failure-streak accumulation/reset (716-733) collectively cover every edge case named in behavioral-spec.md's own per-REQ Edge Cases sections; no gap found this iteration beyond FIND-001 (this iteration, a documentation-only gap, not a missing test)."}
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:718-796 (publishLedgerCycle's attempt/retry/marker-write body)", "description": "Independently re-traced the primary-push-fails -> retry -> marker-write control flow line by line (not relying solely on prior iterations' citations): `result` is correctly reassigned to the retry's own `attempt()` output before `confirmedThisCycle`/marker-cursor computation (line 754), so a successful retry's marker reflects the POST-reset actual state; `pushed`/`published` are correctly left at their pre-retry values (both false/whatever-the-primary-achieved) if the retry's own fetch+reset OR its own push throws (caught by the retryErr catch at line 766); `confirmedThisCycle = pushed && result.committed` correctly gates the cursor advance so a commit-succeeded-but-push-never-confirmed cycle never silently advances pushedLineCount. No logic error, off-by-one, or unguarded null-deref found in this pass."},
+        {"type": "file", "location": "skills/_shared/lib/ledger.mjs:41-64", "description": "Independently re-read the REAL isProfitable()/SWAP_SOURCES source (not trusted from a prior iteration's citation) to confirm the test fixtures' `source: 'sol-trade'` (test.mjs:242) is NOT a member of SWAP_SOURCES (`swap-eth-usdc`/`swap`/`swap-usdc-eth` only), so the FIND-001d Solana round-trip test's `isProfitable(out)===true` assertion is genuinely exercising the intended solOk path, not accidentally passing for an unrelated reason."}
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "PASS",
+      "findings": [],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs:376-399", "description": "iteration-4's FIND-002 (MARKER_DEFAULTS dead code) re-verified closed: readMarker()'s catch-block now derives its fallback from MARKER_DEFAULTS via a defensive fresh copy rather than a hand-duplicated literal. No new dead code, no new duplicated-logic instance found on a full re-read of the 814-line file this iteration."}
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {"type": "file", "location": "runtime/loop/ledger-publish.mjs / __tests__/ledger-publish.test.mjs:275-293", "description": "The actual pure/effectful purity boundary (pure: decidePublish/extractRecordId/projectWakeLine/projectEarnLine/redactBroaderSecretPatterns; effectful: everything else) is unchanged and intact -- no I/O, time, randomness, or hidden state found inside any function documented as pure. iter4's fill_tid fix is genuinely proven by a real, non-tautological test. FAIL is solely due to FIND-001 (this iteration): specs/verification-architecture.md's own proof-obligation table row for this exact fix is stale and now misdescribes the shipped code -- see FIND-001 for the full citation trail."}
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 1,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [],
+    "duplicateFindings": []
+  }
+}

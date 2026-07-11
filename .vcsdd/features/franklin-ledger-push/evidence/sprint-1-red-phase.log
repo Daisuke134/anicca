@@ -1,0 +1,56 @@
+franklin-ledger-push (P2) — Phase 2a RED-phase evidence
+
+new-feature-tests: FAIL
+regression-baseline: PASS
+
+## new-feature-tests (FAIL, correct reason — module does not exist yet)
+
+Command: `node --test __tests__/ledger-publish.test.mjs` (run BEFORE runtime/loop/ledger-publish.mjs
+was created).
+
+```
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module
+'/Users/anicca/anicca/.worktrees/ledger-push/runtime/loop/ledger-publish.mjs' imported from
+/Users/anicca/anicca/.worktrees/ledger-push/runtime/loop/__tests__/ledger-publish.test.mjs
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    ...
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/anicca/anicca/.worktrees/ledger-push/runtime/loop/ledger-publish.mjs'
+}
+
+Node.js v25.6.1
+✖ __tests__/ledger-publish.test.mjs (81.066375ms)
+ℹ tests 1
+ℹ suites 0
+ℹ pass 0
+ℹ fail 1
+```
+
+Confirmed RED for the correct reason: the test file imports `decidePublish`, `extractWakeId`,
+`publishLedgerCycle`, `DEFAULT_MIN_LINES`, `DEFAULT_MIN_INTERVAL_MS` from `../ledger-publish.mjs`,
+which did not exist at this point in the session.
+
+## regression-baseline (PASS — 183/183, package.json's official `test` script, BEFORE
+`ledger-publish.test.mjs` was wired into package.json)
+
+Command: `cd runtime/loop && npm test`
+
+```
+...
+ℹ tests 183
+ℹ suites 0
+ℹ pass 183
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 22139.955959
+```
+
+No pre-existing test was modified or touched by this feature at RED-phase time — package.json's
+`test`/`test:unit` scripts were still their pre-feature content, so this run proves the baseline was
+green before any implementation code was written.
