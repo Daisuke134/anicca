@@ -114,6 +114,11 @@ function findHighestSequenceRow(loanRows, lenderId) {
 // reconcileWindowSpanMs below). A too-old row REFUSES (reason: stale_row_beyond_reconcile_window) —
 // zero rows appended, zero sequence consumed — rather than being silently marked disbursement_failed;
 // recovering it requires a wider manual scan, never an automatic re-disburse.
+//
+// impl-review iteration-3, FIND-201 (critical): `loanRows` was already a parameter of this function
+// but was never forwarded into `reconcile()` — without it, reconcileProvisionalDisbursement has no way
+// to reject a matched Transfer whose tx_hash is already recorded against a DIFFERENT loan_id (the same
+// cross-ledger replay hazard verifyRepayment already guards against). Now threaded through.
 async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, reconcile, deps) {
   const staleRow = findHighestSequenceRow(loanRows, lenderId);
   if (!staleRow || (staleRow.status !== "provisioning" && staleRow.status !== "disbursement_uncertain")) {
@@ -121,7 +126,7 @@ async function resolveStaleProvisioning(ledgerFile, loanRows, lenderId, nowMs, r
   }
   let reconcileResult;
   try {
-    reconcileResult = await reconcile({ loanRow: staleRow });
+    reconcileResult = await reconcile({ loanRow: staleRow, loanRows });
   } catch (e) {
     return { ok: false, reason: "reconciliation_failed", error: errorMessage(e) };
   }
@@ -224,12 +229,17 @@ async function fetchLatestBlockNumber(rpcUrl) {
   return Number(BigInt(json.result));
 }
 
-async function defaultReconcile({ loanRow }, deps) {
+// impl-review iteration-3, FIND-201: `loanRows` is now accepted (forwarded from resolveStaleProvisioning
+// via `reconcile({loanRow, loanRows})`) and passed straight through to reconcileProvisionalDisbursement
+// on both branches below, so its own cross-ledger tx_hash-replay guard has the full ledger to check
+// against.
+async function defaultReconcile({ loanRow, loanRows }, deps) {
   // deps.reconcileFromBlock is a TEST-ONLY seam (mirrors the pre-existing convention) -- production
   // never sets it, so production always computes a genuinely bounded window below.
   if (deps.reconcileFromBlock) {
     return reconcileProvisionalDisbursement({
       loanRow,
+      loanRows,
       rpcUrl: deps.rpcUrl,
       fromBlock: deps.reconcileFromBlock,
       toBlock: deps.reconcileToBlock || "latest",
@@ -240,6 +250,7 @@ async function defaultReconcile({ loanRow }, deps) {
   const from = Math.max(0, latest - lookbackBlocks);
   return reconcileProvisionalDisbursement({
     loanRow,
+    loanRows,
     rpcUrl: deps.rpcUrl,
     // toBlock pinned to the SAME snapshot as fromBlock (never "latest" alongside a numeric fromBlock)
     // -- keeps the requested range exactly bounded, never silently wider by the time the provider

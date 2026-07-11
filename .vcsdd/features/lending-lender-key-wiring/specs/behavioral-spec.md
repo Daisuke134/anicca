@@ -25,6 +25,21 @@ duplicate, anicca-agent-lending's own already-converged REQ-101..117/PROP-1xx co
   `/supported` preflight against the facilitator before signing, refusing
   `facilitator_not_mainnet` unless the facilitator itself advertises `eip155:8453`. See
   `reviews/impl/iteration-2/output/findings/FIND-101..103.json`.
+- **impl iter3 fixes FIND-201/202** (2026-07-11, impl-review iteration-3): FIND-201 (critical) — new
+  REQ-124: `reconcileProvisionalDisbursement` now ALSO rejects a wallet-pair+exact-value-matching
+  Transfer log whose own `tx_hash` is already recorded (via `extractTxHash`) against ANY row —
+  same-loan or a DIFFERENT `loan_id` — in `loanRows`, reusing `verifyRepayment`'s own already-proven
+  cross-ledger replay guard (`lending-verify.mjs:84-86`). `resolveStaleProvisioning`
+  (`lending-orchestrator.mjs`) now forwards its own already-in-scope `loanRows` into
+  `reconcile({loanRow, loanRows})`, and `defaultReconcile` forwards `loanRows` into
+  `reconcileProvisionalDisbursement` on both its bounded-window branches. Without this, REQ-122's own
+  exact-value match was not sufficient proof of attribution when the SAME borrower has two stuck rows
+  sharing an identical wallet pair and an identical flat cold-start cap (`computeLoanCapUsd`) — a real
+  fund-misattribution risk, not a UI nit. FIND-202 (medium, non-code) — this document's own Changelog
+  and `specs/verification-architecture.md`'s Proof Obligations table/Verification Strategy were never
+  extended past impl-review iteration-1 to cover iteration-2's REQ-122/REQ-123, nor now iteration-3's
+  REQ-124; both are corrected in this changelog entry and in `verification-architecture.md` directly.
+  See `reviews/impl/iteration-3/output/findings/FIND-201..202.json`.
 
 ## Root cause (verified live)
 
@@ -191,6 +206,42 @@ never actually received THIS loan's own `principal_usd` — silent money mis-acc
   rejected (`found:false`).
 - `lending-verify.test.mjs`: an exact-value transfer is matched even when an unrelated-value transfer
   between the same two wallets also appears in the same window.
+
+### REQ-124: cross-loan tx_hash-replay guard for reconciliation (impl-review iteration-3, FIND-201, critical)
+**EARS**: WHEN `reconcileProvisionalDisbursement` (`lending-verify.mjs`) finds a candidate Transfer log
+that already passes REQ-122's exact-value + wallet-pair match, THE SYSTEM SHALL additionally reject
+that candidate if its own `tx_hash` (via `extractTxHash`) is already recorded as the `tx_hash` of ANY
+row in the caller-supplied `loanRows` — same-loan or a DIFFERENT `loan_id` — before ever returning
+`{found:true, txHash}`, reusing `verifyRepayment`'s own already-proven `alreadyCredited` guard
+(`lending-verify.mjs:84-86`, REQ-108e).
+
+**Root cause**: REQ-122's exact-value match closed the value-blind hazard (FIND-101) but did not close
+a narrower, concrete follow-on: `computeLoanCapUsd` returns a FLAT cap for every cold-start attempt
+until a borrower's first on-time repayment, so repeat stuck-row cycles to the SAME struggling borrower
+(the exact retry pattern REQ-118c/REQ-120 exist to support) share both the identical wallet pair AND the
+identical exact value REQ-122 trusts. Combined with REQ-120's own accepted false-negative risk, a
+genuinely-disbursed-but-locally-uncredited loan_A could have its own real transfer misattributed to a
+later loan_B's reconciliation, landing loan_B falsely `active` on loan_A's own txHash while loan_A stays
+permanently `disbursement_failed` — an active mis-crediting across two different loan_ids, not merely a
+missed reconciliation. `resolveStaleProvisioning` had `loanRows` in scope but never forwarded it into its
+own `reconcile()` call, and `reconcileProvisionalDisbursement`'s signature had no parameter to receive it.
+
+**Edge Cases**:
+- A candidate log matching wallet-pair + exact value, whose own `tx_hash` already equals a DIFFERENT
+  `loan_id`'s recorded `tx_hash` → rejected (`{found:false}`), never counted as this loan's own
+  disbursement — the row stays unconfirmed rather than risk misattribution.
+- A candidate log matching wallet-pair + exact value, whose own `tx_hash` is genuinely new (not present
+  anywhere in `loanRows`) → matched normally (`{found:true, txHash}`), unaffected (positive control).
+- `loanRows` omitted/empty (defensive default `[]`) → no false rejection; behaves exactly as REQ-122
+  alone did before this fix (no regression to the single-stuck-row case).
+
+**Acceptance Criteria**:
+- `lending-verify.test.mjs`: a wallet-pair+exact-value-matching Transfer whose `tx_hash` is already
+  recorded against a DIFFERENT `loan_id` in `loanRows` is rejected (`found:false`).
+- `lending-verify.test.mjs`: a genuinely new `tx_hash` (not present in `loanRows`) is still matched
+  normally (positive control).
+- `lending-orchestrator.test.mjs`: `resolveStaleProvisioning` forwards the FULL current `loanRows`
+  ledger (not just the stale row alone) into `reconcile({loanRow, loanRows})`.
 
 ### REQ-123: live facilitator mainnet preflight before signing (impl-review iteration-2, FIND-103, high)
 **EARS**: WHEN `defaultDisburse` is about to call `payViaFacilitator` against `facilitatorUrl`, THE
