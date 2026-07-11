@@ -243,8 +243,8 @@
       "status": "active",
       "createdAt": "2026-07-11T16:01:43.102Z",
       "mode": "lean",
-      "currentPhase": "init",
-      "updatedAt": "2026-07-11T16:01:43.102Z"
+      "currentPhase": "1c",
+      "updatedAt": "2026-07-11T16:03:08.760Z"
     }
   },
   "activeFeature": "reality-verifier"
