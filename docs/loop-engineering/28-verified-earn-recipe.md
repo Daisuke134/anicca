@@ -43,8 +43,15 @@
 
 Polymarket deposit(pUSD)= `0x4c176db1cd976E570fD35E92e0F6559e1Ba515Aa`（BlockRun setup 済、creds ready、region block 無し）。
 
+## ★★★ 法的 PIVOT（2026-07-12 調査で判明、recipe を上書き）★★★
+**Polymarket を日本の物理拠点(mac mini)から回すのは違法リスク。** 日本は geoblock 対象(frontend close-only)、**刑法185条 賭博罪は user 本人にも刑事責任がありうる**(法律事務所 So&Sato)。VPN は ToS 違反(凍結)かつ賭博罪を消さない=二重リスク。bitbank は Polymarket 紐付け口座凍結、警察庁「海外賭博への日本居住者参加は犯罪」。→ **poly-maker が技術的にベストでも、Japan mac mini では Polymarket を本番稼働させない**（Dais「社会に殺されたくない」に忠実）。
+**日本拠点からの合法性ランク**: Solana spot(合法・ただ crypto) > HL perp(グレー、金商法だが**賭博でない**) > Polymarket(賭博罪リスク=最悪)。
+**新・主戦略 = HL funding-arb**（構造的 edge かつ賭博でない）。Polymarket をやるなら海外法人/海外居住の実行主体経由に設計変更。
+送金ルール: Dais は **native SOL(Solana)のみ**送る。USDC/POL を頼まない。→ memory feedback_dais_funds_native_sol_only_and_polymarket_japan_illegal。
+
 ## 未確認（実装前に潰す）
-- 日本(mac mini)から Polymarket order が実際に通るか（setup は弾かれなかったが、実 order で要確認。必要なら VPN/proxy）
+- HL funding-arb を $25-30 の小資本で回せるか（BP は $50-100。小さく始めて機構実証→scale）
+- 届いた SOL → HL(USDC on Arbitrum/等) の bridge/swap 経路
 - POL→pUSD の swap 経路（我々の funding スクリプトに POL 対応があるか）
 - poly-maker 移植の adversary 検証
 
