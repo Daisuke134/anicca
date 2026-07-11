@@ -415,7 +415,7 @@ verifier という別成果物は作らない。**検証 = loop 自身（と私�
 
 ## フェーズ1'（§8 のフェーズ1 を上書き。金欠 top-up より先に「漏れを止め self-improve を実弾に繋ぐ」）
 - [ ] 1'. self-improve の fitness を実 on-chain P&L に繋ぐ（R1）— done: evolve の評価が earn-ledger external:true を読む
-- [ ] 2'. pm MM の adverse-selection を止める（R2）— done: 片側約定 naked が発生しないコードに
+- [~] 2'. pm MM の adverse-selection を止める（R2）— **コード done(2026-07-11, ~/anicca main `5fbcc8da`→merged)**: `no_naked.py`(pure logic 15テストgreen) + market_maker.py が pass 冒頭で naked 単脚を検知し flatten(complete/sell 安い方)・残る間は新規 quote 停止(fail-closed) + bundle_arb.py が逐次 FOK 片脚約定時に unwind。**live E2E 未(唯一の残 gate)**: SDK 呼出(fill判定/SELL)=UNVERIFIED、実パス走行で on-chain「naked 単脚が残らない」を own-eyes 確認が必要
 - [ ] 3'. Franklin の Base $6.48 を Solana に集約（R4、self-funded・許可不要）— done: 8Fpqd の USDC が増える（on-chain 確認）
 - [ ] 4'. sol/pm/hl を実弾 fitness で回し、edge>コストの時だけ撃つのを1 wake 実証 — done: 非WAITの earn action が実P&Lで+か、正直WAIT
 - [ ] 5'. 「稼いだ」= external:true 実 tx を on-chain 確認（唯一の gate）
