@@ -124,7 +124,13 @@ is touched.
 
 - **REQ-CR1** `lib/checkpoint_resume.py` SHALL expose a PURE function `find_latest_checkpoint(
   runs_dir: str, current_run_id: str) -> Optional[str]` that returns the absolute path to a
-  checkpoint directory to resume from, or `None` when no prior run has any usable checkpoint.
+  checkpoint directory to resume from, or `None` when no prior run has any usable checkpoint. This
+  function SHALL itself normalize its return value to an absolute path via `os.path.abspath` (never
+  relying on the caller happening to pass an already-absolute `runs_dir`) — i.e. calling it with a
+  RELATIVE `runs_dir` (e.g. `"runs"`, resolved against the current working directory) SHALL still
+  return an absolute path string, not a relative one, making REQ-CR1's "absolute path" contract true
+  by construction rather than true only by accident of production's `RUNS_DIR` always being
+  absolute.
 
 - **REQ-CR2** WHEN selecting which PRIOR RUN to resume from, THE SYSTEM SHALL: list the immediate
   entries of `runs_dir`, filter that list down to ONLY entries whose name matches REQ-CR10's
@@ -206,7 +212,24 @@ is touched.
   `RUN_ID` = the just-created `$RUN_ID`, correctly excluding itself even though its own now-empty
   directory already exists under `runs/`) and BEFORE the existing `"$OPENEVOLVE_BIN"` invocation.
   `run_evolve.sh` SHALL capture this call's stdout verbatim as the checkpoint path (an empty string
-  meaning "no checkpoint found," per REQ-CR8).
+  meaning "no checkpoint found," per REQ-CR8). `run_evolve.sh` SHALL also capture this call's own
+  exit status separately from its stdout (mirroring the existing pattern at `run_evolve.sh:58-64`'s
+  `OBSERVE_JSON="$(...)"` capture, which does not abort on a non-zero `ledger_reader.py` exit
+  either) — see REQ-CR12 for what happens on a non-zero exit here.
+
+- **REQ-CR12** WHEN the REQ-CR6 call itself exits non-zero (the `checkpoint_resume.py` process
+  crashed, raised an uncaught exception, or `$PY_BIN` was not executable) — as DISTINCT from the
+  call succeeding and simply returning an empty string — THE SYSTEM SHALL treat this exactly like
+  the REQ-CR8 "no checkpoint found" fallback for the PURPOSES of the `openevolve-run` invocation
+  (no `--checkpoint` flag; run proceeds as a cold start — resuming is a pure optimization to this
+  harness, never a precondition for it to run at all, the same "degrade, never block" posture the
+  existing OBSERVE/`ledger_reader.py` step already takes at `run_evolve.sh:58-64`), BUT the log
+  line this case produces (per REQ-CR9) SHALL be a THIRD, distinct wording — the literal substring
+  `checkpoint_resume: resume-check crashed` followed by the captured exit status — so a crashed
+  lookup is never silently conflated with, or indistinguishable in the log from, an ordinary
+  "no prior run exists yet" cold start. This is the one and only new failure-handling branch
+  REQ-CR7 defers to; it governs solely the REQ-CR6 helper call's own exit status, never
+  `openevolve-run`'s (that remains REQ-OE6's existing concern, unchanged).
 
 - **REQ-CR7** WHEN the REQ-CR6 call returns a non-empty checkpoint path, THE SYSTEM SHALL append
   exactly one additional argument pair, `--checkpoint "<path>"`, to the EXISTING `openevolve-run`
@@ -230,14 +253,19 @@ is touched.
   EVERY invocation of this feature's new step — this decision SHALL NEVER be silent, and its content
   SHALL NEVER be merely "some line got written" (a bare line-count check is not sufficient evidence
   this requirement holds; the line's TEXT is pinned below so a test can assert on it directly).
-  WHEN the REQ-CR6 call returns a non-empty checkpoint path, the log line's message SHALL contain the
-  literal substring `checkpoint_resume: resuming from checkpoint` immediately followed by the actual
-  resolved path. WHEN the REQ-CR6 call returns empty/`None` (no prior checkpoint found, for any
-  reason), the log line's message SHALL contain the literal substring
-  `checkpoint_resume: no prior checkpoint found` — a concrete, non-blank, informative string, not a
-  generic placeholder. Both wordings are pinned here, verbatim, precisely so two independent
-  implementers cannot diverge on wording and so a test can assert on this exact content in BOTH
-  branches (not just the found branch), never merely `count(lines) == 1`.
+  There are exactly THREE mutually-exclusive branches, each with its own pinned, verbatim substring
+  (so two independent implementers cannot diverge on wording, and a test can assert on this exact
+  content in ALL THREE branches, never merely `count(lines) == 1`):
+  1. REQ-CR6 call exits zero AND returns a non-empty checkpoint path: the log line's message SHALL
+     contain the literal substring `checkpoint_resume: resuming from checkpoint` immediately
+     followed by the actual resolved path.
+  2. REQ-CR6 call exits zero AND returns empty/`None` (no prior checkpoint found, for any reason):
+     the log line's message SHALL contain the literal substring
+     `checkpoint_resume: no prior checkpoint found`.
+  3. REQ-CR6 call itself exits non-zero (REQ-CR12's crash case): the log line's message SHALL
+     contain the literal substring `checkpoint_resume: resume-check crashed` immediately followed
+     by the captured exit status — a concrete, non-blank, informative string in every branch, not a
+     generic placeholder.
 
 ### Group CR-SAFETY — no filesystem mutation, anywhere in this feature's code
 
@@ -245,19 +273,26 @@ is touched.
   entrypoint (REQ-CR6) SHALL EVER call any filesystem-mutating API. Concretely, this module's own
   source code (in both the pure function and the `__main__` block) SHALL NEVER call: `os.remove`,
   `os.unlink`, `os.rmdir`, `os.removedirs`, `os.mkdir`, `os.makedirs`, `os.rename`, `os.replace`,
-  `os.truncate`, any `shutil.*` function (`shutil.rmtree`, `shutil.copy*`, `shutil.move`, etc.), or
-  `open(...)` with any mode other than the implicit read-only default (i.e. never `'w'`, `'a'`,
-  `'x'`, `'w+'`, or any other write/append/create/truncate mode) — nor any equivalent operation that
-  creates, deletes, renames, or writes bytes to a file or directory. THE ONLY filesystem operations
-  this module's runtime code MAY perform are READ-ONLY directory traversal: `os.listdir`,
-  `os.scandir`, and `os.path.*` queries (`isdir`, `isfile`, `exists`, `join`, `abspath`, etc.) —
-  listing directory entries and inspecting their names/existence, NEVER opening or reading the byte
-  contents of any file (this restates and sharpens REQ-CR5's "no file-content reads" rule to also
-  explicitly cover the `__main__` entrypoint, not only the pure function). The `__main__`
-  entrypoint's only permitted output channel is stdout (REQ-CR6); it never writes to any file. This
-  requirement makes INV-CR1 directly traceable to an explicit, testable REQ (closing the gap where
-  INV-CR1 previously had no REQ or test enforcing it) and is verified by PROP-CR12 (static
-  denylist scan + dynamic before/after directory-snapshot comparison).
+  `os.truncate`, `os.symlink`, `os.link`, any `shutil.*` function (`shutil.rmtree`, `shutil.copy*`,
+  `shutil.move`, etc.), `open(...)` with any mode other than the implicit read-only default (i.e.
+  never `'w'`, `'a'`, `'x'`, `'w+'`, or any other write/append/create/truncate mode), NOR any
+  `pathlib.Path` mutating method (`Path.unlink`, `Path.rmdir`, `Path.mkdir`, `Path.rename`,
+  `Path.replace`, `Path.touch`, `Path.write_text`, `Path.write_bytes`, `Path.symlink_to`,
+  `Path.hardlink_to`, or any other `Path` method that creates/deletes/renames/writes) — nor any
+  equivalent operation that creates, deletes, renames, or writes bytes to a file or directory. THE
+  ONLY filesystem operations this module's runtime code MAY perform are READ-ONLY directory
+  traversal: `os.listdir`, `os.scandir`, and `os.path.*` queries (`isdir`, `isfile`, `exists`,
+  `join`, `abspath`, etc.) — listing directory entries and inspecting their names/existence, NEVER
+  opening or reading the byte contents of any file (this restates and sharpens REQ-CR5's "no
+  file-content reads" rule to also explicitly cover the `__main__` entrypoint, not only the pure
+  function). This module SHALL NOT import `pathlib` at all (`os`/`os.path` suffice for every
+  operation REQ-CR1-CR10 require), which makes the "no `pathlib.Path` mutation" half of this
+  requirement structurally trivial to verify (an import-scan alone proves it) rather than requiring
+  an exhaustive enumeration of every `Path` mutating method. The `__main__` entrypoint's only
+  permitted output channel is stdout (REQ-CR6); it never writes to any file. This requirement makes
+  INV-CR1 directly traceable to an explicit, testable REQ (closing the gap where INV-CR1 previously
+  had no REQ or test enforcing it) and is verified by PROP-CR12 (static denylist scan + a `pathlib`
+  import-absence scan + dynamic before/after directory-snapshot comparison).
 
 ## Global Invariants
 

@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "medium",
+  "description": "REQ-CR7 (behavioral-spec.md:211-219) requires that when a checkpoint IS found, run_evolve.sh appends --checkpoint \"<path>\" while leaving 'the EXISTING openevolve-run invocation (unchanged otherwise: same initial_program, evaluation_file, --config, --iterations, --output arguments, in the same order).' No Proof Obligation in the table actually asserts this for the FOUND branch. PROP-CR-WIRE1 (verification-architecture.md:72) is a static grep/text-position check that only confirms (a) the exact checkpoint_resume.py call substring is present, (b) that call's line number precedes the openevolve-run call's line number, and (c) that 'the invocation's argument list conditionally includes --checkpoint' -- a static grep cannot actually verify a runtime conditional-inclusion property, and the table names no additional mechanism for it. It does not pin down that the other five pre-existing arguments remain present, byte-identical, and in the same relative order once --checkpoint is appended. PROP-CR-WIRE2 (verification-architecture.md:73) is explicitly scoped to the NOT-found branch only ('WHEN no checkpoint is found, the resulting openevolve-run argument list is IDENTICAL ... to the pre-feature invocation'). There is no found-branch counterpart to PROP-CR-WIRE2 anywhere in the table. An implementation that, when appending --checkpoint, accidentally drops --iterations, reorders --output ahead of --config, or duplicates an existing flag would satisfy every currently-listed Proof Obligation (PROP-CR1 through PROP-CR-LIVE1) while directly violating REQ-CR7's 'unchanged otherwise ... same order' clause.",
+  "evidence": {
+    "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+    "lineRange": "72-73",
+    "snippet": "PROP-CR-WIRE1 | ... the invocation's argument list conditionally includes --checkpoint (REQ-CR6, REQ-CR7) | wire | true | grep/text-position check ... // PROP-CR-WIRE2 | WHEN no checkpoint is found, the resulting openevolve-run argument list is IDENTICAL ... (REQ-CR8, INV-CR4) | 1 | true | a synthetic re-assembly test ..."
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/anicca/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+      "lineRange": "211-219",
+      "snippet": "REQ-CR7 ... THE SYSTEM SHALL append exactly one additional argument pair, --checkpoint \"<path>\", to the EXISTING openevolve-run invocation (unchanged otherwise: same initial_program, evaluation_file, --config, --iterations, --output arguments, in the same order)"
+    }
+  ],
+  "routeToPhase": "1b"
+}
