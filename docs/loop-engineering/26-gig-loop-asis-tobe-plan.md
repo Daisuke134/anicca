@@ -124,11 +124,9 @@ Dais 確定方針(2026-07-11):
 - ✅ `docs/loop-engineering/25-...bp.md` — 検証+自己改善BP（judge.py 実物裏取り）。
 - ✅ 段#1 B0 capability: STARTUP に B0 SHUPPIN + trajectory + cron idempotent + max_apply 5→12 追加、commit+push、restart 活性化。
 - ✅ **B0 実発火(2026-07-11 23:57)**: loop 自己申告で 下書き2件公開(業務AI活用診断¥8000/id4302213・SEO診断¥10000/id4244912) + 新規1件(見やすいパワポ¥8000/id4308502)。★未検証(reports lie)★ + typo「作りますます」残 + trajectory PNG 0枚(cdp_snapshot 未呼出=配線未効)。
-- 🔄 **増分1(出品playbook格上げ) = VCSDD 実装済・審査中**: worktree `feature/gig-strategy-prompt-upgrade`(commit 935d3647)、verify 11/11 PASS(RED 7/11 非空確認)。fresh adversary(Sonnet) 実行中。
-- ⬜ **RESUME 手順(compact後ここから)**:
-  1. adversary PASS(blocking 0)確認 → `cd ~/anicca && git merge feature/gig-strategy-prompt-upgrade`（live working tree へ反映）
-  2. ★live `~/gig/strategy.json`(v38) の skip_categories から「霊感/スピリチュアル/占い」を削除★（builder既知課題・default だけでは propagate しない・passprep は live 優先）
-  3. `bash ~/anicca/skills/earn/gig/gig-cli.sh --restart` で playbook 活性化
-  4. **私が browser :9222 で own-eyes 確認**: /mypage/services_lists で 3サービス公開中 + typo「作りますます」が直った + 松竹梅/モニター価格反映 / trajectory PNG が今度は出るか
-  5. 次増分: funnel metrics(コード) → 50/50 BP web検索自己改善 → verifier土台(gig_judge) → self-heal配線
-- copy元 judge.py: scratchpad/judge_bu.py（raw main 198L, VERIFIED）。worktree cleanup: merge後 `git worktree remove .worktrees/gig-strategy-prompt-upgrade`。
+- ✅ **増分1(出品playbook格上げ) = 完了・merge・live・活性化(2026-07-12)**: adversary PASS(0 blocking, 6/6 REQ)、verify 11/11 VERIFIED実行。main へ fast-forward merge、live `~/gig/strategy.json` の占い削除(20→19)、bash -n OK、restart 済(ALIVE)、push 済、worktree掃除済。gig-cli.sh に LISTING PLAYBOOK/APPLY SPEED RULE/NEVER-REFUSE/FEASIBILITY GATE の4ブロック live。
+- ⬜ **RESUME(compact後ここから) — 増分1の検証 + 増分2**:
+  1. ★私が browser :9222 で own-eyes 確認(未実施)★: /mypage/services_lists で 増分1後の新パスが (a)3サービス公開中か (b)typo「作りますます」を直したか (c)松竹梅/モニター価格/ベネフィットtitle を反映したか / trajectory PNG(~/gig/trajectory/)が出るように なったか。self-report(shuppin.jsonl)でなく実画面で。
+  2. B0発火の既確認(23:57): 下書き2公開(4302213/4244912)+新規1(4308502)。※これも browser で live 実在を確認する。
+  3. 増分2以降(順に・各VCSDD-lean): funnel metrics(gig-funnel.jsonl+auditor集計) → 50/50 BP web検索自己改善(B4にfirecrawl/agent-reach) → verifier土台(gig_judge=judge.py copy+auditor report-skeptical化) → self-heal配線(Reflexion+self-fix.sh)。tracker=§6.5。
+- copy元 judge.py: scratchpad/judge_bu.py（raw main 198L, VERIFIED）。
