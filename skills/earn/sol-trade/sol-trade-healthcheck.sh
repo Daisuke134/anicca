@@ -1,5 +1,17 @@
 #!/usr/bin/env bash
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"  # launchd has a minimal PATH; python3 lives in homebrew
+# DEPRECATED (self-heal-allslots sprint, FIND-006): this single-slot, sol-trade-hardcoded script is
+# SUPERSEDED by the registry-driven generalization skills/self/earning-health-allslots.sh (which
+# checks earn/sol-trade -- AND every other required earn slot -- via ONE shared script + one
+# skills/self/earning-health-registry.json entry, reusing this file's exact detection algorithm
+# unmodified via earning-health.py::is_fresh_but_barren). Kept in place, NOT deleted: the
+# pre-existing ai.anicca.sol-trade-earning-healthcheck.plist may still reference this file until
+# that plist is unloaded and migrated to ai.anicca.earning-health-allslots (see
+# skills/self/launchd/README.md's explicit unload-before-load instruction; NEITHER plist is
+# `launchctl load`ed by this sprint). Do not add new features here -- extend
+# earning-health-allslots.sh + the registry instead; remove this file once the old plist is
+# retired.
+#
 # sol-trade-healthcheck.sh — CONTENT check for the earn/sol-trade slot, NOT an artifact-age check.
 # THE BLIND SPOT THIS CLOSES (Franklin, 2026-07-08 -> 2026-07-10, ~46h): sol-trade.trace.jsonl got a
 # new line on EVERY wake (a fresh "skip" line, roughly hourly), so the existing artifact-AGE

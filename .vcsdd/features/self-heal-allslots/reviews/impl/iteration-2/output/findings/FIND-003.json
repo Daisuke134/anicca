@@ -1,0 +1,13 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "earning-health-allslots.sh has a reachable fallback branch for when a trace-derived reason/error string sanitizes down to an empty string, and that branch is completely untested (neither at the pure-core unit level nor at the wiring level). is_fresh_but_barren only requires the RAW cause string to be non-empty (earning-health.py:81: `return bool(only_reason)` on the UNSANITIZED reason/error text) to flag BARREN -- it has no knowledge of sanitize_for_prompt's allowlist. So a real, reachable case exists where a slot's trace writes a non-empty reason/error consisting ENTIRELY of characters outside the sanitizer's allowlist (e.g. a reason string that is only emoji, only CJK/non-ASCII text, or only punctuation like '!!!' or '###') -- is_fresh_but_barren correctly flags this as BARREN (the raw cause is non-empty), but sanitize_for_prompt then reduces it to the empty string, triggering earning-health-allslots.sh:112's `[ -z \"$REASON\" ] && REASON=\"unspecified\"` fallback (and the analogous SAFE_ID fallback at line 114). Neither test_earning_health.py nor test_earning_health_allslots.sh exercises a reason/error string that survives is_fresh_but_barren's non-empty check but sanitizes to empty -- the self-fix BLOCKER text's 'unspecified' fallback path is dead-in-tests code, unverified to actually produce a sane, non-garbled prompt string end-to-end.",
+  "evidence": {
+    "filePath": "skills/self/earning-health-allslots.sh",
+    "lineRange": "111-114",
+    "snippet": "REASON=\"$(printf '%s' \"$RAW_REASON\" | python3 \"$SELF_DIR/earning-health.py\" sanitize-reason 200)\"\n[ -z \"$REASON\" ] && REASON=\"unspecified\"\nSAFE_ID=\"$(printf '%s' \"$ID\" | python3 \"$SELF_DIR/earning-health.py\" sanitize-reason 80)\"\n[ -z \"$SAFE_ID\" ] && SAFE_ID=\"unspecified-slot\""
+  },
+  "routeToPhase": "2a"
+}
