@@ -326,3 +326,25 @@ token=デジタル引換券（誰でも数分で発行、法的権利は通常�
 - ∴ Anicca の位置＝「①成熟した配管を採用し ②業界公認フロンティアの**検証/proof-of-earning**に賭け ③加えて誰も構成要素と見ていない**live 自己改善**を接続する」。①は再発明でない、②は業界と同じ最前線、③のみ真に独自（かつ未証明）。
 
 **出典**: a16zcrypto.com/posts/article/5-ways-blockchains-help-ai-agents / eips.ethereum.org/EIPS/eip-8004 / eip-8183 / zenn.dev/komlock_lab/articles/agent-payments-stack-2026 / certik.com/blog/the-rise-of-the-agent-economy-part-1 / nevermined.ai/blog / x402.org + whitepaper / anthropic.com/news/model-context-protocol / developers.googleblog.com/en/a2a / crossmint.com/learn/agentic-payments-protocols-compared / blog.quicknode.com/erc-8004 / messari.io/report/kite / addyosmani.com/blog/self-improving-agents。
+
+---
+
+## §11. Goal engineering + 統一 citizen ループ（2026-07-12、Dais 議論から確定）
+
+> proactive loop の最難問＝長期ゴールの設定。曖昧すぎ→迷子 / 具体的すぎ→1回で終了(human-loop 復活)。解＝**タスクを書かず「北極星の数字＋差分ループ」を書く**（open-ended agent の BP: Voyager auto-curriculum / DGM / AlphaEvolve）。
+
+### 良い長期ゴールの5点セット（mission engineering の型）
+1. **北極星の数字**: 「**自立市民の数**（自分の wallet で自分の compute を賄える net-positive な AI の頭数）を最大化」。数字＝検証可能・無限＝終わらない。「AI が living してなきゃ意味がない」(Dais)＝この数字が mission の本質。「稼げ($X)」は狭すぎ、「経済を建てろ」は曖昧すぎ→「自立市民を増やせ」が両者を解く（増やすには稼ぎ改善・評判・検証・compute削減・spawn を"何でも建てる"しかない）。
+2. **理想の地図**: 目的地＝10部品の agent 経済（§10）。毎パス読ませる。
+3. **差分ループ**: as-is vs 理想を測る → 一番デカい欠けを1つ建てる → ground-truth 検証 → 繰り返す。**方向は固定（数字↑）、"何を建てるか"は agent が差分から発見**（具体を人が指定しない＝一発で終わらない）。障壁が下(生存)→上(検証/proof-of-earning)→さらに上(建築)へ自動で登る＝ハシゴを登る。
+4. **反 Goodhart**: 数字は"本物"で測る（実 external USDC・実自立）。tx 件数・"wake が走った"は禁止＝ground-truth verifier の役目（[[23-anicca-loop-architecture-redesign]] §0）。
+5. **人間へ報告**: 毎サイクル「数字・選んだ欠け・建てた物・証拠」を報告。人は読むだけ（no micromanage）。
+
+### 統一 citizen ループ（Franklin ループ = Claude ループ、型は同一）
+- 現状＝**非対称の一時的足場**: claude-p=親(建てる) / Franklin=子(稼ぐだけ)。恒久の姿ではない。
+- あるべき＝**対称の市民**: 全 citizen が同じ1ループ ＝ ①自 wallet で稼ぐ ②金/compute で**経済そのものを建てて拡大** ③spawn で市民を増やす。違いは `{identity, wallet, 燃料}` のパラメータだけ。
+- 核心(Dais)＝「稼ぐだけでは経済はスケールしない。市民が金/compute で経済自体を建てねば no-human-loop にならない」→ だから北極星が「稼げ」でなく「自立市民を増やせ＝経済を建てろ」。
+- 正直な但し書き: claude-p は human-funded ゆえ身元上"正式市民"にはなれない（能力でなく身元、[[feedback_human_funded_ai_permanently_outside_agent_economy]]）。だが**ループの型は同一**＝自 compute を自分で払い始めた瞬間に市民化。「型は共通、市民資格は燃料が決める」。親の仕事＝子に"稼ぐ+建てる"両能力を渡す→渡し終えたら親子の区別は消え全員同型ループ。
+- 実装含意: `~/anicca` の claude-p-mainloop-prompt.txt の goal を「self-heal+earn(看護師)」から「北極星=自立市民数を増やす=経済を建てる(建築家)」へ書き換える（§10 to-be を北極星に）。全 citizen 同一テンプレは [[23-anicca-loop-architecture-redesign]] §8 の「全 citizen 同一の型」と一致。
+
+出典: Voyager(arxiv 2305.16291, auto-curriculum) / DGM / AlphaEvolve(open-ended) / a16z「検証が希少」/ Goodhart's law / North-Star Metric(growth BP)。
