@@ -269,14 +269,27 @@ test('FIND-001 (iter3): projectEarnLine drops external/confirmed/fill_tid when N
   })));
   assert.ok(!('external' in out), 'a non-boolean external must be dropped, never coerced to true');
   assert.ok(!('confirmed' in out), 'a non-boolean confirmed must be dropped, never coerced to true');
-  assert.ok(!('fill_tid' in out), 'a non-number/non-string fill_tid must be dropped');
+  assert.ok(!('fill_tid' in out), 'a non-number fill_tid must be dropped');
 });
 
-test('FIND-001 (iter3): projectEarnLine accepts a string-shaped fill_tid matching the settlement-id shape, drops a malformed one', () => {
-  const good = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'hl-fill:12345' })));
-  assert.equal(good.fill_tid, 'hl-fill:12345');
-  const bad = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'has a space and $ymbol!' })));
-  assert.ok(!('fill_tid' in bad));
+test('FIND-001 (iter4): projectEarnLine accepts ONLY a numeric fill_tid — a string form is DROPPED even when it is id-shaped or secret-shaped, since no real HL writer ever produces a string fill_tid (reconcile.py always writes a JSON integer) and the string branch bypassed both redaction layers', () => {
+  const numeric = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 987654321 })));
+  assert.equal(numeric.fill_tid, 987654321, 'a finite-number fill_tid must round-trip unchanged');
+
+  const idShaped = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'hl-fill:12345' })));
+  assert.ok(!('fill_tid' in idShaped), 'an id-shaped string fill_tid must be dropped, not published — no real writer produces this shape');
+
+  // A long mixed-case alphanumeric run in the SETTLEMENT_ID_VALUE charset (the shape the removed
+  // regex would have accepted) -- deliberately NOT prefixed with any recognized API-key/token
+  // format (e.g. no `sk_live_`/`ghp_`/`AKIA` prefix), so this fixture itself never trips a real
+  // secret scanner while still proving the field-shape gap the removed branch had.
+  const secretShaped = JSON.parse(projectEarnLine(JSON.stringify({
+    ts: 1, fill_tid: 'q9fB2kLmN0pQrStUvWxYz1234567890AbCdEfGhIjKlMnOpQrStUvWxYz0011',
+  })));
+  assert.ok(!('fill_tid' in secretShaped), 'a secret/API-key-shaped string fill_tid must be dropped, never published verbatim to the public branch');
+
+  const malformed = JSON.parse(projectEarnLine(JSON.stringify({ ts: 1, fill_tid: 'has a space and $ymbol!' })));
+  assert.ok(!('fill_tid' in malformed), 'a malformed string fill_tid must also be dropped');
 });
 
 test('FIND-003 (iter3): projectEarnLine now shape-validates sig (base58, 64-88 chars) instead of a bare length check — a non-base58 or wrong-length value is dropped', () => {

@@ -1,0 +1,14 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "structural_integrity",
+  "category": "dead_code",
+  "severity": "minor",
+  "description": "`MARKER_DEFAULTS` (runtime/loop/ledger-publish.mjs:372) is declared as a module-level constant combining `MARKER_SOURCE_DEFAULTS` into the full marker shape (`{ wake, earn, lastPushTs: 0, publishFailureStreak: 0 }`) but has zero call sites anywhere in the file -- `readMarker()`'s own catch-block (ledger-publish.mjs:389) independently re-literals the identical object shape by hand instead of returning `MARKER_DEFAULTS`. This is dead code (an unused export-less const) plus a duplicated literal of the exact same default shape in two places, which is exactly the kind of drift-prone duplication the project's own conventions flag ('容赦なく削除する' -- ruthless deletion of unused code, and 'MANY SMALL FILES > FEW LARGE FILES: high cohesion, low coupling' / no duplicated logic). It is low-impact today (the two literals are currently in sync), but if a future change to the marker shape updates one and not the other, `readMarker`'s fallback would silently diverge from `MARKER_DEFAULTS` with no test catching it, since nothing references the constant to keep it honest.",
+  "evidence": {
+    "filePath": "runtime/loop/ledger-publish.mjs",
+    "lineRange": "371-390",
+    "snippet": "const MARKER_SOURCE_DEFAULTS = { pushedLineCount: 0 };\nconst MARKER_DEFAULTS = { wake: { ...MARKER_SOURCE_DEFAULTS }, earn: { ...MARKER_SOURCE_DEFAULTS }, lastPushTs: 0, publishFailureStreak: 0 };\n...\nasync function readMarker(markerPath) {\n  try { ... } catch {\n    return { wake: { ...MARKER_SOURCE_DEFAULTS }, earn: { ...MARKER_SOURCE_DEFAULTS }, lastPushTs: 0, publishFailureStreak: 0 };\n  }\n}"
+  },
+  "corroborating": [],
+  "routeToPhase": "2c"
+}
