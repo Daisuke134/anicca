@@ -216,13 +216,19 @@ const HEX_40PLUS_RUN = /(0x)?[0-9a-fA-F]{40,}/g;
 // `tx`, instead of the previous bare length/type check.
 const SIG_VALUE = /^[1-9A-HJ-NP-Za-km-z]{64,88}$/;
 
-// impl-review iter3 FIND-001: `fill_tid` is Hyperliquid's per-fill settlement id
+// impl-review iter4 FIND-001: `fill_tid` is Hyperliquid's per-fill settlement id
 // (skills/earn/hl-trade/lib/reconcile.py:139-148, `fill["tid"]`) — verified live as a JSON
 // integer (the userFills API's own numeric trade id), never a string, in every real HL-sourced
-// earn-ledger line. A bounded alphanumeric/`:`/`-`/`_` string form is ALSO accepted (same
-// identifier-shape discipline as `tx`/`sig`) in case a future writer serializes it as a string —
-// either way it is a settlement REFERENCE, never free text, so it is never routed through redaction.
-const SETTLEMENT_ID_VALUE = /^[A-Za-z0-9:_-]{1,128}$/;
+// earn-ledger line, and `record.mjs`/`deriveLine` perform no field-shape validation that would
+// reject a future string-typed value before it reaches the ledger. Fail-closed to what real
+// writers actually produce today: accept ONLY a finite number. A prior iteration also accepted a
+// bounded alphanumeric/`:`/`-`/`_` string form "in case a future writer serializes it as a
+// string" — that branch was strictly broader than a settlement-reference shape (128 chars of
+// alphanumeric+punctuation is API-key/token shaped) and was exempt from BOTH redaction layers, so
+// it was removed rather than tightened: no real writer needs it, and `isProfitable()`
+// (skills/_shared/lib/ledger.mjs:62, `line.fill_tid != null`) only requires presence, not string
+// form. If a future writer genuinely needs a string fill_tid, that requires a new, narrowly-scoped
+// allowlist change reviewed against the writer that actually produces it — not a speculative one.
 
 /**
  * redactBroaderSecretPatterns(str) — pure. Second, stricter redaction pass for free-text fields
@@ -335,10 +341,9 @@ function projectEarnField(key, value) {
     // EVERY published earn line unclassifiable as profitable, regardless of the source line's truth.
     case 'external': return typeof value === 'boolean' ? value : undefined;
     case 'confirmed': return typeof value === 'boolean' ? value : undefined;
-    case 'fill_tid':
-      if (typeof value === 'number') return isFiniteNumber(value) ? value : undefined;
-      if (typeof value === 'string') return SETTLEMENT_ID_VALUE.test(value) ? value : undefined;
-      return undefined;
+    // impl-review iter4 FIND-001: number-only — the only shape any real writer produces (see
+    // comment above the removed SETTLEMENT_ID_VALUE regex); a string form is fail-closed DROPPED.
+    case 'fill_tid': return isFiniteNumber(value) ? value : undefined;
     default: return undefined; // fail-closed, same allowlist discipline as the wake source.
   }
 }
@@ -386,7 +391,11 @@ async function readMarker(markerPath) {
       publishFailureStreak: Number.isInteger(parsed.publishFailureStreak) ? parsed.publishFailureStreak : 0,
     };
   } catch {
-    return { wake: { ...MARKER_SOURCE_DEFAULTS }, earn: { ...MARKER_SOURCE_DEFAULTS }, lastPushTs: 0, publishFailureStreak: 0 };
+    // impl-review iter4 FIND-002: derive from MARKER_DEFAULTS (single source of truth for the
+    // shape) instead of hand-duplicating its literal, so the two cannot silently drift out of
+    // sync. A fresh deep copy (not the shared MARKER_DEFAULTS object itself) so callers mutating
+    // the returned marker never leak state into the next readMarker() call.
+    return { wake: { ...MARKER_DEFAULTS.wake }, earn: { ...MARKER_DEFAULTS.earn }, lastPushTs: MARKER_DEFAULTS.lastPushTs, publishFailureStreak: MARKER_DEFAULTS.publishFailureStreak };
   }
 }
 

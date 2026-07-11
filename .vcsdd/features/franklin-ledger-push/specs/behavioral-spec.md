@@ -7,6 +7,22 @@ git history alone, without making the wake loop dependent on git/network succeed
 
 ## Changelog
 
+- **impl review iter4 fixes: FIND-001 (major) + FIND-002 (minor), fresh-context adversary iteration
+  4.** (1) **FIND-001 (major, security_surface)**: the iter3 fix for `fill_tid` accepted EITHER a
+  finite number OR a bounded alphanumeric/`:`/`-`/`_` string (`SETTLEMENT_ID_VALUE`,
+  `/^[A-Za-z0-9:_-]{1,128}$/`) speculatively, "in case a future writer serializes it as a string" —
+  but no real writer in the repo ever produces that string form (`skills/earn/hl-trade/lib/
+  reconcile.py:144-148` always writes a JSON integer from Hyperliquid's userFills API), and the
+  string branch was exempt from BOTH redaction layers while being materially broader than a
+  settlement-reference shape (128 chars of alphanumeric+punctuation is API-key/token shaped).
+  Fail-closed to what real writers actually produce: `fill_tid` now accepts a finite number ONLY;
+  the string branch and `SETTLEMENT_ID_VALUE` regex are removed entirely. `isProfitable()`'s
+  Hyperliquid path (`skills/_shared/lib/ledger.mjs:62`, `line.fill_tid != null`) only requires
+  presence, not string form, so the round-trip proof (REQ-702) is unaffected. (2) **FIND-002
+  (minor, dead_code)**: `MARKER_DEFAULTS` (`ledger-publish.mjs:377`) had zero call sites;
+  `readMarker()`'s catch-block hand-duplicated the identical literal instead of deriving from it.
+  Fixed: the catch-block now builds its fallback from `MARKER_DEFAULTS` (a fresh copy, not the
+  shared object, to avoid cross-call mutation leakage) so the two shapes cannot silently drift.
 - **impl-review iter3 fixes: FIND-001..003 (fresh-context adversary, iteration 3).** (1) **FIND-001
   (critical)**: iter2's earn allowlist (REQ-702) dropped `external`/`confirmed`/`fill_tid`, so
   `skills/_shared/lib/ledger.mjs::isProfitable()` — the repo's single source of truth for "is this
@@ -126,7 +142,13 @@ publishes BOTH sources onto the SAME branch as two SEPARATE files, each with its
   base58/64-88-char, same discipline as `tx`, never routed through free-text redaction), `status`,
   `chain`, `task` (REQ-706's two-layer redaction, capped at 200 chars), and — **impl-review iter3
   FIND-001 (critical)** — `external` (boolean), `confirmed` (boolean), and `fill_tid` (Hyperliquid's
-  settlement id: a finite number, or a bounded identifier-shaped string). These three are REQUIRED
+  settlement id: **impl-review iter4 FIND-001** — a finite number ONLY; the only shape ANY real
+  writer produces, verified live against `skills/earn/hl-trade/lib/reconcile.py:144-148`'s
+  `fill["tid"]`, Hyperliquid's userFills API's own numeric trade id. A prior iteration also accepted
+  a bounded identifier-shaped string "in case a future writer serializes it as a string" — removed:
+  that string branch was strictly broader than a settlement-reference shape and was exempt from both
+  redaction layers (REQ-706) despite no real writer needing it; a string-typed `fill_tid` is now
+  fail-closed DROPPED, never published). These three are REQUIRED
   by `skills/_shared/lib/ledger.mjs::isProfitable(line)` (the repo's single source of truth for "is
   this a real, GATE-0 profitable earn": `external===true` AND a chain-correct confirmation —
   `tx`+`status==='0x1'` for EVM, `sig`+`confirmed===true` for Solana, `fill_tid`+`confirmed===true`
@@ -165,6 +187,10 @@ fixed machine format, never judgment. The model-authored `args` object is NEVER 
   `isProfitable(published_line) === true` AFTER round-tripping through `projectEarnLine` — proven for
   all three chain paths (EVM `tx`+`status`, Solana `sig`+`confirmed`, Hyperliquid `fill_tid`+
   `confirmed`), using the real imported `isProfitable`, never a re-implementation of its rules.
+- **impl-review iter4 FIND-001**: a numeric `fill_tid` round-trips unchanged; a string-typed
+  `fill_tid` is DROPPED regardless of shape — including a settlement-id-shaped string (e.g.
+  `"hl-fill:12345"`) AND a secret/API-key-shaped string (a long mixed alphanumeric run) — since no
+  real writer produces a string `fill_tid` and the field is exempt from free-text redaction (REQ-706).
 
 ### REQ-703: Best-effort non-fatality
 **EARS**: WHEN any operation in the cycle (origin-url resolution, publish-repo setup, `add`,
