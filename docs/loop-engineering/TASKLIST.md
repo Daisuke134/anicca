@@ -8,13 +8,13 @@
 
 ---
 
-## #1 ledger 一意化  — status: 🧪(builder下書き worktree ledger-uniqueness、要検証)
-- [ ] 1a. 3つの earn-ledger パスを grep 全特定、canonical を確定
-- [ ] 1b. `defaultEarnLedgerPath()` を canonical(`$ANICCA_HOME/state/earn-ledger.jsonl`)へ統一
-- [ ] 1c. reader に wallet フィルタ（自 instance 以外を除外）
-- [ ] 1d. 混入 `0xa3cdd4` 行を `.quarantine.jsonl` へ move（削除しない）
-- [ ] 1e. pure path 解決 + filter reader を unit test（RED→GREEN、own-eyes 実行）
-- 検証可能条件: 1 instance=1 canonical ledger、読む場所が一意、他 wallet 行が除外される
+## #1 ledger 一意化  — status: ✅ DONE(2026-07-12, main merged + live quarantine, own-eyes)
+- [x] 1a. canonical = `<ANICCA_HOME>/skills/earn/state/earn-ledger.jsonl`(6 writer が既に合意)。founder-loop の `state/earn-ledger.jsonl` は別物(GATE-0専用)＝意図的分離、merge しない
+- [x] 1b. `resolveEarnLedgerPath()`(JS) + `resolve_ledger_path()`(Py) で両言語が同一 canonical を返す
+- [x] 1c. `filterOwnWalletRows()`(JS)/`filter_own_wallet_rows()`(Py) = 自 wallet allow-list、walletless(sol/hl/narrate)は通す、他 wallet は fail-closed 除外
+- [x] 1d. **live founder ledger の他 wallet 295行(a3cdd4/b9dd3b等)を `.earn-ledger.quarantine.jsonl` へ退避、自分170行保全、.bak 作成（非破壊、own-eyes 検証）**。汚染行に external:true は0件だった(偽稼ぎは無し)
+- [x] 1e. JS 18/18 + Python 14/14 = 32/32 pass（私が自分で実行確認）
+- 検証済み: main に merge(ledger.mjs grep=3)、live ledger は 0x810f のみ、読む場所が一意
 
 ## #2 pm reconcile 配線  — status: ⬜(#1 待ち)
 - [ ] 2a. worktree の `reconcile.mjs` を本番 `skills/earn/lib/` へ
@@ -29,12 +29,10 @@
 - [ ] 3c. index.mjs 経由でのみ pm が回ることを確認（二重稼働解消）
 - 検証可能条件: claude-p の earn loop が1本、pm は menu 経由のみ
 
-## #4 build loop 一本化  — status: 🧪(builder下書き worktree build-loop-unify、要検証)
-- [ ] 4a. mainloop + founder-loop を1スクリプトに統合
-- [ ] 4b. 統合 prompt に「大脳=小脳を稼げるようにする専任、稼ぎ自体しない」明記
-- [ ] 4c. SWITCHOVER.md（旧2 job unload→新1 job load の1コマンド）
-- [ ] 4d. 親が own-eyes 後に実 launchd 切替
-- 検証可能条件: 大脳 loop が1本、cron 重複解消
+## #4 build loop 一本化  — status: ✅ 既に達成(2026-07-12 own-eyes で判明、実質no-op)
+- [x] 検証: `founder-loop.sh` は **claude を呼ばない**（record-earn.mjs = 唯一の ledger writer + ceo bandit、prompt.txt 無し）。`claude --model sonnet -p` を呼ぶ build loop は **claude-p-mainloop ただ1本**。→ 「2つの重複 claude build loop」は存在しなかった（doc27 旧記述が誤り、私の前回 stale-read が原因）
+- [x] つまり大脳 build loop は既に1本。追加統合は不要。builder が入れた mainloop の model override(`CLAUDE_P_MAINLOOP_MODEL`)は任意採用（未 merge、優先度低）
+- 注: founder-loop(30min, deterministic 記録+CEO) と mainloop(6h, claude build) は**別役割**で、統合してはいけない（記録を6hに遅らせるのは害）
 
 ## #5 AGENTIC 検証実装(reality-verifier)  — status: 🧪(builder下書き worktree reality-verifier、要検証)
 - [ ] 5a. `.claude/agents/reality-verifier.md` を doc24 準拠で作成

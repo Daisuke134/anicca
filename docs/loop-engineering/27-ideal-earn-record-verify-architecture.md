@@ -42,7 +42,7 @@ honesty: [V]=ファイル/実測確認 / [R]=推論 / [?]=未確認。金の真�
    → skill/harness を直す → earn loop に返す → 検証が PASS するまで
    ★役割 = 「小さい脳が稼げること」を保証・改善する。稼ぎ自体はしない。★
 ```
-- **cadence は1本化**: 今 mainloop(6h) と founder-loop(30min) の2カデンスがある。to-be は **build=1本**（重い build と速い tick を1つの loop に統合、または片方を skill に）。理由: 同じ大脳・同じ役割を2 cron で回すのは token 浪費(Dais)。
+- **cadence**: 大脳 build loop = **claude-p-mainloop(6h)ただ1本**（2026-07-12 own-eyes 訂正）。~~founder-loop も claude~~ は誤り: founder-loop(30min) は claude を呼ばず record-earn.mjs(記録)+CEO bandit の**決定論**で、build loop ではない。よって build=既に1本、追加統合は不要。
 
 **2 loop の関係**: EARN が回す → DETERMINISTIC が記録 → AGENTIC が正直さを検証 → PASS を BUILD にフィードバック → BUILD が EARN を改善。
 
@@ -88,7 +88,7 @@ honesty: [V]=ファイル/実測確認 / [R]=推論 / [?]=未確認。金の真�
 |---|---|---|---|
 | EARN loop | 1 instance=1 loop 小脳 | agent-economy-loop(index.mjs)=free/glm-4.7 稼働 ✅。だが **pm-earner 別 cron が pm を二重稼働**（menu 迂回） | 🟡 重複1 |
 | 脳の分離 | 稼ぐ=小脳/build=大脳 | earn=free ✅ / build(mainloop)=claude sonnet ✅ | 🟢 |
-| BUILD 一本化 | build=1 loop | mainloop(6h) + founder-loop(30min) の2カデンス併存 | 🟡 重複1 |
+| BUILD 一本化 | build=1 loop | **既に1本**(claude build=mainloop のみ。founder-loop は決定論記録で claude でない、2026-07-12訂正) | 🟢 |
 | RECORD 複式簿記 | 勝ちも負けも両側 | **pm は勝ちだけ記録、負け・買いコスト記録せず**（redeem.py:172「buy was never ledgered」） | 🔴 |
 | RECORD wallet 錨 | 毎 wake reconcile | **HL は reconcile.py 毎 wake 配線済(手本)✅。pm は reconcile.mjs 作済だが worktree 置き去り＝本番未配線** | 🔴 pm |
 | ledger 一意 | 1 instance=1 ledger | **founder(0x810f)の ledger が2パス・別 wallet(0xa3cdd4)混在、default 関数が誤パスを指す** | 🔴 |
