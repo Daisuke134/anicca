@@ -1,0 +1,40 @@
+target-feature-tests: PASS
+regression-baseline: PASS
+
+=== node --test (target feature) ===
+Command: node --test skills/self/lib/__tests__/reality-verdict-schema.test.mjs \
+  skills/self/lib/__tests__/reality-verdict-schema.property.test.mjs \
+  skills/self/__tests__/reality-verifier-agent-definition.test.mjs
+
+ℹ tests 35
+ℹ suites 0
+ℹ pass 35
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 284.427625
+
+All property tests (PROP-001..005, fast-check) ran their default iteration counts with zero
+counterexamples found. All 9 static content-assertion tests on
+.claude/agents/reality-verifier.md (PROP-006, PROP-007) passed.
+
+=== bash skills/self/__tests__/test-reality-verify-spawn.sh (target feature) ===
+(A) missing arguments -> non-zero exit, nothing spawned
+  ok no-args -> non-zero exit (1)
+  ok missing artifact path -> non-zero exit (1)
+(B) REALITY_VERIFY_DRYRUN=1 -> deterministic path derivation, no process spawned
+  ok short 'capafy' -> LOOP=capafy-loop
+  ok dryrun output references RESULT path
+  ok short==long identical (loop-name normalization parity)
+(C) dryrun never spawns a tmux session
+  ok tmux session count unchanged after dryrun call
+=== test-reality-verify-spawn: 6 passed 0 failed ===
+GREEN
+
+=== regression baseline: bash skills/self/test-self-fix.sh (pre-existing suite, untouched by this feature) ===
+=== self-fix: 13 passed 0 failed ===
+GREEN
+
+target-feature-tests: PASS
+regression-baseline: PASS
