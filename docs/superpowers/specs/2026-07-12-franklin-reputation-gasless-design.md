@@ -10,8 +10,12 @@
 ## 1. Goal（検証可能な done 条件、全て MUST）
 - **G1（gas）**: 全 on-chain 書き込みの前に `ensureGas()` preflight が走る。native 残高が閾値未満のとき、**testnet では**指定 funder から hard cap 内で自動 drip し、**mainnet では自動送金せず**「必要 gas 量つき構造化エラー」を返す（silent fail 禁止・想定外 spend 禁止）。done = Base Sepolia で register→giveFeedback が**手動 ETH 補給ゼロ**で通る E2E ログ。
 - **G2（reputation 書込）**: `gigVerifyAndPay` 成功時に `giveFeedback(takerAgentId, +100, "gig-complete", gigId)`、reject 時に `-100` を Reputation Registry へ書く（fail-open: 書込失敗で payout 自体は失敗させない）。done = Base Sepolia で完了 gig の feedback tx hash + `getSummary` の count 増を独立 `eth_call` で確認。
-- **G3（reputation gate）**: `lending/lib/reputation-gate.mjs` の `passesOnchainReputationGate({borrowerAgentId,minScore,minJobCount})` を lending 与信に合成。**未設定（min=0）なら素通り = fail-open で段階導入**。done = 閾値設定時に実績不足 borrower が弾かれる unit + testnet 実証。
-  - ★2026-07-12 spec 訂正（adversary FIND-002 起因、phase 1c 判断）: gate は**本番の lending 判定経路に実配線する**こと。`isBorrowerEligibleWithReputationGate` を新設して誰も呼ばない dead code にしてはならない。**実経路 = `lending-orchestrator.mjs:executeLoanIssuanceAttempt`（借入発行の実入口）で、eligibility 判定の直後に gate を合成する**（`wake-gate.mjs` が eligibility を別途行うならそこも）。既定 fail-open（min=0 で全通過）ゆえ、閾値未設定なら既存挙動と完全に同一＝安全に配線できる。done に「本番経路からの呼び出しが grep で1件以上」を追加。
+- **G3（reputation gate）** — ★2026-07-12 本スプリントから DE-SCOPE（deferred）。adversary FIND-201 起因の設計判断★:
+  - 当初計画: `lending/lib/reputation-gate.mjs` を lending 与信の本番経路に合成（fail-open 既定で段階導入）。
+  - **判明したブロッカー（FIND-201、独立確認済）**: 借り手の ERC-8004 `agentId` は **citizens registry に存在しない**。実データ（`skills/self/spawn/registry/citizens.seed.json` の Franklin 行、`spawn-orchestrator.mjs` の `citizenRecord`）は `id/wallet/walletAddress/fuel/humanDependencies/homeDir/coLocatedWithCoordinator` のみ。`agent_id` は children **ledger** 行にしか書かれず registry 行には無い。∴ `freshBorrower.agent_id` は本番で常に undefined → 閾値設定時に**全借り手が拒否**（gate が反転）。field 名でなくデータ欠如＝この feature 単体では解けない。
+  - **本スプリントの done**: `reputation-gate.mjs` は**テスト済みだが未配線の lib** として残す。orchestrator への配線は revert（設定すると lending が壊れる gate を本番に出さない）。G1+G2 のみ出荷。
+  - **前提となる follow-up spec（別途）**: (1) citizens registry の `citizenRecord`（+ seed migration）に `agent_id`/`agent_evm_address` を追加、または wallet→agentId を ERC-8004 で解決する resolver を用意 → (2) その後に gate を本番配線し fail-closed に倒す。→ 記録先 [[../loop-engineering/23-anicca-loop-architecture-redesign]]。
+- **G1/G2 は出荷対象（clean, adversary で FIND-001..005 修正確認済）**: gas 自動化 + 評判の gig 完了時 on-chain 書き込み。
 - **G4（gasless 布石）**: ERC-4337 + paymaster（AgentKit `CdpSmartWalletProvider`）による真の gasless を**評価し**、`lib/wallet-provider.mjs` に差し替え可能な seam を作る（本 spec では**実配線しない**、seam のみ）。done = seam の存在 + 評価メモ。
 
 ## 2. Non-goals（この spec でやらない）
