@@ -58,3 +58,32 @@ loop の DID/RESULT/EARNED を信用しない。**実 side-effect(投稿URLをlo
 - `verify-loops-audit.sh:18-29 liveurl()` = **HTTP status しか見ない** → reddit BAN/コメント非表示/IG false-negative を全て見逃す。→ logged-out DOM 本文存在チェック + BAN チェックが必須。
 - clip: healthcheck が clip-promote-core DEAD を検知し selfheal-request を書いたが、**escalation→self-fix 実行の trigger が引かれてない**(self-fix 本日0件)。
 - video: 2つの state file(warmup_day 4 vs 0)の整合性チェックが無い。
+
+## 最終確定表（全loop browser/on-chain検証済、2026-07-11）★私の誤りも訂正★
+| loop | on-chain/browser 実確認 | 判定 | 根因/直すべき |
+|---|---|---|---|
+| **founder** | ★訂正★ Base RPC で3件の実USDC受領を1円単位確認=**$9.02 実収益(本物)**。私の「嘘」判定は誤り(空ledger path誤読、on-chain未確認だった) | 🟢 実収益あり | 残高は他chainへ転送済(正常) |
+| **connector** | connpassで「受付票/申込キャンセル」表示=**2件本当に登録**+gcal confirmed | 🟡 予約は実 | healthcheck DEAD誤判定で15分4回restart、PID73590が10.5h stuck空回り。4枠中2枠のみ応募 |
+| **clip** | 最終投稿17h前、以降ゼロ。shared-unconfirmed毎pass失敗。promote-core DEAD | 🔴 投稿停止 | シェアモーダル無限+promote-core修復未trigger |
+| **video** | grid「投稿はまだありません」空 | 🔴 投稿ゼロ | warmup未完+state 4vs0矛盾未検知 |
+| **reddit** | account **BAN済**(スクショ)、公開impressionゼロ | 🔴 死亡 | BAN。liveurl HTTP200のみでBAN検知不能 |
+| **gig** | 出品3件実在だが**実績0件**、login失敗 | 🔴 稼ぎゼロ | reCAPTCHA/fraud login block+pass counter停止 |
+| **capafy** | 審査中(status=1)、**public listing未掲載**。"PUBLISHED"はログの嘘 | 🔴 未公開 | DRAINED誤判定でhealthcheck黙らせ+orphan draft2件枠占有 |
+| **sol** | wallet今日活動、だが**realized trade無し**(WAIT neutral) | 🟡 待機 | signal neutral+資金$3.4薄 |
+| **pm** | $4.95、10分毎launchd稼働中。kill-switchは07-05のみで解除済 | 🟡 稼働だが | 資金<$5でbundle-arb最小ロット未達HOLD |
+| **hl** | rotation後の新wallet残高0、旧walletに$8.96ポジ孤立 | 🔴 資金分断 | wallet rotation後の資金移管未完 |
+| **Franklin** | launchd 2個running、cumulativeNet$0.02 | 🟡 稼働だが利益ゼロ | 低資金+neutral |
+| **affiliate** | 最終投稿06-30(11日前)、reCAPTCHA logout | 🔴 blocked | account-level reCAPTCHA(#994、人手要) |
+| **life-manager** | state全ファイル0バイト=空稼働 | 🔴 空 | 実action未実行、MRR$0 |
+| **explorer** | proposals今日の行あり | 🟡 稼働 | 収益化は未 |
+| **bounty** | survivor0/combined_score0 | 🟡 idle | 外部demand無 |
+| **CEO** | decision1件(no-change)、core今dead(週次) | 🟡 判断1回 | — |
+
+**実収益が出てるのは founder($9.02累計) + pm(redeem過去分) のみ。今日 実 side-effect あり=connector(予約2)/explorer(proposal)/founder(受領)。残りは壊れ/空/blocked。**
+
+## self-heal 確定した穴(全部browser実証)
+1. liveurl HTTP200のみ → reddit BAN/コメント非表示/IG false-neg 見逃す
+2. escalation→self-fix実行のtriggerが切れてる(clip promote-core DEAD検知したが修復未起動、self-fix本日0件)
+3. state整合性チェック無し(video warmup 4vs0)
+4. 「PUBLISHED/DRAINED」等ラベルの誤表示を実side-effect(新listing/新post)で照合してない(capafy)
+5. healthcheck DEAD誤判定(connector: 正常終了をDEAD扱いでrestart storm→stuck)
