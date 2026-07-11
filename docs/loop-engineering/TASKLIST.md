@@ -1,5 +1,18 @@
 # TASKLIST — earn/record/verify を稼げる状態にする（atomic SSOT）
 
+## ★ CURRENT PHASE (2026-07-12) = 実際に稼ぐ。正本 game plan = `29-earn-game-plan.md` ★
+記録/検証/一本化(#1-#6 下記)は全 DONE。今は「実 external:true を出す」フェーズ。
+残タスク(doc29 の実装順):
+- **G1. native→stablecoin swap step** = 全エンジンの前提。**realtime 発見: swap infra は既にある**(`skills/earn/funding/lib/relay_swap.py`=relay.link, `bridge.py`=Polygon USDC.e→Solana, `franklin_sol_base_refill.py`)。gap = ①POL→USDC.e swap(Polygon, relay.link) ②env 確認(POLYGON_WALLET_PRIVATE_KEY 等は anicca-daemon.sh が runtime 注入、.env に無い)。$30 POL を half/half に。※実マネー=clean context で実行。
+- **G2. 層0 x402 seller を live 化**（$0 資本の最速 earner）→ 最初の external:true。
+- **G3. 層1 yield floor**(Beefy/Aave hedge) / **G4. 層2 HL funding-arb**($50-100超で)。
+- 資金配分: claude-p $15 + Franklin $15。全員が同じ共有 skill で稼ぐ。
+現在残高(own-eyes 2026-07-12): 0x810f=308 POL(≈$25-30), pm 0x904B=$1.35 pUSD, PM deposit 0x4c176=$0, Franklin Base 0x3EcCAD=$6.48。
+次アクション: G1 の POL→USDC.e swap を relay.link で(clean context 推奨、$30 保護)。
+
+---
+
+
 **これがタスクの source of truth。** 設計の正本(spec)は分離: `27-ideal-earn-record-verify-architecture.md`（2種の Anicca / 3層 / 図）。上位方針 = `23-...redesign.md §10`。
 **進め方（Dais 2026-07-12 明示）**: ここから **main(私) が自分で build、1つずつ**。builder は信用せず、その出力は「下書き」として fresh adversary(Sonnet)+own-eyes で検証し、良い所だけ取り私が仕上げる/作り直す。3つ同時にやらない。
 **Done 判定**: 金の真実 = wallet on-chain external:true のみ。report/test-green は稼ぎでない。各 atomic は「検証可能条件」を満たし私が own-eyes した時のみ ✅。
