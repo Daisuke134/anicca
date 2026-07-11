@@ -1,0 +1,16 @@
+✔ PROP-117c fixture 1: a registry where every self-funded citizen fails wallet.evm===true produces zero candidate pairs, never invokes executeLoanIssuanceAttempt, still runs executeDefaultDetectionSweep exactly once, and is a clean no-op (2.201458ms)
+✔ PROP-117c fixture 2: a registry with exactly ONE self-funded, EVM-walleted, co-located citizen produces zero candidate pairs via the lenderId!==borrowerId impossibility (never the wallet.evm-exclusion path), still runs executeDefaultDetectionSweep exactly once (0.6665ms)
+✔ PROP-117c fixture 3 (resolves FIND-1003/1004/1006): a real two-citizen wake selects the correct pair and executeLoanIssuanceAttempt genuinely returns {status:"active"}, never "refused" (4.755625ms)
+✔ a fully-populated deps.getCitizen override ({...registryCitizen, balanceUsd}) is threaded through to a genuine, non-refused executeLoanIssuanceAttempt outcome (1.052ms)
+✔ REQ-117 step 6: executeLoanIssuanceAttempt is invoked with the real 2-argument ({lenderId, borrowerId, nowMs}, deps) shape -- never throws TypeError: getCitizen is not a function (0.970917ms)
+✔ REQ-118 fail-closed: an unresolvable lender EVM key (empty env, no ANICCA_HOME wallet, no override) refuses BEFORE executeLoanIssuanceAttempt is ever called -- zero ledger rows, never risks privateKeyToAccount(undefined) on the real disbursement path (0.520709ms)
+✔ REQ-118: a resolved lenderPrivateKey (mocking resolve-identity via deps.resolveLenderPrivateKey) is genuinely forwarded into executeLoanIssuanceAttempt's own deps, gating a real 'active' outcome (1.063416ms)
+✔ REQ-118 idempotent recovery: a stuck disbursement_uncertain row from a prior crashed attempt (the exact production symptom -- loan_Franklin_1) is reconciled via a REAL rpcUrl on the next wake, never double-disbursed, and a fresh issuance for the SAME lender/borrower pair succeeds (15.160667ms)
+ℹ tests 8
+ℹ suites 0
+ℹ pass 8
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 239.579666

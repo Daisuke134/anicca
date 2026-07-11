@@ -1,0 +1,15 @@
+{
+  "featureName": "lending-lender-key-wiring",
+  "mode": "lean",
+  "language": "javascript",
+  "currentPhase": "complete",
+  "note": "Fix to existing feature anicca-agent-lending (sprint-3, skills/economy/lending/scripts/wake-gate.mjs). No .vcsdd/features/anicca-agent-lending directory exists in this repo, so tracked as its own lean feature per fallback instruction. Root cause: deps.lenderPrivateKey/deps.rpcUrl were never resolved+injected on the production wake-gate.mjs -> executeLoanIssuanceAttempt call path, so every real disbursement crashed at privateKeyToAccount(undefined) (live symptom: loan_Franklin_1 stuck at disbursement_uncertain).",
+  "phaseHistory": [
+    { "from": "init", "to": "1a", "note": "specs/behavioral-spec.md written" },
+    { "from": "1a", "to": "1b", "note": "specs/verification-architecture.md written" },
+    { "from": "1b", "to": "2a", "note": "RED: 3 new wake-gate.test.mjs tests written and confirmed failing against pre-fix wake-gate.mjs (git stash isolation) -- evidence/sprint-1-red-phase.log, 5/8 pass 3/8 fail" },
+    { "from": "2a", "to": "2b", "note": "GREEN: resolveEvmPrivateKey wiring + rpcUrl wiring + fail-closed refusal implemented in wake-gate.mjs -- evidence/sprint-1-green-phase-wake-gate.log (8/8 pass), sprint-1-green-phase-full-lending-suite.log (134/134 pass)" },
+    { "from": "2b", "to": "2c", "note": "no refactor needed -- minimal, targeted change" },
+    { "from": "2c", "to": "complete", "note": "runtime/loop npm test run (250 tests) -- pre-existing, isolated ENOTEMPTY tmp-dir race in integration.test.mjs (unrelated files: PROP-021/PROP-019) reproduced identically on baseline via git stash; zero failures in any lending/wake-gate/resolve-identity test across 3 separate full-suite runs. Awaiting fresh-context adversary review (Phase 3) before merge -- not merged, not triggering a live loan." }
+  ]
+}

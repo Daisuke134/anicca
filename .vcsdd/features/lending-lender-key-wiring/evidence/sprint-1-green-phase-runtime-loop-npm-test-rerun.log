@@ -1,0 +1,367 @@
+
+> anicca-loop@1.0.0 test
+> node --test __tests__/tier.test.mjs __tests__/env-filter.test.mjs __tests__/ledger-record.test.mjs __tests__/loop-detect.test.mjs __tests__/parse-tool-call.test.mjs __tests__/config.test.mjs __tests__/inference.test.mjs __tests__/catalog-gate.test.mjs __tests__/registry-classification.test.mjs __tests__/harness-health.test.mjs __tests__/harness-health-snapshot.test.mjs __tests__/harness-health-no-autoaction.test.mjs __tests__/integration.test.mjs __tests__/harness-health-failure-detail.test.mjs __tests__/always-act-router.test.mjs __tests__/always-act-wire-seam.test.mjs __tests__/always-act-nojudgment.test.mjs __tests__/always-act-reroute.test.mjs __tests__/go-live.test.mjs __tests__/daemon-script-franklin-routing.test.mjs __tests__/daemon-script-franklin2-identity.test.mjs __tests__/franklin-plist-config.test.mjs __tests__/telemetry-host-label.test.mjs __tests__/ledger-publish.test.mjs
+
+✔ PROP-507b (static, Tier 0): always-act-router.mjs contains no RegExp/.match(/.test( call, and no if(args./switch(slot)-style branching keyed on model-chosen slot/args CONTENT (9.309541ms)
+✔ PROP-501a: identity MISMATCH -> always-act NOT engaged (sleep tool still on the real outbound wire), regardless of the flag (241.15675ms)
+✔ PROP-501b: identity MATCH + flag unset -> always-act NOT engaged; ledgers kind:always_act_not_engaged reason:flag_unset (REQ-512) (620.635791ms)
+✔ PROP-501b: identity MATCH + flag malformed ("yes") -> always-act NOT engaged; ledgers reason:flag_malformed (618.129917ms)
+✔ PROP-501c: identity MATCH + flag "1" -> always-act ENGAGED (sleep withheld on the real outbound wire, run_skill enum = the always-act menu) (620.032667ms)
+✔ Row 1 / PROP-506b: valid slot picked, execution completes, earnLine !== null -> immediate EXECUTE, 1 think() call total, no reroute (724.00025ms)
+✔ Row 2 / PROP-505a: no-tool-call -> reprompt (same menu) -> valid pick, earnLine !== null -> EXECUTE via reprompt, exactly 2 think() calls (672.814042ms)
+✔ Row 3 / PROP-513e (money-safety-critical, FIND-301 direct regression): no-tool-call -> reprompt -> fabricated slot:"sleep" -> ESCALATE, exactly 2 think() calls, never 3, no skill execution (925.4365ms)
+✔ Row 4 / PROP-505a: no-tool-call -> reprompt -> no-tool-call again -> ESCALATE, exactly 2 think() calls (926.168833ms)
+✔ Row 5 / PROP-506a (hard tool-enum exclusion): capital slot picked, earnLine===null -> reroute EXCLUDES the just-picked slot from the REAL schema -> valid safe reroute pick, earnLine!==null -> EXECUTE, 2 think() calls (1032.368584ms)
+✔ Row 6 / PROP-513b/c (money-safety-critical, FIND-201): reroute in flight, model re-emits the just-excluded capital slot -> REJECTED, no execution, no 3rd think() call, direct ESCALATE (1026.786958ms)
+✔ Row 6b / PROP-513c: reroute in flight, model emits a DIFFERENT capital slot (still in ctx.alwaysActMenu, absent from this reroute's currentOfferedSlots) -> REJECTED, ESCALATE (1030.485833ms)
+✔ Row 7 / REQ-506 edge case ("rerouted second pick ALSO no-ops"): reroute's own pick ALSO produces earnLine===null -> ESCALATE, never a 3rd think() call (1132.030959ms)
+✔ Row 8 / PROP-513a (structural, FIND-103 direct regression): fabricated slot:"sleep" on the VERY FIRST think() call -> REJECTED (never silently honored as idle) -> reprompt (same menu) -> valid pick -> EXECUTE, 2 think() calls (677.870708ms)
+✔ Row 9 / PROP-506g (money-safety-critical, FIND-301 REQ-506 symmetric extension): no-tool-call -> reprompt -> VALID pick but earnLine===null -> ESCALATE directly, NO reroute (never a 3rd think() call) (1026.803125ms)
+✔ Row 10 (spec-review iteration-5 notes.md fix): fabricated slot on attempt 1 -> reprompt -> fabricated slot AGAIN -> ESCALATE, exactly 2 think() calls (925.258708ms)
+✔ Row 11 (spec-review iteration-5 notes.md fix): fabricated slot on attempt 1 -> reprompt -> no tool call -> ESCALATE, exactly 2 think() calls (924.354125ms)
+✔ Row 12 (spec-review iteration-5 notes.md fix): fabricated slot on attempt 1 -> reprompt -> VALID pick but earnLine===null -> ESCALATE, NO reroute, exactly 2 think() calls (1026.289667ms)
+✔ PROP-502d (REAL wake): an empty-yielding registry escalates a REAL spawned wake with the DISTINCT kind:'router_menu_empty', zero think() calls, never the ordinary router_no_realized_action kind (926.935875ms)
+✔ PROP-506f (empty-safe-set-escalates): reroute-eligible risk-free set is empty (all other live always-act slots besides the pick are risk:"capital") -> immediate REQ-508 escalation, zero additional think() calls, ledgered attemptsUsed===0 despite exactly ONE think() call made (1027.643625ms)
+✔ PROP-506c: economy/gig pick with earnLine===null triggers the SAME reroute path as any isEarnSlot member (classify call-site widening, index.mjs:450) (934.400125ms)
+✔ PROP-506c: economy/lending pick with earnLine===null ALSO triggers the reroute path (same widening) (825.672625ms)
+✔ PROP-507a: the model's chosen args reach the skill's WAKE_ID-scoped execution UNMODIFIED — the harness never substitutes/filters by args content (830.963458ms)
+✔ PROP-509a (money-safety-critical, Tier 0 static guard): this feature's current diff touches none of the money-safety guard files (expected green from day 1 — a REGRESSION guard, not a behavior-under-test) (56.311875ms)
+✔ PROP-509b (money-safety-critical): a REAL guard-block (kill-switch-style skip, exits 0, writes no earn-ledger line) on the first pick triggers a reroute to a DIFFERENT slot, and the guard's own skip record is preserved VERBATIM in the ledger (never overwritten/silenced) (932.87825ms)
+✔ PROP-512a: a Franklin-identity wake with the flag set to "1" takes the ENGAGED path (sleep withheld on the real wire) and never ledgers a stray always_act_not_engaged line for that wake (626.357875ms)
+✔ PROP-502a: isEarnActionSlot is the union of isEarnSlot and {economy/gig, economy/lending} (0.74925ms)
+✔ PROP-502a (property): for arbitrary slot names, isEarnActionSlot never returns true for a slot that is neither isEarnSlot nor {economy/gig, economy/lending} (9.999875ms)
+✔ PROP-502b (property): assembleAlwaysActMenu never includes a non-live slot, for arbitrary generated registries (12.8325ms)
+✔ PROP-502c: given the CURRENT skills/registry.json, isEarnActionSlot-menu membership resolves to exactly the 11 documented always-act slots (6.249667ms)
+✔ PROP-502d (pure-planning prerequisite only -- see always-act-reroute.test.mjs::PROP-502d for the REAL ledger-kind assertion, Phase 3 iter1 FIND-001 fix): an empty resolved menu is representable (assembleAlwaysActMenu returns []), never throws, never silently substitutes a default (0.109208ms)
+✔ PROP-503a (property, boundary sweep): at-or-above reserveThresholdUsdc, the menu is the FULL unfiltered isEarnActionSlot set (mirrors catalog-gate.mjs::isBelowThreshold at-or-above semantics) (1.672542ms)
+✔ PROP-503b: below-threshold WITH an open position for a capital-risking slot keeps it in the menu (carve-out preserved); economy/gig/earn/clip/x402_sell remain regardless (0.093917ms)
+✔ PROP-504a: getToolDefinitions(slots, {omitSleep:true}) never includes a sleep tool; default/omitted opts is byte-identical to the current single-arg call (0.134709ms)
+✔ PROP-504a: buildAlwaysActToolDefinitions is a thin wrapper — getToolDefinitions(menu,{omitSleep:true}) — not a parallel reimplementation (0.077416ms)
+✔ PROP-504a (property): for ANY non-empty menu, buildAlwaysActToolDefinitions never contains a tool named sleep (7.000959ms)
+✔ PROP-506e: isMarketRiskFree is true iff riskTagOf(slot) === "safe" exactly; an untagged (undefined) slot is fail-closed to NOT risk-free (0.165625ms)
+✔ PROP-506e (property): isMarketRiskFree exactly mirrors riskTagOf(slot)==="safe" for arbitrary tag values (1.307541ms)
+✔ PROP-506e (literal, current registry): earn/sol-trade, hl_trade, token_launch, earn/polymarket-trade, yield are never risk-free reroute targets (3.756666ms)
+✔ noRealizedAction: true iff earnLine === null (never merely falsy — a real {profitable:false} line is still a realized action) (0.592292ms)
+✔ isRejectableSleepOrOffMenu: rejects "sleep" unconditionally and any slot absent from currentOfferedSlots; accepts any member (0.069208ms)
+✔ isRejectableSleepOrOffMenu (property): for any offered set and any slot, rejection is EXACTLY (slot==="sleep" || !offered.includes(slot)) — independent of array identity/order (5.646916ms)
+✔ nextRerouteState: attemptsUsed===0 -> shouldRetry true, attemptsUsedNext 1, exhausted false; attemptsUsed===1 -> shouldRetry false, exhausted true (maxAttempts=1) (0.163167ms)
+✔ PROP-511a (property, bounded exhaustive): for EVERY reachable sequence of up to 2 invalid outcomes, attemptsUsed transitions 0->1 exactly once and never exceeds maxAttempts=1 (2 think() calls total, never 3) (3.901209ms)
+✔ buildMustActReinforcement: returns a non-empty, deterministic directive string for the same inputs (0.076125ms)
+✔ PROP-510a: buildAlwaysActLedgerFields ledgers wake_id/slot/args/attemptsUsed/realized; attemptsUsed is passed through VERBATIM in the {0,1} domain, never re-derived as a think()-call count (0.072ms)
+✔ PROP-510a (property): attemptsUsed is echoed unchanged for both domain values {0,1}; never coerced/rounded/count-like (0.094125ms)
+✔ PROP-512a: buildGoLiveRecord shapes exactly kind:'always_act_go_live' + the passed-through ts and config_source, REQ-512's own named payload fields (0.038792ms)
+✔ PROP-512a (property): buildGoLiveRecord's kind is ALWAYS the literal string always_act_go_live, regardless of ts/configSource content (0.2465ms)
+✔ PROP-512a: shouldRecordGoLive is true for an empty tail and for a tail with no existing always_act_go_live line (0.037458ms)
+✔ PROP-512a: shouldRecordGoLive is false once a always_act_go_live line already exists anywhere in the tail -- the "exactly once at the flip" guard (0.02475ms)
+✔ PROP-512b(a): no always_act_go_live line anywhere in the tail -> never regression-detected, regardless of how many always_act_not_engaged lines precede it (benign pre-rollout state) (0.071625ms)
+✔ PROP-512b(b): always_act_go_live followed by >= minRun consecutive always_act_not_engaged lines DOES trigger regression-detected (0.045042ms)
+✔ PROP-512b(b): fewer than minRun consecutive always_act_not_engaged lines after go-live does NOT trigger it (0.027625ms)
+✔ PROP-512b(c): a single always_act_not_engaged line surrounded by successfully-engaged wakes after go-live does NOT trigger regression (a blip resets the run) (0.024833ms)
+✔ PROP-512b (property): for ANY tail with no always_act_go_live line, the detector is always false (0.233458ms)
+✔ PROP-504b (money-doctrine-critical): thinkProxy's REAL outbound request body has NO tool named "sleep" when ctx.alwaysActEngaged===true and ctx.alwaysActMenu is set (39.458875ms)
+✔ PROP-504b (non-regression): thinkProxy's outbound tools array STILL includes sleep when ctx.alwaysActEngaged is falsy/absent — proving the conditional wiring, not a hardcoded omission (2.970292ms)
+✔ PROP-504b (non-regression): ctx.alwaysActEngaged === false (explicit) behaves identically to absent (2.821125ms)
+✔ PROP-201a: below threshold, filterCatalog excludes every capital-risking slot (no always-available/open-position carve-out in play) (0.741708ms)
+✔ PROP-201b: at or above threshold, filterCatalog returns the full unfiltered slot list (boundary: equality counts as at-or-above) (1.003791ms)
+✔ PROP-201c: unset/non-finite/negative reserveThresholdUsdc falls back to the documented default 20, and the gate is never silently disabled (0.226375ms)
+✔ PROP-201c: non-finite/negative balanceUsdc is treated as below-threshold (fail-closed), mirroring tier.mjs's own NaN/Infinity/negative handling (0.180084ms)
+✔ PROP-201d: a slot with no explicit risk tag defaults to capital-risking (excluded) while below threshold (0.140916ms)
+✔ PROP-201e: alwaysAvailable:true slots (report, cook) survive filtering even in a pathological all-risky-tag input (0.174458ms)
+✔ PROP-201e: the `sleep` meta-tool is structurally unaffected by filterCatalog entirely -- getToolDefinitions always appends it, independent of the slots array (0.181375ms)
+✔ PROP-201f: a capital-risking slot with hasOpenRiskPositionOf(slot)===true remains available below threshold (open-position carve-out) (0.252542ms)
+✔ PROP-201f: the same open-position carve-out applies to `yield` (1.97775ms)
+✔ PROP-201h: hasOpenRiskPositionOfYield reads the SAME ledger-scan expression index.mjs uses for ctx.positionsSummary -- zero I/O (0.25175ms)
+✔ PROP-201i(a): hasOpenRiskPositionOfHlTrade's query is invoked lazily -- ONLY when balanceUsdc < reserveThresholdUsdc, never when at/above it (0.164292ms)
+✔ PROP-201i(b): a query failure/timeout/rejection resolves to true (fail-open), never false and never an uncaught throw (0.260584ms)
+✔ PROP-201i(c): a resolved non-empty open_positions array -> true; an empty array -> false (0.122417ms)
+✔ PROP-202a: filterCatalog is a pure function of the CURRENT call's inputs only -- no state leaks between successive calls (0.145459ms)
+✔ PROP-202b: a balance transition from below to at/above threshold between two successive calls restores the exact pre-restriction slot set (0.096042ms)
+✔ PROP-203a: filterCatalog's return type is a plain array of strings, with no attached score/rank/preference field (0.100542ms)
+✔ PROP-203b (partial runtime proxy): filterCatalog's output ordering is not used to encode a preference -- the SAME input set, given in a different order, produces the SAME resulting set (0.112334ms)
+✔ PROP-011: process.env wins over .env file values (0.909167ms)
+✔ PROP-011: .env value used when env var absent (0.085541ms)
+✔ PROP-012: malformed .env line skipped, valid lines parsed (0.109041ms)
+✔ PROP-012: entirely malformed .env does not crash (0.065208ms)
+✔ PROP-011/012: defaults applied when nothing set (0.065083ms)
+✔ PROP-011: ANICCA_HOME absent yields empty/null home path (0.052458ms)
+✔ PROP-012: .env with # comments and blank lines parsed correctly (0.05025ms)
+✔ REQ-004(a): INSTANCE=franklin resolves PORT to ClawRouter's 8402 (matching the non-franklin branch), not 8403 (6.511667ms)
+✔ REQ-004(c): even with FRANKLIN_PROXY_PORT=8403 set (mirroring the deployed plist's current value), PORT still resolves 8402 for franklin (7.853ms)
+✔ regression: non-franklin (INSTANCE unset / clawrouter) still resolves PORT=8402 via COMPUTE_PROXY_PORT (unchanged) (11.716666ms)
+✔ REQ-004(a): OPENAI_BASE_URL (the SAME $PORT variable line 117 already uses) resolves to http://127.0.0.1:8402/v1 for franklin (5.710208ms)
+✔ REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns `franklin proxy` or `clawrouter`, never reads $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY, but keeps AT MOST a curl readiness probe (0.432166ms)
+✔ regression/REQ-005: the non-franklin ensure_brain branch (its own, separately-designed $HOME/.openclaw/.env use) is untouched and structurally distinct from the franklin branch (0.261209ms)
+✔ REQ-001 PROP-001 (regression): is_franklin_instance("franklin") matches — the original citizen, unchanged (6.998458ms)
+✔ REQ-001 PROP-002 (new): is_franklin_instance("franklin2") matches — the exact bug this feature fixes (4.649375ms)
+✔ REQ-001 PROP-003: is_franklin_instance matches franklin + any digit-run (franklin3, franklin10, franklin99) (18.84325ms)
+✔ REQ-001/REQ-004 PROP-004: is_franklin_instance rejects non-matching decoys (fail-closed) (45.895375ms)
+✔ REQ-001 PROP-005 (static): all 3 daemon call sites use is_franklin_instance — zero remaining literal `"$INSTANCE" = "franklin"` string-equality left in the file (0.446375ms)
+✔ REQ-002(b): step-3 telemetry branch condition now reached for franklin2 (static: step 3 still selects telemetry-post-franklin.mjs behind is_franklin_instance) (0.14175ms)
+✔ REQ-002(c): step-4 wallet-derivation branch condition now reached for franklin2 (static: step 4 still selects wallet-address-solana.mjs behind is_franklin_instance) (0.065625ms)
+✔ REQ-003 (regression): non-franklin/unset still resolves to the default EVM/ClawRouter path (static: step 4 else-branch still uses wallet-address.mjs, not solana) (0.050333ms)
+✔ impl-review iteration-1 FIND-002 fix (static): the franklin-branch telemetry pkill is scoped to THIS instance's own $ANICCA_HOME, never an unscoped script-path-only pattern that would also match a concurrently-running sibling Franklin instance (1.082459ms)
+✔ impl-review iteration-3 FIND-001 fix (static): the iteration-2 one-time, unscoped, end-anchored legacy-poster-cleanup pkill is REMOVED — it cross-matched skills/earn/sol-trade/run.sh's own flagless one-shot telemetry POST on every invocation, not only during a migration window; the scoped pkill remains the ONLY telemetry-post-franklin.mjs pkill line in step 3, positioned before the poster is (re)launched (0.195542ms)
+✔ impl-review iteration-2 FIND-002 fix (static): the dead env-var pkill ("FRANKLIN_TELEMETRY_LOOP") is gone — pkill -f matches argv, not exported environment variables, so it never matched anything (0.079375ms)
+✔ impl-review iteration-3 FIND-002 fix — match-matrix simulation: applies the scoped pkill pattern, extracted VERBATIM from the real anicca-daemon.sh source text (same technique as extractClassifierFunction()), to real new-format/legacy/sol-trade argv strings for BOTH live instances, exactly reproducing pkill -f ERE semantics via grep -E (34.244958ms)
+✔ PROP-005: removes BLOCKRUN_WALLET_KEY (0.727625ms)
+✔ PROP-005: removes MY_PRIVATE_KEY (0.055333ms)
+✔ PROP-005: removes WALLET_PRIV_KEY (0.043458ms)
+✔ PROP-005: removes all matching keys from mixed env (0.0535ms)
+✔ PROP-006: scrubPrivateKeys is idempotent (0.593875ms)
+✔ PROP-006: does not mutate original env (0.05775ms)
+✔ PROP-018: BLOCKRUN_WALLET_KEY always removed (0.069ms)
+✔ PROP-020: wallet address (0x + 40 hex) is NOT scrubbed (0.04225ms)
+✔ PROP-020: private key pattern (0x + 64 hex) detected in observation string (0.169708ms)
+✔ PROP-020: wallet address survives redactPrivateKeyPatterns (0.1105ms)
+✔ REQ-004 AC#2 (new): deployed plist's ANICCA_FREE_MODEL/ANICCA_LEAN_MODEL/ANICCA_FUNDED_MODEL no longer pin THINK to the rate-limited free model (17.730208ms)
+✔ REQ-003 guardrail (already-passing): deployed plist MUST NOT contain an ANICCA_BALANCE_OVERRIDE key (the fabricated-balance backdoor REQ-003 forbids) (8.542417ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the arbitrary-risk-tag backdoor this override would otherwise let an attacker-controlled registry.json defeat REQ-506's reroute filter through) (10.207875ms)
+✔ franklin-alwaysact-skill-router REQ-509 guardrail (Phase 3 impl-review iteration-2 FIND-001 fix): deployed ai.anicca.franklin2-loop.plist MUST NOT contain an ALWAYS_ACT_REGISTRY_PATH_OVERRIDE key (the second live Franklin instance is covered by the SAME guardrail, never assumed safe by omission) (9.59025ms)
+✔ REQ-512 AC: the go-live operational action appends kind:'always_act_go_live' exactly once at the flip -- first call against a fresh (missing) ledger file writes the line (10.745625ms)
+✔ REQ-512 AC: a SECOND invocation of the go-live action never duplicates the anchor line -- exactly once, never on any other invocation (5.114791ms)
+✔ REQ-512 AC: recordGoLive never appends when a go-live line already exists in the tail from an EARLIER, unrelated append (real ledger tail read, not an in-memory flag) (1.502125ms)
+✔ REQ-512 AC ("never on any other wake"): index.mjs -- the wake-loop entry point -- never imports or invokes go-live.mjs/recordGoLive; the go-live line is written ONLY by the operator's own separate one-time command, never automatically by any wake (0.766209ms)
+✔ R6: capFailureDetail caps at EXACTLY 4000 chars (tool_logic-branch fixture, 6000-char input) (1.645625ms)
+✔ R6: capFailureDetail caps at EXACTLY 4000 chars (brain_transport-branch fixture, 6000-char input) -- resolves FIND-009 (0.087042ms)
+✔ R6: capFailureDetail whitespace-collapses before capping (same idiom as the existing 900-char `result` cap) (0.045209ms)
+✔ R6: wake_error wake -> exactly one harness-failures.jsonl line, no slot key, layer:brain_transport (4596.255042ms)
+✔ R6: brain_transport err.message containing a 64-hex private key -> detail shows [REDACTED], not the raw hex (4486.740041ms)
+✔ R6: skill_error wake with >2000-char stdout -> detail LONGER than 900 chars, ledger result STILL capped at 900 (they genuinely diverge) (560.682667ms)
+✔ R6: skill_error wake with >4000-char stdout -> detail length EXACTLY 4000 (resolves FIND-008) (561.74075ms)
+✔ R6: clean wake -> ZERO lines appended to harness-failures.jsonl; ledger result stays <=900 (INV-NO-PROMPT-REGRESSION) (614.586083ms)
+✔ R10: grep -rn "self-fix.sh" runtime/loop/ skills/self/self-improve/ (excluding this feature's own test/spec prose) returns ZERO matches (11.110333ms)
+✔ R7: fixture ledger.jsonl -> harness-health.json deep-equal to computeHarnessHealth on the same parsed fixture (87.415958ms)
+✔ R7: missing ledger.jsonl -> writes the R4 empty shape, exit code 0, no throw (73.340667ms)
+✔ R7: re-running overwrites -- output reflects only the latest run, no unbounded growth (122.949667ms)
+✔ R1: {wake,narrate,shutdown} -> clean (2.901458ms)
+✔ R1: wake_error -> brain_transport (0.12125ms)
+✔ R1: skill_missing -> tool_missing (0.054584ms)
+✔ R1: skill_timeout -> tool_timeout (0.113208ms)
+✔ R1: skill_error -> tool_logic (0.067583ms)
+✔ R1: unrecognized kind string -> unknown, never throws (0.099208ms)
+✔ R2: [wake,wake,skill_error,skill_error] for slot x -> wakes:4 failures:2 rate:0.5 streak:2 (0.119459ms)
+✔ R2: a trailing wake after failures resets streak to 0 (0.045166ms)
+✔ R2: slot never present -> null (0.044375ms)
+✔ R2: records with a DIFFERENT slot are excluded from x's count (0.238167ms)
+✔ R2 (INV-LOOPDETECT-SEPARATE): a loop_detect record carrying slot:'x' is excluded entirely (2.183542ms)
+✔ R3: wake_error (no slot) interspersed among slot records is counted independently (0.486542ms)
+✔ R3: a wake_error immediately followed by a slot's own skill_error does NOT inflate that slot's streak (0.547833ms)
+✔ R3: brain-transport streak resets on wake/narrate, counts trailing wake_error only (0.359958ms)
+✔ R4: multi-slot fixture -> perSlot keys match exactly the distinct slots present (4.428459ms)
+✔ R4: empty records -> R4 empty-ledger shape, never throws (2.766292ms)
+✔ R4: every perSlot/brainTransport entry carries escalate computed via R5 with the passed streakThreshold (1.410916ms)
+✔ R5: one below threshold -> false (0.055ms)
+✔ R5: exactly at threshold -> true (0.035208ms)
+✔ R5: one above threshold -> true (0.023792ms)
+✔ R5: DEFAULT_STREAK_THRESHOLD is 5 when HARNESS_HEALTH_STREAK_THRESHOLD is unset (Number(process.env.X) || N idiom) (0.019875ms)
+✔ R8 (JS side): computeHarnessHealth on the shared parity fixture matches its expected field-for-field (generatedAt excluded) (13.39375ms)
+✔ PROP-014: 10 consecutive wakes yield exactly 10 ledger lines (526.126792ms)
+✔ PROP-013: SIGTERM produces shutdown kind as last ledger line (663.537208ms)
+✔ PROP-015: skill that exits non-zero does not crash the loop (308.723833ms)
+✔ PROP-016: after LOOP_DETECT_WINDOW identical actions, inference is NOT called (516.452208ms)
+✔ PROP-016b: consecutive loop_detect on the SAME slot escalates the cooldown (1394.574791ms)
+✖ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (158.291416ms)
+✔ PROP-021(a): profitable earn line -> loop records profitable:true (864.55475ms)
+✔ PROP-021(b): discover line (no tx) -> profitable:false (663.025583ms)
+✔ PROP-021(e): exit 0 with no matching WAKE_ID in earn-ledger -> profitable:false (562.775209ms)
+✔ PROP-022: SIGTERM while skill runs kills child within 5s, exit code 0 (7528.555584ms)
+✔ PROP-023(a): ANICCA_BRAIN=proxy makes HTTP call, no claude subprocess (152.741334ms)
+✔ PROP-023(e): ANICCA_BRAIN=claude-p with missing claude binary falls back to proxy (103.406416ms)
+✔ PROP-701: pendingLineCount<=0 never pushes, regardless of nowMs/lastPushTs (2.018541ms)
+✔ PROP-702: pendingLineCount >= DEFAULT_MIN_LINES(10) always pushes, even with zero elapsed time (0.170875ms)
+✔ PROP-702 boundary: 9 pending lines does NOT push on line-count alone (0.948ms)
+✔ PROP-703: 1 pending line pushes once >= 15 minutes have elapsed since last push (1.066334ms)
+✔ PROP-704: 1ms before the 15-minute floor, with pending<10, never pushes ("throttled") (1.199334ms)
+✔ PROP-705: extractWakeId returns the wake_id field of a valid JSON line, "unknown" otherwise (1.274875ms)
+✔ extractEarnRef returns the `wake` field of a valid earn-ledger line, "unknown" otherwise (0.2435ms)
+✔ projectWakeLine keeps every allowlisted field, drops the model-authored `args` object and any other unknown field (1.035083ms)
+✔ projectWakeLine passes through net_/earn_/cost_ numeric fields, drops non-numeric values for the same keys (0.098917ms)
+✔ projectWakeLine passes through a hash-shaped tx field, drops a non-hash-shaped tx value (0.143208ms)
+✔ projectWakeLine redacts a private-key pattern AND a Solana-shaped base58 run AND a generic 40+ hex run inside result/skip_reason, caps at 200 chars (0.146833ms)
+✔ projectWakeLine returns null for malformed JSON or a non-object line (dropped, never published raw) (0.047959ms)
+✔ redactBroaderSecretPatterns: a 40-hex string alone is redacted (stricter than env-filter.mjs's 64-hex-only contract, deliberately, for published free text) (0.036083ms)
+✔ FIND-001 (iter3, critical): projectEarnLine keeps every allowlisted money field INCLUDING external/confirmed/fill_tid — required by isProfitable(), never dropped (0.141417ms)
+✔ FIND-001 (iter3): projectEarnLine round-trips a Solana-only profitable line (sig+confirmed, no tx) through the real isProfitable() (0.336417ms)
+✔ FIND-001 (iter3): projectEarnLine round-trips a Hyperliquid-only profitable line (fill_tid+confirmed, no tx/sig) through the real isProfitable() (0.095292ms)
+✔ FIND-001 (iter3): projectEarnLine drops external/confirmed/fill_tid when NOT the correct type (fail-closed, never coerced) (0.057708ms)
+✔ FIND-001 (iter4): projectEarnLine accepts ONLY a numeric fill_tid — a string form is DROPPED even when it is id-shaped or secret-shaped, since no real HL writer ever produces a string fill_tid (reconcile.py always writes a JSON integer) and the string branch bypassed both redaction layers (0.05775ms)
+✔ FIND-003 (iter3): projectEarnLine now shape-validates sig (base58, 64-88 chars) instead of a bare length check — a non-base58 or wrong-length value is dropped (0.050791ms)
+✔ FIND-001: projectEarnLine drops a non-hash-shaped tx value, redacts+caps the free-text task field (0.053042ms)
+✔ FIND-001: projectEarnLine returns null for malformed JSON or a non-object line (0.0365ms)
+✔ REQ-701: enabled:false performs zero git calls and zero fs writes (0.906208ms)
+✔ REQ-701: process.env.LEDGER_PUBLISH_ENABLED default resolution — unset env means disabled (0.292375ms)
+✔ REQ-703: origin-url resolution failure ("git remote get-url" throws) is non-fatal, reason "setup-failed" (17.972125ms)
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: clone --no-checkout --quiet --depth 1 --single-branch --no-tags file:///does/not/exist /tmp/ledger-publish-badclone-uMebd5/home/state/.ledger-publish-repo
+warning: You appear to have cloned an empty repository.
+✔ REQ-703: publish-repo clone failure is non-fatal, reason "setup-failed", no destination file created (3.281ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-first-cNkklT/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ REQ-705/FIND-001: first-ever publish creates a DEDICATED clone on orphan branch ledger-<instance> containing BOTH wake and earn files, never touches the shared checkout's main (441.77625ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-shallow-Zk6TWj/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+Reset branch 'ledger-franklin'
+To file:///tmp/ledger-publish-shallow-Zk6TWj/origin.git
+   829050d..574d566  ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ FIND-006: the dedicated clone is shallow (--depth 1) and stays shallow across a subsequent fetch/push cycle (402.149792ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-leak-tYmVDV/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ leak test (FIND-001/002): a shared checkout with an uncommitted AND a committed-but-unpushed change is completely untouched by a publish cycle (404.92925ms)
+fatal: couldn't find remote ref refs/heads/ledger-clawrouter
+Switched to a new branch 'ledger-clawrouter'
+To file:///tmp/ledger-publish-defaultinst-59ZEIL/origin.git
+ * [new branch]      ledger-clawrouter -> ledger-clawrouter
+warning: You appear to have cloned an empty repository.
+✔ REQ-702: ANICCA_INSTANCE default falls back to "clawrouter" when instance is omitted (376.586541ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-pushdown-2VIu6h/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+Reset branch 'ledger-franklin'
+warning: You appear to have cloned an empty repository.
+✔ REQ-703/PROP-717: a persistently failing push (both the initial attempt AND the retry) is non-fatal — never throws, marker.wake.pushedLineCount stays at the last CONFIRMED value, streak increments (481.237041ms)
+warning: You appear to have cloned an empty repository.
+✔ REQ-708: a live-held lock (this process's own pid) causes the cycle to skip with reason "locked", no publish-repo writes (116.906708ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-lockstale-ouMtHP/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ REQ-708: a stale lock (dead pid) is reclaimed and the cycle proceeds normally (330.775917ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+[ledger-publish] push rejected, re-syncing from origin and retrying once: mock: network unreachable
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+[ledger-publish] retry after re-sync also failed, will retry next cycle: Command failed: git fetch --quiet --depth 1 --no-tags origin +refs/heads/ledger-franklin:refs/remotes/origin/ledger-franklin
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-repoloss-kF3HO0/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ FIND-002/FIND-003: publishRepoDir loss between cycles is fully self-healing — every source line still ends up on the branch exactly once, no gap (478.732125ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-divergence-0Ea6Gt/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+Reset branch 'ledger-franklin'
+To file:///tmp/ledger-publish-divergence-0Ea6Gt/origin.git
+   8c03b65..9c4a547  ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ FIND-002: a push rejected mid-cycle by a real divergence (an outside writer, simulating a stale local state) is recovered via re-sync+reproject+retry, no line dropped or duplicated (595.212917ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-phantompush-S6F6Pj/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+[ledger-publish] push rejected, re-syncing from origin and retrying once: mock: client-side timeout after the push already succeeded
+warning: You appear to have cloned an empty repository.
+✔ FIND-002 (iter3, major): pushed must be false when the retry issues NO git push (post-reset reconcile found nothing pending) — not misreported true (390.706375ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+To file:///tmp/ledger-publish-commitfail-VRFkHs/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ REQ-703: a commit failure is logged and non-fatal, and the next cycle recovers cleanly with no duplication (362.787083ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+warning: You appear to have cloned an empty repository.
+✔ REQ-704 integration: 5 pending lines under the 10-line/15-min throttle commits locally but does NOT push, and marker.wake.pushedLineCount stays 0 (unconfirmed) (303.679458ms)
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: remote get-url origin
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: remote get-url origin
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: remote get-url origin
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: remote get-url origin
+[ledger-publish] publish-repo setup failed, skipping cycle: mock git failure: remote get-url origin
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+warning: You appear to have cloned an empty repository.
+✔ FIND-005: publishFailureStreak accumulates across consecutive setup failures and resets to 0 on the next successful setup (266.510083ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+To file:///tmp/ledger-publish-reachability-bEg13Z/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+warning: You appear to have cloned an empty repository.
+✔ FIND-005: a failing ls-remote reachability probe at first-ever setup logs clearly and does not block the cycle (non-fatal, no credential-shaped token in the log) (289.269042ms)
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+Switched to a new branch 'ledger-franklin'
+fatal: couldn't find remote ref refs/heads/ledger-franklin
+To file:///tmp/ledger-publish-reachability-once-DZp2yD/origin.git
+ * [new branch]      ledger-franklin -> ledger-franklin
+✔ FIND-005: the reachability probe runs only once (at first-ever dedicated-clone setup), never again once the clone already exists (409.679875ms)
+✔ PROP-007: formatRecord returns valid JSON string with newline (1.18025ms)
+✔ PROP-007: formatRecord output round-trips JSON.parse without error (0.069375ms)
+✔ PROP-007: required fields ts, wake_id, kind, sleep_s present in output (0.05075ms)
+✔ PROP-007: extra fields are preserved in JSON output (0.04725ms)
+✔ PROP-007: handles empty string fields without throwing (0.075958ms)
+✔ PROP-008: returns true when last 3 entries are identical (0.709167ms)
+✔ PROP-008: true when last 3 identical even with different earlier entries (0.057167ms)
+✔ PROP-008: window of 1 detects immediately on first repeated call (0.040042ms)
+✔ PROP-008: false when args differ between identical slots (0.057292ms)
+✔ PROP-009: returns false when fewer than window entries (0.108792ms)
+✔ PROP-009: returns false for empty array (0.039166ms)
+✔ PROP-009: single entry with window=3 returns false (0.037375ms)
+✔ PROP-009: window=0 always returns false (disabled) (0.03675ms)
+✔ PROP-009: different slots in window -> false (0.051666ms)
+✔ PROP-009: exactly window-1 identical entries returns false (0.078ms)
+✔ PROP-010: parses well-formed run_skill tool call (1.335917ms)
+✔ PROP-010: extracts nested skill args (the model decision) (0.10725ms)
+✔ PROP-010: flattened params (slot + strategy at top level) (0.053667ms)
+✔ PROP-010: text-only response returns null (0.253542ms)
+✔ PROP-010: empty tool_calls array returns null (0.044ms)
+✔ PROP-010: malformed JSON arguments returns null (0.046667ms)
+✔ PROP-010: null response returns null (0.035125ms)
+✔ PROP-010: undefined response returns null (0.030959ms)
+✔ PROP-010: missing choices returns null (0.050916ms)
+✔ PROP-010: sleep tool call parsed correctly (0.087625ms)
+✔ PROP-010: claude -p JSON output with tool_calls in result (0.057417ms)
+✔ PROP-201g: every currently-live registry.json slot matches behavioral-spec.md's exact expected count (18) (3.417375ms)
+✔ ★PROP-201g★ every currently-live registry.json slot carries an explicit risk/alwaysAvailable field matching the classification table (4.452375ms)
+✔ PROP-201g: every slot named in behavioral-spec.md's classification table is actually present and 'live' in registry.json (table isn't stale) (1.39425ms)
+✔ REQ-002(b) (FIND-001 fix): instanceHostLabel("franklin") -> "Franklin" (backward-compat, Franklin#1's dashboard row name is unchanged) (53.46225ms)
+✔ REQ-002(b) (FIND-001 fix): instanceHostLabel("franklin2") -> "Franklin2" (the new capability — was the bug's duplicate-label collision before this fix) (47.759625ms)
+✔ REQ-002(b) (FIND-001 fix): instanceHostLabel matches franklin + any digit-run (franklin3, franklin10, franklin99) with the digits preserved (144.012125ms)
+✔ REQ-002(b) (FIND-001 fix): instanceHostLabel(undefined) -> "Franklin" (unset ANICCA_INSTANCE defaults to the original citizen's label, matching pre-fix behavior for standalone/manual runs) (47.374417ms)
+✔ REQ-002(b) (FIND-001 fix): instanceHostLabel is a general capitalize-first-letter mapping for any other franklin-family-adjacent string, never silently reused across distinct instances (48.895209ms)
+✔ PROP-001: selectTier(0) returns broke tier with free model (0.654792ms)
+✔ PROP-001: selectTier(0) uses ANICCA_FREE_MODEL env override (0.050166ms)
+✔ PROP-002: selectTier(0.5) returns lean tier with lean model (0.040667ms)
+✔ PROP-002: selectTier(1.00) is still lean (boundary) (0.036666ms)
+✔ PROP-003: selectTier(5.0) returns funded tier with funded model (0.037625ms)
+✔ PROP-003: selectTier(1.01) returns funded (0.043708ms)
+✔ PROP-004: selectTier(NaN) returns broke (0.034542ms)
+✔ PROP-004: selectTier(Infinity) returns broke (0.030959ms)
+✔ PROP-004: selectTier(-Infinity) returns broke (0.045041ms)
+✔ PROP-004: selectTier(-0.5) returns broke (0.071417ms)
+✔ PROP-002/003: LEAN_TIER_THRESHOLD env override shifts boundary (0.048083ms)
+ℹ tests 250
+ℹ suites 0
+ℹ pass 249
+ℹ fail 1
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 20549.5485
+
+✖ failing tests:
+
+test at __tests__/integration.test.mjs:398:1
+✖ PROP-019: when balance RPC fails, loop retains previous tier and does not crash (158.291416ms)
+  Error: ENOTEMPTY, Directory not empty: /tmp/anicca-loop-test-uAqGIg '/tmp/anicca-loop-test-uAqGIg'
+      at Object.rmSync (node:fs:1205:18)
+      at TestContext.<anonymous> (file:///Users/operator/anicca/.worktrees/lending-lender-key/runtime/loop/__tests__/integration.test.mjs:435:8)
+      at async Test.run (node:internal/test_runner/test:1125:7)
+      at async Test.processPendingSubtests (node:internal/test_runner/test:787:7) {
+    errno: 66,
+    code: 'ENOTEMPTY',
+    path: '/tmp/anicca-loop-test-uAqGIg',
+    syscall: 'rm'
+  }
