@@ -121,9 +121,11 @@ def main():
         # 2) load video via file-chooser intercept (THE key step)
         if not load_video_via_filechooser(tid, video):
             res["error"] = "file chooser load failed"; shot(tid, "2-loadfail"); print(json.dumps(res)); return
-        # wait for upload (次へ appears)
+        # wait for upload (次へ appears). Bumped 12->20 reps (60s->100s): the
+        # burn_captions.py ABR bitrate fix produces ~4x larger files (~29MB vs
+        # ~2MB previously), so IG needs more time to ingest before advancing.
         ok = False
-        for _ in range(12):
+        for _ in range(20):
             time.sleep(5)
             if ev(tid, "(()=>!![...document.querySelectorAll('div[role=button],button,span,a')].find(x=>['次へ','Next'].includes((x.textContent||'').trim())&&x.getBoundingClientRect().top<160))()"):
                 ok = True; break
@@ -160,7 +162,13 @@ def main():
         cdp.click_xy(tid, sb["x"], sb["y"]); time.sleep(3); shot(tid, "6-sharing")
         url = None
         before = res.get("_before_reels") or []
-        for _ in range(10):
+        # Bumped 10->20 reps (120s->240s, ~340s incl. nav overhead): 3
+        # consecutive real failures observed on ~29MB ABR-fixed files, all
+        # stuck at "reached=shared-unconfirmed" with the share modal showing
+        # a stalled loading spinner (シェア中) in the 6-sharing.png screenshot
+        # -- IG's own processing for larger reels needs more wall-clock time
+        # than this poll window allowed for the old ~2MB files.
+        for _ in range(20):
             time.sleep(12)
             cdp.navigate(tid, f"https://www.instagram.com/{a.handle}/"); time.sleep(5)
             hrefs = ev(tid, """(()=>[...document.querySelectorAll('main a[href*="/reel/"],main a[href*="/p/"]')].map(a=>a.getAttribute('href')))()""") or []
