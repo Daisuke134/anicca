@@ -13,6 +13,14 @@
 ✅ G1完了(POL→USDC.e swap, tx 56348c8d) + ✅ Base bridge完了(relay Polygon→Base, tx 1fba42d, $22.97着) = **loop が funded・自律earn可能に**。
 次: (a)loop の戦略を良い方に(poly-maker/funding-arb, 弱戦略のままだと funded でも溶ける) (b)loop の実 wake を観測し external:true を dashboard で確認。私は trade しない=loop がやる。
 
+## ★ REALTIME 2026-07-12 04:06 (loop 自律行動を own-eyes 観測) ★
+- **loop が自律で HL に入金した**: hl_trade wake が "balance $0<trade$20 → self-fund relay Base→HL" を実行。HL account value=**$18.78**(on-chain 検証, fee $1.22)。まだ position 無し(WAIT/narrate)。**＝自律 capital 管理 machinery は本物に動く。**
+- 資金現況: HL $18.78 + Base USDC $0.97 + pm 0x904B $1.35 ≈ $21（$30 POL から swap/bridge fee ~$5 + 履歴 naked 損で目減り）。
+- Franklin: x402-serve 立てたが**買い手ゼロ**、gig 需要ゼロ → net $0。
+- **真の稼ぎ = 依然 $0**(external:true 実利益なし)。loop は活発だが「価値の受け手/edge」が無い。
+- ⚠️ **緊急リスク**: loop が HL $18.78 を**弱い方向性戦略で trade すると溶ける**。→ 最優先 = HL を funding-arb(構造edge)に。または trade せず WAIT を維持。
+- 手数料の学び: 小資本を multi-hop swap/bridge すると fee が%で重い($30→$21)。将来は Dais に SOL 直送→最小 hop。
+
 ---
 
 
