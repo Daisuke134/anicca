@@ -101,7 +101,7 @@
 | — | `projectWakeLine`: passes through a hash-shaped `tx`/`tx_hash`/`txHash` field, drops a non-hash-shaped value for the same keys | 1 | true | node:test |
 | PROP-709 | `projectWakeLine`: two-layer redaction (`redactPrivateKeyPatterns` + `redactBroaderSecretPatterns`) on `result`/`skip_reason` catches a 64-hex `0x...` key, an 88-char base58 Solana-shaped run, AND a bare 40+-hex run; caps output at 200 chars | 1 | true | node:test |
 | PROP-710 | `projectWakeLine`/`projectEarnLine`: returns `null` for malformed JSON or a non-object line (dropped, never published raw) | 0 | true | node:test |
-| FIND-001a (rewritten, impl-review iter3) | `projectEarnLine`: keeps every REQ-702-allowlisted EARN field, NOW INCLUDING `external`/`confirmed`/`fill_tid` (type/shape-checked, never coerced) — drops ONLY fields truly outside the explicit list. Also asserts a non-boolean `external`/`confirmed` and a non-number/non-string `fill_tid` are still dropped (fail-closed) | 1 | true | node:test |
+| FIND-001a (rewritten impl-review iter3; updated iter4) | `projectEarnLine`: keeps every REQ-702-allowlisted EARN field, including `external`/`confirmed` (boolean-only) and `fill_tid` (FINITE NUMBER ONLY — iter4 FIND-001 removed the string form entirely; ALL string `fill_tid` values are dropped, including id-shaped and secret-shaped strings, proven by the regression guard at `__tests__/ledger-publish.test.mjs:275-293`). Non-boolean `external`/`confirmed` dropped (fail-closed) | 1 | true | node:test |
 | FIND-001b (updated, impl-review iter3) | `projectEarnLine`: drops a non-hash-shaped `tx`; drops a `sig` that is the wrong length or contains a non-base58 character (FIND-003 shape check, not a bare length/type check); redacts+caps the free-text `task` field the same way `result`/`skip_reason` are redacted on the wake source | 1 | true | node:test |
 | FIND-001c | End-to-end: a real earn-ledger line carrying `net_usdc`/`tx`/`sig` (the actual money-evidence schema, verified live against `record-swap.mjs`) is published, unredacted-by-shape, to `<instance>-earn.jsonl` on a fresh clone of the branch — restoring third-party balance-growth verifiability | 2 | true | node:test (real git, `file://` bare-repo fixture) |
 | FIND-001d (new, impl-review iter3, critical) | `projectEarnLine` round-trip through the REAL imported `skills/_shared/lib/ledger.mjs::isProfitable()` (never a re-implementation of its rules): a profitable EVM line (`tx`+`status==='0x1'`), a profitable Solana line (`sig`+`confirmed`), and a profitable Hyperliquid line (`chain`+`fill_tid`+`confirmed`) — all with `external:true`/`net_usdc>0` — each still classify as `isProfitable(published_line) === true` after projection; a line with a wrong-typed `external`/`confirmed`/`fill_tid` has that field dropped, not coerced | 1 | true | node:test (imports the real `isProfitable`) |
@@ -152,3 +152,12 @@
   both are covered at Tier 2 (real-git, reachable-scenario tests) rather than requiring a strong
   formal-methods tool — consistent with `evolve.mjs`'s own precedent for this class of effectful
   git-wrapping code in this repo.
+
+## Changelog — impl iter5 doc-sync (2026-07-11)
+- FIND-001 (iter5, minor, doc-only): FIND-001a proof-obligation row updated to the iter4 numeric-only fill_tid reality + cites the regression guard test. Code/test dimensions all PASSed at iter5.
+
+## Escalation record (iteration limit, 2026-07-11)
+Five impl-review iterations (FAIL 5→6→3→2→1). At iter5 all four CODE dimensions PASSed; the single
+residual was this stale doc row, fixed directly by the thinker above. Per project rule (max 5 →
+escalate): residual accepted as doc-only; merge proceeds with the flag OFF by default; live enable is
+a separate operator step with observed-evidence verification.
