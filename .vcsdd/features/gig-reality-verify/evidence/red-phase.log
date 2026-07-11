@@ -28,3 +28,28 @@ Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && 
 Result: exit=1
   FAIL gig_judge.py does not exist yet at .../skills/earn/gig/gig_judge.py
 === test_gig_judge: 0 passed 1 failed (RED: module missing) ===
+
+=== FIX ROUND (fresh-adversary FAIL, 3 blocking + 1 mitigation) — RED confirmed ===
+Command: cd ~/anicca/.worktrees/gig-reality-verify/skills/earn/gig/__tests__ && node --test ./*.test.mjs
+Result: tests 67, pass 54, fail 13 (12 new-feature RED + 1 pre-existing baseline, same as before)
+
+New RED failures (12, all EXPECTED — files/behavior not yet implemented):
+  ✖ scripts/cdp_nav_snapshot.py exists
+  ✖ cdp_nav_snapshot.py: python syntax is valid (py_compile)
+  ✖ cdp_nav_snapshot.py: performs a real CDP Page.navigate call
+  ✖ cdp_nav_snapshot.py: waits for the page to finish loading (loadEventFired or readyState poll)
+  ✖ cdp_nav_snapshot.py: still captures a screenshot (Page.captureScreenshot)
+  ✖ cdp_nav_snapshot.py: appends a trajectory row (parity with cdp_snapshot.py)
+  ✖ cdp_nav_snapshot.py: navigate()/get_tab() logic is copied IN, not referenced out-of-repo
+  ✖ cdp_snapshot.py: no longer references the dangling out-of-repo cdp_lib48.py path
+  ✖ gig_reality_verify.sh: generates a STABLE pass_id BEFORE spawning the judge (REQ-008)
+  ✖ gig_reality_verify.sh: embeds the pass_id into the prompt (build_verifier_prompt call)
+  ✖ gig_reality_verify.sh: uses the deterministic evidence gate (gig_reality_gate.py)
+  ✖ gig_reality_verify.sh: records a run_start timestamp before the spawn (min_ts bound)
+
+Command: python3 test_gig_judge.py
+Result: exit=1 — TypeError: build_verifier_prompt() takes from 1 to 2 positional arguments but 3 were
+given (signature change to require pass_id not yet implemented) — RED confirmed.
+
+Command: python3 test_gig_reality_gate.py
+Result: exit=1 — FAIL scripts/gig_reality_gate.py does not exist yet — RED confirmed.

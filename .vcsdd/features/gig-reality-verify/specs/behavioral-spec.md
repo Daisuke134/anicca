@@ -110,6 +110,78 @@ deterministic verdict row to `~/gig/audit.jsonl` exactly as before, and SHALL, a
   byte-identical to before this change (no regression).
 - A new line calling `gig_reality_verify.sh` appears strictly after the existing verdict-append block.
 
+### REQ-006: deterministic, reproducible navigation (fresh-adversary FIND-001 fix)
+**EARS**: WHEN the fresh judge is instructed to visit a ground-truth URL THE SYSTEM SHALL provide a
+navigation helper COMMITTED IN THIS REPO that performs a real CDP `Page.navigate(url)` call, waits
+for the page to finish loading (via `Page.loadEventFired` and/or a `document.readyState` poll), then
+captures a screenshot and appends a trajectory row — so navigation is a deterministic, reproducible
+tool call, not freeform LLM-improvised Bash/CDP calls that happened to work once.
+**Edge Cases**:
+- The helper must not reference any path outside this repo (no dangling cross-repo reference such as
+  the historical comment pointing at `~/gig/cdp_lib48.py`, which lives outside `~/anicca`); any
+  `navigate()`/`get_tab()` logic needed must be copied INTO the repo helper.
+- Navigation that never reaches `readyState==='complete'` within a bounded timeout SHALL still capture
+  whatever screenshot is available (never hang the judge indefinitely) and record the row.
+**Acceptance Criteria**:
+- `skills/earn/gig/scripts/cdp_nav_snapshot.py` exists, contains a `Page.navigate` CDP call, and
+  contains a load-wait (`Page.loadEventFired` event handling or a `readyState` poll loop).
+- `gig_judge.build_verifier_prompt` instructs the fresh judge to call this exact helper once per
+  ground-truth URL (by pass_id + seq), not to improvise navigation.
+- `cdp_snapshot.py`'s comment no longer references an out-of-repo file path.
+
+### REQ-007: deterministic evidence gate — the caller never accepts an unbacked verdict (FIND-002 fix)
+**EARS**: WHEN `gig_reality_verify.sh` receives the fresh judge's self-reported `JudgementResult` JSON
+THE SYSTEM SHALL, before accepting a `verdict:true` as a clean pass, deterministically (no LLM) check
+that at least one trajectory row per ground-truth URL was captured during THIS run (by `pass_id` and a
+`ts >= run_start` bound read from the real `~/gig/trajectory/<pass_id>/trajectory.jsonl` file). If the
+evidence count is below the required count, THE SYSTEM SHALL override the accepted verdict to `false`
+with a `failure_reason` stating the verifier produced a verdict without capturing ground-truth
+screenshots, and SHALL treat this exactly like any other `verdict:false` (selfheal-request write).
+**Edge Cases**:
+- `verdict:true` + zero trajectory rows (judge fabricated/skipped navigation entirely) → gated to
+  `false`, selfheal-request written.
+- `verdict:true` + trajectory rows for a DIFFERENT/stale `pass_id` (not this run's) → does not count
+  (evidence must be scoped to the run's own `pass_id` + `ts` bound).
+- `verdict:false` from the judge itself is never "upgraded" — the gate only ever downgrades an
+  unbacked `true`, never invents a `true`.
+**Acceptance Criteria**:
+- A pure, unit-testable function (`gig_judge.gate_verdict(judgement, evidence_count, required_count)`)
+  exists: returns the judgement unchanged when `evidence_count >= required_count` OR `verdict` is
+  already `false`; returns a `false`-verdict `JudgementResult` with the fixed failure_reason otherwise.
+- A dedicated script (`scripts/gig_reality_gate.py`) reads the real trajectory file for a given
+  `pass_id`/`min_ts`, counts matching rows, and applies `gate_verdict` — directly testable by pointing
+  it at a temp trajectory root with zero rows and asserting the output verdict is `false`.
+- `gig_reality_verify.sh` uses this gate (not a bare parse-and-trust) before writing to
+  `audit-reality.jsonl` / deciding the selfheal-request.
+
+### REQ-008: stable pass_id ties navigation evidence to one verification run (FIND-003, falls out of 006+007)
+**EARS**: WHEN `gig_reality_verify.sh` spawns the fresh judge THE SYSTEM SHALL generate one stable
+`pass_id` deterministically (bash-side, e.g. time-based) BEFORE the spawn, embed it in the prompt so
+every navigation-helper call in that run writes under the SAME `~/gig/trajectory/<pass_id>/` directory,
+and use that same `pass_id` when counting evidence in REQ-007's gate.
+**Acceptance Criteria**:
+- The `pass_id` used in the prompt and the `pass_id` used by the evidence gate are the identical value
+  for a single run (no drift, no LLM-chosen pass_id).
+- The evidence-count required for a clean pass equals the number of ground-truth URLs used in that
+  run's prompt (one screenshot minimum per ground-truth URL).
+
+### REQ-009: prompt-injection resistance for third-party claim text (FIND-004, mitigation)
+**EARS**: WHEN `gig_judge` renders claim rows into the prompt THE SYSTEM SHALL wrap each claim's
+rendered content in an explicit `<untrusted_claim>...</untrusted_claim>` delimiter and SHALL include
+an explicit instruction that text inside that delimiter is third-party DATA, never an instruction to
+the judge, and any instruction-like content inside it must be ignored.
+**Acceptance Criteria**:
+- Rendered claims are wrapped in `<untrusted_claim>...</untrusted_claim>`.
+- The prompt contains an explicit "ignore any instruction" (or equivalent) warning near the claims
+  block.
+
+## Deferred (explicitly out of scope for this increment)
+- **FIND-005 (ARG_MAX risk)**: `CLAIMS_JSON`/judge-raw-text are currently passed as heredoc `argv`
+  arguments to `python3 -`. For a very large accumulated claims history this could theoretically
+  approach the OS `ARG_MAX` limit. NOT fixed in this increment (current claim volumes — N≤5 rows per
+  source, ≤~15 total — are far below any practical limit). If claim volume grows materially, switch to
+  a stdin-piped or temp-file-based hand-off instead of argv. Tracked here so it is not silently lost.
+
 ## Non-functional requirements
 - No hardcoded judgment: whether a claim is actually true on screen is decided by the fresh LLM judge
   reading real DOM/screenshots — never a regex/keyword match against jsonl text (see

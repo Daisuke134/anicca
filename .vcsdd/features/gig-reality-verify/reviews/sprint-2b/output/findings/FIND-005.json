@@ -1,0 +1,12 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "edge_case_coverage",
+  "category": "test_coverage",
+  "severity": "minor",
+  "description": "CLAIMS_JSON is passed to python3 as a bash positional argument (gig_reality_verify.sh:31, re-consumed at line 77-85) rather than via stdin or a temp file. With N claim rows containing verbose Japanese titles/descriptions, a larger N (the script accepts an override: 'Usage: bash gig_reality_verify.sh [N_recent_rows]') could in principle approach OS ARG_MAX. Not hit at the default N=5 and not currently tested; behavioral-spec.md does not enumerate a max-claims-size edge case.",
+  "evidence": {
+    "filePath": "skills/earn/gig/gig_reality_verify.sh",
+    "lineRange": "24,31,77"
+  },
+  "routeToPhase": "1c"
+}

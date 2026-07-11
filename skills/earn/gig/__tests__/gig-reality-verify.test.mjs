@@ -102,3 +102,36 @@ test('auditor.sh: existing deterministic PY heredoc verdict logic markers still 
     assert.ok(src.includes(marker), `regression: missing existing marker ${marker}`);
   }
 });
+
+// ─── fresh-adversary fix round (FIND-001/002/003): reproducible nav + deterministic evidence gate ──
+
+test('gig_reality_verify.sh: generates a STABLE pass_id BEFORE spawning the judge (REQ-008)', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(/PASS_ID=/.test(src), 'no PASS_ID variable generated');
+  const passIdIdx = src.indexOf('PASS_ID=');
+  // match the ACTUAL invocation line ("$CLAUDE" -p ...), not any comment/doc text that merely
+  // mentions "claude -p" (this file's header comments do, well before PASS_ID is generated).
+  const spawnIdx = src.search(/"\$CLAUDE"\s+-p\b/);
+  assert.ok(passIdIdx !== -1 && spawnIdx !== -1 && passIdIdx < spawnIdx, 'PASS_ID must be generated BEFORE the claude -p spawn');
+});
+
+test('gig_reality_verify.sh: embeds the pass_id into the prompt (build_verifier_prompt call)', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(/build_verifier_prompt\(claims,\s*pass_id/.test(src) || /build_verifier_prompt\(\s*claims,\s*\w*pass_id/i.test(src),
+    'gig_reality_verify.sh does not pass pass_id into build_verifier_prompt');
+});
+
+test('gig_reality_verify.sh: uses the deterministic evidence gate (gig_reality_gate.py), not a bare parse-and-trust', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(src.includes('gig_reality_gate.py'), 'gig_reality_verify.sh does not call scripts/gig_reality_gate.py');
+});
+
+test('gig_reality_verify.sh: records a run_start timestamp before the spawn (min_ts bound for the gate)', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(/RUN_START/.test(src), 'no RUN_START timestamp captured for the evidence-window bound');
+});
+
+test("gig_reality_verify.sh: required evidence count is derived from DEFAULT_GROUND_TRUTH_URLS, not hardcoded blind", () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(/DEFAULT_GROUND_TRUTH_URLS/.test(src), 'gig_reality_verify.sh does not derive required_count from DEFAULT_GROUND_TRUTH_URLS');
+});
