@@ -16,12 +16,13 @@
 - [x] 1e. JS 18/18 + Python 14/14 = 32/32 pass（私が自分で実行確認）
 - 検証済み: main に merge(ledger.mjs grep=3)、live ledger は 0x810f のみ、読む場所が一意
 
-## #2 pm reconcile 配線  — status: ⬜(#1 待ち)
-- [ ] 2a. worktree の `reconcile.mjs` を本番 `skills/earn/lib/` へ
-- [ ] 2b. pass 末尾で毎 wake `reconcile` 呼ぶ（HL reconcile.py と同形）
-- [ ] 2c. reconcile 先を #1 の canonical パスに向ける
-- [ ] 2d. 「負け・買いコストが負 drift で載る」を test + own-eyes
-- 検証可能条件: pm でも ledger 合計 ≡ wallet delta
+## #2 pm reconcile 配線  — status: ✅ DONE(2026-07-12, main merged, own-eyes)
+- [x] 2a. `reconcile.mjs` を本番 `skills/earn/lib/` へ（ownWallet スコープ追加、11/11 テスト green）
+- [x] 2b. `run_earner.sh` の pass 末尾で毎 wake `pm-reconcile.mjs` 呼ぶ（HL と同形）
+- [x] 2c. pm ledger = redeem が書く `~/anicca/skills/earn/state/earn-ledger.jsonl`（redeem.py:89）に向け、ownWallet=0x904b でスコープ
+- [x] 2d. 実 pUSD $1.35 を eth_call で読取→baseline anchor→冪等 drift0 を own-eyes 確認。汚染21行(automaton)は quarantine、pm 7行保全
+- 検証済み: pm-reconcile が実 pUSD を読み drift を記録。以後 pm の負け/買いが reconcile 行で載る（ledger ≡ wallet delta）
+- 注: 実測で pm は $4.95→$1.35 とさらに流出中 → #3(pm HOLD/一本化)を急ぐ理由
 
 ## #3 earn loop 一本化  — status: ⬜(#2 後)
 - [ ] 3a. `pm-earner` launchd job を unload/廃止
