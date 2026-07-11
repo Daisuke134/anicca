@@ -27,6 +27,7 @@ DEFAULT_GROUND_TRUTH_URLS = [
     "https://coconala.com/mypage/services_lists",
     "https://coconala.com/mypage/received_orders/open",
     "https://coconala.com/mypage/dashboard_provider",
+    "https://coconala.com/mypage/job_matching/applied/offers",
 ]
 
 
@@ -165,6 +166,19 @@ The following URLs are the GROUND TRUTH for this judgement. GROUND TRUTH VALIDAT
 PRIORITY): the ground truth takes ABSOLUTE precedence over the claims below. If what you actually
 observe on these real pages does NOT satisfy a claim, the verdict for that claim MUST be false.
 {urls_block}
+
+FIELD-IDENTITY WARNING for "applied" claims (requestId/price_jpy/delivery_date in applied.jsonl):
+a Coconala 公開依頼 request page (coconala.com/requests/<id>) shows the CLIENT's OWN fields —
+"納品希望日" (the client's stated desired delivery date) and "募集期限" (the application deadline).
+Neither of these is what we proposed. They are independent of, and commonly DIFFERENT from, our own
+delivery_date claim, because our own offer can legitimately promise an earlier or later date than the
+client's stated preference. The applied.jsonl delivery_date/price_jpy claim is instead a fact about
+OUR OWN submitted offer (提案), whose real, load-bearing ground truth is our own applications list at
+https://coconala.com/mypage/job_matching/applied/offers (応募・スカウト管理) — each row there shows
+our actual submitted "提案額" and "納品予定日" for that requestId. When verifying an applied.jsonl
+claim, read OUR OWN 納品予定日/提案額 from that applied-offers list (or that offer's own edit page),
+NOT the client's request-page 納品希望日/募集期限 — do not treat a mismatch against the client's own
+field as a contradiction of our claim.
 </ground_truth>
 
 <claims_to_verify>
