@@ -67,14 +67,34 @@ derivation).
 **Edge Cases**:
 - Franklin2's own `$ANICCA_HOME`/`$REPO` env (set by its own launchd plist, untouched here) is what the
   spawned node scripts inherit — no new hardcoding of "franklin2" anywhere; the SAME franklin branch body
-  serves franklin, franklin2, franklin3, … indistinguishably (that is the point of the fix).
+  (the shell code in `anicca-daemon.sh` — the `if is_franklin_instance "$INSTANCE"` branches) serves
+  franklin, franklin2, franklin3, … indistinguishably in that sense: every Franklin-family instance runs
+  the identical code path. This does NOT mean every instance is dashboard-indistinguishable — the
+  telemetry poster's `host` label and the `pkill` process-scoping inside that shared body are themselves
+  instance-aware (per (b) below), precisely so two instances running the SAME body concurrently stay
+  distinguishable on the dashboard and never interfere with each other's poster process.
 - If Franklin2's `.solana-session` file were absent, `wallet-address-solana.mjs` prints nothing and exits
   0 (existing, out-of-scope behavior of that helper) — `ANICCA_WALLET_ADDRESS` stays unset, same
   non-fatal fail-open-to-empty behavior the franklin branch already has today. Not touched by this
   feature.
+- (impl-review iteration-1 FIND-001 fix) `telemetry-post-franklin.mjs`'s dashboard `host` label derives
+  from `ANICCA_INSTANCE`: `franklin` (or unset, for standalone/manual runs) → `"Franklin"` (backward
+  compat — Franklin#1's existing dashboard row name never changes), `franklin2` → `"Franklin2"`, and
+  generally `franklin<N>` → `"Franklin<N>"` (capitalize-first-letter of the instance name) — so two
+  concurrently-running Franklin-family instances never report under the identical dashboard label.
+- (impl-review iteration-1 FIND-002 fix) The franklin-branch telemetry `pkill` (step 3) is scoped to
+  THIS instance's own `$ANICCA_HOME` (via a `--home "$ANICCA_HOME"` argv marker the poster is invoked
+  with, which the poster script itself never parses) — a daemon restart of ONE Franklin-family instance
+  can no longer kill ANOTHER concurrently-running instance's in-flight poster process, since both
+  instances would otherwise present the identical `dashboard/telemetry-post-franklin.mjs` argv
+  substring to an unscoped `pkill -f`.
 **Acceptance Criteria**:
 - With `ANICCA_INSTANCE=franklin2`, the brain-probe/telemetry/wallet-derivation branch conditions all
   evaluate true (same as `ANICCA_INSTANCE=franklin` today).
+- With `ANICCA_INSTANCE=franklin2`, the telemetry poster's dashboard `host` label is `"Franklin2"`, never
+  `"Franklin"` (FIND-001).
+- The franklin-branch telemetry `pkill -f` pattern includes `$ANICCA_HOME` so it cannot match a sibling
+  Franklin instance's poster process (FIND-002).
 
 ### REQ-003: Non-franklin instances unchanged (regression)
 **EARS**: WHEN `ANICCA_INSTANCE` does NOT match the franklin pattern (REQ-001) THE SYSTEM SHALL follow

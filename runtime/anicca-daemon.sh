@@ -124,9 +124,16 @@ if is_franklin_instance "$INSTANCE"; then
   # telemetry-post-franklin.mjs is a ONE-SHOT script (ed25519 signer over Franklin's own Solana key,
   # was previously appended to sol-trade/run.sh) — no built-in setInterval like telemetry-poster.mjs,
   # so loop it here every 120s (same cadence as the EVM poster) to keep Franklin alive on the dashboard.
-  pkill -f "dashboard/telemetry-post-franklin.mjs" 2>/dev/null || true
+  # franklin2-daemon-identity impl-review iteration-1 FIND-002 fix: pkill -f is scoped to THIS
+  # instance's own $ANICCA_HOME (via the `--home` argv marker the poster is invoked with below, which
+  # the script itself never reads/parses — it is present purely so this pattern can target it) so a
+  # daemon restart of ONE Franklin-family instance can never kill ANOTHER concurrently-running
+  # instance's in-flight poster process — both instances run the identical script path, so an
+  # unscoped pattern would match both (confirmed: two live launchd jobs, ai.anicca.franklin-loop and
+  # ai.anicca.franklin2-loop, each with their own distinct $ANICCA_HOME).
+  pkill -f "dashboard/telemetry-post-franklin.mjs --home $ANICCA_HOME" 2>/dev/null || true
   pkill -f "FRANKLIN_TELEMETRY_LOOP" 2>/dev/null || true
-  ( export FRANKLIN_TELEMETRY_LOOP=1; while true; do node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" >>"$LOGDIR/poster.log" 2>&1; sleep 120; done ) &
+  ( export FRANKLIN_TELEMETRY_LOOP=1; while true; do node "$REPO/runtime/dashboard/telemetry-post-franklin.mjs" --home "$ANICCA_HOME" >>"$LOGDIR/poster.log" 2>&1; sleep 120; done ) &
 else
   pkill -f "dashboard/telemetry-poster.mjs" 2>/dev/null || true
   sleep 1
