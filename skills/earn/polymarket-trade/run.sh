@@ -97,7 +97,15 @@ fi
 # MAX_BET_SIZE/POLY_MIN_ORDER: all THREE caps are asserted fixed at the same single choke point.
 export MAX_BET_SIZE=2
 export POLY_MIN_ORDER=1
-export MAX_PASS_SPEND=2
+# BUG FIX (2026-07-12, own-eyes+math verified): MAX_PASS_SPEND=2 made bundle_arb.py/
+# market_maker.py structurally unable to ever afford Polymarket's 5-share CLOB minimum on an
+# ordinary (near-$1 combined YES+NO) market -- budget_shares=int(2/0.97)=2 < 5 -> permanent HOLD,
+# no matter how much money is in the wallet (confirmed: still blocks at $5, $40, or more). Raising
+# to 20 does not remove the real safety bound: both scripts already take
+# min(avail*0.9-or-0.98, MAX_PASS_SPEND), so a pass can still never spend more than ~90-98% of the
+# ACTUAL wallet balance -- this constant only stops being a tighter, stricter-than-the-balance
+# artificial ceiling on top of that.
+export MAX_PASS_SPEND=20
 if [ -n "${EARN_GENOME_ID:-}" ]; then
   MIN_EDGE="${MIN_EDGE:-}" MIN_CONF="${MIN_CONF:-}" RESOLVE_HORIZON_DAYS="${RESOLVE_HORIZON_DAYS:-}" \
   MAX_CANDIDATES="${MAX_CANDIDATES:-}" EARN_CONSENSUS_MODELS="${EARN_CONSENSUS_MODELS:-}" \
