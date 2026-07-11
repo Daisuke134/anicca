@@ -1,54 +1,36 @@
-# HANDOFF → next session (2026-07-11) — VERIFY EVERYTHING FIRST, then build
+# HANDOFF — agent-economy 実装ループ（2026-07-11 更新）
 
-> Paste this whole file (or the Gmail draft of it) as the opening prompt of a FRESH Claude Code session.
-> The previous session got long (quality degraded). This is the clean, evidence-grounded restart.
+★ FRESH SESSION はまず `docs/loop-engineering/20-implementation-certainty-2026-07-11.md`（§A-G, confidence 表）と `21-p1-alwaysact-live-2026-07-11.md`（live milestone + WITNESS③）を読む。★
 
-## THE MISSION
-Make Anicca's agent economy genuinely, verifiably RUN. A self-funded citizen (Franklin) EARNS real profit on its own wallet from its OWN wake-cycle, self-heals, self-improves, and with surplus LOANS / posts JOBS to other Franklins and SPAWNS more of itself — growing the economy. You (claude-p) = the DEVELOPER + SECOND-EYES AUDITOR loop: you BUILD + VERIFY the machinery and fix what Franklin's self-heal can't, then exit. You do NOT trade in Franklin's place (harness-not-cook). Repo: the agent economy lives in ~/anicca (OSS).
+## 運用モデル（この session がやっていること）
+thinker=私（Fable/Opus main loop）、実装=Sonnet subagent、adversary=Opus 4.8 fresh。全 feature を full/lean VCSDD で回し、adversary が PASS するまで iter を重ね、私が独立に test 実行して verify、money milestone は MONEY EVIDENCE PROTOCOL（on-chain tx + mail to Dais keiodaisuke@gmail.com + dashboard 実数値）でのみ完了。`/loop` で自走。人間へ質問しない。
 
-## ★★★ RULE #0 — VERIFY EVERYTHING WITH EVIDENCE, FIRST ★★★
-The entire disaster came from NOT verifying. Franklin's sol-trade was silently broken for 2 days (a path regression) and nobody — not the loops, not the adversary — noticed, because "daemon running" was mistaken for "earning." NEVER trust a self-report, a ledger, a doc, or a subagent for a money/health claim. Verify independently: on-chain RPC, the raw trace/ledger, the actual process. Your FIRST job in this session is a full STATUS-QUO AUDIT (below) — know the truth of the truth before building one more thing. "Is it actually earning? Or is the problem elsewhere?" — answer that with evidence.
+## ★ 達成済み（全て merged to `~/anicca` main + live 検証済み）★
+| P | 内容 | 証拠 |
+|---|---|---|
+| P1 | always-act（NO-WAIT earn router）| spec5+impl4+converge5 iter、engaged wake が ACT。flag `ALWAYS_ACT_ENABLED=1` on franklin-loop plist。go-live ledger 行あり |
+| P2 | per-wake ledger publish | origin branch `ledger-franklin`（wake+earn jsonl、git 検証可能）。flag `LEDGER_PUBLISH_ENABLED=1` |
+| **P4 / WITNESS③** | **初 on-chain 相互扶助ローン** | **tx `0x36faafce0f22817eb94f3d2b7111d188e224287dbc31b8c976edf193cf6e2863`**（Base、status 0x1、USDC $0.02 Franklin→Franklin2、RPC 検証）。loan_Franklin_41 active |
 
-## STATUS-QUO AUDIT (do this FIRST, record findings to a dated docs MD)
-For EACH, get real evidence, not a claim:
-1. Is each loop alive? `launchctl list | grep -iE "franklin|claude-p|citizens|sol-trade-earning"`. Note LastExitStatus (claude-p-mainloop was exit 124=timeout).
-2. Is Franklin earning? Read `~/.blockrun/skills/earn/state/sol-trade.trace.jsonl` (last 30 lines: live-pass vs skip) + `earn-ledger.jsonl` (any new realized row? per-tool net_usdc). Query Franklin's Solana wallet 8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9 on public RPC (recent Jupiter swaps? balance trend).
-3. Did the regression fix hold? run.sh guard should PASS (own==cli==8Fpqd). Confirm trace shows live-pass, not identity-mismatch skip, on the daemon's OWN autonomous wakes (not a manual run).
-4. Is self-heal live + correct? `ai.anicca.sol-trade-earning-healthcheck` plist loaded; run `earning-health.py is-barren 20` on the live trace (should be false now); confirm it WOULD flag an all-skip window.
-5. Dashboard truth vs reality: aniccaai.com/dashboard net worth vs actual on-chain USDC (they mismatched: dash $3.27 vs real $13.18). Franklin #2 not listed.
-6. Is claude-p (you) earning as donor? Dashboard shows claude-p $0. Verify wallet on-chain.
-Write the audit result to `docs/loop-engineering/18-status-quo-audit-<date>.md` and commit.
+### P4 で構築した恒久資産（再利用可）
+- Franklin2 identity: EVM `0xe7747Fd899D8987821Bb4CB3D6aDf22565F87ce9` / Solana `HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX`。wallet.json は `~/.franklin2-home/.blockrun/.automaton/`。plist に `ANICCA_STATE_DIR=/Users/anicca/.hermes/state`（canonical citizens 共有）。
+- daemon が franklin[N] 認識（`is_franklin_instance`）。
+- **x402 facilitator mainnet live**: `~/anicca/services/facilitator/` の `GIG_CHAIN=base ./start.sh` で :8405 起動（eip155:8453）。signer `0x1F5b17f41524B02a4ee4d99D4158c86C942e43f3`。★gasless settle は facilitator が gas 立替 → 定期的に Base ETH 補充が要る。現在 ~0.001655 ETH。★
+- **gas-eth refill**: `skills/earn/funding/franklin_sol_base_refill.py --gas-eth --recipient <addr> --live`（relay Solana USDC→Base native ETH、$3 cap）。USDC refill は同 script `--live`（`--recipient` なし）。
+- lending: `~/.blockrun/skills/economy/lending/run.sh`（要 `GIG_CHAIN=base GIG_FACILITATOR_URL=http://127.0.0.1:8405`）。全 money-safety guard live。citizens.json = `~/.hermes/state/citizens.json`（Franklin+Franklin2、両 EVM 行）。
+- Franklin Solana wallet `8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9`、Base wallet `0x3EcCAD24794ca298D25378E9902A251322ea8749`。
 
-## VERIFIED FACTS from the prior session (re-verify, don't trust)
-- Franklin sol-trade was broken by commit 3d97c59 (2026-07-08): identity-guard used a `runtime/`-relative path never rsynced to $ANICCA_HOME → skipped every wake (67 consecutive). FIXED: ~/anicca commit 1c75b90 (WADDR via $ANICCA_REPO). ★VERIFIED on an AUTONOMOUS wake: 2026-07-10T14:38:13Z the daemon's OWN wake produced action:"live-pass" (exit 0), and the deployed ~/.blockrun/skills/earn/sol-trade/run.sh contains the $ANICCA_REPO fix (rsynced) — the fix holds autonomously, the earn loop is unblocked and running on its own.★ BUT that wake still chose WAIT (0% conviction, $13.15, no edge) — the loop RUNS autonomously but does NOT yet profit, and the model explicitly "waits for a breakout" = the exact NO-WAIT-doctrine violation the always-act feature must eliminate. So: earn loop alive ✓, profitable ✗ (needs always-act + edge).
-- self-heal earning-health detector: DONE + LIVE. ~/anicca commit 3dd60a2 (skills/self/earning-health.py + skills/earn/sol-trade/sol-trade-healthcheck.sh). plist ai.anicca.sol-trade-earning-healthcheck loaded. Flags "runs but all-skip/barren" → escalates to self-fix. Verified on the 67-skip window.
-- spawn-funding-swap sprint-1: VCSDD COMPLETE (104/104 + 310/310) but real-clients adapters UNIMPLEMENTED = no real swap. Deprioritized (cloud-spawn path; not needed for first witness).
-- Franklin #2: manual bootstrap (Solana wallet HyJHSfTkLjpmqeY4FEbnSjM4DfUh9ELGchHqgFDBkrcX, daemon ai.anicca.franklin2-loop pid). NOT autonomous, tier=broke, no Base EVM identity. Not a Done-witness.
-- WITNESSES UNMET: no autonomous realized profit; citizens.json = seed only.
+## 🔄 進行中 / 残
+| P | 状態 | 次アクション |
+|---|---|---|
+| **P3 self-heal 全 slot** | 🔄 branch `feature/self-heal-allslots`（f9219842、13/13+9/9 green、adversary review 中）。sol-trade+pm-trade を barren 検知に実配線、他は gap 記録。self-fix.sh が claude-p OpenClaw 依存（graduation gap 明記済み）| adversary PASS→merge→plist `ai.anicca.earning-health-allslots` を load |
+| **P5 spawn（witness②）** | 未着手。前提は 20.md §E 済み: spawn-funding-swap の real-clients 5 module（chain-reader/price-oracle/skip-api/base-signer/relay-poller、~290行、copy元特定済）+ 26 AKT seed（`anicca-akash` keyring）+ mainnet Akash container boot（testnet lease まで実証済、唯一 boot 未達）→ Franklin 自身が spawn 発火 | lean VCSDD で real-clients 実装 → testnet E2E → 26 AKT → mainnet boot |
+| **P6 dashboard** | 未着手 | aniccaai.com/dashboard.json real-time 化（35日 stale）+ 全 Franklin + 実 ledger。facilitator の launchd 常駐化（今は手動 start.sh）。cleaner に `~/.openclaw/skills/.backups/` sweep 追加 |
+| P1-sprint2 | task #7、未着手 | free/glm-4.7 が engaged schema で tool call を出せず ~80% wake が escalation。few-shot example + escalation raw snippet 観測性 |
 
-## IN-FLIGHT VCSDD (both in ~/anicca/.vcsdd/features/)
-1. `franklin-alwaysact-skill-router` — THE no-WAIT feature. spec 7f1ba38, spec-review iter1 FAILED 5 findings — ★NOW FIXED in commit 687ede7 (12 REQ/25 PROP)★: FIND-001/005 (real sleep-tool wire seam via ctx.alwaysActEngaged + prompt.mjs omitSleep param; PROP-504b tests the REAL outbound request body), FIND-002 (reroute for economy/gig+lending now via isEarnActionSlot at index.mjs:450 call-site, not isEarnSlot; PROP-506c), FIND-003 (reroute now a hard array filter excluding the picked slot — option a — not the soft avoidSlot; empty-enum edge PROP-506d), FIND-004 (REQ-512: go-live/not-engaged ledger signals + isPostGoLiveRegression detector sibling to earning-health.py; PROP-512a/b). ★NEXT TASK = spec-review iter2 (fresh Opus) on 687ede7 — if PASS → tdd → impl → adversary → harden → converge → live. Do NOT re-fix the 5 (already done); re-review.★ Money-safety unchanged; harness-not-cook (skill choice stays model judgment); kill-switch flag OK as one-time post-converge flip with silent-revert observability now specced.
-2. `franklin-earn-coldstart-evolution` — self-improve edge (spec, iter1 findings fixed a386bee; simulated-P&L deleted). Re-review + build after always-act.
-
-## COPY, DON'T REINVENT (sources in docs/loop-engineering/17-copyable-earning-agent-code.md)
-- always-act "never idle": Olas `valory-xyz/open-autonomy` FSM (must-transition) + Fetch.ai uAgents `on_interval`.
-- identity/credit for loan/gig/spawn: ERC-8004 `ChaosChain/trustless-agents-erc-ri` (self-feedback/self-validation forbidden). Already used by our gig board.
-- capital allocation: existing Mahoraga bandit (memory reference_ceo_manager_explorer_multiagent_bp_2026_07_08) — keep, no better candidate.
-- self-improve from realized P&L: freqtrade FreqAI adaptive retrain.
-- agent-to-agent trade state machine: Virtuals ACP (open→funded→submitted→completed). Payment: x402 (already live, Franklin↔Franklin mainnet tx 0x436143c1).
-
-## RESEARCH CORPUS (read these; they are the article + design source of truth)
-- docs/loop-engineering/00-INDEX.md, 10-STATUS-verified.md (§D ordered TODO + §F NO-WAIT DOCTRINE), 14-cold-start-escape-BP.md, 15-agent-economy-landscape.md, 16-self-improvement-loop-BP.md, 17-copyable-earning-agent-code.md.
-- Key memories: feedback_franklin_never_waits_always_acts_to_earn, feedback_research_must_be_persisted_to_md_immediately, feedback_never_ask_dais_to_decide_just_execute, feedback_no_humanloop_citizen_economy_is_my_job_not_dais_permission.
-
-## ORDERED TODO (verify-first)
-0. STATUS-QUO AUDIT (above) → 18-*.md. ← START HERE.
-1. Franklin ALWAYS-ACT earner: fix the 5 spec findings → full VCSDD → live. Verify: trace shows an earn ACTION every autonomous wake (not skip/WAIT); earn-ledger grows; wallet balance rises (RPC).
-2. self-improve edge (franklin-earn-coldstart-evolution): re-review + build. Verify: genome promotion backed by real realized P&L.
-3. Dashboard real-time: per-tool logs + full ledger + net-worth trend for ALL Franklins on aniccaai.com/dashboard (data source = earn-ledger.jsonl; dashboard-sync is Dais-owned — implement/flag). Fix Franklin #1 stale/mismatch + register Franklin #2.
-4. Surplus → loan / job-post between Franklins (gig+lending, real USDC, verify on-chain). 
-5. Autonomous spawn (witness②): citizens.json genuine new entry, RPC-verified.
-6. 2 articles (loop-engineering + agent-economy) via ai-entity-article-writer — drafts already in Dais's Gmail.
-
-## CONSTRAINTS
-Full VCSDD every code change (spec→spec-review→TDD→impl→adversary→harden→converge), fresh-Opus adversary, zero open blocking before converge. harness-not-cook. NO-WAIT doctrine. Never weaken caps/scope_guard. Verify money/health claims independently on-chain/ledger/process — NEVER self-report. Coordinate with live ai.anicca.claude-p-mainloop (uses worktrees, don't collide). Persist every research to a docs MD immediately. Never ask Dais to decide — decide and execute; report outcome first, in Japanese.
+## 既知の運用ノート
+- **fablize hook「tool failure」誤発火**は session 全体の既知 artifact（grep no-match / 意図的 RED test の exit 1 が sticky flag 化）。実失敗ではない、複数 agent が確認済み。
+- ディスクが度々逼迫（99%）。許可済み回収: `~/.cache/anicca-*`、旧 scratchpad、`~/.openclaw/skills/.backups/*.tar.gz`（git 追跡済で復元可）。cargo target も大物。
+- public Base RPC（mainnet.base.org）は 429 頻発 → `BASE_RPC_URL=https://base-rpc.publicnode.com` を使う。
+- worktree が外部プロセスに削除される事故あり → `.anicca-keep` marker 必須、branch は push 済みなら `git worktree add <path> <branch>` で復元可。
+- lending の junk 行（loan_Franklin_2..41）は全て disbursement_failed か、41 が唯一 active。ガード健全性の実証。
