@@ -34,6 +34,25 @@ LOGDIR="$ANICCA_HOME/logs"; mkdir -p "$LOGDIR"
 
 log() { echo "[$(date -u +%FT%TZ)] anicca-daemon: $*" >&2; }
 
+# franklin2-daemon-identity REQ-001: pure, deterministic instance-classification predicate — matches
+# 'franklin' (unchanged, original citizen) or 'franklin' followed by a digit-run (franklin2, franklin10,
+# … future spawned Franklin siblings). Fails CLOSED (exit 1 / false) on anything else, including empty,
+# case variants (Franklin2), and non-digit suffixes (franklinX) — those keep today's default/EVM path
+# unchanged (REQ-003/REQ-004). Used at all 3 routing call sites below (brain-probe, telemetry-poster
+# choice, wallet-address derivation) so they can never diverge. Parsing a fixed machine identifier format
+# via a POSIX `case` pattern here is genuine parsing, not judgment (same class as the PORT parsing
+# elsewhere in this file) — no LLM-replaceable decision is being made.
+is_franklin_instance() {
+  local suffix
+  suffix="${1#franklin}"
+  [ "$suffix" = "$1" ] && return 1  # no literal 'franklin' prefix at all (case-sensitive)
+  case "$suffix" in
+    '') return 0 ;;             # exactly 'franklin'
+    *[!0-9]*) return 1 ;;       # suffix has a non-digit char anywhere -> fail closed
+    *) return 0 ;;              # suffix is a non-empty digit-run -> 'franklin<N>'
+  esac
+}
+
 # 1. self-update from the mother (fast-forward only; never clobber local state) ------------------
 if [ -d "$REPO/.git" ]; then
   git -C "$REPO" fetch --quiet origin main 2>/dev/null \
@@ -53,7 +72,7 @@ if [ -d "$REPO/skills" ] && [ "$REPO" != "$ANICCA_HOME" ]; then
     && log "linked node_modules for skill deps"
 fi
 # 2. brain: start this instance's own OpenAI-compatible proxy on $PORT if not already answering.
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # franklin-loop-revival REQ-004(b)/REQ-005/PROP-016 (2026-07-08): Franklin's brain is the
   # ALREADY-RUNNING, SEPARATELY-launchd shared free-tier LLM-router job on :8402 (its own
   # RunAtLoad+KeepAlive plist, confirmed live — free-tier-only, no shared-wallet credential
@@ -101,7 +120,7 @@ else
 fi
 
 # 3. telemetry poster: one instance (kill any stale one first so the dashboard never doubles) -----
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # telemetry-post-franklin.mjs is a ONE-SHOT script (ed25519 signer over Franklin's own Solana key,
   # was previously appended to sol-trade/run.sh) — no built-in setInterval like telemetry-poster.mjs,
   # so loop it here every 120s (same cadence as the EVM poster) to keep Franklin alive on the dashboard.
@@ -117,7 +136,7 @@ fi
 # 4. brain endpoint + model the loop should use -------------------------------------------------
 export OPENAI_BASE_URL="http://127.0.0.1:$PORT/v1"
 export OPENAI_API_KEY="${OPENAI_API_KEY:-x402-local}"
-if [ "$INSTANCE" = "franklin" ]; then
+if is_franklin_instance "$INSTANCE"; then
   # franklin-loop-revival REQ-001: derive Franklin's OWN Solana wallet address (base58 pubkey) via
   # the gated per-instance resolve-identity.mjs::resolveSolanaSecret path (never bare-grepped, never
   # falls back to scanning another instance's dot-directory — REQ-005/REQ-006). A missing or

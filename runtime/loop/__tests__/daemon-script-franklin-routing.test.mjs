@@ -99,8 +99,11 @@ test('REQ-004(a): OPENAI_BASE_URL (the SAME $PORT variable line 117 already uses
 
 test('REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns `franklin proxy` or `clawrouter`, never reads $HOME/.openclaw/.env or BLOCKRUN_WALLET_KEY, but keeps AT MOST a curl readiness probe', () => {
   const step2 = extractBetween(source, '# 2. brain:', '# 3. telemetry poster');
-  const franklinBranchMatch = step2.match(/if \[ "\$INSTANCE" = "franklin" \]; then([\s\S]*?)\nelse\b/);
-  assert.ok(franklinBranchMatch, 'expected an `if [ "$INSTANCE" = "franklin" ]; then ... else` block inside daemon.sh step 2');
+  // franklin2-daemon-identity rewired the literal `"$INSTANCE" = "franklin"` comparison to the shared
+  // is_franklin_instance() predicate (so franklin2/franklin3/… route the same way) — the condition text
+  // changed, the franklin-branch BODY this test inspects did not.
+  const franklinBranchMatch = step2.match(/if is_franklin_instance "\$INSTANCE"; then([\s\S]*?)\nelse\b/);
+  assert.ok(franklinBranchMatch, 'expected an `if is_franklin_instance "$INSTANCE"; then ... else` block inside daemon.sh step 2');
   const franklinBranch = franklinBranchMatch[1];
 
   assert.ok(!/franklin proxy/.test(franklinBranch), 'must NEVER spawn `franklin proxy` (REQ-004(b)) — today it does (line ~69)');
@@ -112,9 +115,10 @@ test('REQ-004(b)/REQ-005/PROP-016 (static): step-2 franklin branch never spawns 
 
 test('regression/REQ-005: the non-franklin ensure_brain branch (its own, separately-designed $HOME/.openclaw/.env use) is untouched and structurally distinct from the franklin branch', () => {
   const step2 = extractBetween(source, '# 2. brain:', '# 3. telemetry poster');
-  // The two branches must remain textually distinct: exactly one `if [ "$INSTANCE" = "franklin" ]`
+  // The two branches must remain textually distinct: exactly one `if is_franklin_instance "$INSTANCE"`
   // conditional inside step 2, with its own `else` — never collapsed into one ensure_brain (REQ-005).
-  const franklinConditionals = (step2.match(/if \[ "\$INSTANCE" = "franklin" \]; then/g) || []).length;
+  // (franklin2-daemon-identity: condition text rewired from a literal comparison to the shared predicate.)
+  const franklinConditionals = (step2.match(/if is_franklin_instance "\$INSTANCE"; then/g) || []).length;
   assert.equal(franklinConditionals, 1, 'step 2 must have exactly one franklin/else conditional (branches not collapsed, REQ-005)');
   assert.ok(/\$HOME\/\.openclaw\/\.env/.test(step2), 'the non-franklin branch\'s own $HOME/.openclaw/.env use must remain (unchanged, out of scope)');
   assert.ok(/BLOCKRUN_WALLET_KEY/.test(step2), 'the non-franklin branch\'s own BLOCKRUN_WALLET_KEY use must remain (unchanged, out of scope)');
