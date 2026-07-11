@@ -74,9 +74,18 @@ restart() {
   bash "$HOME/anicca/skills/earn/clip-promote/clip-promote-cli.sh" --restart >> "$LOG" 2>&1 || true
 }
 
+HB_MTIME="$(stat -f %m "$HB" 2>/dev/null || echo 0)"
+START_MTIME_CHECK="$(stat -f %m "$START" 2>/dev/null || echo 0)"
+
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "clip-promote-core DEAD"
-elif [ ! -f "$HB" ]; then
+elif [ ! -f "$HB" ] || [ "$HB_MTIME" -lt "$START_MTIME_CHECK" ]; then
+  # No completed pass yet UNDER THE CURRENT SESSION -- either $HB was never written, or it's a
+  # leftover from a PRIOR session (its mtime predates this session's $START marker). Either way
+  # this is NOT evidence of staleness; use the post-restart grace window instead of comparing
+  # $HB's raw age. (2026-07-11 incident: a freshly-restarted, actively-working session was killed
+  # mid-flight because the pre-restart $HB was days-stale and this branch only special-cased a
+  # totally-ABSENT $HB, not a stale-but-present one that predated the restart.)
   if [ ! -f "$START" ]; then
     # $START marker itself missing (e.g. wiped by external cleanup). Both "now" and epoch-0
     # fallbacks caused real incidents (now = STALE detection permanently disabled; epoch-0 =
@@ -85,15 +94,14 @@ elif [ ! -f "$HB" ]; then
     touch "$START"
     echo "$(date '+%F %T') clip-promote-core: .last-start marker missing -- reseeded now, will re-check next pass" >> "$LOG"
   else
-    START_MTIME="$(stat -f %m "$START")"
-    START_AGE="$(( ($(date +%s) - START_MTIME) / 60 ))"
+    START_AGE="$(( ($(date +%s) - START_MTIME_CHECK) / 60 ))"
     if [ "$START_AGE" -ge "$STALE_MIN" ]; then
       restart "clip-promote-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
     else
       echo "$(date '+%F %T') clip-promote-core ALIVE (first pass pending, ${START_AGE}min since start)" >> "$LOG"
     fi
   fi
-elif [ "$(( ($(date +%s) - $(stat -f %m "$HB")) / 60 ))" -ge "$STALE_MIN" ]; then
+elif [ "$(( ($(date +%s) - HB_MTIME) / 60 ))" -ge "$STALE_MIN" ]; then
   restart "clip-promote-core STALE (no pass in >=${STALE_MIN}min; in-session cron likely stopped)"
 else
   echo "$(date '+%F %T') clip-promote-core ALIVE+fresh" >> "$LOG"
