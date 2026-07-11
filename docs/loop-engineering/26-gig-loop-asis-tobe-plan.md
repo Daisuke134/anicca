@@ -122,5 +122,13 @@ Dais 確定方針(2026-07-11):
 ## §7 既に作った物 / 状態
 - ✅ `~/anicca/skills/earn/gig/scripts/cdp_snapshot.py` — trajectory capture。**実 :9222 で screenshot 実撮影・成功確認済**（1920×854 PNG + trajectory.jsonl 生成、URL/title 記録）。
 - ✅ `docs/loop-engineering/25-...bp.md` — 検証+自己改善BP（judge.py 実物裏取り）。
-- ⬜ 次: **段#1 = B0 出品 capability を STARTUP + cdp_shuppin.py で追加**（← 今ここ）。
-- copy元 judge.py: scratchpad/judge_bu.py（raw main 198L, VERIFIED）。
+- ✅ 段#1 B0 capability: STARTUP に B0 SHUPPIN + trajectory + cron idempotent + max_apply 5→12 追加、commit+push、restart 活性化。
+- ✅ **B0 実発火(2026-07-11 23:57)**: loop 自己申告で 下書き2件公開(業務AI活用診断¥8000/id4302213・SEO診断¥10000/id4244912) + 新規1件(見やすいパワポ¥8000/id4308502)。★未検証(reports lie)★ + typo「作りますます」残 + trajectory PNG 0枚(cdp_snapshot 未呼出=配線未効)。
+- 🔄 **増分1(出品playbook格上げ) = VCSDD 実装済・審査中**: worktree `feature/gig-strategy-prompt-upgrade`(commit 935d3647)、verify 11/11 PASS(RED 7/11 非空確認)。fresh adversary(Sonnet) 実行中。
+- ⬜ **RESUME 手順(compact後ここから)**:
+  1. adversary PASS(blocking 0)確認 → `cd ~/anicca && git merge feature/gig-strategy-prompt-upgrade`（live working tree へ反映）
+  2. ★live `~/gig/strategy.json`(v38) の skip_categories から「霊感/スピリチュアル/占い」を削除★（builder既知課題・default だけでは propagate しない・passprep は live 優先）
+  3. `bash ~/anicca/skills/earn/gig/gig-cli.sh --restart` で playbook 活性化
+  4. **私が browser :9222 で own-eyes 確認**: /mypage/services_lists で 3サービス公開中 + typo「作りますます」が直った + 松竹梅/モニター価格反映 / trajectory PNG が今度は出るか
+  5. 次増分: funnel metrics(コード) → 50/50 BP web検索自己改善 → verifier土台(gig_judge) → self-heal配線
+- copy元 judge.py: scratchpad/judge_bu.py（raw main 198L, VERIFIED）。worktree cleanup: merge後 `git worktree remove .worktrees/gig-strategy-prompt-upgrade`。
