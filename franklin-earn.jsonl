@@ -916,3 +916,4 @@
 {"ts":1783747362,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRFX47MP842FA60B050F41C7"}
 {"ts":1783748676,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"gig","task":"observe: eligible=post open=0 balance=$6.4978","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRFXWFAC474D835268C042D7"}
 {"ts":1783748807,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRFXZ8D5D6158412D18D4EF6"}
+{"ts":1783749464,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"gig","task":"observe: eligible=post open=0 balance=$6.4978","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRFYDBSOE1887C7789E34B7B"}
