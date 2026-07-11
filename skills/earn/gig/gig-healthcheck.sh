@@ -33,10 +33,21 @@ restart(){
 
 if ! tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then
   restart "gig-core DEAD"
-elif [ ! -f "$HB" ]; then
+elif [ ! -f "$HB" ] || [ "$HB" -ot "$HOME/gig/.last-start" ]; then
   # .last-pass is created ONLY by a COMPLETED pass (NOT at startup — startup seeds .last-start).
-  # So a missing .last-pass right after boot is normal; give a grace window since .last-start before
-  # treating "never completed a pass" as a failure (else we'd kill the core mid-first-pass = restart loop).
+  # So a missing OR stale-from-a-PRIOR-session .last-pass right after boot is normal; give a grace
+  # window since .last-start before treating "never completed a pass" as a failure (else we'd kill
+  # the core mid-first-pass = restart loop). The `-ot .last-start` half of this condition closes a
+  # real incident (2026-07-11 gig-cadence self-fix): after a multi-day outage left .last-pass dated
+  # 2026-07-08, a freshly-restarted, genuinely-working session was judged STALE on every single tick
+  # (.last-pass's absolute age was always >=90min) and got killed every ~5min before any pass could
+  # ever run long enough to touch .last-pass and break the cycle — an unrecoverable restart loop that
+  # would have silently reproduced this same cadence miss every day going forward. Comparing against
+  # .last-start (this session's own boot time, always fresh on restart) instead of trusting an
+  # ancient .last-pass left over from a session that no longer exists is the fix; once a pass
+  # completes, .last-pass becomes newer than .last-start and this branch stops applying, falling
+  # through to the real staleness check below (which still correctly catches an in-session cron that
+  # silently dies mid-lifetime, since in that case .last-pass stays NEWER than the old .last-start).
   START_AGE="$(( ($(date +%s) - $(stat -f %m "$HOME/gig/.last-start" 2>/dev/null || echo 0)) / 60 ))"
   if [ "$START_AGE" -ge "$STALE_MIN" ]; then
     restart "gig-core ALIVE but no completed pass in >=${START_AGE}min since start (never fired)"
