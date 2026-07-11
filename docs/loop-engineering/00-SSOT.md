@@ -105,6 +105,19 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [ ] #6  CEO仕上げ — done: cost自動記録+registry訂正+decision≥1(V3で縮退)
 [ ] #9.5 SNS factory移行 — done: Dais go後にOpenClaw退役
 ```
+### Phase 3 — colony 戦略ゴール（★Dais 2026-07-11 原案・end-state・忘れ厳禁★）
+```
+[ ] G-GIG-FULL  gig 稼ぎ戦略 spec(2026-07-08) を full 実装（現~30-40%→100%）。詳細tracker=doc 26 §6.5。
+                出品playbook(松竹梅/モニター価格/サムネ文字/ベネフィットtitle/成果物ニッチ)・応募速度rule(掲載30分)・
+                50/50 BP web検索自己改善・占い再分類・never-refuse・funnel metrics・feasibility明示。
+                ※他 earn loop(clip/video/article/affiliate)にも同雛形を横展開(spec §7)。
+[ ] G-CLOUD     全 earn loop を Mac Mini/PC から cloud へ移す(安価・無限スケール)。Dais は phone だけで運用、
+                ローカル依存ゼロ、hundreds の claude が並行 earn。done: cloud で loop が回り実 earn、Mac停止でも継続。
+[ ] G-PRODUCTIZE anicca の earn loop(gig/clip/video/…)を profitable-claude へ copy して実 earn。
+                PC=「誰でも1コマンド→earn開始」製品。各 claude が自分の Coconala等 account を新規作成→自走 earn。
+                hundreds spin-up 可能に。done: PC repo 単体で1コマンド起動→新account→実¥。
+                ※「fix in place優先」は当面の戦術、この G-PRODUCTIZE が最終形。
+```
 
 ## 6. Done 判定（全 task 共通、spec §10 準拠）
 実 side-effect を **reality-verifier が独立確認**した時のみ done。report/test-green/adversary-PASS は done でない。「PROPOSED/draft/enqueue」は done でない。収益は on-chain/Stripe 実記録で照合。
