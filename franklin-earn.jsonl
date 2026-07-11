@@ -1012,3 +1012,5 @@
 {"ts":1783810924,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"hl-trade","task":"hl-fund-skipped: uneconomic","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGYYGFQDC0FB08DD0C247A8"}
 {"ts":1783811435,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGZ9MH9374D4A33A195427D"}
 {"ts":1783811562,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"token","task":"token-launch ANIC","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRGZCDZW30FE920AFC8A4FCA"}
+{"ts":1783812708,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"x402-serve","task":"x402 server up public+advertised","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH00R1VE39B7E69ECC14B96"}
+{"ts":1783813105,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"gig","task":"observe: eligible=post open=0 balance=$4.4778","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH09BLW82A36821419747F5"}
