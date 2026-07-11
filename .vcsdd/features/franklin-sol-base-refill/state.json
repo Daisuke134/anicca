@@ -1,0 +1,37 @@
+{
+  "featureName": "franklin-sol-base-refill",
+  "mode": "lean",
+  "currentPhase": "2c",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "reason": "Phase 1a: specs/behavioral-spec.md written (EARS REQ-001..007, purity boundary, non-goals)."
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "reason": "Phase 1b: specs/verification-architecture.md written (purity boundary map, PROP-001..012, tiered strategy)."
+    },
+    {
+      "from": "1b",
+      "to": "2a",
+      "reason": "Phase 2a (RED): tests/test_refill_plan.py + tests/test_franklin_sol_base_refill.py written against not-yet-existing lib/refill_plan.py + franklin_sol_base_refill.py -- confirmed ModuleNotFoundError on both, regression baseline (33 existing funding tests) confirmed still green. See evidence/red-green.txt."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "reason": "Phase 2b (GREEN): lib/refill_plan.py (pure) + franklin_sol_base_refill.py (CLI/orchestration, dep-injected) implemented. All 57 new tests + 33 existing funding tests pass (90/90). runtime/loop npm test: 210/210 pass, no regressions."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "reason": "Phase 2c: reviewed for structure/naming/duplication -- no changes needed (pure/effectful split already clean, no duplication vs existing lib/*.py). Tests remain green."
+    }
+  ],
+  "gates": {
+    "reqCoverage": "REQ-001..007 each have >=1 explicit test; see tests/test_refill_plan.py + tests/test_franklin_sol_base_refill.py",
+    "cronWiringCheck": "grep across repo confirms franklin_sol_base_refill is referenced only from this feature's own files (.vcsdd docs + skills/earn/funding/*) -- not wired into any cron/loop/wake path (REQ-007)."
+  },
+  "notes": "NOT run with --live in this session (operator-invoked one-shot, out of scope for this VCSDD build task). Do not merge; branch feature/franklin-sol-base-refill pushed for review."
+}
