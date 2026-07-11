@@ -254,6 +254,49 @@ test("PROP-106g/PROP-106h: reconcileProvisionalDisbursement finds a crashed/unce
   }
 });
 
+test("FIND-101 fix (critical, impl-review iteration-2): reconcileProvisionalDisbursement REJECTS a Transfer between the correct lender/borrower wallets whose decoded VALUE does not equal loanRow.principal_usd -- an unrelated transfer between the same two wallets (e.g. a different payment, or a prior loan's repayment) must never be mistaken for THIS loan's own disbursement", async () => {
+  const loanRow = {
+    loan_id: "loan_L1_5",
+    lender_id: "L1",
+    borrower_id: "b1",
+    lender_wallet: LENDER,
+    borrower_wallet: BORROWER,
+    principal_usd: 0.02, // expects exactly 20000 base units
+  };
+  // Address+from+to topics all match -- ONLY the value differs (5000, not the expected 20000).
+  const rpc = await startMockRpc({ eth_getLogs: () => [transferLog({ from: LENDER, to: BORROWER, valueBase: 5000 })] });
+  try {
+    const result = await reconcileProvisionalDisbursement({ loanRow, rpcUrl: rpc.url, fromBlock: "0x1", toBlock: "0x64" });
+    assert.equal(result.found, false, "an unrelated-value transfer between the same two wallets must NOT be treated as this loan's own disbursement");
+  } finally {
+    await rpc.close();
+  }
+});
+
+test("FIND-101 fix (critical, impl-review iteration-2): reconcileProvisionalDisbursement picks the EXACT-value transfer and ignores a same-wallet-pair unrelated-value transfer when BOTH appear in the same window", async () => {
+  const loanRow = {
+    loan_id: "loan_L1_6",
+    lender_id: "L1",
+    borrower_id: "b1",
+    lender_wallet: LENDER,
+    borrower_wallet: BORROWER,
+    principal_usd: 0.02,
+  };
+  const rpc = await startMockRpc({
+    eth_getLogs: () => [
+      transferLog({ from: LENDER, to: BORROWER, valueBase: 5000 }), // unrelated -- must be skipped
+      transferLog({ from: LENDER, to: BORROWER, valueBase: 20000 }), // THIS loan's own principal -- must be matched
+    ],
+  });
+  try {
+    const result = await reconcileProvisionalDisbursement({ loanRow, rpcUrl: rpc.url, fromBlock: "0x1", toBlock: "0x64" });
+    assert.equal(result.found, true);
+    assert.ok(result.txHash);
+  } finally {
+    await rpc.close();
+  }
+});
+
 test("PROP-106f/PROP-106g: reconcileProvisionalDisbursement reports no match when the on-chain lookup finds nothing (the disbursement_failed path)", async () => {
   const loanRow = { loan_id: "loan_L1_2", lender_id: "L1", borrower_id: "b1", lender_wallet: LENDER, borrower_wallet: BORROWER, principal_usd: 0.02 };
   const rpc = await startMockRpc({ eth_getLogs: () => [] });
