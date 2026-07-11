@@ -1,0 +1,76 @@
+{
+  "featureName": "franklin-sol-base-refill",
+  "mode": "lean",
+  "currentPhase": "3",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "reason": "Phase 1a: specs/behavioral-spec.md written (EARS REQ-001..007, purity boundary, non-goals)."
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "reason": "Phase 1b: specs/verification-architecture.md written (purity boundary map, PROP-001..012, tiered strategy)."
+    },
+    {
+      "from": "1b",
+      "to": "2a",
+      "reason": "Phase 2a (RED): tests/test_refill_plan.py + tests/test_franklin_sol_base_refill.py written against not-yet-existing lib/refill_plan.py + franklin_sol_base_refill.py -- confirmed ModuleNotFoundError on both, regression baseline (33 existing funding tests) confirmed still green. See evidence/red-green.txt."
+    },
+    {
+      "from": "2a",
+      "to": "2b",
+      "reason": "Phase 2b (GREEN): lib/refill_plan.py (pure) + franklin_sol_base_refill.py (CLI/orchestration, dep-injected) implemented. All 57 new tests + 33 existing funding tests pass (90/90). runtime/loop npm test: 210/210 pass, no regressions."
+    },
+    {
+      "from": "2b",
+      "to": "2c",
+      "reason": "Phase 2c: reviewed for structure/naming/duplication -- no changes needed (pure/effectful split already clean, no duplication vs existing lib/*.py). Tests remain green."
+    },
+    {
+      "from": "2c",
+      "to": "3",
+      "reason": "Phase 3 (fresh-context adversary implementation review) iteration 1: FAIL, 7 findings (FIND-001..007) -- reviews/impl/iteration-1/output/verdict.json. All 7 fixed at the code level (see behavioral-spec.md Changelog 'impl iter1 fixes FIND-001..007'), commit 92c41548.",
+      "iteration": 1,
+      "verdict": "FAIL",
+      "findingCount": 7
+    },
+    {
+      "from": "3",
+      "to": "3",
+      "reason": "Phase 3 iteration 2: fresh-context re-review of the iter1 fix -- FAIL, 6 findings (FIND-001..006) -- reviews/impl/iteration-2/output/verdict.json. FIND-002..006 fixed at the code level this pass (shared sanitized-secret-error helper moved into lib/identity.py so verify_solana_secret_file's decode failures are sanitized too; deps[\"append_ledger\"]/deps[\"is_killed\"] wrapped fail-closed; non-dict truthy relay_quote guarded; lib/relay_swap.py's secret_b58 param renamed secret_str; this state.json update). FIND-001 (live relay.link dry-run evidence gate) intentionally left open, routed to a follow-up pass that runs the real dry-run and attaches its response as evidence -- see behavioral-spec.md Changelog 'impl iter2 fixes FIND-002..006'.",
+      "iteration": 2,
+      "verdict": "FAIL",
+      "findingCount": 6,
+      "openFindings": ["FIND-001-of-iteration-2 (evidence gate, unresolved)"]
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1,
+    "2a": 1,
+    "2b": 1,
+    "2c": 1,
+    "3": 2
+  },
+  "gates": {
+    "reqCoverage": "REQ-001..007 each have >=1 explicit test; see tests/test_refill_plan.py + tests/test_franklin_sol_base_refill.py",
+    "cronWiringCheck": "grep across repo confirms franklin_sol_base_refill is referenced only from this feature's own files (.vcsdd docs + skills/earn/funding/*) -- not wired into any cron/loop/wake path (REQ-007).",
+    "3": {
+      "iteration1": {
+        "verdict": "FAIL",
+        "findingCount": 7,
+        "verdictPath": "reviews/impl/iteration-1/output/verdict.json",
+        "status": "all 7 findings fixed at code level, commit 92c41548"
+      },
+      "iteration2": {
+        "verdict": "FAIL",
+        "findingCount": 6,
+        "verdictPath": "reviews/impl/iteration-2/output/verdict.json",
+        "status": "FIND-002..006 fixed at code level this pass; FIND-001 (live relay.link dry-run evidence gate) intentionally open, routed to a follow-up pass"
+      }
+    }
+  },
+  "notes": "NOT run with --live in this session (operator-invoked one-shot, out of scope for this VCSDD build task). Do not merge; branch feature/franklin-sol-base-refill pushed for review. currentPhase stays at 3 (impl-review) pending a fresh-context re-review of this iter2 fix + the FIND-001-of-iteration-2 live dry-run evidence."
+}

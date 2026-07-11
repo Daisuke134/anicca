@@ -1,0 +1,18 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "high",
+  "description": "REQ-004's own acceptance criteria (behavioral-spec.md:129-142, added as the 'impl iteration-1 FIND-005 fix') states a MUST: 'THE OPERATOR MUST run a real (non-signing) dry-run against the live api.relay.link/quote endpoint for this exact currency pair and manually inspect the returned details shape BEFORE the first --live invocation, and attach that raw response as evidence in this feature's .vcsdd directory. This is a MUST gate, not a recommendation.' No such evidence file exists anywhere under .vcsdd/features/franklin-sol-base-refill/evidence/ -- the only file there is evidence/red-green.txt, which is pytest/npm test output, not a relay.link API response. state.json's own notes confirm '--live' was never run this session, and make no mention of a real-network, non-signing dry-run fetch either ('NOT run with --live in this session ... Do not merge'). This MUST gate is also not enforced anywhere in code: nothing in franklin_sol_base_refill.py checks for this evidence artifact's existence (or any operator sign-off) before permitting --live -- it exists only as prose in the spec. The underlying risk iteration-1's FIND-005 named (the cited 'proven'/'verified live' precedent skills/earn/sol-to-usdc.py never actually reads details.currencyIn.amountUsd or details.currencyOut.amountUsd -- see sol-to-usdc.py:83-84, which only reads currencyOut.amountFormatted for a print statement -- so this feature's exact field-shape assumption for its paramount 8% fee cap has never been checked against a real relay.link response for USDC-SPL(Solana)->USDC(Base)) is therefore STILL entirely empirically unverified at HEAD 92c41548. The iteration-2 code fix (_extract_quote_usd, FIND-001-of-iteration-1) only makes an UNVERIFIED assumption fail closed instead of fail open -- it does not verify the assumption is even reachable/true against production data. If relay.link's real response shape differs from what this code expects (e.g. amountUsd absent, nested differently, or a different key name entirely), every real --live run would simply refuse (safe), but the feature would also never actually succeed, and this would only be discovered on the FIRST live attempt -- exactly the gap the MUST gate was written to close, and it remains unclosed.",
+  "evidence": {
+    "filePath": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md",
+    "lineRange": "129-142",
+    "snippet": "THE OPERATOR MUST run a real (non-signing) dry-run against the live `api.relay.link/quote` endpoint for this exact currency pair and manually inspect the returned `details` shape BEFORE the first `--live` invocation, and attach that raw response as evidence in this feature's `.vcsdd` directory. This is a MUST gate, not a recommendation"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-004",
+    "relatedFinding": "iteration-1 FIND-005 (routed to phase 1b, addressed there only as a documentation/process requirement, not as an executed verification)",
+    "confirmedAbsence": ".vcsdd/features/franklin-sol-base-refill/evidence/ contains only red-green.txt (pytest/npm output); no relay.link API response artifact exists"
+  },
+  "routeToPhase": "2c"
+}

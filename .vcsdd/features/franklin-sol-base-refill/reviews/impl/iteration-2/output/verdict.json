@@ -1,0 +1,140 @@
+{
+  "phase": "impl-review",
+  "feature": "franklin-sol-base-refill",
+  "iteration": 2,
+  "overallVerdict": "FAIL",
+  "timestamp": "2026-07-11T00:00:00Z",
+  "reviewed_commits": ["92c41548"],
+  "external_test_evidence": "115/115 funding (thinker-executed)",
+  "reviewContext": {
+    "reviewType": "implementation",
+    "worktree": "/Users/operator/anicca/.worktrees/sol-base-refill",
+    "specPath": ".vcsdd/features/franklin-sol-base-refill/specs/behavioral-spec.md",
+    "verificationArchitecturePath": ".vcsdd/features/franklin-sol-base-refill/specs/verification-architecture.md",
+    "filesReviewed": [
+      "skills/earn/funding/lib/refill_plan.py",
+      "skills/earn/funding/franklin_sol_base_refill.py",
+      "skills/earn/funding/lib/relay_swap.py",
+      "skills/earn/funding/lib/erc20.py",
+      "skills/earn/funding/lib/identity.py",
+      "skills/earn/funding/lib/ledger.py",
+      "skills/earn/funding/lib/kill_switch.py",
+      "skills/earn/funding/run.py",
+      "skills/earn/funding/send_to_franklin.py",
+      "skills/earn/funding/tests/test_refill_plan.py",
+      "skills/earn/funding/tests/test_franklin_sol_base_refill.py",
+      "skills/earn/funding/tests/test_erc20.py",
+      "skills/earn/funding/tests/test_identity.py",
+      "skills/earn/sol-to-usdc.py",
+      ".vcsdd/features/franklin-sol-base-refill/state.json",
+      ".vcsdd/features/franklin-sol-base-refill/evidence/red-green.txt",
+      ".vcsdd/features/franklin-sol-base-refill/reviews/impl/iteration-1/output/verdict.json",
+      ".vcsdd/features/franklin-sol-base-refill/reviews/impl/iteration-1/output/findings/*.json",
+      ".vcsdd/features/franklin-sol-base-refill/reviews/impl/iteration-1/output/notes.md"
+    ]
+  },
+  "dimensions": [
+    {
+      "name": "spec_fidelity",
+      "verdict": "FAIL",
+      "findings": ["FIND-001"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:138-157",
+          "description": "Confirmed FIND-001-of-iteration-1 genuinely fixed: _extract_quote_usd returns None (never a fabricated local-amount fallback) on missing/null/wrong-type currencyIn/currencyOut, and evaluate_relay_fee (lib/refill_plan.py:83-99) fails closed on that None; verified against tests/test_franklin_sol_base_refill.py:311-368 which cover missing-key, null, and wrong-type shapes plus the exact FIND-001 regression scenario."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:200-204",
+          "description": "Confirmed FIND-002-of-iteration-1 genuinely fixed: read_citizens() call is wrapped in try/except, fails closed via fail(), never crashes uncaught; verified against tests/test_franklin_sol_base_refill.py:234-256."
+        }
+      ]
+    },
+    {
+      "name": "edge_case_coverage",
+      "verdict": "FAIL",
+      "findings": ["FIND-004"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_erc20.py:60-69",
+          "description": "test_parse_erc20_transfer_amount_malformed_log_shapes_ignored_not_crashed genuinely covers None logs, missing-topics, missing-data malformed shapes for the new tx-verification pure function."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/tests/test_franklin_sol_base_refill.py:461-518",
+          "description": "Confirmed genuine orchestration-level coverage of REQ-006's named edge cases: unrelated-inflow-without-matching-Transfer-log, short-fill under 85%, non-success receipt status, and success-with-no-txHashes are each a distinct test with a distinct fixture, not a single reused happy-path fixture."
+        }
+      ]
+    },
+    {
+      "name": "implementation_correctness",
+      "verdict": "FAIL",
+      "findings": ["FIND-003"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/erc20.py:78-109",
+          "description": "parse_erc20_transfer_amount manually traced against ERC-20 Transfer(address,address,uint256) log encoding: ERC20_TRANSFER_TOPIC0 constant verified correct (keccak256 of the canonical event signature), topics[2] correctly used as the 32-byte-padded 'to' address (topics[0]=sig, topics[1]=from, topics[2]=to per the ABI), token address and recipient both compared case-insensitively and consistently, amount correctly parsed from the log's data field via int(data,16). No defect found in this pure parsing logic."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:366-399",
+          "description": "REQ-006's (a)-(d) tx-specific verification chain traced end-to-end: fill_tx_hash presence, receipt status==0x1, matching Transfer log, and >=85% delivered-amount are all required via a single `verified` boolean; the secondary balance-delta sanity flag is correctly decoupled and never gates the sent/failed decision either direction, matching FIND-004-of-iteration-1's fix exactly."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/relay_swap.py vs skills/earn/sol-to-usdc.py",
+          "description": "Manual side-by-side diff of the extracted ALT-parsing/instruction-building/sign/submit logic against the cited precedent found no adaptation errors: instruction/AccountMeta construction, ALT byte-layout parsing (56-byte header + 32-byte entries), blockhash fetch, MessageV0.try_compile, and sendTransaction call are all faithfully preserved; only the origin currency (native SOL -> USDC-SPL mint EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v, a correct real Solana USDC mint address) and the secret-decode call (base58-only -> dual-decode, the intended FIND-003 fix) differ, both as intended."
+        }
+      ]
+    },
+    {
+      "name": "structural_integrity",
+      "verdict": "FAIL",
+      "findings": ["FIND-005", "FIND-006"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/relay_swap.py",
+          "description": "Confirmed FIND-007-of-iteration-1 genuinely fixed: the ALT/instruction/sign/submit block is now a real extraction into its own module (not a copy left to independently drift), with sol-to-usdc.py explicitly left untouched per the spec's own stated intent; no new duplication introduced."
+        }
+      ]
+    },
+    {
+      "name": "verification_readiness",
+      "verdict": "FAIL",
+      "findings": ["FIND-002"],
+      "evidence": [
+        {
+          "type": "file",
+          "location": "skills/earn/funding/franklin_sol_base_refill.py:191-196,321-328",
+          "description": "Confirmed FIND-003-of-iteration-1 genuinely fixed AT THESE TWO SITES: both derive_pubkey and build_sign_submit failures are caught and routed through _sanitized_secret_error (franklin_sol_base_refill.py:127-135), which records only a fixed context string + exception CLASS NAME, never str(exc); verified directly against tests/test_franklin_sol_base_refill.py:185-217, which inject a FAKE_SECRET through the raising path via BOTH derive_pubkey and build_sign_submit and assert its absence from json.dumps(result) and every ledger row -- these are genuine failing-path injections, not tautological assertions."
+        },
+        {
+          "type": "file",
+          "location": "skills/earn/funding/lib/refill_plan.py",
+          "description": "Re-confirmed zero I/O/network/clock imports in the pure module; purity boundary claim in verification-architecture.md still holds."
+        }
+      ]
+    }
+  ],
+  "convergenceSignals": {
+    "findingCount": 6,
+    "allCriteriaEvaluated": true,
+    "evaluatedCriteria": [
+      "REQ-001", "REQ-002", "REQ-003", "REQ-004", "REQ-005", "REQ-006", "REQ-007"
+    ],
+    "duplicateFindings": [],
+    "iterationOneFindingsStatus": {
+      "FIND-001": "resolved (verified: _extract_quote_usd fail-closed extraction, tests confirm fabricated-fallback removed)",
+      "FIND-002": "resolved (verified: read_citizens() wrapped, fails closed with ledger row)",
+      "FIND-003": "resolved for this feature's own two call sites, but NOT module-wide -- see this iteration's new FIND-002",
+      "FIND-004": "resolved (verified: tx-specific Transfer-log verification is primary, balance-delta demoted to non-gating sanity flag)",
+      "FIND-005": "code-level mitigation only (fail-closed on missing fields) -- the underlying field-shape assumption is still unverified against live relay.link data; the spec's own MUST evidence-gate is unmet -- see this iteration's new FIND-001",
+      "FIND-006": "resolved for relay_quote/read_solana_balance_usd, but append_ledger/is_killed remain unwrapped -- see this iteration's new FIND-003",
+      "FIND-007": "resolved (verified: genuine extraction to lib/relay_swap.py, no remaining duplication)"
+    }
+  }
+}

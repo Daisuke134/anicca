@@ -1,0 +1,16 @@
+{
+  "findingId": "FIND-005",
+  "dimension": "structural_integrity",
+  "category": "naming_clarity",
+  "severity": "low",
+  "description": "lib/relay_swap.py's build_sign_submit_solana_tx(secret_b58: str, quote: dict, rpc_url: str) (line 51) and its internal `kp = keypair_from_secret_string(secret_b58)` (line 64) keep the parameter name `secret_b58` even after iteration-1's FIND-003 fix specifically replaced a base58-only decode with the dual-decode `keypair_from_secret_string` helper precisely BECAUSE the resolved secret is not always base58 (lib/identity.py:44-49's own docstring documents a real wallet file whose secret is base64 despite its field name). The parameter name now actively contradicts the fix's own rationale -- a future maintainer reading `secret_b58` in a signature could reasonably assume base58-only encoding is still guaranteed, reintroducing the exact base58-only assumption FIND-003 was written to remove.",
+  "evidence": {
+    "filePath": "skills/earn/funding/lib/relay_swap.py",
+    "lineRange": "51-64",
+    "snippet": "def build_sign_submit_solana_tx(secret_b58: str, quote: dict, rpc_url: str) -> str:\n    ...\n    kp = keypair_from_secret_string(secret_b58)"
+  },
+  "crossReference": {
+    "relatedFinding": "iteration-1 FIND-003"
+  },
+  "routeToPhase": "2c"
+}

@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "implementation_correctness",
+  "category": "requirement_mismatch",
+  "severity": "medium",
+  "description": "Iteration-1's FIND-006 fix wrapped relay_quote()/read_solana_balance_usd() production wiring in try/except so a transient failure fails closed with a clean JSON line + ledger row instead of an uncaught crash, matching the module's own documented output contract (franklin_sol_base_refill.py:28-29: 'exactly one JSON line on stdout... non-zero otherwise'). That same protection was not extended to every effectful call reachable in run_refill(): deps['append_ledger'](...) is invoked from every single refusal path via the shared `fail()` closure (franklin_sol_base_refill.py:174-179) plus five more call sites (lines ~301, ~334-345, ~423, ~442, ~458) with NO surrounding try/except anywhere in the function, and deps['is_killed']() (line 181) is likewise unwrapped. In production wiring (build_default_deps, lines 469-525), append_ledger ultimately calls lib/ledger.py's append_ledger(path, row), which performs `os.makedirs(parent, exist_ok=True)` and `open(path, 'a', ...)` (lib/ledger.py:34-38) -- a disk-full or permissions failure there raises uncaught. Since `fail()` itself calls `deps['append_ledger']` as its FIRST action on every refusal path (line 178), a disk/permission failure at that exact moment -- which is precisely when the module is trying to record a money-safety refusal -- crashes the whole process with a Python traceback, printing NO JSON line at all and leaving zero audit trail, which is strictly worse than any of the seven scenarios iteration-1's FIND-006 fix already addressed (those all still successfully wrote a failure row before this gap).",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "174-181",
+    "snippet": "def fail(reason: str, extra: Optional[dict] = None, status: str = \"failed\") -> dict:\n    row = build_row(\n        step=STEP, amount_usd=amount_usd or 0, status=status, reason=reason, extra=extra or {}\n    )\n    deps[\"append_ledger\"](row)\n    return {\"ok\": False, \"step\": STEP, \"error\": reason}\n\nif deps[\"is_killed\"]():"
+  },
+  "crossReference": {
+    "specRequirement": "franklin_sol_base_refill.py:28-29 module docstring (\"Output: exactly one JSON line on stdout... non-zero otherwise\")",
+    "relatedFinding": "iteration-1 FIND-006 (fixed relay_quote/read_solana_balance_usd only, not append_ledger itself)"
+  },
+  "routeToPhase": "2b"
+}

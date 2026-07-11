@@ -1,0 +1,17 @@
+{
+  "findingId": "FIND-003",
+  "dimension": "verification_readiness",
+  "category": "security_surface",
+  "severity": "high",
+  "description": "The real signing path bypasses the codebase's own proven dual-decode helper, and its failure mode risks leaking the secret into the persisted ledger. _build_sign_submit_solana_tx() calls Keypair.from_base58_string(secret_b58) directly (line 387), instead of lib/identity.py's keypair_from_secret_string() (base58-first, base64-fallback) that derive_pubkey already uses for the citizen-matching step. lib/identity.py's own docstring (lines 44-49) documents that at least one of this project's real wallet-secret files is base64-encoded despite its field name, and explicitly justifies the dual-decode fallback for that reason. If Franklin's resolved secret is in that format, derive_pubkey (used earlier for REQ-002's citizen match) will succeed, but the real --live signing call will always raise. Separately: that exception is interpolated directly into a ledger-persisted `reason` string via fail(f'solana tx build/sign/submit failed: {exc}', ...) at line 257 -- if solders' Rust-level base58-decode error message embeds any of the offending input it was asked to decode, the raw secret would be written to skills/earn/state/funding-ledger.jsonl on disk, directly violating REQ-001's acceptance criterion that 'the secret itself is never written to stdout/stderr/logs/ledger.' Neither the decode-path inconsistency nor the actual content of solders' exception message is exercised by any test in this suite -- there is no test that makes build_sign_submit's real decode step fail.",
+  "evidence": {
+    "filePath": "skills/earn/funding/franklin_sol_base_refill.py",
+    "lineRange": "362-388, 254-257",
+    "snippet": "kp = Keypair.from_base58_string(secret_b58)\n...\ntry:\n    signature = deps[\"build_sign_submit\"](secret, quote)\nexcept Exception as exc:\n    return fail(f\"solana tx build/sign/submit failed: {exc}\", {\"plan\": plan}, status=\"failed\")"
+  },
+  "crossReference": {
+    "specRequirement": "REQ-001 acceptance criterion (secret never written to ledger)",
+    "provenHelperNotUsed": "skills/earn/funding/lib/identity.py:40-59 (keypair_from_secret_string, used by derive_pubkey but not by _build_sign_submit_solana_tx)"
+  },
+  "routeToPhase": "2b"
+}
