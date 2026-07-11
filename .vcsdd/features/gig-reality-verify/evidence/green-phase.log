@@ -44,20 +44,43 @@ Verified REAL (not fabricated) via repeated live process inspection over 5+ minu
     command-line dump).
   - :9222 CDP daily-driver confirmed live and logged into coconala.com before the run.
 
-Honest disclosure (no fabricated PASS — feedback_i_am_the_final_verifier_never_claim_earning_without_
-external_tx / feedback_never_claim_working_without_own_eyes_verification apply to ME too): the fresh
-judge's FINAL verdict (JSON row in ~/gig/audit-reality.jsonl) had NOT yet been observed as of this
-evidence file's last edit — the live browser-navigating + multi-tool-call judge run had not completed
-within this session's practical polling budget (repeated checks every ~10-20s of real time over 5
-real minutes; a full navigate+screenshot+DOM-read across 3 pages with an LLM agent commonly takes
-longer than that). This is DIFFERENT from "did not run" or "assumed PASS" — it is a genuinely launched,
-genuinely still-executing real side-effecting process, disclosed as in-progress per the task's own
-explicit instruction for this exact situation ("時間/コスト上 full 実走が無理なら...「full実走は親が
-確認」と明記(捏造PASS禁止)"). The parent (or a follow-up session) should check the outcome via:
-  cat ~/gig/audit-reality.jsonl
-  tail -50 /private/tmp/claude-501/-Users-anicca-anicca-project/9d380a61-502b-42dd-b53a-cf1fa8a7f9cb/scratchpad/reality-verify-run.stderr.log
-If the row shows verdict:true for the live shuppin/applied claims, the full GREEN E2E bar (behavioral-
-spec REQ-004, verification-architecture PROP-007) is met. If verdict:false or timeout, the script's
-own self-heal write path (already unit-verified) will have written
-~/.openclaw/state/.gig-core-selfheal-request.json, which is itself correct/expected behavior per
-REQ-004 — not a bug in this implementation.
+--- LIVE E2E RESULT (completed 2026-07-12 00:40:02 JST, 6m05s real wall-clock after spawn) ---
+Background task blk20rtcy finished (exit code 0). ~/gig/audit-reality.jsonl gained exactly one new
+row, appended by the script itself (not fabricated by me — read directly from the file after the
+background process's own completion notification):
+
+  {"ts": 1783784402, "verdict": true, "failure_reason": "", "impossible_task": false,
+   "reached_captcha": false, "claims_checked": 10}
+
+Full "reasoning" field (truncated pointer — see ~/gig/audit-reality.jsonl for the complete text):
+the fresh judge independently navigated /mypage/services_lists, each individual /services/<id> page
+for the 4 typo-fix claims, /mypage/received_orders/open, /mypage/dashboard_provider, and each
+/requests/<id> page for the 4 applied claims — and matched EVERY one of the 10 real live claims
+(5 shuppin publish/typo-fix rows + 4 applied rows + 1 nurture-narrative row) against the actual
+screen content: all 5 services confirmed 公開中 with matching titles/prices; doubled-ます typo
+confirmed absent from all 4 edited services' own text (one false-positive substring match in an
+UNRELATED third-party sidebar listing was correctly excluded, not our copy); the 1 real
+取引中 order (jibieaian, ¥40,000) matched exactly; all 4 applied requests confirmed 応募済み with
+matching titles/budgets. verdict:true, reached_captcha:false, impossible_task:false,
+failure_reason:"" (empty, i.e. no failure).
+
+Fresh-screenshot proof this was a REAL navigate, not a hallucinated report: a NEW trajectory file
+was written DURING this exact run window (mtime 2026-07-12 00:34:38, i.e. 41s after spawn, well
+inside the run):
+  ~/gig/trajectory/verify001/01-reality_verify_check.png (237.9K PNG)
+  ~/gig/trajectory/verify001/trajectory.jsonl ->
+    {"ts": 1783784078, "pass_id": "verify001", "seq": "01", "label": "reality_verify_check",
+     "url": "https://coconala.com/mypage/services_lists",
+     "title": "出品サービス管理 | マイページ | ココナラ", ...}
+This is the judge itself calling cdp_snapshot.py on the real live page, per its instructions —
+independent confirmation beyond the judge's own self-reported JSON.
+
+Selfheal-request check: ~/.openclaw/state/.gig-core-selfheal-request.json was NOT written/touched by
+this run (verdict was true) — confirms REQ-004's "on verdict:true, do NOT write selfheal" edge case
+holds in the real run, not just in unit tests.
+
+CONCLUSION: behavioral-spec REQ-004 and verification-architecture PROP-007 (full E2E, live) are MET
+by a REAL, observed, non-fabricated side-effecting run — a fresh-spawned, report-independent judge
+navigated the real Coconala screens and reached the SAME conclusion (all claims real) that I would
+have reached manually, exactly replacing the "私が main session で navigate→screenshot→判定" step
+this feature exists to automate (docs/loop-engineering/26-...md §8 goal statement).
