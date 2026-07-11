@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "low",
+  "description": "REQ-CR6 (behavioral-spec.md:216-218) claims: 'run_evolve.sh SHALL also capture this call's own exit status separately from its stdout (mirroring the existing pattern at run_evolve.sh:58-64's OBSERVE_JSON=\"$(...)\" capture, which does not abort on a non-zero ledger_reader.py exit either)'. This citation is inaccurate: the actual OBSERVE step at run_evolve.sh:59-64 does NOT capture ledger_reader.py's exit status into any variable at all -- it only guards on `[ -x \"$PY_BIN\" ]` before the call, then unconditionally proceeds regardless of what `$?` turns out to be after the command substitution (no `$?` is ever read or stored). There is no 'existing pattern' of separately capturing an exit status to mirror; the OBSERVE step simply never checks it, full stop. This does not change what REQ-CR6/REQ-CR12 require of the NEW checkpoint_resume.py call (capturing its exit status to distinguish REQ-CR12's crash branch is still a well-specified, self-contained requirement on its own), so it has zero effect on implementability or correctness -- it is a documentation/grounding-accuracy defect only, in a spec whose own rhetorical style repeatedly leans on 'confirmed', 'verified live', 'mirrors the existing pattern' framing to justify its design choices. Given that framing is the document's own evidentiary standard, an inaccurate instance of it should be corrected even though it is functionally inert here.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "216-218",
+    "snippet": "`run_evolve.sh` SHALL also capture this call's own exit status separately from its stdout (mirroring the existing pattern at `run_evolve.sh:58-64`'s `OBSERVE_JSON=\"$(...)\"` capture, which does not abort on a non-zero `ledger_reader.py` exit either)"
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/skills/earn/self-improve/run_evolve.sh",
+      "lineRange": "59-64",
+      "snippet": "if [ -x \"$PY_BIN\" ]; then\n  OBSERVE_JSON=\"$(\"$PY_BIN\" \"$SKILL_DIR/lib/ledger_reader.py\" 2>>\"$LOG\")\"\n  echo \"$(now) OBSERVE realized_ledger=${OBSERVE_JSON:-'{\"error\":\"ledger_reader produced no output\"}'}\" >> \"$LOG\"\nelse\n  echo \"$(now) OBSERVE SKIPPED (python not found at $PY_BIN) — proceeding to EVOLVE anyway\" >> \"$LOG\"\nfi"
+    }
+  ],
+  "routeToPhase": "1a"
+}

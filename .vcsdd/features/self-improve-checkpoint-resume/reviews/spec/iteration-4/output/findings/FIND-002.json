@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-002",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "medium",
+  "description": "REQ-CR10 (behavioral-spec.md:174-186) defines candidacy PURELY by name shape (`^run-\\d{8}T\\d{6}Z$`), explicitly 'independently of whatever the entry contains (a directory or a file, empty or not)'. REQ-CR2 (behavioral-spec.md:135-155) then iterates these name-matched candidates and calls REQ-CR3 (behavioral-spec.md:157-172) on each, whose text ('if that directory has no checkpoints/ subdirectory at all, return None immediately') implicitly assumes the candidate IS a directory, but neither REQ-CR2 nor REQ-CR3 pins the exact implementation technique for detecting 'no checkpoints/ subdirectory' when the candidate itself is a plain FILE (not a directory) that happens to match REQ-CR10's timestamp-shape regex -- a plausible real artifact from an interrupted write, a stray `touch run-20260710T190919Z`, or a partial rsync, exactly the class of environmental gotcha this same spec explicitly cares about one level down (EDGE-CR11's `.DS_Store`-inside-`checkpoints/` scenario, behavioral-spec.md:355-365). This matters because of a real, non-obvious Python semantics gap: `os.path.isdir(os.path.join(candidate, 'checkpoints'))`-first (safe, returns False, never raises) and `os.listdir(os.path.join(candidate, 'checkpoints'))` wrapped only in `except FileNotFoundError` (UNSAFE) are NOT equivalent here -- when `candidate` itself exists but is a file rather than a directory, `os.listdir` on a path nested under it raises `NotADirectoryError`, a DISTINCT exception type from `FileNotFoundError`. An implementer who reads REQ-CR3's 'no checkpoints/ subdirectory... return None' as licensing a narrow `except FileNotFoundError:` (which is the more naturally-read implementation of that sentence, and passes every currently-specified EDGE-CR/PROP-CR fixture, none of which include a non-directory candidate) would ship code that raises uncaught on this exact input. No EDGE-CR and no PROP-CR (PROP-CR1 through PROP-CR11) constructs a fixture where a `runs_dir` entry matches REQ-CR10's regex but is a plain file rather than a directory, so this gap is untested as well as unspecified. Mitigating factor (why this is not blocking): REQ-CR12's crash-handling branch (this iteration's own fix) already treats ANY uncaught exception from the checkpoint_resume.py process as a first-class, safely-degraded outcome (no --checkpoint flag, distinct 'resume-check crashed' log line) -- so even if this exact gap ships as a live bug, the harness's own safety net (not this function's own robustness) prevents it from being dangerous; it would just make an otherwise-avoidable crash-log line fire on an input the spec could have specified cleanly, exactly as it already did for EDGE-CR11 one level down.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/behavioral-spec.md",
+    "lineRange": "157-186",
+    "snippet": "REQ-CR3: 'GIVEN a single candidate run directory ... if that directory has no checkpoints/ subdirectory at all, return None immediately.' / REQ-CR10: 'is EXCLUDED from candidacy entirely ... regardless of ... whatever the entry contains (a directory or a file, empty or not)' -- no requirement addresses a name-matched candidate that is itself a plain file."
+  },
+  "groundTruthEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/.worktrees/self-improve-checkpoint-resume/.vcsdd/features/self-improve-checkpoint-resume/specs/verification-architecture.md",
+      "lineRange": "70-71",
+      "snippet": "PROP-CR10 / PROP-CR11 fixtures cover a non-run-shaped `db` sibling and a stray `.DS_Store`-only `checkpoints/` dir, but no fixture covers a run-shaped PLAIN FILE candidate"
+    }
+  ],
+  "routeToPhase": "1a"
+}
