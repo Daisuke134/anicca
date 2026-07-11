@@ -11,6 +11,18 @@ import fs from "fs";
 import bs58 from "bs58";
 import nacl from "tweetnacl";
 
+// franklin2-daemon-identity impl-review iteration-1 FIND-001 fix: the dashboard `host` label must
+// derive from ANICCA_INSTANCE so franklin2 (and future franklin3, franklin10, …) are distinguishable
+// from Franklin#1 on the dashboard, instead of every Franklin-family instance reporting the identical
+// literal "Franklin" label. Pure, deterministic, no I/O — deliberately kept extractable/testable
+// without importing this file (import triggers wallet-secret read + network I/O as a side effect); see
+// __tests__/telemetry-host-label.test.mjs, which extracts this function verbatim from the source text.
+function instanceHostLabel(instance) {
+  const name = (instance || "franklin").trim();
+  if (name === "franklin") return "Franklin"; // backward-compat: Franklin#1's dashboard row name is pinned, never changes
+  return name.charAt(0).toUpperCase() + name.slice(1); // franklin2 -> Franklin2, franklin10 -> Franklin10, ...
+}
+
 const HOME = process.env.HOME;
 const SOLANA_WALLET_FILE = HOME + "/.blockrun/.solana-session"; // base58 64-byte secret key (Franklin's own wallet, written by @blockrun/llm on first `franklin setup`)
 const COST_LOG = HOME + "/.blockrun/cost_log.jsonl";
@@ -78,13 +90,14 @@ function burnToday() {
 // 2026-07-05: nvidia/llama-4-maverick is BlockRun billing_mode="free" (pricing input/output = 0) —
 // so model_tier is "free", never "frontier".
 const FRANKLIN_MODEL = process.env.FRANKLIN_FREE_MODEL || "nvidia/llama-4-maverick";
+const HOST_LABEL = instanceHostLabel(process.env.ANICCA_INSTANCE);
 
 async function post() {
   const [sol, usdc, price] = await Promise.all([solBalance(), usdcBalance(), solPrice()]);
   const net_worth_usd = +(usdc + sol * price).toFixed(6);
   const burn_day_usd = +burnToday().toFixed(6);
   const payload = {
-    id: address, ts: Math.floor(Date.now() / 1000), host: "Franklin", geo: "JP", chain: "solana",
+    id: address, ts: Math.floor(Date.now() / 1000), host: HOST_LABEL, geo: "JP", chain: "solana",
     funding: "self", env: "local", brain: "proxy",
     model_live: FRANKLIN_MODEL, model_tier: "free",
     net_worth_usd, revenue_mo_usd: 0, revenue_by_source: {}, log: activityLog(),

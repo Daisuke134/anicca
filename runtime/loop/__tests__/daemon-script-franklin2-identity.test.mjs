@@ -103,3 +103,22 @@ test('REQ-003 (regression): non-franklin/unset still resolves to the default EVM
   const step4 = source.slice(step4Start, execStart);
   assert.ok(/wallet-address\.mjs/.test(step4), 'non-franklin else-branch must still use the EVM wallet-address.mjs helper');
 });
+
+test('impl-review iteration-1 FIND-002 fix (static): the franklin-branch telemetry pkill is scoped to THIS instance\'s own $ANICCA_HOME, never an unscoped script-path-only pattern that would also match a concurrently-running sibling Franklin instance', () => {
+  const step3Start = source.indexOf('# 3. telemetry poster');
+  const step4Start = source.indexOf('# 4. brain endpoint');
+  assert.ok(step3Start !== -1 && step4Start !== -1, 'expected step 3/4 markers to exist in daemon.sh');
+  const step3 = source.slice(step3Start, step4Start);
+  assert.ok(
+    /pkill -f "dashboard\/telemetry-post-franklin\.mjs --home \$ANICCA_HOME"/.test(step3),
+    'the telemetry pkill pattern must include --home $ANICCA_HOME so it cannot match another instance\'s poster process (FIND-002)',
+  );
+  assert.ok(
+    !/pkill -f "dashboard\/telemetry-post-franklin\.mjs"\s*2>\/dev\/null/.test(step3),
+    'no unscoped (script-path-only) pkill pattern for telemetry-post-franklin.mjs may remain (FIND-002 regression guard)',
+  );
+  assert.ok(
+    /node "\$REPO\/runtime\/dashboard\/telemetry-post-franklin\.mjs" --home "\$ANICCA_HOME"/.test(step3),
+    'the poster must be launched with the --home "$ANICCA_HOME" argv marker so the scoped pkill pattern above can actually match it',
+  );
+});
