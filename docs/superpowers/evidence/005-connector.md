@@ -52,7 +52,33 @@ online の短い夜イベントでも各日に90分空きが残る為 horizon �
 | テーマ | generic AI | AI + Web3/crypto |
 | アカウント | — | keiodaisuke@gmail.com（Dais本人、確認メール受信） |
 
-## 残（7日 streak の done 条件、§10）
-- cron `ad89027d` が7日連続 ok run、各日 Telegram delivered:true + FREE 実登録（サイト証跡+gcal 読返し）or 正直 none。
-- 本 pass の STEP5 Telegram 8547730585 配信 delivered 確認（pass 完走待ち、last-pass touch で判定）。
-- fresh adversary(Opus) PASS。
+## ループ再設計（2026-07-12 04:33、Dais「full 2週間埋めろ・プロンプトでなくループ改善」）
+真因: 1つの LLM パスに14日任せると2-3件で早期停止（信頼性なし）。
+fix = `connector_fill_gaps.sh`（決定論的 per-day driver）:
+1. gcal から空き日を決定論的に列挙（KEYS=connpass/luma/参加登録/申し込み/参加確定/?tk= を含むイベントがある日=埋済）。
+2. 各空き日ごとに「その日1件だけ登録する」短命 `claude -p` エージェントを **soonest-first で順に spawn**（1日1件=小タスク=確実）。
+3. 全日終了後に `connector_daily_report.sh` で Telegram 日次報告。
+- 検証: 空き日計算 OK（FILLED=7/12-15,21,23,25 / OPEN=7/16,17,18,19,20,22,24）。driver 起動後 7/16 agent が :9222 で luma.com/tokyo+discover?categories=crypto+connpass を実際に検索中（実タブ確認）。
+
+## Telegram 配信（Dais「届いてない」→解決）
+- 真因: 長い STEP1 で pass が STEP5(Telegram) 前に力尽きる日がある。
+- 送信経路は正常: `openclaw message send --channel telegram --target 8547730585` テスト msgId 1941 + 本日ブリーフ 1942/1943 全て ok:true 実配信。
+- 恒久 fix: `connector_daily_report.sh`（applications.jsonl を読み honest offline/none）を本パスと独立の launchd で毎日送る。
+
+## launchd（毎日自動）
+- `ai.anicca.connector-fill-gaps`（07:50 JST）= 全空き日を埋める driver。LOADED 確認。
+- `ai.anicca.connector-daily-report`（09:10 JST）= Telegram 日次報告。LOADED 確認。
+
+## 競合バグ（発見+修正）
+- connector が2系統（旧 connector-cli.sh tmux パス + fill_gaps driver）が同時に :9222 を奪い合い→登録が進まなかった。旧 tmux パスを kill して driver に専有させ解消。
+- bug 修正: プロンプト肥大で `command too long`→セッション DEAD→file-based prompt（`~/.openclaw/state/connector-startup-prompt.txt` に全文、短い bootstrap で読ませる）。
+
+## commit（全 push 済、profitable-claude repo）
+0652d43(offline+crypto) / runbookコピペ / crypto-quality / file-based-prompt / fill-every-day / connector_fill_gaps.sh driver / connector_daily_report.sh。
+
+## 残 TODO（次セッション、compact 後の最優先）
+- (a) driver が 7 空き日(7/16,17,18,19,20,22,24)を実際に着地させる — 実行中、slow（各日 discovery を1から再実行）。gcal get_event で各日 location=実会場を読返し確認。
+- (b) 高速化 = discover-once: luma.com/tokyo + /crypto + connpass を1回スクレイプ→次14日の in-person AI/crypto イベントを全抽出→各空き日にマッピング→登録。per-day 再探索を廃す。
+- (c) cron `ad89027d` は今も `connector-cli.sh --restart`（旧2-3件パス）を指す→07:35 JST で旧パス復活し driver(07:50) と :9222 競合リスク。**fill_gaps に向け直す or disable 必須**（`openclaw cron edit` は id 指定要調整）。
+- (d) fresh adversary(Opus) PASS。
+- (e) 7日 streak（時間累積、Dais は不要と発言だが §10 done 条件には残る）。
