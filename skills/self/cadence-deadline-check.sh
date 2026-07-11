@@ -22,6 +22,48 @@ TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
 NOW_HOUR_JST="${CADENCE_DEADLINE_NOW_HOUR_JST:-$(TZ=Asia/Tokyo date +%H)}"
 CADENCE_LOOPS="clip affiliate video gig bounty pm-earner founder-loop"
 
+# G1 fix (2026-07-11, docs/loop-engineering/23-anicca-loop-architecture-redesign.md TODO G1 /
+# docs/superpowers/evidence/LOOPS-TRUTH-AUDIT.md "escalation→self-fix実行のtriggerが切れてる"):
+# standalone healthcheck.sh scripts for loops that don't source healthcheck-lib.sh (clip/video/
+# clip-promote/connector-style) write a ".<loop>-core-selfheal-request.json" marker when they give
+# up restarting a DEAD loop. Its own note says "read this on your next wake" -- but the loop that
+# would read it is exactly the one that's dead, so it never wakes to read it. Confirmed 2026-07-11:
+# clip-promote-core wrote such a marker (10:04 UTC) and self-fix ran ZERO times that day. Runs on
+# EVERY invocation of this script (unlike the 21:00-JST-only Cadence Contract escalation below)
+# since this script is already invoked twice a day for free: once by its own dedicated launchd
+# (daily 21:05 JST) and once every 6h as a safety net from verify-loops-audit.sh -- giving the
+# marker a real trigger with no new launchd job. self-fix.sh is itself idempotent (skips re-spawn
+# while a fixer for that loop is still live, <180min hang ceiling) so calling it again here every
+# pass is always safe; a marker still present after a fixer already ran (FAILed, or between runs)
+# re-escalates naturally on the next pass -- no separate staleness/cooldown math needed.
+scan_selfheal_requests() {
+  local f loop reason age_h
+  for f in "$STATE_DIR"/.*-core-selfheal-request.json; do
+    [ -f "$f" ] || continue
+    loop="$(python3 -c "
+import json
+try:
+    print(json.load(open('$f')).get('loop') or '')
+except Exception:
+    print('')" 2>/dev/null)"
+    if [ -z "$loop" ]; then
+      loop="$(basename "$f" | sed -E 's/^\.//; s/-core-selfheal-request\.json$//')"
+    fi
+    [ -n "$loop" ] || { echo "$(date '+%F %T') selfheal-request: $f -- could not determine loop name, skipping" >> "$LOG"; continue; }
+    reason="$(python3 -c "
+import json
+try:
+    d = json.load(open('$f'))
+    print(d.get('reason') or d.get('heal') or d.get('note') or 'selfheal-request marker present')
+except Exception:
+    print('selfheal-request marker present (unreadable json)')" 2>/dev/null)"
+    age_h=$(( ( $(date +%s) - $(stat -f %m "$f" 2>/dev/null || echo "$(date +%s)") ) / 3600 ))
+    echo "$(date '+%F %T') selfheal-request: $f (loop=$loop age=${age_h}h) -> self-fix.sh $loop" >> "$LOG"
+    bash "$SELF/self-fix.sh" "$loop" "escalated selfheal-request marker $f (age ${age_h}h, written when a healthcheck gave up restarting this loop): $reason. If you resolve it, delete or rename this marker as part of the fix -- if it is still present next pass, it will be re-escalated." >> "$LOG" 2>&1 || true
+  done
+}
+scan_selfheal_requests
+
 # Defensive: only act at/after 21:00 JST even if invoked early (e.g. a manual run, or
 # verify-loops-audit.sh's own earlier-in-the-day pass calling this as a safety net).
 if ! [ "$NOW_HOUR_JST" -ge 21 ] 2>/dev/null; then

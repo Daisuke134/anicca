@@ -65,8 +65,17 @@ fi
 
 cd "$WORKDIR" || { echo "$(now) FATAL cannot cd to $WORKDIR" >> "$LOG_ERR"; exit 1; }
 
-echo "$(now) launching claude --model sonnet (hard timeout 3600s) cwd=$(pwd)" >> "$LOG_OUT"
-timeout 3600 claude --model sonnet --dangerously-skip-permissions -p "$(cat "$PROMPT_FILE")" \
+TIMEOUT_LIB="$SKILL_DIR/mainloop-timeout-lib.sh"
+if [ ! -f "$TIMEOUT_LIB" ]; then
+  echo "$(now) FATAL timeout lib missing: $TIMEOUT_LIB" >> "$LOG_ERR"
+  exit 1
+fi
+# shellcheck source=./mainloop-timeout-lib.sh
+source "$TIMEOUT_LIB"
+TIMEOUT_SEC="$(resolve_mainloop_timeout_sec)"
+
+echo "$(now) launching claude --model sonnet (hard timeout ${TIMEOUT_SEC}s) cwd=$(pwd)" >> "$LOG_OUT"
+timeout "$TIMEOUT_SEC" claude --model sonnet --dangerously-skip-permissions -p "$(cat "$PROMPT_FILE")" \
   >> "$LOG_OUT" 2>> "$LOG_ERR"
 STATUS=$?
 echo "$(now) claude-p-mainloop exit status=$STATUS" >> "$LOG_OUT"

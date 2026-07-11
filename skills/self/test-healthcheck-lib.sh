@@ -42,4 +42,22 @@ printf '997000\n' > "$TMPLOG"
 chkr "restart 3000s ago (past 1200s grace)" OK "$TMPLOG" 1000000
 rm -f "$TMPLOG"
 
+# G2 item4: hc_last_pass_recent -- a genuinely-completed-pass marker touched within max_age_min
+# means the loop is healthy right now, regardless of session-liveness alone (real connector
+# incident 2026-07-11: session-liveness-only judgment DEAD-misjudged a healthy once-daily-cron loop).
+chkp(){ local name="$1" want="$2"; shift 2; if hc_last_pass_recent "$@"; then got=TRUE; else got=FALSE; fi
+  [ "$got" = "$want" ] && { echo "  ok $name ($got)"; P=$((P+1)); } || { echo "  FAIL $name want=$want got=$got"; F=$((F+1)); }; }
+
+HBFILE="$(mktemp)"
+touch "$HBFILE"   # mtime = now
+chkp "just-touched marker, max_age=60min" TRUE "$HBFILE" 60
+# back-date the marker to 90min ago (older than the 60min window)
+OLD_TS=$(( $(date +%s) - 90*60 ))
+touch -t "$(date -r "$OLD_TS" +%Y%m%d%H%M.%S 2>/dev/null || date -j -f %s "$OLD_TS" +%Y%m%d%H%M.%S)" "$HBFILE" 2>/dev/null || \
+  python3 -c "import os,sys; t=float(sys.argv[1]); os.utime(sys.argv[2], (t,t))" "$OLD_TS" "$HBFILE"
+chkp "marker 90min old, max_age=60min -> FALSE (stale)" FALSE "$HBFILE" 60
+chkp "marker 90min old, max_age=120min -> TRUE (still within window)" TRUE "$HBFILE" 120
+rm -f "$HBFILE"
+chkp "marker file missing entirely -> FALSE" FALSE "/tmp/.does-not-exist-hc-last-pass-$$" 60
+
 echo "=== healthcheck-lib stall-detect: $P passed $F failed ==="; [ "$F" = 0 ]&&echo GREEN||exit 1

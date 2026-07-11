@@ -292,3 +292,119 @@ Known past fixes (bootstrap, 2026-07-04): Gamma API returns numeric fields as st
 `src/market/polymarket.py::_to_float`); dead default RPC replaced with `POLYGON_RPC_URL` env
 (default `polygon-bor-rpc.publicnode.com`); `agent.py` passed a wallet object where the executor needs
 `wallet.private_key`.
+
+## REWARD-MM (poly-maker port) — PAPER MODE ONLY, not wired into `run.sh` (2026-07-12)
+
+`reward_mm/` is a ported core of `warproxxx/poly-maker` (MIT, ★1387, cloned+read+tested live
+2026-07-12) — the **third base strategy**: Polymarket's official **liquidity-rewards** program
+pays $/day to whoever rests two-sided quotes inside a market's reward band, independent of
+whether the market moves your way. `bundle_arb.py`/`market_maker.py` above never claim this —
+they only look for a locked-edge bundle or a bare two-sided maker quote. `reward_mm` is edge
+from **structure** (the reward program), not from prediction.
+
+### ★★★ READ FIRST — legal pivot that gates whether this ever goes live ★★★
+`anicca-project/docs/loop-engineering/28-verified-earn-recipe.md` (same day this was written,
+2026-07-12) found that **running Polymarket from a Japan physical location carries 刑法185条
+(gambling) exposure that can attach to the user, not just the operator**, and that doc's own
+conclusion PIVOTS the colony's main earn strategy to HL funding-arb, explicitly stating
+"Polymarket を日本の物理拠点(mac mini)から回すのは違法リスク... poly-maker が技術的にベストでも、
+Japan mac mini では Polymarket を本番稼働させない". `reward_mm` was built anyway, in **paper mode
+only**, because (a) it does not place a real bet or move real money, and (b) the code itself is
+still useful evidence/reference regardless of where the decision to go live eventually gets made
+(a non-Japan legal entity, per that doc). **Do not wire this into a live execution path without
+first re-reading and resolving that finding** — this is a blocking legal question, not an
+engineering one.
+
+### Files (`reward_mm/`, all new, nothing existing modified)
+| File | Ported from (poly-maker, MIT) | What it does |
+|---|---|---|
+| `gamma_scan.py` | `catalog/{gamma.py,scanner.py,scoring.py}` | Reward-market discovery: real Gamma API (`/markets`) + real CLOB API (`/sampling-markets` for reward rates) → parse → score by est. reward+rebate income, penalized by extremity/spread, gated by book-depth viability. Sync `requests` (upstream is async `httpx`) to match this skill's existing style. |
+| `book.py` | `marketdata/orderbook.py` (partial) | Public no-auth CLOB order-book snapshot (`GET /book?token_id=`, verified live, no auth needed) + depth-weighted microprice. Upstream keeps a persistent WS book; this is a REST poll — good enough for one-shot paper snapshots, a live engine should upgrade the call site to WS. |
+| `estimators.py` | `strategy/estimators.py` | `Ewma`, `VolEstimator`, `FlowEstimator`, `MarkoutTracker` (toxicity) — near-verbatim port, pure logic, no I/O. |
+| `regime.py` | `strategy/regime.py` | `RegimeMachine`: QUIET/TRENDING/EVENT/REDUCE_ONLY/HALTED state machine — near-verbatim port. |
+| `quoting.py` | `strategy/quoting.py` | `construct_quotes`: fair-value (microprice + flow EWMA) → inventory-skewed reservation price → vol/toxicity half-spread clamped to the reward band in QUIET → two-sided post-only BUY-YES/BUY-NO. Simplified to a single price layer per side (upstream ladders across `layers`); same core math. |
+| `risk.py` | `risk/manager.py` | `RiskManager`: per-market/total notional caps with soft tapering, daily-loss kill switch, order-error-rate breaker. Simplified to an in-memory paper ledger (upstream reads a SQLite `StateStore`). |
+| `profiles.py` | `config/strategy.toml` | Two strategy presets, ported from poly-maker's own **live-sampled** parameters (`newsom-mm` → `DEFAULT`, `romania-pm` → `THIN_BOOK`) — not invented, taken from a real 2026-07-06 microstructure sample the upstream author recorded in the TOML comments. |
+| `paper_run.py` | new (orchestrator) | CLI: scan real reward markets → pick top-N by score → fetch each one's real book → compute fair value/regime/quotes → print JSON. **Never posts an order** — no wallet, no key, no `SecureClient`/`post_order` import anywhere in this module or its dependency graph (grepped and verified, see below). |
+| `test_reward_mm.py` | new | 31 pytest tests: pure-logic unit tests for every module above + 2 tests marked `@pytest.mark.live` that hit the real Gamma/CLOB REST APIs. |
+
+Money-safety is structural, not a flag: `grep -rniE "post_order|create_market_order|create_limit_order|private_key|SecureClient" reward_mm/` returns nothing except the doc comment in `paper_run.py` that says those strings are absent.
+
+### Real Gamma API proof (live run, 2026-07-12)
+```
+$ cd skills/earn/polymarket-trade && python3 -m reward_mm.paper_run --top 3 --min-liquidity 500
+{
+  "mode": "PAPER — no order placed",
+  "scanned_reward_eligible_markets": 690,
+  "picked": 3,
+  "picks": [
+    { "question": "Will Tom Pelphrey – \"Task\" win Emmys 2026...", "regime": "QUIET",
+      "reward_daily_rate_usdc": 276.0, "reward_min_size": 20.0, "reward_max_spread_pct": 4.5,
+      "quotes": [ {"side":"BUY","price":0.41,"size":53.66,"post_only":true},
+                  {"side":"BUY","price":0.56,"size":39.29,"post_only":true} ] },
+    { "question": "Iran military action against a Gulf State on July 9?", "regime": "HALTED",
+      "quotes": [], "reason": "past halt_before_hours window (market resolves imminently)" },
+    { "question": "Will LeBron James play for the Cleveland Cavaliers in 2026-27?", "regime": "QUIET",
+      "reward_daily_rate_usdc": 1473.0,
+      "quotes": [ {"side":"BUY","price":0.477,"size":300.0,"post_only":true},
+                  {"side":"BUY","price":0.508,"size":300.0,"post_only":true} ] }
+  ]
+}
+```
+690 real reward-eligible markets scanned live from Gamma+CLOB. The regime machine correctly HALTED
+the Iran market (past its resolution window) instead of quoting it blind — proof the halt logic is
+live-real, not decorative. Run `python3 -m pytest reward_mm/test_reward_mm.py -v` for the full
+31/31 pass (offline unit tests + the 2 live-network tests).
+
+### Loop wiring plan (NOT done — proposal for the parent to execute after the legal question above)
+`run.sh` currently chains `bundle_arb.py → market_maker.py → pick.py→place_order.py`, each already
+fail-closed and its own money-safety-capped (see "PER-PASS RISK ENVELOPE" above). Adding reward-MM
+as a fourth strategy would look like:
+1. **New `reward_execute.py`** (does not exist yet) — takes `paper_run.py`'s JSON quote plan,
+   re-applies the SAME `MAX_PASS_SPEND`/per-order caps `run.sh` already asserts (line ~89-91), then
+   drives the proven V2 flow this skill already has (`SecureClient` bootstrap + relayer-key mint +
+   `create_limit_order(..., post_only=True)` + `post_order`, same primitives `market_maker.py`
+   already uses) — one call per quote in the plan, cancel-and-replace each pass exactly like
+   `market_maker.py` does today.
+2. **`run.sh` change**: add a 4th step after `market_maker.py`, gated behind a NEW explicit env
+   flag (e.g. `REWARD_MM_LIVE=1`, default unset/off) so the existing 3-strategy chain's behavior
+   is byte-for-byte unchanged until a human/AI operator deliberately flips it — mirrors how this
+   skill already gates other risky paths (`KILL` file, `MAX_PASS_SPEND`).
+3. **Persistent process, not one-shot**: `paper_run.py` is a cold-start snapshot (vol/flow/toxicity
+   all seeded at 0, see its module docstring). A live engine needs a long-running loop (launchd
+   job, like `market_maker.py`'s own cadence) that keeps `MarketEstimators`/`RegimeMachine` state
+   PER MARKET across passes (a small JSON/SQLite state file keyed by `condition_id`, same shape as
+   poly-maker's `state.db`) so vol/flow/toxicity actually mean something by the 2nd+ pass.
+4. **Risk config**: `RiskConfig` defaults in `risk.py` (`daily_loss_kill_usdc=20`,
+   `max_total_exposure_usdc=500`) are placeholders sized for a $50-100 bankroll per the verified
+   recipe doc — tune down for a first live test (e.g. `daily_loss_kill_usdc=5`,
+   `max_total_exposure_usdc=20`) exactly like `MAX_PASS_SPEND=2` gates the existing strategies.
+
+### How the parent enables live (after resolving the legal question, own-eyes verification required)
+1. Re-decide the jurisdiction question in the legal-pivot doc (non-Japan entity, or accept the risk
+   explicitly, or don't go live at all — HL funding-arb per that doc's new main strategy).
+2. Write `reward_execute.py` per the wiring plan above (this task deliberately did not write it —
+   "実マネーは動かさない" was the explicit constraint).
+3. Add the `REWARD_MM_LIVE` gate to `run.sh`, default OFF.
+4. Fund a small isolated test amount ($5-10, per the colony's own "$50-100 recipe, start smaller
+   to prove the mechanism" pattern used elsewhere in this repo).
+5. Flip `REWARD_MM_LIVE=1` for ONE pass, verify the resulting resting order on-chain / via
+   `polymarket.com` UI (own-eyes, per this project's `feedback_i_am_the_final_verifier` rule —
+   a green test suite is not a live-money verification).
+6. Only after a real observed resting order + at least one real reward-eligible fill does this
+   count as "earning" per this project's ledger rule (realized profit > 0, on-chain).
+
+### Judgment calls this port made (flag for review)
+- **Sync `requests` instead of async `httpx`/WS**: matches this skill's existing style
+  (`market_maker.py`, `bundle_arb.py`, `pick.py` are all sync); trades upstream's WS latency
+  advantage for simplicity in a paper-mode CLI. A live engine should reconsider this (WS reduces
+  stale-quote risk).
+- **Single price layer per side** instead of poly-maker's multi-order ladder: simpler, still
+  reward-eligible (reward scoring is per-order against the min-size floor, which `_order_size`
+  respects), loses some of the ladder's queue-priority diversification.
+- **No SQLite state store**: `risk.py`'s ledger and `paper_run.py`'s regime/estimator state are
+  all in-memory and reset every process invocation. Fine for a one-shot paper snapshot; NOT fine
+  for a live engine (item 3 in the wiring plan above is a hard prerequisite, not optional).
+- **Reward market universe**: `paper_run.py` defaults to no Gamma tag filter (scans ALL
+  reward-eligible markets), not just poly-maker's `politics` tag default — broader universe,
+  untested against poly-maker's own political-market tuning assumptions embedded in `profiles.py`.

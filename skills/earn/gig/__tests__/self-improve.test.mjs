@@ -40,11 +40,12 @@ test('strategy.default.json: all required keys present', () => {
   }
 });
 
-test('strategy.default.json: max_apply_per_pass is a positive integer ≤ 10', () => {
+test('strategy.default.json: max_apply_per_pass is a positive integer ≤ 20', () => {
   const obj = JSON.parse(fs.readFileSync(path.join(DIR, 'strategy.default.json'), 'utf8'));
   assert.ok(Number.isInteger(obj.max_apply_per_pass), 'max_apply_per_pass not integer');
   assert.ok(obj.max_apply_per_pass > 0, 'max_apply_per_pass must be > 0');
-  assert.ok(obj.max_apply_per_pass <= 10, 'max_apply_per_pass must be ≤ 10 (sanity cap)');
+  // sanity cap raised 10 -> 20: throughput was deliberately bumped to 12 (RCA FIX C, apply-throughput 増).
+  assert.ok(obj.max_apply_per_pass <= 20, 'max_apply_per_pass must be ≤ 20 (sanity cap)');
 });
 
 test('strategy.default.json: improve_cadence_passes is a positive integer', () => {

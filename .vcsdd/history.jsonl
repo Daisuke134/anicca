@@ -352,3 +352,11 @@
 {"timestamp":"2026-07-11T09:48:45.130Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"1b","to":"1c","iteration":1,"phase":"1c"}
 {"timestamp":"2026-07-11T09:48:45.136Z","event":"phase_transition","featureName":"self-improve-checkpoint-resume","from":"1c","to":"2a","iteration":1,"phase":"2a"}
 {"timestamp":"2026-07-11T09:48:45.136Z","event":"sprint_started","featureName":"self-improve-checkpoint-resume","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-11T16:00:06.173Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"init","to":"1a","iteration":1,"phase":"1a"}
+{"timestamp":"2026-07-11T16:00:06.174Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-11T16:00:06.174Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-11T16:00:19.285Z","event":"gate_recorded","featureName":"ledger-uniqueness","phase":"1c","verdict":"PASS","reviewedBy":"verifier"}
+{"timestamp":"2026-07-11T16:00:24.349Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-11T16:00:24.349Z","event":"sprint_started","featureName":"ledger-uniqueness","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-11T16:03:54.375Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-07-11T16:06:55.816Z","event":"phase_transition","featureName":"ledger-uniqueness","from":"2b","to":"2c","iteration":1,"phase":"2c"}

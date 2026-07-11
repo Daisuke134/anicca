@@ -28,6 +28,10 @@ if [ -f "$DIR/KILL" ]; then
 fi
 run "$VENV" "$DIR/bundle_arb.py"   >> "$LOG" 2>&1 || echo "[$(ts)] bundle_arb exit $?" >> "$LOG"
 run "$VENV" "$DIR/market_maker.py" >> "$LOG" 2>&1 || echo "[$(ts)] market_maker exit $?" >> "$LOG"
+
+# TASKLIST #2: wallet-anchored reconcile — book this pass's real pUSD delta (losses/buys the win-only
+# ledger never recorded) so sum(pm net_usdc) == real pUSD wallet delta. Read-only on-chain, fail-closed.
+run node "$DIR/pm-reconcile.mjs" >> "$LOG" 2>&1 || echo "[$(ts)] pm-reconcile exit $?" >> "$LOG"
 echo "[$(ts)] === pass done ===" >> "$LOG"
 
 # Signed telemetry POST (#25 TELEM) — fail-safe: never affects the trading passes above.
