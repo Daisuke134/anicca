@@ -1,0 +1,32 @@
+{
+  "findingId": "FIND-CONV-001",
+  "dimension": "spec_fidelity",
+  "category": "spec_gap",
+  "severity": "critical",
+  "blocking": true,
+  "description": "state.json records gates.\"1c\".verdict=\"PASS\" (timestamp 2026-07-08T13:06:22.909Z, reviewedBy \"adversary\"), and the phase history shows a clean 1c->2a transition at 2026-07-08T13:06:22.926Z. But EVERY persisted spec-review artifact on disk under reviews/spec/ (iteration-1, iteration-2, iteration-3 -- there is no iteration-4 or later; confirmed via Glob for **/*iteration-4* and a full directory listing) has overallVerdict=\"FAIL\". The LATEST one, reviews/spec/iteration-3/output/verdict.json, is FAIL with two findings still open at that point: FIND-009 (severity critical, dimension spec_fidelity, routeToPhase \"1c\") and FIND-010 (severity medium, dimension verification_readiness, routeToPhase \"1c\"). No verdict.json anywhere in the feature directory records a PASS for a spec review. I independently re-read the CURRENT specs/behavioral-spec.md and specs/verification-architecture.md and confirmed their prose now textually resolves FIND-009 (REQ-002's EARS text explicitly names sigStatus/usdcDeltaForSig as the sole delta mechanism, and the sol-trade/run.sh Effectful Shell bullet in verification-architecture.md now explicitly lists solana-verify.mjs::sigStatus/usdcDeltaForSig, which FIND-009 said was missing) and FIND-010 (both documents now state 'No franklin-trading balance CLI call is made or parsed anywhere in this feature', eliminating the chalk/ANSI-parsing risk FIND-010 flagged, rather than hardening a parser). So the CONTENT of the current spec appears to have been revised in response to FIND-009/FIND-010. But there is no persisted fresh-adversary re-review of that revised content anywhere on disk, and state.json's own \"iterations\" counter for phase \"1c\" is 1 -- not 3, and not 4 -- which does not match either 'the review that actually passed' (there is none) or 'the total number of spec-review iterations run' (3, per the reviews/spec/ directory). This is a phase-gate integrity violation: per this project's own dev-workflow.md ('blocking 1件でも次フェーズ進行禁止') and the VCSDD adversary protocol ('adversary は毎 iteration fresh spawn'), a phase transition past a FAIL verdict with open blocking findings requires a subsequent fresh-adversary PASS verdict persisted to disk before the gate may be marked PASS and the phase may advance. That persisted PASS never happened for this feature's spec phase. I cannot certify spec-phase convergence from disk evidence alone, regardless of how sound the current spec prose reads, because the review-artifact trail itself is broken.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/state.json",
+    "lineRange": "74-87",
+    "snippet": "\"gates\": {\"1c\": {\"verdict\": \"PASS\", \"timestamp\": \"2026-07-08T13:06:22.909Z\", \"reviewedBy\": \"adversary\" ...}}"
+  },
+  "crossReference": [
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/reviews/spec/iteration-3/output/verdict.json",
+      "lineRange": "3-6, 21-27, 30-37",
+      "snippet": "\"overallVerdict\": \"FAIL\" ... spec_fidelity FAIL findings:[\"FIND-009\"] ... verification_readiness FAIL findings:[\"FIND-009\",\"FIND-010\"]"
+    },
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/reviews/spec/iteration-3/output/findings/FIND-009.json",
+      "lineRange": "1-22",
+      "snippet": "severity: critical, routeToPhase: 1c -- REQ-002's delta mechanism specified in two mutually inconsistent ways, no reconciling statement"
+    },
+    {
+      "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/reviews/spec/iteration-3/output/findings/FIND-010.json",
+      "lineRange": "1-18",
+      "snippet": "severity: medium, routeToPhase: 1c -- balance-parse ANSI risk never tested against the real chalk-wrapped CLI output"
+    }
+  ],
+  "requiredFix": "Spawn a fresh Phase-1c spec-review adversary (iteration-4) against the CURRENT specs/behavioral-spec.md and specs/verification-architecture.md, obtain and PERSIST a genuine PASS verdict.json under reviews/spec/iteration-4/output/, and only then have state.json's gates.\"1c\" reference that verdict (correct timestamp + iteration number). Do not rely on the spec text having silently changed as a substitute for a persisted re-review.",
+  "routeToPhase": "1c"
+}

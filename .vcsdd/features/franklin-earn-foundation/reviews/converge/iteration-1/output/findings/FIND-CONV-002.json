@@ -1,0 +1,27 @@
+{
+  "findingId": "FIND-CONV-002",
+  "dimension": "formal_hardening",
+  "category": "verification_tool_mismatch",
+  "severity": "high",
+  "blocking": true,
+  "description": "verification/verification-report.md's 'Proof Obligations (discharge status)' section (the Phase 5 hardening artifact whose job is to confirm every declared proof obligation in specs/verification-architecture.md was actually discharged) lists exactly 6 bullet items labeled PROP-011 through PROP-016. Every one of these 6 labels is MISMATCHED against verification-architecture.md's real PROP-011..016 table (verification-architecture.md:71-88): the report's 'PROP-013 (non-owner HALT before touching franklin-trading CLI)' actually describes the REAL PROP-014 (the identity-match guard); the report's 'PROP-014 (record win AND loss, sig-keyed idempotency)' actually describes the REAL PROP-005/PROP-007; the report's 'PROP-015 (LAST signature on multi-swap pass)' actually describes the REAL PROP-010; the report's 'PROP-011 (per-instance identity resolution, no cross-instance key)' and 'PROP-012 (fail-closed on unresolvable secret)' are generic restatements that don't cleanly map to any single real PROP-011/012 either. Only the report's 'PROP-016 (verify-error degrades to trace-only)' label actually matches the real PROP-016. Beyond the mislabeling, the report's discharge table NEVER mentions PROP-001, PROP-002, PROP-003, PROP-004, PROP-006, PROP-008, PROP-009, or the REAL PROP-013 (ANICCA_EVM_PRIVATE_KEY override on earn/run.sh) at all -- i.e. every proof obligation belonging to REQ-001 (earn/run.sh's own identity-resolution fix) is entirely absent from the Phase 5 hardening report's discharge table, even though I independently confirmed skills/earn/__tests__/run-identity.test.mjs genuinely exists and DOES cover PROP-002/PROP-004/PROP-009/PROP-013 with real bash-integration tests spawning the actual run.sh (not stubs). The underlying test coverage for those PROPs appears to genuinely exist; the Phase 5 SUMMARY REPORT itself simply never says so, under any correct ID. A reader relying on verification-report.md alone -- which is exactly the document Phase 6 convergence is supposed to be able to trust as the authoritative proof-obligation discharge ledger -- cannot confirm REQ-001 was hardened at all, and cannot trust ANY of the 6 listed PROP-IDs to mean what verification-architecture.md says they mean.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/verification/verification-report.md",
+    "lineRange": "26-32",
+    "snippet": "PROP-013 (non-owner HALT before touching franklin-trading CLI): DISCHARGED -- integration scenario (b) [this is actually the REAL PROP-014's subject matter]"
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md",
+    "lineRange": "71-88",
+    "snippet": "real PROP-011=wallet derivation fixture test; PROP-012=earn-guard cumulative HALT; PROP-013=ANICCA_EVM_PRIVATE_KEY override (earn/run.sh); PROP-014=identity-match guard (root cause 3); PROP-015=ANICCA_SOLANA_PRIVATE_KEY override; PROP-016=RPC read-failure degrade -- none of these match the report's own labels 1:1 except PROP-016"
+  },
+  "codeEvidence": [
+    {
+      "filePath": "/Users/operator/anicca/skills/earn/__tests__/run-identity.test.mjs",
+      "lineRange": "48-106",
+      "note": "Independently confirmed this file exists and genuinely tests PROP-002/PROP-004/PROP-009/PROP-013 (all REQ-001 proof obligations) via real execFile spawns of the actual run.sh -- but this file is never cited anywhere in verification-report.md's Proof Obligations section."
+    }
+  ],
+  "requiredFix": "Rewrite verification/verification-report.md's 'Proof Obligations' section to enumerate all 16 declared PROPs (PROP-001 through PROP-016) using the EXACT IDs and descriptions from specs/verification-architecture.md, each with a DISCHARGED/NOT-DISCHARGED status and a file:line citation to the actual test that exercises it (including skills/earn/__tests__/run-identity.test.mjs for PROP-002/004/009/013, skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs for PROP-010, skills/_shared/lib/__tests__/identity-guard.test.js for PROP-008, and an explicit statement for PROP-001/003/006 -- rather than 6 mislabeled, sol-trade-only bullets.",
+  "routeToPhase": "5"
+}

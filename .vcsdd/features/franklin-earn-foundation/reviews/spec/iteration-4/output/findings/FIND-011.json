@@ -1,0 +1,20 @@
+{
+  "findingId": "FIND-011",
+  "dimension": "verification_readiness",
+  "category": "test_coverage",
+  "severity": "low",
+  "blocking": false,
+  "description": "skills/earn/sol-trade/lib/parse-pass.mjs's extractLastSignature() defensively strips ANSI escape codes before regex-matching the 'Signature: <sig>' line (const ANSI_RE = /\\x1b\\[[0-9;]*m/g; const clean = stdout.replace(ANSI_RE, \"\");, parse-pass.mjs:8,15) -- this is real, shipped, executed logic. However skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs (read in full, all 5 test cases) never exercises this branch: none of its fixtures contain an ANSI escape sequence anywhere in the input string, so the ANSI_RE.replace() call is executed on every test run but its behavior (does it actually strip a real chalk-wrapped sequence like '\\x1b[32mSignature: <sig>\\x1b[0m' and still extract the signature correctly?) is never asserted. This is NOT a re-opening of FIND-010: FIND-010's underlying risk (franklin-trading balance's chalk-wrapped USDC Balance line) is independently and correctly eliminated by never calling that subcommand at all, and the Signature line this parser actually reads is re-confirmed plain-text/unwrapped in the real installed jupiter.js:342 -- so the real-world risk this untested branch guards against is currently zero. This is a pure test-suite completeness gap in already-shipped defensive code, not a spec defect: no requirement, edge case, or proof obligation in specs/verification-architecture.md (PROP-010's description covers 0/1/N-occurrence and malformed/truncated-input cases only) mandates an ANSI-coded-input test case, so there is nothing in the CURRENT spec text to fix here -- the fix (if pursued) is a one-line addition to the existing test file's fixture set, not a spec change.",
+  "evidence": {
+    "filePath": "/Users/operator/anicca/skills/earn/sol-trade/lib/parse-pass.mjs",
+    "lineRange": "8,13-21",
+    "snippet": "const ANSI_RE = /\\x1b\\[[0-9;]*m/g;\n...\nconst clean = stdout.replace(ANSI_RE, \"\");"
+  },
+  "crossReference": {
+    "filePath": "/Users/operator/anicca/skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs",
+    "lineRange": "1-41",
+    "snippet": "5 test cases (no-signature-line, single-signature, multi-signature-takes-last, malformed/truncated/empty-never-throws, deterministic-repeat) -- none contains an ANSI/escape-code fixture."
+  },
+  "routeToPhase": "2a",
+  "note": "Non-blocking. Does not affect this iteration-4 spec verdict (spec_fidelity / verification_readiness both PASS); recorded for test-suite hygiene follow-up only."
+}

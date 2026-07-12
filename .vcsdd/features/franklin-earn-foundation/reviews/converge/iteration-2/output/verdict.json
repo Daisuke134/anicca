@@ -1,0 +1,89 @@
+{
+  "feature": "franklin-earn-foundation",
+  "phase": "converge",
+  "iteration": 2,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T03:00:00Z",
+  "toolConstraintNote": "This review session had Read/Grep/Glob/Write only (no shell/execute tool). All test-count claims (5/5, 8/8, 5/5, 20/20, 8/8, 12/12, summing to the reported 58/58) were independently re-derived by reading every one of the 6 cited test files in full and counting test() blocks -- not by trusting the report's prose. All 16 PROP rows in verification-report.md were independently cross-checked, one by one, against specs/verification-architecture.md:71-88's real definitions and against the real source files they cite.",
+  "priorFindingsClosureStatus": [
+    {
+      "findingId": "FIND-CONV-001",
+      "status": "CONFIRMED-CLOSED",
+      "note": "state.json gates[\"1c\"] now cites reviews/spec/iteration-4/output/verdict.json (overallVerdict PASS, both spec_fidelity and verification_readiness dimensions PASS, 0 blocking findings). Independently re-read that verdict AND re-verified its two central factual claims directly against the current repo: (1) specs/behavioral-spec.md and specs/verification-architecture.md now describe exactly ONE authoritative delta mechanism (sigStatus -> usdcDeltaForSig via record-swap.mjs) with zero remaining reference to a 'franklin-trading balance' CLI snapshot as a delta source; (2) skills/earn/sol-trade/lib/record-swap.mjs:14-56 (read in full) imports ONLY sigStatus/usdcDeltaForSig/alreadyRecordedSig/record, never touches a 'balance' subcommand, and skills/earn/sol-trade/run.sh (read in full) invokes only `franklin-trading start`, never `franklin-trading balance`. The spec and the shipped code agree with each other and with the iteration-4 verdict's claims. FIND-009/FIND-010 are genuinely resolved, not merely asserted resolved."
+    },
+    {
+      "findingId": "FIND-CONV-002",
+      "status": "CONFIRMED-CLOSED",
+      "note": "verification/verification-report.md's Proof Obligations table was read row-by-row and independently cross-checked against specs/verification-architecture.md:71-88's real PROP-001..016 definitions -- every one of the 16 rows now correctly matches its arch-defined ID and description (no mislabeling against test_run.sh's internal scenario lettering this time), and every REQ-001-side PROP (001/002/003/004/009/013) that was previously entirely omitted is now present with real evidence. Independently verified 6 of the 16 rows in depth: PROP-003's new test (skills/earn/__tests__/run-identity.test.mjs:152-205) genuinely spawns a real earn/run.sh discover-mode pass with a KNOWN fixture private key, captures full stdout+stderr, and asserts neither stream matches /0x[0-9a-fA-F]{64}/, with a sanity self-check that the regex is a real (non-vacuous) detector; PROP-002/PROP-013's HOME-portability fixture fix (same file, lines 30-40 + 78-97 + 141-150) is a genuine test-fixture-only change (PYTHONPATH passthrough for the child python3's eth_account import), no production or assertion weakening; PROP-009's assertion (line 137) now matches earn/run.sh's REAL current HALT line ('no signing key resolved for this instance ... HALT (fail-closed)', run.sh:51) which I independently re-read and confirmed fires exactly where the test claims. security-report.md and purity-audit.md are both present, internally consistent with each other and with the code I independently re-read (record-swap.mjs's effectful classification, parse-pass.mjs's genuine purity, the identity-match guard's per-instance-state-only inputs), and report zero unresolved violations."
+    }
+  ],
+  "dimensions": {
+    "spec_fidelity": "PASS",
+    "test_adequacy": "PASS",
+    "impl_correctness": "PASS",
+    "formal_hardening": "PASS"
+  },
+  "dimensionEvidence": [
+    {
+      "dimension": "spec_fidelity",
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/reviews/spec/iteration-4/output/verdict.json", "description": "Genuine disk-persisted PASS verdict (both dimensions PASS, 0 blocking) now supports state.json's gates[\"1c\"]=PASS, closing FIND-CONV-001."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/lib/record-swap.mjs:1-56", "description": "Full read: single authoritative delta mechanism (sigStatus -> usdcDeltaForSig -> record), no franklin-trading balance import/call anywhere; matches spec text exactly."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/run.sh:1-110", "description": "Full read: only `franklin-trading start` is invoked; parse-pass.mjs + record-swap.mjs wired exactly as verification-architecture.md's Effectful Shell section (lines 44-64) describes, including identity-match guard ordering before the cumulative earn-guard before the CLI call."}
+      ]
+    },
+    {
+      "dimension": "test_adequacy",
+      "evidence": [
+        {"type": "test-output", "location": "static re-derivation of 6 test files", "description": "skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs = 5 test() blocks; record-swap.test.mjs = 8; skills/earn/__tests__/run-identity.test.mjs = 5 (PROP-002/003/004/009/013); runtime/loop/__tests__/resolve-identity.test.mjs = 20; runtime/loop/__tests__/wallet-address-solana.test.mjs = 8; skills/_shared/lib/__tests__/identity-guard.test.js = 12. Sum = 58, exactly matching verification-report.md's claimed 'tests 58, pass 58' fresh 2026-07-10 re-run figure -- independently reproduced by full-file read, not by trusting the report."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/tests/test_run.sh:1-277", "description": "9 ok()-producing assertions across 8 lettered scenarios (a)-(h), each independently read; scenario logic (fixture PATH-stub franklin-trading, local fake_solana_rpc.mjs, freshly-generated non-Franklin keypairs, snapshot-diff trace.jsonl cleanup) is genuine end-to-end wiring, not tautological -- e.g. scenario (a)'s marker-file-present assertion can only pass if the identity-match guard genuinely let control reach the fixture CLI."},
+        {"type": "test-output", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/verification/security-results/node-test.log", "description": "Captured 2026-07-08 log shows an EARLIER (pre-hardening-follow-up) 25-test green run (5+8+12). The claimed post-hardening 58/58 figure in verification-report.md is NOT independently backed by its own captured log file under security-results/ -- it exists only as prose inside the report. This is a minor evidence-provenance gap, not a blocking finding: my own independent static count of all 6 relevant test files sums to exactly 58, matching the claim, and the orchestrator has stated it will independently execute the full suite as fresh evidence."}
+      ]
+    },
+    {
+      "dimension": "impl_correctness",
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/run.sh:13,29-38", "description": "unset ANICCA_SOLANA_PRIVATE_KEY fires before OWN_WALLET/CLI_WALLET derivation; identity-match guard HALTs (exit 0, trace-only) unless both derivations agree and are non-empty -- no cross-instance key fallback, independently re-confirmed against current code."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/run.sh:48-54", "description": "unset ANICCA_EVM_PRIVATE_KEY before resolve-identity.mjs evm invocation; empty SIGNKEY HALTs at line 50-53 before any strategy branch."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/run.sh:17,65", "description": "MAX_SPEND=\"${SOL_TRADE_MAX_SPEND:-0.25}\" wired through to `franklin-trading start --max-spend`."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/lib/record-swap.mjs:43-53", "description": "earn_usdc/cost_usdc computed unconditionally from delta sign for BOTH win and loss (no delta>0 gate); corroborated by a real on-chain LOSS in verification/security-results/realchain-e2e.log (net_usdc:-0.008664)."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/sol-trade/lib/record-swap.mjs:46-52 + /Users/operator/anicca/skills/_shared/lib/ledger.mjs:32,51-63", "description": "record-swap.mjs's JSON payload never includes an `external` key; ledger.mjs's deriveLine only sets external:true when o.external===true, and isProfitable() requires it -- a sol-trade line can never claim GATE-0. Cross-checked against earn/run.sh:146, the only other external:true site, which is gated by isExternalPayout() first."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/_shared/lib/identity-guard.mjs:30-58", "description": "'sol-trade' is a single additive entry in ALLOWED_EARN_SOURCES (no wildcard); PROP-008 regression test (identity-guard.test.js:75-80) confirms 7 pre-existing sources still pass."}
+      ]
+    },
+    {
+      "dimension": "formal_hardening",
+      "evidence": [
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/verification/verification-report.md:40-58", "description": "All 16 PROP rows independently cross-checked against specs/verification-architecture.md:71-88's real definitions -- correct ID-to-definition mapping throughout (the FIND-CONV-002 mislabeling is gone); every row cites a real, independently-read test file:line."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/__tests__/run-identity.test.mjs:152-205", "description": "PROP-003's new test independently read in full: genuine fixture-key + full-stdout/stderr capture + negative-control-style sanity check that the leak-detector regex is non-vacuous."},
+        {"type": "file", "location": "/Users/operator/anicca/skills/earn/__tests__/run-identity.test.mjs:114-139", "description": "PROP-009's assertion (/no signing key resolved for this instance.*HALT \\(fail-closed\\)/) independently re-verified against the real current HALT line in earn/run.sh:51 -- matches exactly."},
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/verification/security-report.md", "description": "Present, internally consistent, zero unresolved violations claimed and independently corroborated against the code read in this session."},
+        {"type": "file", "location": "/Users/operator/anicca/.vcsdd/features/franklin-earn-foundation/verification/purity-audit.md", "description": "Present; parse-pass.mjs independently re-confirmed pure (no imports beyond node:path/node:url for its CLI guard, no fs/net in extractLastSignature); record-swap.mjs independently re-confirmed correctly classified as effectful (network RPC + ledger append), never called from a purity-assuming path."}
+      ]
+    }
+  ],
+  "blockingFindings": [],
+  "minorFindings": [
+    {
+      "findingId": "FIND-CONV2-001",
+      "dimension": "spec_fidelity",
+      "oneLine": "state.json's per-phase iteration counters (all still =1) do not reflect the real iteration counts (spec=4, impl=2, converge=2) -- carried forward from iteration-1's FIND-CONV-003, still unfixed, still non-blocking bookkeeping drift."
+    },
+    {
+      "findingId": "FIND-CONV2-002",
+      "dimension": "test_adequacy",
+      "oneLine": "The claimed post-hardening 'tests 58, pass 58' 2026-07-10 fresh re-run in verification-report.md has no corresponding captured log file under verification/security-results/ (the only captured node-test.log on disk is the stale pre-hardening 2026-07-08 25-test run) -- the 58/58 figure is asserted in report prose only. Independently corroborated as arithmetically correct (5+8+5+20+8+12=58) by this review's own static file-by-file test count, so not treated as fabricated, but the audit trail is thinner than the rest of the report's evidence discipline. Non-blocking given the orchestrator will independently execute the full suite as fresh evidence."
+    },
+    {
+      "findingId": "FIND-CONV2-003",
+      "dimension": "formal_hardening",
+      "oneLine": "FIND-011 (parse-pass.mjs's ANSI-strip branch has zero test coverage for an actual ANSI-coded input) remains open, correctly routed to phase 2a, correctly non-blocking (the real-world risk it guards against is already zero per FIND-010's resolution) -- carried forward, not newly discovered."
+    }
+  ],
+  "overallVerdict": "PASS",
+  "evidence": "Independently re-derived from disk only, with NO reliance on any prior claim taken at face value: (1) read reviews/spec/iteration-4/output/verdict.json in full and cross-checked its two central factual claims (single delta mechanism; franklin-trading balance never called) directly against the current specs/behavioral-spec.md, specs/verification-architecture.md, skills/earn/sol-trade/lib/record-swap.mjs, and skills/earn/sol-trade/run.sh; (2) read verification/verification-report.md's full 16-row Proof Obligations table and independently cross-checked every row's ID against specs/verification-architecture.md:71-88's real definitions (no mislabeling found this iteration); (3) independently read all 6 test files verification-report.md cites (parse-pass.test.mjs, record-swap.test.mjs, run-identity.test.mjs, resolve-identity.test.mjs, wallet-address-solana.test.mjs, identity-guard.test.js) in full and counted every test() block, reproducing the exact per-file counts (5/8/5/20/8/12=58) the report claims; (4) independently read skills/earn/sol-trade/tests/test_run.sh in full and counted 9 ok()-producing assertions across 8 scenarios, confirming each scenario's fixture wiring (PATH-stub CLI, local fake RPC, freshly-generated non-Franklin keypairs) is genuine end-to-end proof, not tautological; (5) independently re-read skills/earn/sol-trade/run.sh, skills/earn/run.sh, skills/_shared/lib/ledger.mjs, skills/_shared/lib/identity-guard.mjs, skills/_shared/lib/solana-verify.mjs, skills/earn/lib/resolve-identity.mjs in full and confirmed all four money-safety invariants (no cross-instance key fallback; spend cap wired; win AND loss both recorded; external:true only set after an external-payout assertion) hold in the CURRENT code, not merely in a prior review's snapshot; (6) read security-report.md and purity-audit.md and found them consistent with the code. Both FIND-CONV-001 and FIND-CONV-002 are CONFIRMED-CLOSED against real artifacts, not rubber-stamped. Three non-blocking findings carried forward/newly noted for hygiene, none gating convergence.",
+  "convergenceSignals": {
+    "readyForComplete": true,
+    "requiredFixes": []
+  }
+}

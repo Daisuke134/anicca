@@ -246,7 +246,15 @@
       "language": "python",
       "currentPhase": "2a",
       "updatedAt": "2026-07-11T09:48:45.135Z"
+    },
+    "config-delivery-verification": {
+      "status": "active",
+      "createdAt": "2026-07-12T11:28:24.723Z",
+      "mode": "lean",
+      "language": "typescript",
+      "currentPhase": "1b",
+      "updatedAt": "2026-07-12T11:35:09.297Z"
     }
   },
-  "activeFeature": "self-improve-checkpoint-resume"
+  "activeFeature": "config-delivery-verification"
 }

@@ -1,0 +1,31 @@
+{
+  "featureName": "config-delivery-verification",
+  "mode": "lean",
+  "language": "typescript",
+  "currentPhase": "1b",
+  "phaseHistory": [
+    {
+      "from": "init",
+      "to": "1a",
+      "timestamp": "2026-07-12T11:35:09.293Z"
+    },
+    {
+      "from": "1a",
+      "to": "1b",
+      "timestamp": "2026-07-12T11:35:09.297Z"
+    }
+  ],
+  "iterations": {
+    "1a": 1,
+    "1b": 1
+  },
+  "proofObligations": [],
+  "traceability": {
+    "epicId": "VCSDD-config-delivery-verification-1783855704724",
+    "beads": []
+  },
+  "gates": {},
+  "sprintCount": 0,
+  "createdAt": "2026-07-12T11:28:24.723Z",
+  "updatedAt": "2026-07-12T11:35:09.297Z"
+}
