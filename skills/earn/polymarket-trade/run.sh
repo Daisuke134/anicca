@@ -174,6 +174,24 @@ with open(os.environ["TRACE_FILE"], "a") as f:
 PY
 }
 
+# STEP 0 — COLLECT WHAT WE ALREADY WON, before risking anything new.
+#
+# Until 2026-07-12 redeem.py was reachable ONLY from run_earner.sh, i.e. only from the
+# claude-p-specific `pm-earner` launchd job. Every other Anicca — Franklin, Franklin2,
+# automaton, and anyone who spins up their own — ran THIS file, placed bets, won them,
+# and had no way to ever cash them out. Their winnings stayed locked in resolved
+# positions forever. That is not an economy; that is a one-way valve.
+#
+# Now every instance redeems its OWN wallet at the top of its OWN pass (redeem.py derives
+# the wallet from this instance's key, so it can only ever collect what it actually won).
+# A failed redeem never blocks the pass: an unreachable RPC must not stop the loop from
+# trading, and the next wake retries. Winnings free up cash -> cash funds the next bet.
+if [ -f "$SKILL_DIR/redeem.py" ]; then
+  REDEEM_OUT=$(timeout 200 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/redeem.py" 2>&1); REDEEM_RC=$?
+  echo "$REDEEM_OUT" | tail -6
+  append_strategy_trace "redeem" "$REDEEM_OUT" "$REDEEM_RC"
+fi
+
 # BASE STRATEGY #2 — risk-free bundle arbitrage scan (bundle_arb.py, EXISTING
 # working alpha, unchanged — do not reinvent). Self-gating: no-ops ("no
 # risk-free bundle arb ≥0.5% right now") when the market is efficient; buys

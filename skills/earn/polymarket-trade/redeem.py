@@ -83,8 +83,26 @@ import sys
 import time
 
 DATA_API = "https://data-api.polymarket.com"
-DEPOSIT_WALLET = "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
-AGENT_ENV = os.path.expanduser("~/.anicca-founder/agents/polymarket-agent/.env")
+
+# Whose winnings this run cashes out. Every Anicca — claude-p, Franklin, Franklin2,
+# automaton, and anyone who spins up their own — redeems into their OWN wallet, so this
+# cannot be a constant. It was one (claude-p's, hardcoded), which meant every other AI
+# could place bets but could never collect on them: run.sh resolves each instance's own
+# key, the client then derived a different wallet, and the money-safety check below
+# aborted the redeem. They could win and never get paid.
+#
+# Resolution order: PM_DEPOSIT_WALLET (set per-instance by run.sh) -> the wallet the
+# instance's own private key resolves to. The check below still fires when an explicit
+# expectation is given, so a misconfigured env can never cash out someone else's wallet.
+DEPOSIT_WALLET = os.environ.get(
+    "PM_DEPOSIT_WALLET", "0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74"
+)
+EXPECT_WALLET = os.environ.get("PM_DEPOSIT_WALLET")  # None => trust the key's own wallet
+AGENT_ENV = os.path.expanduser(
+    os.environ.get(
+        "PM_TRADE_AGENT_ENV", "~/.anicca-founder/agents/polymarket-agent/.env"
+    )
+)
 LEDGER_RECORD_JS = os.path.expanduser("~/anicca/skills/earn/lib/record.mjs")
 LEDGER_PATH = os.path.expanduser("~/anicca/skills/earn/state/earn-ledger.jsonl")
 EARN_GUARD_JS = os.path.expanduser("~/anicca/skills/_shared/lib/earn-guard.mjs")
@@ -166,14 +184,16 @@ def compute_recovered_amount(pusd_before: float, pusd_after: float) -> float:
     return delta
 
 
-def build_ledger_line(row: dict, tx_hash: str, status: str) -> dict:
+def build_ledger_line(row: dict, tx_hash: str, status: str, wallet: str = None) -> dict:
     """R3: the earn-ledger.jsonl line for one redeemed condition.
     earn_usdc = gross cash the CTF/neg-risk contract paid out for this condition
     (the first ledger touch for this position — the original buy was never itself
     ledgered); cost_usdc = the original stake; record.mjs derives
     net_usdc = earn - cost = the realized profit for this condition."""
     return {
-        "wallet": DEPOSIT_WALLET.lower(),
+        # The redeeming instance's OWN wallet. Falls back to the legacy constant only so
+        # existing callers/tests that predate multi-instance redeeming keep working.
+        "wallet": (wallet or DEPOSIT_WALLET).lower(),
         "source": "polymarket-redeem",
         "task": row["title"],
         "earn_usdc": round(row["currentValue"], 6),
@@ -240,11 +260,16 @@ def build_client():
         private_key=key, credentials=creds,
         api_key=RelayerApiKey(key=api_key, address=acct.address),
     )
-    if str(client.wallet).lower() != DEPOSIT_WALLET.lower():
+    # Money-safety: only assert when the caller stated which wallet it expects. An
+    # instance running on its own key legitimately resolves to its own wallet — asserting
+    # against a hardcoded constant here is what locked every AI except claude-p out of its
+    # own winnings. A wrong key still cannot reach a wallet it does not own: the wallet is
+    # derived FROM the key.
+    if EXPECT_WALLET and str(client.wallet).lower() != EXPECT_WALLET.lower():
         client.close()
         raise RuntimeError(
             f"money-safety abort: client resolved to wallet {client.wallet}, "
-            f"expected the known deposit wallet {DEPOSIT_WALLET}"
+            f"but PM_DEPOSIT_WALLET expects {EXPECT_WALLET}"
         )
     return client
 
@@ -274,7 +299,9 @@ def ensure_ctf_operator_approval(client, operator: str) -> str | None:
     rights ONLY — it cannot move pUSD/USDC, and is fully revocable
     (`approved=False`) at any time. Idempotent: returns None (no tx sent) if
     already approved. Uses the SDK's own public `approve_erc1155_for_all`."""
-    if is_ctf_operator_approved(DEPOSIT_WALLET, operator):
+    # Ask about THIS client's own wallet — the approval lives on the wallet that will
+    # actually redeem, which differs per instance.
+    if is_ctf_operator_approved(str(client.wallet), operator):
         return None
     handle = client.approve_erc1155_for_all(
         token_address=CTF_ADDRESS, operator_address=operator, approved=True,
@@ -386,22 +413,32 @@ def write_kill_switch(reason: str) -> None:
 
 
 def main() -> int:
-    positions = fetch_positions(DEPOSIT_WALLET)
-    rows = dedupe_redeemable_conditions(positions)
-    if not rows:
-        print("no redeemable conditions found — nothing to do")
-        return 0
-
-    print(f"found {len(rows)} redeemable condition(s):")
-    for row in rows:
-        kind = classify_market_type(row["negativeRisk"])
-        print(f"  - {row['title']!r} conditionId={row['conditionId']} "
-              f"value=${row['currentValue']:.4f} type={kind}")
-
-    before = pusd_balance(DEPOSIT_WALLET)
-    print(f"pUSD before: {before}")
-
+    # WHO AM I — answered by this instance's own key, not by a constant. The wallet is
+    # DERIVED from the key, so an instance can only ever see and cash out positions it
+    # actually owns: claude-p cannot redeem Franklin's winnings and Franklin cannot
+    # redeem claude-p's, no matter how the environment is misconfigured.
     client = build_client()
+    wallet = str(client.wallet)
+
+    try:
+        positions = fetch_positions(wallet)
+        rows = dedupe_redeemable_conditions(positions)
+        if not rows:
+            print(f"no redeemable conditions found for {wallet} — nothing to do")
+            return 0
+
+        print(f"found {len(rows)} redeemable condition(s) for {wallet}:")
+        for row in rows:
+            kind = classify_market_type(row["negativeRisk"])
+            print(f"  - {row['title']!r} conditionId={row['conditionId']} "
+                  f"value=${row['currentValue']:.4f} type={kind}")
+
+        before = pusd_balance(wallet)
+        print(f"pUSD before: {before}")
+    except Exception:
+        client.close()
+        raise
+
     results = []
     try:
         for row in rows:
@@ -413,13 +450,13 @@ def main() -> int:
             tx = redeem_condition(client, row["conditionId"])
             status = fetch_receipt_status(tx["tx_hash"])
             print(f"  tx={tx['tx_hash']} status={status}")
-            line = build_ledger_line(row, tx_hash=tx["tx_hash"], status=status)
+            line = build_ledger_line(row, tx_hash=tx["tx_hash"], status=status, wallet=wallet)
             profitable = record_ledger_line(line)
             results.append({**tx, "status": status, "row": row, "profitable": profitable})
             # P1 (spec §3/§4): after EVERY redeem, re-check the cumulative earn>spend
             # invariant. HALT -> stop redeeming further conditions THIS pass AND trip the
             # kill-switch so the trading entrypoint (run.sh) refuses the NEXT pass too.
-            halted, reason = check_cumulative_halt(DEPOSIT_WALLET.lower(), "polymarket-redeem")
+            halted, reason = check_cumulative_halt(wallet.lower(), "polymarket-redeem")
             if halted:
                 write_kill_switch(reason)
                 print(f"P1 GUARD: cumulative net breach ({reason}) — wrote KILL switch, stopping redeem pass.")
@@ -427,7 +464,7 @@ def main() -> int:
     finally:
         client.close()
 
-    after = pusd_balance(DEPOSIT_WALLET)
+    after = pusd_balance(wallet)
     recovered = compute_recovered_amount(before, after)
     print(f"pUSD after: {after}  (recovered: {recovered})")
 
