@@ -157,7 +157,47 @@ export async function spotPrice(priceId, fetchImpl) {
 // Aggregation
 // ---------------------------------------------------------------------------------------------
 /**
- * @param {Array<{chain:'base'|'polygon'|'solana', address:string, label?:string}>} wallets
+ * Build this instance's wallet list from its own resolved identity.
+ *
+ * An EVM instance holds money on Base AND Polygon AND (off-chain) Hyperliquid from the SAME address,
+ * so one address expands to three legs. Venue wallets that are NOT derivable from the signing key --
+ * chiefly the Polymarket deposit wallet, which is an ERC-1167 proxy with no key of its own -- are
+ * supplied via ANICCA_EXTRA_WALLETS, a JSON array of {chain,address,label}. Anything malformed there
+ * is ignored rather than crashing the loop: a bad env var must never stop an instance from waking.
+ *
+ * @param {{ANICCA_WALLET_ADDRESS?:string, ANICCA_EXTRA_WALLETS?:string}} config
+ * @returns {Array<{chain:string,address:string,label:string}>}
+ */
+export function resolveInstanceWallets(config = {}) {
+  const wallets = [];
+  const addr = config.ANICCA_WALLET_ADDRESS || process.env.ANICCA_WALLET_ADDRESS;
+
+  if (addr && /^0x[0-9a-fA-F]{40}$/.test(addr)) {
+    wallets.push({ chain: 'base', address: addr, label: 'own EVM' });
+    wallets.push({ chain: 'polygon', address: addr, label: 'own EVM' });
+    wallets.push({ chain: 'hyperliquid', address: addr, label: 'own HL margin' });
+  } else if (addr && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(addr)) {
+    wallets.push({ chain: 'solana', address: addr, label: 'own Solana' });
+  }
+
+  const extraRaw = config.ANICCA_EXTRA_WALLETS || process.env.ANICCA_EXTRA_WALLETS;
+  if (extraRaw) {
+    try {
+      const extra = JSON.parse(extraRaw);
+      if (Array.isArray(extra)) {
+        for (const w of extra) {
+          if (w && typeof w.chain === 'string' && typeof w.address === 'string') {
+            wallets.push({ chain: w.chain, address: w.address, label: w.label || w.chain });
+          }
+        }
+      }
+    } catch { /* malformed env must not stop the wake */ }
+  }
+  return wallets;
+}
+
+/**
+ * @param {Array<{chain:'base'|'polygon'|'solana'|'hyperliquid', address:string, label?:string}>} wallets
  * @param {{fetchImpl?:Function, includeNative?:boolean, rpc?:object}} [opts]
  * @returns {Promise<{total_usd:number, holdings:Array, errors:Array}>}
  *

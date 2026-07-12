@@ -42,6 +42,35 @@ export function liveSlotNames(registry) {
  * @param {string[]} [activeSkillSlots] - list of available skill slots
  * @returns {string}
  */
+/**
+ * Show the agent EVERY asset it owns and WHERE each one sits.
+ *
+ * Until 2026-07-12 the prompt showed a single USDC number, so an instance could not see most of its
+ * own money and reasoned from a false picture: claude-p was told $1.95 while it actually held $24.59
+ * (a Polymarket deposit wallet and a Hyperliquid margin account it had itself funded were invisible),
+ * and Franklin -- sent $18.88 of SOL -- kept concluding "my USDC is too small to trade" because SOL
+ * did not appear anywhere in its context.
+ *
+ * The venue is named on every line on purpose: most of the balance is spendable only AT the venue
+ * holding it, so the model must be able to tell "I have $14 but it is inside Polymarket" from "I have
+ * $14 I can deploy anywhere". No instruction is given here about what to DO with the money -- the
+ * model decides that; this only stops it from deciding while blind. Returns [] when the read failed,
+ * leaving the prompt exactly as it was before.
+ */
+export function netWorthLines(nw) {
+  if (!nw || !Array.isArray(nw.holdings) || nw.holdings.length === 0) return [];
+  const lines = [`- TOTAL ASSETS (all chains + venues): $${nw.total_usd.toFixed(2)} — held as:`];
+  for (const h of nw.holdings) {
+    const unpriced = h.priced === false ? '  [NO PRICE — counted as $0]' : '';
+    lines.push(`    · ${h.symbol} on ${h.chain} (${h.label}): ${h.amount.toFixed(4)} = $${h.usd.toFixed(2)}${unpriced}`);
+  }
+  lines.push('    (money at a venue is spendable AT that venue; move it first to use it elsewhere)');
+  if (nw.errors?.length) {
+    lines.push(`    (${nw.errors.length} balance read(s) failed — this TOTAL is a LOWER BOUND, not the full picture)`);
+  }
+  return lines;
+}
+
 export function buildSystemPrompt(ctx, activeSkillSlots) {
   const slots = (activeSkillSlots && activeSkillSlots.length)
     ? activeSkillSlots
@@ -60,7 +89,8 @@ export function buildSystemPrompt(ctx, activeSkillSlots) {
     '',
     '## Current State',
     `- Wallet: ${ctx.walletAddress}`,
-    `- USDC Balance: $${ctx.balanceUsdc.toFixed(6)}`,
+    `- LIQUID (spendable on a new venture right now): $${ctx.balanceUsdc.toFixed(6)}`,
+    ...netWorthLines(ctx.netWorth),
     `- Deployed / positions: ${ctx.positionsSummary || '(none surfaced)'}`,
     `- Tier: ${ctx.tier}`,
     `- Model: ${ctx.model}`,

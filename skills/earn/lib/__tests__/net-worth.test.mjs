@@ -4,7 +4,7 @@
  */
 import assert from 'node:assert/strict';
 import {
-  fetchNetWorth, hexToUnits, balanceOfCalldata, EVM_TOKENS, SOLANA_USDC_MINT,
+  fetchNetWorth, hexToUnits, balanceOfCalldata, EVM_TOKENS, SOLANA_USDC_MINT, resolveInstanceWallets,
 } from '../net-worth.mjs';
 
 let pass = 0, fail = 0;
@@ -205,6 +205,39 @@ await ta('spot price is fetched once per asset, not once per wallet', async () =
   );
   const priceCalls = f.calls.filter((c) => String(c.url).includes('SOL-USD'));
   assert.equal(priceCalls.length, 1, 'price must be cached across wallets');
+});
+
+// ---- wallet resolution ----------------------------------------------------------------------
+t('resolveInstanceWallets: an EVM address expands to Base + Polygon + Hyperliquid', () => {
+  const w = resolveInstanceWallets({ ANICCA_WALLET_ADDRESS: '0x810f6d61f7606deee2657d3083e150a222bc29c5' });
+  assert.deepEqual(w.map((x) => x.chain).sort(), ['base', 'hyperliquid', 'polygon']);
+});
+t('resolveInstanceWallets: a Solana address resolves to the Solana leg only', () => {
+  const w = resolveInstanceWallets({ ANICCA_WALLET_ADDRESS: '8FpqdcCHqjqkVXR58eVJa53neXbJf9emXhvHhgeUPCV9' });
+  assert.deepEqual(w.map((x) => x.chain), ['solana']);
+});
+t('resolveInstanceWallets: ANICCA_EXTRA_WALLETS adds venue wallets (e.g. the PM deposit proxy)', () => {
+  const w = resolveInstanceWallets({
+    ANICCA_WALLET_ADDRESS: '0x810f6d61f7606deee2657d3083e150a222bc29c5',
+    ANICCA_EXTRA_WALLETS: JSON.stringify([
+      { chain: 'polygon', address: '0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74', label: 'PM deposit' },
+    ]),
+  });
+  assert.equal(w.length, 4);
+  assert.ok(w.some((x) => x.label === 'PM deposit'));
+});
+t('resolveInstanceWallets: malformed ANICCA_EXTRA_WALLETS is ignored, never crashes the wake', () => {
+  const w = resolveInstanceWallets({
+    ANICCA_WALLET_ADDRESS: '0x810f6d61f7606deee2657d3083e150a222bc29c5',
+    ANICCA_EXTRA_WALLETS: '{not json',
+  });
+  assert.equal(w.length, 3);
+});
+t('resolveInstanceWallets: no address → empty list (caller keeps prior behaviour, no throw)', () => {
+  const saved = process.env.ANICCA_WALLET_ADDRESS;
+  delete process.env.ANICCA_WALLET_ADDRESS;
+  assert.deepEqual(resolveInstanceWallets({}), []);
+  if (saved !== undefined) process.env.ANICCA_WALLET_ADDRESS = saved;
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

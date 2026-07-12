@@ -27,6 +27,7 @@ import { readDotenvFile } from './dotenv.mjs';
 import { loadConfig } from './config.mjs';
 import { selectTier } from './tier.mjs';
 import { fetchUsdcBalance } from './balance.mjs';
+import { fetchNetWorth, resolveInstanceWallets } from '../../skills/earn/lib/net-worth.mjs';
 import { assembleContext } from './context.mjs';
 import { selfEval } from './self-eval.mjs';
 import { think } from './brain.mjs';
@@ -427,6 +428,26 @@ async function runOneWake() {
     process.stderr.write(`[loop] Balance fetch failed: ${err.message} — keeping tier=${currentTier.tier}\n`);
   }
 
+  // 2b. Fetch TOTAL net worth across every chain, token and venue this instance holds money in.
+  //     This is deliberately NOT merged into liquidUsdc above: liquidUsdc gates capital-risk slots
+  //     and must stay the conservative "spendable right here, right now" number, whereas most of an
+  //     instance's money sits somewhere it can only be spent AT (pUSD inside a Polymarket deposit
+  //     wallet buys Polymarket shares and nothing else; Hyperliquid margin backs perps and nothing
+  //     else). Widening the GATE with venue-locked money would let a slot open on funds it cannot
+  //     actually draw on. What the agent was missing was VISIBILITY, not permission -- measured
+  //     2026-07-12, claude-p's readers showed $1.95 of a real $24.59, and Franklin, sent $18.88 of
+  //     SOL, kept logging "my USDC is too small to trade" because SOL was invisible to it. So the
+  //     total goes into the PROMPT (see prompt.mjs), where the model can reason about where its
+  //     money actually is and move it, while the gate stays honest. Fail-soft: any error leaves
+  //     netWorth null and the wake proceeds exactly as before.
+  let netWorth = null;
+  try {
+    const wallets = resolveInstanceWallets(config);
+    if (wallets.length > 0) netWorth = await fetchNetWorth(wallets);
+  } catch (err) {
+    process.stderr.write(`[loop] Net-worth fetch failed (non-fatal): ${err.message}\n`);
+  }
+
   // 3. Read recent ledger lines for context
   let recentLedger = [];
   try {
@@ -536,6 +557,7 @@ async function runOneWake() {
   const ctx = assembleContext({
     walletAddress,
     balanceUsdc: liquidUsdc, // REAL liquid (was broke?0:undefined → always 0, so the buffer steer saw $0 for everyone)
+    netWorth,                // TOTAL across chains/venues (see 2b) — visibility for the model, NOT a gate
     tier: currentTier.tier,
     model: currentTier.model,
     recentLedgerLines: recentLedger,
