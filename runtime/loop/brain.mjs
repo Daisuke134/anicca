@@ -251,7 +251,13 @@ export async function thinkClaudeP(ctx, config) {
     throw new Error(`claude_empty_output`);
   }
   try {
-    return JSON.parse(stdout);
+    const parsed = JSON.parse(stdout);
+    // Surface what the brain ACTUALLY said. A wake logged as `narrate` is indistinguishable from a
+    // wake whose answer the parser could not read — and we spent a full day unable to tell those
+    // two apart. stderr only; stdout is the loop's JSON contract.
+    const said = typeof parsed?.result === 'string' ? parsed.result : JSON.stringify(parsed);
+    process.stderr.write(`[brain] claude-p said: ${said.slice(0, 300).replace(/\n/g, ' ')}\n`);
+    return parsed;
   } catch {
     throw new Error(`claude_invalid_json: ${stdout.slice(0, 200)}`);
   }
