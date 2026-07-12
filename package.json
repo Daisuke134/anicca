@@ -1,9 +1,11 @@
 {
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@solana/web3.js": "^1.98.4",
     "bs58": "5.0.0",
     "viem": "^2.52.2",
-    "x402-express": "^1.2.0"
+    "x402-express": "^1.2.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
     "fast-check": "^4.8.0"
