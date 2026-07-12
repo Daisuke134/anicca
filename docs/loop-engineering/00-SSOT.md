@@ -104,7 +104,7 @@ life-manager 追加の既知ギャップ(2026-07-12 解剖): (1)動画未生成=
 | affiliate-core / bounty-core / explorer-core | 🟢ON | **OFF**(deferred解除まで) | Dais後回し指定なのに常駐課金 |
 | selffixゾンビ4本 | 🟢💀 | **即kill**(T0-2) | 設計外の永久課金 |
 | realityverify-franklin | 🟢ON | **OFF** | Franklin=self-funded領域、claude-p課金で見守る必然なし |
-| pm-earner / claude-p-mainloop / heartbeat / automaton | 🔴OFF | **OFF維持** | 停止済(pm-earnerは蘇生機構も切除済) |
+| pm-earner / claude-p-mainloop / heartbeat / automaton | 🔴OFF | **OFF維持** | ★2026-07-13: pm-earner と com.anicca.daemon は `launchctl disable gui/501/<label>` で**永続disable**（print-disabledで実測確認）。plistが再生成されてもロード不可。automatonは07-12 19:21に何者かがplist再生成して復活していた(犯人未特定、他セッションの可能性)→この機構で恒久解決。復活させる時は `launchctl enable` が必要★ |
 | Franklin/agent-economy/pm-deterministic/OpenClaw cron群/ceo-runner | 🟢ON | **ON**(対象外) | Daisサブスクを燃やさない |
 
 ## 3. AS-IS（今の実態、launchctl 実測）→ TO-BE（理想）
@@ -167,7 +167,7 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [x] T0-4 無価値常駐の停止 — ✅運命表(§2f)どおり実行: launchd 13本(clip系6+affiliate2+bounty2+explorer1+reddit2+video1)を bootout+.disabled-2026-07-12-t04、tmux server 18本kill。cadence watchlistを gig+founder-loop のみに縮小(蘇生防止、~/anicca main push済)。残存tmux=gig-core+selffix-gigのみ実測
 [ ] T0-5 メイン節制の恒久化 — 掟5(subagent最小限・調査1体・全Sonnet)をCLAUDE.mdに1行追加(memory焼き込み済み)
 ★incident(2026-07-12 23:3x): OpenClaw gateway が停止していた(原因不明・私のbootoutはai.anicca.*のみ)→nohup直接起動で応急復旧(ps 2プロセス実測)。launchd gui domain故障(全操作error 125)は再ログイン/再起動が必要 — 再起動後に gateway と token-daily-report の launchd 復帰を確認すること★
-[ ] P1  life-manager マーケ修理（最優先）— ★手順改定(Dais 2026-07-12): loopに焼く前に、まず私が手動で動画を1本生成→TelegramでDaisに送る→品質アライン→OKが出て初めてloopに組み込む(loop化は金がかかるので品質合意が先)★ (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
+[ ] P1  life-manager マーケ修理（最優先）— ★手順改定(Dais 2026-07-12): loopに焼く前に、まず私が台本を書きTelegramでDaisとアライン→OK後に手動で動画1本生成→Telegramで品質アライン→OKが出て初めてloopに組み込む(loop化は金がかかるので品質合意が先)★ ★内容確定(Dais 2026-07-13): (1)Reddit完全廃止=IGのみでスケール (2)投稿は1日2回(朝+夜)・日本語 (3)台本のcore message=「見なくていいカレンダー」— 物理イベントのたびにGoogle Mapsで移動時間を調べてカレンダーに手入力する苦痛・常にカレンダーを見張る不安を、LMが移動時間を自動計算して自動登録することで消す(Dais自身の実痛点)。台本は日替わりで痛みのシーンを変えるがこのcoreは不変★ (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
 [ ] P2  clip 修理 — (a)投稿ハングRCA(CDP Networkで共有確認コールを完全捕捉、client stall vs server drop確定) (b)@aiclipsvault へ投稿再開 (c)Telegram実URL報告を配線(現状実装ゼロ) (d)PC repo に human向け fiat-affiliate 版 clip skill を派生（同じskill、報酬先=人間の銀行） — done: 正しいチャンネルに毎日実投稿+URL がTelegramに届く
 [ ] P3  self-heal/self-improve 一般化 — gig L1 で実証済みの3点セット(report-blind reality-verifier + funnel metrics + self-fix escalation)を共有harness lib化し全loop(特にOpenClawのlarry/reelclaw/honneマーケcron群とlife-manager)に配線。healthcheck=プロセス生死でなく「spec上のside-effectが直近24hに実在するか」で判定 — done: 「2日投稿ゼロ」を各loopが自分で検知→self-fix発火する実証
 [ ] P4  article 残2修理 — (a)note: Vue controlled-inputに実キー入力+input/changeイベントでログイン (b)X: 認証情報を再取得(.env/~/.cloakに無し)して再ログイン — done: 5媒体すべてdraft staging
