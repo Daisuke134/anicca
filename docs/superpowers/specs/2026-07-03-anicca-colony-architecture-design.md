@@ -1491,6 +1491,22 @@ Dais の3つの直感（①エッジ探しだけでなく一部は探索的ギ�
 
 ```
 === STEP 0: 証拠を正直にする（最優先・これが無いと何も信用できない）===
+[✅] T0 SONNET-BRAIN    ★2026-07-12 発見・修正★ claude-p の稼ぐループ(agent-economy-loop)が
+                        Franklin と同じ free/glm-4.7 で判断していた。
+                        config.mjs は全ティアを無料モデルに固定しており、その理由は正しい——
+                        「有料 frontier が treasury を枯らした($14→$10.5)。自払いエージェントが
+                        小資本で黒字を保つ唯一の道は無料の脳」。
+                        ★だがこれは Franklin(self-funded、推論代を自分の crypto wallet から x402 で払う)
+                        にしか当てはまらない。claude-p は human-funded で、推論代は Dais の Anthropic
+                        サブスクから出る。crypto wallet は【取引専用】で推論に1円も使わない。
+                        つまり claude-p は強い脳をタダで使えるのに、わざわざ弱い脳で判断していた。★
+                        結果: $19.15 を持ちながら narrate を繰り返し(直近300回で polymarket をたった3回)、
+                        6時間資金が遊んだ。
+                        修正: brain.mjs に既に `ANICCA_BRAIN=claude-p` → `claude -p` サブプロセス
+                        (claude-sonnet-4-6、proxy へのフォールバック付き)の経路が存在していた。
+                        plist を proxy → claude-p に変更。CLAUDE_BIN も明示(launchd の PATH には無い)。
+                        検証: brain 直接呼び出しで 68秒・success / 再起動後のエラー 0件。
+                        ★Franklin の設定は変えていない(proxy + free/glm-4.7 のまま = self-funded には正しい)★
 [  ] T1 DASH-NETWORTH   dashboard の資産を net-worth.mjs に繋ぐ
                         現: $28.65 表示 / 実: $65.06（HL証拠金・PM口座・Base が抜けている）
                         検証: dashboard-sync の total_net_worth_usd == net-worth.mjs の合計（±$1）
