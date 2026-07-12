@@ -34,7 +34,7 @@ anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self
 | loop | 何をする | 問題 |
 |---|---|---|
 | connector | イベント登録→gcal+人脈 | ★2026-07-12 main-session が自分の手で fix中★: 真因=(1)first-pass 2h+ハング(pass未完で1日の窓浪費)(2)self-heal未発火(3)1候補/passで11 gap埋まらず。fake eventは無し(7/11の2件は実登録・DaisNar参加者リスト確認)。fix A=STEP1を全open horizon日loop / fix B=ハング120分検知+self-heal発火(was 26h放置)。修正版で core再走中→応募をlogged-out firecrawlで検証予定。RCA正本=docs/loop-engineering/27-connector-rca-and-fix.md |
-| affiliate | 紹介投稿→紹介料 | reCAPTCHAで06-30からlogout・投稿0 |
+| affiliate | 紹介投稿→紹介料 | reCAPTCHAで06-30からlogout・投稿0。★2026-07-12 実測: @aishigoto.labo2 の warmup day1 が実行済み（`~/.cloak/ig-warmup-aishigoto.labo2.json` day1 reels6/scrolls5 + screenshot 14:14 JST）**だが起動元スケジューラが launchd にも openclaw cron(jobs.json) にも存在しない**=真因①の再演リスク（明日走る保証なし）。最初の一手=gateway live store を cron CLI で照会→launchd 日次 warmup ジョブ化★ |
 | bounty | 懸賞提出→賞金 | idle・survivor0 |
 | explorer | 機会探索→他loopへ供給 | proposal走るが収益化0 |
 | life-manager(core) | 予定/連絡/intake→MRR | ★2026-07-12 anicca版(loop)退役済=単一起動★・空稼働・MRR0（次は#8で稼働） |
@@ -44,11 +44,11 @@ anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self
 | gig | Coconala出品/提案/返信/納品→銀行 | 24日本体復元済。提案(teian)・出品(shuppin)・納品が足りない ←今 |
 | capafy | skill販売→銀行 | 審査中status=1・public未掲載・"PUBLISHED"嘘(accountはログイン済) |
 | ~~life-manager(loop)~~ | ~~(PC版と重複)~~ | ✅退役完了(2026-07-12): launchd `life-manager-loop-healthcheck` を bootout+disable+plist→.disabled、tmux worker(loop+selffix)kill、worker process 消滅=2x課金停止実証。復活escalation無し(LMHB=report専用)。PC core は生存継続 |
-| clip | IG動画→crypto視聴報酬 | 別垢乱造・blur |
+| clip | IG動画→crypto視聴報酬 | ★2026-07-12 実測更新: blur は解決済み（〜07-10 は 202x360/~200kbps を投稿していた→verify_clip.sh に 1080x1920+2.5Mbps ゲート追加、07-11 に burn_captions.py を純ABR 4Mbps 化 pass19 で実測 3.7-3.9Mbps）。**現在の主障害は投稿停止**: 07-11 17:00 以降投稿0件（IG共有確認ステップで全試行ハング or 202後に消滅、`~/.cloak/clip-accounts.json` の2アカウント両方 status=investigating で run.sh が選択不能）。最終実投稿=instagram.com/aiclipsvault/reel/DanlbElPLGr/。Telegram送信実装ゼロ（mail経路のみ=Daisに未達）。browser=専用port 9223/9224 で:9222とは分離設計。収益¥0（clip-promote の回収も未検証） |
 | clip-promote | 拡散→crypto | 選択だけsuccess・$0 |
 | video | 動画→crypto | grid空・blur |
 | reddit | 投稿→crypto | account BAN |
-| founder/Franklin/pm/sol | trade→crypto | 別CC担当 |
+| founder/Franklin/pm/sol | trade→crypto | 別CC担当。★2026-07-12 18:15 JST: `ai.anicca.pm-earner`(10分毎launchd) は TASKLIST #3 で2度「停止済み」と虚偽記録されたまま実稼働していた→本日 bootout+plist を .disabled-2026-07-12 化、`launchctl list | grep -c pm-earner`→0 を実測。残る発注系統= pm-deterministic(30分毎)+agent-economy-loop menu のみ★ |
 
 ## 2c. 8 loop 生死+実出力 実測（2026-07-12 08:xx JST、tmux has-session + launchctl list + evidence の有無で判定。「プロセスが生きている」≠「毎日実出力している証拠がある」を明確に分離）
 | # | loop | プロセス生存 | launchd登録 | 毎日の実出力を証拠で確認済みか |
@@ -57,10 +57,25 @@ anicca 側(別 CC): founder / Franklin / pm / sol / clip / video / reddit / self
 | 2 | capafy | launchd直起動(tmux常駐なし) | `capafy-loop-daily`1本のみ(毎日08:10) | **YES**（08:10:05に人手ゼロで自動発火を実証、そのパスで孤児DRAFTを審査提出まで完遂→私がAPI照合 status=1/skills=1/keys=1） |
 | 3 | article | プロセス無し | 無し | NO（未マージ・未live、着手すらしていない） |
 | 4 | life-manager | launchd直起動(tmux常駐なし) | `life-manager-daily`1本のみ(毎日10:15) | **YES**（修理後のパスが自力で新規IG投稿 https://www.instagram.com/p/DarB2Qikt3d/ を産み、私が実ブラウザで確認。Redditはkarma=1を実測しBP通り宣伝せずkarma育成） |
-| 5 | affiliate | tmux ALIVE | healthcheck+proactive | NO（アカウントロック中、代替アカウント暖機中、投稿不可） |
+| 5 | affiliate | tmux ALIVE | healthcheck+proactive（★warmup 本体のスケジューラ未特定★） | NO（@aishigoto.labo 恒久ロック。@aishigoto.labo2 warmup day1 は 2026-07-12 に実行済み=state json+screenshot 実在、だが起動元不明で日次継続の保証なし） |
 | 6 | bounty | tmux ALIVE | healthcheck+proactive | 未調査（今回のセッションでまだ見ていない） |
 | 7 | connector | プロセス無し(設計上、launchd直起動) | fill-gaps(実行中PID確認)+daily-report | **YES**（SSOT #5済み、強evidence） |
 | 8 | explorer | tmux ALIVE | healthcheckのみ | 未調査（今回のセッションでまだ見ていない） |
+
+## 2d. 共通修理マトリクス（2026-07-12 18:30 JST、3体のSonnet調査agent実測に基づく）
+| loop | ①launchd直起動 | ②timeout削除 | ③Telegram実配信 | ④browser排他 | 実証拠URLをledgerに記録 |
+|---|---|---|---|---|---|
+| gig | ✅ | ✅相当 | ✅(msgId 1938) | ✅ cdp_lock.sh(:9222 mkdir排他) | ✅(応募9件 実UI確認) |
+| capafy | ✅(08:10) | ✅ | ✅(msgId 1973) | ✅ mkdir排他 | ✅(API status=1照合) |
+| article | ✅(06:00) | ✅(BG_WAIT_CEILING=0) | ✅(msgId 1990/1991) | — | ✅(draft 404確認) |
+| life-manager | ✅(10:15) | ✅ | ✅(07-12 09:54 commit ac104a3 で修理、msgId 1976。それ以前はPushNotification=未達) | ❌ LLM目視判断のみ(:9222共有、mkdirロック無し) | ✅(IG実URL+logged-out検証。ただし動画でなくPillow静止画カード、IG=借り物@anicca.affirms2、Reddit=@anicca_sao shadowban確定・appeal提出済) |
+| connector | ✅(07:50/09:10) | ✅相当(120分ハング検知) | ✅(msgId 1941-1943) | — | ✅(gcal readback+実会場) |
+| **affiliate** | ❌(warmupの起動元不明) | ❌未確認 | ❌ | ❌未確認 | ❌(warmup day1のstate/screenshotのみ) |
+| **bounty** | ❌ | ❌未確認 | ❌ | 要判定 | ❌(未調査) |
+| **explorer** | ❌(healthcheckのみ) | ❌未確認 | ❌ | 要判定 | ❌(proposal走るが収益導線0) |
+| (参考)clip=anicca別CC | ✅(producer+proactive) | — | ❌実装ゼロ(mail経路のみ) | ✅ 専用port 9223/9224 | ⚠️ledgerに実URL有るが07-11 17:00以降投稿0(IG共有確認ハング) |
+
+life-manager 追加の既知ギャップ(2026-07-12 解剖): (1)動画未生成=MoneyPrinterTurbo未インストールで毎回Pillow静止画カードにフォールバック (2)専用IG/Redditアカウント不在(借り物運用) (3)同日重複ガードがLLM判断のみ (4)別系統 `~/.openclaw/skills/life-manager-video/post-daily.sh`(実音声→リール動画→Postiz→TikTok @anicca.comedy、07-12 00:31 実投稿記録)が**どのcron/launchdからも呼ばれておらず実行主体不明**=幽霊稼働。
 
 結論(2026-07-12 更新): 「毎日の実出力を証拠で確認済み」= **4つ(gig, connector, capafy, life-manager)**。articleは存在しない(未着手)。affiliate/bounty/explorerは未調査。★共通の真因(4loopで同一)★: (1)「毎日9時に起きます」等の**自己申告CronCreateは実体として保存されず**、1回動いて以降永久停止する → launchd直起動に置換すること (2)**timeoutが仕事の途中で殺す** → sutando の core-agent パターン(終わるまで走る)を採用 (3)**PushNotificationはDaisに届かない**(Remote Control非アクティブでsilent no-op) → `openclaw message send --channel telegram --target 8547730585` を使うこと。残りloopを直す時もこの3点を必ず確認する。
 
