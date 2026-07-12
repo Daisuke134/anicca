@@ -65,7 +65,15 @@ case "$TRANS" in
       EBUD=$(( TIMEOUT / 3 )); WBUD=$(( TIMEOUT * 2 / 3 ))   # ensure-browser + warm ≤ TIMEOUT
       WTID=$(timeout "$EBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/ensure_warmup_browser.py" --handle "$HANDLE" --port "$WPORT" --profile "$WPROF" --creds "$CREDS" 2>/tmp/ev_ensure.log | tail -1)
       if [ -z "$WTID" ] || printf '%s' "$WTID" | grep -q ERROR; then
-        set_state "{\"last_warmup_date\": \"$TODAY\"}"; DID="warmup deferred: dedicated browser/login not ready ($(tail -1 /tmp/ev_ensure.log 2>/dev/null|cut -c1-60))"
+        # ★ FIND-904 fix (2026-07-12): do NOT stamp last_warmup_date here — that poisoned decide()
+        #   into "noop" (already warmed today) for every remaining wake THAT SAME DAY, so a single
+        #   transient ensure_warmup_browser failure (e.g. the dedicated instance not up yet) silently
+        #   burned the entire day's Cadence Contract with zero retries. This is an INFRA precondition
+        #   failure, not a real warmup attempt (no reels were watched) — unlike the ban-signal and
+        #   too-few-real-views branches below, which DO stamp the date because a real attempt happened
+        #   and a same-day retry would just re-trigger the same ban/low-view outcome. Leaving the date
+        #   unset here lets decide() re-fire S1_warmup on the next wake instead. ★
+        DID="warmup deferred: dedicated browser/login not ready ($(tail -1 /tmp/ev_ensure.log 2>/dev/null|cut -c1-60))"
         write_audit   # ★ P0-3 fix: this failure MUST be visible in the audit ledger, never silently eaten ★
         R_HANDLE="$HANDLE" R_TRANS="$TRANS" R_DID="$DID" $PY -c "import json,os;print(json.dumps({'slot':'earn/video','handle':os.environ['R_HANDLE'],'transition':os.environ['R_TRANS'],'did':os.environ['R_DID'],'earned_usdc':0.0,'cost_usdc':0.0},ensure_ascii=False))"; exit 0
       fi
