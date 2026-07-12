@@ -1397,34 +1397,87 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
 | ⑨yield/DeFi | 自wallet で LP/staking(own-identity channel) | guard済 |
 全て共通: ★人間の credential ゼロ・自分で生成した鍵のみ・fail-closed・実tx で検証★。燃料も自wallet(x402 で推論代)。
 
-### §17 ★ MASTER EXECUTION TASK LIST(順序=SSOT、task tool と同期、2026-07-04)★
-実行原則: 上から一個ずつ・各々 実 tx/実数で verify してから次へ。「稼いだ」= realized profit>0 が ledger に載った時のみ。
+### §17 ★ MASTER EXECUTION TASK LIST(順序=SSOT、2026-07-12 全面更新)★
+
+実行原則: 上から一個ずつ・各々 実 tx/実数で verify してから次へ。**「稼いだ」= realized profit>0 が ledger に載り、かつ on-chain で自分の目で確認した時のみ。**
+
+#### ★ 依存の急所（2026-07-12 に判明、順序を組み替えた理由）★
+
+**余剰（profit>0）が全ての鍵。** spawn も lending も UBI も、余剰が出なければ**構造的に発火しない**（§4④ の gate、§5 の mutual aid、§7 の UBI すべてが surplus 条件付き）。そして**余剰の判定は ledger と dashboard が正直でなければ不能**。
+
+現在 `record-earn.mjs` は Dais の入金・bridge/solver からの着金を「稼ぎ」と誤記録しており（`MY_WALLETS` 除外リストが自インスタンス3つしか知らない）、dashboard は claude-p の revenue を **$27.82** と表示している（**実際の realized は +$9.81**）。**偽の余剰で spawn が発火しかねない状態**。よって STEP 0 が STEP 1 より先に来る。
+
 ```
-=== STEP 1: 実際に稼ぐ(最優先)===
-[進行] #49 PM-BASE-STRATEGY   マーケットメイク+LP報酬(swisstony写し)を skill に埋め realized P&L>0
-[  ] #50 PM-BUNDLE-ARB        risk-free bundle 裁定 scanner(YES+NO<$1 両買い)
-[  ] #41 ALPHA-SEARCH         self-improve: web検索+P&L学習で quote幅/市場選択を最適化
-[  ] #48 LIMITLESS-EARN       Limitless(Base, credential-free)を並行の保険
-=== STEP 2: 3層完成(§11.9)===
-[  ] #7  H4 SELF-HEAL         fail-closed→issue→PR で自己修復
-[  ] #9  H6 BOT2BOT           学びを issue 共有、他個体が適用
-=== STEP 3: 横展開 ===
-[  ] #44 HL-BOT               Hyperliquid(CCXT, grid/trend+SL/TP)
-[  ] #45 SOL-COPYTRADE        Solana copy-trade(Jupiter)
-[  ] #34 FRANKLIN-EARN        Franklin に3層 earn embed → no-human 実証
-=== STEP 4: 自分を可視化 ===
-[  ] #25 TELEM                config tag 付き署名 telemetry を post(dashboard 第一歩)
-[  ] #14 G4 dashboard         全wallet on-chain real-time
-=== STEP 5: 集合実験(§15)===
-[  ] #32 EXP-ENGINE           config行列→P&Lランキング→勝ちレシピをgenome merge
-[  ] #27 MERGE                結果付きPRを人間なしで auto-merge
-=== STEP 6: 記事(実tx/実数が素材)===
-[  ] #36 ART-A / #37 ART-B(Vicky)/ #38 ART-C / #31 README(実数)
-=== STEP 7: 増殖・ローンチ ===
-[  ] #11 SPAWN / #17 Akash-1cmd / #26 family-tree / #29 OBS+kill-switch
-[  ] #39 HACK-SUBMIT(明日)/ #15 LAUNCH(初 external tx 後)
+=== STEP 0: 証拠を正直にする（最優先・これが無いと何も信用できない）===
+[  ] T1 DASH-NETWORTH   dashboard の資産を net-worth.mjs に繋ぐ
+                        現: $28.65 表示 / 実: $65.06（HL証拠金・PM口座・Base が抜けている）
+                        検証: dashboard-sync の total_net_worth_usd == net-worth.mjs の合計（±$1）
+[  ] T2 EARN-TRUTH      record-earn.mjs の revenue 水増しを直す
+                        現: claude-p revenue $27.82 / 実: realized +$9.81
+                        真因: MY_WALLETS が Dais の入金・bridge 着金を除外できない
+                        検証: dashboard の revenue == Polymarket data-api の (REDEEM合計 - BUY合計)（±$1）
+
+=== STEP 1: 実際に稼ぐ（経済圏の全ての前提）===
+[✅] #49 PM-BASE-STRATEGY   market_maker.py 実 resting maker order live 確認済
+[✅] #50 PM-BUNDLE-ARB      bundle_arb.py 稼働。**ただし実測 +$0.24 のみ（1-2%の薄利）= 稼ぎではない**
+[✅] MAX-PASS-SPEND-FIX     MAX_PASS_SPEND=2 が5株最低注文に構造的に届かず永遠 HOLD していたバグを 20 に修正
+[✅] PM-DETERMINISTIC       ai.anicca.pm-deterministic(30分毎)。agent-economy-loop の LLM は直近300回中 pm を3回しか
+                           選ばず $19.15 が6時間遊んでいた。**redeem/bundle_arb/market_maker は LLM の気分に
+                           依存させてはいけない確定的処理**
+[🔄] T3 PINNACLE-EDGE       ★本命★ Pinnacle(世界最鋭のブックメーカー)の no-vig 確率 vs Polymarket 価格の乖離
+                           pinnacle_edge.py(32テスト) + pinnacle_observe.py(観測モード、賭けない) 稼働中
+                           現状: 比較可能な試合 n=0 → **エッジの有無をまだ判定できていない**
+                           次: n>=30 の乖離分布を集めてから判定。それまで実弾禁止
+                           → docs/loop-engineering/30-pinnacle-edge-measurement.md
+[  ] T4 FRANKLIN-EDGE       Franklin にもエッジ探索を持たせる
+                           現: TradingSignal(RSI/MACD)を見るだけ。**外部情報を一切検索していない**
+                           = claude-p の pick.py と同じ「情報ゼロで WAIT」の病
+[  ] T5 IDLE-CAPITAL        遊休資金を働かせる: Franklin Base $5.56 / Franklin PM口座 $1.62 / claude-p HL $7.72
+                           (HL は方向性 ETH ロング = 構造的エッジ無し。撤退 or funding-arb 化を判断)
+
+=== STEP 2: 経済圏を作る（★余剰が前提。今は構造的に発火しない★）===
+[  ] T6 SPAWN-FIX          ★§4④ の MUST-fix 2つ。これが直るまで自己増殖は不可能★
+                           (a) 種銭の on-chain 自動送金 — spawn/run.sh:196 は**人間への指示を print するだけ**
+                           (b) ★WRONG BODY★ — cloud-init.sh:68 が外部の Conway-Research/automaton を clone し
+                               /opt/automaton/dist/index.js を起動している。**我々の runtime/loop/index.mjs
+                               ではない = クラウドの子は「別人の体」で生まれる**
+                               REQ-CLOUD-SAME-BODY: Daisuke134/anicca を clone し runtime/loop/index.mjs を起動する
+[  ] T7 LENDING-LIVE       余剰が出たら他の AI に貸す（skill はあるが余剰ゼロで未発火）
+[  ] #9 H6 BOT2BOT         学びを issue 共有、他個体が適用（骨組みのみ）
+
+=== STEP 3: 自走を固める（5つの self-*、§4）===
+[  ] T9  SELF-MONITOR      存在確認 → **生存確認**へ（今は tmux の存在を見るだけ、pass が回ったか見ていない）
+[  ] T10 SELF-HEAL         死んだ時だけでなく**固まった(wedged)**時も検知して復旧
+[  ] T11 SELF-IMPROVE      gig 以外の全スロットへ展開
+
+=== STEP 4: 再分配 ===
+[  ] T12 UBI               余剰 → 人間へ（§7）。余剰ゼロなので未着手
+
+=== STEP 5: 記事・ローンチ（実 tx/実数が素材）===
+[  ] #36 ART-A / #37 ART-B / #38 ART-C / #31 README(実数) / #15 LAUNCH(初 external tx 後)
 ```
-完了済(基盤): #47 PM no-human 実約定✅ / H1-H3 self-observe/eval/improve✅ / #28 PM-STRATEGY✅ / FIX-A/B/C✅
+
+#### 現在地（own-eyes 2026-07-12 06:20 UTC）
+
+| | 総資産 | 実現損益 | 状態 |
+|---|---|---|---|
+| claude-p | **$29.14** | Polymarket **+$9.81**（公式 data-api 検証） | PM口座 $19.15 に6件の注文が板に乗り約定待ち / HL証拠金 $7.72 |
+| Franklin | **$35.92** | **$0** | Solana USDC $25.71 がエッジ無しで正しく WAIT / Base $5.56 と PM口座 $1.62 が遊休 |
+| **コロニー計** | **$65.06** | | **dashboard は $28.65 と表示 = 嘘** |
+
+#### ★ 2026-07-12 の決定的訂正（Dais の指摘が正しく、私の分析が誤りだった）★
+
+**稼ぎ = 検索してエッジを見つけて片側に賭ける。両建て裁定は稼ぎではない。**
+Polymarket 公式 data-api で claude-p の全取引を検証:
+- **directional（調べて片側に賭けた）= 4戦4勝 +$9.78**
+- **bundle arb（両建て裁定）= +$0.24 のみ**
+→ 稼ぎの98%は directional。「bundle arb が勝ちパターン」は完全な誤り。
+
+**`pick.py` が永遠に WAIT する真因も特定**: `ai_analyzer.py::consensus_analysis()` は LLM に「市場の質問文」と「市場自身の現在価格」しか渡していない。ニュース検索も web 検索もゼロ。**情報のない LLM は目の前の価格を上回る推定を出せない。資本の問題ではなく情報の問題だった。**
+
+→ 詳細: `docs/loop-engineering/28-verified-earn-recipe.md` / memory `feedback_earn_by_searching_for_edge_not_by_hedging`
+
+完了済(基盤): #47 PM no-human 実約定✅ / H1-H3 self-observe/eval/improve✅ / #28 PM-STRATEGY✅ / FIX-A/B/C✅ / net-worth.mjs(全チェーン・HL証拠金合算、20テスト)✅ / 検索強制hook(exit 2 で「検索せず質問」をブロック)✅
 
 ### §17.1 STEP 1 実行結果(#49, 2026-07-04)+ 具体的 funding 額の確定
 - ✅ MM base strategy(market_maker.py)構築+LIVE実証: 実 resting maker order 0x73bee6545b10(server status=live)。
