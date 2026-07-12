@@ -146,12 +146,16 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [~] L5  affiliate — ★DEFERRED(Dais 2026-07-12: 稼げる保証なし・後回し)★ 再開時: warmup起動元をgateway live cronで特定→launchd化→7日warmup→実投稿URL
 [~] L7  bounty — ★DEFERRED(Dais 2026-07-12)★
 [~] L8  explorer — ★DEFERRED(Dais 2026-07-12)★
+★実行方式(Dais 2026-07-12): 1つずつ・superpowers(brainstorming→writing-plans→subagent-driven-development)+VCSDD lean(spec駆動+TDD)。順序=P1→P9厳守★
 [ ] P1  life-manager マーケ修理（最優先）— (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
 [ ] P2  clip 修理 — (a)投稿ハングRCA(CDP Networkで共有確認コールを完全捕捉、client stall vs server drop確定) (b)@aiclipsvault へ投稿再開 (c)Telegram実URL報告を配線(現状実装ゼロ) (d)PC repo に human向け fiat-affiliate 版 clip skill を派生（同じskill、報酬先=人間の銀行） — done: 正しいチャンネルに毎日実投稿+URL がTelegramに届く
 [ ] P3  self-heal/self-improve 一般化 — gig L1 で実証済みの3点セット(report-blind reality-verifier + funnel metrics + self-fix escalation)を共有harness lib化し全loop(特にOpenClawのlarry/reelclaw/honneマーケcron群とlife-manager)に配線。healthcheck=プロセス生死でなく「spec上のside-effectが直近24hに実在するか」で判定 — done: 「2日投稿ゼロ」を各loopが自分で検知→self-fix発火する実証
-[ ] P4  profitable-claude repo への confinement — clip等ananicca側の人間向けloopをPC repoへvendor、外部参照0件(C1-C7パターン)、1コマンドinstall(own Claude subscriptionで走る)→OSS化
-[ ] P5  OpenClaw/Hermes 対応 — loop=prompt+scheduler+CLI+jsonl state の model-agnostic 設計を維持し、scheduler/model呼び出しだけadapter化
-[ ] P6  クラウドホスト — Daisスマホのみ運用。ホスト先の選定(Claude Code cloud /schedule routines vs 自前box)が要決定
+[ ] P4  article 残2修理 — (a)note: Vue controlled-inputに実キー入力+input/changeイベントでログイン (b)X: 認証情報を再取得(.env/~/.cloakに無し)して再ログイン — done: 5媒体すべてdraft staging
+[ ] P5  gig 売上化 — funnel実測 applied106/replied40/won2/paid0/live2 → 出品(shuppin)本数を増やし受動受注チャネルを太らせ、納品(nouhin)→入金まで — done: paid>0 が funnel jsonl+実UIで一致
+[ ] P6  capafy promote — 掲載20件は公開済み・売上$0 → P3のマーケ自己改善をcapafy宣伝にも適用 — done: 初売上
+[ ] P7  profitable-claude repo への confinement — clip等anicca側の人間向けloopをPC repoへvendor、外部参照0件(C1-C7パターン)、1コマンドinstall(own Claude subscriptionで走る)→OSS化
+[ ] P8  OpenClaw/Hermes 対応 — loop=prompt+scheduler+CLI+jsonl state の model-agnostic 設計を維持し、scheduler/model呼び出しだけadapter化
+[ ] P9  クラウドホスト — Daisスマホのみ運用。ホスト先=★routines(Claude Code cloud /schedule) か Akash/DigitalOcean系に傾き(Dais 2026-07-12)★。ブラウザ系loop(CloakBrowser必須)はroutinesに載らないため、box(Akash/DO)+routinesのハイブリッドが有力
 [x] #6  CEO仕上げ ★クローズ2026-07-12(自分で実装・subagent kill後に take over・全検証自分の目)★ — ①cost自己申告照合を日次light-passに配線(bin/ceo_run.py, record_cost_claim_warnings+stamp_last_observed_at)→実発火確認(gig cost-claim-unbacked を実検知) ②registry真値化=欠落してた sol(Solana) を external/external-anicca で追加(11ループ揃う、capafy/article/pm/hl/sol=external正) ③ceo-decisions.jsonl に週次decision 1行実在。全CEOテスト緑(registry 29/29・last_observed 6/6・cost-wiring 4/4・anicca_ref 5/5・gcal_write 7/7)。commit群 push済。※残1赤 vendor PROP-055=life-manager-cli の vendor 参照=#8/LMの領域(CEO無関係pre-existing)
 [ ] #9.5 SNS factory移行 — done: Dais go後にOpenClaw退役
 ```
