@@ -85,16 +85,54 @@ automaton (.anicca)             redeem=4  news=2
 **残（次の pass で確認）**: 実際に決着した玉が出た時、earn-ledger に
 `polymarket-redeem` 行が**自分の wallet で**書かれることの確認。
 
-### T3. 重複コードの二重発注を止める 🔥
-- やること: `bundle_arb.py` / `market_maker.py` が同じ財布に複数系統から注文を出さないようにする（1系統に）
-- **完了条件**: 同一 wallet への注文経路が1本だけ（`launchctl list` + コード grep で確認）
+### T3. ★真犯人★ 稼ぐ skill が menu から隠されていた 🔥（2026-07-12、commit dbb8ec0c）
 
-### T4. claude-p の脳を Sonnet にする（timeout の出ない型で）🔥
-**なぜ4番目か**: T1〜T3 が直っていれば、強い脳がそれを使って判断できる。
+**私は3回「timeout が原因」と断言し、3回とも間違っていた。Dais の指摘（「timeout は絶対に原因ではない。
+Franklin と claude-p は同じコードなのに片方だけ動く。差分を見ろ」）が正しかった。**
 
-- 現状: `ANICCA_BRAIN=claude-p` にしたが、**120秒でタイムアウトして弱い脳(glm-4.7)に落ちる**
-- claude-p は **Dais の Anthropic サブスクで動く = crypto は減らない**。ClawRouter/proxy は Franklin 専用
-- **完了条件**: ledger に `model=sonnet` かつ `slot=earn/*` の wake が実在し、narrate 率が下がる
+**真因（実測）**:
+```
+catalog-gate.mjs: 「reserve を下回る instance には、金を使う skill を menu から隠す」
+loop が読む残高 = ★Base チェーンの USDC だけ★（balance.mjs）
+
+claude-p の Base USDC = $1.95   BOOTSTRAP_RESERVE_USDC = $2   → ★5セント足りない★
+  → polymarket / sol-trade / yield（全部 risk=capital）が ★menu から消える★
+  → 脳は narrate しか選べない  → 直近300 wake 中 235 が narrate の正体
+Franklin の Base USDC = $6.48   → gate を超える → menu にある → ★同じコードで120回実行★
+
+★しかも claude-p は本当は金を持っていた★
+  Polymarket 口座の pUSD = $12.43（= Polymarket の株しか買えない金
+                                   = ★まさに polymarket slot が使う通貨★）
+  → 「Polymarket でしか使えない金があるのに、Polymarket を禁止する」という倒錯
+```
+timeout は**症状**だった（menu が空なので脳が何も選べず、判断に時間をかけていた）。
+
+**修正**:
+- `filterCatalog` が `balanceUsdc` に**関数** `(slotName) => number` も受け付けるように（数値なら従来通り＝既存テスト不変）
+- `index.mjs` が **その slot が実際に使える金**を渡す（pUSD → polymarket / Solana USDC → sol-trade）。
+  net-worth は**毎 wake すでに取得していた**（が gate には渡していなかった）
+- `resolveInstanceWallets` が Polymarket 預金 wallet を知らなかった → **plist に `ANICCA_EXTRA_WALLETS` を追加**
+  （claude-p `0x904B…` / Franklin `0xda4b…`）→ **launchctl で reload（ファイルを書くだけでは届かない）**
+
+**証拠**:
+```
+修正前: holdings: base/USDC=$1.95 | polygon/POL=$0.32 | hyperliquid/USD=$7.72   ← pUSD が無い
+修正後: holdings: base/USDC=$1.95 | ★polygon/pUSD=$12.43★ | hyperliquid/USD=$7.72
+        → polymarket slot の spendable = $14.38 (reserve $2) → ★menu に載る★
+
+launchd 上の実値（own-eyes）:
+  ANICCA_EXTRA_WALLETS => [{"chain": "polygon", "address": "0x904B50d2…", "label": "polymarket deposit"}]
+
+19/19 catalog-gate tests green（新規2件）。全体 387/404。
+baseline との差1件（integration PROP-013 SIGTERM）は stash して3回走らせ、
+変更なしでも落ちる ★既存の flaky★ と確認済み。
+```
+
+**残**: 本番の loop が実際に `slot=earn/polymarket-trade` を選ぶかを観測中。
+
+### T4. pm-deterministic を削除して 1 instance = 1 loop にする 🔥
+**なぜ**: pm-deterministic は「脳が earn を選ばないから」貼られたパッチ。T3 で脳が選べるようになったので不要。
+- **完了条件**: `launchctl list` から pm-deterministic が消え、それでも earn-ledger に polymarket の取引が出続ける
 
 ### T5. 「引退届」— 意図的に止めたループを self-healer が蘇生しないようにする ⚡
 - 教訓: pm-earner を3回 disable して3回蘇生された
