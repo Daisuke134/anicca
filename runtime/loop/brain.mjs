@@ -111,6 +111,63 @@ export function resolveClaudePTimeoutMs(overrideVal, resolvedSleepBaseS) {
   return clampedSeconds * 1000;
 }
 
+/**
+ * REQ-009 / FIND-005: standalone effectful-shell primitive (the `runClaudePWithTimeout` name
+ * verification-architecture.md's Purity Boundary Map documents, previously inlined directly inside
+ * thinkClaudeP). Spawns `bin` with `args`, enforcing `timeoutMs` via the SAME two-stage
+ * SIGTERM -> 2000ms grace -> SIGKILL pattern index.mjs:1037-1041 already uses elsewhere in this repo.
+ * Resolves `{stdout, stderr, code}` on a normal exit (any exit code); rejects with a
+ * `claude_p_timeout`-tagged error if the timeout fired.
+ *
+ * FIND-004 fix: the inner 2000ms grace-period timer IS captured (`graceTimer`) and explicitly cleared
+ * on both `exit` and `error` — previously it was never stored, so a child that honored SIGTERM and
+ * exited cleanly within the grace period left that timer dangling, later firing a no-op `kill()`
+ * against an already-dead PID.
+ *
+ * @param {string} bin
+ * @param {string[]} args
+ * @param {{env: Record<string, string>, cwd: string, timeoutMs: number}} options
+ * @returns {Promise<{stdout: string, stderr: string, code: number|null}>}
+ */
+export function runClaudePWithTimeout(bin, args, { env, cwd, timeoutMs }) {
+  return new Promise((resolve, reject) => {
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    let graceTimer = null;
+
+    const proc = spawn(bin, args, { env, cwd, stdio: ['ignore', 'pipe', 'pipe'] });
+
+    // REQ-009: today this spawn() has NO timeout at all -- a hung child hangs the wake forever (never
+    // resolves, never rejects). Port index.mjs:1037-1041's existing two-stage pattern here: on timeout,
+    // request termination first, then force-stop after a 2000ms grace period if it is still alive.
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { proc.kill('SIGTERM'); } catch {}
+      graceTimer = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);
+    }, timeoutMs);
+
+    proc.stdout.on('data', d => { stdout += d; });
+    proc.stderr.on('data', d => { stderr += d; });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      clearTimeout(graceTimer);
+      reject(new Error(`claude_not_found: ${err.message}`));
+    });
+
+    proc.on('exit', (code) => {
+      clearTimeout(timer);
+      clearTimeout(graceTimer);
+      if (timedOut) {
+        reject(new Error(`claude_p_timeout: exceeded ${timeoutMs}ms`));
+        return;
+      }
+      resolve({ stdout, stderr, code });
+    });
+  });
+}
+
 export async function thinkClaudeP(ctx, config) {
   const claudeBin = config.CLAUDE_BIN || process.env.CLAUDE_BIN || 'claude';
   const model = config.ANICCA_BRAIN_MODEL || 'claude-sonnet-4-6';
@@ -141,65 +198,33 @@ export async function thinkClaudeP(ctx, config) {
     ...(scrubbed.CLAUDE_CODE_OAUTH_TOKEN ? { CLAUDE_CODE_OAUTH_TOKEN: scrubbed.CLAUDE_CODE_OAUTH_TOKEN } : {}),
   };
 
-  return new Promise((resolve, reject) => {
-    let stdout = '';
-    let stderr = '';
-    let timedOut = false;
-
-    const proc = spawn(claudeBin, [
-      '-p', prompt,
-      '--output-format', 'json',
-      '--model', model,
-      // Without this the child stops to ASK for tool permission and answers with advice about
-      // settings.json/allowedTools instead of the wake's decision -- observed verbatim 2026-07-12,
-      // and it is why every claude-p wake fell through parseToolCall into `narrate` while looking
-      // perfectly healthy (zero errors, no fallback). The loops that already run on Sonnet
-      // (claude-p-mainloop.sh:78, self-fix.sh) all pass this flag; this one simply never did.
-      '--dangerously-skip-permissions',
-    ], {
-      env: childEnv,
-      cwd: os.tmpdir(),   // neutral cwd → no project .claude/hooks loaded → no 2-min hang
-      stdio: ['ignore', 'pipe', 'pipe'],
-    });
-
-    // REQ-009: today this spawn() has NO timeout at all -- a hung child hangs the wake forever (never
-    // resolves, never rejects). Port index.mjs:1037-1041's existing two-stage pattern here: on timeout,
-    // request termination first, then force-stop after a 2000ms grace period if it is still alive.
-    const timer = setTimeout(() => {
-      timedOut = true;
-      try { proc.kill('SIGTERM'); } catch {}
-      setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);
-    }, timeoutMs);
-
-    proc.stdout.on('data', d => { stdout += d; });
-    proc.stderr.on('data', d => { stderr += d; });
-
-    proc.on('error', (err) => {
-      clearTimeout(timer);
-      reject(new Error(`claude_not_found: ${err.message}`));
-    });
-
-    proc.on('exit', (code) => {
-      clearTimeout(timer);
-      if (timedOut) {
-        reject(new Error(`claude_p_timeout: exceeded ${timeoutMs}ms`));
-        return;
-      }
-      if (code !== 0) {
-        reject(new Error(`claude_exit_${code}: ${stderr.slice(0, 200)}`));
-        return;
-      }
-      if (!stdout.trim()) {
-        reject(new Error(`claude_empty_output`));
-        return;
-      }
-      try {
-        resolve(JSON.parse(stdout));
-      } catch {
-        reject(new Error(`claude_invalid_json: ${stdout.slice(0, 200)}`));
-      }
-    });
+  const { stdout, stderr, code } = await runClaudePWithTimeout(claudeBin, [
+    '-p', prompt,
+    '--output-format', 'json',
+    '--model', model,
+    // Without this the child stops to ASK for tool permission and answers with advice about
+    // settings.json/allowedTools instead of the wake's decision -- observed verbatim 2026-07-12,
+    // and it is why every claude-p wake fell through parseToolCall into `narrate` while looking
+    // perfectly healthy (zero errors, no fallback). The loops that already run on Sonnet
+    // (claude-p-mainloop.sh:78, self-fix.sh) all pass this flag; this one simply never did.
+    '--dangerously-skip-permissions',
+  ], {
+    env: childEnv,
+    cwd: os.tmpdir(),   // neutral cwd → no project .claude/hooks loaded → no 2-min hang
+    timeoutMs,
   });
+
+  if (code !== 0) {
+    throw new Error(`claude_exit_${code}: ${stderr.slice(0, 200)}`);
+  }
+  if (!stdout.trim()) {
+    throw new Error(`claude_empty_output`);
+  }
+  try {
+    return JSON.parse(stdout);
+  } catch {
+    throw new Error(`claude_invalid_json: ${stdout.slice(0, 200)}`);
+  }
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
