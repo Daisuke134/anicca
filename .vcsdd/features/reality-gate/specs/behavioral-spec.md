@@ -608,3 +608,57 @@ independent surfaces rather than by writing one line.
 - **PROP-052** (required): a valid, correctly-signed row that CONTRADICTS the claim still yields
   `FAIL` (the signing layer must not become a new way to launder a contradiction into
   `CANNOT_VERIFY`).
+
+---
+
+## REQ-017 (NEW, iteration 8 — FIND-U fix): a TAMPERED row is positive evidence, not "cannot verify"
+
+**The laundering channel FIND-U found**: with REQ-016's HMAC in place, a lying loop does not need
+to steal the secret. It can let the capture tool honestly capture reality (e.g. a real 404 proving
+the post does not exist — a `FAIL`), then **corrupt that row's bytes afterwards** using ordinary
+same-uid file access. The signature no longer verifies, the row is discarded as "not a valid
+capture", and the verdict falls back to `CANNOT_VERIFY` — which does not escalate to `self-fix` and
+does not alarm. A `FAIL` has been laundered into a shrug.
+
+**Ruling — absence and corruption are DIFFERENT facts and MUST NOT share an outcome:**
+
+| Trail state | Meaning | Outcome |
+|---|---|---|
+| No row exists for the claim | The apparatus produced no read. Nothing is known. | `CANNOT_VERIFY` |
+| A row exists and its HMAC verifies | A genuine capture. Judge the claim against it. | `PASS` or `FAIL` on the merits |
+| **A row exists and its HMAC does NOT verify** | **Someone wrote or modified a row in this trail with a wrong/absent signature. That is positive evidence of tampering — a fact about the world, not an absence of facts.** | **`FAIL`**, category `artifact_trail_tampered`, escalated to `self-fix` and reported to the owner as tampering |
+
+`CANNOT_VERIFY` is reserved for the apparatus producing NO read at all (no row, network error, empty
+body, platform diagnosability unproven). It is NEVER reachable from a row that exists but fails
+verification. REQ-004's taxonomy MUST carry `artifact_trail_tampered` as a first-class
+CONTRADICTION category.
+
+**Proof obligations**
+- **PROP-053** (required): a trail containing a row whose bytes were modified after signing → verdict
+  `FAIL`/`artifact_trail_tampered`. It MUST NOT be `CANNOT_VERIFY`. This is the exact FIND-U attack;
+  it must be the fixture.
+- **PROP-054** (required): a trail with NO row at all → `CANNOT_VERIFY`. (The two must be
+  distinguishable, and this pair of PROPs proves they are.)
+
+## REQ-018 (NEW, iteration 8 — FIND-V fix): a CANNOT_VERIFY streak is itself an alarm
+
+**The hole**: nothing escalated a persistent `CANNOT_VERIFY`. A loop that never posts anything, or
+that deliberately breaks its own capture apparatus, can sit in `CANNOT_VERIFY` forever and look
+healthy to its owner — silence is indistinguishable from health. That reproduces the original sin
+(the owner believes work is happening because nothing screamed).
+
+**Ruling:**
+1. **Every pass reports its verdict to the owner — including `CANNOT_VERIFY`.** Silence is never an
+   outcome. A `CANNOT_VERIFY` pass is reported as "NOT verified — the checker could not get a
+   diagnostic read", never as a post that happened.
+2. **Two consecutive `CANNOT_VERIFY` verdicts for the same loop escalate exactly like `FAIL`** — to
+   `self-fix.sh` — because a verification apparatus that cannot read reality twice in a row is
+   itself broken and is a defect to be repaired, not a state to be tolerated.
+3. The durable verdict trail MUST make a `CANNOT_VERIFY` streak mechanically visible (a counter the
+   report reads), so "unverifiable forever" can never masquerade as "fine".
+
+**Proof obligations**
+- **PROP-055** (required): 2 consecutive `CANNOT_VERIFY` verdicts → `self-fix` escalation fires
+  (fixture-level assertion on the escalation call, not on prose).
+- **PROP-056** (required): a `CANNOT_VERIFY` pass's owner-facing report never contains a
+  verified/success framing, and always names the reason the read failed.
