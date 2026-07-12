@@ -23,7 +23,7 @@
  * @param {object} opts
  * @returns {WakeContext}
  */
-export function assembleContext({ walletAddress, balanceUsdc, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer, alwaysActEngaged, alwaysActMenu }) {
+export function assembleContext({ walletAddress, balanceUsdc, netWorth, tier, model, recentLedgerLines, genesisPrompt, wakeId, ts, activeSkillSlots, skillCatalog, positionsSummary, reserveUsdc, avoidSlot, recentSlots, earnSteer, alwaysActEngaged, alwaysActMenu }) {
   return {
     // franklin-alwaysact-skill-router REQ-504: additive fields set by index.mjs's wake loop only for
     // Franklin-identity, flag-engaged wakes (REQ-501). alwaysActEngaged defaults false (byte-for-byte
@@ -34,6 +34,10 @@ export function assembleContext({ walletAddress, balanceUsdc, tier, model, recen
     alwaysActMenu: Array.isArray(alwaysActMenu) ? alwaysActMenu : [],
     walletAddress: walletAddress || 'unknown',
     balanceUsdc: typeof balanceUsdc === 'number' ? balanceUsdc : 0,
+    // TOTAL assets across every chain/token/venue (net-worth.mjs). Visibility only — balanceUsdc above
+    // remains the capital gate. null when the read failed: the prompt then omits the block entirely
+    // rather than showing a fabricated total.
+    netWorth: netWorth && typeof netWorth === 'object' ? netWorth : null,
     // loop-break + diversification signals — index.mjs passes these; without them here they were DROPPED,
     // so the FORBID-this-slot / over-use steers never fired in production (the live agent kept looping).
     avoidSlot: avoidSlot || null,
