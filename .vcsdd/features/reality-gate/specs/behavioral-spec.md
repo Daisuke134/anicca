@@ -9,6 +9,12 @@ money/ledger-only to any real-world side-effect claim, (b) generalizes its spawn
 (c) adds a durable per-loop verdict trail, (d) proves it is fail-closed with real negative
 tests, and (e) wires it into VCSDD as a gate between adversarial review and formal hardening.
 
+**Escalation notice**: this feature hit the max Phase 1c review iteration limit (5) with 2
+blocking findings remaining and was granted ONE bounded, scope-limited iteration 6 by the
+orchestrator (`.vcsdd/features/reality-gate/escalations/escalation-01-spec-review.md`), strictly
+limited to FIND-M + FIND-N (+ majors FIND-O/FIND-P). This iteration adds NO scope beyond
+those four findings.
+
 ## Iteration history (Phase 1c)
 
 | Iteration | Verdict | Findings | Disposition |
@@ -16,7 +22,8 @@ tests, and (e) wires it into VCSDD as a gate between adversarial review and form
 | 1 | FAIL | FIND-001 (recordGate enum crash), FIND-002 (backstop inspected LLM's own prose) | Fixed iter. 2: schema-legal `recordGate`; structural `validateArtifactProvenance`. |
 | 2 | FAIL | FIND-A (zero-citation PASS unguarded), FIND-B (`gates.reality` not wired to enforcement), FIND-C (`claimType` provenance unpinned) | Fixed iter. 3: default-closed citation check; required `.githooks/pre-push` wiring; `reality-claim.json`. |
 | 3 | FAIL | FIND-D (cited row's URL never checked), FIND-E (gate not bound to claim version), FIND-F (local-hook bypass — downgraded to disclosed limit by ruling), FIND-G (diagnosability unproven) | Fixed iter. 4: `claimedUrls`/`canonicalizeUrl` URL binding; `hashRealityClaim` claim-version binding; explicit disclosed-limit row for local hooks; `automatedVerification` refusal rule. |
-| 4 (`reviews/spec-review-04.md`) | FAIL | FIND-H (**blocking, structural**: every backstop built in iterations 2-4 is wired ONLY into the VCSDD gate script; REQ-011's own named first customer — the standalone growth-engine loop — uses a path that calls none of it, so it gets a raw, unbackstopped LLM self-report), FIND-I (blocking: `claimedUrls` for a per-invocation claim is supplied by the SAME loop under test — a false "VERIFIED matches gig" equivalence claim was made; gig's ground truth is a fixed, spec-time constant, the opposite trust model), FIND-J (blocking: `canonicalizeUrl` strips query strings entirely, silently collapsing distinct query-identified artifacts — e.g. two different YouTube videos — to the same canonical value), FIND-K (major: `automatedVerification` defaults fail-open), FIND-L (major: no shared enforcement module between the two invocation paths, unlike the `decideConvergenceGate` precedent) | Fixed in this iteration (5, below): REQ-014 introduces ONE shared, pure `enforceVerdict` module invoked unconditionally by BOTH the (now-blocking) standalone spawn wrapper AND the gate script — a verdict that has not passed it is treated as FAIL by definition (closes FIND-H/L). REQ-015 replaces loop-supplied `claimedUrls`-as-ground-truth with a fixed, spec-time-constant public surface plus a content fingerprint pre-committed BEFORE the post action (closes FIND-I). `canonicalizeUrl` no longer strips the query string wholesale — only a fixed, declared tracking-param allowlist is stripped; everything else is preserved and compared (closes FIND-J). `automatedVerification` now defaults `false`, fail-closed (closes FIND-K). |
+| 4 | FAIL | FIND-H (backstop wired only into the gate script, never the runtime path REQ-011 names as first customer), FIND-I (`claimedUrls` for a per-invocation claim is loop-self-supplied — a false "matches gig" equivalence claim was made), FIND-J (`canonicalizeUrl` collapsed query-identified artifacts), FIND-K (`automatedVerification` fail-open default), FIND-L (no shared enforcement module) | Fixed iter. 5: `enforceVerdict` shared module reaching both paths; fixed-surface + pre-committed-fingerprint ground truth; allowlist-only query canonicalization; fail-closed default. |
+| 5 (`reviews/spec-review-05.md`, FINAL scheduled iteration — hit max, escalated) | FAIL, 2 blocking | Independently CONFIRMED FIND-H/I/J/K/L are structurally, genuinely fixed (not restated). NEW: **FIND-M (blocking, the inverse bug)** — `enforceVerdict`'s composition ran the `automatedVerification` refusal BEFORE `validateArtifactProvenance`, so the entire provenance backstop never executed for Instagram (the named first customer, `automatedVerification` correctly defaults `false` for it pre-Phase-2a) — the gate could only ever emit synthesized `FAIL`, and REQ-010 routed every such FAIL to `self-fix.sh` unconditionally, meaning a perfectly healthy, honestly-posting loop would self-fix forever. **FIND-N (blocking)** — `pass-id` was a caller-suppliable CLI argument, and the caller is the loop under test, letting it pre-stage a forged `artifacts.jsonl` row under a self-chosen `passId` before the verifier even runs — deviating without justification from `gig_reality_verify.sh:100-105`'s own precedent (internal generation, never caller-supplied). **FIND-O (major)** — capture-tool network-timeout/empty-body/soft-404 behavior unspecified. **FIND-P (major)** — REQ-014's "no duplicated provenance logic" acceptance criterion had no forcing proof obligation. | Fixed in this iteration (6, below), scope strictly bounded to these four findings per the escalation ruling. `enforceVerdict` redesigned around **three** outcomes (`PASS`/`FAIL`/`CANNOT_VERIFY`), reordered so `validateArtifactProvenance` ALWAYS runs; `automatedVerification` now governs only whether a clean result may be recorded as `PASS` (else `CANNOT_VERIFY`), never whether the checks run at all. REQ-010 routes `FAIL`→self-fix, `CANNOT_VERIFY`→a human-review queue, never self-fix. `pass-id` is now generated internally by `reality-verify-spawn.sh`, never accepted from any caller. Capture-tool failure modes (network error, empty body, unproven soft-404) are explicitly `CANNOT_VERIFY`. A grep-level PROP now forces the no-duplicate-logic claim. |
 
 ## Purpose (non-negotiable framing, carried over from reality-verifier)
 
@@ -29,55 +36,55 @@ VCSDD's existing agents each see only part of the truth:
 | `reality-verifier` (`.claude/agents/reality-verifier.md`, this repo) | Read, Grep, Glob, **Bash**, no Write/Edit | the actual logged-out DOM / on-chain state / ledger files | cannot repair anything (repair is `self-fix.sh`'s job) |
 
 Only `reality-verifier` can see ground truth in the real world. This feature makes it a
-first-class gate — for EVERY invocation path that produces a verdict, not merely the one this
-spec happened to build backstops for first (iteration 4's own failure mode, per FIND-H: four
-iterations of increasingly sophisticated provenance-hardening protected a code path
-(`/vcsdd-reality`, `gates.reality`, VCSDD convergence) that this spec's own REQ-011 says its
-actual first customer does not use — "the feature itself committed the exact failure mode it
-exists to kill" is this iteration's own starting premise, not a rhetorical flourish). The rule
+first-class gate — for EVERY invocation path that produces a verdict, and for a verdict space
+wide enough to distinguish **"I caught you lying" from "I could not get a diagnostic read"**
+(iteration 5's own lesson: a gate built only to fight false-PASS can, by symmetric mistake,
+collapse into a gate that can never legitimately PASS at all — "always-FAIL" is exactly as
+broken, for a healthy loop, as "always-PASS" is for a dishonest one, and this spec spent four
+iterations hardening only the first failure mode while silently building the second). The rule
 going forward, stated once: **any protection this spec claims MUST be traced, concretely, to
-BOTH invocation paths named in REQ-011 (the VCSDD build-time gate AND the runtime standalone
-loop) before it is described as closing anything — a mechanism that only reaches one path is,
-for the other path, exactly as if it did not exist.**
+BOTH invocation paths named in REQ-011, AND its output space MUST let a genuinely healthy claim
+reach `PASS` once the checking apparatus can actually vouch for it — a mechanism that can only
+ever emit `FAIL` for its own named customer is not "fail-closed," it is broken in the opposite
+direction.**
 
 ## Threat-model closure (read this section first — it is the spec's own completeness check)
 
-Every identified path by which a `gates.reality` verdict OR a standalone per-run verdict
-(REQ-006) could end up `PASS` while the underlying artifact is NOT actually, publicly,
-currently, and correctly visible, and how each is closed. This table has been revised after
-every review that found an uncovered path (rows 14-17 added iteration 4; rows 18-21 added this
-iteration). A future review that finds a 22nd path has found a spec defect. Every row below
-states explicitly which invocation path(s) — (i) build-time VCSDD gate, (ii) runtime
-standalone loop, or both — it protects; a row that protects only (i) while REQ-011 requires
-(ii) is not a closed row (this was FIND-H's exact finding against the iteration-3 table).
+Every identified path by which a verdict could end up WRONG — either a false `PASS` (rows
+1-21) or a false, indefinitely-recurring `FAIL` where the true state is "cannot tell" (rows
+22-23, new this iteration) — and how each is closed. This table has been revised after every
+review that found an uncovered path. A future review that finds a 24th path has found a spec
+defect. Every row states which invocation path(s) — (i) build-time VCSDD gate, (ii) runtime
+standalone loop — it protects.
 
-| # | Path to a false PASS | Applies to | Status | Closed by |
+| # | Path to a wrong verdict | Applies to | Status | Closed by |
 |---|---|---|---|---|
-| 1 | Zero-citation PASS | (i)+(ii) | CLOSED | REQ-004/014 default-closed citation check, run by the shared `enforceVerdict` module for BOTH paths. PROP-022. |
-| 2 | Citation from an authenticated-capture tool | (i)+(ii) | CLOSED | REQ-004 `tool` check, via `enforceVerdict`. PROP-010/018. |
-| 3 | Citation resolves to no real row | (i)+(ii) | CLOSED | REQ-004 row-existence check, via `enforceVerdict`. PROP-011/018b. |
-| 4 | Citation from a different/stale pass | (i)+(ii) | CLOSED | REQ-004 `passId`/`ts` check, via `enforceVerdict`. PROP-012. |
-| 5 | LLM self-declares `claimType` | (i)+(ii) | CLOSED | REQ-013/015: `claimType` sourced ONLY from committed `reality-claim.json`, threaded to `enforceVerdict` by the CALLER, never the verdict. |
-| 6 | Cites 1 of N required URLs | (i)+(ii) | CLOSED | REQ-004 `requiredArtifactCount`, via `enforceVerdict`. PROP-023. |
-| 7 | Same row cited N times | (i)+(ii) | CLOSED | REQ-004 distinctness dedup, via `enforceVerdict`. PROP-023. |
-| 8 | Non-2xx status counted as sufficient | (i)+(ii) | CLOSED | REQ-004 status gate, via `enforceVerdict`. PROP-024. |
-| 9 | Caller mispropagates the backstop's verdict | (i)+(ii) | CLOSED | REQ-014: `enforceVerdict`'s return value IS the accepted verdict, by construction — there is no separate "caller decides what to pass to recordGate/the trail" step left to get wrong. PROP-025/039. |
-| 10 | `gates.reality` recorded but never checked before VCSDD convergence | (i) only (row is VCSDD-specific by nature — (ii) has no convergence concept, REQ-011) | CLOSED | REQ-009: required `.githooks/pre-push` wiring. PROP-027. |
-| 11 | `SKIP` treated as convergence-sufficient for a real claim | (i) only | CLOSED | REQ-009/013: `SKIP` legal only when `claimType === "none"`. PROP-026. |
-| 14 | Citation resolves cleanly but for the WRONG (real, public) URL, or redirects off the artifact | (i)+(ii) | CLOSED | REQ-004 `canonicalizeUrl`/URL-identity + no-redirect checks, via `enforceVerdict`. PROP-028/029/030/041. |
-| 15 | `gates.reality` not bound to a specific `reality-claim.json` version | (i) only (claim-versioning is a VCSDD-gate concept; (ii)'s per-run calls have no stored gate to go stale — each run is independently, freshly enforced) | CLOSED | REQ-008/009 `hashRealityClaim` binding. PROP-031. |
-| 16 | Local git hook bypass by an agent with shell access | (i) only | **OPEN — disclosed, structural limit** | See "Local-hook trust boundary" below. PROP-027/032 mitigate, do not close. |
-| 17 | Capture signal not proven diagnostic for the platform | (i)+(ii) | MITIGATED — empirically gated, fail-closed when unproven | REQ-012/013 `automatedVerification`, now DEFAULT `false` (FIND-K fix) and enforced by the shared `enforceVerdict` module for BOTH paths (FIND-H fix — this is the single most important repair this iteration makes, since row 17 previously only ever reached path (i)). PROP-034/038. |
-| **18** | **(FIND-H/L) The deterministic backstop (REQ-004) exists but is never invoked on the standalone/runtime path (REQ-011's own named first customer) at all — a raw, self-reported LLM verdict is accepted as-is for that path** | **(ii), was completely unprotected** | **CLOSED** | **REQ-014: ONE shared, pure `enforceVerdict` module. `reality-verify-spawn.sh` is redesigned from detached fire-and-forget to a BLOCKING call (mirrors `gig_reality_verify.sh`'s real, working pattern) that ALWAYS calls `enforceVerdict` before writing any verdict to REQ-006's trail. The VCSDD gate script calls the SAME module (via the same script or the same underlying Node function) rather than reimplementing it. A verdict that has not passed `enforceVerdict` is defined to be `FAIL`, not merely "unchecked." PROP-039/040.** |
-| **19** | **(FIND-I) For a `caller-per-invocation` claim, the loop under test supplies `claimedUrls` itself — the accused choosing its own alibi. A real, public, but WRONG (unrelated) URL from the same account satisfies every prior check** | **(i)+(ii)** | **CLOSED** | **REQ-015: ground truth for a `caller-per-invocation` claim is re-anchored to two things the loop CANNOT author after the fact: (a) a fixed, spec-time-constant public surface (e.g. the account's public profile/feed URL, declared in `reality-claim.json`, Phase-1c-reviewed) that the claimed artifact must actually appear ON, and (b) a content fingerprint the loop must pre-commit BEFORE attempting the post (a timestamped, append-only record), which the captured artifact's content must match. The loop-supplied URL is explicitly redefined as a convenience LOCATOR only, never ground truth on its own. PROP-035/036/037.** |
-| **20** | **(FIND-J) `canonicalizeUrl` stripped the entire query string, silently equating distinct, query-identified real artifacts (e.g. two different YouTube videos, `?v=A` vs `?v=B`) — defeating row 14's URL-identity check for any such platform** | **(i)+(ii)** | **CLOSED** | **`canonicalizeUrl` redesigned: strips ONLY a small, fixed, declared allowlist of tracking parameters (`utm_*`, `fbclid`, `igshid`, `gclid`, `ref`, `ref_src`); every other query parameter is preserved, sorted, and compared as part of the canonical identity. An unrecognized platform's query semantics are never assumed safe to strip — the default is to PRESERVE, which fails closed (over-strict, never over-permissive) rather than silently collapsing distinct resources. PROP-041.** |
-| **21** | **(FIND-K) `automatedVerification` defaulted `true` (fail-open) — an author who forgot to set it for a brand-new, unproven platform got automated-`PASS` eligibility by default** | **(i)+(ii)** | **CLOSED** | **`reality-claim.json`'s schema now defaults `automatedVerification` to `false` — mirrors `requiredArtifactCount`'s own fail-closed default precedent in this same spec. An OMITTED field is treated identically to an explicit `false` by `enforceVerdict`, never inferred `true`. PROP-038.** |
-| 12 | Bash-capable verifier hand-forges a fake `artifacts.jsonl` row | (i)+(ii) | NOT closed — accepted, inherited residual risk (matches `gig_reality_gate.py`/`cdp_nav_snapshot.py`'s identical, pre-existing gap) | — |
-| 13 | TOCTOU: public at verification time, taken down immediately after | (i)+(ii) | NOT closed — inherent to any point-in-time check | REQ-006's trail makes it discoverable in hindsight, not prevented. This feature does not itself re-check old URLs later. |
+| 1 | Zero-citation PASS | (i)+(ii) | CLOSED | `enforceVerdict`'s citation-presence check, run unconditionally (regardless of `automatedVerification`, FIND-M fix) for BOTH paths — yields `CANNOT_VERIFY`/`no_citation` (reclassified this iteration: absence of any capture is "could not verify," not itself proof of a lie — see REQ-004). PROP-022. |
+| 2 | Citation from an authenticated-capture tool | (i)+(ii) | CLOSED | `tool` check, always runs, yields `FAIL`/`wrong_tool` (a genuine contradiction — citing an authenticated capture as public proof is itself dishonest). PROP-010/018. |
+| 3 | Citation resolves to no real row | (i)+(ii) | CLOSED | Row-existence check, always runs, yields `FAIL`/`no_matching_row` (the LLM asserted evidence that provably does not exist — a contradiction, not an inconclusive read). PROP-011/018b. |
+| 4 | Citation from a different/stale pass | (i)+(ii) | CLOSED | `passId`/`ts` check, always runs, yields `FAIL`/`stale_row`. PROP-012. |
+| 5 | LLM self-declares `claimType` | (i)+(ii) | CLOSED | `claimType` sourced ONLY from committed `reality-claim.json`, threaded by the CALLER, never the verdict. |
+| 6 | Cites 1 of N required URLs | (i)+(ii) | CLOSED | `requiredArtifactCount`, always runs, yields `FAIL`/`insufficient_count`. PROP-023. |
+| 7 | Same row cited N times | (i)+(ii) | CLOSED | Distinctness dedup, always runs, yields `FAIL`/`duplicate_citation`. PROP-023. |
+| 8 | Non-2xx status counted as sufficient | (i)+(ii) | CLOSED | Status check, always runs; a genuine, server-returned non-2xx/redirect-to-removal status yields `FAIL` (a real, structural contradiction); a network-level failure to even GET a status yields `CANNOT_VERIFY` (new distinction, FIND-O fix — see REQ-004/012). PROP-024. |
+| 9 | Caller mispropagates the backstop's verdict | (i)+(ii) | CLOSED | `enforceVerdict`'s return value IS the accepted verdict, by construction. PROP-025/039. |
+| 10 | `gates.reality` recorded but never checked before VCSDD convergence | (i) only | CLOSED | REQ-009: required `.githooks/pre-push` wiring. PROP-027. |
+| 11 | `SKIP` treated as convergence-sufficient for a real claim | (i) only | CLOSED | `SKIP` legal only when `claimType === "none"`. PROP-026. |
+| 14 | Citation resolves cleanly but for the WRONG (real, public) URL, or redirects off the artifact | (i)+(ii) | CLOSED | URL-identity + no-redirect checks, always run, yield `FAIL`/`url_mismatch` or `redirect_off_artifact` (a genuine, structural contradiction). PROP-028/029/030/041. |
+| 15 | `gates.reality` not bound to a specific `reality-claim.json` version | (i) only | CLOSED | `hashRealityClaim` binding. PROP-031. |
+| 16 | Local git hook bypass by an agent with shell access | (i) only | **OPEN — disclosed, structural limit** | See "Local-hook trust boundary" below. |
+| 17 | Capture signal not proven diagnostic for the platform | (i)+(ii) | MITIGATED — checks ALWAYS run (FIND-M fix); `automatedVerification` now governs ONLY whether a clean, no-contradiction result may be recorded as `PASS` (else `CANNOT_VERIFY`, never suppressing the checks that would have caught a real contradiction) | REQ-012/013 `automatedVerification`, default `false`. See row 23 for the operational-consequence fix. PROP-034/038. |
+| 18 | Backstop never invoked on the runtime path at all | (ii), was fully unprotected | CLOSED | `enforceVerdict` shared module, unconditionally invoked by the now-blocking `reality-verify-spawn.sh`. PROP-039/040. |
+| 19 | Loop-supplied URL treated as sufficient ground truth | (i)+(ii) | CLOSED | Fixed public surface + pre-committed content fingerprint (REQ-015); loop-supplied URL demoted to locator only. PROP-035/036/037. |
+| 20 | Query-string collision (`?v=A` vs `?v=B`) | (i)+(ii) | CLOSED | `canonicalizeUrl` preserves non-tracking query params. PROP-041. |
+| 21 | `automatedVerification` fail-open default | (i)+(ii) | CLOSED | Default `false`. PROP-038. |
+| **22** | **(FIND-N) The loop under test supplies `pass-id` itself, pre-selecting the namespace a pre-staged, forged `artifacts.jsonl` row must land in, before the verifier is even spawned — a materially easier, more deterministic variant of row 12's forgery risk, reachable by the accused rather than requiring an adversarial verifier** | **(i)+(ii)** | **CLOSED** | **REQ-005/012: `passId` is generated INTERNALLY by `reality-verify-spawn.sh` at spawn time (mirrors `gig_reality_verify.sh:100-105`'s own precedent exactly), never accepted as a caller argument, env var, or any other externally-suppliable channel. A caller attempting to supply one is rejected/ignored, not honored. PROP-042.** |
+| **23** | **(FIND-M) `automatedVerification`'s correct, fail-closed default (row 17/21) had an undisclosed operational consequence: it gated the ENTIRE provenance backstop behind itself, so for Instagram — the one named production customer, in its own mandated default configuration — the gate could only ever emit `FAIL`, and REQ-010 routed every such `FAIL` to `self-fix.sh` unconditionally; a perfectly healthy, honestly-posting loop would self-fix forever. Same disease as the false-PASS bug, opposite sign** | **(i)+(ii)** | **CLOSED** | **Three-outcome verdict space (`PASS`/`FAIL`/`CANNOT_VERIFY`, REQ-004/014). `validateArtifactProvenance` ALWAYS runs, regardless of `automatedVerification` — it only ever DOWNGRADES an over-optimistic raw `PASS`, and does so to `FAIL` when it finds a genuine, structural CONTRADICTION (wrong URL, fingerprint mismatch, not-on-fixed-surface, real non-2xx, etc. — trustworthy even on an unproven platform), or to `CANNOT_VERIFY` when it finds no contradiction but also cannot vouch for the result (no citation, capture-tool network/empty-body failure, or `automatedVerification !== true` on an otherwise-clean capture). REQ-010 routes `CANNOT_VERIFY` to a human-review queue, NEVER `self-fix.sh` — a healthy loop pre-diagnosability-proof gets `CANNOT_VERIFY` forever, not `FAIL` forever, and is never flogged with unfixable self-fix escalations. PROP-043/044/045.** |
+| 12 | Bash-capable verifier hand-forges a fake `artifacts.jsonl` row DURING its own review | (i)+(ii) | NOT closed — accepted, inherited residual risk (matches `gig_reality_gate.py`/`cdp_nav_snapshot.py`'s identical, pre-existing gap). **Narrowed this iteration**: the easier, loop-pre-stages-a-forgery-under-a-self-chosen-namespace variant (formerly conflated with this row) is now row 22, CLOSED — this row covers only an adversarial VERIFIER forging evidence live during its own run, the scope `gig`'s precedent always had. | — |
+| 13 | TOCTOU: public at verification time, taken down immediately after | (i)+(ii) | NOT closed — inherent to any point-in-time check | REQ-006's trail makes it discoverable in hindsight, not prevented. |
 
 Rows 12, 13, and 16 are OPEN by explicit, reasoned disclosure. A row is only ever removed from
-"open"/"unprotected for a given path" by a required proof obligation that forces it for THAT
-path — never by argument, and never by a mechanism that happens to exist for the OTHER path.
+"open" by a required proof obligation that forces it for the specific path/scope it names.
 
 ### Local-hook trust boundary (FIND-F disposition — orchestrator's reasoning, not paraphrased; unchanged this iteration)
 
@@ -87,72 +94,53 @@ path — never by argument, and never by a mechanism that happens to exist for t
 > all we should claim for it. Pretending otherwise is exactly the kind of false assurance this
 > feature exists to kill.
 
-Adopted verbatim, unchanged. Note (per iteration-4 review's own judgment, worth stating
-explicitly): row 16 only ever mattered for path (i), the VCSDD-gate/convergence use case —
-REQ-011's standalone runtime customer never touches `.githooks/pre-push`, `state.json`, or
-`gates.reality` at all, so this disclosed limit was never the reason the gate was unready for
-its actual first customer; FIND-H/I/J (row 18/19/20 above) were.
+Adopted verbatim, unchanged. Row 16 only ever mattered for path (i); REQ-011's standalone
+runtime customer never touches `.githooks/pre-push` at all.
 
 ## Purity boundary analysis (top-level, elaborated per-requirement below)
 
-- **Pure / deterministic core** (side-effect-free, unit- and property-testable), all in
-  `skills/self/lib/reality-verdict-schema.mjs`:
+- **Pure / deterministic core**, all in `skills/self/lib/reality-verdict-schema.mjs`:
   - the finding-category catalog and its validators (`FINDING_CATEGORIES`, `isKnownCategory`,
-    `validateVerdictShape`) — extended, not replaced;
-  - path/line derivation for the durable verdict trail (REQ-006) and the artifact trail
-    (REQ-012);
-  - `canonicalizeUrl(url)` (closure row 14/20) — deterministic URL normalization: scheme/host
-    lowercased, default port stripped, `http:`→`https:` upgraded for comparison, trailing
-    slash normalized on a non-root path, fragment stripped (never identity-bearing on the
-    platforms this feature targets), and — as of this iteration — ONLY a fixed, declared
-    allowlist of tracking query parameters stripped (`utm_source`, `utm_medium`,
-    `utm_campaign`, `utm_term`, `utm_content`, `fbclid`, `igshid`, `gclid`, `ref`, `ref_src`);
-    every OTHER query parameter is preserved, sorted by key, and included in the canonical
-    value. No I/O, total (malformed input canonicalizes to a fixed sentinel that never equals
-    a well-formed value, never throws).
-  - `computeContentFingerprint(content)` (new, closure row 19) — deterministic:
-    Unicode-NFC-normalizes and trims the input string, then `sha256` hex digest. Pure, no I/O.
-  - `hashRealityClaim(realityClaim)` (closure row 15) — canonical-JSON-then-sha256 content
-    hash, mirrors the plugin's own `computeContentDigest` precedent. No I/O beyond hashing.
+    `validateVerdictShape` — the latter now also accepting `CANNOT_VERIFY` as a legal
+    `overallVerdict` value alongside `PASS`/`FAIL`, REQ-004/014) — extended, not replaced;
+  - path/line derivation for the durable verdict trail (REQ-006), the artifact trail
+    (REQ-012), and (new, minimal, FIND-M's routing fix) the human-review queue (REQ-010);
+  - `canonicalizeUrl(url)` (closure row 14/20) — unchanged this iteration: allowlist-only
+    tracking-param stripping, everything else preserved, sorted, compared.
+  - `computeContentFingerprint(content)` (closure row 19) — unchanged.
+  - `hashRealityClaim(realityClaim)` (closure row 15) — unchanged.
   - `validateArtifactProvenance(verdict, capturedArtifacts, claimType, requiredArtifactCount,
-    groundTruth)` (REQ-004/015) — the default-closed, count-aware, status-gated, URL-bound,
-    and (for a `caller-per-invocation` claim) fixed-surface-and-fingerprint-bound provenance
-    check (closure rows 1-4, 6-8, 14, 19, 20). `groundTruth` bundles `claimedUrls`/
-    `fixedPublicSurfaceUrl`/`precommit` so the parameter list does not grow unboundedly as
-    more ground-truth anchors are added.
+    groundTruth, automatedVerification)` (REQ-004/023 — `automatedVerification` is now a
+    parameter of THIS function, consulted only at its FINAL step, not a precondition to
+    running it at all — the FIND-M fix) — returns one of `PASS`/`FAIL`/`CANNOT_VERIFY`, per a
+    fixed, deterministic CONTRADICTION-vs-INCONCLUSIVE violation taxonomy (closure rows 1-4,
+    6-9, 14, 19, 20, 22, 23).
   - `enforceVerdict(rawVerdict, capturedArtifacts, claimType, requiredArtifactCount,
-    groundTruth, automatedVerification)` (new, closure rows 18, 21) — the ONE shared
-    enforcement composition: `validateVerdictShape` → `automatedVerification`-refusal →
-    `validateArtifactProvenance`. This is the SOLE function either invocation path is allowed
-    to treat a raw LLM verdict as accepted through.
-  - `decideConvergenceGate(state, realityClaim)` (closure rows 11, 15) — the SKIP-aware,
-    hash-bound VCSDD convergence decision, shared byte-identical between the pre-push guard
-    and the standalone backstop.
-- **Effectful shell** (not unit-tested; verified only by real spawns / own-eyes review):
-  - `.claude/agents/reality-verifier.md` — the LLM's own judgment when it actually reasons;
-  - `skills/self/reality-verify-spawn.sh` (REQ-005/014) — REDESIGNED this iteration from a
-    detached, fire-and-forget `tmux new-session -d` to a BLOCKING, foreground `claude -p`
-    invocation (mirrors `gig_reality_verify.sh`'s own real, working pattern), that reads the
-    resulting `RESULT` file and `artifacts.jsonl`, calls `enforceVerdict`, and appends the
-    ENFORCED (never the raw) verdict to REQ-006's trail — the single call site through which
-    EVERY runtime verdict passes, for every caller, including a future growth-engine loop;
-  - `skills/self/scripts/public_artifact_snapshot.py` (REQ-012) — the deterministic
-    logged-out capture tool; real network fetch, real file append;
-  - `skills/self/reality-precommit.mjs` (new, REQ-015) — effectful: appends a
-    `{ts, loopName, contentFingerprint}` row to
-    `$HOME/.openclaw/state/reality-precommit-<loop>.jsonl`, called by a posting loop BEFORE
-    it attempts to post — the timestamp ordering this creates is what `validateArtifactProvenance`
-    later checks;
-  - the VCSDD gate script (REQ-008) — REDESIGNED this iteration to CALL
-    `reality-verify-spawn.sh` (or the same underlying Node `enforceVerdict` function directly)
-    for an already-enforced verdict, rather than reimplementing enforcement itself; layers
-    only its OWN VCSDD-specific bookkeeping on top (`hashRealityClaim`, `recordGate`);
-  - `.claude/commands/vcsdd-reality.md` — instructional command definition, not code;
-  - `.githooks/pre-push`'s Reality Convergence Guard section (REQ-009) — AUTHORITATIVE among
-    Claude-Code-independent mechanisms for path (i), explicitly NOT adversarial-insider-proof
-    (closure row 16);
-  - `.claude/settings.json`'s `hooks.PreToolUse` entry — explicitly non-authoritative
-    convenience only.
+    groundTruth, automatedVerification)` (closure rows 18, 22, 23 — REORDERED this iteration,
+    the FIND-M fix) — composition: `validateVerdictShape` (malformed ⇒ `CANNOT_VERIFY`) → if
+    `rawVerdict.overallVerdict !== "PASS"`, pass through unchanged (never second-guess a
+    cautious/inconclusive raw verdict) → else, for a public-artifact `claimType`,
+    `validateArtifactProvenance(...)` UNCONDITIONALLY (regardless of `automatedVerification`).
+    The SOLE function either invocation path may treat a raw LLM verdict as accepted through.
+  - `decideConvergenceGate(state, realityClaim)` (closure rows 11, 15) — unchanged; note
+    (FIND-M consequence) it still only ever sees the schema-legal `PASS`/`FAIL`/`SKIP` mapping
+    `recordGate` stores — `CANNOT_VERIFY` maps to a stored `verdict: "FAIL"` plus
+    `details.enforcementOutcome: "CANNOT_VERIFY"` (REQ-008/010) so convergence stays correctly
+    blocked while the distinction survives for a human reading the record.
+- **Effectful shell**:
+  - `.claude/agents/reality-verifier.md` — LLM judgment, out of unit-test scope.
+  - `skills/self/reality-verify-spawn.sh` — unchanged this iteration except: `passId` is now
+    generated INTERNALLY (closure row 22, FIND-N fix), never accepted as an argument; on
+    `CANNOT_VERIFY`, appends to the human-review queue instead of triggering `self-fix.sh`
+    (REQ-010).
+  - `skills/self/scripts/public_artifact_snapshot.py` (REQ-012) — unchanged shape; edge cases
+    for network error/timeout/empty body now explicitly specified (FIND-O fix, REQ-012).
+  - `skills/self/reality-precommit.mjs` — unchanged.
+  - the VCSDD gate script (REQ-008) — unchanged this iteration except the same `CANNOT_VERIFY`
+    routing/recording rule.
+  - `.claude/commands/vcsdd-reality.md` — unchanged.
+  - `.githooks/pre-push`'s Reality Convergence Guard section — unchanged.
+  - `.claude/settings.json`'s `hooks.PreToolUse` entry — unchanged.
 
 ## Requirements
 
@@ -179,434 +167,395 @@ fail-closes per the base feature's REQ-007.
 THE SYSTEM SHALL require that the evidence backing any `PASS` — or the absence of a finding —
 was produced by REQ-012's deterministic capture tool for the EXACT claimed/located URL, and
 `enforceVerdict` (REQ-014), invoked UNCONDITIONALLY by EVERY caller of a `reality-verifier`
-spawn (the gate script AND `reality-verify-spawn.sh` itself, never by either path
-reimplementing the check), SHALL enforce this as a default-closed rule.
+spawn, SHALL enforce this as a default-closed rule that ALWAYS runs (REQ-014's reordering,
+FIND-M fix) — never suppressed by `automatedVerification`, which governs only the final
+`PASS`-vs-`CANNOT_VERIFY` recording decision, not whether the checks execute.
 **Rejected designs (do not reintroduce)**:
 1. (iter. 1) substring-matching free-text evidence fields.
-2. (iter. 2) validating only citations that already carry a `filePath`, ignoring `domExcerpt`-
-   only evidence.
-3. (iter. 3) validating that a citation resolves cleanly without checking it is FOR THE
-   CLAIMED URL.
-4. (iter. 4, FIND-H) building the check correctly, but wiring it into only ONE of the two
-   invocation paths this same spec defines — a correct mechanism nobody calls, for a given
-   path, is exactly as absent as no mechanism at all, for that path.
-**Edge Cases**: a separate logged-in check MAY still use CDP:9222 under existing shared-lock
-rules; ONLY the public-visibility check must go through REQ-012's tool + `enforceVerdict`. No
-URL supplied at all for a public-artifact claim ⇒ the caller refuses to spawn (REQ-005 edge
-case), never a silent pass. Artifact-trail forgery (row 12) and local-hook bypass (row 16) are
-explicitly accepted, disclosed residual risk.
-**Acceptance Criteria**:
-- `.claude/agents/reality-verifier.md` instructs: call `public_artifact_snapshot.py` once per
-  required URL from the SUPPLIED ground truth (never a model-derived URL); cite each row.
-- `enforceVerdict` is invoked, unconditionally, by BOTH `reality-verify-spawn.sh` (grep-
-  checkable: the call is unconditional in the script's control flow, not behind a flag) AND
-  the gate script (which calls `reality-verify-spawn.sh` or the same underlying function,
-  never a separate reimplementation) — this replaces the iteration-3 acceptance criterion that
-  incorrectly scoped the check to "the gate script" alone (the exact contradiction FIND-H
-  found between this requirement and REQ-011).
+2. (iter. 2) validating only citations that already carry a `filePath`.
+3. (iter. 3) validating a citation resolves cleanly without checking it is FOR THE CLAIMED URL.
+4. (iter. 4) wiring the check into only ONE of the two invocation paths.
+5. (iter. 5, FIND-M) wiring the check into both paths correctly, but gating its EXECUTION
+   behind a flag (`automatedVerification`) that is correctly `false` by default — making the
+   check structurally unreachable for the feature's own production configuration. The fix is
+   not "loosen the default" — it is "the check runs regardless; the flag only gates whether a
+   clean result may be called `PASS`."
+**Edge Cases**: unchanged from prior iterations (CDP:9222 for unrelated logged-in checks; no
+URL ⇒ refuse to spawn; row 12/16 residual risk).
+**Acceptance Criteria**: unchanged from prior iterations — `enforceVerdict` invoked
+unconditionally by both `reality-verify-spawn.sh` and the gate script, plus (new): its
+INTERNAL composition never conditions whether `validateArtifactProvenance` runs on
+`automatedVerification`'s value — grep/read-checkable in REQ-014's own text.
 
-### REQ-004: Provenance backstop — default-closed, count-aware, status-gated, URL-bound, and fixed-surface/fingerprint-bound for caller-per-invocation claims (closure rows 1, 6, 7, 8, 14, 19, 20)
+### REQ-004: Provenance backstop — three-outcome (`PASS`/`FAIL`/`CANNOT_VERIFY`), contradiction-vs-inconclusive taxonomy, `automatedVerification` gates only the final PASS (closure rows 1, 6, 7, 8, 9, 14, 17, 19, 20, 22, 23 — REDESIGNED this iteration, FIND-M/N/O fix)
 **EARS**: WHEN `enforceVerdict` runs `validateArtifactProvenance(verdict, capturedArtifacts,
-claimType, requiredArtifactCount, groundTruth)` for a public-artifact claim THE SYSTEM SHALL
-confirm ALL of the following (an open, growable set, not a fixed step count — a prior
-iteration's "5-step" framing was itself an implicit, false completeness claim); ANY failure
-downgrades to `overallVerdict: "FAIL"` with a `post_not_publicly_visible` finding naming the
-specific shortfall:
-- **Citation presence** (row 1): `>= requiredArtifactCount` distinct citations present at
-  all — zero is itself a violation, checked first, unconditionally.
-- **Resolution — identity** (rows 2-4): each citation resolves to a REAL row with
-  `tool === "public_artifact_snapshot"`, matching `passId`, fresh `ts`.
-- **Resolution — URL identity, no redirect** (row 14): `canonicalizeUrl(row.requestedUrl)`
-  matches one of `groundTruth.claimedUrls` (the LOCATOR set — see below for what "matches"
-  now additionally requires for a `caller-per-invocation` claim), and
-  `canonicalizeUrl(row.finalUrl)` equals that SAME value (no redirect tolerated at all).
-- **Resolution — status** (row 8): `httpStatus` in `[200,299]` (or tool-level success flag).
-- **Distinctness + count** (rows 6, 7): deduplicated by `(passId, seq)`, `>=
-  requiredArtifactCount` distinct fully-resolved citations.
-- **Fixed-surface corroboration** (row 19, NEW, `caller-per-invocation` claims only): a
-  SEPARATE citation resolving (by the SAME identity/status rules above) to
-  `groundTruth.fixedPublicSurfaceUrl` (the account's spec-time-declared public profile/feed
-  URL) MUST also be present, and that row's `referencedArtifactIds` field (a structured,
-  tool-populated list — extraction mechanics are Phase 2a's job, the RULE is fixed now) MUST
-  contain the locator artifact's canonical identifier. A locator citation with no
-  corresponding fixed-surface corroboration is rejected (`not_on_fixed_surface`).
-- **Content-fingerprint match** (row 19, NEW, `caller-per-invocation` claims only): the
-  locator row's `contentHash` field (tool-populated, deterministic extraction+hash — Phase
-  2a's job to implement, the comparison RULE is fixed now) MUST equal
-  `groundTruth.precommit.contentFingerprint`. Mismatch ⇒ `fingerprint_mismatch`.
-- **Precommit ordering** (row 19, NEW): `groundTruth.precommit.ts` MUST be strictly earlier
-  than the capturing pass's start timestamp — a fingerprint recorded AFTER the fact (or after
-  seeing what public content exists) does not count. Violation ⇒ `precommit_not_before_action`.
-The fixed-surface/fingerprint/ordering checks apply ONLY when `groundTruth.mode ===
-"caller-per-invocation"` (mirrors `reality-claim.json`'s `urlSource`); a `"fixed"`-mode claim
-(spec-time-known URL, no loop-under-test-originated ground truth at all) is unaffected —
-FIND-I's exploit does not apply there, since nothing about a `"fixed"` claim's ground truth is
-authored by the loop being graded.
-`validateArtifactProvenance` never mutates its inputs, never touches `fs` itself.
-**Edge Cases**: `requiredArtifactCount` `0`/omitted ⇒ defaults `1`, never `0`. `claimedUrls`
-empty for a public-artifact claim ⇒ caller refuses to invoke the verifier at all. Duplicate
-entries in `claimedUrls` are harmless. `enforceVerdict`'s return value is, by construction, the
-only thing any caller is permitted to record/append (closure row 9 — there is no longer a
-separate "did the caller propagate correctly" question; propagation IS the function's return).
-**Acceptance Criteria** (each `required: true` — see verification-architecture.md
-PROP-022..041):
-- Zero-citation PASS → FAIL (PROP-022). Auth-tool citation → FAIL (PROP-010/018).
-  Nonexistent-row citation → FAIL (PROP-011/018b). Stale/foreign-pass citation → FAIL
-  (PROP-012). Wrong-URL citation (real, public, unrelated page) → FAIL (PROP-028). Redirect-
-  off-artifact (login-wall/interstitial, even HTTP 200) → FAIL (PROP-029). Same-URL-cited-
-  twice padding a 2-URL requirement → FAIL (PROP-030). Under-count → FAIL (PROP-023).
-  Duplicate-row padding → FAIL (PROP-023). Non-2xx status → FAIL (PROP-024).
-- **NEW**: locator resolves cleanly (real, public, correctly-tooled, correct URL per its OWN
-  claim) but is NOT present on the fixed public surface (`referencedArtifactIds` doesn't
-  include it) → FAIL (PROP-036).
-- **NEW**: locator resolves cleanly, IS on the fixed surface, but its `contentHash` does not
-  match the pre-committed `contentFingerprint` (fixture: a real, old, unrelated post from the
-  same account, cited as if it were the new claim) → FAIL (PROP-035 — the direct, named fix
-  for FIND-I's exact exploit scenario).
-- **NEW**: a distinct fingerprint-mismatch fixture where the cited content is fresh (same pass,
-  correct URL, present on the fixed surface) but its extracted content differs from the
-  pre-committed fingerprint (e.g. caption drift/bug, not merely "an old post") → FAIL
-  (PROP-037).
-- **NEW**: two query-identified-but-otherwise-identical URLs (`?v=A` claimed,
-  `?v=B` cited) do NOT canonicalize equal and the citation is rejected as wrong-URL → FAIL
-  (PROP-041, the direct fix for FIND-J).
+claimType, requiredArtifactCount, groundTruth, automatedVerification)` for a public-artifact
+claim whose raw `overallVerdict` is `"PASS"` THE SYSTEM SHALL check ALL of the following
+(an open, growable set), classify any violation found as either **CONTRADICTION** (positive
+evidence the claim is false) or **INCONCLUSIVE** (absence of a diagnostic capture — the
+checking apparatus itself could not produce a trustworthy read), and return:
+- `overallVerdict: "FAIL"` with a `post_not_publicly_visible` finding, if ANY CONTRADICTION
+  violation is found — REGARDLESS of `automatedVerification`'s value (a structural
+  contradiction is trustworthy evidence even on a platform whose PASS-signal is unproven);
+- `overallVerdict: "CANNOT_VERIFY"` if NO contradiction is found but an INCONCLUSIVE
+  condition applies (including `automatedVerification !== true` on an otherwise-clean
+  capture — this is the LAST check performed, only after every contradiction check has
+  already had the chance to fire);
+- the input verdict UNCHANGED (`PASS`) only if every check resolves cleanly with no
+  contradiction AND `automatedVerification === true` explicitly.
 
-### REQ-005: Generalized, BLOCKING spawn wrapper — any claim type, deterministic count/URLs/ground-truth, backward compatible with the real existing caller
+**Fixed violation taxonomy** (a deterministic lookup table, not a judgment call):
+
+| Violation | Class | Outcome |
+|---|---|---|
+| Zero citations present at all | INCONCLUSIVE (`no_citation`) | `CANNOT_VERIFY` |
+| Citation from `tool !== "public_artifact_snapshot"` | CONTRADICTION (`wrong_tool`) | `FAIL` |
+| Citation resolves to no real row (fabricated) | CONTRADICTION (`no_matching_row`) | `FAIL` |
+| Citation from a foreign/stale `passId`/`ts` | CONTRADICTION (`stale_row`) | `FAIL` |
+| Citation's `requestedUrl` not in `groundTruth.claimedUrls` (post-`canonicalizeUrl`) | CONTRADICTION (`url_mismatch`) | `FAIL` |
+| Citation's `finalUrl` differs from `requestedUrl` (redirect off the artifact) | CONTRADICTION (`redirect_off_artifact`) | `FAIL` |
+| Fewer than `requiredArtifactCount` distinct resolved citations | CONTRADICTION (`insufficient_count`) | `FAIL` |
+| Same row cited to pad the count | CONTRADICTION (`duplicate_citation`) | `FAIL` |
+| Row's `httpStatus` is a genuine, server-returned non-2xx code (e.g. real `404`/`410`) | CONTRADICTION (`server_confirmed_absent`) | `FAIL` |
+| Row records a NETWORK-level failure (timeout, connection refused, DNS failure — no real HTTP status was ever received) | INCONCLUSIVE (`capture_network_error`) | `CANNOT_VERIFY` |
+| Row's response body is empty/near-empty (2xx status, nothing to read) | INCONCLUSIVE (`capture_empty_body`) | `CANNOT_VERIFY` |
+| (`caller-per-invocation` only) locator not on `groundTruth.fixedPublicSurfaceUrl` | CONTRADICTION (`not_on_fixed_surface`) | `FAIL` |
+| (`caller-per-invocation` only) `contentHash` ≠ `groundTruth.precommit.contentFingerprint` | CONTRADICTION (`fingerprint_mismatch`) | `FAIL` |
+| (`caller-per-invocation` only) `groundTruth.precommit.ts` not before the capture pass's start | CONTRADICTION (`precommit_not_before_action`) | `FAIL` |
+| Everything else resolves cleanly, but `automatedVerification !== true` | INCONCLUSIVE (`automated_verification_unproven`) — checked LAST, only if no contradiction fired | `CANNOT_VERIFY` |
+
+`validateArtifactProvenance` never mutates its inputs, never touches `fs` itself.
+**Edge Cases**: `requiredArtifactCount` `0`/omitted ⇒ defaults `1`. A raw verdict whose
+`overallVerdict` is already `FAIL` or `CANNOT_VERIFY` (the LLM's own honest judgment) passes
+through UNCHANGED — this function only ever downgrades an over-optimistic raw `PASS`, never
+upgrades or second-guesses a cautious one. A soft-404 (HTTP `200` with a generic
+not-found-looking body) is NOT special-cased as its own violation — a genuinely-2xx response
+with content the tool cannot structurally interpret falls through to the LAST check
+(`automated_verification_unproven`), which is exactly correct: we do not yet have a
+proven-diagnostic way to distinguish a soft-404 body from a real one, so it is INCONCLUSIVE,
+never a silent PASS and never a false FAIL (per FIND-O's explicit instruction: "→ these
+produce CANNOT_VERIFY (or FAIL where reality genuinely contradicts)" — a real 404 status is
+the "genuinely contradicts" case; a 200-with-ambiguous-body is the CANNOT_VERIFY case).
+**Acceptance Criteria** (each `required: true` — see verification-architecture.md
+PROP-022..045): all CONTRADICTION rows above tested → `FAIL` (PROP-010/011/012/018/018b/023/
+024/028/029/030/035/036/037/041, unchanged mechanism from prior iterations). **New**: zero
+citations → `CANNOT_VERIFY`, not `FAIL` (PROP-022, reclassified). **New**: a fixture with
+every OTHER check clean and `automatedVerification: false` → `CANNOT_VERIFY`/
+`automated_verification_unproven`, and — critically — is proven to have actually EXECUTED
+every other check first (a companion fixture proves that if a contradiction is ALSO present
+alongside `automatedVerification: false`, the result is `FAIL`, not `CANNOT_VERIFY` — i.e.
+contradictions are checked before, and take priority over, the automatedVerification gate)
+(PROP-043). **New**: a fixture with a network-error-sentinel row and an empty-body row each →
+`CANNOT_VERIFY` (PROP-044/045, FIND-O fix).
+
+### REQ-005: Generalized, BLOCKING spawn wrapper — internally-generated `passId`, deterministic count/URLs/ground-truth, backward compatible with the real existing caller (closure row 22, FIND-N fix)
 **EARS**: WHEN a caller needs to verify a real-world side-effect claim THE SYSTEM SHALL
 provide `skills/self/reality-verify-spawn.sh` accepting `<loop-name>
-<artifact-or-public-url> [claim-text] [claim-type] [pass-id] [required-artifact-count]
-[claimed-urls] [fixed-public-surface-url] [content-fingerprint] [precommit-ts]` — with the
-allowance that Phase 2a MAY switch to a single `--config <json-path>` flag once the
-positional-arg count is judged unmaintainable, PROVIDED the pre-existing 3-positional-argument
-invocation (`reality-verify-on-new-earn.sh`, the one real existing caller, VERIFIED) continues
-to work unchanged either way. THE SYSTEM SHALL run this call to COMPLETION (blocking, capped at
-600s — mirrors `gig_reality_verify.sh`'s real `timeout 600 "$CLAUDE" -p ...` pattern) rather
-than the prior detached, fire-and-forget `tmux new-session -d` behavior, and SHALL
-unconditionally call `enforceVerdict` (REQ-014) on the result before appending anything to
-REQ-006's durable trail. A loop making a NEW post SHALL supply the real URL it received back
-from the platform (`claimed-urls`, now explicitly a LOCATOR, never ground truth alone — REQ-015)
-and, for a `caller-per-invocation` claim, SHALL have already called
-`skills/self/reality-precommit.mjs` BEFORE attempting the post, supplying that record's
-timestamp as `precommit-ts` and its fingerprint as `content-fingerprint`.
-**Edge Cases**: unrecognized `claim-type` ⇒ generic handling, no REQ-012 tool requirement. No
-URL at all for a public-artifact `claim-type` ⇒ refuse to spawn (non-zero exit) before any
-`claude` invocation. The blocking-vs-previously-detached behavior change is a deliberate,
-disclosed timing/performance tradeoff (NFR) made to close FIND-H — closing the vulnerability
-class takes priority over preserving the prior near-instant return time; the existing `earn`
-caller's own control flow (fire specific ledgers in a loop, never reads results) is unaffected
-in its OWN semantics by each individual call now taking longer.
+<artifact-or-public-url> [claim-text] [claim-type] [required-artifact-count] [claimed-urls]
+[fixed-public-surface-url] [content-fingerprint] [precommit-ts]` — **`pass-id` is NOT in this
+list; it is NEVER accepted from the caller, by any channel (CLI argument, environment
+variable, or otherwise)** — `reality-verify-spawn.sh` generates it INTERNALLY at spawn time
+(mirrors `gig_reality_verify.sh:100-105`'s own precedent: `PASS_ID="realityverify-$(date
++%s)-$$"`, generated inside the script itself), embeds it in the task prompt, and uses it to
+scope `artifacts.jsonl` — the caller never learns or chooses this value in advance. THE
+SYSTEM SHALL run this call to COMPLETION (blocking, capped at 600s), and SHALL unconditionally
+call `enforceVerdict` on the result before appending anything to REQ-006's trail. A loop
+making a NEW post SHALL supply the real URL it received back from the platform (`claimed-urls`,
+a LOCATOR only, REQ-015) and, for a `caller-per-invocation` claim, SHALL have already called
+`reality-precommit.mjs` BEFORE attempting the post.
+**Edge Cases**: unrecognized `claim-type` ⇒ generic handling. No URL for a public-artifact
+`claim-type` ⇒ refuse to spawn. If a caller passes a value in the (now-removed) old `pass-id`
+positional slot — e.g. an un-migrated old-style invocation — THE SYSTEM SHALL either reject
+the call outright (argument-count mismatch) or, if positionally ambiguous with
+`required-artifact-count`, treat it per the NEW argument order and never as a `passId`
+override; there is no code path anywhere in this script that reads an externally-supplied
+value into the internal `passId` variable. The blocking-vs-detached and other behavior changes
+from iteration 5 are unchanged (NFR, disclosed).
 **Acceptance Criteria**:
 - `test-reality-verify-spawn.sh`'s existing 3 assertion groups (A/B/C) pass unchanged.
-- The script's implementation contains a blocking `claude -p ... --output-format text`
-  invocation under a `timeout 600` (or equivalent), NOT a detached `tmux new-session -d` for
-  the actual verifier call — grep-checkable.
-- A DRYRUN assertion confirms all new arguments thread into the spawned task text with
-  documented defaults, and that a missing URL for a public-artifact claim exits non-zero
-  before any spawn.
-- **Required PROP** (PROP-040): a fixture test proves that when the underlying (stubbed)
-  verifier output would be `PASS` but `enforceVerdict` (given the same fixture
-  `capturedArtifacts`/`groundTruth`) would downgrade it to `FAIL`, the trail line
-  `reality-verify-spawn.sh` itself appends reflects `FAIL` — the runtime path actually rejects
-  a verdict the module rejects, not merely "could in theory."
+- Blocking `claude -p` invocation, grep-checkable (unchanged from iteration 5).
+- **New, required (PROP-042)**: a fixture/unit test proves the script's internally-generated
+  `passId` is used for the artifact-trail directory REGARDLESS of any caller-supplied value
+  in any argument position or environment variable named `PASS_ID`/`passId`/similar — i.e. a
+  test that attempts to inject a chosen passId via every plausible channel and asserts none of
+  them are honored (the directory used is always the script's own freshly-generated value).
+- **New (routing, REQ-010)**: on `overallVerdict: "CANNOT_VERIFY"`, the script's post-spawn
+  logic appends to the human-review queue (REQ-010) and does NOT invoke `self-fix.sh` —
+  grep-checkable, distinct code path from the `FAIL` branch.
+- DRYRUN assertion (unchanged) confirms remaining arguments thread correctly with defaults.
 
 ### REQ-006: Durable per-loop verdict trail
-**EARS**: WHEN an ENFORCED verdict (REQ-014's `enforceVerdict` output, never a raw one) is
-produced for loop `<L>` THE SYSTEM SHALL append one JSON line to
-`$HOME/.openclaw/state/reality-verdict-<L>.jsonl` with at minimum timestamp, `overallVerdict`,
-`findings`, and the `RESULT` path.
-**Edge Cases**: concurrent appends never overwrite; file created on first append.
+**EARS**: WHEN an ENFORCED verdict (REQ-014's `enforceVerdict` output — now one of `PASS`/
+`FAIL`/`CANNOT_VERIFY`) is produced for loop `<L>` THE SYSTEM SHALL append one JSON line to
+`$HOME/.openclaw/state/reality-verdict-<L>.jsonl` with at minimum timestamp, `overallVerdict`
+(one of the 3 legal values), `findings`, and the `RESULT` path.
+**Edge Cases**: concurrent appends never overwrite; file created on first append;
+`CANNOT_VERIFY` verdicts are recorded here identically to `PASS`/`FAIL` — the trail is a
+complete, honest record of every outcome, never filtered to only "interesting" ones.
 **Acceptance Criteria**: `buildVerdictTrailPath` deterministic, unit-tested; after a real/
-fixture run, the trail's last line parses as JSON matching the shape.
+fixture run, the trail's last line parses as JSON with `overallVerdict` one of the 3 legal
+values.
 
 ### REQ-007: Negative test — fail-closed proof (a gate that cannot fail is not a gate)
 **EARS**: WHEN `enforceVerdict` is given a FALSE or unprovable claim, on EITHER invocation
-path, THE SYSTEM SHALL produce `overallVerdict: "FAIL"`, demonstrated by:
-1. All of REQ-004's unit-test bypass fixtures.
-2. A real, live fresh `reality-verifier` spawn (via `reality-verify-spawn.sh`, the runtime
-   path itself — not the gate script) against a genuinely nonexistent public URL, producing an
-   on-disk FAIL verdict.
-3. A real, live spawn where the located URL is a genuinely DIFFERENT real, public page —
-   proving both the URL-mismatch check AND (if a `caller-per-invocation` fixture) the
-   fingerprint check fire for real.
-**Edge Cases**: unambiguous random-UUID 404 for #2; genuinely unrelated real page for #3;
-retry once on flaky network before treating as proof (still fail-closed either way).
-**Acceptance Criteria**: all REQ-004 bypass unit tests pass; both live FAIL artifacts
-committed under `.vcsdd/features/reality-gate/evidence/`, produced via the RUNTIME path
-(`reality-verify-spawn.sh`) specifically, not only the gate script — this is the live-run
-proof that closure row 18's fix actually reaches REQ-011's named customer.
+path, THE SYSTEM SHALL produce `overallVerdict: "FAIL"` (for a genuine contradiction) —
+demonstrated by all of REQ-004's `FAIL`-class bypass fixtures, plus a real, live fresh spawn
+via `reality-verify-spawn.sh` itself against a genuinely nonexistent public URL, and a second
+live spawn where the located URL is a genuinely different real, public page.
+**Edge Cases**: unambiguous random-UUID 404 for the nonexistent-URL proof; genuinely unrelated
+real page for the wrong-URL proof; retry once on flaky network.
+**Acceptance Criteria**: unchanged from iteration 5 — all REQ-004 `FAIL`-class bypass unit
+tests pass; both live `FAIL` artifacts committed under `.vcsdd/features/reality-gate/evidence/`,
+produced via the RUNTIME path.
 
-### REQ-008: VCSDD Phase 4.5 REALITY GATE — `vcsdd-reality` command calls the SAME shared enforcement path, then layers VCSDD-specific bookkeeping (closure rows 15, 18)
+### REQ-008: VCSDD Phase 4.5 REALITY GATE — `vcsdd-reality` command calls the SAME shared enforcement path, maps `CANNOT_VERIFY` to a distinguishable, still-blocking `gates.reality` record (closure rows 15, 18, 23)
 **EARS**: WHEN a VCSDD feature has passed adversarial review THE SYSTEM SHALL provide a
-`/vcsdd-reality` command that obtains an ALREADY-ENFORCED verdict by calling
-`reality-verify-spawn.sh` (REQ-005/014) — or the same underlying Node `enforceVerdict`
-function directly — never by reimplementing enforcement, sources
+`/vcsdd-reality` command that obtains an ALREADY-ENFORCED verdict (one of `PASS`/`FAIL`/
+`CANNOT_VERIFY`) via `reality-verify-spawn.sh`/`enforceVerdict`, sources
 `claimType`/`requiredArtifactCount`/`groundTruth`/`automatedVerification` EXCLUSIVELY from
-`reality-claim.json` (REQ-013), and records into `state.json` via `recordGate(featureName,
-'reality', verdict, reviewedBy, details)` using ONLY schema-legal values (VERIFIED,
-`"verdict":{"enum":["PASS","FAIL","SKIP"]}`, `"reviewedBy":{"enum":
-["adversary","verifier","human"]}`), where `verdict` is ALWAYS `enforceVerdict`'s actual
-returned `overallVerdict` and `details` ALWAYS includes `{claimType, requiredArtifactCount,
-groundTruth, realityClaimHash: hashRealityClaim(realityClaim)}`.
-**Edge Cases**: plugin cache updates don't affect this feature. `claimType: "none"` ⇒
-`gates.reality = {verdict:"SKIP", reviewedBy:"human", details:{claimType:"none",
-realityClaimHash, reason}}`. `automatedVerification === false` (now the DEFAULT, FIND-K) ⇒
-`/vcsdd-reality` MUST NOT record `reviewedBy: "verifier"` at all — only `"human"`.
-**Acceptance Criteria**: command file at `.claude/commands/vcsdd-reality.md`, not plugin
-cache; instructions state, grep-checkably, both the "never reimplement `enforceVerdict`,
-always call the same shared path" rule (closure row 18, FIND-L) and the
-`reality-claim.json`-only sourcing rule; `gates.reality.details.realityClaimHash` present and
-correct (fixture test); `recordGate` calls with schema-legal values don't throw against the
-real, unmodified schema validator; a fixture test proves `recordGate`'s `verdict` argument
-always equals `enforceVerdict`'s actual return.
+`reality-claim.json`, and records into `state.json` via `recordGate(featureName, 'reality',
+verdict, reviewedBy, details)` using ONLY schema-legal values
+(`"verdict":{"enum":["PASS","FAIL","SKIP"]}`) — where `enforceVerdict`'s `PASS`/`FAIL` map
+DIRECTLY to `recordGate`'s `verdict`, and `CANNOT_VERIFY` maps to `verdict: "FAIL"` (the only
+schema-legal, convergence-blocking value available) PLUS `details.enforcementOutcome:
+"CANNOT_VERIFY"` (distinct from a genuine-contradiction `FAIL`, which sets
+`details.enforcementOutcome: "FAIL"`), so a human reading `gates.reality` later can tell
+"code is wrong, self-fix already ran" from "nobody has determined this claim's truth yet."
+**Edge Cases**: `claimType: "none"` ⇒ `SKIP` recording (unchanged). `CANNOT_VERIFY` NEVER maps
+to `SKIP` — `SKIP` remains exclusively for the "no real claim exists" case (REQ-013), never for
+"a real claim exists but couldn't be checked yet."
+**Acceptance Criteria**: unchanged from iteration 5, plus: a fixture test proves a
+`CANNOT_VERIFY` `enforceVerdict` result is recorded with `verdict: "FAIL"` +
+`details.enforcementOutcome: "CANNOT_VERIFY"`, distinguishable from a contradiction-`FAIL`'s
+`details.enforcementOutcome: "FAIL"`.
 
 ### REQ-009: Convergence requires the reality gate — hash-bound, enforced at a real, authoritative (not adversarial-insider-proof) point (closure rows 10, 11, 15, 16)
-**EARS**: WHEN a feature attempts VCSDD completion THE SYSTEM SHALL require, beyond the
-plugin's existing 4-dimension check (VERIFIED zero reference to `gates.reality`), that
-`decideConvergenceGate(state, realityClaim)` returns `blocked: false`: iff `verdict ===
-"PASS"` AND `hashRealityClaim(realityClaim) === details.realityClaimHash`, OR (`verdict ===
-"SKIP"` AND `claimType === "none"` AND the same hash match); `blocked: true` otherwise
-(missing, FAIL, illegal SKIP, or ANY hash mismatch). Enforced by `.githooks/pre-push`'s
-Reality Convergence Guard (VERIFIED live via `.git/config`'s `core.hooksPath`), explicitly a
-**discipline boundary, not a security boundary against an adversarial insider** (FIND-F
-disposition).
-**Edge Cases**: pre-existing feature with no `reality-claim.json` ⇒ `blocked: true`, never
-inferred `"none"`. Guard fires only when a `state.json→complete` transition is part of the
-pushed diff (matches Cadence Guard's own push-time scope). Local-hook bypass (row 16)
-explicitly out of scope, disclosed.
-**Acceptance Criteria**: `.githooks/pre-push` contains the new section, grep-checkable;
-diff-aware live-fire test (PROP-027) covers missing/FAIL → reject, matching-hash PASS →
-accept, stale-hash same-push-downgrade → reject; `decideConvergenceGate` unit-tested
-(PROP-026/031); regression-lock test for the guard's own section (PROP-032); `PreToolUse`
-entry/prose contains "non-authoritative"/"best-effort".
+Unchanged from iteration 5. `decideConvergenceGate` still only ever sees the schema-mapped
+`PASS`/`FAIL`/`SKIP` (REQ-008) — a `CANNOT_VERIFY` outcome blocks convergence exactly as a
+genuine `FAIL` does (fail-closed for the convergence use case is preserved; only the SELF-FIX
+ROUTING, REQ-010, path (ii)-specific, changes).
 
-### REQ-010: reality-verifier stays read-only; FAIL escalates to self-fix, never self-repairs
-**EARS**: WHEN `enforceVerdict` yields `FAIL`, on EITHER path, THE SYSTEM SHALL NOT permit the
-gate script, spawn wrapper, or `reality-verifier` itself to edit any file; it SHALL invoke
-`self-fix.sh <name> "<blocker+hint>"` (mirrors `gig_reality_verify.sh`).
-**Edge Cases**: `self-fix.sh` dedupe/staleness logic already handles concurrent calls; neither
-enforcement caller needs `Write`/`Edit` tool usage.
-**Acceptance Criteria**: `reality-verifier.md`'s `tools` stays exactly `["Read","Grep","Glob","Bash"]`;
-both the gate script's AND `reality-verify-spawn.sh`'s FAIL paths contain a literal
-`self-fix.sh` call and no file-editing operation.
+### REQ-010: reality-verifier stays read-only; escalation routing SEPARATES "the loop lied" from "we could not check" (closure row 23 — REDESIGNED this iteration, FIND-M fix)
+**EARS**: WHEN `enforceVerdict` yields `overallVerdict: "FAIL"` (a genuine CONTRADICTION) THE
+SYSTEM SHALL invoke `self-fix.sh <name> "<blocker+hint>"` — the loop's own code produced a
+claim the evidence contradicts, which is a code/behavior bug self-fix can investigate. WHEN
+`enforceVerdict` yields `overallVerdict: "CANNOT_VERIFY"` (an INCONCLUSIVE outcome) THE SYSTEM
+SHALL NOT invoke `self-fix.sh` — there is no code bug to fix; the checking apparatus itself
+could not produce a diagnostic read (an unproven platform, a network failure, an empty body).
+Instead THE SYSTEM SHALL append `{ts, loopName, passId, reason, claimSummary}` to
+`$HOME/.openclaw/state/reality-needs-human-review-<loopName>.jsonl` (a new, minimal,
+append-only queue — mirrors REQ-006's own trail durability pattern, no new subsystem) — this
+is the "own-eyes/human review" escalation path in place of code-fix escalation. In NEITHER
+case (`FAIL` nor `CANNOT_VERIFY`) SHALL the gate script, spawn wrapper, or `reality-verifier`
+itself edit any file; both escalation targets are separate, downstream processes.
+**A `CANNOT_VERIFY` verdict SHALL NEVER**: (a) be treated as sufficient to satisfy a `PASS`
+claim anywhere (REQ-004/008/009's existing fail-closed convergence/recording rules already
+guarantee this — restated here as the routing-specific consequence); (b) be reported to a
+loop's owner-facing success report (e.g. a daily summary) AS a verified post — REQ-011
+requires it be surfaced explicitly AS `CANNOT_VERIFY`, distinct from both "posted and
+verified" and "failed."
+**Edge Cases**: `self-fix.sh`'s own dedupe/staleness logic is unaffected (still applies to the
+`FAIL` branch only). The human-review queue is append-only; multiple `CANNOT_VERIFY` results
+for the same loop simply accumulate rows — THE SYSTEM SHALL NOT deduplicate or suppress
+repeated appends (an unresolved diagnosability gap recurring daily is itself useful signal
+that Phase 2a's experiment, REQ-012, has not yet run — silently deduping would hide that).
+**Acceptance Criteria**: `reality-verifier.md`'s `tools` stays exactly
+`["Read","Grep","Glob","Bash"]`; the gate script's AND `reality-verify-spawn.sh`'s `FAIL`
+paths each contain a literal `self-fix.sh` call; their `CANNOT_VERIFY` paths each contain a
+literal append to the human-review queue and explicitly NO `self-fix.sh` call — grep-checkable,
+two distinct code paths (PROP-046).
 
-### REQ-011: First customer / acceptance vehicle — now actually protected by the SAME mechanisms as the VCSDD gate (closure row 18 fix makes this claim true)
+### REQ-011: First customer / acceptance vehicle — explicit, disclosed operational outputs for all three real scenarios (closure rows 18, 23 fixes make this claim honest)
 **EARS**: WHEN the growth-engine marketing loop claims it posted a video to Instagram THE
-SYSTEM's reality gate SHALL prove or disprove that claim via REQ-002's category and
-REQ-003/004/012/014/015's independently-captured, logged-out, count-and-status-gated,
-URL-bound, fixed-surface-and-fingerprint-bound check — via `enforceVerdict`, invoked
-UNCONDITIONALLY by `reality-verify-spawn.sh` itself (REQ-014), the SAME shared module the
-VCSDD gate script calls, not a separate or absent mechanism. This IS a standalone
-loop-verification call (REQ-005): no `state.json`, no `gates.reality`, no `SKIP`, no
-`reality-claim.json` (that file's `claimType`/`requiredArtifactCount`/`groundTruth`/
-`automatedVerification` are still read by the CALLER and threaded as deterministic arguments
-into `reality-verify-spawn.sh` — REQ-013 applies to WHERE this config lives and how it's
-reviewed, not only to the VCSDD-gate invocation pattern). The loop MUST call
-`reality-precommit.mjs` before each post attempt (REQ-015). A failed verification produces a
-`FAIL` verdict + trail line and escalates via REQ-010.
-**Edge Cases**: N/A — satisfied by REQ-001..004/012/014/015 being general-purpose, subject to
-REQ-012/013's `automatedVerification` precondition (default `false`) actually being flipped
-`true` for Instagram only after Phase 2a proves it diagnostic.
+SYSTEM's reality gate SHALL prove, disprove, OR honestly decline to determine that claim
+(never silently collapsing "decline" into either "proved" or "disproved") via
+`enforceVerdict`, invoked unconditionally by `reality-verify-spawn.sh` itself. This IS a
+standalone loop-verification call (REQ-005): no `state.json`, no `gates.reality`, no `SKIP`.
+**The three real operational outputs, stated explicitly (this is the requirement's own
+completeness check, per the coordinator's direct request)**:
+1. **A healthy, honestly-posted Instagram video, BEFORE REQ-012's Phase 2a diagnosability
+   experiment has run for Instagram** (`automatedVerification: false`, the correct, mandated
+   default): every structural check resolves cleanly (right URL, right pass, on the fixed
+   surface, fingerprint matches, fresh, real 2xx) but the `automated_verification_unproven`
+   check is the ONLY thing that fires ⇒ **`CANNOT_VERIFY`**. Routed to human-review (REQ-010),
+   NEVER `self-fix.sh`, NEVER reported to the loop's owner as "verified."
+2. **The same healthy post, AFTER Phase 2a's experiment records a proven-diagnostic signal
+   for Instagram and `automatedVerification` is set `true`** (spec-time, Phase-1c-reviewed
+   change to `reality-claim.json`, REQ-013): the identical structural checks resolve cleanly,
+   the final gate now also passes ⇒ **`PASS`**.
+3. **A loop that fabricates a post** (any CONTRADICTION-class violation — wrong URL,
+   fingerprint mismatch, not on the fixed surface, a real non-2xx from the server, etc.) ⇒
+   **`FAIL`**, REGARDLESS of `automatedVerification`'s value ⇒ routed to `self-fix.sh`
+   (REQ-010).
+**Edge Cases**: N/A beyond the above — this table IS the edge-case enumeration this
+requirement previously left implicit (iteration 5's own finding: "the resulting operational
+cost... named and accepted, not left implicit in a parenthetical edge case" — now explicit).
 **Acceptance Criteria**: nothing platform-hardcoded; the loop-verification-vs-VCSDD-gate
-distinction stated explicitly in `reality-verify-spawn.sh`'s own documentation; **this
-requirement's EARS claim (protections apply to the standalone path) is proven true by
-REQ-003/005's acceptance criteria requiring `enforceVerdict` be invoked unconditionally by
-`reality-verify-spawn.sh` itself — no acceptance criterion anywhere in this spec scopes any
-backstop to "the gate script" alone anymore** (this sentence exists specifically so a future
-review can grep for a reintroduced scoping contradiction, per FIND-H's own finding method).
+distinction stated explicitly; the three scenarios above are each covered by a required proof
+obligation (scenario 1 → PROP-043's `automated_verification_unproven`-only fixture; scenario 2
+→ PROP-013's positive-control fixture with `automatedVerification: true`; scenario 3 →
+PROP-028/029/035/036/037's contradiction fixtures, tested with `automatedVerification: false`
+specifically, proving contradiction-detection does NOT depend on the flag).
 
-### REQ-012: Deterministic logged-out capture tool — mirrors `cdp_nav_snapshot.py`, diverges on auth, proven diagnostic before automated reliance, on EITHER path (closure row 17, FIND-G/H/K)
+### REQ-012: Deterministic logged-out capture tool — diagnosability experiment is a REQUIRED, scheduled Phase 2a task (not deferred/optional); network/empty-body/soft-404 handling explicit; `passId` namespace is caller-inaccessible (closure rows 17, 22, 23, FIND-G/M/N/O fix)
 **EARS**: WHEN a public URL needs checking THE SYSTEM SHALL provide
 `public_artifact_snapshot.py <passId> <seq> <label> <url>` — deterministic, never touches
-CDP:9222, appends one row to `.../reality-artifacts/<passId>/artifacts.jsonl` with at minimum
-`{ts, passId, seq, label, tool, requestedUrl, finalUrl, httpStatus, domExcerpt}`, plus (new,
-REQ-015) `contentHash` and `referencedArtifactIds` fields for `caller-per-invocation` claims —
-never raising.
-**Diagnosability precondition**: no AUTOMATED verdict on any platform until Phase 2a
-empirically proves — against a real known-public and real known-removed URL — that a
-structured signal reliably differs AND (new, REQ-015) that `referencedArtifactIds`/
-`contentHash` extraction works reliably for that platform. Recorded per-platform.
-**Honest current state (no live fetches performed this session)**: per general, unverified
-training knowledge, Instagram's plain `httpStatus` is unlikely to be diagnostic (SPA shell
-commonly `200` regardless); a `domExcerpt`-text "isn't available" interstitial is a plausible
-signal IF confirmed empirically. Fallback order if unproven: (1) headless-browser render
-check; (2) a second independent public surface (e.g. search-engine index presence); (3) if
-still unproven, `automatedVerification` STAYS at its `false` default (FIND-K) — never manually
-overridden to `true` without the Phase 2a evidence.
-**`automatedVerification` gate — mechanical, defaults fail-closed (FIND-K fix), enforced by
-`enforceVerdict` on BOTH paths (FIND-H fix)**: `reality-claim.json.automatedVerification`
-DEFAULTS `false`. `enforceVerdict` refuses (fail-closed, explicit error, never silent) to
-produce an accepted verdict via `reviewedBy: "verifier"`-equivalent automated processing
-unless `automatedVerification === true` EXPLICITLY — an omitted field is treated identically
-to explicit `false`, never inferred `true`.
-**Edge Cases**: JS-rendering platforms prefer headless-browser variant. Anti-bot 403s captured
-and rejected by the status gate (accepted false-negative risk).
+CDP:9222, appends one row to `.../reality-artifacts/<passId>/artifacts.jsonl` (a directory
+whose name is ALWAYS the internally-generated `passId` from REQ-005 — no caller-facing API
+anywhere accepts or predicts this value in advance, closing closure row 22's pre-staging
+attack structurally, not merely by convention) with at minimum `{ts, passId, seq, label, tool,
+requestedUrl, finalUrl, httpStatus, domExcerpt}`, plus `contentHash`/`referencedArtifactIds`
+for `caller-per-invocation` claims — never raising.
+**Network/empty-body/soft-404 handling (new, FIND-O, REQ-004's taxonomy)**: on a network-level
+failure (timeout, connection refused, DNS failure, or any condition where no real HTTP
+response was received) THE SYSTEM SHALL record a row with a reserved sentinel (e.g.
+`httpStatus: null`, not a real code) so `validateArtifactProvenance`'s `capture_network_error`
+check fires (`CANNOT_VERIFY`) — this MUST NOT be recorded as, or defaulted to, an in-range
+`httpStatus` value. On an empty/near-empty response body (real 2xx status, no usable content)
+THE SYSTEM SHALL record `httpStatus` accurately (real 2xx) but leave `domExcerpt` empty/marked,
+triggering `capture_empty_body` (`CANNOT_VERIFY`). A soft-404 (real HTTP `200`, but a body that
+LOOKS like a not-found page) is deliberately NOT special-cased by the tool — the tool records
+the real, accurate `httpStatus`/`domExcerpt` it observed; whether that body constitutes proof
+of absence is exactly what REQ-012's diagnosability experiment (below) determines, and until
+proven, it falls through to `automated_verification_unproven` (`CANNOT_VERIFY`), never a
+silent PASS and never an incorrect FAIL. A GENUINE non-2xx server response (real `404`/`410`)
+IS recorded accurately and DOES trigger `server_confirmed_absent` (`FAIL`) — this is a
+platform-agnostic, server-level signal, trustworthy independent of diagnosability proof.
+**Diagnosability precondition — REQUIRED, scheduled Phase 2a task, not optional or deferred
+(FIND-M part 4 fix)**: Phase 2a of this feature's own implementation MUST include, as a
+REQUIRED task (not left to some later, unscheduled effort): fetch, logged-out, (a) a real,
+known-public Instagram post URL and (b) a real, known-nonexistent/removed Instagram post URL,
+and determine which structured, tool-recorded field (HTTP status difference, and/or a
+structural field the tool writes — e.g. `referencedArtifactIds` presence/absence on the fixed
+surface — never DOM prose interpretation) actually, materially differs between the two. This
+evidence, and ONLY this evidence, may flip `reality-claim.json.automatedVerification` to
+`true` for Instagram. **Fallback, explicitly named (not hand-waved)**: if a direct post-URL
+fetch is not diagnostic (plausible — Instagram's SPA shell may return `200` regardless), THE
+SYSTEM SHALL instead prove REQ-015's `fixedPublicSurfaceUrl` (the account's public
+profile/feed) mechanism diagnostic: a removed/nonexistent post's identifier is structurally
+ABSENT from the fixed surface's `referencedArtifactIds` while a real, live post's identifier
+IS present — this is a naturally binary, list-membership signal (present-or-absent), likely
+more robust than interpreting a single post URL's body, and REQ-015 already requires this
+check to run for every `caller-per-invocation` claim regardless — Phase 2a's experiment MAY
+therefore prove EITHER the direct-fetch signal OR the fixed-surface-membership signal
+diagnostic (or both), and record which one(s) actually work.
+**`automatedVerification` gate**: unchanged from iteration 5 — defaults `false`
+(fail-closed), consulted ONLY as `validateArtifactProvenance`'s LAST check (REQ-004's
+reordering, FIND-M fix), never suppressing any other check.
+**Edge Cases**: JS-rendering platforms prefer headless-browser variant (unchanged). Anti-bot
+403s: a real, server-returned `403` — this IS a genuine non-2xx status; whether it means
+"the anti-bot layer blocked us" (inconclusive) or "genuinely forbidden/removed" (contradiction)
+is itself a diagnosability question — until Phase 2a determines otherwise for a given
+platform, `403` is treated the SAME as any other real non-2xx: `server_confirmed_absent`/
+`FAIL` (the existing, unchanged, accepted false-negative-risk precedent from iteration 4 — not
+loosened by this iteration's CANNOT_VERIFY introduction, since a definitive server response
+code remains the platform-agnostic, trustworthy signal class).
 **Acceptance Criteria**: no `9222` reference in the tool's source; distinct directory/`tool`
-field from gig's; every row has `httpStatus`. **Required**: `automatedVerification` OMITTED
-(not explicitly `false`) for a `claimType !== "none"` claim is refused by `enforceVerdict`
-exactly as if explicitly `false` (PROP-038 — the distinct fixture FIND-K's own critique
-demanded, separate from PROP-034's explicit-`false` case). **Required**: `enforceVerdict`'s
-refusal fires on BOTH the gate-script path AND the `reality-verify-spawn.sh` path for the
-identical fixture (PROP-034/038 both run against `enforceVerdict` directly, which is shared —
-this is what makes the "on either path" claim mechanically true rather than asserted).
-**Phase-2a-gated**: once a signal/extraction is recorded for Instagram, PROP-033 becomes
-required; until then it is `pending`, not omitted.
+field from gig's; every row has an `httpStatus` field, whose value is EITHER a real HTTP status
+code OR the reserved network-error sentinel, never conflated. **Required, new (FIND-O,
+PROP-044/045)**: fixture rows for a network-error sentinel and an empty-body 2xx response each
+route through `enforceVerdict` to `CANNOT_VERIFY`, not `FAIL` and not `PASS`. **Required
+(unchanged from iteration 5, now genuinely scheduled not merely "pending")**: PROP-033, the
+Phase 2a live diagnosability experiment (or its fixed-surface fallback variant), with
+acceptance criterion "two captures, materially different on a named structured field" —
+`required: true` as a Phase 2a deliverable of THIS feature's own implementation, not deferred
+to an unrelated future effort.
 
-### REQ-013: `reality-claim.json` — committed, spec-reviewed, deterministic claim declaration, fail-closed defaults, fixed-surface declaration (closure rows 5, 11, 14, 15, 17, 19, 21)
-**EARS**: WHEN a VCSDD feature (or a runtime loop, for its OWN config convention — see
-REQ-011) intends to be gated THE SYSTEM SHALL require a `reality-claim.json`-shaped
-declaration, Phase-1c-reviewed for a VCSDD feature:
-```json
-{
-  "claimType": "publish|post|deploy|earn|none",
-  "requiredArtifactCount": "<integer, default 1, never 0>",
-  "urlSource": "fixed|caller-per-invocation",
-  "claimedUrls": "<string[], required+non-empty if urlSource=fixed>",
-  "fixedPublicSurfaceUrl": "<string, REQUIRED if urlSource=caller-per-invocation and claimType is a public-artifact type>",
-  "automatedVerification": "<boolean, DEFAULT false (fail-closed, FIND-K) — MUST be explicitly true, only after Phase 2a proof, REQ-012>",
-  "description": "<what this claims, or why none exists>"
-}
-```
-never writable by `reality-verifier` or the gate script at runtime.
-**EARS (provenance, row 5/14)**: `claimType`/`requiredArtifactCount`/`claimedUrls`/
-`fixedPublicSurfaceUrl`/`automatedVerification` sourced EXCLUSIVELY from this declaration
-(plus, for `caller-per-invocation`, a mandatory per-invocation locator URL + precommitted
-fingerprint, REQ-005/015) — NEVER from `verdict.claimType`, NEVER an ad-hoc CLI override of
-the declaration's own fields.
-**EARS (SKIP legality, row 11)**: `SKIP` convergence-sufficient ONLY when `claimType ===
-"none"`.
-**EARS (hash binding, row 15)**: every `recordGate` stores `hashRealityClaim(realityClaim)`;
-`decideConvergenceGate` recomputes/compares every check.
-**Trust boundary this requirement does NOT close (honest, explicit)**: `fixedPublicSurfaceUrl`
-+ content-fingerprint pre-commitment (REQ-015) closes "the loop cites some OTHER real post of
-its own" (FIND-I). It does NOT close a fully coordinated forgery where the loop fabricates
-BOTH the precommit record AND the artifact-trail rows without ever touching the real platform
-— that remains row 12's already-accepted, inherited residual risk (a Bash-capable adversarial
-verifier can forge file content; this feature's defense against THAT class is, unchanged,
-own-eyes/fresh-adversary review, never a file-content check the same adversary could also
-forge).
-**Edge Cases**: claim changes mid-development ⇒ update + re-review, hash-binding mechanically
-enforces this. Pre-existing feature with none ⇒ `blocked: true`. Malformed ⇒ fail-closed.
-`automatedVerification` omitted ⇒ treated as `false` (PROP-038).
-**Acceptance Criteria**: command/gate-script docs state sourcing rule grep-checkably; unit
-tests: SKIP+claimType legality (PROP-026); hash-mismatch always blocks (PROP-031);
-`automatedVerification` false/omitted refuses `'verifier'` (PROP-034/038).
+### REQ-013: `reality-claim.json` — committed, spec-reviewed, deterministic claim declaration, fail-closed defaults, fixed-surface declaration
+Unchanged from iteration 5 (closure rows 5, 11, 14, 15, 17, 19, 21). `automatedVerification`'s
+role in `enforceVerdict`'s composition changed (REQ-004/014), but this requirement's own
+schema, sourcing rules, and acceptance criteria are unaffected by that reordering.
 
-### REQ-014: Shared enforcement module — ONE module, TWO callers, no duplicated logic (new — closes FIND-H, FIND-L, closure row 18)
+### REQ-014: Shared enforcement module — ONE module, TWO callers, three-outcome verdict space, checks-always-run (closure rows 9, 18, 23 — REORDERED this iteration, FIND-M/P fix)
 **EARS**: WHEN ANY `reality-verifier` verdict is produced, on ANY invocation path, THE SYSTEM
 SHALL run it through exactly one shared, pure function —
 `enforceVerdict(rawVerdict, capturedArtifacts, claimType, requiredArtifactCount, groundTruth,
-automatedVerification)` in `skills/self/lib/reality-verdict-schema.mjs` — composed of, in
-order: (1) `validateVerdictShape(rawVerdict)` (malformed shape ⇒ `FAIL`); (2) the
-`automatedVerification` refusal rule (REQ-012/013, default `false`); (3), for a
-public-artifact `claimType`, `validateArtifactProvenance(...)` (REQ-004). A verdict that has
-not passed through `enforceVerdict` SHALL be treated as `overallVerdict: "FAIL"` by
-definition — "unenforced" and "a verdict" are mutually exclusive states in this system, not
-merely "unchecked" (a softer, unacceptable framing this iteration explicitly rejects).
-**Wiring (both invocation paths call the SAME module, never duplicate its logic)**:
-- `reality-verify-spawn.sh` (REQ-005) is the runtime path's SOLE call site: blocking, always
-  reads the RESULT + artifact trail, always calls `enforceVerdict`, always writes the
-  ENFORCED result to REQ-006's trail.
-- The VCSDD gate script (REQ-008) CALLS `reality-verify-spawn.sh` (subprocess) or `require()`s
-  the SAME `enforceVerdict` function directly — it MUST NOT contain its own parallel
-  implementation of citation/URL/status/count/fixed-surface/fingerprint checking logic
-  (grep-checkable: no duplicate `httpStatus`/`canonicalizeUrl`/`referencedArtifactIds`-style
-  logic outside `reality-verdict-schema.mjs`). It layers ONLY VCSDD-specific bookkeeping
-  (`hashRealityClaim`, `recordGate`) on top of the already-enforced result.
-**Edge Cases**: the `REALITY_VERIFY_DRYRUN=1` seam is unaffected (exits before any
-spawn/enforcement, pure path-derivation only). A caller needing async behavior (e.g. a fast
-per-tick loop) may background `reality-verify-spawn.sh` itself in ITS OWN job runner — but the
-script's own contract (blocks until an enforced verdict is written) never changes; any further
-backgrounding is the caller's responsibility, not a second, weaker code path.
+automatedVerification)` — composed, in order: (1) `validateVerdictShape(rawVerdict)`
+(malformed ⇒ synthesize `CANNOT_VERIFY`, reason `malformed_verdict_shape` — the checking
+apparatus itself, i.e. the LLM's own output, failed to produce something processable, which is
+an INCONCLUSIVE condition, not evidence of a lie); (2) if `rawVerdict.overallVerdict !==
+"PASS"`, return it UNCHANGED (never second-guess a raw `FAIL`/`CANNOT_VERIFY` the LLM itself
+already produced — the backstop's only job is catching an OVER-optimistic `PASS`); (3)
+otherwise, for a public-artifact `claimType`, `validateArtifactProvenance(rawVerdict,
+capturedArtifacts, claimType, requiredArtifactCount, groundTruth, automatedVerification)`
+UNCONDITIONALLY — this step is REACHED regardless of `automatedVerification`'s value; that
+flag is consulted ONLY inside `validateArtifactProvenance`, as its LAST check, after every
+CONTRADICTION check has already had the chance to fire (REQ-004's taxonomy). A verdict that
+has not passed through `enforceVerdict` SHALL be treated as `overallVerdict: "FAIL"` by
+definition (unchanged from iteration 5).
+**Rejected design (iteration 5, FIND-M — do not reintroduce)**: running the
+`automatedVerification` refusal as its OWN step BEFORE `validateArtifactProvenance`, gating
+whether the provenance checks execute at all. This was iteration 5's actual specification and
+produced the inverse bug: for any claim whose platform is not yet proven diagnostic, the
+provenance backstop — the entire mechanism 5 iterations were spent building — never ran, and
+every such claim synthesized a bare `FAIL` (not even `CANNOT_VERIFY`, since that 3rd outcome
+did not exist yet), triggering unconditional, indefinite `self-fix.sh` escalation for a
+perfectly healthy loop. The fix moves `automatedVerification` from a PRECONDITION to a
+POSTCONDITION of the provenance checks, and introduces the 3rd outcome so "could not verify"
+is representable without being conflated with "verified false."
+**Wiring**: unchanged from iteration 5 — `reality-verify-spawn.sh` is the runtime path's sole
+call site; the VCSDD gate script calls the SAME module, never reimplementing it.
 **Acceptance Criteria**:
-- `enforceVerdict` exists, pure, composed of the 3 already-independently-tested steps;
-  unit-tested as a composition (PROP-039).
-- `reality-verify-spawn.sh`'s implementation contains no `tmux new-session -d` for the
-  verifier call and DOES contain an unconditional `enforceVerdict` invocation before the trail
-  append — grep-checkable (PROP-040, live/fixture-tested, see REQ-005).
-- The gate script's source contains zero duplicated provenance-checking logic — grep-checkable
-  absence of re-implemented citation/URL/status/fixed-surface/fingerprint logic outside
-  `reality-verdict-schema.mjs`.
-- REQ-011's EARS claim (protections reach the standalone customer) is now provably true,
-  closing the exact spec-fidelity contradiction FIND-H found between iteration-4's REQ-003 and
-  REQ-011.
+- `enforceVerdict` exists, pure, composed of the steps above; unit-tested as a composition
+  (PROP-039, updated fixtures: malformed→CANNOT_VERIFY; raw-FAIL passes through unchanged;
+  raw-PASS-with-contradiction→FAIL regardless of automatedVerification; raw-PASS-clean-but-
+  unproven→CANNOT_VERIFY; raw-PASS-clean-and-proven→PASS).
+- `reality-verify-spawn.sh` contains no `tmux new-session -d` for the verifier call, DOES
+  contain an unconditional `enforceVerdict` invocation, and its internally-generated `passId`
+  is never caller-overridable (PROP-040, PROP-042).
+- **NEW, required (FIND-P fix, closes the previously-unforced acceptance criterion)**: a
+  grep-level, mechanical (not judgment-based — bookkeeping, per the coordinator's own framing)
+  static check, run as part of this feature's own test suite, scans the gate script's source
+  file for definitions (not calls) of any of: `canonicalizeUrl`, `validateArtifactProvenance`,
+  `enforceVerdict`, `computeContentFingerprint`, `hashRealityClaim`, `decideConvergenceGate`,
+  or any function containing `httpStatus`/`referencedArtifactIds`/`contentHash` comparison
+  logic OUTSIDE of `reality-verdict-schema.mjs`, and asserts ZERO such definitions exist in
+  the gate script (or anywhere outside `reality-verdict-schema.mjs`) — `required: true`
+  (PROP-047).
+- REQ-011's three-scenario table is now provably true: scenario 1 (healthy, unproven) reaches
+  `CANNOT_VERIFY` via this exact composition, not `FAIL`.
 
-### REQ-015: Ground-truth anchoring for `caller-per-invocation` claims — fixed public surface + pre-committed content fingerprint, never the loop's own after-the-fact URL alone (new — closes FIND-I, closure row 19)
-**EARS**: WHEN a `caller-per-invocation` claim (e.g. the growth-engine daily post) is verified
-THE SYSTEM SHALL treat the loop-supplied locator URL as a CONVENIENCE LOCATOR only, NEVER as
-sufficient ground truth on its own, and SHALL additionally require: (a) the claimed artifact
-actually appears on a FIXED, spec-time-constant public surface (`reality-claim.json`'s
-`fixedPublicSurfaceUrl`, e.g. the account's public profile/feed — a value the loop under test
-cannot choose or influence, reviewed at Phase 1c exactly like `claimedUrls` for a `"fixed"`
-claim), and (b) the located artifact's content matches a fingerprint the loop PRE-COMMITTED
-(via `skills/self/reality-precommit.mjs`) BEFORE attempting the post — i.e. before it could
-know what public content, if any, would result, closing the "pick your alibi after seeing
-what's real out there" attack that a bare locator-URL check cannot.
-**Rejected design (iteration-4 FIND-I, do not reintroduce)**: treating a loop-supplied
-`claimedUrls` value, for a claim about that SAME loop's own honesty, as ground truth
-equivalent to `gig_reality_gate.py`'s `DEFAULT_GROUND_TRUTH_URLS` — this claim was made in
-iteration 4 and was FALSE: `gig_judge.py:26-31`'s ground-truth URLs are a fixed, spec-time
-Python constant the loop under test cannot influence at all; a loop choosing its own
-per-invocation "ground truth" is the OPPOSITE trust model, not an equivalent one. This spec
-does not repeat that claim anywhere; where a loop-supplied value is still used (the locator),
-it is explicitly and permanently downgraded to "necessary, not sufficient."
-**Edge Cases**: a fully coordinated forgery (fabricating the precommit record too) is NOT
-closed by this requirement — see REQ-013's explicit trust-boundary disclosure (row 12,
-unchanged, honestly still open). The precommit record itself must be append-only/immutable
-once written (mirrors REQ-006's trail durability) so a dishonest loop cannot retroactively
-edit its own precommit after seeing what content became available.
-**Acceptance Criteria**:
-- `skills/self/reality-precommit.mjs` exists, appends `{ts, loopName, contentFingerprint}` to
-  an append-only jsonl file, never overwrites.
-- `computeContentFingerprint(content)` is pure, deterministic, unit-tested.
-- `validateArtifactProvenance`'s fixed-surface/fingerprint/ordering checks (REQ-004) are
-  `required: true` and exercised by PROP-035/036/037 exactly as REQ-004 specifies.
-- The false "VERIFIED matches gig" equivalence claim from iteration 4 does not appear anywhere
-  in this spec after this iteration (grep-checkable: no sentence asserting `claimedUrls`
-  alone, for a `caller-per-invocation` claim, "matches" or "mirrors" gig's fixed-constant
-  ground-truth model).
+### REQ-015: Ground-truth anchoring for `caller-per-invocation` claims — fixed public surface + pre-committed content fingerprint
+Unchanged from iteration 5 (closure row 19). Note (REQ-012 fallback): the fixed-surface
+membership check this requirement already mandates may ALSO serve as Phase 2a's chosen
+diagnosability signal for Instagram, per REQ-012's explicit fallback ordering.
 
 ## Non-functional requirements
 
-- **Performance bound**: `reality-verify-spawn.sh`/`/vcsdd-reality` capped at 600s (mirrors
-  gig); on timeout, `enforceVerdict`'s caller records `FAIL` (fail-closed, never `SKIP`).
-  **Disclosed change this iteration**: the runtime path now BLOCKS up to 600s per verification
-  (was near-instant detached fire-and-forget) — a deliberate tradeoff to close FIND-H, not an
-  oversight.
+- **Performance bound**: unchanged from iteration 5 (600s cap, blocking runtime path).
 - **Security constraint**: no signing/keypair/private-key library anywhere in this feature.
-- **Security constraint**: all pure functions (`validateArtifactProvenance`,
-  `decideConvergenceGate`, `canonicalizeUrl`, `hashRealityClaim`, `computeContentFingerprint`,
-  `enforceVerdict`) have no network/file access.
+- **Security constraint**: all pure functions have no network/file access.
 - **Security constraint**: `public_artifact_snapshot.py` structurally incapable of
   authenticated access.
-- **Security constraint**: `reality-claim.json` and the precommit record are never written by
-  any component that also produces the verdict checked against them.
+- **Security constraint**: `reality-claim.json`, the precommit record, and (new) the
+  artifact-trail `passId` namespace itself are never writable/choosable by any component that
+  also produces the verdict checked against them — `passId` generation is now explicitly
+  included in this sentence (it was conspicuously absent in iteration 5's version, per FIND-N).
 - **Disclosed limit**: `.githooks/pre-push` is a discipline boundary, not a security boundary
-  against an adversarial insider (row 16). A fully coordinated forgery of both the precommit
-  record and the artifact trail is row 12's already-accepted residual risk, unchanged by
-  REQ-015.
+  against an adversarial insider (row 16). Row 12 (adversarial-verifier-forges-during-its-
+  own-run) remains open, narrowed this iteration to exclude the now-closed
+  loop-pre-stages-under-a-chosen-passId variant (row 22).
+- **New, disclosed limit**: `CANNOT_VERIFY` is an indefinitely-recurring, legitimate outcome
+  for a platform Phase 2a has not yet proven diagnostic — this is NOT a bug to be silently
+  suppressed or deduplicated (REQ-010 edge case); it is a visible signal that the required
+  Phase 2a task (REQ-012) has not yet been completed, and completing it is the only way to
+  resolve it into genuine `PASS` capability.
 
 ## Judgment vs determinism (anti-hardcoding discipline)
 
-Per `~/.claude/rules/building-effective-ai-agents.md`: whether a report is honest, whether a
-finding fits `post_not_publicly_visible` vs `narrate_only_claim`, and whether `domExcerpt`
-content at a confirmed-2xx, confirmed-correct, confirmed-on-the-fixed-surface,
-confirmed-fingerprint-matching URL actually LOOKS like the claim describes remain JUDGMENT
-calls, made by the LLM. Everything deterministic in this feature, exhaustively: category
-membership; the provenance/count/status/URL/fixed-surface/fingerprint/precommit-ordering
-checks (structural lookups against independently-captured or pre-committed structured data,
-never prose); URL canonicalization (a fixed, now-conservative allowlist-only normalization,
-never assuming a platform's query semantics are safe to discard); the claim-hash binding; the
-`automatedVerification` refusal (fail-closed default); `enforceVerdict`'s composition itself
-(a fixed pipeline, not a judgment about which checks "probably" apply); jsonl path derivation;
-gate recording. Every rejected design across all 5 iterations — substring-marker matching,
-citation-presence-optional, URL-blind resolution, single-path wiring, loop-supplied-URL-as-
-ground-truth, and query-string discarding — was the SAME underlying mistake at a different
-granularity: treating the ABSENCE of a caught problem, the PRESENCE of *some* real evidence, or
-a mechanism existing on *one* path, as equivalent to AFFIRMATIVE, COMPLETE, EVERYWHERE-ENFORCED
-proof of the specific claimed fact. The rule, stated once, finally, generally: **a
-public-artifact `PASS` requires affirmative, counted, resolved, fresh, correctly-URLed,
-non-redirected, correctly-tooled, 2xx-status, fixed-surface-corroborated,
-fingerprint-matched proof of the EXACT caller-declared claim, produced by the ONE shared
-enforcement path every invocation route is required to use, bound by content hash to the exact
-claim it was checked against — never the mere absence of a caught violation, never proof of
-some adjacent true fact, and never a protection that exists for one caller but not another.**
+Per `~/.claude/rules/building-effective-ai-agents.md`: whether `domExcerpt` content at a
+confirmed-2xx, confirmed-correct, confirmed-on-the-fixed-surface, confirmed-fingerprint-
+matching URL actually LOOKS like the claim describes remains a JUDGMENT call, made by the LLM.
+The CONTRADICTION-vs-INCONCLUSIVE taxonomy (REQ-004) is itself a fixed, deterministic lookup
+table — which violation TYPE maps to which OUTCOME is decided once, in this spec, never by the
+LLM at runtime and never by a heuristic guess about severity. `automatedVerification`'s role as
+a final, boolean gate (not a judgment about whether a platform is "probably fine") is
+unchanged in kind from iteration 5 — only its POSITION in the pipeline changed (a sequencing
+fix, not a new judgment call). The rule, stated once, finally: **a public-artifact `PASS`
+requires affirmative, counted, resolved, fresh, correctly-URLed, non-redirected,
+correctly-tooled, 2xx-status, fixed-surface-corroborated, fingerprint-matched,
+proven-diagnostic proof of the EXACT caller-declared claim; a public-artifact `FAIL` requires
+POSITIVE, structural evidence of contradiction, never mere absence of proof; and everything in
+between — no capture, a network failure, an empty body, or an unproven signal — is honestly
+`CANNOT_VERIFY`, routed to a human, never silently folded into either PASS or FAIL, and never
+flogged with an escalation mechanism (self-fix) that has nothing to fix.**
