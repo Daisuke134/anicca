@@ -187,15 +187,57 @@ def name_similarity(a: str, b: str) -> float:
     return SequenceMatcher(None, _norm(a), _norm(b)).ratio()
 
 
-def match_market(pin_event: dict, pm_markets: list[dict], threshold: float = 0.55):
+# THE TRAP THIS EXISTS TO KILL (live incident, 2026-07-12): MLB and soccer play the SAME fixture
+# more than once (double-headers, league rematches). Pinnacle listed "Cubs @ Reds" twice -- one
+# already in-play, one genuinely pre-match the next day -- and Polymarket's only Cubs/Reds market
+# was the in-play one. Matching on team names alone paired the pre-match Pinnacle line to the
+# in-play Polymarket price and manufactured a "+39.6pt edge" that was really just two different
+# games (same trap: Padres/Blue Jays +20.8pt, actually traded; France/Spain +18.5pt). Team names
+# are necessary but not sufficient -- the two sides must also describe the same KICKOFF.
+DEFAULT_TIME_TOLERANCE_S = int(os.environ.get("PINNACLE_TIME_TOLERANCE_S", str(3 * 3600)))
+
+
+def _parse_ts(value) -> float | None:
+    """ISO-8601 or Gamma's Postgres-style timestamp -> epoch seconds (UTC). None if unparseable.
+
+    Pinnacle's commence_time looks like "2026-07-12T17:41:00Z"; Gamma's gameStartTime looks like
+    "2026-07-11 23:10:00+00" (space-separated, no minutes on the UTC offset) -- both parse with
+    fromisoformat once "Z" is normalised. A naive result (no offset at all) is assumed UTC, which
+    is how Gamma stores this column.
+    """
+    if not value:
+        return None
+    try:
+        dt = datetime.datetime.fromisoformat(str(value).strip().replace("Z", "+00:00"))
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=datetime.timezone.utc)
+        return dt.timestamp()
+    except Exception:
+        return None                        # unparseable -> fail closed, never trade on a guess
+
+
+def match_market(
+    pin_event: dict,
+    pm_markets: list[dict],
+    threshold: float = 0.55,
+    time_tolerance_s: int | None = None,
+):
     """Find the Polymarket market that is about the SAME game as this Pinnacle event.
 
     Fuzzy on purpose: Polymarket phrases a game as a question ("Will the Cubs beat the Reds?",
     "Cubs vs. Reds"), never as a bare fixture. A weak match is worse than none -- it would compare
     two different games and manufacture a phantom edge -- so anything under the threshold is
     rejected and the caller simply sees no opportunity for that event.
+
+    Team names alone are NOT enough (see DEFAULT_TIME_TOLERANCE_S above): a candidate is only
+    considered if Polymarket's gameStartTime is within `time_tolerance_s` of Pinnacle's
+    commence_time. Missing or unparseable timestamps on EITHER side fail closed -- guessing that
+    two rows describe the same game is exactly the bug this check exists to remove.
     """
+    if time_tolerance_s is None:
+        time_tolerance_s = DEFAULT_TIME_TOLERANCE_S
     home, away = pin_event.get("home_team", ""), pin_event.get("away_team", "")
+    pin_start = _parse_ts(pin_event.get("commence_time"))
     best, best_score = None, 0.0
     for m in pm_markets:
         q = m.get("question") or ""
@@ -205,6 +247,9 @@ def match_market(pin_event: dict, pm_markets: list[dict], threshold: float = 0.5
         # both team names must actually appear -- fuzzy matching alone happily pairs unrelated games
         if _norm(home) not in nq or _norm(away) not in nq:
             continue
+        pm_start = _parse_ts(m.get("gameStartTime"))
+        if pin_start is None or pm_start is None or abs(pin_start - pm_start) > time_tolerance_s:
+            continue                       # can't confirm same kickoff -> not the same game
         score = max(name_similarity(q, f"{away} vs {home}"), name_similarity(q, f"{home} vs {away}"))
         if score > best_score:
             best, best_score = m, score
