@@ -105,3 +105,49 @@ def test_an_edge_below_the_threshold_is_not_an_opportunity():
     pm = [pm_market("Max Holloway vs. Conor McGregor",
                     ["Max Holloway", "Conor McGregor"], [0.725, 0.275])]
     assert find_edges(pin, pm, min_edge=0.03, now_ts=FUTURE_TS) == []
+
+
+# ---- gate 1: in-play / settled games are incomparable ---------------------
+NOW = datetime.datetime(2026, 7, 12, 1, 37, tzinfo=datetime.timezone.utc).timestamp()
+
+
+def test_a_game_already_underway_is_not_prematch():
+    assert is_prematch("2026-07-12T01:27:00Z", NOW) is False   # started 10 min ago
+
+
+def test_a_game_starting_within_the_lead_buffer_is_not_prematch():
+    assert is_prematch("2026-07-12T01:40:00Z", NOW) is False    # 3 min out, inside the 600s buffer
+
+
+def test_a_game_comfortably_in_the_future_is_prematch():
+    assert is_prematch("2026-07-12T16:16:00Z", NOW) is True
+
+
+def test_an_unparseable_commence_time_fails_closed():
+    assert is_prematch("not a time", NOW) is False
+    assert is_prematch("", NOW) is False
+
+
+def test_the_mckinney_trap_is_not_reported_as_an_edge():
+    # the exact shape of the first live run's +97,147%: settled game, stale line, price at ~0
+    pin = [pin_event("King Green", "Terrance McKinney", 100, -100,
+                     commence="2026-07-12T01:27:00Z")]
+    pm = [pm_market("UFC 329: King Green vs. Terrance McKinney",
+                    ["King Green", "Terrance McKinney"], [0.9995, 0.0005])]
+    assert find_edges(pin, pm, min_edge=0.03, now_ts=NOW) == []
+
+
+# ---- gate 2: an enormous "edge" is bad data, not opportunity --------------
+def test_an_absurd_edge_is_rejected_even_when_the_game_is_prematch():
+    # 50pt apart on two liquid, professionally-watched markets means the rows disagree about
+    # reality (stale line, bad match), not that free money is sitting there
+    pin = [pin_event("Team A", "Team B", 100, -100)]           # ~50/50 no-vig
+    pm = [pm_market("Team B vs. Team A", ["Team A", "Team B"], [0.99, 0.01])]
+    assert find_edges(pin, pm, min_edge=0.03, max_edge=0.30, now_ts=FUTURE_TS) == []
+
+
+def test_raising_max_edge_lets_the_same_outlier_through():
+    # proves the rejection above comes from max_edge and not from some unrelated filter
+    pin = [pin_event("Team A", "Team B", 100, -100)]
+    pm = [pm_market("Team B vs. Team A", ["Team A", "Team B"], [0.99, 0.01])]
+    assert len(find_edges(pin, pm, min_edge=0.03, max_edge=0.99, now_ts=FUTURE_TS)) == 1
