@@ -5027,3 +5027,11 @@
 {"ts":1783815685,"wake_id":"00MRH1SVO987F02842D3CB4099","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783815815,"wake_id":"00MRH1VO3UA4D92E7584F4447C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783815945,"wake_id":"00MRH1YG5T794626014B674E0A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783816076,"wake_id":"00MRH219LLFE6D1B580F3C4C6D","kind":"skill_timeout","sleep_s":120,"model":"free/glm-4.7","slot":"earn/clip-producer","attemptsUsed":0,"result":"earn/clip-producer skill timeout"}
+{"ts":1783816321,"wake_id":"00MRH26J0T6B71D15940524045","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783816456,"wake_id":"00MRH29F269774DF6D9E7F4D26","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783816587,"wake_id":"00MRH2C7IGF91E8C32570342E3","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783816715,"wake_id":"00MRH2EYKE869E99DD98574F3B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"WAIT — strong bearish signal for SOL (observed momentum −2.33%, conviction 10) so the edge doesn't clear the ~0.4%+ round-trip fees.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"1"}
+{"ts":1783816715,"wake_id":"00MRH2EYKE869E99DD98574F3B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783816868,"wake_id":"00MRH2I8CZCBEFCA288BF94187","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"deposit wallet: [REDACTED] | pUSD: 1.621603\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoting.\n  cancel-and-replace: cleared old quotes\n  NAKED-FIX exec "}
+{"ts":1783816868,"wake_id":"00MRH2I8CZCBEFCA288BF94187","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
