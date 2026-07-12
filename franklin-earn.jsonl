@@ -1021,3 +1021,6 @@
 {"ts":1783818785,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH3N6577BFCFEFC8D3447E0"}
 {"ts":1783822289,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH5Q59U0FCD08F6E46242B5"}
 {"ts":1783823080,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH67565C7AF35F98F99407C"}
+{"ts":1783824239,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"hl-trade","task":"hl-fund-skipped: uneconomic","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH6VZMS7F453EB60F5C49F3"}
+{"ts":1783824367,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH6YTEI37FFDF99DDBF4975"}
+{"ts":1783824918,"wallet":"0x3eccad24794ca298d25378e9902a251322ea8749","source":"yield","task":"hold (buffer healthy, position accruing)","earn_usdc":0,"cost_usdc":0,"net_usdc":0,"wake":"00MRH7ALDQ12F0490BA48544A5"}
