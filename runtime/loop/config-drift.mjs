@@ -34,6 +34,8 @@ import { promisify } from 'node:util';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { readDotenvFile } from './dotenv.mjs';
+import { parseDotenv } from './config.mjs';
 
 const execFileAsync = promisify(execFile);
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
@@ -247,14 +249,24 @@ export function detectBrainDrift(instance, declaredConfig, observedEnvOrNull, ke
  * FAIL for that whole copy rather than a per-slot breakdown (there is nothing slot-level left to say
  * once the copy itself cannot be read).
  *
- * @param {{slots?: Record<string, {status?: unknown}>}} canonicalRegistry
+ * FIND-005 fix (iteration-2, pure-core fail-closed): an unreadable `canonicalRegistry` itself (not just
+ * an unreadable copy) is now handled AT THIS PURE-CORE LEVEL — every copy reports `reason:
+ * 'unobservable'` (there is nothing to declare a drift against without a canonical to compare to).
+ * Previously this was only guarded externally by the composed `runConfigDriftDetector` wrapper; now the
+ * REQ-006 pure function itself fails closed, testable in isolation without needing the wrapper at all.
+ *
+ * @param {{slots?: Record<string, {status?: unknown}>}|null} canonicalRegistry
  * @param {{copyPath: string, registryOrNull: object|null}[]} copies
  * @returns {Array<{key: string, copyPath: string, declared: unknown, actual: unknown} | {copyPath: string, declared: null, actual: null, reason: string}>}
  */
 export function detectRegistryStatusDrift(canonicalRegistry, copies) {
+  const safeCopies = copies || [];
+  if (classifyObservability(canonicalRegistry) === 'UNOBSERVABLE') {
+    return safeCopies.map(({ copyPath }) => ({ copyPath, declared: null, actual: null, reason: 'unobservable' }));
+  }
   const declaredMap = flattenRegistrySlotStatus(canonicalRegistry);
   const results = [];
-  for (const { copyPath, registryOrNull } of copies || []) {
+  for (const { copyPath, registryOrNull } of safeCopies) {
     if (classifyObservability(registryOrNull) === 'UNOBSERVABLE') {
       results.push({ copyPath, declared: null, actual: null, reason: 'unobservable' });
       continue;
@@ -303,40 +315,6 @@ export async function readPlistDeclaredEnv(plistPath) {
 }
 
 /**
- * NFR-Security / FIND-002 wiring: resolves a launchd label to its live PID (read-only lookup, never
- * signals/restarts it — REQ-005) and reads that PID's own runtime command line, but immediately hands
- * the raw line to `parseAllowedEnvFromCommandLine` and keeps ONLY the allow-listed keys — the raw line
- * itself is a local value that is discarded the moment this function returns and is never propagated
- * into the returned object, a log line, or a thrown error's message. Any failure along the way (label
- * not loaded, PID gone, read error) resolves to `null` (REQ-004 unobservable), never a partial/garbage
- * env.
- *
- * @param {string} launchdLabel
- * @param {string[]} [allowedKeys]
- * @returns {Promise<{pid: number, env: Record<string, string>}|null>}
- */
-export async function readRuntimeEnvOfLabel(launchdLabel, allowedKeys = ['ANICCA_BRAIN']) {
-  try {
-    const { stdout: listOutput } = await execFileAsync('launchctl', ['list', launchdLabel]);
-    const pidMatch = /"PID"\s*=\s*(\d+)/.exec(listOutput);
-    if (!pidMatch) return null;
-    const pid = Number.parseInt(pidMatch[1], 10);
-    if (!Number.isFinite(pid)) return null;
-    // NOTE: macOS's `ps` only appends a process's environment to its command output with the
-    // CAPITAL `-E` flag (lowercase `-e` does not do this on this platform, verified live
-    // 2026-07-12) -- and `-A` (select ALL processes) overrides a `-p <pid>` filter rather than
-    // combining with it, so `-A` must be OMITTED here (kept only in listRunningIndexLoopProcesses,
-    // which genuinely wants every process and has no `-p` filter to conflict with).
-    const { stdout: psOutput } = await execFileAsync('ps', ['-wwE', '-o', 'command', '-p', String(pid)], PS_EXEC_OPTIONS);
-    const dataLine = psOutput.split('\n').filter((l) => l.trim().length > 0).slice(1).join(' ');
-    const env = parseAllowedEnvFromCommandLine(dataLine, allowedKeys); // raw dataLine discarded right after this call
-    return { pid, env };
-  } catch {
-    return null;
-  }
-}
-
-/**
  * REQ-010's effectful half: enumerates ALL live processes via `ps -Awwe -o pid,command` and returns the
  * raw output lines (no filtering/parsing here — `parseIndexLoopProcesses` does that, purely). Never
  * filters by a hardcoded instance list; the pure parser above decides which lines are monitoring
@@ -371,6 +349,7 @@ export async function listRunningIndexLoopProcesses() {
  * @param {() => Promise<string[]>} [deps.listProcesses]
  * @param {(plistPath: string) => Promise<Record<string, unknown>|null>} [deps.readPlistEnv]
  * @param {(filePath: string) => Promise<object|null>} [deps.readRegistry]
+ * @param {(aniccaHome: string) => Promise<string>} [deps.readDotenvText]
  * @param {string} [deps.plistDir]
  * @param {string} [deps.canonicalRegistryPath]
  * @param {string} [deps.brainKey]
@@ -382,6 +361,7 @@ export async function runConfigDriftDetector(deps = {}) {
     listProcesses = listRunningIndexLoopProcesses,
     readPlistEnv = readPlistDeclaredEnv,
     readRegistry = readRegistryFile,
+    readDotenvText = readDotenvFile,
     plistDir = DEFAULT_PLIST_DIR,
     canonicalRegistryPath = DEFAULT_CANONICAL_REGISTRY_PATH,
     brainKey = 'ANICCA_BRAIN',
@@ -399,28 +379,51 @@ export async function runConfigDriftDetector(deps = {}) {
     const instance = target.xpcServiceName || `pid:${target.pid}`;
     // REQ-001's declared side: this target's OWN plist, found via its OWN observed xpcServiceName --
     // never a shared/global expectation (REQ-003). Missing xpcServiceName -> declared side is itself
-    // unobservable (REQ-010 edge case), which detectBrainDrift's FIND-003 fix now reports as a FAIL.
-    const declaredEnvOrNull = target.xpcServiceName
+    // unobservable (REQ-010 edge case), which detectBrainDrift's FIND-003(iter1) fix now reports as a
+    // FAIL.
+    const rawPlistEnv = target.xpcServiceName
       ? await readPlistEnv(path.join(plistDir, `${target.xpcServiceName}.plist`))
       : null;
+    // FIND-003 fix (iteration-2): the plist is only the TOP of config.mjs's real precedence chain
+    // (processEnv > dotenv($ANICCA_HOME/.env) > DEFAULTS — config.mjs:104-112). A plist that read fine
+    // but simply never mentions this key must still check $ANICCA_HOME/.env before this feature treats
+    // it as "inherits codeDefault" -- otherwise a real operator override sourced from .env (which `ps`
+    // can NEVER see: index.mjs:81-82 merges dotenv values into the in-memory `config` object without
+    // ever writing them back to process.env) would be silently invisible to this detector, reporting a
+    // false PASS for a real drift. A plist that could not be read AT ALL stays unobservable regardless
+    // of .env (an unreadable identity source isn't rescued by a lower-precedence layer).
+    let declaredEnvOrNull = rawPlistEnv;
+    if (classifyObservability(rawPlistEnv) !== 'UNOBSERVABLE' && target.aniccaHome) {
+      const envFileValues = parseDotenv(await readDotenvText(target.aniccaHome));
+      declaredEnvOrNull = { ...envFileValues, ...rawPlistEnv }; // plist (highest, mirrors processEnv) wins over .env
+    }
     // REQ-001's actual side: re-derives ONLY the allow-listed brainKey from the SAME raw ps line this
     // target was discovered from -- no other token on that line (e.g. a secret) is ever retained here
-    // (NFR-Security/FIND-002).
+    // (NFR-Security/FIND-002 from iteration-1).
     const rawLine = psOutputLines.find((l) => typeof l === 'string' && l.trim().split(/\s+/)[0] === String(target.pid));
     const observedEnv = rawLine ? parseAllowedEnvFromCommandLine(rawLine, [brainKey]) : null;
     brainDrift.push(...detectBrainDrift(instance, declaredEnvOrNull, observedEnv, brainKey, codeDefaultBrain));
 
-    if (target.aniccaHome && !seenHomes.has(target.aniccaHome)) {
-      seenHomes.add(target.aniccaHome);
-      const copyPath = path.join(target.aniccaHome, 'skills', 'registry.json');
-      registryCopies.push({ copyPath, registryOrNull: await readRegistry(copyPath) });
+    // FIND-002 fix (iteration-2): a target whose ANICCA_HOME could not be observed at all (REQ-010 edge
+    // case) must still surface as an explicit FAIL, never be silently excluded from registryDrift --
+    // previously this branch had no `else`, so such a target contributed NOTHING (not even an
+    // unobservable entry), which is exactly the "observed nothing -> looks like PASS" hole REQ-004
+    // forbids.
+    if (target.aniccaHome) {
+      if (!seenHomes.has(target.aniccaHome)) {
+        seenHomes.add(target.aniccaHome);
+        const copyPath = path.join(target.aniccaHome, 'skills', 'registry.json');
+        registryCopies.push({ copyPath, registryOrNull: await readRegistry(copyPath) });
+      }
+    } else {
+      registryCopies.push({ copyPath: `pid:${target.pid}:ANICCA_HOME_UNOBSERVABLE`, registryOrNull: null });
     }
   }
 
   const canonicalRegistry = await readRegistry(canonicalRegistryPath);
-  const registryDrift = classifyObservability(canonicalRegistry) === 'UNOBSERVABLE'
-    ? registryCopies.map((c) => ({ copyPath: c.copyPath, declared: null, actual: null, reason: 'unobservable' }))
-    : detectRegistryStatusDrift(canonicalRegistry, registryCopies);
+  // detectRegistryStatusDrift's own FIND-005 fix now fails closed on an unreadable canonicalRegistry
+  // itself, so no external duplicate guard is needed here.
+  const registryDrift = detectRegistryStatusDrift(canonicalRegistry, registryCopies);
 
   const hasDrift = brainDrift.length > 0 || registryDrift.length > 0;
   // REQ-010 edge case: zero discovered targets is its OWN explicit status, never silently folded into

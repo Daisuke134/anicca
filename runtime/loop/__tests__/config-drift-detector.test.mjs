@@ -23,11 +23,18 @@ const CANONICAL_REGISTRY_DORMANT = { slots: { hl_trade: { status: 'dormant' } } 
 const RUNTIME_REGISTRY_LIVE = { slots: { hl_trade: { status: 'live' } } };
 const RUNTIME_REGISTRY_DORMANT = { slots: { hl_trade: { status: 'dormant' } } };
 
-function fakeDeps({ psLines, plistEnvsByPath = {}, registriesByPath = {}, canonicalRegistryPath = '/repo/skills/registry.json' }) {
+function fakeDeps({
+  psLines,
+  plistEnvsByPath = {},
+  registriesByPath = {},
+  dotenvTextByHome = {}, // FIND-003(iter2): fake $ANICCA_HOME/.env contents, keyed by aniccaHome -- NEVER the real filesystem
+  canonicalRegistryPath = '/repo/skills/registry.json',
+}) {
   return {
     listProcesses: async () => psLines,
     readPlistEnv: async (plistPath) => (plistPath in plistEnvsByPath ? plistEnvsByPath[plistPath] : null),
     readRegistry: async (filePath) => (filePath in registriesByPath ? registriesByPath[filePath] : null),
+    readDotenvText: async (aniccaHome) => (aniccaHome in dotenvTextByHome ? dotenvTextByHome[aniccaHome] : ''),
     canonicalRegistryPath,
   };
 }
@@ -180,12 +187,131 @@ test('REQ-004: an unreadable canonical registry.json fails EVERY runtime copy cl
 
 test('injected deps mean this file never touches a real ps/plutil/launchctl process or the real filesystem', async () => {
   let listProcessesCalls = 0;
+  let readDotenvCalls = 0;
   const deps = {
     listProcesses: async () => { listProcessesCalls += 1; return [AGENT_ECONOMY_PS_LINE]; },
     readPlistEnv: async () => ({ ANICCA_BRAIN: 'proxy' }),
     readRegistry: async () => ({ slots: {} }),
+    readDotenvText: async () => { readDotenvCalls += 1; return ''; },
     canonicalRegistryPath: '/fake/registry.json',
   };
   await runConfigDriftDetector(deps);
   assert.equal(listProcessesCalls, 1, 'the injected fake, not a real ps invocation, must be the one and only process source');
+  assert.equal(readDotenvCalls, 1, 'the injected fake, not a real filesystem read, must be the one and only .env source (FIND-003 iter2 wiring)');
+});
+
+// ── FIND-002 (adversary iteration-2, blocking): a target whose ANICCA_HOME could not be observed at all
+// must still surface as an explicit FAIL in registryDrift, never be silently excluded (REQ-004/REQ-010
+// edge case). Previously this branch had no `else` -- such a target contributed NOTHING at all. ────────
+
+test('FIND-002: a discovered target with NO observable ANICCA_HOME contributes an explicit unobservable FAIL to registryDrift, never a silent omission', async () => {
+  const NO_HOME_PS_LINE =
+    '77777 node /Users/operator/anicca/runtime/loop/index.mjs XPC_SERVICE_NAME=ai.anicca.orphan-loop ANICCA_BRAIN=proxy'; // deliberately no ANICCA_HOME= token
+  const deps = fakeDeps({
+    psLines: [NO_HOME_PS_LINE],
+    plistEnvsByPath: { [`${PLIST_DIR}/ai.anicca.orphan-loop.plist`]: { ANICCA_BRAIN: 'proxy' } },
+    registriesByPath: { '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.targets.length, 1);
+  assert.equal(report.targets[0].aniccaHome, null);
+  assert.equal(report.overallStatus, 'FAIL', 'an unobservable ANICCA_HOME must FAIL the run, never silently PASS');
+  assert.equal(report.registryDrift.length, 1, 'exactly one unobservable registryDrift entry must be contributed for this target -- not zero (the pre-fix silent-drop bug)');
+  assert.equal(report.registryDrift[0].reason, 'unobservable');
+  assert.match(report.registryDrift[0].copyPath, /77777/, 'the unobservable entry must be traceable back to the specific pid it came from');
+});
+
+test('FIND-002: a mix of one home-observable target (clean) and one home-unobservable target still surfaces the unobservable one -- the clean target must not mask it', async () => {
+  const NO_HOME_PS_LINE = '77777 node /Users/operator/anicca/runtime/loop/index.mjs XPC_SERVICE_NAME=ai.anicca.orphan-loop ANICCA_BRAIN=proxy';
+  const deps = fakeDeps({
+    psLines: [FRANKLIN_PS_LINE, NO_HOME_PS_LINE],
+    plistEnvsByPath: {
+      [`${PLIST_DIR}/ai.anicca.franklin-loop.plist`]: { ANICCA_BRAIN: 'proxy' },
+      [`${PLIST_DIR}/ai.anicca.orphan-loop.plist`]: { ANICCA_BRAIN: 'proxy' },
+    },
+    registriesByPath: {
+      '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT,
+      '/Users/operator/.blockrun/skills/registry.json': RUNTIME_REGISTRY_DORMANT,
+    },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.overallStatus, 'FAIL');
+  assert.equal(report.registryDrift.length, 1);
+  assert.equal(report.registryDrift[0].reason, 'unobservable');
+});
+
+// ── FIND-003 (adversary iteration-2, blocking): the OBSERVED-side codeDefault fallback (added to stop
+// Franklin/com.anicca.daemon false positives) opened a false NEGATIVE for a real ANICCA_BRAIN override
+// sourced from $ANICCA_HOME/.env, which `ps` can never see (index.mjs never writes dotenv values back
+// to process.env). The detector must now read .env too and treat it as a (lower-precedence-than-plist)
+// declared source, matching config.mjs's own real processEnv > dotenv > DEFAULTS precedence. ───────────
+
+test('FIND-003: a real ANICCA_BRAIN override sourced ONLY from $ANICCA_HOME/.env (plist has no such key) is now detected as a real drift, not silently PASSed', async () => {
+  const deps = fakeDeps({
+    psLines: [AGENT_ECONOMY_PS_LINE], // observed runtime ANICCA_BRAIN=proxy (ps can never see .env)
+    plistEnvsByPath: {
+      [`${PLIST_DIR}/ai.anicca.agent-economy-loop.plist`]: { ANICCA_HOME: '/Users/operator/.anicca-founder' }, // plist itself never mentions ANICCA_BRAIN
+    },
+    dotenvTextByHome: {
+      '/Users/operator/.anicca-founder': 'ANICCA_BRAIN=claude-p\n', // the REAL declared intent lives only here
+    },
+    registriesByPath: {
+      '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT,
+      '/Users/operator/.anicca-founder/skills/registry.json': RUNTIME_REGISTRY_DORMANT,
+    },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.overallStatus, 'FAIL', `expected FAIL (a real .env-sourced drift), got brainDrift=${JSON.stringify(report.brainDrift)}`);
+  assert.equal(report.brainDrift.length, 1);
+  assert.equal(report.brainDrift[0].declared, 'claude-p', 'declared must be resolved from .env, since the plist itself never mentions the key');
+  assert.equal(report.brainDrift[0].actual, 'proxy');
+});
+
+test('FIND-003: when .env ALSO says proxy (matching the observed runtime value), no false drift is introduced by reading .env', async () => {
+  const deps = fakeDeps({
+    psLines: [AGENT_ECONOMY_PS_LINE],
+    plistEnvsByPath: {
+      [`${PLIST_DIR}/ai.anicca.agent-economy-loop.plist`]: { ANICCA_HOME: '/Users/operator/.anicca-founder' },
+    },
+    dotenvTextByHome: { '/Users/operator/.anicca-founder': 'ANICCA_BRAIN=proxy\n' },
+    registriesByPath: {
+      '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT,
+      '/Users/operator/.anicca-founder/skills/registry.json': RUNTIME_REGISTRY_DORMANT,
+    },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.overallStatus, 'PASS');
+  assert.deepEqual(report.brainDrift, []);
+});
+
+test('FIND-003: the plist EXPLICITLY declaring a key wins over a conflicting .env value (processEnv-equivalent precedence over dotenv, matching config.mjs:104-112 exactly)', async () => {
+  const deps = fakeDeps({
+    psLines: [AGENT_ECONOMY_PS_LINE], // observed = proxy
+    plistEnvsByPath: {
+      [`${PLIST_DIR}/ai.anicca.agent-economy-loop.plist`]: { ANICCA_BRAIN: 'proxy' }, // plist EXPLICITLY says proxy
+    },
+    dotenvTextByHome: { '/Users/operator/.anicca-founder': 'ANICCA_BRAIN=claude-p\n' }, // .env disagrees, but is LOWER precedence
+    registriesByPath: {
+      '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT,
+      '/Users/operator/.anicca-founder/skills/registry.json': RUNTIME_REGISTRY_DORMANT,
+    },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.overallStatus, 'PASS', 'the plist (higher precedence, matching real processEnv-injection semantics) must win over .env, exactly like config.mjs loadConfig');
+  assert.deepEqual(report.brainDrift, []);
+});
+
+test('FIND-003: an unreadable plist stays unobservable regardless of .env content -- a lower-precedence layer never rescues an unreadable higher-precedence identity source', async () => {
+  const deps = fakeDeps({
+    psLines: [AGENT_ECONOMY_PS_LINE],
+    plistEnvsByPath: {}, // plist itself unreadable
+    dotenvTextByHome: { '/Users/operator/.anicca-founder': 'ANICCA_BRAIN=proxy\n' }, // matches actual, but must NOT rescue an unreadable plist
+    registriesByPath: {
+      '/repo/skills/registry.json': CANONICAL_REGISTRY_DORMANT,
+      '/Users/operator/.anicca-founder/skills/registry.json': RUNTIME_REGISTRY_DORMANT,
+    },
+  });
+  const report = await runConfigDriftDetector(deps);
+  assert.equal(report.overallStatus, 'FAIL');
+  assert.equal(report.brainDrift[0].reason, 'unobservable', 'an unreadable plist must stay unobservable even if .env happens to "agree" with the observed value -- fail-closed, not fail-open');
 });
