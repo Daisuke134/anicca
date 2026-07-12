@@ -170,21 +170,40 @@ Franklin  $29.33  solana/USDC=$24.61  solana/SOL=$3.09  polygon/pUSD=$1.62  ← 
   wake 間隔がそのまま思考時間の予算。Sonnet は120秒では終わらない）
 - **「claude-p は絶対に proxy から答えてはならない」をテストで固定**（将来の誰かが戻さないように）
 
-### T3.7 ★NEXT★ claude -p の出力をパーサが理解できていない疑い 🔴
+### T3.7 claude -p に「選べるスロット」と「答えの形」を見せていなかった ✅（commit 2be3c74e）
 
-**症状（実測）**: reload 後の wake が `skill_missing / slot=run_skill / "run_skill skill not found"`。
-`run_skill` は**ツール名**であってスロット名ではない。脳がスロット名として渡すはずがない。
+**症状**: すべての claude-p wake が `skill_missing / slot=run_skill`。
+`run_skill` は**ツール名**であってスロット名ではない。
 
-**仮説（未検証）**: `thinkClaudeP` は `claude -p --output-format json` の出力を**そのまま返している**。
-だが `parseToolCall` は proxy（ClawRouter）が返す **OpenAI 形式**（`choices[0].message.tool_calls`）を期待する。
-Claude Code の JSON は `{"type":"result","result":"...","session_id":...}` という**別形式**。
-→ tool_call が取り出せず、`run_skill` を誤ってスロット名として解釈している可能性。
+**真因**（実測で確定。私の当初の仮説「パーサが Claude の形式を読めない」は**外れ**だった —
+パーサは `response.result` が JSON なら parse する処理を既に持っていた）:
+```
+proxy 経路 : モデルに機械可読な tool スキーマを渡す（tools:[...]、スロットは enum）
+claude -p  : ★そんな経路が無い。テキストしか見ない★
+             なのに誰もスキーマをテキストに書いていなかった
 
-**注意（今日この罠にかかった）**: ledger の `model` フィールドは `ctx.model`（残高ティア由来の文字列）を
-記録しているだけで、**実際にどの脳が答えたかを反映していない**。`model=free/glm-4.7` を見て
+→ モデルは「見せられたことのない形」を推測するしかなかった
+→ slot を持たない tool_calls を返す
+→ parse-tool-call.mjs が toolCall.function.name にフォールバック
+→ スロット名として "run_skill" が dispatch される → skill_missing
+
+★脳は正常だった。話し方を誰も教えていなかっただけ★
+```
+
+**修正**: プロンプトに**その wake で選べるスロット一覧**と**答えるべき JSON の形**を明示。
+
+**証拠（実バイナリで検証）**:
+```
+result: {"tool_calls":[{"function":{"name":"run_skill",
+         "arguments":"{\"slot\":\"earn/polymarket-trade\"}"}}]}
+duration_ms: 15207   ← ★15秒★
+```
+**15秒。120秒の timeout は最初から何の原因でもなかった**（Dais の指摘が3度とも正しかった）。
+4/4 brain tests green。
+
+**罠（今日ここで2度騙された）**: ledger の `model` フィールドは `ctx.model`（残高ティア由来の文字列）
+を記録しているだけで、**実際にどの脳が答えたかを反映していない**。`model=free/glm-4.7` を見て
 「claude-p が使われていない」と判断してはいけない。
-
-**完了条件**: `slot=earn/*` の wake が出て、skill が実際に実行される（`skill_missing` が消える）。
 
 ### T4. pm-deterministic を削除して 1 instance = 1 loop にする 🔥
 **なぜ**: pm-deterministic は「脳が earn を選ばないから」貼られたパッチ。T3 で脳が選べるようになったので不要。
