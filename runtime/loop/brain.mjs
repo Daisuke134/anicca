@@ -32,12 +32,17 @@ export async function think(ctx, config) {
   const brain = config.ANICCA_BRAIN || 'proxy';
 
   if (brain === 'claude-p') {
-    try {
-      return await thinkClaudeP(ctx, config);
-    } catch (err) {
-      process.stderr.write(`[brain] claude-p failed: ${err.message} — falling back to proxy\n`);
-      // Fall through to proxy
-    }
+    // NO FALLBACK TO THE PROXY. claude-p is human-funded: its brain is an Anthropic subscription
+    // that is already paid for, and its crypto wallet exists to TRADE, not to buy inference.
+    // Falling back to ClawRouter silently put a free model in charge of the money — and measured
+    // 2026-07-12 that model could not even issue the tool call correctly ("run_skill skill not
+    // found"), so a wake that fell back was worse than a wake that never happened. Failing loudly
+    // is right: the ledger records a wake_error and the next wake retries with the real brain.
+    //
+    // Franklin and the other SELF-funded instances still take the proxy path below, and that is
+    // correct for them: they buy inference out of the very wallet they trade with, so a free model
+    // is the only way they stay net-positive.
+    return thinkClaudeP(ctx, config);
   }
 
   return thinkProxy(ctx, config);

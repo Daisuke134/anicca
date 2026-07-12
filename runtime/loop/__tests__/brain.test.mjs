@@ -89,3 +89,23 @@ test('think(): all attempts 429 (rate-limit) -> throws instead of masking as a n
     server.close();
   }
 });
+
+// --- claude-p never falls back to the proxy (2026-07-13, Dais) --------------------------------
+// claude-p is human-funded: the subscription brain is already paid for, and its crypto wallet is
+// for TRADING, not for buying inference. The old fallback silently handed money decisions to a
+// free model that could not even issue the tool call ("run_skill skill not found"). A wake that
+// fails loudly and retries beats a wake decided by the wrong brain.
+test('ANICCA_BRAIN=claude-p throws instead of falling back to the proxy', async () => {
+  const config = {
+    ANICCA_BRAIN: 'claude-p',
+    CLAUDE_BIN: '/nonexistent/claude-binary-that-cannot-exist',
+    // A proxy that would answer if we ever fell through to it — we must NEVER reach it.
+    OPENAI_BASE_URL: 'http://127.0.0.1:1/v1',
+  };
+
+  await assert.rejects(
+    () => think(baseCtx(), config),
+    (err) => /claude_not_found|claude_exit|claude_p_timeout|claude_empty|claude_invalid/.test(err.message),
+    'claude-p failure must surface as a claude-p error, never as a silent proxy answer',
+  );
+});
