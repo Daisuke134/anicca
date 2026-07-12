@@ -93,7 +93,10 @@ check() {
 
 TARGET="${1:-all}"
 echo "=== healthcheck-runtime-loop $(date -u +%Y-%m-%dT%H:%M:%SZ) ==="
-[ "$TARGET" = all -o "$TARGET" = a3cdd4 ]       && check "anicca-a3cdd4"  "com.anicca.daemon"      keepalive "$HOME/.anicca/state/ledger.jsonl" 20
+# RETIRED 2026-07-12 (Dais): a3cdd4/automaton = paused until Conway Claude ships; pm-earner = retired
+# (pm goes via pm-deterministic + agent-economy menu only). Watching them caused self-heal to REVIVE the
+# intentionally-disabled plists (rename undone within ~1h → three false-DONE incidents). Do not re-add.
+# [ "$TARGET" = all -o "$TARGET" = a3cdd4 ]       && check "anicca-a3cdd4"  "com.anicca.daemon"      keepalive "$HOME/.anicca/state/ledger.jsonl" 20
 [ "$TARGET" = all -o "$TARGET" = franklin ]     && check "Franklin"       "ai.anicca.franklin-loop" keepalive "$HOME/.blockrun/state/ledger.jsonl" 20
-[ "$TARGET" = all -o "$TARGET" = pm-earner ]    && check "claude-p-pm"    "ai.anicca.pm-earner"    interval  "$HERE/../earn/polymarket-trade/earner.log" 40
+# [ "$TARGET" = all -o "$TARGET" = pm-earner ]    && check "claude-p-pm"    "ai.anicca.pm-earner"    interval  "$HERE/../earn/polymarket-trade/earner.log" 40
 [ "$TARGET" = all -o "$TARGET" = founder-proxy ] && check "claude-p-proxy" "ai.anicca.founder-loop" keepalive "$HOME/.anicca-founder/state/ledger.jsonl" 120
