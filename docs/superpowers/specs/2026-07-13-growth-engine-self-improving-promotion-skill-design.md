@@ -42,10 +42,21 @@
 - **core message(不変)**: 「見なくていいカレンダー」— 物理予定のたびにGoogle Mapsで移動時間を調べ手入力する苦痛、常時カレンダー見張りの不安を、移動時間の自動計算・自動登録で消す(Dais本人の実痛点)
 - **CTA(不変)**: aniccaai.com/life-manager
 
-## 5. 台本3本(G0 STEP1、Daisアライン用)
-**A「マップ往復」**: フック「予定を入れるたび、Googleマップ開いてない？」→ 痛み: イベント登録→マップで経路検索→「45分か…」→カレンダーに戻り出発時刻を逆算して手入力→次の予定と被って青ざめる →解決: Aniccaは予定を入れた瞬間に移動時間を自動計算、「出発」ブロックまで勝手に登録 → CTA「カレンダーは、任せるものへ」
-**B「見張り疲れ」**: フック「『次なんだっけ』って、今日何回思った？」→ 痛み: 作業中もカレンダーをチラチラ、集中が切れる、見逃しの恐怖だけが残る →解決: Aniccaが「そろそろ出る時間」と先に声をかける。見るカレンダーから、教えてくるカレンダーへ → CTA
-**C「ダブブの血の気」**: フック「ダブルブッキングに気づいた瞬間の、あの血の気」→ 痛み: 移動時間を入れずに連続で予定→物理的に間に合わない約束をしていた →解決: Aniccaは移動時間込みで衝突を先回り警告、リスケ案まで出す → CTA
+## 5. 台本3本×2言語(G0 STEP1確定版、2026-07-13。Daisに提示済み・最終OK待ち)
+使用skill: **viral-hook-creator**(skills.sh ognjengt/founder-skills、1.2K installs、`~/.claude/skills/viral-hook-creator/` にインストール済み。18 hookパターン+trigger words。builderは references/hook-patterns.md + trigger_words.md を必ずRead) + **stop-ai-slop-jp**(日本語自然化、下書き後必須) + 候補 **kostja94/marketing-skills@video-marketing**(2K installs、未インストール)。
+
+### 日本語(JP垢、G0-G1)
+**A [Cautionary Tale型]「マップ往復」**: フック「予定を入れるたびGoogleマップを開く人、今日で最後にしませんか」→ 痛み: イベント登録→マップで経路検索→「45分か…」→カレンダーに戻り出発時刻を逆算して手入力→次の予定と被って青ざめる → 解決: Aniccaは予定を入れた瞬間に移動時間を自動計算、「出発」ブロックまで勝手に登録 → CTA「カレンダーは、任せるものへ」aniccaai.com/life-manager
+**B [Relatable Pain型]「見張り疲れ」**: フック「『次なんだっけ』って今日何回思った？3回超えてたら見てください」→ 痛み: 作業中もカレンダーをチラチラ、集中は切れるのに見逃しの恐怖は消えない → 解決: Aniccaが「そろそろ出る時間」と先に声をかける。見るカレンダーから、教えてくるカレンダーへ → CTA同上
+**C [Story型]「ダブブの血の気」**: フック「ダブルブッキングに気づいた瞬間の、あの血の気が引く感じ」→ 痛み: 移動時間を入れず予定を連打→物理的に間に合わない約束をしていた → 解決: Aniccaは移動時間込みで衝突を先回り警告、リスケ案まで出す → CTA同上
+
+### English(EN垢、G3)
+**A**: "Still opening Google Maps every time you add an event? Watch this." → search route→mental math→type departure time→it collides with your next meeting → Anicca auto-calculates travel time and books your departure block the moment you add the event → CTA "A calendar you never have to watch." aniccaai.com/life-manager
+**B**: "How many times did you think 'wait, what's next?' today?" → the anxiety of watching your own calendar all day → Anicca taps YOU on the shoulder: "time to leave." A calendar that speaks first → CTA
+**C**: "That cold sweat when you spot a double-booking..." → you stacked events with zero travel time → Anicca warns before it happens, reschedule suggestion included → CTA
+
+### 台本生成の恒久ルール
+core message「見なくていいカレンダー」+CTAは不変。日替わりで変えるのは痛みシーンとフック型のみ(1変異/実験)。builderは毎回 viral-hook-creator のパターンから選び、JP版は stop-ai-slop-jp を通す。
 
 ## 6. 実装体制（Dais 2026-07-13確定）
 - claude-p(私)=thinker(設計・アライン・最終verify)のみ。**コードは書かない**
