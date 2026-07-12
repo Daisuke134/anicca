@@ -190,6 +190,25 @@ MM_OUT=$(timeout 200 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/market_maker.py"
 echo "$MM_OUT" | tail -10
 append_strategy_trace "market-maker" "$MM_OUT" "$MM_RC"
 
+# PINNACLE OBSERVATION (2026-07-12, OBSERVE-ONLY -- see
+# docs/loop-engineering/30-pinnacle-edge-measurement.md). pinnacle_edge.py is proven-correct
+# (32/32 tests, three real false-edges caught and killed) but the first live measurement found
+# ZERO comparable games -- Pinnacle carries tomorrow's pre-match lines while Polymarket lists
+# today's already-started games, so whether the disagreement it looks for is a real, tradeable
+# edge is still UNKNOWN (n=0). This block ONLY appends what the scan saw to
+# $STATE_DIR/pinnacle-observations.jsonl (via pinnacle_observe.py) so the comparable-game count
+# can accumulate across wake-ups; it NEVER places an order -- no place_order.py / bundle_arb.py /
+# market_maker.py call happens here, and PINNACLE_LIVE does not exist as a switch anywhere in
+# this repo yet (wiring it up to actually trade is a separate, later change, gated on having
+# real edge data to judge first). pinnacle_edge.py's own MIN_FETCH_INTERVAL_S cache already caps
+# the paid Odds-API reads to ~5/day; this line adds no extra interval control on top.
+# pinnacle_observe.py itself is fail-soft (missing ODDS_API_KEY -> silent skip, any fetch
+# exception -> a logged {"error":...} line, never a crash) -- the `|| true` here is a second,
+# independent layer so a pass can never be failed by this block.
+if [ -x "$AGENT_HOME/.venv/bin/python" ] && [ -f "$SKILL_DIR/pinnacle_observe.py" ]; then
+  timeout 60 "$AGENT_HOME/.venv/bin/python" "$SKILL_DIR/pinnacle_observe.py" >> "$TRACE" 2>&1 || true
+fi
+
 # DIRECTIONAL AUTONOMOUS BUY (#25, NEW — the genuinely-missing piece): pick.py
 # (multi-model consensus + smart-money/whale signal picks market/side/size,
 # fail-closed to WAIT) -> place_order.py (generalized working V2 FAK exec).
