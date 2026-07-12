@@ -73,3 +73,63 @@ Dais 要求の深掘り検索(firecrawl, Polymarket公式docs+実gamma API)の�
 - **Polymarketの本当の最小単位は「5シェア」であって「$5」ではない。** シェア価格が安い(＝市場が偏っている)markets を見つければ、5シェアは$1未満でも発注できる。現在の`budget_shares<5`/`MIN_SIZE=5`ゲートはPolymarket CLOB自体の実制約(コード側の恣意的な上限ではない)だが、**株価の高い(五分五分の)市場ばかりスキャンしていると結果的に$5弱を要求してしまう**——これが現在$1.35でHOLDしている理由。
 - **訂正**: 「$1-5 は手数料に構造的に負ける」(6-9行目)は**報酬型MMには真、directional/bundle-arbには誤**。今後の主戦略は「安い(偏った)株価の市場を優先スキャンする」ロジック強化 → Task #3(anicca-project TaskList)参照。
 - Franklinの"$12.99→$3.44をtradeゼロで"目減りの内訳、正体確定(2026-07-12 own-eyes+コード読解): 直近10txすべてで、取引の有無に関係なく毎wake同一の外部wallet(`AQqnMFBwGZEoti85aTVRy8XYpKrho7GaMDx9ZB3CEeKA`)へ約$0.0095が引かれている(on-chain確認、10件平均$0.00953)。**正体 = BlockRunのx402ツール課金**。`@blockrun/franklin-trading/dist/tools/blockrun.js`のsignPayment()が確認: 「free/glm-4.7」は**LLM推論だけ**が無料で、sol-tradeが毎wake呼ぶ市場データ/TradingSignal系の"tool"呼び出しはBlockRun側endpointが動的に指定する`recipient`へx402で個別課金される(Aniccaのコードにハードコードされた額ではない)。earn-ledgerのcost_usdcには記録されていない(ledgerがLLM/skill層のcostしか見ておらず、tool呼び出し自体のx402課金を素通りしている)。→ 対策候補: (a)ツール呼び出し頻度を減らす、(b)このcostをearn-ledgerに記録するよう配線、(c)無料で足りるならtool呼び出し自体を止める。
+
+---
+
+## ★★★ 決定的訂正 (2026-07-12, Dais指摘が正しく私の分析が誤りだった) — 稼ぎ = 検索してエッジを見つけて片側に賭ける ★★★
+
+### 実データ (Polymarket 公式 data-api で claude-p の全取引を検証)
+
+| 種別 | 内訳 | 純益 |
+|---|---|---|
+| **directional (調べて片側に賭けた)** | Newport +44.9% / Canada-Morocco +37.0% / Morocco勝利 +78.0% / Khachanov +63.9% (4戦4勝) | **+$9.78** |
+| **bundle arb (両側を均等に買う裁定)** | Paraguay O/U +1.0% / Spread France +1.0% / Wimbledon Tiafoe +2.0% | **+$0.24** |
+
+**稼ぎの98%は directional。** 私はこれを「bundle arb が7戦7勝の勝ちパターン」と繰り返し報告したが**完全な誤り**。bundle arb は数学的に安全だが 1-2% の薄利で、稼ぎとは呼べない。
+
+### 根本原因: pick.py は外部情報を一切見ていない
+
+`pick.py` → `src/analysis/ai_analyzer.py::consensus_analysis()` が LLM に渡している情報の**全て**:
+```python
+prompt = f"""Analyze this prediction market:
+Question: {question}                        # 市場の質問文だけ
+Current market odds: {current_odds*100:.1f}% YES   # 市場の値段だけ
+{whale_context}                             # 大口の動き(あれば)
+Respond: PROBABILITY / CONFIDENCE / REASONING"""
+```
+**ニュース検索なし。web検索なし。外部情報ゼロ。** 情報を持たない LLM は市場と同じ答えしか出せず、永遠に「エッジなし」で WAIT する。これが「エッジが見つからない」の正体であり、資本量の問題ではない。
+
+### BP = Polymarket 公式 `Polymarket/agents` (★3,733) を copy+tweak する
+
+彼らのパイプライン（`agents/application/executor.py`）:
+```
+市場を選ぶ
+  → connectors/news.py    : NewsAPI でニュース取得      ← 我々に無い
+  → connectors/search.py  : Tavily で web検索           ← 我々に無い
+  → connectors/chroma.py  : ベクトルDBで関連情報を絞る    ← 我々に無い
+  → prompts.py::superforecaster() で確率推定
+  → 市場価格とのズレ = エッジ → 賭ける
+```
+
+**Superforecaster プロンプトの核心5ステップ**（`agents/application/prompts.py` 実物）:
+1. Breaking Down the Question — 質問を分解する
+2. **Gathering Information — 多様な情報源を探す。定量データと定性的洞察の両方。関連ニュースと専門家の分析を追う** ← ここが我々に完全に欠けていた
+3. Consider Base Rates — 統計的基準値・過去の類似例から出発
+4. Identify and Evaluate Factors — 影響要因を列挙し重み付け（単一情報に依存しない）
+5. Think Probabilistically — 確率で答える、白黒思考をしない
+
+### 実在する稼ぎ方の序列（一次情報で確認）
+
+| 戦略 | 実証された稼ぎ | 出典 |
+|---|---|---|
+| **情報エッジ** | **$8,500万**（Fredi9999、2024米大統領選。独自の「近隣投票調査」を外注し隠れTrump支持を検出 = 市場より正確な確率を得た） | [CBS 60 Minutes](https://www.cbsnews.com/news/french-whale-made-over-80-million-on-polymarket-betting-on-trump-election-win-60-minutes/) |
+| レイテンシ裁定 | $271,500 / 30日（Polymarket の表示が Binance より30-90秒遅れる隙） | [Predik](https://predik.io/en/blog/bot-trading-polymarket-exploit-latencia-arbitraje-en) |
+| ニュース感情分析bot | $220万 / 2ヶ月 | [QuantVPS](https://www.quantvps.com/blog/polymarket-hft-traders-use-ai-arbitrage-mispricing) |
+| bundle arb | 1-2%（薄利） | 我々の実測 |
+
+※ 全ウォレットのうち $1,000 超の利益を出したことがあるのは **0.51%** のみ。リーダーボード上位20のうち14が bot（[Finance Magnates](https://www.financemagnates.com/trending/prediction-markets-are-turning-into-a-bot-playground/)）。
+
+### 実装方針（次にやること）
+`pick.py` に **検索 → 情報収集 → Superforecaster 推論 → エッジ計算** のパイプラインを移植する。Polymarket 公式は NewsAPI/Tavily（APIキー要）を使うが、我々は無料の検索手段に差し替える。**「エッジが見つからない」と報告する前に必ず外部情報を検索する** — 検索せずに「エッジなし」と結論するのは禁止。
+
+→ memory `feedback_earn_by_searching_for_edge_not_by_hedging`
