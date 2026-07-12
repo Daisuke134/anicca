@@ -13,6 +13,8 @@ import { fileURLToPath } from "node:url";
 const require = createRequire(import.meta.url);
 const { enrichOnChain } = require("../netlify/functions/_lib/enrich");
 const { aggregate } = require("../netlify/functions/_lib/telemetry-aggregate");
+const { makeSolanaReader } = require("../netlify/functions/_lib/chain-reader-solana");
+const { computeDashboardOverrides, withDashboardOverrides } = require("../netlify/functions/_lib/net-worth-augment");
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_DASHBOARD_PATH = path.resolve(__dirname, "../public/dashboard.json");
@@ -111,6 +113,38 @@ function unverifiedReader() {
   };
 }
 
+// Builds the FULL {base, solana} reader map that main() actually enriches against: a Base EVM reader
+// (makeLiveReader, above) and a live Solana reader (chain-reader-solana.js — previously defined but
+// NEVER wired into this script, so every solana-chain row like Franklin's fell through to the
+// duck-typed "flat reader, back-compat" branch in enrich.js's readerFor() and got read against the
+// Base RPC with a base58 id, which always fails => permanently net_worth_src:"unverified").
+//
+// Then overlays computeDashboardOverrides(rows) on BOTH readers: for any row whose telemetry `id` has
+// extra wallet legs configured in dashboard-wallet-legs.js (claude-p, Franklin — an instance whose
+// real funds live on chains/venues its signing address alone cannot see), net_worth_usd becomes the
+// FULL multi-chain/multi-venue sum, and for claude-p specifically revenue_mo_usd becomes its realized
+// Polymarket P&L (REDEEM − BUY) rather than a Base-only USDC-Transfer scan. Every other row is
+// untouched — the overrides are per-id, never per-reader (see net-worth-augment.js's header).
+export async function makeLiveReaders(rows, { rpcUrl, solanaRpcUrl, fetchImpl, solanaConn, solanaFetchPrice } = {}) {
+  const evmReader = await makeLiveReader(rows, { rpcUrl });
+  const solanaIds = rows.filter((r) => r.chain === "solana").map((r) => r.id);
+  // solanaConn/solanaFetchPrice are test-only seams (same shape chain-reader-solana.js's own tests
+  // use) — production never sets them, so makeSolanaReader builds a real Connection as usual.
+  const solanaReader = await makeSolanaReader(solanaIds, { rpcUrl: solanaRpcUrl, conn: solanaConn, fetchPrice: solanaFetchPrice });
+  let overrides;
+  try {
+    overrides = await computeDashboardOverrides(rows, { fetchImpl: fetchImpl || globalThis.fetch });
+  } catch {
+    // an override-computation failure must never break the base reads that DID succeed — degrade to
+    // "no overrides configured" (every accessor returns undefined -> enrich falls back per-row).
+    overrides = { netWorthUsd: () => undefined, revenueMoUsd: () => undefined, revenueTodayUsd: () => undefined, errors: [] };
+  }
+  return {
+    base: withDashboardOverrides(evmReader, overrides),
+    solana: withDashboardOverrides(solanaReader, overrides),
+  };
+}
+
 // CLI entrypoint (invoked by Dais-owned ops). Skipped when imported.
 // S2-IMPL-FIND-001 fix: process.argv[1] is not guaranteed absolute — the naive
 // `import.meta.url === \`file://${process.argv[1]}\`` comparison silently returns false for
@@ -147,7 +181,7 @@ async function main() {
     process.exit(2);
   }
   const rows = await r.json();
-  const reader = await makeLiveReader(Array.isArray(rows) ? rows : [], { rpcUrl });
+  const reader = await makeLiveReaders(Array.isArray(rows) ? rows : [], { rpcUrl, solanaRpcUrl: env.SOLANA_RPC_URL });
   let existing = {};
   try { existing = JSON.parse(await fs.readFile(dashboardPath, "utf8")); } catch { /* new file */ }
   const next = await renderDashboard({ rows: Array.isArray(rows) ? rows : [], reader, existing });

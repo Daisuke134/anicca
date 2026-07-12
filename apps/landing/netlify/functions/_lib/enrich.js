@@ -30,23 +30,42 @@ function enrichOnChain(rows, readers, nowMs = Date.now()) {
     const ex = excludeSet(row);
     const reader = readerFor(readers, row.chain || "base");
     if (!reader) { e.net_worth_src = "unverified"; e.earn_src = "unverified"; return e; }
-    // net worth = on-chain USDC + native*price (dimensioned USD)
+    // net worth = on-chain USDC + native*price (dimensioned USD), UNLESS the reader exposes a
+    // per-row netWorthUsd(id) override (Sprint-7: multi-chain/multi-venue instances — see
+    // net-worth-augment.js). The override is per-ROW: it returns undefined for any id it has no
+    // data for, so every other row sharing this reader keeps the exact old usdc+native computation.
     try {
-      const usdc = Number(reader.usdcBalanceAtomic(row.id)) / 1e6;
-      const eth = Number(reader.nativeBalanceWei(row.id)) / 1e18;
-      const price = reader.ethUsdPrice();
-      const nw = usdc + eth * price;
+      const override = typeof reader.netWorthUsd === "function" ? reader.netWorthUsd(row.id) : undefined;
+      let nw;
+      if (override !== undefined && override !== null) {
+        nw = Number(override);
+      } else {
+        const usdc = Number(reader.usdcBalanceAtomic(row.id)) / 1e6;
+        const eth = Number(reader.nativeBalanceWei(row.id)) / 1e18;
+        const price = reader.ethUsdPrice();
+        nw = usdc + eth * price;
+      }
       if (!Number.isFinite(nw)) throw new Error("non-finite net worth"); // NaN price/balance ⇒ unverified, never trusted
       e.net_worth_usd = nw;
       e.net_worth_src = "chain";
     } catch {
       e.net_worth_src = "unverified";
     }
-    // earnings = external inflows (exclude self/seed/our). today ⊆ month window, so clamp today ≤ mo
-    // to hold the R9 invariant even against a quirky reader.
+    // earnings = external inflows (exclude self/seed/our), UNLESS the reader exposes a per-row
+    // revenueMoUsd(id) override (e.g. Polymarket realized P&L — REDEEM minus BUY — for an instance
+    // whose real earnings a Transfer-log scan cannot see/cannot correctly classify). Same per-ROW
+    // contract as netWorthUsd above. today ⊆ month window, so clamp today ≤ mo either way.
     try {
-      const mo = reader.externalInflowsUsd(row.id, mStart, ex);
-      const today = reader.externalInflowsUsd(row.id, midnight, ex);
+      const moOverride = typeof reader.revenueMoUsd === "function" ? reader.revenueMoUsd(row.id) : undefined;
+      let mo, today;
+      if (moOverride !== undefined && moOverride !== null) {
+        mo = Number(moOverride);
+        const todayOverride = typeof reader.revenueTodayUsd === "function" ? reader.revenueTodayUsd(row.id) : undefined;
+        today = todayOverride !== undefined && todayOverride !== null ? Number(todayOverride) : mo;
+      } else {
+        mo = reader.externalInflowsUsd(row.id, mStart, ex);
+        today = reader.externalInflowsUsd(row.id, midnight, ex);
+      }
       if (!Number.isFinite(mo) || !Number.isFinite(today)) throw new Error("non-finite earnings");
       e.revenue_mo_usd = mo;
       e.revenue_today_usd = Math.min(today, mo);
