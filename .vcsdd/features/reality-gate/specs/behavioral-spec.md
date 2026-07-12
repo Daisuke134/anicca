@@ -280,8 +280,11 @@ from iteration 5 are unchanged (NFR, disclosed).
   in any argument position or environment variable named `PASS_ID`/`passId`/similar — i.e. a
   test that attempts to inject a chosen passId via every plausible channel and asserts none of
   them are honored (the directory used is always the script's own freshly-generated value).
-- **New (routing, REQ-010)**: on `overallVerdict: "CANNOT_VERIFY"`, the script's post-spawn
-  logic appends to the human-review queue (REQ-010) and does NOT invoke `self-fix.sh` —
+- **New (routing, REQ-010/018)**: on `overallVerdict: "CANNOT_VERIFY"`, the script's post-spawn
+  logic appends to the human-review queue (REQ-010). The **FIRST** such verdict does NOT invoke
+  `self-fix.sh`; the **SECOND CONSECUTIVE** one DOES (REQ-018/PROP-055 — a checker that cannot
+  read reality twice in a row is itself a defect, and "unverifiable forever" must never become a
+  place a loop can hide) —
   grep-checkable, distinct code path from the `FAIL` branch.
 - DRYRUN assertion (unchanged) confirms remaining arguments thread correctly with defaults.
 
@@ -594,8 +597,12 @@ correctly-tooled, 2xx-status, fixed-surface-corroborated, fingerprint-matched,
 proven-diagnostic proof of the EXACT caller-declared claim; a public-artifact `FAIL` requires
 POSITIVE, structural evidence of contradiction, never mere absence of proof; and everything in
 between — no capture, a network failure, an empty body, or an unproven signal — is honestly
-`CANNOT_VERIFY`, routed to a human, never silently folded into either PASS or FAIL, and never
-flogged with an escalation mechanism (self-fix) that has nothing to fix.**
+`CANNOT_VERIFY`, routed to a human, never silently folded into either PASS or FAIL, and — on its
+FIRST occurrence — not flogged with an escalation mechanism (self-fix) that has nothing to fix.
+**But a SECOND CONSECUTIVE `CANNOT_VERIFY` DOES escalate to self-fix (REQ-018/PROP-055): at that
+point the thing that needs fixing is the checker itself. Tolerating an endless `CANNOT_VERIFY`
+streak would rebuild the original sin — a loop that does nothing, and a silence its owner
+mistakes for health.**
 
 ---
 
