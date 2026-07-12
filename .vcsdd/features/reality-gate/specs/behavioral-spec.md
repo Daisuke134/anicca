@@ -80,7 +80,7 @@ standalone loop — it protects.
 | 21 | `automatedVerification` fail-open default | (i)+(ii) | CLOSED | Default `false`. PROP-038. |
 | **22** | **(FIND-N) The loop under test supplies `pass-id` itself, pre-selecting the namespace a pre-staged, forged `artifacts.jsonl` row must land in, before the verifier is even spawned — a materially easier, more deterministic variant of row 12's forgery risk, reachable by the accused rather than requiring an adversarial verifier** | **(i)+(ii)** | **CLOSED** | **REQ-005/012: `passId` is generated INTERNALLY by `reality-verify-spawn.sh` at spawn time (mirrors `gig_reality_verify.sh:100-105`'s own precedent exactly), never accepted as a caller argument, env var, or any other externally-suppliable channel. A caller attempting to supply one is rejected/ignored, not honored. PROP-042. **AND (FIND-Q fix, iteration 7 — internal generation alone was NOT sufficient): the value must be CSPRNG-derived (>=128 bits), never `date +%s`+PID (which the caller can derive in advance via `$!` + a 2-second timestamp search), and the artifact-trail directory must be created with an EXCLUSIVE create so that a pre-existing directory (a lucky guess, pre-staged) fails closed to `CANNOT_VERIFY` rather than being reused. PROP-048.**** |
 | **23** | **(FIND-M) `automatedVerification`'s correct, fail-closed default (row 17/21) had an undisclosed operational consequence: it gated the ENTIRE provenance backstop behind itself, so for Instagram — the one named production customer, in its own mandated default configuration — the gate could only ever emit `FAIL`, and REQ-010 routed every such `FAIL` to `self-fix.sh` unconditionally; a perfectly healthy, honestly-posting loop would self-fix forever. Same disease as the false-PASS bug, opposite sign** | **(i)+(ii)** | **CLOSED** | **Three-outcome verdict space (`PASS`/`FAIL`/`CANNOT_VERIFY`, REQ-004/014). `validateArtifactProvenance` ALWAYS runs, regardless of `automatedVerification` — it only ever DOWNGRADES an over-optimistic raw `PASS`, and does so to `FAIL` when it finds a genuine, structural CONTRADICTION (wrong URL, fingerprint mismatch, not-on-fixed-surface, real non-2xx, etc. — trustworthy even on an unproven platform), or to `CANNOT_VERIFY` when it finds no contradiction but also cannot vouch for the result (no citation, capture-tool network/empty-body failure, or `automatedVerification !== true` on an otherwise-clean capture). REQ-010 routes `CANNOT_VERIFY` to a human-review queue, NEVER `self-fix.sh` — a healthy loop pre-diagnosability-proof gets `CANNOT_VERIFY` forever, not `FAIL` forever, and is never flogged with unfixable self-fix escalations. PROP-043/044/045.** |
-| 12 | Bash-capable verifier hand-forges a fake `artifacts.jsonl` row DURING its own review | (i)+(ii) | NOT closed — accepted, inherited residual risk (matches `gig_reality_gate.py`/`cdp_nav_snapshot.py`'s identical, pre-existing gap). **Narrowed this iteration**: the easier, loop-pre-stages-a-forgery-under-a-self-chosen-namespace variant (formerly conflated with this row) is now row 22, CLOSED — this row covers only an adversarial VERIFIER forging evidence live during its own run, the scope `gig`'s precedent always had. | — |
+| 12 | **Same-uid artifact-trail forgery — WIDENED, iteration 7 (FIND-S).** Any process running as the same OS user can write to the artifact trail. This covers (a) an adversarial VERIFIER forging evidence during its own run (the original, inherited-from-`gig` scope) AND (b) **the loop under test winning a race**: it watches the trail's parent directory, sees the exclusive `mkdir` succeed, learns the `passId` the instant it exists, and writes a forged, structurally-valid row while the real verifier runs. Entropy (row 22) defeats *guessing* the passId in advance; it does not defeat *observing* it. | (i)+(ii) | **OPEN — disclosed architectural limit, NOT closable by spec text.** MITIGATED (not closed) by REQ-016's HMAC row signing: the capture tool signs each row with a per-run secret generated inside the verification wrapper and never placed in the loop's environment/arguments, and `enforceVerdict` rejects any unsigned/mis-signed row — a loop must now steal a secret from another process, not merely write a file. **The honest statement: a verifier and the loop it verifies inside the SAME trust domain (same uid, same host) admits no cryptographic closure. No amount of additional spec text changes this.** The real defenses, stated plainly: (1) the verifier is spawned from OUTSIDE the loop with fresh context; (2) recurring own-eyes/fresh-adversary review; (3) **the actual structural fix, recorded as future work, is to move the verifier out of the loop's trust domain — a separate OS user, or a different host (cloud routines) — so the loop cannot write what verifies it.** Pretending row 12 is "closed" would be the exact false assurance this whole feature exists to abolish. | REQ-016 (mitigation only) |
 | 13 | TOCTOU: public at verification time, taken down immediately after | (i)+(ii) | NOT closed — inherent to any point-in-time check | REQ-006's trail makes it discoverable in hindsight, not prevented. |
 
 Rows 12, 13, and 16 are OPEN by explicit, reasoned disclosure. A row is only ever removed from
@@ -511,12 +511,17 @@ call site; the VCSDD gate script calls the SAME module, never reimplementing it.
   is never caller-overridable (PROP-040, PROP-042).
 - **NEW, required (FIND-P fix, closes the previously-unforced acceptance criterion)**: a
   grep-level, mechanical (not judgment-based — bookkeeping, per the coordinator's own framing)
-  static check, run as part of this feature's own test suite, scans the gate script's source
-  file for definitions (not calls) of any of: `canonicalizeUrl`, `validateArtifactProvenance`,
+  static check, run as part of this feature's own test suite, scans **BOTH callers' source
+  files — (i) the build-time VCSDD gate script AND (ii) the runtime path
+  `skills/self/reality-verify-spawn.sh`** (FIND-R/FIND-T fix, iteration 7: scoping this check
+  to the gate script alone leaves REQ-011's named first customer, the runtime loop, with zero
+  forcing check against shadow-reimplemented provenance logic — that is FIND-H reopening.
+  "ONE module, TWO callers" is proven on both callers or on neither) — for definitions (not
+  calls) of any of: `canonicalizeUrl`, `validateArtifactProvenance`,
   `enforceVerdict`, `computeContentFingerprint`, `hashRealityClaim`, `decideConvergenceGate`,
   or any function containing `httpStatus`/`referencedArtifactIds`/`contentHash` comparison
   logic OUTSIDE of `reality-verdict-schema.mjs`, and asserts ZERO such definitions exist in
-  the gate script (or anywhere outside `reality-verdict-schema.mjs`) — `required: true`
+  either caller (or anywhere outside `reality-verdict-schema.mjs`) — `required: true`
   (PROP-047).
 - REQ-011's three-scenario table is now provably true: scenario 1 (healthy, unproven) reaches
   `CANNOT_VERIFY` via this exact composition, not `FAIL`.
@@ -565,3 +570,41 @@ POSITIVE, structural evidence of contradiction, never mere absence of proof; and
 between — no capture, a network failure, an empty body, or an unproven signal — is honestly
 `CANNOT_VERIFY`, routed to a human, never silently folded into either PASS or FAIL, and never
 flogged with an escalation mechanism (self-fix) that has nothing to fix.**
+
+---
+
+## REQ-016 (NEW, iteration 7 — FIND-S mitigation): HMAC-signed artifact rows + the trust-domain limit
+
+**EARS**: WHEN the verification wrapper starts a pass THE SYSTEM SHALL generate a per-run HMAC
+secret from a CSPRNG **inside the wrapper process**, pass it to `public_artifact_snapshot.py`
+through a channel not observable to the loop under test (never a CLI argument, never an env var
+exported into the loop's own environment, never written to the trail directory), and the capture
+tool SHALL append `rowHmac = HMAC(secret, canonical_serialization_of_row)` to every row it writes.
+`enforceVerdict` SHALL recompute the HMAC for every cited row and treat any row that is unsigned,
+mis-signed, or signed with a different pass's secret as **not a valid capture** → the verdict
+cannot reach PASS on it (fail-closed: `CANNOT_VERIFY` if no valid capture remains; `FAIL` if a
+valid capture contradicts the claim).
+
+**What this buys**: a loop that observes the `passId` (row 12(b)'s race) can still *write* a file,
+but it cannot produce a row that survives `enforceVerdict` without stealing a secret held in
+another process's memory. That is a materially higher bar than "write a line to a jsonl".
+
+**What this does NOT buy, stated without euphemism**: it is a bar, not a wall. A determined
+same-uid adversary can still attack the secret. **A verifier cannot be made cryptographically
+sound against a loop that shares its trust domain.** This spec therefore declares row 12 OPEN and
+records the only real fix as future architectural work: run the reality-verifier under a different
+OS user, or on a different host (cloud routines), so the code being judged cannot write the
+evidence that judges it. Until then the operative defenses are (1) fresh-context spawn from
+outside the loop, (2) recurring own-eyes review, (3) the fixed-public-surface + pre-committed
+fingerprint anchors (REQ-015), which a forger would have to defeat *consistently* across
+independent surfaces rather than by writing one line.
+
+**Acceptance / proof obligations**
+- **PROP-049** (required): a row with no `rowHmac` → never counted as a valid capture.
+- **PROP-050** (required): a row with an `rowHmac` computed under a different secret (simulating a
+  forger who observed the passId but not the secret) → never counted as a valid capture.
+- **PROP-051** (required): the secret never appears in the wrapper's argv, in any env var visible
+  to the spawned loop/verifier, or anywhere under the artifact-trail directory (mechanical check).
+- **PROP-052** (required): a valid, correctly-signed row that CONTRADICTS the claim still yields
+  `FAIL` (the signing layer must not become a new way to launder a contradiction into
+  `CANNOT_VERIFY`).
