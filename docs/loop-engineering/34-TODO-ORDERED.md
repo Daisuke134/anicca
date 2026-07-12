@@ -130,6 +130,46 @@ baseline との差1件（integration PROP-013 SIGTERM）は stash して3回走�
 
 **残**: 本番の loop が実際に `slot=earn/polymarket-trade` を選ぶかを観測中。
 
+### T3.5 ★根本修正★ wallet manifest — agent が自分の全 wallet を知る（commit 8d45bf3e）
+
+**Dais**:「各 skill が1つの wallet しか知らないのが根本問題。**全エージェントが自分の持つ全 wallet を
+認識し、使えるべき**。simple で fundamental な修正をしろ。web/gh で BP を探せ」
+
+**BP 調査**（`35-wallet-manifest-bp.md`、引用付き）:
+- **同型のアンチパターンが実在**: elizaOS の `plugin-polymarket` は、同じ1つの wallet を
+  `POLYMARKET_WALLET_ADDRESS` → `POLYMARKET_ADDRESS` → `STEWARD_EVM_ADDRESS` → `ELIZA_MANAGED_EVM_ADDRESS`
+  の**4段 env fallback** で解決している（我々と全く同じ病気が本番 OSS にある）
+- **正しい形**: hyperlane-registry の `addresses.yaml` — **1つの宣言ファイルを全ツールが読む**
+- **鍵の扱い**: Turnkey/MetaMask「The agent never touches the private key. It receives signatures, not keys.」
+
+**実装**: `$ANICCA_HOME/wallets.json` を唯一の正本に。
+- public address のみ宣言。**秘密鍵は `keyRef` で場所を指すだけ**（貼り付けられた鍵は parse 時に落とす）
+- skill は「**自分の wallet のうち、自分の venue で使えるのはどれか**」と聞くだけ
+  （各コンポーネントが別々の env から再導出しない）
+- 壊れた1行が、読める他の wallet を見えなくすることはない（行単位で fail-closed）
+- **私が数時間前に plist に足した `ANICCA_EXTRA_WALLETS` の手書き JSON は撤去**（同じ病気だった）
+
+**証拠（on-chain 実測）**:
+```
+claude-p  $15.96  base/USDC=$1.95  polygon/pUSD=$6.28  hyperliquid/USD=$7.72
+Franklin  $29.33  solana/USDC=$24.61  solana/SOL=$3.09  polygon/pUSD=$1.62  ← ★初めて可視化★
+66/66 tests green（新規6件）
+```
+
+### T3.6 claude-p は ClawRouter を捨て、自分のモデルで動く（commit 6edc5f83）
+
+**Dais**:「claude-p の earn loop に ClawRouter を使うな。モデル自身で動かせ」
+
+- **proxy へのフォールバックを削除**。claude-p は human-funded＝サブスクで脳が動く。
+  crypto wallet は**取引専用**であって推論代ではない
+- フォールバックは「無料モデルに金の判断を任せる」ことだった。実測でその無料モデルは
+  **ツール呼び出しすら間違えていた**（`run_skill skill not found`）
+- 失敗したら**大声で失敗する**（wake_error → 次の wake で本物の脳が再試行）
+- Franklin 等 self-funded は proxy のまま（**自分の財布から推論代を払うので無料モデルが正しい**）
+- wake 間隔 120秒 → **600秒**（claude -p の timeout は SLEEP_BASE_S から導出される＝
+  wake 間隔がそのまま思考時間の予算。Sonnet は120秒では終わらない）
+- **「claude-p は絶対に proxy から答えてはならない」をテストで固定**（将来の誰かが戻さないように）
+
 ### T4. pm-deterministic を削除して 1 instance = 1 loop にする 🔥
 **なぜ**: pm-deterministic は「脳が earn を選ばないから」貼られたパッチ。T3 で脳が選べるようになったので不要。
 - **完了条件**: `launchctl list` から pm-deterministic が消え、それでも earn-ledger に polymarket の取引が出続ける
