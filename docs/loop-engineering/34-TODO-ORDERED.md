@@ -28,13 +28,28 @@ Franklin2  wallet address が記録されていない
 
 ## ★ 実行順（この番号順にしかやらない）★
 
-### T1. pick.py に「世界を調べる目」を付ける 🔥 最優先
-**なぜ最初か**: これが直らなければ、他を全部直しても1円も増えない。
+### T1. pick.py に「世界を調べる目」を付ける ✅ DONE（2026-07-12、commit 2576c343）
 
-- やること: 賭ける前に web 検索（ニュース・専門家の予測）を実行し、その結果を LLM に渡す
-- BP（既知、memory `feedback_earn_by_searching_for_edge_not_by_hedging`）: Polymarket 公式 agents の構成 = **NewsAPI + Tavily + Superforecaster プロンプト**
-- **完了条件（検証可能）**: 賭けた記録（ledger）に、**実際に読んだ記事の URL** が根拠として残っている
-- 禁止: VCSDD / subagent 乱用（トークン浪費）
+**やったこと**: 賭ける候補ごとに firecrawl で web 検索 → 記事の生テキストを LLM に渡す
+（判断はハードコードせず、モデルが自分で重みづける）→ 根拠の URL を決定に添えて emit。
+検索が失敗しても pass は止まらない（情報が無いだけで、以前と同じ挙動に戻る）。
+
+- 新規: `skills/earn/polymarket-trade/news_search.py` + `test_news_search.py`（7/7 green、ネットワーク不要）
+- 変更: `pick.py::evaluate()`（検索 → 質問に埋め込む）/ `_emit()`（`news_urls` / `news_found` を記録）
+- **★動いているループのパスに rsync 済み★**（正本を直しただけでは届かない = 今日の最大の教訓）
+
+**証拠（本番パス `~/.anicca-founder/skills/earn/polymarket-trade/pick.py` で実行）**:
+```
+[news] 4 source(s) for: Will Argentina win the 2026 FIFA World Cup?
+[news] 4 source(s) for: Will France win the 2026 FIFA World Cup?
+[news] 4 source(s) for: Will Spain win the 2026 FIFA World Cup?
+[news] 4 source(s) for: Will England win the 2026 FIFA World Cup?
+{"action": "WAIT", "reason": "no-candidate-cleared-edge-confidence-gate"}
+```
+= 4市場すべてを実際に検索し、記事を読んだ上で判断 → 基準を満たすエッジが無いので正しく WAIT。
+
+**残（T1 の続き、次にやる）**: 賭けが実際に成立した時に `news_urls` が earn-ledger に載ることの確認
+（今は WAIT なので未確認。BUY が出た最初の pass で検証する）。
 
 ### T2. redeem を earn loop 本体に入れる 🔥
 **なぜ2番目か**: 今 `redeem.py` は `run_earner.sh`（= 停止した pm-earner）からしか呼ばれない。
