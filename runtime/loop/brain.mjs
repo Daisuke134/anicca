@@ -122,6 +122,12 @@ async function thinkClaudeP(ctx, config) {
       '-p', prompt,
       '--output-format', 'json',
       '--model', model,
+      // Without this the child stops to ASK for tool permission and answers with advice about
+      // settings.json/allowedTools instead of the wake's decision -- observed verbatim 2026-07-12,
+      // and it is why every claude-p wake fell through parseToolCall into `narrate` while looking
+      // perfectly healthy (zero errors, no fallback). The loops that already run on Sonnet
+      // (claude-p-mainloop.sh:78, self-fix.sh) all pass this flag; this one simply never did.
+      '--dangerously-skip-permissions',
     ], {
       env: childEnv,
       cwd: os.tmpdir(),   // neutral cwd → no project .claude/hooks loaded → no 2-min hang
