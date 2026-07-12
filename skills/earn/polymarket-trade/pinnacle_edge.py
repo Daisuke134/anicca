@@ -322,8 +322,20 @@ def find_edges(
         markets = [m for m in (books[0].get("markets") or []) if m.get("key") == "h2h"]
         if not markets:
             continue
+        h2h_outcomes = markets[0].get("outcomes") or []
+        # THE TRAP THIS EXISTS TO KILL (live incident, 2026-07-12): baseball and MMA h2h lines are
+        # always 2-way (no draw), but SOCCER h2h is 3-way (win/draw/loss) -- a completely different
+        # question from Polymarket's 2-way "Team to Advance" markets (which include extra time and
+        # penalties, never present in Pinnacle's 90-minute h2h line at all). Comparing France's
+        # 90-minute win probability (41.0%) to its advance-market price (59.5%) manufactured a fake
+        # "-18.5pt edge" even though both numbers were individually correct -- they answer different
+        # questions and neither can be derived from the other. There is no safe way to salvage a
+        # 3-way line for a 2-way comparison (reallocating Draw would be a guess), so any h2h with
+        # other than exactly two outcomes is dropped before it can be compared at all. Fail closed.
+        if len(h2h_outcomes) != 2:
+            continue
         try:
-            fair = fair_probs_from_outcomes(markets[0].get("outcomes") or [])
+            fair = fair_probs_from_outcomes(h2h_outcomes)
         except ValueError:
             continue
 
