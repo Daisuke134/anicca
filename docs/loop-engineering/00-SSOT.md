@@ -94,6 +94,19 @@ life-manager 追加の既知ギャップ(2026-07-12 解剖): (1)動画未生成=
 - マスタープラン3段: (1)Claude が Dais に$100k MRR稼ぐ → (2)一般化して OpenClaw/Hermes でも同体験+完全OSS化 → (3)全部クラウドホスト（Daisはスマホだけで運用、物理PC返却）
 - lm-video の実行主体判明(2026-07-12): OpenClaw gateway live cron（`lm-video-store-recording` 2h毎 + `lm-video-post-morning/evening`）= 幽霊ではなく稼働中。jobs.json に無いのは既知のlive-store desync。周辺に larry/reelclaw/honne のマーケcron約20本が全部ok稼働・Telegram announce設定済み
 
+## 2f. 全ループ運命表（2026-07-12 夜。ON/OFF の唯一のアライン正本。変更は必ずここを更新）
+| ループ | 今 | 運命 | 理由 |
+|---|---|---|---|
+| gig-core+auditor毎時+daily-report | 🟢ON | **ON維持**(T0-3で単発化) | 唯一動く稼ぎ導線(応募/出品が実UI確認済) |
+| capafy-daily / article-daily / life-manager-daily / connector | 🟢ON | **ON維持** | 単発型で安い。articleはT0で時間上限追加 |
+| clip系(core/promote/video tmux+launchd6本) | 🟢ON | **OFF→P2で修理後ON** | 投稿壊れたまま$59+/日=純浪費。Dais「1日1投稿なら良い」はP2完了後に実現 |
+| reddit-loop | 🟢ON(2.5日連続) | **OFF恒久** | 垢BAN=何を書いても無意味 |
+| affiliate-core / bounty-core / explorer-core | 🟢ON | **OFF**(deferred解除まで) | Dais後回し指定なのに常駐課金 |
+| selffixゾンビ4本 | 🟢💀 | **即kill**(T0-2) | 設計外の永久課金 |
+| realityverify-franklin | 🟢ON | **OFF** | Franklin=self-funded領域、claude-p課金で見守る必然なし |
+| pm-earner / claude-p-mainloop / heartbeat / automaton | 🔴OFF | **OFF維持** | 停止済(pm-earnerは蘇生機構も切除済) |
+| Franklin/agent-economy/pm-deterministic/OpenClaw cron群/ceo-runner | 🟢ON | **ON**(対象外) | Daisサブスクを燃やさない |
+
 ## 3. AS-IS（今の実態、launchctl 実測）→ TO-BE（理想）
 ```
 AS-IS（混線・半分移行）:
@@ -147,7 +160,13 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [~] L7  bounty — ★DEFERRED(Dais 2026-07-12)★
 [~] L8  explorer — ★DEFERRED(Dais 2026-07-12)★
 ★実行方式(Dais 2026-07-12): 1つずつ・superpowers(brainstorming→writing-plans→subagent-driven-development)+VCSDD lean(spec駆動+TDD)。順序=P1→P9厳守★
-[ ] P1  life-manager マーケ修理（最優先）— (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
+━━ Phase 0: token止血（2026-07-12 夜 Dais承認。P1より先 — 残15%を守る緊急処置。詳細=doc 31）━━
+[ ] T0-1 token日報watchdog — token-daily-report.sh(作成済み・未テスト)を実Telegram送信テスト→launchd 09:15 JST登録。毎朝「昨日$XX/犯人TOP3/常駐セッション数/ゾンビ数」
+[ ] T0-2 ゾンビ退治 — 残selffix 4本(clip/Franklin/founder/clip-promote)をkill + self-fix.shに自壊タイマー(最大2h)実装(掟2)
+[ ] T0-3 常駐tmux廃止 — core loop群を「単発claude -p+launchd」型へ改修(掟1: 起きる→働く→死ぬ)。★P3と同じファイルを触るのでP3と同時実施★
+[ ] T0-4 無価値常駐の停止 — Dais承認の運命表(§2f)どおりOFF実行: clip系(P2まで) / reddit-loop(BAN) / affiliate・bounty・explorer-core(deferred) / realityverify-franklin
+[ ] T0-5 メイン節制の恒久化 — 掟5(subagent最小限・調査1体・全Sonnet)をCLAUDE.mdに1行追加(memory焼き込み済み)
+[ ] P1  life-manager マーケ修理（最優先）— ★手順改定(Dais 2026-07-12): loopに焼く前に、まず私が手動で動画を1本生成→TelegramでDaisに送る→品質アライン→OKが出て初めてloopに組み込む(loop化は金がかかるので品質合意が先)★ (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
 [ ] P2  clip 修理 — (a)投稿ハングRCA(CDP Networkで共有確認コールを完全捕捉、client stall vs server drop確定) (b)@aiclipsvault へ投稿再開 (c)Telegram実URL報告を配線(現状実装ゼロ) (d)PC repo に human向け fiat-affiliate 版 clip skill を派生（同じskill、報酬先=人間の銀行） — done: 正しいチャンネルに毎日実投稿+URL がTelegramに届く
 [ ] P3  self-heal/self-improve 一般化 — gig L1 で実証済みの3点セット(report-blind reality-verifier + funnel metrics + self-fix escalation)を共有harness lib化し全loop(特にOpenClawのlarry/reelclaw/honneマーケcron群とlife-manager)に配線。healthcheck=プロセス生死でなく「spec上のside-effectが直近24hに実在するか」で判定 — done: 「2日投稿ゼロ」を各loopが自分で検知→self-fix発火する実証
 [ ] P4  article 残2修理 — (a)note: Vue controlled-inputに実キー入力+input/changeイベントでログイン (b)X: 認証情報を再取得(.env/~/.cloakに無し)して再ログイン — done: 5媒体すべてdraft staging
