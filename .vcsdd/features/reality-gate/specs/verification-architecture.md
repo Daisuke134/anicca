@@ -101,8 +101,12 @@ independently confirmed (FIND-H/I/J/K/L) as structurally, genuinely fixed.
     Both properties are load-bearing: entropy makes guessing infeasible, exclusive-create makes a lucky guess
     fail-closed instead of accepted. `passId` is still never read from any caller-facing
     argument or env var — the (former) `pass-id` positional argument is REMOVED from the
-    accepted argument list entirely; on `CANNOT_VERIFY`, appends to the human-review queue (REQ-010) instead of
-    invoking `self-fix.sh` — a distinct branch from the existing `FAIL`→`self-fix.sh` branch.
+    accepted argument list entirely; on `CANNOT_VERIFY`, appends to the human-review queue (REQ-010).
+    **The FIRST `CANNOT_VERIFY` does NOT invoke `self-fix.sh`; the SECOND CONSECUTIVE one DOES
+    (REQ-018/PROP-055).** So the code has three branches, not two: `FAIL`→`self-fix.sh`;
+    first-`CANNOT_VERIFY`→human-review queue only; second-consecutive-`CANNOT_VERIFY`→human-review
+    queue AND `self-fix.sh`. The consecutive-`CANNOT_VERIFY` counter is read from the durable verdict
+    trail (REQ-006/018), not from in-memory state, so it survives the process dying between passes.
   - `skills/self/scripts/public_artifact_snapshot.py` *(edge cases specified, FIND-O fix)* —
     on a network-level failure, records the reserved `httpStatus` sentinel (never a real
     in-range code); on an empty body, records the real 2xx status with an empty/marked
