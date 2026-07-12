@@ -161,11 +161,12 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [~] L8  explorer — ★DEFERRED(Dais 2026-07-12)★
 ★実行方式(Dais 2026-07-12): 1つずつ・superpowers(brainstorming→writing-plans→subagent-driven-development)+VCSDD lean(spec駆動+TDD)。順序=P1→P9厳守★
 ━━ Phase 0: token止血（2026-07-12 夜 Dais承認。P1より先 — 残15%を守る緊急処置。詳細=doc 31）━━
-[ ] T0-1 token日報watchdog — token-daily-report.sh(作成済み・未テスト)を実Telegram送信テスト→launchd 09:15 JST登録。毎朝「昨日$XX/犯人TOP3/常駐セッション数/ゾンビ数」
-[ ] T0-2 ゾンビ退治 — 残selffix 4本(clip/Franklin/founder/clip-promote)をkill + self-fix.shに自壊タイマー(最大2h)実装(掟2)
+[x] T0-1 token日報watchdog — ✅実Telegram送信成功(messageId 2015)。launchd plist(ai.anicca.token-daily-report, 09:15 JST)作成済み。★ただしlaunchd gui domainが全操作125拒否の故障中→次回ログイン/再起動で自動有効化。それまで日報は手動/次セッションで発火★
+[x] T0-2 ゾンビ退治(kill分) — ✅selffixゾンビ全滅(pm-earner/clip/Franklin/founder/clip-promote/reddit/affiliate/video/bounty/claude-p-pm/a3cdd4のtmux server kill、残存=gig系2本のみを全socket走査で実測)。残: self-fix.shの自壊タイマー実装(P3と同時)
 [ ] T0-3 常駐tmux廃止 — core loop群を「単発claude -p+launchd」型へ改修(掟1: 起きる→働く→死ぬ)。★P3と同じファイルを触るのでP3と同時実施★
-[ ] T0-4 無価値常駐の停止 — Dais承認の運命表(§2f)どおりOFF実行: clip系(P2まで) / reddit-loop(BAN) / affiliate・bounty・explorer-core(deferred) / realityverify-franklin
+[x] T0-4 無価値常駐の停止 — ✅運命表(§2f)どおり実行: launchd 13本(clip系6+affiliate2+bounty2+explorer1+reddit2+video1)を bootout+.disabled-2026-07-12-t04、tmux server 18本kill。cadence watchlistを gig+founder-loop のみに縮小(蘇生防止、~/anicca main push済)。残存tmux=gig-core+selffix-gigのみ実測
 [ ] T0-5 メイン節制の恒久化 — 掟5(subagent最小限・調査1体・全Sonnet)をCLAUDE.mdに1行追加(memory焼き込み済み)
+★incident(2026-07-12 23:3x): OpenClaw gateway が停止していた(原因不明・私のbootoutはai.anicca.*のみ)→nohup直接起動で応急復旧(ps 2プロセス実測)。launchd gui domain故障(全操作error 125)は再ログイン/再起動が必要 — 再起動後に gateway と token-daily-report の launchd 復帰を確認すること★
 [ ] P1  life-manager マーケ修理（最優先）— ★手順改定(Dais 2026-07-12): loopに焼く前に、まず私が手動で動画を1本生成→TelegramでDaisに送る→品質アライン→OKが出て初めてloopに組み込む(loop化は金がかかるので品質合意が先)★ (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
 [ ] P2  clip 修理 — (a)投稿ハングRCA(CDP Networkで共有確認コールを完全捕捉、client stall vs server drop確定) (b)@aiclipsvault へ投稿再開 (c)Telegram実URL報告を配線(現状実装ゼロ) (d)PC repo に human向け fiat-affiliate 版 clip skill を派生（同じskill、報酬先=人間の銀行） — done: 正しいチャンネルに毎日実投稿+URL がTelegramに届く
 [ ] P3  self-heal/self-improve 一般化 — gig L1 で実証済みの3点セット(report-blind reality-verifier + funnel metrics + self-fix escalation)を共有harness lib化し全loop(特にOpenClawのlarry/reelclaw/honneマーケcron群とlife-manager)に配線。healthcheck=プロセス生死でなく「spec上のside-effectが直近24hに実在するか」で判定 — done: 「2日投稿ゼロ」を各loopが自分で検知→self-fix発火する実証
