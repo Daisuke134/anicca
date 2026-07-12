@@ -31,8 +31,22 @@
 import { promises as fs } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const execFileAsync = promisify(execFile);
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+const DEFAULT_CANONICAL_REGISTRY_PATH = path.join(REPO_ROOT, 'skills', 'registry.json');
+const DEFAULT_PLIST_DIR = path.join(os.homedir(), 'Library', 'LaunchAgents');
+// Node's execFile default maxBuffer is 1MB. A real `ps -AwwE -o pid,command` dump of this fleet's full
+// process table (every process's FULL env appended, `-E`) is verified LIVE (2026-07-12) to run to
+// ~3.2MB — well past that default, which makes execFile throw ERR_CHILD_PROCESS_STDOUT_MAXBUFFER,
+// silently caught below and turned into an empty/null result (a real production bug this feature itself
+// would otherwise have shipped: `listRunningIndexLoopProcesses` returning zero targets, NOT because no
+// process is running, but because the buffer was too small to read the real answer). 16MB gives ample
+// headroom as the fleet grows.
+const PS_EXEC_OPTIONS = { maxBuffer: 16 * 1024 * 1024 };
 
 // ── Pure core (REQ-006): plain data in, plain data out — no file/process/network access ──────────────
 
@@ -191,19 +205,38 @@ export function parseIndexLoopProcesses(psOutputLines) {
  * (`reason: "unobservable"`) when the runtime value could not be observed at all, and returns exactly
  * one drift entry (or zero, on a match) otherwise. Contains no instance-name branching.
  *
+ * FIND-003 fix: a `declaredConfig` that is itself `null`/`undefined` (the plist could not be read at
+ * all) is NOT the same as a `declaredConfig` of `{}` (the plist WAS read, it simply never declared this
+ * key — REQ-001's own "inherits code default" edge case). The former is fail-closed FAIL (REQ-004): an
+ * unreadable declared side must never quietly resolve to "no drift", exactly like an unreadable actual
+ * side already does.
+ *
+ * Live-run correctness fix (found running the real detector against the production fleet 2026-07-12,
+ * `com.anicca.daemon`): `ps` can only ever show a key that was EXPLICITLY present in the process's
+ * spawned env — it cannot see an in-process JS default like `brain.mjs`'s own
+ * `config.ANICCA_BRAIN || 'proxy'`. So an OBSERVED env object that is simply missing `key` (as opposed
+ * to `observedEnvOrNull` being `null`, i.e. genuinely unobservable) must resolve the SAME "inherits
+ * codeDefault" rule the declared side already gets — otherwise every instance that never explicitly
+ * overrides `ANICCA_BRAIN` reports a spurious `declared: 'proxy' vs actual: undefined` "drift" that
+ * isn't real (the running process's own effective value is ALSO `codeDefault`, by the identical
+ * fallback rule).
+ *
  * @param {string} instance
- * @param {Record<string, unknown>} declaredConfig
+ * @param {Record<string, unknown>|null} declaredConfig
  * @param {Record<string, unknown>|null} observedEnvOrNull
  * @param {string} [key]
  * @param {unknown} [codeDefault]
  * @returns {Array<{key: string, instance: string, declared: unknown, actual: unknown, reason?: string}>}
  */
 export function detectBrainDrift(instance, declaredConfig, observedEnvOrNull, key = 'ANICCA_BRAIN', codeDefault = 'proxy') {
+  if (classifyObservability(declaredConfig) === 'UNOBSERVABLE') {
+    return [{ key, instance, declared: null, actual: null, reason: 'unobservable' }];
+  }
   const { value: declared } = resolveExpectedValue(declaredConfig, key, codeDefault);
   if (classifyObservability(observedEnvOrNull) === 'UNOBSERVABLE') {
     return [{ key, instance, declared, actual: null, reason: 'unobservable' }];
   }
-  const actual = observedEnvOrNull[key];
+  const { value: actual } = resolveExpectedValue(observedEnvOrNull, key, codeDefault);
   return diffDeclaredVsActual({ [key]: declared }, { [key]: actual }).map((d) => ({ ...d, instance }));
 }
 
@@ -289,7 +322,12 @@ export async function readRuntimeEnvOfLabel(launchdLabel, allowedKeys = ['ANICCA
     if (!pidMatch) return null;
     const pid = Number.parseInt(pidMatch[1], 10);
     if (!Number.isFinite(pid)) return null;
-    const { stdout: psOutput } = await execFileAsync('ps', ['-Awwe', '-o', 'command', '-p', String(pid)]);
+    // NOTE: macOS's `ps` only appends a process's environment to its command output with the
+    // CAPITAL `-E` flag (lowercase `-e` does not do this on this platform, verified live
+    // 2026-07-12) -- and `-A` (select ALL processes) overrides a `-p <pid>` filter rather than
+    // combining with it, so `-A` must be OMITTED here (kept only in listRunningIndexLoopProcesses,
+    // which genuinely wants every process and has no `-p` filter to conflict with).
+    const { stdout: psOutput } = await execFileAsync('ps', ['-wwE', '-o', 'command', '-p', String(pid)], PS_EXEC_OPTIONS);
     const dataLine = psOutput.split('\n').filter((l) => l.trim().length > 0).slice(1).join(' ');
     const env = parseAllowedEnvFromCommandLine(dataLine, allowedKeys); // raw dataLine discarded right after this call
     return { pid, env };
@@ -308,9 +346,111 @@ export async function readRuntimeEnvOfLabel(launchdLabel, allowedKeys = ['ANICCA
  */
 export async function listRunningIndexLoopProcesses() {
   try {
-    const { stdout } = await execFileAsync('ps', ['-Awwe', '-o', 'pid,command']);
+    // CAPITAL `-E` (not `-e`) is what actually appends env on macOS (verified live 2026-07-12);
+    // `-A` (all processes) is fine here since there is no `-p` filter for it to override.
+    const { stdout } = await execFileAsync('ps', ['-AwwE', '-o', 'pid,command'], PS_EXEC_OPTIONS);
     return stdout.split('\n');
   } catch {
     return [];
   }
+}
+
+// ── Composed detector (REQ-010 discovery → REQ-001/002 comparison → REQ-004 fail-closed report) ──────
+
+/**
+ * The actual, runnable "config-drift detector" every EARS statement in behavioral-spec.md refers to:
+ * discovers every live `runtime/loop/index.mjs` instance (REQ-010), compares each one's declared vs
+ * observed `ANICCA_BRAIN` (REQ-001) and its runtime registry copy against the canonical registry
+ * (REQ-002), and reports everything fail-closed (REQ-004) — facts only, no severity judgment (REQ-007).
+ *
+ * Every I/O boundary is injectable via `deps` (defaulting to the real adapters above) specifically so
+ * this function's own test can drive it end-to-end with fixture data and NEVER invoke a real `ps`/
+ * `plutil`/`launchctl`/filesystem call.
+ *
+ * @param {object} [deps]
+ * @param {() => Promise<string[]>} [deps.listProcesses]
+ * @param {(plistPath: string) => Promise<Record<string, unknown>|null>} [deps.readPlistEnv]
+ * @param {(filePath: string) => Promise<object|null>} [deps.readRegistry]
+ * @param {string} [deps.plistDir]
+ * @param {string} [deps.canonicalRegistryPath]
+ * @param {string} [deps.brainKey]
+ * @param {unknown} [deps.codeDefaultBrain]
+ * @returns {Promise<{generatedAt: string, targets: object[], brainDrift: object[], registryDrift: object[], overallStatus: "PASS"|"FAIL"|"NO_TARGETS"}>}
+ */
+export async function runConfigDriftDetector(deps = {}) {
+  const {
+    listProcesses = listRunningIndexLoopProcesses,
+    readPlistEnv = readPlistDeclaredEnv,
+    readRegistry = readRegistryFile,
+    plistDir = DEFAULT_PLIST_DIR,
+    canonicalRegistryPath = DEFAULT_CANONICAL_REGISTRY_PATH,
+    brainKey = 'ANICCA_BRAIN',
+    codeDefaultBrain = 'proxy',
+  } = deps;
+
+  const psOutputLines = await listProcesses();
+  const targets = parseIndexLoopProcesses(psOutputLines);
+
+  const brainDrift = [];
+  const registryCopies = [];
+  const seenHomes = new Set();
+
+  for (const target of targets) {
+    const instance = target.xpcServiceName || `pid:${target.pid}`;
+    // REQ-001's declared side: this target's OWN plist, found via its OWN observed xpcServiceName --
+    // never a shared/global expectation (REQ-003). Missing xpcServiceName -> declared side is itself
+    // unobservable (REQ-010 edge case), which detectBrainDrift's FIND-003 fix now reports as a FAIL.
+    const declaredEnvOrNull = target.xpcServiceName
+      ? await readPlistEnv(path.join(plistDir, `${target.xpcServiceName}.plist`))
+      : null;
+    // REQ-001's actual side: re-derives ONLY the allow-listed brainKey from the SAME raw ps line this
+    // target was discovered from -- no other token on that line (e.g. a secret) is ever retained here
+    // (NFR-Security/FIND-002).
+    const rawLine = psOutputLines.find((l) => typeof l === 'string' && l.trim().split(/\s+/)[0] === String(target.pid));
+    const observedEnv = rawLine ? parseAllowedEnvFromCommandLine(rawLine, [brainKey]) : null;
+    brainDrift.push(...detectBrainDrift(instance, declaredEnvOrNull, observedEnv, brainKey, codeDefaultBrain));
+
+    if (target.aniccaHome && !seenHomes.has(target.aniccaHome)) {
+      seenHomes.add(target.aniccaHome);
+      const copyPath = path.join(target.aniccaHome, 'skills', 'registry.json');
+      registryCopies.push({ copyPath, registryOrNull: await readRegistry(copyPath) });
+    }
+  }
+
+  const canonicalRegistry = await readRegistry(canonicalRegistryPath);
+  const registryDrift = classifyObservability(canonicalRegistry) === 'UNOBSERVABLE'
+    ? registryCopies.map((c) => ({ copyPath: c.copyPath, declared: null, actual: null, reason: 'unobservable' }))
+    : detectRegistryStatusDrift(canonicalRegistry, registryCopies);
+
+  const hasDrift = brainDrift.length > 0 || registryDrift.length > 0;
+  // REQ-010 edge case: zero discovered targets is its OWN explicit status, never silently folded into
+  // "PASS" (an empty fleet is not the same fact as "everything I checked matched").
+  const overallStatus = targets.length === 0 ? 'NO_TARGETS' : (hasDrift ? 'FAIL' : 'PASS');
+
+  return {
+    generatedAt: new Date().toISOString(),
+    targets,
+    brainDrift,
+    registryDrift,
+    overallStatus,
+  };
+}
+
+// ── CLI entrypoint ─────────────────────────────────────────────────────────────────────────────────────
+// `node runtime/loop/config-drift.mjs` runs the real detector against the live fleet. stdout carries
+// ONLY the JSON report (this repo's own rule: a loop's child script must never mix diagnostic text into
+// stdout, or the parent misparses it -- any diagnostic here goes to stderr instead). Exit code: 0 only
+// for a genuine PASS; non-zero for FAIL (drift found, or anything unobservable) and for NO_TARGETS
+// (never let "nothing was even checked" look like success to a caller only checking the exit code).
+const isMainModule = process.argv[1] && import.meta.url === `file://${process.argv[1]}`;
+if (isMainModule) {
+  runConfigDriftDetector()
+    .then((report) => {
+      process.stdout.write(`${JSON.stringify(report)}\n`);
+      process.exit(report.overallStatus === 'PASS' ? 0 : 1);
+    })
+    .catch((err) => {
+      process.stderr.write(`[config-drift] fatal: ${err && err.message}\n`);
+      process.exit(2);
+    });
 }

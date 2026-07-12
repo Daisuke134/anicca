@@ -112,6 +112,48 @@ test('REQ-001 edge case: plist declares no ANICCA_BRAIN key at all -> treated as
   assert.equal(drift[0].actual, 'claude-p');
 });
 
+// ── FIND-003 (adversary iteration-1, major->blocking): declaredConfig===null (plist UNREADABLE) must
+// be distinguished from declaredConfig==={} (plist WAS read, key just absent) — the former is a
+// fail-closed FAIL, never a silent fall-through to codeDefault that could look like a PASS. ────────────
+
+test('FIND-003: declaredConfig=null (plist could not be read at all) -> FAIL (reason: unobservable), NEVER a silent codeDefault-based PASS', () => {
+  const drift = detectBrainDrift('ai.anicca.agent-economy-loop', null, { ANICCA_BRAIN: 'proxy' });
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0].reason, 'unobservable');
+  assert.equal(drift[0].declared, null);
+  assert.equal(drift[0].actual, null);
+});
+
+test('FIND-003: declaredConfig={} (plist WAS read successfully, key merely absent) still resolves via codeDefault — NOT treated as unobservable (must not regress the REQ-001 edge case above)', () => {
+  const drift = detectBrainDrift('some-instance', {}, { ANICCA_BRAIN: 'proxy' });
+  assert.deepEqual(drift, [], 'declared (inherited default proxy) matches actual (proxy) -> PASS, and must NOT be reported as unobservable just because the key was absent');
+});
+
+test('FIND-003: an unreadable declaredConfig takes priority even when the actual side WOULD have matched the codeDefault — unobservable is reported regardless of what the (unusable) codeDefault comparison would have said', () => {
+  const drift = detectBrainDrift('ai.anicca.agent-economy-loop', undefined, { ANICCA_BRAIN: 'proxy' });
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0].reason, 'unobservable');
+});
+
+// ── Live-run correctness fix (found running the real detector against the production fleet,
+// com.anicca.daemon 2026-07-12): `ps` can only show ANICCA_BRAIN if it was EXPLICITLY set in the
+// process's env -- it can't see brain.mjs's own in-process `config.ANICCA_BRAIN || 'proxy'` default. An
+// OBSERVED env object (not null -- the process WAS read successfully) that simply lacks the key must
+// inherit codeDefault the SAME way the declared side already does, or every instance that never
+// explicitly overrides ANICCA_BRAIN reports a spurious drift that isn't real. ──────────────────────────
+
+test('real-fleet fix: neither side explicitly sets ANICCA_BRAIN (both observed AND declared omit the key) -> both resolve to the SAME inherited codeDefault -> PASS, not a spurious declared="proxy"/actual=undefined drift', () => {
+  const drift = detectBrainDrift('com.anicca.daemon', { ANICCA_HOME: '/Users/operator/.anicca' }, { ANICCA_HOME: '/Users/operator/.anicca' });
+  assert.deepEqual(drift, [], 'neither side named ANICCA_BRAIN at all -> both inherit the identical codeDefault -> no real drift');
+});
+
+test('real-fleet fix: observed env IS successfully read (not null) but happens to omit the key, while declared EXPLICITLY sets a non-default value -> still reports a real drift (this fix must not become a new silent-PASS hole)', () => {
+  const drift = detectBrainDrift('ai.anicca.agent-economy-loop', { ANICCA_BRAIN: 'claude-p' }, { ANICCA_HOME: '/Users/operator/.anicca-founder' });
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0].declared, 'claude-p');
+  assert.equal(drift[0].actual, 'proxy', 'the observed side with the key absent inherits codeDefault, which still differs from the explicit declared claude-p -> real drift correctly reported');
+});
+
 test('resolveExpectedValue: key present in declaredConfig is returned verbatim with declaredExplicitly=true', () => {
   const resolved = resolveExpectedValue({ ANICCA_BRAIN: 'claude-p' }, 'ANICCA_BRAIN', 'proxy');
   assert.deepEqual(resolved, { value: 'claude-p', declaredExplicitly: true });
