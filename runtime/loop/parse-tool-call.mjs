@@ -85,7 +85,20 @@ function extractInnerResponse(response) {
  * Extract the first tool_call entry from an OpenAI-compatible response.
  */
 function extractFirstToolCall(response) {
-  if (!response || !Array.isArray(response.choices) || response.choices.length === 0) {
+  if (!response) return null;
+
+  // A text-mode brain (`claude -p`) has no tool-call channel: it is ASKED to emit the envelope as
+  // text, so what comes back is the bare object — {"tool_calls":[...]} — with no OpenAI chat
+  // wrapper around it. Reading only `choices[0].message.tool_calls` threw that away and every wake
+  // was logged as `narrate`: measured 2026-07-13, the model answered
+  //   {"tool_calls":[{"function":{"name":"run_skill","arguments":"{\"slot\":\"earn/polymarket-trade\"}"}}]}
+  // — exactly right — and the loop recorded "the brain chose to do nothing". It had chosen to trade.
+  if (Array.isArray(response.tool_calls) && response.tool_calls.length > 0) {
+    const tc = response.tool_calls[0];
+    if (tc?.function?.name) return tc;
+  }
+
+  if (!Array.isArray(response.choices) || response.choices.length === 0) {
     return null;
   }
   const message = response.choices[0]?.message;
