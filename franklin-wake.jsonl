@@ -5019,3 +5019,11 @@
 {"ts":1783814850,"wake_id":"00MRH1AZU5E38266A7E4A34C8A","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":0,"exit_code":0,"skip_reason":"deposit wallet: [REDACTED] | pUSD: 1.621603\nscanned 57 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoting.\n  cancel-and-replace: cleared old quotes\n  NAKED-FIX exec "}
 {"ts":1783814850,"wake_id":"00MRH1AZU5E38266A7E4A34C8A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783815029,"wake_id":"00MRH1ETZSDD5F8FC8A98F4E26","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815162,"wake_id":"00MRH1HOD3A5F71B3EBC574A99","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815292,"wake_id":"00MRH1KGX28CA03C9435B547B4","kind":"router_reroute_skip","slot":"earn/video","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"slot\": \"earn/video\", \"handle\": \"money_blueprintdaily\", \"transition\": \"noop\", \"did\": \"noop (already warmed today)\", \"earned_usdc\": 0.0, \"cost_usdc\": 0.0}\n"}
+{"ts":1783815292,"wake_id":"00MRH1KGX28CA03C9435B547B4","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815424,"wake_id":"00MRH1NAISD99AC4A7911647C8","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815555,"wake_id":"00MRH1Q3SA41C6FCDB49A44F2A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815685,"wake_id":"00MRH1SVO987F02842D3CB4099","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815815,"wake_id":"00MRH1VO3UA4D92E7584F4447C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783815945,"wake_id":"00MRH1YG5T794626014B674E0A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
