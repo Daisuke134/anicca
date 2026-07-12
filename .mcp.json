@@ -2,42 +2,25 @@
   "mcpServers": {
     "serena": {
       "command": "uvx",
-      "args": ["serena-mcp"],
-      "env": {}
-    },
-    "context7": {
-      "command": "npx",
-      "args": ["-y", "@context7/mcp"],
-      "env": {}
-    },
-    "apple-docs": {
-      "command": "npx",
-      "args": ["-y", "@nicepkg/apple-docs-mcp"],
+      "args": [
+        "serena-mcp"
+      ],
       "env": {}
     },
     "maestro": {
       "command": "npx",
-      "args": ["-y", "@nicepkg/maestro-mcp"],
-      "env": {}
-    },
-    "revenuecat": {
-      "command": "npx",
-      "args": ["-y", "@nicepkg/revenuecat-mcp"],
-      "env": {}
-    },
-    "pencil": {
-      "command": "npx",
-      "args": ["-y", "@nicepkg/pencil-mcp"],
+      "args": [
+        "-y",
+        "@nicepkg/maestro-mcp"
+      ],
       "env": {}
     },
     "conway": {
       "command": "npx",
-      "args": ["-y", "@nicepkg/conway-mcp"],
-      "env": {}
-    },
-    "mixpanel": {
-      "command": "npx",
-      "args": ["-y", "@nicepkg/mixpanel-mcp"],
+      "args": [
+        "-y",
+        "@nicepkg/conway-mcp"
+      ],
       "env": {}
     }
   }
