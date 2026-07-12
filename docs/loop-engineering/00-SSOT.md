@@ -79,6 +79,21 @@ life-manager 追加の既知ギャップ(2026-07-12 解剖): (1)動画未生成=
 
 結論(2026-07-12 更新): 「毎日の実出力を証拠で確認済み」= **4つ(gig, connector, capafy, life-manager)**。articleは存在しない(未着手)。affiliate/bounty/explorerは未調査。★共通の真因(4loopで同一)★: (1)「毎日9時に起きます」等の**自己申告CronCreateは実体として保存されず**、1回動いて以降永久停止する → launchd直起動に置換すること (2)**timeoutが仕事の途中で殺す** → sutando の core-agent パターン(終わるまで走る)を採用 (3)**PushNotificationはDaisに届かない**(Remote Control非アクティブでsilent no-op) → `openclaw message send --channel telegram --target 8547730585` を使うこと。残りloopを直す時もこの3点を必ず確認する。
 
+## 2e. GOALS（Dais 2026-07-12 夕方 確定・音声指示）
+| プロダクト | MRR目標 | 稼ぎ方 |
+|---|---|---|
+| life-manager web app | $10k | 人生管理AI（本命）。マーケ=IG/Reddit/動画 |
+| capafy | $10k | skill販売+promote |
+| gig | $5k | 出品(shuppin)+納品(nouhin)で受注 |
+| article | $10k | note/Substack/X の有料記事（記事自体がマーケ） |
+| clipping | $1k | クリップ動画 |
+| anicca iOS app(affirmation) | $10k | larry+reelclaw+honne のSNS動画マーケで伸ばす |
+- 合計 ≈ $46k → 最終目標 **$100k MRR**（$200の課金で$100k稼ぐ = "profitable claude" の証明）
+- ★スコープ変更(Dais明示): **affiliate/bounty/explorer = 後回し**（大きく稼げる保証なし）。automaton(com.anicca.daemon)= **一時停止済**(2026-07-12、Conway Claude出荷まで。plist=.disabled-2026-07-12-until-conway)
+- 優先順: **①life-manager マーケ修理 → ②clip 修理 → ③全loopのself-heal/self-improve一般化（マーケloopが自分で数字を追い自分で直す）**
+- マスタープラン3段: (1)Claude が Dais に$100k MRR稼ぐ → (2)一般化して OpenClaw/Hermes でも同体験+完全OSS化 → (3)全部クラウドホスト（Daisはスマホだけで運用、物理PC返却）
+- lm-video の実行主体判明(2026-07-12): OpenClaw gateway live cron（`lm-video-store-recording` 2h毎 + `lm-video-post-morning/evening`）= 幽霊ではなく稼働中。jobs.json に無いのは既知のlive-store desync。周辺に larry/reelclaw/honne のマーケcron約20本が全部ok稼働・Telegram announce設定済み
+
 ## 3. AS-IS（今の実態、launchctl 実測）→ TO-BE（理想）
 ```
 AS-IS（混線・半分移行）:
@@ -128,9 +143,15 @@ CEO = 薄い機械 gate（予算 hard-stop + registry のみ、loop 殺す/作�
 [x] #8  life-manager セルフマーケ ★クローズ2026-07-12★ — loopを実際に直し、直後のパスが**自力で新規IG投稿を産んだのを私が自分の目で確認**: https://www.instagram.com/p/DarB2Qikt3d/ (19分前投稿、"Stop searching travel time for every event"クリエイティブ、CTA=aniccaai.com/life-manager、実ブラウザでスクショ)。★直した3点★ (1)毎日10:15のlaunchd(`ai.anicca.life-manager-daily`)で確実起動(自己申告cron依存を廃止) (2)**timeout削除**(20分で仕事の途中でrc=124 kill されて1件も投稿できていなかった真因。sutando=github.com/sonichi/sutando の core-agent パターン「終わるまで走る」を採用) (3)**Reddit BP焼込**(docs/loop-engineering/29-reddit-marketing-bp.md、Sprout Social等の引用付き): 両チャネル必須+karma gate(karma<50は宣伝禁止、純粋な有用コメントでkarma育成)+90/10ルール。実証=loopが自分でkarma=1を実測しBP通り宣伝せずr/ADHDで有用コメントを投稿 (4)**Telegram報告を修理**: PushNotificationは未達だった(Remote Control非アクティブでsilent no-op)→ connector/gig と同じ `openclaw message send --channel telegram --target 8547730585` に切替、messageId 1973/dryRun=false で実配信を検証。収益は正直に$0(ユーザー0人)。evidence=08-lm-phaseB.md + screenshot 08-lm-ig-new-post.png
 [x] L2  capafy public掲載 ★完全クローズ2026-07-12★ — done条件(status=4 browser確認 + "PUBLISHED"嘘なし)を充足し、さらに**loopが自力で新規スキルを審査提出まで完遂**するのを実証。①公開20件を実ブラウザ(ログアウト=買い手視点)で確認、購入導線まで実在(evidence=L2-capafy.md)。②毎日08:10のlaunchd(`ai.anicca.capafy-loop-daily`)を配線し、**08:10:05に人の手ゼロで自動発火**をログのタイムスタンプで実証。③**真因3つをloop自身が発見・修理**: (a)timeout 1200 が CP1 の途中で毎回 rc=124 kill → timeout削除(sutando=github.com/sonichi/sutando の core-agent「終わるまで走る」パターン採用) (b)`ANTHROPIC_API_KEY`残高$0でheadless即死 → unset して subscription auth に fallback(commit f163b975) (c)**二重スケジューリング**(launchd 08:10 と OpenClaw cron 09:00 が同じ:9222タブを奪合い1.5hで5回重複起動・全て "Reached max turns(40)" で失敗)→ mkdir排他ロックを実装。④「下書きで終わり」を禁止しCP1→CP2→CP3完遂を焼込 → **孤児DRAFT(4866150011 Decision Debate)を拾い上げ審査提出まで完走**。CP1の真の詰まりは「モデル提供元」未入力+「DPA同意」未チェックだったとloop自身が特定。⑤**私が独立にAPI照合**: status=1(審査中)/isConfirmedSkills=1/isConfirmedConfigKeys=1/auditStatus=1/model=Claude Sonnet 4.6 — 全て揃い、報告と実APIが一致(嘘なし)。⑥Telegram報告をPushNotification(未達)→`openclaw message send`(messageId 1973実証)に修理。収益は正直に**$0**(掲載は成功、売上はまだゼロ=IMPROVE層の課題)。
 [~] #7  article ★2026-07-12 大半クローズ・残2★ — done条件をDaisが改定: **5媒体すべてに draft を置き、絶対に自動公開しない**(AIスロップを世に出さない、公開はDaisが手で行う)。★最重要発見: このループは動いていたら全世界に自動公開していた★ — adversarial audit で判明した修理前の実態は Zenn=published:true を必須要求しpushで即公開 / Substack=draft作成直後に無条件POST /publish / note=create_draft直後に無条件publish_article() / dev.to="published": not DRY_RUN(実行=公開) の **5媒体中4媒体が正常動作として無条件公開**。全てコードレベルで塞ぎ(prompt頼みにしない)、run.sh の検証も反転(draft/404=成功、公開200=SAFETY FAILUREで叫ぶ)。全TDD。実走行(14:28)の結果=記事「AIエージェントは人間なしでAPIの代金を払えるのか(x402を実際に動かして検証)」を日英で執筆し **Zenn/dev.to/Substack ja/en の4媒体に draft staging、公開ゼロ**。Zennは実ブラウザで404(非公開)を、dev.toはAPI published=False+無認証404を、私が自分の目で確認。Telegram報告 messageId 1990(私のテスト送信1991で本物と確定)。launchd `ai.anicca.article-daily` 06:00 ロード済み=明日から自動で回りnote/Xも毎日再挑戦。真因3つ(自己申告cron/timeout/PushNotification)は設計で回避済み、+実行1回目の「丸投げして緑で記事0本」も修理(BG_WAIT_CEILING=0)。**残2: (a)note=ログインのVue reactivity(fill()がcontrolled inputに反応せずsubmitがdisabledのまま、実キー入力+input/changeイベント発火で直る見込み) (b)X=セッション失効+認証情報が.envにも~/.cloakにも無く再ログイン不可**。収益¥0(下書きのみ、Daisが公開して有料記事が売れて初めて¥)。evidence=07-article.md
-[ ] L5  affiliate reCAPTCHA突破 — done: 再ログイン→実投稿URL
-[ ] L7  bounty 提出 — done: survivor→提出→賞金 or 正直none
-[ ] L8  explorer 収益化 — done: proposal→実収益導線
+[~] L5  affiliate — ★DEFERRED(Dais 2026-07-12: 稼げる保証なし・後回し)★ 再開時: warmup起動元をgateway live cronで特定→launchd化→7日warmup→実投稿URL
+[~] L7  bounty — ★DEFERRED(Dais 2026-07-12)★
+[~] L8  explorer — ★DEFERRED(Dais 2026-07-12)★
+[ ] P1  life-manager マーケ修理（最優先）— (a)動画クリエイティブ: MoneyPrinterTurbo実導入 or 稼働中の lm-video パイプライン流用で静止画カード→動画へ (b)Reddit: @anicca_sao shadowban→appeal結果待ちと並行してCloakBrowser daily-driverで再ログイン/新アカウント+karma育成 (c)LM専用IG/Redditアカウント作成（借り物@anicca.affirms2脱却） (d):9222 mkdir排他ロック実装 — done: 動画クリエイティブがIGに実投稿され実URLをTelegram報告
+[ ] P2  clip 修理 — (a)投稿ハングRCA(CDP Networkで共有確認コールを完全捕捉、client stall vs server drop確定) (b)@aiclipsvault へ投稿再開 (c)Telegram実URL報告を配線(現状実装ゼロ) (d)PC repo に human向け fiat-affiliate 版 clip skill を派生（同じskill、報酬先=人間の銀行） — done: 正しいチャンネルに毎日実投稿+URL がTelegramに届く
+[ ] P3  self-heal/self-improve 一般化 — gig L1 で実証済みの3点セット(report-blind reality-verifier + funnel metrics + self-fix escalation)を共有harness lib化し全loop(特にOpenClawのlarry/reelclaw/honneマーケcron群とlife-manager)に配線。healthcheck=プロセス生死でなく「spec上のside-effectが直近24hに実在するか」で判定 — done: 「2日投稿ゼロ」を各loopが自分で検知→self-fix発火する実証
+[ ] P4  profitable-claude repo への confinement — clip等ananicca側の人間向けloopをPC repoへvendor、外部参照0件(C1-C7パターン)、1コマンドinstall(own Claude subscriptionで走る)→OSS化
+[ ] P5  OpenClaw/Hermes 対応 — loop=prompt+scheduler+CLI+jsonl state の model-agnostic 設計を維持し、scheduler/model呼び出しだけadapter化
+[ ] P6  クラウドホスト — Daisスマホのみ運用。ホスト先の選定(Claude Code cloud /schedule routines vs 自前box)が要決定
 [x] #6  CEO仕上げ ★クローズ2026-07-12(自分で実装・subagent kill後に take over・全検証自分の目)★ — ①cost自己申告照合を日次light-passに配線(bin/ceo_run.py, record_cost_claim_warnings+stamp_last_observed_at)→実発火確認(gig cost-claim-unbacked を実検知) ②registry真値化=欠落してた sol(Solana) を external/external-anicca で追加(11ループ揃う、capafy/article/pm/hl/sol=external正) ③ceo-decisions.jsonl に週次decision 1行実在。全CEOテスト緑(registry 29/29・last_observed 6/6・cost-wiring 4/4・anicca_ref 5/5・gcal_write 7/7)。commit群 push済。※残1赤 vendor PROP-055=life-manager-cli の vendor 参照=#8/LMの領域(CEO無関係pre-existing)
 [ ] #9.5 SNS factory移行 — done: Dais go後にOpenClaw退役
 ```
