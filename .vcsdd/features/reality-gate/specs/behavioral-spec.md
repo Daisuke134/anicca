@@ -372,9 +372,15 @@ repeated appends (an unresolved diagnosability gap recurring daily is itself use
 that Phase 2a's experiment, REQ-012, has not yet run — silently deduping would hide that).
 **Acceptance Criteria**: `reality-verifier.md`'s `tools` stays exactly
 `["Read","Grep","Glob","Bash"]`; the gate script's AND `reality-verify-spawn.sh`'s `FAIL`
-paths each contain a literal `self-fix.sh` call; their `CANNOT_VERIFY` paths each contain a
-literal append to the human-review queue and explicitly NO `self-fix.sh` call — grep-checkable,
-two distinct code paths (PROP-046).
+paths each contain a literal `self-fix.sh` call; their **FIRST-`CANNOT_VERIFY`** paths each
+contain a literal append to the human-review queue and NO `self-fix.sh` call — grep-checkable,
+two distinct code paths (PROP-046). **CORRECTED iteration 9 (FIND-AA): this is NOT an
+unconditional rule. Per REQ-018, the SECOND consecutive `CANNOT_VERIFY` for the same loop MUST
+invoke `self-fix.sh` (PROP-055) — a checker that cannot read reality twice in a row is itself a
+defect. The implementation therefore branches on the consecutive-`CANNOT_VERIFY` counter:
+first → human-review queue only; second → human-review queue AND `self-fix.sh`. PROP-046 and
+PROP-055 are jointly satisfiable and both required; a Builder implementing an unconditional
+"CANNOT_VERIFY never calls self-fix" would fail PROP-055.**
 
 ### REQ-011: First customer / acceptance vehicle — explicit, disclosed operational outputs for all three real scenarios (closure rows 18, 23 fixes make this claim honest)
 **EARS**: WHEN the growth-engine marketing loop claims it posted a video to Instagram THE
@@ -418,9 +424,13 @@ anywhere accepts this value, AND (FIND-Q fix, iteration 7) the value MUST be CSP
 calling loop (`bash "$SPAWN" & pid=$!` reveals the child PID; the timestamp is a ~2-second
 search space) and would leave closure row 22's pre-staging attack OPEN. The artifact-trail
 directory MUST additionally be created with an EXCLUSIVE create that fails if it already
-exists; a pre-existing directory is tamper evidence → `CANNOT_VERIFY`, never reuse, never
-PASS. Entropy makes guessing infeasible; exclusive-create makes a lucky guess fail closed.
-Forcing proof: PROP-048) with at minimum `{ts, passId, seq, label, tool,
+exists; **a pre-existing directory at a freshly-drawn 128-bit CSPRNG name cannot be a collision
+or a stale leftover — it is proof that something observed or predicted the name and got there
+first, so it yields `FAIL` / `artifact_trail_tampered` per REQ-017, NOT `CANNOT_VERIFY`**
+(corrected iteration 9: an earlier draft of this line said `CANNOT_VERIFY`, which would have
+handed a watching loop exactly the soft, non-escalating outcome it wants). Never reuse, never
+PASS. Entropy makes guessing infeasible; exclusive-create turns a lucky guess into tamper
+evidence. Forcing proof: PROP-048) with at minimum `{ts, passId, seq, label, tool,
 requestedUrl, finalUrl, httpStatus, domExcerpt}`, plus `contentHash`/`referencedArtifactIds`
 for `caller-per-invocation` claims — never raising.
 **Network/empty-body/soft-404 handling (new, FIND-O, REQ-004's taxonomy)**: on a network-level
