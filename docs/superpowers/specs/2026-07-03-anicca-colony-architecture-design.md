@@ -1397,6 +1397,88 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
 | ⑨yield/DeFi | 自wallet で LP/staking(own-identity channel) | guard済 |
 全て共通: ★人間の credential ゼロ・自分で生成した鍵のみ・fail-closed・実tx で検証★。燃料も自wallet(x402 で推論代)。
 
+### §16.9 ★ BASE 戦略 + ポートフォリオ配分 + spawn 先の BP（2026-07-12 調査、出典付き）★
+
+Dais の3つの直感（①エッジ探しだけでなく一部は探索的ギャンブルに張れ ②1体が大当たりすれば経済圏全体の勝ち ③ローカル依存＝人間依存だからクラウドへ）は、すべて実務の裏付けがあった。以下は推測ではなく一次情報。
+
+#### (1) 各稼ぎ手段の BASE 戦略（弱いモデルでも稼げるための「型」）
+
+| 手段 | BASE 戦略 | 実務の閾値 | 小資本($30-60)で成立するか |
+|---|---|---|---|
+| **Polymarket** | ブックメーカーの no-vig オッズ vs 予測市場価格の裁定。Polymarket は板式で vig≈0%、スポーツブックは 3-5% の vig を内包 → その差が裁定の温床 | **MLB/NBA で1日に複数回、1-5% の乖離**。ただし **15-30秒で消える**。「No」買いは実効 ask <$0.65 の時のみ（$0.40 なら勝率42%で損益分岐、$0.60 なら59%必要） | ✅ **ただし速度が要る**。人力では捕捉不可 |
+| **Solana 現物** | momentum scalping（利確2-5%/損切1%）、DEX間裁定(Jupiter⇔Orca)、**新規流動性プール検知** | tx $0.0025 と極小。Jito チップ 0.01 SOL で 1-8% の MEV loss を防ぐ | 🟡 **往復0.4%を超えるかは未検証**（正直に「わからない」。要追加調査） |
+| **Hyperliquid** | funding-arb は **$5,000-10,000 必要（確定）**。小資本の代替は **maker rebate**（高volume tierで -0.003%、成行→指値で片側コスト 0.045%→0.015%） | funding > 0.11%/時 で成立 | ❌ **$7.72 では原理的に不可能。撤退対象** |
+| **DeFi Yield** | Solana/Base（ガス <$0.01）で Kamino(自動集中流動性) / Raydium / Orca Whirlpools | | 🟡 $20-100 の損益分岐は**未発見**（要追加調査） |
+
+**残酷な事実**: 95M 件のトランザクション分析で、**$1,000 超の利益を出した wallet は 0.51% だけ**。多くの bot は実際には勝てていない。
+
+出典: [oddspapi](https://oddspapi.io/blog/polymarket-arbitrage-local-bookmakers/) / [poly-maker ★1.4k](https://github.com/warproxxx/poly-maker) / [OneKey (HL funding-arb)](https://onekey.so/blog/ecosystem/hyperliquid-funding-rate-arbitrage-20260429/) / [strongmocha (0.51%)](https://strongmocha.com/beginners-guides/film-music/analysis-of-film-music/are-polymarket-trading-bots-actually-profitable-the-math-behind-2026-s-predictio/)
+
+#### (2) ★ポートフォリオ配分 — Dais の「一部はギャンブルに張れ」に実務の裏付けがあった★
+
+**Taleb のバーベル戦略 = 90% 安全 / 10% 高リスク投機**（[FourWeekMBA](https://fourweekmba.com/barbell-strategy-taleb/)）。核心は「損失側は小さく限定、成功側は青天井」という**非対称性**。
+
+**VC のべき乗則（実データ）**:
+- **6% の deal が全リターンの 60% を生む**
+- **単一の勝者がファンド価値の半分超**を占めるのが典型
+- → **「1体が大当たりすれば経済圏全体の勝ち」= Dais の言葉そのままが実証済み**
+- さらに研究は「実務 VC は理論より**保守的すぎる**」と指摘している
+
+出典: [BIP Ventures](https://www.bipventures.vc/news/explainer-what-is-the-venture-capital-power-law) / [thevcfactory](https://thevcfactory.com/power-law-venture-capital/)
+
+**サイジング**: プロは**フル Kelly をほぼ使わない**。**quarter〜half Kelly** が標準（half-Kelly で最大成長率の 75% を確保しつつ drawdown を大幅圧縮、Thorp の実証）。Polymarket は 2% の profit fee があるため **fee 調整後の Kelly** で計算すること。
+
+**meme coin も純粋なギャンブルではなく選別基準がある**:
+- 流動性が時価総額の 10-20% 以上、**6ヶ月以上ロック**（未ロック = 即 rug 可能）
+- 上位10 holders が供給の **30% 未満**、単一 wallet が **5% 未満**
+- ツール: RugCheck / BirdEye / Bubblemaps
+- **★正直に★**: これは「rug pull 回避」であって「儲かる保証」ではない。期待値プラスの実証データは**見つからなかった**。位置づけは「**損失を限定した上での非対称ベット（optionality 狙い）**」であって、期待値プラスの主張ではない。
+
+#### (3) ★見落としていた設計欠陥 — 見せかけの分散★
+
+> 「複数エージェントが独立に評価すると、**相関のある資産に過剰集中し、見せかけの分散(illusory diversification)になる**」
+> — multi-agent LLM financial trading の既知の失敗パターン（[emergentmind](https://www.emergentmind.com/topics/multi-agent-llm-financial-trading)）
+
+対策（学術）: Correlation-Break Diversification スコア、分散ペナルティ関数、risk parity。実証では低相関(~0.4)のポートフォリオが Sharpe 比を有意に改善（[AgenticAI TA 論文](https://arxiv.org/pdf/2605.12532)）。
+
+**★我々の skill にはこの仕組みが無い★**: Franklin と claude-p が同じ市場に同じ方向で賭けたら、「2体で分散している」ように見えて**実は1体分のリスクを2倍取っているだけ**。colony が大きくなるほど致命的。→ T13 として TODO 化。
+
+#### (4) 撤退判定（「稼げない手段は止める」）
+
+- **年率 Sharpe < 1（コスト控除後）は無視すべき**。機関投資家は Sharpe < 2 を無視する。良質なリテール定量戦略の現実は **0.7〜1.5**（[quantstart](https://www.quantstart.com/articles/Sharpe-Ratio-for-Algorithmic-Trading-Performance-Measurement/)）
+- profit factor の**トレンド低下**（2.5→1.8 等）自体を edge 劣化のシグナルとして扱う
+- **★正直に★**: 「実現 P&L で何回・何日で撤退」という定量ルールは**見つからなかった**。自前設計が必要。推奨: quarter-Kelly 運用 + **N=30-50 トレードで Sharpe 再計算**
+
+**即適用**: claude-p の Hyperliquid $7.72（構造的エッジゼロの方向性 ETH ロング）は **撤退対象**。$5,000-10,000 ないと funding-arb は不可能と確定しているので、「頑張れば何とかなる」ではなく**原理的に不可能**。
+
+#### (5) ★spawn 先 — AI が人間のクレカ無しで契約できるクラウドはどこか★
+
+**判定軸: AI が自分の wallet の crypto だけで、人間の介在ゼロで契約・支払い・デプロイできるか。**
+
+| 選択肢 | crypto払い | 人間のクレカ | 常駐/cron | 料金 |
+|---|---|---|---|---|
+| **★Cloudflare Workers + Durable Objects★** | ◎ **stablecoin 決済を公式サポート**（wallet 接続 → permit → on-chain 確認で即時有効化）。**x402 を Cloudflare 自身が実装済み** | **不要** | ◎**最適**。各 agent が自分の SQLite DB を持ち、cron でスケジュール、hibernation から起床。**ledger.jsonl 的な state を DO の SQLite に直接置ける**（ローカルファイルより堅牢） | 使用量課金（無料枠あり）。**起床時のみ課金** |
+| **Akash** | ◎ AKT/ACT 直接払い。**既に repo にコードがある**（`skills/self/spawn/scripts/deploy-akash.sh`） | 不要 | 常駐VM型、cron は自前実装 | AWS 比 60-85% 安。$100/月 AWS 相当が **$15-40/月** |
+| Modal | 不明（crypto 言及なし） | 明記なし | GPU 不要なら過剰。**常時稼働(non-preemptible)は 4core/16GB で月 $685** | cron 的短時間実行なら実用的 |
+| Fly.io / Railway | ✕ | **必須**（トライアルでも） | | 不適格 |
+| AWS Lightsail | ✕ | **必須** | OpenClaw 公式ワンクリックはあるが**クレカ必須で AI 自己決済に使えない** | |
+| VPS リセラー(BitLaunch等) | ◎ BTC/USDT で DO/Vultr/Hetzner を購入代行、no-KYC | 不要 | 常駐可 | DO 最小 $4-6/月 |
+
+**★結論: 20-90分ごとに起きるだけなら 24/7 常駐は不要。サーバーレス cron で十分。**
+→ **Cloudflare Workers + Durable Objects が最有力**（x402 対応 = 人間クレカ不要、cron trigger、永続 state、起床時のみ課金）。次点 **Akash**（既にコードがある、$15-40/月）。
+
+**月 $5-10 しか稼げない agent を生かす制約**からは、**「常駐せず起床時のみ課金」の Cloudflare** か **Akash 最小構成**が現実的。Fly.io/Railway/Modal常駐/AWS は**クレカ要件または $100+/月で不適格**。
+
+**秘密鍵の BP（2026年のコンセンサス）**:
+> 「**エージェントは秘密鍵に一切触れない**。TEE（Trusted Execution Environment）内にキーを隔離し、**署名のみ委譲**する。鍵が信頼済みハードウェアを離れることは決してない」— [Halborn](https://www.halborn.com/blog/post/ai-agent-wallet-key-management-best-practices)
+
+具体的選択肢: Turnkey / Privy / Crossmint（TEE ベース agent wallet）。
+**我々の既存パターンも有効**: 「SDL env は平読み可能な metadata なので秘密鍵を絶対に書かない。**子は起動時に自分で wallet を生成し、親が on-chain で seed する**」（memory `reference_akash_cli_deploy`）— これは TEE の代替として機能する。
+
+出典: [Cloudflare stablecoin](https://developers.cloudflare.com/billing/payment-methods/stablecoin-payments/) / [Durable Objects](https://developers.cloudflare.com/durable-objects/) / [Cloudflare x402 (InfoQ)](https://www.infoq.com/news/2026/07/cloudflare-aws-x402-micropayment/) / [Akash](https://coinstancy.com/academy/guides/akash-network/) / [Modal pricing](https://modal.com/pricing) / [Render vs Railway vs Fly.io](https://dev.to/pavel-hostim/render-vs-railway-vs-flyio-pricing-compared-2026-2e5p)
+
+---
+
 ### §17 ★ MASTER EXECUTION TASK LIST(順序=SSOT、2026-07-12 全面更新)★
 
 実行原則: 上から一個ずつ・各々 実 tx/実数で verify してから次へ。**「稼いだ」= realized profit>0 が ledger に載り、かつ on-chain で自分の目で確認した時のみ。**
@@ -1432,8 +1514,26 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
 [  ] T4 FRANKLIN-EDGE       Franklin にもエッジ探索を持たせる
                            現: TradingSignal(RSI/MACD)を見るだけ。**外部情報を一切検索していない**
                            = claude-p の pick.py と同じ「情報ゼロで WAIT」の病
-[  ] T5 IDLE-CAPITAL        遊休資金を働かせる: Franklin Base $5.56 / Franklin PM口座 $1.62 / claude-p HL $7.72
-                           (HL は方向性 ETH ロング = 構造的エッジ無し。撤退 or funding-arb 化を判断)
+[  ] T5 HL-EXIT            ★撤退★ claude-p の Hyperliquid $7.72（方向性 ETH ロング、構造的エッジ**ゼロ**）
+                           funding-arb は $5,000-10,000 必要と確定（§16.9-1）→ $7.72 では**原理的に不可能**
+                           「頑張れば何とかなる」ではない。撤退して Polymarket/Yield に回す
+[  ] T13 BARBELL           ★Dais の直感に実務の裏付けあり（§16.9-2）★ 90% 安全 / 10% 探索的ギャンブル
+                           VC のべき乗則: 6% の deal が全リターンの 60%、単一の勝者がファンドの半分超
+                           = 「1体が大当たりすれば経済圏全体の勝ち」は実証済み
+                           サイジングは quarter〜half Kelly（フル Kelly は使わない）
+                           meme coin は選別基準あり（流動性10-20%以上・6ヶ月ロック / 上位10 holders <30%）
+                           **ただし期待値プラスの実証は無い = optionality 狙いであって儲かる保証ではない**
+[  ] T14 CORRELATION       ★見落としていた設計欠陥（§16.9-3）★ 見せかけの分散(illusory diversification)
+                           複数エージェントが独立に評価すると相関資産に過剰集中する（既知の失敗パターン）
+                           Franklin と claude-p が同じ市場に同じ方向で賭けたら、
+                           「2体で分散」に見えて**実は1体分のリスクを2倍取っているだけ**
+                           → colony 全体のポジション相関をチェックし、同一トレードへの集中を抑制する仕組み
+                           **現状この仕組みは存在しない。colony が大きくなるほど致命的**
+[  ] T15 EXIT-RULE         撤退判定を仕組みにする（§16.9-4）
+                           年率 Sharpe < 1（コスト控除後）は無視。profit factor のトレンド低下も edge 劣化の信号
+                           推奨: quarter-Kelly 運用 + N=30-50 トレードで Sharpe 再計算
+                           ※「何回・何日で撤退」の定量ルールは一次情報に**存在しなかった** = 自前設計が要る
+[  ] T16 IDLE-CAPITAL      遊休資金を働かせる: Franklin Base $5.56 / Franklin 自身の PM口座 $1.62
 
 === STEP 2: 経済圏を作る（★余剰が前提。今は構造的に発火しない★）===
 [  ] T6 SPAWN-FIX          ★§4④ の MUST-fix 2つ。これが直るまで自己増殖は不可能★
@@ -1442,6 +1542,18 @@ genome(既定 recipe)に merge(#27)④負け config は自動 retire。★ maker
                                /opt/automaton/dist/index.js を起動している。**我々の runtime/loop/index.mjs
                                ではない = クラウドの子は「別人の体」で生まれる**
                                REQ-CLOUD-SAME-BODY: Daisuke134/anicca を clone し runtime/loop/index.mjs を起動する
+[  ] T17 CLOUD-TARGET      ★spawn 先の決定（§16.9-5、調査済み）★
+                           判定軸 = **AI が自分の crypto だけで、人間のクレカ無しに契約・支払い・デプロイできるか**
+                           ★最有力 = Cloudflare Workers + Durable Objects★
+                             ・stablecoin 決済を公式サポート（人間のクレカ不要）、**x402 を Cloudflare 自身が実装済み**
+                             ・cron trigger + hibernation から起床 = **20-90分ごとに起きるだけなら 24/7 常駐は不要**
+                             ・各 agent が自分の SQLite DB を持つ → ledger.jsonl をローカルファイルより堅牢に置ける
+                             ・**起床時のみ課金** = 月 $5-10 しか稼げない agent でも生きられる
+                           次点 = Akash（AKT 直接払い、既に deploy-akash.sh がある、$15-40/月）
+                           ✕ Fly.io / Railway / AWS Lightsail = **クレカ必須で AI 自己決済に使えない**
+                           ✕ Modal 常時稼働 = 月 $685（GPU 不要なので過剰）
+                           秘密鍵: **エージェントは秘密鍵に一切触れない**が 2026 のコンセンサス（TEE に隔離、署名のみ委譲）
+                                   我々の既存パターン（子が起動時に自分で wallet 生成 → 親が on-chain で seed）も有効
 [  ] T7 LENDING-LIVE       余剰が出たら他の AI に貸す（skill はあるが余剰ゼロで未発火）
 [  ] #9 H6 BOT2BOT         学びを issue 共有、他個体が適用（骨組みのみ）
 
