@@ -1,0 +1,94 @@
+{
+  "feature": "franklin-earn-foundation",
+  "phase": "converge",
+  "iteration": 1,
+  "reviewer": "fresh-opus-adversary",
+  "timestamp": "2026-07-10T00:00:00Z",
+  "toolConstraintNote": "This review session had Read/Grep/Glob/Write only, no shell/execute tool. Test-count claims below were independently re-derived by this review by reading each test file in full and counting test()/ok() blocks against the parent's reported counts (5/5 parse-pass, 8/8 record-swap, 9/9 test_run.sh, 12/12 identity-guard) -- all four counts were reproduced exactly by static count, matching the parent's claims and iteration-2's own independent re-derivation. No test was actually executed by this review; this is a static, falsifiable re-derivation, not an execution claim.",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "test_adequacy": "PASS",
+    "impl_correctness": "PASS",
+    "formal_hardening": "FAIL"
+  },
+  "blockingFindings": [
+    {
+      "findingId": "FIND-CONV-001",
+      "dimension": "spec_fidelity",
+      "oneLine": "state.json gates.\"1c\"=PASS is unsupported by any persisted spec-review artifact -- all 3 spec-review iterations on disk (reviews/spec/iteration-1..3) are FAIL, the latest (iteration-3) with 2 open findings (FIND-009 critical, FIND-010 medium) routed back to phase 1c, and no iteration-4+ PASS verdict exists anywhere."
+    },
+    {
+      "findingId": "FIND-CONV-002",
+      "dimension": "formal_hardening",
+      "oneLine": "verification-report.md's Proof Obligations table mislabels 5 of its 6 listed PROP-IDs against verification-architecture.md's real PROP-011..016 definitions, and never mentions PROP-001/002/003/004/006/008/009/013 (all of REQ-001's proof obligations) at all, even though the underlying test (run-identity.test.mjs) genuinely exists."
+    }
+  ],
+  "minorFindings": [
+    {
+      "findingId": "FIND-CONV-003",
+      "dimension": "spec_fidelity",
+      "oneLine": "state.json's iteration counters (all =1) do not match the actual number of persisted review iterations (spec=3, impl=2) -- unreliable bookkeeping, non-blocking."
+    }
+  ],
+  "overallVerdict": "FAIL",
+  "testResults": "No execute/shell tool available in this review session (Read/Grep/Glob/Write only). Independently re-derived by STATIC count (reading every test file in full and counting test()/ok() blocks), matching the parent-reported/evidence-log-reported figures exactly: skills/earn/sol-trade/lib/__tests__/parse-pass.test.mjs = 5 test() blocks (5/5 claimed); skills/earn/sol-trade/lib/__tests__/record-swap.test.mjs = 8 test() blocks (8/8 claimed); skills/earn/sol-trade/tests/test_run.sh = 8 lettered scenarios (a)-(h) with 9 total ok()-producing assertions, scenario (a) alone contributing 2 (9/9 claimed); skills/_shared/lib/__tests__/identity-guard.test.js = 12 test() blocks (12/12 claimed), including the new PROP-008 'sol-trade' allowlist regression tests. skills/earn/__tests__/run-identity.test.mjs (REQ-001's own PROP-002/004/009/013 coverage) independently found and read in full: 4 test() blocks, each genuinely spawning the real run.sh via execFile with a fully-controlled env (no ambient contamination), reading the resolved wallet address back from the narrate ledger line rather than asserting on a mock. No test file inspected appeared tautological or implementation-detail-only; each asserts on externally observable behavior (resolved wallet address, ledger line contents, exit code, trace.jsonl reason string, marker-file invocation/non-invocation of the fixture franklin-trading CLI).",
+  "evidence": [
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/sol-trade/run.sh:13,29-38,42-45",
+      "description": "Confirmed the defensive `unset ANICCA_SOLANA_PRIVATE_KEY` fires before any wallet derivation; the identity-match guard derives OWN_WALLET (this instance's ANICCA_HOME) and CLI_WALLET (forced ANICCA_HOME=$HOME/.blockrun) via the SAME unmodified runtime/wallet-address-solana.mjs and HALTs (exit 0, trace-only, zero new ledger lines) unless both are non-empty and equal, BEFORE the cumulative earn-guard.mjs check and BEFORE franklin-trading start -- matches REQ-002's EARS ordering exactly. Money-safety check (i) no cross-instance key fallback: CONFIRMED at the code level."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/run.sh:48-54",
+      "description": "Confirmed `unset ANICCA_EVM_PRIVATE_KEY` fires before `resolve-identity.mjs evm`, and the resolved SIGNKEY is re-exported under $PKVAR (default BLOCKRUN_WALLET_KEY), overwriting whatever was sourced from $HOME/.openclaw/.env earlier in the same script -- the ambient automaton key can never survive to any downstream child. Empty SIGNKEY HALTs (exit 0) at line 50-53, before the P1 earn-guard.mjs call even runs."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/lib/resolve-identity.mjs:63-87,115-138",
+      "description": "resolveEvmPrivateKey/resolveSolanaSecret both fail-closed to null on any unresolvable/malformed input, both gate the legacy shared-home fallback to ONLY the rightful owner's effectiveHome (never merge across instances), matching REQ-001/REQ-002's EARS text verbatim."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/sol-trade/run.sh:17",
+      "description": "Money-safety check (ii) spend cap: `MAX_SPEND=\"${SOL_TRADE_MAX_SPEND:-0.25}\"` passed to `franklin-trading start ... --max-spend \"$MAX_SPEND\"` (line 65) -- confirmed present and wired through."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/sol-trade/lib/record-swap.mjs:43-53",
+      "description": "Money-safety check (iii) win/loss both recorded: `earn_usdc = delta>0?delta:0; cost_usdc = delta<0?-delta:0` -- both branches call record() unconditionally (no delta>0 gate, the ONE deliberate divergence from record-payout.mjs). Corroborated by a REAL on-chain artifact: verification/security-results/realchain-e2e.log shows a genuine recorded LOSS (net_usdc:-0.008664) against a real signature from Franklin's own wallet 8Fpqd..., proving the win/loss-symmetric recording is not merely unit-tested but exercised against live chain data."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/earn/sol-trade/lib/record-swap.mjs:46-52 and /Users/anicca/anicca/skills/_shared/lib/ledger.mjs:32,51-63",
+      "description": "Money-safety check (iv) external:true only on cash-settled receipts: record-swap.mjs's JSON payload NEVER includes an `external` key (comment explicitly documents why); ledger.mjs's deriveLine only sets `line.external=true` when `o.external===true`, and isProfitable() requires `line.external===true` to return true -- a sol-trade line can never claim GATE-0. Cross-checked against earn/run.sh's OWN external:true usage (line 146), which sets it ONLY after `isExternalPayout()` asserts an inbound transfer from an approved external payer (0xwork taskPool) -- the only other place in the touched files that sets external:true, and it is gated correctly."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/skills/_shared/lib/identity-guard.mjs:30-58",
+      "description": "\"sol-trade\" added as a single additive entry to ALLOWED_EARN_SOURCES (no wildcard), matching the Files-in-scope table's one-line description exactly."
+    },
+    {
+      "type": "test-output",
+      "location": "static re-derivation, see testResults field above",
+      "description": "All 4 test files' claimed pass counts (5/5, 8/8, 9/9, 12/12) independently reproduced by full-file read and test()/ok() count; a 5th test file (run-identity.test.mjs, REQ-001's own coverage) independently discovered and read in full, 4/4 genuine integration-style assertions."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/reviews/spec/iteration-3/output/verdict.json and findings/FIND-009.json, FIND-010.json",
+      "description": "Evidence underlying FIND-CONV-001: the only spec-review artifacts on disk are 3 FAIL iterations; no PASS verdict for the spec phase exists anywhere in reviews/spec/."
+    },
+    {
+      "type": "file",
+      "location": "/Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/verification/verification-report.md:26-32 vs /Users/anicca/anicca/.vcsdd/features/franklin-earn-foundation/specs/verification-architecture.md:71-88",
+      "description": "Evidence underlying FIND-CONV-002: side-by-side ID mismatch between the Phase 5 report's 6 discharge bullets and the real PROP-011..016 table."
+    }
+  ],
+  "convergenceSignals": {
+    "readyForComplete": false,
+    "requiredFixes": [
+      "Persist a fresh Phase-1c spec-review iteration (iteration-4 or later) against the CURRENT specs/behavioral-spec.md + specs/verification-architecture.md and obtain a genuine, disk-persisted PASS verdict before state.json's gates.\"1c\" may be treated as satisfied.",
+      "Rewrite verification/verification-report.md's Proof Obligations section to enumerate all 16 declared PROPs by their correct verification-architecture.md IDs with accurate file:line test evidence for each, including the REQ-001-side PROPs (001-004, 009, 013) currently omitted entirely."
+    ]
+  }
+}
