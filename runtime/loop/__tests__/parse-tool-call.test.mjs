@@ -131,3 +131,29 @@ test('PROP-010: claude -p JSON output with tool_calls in result', () => {
   assert.ok(result !== null);
   assert.equal(result.slot, 'earn');
 });
+
+// --- a text-mode brain answers with the bare envelope (2026-07-13) ----------------------------
+// `claude -p` has no tool-call channel; it emits the envelope as TEXT, so there is no OpenAI chat
+// wrapper. Reading only choices[0].message.tool_calls threw the answer away and logged `narrate` —
+// the loop recorded "the brain chose to do nothing" while the brain had chosen to trade.
+test('parses the bare {"tool_calls":[...]} a text-mode brain returns', () => {
+  const claudeEnvelope = {
+    type: 'result',
+    result: JSON.stringify({
+      tool_calls: [
+        { function: { name: 'run_skill', arguments: '{"slot":"earn/polymarket-trade"}' } },
+      ],
+    }),
+  };
+
+  const call = parseToolCall(claudeEnvelope);
+
+  assert.equal(call.slot, 'earn/polymarket-trade', 'the slot the brain actually chose');
+});
+
+test('the OpenAI-wrapped shape (proxy brain) still parses', () => {
+  const openai = {
+    choices: [{ message: { tool_calls: [{ function: { name: 'run_skill', arguments: '{"slot":"yield"}' } }] } }],
+  };
+  assert.equal(parseToolCall(openai).slot, 'yield');
+});
