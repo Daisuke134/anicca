@@ -205,9 +205,53 @@ duration_ms: 15207   ← ★15秒★
 を記録しているだけで、**実際にどの脳が答えたかを反映していない**。`model=free/glm-4.7` を見て
 「claude-p が使われていない」と判断してはいけない。
 
-### T4. pm-deterministic を削除して 1 instance = 1 loop にする 🔥
-**なぜ**: pm-deterministic は「脳が earn を選ばないから」貼られたパッチ。T3 で脳が選べるようになったので不要。
-- **完了条件**: `launchctl list` から pm-deterministic が消え、それでも earn-ledger に polymarket の取引が出続ける
+### T4. 1 instance = 1 loop ✅ DONE（2026-07-13）
+
+pm-deterministic は「脳が earn を選ばないから」貼られたパッチだった。T3/T3.7 で脳が自分で選んで
+実行できるようになったので、存在理由が消えた。
+
+```
+launchctl print-disabled:
+  "ai.anicca.pm-earner"        => disabled   （永続。plist が再生成されても load 不可）
+  "ai.anicca.pm-deterministic" => disabled   ★今回★
+
+稼ぐループ（1 instance = 1 loop）:
+  claude-p   → agent-economy-loop   pid 6938
+  Franklin   → franklin-loop        pid 79739
+  Franklin2  → franklin2-loop       pid 4855
+  automaton  → 戦略的停止（Conway Claude 出荷まで。SSOT §5）
+
+  founder-loop-cadence = 記録+メール（取引しない）
+  verify-loops-audit   = 検証（6h ごと）
+```
+**同じ財布に複数系統が注文を出す構造が消えた。**
+
+### T13. ★NEW★ tool call を MCP に置き換える（車輪の再発明の後始末）
+
+**Dais**:「blockrun-mcp を見ろ。tool call で車輪の再発明をするな。**我々がやること全ては既に誰かが
+実装している。探して tweak しろ**」
+
+**判明した事実**（`36-blockrun-mcp-toolcall-bp.md`）:
+- `claude -p` には **`--mcp-config` / `--strict-mcp-config` が実在する**（`claude --help` で確認）。
+  brain.mjs に私が書いた「claude -p にはツール経路が無い」は**嘘だった**（訂正済み、commit 0d57d30f）
+- `blockrun-mcp` は標準の `registerTool(name, {inputSchema: zod}, handler)` で定義。
+  **プロンプトへの JSON 手書きは1行も無い**
+- Franklin も常にネイティブ `tools:` schema を渡している
+
+**やること**: `run_skill` / `sleep` を Zod schema 付きの小さな stdio MCP server にし、
+`claude -p --mcp-config` で渡す → brain.mjs の手書きエンベロープを**丸ごと削除**。
+
+**注意（drop-in ではない）**: `--dangerously-skip-permissions` 下では claude が MCP tool を
+**自分で実行してしまう**。今の設計は「脳は決定だけ返し、実行は外側の JS」。
+→ tool の handler を「実行せず決定を返すだけ」にする必要がある。
+
+### T14. ★NEW★ 車輪の再発明を機械的に止める
+
+- ✅ `gaupoit/programming-advisor` インストール済み（"Reinventing the Wheel" detector。
+  「作る」と言った瞬間に既存実装を検索して比較表を出す）
+- ✅ シンプルさ強制は**既に入っていた**（`agent-skills:code-simplification` + built-in `simplify`）。
+  **呼んでいなかっただけ**
+- ❌ hook で機械的にブロックする仕組みは**実在しない**（「車輪の再発明か」は意味論的判断で hook では検証不能）
 
 ### T5. 「引退届」— 意図的に止めたループを self-healer が蘇生しないようにする ⚡
 - 教訓: pm-earner を3回 disable して3回蘇生された
