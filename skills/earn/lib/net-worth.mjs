@@ -23,6 +23,8 @@
  * without a network (see __tests__/net-worth.test.mjs).
  */
 
+import { loadWalletManifest } from './wallets.mjs';
+
 // ---------------------------------------------------------------------------------------------
 // Chain + token constants (machine facts, not judgment — same values colony-status.sh already uses)
 // ---------------------------------------------------------------------------------------------
@@ -169,6 +171,20 @@ export async function spotPrice(priceId, fetchImpl) {
  * @returns {Array<{chain:string,address:string,label:string}>}
  */
 export function resolveInstanceWallets(config = {}) {
+  // FIRST: the instance's own manifest ($ANICCA_HOME/wallets.json) — one declarative file naming
+  // every wallet it owns, which every component reads and nothing else. Before this existed the
+  // truth was smeared across ANICCA_WALLET_ADDRESS, a hand-written ANICCA_EXTRA_WALLETS blob in a
+  // plist, a constant inside redeem.py and a markdown doc; nothing reconciled them, and the loop
+  // consequently could not see $12 of its own money. See skills/earn/lib/wallets.mjs.
+  const home = config.ANICCA_HOME || process.env.ANICCA_HOME;
+  const manifest = loadWalletManifest(home);
+  if (manifest.wallets.length > 0) {
+    return manifest.wallets
+      .filter((w) => w.venue !== 'telemetry') // signing-only identity, holds no funds by design
+      .map((w) => ({ chain: w.chain, address: w.address, label: w.label }));
+  }
+
+  // Fallback: the pre-manifest env layout, so an instance without a wallets.json keeps working.
   const wallets = [];
   const addr = config.ANICCA_WALLET_ADDRESS || process.env.ANICCA_WALLET_ADDRESS;
 
