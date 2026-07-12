@@ -219,6 +219,33 @@ test('registry status edge case: a slot present only in the runtime copy (not in
   assert.equal(drift[0].key, 'ghost_slot.status');
 });
 
+// ── FIND-005 (adversary iteration-2, minor): detectRegistryStatusDrift itself (the REQ-006 pure core,
+// not just the composed runConfigDriftDetector wrapper) must fail closed when canonicalRegistry itself
+// is unobservable (null/undefined) — an unreadable canonical means there is nothing to diff every copy
+// against, so every copy reports unobservable, never an empty (PASS) array. ─────────────────────────────
+
+test('FIND-005: detectRegistryStatusDrift(null, copies) fails EVERY copy closed at the pure-function level itself, not just via an external wrapper check', () => {
+  const copies = [
+    { copyPath: '/a/registry.json', registryOrNull: { slots: { hl_trade: { status: 'dormant' } } } },
+    { copyPath: '/b/registry.json', registryOrNull: null },
+  ];
+  const drift = detectRegistryStatusDrift(null, copies);
+  assert.equal(drift.length, 2, 'both copies must report unobservable -- an unreadable canonical rescues nothing');
+  assert.ok(drift.every((d) => d.reason === 'unobservable' && d.declared === null && d.actual === null));
+  assert.deepEqual(drift.map((d) => d.copyPath).sort(), ['/a/registry.json', '/b/registry.json']);
+});
+
+test('FIND-005: detectRegistryStatusDrift(undefined, copies) behaves identically to null (both classify as UNOBSERVABLE)', () => {
+  const copies = [{ copyPath: '/x/registry.json', registryOrNull: { slots: {} } }];
+  const drift = detectRegistryStatusDrift(undefined, copies);
+  assert.equal(drift.length, 1);
+  assert.equal(drift[0].reason, 'unobservable');
+});
+
+test('FIND-005: detectRegistryStatusDrift(null, []) with zero copies returns an empty array (nothing to report, not an error)', () => {
+  assert.deepEqual(detectRegistryStatusDrift(null, []), []);
+});
+
 // ── REQ-004 / PROP-009 / PROP-010 — fail-closed on unobservable runtime state ─────────────────────────
 
 test('classifyObservability: null/undefined raw observation classifies as UNOBSERVABLE', () => {

@@ -74,10 +74,14 @@ const FLOAT_KEYS = new Set(['LEAN_TIER_THRESHOLD']);
  * - Blank lines are skipped
  * - KEY=VALUE format only; malformed lines are silently skipped
  *
+ * Exported (not just internal to loadConfig) so config-delivery-verification's config-drift.mjs can
+ * reuse this EXACT parsing logic when it needs to read $ANICCA_HOME/.env as an additional declared-
+ * config source, rather than re-implementing dotenv parsing a second time (FIND-003, iteration-2).
+ *
  * @param {string} dotenvText
  * @returns {Record<string, string>}
  */
-function parseDotenv(dotenvText) {
+export function parseDotenv(dotenvText) {
   if (!dotenvText || typeof dotenvText !== 'string') return {};
   const result = {};
   for (const rawLine of dotenvText.split('\n')) {
