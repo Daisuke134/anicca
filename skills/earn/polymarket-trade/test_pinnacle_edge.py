@@ -151,3 +151,55 @@ def test_raising_max_edge_lets_the_same_outlier_through():
     pin = [pin_event("Team A", "Team B", 100, -100)]
     pm = [pm_market("Team B vs. Team A", ["Team A", "Team B"], [0.99, 0.01])]
     assert len(find_edges(pin, pm, min_edge=0.03, max_edge=0.99, now_ts=FUTURE_TS)) == 1
+
+
+from pinnacle_edge import fetch_polymarket_sports
+
+
+def fake_gamma(pages):
+    """pages: list of lists of markets, served in order. Records the URLs requested."""
+    calls = []
+
+    def fetch(url, timeout=25):
+        calls.append(url)
+        i = len(calls) - 1
+        if i >= len(pages):
+            return []
+        page = pages[i]
+        if isinstance(page, Exception):
+            raise page
+        return page
+
+    fetch.calls = calls
+    return fetch
+
+
+def mkt(cid):
+    return {"conditionId": cid, "question": f"q{cid}", "enableOrderBook": True}
+
+
+def test_pagination_walks_offsets_and_concatenates():
+    fetch = fake_gamma([[mkt("a"), mkt("b")], [mkt("c")], []])
+    out = fetch_polymarket_sports(pages=3, fetch=fetch)
+    assert [m["conditionId"] for m in out] == ["a", "b", "c"]
+    assert "offset=0" in fetch.calls[0]
+    assert "offset=100" in fetch.calls[1]
+
+
+def test_duplicate_markets_across_pages_are_deduped():
+    fetch = fake_gamma([[mkt("a"), mkt("b")], [mkt("b"), mkt("c")]])
+    out = fetch_polymarket_sports(pages=2, fetch=fetch)
+    assert [m["conditionId"] for m in out] == ["a", "b", "c"]
+
+
+def test_an_empty_page_stops_the_walk_early():
+    fetch = fake_gamma([[mkt("a")], [], [mkt("never")]])
+    out = fetch_polymarket_sports(pages=3, fetch=fetch)
+    assert [m["conditionId"] for m in out] == ["a"]
+    assert len(fetch.calls) == 2
+
+
+def test_a_failing_page_keeps_the_pages_that_did_load():
+    fetch = fake_gamma([[mkt("a")], RuntimeError("gamma 503"), [mkt("c")]])
+    out = fetch_polymarket_sports(pages=3, fetch=fetch)
+    assert [m["conditionId"] for m in out] == ["a"], "one bad page must not lose the good ones"
