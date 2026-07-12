@@ -86,9 +86,36 @@ async function thinkProxy(ctx, config) {
 
 // ── Claude -p brain (subprocess) ────────────────────────────────────────────
 
-async function thinkClaudeP(ctx, config) {
+/**
+ * REQ-009: resolves the wall-clock timeout (ms) for a single `claude -p` child.
+ *
+ * Default = the resolved `SLEEP_BASE_S` (the caller's own already-resolved wake-interval seconds,
+ * `config.SLEEP_BASE_S` with its own 120 fallback applied by the caller) converted to milliseconds.
+ * `overrideVal` (e.g. `CLAUDE_P_TIMEOUT_S`) is used ONLY when it is a positive, finite INTEGER number
+ * of seconds — any other value (missing, non-numeric, zero, negative, non-integer) falls back to the
+ * default. An override larger than `resolvedSleepBaseS` is clamped DOWN to `resolvedSleepBaseS` itself
+ * (never a borrowed unrelated constant) so a single THINK call can never outrun the next scheduled wake.
+ *
+ * @param {unknown} overrideVal
+ * @param {number} resolvedSleepBaseS
+ * @returns {number} timeout in milliseconds
+ */
+export function resolveClaudePTimeoutMs(overrideVal, resolvedSleepBaseS) {
+  const defaultMs = resolvedSleepBaseS * 1000;
+  const n = Number(overrideVal);
+  const isValidPositiveInteger =
+    overrideVal !== null && overrideVal !== undefined && overrideVal !== '' &&
+    Number.isFinite(n) && Number.isInteger(n) && n > 0;
+  if (!isValidPositiveInteger) return defaultMs;
+  const clampedSeconds = Math.min(n, resolvedSleepBaseS);
+  return clampedSeconds * 1000;
+}
+
+export async function thinkClaudeP(ctx, config) {
   const claudeBin = config.CLAUDE_BIN || process.env.CLAUDE_BIN || 'claude';
   const model = config.ANICCA_BRAIN_MODEL || 'claude-sonnet-4-6';
+  const resolvedSleepBaseS = config.SLEEP_BASE_S != null ? Number(config.SLEEP_BASE_S) : 120;
+  const timeoutMs = resolveClaudePTimeoutMs(config.CLAUDE_P_TIMEOUT_S, resolvedSleepBaseS);
 
   const prompt = [
     buildSystemPrompt(ctx),
@@ -117,6 +144,7 @@ async function thinkClaudeP(ctx, config) {
   return new Promise((resolve, reject) => {
     let stdout = '';
     let stderr = '';
+    let timedOut = false;
 
     const proc = spawn(claudeBin, [
       '-p', prompt,
@@ -134,14 +162,29 @@ async function thinkClaudeP(ctx, config) {
       stdio: ['ignore', 'pipe', 'pipe'],
     });
 
+    // REQ-009: today this spawn() has NO timeout at all -- a hung child hangs the wake forever (never
+    // resolves, never rejects). Port index.mjs:1037-1041's existing two-stage pattern here: on timeout,
+    // request termination first, then force-stop after a 2000ms grace period if it is still alive.
+    const timer = setTimeout(() => {
+      timedOut = true;
+      try { proc.kill('SIGTERM'); } catch {}
+      setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);
+    }, timeoutMs);
+
     proc.stdout.on('data', d => { stdout += d; });
     proc.stderr.on('data', d => { stderr += d; });
 
     proc.on('error', (err) => {
+      clearTimeout(timer);
       reject(new Error(`claude_not_found: ${err.message}`));
     });
 
     proc.on('exit', (code) => {
+      clearTimeout(timer);
+      if (timedOut) {
+        reject(new Error(`claude_p_timeout: exceeded ${timeoutMs}ms`));
+        return;
+      }
       if (code !== 0) {
         reject(new Error(`claude_exit_${code}: ${stderr.slice(0, 200)}`));
         return;
