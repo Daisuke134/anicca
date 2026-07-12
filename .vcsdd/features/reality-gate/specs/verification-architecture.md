@@ -75,10 +75,20 @@ independently confirmed (FIND-H/I/J/K/L) as structurally, genuinely fixed.
   - `.claude/agents/reality-verifier.md` — LLM judgment, out of unit-test scope.
   - `skills/self/reality-verify-spawn.sh` *(EXTENDED this iteration — FIND-N fix, closure row
     22)* — unchanged blocking-spawn design from iteration 5, PLUS: `passId` generation is now
-    INTERNAL to this script (`PASS_ID="realityverify-$(date +%s)-$$"`-equivalent, generated
-    at spawn time, embedded in the task prompt, never read from any caller-facing argument or
-    env var — the (former) `pass-id` positional argument is REMOVED from the accepted argument
-    list entirely); on `CANNOT_VERIFY`, appends to the human-review queue (REQ-010) instead of
+    INTERNAL to this script AND **UNPREDICTABLE** (FIND-Q fix, iteration 7 — orchestrator
+    ruling). A time+PID scheme (`realityverify-$(date +%s)-$$`) is **REJECTED and forbidden**:
+    the calling loop can derive it in advance (`bash "$SPAWN" & pid=$!` gives the parent the
+    child's PID, and `date +%s` is a ~2-second search space), so it would let the loop under
+    test pre-stage a forged `artifacts.jsonl` row under a passId it guessed — the exact
+    pre-staging attack closure row 22 claims to close. Instead, `passId` MUST be drawn from a
+    CSPRNG (e.g. `openssl rand -hex 16` / `uuidgen`, >= 128 bits of entropy) and the artifact
+    trail directory MUST be created with an **exclusive** create that FAILS if the directory
+    already exists (`mkdir` without `-p`); a pre-existing directory is treated as evidence of
+    tampering → `CANNOT_VERIFY` (never PASS), never silently reused. Both properties are
+    load-bearing: entropy makes guessing infeasible, exclusive-create makes a lucky guess
+    fail-closed instead of accepted. `passId` is still never read from any caller-facing
+    argument or env var — the (former) `pass-id` positional argument is REMOVED from the
+    accepted argument list entirely; on `CANNOT_VERIFY`, appends to the human-review queue (REQ-010) instead of
     invoking `self-fix.sh` — a distinct branch from the existing `FAIL`→`self-fix.sh` branch.
   - `skills/self/scripts/public_artifact_snapshot.py` *(edge cases specified, FIND-O fix)* —
     on a network-level failure, records the reserved `httpStatus` sentinel (never a real
@@ -114,7 +124,8 @@ independently confirmed (FIND-H/I/J/K/L) as structurally, genuinely fixed.
 | **PROP-044** | **23** | **(i)+(ii)** | **NEW (FIND-O fix)**: a citation resolving to a row recording the network-error sentinel (never a real HTTP status) ⇒ `CANNOT_VERIFY`/`capture_network_error`, never `FAIL` and never treated as a resolvable citation for count purposes | 1 | true | fast-check + node:test |
 | **PROP-045** | **23** | **(i)+(ii)** | **NEW (FIND-O fix)**: a citation resolving to a row with a real 2xx status but empty/near-empty `domExcerpt` ⇒ `CANNOT_VERIFY`/`capture_empty_body` | 1 | true | node:test |
 | **PROP-046** | **23 (routing)** | **(i)+(ii)** | **NEW (FIND-M part 2 fix)**: both `reality-verify-spawn.sh`'s and the gate script's post-enforcement logic contain, as two DISTINCT, grep-checkable code branches: `overallVerdict === "FAIL"` → calls `self-fix.sh`; `overallVerdict === "CANNOT_VERIFY"` → appends to the human-review queue and explicitly does NOT call `self-fix.sh` in that branch | 0 | true | grep-based static check + fixture harness confirming the correct branch executes for each of the 2 verdict values |
-| **PROP-047** | **18 (FIND-P fix — the missing PROP FIND-P named)** | **(i) only — a property of the gate script's source file** | **NEW (FIND-P fix)**: a mechanical, grep-level static check (bookkeeping, not judgment — per the coordinator's own framing) scans the VCSDD gate script's source for definitions (not calls) of `canonicalizeUrl`, `validateArtifactProvenance`, `enforceVerdict`, `computeContentFingerprint`, `hashRealityClaim`, `decideConvergenceGate`, or any function body containing `httpStatus`/`referencedArtifactIds`/`contentHash` comparison logic, OUTSIDE `reality-verdict-schema.mjs`, and asserts ZERO matches — the direct, forcing proof for REQ-014's previously-unforced "zero duplicated provenance logic" acceptance criterion | 0 | true | grep/AST-based static check, run as part of the test suite |
+| **PROP-048** | **22 (FIND-Q fix)** | **(i)+(ii)** | **NEW (FIND-Q fix, iteration 7)**: `passId` unpredictability + tamper-evidence. Two required assertions: (a) the generated `passId` is drawn from a CSPRNG with >= 128 bits of entropy — a time+PID-derived value is a test FAILURE (a fixture that predicts `realityverify-$(date +%s)-$$` and finds it honored must fail the suite); (b) the artifact-trail directory is created with an EXCLUSIVE create — a fixture that pre-creates the directory (simulating a loop that guessed the passId and pre-staged a forged row) MUST cause the run to fail-closed with `CANNOT_VERIFY`, never to reuse the directory and never to PASS | 0 | true | node/bash fixture harness driving the script's real passId-derivation + directory-creation code path |
+| **PROP-047** | **18 (FIND-P fix — the missing PROP FIND-P named)** | **(i)+(ii) — BOTH callers' source files (FIND-R fix, iteration 7): the VCSDD gate script AND `skills/self/reality-verify-spawn.sh`, the runtime path. Scoping this check to the build-time gate script alone leaves the runtime customer — REQ-011's named first customer — with zero forcing check against shadow-reimplemented provenance logic, which is FIND-H reopening. "ONE module, TWO callers" must be proven on both callers or it is proven on neither.** | **NEW (FIND-P fix)**: a mechanical, grep-level static check (bookkeeping, not judgment — per the coordinator's own framing) scans **each caller's** source for definitions (not calls) of `canonicalizeUrl`, `validateArtifactProvenance`, `enforceVerdict`, `computeContentFingerprint`, `hashRealityClaim`, `decideConvergenceGate`, or any function body containing `httpStatus`/`referencedArtifactIds`/`contentHash` comparison logic, OUTSIDE `reality-verdict-schema.mjs`, and asserts ZERO matches — the direct, forcing proof for REQ-014's previously-unforced "zero duplicated provenance logic" acceptance criterion | 0 | true | grep/AST-based static check, run as part of the test suite |
 
 Closure rows 12, 13, and 16 have no `required: true` PROP claiming to CLOSE them — named,
 accepted residual risk. Row 22 (FIND-N) and row 23 (FIND-M/O) are CLOSED this iteration, each
