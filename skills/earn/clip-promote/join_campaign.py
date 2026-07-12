@@ -19,6 +19,14 @@ import json
 import re
 import time
 
+# REQ-1b follow-up (2026-07-12): a campaign can be budget-exhausted while still badged "Live"
+# (its detail page never prints the literal word "Ended") -- verified live on ufc-mma-clips-1
+# and thor-world-record-deadlift-1, both ranked normally on the campaigns list (select_campaigns.py
+# ranks by TOTAL budget, not remaining) but "$0.00 left"/"$0.00 Remaining" on their own detail page,
+# with no Join button rendered. Without this, both were misclassified as the anomalous
+# "join-button-not-found" instead of the expected, already-documented "campaign-ended" outcome.
+_BUDGET_EXHAUSTED_RE = re.compile(r"\$0\.00\s*(?:left|remaining)", re.IGNORECASE)
+
 
 def _click_join_submit(cdp, tid):
     """The submit button's text is dynamic ("Join with N Account(s)"), so exact-match
@@ -42,7 +50,7 @@ def fetch_live(tid, cdp, campaign_slug):
     r = cdp.click_by_text(tid, "Join Campaign")
     if not r.get("found"):
         text = cdp.evaluate(tid, "document.body.innerText") or ""
-        if "Ended" in text[:2000]:
+        if "Ended" in text[:2000] or _BUDGET_EXHAUSTED_RE.search(text):
             return {"joined": False, "reason": "campaign-ended", "min_followers": None}
         return {"joined": False, "reason": "join-button-not-found", "min_followers": None}
 
