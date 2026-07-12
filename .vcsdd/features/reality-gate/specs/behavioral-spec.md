@@ -365,8 +365,11 @@ that does nothing stays silent. Any earlier phrasing in this requirement or in P
 as an UNCONDITIONAL "CANNOT_VERIFY never calls self-fix" is superseded by this rule: PROP-046 MUST
 be restated as "a single, first `CANNOT_VERIFY` does not call self-fix", and PROP-055 forces the
 two-strike escalation. Both are required and must be jointly satisfiable by one implementation.
-**Edge Cases**: `self-fix.sh`'s own dedupe/staleness logic is unaffected (still applies to the
-`FAIL` branch only). The human-review queue is append-only; multiple `CANNOT_VERIFY` results
+**Edge Cases**: `self-fix.sh`'s own dedupe/staleness logic is unaffected — it applies to EVERY
+path that reaches `self-fix.sh`, which per REQ-018 is the `FAIL` branch AND the
+second-consecutive-`CANNOT_VERIFY` branch (corrected iteration 9: an earlier draft said "the
+`FAIL` branch only", which would have re-introduced the unconditional no-self-fix-on-
+`CANNOT_VERIFY` rule REQ-018 explicitly abolishes). The human-review queue is append-only; multiple `CANNOT_VERIFY` results
 for the same loop simply accumulate rows — THE SYSTEM SHALL NOT deduplicate or suppress
 repeated appends (an unresolved diagnosability gap recurring daily is itself useful signal
 that Phase 2a's experiment, REQ-012, has not yet run — silently deduping would hide that).
