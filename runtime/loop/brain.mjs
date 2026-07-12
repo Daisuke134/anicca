@@ -179,9 +179,15 @@ export async function thinkClaudeP(ctx, config) {
   const resolvedSleepBaseS = config.SLEEP_BASE_S != null ? Number(config.SLEEP_BASE_S) : 120;
   const timeoutMs = resolveClaudePTimeoutMs(config.CLAUDE_P_TIMEOUT_S, resolvedSleepBaseS);
 
-  // The proxy path hands the model a machine-readable tool SCHEMA (`tools: [...]`, with the slot
-  // names as an enum). `claude -p` gets no such channel — it sees text and nothing else. So the
-  // schema has to be written INTO the text, or the model is guessing at a shape it was never shown.
+  // TEMPORARY, and known to be the wrong shape. `claude -p` DOES have a tool-call channel:
+  // `--mcp-config` / `--strict-mcp-config` (verified in `claude --help`, 2026-07-13). The right fix
+  // is a tiny MCP server exposing run_skill/sleep with a Zod schema — exactly how our own
+  // blockrun-mcp already registers its tools — which deletes this hand-written envelope entirely.
+  // It is not a drop-in: under --dangerously-skip-permissions claude EXECUTES an MCP tool it calls,
+  // which would collapse the loop's decide-here / execute-there split, so the handler must return
+  // the decision rather than act on it. Tracked as T13. See 36-blockrun-mcp-toolcall-bp.md.
+  //
+  // Until then: the model must be SHOWN the schema in text, or it guesses at a shape nobody gave it.
   //
   // It was guessing. Measured 2026-07-13: it answered with a tool_calls block that carried no
   // `slot`, parse-tool-call.mjs fell back to `toolCall.function.name`, and every claude-p wake
