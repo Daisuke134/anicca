@@ -397,8 +397,10 @@ completeness check, per the coordinator's direct request)**:
    experiment has run for Instagram** (`automatedVerification: false`, the correct, mandated
    default): every structural check resolves cleanly (right URL, right pass, on the fixed
    surface, fingerprint matches, fresh, real 2xx) but the `automated_verification_unproven`
-   check is the ONLY thing that fires ⇒ **`CANNOT_VERIFY`**. Routed to human-review (REQ-010),
-   NEVER `self-fix.sh`, NEVER reported to the loop's owner as "verified."
+   check is the ONLY thing that fires ⇒ **`CANNOT_VERIFY`**. Routed to human-review (REQ-010);
+   the FIRST such pass does NOT call `self-fix.sh`, but per REQ-018 the SECOND CONSECUTIVE one
+   DOES (PROP-055) — and it is NEVER reported to the loop's owner as "verified" (every pass
+   reports, including this one, naming why the read failed — PROP-056).
 2. **The same healthy post, AFTER Phase 2a's experiment records a proven-diagnostic signal
    for Instagram and `automatedVerification` is set `true`** (spec-time, Phase-1c-reviewed
    change to `reality-claim.json`, REQ-013): the identical structural checks resolve cleanly,
