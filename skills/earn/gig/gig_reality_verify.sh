@@ -37,8 +37,21 @@ echo "$(date '+%F %T') gig_reality_verify: starting (N=$N)" >&2
 
 # ─── 1. Collect the most recent N claim rows from each source (deterministic, no judgment here) ──
 CLAIMS_JSON=$("$PY" - "$G" "$N" <<'PYEOF' 2>>"$G/.reality-verify.err.log"
+# ENTITY-ID FILTER (FIND-005, reality-verify false-positive round realityverify-1783813501-61933):
+# the gig core also appends pass-level bookkeeping/audit rows to these same jsonl files — e.g. B2's
+# "zero_applied_exhaustive_scan" summary, whose free-text `note` recaps dozens of ALREADY-PROCESSED
+# requestIds from memory (title shorthand, not copy-pasted from the page). These rows assert NO new
+# side effect (nothing to verify against a real screen) yet stuffing them into claims_to_verify let
+# the judge pick an incidental paraphrase slip inside the prose (a title mixed up between two
+# historical requestIds) and fail the WHOLE round over it. The core itself already marks these rows
+# deterministically: every genuine entity-specific claim carries a real Coconala requestId/service_id;
+# every pass-summary/audit row uses the literal sentinel "N/A" (self-adopted convention, verified
+# ~100%-correlated with no-op statuses like zero_applied_exhaustive_scan/reviewed_no_new_action_needed
+# across ~300 historical rows). This is structural-field filtering on that existing sentinel, not new
+# judgment about prose content — statuses stay 100% free-form (agent's own words, never hardcoded).
 import json, os, sys
 G, N = sys.argv[1], int(sys.argv[2])
+NO_CLAIM_ID = {"", "n/a", "na", "none", "null"}
 
 def tail_rows(fname, kind):
     p = os.path.join(G, fname)
@@ -53,6 +66,9 @@ def tail_rows(fname, kind):
             d = json.loads(line)
         except Exception:
             continue
+        entity_id = d.get("requestId") or d.get("service_id") or ""
+        if str(entity_id).strip().lower() in NO_CLAIM_ID:
+            continue  # pass-level bookkeeping/audit row — no entity-specific side effect to verify
         d["kind"] = kind
         rows.append(d)
     return rows[-N:]
