@@ -78,6 +78,10 @@ with contextlib.redirect_stdout(sys.stderr):
     from src.signals.trades import get_smart_money_summary  # noqa: E402
     from src.utils.kelly import KellyCriterion  # noqa: E402
 
+    # Lives next to this file (the skill dir), not in the vendored agent tree.
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from news_search import build_question_with_news, search_news  # noqa: E402
+
 
 def _env_float(name, default):
     try:
@@ -154,17 +158,37 @@ def whale_signal(market_id):
 def evaluate(analyzer, market):
     """Run the model's own consensus+whale judgment on one candidate.
     Returns the consensus_analysis result dict, or None if the model
-    couldn't produce one (never a fabricated result)."""
+    couldn't produce one (never a fabricated result).
+
+    The model is shown a web search of the market's subject BEFORE it prices it.
+    Without that, it sees only the question and the market's own price — and a model
+    with no outside information cannot out-predict a price thousands of traders
+    already set. A failed search yields no news and the pass proceeds as before.
+    """
     market_id = market.get("id") or market.get("condition_id")
     whale_data = whale_signal(market_id) if market_id else None
+    news_text, news_urls = search_news(market["question"])
+    # Visible on stderr (never stdout — stdout is the one-line JSON contract). Without
+    # this line there is no way to tell a searched judgment from a blind one after the
+    # fact, and an invisible feature is indistinguishable from a missing one.
+    print(
+        f"[news] {len(news_urls)} source(s) for: {market['question'][:70]}",
+        file=sys.stderr,
+        flush=True,
+    )
+    question = build_question_with_news(market["question"], news_text)
     try:
         result = analyzer.consensus_analysis(
-            market["question"], market["yes_odds"], whale_data=whale_data
+            question, market["yes_odds"], whale_data=whale_data
         )
     except Exception:
         return None
     if not result or result.get("consensus") == "ERROR":
         return None
+    # Carry the evidence with the decision: every bet this engine places must be
+    # traceable to what it actually read. A bet with no sources is a coin flip.
+    result["news_urls"] = news_urls
+    result["news_found"] = bool(news_text)
     return result
 
 
@@ -266,6 +290,10 @@ def _run():
         "edge": avg_edge,
         "confidence": avg_conf,
         "consensus": consensus,
+        # The evidence this bet rests on. An empty list means the model priced the
+        # market on the price alone — i.e. a coin flip, and readable as such later.
+        "news_urls": result.get("news_urls", []),
+        "news_found": bool(result.get("news_found")),
     })
 
 
