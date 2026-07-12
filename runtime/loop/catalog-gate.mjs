@@ -71,11 +71,26 @@ export function filterCatalog({
   const slots = Array.isArray(allSlotNames) ? allSlotNames : [];
   const threshold = effectiveThreshold(reserveThresholdUsdc);
 
-  // REQ-202: at or above threshold, the full unfiltered live-slot list is always returned -- no slot is
-  // ever removed once above threshold (equality counts as at-or-above).
-  if (!isBelowThreshold(balanceUsdc, threshold)) return slots.slice();
+  // balanceUsdc may be a number (one balance for every slot — the original behaviour, and what
+  // every existing caller and test passes) or a function (name) => number, letting the caller gate
+  // each slot on the money THAT slot can actually spend.
+  //
+  // Why the function form exists (measured 2026-07-12): the gate read only Base USDC. claude-p held
+  // $1.95 there — five cents under the $2 reserve — so every capital-risking slot was hidden and its
+  // brain had nothing left to pick but `narrate` (235 of its last 300 wakes). Meanwhile it held $5.18
+  // of pUSD inside its Polymarket deposit wallet: money that buys Polymarket shares and nothing else,
+  // i.e. exactly the currency the polymarket slot spends. The instance was forbidden from trading on
+  // the only venue its money could be spent at. Franklin, on the identical code with $6.48 of Base
+  // USDC, cleared the same gate and traded polymarket 120 times. Same code, opposite outcome, and the
+  // whole difference was which pocket the gate happened to look in.
+  //
+  // The gate stays honest either way: it never counts money a slot cannot draw on.
+  const balanceFor = (name) =>
+    typeof balanceUsdc === "function" ? balanceUsdc(name) : balanceUsdc;
 
   return slots.filter((name) => {
+    // REQ-202: at or above threshold, a slot is never removed (equality counts as at-or-above).
+    if (!isBelowThreshold(balanceFor(name), threshold)) return true;
     // FIND-002: alwaysAvailable overrides the risk tag entirely, checked BEFORE the risk tag itself, so
     // a pathological all-risky-tagged registry can never hide these maintainer-designated utility slots.
     if (typeof alwaysAvailableOf === "function" && alwaysAvailableOf(name) === true) return true;
