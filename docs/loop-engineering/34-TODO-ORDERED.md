@@ -2,6 +2,39 @@
 
 **このファイルが唯一の TODO 正本。** 他のファイル（TASKLIST.md 等）の TODO は古い。ここを見る。
 
+> **★ 新セッションはまず `.claude/handovers/2026-07-13_HANDOVER.md` を読む。★**
+> **最初のタスク = T13（tool call を MCP に置き換える）。** ブロッカーと設計は handover §6 に全部ある。
+
+## 次にやる順序（2026-07-13 時点）
+```
+T13  tool call を MCP に      ← ★次★（mcp-decide.mjs は書いた。SDK の dist が入らないのがブロッカー）
+T15  低レベル実行を blockrun-mcp に委譲（place_order/redeem/positions）。戦略は我々のまま
+T5   reality-verifier に稼ぎを見せる（watch them earn）
+T6   dashboard の嘘（model_live ハードコード）を消す
+T8   常駐 tmux が復活しない仕組み
+T9   config-drift を healthcheck に配線
+T10  Franklin2 / automaton の wallets.json
+T11  OSS: 1コマンドで spin up
+T12  構造の掃除 + リネーム（Agora?）
+```
+
+## T15. 低レベル実行を blockrun-mcp に委譲する（★新規、2026-07-13★）
+
+**blockrun-mcp と我々の pm skill は競合しない。レイヤーが違う。**
+```
+blockrun_polymarket = ★手★  action: setup/fund/buy/sell/cancel/orders/positions/redeem/withdraw
+                            gasless wallet・relayer API・署名の面倒を全部見る
+                            ★「何を買うか」は決めない★
+
+我々の pm skill      = ★脳★  pick.py(検索+LLM判断) / pinnacle_edge / bundle_arb /
+                            market_maker / Kelly sizing / genome進化 / KILL switch / ledger
+                            ★「どうやって注文を出すか」は本質ではない★
+```
+- **置き換える**: `place_order.py` / `redeem.py` / `positions.py`（低レベル実行）
+- **残す**: `pick.py` / `pinnacle_edge` / `bundle_arb` / `genome`（戦略。価値はここにある）
+- **PR は不要**: blockrun-mcp は実行層として正しい。Kelly/cap/ledger は戦略であり、
+  実行ツールに混ぜたら設計が壊れる
+
 **前提の事実** → `33-COLONY-GROUND-TRUTH.md`（4人の AI / 実際の金 / ループの正体 / なぜ壊れたか）
 
 **鉄則（今日3回破った）**

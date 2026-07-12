@@ -1,5 +1,7 @@
 # TASKLIST — earn/record/verify を稼げる状態にする（atomic SSOT）
 
+> ⚠️ **このファイルの TODO は古い。正本は `34-TODO-ORDERED.md`、入口は `.claude/handovers/2026-07-13_HANDOVER.md`。**
+
 ## ★★★ 唯一の真実 = NET PROFIT（Dais 2026-07-12 焼き込み）★★★
 成果 = **loop が自分で redeem して、渡された額より wallet が増えた時のみ**。activity/build/建玉/test-green は成果でない。
 - claude-p: 渡し合計 $18(POL$30由来) → **超えて初めて成功**。
