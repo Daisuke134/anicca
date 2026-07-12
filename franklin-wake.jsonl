@@ -5135,3 +5135,10 @@
 {"ts":1783826563,"wake_id":"00MRH8A1QKA154B1B75DF64305","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783826696,"wake_id":"00MRH8CVT13A6484805D51400C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783826826,"wake_id":"00MRH8FO4E95CF8D13D6EA4F7F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783826958,"wake_id":"00MRH8II7C613656701CCF4BF0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783827090,"wake_id":"00MRH8LCFJE6D2310C4DF742CF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783827222,"wake_id":"00MRH8O5STA387976BBD4249D6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783827591,"wake_id":"00MRH8W2F31F5BD03224284FE3","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783827721,"wake_id":"00MRH8YUPO01D118309A8C43CF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783827850,"wake_id":"00MRH91MDD79A0CF46CBB74CF9","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1783828169,"wake_id":"00MRH98GPX59E8CBE6B4884056","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
