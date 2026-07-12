@@ -20,8 +20,9 @@ TODAY_JST="${CADENCE_DEADLINE_TODAY_JST_OVERRIDE:-$(TZ=Asia/Tokyo date +%F)}"
 # test can exercise both the before-21:00 no-op path and the escalation path deterministically,
 # without waiting for or depending on the real wall clock.
 NOW_HOUR_JST="${CADENCE_DEADLINE_NOW_HOUR_JST:-$(TZ=Asia/Tokyo date +%H)}"
-# pm-earner removed 2026-07-12 (Dais): retired job — cadence-checking it made self-heal revive the disabled plist
-CADENCE_LOOPS="clip affiliate video gig bounty founder-loop"
+# 2026-07-12 (Dais, SSOT §2f fate table): pm-earner retired; clip/affiliate/video/bounty turned OFF until
+# P2/deferred-revival — cadence-checking an OFF loop makes self-heal revive it (掟3: retire from watchlists first).
+CADENCE_LOOPS="gig founder-loop"
 
 # G1 fix (2026-07-11, docs/loop-engineering/23-anicca-loop-architecture-redesign.md TODO G1 /
 # docs/superpowers/evidence/LOOPS-TRUTH-AUDIT.md "escalation→self-fix実行のtriggerが切れてる"):
