@@ -179,10 +179,35 @@ export async function thinkClaudeP(ctx, config) {
   const resolvedSleepBaseS = config.SLEEP_BASE_S != null ? Number(config.SLEEP_BASE_S) : 120;
   const timeoutMs = resolveClaudePTimeoutMs(config.CLAUDE_P_TIMEOUT_S, resolvedSleepBaseS);
 
+  // The proxy path hands the model a machine-readable tool SCHEMA (`tools: [...]`, with the slot
+  // names as an enum). `claude -p` gets no such channel — it sees text and nothing else. So the
+  // schema has to be written INTO the text, or the model is guessing at a shape it was never shown.
+  //
+  // It was guessing. Measured 2026-07-13: it answered with a tool_calls block that carried no
+  // `slot`, parse-tool-call.mjs fell back to `toolCall.function.name`, and every claude-p wake
+  // dispatched the literal slot "run_skill" — the TOOL's name, not a skill — and died as
+  // `skill_missing`. The brain was working; nobody had told it how to speak.
+  const menuSlots = (ctx.alwaysActEngaged ? ctx.alwaysActMenu : ctx.activeSkillSlots) || [];
+  const slotList = menuSlots.map((s) => `  - ${s}`).join('\n');
+  const canSleep = ctx.alwaysActEngaged !== true;
+  const shapeSpec = [
+    'Answer with ONE JSON object and nothing else — no prose, no markdown fence:',
+    '',
+    '{"tool_calls":[{"function":{"name":"run_skill","arguments":"{\\"slot\\":\\"<slot>\\"}"}}]}',
+    '',
+    'where <slot> is EXACTLY one of:',
+    slotList || '  (no slots available this wake)',
+    ...(canSleep
+      ? ['', 'Or, to do nothing this wake:', '{"tool_calls":[{"function":{"name":"sleep","arguments":"{}"}}]}']
+      : []),
+  ].join('\n');
+
   const prompt = [
     buildSystemPrompt(ctx),
     '',
     buildUserMessage(ctx),
+    '',
+    shapeSpec,
     '',
     // franklin-alwaysact-skill-router REQ-504: an always-act-engaged wake must not be told sleep is
     // an option, so the text-mode brain path stays consistent with the tool-schema path.
