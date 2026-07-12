@@ -1,0 +1,10 @@
+{
+  "_comment": "REQ-LV-102 follow-up (2026-07-12 self-fix pass, issues #994/#1000): a documented, time-boxed exception to the daily Cadence Contract escalation for a loop whose miss is a FULLY diagnosed, already-in-progress-fix EXTERNAL blocker (not a code bug self-fix can act on again). cadence-deadline-check.sh checks this file BEFORE spawning a self-fix session: if today's JST date is <= 'until', it logs and skips the spawn instead of burning a fresh context-less Sonnet session re-diagnosing the same known issue every day. This does NOT touch cadence.py's row-exists truth (the loop still correctly reports missed in cadence-evidence.py / weekly reports) -- it only suppresses the redundant self-fix RESPAWN. If 'until' passes and the loop is still missing its cadence, suppression auto-expires and normal escalation resumes on its own (no separate cleanup needed) -- so a wrong ETA guess can never cause a silent permanent bypass.",
+  "affiliate": {
+    "until": "2026-07-18",
+    "reason": "IG account @aishigoto.labo is permanently account-level locked by a Meta reCAPTCHA Enterprise wall (confirmed since 2026-07-04 via 4 independent attempts: login, invalid-creds retry, password-reset, and 2026-07-12 direct CDP inspection). Replacement account @aishigoto.labo2 was created 2026-07-11 and its ~7-day organic warmup started 2026-07-12 (day 1) -- attaching the affiliate bio-link or posting commercially before the warmup completes has previously killed an account (@aiclipper.daily, day-0 commercial link). No code/script fix applies; the daily pass is already behaving correctly (produces+queues decks safely, advances warmup, logs a lesson, fail-closed-skips the post) every day through this window.",
+    "tracking": "~/.cloak/ig-warmup-aishigoto.labo2.json (day counter), state/lessons.jsonl in profitable-claude/skills/human-funded/affiliate (daily diagnosis trail)",
+    "issues": ["https://github.com/Daisuke134/anicca/issues/994", "https://github.com/Daisuke134/anicca/issues/1000"],
+    "recorded": "2026-07-12"
+  }
+}

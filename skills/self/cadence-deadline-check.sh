@@ -15,7 +15,7 @@ set -uo pipefail
 SELF="${VERIFY_LOOPS_SELF_DIR:-$HOME/anicca/skills/self}"
 STATE_DIR="$HOME/.openclaw/state"; mkdir -p "$STATE_DIR"
 LOG="$HOME/.openclaw/logs/cadence-deadline-check.log"; mkdir -p "$(dirname "$LOG")"
-TODAY_JST="$(TZ=Asia/Tokyo date +%F)"
+TODAY_JST="${CADENCE_DEADLINE_TODAY_JST_OVERRIDE:-$(TZ=Asia/Tokyo date +%F)}"
 # Test-only override seam (mirrors this codebase's own EARN_LEDGER/FOUNDER_TEST convention) so a
 # test can exercise both the before-21:00 no-op path and the escalation path deterministically,
 # without waiting for or depending on the real wall clock.
@@ -71,6 +71,35 @@ if ! [ "$NOW_HOUR_JST" -ge 21 ] 2>/dev/null; then
   exit 0
 fi
 
+# REQ-LV-102 follow-up (2026-07-12, issues #994/#1000): a per-loop, time-boxed, documented
+# exception for a Cadence Contract miss that is a FULLY diagnosed, already-in-progress-fix
+# EXTERNAL blocker (e.g. a platform account lock under a multi-day recovery timeline) rather than
+# a code bug self-fix can act on again. See cadence-known-gaps.json's own header comment for the
+# full rationale. This NEVER touches cadence.py's row-exists truth (MET below is unaffected) —
+# it only decides whether to spawn ANOTHER context-less self-fix session for a loop we already
+# know is blocked and why. Auto-expires: once TODAY_JST > the recorded 'until', this returns
+# False again on its own and normal escalation resumes — a wrong ETA guess can't silently persist.
+KNOWN_GAPS="$SELF/cadence-known-gaps.json"
+known_gap_active() {
+  local loop="$1"
+  python3 -c "
+import json, datetime
+try:
+    d = json.load(open('$KNOWN_GAPS'))
+except Exception:
+    d = {}
+entry = d.get('$loop') or {}
+until = entry.get('until')
+active = False
+if until:
+    try:
+        active = datetime.date.fromisoformat('$TODAY_JST') <= datetime.date.fromisoformat(until)
+    except Exception:
+        active = False
+print('True' if active else 'False')
+" 2>/dev/null
+}
+
 for L in $CADENCE_LOOPS; do
   STATUS_JSON="$(python3 "$SELF/cadence-evidence.py" status "$L" 2>>"$LOG")"
   MET="$(printf '%s' "$STATUS_JSON" | python3 -c "import json,sys; print(json.load(sys.stdin)['met'])" 2>/dev/null || echo False)"
@@ -81,7 +110,11 @@ for L in $CADENCE_LOOPS; do
     MK="$STATE_DIR/.cadence-escalated-$L-$TODAY_JST"
     if [ ! -f "$MK" ]; then
       touch "$MK"
-      bash "$SELF/self-fix.sh" "$L" "cadence audit: $L's Cadence Contract was NOT met by 21:00 JST today ($TODAY_JST) — diagnose why today's contracted cadence (see $SELF/cadence-contracts.json) did not happen and fix it. This is a DAILY judgment (not artifact staleness): a real pass days ago does NOT satisfy today's contract." >> "$LOG" 2>&1 || true
+      if [ "$(known_gap_active "$L")" = "True" ]; then
+        echo "$(date '+%F %T') $L: known-gap active (cadence-known-gaps.json) — suppressing self-fix spawn, already diagnosed as an external blocker with a tracked ETA" >> "$LOG"
+      else
+        bash "$SELF/self-fix.sh" "$L" "cadence audit: $L's Cadence Contract was NOT met by 21:00 JST today ($TODAY_JST) — diagnose why today's contracted cadence (see $SELF/cadence-contracts.json) did not happen and fix it. This is a DAILY judgment (not artifact staleness): a real pass days ago does NOT satisfy today's contract." >> "$LOG" 2>&1 || true
+      fi
     fi
   fi
 done

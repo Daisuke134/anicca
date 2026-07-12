@@ -96,5 +96,41 @@ G1_CALLS_2=0
 
 rm -rf "$FAKE_SELF2" "$FAKE_HOME2"
 
+echo "--- known-gap suppression (2026-07-12, issues #994/#1000): an active known-gap must skip the self-fix spawn, an expired one must not ---"
+FAKE_SELF3="$(mktemp -d)"; FAKE_HOME3="$(mktemp -d)"
+mkdir -p "$FAKE_HOME3/.openclaw/state" "$FAKE_HOME3/.openclaw/logs"
+cat > "$FAKE_SELF3/cadence-evidence.py" <<'PYEOF'
+import json, sys
+loop = sys.argv[2]
+print(json.dumps({"loop": loop, "met": False, "streak": 0, "scorecard": "missed"}))
+PYEOF
+SELF_FIX_CALLS3="$FAKE_HOME3/.openclaw/state/self-fix-calls.log"
+cat > "$FAKE_SELF3/self-fix.sh" <<EOF
+#!/usr/bin/env bash
+echo "\$1" >> "$SELF_FIX_CALLS3"
+EOF
+chmod +x "$FAKE_SELF3/self-fix.sh"
+cat > "$FAKE_SELF3/cadence-contracts.json" <<'JSONEOF'
+{}
+JSONEOF
+cat > "$FAKE_SELF3/cadence-known-gaps.json" <<'JSONEOF'
+{
+  "affiliate": {"until": "2026-07-18", "reason": "test: active gap"},
+  "gig": {"until": "2026-07-01", "reason": "test: expired gap"}
+}
+JSONEOF
+# Using the TODAY_JST override seam (mirrors NOW_HOUR_JST) so this never bit-rots against the
+# real wall clock: pin "today" to 2026-07-12 (mid-gap for affiliate, past-gap for gig).
+HOME="$FAKE_HOME3" VERIFY_LOOPS_SELF_DIR="$FAKE_SELF3" CADENCE_DEADLINE_NOW_HOUR_JST=21 CADENCE_DEADLINE_TODAY_JST_OVERRIDE=2026-07-12 bash "$REAL_SCRIPT" >/dev/null 2>&1
+CALLS_3=""
+[ -f "$SELF_FIX_CALLS3" ] && CALLS_3="$(cat "$SELF_FIX_CALLS3")"
+echo "$CALLS_3" | grep -qx "affiliate" && fail "known-gap: 'affiliate' should be suppressed (today 2026-07-12 <= until 2026-07-18) but self-fix.sh was invoked" \
+  || ok "known-gap: 'affiliate' self-fix spawn correctly suppressed (today <= until)"
+echo "$CALLS_3" | grep -qx "gig" && ok "known-gap: 'gig' (until 2026-07-01, already past) escalates normally, suppression correctly expired" \
+  || fail "known-gap: 'gig' should have escalated (known-gap already expired) but did not"
+echo "$CALLS_3" | grep -qx "clip" && ok "known-gap: 'clip' (no known-gap entry) still escalates normally" \
+  || fail "known-gap: 'clip' should have escalated (no known-gap entry) but did not"
+rm -rf "$FAKE_SELF3" "$FAKE_HOME3"
+
 echo "=== test_cadence_deadline_check: $P passed $F failed ==="
 [ "$F" = 0 ] && exit 0 || exit 1
