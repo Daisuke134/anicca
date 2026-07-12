@@ -5044,3 +5044,11 @@
 {"ts":1783817608,"wake_id":"00MRH2Y3BX0FE28E3DBA1444BF","kind":"shutdown","sleep_s":0}
 {"ts":1783817609,"wake_id":"00MRH2Y4MCB9114E369CF74BC6","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — observed SOL momentum −2.34% with conviction=10 and I hold only $26.30 USDC, so the expected edge does not clear ~0.4%+ round-trip fees/slippage; hold USDC, preserve SOL for gas, and check Trad"}
 {"ts":1783817609,"wake_id":"00MRH2Y4MCB9114E369CF74BC6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783817767,"wake_id":"00MRH31IIAF9E79F08DE794F20","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783817896,"wake_id":"00MRH349O0A9CB0970455546C5","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — SOL TradingSignal is bearish but low confidence (33%); the edge doesn't clear ~0.4%+ round-trip fees/slippage, so hold USDC.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"17"}
+{"ts":1783817896,"wake_id":"00MRH349O0A9CB0970455546C5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783818043,"wake_id":"00MRH37F2545009439E12F47BF","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — bankroll too small (USDC $26.25) to justify paying for a TradingSignal call or incurring ~0.4%+ Jupiter round-trip fees/slippage; remain in USDC and preserve SOL for gas.\n[sol-trade] sol-evolve"}
+{"ts":1783818043,"wake_id":"00MRH37F2545009439E12F47BF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783818210,"wake_id":"00MRH3B06TB6C0F316E1EE4557","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1783818512,"wake_id":"00MRH3HH7LCF2C493B515C4A32","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783818642,"wake_id":"00MRH3K9U79EFEFC997B134FA1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
