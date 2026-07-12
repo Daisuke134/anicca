@@ -74,11 +74,12 @@ def pin_event(home, away, home_price, away_price, commence=FUTURE):
     }
 
 
-def pm_market(question, outcomes, prices):
+def pm_market(question, outcomes, prices, game_start=FUTURE):
     return {
         "question": question, "enableOrderBook": True,
         "conditionId": "0xabc", "clobTokenIds": '["1","2"]',
         "outcomes": json.dumps(outcomes), "outcomePrices": json.dumps([str(p) for p in prices]),
+        "gameStartTime": game_start,
     }
 
 
@@ -151,6 +152,90 @@ def test_raising_max_edge_lets_the_same_outlier_through():
     pin = [pin_event("Team A", "Team B", 100, -100)]
     pm = [pm_market("Team B vs. Team A", ["Team A", "Team B"], [0.99, 0.01])]
     assert len(find_edges(pin, pm, min_edge=0.03, max_edge=0.99, now_ts=FUTURE_TS)) == 1
+
+
+# ---- gate 3: same teams, different game -- match must also verify KICKOFF TIME -------------
+# THE actual live incident (2026-07-12): Pinnacle listed Cubs @ Reds TWICE -- a game already
+# in-play (2026-07-11T23:11Z) and a genuinely pre-match game the next day (2026-07-12T17:41Z).
+# Polymarket's only Cubs/Reds market was the FIRST game (gameStartTime 2026-07-11 23:10:00+00,
+# Gamma's own Postgres-style format). match_market, matching on team names alone, paired the
+# pre-match Pinnacle line to the in-play Polymarket price and manufactured a "+39.6pt edge" that
+# was really just a comparison between two different games. Same trap hit Padres/Blue Jays
+# (+20.8pt, which cleared max_edge and was ACTUALLY TRADED) and France/Spain (+18.5pt).
+def test_the_doubleheader_trap_is_not_matched_across_different_games():
+    pin_tomorrow = pin_event(
+        "Cincinnati Reds", "Chicago Cubs", 310, -410, commence="2026-07-12T17:41:00Z"
+    )
+    pm_todays_live_game = [pm_market(
+        "Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.935, 0.065],
+        game_start="2026-07-11 23:10:00+00",
+    )]
+    market, score = match_market(pin_tomorrow, pm_todays_live_game)
+    assert market is None, "same teams but a different game (different day) must never match"
+
+
+def test_the_doubleheader_trap_produces_no_edge_end_to_end():
+    # the full pipeline version of the test above: even though the Pinnacle event IS prematch,
+    # find_edges must not report an edge sized against a Polymarket market for a different game.
+    pin_tomorrow = pin_event(
+        "Cincinnati Reds", "Chicago Cubs", 310, -410, commence="2026-07-12T17:41:00Z"
+    )
+    pm_todays_live_game = [pm_market(
+        "Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.935, 0.065],
+        game_start="2026-07-11 23:10:00+00",
+    )]
+    assert find_edges([pin_tomorrow], pm_todays_live_game, min_edge=0.03, now_ts=NOW) == []
+
+
+def test_kickoff_times_within_tolerance_still_match():
+    # a genuine same-game pairing where Pinnacle and Gamma simply round/report kickoff slightly
+    # differently must still match -- the fix must not be so strict it breaks real games.
+    pin = pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410, commence="2026-07-12T17:41:00Z")
+    pm = [pm_market(
+        "Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145],
+        game_start="2026-07-12 18:00:00+00",   # 19 minutes later -- same card, well within tolerance
+    )]
+    market, score = match_market(pin, pm)
+    assert market is not None
+    assert market["gameStartTime"] == "2026-07-12 18:00:00+00"
+
+
+def test_kickoff_time_tolerance_is_configurable():
+    pin = pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410, commence="2026-07-12T17:41:00Z")
+    pm = [pm_market(
+        "Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145],
+        game_start="2026-07-12 21:00:00+00",   # 3h19m later -- outside the 3h default
+    )]
+    assert match_market(pin, pm)[0] is None, "outside the default tolerance -> no match"
+    market, score = match_market(pin, pm, time_tolerance_s=4 * 3600)
+    assert market is not None, "widening the tolerance must let a genuinely close game through"
+
+
+def test_missing_game_start_time_fails_closed():
+    # a Polymarket market with no gameStartTime at all must never be matched -- guessing it is the
+    # same game as the Pinnacle event is exactly the failure mode this fix exists to remove.
+    pin = pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410, commence=FUTURE)
+    pm = pm_market("Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145])
+    del pm["gameStartTime"]
+    market, score = match_market(pin, [pm])
+    assert market is None
+
+
+def test_unparseable_game_start_time_fails_closed():
+    pin = pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410, commence=FUTURE)
+    pm = pm_market(
+        "Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145],
+        game_start="not a time",
+    )
+    market, score = match_market(pin, [pm])
+    assert market is None
+
+
+def test_unparseable_pinnacle_commence_time_also_fails_closed():
+    pin = pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410, commence="not a time")
+    pm = pm_market("Chicago Cubs vs. Cincinnati Reds", ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145])
+    market, score = match_market(pin, [pm])
+    assert market is None
 
 
 from pinnacle_edge import fetch_polymarket_sports
