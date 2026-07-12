@@ -32,8 +32,21 @@
     "epicId": "VCSDD-reality-gate-1783874251213",
     "beads": []
   },
-  "gates": {},
+  "gates": {
+    "1c": {
+      "verdict": "PASS",
+      "timestamp": "2026-07-12T19:07:35.135Z",
+      "reviewedBy": "adversary",
+      "details": {
+        "iterations": 13,
+        "blocking": 0,
+        "note": "spec-review-13-gate.md; 3 open disclosed rows (12 same-uid forgery,13 TOCTOU,16 local-hook bypass)"
+      },
+      "adversaryVerdict": "PASS",
+      "adversaryReviewedAt": "2026-07-12T19:07:35.135Z"
+    }
+  },
   "sprintCount": 0,
   "createdAt": "2026-07-12T16:37:31.212Z",
-  "updatedAt": "2026-07-12T17:02:24.864Z"
+  "updatedAt": "2026-07-12T19:07:35.136Z"
 }
