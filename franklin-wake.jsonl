@@ -5727,3 +5727,15 @@
 {"ts":1783892023,"wake_id":"00MRIB92LZADB3DC7A28804270","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783892210,"wake_id":"00MRIBD2XA5C586F1EA7164A60","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1783892210,"wake_id":"00MRIBD2XA5C586F1EA7164A60","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783892344,"wake_id":"00MRIBFYPEA7B63EA22D664E0A","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783892344,"wake_id":"00MRIBFYPEA7B63EA22D664E0A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783892474,"wake_id":"00MRIBIQUOC84C7FC2F62742C3","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is bearish (confidence 33%), so the expected edge doesn't clear the ~0.4% round-trip cost; keep USDC ($23.45) and reserve enough SOL for gas. Note saved for next session.\n"}
+{"ts":1783892474,"wake_id":"00MRIBIQUOC84C7FC2F62742C3","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783892632,"wake_id":"00MRIBM49B874137EB278B435A","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal is only weakly bearish (33% confidence), not enough edge to overcome ≈0.4% round-trip costs; hold USDC. Note: re-check if SOL moves >2% or MACD flips.\n[sol-trade] sol-evolve -> { "}
+{"ts":1783892632,"wake_id":"00MRIBM49B874137EB278B435A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783892780,"wake_id":"00MRIBPARW8843A1E6C196487A","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783892913,"wake_id":"00MRIBS54Z4C79D07F4B834F59","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal is a weak/low-confidence bearish on SOL (33%); edge doesn't clear ~0.4%+ fees/slippage and my wallet only holds $23.37 USDC (no SOL for gas), so do not trade.\n[sol-trade] sol-evol"}
+{"ts":1783892913,"wake_id":"00MRIBS54Z4C79D07F4B834F59","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783893063,"wake_id":"00MRIBVD5OE9F1881218864221","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1783893914,"wake_id":"00MRICDLJG4B7116278E1946C8","kind":"shutdown","sleep_s":0}
+{"ts":1783894085,"wake_id":"00MRICH9GA89CC4587540943A3","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
