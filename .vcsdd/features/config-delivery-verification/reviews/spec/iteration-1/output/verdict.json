@@ -1,0 +1,83 @@
+{
+  "reviewType": "spec",
+  "feature": "config-delivery-verification",
+  "iteration": 1,
+  "timestamp": "2026-07-12T00:00:00Z",
+  "overallVerdict": "FAIL",
+  "dimensions": {
+    "spec_fidelity": "FAIL",
+    "verification_readiness": "FAIL"
+  },
+  "findings": [
+    {
+      "id": "FIND-001",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "location": "behavioral-spec.md:273-277 (NFR-Security), verification-architecture.md:56 (PROP-018), runtime/loop/env-filter.mjs:15",
+      "description": "NFR-Security requires masking '秘密鍵らしきキー（*_PRIVATE_KEY, *_SECRET*, ANTHROPIC_API_KEY, CLAUDE_CODE_OAUTH_TOKEN 等）' from ps output, and claims this is '同等の考え方' (equivalent approach) to runtime/loop/env-filter.mjs's scrubPrivateKeys. I read env-filter.mjs directly: PRIVATE_KEY_REGEX = /(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/ — this regex does NOT match ANTHROPIC_API_KEY (ends in _KEY, not one of the three listed suffixes) nor CLAUDE_CODE_OAUTH_TOKEN (ends in _TOKEN), i.e. the two concrete examples the NFR itself names would slip through the cited 'equivalent' function unmasked. The requirement gives no concrete regex/allowlist of its own and closes with a bare '等' (etc.) — this is exactly the open-ended, non-falsifiable language the review is required to reject. PROP-018 ('秘密鍵ライクな値を含む fixture') inherits the same ambiguity: an implementer cannot derive a single unambiguous masking rule from this text, and two implementers would reasonably build different (and both 'spec-compliant') maskers.",
+      "requiredFix": "Replace the vague NFR-Security bullet with a concrete, closed enumeration or an explicit regex definition for the masking function used specifically by the config-drift detector's ps-output reader (it must not just be 'same idea as scrubPrivateKeys' since that function demonstrably does not cover ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN). Add a REQ-0XX with EARS wording and a fixture-based acceptance criterion listing every key pattern that must be masked, and update PROP-018 to name the exact regex/allowlist under test."
+    },
+    {
+      "id": "FIND-002",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "location": "behavioral-spec.md:77-81 (Context, existing-pattern citation) vs REQ-009 EARS/Acceptance Criteria (behavioral-spec.md:239-266); cross-checked against runtime/loop/index.mjs:1037-1041",
+      "description": "The spec's own 'existing pattern' citation is inaccurate, and this creates a self-contradiction inside REQ-009. Context (lines 77-81) says the detector will reuse 'runtime/loop/index.mjs:1016-1047 の既存パターン... setTimeout + SIGKILL を送る既存パターン', and REQ-009's EARS text says '上限を超えたら SIGKILL で終了させ' (a bare, immediate SIGKILL). I read index.mjs:1037-1041 directly: the actual timeout-triggered kill first calls proc.kill('SIGTERM'), and only after an additional 2000ms grace period does it call proc.kill('SIGKILL'). That is a two-stage SIGTERM-then-SIGKILL pattern, not a single SIGKILL. REQ-009 and its Acceptance Criteria (line 261-263, 'タイムアウト経過後に SIGKILL で子プロセスが終了') never mention an intermediate SIGTERM step or grace period, so an implementer cannot tell whether thinkClaudeP's new timeout must (a) send SIGKILL immediately as literally written, or (b) replicate the SIGTERM+2s-grace+SIGKILL pattern as the Context section claims to '踏襲' (inherit). These two readings produce different, both spec-citable, implementations and different test assertions for PROP-016.",
+      "requiredFix": "Pick one termination sequence explicitly (immediate SIGKILL, or SIGTERM+grace-then-SIGKILL with a stated grace duration) and make REQ-009's EARS text, its Acceptance Criteria, and PROP-016 all state the identical sequence. Correct the Context citation so it accurately describes what index.mjs:1016-1047 actually does."
+    },
+    {
+      "id": "FIND-003",
+      "severity": "blocking",
+      "dimension": "verification_readiness",
+      "location": "verification-architecture.md:55 (PROP-017) vs behavioral-spec.md REQ-009 (239-266) and runtime/loop/config.mjs (whole file, no clamp logic)",
+      "description": "PROP-017 requires 'resolveClaudePTimeoutMs のデフォルトは 120（SLEEP_BASE_S）で、オーバーライド値がクランプ・検証される（REQ-009）' modeled on mainloop-timeout-lib.sh's resolve_mainloop_timeout_sec, which I read directly: it has an explicit numeric-format regex check, a positivity check, AND an explicit upper-bound clamp (MAINLOOP_TIMEOUT_MAX_SEC=21600, derived from the plist's own StartInterval). REQ-009 in behavioral-spec.md, however, contains NO clamp value, NO upper bound, and NO validation rule anywhere in its EARS text or Acceptance Criteria — it only says the timeout defaults to SLEEP_BASE_S=120 and can be overridden 'via config.mjs の既存の設定解決規約（cfgNum）'. I read config.mjs directly: it has no function named cfgNum at all (cfgNum is a private helper inside index.mjs: `val != null ? Number(val) : fallback`, with zero format validation and zero clamping — a non-numeric override becomes NaN and silently passes through). So PROP-017 asserts a behavior (validated + clamped override) that (a) has no REQ-009 acceptance criterion defining what 'valid' or the clamp ceiling even means, and (b) contradicts the only implementation mechanism REQ-009 actually names (cfgNum, which validates/clamps nothing).",
+      "requiredFix": "Either remove the clamp/validate language from PROP-017 (if cfgNum's pass-through semantics are actually what's wanted), or add a concrete REQ-009 acceptance criterion stating the exact validation rule and the exact upper-bound clamp value for the claude-p timeout override, consistent with whichever config-resolution function (cfgNum or a new function) is actually specified as the implementation target."
+    },
+    {
+      "id": "FIND-004",
+      "severity": "blocking",
+      "dimension": "spec_fidelity",
+      "location": "behavioral-spec.md:28-32 (Context, citing 'runtime/loop/brain.mjs:5-6') vs runtime/loop/brain.mjs:1-10",
+      "description": "The Context section states: '対比: runtime/loop/brain.mjs:5-6 のコメント通り、ANICCA_BRAIN=proxy は Franklin ... にとっては正しい設定であり、claude-p ... にとってのみ claude-p が期待値である', citing lines 5-6 as the source of this correctness claim. I read brain.mjs:1-10 directly. Lines 5-6 read only: 'REQ-011: Pluggable brain backend: ANICCA_BRAIN=proxy → HTTP to OPENAI_BASE_URL (default)' and 'ANICCA_BRAIN=claude-p → spawn `claude -p` subprocess' — i.e. they document what each value technically DOES, and say nothing whatsoever about which value is 'correct' for which instance or funding model. This is a hallucinated/unsupported citation inside a section the spec explicitly labels '検証済み事実（verified facts）'. Per this review's own mandate ('spec の Context に書かれた事実が、あなた自身が... 再確認して食い違うなら FAIL'), a spec that misattributes its central REQ-003 justification to a comment that does not say what is claimed cannot be trusted as fully fact-checked, even though the underlying business claim (Franklin=self-funded, proxy correct) is independently plausible from other parts of the Context.",
+      "requiredFix": "Remove the false citation or replace it with an accurate one (the correctness rule for Franklin vs claude-p is a project/business fact, e.g. from CLAUDE.md's colony table or ANICCA_FUNDING semantics — not something brain.mjs's comments assert). Re-verify every other file:line citation in the Context section against the actual file contents before resubmission."
+    },
+    {
+      "id": "FIND-005",
+      "severity": "major",
+      "dimension": "verification_readiness",
+      "location": "behavioral-spec.md REQ-001 (100-116) and REQ-002 (117-134); verification-architecture.md Effectful Shell (19-33)",
+      "description": "No REQ specifies HOW the effectful shell obtains the list of {launchd label, plist path} pairs to check (REQ-001) or the list of registry runtime-copy paths to check (REQ-002), beyond the three copies and one label named as 'verified facts' in Context. REQ-003's guarantee ('新しいインスタンスが追加されたとき、detector のコード変更なしに... 扱えること') only covers the pure resolveExpectedValue function's lack of if-else branching — it says nothing about whether a newly-created 4th runtime registry copy, or a newly-added launchd job, is ever discovered and fed into the detector at all. If the effectful shell hardcodes exactly the three paths/one label from this session's investigation, a future 4th copy is simply never observed — neither PASS nor FAIL — which silently defeats the fail-closed goal (REQ-004) at the orchestration layer even though every individual pure/effectful function REQ-004-compliant in isolation.",
+      "requiredFix": "Add a REQ that specifies the discovery mechanism for the instance/copy list (e.g., dynamic enumeration via `launchctl list | grep <prefix>` and a filesystem glob for registry copies under known home directories, versus an explicit maintained manifest file that the detector reads) and add an edge case + acceptance criterion for what happens when the discovery mechanism itself finds zero or an unexpected number of targets."
+    },
+    {
+      "id": "FIND-006",
+      "severity": "minor",
+      "dimension": "spec_fidelity",
+      "location": "behavioral-spec.md:251-253 (REQ-009 Edge Cases, 'config.mjs の既存の設定解決規約（cfgNum）'); runtime/loop/config.mjs (no cfgNum defined); runtime/loop/index.mjs:1128-1130",
+      "description": "The spec attributes cfgNum to config.mjs ('config.mjs の既存の設定解決規約（cfgNum）経由でオーバーライド可能'). I read config.mjs in full: it exports loadConfig/coerce/parseDotenv and defines no function named cfgNum anywhere. cfgNum is actually a private helper defined inside index.mjs (line 1128: `function cfgNum(val, fallback) { return val != null ? Number(val) : fallback; }`), with different semantics than config.mjs's own coerce() (which looks up DEFAULTS/INTEGER_KEYS/FLOAT_KEYS by key name and falls back to the typed default on NaN, whereas cfgNum takes an explicit inline fallback and has no NaN guard at all). This is a small but real factual error in a spec section that presents itself as code-verified.",
+      "requiredFix": "Correct the citation to point at index.mjs:1128 (cfgNum) rather than config.mjs, and note the different NaN-handling semantics if resolveClaudePTimeoutMs is meant to reuse cfgNum verbatim."
+    },
+    {
+      "id": "FIND-007",
+      "severity": "minor",
+      "dimension": "verification_readiness",
+      "location": "behavioral-spec.md REQ-008 (219-237)",
+      "description": "REQ-008 requires bootout/bootstrap-restarting the actual live, currently-earning ai.anicca.agent-economy-loop launchd job (this repo's own colony data confirms this is a real production human-funded earn loop, and other registry data in this same repo shows open-risk earn positions elsewhere in the colony, e.g. hl_trade holding $7.72). Neither REQ-008 nor its Edge Cases specify any precondition check before the restart (e.g., is a wake/skill currently mid-flight, is there an open risk position tied to this specific instance) — the Edge Cases only cover post-restart PID-staleness and the observation race, not pre-restart safety.",
+      "requiredFix": "Add an edge case to REQ-008 requiring a precondition check (or an explicit documented decision that none is needed, with justification) before the manual bootout/bootstrap restart is performed as part of this feature's implementation work."
+    }
+  ],
+  "evidenceReviewed": [
+    "Read behavioral-spec.md and verification-architecture.md in full",
+    "Read ~/Library/LaunchAgents/ai.anicca.agent-economy-loop.plist directly — confirmed EnvironmentVariables.ANICCA_BRAIN=claude-p as claimed",
+    "Read runtime/loop/brain.mjs in full — confirmed default brain='proxy', confirmed thinkClaudeP has no timeout on spawn() (only proc.on('exit')), confirmed brain.mjs:5-6 does NOT support the Franklin-correctness citation made in behavioral-spec.md",
+    "Read runtime/loop/index.mjs:140-179 and full registry-loading block — confirmed registry.json is read exactly once at module top-level with no re-read path (grep for 'registry' in this file returns only this one block)",
+    "Read runtime/loop/index.mjs:1000-1050 and grepped cfgNum usages/definition — confirmed the timeout-triggered kill path is SIGTERM immediately + SIGKILL after 2000ms grace, not a bare SIGKILL; confirmed cfgNum is defined in index.mjs (line 1128), not config.mjs",
+    "Read runtime/loop/config.mjs in full — confirmed SLEEP_BASE_S default=120, confirmed no cfgNum function exists in this file, confirmed coerce() has different semantics than cfgNum",
+    "Read runtime/loop/env-filter.mjs in full — confirmed scrubPrivateKeys' regex only matches _WALLET_KEY/_PRIVATE_KEY/_PRIV_KEY suffixes and would NOT mask ANTHROPIC_API_KEY or CLAUDE_CODE_OAUTH_TOKEN, the two examples NFR-Security itself names",
+    "Read skills/registry.json:110-149 — confirmed canonical hl_trade.status='dormant' with dormantReason present",
+    "Grepped and read hl_trade block in ~/.blockrun/skills/registry.json, ~/.anicca-founder/skills/registry.json, ~/.franklin2-home/.blockrun/skills/registry.json — confirmed all three runtime copies show hl_trade.status='live', matching the spec's Bug 2 claim exactly",
+    "Read skills/self/mainloop-timeout-lib.sh in full — confirmed it performs real numeric-format validation and an explicit upper-bound clamp (21600s), which the spec's PROP-017 claims to mirror but REQ-009 does not actually specify a corresponding bound",
+    "Grepped behavioral-spec.md and verification-architecture.md for hedge/vagueness tokens (任意/推奨/適切に/必要に応じて/望ましい/should/可能な限り) — none found, so the requirements are not FAILing on that specific vagueness axis",
+    "Note: this review environment has no shell-execution tool, so live process state (PID 94249's actual environment via `ps`) could not be independently re-verified in this session — verification was limited to file-based evidence (plist, registry copies, source code) reachable via Read/Grep"
+  ]
+}
