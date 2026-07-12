@@ -203,3 +203,77 @@ def test_a_failing_page_keeps_the_pages_that_did_load():
     fetch = fake_gamma([[mkt("a")], RuntimeError("gamma 503"), [mkt("c")]])
     out = fetch_polymarket_sports(pages=3, fetch=fetch)
     assert [m["conditionId"] for m in out] == ["a"], "one bad page must not lose the good ones"
+
+
+import pinnacle_edge
+
+
+@pytest.fixture
+def tmp_cache(tmp_path, monkeypatch):
+    p = tmp_path / "pinnacle-cache.json"
+    monkeypatch.setattr(pinnacle_edge, "CACHE_PATH", str(p))
+    return p
+
+
+def counting_odds_fetch(events):
+    calls = []
+
+    def fetch(url, timeout=25):
+        calls.append(url)
+        return events
+
+    fetch.calls = calls
+    return fetch
+
+
+def test_first_scan_spends_credits_once_per_sport(tmp_cache):
+    fetch = counting_odds_fetch([pin_event("H", "A", -110, -110)])
+    events, cached = pinnacle_edge.fetch_pinnacle_budgeted(
+        ["baseball_mlb", "mma_mixed_martial_arts"], "KEY", now_ts=1000.0, fetch=fetch
+    )
+    assert cached is False
+    assert len(fetch.calls) == 2, "one credit per sport, no more"
+    assert len(events) == 2
+
+
+def test_a_second_scan_inside_the_interval_spends_nothing(tmp_cache):
+    first = counting_odds_fetch([pin_event("H", "A", -110, -110)])
+    pinnacle_edge.fetch_pinnacle_budgeted(["baseball_mlb"], "KEY", now_ts=1000.0, fetch=first)
+
+    second = counting_odds_fetch([pin_event("SHOULD", "NOT", -110, -110)])
+    events, cached = pinnacle_edge.fetch_pinnacle_budgeted(
+        ["baseball_mlb"], "KEY", now_ts=1000.0 + 60, fetch=second
+    )
+    assert cached is True
+    assert second.calls == [], "inside the interval the paid API must not be touched at all"
+    assert events[0]["home_team"] == "H", "the cached lines are served unchanged"
+
+
+def test_once_the_interval_has_passed_credits_are_spent_again(tmp_cache):
+    first = counting_odds_fetch([pin_event("OLD", "A", -110, -110)])
+    pinnacle_edge.fetch_pinnacle_budgeted(["baseball_mlb"], "KEY", now_ts=1000.0, fetch=first)
+
+    later = 1000.0 + pinnacle_edge.MIN_FETCH_INTERVAL_S + 1
+    second = counting_odds_fetch([pin_event("NEW", "A", -110, -110)])
+    events, cached = pinnacle_edge.fetch_pinnacle_budgeted(
+        ["baseball_mlb"], "KEY", now_ts=later, fetch=second
+    )
+    assert cached is False
+    assert len(second.calls) == 1
+    assert events[0]["home_team"] == "NEW"
+
+
+def test_one_dead_sport_does_not_kill_the_whole_scan(tmp_cache):
+    calls = []
+
+    def fetch(url, timeout=25):
+        calls.append(url)
+        if "mma" in url:
+            raise RuntimeError("odds api 500")
+        return [pin_event("H", "A", -110, -110)]
+
+    events, cached = pinnacle_edge.fetch_pinnacle_budgeted(
+        ["baseball_mlb", "mma_mixed_martial_arts"], "KEY", now_ts=1000.0, fetch=fetch
+    )
+    assert len(calls) == 2
+    assert len(events) == 1, "the sport that answered must still be scanned"
