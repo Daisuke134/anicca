@@ -170,6 +170,22 @@ Franklin  $29.33  solana/USDC=$24.61  solana/SOL=$3.09  polygon/pUSD=$1.62  ← 
   wake 間隔がそのまま思考時間の予算。Sonnet は120秒では終わらない）
 - **「claude-p は絶対に proxy から答えてはならない」をテストで固定**（将来の誰かが戻さないように）
 
+### T3.7 ★NEXT★ claude -p の出力をパーサが理解できていない疑い 🔴
+
+**症状（実測）**: reload 後の wake が `skill_missing / slot=run_skill / "run_skill skill not found"`。
+`run_skill` は**ツール名**であってスロット名ではない。脳がスロット名として渡すはずがない。
+
+**仮説（未検証）**: `thinkClaudeP` は `claude -p --output-format json` の出力を**そのまま返している**。
+だが `parseToolCall` は proxy（ClawRouter）が返す **OpenAI 形式**（`choices[0].message.tool_calls`）を期待する。
+Claude Code の JSON は `{"type":"result","result":"...","session_id":...}` という**別形式**。
+→ tool_call が取り出せず、`run_skill` を誤ってスロット名として解釈している可能性。
+
+**注意（今日この罠にかかった）**: ledger の `model` フィールドは `ctx.model`（残高ティア由来の文字列）を
+記録しているだけで、**実際にどの脳が答えたかを反映していない**。`model=free/glm-4.7` を見て
+「claude-p が使われていない」と判断してはいけない。
+
+**完了条件**: `slot=earn/*` の wake が出て、skill が実際に実行される（`skill_missing` が消える）。
+
 ### T4. pm-deterministic を削除して 1 instance = 1 loop にする 🔥
 **なぜ**: pm-deterministic は「脳が earn を選ばないから」貼られたパッチ。T3 で脳が選べるようになったので不要。
 - **完了条件**: `launchctl list` から pm-deterministic が消え、それでも earn-ledger に polymarket の取引が出続ける
