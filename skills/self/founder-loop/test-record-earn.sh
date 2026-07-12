@@ -146,4 +146,10 @@ RAWBAD="[{\"address\":\"$USDCADDR\",\"topics\":[\"$TT\",\"$FROM_EXT\",\"$TO_F\"]
 OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_RAW_LOGS_JSON="$RAWBAD" node "$M" 2>&1)"; rc=$?
 ok "$([ $rc -ne 0 ] && [ ! -s "$T/state/earn-ledger.jsonl" ] && echo 1 || echo 0)" "FIND-701: malformed data=0x (filter-passing) → fail-closed (rc=$rc)"
 
+# 22. 2026-07-12 fix: the forensically-identified funding/bridge address (source of the two
+# misrecorded "x402 earn $22.97"/"$7.98" ledger rows) must NEVER count as an external earning again.
+T="$(mkdir_dir "$FW")"; FUNDER="0xf70da97812cb96acdf810712aa562db8dfa3dbef"
+OUT="$(FOUNDER_TEST=1 FOUNDER_DIR="$T" FOUNDER_CURSOR=100 FOUNDER_BLOCK_NOW=200 FOUNDER_LOGS_JSON="[{\"from\":\"$FUNDER\",\"value\":22.97},{\"from\":\"$EXT\",\"value\":3}]" node "$M" 2>&1)"; rc=$?
+ok "$([ $rc -eq 0 ] && [ "$(jq -r '.earn_usdc' "$T/state/earn-ledger.jsonl" 2>/dev/null | tail -1)" = "3" ] && echo 1 || echo 0)" "2026-07-12: known funding/bridge address (0xf70da978…) excluded — only the real external 3 counts, not 25.97 (rc=$rc)"
+
 [ $fails -eq 0 ] && { echo "PASS — founder record-earn (external-inflow + finalized + raw-parse): external-only (self=0, INV-7) + real-log parse (from-slice/BigInt/to/address re-verify) + finalized-head (no reorg) + seam-gating + wallet-pin + realpath + env-independent root + fail-closed + atomic cursor"; exit 0; } || { echo "FAIL ($fails)"; exit 1; }

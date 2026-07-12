@@ -36,7 +36,17 @@ const FOUNDER_WALLET_EXPECTED = "0x810f6d61f7606deee2657d3083e150a222bc29c5";
 // 0xa3cdd4... = automaton's wallet BEFORE the 2026-07-07 rotation (key leaked, kept here so a
 // self-transfer from the now-retired address still never counts as earned); 0xb9dd3b67... = its
 // current (post-rotation) address. 0x9b1ee988... = a separate known-internal wallet (unrelated).
-const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0xb9dd3b67921b354c656523d6851537988f31dd56", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83"];
+//
+// 0xf70da978... = FOUND 2026-07-12 by forensically tracing the two largest ledger rows ("x402 earn
+// $22.97" tx 0x3b3eeee6…, "x402 earn $7.98" tx 0x41ead2f3…): both were USDC Transfers FROM this SAME
+// address. It has NO contract code (eth_getCode = "0x", a plain EOA) and currently holds >$3.1M USDC
+// on Base — far too large and too centralized to be an x402 micro-payment counterparty. That size/shape
+// matches a funding/bridge/exchange-withdrawal hot wallet, not a paying customer, and the founder
+// wallet's actual Base balance right after those two "earn" rows (~$1.95) never reflected $30+ of new
+// revenue — confirming the money was routed THROUGH, not earned. Fail-closed per the no-human-loop
+// rule (task 2026-07-12, "稼ぎを過大に見積もる方が危険"): treat as internal/funding, never as earnings,
+// until it is positively identified as a legitimate counterparty.
+const SHARED = ["0xa3cdd4ec6b94f01826aaf90a6d5538a2aa8c4c21", "0xb9dd3b67921b354c656523d6851537988f31dd56", "0x9b1ee988b1a2931abce467f0a8eaff6c70c93e83", "0xf70da97812cb96acdf810712aa562db8dfa3dbef"];
 let wallet;
 if (TEST && process.env.FOUNDER_WALLET) wallet = process.env.FOUNDER_WALLET;
 else { try { wallet = JSON.parse(fs.readFileSync(WALLET_JSON, "utf8")).address; } catch { die("no founder wallet.json (gen-wallet first)"); } }
