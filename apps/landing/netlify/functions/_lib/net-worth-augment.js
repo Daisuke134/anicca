@@ -16,7 +16,7 @@
 // net-worth-lib.fetchNetWorth's own per-leg fail-soft behaviour; a revenue override that fails to
 // fetch is simply left out of the cache, so that row's enrich falls back to its default earnings path.
 const { fetchNetWorth } = require('./net-worth-lib');
-const { fetchRealizedPnlUsd } = require('./polymarket-revenue-reader');
+const { fetchTotalPnlUsd } = require('./polymarket-revenue-reader');
 const { fetchPortfolioValueUsd } = require('./polymarket-value-reader');
 const { normalizeId, legsFor, polymarketAccountFor, polymarketRevenueEnabledFor } = require('./dashboard-wallet-legs');
 
@@ -82,7 +82,16 @@ async function computeDashboardOverrides(rows, opts = {}) {
         const activityUrl = typeof opts.polymarketActivityUrl === "function"
           ? opts.polymarketActivityUrl(pmAccount)
           : opts.polymarketActivityUrl;
-        const pnl = await fetchRealizedPnlUsd(pmAccount, fetchImpl, { activityUrl });
+        // total = realized + mark-to-market of open positions. Realized-only reports a LOSS on the
+        // cash of bets still on the table (claude-p: realized -$9.16 while holding $19.33 open ->
+        // truly +$10.18). If /value fails this throws -> row left uncached -> "unverified", never a
+        // confidently-wrong negative.
+        const pnl = await fetchTotalPnlUsd(pmAccount, fetchImpl, {
+          activityUrl,
+          valueUrl: typeof opts.polymarketValueUrl === "function"
+            ? opts.polymarketValueUrl(pmAccount)
+            : opts.polymarketValueUrl,
+        });
         revenueCache.set(key, pnl);
       } catch (e) {
         errors.push({ id: row.id, kind: "revenue", errors: [{ error: String(e.message || e) }] });

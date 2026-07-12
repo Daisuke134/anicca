@@ -162,7 +162,8 @@ test("T2: revenue_mo_usd == Polymarket REDEEM total - BUY total for claude-p", a
   const reader = await augmentDashboardReader(emptyFlatReader(), [row], { fetchImpl: fakeFetch({ pmActivity }) });
   const [e] = enrichOnChain([row], { base: reader });
   assert.strictEqual(e.earn_src, "chain");
-  assert.strictEqual(Math.round(e.revenue_mo_usd * 100) / 100, 9.81);
+  // total P&L = realized (49.78 - 39.97 = 9.81) + open-position mark-to-market (fixture /value = 12.30)
+  assert.strictEqual(Math.round(e.revenue_mo_usd * 100) / 100, 22.11);
   assert.ok(e.revenue_today_usd <= e.revenue_mo_usd);
 });
 

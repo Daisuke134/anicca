@@ -64,3 +64,48 @@ test("no revenue events => 0, not undefined/NaN", async () => {
   const pnl = await fetchRealizedPnlUsd("0xaddr", f);
   assert.strictEqual(pnl, 0);
 });
+
+// ── Open positions are NOT a loss ────────────────────────────────────────────
+// The realized-only formula counts the cash spent opening a bet as if it were gone. That is wrong
+// the moment the loop is actually betting: on 2026-07-12 claude-p showed realized -$9.16 while
+// holding $19.33 of unsettled positions -- it was reported as LOSING $9 when its true economic
+// position was +$10. Marking the open positions to Polymarket's own /value endpoint is what makes
+// the number honest.
+const { fetchTotalPnlUsd } = require("../polymarket-revenue-reader");
+
+test("T2b: total P&L adds the mark-to-market value of unsettled positions", async () => {
+  const activity = [
+    { type: "TRADE", side: "BUY", usdcSize: 58.93 },
+    { type: "REDEEM", usdcSize: 49.78 },
+  ];
+  const f = async (url) =>
+    String(url).includes("/value")
+      ? okJson([{ user: "0xabc", value: 19.33 }])
+      : okJson(activity);
+
+  const total = await fetchTotalPnlUsd("0xabc", f);
+  assert.strictEqual(Math.round(total * 100) / 100, 10.18); // 49.78 - 58.93 + 19.33
+});
+
+test("T2b: with no open positions, total P&L equals realized P&L", async () => {
+  const activity = [
+    { type: "TRADE", side: "BUY", usdcSize: 10 },
+    { type: "REDEEM", usdcSize: 15 },
+  ];
+  const f = async (url) =>
+    String(url).includes("/value") ? okJson([]) : okJson(activity);
+
+  assert.strictEqual(await fetchTotalPnlUsd("0xabc", f), 5);
+});
+
+test("T2b: a failed /value read throws rather than silently dropping the positions", async () => {
+  // Falling back to realized-only here would report a LOSS on money that is still on the table.
+  // Unverified is the honest answer; a confidently wrong negative is not.
+  const activity = [{ type: "TRADE", side: "BUY", usdcSize: 20 }];
+  const f = async (url) =>
+    String(url).includes("/value")
+      ? { ok: false, status: 503, json: async () => ({}) }
+      : okJson(activity);
+
+  await assert.rejects(() => fetchTotalPnlUsd("0xabc", f), /value/i);
+});

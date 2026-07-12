@@ -67,8 +67,8 @@ test("makeLiveReaders returns a {base, solana} map, both carrying the same overr
   // claude-p's override ($5 pUSD) is visible through EITHER reader (id-keyed, not chain-keyed)
   assert.strictEqual(readers.base.netWorthUsd(CLAUDE_P_ID), 5);
   assert.strictEqual(readers.solana.netWorthUsd(CLAUDE_P_ID), 5);
-  // claude-p's Polymarket revenue override: 10 - 4 = 6
-  assert.strictEqual(readers.base.revenueMoUsd(CLAUDE_P_ID), 6);
+  // claude-p's Polymarket total P&L: realized (10 - 4 = 6) + open positions (/value = 5) = 11
+  assert.strictEqual(readers.base.revenueMoUsd(CLAUDE_P_ID), 11);
 });
 
 test("a solana-chain row is enriched through the solana reader, not silently unverified", async () => {

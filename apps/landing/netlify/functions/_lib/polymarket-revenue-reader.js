@@ -47,4 +47,37 @@ async function fetchRealizedPnlUsd(address, fetchImpl, opts = {}) {
   return Math.round(pnl * 1e6) / 1e6;
 }
 
-module.exports = { fetchRealizedPnlUsd, DEFAULT_ACTIVITY_URL };
+const DEFAULT_VALUE_URL = (address) =>
+  `https://data-api.polymarket.com/value?user=${address}`;
+
+/**
+ * Total P&L = realized (settled bets) PLUS the mark-to-market value of positions still open.
+ *
+ * The realized-only number treats the cash spent opening a bet as a loss until that bet settles,
+ * so an actively-betting loop looks like it is losing money it is merely holding: on 2026-07-12
+ * claude-p was realized -$9.16 while carrying $19.33 of open positions -- truly +$10.17, reported
+ * as a $9 loss. Polymarket's own /value endpoint marks the open positions to market (cash +
+ * positions), which is the only honest current number.
+ *
+ * A failed /value read THROWS -- callers treat that as "unverified". Silently falling back to
+ * realized-only would confidently report a loss on money that is still on the table, which is the
+ * exact failure this function exists to prevent.
+ *
+ * @returns {Promise<number>} realized P&L + open-position value, in USD.
+ */
+async function fetchTotalPnlUsd(address, fetchImpl, opts = {}) {
+  const realized = await fetchRealizedPnlUsd(address, fetchImpl, opts);
+  const url = opts.valueUrl || DEFAULT_VALUE_URL(address);
+  const res = await fetchImpl(url, { method: 'GET' });
+  if (!res.ok) throw new Error(`polymarket value ${res.status}`);
+  const body = await res.json();
+  // /value returns [] when nothing is open, or [{user, value}] with the mark-to-market total.
+  const open = Array.isArray(body) && body[0] && Number.isFinite(Number(body[0].value))
+    ? Number(body[0].value)
+    : 0;
+  const total = realized + open;
+  if (!Number.isFinite(total)) throw new Error('polymarket value: non-finite total');
+  return Math.round(total * 1e6) / 1e6;
+}
+
+module.exports = { fetchRealizedPnlUsd, fetchTotalPnlUsd, DEFAULT_ACTIVITY_URL, DEFAULT_VALUE_URL };
