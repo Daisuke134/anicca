@@ -222,6 +222,7 @@ checking apparatus itself could not produce a trustworthy read), and return:
 | (`caller-per-invocation` only) locator not on `groundTruth.fixedPublicSurfaceUrl` | CONTRADICTION (`not_on_fixed_surface`) | `FAIL` |
 | (`caller-per-invocation` only) `contentHash` ≠ `groundTruth.precommit.contentFingerprint` | CONTRADICTION (`fingerprint_mismatch`) | `FAIL` |
 | (`caller-per-invocation` only) `groundTruth.precommit.ts` not before the capture pass's start | CONTRADICTION (`precommit_not_before_action`) | `FAIL` |
+| **Row exists in the trail but its `rowHmac` is absent, mis-signed, or signed with another pass's secret (REQ-016/017)** | **CONTRADICTION (`artifact_trail_tampered`)** — a row that exists but does not verify is positive evidence that someone wrote/modified the trail; it is NOT an absence of information | **`FAIL`** |
 | Everything else resolves cleanly, but `automatedVerification !== true` | INCONCLUSIVE (`automated_verification_unproven`) — checked LAST, only if no contradiction fired | `CANNOT_VERIFY` |
 
 `validateArtifactProvenance` never mutates its inputs, never touches `fs` itself.
@@ -351,9 +352,19 @@ itself edit any file; both escalation targets are separate, downstream processes
 **A `CANNOT_VERIFY` verdict SHALL NEVER**: (a) be treated as sufficient to satisfy a `PASS`
 claim anywhere (REQ-004/008/009's existing fail-closed convergence/recording rules already
 guarantee this — restated here as the routing-specific consequence); (b) be reported to a
-loop's owner-facing success report (e.g. a daily summary) AS a verified post — REQ-011
+loop's owner-facing success report (e.g. a daily summary) AS a verified post — REQ-018
 requires it be surfaced explicitly AS `CANNOT_VERIFY`, distinct from both "posted and
 verified" and "failed."
+
+**AMENDED by REQ-018 (iteration 8 — FIND-V): the no-self-fix rule is per-pass, not permanent.**
+A SINGLE `CANNOT_VERIFY` SHALL NOT invoke `self-fix.sh` (the loop's code is not implicated by one
+unreadable pass). But **TWO CONSECUTIVE `CANNOT_VERIFY` verdicts for the same loop SHALL invoke
+`self-fix.sh`**, because a verification apparatus that cannot read reality twice in a row is itself
+a defect to repair, not a state to tolerate — and "unverifiable forever" is precisely how a loop
+that does nothing stays silent. Any earlier phrasing in this requirement or in PROP-046 that reads
+as an UNCONDITIONAL "CANNOT_VERIFY never calls self-fix" is superseded by this rule: PROP-046 MUST
+be restated as "a single, first `CANNOT_VERIFY` does not call self-fix", and PROP-055 forces the
+two-strike escalation. Both are required and must be jointly satisfiable by one implementation.
 **Edge Cases**: `self-fix.sh`'s own dedupe/staleness logic is unaffected (still applies to the
 `FAIL` branch only). The human-review queue is append-only; multiple `CANNOT_VERIFY` results
 for the same loop simply accumulate rows — THE SYSTEM SHALL NOT deduplicate or suppress
@@ -580,10 +591,14 @@ secret from a CSPRNG **inside the wrapper process**, pass it to `public_artifact
 through a channel not observable to the loop under test (never a CLI argument, never an env var
 exported into the loop's own environment, never written to the trail directory), and the capture
 tool SHALL append `rowHmac = HMAC(secret, canonical_serialization_of_row)` to every row it writes.
-`enforceVerdict` SHALL recompute the HMAC for every cited row and treat any row that is unsigned,
-mis-signed, or signed with a different pass's secret as **not a valid capture** → the verdict
-cannot reach PASS on it (fail-closed: `CANNOT_VERIFY` if no valid capture remains; `FAIL` if a
-valid capture contradicts the claim).
+`enforceVerdict` SHALL recompute the HMAC for every cited row. **A row that EXISTS but whose HMAC
+does not verify (unsigned, mis-signed, or signed with a different pass's secret) is NOT "a missing
+capture" — it is positive evidence of trail tampering and SHALL yield `FAIL` /
+`artifact_trail_tampered` (REQ-017 governs; this supersedes any earlier "not a valid capture →
+CANNOT_VERIFY" reading of this requirement).** `CANNOT_VERIFY` is reachable ONLY when the trail
+contains NO row for the claim at all, or when the row records a network-level failure / empty body /
+unproven diagnosability. A `PASS` is reachable only on a row that exists AND verifies AND does not
+contradict the claim.
 
 **What this buys**: a loop that observes the `passId` (row 12(b)'s race) can still *write* a file,
 but it cannot produce a row that survives `enforceVerdict` without stealing a secret held in
