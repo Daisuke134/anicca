@@ -5205,3 +5205,11 @@
 {"ts":1783837944,"wake_id":"00MRHF1YO9DA15C8204DB543D6","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783838075,"wake_id":"00MRHF4SA3B99269F44F984308","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"deposit wallet: [REDACTED] | pUSD: 1.621603\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoting.\n  cancel-and-replace: cleared old quotes\n  NAKED-FIX exec "}
 {"ts":1783838075,"wake_id":"00MRHF4SA3B99269F44F984308","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783838255,"wake_id":"00MRHF8MV0B5F6DEA0E9D34A5D","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783838381,"wake_id":"00MRHFBBZJ2DD52B92121F4AD0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783838514,"wake_id":"00MRHFE6KU4E1245F128E54A4A","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783838639,"wake_id":"00MRHFGVJDB67A4C5503514662","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783838775,"wake_id":"00MRHFJRZC6B83390F8B694600","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783838906,"wake_id":"00MRHFMLK1FEC011EBA5784D5D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783839042,"wake_id":"00MRHFPIFA400B1A96BF414CEE","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal for SOL is only weakly bearish (confidence ~33%, MACD negative); the edge does not clear ~0.4%+ Jupiter round‑trip fees/slippage on this small $25.68 bankroll, so hold USDC (note "}
+{"ts":1783839042,"wake_id":"00MRHFPIFA400B1A96BF414CEE","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
