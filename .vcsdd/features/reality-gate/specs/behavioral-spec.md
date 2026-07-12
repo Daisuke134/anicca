@@ -343,9 +343,12 @@ ROUTING, REQ-010, path (ii)-specific, changes).
 **EARS**: WHEN `enforceVerdict` yields `overallVerdict: "FAIL"` (a genuine CONTRADICTION) THE
 SYSTEM SHALL invoke `self-fix.sh <name> "<blocker+hint>"` — the loop's own code produced a
 claim the evidence contradicts, which is a code/behavior bug self-fix can investigate. WHEN
-`enforceVerdict` yields `overallVerdict: "CANNOT_VERIFY"` (an INCONCLUSIVE outcome) THE SYSTEM
-SHALL NOT invoke `self-fix.sh` — there is no code bug to fix; the checking apparatus itself
-could not produce a diagnostic read (an unproven platform, a network failure, an empty body).
+`enforceVerdict` yields **the FIRST** `overallVerdict: "CANNOT_VERIFY"` (an INCONCLUSIVE outcome)
+THE SYSTEM SHALL NOT invoke `self-fix.sh` — there is no code bug to fix; the checking apparatus
+itself could not produce a diagnostic read (an unproven platform, a network failure, an empty
+body). **WHEN a SECOND CONSECUTIVE `CANNOT_VERIFY` occurs for the same loop THE SYSTEM SHALL
+invoke `self-fix.sh` (REQ-018/PROP-055) — at that point the checking apparatus itself is the
+defect, and there IS something to fix.**
 Instead THE SYSTEM SHALL append `{ts, loopName, passId, reason, claimSummary}` to
 `$HOME/.openclaw/state/reality-needs-human-review-<loopName>.jsonl` (a new, minimal,
 append-only queue — mirrors REQ-006's own trail durability pattern, no new subsystem) — this
