@@ -152,6 +152,24 @@ if ! cdp_lock_acquire "reality-verifier" 120; then
 fi
 trap 'cdp_lock_release' EXIT
 
+# ─── 3.6 CDP HEALTH GUARD (2026-07-13 fix) — ensure the daily-driver is actually alive before ────
+# spawning the judge. cdp_daily_driver_guard.sh already existed (root-caused the starved-accept-queue
+# failure mode) but had ZERO callers anywhere in the codebase — the mutex above only arbitrates WHO
+# drives :9222, it never checks whether the browser process is even up. Root cause of the
+# evidence_captured=0/"connection refused" reality_verify_failed rounds (audit-reality.jsonl
+# ts=1783896511): the daily-driver Chromium died (WindowServer port death) and nothing ever noticed
+# or relaunched it, so every subsequent judge spawn burned its full 600s timeout hitting a dead port.
+# We hold the CDP lock at this point (exclusive), so it is safe to kill+relaunch here.
+source "$SELF_DIR/scripts/cdp_daily_driver_guard.sh"
+if ! cdp_guard_ensure_healthy 6 45; then
+  echo "$(date '+%F %T') gig_reality_verify: CDP :9222 unreachable even after guard relaunch attempt — recording infra failure, not spawning judge" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':False,'failure_reason':'cdp_daily_driver_down_after_guard_relaunch','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  "$PY" -c "import json,time; print(json.dumps({'reason':'reality_verify_failed','failure_reason':'cdp_daily_driver_down_after_guard_relaunch','ts':int(time.time())}, ensure_ascii=False))" > "$SELFHEAL"
+  echo "$ROW"
+  exit 0
+fi
+
 # ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
 # env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
 # idiom), not pay-per-token API billing. --dangerously-skip-permissions + --add-dir "$HOME": the
