@@ -25,11 +25,24 @@
   は launchd が **再読込（bootout → bootstrap もしくは kickstart -k）されるまで古いまま**。
   デーモンの自己更新による内部 exec も既存 env を継承するため、ファイル編集だけでは絶対に
   反映されない。
-- 対比: `runtime/loop/brain.mjs:5-6` のコメント通り、`ANICCA_BRAIN=proxy` は Franklin
-  （self-funded, `ANICCA_FUNDING=self` 、自分の crypto wallet から推論代を払う）にとっては
-  **正しい設定**であり、claude-p（human-funded, `ai.anicca.agent-economy-loop` /
-  `ai.anicca.pm-earner` / `ai.anicca.founder-loop`）にとってのみ `claude-p` が期待値である。
-  「1つの正しい値」は存在しない — インスタンスごとに期待値が異なる。
+- 対比（**訂正**: 前版が引用した `brain.mjs:5-6` は各値の動作を説明するコメントに過ぎず、
+  「どちらが正しいか」には一言も触れていない — 幻覚引用だったため削除する）:
+  `ANICCA_BRAIN=proxy` が Franklin（self-funded, `ANICCA_FUNDING=self`）にとって正しい根拠は、
+  コードコメントではなく実在する経済的事実として書く。本セッションで
+  `runtime/loop/config.mjs:20-24` を実際に Read して確認した実在コメント（`DEFAULTS` の
+  `OPENAI_BASE_URL`/モデル選定に関する記述）:
+  > 「Paid frontier was draining the treasury on the funded tier ($14->$10.5) while yield
+  > earned ~$0 — net-negative. A free brain + earning skills = the only way a self-paying
+  > agent stays net-positive at small capital. (Frontier is for capable instances on
+  > flat-rate billing, e.g. Claude on a subscription — NOT a self-paying Anicca burning
+  > x402 per wake.)」
+  Franklin は `ANICCA_FUNDING=self` で推論代を自分の crypto wallet から x402 で払う
+  self-paying agent であり、有料の `claude-p` 脳に切り替えると x402 支払いのたびに財布が
+  減る。したがって Franklin にとっては無料の `proxy`（`free/glm-4.7` 等）が正しい設定であり、
+  claude-p（human-funded, Anthropic サブスクリプションの定額課金で動く
+  `ai.anicca.agent-economy-loop` / `ai.anicca.pm-earner` / `ai.anicca.founder-loop`）に
+  とってのみ `claude-p` が期待値である。「1つの正しい値」は存在しない — インスタンスごとに
+  期待値が異なる。
 
 ### Bug 2 — hl_trade の registry status が実行時コピーに届いていない
 
@@ -74,11 +87,22 @@
 - `/Users/anicca/anicca/skills/self/mainloop-timeout-lib.sh` は「純粋な値解決関数
   （`resolve_mainloop_timeout_sec`）を本体スクリプトから分離してテスト可能にする」という
   同種の規約の別実例。
-- `runtime/loop/index.mjs:1016-1047`（`SKILL_TIMEOUT_S`, デフォルト120秒）に、
-  子プロセスへ `setTimeout` + `SIGKILL` を送る既存パターンが既にある。REQ-009 の
-  タイムアウト機構はこのパターンを踏襲する（`claude --help` / `claude -p --help` を
+- `runtime/loop/index.mjs:1016-1047`（`SKILL_TIMEOUT_S`, デフォルト120秒、`cfgNum` は
+  `runtime/loop/index.mjs:1128` の素通しヘルパー — `val != null ? Number(val) : fallback`
+  で検証もクランプも行わない、`config.mjs` にはない）に、子プロセスを終了させる既存パターンが
+  既にある。本セッションで `index.mjs:1037-1041` を実際に読んで確認した実装は**二段階**:
+  ```
+  const timer = setTimeout(() => {
+    timedOut = true;
+    try { proc.kill('SIGTERM'); } catch {}
+    setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 2000);
+  }, timeoutMs);
+  ```
+  すなわち「タイムアウト経過 → `SIGTERM` → 2000ms 待機 → まだ生きていれば `SIGKILL`」。
+  REQ-009 のタイムアウト機構はこの二段階パターンをそのまま踏襲する（単純な即時 `SIGKILL`
+  ではない — 前版の記述は誤りだったため訂正する）。`claude --help` / `claude -p --help` を
   本セッションで実行し確認した通り、この CLI バージョンに `--max-turns` フラグは
-  **存在しない** — `--max-turns`は例として書かれていたが実在しないため採用しない）。
+  **存在しない** — `--max-turns`は例として書かれていたが実在しないため採用しない。
 
 ## Purity Boundary Analysis
 
@@ -99,8 +123,9 @@
 
 ### REQ-001: ANICCA_BRAIN 宣言値と実行時値の乖離検出
 **EARS**: WHEN config-drift detector が human-funded インスタンス（`ai.anicca.agent-economy-loop`
-等、期待値解決ルールは REQ-003 参照）に対して実行される THE SYSTEM SHALL
-「plist の `EnvironmentVariables.ANICCA_BRAIN` 宣言値」と「`launchctl list` で得た PID の
+等、期待値解決ルールは REQ-003 参照、対象となるプロセス集合と対応する plist の発見方法は
+REQ-010 参照）に対して実行される THE SYSTEM SHALL
+「plist の `EnvironmentVariables.ANICCA_BRAIN` 宣言値」と「REQ-010 で発見した PID の
 `ps -Awwe` 実行時コマンドライン中の `ANICCA_BRAIN=` 値」を比較し、不一致なら乖離1件として
 `{key: "ANICCA_BRAIN", instance, declared, actual}` を返す。
 **Edge Cases**:
@@ -115,11 +140,12 @@
   `actual="proxy"`）では乖離0件・PASS を返す。
 
 ### REQ-002: registry.json スキル slot status の宣言値と実行時コピーの乖離検出
-**EARS**: WHEN config-drift detector が「正本 `skills/registry.json`」と「1つ以上の
-ランタイムコピー（例: `~/.blockrun/skills/registry.json`,
-`~/.anicca-founder/skills/registry.json`, `~/.franklin2-home/.blockrun/skills/registry.json`）」
-を与えられて実行される THE SYSTEM SHALL 各 slot の `status` フィールドを正本とコピーで比較し、
-不一致がある slot ごとに `{key: "<slot>.status", copyPath, declared, actual}` を乖離として返す。
+**EARS**: WHEN config-drift detector が「正本 `skills/registry.json`」と「REQ-010 の発見手順で
+見つかったランタイムコピー群（現時点で観測されている実例: `~/.blockrun/skills/registry.json`,
+`~/.anicca-founder/skills/registry.json`, `~/.franklin2-home/.blockrun/skills/registry.json` —
+これはハードコードされた対象列挙ではなく REQ-010 の発見結果の一例）」を与えられて実行される
+THE SYSTEM SHALL 各 slot の `status` フィールドを正本とコピーで比較し、不一致がある slot
+ごとに `{key: "<slot>.status", copyPath, declared, actual}` を乖離として返す。
 **Edge Cases**:
 - ランタイムコピーのファイルが存在しない、または JSON parse に失敗する: REQ-004 に従い
   FAIL を返す（「そのコピーは無視して他だけ判定」してはならない）。
@@ -131,6 +157,8 @@
 - 正本とコピーが完全一致する fixture では乖離0件・PASS を返す。
 - 複数コピーを与えたとき、乖離のある/なしをコピーごとに独立して報告する（1コピーが一致していても
   他のコピーの乖離を握り潰さない）。
+- 対象コピーの集合は REQ-002 のコード内に静的リストとして埋め込まれておらず、REQ-010 の
+  発見関数の戻り値をそのまま受け取ることをコードレビューで確認する。
 
 ### REQ-003: インスタンスごとの期待値解決（self-funded 例外の保証）
 **EARS**: WHEN config-drift detector が期待値と実際値を比較する THE SYSTEM SHALL
@@ -185,6 +213,12 @@ kill・restart・シグナル送信を一切行わず、対象ファイル（pli
 - detector をテスト fixture に対して連続実行しても、fixture 元ファイルの mtime が
   変化しないことをテストで確認する。
 
+**スコープの明示（REQ-009 との切り分け）**: この read-only 禁止は「detector が監視対象
+（agent-economy-loop 等の稼働プロセスそのもの）に対して kill/restart すること」を禁じる。
+REQ-009 の `SIGTERM`→`SIGKILL` は `runtime/loop/brain.mjs` 自身が `thinkClaudeP` の中で
+自分が spawn した `claude -p` 子プロセスをタイムアウト管理する既存の効果的シェル層の話
+であり、config-drift detector のコードではない。両者は別コンポーネントであり矛盾しない。
+
 ### REQ-006: 乖離計算は純粋関数として分離される（purity boundary）
 **EARS**: WHERE 乖離の計算ロジック THE SYSTEM SHALL 「宣言された設定マップ」と
 「観測された実行時マップ」という2つの純粋なデータ構造だけを引数に取り、乖離リストだけを
@@ -222,12 +256,44 @@ kill・restart・シグナル送信を一切行わず、対象ファイル（pli
 再起動された後、config-drift detector が同インスタンスに対して再実行される THE SYSTEM SHALL
 新しい PID の実行時 `ANICCA_BRAIN` 値が `claude-p` であり、REQ-001 の乖離が0件（PASS）
 であることを報告する。
+
+**再起動の前提条件（MUST、本番の稼働ループ＝実際に金が動く体を再起動するため）**:
+1. **in-flight wake が無いこと**: `launchctl bootout` は対象プロセスに `SIGTERM` を送る。
+   `runtime/loop/index.mjs:324-334` に既に実装済みの `process.on('SIGTERM', ...)` ハンドラが、
+   `currentChildKiller` 経由で in-flight のスキル子プロセスを最大5秒待って終了させ、
+   `kind: "shutdown"` のledgerレコードを1行書いてから終了する（本セッションでコードを
+   実際に読んで確認済み）。したがって bootout 実行後、対象の `daemon.err.log` /
+   `ledger.jsonl` に `shutdown` レコードが**新しいPIDの最初のレコードより前のタイムスタンプで
+   書かれていること**を確認してから、初めて「安全に再起動が完了した」とみなす。
+2. **未決済のポジションが再起動で失われないこと**: `runtime/loop/index.mjs` を本セッションで
+   grep した結果、モジュールスコープの可変状態は `currentChildKiller` /
+   `loopDetectStreak` / `loopDetectSlot` / `shuttingDown` / `registryForAlwaysAct` /
+   `activeSkillSlots` のみで、ポジション/建玉を保持するインメモリ変数は存在しない。
+   実際に確認したポジション追跡の実装は2パターンとも「プロセスの外」に状態を持つ:
+   - `hasOpenRiskPositionOfYield`（`catalog-gate.mjs:101`）は**既に読み込んだ ledger.jsonl の
+     スキャン結果**（ディスク上のファイル、プロセスメモリではない）を参照する。
+   - `hasOpenRiskPositionOfHlTrade`（`catalog-gate.mjs:128`）は `queryFn`
+     （本番配線: `hl.py account` の `open_positions`）を**毎回ライブに Hyperliquid へ問い合わせる**
+     — インメモリキャッシュではない。
+   したがって、このインスタンスが保有する建玉はプロセスの再起動によって失われない
+   （ledger はディスク上、hl_trade はエクスチェンジ側のライブ照会）。
+   **受け入れ条件としての確認手順**: 再起動を実行する**前**に、そのインスタンスが
+   現在保有する未決済ポジション一覧を対応するクエリ（`hl.py account` 等、そのインスタンスの
+   registry で live な各 earn slot に対応するアカウント照会コマンド）で取得し記録する。
+   再起動**後**に同じクエリを再実行し、ポジション一覧が再起動前と一致することを確認する
+   （この一致確認そのものが REQ-008 の受け入れ条件の一部であり、一致しない場合は
+   PASS と報告しない）。
+
 **Edge Cases**:
 - 再起動後も古い PID が生き残っている（bootout が不完全）: detector は
   `launchctl list` から得た**現在の**PIDに対して観測するため、古いPIDの残存を誤って
   PASS と報告しない（新PIDでの観測のみが真）。
 - 再起動直後、プロセスがまだ env を確定させる前の一瞬（起動レース）: REQ-004 の
   fail-closed（観測不能→FAIL）が適用され、PASS を誤って返さない。
+- `shutdown` レコードが書かれる前にプロセスが強制終了された（5秒のグレース期間を
+  超えて子プロセスが応答しなかった等）: `shutdown` レコードの不在を検知し、
+  「安全な再起動が確認できなかった」ケースとして扱う（REQ-004 の fail-closed に従い
+  PASS としない）。
 **Acceptance Criteria**:
 - 本 feature の実装完了時点で、`launchctl list | grep ai.anicca.agent-economy-loop` の
   PID に対し `ps -Awwe -o command -p <PID>` を実行して `ANICCA_BRAIN=claude-p` を
@@ -235,46 +301,125 @@ kill・restart・シグナル送信を一切行わず、対象ファイル（pli
   「plist を編集した」だけでは PASS と認めない）。
 - detector を実インスタンスに対して実行し、`ANICCA_BRAIN` の乖離が0件であるという
   出力を得る。
+- 再起動前後のポジション一致確認クエリの出力（fresh evidence）を記録する。
+- `daemon.err.log`/`ledger.jsonl` に `shutdown` レコードが新PIDの初回レコードより前の
+  タイムスタンプで存在することを確認する。
 
 ### REQ-009: 1 wake の所要時間が SLEEP_BASE_S を超えないことの検証とタイムアウト保護
 **EARS**: WHEN `runtime/loop/brain.mjs` の `thinkClaudeP`（`ANICCA_BRAIN=claude-p` 経路）が
-`claude -p` 子プロセスを起動する THE SYSTEM SHALL その子プロセスの実行時間に
-`SLEEP_BASE_S`（デフォルト120秒、`runtime/loop/config.mjs` 由来）を上限とするタイムアウトを
-設け、上限を超えたら `SIGKILL` で終了させ、明示的なタイムアウトエラー
+`claude -p` 子プロセスを起動する THE SYSTEM SHALL その子プロセスの実行時間に上限
+（`resolveClaudePTimeoutMs` が解決する値、デフォルト `SLEEP_BASE_S`=120秒）を設け、上限を
+超えたら `runtime/loop/index.mjs:1037-1041` の既存パターンと同じ**二段階**（`SIGTERM` を
+送り、2000ms 待って生存していれば `SIGKILL`）で終了させ、明示的なタイムアウトエラー
 （例: `claude_p_timeout`）を返す。
+
+**タイムアウト値の解決規則（MUST、具体値で定義 — 曖昧な「適切に」は禁止）**:
+- デフォルト = 呼び出し時点の `config.SLEEP_BASE_S`（未設定なら120）を秒からミリ秒に
+  変換した値。
+- オーバーライド（例: `CLAUDE_P_TIMEOUT_S` のような専用の環境変数、`mainloop-timeout-lib.sh`
+  の `CLAUDE_P_MAINLOOP_TIMEOUT_SEC` と同型の命名規約）は「正の有限整数の秒数」である
+  ときのみ採用し、それ以外（未設定・非数値・0・負数）はデフォルトへフォールバックする
+  （`runtime/loop/index.mjs:1128` の既存 `cfgNum` は `val != null ? Number(val) : fallback`
+  という素通しヘルパーで、この検証もクランプも行わない — 本 feature が独自に追加する）。
+- **クランプ上限 = 呼び出し時点で解決された `SLEEP_BASE_S` の値そのもの**
+  （`mainloop-timeout-lib.sh:resolve_mainloop_timeout_sec` が「次にスケジュールされる
+  発火（plist の `StartInterval`=21600秒）を超えないようにクランプする」のと同じ**構造**を、
+  この機能の実際の文脈——「次の wake が来るまでの間隔＝ `SLEEP_BASE_S` 自体」——に正しく
+  当てはめたもの。`mainloop-timeout-lib.sh` の 21600 という**数値そのもの**は
+  6時間周期の別ジョブ（`claude-p-mainloop.sh`）固有の値であり、本機能にそのまま転用しない
+  ——数値を借りるのではなく、「次のスケジュールされたサイクルを追い越さない」という
+  クランプの設計原則だけを踏襲する）。
+  すなわちオーバーライド値が `SLEEP_BASE_S` の解決値を超える場合、`SLEEP_BASE_S` の
+  解決値まで切り詰める。これにより、THINK 1回が次の wake サイクルの間隔を追い越して
+  ループ全体を恒久的に遅延させることがなくなる。
+
 **Edge Cases**:
 - 現状（本セッションで `brain.mjs` を読んで確認）、`thinkClaudeP` の `spawn()` 呼び出しには
   **一切のタイムアウトが設定されていない** — `proc.on('exit', ...)` のみで、ハングした場合
   永久に resolve/reject されない。この欠落自体が REQ-009 の対象。
 - 本セッションで `claude --help` / `claude -p --help` を実行して確認した通り、この CLI
   バージョンに `--max-turns` フラグは**存在しない**。したがってタイムアウト保護は
-  CLI フラグではなく、`runtime/loop/index.mjs:1016-1047` の既存 `SKILL_TIMEOUT_S`
-  パターン（`setTimeout` + `proc.kill('SIGKILL')`）を `brain.mjs` 側に同じ規約で移植する
-  形で実装する。
+  CLI フラグではなく、`runtime/loop/index.mjs:1016-1047`／`:1037-1041` の既存
+  `SKILL_TIMEOUT_S` の二段階 kill パターンを `brain.mjs` 側に同じ規約で移植する形で実装する。
 - タイムアウトによる kill 後も `thinkClaudeP` は例外を投げるだけで、既存の
   `think()` のフォールバック（`brain.mjs:34-44`、proxy へのフォールスルー）は変更しない
   （この feature はタイムアウト保護の追加のみで、フォールバックロジック自体は
   対象外 — 既存の catch がそのまま proxy へ fall through する）。
+- `SIGTERM` を受けても2000ms以内に終了しない子プロセス: `SIGKILL` を送る
+  （`index.mjs:1037-1041` と同じ猶予時間）。
 **Acceptance Criteria**:
 - `thinkClaudeP` にタイムアウト値より短い時間で正常終了する fixture プロセスを渡すと、
   正常な resolve が返る。
 - タイムアウト値より長くハングする fixture プロセスを渡すと、タイムアウト経過後に
-  `SIGKILL` で子プロセスが終了し、`claude_p_timeout` を含むエラーで reject される
-  （ハング状態のまま resolve も reject もされない、という現状のバグが再現しないことを
-  テストで確認する）。
-- タイムアウト値のデフォルトが `SLEEP_BASE_S`（120秒）であり、`config.mjs` の
-  既存の設定解決規約（`cfgNum`）経由でオーバーライド可能であることをテストで確認する。
+  まず `SIGTERM` が送られ、2000ms以内に終了しなければ `SIGKILL` が送られて子プロセスが
+  終了し、`claude_p_timeout` を含むエラーで reject される（ハング状態のまま resolve も
+  reject もされない、という現状のバグが再現しないことをテストで確認する）。
+- タイムアウト値のデフォルトが解決された `SLEEP_BASE_S`（未設定なら120）であること、
+  正の有限整数以外のオーバーライドはデフォルトへフォールバックすること、
+  オーバーライドが `SLEEP_BASE_S` の解決値を超える場合は `SLEEP_BASE_S` の解決値へ
+  クランプされることの3点を、`resolveClaudePTimeoutMs` の純粋関数ユニットテストで
+  確認する。
+
+### REQ-010: 監視対象集合の発見は静的列挙ではなく稼働中プロセスからの逆算による
+**EARS**: WHEN config-drift detector が REQ-001（plist宣言）または REQ-002（registry
+ランタイムコピー）の監視対象集合を決定する THE SYSTEM SHALL その集合を、detector の
+コード内にハードコードされたインスタンス名/パスの静的リストからではなく、**現在実際に
+稼働している `runtime/loop/index.mjs` プロセスを列挙し、そのプロセス自身の実行時 env から
+発見する**。
+- REQ-002（registry コピー発見）: `ps -Awwe -o pid,command` を全プロセスに対して実行し、
+  コマンドラインに `runtime/loop/index.mjs` を含むプロセスを列挙する。各プロセスの実行時
+  env から `ANICCA_HOME` を読み取り、`$ANICCA_HOME/skills/registry.json` を
+  そのプロセスのランタイムコピーとして扱う（本セッションで確認した実例:
+  PID 94249 の `ANICCA_HOME=/Users/anicca/.anicca-founder`）。
+- REQ-001（plist宣言の対応付け）: 同じプロセス列挙の実行時 env から `XPC_SERVICE_NAME`
+  を読み取り（本セッションで確認済み: PID 94249 の実 env に
+  `XPC_SERVICE_NAME=ai.anicca.agent-economy-loop` が含まれる — これは launchd が
+  KeepAlive/StartInterval ジョブの子プロセスに自動的に注入する値であり、detector が
+  推測する必要はない）、`~/Library/LaunchAgents/<XPC_SERVICE_NAME>.plist` をそのプロセスの
+  宣言側とする。
+**Edge Cases**:
+- 新しいインスタンス（4個目以降）が起動されたとき、detector のコード変更なしに
+  発見される（=`runtime/loop/index.mjs` を実行するプロセスである限り、静的リストの
+  更新漏れという理由で監視対象から漏れることは原理的に起きない）。
+- `ps -Awwe` に `runtime/loop/index.mjs` を含む行が1つも無い（全インスタンス停止中）:
+  監視対象0件は「乖離0件のPASS」ではなく「対象なし」として明示的に区別して報告する
+  （沈黙を PASS と誤読させない）。
+- `ANICCA_HOME` または `XPC_SERVICE_NAME` が実行時 env に存在しないプロセスが見つかった:
+  REQ-004 に従い、そのプロセスについて `reason: "unobservable"` の FAIL を返す
+  （黙って対象から除外しない）。
+**Acceptance Criteria**:
+- `ps -Awwe` 出力の fixture に `runtime/loop/index.mjs` を含む3行を与えたとき、発見関数は
+  3個の `{pid, anicca_home, xpc_service_name}` を返す。
+- 同じ fixture に4行目を追加しても、発見関数のコードを変更せずに4個返る
+  （静的リストのメンテナンスが不要であることをテストで示す）。
+- detector のソースコードに、既知のインスタンス名（`agent-economy-loop`, `franklin-loop`,
+  `franklin2-loop`, `pm-earner` 等）やランタイムコピーの絶対パス
+  （`~/.blockrun`, `~/.anicca-founder`, `~/.franklin2-home` 等）を**対象集合の定義として**
+  埋め込むリテラルが存在しないことをコードレビューで確認する（テスト fixture 内の
+  期待値としての言及は可、対象発見ロジック本体への埋め込みは不可）。
 
 ## Non-Functional Requirements
 
 - **Performance bound**: config-drift detector 全体（REQ-001+REQ-002、対象インスタンス数
   ≤10、ランタイムコピー数 ≤5 の現実的な規模）は 5秒以内に完了する（`ps`/ファイル読み取りの
   実測レイテンシから導出。ネットワークI/Oを含まないため妥当な上限）。
-- **Security**: detector が `ps -Awwe` の生コマンドライン全体を観測・記録する際、
-  `runtime/loop/env-filter.mjs` の `scrubPrivateKeys` と同等の考え方で、秘密鍵らしき
-  キー（`*_PRIVATE_KEY`, `*_SECRET*`, `ANTHROPIC_API_KEY`, `CLAUDE_CODE_OAUTH_TOKEN` 等）
-  の値をログ・出力にそのまま残してはならない（値をマスクした上で「このキーが存在する/しない」
-  「値が一致/不一致」という事実だけを報告する）。
+- **Security**（**訂正**: 前版は `runtime/loop/env-filter.mjs` の `scrubPrivateKeys` を
+  「秘密鍵らしきキー全般をマスクする」根拠として引いたが、本セッションで実装を実際に
+  Read して確認したところ、その正規表現は `/(_WALLET_KEY|_PRIVATE_KEY|_PRIV_KEY)$/`
+  という**末尾一致のみ**であり、`ANTHROPIC_API_KEY` や `CLAUDE_CODE_OAUTH_TOKEN` は
+  マッチせず素通りする（`brain.mjs:110-115` はこれらを意図的に子プロセスへ渡す —
+  それが正しい仕様）。「秘密鍵らしきキー等」という非閉集合の主張は誤りだったため、
+  `scrubPrivateKeys` への依存をやめ、以下の閉じた設計に置き換える）:
+  detector は `ps -Awwe` から取得した実行時コマンドラインの**生の文字列を一切保持・ログ・
+  出力しない**。detector が読み取ってよいのは、その REQ が明示的に比較対象として定義した
+  キーの値**だけ**（現時点で REQ-001 は `ANICCA_BRAIN` のみ、REQ-002 は registry.json の
+  `<slot>.status` フィールドのみ — いずれも秘密ではない）。それ以外のキー（生成された
+  `env` オブジェクトに含まれる `ANTHROPIC_API_KEY` / `CLAUDE_CODE_OAUTH_TOKEN` /
+  `ANICCA_WALLET_ADDRESS` 等）は、パース処理の中間表現としてメモリに一時的に存在しうるが、
+  detector の戻り値・ログ・標準出力のいずれにも含めてはならない。
+  **受け入れ条件（検証可能）**: `ANTHROPIC_API_KEY=sk-test-secret-value` を含む合成
+  `ps` 出力 fixture を detector に通したとき、detector の戻り値・stdout・ログのどこにも
+  文字列 `sk-test-secret-value` が現れないことをテストで確認する。
 - **No regression**: この feature は既存の `runtime/loop/index.mjs` / `brain.mjs` の
   正常系の挙動（proxy 経路のデフォルト動作、既存の `SKILL_TIMEOUT_S` ロジック）を
   変更しない。REQ-009 は `thinkClaudeP` に**タイムアウトを追加するだけ**であり、
