@@ -362,3 +362,55 @@ def test_one_dead_sport_does_not_kill_the_whole_scan(tmp_cache):
     )
     assert len(calls) == 2
     assert len(events) == 1, "the sport that answered must still be scanned"
+
+
+# ---- gate 4: a 3-way Pinnacle line (soccer) is NOT the same question as a 2-way advance market ---
+# THE actual live incident (2026-07-12): Pinnacle's soccer h2h is 3-way (win/draw/loss) -- "will
+# France win in 90 minutes" -- while the only matching Polymarket market was "France vs. Spain:
+# Team to Advance" -- "will France win after extra time and penalties" -- a DIFFERENT question with
+# a different sample space (a draw in 90 minutes is not a loss in the advance market). Comparing
+# France's 90-minute no-vig probability (41.0%) to its advance price (59.5%) manufactured a fake
+# "-18.5pt edge" even though both numbers were individually correct. There is no way to derive the
+# advance probability from the 90-minute odds (extra time and penalties are not in Pinnacle's h2h
+# line at all), so the only safe move is to refuse the comparison outright, not to reallocate Draw.
+def pin_event_3way(home, away, home_price, away_price, draw_price, commence=FUTURE):
+    return {
+        "home_team": home, "away_team": away,
+        "sport_key": "soccer_fifa_world_cup", "commence_time": commence,
+        "bookmakers": [{
+            "key": "pinnacle",
+            "markets": [{"key": "h2h", "outcomes": [
+                {"name": home, "price": home_price},
+                {"name": away, "price": away_price},
+                {"name": "Draw", "price": draw_price},
+            ]}],
+        }],
+    }
+
+
+def test_three_way_soccer_h2h_is_never_compared_to_a_two_way_advance_market():
+    # France +136 / Spain +229 / Draw +227 is the real live line (90-minute h2h, 3-way). That
+    # specific line's 90-minute France probability (41.0%) happens to be BELOW its advance-market
+    # price (59.5%), which the code's one-sided "only underpriced sides are actionable" filter
+    # already drops on its own -- so it would pass even without the fix, and would not actually
+    # prove the guard exists. Use different (still realistic) 3-way odds where the 90-minute
+    # no-vig probability for the home side (52.8%) sits ABOVE its 2-way advance-market price
+    # (40%): a full 12.8pt gap that clears both min_edge and max_edge and WOULD be reported as a
+    # live opportunity if the 3-way/2-way question mismatch were not caught.
+    pin = [pin_event_3way("France", "Spain", -150, 300, 250)]
+    # "France vs. Spain: Team to Advance" -- a genuinely different, 2-way question (ET+PK included)
+    pm = [pm_market("France vs. Spain: Team to Advance", ["France", "Spain"], [0.40, 0.60])]
+    assert find_edges(pin, pm, min_edge=0.03, now_ts=FUTURE_TS) == [], (
+        "a 3-way Pinnacle line must never be scored against a 2-way Polymarket market -- "
+        "the two are different questions and any 'edge' between them is fake"
+    )
+
+
+def test_two_way_h2h_markets_still_produce_edges_after_the_three_way_guard():
+    # regression guard: the fix must not accidentally reject genuine 2-way sports (MLB, MMA)
+    pin = [pin_event("Cincinnati Reds", "Chicago Cubs", 310, -410)]
+    pm = [pm_market("Chicago Cubs vs. Cincinnati Reds",
+                    ["Chicago Cubs", "Cincinnati Reds"], [0.855, 0.145])]
+    edges = find_edges(pin, pm, min_edge=0.03, now_ts=FUTURE_TS)
+    assert len(edges) == 1, "a genuine 2-way h2h market must still produce its edge"
+    assert edges[0]["buy_outcome"] == "Cincinnati Reds"
