@@ -339,3 +339,39 @@ test("PROP-203b (partial runtime proxy): filterCatalog's output ordering is not 
   const reversed = filterCatalog({ ...common, allSlotNames: [...ALL_SLOTS].reverse() });
   assert.deepEqual([...forward].sort(), [...reversed].sort(), "the resulting SET of eligible slots must not depend on input ordering -- confirms no positional/ranking semantics are being encoded");
 });
+
+// --- per-slot spendable balance (2026-07-12) -------------------------------------------------
+// claude-p held $1.95 of Base USDC (five cents under its $2 reserve) and $5.18 of pUSD inside its
+// Polymarket deposit wallet. The gate read Base USDC alone, hid every capital slot, and left the
+// brain nothing to pick but narrate — while the money it DID have was the exact currency the
+// polymarket slot spends. These lock the fix: a slot is gated on what IT can spend.
+test('function balanceUsdc gates each slot on its own spendable money', () => {
+  const spendable = (name) =>
+    name === 'earn/polymarket-trade' ? 1.95 + 5.18 : 1.95; // pUSD only spendable on polymarket
+
+  const eligible = filterCatalog({
+    balanceUsdc: spendable,
+    allSlotNames: ['earn/polymarket-trade', 'earn/sol-trade', 'report'],
+    riskTagOf: (n) => (n === 'report' ? 'safe' : 'capital'),
+    alwaysAvailableOf: () => false,
+    hasOpenRiskPositionOf: () => false,
+    reserveThresholdUsdc: 2,
+  });
+
+  assert.ok(eligible.includes('earn/polymarket-trade'), 'polymarket is funded IN ITS OWN VENUE');
+  assert.ok(!eligible.includes('earn/sol-trade'), 'sol-trade has no Solana money — still gated');
+  assert.ok(eligible.includes('report'), 'safe slots are never gated');
+});
+
+test('numeric balanceUsdc keeps the original all-slots-share-one-balance behaviour', () => {
+  const eligible = filterCatalog({
+    balanceUsdc: 1.95,
+    allSlotNames: ['earn/polymarket-trade', 'report'],
+    riskTagOf: (n) => (n === 'report' ? 'safe' : 'capital'),
+    alwaysAvailableOf: () => false,
+    hasOpenRiskPositionOf: () => false,
+    reserveThresholdUsdc: 2,
+  });
+
+  assert.deepEqual(eligible, ['report']);
+});

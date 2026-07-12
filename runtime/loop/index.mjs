@@ -519,8 +519,28 @@ async function runOneWake() {
   }
   let eligibleSkillSlots = activeSkillSlots;
   try {
+    // Gate each slot on the money THAT slot can actually spend, not on Base USDC alone.
+    // pUSD in a Polymarket deposit wallet buys Polymarket shares and nothing else — so it is
+    // real, spendable money FOR the polymarket slot, and invisible everywhere else. Same for
+    // Solana USDC and the sol-trade slot. Reading only Base USDC is what left claude-p with
+    // $18 to its name, a $2 reserve it missed by five cents, and no slot to pick but narrate.
+    // netWorth is fail-soft (null on any RPC error) → fall back to the old single balance.
+    const spendableFor = (slotName) => {
+      const holdings = netWorth?.holdings;
+      if (!Array.isArray(holdings)) return liquidUsdc;
+      const sum = (pred) =>
+        holdings.filter(pred).reduce((acc, h) => acc + (Number(h.usd) || 0), 0);
+      if (slotName === 'earn/polymarket-trade') {
+        return liquidUsdc + sum((h) => h.symbol === 'pUSD');
+      }
+      if (slotName === 'earn/sol-trade') {
+        return liquidUsdc + sum((h) => h.chain === 'solana');
+      }
+      return liquidUsdc;
+    };
+
     eligibleSkillSlots = filterCatalog({
-      balanceUsdc: liquidUsdc,
+      balanceUsdc: spendableFor,
       allSlotNames: activeSkillSlots,
       riskTagOf,
       alwaysAvailableOf,
