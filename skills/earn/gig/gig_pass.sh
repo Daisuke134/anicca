@@ -17,7 +17,7 @@ log(){ echo "$(date '+%F %T') gig_pass: $*" >&2; }
 # env -u ANTHROPIC_API_KEY = subscription login (no interactive key prompt). Bounded so it cannot hang forever.
 step(){ # $1=label  $2=prompt
   log "STEP $1 start"
-  env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
+  CLAUDE_CODE_SKIP_PROMPT_HISTORY=1 env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --no-session-persistence --add-dir "$HOME" \
     -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
   log "STEP $1 done (rc=$?)"
 }
