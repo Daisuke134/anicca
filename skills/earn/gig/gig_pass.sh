@@ -1,0 +1,51 @@
+#!/usr/bin/env bash
+# gig_pass.sh — ONE gig pass as a deterministic prompt-chain (Anthropic best practice: workflows give
+# predictability for well-defined multi-step tasks; a single 20KB agent prompt drops steps). Each step is
+# a SEPARATE bounded claude sub-call with a short focused prompt, so no step is skipped and every
+# component gets iterated every pass. Deterministic bookkeeping (passprep/funnel/verify/locks) is plain
+# code. State passes between steps through the ~/gig/*.jsonl files (structured note-taking).
+#
+# Called every hour by the cron/tmux core instead of the monolithic prompt.
+set -uo pipefail
+export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+B="$HOME/anicca/skills/browser/scripts"; G="$HOME/anicca/skills/earn/gig"
+CLAUDE="$(command -v claude || echo "$HOME/.local/bin/claude")"
+RB="$HOME/anicca/skills/earn/gig/GIG_PASS_RUNBOOK.md"
+log(){ echo "$(date '+%F %T') gig_pass: $*" >&2; }
+
+# focused sub-call: run ONE step as its own agent. Short prompt + a pointer to the runbook for detail.
+# env -u ANTHROPIC_API_KEY = subscription login (no interactive key prompt). Bounded so it cannot hang forever.
+step(){ # $1=label  $2=prompt
+  log "STEP $1 start"
+  env -u ANTHROPIC_API_KEY timeout 900 "$CLAUDE" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" \
+    -p "You are the Anicca Coconala gig earn-core (mtdc). set -a; . ~/.openclaw/.env; set +a. Do EXACTLY this ONE step, fully, then stop. Detail/rules are in $RB. $2" >/dev/null 2>&1
+  log "STEP $1 done (rc=$?)"
+}
+
+# ── deterministic prelude ───────────────────────────────────────────────────
+bash "$G/scripts/gig_single_instance.sh" acquire | grep -q ACQUIRED || { log "another pass owns this cycle — exit"; exit 0; }
+trap 'bash "$G/scripts/gig_single_instance.sh" release; python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
+bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
+python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
+python3 "$B/session_vault.py" restore >/dev/null 2>&1
+PREP=$(python3 "$G/passprep.py" 2>/dev/null); log "passprep: ${PREP:0:120}"
+python3 "$B/cdp_context_lease.py" acquire gig >/dev/null 2>&1
+
+# ── the chain: every step runs, in order, as its own bounded agent ──────────
+step "LEARN"   "STEP 0.5 LEARN: first read ~/gig/.selfimprove-todo.json and do any 'missing' steps. Then crwl a best-practice source + scout.py 2-3 TOP-SELLING listings in a target category, extract the generalized winning patterns and MERGE them into ~/gig/playbook.json (general[]+components{}; 3+ winners => tier=core)."
+step "B0"      "B0 SHUPPIN: open coconala.com/mypage/services_lists. ITERATE EXISTING first — for the WEAKEST 0-sale listing, fix its full component set toward the winners in playbook.json (title, 3-plan price, 文字入れ thumbnail image = generate+upload, 1000字 description). Then add a new listing if <6 published. Append each action (one compact json line) to ~/gig/shuppin.jsonl."
+step "PROFILE" "B4-PROFILE: open coconala.com/mypage/profile. Pick the WEAKEST un-touched profile component vs the winners (default icon / short 自己紹介 / no キャッチコピー / no portfolio) and fix ONE via CDP (for the icon, generate+upload a PNG). Record it in ~/gig/strategy.json experiments."
+step "B1"      "B1 NURTURE ALL: sweep every open talk-room at coconala.com/mypage/messages. Reply to new buyer messages; if 仮払い arrived, build the real deliverable and 納品; if 検収 ready, ask for 評価. FOLLOW-UP: any 応募 with a reply but no 仮払い after ~24h gets ONE polite value-adding follow-up. Ground purchase status ONLY on the real トークルーム system message. Append actions to ~/gig/applied.jsonl."
+step "B2"      "B2 APPLY BROADLY: at sort=new, apply to up to 12 fresh (掲載30分以内 preferred, non-saturated) 公開依頼 with a tailored 5-段 proposal + a real sample deliverable. Append each to ~/gig/applied.jsonl and a map row to ~/loops/gig/state/task-request-map.jsonl (requestId as quoted string)."
+
+# ── deterministic bookkeeping + close ───────────────────────────────────────
+python3 "$G/gig_funnel.py" "$(date +%s)" >/dev/null 2>&1   # EARNED CHECK + FUNNEL (deterministic, exit 0 always)
+python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
+touch "$HOME/gig/.last-pass"
+# self-report (so the verifier can compare claims to file evidence)
+python3 - <<PYEOF 2>/dev/null || true
+import json,time
+open("$HOME/gig/pass-report.jsonl","a").write(json.dumps({"ts":int(time.time()),"driver":"gig_pass.sh","steps":["LEARN","B0","PROFILE","B1","B2","FUNNEL"]},ensure_ascii=False)+"\n")
+PYEOF
+bash "$G/scripts/gig_selfimprove_verify.sh" >/dev/null 2>&1   # write next-pass todo from real evidence
+log "pass complete"
