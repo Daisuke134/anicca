@@ -32,7 +32,7 @@ PREP=$(python3 "$G/passprep.py" 2>/dev/null); log "passprep: ${PREP:0:120}"
 python3 "$B/cdp_context_lease.py" acquire gig >/dev/null 2>&1
 
 # ── the chain: every step runs, in order, as its own bounded agent ──────────
-step "LEARN"   "STEP 0.5 LEARN: first read ~/gig/.selfimprove-todo.json and do any 'missing' steps. Then crwl a best-practice source + scout.py 2-3 TOP-SELLING listings in a target category, extract the generalized winning patterns and MERGE them into ~/gig/playbook.json (general[]+components{}; 3+ winners => tier=core)."
+step "LEARN"   "STEP 0.5 LEARN: first read the LAST line of ~/gig/reflection.jsonl (the previous pass verbal reflection — what was tried and what to adjust) and let it steer this pass. Then read ~/gig/.selfimprove-todo.json and do any 'missing' steps. Then crwl a best-practice source + scout.py 2-3 TOP-SELLING listings in a target category, extract the generalized winning patterns and MERGE them into ~/gig/playbook.json (general[]+components{}; 3+ winners => tier=core)."
 step "B0"      "B0 SHUPPIN: open coconala.com/mypage/services_lists. ITERATE EXISTING first — for the WEAKEST 0-sale listing, fix its full component set toward the winners in playbook.json (title, 3-plan price, 文字入れ thumbnail image = generate+upload, 1000字 description). Then add a new listing if <6 published. Append each action (one compact json line) to ~/gig/shuppin.jsonl."
 step "PROFILE" "B4-PROFILE: open coconala.com/mypage/profile. Pick the WEAKEST un-touched profile component vs the winners (default icon / short 自己紹介 / no キャッチコピー / no portfolio) and fix ONE via CDP (for the icon, generate+upload a PNG). Record it in ~/gig/strategy.json experiments."
 step "B1"      "B1 NURTURE ALL: sweep every open talk-room at coconala.com/mypage/messages. Reply to new buyer messages; if 仮払い arrived, build the real deliverable and 納品; if 検収 ready, ask for 評価. FOLLOW-UP: any 応募 with a reply but no 仮払い after ~24h gets ONE polite value-adding follow-up. Ground purchase status ONLY on the real トークルーム system message. Append actions to ~/gig/applied.jsonl."
@@ -47,5 +47,6 @@ python3 - <<PYEOF 2>/dev/null || true
 import json,time
 open("$HOME/gig/pass-report.jsonl","a").write(json.dumps({"ts":int(time.time()),"driver":"gig_pass.sh","steps":["LEARN","B0","PROFILE","B1","B2","FUNNEL"]},ensure_ascii=False)+"\n")
 PYEOF
+step "REFLECT" "REFLECTION (Reflexion verbal reinforcement): read the last 2 rows of ~/gig/gig-funnel.jsonl (this pass vs previous) and tail -5 ~/gig/pass-report.jsonl. In ONE compact json line append to ~/gig/reflection.jsonl: {ts, tried:<what you changed this pass>, funnel_moved:<applied/replied/won/paid delta or flat>, next:<the single most promising thing to try next pass>}. Be concrete and honest; if nothing moved, say so and pick a different lever."
 bash "$G/scripts/gig_selfimprove_verify.sh" >/dev/null 2>&1   # write next-pass todo from real evidence
 log "pass complete"
