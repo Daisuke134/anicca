@@ -67,6 +67,20 @@ FIX-3 prompt の「選べる options」= 実 available-slots に一致させる(
 FIX-4 narrate 中の compute 焼却を止める(稼がない wake は最小 compute で寝る)
 ```
 
+## 3.5 — earner を一個ずつ「実際に稼げるか」検証（2026-07-14）
+
+**x402_sell → 🔴 今は稼げない（実測）**
+```
+serve が起動しない: ERR_MODULE_NOT_FOUND `@coinbase/x402`(canonical dir に node_modules 無し)
+  → npm install で解決 → 次に `viem/accounts` が ★Node v25.6.1★ の ESM 解決で失敗
+  → 8411/8403/4848 何も listen せず → public funnel(aniccanomac-mini-1.tail7a0ba4.ts.net)= HTTP 502
+  → earn-ledger の x402 外部売上 = 永久に $0
+教訓: dormant→live に flip しても、skill 実体(serve)が壊れてたら稼げない。
+      「mechanism 検証済み(過去 tx)」≠「今 動く」。★一個ずつ E2E で確かめる★のが正しい(user 指示)
+x402 を稼がせるには: (1) Node 版/依存の ESM 整合で serve を起動 (2) demand(Bazaar seed + 集客)
+```
+bounty(Algora) / clip / video は未検証（続けて一個ずつ）。
+
 ## 4. 稼ぎの self-improve と GDP（設計）
 - 各 revenue stream（trading/bounty/clip/affiliate/sell）を **earn-ledger に1本ずつ**記録（tx 付き外部 USDC のみ = fake 不可、§37 honesty）。
 - `/dashboard` に real-time ログとして出す（人が「本当に稼いでる」を見る。§TODO T6 の model_live 嘘は消す）。
