@@ -30,6 +30,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | INV-3 | 各ループは **4層**を持つ（§2）。1層でも欠けたら未完成 |
 | INV-4 | **judgment は model に置く。hardcode に焼かない**（`WATCHED >= 3` のような閾値の直書きは禁止。model が状態を見て決める） |
 | INV-5 | **外部学習 > 内部学習**。成功例が少ないうちは、自分の履歴からは学べない。**毎パス web を検索して他人のレシピを取り込む** |
+| INV-5b | **学びは焼き込んで一般化する（一回きりにしない）**。記事 + 勝者観察で得たものを毎回 `playbook.json` に記録し、複数の勝者に共通するパターンは「一般戦略」へ昇格させる。2階層: ①「どう勝つか」の general strategy ②各コンポーネントの little best-practice。この蓄積された recipe が、次サイクルでどのコンポーネントをどう直すかを駆動する。ビジネスの本質＝「勝っている人を copy して recipe を汎化し repeatable にする」— gig/trading/app/全ループ共通 |
 | INV-6 | 改善対象は戦略だけではない。**全コンポーネント**（プロフィール / アイコン / 出品 / 価格 / サムネ / 提案文 / ニッチ / 納品物） |
 | INV-7 | web 取得は **crawl4ai (`crwl <url> -o markdown`)**。firecrawl は credit 枯渇。WebSearch/WebFetch は禁止 |
 | INV-8 | ブラウザは共有基盤を通す（`ensure_browser` → `cdp_context_lease acquire` → 作業 → `release`）。**例外なし（gig も）** |
