@@ -61,7 +61,7 @@ if (process.env.CDP_API_KEY_ID && process.env.CDP_API_KEY_SECRET) {
 app.use(
   paymentMiddleware(
     payTo(),
-    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost." } } },
+    { "GET /research": { price: PRICE, network: NETWORK, config: { description: "On-demand web research digest — free-source curated (Wikipedia + Hacker News + Jina Reader). GET /research?q=<topic>; pay per request in USDC on Base. Runs on any install, $0 source cost.", discoverable: true } } },
     facilitator
   )
 );
