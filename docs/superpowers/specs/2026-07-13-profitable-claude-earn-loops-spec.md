@@ -200,21 +200,32 @@ TO-BE:
 
 **前提**: Mac mini 1台で数百ループは回らない（今日すでに ENOSPC で死んでいる）。
 
+**アカウントの数え方（訂正）**: 「1アカウント=1永続profile」は正しい。だが我々は profile を**数百持つ**
+（数百 coconala / 数百 TikTok / 数百 IG）。共有するのはインフラ（App Store Connect / Stripe キー）だけ。
+
+**脳と手を分ける（scale の核心）**:
+```
+脳 = Claude ループ本体（1ループ=1プロセス）→ クラウドVM に撒く（subscription or API）
+手 = ブラウザ（1アカウント=1永続context/profile）→ ブラウザ基盤が N context を1コンテナで管理
+     ★steel-browser(7.3k★) / browserless(13.5k★) を Docker で self-host、または Browserbase(従量)★
+     どちらも session/proxy/fingerprint/lifecycle(自動再起動) を内蔵 = 我々の詰まりを名指しで解決
+```
 ```
 段階1  1アカウント × 1サイトで ★$1k MRR を安定★      ← 今ここの手前（¥0）
-段階2  同一サイトで複数アカウント（proxy / fingerprint 分離のコストを実測）
+段階2  同一サイトで複数アカウント（アカウント毎に sticky proxy + fingerprint 固定）
 段階3  他サイトへ横展開（lancers / CrowdWorks / Fiverr / Upwork）
 段階4  数百〜数千ループをクラウドで回す
-       ├ どこで: Modal / Fly Machines / Akash / k8s CronJob の実行時課金を実測して比較
-       ├ ブラウザ: browserless / steel-browser / Browserbase の実価格
-       ├ ★ToS★: subscription を大量購入して headless で回すのが許されるかを公式で確認し引用する
-       │        （ダメならダメと明言し、API 課金前提の経済に切り替える）
-       └ 経済: 1ループの月コスト vs 月収。★収 > コスト★ でなければ増やす意味がない
+       ├ 手（ブラウザ）: steel-browser を Docker で Hetzner/Fly/Akash に self-host（第一候補）
+       │                 規模が出たら browserless の成熟度を評価。マネージドなら Browserbase
+       ├ 脳（Claude）: headless claude -p を VM に分散。★ToS 公式確認は未（Dais 方針=大量購入する）★
+       └ 経済: 1ループ月コスト（proxy $2-5 + compute + token）vs 月収。★収 > コスト★ が増やす条件
 段階5  OSS 公開（profitable-claude）+ dashboard で全 Claude の収益を公開
 ```
 
-**このセッションでやること**: 段階4の調査 + **PoC を1本実際に動かして実出力を出す**（TASKLIST #4）。
+**このセッションでやること**: **PoC を1本実際に動かして実出力を出す**（TASKLIST #26）=
+steel-browser を1コンテナ（Fly/Hetzner）に立て、既存 gig or clip ループを1本そこで回す。
 嘘の成功報告は禁止。動かせなければ「動かせなかった」と書く。
+**詳細な検索実データ + 引用 → `docs/loop-engineering/45-scale-hosting-and-session.md`**
 
 ---
 

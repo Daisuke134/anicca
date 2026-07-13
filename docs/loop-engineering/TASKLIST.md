@@ -34,7 +34,7 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す | pending |
 | **24 / VIDEO-1** | video: warmup の hardcode を外し self-improve + scout 移植 | pending |
 | **25 / LM-1** | life manager loop（X-1）を 1k MRR まで | pending |
-| **26 / Q3** | 100〜1000ループの現実解 + PoC 1本 | pending |
+| **26 / Q3** | scale: steel-browser を Docker で cloud に立て、gig/clip 1本を回す PoC + ToS 公式確認 + 経済表（調査済 → doc 45） | pending |
 | **27 / OSS** | profitable-claude 公開 + dashboard 収益透明化 | pending |
 
 Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skills/browser/SKILL.md`。
