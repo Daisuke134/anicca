@@ -23,8 +23,9 @@ step(){ # $1=label  $2=prompt
 }
 
 # ── deterministic prelude ───────────────────────────────────────────────────
-bash "$G/scripts/gig_single_instance.sh" acquire | grep -q ACQUIRED || { log "another pass owns this cycle — exit"; exit 0; }
-trap 'bash "$G/scripts/gig_single_instance.sh" release; python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
+exec 200>/tmp/anicca-gig-pass.lock
+flock -n 200 || { log "another pass holds the flock — exit"; exit 0; }   # atomic: only ONE gig_pass.sh runs; flock auto-releases on exit
+trap 'python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
 python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
 python3 "$B/session_vault.py" restore >/dev/null 2>&1
