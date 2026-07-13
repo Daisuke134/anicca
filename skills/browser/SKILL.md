@@ -52,9 +52,23 @@ Run `dump` right after any fresh human login, so that login is banked forever.
 - Caches are capped at launch (`--disk-cache-size`, cache dir under `/tmp`). An uncapped profile grew
   to 1.0GB, 97% of it disposable cache, and filled the disk the loops write their ledgers to.
 
-## Known gap (see task #28)
+## Lease your own space — never share a tab with another loop
 
-Loops still share one tab space, so a `navigate` from one loop can destroy another's half-filled form.
-The fix is one browser with **one BrowserContext per task** (CDP `Target.createBrowserContext`:
-"Similar to an incognito profile but you can have more than one"), seeded from the vault's
-`auth-state.json` because contexts do not share cookies, and disposed when the task ends.
+Loops used to share one tab space, so a `navigate` from clip would destroy the form gig was halfway
+through filling, and neither could tell. Take a context instead: CDP `Target.createBrowserContext` is
+"Similar to an incognito profile but you can have more than one", and nothing outside your context can
+reach into it.
+
+```bash
+LEASE=$(python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py acquire gig)   # your own space
+WS=$(echo "$LEASE" | python3 -c 'import sys,json;print(json.load(sys.stdin)["ws"])') # drive this tab
+# ... do the work over $WS ...
+python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py release gig            # tabs die with it
+```
+
+A fresh context starts logged out, so `acquire` seeds it from the vault's cookies — verified live:
+a leased context reaches `coconala.com/mypage/dashboard` already authenticated. A loop killed with -9
+never releases, so run `cdp_context_lease.py gc --idle-min 45` from the healthcheck to reap what it
+left holding.
+
+Rules: one context per task, always `release` when done, never touch another task's context.
