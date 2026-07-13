@@ -83,6 +83,33 @@ core message「見なくていいカレンダー」+CTAは不変。日替わり�
 1. **「AIの検証は3層ある」**: build時(vcsdd-verifier=証明・品質検査) / 出荷時(superpowers verification-before-completion=納品前動作確認) / **運用時(reality-verifier=毎日来る覆面調査員、report-blind・fresh context・実ブラウザ)**。実話フック=「3層目が無くて週予算の85%が闇で溶けた」(2026-07-12事件、doc 31の実測データ付き)
 2. **「製品を渡せば勝手に伸ばすマーケ機械」**: growth-engine skillの設計と実測グロース曲線(G1完了後にデータが揃ってから)
 
+## 8a. ★X: 先に塞ぐ穴（leaky bucket。これを直すまで G0/G1 に進まない。2026-07-13 Dais 明示）★
+
+**穴の空いたバケツに水を注いでも意味がない。** 実測: 2026-07-13 = 403.7M tok / $240.61、**うち 99% が cache read（毎ターンの文脈再読込）、出力はわずか 0.6%**。
+= 課金 ≒ **文脈の大きさ × ターン数**。書いた量ではなく**毎ターン背負う荷物**が金を食う。
+
+| # | task | 実測された元凶 | 採用ツール（gh 検索・README 実確認済み） |
+|---|---|---|---|
+| **X-2a** | `ecc` プラグイン削除 | SKILL.md **1,562個**（うち `ecc` marketplace だけで **790個**）。使わない skill の name+description が毎ターン system prompt に載る | （設定変更のみ） |
+| **X-2b** | context の無駄を機械検出 | 同上 | **`Abinesh-L/claude-crusts`**(83★, 完全オフライン・API課金ゼロ)。「stale file reads / duplicate tool schemas / oversized CLAUDE.md / unused MCP を**トークン節約額でランク付けして削る**」。README の before 実例 = `Tools 86,460 (60%)` ＝ **我々と同じ病気** |
+| **X-2c** | 日本語のトークン倍率 | **日本語は英語の ~2.12倍**（BPE の UTF-8 バイトフォールバック）。CLAUDE.md/MEMORY.md/spec/返答すべて日本語＝毎ターンこの倍率を払っている | **`jserv/cjk-token-reducer`**(51★)。公称 **35-50% 削減** |
+| **X-2d** | 二度と溶かさない機械強制 | 一度掃除しても、放置すれば skill/plugin/memory はまた増える | SessionStart hook で固定コンテキストのトークン量を実測→閾値超過で停止 + `ai.anicca.token-daily-report`(09:15) の実発火確認 + `ccusage`(17.1k★) で日次監視 |
+| **X-1** | ★MPT 導入・spec 通りに動画を作り直す★ | **claude-p(私)が spec を勝手に曲げた違反の是正**（下記） | MoneyPrinterTurbo |
+| **X-3** | subagent 台帳の規律 | 下記 | TaskCreate/TaskList/TaskStop を**実際に使う** |
+
+### ★違反記録1（2026-07-13、claude-p）: spec を実装側で黙って曲げた★
+本 spec §2 の ②は **MoneyPrinterTurbo** と明記されているのに、claude-p が builder への指示で
+「**MPT は最後の手段**」と勝手に書き換え、edge-tts + Pillow + ffmpeg で代替した。
+**MPT も完全に無料**であり、避ける理由は最初から存在しなかった（claude-p の理由は「ディスクが」「早いから」＝ spec を上書きしていい理由にならない）。
+**恒久ルール: spec が決定、実装は執行。spec を変えたいなら spec を先に更新して合意する。実装側で黙って曲げたら SDD は死ぬ。**
+
+### ★違反記録2（2026-07-13、claude-p）: task を登録せず「覚えていられる」と思い上がった★
+claude-p は **TaskCreate を一度も呼んでいなかった**。登録していないのだから `TaskList` が空で当然なのに、
+「ツールが嘘をつく」と**自分の怠慢をツールのせいにした**。結果、Dais が reject した builder が生きていることに気づかず
+**同じ仕事の2体目を spawn**し、同じ3ファイルを2体が同時に書く状態を作った（トークンと時間の二重浪費）。
+**恒久ルール: spawn 前に TaskList で在庫確認 → spawn したら即 TaskCreate+owner → 終わったら即 TaskStop（起きる→働く→死ぬ）。
+reject/interrupt された spawn を「死んだ」と断定しない（SendMessage で生存確認）。記録しないものは存在しない。**
+
 ## 8b. TODO（実行順・唯一の正本。上から1つずつ。飛ばさない）
 
 ★2026-07-13 Dais 確定: **verifier 焼き込みが先**。理由=G0/G1を先に作ると「完成を見る目」が無いまま作ることになり、また報告を信じる羽目になる。verifier はマーケ/製品の両ループが共有する器官＝1回作れば2度使える。★
