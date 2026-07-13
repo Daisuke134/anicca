@@ -23,9 +23,10 @@ step(){ # $1=label  $2=prompt
 }
 
 # ── deterministic prelude ───────────────────────────────────────────────────
-exec 200>/tmp/anicca-gig-pass.lock
-flock -n 200 || { log "another pass holds the flock — exit"; exit 0; }   # atomic: only ONE gig_pass.sh runs; flock auto-releases on exit
-trap 'python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
+LOCKD=/tmp/anicca-gig-pass.lock.d
+[ -d "$LOCKD" ] && [ $(( $(date +%s) - $(stat -f %m "$LOCKD" 2>/dev/null||echo 0) )) -gt 1800 ] && rmdir "$LOCKD" 2>/dev/null   # reap a crashed holder (>30min)
+mkdir "$LOCKD" 2>/dev/null || { log "another pass holds the lock — exit"; exit 0; }   # mkdir = atomic on macOS; only ONE gig_pass.sh runs
+trap 'rmdir "$LOCKD" 2>/dev/null; python3 "$B/cdp_context_lease.py" release gig >/dev/null 2>&1' EXIT
 bash "$HOME/anicca/skills/browser/ensure_browser.sh" >/dev/null 2>&1
 python3 "$B/cdp_tab_gc.py" >/dev/null 2>&1
 python3 "$B/session_vault.py" restore >/dev/null 2>&1
