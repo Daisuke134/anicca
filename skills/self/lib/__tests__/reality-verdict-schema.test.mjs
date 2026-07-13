@@ -8,6 +8,8 @@ import {
   isKnownCategory,
   normalizeLoopName,
   buildResultPath,
+  buildVerdictTrailPath,
+  buildHumanReviewQueuePath,
   validateVerdictShape,
 } from "../reality-verdict-schema.mjs";
 
@@ -15,13 +17,18 @@ import {
 // REQ-005: finding category catalog
 // ---------------------------------------------------------------------------
 
-test("FINDING_CATEGORIES contains exactly the 6 REQ-005 categories", () => {
+test("FINDING_CATEGORIES contains exactly the 7 REQ-005/REQ-004(reality-gate) categories", () => {
+  // REQ-001/REQ-004 (reality-gate): "post_not_publicly_visible" added as the category the
+  // provenance backstop attaches to its synthesized FAIL/CANNOT_VERIFY findings — the
+  // catalog is an "open, growable set" per REQ-004's own EARS text; this length-7 test is
+  // the deliberate, spec-sanctioned update of the prior length-6 test.
   assert.deepEqual(
     [...FINDING_CATEGORIES].sort(),
     [
       "internal_transfer_mislabeled",
       "mock_marker_in_success_path",
       "narrate_only_claim",
+      "post_not_publicly_visible",
       "report_ledger_mismatch",
       "report_onchain_mismatch",
       "unhealthy_strategy",
@@ -71,6 +78,26 @@ test("buildResultPath differs for different timestamps (isolation across concurr
   const a = buildResultPath("/tmp/state", "founder", 100);
   const b = buildResultPath("/tmp/state", "founder", 200);
   assert.notEqual(a, b);
+});
+
+// ---------------------------------------------------------------------------
+// REQ-006/REQ-010: durable verdict trail + human-review queue paths
+// ---------------------------------------------------------------------------
+
+test("buildVerdictTrailPath embeds the normalized loop name, under stateDir, no timestamp", () => {
+  assert.equal(buildVerdictTrailPath("/tmp/state", "capafy"), "/tmp/state/reality-verdict-capafy-loop.jsonl");
+});
+
+test("buildVerdictTrailPath is deterministic and short/long loop-name forms collide (one file per loop)", () => {
+  const a = buildVerdictTrailPath("/tmp/state", "capafy");
+  const b = buildVerdictTrailPath("/tmp/state", "capafy-loop");
+  assert.equal(a, b);
+});
+
+test("buildHumanReviewQueuePath embeds the normalized loop name, under stateDir, distinct from the verdict trail", () => {
+  const queue = buildHumanReviewQueuePath("/tmp/state", "capafy");
+  assert.equal(queue, "/tmp/state/reality-needs-human-review-capafy-loop.jsonl");
+  assert.notEqual(queue, buildVerdictTrailPath("/tmp/state", "capafy"));
 });
 
 // ---------------------------------------------------------------------------
