@@ -80,6 +80,32 @@
 - #26（Q3-SCALE）= steel-browser を1コンテナ Hetzner/Fly に立て、既存の gig or clip ループを1本そこで回す PoC。実出力を本 MD に追記。
 - 200→2B は「脳（Claude プロセス）を撒く所」×「手（browser context）を撒く所」の2軸。どちらも水平分散可能。ボトルネックは金（proxy+compute+token）であって技術ではない。
 
+## 5. ★CONTROL PLANE — 電話から全部を制御/監視する（Dais の本命要件 2026-07-14）★
+
+要件: MacBook を返す。ターミナル→Mac Mini の SSH は続かない。Dais は **電話から** ①数百〜数千の Claude ループ（clip/gig/capafy/webapp/affiliate）を監視 ②新しい Claude セッションを開いて指示、を両方やりたい。Claude mobile app は Mac Mini に直接繋げない（cloud dispatch は実用にならない）。→ **ループを local device から剥がして cloud に置く**のが唯一の解。
+
+### 3 面に分ける
+```
+ [脳] Claude ループ本体      → cloud VM (Hetzner/Fly/Modal) で headless claude -p
+ [手] browser               → steel-browser/browserless を Docker で cloud に（CloakBrowser は local 専用=cloudで使えない）
+ [制御/監視面]              → 電話から届く所に置く:
+     ├ MONITOR: Telegram bot（全 pass を報告）+ hosted dashboard（全アカ×views×$）
+     └ COMMAND: cloud の Claude Code セッション（claude.ai/code web/mobile、or /schedule routines）
+                 = Mac Mini でなく cloud を叩く → 電話ネイティブで届く
+```
+
+### 要点
+- **CloakBrowser は local daily-driver 専用**。cloud host したら steel-browser（7k★、session/proxy/anti-detect/lifecycle が agent 向けに揃う）に手を差し替える。これが「browser.sh 的な hosted browser」の答え。
+- 監視の本命 = **Telegram**（全ループが pass 毎に投稿URL/metrics/$/失敗を送る）+ hosted dashboard。Dais は電話で全部見える。
+- 指示の本命 = **cloud 上の Claude Code**（claude.ai/code は電話から届く。Mac Mini 依存を切る）。cron/loop は cloud VM の launchd 相当（systemd）or /schedule。
+- コスト: Mac 増設は非効率。cloud VM（Hetzner 専用 $/月で数十ループ）+ steel-browser Docker + proxy/アカ。ボトルネックは金であって技術でない。
+
+### 段階
+1. まず IG・1アカ・Mac Mini で loop を黒字化（Phase 1、今）。
+2. 2本目を cloud VM + steel-browser で回す PoC（TASKLIST #26）。session 永続 + proxy 固定を steel に載せる。
+3. 制御/監視面（Telegram + dashboard + cloud Claude Code）を立て、Mac Mini 依存を切る。
+4. 黒字 combo を N アカに clone、cloud に水平分散。
+
 ## 関連
 - spec §7 SCALE → `docs/superpowers/specs/2026-07-13-profitable-claude-earn-loops-spec.md`
 - session 永続化 → `docs/earn/session-persistence-playbook.md`
