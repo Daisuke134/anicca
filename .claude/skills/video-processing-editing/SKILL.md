@@ -18,6 +18,7 @@ metadata:
     reason: Audio tracks for video require voice synthesis, mixing, and synchronization
   - skill: sound-engineer
     reason: Video sound design and audio mixing use spatial audio and effects processing techniques
+disable-model-invocation: true
 ---
 
 # Video Processing & Editing

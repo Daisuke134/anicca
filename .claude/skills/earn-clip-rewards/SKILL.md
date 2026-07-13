@@ -1,6 +1,7 @@
 ---
 name: earn-clip-rewards
 description: Complete, no-human-in-the-loop CLIPPING BUSINESS skill. Turn any long-form podcast/interview into ranked 9:16 short clips with karaoke captions (English) OR translated Japanese subtitles (jimaku), post them to social accounts, submit to per-view reward campaigns (ClipAffiliates/Whop), and collect USDC. Battle-tested pipeline (yt-dlp + SamurAIGPT local + faster-whisper + Gemini + ffmpeg) that even a free/cheap model can run end to end. Tracked under feature/clip-rewards with SSOT state at docs/superpowers/specs/2026-06-28-clip-rewards-state.md.
+disable-model-invocation: true
 ---
 
 # earn-clip-rewards — the clipping business, end to end

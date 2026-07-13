@@ -16,6 +16,7 @@ description: |
 
   Triggers: "tiktok research", "tt research", "find trending tiktoks", "analyze tiktok accounts",
   "what's working on tiktok", "content research tiktok", "tiktok analysis", "tiktok trends"
+disable-model-invocation: true
 ---
 
 # TikTok Research

@@ -1,6 +1,7 @@
 ---
 name: ig-reels-poster
 description: Publish a VIDEO Reel (mp4, 9:16) to an Instagram account via the CloakBrowser daily-driver (no Postiz). Browser-direct flow that differs from the carousel poster: 新規投稿 → upload 1 mp4 → IG auto-detects リール → cover/thumbnail + trim step (video-only) → 次へ → caption → シェア. ★ Default --dry verifies the whole flow up to (not incl.) publish, then discards — proves it works WITHOUT posting. --live publishes (only when the account is warmed). ★ Sibling of ig-account-poster (that one = photo carousel; this one = video Reels).
+disable-model-invocation: true
 ---
 
 # ig-reels-poster

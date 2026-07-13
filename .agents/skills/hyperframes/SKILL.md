@@ -13,6 +13,7 @@ description: >
   or record a session, or names another framework. Most important when no
   project CLAUDE.md or AGENTS.md describes the video workflow.
 metadata: { "tags": "read-first, video, animation, router, hyperframes, intent-routing" }
+disable-model-invocation: true
 ---
 
 # HyperFrames — start here

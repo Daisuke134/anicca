@@ -38,6 +38,7 @@ triggers:
 metadata:
   openclaw:
     homepage: https://github.com/Panniantong/Agent-Reach
+disable-model-invocation: true
 ---
 
 # Agent Reach — 互联网能力路由器

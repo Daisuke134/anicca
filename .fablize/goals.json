@@ -1,0 +1,13 @@
+{
+ "brief": "agent-economy earn+verifier",
+ "created": "2026-07-11T11:00:40.174305+00:00",
+ "goals": [
+  {
+   "id": "G001",
+   "title": "Agent economy earns external:true USDC verified by tool-verifier in daily loops",
+   "objective": "Produce the first on-chain external:true earned USDC from a base agent, with a fresh-context Bash+on-chain tool-verifier baked into each daily loop confirming real side-effects, then scale. SSOT docs/loop-engineering/23 section6",
+   "status": "pending",
+   "evidence": null
+  }
+ ]
+}

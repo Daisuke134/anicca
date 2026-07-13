@@ -7,6 +7,7 @@ description: >
   presentation, pitch deck, slide deck, interactive deck, or page-to-deck
   conversion that might be a slideshow; if the user did not explicitly ask for a
   slideshow / slide show, confirm before authoring.
+disable-model-invocation: true
 ---
 
 # Slideshow authoring contract

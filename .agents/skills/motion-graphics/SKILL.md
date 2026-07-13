@@ -16,6 +16,7 @@ metadata:
   {
     "tags": "orchestrator, motion-graphics, kinetic-type, data-viz, logo-reveal, lower-thirds, news, tweet, webpage, asset-fusion, short-form, overlay, no-narration",
   }
+disable-model-invocation: true
 ---
 
 # motion-graphics — dispatch entry

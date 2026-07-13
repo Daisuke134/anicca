@@ -1,6 +1,7 @@
 ---
 name: whop-driver
 description: Drive Whop (whop.com) end-to-end as a CLIPPER — login (email magic link), Content Rewards discover, search/pick campaign, link socials, join campaign, submit clip URL, read balance, withdraw. Whop has no public clipper API; this skill handles the iframe-gated postMessage-JWT architecture via CDP attachToTarget + Page.captureScreenshot + coord-click on the CloakBrowser daily-driver (:9222). The daily earn loop calls this skill; never one-shot.
+disable-model-invocation: true
 ---
 
 # whop-driver

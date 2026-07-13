@@ -1,6 +1,7 @@
 ---
 name: faceless-money-factory
 description: Generate a FRESH faceless personal-finance short video every day, forever, for $0. AI-AGNOSTIC — ANY agent runs it with its OWN model; the skill calls NO LLM API and names NO provider (you, the agent, write the script in natural language; deterministic scripts do TTS + stock b-roll + captions + assembly). Copies a proven viral template (head-to-head) with brand-new content each run. No face, no lip-sync, no paid APIs, no keys. Use to mass-produce monetizable short-form finance content (TikTok/Reels/Shorts) on autopilot. Default output = DRAFT email for approval until posting accounts are wired.
+disable-model-invocation: true
 ---
 
 # Faceless Money Factory

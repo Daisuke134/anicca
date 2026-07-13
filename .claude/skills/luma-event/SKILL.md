@@ -1,6 +1,7 @@
 ---
 name: luma-event
 description: Create (or edit) a public event on Luma (lu.ma) end-to-end, fully autonomously, by driving the running CloakBrowser daily-driver over CDP (:9222). Use whenever you need to publish ANY Luma event — a hackathon, meetup, workshop, AMA, launch party — not just one specific event. Triggers: "make a Luma event", "create a lu.ma page", "publish this on Luma", "set up the hackathon on Luma". Model-agnostic: this skill calls NO LLM API and names no model — the running agent supplies the judgment (title, date, copy) in natural language; the skill supplies the deterministic browser mechanism + the Luma-specific gotchas.
+disable-model-invocation: true
 ---
 
 # luma-event — publish any event on Luma autonomously

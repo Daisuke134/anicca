@@ -298,3 +298,15 @@
 {"timestamp":"2026-07-10T08:40:28.306Z","event":"feature_created","featureName":"spawn-funding-swap","mode":"strict","language":"typescript"}
 {"timestamp":"2026-07-10T08:44:41.450Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-10T08:44:41.452Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-10T10:35:48.661Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-10T10:35:48.662Z","event":"gate_recorded","featureName":"spawn-funding-swap","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-10T10:36:09.980Z","event":"gate_recorded","featureName":"spawn-funding-swap","phase":"1c","verdict":"PASS","reviewedBy":"human"}
+{"timestamp":"2026-07-10T10:36:09.987Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-10T10:36:09.987Z","event":"sprint_started","featureName":"spawn-funding-swap","sprintNumber":1,"phase":"2a"}
+{"timestamp":"2026-07-10T10:54:10.311Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"2a","to":"2b","iteration":1,"phase":"2b"}
+{"timestamp":"2026-07-10T11:30:48.531Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"2b","to":"2c","iteration":1,"phase":"2c"}
+{"timestamp":"2026-07-10T12:17:26.361Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"2c","to":"3","iteration":1,"phase":"3"}
+{"timestamp":"2026-07-10T12:33:48.593Z","event":"gate_recorded","featureName":"spawn-funding-swap","phase":"3","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-10T12:33:48.601Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"3","to":"5","iteration":1,"phase":"5"}
+{"timestamp":"2026-07-10T12:44:02.138Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"5","to":"6","iteration":1,"phase":"6"}
+{"timestamp":"2026-07-10T12:44:10.344Z","event":"phase_transition","featureName":"spawn-funding-swap","from":"6","to":"complete","iteration":1,"phase":"complete"}
