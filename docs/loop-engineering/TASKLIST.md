@@ -30,7 +30,8 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | **19 / L0-3** | **learn-from-winners: scout.py（成功者の実物を見る道具）を全ループ共通に** | ✅ DONE（scout.py 実測済 + gig 配線 + SKILL.md。clip/video は各タスクで配線） |
 | **19.5** | **gig の respawn 地獄を止める（reality-verify が logged-out で誤 FALSE→respawn を一日中）** | ✅ DONE（verifier 判定前に L0-2 restore+keepalive。logged-out なら verdict=None で defer。commit pushed 2026-07-13） |
 | **20 / GIG-1** | earn-gig を skill 化（1行プロンプトを分解） | ✅ DONE（STARTUP 18700→1576字、パス手順を GIG_PASS_RUNBOOK.md に verbatim 抽出。commit 166e9a44） |
-| **21 / GIG-2** | プロフィール実編集（アイコン+カバー画像+自己紹介） | ⚠ PARTIAL — 自己紹介テキストのみ実編集・描画確認済。★アイコン画像・カバー画像は未編集（画像生成+upload の能力を未実装）★ 要: 画像生成→CDP file upload |
+| **21 / GIG-2** | プロフィール実編集（アイコン+カバー+自己紹介） | ✅ 自己紹介+★アイコン画像★を実編集・実画面確認（1024²PNG生成→upload、hash変化）。カバー/サムネは runbook のローテーションで自走 |
+| **21.7 / GIG-10K** | 10k MRR 自走の実挙動検証: ①monitor 勝者の全コンポ差分 ②table-stakes 一気埋め（既存6出品を勝者へ改善+新規追加）③playbook.json 生成 ④段階1 初レビュー | ⬜ runbook に指示は焼込済（PULL/TABLE-STAKES/FULL-MENU/BAKE/ITERATE-EXISTING）。★実挙動を1フルパスで検証要★ |
 | **21.5** | 学びを焼き込んで一般化（勝者パターンを playbook.json に蓄積→3勝者共通で core 戦略に昇格→戦略からコンポーネント修正） | ✅ DONE（BAKE THE LEARNING を runbook に。commit pushed） |
 | **22 / GIG-3** | paid=0（納品→検収→出金→着金） | ✅ DONE（仕組みは runbook B1/EARNED CHECK に既存。振込申請は実収益が出て初めて可能＝earnings 待ち。Dais 確認） |
 | **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す | pending |
