@@ -170,6 +170,23 @@ if ! cdp_guard_ensure_healthy 6 45; then
   exit 0
 fi
 
+# ─── 3.7 SESSION RESTORE (2026-07-13, L0-2) — the verifier must be LOGGED IN before it judges ────
+# Root cause of the all-day auth_wall FALSE->respawn cycle: the judge navigated Coconala while the
+# session had dropped, every ground-truth URL redirected to /login, and a logged-out verifier
+# recorded verdict=false — accusing a healthy loop of lying. We hold the CDP lock here (exclusive)
+# and the browser is up, so restore the banked login first, then confirm it took.
+VAULT="$HOME/anicca/skills/browser/scripts/session_vault.py"
+"$PY" "$VAULT" restore >/dev/null 2>&1 || true
+KA=$("$PY" "$VAULT" keepalive "https://coconala.com/mypage/dashboard" 2>/dev/null || echo '{}')
+LOGGED_OUT=$("$PY" -c "import json,sys; print('1' if json.loads(sys.argv[1]).get('logged_out') else '0')" "$KA" 2>/dev/null || echo 0)
+if [ "$LOGGED_OUT" = "1" ]; then
+  echo "$(date '+%F %T') gig_reality_verify: still logged out after vault restore — DEFER (not a lie)" >&2
+  ROW=$("$PY" -c "import json,time; print(json.dumps({'ts':int(time.time()),'verdict':None,'note':'deferred_session_logged_out','claims_checked':$CLAIMS_COUNT,'pass_id':'$PASS_ID'}, ensure_ascii=False))")
+  echo "$ROW" >> "$AUDIT_REALITY"
+  echo "$ROW"
+  exit 0
+fi
+
 # ─── 4. Spawn a FRESH, report-independent claude -p judge (subscription session, capped) ─────────
 # env -u ANTHROPIC_API_KEY: use the Claude subscription login (parity: gig-cli.sh/self-fix.sh spawn
 # idiom), not pay-per-token API billing. --dangerously-skip-permissions + --add-dir "$HOME": the
