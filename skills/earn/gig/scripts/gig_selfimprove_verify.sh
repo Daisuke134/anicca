@@ -25,6 +25,7 @@ ev = {
   "funnel": mtime(f"{G}/gig-funnel.jsonl") > now-W,            # every pass writes funnel
   "applied_or_nurtured": mtime(f"{G}/applied.jsonl") > now-W,  # A or B1 activity
   "listing_work": mtime(f"{G}/shuppin.jsonl") > now-W,         # B0
+  "apply_volume": (lambda: (lambda rows: sum(1 for r in rows if r.get("status")=="applied" and (lambda t: (isinstance(t,(int,float)) and now-t<7200))(r.get("ts",0))) >= 3)([__import__("json").loads(l) for l in open(f"{G}/applied.jsonl") if l.strip() and l.strip()[0]=="{"] if __import__("os").path.exists(f"{G}/applied.jsonl") else []))(),  # >=3 applies in last 2h
 }
 todo=[k for k,v in ev.items() if not v]
 out={"ts":now,"evidence":ev,"missing":todo,
