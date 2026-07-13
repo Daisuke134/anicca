@@ -6180,3 +6180,13 @@
 {"ts":1783936087,"wake_id":"00MRJ1HIXFD2AD3A7A7D514257","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783936252,"wake_id":"00MRJ1L1T00DC519ECC14C4FA7","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
 {"ts":1783936252,"wake_id":"00MRJ1L1T00DC519ECC14C4FA7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783936383,"wake_id":"00MRJ1NV2256D52C732AEE4084","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — insufficient SOL for gas: wallet holds $21.33 USDC but no SOL, so I cannot execute a Jupiter swap.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"177c0bc4fb22\",   \"evaluation"}
+{"ts":1783936383,"wake_id":"00MRJ1NV2256D52C732AEE4084","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783936532,"wake_id":"00MRJ1R1YF38DA67CEEB974B7D","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783936532,"wake_id":"00MRJ1R1YF38DA67CEEB974B7D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783936664,"wake_id":"00MRJ1TVIUB988CAFB69D844B5","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783936664,"wake_id":"00MRJ1TVIUB988CAFB69D844B5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783936795,"wake_id":"00MRJ1WP4562951D2D6E984EBA","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783936930,"wake_id":"00MRJ1ZLIIDC134A22E9884D84","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783936930,"wake_id":"00MRJ1ZLIIDC134A22E9884D84","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783937062,"wake_id":"00MRJ22EY148E872B25A784BF2","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
