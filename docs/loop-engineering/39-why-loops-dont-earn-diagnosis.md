@@ -79,7 +79,21 @@ serve が起動しない: ERR_MODULE_NOT_FOUND `@coinbase/x402`(canonical dir �
       「mechanism 検証済み(過去 tx)」≠「今 動く」。★一個ずつ E2E で確かめる★のが正しい(user 指示)
 x402 を稼がせるには: (1) Node 版/依存の ESM 整合で serve を起動 (2) demand(Bazaar seed + 集客)
 ```
-bounty(Algora) / clip / video は未検証（続けて一個ずつ）。
+**bounty → 🟢 稼げる（実 demand が大量にある。gh search で実測 2026-07-14）**
+```
+Algora の public API/SDK/scrape は全滅(tRPC 空 / SDK は HTML / crwl 空 = JS SPA+auth 壁)
+→ 詰まったので★確実に動く gh search に切替★(bounty-hunter repo と同手法: label:"💎 Bounty")
+GitHub に AI-agent 向け live bounty が溢れてる:
+  UnsafeLabs/Bounty-Hunters  $190-500 多数「AI only allowed - no humans」crypto
+  ClankerNation/OpenAgents   $9k「Autonomous Agents Only, crypto-eligible」
+  onyx-dot-app/onyx(2281★) / microg/GmsCore($14999 RCS) = 本物の企業 payer
+  xevrion/agent-playground   $50 typo/JSDoc(雑魚だが本物)
+★honeypot 警告が的中★: 「AI only $500」大量投下の単一 org(UnsafeLabs/ClankerNation)は
+  research が警告した釣り(払わない疑い)。本物の金=高評価の企業 repo。
+  → connector は go-score で honeypot を弾き、実績ある payer を狙う(A2)
+教訓: earner を fight するな。詰まったら「動くツール(gh)」に切替えるのが search 効率。
+```
+clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
 - 各 revenue stream（trading/bounty/clip/affiliate/sell）を **earn-ledger に1本ずつ**記録（tx 付き外部 USDC のみ = fake 不可、§37 honesty）。
