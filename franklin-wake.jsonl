@@ -6669,3 +6669,11 @@
 {"ts":1783985140,"wake_id":"00MRJUOW5L548F4882A09647E0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783985288,"wake_id":"00MRJUS24RCADCA808BF264D61","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
 {"ts":1783985386,"wake_id":"00MRJUU5Z8E8EE0BBA9CC2490E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783985547,"wake_id":"00MRJUXM5QEF21DEC0ADF546FF","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783985711,"wake_id":"00MRJV154H1C857BD41C104E3C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783985876,"wake_id":"00MRJV4O9U792EDBD76A634E7C","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — TradingSignal shows only weak (33%) bearish conviction for SOL; the edge doesn't clear ~0.4%+ round-trip fees and with $18.99 USDC bankroll it's not worth trading.\n[sol-trade] sol-evolve -> {  "}
+{"ts":1783985876,"wake_id":"00MRJV4O9U792EDBD76A634E7C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783986029,"wake_id":"00MRJV7YJO652DD34949634F27","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783986029,"wake_id":"00MRJV7YJO652DD34949634F27","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783986162,"wake_id":"00MRJVAT23E194DFCF1036465F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783986362,"wake_id":"00MRJVF300582FC343477A45A3","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
