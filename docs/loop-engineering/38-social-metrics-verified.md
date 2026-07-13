@@ -89,6 +89,33 @@ skills/growth-engine/metrics_fetch.py
 ```
 判断（どの変異を採るか）は LLM。metrics_fetch は**決定的な bookkeeping のみ**（regex 判定を持ち込まない）。
 
+## ★ V0-5: IG 診断可能性 実験の結果（2026-07-13 実測。REQ-012 Phase 2a の答え）★
+
+**verifier は metrics とは別物**: 欲しいのは数字ではなく「**その投稿が本当に公開されているか**」。
+よって **logged-out（cookie 無し）の instagrapi** を使う（logged-in で見ると shadowban/失敗投稿も
+本人にだけは見えて偽 PASS が出る＝我々が殺そうとしている病気そのもの）。
+
+### 採用シグナル = 固定公開面（プロフィール）のメンバーシップ検査
+```
+LOGGED-OUT instagrapi:
+  user_id_from_username("anicca.affirms2") -> 43475841194
+  user_medias_gql(uid, 12) -> ['DarB2Qikt3d', 'Daoa_TREugW', 'DanT6ChmUVC', 'DajR2tDjRyH']
+  "DarB2Qikt3d"(実在) in codes -> True
+  "ZZZZZZZZZZZ"(偽物) in codes -> False   ← ★陽性の矛盾証拠 = FAIL を出せる★
+```
+| ログアウトで観測される状態 | verdict |
+|---|---|
+| 固定公開面が開け、主張の post code が一覧に**在る** | **PASS** |
+| 固定公開面は開けるのに post code が一覧に**無い** | **FAIL**（陽性の矛盾＝「投稿した」は嘘） |
+| 固定公開面自体が取れない（例外/レート制限） | **CANNOT_VERIFY**（正直に「読めなかった」） |
+
+→ 3値すべてが機械的に出る = **`automatedVerification: true` を IG に対して正当に立てられる**（gate が飾りにならない）。
+
+### 却下した弱いシグナル
+`media_info(code)` の単体呼び出し: 実在 → 構造化データ / 非実在 → `LoginRequired` 例外。
+**差は出るが例外が曖昧**（レート制限でも同じ例外）→ これ単体では「削除された」を FAIL と断定できず
+CANNOT_VERIFY 止まり。**FAIL を出すには固定公開面のメンバーシップ検査が必須**。
+
 ## 引用
 - Meta 公式: developers.facebook.com/docs/instagram-platform/insights —
   「This API returns only data for media owned by Instagram professional accounts.」
