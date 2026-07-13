@@ -115,6 +115,18 @@ self-pay(x402-serve 71行 + tx 0xd7a82586)= 非計上 ✓
   ① x402 Bazaar に list(CDP が catalog) ② awesome-x402 PR + x402scan index ③ 外部 inflow を検証
   ※run.sh の現広告先=colony forum(=まだ我々)→真の外部でない。ここを直す必要。
 ```
+
+**★x402 外部売上の壁 = Bazaar 飽和（2026-07-14 実測）★**
+```
+x402 Bazaar(api.cdp.coinbase.com/platform/v2/x402/discovery/resources)= 生きてる。
+  ★総リソース数 25,748★。research 競合に api.exa.ai/search, voidfeed.ai 等の強者。
+  我々の endpoint は offset 0 に未掲載(CDP facilitator 経由 self-pay で載るはずだが全ページ未確認)。
+honest 含意: 載ること ≠ 買われること。25,748 の1つを外部が organic に見つける確率 ≈ 0。
+  → 「x402 を立てて待つ」で外部から稼ぐのは ★飽和市場では非現実的★。
+  外部で稼ぐには (a) ニッチ差別化 or (b) clip/affiliate で自分で traffic を送る が必須。
+= 今 session の core 結論: 外部 crypto 需要(generic service への)は飽和/希少。
+  earn の本当の課題は「受け取り rail」でも「listing」でもなく ★差別化された needs + 集客★。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
