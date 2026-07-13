@@ -9,6 +9,10 @@
 # DONE (REQ-8): the RECORD transition is the ONLY one that prints earned_usdc>0, via record-payout.mjs
 # run under `env -i` (no PII) so the malice-guard passes.
 set -uo pipefail
+
+# The browser is shared with the other money loops: heal it, restore the logins, collect stray tabs.
+bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+
 SK="$HOME/anicca/skills/earn/clip-promote"
 PY=/opt/homebrew/bin/python3
 NODE=/opt/homebrew/bin/node
