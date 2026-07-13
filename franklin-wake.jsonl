@@ -5965,3 +5965,12 @@
 {"ts":1783915276,"wake_id":"00MRIP3GU7DE2F3063D2024376","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783915467,"wake_id":"00MRIP7JXV1C5CC8234F6C49B4","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"Wallet: solana 8Fpq…PCV9 — USDC $22.47, SOL balance 0 (no SOL available for fees).\n\nNote for next session: top up a small amount of SOL (≈0.003–0.01 SOL) if you want active trading; otherwise hold USD"}
 {"ts":1783915467,"wake_id":"00MRIP7JXV1C5CC8234F6C49B4","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783915632,"wake_id":"00MRIPB38LC855A14BB511435E","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783915764,"wake_id":"00MRIPDXPVA085B2FFF689456C","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783915764,"wake_id":"00MRIPDXPVA085B2FFF689456C","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783915895,"wake_id":"00MRIPGQEO2A7C42FA3C3E4EA0","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783915895,"wake_id":"00MRIPGQEO2A7C42FA3C3E4EA0","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783916026,"wake_id":"00MRIPJJHBA2AF974503FC46A9","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783916158,"wake_id":"00MRIPMD0M534FE977F83B44CA","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783916158,"wake_id":"00MRIPMD0M534FE977F83B44CA","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783916289,"wake_id":"00MRIPP6L878BD09BFEB3D4E8D","kind":"loop_detect","slot":"economy/lending","sleep_s":300}
