@@ -211,7 +211,14 @@ if [ "$IS_FALSE" = "1" ]; then
   "$PY" -c "
 import json, sys, time
 d = json.loads(sys.argv[1])
-out = {'reason': 'reality_verify_failed', 'failure_reason': d.get('failure_reason'), 'ts': int(time.time())}
+# kind classification (2026-07-13 self-fix, gh#1015): reached_captcha=true means the judge could NOT
+# even reach the real ground-truth screens (login/auth wall) -- there is no claim-vs-reality mismatch
+# for code to fix, it's an external/session precondition. Only a false verdict WITHOUT reached_captcha
+# is a genuine claim_mismatch (the judge DID see the real screen and the core's claim did not hold
+# there) -- that is the case worth an unconditional self-fix.sh code-bug spawn. auditor.sh reads this
+# 'kind' to cooldown-gate auth_wall spawns instead of respawning a full agent every hourly audit pass.
+kind = 'auth_wall' if d.get('reached_captcha') else 'claim_mismatch'
+out = {'reason': 'reality_verify_failed', 'kind': kind, 'failure_reason': d.get('failure_reason'), 'ts': int(time.time())}
 print(json.dumps(out, ensure_ascii=False))
 " "$PARSED_ROW" > "$SELFHEAL"
   echo "$(date '+%F %T') gig_reality_verify: verdict=false -> wrote selfheal-request" >&2

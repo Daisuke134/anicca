@@ -79,9 +79,33 @@ fi
 # against duplicate/hung fixers, so a second hourly run while a fixer is live is a safe no-op.
 SELFHEAL_REQ="$HOME/.openclaw/state/.gig-core-selfheal-request.json"
 SELF_FIX="$HOME/anicca/skills/self/self-fix.sh"
+# AUTH-WALL COOLDOWN (2026-07-13 self-fix, gh#1015): kind=auth_wall means the reality-verifier hit a
+# login wall (reached_captcha=true) -- an external/session precondition (Coconala logged out, iPhone
+# Bluetooth 2FA relay down), NOT a code bug. Before this fix, every hourly audit pass respawned a full
+# self-fix.sh Sonnet agent to "find why claim != reality and fix the code" for a condition that never
+# changes without Dais physically toggling Bluetooth -- confirmed from audit-reality.jsonl: 5 of the
+# last 6 reality-verify rounds set reached_captcha=true yet still wrote the generic selfheal-request,
+# and self-fix.sh has no cross-invocation memory once a prior fixer already exited. kind=claim_mismatch
+# (the judge DID reach the real screen and the claim genuinely did not hold) is unthrottled, unchanged.
+AUTH_WALL_COOLDOWN_MARKER="$G/.auth-wall-selfheal-cooldown"
+AUTH_WALL_COOLDOWN_SECS=21600  # 6h: re-alert periodically without spawning a fresh agent every hour
 if [ -f "$SELFHEAL_REQ" ] && [ -x "$SELF_FIX" ]; then
+  KIND="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('kind','claim_mismatch'))" 2>/dev/null || echo 'claim_mismatch')"
   REASON="$(python3 -c "import json;print(json.load(open('$SELFHEAL_REQ')).get('reason','') or json.load(open('$SELFHEAL_REQ')).get('failure_reason',''))" 2>/dev/null || echo '')"
   [ -z "$REASON" ] && REASON="reality-verifier could not confirm the gig core's reported 出品/応募/納品 on the real Coconala pages"
-  bash "$SELF_FIX" gig "reality-verify FAIL: ${REASON}. The gig core reported side-effects the fresh reality-verifier could NOT confirm on the real Coconala UI. Find why claim != reality and fix the code so future claims are backed by real on-page state." >/dev/null 2>>"$G/.self-fix.err.log" || true
+  SKIP_SELFHEAL=0
+  if [ "$KIND" = "auth_wall" ]; then
+    cooldown_age=999999
+    [ -f "$AUTH_WALL_COOLDOWN_MARKER" ] && cooldown_age=$(( $(date +%s) - $(cat "$AUTH_WALL_COOLDOWN_MARKER" 2>/dev/null || echo 0) ))
+    if [ "$cooldown_age" -lt "$AUTH_WALL_COOLDOWN_SECS" ]; then
+      SKIP_SELFHEAL=1
+      echo "$(date '+%F %T') auditor: auth_wall selfheal within cooldown (${cooldown_age}s<${AUTH_WALL_COOLDOWN_SECS}s) -- skip self-fix.sh spawn (already diagnosed)" >> "$G/.self-fix.err.log"
+    else
+      date +%s > "$AUTH_WALL_COOLDOWN_MARKER"
+    fi
+  fi
+  if [ "$SKIP_SELFHEAL" = "0" ]; then
+    bash "$SELF_FIX" gig "reality-verify FAIL: ${REASON}. The gig core reported side-effects the fresh reality-verifier could NOT confirm on the real Coconala UI. Find why claim != reality and fix the code so future claims are backed by real on-page state." >/dev/null 2>>"$G/.self-fix.err.log" || true
+  fi
   rm -f "$SELFHEAL_REQ"
 fi
