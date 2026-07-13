@@ -62,7 +62,12 @@ case "$TRANS" in
     if [ "$DRY" = 1 ]; then WATCHED=5; else
       WPORT=$($PY -c "import json;print(json.load(open('$CREDS')).get('warmup_cdp_port',9334))" 2>/dev/null)
       WPROF=$($PY -c "import json,os;print(json.load(open('$CREDS')).get('warmup_profile',os.path.expanduser('~/.cloak/profiles/warmup-$HANDLE')))" 2>/dev/null)
-      EBUD=$(( TIMEOUT / 3 )); WBUD=$(( TIMEOUT * 2 / 3 ))   # ensure-browser + warm ≤ TIMEOUT
+      # ★ FIND (2026-07-14): a 1/3-2/3 split (EBUD=73s/WBUD=146s @ TIMEOUT=220) was starving warm_iso —
+      #   confirmed live that reaching 3 real distinct niche views can take ~180-190s (candidate hit rate
+      #   is low since IG's hashtag-page redirect leaves mostly /p/ image posts), while ensure_warmup_browser
+      #   only needs its full budget on the rare day the persisted session gets OTP-challenged again; the
+      #   common case (session already logged in) finishes in a few seconds. Shift the split accordingly. ★
+      EBUD=$(( TIMEOUT / 6 )); [ "$EBUD" -lt 30 ] && EBUD=30; WBUD=$(( TIMEOUT - EBUD ))   # ensure-browser + warm ≤ TIMEOUT
       WTID=$(timeout "$EBUD" $PY "$HOME/.claude/skills/ig-account-warmer/scripts/ensure_warmup_browser.py" --handle "$HANDLE" --port "$WPORT" --profile "$WPROF" --creds "$CREDS" 2>/tmp/ev_ensure.log | tail -1)
       if [ -z "$WTID" ] || printf '%s' "$WTID" | grep -q ERROR; then
         # ★ FIND-904 fix (2026-07-12): do NOT stamp last_warmup_date here — that poisoned decide()
