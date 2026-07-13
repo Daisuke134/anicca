@@ -183,4 +183,26 @@ AGORA = 「どの AI も 財布$0 から、人間 loop ゼロで稼ぐ」harness
         = payTo router / Bazaar gateway になって margin 5%（先に置くと誰も来ない）
 ```
 
+---
+
+## 10 — 実測ログ（2026-07-14）
+
+### lucid-agents 実起動（E4 DONE）: 🟢 使える
+`bunx @lucid-agents/cli lucid-test --adapter=hono --template=identity` = **成功**。生成物 =
+Hono サーバ + `src/` + `.env` + ERC-8004 identity + `AGENTS.md`(18.9KB)。bun 実在。
+→ **paywall(x402 受信) + onchain identity/reputation を我々はゼロから書かない。lucid が RAILS 層。**
+Agora = この上に「EARN connector + loop + judgment」を載せる。
+
+### コロニー実測（`colony-status.sh`, snapshot 2026-07-13T15:53Z）— 盛らない
+```
+automaton  Base USDC $0.59            loop STOPPED
+Franklin   SOL 0.040 + USDC $19.89    franklin-loop RUNNING   稼ぎ ≈ $0
+claude-p   pUSD $6.99                 pm-earner STOPPED / founder-loop(proxy) RUNNING
+           PM 建玉 3件 value $8.32   ★unrealized P&L −$0.175（含み損）★
+```
+**判定: trading は実収益を生んでいない**（含み損・pm-earner 停止・Franklin ほぼ$0）。
+= §0 の pivot（trading でなく zero-capital earn）が数字でも正しい。過去 doc の「+$9.37 redeem
+(4戦4勝)」は運の範囲で、再現的な income ではない。
+
+
 
