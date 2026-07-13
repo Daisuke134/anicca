@@ -25,12 +25,39 @@ description: セッション引き継ぎノートを生成し、/goal プロン�
 - 「捨てた選択肢と理由」は特に重要（同じ議論を繰り返さない為）。
 
 ### ★次セッションの /goal コマンド（必須・これが本体）★
-Dais がそのまま貼れば **human-in-the-loop 無しで残作業を E2E 完遂**できる `/goal` を1つ生成して載せる。
+Dais がそのまま貼れば **human-in-the-loop 無しで残作業を E2E 完遂**できる `/goal` を生成して載せる。
+- **★残作業が複数ドメインにまたがるなら `/goal` を複数出す★**（例: 記事の続き + コードの続き）。
+  1つのドメインだけ `/goal` を書いて他を「次にやること」の表に置き去りにしない
+  ＝ goal の無い残作業は次セッションで確実に落ちる。**残作業の数だけ goal がある**のが正しい状態
 - `goal-setter:goal-setter` skill の流儀（`~/.claude/skills/goal-prompt-builder/` の golden template）で書く。
 - **5節をこの順で**: `Objective` / `Scope` / `Constraints` / `Done when` / `Stop if`。
 - `Done when` は **machine-checkable な検証コマンド + evidence 条件**で書く（自己申告 done 禁止・実 side-effect / 実ブラウザ / on-chain / message_id で照合）。
-- `Constraints` に必ず: VCSDD token 上限厳守 / 実装は Sonnet subagent / spec を実装側で曲げない / spawn 前後に TaskList→TaskCreate→TaskStop / 実測せず断定しない / 編集毎 commit+push / ¥0 は ¥0 と報告。
 - `Stop if` に必ず: 同一フェーズ3回 FAIL で止めて handover / 破壊的・不可逆操作 / 週次token残 10%未満。
+
+#### `Constraints` に必ず入れる（全タスク共通・省略禁止）
+```
+- 開発方式 = GLVS（Goal → Loop → Verify → State）。会話でなく file に進捗を書く
+- 実装は Sonnet subagent / spec を実装側で曲げない / VCSDD token 上限厳守
+- spawn 前後に TaskList → TaskCreate → TaskStop
+- 実測せず断定しない（既定の姿勢 = 「私は間違っている」。断定前に外部検索 + 実測）
+- 車輪の再発明禁止（作る前に web+gh で既存実装を探して copy+tweak）
+- 編集ごとに commit+push（確認を求めない）
+- ¥0 は ¥0 と報告する。盛らない
+```
+
+#### ★コードを1行でも触る残作業がある場合、`Constraints` に VCSDD を明記する（省略禁止）★
+残作業が実装・修正・リファクタ・設定変更のいずれかを含むなら、次のブロックを**そのまま**入れる。
+（ドキュメント/記事のみの残作業なら、このブロックは不要 — 代わりに「該当なし（doc のみ）」と1行書く）
+```
+- ★実装は VCSDD の実コマンドを phase 順に呼ぶ。SPEC 本文への手書き追記は進捗ではない★
+    /vcsdd:vcsdd-init → vcsdd-spec → vcsdd-spec-review → /vcsdd:vcsdd-tdd(RED)
+    → vcsdd-impl(GREEN) → vcsdd-adversary → vcsdd-harden → vcsdd-converge
+  `.vcsdd/features/<name>/state.json` の phase が進んでいないものは「やった」と言わない
+- 規模に応じ mode: lean / strict を選んでよいが、★フェーズ自体は飛ばさない★
+- adversary は毎 iteration fresh spawn（model: sonnet 明示）。blocking 1件でも次フェーズ禁止
+- 最後に reality-verifier が実ブラウザ / on-chain / 実コマンド出力で source of truth を確認するまで完了と言わない
+- worktree-per-task（`git worktree add .worktrees/<task> -b feature/<task>`）
+```
 
 ### 新セッション開始プロンプト
 - 次の agent がそのまま貼って開始できる正確なプロンプトを1つ。冒頭で「まず `/context` を測れ」を入れる。
