@@ -90,6 +90,19 @@ serve-mainnet-boot.sh で本番 serve 起動(CDP facilitator, payTo=0x810f, funn
   config は証明済。real earning は外部 buyer が要る(= Bazaar list / marketing 集客)。
 次: registry で x402_sell を dormant→live に flip(serve が動く証明が出た) → loop に載せて検証 → 外部 buyer 獲得。
 ```
+**flip + embed 完了（2026-07-14）**
+```
+registry.json: x402_sell dormant→live（commit 済, ~/anicca）。liveSlotNames に載る=脳が選べる。
+embed は run.sh の x402 分岐が既に per-instance で正しい:
+  run.sh:268 X402_PAYTO=$W(各自 wallet) node serve.mjs / :280 cloudflared 公開 / :290 forum 広告
+  → claude-p も Franklin も自分の payTo で seller を立て、自分で buyer を探す。同じ menu。
+残る caveat（full loop earning に必要）:
+  (1) ★稼働中 loop(pid 660/622/626)は起動時に registry を読む→ x402_sell 反映に loop 再起動が要る★
+  (2) loop 経路の serve.mjs が CDP creds を持つか要確認(run.sh は CDP を明示 export しない。
+      claude-p は ~/.openclaw/.env に在るが loop env が継承するか / Franklin は自前 CDP が要る)
+  (3) real revenue = 外部 buyer(colony 外)。self-pay は INV-7 で非計上
+→ 次(bounty)へ進む前 or 並行で: loop 再起動 + 次 wake で「脳が x402_sell を選び seller が上がる」を実ログ確認。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
