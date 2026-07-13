@@ -6136,3 +6136,9 @@
 {"ts":1783931594,"wake_id":"00MRIYT87798215779D15549D1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783931745,"wake_id":"00MRIYWGB6D02A5EDFCA8E4876","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — SOL signal is bearish but low-confidence (33%), not strong enough to overcome ~0.4%+ round-trip fees/slippage.\n[sol-trade] sol-evolve -> {   \"promoted\": false,   \"baselineId\": \"177c0bc4fb22\",  "}
 {"ts":1783931745,"wake_id":"00MRIYWGB6D02A5EDFCA8E4876","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783931898,"wake_id":"00MRIYZQMVC7A5DB00465D4737","kind":"loop_detect","slot":"earn/sol-trade","sleep_s":300}
+{"ts":1783932200,"wake_id":"00MRIZ67L8DBCF0BC9BAC34BB1","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783932332,"wake_id":"00MRIZ91HL4DBB8FC4CD204A60","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783932465,"wake_id":"00MRIZBW951425FD380DFB427D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783932596,"wake_id":"00MRIZEOUO982337AD34A047C2","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1783932730,"wake_id":"00MRIZHK0T8D1252F9130D48CA","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
