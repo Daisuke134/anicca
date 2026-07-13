@@ -11,6 +11,12 @@ status(){ tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null && echo ALIVE ||
 case "${1:-}" in --status) status; exit 0;; --restart) tmux -S "$SOCK" kill-session -t "$SESSION" 2>/dev/null||true;; esac
 if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/dev/null; then echo "reddit-loop already ALIVE"; exit 0; fi
 STARTUP="${STARTUP} 重要な結果（数字・IDを含む成果、realized P&L、致命的エラー）が出たら PushNotification ツールで Dais へ verbatim 送信してから終了する。narration・定常報告には使わない。"
-tmux -S "$SOCK" new-session -d -s "$SESSION" "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+STARTUP="${STARTUP} BROWSER DISCIPLINE (mandatory, every pass): the daily-driver Chromium is shared with the other money loops. FIRST run bash: bash ~/anicca/skills/browser/ensure_browser.sh — it heals a dead browser and restores the logins from the cookie vault; if it prints FAILED, skip all browser work this pass and report honestly instead of hanging. THEN take your own isolated space: LEASE=$(python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py acquire reddit) and drive ONLY the tab at the ws URL inside that JSON. NEVER navigate a tab you did not open — another loop may be halfway through a form in it. When the pass is done run: python3 ~/anicca/skills/browser/scripts/cdp_context_lease.py release reddit ."
+PROMPT_FILE="$HOME/.cache/anicca-loops/reddit-startup.txt"
+mkdir -p "$(dirname "$PROMPT_FILE")"
+printf %s "$STARTUP" > "$PROMPT_FILE"
+bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+tmux -S "$SOCK" new-session -d -s "$SESSION" \
+  "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/.openclaw/state" && touch "$HOME/.openclaw/state/.reddit-loop-last-start"; sleep 2
 echo "reddit-loop started ($(status))."

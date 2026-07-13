@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+
+# The browser is shared with the other money loops: heal it, restore the logins, collect stray tabs.
+bash "$HOME/anicca/skills/browser/ensure_browser.sh" || echo "WARN: browser not recovered"
+
 export PATH="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin:$PATH"  # claude itself lives in ~/.local/bin (npm global install, not homebrew)
 # self-fix.sh — TRUE autonomous self-heal launcher (no human, no "file issue and wait"). When a loop hits a
 # code/automation blocker it cannot fix in-pass, it (or a healthcheck) calls this to spawn a detached, full-power
