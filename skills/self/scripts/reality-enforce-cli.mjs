@@ -17,14 +17,55 @@
 //     [--claim-type <type>] [--required-count <n>] [--claimed-urls <comma,list>] \
 //     [--fixed-surface-url <url>] [--content-fingerprint <hash>] [--precommit-ts <ms>] \
 //     [--capture-start-ts <ms>] [--artifacts-file <path>] [--automated-verification true|false]
-import { readFileSync, appendFileSync, mkdirSync, existsSync } from "node:fs";
+import { readFileSync, appendFileSync, mkdirSync, existsSync, writeFileSync, chmodSync } from "node:fs";
 import { dirname } from "node:path";
+import { randomBytes } from "node:crypto";
 import {
   enforceVerdict,
   buildVerdictTrailPath,
   buildHumanReviewQueuePath,
   shouldEscalateCannotVerifyStreak,
+  computeRowHmac,
+  verifyRowHmac,
 } from "../lib/reality-verdict-schema.mjs";
+
+// REQ-006/017 follow-on (adversary-found FIND): the durable verdict trail itself must be
+// tamper-evident, or a loop can defeat the CANNOT_VERIFY escalation streak (REQ-018) by
+// appending a forged row directly to the trail file to reset it. Every trail row this CLI
+// writes is HMAC-signed under a PERSISTENT per-state-dir key (distinct from the per-pass
+// capture secret piped in on stdin, which does not survive between passes) so a later read
+// can detect a row that was appended or edited by anything other than this CLI.
+// Honest limit: this key lives on the same host/uid as the loop it verifies, so a fully
+// compromised loop could read it too — this raises the bar, it is not a hard wall; the real
+// fix is running the verifier under a separate user/host (tracked separately, not here).
+function loadOrCreateTrailKey(stateDir) {
+  const dir = String(stateDir ?? "").replace(/\/+$/, "");
+  const keyPath = `${dir}/.reality-trail-key`;
+  if (existsSync(keyPath)) {
+    const existing = readFileSync(keyPath, "utf8").trim();
+    if (existing) return existing;
+  }
+  mkdirSync(dir, { recursive: true });
+  const key = randomBytes(32).toString("hex");
+  writeFileSync(keyPath, key, { mode: 0o600 });
+  try {
+    chmodSync(keyPath, 0o600);
+  } catch {
+    // best-effort on platforms where chmod after write is redundant/unsupported
+  }
+  return key;
+}
+
+function tamperedTrailFinding() {
+  return {
+    category: "post_not_publicly_visible",
+    severity: "critical",
+    description:
+      "The durable verdict trail for this loop contains a row that does not verify under the trail's own persistent HMAC key — positive evidence the trail file was appended to or modified by something other than reality-enforce-cli.mjs.",
+    evidence: { domExcerpt: "artifact_trail_tampered" },
+    reason: "artifact_trail_tampered",
+  };
+}
 
 function readArg(name, argv) {
   const idx = argv.indexOf(name);
@@ -124,30 +165,44 @@ function main() {
   // never filtered to only "interesting" ones.
   const trailPath = buildVerdictTrailPath(stateDir, loopName);
   mkdirSync(dirname(trailPath), { recursive: true });
+
+  // Tamper check: read the EXISTING trail (before this pass's own row is appended) and verify
+  // every row's rowHmac under the persistent trail key. Any row that doesn't verify — forged,
+  // edited, or written by something other than this CLI — is positive evidence of tampering,
+  // and overrides THIS pass's own outcome to FAIL (never silently trusted, never used to reset
+  // the CANNOT_VERIFY streak in the caller's favor).
+  const trailKey = loadOrCreateTrailKey(stateDir);
+  const existingTrailRows = readJsonlRows(trailPath);
+  const trailTampered = existingTrailRows.some((row) => !verifyRowHmac(trailKey, row));
+
+  const effectiveVerdict = trailTampered ? "FAIL" : enforced.overallVerdict;
+  const effectiveFindings = trailTampered ? [tamperedTrailFinding()] : enforced.findings || [];
+
   const trailRow = {
     ts: Date.now(),
     loopName,
     passId,
-    overallVerdict: enforced.overallVerdict,
-    findings: enforced.findings || [],
+    overallVerdict: effectiveVerdict,
+    findings: effectiveFindings,
     RESULT: rawVerdictFile,
   };
+  trailRow.rowHmac = computeRowHmac(trailKey, trailRow);
   appendFileSync(trailPath, JSON.stringify(trailRow) + "\n");
 
-  // REQ-010/REQ-018 routing: FAIL always escalates to self-fix.sh (a code/behavior bug the
-  // caller must investigate). CANNOT_VERIFY escalates to self-fix.sh only on the SECOND
-  // CONSECUTIVE occurrence for this loop (PROP-055) — the first goes to the human-review
-  // queue only. shouldEscalateCannotVerifyStreak is IMPORTED, never re-derived here.
+  // REQ-010/REQ-018 routing: FAIL always escalates to self-fix.sh (a code/behavior bug — or a
+  // tampered trail — the caller must investigate). CANNOT_VERIFY escalates to self-fix.sh only
+  // on the SECOND CONSECUTIVE occurrence for this loop (PROP-055) — the first goes to the
+  // human-review queue only. shouldEscalateCannotVerifyStreak is IMPORTED, never re-derived here.
   let escalateSelfFix = false;
   let humanReviewAppended = false;
-  if (enforced.overallVerdict === "FAIL") {
+  if (effectiveVerdict === "FAIL") {
     escalateSelfFix = true;
-  } else if (enforced.overallVerdict === "CANNOT_VERIFY") {
-    const trailSoFar = readJsonlRows(trailPath); // includes the row just appended (last line)
+  } else if (effectiveVerdict === "CANNOT_VERIFY") {
+    const trailSoFar = [...existingTrailRows, trailRow]; // both halves already HMAC-verified above
     escalateSelfFix = shouldEscalateCannotVerifyStreak(trailSoFar);
     const queuePath = buildHumanReviewQueuePath(stateDir, loopName);
     mkdirSync(dirname(queuePath), { recursive: true });
-    const firstFinding = (enforced.findings || [])[0] || {};
+    const firstFinding = effectiveFindings[0] || {};
     appendFileSync(
       queuePath,
       JSON.stringify({
@@ -163,11 +218,11 @@ function main() {
 
   process.stdout.write(
     JSON.stringify({
-      overallVerdict: enforced.overallVerdict,
+      overallVerdict: effectiveVerdict,
       escalateSelfFix,
       humanReviewAppended,
       trailPath,
-      findings: enforced.findings || [],
+      findings: effectiveFindings,
     }) + "\n"
   );
 }

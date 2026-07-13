@@ -161,6 +161,21 @@ test("wrong_tool: citation from a tool other than public_artifact_snapshot -> FA
   assert.equal(result.findings[0].reason, "wrong_tool");
 });
 
+test("ig_public_check is a trusted capture tool: a clean citation naming it -> PASS, not wrong_tool", () => {
+  const row = makeRow({ tool: "ig_public_check" });
+  const raw = rawPass([citationFor(row)]);
+  const result = enforceVerdict(raw, [row], "public-artifact", 1, CLEAN_GROUND_TRUTH, true);
+  assert.equal(result.overallVerdict, "PASS");
+});
+
+test("tool allowlist still rejects anything outside {public_artifact_snapshot, ig_public_check} -> FAIL/wrong_tool", () => {
+  const row = makeRow({ tool: "yet_another_untrusted_tool" });
+  const citation = { ...citationFor(row), tool: "yet_another_untrusted_tool" };
+  const result = validateArtifactProvenance(rawPass([citation]), [row], "public-artifact", 1, CLEAN_GROUND_TRUTH, true);
+  assert.equal(result.overallVerdict, "FAIL");
+  assert.equal(result.findings[0].reason, "wrong_tool");
+});
+
 test("stale_row: cited row belongs to a foreign passId -> FAIL", () => {
   const row = makeRow({ passId: "pass-FOREIGN" });
   const raw = rawPass([citationFor(row)]);

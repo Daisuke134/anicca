@@ -289,7 +289,12 @@ export function verifyRowHmac(secret, row) {
 }
 
 const PUBLIC_ARTIFACT_CLAIM_TYPES = new Set(["public-artifact", "caller-per-invocation"]);
-const PUBLIC_ARTIFACT_SNAPSHOT_TOOL = "public_artifact_snapshot";
+// REQ-004/017 (reality-gate, ig-adapter follow-on): the allowlist of deterministic capture
+// tools whose rows this backstop will trust a citation against. `ig_public_check` reuses
+// public_artifact_snapshot.py's own HMAC signing/canonicalization (never redefines it), so a
+// citation naming either tool is checked identically below; any tool NOT in this set still
+// hits the wrong_tool/FAIL branch unchanged.
+const TRUSTED_CAPTURE_TOOLS = new Set(["public_artifact_snapshot", "ig_public_check"]);
 
 function isNetworkErrorRow(row) {
   return Boolean(row.networkError) || row.httpStatus === null || row.httpStatus === undefined;
@@ -368,11 +373,11 @@ export function validateArtifactProvenance(
         citation,
       });
     }
-    if (citation.tool !== PUBLIC_ARTIFACT_SNAPSHOT_TOOL) {
+    if (!TRUSTED_CAPTURE_TOOLS.has(citation.tool)) {
       return synthesizedVerdict(
         "FAIL",
         "wrong_tool",
-        `Citation's tool "${String(citation.tool)}" is not the deterministic capture tool.`,
+        `Citation's tool "${String(citation.tool)}" is not a trusted deterministic capture tool.`,
         { citation }
       );
     }
