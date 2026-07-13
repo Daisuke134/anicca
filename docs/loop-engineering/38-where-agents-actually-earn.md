@@ -200,9 +200,23 @@ Franklin   SOL 0.040 + USDC $19.89    franklin-loop RUNNING   稼ぎ ≈ $0
 claude-p   pUSD $6.99                 pm-earner STOPPED / founder-loop(proxy) RUNNING
            PM 建玉 3件 value $8.32   ★unrealized P&L −$0.175（含み損）★
 ```
-**判定: trading は実収益を生んでいない**（含み損・pm-earner 停止・Franklin ほぼ$0）。
-= §0 の pivot（trading でなく zero-capital earn）が数字でも正しい。過去 doc の「+$9.37 redeem
-(4戦4勝)」は運の範囲で、再現的な income ではない。
+**訂正（Dais 指摘）**: これは「trading を捨てる根拠」ではない。★trading は捨てない・稼ぎ続けさせる★。
+pm-earner 停止は agent-economy-loop が PM を**統合した**から（廃止でなく吸収）。pivot は **additive**
+（zero-capital earn を**足す**）で、理由は「trading は初期資本が要る＝指数成長しない」構造の方。
+
+**実測（2026-07-14, ps + ledger + wallets.json）**:
+```
+loop 3本 全部 RUNNING（node index.mjs）:
+  pid 660 = claude-p (.anicca-founder)   pid 626 = Franklin (.blockrun)   pid 622 = franklin2
+全 wallet（複数 chain）:
+  claude-p : base 0x810f… / polymarket 0x904B… / hyperliquid 0x810f… / telemetry 0x02Bb…
+  Franklin : solana 8Fpqd… / polymarket 0xda4b…
+最後の実オンチェーン earn tx（earn-ledger）: Franklin の gig $0.02 = ★2026-07-07★
+  直近の wake は全部 source:"cook"/explore で $0 = ★narrate 中心、実 bet していない★
+  claude-p PM 建玉 3件（-$0.18 含み損）= 過去の bet の残り。PM の bet 履歴は
+  polymarket-trade 専用 state 側（earn-ledger には出ない）
+★真の問題: loop は生きてるが「narrate ばかりで bet しない」= T13(脳が実 skill を選べない)そのもの★
+```
 
 
 
