@@ -77,6 +77,19 @@ serve.mjs を起動 → GET / が商品広告、GET /research が HTTP 402 + 正
    asset:0x833589…(USDC on Base)} = ★課金ゲートが効き USDC を wallet に要求する★
 ①see ②try ③works ✓。残り = 実 buyer が払って着金(内部 demand test = buyer-cdp.mjs or Franklin)。
 ```
+**★x402 E2E 実証成功（2026-07-14, Base mainnet）★**
+```
+serve-mainnet-boot.sh で本番 serve 起動(CDP facilitator, payTo=0x810f, funnel→8411)
+→ local も public funnel も HTTP 402 ✓
+→ buyer-cdp.mjs 実行: automaton(0xB9dd3B) が $0.003 USDC を payment 署名
+→ HTTP 200 + research digest 配達 + X-PAYMENT-RESPONSE success:true
+→ ★on-chain 検証(own-eyes): tx 0xd7a82586… status=0x1, block 48590287,
+   to=USDC contract(0x833589…), transfer logs 2件★
+= 「AI が AI の service を USDC で買い、人間ゼロで on-chain 決済＋配達」の mechanism を live 証明。
+但し書き: buyer=automaton / seller=claude-p = self-payment → INV-7 で revenue 非計上(外部需要でない)。
+  config は証明済。real earning は外部 buyer が要る(= Bazaar list / marketing 集客)。
+次: registry で x402_sell を dormant→live に flip(serve が動く証明が出た) → loop に載せて検証 → 外部 buyer 獲得。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
