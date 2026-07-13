@@ -179,3 +179,44 @@ Franklin は自律citizenであり「代わりにtrade/babysitしない」原則
 **Q31（reputationの仕組み）**: ACP独自のreview機構を持つ：`acp client review --job-id 42 --rating 5`(1-5評価+任意テキスト250字)。**「providerがERC-8004 reputation registryに登録済みならon-chain記録、未登録ならoff-chainのみ」の二層構造**。「graduated agentは自動的にERC-8004へ登録される」という情報は二次ソースのみでUNVERIFIED。reputationがagent単位かoffering単位かも一次ソースに明記なし＝UNVERIFIED。
 
 **Q32（なぜbar chart画像等が取引されるか）**: 公式に直接の説明は無いが類似例あり：「A user may tag Butler with a request to place a trade based on information in a chart included in a social post」「A conglomerate of specialized agents is operating a 24/7 hedge fund」。**推測**：他agentが画像/チャートを解釈材料として消費するagent-to-agentパイプラインの一部。ただし前述の通りAPIデータの過半がテストデータだったため、**「$2のbar chart」自体が実需要でなくsandbox環境のテストの可能性が高い**、正直にそう書く。
+
+---
+
+## 創業者・沿革（2026-07-14、記事の人間ドラマ用フック）
+
+### Virtuals Protocol
+| 項目 | 内容 |
+|---|---|
+| 創業者 | Jansen Teng(共同創業者・CEO、Imperial College London卒、元BCGコンサルタント)、Wee Kee Tiew(共同創業者、同大学卒) |
+| 創業 | 2021年10月、Web3ゲームギルド「PathDAO」としてマレーシア・クアラルンプールで創業 |
+| 転機の物語 | PathDAOは$16.6Mシード(DeFiance Capital等)、評価額$600Mでスタートしたが、ゲーム市場崩壊でFDVが$600M→$6Mへ**99%暴落**。デートapp・音楽・レンディングと複数回ピボットするも失敗続き。2023年ChatGPT登場を機に「AIが次の波」と確信、90%のトークンホルダー同意でDAOごと作り変え2024年にAIエージェントプラットフォームへ転生 |
+| バイラルの瞬間 | 2024年10月Base上でローンチ、12月に時価総額$1B突破。象徴agent「Luna」(AIアイドル歌手として誕生、後に24時間ライブ配信ソロアーティスト化、TikTokフォロワー50万人超)が時価総額$5M→$100Mへ急騰 |
+| 規模 | 累計17,000以上のagent作成、プロトコル累計収益$39.5M超。従業員38〜67名(出典により差)、時価総額$2.6B前後(変動大) |
+| 出典 | `aicoin.com/en/article/432036`、`panewslab.com/en/articledetails/yhazh3br.html`、`whitepaper.virtuals.io/core-contributors`、`medium.com/@0xai.dev/virtuals-protocol-luna-55b661df601e`、`banklesstimes.com`(2024-11-29記事) |
+
+### Valory（Olas、旧Autonolas）
+| 項目 | 内容 |
+|---|---|
+| 創業者 | David Minarsch(共同創業者・CEO、Cambridge大学Applied Game Theory PhD、2019-2021 Fetch.aiでLead Economist/Head of Multi-Agent Systems)、David Galindo(共同創業者、元University of Birmingham計算機セキュリティ准教授、暗号学研究者)、Oaksprout the Tan(匿名DeFiコミュニティ貢献者) |
+| 創業 | 2021年7月、スイス・ツーク(Zug)にてValory AGとして創業 |
+| 転機の物語 | Minarschが語る転機は「2023年11月のOpenAI取締役会騒動を見て、中央集権的にコントロールされたAIが将来に本物のリスクをもたらすことが誰の目にも明らかになった」瞬間。ミッションは「コミュニティ・組織・国家が分散型自律エージェントを通じてAIシステムをco-own(共同所有)できるようにすること」 |
+| 改名の経緯 | "Autonolas"("Autonomy"+"Olas"=スペイン語で「波」)から"Olas"へ改名。組織成長に伴うブランド再定義、配色も冷たい黒青緑からパステル調へ |
+| 資金調達 | 2022年10月$4Mシード(True Ventures主導)。Pearlローンチ時$13.8M調達との報道あり(詳細UNVERIFIED) |
+| Mech Marketplace | 2025年2月ローンチ(CoinDesk報道)。Minarsch:「We launched Olas so that people could truly own their AI」 |
+| 規模 | 2026年時点でMech累計1,000万件超の取引、エコシステム全体で約2,000体のagent、日次アクティブ約500体 |
+| 出典 | `davidminarsch.github.io/about/`、`pulse2.com/valory-profile-david-minarsch-interview/`、`prnewswire.com`(2022-10 $4Mシード発表)、`olas.network/blog/a-new-visual-identity-for-autonolas`、`olas.network/mech-marketplace` |
+
+**記事フック候補**: Virtualsは「99%暴落した失敗プロジェクトからの生まれ変わり」、Valoryは「OpenAI取締役会騒動が引き金になった"AIを人間が共同所有する"という思想」。両方とも良いフック、記事[3]landscapeか個別記事の冒頭で使える。
+
+---
+
+## 検証確定（2026-07-14、自分でgh api+curl、subagent不使用）: 「ハンコを押すだけでも5%は入る」claim
+
+記事[4]の主張「ACPでは検収役も5%をもらう商売として設計されていますが、検収の中身が正しかったことを保証する仕組みはありません。ハンコを押すだけでも5%は入ります」を、**on-chainのSolidityコントラクト本体を直読みして検証、事実と確定**。
+
+`Virtual-Protocol/agent-commerce-protocol`の`contracts/acp/v1/ACPSimple.sol`（`raw.githubusercontent.com/Virtual-Protocol/agent-commerce-protocol/main/contracts/acp/v1/ACPSimple.sol`）、`signMemo(uint256 memoId, bool isApproved, string calldata reason)`関数(line 571-617)：
+- `isApproved`は単なるbool、`reason`は自由入力文字列でイベントログに残るだけ、検証には一切使われない。
+- evaluatorであることのrequireチェック(`isJobEvaluator`)はあるが、**成果物の中身をコード側がチェックする処理は皆無**。
+- `isApproved=true`かつ`PHASE_EVALUATION`→`PHASE_COMPLETED`遷移時、`_executePayableMemo`で即座に資金が動き、evaluatorFee(`evaluatorFeeBP`、10000=100%基準、記事の5%と整合)もこの流れでclaimされる。
+
+**結論：claimは正しい。SDK層だけでなくon-chainのコントラクトレベルでも、evaluatorの承認は「中身を読んだか」を一切問わないbooleanのみで、承認すれば無条件に資金が動く設計**。記事[4]の該当箇所は修正不要、事実として確定。

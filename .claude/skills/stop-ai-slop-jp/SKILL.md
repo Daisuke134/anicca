@@ -6,7 +6,6 @@ metadata:
   language: ja
   inspired-by: hardikpandya/stop-slop
   author: Daichi Nagashima (https://genshi.ai/)
-disable-model-invocation: true
 ---
 
 # Stop AI Slop(日本語版)
