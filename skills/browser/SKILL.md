@@ -33,6 +33,7 @@ run whatever file-only work the pass can still do, and report the failure honest
 | `ensure_browser.sh` | Chromium is dead → the loop is blind. Relaunches it with capped caches and restores the logins. Idempotent: prints `ALIVE` when it is already up. |
 | `scripts/session_vault.py` | A hard kill takes the newest cookies with it → re-login → 2FA → **a human**, which breaks autonomy. Snapshots every cookie **and localStorage** (some SPAs keep the session token there) to `~/.cloak/vault/daily-driver/auth-state.json` (launchd `ai.anicca.session-vault`, every 30 min) and pushes it back in when the browser returns. Also does `keepalive` (extend the server-side session + detect logout) and `totp` (generate a 2FA code so re-login needs no human). |
 | `scripts/cdp_tab_gc.py` | Each task opens a tab and nothing closes it. Fifteen-plus live tabs starved memory (load average past 21) and killed Chromium. Keeps one working tab, closes the rest. |
+| `scripts/scout.py` | Articles teach theory; the deepest signal is on the actual winning pages. Every improve cycle should LOOK at who is already winning (top sellers, viral clips, best-selling apps) and copy what they do. Fetches winner pages (public via `crwl`, or logged-in via CDP) and returns their content for the loop's model to learn from. `python3 scripts/scout.py '{"urls":[...],"mode":"public\|browser"}'` |
 
 ```bash
 python3 ~/anicca/skills/browser/scripts/session_vault.py dump      # snapshot logins (cookies + localStorage)
