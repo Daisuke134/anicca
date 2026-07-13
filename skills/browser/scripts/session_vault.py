@@ -13,6 +13,18 @@ authenticated"), done over CDP against the running daily-driver.
     python3 session_vault.py dump      # snapshot every cookie -> auth-state.json
     python3 session_vault.py restore   # push the vault back into the live browser
     python3 session_vault.py status    # how many cookies, which origins, how old
+    python3 session_vault.py keepalive <url> [url...]   # navigate authed pages to extend server-side session + detect logout
+    python3 session_vault.py totp <secret_key_or_@service>  # print a fresh TOTP code so login can finish without a human
+
+Why keepalive: cookie restore only saves a HARD crash. It does NOT save (b) the server invalidating
+the session or (c) a 2FA/passkey re-prompt. keepalive hits an authenticated page on a schedule so the
+server keeps the session warm, and reports logged_out=true the moment a page redirects to /login — so
+a loop can re-auth itself early instead of discovering it mid-task.
+
+Why totp: authenticator-app 2FA is the one re-login path a machine CAN finish alone. Store the TOTP
+secret once (issued when 2FA is enabled) and generate the 6-digit code with pyotp — no phone, no human.
+Google passkey and Apple-ID-SMS are NOT solvable in-browser; earn accounts must use an AI-owned account
+with app-based 2FA, never Dais's passkey-locked Google.
 """
 import asyncio
 import json
@@ -24,6 +36,7 @@ import urllib.request
 CDP = "http://127.0.0.1:9222"
 VAULT_DIR = os.path.expanduser("~/.cloak/vault/daily-driver")
 VAULT = os.path.join(VAULT_DIR, "auth-state.json")
+TOTP_SECRETS = os.path.join(VAULT_DIR, "totp-secrets.json")  # {"@coconala": "BASE32SECRET", ...}, chmod 600
 KEEP_BACKUPS = 8
 
 try:
@@ -49,12 +62,72 @@ async def _call(method, params=None):
                 return msg.get("result", {})
 
 
+# Which origins are worth carrying localStorage for. Cookies cover auth on most sites,
+# but some SPAs keep the auth/session token in localStorage — so a hard kill that loses the
+# profile also loses login unless we snapshot it too (steel-browser: "cookies AND local
+# storage across requests"). Keep this list to the sites the loops actually log into.
+LS_ORIGINS = [
+    "https://coconala.com", "https://www.instagram.com", "https://www.tiktok.com",
+    "https://www.youtube.com", "https://x.com",
+]
+
+
+async def _localstorage(op, data=None):
+    """op='read' -> {origin: {k:v}}; op='write' -> push data back. One tab per origin over CDP."""
+    out = {}
+    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+        mid = [0]
+
+        async def call(method, params=None, sess=None):
+            mid[0] += 1
+            i = mid[0]
+            m = {"id": i, "method": method, "params": params or {}}
+            if sess:
+                m["sessionId"] = sess
+            await ws.send(json.dumps(m))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("id") == i:
+                    if "error" in msg:
+                        raise RuntimeError(msg["error"])
+                    return msg.get("result", {})
+
+        origins = LS_ORIGINS if op == "read" else list((data or {}).keys())
+        for origin in origins:
+            try:
+                t = await call("Target.createTarget", {"url": origin})
+                tid = t["targetId"]
+                sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+                await asyncio.sleep(2)
+                if op == "read":
+                    r = await call("Runtime.evaluate",
+                                   {"expression": "JSON.stringify(Object.fromEntries(Object.entries(localStorage)))",
+                                    "returnByValue": True}, sess=sess)
+                    val = r.get("result", {}).get("value")
+                    if val and val != "{}":
+                        out[origin] = json.loads(val)
+                else:
+                    kv = data.get(origin, {})
+                    expr = "".join(f"localStorage.setItem({json.dumps(k)},{json.dumps(v)});" for k, v in kv.items())
+                    if expr:
+                        await call("Runtime.evaluate", {"expression": expr}, sess=sess)
+                await call("Target.closeTarget", {"targetId": tid})
+            except Exception:
+                continue  # one bad origin must not abort the whole snapshot
+    return out
+
+
 def dump():
     res = asyncio.run(_call("Storage.getCookies"))
     cookies = res.get("cookies", [])
     if not cookies:
         # never overwrite a good vault with an empty snapshot from a half-dead browser
         return {"ok": False, "reason": "browser returned zero cookies; vault left untouched"}
+
+    try:
+        local_storage = asyncio.run(_localstorage("read"))
+    except Exception:
+        local_storage = {}
 
     os.makedirs(VAULT_DIR, exist_ok=True)
     if os.path.exists(VAULT):
@@ -63,15 +136,16 @@ def dump():
         for old in backups[:-KEEP_BACKUPS]:
             os.remove(os.path.join(VAULT_DIR, old))
 
-    payload = {"ts": int(time.time()), "cookies": cookies}
+    payload = {"ts": int(time.time()), "cookies": cookies, "localStorage": local_storage}
     tmp = VAULT + ".tmp"
     with open(tmp, "w") as f:
         json.dump(payload, f)
     os.replace(tmp, VAULT)
-    os.chmod(VAULT, 0o600)  # cookies are credentials
+    os.chmod(VAULT, 0o600)  # cookies + tokens are credentials
 
     domains = sorted({c.get("domain", "") for c in cookies})
-    return {"ok": True, "cookies": len(cookies), "domains": len(domains), "vault": VAULT}
+    return {"ok": True, "cookies": len(cookies), "domains": len(domains),
+            "localStorage_origins": len(local_storage), "vault": VAULT}
 
 
 def restore():
@@ -82,7 +156,14 @@ def restore():
     if not cookies:
         return {"ok": False, "reason": "vault is empty"}
     asyncio.run(_call("Storage.setCookies", {"cookies": cookies}))
-    return {"ok": True, "restored": len(cookies), "age_hours": round((time.time() - saved.get("ts", 0)) / 3600, 1)}
+    ls = saved.get("localStorage", {})
+    if ls:
+        try:
+            asyncio.run(_localstorage("write", ls))
+        except Exception:
+            pass
+    return {"ok": True, "restored": len(cookies), "localStorage_origins": len(ls),
+            "age_hours": round((time.time() - saved.get("ts", 0)) / 3600, 1)}
 
 
 def status():
@@ -96,10 +177,79 @@ def status():
             "logged_in_origins": interesting}
 
 
+async def _keepalive(urls):
+    """Open each url in its own tab, wait for it to settle, and see where it ended up.
+    A redirect to a /login or /signin URL means the server dropped the session."""
+    results = []
+    async with websockets.connect(_browser_ws(), max_size=64 * 1024 * 1024) as ws:
+        mid = [0]
+
+        async def call(method, params=None, sess=None):
+            mid[0] += 1
+            i = mid[0]
+            m = {"id": i, "method": method, "params": params or {}}
+            if sess:
+                m["sessionId"] = sess
+            await ws.send(json.dumps(m))
+            while True:
+                msg = json.loads(await ws.recv())
+                if msg.get("id") == i:
+                    if "error" in msg:
+                        raise RuntimeError(msg["error"])
+                    return msg.get("result", {})
+
+        for url in urls:
+            t = await call("Target.createTarget", {"url": url})
+            tid = t["targetId"]
+            sess = (await call("Target.attachToTarget", {"targetId": tid, "flatten": True}))["sessionId"]
+            await asyncio.sleep(4)  # let redirects/JS settle
+            hist = await call("Page.getNavigationHistory", sess=sess)
+            entries = hist.get("entries", [])
+            final = entries[hist.get("currentIndex", len(entries) - 1)]["url"] if entries else url
+            logged_out = any(k in final.lower() for k in ("/login", "/signin", "/sign_in", "accounts.google.com/signin"))
+            results.append({"url": url, "final": final, "logged_out": logged_out})
+            await call("Target.closeTarget", {"targetId": tid})
+    return results
+
+
+def keepalive(urls):
+    if not urls:
+        return {"ok": False, "reason": "usage: keepalive <url> [url...]"}
+    res = asyncio.run(_keepalive(urls))
+    any_out = any(r["logged_out"] for r in res)
+    return {"ok": not any_out, "logged_out": any_out, "pages": res}
+
+
+def totp(key):
+    """Generate a fresh 6-digit code. key is a base32 secret, or @service to look it up in the vault."""
+    try:
+        import pyotp
+    except ImportError:
+        return {"ok": False, "reason": "pip install pyotp"}
+    secret = key
+    if key.startswith("@"):
+        if not os.path.exists(TOTP_SECRETS):
+            return {"ok": False, "reason": f"no {TOTP_SECRETS}; store {{\"{key}\": \"BASE32\"}} chmod 600"}
+        secret = json.load(open(TOTP_SECRETS)).get(key)
+        if not secret:
+            return {"ok": False, "reason": f"{key} not in totp-secrets.json"}
+    try:
+        code = pyotp.TOTP(secret.replace(" ", "")).now()
+    except Exception as e:
+        return {"ok": False, "reason": f"bad secret: {e}"}
+    return {"ok": True, "code": code}
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "status"
+    rest = sys.argv[2:]
     try:
-        out = {"dump": dump, "restore": restore, "status": status}[cmd]()
+        if cmd == "keepalive":
+            out = keepalive(rest)
+        elif cmd == "totp":
+            out = totp(rest[0]) if rest else {"ok": False, "reason": "usage: totp <secret|@service>"}
+        else:
+            out = {"dump": dump, "restore": restore, "status": status}[cmd]()
     except KeyError:
         out = {"ok": False, "reason": f"unknown command {cmd}"}
     except Exception as e:
