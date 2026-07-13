@@ -1,3 +1,11 @@
+---
+paths:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.swift"
+  - "**/*.js"
+---
+
 # 実装レビュー — vcsdd-adversary のみ（codex-review は廃止）
 
 レビューゲートは VCSDD の fresh-context adversary（モデルは `~/.claude/CLAUDE.md` モデル分業表: Opus 4.8）に一本化する。OpenAI Codex CLI による codex-review は使わない（Dais 2026-07-08）。

@@ -1,3 +1,13 @@
+---
+paths:
+  - "**/*.ts"
+  - "**/*.tsx"
+  - "**/*.js"
+  - "**/*.jsx"
+  - "**/*.swift"
+  - "**/*.py"
+---
+
 # Coding Style
 
 ## Immutability (CRITICAL)

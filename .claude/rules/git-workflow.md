@@ -1,3 +1,9 @@
+---
+paths:
+  - ".github/**"
+  - "**/*.yml"
+---
+
 # Git Workflow
 
 ## Commit Format

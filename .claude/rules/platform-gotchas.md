@@ -1,3 +1,10 @@
+---
+paths:
+  - "aniccaios/**"
+  - "**/*.swift"
+  - "**/*.pbxproj"
+---
+
 # iOS Platform Gotchas
 
 プラットフォーム固有の問題と回避策。経験から学んだ教訓を記録。
