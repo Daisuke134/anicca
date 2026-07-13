@@ -164,3 +164,82 @@ NEW thesis は別 capability を要求する:
 ```
 trading（T15/T7）は「$1→$10 の後段」に格下げしてよいか、が次の意思決定。
 ```
+
+---
+
+## 8 — 追記（2026-07-13, 実測）: earn の実弾。既に「stage 2」の武器を持っている
+
+**§6 の staged model を訂正する。「Agora が rake を取る事業」を作らないと agent が稼げない、は嘘だった。**
+agent は**今すぐ**自分の wallet に USDC を稼げる。マーケットプレイス（gigwork）を経由する必要もない。
+
+### 8.1 x402 は買う側と売る側の両方が既に在る（自分で実コード読了）
+
+```
+BUY 側（金を払って tool を使う）:
+  Apify x402 agentic wallet skill（awal v2.12.0、実測で存在確認）
+    npx awal auth login <email> → OTP → x402 で prepaid token を買う($1)
+    → Apify の数千の Actor(web scrape/social/maps/news)を account 無しで使う
+    ★spend 側★。email OTP + USDC + ETH(gas) の funding が要る。zero-capital ではない
+    価値: 稼ぐ agent が使う「живая web data の手足」。clip/affiliate の材料集めに効く
+
+SELL 側（tool を売って USDC を稼ぐ）:
+  ★我々は既に持っている★ ~/anicca/skills/earn/x402-sell
+    serve.mjs = GET /research?q= を 402-gate → $0 product(Wikipedia+HN+Jina)を返す
+    payTo = 自分の wallet。CDP facilitator が settle gas を払い x402 Bazaar に載せる
+    ★Base mainnet で E2E 検証済み 2026-06-29: 402→買い手が払う→CDP settle→
+      tx 0x467ee2c9… で $0.003 USDC が payTo に着弾→research 返却★
+    $0 product = 全売上が純利益。どの AI（human/self-funded, 任意 model）も同じ recipe で再現
+```
+
+**含意: 我々は blockrun を"転売"しない。自分の x402 endpoint を立て、payTo=自分の wallet。**
+これが「stage 2（自分の物で稼ぐ）」の実体。既に mechanism は動いている。**足りないのは demand（外部の買い手）だけ**で、mechanism ではない（x402-sell の honesty rule: 実 external USDC 着弾でしか売上に数えない）。
+
+### 8.2 稼ぐ道はマーケットプレイスだけではない（earn フォルダの実弾）
+
+`~/anicca/skills/earn/` に既にある（human credential 不要・crypto 着金）:
+```
+x402-sell        自分の paid API を売る（検証済み）          ← 本命
+gig / board-poller  gig work のボードを見て受注              ← marketplace 系
+clip / clip-producer / clip-promote  clipping（動画切り抜き→報酬）
+finchip-publish  finchip 発行
+polymarket / sol / hl -trade  trading（資本が要る＝後段）
+token-launch / funding / video  その他
+```
++ Dais 指摘の未実装だが自明な道: **bounty**（AI が自前で GitHub アカウントを作れる→ crypto 払いの bounty を取る）、**affiliate**（crypto 払いのアフィリエイト）。
+これらは全て「compute + 自前 credential だけ、人間の財布ゼロ」で wallet に着金する = zero-to-one の本体。
+
+### 8.3 訂正後の戦略（両立させる）
+
+```
+❌ 旧: stage1で blockrun rail を使い稼ぐ → stage2で Agora が rake を取る（順序依存）
+✅ 新: 「agent が稼ぐ」と「Agora が rake を取る」は別レイヤー。並行してよい
+
+  A. agent を稼がせる（今すぐ・最優先）:
+     x402-sell を live 化 + demand を作る（Bazaar seed / awesome-x402 PR / agent 開発者に告知）
+     + bounty / clip / affiliate（crypto 着金の別ルート）を live 化
+     → N_earning>0。人間の funding ゼロ。これが holy grail の実証
+     → ここで Agora-事業の収益は $0 で構わない
+
+  B. blockrun エコシステムにも乗る（並行・貢献 + 露出）:
+     自分の talent を business.blockrun.ai に listing（hire される）
+     + @blockrun/llm を直接 import して手足を借りる（copy しない）
+
+  C. Agora=事業の rake（後で・任意）:
+     agent が稼げるようになったら、Agora を「他の AI を x402 Bazaar の売り手に
+     する router / gateway」にして margin を取る。x402 Bazaar が開いた discovery 層
+     （blockrun の closed market ではなく、CDP facilitator がカタログ）
+```
+
+**要するに**: 「go straight to stage 2」= 正しい。x402-sell が既に stage 2 だから。
+trading は消さず後段。marketplace は earn の1手段にすぎない（bounty/clip/affiliate/自前API が並ぶ）。
+
+### 8.4 Apify skill のセットアップ状態（実測）
+```
+awal CLI = v2.12.0 存在確認済み（npx -y awal --version）
+awal status = wallet 未認証（"Authentication required" = ★想定状態、バグでない★）
+次の一手: awal auth login を AI 自前 email（AgentMail/gmail plus-address）で行い
+          OTP を自動読み（ig-account-create の gog gmail 方式）→ zero-human 化。
+          その後 USDC+ETH(gas ~0.001 ETH) を Base に funding して prepaid token を買う。
+          ※funding は spend。Dais wallet からは出さない（earn identity は AI 自前）
+```
+
