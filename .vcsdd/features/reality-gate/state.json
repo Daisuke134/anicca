@@ -1,7 +1,7 @@
 {
   "featureName": "reality-gate",
   "mode": "lean",
-  "currentPhase": "1c",
+  "currentPhase": "6",
   "phaseHistory": [
     {
       "from": "init",
@@ -20,6 +20,12 @@
       "to": "1c",
       "timestamp": "2026-07-12T17:02:24.863Z",
       "reason": "Phase 1c iteration 1 revision: fixed FIND-001 (recordGate enum values), FIND-002 (provenance-based backstop replacing prose keyword-matching), FIND-003 (moot under redesign), FIND-004 (no phantom evidence field), FIND-005 (real .claude/settings.json hook convention + live-fire PROP-019) per reviews/spec-review-01.md"
+    },
+    {
+      "from": "1c",
+      "to": "6",
+      "timestamp": "2026-07-13T02:45:00Z",
+      "reason": "Phases 2a/2b/3/5 executed: enforceVerdict + negative tests + logged-out capture + runtime wiring + adversary 1 round (1 blocking found and fixed, re-verified by hand)"
     }
   ],
   "iterations": {
@@ -44,6 +50,28 @@
       },
       "adversaryVerdict": "PASS",
       "adversaryReviewedAt": "2026-07-12T19:07:35.135Z"
+    },
+    "3": {
+      "verdict": "PASS",
+      "reviewedBy": "adversary (1 round, execute-to-break)",
+      "details": {
+        "invariantsTested": 6,
+        "blockingFound": 1,
+        "blocking": "verdict trail rows unsigned -> a loop could reset the CANNOT_VERIFY streak and evade self-fix forever",
+        "fixCommit": "069be5ec",
+        "reVerifiedBy": "claude-p own hands: forged row now yields FAIL/artifact_trail_tampered + escalateSelfFix true"
+      }
+    },
+    "6": {
+      "verdict": "PASS",
+      "reviewedBy": "claude-p (own-eyes)",
+      "details": {
+        "spec": "1c PASS",
+        "tests": "node 348 / bash GREEN / python 26+32 / gig regression 12, all 0 fail",
+        "impl": "enforceVerdict wired unconditionally into runtime spawn path (single call site)",
+        "verification": "negative tests execute and really emit FAIL",
+        "reality": "logged-out IG fixed-public-surface membership check yields all three verdicts (measured 2026-07-13)"
+      }
     }
   },
   "sprintCount": 0,
