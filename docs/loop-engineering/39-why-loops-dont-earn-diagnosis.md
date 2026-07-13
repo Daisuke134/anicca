@@ -19,16 +19,20 @@
 
 ## 1. 真因（4つ。実ログ + catalog-gate.mjs で確認）
 
-### 真因1 ★zero-capital earn skill が broke agent の menu から隠れる★（最重要）
-`catalog-gate.mjs::filterCatalog`: 残高が reserve 未満のとき、slot は
-`alwaysAvailable` か `riskTag==="safe"` か「建玉保有」でなければ**隠す**。
-untagged は fail-closed で「capital-risking 扱い」→ **隠す**。
+### 真因1 ★全 zero-capital earner が registry で status:"dormant" = available slot に載らない★（最重要）
+**訂正（2026-07-14, registry.json 実測）**: 当初「risk tag が safe でないから gate が隠す」と書いたが**外れ**。
+実測すると x402_sell / economy/gig / earn/clip / earn/video は**既に risk:"safe"**。gate 以前の問題だった。
+
+真因は `prompt.mjs::liveSlotNames` = ★`status==='live'` の slot だけ★を available にする。実測:
 ```
-→ x402_sell / gig / bounty / clip = 「資本ゼロで稼ぐ」skill なのに
-  "safe" tag が付いてない → broke なほど隠される
-  = ★財布ゼロの agent が、ゼロから稼ぐ唯一の道を奪われる★ = zero-to-one を殺すバグ
-  broke な脳に残るのは narrate / self/coordinate / issue-dev だけ → 235/300 wake が narrate
+LIVE な earn slot = earn/sol-trade(capital) / earn/polymarket-trade(capital) / yield(capital) のみ
+DORMANT(= available に載らない) zero-capital earner:
+  economy/gig(safe) / x402_sell(safe) / earn/clip(safe) / earn/clip-producer(safe) / earn/video(safe)
+→ ★broke agent の live な earn は「資本が要る trading」だけ。資本ゼロで稼ぐ道は全部 dormant★
+  → $1.95 の脳が選べる earn が実質ゼロ → narrate / self/coordinate / issue-dev しか残らない
+  → 235/300 wake narrate の正体。skill 実体は存在(serve.mjs/gig.mjs)、x402_sell は tx 検証済み
 ```
+= zero-to-one を殺していたのは「risk gate」でなく「earner が dormant のまま live 化されていない」こと。
 
 ### 真因2 金が trapped、取り出す道が無い
 ```
@@ -53,8 +57,10 @@ available-slots には無い → 脳が選ぶ → dispatch されない → 空�
 
 ## 3. 修正の方向（★まだ直さない。記録のみ★）
 ```
-FIX-1 zero-capital earn skill(x402_sell/gig/bounty/clip)を "safe"(または earn-no-capital)tag に
-      → broke でも常に menu に出す。財布ゼロが稼ぎ始められる = zero-to-one の解錠
+FIX-1 zero-capital earner(economy/gig / x402_sell / earn/clip / earn/clip-producer / earn/video)を
+      registry.json で status:"dormant" → "live" に（既に risk:"safe"）。
+      ★但し flip 前に各 skill が instance で実際に走ることを検証★(x402_sell=server立つ, gig=board 読める)
+      → broke でも menu に earn が出る = zero-to-one の解錠
 FIX-2 trapped money を解放: hl_trade を(建玉ありとして)常時可視化 + polymarket-trade が
       cancel/withdraw の args を honor する(issue #1031)
 FIX-3 prompt の「選べる options」= 実 available-slots に一致させる(嘘を見せない)
