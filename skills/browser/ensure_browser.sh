@@ -17,6 +17,9 @@ LOG="$HOME/.openclaw/logs/cdp-daily-driver-guard.log"
 alive() { curl -s --max-time 4 "$CDP/json/version" >/dev/null 2>&1; }
 
 if alive; then
+  # A loop killed with -9 never releases its context, and an orphaned context keeps its tabs alive
+  # forever. Every pass comes through here, so this is the one place a reaper cannot be forgotten.
+  python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_context_lease.py" gc --idle-min 45 >/dev/null 2>&1 || true
   echo "ALIVE"
   exit 0
 fi
