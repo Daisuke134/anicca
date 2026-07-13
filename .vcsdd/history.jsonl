@@ -363,3 +363,7 @@
 {"timestamp":"2026-07-12T11:28:24.727Z","event":"feature_created","featureName":"config-delivery-verification","mode":"lean","language":"typescript"}
 {"timestamp":"2026-07-12T11:35:09.297Z","event":"phase_transition","featureName":"config-delivery-verification","from":"init","to":"1a","iteration":1,"phase":"1a"}
 {"timestamp":"2026-07-12T11:35:09.298Z","event":"phase_transition","featureName":"config-delivery-verification","from":"1a","to":"1b","iteration":1,"phase":"1b"}
+{"timestamp":"2026-07-12T12:00:26.296Z","event":"gate_recorded","featureName":"config-delivery-verification","phase":"1c","verdict":"PASS","reviewedBy":"adversary"}
+{"timestamp":"2026-07-12T12:00:26.298Z","event":"phase_transition","featureName":"config-delivery-verification","from":"1b","to":"1c","iteration":1,"phase":"1c"}
+{"timestamp":"2026-07-12T12:00:26.311Z","event":"phase_transition","featureName":"config-delivery-verification","from":"1c","to":"2a","iteration":1,"phase":"2a"}
+{"timestamp":"2026-07-12T12:00:26.311Z","event":"sprint_started","featureName":"config-delivery-verification","sprintNumber":1,"phase":"2a"}
