@@ -58,13 +58,7 @@ Mac Mini（`anicca-mac-mini-1`、Tailscale 100.99.82.95）で直接実行する�
 
 ## ローカル + push 先マップ
 
-| ローカル path | Push 先 origin | 役割 |
-|---|---|---|
-| `~/anicca-project/`（products working tree はここ1つのみ） | `github.com/Daisuke134/anicca-products`（public） | iOS/web/api/mobile（aniccaai.com 含む）。Anicca instance からの直接 write は禁止、Dais + Claude Code のみ編集可 |
-| `~/.openclaw/` | `github.com/Daisuke134/anicca-dais`（private） | 本番 Anicca-OpenClaw: gateway/cron/skills/state |
-| `~/anicca/` | `github.com/Daisuke134/anicca`（public OSS） | OSS フレームワーク本体 |
-
-push は各 path で `git push` 単体。push前に必ず `git remote -v && git branch -vv` で origin を確認する。GitHub Actions の新規追加は禁止（`.github/workflows/netlify-deploy.yml` の1個のみ）— 定期実行/cron は全て `~/.openclaw/cron/jobs.json`（OpenClaw gateway）が正本。
+products working tree = `~/anicca-project/`（→ anicca-products public）、`~/.openclaw/`（→ anicca-dais private, cron正本）、`~/anicca/`（→ anicca OSS public）。詳細表・push規約 → CLAUDE.local.md「ローカル + push 先マップ（詳細）」。
 
 ## ブランチ & デプロイ
 
@@ -93,17 +87,7 @@ commit/push 前に必ず `git fetch` して origin より遅れていないか�
 
 ## 並列開発（Git Worktrees）
 
-原則 worktree、ドキュメント変更のみ dev 直接可。同じブランチで複数エージェントが作業しない。
-
-```bash
-git worktree add .worktrees/<task> -b feature/<task>
-cd .worktrees/<task>
-# 完了後
-cd /path/to/anicca-project && git merge feature/<task>
-git worktree remove .worktrees/<task> && git branch -d feature/<task>
-```
-
-各 worktree は独自 spec を持ち、触るファイルを spec 境界に明記する。バックエンドは worktree push で自動デプロイされないため `cd apps/api && railway up --environment staging` を使う。複数エージェントのバックエンドデプロイは順番に行う。
+正本 → `.claude/rules/worktree.md`。原則 worktree、ドキュメント変更のみ dev 直接可。同じブランチで複数エージェントが作業しない。詳細コマンド → CLAUDE.local.md「並列開発（Git Worktrees、詳細）」。
 
 ## ツール優先順位（このプロジェクト固有分）
 
@@ -117,86 +101,7 @@ Web検索/コード内シンボル操作/ブラウザ/Mac操作の既定は `~/.
 
 ## プロジェクト概要
 
-**Anicca** = プロアクティブ行動変容エージェント。
-
-| 項目 | 値 |
-|---|---|
-| iOS | Swift/SwiftUI（iOS 15+, Xcode 16+） |
-| API | Node.js/Express（Railway） |
-| DB | PostgreSQL/Prisma |
-| 決済 | RevenueCat（$9.99/月, $49.99/年） |
-| 分析 | Mixpanel（Anicca 専用、factory アプリには入れない） |
-| E2E | Maestro |
-| Agent | OpenClaw（`agent_docs/openclaw_integration.md`） |
-
-## ミニマム folder tree
-
-```
-~/anicca-project/                          # products folder（唯一）
-├── aniccaios/                             # iOS Swift app（release は fastlane）
-├── apps/
-│   ├── api/                               # Node/Express API (Railway)
-│   └── landing/                           # Next.js → aniccaai.com
-│       ├── public/dashboard.json          # dashboard-sync（Dais owned）が render、Anicca 直接 write 禁止
-│       ├── content/blog/                  # Dais owned blog factory
-│       └── data/research/                 # topic queue（Dais owned）
-├── mobile-apps/                           # factory apps
-├── .github/workflows/netlify-deploy.yml   # これ1個だけ
-└── docs/superpowers/{specs,plans}/        # SDD spec + plan
-
-~/.openclaw/                               # 本番 Anicca-OpenClaw、cron 正本
-├── skills/  cron/jobs.json  gateway/  state/
-├── .env（chmod 600、secrets, git ignore）
-└── CONSTITUTION.md  IDENTITY.md  SOUL.md
-
-~/anicca/                                  # OSS フレームワーク
-├── skills/  identity/  runtime/  services/
-├── control-room/  install.sh
-└── adapters/  templates/
-```
-
-## Anicca Architecture — 1 instance + human-funded claude loops、dashboard read-only
-
-```
-┌────────────────────────────────────────────────────────────────┐
-│         Anicca: OpenClaw instance + human-funded loops         │
-├────────────────────────────────────────────────────────────────┤
-│  #1 Anicca-OpenClaw（Dais 専用、本体）                          │
-│    body : ~/.openclaw/                                         │
-│    repo : anicca-dais（private）                                │
-│    fuel : ChatGPT Plus 課金 / provider = openai-codex           │
-│    cron : ~221                                                  │
-│                                                                  │
-│  human-funded claude ループ群（このセッション種別）              │
-│    fuel : Anthropic subscription（Dais の Claude Code/Pro）      │
-│    role : 自律 earn（wallet 0x810f 等）+ 開発 ad-hoc            │
-│                                                                  │
-│  どちらも自分の body にのみ書く（state/*.jsonl, ledger, cron log） │
-│                    │                                             │
-│                    ▼                                            │
-│  dashboard-sync（Dais owned、Anicca ではない）                  │
-│    OpenClaw state を fetch → dashboard.json を render           │
-│    → anicca-products へ push → netlify 自動デプロイ             │
-│    → aniccaai.com/dashboard                                     │
-└────────────────────────────────────────────────────────────────┘
-```
-
-### aniccaai.com への書き込み制限
-
-| 主体 | 書いてよい場所 | 書いてはいけない場所 |
-|---|---|---|
-| Anicca-OpenClaw | `~/.openclaw/state/`, `cron/`, `skills/`（自分の body） | `~/anicca-project/apps/landing/**`、anicca-products repo |
-| dashboard-sync（Dais owned） | `dashboard.json`（render 結果） | Anicca state の改変 |
-| Claude Code（開発 IDE） | 全 path、Dais 指示時 | 監視なしの unsupervised cron / aniccaai.com push |
-
-Anicca instance の自己更新は body file を書くのみ → dashboard-sync が pull して dashboard.json を render → aniccaai.com に反映する。aniccaai.com は Dais のサイトであり、Anicca は write 権限を持たない。
-
-### fuel 確認
-
-```bash
-openclaw models status | head -5     # → openai-codex
-# Claude Code: system prompt の "Powered by ..." 表示、出ないなら /model
-```
+**Anicca** = プロアクティブ行動変容エージェント（iOS Swift/SwiftUI + Node/Express API + PostgreSQL/Prisma + RevenueCat + OpenClaw agent）。スタック詳細表・folder tree・アーキテクチャ図・write制限・fuel確認 → CLAUDE.local.md「プロジェクト概要」「ミニマム folder tree」「Anicca Architecture」。
 
 ## 技術 gotcha
 
@@ -204,11 +109,7 @@ iOS/SwiftUI/RevenueCat/Xcode/App Store Connect 固有の既知の問題と回避
 
 ## 参照先（必要時に Read）
 
-| ファイル | いつ読む |
-|---|---|
-| `.cursor/plans/reference/secrets.md` | デプロイ・Secret 設定時 |
-| `.cursor/plans/reference/infrastructure.md` | インフラ・Railway 作業時 |
-| `agent_docs/openclaw_integration.md` | OpenClaw 作業時 |
+デプロイ/Secret時→`.cursor/plans/reference/secrets.md`、インフラ/Railway時→`.cursor/plans/reference/infrastructure.md`、OpenClaw作業時→`agent_docs/openclaw_integration.md`。一覧 → CLAUDE.local.md「参照先」。
 
 ## 言語
 
