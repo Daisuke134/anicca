@@ -15,13 +15,18 @@ import {
 // REQ-005: finding category catalog
 // ---------------------------------------------------------------------------
 
-test("FINDING_CATEGORIES contains exactly the 6 REQ-005 categories", () => {
+test("FINDING_CATEGORIES contains exactly the 7 REQ-005/REQ-004(reality-gate) categories", () => {
+  // REQ-001/REQ-004 (reality-gate): "post_not_publicly_visible" added as the category the
+  // provenance backstop attaches to its synthesized FAIL/CANNOT_VERIFY findings — the
+  // catalog is an "open, growable set" per REQ-004's own EARS text; this length-7 test is
+  // the deliberate, spec-sanctioned update of the prior length-6 test.
   assert.deepEqual(
     [...FINDING_CATEGORIES].sort(),
     [
       "internal_transfer_mislabeled",
       "mock_marker_in_success_path",
       "narrate_only_claim",
+      "post_not_publicly_visible",
       "report_ledger_mismatch",
       "report_onchain_mismatch",
       "unhealthy_strategy",
