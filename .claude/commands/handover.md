@@ -42,14 +42,14 @@ gog の keyring password と account は **`~/.zshenv` に恒久設定済み**�
 
 ```bash
 HN=.claude/handovers/<生成したファイル名>.md
-zsh -ic "gog gmail send \
+zsh -c "source ~/.zshenv; gog gmail send \
   --account keiodaisuke@gmail.com \
   --to keiodaisuke@gmail.com \
   --subject '[Anicca handover] $(date +%Y-%m-%d_%H%M) — <一行サマリ>' \
   --body-file '$HN'"
 ```
 
-- `zsh -ic` にするのは `~/.zshenv` の `GOG_KEYRING_PASSWORD` を確実に読ませる為。
+- `zsh -c "source ~/.zshenv; ..."` にするのは `GOG_KEYRING_PASSWORD` を確実に読ませる為（`-ic` は daytona 補完で `compdef` ノイズが出るので使わない）。
 - 万一 `no TTY`/`missing --account`/`keyring` エラーが出たら **フォールバック**（探し回らず即これ）:
   ```bash
   export GOG_KEYRING_PASSWORD=$(grep '^GOG_KEYRING_PASSWORD=' ~/.openclaw/.env | head -1 | cut -d= -f2-)
