@@ -1,0 +1,251 @@
+You are an App Store Optimization (ASO) expert with deep knowledge of Apple's App Store search algorithm and conversion best practices. You are optimizing the listing for Anicca, a gentle proactive-affirmation iOS app for the Daily Affirmations / Health & Fitness category.
+
+## App context (authoritative)
+
+Anicca = proactive Buddhist affirmation iOS app. Sends a single line of kindness at the exact moment the user's mind unravels (11:47pm scroll, 14:18 over-checking, 23:51 spirals). Not habit/streak based — arrives unprompted. RC subscription $9.99/mo or $49.99/yr with 3-day free trial. Currently 1.8.9 LIVE.
+
+Source: https://aniccaai.com/affirmation-app — fetched and pasted below verbatim:
+
+```
+[← anicca.ai](https://aniccaai.com/)
+
+anicca
+
+[JA](https://aniccaai.com/affirmation-app/ja)
+
+Anicca · iOS · Health & Wellness
+
+# you don't  have to be  okay_right now._
+
+Anicca is a quiet companion on your phone. When the spiral starts — at 11:47pm, in line at the pharmacy, the second you open Instagram — a single line of kindness arrives. You don't have to open an app. It finds you.
+
+[![Download on the App Store](https://aniccaai.com/app-store-badge-en.svg)](https://apps.apple.com/us/app/daily-affirmations-anicca/id6755129214)
+
+★ 4.8App Store · Health & Fitness
+
+- iOS 15+
+- No streaks
+- No tracker
+- No guilt
+- Private by design
+
+![Anicca app — incoming notification](https://aniccaai.com/screenshots/en/notification.png)
+
+anicca · now
+
+The story your mind is telling you at this hour is not the truth
+
+Featured in soft-life TikTok · As gentle as a friend who has done the work
+
+I. The premise
+
+## Every other affirmation app  _waits for you to open it._
+
+The spiral does not wait. It comes at midnight, at red lights, in the bathroom mirror. By the time you remember to open the journaling app, the moment has passed. Anicca was built backwards: the affirmation arrives at the spiral. Not a habit, not a streak — a knock on the door.
+
+II. A day with Anicca
+
+## One line of kindness,  _at the right moment._
+
+Anicca learns the shape of your day. She doesn't bother you when you're fine — she shows up when the wave comes.
+
+- 07:42
+
+
+
+anicca
+
+
+
+"You woke up tired. Today does not have to be efficient. It has to be lived."
+
+- 14:18
+
+
+
+anicca
+
+
+
+"You re-read the message you sent. It was kind. Stop checking it."
+
+- 23:51
+
+
+
+anicca
+
+
+
+"The story your mind is telling you at this hour is not the truth. Sleep is allowed to be the answer."
+
+
+III. Three screens, three feelings
+
+## Built like a _monastery_,  moves like an _app_.
+
+![Tell it what hurts](https://aniccaai.com/screenshots/en/onboarding.png)
+
+01
+
+### Tell it what hurts
+
+Onboard in 90 seconds. Pick what you carry — anxiety, self-doubt, grief, late nights. Anicca calibrates to the exact shape of your weather.
+
+![It arrives at the spiral](https://aniccaai.com/screenshots/en/notification.png)
+
+02
+
+### It arrives at the spiral
+
+Not a digest. Not a daily push at 8am. Anicca learns when your mind unravels and meets you there — once, briefly, gently.
+
+![A small lighter feeling](https://aniccaai.com/screenshots/en/nudge-card.png)
+
+03
+
+### A small lighter feeling
+
+Tap to read. Thumb up if it lands. Cards become more you. Nothing to track. Nothing to lose.
+
+IV. The voice
+
+## Lines you might  _actually keep._
+
+Real Anicca cards. Tap a thumb up if it lands; the model writes more like that one.
+
+- "You are allowed to disappoint people who never asked how you were."
+
+boundaries · 22:14
+
+- "The version of you from a year ago would be proud you are still here."
+
+self-love · 09:02
+
+- "A storm is not a sign that you built the house wrong."
+
+grief · 03:38
+
+- "You can want the thing and not be ready for the thing on the same day."
+
+manifestation · 07:55
+
+- "Rest is not the reward for finishing. It is the requirement for continuing."
+
+burnout · 18:40
+
+- "Anicca means impermanence. The feeling you are in right now is also passing."
+
+anxiety · 23:47
+
+
+V. Why it works
+
+## Not another _habit tracker_.
+
+|  | Other apps | Anicca |
+| --- | --- | --- |
+| Trigger | You remember to open it | It opens itself, gently |
+| Cadence | Daily push at 8:00am | When the spiral actually arrives |
+| Length | A 10-minute session | A single line, 4 seconds |
+| Failure | Streak broken, guilt installed | Nothing to break |
+| Voice | Crush your goals! | You don't have to be okay right now |
+
+VI. Pricing
+
+## Free to download.  _Pro if it helps._
+
+Free
+
+
+```
+
+## Best practices to apply (Viktor Seraleev / 12 App Store Growth Experiments)
+
+- Lead with the clearest outcome the user wants ("you don't have to be okay right now"), not the tool.
+- Title: brand + 1 keyword phrase. ≤ 30 chars. MUST contain "anicca" (case-insensitive).
+- Subtitle: a single concrete promise, not a feature list. ≤ 30 chars.
+- Keywords: comma-separated, no spaces, no plurals if singular already exists, no duplication of words from title/subtitle. ≤ 100 chars.
+- Promotional Text: timely line that complements the subtitle without contradicting it. ≤ 170 chars.
+
+## Current listing (per locale)
+
+{
+  "en-US": {
+    "name": "Daily Affirmations - Anicca",
+    "subtitle": "Self Care & Positive Mindset",
+    "keywords": "affirmation,manifestation,self love,self care,positive,mindfulness,anxiety,calm,gratitude,sleep",
+    "promotional_text": "",
+    "description": "Daily affirmations that find you at the moment you need them most.\n\nAnicca is your AI self-care companion — a quiet voice of self-love, manifestation, and inner peace, delivered through beautifully crafted daily cards that arrive exactly when your mind starts to spiral.\n\nMost affirmation apps make you sit down, open them, and read. Anicca is different. It learns your day — when you stay up too late, when self-doubt hits, when anxiety creeps in — and sends a single line of kindness right at that "
+  },
+  "ja": {
+    "name": "毎日のアファメーション - アニッチャ",
+    "subtitle": "セルフケア・ポジティブ思考",
+    "keywords": "アファメーション,引き寄せ,自己肯定感,セルフケア,自己愛,マインドフルネス,不安,瞑想,癒し,眠り",
+    "promotional_text": "",
+    "description": "あなたが本当に必要な瞬間に、優しい言葉が届くアファメーション。\n\nアニッチャ（Anicca）は、AIによるセルフケア・コンパニオン。自己肯定、引き寄せ（マニフェステーション）、心の平和の言葉を、美しいカードと通知で、心が揺れ始める\"その瞬間\"に届けます。\n\n多くのアファメーション・アプリは、自分でアプリを開いて読まなければなりません。アニッチャは違います。あなたの一日を学び — 夜更かししそうな時、自己否定が始まりそうな時、不安が忍び寄る時 — その瞬間にひとつの優しい言葉を届けます。タップすればカード全文。読むだけで、少し心が軽くなる。\n\n## アニッチャが違う理由\n\n- アファメーションは「思い出した時」ではなく「必要な時」に届く\n- AIがあなたの心に響く言葉を学習する\n- 仏教の「無常（アニッチャ）」に根ざした設計 — どんな嵐もいつか過ぎ去る\n- ストリーク・罪悪感・生産性プレッシャーは一切なし\n- すでに自分を責めすぎている人のために作られた\n\n## 主な機能\n\n### ◆ 毎日のアファメーション・カード\n美しくデザインされたカードに、自己肯定の言葉、引き寄せのプロンプト、"
+  },
+  "de-DE": {
+    "name": "Affirmationen - Anicca",
+    "subtitle": "Selbstfürsorge & Affirmationen",
+    "keywords": "Affirmation,Manifestation,Selbstliebe,Selbstfürsorge,Achtsamkeit,Angst,Ruhe,Dankbarkeit,Schlaf",
+    "promotional_text": "",
+    "description": "Tägliche Affirmationen, die dich genau im richtigen Moment finden.\n\nAnicca ist dein KI-Begleiter für Selbstfürsorge — eine leise Stimme der Selbstliebe, Manifestation und inneren Ruhe, geliefert über wunderschön gestaltete tägliche Karten, die genau dann erscheinen, wenn dein Geist ins Wanken gerät.\n\nDie meisten Affirmations-Apps verlangen, dass du sie öffnest und liest. Anicca ist anders. Sie lernt deinen Tag — wenn du zu lange wach bleibst, wenn Selbstzweifel einsetzen, wenn sich Angst einschl"
+  },
+  "es-ES": {
+    "name": "Afirmaciones Diarias - Anicca",
+    "subtitle": "Autocuidado y Bienestar Mental",
+    "keywords": "afirmaciones,manifestación,autocuidado,amor propio,positividad,mindfulness,ansiedad,calma,gratitud",
+    "promotional_text": "",
+    "description": "Afirmaciones diarias que llegan justo cuando más las necesitas.\n\nAnicca es tu compañero de autocuidado con IA — una voz tranquila de amor propio, manifestación y paz interior, entregada a través de tarjetas diarias bellamente diseñadas que aparecen exactamente cuando tu mente empieza a desmoronarse.\n\nLa mayoría de las apps de afirmaciones te obligan a abrirlas y leer. Anicca es diferente. Aprende tu día — cuando te quedas despierta hasta tarde, cuando llega la duda, cuando se cuela la ansiedad —"
+  },
+  "fr-FR": {
+    "name": "Affirmations IA - Anicca",
+    "subtitle": "Soin de Soi et Affirmations IA",
+    "keywords": "affirmation,manifestation,amour de soi,soin de soi,positivité,pleine conscience,anxiété,calme",
+    "promotional_text": "",
+    "description": "Des affirmations quotidiennes qui te trouvent au moment où tu en as le plus besoin.\n\nAnicca est ton compagnon de soin de soi guidé par IA — une voix douce d'amour-propre, de manifestation et de paix intérieure, livrée à travers de magnifiques cartes quotidiennes qui arrivent exactement quand ton esprit commence à vaciller.\n\nLa plupart des applis d'affirmations exigent que tu les ouvres et lises. Anicca est différente. Elle apprend ta journée — quand tu veilles trop tard, quand le doute frappe, q"
+  },
+  "pt-BR": {
+    "name": "Afirmações Diárias - Anicca",
+    "subtitle": "Autocuidado e Afirmações IA",
+    "keywords": "afirmação,manifestação,amor próprio,autocuidado,positividade,mindfulness,ansiedade,calma,gratidão",
+    "promotional_text": "",
+    "description": "Afirmações diárias que chegam exatamente quando você mais precisa.\n\nAnicca é sua companheira de autocuidado com IA — uma voz tranquila de amor-próprio, manifestação e paz interior, entregue por meio de lindas cartas diárias que aparecem no momento exato em que sua mente começa a desmoronar.\n\nA maioria dos apps de afirmação obriga você a abrir e ler. Anicca é diferente. Ela aprende o seu dia — quando você fica acordada até tarde, quando bate a autocrítica, quando a ansiedade chega — e envia uma ú"
+  }
+}
+
+## Audit findings
+
+No prior audit run. Tier=Challenger (Health & Fitness, sub-100K ratings). Score current baselines strictly.
+
+## 7-day metrics
+
+7-day metrics unavailable for this dry-run; optimize for clarity, brand+keyword balance, and Viktor article principles.
+
+## Output
+
+Return a single JSON object with this shape:
+
+```
+{
+  "candidates": [
+    {
+      "rationale": "<1-2 sentences why this set should lift conversion>",
+      "projected_lift_pct": <number, e.g. 8>,
+      "locales": {
+        "en-US": { "name": "...", "subtitle": "...", "keywords": "...", "promotional_text": "..." },
+        "ja":    { "name": "...", "subtitle": "...", "keywords": "...", "promotional_text": "..." },
+        "de-DE": { ... },
+        "es-ES": { ... },
+        "fr-FR": { ... },
+        "pt-BR": { ... }
+      }
+    },
+    { ... 2nd candidate ... },
+    { ... 3rd candidate ... }
+  ]
+}
+```
+
+Each candidate MUST satisfy every per-locale character limit.

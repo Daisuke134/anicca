@@ -1,0 +1,28 @@
+<!DOCTYPE html><html><head><style>
+html{background:#ffffff;}
+body{width:720pt;height:405pt;margin:0;padding:0;display:flex;flex-direction:column;font-family:'Yu Gothic','Hiragino Sans',Meiryo,sans-serif;background:#ffffff;}
+.head{height:56pt;background:#1B4965;display:flex;align-items:center;}
+.head h2{margin:0 0 0 30pt;color:#ffffff;font-size:24pt;font-weight:bold;}
+.head .tab{margin-left:auto;width:14pt;height:56pt;background:#E8732B;}
+.body{flex:1;display:flex;align-items:center;margin:22pt 30pt;}
+.left{width:300pt;margin-right:24pt;}
+.seclabel{border-left:6pt solid #E8732B;padding-left:10pt;margin:0 0 10pt 0;}
+.seclabel p{margin:0;color:#1B4965;font-size:16pt;font-weight:bold;}
+.left p.d{margin:0 0 10pt 0;color:#23303A;font-size:13.5pt;line-height:1.5;}
+.tag{display:inline-block;background:#EAF1F8;border-radius:6pt;padding:8pt 12pt;margin-top:4pt;}
+.tag p{margin:0;color:#1B4965;font-size:14pt;font-weight:bold;}
+.tbl{flex:1;display:flex;flex-direction:column;}
+.placeholder{width:100%;height:230pt;}
+</style></head><body>
+<div class="head"><h2>表で確かめる — y = 80x</h2><div class="tab"></div></div>
+<div class="body">
+  <div class="left">
+    <div class="seclabel"><p>表の読み方</p></div>
+    <p class="d">x が 1 増えるごとに y は 80 ずつ増えます。<br>「いつも 80 倍」 = これが比例定数 a。</p>
+    <div class="tag"><p>y ÷ x は つねに 80</p></div>
+  </div>
+  <div class="tbl">
+    <div id="tbl" class="placeholder"></div>
+  </div>
+</div>
+</body></html>

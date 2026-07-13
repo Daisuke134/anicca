@@ -1,0 +1,130 @@
+{
+  "candidates": [
+    {
+      "rationale": "Leads with the high-intent head term “affirmations” while the subtitle delivers the concrete promise of timely relief, improving search match and conversion clarity.",
+      "projected_lift_pct": 9,
+      "locales": {
+        "en-US": {
+          "name": "anicca: daily affirmations",
+          "subtitle": "Kindness arrives when it hurts",
+          "keywords": "anxiety,mindfulness,sleep,stress,overthinking,grief,burnout,selfcare,selflove,calm,grounding,healing",
+          "promotional_text": "When the late-night spiral starts, Anicca sends a single line to steady you. Try 3 days free; cancel anytime."
+        },
+        "ja": {
+          "name": "Anicca アファメーション",
+          "subtitle": "必要な瞬間にやさしい一行",
+          "keywords": "マインドフルネス,不安,ストレス,睡眠,過剰思考,グリーフ,燃え尽き,自分責め,自己肯定感,セルフケア,落ち着き,癒し",
+          "promotional_text": "夜の不安やスクロールが止まらない瞬間に、そっと一行が届きます。設定は簡単。3日間の無料トライアル。"
+        },
+        "de-DE": {
+          "name": "anicca: tägliche Affirmationen",
+          "subtitle": "Ein Satz, wenn es schwer wird",
+          "keywords": "Achtsamkeit,Angst,Stress,Schlaf,Grübeln,Trauer,Burnout,Selbstfürsorge,Selbstliebe,Ruhe,Heilung",
+          "promotional_text": "Wenn die Mitternachtsspirale beginnt, sendet Anicca eine einzige Zeile, die dich erdet. 3 Tage gratis testen."
+        },
+        "es-ES": {
+          "name": "anicca: afirmaciones diarias",
+          "subtitle": "Una línea cuando más duele",
+          "keywords": "ansiedad,mindfulness,estrés,sueño,rumiación,duelo,agotamiento,autocuidado,amorpropio,calma",
+          "promotional_text": "Cuando llega la espiral nocturna, Anicca te envía una sola línea para calmarte. Pruébalo 3 días gratis."
+        },
+        "fr-FR": {
+          "name": "anicca : affirmations",
+          "subtitle": "Une phrase quand ça déborde",
+          "keywords": "anxiété,pleineconscience,stress,sommeil,rumination,deuil,burnout,autosoins,amourdesoi,calme",
+          "promotional_text": "Quand la spirale de minuit arrive, Anicca envoie une seule ligne pour t’apaiser. Essai gratuit 3 jours."
+        },
+        "pt-BR": {
+          "name": "anicca: afirmações diárias",
+          "subtitle": "Uma linha quando a mente pesa",
+          "keywords": "ansiedade,mindfulness,estresse,sono,ruminação,luto,esgotamento,autocuidado,amorpróprio,calma",
+          "promotional_text": "Quando a espiral da noite começa, a Anicca envia uma única linha para te acalmar. Experimente 3 dias grátis."
+        }
+      }
+    },
+    {
+      "rationale": "Shifts the title to the delivery mechanic (“gentle reminders”) to differentiate, keeping “affirmations” in keywords for broad search capture; subtitle nails the anxiety trigger.",
+      "projected_lift_pct": 7,
+      "locales": {
+        "en-US": {
+          "name": "anicca gentle reminders",
+          "subtitle": "One line when anxiety spikes",
+          "keywords": "affirmations,manifestation,mantra,mindfulness,sleep,stress,overthinking,grief,burnout,selfcare",
+          "promotional_text": "Set nothing, open nothing. Anicca finds you at hard hours with a kind nudge. Try it free for 3 days."
+        },
+        "ja": {
+          "name": "Anicca やさしいリマインダー",
+          "subtitle": "不安が高まる瞬間に一行",
+          "keywords": "アファメーション,マニフェスト,マントラ,マインドフルネス,睡眠,ストレス,過剰思考,グリーフ,燃え尽き,セルフケア",
+          "promotional_text": "開かなくていい。考えすぎる夜に、Aniccaがそっと一行を届けます。3日間の無料トライアル。"
+        },
+        "de-DE": {
+          "name": "anicca sanfte Erinnerungen",
+          "subtitle": "Ein Satz, wenn Angst steigt",
+          "keywords": "Affirmationen,Mantra,Achtsamkeit,Schlaf,Stress,Grübeln,Trauer,Burnout,Selbstfürsorge",
+          "promotional_text": "Nichts planen, nichts öffnen. Anicca schickt dir im harten Moment eine sanfte Zeile. 3 Tage gratis testen."
+        },
+        "es-ES": {
+          "name": "anicca recordatorios suaves",
+          "subtitle": "Una línea cuando hay ansiedad",
+          "keywords": "afirmaciones,manifestación,mantra,mindfulness,sueño,estrés,rumiación,duelo,autocuidado,amorpropio",
+          "promotional_text": "No planifiques nada. Anicca te envía una línea amable justo cuando la necesitas. 3 días de prueba gratis."
+        },
+        "fr-FR": {
+          "name": "anicca rappels doux",
+          "subtitle": "Une phrase quand l’anxiété",
+          "keywords": "affirmations,manifestation,mantra,pleineconscience,sommeil,stress,rumination,deuil,burnout,autosoins",
+          "promotional_text": "Rien à configurer. Anicca t’envoie une ligne au moment dur. Essai gratuit 3 jours."
+        },
+        "pt-BR": {
+          "name": "anicca lembretes gentis",
+          "subtitle": "Uma linha quando há ansiedade",
+          "keywords": "afirmações,manifestação,mantra,mindfulness,sono,estresse,ruminação,luto,esgotamento,amorpróprio",
+          "promotional_text": "Sem esforço: a Anicca envia uma linha gentil quando você mais precisa. Teste grátis por 3 dias."
+        }
+      }
+    },
+    {
+      "rationale": "Leans into the Buddhist origin to attract value-seeking users while the subtitle centers the ‘one gentle line at the spiral’ promise for stronger intent-match messaging.",
+      "projected_lift_pct": 8,
+      "locales": {
+        "en-US": {
+          "name": "anicca: Buddhist affirmations",
+          "subtitle": "A line of mercy at the spiral",
+          "keywords": "anxiety,mindfulness,sleep,stress,overthinking,grief,burnout,selfcare,selflove,calm,grounding,healing",
+          "promotional_text": "Rooted in Buddhism’s anicca—impermanence—Anicca meets you in the hard hours with one gentle line. 3-day free trial."
+        },
+        "ja": {
+          "name": "Anicca: 仏教アファメーション",
+          "subtitle": "渦の瞬間に、慈しみの一行",
+          "keywords": "マインドフルネス,不安,ストレス,睡眠,過剰思考,グリーフ,燃え尽き,自己肯定感,セルフケア,落ち着き,癒し",
+          "promotional_text": "仏教の「無常」から生まれたAnicca。つらい時間に、やさしい一行が届きます。3日間の無料トライアル。"
+        },
+        "de-DE": {
+          "name": "anicca: buddhistische Mantras",
+          "subtitle": "Eine Zeile Güte im Strudel",
+          "keywords": "Achtsamkeit,Angst,Stress,Schlaf,Grübeln,Trauer,Burnout,Selbstfürsorge,Selbstliebe,Ruhe,Heilung",
+          "promotional_text": "Aus der Lehre der Vergänglichkeit: Anicca erreicht dich in schweren Stunden mit einer sanften Zeile. 3 Tage kostenlos testen."
+        },
+        "es-ES": {
+          "name": "anicca: afirmaciones budistas",
+          "subtitle": "Una línea de bondad en la ola",
+          "keywords": "ansiedad,mindfulness,estrés,sueño,rumiación,duelo,autocuidado,amorpropio,calma,sanación",
+          "promotional_text": "Desde el budismo (anicca): una sola línea que te encuentra en la hora difícil. Prueba gratis de 3 días."
+        },
+        "fr-FR": {
+          "name": "anicca : mantras bouddhistes",
+          "subtitle": "Une phrase de douceur au creux",
+          "keywords": "affirmations,anxiété,stress,sommeil,rumination,deuil,burnout,autosoins,amourdesoi,calme",
+          "promotional_text": "Fondé sur l’impermanence (anicca) : une ligne douce quand la nuit déborde. Essai gratuit 3 jours."
+        },
+        "pt-BR": {
+          "name": "anicca: afirmações budistas",
+          "subtitle": "Uma linha de carinho na onda",
+          "keywords": "ansiedade,mindfulness,estresse,sono,ruminação,luto,esgotamento,autocuidado,amorpróprio,calma",
+          "promotional_text": "Inspirado no budismo (anicca): uma única linha que te encontra nas horas difíceis. Experimente 3 dias grátis."
+        }
+      }
+    }
+  ]
+}

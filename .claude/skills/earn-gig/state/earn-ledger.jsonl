@@ -1,0 +1,1 @@
+{"schema":"earn-gig.ledger.v1","note":"append one row per real USDC earn: {ts, rail, platform, taskId|callId, amount_usdc, tx, wallet, verify}"}

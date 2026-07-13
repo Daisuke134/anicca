@@ -197,3 +197,6 @@ aniccaios/*.png
 aniccaios/fastlane/report.xml
 aniccaios/fastlane/build/
 docs/superpowers/evidence/g0-lm-work/
+# large skill assets (kept locally, too big for git — 2026-07-13 skills merge)
+.claude/skills/faceless-money-factory/assets/broll-library/
+.claude/skills/**/*.mp4

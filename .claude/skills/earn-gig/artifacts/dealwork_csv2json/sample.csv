@@ -1,0 +1,4 @@
+id,name,price,joined,active
+1,Alice,19.99,2026-01-15,true
+2,Bob,,2026-02-20,false
+3,Carol,abc,2026-13-99,true

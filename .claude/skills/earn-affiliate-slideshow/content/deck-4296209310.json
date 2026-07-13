@@ -1,0 +1,58 @@
+{
+  "asin": "4296209310",
+  "product_title": "ビジュアル 生成AIで爆速！ ChatGPT仕事術 (日経文庫)",
+  "publisher": "日経BP / 日本経済新聞出版",
+  "verified_claims": [
+    "ビジネスの実務に即した活用事例70選",
+    "生成AIでできること・使うべき場面がビジュアルでわかる"
+  ],
+  "niche": "AI / 生産性",
+  "lang": "ja",
+  "aspect": "9:16",
+  "disclosure": "#PR",
+  "affiliate_link": "https://www.amazon.co.jp/dp/4296209310?tag=aniccaai-22&linkCode=ll1&language=ja_JP",
+  "slides": [
+    {
+      "n": 1,
+      "role": "hook",
+      "text": "ChatGPT、\n結局なにに\n使えばいい？",
+      "narration": "ChatGPT、結局なにに使えばいいの？そう思って止まっていませんか。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, a confused office worker silhouette looking at a glowing chat bubble with a question mark, calm muted palette, vertical 9:16, lots of negative space at top for text, no text in image"
+    },
+    {
+      "n": 2,
+      "role": "problem",
+      "text": "資料作り、\nメール、要約…\n毎日同じ作業",
+      "narration": "資料作り、メールの下書き、長文の要約。毎日同じ作業に、時間を取られていませんか。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, a tired person at a desk surrounded by floating documents and email icons, muted warm palette, vertical 9:16, negative space at top, no text in image"
+    },
+    {
+      "n": 3,
+      "role": "agitate",
+      "text": "「使い方が\nわからない」で\n止まってる",
+      "narration": "多くの人が、使い方がわからない、という理由でAIを使いこなせずに止まっています。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, a person standing in front of a closed door with a glowing AI symbol behind it, muted palette, vertical 9:16, negative space at top, no text in image"
+    },
+    {
+      "n": 4,
+      "role": "solution",
+      "text": "使う場面が\n“一目でわかる”\n本がある",
+      "narration": "そんな人のために、使うべき場面がビジュアルで一目でわかる本があります。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, an open book glowing softly with simple icons floating out of it, calm hopeful palette, vertical 9:16, negative space at top, no text in image"
+    },
+    {
+      "n": 5,
+      "role": "proof",
+      "text": "実務の\n活用事例\n70選",
+      "narration": "ビジネスの実務に即した活用事例が、70個も収録されています。日経文庫の一冊です。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, a neat grid of 70 tiny task icons arranged tidily, satisfying organized layout, muted palette, vertical 9:16, negative space at top, no text in image"
+    },
+    {
+      "n": 6,
+      "role": "cta",
+      "text": "プロフィールの\nリンクから\nチェック\n#PR",
+      "narration": "詳しくはプロフィールのリンクから。これはアフィリエイトを含むPRです。",
+      "image_prompt": "Minimal flat vector illustration, soft cream background, a friendly upward arrow pointing to a profile link area, a small gift-tag labeled PR, warm inviting palette, vertical 9:16, negative space at top, no text in image"
+    }
+  ]
+}

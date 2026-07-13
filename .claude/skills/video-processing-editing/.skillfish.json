@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "name": "video-processing-editing",
+  "owner": "erichowens",
+  "repo": "some_claude_skills",
+  "path": ".claude/skills/video-processing-editing",
+  "branch": "main",
+  "sha": "6e747e1f908bb8f71ac3042f3acee1f383db96bd",
+  "source": "manual"
+}

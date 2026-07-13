@@ -1,0 +1,73 @@
+{
+  "results": [
+    {
+      "candidate_index": 0,
+      "errors": {
+        "en-US": [
+          "en-US title edit distance 26 > 5"
+        ],
+        "ja": [
+          "ja title edit distance 15 > 5"
+        ],
+        "de-DE": [
+          "de-DE title edit distance 30 > 5"
+        ],
+        "es-ES": [
+          "es-ES title edit distance 28 > 5"
+        ],
+        "fr-FR": [
+          "fr-FR title edit distance 21 > 5"
+        ],
+        "pt-BR": [
+          "pt-BR title edit distance 26 > 5"
+        ]
+      }
+    },
+    {
+      "candidate_index": 1,
+      "errors": {
+        "en-US": [
+          "en-US title edit distance 23 > 5"
+        ],
+        "ja": [
+          "ja title edit distance 17 > 5"
+        ],
+        "de-DE": [
+          "de-DE title edit distance 26 > 5"
+        ],
+        "es-ES": [
+          "es-ES title edit distance 27 > 5"
+        ],
+        "fr-FR": [
+          "fr-FR title edit distance 19 > 5"
+        ],
+        "pt-BR": [
+          "pt-BR title edit distance 23 > 5"
+        ]
+      }
+    },
+    {
+      "candidate_index": 2,
+      "errors": {
+        "en-US": [
+          "en-US title edit distance 29 > 5"
+        ],
+        "ja": [
+          "ja title edit distance 18 > 5"
+        ],
+        "de-DE": [
+          "de-DE title edit distance 29 > 5"
+        ],
+        "es-ES": [
+          "es-ES title edit distance 29 > 5"
+        ],
+        "fr-FR": [
+          "fr-FR title edit distance 28 > 5"
+        ],
+        "pt-BR": [
+          "pt-BR title edit distance 27 > 5"
+        ]
+      }
+    }
+  ]
+}

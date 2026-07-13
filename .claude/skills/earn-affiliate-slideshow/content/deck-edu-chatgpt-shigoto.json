@@ -1,0 +1,24 @@
+{
+  "deck_type": "EDUCATIONAL (method-aligned: build trust w/ value → soft bridge → BIO affiliate link)",
+  "niche": "AI / 生産性",
+  "lang": "ja",
+  "aspect": "9:16",
+  "disclosure": "#PR",
+  "affiliate_link": "https://www.amazon.co.jp/dp/4296209310?tag=aniccaai-22&linkCode=ll1&language=ja_JP",
+  "product_as_bio_resource": "ビジュアル 生成AIで爆速！ ChatGPT仕事術 (日経文庫) — the 'go deeper' resource, soft CTA only",
+  "topic": "ChatGPTを仕事で使う人がこっそりやってる時短ワザ5選",
+  "slides": [
+    {"n": 1, "role": "hook", "text": "ChatGPT、\n実は9割が\n使いこなせてない", "narration": "ChatGPTを仕事で使う人がこっそりやってる時短ワザ、5つ。",
+     "image_prompt": "Minimal flat vector, soft cream background, a person at a laptop with a subtle glowing AI spark, calm muted palette, vertical 9:16, big negative space at top, no text in image"},
+    {"n": 2, "role": "tip", "text": "①「役割」を\n最初に与える\n『プロの編集者として』", "narration": "1つ目。最初に役割を与える。『プロの編集者として』と書くだけで精度が上がります。",
+     "image_prompt": "Minimal flat vector, cream background, a small badge/role icon handed to a robot, muted palette, vertical 9:16, negative space at top, no text"},
+    {"n": 3, "role": "tip", "text": "②例を1つ\n見せる\n(出力が安定)", "narration": "2つ目。欲しい形の例を1つ見せる。出力がぶれなくなります。",
+     "image_prompt": "Minimal flat vector, cream background, one example card being copied into a neat row, muted palette, vertical 9:16, negative space at top, no text"},
+    {"n": 4, "role": "tip", "text": "③長文は\n『要点3つで』\nと指定", "narration": "3つ目。長文要約は『要点3つで』と数を指定。読みやすさが段違い。",
+     "image_prompt": "Minimal flat vector, cream background, a long document shrinking into 3 tidy bullet dots, muted palette, vertical 9:16, negative space at top, no text"},
+    {"n": 5, "role": "tip", "text": "④『なぜ?』を\n足して\n論理を引き出す", "narration": "4つ目。『なぜそう言える?』を足すと、根拠まで出してくれます。",
+     "image_prompt": "Minimal flat vector, cream background, a question mark unlocking a small chain of connected dots, muted palette, vertical 9:16, negative space at top, no text"},
+    {"n": 6, "role": "cta", "text": "もっと知るなら\nプロフィールの\nリンクから\n#PR", "narration": "もっと使う場面を知りたい人は、プロフィールのリンクから。これはPRです。",
+     "image_prompt": "Minimal flat vector, cream background, an upward arrow to a profile link area + a small book, warm inviting palette, vertical 9:16, negative space at top, no text"}
+  ]
+}

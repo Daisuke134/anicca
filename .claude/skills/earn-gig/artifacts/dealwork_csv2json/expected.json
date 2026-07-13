@@ -1,0 +1,23 @@
+[
+  {
+    "id": 1,
+    "name": "Alice",
+    "price": 19.99,
+    "joined": "2026-01-15T00:00:00",
+    "active": true
+  },
+  {
+    "id": 2,
+    "name": "Bob",
+    "price": null,
+    "joined": "2026-02-20T00:00:00",
+    "active": false
+  },
+  {
+    "id": 3,
+    "name": "Carol",
+    "price": null,
+    "joined": null,
+    "active": true
+  }
+]
