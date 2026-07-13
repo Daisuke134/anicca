@@ -135,3 +135,32 @@ test("gig_reality_verify.sh: required evidence count is derived from DEFAULT_GRO
   const src = fs.readFileSync(VERIFY_SH, 'utf8');
   assert.ok(/DEFAULT_GROUND_TRUTH_URLS/.test(src), 'gig_reality_verify.sh does not derive required_count from DEFAULT_GROUND_TRUTH_URLS');
 });
+
+// ─── auth-wall cooldown (2026-07-13 self-fix, gh#1015): reached_captcha=true (login wall) is an ──
+// external/session precondition, not a code bug — auditor.sh must not respawn a full self-fix.sh
+// agent every hourly audit pass for an unchanged, already-diagnosed condition.
+
+test('gig_reality_verify.sh: selfheal-request classifies kind from reached_captcha (auth_wall vs claim_mismatch)', () => {
+  const src = fs.readFileSync(VERIFY_SH, 'utf8');
+  assert.ok(/reached_captcha/.test(src), 'does not read reached_captcha from the judge verdict');
+  assert.ok(/'auth_wall'/.test(src) && /'claim_mismatch'/.test(src), 'does not classify selfheal-request kind into auth_wall/claim_mismatch');
+  assert.ok(/'kind'\s*:\s*kind/.test(src), 'does not write the kind field into the selfheal-request JSON');
+});
+
+test('auditor.sh: cooldown-gates auth_wall selfheal requests before spawning self-fix.sh', () => {
+  const src = fs.readFileSync(AUDITOR_SH, 'utf8');
+  assert.ok(src.includes('AUTH_WALL_COOLDOWN_SECS'), 'no auth-wall cooldown window defined');
+  assert.ok(src.includes('AUTH_WALL_COOLDOWN_MARKER'), 'no auth-wall cooldown marker file');
+  assert.ok(/KIND.*=.*auth_wall|auth_wall.*=.*KIND/.test(src) || /"\$KIND"\s*=\s*"auth_wall"/.test(src), 'does not branch on kind=auth_wall');
+  // the cooldown gate must precede the self-fix.sh spawn call, and claim_mismatch must remain reachable
+  const kindIdx = src.indexOf("KIND=");
+  const spawnIdx = src.indexOf('bash "$SELF_FIX"');
+  assert.ok(kindIdx !== -1 && spawnIdx !== -1 && kindIdx < spawnIdx, 'kind must be read before the self-fix.sh spawn decision');
+});
+
+test('auditor.sh: still consumes (rm -f) the selfheal-request even when cooldown-skipped (no stale request pileup)', () => {
+  const src = fs.readFileSync(AUDITOR_SH, 'utf8');
+  const selfHealBlockStart = src.indexOf('SELFHEAL_REQ=');
+  const block = src.slice(selfHealBlockStart);
+  assert.ok(/rm -f "\$SELFHEAL_REQ"/.test(block), 'selfheal-request file is never removed');
+});
