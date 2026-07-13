@@ -30,16 +30,24 @@ fi
 
 mkdir -p "$(dirname "$LOG")"
 echo "$(date '+%F %T') ensure_browser: :9222 dead -> relaunching" >> "$LOG"
-# Cap the caches. An uncapped profile grew to 1.0GB, of which 97% was Default/Cache and Code Cache;
-# five such profiles filled the disk while the cookies that actually matter are a few hundred KB.
+# Cap the caches and move them off the profile. An uncapped profile grew to 1.0GB, of which 97% was
+# Default/Cache and Code Cache; five of them crowded the disk the loops write their ledgers to, while
+# the cookies that keep us logged in are only a few hundred KB.
+# Flags verified against peter.sh/experiments/chromium-command-line-switches (--media-cache-size and
+# --memory-pressure-off do not exist in current Chromium; do not add them back).
 nohup "$BIN" --remote-debugging-port=9222 --user-data-dir="$PROFILE" \
-  --disk-cache-size=104857600 --media-cache-size=52428800 --disable-gpu-shader-disk-cache \
+  --disk-cache-size=209715200 --disk-cache-dir=/tmp/cloak-cache \
+  --disable-gpu-shader-disk-cache --gpu-disk-cache-size-kb=2048 \
   --no-first-run --no-default-browser-check >> "$LOG" 2>&1 &
 
 for _ in 1 2 3 4 5 6 7 8 9 10; do
   sleep 1
   if alive; then
     echo "$(date '+%F %T') ensure_browser: RECOVERED" >> "$LOG"
+    # A hard kill can take the newest cookies with it. Push the vault back in so the loop wakes up
+    # already logged in — a re-login means 2FA, and 2FA means a human, which is the one thing the
+    # loops must never need.
+    python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/session_vault.py" restore >> "$LOG" 2>&1 || true
     echo "RECOVERED"
     exit 0
   fi
