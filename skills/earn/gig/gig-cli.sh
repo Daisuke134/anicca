@@ -31,8 +31,15 @@ if [ "${1:-}" != "--restart" ] && tmux -S "$SOCK" has-session -t "$SESSION" 2>/d
   echo "gig-core already ALIVE"; exit 0
 fi
 
+# The startup prompt is ~10KB. Passing it straight to tmux blows past the length limit tmux
+# accepts for a command, so new-session failed with "command too long" and the healthcheck
+# restarted forever without ever bringing the core back. Hand tmux a short command and let the
+# shell read the prompt from disk.
+PROMPT_FILE="$HOME/gig/.startup-prompt.txt"
+mkdir -p "$HOME/gig"
+printf '%s' "$STARTUP" > "$PROMPT_FILE"
 tmux -S "$SOCK" new-session -d -s "$SESSION" -c "$HOME" \
-  "$CLAUDE" --name "$SESSION" --model sonnet --dangerously-skip-permissions --add-dir "$HOME" -- "$STARTUP"
+  "exec \"$CLAUDE\" --name \"$SESSION\" --model sonnet --dangerously-skip-permissions --add-dir \"$HOME\" -- \"\$(cat '$PROMPT_FILE')\""
 mkdir -p "$HOME/gig" && touch "$HOME/gig/.last-start"   # FIND-R2-001: seed start marker only (.last-pass = real completed pass only, never startup)
 sleep 2
 echo "gig-core started ($(status)). Attach: tmux -S $SOCK attach -t $SESSION"
