@@ -1,7 +1,9 @@
 # TASKLIST — ★唯一の SSOT★（順序は Dais が決めた。勝手に入れ替えるな）
 
-最終更新: 2026-07-13 18:40 JST / branch `feature/clip-rewards`
+最終更新: 2026-07-14 JST / branch `feature/clip-rewards`
 TaskList（会話内）と本ファイルと spec は **同じ ID・同じ順序**。3つが一致しない時は本ファイルが正。
+
+> ★実行基盤の確定（2026-07-14）★ **全 earn loop は claude-p（このMac の launchd `ai.anicca.*.plist`）で走る。openclaw gateway cron ではない**（openclaw subscription は停止予定）。clip の再スケジュールは launchd plist の再有効化であって jobs.json への登録ではない。
 
 > **このファイルが正本。** 会話は揮発する。ここに書いていないタスクは存在しない。
 > earn/colony 側の T13/T15/T5-T12（`34-TODO-ORDERED.md`）は **Anicca 自身の仕事であって、私(claude-p)のタスクではない**。混ぜない。
@@ -34,13 +36,43 @@ activity / applied / posted / built / test-green は成果ではない。**現�
 | **21.7 / GIG-10K** | 10k MRR 自走の実挙動検証: ①monitor 勝者の全コンポ差分 ②table-stakes 一気埋め（既存6出品を勝者へ改善+新規追加）③playbook.json 生成 ④段階1 初レビュー | ⬜ runbook に指示は焼込済（PULL/TABLE-STAKES/FULL-MENU/BAKE/ITERATE-EXISTING）。★実挙動を1フルパスで検証要★ |
 | **21.5** | 学びを焼き込んで一般化（勝者パターンを playbook.json に蓄積→3勝者共通で core 戦略に昇格→戦略からコンポーネント修正） | ✅ DONE（BAKE THE LEARNING を runbook に。commit pushed） |
 | **22 / GIG-3** | paid=0（納品→検収→出金→着金） | ✅ DONE（仕組みは runbook B1/EARNED CHECK に既存。振込申請は実収益が出て初めて可能＝earnings 待ち。Dais 確認） |
-| **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す | pending |
+| **23 / CLIP-1** | clip: self-improve + scout を移植し投稿失敗を直す（→ 下記「CLIP LOOP 最新理解」に7サブタスク展開） | pending |
 | **24 / VIDEO-1** | video: warmup の hardcode を外し self-improve + scout 移植 | pending |
 | **25 / LM-1** | life manager loop（X-1）を 1k MRR まで | pending |
 | **26 / Q3** | scale: steel-browser を Docker で cloud に立て、gig/clip 1本を回す PoC + ToS 公式確認 + 経済表（調査済 → doc 45） | pending |
 | **27 / OSS** | profitable-claude 公開 + dashboard 収益透明化 | pending |
 
 Q2（ブラウザ共有の ASCII）は提出済み → spec §3 / `~/anicca/skills/browser/SKILL.md`。
+
+---
+
+## CLIP LOOP — 最新理解（2026-07-14、実コード確認済み）
+
+### 現状（自分の目で確認）
+- **最終投稿 2026-07-11 21:47。約3日ゼロ。** launchd `ai.anicca.clip-*` plist 全部 `.disabled-2026-07-12-t04`＝停止中。
+- **停止の真因（コード確定）**: `post_reel.py` の bitrate fix で mp4 が ~2MB→**~29MB** に肥大 → IG ブラウザ投稿の `シェア中` spinner が **stall** → publish 確認 5/5 失敗（L206 コメントに実観測記録）。queue に 27-29MB の未投稿7本。
+- **品質バグ**（連鎖の元）: 小ファイル時代は投稿できたが IG が **200×200 に潰した**（below_floor）。＝「品質↑=大ファイル=投稿stall」のジレンマ。
+- **収益 $0**。bio に affiliate/product link 無し。self-improve ループ（metrics→reflect→次投稿）が clip には無い（記録のみ）。
+- 別レール `clip-promote`=ClipAffiliates(promote.fun) per-view 即金、phase idle、$0。
+
+### OSS 探索の結論（gh 一次情報で裏取り）
+丸ごと1 repo は **公に存在しない**。最も近い = **darkzOGx/youtube-automation-agent（★1586）** = 生成→投稿→分析→自己改善が本物のコード（`analytics-optimization-agent.js`→`content-strategy-agent.js` の historicalPerformance フィードバック）。ただし **YouTube 単独 / acc作成・warm・マネタイズ無し**。うちは acc/warm/マネタイズ層を既に持つ（業界より先行）。→ **丸ごと採用でなく、darkzOGx の metrics→自己改善ループの設計だけ copy**。
+
+### アーキテクチャ決定
+- **1 engine（社会マーケ工場）+ 差替可ノード**。PRODUCE（clip/slideshow/video-moneyprinter/avatar）と MONETIZE（affiliate/ebook/app/clipaffiliates）を差し替えるだけ。loop 機構（LEARN→POST→MEASURE→REFLECT + Reflexion + self-heal）は全 format 共通。今 clip/slideshow/video が別 skill = 断片重複 → 収斂する。
+- **1 loop = 1 acc**（fanout）。全アカ共有 loop 禁止（1 ban で連鎖死・直列で遅い）。1 acc = 1 isolated CloakBrowser profile+port + 1 Reflexion state。scale = 同 engine を profile 変えて N 個。
+- **10k MRR の鍵 = 金の帰属 + affiliate-finder**。views でなく **$/post** を最適化。per-post trackable link → affiliate dashboard 読取 → 収益を投稿毎に帰属 → Reflexion が金で最適化。勝ち combo（niche×format×hook×offer）を1アカで実証→N アカに clone。
+
+### 7サブタスク（TaskList #1-8 と一致）
+| ID | 一手 |
+|---|---|
+| CLIP-FIX-1 | poster: 29MB stall を実ブラウザで切り分け（公式API化 or 圧縮）。verify の stale-read false-neg も潰す |
+| CLIP-FIX-2 | 品質 floor 1080×1920（FIX-1 とファイルサイズのジレンマを一体で解く）|
+| CLIP-LOOP-3 | gig Reflexion + darkzOGx analytics loop を移植（MEASURE→REFLECT を金で閉じる）|
+| CLIP-LOOP-4 | **launchd plist 再有効化**（openclaw でない）。1 acc=1 loop |
+| CLIP-MON-5 | ★affiliate-finder ノード新設★ + per-post trackable link + ClipAffiliates 即金 |
+| CLIP-OBS-6 | Telegram 報告 + 全アカ dashboard（views/engagement/$）|
+| CLIP-SCALE-7 | 勝ち combo を N アカに clone、多platform 展開 |
 
 ### Q1 の結末（4ループの実働、実データ 2026-07-13）
 | loop | tmux/launchd | 実際にやっていること | 稼ぎ |
