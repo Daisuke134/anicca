@@ -104,3 +104,11 @@ plugin/skill/memory の変更は **system prompt が起動時に組まれるた�
 上の推定の多くは claude-crusts で否定された。**確定値は claude-crusts analyze の実測 or 新セッションの `/context`**。
 処置ごとに measure → 効いてなければ戻す（memory `feedback_no_flipflop_run_before_concluding`）。
 **教訓: 診断は最初に claude-crusts を回すべきだった。claude-p は推測で優先順位を決め、実データが毎回否定した。**
+
+## 追加ツール: caveman（2026-07-13、Dais 提案 juliusbrussee/caveman）
+- **効能**: 出力トークン **-65%**（agent の「口」を小さくする。filler を削り code/command/error は byte-for-byte 保持）
+- **★但し input tokens saved 0%（README 明記）★** = 我々の主病 cache read 99% には効かない。効くのは「私の返答が短くなり会話履歴(病気B=26-40k tok)の膨張が緩む」間接効果のみ
+- 導入: `install.sh`。plugin として settings に配線。**発動は「caveman mode」or `/caveman`**（次セッションで有効）
+- 判定: 害ゼロ・オフライン・コスト0なので採用。ただし過大評価しない（主病には効かない）
+- BEFORE(このセッション, claude-crusts): TOTAL 403,408 tok(40.3%)/859msg, Conversation 40,059(41%), Tools 55,447(56.7%)
+- AFTER は★次セッションでしか測れない★（plugin 変更は system prompt 起動時反映）
