@@ -6623,3 +6623,10 @@
 {"ts":1783979463,"wake_id":"00MRJRB7IG0BE16453253D4266","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783979630,"wake_id":"00MRJRESEJ36239C97A32E4D02","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783979834,"wake_id":"00MRJRJ67DC827667CF3D948D4","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":0,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
+{"ts":1783979966,"wake_id":"00MRJRLZUM183A607E199F4CF8","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783980092,"wake_id":"00MRJROOZCEEE760ABCD9C4E6F","kind":"router_reroute_skip","slot":"economy/lending","attemptsUsed":1,"exit_code":0,"skip_reason":"{\"candidatesConsidered\":0,\"selectedPair\":null,\"issuance\":null,\"sweep\":{\"defaulted\":[]}}\n"}
+{"ts":1783980092,"wake_id":"00MRJROOZCEEE760ABCD9C4E6F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783980221,"wake_id":"00MRJRRH0XB4F237D369454939","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783980369,"wake_id":"00MRJRUN120CE6F70E86D9446D","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783980533,"wake_id":"00MRJRY52L318D7209A99B43E5","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783980723,"wake_id":"00MRJS27UU3C29F74806E44562","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
