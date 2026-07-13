@@ -16,7 +16,7 @@ BP（best practice）= 答え。オリジナルは書かない。判断には最
 |---|---|---|
 | Goal 具体化 | brainstorming → writing-plans | 設計spec を `docs/superpowers/specs/YYYY-MM-DD-<topic>-design.md`、plan を `docs/superpowers/plans/YYYY-MM-DD-<topic>.md` に書く（アーキテクチャ/方針レベル） |
 | 分離 | using-git-worktrees | `.worktrees/<feature>/`（例外: `~/.openclaw` runtime store は直接編集） |
-| Build/Verify | `vcsdd:vcsdd-init` → `vcsdd:vcsdd-spec` → `vcsdd:vcsdd-spec-review` → `vcsdd:vcsdd-tdd` → `vcsdd:vcsdd-impl` → `vcsdd:vcsdd-adversary` → `vcsdd:vcsdd-harden` → `vcsdd:vcsdd-converge` | EARS要件→fresh-context adversary が spec review PASS→RED→GREEN/refactor→実装レビュー→formal hardening→4次元収束確認。**実コマンドを呼んで `.vcsdd/features/<name>/state.json` の phase を進める**（SPEC本文への手書き追記だけでは進捗とみなさない）。小規模タスクは `mode: lean` でよいがフェーズは飛ばさない。codex-review をどこに挟むかは `.claude/rules/dev-workflow.md` 参照 |
+| Build/Verify | `vcsdd:vcsdd-init` → `vcsdd:vcsdd-spec` → `vcsdd:vcsdd-spec-review` → `vcsdd:vcsdd-tdd` → `vcsdd:vcsdd-impl` → `vcsdd:vcsdd-adversary` → `vcsdd:vcsdd-harden` → `vcsdd:vcsdd-converge` | EARS要件→fresh-context adversary が spec review PASS→RED→GREEN/refactor→実装レビュー→formal hardening→4次元収束確認。**実コマンドを呼んで `.vcsdd/features/<name>/state.json` の phase を進める**（SPEC本文への手書き追記だけでは進捗とみなさない）。小規模タスクは `mode: lean` でよいがフェーズは飛ばさない。**★token 上限（HARD）= `~/.claude/CLAUDE.md`「VCSDD の token 上限」節が正本: spec レビューの adversary は1ラウンドのみ／spec は1ページ（不変条件の箇条書き、EARS大全禁止）／subagent の resume 禁止／本当のゲートは negative test／3回 FAIL で handover★** codex-review をどこに挟むかは `.claude/rules/dev-workflow.md` 参照 |
 | 完了 | finishing-a-development-branch | テスト確認 → push → worktree cleanup |
 
 仕事が確定した瞬間に spec 作成 + TaskCreate + commit&push を同じ turn で行う（後回しにしない）。spec に「任意」「optional」「推奨」は書かない — 全て MUST として書く。タスクリストは source of truth。終わっていない作業を completed と書かない。
