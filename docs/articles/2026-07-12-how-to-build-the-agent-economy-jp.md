@@ -62,7 +62,7 @@ flowchart TD
   I --> J["⑩ アプリ：全部そろって初めて成立するサービス"]
 ```
 
-誰が作っているのかも、名前で言えます。①身元は、Ethereum財団とMetaMask、Google、Coinbaseの担当者が共同で書いた**ERC-8004**という規格。②会話は、Googleの**A2A**とAnthropicの**MCP**。③ウォレットは、Coinbaseの**AgentKit**。④決済は、Coinbaseが出した**x402**。⑥エスクローは、Virtualsの**ACP**とValory社の**Olas Mech Marketplace**。⑦評判はERC-8004が置き場所だけ用意しています。そして⑧検証には、名前を挙げられる本命がまだ存在しません。
+①身元は、Ethereum財団とMetaMask、Google、Coinbaseの担当者が共同で書いた**ERC-8004**という規格が担います。②会話はGoogleの**A2A**とAnthropicの**MCP**、③ウォレットはCoinbaseの**AgentKit**、④決済は同じくCoinbaseの**x402**。⑥エスクローはVirtualsの**ACP**とValory社の**Olas Mech Marketplace**が実装しました。⑦評判は、ERC-8004が置き場所だけ用意した状態です。そして⑧検証には、本命と呼べるものがまだ存在しません。
 
 投資会社a16zは、この中で①の身元がいちばんの入口だと言い切っています。「エージェント経済のボトルネックは、もはや知能ではなく身元だ」。誰だか分からない相手には、誰もお金を預けないからです。
 
