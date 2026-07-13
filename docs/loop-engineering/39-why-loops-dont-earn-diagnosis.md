@@ -69,7 +69,16 @@ FIX-4 narrate 中の compute 焼却を止める(稼がない wake は最小 comp
 
 ## 3.5 — earner を一個ずつ「実際に稼げるか」検証（2026-07-14）
 
-**x402_sell → 🔴 今は稼げない（実測）**
+**x402_sell serve → 🟢 動く（2026-07-14 再検証、修正済）**
+```
+真因は Node 版でなく ★node_modules 欠落★だった。clean `npm i` で解決。
+serve.mjs を起動 → GET / が商品広告、GET /research が HTTP 402 + 正しい x402 challenge
+  {scheme:exact, network:base, maxAmountRequired:3000(=$0.003 USDC), payTo:0x904B50…,
+   asset:0x833589…(USDC on Base)} = ★課金ゲートが効き USDC を wallet に要求する★
+①see ②try ③works ✓。残り = 実 buyer が払って着金(内部 demand test = buyer-cdp.mjs or Franklin)。
+```
+（下は修正前の記録。参考として残す）
+**x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
 serve が起動しない: ERR_MODULE_NOT_FOUND `@coinbase/x402`(canonical dir に node_modules 無し)
   → npm install で解決 → 次に `viem/accounts` が ★Node v25.6.1★ の ESM 解決で失敗
