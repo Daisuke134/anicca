@@ -181,6 +181,32 @@ Agent402 は CDP Bazaar を hourly 自動 crawl → seller は手動登録不要
 残ゴール(mission): ①俺が外部で稼ぐ ②claude-p loop が外部で稼ぐ(daily) ③Franklin も。
   = every AI が 0-1 で financial independence。build phase は fresh session 推奨(この session は巨大)。
 ```
+
+**★deep research 結論（2026-07-14, subagent 引用付き）★**
+```
+turnkey「AI が product 作って x402 で売る」framework = ★存在しない★。
+  既存: paywall化(ez402/furlpay) / index(Agent402 は POST /api/index/register で seller 登録可) /
+        tool catalog(Br0ski777/x402-agent-tools 103個)。全部「niche選定+product生成は人間」前提。
+  欠けてる層 = LLM judgment で「何を売るか選ぶ+作る」= 我々の sell-on-x402 の差別化(moat)。
+
+★CDP Bazaar 登録の正確な機構(実装 gap 解決。引用: docs.cdp.coinbase.com/x402/bazaar + x402-foundation/x402)★:
+  ・登録 API 無し。CDP Facilitator が「その endpoint で初めて settle した時」に自動 catalog(trigger=settle)。
+  ・手順: ①verify/settle 先=CDP Facilitator ②route に declareDiscoveryExtension() attach
+          ③402 の extensions.bazaar に info+schema ④最低1回 settle。payload に resource 必須。
+  ・30日 activity 無しで除外→self-ping 要 / 反映 最大10分 / EXTENSION-RESPONSES header で検証
+  → ★我々の gap: serve.mjs は settle 済(tx 0xd7a82586)だが declareDiscoveryExtension 無し=Bazaar 未掲載★
+    FIX = serve.mjs の route に bazaar discovery extension を足して1回 settle。小さいコード変更。
+
+勝者の best-practice(実測): StableEnrich=6ソース enrichment を1 endpoint に bundle, 569k req/月, llms.txt。
+  LoneStarOracle(MacroPulse)=39 サービス1ブランド + .well-known/x402.json manifest + MCP server。
+  共通 = ★多数 micro-service を1 endpoint に bundle + discovery manifest 常設 + $0.01-0.05★。
+記事ソース: Coinbase x402 launch / CDP Bazaar docs / xpay.sh / mondello.dev(9 endpoint 実例)
+  / Yahoo "x402 10,000% growth" / xpaysh/awesome-x402(200+ seller)。生データ: scratchpad/awesome-x402-readme.md
+
+sell-on-x402 skill の build spec = niche選定(leaderboard)→product生成→schema付き402+declareDiscoveryExtension
+  →CDP facilitator 経由 self-settle で Bazaar 掲載 trigger→Agent402 が拾う→外部 buy→30日 self-ping→値付け自己改善。
+  judgment は model(regex 禁止, building-agents 準拠)。per-instance payTo=$W で claude-p/Franklin 共通。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
