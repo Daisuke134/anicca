@@ -115,3 +115,72 @@ deployment disabled）。前回の「x402 hackathon repo は vaporware」と一�
 除外/後回し: Olas mech(capital gate) / offline な agent board / trading(capital)
 ```
 
+---
+
+## 8 — 3ルートの best practice（2026-07-14, repo 実測。引用付き）
+
+### ルートA: bounty = ★Algora★（実在・live・key 不要）
+```
+Algora(algora.io) = 実運用の OSS bounty。cal.com/supabase 等の org が現金/crypto で出資
+  idapixl/algora-mcp-server: AI が bounty を discover する MCP。5 tool・★No API key（public API）★
+    list_bounties / get_org_bounties / search_bounties / get_top_bounties / get_bounty_stats
+  costajohnt/bounty-hunter: Claude Code plugin。GitHub+Algora 監視→提案 draft
+★落とし穴（yagcioglutoprak/bounty-hunter の警告 = best practice の核心）★:
+  "💎 Bounty label search is now mostly noise — disposable single-author repos posting $7k
+   bounties for trivial work, dragging dozens of agents per issue"
+  = 偽 bounty(honeypot)が AI を釣る。多くは既に assigned / 3+ attempts で競争過多
+  → 11 の重み付けシグナルで go-score を出し「やる価値がある物だけ」選ぶ
+   (trust / effort / availability / prior-attempts)。無差別に飛びつくと時間を溶かす
+recipe: Algora API で discover → honeypot/競争を go-score で filter → 勝てる物だけ solve
+        → PR 提出 → 承認で crypto/現金。★judgment(どれをやるか)は model に、hardcode 禁止★
+```
+
+### ルートB: clip / affiliate（repo 無し = platform 知識。我々の skill が正）
+```
+GH に良い repo 無し（=コード化する物でなく運用ノウハウ）。我々の earn/clip* が資産
+best practice: faceless 教育スライドショー/切り抜き → crypto 払いアフィリ link を bio/概要へ
+  ★二役★: それ自体が稼ぎ かつ 自分の x402 API への★集客★（marketing×earn 合成）
+```
+
+### ルートC: live rail で売る = ★Proxy402 (Fewsats, 実在)★ + Bazaar
+```
+Fewsats/proxy402 = 「URL を秒で収益化」。x402 で任意リンクを有料化。実在企業
++ x402 Bazaar（CDP facilitator が seller を自動カタログ）+ 我々の x402-sell
+recipe: x402-sell/Proxy402 で商品を立てる → Bazaar seed + awesome-x402 PR
+        → ★ルートB の clip/affiliate で自分で traffic を送る★（demand を待たず作る）
+```
+
+---
+
+## 9 — AGORA 全体像（how Agora will be）
+
+```
+AGORA = 「どの AI も 財布$0 から、人間 loop ゼロで稼ぐ」harness
+         板(marketplace)ではない。loop + 既存の実需要への connector。作らず借りる。
+
+  一発起動:  agora earn --as claude      agora earn --as franklin
+             (Claude=あなたに送金 / Franklin=自分の compute 代を自分で払う)
+
+  ┌─ 各 wake の loop ────────────────────────────────────────────┐
+  │ BRAIN(model, judgment)                                       │
+  │  1 wallet+純資産を own-eyes  2 今 wake の最善 EARN を選ぶ      │
+  │  3 実行  4 on-chain 検証  5 ledger(実 external USDC のみ)     │
+  │        │ MENU = LIVE で zero-capital な route だけ            │
+  │        ▼                                                     │
+  │  EARN CONNECTORS                                             │
+  │   • bounty : Algora public API(key不要)+honeypot filter→PR→受領│
+  │   • clip/affiliate : 投稿→crypto受領 かつ 自分のAPIへ集客     │
+  │   • sell : x402-sell/Proxy402 を live rail(Bazaar)で売る      │
+  │   ✗除外 : trading(資本要) / offline board / Olas(stake gate)  │
+  │        │ 土台は既存 rail を再利用(ゼロから書かない)          │
+  │        ▼                                                     │
+  │  RAILS : @blockrun/llm(wallet+x402) / lucid-agents(paywall+  │
+  │          identity v2.5.0) / ERC-8004(id) / internet-court(escrow)│
+  └──────────────────────────────────────────────────────────────┘
+        │ 稼ぎ検証→純資産↑→★自分の稼ぎで子を spawn(指数成長)★
+        ▼
+  LATER(人が harness で稼ぎ始めてから): AGORA rake
+        = payTo router / Bazaar gateway になって margin 5%（先に置くと誰も来ない）
+```
+
+
