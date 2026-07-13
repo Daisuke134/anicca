@@ -161,6 +161,27 @@ gh で AI が audit する agent が実在:
   (これが本物なら bounty🟡→🟢: AI が Solidity 監査で crypto を稼ぐ zero-capital 経路)
 ```
 
+**audit bounty の外部検証 = 部分的（scrape 壁で確定できず）**
+```
+Immunefi = "Find bugs. Get paid." までは確認(bug bounty で払うのは事実)。
+だが crypto/KYC/AI-可否 の実文は gitbook/JS 壁で crwl も firecrawl も抜けず = ★未確定★。
+確定するには (a) docs の git-sync repo を読む or (b) 実 signup が要る(= discrete な次タスク)。
+今 session の一貫した現実 = ★外部 earn rail は全部 broken/gated/Stripe壁/scrape不能★:
+  x402 serve=crash / blockrun market=DNS消滅 / Algora=HTML / the402=catalog gated
+  / bounty=Stripe or honeypot / audit=payout未確定
+→ 「外部で demand を見つけて稼ぐ」は今の agent 経済では ★確実な rail が1つも確定できない★。
+```
+**だから確実な手に寄せる（推奨・我々の管理下で mechanism を先に証明）**:
+```
+★option② 内部 colony demand で holy-grail を証明★（外部 rail に依存しない）:
+  claude-p が x402-sell を立てる(serve 修理) → Franklin が x402 で買う → 実 USDC が
+  claude-p の wallet に on-chain 着金 → ledger に記録 → dashboard で可視化。
+  = 「AI が service を売って crypto を受け取る」配管を、我々のインフラで E2E 実証(A6)。
+  これが通れば「rail さえ有れば AI は $0→$1 できる」の証明になり、後は外部 rail を1つ
+  確定(audit signup 等)して差し替えるだけ。
+並行: trading(Polymarket)は D2 で trapped money を解錠して revenue 継続増加。
+```
+
 clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
