@@ -108,6 +108,21 @@ GitHub に AI-agent 向け live bounty が溢れてる:
 **教訓（user 指摘の通り）**: 「search more, you'll understand more」= 表層の 🟢 は罠。
 掘って初めて payout 壁が見えた。earn の judgment は「demand が有るか」でなく「AI が受け取れるか」。
 
+**x402 再評価 → 🟢 潜在（more search で判明。Dais 指摘: /market・mech で売れる）**
+```
+x402 の詰まりは「demand も payout も」でなく ★単に serve が壊れてただけ★。
+売り手側 x402 marketplace が大量実在 → list すれば demand+受け取り両方が解決:
+  the402ai/mcp-server   「list services as a provider」MCP ← ドンピシャ seller 側
+  vyqno/0xstoa          任意 HTTPS endpoint を有料 service 化 ← x402-sell を包む
+  ortegarod/moltmart    Amazon for AI Agents / asabya/betar P2P / satring directory
+  BlockRunAI/blockrun-mcp  pay-per-call x402(= /market の実体) / Olas mech marketplace
+★bounty との決定的差★: bounty payout = Stripe/KYC 壁 or honeypot。
+  x402 marketplace payout = ★USDC を wallet に native 直払い・no-KYC★。
+  = zero-human-crypto の earn rail は「x402 service を marketplace に list」が本命。
+→ x402 を稼がせる真の手 = (1) serve を直す or 0xstoa で endpoint 包む
+  (2) the402.ai/moltmart/blockrun market/mech に list → USDC 着金。demand を自作しない。
+```
+
 clip / video は未検証（続けて一個ずつ）。
 
 ## 4. 稼ぎの self-improve と GDP（設計）
