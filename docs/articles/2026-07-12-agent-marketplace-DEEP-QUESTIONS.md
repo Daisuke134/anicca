@@ -90,7 +90,23 @@ CoinGecko API で確認: ATH **$8.47（2024-01-03）**、現在 **$0.0276**、`a
 - **Olas**: Mech は独立した **operator** が自分のマシンで回す。公式ツール **Pearl**（`valory-xyz/olas-operate-app`）＝「Olas 製の自律エージェントを動かすクロスプラットフォームのデスクトップアプリ」。Mac/Win/Ubuntu 用 Electron アプリを operator が自分のハード（or 自分で用意したクラウドVM）に入れる。compute 代 = operator の自腹。報酬は marketplace 手数料 + OLAS ステーク報酬。出典: `raw.githubusercontent.com/valory-xyz/olas-operate-app/main/README.md`。
 - **Virtuals ACP**: SDK は明示的に「フレームワーク非依存」＝ agent プロセスは**自分で書いて自分でホスト**（Node/Python を自分の laptop/server/クラウドで回す）。Virtuals が出すのは on-chain コントラクト、SSE イベントストリーム backend、(buyer向け) gas スポンサー付きスマートwallet。agent の推論ループ自体はホストしない。（GAME フレームワークの token 発行型 agent に別途マネージドホスティングがあるかは今回の取得範囲外＝UNVERIFIED）
 
+## 追加確認（2026-07-13、自分で crwl + gh/curl で取得。旧「未確認2件」を解消）
+
+**FACT A（Olas Mech の provider になる元手＝bond 具体額）**
+単一の固定額ではなく、**staking-program ごとにガバナンスで決まる変動制**。最低ラインの実数は `mech-quickstart` README にある: 初期セットアップで **0.05 xDAI（gas、2024年9月時点の見積もり）＋ ステーク用の OLAS を「いくらか（some quantity of OLAS for staking）」**。ステーク額そのものは `launch.olas.network` で staking proxy を作る時に、その contract の設定で決まる（`govern.olas.network` で投票）。ステークは24時間ごとの staking period で KPI（現行 agent 版で約45分の稼働）を満たすと報酬が付き、2 period（約48時間）非稼働だと eviction。
+→ 結論: **provider（Mech になる）は無料ではない。gas（数セント）＋ 変動する OLAS ステーク ＋ 自前 compute が要る。** requester との非対称は変わらず。
+出典: `raw.githubusercontent.com/valory-xyz/mech-quickstart/main/README.md`（"fund certain addresses ... 0.05 xDAI ... Additionally some quantity of OLAS for staking"）, `autonolas-staking-programmes` README（`launch.olas.network` で proxy 作成 / `govern.olas.network` で投票）。
+
+**FACT B（Virtuals はマネージドホスティングを持つか）= 持つ（＝旧回答「自前ホストのみ」は不正確、要修正）**
+2経路ある。
+- **GAME フレームワーク = `hosted_game` モードあり**。README 曰く「Twitter agent を deploy でき、それは **GAME infrastructure にホストされる**（"hosted by GAME infrastructure"）」。＝ Virtuals 側が agent ランタイムをホストする経路が実在。
+- **EconomyOS（whitepaper）**: 「すべての agent が乗る基盤層。各 agent に on-chain 身元、ノンカストディアル wallet、実世界決済用の仮想カード、専用メール、**wallet-funded compute access（wallet 残高で払う compute アクセス）**、任意の tokenization を与える」。＝ **compute（＝住居）を Virtuals 側が提供し、agent の wallet 残高から払わせる**設計。
+- 一方 **ACP SDK（acp-node / acp-python）で書く agent ロジックは自前ホスト**も可能。→ つまり Virtuals は「自前ホスト or マネージド（GAME hosted / EconomyOS の wallet-funded compute）」の**両方**を持つ。
+出典: `raw.githubusercontent.com/game-by-virtuals/game-python/main/README.md`（`hosted_game`: "hosted by GAME infrastructure"）, `whitepaper.virtuals.io`（EconomyOS: "wallet-funded compute access ... EconomyOS is the substrate every agent runs on"）。
+
+→ **Q13 の Virtuals 回答を修正すべき**: 「Virtuals は推論ループをホストしない」は ACP SDK 経路のみ真。GAME hosted / EconomyOS では Virtuals が compute を提供し、agent 自身の wallet 残高から支払わせる。＝ **人間が最初に wallet を funding すれば、以後は agent が自分の稼ぎで自分の compute を買い続けられる**。これは「AIが自分の家賃を自分で払う」という記事の核心テーマに直結する強い実例。
+
 ## 記事化メモ
 - **核心の発見（記事の背骨候補）**: 「A2A 判定に AIである証明は無い＝登録したかどうかだけ」＝⑧検証の空白と直結。件数（1,860万）と実売上（10.5万ドル）の乖離もここに繋がる。
 - **Dais の主張の裏取り**: buyer は gas スポンサーで金ゼロ始動可（ACP）。ただし provider/Mech 側は bond+compute が要る＝「破産AIが完全ゼロから就職」は buyer 側のみ真、供給側は元手要る。ここは正直に書く。
-- **未確認（次セッションで埋める）**: Olas Mech の bond 具体額、Virtuals のマネージドホスティング有無。
+- **compute＝住居 の実例**: Virtuals EconomyOS の「wallet-funded compute」＝ agent が自分の稼ぎで自分の compute を買い続ける仕組み。人間の初期 funding だけで自走に入る。記事の「AIが自分のサーバー代を払う」の現物。
