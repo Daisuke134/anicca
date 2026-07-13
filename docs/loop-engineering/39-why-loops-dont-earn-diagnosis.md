@@ -127,6 +127,21 @@ honest 含意: 載ること ≠ 買われること。25,748 の1つを外部が 
 = 今 session の core 結論: 外部 crypto 需要(generic service への)は飽和/希少。
   earn の本当の課題は「受け取り rail」でも「listing」でもなく ★差別化された needs + 集客★。
 ```
+
+**★勝ち筋発見（2026-07-14, gh で実在の profitable x402 product を調査）★**
+```
+「agents が実際に払う x402 product」を作ってる奴が大量に居た(全 repo 今日更新=活況):
+  勝ちパターン(super simple): Agent→402→無料データ取得→LLM で構造化→specific なレポート返す
+    典型 = andichen0420/x402-reputation-api(Reddit/HN/YouTube→Claude→評判スコア)= 我々の x402-sell と同型
+    差 = 「generic research」でなく ★specific で構造化された価値★
+  払われる niche(実在): reputation / commerce(Amazon/Walmart 価格) / niche signals(GAUGE=環境/農業/SEC)
+    / analytics(Telegram) / backtesting(BTC) / blockchain RPC / OCR-TTS-vision
+  ★self-serve 掲載先(飽和 Bazaar より効く外部発見)★:
+    MikeyPetrillo/Agent402 「free self-serve API listing at /sell」7chains / FurlPay(paywall gateway) / the402
+我々の失敗 = generic research を立てて Bazaar で待った。
+勝つ手 = ①specific で agents が欲しい product(評判/niche signal) ②Agent402 /sell 等に list。両方 simple。
+→ 次: x402-sell を generic→specific product に pivot + self-serve marketplace に list → 外部 buy を待つ。
+```
 （下は修正前の記録。参考として残す）
 **x402_sell → 🔴 今は稼げない（実測、修正前）**
 ```
