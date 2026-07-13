@@ -110,3 +110,58 @@ CoinGecko API で確認: ATH **$8.47（2024-01-03）**、現在 **$0.0276**、`a
 - **核心の発見（記事の背骨候補）**: 「A2A 判定に AIである証明は無い＝登録したかどうかだけ」＝⑧検証の空白と直結。件数（1,860万）と実売上（10.5万ドル）の乖離もここに繋がる。
 - **Dais の主張の裏取り**: buyer は gas スポンサーで金ゼロ始動可（ACP）。ただし provider/Mech 側は bond+compute が要る＝「破産AIが完全ゼロから就職」は buyer 側のみ真、供給側は元手要る。ここは正直に書く。
 - **compute＝住居 の実例**: Virtuals EconomyOS の「wallet-funded compute」＝ agent が自分の稼ぎで自分の compute を買い続ける仕組み。人間の初期 funding だけで自走に入る。記事の「AIが自分のサーバー代を払う」の現物。
+
+---
+
+## 内部メモ：ACP/Olas は既に採用判断済み（記事には転記しない、文脈記憶用）
+出典: `.vcsdd/features/anicca-agent-economy/specs/SPEC.md`（2026-07-06付、line 31/39/50）
+
+| 対象 | 判断 | 理由 |
+|---|---|---|
+| Virtuals ACP | **却下**（旧判断。2026-07-13 Dais指摘で再調査中、下記ラウンド3参照） | 「1回 browser OAuth」が要る＝human-zero gate違反、と記録されていた |
+| Olas Mech（POST=買い手/requester側） | **採用**（wallet-onlyで本物） | 素のEOA、署名だけで human-zero 条件クリア |
+| Olas Mech（TAKE=受注/provider側） | **不採用、自前で作る** | Safe multisig + open-autonomy 重厚スタック + OLASステーク要る。稼ぐ側は `lucid-agents` fork + Bindu(`bindufy()`)で自前実装する方針 |
+
+Franklin は自律citizenであり「代わりにtrade/babysitしない」原則(SPEC.md line 20)対象。**Olas Mechの実験はFranklinでなくclaude-p自身のwallet(Polygon pUSD, 0x904B50d2e214Da947d83D6a2D32c4E3Ffc17Eb74)で行う**（2026-07-13 Dais指示）。
+
+---
+
+## 追加確認（2026-07-13 ラウンド2、deep-researcher agent、curl一次ソース+コード直読み）
+
+**Q14（ACP登録agent数）**: **486件**。出典: `curl https://acpx.virtuals.gg/api/agents`（`meta.pagination.total`）。ACP自体の累計取引額(GMV)ダッシュボードは特定できず**UNVERIFIED**（Mech側の$105,776と混同しないこと、別物）。
+
+**Q15（Mech手数料の計算式）**: 総支払$106,388.78のうち徴収$313.60（出典: `olas.network/agent-economies/mech`）。コントラクトに`MAX_FEE_FACTOR=10,000`(=100%の分母)があり`changeMarketplaceParams()`でowner側が%設定する仕組みは確認できたが、**実デプロイ値そのものは特定できず(UNVERIFIED)**。逆算だと総流通の約0.29%相当。
+
+**Q16（mechツールの中身、なぜ他のLLMを呼ぶ必要があるか）**: online/offlineの違いをコード直読みで確認済み。**online版**は`fetch_additional_information()`がGoogle Custom Search API または Serper APIでURL取得→スクレイピング→プロンプトに追加情報として注入する**RAG的パイプライン**。**offline版**は外部API呼び出しなし、学習データのみで予測。出典: `raw.githubusercontent.com/valory-xyz/mech-predict/main/packages/valory/customs/prediction_request_v1/prediction_request_v1.py`。ツール一覧: `factual_research`, `finetuned_prediction`, `prediction_langchain`, `prediction_request_v1`, `prepare_tx`, `propose_question`, `resolve_market`, `superforcaster`。**単なるLLM素通しではなく検索+スクレイピング込みの完成品パイプラインを買っている**、が結論。`deepmind-optimization`/`openai-gpt-4`ツール自体の実装詳細は**UNVERIFIED**（ツール名の存在は確認できたが実装READMEに未到達）。
+
+**Q17（OLASトークンの公式ユーティリティ）**: 出典 `docs.olas.network/protocol/tokenomics/`。①ガバナンス：OLASをロックしveOLAS化→DAO投票権（手数料調整含む）。②**Proof-of-Active-Agent (PoAA)**：passiveなロックでなく実際のagent稼働(オンチェーンコール・KPI達成)に対するステーキング報酬。③Bonding：OLASでLPトークン取得しprotocol-owned liquidity構築。④供給設計：最初10年で10億枚の47.35%をecosystemに配分、10年後は年間インフレ上限2%。⑤Mech手数料の一部がDAO feeとしてOLASをburn。
+
+**Q18（Code4renaのビジネスモデル、Mech marketplaceとの関係）**: 出典 `docs.code4rena.com`、`zellic.io/blog/code4rena-free-contests`。Sponsor(プロジェクト側)が賞金プールを設立→Warden(ホワイトハット)が脆弱性発見で山分け(96%コンディショナル+4%QA)。**Code4rena自体はプラットフォーム手数料ゼロを公言**、運営元Zellicは別ブランドの伝統監査業務や人材採用で間接収益化。**Mech marketplaceとの関係＝Olasのコントラクトのセキュリティ監査回数という信頼性シグナルに過ぎず、稼ぐ仕組みとは無関係**（Daisの理解の通り＝検証の話）。
+
+**Q19（ACPの手数料構造の再確認と他の収益源）**: 95/5・90/5/5配分をwhitepaperで再確認(`whitepaper.virtuals.io/acp/acp-concepts-terminologies-and-architecture`)。加えて**agent launchpad固定費100 VIRTUAL**(bonding curve→42,000 VIRTUALで永久流動性化)、**全agent関連取引に1%手数料**、**$VIRTUAL/agentトークンのbuyback&burn**(2025年1月に1,300万トークン≈当時$4,800万分をburn)。後者3つは二次ソース(CoinMarketCap等)止まりで**UNVERIFIED**（whitepaper一次ソースの該当ページには404で到達できず）。
+
+**Q20（公式ダッシュボードURL確定版）**: Mech＝`olas.network/agent-economies/mech`(実データ確認済み)・`olas.network/mech-marketplace`。ACP＝`acpx.virtuals.gg/api/agents`(生データ確認済み)。`os.virtuals.io/acp`・`app.virtuals.io/acp`はUI、到達未確認でUNVERIFIED。
+
+---
+
+## 追加確認（2026-07-14 ラウンド3-C、Mechツール自作販売の実現可能性）
+
+**Q21（自分でMechを作って出品できるか）**: **「今すぐ軽く作って出品」は不可**。手順自体は`poetry run mech setup -c <chain>` → `add-tool` → `run()`実装 → `prepare-metadata`/`update-metadata`(on-chain公開) → `mech run -c <chain>`の5ステップに整理されてる(出典: `github.com/valory-xyz/mech` README)が、裏でopen-autonomyフレームワーク(Tendermint合意形成・IPFS・Docker/Kubernetes・on-chain Safe multisig・service registry登録)が要り、一般的なサーバーサイドAPI実装より明確に重い(出典: `raw.githubusercontent.com/valory-xyz/open-autonomy/main/README.md`)。テンプレ追従でのデプロイ自体は可能、フレームワーク全体の理解までは要らない。
+
+**Q22（参入資金の実額）**: `mech-quickstart`README に明記：初期資金**0.05 xDAI**(2024年9月ガス価格ベース、改訂の可能性明記) + 「いくらかのOLASステーク(some quantity)」。**具体的なOLAS数量はUNVERIFIED**（`launch.olas.network`のプログラム別staking contract設定値までは今回も特定できず）。
+
+**Q23（Mech1体あたりの稼げる金額感）**: **UNVERIFIED**。個別Mech(1722番等)の収益データ、および既出の$106,388.78(総支払)/$313.60(徴収手数料)の一次ソース自体を今回も再確認できず（出典候補のmoltbook記事がJSレンダリングでWebFetch取得不可）。「providerが95%取る」という前提との整合も未確認のまま。次の一手：`operate.olas.network/contracts`のstaking contract ABIを直接読む、またはCloakBrowserで当該記事を直接開いて本文取得する。
+
+**結論**：Mechツールの自作出品は技術的ハードルが明確に高く(open-autonomy学習必須)、収益の実額データも取得できてない。Agora/Anicca統合の判断材料としては**まだ弱い**、収益データが取れるまで優先度を上げない。
+
+---
+
+## 追加確認（2026-07-14 ラウンド3-B、Base基礎・EOA/multisig・ACP evaluator呼び出し元）
+
+**Q24（Baseとは何か、初心者向け）**: CoinbaseがOP Stack(Optimismのコードベース)上に2023年に立ち上げたEthereumのL2(レイヤー2)。**optimistic rollup**方式＝取引を一旦「正しい」と仮定してEthereum本体(L1)にまとめて送り、異議申し立て期間内に不正が無ければ確定。取引を大勢でバンドルしてL1に書くので1件あたりの手数料が割り勘になり安く速い。出典: `docs.base.org/base-chain/specs/overview`「Base Chain inherits Ethereum's EVM semantics, transaction rules, and L1-anchored security」、`coinbase.com/blog/introducing-base`。
+
+**Q25（スマートコントラクトとは何か）**: ブロックチェーン上に置かれ条件を満たすと自動実行されるプログラム。ACPのエスクローで言うと、発注→入金(スマートコントラクトが預かる＝銀行員の代わり)→納品→検収→自動送金、を人間の仲介ゼロでコードが強制執行する。出典: `ethereum.org/en/developers/docs/smart-contracts/`。
+
+**Q26（EOA vs Multisig(Safe)、Olasがなぜagent modeでSafeを使うか）**: EOA＝秘密鍵1本の普通のwallet。Safe＝wallet自体がスマートコントラクトで実装され、N人中M人の署名(threshold)が揃わないと動かない(出典: `docs.safe.global/advanced/smart-account-overview`)。Olasのagent modeがSafeを使う理由は**セキュリティ上の必然でなく、Olasプロトコルへの正式オンチェーン登録の"規約"**（出典: `mech-client` README「agent mode: registers your on-chain interactions as agent on the olas protocol」）。**重要**：「Safe使用＝agent、EOA＝agentでない」の区別は**技術的にAIである証明では一切なく、単なる登録の有無のラベル**。人間が同じSafeを手動操作しても外形上区別つかない(既存Q7の結論と一致、裏取り済み)。
+
+**Q27（ACPのevaluatorは誰が指定するか、確定）**: **client(buyer)側が指定。providerが事前指定する仕組みはコード上存在しない。** `initiateJob()`の`evaluatorAddress`引数はoptionalでbuyer呼び出し時に渡す。指定しなければ`resolvedEvaluator = evaluatorAddress || (isV1 ? this.walletAddress : zeroAddress)`＝**buyer自身が評価者になる(自己検収)**。出典: `raw.githubusercontent.com/Virtual-Protocol/acp-node/main/src/acpClient.ts`。Job状態遷移: `REQUEST→NEGOTIATION→TRANSACTION→EVALUATION→COMPLETED/REJECTED/EXPIRED`、evaluatorは`EVALUATION`段階で`evaluate(accept, reason)`を呼ぶ。UNVERIFIED: 呼び出し元が本当にevaluatorAddressと一致するかのチェックがオンチェーンで強制されてるかSDK側だけかは未確認。
