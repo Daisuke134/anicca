@@ -6606,3 +6606,12 @@
 {"ts":1783977610,"wake_id":"00MRJQ7IDSC0B5FD9308B44628","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
 {"ts":1783977766,"wake_id":"00MRJQAUBO08BF08A101814809","kind":"wake","sleep_s":120,"model":"free/glm-4.7","slot":"yield","attemptsUsed":1,"profitable":false,"exit_code":0,"result":"OK: bySkill=null byAgent={\"halt\":false,\"reason\":null,\"cumulativeNet\":0.02} [earn] gas check: {\"kind\":\"gas_ok\",\"eth\":0.0006,\"floor\":0.0003} [earn] yield result: {\"kind\":\"yield_hold\",\"action\":\"hold\",\"li"}
 {"ts":1783977900,"wake_id":"00MRJQDPTH8169DA95E04B4065","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783978065,"wake_id":"00MRJQH9FRA169D720A13C44F7","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783978160,"wake_id":"00MRJQJAC6EF835900CD0C4BC7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783978310,"wake_id":"00MRJQMHV63863A1433FF64A6F","kind":"router_reroute_skip","slot":"earn/polymarket-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"no redeemable conditions found for [REDACTED] — nothing to do\ndeposit wallet: [REDACTED] | pUSD: 0.001713\nscanned 60 markets.\nno risk-free bundle arb ≥0.5% right now (market efficient). MM keeps quoti"}
+{"ts":1783978310,"wake_id":"00MRJQMHV63863A1433FF64A6F","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783978495,"wake_id":"00MRJQQGNZA00AB2D6BF5B491B","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783978561,"wake_id":"00MRJQRW25AF7B4F64384045E7","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
+{"ts":1783978707,"wake_id":"00MRJQV0BP48B88969D54148CD","kind":"wake_error","sleep_s":60,"model":"free/glm-4.7"}
+{"ts":1783978774,"wake_id":"00MRJQWFXF34910F6AA6B3451B","kind":"router_reroute_skip","slot":"earn/sol-trade","attemptsUsed":1,"exit_code":0,"skip_reason":"WAIT — on-chain wallet shows only $19.15 USDC and no reported SOL for fees, so I cannot safely execute a SOL trade that would clear the ~0.4%+ round‑trip cost; note: user-supplied pre-gate shows high "}
+{"ts":1783978774,"wake_id":"00MRJQWFXF34910F6AA6B3451B","kind":"router_no_realized_action","sleep_s":120,"model":"free/glm-4.7","slot":null,"attemptsUsed":1,"profitable":false}
