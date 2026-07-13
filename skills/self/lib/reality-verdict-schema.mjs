@@ -70,6 +70,36 @@ export function buildResultPath(stateDir, loopName, timestampMs) {
   return `${dir}/.reality-verify-${normalized}-${timestampMs}.json`;
 }
 
+/**
+ * REQ-006: deterministic path for a loop's durable, append-only ENFORCED-verdict trail (one
+ * JSON line per enforceVerdict call, every outcome, never filtered). No timestamp component —
+ * unlike buildResultPath (one file per pass), this is ONE file per loop that every pass appends
+ * to, so a loop's full history is readable from a single path.
+ * @param {string} stateDir
+ * @param {string} loopName
+ * @returns {string}
+ */
+export function buildVerdictTrailPath(stateDir, loopName) {
+  const normalized = normalizeLoopName(loopName);
+  const dir = String(stateDir ?? "").replace(/\/+$/, "");
+  return `${dir}/reality-verdict-${normalized}.jsonl`;
+}
+
+/**
+ * REQ-010: deterministic path for a loop's append-only "could not verify, needs a human's own
+ * eyes" queue — the escalation target for a CANNOT_VERIFY verdict that does not (yet) invoke
+ * self-fix.sh. Mirrors buildVerdictTrailPath's own durability pattern (one file per loop,
+ * append-only, never deduplicated).
+ * @param {string} stateDir
+ * @param {string} loopName
+ * @returns {string}
+ */
+export function buildHumanReviewQueuePath(stateDir, loopName) {
+  const normalized = normalizeLoopName(loopName);
+  const dir = String(stateDir ?? "").replace(/\/+$/, "");
+  return `${dir}/reality-needs-human-review-${normalized}.jsonl`;
+}
+
 function hasCiteableEvidence(evidence) {
   if (!evidence || typeof evidence !== "object") return false;
   return Boolean(evidence.filePath || evidence.txHash || evidence.domExcerpt);
