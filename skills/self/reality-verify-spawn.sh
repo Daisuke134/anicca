@@ -119,12 +119,40 @@ TRAIL_DIR="$STATE/.reality-artifacts-$LOOP-$PASS_ID"
 ARTIFACTS_FILE=""
 CAPTURE_START_TS="$(date +%s%3N 2>/dev/null || date +%s000)"
 
+# Instagram post/reel URL -> (account, shortcode), for routing to the dedicated ig_public_check.py
+# adapter instead of the generic plain-GET public_artifact_snapshot.py — Instagram's SPA shell
+# commonly returns 200 regardless of whether the underlying post exists, so a plain HTTP status
+# capture cannot distinguish a real removal from a normal page load; ig_public_check.py's
+# fixed-public-surface membership check can. Prints "<account> <code>" on match, else returns 1.
+parse_instagram_account_and_code() {
+  if [[ "$1" =~ instagram\.com/([A-Za-z0-9._]+)/(p|reel)/([A-Za-z0-9_-]+) ]]; then
+    printf '%s %s\n' "${BASH_REMATCH[1]}" "${BASH_REMATCH[3]}"
+    return 0
+  fi
+  return 1
+}
+
 if [ "$CLAIM_TYPE" = "public-artifact" ] || { [ "$CLAIM_TYPE" = "caller-per-invocation" ] && [ -n "$CLAIMED_URLS" ]; }; then
   # Deterministic, logged-out capture BEFORE the LLM verifier is spawned — the wrapper (not the
   # LLM) owns the trust decision of what got captured (public_artifact_snapshot.py's own doc
   # comment: "the wrapper that OWNS trust decisions is reality-verify-spawn.sh").
   IFS=',' read -r -a URL_ARR <<< "$CLAIMED_URLS"
-  if [ "${#URL_ARR[@]}" -gt 0 ] && [ -n "${URL_ARR[0]}" ]; then
+  IG_ACCOUNT_AND_CODE=""
+  if [ "${#URL_ARR[@]}" -eq 1 ] && [ -n "${URL_ARR[0]}" ]; then
+    IG_ACCOUNT_AND_CODE="$(parse_instagram_account_and_code "${URL_ARR[0]}" || true)"
+  fi
+  if [ -n "$IG_ACCOUNT_AND_CODE" ]; then
+    IG_ACCOUNT="${IG_ACCOUNT_AND_CODE%% *}"
+    IG_CODE="${IG_ACCOUNT_AND_CODE#* }"
+    CAPTURE_OUT=$(printf '%s' "$HMAC_SECRET" | "$PY" "$SELF_DIR/scripts/ig_public_check.py" --pass-id "$PASS_ID" --trail-dir "$TRAIL_DIR" --account "$IG_ACCOUNT" --claimed-code "$IG_CODE" 2>>"$LOG")
+    CAPTURE_RC=$?
+    if [ "$CAPTURE_RC" -eq 0 ]; then
+      ARTIFACTS_FILE="$TRAIL_DIR/artifacts.jsonl"
+      echo "$(date '+%F %T') reality-verify[$LOOP] ig captured: $CAPTURE_OUT" >> "$LOG"
+    else
+      echo "$(date '+%F %T') reality-verify[$LOOP] ig_public_check.py failed rc=$CAPTURE_RC (proceeding with zero captured artifacts -> enforceVerdict will CANNOT_VERIFY/no_citation on an unsupported PASS)" >> "$LOG"
+    fi
+  elif [ "${#URL_ARR[@]}" -gt 0 ] && [ -n "${URL_ARR[0]}" ]; then
     CAPTURE_OUT=$(printf '%s' "$HMAC_SECRET" | "$PY" "$SELF_DIR/scripts/public_artifact_snapshot.py" --pass-id "$PASS_ID" --trail-dir "$TRAIL_DIR" "${URL_ARR[@]}" 2>>"$LOG")
     CAPTURE_RC=$?
     if [ "$CAPTURE_RC" -eq 0 ]; then
