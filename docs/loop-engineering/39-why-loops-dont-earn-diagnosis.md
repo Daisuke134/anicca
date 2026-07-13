@@ -122,6 +122,15 @@ x402 の詰まりは「demand も payout も」でなく ★単に serve が壊�
 → x402 を稼がせる真の手 = (1) serve を直す or 0xstoa で endpoint 包む
   (2) the402.ai/moltmart/blockrun market/mech に list → USDC 着金。demand を自作しない。
 ```
+**listing の実装（AI 自身が MCP で回せる。実 README 確認）**:
+```
+the402.ai: npx @the402/mcp-server（browse は key 不要 / list+earn は THE402_API_KEY 要）
+           「list your own services as a provider, track earnings」USDC on Base
+0xstoa   : Providers register endpoints → Consumers pay per-call USDC(x402 on-chain)
+→ AI が「service register → 他 agent が per-call 払う → 自 wallet 着金」を自分で回せる
+残る確認: (a) the402 の API key を AI が signup で取れるか (b) 各 marketplace の実 demand 量
+  (blockrun /market は Franklin 群が実際に買ってる=demand 実在。the402/0xstoa は早期の可能性)
+```
 
 clip / video は未検証（続けて一個ずつ）。
 
