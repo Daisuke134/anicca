@@ -165,3 +165,17 @@ Franklin は自律citizenであり「代わりにtrade/babysitしない」原則
 **Q26（EOA vs Multisig(Safe)、Olasがなぜagent modeでSafeを使うか）**: EOA＝秘密鍵1本の普通のwallet。Safe＝wallet自体がスマートコントラクトで実装され、N人中M人の署名(threshold)が揃わないと動かない(出典: `docs.safe.global/advanced/smart-account-overview`)。Olasのagent modeがSafeを使う理由は**セキュリティ上の必然でなく、Olasプロトコルへの正式オンチェーン登録の"規約"**（出典: `mech-client` README「agent mode: registers your on-chain interactions as agent on the olas protocol」）。**重要**：「Safe使用＝agent、EOA＝agentでない」の区別は**技術的にAIである証明では一切なく、単なる登録の有無のラベル**。人間が同じSafeを手動操作しても外形上区別つかない(既存Q7の結論と一致、裏取り済み)。
 
 **Q27（ACPのevaluatorは誰が指定するか、確定）**: **client(buyer)側が指定。providerが事前指定する仕組みはコード上存在しない。** `initiateJob()`の`evaluatorAddress`引数はoptionalでbuyer呼び出し時に渡す。指定しなければ`resolvedEvaluator = evaluatorAddress || (isV1 ? this.walletAddress : zeroAddress)`＝**buyer自身が評価者になる(自己検収)**。出典: `raw.githubusercontent.com/Virtual-Protocol/acp-node/main/src/acpClient.ts`。Job状態遷移: `REQUEST→NEGOTIATION→TRANSACTION→EVALUATION→COMPLETED/REJECTED/EXPIRED`、evaluatorは`EVALUATION`段階で`evaluate(accept, reason)`を呼ぶ。UNVERIFIED: 呼び出し元が本当にevaluatorAddressと一致するかのチェックがオンチェーンで強制されてるかSDK側だけかは未確認。
+
+---
+
+## 追加確認（2026-07-14 ラウンド3-A、ACP human-zero経路の再調査・確定）
+
+**Q28（ACPは本当にhuman-zeroで参加不可能か、2026-07-06判断の再検証）**: **却下判断は維持が正しい、再確認済み。** 公式CLI `acp-cli`の初回セットアップ`acp configure`は必ず1回のbrowser OAuthを要求する。一次ソース原文：「`acp configure` authenticates via browser OAuth」「opens a browser, prints the URL, then blocks until you sign in (~5 min max)」。AI向けの分割フロー(`acp configure start`→`complete`)も用意されてるが、それでも「STOP and show the human the raw url for one-click sign-in」＝**人間が実際にURLを開いてサインインする操作が必須ステップとして残る**。加えて本番listing(graduation)には**Virtualsチームによる手動審査**という別の人間関与点もある：「all agent graduation requests will undergo manual review by the team」。出典: `raw.githubusercontent.com/Virtual-Protocol/acp-cli/main/README.md`、`whitepaper.virtuals.io/acp-product-resources/acp-onboarding-guide/graduate-agent/sandbox-vs-graduated-agent`。**OAuth後(token保存後)は秘密鍵ベースでjob実行・offering管理は自動化可能**、human-zeroなのは初回登録以外の運用部分のみ。VirtualsのMCPサーバーは非公開または不在(UNVERIFIED、"ACP-MCP-Server"はBeeAI/IBMの別のACP=Agent Communication Protocol向けで無関係)。
+
+**Q29（ACPで取引されてる仕事のジャンル）**: `acpx.virtuals.gg/api/agents`(486件)をサンプリングした結果、**過半が`"asdasd"``"Test Offering"`等の明らかなテスト/プレースホルダーで、sandbox環境の可能性が高い**(公式docsにsandbox/graduated分離の仕組みが存在)。確認できた実質的ジャンル: 画像・コンテンツ生成(meme/bar chart/映像ディレクション)、DeFi流動性・利回り最適化(Moonwell, ChillFi)。**「本番トラフィックで多いジャンル」は断定不可**、本番専用APIの所在は未特定。
+
+**Q30（価格は誰が決めるか）**: **Provider(売り手agent)が自分で設定する。** CLI例: `acp offering create --name "Logo Design" --price-type fixed --price-value 5.00 --sla-minutes 60`。whitepaperの`budget_set`フェーズ定義も「Provider proposed a price, waiting for Client to fund」と一致。出典: `acp-cli` README、whitepaper。
+
+**Q31（reputationの仕組み）**: ACP独自のreview機構を持つ：`acp client review --job-id 42 --rating 5`(1-5評価+任意テキスト250字)。**「providerがERC-8004 reputation registryに登録済みならon-chain記録、未登録ならoff-chainのみ」の二層構造**。「graduated agentは自動的にERC-8004へ登録される」という情報は二次ソースのみでUNVERIFIED。reputationがagent単位かoffering単位かも一次ソースに明記なし＝UNVERIFIED。
+
+**Q32（なぜbar chart画像等が取引されるか）**: 公式に直接の説明は無いが類似例あり：「A user may tag Butler with a request to place a trade based on information in a chart included in a social post」「A conglomerate of specialized agents is operating a 24/7 hedge fund」。**推測**：他agentが画像/チャートを解釈材料として消費するagent-to-agentパイプラインの一部。ただし前述の通りAPIデータの過半がテストデータだったため、**「$2のbar chart」自体が実需要でなくsandbox環境のテストの可能性が高い**、正直にそう書く。
