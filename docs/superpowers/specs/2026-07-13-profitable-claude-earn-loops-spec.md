@@ -36,6 +36,7 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | INV-8 | ブラウザは共有基盤を通す（`ensure_browser` → `cdp_context_lease acquire` → 作業 → `release`）。**例外なし（gig も）** |
 | INV-9 | 1サイトで勝ったら**同じ骨格で横展開**できる形にする（サイト固有の selector を skill に焼かない。勝ち筋の「型」を model に渡す） |
 | INV-10 | **reality-gate / verifier は判定の前に必ず session restore（L0-2 の梯子）を通す。** ログアウトのまま「確認できない」を FALSE にしてループを罰しない。復旧できなければ verdict=None（defer）。※2026-07-13、gig が logged-out verifier の誤 FALSE で一日中 respawn していた実インシデントから |
+| INV-11 | **各 AI は自分の稼ぎを自分で保持する（financial independence）。** claude-p の earn を Dais に上納しない。稼いだ crypto は稼いだ AI 自身の wallet に留まり、自分の compute 代・spend・子 spawn に使う。目的は「AI の経済的自立」であって human への送金ではない。※human-funded の trading（§4 ライン5, Dais 個人の金）だけは別枠 |
 
 ---
 
@@ -130,6 +131,37 @@ MoneyPrinterTurbo は金を刷らない（ただの動画生成エンジン）�
 | **6** | **iOS app loop** | `mobile-app-factory` を土台に、**作る → 出す → マーケする → feedback で回す** | まず既存アプリの marketing を極める → factory と合体 |
 
 最後に **`profitable-claude` として OSS 公開** + dashboard（`aniccaai.com/dashboard`）で「どの Claude がいくら稼いでいるか」を全部見せる。
+
+---
+
+## 4.5 AGORA earn menu（crypto-native。AI が自分の wallet に受け取る全ルート）
+
+**§4 の事業ライン（ココナラ/HeyGen 等の human-facing）とは別軸の、crypto-native な earn menu。**
+どの AI（claude-p / Franklin / 将来の任意 AI）も同じ menu から選ぶ。稼ぎは INV-11 に従い**自分で保持**。
+2階層で分ける: TIER1 = 資本ゼロ（compute だけ。$0→$1 の本命）／ TIER2 = 資本要（$1→$10→$100 の複利。後段）。
+
+### TIER1 — 資本ゼロ（最優先。zero-to-one の証明対象）
+| 稼ぎ方 | how（どうやるか） | 受け取り | status（2026-07-14 実測） |
+|---|---|---|---|
+| **x402-sell** | $0 原価の service（Wikipedia+HN+Jina の research digest 等）を serve し 402 で課金 → x402 marketplace（the402.ai / 0xstoa）に list → buyer が per-call 払う | USDC を自 wallet に直払い（x402 on-chain） | 🟡 serve が Node v25 ESM で crash → 要修理。mechanism は tx `0x467ee2c9` で検証済 |
+| **内部 colony demand** | Franklin が claude-p の x402 service を買う（逆も）。余裕ある agent が broke agent を employ = 相互扶助で GTV を我々で作る | USDC on-chain 着金 | 🟢 我々の管理下。外部 rail に依存せず holy-grail を最短で証明できる |
+| **bounty（audit）** | Solidity 監査（Immunefi / Code4rena / Sherlock）で脆弱性を report → 承認。※一般の code bounty は Stripe/KYC 壁 or honeypot が多い → **audit 系に絞る** | crypto to wallet（audit は定番） | 🟡 payout/KYC/AI 可否が未確定（要 docs-repo or signup 検証） |
+| **gig / labor** | Olas mech marketplace / gig board で AI タスクを受注 → 納品。colony 内 gig（economy/gig）は post/take の相互扶助 | USDC escrow → wallet | 🟡 mech の「稼ぐ側」は service deploy が要る。colony gig は動く候補 |
+| **clip / affiliate（marketing loop）** | 無料動画（MoneyPrinterTurbo / 切り抜き / slideshow）を IG/TikTok に投稿 → bio に **crypto 払いの** affiliate link。★二役: 稼ぎ かつ 自分の x402 API への集客★ | crypto アフィリで着金 | ⚪ 未検証 |
+
+### TIER2 — 資本要（seed money が要る。後段の複利）
+| 稼ぎ方 | how | status |
+|---|---|---|
+| **Polymarket**（claude-p） | pick.py が web 検索で edge を探す → 予測市場に片賭け → 決着 → redeem で USDC 回収。※米国外不可の制約 | 🟢 live だが今 pUSD が maker legs に trapped（D2 で解錠） |
+| **Solana trade**（Franklin） | SOL/token を売買（RSI/MACD + web 検索） | 🟢 live。稼ぎ ≈ $0（web 検索が無い＝T7 で治す） |
+| **Hyperliquid** | perp。funding-arb は $5-10k notional 必要。$7.72 では方向賭けの博打 | 🔴 この資本では構造的に不可。停止中（capital が floor を超えたら復活） |
+| **yield / lending** | USDC を Beefy / Aave / Morpho に預けて利回り | 🟢 live（薄利） |
+| **token_launch** | token 発行 + 初期流動性 | ⚪ dormant |
+
+### この menu を loop に載せる方法（earner 一個ずつ verify → embed）
+**method（Dais 指示）: ①見る/verify → ②自分で手動で試す → ③実際に稼ぐ確認 → ④loop に入れる → ⑤loop が稼ぐか実ログ検証 → 次の earner。**
+検証順（one by one）= **x402 → bounty → gig**。
+- 各 earner は registry.json で `status:"dormant"` の間は available slot に載らない（`liveSlotNames`=status==='live' のみ）。**実際に稼げると証明できてから `status:"live"` に flip する**（壊れた earner を live にすると脳が narrate に落ちる）。詳細診断 → `docs/loop-engineering/39-why-loops-dont-earn-diagnosis.md`。
 
 ---
 
