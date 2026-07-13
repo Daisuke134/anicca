@@ -201,8 +201,14 @@ TO-BE:
 
 **前提**: Mac mini 1台で数百ループは回らない（今日すでに ENOSPC で死んでいる）。
 
-**アカウントの数え方（訂正）**: 「1アカウント=1永続profile」は正しい。だが我々は profile を**数百持つ**
-（数百 coconala / 数百 TikTok / 数百 IG）。共有するのはインフラ（App Store Connect / Stripe キー）だけ。
+**アカウントの数え方（Dais 2026-07-13 の重要な区別）**:
+- **gig（marketplace + KYC 必須）は例外**: ★1つの KYC 済みアカウント（mtdc）の中で無限にスケールする★。
+  marketplace なので、1エージェントがその1アカウントで何百・何千件に応募/出品/納品できる。
+  アカウントを増やさない＝KYC を繰り返さない。だから gig の scale = 「同じ口座で件数と出品を増やす」。
+  これが 10K→100K→1M MRR への最短路（新規アカウント無し）。
+- **affiliate / clip / IG / TikTok は逆**: 宣伝するモノ/ニッチ毎に**新アカウントが要る**（数百 profile）。
+  共有するのはインフラ（App Store Connect / Stripe キー）だけ。
+→ つまり scale の形はラインで違う: gig = 1アカウント内で件数増、affiliate系 = アカウント数増。
 
 **脳と手を分ける（scale の核心）**:
 ```
