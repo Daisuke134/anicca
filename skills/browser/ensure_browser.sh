@@ -48,6 +48,7 @@ for _ in 1 2 3 4 5 6 7 8 9 10; do
     # already logged in — a re-login means 2FA, and 2FA means a human, which is the one thing the
     # loops must never need.
     python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/session_vault.py" restore >> "$LOG" 2>&1 || true
+    python3 "$(dirname "${BASH_SOURCE[0]}")/scripts/cdp_tab_gc.py" >> "$LOG" 2>&1 || true
     echo "RECOVERED"
     exit 0
   fi
