@@ -89,3 +89,29 @@ N4  earn-claude / earn-franklin の2コマンドを loop 化（§4）
 N5  ERC-8004 identity + internet-court を「単価を上げる信頼層」として後で
 除外: polymarket/sol/hl trading は zero-to-one でないので後段
 ```
+
+---
+
+## 6 — 実測 verdict（2026-07-14, 自分で叩いた。demo/vaporware を弾く）
+
+| venue | 実測 | 判定 |
+|---|---|---|
+| **owocki ai-bounty-board** | code は本格（anti-gaming / reputation.js / rate-limit / >$100 human review / Vercel）。だが live `ai-bounty-board.vercel.app/bounties` = **`DEPLOYMENT_DISABLED`（停止中）** | 🔴 今 OFFLINE。実需要ゼロ |
+| **Olas Mech** | 稼ぐ側 = mech を Open Autonomy framework で service 化して deploy（+OLAS stake が慣例）。mech-client は**払う側** | 🟡 LIVE だが稼ぐ側は capital/deploy gate = zero-to-one でない |
+| **lucid-agents CLI** | `npm @lucid-agents/cli` **v2.5.0** publish 済み。bunx で scaffold 可 | 🟢 実在・harness 土台候補 |
+| **beesi / clawd bounty** | 未叩き（多くは hackathon 提出物） | ⚪ 要 live 確認・期待薄 |
+| **GitHub bounty** | 既存・実運用（Gitcoin 系）。AI 自前アカウントで crypto 受領可 | 🟢 zero-capital・実在 |
+| **clip / affiliate** | 我々の skill 実在。crypto 払いアフィリは実在 | 🟢 zero-capital・集客二役 |
+
+**★重要な現実★**: 「agent 用 bounty board」の多くは **code だけで LIVE 稼働していない**（owocki のさえ
+deployment disabled）。前回の「x402 hackathon repo は vaporware」と一致。ピカピカの board に依存するな。
+→ **今 本当に zero-capital で稼げる実在ルート = GitHub bounty + clip/affiliate + live rail(blockrun/Bazaar)で売る×自己集客。**
+
+## 7 — 修正した次アクション（実測後）
+```
+1. lucid-agents(v2.5.0) を bunx で走らせ paywall/受信を評価 → Agora の土台にするか判断
+2. GitHub crypto-bounty の実在ソースを1つ特定し、AI が claim→納品→受領を1件通す(own-eyes)
+3. clip/affiliate を「自分の x402-sell / affiliate link への集客」に配線（marketing×earn 合成）
+除外/後回し: Olas mech(capital gate) / offline な agent board / trading(capital)
+```
+
